@@ -6,12 +6,7 @@ import { SafeOpenError, readLocalFileSafely } from "../../../src/infra/fs-safe.j
 import type { SsrFPolicy } from "../../../src/infra/net/ssrf.js";
 import { type MediaKind, maxBytesForKind } from "../../../src/media/constants.js";
 import { fetchRemoteMedia } from "../../../src/media/fetch.js";
-import {
-  convertHeicToJpeg,
-  hasAlphaChannel,
-  optimizeImageToPng,
-  resizeToJpeg,
-} from "../../../src/media/image-ops.js";
+import { convertHeicToJpeg, hasAlphaChannel, optimizeImageToPng, resizeToJpeg } from "../../../src/media/image-ops.js";
 import { getDefaultMediaLocalRoots } from "../../../src/media/local-roots.js";
 import { detectMime, extensionForMime, kindFromMime } from "../../../src/media/mime.js";
 import { resolveUserPath } from "../../../src/utils.js";
@@ -49,9 +44,7 @@ function resolveWebMediaOptions(params: {
   }
   return {
     ...params.maxBytesOrOptions,
-    optimizeImages: params.optimizeImages
-      ? (params.maxBytesOrOptions.optimizeImages ?? true)
-      : false,
+    optimizeImages: params.optimizeImages ? (params.maxBytesOrOptions.optimizeImages ?? true) : false,
   };
 }
 
@@ -220,9 +213,7 @@ async function optimizeImageWithFallback(params: {
       return { ...optimized, format: "png" };
     }
     if (shouldLogVerbose()) {
-      logVerbose(
-        `PNG with alpha still exceeds ${formatMb(cap, 0)}MB after optimization; falling back to JPEG`,
-      );
+      logVerbose(`PNG with alpha still exceeds ${formatMb(cap, 0)}MB after optimization; falling back to JPEG`);
     }
   }
 
@@ -230,10 +221,7 @@ async function optimizeImageWithFallback(params: {
   return { ...optimized, format: "jpeg" };
 }
 
-async function loadWebMediaInternal(
-  mediaUrl: string,
-  options: WebMediaOptions = {},
-): Promise<WebMediaResult> {
+async function loadWebMediaInternal(mediaUrl: string, options: WebMediaOptions = {}): Promise<WebMediaResult> {
   const {
     maxBytes,
     optimizeImages = true,
@@ -269,9 +257,7 @@ async function loadWebMediaInternal(
 
     const contentType = optimized.format === "png" ? "image/png" : "image/jpeg";
     const fileName =
-      optimized.format === "jpeg" && meta && isHeicSource(meta)
-        ? toJpegFileName(meta.fileName)
-        : meta?.fileName;
+      optimized.format === "jpeg" && meta && isHeicSource(meta) ? toJpegFileName(meta.fileName) : meta?.fileName;
 
     return {
       buffer: optimized.buffer,
@@ -326,11 +312,7 @@ async function loadWebMediaInternal(
     // For optimized images, allow fetching larger payloads before compression.
     const defaultFetchCap = maxBytesForKind("document");
     const fetchCap =
-      maxBytes === undefined
-        ? defaultFetchCap
-        : optimizeImages
-          ? Math.max(maxBytes, defaultFetchCap)
-          : maxBytes;
+      maxBytes === undefined ? defaultFetchCap : optimizeImages ? Math.max(maxBytes, defaultFetchCap) : maxBytes;
     const fetched = await fetchRemoteMedia({ url: mediaUrl, maxBytes: fetchCap, ssrfPolicy });
     const { buffer, contentType, fileName } = fetched;
     const kind = kindFromMime(contentType);
@@ -369,17 +351,11 @@ async function loadWebMediaInternal(
           });
         }
         if (err.code === "not-file") {
-          throw new LocalMediaAccessError(
-            "not-file",
-            `Local media path is not a file: ${mediaUrl}`,
-            { cause: err },
-          );
+          throw new LocalMediaAccessError("not-file", `Local media path is not a file: ${mediaUrl}`, { cause: err });
         }
-        throw new LocalMediaAccessError(
-          "invalid-path",
-          `Local media path is not safe to read: ${mediaUrl}`,
-          { cause: err },
-        );
+        throw new LocalMediaAccessError("invalid-path", `Local media path is not safe to read: ${mediaUrl}`, {
+          cause: err,
+        });
       }
       throw err;
     }

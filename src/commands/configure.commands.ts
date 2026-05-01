@@ -8,10 +8,7 @@ export async function configureCommand(runtime: RuntimeEnv = defaultRuntime) {
   await runConfigureWizard({ command: "configure" }, runtime);
 }
 
-export async function configureCommandWithSections(
-  sections: WizardSection[],
-  runtime: RuntimeEnv = defaultRuntime,
-) {
+export async function configureCommandWithSections(sections: WizardSection[], runtime: RuntimeEnv = defaultRuntime) {
   await runConfigureWizard({ command: "configure", sections }, runtime);
 }
 

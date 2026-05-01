@@ -1,5 +1,5 @@
 import net from "node:net";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { stripAnsi } from "../terminal/ansi.js";
 
 const runCommandWithTimeoutMock = vi.hoisted(() => vi.fn());
@@ -15,10 +15,13 @@ let PortInUseError: typeof import("./ports.js").PortInUseError;
 
 const describeUnix = process.platform === "win32" ? describe.skip : describe;
 
-beforeEach(async () => {
-  vi.resetModules();
+beforeAll(async () => {
   ({ inspectPortUsage } = await import("./ports-inspect.js"));
   ({ ensurePortAvailable, handlePortError, PortInUseError } = await import("./ports.js"));
+});
+
+beforeEach(() => {
+  runCommandWithTimeoutMock.mockReset();
 });
 
 describe("ports helpers", () => {
@@ -37,9 +40,7 @@ describe("ports helpers", () => {
       exit: vi.fn() as unknown as (code: number) => never,
     };
     // Avoid slow OS port inspection; this test only cares about messaging + exit behavior.
-    await handlePortError(new PortInUseError(1234, "details"), 1234, "context", runtime).catch(
-      () => {},
-    );
+    await handlePortError(new PortInUseError(1234, "details"), 1234, "context", runtime).catch(() => {});
     const messages = runtime.error.mock.calls.map((call) => stripAnsi(String(call[0] ?? "")));
     expect(messages.join("\n")).toContain("context failed: port 1234 is already in use.");
     expect(messages.join("\n")).toContain("Resolve by stopping the process");
@@ -66,18 +67,12 @@ describe("ports helpers", () => {
 });
 
 describeUnix("inspectPortUsage", () => {
-  beforeEach(() => {
-    runCommandWithTimeoutMock.mockClear();
-  });
-
   it("reports busy when lsof is missing but loopback listener exists", async () => {
     const server = net.createServer();
     await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
     const port = (server.address() as net.AddressInfo).port;
 
-    runCommandWithTimeoutMock.mockRejectedValueOnce(
-      Object.assign(new Error("spawn lsof ENOENT"), { code: "ENOENT" }),
-    );
+    runCommandWithTimeoutMock.mockRejectedValueOnce(Object.assign(new Error("spawn lsof ENOENT"), { code: "ENOENT" }));
 
     try {
       const result = await inspectPortUsage(port);

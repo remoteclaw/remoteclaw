@@ -65,10 +65,7 @@ export function loadActiveCallsFromStore(storePath: string): {
   return { activeCalls, providerCallIdMap, processedEventIds, rejectedProviderCallIds };
 }
 
-export async function getCallHistoryFromStore(
-  storePath: string,
-  limit = 50,
-): Promise<CallRecord[]> {
+export async function getCallHistoryFromStore(storePath: string, limit = 50): Promise<CallRecord[]> {
   const logPath = path.join(storePath, "calls.jsonl");
 
   try {

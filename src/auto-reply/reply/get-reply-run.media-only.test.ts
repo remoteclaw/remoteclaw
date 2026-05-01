@@ -202,9 +202,7 @@ describe("runPreparedReply media-only handling", () => {
       }),
     );
 
-    const resetNoticeCall = vi.mocked(routeReply).mock.calls[0]?.[0] as
-      | { payload?: { text?: string } }
-      | undefined;
+    const resetNoticeCall = vi.mocked(routeReply).mock.calls[0]?.[0] as { payload?: { text?: string } } | undefined;
     expect(resetNoticeCall?.payload?.text).toContain("✅ New session started · model:");
     expect(resetNoticeCall?.payload?.text).not.toContain("🔑");
     expect(resetNoticeCall?.payload?.text).not.toContain("api-key");
@@ -308,9 +306,7 @@ describe("runPreparedReply media-only handling", () => {
       }),
     );
 
-    const call = vi.mocked(resolveTypingMode).mock.calls[0]?.[0] as
-      | { suppressTyping?: boolean }
-      | undefined;
+    const call = vi.mocked(resolveTypingMode).mock.calls[0]?.[0] as { suppressTyping?: boolean } | undefined;
     expect(call?.suppressTyping).toBe(true);
   });
 

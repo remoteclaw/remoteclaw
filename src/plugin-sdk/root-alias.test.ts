@@ -226,17 +226,11 @@ describe("plugin-sdk root alias", () => {
     });
 
     expect((lazyModule.moduleExports.slowHelper as () => string)()).toBe("loaded");
-    expect(lazyModule.loadedSpecifiers).toContain(
-      path.join(packageRoot, "src", "plugin-sdk", "compat.ts"),
-    );
+    expect(lazyModule.loadedSpecifiers).toContain(path.join(packageRoot, "src", "plugin-sdk", "compat.ts"));
     expect(
-      typeof (lazyModule.moduleExports.onDiagnosticEvent as (listener: () => void) => () => void)(
-        () => undefined,
-      ),
+      typeof (lazyModule.moduleExports.onDiagnosticEvent as (listener: () => void) => () => void)(() => undefined),
     ).toBe("function");
-    expect(lazyModule.loadedSpecifiers).toContain(
-      path.join(packageRoot, "src", "infra", "diagnostic-events.ts"),
-    );
+    expect(lazyModule.loadedSpecifiers).toContain(path.join(packageRoot, "src", "infra", "diagnostic-events.ts"));
   });
 
   it("prefers hashed dist diagnostic events chunks before falling back to src", () => {
@@ -253,16 +247,10 @@ describe("plugin-sdk root alias", () => {
     });
 
     expect(
-      typeof (lazyModule.moduleExports.onDiagnosticEvent as (listener: () => void) => () => void)(
-        () => undefined,
-      ),
+      typeof (lazyModule.moduleExports.onDiagnosticEvent as (listener: () => void) => () => void)(() => undefined),
     ).toBe("function");
-    expect(lazyModule.loadedSpecifiers).toContain(
-      path.join(packageRoot, "dist", "diagnostic-events-W3Hz61fI.js"),
-    );
-    expect(lazyModule.loadedSpecifiers).not.toContain(
-      path.join(packageRoot, "src", "infra", "diagnostic-events.ts"),
-    );
+    expect(lazyModule.loadedSpecifiers).toContain(path.join(packageRoot, "dist", "diagnostic-events-W3Hz61fI.js"));
+    expect(lazyModule.loadedSpecifiers).not.toContain(path.join(packageRoot, "src", "infra", "diagnostic-events.ts"));
   });
 
   it.each([
@@ -283,9 +271,7 @@ describe("plugin-sdk root alias", () => {
       expectIdentity: false,
       assertForwarded: (value: unknown) => {
         expect(typeof value).toBe("function");
-        expect(typeof (value as (listener: () => void) => () => void)(() => undefined)).toBe(
-          "function",
-        );
+        expect(typeof (value as (listener: () => void) => () => void)(() => undefined)).toBe("function");
       },
     },
   ])("$name", ({ exportName, exportValue, expectIdentity, assertForwarded }) => {

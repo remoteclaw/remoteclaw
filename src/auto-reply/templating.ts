@@ -1,9 +1,6 @@
 import type { StickerMetadata } from "../../extensions/telegram/src/bot/types.js";
 import type { ChannelId } from "../channels/plugins/types.js";
-import type {
-  MediaUnderstandingDecision,
-  MediaUnderstandingOutput,
-} from "../media-understanding/types.js";
+import type { MediaUnderstandingDecision, MediaUnderstandingOutput } from "../media-understanding/types.js";
 import type { InputProvenance } from "../sessions/input-provenance.js";
 import type { InternalMessageChannel } from "../utils/message-channel.js";
 import type { CommandArgs } from "./commands-registry.types.js";
@@ -145,6 +142,8 @@ export type MsgContext = {
   AcpDispatchTailAfterReset?: boolean;
   /** Gateway client scopes when the message originates from the gateway. */
   GatewayClientScopes?: string[];
+  /** Trusted system override for contexts that must never inherit owner semantics. */
+  ForceSenderIsOwnerFalse?: boolean;
   /** Thread identifier (Telegram topic id or Matrix thread event id). */
   MessageThreadId?: string | number;
   /** Platform-native channel/conversation id (e.g. Slack DM channel "D…" id). */

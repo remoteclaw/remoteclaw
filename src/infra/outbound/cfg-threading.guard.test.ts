@@ -169,9 +169,7 @@ describe("outbound cfg-threading guard", () => {
 
     for (const file of adapterFiles) {
       const source = readRepoFile(file);
-      expect(source, `${file} must not call loadConfig in outbound entrypoint`).not.toMatch(
-        loadConfigPattern,
-      );
+      expect(source, `${file} must not call loadConfig in outbound entrypoint`).not.toMatch(loadConfigPattern);
     }
   });
 
@@ -180,9 +178,7 @@ describe("outbound cfg-threading guard", () => {
     for (const file of inlineFiles) {
       const source = readRepoFile(file);
       const outboundBlock = extractOutboundBlock(source, file);
-      expect(outboundBlock, `${file} outbound block must not call loadConfig`).not.toMatch(
-        loadConfigPattern,
-      );
+      expect(outboundBlock, `${file} outbound block must not call loadConfig`).not.toMatch(loadConfigPattern);
     }
   });
 

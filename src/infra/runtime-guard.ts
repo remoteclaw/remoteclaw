@@ -85,10 +85,7 @@ export function parseMinimumNodeEngine(engine: string | null): Semver | null {
   return parseSemver(match[1] ?? null);
 }
 
-export function nodeVersionSatisfiesEngine(
-  version: string | null,
-  engine: string | null,
-): boolean | null {
+export function nodeVersionSatisfiesEngine(version: string | null, engine: string | null): boolean | null {
   const minimum = parseMinimumNodeEngine(engine);
   if (!minimum) {
     return null;
@@ -105,8 +102,7 @@ export function assertSupportedRuntime(
   }
 
   const versionLabel = details.version ?? "unknown";
-  const runtimeLabel =
-    details.kind === "unknown" ? "unknown runtime" : `${details.kind} ${versionLabel}`;
+  const runtimeLabel = details.kind === "unknown" ? "unknown runtime" : `${details.kind} ${versionLabel}`;
   const execLabel = details.execPath ?? "unknown";
 
   runtime.error(

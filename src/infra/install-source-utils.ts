@@ -39,10 +39,7 @@ export type NpmIntegrityDrift = {
   actualIntegrity: string;
 };
 
-export async function withTempDir<T>(
-  prefix: string,
-  fn: (tmpDir: string) => Promise<T>,
-): Promise<T> {
+export async function withTempDir<T>(prefix: string, fn: (tmpDir: string) => Promise<T>): Promise<T> {
   const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), prefix));
   try {
     return await fn(tmpDir);
@@ -94,9 +91,7 @@ function parseResolvedSpecFromId(id: string): string | undefined {
   return `${name}@${version}`;
 }
 
-function normalizeNpmPackEntry(
-  entry: unknown,
-): { filename?: string; metadata: NpmSpecResolution } | null {
+function normalizeNpmPackEntry(entry: unknown): { filename?: string; metadata: NpmSpecResolution } | null {
   if (!entry || typeof entry !== "object") {
     return null;
   }
@@ -105,8 +100,7 @@ function normalizeNpmPackEntry(
   const version = toOptionalString(rec.version);
   const id = toOptionalString(rec.id);
   const resolvedSpec =
-    (name && version ? `${name}@${version}` : undefined) ??
-    (id ? parseResolvedSpecFromId(id) : undefined);
+    (name && version ? `${name}@${version}` : undefined) ?? (id ? parseResolvedSpecFromId(id) : undefined);
 
   return {
     filename: toOptionalString(rec.filename),
@@ -120,9 +114,7 @@ function normalizeNpmPackEntry(
   };
 }
 
-function parseNpmPackJsonOutput(
-  raw: string,
-): { filename?: string; metadata: NpmSpecResolution } | null {
+function parseNpmPackJsonOutput(raw: string): { filename?: string; metadata: NpmSpecResolution } | null {
   const trimmed = raw.trim();
   if (!trimmed) {
     return null;
@@ -200,11 +192,7 @@ async function findPackedArchiveInDir(cwd: string): Promise<string | undefined> 
   return sortedByMtime[0]?.name;
 }
 
-export async function packNpmSpecToArchive(params: {
-  spec: string;
-  timeoutMs: number;
-  cwd: string;
-}): Promise<
+export async function packNpmSpecToArchive(params: { spec: string; timeoutMs: number; cwd: string }): Promise<
   | {
       ok: true;
       archivePath: string;
@@ -215,17 +203,14 @@ export async function packNpmSpecToArchive(params: {
       error: string;
     }
 > {
-  const res = await runCommandWithTimeout(
-    ["npm", "pack", params.spec, "--ignore-scripts", "--json"],
-    {
-      timeoutMs: Math.max(params.timeoutMs, 300_000),
-      cwd: params.cwd,
-      env: {
-        COREPACK_ENABLE_DOWNLOAD_PROMPT: "0",
-        NPM_CONFIG_IGNORE_SCRIPTS: "true",
-      },
+  const res = await runCommandWithTimeout(["npm", "pack", params.spec, "--ignore-scripts", "--json"], {
+    timeoutMs: Math.max(params.timeoutMs, 300_000),
+    cwd: params.cwd,
+    env: {
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: "0",
+      NPM_CONFIG_IGNORE_SCRIPTS: "true",
     },
-  );
+  });
   if (res.code !== 0) {
     const raw = res.stderr.trim() || res.stdout.trim();
     if (/E404|is not in this registry/i.test(raw)) {

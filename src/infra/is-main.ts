@@ -51,8 +51,7 @@ export function isMainModule({
     const currentBase = path.basename(normalizedCurrent);
     const argvBase = path.basename(normalizedArgv1);
     const matched = wrapperEntryPairs.some(
-      ({ wrapperBasename, entryBasename }) =>
-        currentBase === entryBasename && argvBase === wrapperBasename,
+      ({ wrapperBasename, entryBasename }) => currentBase === entryBasename && argvBase === wrapperBasename,
     );
     if (matched) {
       return true;

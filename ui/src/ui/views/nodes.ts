@@ -1,10 +1,5 @@
 import { html, nothing } from "lit";
-import type {
-  DevicePairingList,
-  DeviceTokenSummary,
-  PairedDevice,
-  PendingDevice,
-} from "../controllers/devices.ts";
+import type { DevicePairingList, DeviceTokenSummary, PairedDevice, PendingDevice } from "../controllers/devices.ts";
 import type { ExecApprovalsFile, ExecApprovalsSnapshot } from "../controllers/exec-approvals.ts";
 import { formatRelativeTimestamp, formatList } from "../format.ts";
 import { renderExecApprovals, resolveExecApprovalsState } from "./nodes-exec-approvals.ts";
@@ -186,9 +181,7 @@ function renderPairedDevice(device: PairedDevice, props: NodesProps) {
 function renderTokenRow(deviceId: string, token: DeviceTokenSummary, props: NodesProps) {
   const status = token.revokedAtMs ? "revoked" : "active";
   const scopes = `scopes: ${formatList(token.scopes)}`;
-  const when = formatRelativeTimestamp(
-    token.rotatedAtMs ?? token.createdAtMs ?? token.lastUsedAtMs ?? null,
-  );
+  const when = formatRelativeTimestamp(token.rotatedAtMs ?? token.createdAtMs ?? token.lastUsedAtMs ?? null);
   return html`
     <div class="row" style="justify-content: space-between; gap: 8px;">
       <div class="list-sub">${token.role} · ${status} · ${scopes} · ${when}</div>
@@ -423,8 +416,7 @@ function resolveAgentBindings(config: Record<string, unknown> | null): {
   }
   const tools = (config.tools ?? {}) as Record<string, unknown>;
   const exec = (tools.exec ?? {}) as Record<string, unknown>;
-  const defaultBinding =
-    typeof exec.node === "string" && exec.node.trim() ? exec.node.trim() : null;
+  const defaultBinding = typeof exec.node === "string" && exec.node.trim() ? exec.node.trim() : null;
 
   const agentsNode = (config.agents ?? {}) as Record<string, unknown>;
   if (!Array.isArray(agentsNode.list) || agentsNode.list.length === 0) {
@@ -434,8 +426,7 @@ function resolveAgentBindings(config: Record<string, unknown> | null): {
   const agents = resolveConfigAgents(config).map((entry) => {
     const toolsEntry = (entry.record.tools ?? {}) as Record<string, unknown>;
     const execEntry = (toolsEntry.exec ?? {}) as Record<string, unknown>;
-    const binding =
-      typeof execEntry.node === "string" && execEntry.node.trim() ? execEntry.node.trim() : null;
+    const binding = typeof execEntry.node === "string" && execEntry.node.trim() ? execEntry.node.trim() : null;
     return {
       id: entry.id,
       name: entry.name,

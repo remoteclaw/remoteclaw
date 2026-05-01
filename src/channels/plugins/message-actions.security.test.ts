@@ -2,10 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { jsonResult } from "../../agents/tools/common.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
-import {
-  createChannelTestPluginBase,
-  createTestRegistry,
-} from "../../test-utils/channel-plugins.js";
+import { createChannelTestPluginBase, createTestRegistry } from "../../test-utils/channel-plugins.js";
 import { dispatchChannelMessageAction } from "./message-actions.js";
 import type { ChannelPlugin } from "./types.js";
 
@@ -32,9 +29,7 @@ const discordPlugin: ChannelPlugin = {
 describe("dispatchChannelMessageAction trusted sender guard", () => {
   beforeEach(() => {
     handleAction.mockClear();
-    setActivePluginRegistry(
-      createTestRegistry([{ pluginId: "discord", source: "test", plugin: discordPlugin }]),
-    );
+    setActivePluginRegistry(createTestRegistry([{ pluginId: "discord", source: "test", plugin: discordPlugin }]));
   });
 
   afterEach(() => {

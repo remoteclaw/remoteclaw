@@ -18,6 +18,7 @@ export type MattermostUser = {
   nickname?: string | null;
   first_name?: string | null;
   last_name?: string | null;
+  update_at?: number;
 };
 
 export type MattermostChannel = {
@@ -105,12 +106,7 @@ export function createMattermostClient(params: {
   const NULL_BODY_STATUSES = new Set([101, 204, 205, 304]);
 
   const guardedFetchImpl: MattermostFetch = async (input, init) => {
-    const url =
-      typeof input === "string"
-        ? input
-        : input instanceof URL
-          ? input.toString()
-          : (input as Request).url;
+    const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : (input as Request).url;
     const { response, release } = await fetchWithSsrFGuard({
       url,
       init,
@@ -118,9 +114,7 @@ export function createMattermostClient(params: {
       policy: params.allowPrivateNetwork ? { allowPrivateNetwork: true } : undefined,
     });
     try {
-      const bodyBytes = NULL_BODY_STATUSES.has(response.status)
-        ? null
-        : await response.arrayBuffer();
+      const bodyBytes = NULL_BODY_STATUSES.has(response.status) ? null : await response.arrayBuffer();
       return new Response(bodyBytes, { status: response.status, headers: response.headers });
     } finally {
       await release();
@@ -139,9 +133,7 @@ export function createMattermostClient(params: {
     const res = await fetchImpl(url, { ...init, headers });
     if (!res.ok) {
       const detail = await readMattermostError(res);
-      throw new Error(
-        `Mattermost API ${res.status} ${res.statusText}: ${detail || "unknown error"}`,
-      );
+      throw new Error(`Mattermost API ${res.status} ${res.statusText}: ${detail || "unknown error"}`);
     }
 
     if (res.status === 204) {
@@ -163,10 +155,7 @@ export async function fetchMattermostMe(client: MattermostClient): Promise<Matte
   return await client.request<MattermostUser>("/users/me");
 }
 
-export async function fetchMattermostUser(
-  client: MattermostClient,
-  userId: string,
-): Promise<MattermostUser> {
+export async function fetchMattermostUser(client: MattermostClient, userId: string): Promise<MattermostUser> {
   return await client.request<MattermostUser>(`/users/${userId}`);
 }
 
@@ -177,10 +166,7 @@ export async function fetchMattermostUserByUsername(
   return await client.request<MattermostUser>(`/users/username/${encodeURIComponent(username)}`);
 }
 
-export async function fetchMattermostChannel(
-  client: MattermostClient,
-  channelId: string,
-): Promise<MattermostChannel> {
+export async function fetchMattermostChannel(client: MattermostClient, channelId: string): Promise<MattermostChannel> {
   return await client.request<MattermostChannel>(`/channels/${channelId}`);
 }
 
@@ -189,9 +175,7 @@ export async function fetchMattermostChannelByName(
   teamId: string,
   channelName: string,
 ): Promise<MattermostChannel> {
-  return await client.request<MattermostChannel>(
-    `/teams/${teamId}/channels/name/${encodeURIComponent(channelName)}`,
-  );
+  return await client.request<MattermostChannel>(`/teams/${teamId}/channels/name/${encodeURIComponent(channelName)}`);
 }
 
 export async function sendMattermostTyping(
@@ -287,13 +271,7 @@ export async function createMattermostDirectChannelWithRetry(
   userIds: string[],
   options: CreateDmChannelRetryOptions = {},
 ): Promise<MattermostChannel> {
-  const {
-    maxRetries = 3,
-    initialDelayMs = 1000,
-    maxDelayMs = 10000,
-    timeoutMs = 30000,
-    onRetry,
-  } = options;
+  const { maxRetries = 3, initialDelayMs = 1000, maxDelayMs = 10000, timeoutMs = 30000, onRetry } = options;
 
   let lastError: Error | undefined;
 
@@ -357,11 +335,7 @@ function isRetryableError(error: Error): boolean {
 
   // Check for explicit 429 rate limiting FIRST (before generic "429" text match)
   // This avoids retrying when error detail contains "429" but it's not the status code
-  if (
-    messages.some(
-      (message) => /mattermost api 429\b/.test(message) || message.includes("too many requests"),
-    )
-  ) {
+  if (messages.some((message) => /mattermost api 429\b/.test(message) || message.includes("too many requests"))) {
     return true;
   }
 
@@ -383,30 +357,22 @@ function isRetryableError(error: Error): boolean {
   // This avoids false positives like:
   // - "400 Bad Request: connection timed out" (has status code)
   // - "connect ECONNRESET 104.18.32.10:443" (has port number, not status)
-  const hasMattermostApiStatusCode = messages.some((message) =>
-    /mattermost api \d{3}\b/.test(message),
-  );
+  const hasMattermostApiStatusCode = messages.some((message) => /mattermost api \d{3}\b/.test(message));
   if (hasMattermostApiStatusCode) {
     return false;
   }
 
-  const codes = candidates
-    .map((candidate) => readErrorCode(candidate))
-    .filter((code): code is string => Boolean(code));
+  const codes = candidates.map((candidate) => readErrorCode(candidate)).filter((code): code is string => Boolean(code));
   if (codes.some((code) => RETRYABLE_NETWORK_ERROR_CODES.has(code))) {
     return true;
   }
 
-  const names = candidates
-    .map((candidate) => readErrorName(candidate))
-    .filter((name): name is string => Boolean(name));
+  const names = candidates.map((candidate) => readErrorName(candidate)).filter((name): name is string => Boolean(name));
   if (names.some((name) => RETRYABLE_NETWORK_ERROR_NAMES.has(name))) {
     return true;
   }
 
-  return messages.some((message) =>
-    RETRYABLE_NETWORK_MESSAGE_SNIPPETS.some((pattern) => message.includes(pattern)),
-  );
+  return messages.some((message) => RETRYABLE_NETWORK_MESSAGE_SNIPPETS.some((pattern) => message.includes(pattern)));
 }
 
 function collectErrorCandidates(error: unknown): unknown[] {
@@ -513,10 +479,7 @@ export type MattermostTeam = {
   display_name?: string | null;
 };
 
-export async function fetchMattermostUserTeams(
-  client: MattermostClient,
-  userId: string,
-): Promise<MattermostTeam[]> {
+export async function fetchMattermostUserTeams(client: MattermostClient, userId: string): Promise<MattermostTeam[]> {
   return await client.request<MattermostTeam[]>(`/users/${userId}/teams`);
 }
 
@@ -553,9 +516,7 @@ export async function uploadMattermostFile(
   const form = new FormData();
   const fileName = params.fileName?.trim() || "upload";
   const bytes = Uint8Array.from(params.buffer);
-  const blob = params.contentType
-    ? new Blob([bytes], { type: params.contentType })
-    : new Blob([bytes]);
+  const blob = params.contentType ? new Blob([bytes], { type: params.contentType }) : new Blob([bytes]);
   form.append("files", blob, fileName);
   form.append("channel_id", params.channelId);
 

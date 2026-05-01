@@ -20,8 +20,8 @@ let normalizeZaiEnv: EnvModule["normalizeZaiEnv"];
 
 beforeEach(async () => {
   vi.resetModules();
-  ({ isTruthyEnvValue, logAcceptedEnvOption, normalizeEnv, normalizeZaiEnv } =
-    await import("./env.js"));
+  ({ isTruthyEnvValue, logAcceptedEnvOption, normalizeEnv, normalizeZaiEnv } = await import("./env.js"));
+  loggerMocks.info.mockClear();
 });
 
 describe("normalizeZaiEnv", () => {
@@ -95,9 +95,7 @@ describe("logAcceptedEnvOption", () => {
     );
 
     expect(loggerMocks.info).toHaveBeenCalledTimes(1);
-    expect(loggerMocks.info).toHaveBeenCalledWith(
-      "env: REMOTECLAW_TEST_ENV=<redacted> (test option)",
-    );
+    expect(loggerMocks.info).toHaveBeenCalledWith("env: REMOTECLAW_TEST_ENV=<redacted> (test option)");
   });
 
   it("skips blank values and test-mode logging", () => {

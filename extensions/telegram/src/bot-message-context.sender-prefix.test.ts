@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildTelegramMessageContextForTest } from "./bot-message-context.test-harness.js";
-import {
-  isTelegramForumServiceMessage,
-  TELEGRAM_FORUM_SERVICE_FIELDS,
-} from "./forum-service-message.js";
+import { isTelegramForumServiceMessage, TELEGRAM_FORUM_SERVICE_FIELDS } from "./forum-service-message.js";
 
 describe("isTelegramForumServiceMessage", () => {
   it("returns true for any Telegram forum service field", () => {

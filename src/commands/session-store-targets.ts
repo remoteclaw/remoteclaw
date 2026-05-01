@@ -60,9 +60,7 @@ export function resolveSessionStoreTargets(
     const knownAgents = listAgentIds(cfg);
     const requested = normalizeAgentId(opts.agent ?? "");
     if (!knownAgents.includes(requested)) {
-      throw new Error(
-        `Unknown agent id "${opts.agent}". Use "remoteclaw agents list" to see configured agents.`,
-      );
+      throw new Error(`Unknown agent id "${opts.agent}". Use "remoteclaw agents list" to see configured agents.`);
     }
     return [
       {

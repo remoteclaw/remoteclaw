@@ -4,10 +4,7 @@ const { agentCtor, envHttpProxyAgentCtor, proxyAgentCtor } = vi.hoisted(() => ({
   agentCtor: vi.fn(function MockAgent(this: { options: unknown }, options: unknown) {
     this.options = options;
   }),
-  envHttpProxyAgentCtor: vi.fn(function MockEnvHttpProxyAgent(
-    this: { options: unknown },
-    options: unknown,
-  ) {
+  envHttpProxyAgentCtor: vi.fn(function MockEnvHttpProxyAgent(this: { options: unknown }, options: unknown) {
     this.options = options;
   }),
   proxyAgentCtor: vi.fn(function MockProxyAgent(this: { options: unknown }, options: unknown) {
@@ -40,9 +37,7 @@ describe("createPinnedDispatcher", () => {
         lookup,
       },
     });
-    const firstCallArg = agentCtor.mock.calls[0]?.[0] as
-      | { connect?: Record<string, unknown> }
-      | undefined;
+    const firstCallArg = agentCtor.mock.calls[0]?.[0] as { connect?: Record<string, unknown> } | undefined;
     expect(firstCallArg?.connect?.autoSelectFamily).toBeUndefined();
   });
 

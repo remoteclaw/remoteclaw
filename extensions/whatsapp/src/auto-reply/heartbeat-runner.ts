@@ -10,10 +10,7 @@ import {
   resolveStorePath,
   updateSessionStore,
 } from "../../../../src/config/sessions.js";
-import {
-  emitHeartbeatEvent,
-  resolveIndicatorType,
-} from "../../../../src/infra/heartbeat-events.js";
+import { emitHeartbeatEvent, resolveIndicatorType } from "../../../../src/infra/heartbeat-events.js";
 import { resolveHeartbeatVisibility } from "../../../../src/infra/heartbeat-visibility.js";
 import { getChildLogger } from "../../../../src/logging.js";
 import { redactIdentifier } from "../../../../src/logging/redact-identifier.js";
@@ -141,9 +138,7 @@ export async function runWebHeartbeatOnce(opts: {
         },
         "manual heartbeat message sent",
       );
-      whatsappHeartbeatLog.info(
-        `manual heartbeat sent to ${redactedTo} (id ${sendResult.messageId})`,
-      );
+      whatsappHeartbeatLog.info(`manual heartbeat sent to ${redactedTo} (id ${sendResult.messageId})`);
       return;
     }
 
@@ -183,10 +178,7 @@ export async function runWebHeartbeatOnce(opts: {
     );
     const replyPayload = resolveHeartbeatReplyPayload(replyResult);
 
-    if (
-      !replyPayload ||
-      (!replyPayload.text && !replyPayload.mediaUrl && !replyPayload.mediaUrls?.length)
-    ) {
+    if (!replyPayload || (!replyPayload.text && !replyPayload.mediaUrl && !replyPayload.mediaUrls?.length)) {
       heartbeatLogger.info(
         {
           to: redactedTo,
@@ -243,10 +235,7 @@ export async function runWebHeartbeatOnce(opts: {
     }
 
     if (hasMedia) {
-      heartbeatLogger.warn(
-        { to: redactedTo },
-        "heartbeat reply contained media; sending text only",
-      );
+      heartbeatLogger.warn({ to: redactedTo }, "heartbeat reply contained media; sending text only");
     }
 
     const finalText = (report?.summary?.trim() || replyPayload.text || "").trim();
@@ -267,10 +256,7 @@ export async function runWebHeartbeatOnce(opts: {
     }
 
     if (dryRun) {
-      heartbeatLogger.info(
-        { to: redactedTo, reason: "dry-run", chars: finalText.length },
-        "heartbeat dry-run",
-      );
+      heartbeatLogger.info({ to: redactedTo, reason: "dry-run", chars: finalText.length }, "heartbeat dry-run");
       whatsappHeartbeatLog.info(`[dry-run] heartbeat -> ${redactedTo} (${finalText.length} chars)`);
       return;
     }

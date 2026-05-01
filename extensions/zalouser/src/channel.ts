@@ -181,11 +181,7 @@ function mapUser(params: {
   };
 }
 
-function mapGroup(params: {
-  id: string;
-  name?: string | null;
-  raw?: unknown;
-}): ChannelDirectoryEntry {
+function mapGroup(params: { id: string; name?: string | null; raw?: unknown }): ChannelDirectoryEntry {
   return {
     kind: "group",
     id: params.id,
@@ -210,9 +206,7 @@ function resolveZalouserGroupPolicyEntry(params: ChannelGroupContext) {
   );
 }
 
-function resolveZalouserGroupToolPolicy(
-  params: ChannelGroupContext,
-): GroupToolPolicyConfig | undefined {
+function resolveZalouserGroupToolPolicy(params: ChannelGroupContext): GroupToolPolicyConfig | undefined {
   return resolveZalouserGroupPolicyEntry(params)?.tools;
 }
 
@@ -258,9 +252,7 @@ const zalouserMessageActions: ChannelMessageActionAdapter = {
       currentMessageId: toolContext?.currentMessageId,
     });
     if (!ids) {
-      throw new Error(
-        "Zalouser react requires messageId + cliMsgId (or a current message context id).",
-      );
+      throw new Error("Zalouser react requires messageId + cliMsgId (or a current message context id).");
     }
     const result = await sendReactionZalouser({
       profile: account.profile,
@@ -279,9 +271,7 @@ const zalouserMessageActions: ChannelMessageActionAdapter = {
         {
           type: "text" as const,
           text:
-            params.remove === true
-              ? `Removed reaction ${emoji} from ${ids.msgId}`
-              : `Reacted ${emoji} on ${ids.msgId}`,
+            params.remove === true ? `Removed reaction ${emoji} from ${ids.msgId}` : `Reacted ${emoji} on ${ids.msgId}`,
         },
       ],
       details: {
@@ -304,8 +294,7 @@ export const zalouserDock: ChannelDock = {
   config: {
     resolveAllowFrom: ({ cfg, accountId }) =>
       mapAllowFromEntries(resolveZalouserAccountSync({ cfg: cfg, accountId }).config.allowFrom),
-    formatAllowFrom: ({ allowFrom }) =>
-      formatAllowFromLowercase({ allowFrom, stripPrefixRe: /^(zalouser|zlu):/i }),
+    formatAllowFrom: ({ allowFrom }) => formatAllowFromLowercase({ allowFrom, stripPrefixRe: /^(zalouser|zlu):/i }),
   },
   groups: {
     resolveRequireMention: resolveZalouserRequireMention,
@@ -369,8 +358,7 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
     }),
     resolveAllowFrom: ({ cfg, accountId }) =>
       mapAllowFromEntries(resolveZalouserAccountSync({ cfg: cfg, accountId }).config.allowFrom),
-    formatAllowFrom: ({ allowFrom }) =>
-      formatAllowFromLowercase({ allowFrom, stripPrefixRe: /^(zalouser|zlu):/i }),
+    formatAllowFrom: ({ allowFrom }) => formatAllowFromLowercase({ allowFrom, stripPrefixRe: /^(zalouser|zlu):/i }),
   },
   security: {
     resolveDmPolicy: ({ cfg, accountId, account }) => {
@@ -526,9 +514,7 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
             });
           } else {
             const groups = await listZaloGroupsMatching(account.profile, trimmed);
-            const best =
-              groups.find((group) => group.name.toLowerCase() === trimmed.toLowerCase()) ??
-              groups[0];
+            const best = groups.find((group) => group.name.toLowerCase() === trimmed.toLowerCase()) ?? groups[0];
             results.push({
               input,
               resolved: Boolean(best?.groupId),
@@ -657,9 +643,7 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
           enabled: account.enabled,
           configured,
         },
-        runtime: configured
-          ? runtime
-          : { ...runtime, lastError: runtime?.lastError ?? configError },
+        runtime: configured ? runtime : { ...runtime, lastError: runtime?.lastError ?? configError },
       });
       return {
         ...base,

@@ -97,9 +97,7 @@ function parseGroupTarget(params: {
   return null;
 }
 
-function parseRawChatIdentifierTarget(
-  trimmed: string,
-): { kind: "chat_identifier"; chatIdentifier: string } | null {
+function parseRawChatIdentifierTarget(trimmed: string): { kind: "chat_identifier"; chatIdentifier: string } | null {
   if (/^chat\d+$/i.test(trimmed)) {
     return { kind: "chat_identifier", chatIdentifier: trimmed };
   }
@@ -200,11 +198,7 @@ export function looksLikeBlueBubblesTargetId(raw: string, normalized?: string): 
   if (/^(imessage|sms|auto):/.test(lowered)) {
     return true;
   }
-  if (
-    /^(chat_id|chatid|chat|chat_guid|chatguid|guid|chat_identifier|chatidentifier|chatident|group):/.test(
-      lowered,
-    )
-  ) {
+  if (/^(chat_id|chatid|chat|chat_guid|chatguid|guid|chat_identifier|chatidentifier|chatident|group):/.test(lowered)) {
     return true;
   }
   // Recognize chat<digits> patterns (e.g., "chat660250192681427962") as chat IDs

@@ -1,15 +1,9 @@
 import { resolveControlUiLinks } from "../../commands/onboard-helpers.js";
 import { formatConfigIssueLine } from "../../config/issue-format.js";
-import {
-  resolveGatewayLaunchAgentLabel,
-  resolveGatewaySystemdServiceName,
-} from "../../daemon/constants.js";
+import { resolveGatewayLaunchAgentLabel, resolveGatewaySystemdServiceName } from "../../daemon/constants.js";
 import { renderGatewayServiceCleanupHints } from "../../daemon/inspect.js";
 import { resolveGatewayLogPaths } from "../../daemon/launchd.js";
-import {
-  isSystemdUnavailableDetail,
-  renderSystemdUnavailableHints,
-} from "../../daemon/systemd-hints.js";
+import { isSystemdUnavailableDetail, renderSystemdUnavailableHints } from "../../daemon/systemd-hints.js";
 import { isWSLEnv } from "../../infra/wsl.js";
 import { getResolvedLoggerSettings } from "../../logging.js";
 import { defaultRuntime } from "../../runtime.js";
@@ -24,11 +18,7 @@ import {
   renderRuntimeHints,
   safeDaemonEnv,
 } from "./shared.js";
-import {
-  type DaemonStatus,
-  renderPortDiagnosticsForCli,
-  resolvePortListeningAddresses,
-} from "./status.gather.js";
+import { type DaemonStatus, renderPortDiagnosticsForCli, resolvePortListeningAddresses } from "./status.gather.js";
 
 function sanitizeDaemonStatusForJson(status: DaemonStatus): DaemonStatus {
   const command = status.service.command;
@@ -56,14 +46,11 @@ export function printDaemonStatus(status: DaemonStatus, opts: { json: boolean })
     return;
   }
 
-  const { rich, label, accent, infoText, okText, warnText, errorText } =
-    createCliStatusTextStyles();
+  const { rich, label, accent, infoText, okText, warnText, errorText } = createCliStatusTextStyles();
   const spacer = () => defaultRuntime.log("");
 
   const { service, rpc, extraServices } = status;
-  const serviceStatus = service.loaded
-    ? okText(service.loadedText)
-    : warnText(service.notLoadedText);
+  const serviceStatus = service.loaded ? okText(service.loadedText) : warnText(service.notLoadedText);
   defaultRuntime.log(`${label("Service:")} ${accent(service.label)} (${serviceStatus})`);
   try {
     const logFile = getResolvedLoggerSettings().file;
@@ -72,19 +59,13 @@ export function printDaemonStatus(status: DaemonStatus, opts: { json: boolean })
     // ignore missing config/log resolution
   }
   if (service.command?.programArguments?.length) {
-    defaultRuntime.log(
-      `${label("Command:")} ${infoText(service.command.programArguments.join(" "))}`,
-    );
+    defaultRuntime.log(`${label("Command:")} ${infoText(service.command.programArguments.join(" "))}`);
   }
   if (service.command?.sourcePath) {
-    defaultRuntime.log(
-      `${label("Service file:")} ${infoText(shortenHomePath(service.command.sourcePath))}`,
-    );
+    defaultRuntime.log(`${label("Service file:")} ${infoText(shortenHomePath(service.command.sourcePath))}`);
   }
   if (service.command?.workingDirectory) {
-    defaultRuntime.log(
-      `${label("Working dir:")} ${infoText(shortenHomePath(service.command.workingDirectory))}`,
-    );
+    defaultRuntime.log(`${label("Working dir:")} ${infoText(shortenHomePath(service.command.workingDirectory))}`);
   }
   const daemonEnvLines = safeDaemonEnv(service.command?.environment);
   if (daemonEnvLines.length > 0) {
@@ -172,9 +153,7 @@ export function printDaemonStatus(status: DaemonStatus, opts: { json: boolean })
   }
 
   if (rpc && !rpc.ok && service.loaded && service.runtime?.status === "running") {
-    defaultRuntime.log(
-      warnText("Warm-up: launch agents can take a few seconds. Try again shortly."),
-    );
+    defaultRuntime.log(warnText("Warm-up: launch agents can take a few seconds. Try again shortly."));
   }
   if (rpc) {
     if (rpc.ok) {
@@ -216,8 +195,7 @@ export function printDaemonStatus(status: DaemonStatus, opts: { json: boolean })
     spacer();
   }
 
-  const systemdUnavailable =
-    process.platform === "linux" && isSystemdUnavailableDetail(service.runtime?.detail);
+  const systemdUnavailable = process.platform === "linux" && isSystemdUnavailableDetail(service.runtime?.detail);
   if (systemdUnavailable) {
     defaultRuntime.error(errorText("systemd user services unavailable."));
     for (const hint of renderSystemdUnavailableHints({ wsl: isWSLEnv() })) {
@@ -232,13 +210,8 @@ export function printDaemonStatus(status: DaemonStatus, opts: { json: boolean })
       defaultRuntime.error(errorText(hint));
     }
   } else if (service.loaded && service.runtime?.status === "stopped") {
-    defaultRuntime.error(
-      errorText("Service is loaded but not running (likely exited immediately)."),
-    );
-    for (const hint of renderRuntimeHints(
-      service.runtime,
-      service.command?.environment ?? process.env,
-    )) {
+    defaultRuntime.error(errorText("Service is loaded but not running (likely exited immediately)."));
+    for (const hint of renderRuntimeHints(service.runtime, service.command?.environment ?? process.env)) {
       defaultRuntime.error(errorText(hint));
     }
     spacer();
@@ -248,13 +221,9 @@ export function printDaemonStatus(status: DaemonStatus, opts: { json: boolean })
     const env = service.command?.environment ?? process.env;
     const labelValue = resolveGatewayLaunchAgentLabel(env.REMOTECLAW_PROFILE);
     defaultRuntime.error(
-      errorText(
-        `LaunchAgent label cached but plist missing. Clear with: launchctl bootout gui/$UID/${labelValue}`,
-      ),
+      errorText(`LaunchAgent label cached but plist missing. Clear with: launchctl bootout gui/$UID/${labelValue}`),
     );
-    defaultRuntime.error(
-      errorText(`Then reinstall: ${formatCliCommand("remoteclaw gateway install")}`),
-    );
+    defaultRuntime.error(errorText(`Then reinstall: ${formatCliCommand("remoteclaw gateway install")}`));
     spacer();
   }
 
@@ -275,24 +244,15 @@ export function printDaemonStatus(status: DaemonStatus, opts: { json: boolean })
     );
   }
 
-  if (
-    service.loaded &&
-    service.runtime?.status === "running" &&
-    status.port &&
-    status.port.status !== "busy"
-  ) {
-    defaultRuntime.error(
-      errorText(`Gateway port ${status.port.port} is not listening (service appears running).`),
-    );
+  if (service.loaded && service.runtime?.status === "running" && status.port && status.port.status !== "busy") {
+    defaultRuntime.error(errorText(`Gateway port ${status.port.port} is not listening (service appears running).`));
     if (status.lastError) {
       defaultRuntime.error(`${errorText("Last gateway error:")} ${status.lastError}`);
     }
     if (process.platform === "linux") {
       const env = service.command?.environment ?? process.env;
       const unit = resolveGatewaySystemdServiceName(env.REMOTECLAW_PROFILE);
-      defaultRuntime.error(
-        errorText(`Logs: journalctl --user -u ${unit}.service -n 200 --no-pager`),
-      );
+      defaultRuntime.error(errorText(`Logs: journalctl --user -u ${unit}.service -n 200 --no-pager`));
     } else if (process.platform === "darwin") {
       const logs = resolveGatewayLogPaths(service.command?.environment ?? process.env);
       defaultRuntime.error(`${errorText("Logs:")} ${shortenHomePath(logs.stdoutPath)}`);

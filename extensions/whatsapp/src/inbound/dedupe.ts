@@ -14,11 +14,7 @@ const recentOutboundMessages = createDedupeCache({
   maxSize: RECENT_OUTBOUND_MESSAGE_MAX,
 });
 
-function buildMessageKey(params: {
-  accountId: string;
-  remoteJid: string;
-  messageId: string;
-}): string | null {
+function buildMessageKey(params: { accountId: string; remoteJid: string; messageId: string }): string | null {
   const accountId = params.accountId.trim();
   const remoteJid = params.remoteJid.trim();
   const messageId = params.messageId.trim();
@@ -49,11 +45,7 @@ export function rememberRecentOutboundMessage(params: {
   recentOutboundMessages.check(key);
 }
 
-export function isRecentOutboundMessage(params: {
-  accountId: string;
-  remoteJid: string;
-  messageId: string;
-}): boolean {
+export function isRecentOutboundMessage(params: { accountId: string; remoteJid: string; messageId: string }): boolean {
   const key = buildMessageKey(params);
   if (!key) {
     return false;

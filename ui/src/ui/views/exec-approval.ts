@@ -1,9 +1,6 @@
 import { html, nothing } from "lit";
 import type { AppViewState } from "../app-view-state.ts";
-import type {
-  ExecApprovalRequest,
-  ExecApprovalRequestPayload,
-} from "../controllers/exec-approval.ts";
+import type { ExecApprovalRequest, ExecApprovalRequestPayload } from "../controllers/exec-approval.ts";
 
 function formatRemaining(ms: number): string {
   const remaining = Math.max(0, ms);
@@ -65,9 +62,7 @@ export function renderExecApprovalPrompt(state: AppViewState) {
   const remaining = remainingMs > 0 ? `expires in ${formatRemaining(remainingMs)}` : "expired";
   const queueCount = state.execApprovalQueue.length;
   const isPlugin = active.kind === "plugin";
-  const title = isPlugin
-    ? (active.pluginTitle ?? "Plugin approval needed")
-    : "Exec approval needed";
+  const title = isPlugin ? (active.pluginTitle ?? "Plugin approval needed") : "Exec approval needed";
   return html`
     <div class="exec-approval-overlay" role="dialog" aria-live="polite">
       <div class="exec-approval-card">
@@ -76,18 +71,10 @@ export function renderExecApprovalPrompt(state: AppViewState) {
             <div class="exec-approval-title">${title}</div>
             <div class="exec-approval-sub">${remaining}</div>
           </div>
-          ${
-            queueCount > 1
-              ? html`<div class="exec-approval-queue">${queueCount} pending</div>`
-              : nothing
-          }
+          ${queueCount > 1 ? html`<div class="exec-approval-queue">${queueCount} pending</div>` : nothing}
         </div>
         ${isPlugin ? renderPluginBody(active) : renderExecBody(request)}
-        ${
-          state.execApprovalError
-            ? html`<div class="exec-approval-error">${state.execApprovalError}</div>`
-            : nothing
-        }
+        ${state.execApprovalError ? html`<div class="exec-approval-error">${state.execApprovalError}</div>` : nothing}
         <div class="exec-approval-actions">
           <button
             class="btn primary"

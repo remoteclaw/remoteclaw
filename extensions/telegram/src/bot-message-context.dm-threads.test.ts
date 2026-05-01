@@ -1,8 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-const { buildTelegramMessageContextForTest } =
-  await import("./bot-message-context.test-harness.js");
-const { clearRuntimeConfigSnapshot, setRuntimeConfigSnapshot } =
-  await import("../../../src/config/config.js");
+const { buildTelegramMessageContextForTest } = await import("./bot-message-context.test-harness.js");
+const { clearRuntimeConfigSnapshot, setRuntimeConfigSnapshot } = await import("../../../src/config/config.js");
 
 beforeEach(() => {
   clearRuntimeConfigSnapshot();

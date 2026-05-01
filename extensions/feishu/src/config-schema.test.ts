@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { FeishuConfigSchema, FeishuGroupSchema } from "./config-schema.js";
 
-function expectSchemaIssue(
-  result: ReturnType<typeof FeishuConfigSchema.safeParse>,
-  issuePath: string,
-) {
+function expectSchemaIssue(result: ReturnType<typeof FeishuConfigSchema.safeParse>, issuePath: string) {
   expect(result.success).toBe(false);
   if (!result.success) {
     expect(result.error.issues.some((issue) => issue.path.join(".") === issuePath)).toBe(true);
@@ -262,9 +259,7 @@ describe("FeishuConfigSchema defaultAccount", () => {
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues.some((issue) => issue.path.join(".") === "defaultAccount")).toBe(
-        true,
-      );
+      expect(result.error.issues.some((issue) => issue.path.join(".") === "defaultAccount")).toBe(true);
     }
   });
 });

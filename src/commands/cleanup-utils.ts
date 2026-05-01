@@ -136,9 +136,7 @@ export async function listAgentSessionDirs(stateDir: string): Promise<string[]> 
   const root = path.join(stateDir, "agents");
   try {
     const entries = await fs.readdir(root, { withFileTypes: true });
-    return entries
-      .filter((entry) => entry.isDirectory())
-      .map((entry) => path.join(root, entry.name, "sessions"));
+    return entries.filter((entry) => entry.isDirectory()).map((entry) => path.join(root, entry.name, "sessions"));
   } catch {
     return [];
   }

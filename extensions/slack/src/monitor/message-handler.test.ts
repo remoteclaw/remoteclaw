@@ -48,9 +48,7 @@ function createHandlerWithTracker(overrides?: {
   return { handler, trackEvent };
 }
 
-async function handleDirectMessage(
-  handler: ReturnType<typeof createHandlerWithTracker>["handler"],
-) {
+async function handleDirectMessage(handler: ReturnType<typeof createHandlerWithTracker>["handler"]) {
   await handler(
     {
       type: "message",
@@ -73,9 +71,7 @@ describe("createSlackMessageHandler", () => {
     const trackEvent = vi.fn();
     const handler = createSlackMessageHandler({
       ctx: createContext(),
-      account: { accountId: "default" } as Parameters<
-        typeof createSlackMessageHandler
-      >[0]["account"],
+      account: { accountId: "default" } as Parameters<typeof createSlackMessageHandler>[0]["account"],
       trackEvent,
     });
 
@@ -116,9 +112,7 @@ describe("createSlackMessageHandler", () => {
   it("flushes pending top-level buffered keys before immediate non-debounce follow-ups", async () => {
     const handler = createSlackMessageHandler({
       ctx: createContext(),
-      account: { accountId: "default" } as Parameters<
-        typeof createSlackMessageHandler
-      >[0]["account"],
+      account: { accountId: "default" } as Parameters<typeof createSlackMessageHandler>[0]["account"],
     });
 
     await handler(

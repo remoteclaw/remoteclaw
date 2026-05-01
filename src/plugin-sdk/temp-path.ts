@@ -34,12 +34,7 @@ function resolveTempRoot(tmpDir?: string): string {
 }
 
 function isNodeErrorWithCode(err: unknown, code: string): boolean {
-  return (
-    typeof err === "object" &&
-    err !== null &&
-    "code" in err &&
-    (err as { code?: string }).code === code
-  );
+  return typeof err === "object" && err !== null && "code" in err && (err as { code?: string }).code === code;
 }
 
 /** Build a unique temp file path with sanitized prefix/extension parts. */
@@ -53,10 +48,7 @@ export function buildRandomTempFilePath(params: {
   const prefix = sanitizePrefix(params.prefix);
   const extension = sanitizeExtension(params.extension);
   const nowCandidate = params.now;
-  const now =
-    typeof nowCandidate === "number" && Number.isFinite(nowCandidate)
-      ? Math.trunc(nowCandidate)
-      : Date.now();
+  const now = typeof nowCandidate === "number" && Number.isFinite(nowCandidate) ? Math.trunc(nowCandidate) : Date.now();
   const uuid = params.uuid?.trim() || crypto.randomUUID();
   return path.join(resolveTempRoot(params.tmpDir), `${prefix}-${now}-${uuid}${extension}`);
 }

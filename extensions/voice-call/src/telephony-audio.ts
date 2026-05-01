@@ -17,12 +17,7 @@ function sinc(x: number): number {
  * Build a finite low-pass kernel centered on `srcPos`.
  * The kernel is windowed (Hann) to reduce ringing artifacts.
  */
-function sampleBandlimited(
-  input: Buffer,
-  inputSamples: number,
-  srcPos: number,
-  cutoffCyclesPerSample: number,
-): number {
+function sampleBandlimited(input: Buffer, inputSamples: number, srcPos: number, cutoffCyclesPerSample: number): number {
   const half = Math.floor(RESAMPLE_FILTER_TAPS / 2);
   const center = Math.floor(srcPos);
   let weighted = 0;
@@ -72,9 +67,7 @@ export function resamplePcmTo8k(input: Buffer, inputSampleRate: number): Buffer 
 
   for (let i = 0; i < outputSamples; i++) {
     const srcPos = i * ratio;
-    const sample = Math.round(
-      sampleBandlimited(input, inputSamples, srcPos, cutoffCyclesPerSample),
-    );
+    const sample = Math.round(sampleBandlimited(input, inputSamples, srcPos, cutoffCyclesPerSample));
     output.writeInt16LE(clamp16(sample), i * 2);
   }
 

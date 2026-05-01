@@ -45,11 +45,7 @@ describe("uploadImageFromUrl", () => {
     });
   }
 
-  async function setupSuccessfulUpload(params?: {
-    sourceUrl?: string;
-    contentType?: string;
-    uploadedUrl?: string;
-  }) {
+  async function setupSuccessfulUpload(params?: { sourceUrl?: string; contentType?: string; uploadedUrl?: string }) {
     const { mockFetch, mockUploadFile, uploadImageFromUrl } = await loadUploadMocks();
     const sourceUrl = params?.sourceUrl ?? "https://example.com/image.png";
     const contentType = params?.contentType ?? "image/png";

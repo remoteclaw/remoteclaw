@@ -49,23 +49,14 @@ async function fetchLogs(
 ): Promise<LogsTailPayload> {
   const limit = parsePositiveInt(opts.limit, 200);
   const maxBytes = parsePositiveInt(opts.maxBytes, 250_000);
-  const payload = await callGatewayFromCli(
-    "logs.tail",
-    opts,
-    { cursor, limit, maxBytes },
-    { progress: showProgress },
-  );
+  const payload = await callGatewayFromCli("logs.tail", opts, { cursor, limit, maxBytes }, { progress: showProgress });
   if (!payload || typeof payload !== "object") {
     throw new Error("Unexpected logs.tail response");
   }
   return payload as LogsTailPayload;
 }
 
-export function formatLogTimestamp(
-  value?: string,
-  mode: "pretty" | "plain" = "plain",
-  localTime = false,
-) {
+export function formatLogTimestamp(value?: string, mode: "pretty" | "plain" = "plain", localTime = false) {
   if (!value) {
     return "";
   }
@@ -203,8 +194,7 @@ export function registerLogsCli(program: Command) {
     .option("--local-time", "Display timestamps in local timezone", false)
     .addHelpText(
       "after",
-      () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/logs", "docs.remoteclaw.org/cli/logs")}\n`,
+      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/logs", "docs.remoteclaw.org/cli/logs")}\n`,
     );
 
   addGatewayClientOptions(logs);
@@ -217,8 +207,7 @@ export function registerLogsCli(program: Command) {
     const jsonMode = Boolean(opts.json);
     const pretty = !jsonMode && Boolean(process.stdout.isTTY) && !opts.plain;
     const rich = isRich() && opts.color !== false;
-    const localTime =
-      Boolean(opts.localTime) || (!!process.env.TZ && isValidTimeZone(process.env.TZ));
+    const localTime = Boolean(opts.localTime) || (!!process.env.TZ && isValidTimeZone(process.env.TZ));
 
     while (true) {
       let payload: LogsTailPayload;
@@ -308,10 +297,7 @@ export function registerLogsCli(program: Command) {
           }
         }
       }
-      cursor =
-        typeof payload.cursor === "number" && Number.isFinite(payload.cursor)
-          ? payload.cursor
-          : cursor;
+      cursor = typeof payload.cursor === "number" && Number.isFinite(payload.cursor) ? payload.cursor : cursor;
       first = false;
 
       if (!opts.follow) {

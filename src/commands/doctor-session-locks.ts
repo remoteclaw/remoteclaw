@@ -25,12 +25,9 @@ function formatAge(ageMs: number | null): string {
 }
 
 function formatLockLine(lock: SessionLockInspection): string {
-  const pidStatus =
-    lock.pid === null ? "pid=missing" : `pid=${lock.pid} (${lock.pidAlive ? "alive" : "dead"})`;
+  const pidStatus = lock.pid === null ? "pid=missing" : `pid=${lock.pid} (${lock.pidAlive ? "alive" : "dead"})`;
   const ageStatus = `age=${formatAge(lock.ageMs)}`;
-  const staleStatus = lock.stale
-    ? `stale=yes (${lock.staleReasons.join(", ") || "unknown"})`
-    : "stale=no";
+  const staleStatus = lock.stale ? `stale=yes (${lock.staleReasons.join(", ") || "unknown"})` : "stale=no";
   const removedStatus = lock.removed ? " [removed]" : "";
   return `- ${shortenHomePath(lock.lockPath)} ${pidStatus} ${ageStatus} ${staleStatus}${removedStatus}`;
 }
@@ -76,9 +73,7 @@ export async function noteSessionLockHealth(params?: { shouldRepair?: boolean; s
     lines.push('- Run "remoteclaw doctor --fix" to remove stale lock files automatically.');
   }
   if (shouldRepair && removedCount > 0) {
-    lines.push(
-      `- Removed ${removedCount} stale session lock file${removedCount === 1 ? "" : "s"}.`,
-    );
+    lines.push(`- Removed ${removedCount} stale session lock file${removedCount === 1 ? "" : "s"}.`);
   }
 
   note(lines.join("\n"), "Session locks");

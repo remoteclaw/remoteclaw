@@ -52,11 +52,7 @@ describe("insertBlocksInBatches", () => {
 
   it("keeps nested descendants grouped with their root blocks", async () => {
     const createMock = vi.fn(
-      async ({
-        data,
-      }: {
-        data: { children_id: string[]; descendants: Array<{ block_id: string }> };
-      }) => ({
+      async ({ data }: { data: { children_id: string[]; descendants: Array<{ block_id: string }> } }) => ({
         code: 0,
         data: {
           children: data.children_id.map((id) => ({ block_id: id })),
@@ -82,9 +78,7 @@ describe("insertBlocksInBatches", () => {
     expect(createMock).toHaveBeenCalledTimes(1);
     expect(createMock.mock.calls[0]?.[0]?.data.children_id).toEqual(["root_a", "root_b"]);
     expect(
-      createMock.mock.calls[0]?.[0]?.data.descendants.map(
-        (block: { block_id: string }) => block.block_id,
-      ),
+      createMock.mock.calls[0]?.[0]?.data.descendants.map((block: { block_id: string }) => block.block_id),
     ).toEqual(["root_a", "child_a", "root_b", "child_b"]);
   });
 });

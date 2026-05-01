@@ -3,10 +3,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { ResolvedSynologyChatAccount } from "./types.js";
 import type { WebhookHandlerDeps } from "./webhook-handler.js";
-import {
-  clearSynologyWebhookRateLimiterStateForTest,
-  createWebhookHandler,
-} from "./webhook-handler.js";
+import { clearSynologyWebhookRateLimiterStateForTest, createWebhookHandler } from "./webhook-handler.js";
 
 // Mock sendMessage and resolveChatUserId to prevent real HTTP calls
 vi.mock("./client.js", () => ({
@@ -14,9 +11,7 @@ vi.mock("./client.js", () => ({
   resolveChatUserId: vi.fn().mockResolvedValue(undefined),
 }));
 
-function makeAccount(
-  overrides: Partial<ResolvedSynologyChatAccount> = {},
-): ResolvedSynologyChatAccount {
+function makeAccount(overrides: Partial<ResolvedSynologyChatAccount> = {}): ResolvedSynologyChatAccount {
   return {
     accountId: "default",
     enabled: true,
@@ -367,14 +362,10 @@ describe("createWebhookHandler", () => {
       log,
     });
 
-    const req = makeReq(
-      "POST",
-      makeFormBody({ user_id: "123", username: "testuser", text: "hello" }),
-      {
-        headers: { "content-type": "application/x-www-form-urlencoded" },
-        url: "/webhook/synology?token=valid-token",
-      },
-    );
+    const req = makeReq("POST", makeFormBody({ user_id: "123", username: "testuser", text: "hello" }), {
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      url: "/webhook/synology?token=valid-token",
+    });
     const res = makeRes();
     await handler(req, res);
 
@@ -390,16 +381,12 @@ describe("createWebhookHandler", () => {
       log,
     });
 
-    const req = makeReq(
-      "POST",
-      makeFormBody({ user_id: "123", username: "testuser", text: "hello" }),
-      {
-        headers: {
-          "content-type": "application/x-www-form-urlencoded",
-          authorization: "Bearer valid-token",
-        },
+    const req = makeReq("POST", makeFormBody({ user_id: "123", username: "testuser", text: "hello" }), {
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        authorization: "Bearer valid-token",
       },
-    );
+    });
     const res = makeRes();
     await handler(req, res);
 

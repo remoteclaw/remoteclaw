@@ -4,19 +4,10 @@ import {
   resolveAgentWorkspaceDir,
   resolveSoleAgentId,
 } from "../../agents/agent-scope.js";
-import {
-  listCoreToolSections,
-  PROFILE_OPTIONS,
-  resolveCoreToolProfiles,
-} from "../../agents/tool-catalog.js";
+import { listCoreToolSections, PROFILE_OPTIONS, resolveCoreToolProfiles } from "../../agents/tool-catalog.js";
 import { loadConfig } from "../../config/config.js";
 import { getPluginToolMeta, resolvePluginTools } from "../../plugins/tools.js";
-import {
-  ErrorCodes,
-  errorShape,
-  formatValidationErrors,
-  validateToolsCatalogParams,
-} from "../protocol/index.js";
+import { ErrorCodes, errorShape, formatValidationErrors, validateToolsCatalogParams } from "../protocol/index.js";
 import type { GatewayRequestHandlers, RespondFn } from "./types.js";
 
 type ToolCatalogEntry = {
@@ -43,11 +34,7 @@ function resolveAgentIdOrRespondError(rawAgentId: unknown, respond: RespondFn) {
   const requestedAgentId = typeof rawAgentId === "string" ? rawAgentId.trim() : "";
   const agentId = requestedAgentId || resolveSoleAgentId(cfg) || knownAgents[0];
   if (requestedAgentId && !knownAgents.includes(agentId)) {
-    respond(
-      false,
-      undefined,
-      errorShape(ErrorCodes.INVALID_REQUEST, `unknown agent id "${requestedAgentId}"`),
-    );
+    respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, `unknown agent id "${requestedAgentId}"`));
     return null;
   }
   return { cfg, agentId };
@@ -104,9 +91,7 @@ function buildPluginGroups(params: {
       id: tool.name,
       label: typeof tool.label === "string" && tool.label.trim() ? tool.label.trim() : tool.name,
       description:
-        typeof tool.description === "string" && tool.description.trim()
-          ? tool.description.trim()
-          : "Plugin tool",
+        typeof tool.description === "string" && tool.description.trim() ? tool.description.trim() : "Plugin tool",
       source: "plugin",
       pluginId,
       optional: meta?.optional,
@@ -142,9 +127,7 @@ export const toolsCatalogHandlers: GatewayRequestHandlers = {
     const includePlugins = params.includePlugins !== false;
     const groups = buildCoreGroups();
     if (includePlugins) {
-      const existingToolNames = new Set(
-        groups.flatMap((group) => group.tools.map((tool) => tool.id)),
-      );
+      const existingToolNames = new Set(groups.flatMap((group) => group.tools.map((tool) => tool.id)));
       groups.push(
         ...buildPluginGroups({
           cfg: resolved.cfg,

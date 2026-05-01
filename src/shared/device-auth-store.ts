@@ -40,10 +40,7 @@ export function storeDeviceAuthTokenInStore(params: {
   const next: DeviceAuthStore = {
     version: 1,
     deviceId: params.deviceId,
-    tokens:
-      existing && existing.deviceId === params.deviceId && existing.tokens
-        ? { ...existing.tokens }
-        : {},
+    tokens: existing && existing.deviceId === params.deviceId && existing.tokens ? { ...existing.tokens } : {},
   };
   const entry: DeviceAuthEntry = {
     token: params.token,

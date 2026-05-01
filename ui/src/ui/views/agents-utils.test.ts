@@ -13,9 +13,7 @@ describe("resolveEffectiveModelFallbacks", () => {
       fallbacks: ["google/gemini-2.0-flash"],
     };
 
-    expect(resolveEffectiveModelFallbacks(entryModel, defaultModel)).toEqual([
-      "google/gemini-2.0-flash",
-    ]);
+    expect(resolveEffectiveModelFallbacks(entryModel, defaultModel)).toEqual(["google/gemini-2.0-flash"]);
   });
 
   it("prefers entry fallbacks over defaults", () => {
@@ -83,9 +81,7 @@ describe("resolveConfiguredCronModelSuggestions", () => {
   it("returns empty array for invalid or missing config shape", () => {
     expect(resolveConfiguredCronModelSuggestions(null)).toEqual([]);
     expect(resolveConfiguredCronModelSuggestions({})).toEqual([]);
-    expect(resolveConfiguredCronModelSuggestions({ agents: { defaults: { model: "" } } })).toEqual(
-      [],
-    );
+    expect(resolveConfiguredCronModelSuggestions({ agents: { defaults: { model: "" } } })).toEqual([]);
   });
 });
 

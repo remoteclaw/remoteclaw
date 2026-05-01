@@ -62,10 +62,7 @@ export function resolveRestartSentinelPath(env: NodeJS.ProcessEnv = process.env)
   return path.join(resolveStateDir(env), SENTINEL_FILENAME);
 }
 
-export async function writeRestartSentinel(
-  payload: RestartSentinelPayload,
-  env: NodeJS.ProcessEnv = process.env,
-) {
+export async function writeRestartSentinel(payload: RestartSentinelPayload, env: NodeJS.ProcessEnv = process.env) {
   const filePath = resolveRestartSentinelPath(env);
   await fs.mkdir(path.dirname(filePath), { recursive: true });
   const data: RestartSentinel = { version: 1, payload };
@@ -73,9 +70,7 @@ export async function writeRestartSentinel(
   return filePath;
 }
 
-export async function readRestartSentinel(
-  env: NodeJS.ProcessEnv = process.env,
-): Promise<RestartSentinel | null> {
+export async function readRestartSentinel(env: NodeJS.ProcessEnv = process.env): Promise<RestartSentinel | null> {
   const filePath = resolveRestartSentinelPath(env);
   try {
     const raw = await fs.readFile(filePath, "utf-8");
@@ -96,9 +91,7 @@ export async function readRestartSentinel(
   }
 }
 
-export async function consumeRestartSentinel(
-  env: NodeJS.ProcessEnv = process.env,
-): Promise<RestartSentinel | null> {
+export async function consumeRestartSentinel(env: NodeJS.ProcessEnv = process.env): Promise<RestartSentinel | null> {
   const filePath = resolveRestartSentinelPath(env);
   const parsed = await readRestartSentinel(env);
   if (!parsed) {

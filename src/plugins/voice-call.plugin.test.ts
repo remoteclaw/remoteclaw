@@ -53,9 +53,7 @@ function setup(config: Record<string, unknown>): Registered {
     source: "test",
     config: {},
     pluginConfig: config,
-    runtime: { tts: { textToSpeechTelephony: vi.fn() } } as unknown as Parameters<
-      typeof plugin.register
-    >[0]["runtime"],
+    runtime: { tts: { textToSpeechTelephony: vi.fn() } } as unknown as Parameters<typeof plugin.register>[0]["runtime"],
     logger: noopLogger,
     registerGatewayMethod: (method: string, handler: unknown) => methods.set(method, handler),
     registerTool: (tool: unknown) => tools.push(tool),
@@ -128,10 +126,7 @@ describe("voice-call plugin", () => {
   it("initiates a call via voicecall.initiate", async () => {
     const { methods } = setup({ provider: "mock" });
     const handler = methods.get("voicecall.initiate") as
-      | ((ctx: {
-          params: Record<string, unknown>;
-          respond: ReturnType<typeof vi.fn>;
-        }) => Promise<void>)
+      | ((ctx: { params: Record<string, unknown>; respond: ReturnType<typeof vi.fn> }) => Promise<void>)
       | undefined;
     const respond = vi.fn();
     await handler?.({ params: { message: "Hi" }, respond });
@@ -144,10 +139,7 @@ describe("voice-call plugin", () => {
   it("returns call status", async () => {
     const { methods } = setup({ provider: "mock" });
     const handler = methods.get("voicecall.status") as
-      | ((ctx: {
-          params: Record<string, unknown>;
-          respond: ReturnType<typeof vi.fn>;
-        }) => Promise<void>)
+      | ((ctx: { params: Record<string, unknown>; respond: ReturnType<typeof vi.fn> }) => Promise<void>)
       | undefined;
     const respond = vi.fn();
     await handler?.({ params: { callId: "call-1" }, respond });

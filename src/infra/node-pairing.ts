@@ -107,16 +107,11 @@ function newToken() {
 export async function listNodePairing(baseDir?: string): Promise<NodePairingList> {
   const state = await loadState(baseDir);
   const pending = Object.values(state.pendingById).toSorted((a, b) => b.ts - a.ts);
-  const paired = Object.values(state.pairedByNodeId).toSorted(
-    (a, b) => b.approvedAtMs - a.approvedAtMs,
-  );
+  const paired = Object.values(state.pairedByNodeId).toSorted((a, b) => b.approvedAtMs - a.approvedAtMs);
   return { pending, paired };
 }
 
-export async function getPairedNode(
-  nodeId: string,
-  baseDir?: string,
-): Promise<NodePairingPairedNode | null> {
+export async function getPairedNode(nodeId: string, baseDir?: string): Promise<NodePairingPairedNode | null> {
   const state = await loadState(baseDir);
   return state.pairedByNodeId[normalizeNodeId(nodeId)] ?? null;
 }
@@ -177,10 +172,7 @@ export async function approveNodePairing(
   optionsOrBaseDir?: { callerScopes?: readonly string[] } | string,
   maybeBaseDir?: string,
 ): Promise<ApproveNodePairingResult> {
-  const options =
-    typeof optionsOrBaseDir === "string" || optionsOrBaseDir === undefined
-      ? undefined
-      : optionsOrBaseDir;
+  const options = typeof optionsOrBaseDir === "string" || optionsOrBaseDir === undefined ? undefined : optionsOrBaseDir;
   const baseDir = typeof optionsOrBaseDir === "string" ? optionsOrBaseDir : maybeBaseDir;
   return await withLock(async () => {
     const state = await loadState(baseDir);
@@ -232,11 +224,7 @@ export async function rejectNodePairing(
   baseDir?: string,
 ): Promise<{ requestId: string; nodeId: string } | null> {
   return await withLock(async () => {
-    return await rejectPendingPairingRequest<
-      NodePairingPendingRequest,
-      NodePairingStateFile,
-      "nodeId"
-    >({
+    return await rejectPendingPairingRequest<NodePairingPendingRequest, NodePairingStateFile, "nodeId">({
       requestId,
       idKey: "nodeId",
       loadState: () => loadState(baseDir),

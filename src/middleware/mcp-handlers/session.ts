@@ -11,11 +11,7 @@ import type { McpHandlerContext } from "./context.js";
  * Call the gateway with least-privilege scopes for the given method.
  * Shared by all session MCP handlers (and exported for other handler modules).
  */
-export async function callMcpGateway<T>(
-  ctx: McpHandlerContext,
-  method: string,
-  params?: unknown,
-): Promise<T> {
+export async function callMcpGateway<T>(ctx: McpHandlerContext, method: string, params?: unknown): Promise<T> {
   const scopes = resolveLeastPrivilegeOperatorScopesForMethod(method);
   const result = await callGateway<T>({
     url: ctx.gatewayUrl,
@@ -81,8 +77,7 @@ export function registerSessionTools(server: McpServer, ctx: McpHandlerContext):
   server.registerTool(
     "sessions_send",
     {
-      description:
-        "Send a message to another session. Use sessionKey or label to identify the target.",
+      description: "Send a message to another session. Use sessionKey or label to identify the target.",
       inputSchema: z.object({
         sessionKey: z.string().optional(),
         label: z.string().optional(),
@@ -126,14 +121,10 @@ export function registerSessionTools(server: McpServer, ctx: McpHandlerContext):
 
       // Wait for reply
       try {
-        const waitResult = await callMcpGateway<{ status?: string; error?: string }>(
-          ctx,
-          "agent.wait",
-          {
-            runId,
-            timeoutMs,
-          },
-        );
+        const waitResult = await callMcpGateway<{ status?: string; error?: string }>(ctx, "agent.wait", {
+          runId,
+          timeoutMs,
+        });
 
         // Get the reply from history
         const history = await callMcpGateway<{ messages?: unknown[] }>(ctx, "chat.history", {

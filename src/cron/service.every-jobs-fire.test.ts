@@ -31,14 +31,8 @@ describe("CronService interval/cron jobs fire on time", () => {
     return jobs.find((current) => current.id === jobId);
   };
 
-  const expectMainSystemEvent = (
-    enqueueSystemEvent: ReturnType<typeof vi.fn>,
-    expectedText: string,
-  ) => {
-    expect(enqueueSystemEvent).toHaveBeenCalledWith(
-      expectedText,
-      expect.objectContaining({ agentId: undefined }),
-    );
+  const expectMainSystemEvent = (enqueueSystemEvent: ReturnType<typeof vi.fn>, expectedText: string) => {
+    expect(enqueueSystemEvent).toHaveBeenCalledWith(expectedText, expect.objectContaining({ agentId: undefined }));
   };
 
   it("fires an every-type main job when the timer fires a few ms late", async () => {
@@ -172,9 +166,7 @@ describe("CronService interval/cron jobs fire on time", () => {
     expect(sfRun).toEqual({ ok: true, ran: true });
 
     const sfRuns = enqueueSystemEvent.mock.calls.filter((args) => args[0] === "sf-tick").length;
-    const minuteRuns = enqueueSystemEvent.mock.calls.filter(
-      (args) => args[0] === "minute-tick",
-    ).length;
+    const minuteRuns = enqueueSystemEvent.mock.calls.filter((args) => args[0] === "minute-tick").length;
     expect(minuteRuns).toBeGreaterThan(0);
     expect(sfRuns).toBeGreaterThan(0);
 

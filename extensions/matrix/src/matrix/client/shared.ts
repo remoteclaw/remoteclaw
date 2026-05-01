@@ -75,9 +75,7 @@ async function ensureSharedClientStarted(params: {
       try {
         const joinedRooms = await client.getJoinedRooms();
         if (client.crypto) {
-          await (client.crypto as { prepare: (rooms?: string[]) => Promise<void> }).prepare(
-            joinedRooms,
-          );
+          await (client.crypto as { prepare: (rooms?: string[]) => Promise<void> }).prepare(joinedRooms);
           params.state.cryptoReady = true;
         }
       } catch (err) {
@@ -115,8 +113,7 @@ export async function resolveSharedMatrixClient(
   } = {},
 ): Promise<MatrixClient> {
   const accountId = normalizeAccountId(params.accountId);
-  const auth =
-    params.auth ?? (await resolveMatrixAuth({ cfg: params.cfg, env: params.env, accountId }));
+  const auth = params.auth ?? (await resolveMatrixAuth({ cfg: params.cfg, env: params.env, accountId }));
   const key = buildSharedClientKey(auth, accountId);
   const shouldStart = params.startClient !== false;
 

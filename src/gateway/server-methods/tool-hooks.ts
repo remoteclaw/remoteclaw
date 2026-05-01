@@ -10,10 +10,7 @@ export const toolHooksHandlers: GatewayRequestHandlers = {
     }
     const toolName = typeof params.toolName === "string" ? params.toolName : "";
     const toolParams = (params.params ?? {}) as Record<string, unknown>;
-    const result = await hookRunner.runBeforeToolCall(
-      { toolName, params: toolParams },
-      { toolName },
-    );
+    const result = await hookRunner.runBeforeToolCall({ toolName, params: toolParams }, { toolName });
     respond(true, result ?? {});
   },
 
@@ -27,10 +24,7 @@ export const toolHooksHandlers: GatewayRequestHandlers = {
     const toolParams = (params.params ?? {}) as Record<string, unknown>;
     const durationMs = typeof params.durationMs === "number" ? params.durationMs : undefined;
     const error = typeof params.error === "string" ? params.error : undefined;
-    await hookRunner.runAfterToolCall(
-      { toolName, params: toolParams, durationMs, error },
-      { toolName },
-    );
+    await hookRunner.runAfterToolCall({ toolName, params: toolParams, durationMs, error }, { toolName });
     respond(true, {});
   },
 };

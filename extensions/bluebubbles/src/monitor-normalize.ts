@@ -3,9 +3,7 @@ import { extractHandleFromChatGuid, normalizeBlueBubblesHandle } from "./targets
 import type { BlueBubblesAttachment } from "./types.js";
 
 function asRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 }
 
 function readString(record: Record<string, unknown> | null, key: string): string | undefined {
@@ -96,10 +94,7 @@ export function buildMessagePlaceholder(message: NormalizedWebhookMessage): stri
 }
 
 // Returns inline reply tag like "[[reply_to:4]]" for prepending to message body
-export function formatReplyTag(message: {
-  replyToId?: string;
-  replyToShortId?: string;
-}): string | null {
+export function formatReplyTag(message: { replyToId?: string; replyToShortId?: string }): string | null {
   // Prefer short ID
   const rawId = message.replyToShortId || message.replyToId;
   if (!rawId) {
@@ -123,8 +118,7 @@ function extractReplyMetadata(message: Record<string, unknown>): {
     message["associatedMessage"] ??
     message["reply"];
   const replyRecord = asRecord(replyRaw);
-  const replyHandle =
-    asRecord(replyRecord?.["handle"]) ?? asRecord(replyRecord?.["sender"]) ?? null;
+  const replyHandle = asRecord(replyRecord?.["handle"]) ?? asRecord(replyRecord?.["sender"]) ?? null;
   const replySenderRaw =
     readString(replyHandle, "address") ??
     readString(replyHandle, "handle") ??
@@ -156,22 +150,18 @@ function extractReplyMetadata(message: Record<string, unknown>): {
     readString(replyRecord, "messageId");
 
   const associatedType =
-    readNumberLike(message, "associatedMessageType") ??
-    readNumberLike(message, "associated_message_type");
+    readNumberLike(message, "associatedMessageType") ?? readNumberLike(message, "associated_message_type");
   const associatedGuid =
     readString(message, "associatedMessageGuid") ??
     readString(message, "associated_message_guid") ??
     readString(message, "associatedMessageId");
-  const isReactionAssociation =
-    typeof associatedType === "number" && REACTION_TYPE_MAP.has(associatedType);
+  const isReactionAssociation = typeof associatedType === "number" && REACTION_TYPE_MAP.has(associatedType);
 
   const replyToId = directReplyId ?? (!isReactionAssociation ? associatedGuid : undefined);
   const threadOriginatorGuid = readString(message, "threadOriginatorGuid");
   const messageGuid = readString(message, "guid");
   const fallbackReplyId =
-    !replyToId && threadOriginatorGuid && threadOriginatorGuid !== messageGuid
-      ? threadOriginatorGuid
-      : undefined;
+    !replyToId && threadOriginatorGuid && threadOriginatorGuid !== messageGuid ? threadOriginatorGuid : undefined;
 
   return {
     replyToId: (replyToId ?? fallbackReplyId)?.trim() || undefined,
@@ -195,8 +185,7 @@ function extractSenderInfo(message: Record<string, unknown>): {
   senderName?: string;
 } {
   const handleValue = message.handle ?? message.sender;
-  const handle =
-    asRecord(handleValue) ?? (typeof handleValue === "string" ? { address: handleValue } : null);
+  const handle = asRecord(handleValue) ?? (typeof handleValue === "string" ? { address: handleValue } : null);
   const senderIdRaw =
     readString(handle, "address") ??
     readString(handle, "handle") ??
@@ -207,10 +196,7 @@ function extractSenderInfo(message: Record<string, unknown>): {
     "";
   const senderId = senderIdRaw.trim();
   const senderName =
-    readString(handle, "displayName") ??
-    readString(handle, "name") ??
-    readString(message, "senderName") ??
-    undefined;
+    readString(handle, "displayName") ?? readString(handle, "name") ?? readString(message, "senderName") ?? undefined;
 
   return {
     senderId,
@@ -283,9 +269,7 @@ function extractChatContext(message: Record<string, unknown>): {
     readBoolean(chat, "isGroup") ??
     readBoolean(message, "group");
   const isGroup =
-    typeof groupFromChatGuid === "boolean"
-      ? groupFromChatGuid
-      : (explicitIsGroup ?? participantsCount > 2);
+    typeof groupFromChatGuid === "boolean" ? groupFromChatGuid : (explicitIsGroup ?? participantsCount > 2);
 
   return {
     chatGuid,
@@ -310,8 +294,7 @@ function normalizeParticipantEntry(entry: unknown): BlueBubblesParticipant | nul
   if (!record) {
     return null;
   }
-  const nestedHandle =
-    asRecord(record["handle"]) ?? asRecord(record["sender"]) ?? asRecord(record["contact"]) ?? null;
+  const nestedHandle = asRecord(record["handle"]) ?? asRecord(record["sender"]) ?? asRecord(record["contact"]) ?? null;
   const idRaw =
     readString(record, "address") ??
     readString(record, "handle") ??
@@ -560,8 +543,7 @@ export function resolveTapbackContext(message: NormalizedWebhookMessage): {
   }
   const replyToId = message.associatedMessageGuid?.trim() || message.replyToId?.trim() || undefined;
   const actionHint = resolveTapbackActionHint(associatedType);
-  const emojiHint =
-    message.associatedMessageEmoji?.trim() || REACTION_TYPE_MAP.get(associatedType ?? -1)?.emoji;
+  const emojiHint = message.associatedMessageEmoji?.trim() || REACTION_TYPE_MAP.get(associatedType ?? -1)?.emoji;
   return { emojiHint, actionHint, replyToId };
 }
 
@@ -582,10 +564,7 @@ export function parseTapbackText(params: {
     return null;
   }
 
-  const parseLeadingReactionAction = (
-    prefix: "reacted" | "removed",
-    defaultAction: "added" | "removed",
-  ) => {
+  const parseLeadingReactionAction = (prefix: "reacted" | "removed", defaultAction: "added" | "removed") => {
     if (!lower.startsWith(prefix)) {
       return null;
     }
@@ -616,8 +595,7 @@ export function parseTapbackText(params: {
         }
         return { emoji, action, quotedText: strictMatch[1] };
       }
-      const quotedText =
-        extractQuotedTapbackText(afterPattern) ?? extractQuotedTapbackText(trimmed) ?? afterPattern;
+      const quotedText = extractQuotedTapbackText(afterPattern) ?? extractQuotedTapbackText(trimmed) ?? afterPattern;
       return { emoji, action, quotedText };
     }
   }
@@ -673,31 +651,21 @@ function extractMessagePayload(payload: Record<string, unknown>): Record<string,
   return null;
 }
 
-export function normalizeWebhookMessage(
-  payload: Record<string, unknown>,
-): NormalizedWebhookMessage | null {
+export function normalizeWebhookMessage(payload: Record<string, unknown>): NormalizedWebhookMessage | null {
   const message = extractMessagePayload(payload);
   if (!message) {
     return null;
   }
 
-  const text =
-    readString(message, "text") ??
-    readString(message, "body") ??
-    readString(message, "subject") ??
-    "";
+  const text = readString(message, "text") ?? readString(message, "body") ?? readString(message, "subject") ?? "";
 
   const { senderId, senderIdExplicit, senderName } = extractSenderInfo(message);
-  const { chatGuid, chatIdentifier, chatId, chatName, isGroup, participants } =
-    extractChatContext(message);
+  const { chatGuid, chatIdentifier, chatId, chatName, isGroup, participants } = extractChatContext(message);
   const normalizedParticipants = normalizeParticipantList(participants);
 
   const fromMe = readBoolean(message, "isFromMe") ?? readBoolean(message, "is_from_me");
   const messageId =
-    readString(message, "guid") ??
-    readString(message, "id") ??
-    readString(message, "messageId") ??
-    undefined;
+    readString(message, "guid") ?? readString(message, "id") ?? readString(message, "messageId") ?? undefined;
   const balloonBundleId = readString(message, "balloonBundleId");
   const associatedMessageGuid =
     readString(message, "associatedMessageGuid") ??
@@ -705,8 +673,7 @@ export function normalizeWebhookMessage(
     readString(message, "associatedMessageId") ??
     undefined;
   const associatedMessageType =
-    readNumberLike(message, "associatedMessageType") ??
-    readNumberLike(message, "associated_message_type");
+    readNumberLike(message, "associatedMessageType") ?? readNumberLike(message, "associated_message_type");
   const associatedMessageEmoji =
     readString(message, "associatedMessageEmoji") ??
     readString(message, "associated_message_emoji") ??
@@ -720,9 +687,7 @@ export function normalizeWebhookMessage(
     undefined;
 
   const timestampRaw =
-    readNumber(message, "date") ??
-    readNumber(message, "dateCreated") ??
-    readNumber(message, "timestamp");
+    readNumber(message, "date") ?? readNumber(message, "dateCreated") ?? readNumber(message, "timestamp");
   const timestamp =
     typeof timestampRaw === "number"
       ? timestampRaw > 1_000_000_000_000
@@ -765,9 +730,7 @@ export function normalizeWebhookMessage(
   };
 }
 
-export function normalizeWebhookReaction(
-  payload: Record<string, unknown>,
-): NormalizedWebhookReaction | null {
+export function normalizeWebhookReaction(payload: Record<string, unknown>): NormalizedWebhookReaction | null {
   const message = extractMessagePayload(payload);
   if (!message) {
     return null;
@@ -778,8 +741,7 @@ export function normalizeWebhookReaction(
     readString(message, "associated_message_guid") ??
     readString(message, "associatedMessageId");
   const associatedType =
-    readNumberLike(message, "associatedMessageType") ??
-    readNumberLike(message, "associated_message_type");
+    readNumberLike(message, "associatedMessageType") ?? readNumberLike(message, "associated_message_type");
   if (!associatedGuid || associatedType === undefined) {
     return null;
   }
@@ -798,9 +760,7 @@ export function normalizeWebhookReaction(
 
   const fromMe = readBoolean(message, "isFromMe") ?? readBoolean(message, "is_from_me");
   const timestampRaw =
-    readNumberLike(message, "date") ??
-    readNumberLike(message, "dateCreated") ??
-    readNumberLike(message, "timestamp");
+    readNumberLike(message, "date") ?? readNumberLike(message, "dateCreated") ?? readNumberLike(message, "timestamp");
   const timestamp =
     typeof timestampRaw === "number"
       ? timestampRaw > 1_000_000_000_000

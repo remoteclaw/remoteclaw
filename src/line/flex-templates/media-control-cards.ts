@@ -1,11 +1,4 @@
-import type {
-  FlexBox,
-  FlexBubble,
-  FlexButton,
-  FlexComponent,
-  FlexImage,
-  FlexText,
-} from "./types.js";
+import type { FlexBox, FlexBubble, FlexButton, FlexComponent, FlexImage, FlexText } from "./types.js";
 
 /**
  * Create a media player card for Sonos, Spotify, Apple Music, etc.
@@ -304,11 +297,7 @@ export function createAppleTvRemoteCard(params: {
     } as FlexText);
   }
 
-  const makeButton = (
-    label: string,
-    data: string,
-    style: "primary" | "secondary" = "secondary",
-  ): FlexButton => ({
+  const makeButton = (label: string, data: string, style: "primary" | "secondary" = "secondary"): FlexButton => ({
     type: "button",
     action: {
       type: "postback",

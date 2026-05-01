@@ -16,9 +16,7 @@ export function buildPluginStatusReport(params?: {
   workspaceDir?: string;
 }): PluginStatusReport {
   const config = params?.config ?? loadConfig();
-  const workspaceDir = params?.workspaceDir
-    ? params.workspaceDir
-    : (resolveFirstAgentWorkspace(config) ?? undefined);
+  const workspaceDir = params?.workspaceDir ? params.workspaceDir : (resolveFirstAgentWorkspace(config) ?? undefined);
 
   const registry = loadRemoteClawPlugins({
     config,

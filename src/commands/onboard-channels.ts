@@ -3,11 +3,7 @@ import { listChannelPluginCatalogEntries } from "../channels/plugins/catalog.js"
 import { resolveChannelDefaultAccountId } from "../channels/plugins/helpers.js";
 import { listChannelPlugins, getChannelPlugin } from "../channels/plugins/index.js";
 import type { ChannelMeta } from "../channels/plugins/types.js";
-import {
-  formatChannelPrimerLine,
-  formatChannelSelectionLine,
-  listChatChannels,
-} from "../channels/registry.js";
+import { formatChannelPrimerLine, formatChannelSelectionLine, listChatChannels } from "../channels/registry.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { isChannelConfigured } from "../config/plugin-auto-enable.js";
@@ -18,14 +14,8 @@ import type { RuntimeEnv } from "../runtime.js";
 import { formatDocsLink } from "../terminal/links.js";
 import type { WizardPrompter, WizardSelectOption } from "../wizard/prompts.js";
 import type { ChannelChoice } from "./onboard-types.js";
-import {
-  ensureOnboardingPluginInstalled,
-  reloadOnboardingPluginRegistry,
-} from "./onboarding/plugin-install.js";
-import {
-  getChannelOnboardingAdapter,
-  listChannelOnboardingAdapters,
-} from "./onboarding/registry.js";
+import { ensureOnboardingPluginInstalled, reloadOnboardingPluginRegistry } from "./onboarding/plugin-install.js";
+import { getChannelOnboardingAdapter, listChannelOnboardingAdapters } from "./onboarding/registry.js";
 import type {
   ChannelOnboardingConfiguredResult,
   ChannelOnboardingDmPolicy,
@@ -305,8 +295,11 @@ export async function setupChannels(
     accountOverrides.whatsapp = options.whatsappAccountId.trim();
   }
 
-  const { installedPlugins, catalogEntries, statusByChannel, statusLines } =
-    await collectChannelStatus({ cfg: next, options, accountOverrides });
+  const { installedPlugins, catalogEntries, statusByChannel, statusLines } = await collectChannelStatus({
+    cfg: next,
+    options,
+    accountOverrides,
+  });
   if (!options?.skipStatusNote && statusLines.length > 0) {
     await prompter.note(statusLines.join("\n"), "Channel status");
   }
@@ -346,8 +339,7 @@ export async function setupChannels(
   ];
   await noteChannelPrimer(prompter, primerChannels);
 
-  const quickstartDefault =
-    options?.initialSelection?.[0] ?? resolveQuickstartDefault(statusByChannel);
+  const quickstartDefault = options?.initialSelection?.[0] ?? resolveQuickstartDefault(statusByChannel);
 
   const shouldPromptAccountIds = options?.promptAccountIds === true;
   const accountIdsByChannel = new Map<ChannelChoice, string>();
@@ -384,8 +376,7 @@ export async function setupChannels(
     } else if (typeof (account as { enabled?: boolean })?.enabled === "boolean") {
       enabled = (account as { enabled?: boolean }).enabled;
     } else if (
-      typeof (next.channels as Record<string, { enabled?: boolean }> | undefined)?.[channel]
-        ?.enabled === "boolean"
+      typeof (next.channels as Record<string, { enabled?: boolean }> | undefined)?.[channel]?.enabled === "boolean"
     ) {
       enabled = (next.channels as Record<string, { enabled?: boolean }>)[channel]?.enabled;
     }
@@ -414,9 +405,7 @@ export async function setupChannels(
     const installed = listChannelPlugins();
     const installedIds = new Set(installed.map((plugin) => plugin.id));
     const workspaceDir = resolveFirstAgentWorkspace(next) ?? undefined;
-    const catalog = listChannelPluginCatalogEntries({ workspaceDir }).filter(
-      (entry) => !installedIds.has(entry.id),
-    );
+    const catalog = listChannelPluginCatalogEntries({ workspaceDir }).filter((entry) => !installedIds.has(entry.id));
     const metaById = new Map<string, ChannelMeta>();
     for (const meta of core) {
       metaById.set(meta.id, meta);
@@ -456,10 +445,7 @@ export async function setupChannels(
     const result = enablePluginInConfig(next, channel);
     next = result.config;
     if (!result.enabled) {
-      await prompter.note(
-        `Cannot enable ${channel}: ${result.reason ?? "plugin disabled"}.`,
-        "Channel setup",
-      );
+      await prompter.note(`Cannot enable ${channel}: ${result.reason ?? "plugin disabled"}.`, "Channel setup");
       return false;
     }
     const workspaceDir = resolveFirstAgentWorkspace(next) ?? undefined;
@@ -499,10 +485,7 @@ export async function setupChannels(
     await refreshStatus(channel);
   };
 
-  const applyCustomOnboardingResult = async (
-    channel: ChannelChoice,
-    result: ChannelOnboardingConfiguredResult,
-  ) => {
+  const applyCustomOnboardingResult = async (channel: ChannelChoice, result: ChannelOnboardingConfiguredResult) => {
     if (result === "skip") {
       return false;
     }
@@ -548,9 +531,7 @@ export async function setupChannels(
       }
       return;
     }
-    const supportsDisable = Boolean(
-      options?.allowDisable && (plugin?.config.setAccountEnabled || adapter?.disable),
-    );
+    const supportsDisable = Boolean(options?.allowDisable && (plugin?.config.setAccountEnabled || adapter?.disable));
     const supportsDelete = Boolean(options?.allowDisable && plugin?.config.deleteAccount);
     const action = await promptConfiguredAction({
       prompter,
@@ -576,9 +557,7 @@ export async function setupChannels(
     }
 
     const shouldPromptAccount =
-      action === "delete"
-        ? Boolean(plugin?.config.deleteAccount)
-        : Boolean(plugin?.config.setAccountEnabled);
+      action === "delete" ? Boolean(plugin?.config.deleteAccount) : Boolean(plugin?.config.setAccountEnabled);
     const accountId = shouldPromptAccount
       ? await promptRemovalAccountId({
           cfg: next,

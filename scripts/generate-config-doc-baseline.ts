@@ -19,9 +19,7 @@ const result = await writeConfigDocBaselineStatefile({
 
 if (checkOnly) {
   if (!result.changed) {
-    console.log(
-      `OK ${path.relative(repoRoot, result.jsonPath)} ${path.relative(repoRoot, result.statefilePath)}`,
-    );
+    console.log(`OK ${path.relative(repoRoot, result.jsonPath)} ${path.relative(repoRoot, result.statefilePath)}`);
     process.exit(0);
   }
   console.error(
@@ -37,8 +35,7 @@ if (checkOnly) {
 }
 
 console.log(
-  [
-    `Wrote ${path.relative(repoRoot, result.jsonPath)}`,
-    `Wrote ${path.relative(repoRoot, result.statefilePath)}`,
-  ].join("\n"),
+  [`Wrote ${path.relative(repoRoot, result.jsonPath)}`, `Wrote ${path.relative(repoRoot, result.statefilePath)}`].join(
+    "\n",
+  ),
 );

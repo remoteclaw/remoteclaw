@@ -79,9 +79,7 @@ function isDirectSessionKey(sessionKey?: string): boolean {
 }
 
 function isExternalRoutingChannel(channel?: string): channel is string {
-  return Boolean(
-    channel && channel !== INTERNAL_MESSAGE_CHANNEL && isDeliverableMessageChannel(channel),
-  );
+  return Boolean(channel && channel !== INTERNAL_MESSAGE_CHANNEL && isDeliverableMessageChannel(channel));
 }
 
 export function resolveLastChannelRaw(params: {

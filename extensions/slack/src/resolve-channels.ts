@@ -1,9 +1,6 @@
 import type { WebClient } from "@slack/web-api";
 import { createSlackWebClient } from "./client.js";
-import {
-  collectSlackCursorItems,
-  resolveSlackAllowlistEntries,
-} from "./resolve-allowlist-common.js";
+import { collectSlackCursorItems, resolveSlackAllowlistEntries } from "./resolve-allowlist-common.js";
 
 export type SlackChannelLookup = {
   id: string;
@@ -77,10 +74,7 @@ async function listSlackChannels(client: WebClient): Promise<SlackChannelLookup[
   });
 }
 
-function resolveByName(
-  name: string,
-  channels: SlackChannelLookup[],
-): SlackChannelLookup | undefined {
+function resolveByName(name: string, channels: SlackChannelLookup[]): SlackChannelLookup | undefined {
   const target = name.trim().toLowerCase();
   if (!target) {
     return undefined;
@@ -100,11 +94,7 @@ export async function resolveSlackChannelAllowlist(params: {
 }): Promise<SlackChannelResolution[]> {
   const client = params.client ?? createSlackWebClient(params.token);
   const channels = await listSlackChannels(client);
-  return resolveSlackAllowlistEntries<
-    { id?: string; name?: string },
-    SlackChannelLookup,
-    SlackChannelResolution
-  >({
+  return resolveSlackAllowlistEntries<{ id?: string; name?: string }, SlackChannelLookup, SlackChannelResolution>({
     entries: params.entries,
     lookup: channels,
     parseInput: parseSlackChannelMention,

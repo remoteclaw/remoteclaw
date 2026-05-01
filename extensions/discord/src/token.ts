@@ -37,8 +37,7 @@ export function resolveDiscordToken(
   };
   const accountCfg = resolveAccountCfg(accountId);
   const hasAccountToken = Boolean(
-    accountCfg &&
-    Object.prototype.hasOwnProperty.call(accountCfg as Record<string, unknown>, "token"),
+    accountCfg && Object.prototype.hasOwnProperty.call(accountCfg as Record<string, unknown>, "token"),
   );
   const accountToken = normalizeDiscordToken(
     (accountCfg as { token?: unknown } | undefined)?.token ?? undefined,
@@ -51,10 +50,7 @@ export function resolveDiscordToken(
     return { token: "", source: "none" };
   }
 
-  const configToken = normalizeDiscordToken(
-    discordCfg?.token ?? undefined,
-    "channels.discord.token",
-  );
+  const configToken = normalizeDiscordToken(discordCfg?.token ?? undefined, "channels.discord.token");
   if (configToken) {
     return { token: configToken, source: "config" };
   }

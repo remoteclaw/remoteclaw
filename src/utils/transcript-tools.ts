@@ -43,8 +43,7 @@ export const extractToolCallNames = (message: Record<string, unknown>): string[]
   return Array.from(names);
 };
 
-export const hasToolCall = (message: Record<string, unknown>): boolean =>
-  extractToolCallNames(message).length > 0;
+export const hasToolCall = (message: Record<string, unknown>): boolean => extractToolCallNames(message).length > 0;
 
 export const countToolResults = (message: Record<string, unknown>): ToolResultCounts => {
   const content = message.content;

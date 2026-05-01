@@ -1,10 +1,6 @@
 import net from "node:net";
 
-export async function tryListenOnPort(params: {
-  port: number;
-  host?: string;
-  exclusive?: boolean;
-}): Promise<void> {
+export async function tryListenOnPort(params: { port: number; host?: string; exclusive?: boolean }): Promise<void> {
   const listenOptions: net.ListenOptions = { port: params.port };
   if (params.host) {
     listenOptions.host = params.host;

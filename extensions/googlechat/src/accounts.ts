@@ -18,16 +18,11 @@ export type ResolvedGoogleChatAccount = {
 const ENV_SERVICE_ACCOUNT = "GOOGLE_CHAT_SERVICE_ACCOUNT";
 const ENV_SERVICE_ACCOUNT_FILE = "GOOGLE_CHAT_SERVICE_ACCOUNT_FILE";
 
-const {
-  listAccountIds: listGoogleChatAccountIds,
-  resolveDefaultAccountId: resolveDefaultGoogleChatAccountId,
-} = createAccountListHelpers("googlechat");
+const { listAccountIds: listGoogleChatAccountIds, resolveDefaultAccountId: resolveDefaultGoogleChatAccountId } =
+  createAccountListHelpers("googlechat");
 export { listGoogleChatAccountIds, resolveDefaultGoogleChatAccountId };
 
-function resolveAccountConfig(
-  cfg: RemoteClawConfig,
-  accountId: string,
-): GoogleChatAccountConfig | undefined {
+function resolveAccountConfig(cfg: RemoteClawConfig, accountId: string): GoogleChatAccountConfig | undefined {
   const accounts = cfg.channels?.["googlechat"]?.accounts;
   if (!accounts || typeof accounts !== "object") {
     return undefined;
@@ -35,10 +30,7 @@ function resolveAccountConfig(
   return accounts[accountId];
 }
 
-function mergeGoogleChatAccountConfig(
-  cfg: RemoteClawConfig,
-  accountId: string,
-): GoogleChatAccountConfig {
+function mergeGoogleChatAccountConfig(cfg: RemoteClawConfig, accountId: string): GoogleChatAccountConfig {
   const raw = cfg.channels?.["googlechat"] ?? {};
   const { accounts: _ignored, defaultAccount: _ignored2, ...base } = raw;
   const defaultAccountConfig = resolveAccountConfig(cfg, DEFAULT_ACCOUNT_ID) ?? {};
@@ -80,10 +72,7 @@ function parseServiceAccount(value: unknown): Record<string, unknown> | null {
   }
 }
 
-function resolveCredentialsFromConfig(params: {
-  accountId: string;
-  account: GoogleChatAccountConfig;
-}): {
+function resolveCredentialsFromConfig(params: { accountId: string; account: GoogleChatAccountConfig }): {
   credentials?: Record<string, unknown>;
   credentialsFile?: string;
   source: GoogleChatCredentialSource;

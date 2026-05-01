@@ -3,16 +3,9 @@ import os from "node:os";
 import path from "node:path";
 import { describe, it, expect } from "vitest";
 import { withEnvAsync } from "../test-utils/env.js";
-import {
-  createConfigIO,
-  readConfigFileSnapshotForWrite,
-  writeConfigFile as writeConfigFileViaWrapper,
-} from "./io.js";
+import { createConfigIO, readConfigFileSnapshotForWrite, writeConfigFile as writeConfigFileViaWrapper } from "./io.js";
 
-async function withTempConfig(
-  configContent: string,
-  run: (configPath: string) => Promise<void>,
-): Promise<void> {
+async function withTempConfig(configContent: string, run: (configPath: string) => Promise<void>): Promise<void> {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-env-io-"));
   const configPath = path.join(dir, "remoteclaw.json");
   await fs.writeFile(configPath, configContent);
@@ -27,7 +20,6 @@ async function withWrapperEnvContext(configPath: string, run: () => Promise<void
   await withEnvAsync(
     {
       REMOTECLAW_CONFIG_PATH: configPath,
-      REMOTECLAW_DISABLE_CONFIG_CACHE: "1",
       MY_API_KEY: "original-key-123",
     },
     run,
@@ -42,15 +34,11 @@ function createMutableApiKeyEnv(initialValue = "original-key-123"): Record<strin
   return { MY_API_KEY: initialValue };
 }
 
-async function withGatewayTokenTempConfig(
-  run: (configPath: string) => Promise<void>,
-): Promise<void> {
+async function withGatewayTokenTempConfig(run: (configPath: string) => Promise<void>): Promise<void> {
   await withTempConfig(createGatewayTokenConfigJson(), run);
 }
 
-async function withWrapperGatewayTokenContext(
-  run: (configPath: string) => Promise<void>,
-): Promise<void> {
+async function withWrapperGatewayTokenContext(run: (configPath: string) => Promise<void>): Promise<void> {
   await withGatewayTokenTempConfig(async (configPath) => {
     await withWrapperEnvContext(configPath, async () => run(configPath));
   });

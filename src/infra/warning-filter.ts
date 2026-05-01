@@ -19,10 +19,7 @@ export function shouldIgnoreWarning(warning: ProcessWarning): boolean {
   if (warning.code === "DEP0060" && warning.message?.includes("util._extend")) {
     return true;
   }
-  if (
-    warning.name === "ExperimentalWarning" &&
-    warning.message?.includes("SQLite is an experimental feature")
-  ) {
+  if (warning.name === "ExperimentalWarning" && warning.message?.includes("SQLite is an experimental feature")) {
     return true;
   }
   return false;
@@ -77,12 +74,7 @@ export function installProcessWarningFilter(): void {
     if (shouldIgnoreWarning(normalizeWarningArgs(args))) {
       return;
     }
-    if (
-      args[0] instanceof Error &&
-      args[1] &&
-      typeof args[1] === "object" &&
-      !Array.isArray(args[1])
-    ) {
+    if (args[0] instanceof Error && args[1] && typeof args[1] === "object" && !Array.isArray(args[1])) {
       const warning = args[0];
       const emitted = Object.assign(new Error(warning.message), {
         name: warning.name,

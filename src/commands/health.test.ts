@@ -160,9 +160,7 @@ describe("healthCommand", () => {
 describe("formatHealthCheckFailure", () => {
   it("keeps non-rich output stable", () => {
     const err = new Error("gateway closed (1006 abnormal closure): no close reason");
-    expect(formatHealthCheckFailure(err, { rich: false })).toBe(
-      `Health check failed: ${String(err)}`,
-    );
+    expect(formatHealthCheckFailure(err, { rich: false })).toBe(`Health check failed: ${String(err)}`);
   });
 
   it("formats gateway connection details as indented key/value lines", () => {

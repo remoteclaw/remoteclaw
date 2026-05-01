@@ -4,9 +4,7 @@ import { createDiscordVoiceCommand } from "./command.js";
 import type { DiscordVoiceManager } from "./manager.js";
 
 function findVoiceSubcommand(command: CommandWithSubcommands, name: string) {
-  const subcommands = (
-    command as unknown as { subcommands?: Array<{ name: string; run: unknown }> }
-  ).subcommands;
+  const subcommands = (command as unknown as { subcommands?: Array<{ name: string; run: unknown }> }).subcommands;
   const subcommand = subcommands?.find((entry) => entry.name === name) as
     | { run: (interaction: CommandInteraction) => Promise<void> }
     | undefined;

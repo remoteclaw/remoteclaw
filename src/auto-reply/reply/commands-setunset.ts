@@ -57,9 +57,7 @@ export function parseSetUnsetCommandAction<T>(params: {
   if (parsed.kind === "error") {
     return params.onError(parsed.message);
   }
-  return parsed.kind === "set"
-    ? params.onSet(parsed.path, parsed.value)
-    : params.onUnset(parsed.path);
+  return parsed.kind === "set" ? params.onSet(parsed.path, parsed.value) : params.onUnset(parsed.path);
 }
 
 export function parseSlashCommandWithSetUnset<T>(params: {

@@ -12,10 +12,7 @@ import {
   recordPendingHistoryEntryIfEnabled,
 } from "../../../../src/auto-reply/reply/history.js";
 import { finalizeInboundContext } from "../../../../src/auto-reply/reply/inbound-context.js";
-import {
-  buildMentionRegexes,
-  matchesMentionPatterns,
-} from "../../../../src/auto-reply/reply/mentions.js";
+import { buildMentionRegexes, matchesMentionPatterns } from "../../../../src/auto-reply/reply/mentions.js";
 import { createReplyDispatcherWithTyping } from "../../../../src/auto-reply/reply/reply-dispatcher.js";
 import { resolveControlCommandGate } from "../../../../src/channels/command-gating.js";
 import {
@@ -73,9 +70,7 @@ function formatAttachmentSummaryPlaceholder(contentTypes: Array<string | undefin
     const kind = kindFromMime(contentType) ?? "attachment";
     kindCounts.set(kind, (kindCounts.get(kind) ?? 0) + 1);
   }
-  const parts = [...kindCounts.entries()].map(([kind, count]) =>
-    formatAttachmentKindCount(kind, count),
-  );
+  const parts = [...kindCounts.entries()].map(([kind, count]) => formatAttachmentKindCount(kind, count));
   return `[${parts.join(" + ")} attached]`;
 }
 
@@ -165,18 +160,14 @@ export function createSignalEventHandler(deps: SignalEventHandlerDeps) {
             channel: "Signal",
             from: fromLabel,
             timestamp: historyEntry.timestamp,
-            body: `${historyEntry.body}${
-              historyEntry.messageId ? ` [id:${historyEntry.messageId}]` : ""
-            }`,
+            body: `${historyEntry.body}${historyEntry.messageId ? ` [id:${historyEntry.messageId}]` : ""}`,
             chatType: "group",
             senderLabel: historyEntry.sender,
             envelope: envelopeOptions,
           }),
       });
     }
-    const signalToRaw = entry.isGroup
-      ? `group:${entry.groupId}`
-      : `signal:${entry.senderRecipient}`;
+    const signalToRaw = entry.isGroup ? `group:${entry.groupId}` : `signal:${entry.senderRecipient}`;
     const signalTo = normalizeSignalMessagingTarget(signalToRaw) ?? signalToRaw;
     const inboundHistory =
       entry.isGroup && historyKey && deps.historyLimit > 0
@@ -193,9 +184,7 @@ export function createSignalEventHandler(deps: SignalEventHandlerDeps) {
       RawBody: entry.bodyText,
       CommandBody: entry.commandBody,
       BodyForCommands: entry.commandBody,
-      From: entry.isGroup
-        ? `group:${entry.groupId ?? "unknown"}`
-        : `signal:${entry.senderRecipient}`,
+      From: entry.isGroup ? `group:${entry.groupId ?? "unknown"}` : `signal:${entry.senderRecipient}`,
       To: signalTo,
       SessionKey: route.sessionKey,
       AccountId: route.accountId,
@@ -316,8 +305,7 @@ export function createSignalEventHandler(deps: SignalEventHandlerDeps) {
       dispatcher,
       replyOptions: {
         ...replyOptions,
-        disableBlockStreaming:
-          typeof deps.blockStreaming === "boolean" ? !deps.blockStreaming : undefined,
+        disableBlockStreaming: typeof deps.blockStreaming === "boolean" ? !deps.blockStreaming : undefined,
       },
     });
     markDispatchIdle();
@@ -412,9 +400,7 @@ export function createSignalEventHandler(deps: SignalEventHandlerDeps) {
     const isGroup = Boolean(groupId);
     const reactionAccess = params.resolveAccessDecision(isGroup);
     if (reactionAccess.decision !== "allow") {
-      logVerbose(
-        `Blocked signal reaction sender ${params.senderDisplay} (${reactionAccess.reason})`,
-      );
+      logVerbose(`Blocked signal reaction sender ${params.senderDisplay} (${reactionAccess.reason})`);
       return true;
     }
     const targets = deps.resolveSignalReactionTargets(params.reaction);
@@ -438,9 +424,7 @@ export function createSignalEventHandler(deps: SignalEventHandlerDeps) {
       senderPeerId,
     });
     const groupLabel = isGroup ? `${groupName ?? "Signal Group"} id:${groupId}` : undefined;
-    const messageId = params.reaction.targetSentTimestamp
-      ? String(params.reaction.targetSentTimestamp)
-      : "unknown";
+    const messageId = params.reaction.targetSentTimestamp ? String(params.reaction.targetSentTimestamp) : "unknown";
     const text = deps.buildSignalReactionSystemEventText({
       emojiLabel,
       actorLabel: senderName,
@@ -449,15 +433,7 @@ export function createSignalEventHandler(deps: SignalEventHandlerDeps) {
       groupLabel,
     });
     const senderId = formatSignalSenderId(params.sender);
-    const contextKey = [
-      "signal",
-      "reaction",
-      "added",
-      messageId,
-      senderId,
-      emojiLabel,
-      groupId ?? "",
-    ]
+    const contextKey = ["signal", "reaction", "added", messageId, senderId, emojiLabel, groupId ?? ""]
       .filter(Boolean)
       .join(":");
     enqueueSystemEvent(text, { sessionKey: route.sessionKey, contextKey });
@@ -523,18 +499,16 @@ export function createSignalEventHandler(deps: SignalEventHandlerDeps) {
     const messageText = normalizedMessage.trim();
 
     const quoteText = dataMessage?.quote?.text?.trim() ?? "";
-    const hasBodyContent =
-      Boolean(messageText || quoteText) || Boolean(!reaction && dataMessage?.attachments?.length);
+    const hasBodyContent = Boolean(messageText || quoteText) || Boolean(!reaction && dataMessage?.attachments?.length);
     const senderDisplay = formatSignalSenderDisplay(sender);
-    const { resolveAccessDecision, dmAccess, effectiveDmAllow, effectiveGroupAllow } =
-      await resolveSignalAccessState({
-        accountId: deps.accountId,
-        dmPolicy: deps.dmPolicy,
-        groupPolicy: deps.groupPolicy,
-        allowFrom: deps.allowFrom,
-        groupAllowFrom: deps.groupAllowFrom,
-        sender,
-      });
+    const { resolveAccessDecision, dmAccess, effectiveDmAllow, effectiveGroupAllow } = await resolveSignalAccessState({
+      accountId: deps.accountId,
+      dmPolicy: deps.dmPolicy,
+      groupPolicy: deps.groupPolicy,
+      allowFrom: deps.allowFrom,
+      groupAllowFrom: deps.groupAllowFrom,
+      sender,
+    });
 
     if (
       reaction &&
@@ -693,8 +667,7 @@ export function createSignalEventHandler(deps: SignalEventHandlerDeps) {
           sender: envelope.sourceName ?? senderDisplay,
           body: pendingBodyText,
           timestamp: envelope.timestamp ?? undefined,
-          messageId:
-            typeof envelope.timestamp === "number" ? String(envelope.timestamp) : undefined,
+          messageId: typeof envelope.timestamp === "number" ? String(envelope.timestamp) : undefined,
         },
       });
       return;
@@ -722,9 +695,7 @@ export function createSignalEventHandler(deps: SignalEventHandlerDeps) {
           });
           if (fetched) {
             mediaPaths.push(fetched.path);
-            mediaTypes.push(
-              fetched.contentType ?? attachment.contentType ?? "application/octet-stream",
-            );
+            mediaTypes.push(fetched.contentType ?? attachment.contentType ?? "application/octet-stream");
             if (!mediaPath) {
               mediaPath = fetched.path;
               mediaType = fetched.contentType ?? attachment.contentType ?? undefined;
@@ -768,18 +739,12 @@ export function createSignalEventHandler(deps: SignalEventHandlerDeps) {
       } catch (err) {
         logVerbose(`signal read receipt failed for ${senderDisplay}: ${String(err)}`);
       }
-    } else if (
-      deps.sendReadReceipts &&
-      !deps.readReceiptsViaDaemon &&
-      !isGroup &&
-      !receiptTimestamp
-    ) {
+    } else if (deps.sendReadReceipts && !deps.readReceiptsViaDaemon && !isGroup && !receiptTimestamp) {
       logVerbose(`signal read receipt skipped (missing timestamp) for ${senderDisplay}`);
     }
 
     const senderName = envelope.sourceName ?? senderDisplay;
-    const messageId =
-      typeof envelope.timestamp === "number" ? String(envelope.timestamp) : undefined;
+    const messageId = typeof envelope.timestamp === "number" ? String(envelope.timestamp) : undefined;
     await inboundDebouncer.enqueue({
       senderName,
       senderDisplay,

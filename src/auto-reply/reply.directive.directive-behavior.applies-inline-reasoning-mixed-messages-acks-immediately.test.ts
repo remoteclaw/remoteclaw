@@ -86,11 +86,7 @@ async function runInlineReasoningMessage(params: {
 }
 
 function makeRunConfig(home: string, storePath: string) {
-  return makeWhatsAppDirectiveConfig(
-    home,
-    { model: "anthropic/claude-opus-4-5" },
-    { session: { store: storePath } },
-  );
+  return makeWhatsAppDirectiveConfig(home, { model: "anthropic/claude-opus-4-5" }, { session: { store: storePath } });
 }
 
 async function runInFlightVerboseToggleCase(params: {
@@ -105,11 +101,7 @@ async function runInFlightVerboseToggleCase(params: {
     From: "+1004",
     To: "+2000",
   };
-  const sessionKey = resolveSessionKey(
-    "per-sender",
-    { From: ctx.From, To: ctx.To, Body: ctx.Body },
-    "main",
-  );
+  const sessionKey = resolveSessionKey("per-sender", { From: ctx.From, To: ctx.To, Body: ctx.Body }, "main");
 
   /* oxlint-disable typescript/no-explicit-any */
   vi.mocked(runAgent).mockImplementation((async (agentParams: Record<string, unknown>) => {
@@ -358,9 +350,7 @@ describe("directive behavior", () => {
       );
 
       const text = replyText(currentRes);
-      expect(text).toContain(
-        "Current queue settings: mode=collect, debounce=1500ms, cap=9, drop=summarize.",
-      );
+      expect(text).toContain("Current queue settings: mode=collect, debounce=1500ms, cap=9, drop=summarize.");
       expect(text).toContain(
         "Options: modes steer, followup, collect, steer+backlog, interrupt; debounce:<ms|s|m>, cap:<n>, drop:old|new|summarize.",
       );

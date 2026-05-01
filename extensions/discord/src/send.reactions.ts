@@ -17,10 +17,7 @@ export async function reactMessageDiscord(
   const cfg = opts.cfg ?? loadConfig();
   const { rest, request } = createDiscordClient(opts, cfg);
   const encoded = normalizeReactionEmoji(emoji);
-  await request(
-    () => rest.put(Routes.channelMessageOwnReaction(channelId, messageId, encoded)),
-    "react",
-  );
+  await request(() => rest.put(Routes.channelMessageOwnReaction(channelId, messageId, encoded)), "react");
   return { ok: true };
 }
 
@@ -61,9 +58,7 @@ export async function removeOwnReactionsDiscord(
   await Promise.allSettled(
     Array.from(identifiers, (identifier) => {
       removed.push(identifier);
-      return rest.delete(
-        Routes.channelMessageOwnReaction(channelId, messageId, normalizeReactionEmoji(identifier)),
-      );
+      return rest.delete(Routes.channelMessageOwnReaction(channelId, messageId, normalizeReactionEmoji(identifier)));
     }),
   );
   return { ok: true, removed };
@@ -111,10 +106,7 @@ export async function fetchReactionsDiscord(
       users: users.map((user) => ({
         id: user.id,
         username: user.username,
-        tag:
-          user.username && user.discriminator
-            ? `${user.username}#${user.discriminator}`
-            : user.username,
+        tag: user.username && user.discriminator ? `${user.username}#${user.discriminator}` : user.username,
       })),
     });
   }

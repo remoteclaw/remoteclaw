@@ -23,10 +23,8 @@ describe("buildTelegramMessageContext named-account DM fallback", () => {
 
   beforeEach(async () => {
     vi.resetModules();
-    ({ clearRuntimeConfigSnapshot, setRuntimeConfigSnapshot } =
-      await import("../../../src/config/config.js"));
-    ({ buildTelegramMessageContextForTest } =
-      await import("./bot-message-context.test-harness.js"));
+    ({ clearRuntimeConfigSnapshot, setRuntimeConfigSnapshot } = await import("../../../src/config/config.js"));
+    ({ buildTelegramMessageContextForTest } = await import("./bot-message-context.test-harness.js"));
   });
 
   function getLastUpdateLastRoute(): { sessionKey?: string } | undefined {

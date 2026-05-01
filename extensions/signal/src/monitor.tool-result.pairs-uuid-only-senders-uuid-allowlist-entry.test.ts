@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   config,
   flush,
@@ -8,10 +8,9 @@ import {
 } from "./monitor.tool-result.test-harness.js";
 
 installSignalToolResultTestHooks();
-let monitorSignalProvider: typeof import("./monitor.js").monitorSignalProvider;
+const { monitorSignalProvider } = await import("./monitor.js");
 
-const { replyMock, sendMock, streamMock, upsertPairingRequestMock } =
-  getSignalToolResultTestMocks();
+const { replyMock, sendMock, streamMock, upsertPairingRequestMock } = getSignalToolResultTestMocks();
 
 type MonitorSignalProviderOptions = Parameters<typeof monitorSignalProvider>[0];
 
@@ -19,11 +18,6 @@ async function runMonitorWithMocks(opts: MonitorSignalProviderOptions) {
   return monitorSignalProvider(opts);
 }
 describe("monitorSignalProvider tool results", () => {
-  beforeEach(async () => {
-    vi.resetModules();
-    ({ monitorSignalProvider } = await import("./monitor.js"));
-  });
-
   it("pairs uuid-only senders with a uuid allowlist entry", async () => {
     const baseChannels = (config.channels ?? {}) as Record<string, unknown>;
     const baseSignal = (baseChannels.signal ?? {}) as Record<string, unknown>;
@@ -78,9 +72,7 @@ describe("monitorSignalProvider tool results", () => {
     );
     expect(sendMock).toHaveBeenCalledTimes(1);
     expect(sendMock.mock.calls[0]?.[0]).toBe(`signal:${uuid}`);
-    expect(String(sendMock.mock.calls[0]?.[1] ?? "")).toContain(
-      `Your Signal sender id: uuid:${uuid}`,
-    );
+    expect(String(sendMock.mock.calls[0]?.[1] ?? "")).toContain(`Your Signal sender id: uuid:${uuid}`);
   });
 
   it("reconnects after stream errors until aborted", async () => {

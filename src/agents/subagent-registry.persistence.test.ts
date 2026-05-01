@@ -46,11 +46,7 @@ describe("subagent registry persistence", () => {
     return {} as Record<string, Record<string, unknown>>;
   };
 
-  const writeChildSessionEntry = async (params: {
-    sessionKey: string;
-    sessionId?: string;
-    updatedAt?: number;
-  }) => {
+  const writeChildSessionEntry = async (params: { sessionKey: string; sessionId?: string; updatedAt?: number }) => {
     if (!tempStateDir) {
       throw new Error("tempStateDir not initialized");
     }
@@ -100,10 +96,7 @@ describe("subagent registry persistence", () => {
     }
   };
 
-  const writePersistedRegistry = async (
-    persisted: Record<string, unknown>,
-    opts?: { seedChildSessions?: boolean },
-  ) => {
+  const writePersistedRegistry = async (persisted: Record<string, unknown>, opts?: { seedChildSessions?: boolean }) => {
     tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-subagent-"));
     process.env.REMOTECLAW_STATE_DIR = tempStateDir;
     const registryPath = path.join(tempStateDir, "subagents", "runs.json");
@@ -115,10 +108,7 @@ describe("subagent registry persistence", () => {
     return registryPath;
   };
 
-  const readPersistedRun = async <T>(
-    registryPath: string,
-    runId: string,
-  ): Promise<T | undefined> => {
+  const readPersistedRun = async <T>(registryPath: string, runId: string): Promise<T | undefined> => {
     const parsed = JSON.parse(await fs.readFile(registryPath, "utf8")) as {
       runs?: Record<string, unknown>;
     };
@@ -225,9 +215,7 @@ describe("subagent registry persistence", () => {
       cleanup: string;
       label?: string;
     };
-    const first = (announceSpy.mock.calls as unknown as Array<[unknown]>)[0]?.[0] as
-      | AnnounceParams
-      | undefined;
+    const first = (announceSpy.mock.calls as unknown as Array<[unknown]>)[0]?.[0] as AnnounceParams | undefined;
     if (!first) {
       throw new Error("expected announce call");
     }
@@ -273,8 +261,7 @@ describe("subagent registry persistence", () => {
     // announce should NOT be called since cleanupHandled was true
     const calls = (announceSpy.mock.calls as unknown as Array<[unknown]>).map((call) => call[0]);
     const match = calls.find(
-      (params) =>
-        (params as { childSessionKey?: string }).childSessionKey === "agent:main:subagent:two",
+      (params) => (params as { childSessionKey?: string }).childSessionKey === "agent:main:subagent:two",
     );
     expect(match).toBeFalsy();
   });

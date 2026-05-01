@@ -39,10 +39,7 @@ export type PluginRuntimeCore = {
   };
   logging: {
     shouldLogVerbose: typeof import("../../globals.js").shouldLogVerbose;
-    getChildLogger: (
-      bindings?: Record<string, unknown>,
-      opts?: { level?: LogLevel },
-    ) => RuntimeLogger;
+    getChildLogger: (bindings?: Record<string, unknown>, opts?: { level?: LogLevel }) => RuntimeLogger;
   };
   state: {
     resolveStateDir: typeof import("../../config/paths.js").resolveStateDir;

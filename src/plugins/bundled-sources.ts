@@ -7,9 +7,7 @@ export type BundledPluginSource = {
   npmSpec?: string;
 };
 
-export type BundledPluginLookup =
-  | { kind: "npmSpec"; value: string }
-  | { kind: "pluginId"; value: string };
+export type BundledPluginLookup = { kind: "npmSpec"; value: string } | { kind: "pluginId"; value: string };
 
 export function findBundledPluginSourceInMap(params: {
   bundled: ReadonlyMap<string, BundledPluginSource>;
@@ -30,9 +28,7 @@ export function findBundledPluginSourceInMap(params: {
   return undefined;
 }
 
-export function resolveBundledPluginSources(params: {
-  workspaceDir?: string;
-}): Map<string, BundledPluginSource> {
+export function resolveBundledPluginSources(params: { workspaceDir?: string }): Map<string, BundledPluginSource> {
   const discovery = discoverRemoteClawPlugins({ workspaceDir: params.workspaceDir });
   const bundled = new Map<string, BundledPluginSource>();
 
@@ -49,10 +45,7 @@ export function resolveBundledPluginSources(params: {
       continue;
     }
 
-    const npmSpec =
-      candidate.packageManifest?.install?.npmSpec?.trim() ||
-      candidate.packageName?.trim() ||
-      undefined;
+    const npmSpec = candidate.packageManifest?.install?.npmSpec?.trim() || candidate.packageName?.trim() || undefined;
 
     bundled.set(pluginId, {
       pluginId,

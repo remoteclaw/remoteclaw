@@ -9,11 +9,7 @@ export type UrbitAuthenticateOptions = {
   timeoutMs?: number;
 };
 
-export async function authenticate(
-  url: string,
-  code: string,
-  options: UrbitAuthenticateOptions = {},
-): Promise<string> {
+export async function authenticate(url: string, code: string, options: UrbitAuthenticateOptions = {}): Promise<string> {
   const { response, release } = await urbitFetch({
     baseUrl: url,
     path: "/~/login",

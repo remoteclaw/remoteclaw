@@ -74,12 +74,8 @@ function resolveSessionsDir(opts?: SessionFilePathOptions): string {
   return resolveAgentSessionsDir(opts.agentId);
 }
 
-function resolvePathFromAgentSessionsDir(
-  agentSessionsDir: string,
-  candidateAbsPath: string,
-): string | undefined {
-  const agentBase =
-    safeRealpathSync(path.resolve(agentSessionsDir)) ?? path.resolve(agentSessionsDir);
+function resolvePathFromAgentSessionsDir(agentSessionsDir: string, candidateAbsPath: string): string | undefined {
+  const agentBase = safeRealpathSync(path.resolve(agentSessionsDir)) ?? path.resolve(agentSessionsDir);
   const realCandidate = safeRealpathSync(candidateAbsPath) ?? candidateAbsPath;
   const relative = path.relative(agentBase, realCandidate);
   if (!relative || relative.startsWith("..") || path.isAbsolute(relative)) {
@@ -88,10 +84,7 @@ function resolvePathFromAgentSessionsDir(
   return path.resolve(agentBase, relative);
 }
 
-function resolveSiblingAgentSessionsDir(
-  baseSessionsDir: string,
-  agentId: string,
-): string | undefined {
+function resolveSiblingAgentSessionsDir(baseSessionsDir: string, agentId: string): string | undefined {
   const resolvedBase = path.resolve(baseSessionsDir);
   if (path.basename(resolvedBase) !== "sessions") {
     return undefined;
@@ -105,9 +98,7 @@ function resolveSiblingAgentSessionsDir(
   return path.join(rootDir, "agents", normalizeAgentId(agentId), "sessions");
 }
 
-function resolveAgentSessionsPathParts(
-  candidateAbsPath: string,
-): { parts: string[]; sessionsIndex: number } | null {
+function resolveAgentSessionsPathParts(candidateAbsPath: string): { parts: string[]; sessionsIndex: number } | null {
   const normalized = path.normalize(path.resolve(candidateAbsPath));
   const parts = normalized.split(path.sep).filter(Boolean);
   const sessionsIndex = parts.lastIndexOf("sessions");
@@ -127,10 +118,7 @@ function extractAgentIdFromAbsoluteSessionPath(candidateAbsPath: string): string
   return agentId || undefined;
 }
 
-function resolveStructuralSessionFallbackPath(
-  candidateAbsPath: string,
-  expectedAgentId: string,
-): string | undefined {
+function resolveStructuralSessionFallbackPath(candidateAbsPath: string, expectedAgentId: string): string | undefined {
   const parsed = resolveAgentSessionsPathParts(candidateAbsPath);
   if (!parsed) {
     return undefined;
@@ -167,11 +155,7 @@ function safeRealpathSync(filePath: string): string | undefined {
   }
 }
 
-function resolvePathWithinSessionsDir(
-  sessionsDir: string,
-  candidate: string,
-  opts?: { agentId?: string },
-): string {
+function resolvePathWithinSessionsDir(sessionsDir: string, candidate: string, opts?: { agentId?: string }): string {
   const trimmed = candidate.trim();
   if (!trimmed) {
     throw new Error("Session file path must not be empty");
@@ -182,9 +166,7 @@ function resolvePathWithinSessionsDir(
   // Older versions stored absolute sessionFile paths in sessions.json;
   // convert them to relative so the containment check passes.
   const realTrimmed = path.isAbsolute(trimmed) ? (safeRealpathSync(trimmed) ?? trimmed) : trimmed;
-  const normalized = path.isAbsolute(realTrimmed)
-    ? path.relative(realBase, realTrimmed)
-    : realTrimmed;
+  const normalized = path.isAbsolute(realTrimmed) ? path.relative(realBase, realTrimmed) : realTrimmed;
   if (normalized.startsWith("..") && path.isAbsolute(realTrimmed)) {
     const tryAgentFallback = (agentId: string): string | undefined => {
       const normalizedAgentId = normalizeAgentId(agentId);
@@ -195,10 +177,7 @@ function resolvePathWithinSessionsDir(
           return siblingResolved;
         }
       }
-      return resolvePathFromAgentSessionsDir(
-        resolveAgentSessionsDir(normalizedAgentId),
-        realTrimmed,
-      );
+      return resolvePathFromAgentSessionsDir(resolveAgentSessionsDir(normalizedAgentId), realTrimmed);
     };
 
     const explicitAgentId = opts?.agentId?.trim();
@@ -216,10 +195,7 @@ function resolvePathWithinSessionsDir(
       }
       // Cross-root compatibility for older absolute paths:
       // keep only canonical .../agents/<agentId>/sessions/<file> shapes.
-      const structuralFallback = resolveStructuralSessionFallbackPath(
-        realTrimmed,
-        extractedAgentId,
-      );
+      const structuralFallback = resolveStructuralSessionFallbackPath(realTrimmed, extractedAgentId);
       if (structuralFallback) {
         return structuralFallback;
       }
@@ -243,10 +219,7 @@ export function resolveSessionTranscriptPathInDir(
       : typeof topicId === "number"
         ? String(topicId)
         : undefined;
-  const fileName =
-    safeTopicId !== undefined
-      ? `${safeSessionId}-topic-${safeTopicId}.jsonl`
-      : `${safeSessionId}.jsonl`;
+  const fileName = safeTopicId !== undefined ? `${safeSessionId}-topic-${safeTopicId}.jsonl` : `${safeSessionId}.jsonl`;
   return resolvePathWithinSessionsDir(sessionsDir, fileName);
 }
 

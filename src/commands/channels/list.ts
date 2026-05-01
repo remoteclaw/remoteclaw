@@ -47,10 +47,7 @@ function shouldShowConfigured(channel: ChannelPlugin): boolean {
   return channel.meta.showConfigured !== false;
 }
 
-function formatAccountLine(params: {
-  channel: ChannelPlugin;
-  snapshot: ChannelAccountSnapshot;
-}): string {
+function formatAccountLine(params: { channel: ChannelPlugin; snapshot: ChannelAccountSnapshot }): string {
   const { channel, snapshot } = params;
   const label = formatChannelAccountLabel({
     channel: channel.id,
@@ -84,10 +81,7 @@ function formatAccountLine(params: {
   return `- ${label}: ${bits.join(", ")}`;
 }
 
-export async function channelsListCommand(
-  opts: ChannelsListOptions,
-  runtime: RuntimeEnv = defaultRuntime,
-) {
+export async function channelsListCommand(opts: ChannelsListOptions, runtime: RuntimeEnv = defaultRuntime) {
   const cfg = await requireValidConfig(runtime);
   if (!cfg) {
     return;

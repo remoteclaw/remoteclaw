@@ -22,10 +22,7 @@ export type TlonResolvedAccount = {
   ownerShip: string | null;
 };
 
-export function resolveTlonAccount(
-  cfg: RemoteClawConfig,
-  accountId?: string | null,
-): TlonResolvedAccount {
+export function resolveTlonAccount(cfg: RemoteClawConfig, accountId?: string | null): TlonResolvedAccount {
   const base = cfg.channels?.tlon as
     | {
         name?: string;
@@ -74,26 +71,16 @@ export function resolveTlonAccount(
   const ship = (account?.ship ?? base.ship ?? null) as string | null;
   const url = (account?.url ?? base.url ?? null) as string | null;
   const code = (account?.code ?? base.code ?? null) as string | null;
-  const allowPrivateNetwork = (account?.allowPrivateNetwork ?? base.allowPrivateNetwork ?? null) as
-    | boolean
-    | null;
+  const allowPrivateNetwork = (account?.allowPrivateNetwork ?? base.allowPrivateNetwork ?? null) as boolean | null;
   const groupChannels = (account?.groupChannels ?? base.groupChannels ?? []) as string[];
   const dmAllowlist = (account?.dmAllowlist ?? base.dmAllowlist ?? []) as string[];
-  const groupInviteAllowlist = (account?.groupInviteAllowlist ??
-    base.groupInviteAllowlist ??
-    []) as string[];
-  const autoDiscoverChannels = (account?.autoDiscoverChannels ??
-    base.autoDiscoverChannels ??
-    null) as boolean | null;
-  const showModelSignature = (account?.showModelSignature ?? base.showModelSignature ?? null) as
+  const groupInviteAllowlist = (account?.groupInviteAllowlist ?? base.groupInviteAllowlist ?? []) as string[];
+  const autoDiscoverChannels = (account?.autoDiscoverChannels ?? base.autoDiscoverChannels ?? null) as boolean | null;
+  const showModelSignature = (account?.showModelSignature ?? base.showModelSignature ?? null) as boolean | null;
+  const autoAcceptDmInvites = (account?.autoAcceptDmInvites ?? base.autoAcceptDmInvites ?? null) as boolean | null;
+  const autoAcceptGroupInvites = (account?.autoAcceptGroupInvites ?? base.autoAcceptGroupInvites ?? null) as
     | boolean
     | null;
-  const autoAcceptDmInvites = (account?.autoAcceptDmInvites ?? base.autoAcceptDmInvites ?? null) as
-    | boolean
-    | null;
-  const autoAcceptGroupInvites = (account?.autoAcceptGroupInvites ??
-    base.autoAcceptGroupInvites ??
-    null) as boolean | null;
   const ownerShip = (account?.ownerShip ?? base.ownerShip ?? null) as string | null;
   const defaultAuthorizedShips = ((account as Record<string, unknown>)?.defaultAuthorizedShips ??
     (base as Record<string, unknown>)?.defaultAuthorizedShips ??
@@ -122,9 +109,7 @@ export function resolveTlonAccount(
 }
 
 export function listTlonAccountIds(cfg: RemoteClawConfig): string[] {
-  const base = cfg.channels?.tlon as
-    | { ship?: string; accounts?: Record<string, Record<string, unknown>> }
-    | undefined;
+  const base = cfg.channels?.tlon as { ship?: string; accounts?: Record<string, Record<string, unknown>> } | undefined;
   if (!base) {
     return [];
   }

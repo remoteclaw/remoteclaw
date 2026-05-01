@@ -70,11 +70,7 @@ function mockIsolatedRunOk(): void {
   });
 }
 
-async function postAgentHookWithIdempotency(
-  port: number,
-  idempotencyKey: string,
-  headers?: Record<string, string>,
-) {
+async function postAgentHookWithIdempotency(port: number, idempotencyKey: string, headers?: Record<string, string>) {
   const response = await postHook(
     port,
     "/hooks/agent",
@@ -85,11 +81,7 @@ async function postAgentHookWithIdempotency(
   return response;
 }
 
-async function expectFirstHookDelivery(
-  port: number,
-  idempotencyKey: string,
-  headers?: Record<string, string>,
-) {
+async function expectFirstHookDelivery(port: number, idempotencyKey: string, headers?: Record<string, string>) {
   const first = await postAgentHookWithIdempotency(port, idempotencyKey, headers);
   const firstBody = (await first.json()) as { runId?: string };
   expect(firstBody.runId).toBeTruthy();
@@ -165,12 +157,7 @@ describe("gateway server hooks", () => {
       expect(fallbackCall?.job?.agentId).toBe("main");
       drainSystemEvents(resolveMainKey());
 
-      const resQuery = await postHook(
-        port,
-        "/hooks/wake?token=hook-secret",
-        { text: "Query auth" },
-        { token: null },
-      );
+      const resQuery = await postHook(port, "/hooks/wake?token=hook-secret", { text: "Query auth" }, { token: null });
       expect(resQuery.status).toBe(400);
 
       const resBadChannel = await postHook(port, "/hooks/agent", {
@@ -292,7 +279,7 @@ describe("gateway server hooks", () => {
     });
   });
 
-  test("normalizes duplicate target-agent prefixes before isolated dispatch", async () => {
+  test("preserves target-agent prefixes before isolated dispatch", async () => {
     testState.hooksConfig = {
       enabled: true,
       token: HOOK_TOKEN,
@@ -316,8 +303,59 @@ describe("gateway server hooks", () => {
         | { sessionKey?: string; job?: { agentId?: string } }
         | undefined;
       expect(routedCall?.job?.agentId).toBe("hooks");
-      expect(routedCall?.sessionKey).toBe("slack:channel:c123");
+      expect(routedCall?.sessionKey).toBe("agent:hooks:slack:channel:c123");
       drainSystemEvents(resolveMainKey());
+    });
+  });
+
+  test("rebinds mismatched agent prefixes to the hook target before isolated dispatch", async () => {
+    testState.hooksConfig = {
+      enabled: true,
+      token: HOOK_TOKEN,
+      allowRequestSessionKey: true,
+      allowedSessionKeyPrefixes: ["hook:", "agent:"],
+    };
+    setMainAndHooksAgents();
+    await withGatewayServer(async ({ port }) => {
+      mockIsolatedRunOkOnce();
+
+      const resAgent = await postHook(port, "/hooks/agent", {
+        message: "Do it",
+        name: "Email",
+        agentId: "hooks",
+        sessionKey: "agent:main:slack:channel:c123",
+      });
+      expect(resAgent.status).toBe(200);
+      await waitForSystemEvent();
+
+      const routedCall = (cronIsolatedRun.mock.calls[0] as unknown[] | undefined)?.[0] as
+        | { sessionKey?: string; job?: { agentId?: string } }
+        | undefined;
+      expect(routedCall?.job?.agentId).toBe("hooks");
+      expect(routedCall?.sessionKey).toBe("agent:hooks:slack:channel:c123");
+      drainSystemEvents(resolveMainKey());
+    });
+  });
+
+  test("rejects rebinding into a session namespace that is not allowlisted", async () => {
+    testState.hooksConfig = {
+      enabled: true,
+      token: HOOK_TOKEN,
+      allowRequestSessionKey: true,
+      allowedSessionKeyPrefixes: ["hook:", "agent:main:"],
+    };
+    setMainAndHooksAgents();
+    await withGatewayServer(async ({ port }) => {
+      const denied = await postHook(port, "/hooks/agent", {
+        message: "Do it",
+        name: "Email",
+        agentId: "hooks",
+        sessionKey: "agent:main:slack:channel:c123",
+      });
+      expect(denied.status).toBe(400);
+      const body = (await denied.json()) as { error?: string };
+      expect(body.error).toContain("sessionKey must start with one of");
+      expect(cronIsolatedRun).not.toHaveBeenCalled();
     });
   });
 
@@ -340,11 +378,7 @@ describe("gateway server hooks", () => {
     testState.hooksConfig = { enabled: true, token: HOOK_TOKEN };
     const configPath = process.env.REMOTECLAW_CONFIG_PATH;
     expect(configPath).toBeTruthy();
-    await fs.writeFile(
-      configPath!,
-      JSON.stringify({ gateway: { trustedProxies: ["127.0.0.1"] } }, null, 2),
-      "utf-8",
-    );
+    await fs.writeFile(configPath!, JSON.stringify({ gateway: { trustedProxies: ["127.0.0.1"] } }, null, 2), "utf-8");
 
     await withGatewayServer(async ({ port }) => {
       mockIsolatedRunOk();
@@ -489,12 +523,7 @@ describe("gateway server hooks", () => {
   test("throttles repeated hook auth failures and resets after success", async () => {
     testState.hooksConfig = { enabled: true, token: HOOK_TOKEN };
     await withGatewayServer(async ({ port }) => {
-      const firstFail = await postHook(
-        port,
-        "/hooks/wake",
-        { text: "blocked" },
-        { token: "wrong" },
-      );
+      const firstFail = await postHook(port, "/hooks/wake", { text: "blocked" }, { token: "wrong" });
       expect(firstFail.status).toBe(401);
 
       let throttled: Response | null = null;
@@ -509,12 +538,7 @@ describe("gateway server hooks", () => {
       await waitForSystemEvent();
       drainSystemEvents(resolveMainKey());
 
-      const failAfterSuccess = await postHook(
-        port,
-        "/hooks/wake",
-        { text: "blocked" },
-        { token: "wrong" },
-      );
+      const failAfterSuccess = await postHook(port, "/hooks/wake", { text: "blocked" }, { token: "wrong" });
       expect(failAfterSuccess.status).toBe(401);
     });
   });

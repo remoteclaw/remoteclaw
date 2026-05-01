@@ -81,9 +81,7 @@ describe("parseSetUnsetCommandAction", () => {
 
 describe("parseSlashCommandWithSetUnset", () => {
   it("returns null when the input does not match the slash command", () => {
-    const result = parseSlashCommandWithSetUnset<ParsedSetUnsetAction>(
-      createSlashParams({ raw: "/debug show" }),
-    );
+    const result = parseSlashCommandWithSetUnset<ParsedSetUnsetAction>(createSlashParams({ raw: "/debug show" }));
     expect(result).toBeNull();
   });
 
@@ -98,8 +96,7 @@ describe("parseSlashCommandWithSetUnset", () => {
     const showResult = parseSlashCommandWithSetUnset<ParsedSetUnsetAction>(
       createSlashParams({
         raw: "/config show",
-        onKnownAction: (action) =>
-          action === "show" ? { action: "unset", path: "dummy" } : undefined,
+        onKnownAction: (action) => (action === "show" ? { action: "unset", path: "dummy" } : undefined),
       }),
     );
     expect(showResult).toEqual({ action: "unset", path: "dummy" });

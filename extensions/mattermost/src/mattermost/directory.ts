@@ -1,8 +1,4 @@
-import type {
-  ChannelDirectoryEntry,
-  RemoteClawConfig,
-  RuntimeEnv,
-} from "remoteclaw/plugin-sdk/mattermost";
+import type { ChannelDirectoryEntry, RemoteClawConfig, RuntimeEnv } from "remoteclaw/plugin-sdk/mattermost";
 import { listMattermostAccountIds, resolveMattermostAccount } from "./accounts.js";
 import {
   createMattermostClient,
@@ -20,10 +16,7 @@ export type MattermostDirectoryParams = {
   runtime: RuntimeEnv;
 };
 
-function buildClient(params: {
-  cfg: RemoteClawConfig;
-  accountId?: string | null;
-}): MattermostClient | null {
+function buildClient(params: { cfg: RemoteClawConfig; accountId?: string | null }): MattermostClient | null {
   const account = resolveMattermostAccount({ cfg: params.cfg, accountId: params.accountId });
   if (!account.enabled || !account.botToken || !account.baseUrl) {
     return null;
@@ -75,9 +68,7 @@ export async function listMattermostDirectoryGroups(
   for (const client of clients) {
     try {
       const me = await fetchMattermostMe(client);
-      const channels = await client.request<MattermostChannel[]>(
-        `/users/${me.id}/channels?per_page=200`,
-      );
+      const channels = await client.request<MattermostChannel[]>(`/users/${me.id}/channels?per_page=200`);
       for (const ch of channels) {
         if (ch.type !== "O" && ch.type !== "P") continue;
         if (seenIds.has(ch.id)) continue;
@@ -96,10 +87,7 @@ export async function listMattermostDirectoryGroups(
       }
     } catch (err) {
       // Token may be expired/revoked — skip this account and try others
-      console.debug?.(
-        "[mattermost-directory] listGroups: skipping account:",
-        (err as Error)?.message,
-      );
+      console.debug?.("[mattermost-directory] listGroups: skipping account:", (err as Error)?.message);
       continue;
     }
   }
@@ -142,9 +130,7 @@ export async function listMattermostDirectoryPeers(
         body: JSON.stringify({ term: q, team_id: teamId }),
       });
     } else {
-      const members = await client.request<{ user_id: string }[]>(
-        `/teams/${teamId}/members?per_page=200`,
-      );
+      const members = await client.request<{ user_id: string }[]>(`/teams/${teamId}/members?per_page=200`);
       const userIds = members.map((m) => m.user_id).filter((id) => id !== me.id);
       if (!userIds.length) {
         return [];
@@ -161,8 +147,7 @@ export async function listMattermostDirectoryPeers(
         kind: "user" as const,
         id: `user:${u.id}`,
         name: u.username ?? undefined,
-        handle:
-          [u.first_name, u.last_name].filter(Boolean).join(" ").trim() || u.nickname || undefined,
+        handle: [u.first_name, u.last_name].filter(Boolean).join(" ").trim() || u.nickname || undefined,
       }));
     return params.limit && params.limit > 0 ? entries.slice(0, params.limit) : entries;
   } catch (err) {

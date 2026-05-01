@@ -72,11 +72,7 @@ async function executeSpawnAndExpectAccepted(params: {
   return result;
 }
 
-async function emitLifecycleEndAndFlush(params: {
-  runId: string;
-  startedAt: number;
-  endedAt: number;
-}) {
+async function emitLifecycleEndAndFlush(params: { runId: string; startedAt: number; endedAt: number }) {
   vi.useFakeTimers();
   try {
     emitAgentEvent({
@@ -206,9 +202,7 @@ describe("remoteclaw-tools: subagents (sessions_spawn lifecycle)", () => {
       endedAt: 2345,
     });
 
-    await waitFor(
-      () => ctx.calls.filter((call) => call.method === "agent").length >= 2 && Boolean(deletedKey),
-    );
+    await waitFor(() => ctx.calls.filter((call) => call.method === "agent").length >= 2 && Boolean(deletedKey));
 
     const childWait = ctx.waitCalls.find((call) => call.runId === child.runId);
     expect(childWait?.timeoutMs).toBe(1000);

@@ -4,11 +4,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { captureEnv } from "../../test-utils/env.js";
 import { resolveApiKeyForProfile } from "./oauth.js";
-import {
-  clearRuntimeAuthProfileStoreSnapshots,
-  ensureAuthProfileStore,
-  saveAuthProfileStore,
-} from "./store.js";
+import { clearRuntimeAuthProfileStoreSnapshots, ensureAuthProfileStore, saveAuthProfileStore } from "./store.js";
 import type { AuthProfileStore } from "./types.js";
 
 const { getOAuthApiKeyMock } = vi.hoisted(() => ({
@@ -25,11 +21,7 @@ vi.mock("@mariozechner/pi-ai/oauth", () => ({
   ],
 }));
 
-function createExpiredOauthStore(params: {
-  profileId: string;
-  provider: string;
-  access?: string;
-}): AuthProfileStore {
+function createExpiredOauthStore(params: { profileId: string; provider: string; access?: string }): AuthProfileStore {
   return {
     version: 1,
     profiles: {
@@ -45,11 +37,7 @@ function createExpiredOauthStore(params: {
 }
 
 describe("resolveApiKeyForProfile openai-codex refresh fallback", () => {
-  const envSnapshot = captureEnv([
-    "REMOTECLAW_STATE_DIR",
-    "REMOTECLAW_AGENT_DIR",
-    "PI_CODING_AGENT_DIR",
-  ]);
+  const envSnapshot = captureEnv(["REMOTECLAW_STATE_DIR", "REMOTECLAW_AGENT_DIR", "PI_CODING_AGENT_DIR"]);
   let tempRoot = "";
   let agentDir = "";
 

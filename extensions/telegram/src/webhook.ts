@@ -29,11 +29,7 @@ const TELEGRAM_WEBHOOK_MAX_BODY_BYTES = 1024 * 1024;
 const TELEGRAM_WEBHOOK_BODY_TIMEOUT_MS = 30_000;
 const TELEGRAM_WEBHOOK_CALLBACK_TIMEOUT_MS = 10_000;
 
-async function listenHttpServer(params: {
-  server: ReturnType<typeof createServer>;
-  port: number;
-  host: string;
-}) {
+async function listenHttpServer(params: { server: ReturnType<typeof createServer>; port: number; host: string }) {
   await new Promise<void>((resolve, reject) => {
     const onError = (err: Error) => {
       params.server.off("error", onError);
@@ -92,10 +88,7 @@ function resolveSingleHeaderValue(header: string | string[] | undefined): string
   return undefined;
 }
 
-function hasValidTelegramWebhookSecret(
-  secretHeader: string | undefined,
-  expectedSecret: string,
-): boolean {
+function hasValidTelegramWebhookSecret(secretHeader: string | undefined, expectedSecret: string): boolean {
   if (typeof secretHeader !== "string") {
     return false;
   }
@@ -104,17 +97,10 @@ function hasValidTelegramWebhookSecret(
   return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 
-function resolveTelegramWebhookRateLimitKey(
-  req: IncomingMessage,
-  path: string,
-  config?: RemoteClawConfig,
-): string {
+function resolveTelegramWebhookRateLimitKey(req: IncomingMessage, path: string, config?: RemoteClawConfig): string {
   const clientIp =
-    resolveRequestClientIp(
-      req,
-      config?.gateway?.trustedProxies,
-      config?.gateway?.allowRealIpFallback === true,
-    ) ?? "unknown";
+    resolveRequestClientIp(req, config?.gateway?.trustedProxies, config?.gateway?.allowRealIpFallback === true) ??
+    "unknown";
   return `${path}:${clientIp}`;
 }
 

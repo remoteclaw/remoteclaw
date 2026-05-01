@@ -151,10 +151,7 @@ export function scheduleToolStreamSync(host: ToolStreamHost, force = false) {
   if (host.toolStreamSyncTimer != null) {
     return;
   }
-  host.toolStreamSyncTimer = window.setTimeout(
-    () => flushToolStreamSync(host),
-    TOOL_STREAM_THROTTLE_MS,
-  );
+  host.toolStreamSyncTimer = window.setTimeout(() => flushToolStreamSync(host), TOOL_STREAM_THROTTLE_MS);
 }
 
 export function resetToolStream(host: ToolStreamHost) {

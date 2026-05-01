@@ -27,13 +27,7 @@ import { formatTokens } from "./tui-formatters.js";
 import { createLocalShellRunner } from "./tui-local-shell.js";
 import { createOverlayHandlers } from "./tui-overlays.js";
 import { createSessionActions } from "./tui-session-actions.js";
-import type {
-  AgentSummary,
-  SessionInfo,
-  SessionScope,
-  TuiOptions,
-  TuiStateAccess,
-} from "./tui-types.js";
+import type { AgentSummary, SessionInfo, SessionScope, TuiOptions, TuiStateAccess } from "./tui-types.js";
 import { buildWaitingStatusMessage, defaultWaitingPhrases } from "./tui-waiting.js";
 
 export { resolveFinalAssistantText } from "./tui-formatters.js";
@@ -219,10 +213,7 @@ export function resolveInitialTuiAgentId(params: {
     return normalizeAgentId(parsed.agentId);
   }
 
-  const inferredFromWorkspace = resolveAgentIdByWorkspacePath(
-    params.cfg,
-    params.cwd ?? process.cwd(),
-  );
+  const inferredFromWorkspace = resolveAgentIdByWorkspacePath(params.cfg, params.cwd ?? process.cwd());
   if (inferredFromWorkspace) {
     return inferredFromWorkspace;
   }
@@ -240,8 +231,7 @@ export function resolveGatewayDisconnectState(reason?: string): {
     return {
       connectionStatus: `gateway disconnected: ${reasonLabel}`,
       activityStatus: "pairing required: run remoteclaw devices list",
-      pairingHint:
-        "Pairing required. Run `remoteclaw devices list`, approve your request ID, then reconnect.",
+      pairingHint: "Pairing required. Run `remoteclaw devices list`, approve your request ID, then reconnect.",
     };
   }
   return {
@@ -337,6 +327,7 @@ export async function runTui(opts: TuiOptions) {
   let initialSessionApplied = false;
   let currentSessionId: string | null = null;
   let activeChatRunId: string | null = null;
+  let pendingOptimisticUserMessage = false;
   let historyLoaded = false;
   let isConnected = false;
   let wasDisconnected = false;
@@ -409,6 +400,12 @@ export async function runTui(opts: TuiOptions) {
     },
     set activeChatRunId(value) {
       activeChatRunId = value;
+    },
+    get pendingOptimisticUserMessage() {
+      return pendingOptimisticUserMessage;
+    },
+    set pendingOptimisticUserMessage(value) {
+      pendingOptimisticUserMessage = value;
     },
     get historyLoaded() {
       return historyLoaded;
@@ -572,9 +569,7 @@ export async function runTui(opts: TuiOptions) {
     const sessionLabel = formatSessionKey(currentSessionKey);
     const agentLabel = formatAgentLabel(currentAgentId);
     header.setText(
-      theme.header(
-        `remoteclaw tui - ${client.connection.url} - agent ${agentLabel} - session ${sessionLabel}`,
-      ),
+      theme.header(`remoteclaw tui - ${client.connection.url} - agent ${agentLabel} - session ${sessionLabel}`),
     );
   };
 
@@ -744,9 +739,7 @@ export async function runTui(opts: TuiOptions) {
 
   const updateFooter = () => {
     const sessionKeyLabel = formatSessionKey(currentSessionKey);
-    const sessionLabel = sessionInfo.displayName
-      ? `${sessionKeyLabel} (${sessionInfo.displayName})`
-      : sessionKeyLabel;
+    const sessionLabel = sessionInfo.displayName ? `${sessionKeyLabel} (${sessionInfo.displayName})` : sessionKeyLabel;
     const agentLabel = formatAgentLabel(currentAgentId);
     const modelLabel = sessionInfo.model
       ? sessionInfo.modelProvider
@@ -756,8 +749,7 @@ export async function runTui(opts: TuiOptions) {
     const tokens = formatTokens(sessionInfo.totalTokens ?? null, sessionInfo.contextTokens ?? null);
     const verbose = sessionInfo.verboseLevel ?? "off";
     const reasoning = sessionInfo.reasoningLevel ?? "off";
-    const reasoningLabel =
-      reasoning === "on" ? "reasoning" : reasoning === "stream" ? "reasoning:stream" : null;
+    const reasoningLabel = reasoning === "on" ? "reasoning" : reasoning === "stream" ? "reasoning:stream" : null;
     const footerParts = [
       `agent ${agentLabel}`,
       `session ${sessionLabel}`,
@@ -795,14 +787,8 @@ export async function runTui(opts: TuiOptions) {
     setActivityStatus,
     clearLocalRunIds,
   });
-  const {
-    refreshAgents,
-    refreshSessionInfo,
-    applySessionInfoFromPatch,
-    loadHistory,
-    setSession,
-    abortActive,
-  } = sessionActions;
+  const { refreshAgents, refreshSessionInfo, applySessionInfoFromPatch, loadHistory, setSession, abortActive } =
+    sessionActions;
 
   const { handleChatEvent, handleAgentEvent } = createEventHandlers({
     chatLog,
@@ -811,6 +797,7 @@ export async function runTui(opts: TuiOptions) {
     setActivityStatus,
     refreshSessionInfo,
     loadHistory,
+    noteLocalRunId,
     isLocalRunId,
     forgetLocalRunId,
     clearLocalRunIds,
@@ -826,28 +813,27 @@ export async function runTui(opts: TuiOptions) {
     process.exit(0);
   };
 
-  const { handleCommand, sendMessage, openAgentSelector, openSessionSelector } =
-    createCommandHandlers({
-      client,
-      chatLog,
-      tui,
-      opts,
-      state,
-      deliverDefault,
-      openOverlay,
-      closeOverlay,
-      refreshSessionInfo,
-      applySessionInfoFromPatch,
-      loadHistory,
-      setSession,
-      refreshAgents,
-      abortActive,
-      setActivityStatus,
-      formatSessionKey,
-      noteLocalRunId,
-      forgetLocalRunId,
-      requestExit,
-    });
+  const { handleCommand, sendMessage, openAgentSelector, openSessionSelector } = createCommandHandlers({
+    client,
+    chatLog,
+    tui,
+    opts,
+    state,
+    deliverDefault,
+    openOverlay,
+    closeOverlay,
+    refreshSessionInfo,
+    applySessionInfoFromPatch,
+    loadHistory,
+    setSession,
+    refreshAgents,
+    abortActive,
+    setActivityStatus,
+    formatSessionKey,
+    noteLocalRunId,
+    forgetLocalRunId,
+    requestExit,
+  });
 
   const { runLocalShellLine } = createLocalShellRunner({
     chatLog,

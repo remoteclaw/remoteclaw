@@ -58,22 +58,13 @@ export async function sendMessageMatrix(
         channel: "matrix",
         accountId: opts.accountId,
       });
-      const convertedMessage = getCore().channel.text.convertMarkdownTables(
-        trimmedMessage,
-        tableMode,
-      );
+      const convertedMessage = getCore().channel.text.convertMarkdownTables(trimmedMessage, tableMode);
       const textLimit = getCore().channel.text.resolveTextChunkLimit(cfg, "matrix");
       const chunkLimit = Math.min(textLimit, MATRIX_TEXT_LIMIT);
       const chunkMode = getCore().channel.text.resolveChunkMode(cfg, "matrix", opts.accountId);
-      const chunks = getCore().channel.text.chunkMarkdownTextWithMode(
-        convertedMessage,
-        chunkLimit,
-        chunkMode,
-      );
+      const chunks = getCore().channel.text.chunkMarkdownTextWithMode(convertedMessage, chunkLimit, chunkMode);
       const threadId = normalizeThreadId(opts.threadId);
-      const relation = threadId
-        ? buildThreadRelation(threadId, opts.replyToId)
-        : buildReplyRelation(opts.replyToId);
+      const relation = threadId ? buildThreadRelation(threadId, opts.replyToId) : buildReplyRelation(opts.replyToId);
       const sendContent = async (content: MatrixOutboundContent) => {
         // @vector-im/matrix-bot-sdk uses sendMessage differently
         const eventId = await client.sendMessage(roomId, content);
@@ -102,9 +93,7 @@ export async function sendMessageMatrix(
         });
         const msgtype = useVoice ? MsgType.Audio : baseMsgType;
         const isImage = msgtype === MsgType.Image;
-        const imageInfo = isImage
-          ? await prepareImageInfo({ buffer: media.buffer, client })
-          : undefined;
+        const imageInfo = isImage ? await prepareImageInfo({ buffer: media.buffer, client }) : undefined;
         const [firstChunk, ...rest] = chunks;
         const body = useVoice ? "Voice message" : (firstChunk ?? media.fileName ?? "(file)");
         const content = buildMediaContent({
@@ -179,9 +168,7 @@ export async function sendPollMatrix(
     const roomId = await resolveMatrixRoomId(client, to);
     const pollContent = buildPollStartContent(poll);
     const threadId = normalizeThreadId(opts.threadId);
-    const pollPayload = threadId
-      ? { ...pollContent, "m.relates_to": buildThreadRelation(threadId) }
-      : pollContent;
+    const pollPayload = threadId ? { ...pollContent, "m.relates_to": buildThreadRelation(threadId) } : pollContent;
     // @vector-im/matrix-bot-sdk sendEvent returns eventId string directly
     const eventId = await client.sendEvent(roomId, M_POLL_START, pollPayload);
 
@@ -216,11 +203,7 @@ export async function sendTypingMatrix(
   }
 }
 
-export async function sendReadReceiptMatrix(
-  roomId: string,
-  eventId: string,
-  client?: MatrixClient,
-): Promise<void> {
+export async function sendReadReceiptMatrix(roomId: string, eventId: string, client?: MatrixClient): Promise<void> {
   if (!eventId?.trim()) {
     return;
   }

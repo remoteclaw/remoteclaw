@@ -8,12 +8,7 @@ import { defaultRuntime } from "../runtime.js";
 import { resolveUserPath, shortenHomePath } from "../utils.js";
 import { createClackPrompter } from "../wizard/clack-prompter.js";
 import { WizardCancelledError } from "../wizard/prompts.js";
-import {
-  applyAgentBindings,
-  buildChannelBindings,
-  describeBinding,
-  parseBindingSpecs,
-} from "./agents.bindings.js";
+import { applyAgentBindings, buildChannelBindings, describeBinding, parseBindingSpecs } from "./agents.bindings.js";
 import { createQuietRuntime, requireValidConfig } from "./agents.command-shared.js";
 import { applyAgentConfig, findAgentEntryIndex, listAgentEntries } from "./agents.config.js";
 import { setupChannels } from "./onboard-channels.js";
@@ -46,9 +41,7 @@ export async function agentsAddCommand(
   const nonInteractive = Boolean(opts.nonInteractive || hasFlags);
 
   if (nonInteractive && !workspaceFlag) {
-    runtime.error(
-      "Non-interactive mode requires --workspace. Re-run without flags to use the wizard.",
-    );
+    runtime.error("Non-interactive mode requires --workspace. Re-run without flags to use the wizard.");
     runtime.exit(1);
     return;
   }
@@ -60,9 +53,7 @@ export async function agentsAddCommand(
       return;
     }
     if (!workspaceFlag) {
-      runtime.error(
-        "Non-interactive mode requires --workspace. Re-run without flags to use the wizard.",
-      );
+      runtime.error("Non-interactive mode requires --workspace. Re-run without flags to use the wizard.");
       runtime.exit(1);
       return;
     }
@@ -77,9 +68,7 @@ export async function agentsAddCommand(
     }
 
     const workspaceDir = resolveUserPath(workspaceFlag);
-    const agentDir = opts.agentDir?.trim()
-      ? resolveUserPath(opts.agentDir.trim())
-      : resolveAgentDir(cfg, agentId);
+    const agentDir = opts.agentDir?.trim() ? resolveUserPath(opts.agentDir.trim()) : resolveAgentDir(cfg, agentId);
     const model = opts.model?.trim();
     const nextConfig = applyAgentConfig(cfg, {
       agentId,
@@ -141,8 +130,7 @@ export async function agentsAddCommand(
           [
             "Skipped bindings already claimed by another agent:",
             ...bindingResult.conflicts.map(
-              (conflict) =>
-                `- ${describeBinding(conflict.binding)} (agent=${conflict.existingAgentId})`,
+              (conflict) => `- ${describeBinding(conflict.binding)} (agent=${conflict.existingAgentId})`,
             ),
           ].join("\n"),
         );
@@ -191,9 +179,7 @@ export async function agentsAddCommand(
       agentId = agentId.trim().toLowerCase();
     }
 
-    const existingAgent = listAgentEntries(cfg).find(
-      (agent) => normalizeAgentId(agent.id) === agentId,
-    );
+    const existingAgent = listAgentEntries(cfg).find((agent) => normalizeAgentId(agent.id) === agentId);
     if (existingAgent) {
       const shouldUpdate = await prompter.confirm({
         message: `Agent "${agentId}" already exists. Update it?`,
@@ -314,8 +300,7 @@ export async function agentsAddCommand(
             [
               "Skipped bindings already claimed by another agent:",
               ...result.conflicts.map(
-                (conflict) =>
-                  `- ${describeBinding(conflict.binding)} (agent=${conflict.existingAgentId})`,
+                (conflict) => `- ${describeBinding(conflict.binding)} (agent=${conflict.existingAgentId})`,
               ),
             ].join("\n"),
             "Routing bindings",

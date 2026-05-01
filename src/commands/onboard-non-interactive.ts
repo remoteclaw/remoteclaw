@@ -7,10 +7,7 @@ import { runNonInteractiveOnboardingLocal } from "./onboard-non-interactive/loca
 import { runNonInteractiveOnboardingRemote } from "./onboard-non-interactive/remote.js";
 import type { OnboardOptions } from "./onboard-types.js";
 
-export async function runNonInteractiveOnboarding(
-  opts: OnboardOptions,
-  runtime: RuntimeEnv = defaultRuntime,
-) {
+export async function runNonInteractiveOnboarding(opts: OnboardOptions, runtime: RuntimeEnv = defaultRuntime) {
   const snapshot = await readConfigFileSnapshot();
   if (snapshot.exists && !snapshot.valid) {
     runtime.error(
@@ -20,11 +17,7 @@ export async function runNonInteractiveOnboarding(
     return;
   }
 
-  const baseConfig: RemoteClawConfig = snapshot.valid
-    ? snapshot.exists
-      ? snapshot.config
-      : {}
-    : {};
+  const baseConfig: RemoteClawConfig = snapshot.valid ? (snapshot.exists ? snapshot.config : {}) : {};
   const mode = opts.mode ?? "local";
   if (mode !== "local" && mode !== "remote") {
     runtime.error(`Invalid --mode "${String(mode)}" (use local|remote).`);

@@ -61,9 +61,7 @@ describe("agents bind/unbind commands", () => {
     await agentsBindingsCommand({}, runtime);
 
     expect(runtime.log).toHaveBeenCalledWith(expect.stringContaining("main <- matrix"));
-    expect(runtime.log).toHaveBeenCalledWith(
-      expect.stringContaining("ops <- telegram accountId=work"),
-    );
+    expect(runtime.log).toHaveBeenCalledWith(expect.stringContaining("ops <- telegram accountId=work"));
   });
 
   it("binds routes to default agent when --agent is omitted", async () => {

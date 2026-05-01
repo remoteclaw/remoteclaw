@@ -57,11 +57,7 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
    * is required at the call site. See `src/middleware/README.md` for the
    * full metric vocabulary.
    */
-  protected emitMetric(
-    name: string,
-    value: number,
-    extras?: Record<string, string | number>,
-  ): void {
+  protected emitMetric(name: string, value: number, extras?: Record<string, string | number>): void {
     let line = `[agent-runtime] metric=${name} backend=${this.command} value=${value}`;
     if (extras) {
       for (const [k, v] of Object.entries(extras)) {
@@ -193,9 +189,7 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
     const callerEnv = params.env ?? {};
     const env = { ...process.env, ...runtimeEnv, ...callerEnv };
 
-    logDebug(
-      `[agent-runtime] spawn: ${this.command} ${args.map((a) => JSON.stringify(a)).join(" ")}`,
-    );
+    logDebug(`[agent-runtime] spawn: ${this.command} ${args.map((a) => JSON.stringify(a)).join(" ")}`);
     logDebug(`[agent-runtime] cwd: ${params.workingDirectory ?? process.cwd()}`);
     if (Object.keys(runtimeEnv).length > 0) {
       logDebug(`[agent-runtime] runtime env keys: ${Object.keys(runtimeEnv).join(", ")}`);
@@ -264,9 +258,7 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
 
       startupTimer = setTimeout(() => {
         startupTimedOut = true;
-        logDebug(
-          `[agent-runtime] pid=${child.pid}: startup timeout — no output within ${this.timeoutMs}ms`,
-        );
+        logDebug(`[agent-runtime] pid=${child.pid}: startup timeout — no output within ${this.timeoutMs}ms`);
         killWithEscalation();
       }, this.timeoutMs);
 
@@ -327,27 +319,21 @@ export abstract class CLIRuntimeBase implements AgentRuntime {
       });
 
       // ── Wait for subprocess exit (in parallel with event yielding) ───
-      const exitPromise = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>(
-        (resolve) => {
-          child.on("exit", (code, signal) => {
-            resolve({ code, signal });
-          });
-        },
-      );
+      const exitPromise = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve) => {
+        child.on("exit", (code, signal) => {
+          resolve({ code, signal });
+        });
+      });
 
       // ── Stdin prompt delivery ────────────────────────────────────────
       const customStdin = this.buildStdinPayload(params);
       if (customStdin !== undefined && child.stdin) {
-        logDebug(
-          `[agent-runtime] pid=${child.pid}: delivering custom stdin payload (${customStdin.length} chars)`,
-        );
+        logDebug(`[agent-runtime] pid=${child.pid}: delivering custom stdin payload (${customStdin.length} chars)`);
         child.stdin.write(customStdin);
       } else if (this.supportsStdinPrompt && child.stdin) {
         const composedPrompt = this.composePrompt(params);
         if (composedPrompt.length > CLIRuntimeBase.STDIN_PROMPT_THRESHOLD) {
-          logDebug(
-            `[agent-runtime] pid=${child.pid}: delivering prompt via stdin (${composedPrompt.length} chars)`,
-          );
+          logDebug(`[agent-runtime] pid=${child.pid}: delivering prompt via stdin (${composedPrompt.length} chars)`);
           child.stdin.write(composedPrompt);
         }
       }

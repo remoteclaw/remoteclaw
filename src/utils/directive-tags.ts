@@ -158,8 +158,7 @@ export function parseInlineDirectives(
 
   cleaned = normalizeDirectiveWhitespace(cleaned);
 
-  const replyToId =
-    lastExplicitId ?? (sawCurrent ? currentMessageId?.trim() || undefined : undefined);
+  const replyToId = lastExplicitId ?? (sawCurrent ? currentMessageId?.trim() || undefined : undefined);
 
   return {
     text: cleaned,

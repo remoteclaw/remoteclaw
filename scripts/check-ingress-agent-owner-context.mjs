@@ -3,11 +3,7 @@
 import path from "node:path";
 import ts from "typescript";
 import { runCallsiteGuard } from "./lib/callsite-guard.mjs";
-import {
-  collectCallExpressionLines,
-  runAsScript,
-  unwrapExpression,
-} from "./lib/ts-guard-utils.mjs";
+import { collectCallExpressionLines, runAsScript, unwrapExpression } from "./lib/ts-guard-utils.mjs";
 
 const sourceRoots = ["src/gateway", "extensions/discord/src/voice"];
 const enforcedFiles = new Set([
@@ -33,8 +29,7 @@ export async function main() {
     findCallLines: findLegacyAgentCommandCallLines,
     skipRelativePath: (relPath) => !enforcedFiles.has(relPath.replaceAll(path.sep, "/")),
     header: "Found ingress callsites using local agentCommand() (must be explicit owner-aware):",
-    footer:
-      "Use agentCommandFromIngress(...) and pass senderIsOwner explicitly at ingress boundaries.",
+    footer: "Use agentCommandFromIngress(...) and pass senderIsOwner explicitly at ingress boundaries.",
   });
 }
 

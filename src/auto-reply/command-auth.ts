@@ -37,9 +37,7 @@ function resolveProviderFromContext(
   const explicitMessageChannels = [ctx.Surface, ctx.OriginatingChannel, ctx.Provider]
     .map((value) => normalizeMessageChannel(value))
     .filter((value): value is string => Boolean(value));
-  const explicitMessageChannel = explicitMessageChannels.find(
-    (value) => value !== INTERNAL_MESSAGE_CHANNEL,
-  );
+  const explicitMessageChannel = explicitMessageChannels.find((value) => value !== INTERNAL_MESSAGE_CHANNEL);
   if (!explicitMessageChannel && explicitMessageChannels.includes(INTERNAL_MESSAGE_CHANNEL)) {
     return { providerId: undefined, hadResolutionError: false };
   }
@@ -78,9 +76,7 @@ function resolveProviderFromContext(
   }
   return {
     providerId: undefined,
-    hadResolutionError:
-      inferredProviders.droppedResolutionError ||
-      inferred.some((entry) => entry.hadResolutionError),
+    hadResolutionError: inferredProviders.droppedResolutionError || inferred.some((entry) => entry.hadResolutionError),
   };
 }
 
@@ -296,10 +292,7 @@ function isConversationLikeIdentity(value: string): boolean {
   return /(^|:)(channel|group|thread|topic|room|space|spaces):/.test(normalized);
 }
 
-function shouldUseFromAsSenderFallback(params: {
-  from?: string | null;
-  chatType?: string | null;
-}): boolean {
+function shouldUseFromAsSenderFallback(params: { from?: string | null; chatType?: string | null }): boolean {
   const from = (params.from ?? "").trim();
   if (!from) {
     return false;
@@ -337,10 +330,7 @@ function resolveSenderCandidates(params: {
     pushCandidate(params.senderId);
     pushCandidate(params.senderE164);
   }
-  if (
-    candidates.length === 0 &&
-    shouldUseFromAsSenderFallback({ from: params.from, chatType: params.chatType })
-  ) {
+  if (candidates.length === 0 && shouldUseFromAsSenderFallback({ from: params.from, chatType: params.chatType })) {
     pushCandidate(params.from);
   }
 
@@ -387,10 +377,7 @@ function resolveFallbackAllowFrom(params: {
     resolveFallbackAccountConfig(channelCfg?.accounts, params.accountId) ??
     resolveFallbackDefaultAccountConfig(channelCfg);
   const allowFrom =
-    accountCfg?.allowFrom ??
-    accountCfg?.dm?.allowFrom ??
-    channelCfg?.allowFrom ??
-    channelCfg?.dm?.allowFrom;
+    accountCfg?.allowFrom ?? accountCfg?.dm?.allowFrom ?? channelCfg?.allowFrom ?? channelCfg?.dm?.allowFrom;
   return Array.isArray(allowFrom) ? allowFrom : [];
 }
 
@@ -415,9 +402,7 @@ function resolveFallbackAccountConfig(
   if (direct) {
     return direct;
   }
-  const matchKey = Object.keys(accounts).find(
-    (key) => key.trim().toLowerCase() === normalizedAccountId,
-  );
+  const matchKey = Object.keys(accounts).find((key) => key.trim().toLowerCase() === normalizedAccountId);
   return matchKey ? accounts[matchKey] : undefined;
 }
 
@@ -466,16 +451,11 @@ export function resolveCommandAuthorization(params: {
   commandAuthorized: boolean;
 }): CommandAuthorization {
   const { ctx, cfg, commandAuthorized } = params;
-  const { providerId, hadResolutionError: providerResolutionError } = resolveProviderFromContext(
-    ctx,
-    cfg,
-  );
+  const { providerId, hadResolutionError: providerResolutionError } = resolveProviderFromContext(ctx, cfg);
   const plugin = providerId ? getChannelPlugin(providerId) : undefined;
   const from = (ctx.From ?? "").trim();
   const to = (ctx.To ?? "").trim();
-  const commandsAllowFromConfigured = Boolean(
-    cfg.commands?.allowFrom && typeof cfg.commands.allowFrom === "object",
-  );
+  const commandsAllowFromConfigured = Boolean(cfg.commands?.allowFrom && typeof cfg.commands.allowFrom === "object");
 
   // Check if commands.allowFrom is configured (separate command authorization)
   const commandsAllowFromList = resolveCommandsAllowFromList({
@@ -569,8 +549,7 @@ export function resolveCommandAuthorization(params: {
   const senderId = matchedSender ?? senderCandidates[0];
 
   const enforceOwner = Boolean(
-    plugin?.commands?.enforceOwnerForCommands ??
-    resolveFallbackCommandOptions(providerId).enforceOwnerForCommands,
+    plugin?.commands?.enforceOwnerForCommands ?? resolveFallbackCommandOptions(providerId).enforceOwnerForCommands,
   );
   const senderIsOwnerByIdentity = Boolean(matchedSender);
   const senderIsOwnerByScope =
@@ -578,7 +557,9 @@ export function resolveCommandAuthorization(params: {
     Array.isArray(ctx.GatewayClientScopes) &&
     ctx.GatewayClientScopes.includes("operator.admin");
   const ownerAllowlistConfigured = ownerAllowAll || explicitOwners.length > 0;
-  const senderIsOwner = senderIsOwnerByIdentity || senderIsOwnerByScope || ownerAllowAll;
+  const senderIsOwner = ctx.ForceSenderIsOwnerFalse
+    ? false
+    : senderIsOwnerByIdentity || senderIsOwnerByScope || ownerAllowAll;
   const requireOwner = enforceOwner || ownerAllowlistConfigured;
   const isOwnerForCommands = !requireOwner
     ? true
@@ -594,13 +575,11 @@ export function resolveCommandAuthorization(params: {
   if (commandsAllowFromList !== null || (providerResolutionError && commandsAllowFromConfigured)) {
     // commands.allowFrom is configured - use it for authorization
     const commandsAllowAll =
-      !providerResolutionError &&
-      Boolean(commandsAllowFromList?.some((entry) => entry.trim() === "*"));
+      !providerResolutionError && Boolean(commandsAllowFromList?.some((entry) => entry.trim() === "*"));
     const matchedCommandsAllowFrom = commandsAllowFromList?.length
       ? senderCandidates.find((candidate) => commandsAllowFromList.includes(candidate))
       : undefined;
-    isAuthorizedSender =
-      !providerResolutionError && (commandsAllowAll || Boolean(matchedCommandsAllowFrom));
+    isAuthorizedSender = !providerResolutionError && (commandsAllowAll || Boolean(matchedCommandsAllowFrom));
   } else {
     // Fall back to existing behavior
     isAuthorizedSender = commandAuthorized && isOwnerForCommands;

@@ -1,10 +1,7 @@
 import { request as httpRequest } from "node:http";
 import { expect, vi } from "vitest";
 import type { ResolvedZaloAccount } from "../../../extensions/zalo/src/accounts.js";
-import {
-  clearZaloWebhookSecurityStateForTest,
-  monitorZaloProvider,
-} from "../../../extensions/zalo/src/monitor.js";
+import { clearZaloWebhookSecurityStateForTest, monitorZaloProvider } from "../../../extensions/zalo/src/monitor.js";
 import type { PluginRuntime } from "../../../extensions/zalo/src/runtime-api.js";
 import type { RemoteClawConfig } from "../../../extensions/zalo/src/runtime-api.js";
 import { normalizeSecretInputString } from "../../../extensions/zalo/src/secret-input.js";
@@ -195,10 +192,8 @@ export function createImageLifecycleCore() {
   const core = createPluginRuntimeMock({
     channel: {
       media: {
-        fetchRemoteMedia:
-          fetchRemoteMediaMock as unknown as PluginRuntime["channel"]["media"]["fetchRemoteMedia"],
-        saveMediaBuffer:
-          saveMediaBufferMock as unknown as PluginRuntime["channel"]["media"]["saveMediaBuffer"],
+        fetchRemoteMedia: fetchRemoteMediaMock as unknown as PluginRuntime["channel"]["media"]["fetchRemoteMedia"],
+        saveMediaBuffer: saveMediaBufferMock as unknown as PluginRuntime["channel"]["media"]["saveMediaBuffer"],
       },
       reply: {
         finalizeInboundContext:
@@ -342,8 +337,7 @@ export async function startWebhookLifecycleMonitor(params: {
   const abort = new AbortController();
   const runtime = createRuntimeEnv();
   const webhookUrl = params.webhookUrl ?? params.account.config?.webhookUrl;
-  const webhookSecret =
-    params.webhookSecret ?? normalizeSecretInputString(params.account.config?.webhookSecret);
+  const webhookSecret = params.webhookSecret ?? normalizeSecretInputString(params.account.config?.webhookSecret);
   const run = monitorZaloProvider({
     token: params.token ?? "zalo-token",
     account: params.account,

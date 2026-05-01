@@ -29,11 +29,7 @@ export {
 } from "./sessions-resolution.js";
 import { extractTextFromChatContent } from "../../shared/chat-content.js";
 import { sanitizeUserFacingText } from "../agent-helpers.js";
-import {
-  stripDowngradedToolCallText,
-  stripMinimaxToolCallXml,
-  stripThinkingTagsFromText,
-} from "../agent-utils.js";
+import { stripDowngradedToolCallText, stripMinimaxToolCallXml, stripThinkingTagsFromText } from "../agent-utils.js";
 
 export type SessionKind = "main" | "group" | "cron" | "hook" | "node" | "other";
 

@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  parseFrontmatter,
-  resolveRemoteClawMetadata,
-  resolveHookInvocationPolicy,
-} from "./frontmatter.js";
+import { parseFrontmatter, resolveRemoteClawMetadata, resolveHookInvocationPolicy } from "./frontmatter.js";
 
 describe("parseFrontmatter", () => {
   it("parses single-line key-value pairs", () => {

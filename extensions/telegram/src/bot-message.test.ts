@@ -41,9 +41,7 @@ describe("telegram bot message processor", () => {
     opts: {},
   } as unknown as Parameters<typeof createTelegramMessageProcessor>[0];
 
-  async function processSampleMessage(
-    processMessage: ReturnType<typeof createTelegramMessageProcessor>,
-  ) {
+  async function processSampleMessage(processMessage: ReturnType<typeof createTelegramMessageProcessor>) {
     await processMessage(
       {
         message: {
@@ -57,10 +55,7 @@ describe("telegram bot message processor", () => {
     );
   }
 
-  function createDispatchFailureHarness(
-    context: Record<string, unknown>,
-    sendMessage: ReturnType<typeof vi.fn>,
-  ) {
+  function createDispatchFailureHarness(context: Record<string, unknown>, sendMessage: ReturnType<typeof vi.fn>) {
     const runtimeError = vi.fn();
     buildTelegramMessageContext.mockResolvedValue(context);
     dispatchTelegramMessage.mockRejectedValue(new Error("dispatch exploded"));

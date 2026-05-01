@@ -50,9 +50,7 @@ function readStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return [];
   }
-  return value
-    .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
-    .filter((entry) => entry.length > 0);
+  return value.map((entry) => (typeof entry === "string" ? entry.trim() : "")).filter((entry) => entry.length > 0);
 }
 
 function parseErrorCode(message: string): string {
@@ -289,8 +287,7 @@ async function connectGatewayClient(params: {
       mode: GATEWAY_CLIENT_MODES.TEST,
       onHelloOk: () => stop(undefined, client),
       onConnectError: (err) => stop(err),
-      onClose: (code, reason) =>
-        stop(new Error(`gateway closed during connect (${code}): ${reason}`)),
+      onClose: (code, reason) => stop(new Error(`gateway closed during connect (${code}): ${reason}`)),
     });
 
     const timer = setTimeout(() => stop(new Error("gateway connect timeout")), 10_000);
@@ -320,9 +317,7 @@ function selectTargetNode(nodes: NodeListNode[]): NodeListNode {
 
   const nodeNameOverride = readString(process.env.REMOTECLAW_ANDROID_NODE_NAME)?.toLowerCase();
   if (nodeNameOverride) {
-    const match = nodes.find(
-      (node) => readString(node.displayName)?.toLowerCase() === nodeNameOverride,
-    );
+    const match = nodes.find((node) => readString(node.displayName)?.toLowerCase() === nodeNameOverride);
     if (!match) {
       throw new Error(`REMOTECLAW_ANDROID_NODE_NAME not found in node.list: ${nodeNameOverride}`);
     }
@@ -486,11 +481,7 @@ describeLive("android node capability integration (preconditioned)", () => {
       }
       const status = result.ok ? "ok" : `err:${result.errorCode ?? "UNKNOWN"}`;
       throw new Error(
-        [
-          `${command}: ${issue}`,
-          "summary:",
-          `${result.command} -> ${status} (${result.durationMs}ms)`,
-        ].join("\n"),
+        [`${command}: ${issue}`, "summary:", `${result.command} -> ${status} (${result.durationMs}ms)`].join("\n"),
       );
     });
   }

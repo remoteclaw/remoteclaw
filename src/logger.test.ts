@@ -5,12 +5,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { isVerbose, isYes, logVerbose, setVerbose, setYes } from "./globals.js";
 import { logDebug, logError, logInfo, logSuccess, logWarn } from "./logger.js";
-import {
-  DEFAULT_LOG_DIR,
-  resetLogger,
-  setLoggerOverride,
-  stripRedundantSubsystemPrefixForConsole,
-} from "./logging.js";
+import { DEFAULT_LOG_DIR, resetLogger, setLoggerOverride, stripRedundantSubsystemPrefixForConsole } from "./logging.js";
 import type { RuntimeEnv } from "./runtime.js";
 
 describe("logger helpers", () => {
@@ -136,9 +131,7 @@ describe("stripRedundantSubsystemPrefixForConsole", () => {
   });
 
   it("keeps messages that do not start with the subsystem", () => {
-    expect(stripRedundantSubsystemPrefixForConsole("discordant: hello", "discord")).toBe(
-      "discordant: hello",
-    );
+    expect(stripRedundantSubsystemPrefixForConsole("discordant: hello", "discord")).toBe("discordant: hello");
   });
 });
 

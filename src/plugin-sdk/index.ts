@@ -138,11 +138,7 @@ export {
   type BasicAllowlistResolutionEntry,
 } from "./allowlist-resolution.js";
 export { resolveRequestUrl } from "./request-url.js";
-export {
-  buildDiscordSendMediaOptions,
-  buildDiscordSendOptions,
-  tagDiscordChannelResult,
-} from "./discord-send.js";
+export { buildDiscordSendMediaOptions, buildDiscordSendOptions, tagDiscordChannelResult } from "./discord-send.js";
 export type { KeyedAsyncQueueHooks } from "./keyed-async-queue.js";
 export { enqueueKeyedTask, KeyedAsyncQueue } from "./keyed-async-queue.js";
 export { normalizeWebhookPath, resolveWebhookPath } from "./webhook-path.js";
@@ -320,10 +316,7 @@ export {
   resolveInboundRouteEnvelopeBuilderWithRuntime,
 } from "./inbound-envelope.js";
 export { resolveInboundSessionEnvelopeContext } from "../channels/session-envelope.js";
-export {
-  listConfiguredAccountIds,
-  resolveAccountWithDefaultFallback,
-} from "./account-resolution.js";
+export { listConfiguredAccountIds, resolveAccountWithDefaultFallback } from "./account-resolution.js";
 export { issuePairingChallenge } from "../pairing/pairing-challenge.js";
 export { handleSlackMessageAction } from "./slack-message-actions.js";
 export { extractToolSend } from "./tool-send.js";
@@ -348,11 +341,7 @@ export { loadOutboundMediaFromUrl } from "./outbound-media.js";
 export { resolveChannelAccountConfigBasePath } from "./config-paths.js";
 export { buildMediaPayload } from "../channels/plugins/media-payload.js";
 export type { MediaPayload, MediaPayloadInput } from "../channels/plugins/media-payload.js";
-export {
-  createLoggerBackedRuntime,
-  resolveRuntimeEnv,
-  resolveRuntimeEnvWithUnavailableExit,
-} from "./runtime.js";
+export { createLoggerBackedRuntime, resolveRuntimeEnv, resolveRuntimeEnvWithUnavailableExit } from "./runtime.js";
 export { chunkTextForOutbound } from "./text-chunking.js";
 export { readBooleanParam } from "./boolean-param.js";
 export { readJsonFileWithFallback, writeJsonFileAtomically } from "./json-store.js";
@@ -383,10 +372,7 @@ export {
 export { resolveGatewayBindUrl } from "../shared/gateway-bind-url.js";
 export type { GatewayBindUrlResult } from "../shared/gateway-bind-url.js";
 export { resolveTailnetHostWithRunner } from "../shared/tailscale-status.js";
-export type {
-  TailscaleStatusCommandResult,
-  TailscaleStatusCommandRunner,
-} from "../shared/tailscale-status.js";
+export type { TailscaleStatusCommandResult, TailscaleStatusCommandRunner } from "../shared/tailscale-status.js";
 export type { ChatType } from "../channels/chat-type.js";
 /** @deprecated Use ChatType instead */
 export type { RoutePeerKind } from "../routing/resolve-route.js";
@@ -407,25 +393,13 @@ export {
   resolveWhatsAppConfigAllowFrom,
   resolveWhatsAppConfigDefaultTo,
 } from "./channel-config-helpers.js";
-export {
-  approveDevicePairing,
-  listDevicePairing,
-  rejectDevicePairing,
-} from "../infra/device-pairing.js";
+export { approveDevicePairing, listDevicePairing, rejectDevicePairing } from "../infra/device-pairing.js";
 export { createDedupeCache } from "../infra/dedupe.js";
 export type { DedupeCache } from "../infra/dedupe.js";
 export { createPersistentDedupe } from "./persistent-dedupe.js";
-export type {
-  PersistentDedupe,
-  PersistentDedupeCheckOptions,
-  PersistentDedupeOptions,
-} from "./persistent-dedupe.js";
+export type { PersistentDedupe, PersistentDedupeCheckOptions, PersistentDedupeOptions } from "./persistent-dedupe.js";
 export { formatErrorMessage } from "../infra/errors.js";
-export {
-  formatUtcTimestamp,
-  formatZonedTimestamp,
-  resolveTimezone,
-} from "../infra/format-time/format-datetime.js";
+export { formatUtcTimestamp, formatZonedTimestamp, resolveTimezone } from "../infra/format-time/format-datetime.js";
 export {
   DEFAULT_WEBHOOK_BODY_TIMEOUT_MS,
   DEFAULT_WEBHOOK_MAX_BODY_BYTES,
@@ -444,19 +418,10 @@ export {
   createFixedWindowRateLimiter,
   createWebhookAnomalyTracker,
 } from "./webhook-memory-guards.js";
-export type {
-  BoundedCounter,
-  FixedWindowRateLimiter,
-  WebhookAnomalyTracker,
-} from "./webhook-memory-guards.js";
+export type { BoundedCounter, FixedWindowRateLimiter, WebhookAnomalyTracker } from "./webhook-memory-guards.js";
 
 export { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
-export {
-  SsrFBlockedError,
-  isBlockedHostname,
-  isBlockedHostnameOrIp,
-  isPrivateIpAddress,
-} from "../infra/net/ssrf.js";
+export { SsrFBlockedError, isBlockedHostname, isBlockedHostnameOrIp, isPrivateIpAddress } from "../infra/net/ssrf.js";
 export type { LookupFn, SsrFPolicy } from "../infra/net/ssrf.js";
 export {
   buildHostnameAllowlistPolicyFromSuffixAllowlist,
@@ -480,15 +445,8 @@ export {
 } from "../auto-reply/reply/history.js";
 export type { HistoryEntry } from "../auto-reply/reply/history.js";
 export { mergeAllowlist, summarizeMapping } from "../channels/allowlists/resolve-utils.js";
-export {
-  resolveMentionGating,
-  resolveMentionGatingWithBypass,
-} from "../channels/mention-gating.js";
-export type {
-  AckReactionGateParams,
-  AckReactionScope,
-  WhatsAppAckReactionMode,
-} from "../channels/ack-reactions.js";
+export { resolveMentionGating, resolveMentionGatingWithBypass } from "../channels/mention-gating.js";
+export type { AckReactionGateParams, AckReactionScope, WhatsAppAckReactionMode } from "../channels/ack-reactions.js";
 export {
   removeAckReactionAfterReply,
   shouldAckReaction,
@@ -536,10 +494,7 @@ export {
   listWhatsAppDirectoryPeersFromConfig,
 } from "../channels/plugins/directory-config.js";
 export type { AllowlistMatch } from "../channels/plugins/allowlist-match.js";
-export {
-  formatAllowlistMatchMeta,
-  resolveAllowlistMatchSimple,
-} from "../channels/plugins/allowlist-match.js";
+export { formatAllowlistMatchMeta, resolveAllowlistMatchSimple } from "../channels/plugins/allowlist-match.js";
 export { optionalStringEnum, stringEnum } from "../agents/schema/typebox.js";
 export type { PollInput } from "../polls.js";
 
@@ -573,16 +528,10 @@ export {
   collectOpenGroupPolicyRestrictSendersWarnings,
   collectOpenGroupPolicyRouteAllowlistWarnings,
 } from "../channels/plugins/group-policy-warnings.js";
-export {
-  buildAccountScopedDmSecurityPolicy,
-  formatPairingApproveHint,
-} from "../channels/plugins/helpers.js";
+export { buildAccountScopedDmSecurityPolicy, formatPairingApproveHint } from "../channels/plugins/helpers.js";
 export { PAIRING_APPROVED_MESSAGE } from "../channels/plugins/pairing-message.js";
 
-export type {
-  ChannelOnboardingAdapter,
-  ChannelOnboardingDmPolicy,
-} from "../channels/plugins/onboarding-types.js";
+export type { ChannelOnboardingAdapter, ChannelOnboardingDmPolicy } from "../channels/plugins/onboarding-types.js";
 export {
   addWildcardAllowFrom,
   mergeAllowFromEntries,
@@ -618,11 +567,7 @@ export { stripAnsi } from "../terminal/ansi.js";
 export { missingTargetError } from "../infra/outbound/target-errors.js";
 export { registerLogTransport } from "../logging/logger.js";
 export type { LogTransport, LogTransportRecord } from "../logging/logger.js";
-export {
-  emitDiagnosticEvent,
-  isDiagnosticsEnabled,
-  onDiagnosticEvent,
-} from "../infra/diagnostic-events.js";
+export { emitDiagnosticEvent, isDiagnosticsEnabled, onDiagnosticEvent } from "../infra/diagnostic-events.js";
 export type {
   DiagnosticEventPayload,
   DiagnosticHeartbeatEvent,
@@ -668,10 +613,7 @@ export {
   type ResolvedIMessageAccount,
 } from "../../extensions/imessage/src/accounts.js";
 export { imessageOnboardingAdapter } from "../channels/plugins/onboarding/imessage.js";
-export {
-  looksLikeIMessageTargetId,
-  normalizeIMessageMessagingTarget,
-} from "../channels/plugins/normalize/imessage.js";
+export { looksLikeIMessageTargetId, normalizeIMessageMessagingTarget } from "../channels/plugins/normalize/imessage.js";
 export {
   createAllowedChatSenderMatcher,
   parseChatAllowTargetPrefixes,
@@ -681,10 +623,7 @@ export {
   resolveServicePrefixedOrChatAllowTarget,
   resolveServicePrefixedTarget,
 } from "../../extensions/imessage/src/target-parsing-helpers.js";
-export type {
-  ChatSenderAllowParams,
-  ParsedChatTarget,
-} from "../../extensions/imessage/src/target-parsing-helpers.js";
+export type { ChatSenderAllowParams, ParsedChatTarget } from "../../extensions/imessage/src/target-parsing-helpers.js";
 
 // Channel: Slack
 export {
@@ -697,15 +636,9 @@ export {
 } from "../../extensions/slack/src/accounts.js";
 export { inspectSlackAccount } from "../../extensions/slack/src/account-inspect.js";
 export type { InspectedSlackAccount } from "../../extensions/slack/src/account-inspect.js";
-export {
-  extractSlackToolSend,
-  listSlackMessageActions,
-} from "../../extensions/slack/src/message-actions.js";
+export { extractSlackToolSend, listSlackMessageActions } from "../../extensions/slack/src/message-actions.js";
 export { slackOnboardingAdapter } from "../channels/plugins/onboarding/slack.js";
-export {
-  looksLikeSlackTargetId,
-  normalizeSlackMessagingTarget,
-} from "../channels/plugins/normalize/slack.js";
+export { looksLikeSlackTargetId, normalizeSlackMessagingTarget } from "../channels/plugins/normalize/slack.js";
 export { buildSlackThreadingToolContext } from "../../extensions/slack/src/threading-tool-context.js";
 
 // Channel: Telegram
@@ -718,15 +651,9 @@ export {
 export { inspectTelegramAccount } from "../../extensions/telegram/src/account-inspect.js";
 export type { InspectedTelegramAccount } from "../../extensions/telegram/src/account-inspect.js";
 export { telegramOnboardingAdapter } from "../channels/plugins/onboarding/telegram.js";
-export {
-  looksLikeTelegramTargetId,
-  normalizeTelegramMessagingTarget,
-} from "../channels/plugins/normalize/telegram.js";
+export { looksLikeTelegramTargetId, normalizeTelegramMessagingTarget } from "../channels/plugins/normalize/telegram.js";
 export { collectTelegramStatusIssues } from "../channels/plugins/status-issues/telegram.js";
-export {
-  parseTelegramReplyToMessageId,
-  parseTelegramThreadId,
-} from "../../extensions/telegram/src/outbound-params.js";
+export { parseTelegramReplyToMessageId, parseTelegramThreadId } from "../../extensions/telegram/src/outbound-params.js";
 export { type TelegramProbe } from "../../extensions/telegram/src/probe.js";
 
 // Channel: Signal
@@ -737,10 +664,7 @@ export {
   type ResolvedSignalAccount,
 } from "../../extensions/signal/src/accounts.js";
 export { signalOnboardingAdapter } from "../channels/plugins/onboarding/signal.js";
-export {
-  looksLikeSignalTargetId,
-  normalizeSignalMessagingTarget,
-} from "../channels/plugins/normalize/signal.js";
+export { looksLikeSignalTargetId, normalizeSignalMessagingTarget } from "../channels/plugins/normalize/signal.js";
 
 // Channel: WhatsApp
 export {
@@ -749,10 +673,7 @@ export {
   resolveWhatsAppAccount,
   type ResolvedWhatsAppAccount,
 } from "../../extensions/whatsapp/src/accounts.js";
-export {
-  isWhatsAppGroupJid,
-  normalizeWhatsAppTarget,
-} from "../../extensions/whatsapp/src/normalize.js";
+export { isWhatsAppGroupJid, normalizeWhatsAppTarget } from "../../extensions/whatsapp/src/normalize.js";
 export { resolveWhatsAppOutboundTarget } from "../../extensions/whatsapp/src/resolve-outbound-target.js";
 export { whatsappOnboardingAdapter } from "../channels/plugins/onboarding/whatsapp.js";
 export { resolveWhatsAppHeartbeatRecipients } from "../channels/plugins/whatsapp-heartbeat.js";
@@ -778,12 +699,7 @@ export {
   resolveLineAccount,
 } from "../line/accounts.js";
 export { LineConfigSchema } from "../line/config-schema.js";
-export type {
-  LineConfig,
-  LineAccountConfig,
-  ResolvedLineAccount,
-  LineChannelData,
-} from "../line/types.js";
+export type { LineConfig, LineAccountConfig, ResolvedLineAccount, LineChannelData } from "../line/types.js";
 export {
   createInfoCard,
   createListCard,
@@ -793,11 +709,7 @@ export {
   type CardAction,
   type ListItem,
 } from "../line/flex-templates.js";
-export {
-  processLineMessage,
-  hasMarkdownToConvert,
-  stripMarkdown,
-} from "../line/markdown-to-line.js";
+export { processLineMessage, hasMarkdownToConvert, stripMarkdown } from "../line/markdown-to-line.js";
 export type { ProcessedLineMessage } from "../line/markdown-to-line.js";
 
 // Media utilities

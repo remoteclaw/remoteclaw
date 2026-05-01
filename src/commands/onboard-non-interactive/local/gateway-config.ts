@@ -59,9 +59,7 @@ export function applyNonInteractiveGatewayConfig(params: {
   if (authMode === "token") {
     if (gatewayTokenRefEnv) {
       if (!isValidEnvSecretRefId(gatewayTokenRefEnv)) {
-        runtime.error(
-          "Invalid --gateway-token-ref-env (use env var name like REMOTECLAW_GATEWAY_TOKEN).",
-        );
+        runtime.error("Invalid --gateway-token-ref-env (use env var name like REMOTECLAW_GATEWAY_TOKEN).");
         runtime.exit(1);
         return null;
       }

@@ -93,9 +93,7 @@ describe("CodexCliRuntime", () => {
     });
 
     it("includes prompt on session resume", () => {
-      const args = runtime.testBuildArgs(
-        makeParams({ sessionId: "thread-abc-123", prompt: "Follow-up message" }),
-      );
+      const args = runtime.testBuildArgs(makeParams({ sessionId: "thread-abc-123", prompt: "Follow-up message" }));
       expect(args).toContain("Follow-up message");
     });
 
@@ -265,9 +263,7 @@ describe("CodexCliRuntime", () => {
 
   describe("extractEvent", () => {
     it("captures thread_id from thread.started and returns null", () => {
-      const event = runtime.testExtractEvent(
-        codexEvent("thread.started", { thread_id: "thread-xyz" }),
-      );
+      const event = runtime.testExtractEvent(codexEvent("thread.started", { thread_id: "thread-xyz" }));
       expect(event).toBeNull();
     });
 
@@ -308,9 +304,7 @@ describe("CodexCliRuntime", () => {
     });
 
     it("skips item.started + agent_message", () => {
-      const event = runtime.testExtractEvent(
-        itemEvent("item.started", "agent_message", { id: "msg-1" }),
-      );
+      const event = runtime.testExtractEvent(itemEvent("item.started", "agent_message", { id: "msg-1" }));
       expect(event).toBeNull();
     });
 
@@ -391,9 +385,7 @@ describe("CodexCliRuntime", () => {
     });
 
     it("skips item.updated for non-agent_message types", () => {
-      const event = runtime.testExtractEvent(
-        itemEvent("item.updated", "command_execution", { id: "cmd-1" }),
-      );
+      const event = runtime.testExtractEvent(itemEvent("item.updated", "command_execution", { id: "cmd-1" }));
       expect(event).toBeNull();
     });
 
@@ -457,9 +449,7 @@ describe("CodexCliRuntime", () => {
 
     it("maps item.completed + command_execution to AgentToolResultEvent", () => {
       // Start the command first
-      runtime.testExtractEvent(
-        itemEvent("item.started", "command_execution", { id: "cmd-1", command: "ls" }),
-      );
+      runtime.testExtractEvent(itemEvent("item.started", "command_execution", { id: "cmd-1", command: "ls" }));
 
       const event = runtime.testExtractEvent(
         itemEvent("item.completed", "command_execution", {
@@ -477,9 +467,7 @@ describe("CodexCliRuntime", () => {
     });
 
     it("marks command_execution as error when exit_code is non-zero", () => {
-      runtime.testExtractEvent(
-        itemEvent("item.started", "command_execution", { id: "cmd-2", command: "false" }),
-      );
+      runtime.testExtractEvent(itemEvent("item.started", "command_execution", { id: "cmd-2", command: "false" }));
 
       const event = runtime.testExtractEvent(
         itemEvent("item.completed", "command_execution", {
@@ -570,9 +558,7 @@ describe("CodexCliRuntime", () => {
     });
 
     it("maps turn.failed to AgentErrorEvent", () => {
-      const event = runtime.testExtractEvent(
-        codexEvent("turn.failed", { message: "Context window exceeded" }),
-      );
+      const event = runtime.testExtractEvent(codexEvent("turn.failed", { message: "Context window exceeded" }));
       expect(event).toEqual({
         type: "error",
         message: "Context window exceeded",
@@ -594,17 +580,13 @@ describe("CodexCliRuntime", () => {
     });
 
     it("generates tool IDs when item.id is missing", () => {
-      const event = runtime.testExtractEvent(
-        itemEvent("item.started", "command_execution", { command: "pwd" }),
-      );
+      const event = runtime.testExtractEvent(itemEvent("item.started", "command_execution", { command: "pwd" }));
       expect(event).not.toBeNull();
       expect((event as { toolId: string }).toolId).toMatch(/^codex-item-\d+$/);
     });
 
     it("skips item.completed for file_change", () => {
-      const event = runtime.testExtractEvent(
-        itemEvent("item.completed", "file_change", { id: "fc-1" }),
-      );
+      const event = runtime.testExtractEvent(itemEvent("item.completed", "file_change", { id: "fc-1" }));
       expect(event).toBeNull();
     });
 
@@ -673,9 +655,7 @@ describe("CodexCliRuntime", () => {
         type: "done",
         result: makeDoneResult({ durationMs: 5000 }),
       };
-      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(
-        doneEvent,
-      );
+      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(doneEvent);
 
       expect(doneEvent.result.text).toBe("Hello World");
       expect(doneEvent.result.sessionId).toBe("thread-enrich");
@@ -700,9 +680,7 @@ describe("CodexCliRuntime", () => {
       );
 
       const doneEvent: AgentDoneEvent = { type: "done", result: makeDoneResult() };
-      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(
-        doneEvent,
-      );
+      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(doneEvent);
 
       expect(doneEvent.result.text).toBe("response");
       expect(doneEvent.result.sessionId).toBe("thread-no-usage");
@@ -725,9 +703,7 @@ describe("CodexCliRuntime", () => {
       );
 
       const doneEvent: AgentDoneEvent = { type: "done", result: makeDoneResult() };
-      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(
-        doneEvent,
-      );
+      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(doneEvent);
 
       expect(doneEvent.result.usage).toEqual({
         inputTokens: 400,
@@ -744,9 +720,7 @@ describe("CodexCliRuntime", () => {
       );
 
       const doneEvent: AgentDoneEvent = { type: "done", result: makeDoneResult() };
-      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(
-        doneEvent,
-      );
+      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(doneEvent);
 
       expect(doneEvent.result.usage).toEqual({
         inputTokens: 100,
@@ -823,10 +797,7 @@ describe("CodexCliRuntime", () => {
     let configPath: string;
 
     beforeEach(async () => {
-      testDir = join(
-        tmpdir(),
-        `codex-mcp-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      );
+      testDir = join(tmpdir(), `codex-mcp-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
       await mkdir(testDir, { recursive: true });
       codexDir = join(testDir, "codex-config");
       configPath = join(codexDir, "config.toml");
@@ -837,10 +808,7 @@ describe("CodexCliRuntime", () => {
     });
 
     it("creates TOML config file when mcpServers has entries", async () => {
-      const manager = new CodexMcpConfigManager(
-        { myServer: { command: "node", args: ["server.js"] } },
-        codexDir,
-      );
+      const manager = new CodexMcpConfigManager({ myServer: { command: "node", args: ["server.js"] } }, codexDir);
 
       await manager.setup();
 
@@ -873,10 +841,7 @@ describe("CodexCliRuntime", () => {
       const originalContent = '[settings]\nmodel = "o3"\n';
       await writeFile(configPath, originalContent, "utf-8");
 
-      const manager = new CodexMcpConfigManager(
-        { newServer: { command: "python", args: ["serve.py"] } },
-        codexDir,
-      );
+      const manager = new CodexMcpConfigManager({ newServer: { command: "python", args: ["serve.py"] } }, codexDir);
 
       await manager.setup();
 

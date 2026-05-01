@@ -8,12 +8,7 @@ import { isAcpSessionKey, isSubagentSessionKey } from "../routing/session-key.js
 import { applyVerboseOverride, parseVerboseOverride } from "../sessions/level-overrides.js";
 import { normalizeSendPolicy } from "../sessions/send-policy.js";
 import { parseSessionLabel } from "../sessions/session-label.js";
-import {
-  ErrorCodes,
-  type ErrorShape,
-  errorShape,
-  type SessionsPatchParams,
-} from "./protocol/index.js";
+import { ErrorCodes, type ErrorShape, errorShape, type SessionsPatchParams } from "./protocol/index.js";
 
 function invalid(message: string): { ok: false; error: ErrorShape } {
   return { ok: false, error: errorShape(ErrorCodes.INVALID_REQUEST, message) };
@@ -204,8 +199,7 @@ export async function applySessionsPatchToStore(params: {
       if (!parsed) {
         return invalid(`invalid model: "${trimmed}"`);
       }
-      const isDefault =
-        parsed.provider === resolvedDefault.provider && parsed.model === resolvedDefault.model;
+      const isDefault = parsed.provider === resolvedDefault.provider && parsed.model === resolvedDefault.model;
       if (isDefault) {
         delete next.providerOverride;
         delete next.modelOverride;

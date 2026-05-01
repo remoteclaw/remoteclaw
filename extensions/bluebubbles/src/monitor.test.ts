@@ -57,9 +57,7 @@ const mockResolveAgentRoute = vi.fn(() => ({
   matchedBy: "default",
 }));
 const mockBuildMentionRegexes = vi.fn(() => [/\bbert\b/i]);
-const mockMatchesMentionPatterns = vi.fn((text: string, regexes: RegExp[]) =>
-  regexes.some((r) => r.test(text)),
-);
+const mockMatchesMentionPatterns = vi.fn((text: string, regexes: RegExp[]) => regexes.some((r) => r.test(text)));
 const mockMatchesMentionWithExplicit = vi.fn(
   (params: { text: string; mentionRegexes: RegExp[]; explicitWasMentioned?: boolean }) => {
     if (params.explicitWasMentioned) {
@@ -70,9 +68,7 @@ const mockMatchesMentionWithExplicit = vi.fn(
 );
 const mockResolveRequireMention = vi.fn(() => false);
 const mockResolveGroupPolicy = vi.fn(() => "open" as const);
-type DispatchReplyParams = Parameters<
-  PluginRuntime["channel"]["reply"]["dispatchReplyWithBufferedBlockDispatcher"]
->[0];
+type DispatchReplyParams = Parameters<PluginRuntime["channel"]["reply"]["dispatchReplyWithBufferedBlockDispatcher"]>[0];
 const EMPTY_DISPATCH_RESULT = {
   queuedFinal: false,
   counts: { tool: 0, block: 0, final: 0 },
@@ -111,8 +107,7 @@ function createMockRuntime(): PluginRuntime {
         chunkByNewline: mockChunkByNewline,
         chunkMarkdownTextWithMode: mockChunkMarkdownTextWithMode,
         chunkTextWithMode: mockChunkTextWithMode,
-        resolveChunkMode:
-          mockResolveChunkMode as unknown as PluginRuntime["channel"]["text"]["resolveChunkMode"],
+        resolveChunkMode: mockResolveChunkMode as unknown as PluginRuntime["channel"]["text"]["resolveChunkMode"],
         hasControlCommand: mockHasControlCommand,
       },
       reply: {
@@ -124,8 +119,7 @@ function createMockRuntime(): PluginRuntime {
           mockResolveEnvelopeFormatOptions as unknown as PluginRuntime["channel"]["reply"]["resolveEnvelopeFormatOptions"],
       },
       routing: {
-        resolveAgentRoute:
-          mockResolveAgentRoute as unknown as PluginRuntime["channel"]["routing"]["resolveAgentRoute"],
+        resolveAgentRoute: mockResolveAgentRoute as unknown as PluginRuntime["channel"]["routing"]["resolveAgentRoute"],
       },
       pairing: {
         buildPairingReply: mockBuildPairingReply,
@@ -133,8 +127,7 @@ function createMockRuntime(): PluginRuntime {
         upsertPairingRequest: mockUpsertPairingRequest,
       },
       media: {
-        saveMediaBuffer:
-          mockSaveMediaBuffer as unknown as PluginRuntime["channel"]["media"]["saveMediaBuffer"],
+        saveMediaBuffer: mockSaveMediaBuffer as unknown as PluginRuntime["channel"]["media"]["saveMediaBuffer"],
       },
       session: {
         resolveStorePath: mockResolveStorePath,
@@ -157,9 +150,7 @@ function createMockRuntime(): PluginRuntime {
   });
 }
 
-function createMockAccount(
-  overrides: Partial<ResolvedBlueBubblesAccount["config"]> = {},
-): ResolvedBlueBubblesAccount {
+function createMockAccount(overrides: Partial<ResolvedBlueBubblesAccount["config"]> = {}): ResolvedBlueBubblesAccount {
   return {
     accountId: "default",
     enabled: true,
@@ -1053,10 +1044,7 @@ describe("BlueBubbles webhook monitor", () => {
         core.channel.debounce.createInboundDebouncer = vi.fn((params: any) => {
           // oxlint-disable-next-line typescript/no-explicit-any
           type Item = any;
-          const buckets = new Map<
-            string,
-            { items: Item[]; timer: ReturnType<typeof setTimeout> | null }
-          >();
+          const buckets = new Map<string, { items: Item[]; timer: ReturnType<typeof setTimeout> | null }>();
 
           const flush = async (key: string) => {
             const bucket = buckets.get(key);
@@ -1777,11 +1765,7 @@ describe("BlueBubbles webhook monitor", () => {
       await flushAsync();
 
       // Should call typing start when reply flow triggers it.
-      expect(sendBlueBubblesTyping).toHaveBeenCalledWith(
-        expect.any(String),
-        true,
-        expect.any(Object),
-      );
+      expect(sendBlueBubblesTyping).toHaveBeenCalledWith(expect.any(String), true, expect.any(Object));
     });
 
     it("stops typing on idle", async () => {
@@ -1827,11 +1811,7 @@ describe("BlueBubbles webhook monitor", () => {
       await handleBlueBubblesWebhookRequest(req, res);
       await flushAsync();
 
-      expect(sendBlueBubblesTyping).toHaveBeenCalledWith(
-        expect.any(String),
-        false,
-        expect.any(Object),
-      );
+      expect(sendBlueBubblesTyping).toHaveBeenCalledWith(expect.any(String), false, expect.any(Object));
     });
 
     it("stops typing when no reply is sent", async () => {
@@ -1864,9 +1844,7 @@ describe("BlueBubbles webhook monitor", () => {
         },
       };
 
-      mockDispatchReplyWithBufferedBlockDispatcher.mockImplementationOnce(
-        async () => EMPTY_DISPATCH_RESULT,
-      );
+      mockDispatchReplyWithBufferedBlockDispatcher.mockImplementationOnce(async () => EMPTY_DISPATCH_RESULT);
 
       const req = createMockRequest("POST", "/bluebubbles-webhook", payload);
       const res = createMockResponse();
@@ -1874,11 +1852,7 @@ describe("BlueBubbles webhook monitor", () => {
       await handleBlueBubblesWebhookRequest(req, res);
       await flushAsync();
 
-      expect(sendBlueBubblesTyping).toHaveBeenCalledWith(
-        expect.any(String),
-        false,
-        expect.any(Object),
-      );
+      expect(sendBlueBubblesTyping).toHaveBeenCalledWith(expect.any(String), false, expect.any(Object));
     });
   });
 
@@ -2268,10 +2242,7 @@ describe("BlueBubbles webhook monitor", () => {
       await handleBlueBubblesWebhookRequest(req, res);
       await flushAsync();
 
-      expect(mockEnqueueSystemEvent).toHaveBeenCalledWith(
-        expect.stringContaining("👍"),
-        expect.any(Object),
-      );
+      expect(mockEnqueueSystemEvent).toHaveBeenCalledWith(expect.stringContaining("👍"), expect.any(Object));
     });
   });
 
@@ -2362,9 +2333,7 @@ describe("BlueBubbles webhook monitor", () => {
     });
 
     it("throws when numeric short ID is missing and requireKnownShortId is set", () => {
-      expect(() => resolveBlueBubblesMessageId("999", { requireKnownShortId: true })).toThrow(
-        /short message id/i,
-      );
+      expect(() => resolveBlueBubblesMessageId("999", { requireKnownShortId: true })).toThrow(/short message id/i);
     });
   });
 
@@ -2374,17 +2343,13 @@ describe("BlueBubbles webhook monitor", () => {
         if (opts?.accountId === "acc-a") {
           return {
             resolved: true,
-            entries: [
-              { sender: "A", body: "a-history", messageId: "a-history-1", timestamp: 1000 },
-            ],
+            entries: [{ sender: "A", body: "a-history", messageId: "a-history-1", timestamp: 1000 }],
           };
         }
         if (opts?.accountId === "acc-b") {
           return {
             resolved: true,
-            entries: [
-              { sender: "B", body: "b-history", messageId: "b-history-1", timestamp: 1000 },
-            ],
+            entries: [{ sender: "B", body: "b-history", messageId: "b-history-1", timestamp: 1000 }],
           };
         }
         return { resolved: true, entries: [] };
@@ -2512,14 +2477,10 @@ describe("BlueBubbles webhook monitor", () => {
     });
 
     it("uses exponential backoff for unresolved backfill and stops after resolve", async () => {
-      mockFetchBlueBubblesHistory
-        .mockResolvedValueOnce({ resolved: false, entries: [] })
-        .mockResolvedValueOnce({
-          resolved: true,
-          entries: [
-            { sender: "Friend", body: "older context", messageId: "hist-1", timestamp: 1000 },
-          ],
-        });
+      mockFetchBlueBubblesHistory.mockResolvedValueOnce({ resolved: false, entries: [] }).mockResolvedValueOnce({
+        resolved: true,
+        entries: [{ sender: "Friend", body: "older context", messageId: "hist-1", timestamp: 1000 }],
+      });
 
       const account = createMockAccount({ dmHistoryLimit: 4 });
       const config: RemoteClawConfig = {};

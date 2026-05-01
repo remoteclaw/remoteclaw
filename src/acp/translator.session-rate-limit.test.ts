@@ -29,11 +29,7 @@ function createLoadSessionRequest(sessionId: string, cwd = "/tmp"): LoadSessionR
   } as unknown as LoadSessionRequest;
 }
 
-function createPromptRequest(
-  sessionId: string,
-  text: string,
-  meta: Record<string, unknown> = {},
-): PromptRequest {
+function createPromptRequest(sessionId: string, text: string, meta: Record<string, unknown> = {}): PromptRequest {
   return {
     sessionId,
     prompt: [{ type: "text", text }],
@@ -132,9 +128,7 @@ describe("acp session creation rate limit", () => {
 
     await agent.newSession(createNewSessionRequest());
     await agent.newSession(createNewSessionRequest());
-    await expect(agent.newSession(createNewSessionRequest())).rejects.toThrow(
-      /session creation rate limit exceeded/i,
-    );
+    await expect(agent.newSession(createNewSessionRequest())).rejects.toThrow(/session creation rate limit exceeded/i);
 
     sessionStore.clearAllSessionsForTest();
   });
@@ -448,9 +442,7 @@ describe("acp setSessionMode bridge behavior", () => {
     await agent.loadSession(createLoadSessionRequest("mode-session"));
     vi.mocked(request).mockClear();
 
-    await expect(
-      agent.setSessionMode(createSetSessionModeRequest("mode-session", "high")),
-    ).resolves.toEqual({});
+    await expect(agent.setSessionMode(createSetSessionModeRequest("mode-session", "high"))).resolves.toEqual({});
     expect(request).not.toHaveBeenCalledWith("sessions.patch", expect.any(Object));
 
     sessionStore.clearAllSessionsForTest();
@@ -630,16 +622,9 @@ describe("acp setSessionConfigOption bridge behavior", () => {
     await agent.loadSession(createLoadSessionRequest("bool-config-session"));
 
     await expect(
-      agent.setSessionConfigOption(
-        createSetSessionConfigOptionRequest("bool-config-session", "verbose_level", false),
-      ),
-    ).rejects.toThrow(
-      'ACP bridge does not support non-string session config option values for "verbose_level".',
-    );
-    expect(request).not.toHaveBeenCalledWith(
-      "sessions.patch",
-      expect.objectContaining({ key: "bool-config-session" }),
-    );
+      agent.setSessionConfigOption(createSetSessionConfigOptionRequest("bool-config-session", "verbose_level", false)),
+    ).rejects.toThrow('ACP bridge does not support non-string session config option values for "verbose_level".');
+    expect(request).not.toHaveBeenCalledWith("sessions.patch", expect.objectContaining({ key: "bool-config-session" }));
 
     sessionStore.clearAllSessionsForTest();
   });
@@ -923,8 +908,7 @@ describe("acp final chat snapshots", () => {
   }
 
   it("emits final snapshot text before resolving end_turn", async () => {
-    const { agent, sessionUpdate, promptPromise, runId, sessionStore } =
-      await createSnapshotHarness();
+    const { agent, sessionUpdate, promptPromise, runId, sessionStore } = await createSnapshotHarness();
 
     await agent.handleGatewayEvent({
       event: "chat",
@@ -952,8 +936,7 @@ describe("acp final chat snapshots", () => {
   });
 
   it("does not duplicate text when final repeats the last delta snapshot", async () => {
-    const { agent, sessionUpdate, promptPromise, runId, sessionStore } =
-      await createSnapshotHarness();
+    const { agent, sessionUpdate, promptPromise, runId, sessionStore } = await createSnapshotHarness();
 
     await agent.handleGatewayEvent({
       event: "chat",
@@ -984,16 +967,14 @@ describe("acp final chat snapshots", () => {
     const chunks = sessionUpdate.mock.calls.filter(
       (call: unknown[]) =>
         (call[0] as Record<string, unknown>)?.update &&
-        (call[0] as Record<string, Record<string, unknown>>).update?.sessionUpdate ===
-          "agent_message_chunk",
+        (call[0] as Record<string, Record<string, unknown>>).update?.sessionUpdate === "agent_message_chunk",
     );
     expect(chunks).toHaveLength(1);
     sessionStore.clearAllSessionsForTest();
   });
 
   it("emits only the missing tail when the final snapshot extends prior deltas", async () => {
-    const { agent, sessionUpdate, promptPromise, runId, sessionStore } =
-      await createSnapshotHarness();
+    const { agent, sessionUpdate, promptPromise, runId, sessionStore } = await createSnapshotHarness();
 
     await agent.handleGatewayEvent({
       event: "chat",

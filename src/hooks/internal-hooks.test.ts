@@ -320,15 +320,10 @@ describe("hooks", () => {
         },
       ] as const;
       const nonMessageEvent = createInternalHookEvent("command", "new", "test-session");
-      const missingReceivedContext = createInternalHookEvent(
-        "message",
-        "received",
-        "test-session",
-        {
-          from: "+1234567890",
-          // missing channelId
-        },
-      );
+      const missingReceivedContext = createInternalHookEvent("message", "received", "test-session", {
+        from: "+1234567890",
+        // missing channelId
+      });
       const missingSentContext = createInternalHookEvent("message", "sent", "test-session", {
         to: "+1234567890",
         channelId: "whatsapp",
@@ -386,12 +381,7 @@ describe("hooks", () => {
         content: "Hello",
         channelId: "whatsapp",
       };
-      const receivedEvent = createInternalHookEvent(
-        "message",
-        "received",
-        "test-session",
-        receivedContext,
-      );
+      const receivedEvent = createInternalHookEvent("message", "received", "test-session", receivedContext);
       await triggerInternalHook(receivedEvent);
 
       const sentContext: MessageSentHookContext = {

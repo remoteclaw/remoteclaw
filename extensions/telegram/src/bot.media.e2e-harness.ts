@@ -21,20 +21,13 @@ async function defaultSaveMediaBuffer(buffer: Buffer, contentType?: string) {
 
 const saveMediaBufferSpy: Mock = vi.fn(defaultSaveMediaBuffer);
 
-export function setNextSavedMediaPath(params: {
-  path: string;
-  id?: string;
-  contentType?: string;
-  size?: number;
-}) {
-  saveMediaBufferSpy.mockImplementationOnce(
-    async (buffer: Buffer, detectedContentType?: string) => ({
-      id: params.id ?? "media",
-      path: params.path,
-      size: params.size ?? buffer.byteLength,
-      contentType: params.contentType ?? detectedContentType ?? "application/octet-stream",
-    }),
-  );
+export function setNextSavedMediaPath(params: { path: string; id?: string; contentType?: string; size?: number }) {
+  saveMediaBufferSpy.mockImplementationOnce(async (buffer: Buffer, detectedContentType?: string) => ({
+    id: params.id ?? "media",
+    path: params.path,
+    size: params.size ?? buffer.byteLength,
+    contentType: params.contentType ?? detectedContentType ?? "application/octet-stream",
+  }));
 }
 
 export function resetSaveMediaBufferMock() {

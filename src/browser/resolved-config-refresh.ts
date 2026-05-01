@@ -2,10 +2,7 @@ import { createConfigIO, loadConfig } from "../config/config.js";
 import { resolveBrowserConfig, resolveProfile, type ResolvedBrowserProfile } from "./config.js";
 import type { BrowserServerState } from "./server-context.types.js";
 
-function applyResolvedConfig(
-  current: BrowserServerState,
-  freshResolved: BrowserServerState["resolved"],
-) {
+function applyResolvedConfig(current: BrowserServerState, freshResolved: BrowserServerState["resolved"]) {
   current.resolved = freshResolved;
   for (const [name, runtime] of current.profiles) {
     const nextProfile = resolveProfile(freshResolved, name);

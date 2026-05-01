@@ -31,11 +31,7 @@ const runtime = {
   exit: vi.fn(),
 };
 
-function mockSnapshot(params?: {
-  token?: string;
-  bind?: GatewayBindMode;
-  customBindHost?: string;
-}) {
+function mockSnapshot(params?: { token?: string; bind?: GatewayBindMode; customBindHost?: string }) {
   const token = params?.token ?? "abc123";
   mocks.readConfigFileSnapshot.mockResolvedValue({
     path: "/tmp/remoteclaw.json",

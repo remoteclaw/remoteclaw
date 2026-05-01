@@ -187,9 +187,7 @@ async function deliverTwitchReply(params: {
  *
  * Sets up message handlers and processes incoming messages.
  */
-export async function monitorTwitchProvider(
-  options: TwitchMonitorOptions,
-): Promise<TwitchMonitorResult> {
+export async function monitorTwitchProvider(options: TwitchMonitorOptions): Promise<TwitchMonitorResult> {
   const { account, accountId, config, runtime, abortSignal, statusSink } = options;
 
   const core = getTwitchRuntime();
@@ -212,11 +210,7 @@ export async function monitorTwitchProvider(
   const clientManager = getOrCreateClientManager(accountId, logger);
 
   try {
-    await clientManager.getClient(
-      account,
-      config as Parameters<typeof clientManager.getClient>[1],
-      accountId,
-    );
+    await clientManager.getClient(account, config as Parameters<typeof clientManager.getClient>[1], accountId);
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
     runtime.error?.(`Failed to connect: ${errorMsg}`);

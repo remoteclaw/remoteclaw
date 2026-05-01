@@ -12,6 +12,7 @@ import { splitArgsPreservingQuotes } from "./arg-split.js";
 import { parseSystemdExecStart } from "./systemd-unit.js";
 import {
   isNonFatalSystemdInstallProbeError,
+  isSystemdServiceEnabled,
   isSystemdUserServiceAvailable,
   parseSystemdShow,
   readSystemdServiceExecStart,
@@ -71,15 +72,11 @@ function assertMachineUserSystemctlArgs(args: string[], user: string, ...command
 }
 
 async function readManagedServiceEnabled(env: NodeJS.ProcessEnv = { HOME: TEST_MANAGED_HOME }) {
-  const { isSystemdServiceEnabled } = await import("./systemd.js");
   vi.spyOn(fs, "access").mockResolvedValue(undefined);
   return isSystemdServiceEnabled({ env });
 }
 
-function mockReadGatewayServiceFile(
-  unitLines: string[],
-  extraFiles: Record<string, string | Error> = {},
-) {
+function mockReadGatewayServiceFile(unitLines: string[], extraFiles: Record<string, string | Error> = {}) {
   return vi.spyOn(fs, "readFile").mockImplementation(async (pathname) => {
     const pathValue = pathLikeToString(pathname);
     if (pathValue.endsWith(`/${GATEWAY_SERVICE}`)) {
@@ -97,11 +94,7 @@ function mockReadGatewayServiceFile(
 }
 
 async function expectExecStartWithoutEnvironment(envFileLine: string) {
-  mockReadGatewayServiceFile([
-    "[Service]",
-    "ExecStart=/usr/bin/remoteclaw gateway run",
-    envFileLine,
-  ]);
+  mockReadGatewayServiceFile(["[Service]", "ExecStart=/usr/bin/remoteclaw gateway run", envFileLine]);
 
   const command = await readSystemdServiceExecStart({ HOME: TEST_SERVICE_HOME });
   expect(command?.programArguments).toEqual(["/usr/bin/remoteclaw", "gateway", "run"]);
@@ -184,7 +177,6 @@ describe("isSystemdServiceEnabled", () => {
   });
 
   it("returns false without calling systemctl when the managed unit file is missing", async () => {
-    const { isSystemdServiceEnabled } = await import("./systemd.js");
     const err = new Error("missing unit") as NodeJS.ErrnoException;
     err.code = "ENOENT";
     vi.spyOn(fs, "access").mockRejectedValueOnce(err);
@@ -217,9 +209,9 @@ describe("isSystemdServiceEnabled", () => {
   it("returns false for the WSL2 Ubuntu 24.04 wrapper-only is-enabled failure", async () => {
     execFileMock.mockImplementationOnce((_cmd, args, _opts, cb) => {
       assertUserSystemctlArgs(args, "is-enabled", GATEWAY_SERVICE);
-      const err = new Error(
-        `Command failed: systemctl --user is-enabled ${GATEWAY_SERVICE}`,
-      ) as Error & { code?: number };
+      const err = new Error(`Command failed: systemctl --user is-enabled ${GATEWAY_SERVICE}`) as Error & {
+        code?: number;
+      };
       err.code = 1;
       cb(err, "", "");
     });
@@ -235,27 +227,19 @@ describe("isSystemdServiceEnabled", () => {
     });
     execFileMock.mockImplementationOnce((_cmd, args, _opts, cb) => {
       assertUserSystemctlArgs(args, "is-enabled", GATEWAY_SERVICE);
-      cb(
-        createExecFileError("Failed to connect to bus", { stderr: "Failed to connect to bus" }),
-        "",
-        "",
-      );
+      cb(createExecFileError("Failed to connect to bus", { stderr: "Failed to connect to bus" }), "", "");
     });
 
-    await expect(
-      readManagedServiceEnabled({ HOME: TEST_MANAGED_HOME, USER: "", LOGNAME: "" }),
-    ).rejects.toThrow("systemctl is-enabled unavailable: Failed to connect to bus");
+    await expect(readManagedServiceEnabled({ HOME: TEST_MANAGED_HOME, USER: "", LOGNAME: "" })).rejects.toThrow(
+      "systemctl is-enabled unavailable: Failed to connect to bus",
+    );
   });
 
   it("returns false when both direct and machine-scope is-enabled checks report bus unavailability", async () => {
     execFileMock
       .mockImplementationOnce((_cmd, args, _opts, cb) => {
         assertUserSystemctlArgs(args, "is-enabled", GATEWAY_SERVICE);
-        cb(
-          createExecFileError("Failed to connect to bus", { stderr: "Failed to connect to bus" }),
-          "",
-          "",
-        );
+        cb(createExecFileError("Failed to connect to bus", { stderr: "Failed to connect to bus" }), "", "");
       })
       .mockImplementationOnce((_cmd, args, _opts, cb) => {
         assertMachineUserSystemctlArgs(args, "debian", "is-enabled", GATEWAY_SERVICE);
@@ -269,17 +253,17 @@ describe("isSystemdServiceEnabled", () => {
         );
       });
 
-    await expect(
-      readManagedServiceEnabled({ HOME: TEST_MANAGED_HOME, USER: "debian" }),
-    ).rejects.toThrow("systemctl is-enabled unavailable: Failed to connect to user scope bus");
+    await expect(readManagedServiceEnabled({ HOME: TEST_MANAGED_HOME, USER: "debian" })).rejects.toThrow(
+      "systemctl is-enabled unavailable: Failed to connect to user scope bus",
+    );
   });
 
   it("throws when generic wrapper errors report infrastructure failures", async () => {
     execFileMock.mockImplementationOnce((_cmd, args, _opts, cb) => {
       assertUserSystemctlArgs(args, "is-enabled", GATEWAY_SERVICE);
-      const err = new Error(
-        `Command failed: systemctl --user is-enabled ${GATEWAY_SERVICE}`,
-      ) as Error & { code?: number };
+      const err = new Error(`Command failed: systemctl --user is-enabled ${GATEWAY_SERVICE}`) as Error & {
+        code?: number;
+      };
       err.code = 1;
       cb(err, "", "read-only file system");
     });
@@ -290,7 +274,6 @@ describe("isSystemdServiceEnabled", () => {
   });
 
   it("throws when systemctl is-enabled fails for non-state errors", async () => {
-    const { isSystemdServiceEnabled } = await import("./systemd.js");
     vi.spyOn(fs, "access").mockResolvedValue(undefined);
     execFileMock
       .mockImplementationOnce((_cmd, args, _opts, cb) => {
@@ -307,20 +290,19 @@ describe("isSystemdServiceEnabled", () => {
         err.code = 1;
         cb(err, "", "permission denied");
       });
-    await expect(
-      isSystemdServiceEnabled({ env: { HOME: "/tmp/remoteclaw-test-home" } }),
-    ).rejects.toThrow("systemctl is-enabled unavailable: permission denied");
+    await expect(isSystemdServiceEnabled({ env: { HOME: "/tmp/remoteclaw-test-home" } })).rejects.toThrow(
+      "systemctl is-enabled unavailable: permission denied",
+    );
   });
 
   it("returns false when systemctl is-enabled exits with code 4 (not-found)", async () => {
-    const { isSystemdServiceEnabled } = await import("./systemd.js");
     vi.spyOn(fs, "access").mockResolvedValue(undefined);
     execFileMock.mockImplementationOnce((_cmd, _args, _opts, cb) => {
       // On Ubuntu 24.04, `systemctl --user is-enabled <unit>` exits with
       // code 4 and prints "not-found" to stdout when the unit doesn't exist.
-      const err = new Error(
-        "Command failed: systemctl --user is-enabled remoteclaw-gateway.service",
-      ) as Error & { code?: number };
+      const err = new Error("Command failed: systemctl --user is-enabled remoteclaw-gateway.service") as Error & {
+        code?: number;
+      };
       err.code = 4;
       cb(err, "not-found\n", "");
     });
@@ -340,17 +322,13 @@ describe("isNonFatalSystemdInstallProbeError", () => {
 
   it("matches bus-unavailable install probe failures", () => {
     expect(
-      isNonFatalSystemdInstallProbeError(
-        new Error("systemctl is-enabled unavailable: Failed to connect to bus"),
-      ),
+      isNonFatalSystemdInstallProbeError(new Error("systemctl is-enabled unavailable: Failed to connect to bus")),
     ).toBe(true);
   });
 
   it("does not match real infrastructure failures", () => {
     expect(
-      isNonFatalSystemdInstallProbeError(
-        new Error("systemctl is-enabled unavailable: read-only file system"),
-      ),
+      isNonFatalSystemdInstallProbeError(new Error("systemctl is-enabled unavailable: read-only file system")),
     ).toBe(false);
   });
 });
@@ -467,13 +445,7 @@ describe("splitArgsPreservingQuotes", () => {
 describe("parseSystemdExecStart", () => {
   it("preserves quoted arguments", () => {
     const execStart = '/usr/bin/remoteclaw gateway start --name "My Bot"';
-    expect(parseSystemdExecStart(execStart)).toEqual([
-      "/usr/bin/remoteclaw",
-      "gateway",
-      "start",
-      "--name",
-      "My Bot",
-    ]);
+    expect(parseSystemdExecStart(execStart)).toEqual(["/usr/bin/remoteclaw", "gateway", "start", "--name", "My Bot"]);
   });
 });
 
@@ -484,11 +456,7 @@ describe("readSystemdServiceExecStart", () => {
 
   it("loads REMOTECLAW_GATEWAY_TOKEN from EnvironmentFile", async () => {
     const readFileSpy = mockReadGatewayServiceFile(
-      [
-        "[Service]",
-        "ExecStart=/usr/bin/remoteclaw gateway run",
-        "EnvironmentFile=%h/.remoteclaw/.env",
-      ],
+      ["[Service]", "ExecStart=/usr/bin/remoteclaw gateway run", "EnvironmentFile=%h/.remoteclaw/.env"],
       { [`${TEST_SERVICE_HOME}/.remoteclaw/.env`]: "REMOTECLAW_GATEWAY_TOKEN=env-file-token\n" },
     );
 
@@ -637,11 +605,7 @@ describe("systemd service control", () => {
   it("allows stop when systemd status is degraded but available", async () => {
     execFileMock
       .mockImplementationOnce((_cmd, _args, _opts, cb) =>
-        cb(
-          createExecFileError("degraded", { stderr: "degraded\nsome-unit.service failed" }),
-          "",
-          "",
-        ),
+        cb(createExecFileError("degraded", { stderr: "degraded\nsome-unit.service failed" }), "", ""),
       )
       .mockImplementationOnce((_cmd, args, _opts, cb) => {
         assertUserSystemctlArgs(args, "stop", GATEWAY_SERVICE);
@@ -686,11 +650,7 @@ describe("systemd service control", () => {
       throw new Error("no user info");
     });
     execFileMock.mockImplementationOnce((_cmd, _args, _opts, cb) => {
-      cb(
-        createExecFileError("Failed to connect to bus", { stderr: "Failed to connect to bus" }),
-        "",
-        "",
-      );
+      cb(createExecFileError("Failed to connect to bus", { stderr: "Failed to connect to bus" }), "", "");
     });
 
     await expect(

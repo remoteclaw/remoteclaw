@@ -2,8 +2,7 @@
 
 export type ReasoningLaneCoordinator = Record<string, unknown>;
 
-export const createReasoningLaneCoordinator = (..._args: unknown[]) =>
-  ({}) as ReasoningLaneCoordinator;
+export const createReasoningLaneCoordinator = (..._args: unknown[]) => ({}) as ReasoningLaneCoordinator;
 export const createTelegramReasoningStepState = (..._args: unknown[]) => ({
   noteReasoningHint: () => {},
   noteReasoningDelivered: () => {},

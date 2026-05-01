@@ -1,8 +1,5 @@
 import { resolveMainSessionKeyFromConfig } from "../../config/sessions.js";
-import {
-  loadOrCreateDeviceIdentity,
-  publicKeyRawBase64UrlFromPem,
-} from "../../infra/device-identity.js";
+import { loadOrCreateDeviceIdentity, publicKeyRawBase64UrlFromPem } from "../../infra/device-identity.js";
 import { getLastHeartbeatEvent } from "../../infra/heartbeat-events.js";
 import { setHeartbeatsEnabled } from "../../infra/heartbeat-runner.js";
 import { enqueueSystemEvent, isSystemEventContextChanged } from "../../infra/system-events.js";
@@ -32,10 +29,7 @@ export const systemHandlers: GatewayRequestHandlers = {
       respond(
         false,
         undefined,
-        errorShape(
-          ErrorCodes.INVALID_REQUEST,
-          "invalid set-heartbeats params: enabled (boolean) required",
-        ),
+        errorShape(ErrorCodes.INVALID_REQUEST, "invalid set-heartbeats params: enabled (boolean) required"),
       );
       return;
     }
@@ -61,25 +55,18 @@ export const systemHandlers: GatewayRequestHandlers = {
     const version = typeof params.version === "string" ? params.version : undefined;
     const platform = typeof params.platform === "string" ? params.platform : undefined;
     const deviceFamily = typeof params.deviceFamily === "string" ? params.deviceFamily : undefined;
-    const modelIdentifier =
-      typeof params.modelIdentifier === "string" ? params.modelIdentifier : undefined;
+    const modelIdentifier = typeof params.modelIdentifier === "string" ? params.modelIdentifier : undefined;
     const lastInputSeconds =
       typeof params.lastInputSeconds === "number" && Number.isFinite(params.lastInputSeconds)
         ? params.lastInputSeconds
         : undefined;
     const reason = typeof params.reason === "string" ? params.reason : undefined;
     const roles =
-      Array.isArray(params.roles) && params.roles.every((t) => typeof t === "string")
-        ? params.roles
-        : undefined;
+      Array.isArray(params.roles) && params.roles.every((t) => typeof t === "string") ? params.roles : undefined;
     const scopes =
-      Array.isArray(params.scopes) && params.scopes.every((t) => typeof t === "string")
-        ? params.scopes
-        : undefined;
+      Array.isArray(params.scopes) && params.scopes.every((t) => typeof t === "string") ? params.scopes : undefined;
     const tags =
-      Array.isArray(params.tags) && params.tags.every((t) => typeof t === "string")
-        ? params.tags
-        : undefined;
+      Array.isArray(params.tags) && params.tags.every((t) => typeof t === "string") ? params.tags : undefined;
     const presenceUpdate = updateSystemPresence({
       text,
       deviceId,
@@ -103,8 +90,7 @@ export const systemHandlers: GatewayRequestHandlers = {
       const changed = new Set(presenceUpdate.changedKeys);
       const reasonValue = next.reason ?? reason;
       const normalizedReason = (reasonValue ?? "").toLowerCase();
-      const ignoreReason =
-        normalizedReason.startsWith("periodic") || normalizedReason === "heartbeat";
+      const ignoreReason = normalizedReason.startsWith("periodic") || normalizedReason === "heartbeat";
       const hostChanged = changed.has("host");
       const ipChanged = changed.has("ip");
       const versionChanged = changed.has("version");

@@ -131,9 +131,7 @@ describe("zalouser channel policies", () => {
 
   it("handles react action", async () => {
     const actions = zalouserPlugin.actions;
-    expect(actions?.listActions?.({ cfg: { channels: { zalouser: { enabled: true } } } })).toEqual([
-      "react",
-    ]);
+    expect(actions?.listActions?.({ cfg: { channels: { zalouser: { enabled: true } } } })).toEqual(["react"]);
     const result = await actions?.handleAction?.({
       channel: "zalouser",
       action: "react",

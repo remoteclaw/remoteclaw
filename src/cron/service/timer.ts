@@ -120,10 +120,7 @@ const DEFAULT_BACKOFF_SCHEDULE_MS = [
   60 * 60_000, // 5th+ error →  60 min
 ];
 
-function errorBackoffMs(
-  consecutiveErrors: number,
-  scheduleMs = DEFAULT_BACKOFF_SCHEDULE_MS,
-): number {
+function errorBackoffMs(consecutiveErrors: number, scheduleMs = DEFAULT_BACKOFF_SCHEDULE_MS): number {
   const idx = Math.min(consecutiveErrors - 1, scheduleMs.length - 1);
   return scheduleMs[Math.max(0, idx)];
 }
@@ -132,10 +129,8 @@ function errorBackoffMs(
 const DEFAULT_MAX_TRANSIENT_RETRIES = 3;
 
 const TRANSIENT_PATTERNS: Record<string, RegExp> = {
-  rate_limit:
-    /(rate[_ ]limit|too many requests|429|resource has been exhausted|cloudflare|tokens per day)/i,
-  overloaded:
-    /\b529\b|\boverloaded(?:_error)?\b|high demand|temporar(?:ily|y) overloaded|capacity exceeded/i,
+  rate_limit: /(rate[_ ]limit|too many requests|429|resource has been exhausted|cloudflare|tokens per day)/i,
+  overloaded: /\b529\b|\boverloaded(?:_error)?\b|high demand|temporar(?:ily|y) overloaded|capacity exceeded/i,
   network: /(network|econnreset|econnrefused|fetch failed|socket)/i,
   timeout: /(timeout|etimedout)/i,
   server_error: /\b5\d{2}\b/,
@@ -152,8 +147,7 @@ function isTransientCronError(error: string | undefined, retryOn?: CronRetryOn[]
 function resolveRetryConfig(cronConfig?: CronConfig) {
   const retry = cronConfig?.retry;
   return {
-    maxAttempts:
-      typeof retry?.maxAttempts === "number" ? retry.maxAttempts : DEFAULT_MAX_TRANSIENT_RETRIES,
+    maxAttempts: typeof retry?.maxAttempts === "number" ? retry.maxAttempts : DEFAULT_MAX_TRANSIENT_RETRIES,
     backoffMs:
       Array.isArray(retry?.backoffMs) && retry.backoffMs.length > 0
         ? retry.backoffMs
@@ -235,9 +229,7 @@ function _resolveFailureAlert(
       DEFAULT_FAILURE_ALERT_COOLDOWN_MS,
     ),
     channel:
-      normalizeCronMessageChannel(jobConfig?.channel) ??
-      normalizeCronMessageChannel(job.delivery?.channel) ??
-      "last",
+      normalizeCronMessageChannel(jobConfig?.channel) ?? normalizeCronMessageChannel(job.delivery?.channel) ?? "last",
     to: mode === "webhook" ? explicitTo : (explicitTo ?? normalizeTo(job.delivery?.to)),
     mode,
     accountId: jobConfig?.accountId ?? globalConfig?.accountId,
@@ -274,10 +266,7 @@ function _emitFailureAlert(
         accountId: params.accountId,
       })
       .catch((err) => {
-        state.deps.log.warn(
-          { jobId: params.job.id, err: String(err) },
-          "cron: failure alert delivery failed",
-        );
+        state.deps.log.warn({ jobId: params.job.id, err: String(err) }, "cron: failure alert delivery failed");
       });
     return;
   }
@@ -327,8 +316,7 @@ export function applyJobResult(
   job.state.lastDelivered = result.delivered;
   const deliveryStatus = resolveDeliveryStatus({ job, delivered: result.delivered });
   job.state.lastDeliveryStatus = deliveryStatus;
-  job.state.lastDeliveryError =
-    deliveryStatus === "not-delivered" && result.error ? result.error : undefined;
+  job.state.lastDeliveryError = deliveryStatus === "not-delivered" && result.error ? result.error : undefined;
   job.updatedAtMs = result.endedAt;
 
   // Track consecutive errors for backoff / auto-disable.
@@ -338,8 +326,7 @@ export function applyJobResult(
     job.state.consecutiveErrors = 0;
   }
 
-  const shouldDelete =
-    job.schedule.kind === "at" && job.deleteAfterRun === true && result.status === "ok";
+  const shouldDelete = job.schedule.kind === "at" && job.deleteAfterRun === true && result.status === "ok";
 
   if (!shouldDelete) {
     if (job.schedule.kind === "at") {
@@ -399,8 +386,7 @@ export function applyJobResult(
       }
       const backoffNext = result.endedAt + backoff;
       // Use whichever is later: the natural next run or the backoff delay.
-      job.state.nextRunAtMs =
-        normalNext !== undefined ? Math.max(normalNext, backoffNext) : backoffNext;
+      job.state.nextRunAtMs = normalNext !== undefined ? Math.max(normalNext, backoffNext) : backoffNext;
       state.deps.log.info(
         {
           jobId: job.id,
@@ -429,8 +415,7 @@ export function applyJobResult(
         // schedule computation lands in the same second due to
         // timezone/croner edge cases (see #17821).
         const minNext = result.endedAt + MIN_REFIRE_GAP_MS;
-        job.state.nextRunAtMs =
-          naturalNext !== undefined ? Math.max(naturalNext, minNext) : minNext;
+        job.state.nextRunAtMs = naturalNext !== undefined ? Math.max(naturalNext, minNext) : minNext;
       } else {
         job.state.nextRunAtMs = naturalNext;
       }
@@ -487,12 +472,8 @@ export function armTimer(state: CronServiceState) {
     const jobCount = state.store?.jobs.length ?? 0;
     const enabledCount = state.store?.jobs.filter((j) => j.enabled).length ?? 0;
     const withNextRun =
-      state.store?.jobs.filter((j) => j.enabled && typeof j.state.nextRunAtMs === "number")
-        .length ?? 0;
-    state.deps.log.debug(
-      { jobCount, enabledCount, withNextRun },
-      "cron: armTimer skipped - no jobs with nextRunAtMs",
-    );
+      state.store?.jobs.filter((j) => j.enabled && typeof j.state.nextRunAtMs === "number").length ?? 0;
+    state.deps.log.debug({ jobCount, enabledCount, withNextRun }, "cron: armTimer skipped - no jobs with nextRunAtMs");
     return;
   }
   const now = state.deps.nowMs();
@@ -508,10 +489,7 @@ export function armTimer(state: CronServiceState) {
       state.deps.log.error({ err: String(err) }, "cron: timer tick failed");
     });
   }, clampedDelay);
-  state.deps.log.debug(
-    { nextAt, delayMs: clampedDelay, clamped: delay > MAX_TIMER_DELAY_MS },
-    "cron: timer armed",
-  );
+  state.deps.log.debug({ nextAt, delayMs: clampedDelay, clamped: delay > MAX_TIMER_DELAY_MS }, "cron: timer armed");
 }
 
 function armRunningRecheckTimer(state: CronServiceState) {
@@ -573,10 +551,7 @@ export async function onTimer(state: CronServiceState) {
       }));
     });
 
-    const runDueJob = async (params: {
-      id: string;
-      job: CronJob;
-    }): Promise<TimedCronRunOutcome> => {
+    const runDueJob = async (params: { id: string; job: CronJob }): Promise<TimedCronRunOutcome> => {
       const { id, job } = params;
       const startedAt = state.deps.nowMs();
       job.state.runningAtMs = startedAt;
@@ -744,10 +719,7 @@ function collectRunnableJobs(
   );
 }
 
-export async function runMissedJobs(
-  state: CronServiceState,
-  opts?: { skipJobIds?: ReadonlySet<string> },
-) {
+export async function runMissedJobs(state: CronServiceState, opts?: { skipJobIds?: ReadonlySet<string> }) {
   const startupCandidates = await locked(state, async () => {
     await ensureLoaded(state, { skipRecompute: true });
     if (!state.store) {
@@ -856,9 +828,7 @@ export async function executeJobCore(
   state: CronServiceState,
   job: CronJob,
   abortSignal?: AbortSignal,
-): Promise<
-  CronRunOutcome & CronRunTelemetry & { delivered?: boolean; deliveryAttempted?: boolean }
-> {
+): Promise<CronRunOutcome & CronRunTelemetry & { delivered?: boolean; deliveryAttempted?: boolean }> {
   const resolveAbortError = () => ({
     status: "error" as const,
     error: timeoutErrorMessage(),
@@ -921,10 +891,7 @@ export async function executeJobCore(
           agentId: job.agentId,
           sessionKey: job.sessionKey,
         });
-        if (
-          heartbeatResult.status !== "skipped" ||
-          heartbeatResult.reason !== "requests-in-flight"
-        ) {
+        if (heartbeatResult.status !== "skipped" || heartbeatResult.reason !== "requests-in-flight") {
           break;
         }
         if (abortSignal?.aborted) {
@@ -992,8 +959,7 @@ export async function executeJobCore(
   // See: https://github.com/remoteclaw/remoteclaw/issues/32013
   const summaryText = res.summary?.trim();
   const deliveryPlan = resolveCronDeliveryPlan(job);
-  const suppressMainSummary =
-    res.status === "error" && res.errorKind === "delivery-target" && deliveryPlan.requested;
+  const suppressMainSummary = res.status === "error" && res.errorKind === "delivery-target" && deliveryPlan.requested;
   if (
     shouldEnqueueCronMainSummary({
       summaryText,
@@ -1005,8 +971,7 @@ export async function executeJobCore(
     })
   ) {
     const prefix = "Cron";
-    const label =
-      res.status === "error" ? `${prefix} (error): ${summaryText}` : `${prefix}: ${summaryText}`;
+    const label = res.status === "error" ? `${prefix} (error): ${summaryText}` : `${prefix}: ${summaryText}`;
     state.deps.enqueueSystemEvent(label, {
       agentId: job.agentId,
       sessionKey: job.sessionKey,
@@ -1038,12 +1003,7 @@ export async function executeJobCore(
  * Execute a job. This version is used by the `run` command and other
  * places that need the full execution with state updates.
  */
-export async function executeJob(
-  state: CronServiceState,
-  job: CronJob,
-  _nowMs: number,
-  _opts: { forced: boolean },
-) {
+export async function executeJob(state: CronServiceState, job: CronJob, _nowMs: number, _opts: { forced: boolean }) {
   if (!job.state) {
     job.state = {};
   }
@@ -1109,10 +1069,7 @@ function emitJobFinished(
   });
 }
 
-export function wake(
-  state: CronServiceState,
-  opts: { mode: "now" | "next-heartbeat"; text: string },
-) {
+export function wake(state: CronServiceState, opts: { mode: "now" | "next-heartbeat"; text: string }) {
   const text = opts.text.trim();
   if (!text) {
     return { ok: false } as const;

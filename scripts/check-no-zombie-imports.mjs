@@ -25,12 +25,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
-import {
-  collectTypeScriptFilesFromRoots,
-  resolveSourceRoots,
-  runAsScript,
-  toLine,
-} from "./lib/ts-guard-utils.mjs";
+import { collectTypeScriptFilesFromRoots, resolveSourceRoots, runAsScript, toLine } from "./lib/ts-guard-utils.mjs";
 
 // Resolve repo root from scripts/ (one level up).
 function resolveRepoRootFromScript(importMetaUrl) {
@@ -130,9 +125,7 @@ async function loadAllowlist(repoRoot) {
     // Validate structure.
     for (const entry of entries) {
       if (!entry.callsite || !entry.issue) {
-        console.error(
-          `Error: allowlist entry missing required fields (callsite, issue): ${JSON.stringify(entry)}`,
-        );
+        console.error(`Error: allowlist entry missing required fields (callsite, issue): ${JSON.stringify(entry)}`);
         process.exit(1);
       }
     }
@@ -161,10 +154,7 @@ async function readBaseline(repoRoot, fileName) {
     return value;
   } catch (error) {
     if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
-      console.error(
-        `Error: ${fileName} not found.\n` +
-          `Create it with the current count: echo <count> > ${fileName}`,
-      );
+      console.error(`Error: ${fileName} not found.\nCreate it with the current count: echo <count> > ${fileName}`);
       process.exit(1);
     }
     throw error;

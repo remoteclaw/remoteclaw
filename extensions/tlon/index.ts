@@ -38,9 +38,7 @@ function findTlonBinary(): string {
   const arch = process.arch;
   const platformPkg = `@tloncorp/tlon-skill-${platform}-${arch}`;
   const platformBin = join(__dirname, "node_modules", platformPkg, "tlon");
-  console.log(
-    `[tlon] Checking for platform binary at: ${platformBin}, exists: ${existsSync(platformBin)}`,
-  );
+  console.log(`[tlon] Checking for platform binary at: ${platformBin}, exists: ${existsSync(platformBin)}`);
   if (existsSync(platformBin)) return platformBin;
 
   // Fallback to PATH

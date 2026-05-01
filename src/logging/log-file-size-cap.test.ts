@@ -3,12 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  getLogger,
-  getResolvedLoggerSettings,
-  resetLogger,
-  setLoggerOverride,
-} from "../logging.js";
+import { getLogger, getResolvedLoggerSettings, resetLogger, setLoggerOverride } from "../logging.js";
 
 const DEFAULT_MAX_FILE_BYTES = 500 * 1024 * 1024;
 

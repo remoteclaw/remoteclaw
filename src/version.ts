@@ -10,11 +10,7 @@ const PACKAGE_JSON_CANDIDATES = [
   "./package.json",
 ] as const;
 
-const BUILD_INFO_CANDIDATES = [
-  "../build-info.json",
-  "../../build-info.json",
-  "./build-info.json",
-] as const;
+const BUILD_INFO_CANDIDATES = ["../build-info.json", "../../build-info.json", "./build-info.json"] as const;
 
 function readVersionFromJsonCandidates(
   moduleUrl: string,
@@ -65,10 +61,7 @@ export function readVersionFromBuildInfoForModuleUrl(moduleUrl: string): string 
 }
 
 export function resolveVersionFromModuleUrl(moduleUrl: string): string | null {
-  return (
-    readVersionFromPackageJsonForModuleUrl(moduleUrl) ||
-    readVersionFromBuildInfoForModuleUrl(moduleUrl)
-  );
+  return readVersionFromPackageJsonForModuleUrl(moduleUrl) || readVersionFromBuildInfoForModuleUrl(moduleUrl);
 }
 
 export function resolveBinaryVersion(params: {

@@ -249,15 +249,7 @@ async function resolveWindowsImageName(pid: number): Promise<string | undefined>
 }
 
 async function resolveWindowsCommandLine(pid: number): Promise<string | undefined> {
-  const res = await runCommandSafe([
-    "wmic",
-    "process",
-    "where",
-    `ProcessId=${pid}`,
-    "get",
-    "CommandLine",
-    "/value",
-  ]);
+  const res = await runCommandSafe(["wmic", "process", "where", `ProcessId=${pid}`, "get", "CommandLine", "/value"]);
   if (res.code !== 0) {
     return undefined;
   }
@@ -340,8 +332,7 @@ async function checkPortInUse(port: number): Promise<PortUsageStatus> {
 
 export async function inspectPortUsage(port: number): Promise<PortUsage> {
   const errors: string[] = [];
-  const result =
-    process.platform === "win32" ? await readWindowsListeners(port) : await readUnixListeners(port);
+  const result = process.platform === "win32" ? await readWindowsListeners(port) : await readUnixListeners(port);
   errors.push(...result.errors);
   let listeners = result.listeners;
   let status: PortUsageStatus = listeners.length > 0 ? "busy" : "unknown";
@@ -353,9 +344,7 @@ export async function inspectPortUsage(port: number): Promise<PortUsage> {
   }
   const hints = buildPortHints(listeners, port);
   if (status === "busy" && listeners.length === 0) {
-    hints.push(
-      "Port is in use but process details are unavailable (install lsof or run as an admin user).",
-    );
+    hints.push("Port is in use but process details are unavailable (install lsof or run as an admin user).");
   }
   return {
     port,

@@ -110,11 +110,7 @@ function findFirstAudio(ctx: MsgContext): AudioAttachmentInfo | undefined {
     const p = paths[i]?.trim();
     const u = urls[i]?.trim();
     const mime = types[i] ?? (count === 1 ? ctx.MediaType : undefined);
-    if (
-      mime?.toLowerCase().startsWith("audio/") ||
-      (p && isAudioFileName(p)) ||
-      (u && isAudioFileName(u))
-    ) {
+    if (mime?.toLowerCase().startsWith("audio/") || (p && isAudioFileName(p)) || (u && isAudioFileName(u))) {
       return { path: p || undefined, url: u || undefined, mime };
     }
   }
@@ -136,9 +132,7 @@ function findFirstAudio(ctx: MsgContext): AudioAttachmentInfo | undefined {
   return undefined;
 }
 
-async function readAudioAttachment(
-  audio: AudioAttachmentInfo,
-): Promise<{ buffer: Buffer; fileName: string }> {
+async function readAudioAttachment(audio: AudioAttachmentInfo): Promise<{ buffer: Buffer; fileName: string }> {
   if (audio.path) {
     const buffer = await fs.readFile(audio.path);
     return { buffer, fileName: path.basename(audio.path) };

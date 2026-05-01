@@ -249,9 +249,7 @@ export class GatewayChatClient {
   }
 }
 
-export async function resolveGatewayConnection(
-  opts: GatewayConnectionOptions,
-): Promise<ResolvedGatewayConnection> {
+export async function resolveGatewayConnection(opts: GatewayConnectionOptions): Promise<ResolvedGatewayConnection> {
   const config = loadConfig();
   const env = process.env;
   const gatewayAuthMode = config.gateway?.auth?.mode;
@@ -260,8 +258,7 @@ export async function resolveGatewayConnection(
   const envToken = trimToUndefined(env.REMOTECLAW_GATEWAY_TOKEN);
   const envPassword = trimToUndefined(env.REMOTECLAW_GATEWAY_PASSWORD);
 
-  const urlOverride =
-    typeof opts.url === "string" && opts.url.trim().length > 0 ? opts.url.trim() : undefined;
+  const urlOverride = typeof opts.url === "string" && opts.url.trim().length > 0 ? opts.url.trim() : undefined;
   const explicitAuth = resolveExplicitGatewayAuth({ token: opts.token, password: opts.password });
   ensureExplicitGatewayAuth({
     urlOverride,
@@ -305,9 +302,7 @@ export async function resolveGatewayConnection(
     const password = explicitAuth.password ?? envPassword ?? remotePassword.value;
     if (!token && !password) {
       throwGatewayAuthResolutionError(
-        remoteToken.unresolvedRefReason ??
-          remotePassword.unresolvedRefReason ??
-          "Missing gateway auth credentials.",
+        remoteToken.unresolvedRefReason ?? remotePassword.unresolvedRefReason ?? "Missing gateway auth credentials.",
       );
     }
     return { url, token, password };
@@ -342,9 +337,7 @@ export async function resolveGatewayConnection(
           });
     const password = explicitAuth.password ?? envPassword ?? localPassword.value;
     if (!password) {
-      throwGatewayAuthResolutionError(
-        localPassword.unresolvedRefReason ?? "Missing gateway auth password.",
-      );
+      throwGatewayAuthResolutionError(localPassword.unresolvedRefReason ?? "Missing gateway auth password.");
     }
     return {
       url,
@@ -364,9 +357,7 @@ export async function resolveGatewayConnection(
         });
     const token = explicitAuth.token ?? localToken.value ?? envToken;
     if (!token) {
-      throwGatewayAuthResolutionError(
-        localToken.unresolvedRefReason ?? "Missing gateway auth token.",
-      );
+      throwGatewayAuthResolutionError(localToken.unresolvedRefReason ?? "Missing gateway auth token.");
     }
     return token;
   };
@@ -381,8 +372,7 @@ export async function resolveGatewayConnection(
   }
 
   const passwordCandidate = explicitAuth.password ?? envPassword;
-  const shouldUsePassword =
-    Boolean(passwordCandidate) || (hasConfiguredPassword && !hasConfiguredToken);
+  const shouldUsePassword = Boolean(passwordCandidate) || (hasConfiguredPassword && !hasConfiguredToken);
 
   if (shouldUsePassword) {
     const localPassword = passwordCandidate
@@ -395,9 +385,7 @@ export async function resolveGatewayConnection(
         });
     const password = explicitAuth.password ?? localPassword.value ?? envPassword;
     if (!password) {
-      throwGatewayAuthResolutionError(
-        localPassword.unresolvedRefReason ?? "Missing gateway auth password.",
-      );
+      throwGatewayAuthResolutionError(localPassword.unresolvedRefReason ?? "Missing gateway auth password.");
     }
     return {
       url,

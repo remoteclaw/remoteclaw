@@ -1,12 +1,11 @@
 import { Command } from "commander";
 import { describe, expect, it, vi } from "vitest";
+import { registerDnsCli } from "./dns-cli.js";
 import { parseCanvasSnapshotPayload } from "./nodes-canvas.js";
 import { parseByteSize } from "./parse-bytes.js";
 import { parseDurationMs } from "./parse-duration.js";
 import { shouldSkipRespawnForArgv } from "./respawn-policy.js";
 import { waitForever } from "./wait.js";
-
-const { registerDnsCli } = await import("./dns-cli.js");
 
 describe("waitForever", () => {
   it("creates an unref'ed interval and returns a pending promise", () => {
@@ -19,12 +18,12 @@ describe("waitForever", () => {
 });
 
 describe("shouldSkipRespawnForArgv", () => {
-  it.each([
-    { argv: ["node", "remoteclaw", "--help"] },
-    { argv: ["node", "remoteclaw", "-V"] },
-  ] as const)("skips respawn for argv %j", ({ argv }) => {
-    expect(shouldSkipRespawnForArgv([...argv]), argv.join(" ")).toBe(true);
-  });
+  it.each([{ argv: ["node", "remoteclaw", "--help"] }, { argv: ["node", "remoteclaw", "-V"] }] as const)(
+    "skips respawn for argv %j",
+    ({ argv }) => {
+      expect(shouldSkipRespawnForArgv([...argv]), argv.join(" ")).toBe(true);
+    },
+  );
 
   it("keeps respawn path for normal commands", () => {
     expect(shouldSkipRespawnForArgv(["node", "remoteclaw", "status"])).toBe(false);
@@ -40,9 +39,7 @@ describe("nodes canvas helpers", () => {
   });
 
   it("rejects invalid canvas.snapshot payload", () => {
-    expect(() => parseCanvasSnapshotPayload({ format: "png" })).toThrow(
-      /invalid canvas\.snapshot payload/i,
-    );
+    expect(() => parseCanvasSnapshotPayload({ format: "png" })).toThrow(/invalid canvas\.snapshot payload/i);
   });
 });
 

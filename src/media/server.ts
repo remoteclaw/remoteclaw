@@ -25,11 +25,7 @@ const isValidMediaId = (id: string) => {
   return MEDIA_ID_PATTERN.test(id);
 };
 
-export function attachMediaRoutes(
-  app: Express,
-  ttlMs = DEFAULT_TTL_MS,
-  _runtime: RuntimeEnv = defaultRuntime,
-) {
+export function attachMediaRoutes(app: Express, ttlMs = DEFAULT_TTL_MS, _runtime: RuntimeEnv = defaultRuntime) {
   const mediaDir = getMediaDir();
 
   app.get("/media/:id", async (req, res) => {

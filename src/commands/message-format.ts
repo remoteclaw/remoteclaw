@@ -8,8 +8,7 @@ import { getTerminalTableWidth, renderTable } from "../terminal/table.js";
 import { isRich, theme } from "../terminal/theme.js";
 import { shortenText } from "./text-format.js";
 
-const resolveChannelLabel = (channel: ChannelId) =>
-  getChannelPlugin(channel)?.meta.label ?? channel;
+const resolveChannelLabel = (channel: ChannelId) => getChannelPlugin(channel)?.meta.label ?? channel;
 
 function extractMessageId(payload: unknown): string | null {
   if (!payload || typeof payload !== "object") {
@@ -113,14 +112,8 @@ function renderMessageList(messages: unknown[], opts: FormatOpts, emptyLabel: st
       (typeof authorObj?.username === "string" && authorObj.username) ||
       (typeof msg.user === "string" && msg.user) ||
       "";
-    const time =
-      (typeof msg.timestamp === "string" && msg.timestamp) ||
-      (typeof msg.ts === "string" && msg.ts) ||
-      "";
-    const text =
-      (typeof msg.content === "string" && msg.content) ||
-      (typeof msg.text === "string" && msg.text) ||
-      "";
+    const time = (typeof msg.timestamp === "string" && msg.timestamp) || (typeof msg.ts === "string" && msg.ts) || "";
+    const text = (typeof msg.content === "string" && msg.content) || (typeof msg.text === "string" && msg.text) || "";
     return {
       Time: shortenText(time, 28),
       Author: shortenText(author, 22),
@@ -274,9 +267,7 @@ export function formatMessageCliText(result: MessageActionRunResult): string[] {
     }));
     const okCount = results.filter((entry) => entry.ok).length;
     const total = results.length;
-    const headingLine = ok(
-      `✅ Broadcast complete (${okCount}/${total} succeeded, ${total - okCount} failed)`,
-    );
+    const headingLine = ok(`✅ Broadcast complete (${okCount}/${total} succeeded, ${total - okCount} failed)`);
     return [
       headingLine,
       renderTable({

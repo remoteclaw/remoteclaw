@@ -139,14 +139,10 @@ export function createSynologyChatPlugin() {
       collectWarnings: ({ account }: { account: ResolvedSynologyChatAccount }) => {
         const warnings: string[] = [];
         if (!account.token) {
-          warnings.push(
-            "- Synology Chat: token is not configured. The webhook will reject all requests.",
-          );
+          warnings.push("- Synology Chat: token is not configured. The webhook will reject all requests.");
         }
         if (!account.incomingUrl) {
-          warnings.push(
-            "- Synology Chat: incomingUrl is not configured. The bot cannot send replies.",
-          );
+          warnings.push("- Synology Chat: incomingUrl is not configured. The bot cannot send replies.");
         }
         if (account.allowInsecureSsl) {
           warnings.push(
@@ -238,9 +234,7 @@ export function createSynologyChatPlugin() {
         }
 
         if (!account.token || !account.incomingUrl) {
-          log?.warn?.(
-            `Synology Chat account ${accountId} not fully configured (missing token or incomingUrl)`,
-          );
+          log?.warn?.(`Synology Chat account ${accountId} not fully configured (missing token or incomingUrl)`);
           return waitUntilAbort(ctx.abortSignal);
         }
         if (account.dmPolicy === "allowlist" && account.allowedUserIds.length === 0) {
@@ -250,9 +244,7 @@ export function createSynologyChatPlugin() {
           return waitUntilAbort(ctx.abortSignal);
         }
 
-        log?.info?.(
-          `Starting Synology Chat channel (account: ${accountId}, path: ${account.webhookPath})`,
-        );
+        log?.info?.(`Starting Synology Chat channel (account: ${accountId}, path: ${account.webhookPath})`);
 
         const handler = createWebhookHandler({
           account,
@@ -293,12 +285,7 @@ export function createSynologyChatPlugin() {
                 deliver: async (payload: { text?: string; body?: string }) => {
                   const text = payload?.text ?? payload?.body;
                   if (text) {
-                    await sendMessage(
-                      account.incomingUrl,
-                      text,
-                      sendUserId,
-                      account.allowInsecureSsl,
-                    );
+                    await sendMessage(account.incomingUrl, text, sendUserId, account.allowInsecureSsl);
                   }
                 },
                 onReplyStart: () => {

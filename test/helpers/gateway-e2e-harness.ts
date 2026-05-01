@@ -96,8 +96,7 @@ async function waitForPortOpen(
   const stdout = chunksOut.join("");
   const stderr = chunksErr.join("");
   throw new Error(
-    `timeout waiting for gateway to listen on port ${port}\n` +
-      `--- stdout ---\n${stdout}\n--- stderr ---\n${stderr}`,
+    `timeout waiting for gateway to listen on port ${port}\n--- stdout ---\n${stdout}\n--- stderr ---\n${stderr}`,
   );
 }
 
@@ -127,15 +126,7 @@ export async function spawnGatewayInstance(name: string): Promise<GatewayInstanc
   try {
     child = spawn(
       "node",
-      [
-        "dist/index.js",
-        "gateway",
-        "--port",
-        String(port),
-        "--bind",
-        "loopback",
-        "--allow-unconfigured",
-      ],
+      ["dist/index.js", "gateway", "--port", String(port), "--bind", "loopback", "--allow-unconfigured"],
       {
         cwd: process.cwd(),
         env: {
@@ -341,10 +332,7 @@ export async function waitForNodeStatus(
   timeoutMs = GATEWAY_NODE_STATUS_TIMEOUT_MS,
 ) {
   const deadline = Date.now() + timeoutMs;
-  const client = await connectStatusClient(
-    inst,
-    Math.min(GATEWAY_CONNECT_STATUS_TIMEOUT_MS, timeoutMs),
-  );
+  const client = await connectStatusClient(inst, Math.min(GATEWAY_CONNECT_STATUS_TIMEOUT_MS, timeoutMs));
   try {
     while (Date.now() < deadline) {
       const list = await client.request<NodeListPayload>("node.list", {});
@@ -369,8 +357,7 @@ export async function waitForChatFinalEvent(params: {
   const deadline = Date.now() + (params.timeoutMs ?? 15_000);
   while (Date.now() < deadline) {
     const match = params.events.find(
-      (evt) =>
-        evt.runId === params.runId && evt.sessionKey === params.sessionKey && evt.state === "final",
+      (evt) => evt.runId === params.runId && evt.sessionKey === params.sessionKey && evt.state === "final",
     );
     if (match) {
       return match;

@@ -133,8 +133,7 @@ export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
   configSchema: buildChannelConfigSchema(LineConfigSchema),
   config: {
     ...lineConfigBase,
-    isConfigured: (account) =>
-      Boolean(account.channelAccessToken?.trim() && account.channelSecret?.trim()),
+    isConfigured: (account) => Boolean(account.channelAccessToken?.trim() && account.channelSecret?.trim()),
     describeAccount: (account) => ({
       accountId: account.accountId,
       name: account.name,
@@ -201,8 +200,7 @@ export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
     listGroups: async () => [],
   },
   setup: {
-    resolveAccountId: ({ accountId }) =>
-      getLineRuntime().channel.line.normalizeAccountId(accountId),
+    resolveAccountId: ({ accountId }) => getLineRuntime().channel.line.normalizeAccountId(accountId),
     applyAccountName: ({ cfg, accountId, name }) => {
       const lineConfig = (cfg.channels?.line ?? {}) as LineConfig;
       return patchLineAccountConfig(cfg, lineConfig, accountId, { name });
@@ -333,18 +331,14 @@ export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
         }
       };
 
-      const processed = payload.text
-        ? processLineMessage(payload.text)
-        : { text: "", flexMessages: [] };
+      const processed = payload.text ? processLineMessage(payload.text) : { text: "", flexMessages: [] };
 
       const chunkLimit =
         runtime.channel.text.resolveTextChunkLimit?.(cfg, "line", accountId ?? undefined, {
           fallbackLimit: 5000,
         }) ?? 5000;
 
-      const chunks = processed.text
-        ? runtime.channel.text.chunkMarkdownText(processed.text, chunkLimit)
-        : [];
+      const chunks = processed.text ? runtime.channel.text.chunkMarkdownText(processed.text, chunkLimit) : [];
       const mediaUrls = payload.mediaUrls ?? (payload.mediaUrl ? [payload.mediaUrl] : []);
       const shouldSendQuickRepliesInline = chunks.length === 0 && hasQuickReplies;
       const sendMediaMessages = async () => {
@@ -562,9 +556,7 @@ export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
     probeAccount: async ({ account, timeoutMs }) =>
       getLineRuntime().channel.line.probeLineBot(account.channelAccessToken, timeoutMs),
     buildAccountSnapshot: ({ account, runtime, probe }) => {
-      const configured = Boolean(
-        account.channelAccessToken?.trim() && account.channelSecret?.trim(),
-      );
+      const configured = Boolean(account.channelAccessToken?.trim() && account.channelSecret?.trim());
       const base = buildComputedAccountStatusSnapshot({
         accountId: account.accountId,
         name: account.name,
@@ -591,9 +583,7 @@ export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
         );
       }
       if (!secret) {
-        throw new Error(
-          `LINE webhook mode requires a non-empty channel secret for account "${account.accountId}".`,
-        );
+        throw new Error(`LINE webhook mode requires a non-empty channel secret for account "${account.accountId}".`);
       }
 
       let lineBotLabel = "";
@@ -632,12 +622,7 @@ export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
       let changed = false;
 
       if (accountId === DEFAULT_ACCOUNT_ID) {
-        if (
-          nextLine.channelAccessToken ||
-          nextLine.channelSecret ||
-          nextLine.tokenFile ||
-          nextLine.secretFile
-        ) {
+        if (nextLine.channelAccessToken || nextLine.channelSecret || nextLine.tokenFile || nextLine.secretFile) {
           delete nextLine.channelAccessToken;
           delete nextLine.channelSecret;
           delete nextLine.tokenFile;

@@ -7,9 +7,7 @@ type OriginCheckResult =
     }
   | { ok: false; reason: string };
 
-function parseOrigin(
-  originRaw?: string,
-): { origin: string; host: string; hostname: string } | null {
+function parseOrigin(originRaw?: string): { origin: string; host: string; hostname: string } | null {
   const trimmed = (originRaw ?? "").trim();
   if (!trimmed || trimmed === "null") {
     return null;
@@ -38,19 +36,13 @@ export function checkBrowserOrigin(params: {
     return { ok: false, reason: "origin missing or invalid" };
   }
 
-  const allowlist = new Set(
-    (params.allowedOrigins ?? []).map((value) => value.trim().toLowerCase()).filter(Boolean),
-  );
+  const allowlist = new Set((params.allowedOrigins ?? []).map((value) => value.trim().toLowerCase()).filter(Boolean));
   if (allowlist.has("*") || allowlist.has(parsedOrigin.origin)) {
     return { ok: true, matchedBy: "allowlist" };
   }
 
   const requestHost = normalizeHostHeader(params.requestHost);
-  if (
-    params.allowHostHeaderOriginFallback === true &&
-    requestHost &&
-    parsedOrigin.host === requestHost
-  ) {
+  if (params.allowHostHeaderOriginFallback === true && requestHost && parsedOrigin.host === requestHost) {
     return { ok: true, matchedBy: "host-header-fallback" };
   }
 

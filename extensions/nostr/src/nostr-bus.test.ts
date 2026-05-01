@@ -46,15 +46,11 @@ describe("validatePrivateKey", () => {
     });
 
     it("rejects 63-char hex (too short)", () => {
-      expect(() => validatePrivateKey(TEST_HEX_KEY.slice(0, 63))).toThrow(
-        "Private key must be 64 hex characters",
-      );
+      expect(() => validatePrivateKey(TEST_HEX_KEY.slice(0, 63))).toThrow("Private key must be 64 hex characters");
     });
 
     it("rejects 65-char hex (too long)", () => {
-      expect(() => validatePrivateKey(TEST_HEX_KEY + "0")).toThrow(
-        "Private key must be 64 hex characters",
-      );
+      expect(() => validatePrivateKey(TEST_HEX_KEY + "0")).toThrow("Private key must be 64 hex characters");
     });
 
     it("rejects non-hex characters", () => {
@@ -71,9 +67,7 @@ describe("validatePrivateKey", () => {
     });
 
     it("rejects key with 0x prefix", () => {
-      expect(() => validatePrivateKey("0x" + TEST_HEX_KEY)).toThrow(
-        "Private key must be 64 hex characters",
-      );
+      expect(() => validatePrivateKey("0x" + TEST_HEX_KEY)).toThrow("Private key must be 64 hex characters");
     });
   });
 

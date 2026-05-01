@@ -13,12 +13,7 @@ import { getMatrixRuntime } from "../../runtime.js";
 import type { CoreConfig, MatrixConfig, MatrixRoomConfig, ReplyToMode } from "../../types.js";
 import { resolveMatrixAccount } from "../accounts.js";
 import { setActiveMatrixClient } from "../active-client.js";
-import {
-  isBunRuntime,
-  resolveMatrixAuth,
-  resolveSharedMatrixClient,
-  stopSharedClientForAccount,
-} from "../client.js";
+import { isBunRuntime, resolveMatrixAuth, resolveSharedMatrixClient, stopSharedClientForAccount } from "../client.js";
 import { normalizeMatrixUserId } from "./allowlist.js";
 import { registerMatrixAutoJoin } from "./auto-join.js";
 import { createDirectRoomTracker } from "./direct.js";
@@ -280,13 +275,9 @@ export async function monitorMatrixProvider(opts: MonitorMatrixOpts = {}): Promi
 
   const auth = await resolveMatrixAuth({ cfg, accountId: opts.accountId });
   const resolvedInitialSyncLimit =
-    typeof opts.initialSyncLimit === "number"
-      ? Math.max(0, Math.floor(opts.initialSyncLimit))
-      : auth.initialSyncLimit;
+    typeof opts.initialSyncLimit === "number" ? Math.max(0, Math.floor(opts.initialSyncLimit)) : auth.initialSyncLimit;
   const authWithLimit =
-    resolvedInitialSyncLimit === auth.initialSyncLimit
-      ? auth
-      : { ...auth, initialSyncLimit: resolvedInitialSyncLimit };
+    resolvedInitialSyncLimit === auth.initialSyncLimit ? auth : { ...auth, initialSyncLimit: resolvedInitialSyncLimit };
   const client = await resolveSharedMatrixClient({
     cfg,
     auth: authWithLimit,
@@ -297,12 +288,11 @@ export async function monitorMatrixProvider(opts: MonitorMatrixOpts = {}): Promi
 
   const mentionRegexes = core.channel.mentions.buildMentionRegexes(cfg);
   const defaultGroupPolicy = resolveDefaultGroupPolicy(cfg);
-  const { groupPolicy: groupPolicyRaw, providerMissingFallbackApplied } =
-    resolveAllowlistProviderRuntimeGroupPolicy({
-      providerConfigPresent: cfg.channels?.matrix !== undefined,
-      groupPolicy: accountConfig.groupPolicy,
-      defaultGroupPolicy,
-    });
+  const { groupPolicy: groupPolicyRaw, providerMissingFallbackApplied } = resolveAllowlistProviderRuntimeGroupPolicy({
+    providerConfigPresent: cfg.channels?.matrix !== undefined,
+    groupPolicy: accountConfig.groupPolicy,
+    defaultGroupPolicy,
+  });
   warnMissingProviderGroupPolicyFallbackOnce({
     providerMissingFallbackApplied,
     providerKey: "matrix",

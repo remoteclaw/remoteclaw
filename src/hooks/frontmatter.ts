@@ -44,9 +44,7 @@ function parseInstallSpec(input: unknown): HookInstallSpec | undefined {
   return spec;
 }
 
-export function resolveRemoteClawMetadata(
-  frontmatter: ParsedHookFrontmatter,
-): RemoteClawHookMetadata | undefined {
+export function resolveRemoteClawMetadata(frontmatter: ParsedHookFrontmatter): RemoteClawHookMetadata | undefined {
   const metadataObj = resolveRemoteClawManifestBlock({ frontmatter });
   if (!metadataObj) {
     return undefined;
@@ -68,9 +66,7 @@ export function resolveRemoteClawMetadata(
   };
 }
 
-export function resolveHookInvocationPolicy(
-  frontmatter: ParsedHookFrontmatter,
-): HookInvocationPolicy {
+export function resolveHookInvocationPolicy(frontmatter: ParsedHookFrontmatter): HookInvocationPolicy {
   return {
     enabled: parseFrontmatterBool(getFrontmatterString(frontmatter, "enabled"), true),
   };

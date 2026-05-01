@@ -22,9 +22,7 @@ function run(cmd: string, args: string[], opts?: RunOpts): string {
   }
   if (!opts?.allowFailure && res.status !== 0) {
     const errText =
-      typeof res.stderr === "string" && res.stderr.trim()
-        ? res.stderr.trim()
-        : `exit ${res.status ?? "unknown"}`;
+      typeof res.stderr === "string" && res.stderr.trim() ? res.stderr.trim() : `exit ${res.status ?? "unknown"}`;
     throw new Error(`${cmd} ${args.join(" ")} failed: ${errText}`);
   }
   return typeof res.stdout === "string" ? res.stdout : "";
@@ -105,21 +103,14 @@ export function registerDnsCli(program: Command) {
     .description("DNS helpers for wide-area discovery (Tailscale + CoreDNS)")
     .addHelpText(
       "after",
-      () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/dns", "docs.remoteclaw.org/cli/dns")}\n`,
+      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/dns", "docs.remoteclaw.org/cli/dns")}\n`,
     );
 
   dns
     .command("setup")
-    .description(
-      "Set up CoreDNS to serve your discovery domain for unicast DNS-SD (Wide-Area Bonjour)",
-    )
+    .description("Set up CoreDNS to serve your discovery domain for unicast DNS-SD (Wide-Area Bonjour)")
     .option("--domain <domain>", "Wide-area discovery domain (e.g. remoteclaw.internal)")
-    .option(
-      "--apply",
-      "Install/update CoreDNS config and (re)start the service (requires sudo)",
-      false,
-    )
+    .option("--apply", "Install/update CoreDNS config and (re)start the service (requires sudo)", false)
     .action(async (opts) => {
       const cfg = loadConfig();
       const tailnetIPv4 = pickPrimaryTailnetIPv4();
@@ -128,9 +119,7 @@ export function registerDnsCli(program: Command) {
         configDomain: (opts.domain as string | undefined) ?? cfg.discovery?.wideArea?.domain,
       });
       if (!wideAreaDomain) {
-        throw new Error(
-          "No wide-area domain configured. Set discovery.wideArea.domain or pass --domain.",
-        );
+        throw new Error("No wide-area domain configured. Set discovery.wideArea.domain or pass --domain.");
       }
       const zonePath = getWideAreaZonePath(wideAreaDomain);
 
@@ -161,12 +150,8 @@ export function registerDnsCli(program: Command) {
       });
       defaultRuntime.log("");
       defaultRuntime.log(theme.heading("Tailscale admin (DNS → Nameservers):"));
-      defaultRuntime.log(
-        theme.muted(`- Add nameserver: ${tailnetIPv4 ?? "<this machine's tailnet IPv4>"}`),
-      );
-      defaultRuntime.log(
-        theme.muted(`- Restrict to domain (Split DNS): ${wideAreaDomain.replace(/\.$/, "")}`),
-      );
+      defaultRuntime.log(theme.muted(`- Add nameserver: ${tailnetIPv4 ?? "<this machine's tailnet IPv4>"}`));
+      defaultRuntime.log(theme.muted(`- Restrict to domain (Split DNS): ${wideAreaDomain.replace(/\.$/, "")}`));
 
       if (!opts.apply) {
         defaultRuntime.log("");

@@ -74,8 +74,7 @@ export function buildMSTeamsGraphMessageUrls(params: {
 
   if (conversationType === "channel") {
     const teamId =
-      readNestedString(params.channelData, ["team", "id"]) ??
-      readNestedString(params.channelData, ["teamId"]);
+      readNestedString(params.channelData, ["team", "id"]) ?? readNestedString(params.channelData, ["teamId"]);
     const channelId =
       readNestedString(params.channelData, ["channel", "id"]) ??
       readNestedString(params.channelData, ["channelId"]) ??
@@ -113,8 +112,7 @@ export function buildMSTeamsGraphMessageUrls(params: {
     messageIdCandidates.add(replyToId);
   }
   const urls = Array.from(messageIdCandidates).map(
-    (candidate) =>
-      `${GRAPH_ROOT}/chats/${encodeURIComponent(chatId)}/messages/${encodeURIComponent(candidate)}`,
+    (candidate) => `${GRAPH_ROOT}/chats/${encodeURIComponent(chatId)}/messages/${encodeURIComponent(candidate)}`,
   );
   return Array.from(new Set(urls));
 }

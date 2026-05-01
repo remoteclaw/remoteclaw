@@ -91,9 +91,7 @@ describe("registerSessionTools", () => {
     const tool = mockServer.tools.get("sessions_list");
     const result = await tool!.handler({ limit: 5 });
 
-    expect(mockCallGateway).toHaveBeenCalledWith(
-      expect.objectContaining({ method: "sessions.list" }),
-    );
+    expect(mockCallGateway).toHaveBeenCalledWith(expect.objectContaining({ method: "sessions.list" }));
     expect(result.content[0].type).toBe("text");
   });
 
@@ -117,9 +115,7 @@ describe("registerSessionTools", () => {
     const tool = mockServer.tools.get("agents_list");
     await tool!.handler({});
 
-    expect(mockCallGateway).toHaveBeenCalledWith(
-      expect.objectContaining({ method: "agents.list" }),
-    );
+    expect(mockCallGateway).toHaveBeenCalledWith(expect.objectContaining({ method: "agents.list" }));
   });
 
   it("session_status defaults to current session key", async () => {

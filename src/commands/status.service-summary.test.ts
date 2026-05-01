@@ -64,8 +64,7 @@ describe("readServiceStatusSummary", () => {
       return env?.REMOTECLAW_GATEWAY_PORT === "18789";
     });
     const readRuntime = vi.fn(async (env?: NodeJS.ProcessEnv) => ({
-      status:
-        env?.REMOTECLAW_GATEWAY_PORT === "18789" ? ("running" as const) : ("unknown" as const),
+      status: env?.REMOTECLAW_GATEWAY_PORT === "18789" ? ("running" as const) : ("unknown" as const),
     }));
 
     const summary = await readServiceStatusSummary(

@@ -75,8 +75,7 @@ export function normalizeCanvasScopedUrl(rawUrl: string): NormalizedCanvasScoped
     }
   }
 
-  const capability =
-    capabilityFromPath ?? normalizeCapability(url.searchParams.get(CANVAS_CAPABILITY_QUERY_PARAM));
+  const capability = capabilityFromPath ?? normalizeCapability(url.searchParams.get(CANVAS_CAPABILITY_QUERY_PARAM));
   return {
     pathname: url.pathname,
     capability,

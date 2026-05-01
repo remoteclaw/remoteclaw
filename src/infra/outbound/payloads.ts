@@ -1,8 +1,5 @@
 import { parseReplyDirectives } from "../../auto-reply/reply/reply-directives.js";
-import {
-  isRenderablePayload,
-  shouldSuppressReasoningPayload,
-} from "../../auto-reply/reply/reply-payloads.js";
+import { isRenderablePayload, shouldSuppressReasoningPayload } from "../../auto-reply/reply/reply-payloads.js";
 import type { ReplyPayload } from "../../auto-reply/types.js";
 
 export type NormalizedOutboundPayload = {
@@ -40,9 +37,7 @@ function mergeMediaUrls(...lists: Array<ReadonlyArray<string | undefined> | unde
   return merged;
 }
 
-export function normalizeReplyPayloadsForDelivery(
-  payloads: readonly ReplyPayload[],
-): ReplyPayload[] {
+export function normalizeReplyPayloadsForDelivery(payloads: readonly ReplyPayload[]): ReplyPayload[] {
   const normalized: ReplyPayload[] = [];
   for (const payload of payloads) {
     if (shouldSuppressReasoningPayload(payload)) {
@@ -51,10 +46,7 @@ export function normalizeReplyPayloadsForDelivery(
     const parsed = parseReplyDirectives(payload.text ?? "");
     const explicitMediaUrls = payload.mediaUrls ?? parsed.mediaUrls;
     const explicitMediaUrl = payload.mediaUrl ?? parsed.mediaUrl;
-    const mergedMedia = mergeMediaUrls(
-      explicitMediaUrls,
-      explicitMediaUrl ? [explicitMediaUrl] : undefined,
-    );
+    const mergedMedia = mergeMediaUrls(explicitMediaUrls, explicitMediaUrl ? [explicitMediaUrl] : undefined);
     const hasMultipleMedia = (explicitMediaUrls?.length ?? 0) > 1;
     const resolvedMediaUrl = hasMultipleMedia ? undefined : explicitMediaUrl;
     const next: ReplyPayload = {
@@ -78,9 +70,7 @@ export function normalizeReplyPayloadsForDelivery(
   return normalized;
 }
 
-export function normalizeOutboundPayloads(
-  payloads: readonly ReplyPayload[],
-): NormalizedOutboundPayload[] {
+export function normalizeOutboundPayloads(payloads: readonly ReplyPayload[]): NormalizedOutboundPayload[] {
   const normalizedPayloads: NormalizedOutboundPayload[] = [];
   for (const payload of normalizeReplyPayloadsForDelivery(payloads)) {
     const mediaUrls = payload.mediaUrls ?? (payload.mediaUrl ? [payload.mediaUrl] : []);
@@ -99,9 +89,7 @@ export function normalizeOutboundPayloads(
   return normalizedPayloads;
 }
 
-export function normalizeOutboundPayloadsForJson(
-  payloads: readonly ReplyPayload[],
-): OutboundPayloadJson[] {
+export function normalizeOutboundPayloadsForJson(payloads: readonly ReplyPayload[]): OutboundPayloadJson[] {
   const normalized: OutboundPayloadJson[] = [];
   for (const payload of normalizeReplyPayloadsForDelivery(payloads)) {
     normalized.push({

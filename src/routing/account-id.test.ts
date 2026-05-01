@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  DEFAULT_ACCOUNT_ID,
-  normalizeAccountId,
-  normalizeOptionalAccountId,
-} from "./account-id.js";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId, normalizeOptionalAccountId } from "./account-id.js";
 
 describe("account id normalization", () => {
   const reservedAccountIdCases = [

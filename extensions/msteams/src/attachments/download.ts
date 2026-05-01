@@ -13,11 +13,7 @@ import {
   resolveRequestUrl,
   safeFetchWithPolicy,
 } from "./shared.js";
-import type {
-  MSTeamsAccessTokenProvider,
-  MSTeamsAttachmentLike,
-  MSTeamsInboundMedia,
-} from "./types.js";
+import type { MSTeamsAccessTokenProvider, MSTeamsAttachmentLike, MSTeamsInboundMedia } from "./types.js";
 
 type DownloadCandidate = {
   url: string;
@@ -34,8 +30,7 @@ function resolveDownloadCandidate(att: MSTeamsAttachmentLike): DownloadCandidate
     if (!isRecord(att.content)) {
       return null;
     }
-    const downloadUrl =
-      typeof att.content.downloadUrl === "string" ? att.content.downloadUrl.trim() : "";
+    const downloadUrl = typeof att.content.downloadUrl === "string" ? att.content.downloadUrl.trim() : "";
     if (!downloadUrl) {
       return null;
     }

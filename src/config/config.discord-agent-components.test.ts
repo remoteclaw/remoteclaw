@@ -51,8 +51,7 @@ describe("discord agentComponents config", () => {
       expect(
         res.issues.some(
           (issue) =>
-            issue.path === "channels.discord.agentComponents" &&
-            issue.message.toLowerCase().includes("unrecognized"),
+            issue.path === "channels.discord.agentComponents" && issue.message.toLowerCase().includes("unrecognized"),
         ),
       ).toBe(true);
     }

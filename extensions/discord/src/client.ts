@@ -3,11 +3,7 @@ import { loadConfig } from "../../../src/config/config.js";
 import { createDiscordRetryRunner, type RetryRunner } from "../../../src/infra/retry-policy.js";
 import type { RetryConfig } from "../../../src/infra/retry.js";
 import { normalizeAccountId } from "../../../src/routing/session-key.js";
-import {
-  mergeDiscordAccountConfig,
-  resolveDiscordAccount,
-  type ResolvedDiscordAccount,
-} from "./accounts.js";
+import { mergeDiscordAccountConfig, resolveDiscordAccount, type ResolvedDiscordAccount } from "./accounts.js";
 import { normalizeDiscordToken } from "./token.js";
 
 export type DiscordClientOpts = {
@@ -51,10 +47,7 @@ function resolveAccountWithoutToken(params: {
   };
 }
 
-export function createDiscordRestClient(
-  opts: DiscordClientOpts,
-  cfg?: ReturnType<typeof loadConfig>,
-) {
+export function createDiscordRestClient(opts: DiscordClientOpts, cfg?: ReturnType<typeof loadConfig>) {
   const resolvedCfg = opts.cfg ?? cfg ?? loadConfig();
   const explicitToken = normalizeDiscordToken(opts.token, "channels.discord.token");
   const account = explicitToken

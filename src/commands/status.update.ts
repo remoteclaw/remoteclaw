@@ -1,10 +1,6 @@
 import { formatCliCommand } from "../cli/command-format.js";
 import { resolveRemoteClawPackageRoot } from "../infra/remoteclaw-root.js";
-import {
-  checkUpdateStatus,
-  compareSemverStrings,
-  type UpdateCheckResult,
-} from "../infra/update-check.js";
+import { checkUpdateStatus, compareSemverStrings, type UpdateCheckResult } from "../infra/update-check.js";
 import { VERSION } from "../version.js";
 
 export async function getUpdateCheckResult(params: {
@@ -37,10 +33,7 @@ export function resolveUpdateAvailability(update: UpdateCheckResult): UpdateAvai
   const latestVersion = update.registry?.latestVersion ?? null;
   const registryCmp = latestVersion ? compareSemverStrings(VERSION, latestVersion) : null;
   const hasRegistryUpdate = registryCmp != null && registryCmp < 0;
-  const gitBehind =
-    update.installKind === "git" && typeof update.git?.behind === "number"
-      ? update.git.behind
-      : null;
+  const gitBehind = update.installKind === "git" && typeof update.git?.behind === "number" ? update.git.behind : null;
   const hasGitUpdate = gitBehind != null && gitBehind > 0;
 
   return {

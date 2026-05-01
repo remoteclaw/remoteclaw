@@ -208,12 +208,7 @@ async function getRecord(client: Lark.Client, appToken: string, tableId: string,
   };
 }
 
-async function createRecord(
-  client: Lark.Client,
-  appToken: string,
-  tableId: string,
-  fields: Record<string, unknown>,
-) {
+async function createRecord(client: Lark.Client, appToken: string, tableId: string, fields: Record<string, unknown>) {
   const res = await client.bitable.appTableRecord.create({
     path: { app_token: appToken, table_id: tableId },
     // oxlint-disable-next-line typescript/no-explicit-any
@@ -335,12 +330,7 @@ async function cleanupNewBitable(
   return { cleanedRows, cleanedFields };
 }
 
-async function createApp(
-  client: Lark.Client,
-  name: string,
-  folderToken?: string,
-  logger?: CleanupLogger,
-) {
+async function createApp(client: Lark.Client, name: string, folderToken?: string, logger?: CleanupLogger) {
   const res = await client.bitable.app.create({
     data: {
       name,
@@ -465,9 +455,7 @@ const ListRecordsSchema = Type.Object({
       maximum: 500,
     }),
   ),
-  page_token: Type.Optional(
-    Type.String({ description: "Pagination token from previous response" }),
-  ),
+  page_token: Type.Optional(Type.String({ description: "Pagination token from previous response" })),
 });
 
 const GetRecordSchema = Type.Object({
@@ -633,12 +621,7 @@ export function registerFeishuBitableTools(api: RemoteClawPluginApi) {
     description: "Get a single record by ID from a Bitable table",
     parameters: GetRecordSchema,
     async execute({ params, defaultAccountId }) {
-      return getRecord(
-        getClient(params, defaultAccountId),
-        params.app_token,
-        params.table_id,
-        params.record_id,
-      );
+      return getRecord(getClient(params, defaultAccountId), params.app_token, params.table_id, params.record_id);
     },
   });
 
@@ -653,12 +636,7 @@ export function registerFeishuBitableTools(api: RemoteClawPluginApi) {
     description: "Create a new record (row) in a Bitable table",
     parameters: CreateRecordSchema,
     async execute({ params, defaultAccountId }) {
-      return createRecord(
-        getClient(params, defaultAccountId),
-        params.app_token,
-        params.table_id,
-        params.fields,
-      );
+      return createRecord(getClient(params, defaultAccountId), params.app_token, params.table_id, params.fields);
     },
   });
 

@@ -43,9 +43,7 @@ function isPipeClosedError(err: unknown): boolean {
   return code === "EPIPE" || code === "EIO";
 }
 
-function hasRuntimeOutputWriter(
-  runtime: RuntimeEnv | OutputRuntimeEnv,
-): runtime is OutputRuntimeEnv {
+function hasRuntimeOutputWriter(runtime: RuntimeEnv | OutputRuntimeEnv): runtime is OutputRuntimeEnv {
   return typeof (runtime as Partial<OutputRuntimeEnv>).writeStdout === "function";
 }
 
@@ -111,11 +109,7 @@ export function writeRuntimeStdout(runtime: RuntimeEnv | OutputRuntimeEnv, value
   runtime.log(value);
 }
 
-export function writeRuntimeJson(
-  runtime: RuntimeEnv | OutputRuntimeEnv,
-  value: unknown,
-  space = 2,
-): void {
+export function writeRuntimeJson(runtime: RuntimeEnv | OutputRuntimeEnv, value: unknown, space = 2): void {
   if (hasRuntimeOutputWriter(runtime)) {
     runtime.writeJson(value, space);
     return;

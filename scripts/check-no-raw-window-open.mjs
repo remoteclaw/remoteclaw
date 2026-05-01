@@ -32,9 +32,7 @@ function isRawWindowOpenCall(expression) {
   }
 
   const receiver = unwrapExpression(propertyAccess.expression);
-  return (
-    ts.isIdentifier(receiver) && (receiver.text === "window" || receiver.text === "globalThis")
-  );
+  return ts.isIdentifier(receiver) && (receiver.text === "window" || receiver.text === "globalThis");
 }
 
 export function findRawWindowOpenLines(content, fileName = "source.ts") {

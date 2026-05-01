@@ -24,20 +24,13 @@ export function registerNodesLocationCommands(nodes: Command) {
         await runNodesCommand("location get", async () => {
           const nodeId = await resolveNodeId(opts, String(opts.node ?? ""));
           const maxAgeMs = opts.maxAge ? Number.parseInt(String(opts.maxAge), 10) : undefined;
-          const desiredAccuracyRaw =
-            typeof opts.accuracy === "string" ? opts.accuracy.trim().toLowerCase() : undefined;
+          const desiredAccuracyRaw = typeof opts.accuracy === "string" ? opts.accuracy.trim().toLowerCase() : undefined;
           const desiredAccuracy =
-            desiredAccuracyRaw === "coarse" ||
-            desiredAccuracyRaw === "balanced" ||
-            desiredAccuracyRaw === "precise"
+            desiredAccuracyRaw === "coarse" || desiredAccuracyRaw === "balanced" || desiredAccuracyRaw === "precise"
               ? desiredAccuracyRaw
               : undefined;
-          const timeoutMs = opts.locationTimeout
-            ? Number.parseInt(String(opts.locationTimeout), 10)
-            : undefined;
-          const invokeTimeoutMs = opts.invokeTimeout
-            ? Number.parseInt(String(opts.invokeTimeout), 10)
-            : undefined;
+          const timeoutMs = opts.locationTimeout ? Number.parseInt(String(opts.locationTimeout), 10) : undefined;
+          const invokeTimeoutMs = opts.invokeTimeout ? Number.parseInt(String(opts.invokeTimeout), 10) : undefined;
 
           const invokeParams: Record<string, unknown> = {
             nodeId,
@@ -56,9 +49,7 @@ export function registerNodesLocationCommands(nodes: Command) {
           const raw = await callGatewayCli("node.invoke", opts, invokeParams);
           const res = typeof raw === "object" && raw !== null ? (raw as { payload?: unknown }) : {};
           const payload =
-            res.payload && typeof res.payload === "object"
-              ? (res.payload as Record<string, unknown>)
-              : {};
+            res.payload && typeof res.payload === "object" ? (res.payload as Record<string, unknown>) : {};
 
           if (opts.json) {
             defaultRuntime.writeJson(payload);

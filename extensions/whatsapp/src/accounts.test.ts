@@ -3,9 +3,7 @@ import { describe, expect, it } from "vitest";
 import { resolveWhatsAppAccount, resolveWhatsAppAuthDir } from "./accounts.js";
 
 describe("resolveWhatsAppAuthDir", () => {
-  const stubCfg = { channels: { whatsapp: { accounts: {} } } } as Parameters<
-    typeof resolveWhatsAppAuthDir
-  >[0]["cfg"];
+  const stubCfg = { channels: { whatsapp: { accounts: {} } } } as Parameters<typeof resolveWhatsAppAuthDir>[0]["cfg"];
 
   it("sanitizes path traversal sequences in accountId", () => {
     const { authDir } = resolveWhatsAppAuthDir({

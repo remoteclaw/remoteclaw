@@ -187,11 +187,7 @@ describe("routeReply", () => {
       to: "channel:C123",
       cfg,
     });
-    expect(mocks.sendMessageSlack).toHaveBeenCalledWith(
-      "channel:C123",
-      "[remoteclaw] hi",
-      expect.any(Object),
-    );
+    expect(mocks.sendMessageSlack).toHaveBeenCalledWith("channel:C123", "[remoteclaw] hi", expect.any(Object));
   });
 
   it("routes directive-only Slack replies when interactive replies are enabled", async () => {

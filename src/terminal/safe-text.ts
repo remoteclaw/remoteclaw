@@ -4,10 +4,7 @@ import { stripAnsi } from "./ansi.js";
  * Normalize untrusted text for single-line terminal/log rendering.
  */
 export function sanitizeTerminalText(input: string): string {
-  const normalized = stripAnsi(input)
-    .replace(/\r/g, "\\r")
-    .replace(/\n/g, "\\n")
-    .replace(/\t/g, "\\t");
+  const normalized = stripAnsi(input).replace(/\r/g, "\\r").replace(/\n/g, "\\n").replace(/\t/g, "\\t");
   let sanitized = "";
   for (const char of normalized) {
     const code = char.charCodeAt(0);

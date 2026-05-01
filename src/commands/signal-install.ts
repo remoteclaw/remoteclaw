@@ -55,20 +55,13 @@ export function looksLikeArchive(name: string): boolean {
  * strategy (e.g. Homebrew).
  */
 /** @internal Exported for testing. */
-export function pickAsset(
-  assets: ReleaseAsset[],
-  platform: NodeJS.Platform,
-  arch: string,
-): NamedAsset | undefined {
-  const withName = assets.filter((asset): asset is NamedAsset =>
-    Boolean(asset.name && asset.browser_download_url),
-  );
+export function pickAsset(assets: ReleaseAsset[], platform: NodeJS.Platform, arch: string): NamedAsset | undefined {
+  const withName = assets.filter((asset): asset is NamedAsset => Boolean(asset.name && asset.browser_download_url));
 
   // Archives only, excluding signature files (.asc)
   const archives = withName.filter((a) => looksLikeArchive(a.name.toLowerCase()));
 
-  const byName = (pattern: RegExp) =>
-    archives.find((asset) => pattern.test(asset.name.toLowerCase()));
+  const byName = (pattern: RegExp) => archives.find((asset) => pattern.test(asset.name.toLowerCase()));
 
   if (platform === "linux") {
     // The official "Linux-native" asset is an x86-64 GraalVM binary.

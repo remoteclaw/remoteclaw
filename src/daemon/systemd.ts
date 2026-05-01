@@ -27,11 +27,7 @@ import {
   readSystemdUserLingerStatus,
   type SystemdUserLingerStatus,
 } from "./systemd-linger.js";
-import {
-  buildSystemdUnit,
-  parseSystemdEnvAssignment,
-  parseSystemdExecStart,
-} from "./systemd-unit.js";
+import { buildSystemdUnit, parseSystemdEnvAssignment, parseSystemdExecStart } from "./systemd-unit.js";
 
 function resolveSystemdUnitPathForName(env: GatewayServiceEnv, name: string): string {
   const home = toPosixPath(resolveHomeDir(env));
@@ -59,9 +55,7 @@ export type { SystemdUserLingerStatus };
 
 // Unit file parsing/rendering: see systemd-unit.ts
 
-export async function readSystemdServiceExecStart(
-  env: GatewayServiceEnv,
-): Promise<GatewayServiceCommandConfig | null> {
+export async function readSystemdServiceExecStart(env: GatewayServiceEnv): Promise<GatewayServiceCommandConfig | null> {
   const unitPath = resolveSystemdUnitPath(env);
   try {
     const content = await fs.readFile(unitPath, "utf8");
@@ -156,8 +150,7 @@ function parseEnvironmentFileLine(rawLine: string): { key: string; value: string
   let value = trimmed.slice(eq + 1).trim();
   if (
     value.length >= 2 &&
-    ((value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'")))
+    ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'")))
   ) {
     value = value.slice(1, -1);
   }
@@ -195,9 +188,7 @@ async function resolveSystemdEnvironmentFiles(params: {
         continue;
       }
       const expanded = expandSystemdSpecifier(pathnameRaw, params.env);
-      const pathname = path.posix.isAbsolute(expanded)
-        ? expanded
-        : path.posix.resolve(unitDir, expanded);
+      const pathname = path.posix.isAbsolute(expanded) ? expanded : path.posix.resolve(unitDir, expanded);
       try {
         const fromFile = await readSystemdEnvironmentFile(pathname);
         Object.assign(resolved, fromFile);
@@ -252,9 +243,7 @@ export function parseSystemdShow(output: string): SystemdServiceInfo {
   return info;
 }
 
-async function execSystemctl(
-  args: string[],
-): Promise<{ stdout: string; stderr: string; code: number }> {
+async function execSystemctl(args: string[]): Promise<{ stdout: string; stderr: string; code: number }> {
   return await execFileUtf8("systemctl", args);
 }
 
@@ -521,10 +510,7 @@ export async function installSystemdService({
   return { unitPath };
 }
 
-export async function uninstallSystemdService({
-  env,
-  stdout,
-}: GatewayServiceManageArgs): Promise<void> {
+export async function uninstallSystemdService({ env, stdout }: GatewayServiceManageArgs): Promise<void> {
   await assertSystemdAvailable(env);
   const serviceName = resolveGatewaySystemdServiceName(env.REMOTECLAW_PROFILE);
   const unitName = `${serviceName}.service`;
@@ -556,10 +542,7 @@ async function runSystemdServiceAction(params: {
   params.stdout.write(`${formatLine(params.label, unitName)}\n`);
 }
 
-export async function stopSystemdService({
-  stdout,
-  env,
-}: GatewayServiceControlArgs): Promise<void> {
+export async function stopSystemdService({ stdout, env }: GatewayServiceControlArgs): Promise<void> {
   await runSystemdServiceAction({
     stdout,
     env,

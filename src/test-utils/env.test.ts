@@ -151,16 +151,12 @@ describe("env test utils", () => {
     process.env.REMOTECLAW_HOME = "/srv/remoteclaw-home";
 
     try {
-      const seen = withPathResolutionEnv(
-        homeDir,
-        { REMOTECLAW_BUNDLED_PLUGINS_DIR: "~/bundled" },
-        (env) => ({
-          processHome: process.env.HOME,
-          processRemoteClawHome: process.env.REMOTECLAW_HOME,
-          processBundledDir: process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR,
-          envBundledDir: env.REMOTECLAW_BUNDLED_PLUGINS_DIR,
-        }),
-      );
+      const seen = withPathResolutionEnv(homeDir, { REMOTECLAW_BUNDLED_PLUGINS_DIR: "~/bundled" }, (env) => ({
+        processHome: process.env.HOME,
+        processRemoteClawHome: process.env.REMOTECLAW_HOME,
+        processBundledDir: process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR,
+        envBundledDir: env.REMOTECLAW_BUNDLED_PLUGINS_DIR,
+      }));
 
       expect(seen).toEqual({
         processHome: resolvedHomeDir,

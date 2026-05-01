@@ -430,12 +430,8 @@ describe("scanStatus", () => {
     });
     // Verify plugin logs were routed to stderr during loading and restored after
     expect(loggingState.forceConsoleToStderr).toBe(false);
-    expect(mocks.probeGateway).toHaveBeenCalledWith(
-      expect.objectContaining({ detailLevel: "presence" }),
-    );
-    expect(mocks.callGateway).not.toHaveBeenCalledWith(
-      expect.objectContaining({ method: "channels.status" }),
-    );
+    expect(mocks.probeGateway).toHaveBeenCalledWith(expect.objectContaining({ detailLevel: "presence" }));
+    expect(mocks.callGateway).not.toHaveBeenCalledWith(expect.objectContaining({ method: "channels.status" }));
   });
 
   it("preloads configured channel plugins for status --json when channel auth is env-only", async () => {

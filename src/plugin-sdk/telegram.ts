@@ -44,14 +44,8 @@ export {
   listTelegramDirectoryGroupsFromConfig,
   listTelegramDirectoryPeersFromConfig,
 } from "../channels/plugins/directory-config.js";
-export {
-  looksLikeTelegramTargetId,
-  normalizeTelegramMessagingTarget,
-} from "../channels/plugins/normalize/telegram.js";
-export {
-  parseTelegramReplyToMessageId,
-  parseTelegramThreadId,
-} from "../../extensions/telegram/src/outbound-params.js";
+export { looksLikeTelegramTargetId, normalizeTelegramMessagingTarget } from "../channels/plugins/normalize/telegram.js";
+export { parseTelegramReplyToMessageId, parseTelegramThreadId } from "../../extensions/telegram/src/outbound-params.js";
 export { collectTelegramStatusIssues } from "../channels/plugins/status-issues/telegram.js";
 export { sendTelegramPayloadMessages } from "../channels/plugins/outbound/telegram.js";
 

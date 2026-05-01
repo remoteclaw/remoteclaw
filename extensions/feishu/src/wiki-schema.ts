@@ -7,9 +7,7 @@ export const FeishuWikiSchema = Type.Union([
   Type.Object({
     action: Type.Literal("nodes"),
     space_id: Type.String({ description: "Knowledge space ID" }),
-    parent_node_token: Type.Optional(
-      Type.String({ description: "Parent node token (optional, omit for root)" }),
-    ),
+    parent_node_token: Type.Optional(Type.String({ description: "Parent node token (optional, omit for root)" })),
   }),
   Type.Object({
     action: Type.Literal("get"),
@@ -29,17 +27,13 @@ export const FeishuWikiSchema = Type.Union([
         description: "Object type (default: docx)",
       }),
     ),
-    parent_node_token: Type.Optional(
-      Type.String({ description: "Parent node token (optional, omit for root)" }),
-    ),
+    parent_node_token: Type.Optional(Type.String({ description: "Parent node token (optional, omit for root)" })),
   }),
   Type.Object({
     action: Type.Literal("move"),
     space_id: Type.String({ description: "Source knowledge space ID" }),
     node_token: Type.String({ description: "Node token to move" }),
-    target_space_id: Type.Optional(
-      Type.String({ description: "Target space ID (optional, same space if omitted)" }),
-    ),
+    target_space_id: Type.Optional(Type.String({ description: "Target space ID (optional, same space if omitted)" })),
     target_parent_token: Type.Optional(
       Type.String({ description: "Target parent node token (optional, root if omitted)" }),
     ),

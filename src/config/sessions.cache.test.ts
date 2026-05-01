@@ -2,11 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  clearSessionStoreCacheForTest,
-  loadSessionStore,
-  saveSessionStore,
-} from "./sessions/store.js";
+import { clearSessionStoreCacheForTest, loadSessionStore, saveSessionStore } from "./sessions/store.js";
 import type { SessionEntry } from "./sessions/types.js";
 
 function createSessionEntry(overrides: Partial<SessionEntry> = {}): SessionEntry {

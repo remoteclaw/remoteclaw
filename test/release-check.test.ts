@@ -126,9 +126,7 @@ describe("collectBundledExtensionManifestErrors", () => {
           },
         },
       ]),
-    ).toEqual([
-      "bundled extension 'broken' manifest invalid | remoteclaw.install.npmSpec must be a non-empty string",
-    ]);
+    ).toEqual(["bundled extension 'broken' manifest invalid | remoteclaw.install.npmSpec must be a non-empty string"]);
   });
 
   it("flags invalid release-check allowlist metadata", () => {

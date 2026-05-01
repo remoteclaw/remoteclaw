@@ -157,9 +157,7 @@ describe("DiscordMessageListener", () => {
     const logger = {
       warn: vi.fn(),
       error: vi.fn(),
-    } as unknown as ReturnType<
-      typeof import("../../../src/logging/subsystem.js").createSubsystemLogger
-    >;
+    } as unknown as ReturnType<typeof import("../../../src/logging/subsystem.js").createSubsystemLogger>;
     const handler = vi.fn(async () => {
       throw new Error("boom");
     });
@@ -180,9 +178,7 @@ describe("DiscordMessageListener", () => {
     const logger = {
       warn: vi.fn(),
       error: vi.fn(),
-    } as unknown as ReturnType<
-      typeof import("../../../src/logging/subsystem.js").createSubsystemLogger
-    >;
+    } as unknown as ReturnType<typeof import("../../../src/logging/subsystem.js").createSubsystemLogger>;
     const listener = new DiscordMessageListener(handler, logger);
 
     const handlePromise = listener.handle(
@@ -221,9 +217,7 @@ describe("discord allowlist helpers", () => {
     expect(allowListMatches(allow, { name: "steipete" })).toBe(false);
     expect(allowListMatches(allow, { name: "friends-of-remoteclaw" })).toBe(false);
     expect(allowListMatches(allow, { name: "steipete" }, { allowNameMatching: true })).toBe(true);
-    expect(
-      allowListMatches(allow, { name: "friends-of-remoteclaw" }, { allowNameMatching: true }),
-    ).toBe(true);
+    expect(allowListMatches(allow, { name: "friends-of-remoteclaw" }, { allowNameMatching: true })).toBe(true);
     expect(allowListMatches(allow, { name: "other" })).toBe(false);
   });
 
@@ -950,8 +944,7 @@ function makeReactionClient(options?: {
   parentName?: string;
 }) {
   const channelType = options?.channelType ?? ChannelType.DM;
-  const channelName =
-    options?.channelName ?? (channelType === ChannelType.DM ? undefined : "test-channel");
+  const channelName = options?.channelName ?? (channelType === ChannelType.DM ? undefined : "test-channel");
   const parentId = options?.parentId;
   const parentName = options?.parentName ?? "parent-channel";
 
@@ -994,9 +987,7 @@ function makeReactionListenerParams(overrides?: {
       warn: vi.fn(),
       error: vi.fn(),
       debug: vi.fn(),
-    } as unknown as ReturnType<
-      typeof import("../../../src/logging/subsystem.js").createSubsystemLogger
-    >,
+    } as unknown as ReturnType<typeof import("../../../src/logging/subsystem.js").createSubsystemLogger>,
   };
 }
 
@@ -1024,9 +1015,7 @@ describe("discord DM reaction handling", () => {
 
       const data = makeReactionEvent({ botAsAuthor: true });
       const client = makeReactionClient({ channelType: ChannelType.DM });
-      const listener = new DiscordReactionListener(
-        makeReactionListenerParams({ guildEntries: testCase.guildEntries }),
-      );
+      const listener = new DiscordReactionListener(makeReactionListenerParams({ guildEntries: testCase.guildEntries }));
 
       await listener.handle(data, client);
 
@@ -1043,9 +1032,7 @@ describe("discord DM reaction handling", () => {
   it("blocks DM reactions when dmPolicy is disabled", async () => {
     const data = makeReactionEvent({ botAsAuthor: true });
     const client = makeReactionClient({ channelType: ChannelType.DM });
-    const listener = new DiscordReactionListener(
-      makeReactionListenerParams({ dmPolicy: "disabled" }),
-    );
+    const listener = new DiscordReactionListener(makeReactionListenerParams({ dmPolicy: "disabled" }));
 
     await listener.handle(data, client);
 
@@ -1085,9 +1072,7 @@ describe("discord DM reaction handling", () => {
   it("blocks group DM reactions when group DMs are disabled", async () => {
     const data = makeReactionEvent({ botAsAuthor: true });
     const client = makeReactionClient({ channelType: ChannelType.GroupDM });
-    const listener = new DiscordReactionListener(
-      makeReactionListenerParams({ groupDmEnabled: false }),
-    );
+    const listener = new DiscordReactionListener(makeReactionListenerParams({ groupDmEnabled: false }));
 
     await listener.handle(data, client);
 
@@ -1101,9 +1086,7 @@ describe("discord DM reaction handling", () => {
       guild: { id: "guild-123", name: "Guild" },
     });
     const client = makeReactionClient({ channelType: ChannelType.GuildText });
-    const listener = new DiscordReactionListener(
-      makeReactionListenerParams({ groupPolicy: "disabled" }),
-    );
+    const listener = new DiscordReactionListener(makeReactionListenerParams({ groupPolicy: "disabled" }));
 
     await listener.handle(data, client);
 
@@ -1322,9 +1305,7 @@ describe("discord reaction notification modes", () => {
       await listener.handle(data, client);
 
       expect(messageFetch, testCase.name).toHaveBeenCalledTimes(testCase.expectedMessageFetchCalls);
-      expect(enqueueSystemEventSpy, testCase.name).toHaveBeenCalledTimes(
-        testCase.expectedEnqueueCalls,
-      );
+      expect(enqueueSystemEventSpy, testCase.name).toHaveBeenCalledTimes(testCase.expectedEnqueueCalls);
     }
   });
 });

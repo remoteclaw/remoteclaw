@@ -27,9 +27,7 @@ describe("canvas a2ui copy", () => {
       const previous = process.env.REMOTECLAW_A2UI_SKIP_MISSING;
       process.env.REMOTECLAW_A2UI_SKIP_MISSING = "1";
       try {
-        await expect(
-          copyA2uiAssets({ srcDir: dir, outDir: path.join(dir, "out") }),
-        ).resolves.toBeUndefined();
+        await expect(copyA2uiAssets({ srcDir: dir, outDir: path.join(dir, "out") })).resolves.toBeUndefined();
       } finally {
         if (previous === undefined) {
           delete process.env.REMOTECLAW_A2UI_SKIP_MISSING;

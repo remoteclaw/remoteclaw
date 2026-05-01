@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { VoiceCallTtsConfig } from "./config.js";
 import type { CoreConfig } from "./core-bridge.js";
 import { createTelephonyTtsProvider } from "./telephony-tts.js";
@@ -59,9 +59,7 @@ describe("createTelephonyTtsProvider deepMerge hardening", () => {
   });
 
   it("blocks top-level __proto__ keys", async () => {
-    const tts = await mergeOverride(
-      JSON.parse('{"__proto__":{"polluted":"top"},"openai":{"voice":"coral"}}'),
-    );
+    const tts = await mergeOverride(JSON.parse('{"__proto__":{"polluted":"top"},"openai":{"voice":"coral"}}'));
     const openai = tts.openai as Record<string, unknown>;
 
     expect((Object.prototype as Record<string, unknown>).polluted).toBeUndefined();
@@ -70,13 +68,34 @@ describe("createTelephonyTtsProvider deepMerge hardening", () => {
   });
 
   it("blocks nested __proto__ keys", async () => {
-    const tts = await mergeOverride(
-      JSON.parse('{"openai":{"model":"safe","__proto__":{"polluted":"nested"}}}'),
-    );
+    const tts = await mergeOverride(JSON.parse('{"openai":{"model":"safe","__proto__":{"polluted":"nested"}}}'));
     const openai = tts.openai as Record<string, unknown>;
 
     expect((Object.prototype as Record<string, unknown>).polluted).toBeUndefined();
     expect(openai.polluted).toBeUndefined();
     expect(openai.model).toBe("safe");
+  });
+
+  it("logs fallback metadata when telephony TTS uses a fallback provider", async () => {
+    const warn = vi.fn();
+    const provider = createTelephonyTtsProvider({
+      coreConfig: createCoreConfig(),
+      runtime: {
+        textToSpeechTelephony: async () => ({
+          success: true,
+          audioBuffer: Buffer.alloc(2),
+          sampleRate: 8000,
+          provider: "microsoft",
+          fallbackFrom: "elevenlabs",
+          attemptedProviders: ["elevenlabs", "microsoft"],
+        }),
+      },
+      logger: { warn },
+    });
+
+    await provider.synthesizeForTelephony("hello");
+    expect(warn).toHaveBeenCalledWith(
+      "[voice-call] Telephony TTS fallback used from=elevenlabs to=microsoft attempts=elevenlabs -> microsoft",
+    );
   });
 });

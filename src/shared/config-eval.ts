@@ -140,8 +140,7 @@ export function resolveRuntimePlatform(): string {
 
 function windowsPathExtensions(): string[] {
   const raw = process.env.PATHEXT;
-  const list =
-    raw !== undefined ? raw.split(";").map((v) => v.trim()) : [".EXE", ".CMD", ".BAT", ".COM"];
+  const list = raw !== undefined ? raw.split(";").map((v) => v.trim()) : [".EXE", ".CMD", ".BAT", ".COM"];
   return ["", ...list.filter(Boolean)];
 }
 

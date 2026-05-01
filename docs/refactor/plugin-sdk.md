@@ -57,11 +57,7 @@ export type PluginRuntime = {
         ctx: unknown;
         cfg: unknown;
         dispatcherOptions: {
-          deliver: (payload: {
-            text?: string;
-            mediaUrls?: string[];
-            mediaUrl?: string;
-          }) => void | Promise<void>;
+          deliver: (payload: { text?: string; mediaUrls?: string[]; mediaUrl?: string }) => void | Promise<void>;
           onError?: (err: unknown, info: { kind: string }) => void;
         };
       }): Promise<void>;

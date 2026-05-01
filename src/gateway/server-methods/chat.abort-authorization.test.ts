@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  createActiveRun,
-  createChatAbortContext,
-  invokeChatAbortHandler,
-} from "./chat.abort.test-helpers.js";
+import { createActiveRun, createChatAbortContext, invokeChatAbortHandler } from "./chat.abort.test-helpers.js";
 import { chatHandlers } from "./chat.js";
 
 async function invokeSingleRunAbort({
@@ -33,10 +29,7 @@ async function invokeSingleRunAbort({
 function createSingleAbortContext() {
   return createChatAbortContext({
     chatAbortControllers: new Map([
-      [
-        "run-1",
-        createActiveRun("main", { owner: { connId: "conn-owner", deviceId: "dev-owner" } }),
-      ],
+      ["run-1", createActiveRun("main", { owner: { connId: "conn-owner", deviceId: "dev-owner" } })],
     ]),
   });
 }

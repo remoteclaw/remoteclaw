@@ -65,8 +65,7 @@ export function createCliProgress(options: ProgressOptions): ProgressReporter {
   const total = options.total ?? null;
   let completed = 0;
   let percent = 0;
-  let indeterminate =
-    options.indeterminate ?? (options.total === undefined || options.total === null);
+  let indeterminate = options.indeterminate ?? (options.total === undefined || options.total === null);
 
   activeProgress += 1;
   if (isTty) {

@@ -6,12 +6,7 @@ import type { SsrFPolicy } from "../../../../src/infra/net/ssrf.js";
 import { fetchRemoteMedia, type FetchLike } from "../../../../src/media/fetch.js";
 import { saveMediaBuffer } from "../../../../src/media/store.js";
 
-const DISCORD_CDN_HOSTNAMES = [
-  "cdn.discordapp.com",
-  "media.discordapp.net",
-  "*.discordapp.com",
-  "*.discordapp.net",
-];
+const DISCORD_CDN_HOSTNAMES = ["cdn.discordapp.com", "media.discordapp.net", "*.discordapp.com", "*.discordapp.net"];
 
 // Allow Discord CDN downloads when VPN/proxy DNS resolves to RFC2544 benchmark ranges.
 const DISCORD_MEDIA_SSRF_POLICY: SsrFPolicy = {
@@ -34,22 +29,15 @@ function resolveDiscordMediaSsrFPolicy(policy?: SsrFPolicy): SsrFPolicy {
   if (!policy) {
     return DISCORD_MEDIA_SSRF_POLICY;
   }
-  const hostnameAllowlist = mergeHostnameList(
-    DISCORD_MEDIA_SSRF_POLICY.hostnameAllowlist,
-    policy.hostnameAllowlist,
-  );
-  const allowedHostnames = mergeHostnameList(
-    DISCORD_MEDIA_SSRF_POLICY.allowedHostnames,
-    policy.allowedHostnames,
-  );
+  const hostnameAllowlist = mergeHostnameList(DISCORD_MEDIA_SSRF_POLICY.hostnameAllowlist, policy.hostnameAllowlist);
+  const allowedHostnames = mergeHostnameList(DISCORD_MEDIA_SSRF_POLICY.allowedHostnames, policy.allowedHostnames);
   return {
     ...DISCORD_MEDIA_SSRF_POLICY,
     ...policy,
     ...(allowedHostnames ? { allowedHostnames } : {}),
     ...(hostnameAllowlist ? { hostnameAllowlist } : {}),
     allowRfc2544BenchmarkRange:
-      Boolean(DISCORD_MEDIA_SSRF_POLICY.allowRfc2544BenchmarkRange) ||
-      Boolean(policy.allowRfc2544BenchmarkRange),
+      Boolean(DISCORD_MEDIA_SSRF_POLICY.allowRfc2544BenchmarkRange) || Boolean(policy.allowRfc2544BenchmarkRange),
   };
 }
 
@@ -95,10 +83,7 @@ type DiscordMessageSnapshot = {
 
 const DISCORD_CHANNEL_INFO_CACHE_TTL_MS = 5 * 60 * 1000;
 const DISCORD_CHANNEL_INFO_NEGATIVE_CACHE_TTL_MS = 30 * 1000;
-const DISCORD_CHANNEL_INFO_CACHE = new Map<
-  string,
-  { value: DiscordChannelInfo | null; expiresAt: number }
->();
+const DISCORD_CHANNEL_INFO_CACHE = new Map<string, { value: DiscordChannelInfo | null; expiresAt: number }>();
 const DISCORD_STICKER_ASSET_BASE_URL = "https://media.discordapp.net/stickers";
 
 export function __resetDiscordChannelInfoCacheForTest() {
@@ -128,10 +113,7 @@ export function resolveDiscordMessageChannelId(params: {
   );
 }
 
-export async function resolveDiscordChannelInfo(
-  client: Client,
-  channelId: string,
-): Promise<DiscordChannelInfo | null> {
+export async function resolveDiscordChannelInfo(client: Client, channelId: string): Promise<DiscordChannelInfo | null> {
   const cached = DISCORD_CHANNEL_INFO_CACHE.get(channelId);
   if (cached) {
     if (cached.expiresAt > Date.now()) {
@@ -193,8 +175,7 @@ export function resolveDiscordMessageStickers(message: Message): APIStickerItem[
   if (normalized.length > 0) {
     return normalized;
   }
-  const rawData = (message as { rawData?: { sticker_items?: unknown; stickers?: unknown } })
-    .rawData;
+  const rawData = (message as { rawData?: { sticker_items?: unknown; stickers?: unknown } }).rawData;
   return normalizeStickerItems(rawData?.sticker_items ?? rawData?.stickers);
 }
 
@@ -400,12 +381,7 @@ async function appendResolvedMediaFromStickers(params: {
           fetchImpl: params.fetchImpl,
           ssrfPolicy: params.ssrfPolicy,
         });
-        const saved = await saveMediaBuffer(
-          fetched.buffer,
-          fetched.contentType,
-          "inbound",
-          params.maxBytes,
-        );
+        const saved = await saveMediaBuffer(fetched.buffer, fetched.contentType, "inbound", params.maxBytes);
         params.out.push({
           path: saved.path,
           contentType: saved.contentType,
@@ -478,10 +454,7 @@ function buildDiscordStickerPlaceholder(stickers?: APIStickerItem[]): string {
   return `<media:sticker> (${count} ${label})`;
 }
 
-function buildDiscordMediaPlaceholder(params: {
-  attachments?: APIAttachment[];
-  stickers?: APIStickerItem[];
-}): string {
+function buildDiscordMediaPlaceholder(params: { attachments?: APIAttachment[]; stickers?: APIStickerItem[] }): string {
   const attachmentText = buildDiscordAttachmentPlaceholder(params.attachments);
   const stickerText = buildDiscordStickerPlaceholder(params.stickers);
   if (attachmentText && stickerText) {
@@ -490,9 +463,7 @@ function buildDiscordMediaPlaceholder(params: {
   return attachmentText || stickerText || "";
 }
 
-export function resolveDiscordEmbedText(
-  embed?: { title?: string | null; description?: string | null } | null,
-): string {
+export function resolveDiscordEmbedText(embed?: { title?: string | null; description?: string | null } | null): string {
   const title = embed?.title?.trim() || "";
   const description = embed?.description?.trim() || "";
   if (title && description) {
@@ -506,8 +477,7 @@ export function resolveDiscordMessageText(
   options?: { fallbackText?: string; includeForwarded?: boolean },
 ): string {
   const embedText = resolveDiscordEmbedText(
-    (message.embeds?.[0] as { title?: string | null; description?: string | null } | undefined) ??
-      null,
+    (message.embeds?.[0] as { title?: string | null; description?: string | null } | undefined) ?? null,
   );
   const rawText =
     message.content?.trim() ||
@@ -564,9 +534,7 @@ function resolveDiscordForwardedMessagesText(message: Message): string {
         return null;
       }
       const authorLabel = formatDiscordSnapshotAuthor(snapshotMessage.author);
-      const heading = authorLabel
-        ? `[Forwarded message from ${authorLabel}]`
-        : "[Forwarded message]";
+      const heading = authorLabel ? `[Forwarded message from ${authorLabel}]` : "[Forwarded message]";
       return `${heading}\n${text}`;
     })
     .filter((entry): entry is string => Boolean(entry));
@@ -585,9 +553,7 @@ function resolveDiscordMessageSnapshots(message: Message): DiscordMessageSnapsho
   if (!Array.isArray(snapshots)) {
     return [];
   }
-  return snapshots.filter(
-    (entry): entry is DiscordMessageSnapshot => Boolean(entry) && typeof entry === "object",
-  );
+  return snapshots.filter((entry): entry is DiscordMessageSnapshot => Boolean(entry) && typeof entry === "object");
 }
 
 function resolveDiscordSnapshotMessageText(snapshot: DiscordSnapshotMessage): string {
@@ -600,9 +566,7 @@ function resolveDiscordSnapshotMessageText(snapshot: DiscordSnapshotMessage): st
   return content || attachmentText || embedText || "";
 }
 
-function formatDiscordSnapshotAuthor(
-  author: DiscordSnapshotAuthor | null | undefined,
-): string | undefined {
+function formatDiscordSnapshotAuthor(author: DiscordSnapshotAuthor | null | undefined): string | undefined {
   if (!author) {
     return undefined;
   }
@@ -623,9 +587,7 @@ function formatDiscordSnapshotAuthor(
   return undefined;
 }
 
-export function buildDiscordMediaPayload(
-  mediaList: Array<{ path: string; contentType?: string }>,
-): {
+export function buildDiscordMediaPayload(mediaList: Array<{ path: string; contentType?: string }>): {
   MediaPath?: string;
   MediaType?: string;
   MediaUrl?: string;

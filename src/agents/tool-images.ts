@@ -176,14 +176,8 @@ async function resizeImageBase64IfNeeded(params: {
   const height = meta?.height;
   const overBytes = buf.byteLength > params.maxBytes;
   const hasDimensions = typeof width === "number" && typeof height === "number";
-  const overDimensions =
-    hasDimensions && (width > params.maxDimensionPx || height > params.maxDimensionPx);
-  if (
-    hasDimensions &&
-    !overBytes &&
-    width <= params.maxDimensionPx &&
-    height <= params.maxDimensionPx
-  ) {
+  const overDimensions = hasDimensions && (width > params.maxDimensionPx || height > params.maxDimensionPx);
+  if (hasDimensions && !overBytes && width <= params.maxDimensionPx && height <= params.maxDimensionPx) {
     return {
       base64: params.base64,
       mimeType: params.mimeType,
@@ -211,16 +205,10 @@ async function resizeImageBase64IfNeeded(params: {
       }
       if (out.byteLength <= params.maxBytes) {
         const sourcePixels =
-          typeof width === "number" && typeof height === "number"
-            ? `${width}x${height}px`
-            : "unknown";
-        const sourceWithFile = params.fileName
-          ? `${params.fileName} ${sourcePixels}`
-          : sourcePixels;
+          typeof width === "number" && typeof height === "number" ? `${width}x${height}px` : "unknown";
+        const sourceWithFile = params.fileName ? `${params.fileName} ${sourcePixels}` : sourcePixels;
         const byteReductionPct =
-          buf.byteLength > 0
-            ? Number((((buf.byteLength - out.byteLength) / buf.byteLength) * 100).toFixed(1))
-            : 0;
+          buf.byteLength > 0 ? Number((((buf.byteLength - out.byteLength) / buf.byteLength) * 100).toFixed(1)) : 0;
         log.info(
           `Image resized to fit limits: ${sourceWithFile} ${formatBytesShort(buf.byteLength)} -> ${formatBytesShort(out.byteLength)} (-${byteReductionPct}%)`,
           {
@@ -255,8 +243,7 @@ async function resizeImageBase64IfNeeded(params: {
   const best = smallest?.buffer ?? buf;
   const maxMb = (params.maxBytes / (1024 * 1024)).toFixed(0);
   const gotMb = (best.byteLength / (1024 * 1024)).toFixed(2);
-  const sourcePixels =
-    typeof width === "number" && typeof height === "number" ? `${width}x${height}px` : "unknown";
+  const sourcePixels = typeof width === "number" && typeof height === "number" ? `${width}x${height}px` : "unknown";
   const sourceWithFile = params.fileName ? `${params.fileName} ${sourcePixels}` : sourcePixels;
   log.warn(
     `Image resize failed to fit limits: ${sourceWithFile} best=${formatBytesShort(best.byteLength)} limit=${formatBytesShort(params.maxBytes)}`,

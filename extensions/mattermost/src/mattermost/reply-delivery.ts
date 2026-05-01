@@ -1,8 +1,4 @@
-import type {
-  RemoteClawConfig,
-  PluginRuntime,
-  ReplyPayload,
-} from "remoteclaw/plugin-sdk/mattermost";
+import type { RemoteClawConfig, PluginRuntime, ReplyPayload } from "remoteclaw/plugin-sdk/mattermost";
 import { getAgentScopedMediaLocalRoots } from "remoteclaw/plugin-sdk/mattermost";
 
 type MarkdownTableMode = Parameters<PluginRuntime["channel"]["text"]["convertMarkdownTables"]>[1];
@@ -30,24 +26,12 @@ export async function deliverMattermostReplyPayload(params: {
   tableMode: MarkdownTableMode;
   sendMessage: SendMattermostMessage;
 }): Promise<void> {
-  const mediaUrls =
-    params.payload.mediaUrls ?? (params.payload.mediaUrl ? [params.payload.mediaUrl] : []);
-  const text = params.core.channel.text.convertMarkdownTables(
-    params.payload.text ?? "",
-    params.tableMode,
-  );
+  const mediaUrls = params.payload.mediaUrls ?? (params.payload.mediaUrl ? [params.payload.mediaUrl] : []);
+  const text = params.core.channel.text.convertMarkdownTables(params.payload.text ?? "", params.tableMode);
 
   if (mediaUrls.length === 0) {
-    const chunkMode = params.core.channel.text.resolveChunkMode(
-      params.cfg,
-      "mattermost",
-      params.accountId,
-    );
-    const chunks = params.core.channel.text.chunkMarkdownTextWithMode(
-      text,
-      params.textLimit,
-      chunkMode,
-    );
+    const chunkMode = params.core.channel.text.resolveChunkMode(params.cfg, "mattermost", params.accountId);
+    const chunks = params.core.channel.text.chunkMarkdownTextWithMode(text, params.textLimit, chunkMode);
     for (const chunk of chunks.length > 0 ? chunks : [text]) {
       if (!chunk) {
         continue;

@@ -24,16 +24,11 @@ export type ResolvedMattermostAccount = {
   blockStreamingCoalesce?: MattermostAccountConfig["blockStreamingCoalesce"];
 };
 
-const {
-  listAccountIds: listMattermostAccountIds,
-  resolveDefaultAccountId: resolveDefaultMattermostAccountId,
-} = createAccountListHelpers("mattermost");
+const { listAccountIds: listMattermostAccountIds, resolveDefaultAccountId: resolveDefaultMattermostAccountId } =
+  createAccountListHelpers("mattermost");
 export { listMattermostAccountIds, resolveDefaultMattermostAccountId };
 
-function resolveAccountConfig(
-  cfg: RemoteClawConfig,
-  accountId: string,
-): MattermostAccountConfig | undefined {
+function resolveAccountConfig(cfg: RemoteClawConfig, accountId: string): MattermostAccountConfig | undefined {
   const accounts = cfg.channels?.mattermost?.accounts;
   if (!accounts || typeof accounts !== "object") {
     return undefined;
@@ -41,10 +36,7 @@ function resolveAccountConfig(
   return accounts[accountId] as MattermostAccountConfig | undefined;
 }
 
-function mergeMattermostAccountConfig(
-  cfg: RemoteClawConfig,
-  accountId: string,
-): MattermostAccountConfig {
+function mergeMattermostAccountConfig(cfg: RemoteClawConfig, accountId: string): MattermostAccountConfig {
   const {
     accounts: _ignored,
     defaultAccount: _ignoredDefaultAccount,

@@ -105,9 +105,7 @@ export function resolveIrcAllowlistMatch(params: {
   message: IrcInboundMessage;
   allowNameMatching?: boolean;
 }): { allowed: boolean; source?: string } {
-  const allowFrom = new Set(
-    params.allowFrom.map((entry) => entry.trim().toLowerCase()).filter(Boolean),
-  );
+  const allowFrom = new Set(params.allowFrom.map((entry) => entry.trim().toLowerCase()).filter(Boolean));
   if (allowFrom.has("*")) {
     return { allowed: true, source: "wildcard" };
   }

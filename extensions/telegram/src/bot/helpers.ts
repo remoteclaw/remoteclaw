@@ -36,15 +36,10 @@ export async function resolveTelegramGroupAllowFromContext(params: {
     isForum: params.isForum,
     messageThreadId: params.messageThreadId,
   });
-  const storeAllowFrom = await readChannelAllowFromStore(
-    "telegram",
-    process.env,
-    params.accountId ?? "",
-  ).catch(() => []);
-  const { groupConfig, topicConfig } = params.resolveTelegramGroupConfig(
-    params.chatId,
-    resolvedThreadId,
+  const storeAllowFrom = await readChannelAllowFromStore("telegram", process.env, params.accountId ?? "").catch(
+    () => [],
   );
+  const { groupConfig, topicConfig } = params.resolveTelegramGroupConfig(params.chatId, resolvedThreadId);
   const groupAllowOverride = firstDefined(topicConfig?.allowFrom, groupConfig?.allowFrom);
   // Group sender access must remain explicit (groupAllowFrom/per-group allowFrom only).
   // DM pairing store entries are not a group authorization source.
@@ -67,10 +62,7 @@ export async function resolveTelegramGroupAllowFromContext(params: {
  * (reply threads in regular groups should not create separate sessions).
  * For forum groups, returns the topic ID (or General topic ID=1 if unspecified).
  */
-export function resolveTelegramForumThreadId(params: {
-  isForum?: boolean;
-  messageThreadId?: number | null;
-}) {
+export function resolveTelegramForumThreadId(params: { isForum?: boolean; messageThreadId?: number | null }) {
   // Non-forum groups: ignore message_thread_id (reply threads are not real topics)
   if (!params.isForum) {
     return undefined;
@@ -167,10 +159,7 @@ export function buildTelegramGroupPeerId(chatId: number | string, messageThreadI
  * `chat.id` can differ from the actual sender user id. Prefer sender id when present
  * so per-peer DM scopes isolate users correctly.
  */
-export function resolveTelegramDirectPeerId(params: {
-  chatId: number | string;
-  senderId?: number | string | null;
-}) {
+export function resolveTelegramDirectPeerId(params: { chatId: number | string; senderId?: number | string | null }) {
   const senderId = params.senderId != null ? String(params.senderId).trim() : "";
   if (senderId) {
     return senderId;
@@ -201,17 +190,12 @@ export function buildTelegramParentPeer(params: {
 }
 
 export function buildSenderName(msg: Message) {
-  const name =
-    [msg.from?.first_name, msg.from?.last_name].filter(Boolean).join(" ").trim() ||
-    msg.from?.username;
+  const name = [msg.from?.first_name, msg.from?.last_name].filter(Boolean).join(" ").trim() || msg.from?.username;
   return name || undefined;
 }
 
 export function resolveTelegramMediaPlaceholder(
-  msg:
-    | Pick<Message, "photo" | "video" | "video_note" | "audio" | "voice" | "document" | "sticker">
-    | undefined
-    | null,
+  msg: Pick<Message, "photo" | "video" | "video_note" | "audio" | "voice" | "document" | "sticker"> | undefined | null,
 ): string | undefined {
   if (!msg) {
     return undefined;
@@ -243,8 +227,7 @@ export function buildSenderLabel(msg: Message, senderId?: number | string) {
   } else if (!name && username) {
     label = username;
   }
-  const normalizedSenderId =
-    senderId != null && `${senderId}`.trim() ? `${senderId}`.trim() : undefined;
+  const normalizedSenderId = senderId != null && `${senderId}`.trim() ? `${senderId}`.trim() : undefined;
   const fallbackId = normalizedSenderId ?? (msg.from?.id != null ? String(msg.from.id) : undefined);
   const idPart = fallbackId ? `id:${fallbackId}` : undefined;
   if (label && idPart) {
@@ -267,9 +250,7 @@ export function buildGroupLabel(msg: Message, chatId: number | string, messageTh
 
 export type TelegramTextEntity = NonNullable<Message["entities"]>[number];
 
-export function getTelegramTextParts(
-  msg: Pick<Message, "text" | "caption" | "entities" | "caption_entities">,
-): {
+export function getTelegramTextParts(msg: Pick<Message, "text" | "caption" | "entities" | "caption_entities">): {
   text: string;
   entities: TelegramTextEntity[];
 } {
@@ -344,8 +325,7 @@ export function expandTextLinks(text: string, entities?: TelegramTextLinkEntity[
   for (const entity of textLinks) {
     const linkText = text.slice(entity.offset, entity.offset + entity.length);
     const markdown = `[${linkText}](${entity.url})`;
-    result =
-      result.slice(0, entity.offset) + markdown + result.slice(entity.offset + entity.length);
+    result = result.slice(0, entity.offset) + markdown + result.slice(entity.offset + entity.length);
   }
   return result;
 }
@@ -374,8 +354,7 @@ export function describeReplyTarget(msg: Message): TelegramReplyTarget | null {
   const reply = msg.reply_to_message;
   const externalReply = (msg as Message & { external_reply?: Message }).external_reply;
   const quoteText =
-    msg.quote?.text ??
-    (externalReply as (Message & { quote?: { text?: string } }) | undefined)?.quote?.text;
+    msg.quote?.text ?? (externalReply as (Message & { quote?: { text?: string } }) | undefined)?.quote?.text;
   let body = "";
   let kind: TelegramReplyTarget["kind"] = "reply";
 
@@ -439,9 +418,7 @@ function normalizeForwardedUserLabel(user: User) {
   const username = user.username?.trim() || undefined;
   const id = String(user.id);
   const display =
-    (name && username
-      ? `${name} (@${username})`
-      : name || (username ? `@${username}` : undefined)) || `user:${id}`;
+    (name && username ? `${name} (@${username})` : name || (username ? `@${username}` : undefined)) || `user:${id}`;
   return { display, name: name || undefined, username, id };
 }
 

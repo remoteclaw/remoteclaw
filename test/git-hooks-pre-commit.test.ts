@@ -33,23 +33,12 @@ describe("git-hooks/pre-commit (integration)", () => {
     // Use the real hook script and lightweight helper stubs.
     mkdirSync(path.join(dir, "git-hooks"), { recursive: true });
     mkdirSync(path.join(dir, "scripts", "pre-commit"), { recursive: true });
-    symlinkSync(
-      path.join(process.cwd(), "git-hooks", "pre-commit"),
-      path.join(dir, "git-hooks", "pre-commit"),
-    );
-    writeFileSync(
-      path.join(dir, "scripts", "pre-commit", "run-node-tool.sh"),
-      "#!/usr/bin/env bash\nexit 0\n",
-      {
-        encoding: "utf8",
-        mode: 0o755,
-      },
-    );
-    writeFileSync(
-      path.join(dir, "scripts", "pre-commit", "filter-staged-files.mjs"),
-      "process.exit(0);\n",
-      "utf8",
-    );
+    symlinkSync(path.join(process.cwd(), "git-hooks", "pre-commit"), path.join(dir, "git-hooks", "pre-commit"));
+    writeFileSync(path.join(dir, "scripts", "pre-commit", "run-node-tool.sh"), "#!/usr/bin/env bash\nexit 0\n", {
+      encoding: "utf8",
+      mode: 0o755,
+    });
+    writeFileSync(path.join(dir, "scripts", "pre-commit", "filter-staged-files.mjs"), "process.exit(0);\n", "utf8");
     const fakeBinDir = path.join(dir, "bin");
     mkdirSync(fakeBinDir, { recursive: true });
     writeExecutable(fakeBinDir, "node", "#!/usr/bin/env bash\nexit 0\n");
@@ -79,23 +68,12 @@ describe("git-hooks/pre-commit (integration)", () => {
 
     mkdirSync(path.join(dir, "git-hooks"), { recursive: true });
     mkdirSync(path.join(dir, "scripts", "pre-commit"), { recursive: true });
-    symlinkSync(
-      path.join(process.cwd(), "git-hooks", "pre-commit"),
-      path.join(dir, "git-hooks", "pre-commit"),
-    );
-    writeFileSync(
-      path.join(dir, "scripts", "pre-commit", "run-node-tool.sh"),
-      "#!/usr/bin/env bash\nexit 0\n",
-      {
-        encoding: "utf8",
-        mode: 0o755,
-      },
-    );
-    writeFileSync(
-      path.join(dir, "scripts", "pre-commit", "filter-staged-files.mjs"),
-      "process.exit(0);\n",
-      "utf8",
-    );
+    symlinkSync(path.join(process.cwd(), "git-hooks", "pre-commit"), path.join(dir, "git-hooks", "pre-commit"));
+    writeFileSync(path.join(dir, "scripts", "pre-commit", "run-node-tool.sh"), "#!/usr/bin/env bash\nexit 0\n", {
+      encoding: "utf8",
+      mode: 0o755,
+    });
+    writeFileSync(path.join(dir, "scripts", "pre-commit", "filter-staged-files.mjs"), "process.exit(0);\n", "utf8");
     writeFileSync(path.join(dir, "package.json"), '{"name":"tmp"}\n', "utf8");
     writeFileSync(path.join(dir, "pnpm-lock.yaml"), "lockfileVersion: '9.0'\n", "utf8");
 

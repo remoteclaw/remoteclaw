@@ -7,10 +7,7 @@ import type {
   OutboundRetryConfig,
   ReplyToMode,
 } from "./types.base.js";
-import type {
-  ChannelHealthMonitorConfig,
-  ChannelHeartbeatVisibilityConfig,
-} from "./types.channels.js";
+import type { ChannelHealthMonitorConfig, ChannelHeartbeatVisibilityConfig } from "./types.channels.js";
 import type { DmConfig, ProviderCommandsConfig } from "./types.messages.js";
 import type { SecretInput } from "./types.secrets.js";
 import type { GroupToolPolicyBySenderConfig, GroupToolPolicyConfig } from "./types.tools.js";
@@ -142,7 +139,7 @@ export type DiscordVoiceConfig = {
 export type DiscordExecApprovalConfig = {
   /** Enable exec approval forwarding to Discord DMs. Default: false. */
   enabled?: boolean;
-  /** Discord user IDs to receive approval prompts. Required if enabled. */
+  /** Discord user IDs to receive approval prompts. Optional: falls back to owner IDs inferred from allowFrom/defaultTo when possible. */
   approvers?: string[];
   /** Only forward approvals for these agent IDs. Omit = all agents. */
   agentFilter?: string[];
@@ -152,7 +149,7 @@ export type DiscordExecApprovalConfig = {
   cleanupAfterResolve?: boolean;
   /** Where to send approval prompts. "dm" sends to approver DMs (default), "channel" sends to the
    *  originating Discord channel, "both" sends to both. When target is "channel" or "both", buttons
-   *  are only usable by configured approvers; other users receive an ephemeral denial. */
+   *  are only usable by resolved approvers; other users receive an ephemeral denial. */
   target?: "dm" | "channel" | "both";
 };
 

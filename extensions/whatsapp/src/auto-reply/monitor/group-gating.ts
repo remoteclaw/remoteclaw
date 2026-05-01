@@ -86,19 +86,10 @@ export function applyGroupGating(params: ApplyGroupGatingParams) {
     return { shouldProcess: false };
   }
 
-  noteGroupMember(
-    params.groupMemberNames,
-    params.groupHistoryKey,
-    params.msg.senderE164,
-    params.msg.senderName,
-  );
+  noteGroupMember(params.groupMemberNames, params.groupHistoryKey, params.msg.senderE164, params.msg.senderName);
 
   const mentionConfig = buildMentionConfig(params.cfg, params.agentId);
-  const commandBody = stripMentionsForCommand(
-    params.msg.body,
-    mentionConfig.mentionRegexes,
-    params.msg.selfE164,
-  );
+  const commandBody = stripMentionsForCommand(params.msg.body, mentionConfig.mentionRegexes, params.msg.selfE164);
   const activationCommand = parseActivationCommand(commandBody);
   const owner = isOwnerSender(params.baseMentionConfig, params.msg);
   const shouldBypassMention = owner && hasControlCommand(commandBody, params.cfg);
@@ -130,9 +121,7 @@ export function applyGroupGating(params: ApplyGroupGatingParams) {
   const selfJid = params.msg.selfJid?.replace(/:\\d+/, "");
   const replySenderJid = params.msg.replyToSenderJid?.replace(/:\\d+/, "");
   const selfE164 = params.msg.selfE164 ? normalizeE164(params.msg.selfE164) : null;
-  const replySenderE164 = params.msg.replyToSenderE164
-    ? normalizeE164(params.msg.replyToSenderE164)
-    : null;
+  const replySenderE164 = params.msg.replyToSenderE164 ? normalizeE164(params.msg.replyToSenderE164) : null;
   const implicitMention = Boolean(
     (selfJid && replySenderJid && selfJid === replySenderJid) ||
     (selfE164 && replySenderE164 && selfE164 === replySenderE164),

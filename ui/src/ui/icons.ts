@@ -272,11 +272,7 @@ export const icons = {
   `,
   externalLink: html`
     <svg viewBox="0 0 24 24">
-      <path
-        d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      />
+      <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" stroke-linecap="round" stroke-linejoin="round" />
       <path d="M15 3h6v6M10 14L21 3" stroke-linecap="round" stroke-linejoin="round" />
     </svg>
   `,
@@ -379,10 +375,7 @@ export const icons = {
         fill="url(#lob-g)"
       />
       <path d="M20 45C5 40 0 50 5 60C10 70 20 65 25 55C28 48 25 45 20 45Z" fill="url(#lob-g)" />
-      <path
-        d="M100 45C115 40 120 50 115 60C110 70 100 65 95 55C92 48 95 45 100 45Z"
-        fill="url(#lob-g)"
-      />
+      <path d="M100 45C115 40 120 50 115 60C110 70 100 65 95 55C92 48 95 45 100 45Z" fill="url(#lob-g)" />
       <path d="M45 15Q35 5 30 8" stroke="#ff4d4d" stroke-width="3" stroke-linecap="round" />
       <path d="M75 15Q85 5 90 8" stroke="#ff4d4d" stroke-width="3" stroke-linecap="round" />
       <circle cx="45" cy="35" r="6" fill="#050810" />
@@ -408,21 +401,15 @@ export const icons = {
   `,
   eye: html`
     <svg viewBox="0 0 24 24">
-      <path
-        d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"
-      />
+      <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
       <circle cx="12" cy="12" r="3" />
     </svg>
   `,
   eyeOff: html`
     <svg viewBox="0 0 24 24">
-      <path
-        d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"
-      />
+      <path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49" />
       <path d="M14.084 14.158a3 3 0 0 1-4.242-4.242" />
-      <path
-        d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"
-      />
+      <path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143" />
       <path d="m2 2 20 20" />
     </svg>
   `,
@@ -477,10 +464,7 @@ export function renderIcon(name: IconName, className = "nav-item__icon"): Templa
 }
 
 // Legacy function for compatibility
-export function renderEmojiIcon(
-  iconContent: string | TemplateResult,
-  className: string,
-): TemplateResult {
+export function renderEmojiIcon(iconContent: string | TemplateResult, className: string): TemplateResult {
   return html`<span class=${className} aria-hidden="true">${iconContent}</span>`;
 }
 

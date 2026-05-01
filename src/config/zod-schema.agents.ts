@@ -83,8 +83,7 @@ const AcpBindingSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["match", "peer", "id"],
-        message:
-          "Telegram ACP bindings require canonical topic IDs in the form -1001234567890:topic:42.",
+        message: "Telegram ACP bindings require canonical topic IDs in the form -1001234567890:topic:42.",
       });
     }
   });

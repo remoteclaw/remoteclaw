@@ -157,11 +157,7 @@ function sendJson(res: ServerResponse, status: number, body: unknown): void {
   res.end(JSON.stringify(body));
 }
 
-async function readJsonBody(
-  req: IncomingMessage,
-  maxBytes = 64 * 1024,
-  timeoutMs = 30_000,
-): Promise<unknown> {
+async function readJsonBody(req: IncomingMessage, maxBytes = 64 * 1024, timeoutMs = 30_000): Promise<unknown> {
   const result = await readJsonBodyWithLimit(req, {
     maxBytes,
     timeoutMs,
@@ -371,11 +367,7 @@ export function createNostrProfileHttpHandler(
 // GET /api/channels/nostr/:accountId/profile
 // ============================================================================
 
-async function handleGetProfile(
-  accountId: string,
-  ctx: NostrProfileHttpContext,
-  res: ServerResponse,
-): Promise<true> {
+async function handleGetProfile(accountId: string, ctx: NostrProfileHttpContext, res: ServerResponse): Promise<true> {
   const configProfile = ctx.getConfigProfile(accountId);
   const publishState = await getNostrProfileState(accountId);
 

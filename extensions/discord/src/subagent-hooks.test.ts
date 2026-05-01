@@ -31,9 +31,7 @@ const hookMocks = vi.hoisted(() => ({
       },
     }),
   ),
-  autoBindSpawnedDiscordSubagent: vi.fn(
-    async (): Promise<{ threadId: string } | null> => ({ threadId: "thread-1" }),
-  ),
+  autoBindSpawnedDiscordSubagent: vi.fn(async (): Promise<{ threadId: string } | null> => ({ threadId: "thread-1" })),
   listThreadBindingsBySessionKey: vi.fn((_params?: unknown): ThreadBindingRecord[] => []),
   unbindThreadBindingsBySessionKey: vi.fn(() => []),
 }));
@@ -142,10 +140,7 @@ function createSpawnEventWithoutThread() {
   });
 }
 
-async function runSubagentSpawning(
-  config?: Record<string, unknown>,
-  event = createSpawnEventWithoutThread(),
-) {
+async function runSubagentSpawning(config?: Record<string, unknown>, event = createSpawnEventWithoutThread()) {
   const handlers = registerHandlersForTest(config);
   const handler = getRequiredHookHandler(handlers, "subagent_spawning");
   return await handler(event, {});
@@ -335,9 +330,7 @@ describe("discord subagent hook handlers", () => {
   });
 
   it("resolves delivery target from matching bound thread", () => {
-    hookMocks.listThreadBindingsBySessionKey.mockReturnValueOnce([
-      { accountId: "work", threadId: "777" },
-    ]);
+    hookMocks.listThreadBindingsBySessionKey.mockReturnValueOnce([{ accountId: "work", threadId: "777" }]);
     const result = resolveSubagentDeliveryTargetForTest({
       channel: "discord",
       accountId: "work",

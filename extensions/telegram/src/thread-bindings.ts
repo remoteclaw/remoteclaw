@@ -106,9 +106,7 @@ function resolveEffectiveBindingExpiresAt(params: {
       : params.defaultMaxAgeMs;
 
   const inactivityExpiresAt =
-    idleTimeoutMs > 0
-      ? Math.max(params.record.lastActivityAt, params.record.boundAt) + idleTimeoutMs
-      : undefined;
+    idleTimeoutMs > 0 ? Math.max(params.record.lastActivityAt, params.record.boundAt) + idleTimeoutMs : undefined;
   const maxAgeExpiresAt = maxAgeMs > 0 ? params.record.boundAt + maxAgeMs : undefined;
 
   if (inactivityExpiresAt != null && maxAgeExpiresAt != null) {
@@ -149,10 +147,7 @@ function toSessionBindingRecord(
         typeof record.idleTimeoutMs === "number"
           ? Math.max(0, Math.floor(record.idleTimeoutMs))
           : defaults.idleTimeoutMs,
-      maxAgeMs:
-        typeof record.maxAgeMs === "number"
-          ? Math.max(0, Math.floor(record.maxAgeMs))
-          : defaults.maxAgeMs,
+      maxAgeMs: typeof record.maxAgeMs === "number" ? Math.max(0, Math.floor(record.maxAgeMs)) : defaults.maxAgeMs,
     },
   };
 }
@@ -181,17 +176,10 @@ function fromSessionBindingInput(params: {
     targetKind: toTelegramTargetKind(params.input.targetKind),
     targetSessionKey: params.input.targetSessionKey,
     agentId:
-      typeof metadata.agentId === "string" && metadata.agentId.trim()
-        ? metadata.agentId.trim()
-        : existing?.agentId,
-    label:
-      typeof metadata.label === "string" && metadata.label.trim()
-        ? metadata.label.trim()
-        : existing?.label,
+      typeof metadata.agentId === "string" && metadata.agentId.trim() ? metadata.agentId.trim() : existing?.agentId,
+    label: typeof metadata.label === "string" && metadata.label.trim() ? metadata.label.trim() : existing?.label,
     boundBy:
-      typeof metadata.boundBy === "string" && metadata.boundBy.trim()
-        ? metadata.boundBy.trim()
-        : existing?.boundBy,
+      typeof metadata.boundBy === "string" && metadata.boundBy.trim() ? metadata.boundBy.trim() : existing?.boundBy,
     boundAt: now,
     lastActivityAt: now,
   };
@@ -223,8 +211,7 @@ function summarizeLifecycleForLog(
     maxAgeMs: number;
   },
 ) {
-  const idleTimeoutMs =
-    typeof record.idleTimeoutMs === "number" ? record.idleTimeoutMs : defaults.idleTimeoutMs;
+  const idleTimeoutMs = typeof record.idleTimeoutMs === "number" ? record.idleTimeoutMs : defaults.idleTimeoutMs;
   const maxAgeMs = typeof record.maxAgeMs === "number" ? record.maxAgeMs : defaults.maxAgeMs;
   return `idle=${idleTimeoutMs}ms maxAge=${maxAgeMs}ms`;
 }
@@ -240,16 +227,13 @@ function loadBindingsFromDisk(accountId: string): TelegramThreadBindingRecord[] 
     const bindings: TelegramThreadBindingRecord[] = [];
     for (const entry of parsed.bindings) {
       const conversationId = normalizeConversationId(entry?.conversationId);
-      const targetSessionKey =
-        typeof entry?.targetSessionKey === "string" ? entry.targetSessionKey.trim() : "";
+      const targetSessionKey = typeof entry?.targetSessionKey === "string" ? entry.targetSessionKey.trim() : "";
       const targetKind = entry?.targetKind === "subagent" ? "subagent" : "acp";
       if (!conversationId || !targetSessionKey) {
         continue;
       }
       const boundAt =
-        typeof entry?.boundAt === "number" && Number.isFinite(entry.boundAt)
-          ? Math.floor(entry.boundAt)
-          : Date.now();
+        typeof entry?.boundAt === "number" && Number.isFinite(entry.boundAt) ? Math.floor(entry.boundAt) : Date.now();
       const lastActivityAt =
         typeof entry?.lastActivityAt === "number" && Number.isFinite(entry.lastActivityAt)
           ? Math.floor(entry.lastActivityAt)
@@ -289,10 +273,7 @@ function loadBindingsFromDisk(accountId: string): TelegramThreadBindingRecord[] 
   }
 }
 
-async function persistBindingsToDisk(params: {
-  accountId: string;
-  persist: boolean;
-}): Promise<void> {
+async function persistBindingsToDisk(params: { accountId: string; persist: boolean }): Promise<void> {
   if (!params.persist) {
     return;
   }
@@ -329,9 +310,7 @@ function shouldExpireByIdle(params: {
   if (idleTimeoutMs <= 0) {
     return false;
   }
-  return (
-    params.now >= Math.max(params.record.lastActivityAt, params.record.boundAt) + idleTimeoutMs
-  );
+  return params.now >= Math.max(params.record.lastActivityAt, params.record.boundAt) + idleTimeoutMs;
 }
 
 function shouldExpireByMaxAge(params: {
@@ -365,10 +344,7 @@ export function createTelegramThreadBindingManager(
   }
 
   const persist = params.persist ?? true;
-  const idleTimeoutMs = normalizeDurationMs(
-    params.idleTimeoutMs,
-    DEFAULT_THREAD_BINDING_IDLE_TIMEOUT_MS,
-  );
+  const idleTimeoutMs = normalizeDurationMs(params.idleTimeoutMs, DEFAULT_THREAD_BINDING_IDLE_TIMEOUT_MS);
   const maxAgeMs = normalizeDurationMs(params.maxAgeMs, DEFAULT_THREAD_BINDING_MAX_AGE_MS);
 
   const loaded = loadBindingsFromDisk(accountId);
@@ -410,9 +386,7 @@ export function createTelegramThreadBindingManager(
       if (!targetSessionKey) {
         return [];
       }
-      return listBindingsForAccount().filter(
-        (entry) => entry.targetSessionKey === targetSessionKey,
-      );
+      return listBindingsForAccount().filter((entry) => entry.targetSessionKey === targetSessionKey);
     },
     listBindings: () => listBindingsForAccount(),
     touchConversation: (conversationIdRaw, at) => {
@@ -509,19 +483,13 @@ export function createTelegramThreadBindingManager(
           metadata: input.metadata,
         },
       });
-      BINDINGS_BY_ACCOUNT_CONVERSATION.set(
-        resolveBindingKey({ accountId, conversationId }),
-        record,
-      );
+      BINDINGS_BY_ACCOUNT_CONVERSATION.set(resolveBindingKey({ accountId, conversationId }), record);
       void persistBindingsToDisk({ accountId, persist: manager.shouldPersistMutations() });
       logVerbose(
-        `telegram: bound conversation ${conversationId} -> ${targetSessionKey} (${summarizeLifecycleForLog(
-          record,
-          {
-            idleTimeoutMs,
-            maxAgeMs,
-          },
-        )})`,
+        `telegram: bound conversation ${conversationId} -> ${targetSessionKey} (${summarizeLifecycleForLog(record, {
+          idleTimeoutMs,
+          maxAgeMs,
+        })})`,
       );
       return toSessionBindingRecord(record, {
         idleTimeoutMs,
@@ -635,9 +603,7 @@ export function createTelegramThreadBindingManager(
   return manager;
 }
 
-export function getTelegramThreadBindingManager(
-  accountId?: string,
-): TelegramThreadBindingManager | null {
+export function getTelegramThreadBindingManager(accountId?: string): TelegramThreadBindingManager | null {
   return MANAGERS_BY_ACCOUNT_ID.get(normalizeAccountId(accountId)) ?? null;
 }
 

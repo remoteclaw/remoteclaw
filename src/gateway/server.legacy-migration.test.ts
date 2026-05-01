@@ -1,10 +1,5 @@
 import { describe, expect, test } from "vitest";
-import {
-  getFreePort,
-  installGatewayTestHooks,
-  startGatewayServer,
-  testState,
-} from "./test-helpers.js";
+import { getFreePort, installGatewayTestHooks, startGatewayServer, testState } from "./test-helpers.js";
 
 installGatewayTestHooks({ scope: "suite" });
 

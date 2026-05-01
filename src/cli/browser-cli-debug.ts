@@ -43,10 +43,7 @@ function printJsonResult(parent: BrowserParentOpts, result: unknown): boolean {
   return true;
 }
 
-async function callDebugRequest<T>(
-  parent: BrowserParentOpts,
-  params: BrowserRequestParams,
-): Promise<T> {
+async function callDebugRequest<T>(parent: BrowserParentOpts, params: BrowserRequestParams): Promise<T> {
   return callBrowserRequest<T>(parent, params, { timeoutMs: BROWSER_DEBUG_TIMEOUT_MS });
 }
 
@@ -54,12 +51,7 @@ function resolveProfileQuery(profile?: string) {
   return profile ? { profile } : undefined;
 }
 
-function resolveDebugQuery(params: {
-  targetId?: unknown;
-  clear?: unknown;
-  profile?: string;
-  filter?: unknown;
-}) {
+function resolveDebugQuery(params: { targetId?: unknown; clear?: unknown; profile?: string; filter?: unknown }) {
   return {
     targetId: typeof params.targetId === "string" ? params.targetId.trim() || undefined : undefined,
     filter: typeof params.filter === "string" ? params.filter.trim() || undefined : undefined,
@@ -68,10 +60,7 @@ function resolveDebugQuery(params: {
   };
 }
 
-export function registerBrowserDebugCommands(
-  browser: Command,
-  parentOpts: (cmd: Command) => BrowserParentOpts,
-) {
+export function registerBrowserDebugCommands(browser: Command, parentOpts: (cmd: Command) => BrowserParentOpts) {
   browser
     .command("highlight")
     .description("Highlight an element by ref")
@@ -121,9 +110,7 @@ export function registerBrowserDebugCommands(
           return;
         }
         defaultRuntime.log(
-          result.errors
-            .map((e) => `${e.timestamp} ${e.name ? `${e.name}: ` : ""}${e.message}`)
-            .join("\n"),
+          result.errors.map((e) => `${e.timestamp} ${e.name ? `${e.name}: ` : ""}${e.message}`).join("\n"),
         );
       });
     });
@@ -207,10 +194,7 @@ export function registerBrowserDebugCommands(
   trace
     .command("stop")
     .description("Stop trace recording and write a .zip")
-    .option(
-      "--out <path>",
-      "Output path within remoteclaw temp dir (e.g. trace.zip or /tmp/remoteclaw/trace.zip)",
-    )
+    .option("--out <path>", "Output path within remoteclaw temp dir (e.g. trace.zip or /tmp/remoteclaw/trace.zip)")
     .option("--target-id <id>", "CDP target id (or unique prefix)")
     .action(async (opts, cmd) => {
       await withDebugContext(cmd, parentOpts, async ({ parent, profile }) => {

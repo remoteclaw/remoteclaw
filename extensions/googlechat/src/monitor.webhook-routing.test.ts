@@ -13,11 +13,7 @@ vi.mock("./auth.js", () => ({
   verifyGoogleChatRequest: vi.fn(),
 }));
 
-function createWebhookRequest(params: {
-  authorization?: string;
-  payload: unknown;
-  path?: string;
-}): IncomingMessage {
+function createWebhookRequest(params: { authorization?: string; payload: unknown; path?: string }): IncomingMessage {
   const req = new EventEmitter() as IncomingMessage & {
     destroyed?: boolean;
     destroy: (error?: Error) => IncomingMessage;
@@ -57,10 +53,7 @@ function createWebhookRequest(params: {
   return req;
 }
 
-function createHeaderOnlyWebhookRequest(params: {
-  authorization?: string;
-  path?: string;
-}): IncomingMessage {
+function createHeaderOnlyWebhookRequest(params: { authorization?: string; path?: string }): IncomingMessage {
   const req = new EventEmitter() as IncomingMessage;
   req.method = "POST";
   req.url = params.path ?? "/googlechat";
@@ -133,8 +126,7 @@ async function expectVerifiedRoute(params: {
 }) {
   const res = await dispatchWebhookRequest(params.request);
   expect(res.statusCode).toBe(params.expectedStatus);
-  const expectedCounts =
-    params.expectedSink === "A" ? [1, 0] : params.expectedSink === "B" ? [0, 1] : [0, 0];
+  const expectedCounts = params.expectedSink === "A" ? [1, 0] : params.expectedSink === "B" ? [0, 1] : [0, 0];
   expect(params.sinkA).toHaveBeenCalledTimes(expectedCounts[0]);
   expect(params.sinkB).toHaveBeenCalledTimes(expectedCounts[1]);
 }

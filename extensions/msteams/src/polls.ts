@@ -22,11 +22,7 @@ export type MSTeamsPoll = {
 export type MSTeamsPollStore = {
   createPoll: (poll: MSTeamsPoll) => Promise<void>;
   getPoll: (pollId: string) => Promise<MSTeamsPoll | null>;
-  recordVote: (params: {
-    pollId: string;
-    voterId: string;
-    selections: string[];
-  }) => Promise<MSTeamsPoll | null>;
+  recordVote: (params: { pollId: string; voterId: string; selections: string[] }) => Promise<MSTeamsPoll | null>;
 };
 
 export type MSTeamsPollCard = {
@@ -94,9 +90,7 @@ function readNestedString(value: unknown, keys: Array<string | number>): string 
   return typeof found === "string" && found.trim() ? found.trim() : undefined;
 }
 
-export function extractMSTeamsPollVote(
-  activity: { value?: unknown } | undefined,
-): MSTeamsPollVote | null {
+export function extractMSTeamsPollVote(activity: { value?: unknown } | undefined): MSTeamsPollVote | null {
   const value = activity?.value;
   if (!value || !isRecord(value)) {
     return null;
@@ -117,11 +111,7 @@ export function extractMSTeamsPollVote(
   const nestedSelections = extractSelections(readNestedValue(value, ["choices"]));
   const dataSelections = extractSelections(readNestedValue(value, ["data", "choices"]));
   const selections =
-    directSelections.length > 0
-      ? directSelections
-      : nestedSelections.length > 0
-        ? nestedSelections
-        : dataSelections;
+    directSelections.length > 0 ? directSelections : nestedSelections.length > 0 ? nestedSelections : dataSelections;
 
   if (selections.length === 0) {
     return null;
@@ -141,9 +131,7 @@ export function buildMSTeamsPollCard(params: {
 }): MSTeamsPollCard {
   const pollId = params.pollId ?? crypto.randomUUID();
   const maxSelections =
-    typeof params.maxSelections === "number" && params.maxSelections > 1
-      ? Math.floor(params.maxSelections)
-      : 1;
+    typeof params.maxSelections === "number" && params.maxSelections > 1 ? Math.floor(params.maxSelections) : 1;
   const cappedMaxSelections = Math.min(Math.max(1, maxSelections), params.options.length);
   const choices = params.options.map((option, index) => ({
     title: option,

@@ -30,10 +30,7 @@ export function normalizeCdpWsUrl(wsUrl: string, cdpUrl: string): string {
   return ws.toString();
 }
 
-export async function captureScreenshotPng(opts: {
-  wsUrl: string;
-  fullPage?: boolean;
-}): Promise<Buffer> {
+export async function captureScreenshotPng(opts: { wsUrl: string; fullPage?: boolean }): Promise<Buffer> {
   return await captureScreenshot({
     wsUrl: opts.wsUrl,
     fullPage: opts.fullPage,
@@ -65,8 +62,7 @@ export async function captureScreenshot(opts: {
     }
 
     const format = opts.format ?? "png";
-    const quality =
-      format === "jpeg" ? Math.max(0, Math.min(100, Math.round(opts.quality ?? 85))) : undefined;
+    const quality = format === "jpeg" ? Math.max(0, Math.min(100, Math.round(opts.quality ?? 85))) : undefined;
 
     const result = (await send("Page.captureScreenshot", {
       format,
@@ -94,10 +90,7 @@ export async function createTargetViaCdp(opts: {
     ...withBrowserNavigationPolicy(opts.ssrfPolicy),
   });
 
-  const version = await fetchJson<{ webSocketDebuggerUrl?: string }>(
-    appendCdpPath(opts.cdpUrl, "/json/version"),
-    1500,
-  );
+  const version = await fetchJson<{ webSocketDebuggerUrl?: string }>(appendCdpPath(opts.cdpUrl, "/json/version"), 1500);
   const wsUrlRaw = String(version?.webSocketDebuggerUrl ?? "").trim();
   const wsUrl = wsUrlRaw ? normalizeCdpWsUrl(wsUrlRaw, opts.cdpUrl) : "";
   if (!wsUrl) {
@@ -256,10 +249,7 @@ export function formatAriaSnapshot(nodes: RawAXNode[], limit: number): AriaSnaps
   return out;
 }
 
-export async function snapshotAria(opts: {
-  wsUrl: string;
-  limit?: number;
-}): Promise<{ nodes: AriaSnapshotNode[] }> {
+export async function snapshotAria(opts: { wsUrl: string; limit?: number }): Promise<{ nodes: AriaSnapshotNode[] }> {
   const limit = Math.max(1, Math.min(2000, Math.floor(opts.limit ?? 500)));
   return await withCdpSocket(opts.wsUrl, async (send) => {
     await send("Accessibility.enable").catch(() => {});
@@ -271,11 +261,7 @@ export async function snapshotAria(opts: {
   });
 }
 
-export async function snapshotDom(opts: {
-  wsUrl: string;
-  limit?: number;
-  maxTextChars?: number;
-}): Promise<{
+export async function snapshotDom(opts: { wsUrl: string; limit?: number; maxTextChars?: number }): Promise<{
   nodes: DomSnapshotNode[];
 }> {
   const limit = Math.max(1, Math.min(5000, Math.floor(opts.limit ?? 800)));

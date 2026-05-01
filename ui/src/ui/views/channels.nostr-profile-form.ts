@@ -170,16 +170,10 @@ export function renderNostrProfileForm(params: {
         <div style="font-size: 12px; color: var(--text-muted);">Account: ${accountId}</div>
       </div>
 
-      ${
-        state.error
-          ? html`<div class="callout danger" style="margin-bottom: 12px;">${state.error}</div>`
-          : nothing
-      }
+      ${state.error ? html`<div class="callout danger" style="margin-bottom: 12px;">${state.error}</div>` : nothing}
 
       ${
-        state.success
-          ? html`<div class="callout success" style="margin-bottom: 12px;">${state.success}</div>`
-          : nothing
+        state.success ? html`<div class="callout success" style="margin-bottom: 12px;">${state.success}</div>` : nothing
       }
 
       ${renderPicturePreview()}
@@ -277,9 +271,7 @@ export function renderNostrProfileForm(params: {
       ${
         isDirty
           ? html`
-              <div style="font-size: 12px; color: var(--warning-color); margin-top: 8px">
-                You have unsaved changes
-              </div>
+              <div style="font-size: 12px; color: var(--warning-color); margin-top: 8px">You have unsaved changes</div>
             `
           : nothing
       }
@@ -294,9 +286,7 @@ export function renderNostrProfileForm(params: {
 /**
  * Create initial form state from existing profile
  */
-export function createNostrProfileFormState(
-  profile: NostrProfileType | undefined,
-): NostrProfileFormState {
+export function createNostrProfileFormState(profile: NostrProfileType | undefined): NostrProfileFormState {
   const values: NostrProfileType = {
     name: profile?.name ?? "",
     displayName: profile?.displayName ?? "",

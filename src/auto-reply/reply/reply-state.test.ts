@@ -22,17 +22,9 @@ afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map((dir) => fs.rm(dir, { recursive: true, force: true })));
 });
 
-async function seedSessionStore(params: {
-  storePath: string;
-  sessionKey: string;
-  entry: Record<string, unknown>;
-}) {
+async function seedSessionStore(params: { storePath: string; sessionKey: string; entry: Record<string, unknown> }) {
   await fs.mkdir(path.dirname(params.storePath), { recursive: true });
-  await fs.writeFile(
-    params.storePath,
-    JSON.stringify({ [params.sessionKey]: params.entry }, null, 2),
-    "utf-8",
-  );
+  await fs.writeFile(params.storePath, JSON.stringify({ [params.sessionKey]: params.entry }, null, 2), "utf-8");
 }
 
 async function createCompactionSessionFixture(entry: SessionEntry) {

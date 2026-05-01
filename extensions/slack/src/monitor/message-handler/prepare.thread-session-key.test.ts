@@ -4,8 +4,7 @@ import type { RemoteClawConfig } from "../../../../../src/config/config.js";
 import type { SlackMessageEvent } from "../../types.js";
 
 type PrepareSlackMessage = typeof import("./prepare.js").prepareSlackMessage;
-type CreateInboundSlackTestContext =
-  typeof import("./prepare.test-helpers.js").createInboundSlackTestContext;
+type CreateInboundSlackTestContext = typeof import("./prepare.test-helpers.js").createInboundSlackTestContext;
 type CreateSlackTestAccount = typeof import("./prepare.test-helpers.js").createSlackTestAccount;
 
 let prepareSlackMessage: PrepareSlackMessage;

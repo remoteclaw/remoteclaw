@@ -9,10 +9,7 @@ const { listAccountIds: listZaloAccountIds, resolveDefaultAccountId: resolveDefa
   createAccountListHelpers("zalo");
 export { listZaloAccountIds, resolveDefaultZaloAccountId };
 
-function resolveAccountConfig(
-  cfg: RemoteClawConfig,
-  accountId: string,
-): ZaloAccountConfig | undefined {
+function resolveAccountConfig(cfg: RemoteClawConfig, accountId: string): ZaloAccountConfig | undefined {
   const accounts = (cfg.channels?.zalo as ZaloConfig | undefined)?.accounts;
   if (!accounts || typeof accounts !== "object") {
     return undefined;
@@ -37,11 +34,9 @@ export function resolveZaloAccount(params: {
   const merged = mergeZaloAccountConfig(params.cfg, accountId);
   const accountEnabled = merged.enabled !== false;
   const enabled = baseEnabled && accountEnabled;
-  const tokenResolution = resolveZaloToken(
-    params.cfg.channels?.zalo as ZaloConfig | undefined,
-    accountId,
-    { allowUnresolvedSecretRef: params.allowUnresolvedSecretRef },
-  );
+  const tokenResolution = resolveZaloToken(params.cfg.channels?.zalo as ZaloConfig | undefined, accountId, {
+    allowUnresolvedSecretRef: params.allowUnresolvedSecretRef,
+  });
 
   return {
     accountId,

@@ -3,9 +3,7 @@ import { imessageOutbound } from "../channels/plugins/outbound/imessage.js";
 import type { ChannelOutboundAdapter, ChannelPlugin } from "../channels/plugins/types.js";
 import { collectStatusIssuesFromLastError } from "../plugin-sdk/status-helpers.js";
 
-export const createIMessageTestPlugin = (params?: {
-  outbound?: ChannelOutboundAdapter;
-}): ChannelPlugin => ({
+export const createIMessageTestPlugin = (params?: { outbound?: ChannelOutboundAdapter }): ChannelPlugin => ({
   id: "imessage",
   meta: {
     id: "imessage",

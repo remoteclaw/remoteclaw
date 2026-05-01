@@ -13,12 +13,7 @@ function normalizeStreamingMode(value: unknown): string | null {
 
 export function parseStreamingMode(value: unknown): StreamingMode | null {
   const normalized = normalizeStreamingMode(value);
-  if (
-    normalized === "off" ||
-    normalized === "partial" ||
-    normalized === "block" ||
-    normalized === "progress"
-  ) {
+  if (normalized === "off" || normalized === "partial" || normalized === "block" || normalized === "progress") {
     return normalized;
   }
   return null;
@@ -40,9 +35,7 @@ export function parseSlackLegacyDraftStreamMode(value: unknown): SlackLegacyDraf
   return null;
 }
 
-export function mapSlackLegacyDraftStreamModeToStreaming(
-  mode: SlackLegacyDraftStreamMode,
-): StreamingMode {
+export function mapSlackLegacyDraftStreamModeToStreaming(mode: SlackLegacyDraftStreamMode): StreamingMode {
   if (mode === "append") {
     return "block";
   }
@@ -146,10 +139,7 @@ export function resolveSlackNativeStreaming(
   return true;
 }
 
-export function formatSlackStreamModeMigrationMessage(
-  pathPrefix: string,
-  resolvedStreaming: string,
-): string {
+export function formatSlackStreamModeMigrationMessage(pathPrefix: string, resolvedStreaming: string): string {
   return `Moved ${pathPrefix}.streamMode → ${pathPrefix}.streaming (${resolvedStreaming}).`;
 }
 

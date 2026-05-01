@@ -3,9 +3,7 @@ import type { PluginConfigUiHint, RemoteClawPluginConfigSchema } from "./types.j
 
 type Issue = { path: Array<string | number>; message: string };
 
-type SafeParseResult =
-  | { success: true; data?: unknown }
-  | { success: false; error: { issues: Issue[] } };
+type SafeParseResult = { success: true; data?: unknown } | { success: false; error: { issues: Issue[] } };
 
 type ZodSchemaWithToJsonSchema = ZodTypeAny & {
   toJSONSchema?: (params?: Record<string, unknown>) => unknown;

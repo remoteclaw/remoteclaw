@@ -1,10 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
-import {
-  resolveAuthEnv,
-  resolveAuthProfileCount,
-  resolveProviderEnvVarName,
-} from "./env-injection.js";
+import { resolveAuthEnv, resolveAuthProfileCount, resolveProviderEnvVarName } from "./env-injection.js";
 import type { AuthProfileStore } from "./types.js";
 
 vi.mock("./store.js", async (importOriginal) => {
@@ -59,10 +55,7 @@ describe("resolveAuthEnv", () => {
   ): AuthProfileStore => ({
     version: 1,
     profiles: Object.fromEntries(
-      Object.entries(profiles).map(([id, p]) => [
-        id,
-        { type: "api_key" as const, provider: p.provider, key: p.key },
-      ]),
+      Object.entries(profiles).map(([id, p]) => [id, { type: "api_key" as const, provider: p.provider, key: p.key }]),
     ),
     usageStats,
   });

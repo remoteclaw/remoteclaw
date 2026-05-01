@@ -27,11 +27,7 @@ import {
   type ResolvedGatewayAuth,
 } from "./auth.js";
 import { normalizeCanvasScopedUrl } from "./canvas-capability.js";
-import {
-  handleControlUiAvatarRequest,
-  handleControlUiHttpRequest,
-  type ControlUiRootState,
-} from "./control-ui.js";
+import { handleControlUiAvatarRequest, handleControlUiHttpRequest, type ControlUiRootState } from "./control-ui.js";
 import { applyHookMappings } from "./hooks-mapping.js";
 import {
   extractHookToken,
@@ -90,9 +86,7 @@ const GATEWAY_PROBE_STATUS_BY_PATH = new Map<string, "live" | "ready">([
 ]);
 const MATTERMOST_SLASH_CALLBACK_PATH = "/api/channels/mattermost/command";
 
-function resolveMattermostSlashCallbackPaths(
-  configSnapshot: ReturnType<typeof loadConfig>,
-): Set<string> {
+function resolveMattermostSlashCallbackPaths(configSnapshot: ReturnType<typeof loadConfig>): Set<string> {
   const callbackPaths = new Set<string>([MATTERMOST_SLASH_CALLBACK_PATH]);
   const isMattermostCommandCallbackPath = (path: string): boolean =>
     path === MATTERMOST_SLASH_CALLBACK_PATH || path.startsWith("/api/channels/mattermost/");
@@ -219,9 +213,7 @@ async function handleGatewayProbeRequest(
       body = JSON.stringify(includeDetails ? result : { ready: result.ready });
     } catch {
       statusCode = 503;
-      body = JSON.stringify(
-        includeDetails ? { ready: false, failing: ["internal"], uptimeMs: 0 } : { ready: false },
-      );
+      body = JSON.stringify(includeDetails ? { ready: false, failing: ["internal"], uptimeMs: 0 } : { ready: false });
     }
   } else {
     statusCode = 200;
@@ -232,10 +224,7 @@ async function handleGatewayProbeRequest(
   return true;
 }
 
-function writeUpgradeAuthFailure(
-  socket: { write: (chunk: string) => void },
-  auth: GatewayAuthResult,
-) {
+function writeUpgradeAuthFailure(socket: { write: (chunk: string) => void }, auth: GatewayAuthResult) {
   if (auth.rateLimited) {
     const retryAfterSeconds =
       auth.retryAfterMs && auth.retryAfterMs > 0 ? Math.ceil(auth.retryAfterMs / 1000) : undefined;
@@ -261,10 +250,7 @@ function writeUpgradeAuthFailure(
   socket.write("HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n");
 }
 
-function writeUpgradeServiceUnavailable(
-  socket: { write: (chunk: string) => void },
-  message: string,
-) {
+function writeUpgradeServiceUnavailable(socket: { write: (chunk: string) => void }, message: string) {
   socket.write(
     [
       "HTTP/1.1 503 Service Unavailable",
@@ -284,9 +270,7 @@ type GatewayHttpRequestStage = {
   run: () => Promise<boolean> | boolean;
 };
 
-async function runGatewayHttpRequestStages(
-  stages: readonly GatewayHttpRequestStage[],
-): Promise<boolean> {
+async function runGatewayHttpRequestStages(stages: readonly GatewayHttpRequestStage[]): Promise<boolean> {
   for (const stage of stages) {
     if (await stage.run()) {
       return true;
@@ -319,13 +303,8 @@ function buildPluginRequestStages(params: {
         if (params.mattermostSlashCallbackPaths.has(params.requestPath)) {
           return false;
         }
-        const pathContext =
-          params.pluginPathContext ?? resolvePluginRoutePathContext(params.requestPath);
-        if (
-          !(params.shouldEnforcePluginGatewayAuth ?? shouldEnforceDefaultPluginGatewayAuth)(
-            pathContext,
-          )
-        ) {
+        const pathContext = params.pluginPathContext ?? resolvePluginRoutePathContext(params.requestPath);
+        if (!(params.shouldEnforcePluginGatewayAuth ?? shouldEnforceDefaultPluginGatewayAuth)(pathContext)) {
           return false;
         }
         // Plugin route gateway auth gutted in RemoteClaw fork — always pass.
@@ -336,8 +315,7 @@ function buildPluginRequestStages(params: {
     {
       name: "plugin-http",
       run: () => {
-        const pathContext =
-          params.pluginPathContext ?? resolvePluginRoutePathContext(params.requestPath);
+        const pathContext = params.pluginPathContext ?? resolvePluginRoutePathContext(params.requestPath);
         return (
           params.handlePluginRequest?.(params.req, params.res, pathContext, {
             gatewayAuthSatisfied: pluginGatewayAuthSatisfied,
@@ -431,12 +409,7 @@ export function createHooksRequestHandler(
 
     const body = await readJsonBody(req, hooksConfig.maxBodyBytes);
     if (!body.ok) {
-      const status =
-        body.error === "payload too large"
-          ? 413
-          : body.error === "request body timeout"
-            ? 408
-            : 400;
+      const status = body.error === "payload too large" ? 413 : body.error === "request body timeout" ? 408 : 400;
       sendJson(res, status, { ok: false, error: body.error });
       return true;
     }
@@ -634,9 +607,7 @@ export function createGatewayHttpServer(opts: {
       }
       const requestPath = new URL(req.url ?? "/", "http://localhost").pathname;
       const mattermostSlashCallbackPaths = resolveMattermostSlashCallbackPaths(configSnapshot);
-      const pluginPathContext = handlePluginRequest
-        ? resolvePluginRoutePathContext(requestPath)
-        : null;
+      const pluginPathContext = handlePluginRequest ? resolvePluginRoutePathContext(requestPath) : null;
       const requestStages: GatewayHttpRequestStage[] = [
         {
           name: "hooks",

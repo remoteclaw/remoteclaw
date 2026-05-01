@@ -2,12 +2,7 @@
 
 import ts from "typescript";
 import { createPairingGuardContext } from "./lib/pairing-guard-context.mjs";
-import {
-  collectFileViolations,
-  getPropertyNameText,
-  runAsScript,
-  toLine,
-} from "./lib/ts-guard-utils.mjs";
+import { collectFileViolations, getPropertyNameText, runAsScript, toLine } from "./lib/ts-guard-utils.mjs";
 
 const { repoRoot, sourceRoots, resolveFromRepo } = createPairingGuardContext(import.meta.url);
 
@@ -20,8 +15,7 @@ const allowedFiles = new Set([
 ]);
 
 const storeIdentifierRe = /^(?:storeAllowFrom|storedAllowFrom|storeAllowList)$/i;
-const groupNameRe =
-  /(?:groupAllowFrom|effectiveGroupAllowFrom|groupAllowed|groupAllow|groupAuth|groupSender)/i;
+const groupNameRe = /(?:groupAllowFrom|effectiveGroupAllowFrom|groupAllowed|groupAllow|groupAuth|groupSender)/i;
 const storeSourceCallNames = new Set([
   "readChannelAllowFromStore",
   "readChannelAllowFromStoreSync",

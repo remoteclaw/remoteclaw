@@ -30,11 +30,7 @@ function resolveCachedCron(expr: string, timezone: string): Cron {
   return next;
 }
 
-function resolveCronFromSchedule(schedule: {
-  tz?: string;
-  expr?: unknown;
-  cron?: unknown;
-}): Cron | undefined {
+function resolveCronFromSchedule(schedule: { tz?: string; expr?: unknown; cron?: unknown }): Cron | undefined {
   const exprSource = typeof schedule.expr === "string" ? schedule.expr : schedule.cron;
   if (typeof exprSource !== "string") {
     throw new Error("invalid cron schedule: expr is required");

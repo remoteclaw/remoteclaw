@@ -5,13 +5,7 @@ import { HISTORY_CONTEXT_MARKER } from "../auto-reply/reply/history.js";
 import { CURRENT_MESSAGE_MARKER } from "../auto-reply/reply/mentions.js";
 import { emitAgentEvent } from "../infra/agent-events.js";
 import { buildAssistantDeltaResult } from "./test-helpers.agent-results.js";
-import {
-  agentCommand,
-  getFreePort,
-  installGatewayTestHooks,
-  testState,
-  withGatewayServer,
-} from "./test-helpers.js";
+import { agentCommand, getFreePort, installGatewayTestHooks, testState, withGatewayServer } from "./test-helpers.js";
 
 installGatewayTestHooks({ scope: "suite" });
 
@@ -121,15 +115,10 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       expect(res.status).toBe(200);
       expect(agentCommand).toHaveBeenCalledTimes(1);
       const opts = (agentCommand.mock.calls[0] as unknown[] | undefined)?.[0];
-      expect((opts as { sessionKey?: string } | undefined)?.sessionKey ?? "").toMatch(
-        request.matcher,
-      );
+      expect((opts as { sessionKey?: string } | undefined)?.sessionKey ?? "").toMatch(request.matcher);
       await res.text();
     };
-    const expectMessageContext = (
-      message: string,
-      expected: { history: string[]; current: string[] },
-    ) => {
+    const expectMessageContext = (message: string, expected: { history: string[]; current: string[] }) => {
       expect(message).toContain(HISTORY_CONTEXT_MARKER);
       for (const line of expected.history) {
         expect(message).toContain(line);
@@ -157,9 +146,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       });
       expect(res.status).toBe(400);
       const json = (await res.json()) as Record<string, unknown>;
-      expect((json.error as Record<string, unknown> | undefined)?.type).toBe(
-        "invalid_request_error",
-      );
+      expect((json.error as Record<string, unknown> | undefined)?.type).toBe("invalid_request_error");
       expect(agentCommand).toHaveBeenCalledTimes(0);
     };
     const postSyncUserMessage = async (message: string) => {
@@ -233,9 +220,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         expect(res.status).toBe(200);
 
         const opts = (agentCommand.mock.calls[0] as unknown[] | undefined)?.[0];
-        expect((opts as { sessionKey?: string } | undefined)?.sessionKey).toBe(
-          "agent:beta:openai:custom",
-        );
+        expect((opts as { sessionKey?: string } | undefined)?.sessionKey).toBe("agent:beta:openai:custom");
         await res.text();
       }
 
@@ -249,9 +234,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         expect(res.status).toBe(200);
 
         const opts = (agentCommand.mock.calls[0] as unknown[] | undefined)?.[0];
-        expect((opts as { sessionKey?: string } | undefined)?.sessionKey ?? "").toContain(
-          "openai-user:alice",
-        );
+        expect((opts as { sessionKey?: string } | undefined)?.sessionKey ?? "").toContain("openai-user:alice");
         await res.text();
       }
 
@@ -311,9 +294,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         expect(res.status).toBe(400);
         const json = (await res.json()) as { error?: { type?: string; message?: string } };
         expect(json.error?.type).toBe("invalid_request_error");
-        expect(json.error?.message).toBe(
-          "Invalid `model`. Use `remoteclaw` or `remoteclaw/<agentId>`.",
-        );
+        expect(json.error?.message).toBe("Invalid `model`. Use `remoteclaw` or `remoteclaw/<agentId>`.");
         expect(agentCommand).toHaveBeenCalledTimes(0);
       }
 
@@ -377,9 +358,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
         const firstCall = getFirstAgentCall();
         expect(firstCall?.message).toBe("describe this");
-        expect(firstCall?.images).toEqual([
-          { type: "image", data: imageData, mimeType: "image/png" },
-        ]);
+        expect(firstCall?.images).toEqual([{ type: "image", data: imageData, mimeType: "image/png" }]);
         await res.text();
       }
 
@@ -404,9 +383,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         expect(res.status).toBe(200);
 
         const firstCall = getFirstAgentCall();
-        expect(firstCall?.images).toEqual([
-          { type: "image", data: imageData, mimeType: "image/png" },
-        ]);
+        expect(firstCall?.images).toEqual([{ type: "image", data: imageData, mimeType: "image/png" }]);
         await res.text();
       }
 
@@ -444,9 +421,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
         const firstCall = getFirstAgentCall();
         expect(firstCall?.message).toContain("User sent image(s) with no text.");
-        expect(firstCall?.images).toEqual([
-          { type: "image", data: "QUJDRA==", mimeType: "image/jpeg" },
-        ]);
+        expect(firstCall?.images).toEqual([{ type: "image", data: "QUJDRA==", mimeType: "image/jpeg" }]);
         await res.text();
       }
 
@@ -457,9 +432,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
           messages: [
             {
               role: "user",
-              content: [
-                { type: "image_url", image_url: { url: "data:image/png;base64,QUJDRA==" } },
-              ],
+              content: [{ type: "image_url", image_url: { url: "data:image/png;base64,QUJDRA==" } }],
             },
             { role: "assistant", content: "I can see it." },
             { role: "user", content: "What color was it?" },
@@ -498,9 +471,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         expect(res.status).toBe(200);
 
         const firstCall = getFirstAgentCall();
-        expect(firstCall?.images).toEqual([
-          { type: "image", data: "QkJCQg==", mimeType: "image/png" },
-        ]);
+        expect(firstCall?.images).toEqual([{ type: "image", data: "QkJCQg==", mimeType: "image/png" }]);
         await res.text();
       }
 
@@ -674,9 +645,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         });
         expect(res.status).toBe(400);
         const missingUserJson = (await res.json()) as Record<string, unknown>;
-        expect((missingUserJson.error as Record<string, unknown> | undefined)?.type).toBe(
-          "invalid_request_error",
-        );
+        expect((missingUserJson.error as Record<string, unknown> | undefined)?.type).toBe("invalid_request_error");
       }
     } finally {
       // shared server
@@ -751,9 +720,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         const data = parseSseDataLines(text);
         expect(data[data.length - 1]).toBe("[DONE]");
 
-        const jsonChunks = data
-          .filter((d) => d !== "[DONE]")
-          .map((d) => JSON.parse(d) as Record<string, unknown>);
+        const jsonChunks = data.filter((d) => d !== "[DONE]").map((d) => JSON.parse(d) as Record<string, unknown>);
         expect(jsonChunks.some((c) => c.object === "chat.completion.chunk")).toBe(true);
         const allContent = jsonChunks
           .flatMap((c) => (c.choices as Array<Record<string, unknown>> | undefined) ?? [])
@@ -829,9 +796,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         const stopChoice = errorChunks
           .flatMap((c) => (c.choices as Array<Record<string, unknown>> | undefined) ?? [])
           .find((choice) => choice.finish_reason === "stop");
-        expect((stopChoice?.delta as Record<string, unknown> | undefined)?.content).toBe(
-          "Error: internal error",
-        );
+        expect((stopChoice?.delta as Record<string, unknown> | undefined)?.content).toBe("Error: internal error");
       }
     } finally {
       // shared server

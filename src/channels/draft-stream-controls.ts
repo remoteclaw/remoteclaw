@@ -19,10 +19,7 @@ type ClearFinalizableDraftMessageParams<T> = StopAndClearMessageIdParams<T> & {
   warnPrefix: string;
 };
 
-type FinalizableDraftLifecycleParams<T> = Omit<
-  ClearFinalizableDraftMessageParams<T>,
-  "stopForClear"
-> & {
+type FinalizableDraftLifecycleParams<T> = Omit<ClearFinalizableDraftMessageParams<T>, "stopForClear"> & {
   throttleMs: number;
   state: FinalizableDraftStreamState;
   sendOrEditStreamMessage: (text: string) => Promise<boolean>;
@@ -87,18 +84,14 @@ export function createFinalizableDraftStreamControlsForState(params: {
   });
 }
 
-export async function takeMessageIdAfterStop<T>(
-  params: StopAndClearMessageIdParams<T>,
-): Promise<T | undefined> {
+export async function takeMessageIdAfterStop<T>(params: StopAndClearMessageIdParams<T>): Promise<T | undefined> {
   await params.stopForClear();
   const messageId = params.readMessageId();
   params.clearMessageId();
   return messageId;
 }
 
-export async function clearFinalizableDraftMessage<T>(
-  params: ClearFinalizableDraftMessageParams<T>,
-): Promise<void> {
+export async function clearFinalizableDraftMessage<T>(params: ClearFinalizableDraftMessageParams<T>): Promise<void> {
   const messageId = await takeMessageIdAfterStop({
     stopForClear: params.stopForClear,
     readMessageId: params.readMessageId,

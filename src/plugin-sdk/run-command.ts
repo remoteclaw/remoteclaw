@@ -14,9 +14,7 @@ export type PluginCommandRunOptions = {
 };
 
 /** Run a plugin-managed command with timeout handling and normalized stdout/stderr results. */
-export async function runPluginCommandWithTimeout(
-  options: PluginCommandRunOptions,
-): Promise<PluginCommandRunResult> {
+export async function runPluginCommandWithTimeout(options: PluginCommandRunOptions): Promise<PluginCommandRunResult> {
   const [command] = options.argv;
   if (!command) {
     return { code: 1, stdout: "", stderr: "command is required" };
@@ -32,9 +30,7 @@ export async function runPluginCommandWithTimeout(
     return {
       code: result.code ?? 1,
       stdout: result.stdout,
-      stderr: timedOut
-        ? result.stderr || `command timed out after ${options.timeoutMs}ms`
-        : result.stderr,
+      stderr: timedOut ? result.stderr || `command timed out after ${options.timeoutMs}ms` : result.stderr,
     };
   } catch (error) {
     return {

@@ -1,10 +1,7 @@
 import { loadConfig, resolveGatewayPort } from "../../config/config.js";
 import { callGateway } from "../../gateway/call.js";
 import { resolveGatewayCredentialsFromConfig, trimToUndefined } from "../../gateway/credentials.js";
-import {
-  resolveLeastPrivilegeOperatorScopesForMethod,
-  type OperatorScope,
-} from "../../gateway/method-scopes.js";
+import { resolveLeastPrivilegeOperatorScopesForMethod, type OperatorScope } from "../../gateway/method-scopes.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../../utils/message-channel.js";
 import { readStringParam } from "./common.js";
 
@@ -56,10 +53,10 @@ function canonicalizeToolGatewayWsUrl(raw: string): { origin: string; key: strin
   return { origin, key };
 }
 
-function validateGatewayUrlOverrideForAgentTools(params: {
-  cfg: ReturnType<typeof loadConfig>;
-  urlOverride: string;
-}): { url: string; target: GatewayOverrideTarget } {
+function validateGatewayUrlOverrideForAgentTools(params: { cfg: ReturnType<typeof loadConfig>; urlOverride: string }): {
+  url: string;
+  target: GatewayOverrideTarget;
+} {
   const { cfg } = params;
   const port = resolveGatewayPort(cfg);
   const localAllowed = new Set<string>([
@@ -72,8 +69,7 @@ function validateGatewayUrlOverrideForAgentTools(params: {
   ]);
 
   let remoteKey: string | undefined;
-  const remoteUrl =
-    typeof cfg.gateway?.remote?.url === "string" ? cfg.gateway.remote.url.trim() : "";
+  const remoteUrl = typeof cfg.gateway?.remote?.url === "string" ? cfg.gateway.remote.url.trim() : "";
   if (remoteUrl) {
     try {
       const remote = canonicalizeToolGatewayWsUrl(remoteUrl);
@@ -147,9 +143,7 @@ export async function callGatewayTool<T = Record<string, unknown>>(
   extra?: { expectFinal?: boolean; scopes?: OperatorScope[] },
 ) {
   const gateway = resolveGatewayOptions(opts);
-  const scopes = Array.isArray(extra?.scopes)
-    ? extra.scopes
-    : resolveLeastPrivilegeOperatorScopesForMethod(method);
+  const scopes = Array.isArray(extra?.scopes) ? extra.scopes : resolveLeastPrivilegeOperatorScopesForMethod(method);
   return await callGateway<T>({
     url: gateway.url,
     token: gateway.token,

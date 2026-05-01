@@ -19,9 +19,7 @@ export type BundledExtensionMetadata = BundledExtension & {
   rootDependencyMirrorAllowlist: string[];
 };
 
-export function normalizeBundledExtensionMetadata(
-  extensions: BundledExtension[],
-): BundledExtensionMetadata[] {
+export function normalizeBundledExtensionMetadata(extensions: BundledExtension[]): BundledExtensionMetadata[] {
   return extensions.map((extension) => ({
     ...extension,
     npmSpec:
@@ -40,17 +38,13 @@ export function collectBundledExtensionManifestErrors(extensions: BundledExtensi
 
   for (const extension of extensions) {
     const install = extension.packageJson.remoteclaw?.install;
-    if (
-      install &&
-      (!install.npmSpec || typeof install.npmSpec !== "string" || !install.npmSpec.trim())
-    ) {
+    if (install && (!install.npmSpec || typeof install.npmSpec !== "string" || !install.npmSpec.trim())) {
       errors.push(
         `bundled extension '${extension.id}' manifest invalid | remoteclaw.install.npmSpec must be a non-empty string`,
       );
     }
 
-    const allowlist =
-      extension.packageJson.remoteclaw?.releaseChecks?.rootDependencyMirrorAllowlist;
+    const allowlist = extension.packageJson.remoteclaw?.releaseChecks?.rootDependencyMirrorAllowlist;
     if (allowlist === undefined) {
       continue;
     }

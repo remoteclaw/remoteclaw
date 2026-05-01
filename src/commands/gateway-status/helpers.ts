@@ -94,8 +94,7 @@ export function resolveTargets(cfg: RemoteClawConfig, explicitUrl?: string): Gat
     add({ id: "explicit", kind: "explicit", url: explicit, active: true });
   }
 
-  const remoteUrl =
-    typeof cfg.gateway?.remote?.url === "string" ? normalizeWsUrl(cfg.gateway.remote.url) : null;
+  const remoteUrl = typeof cfg.gateway?.remote?.url === "string" ? normalizeWsUrl(cfg.gateway.remote.url) : null;
   if (remoteUrl) {
     add({
       id: "configRemote",
@@ -184,12 +183,9 @@ export async function resolveAuthForTarget(
 
   if (target.kind === "configRemote" || target.kind === "sshTunnel") {
     const remoteTokenValue = cfg.gateway?.remote?.token;
-    const remotePasswordValue = (cfg.gateway?.remote as { password?: unknown } | undefined)
-      ?.password;
+    const remotePasswordValue = (cfg.gateway?.remote as { password?: unknown } | undefined)?.password;
     const token = await resolveToken(remoteTokenValue, "gateway.remote.token");
-    const password = token
-      ? undefined
-      : await resolvePassword(remotePasswordValue, "gateway.remote.password");
+    const password = token ? undefined : await resolvePassword(remotePasswordValue, "gateway.remote.password");
     return withDiagnostics({ token, password });
   }
 
@@ -249,9 +245,7 @@ export function extractConfigSummary(snapshotUnknown: unknown): GatewayConfigSum
   const cfg = (snap?.config ?? {}) as Record<string, unknown>;
   const gateway = (cfg.gateway ?? {}) as Record<string, unknown>;
   const secrets = (cfg.secrets ?? {}) as Record<string, unknown>;
-  const secretDefaults = (secrets.defaults ?? undefined) as
-    | { env?: string; file?: string; exec?: string }
-    | undefined;
+  const secretDefaults = (secrets.defaults ?? undefined) as { env?: string; file?: string; exec?: string } | undefined;
   const discovery = (cfg.discovery ?? {}) as Record<string, unknown>;
   const wideArea = (discovery.wideArea ?? {}) as Record<string, unknown>;
 
@@ -339,15 +333,13 @@ export function isProbeReachable(probe: GatewayProbeResult): boolean {
 
 export function renderProbeSummaryLine(probe: GatewayProbeResult, rich: boolean) {
   if (probe.ok) {
-    const latency =
-      typeof probe.connectLatencyMs === "number" ? `${probe.connectLatencyMs}ms` : "unknown";
+    const latency = typeof probe.connectLatencyMs === "number" ? `${probe.connectLatencyMs}ms` : "unknown";
     return `${colorize(rich, theme.success, "Connect: ok")} (${latency}) · ${colorize(rich, theme.success, "RPC: ok")}`;
   }
 
   const detail = probe.error ? ` - ${probe.error}` : "";
   if (probe.connectLatencyMs != null) {
-    const latency =
-      typeof probe.connectLatencyMs === "number" ? `${probe.connectLatencyMs}ms` : "unknown";
+    const latency = typeof probe.connectLatencyMs === "number" ? `${probe.connectLatencyMs}ms` : "unknown";
     const rpcStatus = isScopeLimitedProbeFailure(probe)
       ? colorize(rich, theme.warn, "RPC: limited")
       : colorize(rich, theme.error, "RPC: failed");

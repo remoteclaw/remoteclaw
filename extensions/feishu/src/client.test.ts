@@ -136,11 +136,7 @@ describe("createFeishuClient HTTP timeout", () => {
     };
     const httpInstance = lastCall.httpInstance;
 
-    await httpInstance.post(
-      "https://example.com/api",
-      { data: 1 },
-      { headers: { "X-Custom": "yes" } },
-    );
+    await httpInstance.post("https://example.com/api", { data: 1 }, { headers: { "X-Custom": "yes" } });
 
     expect(mockBaseHttpInstance.post).toHaveBeenCalledWith(
       "https://example.com/api",

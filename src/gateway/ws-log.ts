@@ -45,11 +45,7 @@ function collectWsRestMeta(meta?: Record<string, unknown>): string[] {
   return restMeta;
 }
 
-function buildWsHeadline(params: {
-  kind: string;
-  method?: string;
-  event?: string;
-}): string | undefined {
+function buildWsHeadline(params: { kind: string; method?: string; event?: string }): string | undefined {
   if ((params.kind === "req" || params.kind === "res") && params.method) {
     return chalk.bold(params.method);
   }
@@ -111,46 +107,34 @@ export function formatForLog(value: unknown): string {
         parts.push(value.message);
       }
       const code =
-        "code" in value && (typeof value.code === "string" || typeof value.code === "number")
-          ? String(value.code)
-          : "";
+        "code" in value && (typeof value.code === "string" || typeof value.code === "number") ? String(value.code) : "";
       if (code) {
         parts.push(`code=${code}`);
       }
       const combined = parts.filter(Boolean).join(": ").trim();
       if (combined) {
-        return combined.length > LOG_VALUE_LIMIT
-          ? `${combined.slice(0, LOG_VALUE_LIMIT)}...`
-          : combined;
+        return combined.length > LOG_VALUE_LIMIT ? `${combined.slice(0, LOG_VALUE_LIMIT)}...` : combined;
       }
     }
     if (value && typeof value === "object") {
       const rec = value as Record<string, unknown>;
       if (typeof rec.message === "string" && rec.message.trim()) {
         const name = typeof rec.name === "string" ? rec.name.trim() : "";
-        const code =
-          typeof rec.code === "string" || typeof rec.code === "number" ? String(rec.code) : "";
+        const code = typeof rec.code === "string" || typeof rec.code === "number" ? String(rec.code) : "";
         const parts = [name, rec.message.trim()].filter(Boolean);
         if (code) {
           parts.push(`code=${code}`);
         }
         const combined = parts.join(": ").trim();
-        return combined.length > LOG_VALUE_LIMIT
-          ? `${combined.slice(0, LOG_VALUE_LIMIT)}...`
-          : combined;
+        return combined.length > LOG_VALUE_LIMIT ? `${combined.slice(0, LOG_VALUE_LIMIT)}...` : combined;
       }
     }
-    const str =
-      typeof value === "string" || typeof value === "number"
-        ? String(value)
-        : JSON.stringify(value);
+    const str = typeof value === "string" || typeof value === "number" ? String(value) : JSON.stringify(value);
     if (!str) {
       return "";
     }
     const redacted = redactSensitiveText(str, WS_LOG_REDACT_OPTIONS);
-    return redacted.length > LOG_VALUE_LIMIT
-      ? `${redacted.slice(0, LOG_VALUE_LIMIT)}...`
-      : redacted;
+    return redacted.length > LOG_VALUE_LIMIT ? `${redacted.slice(0, LOG_VALUE_LIMIT)}...` : redacted;
   } catch {
     return String(value);
   }
@@ -173,8 +157,7 @@ export function summarizeAgentEventForWsLog(payload: unknown): Record<string, un
   const stream = typeof rec.stream === "string" ? rec.stream : undefined;
   const seq = typeof rec.seq === "number" ? rec.seq : undefined;
   const sessionKey = typeof rec.sessionKey === "string" ? rec.sessionKey : undefined;
-  const data =
-    rec.data && typeof rec.data === "object" ? (rec.data as Record<string, unknown>) : undefined;
+  const data = rec.data && typeof rec.data === "object" ? (rec.data as Record<string, unknown>) : undefined;
 
   const extra: Record<string, unknown> = {};
   if (runId) {
@@ -356,8 +339,7 @@ function logWsOptimized(direction: "in" | "out", kind: string, meta?: Record<str
   }
   const durationMs = typeof startedAt === "number" ? Date.now() - startedAt : undefined;
 
-  const shouldLog =
-    ok === false || (typeof durationMs === "number" && durationMs >= DEFAULT_WS_SLOW_MS);
+  const shouldLog = ok === false || (typeof durationMs === "number" && durationMs >= DEFAULT_WS_SLOW_MS);
   if (!shouldLog) {
     return;
   }
@@ -400,25 +382,18 @@ function logWsCompact(direction: "in" | "out", kind: string, meta?: Record<strin
     return direction === "in" ? "←" : "→";
   })();
   const arrowColor =
-    kind === "req" || kind === "res"
-      ? chalk.yellowBright
-      : direction === "in"
-        ? chalk.greenBright
-        : chalk.cyanBright;
+    kind === "req" || kind === "res" ? chalk.yellowBright : direction === "in" ? chalk.greenBright : chalk.cyanBright;
 
   const prefix = `${arrowColor(compactArrow)} ${chalk.bold(kind)}`;
 
   const statusToken = buildWsStatusToken(kind, ok);
 
   const startedAt =
-    kind === "res" && direction === "out" && inflightKey
-      ? wsInflightCompact.get(inflightKey)?.ts
-      : undefined;
+    kind === "res" && direction === "out" && inflightKey ? wsInflightCompact.get(inflightKey)?.ts : undefined;
   if (kind === "res" && direction === "out" && inflightKey) {
     wsInflightCompact.delete(inflightKey);
   }
-  const durationToken =
-    typeof startedAt === "number" ? chalk.dim(`${now - startedAt}ms`) : undefined;
+  const durationToken = typeof startedAt === "number" ? chalk.dim(`${now - startedAt}ms`) : undefined;
 
   const headline = buildWsHeadline({
     kind,

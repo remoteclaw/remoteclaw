@@ -17,10 +17,7 @@ describe("irc client nickserv", () => {
         register: true,
         registerEmail: "bot@example.com",
       }),
-    ).toEqual([
-      "PRIVMSG NickServ :IDENTIFY secret",
-      "PRIVMSG NickServ :REGISTER secret bot@example.com",
-    ]);
+    ).toEqual(["PRIVMSG NickServ :IDENTIFY secret", "PRIVMSG NickServ :REGISTER secret bot@example.com"]);
   });
 
   it("rejects register without registerEmail", () => {

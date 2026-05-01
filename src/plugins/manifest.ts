@@ -42,10 +42,7 @@ export function resolvePluginManifestPath(rootDir: string): string {
   return path.join(rootDir, PLUGIN_MANIFEST_FILENAME);
 }
 
-export function loadPluginManifest(
-  rootDir: string,
-  rejectHardlinks = true,
-): PluginManifestLoadResult {
+export function loadPluginManifest(rootDir: string, rejectHardlinks = true): PluginManifestLoadResult {
   const manifestPath = resolvePluginManifestPath(rootDir);
   const opened = openBoundaryFileSync({
     absolutePath: manifestPath,
@@ -152,12 +149,7 @@ export type RemoteClawPackageManifest = {
   install?: PluginPackageInstall;
 };
 
-export const DEFAULT_PLUGIN_ENTRY_CANDIDATES = [
-  "index.ts",
-  "index.js",
-  "index.mjs",
-  "index.cjs",
-] as const;
+export const DEFAULT_PLUGIN_ENTRY_CANDIDATES = ["index.ts", "index.js", "index.mjs", "index.cjs"] as const;
 
 export type PackageExtensionResolution =
   | { status: "ok"; entries: string[] }
@@ -181,16 +173,12 @@ export function getPackageManifestMetadata(
   return manifest[MANIFEST_KEY];
 }
 
-export function resolvePackageExtensionEntries(
-  manifest: PackageManifest | undefined,
-): PackageExtensionResolution {
+export function resolvePackageExtensionEntries(manifest: PackageManifest | undefined): PackageExtensionResolution {
   const raw = getPackageManifestMetadata(manifest)?.extensions;
   if (!Array.isArray(raw)) {
     return { status: "missing", entries: [] };
   }
-  const entries = raw
-    .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
-    .filter(Boolean);
+  const entries = raw.map((entry) => (typeof entry === "string" ? entry.trim() : "")).filter(Boolean);
   if (entries.length === 0) {
     return { status: "empty", entries: [] };
   }

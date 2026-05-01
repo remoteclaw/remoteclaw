@@ -19,8 +19,7 @@ export function resolveEffectiveResetTargetSessionKey(params: {
   fallbackToActiveAcpWhenUnbound?: boolean;
 }): string | undefined {
   const activeSessionKey = normalizeText(params.activeSessionKey);
-  const activeAcpSessionKey =
-    activeSessionKey && isAcpSessionKey(activeSessionKey) ? activeSessionKey : undefined;
+  const activeAcpSessionKey = activeSessionKey && isAcpSessionKey(activeSessionKey) ? activeSessionKey : undefined;
   const activeIsNonAcp = Boolean(activeSessionKey) && !activeAcpSessionKey;
 
   const channel = normalizeText(params.channel).toLowerCase();
@@ -38,8 +37,7 @@ export function resolveEffectiveResetTargetSessionKey(params: {
     conversationId,
     parentConversationId,
   });
-  const serviceSessionKey =
-    serviceBinding?.targetKind === "session" ? serviceBinding.targetSessionKey.trim() : "";
+  const serviceSessionKey = serviceBinding?.targetKind === "session" ? serviceBinding.targetSessionKey.trim() : "";
   if (serviceSessionKey) {
     if (allowNonAcpBindingSessionKey) {
       return serviceSessionKey;
@@ -59,9 +57,7 @@ export function resolveEffectiveResetTargetSessionKey(params: {
     parentConversationId,
   });
   const configuredSessionKey =
-    configuredBinding?.record.targetKind === "session"
-      ? configuredBinding.record.targetSessionKey.trim()
-      : "";
+    configuredBinding?.record.targetKind === "session" ? configuredBinding.record.targetSessionKey.trim() : "";
   if (configuredSessionKey) {
     if (allowNonAcpBindingSessionKey) {
       return configuredSessionKey;

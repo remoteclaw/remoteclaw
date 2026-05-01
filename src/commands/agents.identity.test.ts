@@ -3,15 +3,22 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { makeTempWorkspace } from "../test-helpers/workspace.js";
 import { baseConfigSnapshot, createTestRuntime } from "./test-runtime-config-helpers.js";
 
-const configMocks = vi.hoisted(() => ({
-  readConfigFileSnapshot: vi.fn(),
-  writeConfigFile: vi.fn().mockResolvedValue(undefined),
-}));
+const configMocks = vi.hoisted(() => {
+  const writeConfigFile = vi.fn().mockResolvedValue(undefined);
+  return {
+    readConfigFileSnapshot: vi.fn(),
+    writeConfigFile,
+    replaceConfigFile: vi.fn(async (params: { nextConfig: unknown }) => {
+      await writeConfigFile(params.nextConfig);
+    }),
+  };
+});
 
 vi.mock("../config/config.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../config/config.js")>()),
   readConfigFileSnapshot: configMocks.readConfigFileSnapshot,
   writeConfigFile: configMocks.writeConfigFile,
+  replaceConfigFile: configMocks.replaceConfigFile,
 }));
 
 import { agentsSetIdentityCommand } from "./agents.js";
@@ -36,6 +43,7 @@ describe("agents set-identity command", () => {
   beforeEach(() => {
     configMocks.readConfigFileSnapshot.mockClear();
     configMocks.writeConfigFile.mockClear();
+    configMocks.replaceConfigFile.mockClear();
     runtime.log.mockClear();
     runtime.error.mockClear();
     runtime.exit.mockClear();
@@ -95,10 +103,7 @@ describe("agents set-identity command", () => {
       config: { agents: { list: [{ id: "main" }] } },
     });
 
-    await agentsSetIdentityCommand(
-      { agent: "main", avatar: "https://example.com/avatar.png" },
-      runtime,
-    );
+    await agentsSetIdentityCommand({ agent: "main", avatar: "https://example.com/avatar.png" }, runtime);
 
     expect(getWrittenMainIdentity()).toEqual({
       avatar: "https://example.com/avatar.png",
@@ -113,9 +118,7 @@ describe("agents set-identity command", () => {
 
     await agentsSetIdentityCommand({ agent: "main" }, runtime);
 
-    expect(runtime.error).toHaveBeenCalledWith(
-      expect.stringContaining("No identity fields provided"),
-    );
+    expect(runtime.error).toHaveBeenCalledWith(expect.stringContaining("No identity fields provided"));
     expect(runtime.exit).toHaveBeenCalledWith(1);
     expect(configMocks.writeConfigFile).not.toHaveBeenCalled();
   });

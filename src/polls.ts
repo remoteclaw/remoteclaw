@@ -26,17 +26,11 @@ type NormalizePollOptions = {
   maxOptions?: number;
 };
 
-export function resolvePollMaxSelections(
-  optionCount: number,
-  allowMultiselect: boolean | undefined,
-): number {
+export function resolvePollMaxSelections(optionCount: number, allowMultiselect: boolean | undefined): number {
   return allowMultiselect ? Math.max(2, optionCount) : 1;
 }
 
-export function normalizePollInput(
-  input: PollInput,
-  options: NormalizePollOptions = {},
-): NormalizedPollInput {
+export function normalizePollInput(input: PollInput, options: NormalizePollOptions = {}): NormalizedPollInput {
   const question = input.question.trim();
   if (!question) {
     throw new Error("Poll question is required");
@@ -51,9 +45,7 @@ export function normalizePollInput(
   }
   const maxSelectionsRaw = input.maxSelections;
   const maxSelections =
-    typeof maxSelectionsRaw === "number" && Number.isFinite(maxSelectionsRaw)
-      ? Math.floor(maxSelectionsRaw)
-      : 1;
+    typeof maxSelectionsRaw === "number" && Number.isFinite(maxSelectionsRaw) ? Math.floor(maxSelectionsRaw) : 1;
   if (maxSelections < 1) {
     throw new Error("maxSelections must be at least 1");
   }
@@ -72,9 +64,7 @@ export function normalizePollInput(
 
   const durationRaw = input.durationHours;
   const durationHours =
-    typeof durationRaw === "number" && Number.isFinite(durationRaw)
-      ? Math.floor(durationRaw)
-      : undefined;
+    typeof durationRaw === "number" && Number.isFinite(durationRaw) ? Math.floor(durationRaw) : undefined;
   if (durationHours !== undefined && durationHours < 1) {
     throw new Error("durationHours must be at least 1");
   }
@@ -94,7 +84,6 @@ export function normalizePollDurationHours(
   value: number | undefined,
   options: { defaultHours: number; maxHours: number },
 ): number {
-  const base =
-    typeof value === "number" && Number.isFinite(value) ? Math.floor(value) : options.defaultHours;
+  const base = typeof value === "number" && Number.isFinite(value) ? Math.floor(value) : options.defaultHours;
   return Math.min(Math.max(base, 1), options.maxHours);
 }

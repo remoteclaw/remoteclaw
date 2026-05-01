@@ -62,8 +62,7 @@ describe("tailscale helpers", () => {
 
   it("parses noisy JSON output from tailscale status", async () => {
     const exec = vi.fn().mockResolvedValue({
-      stdout:
-        'warning: stale state\n{"Self":{"DNSName":"noisy.tailnet.ts.net.","TailscaleIPs":["100.9.9.9"]}}\n',
+      stdout: 'warning: stale state\n{"Self":{"DNSName":"noisy.tailnet.ts.net.","TailscaleIPs":["100.9.9.9"]}}\n',
     });
     const host = await getTailnetHostname(exec);
     expect(host).toBe("noisy.tailnet.ts.net");
@@ -116,10 +115,7 @@ describe("tailscale helpers", () => {
   });
 
   it("enableTailscaleServe attempts normal first, then sudo", async () => {
-    const exec = vi
-      .fn()
-      .mockRejectedValueOnce(new Error("permission denied"))
-      .mockResolvedValueOnce({ stdout: "" });
+    const exec = vi.fn().mockRejectedValueOnce(new Error("permission denied")).mockResolvedValueOnce({ stdout: "" });
 
     await enableTailscaleServe(3000, exec as never);
 
@@ -145,10 +141,7 @@ describe("tailscale helpers", () => {
   });
 
   it("disableTailscaleServe uses fallback", async () => {
-    const exec = vi
-      .fn()
-      .mockRejectedValueOnce(new Error("permission denied"))
-      .mockResolvedValueOnce({ stdout: "" });
+    const exec = vi.fn().mockRejectedValueOnce(new Error("permission denied")).mockResolvedValueOnce({ stdout: "" });
 
     await disableTailscaleServe(exec as never);
 
@@ -177,11 +170,7 @@ describe("tailscale helpers", () => {
 
     await ensureFunnel(8080, exec as never, runtime, prompt);
 
-    expect(exec).toHaveBeenNthCalledWith(
-      1,
-      tailscaleBin,
-      expect.arrayContaining(["funnel", "status", "--json"]),
-    );
+    expect(exec).toHaveBeenNthCalledWith(1, tailscaleBin, expect.arrayContaining(["funnel", "status", "--json"]));
     expect(exec).toHaveBeenNthCalledWith(
       2,
       tailscaleBin,

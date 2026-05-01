@@ -8,9 +8,7 @@ const loadRemoteClawPlugins = vi.hoisted(() => vi.fn());
 type HandleGatewayRequestOptions = GatewayRequestOptions & {
   extraHandlers?: Record<string, unknown>;
 };
-const handleGatewayRequest = vi.hoisted(() =>
-  vi.fn(async (_opts: HandleGatewayRequestOptions) => {}),
-);
+const handleGatewayRequest = vi.hoisted(() => vi.fn(async (_opts: HandleGatewayRequestOptions) => {}));
 
 vi.mock("../plugins/loader.js", () => ({
   loadRemoteClawPlugins,
@@ -204,9 +202,7 @@ describe("loadGatewayPlugins", () => {
     context.marker = "after-mutation";
 
     await runtime.run({ sessionKey: "s-3", message: "mutated context" });
-    const dispatched = getLastDispatchedContext() as
-      | (GatewayRequestContext & { marker: string })
-      | undefined;
+    const dispatched = getLastDispatchedContext() as (GatewayRequestContext & { marker: string }) | undefined;
     expect(dispatched?.marker).toBe("after-mutation");
   });
 });

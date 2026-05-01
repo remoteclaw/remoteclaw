@@ -113,9 +113,7 @@ describe("warning filter", () => {
       expect(seenWarnings.find((warning) => warning.code === "DEP0060")).toBeUndefined();
       expect(seenWarnings.find((warning) => warning.code === "DEP0040")).toBeUndefined();
       expect(
-        seenWarnings.find((warning) =>
-          warning.message.includes("SQLite is an experimental feature"),
-        ),
+        seenWarnings.find((warning) => warning.message.includes("SQLite is an experimental feature")),
       ).toBeUndefined();
 
       emitWarning("Visible warning", { type: "Warning", code: "REMOTECLAW_TEST_WARNING" });
@@ -127,12 +125,8 @@ describe("warning filter", () => {
         { type: "Warning", code: "REMOTECLAW_VISIBLE_OVERRIDE" },
       );
       await flushWarnings();
-      expect(
-        seenWarnings.find((warning) => warning.code === "REMOTECLAW_TEST_WARNING"),
-      ).toBeDefined();
-      expect(
-        seenWarnings.find((warning) => warning.message === "The punycode module is deprecated."),
-      ).toBeDefined();
+      expect(seenWarnings.find((warning) => warning.code === "REMOTECLAW_TEST_WARNING")).toBeDefined();
+      expect(seenWarnings.find((warning) => warning.message === "The punycode module is deprecated.")).toBeDefined();
     } finally {
       process.off("warning", onWarning);
     }

@@ -1,8 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  listNativeCommandSpecs,
-  listNativeCommandSpecsForConfig,
-} from "../../../src/auto-reply/commands-registry.js";
+import { listNativeCommandSpecs, listNativeCommandSpecsForConfig } from "../../../src/auto-reply/commands-registry.js";
 import { normalizeTelegramCommandName } from "../../../src/config/telegram-custom-commands.js";
 import { escapeRegExp, formatEnvelopeTimestamp } from "../../../test/helpers/envelope-timestamp.js";
 import { expectInboundContextContract } from "../../../test/helpers/inbound-contract.js";
@@ -282,9 +279,7 @@ describe("createTelegramBot", () => {
     expectInboundContextContract(payload);
     const expectedTimestamp = formatEnvelopeTimestamp(new Date("2025-01-09T00:00:00Z"));
     const timestampPattern = escapeRegExp(expectedTimestamp);
-    expect(payload.Body).toMatch(
-      new RegExp(`^\\[Telegram Ops id:42 (\\+\\d+[smhd] )?${timestampPattern}\\]`),
-    );
+    expect(payload.Body).toMatch(new RegExp(`^\\[Telegram Ops id:42 (\\+\\d+[smhd] )?${timestampPattern}\\]`));
     expect(payload.SenderName).toBe("Ada Lovelace");
     expect(payload.SenderId).toBe("99");
     expect(payload.SenderUsername).toBe("ada");
@@ -474,9 +469,7 @@ describe("createTelegramBot", () => {
     expect(payload.ReplyToForwardedFromUsername).toBe("bobsmith");
     expect(payload.ReplyToForwardedFromTitle).toBe("Bob Smith");
     expect(payload.ReplyToForwardedDate).toBe(500000);
-    expect(payload.Body).toContain(
-      "[Forwarded from Bob Smith (@bobsmith) at 1970-01-01T00:08:20.000Z]",
-    );
+    expect(payload.Body).toContain("[Forwarded from Bob Smith (@bobsmith) at 1970-01-01T00:08:20.000Z]");
   });
 
   it("accepts group replies to the bot without explicit mention when requireMention is enabled", async () => {
@@ -744,11 +737,9 @@ describe("createTelegramBot", () => {
     });
 
     expect(replySpy).toHaveBeenCalledTimes(1);
-    expect(
-      sendMessageSpy.mock.calls.some(
-        (call) => call[1] === "You are not authorized to use this command.",
-      ),
-    ).toBe(false);
+    expect(sendMessageSpy.mock.calls.some((call) => call[1] === "You are not authorized to use this command.")).toBe(
+      false,
+    );
   });
 
   it("blocks native DM commands for unpaired users", async () => {
@@ -787,10 +778,7 @@ describe("createTelegramBot", () => {
     });
 
     expect(replySpy).not.toHaveBeenCalled();
-    expect(sendMessageSpy).toHaveBeenCalledWith(
-      12345,
-      "You are not authorized to use this command.",
-    );
+    expect(sendMessageSpy).toHaveBeenCalledWith(12345, "You are not authorized to use this command.");
   });
 
   it("registers message_reaction handler", () => {
@@ -811,9 +799,7 @@ describe("createTelegramBot", () => {
     });
 
     createTelegramBot({ token: "tok" });
-    const handler = getOnHandler("message_reaction") as (
-      ctx: Record<string, unknown>,
-    ) => Promise<void>;
+    const handler = getOnHandler("message_reaction") as (ctx: Record<string, unknown>) => Promise<void>;
 
     await handler({
       update: { update_id: 500 },
@@ -913,9 +899,7 @@ describe("createTelegramBot", () => {
     });
 
     createTelegramBot({ token: "tok" });
-    const handler = getOnHandler("message_reaction") as (
-      ctx: Record<string, unknown>,
-    ) => Promise<void>;
+    const handler = getOnHandler("message_reaction") as (ctx: Record<string, unknown>) => Promise<void>;
 
     await handler({
       update: { update_id: updateId },
@@ -937,9 +921,7 @@ describe("createTelegramBot", () => {
     });
 
     createTelegramBot({ token: "tok" });
-    const handler = getOnHandler("message_reaction") as (
-      ctx: Record<string, unknown>,
-    ) => Promise<void>;
+    const handler = getOnHandler("message_reaction") as (ctx: Record<string, unknown>) => Promise<void>;
 
     await handler({
       update: { update_id: 501 },
@@ -968,9 +950,7 @@ describe("createTelegramBot", () => {
     });
 
     createTelegramBot({ token: "tok" });
-    const handler = getOnHandler("message_reaction") as (
-      ctx: Record<string, unknown>,
-    ) => Promise<void>;
+    const handler = getOnHandler("message_reaction") as (ctx: Record<string, unknown>) => Promise<void>;
 
     await handler({
       update: { update_id: 502 },
@@ -999,9 +979,7 @@ describe("createTelegramBot", () => {
     });
 
     createTelegramBot({ token: "tok" });
-    const handler = getOnHandler("message_reaction") as (
-      ctx: Record<string, unknown>,
-    ) => Promise<void>;
+    const handler = getOnHandler("message_reaction") as (ctx: Record<string, unknown>) => Promise<void>;
 
     await handler({
       update: { update_id: 503 },
@@ -1034,9 +1012,7 @@ describe("createTelegramBot", () => {
     });
 
     createTelegramBot({ token: "tok" });
-    const handler = getOnHandler("message_reaction") as (
-      ctx: Record<string, unknown>,
-    ) => Promise<void>;
+    const handler = getOnHandler("message_reaction") as (ctx: Record<string, unknown>) => Promise<void>;
 
     await handler({
       update: { update_id: 503 },
@@ -1065,9 +1041,7 @@ describe("createTelegramBot", () => {
     });
 
     createTelegramBot({ token: "tok" });
-    const handler = getOnHandler("message_reaction") as (
-      ctx: Record<string, unknown>,
-    ) => Promise<void>;
+    const handler = getOnHandler("message_reaction") as (ctx: Record<string, unknown>) => Promise<void>;
 
     await handler({
       update: { update_id: 503 },
@@ -1096,9 +1070,7 @@ describe("createTelegramBot", () => {
     });
 
     createTelegramBot({ token: "tok" });
-    const handler = getOnHandler("message_reaction") as (
-      ctx: Record<string, unknown>,
-    ) => Promise<void>;
+    const handler = getOnHandler("message_reaction") as (ctx: Record<string, unknown>) => Promise<void>;
 
     await handler({
       update: { update_id: 503 },
@@ -1126,9 +1098,7 @@ describe("createTelegramBot", () => {
     });
 
     createTelegramBot({ token: "tok" });
-    const handler = getOnHandler("message_reaction") as (
-      ctx: Record<string, unknown>,
-    ) => Promise<void>;
+    const handler = getOnHandler("message_reaction") as (ctx: Record<string, unknown>) => Promise<void>;
 
     await handler({
       update: { update_id: 504 },
@@ -1156,9 +1126,7 @@ describe("createTelegramBot", () => {
     });
 
     createTelegramBot({ token: "tok" });
-    const handler = getOnHandler("message_reaction") as (
-      ctx: Record<string, unknown>,
-    ) => Promise<void>;
+    const handler = getOnHandler("message_reaction") as (ctx: Record<string, unknown>) => Promise<void>;
 
     await handler({
       update: { update_id: 505 },
@@ -1194,9 +1162,7 @@ describe("createTelegramBot", () => {
     });
 
     createTelegramBot({ token: "tok" });
-    const handler = getOnHandler("message_reaction") as (
-      ctx: Record<string, unknown>,
-    ) => Promise<void>;
+    const handler = getOnHandler("message_reaction") as (ctx: Record<string, unknown>) => Promise<void>;
 
     // MessageReactionUpdated does not include message_thread_id in the Bot API,
     // so forum reactions always route to the general topic (1).
@@ -1233,9 +1199,7 @@ describe("createTelegramBot", () => {
     });
 
     createTelegramBot({ token: "tok" });
-    const handler = getOnHandler("message_reaction") as (
-      ctx: Record<string, unknown>,
-    ) => Promise<void>;
+    const handler = getOnHandler("message_reaction") as (ctx: Record<string, unknown>) => Promise<void>;
 
     await handler({
       update: { update_id: 506 },
@@ -1271,9 +1235,7 @@ describe("createTelegramBot", () => {
     });
 
     createTelegramBot({ token: "tok" });
-    const handler = getOnHandler("message_reaction") as (
-      ctx: Record<string, unknown>,
-    ) => Promise<void>;
+    const handler = getOnHandler("message_reaction") as (ctx: Record<string, unknown>) => Promise<void>;
 
     await handler({
       update: { update_id: 507 },

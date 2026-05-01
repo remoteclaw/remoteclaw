@@ -1,10 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { type ChannelId, type ChannelPlugin } from "../channels/plugins/types.js";
-import {
-  createSubsystemLogger,
-  type SubsystemLogger,
-  runtimeForLogger,
-} from "../logging/subsystem.js";
+import { createSubsystemLogger, type SubsystemLogger, runtimeForLogger } from "../logging/subsystem.js";
 import { createEmptyPluginRegistry, type PluginRegistry } from "../plugins/registry.js";
 import { getActivePluginRegistry, setActivePluginRegistry } from "../plugins/runtime.js";
 import type { PluginRuntime } from "../plugins/runtime/types.js";
@@ -128,9 +124,7 @@ function createManager(options?: {
     channelLogs,
     channelRuntimeEnvs,
     ...(options?.channelRuntime ? { channelRuntime: options.channelRuntime } : {}),
-    ...(options?.resolveChannelRuntime
-      ? { resolveChannelRuntime: options.resolveChannelRuntime }
-      : {}),
+    ...(options?.resolveChannelRuntime ? { resolveChannelRuntime: options.resolveChannelRuntime } : {}),
   });
 }
 
@@ -326,10 +320,7 @@ describe("server-channels auto restart", () => {
             cfg as {
               channels?: {
                 discord?: {
-                  accounts?: Record<
-                    string,
-                    TestAccount & { healthMonitor?: { enabled?: boolean } }
-                  >;
+                  accounts?: Record<string, TestAccount & { healthMonitor?: { enabled?: boolean } }>;
                 };
               };
             }
@@ -342,9 +333,7 @@ describe("server-channels auto restart", () => {
             return direct;
           }
           const normalized = (accountId ?? DEFAULT_ACCOUNT_ID).toLowerCase().replaceAll(" ", "-");
-          const matchKey = Object.keys(accounts).find(
-            (key) => key.toLowerCase().replaceAll(" ", "-") === normalized,
-          );
+          const matchKey = Object.keys(accounts).find((key) => key.toLowerCase().replaceAll(" ", "-") === normalized);
           return matchKey ? (accounts[matchKey] ?? { enabled: true, configured: true }) : {};
         },
       }),

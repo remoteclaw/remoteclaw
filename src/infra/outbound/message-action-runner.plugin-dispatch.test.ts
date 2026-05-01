@@ -403,9 +403,7 @@ describe("runMessageAction plugin dispatch", () => {
         name: "falls back to agent binding account",
         args: {
           cfg: {
-            bindings: [
-              { agentId: "agent-b", match: { channel: "discord", accountId: "account-b" } },
-            ],
+            bindings: [{ agentId: "agent-b", match: { channel: "discord", accountId: "account-b" } }],
           } as RemoteClawConfig,
           agentId: "agent-b",
         },

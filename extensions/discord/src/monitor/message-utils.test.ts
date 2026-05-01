@@ -40,12 +40,7 @@ function asMessage(payload: Record<string, unknown>): Message {
   return payload as unknown as Message;
 }
 
-const DISCORD_CDN_HOSTNAMES = [
-  "cdn.discordapp.com",
-  "media.discordapp.net",
-  "*.discordapp.com",
-  "*.discordapp.net",
-];
+const DISCORD_CDN_HOSTNAMES = ["cdn.discordapp.com", "media.discordapp.net", "*.discordapp.com", "*.discordapp.net"];
 
 function expectDiscordCdnSsrFPolicy(policy: unknown) {
   expect(policy).toEqual(
@@ -219,9 +214,7 @@ describe("resolveForwardedMediaList", () => {
       proxyFetch,
     );
 
-    expect(fetchRemoteMedia).toHaveBeenCalledWith(
-      expect.objectContaining({ fetchImpl: proxyFetch }),
-    );
+    expect(fetchRemoteMedia).toHaveBeenCalledWith(expect.objectContaining({ fetchImpl: proxyFetch }));
   });
 
   it("keeps forwarded attachment metadata when download fails", async () => {
@@ -361,9 +354,7 @@ describe("resolveMediaList", () => {
       proxyFetch,
     );
 
-    expect(fetchRemoteMedia).toHaveBeenCalledWith(
-      expect.objectContaining({ fetchImpl: proxyFetch }),
-    );
+    expect(fetchRemoteMedia).toHaveBeenCalledWith(expect.objectContaining({ fetchImpl: proxyFetch }));
   });
 
   it("keeps attachment metadata when download fails", async () => {

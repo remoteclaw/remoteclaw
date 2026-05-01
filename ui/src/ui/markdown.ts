@@ -63,6 +63,7 @@ const MARKDOWN_CACHE_MAX_CHARS = 50_000;
 const INLINE_DATA_IMAGE_RE = /^data:image\/[a-z0-9.+-]+;base64,/i;
 const markdownCache = new Map<string, string>();
 const TAIL_LINK_BLUR_CLASS = "chat-link-tail-blur";
+const TRAILING_CJK_TAIL_RE = /([\u4E00-\u9FFF\u3000-\u303F\uFF01-\uFF5E\s]+)$/;
 
 function getCachedMarkdown(key: string): string | null {
   const cached = markdownCache.get(key);
@@ -120,6 +121,50 @@ function installHooks() {
     }
   });
 }
+
+// Extension to prevent auto-linking algorithms from swallowing adjacent CJK characters.
+const cjkAutoLinkExtension = {
+  name: "url",
+  level: "inline",
+  // Indicate where an auto-link might start
+  start(src: string) {
+    const match = src.match(/https?:\/\//i);
+    return match ? match.index! : -1;
+  },
+  tokenizer(src: string) {
+    // GFM standard regex for auto-links
+    const rule = /^https?:\/\/[^\s<]+[^<.,:;"')\]\s]/i;
+    const match = rule.exec(src);
+    if (match) {
+      let urlText = match[0];
+
+      // Stop before any CJK character or typical punctuation following CJK
+      // This stops link boundaries from bleeding into mixed-language paragraphs.
+      const cjkMatch = urlText.match(TRAILING_CJK_TAIL_RE);
+      if (cjkMatch) {
+        urlText = urlText.substring(0, urlText.length - cjkMatch[1].length);
+      }
+
+      return {
+        type: "link",
+        raw: urlText,
+        text: urlText,
+        href: urlText,
+        tokens: [
+          {
+            type: "text",
+            raw: urlText,
+            text: urlText,
+          },
+        ],
+      };
+    }
+  },
+};
+
+marked.use({
+  extensions: [cjkAutoLinkExtension as unknown as import("marked").TokenizerAndRendererExtension],
+});
 
 export function toSanitizedMarkdownHtml(markdown: string): string {
   const input = markdown.trim();
@@ -189,24 +234,12 @@ function normalizeMarkdownImageLabel(text?: string | null): string {
   return trimmed ? trimmed : "image";
 }
 
-htmlEscapeRenderer.code = ({
-  text,
-  lang,
-  escaped,
-}: {
-  text: string;
-  lang?: string;
-  escaped?: boolean;
-}) => {
+htmlEscapeRenderer.code = ({ text, lang, escaped }: { text: string; lang?: string; escaped?: boolean }) => {
   const langClass = lang ? ` class="language-${escapeHtml(lang)}"` : "";
   const safeText = escaped ? text : escapeHtml(text);
   const codeBlock = `<pre><code${langClass}>${safeText}</code></pre>`;
   const langLabel = lang ? `<span class="code-block-lang">${escapeHtml(lang)}</span>` : "";
-  const attrSafe = text
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  const attrSafe = text.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const copyBtn = `<button type="button" class="code-block-copy" data-code="${attrSafe}" aria-label="Copy code"><span class="code-block-copy__idle">Copy</span><span class="code-block-copy__done">Copied!</span></button>`;
   const header = `<div class="code-block-header">${langLabel}${copyBtn}</div>`;
 
@@ -214,8 +247,7 @@ htmlEscapeRenderer.code = ({
   const isJson =
     lang === "json" ||
     (!lang &&
-      ((trimmed.startsWith("{") && trimmed.endsWith("}")) ||
-        (trimmed.startsWith("[") && trimmed.endsWith("]"))));
+      ((trimmed.startsWith("{") && trimmed.endsWith("}")) || (trimmed.startsWith("[") && trimmed.endsWith("]"))));
 
   if (isJson) {
     const lineCount = text.split("\n").length;

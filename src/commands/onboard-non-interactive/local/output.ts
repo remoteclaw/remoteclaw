@@ -55,9 +55,7 @@ export function logNonInteractiveOnboardingJson(params: {
   });
 }
 
-function formatGatewayRuntimeSummary(
-  diagnostics: GatewayHealthFailureDiagnostics | undefined,
-): string | undefined {
+function formatGatewayRuntimeSummary(diagnostics: GatewayHealthFailureDiagnostics | undefined): string | undefined {
   const service = diagnostics?.service;
   if (!service?.runtimeStatus) {
     return undefined;
@@ -126,12 +124,8 @@ export function logNonInteractiveOnboardingFailure(params: {
       ? `Service: ${params.diagnostics.service.label} (${params.diagnostics.service.loaded ? params.diagnostics.service.loadedText : "not loaded"})`
       : undefined,
     gatewayRuntime ? `Runtime: ${gatewayRuntime}` : undefined,
-    params.diagnostics?.lastGatewayError
-      ? `Last gateway error: ${params.diagnostics.lastGatewayError}`
-      : undefined,
-    params.diagnostics?.inspectError
-      ? `Diagnostics warning: ${params.diagnostics.inspectError}`
-      : undefined,
+    params.diagnostics?.lastGatewayError ? `Last gateway error: ${params.diagnostics.lastGatewayError}` : undefined,
+    params.diagnostics?.inspectError ? `Diagnostics warning: ${params.diagnostics.inspectError}` : undefined,
     hints.length > 0 ? hints.join("\n") : undefined,
   ]
     .filter(Boolean)

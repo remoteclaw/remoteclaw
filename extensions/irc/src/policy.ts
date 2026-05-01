@@ -91,10 +91,7 @@ export function resolveIrcGroupAccessGate(params: {
     }
   }
 
-  if (
-    params.groupMatch.groupConfig?.enabled === false ||
-    params.groupMatch.wildcardConfig?.enabled === false
-  ) {
+  if (params.groupMatch.groupConfig?.enabled === false || params.groupMatch.wildcardConfig?.enabled === false) {
     return { allowed: false, reason: "disabled" };
   }
 

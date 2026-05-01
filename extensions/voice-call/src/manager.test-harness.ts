@@ -107,9 +107,7 @@ export function writeCallsToStore(storePath: string, calls: Record<string, unkno
   fs.writeFileSync(logPath, lines);
 }
 
-export function makePersistedCall(
-  overrides: Record<string, unknown> = {},
-): Record<string, unknown> {
+export function makePersistedCall(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     callId: `call-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     providerCallId: `prov-${Date.now()}-${Math.random().toString(36).slice(2)}`,

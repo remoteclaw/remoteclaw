@@ -43,6 +43,13 @@ Token credentials (`type: "token"`) carry an inline `token` string.
    AgentRuntime credential injection path — see
    [`docs/refactor/agentruntime-credential-injection.md`](/refactor/agentruntime-credential-injection) (#2574).
 
+## OAuth SecretRef Policy Guard
+
+- SecretRef input is for static credentials only.
+- If a profile credential is `type: "oauth"`, SecretRef objects are not supported for that profile credential material.
+- If `auth.profiles.<id>.mode` is `"oauth"`, SecretRef-backed `keyRef`/`tokenRef` input for that profile is rejected.
+- Violations are hard failures in startup/reload auth resolution paths.
+
 ## Legacy-Compatible Messaging
 
 For script compatibility, probe errors keep this first line unchanged:

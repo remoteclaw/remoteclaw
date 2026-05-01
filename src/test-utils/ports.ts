@@ -40,9 +40,7 @@ let nextTestPortOffset = 0;
  * (e.g. +1/+2/+3/+4). If each test just grabs an OS free port, parallel test runs
  * can collide on derived ports and get flaky EADDRINUSE.
  */
-export async function getDeterministicFreePortBlock(params?: {
-  offsets?: number[];
-}): Promise<number> {
+export async function getDeterministicFreePortBlock(params?: { offsets?: number[] }): Promise<number> {
   const offsets = params?.offsets ?? [0, 1, 2, 3, 4];
   const maxOffset = Math.max(...offsets);
 
@@ -67,9 +65,7 @@ export async function getDeterministicFreePortBlock(params?: {
   for (let attempt = 0; attempt < usable; attempt += blockSize) {
     const start = base + ((nextTestPortOffset + attempt) % usable);
     // eslint-disable-next-line no-await-in-loop
-    const ok = (await Promise.all(offsets.map((offset) => isPortFree(start + offset)))).every(
-      Boolean,
-    );
+    const ok = (await Promise.all(offsets.map((offset) => isPortFree(start + offset)))).every(Boolean);
     if (!ok) {
       continue;
     }
@@ -82,9 +78,7 @@ export async function getDeterministicFreePortBlock(params?: {
     // eslint-disable-next-line no-await-in-loop
     const port = await getOsFreePort();
     // eslint-disable-next-line no-await-in-loop
-    const ok = (await Promise.all(offsets.map((offset) => isPortFree(port + offset)))).every(
-      Boolean,
-    );
+    const ok = (await Promise.all(offsets.map((offset) => isPortFree(port + offset)))).every(Boolean);
     if (ok) {
       return port;
     }

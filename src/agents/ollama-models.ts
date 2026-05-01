@@ -63,10 +63,7 @@ export function resolveOllamaApiBase(configuredBaseUrl?: string): string {
   return trimmed.replace(/\/v1$/i, "");
 }
 
-export async function queryOllamaContextWindow(
-  apiBase: string,
-  modelName: string,
-): Promise<number | undefined> {
+export async function queryOllamaContextWindow(apiBase: string, modelName: string): Promise<number | undefined> {
   try {
     const response = await fetch(`${apiBase}/api/show`, {
       method: "POST",
@@ -121,10 +118,7 @@ export function isReasoningModelHeuristic(modelId: string): boolean {
 }
 
 /** Build a ModelDefinitionConfig for an Ollama model with default values. */
-export function buildOllamaModelDefinition(
-  modelId: string,
-  contextWindow?: number,
-): ModelDefinitionConfig {
+export function buildOllamaModelDefinition(modelId: string, contextWindow?: number): ModelDefinitionConfig {
   return {
     id: modelId,
     name: modelId,
@@ -137,9 +131,7 @@ export function buildOllamaModelDefinition(
 }
 
 /** Fetch the model list from a running Ollama instance. */
-export async function fetchOllamaModels(
-  baseUrl: string,
-): Promise<{ reachable: boolean; models: OllamaTagModel[] }> {
+export async function fetchOllamaModels(baseUrl: string): Promise<{ reachable: boolean; models: OllamaTagModel[] }> {
   try {
     const apiBase = resolveOllamaApiBase(baseUrl);
     const response = await fetch(`${apiBase}/api/tags`, {

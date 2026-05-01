@@ -60,9 +60,7 @@ describe("Nix integration (U3, U5, U9)", () => {
 
   describe("U5: CONFIG_PATH and STATE_DIR env var overrides", () => {
     it("STATE_DIR defaults to ~/.remoteclaw when env not set", () => {
-      expect(resolveStateDir(envWith({ REMOTECLAW_STATE_DIR: undefined }))).toMatch(
-        /\.remoteclaw$/,
-      );
+      expect(resolveStateDir(envWith({ REMOTECLAW_STATE_DIR: undefined }))).toMatch(/\.remoteclaw$/);
     });
 
     it("STATE_DIR respects REMOTECLAW_STATE_DIR override", () => {
@@ -73,9 +71,9 @@ describe("Nix integration (U3, U5, U9)", () => {
 
     it("STATE_DIR respects REMOTECLAW_HOME when state override is unset", () => {
       const customHome = path.join(path.sep, "custom", "home");
-      expect(
-        resolveStateDir(envWith({ REMOTECLAW_HOME: customHome, REMOTECLAW_STATE_DIR: undefined })),
-      ).toBe(path.join(path.resolve(customHome), ".remoteclaw"));
+      expect(resolveStateDir(envWith({ REMOTECLAW_HOME: customHome, REMOTECLAW_STATE_DIR: undefined }))).toBe(
+        path.join(path.resolve(customHome), ".remoteclaw"),
+      );
     });
 
     it("CONFIG_PATH defaults to REMOTECLAW_HOME/.remoteclaw/remoteclaw.json", () => {
@@ -93,18 +91,14 @@ describe("Nix integration (U3, U5, U9)", () => {
 
     it("CONFIG_PATH defaults to ~/.remoteclaw/remoteclaw.json when env not set", () => {
       expect(
-        resolveConfigPathCandidate(
-          envWith({ REMOTECLAW_CONFIG_PATH: undefined, REMOTECLAW_STATE_DIR: undefined }),
-        ),
+        resolveConfigPathCandidate(envWith({ REMOTECLAW_CONFIG_PATH: undefined, REMOTECLAW_STATE_DIR: undefined })),
       ).toMatch(/\.remoteclaw[\\/]remoteclaw\.json$/);
     });
 
     it("CONFIG_PATH respects REMOTECLAW_CONFIG_PATH override", () => {
-      expect(
-        resolveConfigPathCandidate(
-          envWith({ REMOTECLAW_CONFIG_PATH: "/nix/store/abc/remoteclaw.json" }),
-        ),
-      ).toBe(path.resolve("/nix/store/abc/remoteclaw.json"));
+      expect(resolveConfigPathCandidate(envWith({ REMOTECLAW_CONFIG_PATH: "/nix/store/abc/remoteclaw.json" }))).toBe(
+        path.resolve("/nix/store/abc/remoteclaw.json"),
+      );
     });
 
     it("CONFIG_PATH expands ~ in REMOTECLAW_CONFIG_PATH override", async () => {
@@ -187,9 +181,7 @@ describe("Nix integration (U3, U5, U9)", () => {
 
         expect(cfg.plugins?.load?.paths?.[0]).toBe(path.join(home, "plugins", "demo-plugin"));
         expect(cfg.agents?.list?.[0]?.workspace).toBe(path.join(home, "ws-agent"));
-        expect(cfg.agents?.list?.[0]?.agentDir).toBe(
-          path.join(home, ".remoteclaw", "agents", "main"),
-        );
+        expect(cfg.agents?.list?.[0]?.agentDir).toBe(path.join(home, ".remoteclaw", "agents", "main"));
         expect(cfg.channels?.whatsapp?.accounts?.personal?.authDir).toBe(
           path.join(home, ".remoteclaw", "credentials", "wa-personal"),
         );
@@ -199,27 +191,19 @@ describe("Nix integration (U3, U5, U9)", () => {
 
   describe("U6: gateway port resolution", () => {
     it("uses default when env and config are unset", () => {
-      expect(resolveGatewayPort({}, envWith({ REMOTECLAW_GATEWAY_PORT: undefined }))).toBe(
-        DEFAULT_GATEWAY_PORT,
-      );
+      expect(resolveGatewayPort({}, envWith({ REMOTECLAW_GATEWAY_PORT: undefined }))).toBe(DEFAULT_GATEWAY_PORT);
     });
 
     it("prefers REMOTECLAW_GATEWAY_PORT over config", () => {
-      expect(
-        resolveGatewayPort(
-          { gateway: { port: 19002 } },
-          envWith({ REMOTECLAW_GATEWAY_PORT: "19001" }),
-        ),
-      ).toBe(19001);
+      expect(resolveGatewayPort({ gateway: { port: 19002 } }, envWith({ REMOTECLAW_GATEWAY_PORT: "19001" }))).toBe(
+        19001,
+      );
     });
 
     it("falls back to config when env is invalid", () => {
-      expect(
-        resolveGatewayPort(
-          { gateway: { port: 19003 } },
-          envWith({ REMOTECLAW_GATEWAY_PORT: "nope" }),
-        ),
-      ).toBe(19003);
+      expect(resolveGatewayPort({ gateway: { port: 19003 } }, envWith({ REMOTECLAW_GATEWAY_PORT: "nope" }))).toBe(
+        19003,
+      );
     });
   });
 

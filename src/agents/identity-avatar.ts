@@ -52,9 +52,7 @@ function resolveLocalAvatarPath(params: {
   const workspaceRoot = resolveExistingPath(params.workspaceDir);
   const raw = params.raw;
   const resolved =
-    raw.startsWith("~") || path.isAbsolute(raw)
-      ? resolveUserPath(raw)
-      : path.resolve(workspaceRoot, raw);
+    raw.startsWith("~") || path.isAbsolute(raw) ? resolveUserPath(raw) : path.resolve(workspaceRoot, raw);
   const realPath = resolveExistingPath(resolved);
   if (!isPathWithinRoot(workspaceRoot, realPath)) {
     return { ok: false, reason: "outside_workspace" };

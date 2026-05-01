@@ -1,9 +1,6 @@
 export type ArgSplitEscapeMode = "none" | "backslash" | "backslash-quote-only";
 
-export function splitArgsPreservingQuotes(
-  value: string,
-  options?: { escapeMode?: ArgSplitEscapeMode },
-): string[] {
+export function splitArgsPreservingQuotes(value: string, options?: { escapeMode?: ArgSplitEscapeMode }): string[] {
   const args: string[] = [];
   let current = "";
   let inQuotes = false;
@@ -18,12 +15,7 @@ export function splitArgsPreservingQuotes(
       }
       continue;
     }
-    if (
-      escapeMode === "backslash-quote-only" &&
-      char === "\\" &&
-      i + 1 < value.length &&
-      value[i + 1] === '"'
-    ) {
+    if (escapeMode === "backslash-quote-only" && char === "\\" && i + 1 < value.length && value[i + 1] === '"') {
       current += '"';
       i++;
       continue;

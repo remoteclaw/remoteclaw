@@ -51,11 +51,7 @@ const SMS_DANGEROUS_COMMANDS = ["sms.send"];
 // iOS nodes don't implement system.run/which, but they do support notifications.
 const IOS_SYSTEM_COMMANDS = [NODE_SYSTEM_NOTIFY_COMMAND];
 
-const SYSTEM_COMMANDS = [
-  ...NODE_SYSTEM_RUN_COMMANDS,
-  NODE_SYSTEM_NOTIFY_COMMAND,
-  NODE_BROWSER_PROXY_COMMAND,
-];
+const SYSTEM_COMMANDS = [...NODE_SYSTEM_RUN_COMMANDS, NODE_SYSTEM_NOTIFY_COMMAND, NODE_BROWSER_PROXY_COMMAND];
 const UNKNOWN_PLATFORM_COMMANDS = [
   ...CANVAS_COMMANDS,
   ...CAMERA_COMMANDS,
@@ -151,9 +147,7 @@ function resolvePlatformIdByPrefix(value: string): Exclude<PlatformId, "unknown"
   return undefined;
 }
 
-function resolvePlatformIdByDeviceFamily(
-  value: string,
-): Exclude<PlatformId, "unknown"> | undefined {
+function resolvePlatformIdByDeviceFamily(value: string): Exclude<PlatformId, "unknown"> | undefined {
   for (const rule of DEVICE_FAMILY_TOKEN_RULES) {
     if (rule.tokens.some((token) => value.includes(token))) {
       return rule.id;

@@ -5,7 +5,7 @@ Zalo channel plugin for RemoteClaw (Bot API).
 ## Install (local checkout)
 
 ```bash
-remoteclaw plugins install ./extensions/zalo
+remoteclaw plugins install ./path/to/local/zalo-plugin
 ```
 
 ## Install (npm)

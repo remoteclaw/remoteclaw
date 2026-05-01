@@ -12,9 +12,7 @@ const mockMessage = {
   timestamp: "123",
 } as unknown as Parameters<typeof maybeCreateDiscordAutoThread>[0]["message"];
 
-async function runAutoThread(
-  overrides: Partial<Parameters<typeof maybeCreateDiscordAutoThread>[0]> = {},
-) {
+async function runAutoThread(overrides: Partial<Parameters<typeof maybeCreateDiscordAutoThread>[0]> = {}) {
   return maybeCreateDiscordAutoThread({
     client: mockClient,
     message: mockMessage,

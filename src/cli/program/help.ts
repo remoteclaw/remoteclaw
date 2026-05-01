@@ -17,34 +17,24 @@ const ROOT_COMMANDS_WITH_SUBCOMMANDS = new Set([
   ...getCoreCliCommandsWithSubcommands(),
   ...getSubCliCommandsWithSubcommands(),
 ]);
-const ROOT_COMMANDS_HINT =
-  "Hint: commands suffixed with * have subcommands. Run <command> --help for details.";
+const ROOT_COMMANDS_HINT = "Hint: commands suffixed with * have subcommands. Run <command> --help for details.";
 
 const EXAMPLES = [
   ["remoteclaw onboard --help", "Show detailed help for the onboard command."],
-  [
-    "remoteclaw channels login --verbose",
-    "Link personal WhatsApp Web and show QR + connection logs.",
-  ],
+  ["remoteclaw channels login --verbose", "Link personal WhatsApp Web and show QR + connection logs."],
   [
     'remoteclaw message send --target +15555550123 --message "Hi" --json',
     "Send via your web session and print JSON result.",
   ],
   ["remoteclaw gateway --port 18789", "Run the WebSocket Gateway locally."],
-  [
-    "remoteclaw --dev gateway",
-    "Run a dev Gateway (isolated state/config) on ws://127.0.0.1:19001.",
-  ],
+  ["remoteclaw --dev gateway", "Run a dev Gateway (isolated state/config) on ws://127.0.0.1:19001."],
   ["remoteclaw gateway --force", "Kill anything bound to the default gateway port, then start it."],
   ["remoteclaw gateway ...", "Gateway control via WebSocket."],
   [
     'remoteclaw agent --to +15555550123 --message "Run summary" --deliver',
     "Talk directly to the agent using the Gateway; optionally send the WhatsApp reply.",
   ],
-  [
-    'remoteclaw message send --channel telegram --target @mychat --message "Hi"',
-    "Send via your Telegram bot.",
-  ],
+  ['remoteclaw message send --channel telegram --target @mychat --message "Hi"', "Send via your Telegram bot."],
 ] as const;
 
 export function configureProgramHelp(program: Command, ctx: ProgramContext) {
@@ -88,10 +78,9 @@ export function configureProgramHelp(program: Command, ctx: ProgramContext) {
 
   const formatHelpOutput = (str: string) => {
     let output = str;
-    const isRootHelp = new RegExp(
-      `^Usage:\\s+${CLI_NAME_PATTERN}\\s+\\[options\\]\\s+\\[command\\]\\s*$`,
-      "m",
-    ).test(output);
+    const isRootHelp = new RegExp(`^Usage:\\s+${CLI_NAME_PATTERN}\\s+\\[options\\]\\s+\\[command\\]\\s*$`, "m").test(
+      output,
+    );
     if (isRootHelp && /^Commands:/m.test(output)) {
       output = output.replace(/^Commands:/m, `Commands:\n  ${theme.muted(ROOT_COMMANDS_HINT)}`);
     }
@@ -112,15 +101,9 @@ export function configureProgramHelp(program: Command, ctx: ProgramContext) {
     outputError: (str, write) => write(theme.error(str)),
   });
 
-  if (
-    hasFlag(process.argv, "-V") ||
-    hasFlag(process.argv, "--version") ||
-    hasRootVersionAlias(process.argv)
-  ) {
+  if (hasFlag(process.argv, "-V") || hasFlag(process.argv, "--version") || hasRootVersionAlias(process.argv)) {
     const commit = resolveCommitHash({ moduleUrl: import.meta.url });
-    console.log(
-      commit ? `RemoteClaw ${ctx.programVersion} (${commit})` : `RemoteClaw ${ctx.programVersion}`,
-    );
+    console.log(commit ? `RemoteClaw ${ctx.programVersion} (${commit})` : `RemoteClaw ${ctx.programVersion}`);
     process.exit(0);
   }
 

@@ -1,9 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { maybeInstallDaemon } from "./configure.daemon.js";
 
 const progressSetLabel = vi.hoisted(() => vi.fn());
-const withProgress = vi.hoisted(() =>
-  vi.fn(async (_opts, run) => run({ setLabel: progressSetLabel })),
-);
+const withProgress = vi.hoisted(() => vi.fn(async (_opts, run) => run({ setLabel: progressSetLabel })));
 const loadConfig = vi.hoisted(() => vi.fn());
 const resolveGatewayInstallToken = vi.hoisted(() => vi.fn());
 const buildGatewayInstallPlan = vi.hoisted(() => vi.fn());
@@ -69,8 +68,6 @@ vi.mock("./systemd-linger.js", () => ({
   ensureSystemdUserLingerInteractive,
 }));
 
-const { maybeInstallDaemon } = await import("./configure.daemon.js");
-
 describe("maybeInstallDaemon", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -116,18 +113,13 @@ describe("maybeInstallDaemon", () => {
       port: 18789,
     });
 
-    expect(note).toHaveBeenCalledWith(
-      expect.stringContaining("Gateway install blocked"),
-      "Gateway",
-    );
+    expect(note).toHaveBeenCalledWith(expect.stringContaining("Gateway install blocked"), "Gateway");
     expect(buildGatewayInstallPlan).not.toHaveBeenCalled();
     expect(serviceInstall).not.toHaveBeenCalled();
   });
 
   it("continues daemon install flow when service status probe throws", async () => {
-    serviceIsLoaded.mockRejectedValueOnce(
-      new Error("systemctl is-enabled unavailable: Failed to connect to bus"),
-    );
+    serviceIsLoaded.mockRejectedValueOnce(new Error("systemctl is-enabled unavailable: Failed to connect to bus"));
 
     await expect(
       maybeInstallDaemon({
@@ -140,9 +132,7 @@ describe("maybeInstallDaemon", () => {
   });
 
   it("rethrows install probe failures that are not the known non-fatal Linux systemd cases", async () => {
-    serviceIsLoaded.mockRejectedValueOnce(
-      new Error("systemctl is-enabled unavailable: read-only file system"),
-    );
+    serviceIsLoaded.mockRejectedValueOnce(new Error("systemctl is-enabled unavailable: read-only file system"));
 
     await expect(
       maybeInstallDaemon({

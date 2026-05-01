@@ -15,22 +15,14 @@ type ChatAction =
   | "upload_video_note"
   | "choose_sticker";
 
-type SendChatActionFn = (
-  chatId: number | string,
-  action: ChatAction,
-  threadParams?: unknown,
-) => Promise<unknown>;
+type SendChatActionFn = (chatId: number | string, action: ChatAction, threadParams?: unknown) => Promise<unknown>;
 
 export type TelegramSendChatActionHandler = {
   /**
    * Send a chat action with automatic 401 backoff and circuit breaker.
    * Safe to call from multiple concurrent message contexts.
    */
-  sendChatAction: (
-    chatId: number | string,
-    action: ChatAction,
-    threadParams?: unknown,
-  ) => Promise<void>;
+  sendChatAction: (chatId: number | string, action: ChatAction, threadParams?: unknown) => Promise<void>;
   isSuspended: () => boolean;
   reset: () => void;
 };
@@ -78,11 +70,7 @@ export function createTelegramSendChatActionHandler({
     suspended = false;
   };
 
-  const sendChatAction = async (
-    chatId: number | string,
-    action: ChatAction,
-    threadParams?: unknown,
-  ): Promise<void> => {
+  const sendChatAction = async (chatId: number | string, action: ChatAction, threadParams?: unknown): Promise<void> => {
     if (suspended) {
       return;
     }

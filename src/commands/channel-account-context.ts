@@ -22,8 +22,6 @@ export async function resolveDefaultChannelAccountContext(
   });
   const account = plugin.config.resolveAccount(cfg, defaultAccountId);
   const enabled = plugin.config.isEnabled ? plugin.config.isEnabled(account, cfg) : true;
-  const configured = plugin.config.isConfigured
-    ? await plugin.config.isConfigured(account, cfg)
-    : true;
+  const configured = plugin.config.isConfigured ? await plugin.config.isConfigured(account, cfg) : true;
   return { accountIds, defaultAccountId, account, enabled, configured };
 }

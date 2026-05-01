@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   listChannelPlugins: vi.fn(),
@@ -21,8 +21,7 @@ let listConfiguredMessageChannels: ChannelSelectionModule["listConfiguredMessage
 let resolveMessageChannelSelection: ChannelSelectionModule["resolveMessageChannelSelection"];
 let runtimeModule: RuntimeModule;
 
-beforeEach(async () => {
-  vi.resetModules();
+beforeAll(async () => {
   runtimeModule = await import("../../runtime.js");
   ({ __testing, listConfiguredMessageChannels, resolveMessageChannelSelection } =
     await import("./channel-selection.js"));
@@ -89,8 +88,7 @@ describe("listConfiguredMessageChannels", () => {
         makePlugin({
           id: "telegram",
           accountIds: ["disabled", "enabled"],
-          resolveAccount: (accountId) =>
-            accountId === "disabled" ? { enabled: false } : { enabled: true },
+          resolveAccount: (accountId) => (accountId === "disabled" ? { enabled: false } : { enabled: true }),
           isConfigured: (account) => (account as { enabled?: boolean }).enabled === true,
         }),
       ],
@@ -177,9 +175,7 @@ describe("resolveMessageChannelSelection", () => {
     },
     {
       setup: () => {
-        mocks.listChannelPlugins.mockReturnValue([
-          makePlugin({ id: "discord", isConfigured: async () => true }),
-        ]);
+        mocks.listChannelPlugins.mockReturnValue([makePlugin({ id: "discord", isConfigured: async () => true })]);
       },
       params: { cfg: {} as never },
       expected: {
@@ -231,8 +227,7 @@ describe("resolveMessageChannelSelection", () => {
         ]);
       },
       params: { cfg: {} as never },
-      expectedMessage:
-        "Channel is required when multiple channels are configured: discord, telegram",
+      expectedMessage: "Channel is required when multiple channels are configured: discord, telegram",
     },
   ])("rejects invalid channel selection for %j", async ({ setup, params, expectedMessage }) => {
     setup?.();

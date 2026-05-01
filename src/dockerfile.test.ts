@@ -39,9 +39,7 @@ describe("Dockerfile", () => {
     const dockerfile = await readFile(dockerfilePath, "utf8");
     expect(dockerfile).toContain("FROM build AS runtime-assets");
     expect(dockerfile).toContain("CI=true pnpm prune --prod");
-    expect(dockerfile).toContain(
-      "COPY --from=runtime-assets --chown=node:node /app/node_modules ./node_modules",
-    );
+    expect(dockerfile).toContain("COPY --from=runtime-assets --chown=node:node /app/node_modules ./node_modules");
   });
 
   it("normalizes plugin and agent paths permissions in image layers", async () => {

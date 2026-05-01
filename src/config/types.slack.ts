@@ -1,14 +1,5 @@
-import type {
-  BlockStreamingCoalesceConfig,
-  DmPolicy,
-  GroupPolicy,
-  MarkdownConfig,
-  ReplyToMode,
-} from "./types.base.js";
-import type {
-  ChannelHealthMonitorConfig,
-  ChannelHeartbeatVisibilityConfig,
-} from "./types.channels.js";
+import type { BlockStreamingCoalesceConfig, DmPolicy, GroupPolicy, MarkdownConfig, ReplyToMode } from "./types.base.js";
+import type { ChannelHealthMonitorConfig, ChannelHeartbeatVisibilityConfig } from "./types.channels.js";
 import type { DmConfig, ProviderCommandsConfig } from "./types.messages.js";
 import type { GroupToolPolicyBySenderConfig, GroupToolPolicyConfig } from "./types.tools.js";
 
@@ -50,6 +41,19 @@ export type SlackChannelConfig = {
 export type SlackReactionNotificationMode = "off" | "own" | "all" | "allowlist";
 export type SlackStreamingMode = "off" | "partial" | "block" | "progress";
 export type SlackLegacyStreamMode = "replace" | "status_final" | "append";
+export type SlackExecApprovalTarget = "dm" | "channel" | "both";
+export type SlackExecApprovalConfig = {
+  /** Enable Slack exec approvals for this account. Default: false. */
+  enabled?: boolean;
+  /** Slack user IDs allowed to approve exec requests. Optional: falls back to owner IDs inferred from allowFrom/defaultTo when possible. */
+  approvers?: Array<string | number>;
+  /** Only forward approvals for these agent IDs. Omit = all agents. */
+  agentFilter?: string[];
+  /** Only forward approvals matching these session key patterns (substring or regex). */
+  sessionFilter?: string[];
+  /** Where to send approval prompts. Default: "dm". */
+  target?: SlackExecApprovalTarget;
+};
 export type SlackCapabilitiesConfig =
   | string[]
   | {
@@ -98,6 +102,8 @@ export type SlackAccountConfig = {
   webhookPath?: string;
   /** Optional provider capability tags used for agent/runtime guidance. */
   capabilities?: SlackCapabilitiesConfig;
+  /** Slack-native exec approval delivery + approver authorization. */
+  execApprovals?: SlackExecApprovalConfig;
   /** Markdown formatting overrides (tables). */
   markdown?: MarkdownConfig;
   /** Override native command registration for Slack (bool or "auto"). */

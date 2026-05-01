@@ -1,37 +1,50 @@
 import { Command } from "commander";
 import { describe, expect, it, vi } from "vitest";
-import { createCliRuntimeCapture } from "./test-runtime-capture.js";
+import { registerCronCli } from "./cron-cli.js";
 
 const CRON_CLI_TEST_TIMEOUT_MS = 15_000;
-const { defaultRuntime, resetRuntimeCapture } = createCliRuntimeCapture();
+const mocks = vi.hoisted(() => {
+  const defaultRuntime = {
+    log: vi.fn(),
+    error: vi.fn(),
+    writeStdout: vi.fn((value: string) => {
+      defaultRuntime.log(value.endsWith("\n") ? value.slice(0, -1) : value);
+    }),
+    writeJson: vi.fn((value: unknown, space = 2) => {
+      defaultRuntime.log(JSON.stringify(value, null, space > 0 ? space : undefined));
+    }),
+    exit: vi.fn((code: number) => {
+      throw new Error(`__exit__:${code}`);
+    }),
+  };
+  return {
+    defaultRuntime,
+    callGatewayFromCli: vi.fn(),
+  };
+});
 
-const defaultGatewayMock = async (
-  method: string,
-  _opts: unknown,
-  params?: unknown,
-  _timeoutMs?: number,
-) => {
+const { defaultRuntime, callGatewayFromCli } = mocks;
+
+const defaultGatewayMock = async (method: string, _opts: unknown, params?: unknown, _timeoutMs?: number) => {
   if (method === "cron.status") {
     return { enabled: true };
   }
   return { ok: true, params };
 };
-const callGatewayFromCli = vi.fn(defaultGatewayMock);
+callGatewayFromCli.mockImplementation(defaultGatewayMock);
 
 vi.mock("./gateway-rpc.js", async () => {
   const actual = await vi.importActual<typeof import("./gateway-rpc.js")>("./gateway-rpc.js");
   return {
     ...actual,
     callGatewayFromCli: (method: string, opts: unknown, params?: unknown, extra?: unknown) =>
-      callGatewayFromCli(method, opts, params, extra as number | undefined),
+      mocks.callGatewayFromCli(method, opts, params, extra as number | undefined),
   };
 });
 
 vi.mock("../runtime.js", () => ({
-  defaultRuntime,
+  defaultRuntime: mocks.defaultRuntime,
 }));
-
-const { registerCronCli } = await import("./cron-cli.js");
 
 type CronUpdatePatch = {
   patch?: {
@@ -71,7 +84,11 @@ function buildProgram() {
 function resetGatewayMock() {
   callGatewayFromCli.mockClear();
   callGatewayFromCli.mockImplementation(defaultGatewayMock);
-  resetRuntimeCapture();
+  defaultRuntime.log.mockClear();
+  defaultRuntime.error.mockClear();
+  defaultRuntime.writeStdout.mockClear();
+  defaultRuntime.writeJson.mockClear();
+  defaultRuntime.exit.mockClear();
 }
 
 async function runCronCommand(args: string[]): Promise<void> {
@@ -96,9 +113,7 @@ async function runCronAddAndGetParams(addArgs: string[]): Promise<CronAddParams>
   return (addCall?.[2] ?? {}) as CronAddParams;
 }
 
-async function runCronSimpleAndGetUpdatePatch(
-  command: "enable" | "disable",
-): Promise<{ enabled?: boolean }> {
+async function runCronSimpleAndGetUpdatePatch(command: "enable" | "disable"): Promise<{ enabled?: boolean }> {
   await runCronCommand(["cron", command, "job-1"]);
   const updateCall = callGatewayFromCli.mock.calls.find((call) => call[0] === "cron.update");
   return ((updateCall?.[2] as { patch?: { enabled?: boolean } } | undefined)?.patch ?? {}) as {
@@ -107,21 +122,19 @@ async function runCronSimpleAndGetUpdatePatch(
 }
 
 function mockCronEditJobLookup(schedule: unknown): void {
-  callGatewayFromCli.mockImplementation(
-    async (method: string, _opts: unknown, params?: unknown) => {
-      if (method === "cron.status") {
-        return { enabled: true };
-      }
-      if (method === "cron.list") {
-        return {
-          ok: true,
-          params: {},
-          jobs: [{ id: "job-1", schedule }],
-        };
-      }
-      return { ok: true, params };
-    },
-  );
+  callGatewayFromCli.mockImplementation(async (method: string, _opts: unknown, params?: unknown) => {
+    if (method === "cron.status") {
+      return { enabled: true };
+    }
+    if (method === "cron.list") {
+      return {
+        ok: true,
+        params: {},
+        jobs: [{ id: "job-1", schedule }],
+      };
+    }
+    return { ok: true, params };
+  });
 }
 
 function getGatewayCallParams<T>(method: string): T {
@@ -129,10 +142,7 @@ function getGatewayCallParams<T>(method: string): T {
   return (call?.[2] ?? {}) as T;
 }
 
-async function runCronEditWithScheduleLookup(
-  schedule: unknown,
-  editArgs: string[],
-): Promise<CronUpdatePatch> {
+async function runCronEditWithScheduleLookup(schedule: unknown, editArgs: string[]): Promise<CronUpdatePatch> {
   resetGatewayMock();
   mockCronEditJobLookup(schedule);
   const program = buildProgram();
@@ -140,43 +150,33 @@ async function runCronEditWithScheduleLookup(
   return getGatewayCallParams<CronUpdatePatch>("cron.update");
 }
 
-async function expectCronEditWithScheduleLookupExit(
-  schedule: unknown,
-  editArgs: string[],
-): Promise<void> {
+async function expectCronEditWithScheduleLookupExit(schedule: unknown, editArgs: string[]): Promise<void> {
   resetGatewayMock();
   mockCronEditJobLookup(schedule);
   const program = buildProgram();
-  await expect(
-    program.parseAsync(["cron", "edit", "job-1", ...editArgs], { from: "user" }),
-  ).rejects.toThrow("__exit__:1");
+  await expect(program.parseAsync(["cron", "edit", "job-1", ...editArgs], { from: "user" })).rejects.toThrow(
+    "__exit__:1",
+  );
 }
 
-async function runCronRunAndCaptureExit(params: {
-  ran?: boolean;
-  enqueued?: boolean;
-  args?: string[];
-}) {
+async function runCronRunAndCaptureExit(params: { ran?: boolean; enqueued?: boolean; args?: string[] }) {
   resetGatewayMock();
-  callGatewayFromCli.mockImplementation(
-    async (method: string, _opts: unknown, callParams?: unknown) => {
-      if (method === "cron.status") {
-        return { enabled: true };
-      }
-      if (method === "cron.run") {
-        return {
-          ok: true,
-          params: callParams,
-          ...(typeof params.ran === "boolean" ? { ran: params.ran } : {}),
-          ...(typeof params.enqueued === "boolean" ? { enqueued: params.enqueued } : {}),
-        };
-      }
-      return { ok: true, params: callParams };
-    },
-  );
+  callGatewayFromCli.mockImplementation(async (method: string, _opts: unknown, callParams?: unknown) => {
+    if (method === "cron.status") {
+      return { enabled: true };
+    }
+    if (method === "cron.run") {
+      return {
+        ok: true,
+        params: callParams,
+        ...(typeof params.ran === "boolean" ? { ran: params.ran } : {}),
+        ...(typeof params.enqueued === "boolean" ? { enqueued: params.enqueued } : {}),
+      };
+    }
+    return { ok: true, params: callParams };
+  });
 
-  const runtimeModule = await import("../runtime.js");
-  const runtime = runtimeModule.defaultRuntime as { exit: (code: number) => void };
+  const runtime = defaultRuntime as { exit: (code: number) => void };
   const originalExit = runtime.exit;
   const exitSpy = vi.fn();
   runtime.exit = exitSpy;
@@ -260,32 +260,14 @@ describe("cron cli", () => {
   });
 
   it("infers sessionTarget from payload when --session is omitted", async () => {
-    await runCronCommand([
-      "cron",
-      "add",
-      "--name",
-      "Main reminder",
-      "--cron",
-      "* * * * *",
-      "--system-event",
-      "hi",
-    ]);
+    await runCronCommand(["cron", "add", "--name", "Main reminder", "--cron", "* * * * *", "--system-event", "hi"]);
 
     let addCall = callGatewayFromCli.mock.calls.find((call) => call[0] === "cron.add");
     let params = addCall?.[2] as { sessionTarget?: string; payload?: { kind?: string } };
     expect(params?.sessionTarget).toBe("main");
     expect(params?.payload?.kind).toBe("systemEvent");
 
-    await runCronCommand([
-      "cron",
-      "add",
-      "--name",
-      "Isolated task",
-      "--cron",
-      "* * * * *",
-      "--message",
-      "hello",
-    ]);
+    await runCronCommand(["cron", "add", "--name", "Isolated task", "--cron", "* * * * *", "--message", "hello"]);
 
     addCall = callGatewayFromCli.mock.calls.find((call) => call[0] === "cron.add");
     params = addCall?.[2] as { sessionTarget?: string; payload?: { kind?: string } };
@@ -439,16 +421,7 @@ describe("cron cli", () => {
   });
 
   it("updates delivery settings without requiring --message", async () => {
-    await runCronCommand([
-      "cron",
-      "edit",
-      "job-1",
-      "--deliver",
-      "--channel",
-      "telegram",
-      "--to",
-      "19098680",
-    ]);
+    await runCronCommand(["cron", "edit", "job-1", "--deliver", "--channel", "telegram", "--to", "19098680"]);
 
     const patch = getGatewayCallParams<{
       patch?: {

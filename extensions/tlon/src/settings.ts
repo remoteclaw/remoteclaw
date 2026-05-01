@@ -120,12 +120,9 @@ function parseSettingsResponse(raw: unknown): TlonSettingsStore {
       : undefined,
     autoDiscover: typeof settings.autoDiscover === "boolean" ? settings.autoDiscover : undefined,
     showModelSig: typeof settings.showModelSig === "boolean" ? settings.showModelSig : undefined,
-    autoAcceptDmInvites:
-      typeof settings.autoAcceptDmInvites === "boolean" ? settings.autoAcceptDmInvites : undefined,
+    autoAcceptDmInvites: typeof settings.autoAcceptDmInvites === "boolean" ? settings.autoAcceptDmInvites : undefined,
     autoAcceptGroupInvites:
-      typeof settings.autoAcceptGroupInvites === "boolean"
-        ? settings.autoAcceptGroupInvites
-        : undefined,
+      typeof settings.autoAcceptGroupInvites === "boolean" ? settings.autoAcceptGroupInvites : undefined,
     groupInviteAllowlist: Array.isArray(settings.groupInviteAllowlist)
       ? settings.groupInviteAllowlist.filter((x): x is string => typeof x === "string")
       : undefined,
@@ -231,23 +228,15 @@ function parseSettingsEvent(event: unknown): { key: string; value: unknown } | n
 /**
  * Apply a single settings update to the current state.
  */
-function applySettingsUpdate(
-  current: TlonSettingsStore,
-  key: string,
-  value: unknown,
-): TlonSettingsStore {
+function applySettingsUpdate(current: TlonSettingsStore, key: string, value: unknown): TlonSettingsStore {
   const next = { ...current };
 
   switch (key) {
     case "groupChannels":
-      next.groupChannels = Array.isArray(value)
-        ? value.filter((x): x is string => typeof x === "string")
-        : undefined;
+      next.groupChannels = Array.isArray(value) ? value.filter((x): x is string => typeof x === "string") : undefined;
       break;
     case "dmAllowlist":
-      next.dmAllowlist = Array.isArray(value)
-        ? value.filter((x): x is string => typeof x === "string")
-        : undefined;
+      next.dmAllowlist = Array.isArray(value) ? value.filter((x): x is string => typeof x === "string") : undefined;
       break;
     case "autoDiscover":
       next.autoDiscover = typeof value === "boolean" ? value : undefined;

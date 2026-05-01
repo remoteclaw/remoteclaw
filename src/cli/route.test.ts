@@ -71,9 +71,7 @@ describe("tryRouteCli", () => {
   });
 
   it("routes status when root options precede the command", async () => {
-    await expect(
-      tryRouteCli(["node", "remoteclaw", "--log-level", "debug", "status"]),
-    ).resolves.toBe(true);
+    await expect(tryRouteCli(["node", "remoteclaw", "--log-level", "debug", "status"])).resolves.toBe(true);
 
     expect(findRoutedCommandMock).toHaveBeenCalledWith(["status"]);
     expect(ensureConfigReadyMock).toHaveBeenCalledWith({

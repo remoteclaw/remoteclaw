@@ -1,5 +1,5 @@
 import { Container, Separator, TextDisplay } from "@buape/carbon";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { vi } from "vitest";
 import type { ChannelMessageActionName } from "../../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../../config/config.js";
@@ -16,13 +16,7 @@ const mocks = vi.hoisted(() => ({
     channel === "discord"
       ? {
           supportsComponentsV2: true,
-          buildCrossContextComponents: ({
-            originLabel,
-            message,
-          }: {
-            originLabel: string;
-            message: string;
-          }) => {
+          buildCrossContextComponents: ({ originLabel, message }: { originLabel: string; message: string }) => {
             const trimmed = message.trim();
             const components: Array<TextDisplay | Separator> = [];
             if (trimmed) {
@@ -45,12 +39,21 @@ const mocks = vi.hoisted(() => ({
     }
     return trimmed;
   }),
-  lookupDirectoryDisplay: vi.fn(async ({ targetId }: { targetId: string }) =>
-    targetId.replace(/^#/, ""),
-  ),
-  formatTargetDisplay: vi.fn(
-    ({ target, display }: { target: string; display?: string }) => display ?? target,
-  ),
+  lookupDirectoryDisplay: vi.fn(async ({ targetId }: { targetId: string }) => targetId.replace(/^#/, "")),
+  formatTargetDisplay: vi.fn(({ target, display }: { target: string; display?: string }) => display ?? target),
+}));
+
+vi.mock("./channel-adapters.js", () => ({
+  getChannelMessageAdapter: mocks.getChannelMessageAdapter,
+}));
+
+vi.mock("./target-normalization.js", () => ({
+  normalizeTargetForProvider: mocks.normalizeTargetForProvider,
+}));
+
+vi.mock("./target-resolver.js", () => ({
+  formatTargetDisplay: mocks.formatTargetDisplay,
+  lookupDirectoryDisplay: mocks.lookupDirectoryDisplay,
 }));
 
 const slackConfig = {
@@ -96,25 +99,17 @@ function expectCrossContextPolicyResult(params: {
 }
 
 describe("outbound policy helpers", () => {
-  beforeEach(async () => {
-    vi.resetModules();
-    vi.clearAllMocks();
-    vi.doMock("./channel-adapters.js", () => ({
-      getChannelMessageAdapter: mocks.getChannelMessageAdapter,
-    }));
-    vi.doMock("./target-normalization.js", () => ({
-      normalizeTargetForProvider: mocks.normalizeTargetForProvider,
-    }));
-    vi.doMock("./target-resolver.js", () => ({
-      formatTargetDisplay: mocks.formatTargetDisplay,
-      lookupDirectoryDisplay: mocks.lookupDirectoryDisplay,
-    }));
+  beforeAll(async () => {
     ({
       applyCrossContextDecoration,
       buildCrossContextDecoration,
       enforceCrossContextPolicy,
       shouldApplyCrossContextMarker,
     } = await import("./outbound-policy.js"));
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
   it.each([

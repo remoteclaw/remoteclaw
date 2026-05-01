@@ -2,14 +2,8 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { DEFAULT_BOOTSTRAP_FILENAME } from "../agents/workspace.js";
 import { formatCliCommand } from "../cli/command-format.js";
-import {
-  buildGatewayInstallPlan,
-  gatewayInstallErrorHint,
-} from "../commands/daemon-install-helpers.js";
-import {
-  DEFAULT_GATEWAY_DAEMON_RUNTIME,
-  GATEWAY_DAEMON_RUNTIME_OPTIONS,
-} from "../commands/daemon-runtime.js";
+import { buildGatewayInstallPlan, gatewayInstallErrorHint } from "../commands/daemon-install-helpers.js";
+import { DEFAULT_GATEWAY_DAEMON_RUNTIME, GATEWAY_DAEMON_RUNTIME_OPTIONS } from "../commands/daemon-runtime.js";
 import { formatHealthCheckFailure } from "../commands/health-format.js";
 import { healthCommand } from "../commands/health.js";
 import {
@@ -45,9 +39,7 @@ type FinalizeOnboardingOptions = {
   runtime: RuntimeEnv;
 };
 
-export async function finalizeOnboardingWizard(
-  options: FinalizeOnboardingOptions,
-): Promise<{ launchedTui: boolean }> {
+export async function finalizeOnboardingWizard(options: FinalizeOnboardingOptions): Promise<{ launchedTui: boolean }> {
   const { flow, opts, baseConfig, nextConfig, settings, prompter, runtime } = options;
 
   const withWizardProgress = async <T>(
@@ -59,14 +51,11 @@ export async function finalizeOnboardingWizard(
     try {
       return await work(progress);
     } finally {
-      progress.stop(
-        typeof options.doneMessage === "function" ? options.doneMessage() : options.doneMessage,
-      );
+      progress.stop(typeof options.doneMessage === "function" ? options.doneMessage() : options.doneMessage);
     }
   };
 
-  const systemdAvailable =
-    process.platform === "linux" ? await isSystemdUserServiceAvailable() : true;
+  const systemdAvailable = process.platform === "linux" ? await isSystemdUserServiceAvailable() : true;
   if (process.platform === "linux" && !systemdAvailable) {
     await prompter.note(
       "Systemd user services are unavailable. Skipping lingering checks and service install.",
@@ -88,8 +77,7 @@ export async function finalizeOnboardingWizard(
     });
   }
 
-  const explicitInstallDaemon =
-    typeof opts.installDaemon === "boolean" ? opts.installDaemon : undefined;
+  const explicitInstallDaemon = typeof opts.installDaemon === "boolean" ? opts.installDaemon : undefined;
   let installDaemon: boolean;
   if (explicitInstallDaemon !== undefined) {
     installDaemon = explicitInstallDaemon;
@@ -141,20 +129,16 @@ export async function finalizeOnboardingWizard(
       });
       if (action === "restart") {
         let restartDoneMessage = "Gateway service restarted.";
-        await withWizardProgress(
-          "Gateway service",
-          { doneMessage: () => restartDoneMessage },
-          async (progress) => {
-            progress.update("Restarting Gateway service…");
-            const restartResult = await service.restart({
-              env: process.env,
-              stdout: process.stdout,
-            });
-            const restartStatus = describeGatewayServiceRestart("Gateway", restartResult);
-            restartDoneMessage = restartStatus.progressMessage;
-            restartWasScheduled = restartStatus.scheduled;
-          },
-        );
+        await withWizardProgress("Gateway service", { doneMessage: () => restartDoneMessage }, async (progress) => {
+          progress.update("Restarting Gateway service…");
+          const restartResult = await service.restart({
+            env: process.env,
+            stdout: process.stdout,
+          });
+          const restartStatus = describeGatewayServiceRestart("Gateway", restartResult);
+          restartDoneMessage = restartStatus.progressMessage;
+          restartWasScheduled = restartStatus.scheduled;
+        });
       } else if (action === "reinstall") {
         await withWizardProgress(
           "Gateway service",
@@ -167,10 +151,7 @@ export async function finalizeOnboardingWizard(
       }
     }
 
-    if (
-      !loaded ||
-      (!restartWasScheduled && loaded && !(await service.isLoaded({ env: process.env })))
-    ) {
+    if (!loaded || (!restartWasScheduled && loaded && !(await service.isLoaded({ env: process.env })))) {
       const progress = prompter.progress("Gateway service");
       let installError: string | null = null;
       try {
@@ -191,15 +172,13 @@ export async function finalizeOnboardingWizard(
             "Fix gateway auth config/token input and rerun onboarding.",
           ].join(" ");
         } else {
-          const { programArguments, workingDirectory, environment } = await buildGatewayInstallPlan(
-            {
-              env: process.env,
-              port: settings.port,
-              runtime: daemonRuntime,
-              warn: (message, title) => prompter.note(message, title),
-              config: nextConfig,
-            },
-          );
+          const { programArguments, workingDirectory, environment } = await buildGatewayInstallPlan({
+            env: process.env,
+            port: settings.port,
+            runtime: daemonRuntime,
+            warn: (message, title) => prompter.note(message, title),
+            config: nextConfig,
+          });
 
           progress.update("Installing Gateway service…");
           await service.install({
@@ -213,9 +192,7 @@ export async function finalizeOnboardingWizard(
       } catch (err) {
         installError = err instanceof Error ? err.message : String(err);
       } finally {
-        progress.stop(
-          installError ? "Gateway service install failed." : "Gateway service installed.",
-        );
+        progress.stop(installError ? "Gateway service install failed." : "Gateway service installed.");
       }
       if (installError) {
         await prompter.note(`Gateway service install failed: ${installError}`, "Gateway");
@@ -252,8 +229,7 @@ export async function finalizeOnboardingWizard(
     }
   }
 
-  const controlUiEnabled =
-    nextConfig.gateway?.controlUi?.enabled ?? baseConfig.gateway?.controlUi?.enabled ?? true;
+  const controlUiEnabled = nextConfig.gateway?.controlUi?.enabled ?? baseConfig.gateway?.controlUi?.enabled ?? true;
   if (!opts.skipUi && controlUiEnabled) {
     const controlUiAssets = await ensureControlUiAssetsBuilt(runtime);
     if (!controlUiAssets.ok && controlUiAssets.message) {
@@ -271,8 +247,7 @@ export async function finalizeOnboardingWizard(
     "Optional apps",
   );
 
-  const controlUiBasePath =
-    nextConfig.gateway?.controlUi?.basePath ?? baseConfig.gateway?.controlUi?.basePath;
+  const controlUiBasePath = nextConfig.gateway?.controlUi?.basePath ?? baseConfig.gateway?.controlUi?.basePath;
   const links = resolveControlUiLinks({
     bind: settings.bind,
     port: settings.port,
@@ -312,10 +287,7 @@ export async function finalizeOnboardingWizard(
   const gatewayStatusLine = gatewayProbe.ok
     ? "Gateway: reachable"
     : `Gateway: not detected${gatewayProbe.detail ? ` (${gatewayProbe.detail})` : ""}`;
-  const bootstrapPath = path.join(
-    resolveUserPath(options.workspaceDir),
-    DEFAULT_BOOTSTRAP_FILENAME,
-  );
+  const bootstrapPath = path.join(resolveUserPath(options.workspaceDir), DEFAULT_BOOTSTRAP_FILENAME);
   const hasBootstrap = await fs
     .access(bootstrapPath)
     .then(() => true)
@@ -324,9 +296,7 @@ export async function finalizeOnboardingWizard(
   await prompter.note(
     [
       `Web UI: ${links.httpUrl}`,
-      settings.authMode === "token" && settings.gatewayToken
-        ? `Web UI (with token): ${authedUrl}`
-        : undefined,
+      settings.authMode === "token" && settings.gatewayToken ? `Web UI (with token): ${authedUrl}` : undefined,
       `Gateway WS: ${links.wsUrl}`,
       gatewayStatusLine,
       "Docs: https://docs.remoteclaw.org/web/control-ui",
@@ -420,20 +390,14 @@ export async function finalizeOnboardingWizard(
         "Dashboard ready",
       );
     } else {
-      await prompter.note(
-        `When you're ready: ${formatCliCommand("remoteclaw dashboard --no-open")}`,
-        "Later",
-      );
+      await prompter.note(`When you're ready: ${formatCliCommand("remoteclaw dashboard --no-open")}`, "Later");
     }
   } else if (opts.skipUi) {
     await prompter.note("Skipping Control UI/TUI prompts.", "Control UI");
   }
 
   await prompter.note(
-    [
-      "Back up your agent workspace.",
-      "Docs: https://docs.remoteclaw.org/concepts/agent-workspace",
-    ].join("\n"),
+    ["Back up your agent workspace.", "Docs: https://docs.remoteclaw.org/concepts/agent-workspace"].join("\n"),
     "Workspace backup",
   );
 
@@ -445,10 +409,7 @@ export async function finalizeOnboardingWizard(
   await setupOnboardingShellCompletion({ flow, prompter });
 
   const shouldOpenControlUi =
-    !opts.skipUi &&
-    settings.authMode === "token" &&
-    Boolean(settings.gatewayToken) &&
-    hatchChoice === null;
+    !opts.skipUi && settings.authMode === "token" && Boolean(settings.gatewayToken) && hatchChoice === null;
   if (shouldOpenControlUi) {
     const browserSupport = await detectBrowserOpenSupport();
     if (browserSupport.ok) {
@@ -537,11 +498,8 @@ export async function finalizeOnboardingWizard(
   } else {
     // Legacy configs may have a working key (e.g. apiKey or BRAVE_API_KEY) without
     // an explicit provider. Runtime auto-detects these, so avoid saying "skipped".
-    const { SEARCH_PROVIDER_OPTIONS, hasExistingKey, hasKeyInEnv } =
-      await import("../commands/onboard-search.js");
-    const legacyDetected = SEARCH_PROVIDER_OPTIONS.find(
-      (e) => hasExistingKey(nextConfig, e.value) || hasKeyInEnv(e),
-    );
+    const { SEARCH_PROVIDER_OPTIONS, hasExistingKey, hasKeyInEnv } = await import("../commands/onboard-search.js");
+    const legacyDetected = SEARCH_PROVIDER_OPTIONS.find((e) => hasExistingKey(nextConfig, e.value) || hasKeyInEnv(e));
     if (legacyDetected) {
       await prompter.note(
         [
@@ -563,10 +521,7 @@ export async function finalizeOnboardingWizard(
     }
   }
 
-  await prompter.note(
-    'What now: https://remoteclaw.org/showcase ("What People Are Building").',
-    "What now",
-  );
+  await prompter.note('What now: https://remoteclaw.org/showcase ("What People Are Building").', "What now");
 
   await prompter.outro(
     controlUiOpened

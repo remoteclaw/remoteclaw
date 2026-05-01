@@ -70,14 +70,11 @@ export function createSessionsSpawnTool(opts?: {
   return {
     label: "Sessions",
     name: "sessions_spawn",
-    description:
-      'Spawn an isolated session. mode="run" is one-shot and mode="session" is persistent/thread-bound.',
+    description: 'Spawn an isolated session. mode="run" is one-shot and mode="session" is persistent/thread-bound.',
     parameters: SessionsSpawnToolSchema,
     execute: async (_toolCallId, args) => {
       const params = args;
-      const unsupportedParam = UNSUPPORTED_SESSIONS_SPAWN_PARAM_KEYS.find((key) =>
-        Object.hasOwn(params, key),
-      );
+      const unsupportedParam = UNSUPPORTED_SESSIONS_SPAWN_PARAM_KEYS.find((key) => Object.hasOwn(params, key));
       if (unsupportedParam) {
         throw new ToolInputError(
           `sessions_spawn does not support "${unsupportedParam}". Use "message" or "sessions_send" for channel delivery.`,
@@ -88,8 +85,7 @@ export function createSessionsSpawnTool(opts?: {
       const requestedAgentId = readStringParam(params, "agentId");
       const modelOverride = readStringParam(params, "model");
       const mode = params.mode === "run" || params.mode === "session" ? params.mode : undefined;
-      const cleanup =
-        params.cleanup === "keep" || params.cleanup === "delete" ? params.cleanup : "keep";
+      const cleanup = params.cleanup === "keep" || params.cleanup === "delete" ? params.cleanup : "keep";
       const sandbox = params.sandbox === "require" ? "require" : "inherit";
       // Back-compat: older callers used timeoutSeconds for this tool.
       const timeoutSecondsCandidate =

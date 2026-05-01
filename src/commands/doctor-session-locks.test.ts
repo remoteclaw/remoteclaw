@@ -61,11 +61,7 @@ describe("noteSessionLockHealth", () => {
       JSON.stringify({ pid: -1, createdAt: new Date(Date.now() - 120_000).toISOString() }),
       "utf8",
     );
-    await fs.writeFile(
-      freshLock,
-      JSON.stringify({ pid: process.pid, createdAt: new Date().toISOString() }),
-      "utf8",
-    );
+    await fs.writeFile(freshLock, JSON.stringify({ pid: process.pid, createdAt: new Date().toISOString() }), "utf8");
 
     await noteSessionLockHealth({ shouldRepair: true, staleMs: 30_000 });
 

@@ -16,9 +16,7 @@ export type ExistingInstallPathResult =
       error: string;
     };
 
-export async function resolveExistingInstallPath(
-  inputPath: string,
-): Promise<ExistingInstallPathResult> {
+export async function resolveExistingInstallPath(inputPath: string): Promise<ExistingInstallPathResult> {
   const resolvedPath = resolveUserPath(inputPath);
   if (!(await fileExists(resolvedPath))) {
     return { ok: false, error: `path not found: ${resolvedPath}` };

@@ -41,70 +41,54 @@ type BlueBubblesMonitorTestRuntimeMocks = {
   resolveCommandAuthorizedFromAuthorizers: unknown;
 };
 
-export function createBlueBubblesMonitorTestRuntime(
-  mocks: BlueBubblesMonitorTestRuntimeMocks,
-): PluginRuntime {
+export function createBlueBubblesMonitorTestRuntime(mocks: BlueBubblesMonitorTestRuntimeMocks): PluginRuntime {
   return createPluginRuntimeMock({
     system: {
       enqueueSystemEvent: mocks.enqueueSystemEvent as PluginRuntime["system"]["enqueueSystemEvent"],
     },
     channel: {
       text: {
-        chunkMarkdownText:
-          mocks.chunkMarkdownText as PluginRuntime["channel"]["text"]["chunkMarkdownText"],
+        chunkMarkdownText: mocks.chunkMarkdownText as PluginRuntime["channel"]["text"]["chunkMarkdownText"],
         chunkByNewline: mocks.chunkByNewline as PluginRuntime["channel"]["text"]["chunkByNewline"],
         chunkMarkdownTextWithMode:
           mocks.chunkMarkdownTextWithMode as PluginRuntime["channel"]["text"]["chunkMarkdownTextWithMode"],
-        chunkTextWithMode:
-          mocks.chunkTextWithMode as PluginRuntime["channel"]["text"]["chunkTextWithMode"],
-        resolveChunkMode:
-          mocks.resolveChunkMode as PluginRuntime["channel"]["text"]["resolveChunkMode"],
-        hasControlCommand:
-          mocks.hasControlCommand as PluginRuntime["channel"]["text"]["hasControlCommand"],
+        chunkTextWithMode: mocks.chunkTextWithMode as PluginRuntime["channel"]["text"]["chunkTextWithMode"],
+        resolveChunkMode: mocks.resolveChunkMode as PluginRuntime["channel"]["text"]["resolveChunkMode"],
+        hasControlCommand: mocks.hasControlCommand as PluginRuntime["channel"]["text"]["hasControlCommand"],
       },
       reply: {
         dispatchReplyWithBufferedBlockDispatcher:
           mocks.dispatchReplyWithBufferedBlockDispatcher as PluginRuntime["channel"]["reply"]["dispatchReplyWithBufferedBlockDispatcher"],
-        formatAgentEnvelope:
-          mocks.formatAgentEnvelope as PluginRuntime["channel"]["reply"]["formatAgentEnvelope"],
+        formatAgentEnvelope: mocks.formatAgentEnvelope as PluginRuntime["channel"]["reply"]["formatAgentEnvelope"],
         formatInboundEnvelope:
           mocks.formatInboundEnvelope as PluginRuntime["channel"]["reply"]["formatInboundEnvelope"],
         resolveEnvelopeFormatOptions:
           mocks.resolveEnvelopeFormatOptions as PluginRuntime["channel"]["reply"]["resolveEnvelopeFormatOptions"],
       },
       routing: {
-        resolveAgentRoute:
-          mocks.resolveAgentRoute as PluginRuntime["channel"]["routing"]["resolveAgentRoute"],
+        resolveAgentRoute: mocks.resolveAgentRoute as PluginRuntime["channel"]["routing"]["resolveAgentRoute"],
       },
       pairing: {
-        buildPairingReply:
-          mocks.buildPairingReply as PluginRuntime["channel"]["pairing"]["buildPairingReply"],
-        readAllowFromStore:
-          mocks.readAllowFromStore as PluginRuntime["channel"]["pairing"]["readAllowFromStore"],
-        upsertPairingRequest:
-          mocks.upsertPairingRequest as PluginRuntime["channel"]["pairing"]["upsertPairingRequest"],
+        buildPairingReply: mocks.buildPairingReply as PluginRuntime["channel"]["pairing"]["buildPairingReply"],
+        readAllowFromStore: mocks.readAllowFromStore as PluginRuntime["channel"]["pairing"]["readAllowFromStore"],
+        upsertPairingRequest: mocks.upsertPairingRequest as PluginRuntime["channel"]["pairing"]["upsertPairingRequest"],
       },
       media: {
-        saveMediaBuffer:
-          mocks.saveMediaBuffer as PluginRuntime["channel"]["media"]["saveMediaBuffer"],
+        saveMediaBuffer: mocks.saveMediaBuffer as PluginRuntime["channel"]["media"]["saveMediaBuffer"],
       },
       session: {
-        resolveStorePath:
-          mocks.resolveStorePath as PluginRuntime["channel"]["session"]["resolveStorePath"],
-        readSessionUpdatedAt:
-          mocks.readSessionUpdatedAt as PluginRuntime["channel"]["session"]["readSessionUpdatedAt"],
+        resolveStorePath: mocks.resolveStorePath as PluginRuntime["channel"]["session"]["resolveStorePath"],
+        readSessionUpdatedAt: mocks.readSessionUpdatedAt as PluginRuntime["channel"]["session"]["readSessionUpdatedAt"],
       },
       mentions: {
-        buildMentionRegexes:
-          mocks.buildMentionRegexes as PluginRuntime["channel"]["mentions"]["buildMentionRegexes"],
+        buildMentionRegexes: mocks.buildMentionRegexes as PluginRuntime["channel"]["mentions"]["buildMentionRegexes"],
         matchesMentionPatterns:
           mocks.matchesMentionPatterns as PluginRuntime["channel"]["mentions"]["matchesMentionPatterns"],
         matchesMentionWithExplicit:
           mocks.matchesMentionWithExplicit as PluginRuntime["channel"]["mentions"]["matchesMentionWithExplicit"],
       },
       groups: {
-        resolveGroupPolicy:
-          mocks.resolveGroupPolicy as PluginRuntime["channel"]["groups"]["resolveGroupPolicy"],
+        resolveGroupPolicy: mocks.resolveGroupPolicy as PluginRuntime["channel"]["groups"]["resolveGroupPolicy"],
         resolveRequireMention:
           mocks.resolveRequireMention as PluginRuntime["channel"]["groups"]["resolveRequireMention"],
       },

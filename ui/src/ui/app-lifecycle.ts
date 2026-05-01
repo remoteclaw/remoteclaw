@@ -8,12 +8,7 @@ import {
   stopDebugPolling,
   type PollingHost,
 } from "./app-polling.ts";
-import {
-  observeTopbar,
-  scheduleChatScroll,
-  scheduleLogsScroll,
-  type ScrollHost,
-} from "./app-scroll.ts";
+import { observeTopbar, scheduleChatScroll, scheduleLogsScroll, type ScrollHost } from "./app-scroll.ts";
 import {
   applySettingsFromUrl,
   attachThemeListener,
@@ -98,23 +93,16 @@ export function handleUpdated(host: LifecycleHost, changed: Map<PropertyKey, unk
       changed.has("tab"))
   ) {
     const forcedByTab = changed.has("tab");
-    const forcedByLoad =
-      changed.has("chatLoading") && changed.get("chatLoading") === true && !host.chatLoading;
+    const forcedByLoad = changed.has("chatLoading") && changed.get("chatLoading") === true && !host.chatLoading;
     // Detect streaming start: chatStream changed from null/undefined to a string value
     const previousStream = changed.get("chatStream") as string | null | undefined;
     const streamJustStarted =
       changed.has("chatStream") &&
       (previousStream === null || previousStream === undefined) &&
       typeof host.chatStream === "string";
-    scheduleChatScroll(
-      host,
-      forcedByTab || forcedByLoad || streamJustStarted || !host.chatHasAutoScrolled,
-    );
+    scheduleChatScroll(host, forcedByTab || forcedByLoad || streamJustStarted || !host.chatHasAutoScrolled);
   }
-  if (
-    host.tab === "logs" &&
-    (changed.has("logsEntries") || changed.has("logsAutoFollow") || changed.has("tab"))
-  ) {
+  if (host.tab === "logs" && (changed.has("logsEntries") || changed.has("logsAutoFollow") || changed.has("tab"))) {
     if (host.logsAutoFollow && host.logsAtBottom) {
       scheduleLogsScroll(host, changed.has("tab") || changed.has("logsAutoFollow"));
     }

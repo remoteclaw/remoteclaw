@@ -91,10 +91,7 @@ export async function getSlackHandlerOrThrow(name: string) {
   return handler;
 }
 
-export async function stopSlackMonitor(params: {
-  controller: AbortController;
-  run: Promise<unknown>;
-}) {
+export async function stopSlackMonitor(params: { controller: AbortController; run: Promise<unknown> }) {
   await flush();
   params.controller.abort();
   await params.run;
@@ -177,8 +174,7 @@ vi.mock("./send.js", () => ({
 
 vi.mock("../../../src/pairing/pairing-store.js", () => ({
   readChannelAllowFromStore: (...args: unknown[]) => slackTestState.readAllowFromStoreMock(...args),
-  upsertChannelPairingRequest: (...args: unknown[]) =>
-    slackTestState.upsertPairingRequestMock(...args),
+  upsertChannelPairingRequest: (...args: unknown[]) => slackTestState.upsertPairingRequestMock(...args),
 }));
 
 vi.mock("../../../src/config/sessions.js", () => ({

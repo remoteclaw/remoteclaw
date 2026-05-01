@@ -8,10 +8,7 @@ import { shortenHomePath } from "../utils.js";
 import { confirm, select } from "./configure.shared.js";
 import { guardCancel } from "./onboard-helpers.js";
 
-export async function removeChannelConfigWizard(
-  cfg: RemoteClawConfig,
-  runtime: RuntimeEnv,
-): Promise<RemoteClawConfig> {
+export async function removeChannelConfigWizard(cfg: RemoteClawConfig, runtime: RuntimeEnv): Promise<RemoteClawConfig> {
   let next = { ...cfg };
 
   const listConfiguredChannels = () =>
@@ -67,15 +64,11 @@ export async function removeChannelConfigWizard(
     delete nextChannels[channel];
     next = {
       ...next,
-      channels: Object.keys(nextChannels).length
-        ? (nextChannels as RemoteClawConfig["channels"])
-        : undefined,
+      channels: Object.keys(nextChannels).length ? (nextChannels as RemoteClawConfig["channels"]) : undefined,
     };
 
     note(
-      [`${label} removed from config.`, "Note: credentials/sessions on disk are unchanged."].join(
-        "\n",
-      ),
+      [`${label} removed from config.`, "Note: credentials/sessions on disk are unchanged."].join("\n"),
       "Channel removed",
     );
   }

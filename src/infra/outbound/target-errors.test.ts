@@ -64,8 +64,6 @@ describe("target error helpers", () => {
   });
 
   it("includes the hint in ambiguous target errors", () => {
-    expect(ambiguousTargetError("Discord", "general", "Use channel:123").message).toContain(
-      "Hint: Use channel:123",
-    );
+    expect(ambiguousTargetError("Discord", "general", "Use channel:123").message).toContain("Hint: Use channel:123");
   });
 });

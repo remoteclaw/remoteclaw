@@ -17,11 +17,7 @@ import {
   type GatewayBroadcastFn,
   type GatewayBroadcastToConnIdsFn,
 } from "./server-broadcast.js";
-import {
-  type ChatRunEntry,
-  createChatRunState,
-  createToolEventRecipientRegistry,
-} from "./server-chat.js";
+import { type ChatRunEntry, createChatRunState, createToolEventRecipientRegistry } from "./server-chat.js";
 import { MAX_PAYLOAD_BYTES } from "./server-constants.js";
 import { attachGatewayUpgradeHandler, createGatewayHttpServer } from "./server-http.js";
 import type { DedupeEntry } from "./server-shared.js";
@@ -32,10 +28,7 @@ import {
   shouldEnforceGatewayAuthForPluginPath,
   type PluginRoutePathContext,
 } from "./server/plugins-http.js";
-import {
-  createPreauthConnectionBudget,
-  type PreauthConnectionBudget,
-} from "./server/preauth-connection-budget.js";
+import { createPreauthConnectionBudget, type PreauthConnectionBudget } from "./server/preauth-connection-budget.js";
 import type { ReadinessChecker } from "./server/readiness.js";
 import type { GatewayTlsRuntime } from "./server/tls.js";
 import type { GatewayWsClient } from "./server/ws-types.js";
@@ -82,11 +75,7 @@ export async function createGatewayRuntimeState(params: {
   chatRunBuffers: Map<string, string>;
   chatDeltaSentAt: Map<string, number>;
   addChatRun: (sessionId: string, entry: ChatRunEntry) => void;
-  removeChatRun: (
-    sessionId: string,
-    clientRunId: string,
-    sessionKey?: string,
-  ) => ChatRunEntry | undefined;
+  removeChatRun: (sessionId: string, clientRunId: string, sessionKey?: string) => ChatRunEntry | undefined;
   chatAbortControllers: Map<string, ChatAbortControllerEntry>;
   toolEventRecipients: ReturnType<typeof createToolEventRecipientRegistry>;
 }> {
@@ -177,9 +166,7 @@ export async function createGatewayRuntimeState(params: {
       if (host === bindHosts[0]) {
         throw err;
       }
-      params.log.warn(
-        `gateway: failed to bind loopback alias ${host}:${params.port} (${String(err)})`,
-      );
+      params.log.warn(`gateway: failed to bind loopback alias ${host}:${params.port} (${String(err)})`);
     }
   }
   const httpServer = httpServers[0];

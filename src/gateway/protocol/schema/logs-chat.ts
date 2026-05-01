@@ -72,12 +72,7 @@ export const ChatEventSchema = Type.Object(
     runId: NonEmptyString,
     sessionKey: NonEmptyString,
     seq: Type.Integer({ minimum: 0 }),
-    state: Type.Union([
-      Type.Literal("delta"),
-      Type.Literal("final"),
-      Type.Literal("aborted"),
-      Type.Literal("error"),
-    ]),
+    state: Type.Union([Type.Literal("delta"), Type.Literal("final"), Type.Literal("aborted"), Type.Literal("error")]),
     message: Type.Optional(Type.Unknown()),
     errorMessage: Type.Optional(Type.String()),
     usage: Type.Optional(Type.Unknown()),

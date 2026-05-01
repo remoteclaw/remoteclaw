@@ -2,11 +2,7 @@ import { html, nothing } from "lit";
 import { formatRelativeTimestamp } from "../format.ts";
 import type { ChannelAccountSnapshot, TelegramStatus } from "../types.ts";
 import { renderChannelConfigSection } from "./channels.config.ts";
-import {
-  formatNullableBoolean,
-  renderSingleAccountChannelCard,
-  resolveChannelConfigured,
-} from "./channels.shared.ts";
+import { formatNullableBoolean, renderSingleAccountChannelCard, resolveChannelConfigured } from "./channels.shared.ts";
 import type { ChannelsProps } from "./channels.types.ts";
 
 export function renderTelegramCard(params: {
@@ -41,16 +37,10 @@ export function renderTelegramCard(params: {
           <div>
             <span class="label">Last inbound</span>
             <span
-              >${
-                account.lastInboundAt ? formatRelativeTimestamp(account.lastInboundAt) : "n/a"
-              }</span
+              >${account.lastInboundAt ? formatRelativeTimestamp(account.lastInboundAt) : "n/a"}</span
             >
           </div>
-          ${
-            account.lastError
-              ? html` <div class="account-card-error">${account.lastError}</div> `
-              : nothing
-          }
+          ${account.lastError ? html` <div class="account-card-error">${account.lastError}</div> ` : nothing}
         </div>
       </div>
     `;

@@ -8,10 +8,7 @@ export function normalizeUrlPath(rawPath: string): string {
   return normalized.startsWith("/") ? normalized : `/${normalized}`;
 }
 
-export async function resolveFileWithinRoot(
-  rootReal: string,
-  urlPath: string,
-): Promise<SafeOpenResult | null> {
+export async function resolveFileWithinRoot(rootReal: string, urlPath: string): Promise<SafeOpenResult | null> {
   const normalized = normalizeUrlPath(urlPath);
   const rel = normalized.replace(/^\/+/, "");
   if (rel.split("/").some((p) => p === "..")) {

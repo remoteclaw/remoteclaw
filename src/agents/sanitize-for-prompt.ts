@@ -28,11 +28,7 @@ export function sanitizeForPromptLiteral(value: string): string {
   return value.replace(/[\p{Cc}\p{Cf}\u2028\u2029]/gu, "");
 }
 
-export function wrapUntrustedPromptDataBlock(params: {
-  label: string;
-  text: string;
-  maxChars?: number;
-}): string {
+export function wrapUntrustedPromptDataBlock(params: { label: string; text: string; maxChars?: number }): string {
   const normalizedLines = params.text.replace(/\r\n?/g, "\n").split("\n");
   const sanitizedLines = normalizedLines.map((line) => sanitizeForPromptLiteral(line)).join("\n");
   const trimmed = sanitizedLines.trim();

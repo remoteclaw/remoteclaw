@@ -4,10 +4,7 @@ import type { ModelProviderConfig } from "../config/types.models.js";
 import { isSecretRef, type SecretInput } from "../config/types.secrets.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { fetchWithTimeout } from "../utils/fetch-timeout.js";
-import {
-  normalizeSecretInput,
-  normalizeOptionalSecretInput,
-} from "../utils/normalize-secret-input.js";
+import { normalizeSecretInput, normalizeOptionalSecretInput } from "../utils/normalize-secret-input.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 import type { SecretInputMode } from "./onboard-types.js";
 
@@ -197,11 +194,7 @@ function resolveUniqueEndpointId(params: {
   return { providerId: candidate, renamed: true };
 }
 
-function resolveAliasError(params: {
-  raw: string;
-  cfg: RemoteClawConfig;
-  modelRef: string;
-}): string | undefined {
+function resolveAliasError(params: { raw: string; cfg: RemoteClawConfig; modelRef: string }): string | undefined {
   const trimmed = params.raw.trim();
   if (!trimmed) {
     return undefined;
@@ -289,13 +282,8 @@ function resolveVerificationEndpoint(params: {
   modelId: string;
   endpointPath: "chat/completions" | "messages";
 }) {
-  const resolvedUrl = isAzureUrl(params.baseUrl)
-    ? transformAzureUrl(params.baseUrl, params.modelId)
-    : params.baseUrl;
-  const endpointUrl = new URL(
-    params.endpointPath,
-    resolvedUrl.endsWith("/") ? resolvedUrl : `${resolvedUrl}/`,
-  );
+  const resolvedUrl = isAzureUrl(params.baseUrl) ? transformAzureUrl(params.baseUrl, params.modelId) : params.baseUrl;
+  const endpointUrl = new URL(params.endpointPath, resolvedUrl.endsWith("/") ? resolvedUrl : `${resolvedUrl}/`);
   if (isAzureUrl(params.baseUrl)) {
     endpointUrl.searchParams.set("api-version", "2024-10-21");
   }
@@ -337,9 +325,7 @@ async function requestOpenAiVerification(params: {
     endpointPath: "chat/completions",
   });
   const isBaseUrlAzureUrl = isAzureUrl(params.baseUrl);
-  const headers = isBaseUrlAzureUrl
-    ? buildAzureOpenAiHeaders(params.apiKey)
-    : buildOpenAiHeaders(params.apiKey);
+  const headers = isBaseUrlAzureUrl ? buildAzureOpenAiHeaders(params.apiKey) : buildOpenAiHeaders(params.apiKey);
   if (isBaseUrlAzureUrl) {
     return await requestVerification({
       endpoint,
@@ -489,25 +475,17 @@ function parseCustomApiCompatibility(raw?: string): CustomApiCompatibility {
     return "openai";
   }
   if (compatibilityRaw !== "openai" && compatibilityRaw !== "anthropic") {
-    throw new CustomApiError(
-      "invalid_compatibility",
-      'Invalid --custom-compatibility (use "openai" or "anthropic").',
-    );
+    throw new CustomApiError("invalid_compatibility", 'Invalid --custom-compatibility (use "openai" or "anthropic").');
   }
   return compatibilityRaw;
 }
 
-export function resolveCustomProviderId(
-  params: ResolveCustomProviderIdParams,
-): ResolvedCustomProviderId {
+export function resolveCustomProviderId(params: ResolveCustomProviderIdParams): ResolvedCustomProviderId {
   const providers = params.config.models?.providers ?? {};
   const baseUrl = params.baseUrl.trim();
   const explicitProviderId = params.providerId?.trim();
   if (explicitProviderId && !normalizeEndpointId(explicitProviderId)) {
-    throw new CustomApiError(
-      "invalid_provider_id",
-      "Custom provider ID must include letters, numbers, or hyphens.",
-    );
+    throw new CustomApiError("invalid_provider_id", "Custom provider ID must include letters, numbers, or hyphens.");
   }
   const requestedProviderId = explicitProviderId || buildEndpointIdFromUrl(baseUrl);
   const providerIdResult = resolveUniqueEndpointId({
@@ -544,10 +522,7 @@ export function parseNonInteractiveCustomApiFlags(
   const apiKey = params.apiKey?.trim();
   const providerId = params.providerId?.trim();
   if (providerId && !normalizeEndpointId(providerId)) {
-    throw new CustomApiError(
-      "invalid_provider_id",
-      "Custom provider ID must include letters, numbers, or hyphens.",
-    );
+    throw new CustomApiError("invalid_provider_id", "Custom provider ID must include letters, numbers, or hyphens.");
   }
   return {
     baseUrl,
@@ -567,10 +542,7 @@ export function applyCustomApiConfig(params: ApplyCustomApiConfigParams): Custom
   }
 
   if (params.compatibility !== "openai" && params.compatibility !== "anthropic") {
-    throw new CustomApiError(
-      "invalid_compatibility",
-      'Custom provider compatibility must be "openai" or "anthropic".',
-    );
+    throw new CustomApiError("invalid_compatibility", 'Custom provider compatibility must be "openai" or "anthropic".');
   }
 
   const modelId = params.modelId.trim();
@@ -626,8 +598,7 @@ export function applyCustomApiConfig(params: ApplyCustomApiConfigParams): Custom
     : [...existingModels, nextModel];
   const { apiKey: existingApiKey, ...existingProviderRest } = existingProvider ?? {};
   const normalizedApiKey =
-    normalizeOptionalProviderApiKey(params.apiKey) ??
-    normalizeOptionalProviderApiKey(existingApiKey);
+    normalizeOptionalProviderApiKey(params.apiKey) ?? normalizeOptionalProviderApiKey(existingApiKey);
 
   let config: RemoteClawConfig = {
     ...params.config,
@@ -649,9 +620,7 @@ export function applyCustomApiConfig(params: ApplyCustomApiConfigParams): Custom
   config = applyPrimaryModel(config, modelRef);
   if (alias) {
     const legacyDefaults = config.agents?.defaults as Record<string, unknown> | undefined;
-    const legacyModels = legacyDefaults?.models as
-      | Record<string, Record<string, unknown>>
-      | undefined;
+    const legacyModels = legacyDefaults?.models as Record<string, Record<string, unknown>> | undefined;
     config = {
       ...config,
       agents: {
@@ -708,8 +677,7 @@ export async function promptCustomApiConfig(params: {
 
   let modelId = await promptCustomApiModelId(prompter);
 
-  let compatibility: CustomApiCompatibility | null =
-    compatibilityChoice === "unknown" ? null : compatibilityChoice;
+  let compatibility: CustomApiCompatibility | null = compatibilityChoice === "unknown" ? null : compatibilityChoice;
 
   while (true) {
     let verifiedFromProbe = false;

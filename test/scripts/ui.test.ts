@@ -3,9 +3,7 @@ import { assertSafeWindowsShellArgs, shouldUseShellForCommand } from "../../scri
 
 describe("scripts/ui windows spawn behavior", () => {
   it("enables shell for Windows command launchers that require cmd.exe", () => {
-    expect(
-      shouldUseShellForCommand("C:\\Users\\dev\\AppData\\Local\\pnpm\\pnpm.CMD", "win32"),
-    ).toBe(true);
+    expect(shouldUseShellForCommand("C:\\Users\\dev\\AppData\\Local\\pnpm\\pnpm.CMD", "win32")).toBe(true);
     expect(shouldUseShellForCommand("C:\\tools\\pnpm.bat", "win32")).toBe(true);
   });
 
@@ -15,9 +13,7 @@ describe("scripts/ui windows spawn behavior", () => {
   });
 
   it("allows safe forwarded args when shell mode is required on Windows", () => {
-    expect(() =>
-      assertSafeWindowsShellArgs(["run", "build", "--filter", "@remoteclaw/ui"], "win32"),
-    ).not.toThrow();
+    expect(() => assertSafeWindowsShellArgs(["run", "build", "--filter", "@remoteclaw/ui"], "win32")).not.toThrow();
   });
 
   it("rejects dangerous forwarded args when shell mode is required on Windows", () => {

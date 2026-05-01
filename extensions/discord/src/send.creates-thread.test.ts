@@ -75,11 +75,7 @@ describe("sendMessageDiscord", () => {
     const { rest, getMock, postMock } = makeDiscordRest();
     getMock.mockResolvedValue({ type: ChannelType.GuildMedia });
     postMock.mockResolvedValue({ id: "t1" });
-    await createThreadDiscord(
-      "chan1",
-      { name: "thread", content: "initial forum post" },
-      { rest, token: "t" },
-    );
+    await createThreadDiscord("chan1", { name: "thread", content: "initial forum post" }, { rest, token: "t" });
     expect(postMock).toHaveBeenCalledWith(
       Routes.threads("chan1"),
       expect.objectContaining({
@@ -95,11 +91,7 @@ describe("sendMessageDiscord", () => {
     const { rest, getMock, postMock } = makeDiscordRest();
     getMock.mockResolvedValue({ type: ChannelType.GuildForum });
     postMock.mockResolvedValue({ id: "t1" });
-    await createThreadDiscord(
-      "chan1",
-      { name: "tagged post", appliedTags: ["tag1", "tag2"] },
-      { rest, token: "t" },
-    );
+    await createThreadDiscord("chan1", { name: "tagged post", appliedTags: ["tag1", "tag2"] }, { rest, token: "t" });
     expect(postMock).toHaveBeenCalledWith(
       Routes.threads("chan1"),
       expect.objectContaining({
@@ -116,11 +108,7 @@ describe("sendMessageDiscord", () => {
     const { rest, getMock, postMock } = makeDiscordRest();
     getMock.mockResolvedValue({ type: ChannelType.GuildText });
     postMock.mockResolvedValue({ id: "t1" });
-    await createThreadDiscord(
-      "chan1",
-      { name: "thread", appliedTags: ["tag1"] },
-      { rest, token: "t" },
-    );
+    await createThreadDiscord("chan1", { name: "thread", appliedTags: ["tag1"] }, { rest, token: "t" });
     expect(postMock).toHaveBeenCalledWith(
       Routes.threads("chan1"),
       expect.objectContaining({
@@ -146,11 +134,7 @@ describe("sendMessageDiscord", () => {
     const { rest, getMock, postMock } = makeDiscordRest();
     getMock.mockResolvedValue({ type: ChannelType.GuildText });
     postMock.mockResolvedValue({ id: "t1" });
-    await createThreadDiscord(
-      "chan1",
-      { name: "thread", type: ChannelType.PrivateThread },
-      { rest, token: "t" },
-    );
+    await createThreadDiscord("chan1", { name: "thread", type: ChannelType.PrivateThread }, { rest, token: "t" });
     expect(getMock).toHaveBeenCalledWith(Routes.channel("chan1"));
     expect(postMock).toHaveBeenCalledWith(
       Routes.threads("chan1"),
@@ -164,11 +148,7 @@ describe("sendMessageDiscord", () => {
     const { rest, getMock, postMock } = makeDiscordRest();
     getMock.mockResolvedValue({ type: ChannelType.GuildText });
     postMock.mockResolvedValue({ id: "t1" });
-    await createThreadDiscord(
-      "chan1",
-      { name: "thread", content: "Hello thread!" },
-      { rest, token: "t" },
-    );
+    await createThreadDiscord("chan1", { name: "thread", content: "Hello thread!" }, { rest, token: "t" });
     expect(postMock).toHaveBeenCalledTimes(2);
     // First call: create thread
     expect(postMock).toHaveBeenNthCalledWith(
@@ -225,10 +205,7 @@ describe("sendMessageDiscord", () => {
   it("times out a member", async () => {
     const { rest, patchMock } = makeDiscordRest();
     patchMock.mockResolvedValue({ id: "m1" });
-    await timeoutMemberDiscord(
-      { guildId: "g1", userId: "u1", durationMinutes: 10 },
-      { rest, token: "t" },
-    );
+    await timeoutMemberDiscord({ guildId: "g1", userId: "u1", durationMinutes: 10 }, { rest, token: "t" });
     expect(patchMock).toHaveBeenCalledWith(
       Routes.guildMember("g1", "u1"),
       expect.objectContaining({
@@ -252,10 +229,7 @@ describe("sendMessageDiscord", () => {
   it("bans a member", async () => {
     const { rest, putMock } = makeDiscordRest();
     putMock.mockResolvedValue({});
-    await banMemberDiscord(
-      { guildId: "g1", userId: "u1", deleteMessageDays: 2 },
-      { rest, token: "t" },
-    );
+    await banMemberDiscord({ guildId: "g1", userId: "u1", deleteMessageDays: 2 }, { rest, token: "t" });
     expect(putMock).toHaveBeenCalledWith(
       Routes.guildBan("g1", "u1"),
       expect.objectContaining({ body: { delete_message_days: 2 } }),
@@ -430,9 +404,7 @@ describe("retry rate limits", () => {
     const { rest, postMock } = makeDiscordRest();
     const rateLimitError = createMockRateLimitError(0);
 
-    postMock
-      .mockRejectedValueOnce(rateLimitError)
-      .mockResolvedValueOnce({ id: "msg1", channel_id: "789" });
+    postMock.mockRejectedValueOnce(rateLimitError).mockResolvedValueOnce({ id: "msg1", channel_id: "789" });
 
     const res = await sendMessageDiscord("channel:789", "hello", {
       rest,
@@ -450,9 +422,7 @@ describe("retry rate limits", () => {
     const { rest, postMock } = makeDiscordRest();
     const rateLimitError = createMockRateLimitError(0.5);
 
-    postMock
-      .mockRejectedValueOnce(rateLimitError)
-      .mockResolvedValueOnce({ id: "msg1", channel_id: "789" });
+    postMock.mockRejectedValueOnce(rateLimitError).mockResolvedValueOnce({ id: "msg1", channel_id: "789" });
 
     const promise = sendMessageDiscord("channel:789", "hello", {
       rest,
@@ -490,9 +460,7 @@ describe("retry rate limits", () => {
     const { rest, postMock } = makeDiscordRest();
     postMock.mockRejectedValueOnce(new Error("network error"));
 
-    await expect(sendMessageDiscord("channel:789", "hello", { rest, token: "t" })).rejects.toThrow(
-      "network error",
-    );
+    await expect(sendMessageDiscord("channel:789", "hello", { rest, token: "t" })).rejects.toThrow("network error");
     expect(postMock).toHaveBeenCalledTimes(1);
   });
 

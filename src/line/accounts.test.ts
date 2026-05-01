@@ -3,12 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
-import {
-  resolveLineAccount,
-  resolveDefaultLineAccountId,
-  normalizeAccountId,
-  DEFAULT_ACCOUNT_ID,
-} from "./accounts.js";
+import { resolveLineAccount, resolveDefaultLineAccountId, normalizeAccountId, DEFAULT_ACCOUNT_ID } from "./accounts.js";
 
 describe("LINE accounts", () => {
   const originalEnv = { ...process.env };

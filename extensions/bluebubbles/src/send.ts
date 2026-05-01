@@ -2,19 +2,12 @@ import crypto from "node:crypto";
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/bluebubbles";
 import { stripMarkdown } from "remoteclaw/plugin-sdk/bluebubbles";
 import { resolveBlueBubblesAccount } from "./accounts.js";
-import {
-  getCachedBlueBubblesPrivateApiStatus,
-  isBlueBubblesPrivateApiStatusEnabled,
-} from "./probe.js";
+import { getCachedBlueBubblesPrivateApiStatus, isBlueBubblesPrivateApiStatusEnabled } from "./probe.js";
 import { warnBlueBubbles } from "./runtime.js";
 import { normalizeSecretInputString } from "./secret-input.js";
 import { extractBlueBubblesMessageId, resolveBlueBubblesSendTarget } from "./send-helpers.js";
 import { extractHandleFromChatGuid, normalizeBlueBubblesHandle } from "./targets.js";
-import {
-  blueBubblesFetchWithTimeout,
-  buildBlueBubblesApiUrl,
-  type BlueBubblesSendTarget,
-} from "./types.js";
+import { blueBubblesFetchWithTimeout, buildBlueBubblesApiUrl, type BlueBubblesSendTarget } from "./types.js";
 
 export type BlueBubblesSendOpts = {
   serverUrl?: string;
@@ -89,16 +82,12 @@ function resolvePrivateApiDecision(params: {
 }): PrivateApiDecision {
   const { privateApiStatus, wantsReplyThread, wantsEffect } = params;
   const needsPrivateApi = wantsReplyThread || wantsEffect;
-  const canUsePrivateApi =
-    needsPrivateApi && isBlueBubblesPrivateApiStatusEnabled(privateApiStatus);
+  const canUsePrivateApi = needsPrivateApi && isBlueBubblesPrivateApiStatusEnabled(privateApiStatus);
   const throwEffectDisabledError = wantsEffect && privateApiStatus === false;
   if (!needsPrivateApi || privateApiStatus !== null) {
     return { canUsePrivateApi, throwEffectDisabledError };
   }
-  const requested = [
-    wantsReplyThread ? "reply threading" : null,
-    wantsEffect ? "message effects" : null,
-  ]
+  const requested = [wantsReplyThread ? "reply threading" : null, wantsEffect ? "message effects" : null]
     .filter(Boolean)
     .join(" + ");
   return {
@@ -231,11 +220,9 @@ export async function resolveChatGuidForTarget(params: {
     return params.target.chatGuid;
   }
 
-  const normalizedHandle =
-    params.target.kind === "handle" ? normalizeBlueBubblesHandle(params.target.address) : "";
+  const normalizedHandle = params.target.kind === "handle" ? normalizeBlueBubblesHandle(params.target.address) : "";
   const targetChatId = params.target.kind === "chat_id" ? params.target.chatId : null;
-  const targetChatIdentifier =
-    params.target.kind === "chat_identifier" ? params.target.chatIdentifier : null;
+  const targetChatIdentifier = params.target.kind === "chat_identifier" ? params.target.chatIdentifier : null;
 
   const limit = 500;
   let participantMatch: string | null = null;
@@ -297,9 +284,7 @@ export async function resolveChatGuidForTarget(params: {
           // This prevents routing "send to +1234567890" to a group chat that contains that number.
           const isDmChat = guid.includes(";-;");
           if (isDmChat) {
-            const participants = extractParticipantAddresses(chat).map((entry) =>
-              normalizeBlueBubblesHandle(entry),
-            );
+            const participants = extractParticipantAddresses(chat).map((entry) => normalizeBlueBubblesHandle(entry));
             if (participants.includes(normalizedHandle)) {
               participantMatch = guid;
             }
@@ -344,11 +329,7 @@ async function createNewChatWithMessage(params: {
   if (!res.ok) {
     const errorText = await res.text();
     // Check for Private API not enabled error
-    if (
-      res.status === 400 ||
-      res.status === 403 ||
-      errorText.toLowerCase().includes("private api")
-    ) {
+    if (res.status === 400 || res.status === 403 || errorText.toLowerCase().includes("private api")) {
       throw new Error(
         `BlueBubbles send failed: Cannot create new chat - Private API must be enabled. Original error: ${errorText || res.status}`,
       );
@@ -377,12 +358,8 @@ export async function sendMessageBlueBubbles(
     cfg: opts.cfg ?? {},
     accountId: opts.accountId,
   });
-  const baseUrl =
-    normalizeSecretInputString(opts.serverUrl) ||
-    normalizeSecretInputString(account.config.serverUrl);
-  const password =
-    normalizeSecretInputString(opts.password) ||
-    normalizeSecretInputString(account.config.password);
+  const baseUrl = normalizeSecretInputString(opts.serverUrl) || normalizeSecretInputString(account.config.serverUrl);
+  const password = normalizeSecretInputString(opts.password) || normalizeSecretInputString(account.config.password);
   if (!baseUrl) {
     throw new Error("BlueBubbles serverUrl is required");
   }

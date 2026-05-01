@@ -10,8 +10,7 @@ export const IRC_FIELD_LABELS: Record<string, string> = {
 };
 
 export const IRC_FIELD_HELP: Record<string, string> = {
-  "channels.irc.configWrites":
-    "Allow IRC to write config in response to channel events/commands (default: true).",
+  "channels.irc.configWrites": "Allow IRC to write config in response to channel events/commands (default: true).",
   "channels.irc.dmPolicy":
     'Direct message access control ("pairing" recommended). "open" requires channels.irc.allowFrom=["*"].',
   "channels.irc.nickserv.enabled":
@@ -21,6 +20,5 @@ export const IRC_FIELD_HELP: Record<string, string> = {
   "channels.irc.nickserv.passwordFile": "Optional file path containing NickServ password.",
   "channels.irc.nickserv.register":
     "If true, send NickServ REGISTER on every connect. Use once for initial registration, then disable.",
-  "channels.irc.nickserv.registerEmail":
-    "Email used with NickServ REGISTER (required when register=true).",
+  "channels.irc.nickserv.registerEmail": "Email used with NickServ REGISTER (required when register=true).",
 };

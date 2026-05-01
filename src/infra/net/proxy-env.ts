@@ -37,10 +37,8 @@ export function resolveEnvHttpProxyUrl(
 ): string | undefined {
   const lowerHttpProxy = normalizeProxyEnvValue(env.http_proxy);
   const lowerHttpsProxy = normalizeProxyEnvValue(env.https_proxy);
-  const httpProxy =
-    lowerHttpProxy !== undefined ? lowerHttpProxy : normalizeProxyEnvValue(env.HTTP_PROXY);
-  const httpsProxy =
-    lowerHttpsProxy !== undefined ? lowerHttpsProxy : normalizeProxyEnvValue(env.HTTPS_PROXY);
+  const httpProxy = lowerHttpProxy !== undefined ? lowerHttpProxy : normalizeProxyEnvValue(env.HTTP_PROXY);
+  const httpsProxy = lowerHttpsProxy !== undefined ? lowerHttpsProxy : normalizeProxyEnvValue(env.HTTPS_PROXY);
   if (protocol === "https") {
     return httpsProxy ?? httpProxy ?? undefined;
   }

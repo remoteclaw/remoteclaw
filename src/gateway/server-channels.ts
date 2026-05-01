@@ -8,11 +8,7 @@ import { resetDirectoryCache } from "../infra/outbound/target-resolver.js";
 import type { createSubsystemLogger } from "../logging/subsystem.js";
 import type { PluginRuntime } from "../plugins/runtime/types.js";
 import { resolveAccountEntry, resolveNormalizedAccountEntry } from "../routing/account-lookup.js";
-import {
-  DEFAULT_ACCOUNT_ID,
-  normalizeAccountId,
-  normalizeOptionalAccountId,
-} from "../routing/session-key.js";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId, normalizeOptionalAccountId } from "../routing/session-key.js";
 import type { RuntimeEnv } from "../runtime.js";
 
 const CHANNEL_RESTART_POLICY: BackoffPolicy = {
@@ -73,10 +69,7 @@ function cloneDefaultRuntime(channelId: ChannelId, accountId: string): ChannelAc
   return { ...resolveDefaultRuntime(channelId), accountId };
 }
 
-function applyDescribedAccountFields(
-  next: ChannelAccountSnapshot,
-  described: ChannelAccountSnapshot | undefined,
-) {
+function applyDescribedAccountFields(next: ChannelAccountSnapshot, described: ChannelAccountSnapshot | undefined) {
   if (!described) {
     return next;
   }
@@ -153,8 +146,7 @@ export type ChannelManager = {
 
 // Channel docking: lifecycle hooks (`plugin.gateway`) flow through this manager.
 export function createChannelManager(opts: ChannelManagerOptions): ChannelManager {
-  const { loadConfig, channelLogs, channelRuntimeEnvs, channelRuntime, resolveChannelRuntime } =
-    opts;
+  const { loadConfig, channelLogs, channelRuntimeEnvs, channelRuntime, resolveChannelRuntime } = opts;
 
   const channelStores = new Map<ChannelId, ChannelRuntimeStore>();
   // Tracks restart attempts per channel:account. Reset on successful start.
@@ -180,11 +172,7 @@ export function createChannelManager(opts: ChannelManagerOptions): ChannelManage
     if (!normalizedAccountId) {
       return undefined;
     }
-    const match = resolveNormalizedAccountEntry(
-      channelConfig.accounts,
-      normalizedAccountId,
-      normalizeAccountId,
-    );
+    const match = resolveNormalizedAccountEntry(channelConfig.accounts, normalizedAccountId, normalizeAccountId);
     if (typeof match?.healthMonitor?.enabled !== "boolean") {
       return undefined;
     }
@@ -254,11 +242,7 @@ export function createChannelManager(opts: ChannelManagerOptions): ChannelManage
     return channelRuntime ?? resolveChannelRuntime?.();
   };
 
-  const startChannelInternal = async (
-    channelId: ChannelId,
-    accountId?: string,
-    opts: StartChannelOptions = {},
-  ) => {
+  const startChannelInternal = async (channelId: ChannelId, accountId?: string, opts: StartChannelOptions = {}) => {
     const plugin = getChannelPlugin(channelId);
     const startAccount = plugin?.gateway?.startAccount;
     if (!startAccount) {
@@ -298,9 +282,7 @@ export function createChannelManager(opts: ChannelManagerOptions): ChannelManage
 
         try {
           const account = plugin.config.resolveAccount(cfg, id);
-          const enabled = plugin.config.isEnabled
-            ? plugin.config.isEnabled(account, cfg)
-            : isAccountEnabled(account);
+          const enabled = plugin.config.isEnabled ? plugin.config.isEnabled(account, cfg) : isAccountEnabled(account);
           if (!enabled) {
             setRuntime(channelId, id, {
               accountId: id,
@@ -517,9 +499,7 @@ export function createChannelManager(opts: ChannelManagerOptions): ChannelManage
       try {
         await startChannel(plugin.id);
       } catch (err) {
-        channelLogs[plugin.id]?.error?.(
-          `[${plugin.id}] channel startup failed: ${formatErrorMessage(err)}`,
-        );
+        channelLogs[plugin.id]?.error?.(`[${plugin.id}] channel startup failed: ${formatErrorMessage(err)}`);
       }
     }
   };
@@ -564,9 +544,7 @@ export function createChannelManager(opts: ChannelManagerOptions): ChannelManage
       const accounts: Record<string, ChannelAccountSnapshot> = {};
       for (const id of accountIds) {
         const account = plugin.config.resolveAccount(cfg, id);
-        const enabled = plugin.config.isEnabled
-          ? plugin.config.isEnabled(account, cfg)
-          : isAccountEnabled(account);
+        const enabled = plugin.config.isEnabled ? plugin.config.isEnabled(account, cfg) : isAccountEnabled(account);
         const described = plugin.config.describeAccount?.(account, cfg);
         const current = store.runtimes.get(id) ?? cloneDefaultRuntime(plugin.id, id);
         const next = { ...current, accountId: id };
@@ -582,8 +560,7 @@ export function createChannelManager(opts: ChannelManagerOptions): ChannelManage
         }
         accounts[id] = next;
       }
-      const defaultAccount =
-        accounts[defaultAccountId] ?? cloneDefaultRuntime(plugin.id, defaultAccountId);
+      const defaultAccount = accounts[defaultAccountId] ?? cloneDefaultRuntime(plugin.id, defaultAccountId);
       channels[plugin.id] = defaultAccount;
       channelAccounts[plugin.id] = accounts;
     }

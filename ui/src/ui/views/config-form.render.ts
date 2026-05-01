@@ -82,9 +82,7 @@ const sectionIcons = {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
       <circle cx="12" cy="12" r="10"></circle>
       <line x1="2" y1="12" x2="22" y2="12"></line>
-      <path
-        d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
-      ></path>
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
     </svg>
   `,
   // Additional sections
@@ -170,9 +168,7 @@ const sectionIcons = {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
       <circle cx="12" cy="12" r="10"></circle>
       <line x1="2" y1="12" x2="22" y2="12"></line>
-      <path
-        d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
-      ></path>
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
     </svg>
   `,
   discovery: html`
@@ -393,8 +389,7 @@ export function renderConfigForm(props: ConfigFormProps) {
     return true;
   });
 
-  let subsectionContext: { sectionKey: string; subsectionKey: string; schema: JsonSchema } | null =
-    null;
+  let subsectionContext: { sectionKey: string; subsectionKey: string; schema: JsonSchema } | null = null;
   if (activeSection && activeSubsection && filteredEntries.length === 1) {
     const sectionSchema = filteredEntries[0]?.[1];
     if (
@@ -443,11 +438,7 @@ export function renderConfigForm(props: ConfigFormProps) {
                   <span class="config-section-card__icon">${getSectionIcon(sectionKey)}</span>
                   <div class="config-section-card__titles">
                     <h3 class="config-section-card__title">${label}</h3>
-                    ${
-                      description
-                        ? html`<p class="config-section-card__desc">${description}</p>`
-                        : nothing
-                    }
+                    ${description ? html`<p class="config-section-card__desc">${description}</p>` : nothing}
                   </div>
                 </div>
                 <div class="config-section-card__content">
@@ -478,11 +469,7 @@ export function renderConfigForm(props: ConfigFormProps) {
                   <span class="config-section-card__icon">${getSectionIcon(key)}</span>
                   <div class="config-section-card__titles">
                     <h3 class="config-section-card__title">${meta.label}</h3>
-                    ${
-                      meta.description
-                        ? html`<p class="config-section-card__desc">${meta.description}</p>`
-                        : nothing
-                    }
+                    ${meta.description ? html`<p class="config-section-card__desc">${meta.description}</p>` : nothing}
                   </div>
                 </div>
                 <div class="config-section-card__content">

@@ -5,10 +5,7 @@ export function resolveOncharPrefixes(prefixes: string[] | undefined): string[] 
   return cleaned.length > 0 ? cleaned : DEFAULT_ONCHAR_PREFIXES;
 }
 
-export function stripOncharPrefix(
-  text: string,
-  prefixes: string[],
-): { triggered: boolean; stripped: string } {
+export function stripOncharPrefix(text: string, prefixes: string[]): { triggered: boolean; stripped: string } {
   const trimmed = text.trimStart();
   for (const prefix of prefixes) {
     if (!prefix) {

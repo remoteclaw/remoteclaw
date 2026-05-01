@@ -12,10 +12,7 @@ import { handleDiscordAction } from "../../../../agents/tools/discord-actions.js
 import type { AgentToolResult } from "../../../../types/agent-types.js";
 import type { ChannelMessageActionContext } from "../../types.js";
 
-type Ctx = Pick<
-  ChannelMessageActionContext,
-  "action" | "params" | "cfg" | "accountId" | "requesterSenderId"
->;
+type Ctx = Pick<ChannelMessageActionContext, "action" | "params" | "cfg" | "accountId" | "requesterSenderId">;
 
 export async function tryHandleDiscordMessageActionGuildAdmin(params: {
   ctx: Ctx;
@@ -31,30 +28,21 @@ export async function tryHandleDiscordMessageActionGuildAdmin(params: {
     const guildId = readStringParam(actionParams, "guildId", {
       required: true,
     });
-    return await handleDiscordAction(
-      { action: "memberInfo", accountId: accountId ?? undefined, guildId, userId },
-      cfg,
-    );
+    return await handleDiscordAction({ action: "memberInfo", accountId: accountId ?? undefined, guildId, userId }, cfg);
   }
 
   if (action === "role-info") {
     const guildId = readStringParam(actionParams, "guildId", {
       required: true,
     });
-    return await handleDiscordAction(
-      { action: "roleInfo", accountId: accountId ?? undefined, guildId },
-      cfg,
-    );
+    return await handleDiscordAction({ action: "roleInfo", accountId: accountId ?? undefined, guildId }, cfg);
   }
 
   if (action === "emoji-list") {
     const guildId = readStringParam(actionParams, "guildId", {
       required: true,
     });
-    return await handleDiscordAction(
-      { action: "emojiList", accountId: accountId ?? undefined, guildId },
-      cfg,
-    );
+    return await handleDiscordAction({ action: "emojiList", accountId: accountId ?? undefined, guildId }, cfg);
   }
 
   if (action === "emoji-upload") {
@@ -133,20 +121,14 @@ export async function tryHandleDiscordMessageActionGuildAdmin(params: {
     const channelId = readStringParam(actionParams, "channelId", {
       required: true,
     });
-    return await handleDiscordAction(
-      { action: "channelInfo", accountId: accountId ?? undefined, channelId },
-      cfg,
-    );
+    return await handleDiscordAction({ action: "channelInfo", accountId: accountId ?? undefined, channelId }, cfg);
   }
 
   if (action === "channel-list") {
     const guildId = readStringParam(actionParams, "guildId", {
       required: true,
     });
-    return await handleDiscordAction(
-      { action: "channelList", accountId: accountId ?? undefined, guildId },
-      cfg,
-    );
+    return await handleDiscordAction({ action: "channelList", accountId: accountId ?? undefined, guildId }, cfg);
   }
 
   if (action === "channel-create") {
@@ -221,10 +203,7 @@ export async function tryHandleDiscordMessageActionGuildAdmin(params: {
     const channelId = readStringParam(actionParams, "channelId", {
       required: true,
     });
-    return await handleDiscordAction(
-      { action: "channelDelete", accountId: accountId ?? undefined, channelId },
-      cfg,
-    );
+    return await handleDiscordAction({ action: "channelDelete", accountId: accountId ?? undefined, channelId }, cfg);
   }
 
   if (action === "channel-move") {
@@ -295,10 +274,7 @@ export async function tryHandleDiscordMessageActionGuildAdmin(params: {
     const categoryId = readStringParam(actionParams, "categoryId", {
       required: true,
     });
-    return await handleDiscordAction(
-      { action: "categoryDelete", accountId: accountId ?? undefined, categoryId },
-      cfg,
-    );
+    return await handleDiscordAction({ action: "categoryDelete", accountId: accountId ?? undefined, categoryId }, cfg);
   }
 
   if (action === "voice-status") {
@@ -316,10 +292,7 @@ export async function tryHandleDiscordMessageActionGuildAdmin(params: {
     const guildId = readStringParam(actionParams, "guildId", {
       required: true,
     });
-    return await handleDiscordAction(
-      { action: "eventList", accountId: accountId ?? undefined, guildId },
-      cfg,
-    );
+    return await handleDiscordAction({ action: "eventList", accountId: accountId ?? undefined, guildId }, cfg);
   }
 
   if (action === "event-create") {

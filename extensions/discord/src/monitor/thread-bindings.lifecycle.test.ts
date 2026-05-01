@@ -92,9 +92,7 @@ describe("thread binding lifecycle", () => {
       maxAgeMs: 0,
     });
 
-  const bindDefaultThreadTarget = async (
-    manager: ReturnType<typeof createThreadBindingManager>,
-  ) => {
+  const bindDefaultThreadTarget = async (manager: ReturnType<typeof createThreadBindingManager>) => {
     await manager.bindTarget({
       threadId: "thread-1",
       channelId: "parent-1",
@@ -589,12 +587,8 @@ describe("thread binding lifecycle", () => {
       expect.objectContaining({ autoArchiveMinutes: 60 }),
       expect.objectContaining({ accountId: "default" }),
     );
-    expect(manager.getByThreadId("thread-1")?.targetSessionKey).toBe(
-      "agent:test-agent:subagent:parent",
-    );
-    expect(manager.getByThreadId("thread-created-2")?.targetSessionKey).toBe(
-      "agent:test-agent:subagent:child-2",
-    );
+    expect(manager.getByThreadId("thread-1")?.targetSessionKey).toBe("agent:test-agent:subagent:parent");
+    expect(manager.getByThreadId("thread-created-2")?.targetSessionKey).toBe("agent:test-agent:subagent:child-2");
   });
 
   it("resolves parent channel when thread target is passed via to without threadId", async () => {
@@ -679,9 +673,7 @@ describe("thread binding lifecycle", () => {
         return true;
       }
       const first = call?.[0];
-      return (
-        typeof first === "object" && first !== null && (first as { cfg?: unknown }).cfg === cfg
-      );
+      return typeof first === "object" && first !== null && (first as { cfg?: unknown }).cfg === cfg;
     });
     expect(usedCfg).toBe(true);
   });
@@ -722,11 +714,7 @@ describe("thread binding lifecycle", () => {
         return true;
       }
       const first = call?.[0];
-      return (
-        typeof first === "object" &&
-        first !== null &&
-        (first as { cfg?: unknown }).cfg === refreshedCfg
-      );
+      return typeof first === "object" && first !== null && (first as { cfg?: unknown }).cfg === refreshedCfg;
     });
     expect(usedRefreshedCfg).toBe(true);
     const usedStartupCfg = hoisted.createDiscordRestClient.mock.calls.some((call) => {
@@ -734,11 +722,7 @@ describe("thread binding lifecycle", () => {
         return true;
       }
       const first = call?.[0];
-      return (
-        typeof first === "object" &&
-        first !== null &&
-        (first as { cfg?: unknown }).cfg === startupCfg
-      );
+      return typeof first === "object" && first !== null && (first as { cfg?: unknown }).cfg === startupCfg;
     });
     expect(usedStartupCfg).toBe(false);
   });

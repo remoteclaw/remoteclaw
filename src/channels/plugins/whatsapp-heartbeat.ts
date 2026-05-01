@@ -17,18 +17,14 @@ function getSessionRecipients(cfg: RemoteClawConfig) {
   }
   const storePath = resolveStorePath(cfg.session?.store);
   const store = loadSessionStoreSummary(storePath);
-  const isGroupKey = (key: string) =>
-    key.includes(":group:") || key.includes(":channel:") || key.includes("@g.us");
+  const isGroupKey = (key: string) => key.includes(":group:") || key.includes(":channel:") || key.includes("@g.us");
   const isCronKey = (key: string) => key.startsWith("cron:");
 
   const recipients = Object.entries(store)
     .filter(([key]) => key !== "global" && key !== "unknown")
     .filter(([key]) => !isGroupKey(key) && !isCronKey(key))
     .map(([_, entry]) => ({
-      to:
-        normalizeChatChannelId(entry?.lastChannel) === "whatsapp" && entry?.lastTo
-          ? normalizeE164(entry.lastTo)
-          : "",
+      to: normalizeChatChannelId(entry?.lastChannel) === "whatsapp" && entry?.lastTo ? normalizeE164(entry.lastTo) : "",
       updatedAt: entry?.updatedAt ?? 0,
     }))
     .filter(({ to }) => to.length > 1)
@@ -58,11 +54,7 @@ export function resolveWhatsAppHeartbeatRecipients(
     Array.isArray(cfg.channels?.whatsapp?.allowFrom) && cfg.channels.whatsapp.allowFrom.length > 0
       ? cfg.channels.whatsapp.allowFrom.filter((v) => v !== "*").map(normalizeE164)
       : [];
-  const storeAllowFrom = readChannelAllowFromStoreSync(
-    "whatsapp",
-    process.env,
-    DEFAULT_ACCOUNT_ID,
-  ).map(normalizeE164);
+  const storeAllowFrom = readChannelAllowFromStoreSync("whatsapp", process.env, DEFAULT_ACCOUNT_ID).map(normalizeE164);
 
   const unique = (list: string[]) => [...new Set(list.filter(Boolean))];
   const allowFrom = unique([...configuredAllowFrom, ...storeAllowFrom]);

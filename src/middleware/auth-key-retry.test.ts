@@ -16,15 +16,10 @@ vi.mock("../auth/store.js", async (importOriginal) => {
 
 type FakeResult = { text: string; error?: string };
 
-const makeStore = (
-  profiles: Record<string, { provider: string; key: string }>,
-): AuthProfileStore => ({
+const makeStore = (profiles: Record<string, { provider: string; key: string }>): AuthProfileStore => ({
   version: 1,
   profiles: Object.fromEntries(
-    Object.entries(profiles).map(([id, p]) => [
-      id,
-      { type: "api_key" as const, provider: p.provider, key: p.key },
-    ]),
+    Object.entries(profiles).map(([id, p]) => [id, { type: "api_key" as const, provider: p.provider, key: p.key }]),
   ),
 });
 

@@ -8,11 +8,7 @@ import {
 } from "../agents/agent-scope.js";
 import { lookupContextTokens } from "../agents/context.js";
 import { DEFAULT_CONTEXT_TOKENS, DEFAULT_MODEL, DEFAULT_PROVIDER } from "../agents/defaults.js";
-import {
-  parseModelRef,
-  resolveConfiguredModelRef,
-  resolveDefaultModelForAgent,
-} from "../agents/provider-utils.js";
+import { parseModelRef, resolveConfiguredModelRef, resolveDefaultModelForAgent } from "../agents/provider-utils.js";
 import { type RemoteClawConfig, loadConfig } from "../config/config.js";
 import { resolveStateDir } from "../config/paths.js";
 import {
@@ -27,11 +23,7 @@ import {
   type SessionScope,
 } from "../config/sessions.js";
 import { openBoundaryFileSync } from "../infra/boundary-file-read.js";
-import {
-  normalizeAgentId,
-  normalizeMainKey,
-  parseAgentSessionKey,
-} from "../routing/session-key.js";
+import { normalizeAgentId, normalizeMainKey, parseAgentSessionKey } from "../routing/session-key.js";
 import { isCronRunSessionKey } from "../sessions/session-key-utils.js";
 import {
   AVATAR_MAX_BYTES,
@@ -220,10 +212,7 @@ function findStoreMatch(
  * Find all on-disk store keys that match the given key case-insensitively.
  * Returns every key from the store whose lowercased form equals the target's lowercased form.
  */
-export function findStoreKeysIgnoreCase(
-  store: Record<string, unknown>,
-  targetKey: string,
-): string[] {
+export function findStoreKeysIgnoreCase(store: Record<string, unknown>, targetKey: string): string[] {
   const lowered = targetKey.toLowerCase();
   const matches: string[] = [];
   for (const key of Object.keys(store)) {
@@ -279,9 +268,7 @@ export function classifySessionKey(key: string, entry?: SessionEntry): GatewaySe
   return "direct";
 }
 
-export function parseGroupKey(
-  key: string,
-): { channel?: string; kind?: "group" | "channel"; id?: string } | null {
+export function parseGroupKey(key: string): { channel?: string; kind?: "group" | "channel"; id?: string } | null {
   const agentParsed = parseAgentSessionKey(key);
   const rawKey = agentParsed?.rest ?? key;
   const parts = rawKey.split(":").filter(Boolean);
@@ -347,10 +334,7 @@ export function listAgentsForGateway(cfg: RemoteClawConfig): {
   const defaultId = resolveSoleAgentId(cfg) ?? listAgentIds(cfg)[0];
   const mainKey = normalizeMainKey(cfg.session?.mainKey);
   const scope = cfg.session?.scope ?? "per-sender";
-  const configuredById = new Map<
-    string,
-    { name?: string; identity?: GatewayAgentRow["identity"] }
-  >();
+  const configuredById = new Map<string, { name?: string; identity?: GatewayAgentRow["identity"] }>();
   for (const entry of cfg.agents?.list ?? []) {
     if (!entry?.id) {
       continue;
@@ -361,11 +345,7 @@ export function listAgentsForGateway(cfg: RemoteClawConfig): {
           theme: entry.identity.theme?.trim() || undefined,
           emoji: entry.identity.emoji?.trim() || undefined,
           avatar: entry.identity.avatar?.trim() || undefined,
-          avatarUrl: resolveIdentityAvatarUrl(
-            cfg,
-            normalizeAgentId(entry.id),
-            entry.identity.avatar?.trim(),
-          ),
+          avatarUrl: resolveIdentityAvatarUrl(cfg, normalizeAgentId(entry.id), entry.identity.avatar?.trim()),
         }
       : undefined;
     configuredById.set(normalizeAgentId(entry.id), {
@@ -374,14 +354,10 @@ export function listAgentsForGateway(cfg: RemoteClawConfig): {
     });
   }
   const explicitIds = new Set(
-    (cfg.agents?.list ?? [])
-      .map((entry) => (entry?.id ? normalizeAgentId(entry.id) : ""))
-      .filter(Boolean),
+    (cfg.agents?.list ?? []).map((entry) => (entry?.id ? normalizeAgentId(entry.id) : "")).filter(Boolean),
   );
   const allowedIds = explicitIds.size > 0 ? new Set([...explicitIds, defaultId]) : null;
-  let agentIds = listConfiguredAgentIds(cfg).filter((id) =>
-    allowedIds ? allowedIds.has(id) : true,
-  );
+  let agentIds = listConfiguredAgentIds(cfg).filter((id) => (allowedIds ? allowedIds.has(id) : true));
   if (mainKey && !agentIds.includes(mainKey) && (!allowedIds || allowedIds.has(mainKey))) {
     agentIds = [...agentIds, mainKey];
   }
@@ -411,10 +387,7 @@ function resolveDefaultStoreAgentId(cfg: RemoteClawConfig): string {
   return resolveSoleAgentId(cfg) ?? listAgentIds(cfg)[0];
 }
 
-export function resolveSessionStoreKey(params: {
-  cfg: RemoteClawConfig;
-  sessionKey: string;
-}): string {
+export function resolveSessionStoreKey(params: { cfg: RemoteClawConfig; sessionKey: string }): string {
   const raw = (params.sessionKey ?? "").trim();
   if (!raw) {
     return raw;
@@ -560,11 +533,7 @@ function mergeSessionEntryIntoCombined(params: {
     combined[canonicalKey] = {
       ...existing,
       ...entry,
-      spawnedBy: canonicalizeSpawnedByForAgent(
-        cfg,
-        agentId,
-        entry.spawnedBy ?? existing?.spawnedBy,
-      ),
+      spawnedBy: canonicalizeSpawnedByForAgent(cfg, agentId, entry.spawnedBy ?? existing?.spawnedBy),
     };
   }
 }
@@ -609,8 +578,7 @@ export function loadCombinedSessionStoreForGateway(cfg: RemoteClawConfig): {
     }
   }
 
-  const storePath =
-    typeof storeConfig === "string" && storeConfig.trim() ? storeConfig.trim() : "(multiple)";
+  const storePath = typeof storeConfig === "string" && storeConfig.trim() ? storeConfig.trim() : "(multiple)";
   return { storePath, store: combined };
 }
 
@@ -621,9 +589,7 @@ export function getSessionDefaults(cfg: RemoteClawConfig): GatewaySessionsDefaul
     defaultModel: DEFAULT_MODEL,
   });
   const contextTokens =
-    cfg.agents?.defaults?.contextTokens ??
-    lookupContextTokens(resolved.model) ??
-    DEFAULT_CONTEXT_TOKENS;
+    cfg.agents?.defaults?.contextTokens ?? lookupContextTokens(resolved.model) ?? DEFAULT_CONTEXT_TOKENS;
   return {
     modelProvider: resolved.provider ?? null,
     model: resolved.model ?? null,
@@ -633,9 +599,7 @@ export function getSessionDefaults(cfg: RemoteClawConfig): GatewaySessionsDefaul
 
 export function resolveSessionModelRef(
   cfg: RemoteClawConfig,
-  entry?:
-    | SessionEntry
-    | Pick<SessionEntry, "model" | "modelProvider" | "modelOverride" | "providerOverride">,
+  entry?: SessionEntry | Pick<SessionEntry, "model" | "modelProvider" | "modelOverride" | "providerOverride">,
   agentId?: string,
 ): { provider: string; model: string } {
   const resolved = agentId
@@ -691,9 +655,7 @@ export function resolveSessionModelRef(
 
 export function resolveSessionModelIdentityRef(
   cfg: RemoteClawConfig,
-  entry?:
-    | SessionEntry
-    | Pick<SessionEntry, "model" | "modelProvider" | "modelOverride" | "providerOverride">,
+  entry?: SessionEntry | Pick<SessionEntry, "model" | "modelProvider" | "modelOverride" | "providerOverride">,
   agentId?: string,
 ): { provider?: string; model: string } {
   const runtimeModel = entry?.model?.trim();
@@ -778,8 +740,7 @@ export function listSessionsFromStore(params: {
     .map(([key, entry]) => {
       const updatedAt = entry?.updatedAt ?? null;
       const total = resolveFreshSessionTotalTokens(entry);
-      const totalTokensFresh =
-        typeof entry?.totalTokens === "number" ? entry?.totalTokensFresh !== false : false;
+      const totalTokensFresh = typeof entry?.totalTokens === "number" ? entry?.totalTokensFresh !== false : false;
       const parsed = parseGroupKey(key);
       const channel = entry?.channel ?? parsed?.channel;
       const subject = entry?.subject;
@@ -867,12 +828,7 @@ export function listSessionsFromStore(params: {
     if (entry?.sessionId) {
       if (includeDerivedTitles || includeLastMessage) {
         const agentId = resolveSessionKeyAgentId(s.key, cfg);
-        const fields = readSessionTitleFieldsFromTranscript(
-          entry.sessionId,
-          storePath,
-          entry.sessionFile,
-          agentId,
-        );
+        const fields = readSessionTitleFieldsFromTranscript(entry.sessionId, storePath, entry.sessionFile, agentId);
         if (includeDerivedTitles) {
           derivedTitle = deriveSessionTitle(entry, fields.firstUserMessage);
         }

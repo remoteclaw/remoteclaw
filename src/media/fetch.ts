@@ -127,18 +127,13 @@ export async function fetchRemoteMedia(options: FetchMediaOptions): Promise<Fetc
     try {
       result = await runGuardedFetch(dispatcherPolicy);
     } catch (err) {
-      if (
-        fallbackDispatcherPolicy &&
-        typeof shouldRetryFetchError === "function" &&
-        shouldRetryFetchError(err)
-      ) {
+      if (fallbackDispatcherPolicy && typeof shouldRetryFetchError === "function" && shouldRetryFetchError(err)) {
         try {
           result = await runGuardedFetch(fallbackDispatcherPolicy);
         } catch (fallbackErr) {
-          const combined = new Error(
-            `Primary fetch failed and fallback fetch also failed for ${sourceUrl}`,
-            { cause: fallbackErr },
-          );
+          const combined = new Error(`Primary fetch failed and fallback fetch also failed for ${sourceUrl}`, {
+            cause: fallbackErr,
+          });
           (combined as Error & { primaryError?: unknown }).primaryError = err;
           throw combined;
         }
@@ -150,13 +145,9 @@ export async function fetchRemoteMedia(options: FetchMediaOptions): Promise<Fetc
     finalUrl = result.finalUrl;
     release = result.release;
   } catch (err) {
-    throw new MediaFetchError(
-      "fetch_failed",
-      `Failed to fetch media from ${sourceUrl}: ${formatErrorMessage(err)}`,
-      {
-        cause: err,
-      },
-    );
+    throw new MediaFetchError("fetch_failed", `Failed to fetch media from ${sourceUrl}: ${formatErrorMessage(err)}`, {
+      cause: err,
+    });
   }
 
   try {
@@ -221,8 +212,7 @@ export async function fetchRemoteMedia(options: FetchMediaOptions): Promise<Fetc
     }
 
     const headerFileName = parseContentDispositionFileName(res.headers.get("content-disposition"));
-    let fileName =
-      headerFileName || fileNameFromUrl || (filePathHint ? path.basename(filePathHint) : undefined);
+    let fileName = headerFileName || fileNameFromUrl || (filePathHint ? path.basename(filePathHint) : undefined);
 
     const filePathForMime =
       headerFileName && path.extname(headerFileName) ? headerFileName : (filePathHint ?? finalUrl);

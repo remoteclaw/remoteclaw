@@ -32,11 +32,7 @@ function resolveTarget(to: string, opts?: SendIrcOptions): string {
   throw new Error(`Invalid IRC target: ${to}`);
 }
 
-export async function sendMessageIrc(
-  to: string,
-  text: string,
-  opts: SendIrcOptions = {},
-): Promise<SendIrcResult> {
+export async function sendMessageIrc(to: string, text: string, opts: SendIrcOptions = {}): Promise<SendIrcResult> {
   const runtime = getIrcRuntime();
   const cfg = (opts.cfg ?? runtime.config.loadConfig()) as CoreConfig;
   const account = resolveIrcAccount({
@@ -45,9 +41,7 @@ export async function sendMessageIrc(
   });
 
   if (!account.configured) {
-    throw new Error(
-      `IRC is not configured for account "${account.accountId}" (need host and nick in channels.irc).`,
-    );
+    throw new Error(`IRC is not configured for account "${account.accountId}" (need host and nick in channels.irc).`);
   }
 
   const target = resolveTarget(to, opts);

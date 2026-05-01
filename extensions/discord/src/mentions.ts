@@ -62,10 +62,7 @@ function rewritePlainTextMentions(text: string, accountId?: string | null): stri
   });
 }
 
-export function rewriteDiscordKnownMentions(
-  text: string,
-  params: { accountId?: string | null },
-): string {
+export function rewriteDiscordKnownMentions(text: string, params: { accountId?: string | null }): string {
   if (!text.includes("@")) {
     return text;
   }

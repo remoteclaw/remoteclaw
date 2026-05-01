@@ -1,9 +1,5 @@
 import type { RemoteClawConfig } from "../config/config.js";
-import {
-  type AuthProfileCredential,
-  type AuthProfileStore,
-  resolveAuthProfileDisplayLabel,
-} from "./index.js";
+import { type AuthProfileCredential, type AuthProfileStore, resolveAuthProfileDisplayLabel } from "./index.js";
 
 export type AuthProfileSource = "store";
 
@@ -95,9 +91,7 @@ export function buildAuthHealthSummary(params: {
 }): AuthHealthSummary {
   const now = Date.now();
   const warnAfterMs = params.warnAfterMs ?? DEFAULT_OAUTH_WARN_MS;
-  const providerFilter = params.providers
-    ? new Set(params.providers.map((p) => p.trim()).filter(Boolean))
-    : null;
+  const providerFilter = params.providers ? new Set(params.providers.map((p) => p.trim()).filter(Boolean)) : null;
 
   const profiles = Object.entries(params.store.profiles)
     .filter(([_, cred]) => (providerFilter ? providerFilter.has(cred.provider) : true))
@@ -150,9 +144,7 @@ export function buildAuthHealthSummary(params: {
     provider.status = "static";
   }
 
-  const providers = Array.from(providersMap.values()).toSorted((a, b) =>
-    a.provider.localeCompare(b.provider),
-  );
+  const providers = Array.from(providersMap.values()).toSorted((a, b) => a.provider.localeCompare(b.provider));
 
   return { now, warnAfterMs, profiles, providers };
 }

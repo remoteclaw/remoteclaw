@@ -12,16 +12,11 @@ export type ResolvedBlueBubblesAccount = {
   baseUrl?: string;
 };
 
-const {
-  listAccountIds: listBlueBubblesAccountIds,
-  resolveDefaultAccountId: resolveDefaultBlueBubblesAccountId,
-} = createAccountListHelpers("bluebubbles");
+const { listAccountIds: listBlueBubblesAccountIds, resolveDefaultAccountId: resolveDefaultBlueBubblesAccountId } =
+  createAccountListHelpers("bluebubbles");
 export { listBlueBubblesAccountIds, resolveDefaultBlueBubblesAccountId };
 
-function resolveAccountConfig(
-  cfg: RemoteClawConfig,
-  accountId: string,
-): BlueBubblesAccountConfig | undefined {
+function resolveAccountConfig(cfg: RemoteClawConfig, accountId: string): BlueBubblesAccountConfig | undefined {
   const accounts = cfg.channels?.bluebubbles?.accounts;
   if (!accounts || typeof accounts !== "object") {
     return undefined;
@@ -29,10 +24,7 @@ function resolveAccountConfig(
   return accounts[accountId] as BlueBubblesAccountConfig | undefined;
 }
 
-function mergeBlueBubblesAccountConfig(
-  cfg: RemoteClawConfig,
-  accountId: string,
-): BlueBubblesAccountConfig {
+function mergeBlueBubblesAccountConfig(cfg: RemoteClawConfig, accountId: string): BlueBubblesAccountConfig {
   const base = (cfg.channels?.bluebubbles ?? {}) as BlueBubblesAccountConfig & {
     accounts?: unknown;
     defaultAccount?: unknown;
@@ -65,9 +57,7 @@ export function resolveBlueBubblesAccount(params: {
   };
 }
 
-export function listEnabledBlueBubblesAccounts(
-  cfg: RemoteClawConfig,
-): ResolvedBlueBubblesAccount[] {
+export function listEnabledBlueBubblesAccounts(cfg: RemoteClawConfig): ResolvedBlueBubblesAccount[] {
   return listBlueBubblesAccountIds(cfg)
     .map((accountId) => resolveBlueBubblesAccount({ cfg, accountId }))
     .filter((account) => account.enabled);

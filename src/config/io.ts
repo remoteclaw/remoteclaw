@@ -36,11 +36,7 @@ import {
   resolveConfigEnvVars,
 } from "./env-substitution.js";
 import { applyConfigEnvVars } from "./env-vars.js";
-import {
-  ConfigIncludeError,
-  readConfigIncludeFileWithGuards,
-  resolveConfigIncludes,
-} from "./includes.js";
+import { ConfigIncludeError, readConfigIncludeFileWithGuards, resolveConfigIncludes } from "./includes.js";
 import { findLegacyConfigIssues } from "./legacy.js";
 import { applyMergePatch } from "./merge-patch.js";
 import { normalizeExecSafeBinProfilesInConfig } from "./normalize-exec-safe-bin.js";
@@ -49,10 +45,7 @@ import { resolveConfigPath, resolveDefaultConfigCandidates, resolveStateDir } fr
 import { isBlockedObjectKey } from "./prototype-keys.js";
 import { applyConfigOverrides } from "./runtime-overrides.js";
 import type { RemoteClawConfig, ConfigFileSnapshot, LegacyConfigIssue } from "./types.js";
-import {
-  validateConfigObjectRawWithPlugins,
-  validateConfigObjectWithPlugins,
-} from "./validation.js";
+import { validateConfigObjectRawWithPlugins, validateConfigObjectWithPlugins } from "./validation.js";
 import { compareRemoteClawVersions } from "./version.js";
 
 // Re-export for backwards compatibility
@@ -231,11 +224,7 @@ type UnsetPathWriteResult = {
   value: unknown;
 };
 
-function unsetPathForWriteAt(
-  value: unknown,
-  pathSegments: string[],
-  depth: number,
-): UnsetPathWriteResult {
+function unsetPathForWriteAt(value: unknown, pathSegments: string[], depth: number): UnsetPathWriteResult {
   if (depth >= pathSegments.length) {
     return { changed: false, value };
   }
@@ -268,11 +257,7 @@ function unsetPathForWriteAt(
     return { changed: true, value: next };
   }
 
-  if (
-    isBlockedObjectKey(segment) ||
-    !isWritePlainObject(value) ||
-    !hasOwnObjectKey(value, segment)
-  ) {
+  if (isBlockedObjectKey(segment) || !isWritePlainObject(value) || !hasOwnObjectKey(value, segment)) {
     return { changed: false, value };
   }
   if (isLeaf) {
@@ -320,10 +305,7 @@ function unsetPathForWrite(
   return { changed: false, next: root };
 }
 
-export function resolveConfigSnapshotHash(snapshot: {
-  hash?: string;
-  raw?: string | null;
-}): string | null {
+export function resolveConfigSnapshotHash(snapshot: { hash?: string; raw?: string | null }): string | null {
   if (typeof snapshot.hash === "string") {
     const trimmed = snapshot.hash.trim();
     if (trimmed) {
@@ -427,12 +409,7 @@ function collectEnvRefPaths(value: unknown, path: string, output: Map<string, st
   }
 }
 
-function collectChangedPaths(
-  base: unknown,
-  target: unknown,
-  path: string,
-  output: Set<string>,
-): void {
+function collectChangedPaths(base: unknown, target: unknown, path: string, output: Set<string>): void {
   if (Array.isArray(base) && Array.isArray(target)) {
     const max = Math.max(base.length, target.length);
     for (let index = 0; index < max; index += 1) {
@@ -599,9 +576,7 @@ function warnOnConfigMiskeys(raw: unknown, logger: Pick<typeof console, "warn">)
     return;
   }
   if ("token" in (gateway as Record<string, unknown>)) {
-    logger.warn(
-      'Config uses "gateway.token". This key is ignored; use "gateway.auth.token" instead.',
-    );
+    logger.warn('Config uses "gateway.token". This key is ignored; use "gateway.auth.token" instead.');
   }
 }
 
@@ -627,9 +602,7 @@ function warnIfConfigFromFuture(cfg: RemoteClawConfig, logger: Pick<typeof conso
     return;
   }
   if (cmp < 0) {
-    logger.warn(
-      `Config was last written by a newer RemoteClaw (${touched}); current version is ${VERSION}.`,
-    );
+    logger.warn(`Config was last written by a newer RemoteClaw (${touched}); current version is ${VERSION}.`);
   }
 }
 
@@ -645,8 +618,7 @@ function normalizeDeps(overrides: ConfigIoDeps = {}): Required<ConfigIoDeps> {
     fs: overrides.fs ?? fs,
     json5: overrides.json5 ?? JSON5,
     env: overrides.env ?? process.env,
-    homedir:
-      overrides.homedir ?? (() => resolveRequiredHomeDir(overrides.env ?? process.env, os.homedir)),
+    homedir: overrides.homedir ?? (() => resolveRequiredHomeDir(overrides.env ?? process.env, os.homedir)),
     configPath: overrides.configPath ?? "",
     logger: overrides.logger ?? console,
   };
@@ -678,11 +650,7 @@ type ConfigReadResolution = {
   envWarnings: EnvSubstitutionWarning[];
 };
 
-function resolveConfigIncludesForRead(
-  parsed: unknown,
-  configPath: string,
-  deps: Required<ConfigIoDeps>,
-): unknown {
+function resolveConfigIncludesForRead(parsed: unknown, configPath: string, deps: Required<ConfigIoDeps>): unknown {
   return resolveConfigIncludes(parsed, configPath, {
     readFile: (candidate) => deps.fs.readFileSync(candidate, "utf-8"),
     readFileWithGuards: ({ includePath, resolvedPath, rootRealDir }) =>
@@ -696,10 +664,7 @@ function resolveConfigIncludesForRead(
   });
 }
 
-function resolveConfigForRead(
-  resolvedIncludes: unknown,
-  env: NodeJS.ProcessEnv,
-): ConfigReadResolution {
+function resolveConfigForRead(resolvedIncludes: unknown, env: NodeJS.ProcessEnv): ConfigReadResolution {
   // Apply config.env to process.env BEFORE substitution so ${VAR} can reference config-defined vars.
   if (resolvedIncludes && typeof resolvedIncludes === "object" && "env" in resolvedIncludes) {
     applyConfigEnvVars(resolvedIncludes as RemoteClawConfig, env);
@@ -729,8 +694,7 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
   const candidatePaths = deps.configPath
     ? [requestedConfigPath]
     : resolveDefaultConfigCandidates(deps.env, deps.homedir);
-  const configPath =
-    candidatePaths.find((candidate) => deps.fs.existsSync(candidate)) ?? requestedConfigPath;
+  const configPath = candidatePaths.find((candidate) => deps.fs.existsSync(candidate)) ?? requestedConfigPath;
 
   function loadConfig(): RemoteClawConfig {
     try {
@@ -749,10 +713,7 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
       }
       const raw = deps.fs.readFileSync(configPath, "utf-8");
       const parsed = deps.json5.parse(raw);
-      const readResolution = resolveConfigForRead(
-        resolveConfigIncludesForRead(parsed, configPath, deps),
-        deps.env,
-      );
+      const readResolution = resolveConfigForRead(resolveConfigIncludesForRead(parsed, configPath, deps), deps.env);
       const resolvedConfig = readResolution.resolvedConfigRaw;
       for (const w of readResolution.envWarnings) {
         deps.logger.warn(
@@ -773,10 +734,7 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
       const validated = validateConfigObjectWithPlugins(resolvedConfig);
       if (!validated.ok) {
         const details = validated.issues
-          .map(
-            (iss) =>
-              `- ${sanitizeTerminalText(iss.path || "<root>")}: ${sanitizeTerminalText(iss.message)}`,
-          )
+          .map((iss) => `- ${sanitizeTerminalText(iss.path || "<root>")}: ${sanitizeTerminalText(iss.message)}`)
           .join("\n");
         if (!loggedInvalidConfigs.has(configPath)) {
           loggedInvalidConfigs.add(configPath);
@@ -789,10 +747,7 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
       }
       if (validated.warnings.length > 0) {
         const details = validated.warnings
-          .map(
-            (iss) =>
-              `- ${sanitizeTerminalText(iss.path || "<root>")}: ${sanitizeTerminalText(iss.message)}`,
-          )
+          .map((iss) => `- ${sanitizeTerminalText(iss.path || "<root>")}: ${sanitizeTerminalText(iss.message)}`)
           .join("\n");
         deps.logger.warn(`Config warnings:\\n${details}`);
       }
@@ -801,9 +756,7 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
         applyModelDefaults(
           applyCompactionDefaults(
             applyContextPruningDefaults(
-              applyAgentDefaults(
-                applySessionDefaults(applyLoggingDefaults(applyMessageDefaults(validated.config))),
-              ),
+              applyAgentDefaults(applySessionDefaults(applyLoggingDefaults(applyMessageDefaults(validated.config)))),
             ),
           ),
         ),
@@ -839,10 +792,7 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
       );
       const cfgWithOwnerDisplaySecret = ownerDisplaySecretResolution.config;
       if (ownerDisplaySecretResolution.generatedSecret) {
-        AUTO_OWNER_DISPLAY_SECRET_BY_PATH.set(
-          configPath,
-          ownerDisplaySecretResolution.generatedSecret,
-        );
+        AUTO_OWNER_DISPLAY_SECRET_BY_PATH.set(configPath, ownerDisplaySecretResolution.generatedSecret);
         if (!AUTO_OWNER_DISPLAY_SECRET_PERSIST_IN_FLIGHT.has(configPath)) {
           AUTO_OWNER_DISPLAY_SECRET_PERSIST_IN_FLIGHT.add(configPath);
           void writeConfigFile(cfgWithOwnerDisplaySecret, { expectedConfigPath: configPath })
@@ -892,9 +842,7 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
         applyTalkConfigNormalization(
           applyModelDefaults(
             applyCompactionDefaults(
-              applyContextPruningDefaults(
-                applyAgentDefaults(applySessionDefaults(applyMessageDefaults({}))),
-              ),
+              applyContextPruningDefaults(applyAgentDefaults(applySessionDefaults(applyMessageDefaults({})))),
             ),
           ),
         ),
@@ -944,10 +892,7 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
       try {
         resolved = resolveConfigIncludesForRead(parsedRes.parsed, configPath, deps);
       } catch (err) {
-        const message =
-          err instanceof ConfigIncludeError
-            ? err.message
-            : `Include resolution failed: ${String(err)}`;
+        const message = err instanceof ConfigIncludeError ? err.message : `Include resolution failed: ${String(err)}`;
         return {
           snapshot: {
             path: configPath,
@@ -1004,9 +949,7 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
         applyTalkApiKey(
           applyTalkConfigNormalization(
             applyModelDefaults(
-              applyAgentDefaults(
-                applySessionDefaults(applyLoggingDefaults(applyMessageDefaults(validated.config))),
-              ),
+              applyAgentDefaults(applySessionDefaults(applyLoggingDefaults(applyMessageDefaults(validated.config)))),
             ),
           ),
         ),
@@ -1125,9 +1068,7 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
       throw new Error(formatConfigValidationFailure(pathLabel, issueMessage));
     }
     if (validated.warnings.length > 0) {
-      const details = validated.warnings
-        .map((warning) => `- ${warning.path}: ${warning.message}`)
-        .join("\n");
+      const details = validated.warnings.map((warning) => `- ${warning.path}: ${warning.message}`).join("\n");
       deps.logger.warn(`Config warnings:\n${details}`);
     }
 
@@ -1150,11 +1091,7 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
           // TOCTOU issues where env changes between load and write. Falls back to
           // live env if no snapshot exists (e.g., first write before any load).
           const envForRestore = options.envSnapshotForRestore ?? deps.env;
-          cfgToWrite = restoreEnvVarRefs(
-            cfgToWrite,
-            parsedRes.parsed,
-            envForRestore,
-          ) as RemoteClawConfig;
+          cfgToWrite = restoreEnvVarRefs(cfgToWrite, parsedRes.parsed, envForRestore) as RemoteClawConfig;
         }
       }
     } catch {
@@ -1192,8 +1129,7 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
     const nextHash = hashConfigRaw(json);
     const previousHash = resolveConfigSnapshotHash(snapshot);
     const changedPathCount = changedPaths?.size;
-    const previousBytes =
-      typeof snapshot.raw === "string" ? Buffer.byteLength(snapshot.raw, "utf-8") : null;
+    const previousBytes = typeof snapshot.raw === "string" ? Buffer.byteLength(snapshot.raw, "utf-8") : null;
     const nextBytes = Buffer.byteLength(json, "utf-8");
     const hasMetaBefore = hasConfigMeta(snapshot.parsed);
     const hasMetaAfter = hasConfigMeta(stampedOutputConfig);
@@ -1216,8 +1152,7 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
       if (isVitest && !shouldLogInVitest) {
         return;
       }
-      const changeSummary =
-        typeof changedPathCount === "number" ? `, changedPaths=${changedPathCount}` : "";
+      const changeSummary = typeof changedPathCount === "number" ? `, changedPaths=${changedPathCount}` : "";
       deps.logger.warn(
         `Config overwrite: ${configPath} (sha256 ${previousHash ?? "unknown"} -> ${nextHash}, backup=${configPath}.bak${changeSummary})`,
       );
@@ -1246,13 +1181,11 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
       execArgv: process.execArgv.slice(0, 8),
       watchMode: deps.env.REMOTECLAW_WATCH_MODE === "1",
       watchSession:
-        typeof deps.env.REMOTECLAW_WATCH_SESSION === "string" &&
-        deps.env.REMOTECLAW_WATCH_SESSION.trim().length > 0
+        typeof deps.env.REMOTECLAW_WATCH_SESSION === "string" && deps.env.REMOTECLAW_WATCH_SESSION.trim().length > 0
           ? deps.env.REMOTECLAW_WATCH_SESSION.trim()
           : null,
       watchCommand:
-        typeof deps.env.REMOTECLAW_WATCH_COMMAND === "string" &&
-        deps.env.REMOTECLAW_WATCH_COMMAND.trim().length > 0
+        typeof deps.env.REMOTECLAW_WATCH_COMMAND === "string" && deps.env.REMOTECLAW_WATCH_COMMAND.trim().length > 0
           ? deps.env.REMOTECLAW_WATCH_COMMAND.trim()
           : null,
       existsBefore: snapshot.exists,
@@ -1269,13 +1202,9 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
     };
     const appendWriteAudit = async (result: ConfigWriteAuditResult, err?: unknown) => {
       const errorCode =
-        err && typeof err === "object" && "code" in err && typeof err.code === "string"
-          ? err.code
-          : undefined;
+        err && typeof err === "object" && "code" in err && typeof err.code === "string" ? err.code : undefined;
       const errorMessage =
-        err && typeof err === "object" && "message" in err && typeof err.message === "string"
-          ? err.message
-          : undefined;
+        err && typeof err === "object" && "message" in err && typeof err.message === "string" ? err.message : undefined;
       await appendConfigWriteAuditRecord(deps, {
         ...auditRecordBase,
         result,
@@ -1286,10 +1215,7 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
       });
     };
 
-    const tmp = path.join(
-      dir,
-      `${path.basename(configPath)}.${process.pid}.${crypto.randomUUID()}.tmp`,
-    );
+    const tmp = path.join(dir, `${path.basename(configPath)}.${process.pid}.${crypto.randomUUID()}.tmp`);
 
     try {
       await deps.fs.promises.writeFile(tmp, json, {
@@ -1384,10 +1310,7 @@ export function clearConfigCache(): void {
   configCache = null;
 }
 
-export function setRuntimeConfigSnapshot(
-  config: RemoteClawConfig,
-  sourceConfig?: RemoteClawConfig,
-): void {
+export function setRuntimeConfigSnapshot(config: RemoteClawConfig, sourceConfig?: RemoteClawConfig): void {
   runtimeConfigSnapshot = config;
   runtimeConfigSourceSnapshot = sourceConfig ?? null;
   clearConfigCache();
@@ -1419,11 +1342,7 @@ function isCompatibleTopLevelRuntimeProjectionShape(params: {
     }
     const runtimeValue = runtime[key];
     const candidateValue = candidate[key];
-    const runtimeType = Array.isArray(runtimeValue)
-      ? "array"
-      : runtimeValue === null
-        ? "null"
-        : typeof runtimeValue;
+    const runtimeType = Array.isArray(runtimeValue) ? "array" : runtimeValue === null ? "null" : typeof runtimeValue;
     const candidateType = Array.isArray(candidateValue)
       ? "array"
       : candidateValue === null
@@ -1505,10 +1424,7 @@ export async function readConfigFileSnapshotForWrite(): Promise<ReadConfigFileSn
   return await createConfigIO().readConfigFileSnapshotForWrite();
 }
 
-export async function writeConfigFile(
-  cfg: RemoteClawConfig,
-  options: ConfigWriteOptions = {},
-): Promise<void> {
+export async function writeConfigFile(cfg: RemoteClawConfig, options: ConfigWriteOptions = {}): Promise<void> {
   const io = createConfigIO();
   let nextCfg = cfg;
   const hadRuntimeSnapshot = Boolean(runtimeConfigSnapshot);
@@ -1517,8 +1433,7 @@ export async function writeConfigFile(
     const runtimePatch = createMergePatch(runtimeConfigSnapshot!, cfg);
     nextCfg = coerceConfig(applyMergePatch(runtimeConfigSourceSnapshot!, runtimePatch));
   }
-  const sameConfigPath =
-    options.expectedConfigPath === undefined || options.expectedConfigPath === io.configPath;
+  const sameConfigPath = options.expectedConfigPath === undefined || options.expectedConfigPath === io.configPath;
   await io.writeConfigFile(nextCfg, {
     envSnapshotForRestore: sameConfigPath ? options.envSnapshotForRestore : undefined,
     unsetPaths: options.unsetPaths,

@@ -25,11 +25,10 @@ export function forkSessionFromParent(params: {
   agentId: string;
   sessionsDir: string;
 }): { sessionId: string; sessionFile: string } | null {
-  const parentSessionFile = resolveSessionFilePath(
-    params.parentEntry.sessionId,
-    params.parentEntry,
-    { agentId: params.agentId, sessionsDir: params.sessionsDir },
-  );
+  const parentSessionFile = resolveSessionFilePath(params.parentEntry.sessionId, params.parentEntry, {
+    agentId: params.agentId,
+    sessionsDir: params.sessionsDir,
+  });
   if (!parentSessionFile || !fs.existsSync(parentSessionFile)) {
     return null;
   }

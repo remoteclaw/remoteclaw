@@ -38,16 +38,11 @@ export function resolveReplyContext(
 }
 
 export function buildDirectLabel(author: User, tagOverride?: string) {
-  const username =
-    tagOverride?.trim() || resolveDiscordSenderIdentity({ author, pluralkitInfo: null }).tag;
+  const username = tagOverride?.trim() || resolveDiscordSenderIdentity({ author, pluralkitInfo: null }).tag;
   return `${username ?? "unknown"} user id:${author.id}`;
 }
 
-export function buildGuildLabel(params: {
-  guild?: Guild<true> | Guild;
-  channelName: string;
-  channelId: string;
-}) {
+export function buildGuildLabel(params: { guild?: Guild<true> | Guild; channelName: string; channelId: string }) {
   const { guild, channelName, channelId } = params;
   return `${guild?.name ?? "Guild"} #${channelName} channel id:${channelId}`;
 }

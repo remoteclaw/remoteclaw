@@ -1,10 +1,5 @@
 import type { ChannelAccountSnapshot, ChannelStatusIssue } from "../types.js";
-import {
-  appendMatchMetadata,
-  asString,
-  isRecord,
-  resolveEnabledConfiguredAccountId,
-} from "./shared.js";
+import { appendMatchMetadata, asString, isRecord, resolveEnabledConfiguredAccountId } from "./shared.js";
 
 type DiscordIntentSummary = {
   messageContent?: "enabled" | "limited" | "disabled";
@@ -107,9 +102,7 @@ function readDiscordPermissionsAuditSummary(value: unknown): DiscordPermissionsA
   return { unresolvedChannels, channels };
 }
 
-export function collectDiscordStatusIssues(
-  accounts: ChannelAccountSnapshot[],
-): ChannelStatusIssue[] {
+export function collectDiscordStatusIssues(accounts: ChannelAccountSnapshot[]): ChannelStatusIssue[] {
   const issues: ChannelStatusIssue[] = [];
   for (const entry of accounts) {
     const account = readDiscordAccountStatus(entry);

@@ -151,9 +151,7 @@ describe("control UI routing", () => {
     await app.updateComplete;
 
     expect(app.settings.token).toBe("");
-    expect(JSON.parse(localStorage.getItem("remoteclaw.control.settings.v1") ?? "{}").token).toBe(
-      undefined,
-    );
+    expect(JSON.parse(localStorage.getItem("remoteclaw.control.settings.v1") ?? "{}").token).toBe(undefined);
     expect(window.location.pathname).toBe("/ui/overview");
     expect(window.location.search).toBe("");
   });
@@ -176,14 +174,10 @@ describe("control UI routing", () => {
     await app.updateComplete;
 
     expect(app.settings.token).toBe("abc123");
-    expect(
-      JSON.parse(localStorage.getItem("remoteclaw.control.settings.v1") ?? "{}"),
-    ).toMatchObject({
+    expect(JSON.parse(localStorage.getItem("remoteclaw.control.settings.v1") ?? "{}")).toMatchObject({
       gatewayUrl: "wss://gateway.example/remoteclaw",
     });
-    expect(JSON.parse(localStorage.getItem("remoteclaw.control.settings.v1") ?? "{}").token).toBe(
-      undefined,
-    );
+    expect(JSON.parse(localStorage.getItem("remoteclaw.control.settings.v1") ?? "{}").token).toBe(undefined);
     expect(window.location.pathname).toBe("/ui/overview");
     expect(window.location.hash).toBe("");
   });
@@ -193,9 +187,7 @@ describe("control UI routing", () => {
     await app.updateComplete;
 
     expect(app.settings.token).toBe("abc123");
-    expect(JSON.parse(localStorage.getItem("remoteclaw.control.settings.v1") ?? "{}").token).toBe(
-      undefined,
-    );
+    expect(JSON.parse(localStorage.getItem("remoteclaw.control.settings.v1") ?? "{}").token).toBe(undefined);
     expect(window.location.pathname).toBe("/ui/overview");
     expect(window.location.hash).toBe("");
   });
@@ -204,9 +196,7 @@ describe("control UI routing", () => {
     const app = mountApp("/ui/overview#token=abc123");
     await app.updateComplete;
 
-    const gatewayUrlInput = app.querySelector<HTMLInputElement>(
-      'input[placeholder="ws://100.x.y.z:18789"]',
-    );
+    const gatewayUrlInput = app.querySelector<HTMLInputElement>('input[placeholder="ws://100.x.y.z:18789"]');
     expect(gatewayUrlInput).not.toBeNull();
     gatewayUrlInput!.value = "wss://other-gateway.example/remoteclaw";
     gatewayUrlInput!.dispatchEvent(new Event("input", { bubbles: true }));
@@ -217,9 +207,7 @@ describe("control UI routing", () => {
   });
 
   it("keeps a hash token pending until the gateway URL change is confirmed", async () => {
-    const app = mountApp(
-      "/ui/overview?gatewayUrl=wss://other-gateway.example/remoteclaw#token=abc123",
-    );
+    const app = mountApp("/ui/overview?gatewayUrl=wss://other-gateway.example/remoteclaw#token=abc123");
     await app.updateComplete;
 
     expect(app.settings.gatewayUrl).not.toBe("wss://other-gateway.example/remoteclaw");
@@ -247,8 +235,6 @@ describe("control UI routing", () => {
     await refreshed.updateComplete;
 
     expect(refreshed.settings.token).toBe("abc123");
-    expect(JSON.parse(localStorage.getItem("remoteclaw.control.settings.v1") ?? "{}").token).toBe(
-      undefined,
-    );
+    expect(JSON.parse(localStorage.getItem("remoteclaw.control.settings.v1") ?? "{}").token).toBe(undefined);
   });
 });

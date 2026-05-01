@@ -5,10 +5,7 @@ import type { SlackMonitorContext } from "../context.js";
 import type { SlackMemberChannelEvent } from "../types.js";
 import { authorizeAndResolveSlackSystemEventContext } from "./system-event-context.js";
 
-export function registerSlackMemberEvents(params: {
-  ctx: SlackMonitorContext;
-  trackEvent?: () => void;
-}) {
+export function registerSlackMemberEvents(params: { ctx: SlackMonitorContext; trackEvent?: () => void }) {
   const { ctx, trackEvent } = params;
 
   const handleMemberChannelEvent = async (params: {
@@ -46,25 +43,19 @@ export function registerSlackMemberEvents(params: {
     }
   };
 
-  ctx.app.event(
-    "member_joined_channel",
-    async ({ event, body }: SlackEventMiddlewareArgs<"member_joined_channel">) => {
-      await handleMemberChannelEvent({
-        verb: "joined",
-        event: event as SlackMemberChannelEvent,
-        body,
-      });
-    },
-  );
+  ctx.app.event("member_joined_channel", async ({ event, body }: SlackEventMiddlewareArgs<"member_joined_channel">) => {
+    await handleMemberChannelEvent({
+      verb: "joined",
+      event: event as SlackMemberChannelEvent,
+      body,
+    });
+  });
 
-  ctx.app.event(
-    "member_left_channel",
-    async ({ event, body }: SlackEventMiddlewareArgs<"member_left_channel">) => {
-      await handleMemberChannelEvent({
-        verb: "left",
-        event: event as SlackMemberChannelEvent,
-        body,
-      });
-    },
-  );
+  ctx.app.event("member_left_channel", async ({ event, body }: SlackEventMiddlewareArgs<"member_left_channel">) => {
+    await handleMemberChannelEvent({
+      verb: "left",
+      event: event as SlackMemberChannelEvent,
+      body,
+    });
+  });
 }

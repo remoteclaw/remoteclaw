@@ -125,10 +125,7 @@ function toNativeCommandSpec(command: ChatCommandDefinition, provider?: string):
   };
 }
 
-function listNativeSpecsFromCommands(
-  commands: ChatCommandDefinition[],
-  provider?: string,
-): NativeCommandSpec[] {
+function listNativeSpecsFromCommands(commands: ChatCommandDefinition[], provider?: string): NativeCommandSpec[] {
   return commands
     .filter((command) => command.scope !== "text" && command.nativeName)
     .map((command) => toNativeCommandSpec(command, provider));
@@ -145,15 +142,10 @@ export function listNativeCommandSpecsForConfig(
   return listNativeSpecsFromCommands(listChatCommandsForConfig(cfg), params?.provider);
 }
 
-export function findCommandByNativeName(
-  name: string,
-  provider?: string,
-): ChatCommandDefinition | undefined {
+export function findCommandByNativeName(name: string, provider?: string): ChatCommandDefinition | undefined {
   const normalized = name.trim().toLowerCase();
   return getChatCommands().find(
-    (command) =>
-      command.scope !== "text" &&
-      resolveNativeName(command, provider)?.toLowerCase() === normalized,
+    (command) => command.scope !== "text" && resolveNativeName(command, provider)?.toLowerCase() === normalized,
   );
 }
 
@@ -185,10 +177,7 @@ function parsePositionalArgs(definitions: CommandArgDefinition[], raw: string): 
   return values;
 }
 
-function formatPositionalArgs(
-  definitions: CommandArgDefinition[],
-  values: CommandArgValues,
-): string | undefined {
+function formatPositionalArgs(definitions: CommandArgDefinition[], values: CommandArgValues): string | undefined {
   const parts: string[] = [];
   for (const definition of definitions) {
     const value = values[definition.name];
@@ -212,10 +201,7 @@ function formatPositionalArgs(
   return parts.length > 0 ? parts.join(" ") : undefined;
 }
 
-export function parseCommandArgs(
-  command: ChatCommandDefinition,
-  raw?: string,
-): CommandArgs | undefined {
+export function parseCommandArgs(command: ChatCommandDefinition, raw?: string): CommandArgs | undefined {
   const trimmed = raw?.trim();
   if (!trimmed) {
     return undefined;
@@ -229,10 +215,7 @@ export function parseCommandArgs(
   };
 }
 
-export function serializeCommandArgs(
-  command: ChatCommandDefinition,
-  args?: CommandArgs,
-): string | undefined {
+export function serializeCommandArgs(command: ChatCommandDefinition, args?: CommandArgs): string | undefined {
   if (!args) {
     return undefined;
   }
@@ -249,10 +232,7 @@ export function serializeCommandArgs(
   return formatPositionalArgs(command.args, args.values);
 }
 
-export function buildCommandTextFromArgs(
-  command: ChatCommandDefinition,
-  args?: CommandArgs,
-): string {
+export function buildCommandTextFromArgs(command: ChatCommandDefinition, args?: CommandArgs): string {
   const commandName = command.nativeName ?? command.key;
   return buildCommandText(commandName, serializeCommandArgs(command, args));
 }
@@ -292,9 +272,7 @@ export function resolveCommandArgChoices(params: {
         };
         return provided(context);
       })();
-  return raw.map((choice) =>
-    typeof choice === "string" ? { value: choice, label: choice } : choice,
-  );
+  return raw.map((choice) => (typeof choice === "string" ? { value: choice, label: choice } : choice));
 }
 
 export function resolveCommandArgMenu(params: {
@@ -354,9 +332,7 @@ export function normalizeCommandBody(raw: string, options?: CommandNormalizeOpti
     : singleLine;
 
   const normalizedBotUsername = options?.botUsername?.trim().toLowerCase();
-  const mentionMatch = normalizedBotUsername
-    ? normalized.match(/^\/([^\s@]+)@([^\s]+)(.*)$/)
-    : null;
+  const mentionMatch = normalizedBotUsername ? normalized.match(/^\/([^\s@]+)@([^\s]+)(.*)$/) : null;
   const commandBody =
     mentionMatch && mentionMatch[2].toLowerCase() === normalizedBotUsername
       ? `/${mentionMatch[1]}${mentionMatch[3] ?? ""}`

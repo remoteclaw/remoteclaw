@@ -29,9 +29,7 @@ describe("bonjour-discovery", () => {
         }
         if (domain === WIDE_AREA_DOMAIN) {
           return {
-            stdout: [`Add 2 3 ${WIDE_AREA_DOMAIN} _remoteclaw-gw._tcp. Tailnet Gateway`, ""].join(
-              "\n",
-            ),
+            stdout: [`Add 2 3 ${WIDE_AREA_DOMAIN} _remoteclaw-gw._tcp. Tailnet Gateway`, ""].join("\n"),
             stderr: "",
             code: 0,
             signal: null,
@@ -50,9 +48,7 @@ describe("bonjour-discovery", () => {
               : "tailnet.local";
         const tailnetDns = instance === "Tailnet Gateway" ? "studio.tailnet.ts.net" : "";
         const displayName =
-          instance === studioInstance
-            ? "Peter’s\\032Mac\\032Studio"
-            : instance.replace(" Gateway", "");
+          instance === studioInstance ? "Peter’s\\032Mac\\032Studio" : instance.replace(" Gateway", "");
         const txtParts = [
           "txtvers=1",
           `displayName=${displayName}`,
@@ -63,11 +59,9 @@ describe("bonjour-discovery", () => {
         ].filter((v): v is string => Boolean(v));
 
         return {
-          stdout: [
-            `${instance}._remoteclaw-gw._tcp. can be reached at ${host}:18789`,
-            txtParts.join(" "),
-            "",
-          ].join("\n"),
+          stdout: [`${instance}._remoteclaw-gw._tcp. can be reached at ${host}:18789`, txtParts.join(" "), ""].join(
+            "\n",
+          ),
           stderr: "",
           code: 0,
           signal: null,
@@ -94,14 +88,10 @@ describe("bonjour-discovery", () => {
         }),
       ]),
     );
-    expect(beacons.map((b) => b.domain)).toEqual(
-      expect.arrayContaining(["local.", WIDE_AREA_DOMAIN]),
-    );
+    expect(beacons.map((b) => b.domain)).toEqual(expect.arrayContaining(["local.", WIDE_AREA_DOMAIN]));
 
     const browseCalls = calls.filter((c) => c.argv[0] === "dns-sd" && c.argv[1] === "-B");
-    expect(browseCalls.map((c) => c.argv[3])).toEqual(
-      expect.arrayContaining(["local.", WIDE_AREA_DOMAIN]),
-    );
+    expect(browseCalls.map((c) => c.argv[3])).toEqual(expect.arrayContaining(["local.", WIDE_AREA_DOMAIN]));
     expect(browseCalls.every((c) => c.timeoutMs === 1234)).toBe(true);
   });
 

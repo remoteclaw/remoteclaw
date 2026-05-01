@@ -9,9 +9,7 @@ function expectRecordedInstall(pluginId: string, next: ReturnType<typeof recordP
   expect(typeof next.plugins?.installs?.[pluginId]?.installedAt).toBe("string");
 }
 
-function createExpectedResolutionFields(
-  overrides: Partial<ReturnType<typeof buildNpmResolutionInstallFields>>,
-) {
+function createExpectedResolutionFields(overrides: Partial<ReturnType<typeof buildNpmResolutionInstallFields>>) {
   return {
     resolvedName: undefined,
     resolvedVersion: undefined,

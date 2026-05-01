@@ -17,21 +17,11 @@ import {
   writeCronStoreSnapshot,
 } from "./service.issue-regressions.test-helpers.js";
 import { CronService } from "./service.js";
-import {
-  createDeferred,
-  createNoopLogger,
-  createRunningCronServiceState,
-} from "./service.test-harness.js";
+import { createDeferred, createNoopLogger, createRunningCronServiceState } from "./service.test-harness.js";
 import { computeJobNextRunAtMs } from "./service/jobs.js";
 import { enqueueRun, run } from "./service/ops.js";
 import { createCronServiceState, type CronEvent } from "./service/state.js";
-import {
-  DEFAULT_JOB_TIMEOUT_MS,
-  applyJobResult,
-  executeJobCore,
-  onTimer,
-  runMissedJobs,
-} from "./service/timer.js";
+import { DEFAULT_JOB_TIMEOUT_MS, applyJobResult, executeJobCore, onTimer, runMissedJobs } from "./service/timer.js";
 import type { CronJob, CronJobState } from "./types.js";
 
 const FAST_TIMEOUT_SECONDS = 0.0025;
@@ -342,9 +332,7 @@ describe("Cron issue regressions", () => {
     // past-due jobs are waiting.  See #12025.
     expect(timeoutSpy).toHaveBeenCalled();
     expect(state.timer).not.toBeNull();
-    const delays = timeoutSpy.mock.calls
-      .map(([, delay]) => delay)
-      .filter((d): d is number => typeof d === "number");
+    const delays = timeoutSpy.mock.calls.map(([, delay]) => delay).filter((d): d is number => typeof d === "number");
     expect(delays).toContain(60_000);
     timeoutSpy.mockRestore();
   });
@@ -356,11 +344,9 @@ describe("Cron issue regressions", () => {
       | undefined;
     const runIsolatedAgentJob = vi.fn(
       async () =>
-        await new Promise<{ status: "ok" | "error" | "skipped"; summary?: string; error?: string }>(
-          (resolve) => {
-            resolveRun = resolve;
-          },
-        ),
+        await new Promise<{ status: "ok" | "error" | "skipped"; summary?: string; error?: string }>((resolve) => {
+          resolveRun = resolve;
+        }),
     );
 
     const started = createDeferred<void>();
@@ -421,11 +407,9 @@ describe("Cron issue regressions", () => {
       if (runIsolatedAgentJob.mock.calls.length === 1) {
         runStarted.resolve();
       }
-      return await new Promise<{ status: "ok" | "error" | "skipped"; summary?: string }>(
-        (resolve) => {
-          runResolvers.push(resolve);
-        },
-      );
+      return await new Promise<{ status: "ok" | "error" | "skipped"; summary?: string }>((resolve) => {
+        runResolvers.push(resolve);
+      });
     });
 
     let targetJobId = "";
@@ -687,9 +671,7 @@ describe("Cron issue regressions", () => {
       id: "oneshot-deleteAfterRun-retry",
       deleteAfterRun: true,
     });
-    const deletedJob = deleteResult.state.store?.jobs.find(
-      (j) => j.id === "oneshot-deleteAfterRun-retry",
-    );
+    const deletedJob = deleteResult.state.store?.jobs.find((j) => j.id === "oneshot-deleteAfterRun-retry");
     expect(deletedJob).toBeUndefined();
     expect(deleteResult.runIsolatedAgentJob).toHaveBeenCalledTimes(2);
 
@@ -699,9 +681,7 @@ describe("Cron issue regressions", () => {
       firstError:
         "All models failed (2): anthropic/claude-3-5-sonnet: LLM error overloaded_error: overloaded (overloaded); openai/gpt-5.4: LLM error overloaded_error: overloaded (overloaded)",
     });
-    const overloadedJob = overloadedResult.state.store?.jobs.find(
-      (j) => j.id === "oneshot-overloaded-retry",
-    );
+    const overloadedJob = overloadedResult.state.store?.jobs.find((j) => j.id === "oneshot-overloaded-retry");
     expect(overloadedJob).toBeDefined();
     expect(overloadedJob!.state.lastStatus).toBe("ok");
     expect(overloadedResult.runIsolatedAgentJob).toHaveBeenCalledTimes(2);
@@ -880,9 +860,7 @@ describe("Cron issue regressions", () => {
     });
 
     await onTimer(state);
-    const jobAfterRetry = state.store?.jobs.find(
-      (j) => j.id === "oneshot-bedrock-too-many-tokens-per-day",
-    );
+    const jobAfterRetry = state.store?.jobs.find((j) => j.id === "oneshot-bedrock-too-many-tokens-per-day");
     expect(jobAfterRetry).toBeDefined();
     expect(jobAfterRetry!.enabled).toBe(true);
     expect(jobAfterRetry!.state.lastStatus).toBe("error");
@@ -891,9 +869,7 @@ describe("Cron issue regressions", () => {
     now = (jobAfterRetry!.state.nextRunAtMs ?? now) + 1;
     await onTimer(state);
 
-    const finishedJob = state.store?.jobs.find(
-      (j) => j.id === "oneshot-bedrock-too-many-tokens-per-day",
-    );
+    const finishedJob = state.store?.jobs.find((j) => j.id === "oneshot-bedrock-too-many-tokens-per-day");
     expect(finishedJob).toBeDefined();
     expect(finishedJob!.state.lastStatus).toBe("ok");
     expect(runIsolatedAgentJob).toHaveBeenCalledTimes(2);
@@ -1204,10 +1180,7 @@ describe("Cron issue regressions", () => {
           status: "ok" as const,
           summary: "late-summary",
           delivered: false,
-          error:
-            abortSignal?.aborted && typeof abortSignal.reason === "string"
-              ? abortSignal.reason
-              : undefined,
+          error: abortSignal?.aborted && typeof abortSignal.reason === "string" ? abortSignal.reason : undefined,
         };
       }),
     });
@@ -1246,9 +1219,7 @@ describe("Cron issue regressions", () => {
     expect(abortAwareRunner.getObservedAbortSignal()).toBeDefined();
     expect(abortAwareRunner.getObservedAbortSignal()?.aborted).toBe(true);
 
-    const updated = (await cron.list({ includeDisabled: true })).find(
-      (entry) => entry.id === job.id,
-    );
+    const updated = (await cron.list({ includeDisabled: true })).find((entry) => entry.id === job.id);
     expect(updated?.state.lastStatus).toBe("error");
     expect(updated?.state.lastError).toContain("timed out");
     expect(updated?.state.runningAtMs).toBeUndefined();
@@ -1359,9 +1330,7 @@ describe("Cron issue regressions", () => {
     const original = schedule.computeNextRunAtMs;
     const spy = vi.spyOn(schedule, "computeNextRunAtMs");
     try {
-      spy
-        .mockImplementationOnce(() => undefined)
-        .mockImplementation((sched, nowMs) => original(sched, nowMs));
+      spy.mockImplementationOnce(() => undefined).mockImplementation((sched, nowMs) => original(sched, nowMs));
 
       const expected = original(cronJob.schedule, scheduledAt + 1_000);
       expect(expected).toBeDefined();
@@ -1379,11 +1348,7 @@ describe("Cron issue regressions", () => {
     const dueAt = Date.parse("2026-02-06T10:05:01.000Z");
     const first = createDueIsolatedJob({ id: "batch-first", nowMs: dueAt, nextRunAtMs: dueAt });
     const second = createDueIsolatedJob({ id: "batch-second", nowMs: dueAt, nextRunAtMs: dueAt });
-    await fs.writeFile(
-      store.storePath,
-      JSON.stringify({ version: 1, jobs: [first, second] }),
-      "utf-8",
-    );
+    await fs.writeFile(store.storePath, JSON.stringify({ version: 1, jobs: [first, second] }), "utf-8");
 
     let now = dueAt;
     const events: CronEvent[] = [];
@@ -1408,9 +1373,7 @@ describe("Cron issue regressions", () => {
     const jobs = state.store?.jobs ?? [];
     const firstDone = jobs.find((job) => job.id === first.id);
     const secondDone = jobs.find((job) => job.id === second.id);
-    const startedAtEvents = events
-      .filter((evt) => evt.action === "started")
-      .map((evt) => evt.runAtMs);
+    const startedAtEvents = events.filter((evt) => evt.action === "started").map((evt) => evt.runAtMs);
 
     expect(firstDone?.state.lastRunAtMs).toBe(dueAt);
     expect(firstDone?.state.lastDurationMs).toBe(50);
@@ -1457,10 +1420,7 @@ describe("Cron issue regressions", () => {
 
     const result = await run(state, "stale-running", "force");
     expect(result).toEqual({ ok: true, ran: true });
-    expect(enqueueSystemEvent).toHaveBeenCalledWith(
-      "stale-running",
-      expect.objectContaining({ agentId: undefined }),
-    );
+    expect(enqueueSystemEvent).toHaveBeenCalledWith("stale-running", expect.objectContaining({ agentId: undefined }));
   });
 
   it("honors cron maxConcurrentRuns for due jobs", async () => {
@@ -1473,11 +1433,7 @@ describe("Cron issue regressions", () => {
       nowMs: dueAt,
       nextRunAtMs: dueAt,
     });
-    await fs.writeFile(
-      store.storePath,
-      JSON.stringify({ version: 1, jobs: [first, second] }),
-      "utf-8",
-    );
+    await fs.writeFile(store.storePath, JSON.stringify({ version: 1, jobs: [first, second] }), "utf-8");
 
     let now = dueAt;
     let activeRuns = 0;
@@ -1500,8 +1456,7 @@ describe("Cron issue regressions", () => {
           bothRunsStarted.resolve();
         }
         try {
-          const result =
-            params.job.id === first.id ? await firstRun.promise : await secondRun.promise;
+          const result = params.job.id === first.id ? await firstRun.promise : await secondRun.promise;
           now += 10;
           return result;
         } finally {
@@ -1547,27 +1502,27 @@ describe("Cron issue regressions", () => {
       nowMs: dueAt,
       nextRunAtMs: dueAt,
     });
-    await fs.writeFile(
-      store.storePath,
-      JSON.stringify({ version: 1, jobs: [first, second] }),
-      "utf-8",
-    );
+    await fs.writeFile(store.storePath, JSON.stringify({ version: 1, jobs: [first, second] }), "utf-8");
 
     let now = dueAt;
     let activeRuns = 0;
     let peakActiveRuns = 0;
+    const firstStarted = createDeferred<void>();
     const firstRun = createDeferred<{ status: "ok"; summary: string }>();
     const secondRun = createDeferred<{ status: "ok"; summary: string }>();
     const secondStarted = createDeferred<void>();
+    const bothFinished = createDeferred<void>();
     const runIsolatedAgentJob = vi.fn(async (params: { job: { id: string } }) => {
       activeRuns += 1;
       peakActiveRuns = Math.max(peakActiveRuns, activeRuns);
+      if (params.job.id === first.id) {
+        firstStarted.resolve();
+      }
       if (params.job.id === second.id) {
         secondStarted.resolve();
       }
       try {
-        const result =
-          params.job.id === first.id ? await firstRun.promise : await secondRun.promise;
+        const result = params.job.id === first.id ? await firstRun.promise : await secondRun.promise;
         now += 10;
         return result;
       } finally {
@@ -1583,6 +1538,11 @@ describe("Cron issue regressions", () => {
       enqueueSystemEvent: vi.fn(),
       requestHeartbeatNow: vi.fn(),
       runIsolatedAgentJob,
+      onEvent: (evt) => {
+        if (evt.action === "finished" && evt.jobId === second.id && evt.status === "ok") {
+          bothFinished.resolve();
+        }
+      },
     });
 
     const firstAck = await enqueueRun(state, first.id, "force");
@@ -1590,7 +1550,7 @@ describe("Cron issue regressions", () => {
     expect(firstAck).toEqual({ ok: true, enqueued: true, runId: expect.any(String) });
     expect(secondAck).toEqual({ ok: true, enqueued: true, runId: expect.any(String) });
 
-    await vi.waitFor(() => expect(runIsolatedAgentJob).toHaveBeenCalledTimes(1));
+    await firstStarted.promise;
     expect(runIsolatedAgentJob.mock.calls[0]?.[0]).toMatchObject({ job: { id: first.id } });
     expect(peakActiveRuns).toBe(1);
 
@@ -1601,11 +1561,10 @@ describe("Cron issue regressions", () => {
     expect(peakActiveRuns).toBe(1);
 
     secondRun.resolve({ status: "ok", summary: "second queued run" });
-    await vi.waitFor(() => {
-      const jobs = state.store?.jobs ?? [];
-      expect(jobs.find((job) => job.id === first.id)?.state.lastStatus).toBe("ok");
-      expect(jobs.find((job) => job.id === second.id)?.state.lastStatus).toBe("ok");
-    });
+    await bothFinished.promise;
+    const jobs = state.store?.jobs ?? [];
+    expect(jobs.find((job) => job.id === first.id)?.state.lastStatus).toBe("ok");
+    expect(jobs.find((job) => job.id === second.id)?.state.lastStatus).toBe("ok");
 
     clearCommandLane(CommandLane.Cron);
   });
@@ -1618,6 +1577,10 @@ describe("Cron issue regressions", () => {
     const dueAt = Date.parse("2026-02-06T10:05:03.000Z");
     const job = createDueIsolatedJob({ id: "queued-failure", nowMs: dueAt, nextRunAtMs: dueAt });
     const log = createNoopLogger();
+    const errorLogged = createDeferred<void>();
+    log.error.mockImplementation(() => {
+      errorLogged.resolve();
+    });
     const badStore = `${makeStorePath().storePath}.dir`;
     await fs.mkdir(badStore, { recursive: true });
     const state = createRunningCronServiceState({
@@ -1630,10 +1593,9 @@ describe("Cron issue regressions", () => {
     const result = await enqueueRun(state, job.id, "force");
     expect(result).toEqual({ ok: true, enqueued: true, runId: expect.any(String) });
 
-    await vi.waitFor(() => expect(log.error).toHaveBeenCalledTimes(1));
-    expect(log.error.mock.calls[0]?.[1]).toBe(
-      "cron: queued manual run background execution failed",
-    );
+    await errorLogged.promise;
+    expect(log.error).toHaveBeenCalledTimes(1);
+    expect(log.error.mock.calls[0]?.[1]).toBe("cron: queued manual run background execution failed");
 
     clearCommandLane(CommandLane.Cron);
   });

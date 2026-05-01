@@ -34,15 +34,10 @@ function resolveAgentIdByWorkspace(
   const list = listAgentEntries(cfg);
   const ids = list.map((entry) => normalizeAgentId(entry.id));
   const normalizedTarget = normalizeWorkspacePath(workspaceDir);
-  return ids.filter(
-    (id) => normalizeWorkspacePath(resolveAgentWorkspaceDir(cfg, id)) === normalizedTarget,
-  );
+  return ids.filter((id) => normalizeWorkspacePath(resolveAgentWorkspaceDir(cfg, id)) === normalizedTarget);
 }
 
-export async function agentsSetIdentityCommand(
-  opts: AgentsSetIdentityOptions,
-  runtime: RuntimeEnv = defaultRuntime,
-) {
+export async function agentsSetIdentityCommand(opts: AgentsSetIdentityOptions, runtime: RuntimeEnv = defaultRuntime) {
   const cfg = await requireValidConfig(runtime);
   if (!cfg) {
     return;
@@ -96,12 +91,7 @@ export async function agentsSetIdentityCommand(
     ...(avatarRaw ? { avatar: avatarRaw } : {}),
   };
 
-  if (
-    !incomingIdentity.name &&
-    !incomingIdentity.emoji &&
-    !incomingIdentity.theme &&
-    !incomingIdentity.avatar
-  ) {
+  if (!incomingIdentity.name && !incomingIdentity.emoji && !incomingIdentity.theme && !incomingIdentity.avatar) {
     runtime.error("No identity fields provided. Use --name/--emoji/--theme/--avatar.");
     runtime.exit(1);
     return;

@@ -26,10 +26,7 @@ export function extractUrls(markdown: string): string[] {
   }
 
   // Bare URLs (remove markdown links first to avoid double-matching)
-  const stripped = markdown.replace(
-    /\[(?:[^\]]*)\]\(\s*<?https?:\/\/[^)\s>]+>?(?:\s+["'][^"']*["'])?\s*\)/g,
-    "",
-  );
+  const stripped = markdown.replace(/\[(?:[^\]]*)\]\(\s*<?https?:\/\/[^)\s>]+>?(?:\s+["'][^"']*["'])?\s*\)/g, "");
   const bareRe = /https?:\/\/[^\s)\]>]+/g;
   while ((m = bareRe.exec(stripped)) !== null) {
     urls.add(m[0]);

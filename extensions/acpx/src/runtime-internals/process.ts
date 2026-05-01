@@ -65,10 +65,7 @@ export function resolveSpawnCommand(
   const cachedProgram = options?.cache;
 
   const cacheHit = cachedProgram?.key === cacheKey && cachedProgram.candidate != null;
-  let candidate =
-    cachedProgram?.key === cacheKey && cachedProgram.candidate
-      ? cachedProgram.candidate
-      : undefined;
+  let candidate = cachedProgram?.key === cacheKey && cachedProgram.candidate ? cachedProgram.candidate : undefined;
   if (!candidate) {
     candidate = resolveWindowsSpawnProgramCandidate({
       command: params.command,
@@ -118,6 +115,18 @@ function createAbortError(): Error {
   const error = new Error("Operation aborted.");
   error.name = "AbortError";
   return error;
+}
+
+async function collectStreamOutput(stream: NodeJS.ReadableStream): Promise<string> {
+  let output = "";
+  try {
+    for await (const chunk of stream) {
+      output += String(chunk);
+    }
+  } catch {
+    // Return whatever was captured before the stream failed.
+  }
+  return output;
 }
 
 export function spawnWithResolvedCommand(
@@ -202,14 +211,8 @@ export async function spawnAndCollect(
   const child = spawnWithResolvedCommand(params, options);
   child.stdin.end();
 
-  let stdout = "";
-  let stderr = "";
-  child.stdout.on("data", (chunk) => {
-    stdout += String(chunk);
-  });
-  child.stderr.on("data", (chunk) => {
-    stderr += String(chunk);
-  });
+  const stdoutPromise = collectStreamOutput(child.stdout);
+  const stderrPromise = collectStreamOutput(child.stderr);
 
   let abortKillTimer: NodeJS.Timeout | undefined;
   let aborted = false;
@@ -236,6 +239,7 @@ export async function spawnAndCollect(
 
   try {
     const exit = await waitForExit(child);
+    const [stdout, stderr] = await Promise.all([stdoutPromise, stderrPromise]);
     return {
       stdout,
       stderr,
@@ -250,10 +254,7 @@ export async function spawnAndCollect(
   }
 }
 
-export function resolveSpawnFailure(
-  err: unknown,
-  cwd: string,
-): "missing-command" | "missing-cwd" | null {
+export function resolveSpawnFailure(err: unknown, cwd: string): "missing-command" | "missing-cwd" | null {
   if (!err || typeof err !== "object") {
     return null;
   }

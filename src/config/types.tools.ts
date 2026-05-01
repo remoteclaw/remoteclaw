@@ -192,9 +192,7 @@ export type GroupToolPolicyConfig = {
 export const TOOLS_BY_SENDER_KEY_TYPES = ["id", "e164", "username", "name"] as const;
 export type ToolsBySenderKeyType = (typeof TOOLS_BY_SENDER_KEY_TYPES)[number];
 
-export function parseToolsBySenderTypedKey(
-  rawKey: string,
-): { type: ToolsBySenderKeyType; value: string } | undefined {
+export function parseToolsBySenderTypedKey(rawKey: string): { type: ToolsBySenderKeyType; value: string } | undefined {
   const trimmed = rawKey.trim();
   if (!trimmed) {
     return undefined;

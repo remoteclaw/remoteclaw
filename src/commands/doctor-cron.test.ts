@@ -104,14 +104,8 @@ describe("maybeRepairLegacyCronStore", () => {
       text: "Morning brief",
     });
 
-    expect(noteSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Legacy cron job storage detected"),
-      "Cron",
-    );
-    expect(noteSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Cron store normalized"),
-      "Doctor changes",
-    );
+    expect(noteSpy).toHaveBeenCalledWith(expect.stringContaining("Legacy cron job storage detected"), "Cron");
+    expect(noteSpy).toHaveBeenCalledWith(expect.stringContaining("Cron store normalized"), "Doctor changes");
   });
 
   it("warns instead of replacing announce delivery for notify fallback jobs", async () => {
@@ -189,10 +183,7 @@ describe("maybeRepairLegacyCronStore", () => {
     });
     expect(persisted.jobs[0]?.jobId).toBe("legacy-job");
     expect(persisted.jobs[0]?.notify).toBe(true);
-    expect(noteSpy).not.toHaveBeenCalledWith(
-      expect.stringContaining("Cron store normalized"),
-      "Doctor changes",
-    );
+    expect(noteSpy).not.toHaveBeenCalledWith(expect.stringContaining("Cron store normalized"), "Doctor changes");
   });
 
   it("migrates notify fallback none delivery jobs to cron.webhook", async () => {

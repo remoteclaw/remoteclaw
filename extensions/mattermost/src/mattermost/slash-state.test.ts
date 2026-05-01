@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  activateSlashCommands,
-  deactivateSlashCommands,
-  resolveSlashHandlerForToken,
-} from "./slash-state.js";
+import { activateSlashCommands, deactivateSlashCommands, resolveSlashHandlerForToken } from "./slash-state.js";
 
 describe("slash-state token routing", () => {
   it("returns single match when token belongs to one account", () => {

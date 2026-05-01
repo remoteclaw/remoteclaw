@@ -1,12 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { VoiceCallConfigSchema } from "./config.js";
 import { CallManager } from "./manager.js";
-import {
-  createTestStorePath,
-  FakeProvider,
-  makePersistedCall,
-  writeCallsToStore,
-} from "./manager.test-harness.js";
+import { createTestStorePath, FakeProvider, makePersistedCall, writeCallsToStore } from "./manager.test-harness.js";
 
 function requireSingleActiveCall(manager: CallManager) {
   const activeCalls = manager.getActiveCalls();

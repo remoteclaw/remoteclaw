@@ -12,10 +12,7 @@ export type EchoTracker = {
   buildCombinedKey: (params: { sessionKey: string; combinedBody: string }) => string;
 };
 
-export function createEchoTracker(params: {
-  maxItems?: number;
-  logVerbose?: (msg: string) => void;
-}): EchoTracker {
+export function createEchoTracker(params: { maxItems?: number; logVerbose?: (msg: string) => void }): EchoTracker {
   const recentlySent = new Set<string>();
   const maxItems = Math.max(1, params.maxItems ?? 100);
 
@@ -46,9 +43,7 @@ export function createEchoTracker(params: {
       );
     }
     if (opts.logVerboseMessage) {
-      params.logVerbose?.(
-        `Added to echo detection set (size now: ${recentlySent.size}): ${text.substring(0, 50)}...`,
-      );
+      params.logVerbose?.(`Added to echo detection set (size now: ${recentlySent.size}): ${text.substring(0, 50)}...`);
     }
     trim();
   };

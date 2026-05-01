@@ -222,16 +222,14 @@ describe("renderTable", () => {
 
 describe("wrapNoteMessage", () => {
   it("preserves long filesystem paths without inserting spaces/newlines", () => {
-    const input =
-      "/Users/user/Documents/Github/impact-signals-pipeline/with/really/long/segments/file.txt";
+    const input = "/Users/user/Documents/Github/impact-signals-pipeline/with/really/long/segments/file.txt";
     const wrapped = wrapNoteMessage(input, { maxWidth: 22, columns: 80 });
 
     expect(wrapped).toBe(input);
   });
 
   it("preserves long urls without inserting spaces/newlines", () => {
-    const input =
-      "https://example.com/this/is/a/very/long/url/segment/that/should/not/be/split/for-copy";
+    const input = "https://example.com/this/is/a/very/long/url/segment/that/should/not/be/split/for-copy";
     const wrapped = wrapNoteMessage(input, { maxWidth: 24, columns: 80 });
 
     expect(wrapped).toBe(input);

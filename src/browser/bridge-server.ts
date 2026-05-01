@@ -6,15 +6,8 @@ import { deleteBridgeAuthForPort, setBridgeAuthForPort } from "./bridge-auth-reg
 import type { ResolvedBrowserConfig } from "./config.js";
 import { registerBrowserRoutes } from "./routes/index.js";
 import type { BrowserRouteRegistrar } from "./routes/types.js";
-import {
-  type BrowserServerState,
-  createBrowserRouteContext,
-  type ProfileContext,
-} from "./server-context.js";
-import {
-  installBrowserAuthMiddleware,
-  installBrowserCommonMiddleware,
-} from "./server-middleware.js";
+import { type BrowserServerState, createBrowserRouteContext, type ProfileContext } from "./server-context.js";
+import { installBrowserAuthMiddleware, installBrowserCommonMiddleware } from "./server-middleware.js";
 
 export type BrowserBridge = {
   server: Server;

@@ -85,9 +85,7 @@ export function buildDiscordNativeCommandContext(params: BuildDiscordNativeComma
     // For follow-up delivery (for example subagent completion announces),
     // preserve the real Discord target separately.
     OriginatingChannel: "discord" as const,
-    OriginatingTo: params.isDirectMessage
-      ? `user:${params.user.id}`
-      : `channel:${params.channelId}`,
+    OriginatingTo: params.isDirectMessage ? `user:${params.user.id}` : `channel:${params.channelId}`,
     ThreadParentId: params.isThreadChannel ? params.threadParentId : undefined,
   });
 }

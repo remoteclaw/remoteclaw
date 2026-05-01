@@ -16,10 +16,7 @@ type MutationPayload = { userId: string; postId: string; emojiName: string };
 const BOT_USER_CACHE_TTL_MS = 10 * 60_000;
 const botUserIdCache = new Map<string, { userId: string; expiresAt: number }>();
 
-async function resolveBotUserId(
-  client: MattermostClient,
-  cacheKey: string,
-): Promise<string | null> {
+async function resolveBotUserId(client: MattermostClient, cacheKey: string): Promise<string | null> {
   const cached = botUserIdCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) {
     return cached.userId;
@@ -115,10 +112,7 @@ async function createReaction(client: MattermostClient, params: MutationPayload)
 
 async function deleteReaction(client: MattermostClient, params: MutationPayload): Promise<void> {
   const emoji = encodeURIComponent(params.emojiName);
-  await client.request<unknown>(
-    `/users/${params.userId}/posts/${params.postId}/reactions/${emoji}`,
-    {
-      method: "DELETE",
-    },
-  );
+  await client.request<unknown>(`/users/${params.userId}/posts/${params.postId}/reactions/${emoji}`, {
+    method: "DELETE",
+  });
 }

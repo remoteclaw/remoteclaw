@@ -52,8 +52,7 @@ function extractFailure(error: unknown): {
         ? root.message
         : String(error);
   const isTlsCertError =
-    (code ? TLS_CERT_ERROR_CODES.has(code) : false) ||
-    TLS_CERT_ERROR_PATTERNS.some((pattern) => pattern.test(message));
+    (code ? TLS_CERT_ERROR_CODES.has(code) : false) || TLS_CERT_ERROR_PATTERNS.some((pattern) => pattern.test(message));
   return {
     code,
     message,
@@ -84,15 +83,10 @@ function hasOpenAICodexOAuthProfile(cfg: RemoteClawConfig): boolean {
   if (!profiles) {
     return false;
   }
-  return Object.values(profiles).some(
-    (profile) => profile.provider === "openai-codex" && profile.mode === "oauth",
-  );
+  return Object.values(profiles).some((profile) => profile.provider === "openai-codex" && profile.mode === "oauth");
 }
 
-function shouldRunOpenAIOAuthTlsPrerequisites(params: {
-  cfg: RemoteClawConfig;
-  deep?: boolean;
-}): boolean {
+function shouldRunOpenAIOAuthTlsPrerequisites(params: { cfg: RemoteClawConfig; deep?: boolean }): boolean {
   if (params.deep === true) {
     return true;
   }
@@ -123,9 +117,7 @@ export async function runOpenAIOAuthTlsPreflight(options?: {
   }
 }
 
-export function formatOpenAIOAuthTlsPreflightFix(
-  result: Exclude<OpenAIOAuthTlsPreflightResult, { ok: true }>,
-): string {
+export function formatOpenAIOAuthTlsPreflightFix(result: Exclude<OpenAIOAuthTlsPreflightResult, { ok: true }>): string {
   if (result.kind !== "tls-cert") {
     return [
       "OpenAI OAuth prerequisites check failed due to a network error before the browser flow.",

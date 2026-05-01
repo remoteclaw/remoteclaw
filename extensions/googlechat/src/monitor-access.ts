@@ -170,12 +170,11 @@ export async function applyGoogleChatInboundAccessPolicy(params: {
   });
 
   const defaultGroupPolicy = resolveDefaultGroupPolicy(config);
-  const { groupPolicy, providerMissingFallbackApplied } =
-    resolveAllowlistProviderRuntimeGroupPolicy({
-      providerConfigPresent: config.channels?.googlechat !== undefined,
-      groupPolicy: account.config.groupPolicy,
-      defaultGroupPolicy,
-    });
+  const { groupPolicy, providerMissingFallbackApplied } = resolveAllowlistProviderRuntimeGroupPolicy({
+    providerConfigPresent: config.channels?.googlechat !== undefined,
+    groupPolicy: account.config.groupPolicy,
+    defaultGroupPolicy,
+  });
   warnMissingProviderGroupPolicyFallbackOnce({
     providerMissingFallbackApplied,
     providerKey: "googlechat",
@@ -229,11 +228,7 @@ export async function applyGoogleChatInboundAccessPolicy(params: {
   const configAllowFrom = (account.config.dm?.allowFrom ?? []).map((v) => String(v));
   const normalizedGroupUsers = groupUsers.map((v) => String(v));
   const senderGroupPolicy =
-    groupPolicy === "disabled"
-      ? "disabled"
-      : normalizedGroupUsers.length > 0
-        ? "allowlist"
-        : "open";
+    groupPolicy === "disabled" ? "disabled" : normalizedGroupUsers.length > 0 ? "allowlist" : "open";
   const shouldComputeAuth = core.channel.commands.shouldComputeCommandAuthorized(rawBody, config);
   const storeAllowFrom =
     !isGroup && dmPolicy !== "allowlist" && (dmPolicy !== "open" || shouldComputeAuth)
@@ -247,26 +242,18 @@ export async function applyGoogleChatInboundAccessPolicy(params: {
     groupAllowFrom: normalizedGroupUsers,
     storeAllowFrom,
     groupAllowFromFallbackToAllowFrom: false,
-    isSenderAllowed: (allowFrom) =>
-      isSenderAllowed(senderId, senderEmail, allowFrom, allowNameMatching),
+    isSenderAllowed: (allowFrom) => isSenderAllowed(senderId, senderEmail, allowFrom, allowNameMatching),
   });
   const effectiveAllowFrom = access.effectiveAllowFrom;
   const effectiveGroupAllowFrom = access.effectiveGroupAllowFrom;
   warnDeprecatedUsersEmailEntries(logVerbose, effectiveAllowFrom);
   const commandAllowFrom = isGroup ? effectiveGroupAllowFrom : effectiveAllowFrom;
   const useAccessGroups = config.commands?.useAccessGroups !== false;
-  const senderAllowedForCommands = isSenderAllowed(
-    senderId,
-    senderEmail,
-    commandAllowFrom,
-    allowNameMatching,
-  );
+  const senderAllowedForCommands = isSenderAllowed(senderId, senderEmail, commandAllowFrom, allowNameMatching);
   const commandAuthorized = shouldComputeAuth
     ? core.channel.commands.resolveCommandAuthorizedFromAuthorizers({
         useAccessGroups,
-        authorizers: [
-          { configured: commandAllowFrom.length > 0, allowed: senderAllowedForCommands },
-        ],
+        authorizers: [{ configured: commandAllowFrom.length > 0, allowed: senderAllowedForCommands }],
       })
     : undefined;
 
@@ -297,9 +284,7 @@ export async function applyGoogleChatInboundAccessPolicy(params: {
   }
 
   if (isGroup && access.decision !== "allow") {
-    logVerbose(
-      `drop group message (sender policy blocked, reason=${access.reason}, space=${spaceId})`,
-    );
+    logVerbose(`drop group message (sender policy blocked, reason=${access.reason}, space=${spaceId})`);
     return { ok: false };
   }
 
@@ -339,11 +324,7 @@ export async function applyGoogleChatInboundAccessPolicy(params: {
     }
   }
 
-  if (
-    isGroup &&
-    core.channel.commands.isControlCommandMessage(rawBody, config) &&
-    commandAuthorized !== true
-  ) {
+  if (isGroup && core.channel.commands.isControlCommandMessage(rawBody, config) && commandAuthorized !== true) {
     logVerbose(`googlechat: drop control command from ${senderId}`);
     return { ok: false };
   }

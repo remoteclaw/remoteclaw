@@ -10,9 +10,9 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../../infra/outbound/message-action-runner.js", async () => {
-  const actual = await vi.importActual<
-    typeof import("../../infra/outbound/message-action-runner.js")
-  >("../../infra/outbound/message-action-runner.js");
+  const actual = await vi.importActual<typeof import("../../infra/outbound/message-action-runner.js")>(
+    "../../infra/outbound/message-action-runner.js",
+  );
   return {
     ...actual,
     runMessageAction: mocks.runMessageAction,
@@ -179,14 +179,7 @@ describe("message tool schema scoping", () => {
     },
   ])(
     "scopes schema fields for $provider",
-    ({
-      provider,
-      expectComponents,
-      expectButtons,
-      expectButtonStyle,
-      expectTelegramPollExtras,
-      expectedActions,
-    }) => {
+    ({ provider, expectComponents, expectButtons, expectButtonStyle, expectTelegramPollExtras, expectedActions }) => {
       setActivePluginRegistry(
         createTestRegistry([
           { pluginId: "telegram", source: "test", plugin: telegramPlugin },
@@ -239,9 +232,7 @@ describe("message tool schema scoping", () => {
   );
 
   it("includes poll in the action enum when the current channel supports poll actions", () => {
-    setActivePluginRegistry(
-      createTestRegistry([{ pluginId: "telegram", source: "test", plugin: telegramPlugin }]),
-    );
+    setActivePluginRegistry(createTestRegistry([{ pluginId: "telegram", source: "test", plugin: telegramPlugin }]));
 
     const tool = createMessageTool({
       config: {} as never,
@@ -259,17 +250,14 @@ describe("message tool schema scoping", () => {
       docsPath: "/channels/telegram",
       blurb: "Telegram test plugin.",
       listActions: ({ cfg }) => {
-        const telegramCfg = (cfg as { channels?: { telegram?: { actions?: { poll?: boolean } } } })
-          .channels?.telegram;
+        const telegramCfg = (cfg as { channels?: { telegram?: { actions?: { poll?: boolean } } } }).channels?.telegram;
         return telegramCfg?.actions?.poll === false ? ["send", "react"] : ["send", "react", "poll"];
       },
       supportsButtons: true,
     });
 
     setActivePluginRegistry(
-      createTestRegistry([
-        { pluginId: "telegram", source: "test", plugin: telegramPluginWithConfig },
-      ]),
+      createTestRegistry([{ pluginId: "telegram", source: "test", plugin: telegramPluginWithConfig }]),
     );
 
     const tool = createMessageTool({
@@ -413,20 +401,17 @@ describe("message tool reasoning tag sanitization", () => {
       target: "signal:+15551234567",
       channel: "signal",
     },
-  ])(
-    "sanitizes reasoning tags in $field before sending",
-    async ({ channel, target, field, input, expected }) => {
-      mockSendResult({ channel, to: target });
+  ])("sanitizes reasoning tags in $field before sending", async ({ channel, target, field, input, expected }) => {
+    mockSendResult({ channel, to: target });
 
-      const call = await executeSend({
-        action: {
-          target,
-          [field]: input,
-        },
-      });
-      expect(call?.params?.[field]).toBe(expected);
-    },
-  );
+    const call = await executeSend({
+      action: {
+        target,
+        [field]: input,
+      },
+    });
+    expect(call?.params?.[field]).toBe(expected);
+  });
 });
 
 describe("message tool sandbox passthrough", () => {

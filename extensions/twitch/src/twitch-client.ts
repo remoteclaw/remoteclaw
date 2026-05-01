@@ -39,9 +39,7 @@ export class TwitchClientManager {
           obtainmentTimestamp: account.obtainmentTimestamp ?? Date.now(),
         })
         .then((userId) => {
-          this.logger.info(
-            `Added user ${userId} to RefreshingAuthProvider for ${account.username}`,
-          );
+          this.logger.info(`Added user ${userId} to RefreshingAuthProvider for ${account.username}`);
         })
         .catch((err) => {
           this.logger.error(
@@ -74,11 +72,7 @@ export class TwitchClientManager {
   /**
    * Get or create a chat client for an account
    */
-  async getClient(
-    account: TwitchAccountConfig,
-    cfg?: RemoteClawConfig,
-    accountId?: string,
-  ): Promise<ChatClient> {
+  async getClient(account: TwitchAccountConfig, cfg?: RemoteClawConfig, accountId?: string): Promise<ChatClient> {
     const key = this.getAccountKey(account);
 
     const existing = this.clients.get(key);
@@ -193,10 +187,7 @@ export class TwitchClientManager {
    * Set a message handler for an account
    * @returns A function that removes the handler when called
    */
-  onMessage(
-    account: TwitchAccountConfig,
-    handler: (message: TwitchChatMessage) => void,
-  ): () => void {
+  onMessage(account: TwitchAccountConfig, handler: (message: TwitchChatMessage) => void): () => void {
     const key = this.getAccountKey(account);
     this.messageHandlers.set(key, handler);
     return () => {
@@ -250,9 +241,7 @@ export class TwitchClientManager {
 
       return { ok: true, messageId };
     } catch (error) {
-      this.logger.error(
-        `Failed to send message: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      this.logger.error(`Failed to send message: ${error instanceof Error ? error.message : String(error)}`);
       return {
         ok: false,
         error: error instanceof Error ? error.message : String(error),

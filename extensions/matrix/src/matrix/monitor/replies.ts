@@ -50,23 +50,14 @@ export async function deliverMatrixReplies(params: {
     const replyToId = params.threadId || params.replyToMode === "off" ? undefined : replyToIdRaw;
     const rawText = reply.text ?? "";
     const text = core.channel.text.convertMarkdownTables(rawText, tableMode);
-    const mediaList = reply.mediaUrls?.length
-      ? reply.mediaUrls
-      : reply.mediaUrl
-        ? [reply.mediaUrl]
-        : [];
+    const mediaList = reply.mediaUrls?.length ? reply.mediaUrls : reply.mediaUrl ? [reply.mediaUrl] : [];
 
-    const shouldIncludeReply = (id?: string) =>
-      Boolean(id) && (params.replyToMode === "all" || !hasReplied);
+    const shouldIncludeReply = (id?: string) => Boolean(id) && (params.replyToMode === "all" || !hasReplied);
     const replyToIdForReply = shouldIncludeReply(replyToId) ? replyToId : undefined;
 
     if (mediaList.length === 0) {
       let sentTextChunk = false;
-      for (const chunk of core.channel.text.chunkMarkdownTextWithMode(
-        text,
-        chunkLimit,
-        chunkMode,
-      )) {
+      for (const chunk of core.channel.text.chunkMarkdownTextWithMode(text, chunkLimit, chunkMode)) {
         const trimmed = chunk.trim();
         if (!trimmed) {
           continue;

@@ -37,9 +37,7 @@ type DeviceManagementAuthz = DeviceSessionAuthz & {
   normalizedTargetDeviceId: string;
 };
 
-function redactPairedDevice(
-  device: { tokens?: Record<string, DeviceAuthToken> } & Record<string, unknown>,
-) {
+function redactPairedDevice(device: { tokens?: Record<string, DeviceAuthToken> } & Record<string, unknown>) {
   const { tokens, approvedScopes: _approvedScopes, ...rest } = device;
   return {
     ...rest,
@@ -61,10 +59,7 @@ function resolveDeviceSessionAuthz(client: GatewayClient | null): DeviceSessionA
   };
 }
 
-function resolveDeviceManagementAuthz(
-  client: GatewayClient | null,
-  targetDeviceId: string,
-): DeviceManagementAuthz {
+function resolveDeviceManagementAuthz(client: GatewayClient | null, targetDeviceId: string): DeviceManagementAuthz {
   return {
     ...resolveDeviceSessionAuthz(client),
     normalizedTargetDeviceId: targetDeviceId.trim(),
@@ -73,9 +68,7 @@ function resolveDeviceManagementAuthz(
 
 function isCrossDeviceManagementDenied(authz: DeviceManagementAuthz): boolean {
   return Boolean(
-    authz.callerDeviceId &&
-    authz.callerDeviceId !== authz.normalizedTargetDeviceId &&
-    !authz.isAdminCaller,
+    authz.callerDeviceId && authz.callerDeviceId !== authz.normalizedTargetDeviceId && !authz.isAdminCaller,
   );
 }
 
@@ -91,9 +84,7 @@ export const deviceHandlers: GatewayRequestHandlers = {
         undefined,
         errorShape(
           ErrorCodes.INVALID_REQUEST,
-          `invalid device.pair.list params: ${formatValidationErrors(
-            validateDevicePairListParams.errors,
-          )}`,
+          `invalid device.pair.list params: ${formatValidationErrors(validateDevicePairListParams.errors)}`,
         ),
       );
       return;
@@ -115,9 +106,7 @@ export const deviceHandlers: GatewayRequestHandlers = {
         undefined,
         errorShape(
           ErrorCodes.INVALID_REQUEST,
-          `invalid device.pair.approve params: ${formatValidationErrors(
-            validateDevicePairApproveParams.errors,
-          )}`,
+          `invalid device.pair.approve params: ${formatValidationErrors(validateDevicePairApproveParams.errors)}`,
         ),
       );
       return;
@@ -150,9 +139,7 @@ export const deviceHandlers: GatewayRequestHandlers = {
         undefined,
         errorShape(
           ErrorCodes.INVALID_REQUEST,
-          `invalid device.pair.reject params: ${formatValidationErrors(
-            validateDevicePairRejectParams.errors,
-          )}`,
+          `invalid device.pair.reject params: ${formatValidationErrors(validateDevicePairRejectParams.errors)}`,
         ),
       );
       return;
@@ -182,9 +169,7 @@ export const deviceHandlers: GatewayRequestHandlers = {
         undefined,
         errorShape(
           ErrorCodes.INVALID_REQUEST,
-          `invalid device.pair.remove params: ${formatValidationErrors(
-            validateDevicePairRemoveParams.errors,
-          )}`,
+          `invalid device.pair.remove params: ${formatValidationErrors(validateDevicePairRemoveParams.errors)}`,
         ),
       );
       return;
@@ -205,9 +190,7 @@ export const deviceHandlers: GatewayRequestHandlers = {
         undefined,
         errorShape(
           ErrorCodes.INVALID_REQUEST,
-          `invalid device.token.rotate params: ${formatValidationErrors(
-            validateDeviceTokenRotateParams.errors,
-          )}`,
+          `invalid device.token.rotate params: ${formatValidationErrors(validateDeviceTokenRotateParams.errors)}`,
         ),
       );
       return;
@@ -222,11 +205,7 @@ export const deviceHandlers: GatewayRequestHandlers = {
       context.logGateway.warn(
         `device token rotation denied device=${deviceId} role=${role} reason=device-ownership-mismatch`,
       );
-      respond(
-        false,
-        undefined,
-        errorShape(ErrorCodes.INVALID_REQUEST, DEVICE_TOKEN_ROTATION_DENIED_MESSAGE),
-      );
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, DEVICE_TOKEN_ROTATION_DENIED_MESSAGE));
       return;
     }
     const pairedDevice = await getPairedDevice(deviceId);
@@ -234,11 +213,7 @@ export const deviceHandlers: GatewayRequestHandlers = {
       context.logGateway.warn(
         `device token rotation denied device=${deviceId} role=${role} reason=unknown-device-or-role`,
       );
-      respond(
-        false,
-        undefined,
-        errorShape(ErrorCodes.INVALID_REQUEST, DEVICE_TOKEN_ROTATION_DENIED_MESSAGE),
-      );
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, DEVICE_TOKEN_ROTATION_DENIED_MESSAGE));
       return;
     }
     const requestedScopes = normalizeDeviceAuthScopes(
@@ -253,11 +228,7 @@ export const deviceHandlers: GatewayRequestHandlers = {
       context.logGateway.warn(
         `device token rotation denied device=${deviceId} role=${role} reason=caller-missing-scope scope=${missingScope}`,
       );
-      respond(
-        false,
-        undefined,
-        errorShape(ErrorCodes.INVALID_REQUEST, DEVICE_TOKEN_ROTATION_DENIED_MESSAGE),
-      );
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, DEVICE_TOKEN_ROTATION_DENIED_MESSAGE));
       return;
     }
     const entry = await rotateDeviceToken({
@@ -270,11 +241,7 @@ export const deviceHandlers: GatewayRequestHandlers = {
       context.logGateway.warn(
         `device token rotation denied device=${deviceId} role=${role} reason=scope-outside-approved-baseline`,
       );
-      respond(
-        false,
-        undefined,
-        errorShape(ErrorCodes.INVALID_REQUEST, DEVICE_TOKEN_ROTATION_DENIED_MESSAGE),
-      );
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, DEVICE_TOKEN_ROTATION_DENIED_MESSAGE));
       return;
     }
     context.logGateway.info(
@@ -299,9 +266,7 @@ export const deviceHandlers: GatewayRequestHandlers = {
         undefined,
         errorShape(
           ErrorCodes.INVALID_REQUEST,
-          `invalid device.token.revoke params: ${formatValidationErrors(
-            validateDeviceTokenRevokeParams.errors,
-          )}`,
+          `invalid device.token.revoke params: ${formatValidationErrors(validateDeviceTokenRevokeParams.errors)}`,
         ),
       );
       return;
@@ -312,11 +277,7 @@ export const deviceHandlers: GatewayRequestHandlers = {
       context.logGateway.warn(
         `device token revocation denied device=${deviceId} role=${role} reason=device-ownership-mismatch`,
       );
-      respond(
-        false,
-        undefined,
-        errorShape(ErrorCodes.INVALID_REQUEST, DEVICE_TOKEN_REVOCATION_DENIED_MESSAGE),
-      );
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, DEVICE_TOKEN_REVOCATION_DENIED_MESSAGE));
       return;
     }
     const entry = await revokeDeviceToken({ deviceId, role, callerScopes: authz.callerScopes });
@@ -324,18 +285,10 @@ export const deviceHandlers: GatewayRequestHandlers = {
       context.logGateway.warn(
         `device token revocation denied device=${deviceId} role=${role} reason=unknown-device-or-role`,
       );
-      respond(
-        false,
-        undefined,
-        errorShape(ErrorCodes.INVALID_REQUEST, DEVICE_TOKEN_REVOCATION_DENIED_MESSAGE),
-      );
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, DEVICE_TOKEN_REVOCATION_DENIED_MESSAGE));
       return;
     }
     context.logGateway.info(`device token revoked device=${deviceId} role=${entry.role}`);
-    respond(
-      true,
-      { deviceId, role: entry.role, revokedAtMs: entry.revokedAtMs ?? Date.now() },
-      undefined,
-    );
+    respond(true, { deviceId, role: entry.role, revokedAtMs: entry.revokedAtMs ?? Date.now() }, undefined);
   },
 };

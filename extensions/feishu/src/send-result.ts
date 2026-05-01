@@ -6,10 +6,7 @@ export type FeishuMessageApiResponse = {
   };
 };
 
-export function assertFeishuMessageApiSuccess(
-  response: FeishuMessageApiResponse,
-  errorPrefix: string,
-) {
+export function assertFeishuMessageApiSuccess(response: FeishuMessageApiResponse, errorPrefix: string) {
   if (response.code !== 0) {
     throw new Error(`${errorPrefix}: ${response.msg || `code ${response.code}`}`);
   }

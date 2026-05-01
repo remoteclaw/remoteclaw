@@ -1,9 +1,6 @@
 import type { SlackMonitorContext } from "../context.js";
 
-export type SlackSystemEventHandler = (args: {
-  event: Record<string, unknown>;
-  body: unknown;
-}) => Promise<void>;
+export type SlackSystemEventHandler = (args: { event: Record<string, unknown>; body: unknown }) => Promise<void>;
 
 export type SlackSystemEventTestOverrides = {
   dmPolicy?: "open" | "pairing" | "allowlist" | "disabled";

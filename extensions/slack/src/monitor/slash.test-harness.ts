@@ -38,8 +38,7 @@ vi.mock("../../../../src/channels/reply-prefix.js", () => ({
 }));
 
 vi.mock("../../../../src/config/sessions.js", () => ({
-  recordSessionMetaFromInbound: (...args: unknown[]) =>
-    mocks.recordSessionMetaFromInboundMock(...args),
+  recordSessionMetaFromInbound: (...args: unknown[]) => mocks.recordSessionMetaFromInboundMock(...args),
   resolveStorePath: (...args: unknown[]) => mocks.resolveStorePathMock(...args),
 }));
 

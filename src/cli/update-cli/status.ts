@@ -4,21 +4,14 @@ import {
   resolveUpdateAvailability,
 } from "../../commands/status.update.js";
 import { readConfigFileSnapshot } from "../../config/config.js";
-import {
-  normalizeUpdateChannel,
-  resolveUpdateChannelDisplay,
-} from "../../infra/update-channels.js";
+import { normalizeUpdateChannel, resolveUpdateChannelDisplay } from "../../infra/update-channels.js";
 import { checkUpdateStatus } from "../../infra/update-check.js";
 import { defaultRuntime } from "../../runtime.js";
 import { getTerminalTableWidth, renderTable } from "../../terminal/table.js";
 import { theme } from "../../terminal/theme.js";
 import { parseTimeoutMsOrExit, resolveUpdateRoot, type UpdateStatusOptions } from "./shared.js";
 
-function formatGitStatusLine(params: {
-  branch: string | null;
-  tag: string | null;
-  sha: string | null;
-}): string {
+function formatGitStatusLine(params: { branch: string | null; tag: string | null; sha: string | null }): string {
   const shortSha = params.sha ? params.sha.slice(0, 8) : null;
   const branch = params.branch && params.branch !== "HEAD" ? params.branch : null;
   const tag = params.tag;
@@ -38,9 +31,7 @@ export async function updateStatusCommand(opts: UpdateStatusOptions): Promise<vo
 
   const root = await resolveUpdateRoot();
   const configSnapshot = await readConfigFileSnapshot();
-  const configChannel = configSnapshot.valid
-    ? normalizeUpdateChannel(configSnapshot.config.update?.channel)
-    : null;
+  const configChannel = configSnapshot.valid ? normalizeUpdateChannel(configSnapshot.config.update?.channel) : null;
 
   const update = await checkUpdateStatus({
     root,

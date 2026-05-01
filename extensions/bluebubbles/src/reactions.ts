@@ -151,9 +151,7 @@ export async function sendBlueBubblesReaction(params: {
   const reaction = normalizeBlueBubblesReactionInput(params.emoji, params.remove);
   const { baseUrl, password, accountId } = resolveAccount(params.opts ?? {});
   if (getCachedBlueBubblesPrivateApiStatus(accountId) === false) {
-    throw new Error(
-      "BlueBubbles reaction requires Private API, but it is disabled on the BlueBubbles server.",
-    );
+    throw new Error("BlueBubbles reaction requires Private API, but it is disabled on the BlueBubbles server.");
   }
   const url = buildBlueBubblesApiUrl({
     baseUrl,

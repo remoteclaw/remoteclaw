@@ -13,11 +13,7 @@ function resolveAccountKey(accountId?: string): string {
 }
 
 /** Update cached presence for a user. */
-export function setPresence(
-  accountId: string | undefined,
-  userId: string,
-  data: GatewayPresenceUpdate,
-): void {
+export function setPresence(accountId: string | undefined, userId: string, data: GatewayPresenceUpdate): void {
   const accountKey = resolveAccountKey(accountId);
   let accountCache = presenceCache.get(accountKey);
   if (!accountCache) {
@@ -35,10 +31,7 @@ export function setPresence(
 }
 
 /** Get cached presence for a user. Returns undefined if not cached. */
-export function getPresence(
-  accountId: string | undefined,
-  userId: string,
-): GatewayPresenceUpdate | undefined {
+export function getPresence(accountId: string | undefined, userId: string): GatewayPresenceUpdate | undefined {
   return presenceCache.get(resolveAccountKey(accountId))?.get(userId);
 }
 

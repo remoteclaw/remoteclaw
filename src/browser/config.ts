@@ -67,9 +67,7 @@ function normalizeStringList(raw: string[] | undefined): string[] | undefined {
   if (!Array.isArray(raw) || raw.length === 0) {
     return undefined;
   }
-  const values = raw
-    .map((value) => value.trim())
-    .filter((value): value is string => value.length > 0);
+  const values = raw.map((value) => value.trim()).filter((value): value is string => value.length > 0);
   return values.length > 0 ? values : undefined;
 }
 
@@ -78,20 +76,12 @@ function resolveBrowserSsrFPolicy(cfg: BrowserConfig | undefined): SsrFPolicy | 
   const dangerouslyAllowPrivateNetwork = cfg?.ssrfPolicy?.dangerouslyAllowPrivateNetwork;
   const allowedHostnames = normalizeStringList(cfg?.ssrfPolicy?.allowedHostnames);
   const hostnameAllowlist = normalizeStringList(cfg?.ssrfPolicy?.hostnameAllowlist);
-  const hasExplicitPrivateSetting =
-    allowPrivateNetwork !== undefined || dangerouslyAllowPrivateNetwork !== undefined;
+  const hasExplicitPrivateSetting = allowPrivateNetwork !== undefined || dangerouslyAllowPrivateNetwork !== undefined;
   // Browser defaults to trusted-network mode unless explicitly disabled by policy.
   const resolvedAllowPrivateNetwork =
-    dangerouslyAllowPrivateNetwork === true ||
-    allowPrivateNetwork === true ||
-    !hasExplicitPrivateSetting;
+    dangerouslyAllowPrivateNetwork === true || allowPrivateNetwork === true || !hasExplicitPrivateSetting;
 
-  if (
-    !resolvedAllowPrivateNetwork &&
-    !hasExplicitPrivateSetting &&
-    !allowedHostnames &&
-    !hostnameAllowlist
-  ) {
+  if (!resolvedAllowPrivateNetwork && !hasExplicitPrivateSetting && !allowedHostnames && !hostnameAllowlist) {
     return undefined;
   }
 
@@ -207,9 +197,7 @@ export function resolveBrowserConfig(
   } else {
     const derivedPort = controlPort + 1;
     if (derivedPort > 65535) {
-      throw new Error(
-        `Derived CDP port (${derivedPort}) is too high; check gateway port configuration.`,
-      );
+      throw new Error(`Derived CDP port (${derivedPort}) is too high; check gateway port configuration.`);
     }
     const derived = new URL(`http://127.0.0.1:${derivedPort}`);
     cdpInfo = {
@@ -268,10 +256,7 @@ export function resolveBrowserConfig(
  * Resolve a profile by name from the config.
  * Returns null if the profile doesn't exist.
  */
-export function resolveProfile(
-  resolved: ResolvedBrowserConfig,
-  profileName: string,
-): ResolvedBrowserProfile | null {
+export function resolveProfile(resolved: ResolvedBrowserConfig, profileName: string): ResolvedBrowserProfile | null {
   const profile = resolved.profiles[profileName];
   if (!profile) {
     return null;

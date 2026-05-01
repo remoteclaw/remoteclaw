@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
-import {
-  estimateUsageCost,
-  formatTokenCount,
-  formatUsd,
-  resolveModelCostConfig,
-} from "./usage-format.js";
+import { estimateUsageCost, formatTokenCount, formatUsd, resolveModelCostConfig } from "./usage-format.js";
 
 describe("usage-format", () => {
   it("formats token counts", () => {

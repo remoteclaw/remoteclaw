@@ -57,9 +57,7 @@ export function normalizeGatewayClientId(raw?: string | null): GatewayClientId |
   if (!normalized) {
     return undefined;
   }
-  return GATEWAY_CLIENT_ID_SET.has(normalized as GatewayClientId)
-    ? (normalized as GatewayClientId)
-    : undefined;
+  return GATEWAY_CLIENT_ID_SET.has(normalized as GatewayClientId) ? (normalized as GatewayClientId) : undefined;
 }
 
 export function normalizeGatewayClientName(raw?: string | null): GatewayClientName | undefined {
@@ -71,15 +69,10 @@ export function normalizeGatewayClientMode(raw?: string | null): GatewayClientMo
   if (!normalized) {
     return undefined;
   }
-  return GATEWAY_CLIENT_MODE_SET.has(normalized as GatewayClientMode)
-    ? (normalized as GatewayClientMode)
-    : undefined;
+  return GATEWAY_CLIENT_MODE_SET.has(normalized as GatewayClientMode) ? (normalized as GatewayClientMode) : undefined;
 }
 
-export function hasGatewayClientCap(
-  caps: string[] | null | undefined,
-  cap: GatewayClientCap,
-): boolean {
+export function hasGatewayClientCap(caps: string[] | null | undefined, cap: GatewayClientCap): boolean {
   if (!Array.isArray(caps)) {
     return false;
   }

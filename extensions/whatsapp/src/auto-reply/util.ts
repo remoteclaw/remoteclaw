@@ -43,12 +43,10 @@ export function isLikelyWhatsAppCryptoError(reason: unknown) {
     }
     return Object.prototype.toString.call(value);
   };
-  const raw =
-    reason instanceof Error ? `${reason.message}\n${reason.stack ?? ""}` : formatReason(reason);
+  const raw = reason instanceof Error ? `${reason.message}\n${reason.stack ?? ""}` : formatReason(reason);
   const haystack = raw.toLowerCase();
   const hasAuthError =
-    haystack.includes("unsupported state or unable to authenticate data") ||
-    haystack.includes("bad mac");
+    haystack.includes("unsupported state or unable to authenticate data") || haystack.includes("bad mac");
   if (!hasAuthError) {
     return false;
   }

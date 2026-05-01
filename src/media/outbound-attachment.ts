@@ -14,11 +14,6 @@ export async function resolveOutboundAttachmentFromUrl(
       mediaLocalRoots: options?.localRoots,
     }),
   );
-  const saved = await saveMediaBuffer(
-    media.buffer,
-    media.contentType ?? undefined,
-    "outbound",
-    maxBytes,
-  );
+  const saved = await saveMediaBuffer(media.buffer, media.contentType ?? undefined, "outbound", maxBytes);
   return { path: saved.path, contentType: saved.contentType };
 }

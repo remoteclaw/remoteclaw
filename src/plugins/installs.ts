@@ -13,10 +13,7 @@ export function buildNpmResolutionInstallFields(
   return buildNpmResolutionFields(resolution);
 }
 
-export function recordPluginInstall(
-  cfg: RemoteClawConfig,
-  update: PluginInstallUpdate,
-): RemoteClawConfig {
+export function recordPluginInstall(cfg: RemoteClawConfig, update: PluginInstallUpdate): RemoteClawConfig {
   const { pluginId, ...record } = update;
   const installs = {
     ...cfg.plugins?.installs,

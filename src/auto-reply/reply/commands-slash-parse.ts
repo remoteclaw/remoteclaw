@@ -4,9 +4,7 @@ export type SlashCommandParseResult =
   | { kind: "invalid" }
   | { kind: "parsed"; action: string; args: string };
 
-export type ParsedSlashCommand =
-  | { ok: true; action: string; args: string }
-  | { ok: false; message: string };
+export type ParsedSlashCommand = { ok: true; action: string; args: string } | { ok: false; message: string };
 
 export function parseSlashCommandActionArgs(raw: string, slash: string): SlashCommandParseResult {
   const trimmed = raw.trim();

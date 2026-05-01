@@ -59,11 +59,8 @@ export async function enforceTelegramDmAccess(params: {
     senderId: sender.candidateId,
     senderUsername: sender.username,
   });
-  const allowMatchMeta = `matchKey=${allowMatch.matchKey ?? "none"} matchSource=${
-    allowMatch.matchSource ?? "none"
-  }`;
-  const allowed =
-    effectiveDmAllow.hasWildcard || (effectiveDmAllow.hasEntries && allowMatch.allowed);
+  const allowMatchMeta = `matchKey=${allowMatch.matchKey ?? "none"} matchSource=${allowMatch.matchSource ?? "none"}`;
+  const allowed = effectiveDmAllow.hasWildcard || (effectiveDmAllow.hasEntries && allowMatch.allowed);
   if (allowed) {
     return true;
   }
@@ -118,8 +115,6 @@ export async function enforceTelegramDmAccess(params: {
     return false;
   }
 
-  logVerbose(
-    `Blocked unauthorized telegram sender ${sender.candidateId} (dmPolicy=${dmPolicy}, ${allowMatchMeta})`,
-  );
+  logVerbose(`Blocked unauthorized telegram sender ${sender.candidateId} (dmPolicy=${dmPolicy}, ${allowMatchMeta})`);
   return false;
 }

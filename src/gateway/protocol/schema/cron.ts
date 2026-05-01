@@ -27,11 +27,7 @@ const CronSessionTargetSchema = Type.Union([
   Type.String({ pattern: "^session:.+" }),
 ]);
 const CronWakeModeSchema = Type.Union([Type.Literal("next-heartbeat"), Type.Literal("now")]);
-const CronRunStatusSchema = Type.Union([
-  Type.Literal("ok"),
-  Type.Literal("error"),
-  Type.Literal("skipped"),
-]);
+const CronRunStatusSchema = Type.Union([Type.Literal("ok"), Type.Literal("error"), Type.Literal("skipped")]);
 const CronSortDirSchema = Type.Union([Type.Literal("asc"), Type.Literal("desc")]);
 const CronJobsEnabledFilterSchema = Type.Union([
   Type.Literal("all"),
@@ -49,11 +45,7 @@ const CronRunsStatusFilterSchema = Type.Union([
   Type.Literal("error"),
   Type.Literal("skipped"),
 ]);
-const CronRunsStatusValueSchema = Type.Union([
-  Type.Literal("ok"),
-  Type.Literal("error"),
-  Type.Literal("skipped"),
-]);
+const CronRunsStatusValueSchema = Type.Union([Type.Literal("ok"), Type.Literal("error"), Type.Literal("skipped")]);
 const CronDeliveryStatusSchema = Type.Union([
   Type.Literal("delivered"),
   Type.Literal("not-delivered"),
@@ -215,9 +207,7 @@ export const CronDeliverySchema = Type.Union([
 
 export const CronDeliveryPatchSchema = Type.Object(
   {
-    mode: Type.Optional(
-      Type.Union([Type.Literal("none"), Type.Literal("announce"), Type.Literal("webhook")]),
-    ),
+    mode: Type.Optional(Type.Union([Type.Literal("none"), Type.Literal("announce"), Type.Literal("webhook")])),
     ...CronDeliverySharedProperties,
     to: Type.Optional(Type.String()),
   },
@@ -328,9 +318,7 @@ export const CronRunsParamsSchema = Type.Object(
     offset: Type.Optional(Type.Integer({ minimum: 0 })),
     statuses: Type.Optional(Type.Array(CronRunsStatusValueSchema, { minItems: 1, maxItems: 3 })),
     status: Type.Optional(CronRunsStatusFilterSchema),
-    deliveryStatuses: Type.Optional(
-      Type.Array(CronDeliveryStatusSchema, { minItems: 1, maxItems: 4 }),
-    ),
+    deliveryStatuses: Type.Optional(Type.Array(CronDeliveryStatusSchema, { minItems: 1, maxItems: 4 })),
     deliveryStatus: Type.Optional(CronDeliveryStatusSchema),
     query: Type.Optional(Type.String()),
     sortDir: Type.Optional(CronSortDirSchema),

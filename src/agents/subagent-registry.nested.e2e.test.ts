@@ -68,9 +68,7 @@ describe("subagent registry nested agent tracking", () => {
     expect(orchRuns[0].runId).toBe("run-leaf");
 
     // Leaf has no children
-    const leafRuns = listSubagentRunsForRequester(
-      "agent:main:subagent:orch-uuid:subagent:leaf-uuid",
-    );
+    const leafRuns = listSubagentRunsForRequester("agent:main:subagent:orch-uuid:subagent:leaf-uuid");
     expect(leafRuns).toHaveLength(0);
   });
 

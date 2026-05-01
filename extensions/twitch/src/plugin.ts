@@ -196,14 +196,11 @@ export const twitchPlugin: ChannelPlugin<TwitchAccountConfig> = {
       runtime?: ChannelAccountSnapshot;
       probe?: unknown;
     }): ChannelAccountSnapshot => {
-      const twitch = (cfg as Record<string, unknown>).channels as
-        | Record<string, unknown>
-        | undefined;
+      const twitch = (cfg as Record<string, unknown>).channels as Record<string, unknown> | undefined;
       const twitchCfg = twitch?.twitch as Record<string, unknown> | undefined;
       const accountMap = (twitchCfg?.accounts as Record<string, unknown> | undefined) ?? {};
       const resolvedAccountId =
-        Object.entries(accountMap).find(([, value]) => value === account)?.[0] ??
-        DEFAULT_ACCOUNT_ID;
+        Object.entries(accountMap).find(([, value]) => value === account)?.[0] ?? DEFAULT_ACCOUNT_ID;
       const tokenResolution = resolveTwitchToken(cfg, { accountId: resolvedAccountId });
       return {
         accountId: resolvedAccountId,

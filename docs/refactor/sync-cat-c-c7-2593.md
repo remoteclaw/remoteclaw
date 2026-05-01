@@ -82,14 +82,10 @@ Both rewrites are mechanical, but together they constitute a divergent fork-spec
 approvalId = crypto.randomUUID();
 const approvalTimeoutMs = DEFAULT_EXEC_APPROVAL_TIMEOUT_MS;
 // Keep client transport alive while the approver decides.
-const transportTimeoutMs = Math.max(
-  parseTimeoutMs(params.opts.timeout) ?? 0,
-  approvalTimeoutMs + 10_000,
-);
-const decisionResult = (await callGatewayCli(
-  "exec.approval.request",
-  ...{ transportTimeoutMs },
-)) as { decision?: string } | null;
+const transportTimeoutMs = Math.max(parseTimeoutMs(params.opts.timeout) ?? 0, approvalTimeoutMs + 10_000);
+const decisionResult = (await callGatewayCli("exec.approval.request", ...{ transportTimeoutMs })) as {
+  decision?: string;
+} | null;
 ```
 
 The fork's `callGatewayCli` (`src/cli/nodes-cli/rpc.ts:16-37`) is byte-identical to upstream and accepts the same `{ transportTimeoutMs }` 4th-arg `callOpts` parameter. The fix logic is fork-shared; only the constant and its location differ.

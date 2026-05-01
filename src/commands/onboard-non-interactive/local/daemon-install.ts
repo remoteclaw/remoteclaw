@@ -19,8 +19,7 @@ export async function installGatewayDaemonNonInteractive(params: {
   }
 
   const daemonRuntimeRaw = opts.daemonRuntime ?? DEFAULT_GATEWAY_DAEMON_RUNTIME;
-  const systemdAvailable =
-    process.platform === "linux" ? await isSystemdUserServiceAvailable() : true;
+  const systemdAvailable = process.platform === "linux" ? await isSystemdUserServiceAvailable() : true;
   if (process.platform === "linux" && !systemdAvailable) {
     runtime.log("Systemd user services are unavailable; skipping service install.");
     return;

@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  asBoolean,
-  asNumber,
-  asRecord,
-  asString,
-  resolveTempPathParts,
-} from "./nodes-media-utils.js";
+import { asBoolean, asNumber, asRecord, asString, resolveTempPathParts } from "./nodes-media-utils.js";
 
 describe("cli/nodes-media-utils", () => {
   it("parses primitive helper values", () => {

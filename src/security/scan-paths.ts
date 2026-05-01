@@ -35,8 +35,6 @@ export function isPathInsideWithRealpath(
 export function extensionUsesSkippedScannerPath(entry: string): boolean {
   const segments = entry.split(/[\\/]+/).filter(Boolean);
   return segments.some(
-    (segment) =>
-      segment === "node_modules" ||
-      (segment.startsWith(".") && segment !== "." && segment !== ".."),
+    (segment) => segment === "node_modules" || (segment.startsWith(".") && segment !== "." && segment !== ".."),
   );
 }

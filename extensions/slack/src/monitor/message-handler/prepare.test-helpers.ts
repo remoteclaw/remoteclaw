@@ -52,9 +52,7 @@ export function createInboundSlackTestContext(params: {
   });
 }
 
-export function createSlackTestAccount(
-  config: ResolvedSlackAccount["config"] = {},
-): ResolvedSlackAccount {
+export function createSlackTestAccount(config: ResolvedSlackAccount["config"] = {}): ResolvedSlackAccount {
   return {
     accountId: "default",
     enabled: true,

@@ -1,10 +1,6 @@
 import type { RemoteClawConfig } from "../../config/config.js";
 import { isSubagentSessionKey, resolveAgentIdFromSessionKey } from "../../routing/session-key.js";
-import {
-  listSpawnedSessionKeys,
-  resolveInternalSessionKey,
-  resolveMainSessionAlias,
-} from "./sessions-resolution.js";
+import { listSpawnedSessionKeys, resolveInternalSessionKey, resolveMainSessionAlias } from "./sessions-resolution.js";
 
 export type SessionToolsVisibility = "self" | "tree" | "agent" | "all";
 
@@ -16,13 +12,10 @@ export type AgentToAgentPolicy = {
 
 export type SessionAccessAction = "history" | "send" | "list" | "status";
 
-export type SessionAccessResult =
-  | { allowed: true }
-  | { allowed: false; error: string; status: "forbidden" };
+export type SessionAccessResult = { allowed: true } | { allowed: false; error: string; status: "forbidden" };
 
 export function resolveSessionToolsVisibility(cfg: RemoteClawConfig): SessionToolsVisibility {
-  const raw = (cfg.tools as { sessions?: { visibility?: unknown } } | undefined)?.sessions
-    ?.visibility;
+  const raw = (cfg.tools as { sessions?: { visibility?: unknown } } | undefined)?.sessions?.visibility;
   const value = typeof raw === "string" ? raw.trim().toLowerCase() : "";
   if (value === "self" || value === "tree" || value === "agent" || value === "all") {
     return value;

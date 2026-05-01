@@ -61,10 +61,7 @@ export async function raceWithTimeoutAndAbort<T>(
   }
 }
 
-export function waitForAbortableDelay(
-  delayMs: number,
-  abortSignal?: AbortSignal,
-): Promise<boolean> {
+export function waitForAbortableDelay(delayMs: number, abortSignal?: AbortSignal): Promise<boolean> {
   if (abortSignal?.aborted) {
     return Promise.resolve(false);
   }

@@ -18,9 +18,7 @@ import type { ReplyPayload } from "../types.js";
 import { normalizeReplyPayload } from "./normalize-reply.js";
 import { shouldSuppressReasoningPayload } from "./reply-payloads.js";
 
-let deliverRuntimePromise: Promise<
-  typeof import("../../infra/outbound/deliver-runtime.js")
-> | null = null;
+let deliverRuntimePromise: Promise<typeof import("../../infra/outbound/deliver-runtime.js")> | null = null;
 
 function loadDeliverRuntime() {
   deliverRuntimePromise ??= import("../../infra/outbound/deliver-runtime.js");
@@ -84,11 +82,10 @@ export async function routeReply(params: RouteReplyParams): Promise<RouteReplyRe
 
   // Debug: `pnpm test src/auto-reply/reply/route-reply.test.ts`
   const responsePrefix = params.sessionKey
-    ? resolveEffectiveMessagesConfig(
-        cfg,
-        resolvedAgentId ?? resolveSessionAgentId({ config: cfg }),
-        { channel: normalizedChannel, accountId },
-      ).responsePrefix
+    ? resolveEffectiveMessagesConfig(cfg, resolvedAgentId ?? resolveSessionAgentId({ config: cfg }), {
+        channel: normalizedChannel,
+        accountId,
+      }).responsePrefix
     : cfg.messages?.responsePrefix === "auto"
       ? undefined
       : cfg.messages?.responsePrefix;
@@ -128,8 +125,7 @@ export async function routeReply(params: RouteReplyParams): Promise<RouteReplyRe
   }
 
   const resolvedReplyToId =
-    replyToId ??
-    (channelId === "slack" && threadId != null && threadId !== "" ? String(threadId) : undefined);
+    replyToId ?? (channelId === "slack" && threadId != null && threadId !== "" ? String(threadId) : undefined);
   const resolvedThreadId = channelId === "slack" ? null : (threadId ?? null);
 
   try {

@@ -94,31 +94,23 @@ describe("sendFileUrl", () => {
 
   it("returns true on success", async () => {
     mockSuccessResponse();
-    const result = await settleTimers(
-      sendFileUrl("https://nas.example.com/incoming", "https://example.com/file.png"),
-    );
+    const result = await settleTimers(sendFileUrl("https://nas.example.com/incoming", "https://example.com/file.png"));
     expect(result).toBe(true);
   });
 
   it("returns false on failure", async () => {
     mockFailureResponse(500);
-    const result = await settleTimers(
-      sendFileUrl("https://nas.example.com/incoming", "https://example.com/file.png"),
-    );
+    const result = await settleTimers(sendFileUrl("https://nas.example.com/incoming", "https://example.com/file.png"));
     expect(result).toBe(false);
   });
 });
 
 // Helper to mock the user_list API response for fetchChatUsers / resolveChatUserId
-function mockUserListResponse(
-  users: Array<{ user_id: number; username: string; nickname: string }>,
-) {
+function mockUserListResponse(users: Array<{ user_id: number; username: string; nickname: string }>) {
   mockUserListResponseImpl(users, false);
 }
 
-function mockUserListResponseOnce(
-  users: Array<{ user_id: number; username: string; nickname: string }>,
-) {
+function mockUserListResponseOnce(users: Array<{ user_id: number; username: string; nickname: string }>) {
   mockUserListResponseImpl(users, true);
 }
 

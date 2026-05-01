@@ -15,8 +15,7 @@ type SafeOpenSyncFs = Pick<
 >;
 
 function isExpectedPathError(error: unknown): boolean {
-  const code =
-    typeof error === "object" && error !== null && "code" in error ? String(error.code) : "";
+  const code = typeof error === "object" && error !== null && "code" in error ? String(error.code) : "";
   return code === "ENOENT" || code === "ENOTDIR" || code === "ELOOP";
 }
 
@@ -36,8 +35,7 @@ export function openVerifiedFileSync(params: {
   const ioFs = params.ioFs ?? fs;
   const allowedType = params.allowedType ?? "file";
   const openReadFlags =
-    ioFs.constants.O_RDONLY |
-    (typeof ioFs.constants.O_NOFOLLOW === "number" ? ioFs.constants.O_NOFOLLOW : 0);
+    ioFs.constants.O_RDONLY | (typeof ioFs.constants.O_NOFOLLOW === "number" ? ioFs.constants.O_NOFOLLOW : 0);
   let fd: number | null = null;
   try {
     if (params.rejectPathSymlink) {
@@ -55,11 +53,7 @@ export function openVerifiedFileSync(params: {
     if (params.rejectHardlinks && preOpenStat.isFile() && preOpenStat.nlink > 1) {
       return { ok: false, reason: "validation" };
     }
-    if (
-      params.maxBytes !== undefined &&
-      preOpenStat.isFile() &&
-      preOpenStat.size > params.maxBytes
-    ) {
+    if (params.maxBytes !== undefined && preOpenStat.isFile() && preOpenStat.size > params.maxBytes) {
       return { ok: false, reason: "validation" };
     }
 

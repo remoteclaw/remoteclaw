@@ -33,9 +33,7 @@ export function handleSubagentsInfoAction(ctx: SubagentsCommandContext): Command
     run.startedAt && Number.isFinite(run.startedAt)
       ? (formatDurationCompact((run.endedAt ?? Date.now()) - run.startedAt) ?? "n/a")
       : "n/a";
-  const outcome = run.outcome
-    ? `${run.outcome.status}${run.outcome.error ? ` (${run.outcome.error})` : ""}`
-    : "n/a";
+  const outcome = run.outcome ? `${run.outcome.status}${run.outcome.error ? ` (${run.outcome.error})` : ""}` : "n/a";
 
   const lines = [
     "ℹ️ Subagent info",

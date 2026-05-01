@@ -40,9 +40,7 @@ export function logAcceptedEnvOption(option: AcceptedEnvOption): void {
     return;
   }
   loggedEnv.add(option.key);
-  getLog().info(
-    `env: ${option.key}=${formatEnvValue(rawValue, option.redact)} (${option.description})`,
-  );
+  getLog().info(`env: ${option.key}=${formatEnvValue(rawValue, option.redact)} (${option.description})`);
 }
 
 export function normalizeZaiEnv(): void {

@@ -101,11 +101,7 @@ export function resolveSendPolicy(params: {
     if (matchRawPrefix && !rawSessionKeyNorm.startsWith(matchRawPrefix)) {
       continue;
     }
-    if (
-      matchPrefix &&
-      !rawSessionKeyNorm.startsWith(matchPrefix) &&
-      !strippedSessionKeyNorm.startsWith(matchPrefix)
-    ) {
+    if (matchPrefix && !rawSessionKeyNorm.startsWith(matchPrefix) && !strippedSessionKeyNorm.startsWith(matchPrefix)) {
       continue;
     }
     if (action === "deny") {

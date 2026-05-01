@@ -20,12 +20,9 @@ type FocusBindingContext = {
   labelNoun: "thread" | "conversation";
 };
 
-function resolveFocusBindingContext(
-  params: SubagentsCommandContext["params"],
-): FocusBindingContext | null {
+function resolveFocusBindingContext(params: SubagentsCommandContext["params"]): FocusBindingContext | null {
   if (isDiscordSurface(params)) {
-    const currentThreadId =
-      params.ctx.MessageThreadId != null ? String(params.ctx.MessageThreadId).trim() : "";
+    const currentThreadId = params.ctx.MessageThreadId != null ? String(params.ctx.MessageThreadId).trim() : "";
     const parentChannelId = currentThreadId ? undefined : resolveDiscordChannelIdForFocus(params);
     const conversationId = currentThreadId || parentChannelId;
     if (!conversationId) {
@@ -55,9 +52,7 @@ function resolveFocusBindingContext(
   return null;
 }
 
-export async function handleSubagentsFocusAction(
-  ctx: SubagentsCommandContext,
-): Promise<CommandHandlerResult> {
+export async function handleSubagentsFocusAction(ctx: SubagentsCommandContext): Promise<CommandHandlerResult> {
   const { params, runs, restTokens } = ctx;
   const channel = resolveCommandSurfaceChannel(params);
   if (channel !== "discord" && channel !== "telegram") {
@@ -101,10 +96,7 @@ export async function handleSubagentsFocusAction(
     accountId: bindingContext.accountId,
     conversationId: bindingContext.conversationId,
   });
-  const boundBy =
-    typeof existingBinding?.metadata?.boundBy === "string"
-      ? existingBinding.metadata.boundBy.trim()
-      : "";
+  const boundBy = typeof existingBinding?.metadata?.boundBy === "string" ? existingBinding.metadata.boundBy.trim() : "";
   if (existingBinding && boundBy && boundBy !== "system" && senderId && senderId !== boundBy) {
     return stopWithText(`⚠️ Only ${boundBy} can refocus this ${bindingContext.labelNoun}.`);
   }
@@ -134,9 +126,7 @@ export async function handleSubagentsFocusAction(
       },
     });
   } catch {
-    return stopWithText(
-      `⚠️ Failed to bind this ${bindingContext.labelNoun} to the target session.`,
-    );
+    return stopWithText(`⚠️ Failed to bind this ${bindingContext.labelNoun} to the target session.`);
   }
 
   const actionText =

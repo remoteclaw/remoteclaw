@@ -32,9 +32,7 @@ const commandQueueMocks = vi.hoisted(() => ({
 vi.mock("../../process/command-queue.js", () => commandQueueMocks);
 
 const subagentRegistryMocks = vi.hoisted(() => ({
-  listSubagentRunsForRequester: vi.fn<(requesterSessionKey: string) => SubagentRunRecord[]>(
-    () => [],
-  ),
+  listSubagentRunsForRequester: vi.fn<(requesterSessionKey: string) => SubagentRunRecord[]>(() => []),
   markSubagentRunTerminated: vi.fn(() => 1),
 }));
 
@@ -65,16 +63,9 @@ vi.mock("../../acp/control-plane/manager.js", () => ({
 }));
 
 describe("abort detection", () => {
-  async function writeSessionStore(
-    storePath: string,
-    sessionIdsByKey: Record<string, string>,
-    nowMs = Date.now(),
-  ) {
+  async function writeSessionStore(storePath: string, sessionIdsByKey: Record<string, string>, nowMs = Date.now()) {
     const storeEntries = Object.fromEntries(
-      Object.entries(sessionIdsByKey).map(([key, sessionId]) => [
-        key,
-        { sessionId, updatedAt: nowMs },
-      ]),
+      Object.entries(sessionIdsByKey).map(([key, sessionId]) => [key, { sessionId, updatedAt: nowMs }]),
     );
     await fs.writeFile(storePath, JSON.stringify(storeEntries, null, 2));
   }
@@ -88,9 +79,7 @@ describe("abort detection", () => {
     const storePath = path.join(root, "sessions.json");
     const cfg = {
       session: { store: storePath },
-      ...(typeof params?.commandsTextEnabled === "boolean"
-        ? { commands: { text: params.commandsTextEnabled } }
-        : {}),
+      ...(typeof params?.commandsTextEnabled === "boolean" ? { commands: { text: params.commandsTextEnabled } } : {}),
     } as RemoteClawConfig;
     if (params?.sessionIdsByKey) {
       await writeSessionStore(storePath, params.sessionIdsByKey, params.nowMs);
@@ -262,12 +251,8 @@ describe("abort detection", () => {
     expect(isAbortRequestText("stopp")).toBe(true);
     expect(isAbortRequestText("pare")).toBe(true);
     expect(isAbortRequestText(" توقف ")).toBe(true);
-    expect(isAbortRequestText("/stop@remoteclaw_bot", { botUsername: "remoteclaw_bot" })).toBe(
-      true,
-    );
-    expect(isAbortRequestText("/Stop@remoteclaw_bot", { botUsername: "remoteclaw_bot" })).toBe(
-      true,
-    );
+    expect(isAbortRequestText("/stop@remoteclaw_bot", { botUsername: "remoteclaw_bot" })).toBe(true);
+    expect(isAbortRequestText("/Stop@remoteclaw_bot", { botUsername: "remoteclaw_bot" })).toBe(true);
 
     expect(isAbortRequestText("/status")).toBe(false);
     expect(isAbortRequestText("do not do that")).toBe(true);

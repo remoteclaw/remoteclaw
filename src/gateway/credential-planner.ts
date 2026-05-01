@@ -133,8 +133,7 @@ export function createGatewayCredentialPlan(params: {
     path: "gateway.remote.password",
   });
 
-  const localTokenCanWin =
-    authMode !== "password" && authMode !== "none" && authMode !== "trusted-proxy";
+  const localTokenCanWin = authMode !== "password" && authMode !== "none" && authMode !== "trusted-proxy";
   const tokenCanWin = Boolean(envToken || localToken.configured || remoteToken.configured);
   const passwordCanWin =
     authMode === "password" ||
@@ -142,13 +141,11 @@ export function createGatewayCredentialPlan(params: {
   const localTokenSurfaceActive =
     localTokenCanWin &&
     !envToken &&
-    (authMode === "token" ||
-      (authMode === undefined && !(envPassword || localPassword.configured)));
+    (authMode === "token" || (authMode === undefined && !(envPassword || localPassword.configured)));
 
   const remoteMode = gateway?.mode === "remote";
   const remoteUrlConfigured = Boolean(trimToUndefined(remote?.url));
-  const tailscaleRemoteExposure =
-    gateway?.tailscale?.mode === "serve" || gateway?.tailscale?.mode === "funnel";
+  const tailscaleRemoteExposure = gateway?.tailscale?.mode === "serve" || gateway?.tailscale?.mode === "funnel";
   const remoteConfiguredSurface = remoteMode || remoteUrlConfigured || tailscaleRemoteExposure;
   const remoteTokenFallbackActive = localTokenCanWin && !envToken && !localToken.configured;
   const remotePasswordFallbackActive = !envPassword && !localPassword.configured && passwordCanWin;

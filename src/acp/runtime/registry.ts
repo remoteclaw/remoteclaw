@@ -15,12 +15,9 @@ type AcpRuntimeRegistryGlobalState = {
 const ACP_RUNTIME_REGISTRY_STATE_KEY = Symbol.for("remoteclaw.acpRuntimeRegistryState");
 
 function resolveAcpRuntimeRegistryGlobalState(): AcpRuntimeRegistryGlobalState {
-  return resolveGlobalSingleton<AcpRuntimeRegistryGlobalState>(
-    ACP_RUNTIME_REGISTRY_STATE_KEY,
-    () => ({
-      backendsById: new Map<string, AcpRuntimeBackend>(),
-    }),
-  );
+  return resolveGlobalSingleton<AcpRuntimeRegistryGlobalState>(ACP_RUNTIME_REGISTRY_STATE_KEY, () => ({
+    backendsById: new Map<string, AcpRuntimeBackend>(),
+  }));
 }
 
 const ACP_BACKENDS_BY_ID = resolveAcpRuntimeRegistryGlobalState().backendsById;
@@ -94,10 +91,7 @@ export function requireAcpRuntimeBackend(id?: string): AcpRuntimeBackend {
     );
   }
   if (normalized && backend.id !== normalized) {
-    throw new AcpRuntimeError(
-      "ACP_BACKEND_MISSING",
-      `ACP runtime backend "${normalized}" is not registered.`,
-    );
+    throw new AcpRuntimeError("ACP_BACKEND_MISSING", `ACP runtime backend "${normalized}" is not registered.`);
   }
   return backend;
 }

@@ -3,8 +3,7 @@ const UNKNOWN_CLIENT_IP_BUDGET_KEY = "__remoteclaw_unknown_client_ip__";
 
 export function getMaxPreauthConnectionsPerIpFromEnv(env: NodeJS.ProcessEnv = process.env): number {
   const configured =
-    env.REMOTECLAW_MAX_PREAUTH_CONNECTIONS_PER_IP ||
-    (env.VITEST && env.REMOTECLAW_TEST_MAX_PREAUTH_CONNECTIONS_PER_IP);
+    env.REMOTECLAW_MAX_PREAUTH_CONNECTIONS_PER_IP || (env.VITEST && env.REMOTECLAW_TEST_MAX_PREAUTH_CONNECTIONS_PER_IP);
   if (!configured) {
     return DEFAULT_MAX_PREAUTH_CONNECTIONS_PER_IP;
   }
@@ -20,9 +19,7 @@ export type PreauthConnectionBudget = {
   release(clientIp: string | undefined): void;
 };
 
-export function createPreauthConnectionBudget(
-  limit = getMaxPreauthConnectionsPerIpFromEnv(),
-): PreauthConnectionBudget {
+export function createPreauthConnectionBudget(limit = getMaxPreauthConnectionsPerIpFromEnv()): PreauthConnectionBudget {
   const counts = new Map<string, number>();
   const normalizeBudgetKey = (clientIp: string | undefined) => {
     const ip = clientIp?.trim();

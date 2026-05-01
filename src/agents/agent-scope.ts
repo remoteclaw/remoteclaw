@@ -4,11 +4,7 @@ import type { RemoteClawConfig } from "../config/config.js";
 import { resolveAgentModelFallbackValues } from "../config/model-input.js";
 import { resolveStateDir } from "../config/paths.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
-import {
-  normalizeAgentId,
-  parseAgentSessionKey,
-  resolveAgentIdFromSessionKey,
-} from "../routing/session-key.js";
+import { normalizeAgentId, parseAgentSessionKey, resolveAgentIdFromSessionKey } from "../routing/session-key.js";
 import { resolveUserPath } from "../utils.js";
 import { normalizeSkillFilter } from "./skills/filter.js";
 import { resolveDefaultAgentWorkspaceDir } from "./workspace.js";
@@ -125,30 +121,21 @@ export function resolveDefaultAgentId(cfg: RemoteClawConfig): string {
   return normalizeAgentId(chosen || DEFAULT_AGENT_ID);
 }
 
-export function resolveSessionAgentIds(params: {
-  sessionKey?: string;
-  config?: RemoteClawConfig;
-  agentId?: string;
-}): {
+export function resolveSessionAgentIds(params: { sessionKey?: string; config?: RemoteClawConfig; agentId?: string }): {
   defaultAgentId: string;
   sessionAgentId: string;
 } {
   const defaultAgentId = resolveDefaultAgentId(params.config ?? {});
-  const explicitAgentIdRaw =
-    typeof params.agentId === "string" ? params.agentId.trim().toLowerCase() : "";
+  const explicitAgentIdRaw = typeof params.agentId === "string" ? params.agentId.trim().toLowerCase() : "";
   const explicitAgentId = explicitAgentIdRaw ? normalizeAgentId(explicitAgentIdRaw) : null;
   const sessionKey = params.sessionKey?.trim();
   const normalizedSessionKey = sessionKey ? sessionKey.toLowerCase() : undefined;
   const parsed = normalizedSessionKey ? parseAgentSessionKey(normalizedSessionKey) : null;
-  const sessionAgentId =
-    explicitAgentId ?? (parsed?.agentId ? normalizeAgentId(parsed.agentId) : defaultAgentId);
+  const sessionAgentId = explicitAgentId ?? (parsed?.agentId ? normalizeAgentId(parsed.agentId) : defaultAgentId);
   return { defaultAgentId, sessionAgentId };
 }
 
-export function resolveSessionAgentId(params: {
-  sessionKey?: string;
-  config?: RemoteClawConfig;
-}): string {
+export function resolveSessionAgentId(params: { sessionKey?: string; config?: RemoteClawConfig }): string {
   return resolveSessionAgentIds(params).sessionAgentId;
 }
 
@@ -157,10 +144,7 @@ function resolveAgentEntry(cfg: RemoteClawConfig, agentId: string): AgentEntry |
   return listAgentEntries(cfg).find((entry) => normalizeAgentId(entry.id) === id);
 }
 
-export function resolveAgentConfig(
-  cfg: RemoteClawConfig,
-  agentId: string,
-): ResolvedAgentConfig | undefined {
+export function resolveAgentConfig(cfg: RemoteClawConfig, agentId: string): ResolvedAgentConfig | undefined {
   const id = normalizeAgentId(agentId);
   const entry = resolveAgentEntry(cfg, id);
   if (!entry) {
@@ -171,9 +155,7 @@ export function resolveAgentConfig(
     workspace: typeof entry.workspace === "string" ? entry.workspace : undefined,
     agentDir: typeof entry.agentDir === "string" ? entry.agentDir : undefined,
     model:
-      typeof entry.model === "string" || (entry.model && typeof entry.model === "object")
-        ? entry.model
-        : undefined,
+      typeof entry.model === "string" || (entry.model && typeof entry.model === "object") ? entry.model : undefined,
     skills: Array.isArray(entry.skills) ? entry.skills : undefined,
     humanDelay: entry.humanDelay,
     heartbeat: entry.heartbeat,
@@ -185,10 +167,7 @@ export function resolveAgentConfig(
   };
 }
 
-export function resolveAgentSkillsFilter(
-  cfg: RemoteClawConfig,
-  agentId: string,
-): string[] | undefined {
+export function resolveAgentSkillsFilter(cfg: RemoteClawConfig, agentId: string): string[] | undefined {
   return normalizeSkillFilter(resolveAgentConfig(cfg, agentId)?.skills);
 }
 
@@ -208,36 +187,21 @@ function resolveModelPrimary(raw: unknown): string | undefined {
   return trimmed || undefined;
 }
 
-export function resolveAgentExplicitModelPrimary(
-  cfg: RemoteClawConfig,
-  agentId: string,
-): string | undefined {
+export function resolveAgentExplicitModelPrimary(cfg: RemoteClawConfig, agentId: string): string | undefined {
   const raw = resolveAgentConfig(cfg, agentId)?.model;
   return resolveModelPrimary(raw);
 }
 
-export function resolveAgentEffectiveModelPrimary(
-  cfg: RemoteClawConfig,
-  agentId: string,
-): string | undefined {
-  return (
-    resolveAgentExplicitModelPrimary(cfg, agentId) ??
-    resolveModelPrimary(cfg.agents?.defaults?.model)
-  );
+export function resolveAgentEffectiveModelPrimary(cfg: RemoteClawConfig, agentId: string): string | undefined {
+  return resolveAgentExplicitModelPrimary(cfg, agentId) ?? resolveModelPrimary(cfg.agents?.defaults?.model);
 }
 
 // Backward-compatible alias. Prefer explicit/effective helpers at new call sites.
-export function resolveAgentModelPrimary(
-  cfg: RemoteClawConfig,
-  agentId: string,
-): string | undefined {
+export function resolveAgentModelPrimary(cfg: RemoteClawConfig, agentId: string): string | undefined {
   return resolveAgentExplicitModelPrimary(cfg, agentId);
 }
 
-export function resolveAgentModelFallbacksOverride(
-  cfg: RemoteClawConfig,
-  agentId: string,
-): string[] | undefined {
+export function resolveAgentModelFallbacksOverride(cfg: RemoteClawConfig, agentId: string): string[] | undefined {
   const raw = resolveAgentConfig(cfg, agentId)?.model;
   if (!raw || typeof raw === "string") {
     return undefined;
@@ -249,10 +213,7 @@ export function resolveAgentModelFallbacksOverride(
   return Array.isArray(raw.fallbacks) ? raw.fallbacks : undefined;
 }
 
-export function resolveFallbackAgentId(params: {
-  agentId?: string | null;
-  sessionKey?: string | null;
-}): string {
+export function resolveFallbackAgentId(params: { agentId?: string | null; sessionKey?: string | null }): string {
   const explicitAgentId = typeof params.agentId === "string" ? params.agentId.trim() : "";
   if (explicitAgentId) {
     return normalizeAgentId(explicitAgentId);
@@ -336,10 +297,7 @@ function isPathWithinRoot(candidatePath: string, rootPath: string): boolean {
   return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
 }
 
-export function resolveAgentIdsByWorkspacePath(
-  cfg: RemoteClawConfig,
-  workspacePath: string,
-): string[] {
+export function resolveAgentIdsByWorkspacePath(cfg: RemoteClawConfig, workspacePath: string): string[] {
   const normalizedWorkspacePath = normalizePathForComparison(workspacePath);
   const ids = listAgentIds(cfg);
   const matches: Array<{ id: string; workspaceDir: string; order: number }> = [];
@@ -364,10 +322,7 @@ export function resolveAgentIdsByWorkspacePath(
   return matches.map((entry) => entry.id);
 }
 
-export function resolveAgentIdByWorkspacePath(
-  cfg: RemoteClawConfig,
-  workspacePath: string,
-): string | undefined {
+export function resolveAgentIdByWorkspacePath(cfg: RemoteClawConfig, workspacePath: string): string | undefined {
   return resolveAgentIdsByWorkspacePath(cfg, workspacePath)[0];
 }
 
@@ -408,9 +363,7 @@ export function resolveSoleAgentId(
   cfgOrParams: RemoteClawConfig | { sessionKey?: string; config?: RemoteClawConfig },
 ): string | null {
   const cfg: RemoteClawConfig =
-    cfgOrParams &&
-    typeof cfgOrParams === "object" &&
-    ("sessionKey" in cfgOrParams || "config" in cfgOrParams)
+    cfgOrParams && typeof cfgOrParams === "object" && ("sessionKey" in cfgOrParams || "config" in cfgOrParams)
       ? ((cfgOrParams as { config?: RemoteClawConfig }).config ?? {})
       : (cfgOrParams as RemoteClawConfig);
 
@@ -449,10 +402,7 @@ export function resolveFirstAgentWorkspace(cfg: RemoteClawConfig): string | null
 }
 
 /** Upstream-compat: resolveAgentWorkspaceDirOrNull returns null when workspace cannot be resolved. */
-export function resolveAgentWorkspaceDirOrNull(
-  cfg: RemoteClawConfig,
-  agentId: string,
-): string | null {
+export function resolveAgentWorkspaceDirOrNull(cfg: RemoteClawConfig, agentId: string): string | null {
   const id = normalizeAgentId(agentId);
   const entry = resolveAgentEntry(cfg, id);
   if (!entry) {
@@ -487,10 +437,7 @@ export function resolveAgentRuntime(cfg: RemoteClawConfig, agentId: string): str
 }
 
 /** Resolve per-agent runtime args (fork-specific CLI flags). */
-export function resolveAgentRuntimeArgs(
-  cfg: RemoteClawConfig,
-  agentId: string,
-): string[] | undefined {
+export function resolveAgentRuntimeArgs(cfg: RemoteClawConfig, agentId: string): string[] | undefined {
   const id = normalizeAgentId(agentId);
   const entry = resolveAgentEntry(cfg, id);
   const perAgent = (entry as Record<string, unknown> | undefined)?.runtimeArgs;
@@ -505,10 +452,7 @@ export function resolveAgentRuntimeArgs(
 }
 
 /** Resolve per-agent runtime env (fork-specific CLI env vars). */
-export function resolveAgentRuntimeEnv(
-  cfg: RemoteClawConfig,
-  agentId: string,
-): Record<string, string> | undefined {
+export function resolveAgentRuntimeEnv(cfg: RemoteClawConfig, agentId: string): Record<string, string> | undefined {
   const id = normalizeAgentId(agentId);
   const entry = resolveAgentEntry(cfg, id);
   const perAgent = (entry as Record<string, unknown> | undefined)?.runtimeEnv;
@@ -537,10 +481,7 @@ export function resolveAgentRuntimeOrThrow(cfg: RemoteClawConfig, agentId: strin
 }
 
 /** Resolve per-agent auth profile (fork-specific auth profile reference). */
-export function resolveAgentAuth(
-  cfg: RemoteClawConfig,
-  agentId: string,
-): string | string[] | false | undefined {
+export function resolveAgentAuth(cfg: RemoteClawConfig, agentId: string): string | string[] | false | undefined {
   const id = normalizeAgentId(agentId);
   const entry = resolveAgentEntry(cfg, id);
   const perAgent = (entry as Record<string, unknown> | undefined)?.auth;

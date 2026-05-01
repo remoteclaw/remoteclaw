@@ -98,37 +98,32 @@ describe("gateway tool", () => {
     const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-test-"));
 
     try {
-      await withEnvAsync(
-        { REMOTECLAW_STATE_DIR: stateDir, REMOTECLAW_PROFILE: "isolated" },
-        async () => {
-          const tool = requireGatewayTool();
+      await withEnvAsync({ REMOTECLAW_STATE_DIR: stateDir, REMOTECLAW_PROFILE: "isolated" }, async () => {
+        const tool = requireGatewayTool();
 
-          const result = await tool.execute("call1", {
-            action: "restart",
-            delayMs: 0,
-          });
-          expect(result.details).toMatchObject({
-            ok: true,
-            pid: process.pid,
-            signal: "SIGUSR1",
-            delayMs: 0,
-          });
+        const result = await tool.execute("call1", {
+          action: "restart",
+          delayMs: 0,
+        });
+        expect(result.details).toMatchObject({
+          ok: true,
+          pid: process.pid,
+          signal: "SIGUSR1",
+          delayMs: 0,
+        });
 
-          const sentinelPath = path.join(stateDir, "restart-sentinel.json");
-          const raw = await fs.readFile(sentinelPath, "utf-8");
-          const parsed = JSON.parse(raw) as {
-            payload?: { kind?: string; doctorHint?: string | null };
-          };
-          expect(parsed.payload?.kind).toBe("restart");
-          expect(parsed.payload?.doctorHint).toBe(
-            "Run: remoteclaw --profile isolated doctor --non-interactive",
-          );
+        const sentinelPath = path.join(stateDir, "restart-sentinel.json");
+        const raw = await fs.readFile(sentinelPath, "utf-8");
+        const parsed = JSON.parse(raw) as {
+          payload?: { kind?: string; doctorHint?: string | null };
+        };
+        expect(parsed.payload?.kind).toBe("restart");
+        expect(parsed.payload?.doctorHint).toBe("Run: remoteclaw --profile isolated doctor --non-interactive");
 
-          expect(kill).not.toHaveBeenCalled();
-          await vi.runAllTimersAsync();
-          expect(kill).toHaveBeenCalledWith(process.pid, "SIGUSR1");
-        },
-      );
+        expect(kill).not.toHaveBeenCalled();
+        await vi.runAllTimersAsync();
+        expect(kill).toHaveBeenCalledWith(process.pid, "SIGUSR1");
+      });
     } finally {
       kill.mockRestore();
       vi.useRealTimers();
@@ -192,9 +187,7 @@ describe("gateway tool", () => {
         sessionKey,
       }),
     );
-    const updateCall = vi
-      .mocked(callGatewayTool)
-      .mock.calls.find((call) => call[0] === "update.run");
+    const updateCall = vi.mocked(callGatewayTool).mock.calls.find((call) => call[0] === "update.run");
     expect(updateCall).toBeDefined();
     if (updateCall) {
       const [, opts, params] = updateCall;
@@ -230,8 +223,7 @@ describe("gateway tool", () => {
         ],
       },
     });
-    const schema = (result.details as { result?: { schema?: { properties?: unknown } } }).result
-      ?.schema;
+    const schema = (result.details as { result?: { schema?: { properties?: unknown } } }).result?.schema;
     expect(schema?.properties).toBeUndefined();
   });
 });

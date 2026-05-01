@@ -24,8 +24,7 @@ export function normalizeWindowsArgv(argv: string[]): string[] {
     stripControlChars(value)
       .replace(/^['"]+|['"]+$/g, "")
       .trim();
-  const normalizeCandidate = (value: string): string =>
-    normalizeArg(value).replace(/^\\\\\\?\\/, "");
+  const normalizeCandidate = (value: string): string => normalizeArg(value).replace(/^\\\\\\?\\/, "");
 
   const execPath = normalizeCandidate(process.execPath);
   const execPathLower = execPath.toLowerCase();

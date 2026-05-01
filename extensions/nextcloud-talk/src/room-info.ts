@@ -7,19 +7,13 @@ import { normalizeResolvedSecretInputString } from "./secret-input.js";
 const ROOM_CACHE_TTL_MS = 5 * 60 * 1000;
 const ROOM_CACHE_ERROR_TTL_MS = 30 * 1000;
 
-const roomCache = new Map<
-  string,
-  { kind?: "direct" | "group"; fetchedAt: number; error?: string }
->();
+const roomCache = new Map<string, { kind?: "direct" | "group"; fetchedAt: number; error?: string }>();
 
 function resolveRoomCacheKey(params: { accountId: string; roomToken: string }) {
   return `${params.accountId}:${params.roomToken}`;
 }
 
-function readApiPassword(params: {
-  apiPassword?: unknown;
-  apiPasswordFile?: string;
-}): string | undefined {
+function readApiPassword(params: { apiPassword?: unknown; apiPasswordFile?: string }): string | undefined {
   const inlinePassword = normalizeResolvedSecretInputString({
     value: params.apiPassword,
     path: "channels.nextcloud-talk.apiPassword",
@@ -113,9 +107,7 @@ export async function resolveNextcloudTalkRoomKind(params: {
           fetchedAt: Date.now(),
           error: `status:${response.status}`,
         });
-        runtime?.log?.(
-          `nextcloud-talk: room lookup failed (${response.status}) token=${roomToken}`,
-        );
+        runtime?.log?.(`nextcloud-talk: room lookup failed (${response.status}) token=${roomToken}`);
         return undefined;
       }
 

@@ -17,9 +17,7 @@ describe("resolveAckReaction", () => {
       },
     };
 
-    expect(resolveAckReaction(cfg, "main", { channel: "slack", accountId: "acct1" })).toBe(
-      "party_parrot",
-    );
+    expect(resolveAckReaction(cfg, "main", { channel: "slack", accountId: "acct1" })).toBe("party_parrot");
   });
 
   it("falls back to channel-level overrides", () => {
@@ -36,9 +34,7 @@ describe("resolveAckReaction", () => {
       },
     };
 
-    expect(resolveAckReaction(cfg, "main", { channel: "slack", accountId: "missing" })).toBe(
-      "eyes",
-    );
+    expect(resolveAckReaction(cfg, "main", { channel: "slack", accountId: "missing" })).toBe("eyes");
   });
 
   it("uses the global ackReaction when channel overrides are missing", () => {

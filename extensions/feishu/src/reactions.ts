@@ -117,8 +117,7 @@ export async function listReactionsFeishu(params: {
     reactionId: item.reaction_id ?? "",
     emojiType: item.reaction_type?.emoji_type ?? "",
     operatorType: item.operator_type === "app" ? "app" : "user",
-    operatorId:
-      item.operator_id?.open_id ?? item.operator_id?.user_id ?? item.operator_id?.union_id ?? "",
+    operatorId: item.operator_id?.open_id ?? item.operator_id?.user_id ?? item.operator_id?.union_id ?? "",
   }));
 }
 

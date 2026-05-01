@@ -12,10 +12,7 @@ export type UrbitChannelDeps = {
   fetchImpl?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 };
 
-async function putUrbitChannel(
-  deps: UrbitChannelDeps,
-  params: { body: unknown; auditContext: string },
-) {
+async function putUrbitChannel(deps: UrbitChannelDeps, params: { body: unknown; auditContext: string }) {
   return await urbitFetch({
     baseUrl: deps.baseUrl,
     path: `/~/channel/${deps.channelId}`,

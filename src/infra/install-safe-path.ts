@@ -11,6 +11,20 @@ export function unscopedPackageName(name: string): string {
   return trimmed.includes("/") ? (trimmed.split("/").pop() ?? trimmed) : trimmed;
 }
 
+export function packageNameMatchesId(packageName: string, id: string): boolean {
+  const trimmedId = id.trim();
+  if (!trimmedId) {
+    return false;
+  }
+
+  const trimmedPackageName = packageName.trim();
+  if (!trimmedPackageName) {
+    return false;
+  }
+
+  return trimmedId === trimmedPackageName || trimmedId === unscopedPackageName(trimmedPackageName);
+}
+
 export function safeDirName(input: string): string {
   const trimmed = input.trim();
   if (!trimmed) {
@@ -54,12 +68,7 @@ export function resolveSafeInstallDir(params: {
   const resolvedBase = path.resolve(params.baseDir);
   const resolvedTarget = path.resolve(targetDir);
   const relative = path.relative(resolvedBase, resolvedTarget);
-  if (
-    !relative ||
-    relative === ".." ||
-    relative.startsWith(`..${path.sep}`) ||
-    path.isAbsolute(relative)
-  ) {
+  if (!relative || relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
     return { ok: false, error: params.invalidNameMessage };
   }
   return { ok: true, path: targetDir };

@@ -345,11 +345,7 @@ export default defineConfig({
             },
             {
               label: "Extensions",
-              items: [
-                { slug: "plugins/community" },
-                { slug: "plugins/voice-call" },
-                { slug: "plugins/zalouser" },
-              ],
+              items: [{ slug: "plugins/community" }, { slug: "plugins/voice-call" }, { slug: "plugins/zalouser" }],
             },
             {
               label: "Automation",
@@ -580,11 +576,7 @@ export default defineConfig({
           items: [
             {
               label: "Help",
-              items: [
-                { slug: "help/index" },
-                { slug: "help/troubleshooting" },
-                { slug: "help/faq" },
-              ],
+              items: [{ slug: "help/index" }, { slug: "help/troubleshooting" }, { slug: "help/faq" }],
             },
             {
               label: "Environment and debugging",

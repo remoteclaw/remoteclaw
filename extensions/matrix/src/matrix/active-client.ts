@@ -4,10 +4,7 @@ import { normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
 // Support multiple active clients for multi-account
 const activeClients = new Map<string, MatrixClient>();
 
-export function setActiveMatrixClient(
-  client: MatrixClient | null,
-  accountId?: string | null,
-): void {
+export function setActiveMatrixClient(client: MatrixClient | null, accountId?: string | null): void {
   const key = normalizeAccountId(accountId);
   if (client) {
     activeClients.set(key, client);

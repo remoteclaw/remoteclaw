@@ -77,11 +77,9 @@ describe("sessionsCommand default store agent selection", () => {
         store: "/tmp/sessions-{agentId}.json",
       },
     }));
-    resolveStorePathMock.mockImplementation(
-      (_store: string | undefined, opts?: { agentId?: string }) => {
-        return `/tmp/sessions-${opts?.agentId ?? "missing"}.json`;
-      },
-    );
+    resolveStorePathMock.mockImplementation((_store: string | undefined, opts?: { agentId?: string }) => {
+      return `/tmp/sessions-${opts?.agentId ?? "missing"}.json`;
+    });
     loadSessionStoreMock.mockImplementation(() => ({}));
   });
 
@@ -143,10 +141,7 @@ describe("sessionsCommand default store agent selection", () => {
     expect(payload.count).toBe(2);
     expect(payload.allAgents).toBe(true);
     expect(payload.stores).toEqual([{ agentId: "main", path: "/tmp/shared-sessions.json" }]);
-    expect(payload.sessions?.map((session) => session.agentId).toSorted()).toEqual([
-      "main",
-      "voice",
-    ]);
+    expect(payload.sessions?.map((session) => session.agentId).toSorted()).toEqual(["main", "voice"]);
     expect(loadSessionStoreMock).toHaveBeenCalledTimes(1);
   });
 

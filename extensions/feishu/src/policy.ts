@@ -1,8 +1,4 @@
-import type {
-  AllowlistMatch,
-  ChannelGroupContext,
-  GroupToolPolicyConfig,
-} from "remoteclaw/plugin-sdk/feishu";
+import type { AllowlistMatch, ChannelGroupContext, GroupToolPolicyConfig } from "remoteclaw/plugin-sdk/feishu";
 import { evaluateSenderGroupAccessForPolicy } from "remoteclaw/plugin-sdk/feishu";
 import { normalizeFeishuTarget } from "./targets.js";
 import type { FeishuConfig, FeishuGroupConfig } from "./types.js";
@@ -28,9 +24,7 @@ export function resolveFeishuAllowlistMatch(params: {
   senderIds?: Array<string | null | undefined>;
   senderName?: string | null;
 }): FeishuAllowlistMatch {
-  const allowFrom = params.allowFrom
-    .map((entry) => normalizeFeishuAllowEntry(String(entry)))
-    .filter(Boolean);
+  const allowFrom = params.allowFrom.map((entry) => normalizeFeishuAllowEntry(String(entry))).filter(Boolean);
   if (allowFrom.length === 0) {
     return { allowed: false };
   }
@@ -76,9 +70,7 @@ export function resolveFeishuGroupConfig(params: {
   return wildcard;
 }
 
-export function resolveFeishuGroupToolPolicy(
-  params: ChannelGroupContext,
-): GroupToolPolicyConfig | undefined {
+export function resolveFeishuGroupToolPolicy(params: ChannelGroupContext): GroupToolPolicyConfig | undefined {
   const cfg = params.cfg.channels?.feishu as FeishuConfig | undefined;
   if (!cfg) {
     return undefined;
@@ -116,8 +108,7 @@ export function resolveFeishuReplyPolicy(params: {
     return { requireMention: false };
   }
 
-  const requireMention =
-    params.groupConfig?.requireMention ?? params.globalConfig?.requireMention ?? true;
+  const requireMention = params.groupConfig?.requireMention ?? params.globalConfig?.requireMention ?? true;
 
   return { requireMention };
 }

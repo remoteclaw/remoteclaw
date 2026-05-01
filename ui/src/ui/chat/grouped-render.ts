@@ -6,11 +6,7 @@ import { openExternalUrlSafe } from "../open-external-url.ts";
 import { detectTextDirection } from "../text-direction.ts";
 import type { MessageGroup } from "../types/chat-types.ts";
 import { renderCopyAsMarkdownButton } from "./copy-as-markdown.ts";
-import {
-  extractTextCached,
-  extractThinkingCached,
-  formatReasoningMarkdown,
-} from "./message-extract.ts";
+import { extractTextCached, extractThinkingCached, formatReasoningMarkdown } from "./message-extract.ts";
 import { isToolResultMessage, normalizeRoleForGrouping } from "./message-normalizer.ts";
 import { extractToolCards, renderToolCardSidebar } from "./tool-cards.ts";
 
@@ -118,13 +114,8 @@ export function renderMessageGroup(
   const assistantName = opts.assistantName ?? "Assistant";
   const userLabel = group.senderLabel?.trim();
   const who =
-    normalizedRole === "user"
-      ? (userLabel ?? "You")
-      : normalizedRole === "assistant"
-        ? assistantName
-        : normalizedRole;
-  const roleClass =
-    normalizedRole === "user" ? "user" : normalizedRole === "assistant" ? "assistant" : "other";
+    normalizedRole === "user" ? (userLabel ?? "You") : normalizedRole === "assistant" ? assistantName : normalizedRole;
+  const roleClass = normalizedRole === "user" ? "user" : normalizedRole === "assistant" ? "assistant" : "other";
   const timestamp = new Date(group.timestamp).toLocaleTimeString([], {
     hour: "numeric",
     minute: "2-digit",
@@ -242,8 +233,7 @@ function renderGroupedMessage(
   const hasImages = images.length > 0;
 
   const extractedText = extractTextCached(message);
-  const extractedThinking =
-    opts.showReasoning && role === "assistant" ? extractThinkingCached(message) : null;
+  const extractedThinking = opts.showReasoning && role === "assistant" ? extractThinkingCached(message) : null;
   const markdownBase = extractedText?.trim() ? extractedText : null;
   const reasoningMarkdown = extractedThinking ? formatReasoningMarkdown(extractedThinking) : null;
   const markdown = markdownBase;
@@ -272,9 +262,7 @@ function renderGroupedMessage(
       ${renderMessageImages(images)}
       ${
         reasoningMarkdown
-          ? html`<div class="chat-thinking">${unsafeHTML(
-              toSanitizedMarkdownHtml(reasoningMarkdown),
-            )}</div>`
+          ? html`<div class="chat-thinking">${unsafeHTML(toSanitizedMarkdownHtml(reasoningMarkdown))}</div>`
           : nothing
       }
       ${

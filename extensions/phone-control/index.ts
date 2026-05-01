@@ -1,9 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type {
-  RemoteClawPluginApi,
-  RemoteClawPluginService,
-} from "remoteclaw/plugin-sdk/phone-control";
+import type { RemoteClawPluginApi, RemoteClawPluginService } from "remoteclaw/plugin-sdk/phone-control";
 
 type ArmGroup = "camera" | "screen" | "writes" | "all";
 
@@ -121,16 +118,10 @@ async function readArmState(statePath: string): Promise<ArmStateFile | null> {
     if (group !== "camera" && group !== "screen" && group !== "writes" && group !== "all") {
       return null;
     }
-    if (
-      !Array.isArray(parsed.armedCommands) ||
-      !parsed.armedCommands.every((v: unknown) => typeof v === "string")
-    ) {
+    if (!Array.isArray(parsed.armedCommands) || !parsed.armedCommands.every((v: unknown) => typeof v === "string")) {
       return null;
     }
-    if (
-      !Array.isArray(parsed.addedToAllow) ||
-      !parsed.addedToAllow.every((v: unknown) => typeof v === "string")
-    ) {
+    if (!Array.isArray(parsed.addedToAllow) || !parsed.addedToAllow.every((v: unknown) => typeof v === "string")) {
       return null;
     }
     if (

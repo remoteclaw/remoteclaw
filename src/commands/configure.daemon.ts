@@ -45,19 +45,14 @@ export async function maybeInstallDaemon(params: {
       params.runtime,
     );
     if (action === "restart") {
-      await withProgress(
-        { label: "Gateway service", indeterminate: true, delayMs: 0 },
-        async (progress) => {
-          progress.setLabel("Restarting Gateway service…");
-          const restartResult = await service.restart({
-            env: process.env,
-            stdout: process.stdout,
-          });
-          progress.setLabel(
-            describeGatewayServiceRestart("Gateway", restartResult).progressMessage,
-          );
-        },
-      );
+      await withProgress({ label: "Gateway service", indeterminate: true, delayMs: 0 }, async (progress) => {
+        progress.setLabel("Restarting Gateway service…");
+        const restartResult = await service.restart({
+          env: process.env,
+          stdout: process.stdout,
+        });
+        progress.setLabel(describeGatewayServiceRestart("Gateway", restartResult).progressMessage);
+      });
       shouldCheckLinger = true;
       shouldInstall = false;
     }
@@ -65,14 +60,11 @@ export async function maybeInstallDaemon(params: {
       return;
     }
     if (action === "reinstall") {
-      await withProgress(
-        { label: "Gateway service", indeterminate: true, delayMs: 0 },
-        async (progress) => {
-          progress.setLabel("Uninstalling Gateway service…");
-          await service.uninstall({ env: process.env, stdout: process.stdout });
-          progress.setLabel("Gateway service uninstalled.");
-        },
-      );
+      await withProgress({ label: "Gateway service", indeterminate: true, delayMs: 0 }, async (progress) => {
+        progress.setLabel("Uninstalling Gateway service…");
+        await service.uninstall({ env: process.env, stdout: process.stdout });
+        progress.setLabel("Gateway service uninstalled.");
+      });
     }
   }
 
@@ -92,54 +84,51 @@ export async function maybeInstallDaemon(params: {
         ) as GatewayDaemonRuntime;
       }
     }
-    await withProgress(
-      { label: "Gateway service", indeterminate: true, delayMs: 0 },
-      async (progress) => {
-        progress.setLabel("Preparing Gateway service…");
+    await withProgress({ label: "Gateway service", indeterminate: true, delayMs: 0 }, async (progress) => {
+      progress.setLabel("Preparing Gateway service…");
 
-        const cfg = loadConfig();
-        // Gateway install token resolution is gutted in this fork; treat as
-        // available with no warnings.
-        const tokenResolution: { warnings: string[]; unavailableReason: string | null } = {
-          warnings: [],
-          unavailableReason: null,
-        };
-        for (const warning of tokenResolution.warnings) {
-          note(warning, "Gateway");
-        }
-        if (tokenResolution.unavailableReason) {
-          installError = [
-            "Gateway install blocked:",
-            tokenResolution.unavailableReason,
-            "Fix gateway auth config/token input and rerun configure.",
-          ].join(" ");
-          progress.setLabel("Gateway service install blocked.");
-          return;
-        }
-        const { programArguments, workingDirectory, environment } = await buildGatewayInstallPlan({
+      const cfg = loadConfig();
+      // Gateway install token resolution is gutted in this fork; treat as
+      // available with no warnings.
+      const tokenResolution: { warnings: string[]; unavailableReason: string | null } = {
+        warnings: [],
+        unavailableReason: null,
+      };
+      for (const warning of tokenResolution.warnings) {
+        note(warning, "Gateway");
+      }
+      if (tokenResolution.unavailableReason) {
+        installError = [
+          "Gateway install blocked:",
+          tokenResolution.unavailableReason,
+          "Fix gateway auth config/token input and rerun configure.",
+        ].join(" ");
+        progress.setLabel("Gateway service install blocked.");
+        return;
+      }
+      const { programArguments, workingDirectory, environment } = await buildGatewayInstallPlan({
+        env: process.env,
+        port: params.port,
+        runtime: daemonRuntime,
+        warn: (message, title) => note(message, title),
+        config: cfg,
+      });
+
+      progress.setLabel("Installing Gateway service…");
+      try {
+        await service.install({
           env: process.env,
-          port: params.port,
-          runtime: daemonRuntime,
-          warn: (message, title) => note(message, title),
-          config: cfg,
+          stdout: process.stdout,
+          programArguments,
+          workingDirectory,
+          environment,
         });
-
-        progress.setLabel("Installing Gateway service…");
-        try {
-          await service.install({
-            env: process.env,
-            stdout: process.stdout,
-            programArguments,
-            workingDirectory,
-            environment,
-          });
-          progress.setLabel("Gateway service installed.");
-        } catch (err) {
-          installError = err instanceof Error ? err.message : String(err);
-          progress.setLabel("Gateway service install failed.");
-        }
-      },
-    );
+        progress.setLabel("Gateway service installed.");
+      } catch (err) {
+        installError = err instanceof Error ? err.message : String(err);
+        progress.setLabel("Gateway service install failed.");
+      }
+    });
     if (installError) {
       note("Gateway service install failed: " + installError, "Gateway");
       note(gatewayInstallErrorHint(), "Gateway");

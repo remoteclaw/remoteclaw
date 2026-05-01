@@ -110,10 +110,7 @@ export type HookRunnerOptions = {
 /**
  * Get hooks for a specific hook name, sorted by priority (higher first).
  */
-function getHooksForName<K extends PluginHookName>(
-  registry: PluginRegistry,
-  hookName: K,
-): PluginHookRegistration<K>[] {
+function getHooksForName<K extends PluginHookName>(registry: PluginRegistry, hookName: K): PluginHookRegistration<K>[] {
   return (registry.typedHooks as PluginHookRegistration<K>[])
     .filter((h) => h.hookName === hookName)
     .toSorted((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
@@ -140,13 +137,10 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
     next: PluginHookBeforePromptBuildResult,
   ): PluginHookBeforePromptBuildResult => ({
     systemPrompt: next.systemPrompt ?? acc?.systemPrompt,
-    prependContext:
-      [acc?.prependContext, next.prependContext].filter(Boolean).join("\n") || undefined,
+    prependContext: [acc?.prependContext, next.prependContext].filter(Boolean).join("\n") || undefined,
     prependSystemContext:
-      [acc?.prependSystemContext, next.prependSystemContext].filter(Boolean).join("\n") ||
-      undefined,
-    appendSystemContext:
-      [acc?.appendSystemContext, next.appendSystemContext].filter(Boolean).join("\n") || undefined,
+      [acc?.prependSystemContext, next.prependSystemContext].filter(Boolean).join("\n") || undefined,
+    appendSystemContext: [acc?.appendSystemContext, next.appendSystemContext].filter(Boolean).join("\n") || undefined,
   });
 
   const mergeSubagentSpawningResult = (
@@ -175,14 +169,8 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
     return next;
   };
 
-  const handleHookError = (params: {
-    hookName: PluginHookName;
-    pluginId: string;
-    error: unknown;
-  }): never | void => {
-    const msg = `[hooks] ${params.hookName} handler from ${params.pluginId} failed: ${String(
-      params.error,
-    )}`;
+  const handleHookError = (params: { hookName: PluginHookName; pluginId: string; error: unknown }): never | void => {
+    const msg = `[hooks] ${params.hookName} handler from ${params.pluginId} failed: ${String(params.error)}`;
     if (catchErrors) {
       logger?.error(msg);
       return;
@@ -238,9 +226,7 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
 
     for (const hook of hooks) {
       try {
-        const handlerResult = await (
-          hook.handler as (event: unknown, ctx: unknown) => Promise<TResult>
-        )(event, ctx);
+        const handlerResult = await (hook.handler as (event: unknown, ctx: unknown) => Promise<TResult>)(event, ctx);
 
         if (handlerResult !== undefined && handlerResult !== null) {
           if (mergeResults && result !== undefined) {
@@ -317,10 +303,7 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
    * Allows plugins to analyze completed conversations.
    * Runs in parallel (fire-and-forget).
    */
-  async function runAgentEnd(
-    event: PluginHookAgentEndEvent,
-    ctx: PluginHookAgentContext,
-  ): Promise<void> {
+  async function runAgentEnd(event: PluginHookAgentEndEvent, ctx: PluginHookAgentContext): Promise<void> {
     return runVoidHook("agent_end", event, ctx);
   }
 
@@ -355,10 +338,7 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
   /**
    * Run after_compaction hook.
    */
-  async function runAfterCompaction(
-    event: PluginHookAfterCompactionEvent,
-    ctx: PluginHookAgentContext,
-  ): Promise<void> {
+  async function runAfterCompaction(event: PluginHookAfterCompactionEvent, ctx: PluginHookAgentContext): Promise<void> {
     return runVoidHook("after_compaction", event, ctx);
   }
 
@@ -367,10 +347,7 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
    * Fired when /new or /reset clears a session, before messages are lost.
    * Runs in parallel (fire-and-forget).
    */
-  async function runBeforeReset(
-    event: PluginHookBeforeResetEvent,
-    ctx: PluginHookAgentContext,
-  ): Promise<void> {
+  async function runBeforeReset(event: PluginHookBeforeResetEvent, ctx: PluginHookAgentContext): Promise<void> {
     return runVoidHook("before_reset", event, ctx);
   }
 
@@ -413,10 +390,7 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
    * Run message_sent hook.
    * Runs in parallel (fire-and-forget).
    */
-  async function runMessageSent(
-    event: PluginHookMessageSentEvent,
-    ctx: PluginHookMessageContext,
-  ): Promise<void> {
+  async function runMessageSent(event: PluginHookMessageSentEvent, ctx: PluginHookMessageContext): Promise<void> {
     return runVoidHook("message_sent", event, ctx);
   }
 
@@ -449,10 +423,7 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
    * Run after_tool_call hook.
    * Runs in parallel (fire-and-forget).
    */
-  async function runAfterToolCall(
-    event: PluginHookAfterToolCallEvent,
-    ctx: PluginHookToolContext,
-  ): Promise<void> {
+  async function runAfterToolCall(event: PluginHookAfterToolCallEvent, ctx: PluginHookToolContext): Promise<void> {
     return runVoidHook("after_tool_call", event, ctx);
   }
 
@@ -600,10 +571,7 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
    * Run session_start hook.
    * Runs in parallel (fire-and-forget).
    */
-  async function runSessionStart(
-    event: PluginHookSessionStartEvent,
-    ctx: PluginHookSessionContext,
-  ): Promise<void> {
+  async function runSessionStart(event: PluginHookSessionStartEvent, ctx: PluginHookSessionContext): Promise<void> {
     return runVoidHook("session_start", event, ctx);
   }
 
@@ -611,10 +579,7 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
    * Run session_end hook.
    * Runs in parallel (fire-and-forget).
    */
-  async function runSessionEnd(
-    event: PluginHookSessionEndEvent,
-    ctx: PluginHookSessionContext,
-  ): Promise<void> {
+  async function runSessionEnd(event: PluginHookSessionEndEvent, ctx: PluginHookSessionContext): Promise<void> {
     return runVoidHook("session_end", event, ctx);
   }
 
@@ -665,10 +630,7 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
    * Run subagent_ended hook.
    * Runs in parallel (fire-and-forget).
    */
-  async function runSubagentEnded(
-    event: PluginHookSubagentEndedEvent,
-    ctx: PluginHookSubagentContext,
-  ): Promise<void> {
+  async function runSubagentEnded(event: PluginHookSubagentEndedEvent, ctx: PluginHookSubagentContext): Promise<void> {
     return runVoidHook("subagent_ended", event, ctx);
   }
 
@@ -745,10 +707,7 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
    * Run gateway_start hook.
    * Runs in parallel (fire-and-forget).
    */
-  async function runGatewayStart(
-    event: PluginHookGatewayStartEvent,
-    ctx: PluginHookGatewayContext,
-  ): Promise<void> {
+  async function runGatewayStart(event: PluginHookGatewayStartEvent, ctx: PluginHookGatewayContext): Promise<void> {
     return runVoidHook("gateway_start", event, ctx);
   }
 
@@ -756,10 +715,7 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
    * Run gateway_stop hook.
    * Runs in parallel (fire-and-forget).
    */
-  async function runGatewayStop(
-    event: PluginHookGatewayStopEvent,
-    ctx: PluginHookGatewayContext,
-  ): Promise<void> {
+  async function runGatewayStop(event: PluginHookGatewayStopEvent, ctx: PluginHookGatewayContext): Promise<void> {
     return runVoidHook("gateway_stop", event, ctx);
   }
 

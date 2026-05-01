@@ -93,14 +93,7 @@ export function resolveSlackChannelConfig(params: {
   defaultRequireMention?: boolean;
   allowNameMatching?: boolean;
 }): SlackChannelConfigResolved | null {
-  const {
-    channelId,
-    channelName,
-    channels,
-    channelKeys,
-    defaultRequireMention,
-    allowNameMatching,
-  } = params;
+  const { channelId, channelName, channels, channelKeys, defaultRequireMention, allowNameMatching } = params;
   const entries = channels ?? {};
   const keys = channelKeys ?? Object.keys(entries);
   const normalizedName = channelName ? normalizeSlackSlug(channelName) : "";
@@ -135,12 +128,9 @@ export function resolveSlackChannelConfig(params: {
   }
 
   const resolved = matched ?? fallback ?? {};
-  const allowed =
-    firstDefined(resolved.enabled, resolved.allow, fallback?.enabled, fallback?.allow, true) ??
-    true;
+  const allowed = firstDefined(resolved.enabled, resolved.allow, fallback?.enabled, fallback?.allow, true) ?? true;
   const requireMention =
-    firstDefined(resolved.requireMention, fallback?.requireMention, requireMentionDefault) ??
-    requireMentionDefault;
+    firstDefined(resolved.requireMention, fallback?.requireMention, requireMentionDefault) ?? requireMentionDefault;
   const allowBots = firstDefined(resolved.allowBots, fallback?.allowBots);
   const users = firstDefined(resolved.users, fallback?.users);
   const skills = firstDefined(resolved.skills, fallback?.skills);

@@ -34,10 +34,7 @@ function createInvokeParams(params: Record<string, unknown>) {
   };
 }
 
-function expectInvalidRequestResponse(
-  respond: ReturnType<typeof vi.fn>,
-  expectedMessagePart: string,
-) {
+function expectInvalidRequestResponse(respond: ReturnType<typeof vi.fn>, expectedMessagePart: string) {
   const call = respond.mock.calls[0] as RespondCall | undefined;
   expect(call?.[0]).toBe(false);
   expect(call?.[2]?.code).toBe(ErrorCodes.INVALID_REQUEST);

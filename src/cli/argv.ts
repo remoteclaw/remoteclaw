@@ -1,18 +1,12 @@
 import { isBunRuntime, isNodeRuntime } from "../daemon/runtime-binary.js";
-import {
-  consumeRootOptionToken,
-  FLAG_TERMINATOR,
-  isValueToken,
-} from "../infra/cli-root-options.js";
+import { consumeRootOptionToken, FLAG_TERMINATOR, isValueToken } from "../infra/cli-root-options.js";
 
 const HELP_FLAGS = new Set(["-h", "--help"]);
 const VERSION_FLAGS = new Set(["-V", "--version"]);
 const ROOT_VERSION_ALIAS_FLAG = "-v";
 
 export function hasHelpOrVersion(argv: string[]): boolean {
-  return (
-    argv.some((arg) => HELP_FLAGS.has(arg) || VERSION_FLAGS.has(arg)) || hasRootVersionAlias(argv)
-  );
+  return argv.some((arg) => HELP_FLAGS.has(arg) || VERSION_FLAGS.has(arg)) || hasRootVersionAlias(argv);
 }
 
 function parsePositiveInt(value: string): number | undefined {
@@ -83,10 +77,7 @@ function isRootInvocationForFlags(
     if (arg === FLAG_TERMINATOR) {
       break;
     }
-    if (
-      targetFlags.has(arg) ||
-      (options?.includeVersionAlias === true && arg === ROOT_VERSION_ALIAS_FLAG)
-    ) {
+    if (targetFlags.has(arg) || (options?.includeVersionAlias === true && arg === ROOT_VERSION_ALIAS_FLAG)) {
       hasTarget = true;
       continue;
     }
@@ -150,11 +141,7 @@ export function getCommandPathWithRootOptions(argv: string[], depth = 2): string
   return getCommandPathInternal(argv, depth, { skipRootOptions: true });
 }
 
-function getCommandPathInternal(
-  argv: string[],
-  depth: number,
-  opts: { skipRootOptions: boolean },
-): string[] {
+function getCommandPathInternal(argv: string[], depth: number, opts: { skipRootOptions: boolean }): string[] {
   const args = argv.slice(2);
   const path: string[] = [];
   for (let i = 0; i < args.length; i += 1) {
@@ -292,8 +279,7 @@ export function buildParseArgv(params: {
         ? baseArgv.slice(1)
         : baseArgv;
   const looksLikeNode =
-    normalizedArgv.length >= 2 &&
-    (isNodeRuntime(normalizedArgv[0] ?? "") || isBunRuntime(normalizedArgv[0] ?? ""));
+    normalizedArgv.length >= 2 && (isNodeRuntime(normalizedArgv[0] ?? "") || isBunRuntime(normalizedArgv[0] ?? ""));
   if (looksLikeNode) {
     return normalizedArgv;
   }

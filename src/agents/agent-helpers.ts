@@ -34,21 +34,14 @@ export {
 export { isGoogleModelApi, sanitizeGoogleTurnOrdering } from "./agent-helpers/google.js";
 
 export { downgradeOpenAIReasoningBlocks } from "./agent-helpers/openai.js";
-export {
-  isEmptyAssistantMessageContent,
-  sanitizeSessionMessagesImages,
-} from "./agent-helpers/images.js";
+export { isEmptyAssistantMessageContent, sanitizeSessionMessagesImages } from "./agent-helpers/images.js";
 export {
   isMessagingToolDuplicate,
   isMessagingToolDuplicateNormalized,
   normalizeTextForComparison,
 } from "./agent-helpers/messaging-dedupe.js";
 
-export {
-  mergeConsecutiveUserTurns,
-  validateAnthropicTurns,
-  validateGeminiTurns,
-} from "./agent-helpers/turns.js";
+export { mergeConsecutiveUserTurns, validateAnthropicTurns, validateGeminiTurns } from "./agent-helpers/turns.js";
 export type { FailoverReason } from "./agent-helpers/types.js";
 
 export type { ToolCallIdMode } from "./tool-call-id.js";

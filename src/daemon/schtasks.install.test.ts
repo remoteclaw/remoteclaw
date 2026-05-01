@@ -19,9 +19,7 @@ beforeEach(() => {
 });
 
 describe("installScheduledTask", () => {
-  async function withUserProfileDir(
-    run: (tmpDir: string, env: Record<string, string>) => Promise<void>,
-  ) {
+  async function withUserProfileDir(run: (tmpDir: string, env: Record<string, string>) => Promise<void>) {
     const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-schtasks-install-"));
     const env = {
       USERPROFILE: tmpDir,
@@ -62,9 +60,7 @@ describe("installScheduledTask", () => {
 
       const script = await fs.readFile(scriptPath, "utf8");
       expect(script).toContain('cd /d "C:\\temp\\poc&calc"');
-      expect(script).toContain(
-        'node gateway.js --display-name "safe&whoami" --percent "%%TEMP%%" --bang "^!token^!"',
-      );
+      expect(script).toContain('node gateway.js --display-name "safe&whoami" --percent "%%TEMP%%" --bang "^!token^!"');
       expect(script).toContain('set "OC_INJECT=safe & whoami | calc"');
       expect(script).toContain('set "OC_CARET=a^^b"');
       expect(script).toContain('set "OC_PERCENT=%%TEMP%%"');

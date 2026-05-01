@@ -24,12 +24,7 @@ import { setActivePluginRegistry } from "./runtime.js";
 import { createPluginRuntime, type CreatePluginRuntimeOptions } from "./runtime/index.js";
 import type { PluginRuntime } from "./runtime/types.js";
 import { validateJsonSchemaValue } from "./schema-validator.js";
-import type {
-  RemoteClawPluginDefinition,
-  RemoteClawPluginModule,
-  PluginDiagnostic,
-  PluginLogger,
-} from "./types.js";
+import type { RemoteClawPluginDefinition, RemoteClawPluginModule, PluginDiagnostic, PluginLogger } from "./types.js";
 
 export type PluginLoadResult = PluginRegistry;
 
@@ -58,11 +53,7 @@ function resolvePluginSdkAliasCandidateOrder(params: {
   return isDistRuntime || params.isProduction ? ["dist", "src"] : ["src", "dist"];
 }
 
-function listPluginSdkAliasCandidates(params: {
-  srcFile: string;
-  distFile: string;
-  modulePath: string;
-}) {
+function listPluginSdkAliasCandidates(params: { srcFile: string; distFile: string; modulePath: string }) {
   const orderedKinds = resolvePluginSdkAliasCandidateOrder({
     modulePath: params.modulePath,
     isProduction: process.env.NODE_ENV === "production",
@@ -163,19 +154,16 @@ export const __testing = {
   resolvePluginSdkAliasFile,
 };
 
-function buildCacheKey(params: {
-  workspaceDir?: string;
-  plugins: NormalizedPluginsConfig;
-}): string {
+function buildCacheKey(params: { workspaceDir?: string; plugins: NormalizedPluginsConfig }): string {
   const workspaceKey = params.workspaceDir ? resolveUserPath(params.workspaceDir) : "";
   return `${workspaceKey}::${JSON.stringify(params.plugins)}`;
 }
 
-function validatePluginConfig(params: {
-  schema?: Record<string, unknown>;
-  cacheKey?: string;
-  value?: unknown;
-}): { ok: boolean; value?: Record<string, unknown>; errors?: string[] } {
+function validatePluginConfig(params: { schema?: Record<string, unknown>; cacheKey?: string; value?: unknown }): {
+  ok: boolean;
+  value?: Record<string, unknown>;
+  errors?: string[];
+} {
   const schema = params.schema;
   if (!schema) {
     return { ok: true, value: params.value as Record<string, unknown> | undefined };
@@ -197,9 +185,7 @@ function resolvePluginModuleExport(moduleExport: unknown): {
   register?: RemoteClawPluginDefinition["register"];
 } {
   const resolved =
-    moduleExport &&
-    typeof moduleExport === "object" &&
-    "default" in (moduleExport as Record<string, unknown>)
+    moduleExport && typeof moduleExport === "object" && "default" in (moduleExport as Record<string, unknown>)
       ? (moduleExport as { default: unknown }).default
       : moduleExport;
   if (typeof resolved === "function") {
@@ -364,11 +350,7 @@ function buildProvenanceIndex(params: {
   return { loadPathMatcher, installRules };
 }
 
-function isTrackedByProvenance(params: {
-  pluginId: string;
-  source: string;
-  index: PluginProvenanceIndex;
-}): boolean {
+function isTrackedByProvenance(params: { pluginId: string; source: string; index: PluginProvenanceIndex }): boolean {
   const sourcePath = resolveUserPath(params.source);
   const installRule = params.index.installRules.get(params.pluginId);
   if (installRule) {
@@ -556,9 +538,7 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
     return jitiLoader;
   };
 
-  const manifestByRoot = new Map(
-    manifestRegistry.plugins.map((record) => [record.rootDir, record]),
-  );
+  const manifestByRoot = new Map(manifestRegistry.plugins.map((record) => [record.rootDir, record]));
 
   const seenIds = new Map<string, PluginRecord["origin"]>();
 

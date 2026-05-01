@@ -48,9 +48,7 @@ export function buildDefaultToolPolicyPipelineSteps(params: {
     },
     {
       policy: params.providerProfilePolicy,
-      label: providerProfile
-        ? `tools.byProvider.profile (${providerProfile})`
-        : "tools.byProvider.profile",
+      label: providerProfile ? `tools.byProvider.profile (${providerProfile})` : "tools.byProvider.profile",
       stripPluginOnlyAllowlist: true,
     },
     { policy: params.globalPolicy, label: "tools.allow", stripPluginOnlyAllowlist: true },
@@ -105,9 +103,7 @@ export function applyToolPolicyPipeline(params: {
         const suffix = resolved.strippedAllowlist
           ? "Ignoring allowlist so core tools remain available. Use tools.alsoAllow for additive plugin tool enablement."
           : "These entries won't match any tool unless the plugin is enabled.";
-        params.warn(
-          `tools: ${step.label} allowlist contains unknown entries (${entries}). ${suffix}`,
-        );
+        params.warn(`tools: ${step.label} allowlist contains unknown entries (${entries}). ${suffix}`);
       }
       policy = resolved.policy;
     }

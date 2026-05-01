@@ -50,9 +50,7 @@ describe("agents schema — regression for #2308 (explicit agent config)", () =>
       if (result.success) {
         throw new Error("expected schema validation failure");
       }
-      const workspaceIssue = result.error.issues.find(
-        (iss) => iss.path.join(".") === "agents.list.0.workspace",
-      );
+      const workspaceIssue = result.error.issues.find((iss) => iss.path.join(".") === "agents.list.0.workspace");
       expect(workspaceIssue).toBeDefined();
     });
 
@@ -66,9 +64,7 @@ describe("agents schema — regression for #2308 (explicit agent config)", () =>
       if (result.success) {
         throw new Error("expected schema validation failure");
       }
-      const workspaceIssue = result.error.issues.find(
-        (iss) => iss.path.join(".") === "agents.list.0.workspace",
-      );
+      const workspaceIssue = result.error.issues.find((iss) => iss.path.join(".") === "agents.list.0.workspace");
       expect(workspaceIssue).toBeDefined();
       expect(workspaceIssue?.message).toContain("non-empty string");
     });
@@ -83,9 +79,7 @@ describe("agents schema — regression for #2308 (explicit agent config)", () =>
       if (result.success) {
         throw new Error("expected schema validation failure");
       }
-      const workspaceIssue = result.error.issues.find(
-        (iss) => iss.path.join(".") === "agents.list.0.workspace",
-      );
+      const workspaceIssue = result.error.issues.find((iss) => iss.path.join(".") === "agents.list.0.workspace");
       expect(workspaceIssue).toBeDefined();
     });
 
@@ -99,9 +93,7 @@ describe("agents schema — regression for #2308 (explicit agent config)", () =>
       if (result.success) {
         throw new Error("expected schema validation failure");
       }
-      const workspaceIssue = result.error.issues.find(
-        (iss) => iss.path.join(".") === "agents.list.1.workspace",
-      );
+      const workspaceIssue = result.error.issues.find((iss) => iss.path.join(".") === "agents.list.1.workspace");
       expect(workspaceIssue).toBeDefined();
     });
   });

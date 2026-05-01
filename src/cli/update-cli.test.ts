@@ -138,8 +138,7 @@ vi.mock("../runtime.js", () => ({
 const { runGatewayUpdate } = await import("../infra/update-runner.js");
 const { resolveRemoteClawPackageRoot } = await import("../infra/remoteclaw-root.js");
 const { readConfigFileSnapshot, writeConfigFile } = await import("../config/config.js");
-const { checkUpdateStatus, fetchNpmTagVersion, resolveNpmChannelTag } =
-  await import("../infra/update-check.js");
+const { checkUpdateStatus, fetchNpmTagVersion, resolveNpmChannelTag } = await import("../infra/update-check.js");
 const { runCommandWithTimeout } = await import("../process/exec.js");
 const { runDaemonRestart, runDaemonInstall } = await import("./daemon-cli.js");
 const { doctorCommand } = await import("../commands/doctor.js");
@@ -575,18 +574,11 @@ describe("update-cli", () => {
 
         await updateCommand({});
 
-        expect(doctorCommand).toHaveBeenCalledWith(
-          defaultRuntime,
-          expect.objectContaining({ nonInteractive: true }),
-        );
+        expect(doctorCommand).toHaveBeenCalledWith(defaultRuntime, expect.objectContaining({ nonInteractive: true }));
         expect(process.env.REMOTECLAW_UPDATE_IN_PROGRESS).toBeUndefined();
 
         const logLines = vi.mocked(defaultRuntime.log).mock.calls.map((call) => String(call[0]));
-        expect(
-          logLines.some((line) =>
-            line.includes("Leveled up! New skills unlocked. You're welcome."),
-          ),
-        ).toBe(true);
+        expect(logLines.some((line) => line.includes("Leveled up! New skills unlocked. You're welcome."))).toBe(true);
       });
     } finally {
       randomSpy.mockRestore();
@@ -664,9 +656,7 @@ describe("update-cli", () => {
       .mocked(defaultRuntime.error)
       .mock.calls.some((call) => String(call[0]).includes("Downgrade confirmation required."));
     expect(downgradeMessageSeen).toBe(shouldExit);
-    expect(vi.mocked(defaultRuntime.exit).mock.calls.some((call) => call[0] === 1)).toBe(
-      shouldExit,
-    );
+    expect(vi.mocked(defaultRuntime.exit).mock.calls.some((call) => call[0] === 1)).toBe(shouldExit);
     expect(vi.mocked(runGatewayUpdate).mock.calls.length > 0).toBe(shouldRunUpdate);
   });
 
@@ -687,9 +677,7 @@ describe("update-cli", () => {
 
     await updateWizardCommand({});
 
-    expect(defaultRuntime.error).toHaveBeenCalledWith(
-      expect.stringContaining("Update wizard requires a TTY"),
-    );
+    expect(defaultRuntime.error).toHaveBeenCalledWith(expect.stringContaining("Update wizard requires a TTY"));
     expect(defaultRuntime.exit).toHaveBeenCalledWith(1);
   });
 

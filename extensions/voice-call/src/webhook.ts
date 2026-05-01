@@ -60,12 +60,7 @@ export class VoiceCallWebhookServer {
   /** Media stream handler for bidirectional audio (when streaming enabled) */
   private mediaStreamHandler: MediaStreamHandler | null = null;
 
-  constructor(
-    config: VoiceCallConfig,
-    manager: CallManager,
-    provider: VoiceCallProvider,
-    coreConfig?: CoreConfig,
-  ) {
+  constructor(config: VoiceCallConfig, manager: CallManager, provider: VoiceCallProvider, coreConfig?: CoreConfig) {
     this.config = normalizeVoiceCallConfig(config);
     this.manager = manager;
     this.provider = provider;
@@ -188,9 +183,7 @@ export class VoiceCallWebhookServer {
         // Without this, calls can remain active indefinitely after the stream closes.
         const disconnectedCall = this.manager.getCallByProviderCallId(callId);
         if (disconnectedCall) {
-          console.log(
-            `[voice-call] Auto-ending call ${disconnectedCall.callId} on stream disconnect`,
-          );
+          console.log(`[voice-call] Auto-ending call ${disconnectedCall.callId} on stream disconnect`);
           void this.manager.endCall(disconnectedCall.callId).catch((err) => {
             console.warn(`[voice-call] Failed to auto-end call ${disconnectedCall.callId}:`, err);
           });
@@ -250,11 +243,8 @@ export class VoiceCallWebhookServer {
         console.log(`[voice-call] Webhook server listening on ${url}`);
         if (this.mediaStreamHandler) {
           const address = this.server?.address();
-          const actualPort =
-            address && typeof address === "object" ? address.port : this.config.serve.port;
-          console.log(
-            `[voice-call] Media stream WebSocket on ws://${bind}:${actualPort}${streamPath}`,
-          );
+          const actualPort = address && typeof address === "object" ? address.port : this.config.serve.port;
+          console.log(`[voice-call] Media stream WebSocket on ws://${bind}:${actualPort}${streamPath}`);
         }
         resolve(url);
 
@@ -320,28 +310,18 @@ export class VoiceCallWebhookServer {
   }
 
   private isWebhookPathMatch(requestPath: string, configuredPath: string): boolean {
-    return (
-      this.normalizeWebhookPathForMatch(requestPath) ===
-      this.normalizeWebhookPathForMatch(configuredPath)
-    );
+    return this.normalizeWebhookPathForMatch(requestPath) === this.normalizeWebhookPathForMatch(configuredPath);
   }
 
   /**
    * Handle incoming HTTP request.
    */
-  private async handleRequest(
-    req: http.IncomingMessage,
-    res: http.ServerResponse,
-    webhookPath: string,
-  ): Promise<void> {
+  private async handleRequest(req: http.IncomingMessage, res: http.ServerResponse, webhookPath: string): Promise<void> {
     const payload = await this.runWebhookPipeline(req, webhookPath);
     this.writeWebhookResponse(res, payload);
   }
 
-  private async runWebhookPipeline(
-    req: http.IncomingMessage,
-    webhookPath: string,
-  ): Promise<WebhookResponsePayload> {
+  private async runWebhookPipeline(req: http.IncomingMessage, webhookPath: string): Promise<WebhookResponsePayload> {
     const url = buildRequestUrl(req.url, req.headers.host);
 
     if (url.pathname === "/voice/hold-music") {
@@ -432,11 +412,7 @@ export class VoiceCallWebhookServer {
   /**
    * Read request body as string with timeout protection.
    */
-  private readBody(
-    req: http.IncomingMessage,
-    maxBytes: number,
-    timeoutMs = 30_000,
-  ): Promise<string> {
+  private readBody(req: http.IncomingMessage, maxBytes: number, timeoutMs = 30_000): Promise<string> {
     return readRequestBodyWithLimit(req, { maxBytes, timeoutMs });
   }
 

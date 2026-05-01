@@ -125,7 +125,7 @@ describe("argv helpers", () => {
     },
     {
       name: "help after -- terminator",
-      argv: ["node", "remoteclaw", "nodes", "run", "--", "git", "--help"],
+      argv: ["node", "remoteclaw", "nodes", "invoke", "--", "device.status", "--help"],
       expected: false,
     },
     {
@@ -165,17 +165,7 @@ describe("argv helpers", () => {
   it("extracts command path while skipping known root option values", () => {
     expect(
       getCommandPathWithRootOptions(
-        [
-          "node",
-          "remoteclaw",
-          "--profile",
-          "work",
-          "--container",
-          "demo",
-          "--no-color",
-          "config",
-          "validate",
-        ],
+        ["node", "remoteclaw", "--profile", "work", "--container", "demo", "--no-color", "config", "validate"],
         2,
       ),
     ).toEqual(["config", "validate"]);
@@ -286,9 +276,7 @@ describe("argv helpers", () => {
   it("parses verbose flags", () => {
     expect(getVerboseFlag(["node", "remoteclaw", "status", "--verbose"])).toBe(true);
     expect(getVerboseFlag(["node", "remoteclaw", "status", "--debug"])).toBe(false);
-    expect(
-      getVerboseFlag(["node", "remoteclaw", "status", "--debug"], { includeDebug: true }),
-    ).toBe(true);
+    expect(getVerboseFlag(["node", "remoteclaw", "status", "--debug"], { includeDebug: true })).toBe(true);
   });
 
   it.each([

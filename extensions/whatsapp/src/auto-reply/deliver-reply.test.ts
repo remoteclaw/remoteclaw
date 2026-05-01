@@ -38,9 +38,7 @@ function makeMsg(): WebInboundMsg {
 }
 
 function mockLoadedImageMedia() {
-  (
-    loadWebMedia as unknown as { mockResolvedValueOnce: (v: unknown) => void }
-  ).mockResolvedValueOnce({
+  (loadWebMedia as unknown as { mockResolvedValueOnce: (v: unknown) => void }).mockResolvedValueOnce({
     buffer: Buffer.from("img"),
     contentType: "image/jpeg",
     kind: "image",
@@ -48,21 +46,17 @@ function mockLoadedImageMedia() {
 }
 
 function mockFirstSendMediaFailure(msg: WebInboundMsg, message: string) {
-  (
-    msg.sendMedia as unknown as { mockRejectedValueOnce: (v: unknown) => void }
-  ).mockRejectedValueOnce(new Error(message));
-}
-
-function mockFirstReplyFailure(msg: WebInboundMsg, message: string) {
-  (msg.reply as unknown as { mockRejectedValueOnce: (v: unknown) => void }).mockRejectedValueOnce(
+  (msg.sendMedia as unknown as { mockRejectedValueOnce: (v: unknown) => void }).mockRejectedValueOnce(
     new Error(message),
   );
 }
 
+function mockFirstReplyFailure(msg: WebInboundMsg, message: string) {
+  (msg.reply as unknown as { mockRejectedValueOnce: (v: unknown) => void }).mockRejectedValueOnce(new Error(message));
+}
+
 function mockSecondReplySuccess(msg: WebInboundMsg) {
-  (msg.reply as unknown as { mockResolvedValueOnce: (v: unknown) => void }).mockResolvedValueOnce(
-    undefined,
-  );
+  (msg.reply as unknown as { mockResolvedValueOnce: (v: unknown) => void }).mockResolvedValueOnce(undefined);
 }
 
 const replyLogger = {
@@ -111,9 +105,7 @@ describe("deliverWebReply", () => {
     });
 
     expect(msg.reply).toHaveBeenCalledTimes(1);
-    expect(msg.reply).toHaveBeenCalledWith(
-      "Intro line\nReasoning: appears in content but is not a prefix",
-    );
+    expect(msg.reply).toHaveBeenCalledWith("Intro line\nReasoning: appears in content but is not a prefix");
   });
 
   it("sends chunked text replies and logs a summary", async () => {
@@ -191,9 +183,7 @@ describe("deliverWebReply", () => {
     const msg = makeMsg();
     mockLoadedImageMedia();
     mockFirstSendMediaFailure(msg, "socket reset");
-    (
-      msg.sendMedia as unknown as { mockResolvedValueOnce: (v: unknown) => void }
-    ).mockResolvedValueOnce(undefined);
+    (msg.sendMedia as unknown as { mockResolvedValueOnce: (v: unknown) => void }).mockResolvedValueOnce(undefined);
 
     await deliverWebReply({
       replyResult: { text: "caption", mediaUrl: "http://example.com/img.jpg" },
@@ -223,9 +213,9 @@ describe("deliverWebReply", () => {
     });
 
     expect(msg.reply).toHaveBeenCalledTimes(1);
-    expect(
-      String((msg.reply as unknown as { mock: { calls: unknown[][] } }).mock.calls[0]?.[0]),
-    ).toContain("⚠️ Media failed");
+    expect(String((msg.reply as unknown as { mock: { calls: unknown[][] } }).mock.calls[0]?.[0])).toContain(
+      "⚠️ Media failed",
+    );
     expect(replyLogger.warn).toHaveBeenCalledWith(
       expect.objectContaining({ mediaUrl: "http://example.com/img.jpg" }),
       "failed to send web media reply",
@@ -234,9 +224,7 @@ describe("deliverWebReply", () => {
 
   it("sends audio media as ptt voice note", async () => {
     const msg = makeMsg();
-    (
-      loadWebMedia as unknown as { mockResolvedValueOnce: (v: unknown) => void }
-    ).mockResolvedValueOnce({
+    (loadWebMedia as unknown as { mockResolvedValueOnce: (v: unknown) => void }).mockResolvedValueOnce({
       buffer: Buffer.from("aud"),
       contentType: "audio/ogg",
       kind: "audio",
@@ -263,9 +251,7 @@ describe("deliverWebReply", () => {
 
   it("sends video media", async () => {
     const msg = makeMsg();
-    (
-      loadWebMedia as unknown as { mockResolvedValueOnce: (v: unknown) => void }
-    ).mockResolvedValueOnce({
+    (loadWebMedia as unknown as { mockResolvedValueOnce: (v: unknown) => void }).mockResolvedValueOnce({
       buffer: Buffer.from("vid"),
       contentType: "video/mp4",
       kind: "video",
@@ -291,9 +277,7 @@ describe("deliverWebReply", () => {
 
   it("sends non-audio/image/video media as document", async () => {
     const msg = makeMsg();
-    (
-      loadWebMedia as unknown as { mockResolvedValueOnce: (v: unknown) => void }
-    ).mockResolvedValueOnce({
+    (loadWebMedia as unknown as { mockResolvedValueOnce: (v: unknown) => void }).mockResolvedValueOnce({
       buffer: Buffer.from("bin"),
       contentType: undefined,
       kind: "file",

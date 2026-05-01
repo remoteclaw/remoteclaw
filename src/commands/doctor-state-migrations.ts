@@ -1,4 +1,1 @@
-export {
-  autoMigrateLegacyStateDir,
-  resetAutoMigrateLegacyStateDirForTest,
-} from "../infra/state-migrations.js";
+export { autoMigrateLegacyStateDir, resetAutoMigrateLegacyStateDirForTest } from "../infra/state-migrations.js";

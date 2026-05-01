@@ -259,15 +259,9 @@ function inputIdForField(key: CronFieldKey) {
   return "cron-delivery-to";
 }
 
-function fieldLabelForKey(
-  key: CronFieldKey,
-  form: CronFormState,
-  deliveryMode: CronFormState["deliveryMode"],
-) {
+function fieldLabelForKey(key: CronFieldKey, form: CronFormState, deliveryMode: CronFormState["deliveryMode"]) {
   if (key === "payloadText") {
-    return form.payloadKind === "systemEvent"
-      ? t("cron.form.mainTimelineMessage")
-      : t("cron.form.assistantTaskPrompt");
+    return form.payloadKind === "systemEvent" ? t("cron.form.mainTimelineMessage") : t("cron.form.assistantTaskPrompt");
   }
   if (key === "deliveryTo") {
     return deliveryMode === "webhook" ? t("cron.form.webhookUrl") : t("cron.form.to");
@@ -354,8 +348,7 @@ export function renderCron(props: CronProps) {
   const isAgentTurn = props.form.payloadKind === "agentTurn";
   const isCronSchedule = props.form.scheduleKind === "cron";
   const channelOptions = buildChannelOptions(props);
-  const selectedJob =
-    props.runsJobId == null ? undefined : props.jobs.find((job) => job.id === props.runsJobId);
+  const selectedJob = props.runsJobId == null ? undefined : props.jobs.find((job) => job.id === props.runsJobId);
   const selectedRunTitle =
     props.runsScope === "all"
       ? t("cron.jobList.allJobs")
@@ -371,8 +364,7 @@ export function renderCron(props: CronProps) {
     .map((option) => option.label);
   const statusSummary = summarizeSelection(selectedStatusLabels, t("cron.runs.allStatuses"));
   const deliverySummary = summarizeSelection(selectedDeliveryLabels, t("cron.runs.allDelivery"));
-  const supportsAnnounce =
-    props.form.sessionTarget === "isolated" && props.form.payloadKind === "agentTurn";
+  const supportsAnnounce = props.form.sessionTarget === "isolated" && props.form.payloadKind === "agentTurn";
   const selectedDeliveryMode =
     props.form.deliveryMode === "announce" && !supportsAnnounce ? "none" : props.form.deliveryMode;
   const blockingFields = collectBlockingFields(props.fieldErrors, props.form, selectedDeliveryMode);
@@ -397,13 +389,7 @@ export function renderCron(props: CronProps) {
           <div class="cron-summary-label">${t("cron.summary.enabled")}</div>
           <div class="cron-summary-value">
             <span class=${`chip ${props.status?.enabled ? "chip-ok" : "chip-danger"}`}>
-              ${
-                props.status
-                  ? props.status.enabled
-                    ? t("cron.summary.yes")
-                    : t("cron.summary.no")
-                  : t("common.na")
-              }
+              ${props.status ? (props.status.enabled ? t("cron.summary.yes") : t("cron.summary.no")) : t("common.na")}
             </span>
           </div>
         </div>
@@ -455,8 +441,7 @@ export function renderCron(props: CronProps) {
                 .value=${props.jobsEnabledFilter}
                 @change=${(e: Event) =>
                   props.onJobsFiltersChange({
-                    cronJobsEnabledFilter: (e.target as HTMLSelectElement)
-                      .value as CronJobsEnabledFilter,
+                    cronJobsEnabledFilter: (e.target as HTMLSelectElement).value as CronJobsEnabledFilter,
                   })}
               >
                 <option value="all">${t("cron.jobs.all")}</option>
@@ -471,8 +456,7 @@ export function renderCron(props: CronProps) {
                 .value=${props.jobsScheduleKindFilter}
                 @change=${(e: Event) =>
                   props.onJobsFiltersChange({
-                    cronJobsScheduleKindFilter: (e.target as HTMLSelectElement)
-                      .value as CronJobsScheduleKindFilter,
+                    cronJobsScheduleKindFilter: (e.target as HTMLSelectElement).value as CronJobsScheduleKindFilter,
                   })}
               >
                 <option value="all">${t("cron.jobs.all")}</option>
@@ -488,8 +472,7 @@ export function renderCron(props: CronProps) {
                 .value=${props.jobsLastStatusFilter}
                 @change=${(e: Event) =>
                   props.onJobsFiltersChange({
-                    cronJobsLastStatusFilter: (e.target as HTMLSelectElement)
-                      .value as CronJobsLastStatusFilter,
+                    cronJobsLastStatusFilter: (e.target as HTMLSelectElement).value as CronJobsLastStatusFilter,
                   })}
               >
                 <option value="all">${t("cron.jobs.all")}</option>
@@ -630,11 +613,7 @@ export function renderCron(props: CronProps) {
                 options: runStatusOptions,
                 selected: props.runsStatuses,
                 onToggle: (value, checked) => {
-                  const next = toggleSelection(
-                    props.runsStatuses,
-                    value as CronRunsStatusValue,
-                    checked,
-                  );
+                  const next = toggleSelection(props.runsStatuses, value as CronRunsStatusValue, checked);
                   void props.onRunsFiltersChange({ cronRunsStatuses: next });
                 },
                 onClear: () => {
@@ -648,11 +627,7 @@ export function renderCron(props: CronProps) {
                 options: runDeliveryOptions,
                 selected: props.runsDeliveryStatuses,
                 onToggle: (value, checked) => {
-                  const next = toggleSelection(
-                    props.runsDeliveryStatuses,
-                    value as CronDeliveryStatus,
-                    checked,
-                  );
+                  const next = toggleSelection(props.runsDeliveryStatuses, value as CronDeliveryStatus, checked);
                   void props.onRunsFiltersChange({ cronRunsDeliveryStatuses: next });
                 },
                 onClear: () => {
@@ -714,11 +689,8 @@ export function renderCron(props: CronProps) {
                   .value=${props.form.name}
                   placeholder=${t("cron.form.namePlaceholder")}
                   aria-invalid=${props.fieldErrors.name ? "true" : "false"}
-                  aria-describedby=${ifDefined(
-                    props.fieldErrors.name ? errorIdForField("name") : undefined,
-                  )}
-                  @input=${(e: Event) =>
-                    props.onFormChange({ name: (e.target as HTMLInputElement).value })}
+                  aria-describedby=${ifDefined(props.fieldErrors.name ? errorIdForField("name") : undefined)}
+                  @input=${(e: Event) => props.onFormChange({ name: (e.target as HTMLInputElement).value })}
                 />
                 ${renderFieldError(props.fieldErrors.name, errorIdForField("name"))}
               </label>
@@ -727,8 +699,7 @@ export function renderCron(props: CronProps) {
                 <input
                   .value=${props.form.description}
                   placeholder=${t("cron.form.descriptionPlaceholder")}
-                  @input=${(e: Event) =>
-                    props.onFormChange({ description: (e.target as HTMLInputElement).value })}
+                  @input=${(e: Event) => props.onFormChange({ description: (e.target as HTMLInputElement).value })}
                 />
               </label>
               <label class="field">
@@ -738,8 +709,7 @@ export function renderCron(props: CronProps) {
                   .value=${props.form.agentId}
                   list="cron-agent-suggestions"
                   ?disabled=${props.form.clearAgent}
-                  @input=${(e: Event) =>
-                    props.onFormChange({ agentId: (e.target as HTMLInputElement).value })}
+                  @input=${(e: Event) => props.onFormChange({ agentId: (e.target as HTMLInputElement).value })}
                   placeholder=${t("cron.form.agentPlaceholder")}
                 />
                 <div class="cron-help">${t("cron.form.agentHelp")}</div>
@@ -748,8 +718,7 @@ export function renderCron(props: CronProps) {
                 <input
                   type="checkbox"
                   .checked=${props.form.enabled}
-                  @change=${(e: Event) =>
-                    props.onFormChange({ enabled: (e.target as HTMLInputElement).checked })}
+                  @change=${(e: Event) => props.onFormChange({ enabled: (e.target as HTMLInputElement).checked })}
                 />
                 <span class="field-checkbox__label">${t("cron.summary.enabled")}</span>
               </label>
@@ -767,8 +736,7 @@ export function renderCron(props: CronProps) {
                   .value=${props.form.scheduleKind}
                   @change=${(e: Event) =>
                     props.onFormChange({
-                      scheduleKind: (e.target as HTMLSelectElement)
-                        .value as CronFormState["scheduleKind"],
+                      scheduleKind: (e.target as HTMLSelectElement).value as CronFormState["scheduleKind"],
                     })}
                 >
                   <option value="every">${t("cron.form.every")}</option>
@@ -791,8 +759,7 @@ export function renderCron(props: CronProps) {
                   .value=${props.form.sessionTarget}
                   @change=${(e: Event) =>
                     props.onFormChange({
-                      sessionTarget: (e.target as HTMLSelectElement)
-                        .value as CronFormState["sessionTarget"],
+                      sessionTarget: (e.target as HTMLSelectElement).value as CronFormState["sessionTarget"],
                     })}
                 >
                   <option value="main">${t("cron.form.main")}</option>
@@ -822,8 +789,7 @@ export function renderCron(props: CronProps) {
                   .value=${props.form.payloadKind}
                   @change=${(e: Event) =>
                     props.onFormChange({
-                      payloadKind: (e.target as HTMLSelectElement)
-                        .value as CronFormState["payloadKind"],
+                      payloadKind: (e.target as HTMLSelectElement).value as CronFormState["payloadKind"],
                     })}
                 >
                   <option value="systemEvent">${t("cron.form.systemEvent")}</option>
@@ -848,9 +814,7 @@ export function renderCron(props: CronProps) {
                           placeholder=${t("cron.form.timeoutPlaceholder")}
                           aria-invalid=${props.fieldErrors.timeoutSeconds ? "true" : "false"}
                           aria-describedby=${ifDefined(
-                            props.fieldErrors.timeoutSeconds
-                              ? errorIdForField("timeoutSeconds")
-                              : undefined,
+                            props.fieldErrors.timeoutSeconds ? errorIdForField("timeoutSeconds") : undefined,
                           )}
                           @input=${(e: Event) =>
                             props.onFormChange({
@@ -858,10 +822,7 @@ export function renderCron(props: CronProps) {
                             })}
                         />
                         <div class="cron-help">${t("cron.form.timeoutHelp")}</div>
-                        ${renderFieldError(
-                          props.fieldErrors.timeoutSeconds,
-                          errorIdForField("timeoutSeconds"),
-                        )}
+                        ${renderFieldError(props.fieldErrors.timeoutSeconds, errorIdForField("timeoutSeconds"))}
                       </label>
                     `
                   : nothing
@@ -902,8 +863,7 @@ export function renderCron(props: CronProps) {
                   .value=${selectedDeliveryMode}
                   @change=${(e: Event) =>
                     props.onFormChange({
-                      deliveryMode: (e.target as HTMLSelectElement)
-                        .value as CronFormState["deliveryMode"],
+                      deliveryMode: (e.target as HTMLSelectElement).value as CronFormState["deliveryMode"],
                     })}
                 >
                   ${
@@ -923,9 +883,7 @@ export function renderCron(props: CronProps) {
                   ? html`
                       <label class="field ${selectedDeliveryMode === "webhook" ? "cron-span-2" : ""}">
                         ${renderFieldLabel(
-                          selectedDeliveryMode === "webhook"
-                            ? t("cron.form.webhookUrl")
-                            : t("cron.form.channel"),
+                          selectedDeliveryMode === "webhook" ? t("cron.form.webhookUrl") : t("cron.form.channel"),
                           selectedDeliveryMode === "webhook",
                         )}
                         ${
@@ -937,9 +895,7 @@ export function renderCron(props: CronProps) {
                                   list="cron-delivery-to-suggestions"
                                   aria-invalid=${props.fieldErrors.deliveryTo ? "true" : "false"}
                                   aria-describedby=${ifDefined(
-                                    props.fieldErrors.deliveryTo
-                                      ? errorIdForField("deliveryTo")
-                                      : undefined,
+                                    props.fieldErrors.deliveryTo ? errorIdForField("deliveryTo") : undefined,
                                   )}
                                   @input=${(e: Event) =>
                                     props.onFormChange({
@@ -998,10 +954,7 @@ export function renderCron(props: CronProps) {
                       }
                       ${
                         selectedDeliveryMode === "webhook"
-                          ? renderFieldError(
-                              props.fieldErrors.deliveryTo,
-                              errorIdForField("deliveryTo"),
-                            )
+                          ? renderFieldError(props.fieldErrors.deliveryTo, errorIdForField("deliveryTo"))
                           : nothing
                       }
                     `
@@ -1077,9 +1030,7 @@ export function renderCron(props: CronProps) {
                             ?disabled=${props.form.scheduleExact}
                             aria-invalid=${props.fieldErrors.staggerAmount ? "true" : "false"}
                             aria-describedby=${ifDefined(
-                              props.fieldErrors.staggerAmount
-                                ? errorIdForField("staggerAmount")
-                                : undefined,
+                              props.fieldErrors.staggerAmount ? errorIdForField("staggerAmount") : undefined,
                             )}
                             @input=${(e: Event) =>
                               props.onFormChange({
@@ -1087,10 +1038,7 @@ export function renderCron(props: CronProps) {
                               })}
                             placeholder=${t("cron.form.staggerPlaceholder")}
                           />
-                          ${renderFieldError(
-                            props.fieldErrors.staggerAmount,
-                            errorIdForField("staggerAmount"),
-                          )}
+                          ${renderFieldError(props.fieldErrors.staggerAmount, errorIdForField("staggerAmount"))}
                         </label>
                         <label class="field">
                           <span>${t("cron.form.staggerUnit")}</span>
@@ -1099,8 +1047,7 @@ export function renderCron(props: CronProps) {
                             ?disabled=${props.form.scheduleExact}
                             @change=${(e: Event) =>
                               props.onFormChange({
-                                staggerUnit: (e.target as HTMLSelectElement)
-                                  .value as CronFormState["staggerUnit"],
+                                staggerUnit: (e.target as HTMLSelectElement).value as CronFormState["staggerUnit"],
                               })}
                           >
                             <option value="seconds">${t("cron.form.seconds")}</option>
@@ -1236,8 +1183,7 @@ export function renderCron(props: CronProps) {
                                   )}
                                   @input=${(e: Event) =>
                                     props.onFormChange({
-                                      failureAlertCooldownSeconds: (e.target as HTMLInputElement)
-                                        .value,
+                                      failureAlertCooldownSeconds: (e.target as HTMLInputElement).value,
                                     })}
                                   placeholder="3600"
                                 />
@@ -1398,9 +1344,7 @@ function renderScheduleFields(props: CronProps) {
           type="datetime-local"
           .value=${form.scheduleAt}
           aria-invalid=${props.fieldErrors.scheduleAt ? "true" : "false"}
-          aria-describedby=${ifDefined(
-            props.fieldErrors.scheduleAt ? errorIdForField("scheduleAt") : undefined,
-          )}
+          aria-describedby=${ifDefined(props.fieldErrors.scheduleAt ? errorIdForField("scheduleAt") : undefined)}
           @input=${(e: Event) =>
             props.onFormChange({
               scheduleAt: (e.target as HTMLInputElement).value,
@@ -1419,9 +1363,7 @@ function renderScheduleFields(props: CronProps) {
             id="cron-every-amount"
             .value=${form.everyAmount}
             aria-invalid=${props.fieldErrors.everyAmount ? "true" : "false"}
-            aria-describedby=${ifDefined(
-              props.fieldErrors.everyAmount ? errorIdForField("everyAmount") : undefined,
-            )}
+            aria-describedby=${ifDefined(props.fieldErrors.everyAmount ? errorIdForField("everyAmount") : undefined)}
             @input=${(e: Event) =>
               props.onFormChange({
                 everyAmount: (e.target as HTMLInputElement).value,
@@ -1455,11 +1397,8 @@ function renderScheduleFields(props: CronProps) {
           id="cron-cron-expr"
           .value=${form.cronExpr}
           aria-invalid=${props.fieldErrors.cronExpr ? "true" : "false"}
-          aria-describedby=${ifDefined(
-            props.fieldErrors.cronExpr ? errorIdForField("cronExpr") : undefined,
-          )}
-          @input=${(e: Event) =>
-            props.onFormChange({ cronExpr: (e.target as HTMLInputElement).value })}
+          aria-describedby=${ifDefined(props.fieldErrors.cronExpr ? errorIdForField("cronExpr") : undefined)}
+          @input=${(e: Event) => props.onFormChange({ cronExpr: (e.target as HTMLInputElement).value })}
           placeholder=${t("cron.form.expressionPlaceholder")}
         />
         ${renderFieldError(props.fieldErrors.cronExpr, errorIdForField("cronExpr"))}
@@ -1469,8 +1408,7 @@ function renderScheduleFields(props: CronProps) {
         <input
           .value=${form.cronTz}
           list="cron-tz-suggestions"
-          @input=${(e: Event) =>
-            props.onFormChange({ cronTz: (e.target as HTMLInputElement).value })}
+          @input=${(e: Event) => props.onFormChange({ cronTz: (e.target as HTMLInputElement).value })}
           placeholder=${t("cron.form.timezonePlaceholder")}
         />
         <div class="cron-help">${t("cron.form.timezoneHelp")}</div>

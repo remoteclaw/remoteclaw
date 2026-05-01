@@ -109,9 +109,7 @@ describe("registerMessageTools", () => {
     const tool = mockServer.tools.get("message_react");
     await tool!.handler({ emoji: "\u{1F44D}", messageId: "msg-1" });
 
-    expect(mockCallGateway).toHaveBeenCalledWith(
-      expect.objectContaining({ method: "message:react" }),
-    );
+    expect(mockCallGateway).toHaveBeenCalledWith(expect.objectContaining({ method: "message:react" }));
 
     const effects = await readMcpSideEffects(join(dir, "effects.ndjson"));
     expect(effects.sentTexts).toEqual([]);

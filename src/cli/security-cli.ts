@@ -60,9 +60,7 @@ export function registerSecurityCli(program: Command) {
       });
 
       if (opts.json) {
-        defaultRuntime.log(
-          JSON.stringify(fixResult ? { fix: fixResult, report } : report, null, 2),
-        );
+        defaultRuntime.log(JSON.stringify(fixResult ? { fix: fixResult, report } : report, null, 2));
         return;
       }
 
@@ -97,13 +95,9 @@ export function registerSecurityCli(program: Command) {
               if (action.ok) {
                 lines.push(muted(`  chmod ${mode} ${shortenHomePath(action.path)}`));
               } else if (action.skipped) {
-                lines.push(
-                  muted(`  skip chmod ${mode} ${shortenHomePath(action.path)} (${action.skipped})`),
-                );
+                lines.push(muted(`  skip chmod ${mode} ${shortenHomePath(action.path)} (${action.skipped})`));
               } else if (action.error) {
-                lines.push(
-                  muted(`  chmod ${mode} ${shortenHomePath(action.path)} failed: ${action.error}`),
-                );
+                lines.push(muted(`  chmod ${mode} ${shortenHomePath(action.path)} failed: ${action.error}`));
               }
               continue;
             }
@@ -124,8 +118,7 @@ export function registerSecurityCli(program: Command) {
         }
       }
 
-      const bySeverity = (sev: "critical" | "warn" | "info") =>
-        report.findings.filter((f) => f.severity === sev);
+      const bySeverity = (sev: "critical" | "warn" | "info") => report.findings.filter((f) => f.severity === sev);
 
       const render = (sev: "critical" | "warn" | "info") => {
         const list = bySeverity(sev);

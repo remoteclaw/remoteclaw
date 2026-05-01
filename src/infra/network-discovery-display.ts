@@ -12,10 +12,7 @@ export function summarizeDisplayNetworkError(error: unknown): string {
   return "network interface discovery failed";
 }
 
-export function fallbackBindHostForDisplay(
-  bindMode: GatewayBindMode,
-  customBindHost?: string,
-): string {
+export function fallbackBindHostForDisplay(bindMode: GatewayBindMode, customBindHost?: string): string {
   if (bindMode === "lan") {
     return "0.0.0.0";
   }

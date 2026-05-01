@@ -5,12 +5,7 @@ import { DEFAULT_SUBAGENT_MAX_SPAWN_DEPTH } from "../config/agent-limits.js";
 import { loadConfig } from "../config/config.js";
 import { callGateway } from "../gateway/call.js";
 import { getGlobalHookRunner } from "../plugins/hook-runner-global.js";
-import {
-  isValidAgentId,
-  isCronSessionKey,
-  normalizeAgentId,
-  parseAgentSessionKey,
-} from "../routing/session-key.js";
+import { isValidAgentId, isCronSessionKey, normalizeAgentId, parseAgentSessionKey } from "../routing/session-key.js";
 import { normalizeDeliveryContext } from "../utils/delivery-context.js";
 import { resolveAgentConfig, resolveAgentWorkspaceDir } from "./agent-scope.js";
 import { AGENT_LANE_SUBAGENT } from "./lanes.js";
@@ -174,10 +169,7 @@ async function cleanupProvisionalSession(
   }
 }
 
-function resolveSpawnMode(params: {
-  requestedMode?: SpawnSubagentMode;
-  threadRequested: boolean;
-}): SpawnSubagentMode {
+function resolveSpawnMode(params: { requestedMode?: SpawnSubagentMode; threadRequested: boolean }): SpawnSubagentMode {
   if (params.requestedMode === "run" || params.requestedMode === "session") {
     return params.requestedMode;
   }
@@ -213,8 +205,7 @@ async function ensureThreadBindingForSubagentSpawn(params: {
   if (!hookRunner?.hasHooks("subagent_spawning")) {
     return {
       status: "error",
-      error:
-        "thread=true is unavailable because no channel plugin registered subagent_spawning hooks.",
+      error: "thread=true is unavailable because no channel plugin registered subagent_spawning hooks.",
     };
   }
 
@@ -333,8 +324,7 @@ export async function spawnSubagentDirect(
   });
 
   const callerDepth = getSubagentDepthFromSessionStore(requesterInternalKey, { cfg });
-  const maxSpawnDepth =
-    cfg.agents?.defaults?.subagents?.maxSpawnDepth ?? DEFAULT_SUBAGENT_MAX_SPAWN_DEPTH;
+  const maxSpawnDepth = cfg.agents?.defaults?.subagents?.maxSpawnDepth ?? DEFAULT_SUBAGENT_MAX_SPAWN_DEPTH;
   if (callerDepth >= maxSpawnDepth) {
     return {
       status: "forbidden",
@@ -351,13 +341,11 @@ export async function spawnSubagentDirect(
     };
   }
 
-  const rawRequesterAgentId =
-    ctx.requesterAgentIdOverride ?? parseAgentSessionKey(requesterInternalKey)?.agentId;
+  const rawRequesterAgentId = ctx.requesterAgentIdOverride ?? parseAgentSessionKey(requesterInternalKey)?.agentId;
   if (!rawRequesterAgentId) {
     return {
       status: "forbidden",
-      error:
-        "sessions_spawn: cannot resolve requester agent id — tool must run inside an agent session",
+      error: "sessions_spawn: cannot resolve requester agent id — tool must run inside an agent session",
     };
   }
   const requesterAgentId = normalizeAgentId(rawRequesterAgentId);
@@ -489,9 +477,7 @@ export async function spawnSubagentDirect(
     childSessionKey,
     label: label || undefined,
     task,
-    acpEnabled:
-      (cfg as unknown as { acp?: { enabled?: boolean } }).acp?.enabled !== false &&
-      !childRuntime.sandboxed,
+    acpEnabled: (cfg as unknown as { acp?: { enabled?: boolean } }).acp?.enabled !== false && !childRuntime.sandboxed,
     childDepth,
     maxSpawnDepth,
   });
@@ -503,8 +489,7 @@ export async function spawnSubagentDirect(
   ).tools?.sessions_spawn?.attachments;
   const attachmentsEnabled = attachmentsCfg?.enabled === true;
   const maxTotalBytes =
-    typeof attachmentsCfg?.maxTotalBytes === "number" &&
-    Number.isFinite(attachmentsCfg.maxTotalBytes)
+    typeof attachmentsCfg?.maxTotalBytes === "number" && Number.isFinite(attachmentsCfg.maxTotalBytes)
       ? Math.max(0, Math.floor(attachmentsCfg.maxTotalBytes))
       : 5 * 1024 * 1024;
   const maxFiles =
@@ -539,8 +524,7 @@ export async function spawnSubagentDirect(
       });
       return {
         status: "forbidden",
-        error:
-          "attachments are disabled for sessions_spawn (enable tools.sessions_spawn.attachments.enabled)",
+        error: "attachments are disabled for sessions_spawn (enable tools.sessions_spawn.attachments.enabled)",
       };
     }
     if (requestedAttachments.length > maxFiles) {
@@ -609,23 +593,17 @@ export async function spawnSubagentDirect(
           buf = Buffer.from(contentVal, "utf8");
           const estimatedBytes = buf.byteLength;
           if (estimatedBytes > maxFileBytes) {
-            fail(
-              `attachments_file_bytes_exceeded (name=${name} bytes=${estimatedBytes} maxFileBytes=${maxFileBytes})`,
-            );
+            fail(`attachments_file_bytes_exceeded (name=${name} bytes=${estimatedBytes} maxFileBytes=${maxFileBytes})`);
           }
         }
 
         const bytes = buf.byteLength;
         if (bytes > maxFileBytes) {
-          fail(
-            `attachments_file_bytes_exceeded (name=${name} bytes=${bytes} maxFileBytes=${maxFileBytes})`,
-          );
+          fail(`attachments_file_bytes_exceeded (name=${name} bytes=${bytes} maxFileBytes=${maxFileBytes})`);
         }
         totalBytes += bytes;
         if (totalBytes > maxTotalBytes) {
-          fail(
-            `attachments_total_bytes_exceeded (totalBytes=${totalBytes} maxTotalBytes=${maxTotalBytes})`,
-          );
+          fail(`attachments_total_bytes_exceeded (totalBytes=${totalBytes} maxTotalBytes=${maxTotalBytes})`);
         }
 
         const sha256 = crypto.createHash("sha256").update(buf).digest("hex");
@@ -633,11 +611,7 @@ export async function spawnSubagentDirect(
         writeJobs.push({ outPath, buf });
         files.push({ name, bytes, sha256 });
       }
-      await Promise.all(
-        writeJobs.map(({ outPath, buf }) =>
-          fs.writeFile(outPath, buf, { mode: 0o600, flag: "wx" }),
-        ),
-      );
+      await Promise.all(writeJobs.map(({ outPath, buf }) => fs.writeFile(outPath, buf, { mode: 0o600, flag: "wx" })));
 
       const manifest = {
         relDir,
@@ -645,14 +619,10 @@ export async function spawnSubagentDirect(
         totalBytes,
         files,
       };
-      await fs.writeFile(
-        path.join(absDir, ".manifest.json"),
-        JSON.stringify(manifest, null, 2) + "\n",
-        {
-          mode: 0o600,
-          flag: "wx",
-        },
-      );
+      await fs.writeFile(path.join(absDir, ".manifest.json"), JSON.stringify(manifest, null, 2) + "\n", {
+        mode: 0o600,
+        flag: "wx",
+      });
 
       attachmentsReceipt = {
         count: files.length,

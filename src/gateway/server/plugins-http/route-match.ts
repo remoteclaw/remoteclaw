@@ -1,17 +1,10 @@
 import type { PluginRegistry } from "../../../plugins/registry.js";
 import { canonicalizePathVariant } from "../../security-path.js";
-import {
-  prefixMatchPath,
-  resolvePluginRoutePathContext,
-  type PluginRoutePathContext,
-} from "./path-context.js";
+import { prefixMatchPath, resolvePluginRoutePathContext, type PluginRoutePathContext } from "./path-context.js";
 
 type PluginHttpRouteEntry = NonNullable<PluginRegistry["httpRoutes"]>[number];
 
-export function doesPluginRouteMatchPath(
-  route: PluginHttpRouteEntry,
-  context: PluginRoutePathContext,
-): boolean {
+export function doesPluginRouteMatchPath(route: PluginHttpRouteEntry, context: PluginRoutePathContext): boolean {
   const routeCanonicalPath = canonicalizePathVariant(route.path);
   if (route.match === "prefix") {
     return context.candidates.some((candidate) => prefixMatchPath(candidate, routeCanonicalPath));
@@ -52,9 +45,6 @@ export function findRegisteredPluginHttpRoute(
   return findMatchingPluginHttpRoutes(registry, pathContext)[0];
 }
 
-export function isRegisteredPluginHttpRoutePath(
-  registry: PluginRegistry,
-  pathname: string,
-): boolean {
+export function isRegisteredPluginHttpRoutePath(registry: PluginRegistry, pathname: string): boolean {
   return findRegisteredPluginHttpRoute(registry, pathname) !== undefined;
 }

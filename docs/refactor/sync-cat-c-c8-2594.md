@@ -81,10 +81,7 @@ import { expectChannelInboundContextContract } from "./suites.js"; // ./suites.j
 // outbound-payload.contract.test.ts upstream imports
 import { discordOutbound } from "../../../../extensions/discord/src/outbound-adapter.js"; // missing in fork
 import { whatsappOutbound } from "../../../../extensions/whatsapp/src/outbound-adapter.js"; // missing in fork
-import {
-  installChannelOutboundPayloadContractSuite,
-  primeChannelOutboundSendMock,
-} from "./suites.js"; // ./suites.js → missing in fork
+import { installChannelOutboundPayloadContractSuite, primeChannelOutboundSendMock } from "./suites.js"; // ./suites.js → missing in fork
 
 // registry-backed.contract.test.ts upstream imports
 import { resetMatrixThreadBindingsForTests } from "../../../../extensions/matrix/api.js"; // missing in fork

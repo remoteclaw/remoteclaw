@@ -1,17 +1,9 @@
 import { sanitizeUserFacingText } from "../../agents/agent-helpers.js";
 import { stripHeartbeatToken } from "../heartbeat.js";
-import {
-  HEARTBEAT_TOKEN,
-  isSilentReplyText,
-  SILENT_REPLY_TOKEN,
-  stripSilentToken,
-} from "../tokens.js";
+import { HEARTBEAT_TOKEN, isSilentReplyText, SILENT_REPLY_TOKEN, stripSilentToken } from "../tokens.js";
 import type { ReplyPayload } from "../types.js";
 import { hasLineDirectives, parseLineDirectives } from "./line-directives.js";
-import {
-  resolveResponsePrefixTemplate,
-  type ResponsePrefixContext,
-} from "./response-prefix-template.js";
+import { resolveResponsePrefixTemplate, type ResponsePrefixContext } from "./response-prefix-template.js";
 
 export type NormalizeReplySkipReason = "empty" | "silent" | "heartbeat";
 
@@ -25,14 +17,9 @@ export type NormalizeReplyOptions = {
   onSkip?: (reason: NormalizeReplySkipReason) => void;
 };
 
-export function normalizeReplyPayload(
-  payload: ReplyPayload,
-  opts: NormalizeReplyOptions = {},
-): ReplyPayload | null {
+export function normalizeReplyPayload(payload: ReplyPayload, opts: NormalizeReplyOptions = {}): ReplyPayload | null {
   const hasMedia = Boolean(payload.mediaUrl || (payload.mediaUrls?.length ?? 0) > 0);
-  const hasChannelData = Boolean(
-    payload.channelData && Object.keys(payload.channelData).length > 0,
-  );
+  const hasChannelData = Boolean(payload.channelData && Object.keys(payload.channelData).length > 0);
   const trimmed = payload.text?.trim() ?? "";
   if (!trimmed && !hasMedia && !hasChannelData) {
     opts.onSkip?.("empty");
@@ -89,12 +76,7 @@ export function normalizeReplyPayload(
     ? resolveResponsePrefixTemplate(opts.responsePrefix, opts.responsePrefixContext)
     : opts.responsePrefix;
 
-  if (
-    effectivePrefix &&
-    text &&
-    text.trim() !== HEARTBEAT_TOKEN &&
-    !text.startsWith(effectivePrefix)
-  ) {
+  if (effectivePrefix && text && text.trim() !== HEARTBEAT_TOKEN && !text.startsWith(effectivePrefix)) {
     text = `${effectivePrefix} ${text}`;
   }
 

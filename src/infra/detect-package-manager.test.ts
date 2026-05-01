@@ -4,9 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { detectPackageManager } from "./detect-package-manager.js";
 
-async function createPackageManagerRoot(
-  files: Array<{ path: string; content: string }>,
-): Promise<string> {
+async function createPackageManagerRoot(files: Array<{ path: string; content: string }>): Promise<string> {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-detect-pm-"));
   for (const file of files) {
     await fs.writeFile(path.join(root, file.path), file.content, "utf8");
@@ -44,9 +42,7 @@ describe("detectPackageManager", () => {
       expected: "npm",
     },
   ])("falls back to lockfiles when $name", async ({ files, expected }) => {
-    await expect(detectPackageManager(await createPackageManagerRoot(files))).resolves.toBe(
-      expected,
-    );
+    await expect(detectPackageManager(await createPackageManagerRoot(files))).resolves.toBe(expected);
   });
 
   it("returns null when no package manager markers exist", async () => {

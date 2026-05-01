@@ -1,10 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  LEGACY_DAEMON_CLI_EXPORTS,
-  resolveLegacyDaemonCliAccessors,
-} from "../src/cli/daemon-cli-compat.ts";
+import { LEGACY_DAEMON_CLI_EXPORTS, resolveLegacyDaemonCliAccessors } from "../src/cli/daemon-cli-compat.ts";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const distDir = path.join(rootDir, "dist");
@@ -43,9 +40,7 @@ const resolved = orderedCandidates
   .find((entry) => Boolean(entry.accessors));
 
 if (!resolved?.accessors) {
-  throw new Error(
-    `Could not resolve daemon-cli export aliases from dist bundles: ${orderedCandidates.join(", ")}`,
-  );
+  throw new Error(`Could not resolve daemon-cli export aliases from dist bundles: ${orderedCandidates.join(", ")}`);
 }
 
 const target = resolved.entry;

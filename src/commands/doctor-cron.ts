@@ -22,9 +22,7 @@ function formatLegacyIssuePreview(issues: Partial<Record<string, number>>): stri
     lines.push(`- ${pluralize(issues.jobId, "job")} still uses legacy \`jobId\``);
   }
   if (issues.legacyScheduleString) {
-    lines.push(
-      `- ${pluralize(issues.legacyScheduleString, "job")} stores schedule as a bare string`,
-    );
+    lines.push(`- ${pluralize(issues.legacyScheduleString, "job")} stores schedule as a bare string`);
   }
   if (issues.legacyScheduleCron) {
     lines.push(`- ${pluralize(issues.legacyScheduleCron, "job")} still uses \`schedule.cron\``);
@@ -38,19 +36,13 @@ function formatLegacyIssuePreview(issues: Partial<Record<string, number>>): stri
     );
   }
   if (issues.legacyTopLevelPayloadFields) {
-    lines.push(
-      `- ${pluralize(issues.legacyTopLevelPayloadFields, "job")} still uses top-level payload fields`,
-    );
+    lines.push(`- ${pluralize(issues.legacyTopLevelPayloadFields, "job")} still uses top-level payload fields`);
   }
   if (issues.legacyTopLevelDeliveryFields) {
-    lines.push(
-      `- ${pluralize(issues.legacyTopLevelDeliveryFields, "job")} still uses top-level delivery fields`,
-    );
+    lines.push(`- ${pluralize(issues.legacyTopLevelDeliveryFields, "job")} still uses top-level delivery fields`);
   }
   if (issues.legacyDeliveryMode) {
-    lines.push(
-      `- ${pluralize(issues.legacyDeliveryMode, "job")} still uses delivery mode \`deliver\``,
-    );
+    lines.push(`- ${pluralize(issues.legacyDeliveryMode, "job")} still uses delivery mode \`deliver\``);
   }
   return lines;
 }
@@ -135,9 +127,7 @@ export async function maybeRepairLegacyCronStore(params: {
   const notifyCount = rawJobs.filter((job) => job.notify === true).length;
   const previewLines = formatLegacyIssuePreview(normalized.issues);
   if (notifyCount > 0) {
-    previewLines.push(
-      `- ${pluralize(notifyCount, "job")} still uses legacy \`notify: true\` webhook fallback`,
-    );
+    previewLines.push(`- ${pluralize(notifyCount, "job")} still uses legacy \`notify: true\` webhook fallback`);
   }
   if (previewLines.length === 0) {
     return;

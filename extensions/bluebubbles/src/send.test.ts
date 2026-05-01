@@ -19,10 +19,7 @@ installBlueBubblesFetchTestHooks({
   privateApiStatusMock,
 });
 
-function mockResolvedHandleTarget(
-  guid: string = "iMessage;-;+15551234567",
-  address: string = "+15551234567",
-) {
+function mockResolvedHandleTarget(guid: string = "iMessage;-;+15551234567", address: string = "+15551234567") {
   mockFetch.mockResolvedValueOnce({
     ok: true,
     json: () =>
@@ -217,11 +214,7 @@ describe("send", () => {
               data: [
                 {
                   guid: "iMessage;+;group-the-council",
-                  participants: [
-                    { address: "+12622102921" },
-                    { address: "+15550001111" },
-                    { address: "+15550002222" },
-                  ],
+                  participants: [{ address: "+12622102921" }, { address: "+15550001111" }, { address: "+15550002222" }],
                 },
               ],
             }),
@@ -401,9 +394,7 @@ describe("send", () => {
     });
 
     it("throws when serverUrl is missing", async () => {
-      await expect(sendMessageBlueBubbles("+15551234567", "Hello", {})).rejects.toThrow(
-        "serverUrl is required",
-      );
+      await expect(sendMessageBlueBubbles("+15551234567", "Hello", {})).rejects.toThrow("serverUrl is required");
     });
 
     it("throws when password is missing", async () => {
@@ -452,14 +443,10 @@ describe("send", () => {
       mockResolvedHandleTarget();
       mockSendResponse({ data: { guid: "msg-uuid-stripped" } });
 
-      const result = await sendMessageBlueBubbles(
-        "+15551234567",
-        "**Bold** and *italic* with `code`\n## Header",
-        {
-          serverUrl: "http://localhost:1234",
-          password: "test",
-        },
-      );
+      const result = await sendMessageBlueBubbles("+15551234567", "**Bold** and *italic* with `code`\n## Header", {
+        serverUrl: "http://localhost:1234",
+        password: "test",
+      });
 
       expect(result.messageId).toBe("msg-uuid-stripped");
 
@@ -525,10 +512,7 @@ describe("send", () => {
     });
 
     it("uses private-api when reply metadata is present", async () => {
-      mockBlueBubblesPrivateApiStatusOnce(
-        privateApiStatusMock,
-        BLUE_BUBBLES_PRIVATE_API_STATUS.enabled,
-      );
+      mockBlueBubblesPrivateApiStatusOnce(privateApiStatusMock, BLUE_BUBBLES_PRIVATE_API_STATUS.enabled);
       mockResolvedHandleTarget();
       mockSendResponse({ data: { guid: "msg-uuid-124" } });
 
@@ -550,10 +534,7 @@ describe("send", () => {
     });
 
     it("downgrades threaded reply to plain send when private API is disabled", async () => {
-      mockBlueBubblesPrivateApiStatusOnce(
-        privateApiStatusMock,
-        BLUE_BUBBLES_PRIVATE_API_STATUS.disabled,
-      );
+      mockBlueBubblesPrivateApiStatusOnce(privateApiStatusMock, BLUE_BUBBLES_PRIVATE_API_STATUS.disabled);
       mockResolvedHandleTarget();
       mockSendResponse({ data: { guid: "msg-uuid-plain" } });
 
@@ -573,10 +554,7 @@ describe("send", () => {
     });
 
     it("normalizes effect names and uses private-api for effects", async () => {
-      mockBlueBubblesPrivateApiStatusOnce(
-        privateApiStatusMock,
-        BLUE_BUBBLES_PRIVATE_API_STATUS.enabled,
-      );
+      mockBlueBubblesPrivateApiStatusOnce(privateApiStatusMock, BLUE_BUBBLES_PRIVATE_API_STATUS.enabled);
       mockResolvedHandleTarget();
       mockSendResponse({ data: { guid: "msg-uuid-125" } });
 
@@ -638,14 +616,10 @@ describe("send", () => {
           ),
       });
 
-      const result = await sendMessageBlueBubbles(
-        "chat_guid:iMessage;-;direct-chat",
-        "Direct message",
-        {
-          serverUrl: "http://localhost:1234",
-          password: "test",
-        },
-      );
+      const result = await sendMessageBlueBubbles("chat_guid:iMessage;-;direct-chat", "Direct message", {
+        serverUrl: "http://localhost:1234",
+        password: "test",
+      });
 
       expect(result.messageId).toBe("direct-msg-123");
       expect(mockFetch).toHaveBeenCalledTimes(1);

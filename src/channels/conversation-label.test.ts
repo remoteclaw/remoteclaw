@@ -61,10 +61,7 @@ describe("resolveConversationLabel", () => {
       },
       expected: "Family id:123@g.us",
     },
-  ] satisfies Array<{ name: string; ctx: MsgContext; expected: string }>)(
-    "$name",
-    ({ ctx, expected }) => {
-      expect(resolveConversationLabel(ctx)).toBe(expected);
-    },
-  );
+  ] satisfies Array<{ name: string; ctx: MsgContext; expected: string }>)("$name", ({ ctx, expected }) => {
+    expect(resolveConversationLabel(ctx)).toBe(expected);
+  });
 });

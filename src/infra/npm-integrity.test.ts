@@ -1,8 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  resolveNpmIntegrityDrift,
-  resolveNpmIntegrityDriftWithDefaultMessage,
-} from "./npm-integrity.js";
+import { resolveNpmIntegrityDrift, resolveNpmIntegrityDriftWithDefaultMessage } from "./npm-integrity.js";
 
 describe("resolveNpmIntegrityDrift", () => {
   it.each([
@@ -130,9 +127,7 @@ describe("resolveNpmIntegrityDrift", () => {
       },
       onIntegrityDrift: async () => false,
     });
-    expect(abortResult.error).toBe(
-      "aborted: npm package integrity drift detected for @remoteclaw/test@1.0.0",
-    );
+    expect(abortResult.error).toBe("aborted: npm package integrity drift detected for @remoteclaw/test@1.0.0");
   });
 
   it("falls back to the original spec when resolvedSpec is missing", async () => {

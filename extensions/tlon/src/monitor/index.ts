@@ -120,9 +120,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
         runtime.log?.(`[tlon] Attempting authentication to ${accountUrl}...`);
         return await authenticate(accountUrl, accountCode, { ssrfPolicy });
       } catch (error: any) {
-        runtime.error?.(
-          `[tlon] Failed to authenticate (attempt ${attempt}): ${error?.message ?? String(error)}`,
-        );
+        runtime.error?.(`[tlon] Failed to authenticate (attempt ${attempt}): ${error?.message ?? String(error)}`);
         if (attempt >= maxAttempts) {
           throw error;
         }
@@ -177,9 +175,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
   let effectiveAutoAcceptGroupInvites: boolean = account.autoAcceptGroupInvites ?? false;
   let effectiveGroupInviteAllowlist: string[] = account.groupInviteAllowlist;
   let effectiveAutoDiscoverChannels: boolean = account.autoDiscoverChannels ?? false;
-  let effectiveOwnerShip: string | null = account.ownerShip
-    ? normalizeShip(account.ownerShip)
-    : null;
+  let effectiveOwnerShip: string | null = account.ownerShip ? normalizeShip(account.ownerShip) : null;
   let pendingApprovals: PendingApproval[] = [];
   let currentSettings: TlonSettingsStore = {};
 
@@ -255,9 +251,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
     for (const { key, fileValue, settingsValue } of migrations) {
       // Only migrate if file has a value and settings store doesn't
       const hasFileValue = Array.isArray(fileValue) ? fileValue.length > 0 : fileValue != null;
-      const hasSettingsValue = Array.isArray(settingsValue)
-        ? settingsValue.length > 0
-        : settingsValue != null;
+      const hasSettingsValue = Array.isArray(settingsValue) ? settingsValue.length > 0 : settingsValue != null;
 
       if (hasFileValue && !hasSettingsValue) {
         try {
@@ -297,30 +291,22 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
     }
     if (currentSettings.autoDiscoverChannels !== undefined) {
       effectiveAutoDiscoverChannels = currentSettings.autoDiscoverChannels;
-      runtime.log?.(
-        `[tlon] Using autoDiscoverChannels from settings store: ${effectiveAutoDiscoverChannels}`,
-      );
+      runtime.log?.(`[tlon] Using autoDiscoverChannels from settings store: ${effectiveAutoDiscoverChannels}`);
     }
     if (currentSettings.dmAllowlist?.length) {
       effectiveDmAllowlist = currentSettings.dmAllowlist;
-      runtime.log?.(
-        `[tlon] Using dmAllowlist from settings store: ${effectiveDmAllowlist.join(", ")}`,
-      );
+      runtime.log?.(`[tlon] Using dmAllowlist from settings store: ${effectiveDmAllowlist.join(", ")}`);
     }
     if (currentSettings.showModelSig !== undefined) {
       effectiveShowModelSig = currentSettings.showModelSig;
     }
     if (currentSettings.autoAcceptDmInvites !== undefined) {
       effectiveAutoAcceptDmInvites = currentSettings.autoAcceptDmInvites;
-      runtime.log?.(
-        `[tlon] Using autoAcceptDmInvites from settings store: ${effectiveAutoAcceptDmInvites}`,
-      );
+      runtime.log?.(`[tlon] Using autoAcceptDmInvites from settings store: ${effectiveAutoAcceptDmInvites}`);
     }
     if (currentSettings.autoAcceptGroupInvites !== undefined) {
       effectiveAutoAcceptGroupInvites = currentSettings.autoAcceptGroupInvites;
-      runtime.log?.(
-        `[tlon] Using autoAcceptGroupInvites from settings store: ${effectiveAutoAcceptGroupInvites}`,
-      );
+      runtime.log?.(`[tlon] Using autoAcceptGroupInvites from settings store: ${effectiveAutoAcceptGroupInvites}`);
     }
     if (currentSettings.groupInviteAllowlist?.length) {
       effectiveGroupInviteAllowlist = currentSettings.groupInviteAllowlist;
@@ -360,9 +346,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
         groupChannels.push(ch);
       }
     }
-    runtime.log?.(
-      `[tlon] Added ${account.groupChannels.length} manual groupChannels to monitoring`,
-    );
+    runtime.log?.(`[tlon] Added ${account.groupChannels.length} manual groupChannels to monitoring`);
   }
 
   // Also merge settings store groupChannels (may have been set via tlon settings command)
@@ -375,9 +359,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
   }
 
   if (groupChannels.length > 0) {
-    runtime.log?.(
-      `[tlon] Monitoring ${groupChannels.length} group channel(s): ${groupChannels.join(", ")}`,
-    );
+    runtime.log?.(`[tlon] Monitoring ${groupChannels.length} group channel(s): ${groupChannels.join(", ")}`);
   } else {
     runtime.log?.("[tlon] No group channels to monitor (DMs only)");
   }
@@ -622,9 +604,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
 
     const message = formatApprovalRequest(approval);
     await sendOwnerNotification(message);
-    runtime.log?.(
-      `[tlon] Queued approval request: ${approval.id} (${approval.type} from ${approval.requestingShip})`,
-    );
+    runtime.log?.(`[tlon] Queued approval request: ${approval.id} (${approval.type} from ${approval.requestingShip})`);
   }
 
   // Process the owner's approval response
@@ -636,9 +616,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
 
     const approval = findPendingApproval(pendingApprovals, parsed.id);
     if (!approval) {
-      await sendOwnerNotification(
-        "No pending approval found" + (parsed.id ? ` for ID: ${parsed.id}` : ""),
-      );
+      await sendOwnerNotification("No pending approval found" + (parsed.id ? ` for ID: ${parsed.id}` : ""));
       return true; // Still consumed the message
     }
 
@@ -648,9 +626,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
           await addToDmAllowlist(approval.requestingShip);
           // Process the original message if available
           if (approval.originalMessage) {
-            runtime.log?.(
-              `[tlon] Processing original message from ${approval.requestingShip} after approval`,
-            );
+            runtime.log?.(`[tlon] Processing original message from ${approval.requestingShip} after approval`);
             await processMessage({
               messageId: approval.originalMessage.messageId,
               senderShip: approval.requestingShip,
@@ -715,9 +691,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
                     }
                   }
                   if (newCount > 0) {
-                    runtime.log?.(
-                      `[tlon] Discovered ${newCount} new channel(s) after joining group`,
-                    );
+                    runtime.log?.(`[tlon] Discovered ${newCount} new channel(s) after joining group`);
                   }
                 } catch (err) {
                   runtime.log?.(`[tlon] Channel discovery after group join failed: ${String(err)}`);
@@ -764,9 +738,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
 
       case "pending": {
         await sendOwnerNotification(formatPendingList(pendingApprovals));
-        runtime.log?.(
-          `[tlon] Owner requested pending approvals list (${pendingApprovals.length} pending)`,
-        );
+        runtime.log?.(`[tlon] Owner requested pending approvals list (${pendingApprovals.length} pending)`);
         return true;
       }
 
@@ -868,9 +840,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
           // Include note about ongoing conversation for agent judgment
           const contextNote = `[Thread conversation - ${threadHistory.length} previous replies. You are participating in this thread. Only respond if relevant or helpful - you don't need to reply to every message.]`;
           messageText = `${contextNote}\n\n[Previous messages]\n${threadContext}\n\n[Current message]\n${messageText}`;
-          runtime?.log?.(
-            `[tlon] Added thread context (${threadHistory.length} replies) to message`,
-          );
+          runtime?.log?.(`[tlon] Added thread context (${threadHistory.length} replies) to message`);
         }
       } catch (error: any) {
         runtime?.log?.(`[tlon] Could not fetch thread context: ${error?.message ?? String(error)}`);
@@ -907,9 +877,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
         }
 
         const historyText = history
-          .map(
-            (msg) => `[${new Date(msg.timestamp).toLocaleString()}] ${msg.author}: ${msg.content}`,
-          )
+          .map((msg) => `[${new Date(msg.timestamp).toLocaleString()}] ${msg.author}: ${msg.content}`)
           .join("\n");
 
         messageText =
@@ -979,24 +947,17 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
             fromShip: botShipName,
             toShip: effectiveOwnerShip,
             text: warningMsg,
-          }).catch((err) =>
-            runtime.error?.(`[tlon] Failed to send security warning to owner: ${err}`),
-          );
+          }).catch((err) => runtime.error?.(`[tlon] Failed to send security warning to owner: ${err}`));
         }
       }
       senders.add(senderShip);
     }
 
     const senderRole = isOwner(senderShip) ? "owner" : "user";
-    const fromLabel = isGroup
-      ? `${senderShip} [${senderRole}] in ${channelNest}`
-      : `${senderShip} [${senderRole}]`;
+    const fromLabel = isGroup ? `${senderShip} [${senderRole}] in ${channelNest}` : `${senderShip} [${senderRole}]`;
 
     // Compute command authorization for slash commands (owner-only)
-    const shouldComputeAuth = core.channel.commands.shouldComputeCommandAuthorized(
-      messageText,
-      cfg,
-    );
+    const shouldComputeAuth = core.channel.commands.shouldComputeCommandAuthorized(messageText, cfg);
     let commandAuthorized = false;
 
     if (shouldComputeAuth) {
@@ -1063,10 +1024,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
 
     const dispatchStartTime = Date.now();
 
-    const responsePrefix = core.channel.reply.resolveEffectiveMessagesConfig(
-      cfg,
-      route.agentId,
-    ).responsePrefix;
+    const responsePrefix = core.channel.reply.resolveEffectiveMessagesConfig(cfg, route.agentId).responsePrefix;
     const humanDelay = core.channel.reply.resolveHumanDelayConfig(cfg, route.agentId);
 
     await core.channel.reply.dispatchReplyWithBufferedBlockDispatcher({
@@ -1126,9 +1084,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
         },
         onError: (err, info) => {
           const dispatchDuration = Date.now() - dispatchStartTime;
-          runtime.error?.(
-            `[tlon] ${info.kind} reply failed after ${dispatchDuration}ms: ${String(err)}`,
-          );
+          runtime.error?.(`[tlon] ${info.kind} reply failed after ${dispatchDuration}ms: ${String(err)}`);
         },
       },
     });
@@ -1201,8 +1157,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
       // 1. Direct mention always triggers response
       // 2. Thread replies where we've participated - respond if relevant (let agent decide)
       const mentioned = isBotMentioned(messageText, botShipName, botNickname ?? undefined);
-      const inParticipatedThread =
-        isThreadReply && parentId && participatedThreads.has(String(parentId));
+      const inParticipatedThread = isThreadReply && parentId && participatedThreads.has(String(parentId));
 
       if (!mentioned && !inParticipatedThread) {
         return;
@@ -1239,9 +1194,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
               });
               await queueApprovalRequest(approval);
             } else {
-              runtime.log?.(
-                `[tlon] Access denied: ${senderShip} in ${nest} (allowed: ${allowedShips.join(", ")})`,
-              );
+              runtime.log?.(`[tlon] Access denied: ${senderShip} in ${nest} (allowed: ${allowedShips.join(", ")})`);
             }
             return;
           }
@@ -1263,9 +1216,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
         isThreadReply,
       });
     } catch (error: any) {
-      runtime.error?.(
-        `[tlon] Error handling channel firehose event: ${error?.message ?? String(error)}`,
-      );
+      runtime.error?.(`[tlon] Error handling channel firehose event: ${error?.message ?? String(error)}`);
     }
   };
 
@@ -1360,9 +1311,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
 
       // Log mismatch between author and partner for debugging
       if (authorShip && partnerShip && authorShip !== partnerShip) {
-        runtime.log?.(
-          `[tlon] DM ship mismatch (author=${authorShip}, partner=${partnerShip}) - routing to partner`,
-        );
+        runtime.log?.(`[tlon] DM ship mismatch (author=${authorShip}, partner=${partnerShip}) - routing to partner`);
       }
 
       // Resolve any cited/quoted messages first
@@ -1436,9 +1385,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
         timestamp: essay.sent || Date.now(),
       });
     } catch (error: any) {
-      runtime.error?.(
-        `[tlon] Error handling chat firehose event: ${error?.message ?? String(error)}`,
-      );
+      runtime.error?.(`[tlon] Error handling chat firehose event: ${error?.message ?? String(error)}`);
     }
   };
 
@@ -1491,9 +1438,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
             }
           }
         } catch (error: any) {
-          runtime.error?.(
-            `[tlon] Error handling contacts event: ${error?.message ?? String(error)}`,
-          );
+          runtime.error?.(`[tlon] Error handling contacts event: ${error?.message ?? String(error)}`);
         }
       },
       err: (error) => {
@@ -1524,8 +1469,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
 
       // Update DM allowlist
       if (newSettings.dmAllowlist !== undefined) {
-        effectiveDmAllowlist =
-          newSettings.dmAllowlist.length > 0 ? newSettings.dmAllowlist : account.dmAllowlist;
+        effectiveDmAllowlist = newSettings.dmAllowlist.length > 0 ? newSettings.dmAllowlist : account.dmAllowlist;
         runtime.log?.(`[tlon] Settings: dmAllowlist updated to ${effectiveDmAllowlist.join(", ")}`);
       }
 
@@ -1544,20 +1488,14 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
       // Update auto-accept group invites setting
       if (newSettings.autoAcceptGroupInvites !== undefined) {
         effectiveAutoAcceptGroupInvites = newSettings.autoAcceptGroupInvites;
-        runtime.log?.(
-          `[tlon] Settings: autoAcceptGroupInvites = ${effectiveAutoAcceptGroupInvites}`,
-        );
+        runtime.log?.(`[tlon] Settings: autoAcceptGroupInvites = ${effectiveAutoAcceptGroupInvites}`);
       }
 
       // Update group invite allowlist
       if (newSettings.groupInviteAllowlist !== undefined) {
         effectiveGroupInviteAllowlist =
-          newSettings.groupInviteAllowlist.length > 0
-            ? newSettings.groupInviteAllowlist
-            : account.groupInviteAllowlist;
-        runtime.log?.(
-          `[tlon] Settings: groupInviteAllowlist updated to ${effectiveGroupInviteAllowlist.join(", ")}`,
-        );
+          newSettings.groupInviteAllowlist.length > 0 ? newSettings.groupInviteAllowlist : account.groupInviteAllowlist;
+        runtime.log?.(`[tlon] Settings: groupInviteAllowlist updated to ${effectiveGroupInviteAllowlist.join(", ")}`);
       }
 
       if (newSettings.defaultAuthorizedShips !== undefined) {
@@ -1585,9 +1523,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
       // Update pending approvals
       if (newSettings.pendingApprovals !== undefined) {
         pendingApprovals = newSettings.pendingApprovals;
-        runtime.log?.(
-          `[tlon] Settings: pendingApprovals updated (${pendingApprovals.length} items)`,
-        );
+        runtime.log?.(`[tlon] Settings: pendingApprovals updated (${pendingApprovals.length} items)`);
       }
     });
 
@@ -1620,9 +1556,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
                   // If this is a new channel we're not watching yet, add it
                   if (!watchedChannels.has(channelNest)) {
                     watchedChannels.add(channelNest);
-                    runtime.log?.(
-                      `[tlon] Auto-detected new channel (invite accepted): ${channelNest}`,
-                    );
+                    runtime.log?.(`[tlon] Auto-detected new channel (invite accepted): ${channelNest}`);
 
                     // Persist to settings store so it survives restarts
                     if (effectiveAutoAcceptGroupInvites) {
@@ -1646,9 +1580,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
                           runtime.log?.(`[tlon] Persisted ${channelNest} to settings store`);
                         }
                       } catch (err) {
-                        runtime.error?.(
-                          `[tlon] Failed to persist channel to settings: ${String(err)}`,
-                        );
+                        runtime.error?.(`[tlon] Failed to persist channel to settings: ${String(err)}`);
                       }
                     }
                   }
@@ -1688,9 +1620,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
                             runtime.log?.(`[tlon] Persisted ${channelNest} to settings store`);
                           }
                         } catch (err) {
-                          runtime.error?.(
-                            `[tlon] Failed to persist channel to settings: ${String(err)}`,
-                          );
+                          runtime.error?.(`[tlon] Failed to persist channel to settings: ${String(err)}`);
                         }
                       }
                     }
@@ -1699,9 +1629,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
               }
             }
           } catch (error: any) {
-            runtime.error?.(
-              `[tlon] Error handling groups-ui event: ${error?.message ?? String(error)}`,
-            );
+            runtime.error?.(`[tlon] Error handling groups-ui event: ${error?.message ?? String(error)}`);
           }
         },
         err: (error) => {
@@ -1781,9 +1709,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
           // Check if inviter is on allowlist
           const isAllowed =
             effectiveGroupInviteAllowlist.length > 0
-              ? effectiveGroupInviteAllowlist
-                  .map((s) => normalizeShip(s))
-                  .some((s) => s === normalizedInviter)
+              ? effectiveGroupInviteAllowlist.map((s) => normalizeShip(s)).some((s) => s === normalizedInviter)
               : false; // Fail-safe: empty allowlist means deny
 
           if (!isAllowed) {
@@ -1816,9 +1742,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
               },
             });
             processedGroupInvites.add(groupFlag);
-            runtime.log?.(
-              `[tlon] Auto-accepted group invite: ${groupFlag} (from ${validInvite.from})`,
-            );
+            runtime.log?.(`[tlon] Auto-accepted group invite: ${groupFlag} (from ${validInvite.from})`);
           } catch (err) {
             runtime.error?.(`[tlon] Failed to auto-accept group ${groupFlag}: ${String(err)}`);
           }
@@ -1839,9 +1763,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
               try {
                 await processPendingInvites(data as Foreigns);
               } catch (error: any) {
-                runtime.error?.(
-                  `[tlon] Error handling foreigns event: ${error?.message ?? String(error)}`,
-                );
+                runtime.error?.(`[tlon] Error handling foreigns event: ${error?.message ?? String(error)}`);
               }
             })();
           },
@@ -1852,9 +1774,7 @@ export async function monitorTlonProvider(opts: MonitorTlonOpts = {}): Promise<v
             runtime.log?.("[tlon] Foreigns subscription ended");
           },
         });
-        runtime.log?.(
-          "[tlon] Subscribed to foreigns (/v1/foreigns) for auto-accepting group invites",
-        );
+        runtime.log?.("[tlon] Subscribed to foreigns (/v1/foreigns) for auto-accepting group invites");
       } catch (err) {
         runtime.log?.(`[tlon] Foreigns subscription failed: ${String(err)}`);
       }

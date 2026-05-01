@@ -51,10 +51,7 @@ export function maybeSendAckReaction(params: {
     return;
   }
 
-  params.info(
-    { chatId: params.msg.chatId, messageId: params.msg.id, emoji },
-    "sending ack reaction",
-  );
+  params.info({ chatId: params.msg.chatId, messageId: params.msg.id, emoji }, "sending ack reaction");
   sendReactionWhatsApp(params.msg.chatId, params.msg.id, emoji, {
     verbose: params.verbose,
     fromMe: false,

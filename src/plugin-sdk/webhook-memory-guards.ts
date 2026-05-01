@@ -113,10 +113,7 @@ export function createBoundedCounter(options: {
 }): BoundedCounter {
   const maxTrackedKeys = Math.max(1, Math.floor(options.maxTrackedKeys));
   const ttlMs = Math.max(0, Math.floor(options.ttlMs ?? 0));
-  const pruneIntervalMs = Math.max(
-    1,
-    Math.floor(options.pruneIntervalMs ?? (ttlMs > 0 ? ttlMs : 60_000)),
-  );
+  const pruneIntervalMs = Math.max(1, Math.floor(options.pruneIntervalMs ?? (ttlMs > 0 ? ttlMs : 60_000)));
   const counters = new Map<string, CounterState>();
   let lastPruneMs = 0;
 
@@ -125,8 +122,7 @@ export function createBoundedCounter(options: {
     counters.set(key, value);
   };
 
-  const isExpired = (entry: CounterState, nowMs: number) =>
-    ttlMs > 0 && nowMs - entry.updatedAtMs >= ttlMs;
+  const isExpired = (entry: CounterState, nowMs: number) => ttlMs > 0 && nowMs - entry.updatedAtMs >= ttlMs;
 
   const prune = (nowMs: number) => {
     if (ttlMs > 0) {
@@ -175,10 +171,7 @@ export function createWebhookAnomalyTracker(options?: {
     Math.floor(options?.maxTrackedKeys ?? WEBHOOK_ANOMALY_COUNTER_DEFAULTS.maxTrackedKeys),
   );
   const ttlMs = Math.max(0, Math.floor(options?.ttlMs ?? WEBHOOK_ANOMALY_COUNTER_DEFAULTS.ttlMs));
-  const logEvery = Math.max(
-    1,
-    Math.floor(options?.logEvery ?? WEBHOOK_ANOMALY_COUNTER_DEFAULTS.logEvery),
-  );
+  const logEvery = Math.max(1, Math.floor(options?.logEvery ?? WEBHOOK_ANOMALY_COUNTER_DEFAULTS.logEvery));
   const trackedStatusCodes = new Set(options?.trackedStatusCodes ?? WEBHOOK_ANOMALY_STATUS_CODES);
   const counter = createBoundedCounter({ maxTrackedKeys, ttlMs });
 

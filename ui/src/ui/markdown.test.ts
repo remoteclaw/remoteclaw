@@ -10,13 +10,7 @@ describe("toSanitizedMarkdownHtml", () => {
 
   it("strips scripts and unsafe links", () => {
     const html = toSanitizedMarkdownHtml(
-      [
-        "<script>alert(1)</script>",
-        "",
-        "[x](javascript:alert(1))",
-        "",
-        "[ok](https://example.com)",
-      ].join("\n"),
+      ["<script>alert(1)</script>", "", "[x](javascript:alert(1))", "", "[ok](https://example.com)"].join("\n"),
     );
     expect(html).not.toContain("<script");
     expect(html).not.toContain("javascript:");
@@ -57,12 +51,9 @@ describe("toSanitizedMarkdownHtml", () => {
   });
 
   it("renders GFM markdown tables (#20410)", () => {
-    const md = [
-      "| Feature | Status |",
-      "|---------|--------|",
-      "| Tables  | ✅     |",
-      "| Borders | ✅     |",
-    ].join("\n");
+    const md = ["| Feature | Status |", "|---------|--------|", "| Tables  | ✅     |", "| Borders | ✅     |"].join(
+      "\n",
+    );
     const html = toSanitizedMarkdownHtml(md);
     expect(html).toContain("<table");
     expect(html).toContain("<thead");
@@ -73,15 +64,9 @@ describe("toSanitizedMarkdownHtml", () => {
   });
 
   it("renders GFM tables surrounded by text (#20410)", () => {
-    const md = [
-      "Text before.",
-      "",
-      "| Col1 | Col2 |",
-      "|------|------|",
-      "| A    | B    |",
-      "",
-      "Text after.",
-    ].join("\n");
+    const md = ["Text before.", "", "| Col1 | Col2 |", "|------|------|", "| A    | B    |", "", "Text after."].join(
+      "\n",
+    );
     const html = toSanitizedMarkdownHtml(md);
     expect(html).toContain("<table");
     expect(html).toContain("Col1");
@@ -107,10 +92,8 @@ describe("toSanitizedMarkdownHtml", () => {
 
   it("keeps oversized plain-text replies readable instead of forcing code-block chrome", () => {
     const input =
-      Array.from(
-        { length: 320 },
-        (_, i) => `Paragraph ${i + 1}: ${"Long plain-text reply. ".repeat(8)}`,
-      ).join("\n\n") + "\n";
+      Array.from({ length: 320 }, (_, i) => `Paragraph ${i + 1}: ${"Long plain-text reply. ".repeat(8)}`).join("\n\n") +
+      "\n";
 
     const html = toSanitizedMarkdownHtml(input);
 
@@ -131,10 +114,8 @@ describe("toSanitizedMarkdownHtml", () => {
 
   it("exercises the cached oversized fallback branch", () => {
     const input =
-      Array.from(
-        { length: 240 },
-        (_, i) => `Paragraph ${i + 1}: ${"Cacheable long reply. ".repeat(8)}`,
-      ).join("\n\n") + "\n";
+      Array.from({ length: 240 }, (_, i) => `Paragraph ${i + 1}: ${"Cacheable long reply. ".repeat(8)}`).join("\n\n") +
+      "\n";
 
     expect(input.length).toBeGreaterThan(40_000);
     expect(input.length).toBeLessThan(50_000);
@@ -161,5 +142,23 @@ describe("toSanitizedMarkdownHtml", () => {
       parseSpy.mockRestore();
       warnSpy.mockRestore();
     }
+  });
+
+  it("keeps adjacent trailing CJK text outside bare auto-links", () => {
+    const html = toSanitizedMarkdownHtml("https://example.com重新解读");
+    expect(html).toContain('<a href="https://example.com"');
+    expect(html).toContain(">https://example.com</a>重新解读");
+  });
+
+  it("preserves valid mixed-script query parameters inside auto-links", () => {
+    const html = toSanitizedMarkdownHtml("https://api.example.com?q=重新&lang=en");
+    expect(html).toContain('href="https://api.example.com?q=%E9%87%8D%E6%96%B0&amp;lang=en"');
+    expect(html).toContain(">https://api.example.com?q=重新&amp;lang=en</a>");
+  });
+
+  it("preserves valid mixed-script path segments inside auto-links", () => {
+    const html = toSanitizedMarkdownHtml("https://example.com/path/重新/file");
+    expect(html).toContain('href="https://example.com/path/%E9%87%8D%E6%96%B0/file"');
+    expect(html).toContain(">https://example.com/path/重新/file</a>");
   });
 });

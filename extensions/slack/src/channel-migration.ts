@@ -12,10 +12,7 @@ export type SlackChannelMigrationResult = {
   scopes: MigrationScope[];
 };
 
-function resolveAccountChannels(
-  cfg: RemoteClawConfig,
-  accountId?: string | null,
-): { channels?: SlackChannels } {
+function resolveAccountChannels(cfg: RemoteClawConfig, accountId?: string | null): { channels?: SlackChannels } {
   if (!accountId) {
     return {};
   }
@@ -28,9 +25,7 @@ function resolveAccountChannels(
   if (exact?.channels) {
     return { channels: exact.channels };
   }
-  const matchKey = Object.keys(accounts).find(
-    (key) => key.toLowerCase() === normalized.toLowerCase(),
-  );
+  const matchKey = Object.keys(accounts).find((key) => key.toLowerCase() === normalized.toLowerCase());
   return { channels: matchKey ? accounts[matchKey]?.channels : undefined };
 }
 
@@ -68,11 +63,7 @@ export function migrateSlackChannelConfig(params: {
 
   const accountChannels = resolveAccountChannels(params.cfg, params.accountId).channels;
   if (accountChannels) {
-    const result = migrateSlackChannelsInPlace(
-      accountChannels,
-      params.oldChannelId,
-      params.newChannelId,
-    );
+    const result = migrateSlackChannelsInPlace(accountChannels, params.oldChannelId, params.newChannelId);
     if (result.migrated) {
       migrated = true;
       scopes.push("account");
@@ -84,11 +75,7 @@ export function migrateSlackChannelConfig(params: {
 
   const globalChannels = params.cfg.channels?.slack?.channels;
   if (globalChannels) {
-    const result = migrateSlackChannelsInPlace(
-      globalChannels,
-      params.oldChannelId,
-      params.newChannelId,
-    );
+    const result = migrateSlackChannelsInPlace(globalChannels, params.oldChannelId, params.newChannelId);
     if (result.migrated) {
       migrated = true;
       scopes.push("global");

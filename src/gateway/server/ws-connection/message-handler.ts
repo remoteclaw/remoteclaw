@@ -32,17 +32,8 @@ import {
   CANVAS_CAPABILITY_TTL_MS,
   mintCanvasCapabilityToken,
 } from "../../canvas-capability.js";
-import {
-  buildDeviceAuthPayload,
-  buildDeviceAuthPayloadV3,
-  normalizeDeviceMetadataForAuth,
-} from "../../device-auth.js";
-import {
-  isLocalishHost,
-  isLoopbackAddress,
-  isTrustedProxyAddress,
-  resolveClientIp,
-} from "../../net.js";
+import { buildDeviceAuthPayload, buildDeviceAuthPayloadV3, normalizeDeviceMetadataForAuth } from "../../device-auth.js";
+import { isLocalishHost, isLoopbackAddress, isTrustedProxyAddress, resolveClientIp } from "../../net.js";
 import { resolveNodeCommandAllowlist } from "../../node-command-policy.js";
 import { checkBrowserOrigin } from "../../origin-check.js";
 import { GATEWAY_CLIENT_IDS, GATEWAY_CLIENT_MODES } from "../../protocol/client-info.js";
@@ -114,9 +105,7 @@ function resolveHandshakeBrowserSecurityContext(params: {
   rateLimiter?: AuthRateLimiter;
   browserRateLimiter?: AuthRateLimiter;
 }): HandshakeBrowserSecurityContext {
-  const hasBrowserOriginHeader = Boolean(
-    params.requestOrigin && params.requestOrigin.trim() !== "",
-  );
+  const hasBrowserOriginHeader = Boolean(params.requestOrigin && params.requestOrigin.trim() !== "");
   return {
     hasBrowserOriginHeader,
     enforceOriginCheckForAnyClient: hasBrowserOriginHeader,
@@ -125,9 +114,7 @@ function resolveHandshakeBrowserSecurityContext(params: {
         ? BROWSER_ORIGIN_LOOPBACK_RATE_LIMIT_IP
         : params.clientIp,
     authRateLimiter:
-      hasBrowserOriginHeader && params.browserRateLimiter
-        ? params.browserRateLimiter
-        : params.rateLimiter,
+      hasBrowserOriginHeader && params.browserRateLimiter ? params.browserRateLimiter : params.rateLimiter,
   };
 }
 
@@ -159,12 +146,7 @@ function shouldSkipBackendSelfPairing(params: {
     return false;
   }
   const usesSharedSecretAuth = params.authMethod === "token" || params.authMethod === "password";
-  return (
-    params.isLocalClient &&
-    !params.hasBrowserOriginHeader &&
-    params.sharedAuthOk &&
-    usesSharedSecretAuth
-  );
+  return params.isLocalClient && !params.hasBrowserOriginHeader && params.sharedAuthOk && usesSharedSecretAuth;
 }
 
 function resolveDeviceSignaturePayloadVersion(params: {
@@ -424,11 +406,7 @@ export function attachGatewayWsMessageHandler(params: {
         // Handshake must be a normal request:
         // { type:"req", method:"connect", params: ConnectParams }.
         const isRequestFrame = validateRequestFrame(parsed);
-        if (
-          !isRequestFrame ||
-          parsed.method !== "connect" ||
-          !validateConnectParams(parsed.params)
-        ) {
+        if (!isRequestFrame || parsed.method !== "connect" || !validateConnectParams(parsed.params)) {
           const handshakeError = isRequestFrame
             ? parsed.method === "connect"
               ? `invalid connect params: ${formatValidationErrors(validateConnectParams.errors)}`
@@ -574,23 +552,17 @@ export function attachGatewayWsMessageHandler(params: {
         });
         const device = controlUiAuthPolicy.device;
 
-        let {
-          authResult,
-          authOk,
-          authMethod,
-          sharedAuthOk,
-          deviceTokenCandidate,
-          deviceTokenCandidateSource,
-        } = await resolveConnectAuthState({
-          resolvedAuth,
-          connectAuth: connectParams.auth,
-          hasDeviceIdentity: Boolean(device),
-          req: upgradeReq,
-          trustedProxies,
-          allowRealIpFallback,
-          rateLimiter: authRateLimiter,
-          clientIp: browserRateLimitClientIp,
-        });
+        let { authResult, authOk, authMethod, sharedAuthOk, deviceTokenCandidate, deviceTokenCandidateSource } =
+          await resolveConnectAuthState({
+            resolvedAuth,
+            connectAuth: connectParams.auth,
+            hasDeviceIdentity: Boolean(device),
+            req: upgradeReq,
+            trustedProxies,
+            allowRealIpFallback,
+            rateLimiter: authRateLimiter,
+            clientIp: browserRateLimitClientIp,
+          });
         const rejectUnauthorized = (failedAuth: GatewayAuthResult) => {
           const canRetryWithDeviceToken =
             failedAuth.reason === "token_mismatch" &&
@@ -688,8 +660,7 @@ export function attachGatewayWsMessageHandler(params: {
           }
 
           if (decision.kind === "reject-control-ui-insecure-auth") {
-            const errorMessage =
-              "control ui requires device identity (use HTTPS or localhost secure context)";
+            const errorMessage = "control ui requires device identity (use HTTPS or localhost secure context)";
             markHandshakeFailure("control-ui-insecure-auth", {
               insecureAuthConfigured: controlUiAuthPolicy.allowInsecureAuthConfigured,
             });
@@ -742,10 +713,7 @@ export function attachGatewayWsMessageHandler(params: {
             return;
           }
           const signedAt = device.signedAt;
-          if (
-            typeof signedAt !== "number" ||
-            Math.abs(Date.now() - signedAt) > DEVICE_SIGNATURE_SKEW_MS
-          ) {
+          if (typeof signedAt !== "number" || Math.abs(Date.now() - signedAt) > DEVICE_SIGNATURE_SKEW_MS) {
             rejectDeviceAuthInvalid("device-signature-stale", "device signature expired");
             return;
           }
@@ -959,11 +927,7 @@ export function attachGatewayWsMessageHandler(params: {
                 connectParams.client.deviceFamily = metadataPinning.pinnedDeviceFamily;
               }
             }
-            const pairedRoles = Array.isArray(paired.roles)
-              ? paired.roles
-              : paired.role
-                ? [paired.role]
-                : [];
+            const pairedRoles = Array.isArray(paired.roles) ? paired.roles : paired.role ? [paired.role] : [];
             const pairedScopes = Array.isArray(paired.scopes)
               ? paired.scopes
               : Array.isArray(paired.approvedScopes)
@@ -1013,9 +977,7 @@ export function attachGatewayWsMessageHandler(params: {
           }
         }
 
-        const deviceToken = device
-          ? await ensureDeviceToken({ deviceId: device.id, role, scopes })
-          : null;
+        const deviceToken = device ? await ensureDeviceToken({ deviceId: device.id, role, scopes }) : null;
 
         if (role === "node") {
           const cfg = loadConfig();
@@ -1024,9 +986,7 @@ export function attachGatewayWsMessageHandler(params: {
             deviceFamily: connectParams.client.deviceFamily,
           });
           const declared = Array.isArray(connectParams.commands) ? connectParams.commands : [];
-          const filtered = declared
-            .map((cmd) => cmd.trim())
-            .filter((cmd) => cmd.length > 0 && allowlist.has(cmd));
+          const filtered = declared.map((cmd) => cmd.trim()).filter((cmd) => cmd.length > 0 && allowlist.has(cmd));
           connectParams.commands = filtered;
         }
 
@@ -1076,11 +1036,8 @@ export function attachGatewayWsMessageHandler(params: {
           snapshot.health = cachedHealth;
           snapshot.stateVersion.health = getHealthVersion();
         }
-        const canvasCapability =
-          role === "node" && canvasHostUrl ? mintCanvasCapabilityToken() : undefined;
-        const canvasCapabilityExpiresAtMs = canvasCapability
-          ? Date.now() + CANVAS_CAPABILITY_TTL_MS
-          : undefined;
+        const canvasCapability = role === "node" && canvasHostUrl ? mintCanvasCapabilityToken() : undefined;
+        const canvasCapabilityExpiresAtMs = canvasCapability ? Date.now() + CANVAS_CAPABILITY_TTL_MS : undefined;
         const scopedCanvasHostUrl =
           canvasHostUrl && canvasCapability
             ? (buildCanvasScopedHostUrl(canvasHostUrl, canvasCapability) ?? canvasHostUrl)
@@ -1138,9 +1095,7 @@ export function attachGatewayWsMessageHandler(params: {
           for (const nodeId of nodeIdsForPairing) {
             void updatePairedNodeMetadata(nodeId, {
               lastConnectedAtMs: nodeSession.connectedAtMs,
-            }).catch((err) =>
-              logGateway.warn(`failed to record last connect for ${nodeId}: ${formatForLog(err)}`),
-            );
+            }).catch((err) => logGateway.warn(`failed to record last connect for ${nodeId}: ${formatForLog(err)}`));
           }
           void loadVoiceWakeConfig()
             .then((cfg) => {
@@ -1149,9 +1104,7 @@ export function attachGatewayWsMessageHandler(params: {
               });
             })
             .catch((err) =>
-              logGateway.warn(
-                `voicewake snapshot failed for ${nodeSession.nodeId}: ${formatForLog(err)}`,
-              ),
+              logGateway.warn(`voicewake snapshot failed for ${nodeSession.nodeId}: ${formatForLog(err)}`),
             );
         }
 
@@ -1185,12 +1138,7 @@ export function attachGatewayWsMessageHandler(params: {
       }
       const req = parsed;
       logWs("in", "req", { connId, id: req.id, method: req.method });
-      const respond = (
-        ok: boolean,
-        payload?: unknown,
-        error?: ErrorShape,
-        meta?: Record<string, unknown>,
-      ) => {
+      const respond = (ok: boolean, payload?: unknown, error?: ErrorShape, meta?: Record<string, unknown>) => {
         send({ type: "res", id: req.id, ok, payload, error });
         const unauthorizedRoleError = isUnauthorizedRoleError(error);
         let logMeta = meta;

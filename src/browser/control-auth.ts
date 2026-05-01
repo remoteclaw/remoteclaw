@@ -37,10 +37,7 @@ function shouldAutoGenerateBrowserAuth(env: NodeJS.ProcessEnv): boolean {
   return true;
 }
 
-export async function ensureBrowserControlAuth(params: {
-  cfg: RemoteClawConfig;
-  env?: NodeJS.ProcessEnv;
-}): Promise<{
+export async function ensureBrowserControlAuth(params: { cfg: RemoteClawConfig; env?: NodeJS.ProcessEnv }): Promise<{
   auth: BrowserControlAuth;
   generatedToken?: string;
 }> {

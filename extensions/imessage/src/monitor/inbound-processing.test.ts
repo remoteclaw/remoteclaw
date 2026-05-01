@@ -1,10 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../../../../src/config/config.js";
 import { sanitizeTerminalText } from "../../../../src/terminal/safe-text.js";
-import {
-  describeIMessageEchoDropLog,
-  resolveIMessageInboundDecision,
-} from "./inbound-processing.js";
+import { describeIMessageEchoDropLog, resolveIMessageInboundDecision } from "./inbound-processing.js";
 import { createSelfChatCache } from "./self-chat-cache.js";
 
 describe("resolveIMessageInboundDecision echo detection", () => {

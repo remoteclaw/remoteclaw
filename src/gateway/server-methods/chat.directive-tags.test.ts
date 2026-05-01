@@ -179,9 +179,7 @@ async function runNonStreamingChatSend(params: {
       ...sendParams,
       ...params.requestParams,
     },
-    respond: params.respond as unknown as Parameters<
-      (typeof chatHandlers)["chat.send"]
-    >[0]["respond"],
+    respond: params.respond as unknown as Parameters<(typeof chatHandlers)["chat.send"]>[0]["respond"],
     req: {} as never,
     client: (params.client ?? null) as never,
     isWebchatConnect: () => false,
@@ -200,10 +198,7 @@ async function runNonStreamingChatSend(params: {
   }
 
   await vi.waitFor(
-    () =>
-      expect(
-        (params.context.broadcast as unknown as ReturnType<typeof vi.fn>).mock.calls.length,
-      ).toBe(1),
+    () => expect((params.context.broadcast as unknown as ReturnType<typeof vi.fn>).mock.calls.length).toBe(1),
     FAST_WAIT_OPTS,
   );
 

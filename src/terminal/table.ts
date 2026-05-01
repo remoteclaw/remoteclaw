@@ -20,10 +20,7 @@ export type RenderTableOptions = {
   border?: "unicode" | "ascii" | "none";
 };
 
-function resolveDefaultBorder(
-  platform: NodeJS.Platform,
-  env: NodeJS.ProcessEnv,
-): "unicode" | "ascii" {
+function resolveDefaultBorder(platform: NodeJS.Platform, env: NodeJS.ProcessEnv): "unicode" | "ascii" {
   if (platform !== "win32") {
     return "unicode";
   }
@@ -156,8 +153,7 @@ function wrapLine(text: string, width: number): string[] {
   const coreTokens = tokens.slice(firstCharIndex, lastCharIndex + 1);
 
   const lines: string[] = [];
-  const isBreakChar = (ch: string) =>
-    ch === " " || ch === "\t" || ch === "/" || ch === "-" || ch === "_" || ch === ".";
+  const isBreakChar = (ch: string) => ch === " " || ch === "\t" || ch === "/" || ch === "-" || ch === "_" || ch === ".";
   const isSpaceChar = (ch: string) => ch === " " || ch === "\t";
   let skipNextLf = false;
 
@@ -318,9 +314,7 @@ export function renderTable(opts: RenderTableOptions): string {
   const preferredMinWidths = columns.map((c, i) =>
     Math.max(c.minWidth ?? 3, (metrics[i]?.headerW ?? 0) + padding * 2, 3),
   );
-  const absoluteMinWidths = columns.map((_c, i) =>
-    Math.max((metrics[i]?.headerW ?? 0) + padding * 2, 3),
-  );
+  const absoluteMinWidths = columns.map((_c, i) => Math.max((metrics[i]?.headerW ?? 0) + padding * 2, 3));
 
   if (maxWidth && total > maxWidth) {
     let over = total - maxWidth;
@@ -379,9 +373,7 @@ export function renderTable(opts: RenderTableOptions): string {
         .map(({ i }) => i);
       if (flexCols.length > 0) {
         const caps = columns.map((c) =>
-          typeof c.maxWidth === "number" && c.maxWidth > 0
-            ? Math.floor(c.maxWidth)
-            : Number.POSITIVE_INFINITY,
+          typeof c.maxWidth === "number" && c.maxWidth > 0 ? Math.floor(c.maxWidth) : Number.POSITIVE_INFINITY,
         );
         while (extra > 0) {
           let progressed = false;

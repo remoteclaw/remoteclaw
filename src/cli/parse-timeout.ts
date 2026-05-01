@@ -29,11 +29,7 @@ export function parseTimeoutMsWithFallback(
   }
 
   const value =
-    typeof raw === "string"
-      ? raw.trim()
-      : typeof raw === "number" || typeof raw === "bigint"
-        ? String(raw)
-        : null;
+    typeof raw === "string" ? raw.trim() : typeof raw === "number" || typeof raw === "bigint" ? String(raw) : null;
 
   if (value === null) {
     if (options.invalidType === "error") {

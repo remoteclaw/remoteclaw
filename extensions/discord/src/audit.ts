@@ -36,9 +36,7 @@ function shouldAuditChannelConfig(config: DiscordGuildChannelConfig | undefined)
   return true;
 }
 
-function listConfiguredGuildChannelKeys(
-  guilds: Record<string, DiscordGuildEntry> | undefined,
-): string[] {
+function listConfiguredGuildChannelKeys(guilds: Record<string, DiscordGuildEntry> | undefined): string[] {
   if (!guilds) {
     return [];
   }
@@ -70,10 +68,7 @@ function listConfiguredGuildChannelKeys(
   return [...ids].toSorted((a, b) => a.localeCompare(b));
 }
 
-export function collectDiscordAuditChannelIds(params: {
-  cfg: RemoteClawConfig;
-  accountId?: string | null;
-}) {
+export function collectDiscordAuditChannelIds(params: { cfg: RemoteClawConfig; accountId?: string | null }) {
   const account = inspectDiscordAccount({
     cfg: params.cfg,
     accountId: params.accountId,

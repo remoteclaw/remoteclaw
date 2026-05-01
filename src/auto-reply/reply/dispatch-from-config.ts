@@ -16,11 +16,7 @@ import {
   toPluginMessageReceivedEvent,
 } from "../../hooks/message-hook-mappers.js";
 import { isDiagnosticsEnabled } from "../../infra/diagnostic-events.js";
-import {
-  logMessageProcessed,
-  logMessageQueued,
-  logSessionStateChange,
-} from "../../logging/diagnostic.js";
+import { logMessageProcessed, logMessageQueued, logSessionStateChange } from "../../logging/diagnostic.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
 import { resolveSendPolicy } from "../../sessions/send-policy.js";
 import { maybeApplyTtsToPayload, normalizeTtsAutoMode, resolveTtsConfig } from "../../tts/tts.js";
@@ -76,8 +72,7 @@ const resolveSessionStoreLookup = (
   sessionKey?: string;
   entry?: SessionEntry;
 } => {
-  const targetSessionKey =
-    ctx.CommandSource === "native" ? ctx.CommandTargetSessionKey?.trim() : undefined;
+  const targetSessionKey = ctx.CommandSource === "native" ? ctx.CommandTargetSessionKey?.trim() : undefined;
   const sessionKey = (targetSessionKey ?? ctx.SessionKey)?.trim();
   if (!sessionKey) {
     return {};
@@ -174,20 +169,15 @@ export async function dispatchReplyFromConfig(params: {
   const hookRunner = getGlobalHookRunner();
 
   // Extract message context for hooks (plugin and internal)
-  const timestamp =
-    typeof ctx.Timestamp === "number" && Number.isFinite(ctx.Timestamp) ? ctx.Timestamp : undefined;
-  const messageIdForHook =
-    ctx.MessageSidFull ?? ctx.MessageSid ?? ctx.MessageSidFirst ?? ctx.MessageSidLast;
+  const timestamp = typeof ctx.Timestamp === "number" && Number.isFinite(ctx.Timestamp) ? ctx.Timestamp : undefined;
+  const messageIdForHook = ctx.MessageSidFull ?? ctx.MessageSid ?? ctx.MessageSidFirst ?? ctx.MessageSidLast;
   const hookContext = deriveInboundMessageHookContext(ctx, { messageId: messageIdForHook });
   const { isGroup, groupId } = hookContext;
 
   // Trigger plugin hooks (fire-and-forget)
   if (hookRunner?.hasHooks("message_received")) {
     fireAndForgetHook(
-      hookRunner.runMessageReceived(
-        toPluginMessageReceivedEvent(hookContext),
-        toPluginMessageContext(hookContext),
-      ),
+      hookRunner.runMessageReceived(toPluginMessageReceivedEvent(hookContext), toPluginMessageContext(hookContext)),
       "dispatch-from-config: message_received plugin hook failed",
     );
   }
@@ -228,8 +218,7 @@ export async function dispatchReplyFromConfig(params: {
     originatingTo &&
     originatingChannel !== currentSurface,
   );
-  const shouldSuppressTyping =
-    shouldRouteToOriginating || originatingChannel === INTERNAL_MESSAGE_CHANNEL;
+  const shouldSuppressTyping = shouldRouteToOriginating || originatingChannel === INTERNAL_MESSAGE_CHANNEL;
   const ttsChannel = shouldRouteToOriginating ? originatingChannel : currentSurface;
 
   /**
@@ -296,9 +285,7 @@ export async function dispatchReplyFromConfig(params: {
           routedFinalCount += 1;
         }
         if (!result.ok) {
-          logVerbose(
-            `dispatch-from-config: route-reply (abort) failed: ${result.error ?? "unknown error"}`,
-          );
+          logVerbose(`dispatch-from-config: route-reply (abort) failed: ${result.error ?? "unknown error"}`);
         }
       } else {
         queuedFinal = dispatcher.sendFinalReply(payload);
@@ -314,18 +301,11 @@ export async function dispatchReplyFromConfig(params: {
       cfg,
       entry: sessionStoreEntry.entry,
       sessionKey: sessionStoreEntry.sessionKey ?? sessionKey,
-      channel:
-        sessionStoreEntry.entry?.channel ??
-        ctx.OriginatingChannel ??
-        ctx.Surface ??
-        ctx.Provider ??
-        undefined,
+      channel: sessionStoreEntry.entry?.channel ?? ctx.OriginatingChannel ?? ctx.Surface ?? ctx.Provider ?? undefined,
       chatType: sessionStoreEntry.entry?.chatType,
     });
     if (sendPolicy === "deny") {
-      logVerbose(
-        `Send blocked by policy for session ${sessionStoreEntry.sessionKey ?? sessionKey ?? "unknown"}`,
-      );
+      logVerbose(`Send blocked by policy for session ${sessionStoreEntry.sessionKey ?? sessionKey ?? "unknown"}`);
       const counts = dispatcher.getQueuedCounts();
       recordProcessed("completed", { reason: "send_policy_deny" });
       markIdle("message_completed");
@@ -344,9 +324,7 @@ export async function dispatchReplyFromConfig(params: {
         return payload;
       }
       const execApproval =
-        payload.channelData &&
-        typeof payload.channelData === "object" &&
-        !Array.isArray(payload.channelData)
+        payload.channelData && typeof payload.channelData === "object" && !Array.isArray(payload.channelData)
           ? payload.channelData.execApproval
           : undefined;
       if (execApproval && typeof execApproval === "object" && !Array.isArray(execApproval)) {
@@ -463,9 +441,7 @@ export async function dispatchReplyFromConfig(params: {
           groupId,
         });
         if (!result.ok) {
-          logVerbose(
-            `dispatch-from-config: route-reply (final) failed: ${result.error ?? "unknown error"}`,
-          );
+          logVerbose(`dispatch-from-config: route-reply (final) failed: ${result.error ?? "unknown error"}`);
         }
         queuedFinal = result.ok || queuedFinal;
         if (result.ok) {
@@ -480,12 +456,7 @@ export async function dispatchReplyFromConfig(params: {
     // Generate TTS-only reply after block streaming completes (when there's no final reply).
     // This handles the case where block streaming succeeds and drops final payloads,
     // but we still want TTS audio to be generated from the accumulated block content.
-    if (
-      ttsMode === "final" &&
-      replies.length === 0 &&
-      blockCount > 0 &&
-      accumulatedBlockText.trim()
-    ) {
+    if (ttsMode === "final" && replies.length === 0 && blockCount > 0 && accumulatedBlockText.trim()) {
       try {
         const ttsSyntheticReply = await maybeApplyTtsToPayload({
           payload: { text: accumulatedBlockText },
@@ -519,9 +490,7 @@ export async function dispatchReplyFromConfig(params: {
               routedFinalCount += 1;
             }
             if (!result.ok) {
-              logVerbose(
-                `dispatch-from-config: route-reply (tts-only) failed: ${result.error ?? "unknown error"}`,
-              );
+              logVerbose(`dispatch-from-config: route-reply (tts-only) failed: ${result.error ?? "unknown error"}`);
             }
           } else {
             const didQueue = dispatcher.sendFinalReply(ttsOnlyPayload);

@@ -46,10 +46,8 @@ const runtimeStub = {
   },
   media: {
     loadWebMedia: loadWebMediaMock as unknown as PluginRuntime["media"]["loadWebMedia"],
-    mediaKindFromMime:
-      mediaKindFromMimeMock as unknown as PluginRuntime["media"]["mediaKindFromMime"],
-    isVoiceCompatibleAudio:
-      isVoiceCompatibleAudioMock as unknown as PluginRuntime["media"]["isVoiceCompatibleAudio"],
+    mediaKindFromMime: mediaKindFromMimeMock as unknown as PluginRuntime["media"]["mediaKindFromMime"],
+    isVoiceCompatibleAudio: isVoiceCompatibleAudioMock as unknown as PluginRuntime["media"]["isVoiceCompatibleAudio"],
     getImageMetadata: getImageMetadataMock as unknown as PluginRuntime["media"]["getImageMetadata"],
     resizeToJpeg: resizeToJpegMock as unknown as PluginRuntime["media"]["resizeToJpeg"],
   },

@@ -225,9 +225,7 @@ export function extractAssistantText(msg: AssistantMessage): string {
   const extracted =
     extractTextFromChatContent(msg.content, {
       sanitizeText: (text) =>
-        stripThinkingTagsFromText(
-          stripDowngradedToolCallText(stripMinimaxToolCallXml(text)),
-        ).trim(),
+        stripThinkingTagsFromText(stripDowngradedToolCallText(stripMinimaxToolCallXml(text))).trim(),
       joinWith: "\n",
       normalizeText: (text) => text.trim(),
     }) ?? "";

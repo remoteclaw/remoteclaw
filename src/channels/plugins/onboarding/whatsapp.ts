@@ -48,10 +48,7 @@ async function promptWhatsAppOwnerAllowFrom(params: {
 }): Promise<{ normalized: string; allowFrom: string[] }> {
   const { prompter, existingAllowFrom } = params;
 
-  await prompter.note(
-    "We need the sender/owner number so RemoteClaw can allowlist you.",
-    "WhatsApp number",
-  );
+  await prompter.note("We need the sender/owner number so RemoteClaw can allowlist you.", "WhatsApp number");
   const entry = await prompter.text({
     message: "Your personal WhatsApp number (the phone you will message from)",
     placeholder: "+15555550123",
@@ -94,10 +91,7 @@ async function applyWhatsAppOwnerAllowlist(params: {
   let next = setWhatsAppSelfChatMode(params.cfg, true);
   next = setWhatsAppDmPolicy(next, "allowlist");
   next = setWhatsAppAllowFrom(next, allowFrom);
-  await params.prompter.note(
-    [...params.messageLines, `- allowFrom includes ${normalized}`].join("\n"),
-    params.title,
-  );
+  await params.prompter.note([...params.messageLines, `- allowFrom includes ${normalized}`].join("\n"), params.title);
   return next;
 }
 
@@ -169,10 +163,7 @@ async function promptWhatsAppAllowFrom(
       prompter,
       existingAllowFrom,
       title: "WhatsApp personal phone",
-      messageLines: [
-        "Personal phone mode enabled.",
-        "- dmPolicy set to allowlist (pairing skipped)",
-      ],
+      messageLines: ["Personal phone mode enabled.", "- dmPolicy set to allowlist (pairing skipped)"],
     });
   }
 
@@ -269,15 +260,7 @@ export const whatsappOnboardingAdapter: ChannelOnboardingAdapter = {
       quickstartScore: linked ? 5 : 4,
     };
   },
-  configure: async ({
-    cfg,
-    runtime,
-    prompter,
-    options,
-    accountOverrides,
-    shouldPromptAccountIds,
-    forceAllowFrom,
-  }) => {
+  configure: async ({ cfg, runtime, prompter, options, accountOverrides, shouldPromptAccountIds, forceAllowFrom }) => {
     const accountId = await resolveAccountIdForConfigure({
       cfg,
       prompter,

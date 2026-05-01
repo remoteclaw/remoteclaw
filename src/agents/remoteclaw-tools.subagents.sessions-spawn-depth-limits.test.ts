@@ -112,9 +112,7 @@ describe("sessions_spawn depth + child limits", () => {
     const agentCall = calls.find((entry) => entry.method === "agent");
     expect(agentCall?.params?.spawnedBy).toBe("agent:main:subagent:parent");
 
-    const spawnDepthPatch = calls.find(
-      (entry) => entry.method === "sessions.patch" && entry.params?.spawnDepth === 2,
-    );
+    const spawnDepthPatch = calls.find((entry) => entry.method === "sessions.patch" && entry.params?.spawnDepth === 2);
     expect(spawnDepthPatch?.params?.key).toMatch(/^agent:main:subagent:/);
     expect(spawnDepthPatch?.params?.subagentRole).toBe("leaf");
     expect(spawnDepthPatch?.params?.subagentControlScope).toBe("none");
@@ -249,10 +247,6 @@ describe("sessions_spawn depth + child limits", () => {
       status: "error",
     });
     expect(String((result.details as { error?: string }).error ?? "")).toContain("invalid model");
-    expect(
-      callGatewayMock.mock.calls.some(
-        (call) => (call[0] as { method?: string }).method === "agent",
-      ),
-    ).toBe(false);
+    expect(callGatewayMock.mock.calls.some((call) => (call[0] as { method?: string }).method === "agent")).toBe(false);
   });
 });

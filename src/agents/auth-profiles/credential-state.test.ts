@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  evaluateStoredCredentialEligibility,
-  resolveTokenExpiryState,
-} from "./credential-state.js";
+import { evaluateStoredCredentialEligibility, resolveTokenExpiryState } from "./credential-state.js";
 
 describe("resolveTokenExpiryState", () => {
   const now = 1_700_000_000_000;

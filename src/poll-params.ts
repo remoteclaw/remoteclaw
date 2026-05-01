@@ -55,10 +55,7 @@ export function hasPollCreationParams(params: Record<string, unknown>): boolean 
       return true;
     }
     if (def.kind === "stringArray") {
-      if (
-        Array.isArray(value) &&
-        value.some((entry) => typeof entry === "string" && entry.trim())
-      ) {
+      if (Array.isArray(value) && value.some((entry) => typeof entry === "string" && entry.trim())) {
         return true;
       }
       if (typeof value === "string" && value.trim().length > 0) {

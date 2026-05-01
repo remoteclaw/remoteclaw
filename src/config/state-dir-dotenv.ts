@@ -19,9 +19,7 @@ function isBlockedServiceEnvVar(key: string): boolean {
  * a filtered record of key-value pairs suitable for embedding in a service
  * environment (LaunchAgent plist, systemd unit, Scheduled Task).
  */
-export function readStateDirDotEnvVars(
-  env: Record<string, string | undefined>,
-): Record<string, string> {
+export function readStateDirDotEnvVars(env: Record<string, string | undefined>): Record<string, string> {
   const stateDir = resolveStateDir(env as NodeJS.ProcessEnv);
   const dotEnvPath = path.join(stateDir, ".env");
 

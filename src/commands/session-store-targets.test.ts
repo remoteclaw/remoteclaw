@@ -13,9 +13,7 @@ describe("resolveSessionStoreTargets", () => {
   });
 
   it("delegates session store target resolution to the shared config helper", () => {
-    resolveSessionStoreTargetsMock.mockReturnValue([
-      { agentId: "main", storePath: "/tmp/main-sessions.json" },
-    ]);
+    resolveSessionStoreTargetsMock.mockReturnValue([{ agentId: "main", storePath: "/tmp/main-sessions.json" }]);
 
     const targets = resolveSessionStoreTargets({}, {});
 

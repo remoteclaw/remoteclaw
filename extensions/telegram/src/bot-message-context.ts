@@ -2,20 +2,14 @@ import type { Bot } from "grammy";
 import { resolveAckReaction } from "../../../src/agents/identity.js";
 import { hasControlCommand } from "../../../src/auto-reply/command-detection.js";
 import { normalizeCommandBody } from "../../../src/auto-reply/commands-registry.js";
-import {
-  formatInboundEnvelope,
-  resolveEnvelopeFormatOptions,
-} from "../../../src/auto-reply/envelope.js";
+import { formatInboundEnvelope, resolveEnvelopeFormatOptions } from "../../../src/auto-reply/envelope.js";
 import {
   buildPendingHistoryContextFromMap,
   recordPendingHistoryEntryIfEnabled,
   type HistoryEntry,
 } from "../../../src/auto-reply/reply/history.js";
 import { finalizeInboundContext } from "../../../src/auto-reply/reply/inbound-context.js";
-import {
-  buildMentionRegexes,
-  matchesMentionWithExplicit,
-} from "../../../src/auto-reply/reply/mentions.js";
+import { buildMentionRegexes, matchesMentionWithExplicit } from "../../../src/auto-reply/reply/mentions.js";
 import type { MsgContext } from "../../../src/auto-reply/templating.js";
 import { shouldAckReaction as shouldAckReactionGate } from "../../../src/channels/ack-reactions.js";
 import { resolveControlCommandGate } from "../../../src/channels/command-gating.js";
@@ -30,23 +24,14 @@ import {
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import { loadConfig } from "../../../src/config/config.js";
 import { readSessionUpdatedAt, resolveStorePath } from "../../../src/config/sessions.js";
-import type {
-  DmPolicy,
-  TelegramGroupConfig,
-  TelegramTopicConfig,
-} from "../../../src/config/types.js";
+import type { DmPolicy, TelegramGroupConfig, TelegramTopicConfig } from "../../../src/config/types.js";
 import { logVerbose, shouldLogVerbose } from "../../../src/globals.js";
 import { recordChannelActivity } from "../../../src/infra/channel-activity.js";
 import { resolveAgentRoute } from "../../../src/routing/resolve-route.js";
 import { resolveThreadSessionKeys } from "../../../src/routing/session-key.js";
 import { resolvePinnedMainDmOwnerFromAllowlist } from "../../../src/security/dm-policy-shared.js";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
-import {
-  firstDefined,
-  isSenderAllowed,
-  normalizeAllowFrom,
-  normalizeDmAllowFromWithStore,
-} from "./bot-access.js";
+import { firstDefined, isSenderAllowed, normalizeAllowFrom, normalizeDmAllowFromWithStore } from "./bot-access.js";
 import {
   buildGroupLabel,
   buildSenderLabel,
@@ -181,9 +166,7 @@ export const buildTelegramMessageContext = async ({
   // DMs: use raw messageThreadId for thread sessions (not forum topic ids)
   const dmThreadId = threadSpec.scope === "dm" ? threadSpec.id : undefined;
   const threadKeys =
-    dmThreadId != null
-      ? resolveThreadSessionKeys({ baseSessionKey, threadId: String(dmThreadId) })
-      : null;
+    dmThreadId != null ? resolveThreadSessionKeys({ baseSessionKey, threadId: String(dmThreadId) }) : null;
   const sessionKey = threadKeys?.sessionKey ?? baseSessionKey;
   const mentionRegexes = buildMentionRegexes(cfg, route.agentId);
   const effectiveDmAllow = normalizeDmAllowFromWithStore({ allowFrom, storeAllowFrom, dmPolicy });
@@ -209,9 +192,7 @@ export const buildTelegramMessageContext = async ({
       return null;
     }
     if (baseAccess.reason === "topic-disabled") {
-      logVerbose(
-        `Blocked telegram topic ${chatId} (${resolvedThreadId ?? "unknown"}) (topic disabled)`,
-      );
+      logVerbose(`Blocked telegram topic ${chatId} (${resolvedThreadId ?? "unknown"}) (topic disabled)`);
       return null;
     }
     logVerbose(`Blocked telegram group sender ${senderId || "unknown"} (group allowFrom override)`);
@@ -236,12 +217,7 @@ export const buildTelegramMessageContext = async ({
   const sendTyping = async () => {
     await withTelegramApiErrorLogging({
       operation: "sendChatAction",
-      fn: () =>
-        sendChatActionHandler.sendChatAction(
-          chatId,
-          "typing",
-          buildTypingThreadParams(replyThreadId),
-        ),
+      fn: () => sendChatActionHandler.sendChatAction(chatId, "typing", buildTypingThreadParams(replyThreadId)),
     });
   };
 
@@ -249,12 +225,7 @@ export const buildTelegramMessageContext = async ({
     try {
       await withTelegramApiErrorLogging({
         operation: "sendChatAction",
-        fn: () =>
-          sendChatActionHandler.sendChatAction(
-            chatId,
-            "record_voice",
-            buildTypingThreadParams(replyThreadId),
-          ),
+        fn: () => sendChatActionHandler.sendChatAction(chatId, "record_voice", buildTypingThreadParams(replyThreadId)),
       });
     } catch (err) {
       logVerbose(`telegram record_voice cue failed for chat ${chatId}: ${String(err)}`);
@@ -339,12 +310,7 @@ export const buildTelegramMessageContext = async ({
   // This allows voice notes to be checked for mentions before being dropped
   let preflightTranscript: string | undefined;
   const needsPreflightTranscription =
-    isGroup &&
-    requireMention &&
-    hasAudio &&
-    !hasUserText &&
-    mentionRegexes.length > 0 &&
-    !disableAudioPreflight;
+    isGroup && requireMention && hasAudio && !hasUserText && mentionRegexes.length > 0 && !disableAudioPreflight;
 
   if (needsPreflightTranscription) {
     try {
@@ -352,10 +318,7 @@ export const buildTelegramMessageContext = async ({
       // Build a minimal context for transcription
       const tempCtx: MsgContext = {
         MediaPaths: allMedia.length > 0 ? allMedia.map((m) => m.path) : undefined,
-        MediaTypes:
-          allMedia.length > 0
-            ? (allMedia.map((m) => m.contentType).filter(Boolean) as string[])
-            : undefined,
+        MediaTypes: allMedia.length > 0 ? (allMedia.map((m) => m.contentType).filter(Boolean) as string[]) : undefined,
       };
       preflightTranscript = await transcribeFirstAudio({
         ctx: tempCtx,
@@ -381,9 +344,7 @@ export const buildTelegramMessageContext = async ({
     }
   }
 
-  const hasAnyMention = (msg.entities ?? msg.caption_entities ?? []).some(
-    (ent) => ent.type === "mention",
-  );
+  const hasAnyMention = (msg.entities ?? msg.caption_entities ?? []).some((ent) => ent.type === "mention");
   const explicitlyMentioned = botUsername ? hasBotMention(msg, botUsername) : false;
 
   const computedWasMentioned = matchesMentionWithExplicit({
@@ -416,8 +377,7 @@ export const buildTelegramMessageContext = async ({
   const botId = primaryCtx.me?.id;
   const replyFromId = msg.reply_to_message?.from?.id;
   const replyToBotMessage = botId != null && replyFromId === botId;
-  const isReplyToServiceMessage =
-    replyToBotMessage && isTelegramForumServiceMessage(msg.reply_to_message);
+  const isReplyToServiceMessage = replyToBotMessage && isTelegramForumServiceMessage(msg.reply_to_message);
   const implicitMention = replyToBotMessage && !isReplyToServiceMessage;
   const canDetectMention = Boolean(botUsername) || mentionRegexes.length > 0;
   const mentionGate = resolveMentionGatingWithBypass({
@@ -480,21 +440,17 @@ export const buildTelegramMessageContext = async ({
     ) => Promise<void>;
     getChat?: (chatId: number | string) => Promise<unknown>;
   };
-  const reactionApi =
-    typeof api.setMessageReaction === "function" ? api.setMessageReaction.bind(api) : null;
+  const reactionApi = typeof api.setMessageReaction === "function" ? api.setMessageReaction.bind(api) : null;
   const getChatApi = typeof api.getChat === "function" ? api.getChat.bind(api) : null;
 
   // Status Reactions controller (lifecycle reactions)
   const statusReactionsConfig = cfg.messages?.statusReactions;
-  const statusReactionsEnabled =
-    statusReactionsConfig?.enabled === true && Boolean(reactionApi) && shouldAckReaction();
+  const statusReactionsEnabled = statusReactionsConfig?.enabled === true && Boolean(reactionApi) && shouldAckReaction();
   const resolvedStatusReactionEmojis = resolveTelegramStatusReactionEmojis({
     initialEmoji: ackReaction,
     overrides: statusReactionsConfig?.emojis,
   });
-  const statusReactionVariantsByEmoji = buildTelegramStatusReactionVariants(
-    resolvedStatusReactionEmojis,
-  );
+  const statusReactionVariantsByEmoji = buildTelegramStatusReactionVariants(resolvedStatusReactionEmojis);
   let allowedStatusReactionEmojisPromise: Promise<Set<string> | null> | null = null;
   const statusReactionController: StatusReactionController | null =
     statusReactionsEnabled && msg.message_id
@@ -524,9 +480,7 @@ export const buildTelegramMessageContext = async ({
                 if (!resolvedEmoji) {
                   return;
                 }
-                await reactionApi(chatId, msg.message_id, [
-                  { type: "emoji", emoji: resolvedEmoji },
-                ]);
+                await reactionApi(chatId, msg.message_id, [{ type: "emoji", emoji: resolvedEmoji }]);
               }
             },
             // Telegram replaces atomically — no removeReaction needed
@@ -566,9 +520,7 @@ export const buildTelegramMessageContext = async ({
   // Build forward annotation for reply target if it was itself a forwarded message (issue #9619)
   const replyForwardAnnotation = replyTarget?.forwardedFrom
     ? `[Forwarded from ${replyTarget.forwardedFrom.from}${
-        replyTarget.forwardedFrom.date
-          ? ` at ${new Date(replyTarget.forwardedFrom.date * 1000).toISOString()}`
-          : ""
+        replyTarget.forwardedFrom.date ? ` at ${new Date(replyTarget.forwardedFrom.date * 1000).toISOString()}` : ""
       }]\n`
     : "";
   const replySuffix = replyTarget
@@ -587,9 +539,7 @@ export const buildTelegramMessageContext = async ({
     : "";
   const groupLabel = isGroup ? buildGroupLabel(msg, chatId, resolvedThreadId) : undefined;
   const senderName = buildSenderName(msg);
-  const conversationLabel = isGroup
-    ? (groupLabel ?? `group:${chatId}`)
-    : buildSenderLabel(msg, senderId || chatId);
+  const conversationLabel = isGroup ? (groupLabel ?? `group:${chatId}`) : buildSenderLabel(msg, senderId || chatId);
   const storePath = resolveStorePath(cfg.session?.store, {
     agentId: route.agentId,
   });
@@ -676,9 +626,7 @@ export const buildTelegramMessageContext = async ({
     ReplyToForwardedFromId: replyTarget?.forwardedFrom?.fromId,
     ReplyToForwardedFromUsername: replyTarget?.forwardedFrom?.fromUsername,
     ReplyToForwardedFromTitle: replyTarget?.forwardedFrom?.fromTitle,
-    ReplyToForwardedDate: replyTarget?.forwardedFrom?.date
-      ? replyTarget.forwardedFrom.date * 1000
-      : undefined,
+    ReplyToForwardedDate: replyTarget?.forwardedFrom?.date ? replyTarget.forwardedFrom.date * 1000 : undefined,
     ForwardedFrom: forwardOrigin?.from,
     ForwardedFromType: forwardOrigin?.fromType,
     ForwardedFromId: forwardOrigin?.fromId,
@@ -694,16 +642,8 @@ export const buildTelegramMessageContext = async ({
     MediaPath: stickerCacheHit ? undefined : allMedia[0]?.path,
     MediaType: stickerCacheHit ? undefined : allMedia[0]?.contentType,
     MediaUrl: stickerCacheHit ? undefined : allMedia[0]?.path,
-    MediaPaths: stickerCacheHit
-      ? undefined
-      : allMedia.length > 0
-        ? allMedia.map((m) => m.path)
-        : undefined,
-    MediaUrls: stickerCacheHit
-      ? undefined
-      : allMedia.length > 0
-        ? allMedia.map((m) => m.path)
-        : undefined,
+    MediaPaths: stickerCacheHit ? undefined : allMedia.length > 0 ? allMedia.map((m) => m.path) : undefined,
+    MediaUrls: stickerCacheHit ? undefined : allMedia.length > 0 ? allMedia.map((m) => m.path) : undefined,
     MediaTypes: stickerCacheHit
       ? undefined
       : allMedia.length > 0
@@ -767,9 +707,7 @@ export const buildTelegramMessageContext = async ({
   }
 
   if (forwardOrigin && shouldLogVerbose()) {
-    logVerbose(
-      `telegram forward-context: forwardedFrom="${forwardOrigin.from}" type=${forwardOrigin.fromType}`,
-    );
+    logVerbose(`telegram forward-context: forwardedFrom="${forwardOrigin.from}" type=${forwardOrigin.fromType}`);
   }
 
   if (shouldLogVerbose()) {
@@ -805,6 +743,4 @@ export const buildTelegramMessageContext = async ({
   };
 };
 
-export type TelegramMessageContext = NonNullable<
-  Awaited<ReturnType<typeof buildTelegramMessageContext>>
->;
+export type TelegramMessageContext = NonNullable<Awaited<ReturnType<typeof buildTelegramMessageContext>>>;

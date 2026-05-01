@@ -40,8 +40,7 @@ export const callGateway = programMocks.callGateway as AnyMock;
 export const runChannelLogin = programMocks.runChannelLogin as AnyMock;
 export const runChannelLogout = programMocks.runChannelLogout as AnyMock;
 export const runTui = programMocks.runTui as AnyMock;
-export const loadAndMaybeMigrateDoctorConfig =
-  programMocks.loadAndMaybeMigrateDoctorConfig as AnyMock;
+export const loadAndMaybeMigrateDoctorConfig = programMocks.loadAndMaybeMigrateDoctorConfig as AnyMock;
 export const ensureConfigReady = programMocks.ensureConfigReady as AnyMock;
 export const ensurePluginRegistryLoaded = programMocks.ensurePluginRegistryLoaded as AnyMock;
 
@@ -55,16 +54,7 @@ export const runtime = programMocks.runtime as {
 vi.mock("../commands/message.js", () => ({ messageCommand: programMocks.messageCommand }));
 vi.mock("../commands/status.js", () => ({ statusCommand: programMocks.statusCommand }));
 vi.mock("../commands/configure.js", () => ({
-  CONFIGURE_WIZARD_SECTIONS: [
-    "workspace",
-    "model",
-    "web",
-    "gateway",
-    "daemon",
-    "channels",
-    "skills",
-    "health",
-  ],
+  CONFIGURE_WIZARD_SECTIONS: ["workspace", "model", "web", "gateway", "daemon", "channels", "skills", "health"],
   configureCommand: programMocks.configureCommand,
   configureCommandWithSections: programMocks.configureCommandWithSections,
   configureCommandFromSectionsArg: (sections: unknown, runtime: unknown) => {

@@ -3,10 +3,7 @@ import { resolveChunkMode, resolveTextChunkLimit } from "../../../../../src/auto
 import { shouldComputeCommandAuthorized } from "../../../../../src/auto-reply/command-detection.js";
 import { formatInboundEnvelope } from "../../../../../src/auto-reply/envelope.js";
 import type { getReplyFromConfig } from "../../../../../src/auto-reply/reply.js";
-import {
-  buildHistoryContextFromEntries,
-  type HistoryEntry,
-} from "../../../../../src/auto-reply/reply/history.js";
+import { buildHistoryContextFromEntries, type HistoryEntry } from "../../../../../src/auto-reply/reply/history.js";
 import { finalizeInboundContext } from "../../../../../src/auto-reply/reply/inbound-context.js";
 import { dispatchReplyWithBufferedBlockDispatcher } from "../../../../../src/auto-reply/reply/provider-dispatcher.js";
 import type { ReplyPayload } from "../../../../../src/auto-reply/types.js";
@@ -81,11 +78,7 @@ async function resolveWhatsAppCommandAuthorized(params: {
         dmPolicy,
       });
   const dmAllowFrom =
-    configuredAllowFrom.length > 0
-      ? configuredAllowFrom
-      : params.msg.selfE164
-        ? [params.msg.selfE164]
-        : [];
+    configuredAllowFrom.length > 0 ? configuredAllowFrom : params.msg.selfE164 ? [params.msg.selfE164] : [];
   const access = resolveDmGroupAccessWithCommandGate({
     isGroup,
     dmPolicy,
@@ -287,13 +280,11 @@ export async function processMessage(params: {
 
   const inboundHistory =
     params.msg.chatType === "group"
-      ? (params.groupHistory ?? params.groupHistories.get(params.groupHistoryKey) ?? []).map(
-          (entry) => ({
-            sender: entry.sender,
-            body: entry.body,
-            timestamp: entry.timestamp,
-          }),
-        )
+      ? (params.groupHistory ?? params.groupHistories.get(params.groupHistoryKey) ?? []).map((entry) => ({
+          sender: entry.sender,
+          body: entry.body,
+          timestamp: entry.timestamp,
+        }))
       : undefined;
 
   const ctxPayload = finalizeInboundContext({
@@ -340,17 +331,12 @@ export async function processMessage(params: {
     cfg: params.cfg,
     msg: params.msg,
   });
-  const shouldUpdateMainLastRoute =
-    !pinnedMainDmRecipient || pinnedMainDmRecipient === dmRouteTarget;
+  const shouldUpdateMainLastRoute = !pinnedMainDmRecipient || pinnedMainDmRecipient === dmRouteTarget;
   const inboundLastRouteSessionKey = resolveInboundLastRouteSessionKey({
     route: params.route,
     sessionKey: params.route.sessionKey,
   });
-  if (
-    dmRouteTarget &&
-    inboundLastRouteSessionKey === params.route.mainSessionKey &&
-    shouldUpdateMainLastRoute
-  ) {
+  if (dmRouteTarget && inboundLastRouteSessionKey === params.route.mainSessionKey && shouldUpdateMainLastRoute) {
     updateLastRouteInBackground({
       cfg: params.cfg,
       backgroundTasks: params.backgroundTasks,
@@ -362,14 +348,8 @@ export async function processMessage(params: {
       ctx: ctxPayload,
       warn: params.replyLogger.warn.bind(params.replyLogger),
     });
-  } else if (
-    dmRouteTarget &&
-    inboundLastRouteSessionKey === params.route.mainSessionKey &&
-    pinnedMainDmRecipient
-  ) {
-    logVerbose(
-      `Skipping main-session last route update for ${dmRouteTarget} (pinned owner ${pinnedMainDmRecipient})`,
-    );
+  } else if (dmRouteTarget && inboundLastRouteSessionKey === params.route.mainSessionKey && pinnedMainDmRecipient) {
+    logVerbose(`Skipping main-session last route update for ${dmRouteTarget} (pinned owner ${pinnedMainDmRecipient})`);
   }
 
   const metaTask = recordSessionMetaFromInbound({
@@ -427,8 +407,7 @@ export async function processMessage(params: {
           combinedBodySessionKey: params.route.sessionKey,
           logVerboseMessage: shouldLog,
         });
-        const fromDisplay =
-          params.msg.chatType === "group" ? conversationId : (params.msg.from ?? "unknown");
+        const fromDisplay = params.msg.chatType === "group" ? conversationId : (params.msg.from ?? "unknown");
         const hasMedia = Boolean(payload.mediaUrl || payload.mediaUrls?.length);
         whatsappOutboundLog.info(`Auto-replied to ${fromDisplay}${hasMedia ? " (media)" : ""}`);
         if (shouldLogVerbose()) {
@@ -437,12 +416,7 @@ export async function processMessage(params: {
         }
       },
       onError: (err, info) => {
-        const label =
-          info.kind === "tool"
-            ? "tool update"
-            : info.kind === "block"
-              ? "block update"
-              : "auto-reply";
+        const label = info.kind === "tool" ? "tool update" : info.kind === "block" ? "block update" : "auto-reply";
         whatsappOutboundLog.error(
           `Failed sending web ${label} to ${params.msg.from ?? conversationId}: ${formatError(err)}`,
         );

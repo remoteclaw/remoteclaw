@@ -8,8 +8,7 @@ export const resolveStateDirMock: TestMock = vi.fn(
   (env: NodeJS.ProcessEnv) => env.REMOTECLAW_STATE_DIR ?? "/tmp/remoteclaw",
 );
 export const resolveConfigPathMock: TestMock = vi.fn(
-  (env: NodeJS.ProcessEnv, stateDir: string) =>
-    env.REMOTECLAW_CONFIG_PATH ?? `${stateDir}/remoteclaw.json`,
+  (env: NodeJS.ProcessEnv, stateDir: string) => env.REMOTECLAW_CONFIG_PATH ?? `${stateDir}/remoteclaw.json`,
 );
 export const pickPrimaryTailnetIPv4Mock: TestMock = vi.fn();
 export const pickPrimaryLanIPv4Mock: TestMock = vi.fn();

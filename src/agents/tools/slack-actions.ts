@@ -30,13 +30,7 @@ import {
   readStringParam,
 } from "./common.js";
 
-const messagingActions = new Set([
-  "sendMessage",
-  "editMessage",
-  "deleteMessage",
-  "readMessages",
-  "downloadFile",
-]);
+const messagingActions = new Set(["sendMessage", "editMessage", "deleteMessage", "readMessages", "downloadFile"]);
 
 const reactionsActions = new Set(["react", "reactions"]);
 const pinActions = new Set(["pinMessage", "unpinMessage", "listPins"]);
@@ -203,11 +197,7 @@ export async function handleSlackAction(
         if (mediaUrl && blocks) {
           throw new Error("Slack sendMessage does not support blocks with mediaUrl.");
         }
-        const threadTs = resolveThreadTsFromContext(
-          readStringParam(params, "threadTs"),
-          to,
-          context,
-        );
+        const threadTs = resolveThreadTsFromContext(readStringParam(params, "threadTs"), to, context);
         const result = await sendSlackMessage(to, content ?? "", {
           ...writeOpts,
           mediaUrl: mediaUrl ?? undefined,
@@ -271,8 +261,7 @@ export async function handleSlackAction(
       case "readMessages": {
         const channelId = resolveChannelId();
         const limitRaw = params.limit;
-        const limit =
-          typeof limitRaw === "number" && Number.isFinite(limitRaw) ? limitRaw : undefined;
+        const limit = typeof limitRaw === "number" && Number.isFinite(limitRaw) ? limitRaw : undefined;
         const before = readStringParam(params, "before");
         const after = readStringParam(params, "after");
         const threadId = readStringParam(params, "threadId");
@@ -284,10 +273,7 @@ export async function handleSlackAction(
           threadId: threadId ?? undefined,
         });
         const messages = result.messages.map((message) =>
-          withNormalizedTimestamp(
-            message as Record<string, unknown>,
-            (message as { ts?: unknown }).ts,
-          ),
+          withNormalizedTimestamp(message as Record<string, unknown>, (message as { ts?: unknown }).ts),
         );
         return jsonResult({ ok: true, messages, hasMore: result.hasMore });
       }
@@ -296,9 +282,7 @@ export async function handleSlackAction(
         const channelTarget = readStringParam(params, "channelId") ?? readStringParam(params, "to");
         const channelId = channelTarget ? resolveSlackChannelId(channelTarget) : undefined;
         const threadId = readStringParam(params, "threadId") ?? readStringParam(params, "replyTo");
-        const maxBytes = account.config?.mediaMaxMb
-          ? account.config.mediaMaxMb * 1024 * 1024
-          : 20 * 1024 * 1024;
+        const maxBytes = account.config?.mediaMaxMb ? account.config.mediaMaxMb * 1024 * 1024 : 20 * 1024 * 1024;
         const downloaded = await downloadSlackFile(fileId, {
           ...readOpts,
           maxBytes,
@@ -350,15 +334,10 @@ export async function handleSlackAction(
       }
       return jsonResult({ ok: true });
     }
-    const pins = writeOpts
-      ? await listSlackPins(channelId, readOpts)
-      : await listSlackPins(channelId);
+    const pins = writeOpts ? await listSlackPins(channelId, readOpts) : await listSlackPins(channelId);
     const normalizedPins = pins.map((pin) => {
       const message = pin.message
-        ? withNormalizedTimestamp(
-            pin.message as Record<string, unknown>,
-            (pin.message as { ts?: unknown }).ts,
-          )
+        ? withNormalizedTimestamp(pin.message as Record<string, unknown>, (pin.message as { ts?: unknown }).ts)
         : pin.message;
       return message ? { ...pin, message } : pin;
     });
@@ -370,9 +349,7 @@ export async function handleSlackAction(
       throw new Error("Slack member info is disabled.");
     }
     const userId = readStringParam(params, "userId", { required: true });
-    const info = writeOpts
-      ? await getSlackMemberInfo(userId, readOpts)
-      : await getSlackMemberInfo(userId);
+    const info = writeOpts ? await getSlackMemberInfo(userId, readOpts) : await getSlackMemberInfo(userId);
     return jsonResult({ ok: true, info });
   }
 

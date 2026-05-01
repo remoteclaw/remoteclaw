@@ -46,10 +46,7 @@ function resolve(obj: unknown, files: Record<string, unknown> = {}, basePath = D
   return resolveConfigIncludes(obj, basePath, createMockResolver(files));
 }
 
-function expectResolveIncludeError(
-  run: () => unknown,
-  expectedPattern?: RegExp,
-): ConfigIncludeError {
+function expectResolveIncludeError(run: () => unknown, expectedPattern?: RegExp): ConfigIncludeError {
   let thrown: unknown;
   try {
     run();
@@ -146,17 +143,11 @@ describe("resolveConfigIncludes", () => {
   it.each([
     { includeFile: "list.json", included: ["a", "b"] },
     { includeFile: "value.json", included: "hello" },
-  ] as const)(
-    "throws when sibling keys are used with non-object include $includeFile",
-    ({ includeFile, included }) => {
-      const files = { [configPath(includeFile)]: included };
-      const obj = { $include: `./${includeFile}`, extra: true };
-      expectResolveIncludeError(
-        () => resolve(obj, files),
-        /Sibling keys require included content to be an object/,
-      );
-    },
-  );
+  ] as const)("throws when sibling keys are used with non-object include $includeFile", ({ includeFile, included }) => {
+    const files = { [configPath(includeFile)]: included };
+    const obj = { $include: `./${includeFile}`, extra: true };
+    expectResolveIncludeError(() => resolve(obj, files), /Sibling keys require included content to be an object/);
+  });
 
   it("resolves nested includes", () => {
     const files = {
@@ -273,10 +264,7 @@ describe("resolveConfigIncludes", () => {
       };
     }
     failFiles[configPath("fail10.json")] = { done: true };
-    expectResolveIncludeError(
-      () => resolve({ $include: "./fail0.json" }, failFiles),
-      /Maximum include depth/,
-    );
+    expectResolveIncludeError(() => resolve({ $include: "./fail0.json" }, failFiles), /Maximum include depth/);
   });
 
   it.each([
@@ -301,12 +289,9 @@ describe("resolveConfigIncludes", () => {
         nested: { a: 1, b: 9 },
       },
     },
-  ] as const)(
-    "handles relative paths and nested include ordering: $name",
-    ({ obj, files, expected }) => {
-      expect(resolve(obj, files)).toEqual(expected);
-    },
-  );
+  ] as const)("handles relative paths and nested include ordering: $name", ({ obj, files, expected }) => {
+    expect(resolve(obj, files)).toEqual(expected);
+  });
 
   it("enforces traversal boundaries while allowing safe nested-parent paths", () => {
     expectResolveIncludeError(
@@ -407,9 +392,7 @@ describe("real-world config patterns", () => {
   });
 });
 describe("security: path traversal protection (CWE-22)", () => {
-  function expectRejectedTraversalPaths(
-    cases: ReadonlyArray<{ includePath: string; expectEscapesMessage: boolean }>,
-  ) {
+  function expectRejectedTraversalPaths(cases: ReadonlyArray<{ includePath: string; expectEscapesMessage: boolean }>) {
     for (const { includePath, expectEscapesMessage } of cases) {
       const obj = { $include: includePath };
       expect(() => resolve(obj, {}), includePath).toThrow(ConfigIncludeError);
@@ -471,13 +454,10 @@ describe("security: path traversal protection (CWE-22)", () => {
         files: { [configPath("a", "b", "c", "deep.json")]: { deep: true } },
         expected: { deep: true },
       },
-    ] as const)(
-      "allows legitimate include path under config root: $name",
-      ({ includePath, files, expected }) => {
-        const obj = { $include: includePath };
-        expect(resolve(obj, files)).toEqual(expected);
-      },
-    );
+    ] as const)("allows legitimate include path under config root: $name", ({ includePath, files, expected }) => {
+      const obj = { $include: includePath };
+      expect(resolve(obj, files)).toEqual(expected);
+    });
 
     // Note: Upward traversal from nested configs is restricted for security.
     // Each config file can only include files from its own directory and subdirectories.
@@ -640,10 +620,7 @@ describe("security: path traversal protection (CWE-22)", () => {
         }
 
         expect(() =>
-          resolveConfigIncludes(
-            { $include: "./extra.json5" },
-            path.join(configDir, "remoteclaw.json"),
-          ),
+          resolveConfigIncludes({ $include: "./extra.json5" }, path.join(configDir, "remoteclaw.json")),
         ).toThrow(/security checks|hardlink/i);
       } finally {
         await fs.rm(tempRoot, { recursive: true, force: true });
@@ -660,10 +637,7 @@ describe("security: path traversal protection (CWE-22)", () => {
         await fs.writeFile(includePath, `{"blob":"${payload}"}`, "utf-8");
 
         expect(() =>
-          resolveConfigIncludes(
-            { $include: "./big.json5" },
-            path.join(configDir, "remoteclaw.json"),
-          ),
+          resolveConfigIncludes({ $include: "./big.json5" }, path.join(configDir, "remoteclaw.json")),
         ).toThrow(/security checks|max/i);
       } finally {
         await fs.rm(tempRoot, { recursive: true, force: true });

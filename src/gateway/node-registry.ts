@@ -5,6 +5,8 @@ export type NodeSession = {
   nodeId: string;
   connId: string;
   client: GatewayWsClient;
+  clientId?: string;
+  clientMode?: string;
   displayName?: string;
   platform?: string;
   version?: string;
@@ -59,6 +61,8 @@ export class NodeRegistry {
       nodeId,
       connId: client.connId,
       client,
+      clientId: connect.client.id,
+      clientMode: connect.client.mode,
       displayName: connect.client.displayName,
       platform: connect.client.platform,
       version: connect.client.version,
@@ -123,8 +127,7 @@ export class NodeRegistry {
       id: requestId,
       nodeId: params.nodeId,
       command: params.command,
-      paramsJSON:
-        "params" in params && params.params !== undefined ? JSON.stringify(params.params) : null,
+      paramsJSON: "params" in params && params.params !== undefined ? JSON.stringify(params.params) : null,
       timeoutMs: params.timeoutMs,
       idempotencyKey: params.idempotencyKey,
     };

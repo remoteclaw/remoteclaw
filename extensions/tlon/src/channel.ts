@@ -5,11 +5,7 @@ import type {
   ChannelSetupInput,
   RemoteClawConfig,
 } from "remoteclaw/plugin-sdk/tlon";
-import {
-  applyAccountNameToChannelSection,
-  DEFAULT_ACCOUNT_ID,
-  normalizeAccountId,
-} from "remoteclaw/plugin-sdk/tlon";
+import { applyAccountNameToChannelSection, DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/tlon";
 import { buildTlonAccountFields } from "./account-fields.js";
 import { tlonChannelConfigSchema } from "./config-schema.js";
 import { monitorTlonProvider } from "./monitor/index.js";
@@ -20,22 +16,11 @@ import { resolveTlonAccount, listTlonAccountIds } from "./types.js";
 import { authenticate } from "./urbit/auth.js";
 import { ssrfPolicyFromAllowPrivateNetwork } from "./urbit/context.js";
 import { urbitFetch } from "./urbit/fetch.js";
-import {
-  buildMediaStory,
-  sendDm,
-  sendGroupMessage,
-  sendDmWithStory,
-  sendGroupMessageWithStory,
-} from "./urbit/send.js";
+import { buildMediaStory, sendDm, sendGroupMessage, sendDmWithStory, sendGroupMessageWithStory } from "./urbit/send.js";
 import { uploadImageFromUrl } from "./urbit/upload.js";
 
 // Simple HTTP-only poke that doesn't open an EventSource (avoids conflict with monitor's SSE)
-async function createHttpPokeApi(params: {
-  url: string;
-  code: string;
-  ship: string;
-  allowPrivateNetwork?: boolean;
-}) {
+async function createHttpPokeApi(params: { url: string; code: string; ship: string; allowPrivateNetwork?: boolean }) {
   const ssrfPolicy = ssrfPolicyFromAllowPrivateNetwork(params.allowPrivateNetwork);
   const cookie = await authenticate(params.url, params.code, { ssrfPolicy });
   const channelId = `${Math.floor(Date.now() / 1000)}-${crypto.randomUUID()}`;
@@ -141,9 +126,7 @@ function applyTlonSetupConfig(params: {
         accounts: {
           ...(base as { accounts?: Record<string, unknown> }).accounts,
           [accountId]: {
-            ...(base as { accounts?: Record<string, Record<string, unknown>> }).accounts?.[
-              accountId
-            ],
+            ...(base as { accounts?: Record<string, Record<string, unknown>> }).accounts?.[accountId],
             enabled: true,
             ...payload,
           },
@@ -160,11 +143,7 @@ type ConfiguredTlonAccount = ResolvedTlonAccount & {
   code: string;
 };
 
-function resolveOutboundContext(params: {
-  cfg: RemoteClawConfig;
-  accountId?: string | null;
-  to: string;
-}) {
+function resolveOutboundContext(params: { cfg: RemoteClawConfig; accountId?: string | null; to: string }) {
   const account = resolveTlonAccount(params.cfg, params.accountId ?? undefined);
   if (!account.configured || !account.ship || !account.url || !account.code) {
     throw new Error("Tlon account not configured");
@@ -337,13 +316,7 @@ export const tlonPlugin: ChannelPlugin = {
     deleteAccount: ({ cfg, accountId }) => {
       const useDefault = !accountId || accountId === "default";
       if (useDefault) {
-        const {
-          ship: _ship,
-          code: _code,
-          url: _url,
-          name: _name,
-          ...rest
-        } = cfg.channels?.tlon ?? {};
+        const { ship: _ship, code: _code, url: _url, name: _name, ...rest } = cfg.channels?.tlon ?? {};
         return {
           ...cfg,
           channels: {

@@ -30,8 +30,7 @@ export function maybeHandleQueueDirective(params: {
       channel: params.channel,
       sessionEntry: params.sessionEntry,
     });
-    const debounceLabel =
-      typeof settings.debounceMs === "number" ? `${settings.debounceMs}ms` : "default";
+    const debounceLabel = typeof settings.debounceMs === "number" ? `${settings.debounceMs}ms` : "default";
     const capLabel = typeof settings.cap === "number" ? String(settings.cap) : "default";
     const dropLabel = settings.dropPolicy ?? "default";
     return {
@@ -42,10 +41,8 @@ export function maybeHandleQueueDirective(params: {
     };
   }
 
-  const queueModeInvalid =
-    !directives.queueMode && !directives.queueReset && Boolean(directives.rawQueueMode);
-  const queueDebounceInvalid =
-    directives.rawDebounce !== undefined && typeof directives.debounceMs !== "number";
+  const queueModeInvalid = !directives.queueMode && !directives.queueReset && Boolean(directives.rawQueueMode);
+  const queueDebounceInvalid = directives.rawDebounce !== undefined && typeof directives.debounceMs !== "number";
   const queueCapInvalid = directives.rawCap !== undefined && typeof directives.cap !== "number";
   const queueDropInvalid = directives.rawDrop !== undefined && !directives.dropPolicy;
 
@@ -62,14 +59,10 @@ export function maybeHandleQueueDirective(params: {
       );
     }
     if (queueCapInvalid) {
-      errors.push(
-        `Invalid cap "${directives.rawCap ?? ""}". Use a positive integer (e.g. cap:10).`,
-      );
+      errors.push(`Invalid cap "${directives.rawCap ?? ""}". Use a positive integer (e.g. cap:10).`);
     }
     if (queueDropInvalid) {
-      errors.push(
-        `Invalid drop policy "${directives.rawDrop ?? ""}". Use drop:old, drop:new, or drop:summarize.`,
-      );
+      errors.push(`Invalid drop policy "${directives.rawDrop ?? ""}". Use drop:old, drop:new, or drop:summarize.`);
     }
     return { text: errors.join(" ") };
   }

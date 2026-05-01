@@ -4,14 +4,9 @@ import type { DiscordAccountConfig } from "../../../../src/config/config.js";
 const DEFAULT_CUSTOM_ACTIVITY_TYPE = 4;
 const CUSTOM_STATUS_NAME = "Custom Status";
 
-type DiscordPresenceConfig = Pick<
-  DiscordAccountConfig,
-  "activity" | "status" | "activityType" | "activityUrl"
->;
+type DiscordPresenceConfig = Pick<DiscordAccountConfig, "activity" | "status" | "activityType" | "activityUrl">;
 
-export function resolveDiscordPresenceUpdate(
-  config: DiscordPresenceConfig,
-): UpdatePresenceData | null {
+export function resolveDiscordPresenceUpdate(config: DiscordPresenceConfig): UpdatePresenceData | null {
   const activityText = typeof config.activity === "string" ? config.activity.trim() : "";
   const status = typeof config.status === "string" ? config.status.trim() : "";
   const activityType = config.activityType;

@@ -2,11 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import {
-  isExecutableFile,
-  resolveExecutableFromPathEnv,
-  resolveExecutablePath,
-} from "./executable-path.js";
+import { isExecutableFile, resolveExecutableFromPathEnv, resolveExecutablePath } from "./executable-path.js";
 
 describe("executable path helpers", () => {
   it("detects executable files and rejects directories or non-executables", async () => {
@@ -39,9 +35,7 @@ describe("executable path helpers", () => {
     await fs.chmod(pathTool, 0o755);
     await fs.chmod(cwdTool, 0o755);
 
-    expect(resolveExecutableFromPathEnv("runner", `${binDir}${path.delimiter}/usr/bin`)).toBe(
-      pathTool,
-    );
+    expect(resolveExecutableFromPathEnv("runner", `${binDir}${path.delimiter}/usr/bin`)).toBe(pathTool);
     expect(resolveExecutableFromPathEnv("missing", binDir)).toBeUndefined();
     expect(resolveExecutablePath("./local-tool", { cwd })).toBe(cwdTool);
     expect(resolveExecutablePath("runner", { env: { PATH: binDir } })).toBe(pathTool);
@@ -66,9 +60,9 @@ describe("executable path helpers", () => {
     await fs.chmod(pathTool, 0o755);
 
     expect(resolveExecutablePath(absoluteTool)).toBe(absoluteTool);
-    expect(
-      path.normalize(resolveExecutablePath("~/home-tool", { env: { HOME: homeDir } }) ?? ""),
-    ).toBe(path.normalize(homeTool));
+    expect(path.normalize(resolveExecutablePath("~/home-tool", { env: { HOME: homeDir } }) ?? "")).toBe(
+      path.normalize(homeTool),
+    );
     expect(path.normalize(resolveExecutablePath("runner", { env: { Path: binDir } }) ?? "")).toBe(
       path.normalize(pathTool),
     );

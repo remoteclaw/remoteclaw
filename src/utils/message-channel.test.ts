@@ -26,9 +26,7 @@ describe("message-channel", () => {
   });
 
   it("normalizes plugin aliases when registered", () => {
-    setActivePluginRegistry(
-      createTestRegistry([{ pluginId: "msteams", plugin: msteamsPlugin, source: "test" }]),
-    );
+    setActivePluginRegistry(createTestRegistry([{ pluginId: "msteams", plugin: msteamsPlugin, source: "test" }]));
     expect(resolveGatewayMessageChannel("teams")).toBe("msteams");
   });
 });

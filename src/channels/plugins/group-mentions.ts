@@ -6,10 +6,7 @@ import {
   resolveToolsBySender,
 } from "../../config/group-policy.js";
 import type { DiscordConfig } from "../../config/types.js";
-import type {
-  GroupToolPolicyBySenderConfig,
-  GroupToolPolicyConfig,
-} from "../../config/types.tools.js";
+import type { GroupToolPolicyBySenderConfig, GroupToolPolicyConfig } from "../../config/types.tools.js";
 import { resolveExactLineGroupConfigKey } from "../../line/group-keys.js";
 import { normalizeAtHashSlug, normalizeHyphenSlug } from "../../shared/string-normalization.js";
 import type { ChannelGroupContext } from "./types.js";
@@ -26,12 +23,7 @@ function parseTelegramGroupId(value?: string | null) {
     return { chatId: undefined, topicId: undefined };
   }
   const parts = raw.split(":").filter(Boolean);
-  if (
-    parts.length >= 3 &&
-    parts[1] === "topic" &&
-    /^-?\d+$/.test(parts[0]) &&
-    /^\d+$/.test(parts[2])
-  ) {
+  if (parts.length >= 3 && parts[1] === "topic" && /^-?\d+$/.test(parts[0]) && /^\d+$/.test(parts[2])) {
     return { chatId: parts[0], topicId: parts[2] };
   }
   if (parts.length >= 2 && /^-?\d+$/.test(parts[0]) && /^\d+$/.test(parts[1])) {
@@ -52,8 +44,7 @@ function resolveTelegramRequireMention(params: {
   const groupConfig = cfg.channels?.telegram?.groups?.[chatId];
   const groupDefault = cfg.channels?.telegram?.groups?.["*"];
   const topicConfig = topicId && groupConfig?.topics ? groupConfig.topics[topicId] : undefined;
-  const defaultTopicConfig =
-    topicId && groupDefault?.topics ? groupDefault.topics[topicId] : undefined;
+  const defaultTopicConfig = topicId && groupDefault?.topics ? groupDefault.topics[topicId] : undefined;
   if (typeof topicConfig?.requireMention === "boolean") {
     return topicConfig.requireMention;
   }
@@ -82,9 +73,7 @@ function resolveDiscordGuildEntry(guilds: DiscordConfig["guilds"], groupSpace?: 
     return guilds[normalized];
   }
   if (normalized) {
-    const match = Object.values(guilds).find(
-      (entry) => normalizeDiscordSlug(entry?.slug ?? undefined) === normalized,
-    );
+    const match = Object.values(guilds).find((entry) => normalizeDiscordSlug(entry?.slug ?? undefined) === normalized);
     if (match) {
       return match;
     }
@@ -103,9 +92,7 @@ function resolveDiscordChannelEntry<TEntry>(
   const channelSlug = normalizeDiscordSlug(groupChannel);
   return (
     (params.groupId ? channelEntries[params.groupId] : undefined) ??
-    (channelSlug
-      ? (channelEntries[channelSlug] ?? channelEntries[`#${channelSlug}`])
-      : undefined) ??
+    (channelSlug ? (channelEntries[channelSlug] ?? channelEntries[`#${channelSlug}`]) : undefined) ??
     (groupChannel ? channelEntries[normalizeDiscordSlug(groupChannel)] : undefined)
   );
 }
@@ -121,17 +108,9 @@ type SenderScopedToolsEntry = {
   toolsBySender?: GroupToolPolicyBySenderConfig;
 };
 
-type ChannelGroupPolicyChannel =
-  | "telegram"
-  | "whatsapp"
-  | "imessage"
-  | "googlechat"
-  | "bluebubbles"
-  | "line";
+type ChannelGroupPolicyChannel = "telegram" | "whatsapp" | "imessage" | "googlechat" | "bluebubbles" | "line";
 
-function resolveSlackChannelPolicyEntry(
-  params: GroupMentionParams,
-): SlackChannelPolicyEntry | undefined {
+function resolveSlackChannelPolicyEntry(params: GroupMentionParams): SlackChannelPolicyEntry | undefined {
   const account = inspectSlackAccount({
     cfg: params.cfg,
     accountId: params.accountId,
@@ -144,12 +123,9 @@ function resolveSlackChannelPolicyEntry(
   const groupChannel = params.groupChannel;
   const channelName = groupChannel?.replace(/^#/, "");
   const normalizedName = normalizeHyphenSlug(channelName);
-  const candidates = [
-    channelId ?? "",
-    channelName ? `#${channelName}` : "",
-    channelName ?? "",
-    normalizedName,
-  ].filter(Boolean);
+  const candidates = [channelId ?? "", channelName ? `#${channelName}` : "", channelName ?? "", normalizedName].filter(
+    Boolean,
+  );
   for (const candidate of candidates) {
     if (candidate && channels[candidate]) {
       return channels[candidate];
@@ -209,10 +185,7 @@ function resolveSenderToolsEntry(
 }
 
 function resolveDiscordPolicyContext(params: GroupMentionParams) {
-  const guildEntry = resolveDiscordGuildEntry(
-    params.cfg.channels?.discord?.guilds,
-    params.groupSpace,
-  );
+  const guildEntry = resolveDiscordGuildEntry(params.cfg.channels?.discord?.guilds, params.groupSpace);
   const channelEntries = guildEntry?.channels;
   const channelEntry =
     channelEntries && Object.keys(channelEntries).length > 0
@@ -221,9 +194,7 @@ function resolveDiscordPolicyContext(params: GroupMentionParams) {
   return { guildEntry, channelEntry };
 }
 
-export function resolveTelegramGroupRequireMention(
-  params: GroupMentionParams,
-): boolean | undefined {
+export function resolveTelegramGroupRequireMention(params: GroupMentionParams): boolean | undefined {
   const { chatId, topicId } = parseTelegramGroupId(params.groupId);
   const requireMention = resolveTelegramRequireMention({
     cfg: params.cfg,
@@ -264,9 +235,7 @@ export function resolveGoogleChatGroupRequireMention(params: GroupMentionParams)
   return resolveChannelRequireMention(params, "googlechat");
 }
 
-export function resolveGoogleChatGroupToolPolicy(
-  params: GroupMentionParams,
-): GroupToolPolicyConfig | undefined {
+export function resolveGoogleChatGroupToolPolicy(params: GroupMentionParams): GroupToolPolicyConfig | undefined {
   return resolveChannelToolPolicyForSender(params, "googlechat");
 }
 
@@ -282,28 +251,20 @@ export function resolveBlueBubblesGroupRequireMention(params: GroupMentionParams
   return resolveChannelRequireMention(params, "bluebubbles");
 }
 
-export function resolveTelegramGroupToolPolicy(
-  params: GroupMentionParams,
-): GroupToolPolicyConfig | undefined {
+export function resolveTelegramGroupToolPolicy(params: GroupMentionParams): GroupToolPolicyConfig | undefined {
   const { chatId } = parseTelegramGroupId(params.groupId);
   return resolveChannelToolPolicyForSender(params, "telegram", chatId ?? params.groupId);
 }
 
-export function resolveWhatsAppGroupToolPolicy(
-  params: GroupMentionParams,
-): GroupToolPolicyConfig | undefined {
+export function resolveWhatsAppGroupToolPolicy(params: GroupMentionParams): GroupToolPolicyConfig | undefined {
   return resolveChannelToolPolicyForSender(params, "whatsapp");
 }
 
-export function resolveIMessageGroupToolPolicy(
-  params: GroupMentionParams,
-): GroupToolPolicyConfig | undefined {
+export function resolveIMessageGroupToolPolicy(params: GroupMentionParams): GroupToolPolicyConfig | undefined {
   return resolveChannelToolPolicyForSender(params, "imessage");
 }
 
-export function resolveDiscordGroupToolPolicy(
-  params: GroupMentionParams,
-): GroupToolPolicyConfig | undefined {
+export function resolveDiscordGroupToolPolicy(params: GroupMentionParams): GroupToolPolicyConfig | undefined {
   const context = resolveDiscordPolicyContext(params);
   const channelPolicy = resolveSenderToolsEntry(context.channelEntry, params);
   if (channelPolicy) {
@@ -312,16 +273,12 @@ export function resolveDiscordGroupToolPolicy(
   return resolveSenderToolsEntry(context.guildEntry, params);
 }
 
-export function resolveSlackGroupToolPolicy(
-  params: GroupMentionParams,
-): GroupToolPolicyConfig | undefined {
+export function resolveSlackGroupToolPolicy(params: GroupMentionParams): GroupToolPolicyConfig | undefined {
   const resolved = resolveSlackChannelPolicyEntry(params);
   return resolveSenderToolsEntry(resolved, params);
 }
 
-export function resolveBlueBubblesGroupToolPolicy(
-  params: GroupMentionParams,
-): GroupToolPolicyConfig | undefined {
+export function resolveBlueBubblesGroupToolPolicy(params: GroupMentionParams): GroupToolPolicyConfig | undefined {
   return resolveChannelToolPolicyForSender(params, "bluebubbles");
 }
 
@@ -342,9 +299,7 @@ export function resolveLineGroupRequireMention(params: GroupMentionParams): bool
   return resolveChannelRequireMention(params, "line");
 }
 
-export function resolveLineGroupToolPolicy(
-  params: GroupMentionParams,
-): GroupToolPolicyConfig | undefined {
+export function resolveLineGroupToolPolicy(params: GroupMentionParams): GroupToolPolicyConfig | undefined {
   const exactGroupId = resolveExactLineGroupConfigKey({
     cfg: params.cfg,
     accountId: params.accountId,

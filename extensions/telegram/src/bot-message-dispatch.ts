@@ -9,16 +9,8 @@ import { logAckFailure, logTypingFailure } from "../../../src/channels/logging.j
 import { createReplyPrefixOptions } from "../../../src/channels/reply-prefix.js";
 import { createTypingCallbacks } from "../../../src/channels/typing.js";
 import { resolveMarkdownTableMode } from "../../../src/config/markdown-tables.js";
-import {
-  loadSessionStore,
-  resolveSessionStoreEntry,
-  resolveStorePath,
-} from "../../../src/config/sessions.js";
-import type {
-  RemoteClawConfig,
-  ReplyToMode,
-  TelegramAccountConfig,
-} from "../../../src/config/types.js";
+import { loadSessionStore, resolveSessionStoreEntry, resolveStorePath } from "../../../src/config/sessions.js";
+import type { RemoteClawConfig, ReplyToMode, TelegramAccountConfig } from "../../../src/config/types.js";
 import { danger, logVerbose } from "../../../src/globals.js";
 import { getAgentScopedMediaLocalRoots } from "../../../src/media/local-roots.js";
 import type { RuntimeEnv } from "../../../src/runtime.js";
@@ -36,10 +28,7 @@ import {
   type DraftLaneState,
   type LaneName,
 } from "./lane-delivery.js";
-import {
-  createTelegramReasoningStepState,
-  splitTelegramReasoningText,
-} from "./reasoning-lane-coordinator.js";
+import { createTelegramReasoningStepState, splitTelegramReasoningText } from "./reasoning-lane-coordinator.js";
 import { editMessageTelegram } from "./send.js";
 import { cacheSticker, describeStickerImage } from "./sticker-cache.js";
 
@@ -62,15 +51,9 @@ export function pruneStickerMediaFromContext(
   if (opts?.stickerMediaIncluded === false) {
     return;
   }
-  const nextMediaPaths = Array.isArray(ctxPayload.MediaPaths)
-    ? ctxPayload.MediaPaths.slice(1)
-    : undefined;
-  const nextMediaUrls = Array.isArray(ctxPayload.MediaUrls)
-    ? ctxPayload.MediaUrls.slice(1)
-    : undefined;
-  const nextMediaTypes = Array.isArray(ctxPayload.MediaTypes)
-    ? ctxPayload.MediaTypes.slice(1)
-    : undefined;
+  const nextMediaPaths = Array.isArray(ctxPayload.MediaPaths) ? ctxPayload.MediaPaths.slice(1) : undefined;
+  const nextMediaUrls = Array.isArray(ctxPayload.MediaUrls) ? ctxPayload.MediaUrls.slice(1) : undefined;
+  const nextMediaTypes = Array.isArray(ctxPayload.MediaTypes) ? ctxPayload.MediaTypes.slice(1) : undefined;
   ctxPayload.MediaPaths = nextMediaPaths && nextMediaPaths.length > 0 ? nextMediaPaths : undefined;
   ctxPayload.MediaUrls = nextMediaUrls && nextMediaUrls.length > 0 ? nextMediaUrls : undefined;
   ctxPayload.MediaTypes = nextMediaTypes && nextMediaTypes.length > 0 ? nextMediaTypes : undefined;
@@ -256,8 +239,7 @@ export const dispatchTelegramMessage = async ({
     }
     return {
       segments,
-      suppressedReasoningOnly:
-        Boolean(split.reasoningText) && suppressReasoning && !split.answerText,
+      suppressedReasoningOnly: Boolean(split.reasoningText) && suppressReasoning && !split.answerText,
     };
   };
   const resetDraftLaneState = (lane: DraftLaneState) => {
@@ -301,11 +283,7 @@ export const dispatchTelegramMessage = async ({
     // Some providers briefly emit a shorter prefix snapshot (for example
     // "Sure." -> "Sure" -> "Sure."). Keep the longer preview to avoid
     // visible punctuation flicker.
-    if (
-      lane.lastPartialText &&
-      lane.lastPartialText.startsWith(text) &&
-      text.length < lane.lastPartialText.length
-    ) {
+    if (lane.lastPartialText && lane.lastPartialText.startsWith(text) && text.length < lane.lastPartialText.length) {
       return;
     }
     lane.lastPartialText = text;
@@ -403,9 +381,7 @@ export const dispatchTelegramMessage = async ({
   }
 
   const replyQuoteText =
-    ctxPayload.ReplyToIsQuote && ctxPayload.ReplyToBody
-      ? ctxPayload.ReplyToBody.trim() || undefined
-      : undefined;
+    ctxPayload.ReplyToIsQuote && ctxPayload.ReplyToBody ? ctxPayload.ReplyToBody.trim() || undefined : undefined;
   const deliveryState = createLaneDeliveryStateTracker();
   const clearGroupHistory = () => {
     if (isGroup && historyKey) {
@@ -505,9 +481,8 @@ export const dispatchTelegramMessage = async ({
             // rotations/partials are applied before final delivery mapping.
             await enqueueDraftLaneEvent(async () => {});
           }
-          const previewButtons = (
-            payload.channelData?.telegram as { buttons?: TelegramInlineButtons } | undefined
-          )?.buttons;
+          const previewButtons = (payload.channelData?.telegram as { buttons?: TelegramInlineButtons } | undefined)
+            ?.buttons;
           const split = splitTextIntoLaneSegments(payload.text);
           const segments = split.segments;
           const hasMedia = Boolean(payload.mediaUrl) || (payload.mediaUrls?.length ?? 0) > 0;
@@ -524,9 +499,7 @@ export const dispatchTelegramMessage = async ({
               };
             };
             const bufferedButtons = (
-              buffered.payload.channelData?.telegram as
-                | { buttons?: TelegramInlineButtons }
-                | undefined
+              buffered.payload.channelData?.telegram as { buttons?: TelegramInlineButtons } | undefined
             )?.buttons;
             await deliverLaneText({
               laneName: "answer",
@@ -539,11 +512,7 @@ export const dispatchTelegramMessage = async ({
           };
 
           for (const segment of segments) {
-            if (
-              segment.lane === "answer" &&
-              info.kind === "final" &&
-              reasoningStepState.shouldBufferFinalAnswer()
-            ) {
+            if (segment.lane === "answer" && info.kind === "final" && reasoningStepState.shouldBufferFinalAnswer()) {
               reasoningStepState.bufferFinalAnswer({ payload, text: segment.text });
               continue;
             }
@@ -592,8 +561,7 @@ export const dispatchTelegramMessage = async ({
             await reasoningLane.stream?.stop();
             reasoningStepState.resetForNextStep();
           }
-          const canSendAsIs =
-            hasMedia || (typeof payload.text === "string" && payload.text.length > 0);
+          const canSendAsIs = hasMedia || (typeof payload.text === "string" && payload.text.length > 0);
           if (!canSendAsIs) {
             if (info.kind === "final") {
               await flushBufferedFinalAnswer();
@@ -678,10 +646,7 @@ export const dispatchTelegramMessage = async ({
     // before stream cleanup so boundary rotations/materialization complete first.
     await draftLaneEventQueue;
     // Must stop() first to flush debounced content before clear() wipes state.
-    const streamCleanupStates = new Map<
-      NonNullable<DraftLaneState["stream"]>,
-      { shouldClear: boolean }
-    >();
+    const streamCleanupStates = new Map<NonNullable<DraftLaneState["stream"]>, { shouldClear: boolean }>();
     const lanesToCleanup: Array<{ laneName: LaneName; lane: DraftLaneState }> = [
       { laneName: "answer", lane: answerLane },
       { laneName: "reasoning", lane: reasoningLane },
@@ -697,11 +662,8 @@ export const dispatchTelegramMessage = async ({
       const hasBoundaryFinalizedActivePreview =
         laneState.laneName === "answer" &&
         typeof activePreviewMessageId === "number" &&
-        archivedAnswerPreviews.some(
-          (p) => p.deleteIfUnused === false && p.messageId === activePreviewMessageId,
-        );
-      const shouldClear =
-        !finalizedPreviewByLane[laneState.laneName] && !hasBoundaryFinalizedActivePreview;
+        archivedAnswerPreviews.some((p) => p.deleteIfUnused === false && p.messageId === activePreviewMessageId);
+      const shouldClear = !finalizedPreviewByLane[laneState.laneName] && !hasBoundaryFinalizedActivePreview;
       const existing = streamCleanupStates.get(stream);
       if (!existing) {
         streamCleanupStates.set(stream, { shouldClear });
@@ -722,18 +684,14 @@ export const dispatchTelegramMessage = async ({
       try {
         await bot.api.deleteMessage(chatId, archivedPreview.messageId);
       } catch (err) {
-        logVerbose(
-          `telegram: archived answer preview cleanup failed (${archivedPreview.messageId}): ${String(err)}`,
-        );
+        logVerbose(`telegram: archived answer preview cleanup failed (${archivedPreview.messageId}): ${String(err)}`);
       }
     }
     for (const messageId of archivedReasoningPreviewIds) {
       try {
         await bot.api.deleteMessage(chatId, messageId);
       } catch (err) {
-        logVerbose(
-          `telegram: archived reasoning preview cleanup failed (${messageId}): ${String(err)}`,
-        );
+        logVerbose(`telegram: archived reasoning preview cleanup failed (${messageId}): ${String(err)}`);
       }
     }
   }
@@ -741,8 +699,7 @@ export const dispatchTelegramMessage = async ({
   const deliverySummary = deliveryState.snapshot();
   if (
     dispatchError ||
-    (!deliverySummary.delivered &&
-      (deliverySummary.skippedNonSilent > 0 || deliverySummary.failedNonSilent > 0))
+    (!deliverySummary.delivered && (deliverySummary.skippedNonSilent > 0 || deliverySummary.failedNonSilent > 0))
   ) {
     const fallbackText = dispatchError
       ? "Something went wrong while processing your request. Please try again."

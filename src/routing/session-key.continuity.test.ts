@@ -19,10 +19,7 @@ describe("Discord Session Key Continuity", () => {
     });
   }
 
-  function expectDistinctDmAndChannelKeys(params: {
-    dmScope: "main" | "per-peer";
-    expectedDmKey: string;
-  }) {
+  function expectDistinctDmAndChannelKeys(params: { dmScope: "main" | "per-peer"; expectedDmKey: string }) {
     const dmKey = buildDiscordSessionKey({
       peer: { kind: "direct", id: "user123" },
       dmScope: params.dmScope,

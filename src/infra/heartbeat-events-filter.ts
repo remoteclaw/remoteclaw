@@ -55,11 +55,7 @@ function isHeartbeatNoiseEvent(evt: string): boolean {
   if (!lower) {
     return false;
   }
-  return (
-    lower.includes("heartbeat poll") ||
-    lower.includes("heartbeat wake") ||
-    lower.startsWith("heartbeat_ok")
-  );
+  return lower.includes("heartbeat poll") || lower.includes("heartbeat wake") || lower.startsWith("heartbeat_ok");
 }
 
 export function isExecCompletionEvent(evt: string): boolean {

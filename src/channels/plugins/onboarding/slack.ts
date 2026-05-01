@@ -117,11 +117,7 @@ async function noteSlackTokenHelp(prompter: WizardPrompter, botName: string): Pr
   );
 }
 
-function setSlackChannelAllowlist(
-  cfg: RemoteClawConfig,
-  accountId: string,
-  channelKeys: string[],
-): RemoteClawConfig {
+function setSlackChannelAllowlist(cfg: RemoteClawConfig, accountId: string, channelKeys: string[]): RemoteClawConfig {
   const channels = Object.fromEntries(channelKeys.map((key) => [key, { allow: true }]));
   return patchChannelConfigForAccount({
     cfg,
@@ -142,8 +138,7 @@ async function promptSlackAllowFrom(params: {
   });
   const resolved = resolveSlackAccount({ cfg: params.cfg, accountId });
   const token = resolved.userToken ?? resolved.botToken ?? "";
-  const existing =
-    params.cfg.channels?.slack?.allowFrom ?? params.cfg.channels?.slack?.dm?.allowFrom ?? [];
+  const existing = params.cfg.channels?.slack?.allowFrom ?? params.cfg.channels?.slack?.dm?.allowFrom ?? [];
   const parseId = (value: string) =>
     parseMentionOrPrefixedId({
       value,
@@ -185,8 +180,7 @@ const dmPolicy: ChannelOnboardingDmPolicy = {
   channel,
   policyKey: "channels.slack.dmPolicy",
   allowFromKey: "channels.slack.allowFrom",
-  getCurrent: (cfg) =>
-    cfg.channels?.slack?.dmPolicy ?? cfg.channels?.slack?.dm?.policy ?? "pairing",
+  getCurrent: (cfg) => cfg.channels?.slack?.dmPolicy ?? cfg.channels?.slack?.dm?.policy ?? "pairing",
   setPolicy: (cfg, policy) =>
     setLegacyChannelDmPolicyWithAllowFrom({
       cfg,
@@ -231,8 +225,7 @@ export const slackOnboardingAdapter: ChannelOnboardingAdapter = {
     const hasConfiguredBotToken = hasConfiguredSecretInput(resolvedAccount.config.botToken);
     const hasConfiguredAppToken = hasConfiguredSecretInput(resolvedAccount.config.appToken);
     const hasConfigTokens = hasConfiguredBotToken && hasConfiguredAppToken;
-    const accountConfigured =
-      Boolean(resolvedAccount.botToken && resolvedAccount.appToken) || hasConfigTokens;
+    const accountConfigured = Boolean(resolvedAccount.botToken && resolvedAccount.appToken) || hasConfigTokens;
     const allowEnv = slackAccountId === DEFAULT_ACCOUNT_ID;
     let resolvedBotTokenForAllowlist = resolvedAccount.botToken;
     const slackBotName = String(
@@ -328,9 +321,7 @@ export const slackOnboardingAdapter: ChannelOnboardingAdapter = {
             const resolvedKeys = resolved
               .filter((entry) => entry.resolved && entry.id)
               .map((entry) => entry.id as string);
-            const unresolved = resolved
-              .filter((entry) => !entry.resolved)
-              .map((entry) => entry.input);
+            const unresolved = resolved.filter((entry) => !entry.resolved).map((entry) => entry.input);
             keys = [...resolvedKeys, ...unresolved.map((entry) => entry.trim()).filter(Boolean)];
             await noteChannelLookupSummary({
               prompter,

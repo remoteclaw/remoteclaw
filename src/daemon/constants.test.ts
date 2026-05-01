@@ -94,15 +94,11 @@ describe("formatGatewayServiceDescription", () => {
   });
 
   it("includes profile when set", () => {
-    expect(formatGatewayServiceDescription({ profile: "work" })).toBe(
-      "RemoteClaw Gateway (profile: work)",
-    );
+    expect(formatGatewayServiceDescription({ profile: "work" })).toBe("RemoteClaw Gateway (profile: work)");
   });
 
   it("includes version when set", () => {
-    expect(formatGatewayServiceDescription({ version: "2026.1.10" })).toBe(
-      "RemoteClaw Gateway (v2026.1.10)",
-    );
+    expect(formatGatewayServiceDescription({ version: "2026.1.10" })).toBe("RemoteClaw Gateway (v2026.1.10)");
   });
 
   it("includes profile and version when set", () => {

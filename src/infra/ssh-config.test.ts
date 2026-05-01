@@ -80,10 +80,7 @@ describe("ssh-config", () => {
   });
 
   it("adds non-default port and trimmed identity arguments", async () => {
-    await resolveSshConfig(
-      { user: "me", host: "alias", port: 2022 },
-      { identity: "  /tmp/custom_id  " },
-    );
+    await resolveSshConfig({ user: "me", host: "alias", port: 2022 }, { identity: "  /tmp/custom_id  " });
 
     const args = spawnMock.mock.calls.at(-1)?.[1] as string[] | undefined;
     expect(args).toEqual(["-G", "-p", "2022", "-i", "/tmp/custom_id", "--", "me@alias"]);

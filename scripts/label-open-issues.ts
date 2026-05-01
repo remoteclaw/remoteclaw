@@ -272,14 +272,10 @@ function loadState(statePath: string): LoadedState {
   const raw = readFileSync(statePath, "utf8");
   const parsed = JSON.parse(raw) as Partial<ScriptState>;
   const issues = Array.isArray(parsed.issues)
-    ? parsed.issues.filter(
-        (value): value is number => typeof value === "number" && Number.isFinite(value),
-      )
+    ? parsed.issues.filter((value): value is number => typeof value === "number" && Number.isFinite(value))
     : [];
   const pullRequests = Array.isArray(parsed.pullRequests)
-    ? parsed.pullRequests.filter(
-        (value): value is number => typeof value === "number" && Number.isFinite(value),
-      )
+    ? parsed.pullRequests.filter((value): value is number => typeof value === "number" && Number.isFinite(value))
     : [];
 
   const state: ScriptState = {
@@ -346,16 +342,7 @@ function resolveRepo(): RepoInfo {
 }
 
 function fetchIssuePage(repo: RepoInfo, after: string | null): IssuePage {
-  const args = [
-    "api",
-    "graphql",
-    "-f",
-    `query=${ISSUE_QUERY}`,
-    "-f",
-    `owner=${repo.owner}`,
-    "-f",
-    `name=${repo.name}`,
-  ];
+  const args = ["api", "graphql", "-f", `query=${ISSUE_QUERY}`, "-f", `owner=${repo.owner}`, "-f", `name=${repo.name}`];
 
   if (after) {
     args.push("-f", `after=${after}`);
@@ -552,16 +539,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function fallbackCategory(issueText: string): "bug" | "enhancement" {
   const lower = issueText.toLowerCase();
-  const bugSignals = [
-    "bug",
-    "error",
-    "crash",
-    "broken",
-    "regression",
-    "fails",
-    "failure",
-    "incorrect",
-  ];
+  const bugSignals = ["bug", "error", "crash", "broken", "regression", "fails", "failure", "incorrect"];
   return bugSignals.some((signal) => lower.includes(signal)) ? "bug" : "enhancement";
 }
 
@@ -655,12 +633,7 @@ async function classifyItem(
   return normalizeClassification(parsed, itemText);
 }
 
-function applyLabels(
-  target: LabelTarget,
-  item: LabelItem,
-  labelsToAdd: string[],
-  dryRun: boolean,
-): boolean {
+function applyLabels(target: LabelTarget, item: LabelItem, labelsToAdd: string[], dryRun: boolean): boolean {
   if (!labelsToAdd.length) {
     return false;
   }
@@ -672,11 +645,9 @@ function applyLabels(
 
   const ghTarget = target === "issue" ? "issue" : "pr";
 
-  execFileSync(
-    "gh",
-    [ghTarget, "edit", String(item.number), "--add-label", labelsToAdd.join(",")],
-    { stdio: "inherit" },
-  );
+  execFileSync("gh", [ghTarget, "edit", String(item.number), "--add-label", labelsToAdd.join(",")], {
+    stdio: "inherit",
+  });
   return true;
 }
 
@@ -714,9 +685,7 @@ async function main() {
     loadedState = createEmptyState();
   }
 
-  logInfo(
-    `State entries: ${loadedState.issueSet.size} issues, ${loadedState.pullRequestSet.size} pull requests.`,
-  );
+  logInfo(`State entries: ${loadedState.issueSet.size} issues, ${loadedState.pullRequestSet.size} pull requests.`);
 
   const issueState = loadedState.issueSet;
   const pullRequestState = loadedState.pullRequestSet;
@@ -807,19 +776,13 @@ async function main() {
     prScannedCount += batch.pullRequests.length;
     prTotalCount = batch.totalCount ?? prTotalCount;
 
-    const pendingPullRequests = batch.pullRequests.filter(
-      (pullRequest) => !pullRequestState.has(pullRequest.number),
-    );
+    const pendingPullRequests = batch.pullRequests.filter((pullRequest) => !pullRequestState.has(pullRequest.number));
     const skippedInBatch = batch.pullRequests.length - pendingPullRequests.length;
     prSkippedCount += skippedInBatch;
 
     logHeader(`PR Batch ${batch.batchIndex}`);
-    logInfo(
-      `Fetched ${batch.pullRequests.length} pull requests (${skippedInBatch} already processed).`,
-    );
-    logInfo(
-      `Processing ${pendingPullRequests.length} pull requests (scanned so far: ${prScannedCount}).`,
-    );
+    logInfo(`Fetched ${batch.pullRequests.length} pull requests (${skippedInBatch} already processed).`);
+    logInfo(`Processing ${pendingPullRequests.length} pull requests (scanned so far: ${prScannedCount}).`);
 
     for (const pullRequest of pendingPullRequests) {
       writeStdoutLine(`\n#${pullRequest.number} — ${pullRequest.title}`);

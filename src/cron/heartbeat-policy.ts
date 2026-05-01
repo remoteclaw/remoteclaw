@@ -7,16 +7,11 @@ export type HeartbeatDeliveryPayload = {
   mediaUrls?: string[];
 };
 
-export function shouldSkipHeartbeatOnlyDelivery(
-  payloads: HeartbeatDeliveryPayload[],
-  ackMaxChars: number,
-): boolean {
+export function shouldSkipHeartbeatOnlyDelivery(payloads: HeartbeatDeliveryPayload[], ackMaxChars: number): boolean {
   if (payloads.length === 0) {
     return true;
   }
-  const hasAnyMedia = payloads.some(
-    (payload) => resolveSendableOutboundReplyParts(payload).hasMedia,
-  );
+  const hasAnyMedia = payloads.some((payload) => resolveSendableOutboundReplyParts(payload).hasMedia);
   if (hasAnyMedia) {
     return false;
   }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { markdownToSlackMrkdwn, normalizeSlackOutboundText } from "./format.js";
+import { markdownToSlackMrkdwn, markdownToSlackMrkdwnChunks, normalizeSlackOutboundText } from "./format.js";
 import { escapeSlackMrkdwn } from "./monitor/mrkdwn.js";
 
 describe("markdownToSlackMrkdwn", () => {
@@ -7,23 +7,11 @@ describe("markdownToSlackMrkdwn", () => {
     const cases = [
       ["converts bold from double asterisks to single", "**bold text**", "*bold text*"],
       ["preserves italic underscore format", "_italic text_", "_italic text_"],
-      [
-        "converts strikethrough from double tilde to single",
-        "~~strikethrough~~",
-        "~strikethrough~",
-      ],
-      [
-        "renders basic inline formatting together",
-        "hi _there_ **boss** `code`",
-        "hi _there_ *boss* `code`",
-      ],
+      ["converts strikethrough from double tilde to single", "~~strikethrough~~", "~strikethrough~"],
+      ["renders basic inline formatting together", "hi _there_ **boss** `code`", "hi _there_ *boss* `code`"],
       ["renders inline code", "use `npm install`", "use `npm install`"],
       ["renders fenced code blocks", "```js\nconst x = 1;\n```", "```\nconst x = 1;\n```"],
-      [
-        "renders links with Slack mrkdwn syntax",
-        "see [docs](https://example.com)",
-        "see <https://example.com|docs>",
-      ],
+      ["renders links with Slack mrkdwn syntax", "see [docs](https://example.com)", "see <https://example.com|docs>"],
       ["does not duplicate bare URLs", "see https://example.com", "see https://example.com"],
       ["escapes unsafe characters", "a & b < c > d", "a &amp; b &lt; c &gt; d"],
       [
@@ -53,13 +41,21 @@ describe("markdownToSlackMrkdwn", () => {
     const res = markdownToSlackMrkdwn(
       "**Important:** Check the _docs_ at [link](https://example.com)\n\n- first\n- second",
     );
-    expect(res).toBe(
-      "*Important:* Check the _docs_ at <https://example.com|link>\n\n• first\n• second",
-    );
+    expect(res).toBe("*Important:* Check the _docs_ at <https://example.com|link>\n\n• first\n• second");
   });
 
   it("does not throw when input is undefined at runtime", () => {
     expect(markdownToSlackMrkdwn(undefined as unknown as string)).toBe("");
+  });
+
+  // FORK-SYNC: skipped — fork's markdownToSlackMrkdwnChunks implementation doesn't yet
+  // have the upstream rendered-length re-chunking behavior. The source-side port is
+  // EXTRACT-deferred (see dispatch-2-adversarial-audit.md). Re-enable once format.ts ports.
+  it.skip("re-chunks on rendered length and still prefers word boundaries", () => {
+    const chunks = markdownToSlackMrkdwnChunks("alpha <<", 8);
+
+    expect(chunks).toEqual(["alpha ", "&lt;&lt;"]);
+    expect(chunks.every((chunk) => chunk.length <= 8)).toBe(true);
   });
 });
 

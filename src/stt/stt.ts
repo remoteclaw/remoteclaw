@@ -1,13 +1,7 @@
-import {
-  collectProviderApiKeysForExecution,
-  executeWithApiKeyRotation,
-} from "../auth/api-key-rotation.js";
+import { collectProviderApiKeysForExecution, executeWithApiKeyRotation } from "../auth/api-key-rotation.js";
 import { requireApiKey, resolveApiKeyForProvider } from "../auth/provider-auth.js";
 import type { RemoteClawConfig } from "../config/config.js";
-import type {
-  MediaUnderstandingConfig,
-  MediaUnderstandingModelConfig,
-} from "../config/types.tools.js";
+import type { MediaUnderstandingConfig, MediaUnderstandingModelConfig } from "../config/types.tools.js";
 import { DEFAULT_AUDIO_MODELS } from "./defaults.js";
 import { buildSttProviderRegistry, getSttProvider } from "./providers/index.js";
 import type { AudioTranscriptionResult, SttProvider } from "./types.js";
@@ -16,9 +10,7 @@ export type SttProviderRegistry = Map<string, SttProvider>;
 
 type ProviderQuery = Record<string, string | number | boolean>;
 
-function normalizeProviderQuery(
-  options?: Record<string, string | number | boolean>,
-): ProviderQuery | undefined {
+function normalizeProviderQuery(options?: Record<string, string | number | boolean>): ProviderQuery | undefined {
   if (!options) {
     return undefined;
   }
@@ -104,9 +96,7 @@ export type TranscribeAudioParams = {
   timeoutMs: number;
 };
 
-export async function transcribeAudioWithProvider(
-  params: TranscribeAudioParams,
-): Promise<AudioTranscriptionResult> {
+export async function transcribeAudioWithProvider(params: TranscribeAudioParams): Promise<AudioTranscriptionResult> {
   const { providerId, cfg, entry, config } = params;
 
   const provider = getSttProvider(providerId, params.providerRegistry);
@@ -152,11 +142,7 @@ export async function transcribeAudioWithProvider(
         baseUrl,
         headers,
         model,
-        language:
-          params.language ??
-          entry.language ??
-          config?.language ??
-          cfg.tools?.media?.audio?.language,
+        language: params.language ?? entry.language ?? config?.language ?? cfg.tools?.media?.audio?.language,
         prompt: params.prompt,
         query: providerQuery,
         timeoutMs: params.timeoutMs,

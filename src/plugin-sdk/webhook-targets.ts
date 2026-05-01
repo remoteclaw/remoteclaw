@@ -2,10 +2,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { registerPluginHttpRoute } from "../plugins/http-registry.js";
 import type { FixedWindowRateLimiter } from "./webhook-memory-guards.js";
 import { normalizeWebhookPath } from "./webhook-path.js";
-import {
-  beginWebhookRequestPipelineOrReject,
-  type WebhookInFlightLimiter,
-} from "./webhook-request-guards.js";
+import { beginWebhookRequestPipelineOrReject, type WebhookInFlightLimiter } from "./webhook-request-guards.js";
 
 export type RegisteredWebhookTarget<T> = {
   target: T;
@@ -21,10 +18,7 @@ type RegisterPluginHttpRouteParams = Parameters<typeof registerPluginHttpRoute>[
 
 export { registerPluginHttpRoute };
 
-export type RegisterWebhookPluginRouteOptions = Omit<
-  RegisterPluginHttpRouteParams,
-  "path" | "fallbackPath"
->;
+export type RegisterWebhookPluginRouteOptions = Omit<RegisterPluginHttpRouteParams, "path" | "fallbackPath">;
 
 /** Register a webhook target and lazily install the matching plugin HTTP route on first use. */
 export function registerWebhookTargetWithPluginRoute<T extends { path: string }>(params: {
@@ -167,10 +161,7 @@ export async function withResolvedWebhookRequestPipeline<T>(params: {
   }
 }
 
-export type WebhookTargetMatchResult<T> =
-  | { kind: "none" }
-  | { kind: "single"; target: T }
-  | { kind: "ambiguous" };
+export type WebhookTargetMatchResult<T> = { kind: "none" } | { kind: "single"; target: T } | { kind: "ambiguous" };
 
 function updateMatchedWebhookTarget<T>(
   matched: T | undefined,

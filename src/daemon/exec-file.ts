@@ -22,9 +22,7 @@ export async function execFileUtf8(
       const stderrText = String(stderr ?? "");
       resolve({
         stdout: String(stdout ?? ""),
-        stderr:
-          stderrText ||
-          (typeof e.message === "string" ? e.message : typeof error === "string" ? error : ""),
+        stderr: stderrText || (typeof e.message === "string" ? e.message : typeof error === "string" ? error : ""),
         code: typeof e.code === "number" ? e.code : 1,
       });
     });

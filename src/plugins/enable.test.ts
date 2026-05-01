@@ -15,10 +15,7 @@ function expectEnableResult(
   params.assert(result);
 }
 
-function expectEnabledAllowlist(
-  result: ReturnType<typeof enablePluginInConfig>,
-  expected: string[],
-) {
+function expectEnabledAllowlist(result: ReturnType<typeof enablePluginInConfig>, expected: string[]) {
   expect(result.config.plugins?.allow).toEqual(expected);
 }
 

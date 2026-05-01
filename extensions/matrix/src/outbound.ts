@@ -9,8 +9,7 @@ export const matrixOutbound: ChannelOutboundAdapter = {
   textChunkLimit: 4000,
   sendText: async ({ cfg, to, text, deps, replyToId, threadId, accountId }) => {
     const send = deps?.sendMatrix ?? sendMessageMatrix;
-    const resolvedThreadId =
-      threadId !== undefined && threadId !== null ? String(threadId) : undefined;
+    const resolvedThreadId = threadId !== undefined && threadId !== null ? String(threadId) : undefined;
     const result = await send(to, text, {
       cfg,
       replyToId: replyToId ?? undefined,
@@ -25,8 +24,7 @@ export const matrixOutbound: ChannelOutboundAdapter = {
   },
   sendMedia: async ({ cfg, to, text, mediaUrl, deps, replyToId, threadId, accountId }) => {
     const send = deps?.sendMatrix ?? sendMessageMatrix;
-    const resolvedThreadId =
-      threadId !== undefined && threadId !== null ? String(threadId) : undefined;
+    const resolvedThreadId = threadId !== undefined && threadId !== null ? String(threadId) : undefined;
     const result = await send(to, text, {
       cfg,
       mediaUrl,
@@ -41,8 +39,7 @@ export const matrixOutbound: ChannelOutboundAdapter = {
     };
   },
   sendPoll: async ({ cfg, to, poll, threadId, accountId }) => {
-    const resolvedThreadId =
-      threadId !== undefined && threadId !== null ? String(threadId) : undefined;
+    const resolvedThreadId = threadId !== undefined && threadId !== null ? String(threadId) : undefined;
     const result = await sendPollMatrix(to, poll, {
       cfg,
       threadId: resolvedThreadId,

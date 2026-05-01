@@ -28,9 +28,7 @@ describe("Ghost reminder bug (issue #13317)", () => {
       messageId: "m1",
       chatId: "155462274",
     });
-    const getReplySpy = vi
-      .spyOn(replyModule, "getReplyFromConfig")
-      .mockResolvedValue({ text: replyText });
+    const getReplySpy = vi.spyOn(replyModule, "getReplyFromConfig").mockResolvedValue({ text: replyText });
     return { sendTelegram, getReplySpy };
   };
 
@@ -82,7 +80,7 @@ describe("Ghost reminder bug (issue #13317)", () => {
   ): Promise<{
     result: Awaited<ReturnType<typeof runHeartbeatOnce>>;
     sendTelegram: ReturnType<typeof vi.fn>;
-    calledCtx: { Provider?: string; Body?: string } | null;
+    calledCtx: { Provider?: string; Body?: string; ForceSenderIsOwnerFalse?: boolean } | null;
   }> => {
     return runHeartbeatCase({
       tmpPrefix,
@@ -101,7 +99,7 @@ describe("Ghost reminder bug (issue #13317)", () => {
   }): Promise<{
     result: Awaited<ReturnType<typeof runHeartbeatOnce>>;
     sendTelegram: ReturnType<typeof vi.fn>;
-    calledCtx: { Provider?: string; Body?: string } | null;
+    calledCtx: { Provider?: string; Body?: string; ForceSenderIsOwnerFalse?: boolean } | null;
     replyCallCount: number;
   }> => {
     return withTempHeartbeatSandbox(
@@ -154,25 +152,19 @@ describe("Ghost reminder bug (issue #13317)", () => {
   });
 
   it("uses CRON_EVENT_PROMPT when an actionable cron event exists", async () => {
-    const { result, sendTelegram, calledCtx } = await runCronReminderCase(
-      "remoteclaw-cron-",
-      (sessionKey) => {
-        enqueueSystemEvent("Reminder: Check Base Scout results", { sessionKey });
-      },
-    );
+    const { result, sendTelegram, calledCtx } = await runCronReminderCase("remoteclaw-cron-", (sessionKey) => {
+      enqueueSystemEvent("Reminder: Check Base Scout results", { sessionKey });
+    });
     expect(result.status).toBe("ran");
     expectCronEventPrompt(calledCtx, "Reminder: Check Base Scout results");
     expect(sendTelegram).toHaveBeenCalled();
   });
 
   it("uses CRON_EVENT_PROMPT when cron events are mixed with heartbeat noise", async () => {
-    const { result, sendTelegram, calledCtx } = await runCronReminderCase(
-      "remoteclaw-cron-mixed-",
-      (sessionKey) => {
-        enqueueSystemEvent("HEARTBEAT_OK", { sessionKey });
-        enqueueSystemEvent("Reminder: Check Base Scout results", { sessionKey });
-      },
-    );
+    const { result, sendTelegram, calledCtx } = await runCronReminderCase("remoteclaw-cron-mixed-", (sessionKey) => {
+      enqueueSystemEvent("HEARTBEAT_OK", { sessionKey });
+      enqueueSystemEvent("Reminder: Check Base Scout results", { sessionKey });
+    });
     expect(result.status).toBe("ran");
     expectCronEventPrompt(calledCtx, "Reminder: Check Base Scout results");
     expect(sendTelegram).toHaveBeenCalled();
@@ -229,6 +221,7 @@ describe("Ghost reminder bug (issue #13317)", () => {
 
     expect(result.status).toBe("ran");
     expect(calledCtx?.Provider).toBe("exec-event");
+    expect(calledCtx?.ForceSenderIsOwnerFalse).toBe(true);
     expect(calledCtx?.Body).toContain("Handle the result internally");
     expect(sendTelegram).not.toHaveBeenCalled();
   });

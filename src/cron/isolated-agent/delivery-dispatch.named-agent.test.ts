@@ -12,19 +12,13 @@ vi.mock("../../agents/subagent-registry.js", () => ({
 describe("matchesMessagingToolDeliveryTarget", () => {
   it("matches when channel and to agree", () => {
     expect(
-      matchesMessagingToolDeliveryTarget(
-        { provider: "telegram", to: "123456" },
-        { channel: "telegram", to: "123456" },
-      ),
+      matchesMessagingToolDeliveryTarget({ provider: "telegram", to: "123456" }, { channel: "telegram", to: "123456" }),
     ).toBe(true);
   });
 
   it("rejects when channel differs", () => {
     expect(
-      matchesMessagingToolDeliveryTarget(
-        { provider: "whatsapp", to: "123456" },
-        { channel: "telegram", to: "123456" },
-      ),
+      matchesMessagingToolDeliveryTarget({ provider: "whatsapp", to: "123456" }, { channel: "telegram", to: "123456" }),
     ).toBe(false);
   });
 
@@ -39,10 +33,7 @@ describe("matchesMessagingToolDeliveryTarget", () => {
 
   it("rejects when channel is missing from delivery", () => {
     expect(
-      matchesMessagingToolDeliveryTarget(
-        { provider: "telegram", to: "123456" },
-        { channel: undefined, to: "123456" },
-      ),
+      matchesMessagingToolDeliveryTarget({ provider: "telegram", to: "123456" }, { channel: undefined, to: "123456" }),
     ).toBe(false);
   });
 
@@ -57,10 +48,7 @@ describe("matchesMessagingToolDeliveryTarget", () => {
 
   it("matches when provider is 'message' (generic)", () => {
     expect(
-      matchesMessagingToolDeliveryTarget(
-        { provider: "message", to: "123456" },
-        { channel: "telegram", to: "123456" },
-      ),
+      matchesMessagingToolDeliveryTarget({ provider: "message", to: "123456" }, { channel: "telegram", to: "123456" }),
     ).toBe(true);
   });
 

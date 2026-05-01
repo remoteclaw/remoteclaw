@@ -25,9 +25,7 @@ export const InstallRecordShape = {
   clawhubUrl: z.string().optional(),
   clawhubPackage: z.string().optional(),
   clawhubFamily: z.union([z.literal("code-plugin"), z.literal("bundle-plugin")]).optional(),
-  clawhubChannel: z
-    .union([z.literal("official"), z.literal("community"), z.literal("private")])
-    .optional(),
+  clawhubChannel: z.union([z.literal("official"), z.literal("community"), z.literal("private")]).optional(),
 } as const;
 
 export const PluginInstallRecordShape = {

@@ -7,11 +7,7 @@ import { GATEWAY_CLIENT_IDS, GATEWAY_CLIENT_MODES } from "./protocol/client-info
 import type { ErrorShape } from "./protocol/index.js";
 import { PROTOCOL_VERSION } from "./protocol/index.js";
 import { handleGatewayRequest } from "./server-methods.js";
-import type {
-  GatewayRequestContext,
-  GatewayRequestHandler,
-  GatewayRequestOptions,
-} from "./server-methods/types.js";
+import type { GatewayRequestContext, GatewayRequestHandler, GatewayRequestOptions } from "./server-methods/types.js";
 
 // ── Fallback gateway context for non-WS paths (Telegram, WhatsApp, etc.) ──
 // The WS path sets a per-request scope via AsyncLocalStorage, but channel
@@ -19,9 +15,7 @@ import type {
 // through handleGatewayRequest. We store the gateway context at startup so
 // dispatchGatewayMethod can use it as a fallback.
 
-const FALLBACK_GATEWAY_CONTEXT_STATE_KEY: unique symbol = Symbol.for(
-  "remoteclaw.fallbackGatewayContextState",
-);
+const FALLBACK_GATEWAY_CONTEXT_STATE_KEY: unique symbol = Symbol.for("remoteclaw.fallbackGatewayContextState");
 
 type FallbackGatewayContextState = {
   context: GatewayRequestContext | undefined;
@@ -64,10 +58,7 @@ function createSyntheticOperatorClient(): GatewayRequestOptions["client"] {
   };
 }
 
-async function dispatchGatewayMethod<T>(
-  method: string,
-  params: Record<string, unknown>,
-): Promise<T> {
+async function dispatchGatewayMethod<T>(method: string, params: Record<string, unknown>): Promise<T> {
   const scope = getPluginRuntimeGatewayRequestScope();
   const context = scope?.context ?? fallbackGatewayContextState.context;
   const isWebchatConnect = scope?.isWebchatConnect ?? (() => false);
@@ -130,13 +121,10 @@ function createGatewaySubagentRuntime(): PluginRuntime["subagent"] {
       return { runId };
     },
     async waitForRun(params) {
-      const payload = await dispatchGatewayMethod<{ status?: string; error?: string }>(
-        "agent.wait",
-        {
-          runId: params.runId,
-          ...(params.timeoutMs != null && { timeoutMs: params.timeoutMs }),
-        },
-      );
+      const payload = await dispatchGatewayMethod<{ status?: string; error?: string }>("agent.wait", {
+        runId: params.runId,
+        ...(params.timeoutMs != null && { timeoutMs: params.timeoutMs }),
+      });
       const status = payload?.status;
       if (status !== "ok" && status !== "error" && status !== "timeout") {
         throw new Error(`Gateway agent.wait returned unexpected status: ${status}`);
@@ -191,15 +179,10 @@ export function loadGatewayPlugins(params: {
   const gatewayMethods = Array.from(new Set([...params.baseMethods, ...pluginMethods]));
   if (pluginRegistry.diagnostics.length > 0) {
     for (const diag of pluginRegistry.diagnostics) {
-      const details = [
-        diag.pluginId ? `plugin=${diag.pluginId}` : null,
-        diag.source ? `source=${diag.source}` : null,
-      ]
+      const details = [diag.pluginId ? `plugin=${diag.pluginId}` : null, diag.source ? `source=${diag.source}` : null]
         .filter((entry): entry is string => Boolean(entry))
         .join(", ");
-      const message = details
-        ? `[plugins] ${diag.message} (${details})`
-        : `[plugins] ${diag.message}`;
+      const message = details ? `[plugins] ${diag.message} (${details})` : `[plugins] ${diag.message}`;
       if (diag.level === "error") {
         params.log.error(message);
       } else {

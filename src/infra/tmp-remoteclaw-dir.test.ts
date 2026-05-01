@@ -1,9 +1,6 @@
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import {
-  POSIX_REMOTECLAW_TMP_DIR,
-  resolvePreferredRemoteClawTmpDir,
-} from "./tmp-remoteclaw-dir.js";
+import { POSIX_REMOTECLAW_TMP_DIR, resolvePreferredRemoteClawTmpDir } from "./tmp-remoteclaw-dir.js";
 
 type TmpDirOptions = NonNullable<Parameters<typeof resolvePreferredRemoteClawTmpDir>[0]>;
 

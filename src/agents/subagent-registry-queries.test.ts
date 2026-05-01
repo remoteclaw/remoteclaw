@@ -201,12 +201,8 @@ describe("subagent registry query regressions", () => {
       }),
     ]);
 
-    expect(
-      countPendingDescendantRunsExcludingRunFromRuns(runs, "agent:main:main", "run-self"),
-    ).toBe(1);
-    expect(
-      countPendingDescendantRunsExcludingRunFromRuns(runs, "agent:main:main", "run-sibling"),
-    ).toBe(1);
+    expect(countPendingDescendantRunsExcludingRunFromRuns(runs, "agent:main:main", "run-self")).toBe(1);
+    expect(countPendingDescendantRunsExcludingRunFromRuns(runs, "agent:main:main", "run-sibling")).toBe(1);
   });
 
   it("counts ended orchestrators with pending descendants as active", () => {
@@ -393,9 +389,7 @@ describe("subagent registry query regressions", () => {
     expect(resolveRequesterForChildSessionFromRuns(runs, childTwoSessionKey)).toMatchObject({
       requesterSessionKey: parentSessionKey,
     });
-    expect(shouldIgnorePostCompletionAnnounceForSessionFromRuns(runs, parentSessionKey)).toBe(
-      false,
-    );
+    expect(shouldIgnorePostCompletionAnnounceForSessionFromRuns(runs, parentSessionKey)).toBe(false);
 
     runs.set(
       "run-child-one",
@@ -434,9 +428,7 @@ describe("subagent registry query regressions", () => {
     expect(resolveRequesterForChildSessionFromRuns(runs, childThreeSessionKey)).toMatchObject({
       requesterSessionKey: parentSessionKey,
     });
-    expect(shouldIgnorePostCompletionAnnounceForSessionFromRuns(runs, parentSessionKey)).toBe(
-      false,
-    );
+    expect(shouldIgnorePostCompletionAnnounceForSessionFromRuns(runs, parentSessionKey)).toBe(false);
 
     runs.set(
       "run-child-three",

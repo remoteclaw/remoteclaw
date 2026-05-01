@@ -68,10 +68,7 @@ export function listBoundAccountIds(cfg: RemoteClawConfig, channelId: string): s
  * or when no binding targets that agent on the requested channel. Multi-agent
  * configs have no implicit "default" agent — callers must disambiguate explicitly.
  */
-export function resolveSoleAgentBoundAccountId(
-  cfg: RemoteClawConfig,
-  channelId: string,
-): string | null {
+export function resolveSoleAgentBoundAccountId(cfg: RemoteClawConfig, channelId: string): string | null {
   const normalizedChannel = normalizeBindingChannelId(channelId);
   if (!normalizedChannel) {
     return null;
@@ -83,11 +80,7 @@ export function resolveSoleAgentBoundAccountId(
   const normalizedSoleAgentId = normalizeAgentId(soleAgentId);
   for (const binding of listBindings(cfg)) {
     const resolved = resolveNormalizedBindingMatch(binding);
-    if (
-      !resolved ||
-      resolved.channelId !== normalizedChannel ||
-      resolved.agentId !== normalizedSoleAgentId
-    ) {
+    if (!resolved || resolved.channelId !== normalizedChannel || resolved.agentId !== normalizedSoleAgentId) {
       continue;
     }
     return resolved.accountId;

@@ -20,10 +20,7 @@ export type ProbeTwitchResult = BaseProbeResult<string> & {
  * This tests the Twitch OAuth token by attempting to connect
  * to the chat server and verify the bot's username.
  */
-export async function probeTwitch(
-  account: TwitchAccountConfig,
-  timeoutMs: number,
-): Promise<ProbeTwitchResult> {
+export async function probeTwitch(account: TwitchAccountConfig, timeoutMs: number): Promise<ProbeTwitchResult> {
   const started = Date.now();
 
   if (!account.accessToken || !account.username) {

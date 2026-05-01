@@ -50,9 +50,7 @@ describe("resolveSessionKey", () => {
         From: "discord:channel:123456",
         SenderId: "789",
       });
-      expect(resolveSessionKey("per-sender", ctx, "main")).toBe(
-        "agent:fina:discord:channel:123456",
-      );
+      expect(resolveSessionKey("per-sender", ctx, "main")).toBe("agent:fina:discord:channel:123456");
     });
 
     it("does not rewrite discord:channel: keys when sender does not match", () => {
@@ -62,9 +60,7 @@ describe("resolveSessionKey", () => {
         From: "discord:789",
         SenderId: "789",
       });
-      expect(resolveSessionKey("per-sender", ctx, "main")).toBe(
-        "agent:fina:discord:channel:123456",
-      );
+      expect(resolveSessionKey("per-sender", ctx, "main")).toBe("agent:fina:discord:channel:123456");
     });
 
     it("handles keys without an agent prefix", () => {

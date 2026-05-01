@@ -181,12 +181,7 @@ export const ToolsEffectiveParamsSchema = Type.Object(
 
 export const ToolCatalogProfileSchema = Type.Object(
   {
-    id: Type.Union([
-      Type.Literal("minimal"),
-      Type.Literal("coding"),
-      Type.Literal("messaging"),
-      Type.Literal("full"),
-    ]),
+    id: Type.Union([Type.Literal("minimal"), Type.Literal("coding"), Type.Literal("messaging"), Type.Literal("full")]),
     label: NonEmptyString,
   },
   { additionalProperties: false },
@@ -201,12 +196,7 @@ export const ToolCatalogEntrySchema = Type.Object(
     pluginId: Type.Optional(NonEmptyString),
     optional: Type.Optional(Type.Boolean()),
     defaultProfiles: Type.Array(
-      Type.Union([
-        Type.Literal("minimal"),
-        Type.Literal("coding"),
-        Type.Literal("messaging"),
-        Type.Literal("full"),
-      ]),
+      Type.Union([Type.Literal("minimal"), Type.Literal("coding"), Type.Literal("messaging"), Type.Literal("full")]),
     ),
   },
   { additionalProperties: false },

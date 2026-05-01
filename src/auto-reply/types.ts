@@ -9,12 +9,7 @@ export type BlockReplyContext = {
   timeoutMs?: number;
 };
 
-export type TypingPolicy =
-  | "auto"
-  | "user_message"
-  | "system_event"
-  | "internal_webchat"
-  | "heartbeat";
+export type TypingPolicy = "auto" | "user_message" | "system_event" | "internal_webchat" | "heartbeat";
 
 export type GetReplyOptions = {
   /** Override run id for agent events (defaults to random UUID). */

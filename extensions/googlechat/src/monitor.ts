@@ -72,20 +72,13 @@ function normalizeAudienceType(value?: string | null): GoogleChatAudienceType | 
   if (normalized === "app-url" || normalized === "app_url" || normalized === "app") {
     return "app-url";
   }
-  if (
-    normalized === "project-number" ||
-    normalized === "project_number" ||
-    normalized === "project"
-  ) {
+  if (normalized === "project-number" || normalized === "project_number" || normalized === "project") {
     return "project-number";
   }
   return undefined;
 }
 
-export async function handleGoogleChatWebhookRequest(
-  req: IncomingMessage,
-  res: ServerResponse,
-): Promise<boolean> {
+export async function handleGoogleChatWebhookRequest(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
   return await googleChatWebhookRequestHandler(req, res);
 }
 
@@ -115,11 +108,7 @@ async function processGoogleChatEvent(event: GoogleChatEvent, target: WebhookTar
  * 2. Agent name from config
  * 3. "RemoteClaw" as generic fallback
  */
-function resolveBotDisplayName(params: {
-  accountName?: string;
-  agentId: string;
-  config: RemoteClawConfig;
-}): string {
+function resolveBotDisplayName(params: { accountName?: string; agentId: string; config: RemoteClawConfig }): string {
   const { accountName, agentId, config } = params;
   if (accountName?.trim()) {
     return accountName.trim();
@@ -220,9 +209,7 @@ async function processMessageWithPipeline(params: {
     }
   }
 
-  const fromLabel = isGroup
-    ? space.displayName || `space:${spaceId}`
-    : senderName || `user:${senderId}`;
+  const fromLabel = isGroup ? space.displayName || `space:${spaceId}` : senderName || `user:${senderId}`;
   const { storePath, body } = buildEnvelope({
     channel: "Google Chat",
     from: fromLabel,
@@ -330,9 +317,7 @@ async function processMessageWithPipeline(params: {
         typingMessageName = undefined;
       },
       onError: (err, info) => {
-        runtime.error?.(
-          `[${account.accountId}] Google Chat ${info.kind} reply failed: ${String(err)}`,
-        );
+        runtime.error?.(`[${account.accountId}] Google Chat ${info.kind} reply failed: ${String(err)}`);
       },
     },
     replyOptions: {},
@@ -371,13 +356,8 @@ async function deliverGoogleChatReply(params: {
   statusSink?: (patch: { lastInboundAt?: number; lastOutboundAt?: number }) => void;
   typingMessageName?: string;
 }): Promise<void> {
-  const { payload, account, spaceId, runtime, core, config, statusSink, typingMessageName } =
-    params;
-  const mediaList = payload.mediaUrls?.length
-    ? payload.mediaUrls
-    : payload.mediaUrl
-      ? [payload.mediaUrl]
-      : [];
+  const { payload, account, spaceId, runtime, core, config, statusSink, typingMessageName } = params;
+  const mediaList = payload.mediaUrls?.length ? payload.mediaUrls : payload.mediaUrl ? [payload.mediaUrl] : [];
 
   if (mediaList.length > 0) {
     let suppressCaption = false;
@@ -430,9 +410,7 @@ async function deliverGoogleChatReply(params: {
           space: spaceId,
           text: caption,
           thread: payload.replyToId,
-          attachments: [
-            { attachmentUploadToken: upload.attachmentUploadToken, contentName: loaded.fileName },
-          ],
+          attachments: [{ attachmentUploadToken: upload.attachmentUploadToken, contentName: loaded.fileName }],
         });
         statusSink?.({ lastOutboundAt: Date.now() });
       } catch (err) {
@@ -523,15 +501,11 @@ export function monitorGoogleChatProvider(options: GoogleChatMonitorOptions): ()
   };
 }
 
-export async function startGoogleChatMonitor(
-  params: GoogleChatMonitorOptions,
-): Promise<() => void> {
+export async function startGoogleChatMonitor(params: GoogleChatMonitorOptions): Promise<() => void> {
   return monitorGoogleChatProvider(params);
 }
 
-export function resolveGoogleChatWebhookPath(params: {
-  account: ResolvedGoogleChatAccount;
-}): string {
+export function resolveGoogleChatWebhookPath(params: { account: ResolvedGoogleChatAccount }): string {
   return (
     resolveWebhookPath({
       webhookPath: params.account.config.webhookPath,

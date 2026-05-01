@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  encodeSlackModalPrivateMetadata,
-  parseSlackModalPrivateMetadata,
-} from "./modal-metadata.js";
+import { encodeSlackModalPrivateMetadata, parseSlackModalPrivateMetadata } from "./modal-metadata.js";
 
 describe("parseSlackModalPrivateMetadata", () => {
   it("returns empty object for missing or invalid values", () => {

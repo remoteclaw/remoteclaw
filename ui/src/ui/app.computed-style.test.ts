@@ -50,9 +50,7 @@ describe("RemoteClawApp — computed-style smoke", () => {
     // `.sidebar-shell` / `.sidebar-nav` structure (#2517 regression shape),
     // the sidebar lands outside its named grid-area and expands to fit all
     // nav content — producing a height far larger than the viewport.
-    expect(rect.height, "sidebar must fit within the viewport").toBeLessThanOrEqual(
-      window.innerHeight,
-    );
+    expect(rect.height, "sidebar must fit within the viewport").toBeLessThanOrEqual(window.innerHeight);
     expect(rect.height, "sidebar collapsed to zero height").toBeGreaterThan(300);
     expect(rect.width, "sidebar collapsed to zero width").toBeGreaterThan(0);
   });
@@ -63,10 +61,7 @@ describe("RemoteClawApp — computed-style smoke", () => {
 
     const status = app.querySelector(".topbar-status");
     expect(status, ".topbar-status not found in rendered DOM").not.toBeNull();
-    expect(
-      status!.getBoundingClientRect().width,
-      ".topbar-status collapsed to zero width",
-    ).toBeGreaterThan(0);
+    expect(status!.getBoundingClientRect().width, ".topbar-status collapsed to zero width").toBeGreaterThan(0);
   });
 
   it("all nav-section group headers are visible inside the sidebar", async () => {

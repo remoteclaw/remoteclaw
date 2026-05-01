@@ -1,11 +1,7 @@
 import { constants as fsConstants } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
-import {
-  listAgentIds,
-  resolveAgentDir,
-  resolveAgentWorkspaceDir,
-} from "../../agents/agent-scope.js";
+import { listAgentIds, resolveAgentDir, resolveAgentWorkspaceDir } from "../../agents/agent-scope.js";
 import { ensureAgentWorkspace } from "../../agents/workspace.js";
 import {
   applyAgentConfig,
@@ -42,9 +38,7 @@ import type { GatewayRequestHandlers, RespondFn } from "./types.js";
  * Per-agent editableFiles override the defaults; if neither is set, returns [].
  */
 function resolveEditableFiles(cfg: RemoteClawConfig, agentId: string): string[] {
-  const agentEntry = (cfg.agents?.list ?? []).find(
-    (e) => normalizeAgentId(e.id) === normalizeAgentId(agentId),
-  );
+  const agentEntry = (cfg.agents?.list ?? []).find((e) => normalizeAgentId(e.id) === normalizeAgentId(agentId));
   if (agentEntry?.editableFiles) {
     return agentEntry.editableFiles;
   }
@@ -127,10 +121,7 @@ function resolveWorkspaceFilePathResultOrThrow(params: {
 
 const SUPPORTS_NOFOLLOW = process.platform !== "win32" && "O_NOFOLLOW" in fsConstants;
 const OPEN_WRITE_FLAGS =
-  fsConstants.O_WRONLY |
-  fsConstants.O_CREAT |
-  fsConstants.O_TRUNC |
-  (SUPPORTS_NOFOLLOW ? fsConstants.O_NOFOLLOW : 0);
+  fsConstants.O_WRONLY | fsConstants.O_CREAT | fsConstants.O_TRUNC | (SUPPORTS_NOFOLLOW ? fsConstants.O_NOFOLLOW : 0);
 
 async function resolveWorkspaceRealPath(workspaceDir: string): Promise<string> {
   try {
@@ -361,10 +352,7 @@ function respondInvalidMethodParams(
   respond(
     false,
     undefined,
-    errorShape(
-      ErrorCodes.INVALID_REQUEST,
-      `invalid ${method} params: ${formatValidationErrors(errors)}`,
-    ),
+    errorShape(ErrorCodes.INVALID_REQUEST, `invalid ${method} params: ${formatValidationErrors(errors)}`),
   );
 }
 
@@ -393,11 +381,7 @@ async function moveToTrashBestEffort(pathname: string): Promise<void> {
 }
 
 function respondWorkspaceFileInvalid(respond: RespondFn, name: string, reason: string): void {
-  respond(
-    false,
-    undefined,
-    errorShape(ErrorCodes.INVALID_REQUEST, `unsafe workspace file "${name}" (${reason})`),
-  );
+  respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, `unsafe workspace file "${name}" (${reason})`));
 }
 
 async function resolveWorkspaceFilePathOrRespond(params: {
@@ -418,11 +402,7 @@ async function resolveWorkspaceFilePathOrRespond(params: {
 }
 
 function respondWorkspaceFileUnsafe(respond: RespondFn, name: string): void {
-  respond(
-    false,
-    undefined,
-    errorShape(ErrorCodes.INVALID_REQUEST, `unsafe workspace file "${name}"`),
-  );
+  respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, `unsafe workspace file "${name}"`));
 }
 
 function respondWorkspaceFileMissing(params: {
@@ -468,9 +448,7 @@ export const agentsHandlers: GatewayRequestHandlers = {
         undefined,
         errorShape(
           ErrorCodes.INVALID_REQUEST,
-          `invalid agents.create params: ${formatValidationErrors(
-            validateAgentsCreateParams.errors,
-          )}`,
+          `invalid agents.create params: ${formatValidationErrors(validateAgentsCreateParams.errors)}`,
         ),
       );
       return;
@@ -481,11 +459,7 @@ export const agentsHandlers: GatewayRequestHandlers = {
     const agentId = normalizeAgentId(rawName);
 
     if (findAgentEntryIndex(listAgentEntries(cfg), agentId) >= 0) {
-      respond(
-        false,
-        undefined,
-        errorShape(ErrorCodes.INVALID_REQUEST, `agent "${agentId}" already exists`),
-      );
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, `agent "${agentId}" already exists`));
       return;
     }
 
@@ -542,9 +516,7 @@ export const agentsHandlers: GatewayRequestHandlers = {
 
     const nextConfig = applyAgentConfig(cfg, {
       agentId,
-      ...(typeof params.name === "string" && params.name.trim()
-        ? { name: params.name.trim() }
-        : {}),
+      ...(typeof params.name === "string" && params.name.trim() ? { name: params.name.trim() } : {}),
       ...(workspaceDir ? { workspace: workspaceDir } : {}),
       ...(model ? { model } : {}),
       ...(avatar ? { identity: { avatar: sanitizeIdentityLine(avatar) } } : {}),
@@ -596,9 +568,7 @@ export const agentsHandlers: GatewayRequestHandlers = {
         undefined,
         errorShape(
           ErrorCodes.INVALID_REQUEST,
-          `invalid agents.files.list params: ${formatValidationErrors(
-            validateAgentsFilesListParams.errors,
-          )}`,
+          `invalid agents.files.list params: ${formatValidationErrors(validateAgentsFilesListParams.errors)}`,
         ),
       );
       return;
@@ -655,28 +625,18 @@ export const agentsHandlers: GatewayRequestHandlers = {
       return;
     }
     const rawName = params.name;
-    const name = (
-      typeof rawName === "string" || typeof rawName === "number" ? String(rawName) : ""
-    ).trim();
+    const name = (typeof rawName === "string" || typeof rawName === "number" ? String(rawName) : "").trim();
     if (!name) {
       respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "file name is required"));
       return;
     }
     if (isUnsafePattern(name)) {
-      respond(
-        false,
-        undefined,
-        errorShape(ErrorCodes.INVALID_REQUEST, `unsafe file name "${name}"`),
-      );
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, `unsafe file name "${name}"`));
       return;
     }
     const globs = resolveEditableFiles(cfg, agentId);
     if (!matchesEditableGlobs(name, globs)) {
-      respond(
-        false,
-        undefined,
-        errorShape(ErrorCodes.INVALID_REQUEST, `file "${name}" is not in editableFiles`),
-      );
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, `file "${name}" is not in editableFiles`));
       return;
     }
     const workspaceDir = resolveAgentWorkspaceDir(cfg, agentId);
@@ -737,28 +697,18 @@ export const agentsHandlers: GatewayRequestHandlers = {
       return;
     }
     const rawName = params.name;
-    const name = (
-      typeof rawName === "string" || typeof rawName === "number" ? String(rawName) : ""
-    ).trim();
+    const name = (typeof rawName === "string" || typeof rawName === "number" ? String(rawName) : "").trim();
     if (!name) {
       respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "file name is required"));
       return;
     }
     if (isUnsafePattern(name)) {
-      respond(
-        false,
-        undefined,
-        errorShape(ErrorCodes.INVALID_REQUEST, `unsafe file name "${name}"`),
-      );
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, `unsafe file name "${name}"`));
       return;
     }
     const globs = resolveEditableFiles(cfg, agentId);
     if (!matchesEditableGlobs(name, globs)) {
-      respond(
-        false,
-        undefined,
-        errorShape(ErrorCodes.INVALID_REQUEST, `file "${name}" is not in editableFiles`),
-      );
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, `file "${name}" is not in editableFiles`));
       return;
     }
     const workspaceDir = resolveAgentWorkspaceDir(cfg, agentId);
@@ -778,11 +728,7 @@ export const agentsHandlers: GatewayRequestHandlers = {
     }
     const content = String(params.content ?? "");
     const relativeWritePath = path.relative(resolvedPath.workspaceReal, resolvedPath.ioPath);
-    if (
-      !relativeWritePath ||
-      relativeWritePath.startsWith("..") ||
-      path.isAbsolute(relativeWritePath)
-    ) {
+    if (!relativeWritePath || relativeWritePath.startsWith("..") || path.isAbsolute(relativeWritePath)) {
       respondWorkspaceFileUnsafe(respond, name);
       return;
     }

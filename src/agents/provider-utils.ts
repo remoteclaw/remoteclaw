@@ -282,10 +282,7 @@ export function resolveConfiguredModelRef(params: {
   return { provider: params.defaultProvider, model: params.defaultModel };
 }
 
-export function resolveDefaultModelForAgent(params: {
-  cfg: RemoteClawConfig;
-  agentId?: string;
-}): ModelRef {
+export function resolveDefaultModelForAgent(params: { cfg: RemoteClawConfig; agentId?: string }): ModelRef {
   return resolveConfiguredModelRef({
     cfg: params.cfg,
     defaultProvider: DEFAULT_PROVIDER,

@@ -1,49 +1,56 @@
 import { Command } from "commander";
-import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { createCliRuntimeCapture } from "./test-runtime-capture.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { registerDevicesCli } from "./devices-cli.js";
 
-const { defaultRuntime: runtime, resetRuntimeCapture } = createCliRuntimeCapture();
-runtime.exit.mockImplementation(() => {});
-const callGateway = vi.fn();
-const buildGatewayConnectionDetails = vi.fn(() => ({
-  url: "ws://127.0.0.1:18789",
-  urlSource: "local loopback",
-  message: "",
+const mocks = vi.hoisted(() => ({
+  runtime: {
+    log: vi.fn(),
+    error: vi.fn(),
+    exit: vi.fn(),
+    writeJson: vi.fn(),
+  },
+  callGateway: vi.fn(),
+  buildGatewayConnectionDetails: vi.fn(() => ({
+    url: "ws://127.0.0.1:18789",
+    urlSource: "local loopback",
+    message: "",
+  })),
+  listDevicePairing: vi.fn(),
+  approveDevicePairing: vi.fn(),
+  summarizeDeviceTokens: vi.fn(),
+  withProgress: vi.fn(async (_opts: unknown, fn: () => Promise<unknown>) => await fn()),
 }));
-const listDevicePairing = vi.fn();
-const approveDevicePairing = vi.fn();
-const summarizeDeviceTokens = vi.fn();
-const withProgress = vi.fn(async (_opts: unknown, fn: () => Promise<unknown>) => await fn());
-vi.mock("../gateway/call.js", () => ({
+
+const {
+  runtime,
   callGateway,
   buildGatewayConnectionDetails,
-}));
-
-vi.mock("./progress.js", () => ({
-  withProgress,
-}));
-
-vi.mock("../infra/device-pairing.js", () => ({
   listDevicePairing,
   approveDevicePairing,
   summarizeDeviceTokens,
+  withProgress,
+} = mocks;
+
+vi.mock("../gateway/call.js", () => ({
+  callGateway: mocks.callGateway,
+  buildGatewayConnectionDetails: mocks.buildGatewayConnectionDetails,
 }));
 
-vi.mock("../runtime.js", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../runtime.js")>()),
-  defaultRuntime: runtime,
-  writeRuntimeJson: (
-    targetRuntime: { log: (...args: unknown[]) => void },
-    value: unknown,
-    space = 2,
-  ) => targetRuntime.log(JSON.stringify(value, null, space > 0 ? space : undefined)),
+vi.mock("./progress.js", () => ({
+  withProgress: mocks.withProgress,
 }));
 
-let registerDevicesCli: typeof import("./devices-cli.js").registerDevicesCli;
+vi.mock("../infra/device-pairing.js", () => ({
+  listDevicePairing: mocks.listDevicePairing,
+  approveDevicePairing: mocks.approveDevicePairing,
+  summarizeDeviceTokens: mocks.summarizeDeviceTokens,
+}));
 
-beforeAll(async () => {
-  ({ registerDevicesCli } = await import("./devices-cli.js"));
-});
+vi.mock("../runtime.js", () => ({
+  defaultRuntime: mocks.runtime,
+  writeRuntimeJson: (targetRuntime: { log: (...args: unknown[]) => void }, value: unknown, space = 2) =>
+    targetRuntime.log(JSON.stringify(value, null, space > 0 ? space : undefined)),
+}));
 
 async function runDevicesApprove(argv: string[]) {
   await runDevicesCommand(["approve", ...argv]);
@@ -103,10 +110,7 @@ describe("devices cli approve", () => {
 
     await runDevicesApprove(args);
 
-    expect(callGateway).toHaveBeenNthCalledWith(
-      1,
-      expect.objectContaining({ method: "device.pair.list" }),
-    );
+    expect(callGateway).toHaveBeenNthCalledWith(1, expect.objectContaining({ method: "device.pair.list" }));
     expect(callGateway).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
@@ -122,14 +126,10 @@ describe("devices cli approve", () => {
     await runDevicesApprove([]);
 
     expect(callGateway).toHaveBeenCalledTimes(1);
-    expect(callGateway).toHaveBeenCalledWith(
-      expect.objectContaining({ method: "device.pair.list" }),
-    );
+    expect(callGateway).toHaveBeenCalledWith(expect.objectContaining({ method: "device.pair.list" }));
     expect(runtime.error).toHaveBeenCalledWith("No pending device pairing requests to approve");
     expect(runtime.exit).toHaveBeenCalledWith(1);
-    expect(callGateway).not.toHaveBeenCalledWith(
-      expect.objectContaining({ method: "device.pair.approve" }),
-    );
+    expect(callGateway).not.toHaveBeenCalledWith(expect.objectContaining({ method: "device.pair.approve" }));
   });
 });
 
@@ -170,10 +170,7 @@ describe("devices cli clear", () => {
 
     await runDevicesCommand(["clear", "--yes", "--pending"]);
 
-    expect(callGateway).toHaveBeenNthCalledWith(
-      1,
-      expect.objectContaining({ method: "device.pair.list" }),
-    );
+    expect(callGateway).toHaveBeenNthCalledWith(1, expect.objectContaining({ method: "device.pair.list" }));
     expect(callGateway).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({ method: "device.pair.remove", params: { deviceId: "device-1" } }),
@@ -252,9 +249,7 @@ describe("devices cli local fallback", () => {
 
     await runDevicesCommand(["list"]);
 
-    expect(callGateway).toHaveBeenCalledWith(
-      expect.objectContaining({ method: "device.pair.list" }),
-    );
+    expect(callGateway).toHaveBeenCalledWith(expect.objectContaining({ method: "device.pair.list" }));
     expect(listDevicePairing).toHaveBeenCalledTimes(1);
     expect(runtime.log).toHaveBeenCalledWith(expect.stringContaining(fallbackNotice));
   });
@@ -288,9 +283,9 @@ describe("devices cli local fallback", () => {
   it("does not use local fallback when an explicit --url is provided", async () => {
     callGateway.mockRejectedValueOnce(new Error("gateway closed (1008): pairing required"));
 
-    await expect(
-      runDevicesCommand(["list", "--json", "--url", "ws://127.0.0.1:18789"]),
-    ).rejects.toThrow("pairing required");
+    await expect(runDevicesCommand(["list", "--json", "--url", "ws://127.0.0.1:18789"])).rejects.toThrow(
+      "pairing required",
+    );
     expect(listDevicePairing).not.toHaveBeenCalled();
   });
 });
@@ -319,9 +314,12 @@ describe("devices cli list", () => {
   });
 });
 
+beforeEach(() => {
+  vi.clearAllMocks();
+  runtime.exit.mockImplementation(() => {});
+});
+
 afterEach(() => {
-  resetRuntimeCapture();
-  callGateway.mockClear();
   buildGatewayConnectionDetails.mockClear();
   buildGatewayConnectionDetails.mockReturnValue({
     url: "ws://127.0.0.1:18789",

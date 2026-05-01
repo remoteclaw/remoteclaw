@@ -74,11 +74,7 @@ export const ttsHandlers: GatewayRequestHandlers = {
   "tts.convert": async ({ params, respond }) => {
     const text = typeof params.text === "string" ? params.text.trim() : "";
     if (!text) {
-      respond(
-        false,
-        undefined,
-        errorShape(ErrorCodes.INVALID_REQUEST, "tts.convert requires text"),
-      );
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "tts.convert requires text"));
       return;
     }
     try {
@@ -94,11 +90,7 @@ export const ttsHandlers: GatewayRequestHandlers = {
         });
         return;
       }
-      respond(
-        false,
-        undefined,
-        errorShape(ErrorCodes.UNAVAILABLE, result.error ?? "TTS conversion failed"),
-      );
+      respond(false, undefined, errorShape(ErrorCodes.UNAVAILABLE, result.error ?? "TTS conversion failed"));
     } catch (err) {
       respond(false, undefined, errorShape(ErrorCodes.UNAVAILABLE, formatForLog(err)));
     }
@@ -109,10 +101,7 @@ export const ttsHandlers: GatewayRequestHandlers = {
       respond(
         false,
         undefined,
-        errorShape(
-          ErrorCodes.INVALID_REQUEST,
-          "Invalid provider. Use openai, elevenlabs, or edge.",
-        ),
+        errorShape(ErrorCodes.INVALID_REQUEST, "Invalid provider. Use openai, elevenlabs, or edge."),
       );
       return;
     }

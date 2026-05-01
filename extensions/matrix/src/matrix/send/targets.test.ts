@@ -45,10 +45,7 @@ describe("resolveMatrixRoomId", () => {
     const resolved = await resolveMatrixRoomId(client, userId);
 
     expect(resolved).toBe(roomId);
-    expect(setAccountData).toHaveBeenCalledWith(
-      EventType.Direct,
-      expect.objectContaining({ [userId]: [roomId] }),
-    );
+    expect(setAccountData).toHaveBeenCalledWith(EventType.Direct, expect.objectContaining({ [userId]: [roomId] }));
   });
 
   it("continues when a room member lookup fails", async () => {
@@ -78,9 +75,7 @@ describe("resolveMatrixRoomId", () => {
     const client = {
       getAccountData: vi.fn().mockRejectedValue(new Error("nope")),
       getJoinedRooms: vi.fn().mockResolvedValue([roomId]),
-      getJoinedRoomMembers: vi
-        .fn()
-        .mockResolvedValue(["@bot:example.org", userId, "@extra:example.org"]),
+      getJoinedRoomMembers: vi.fn().mockResolvedValue(["@bot:example.org", userId, "@extra:example.org"]),
       setAccountData: vi.fn().mockResolvedValue(undefined),
     } as unknown as MatrixClient;
 

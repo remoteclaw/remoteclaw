@@ -138,9 +138,7 @@ describe("maybeRepairGatewayDaemon", () => {
       confirm: vi.fn(),
       confirmRepair: vi.fn(),
       confirmAggressive: vi.fn(),
-      confirmSkipInNonInteractive: vi.fn(async ({ message }: { message: string }) =>
-        confirmImpl(message),
-      ),
+      confirmSkipInNonInteractive: vi.fn(async ({ message }: { message: string }) => confirmImpl(message)),
       select: vi.fn(),
       shouldRepair: false,
       shouldForce: false,
@@ -161,10 +159,7 @@ describe("maybeRepairGatewayDaemon", () => {
     });
 
     expect(service.restart).toHaveBeenCalledTimes(1);
-    expect(note).toHaveBeenCalledWith(
-      "restart scheduled, gateway will restart momentarily",
-      "Gateway",
-    );
+    expect(note).toHaveBeenCalledWith("restart scheduled, gateway will restart momentarily", "Gateway");
     expect(sleep).not.toHaveBeenCalled();
     expect(healthCommand).not.toHaveBeenCalled();
   });
@@ -184,10 +179,7 @@ describe("maybeRepairGatewayDaemon", () => {
     });
 
     expect(service.restart).toHaveBeenCalledTimes(1);
-    expect(note).toHaveBeenCalledWith(
-      "restart scheduled, gateway will restart momentarily",
-      "Gateway",
-    );
+    expect(note).toHaveBeenCalledWith("restart scheduled, gateway will restart momentarily", "Gateway");
     expect(sleep).not.toHaveBeenCalled();
     expect(healthCommand).not.toHaveBeenCalled();
   });

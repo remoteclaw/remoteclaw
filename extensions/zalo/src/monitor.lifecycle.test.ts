@@ -91,9 +91,7 @@ describe("monitorZaloProvider lifecycle", () => {
     await monitoredRun;
 
     expect(settled).toBe(true);
-    expect(runtime.log).toHaveBeenCalledWith(
-      expect.stringContaining("Zalo provider stopped mode=polling"),
-    );
+    expect(runtime.log).toHaveBeenCalledWith(expect.stringContaining("Zalo provider stopped mode=polling"));
   });
 
   it("deletes an existing webhook before polling", async () => {
@@ -108,9 +106,7 @@ describe("monitorZaloProvider lifecycle", () => {
 
     expect(getWebhookInfoMock).toHaveBeenCalledTimes(1);
     expect(deleteWebhookMock).toHaveBeenCalledTimes(1);
-    expect(runtime.log).toHaveBeenCalledWith(
-      expect.stringContaining("Zalo polling mode ready (webhook disabled)"),
-    );
+    expect(runtime.log).toHaveBeenCalledWith(expect.stringContaining("Zalo polling mode ready (webhook disabled)"));
 
     abort.abort();
     await run;
@@ -172,8 +168,6 @@ describe("monitorZaloProvider lifecycle", () => {
 
     expect(settled).toBe(true);
     expect(registry.httpRoutes).toHaveLength(0);
-    expect(runtime.log).toHaveBeenCalledWith(
-      expect.stringContaining("Zalo provider stopped mode=webhook"),
-    );
+    expect(runtime.log).toHaveBeenCalledWith(expect.stringContaining("Zalo provider stopped mode=webhook"));
   });
 });

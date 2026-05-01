@@ -65,10 +65,7 @@ async function runStateIntegrity(cfg: RemoteClawConfig) {
   return confirmSkipInNonInteractive;
 }
 
-function writeSessionStore(
-  cfg: RemoteClawConfig,
-  sessions: Record<string, { sessionId: string; updatedAt: number }>,
-) {
+function writeSessionStore(cfg: RemoteClawConfig, sessions: Record<string, { sessionId: string; updatedAt: number }>) {
   setupSessionState(cfg, process.env, process.env.HOME ?? "");
   const storePath = resolveStorePath(cfg.session?.store, { agentId: "main" });
   fs.writeFileSync(storePath, JSON.stringify(sessions, null, 2));
@@ -148,9 +145,7 @@ describe("doctor state integrity oauth dir checks", () => {
       params.message.includes("This only renames them to *.deleted.<timestamp>."),
     );
     await noteStateIntegrity(cfg, { confirmSkipInNonInteractive });
-    expect(stateIntegrityText()).toContain(
-      "These .jsonl files are no longer referenced by sessions.json",
-    );
+    expect(stateIntegrityText()).toContain("These .jsonl files are no longer referenced by sessions.json");
     expect(stateIntegrityText()).toContain("Examples: orphan-session.jsonl");
     expect(confirmSkipInNonInteractive).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -173,9 +168,7 @@ describe("doctor state integrity oauth dir checks", () => {
     expect(text).toContain("recent sessions are missing transcripts");
     expect(text).toMatch(/remoteclaw sessions --store ".*sessions\.json"/);
     expect(text).toMatch(/remoteclaw sessions cleanup --store ".*sessions\.json" --dry-run/);
-    expect(text).toMatch(
-      /remoteclaw sessions cleanup --store ".*sessions\.json" --enforce --fix-missing/,
-    );
+    expect(text).toMatch(/remoteclaw sessions cleanup --store ".*sessions\.json" --enforce --fix-missing/);
     expect(text).not.toContain("--active");
     expect(text).not.toContain(" ls ");
   });

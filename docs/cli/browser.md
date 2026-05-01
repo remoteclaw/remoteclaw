@@ -32,6 +32,27 @@ remoteclaw browser --browser-profile remoteclaw open https://example.com
 remoteclaw browser --browser-profile remoteclaw snapshot
 ```
 
+## If the command is missing
+
+If `remoteclaw browser` is an unknown command, check `plugins.allow` in
+`~/.remoteclaw/remoteclaw.json`.
+
+When `plugins.allow` is present, the bundled browser plugin must be listed
+explicitly:
+
+```json5
+{
+  plugins: {
+    allow: ["telegram", "browser"],
+  },
+}
+```
+
+`browser.enabled=true` does not restore the CLI subcommand when the plugin
+allowlist excludes `browser`.
+
+Related: [Browser tool](/tools/browser#missing-browser-command-or-tool)
+
 ## Profiles
 
 Profiles are named browser routing configs. In practice:

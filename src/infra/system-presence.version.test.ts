@@ -34,8 +34,7 @@ describe("system-presence version fallback", () => {
   ) {
     await withPresenceModule(env, async ({ listSystemPresence }) => {
       const selfEntry = listSystemPresence().find((entry) => entry.reason === "self");
-      const resolvedExpected =
-        typeof expectedVersion === "function" ? await expectedVersion() : expectedVersion;
+      const resolvedExpected = typeof expectedVersion === "function" ? await expectedVersion() : expectedVersion;
       expect(selfEntry?.version).toBe(resolvedExpected);
     });
   }

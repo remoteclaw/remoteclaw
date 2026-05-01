@@ -53,10 +53,7 @@ function resolveNextcloudTalkSendContext(opts: NextcloudTalkSendOpts): {
     cfg,
     accountId: opts.accountId,
   });
-  const { baseUrl, secret } = resolveCredentials(
-    { baseUrl: opts.baseUrl, secret: opts.secret },
-    account,
-  );
+  const { baseUrl, secret } = resolveCredentials({ baseUrl: opts.baseUrl, secret: opts.secret }, account);
   return { cfg, account, baseUrl, secret };
 }
 
@@ -77,10 +74,7 @@ export async function sendMessageNextcloudTalk(
     channel: "nextcloud-talk",
     accountId: account.accountId,
   });
-  const message = getNextcloudTalkRuntime().channel.text.convertMarkdownTables(
-    text.trim(),
-    tableMode,
-  );
+  const message = getNextcloudTalkRuntime().channel.text.convertMarkdownTables(text.trim(), tableMode);
 
   const body: Record<string, unknown> = {
     message,

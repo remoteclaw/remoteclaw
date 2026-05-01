@@ -14,16 +14,8 @@ import {
 import { formatConfigIssueLines } from "../../config/issue-format.js";
 import { applyLegacyMigrations } from "../../config/legacy.js";
 import { applyMergePatch } from "../../config/merge-patch.js";
-import {
-  redactConfigObject,
-  redactConfigSnapshot,
-  restoreRedactedValues,
-} from "../../config/redact-snapshot.js";
-import {
-  buildConfigSchema,
-  lookupConfigSchema,
-  type ConfigSchemaResponse,
-} from "../../config/schema.js";
+import { redactConfigObject, redactConfigSnapshot, restoreRedactedValues } from "../../config/redact-snapshot.js";
+import { buildConfigSchema, lookupConfigSchema, type ConfigSchemaResponse } from "../../config/schema.js";
 import { extractDeliveryInfo } from "../../config/sessions.js";
 import type { ConfigValidationIssue, RemoteClawConfig } from "../../config/types.remoteclaw.js";
 import {
@@ -34,11 +26,7 @@ import {
 import { scheduleGatewaySigusr1Restart } from "../../infra/restart.js";
 import { loadRemoteClawPlugins } from "../../plugins/loader.js";
 import { diffConfigPaths } from "../config-reload.js";
-import {
-  formatControlPlaneActor,
-  resolveControlPlaneActor,
-  summarizeChangedPaths,
-} from "../control-plane-audit.js";
+import { formatControlPlaneActor, resolveControlPlaneActor, summarizeChangedPaths } from "../control-plane-audit.js";
 import {
   ErrorCodes,
   errorShape,
@@ -71,10 +59,7 @@ function requireConfigBaseHash(
     respond(
       false,
       undefined,
-      errorShape(
-        ErrorCodes.INVALID_REQUEST,
-        "config base hash unavailable; re-run config.get and retry",
-      ),
+      errorShape(ErrorCodes.INVALID_REQUEST, "config base hash unavailable; re-run config.get and retry"),
     );
     return false;
   }
@@ -83,10 +68,7 @@ function requireConfigBaseHash(
     respond(
       false,
       undefined,
-      errorShape(
-        ErrorCodes.INVALID_REQUEST,
-        "config base hash required; re-run config.get and retry",
-      ),
+      errorShape(ErrorCodes.INVALID_REQUEST, "config base hash required; re-run config.get and retry"),
     );
     return false;
   }
@@ -94,30 +76,20 @@ function requireConfigBaseHash(
     respond(
       false,
       undefined,
-      errorShape(
-        ErrorCodes.INVALID_REQUEST,
-        "config changed since last load; re-run config.get and retry",
-      ),
+      errorShape(ErrorCodes.INVALID_REQUEST, "config changed since last load; re-run config.get and retry"),
     );
     return false;
   }
   return true;
 }
 
-function parseRawConfigOrRespond(
-  params: unknown,
-  requestName: string,
-  respond: RespondFn,
-): string | null {
+function parseRawConfigOrRespond(params: unknown, requestName: string, respond: RespondFn): string | null {
   const rawValue = (params as { raw?: unknown }).raw;
   if (typeof rawValue !== "string") {
     respond(
       false,
       undefined,
-      errorShape(
-        ErrorCodes.INVALID_REQUEST,
-        `invalid ${requestName} params: raw (string) required`,
-      ),
+      errorShape(ErrorCodes.INVALID_REQUEST, `invalid ${requestName} params: raw (string) required`),
     );
     return null;
   }
@@ -232,9 +204,7 @@ function buildConfigRestartSentinelPayload(params: {
   };
 }
 
-async function tryWriteRestartSentinelPayload(
-  payload: RestartSentinelPayload,
-): Promise<string | null> {
+async function tryWriteRestartSentinelPayload(payload: RestartSentinelPayload): Promise<string | null> {
   try {
     return await writeRestartSentinel(payload);
   } catch {
@@ -293,20 +263,14 @@ export const configHandlers: GatewayRequestHandlers = {
     respond(true, loadSchemaWithPlugins(), undefined);
   },
   "config.schema.lookup": ({ params, respond, context }) => {
-    if (
-      !assertValidParams(params, validateConfigSchemaLookupParams, "config.schema.lookup", respond)
-    ) {
+    if (!assertValidParams(params, validateConfigSchemaLookupParams, "config.schema.lookup", respond)) {
       return;
     }
     const path = (params as { path: string }).path;
     const schema = loadSchemaWithPlugins();
     const result = lookupConfigSchema(schema, path);
     if (!result) {
-      respond(
-        false,
-        undefined,
-        errorShape(ErrorCodes.INVALID_REQUEST, "config schema path not found"),
-      );
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "config schema path not found"));
       return;
     }
     if (!validateConfigSchemaLookupResult(result)) {
@@ -357,11 +321,7 @@ export const configHandlers: GatewayRequestHandlers = {
       return;
     }
     if (!snapshot.valid) {
-      respond(
-        false,
-        undefined,
-        errorShape(ErrorCodes.INVALID_REQUEST, "invalid config; fix before patching"),
-      );
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "invalid config; fix before patching"));
       return;
     }
     const rawValue = (params as { raw?: unknown }).raw;
@@ -369,10 +329,7 @@ export const configHandlers: GatewayRequestHandlers = {
       respond(
         false,
         undefined,
-        errorShape(
-          ErrorCodes.INVALID_REQUEST,
-          "invalid config.patch params: raw (string) required",
-        ),
+        errorShape(ErrorCodes.INVALID_REQUEST, "invalid config.patch params: raw (string) required"),
       );
       return;
     }
@@ -381,16 +338,8 @@ export const configHandlers: GatewayRequestHandlers = {
       respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, parsedRes.error));
       return;
     }
-    if (
-      !parsedRes.parsed ||
-      typeof parsedRes.parsed !== "object" ||
-      Array.isArray(parsedRes.parsed)
-    ) {
-      respond(
-        false,
-        undefined,
-        errorShape(ErrorCodes.INVALID_REQUEST, "config.patch raw must be an object"),
-      );
+    if (!parsedRes.parsed || typeof parsedRes.parsed !== "object" || Array.isArray(parsedRes.parsed)) {
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "config.patch raw must be an object"));
       return;
     }
     const merged = applyMergePatch(snapshot.config, parsedRes.parsed, {
@@ -402,10 +351,7 @@ export const configHandlers: GatewayRequestHandlers = {
       respond(
         false,
         undefined,
-        errorShape(
-          ErrorCodes.INVALID_REQUEST,
-          restoredMerge.humanReadableMessage ?? "invalid config",
-        ),
+        errorShape(ErrorCodes.INVALID_REQUEST, restoredMerge.humanReadableMessage ?? "invalid config"),
       );
       return;
     }
@@ -429,8 +375,7 @@ export const configHandlers: GatewayRequestHandlers = {
     );
     await writeConfigFile(validated.config, writeOptions);
 
-    const { sessionKey, note, restartDelayMs, deliveryContext, threadId } =
-      resolveConfigRestartRequest(params);
+    const { sessionKey, note, restartDelayMs, deliveryContext, threadId } = resolveConfigRestartRequest(params);
     const payload = buildConfigRestartSentinelPayload({
       kind: "config-patch",
       mode: "config.patch",
@@ -489,8 +434,7 @@ export const configHandlers: GatewayRequestHandlers = {
     );
     await writeConfigFile(parsed.config, writeOptions);
 
-    const { sessionKey, note, restartDelayMs, deliveryContext, threadId } =
-      resolveConfigRestartRequest(params);
+    const { sessionKey, note, restartDelayMs, deliveryContext, threadId } = resolveConfigRestartRequest(params);
     const payload = buildConfigRestartSentinelPayload({
       kind: "config-apply",
       mode: "config.apply",

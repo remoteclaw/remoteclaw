@@ -1,10 +1,7 @@
 import type { App } from "@slack/bolt";
 import type { HistoryEntry } from "../../../../src/auto-reply/reply/history.js";
 import { formatAllowlistMatchMeta } from "../../../../src/channels/allowlist-match.js";
-import type {
-  RemoteClawConfig,
-  SlackReactionNotificationMode,
-} from "../../../../src/config/config.js";
+import type { RemoteClawConfig, SlackReactionNotificationMode } from "../../../../src/config/config.js";
 import { resolveSessionKey, type SessionScope } from "../../../../src/config/sessions.js";
 import type { DmPolicy, GroupPolicy } from "../../../../src/config/types.js";
 import { logVerbose } from "../../../../src/globals.js";
@@ -80,11 +77,7 @@ export type SlackMonitorContext = {
     purpose?: string;
   }>;
   resolveUserName: (userId: string) => Promise<{ name?: string }>;
-  setSlackThreadStatus: (params: {
-    channelId: string;
-    threadTs?: string;
-    status: string;
-  }) => Promise<void>;
+  setSlackThreadStatus: (params: { channelId: string; threadTs?: string; status: string }) => Promise<void>;
 };
 
 export function createSlackMonitorContext(params: {
@@ -221,8 +214,7 @@ export function createSlackMonitorContext(params: {
               ? "group"
               : undefined;
       const topic = channel && "topic" in channel ? (channel.topic?.value ?? undefined) : undefined;
-      const purpose =
-        channel && "purpose" in channel ? (channel.purpose?.value ?? undefined) : undefined;
+      const purpose = channel && "purpose" in channel ? (channel.purpose?.value ?? undefined) : undefined;
       const entry = { name, type, topic, purpose };
       channelCache.set(channelId, entry);
       return entry;
@@ -251,11 +243,7 @@ export function createSlackMonitorContext(params: {
     }
   };
 
-  const setSlackThreadStatus = async (p: {
-    channelId: string;
-    threadTs?: string;
-    status: string;
-  }) => {
+  const setSlackThreadStatus = async (p: { channelId: string; threadTs?: string; status: string }) => {
     if (!p.threadTs) {
       return;
     }
@@ -313,8 +301,7 @@ export function createSlackMonitorContext(params: {
         .filter((value): value is string => Boolean(value))
         .map((value) => value.toLowerCase());
       const permitted =
-        groupDmChannelsLower.includes("*") ||
-        candidates.some((candidate) => groupDmChannelsLower.includes(candidate));
+        groupDmChannelsLower.includes("*") || candidates.some((candidate) => groupDmChannelsLower.includes(candidate));
       if (!permitted) {
         return false;
       }
@@ -339,9 +326,7 @@ export function createSlackMonitorContext(params: {
           channelAllowed,
         })
       ) {
-        logVerbose(
-          `slack: drop channel ${p.channelId} (groupPolicy=${params.groupPolicy}, ${channelMatchMeta})`,
-        );
+        logVerbose(`slack: drop channel ${p.channelId} (groupPolicy=${params.groupPolicy}, ${channelMatchMeta})`);
         return false;
       }
       // When groupPolicy is "open", only block channels that are EXPLICITLY denied
@@ -369,16 +354,10 @@ export function createSlackMonitorContext(params: {
     };
     const incomingApiAppId = typeof raw.api_app_id === "string" ? raw.api_app_id : "";
     const incomingTeamId =
-      typeof raw.team_id === "string"
-        ? raw.team_id
-        : typeof raw.team?.id === "string"
-          ? raw.team.id
-          : "";
+      typeof raw.team_id === "string" ? raw.team_id : typeof raw.team?.id === "string" ? raw.team.id : "";
 
     if (params.apiAppId && incomingApiAppId && incomingApiAppId !== params.apiAppId) {
-      logVerbose(
-        `slack: drop event with api_app_id=${incomingApiAppId} (expected ${params.apiAppId})`,
-      );
+      logVerbose(`slack: drop event with api_app_id=${incomingApiAppId} (expected ${params.apiAppId})`);
       return true;
     }
     if (params.teamId && incomingTeamId && incomingTeamId !== params.teamId) {

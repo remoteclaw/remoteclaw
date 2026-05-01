@@ -72,9 +72,7 @@ function normalizeNotifyState(raw: unknown): NotifyStateFile {
       continue;
     }
     const accountId =
-      typeof record.accountId === "string" && record.accountId.trim()
-        ? record.accountId.trim()
-        : undefined;
+      typeof record.accountId === "string" && record.accountId.trim() ? record.accountId.trim() : undefined;
     const messageThreadId =
       typeof record.messageThreadId === "number" && Number.isFinite(record.messageThreadId)
         ? Math.trunc(record.messageThreadId)
@@ -122,11 +120,7 @@ async function writeNotifyState(filePath: string, state: NotifyStateFile): Promi
   await fs.writeFile(filePath, `${content}\n`, "utf8");
 }
 
-function notifySubscriberKey(subscriber: {
-  to: string;
-  accountId?: string;
-  messageThreadId?: number;
-}): string {
+function notifySubscriberKey(subscriber: { to: string; accountId?: string; messageThreadId?: number }): string {
   return [subscriber.to, subscriber.accountId ?? "", subscriber.messageThreadId ?? ""].join("|");
 }
 
@@ -203,10 +197,7 @@ function requestTimestampMs(request: PendingPairingRequest): number | null {
   return ts > 0 ? ts : null;
 }
 
-function shouldNotifySubscriberForRequest(
-  subscriber: NotifySubscription,
-  request: PendingPairingRequest,
-): boolean {
+function shouldNotifySubscriberForRequest(subscriber: NotifySubscription, request: PendingPairingRequest): boolean {
   if (subscriber.mode !== "once") {
     return true;
   }
@@ -232,9 +223,7 @@ async function notifySubscriber(params: {
   try {
     await send(params.subscriber.to, params.text, {
       ...(params.subscriber.accountId ? { accountId: params.subscriber.accountId } : {}),
-      ...(params.subscriber.messageThreadId != null
-        ? { messageThreadId: params.subscriber.messageThreadId }
-        : {}),
+      ...(params.subscriber.messageThreadId != null ? { messageThreadId: params.subscriber.messageThreadId } : {}),
     });
     return true;
   } catch (err) {
@@ -247,10 +236,7 @@ async function notifySubscriber(params: {
   }
 }
 
-async function notifyPendingPairingRequests(params: {
-  api: RemoteClawPluginApi;
-  statePath: string;
-}): Promise<void> {
+async function notifyPendingPairingRequests(params: { api: RemoteClawPluginApi; statePath: string }): Promise<void> {
   const state = await readNotifyState(params.statePath);
   const pairing = await listDevicePairing();
   const pending = pairing.pending as PendingPairingRequest[];
@@ -383,9 +369,7 @@ export async function handleNotifyCommand(params: {
   }
 
   if (params.action === "off" || params.action === "disable") {
-    const currentIndex = state.subscribers.findIndex(
-      (entry) => notifySubscriberKey(entry) === targetKey,
-    );
+    const currentIndex = state.subscribers.findIndex((entry) => notifySubscriberKey(entry) === targetKey);
     if (currentIndex !== -1) {
       state.subscribers.splice(currentIndex, 1);
       await writeNotifyState(statePath, state);
@@ -436,16 +420,12 @@ export function registerPairingNotifierService(api: RemoteClawPluginApi): void {
       };
 
       await tick().catch((err) => {
-        api.logger.warn(
-          `device-pair: initial notify poll failed: ${String((err as Error)?.message ?? err)}`,
-        );
+        api.logger.warn(`device-pair: initial notify poll failed: ${String((err as Error)?.message ?? err)}`);
       });
 
       notifyInterval = setInterval(() => {
         tick().catch((err) => {
-          api.logger.warn(
-            `device-pair: notify poll failed: ${String((err as Error)?.message ?? err)}`,
-          );
+          api.logger.warn(`device-pair: notify poll failed: ${String((err as Error)?.message ?? err)}`);
         });
       }, NOTIFY_POLL_INTERVAL_MS);
       notifyInterval.unref?.();

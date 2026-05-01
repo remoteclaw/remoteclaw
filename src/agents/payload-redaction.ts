@@ -71,10 +71,7 @@ function digestBase64Payload(data: string): string {
   return crypto.createHash("sha256").update(data).digest("hex");
 }
 
-function visitDiagnosticPayload(
-  value: unknown,
-  opts?: { omitField?: (key: string) => boolean },
-): unknown {
+function visitDiagnosticPayload(value: unknown, opts?: { omitField?: (key: string) => boolean }): unknown {
   const seen = new WeakSet<object>();
 
   const visit = (input: unknown): unknown => {

@@ -23,16 +23,11 @@ export function registerBrowserCli(program: Command) {
         `\n${theme.heading("Examples:")}\n${formatHelpExamples(
           browserCoreExamples.map((cmd) => [cmd, ""]),
           true,
-        )}\n\n${theme.muted("Docs:")} ${formatDocsLink(
-          "/cli/browser",
-          "docs.remoteclaw.org/cli/browser",
-        )}\n`,
+        )}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/browser", "docs.remoteclaw.org/cli/browser")}\n`,
     )
     .action(() => {
       browser.outputHelp();
-      defaultRuntime.error(
-        danger(`Missing subcommand. Try: "${formatCliCommand("remoteclaw browser status")}"`),
-      );
+      defaultRuntime.error(danger(`Missing subcommand. Try: "${formatCliCommand("remoteclaw browser status")}"`));
       defaultRuntime.exit(1);
     });
 

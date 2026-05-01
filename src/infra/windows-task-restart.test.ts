@@ -24,8 +24,7 @@ const createdTmpDirs = new Set<string>();
 
 function decodeCmdPathArg(value: string): string {
   const trimmed = value.trim();
-  const withoutQuotes =
-    trimmed.startsWith('"') && trimmed.endsWith('"') ? trimmed.slice(1, -1) : trimmed;
+  const withoutQuotes = trimmed.startsWith('"') && trimmed.endsWith('"') ? trimmed.slice(1, -1) : trimmed;
   return withoutQuotes.replace(/\^!/g, "!").replace(/%%/g, "%");
 }
 

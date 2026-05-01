@@ -1,9 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  getChannelActivity,
-  recordChannelActivity,
-  resetChannelActivityForTest,
-} from "./channel-activity.js";
+import { getChannelActivity, recordChannelActivity, resetChannelActivityForTest } from "./channel-activity.js";
 
 describe("channel activity", () => {
   beforeEach(() => {

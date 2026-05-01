@@ -1,8 +1,4 @@
-import type {
-  LineChannelData,
-  RemoteClawPluginApi,
-  ReplyPayload,
-} from "remoteclaw/plugin-sdk/line";
+import type { LineChannelData, RemoteClawPluginApi, ReplyPayload } from "remoteclaw/plugin-sdk/line";
 import {
   createActionCard,
   createImageCard,
@@ -260,10 +256,7 @@ export function registerLineCardCommand(api: RemoteClawPluginApi): void {
             const bubble = createReceiptCard({ title, items, total, footer });
             return buildLineReply({
               flexMessage: {
-                altText: `${title}: ${items.map((i) => `${i.name} ${i.value}`).join(", ")}`.slice(
-                  0,
-                  400,
-                ),
+                altText: `${title}: ${items.map((i) => `${i.name} ${i.value}`).join(", ")}`.slice(0, 400),
                 contents: bubble,
               },
             });

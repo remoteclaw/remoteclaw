@@ -33,11 +33,7 @@ function buildRecentMessageIdKey(run: FollowupRun, queueKey: string): string | u
   ]);
 }
 
-function isRunAlreadyQueued(
-  run: FollowupRun,
-  items: FollowupRun[],
-  allowPromptFallback = false,
-): boolean {
+function isRunAlreadyQueued(run: FollowupRun, items: FollowupRun[], allowPromptFallback = false): boolean {
   const hasSameRouting = (item: FollowupRun) =>
     item.originatingChannel === run.originatingChannel &&
     item.originatingTo === run.originatingTo &&
@@ -69,8 +65,7 @@ export function enqueueFollowupRun(
   const dedupe =
     dedupeMode === "none"
       ? undefined
-      : (item: FollowupRun, items: FollowupRun[]) =>
-          isRunAlreadyQueued(item, items, dedupeMode === "prompt");
+      : (item: FollowupRun, items: FollowupRun[]) => isRunAlreadyQueued(item, items, dedupeMode === "prompt");
 
   // Deduplicate: skip if the same message is already queued.
   if (shouldSkipQueueItem({ item: run, items: queue.items, dedupe })) {

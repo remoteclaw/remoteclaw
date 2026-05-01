@@ -1,13 +1,6 @@
 import type { RemoteClawConfig } from "../../config/config.js";
-import {
-  resolveAccountEntry,
-  resolveNormalizedAccountEntry,
-} from "../../routing/account-lookup.js";
-import {
-  DEFAULT_ACCOUNT_ID,
-  normalizeAccountId,
-  normalizeOptionalAccountId,
-} from "../../routing/session-key.js";
+import { resolveAccountEntry, resolveNormalizedAccountEntry } from "../../routing/account-lookup.js";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId, normalizeOptionalAccountId } from "../../routing/session-key.js";
 import type { ChannelAccountSnapshot } from "./types.core.js";
 
 export function createAccountListHelpers(
@@ -128,9 +121,7 @@ export function mergeAccountConfig<TConfig extends Record<string, unknown>>(para
 }): TConfig {
   const omitKeys = new Set(["accounts", ...(params.omitKeys ?? [])]);
   const base = Object.fromEntries(
-    Object.entries((params.channelConfig ?? {}) as Record<string, unknown>).filter(
-      ([key]) => !omitKeys.has(key),
-    ),
+    Object.entries((params.channelConfig ?? {}) as Record<string, unknown>).filter(([key]) => !omitKeys.has(key)),
   ) as TConfig;
   const merged = {
     ...base,
@@ -188,10 +179,7 @@ export function describeAccountSnapshot<
 }): ChannelAccountSnapshot {
   return {
     accountId: String(params.account.accountId ?? DEFAULT_ACCOUNT_ID),
-    name:
-      typeof params.account.name === "string" && params.account.name.trim()
-        ? params.account.name
-        : undefined,
+    name: typeof params.account.name === "string" && params.account.name.trim() ? params.account.name : undefined,
     enabled: params.account.enabled !== false,
     configured: params.configured,
     ...params.extra,

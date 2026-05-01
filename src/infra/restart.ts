@@ -1,10 +1,7 @@
 import { spawnSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
-import {
-  resolveGatewayLaunchAgentLabel,
-  resolveGatewaySystemdServiceName,
-} from "../daemon/constants.js";
+import { resolveGatewayLaunchAgentLabel, resolveGatewaySystemdServiceName } from "../daemon/constants.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { cleanStaleGatewayProcessesSync, findGatewayPidsOnPortSync } from "./restart-stale-pids.js";
 import { relaunchGatewayScheduledTask } from "./windows-task-restart.js";
@@ -73,10 +70,8 @@ function summarizeChangedPaths(paths: string[] | undefined, maxPaths = 6): strin
 
 function formatRestartAudit(audit: RestartAuditInfo | undefined): string {
   const actor = typeof audit?.actor === "string" && audit.actor.trim() ? audit.actor.trim() : null;
-  const deviceId =
-    typeof audit?.deviceId === "string" && audit.deviceId.trim() ? audit.deviceId.trim() : null;
-  const clientIp =
-    typeof audit?.clientIp === "string" && audit.clientIp.trim() ? audit.clientIp.trim() : null;
+  const deviceId = typeof audit?.deviceId === "string" && audit.deviceId.trim() ? audit.deviceId.trim() : null;
+  const clientIp = typeof audit?.clientIp === "string" && audit.clientIp.trim() ? audit.clientIp.trim() : null;
   const changed = summarizeChangedPaths(audit?.changedPaths);
   const fields = [];
   if (actor) {
@@ -300,10 +295,7 @@ export function triggerRemoteClawRestart(): RestartAttempt {
 
   const tried: string[] = [];
   if (process.platform === "linux") {
-    const unit = normalizeSystemdUnit(
-      process.env.REMOTECLAW_SYSTEMD_UNIT,
-      process.env.REMOTECLAW_PROFILE,
-    );
+    const unit = normalizeSystemdUnit(process.env.REMOTECLAW_SYSTEMD_UNIT, process.env.REMOTECLAW_PROFILE);
     const userArgs = ["--user", "restart", unit];
     tried.push(`systemctl ${userArgs.join(" ")}`);
     const userRestart = spawnSync("systemctl", userArgs, {
@@ -322,10 +314,9 @@ export function triggerRemoteClawRestart(): RestartAttempt {
     if (!systemRestart.error && systemRestart.status === 0) {
       return { ok: true, method: "systemd", tried };
     }
-    const detail = [
-      `user: ${formatSpawnDetail(userRestart)}`,
-      `system: ${formatSpawnDetail(systemRestart)}`,
-    ].join("; ");
+    const detail = [`user: ${formatSpawnDetail(userRestart)}`, `system: ${formatSpawnDetail(systemRestart)}`].join(
+      "; ",
+    );
     return { ok: false, method: "systemd", detail, tried };
   }
 
@@ -341,9 +332,7 @@ export function triggerRemoteClawRestart(): RestartAttempt {
     };
   }
 
-  const label =
-    process.env.REMOTECLAW_LAUNCHD_LABEL ||
-    resolveGatewayLaunchAgentLabel(process.env.REMOTECLAW_PROFILE);
+  const label = process.env.REMOTECLAW_LAUNCHD_LABEL || resolveGatewayLaunchAgentLabel(process.env.REMOTECLAW_PROFILE);
   const uid = typeof process.getuid === "function" ? process.getuid() : undefined;
   const domain = uid !== undefined ? `gui/${uid}` : "gui/501";
   const target = `${domain}/${label}`;
@@ -410,14 +399,9 @@ export function scheduleGatewaySigusr1Restart(opts?: {
   audit?: RestartAuditInfo;
 }): ScheduledRestart {
   const delayMsRaw =
-    typeof opts?.delayMs === "number" && Number.isFinite(opts.delayMs)
-      ? Math.floor(opts.delayMs)
-      : 2000;
+    typeof opts?.delayMs === "number" && Number.isFinite(opts.delayMs) ? Math.floor(opts.delayMs) : 2000;
   const delayMs = Math.min(Math.max(delayMsRaw, 0), 60_000);
-  const reason =
-    typeof opts?.reason === "string" && opts.reason.trim()
-      ? opts.reason.trim().slice(0, 200)
-      : undefined;
+  const reason = typeof opts?.reason === "string" && opts.reason.trim() ? opts.reason.trim().slice(0, 200) : undefined;
   const mode = process.listenerCount("SIGUSR1") > 0 ? "emit" : "signal";
   const nowMs = Date.now();
   const cooldownMsApplied = Math.max(0, lastRestartEmittedAt + RESTART_COOLDOWN_MS - nowMs);

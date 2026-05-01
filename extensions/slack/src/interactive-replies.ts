@@ -6,9 +6,7 @@ function resolveInteractiveRepliesFromCapabilities(capabilities: unknown): boole
     return false;
   }
   if (Array.isArray(capabilities)) {
-    return capabilities.some(
-      (entry) => String(entry).trim().toLowerCase() === "interactivereplies",
-    );
+    return capabilities.some((entry) => String(entry).trim().toLowerCase() === "interactivereplies");
   }
   if (typeof capabilities === "object") {
     return (capabilities as { interactiveReplies?: unknown }).interactiveReplies === true;

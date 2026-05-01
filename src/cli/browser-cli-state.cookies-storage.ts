@@ -52,35 +52,33 @@ export function registerBrowserCookiesAndStorageCommands(
 ) {
   const cookies = browser.command("cookies").description("Read/write cookies");
 
-  cookies
-    .option("--target-id <id>", "CDP target id (or unique prefix)")
-    .action(async (opts, cmd) => {
-      const parent = parentOpts(cmd);
-      const profile = parent?.browserProfile;
-      const targetId = resolveTargetId(opts.targetId, cmd);
-      try {
-        const result = await callBrowserRequest<{ cookies?: unknown[] }>(
-          parent,
-          {
-            method: "GET",
-            path: "/cookies",
-            query: {
-              targetId,
-              profile,
-            },
+  cookies.option("--target-id <id>", "CDP target id (or unique prefix)").action(async (opts, cmd) => {
+    const parent = parentOpts(cmd);
+    const profile = parent?.browserProfile;
+    const targetId = resolveTargetId(opts.targetId, cmd);
+    try {
+      const result = await callBrowserRequest<{ cookies?: unknown[] }>(
+        parent,
+        {
+          method: "GET",
+          path: "/cookies",
+          query: {
+            targetId,
+            profile,
           },
-          { timeoutMs: 20000 },
-        );
-        if (parent?.json) {
-          defaultRuntime.writeJson(result);
-          return;
-        }
-        defaultRuntime.writeJson(result.cookies ?? []);
-      } catch (err) {
-        defaultRuntime.error(danger(String(err)));
-        defaultRuntime.exit(1);
+        },
+        { timeoutMs: 20000 },
+      );
+      if (parent?.json) {
+        defaultRuntime.writeJson(result);
+        return;
       }
-    });
+      defaultRuntime.writeJson(result.cookies ?? []);
+    } catch (err) {
+      defaultRuntime.error(danger(String(err)));
+      defaultRuntime.exit(1);
+    }
+  });
 
   cookies
     .command("set")

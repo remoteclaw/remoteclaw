@@ -4,9 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { resolveLsofCommand, resolveLsofCommandSync } from "./ports-lsof.js";
 
 const LSOF_CANDIDATES =
-  process.platform === "darwin"
-    ? ["/usr/sbin/lsof", "/usr/bin/lsof"]
-    : ["/usr/bin/lsof", "/usr/sbin/lsof"];
+  process.platform === "darwin" ? ["/usr/sbin/lsof", "/usr/bin/lsof"] : ["/usr/bin/lsof", "/usr/sbin/lsof"];
 
 describe("lsof command resolution", () => {
   afterEach(() => {

@@ -62,9 +62,7 @@ vi.mock("../../agents/agent-scope.js", () => ({
 }));
 
 vi.mock("../../agents/workspace.js", async () => {
-  const actual = await vi.importActual<typeof import("../../agents/workspace.js")>(
-    "../../agents/workspace.js",
-  );
+  const actual = await vi.importActual<typeof import("../../agents/workspace.js")>("../../agents/workspace.js");
   return {
     ...actual,
     ensureAgentWorkspace: mocks.ensureAgentWorkspace,
@@ -259,9 +257,7 @@ describe("agents.create", () => {
     });
     await promise;
 
-    expect(callOrder.indexOf("ensureAgentWorkspace")).toBeLessThan(
-      callOrder.indexOf("writeConfigFile"),
-    );
+    expect(callOrder.indexOf("ensureAgentWorkspace")).toBeLessThan(callOrder.indexOf("writeConfigFile"));
   });
 
   it("rejects creating an agent with reserved 'main' id", async () => {
@@ -422,11 +418,7 @@ describe("agents.delete", () => {
     });
     await promise;
 
-    expect(respond).toHaveBeenCalledWith(
-      true,
-      { ok: true, agentId: "test-agent", removedBindings: 2 },
-      undefined,
-    );
+    expect(respond).toHaveBeenCalledWith(true, { ok: true, agentId: "test-agent", removedBindings: 2 }, undefined);
     expect(mocks.writeConfigFile).toHaveBeenCalled();
     // moveToTrashBestEffort calls fs.access then movePathToTrash for each dir
     expect(mocks.movePathToTrash).toHaveBeenCalled();
@@ -718,16 +710,13 @@ describe("agents.files.get/set symlink safety", () => {
   it.each([
     { method: "agents.files.get" as const, expectNoOpen: false },
     { method: "agents.files.set" as const, expectNoOpen: true },
-  ])(
-    "rejects $method when allowlisted file symlink escapes workspace",
-    async ({ method, expectNoOpen }) => {
-      mockWorkspaceEscapeSymlink();
-      await expectUnsafeWorkspaceFile(method);
-      if (expectNoOpen) {
-        expect(mocks.fsOpen).not.toHaveBeenCalled();
-      }
-    },
-  );
+  ])("rejects $method when allowlisted file symlink escapes workspace", async ({ method, expectNoOpen }) => {
+    mockWorkspaceEscapeSymlink();
+    await expectUnsafeWorkspaceFile(method);
+    if (expectNoOpen) {
+      expect(mocks.fsOpen).not.toHaveBeenCalled();
+    }
+  });
 
   it("allows in-workspace symlink targets for get/set", async () => {
     const workspace = "/workspace/test-agent";

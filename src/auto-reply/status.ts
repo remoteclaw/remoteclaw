@@ -27,11 +27,7 @@ import {
 } from "../tts/tts.js";
 import { formatTokenCount as formatTokenCountShared } from "../utils/usage-format.js";
 import { VERSION } from "../version.js";
-import {
-  listChatCommands,
-  listChatCommandsForConfig,
-  type ChatCommandDefinition,
-} from "./commands-registry.js";
+import { listChatCommands, listChatCommandsForConfig, type ChatCommandDefinition } from "./commands-registry.js";
 import type { CommandCategory } from "./commands-registry.types.js";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
 // import ... from "./model-runtime.js";
@@ -106,9 +102,7 @@ function normalizeAuthMode(value?: string): NormalizedAuthMode | undefined {
   return undefined;
 }
 
-function resolveRuntimeLabel(
-  args: Pick<StatusArgs, "config" | "agent" | "sessionKey" | "sessionScope">,
-): string {
+function resolveRuntimeLabel(args: Pick<StatusArgs, "config" | "agent" | "sessionKey" | "sessionScope">): string {
   const sessionKey = args.sessionKey?.trim();
   // Gutted in RemoteClaw fork — sandbox runtime removed; always direct
   if (args.config && sessionKey) {
@@ -160,8 +154,7 @@ const formatQueueDetails = (queue?: QueueStatus) => {
   }
   if (typeof queue.debounceMs === "number") {
     const ms = Math.max(0, Math.round(queue.debounceMs));
-    const label =
-      ms >= 1000 ? `${ms % 1000 === 0 ? ms / 1000 : (ms / 1000).toFixed(1)}s` : `${ms}ms`;
+    const label = ms >= 1000 ? `${ms % 1000 === 0 ? ms / 1000 : (ms / 1000).toFixed(1)}s` : `${ms}ms`;
     detailParts.push(`debounce ${label}`);
   }
   if (typeof queue.cap === "number") {
@@ -194,8 +187,7 @@ const readUsageFromSessionLog = (
   }
   let logPath: string;
   try {
-    const resolvedAgentId =
-      agentId ?? (sessionKey ? resolveAgentIdFromSessionKey(sessionKey) : undefined);
+    const resolvedAgentId = agentId ?? (sessionKey ? resolveAgentIdFromSessionKey(sessionKey) : undefined);
     logPath = resolveSessionFilePath(
       sessionId,
       sessionEntry,
@@ -278,18 +270,11 @@ const formatUsagePair = (input?: number | null, output?: number | null) => {
   return `🧮 Tokens: ${inputLabel} in / ${outputLabel} out`;
 };
 
-const formatCacheLine = (
-  input?: number | null,
-  cacheRead?: number | null,
-  cacheWrite?: number | null,
-) => {
+const formatCacheLine = (input?: number | null, cacheRead?: number | null, cacheWrite?: number | null) => {
   if (!cacheRead && !cacheWrite) {
     return null;
   }
-  if (
-    (typeof cacheRead !== "number" || cacheRead <= 0) &&
-    (typeof cacheWrite !== "number" || cacheWrite <= 0)
-  ) {
+  if ((typeof cacheRead !== "number" || cacheRead <= 0) && (typeof cacheWrite !== "number" || cacheWrite <= 0)) {
     return null;
   }
 
@@ -300,18 +285,12 @@ const formatCacheLine = (
     (typeof cacheRead === "number" ? cacheRead : 0) +
     (typeof cacheWrite === "number" ? cacheWrite : 0) +
     (typeof input === "number" ? input : 0);
-  const hitRate =
-    totalInput > 0 && typeof cacheRead === "number"
-      ? Math.round((cacheRead / totalInput) * 100)
-      : 0;
+  const hitRate = totalInput > 0 && typeof cacheRead === "number" ? Math.round((cacheRead / totalInput) * 100) : 0;
 
   return `🗄️ Cache: ${hitRate}% hit · ${cachedLabel} cached, ${newLabel} new`;
 };
 
-const formatVoiceModeLine = (
-  config?: RemoteClawConfig,
-  sessionEntry?: SessionEntry,
-): string | null => {
+const formatVoiceModeLine = (config?: RemoteClawConfig, sessionEntry?: SessionEntry): string | null => {
   if (!config) {
     return null;
   }
@@ -371,8 +350,7 @@ export function buildStatusMessage(args: StatusArgs): string {
     }
   }
 
-  const verboseLevel =
-    args.resolvedVerbose ?? args.sessionEntry?.verboseLevel ?? args.agent?.verboseDefault ?? "off";
+  const verboseLevel = args.resolvedVerbose ?? args.sessionEntry?.verboseLevel ?? args.agent?.verboseDefault ?? "off";
 
   const runtime = { label: resolveRuntimeLabel(args) };
 
@@ -393,17 +371,13 @@ export function buildStatusMessage(args: StatusArgs): string {
     ? (args.groupActivation ?? entry?.groupActivation ?? "mention")
     : undefined;
 
-  const contextLine = [
-    `Tokens: ${formatTokens(totalTokens)}`,
-    `🧹 Compactions: ${entry?.compactionCount ?? 0}`,
-  ]
+  const contextLine = [`Tokens: ${formatTokens(totalTokens)}`, `🧹 Compactions: ${entry?.compactionCount ?? 0}`]
     .filter(Boolean)
     .join(" · ");
 
   const queueMode = args.queue?.mode ?? "unknown";
   const queueDetails = formatQueueDetails(args.queue);
-  const verboseLabel =
-    verboseLevel === "full" ? "verbose:full" : verboseLevel === "on" ? "verbose" : null;
+  const verboseLabel = verboseLevel === "full" ? "verbose:full" : verboseLevel === "on" ? "verbose" : null;
   const optionParts = [`Runtime: ${runtime.label}`, verboseLabel];
   const optionsLine = optionParts.filter(Boolean).join(" · ");
   const activationParts = [
@@ -414,8 +388,7 @@ export function buildStatusMessage(args: StatusArgs): string {
 
   const selectedAuthMode = normalizeAuthMode(args.modelAuth);
   const selectedAuthLabelValue =
-    args.modelAuth ??
-    (selectedAuthMode && selectedAuthMode !== "unknown" ? selectedAuthMode : undefined);
+    args.modelAuth ?? (selectedAuthMode && selectedAuthMode !== "unknown" ? selectedAuthMode : undefined);
   const selectedModelLabel = modelRefs.selected.label || "unknown";
 
   const selectedAuthLabel = selectedAuthLabelValue ? ` · 🔑 ${selectedAuthLabelValue}` : "";
@@ -458,19 +431,9 @@ const CATEGORY_LABELS: Record<CommandCategory, string> = {
   docks: "Docks",
 };
 
-const CATEGORY_ORDER: CommandCategory[] = [
-  "session",
-  "options",
-  "status",
-  "management",
-  "media",
-  "tools",
-  "docks",
-];
+const CATEGORY_ORDER: CommandCategory[] = ["session", "options", "status", "management", "media", "tools", "docks"];
 
-function groupCommandsByCategory(
-  commands: ChatCommandDefinition[],
-): Map<CommandCategory, ChatCommandDefinition[]> {
+function groupCommandsByCategory(commands: ChatCommandDefinition[]): Map<CommandCategory, ChatCommandDefinition[]> {
   const grouped = new Map<CommandCategory, ChatCommandDefinition[]>();
   for (const category of CATEGORY_ORDER) {
     grouped.set(category, []);
@@ -526,9 +489,7 @@ export type CommandsMessageResult = {
 };
 
 function formatCommandEntry(command: ChatCommandDefinition): string {
-  const primary = command.nativeName
-    ? `/${command.nativeName}`
-    : command.textAliases[0]?.trim() || `/${command.key}`;
+  const primary = command.nativeName ? `/${command.nativeName}` : command.textAliases[0]?.trim() || `/${command.key}`;
   const seen = new Set<string>();
   const aliases = command.textAliases
     .map((alias) => alias.trim())
@@ -599,10 +560,7 @@ function formatCommandList(items: CommandsListItem[]): string {
   return lines.join("\n");
 }
 
-export function buildCommandsMessage(
-  cfg?: RemoteClawConfig,
-  options?: CommandsMessageOptions,
-): string {
+export function buildCommandsMessage(cfg?: RemoteClawConfig, options?: CommandsMessageOptions): string {
   const result = buildCommandsMessagePaginated(cfg, options);
   return result.text;
 }

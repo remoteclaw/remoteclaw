@@ -27,11 +27,7 @@ export const GCP_VERTEX_CREDENTIALS_MARKER = "gcp-vertex-credentials";
 export const NON_ENV_SECRETREF_MARKER = "secretref-managed"; // pragma: allowlist secret
 export const SECRETREF_ENV_HEADER_MARKER_PREFIX = "secretref-env:"; // pragma: allowlist secret
 
-const AWS_SDK_ENV_MARKERS = new Set([
-  "AWS_BEARER_TOKEN_BEDROCK",
-  "AWS_ACCESS_KEY_ID",
-  "AWS_PROFILE",
-]);
+const AWS_SDK_ENV_MARKERS = new Set(["AWS_BEARER_TOKEN_BEDROCK", "AWS_ACCESS_KEY_ID", "AWS_PROFILE"]);
 
 // Legacy marker names kept for backward compatibility with existing models.json files.
 const LEGACY_ENV_API_KEY_MARKERS = [
@@ -82,15 +78,10 @@ export function resolveEnvSecretRefHeaderValueMarker(envVarName: string): string
 
 export function isSecretRefHeaderValueMarker(value: string): boolean {
   const trimmed = value.trim();
-  return (
-    trimmed === NON_ENV_SECRETREF_MARKER || trimmed.startsWith(SECRETREF_ENV_HEADER_MARKER_PREFIX)
-  );
+  return trimmed === NON_ENV_SECRETREF_MARKER || trimmed.startsWith(SECRETREF_ENV_HEADER_MARKER_PREFIX);
 }
 
-export function isNonSecretApiKeyMarker(
-  value: string,
-  opts?: { includeEnvVarName?: boolean },
-): boolean {
+export function isNonSecretApiKeyMarker(value: string, opts?: { includeEnvVarName?: boolean }): boolean {
   const trimmed = value.trim();
   if (!trimmed) {
     return false;

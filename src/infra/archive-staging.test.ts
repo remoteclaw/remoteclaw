@@ -32,26 +32,23 @@ describe("archive-staging helpers", () => {
     });
   });
 
-  it.runIf(process.platform !== "win32")(
-    "rejects symlink and non-directory archive destinations",
-    async () => {
-      await withTempDir("remoteclaw-archive-staging-", async (rootDir) => {
-        const realDestDir = path.join(rootDir, "real-dest");
-        const symlinkDestDir = path.join(rootDir, "dest-link");
-        const fileDest = path.join(rootDir, "dest.txt");
-        await fs.mkdir(realDestDir, { recursive: true });
-        await fs.symlink(realDestDir, symlinkDestDir, directorySymlinkType);
-        await fs.writeFile(fileDest, "nope", "utf8");
+  it.runIf(process.platform !== "win32")("rejects symlink and non-directory archive destinations", async () => {
+    await withTempDir("remoteclaw-archive-staging-", async (rootDir) => {
+      const realDestDir = path.join(rootDir, "real-dest");
+      const symlinkDestDir = path.join(rootDir, "dest-link");
+      const fileDest = path.join(rootDir, "dest.txt");
+      await fs.mkdir(realDestDir, { recursive: true });
+      await fs.symlink(realDestDir, symlinkDestDir, directorySymlinkType);
+      await fs.writeFile(fileDest, "nope", "utf8");
 
-        await expect(prepareArchiveDestinationDir(symlinkDestDir)).rejects.toMatchObject({
-          code: "destination-symlink",
-        } satisfies Partial<ArchiveSecurityError>);
-        await expect(prepareArchiveDestinationDir(fileDest)).rejects.toMatchObject({
-          code: "destination-not-directory",
-        } satisfies Partial<ArchiveSecurityError>);
-      });
-    },
-  );
+      await expect(prepareArchiveDestinationDir(symlinkDestDir)).rejects.toMatchObject({
+        code: "destination-symlink",
+      } satisfies Partial<ArchiveSecurityError>);
+      await expect(prepareArchiveDestinationDir(fileDest)).rejects.toMatchObject({
+        code: "destination-not-directory",
+      } satisfies Partial<ArchiveSecurityError>);
+    });
+  });
 
   it("creates in-destination parent directories for file outputs", async () => {
     await withTempDir("remoteclaw-archive-staging-", async (rootDir) => {
@@ -77,33 +74,30 @@ describe("archive-staging helpers", () => {
     });
   });
 
-  it.runIf(process.platform !== "win32")(
-    "rejects output paths that traverse a destination symlink",
-    async () => {
-      await withTempDir("remoteclaw-archive-staging-", async (rootDir) => {
-        const destDir = path.join(rootDir, "dest");
-        const outsideDir = path.join(rootDir, "outside");
-        const linkDir = path.join(destDir, "escape");
-        await fs.mkdir(destDir, { recursive: true });
-        await fs.mkdir(outsideDir, { recursive: true });
-        await fs.symlink(outsideDir, linkDir, directorySymlinkType);
-        const destinationRealDir = await prepareArchiveDestinationDir(destDir);
+  it.runIf(process.platform !== "win32")("rejects output paths that traverse a destination symlink", async () => {
+    await withTempDir("remoteclaw-archive-staging-", async (rootDir) => {
+      const destDir = path.join(rootDir, "dest");
+      const outsideDir = path.join(rootDir, "outside");
+      const linkDir = path.join(destDir, "escape");
+      await fs.mkdir(destDir, { recursive: true });
+      await fs.mkdir(outsideDir, { recursive: true });
+      await fs.symlink(outsideDir, linkDir, directorySymlinkType);
+      const destinationRealDir = await prepareArchiveDestinationDir(destDir);
 
-        await expect(
-          prepareArchiveOutputPath({
-            destinationDir: destDir,
-            destinationRealDir,
-            relPath: "escape/payload.txt",
-            outPath: path.join(linkDir, "payload.txt"),
-            originalPath: "escape/payload.txt",
-            isDirectory: false,
-          }),
-        ).rejects.toMatchObject({
-          code: "destination-symlink-traversal",
-        } satisfies Partial<ArchiveSecurityError>);
-      });
-    },
-  );
+      await expect(
+        prepareArchiveOutputPath({
+          destinationDir: destDir,
+          destinationRealDir,
+          relPath: "escape/payload.txt",
+          outPath: path.join(linkDir, "payload.txt"),
+          originalPath: "escape/payload.txt",
+          isDirectory: false,
+        }),
+      ).rejects.toMatchObject({
+        code: "destination-symlink-traversal",
+      } satisfies Partial<ArchiveSecurityError>);
+    });
+  });
 
   it("cleans up staged archive directories after success and failure", async () => {
     await withTempDir("remoteclaw-archive-staging-", async (rootDir) => {
@@ -154,9 +148,7 @@ describe("archive-staging helpers", () => {
           destinationDir: destDir,
           destinationRealDir,
         });
-        await expect(
-          fs.readFile(path.join(destDir, "nested", "payload.txt"), "utf8"),
-        ).resolves.toBe("hi");
+        await expect(fs.readFile(path.join(destDir, "nested", "payload.txt"), "utf8")).resolves.toBe("hi");
 
         await fs.symlink(outsideDir, path.join(sourceDir, "escape"), directorySymlinkType);
         await expect(

@@ -50,9 +50,7 @@ function createDescendantRun(params?: {
     cleanup: params?.cleanup ?? "keep",
     createdAt: 1000,
     endedAt: params?.endedAt ?? 2000,
-    ...(params?.frozenResultText === undefined
-      ? {}
-      : { frozenResultText: params.frozenResultText }),
+    ...(params?.frozenResultText === undefined ? {} : { frozenResultText: params.frozenResultText }),
   };
 }
 
@@ -61,14 +59,10 @@ describe("isLikelyInterimCronMessage", () => {
     expect(isLikelyInterimCronMessage("on it")).toBe(true);
   });
   it("detects subagent-related interim text", () => {
-    expect(isLikelyInterimCronMessage("spawned a subagent, it'll auto-announce when done")).toBe(
-      true,
-    );
+    expect(isLikelyInterimCronMessage("spawned a subagent, it'll auto-announce when done")).toBe(true);
   });
   it("rejects substantive content", () => {
-    expect(isLikelyInterimCronMessage("Here are your results: revenue was $5000 this month")).toBe(
-      false,
-    );
+    expect(isLikelyInterimCronMessage("Here are your results: revenue was $5000 this month")).toBe(false);
   });
   it("does not treat empty as interim (empty = NO_REPLY was stripped)", () => {
     expect(isLikelyInterimCronMessage("")).toBe(false);

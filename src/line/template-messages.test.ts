@@ -80,9 +80,7 @@ describe("carousel column limits", () => {
     {
       createTemplate: () =>
         createTemplateCarousel(
-          Array.from({ length: 15 }, () =>
-            createCarouselColumn({ text: "Text", actions: [messageAction("OK")] }),
-          ),
+          Array.from({ length: 15 }, () => createCarouselColumn({ text: "Text", actions: [messageAction("OK")] })),
         ),
     },
     {
@@ -117,8 +115,7 @@ describe("createProductCarousel", () => {
     },
   ])("uses expected action type for product action", ({ expectedType, ...item }) => {
     const template = createProductCarousel([item]);
-    const columns = (template.template as { columns: Array<{ actions: Array<{ type: string }> }> })
-      .columns;
+    const columns = (template.template as { columns: Array<{ actions: Array<{ type: string }> }> }).columns;
     expect(columns[0].actions[0].type).toBe(expectedType);
   });
 });

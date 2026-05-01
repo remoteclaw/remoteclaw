@@ -1,12 +1,5 @@
-import {
-  chunkTextWithMode,
-  resolveChunkMode,
-  resolveTextChunkLimit,
-} from "../../../src/auto-reply/chunk.js";
-import {
-  DEFAULT_GROUP_HISTORY_LIMIT,
-  type HistoryEntry,
-} from "../../../src/auto-reply/reply/history.js";
+import { chunkTextWithMode, resolveChunkMode, resolveTextChunkLimit } from "../../../src/auto-reply/chunk.js";
+import { DEFAULT_GROUP_HISTORY_LIMIT, type HistoryEntry } from "../../../src/auto-reply/reply/history.js";
 import type { ReplyPayload } from "../../../src/auto-reply/types.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import { loadConfig } from "../../../src/config/config.js";
@@ -27,11 +20,7 @@ import { signalCheck, signalRpcRequest } from "./client.js";
 import { formatSignalDaemonExit, spawnSignalDaemon, type SignalDaemonHandle } from "./daemon.js";
 import { isSignalSenderAllowed, type resolveSignalSender } from "./identity.js";
 import { createSignalEventHandler } from "./monitor/event-handler.js";
-import type {
-  SignalAttachment,
-  SignalReactionMessage,
-  SignalReactionTarget,
-} from "./monitor/event-handler.types.js";
+import type { SignalAttachment, SignalReactionMessage, SignalReactionTarget } from "./monitor/event-handler.types.js";
 import { sendMessageSignal } from "./send.js";
 import { runSignalSseLoop } from "./sse-reconnect.js";
 
@@ -61,10 +50,7 @@ function resolveRuntime(opts: MonitorSignalOpts): RuntimeEnv {
   return opts.runtime ?? createNonExitingRuntime();
 }
 
-function mergeAbortSignals(
-  a?: AbortSignal,
-  b?: AbortSignal,
-): { signal?: AbortSignal; dispose: () => void } {
+function mergeAbortSignals(a?: AbortSignal, b?: AbortSignal): { signal?: AbortSignal; dispose: () => void } {
   if (!a && !b) {
     return { signal: undefined, dispose: () => {} };
   }
@@ -276,12 +262,7 @@ async function fetchAttachment(params: {
     return null;
   }
   const buffer = Buffer.from(result.data, "base64");
-  const saved = await saveMediaBuffer(
-    buffer,
-    attachment.contentType ?? undefined,
-    "inbound",
-    params.maxBytes,
-  );
+  const saved = await saveMediaBuffer(buffer, attachment.contentType ?? undefined, "inbound", params.maxBytes);
   return { path: saved.path, contentType: saved.contentType };
 }
 
@@ -296,8 +277,7 @@ async function deliverReplies(params: {
   textLimit: number;
   chunkMode: "length" | "newline";
 }) {
-  const { replies, target, baseUrl, account, accountId, runtime, maxBytes, textLimit, chunkMode } =
-    params;
+  const { replies, target, baseUrl, account, accountId, runtime, maxBytes, textLimit, chunkMode } = params;
   for (const payload of replies) {
     const mediaList = payload.mediaUrls ?? (payload.mediaUrl ? [payload.mediaUrl] : []);
     const text = payload.text ?? "";
@@ -340,9 +320,7 @@ export async function monitorSignalProvider(opts: MonitorSignalOpts = {}): Promi
   });
   const historyLimit = Math.max(
     0,
-    accountInfo.config.historyLimit ??
-      cfg.messages?.groupChat?.historyLimit ??
-      DEFAULT_GROUP_HISTORY_LIMIT,
+    accountInfo.config.historyLimit ?? cfg.messages?.groupChat?.historyLimit ?? DEFAULT_GROUP_HISTORY_LIMIT,
   );
   const groupHistories = new Map<string, HistoryEntry[]>();
   const textLimit = resolveTextChunkLimit(cfg, "signal", accountInfo.accountId);
@@ -354,17 +332,14 @@ export async function monitorSignalProvider(opts: MonitorSignalOpts = {}): Promi
   const groupAllowFrom = normalizeAllowList(
     opts.groupAllowFrom ??
       accountInfo.config.groupAllowFrom ??
-      (accountInfo.config.allowFrom && accountInfo.config.allowFrom.length > 0
-        ? accountInfo.config.allowFrom
-        : []),
+      (accountInfo.config.allowFrom && accountInfo.config.allowFrom.length > 0 ? accountInfo.config.allowFrom : []),
   );
   const defaultGroupPolicy = resolveDefaultGroupPolicy(cfg);
-  const { groupPolicy, providerMissingFallbackApplied } =
-    resolveAllowlistProviderRuntimeGroupPolicy({
-      providerConfigPresent: cfg.channels?.signal !== undefined,
-      groupPolicy: accountInfo.config.groupPolicy,
-      defaultGroupPolicy,
-    });
+  const { groupPolicy, providerMissingFallbackApplied } = resolveAllowlistProviderRuntimeGroupPolicy({
+    providerConfigPresent: cfg.channels?.signal !== undefined,
+    groupPolicy: accountInfo.config.groupPolicy,
+    defaultGroupPolicy,
+  });
   warnMissingProviderGroupPolicyFallbackOnce({
     providerMissingFallbackApplied,
     providerKey: "signal",

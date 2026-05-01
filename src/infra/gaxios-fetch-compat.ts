@@ -60,10 +60,7 @@ function hasTlsAgentShape(value: unknown): value is TlsAgentLike {
   return isRecord(value) && isRecord(value.options);
 }
 
-function resolveTlsOptions(
-  init: GaxiosFetchRequestInit,
-  url: URL,
-): { cert?: TlsCert; key?: TlsKey } {
+function resolveTlsOptions(init: GaxiosFetchRequestInit, url: URL): { cert?: TlsCert; key?: TlsKey } {
   const explicit = {
     cert: init.cert,
     key: init.key,
@@ -133,10 +130,7 @@ function resolveProxyUri(init: GaxiosFetchRequestInit, url: URL): string | undef
   }
 
   const envProxy =
-    process.env.HTTPS_PROXY ??
-    process.env.https_proxy ??
-    process.env.HTTP_PROXY ??
-    process.env.http_proxy;
+    process.env.HTTPS_PROXY ?? process.env.https_proxy ?? process.env.HTTP_PROXY ?? process.env.http_proxy;
   if (!envProxy) {
     return undefined;
   }
@@ -164,8 +158,7 @@ function buildDispatcher(init: GaxiosFetchRequestInit, url: URL): Dispatcher | u
   }
 
   const { cert, key } = resolveTlsOptions(init, url);
-  const proxyUri =
-    resolveProxyUri(init, url) ?? (hasProxyAgentShape(agent) ? String(agent.proxy) : undefined);
+  const proxyUri = resolveProxyUri(init, url) ?? (hasProxyAgentShape(agent) ? String(agent.proxy) : undefined);
   if (proxyUri) {
     const { ProxyAgent } = loadUndiciRuntimeDeps();
     return new ProxyAgent({
@@ -218,8 +211,7 @@ function isDirectGaxiosImportMiss(err: unknown): boolean {
   }
   return (
     typeof err.message === "string" &&
-    (err.message.includes("Cannot find package 'gaxios'") ||
-      err.message.includes("Cannot find module 'gaxios'"))
+    (err.message.includes("Cannot find package 'gaxios'") || err.message.includes("Cannot find module 'gaxios'"))
   );
 }
 
@@ -247,24 +239,17 @@ async function loadGaxiosConstructor(): Promise<GaxiosConstructor | null> {
 }
 
 function installLegacyWindowFetchShim(): void {
-  if (
-    typeof globalThis.fetch !== "function" ||
-    typeof (globalThis as Record<string, unknown>).window !== "undefined"
-  ) {
+  if (typeof globalThis.fetch !== "function" || typeof (globalThis as Record<string, unknown>).window !== "undefined") {
     return;
   }
   (globalThis as Record<string, unknown>).window = { fetch: globalThis.fetch };
 }
 
-export function createGaxiosCompatFetch(
-  baseFetch: FetchLike = globalThis.fetch.bind(globalThis),
-): FetchLike {
+export function createGaxiosCompatFetch(baseFetch: FetchLike = globalThis.fetch.bind(globalThis)): FetchLike {
   return async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const gaxiosInit = (init ?? {}) as GaxiosFetchRequestInit;
     const requestUrl =
-      input instanceof Request
-        ? new URL(input.url)
-        : new URL(typeof input === "string" ? input : input.toString());
+      input instanceof Request ? new URL(input.url) : new URL(typeof input === "string" ? input : input.toString());
     const dispatcher = buildDispatcher(gaxiosInit, requestUrl);
 
     const nextInit: RequestInit = { ...gaxiosInit };

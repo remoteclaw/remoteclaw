@@ -112,12 +112,7 @@ export async function signalCheck(
 ): Promise<{ ok: boolean; status?: number | null; error?: string | null }> {
   const normalized = normalizeBaseUrl(baseUrl);
   try {
-    const res = await fetchWithTimeout(
-      `${normalized}/api/v1/check`,
-      { method: "GET" },
-      timeoutMs,
-      getRequiredFetch(),
-    );
+    const res = await fetchWithTimeout(`${normalized}/api/v1/check`, { method: "GET" }, timeoutMs, getRequiredFetch());
     if (!res.ok) {
       return { ok: false, status: res.status, error: `HTTP ${res.status}` };
     }

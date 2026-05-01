@@ -152,8 +152,7 @@ describe("createSessionVisibilityGuard", () => {
     expect(guard.check("agent:ops:main")).toEqual({
       allowed: false,
       status: "forbidden",
-      error:
-        "Agent-to-agent messaging is disabled. Set tools.agentToAgent.enabled=true to allow cross-agent sends.",
+      error: "Agent-to-agent messaging is disabled. Set tools.agentToAgent.enabled=true to allow cross-agent sends.",
     });
   });
 
@@ -169,8 +168,7 @@ describe("createSessionVisibilityGuard", () => {
     expect(guard.check("agent:main:telegram:group:1")).toEqual({
       allowed: false,
       status: "forbidden",
-      error:
-        "Session history visibility is restricted to the current session (tools.sessions.visibility=self).",
+      error: "Session history visibility is restricted to the current session (tools.sessions.visibility=self).",
     });
   });
 });

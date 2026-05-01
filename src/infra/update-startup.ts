@@ -135,11 +135,7 @@ function sameUpdateAvailable(a: UpdateAvailable | null, b: UpdateAvailable | nul
   if (!a || !b) {
     return false;
   }
-  return (
-    a.currentVersion === b.currentVersion &&
-    a.latestVersion === b.latestVersion &&
-    a.channel === b.channel
-  );
+  return a.currentVersion === b.currentVersion && a.latestVersion === b.latestVersion && a.channel === b.channel;
 }
 
 function setUpdateAvailableCache(params: {
@@ -179,9 +175,7 @@ function resolveStableJitterMs(params: {
   if (params.jitterWindowMs <= 0) {
     return 0;
   }
-  const hash = createHash("sha256")
-    .update(`${params.installId}:${params.version}:${params.tag}`)
-    .digest();
+  const hash = createHash("sha256").update(`${params.installId}:${params.version}:${params.tag}`).digest();
   const bucket = hash.readUInt32BE(0);
   return bucket % (Math.floor(params.jitterWindowMs) + 1);
 }
@@ -200,8 +194,7 @@ function resolveStableAutoApplyAtMs(params: {
   }
   const installId = params.nextState.autoInstallId;
   const matchesExisting =
-    params.state.autoFirstSeenVersion === params.version &&
-    params.state.autoFirstSeenTag === params.tag;
+    params.state.autoFirstSeenVersion === params.version && params.state.autoFirstSeenTag === params.tag;
 
   if (!matchesExisting) {
     params.nextState.autoFirstSeenVersion = params.version;
@@ -213,9 +206,7 @@ function resolveStableAutoApplyAtMs(params: {
     params.nextState.autoFirstSeenAt = params.state.autoFirstSeenAt;
   }
 
-  const firstSeenMs = params.nextState.autoFirstSeenAt
-    ? Date.parse(params.nextState.autoFirstSeenAt)
-    : params.nowMs;
+  const firstSeenMs = params.nextState.autoFirstSeenAt ? Date.parse(params.nextState.autoFirstSeenAt) : params.nowMs;
   const baseDelayMs = Math.max(0, params.stableDelayHours) * ONE_HOUR_MS;
   const jitterWindowMs = Math.max(0, params.stableJitterHours) * ONE_HOUR_MS;
   const jitterMs = resolveStableJitterMs({
@@ -238,10 +229,7 @@ async function runAutoUpdateCommand(params: {
   const argv1 = process.argv[1]?.trim();
   const lowerExecBase = execPath ? path.basename(execPath).toLowerCase() : "";
   const runtimeIsNodeOrBun =
-    lowerExecBase === "node" ||
-    lowerExecBase === "node.exe" ||
-    lowerExecBase === "bun" ||
-    lowerExecBase === "bun.exe";
+    lowerExecBase === "node" || lowerExecBase === "node.exe" || lowerExecBase === "bun" || lowerExecBase === "bun.exe";
   const argv: string[] = [];
   if (execPath && argv1) {
     argv.push(execPath, argv1, ...baseArgs);
@@ -396,8 +384,7 @@ export async function runGatewayUpdateCheck(params: {
     }
     nextState.lastAvailableVersion = resolved.version;
     nextState.lastAvailableTag = tag;
-    const shouldNotify =
-      state.lastNotifiedVersion !== resolved.version || state.lastNotifiedTag !== tag;
+    const shouldNotify = state.lastNotifiedVersion !== resolved.version || state.lastNotifiedTag !== tag;
     if (shouldRunUpdateHints && shouldNotify) {
       params.log.info(
         `update available (${tag}): v${resolved.version} (current v${VERSION}). Run: ${formatCliCommand("remoteclaw update")}`,

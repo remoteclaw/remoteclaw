@@ -137,10 +137,7 @@ export async function rotateDeviceToken(
   }
 }
 
-export async function revokeDeviceToken(
-  state: DevicesState,
-  params: { deviceId: string; role: string },
-) {
+export async function revokeDeviceToken(state: DevicesState, params: { deviceId: string; role: string }) {
   if (!state.client || !state.connected) {
     return;
   }

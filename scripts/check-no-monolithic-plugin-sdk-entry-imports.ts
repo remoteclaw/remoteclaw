@@ -88,17 +88,13 @@ function main() {
 
   if (monolithicOffenders.length > 0 || legacyCompatOffenders.length > 0) {
     if (monolithicOffenders.length > 0) {
-      console.error(
-        "Bundled plugin source files must not import monolithic remoteclaw/plugin-sdk.",
-      );
+      console.error("Bundled plugin source files must not import monolithic remoteclaw/plugin-sdk.");
       for (const file of monolithicOffenders.toSorted()) {
         console.error(`- ${relativeToCwd(file)}`);
       }
     }
     if (legacyCompatOffenders.length > 0) {
-      console.error(
-        "Bundled plugin source files must not import legacy remoteclaw/plugin-sdk/compat.",
-      );
+      console.error("Bundled plugin source files must not import legacy remoteclaw/plugin-sdk/compat.");
       for (const file of legacyCompatOffenders.toSorted()) {
         console.error(`- ${relativeToCwd(file)}`);
       }
@@ -111,9 +107,7 @@ function main() {
     process.exit(1);
   }
 
-  console.log(
-    `OK: bundled plugin source files use scoped plugin-sdk subpaths (${filesToCheck.size} checked).`,
-  );
+  console.log(`OK: bundled plugin source files use scoped plugin-sdk subpaths (${filesToCheck.size} checked).`);
 }
 
 main();

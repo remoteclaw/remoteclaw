@@ -2,11 +2,7 @@ import { Type } from "@sinclair/typebox";
 import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import type { AgentTool, AgentToolResult } from "./agent-types.js";
-import {
-  filterToolsByPolicy,
-  isToolAllowedByPolicyName,
-  resolveSubagentToolPolicy,
-} from "./tool-policy-resolution.js";
+import { filterToolsByPolicy, isToolAllowedByPolicyName, resolveSubagentToolPolicy } from "./tool-policy-resolution.js";
 
 function createStubTool(name: string): AgentTool {
   return {

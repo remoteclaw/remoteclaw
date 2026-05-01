@@ -31,10 +31,7 @@ type SessionTitleFieldsCacheEntry = SessionTitleFields & {
 const sessionTitleFieldsCache = new Map<string, SessionTitleFieldsCacheEntry>();
 const MAX_SESSION_TITLE_FIELDS_CACHE_ENTRIES = 5000;
 
-function readSessionTitleFieldsCacheKey(
-  filePath: string,
-  opts?: { includeInterSession?: boolean },
-) {
+function readSessionTitleFieldsCacheKey(filePath: string, opts?: { includeInterSession?: boolean }) {
   const includeInterSession = opts?.includeInterSession === true ? "1" : "0";
   return `${filePath}\t${includeInterSession}`;
 }
@@ -72,18 +69,13 @@ function setCachedSessionTitleFields(cacheKey: string, stat: fs.Stats, value: Se
   }
 }
 
-export function attachRemoteClawTranscriptMeta(
-  message: unknown,
-  meta: Record<string, unknown>,
-): unknown {
+export function attachRemoteClawTranscriptMeta(message: unknown, meta: Record<string, unknown>): unknown {
   if (!message || typeof message !== "object" || Array.isArray(message)) {
     return message;
   }
   const record = message as Record<string, unknown>;
   const existing =
-    record.__remoteclaw &&
-    typeof record.__remoteclaw === "object" &&
-    !Array.isArray(record.__remoteclaw)
+    record.__remoteclaw && typeof record.__remoteclaw === "object" && !Array.isArray(record.__remoteclaw)
       ? (record.__remoteclaw as Record<string, unknown>)
       : {};
   return {
@@ -95,11 +87,7 @@ export function attachRemoteClawTranscriptMeta(
   };
 }
 
-export function readSessionMessages(
-  sessionId: string,
-  storePath: string | undefined,
-  sessionFile?: string,
-): unknown[] {
+export function readSessionMessages(sessionId: string, storePath: string | undefined, sessionFile?: string): unknown[] {
   const candidates = resolveSessionTranscriptCandidates(sessionId, storePath, sessionFile);
 
   const filePath = candidates.find((p) => fs.existsSync(p));
@@ -170,15 +158,11 @@ export function resolveSessionTranscriptCandidates(
   if (storePath) {
     const sessionsDir = path.dirname(storePath);
     if (sessionFile && sessionFileState !== "stale") {
-      pushCandidate(() =>
-        resolveSessionFilePath(sessionId, { sessionFile }, { sessionsDir, agentId }),
-      );
+      pushCandidate(() => resolveSessionFilePath(sessionId, { sessionFile }, { sessionsDir, agentId }));
     }
     pushCandidate(() => resolveSessionTranscriptPathInDir(sessionId, sessionsDir));
     if (sessionFile && sessionFileState === "stale") {
-      pushCandidate(() =>
-        resolveSessionFilePath(sessionId, { sessionFile }, { sessionsDir, agentId }),
-      );
+      pushCandidate(() => resolveSessionFilePath(sessionId, { sessionFile }, { sessionsDir, agentId }));
     }
   } else if (sessionFile) {
     if (agentId) {
@@ -209,10 +193,7 @@ export function resolveSessionTranscriptCandidates(
 
 export type ArchiveFileReason = SessionArchiveReason;
 
-function classifySessionTranscriptCandidate(
-  sessionId: string,
-  sessionFile?: string,
-): "current" | "stale" | "custom" {
+function classifySessionTranscriptCandidate(sessionId: string, sessionFile?: string): "current" | "stale" | "custom" {
   const transcriptSessionId = extractGeneratedTranscriptSessionId(sessionFile);
   if (!transcriptSessionId) {
     return "custom";
@@ -235,9 +216,7 @@ function extractGeneratedTranscriptSessionId(sessionFile?: string): string | und
     const topicSessionId = withoutExt.slice(0, topicIndex);
     return looksLikeGeneratedSessionId(topicSessionId) ? topicSessionId : undefined;
   }
-  const forkMatch = withoutExt.match(
-    /^(\d{4}-\d{2}-\d{2}T[\w-]+(?:Z|[+-]\d{2}(?:-\d{2})?)?)_(.+)$/,
-  );
+  const forkMatch = withoutExt.match(/^(\d{4}-\d{2}-\d{2}T[\w-]+(?:Z|[+-]\d{2}(?:-\d{2})?)?)_(.+)$/);
   if (forkMatch?.[2]) {
     return looksLikeGeneratedSessionId(forkMatch[2]) ? forkMatch[2] : undefined;
   }
@@ -285,9 +264,7 @@ export function archiveSessionTranscripts(opts: {
 }): string[] {
   const archived: string[] = [];
   const storeDir =
-    opts.restrictToStoreDir && opts.storePath
-      ? canonicalizePathForComparison(path.dirname(opts.storePath))
-      : null;
+    opts.restrictToStoreDir && opts.storePath ? canonicalizePathForComparison(path.dirname(opts.storePath)) : null;
   for (const candidate of resolveSessionTranscriptCandidates(
     opts.sessionId,
     opts.storePath,
@@ -352,10 +329,7 @@ export async function cleanupArchivedSessionTranscripts(opts: {
   return { removed, scanned };
 }
 
-export function capArrayByJsonBytes<T>(
-  items: T[],
-  maxBytes: number,
-): { items: T[]; bytes: number } {
+export function capArrayByJsonBytes<T>(items: T[], maxBytes: number): { items: T[]; bytes: number } {
   if (items.length === 0) {
     return { items, bytes: 2 };
   }
@@ -559,10 +533,7 @@ export function readFirstUserMessageFromTranscript(
 const LAST_MSG_MAX_BYTES = 16384;
 const LAST_MSG_MAX_LINES = 20;
 
-function readLastMessagePreviewFromOpenTranscript(params: {
-  fd: number;
-  size: number;
-}): string | null {
+function readLastMessagePreviewFromOpenTranscript(params: { fd: number; size: number }): string | null {
   const readStart = Math.max(0, params.size - LAST_MSG_MAX_BYTES);
   const readLen = Math.min(params.size, LAST_MSG_MAX_BYTES);
   const buf = Buffer.alloc(readLen);
@@ -640,9 +611,7 @@ function resolvePositiveUsageNumber(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : undefined;
 }
 
-function extractLatestUsageFromTranscriptChunk(
-  chunk: string,
-): SessionTranscriptUsageSnapshot | null {
+function extractLatestUsageFromTranscriptChunk(chunk: string): SessionTranscriptUsageSnapshot | null {
   const lines = chunk.split(/\r?\n/).filter((line) => line.trim().length > 0);
   const snapshot: SessionTranscriptUsageSnapshot = {};
   let sawSnapshot = false;
@@ -837,9 +806,7 @@ function extractPreviewText(message: TranscriptPreviewMessage): string | null {
   }
   if (Array.isArray(message.content)) {
     const parts = message.content
-      .map((entry) =>
-        typeof entry?.text === "string" ? stripInlineDirectiveTagsForDisplay(entry.text).text : "",
-      )
+      .map((entry) => (typeof entry?.text === "string" ? stripInlineDirectiveTagsForDisplay(entry.text).text : ""))
       .filter((text) => text.trim().length > 0);
     if (parts.length > 0) {
       return parts.join("\n").trim();

@@ -24,10 +24,7 @@ function normalizeAccountId(accountId?: string) {
   return trimmed.replace(/[^a-z0-9._-]+/gi, "_");
 }
 
-function resolveTelegramUpdateOffsetPath(
-  accountId?: string,
-  env: NodeJS.ProcessEnv = process.env,
-): string {
+function resolveTelegramUpdateOffsetPath(accountId?: string, env: NodeJS.ProcessEnv = process.env): string {
   const stateDir = resolveStateDir(env, os.homedir);
   const normalized = normalizeAccountId(accountId);
   return path.join(stateDir, "telegram", `update-offset-${normalized}.json`);
@@ -58,11 +55,7 @@ function safeParseState(raw: string): TelegramUpdateOffsetState | null {
     if (parsed.lastUpdateId !== null && !isValidUpdateId(parsed.lastUpdateId)) {
       return null;
     }
-    if (
-      parsed.version === STORE_VERSION &&
-      parsed.botId !== null &&
-      typeof parsed.botId !== "string"
-    ) {
+    if (parsed.version === STORE_VERSION && parsed.botId !== null && typeof parsed.botId !== "string") {
       return null;
     }
     return {

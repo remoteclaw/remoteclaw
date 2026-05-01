@@ -67,8 +67,7 @@ describe("createTelegramBot", () => {
       const fetchImpl = resolveTelegramFetch();
       expect(fetchImpl).toBeTypeOf("function");
       expect(fetchImpl).not.toBe(fetchSpy);
-      const clientFetch = (botCtorSpy.mock.calls[0]?.[1] as { client?: { fetch?: unknown } })
-        ?.client?.fetch;
+      const clientFetch = (botCtorSpy.mock.calls[0]?.[1] as { client?: { fetch?: unknown } })?.client?.fetch;
       expect(clientFetch).toBeTypeOf("function");
       expect(clientFetch).not.toBe(fetchSpy);
     } finally {
@@ -170,9 +169,7 @@ describe("createTelegramBot", () => {
       const expectedTimestamp = formatEnvelopeTimestamp(new Date("2025-01-09T00:00:00Z"));
       const timestampPattern = escapeRegExp(expectedTimestamp);
       expect(payload.Body).toMatch(
-        new RegExp(
-          `^\\[Telegram Ada Lovelace \\(@ada_bot\\) id:1234 (\\+\\d+[smhd] )?${timestampPattern}\\]`,
-        ),
+        new RegExp(`^\\[Telegram Ada Lovelace \\(@ada_bot\\) id:1234 (\\+\\d+[smhd] )?${timestampPattern}\\]`),
       );
       expect(payload.Body).toContain("hello world");
     });
@@ -235,9 +232,7 @@ describe("createTelegramBot", () => {
         expect(pairingText, testCase.name).toContain("Your Telegram user id: 999");
         expect(pairingText, testCase.name).toContain("Pairing code:");
         expect(pairingText, testCase.name).toContain("PAIRME12");
-        expect(pairingText, testCase.name).toContain(
-          "remoteclaw pairing approve telegram PAIRME12",
-        );
+        expect(pairingText, testCase.name).toContain("remoteclaw pairing approve telegram PAIRME12");
         expect(pairingText, testCase.name).not.toContain("<code>");
       }
     }
@@ -399,15 +394,9 @@ describe("createTelegramBot", () => {
     });
 
     createTelegramBot({ token: "tok" });
-    const callbackHandler = getOnHandler("callback_query") as (
-      ctx: Record<string, unknown>,
-    ) => Promise<void>;
-    const messageHandler = getOnHandler("message") as (
-      ctx: Record<string, unknown>,
-    ) => Promise<void>;
-    const channelPostHandler = getOnHandler("channel_post") as (
-      ctx: Record<string, unknown>,
-    ) => Promise<void>;
+    const callbackHandler = getOnHandler("callback_query") as (ctx: Record<string, unknown>) => Promise<void>;
+    const messageHandler = getOnHandler("message") as (ctx: Record<string, unknown>) => Promise<void>;
+    const channelPostHandler = getOnHandler("channel_post") as (ctx: Record<string, unknown>) => Promise<void>;
 
     await callbackHandler({
       update: { update_id: 222 },
@@ -498,11 +487,9 @@ describe("createTelegramBot", () => {
 
   it("does not persist update offset past pending updates", async () => {
     // For this test we need sequentialize(...) to behave like a normal middleware and call next().
-    sequentializeSpy.mockImplementationOnce(
-      () => async (_ctx: unknown, next: () => Promise<void>) => {
-        await next();
-      },
-    );
+    sequentializeSpy.mockImplementationOnce(() => async (_ctx: unknown, next: () => Promise<void>) => {
+      await next();
+    });
 
     const onUpdateId = vi.fn();
     loadConfig.mockReturnValue({
@@ -517,19 +504,13 @@ describe("createTelegramBot", () => {
       },
     });
 
-    type Middleware = (
-      ctx: Record<string, unknown>,
-      next: () => Promise<void>,
-    ) => Promise<void> | void;
+    type Middleware = (ctx: Record<string, unknown>, next: () => Promise<void>) => Promise<void> | void;
 
     const middlewares = middlewareUseSpy.mock.calls
       .map((call) => call[0])
       .filter((fn): fn is Middleware => typeof fn === "function");
 
-    const runMiddlewareChain = async (
-      ctx: Record<string, unknown>,
-      finalNext: () => Promise<void>,
-    ) => {
+    const runMiddlewareChain = async (ctx: Record<string, unknown>, finalNext: () => Promise<void>) => {
       let idx = -1;
       const dispatch = async (i: number): Promise<void> => {
         if (i <= idx) {
@@ -568,8 +549,7 @@ describe("createTelegramBot", () => {
 
     // Once the pending update finishes, the watermark can safely catch up.
     const persistedAfterDrain = onUpdateId.mock.calls.map((call) => Number(call[0]));
-    const maxPersistedAfterDrain =
-      persistedAfterDrain.length > 0 ? Math.max(...persistedAfterDrain) : -Infinity;
+    const maxPersistedAfterDrain = persistedAfterDrain.length > 0 ? Math.max(...persistedAfterDrain) : -Infinity;
     expect(maxPersistedAfterDrain).toBe(102);
   });
   it("allows distinct callback_query ids without update_id", async () => {
@@ -580,9 +560,7 @@ describe("createTelegramBot", () => {
     });
 
     createTelegramBot({ token: "tok" });
-    const handler = getOnHandler("callback_query") as (
-      ctx: Record<string, unknown>,
-    ) => Promise<void>;
+    const handler = getOnHandler("callback_query") as (ctx: Record<string, unknown>) => Promise<void>;
 
     await handler({
       callbackQuery: {
@@ -1079,10 +1057,7 @@ describe("createTelegramBot", () => {
     createTelegramBot({ token: "tok" });
     return getOnHandler("message") as (ctx: Record<string, unknown>) => Promise<void>;
   }
-  async function dispatchMessage(params: {
-    message: Record<string, unknown>;
-    me?: Record<string, unknown>;
-  }) {
+  async function dispatchMessage(params: { message: Record<string, unknown>; me?: Record<string, unknown> }) {
     const handler = getMessageHandler();
     await handler({
       message: params.message,
@@ -1193,9 +1168,7 @@ describe("createTelegramBot", () => {
     expect(payload.SenderUsername).toBe("ada");
     const expectedTimestamp = formatEnvelopeTimestamp(new Date("2025-01-09T00:00:00Z"));
     const timestampPattern = escapeRegExp(expectedTimestamp);
-    expect(payload.Body).toMatch(
-      new RegExp(`^\\[Telegram Ops id:42 (\\+\\d+[smhd] )?${timestampPattern}\\]`),
-    );
+    expect(payload.Body).toMatch(new RegExp(`^\\[Telegram Ops id:42 (\\+\\d+[smhd] )?${timestampPattern}\\]`));
   });
   it("reacts to mention-gated group messages when ackReaction is enabled", async () => {
     resetHarnessSpies();
@@ -1624,9 +1597,7 @@ describe("createTelegramBot", () => {
 
     expect(sendMessageSpy.mock.calls.length).toBeGreaterThan(1);
     for (const call of sendMessageSpy.mock.calls) {
-      expect(
-        (call[2] as { reply_to_message_id?: number } | undefined)?.reply_to_message_id,
-      ).toBeUndefined();
+      expect((call[2] as { reply_to_message_id?: number } | undefined)?.reply_to_message_id).toBeUndefined();
     }
   });
   it("prefixes final replies with responsePrefix", async () => {
@@ -1681,8 +1652,7 @@ describe("createTelegramBot", () => {
 
       expect(sendMessageSpy.mock.calls.length).toBeGreaterThan(1);
       for (const [index, call] of sendMessageSpy.mock.calls.entries()) {
-        const actual = (call[2] as { reply_to_message_id?: number } | undefined)
-          ?.reply_to_message_id;
+        const actual = (call[2] as { reply_to_message_id?: number } | undefined)?.reply_to_message_id;
         if (mode === "all" || index === 0) {
           expect(actual).toBe(messageId);
         } else {
@@ -1866,9 +1836,7 @@ describe("createTelegramBot", () => {
     const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
     try {
       createTelegramBot({ token: "tok", testTimings: TELEGRAM_TEST_TIMINGS });
-      const handler = getOnHandler("channel_post") as (
-        ctx: Record<string, unknown>,
-      ) => Promise<void>;
+      const handler = getOnHandler("channel_post") as (ctx: Record<string, unknown>) => Promise<void>;
 
       const first = handler({
         channelPost: {
@@ -1907,9 +1875,7 @@ describe("createTelegramBot", () => {
           : undefined;
       // Cancel the real timer so it cannot fire a second time after we manually invoke it.
       if (flushTimerCallIndex >= 0) {
-        clearTimeout(
-          setTimeoutSpy.mock.results[flushTimerCallIndex]?.value as ReturnType<typeof setTimeout>,
-        );
+        clearTimeout(setTimeoutSpy.mock.results[flushTimerCallIndex]?.value as ReturnType<typeof setTimeout>);
       }
       expect(flushTimer).toBeTypeOf("function");
       await flushTimer?.();
@@ -1941,9 +1907,7 @@ describe("createTelegramBot", () => {
     useFrozenTime("2026-02-20T00:00:00.000Z");
     try {
       createTelegramBot({ token: "tok", testTimings: TELEGRAM_TEST_TIMINGS });
-      const handler = getOnHandler("channel_post") as (
-        ctx: Record<string, unknown>,
-      ) => Promise<void>;
+      const handler = getOnHandler("channel_post") as (ctx: Record<string, unknown>) => Promise<void>;
 
       const part1 = "A".repeat(4050);
       const part2 = "B".repeat(50);
@@ -2031,9 +1995,7 @@ describe("createTelegramBot", () => {
     replySpy.mockClear();
     const fetchSpy = vi
       .spyOn(globalThis, "fetch")
-      .mockImplementation(async () =>
-        Promise.reject(new Error("MediaFetchError: Failed to fetch media")),
-      );
+      .mockImplementation(async () => Promise.reject(new Error("MediaFetchError: Failed to fetch media")));
 
     try {
       createTelegramBot({ token: "tok" });
@@ -2051,11 +2013,9 @@ describe("createTelegramBot", () => {
         getFile: async () => ({ file_path: "photos/p1.jpg" }),
       });
 
-      expect(sendMessageSpy).toHaveBeenCalledWith(
-        1234,
-        "⚠️ Failed to download media. Please try again.",
-        { reply_to_message_id: 411 },
-      );
+      expect(sendMessageSpy).toHaveBeenCalledWith(1234, "⚠️ Failed to download media. Please try again.", {
+        reply_to_message_id: 411,
+      });
       expect(replySpy).not.toHaveBeenCalled();
     } finally {
       fetchSpy.mockRestore();
@@ -2094,9 +2054,7 @@ describe("createTelegramBot", () => {
     const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
     try {
       createTelegramBot({ token: "tok", testTimings: TELEGRAM_TEST_TIMINGS });
-      const handler = getOnHandler("channel_post") as (
-        ctx: Record<string, unknown>,
-      ) => Promise<void>;
+      const handler = getOnHandler("channel_post") as (ctx: Record<string, unknown>) => Promise<void>;
 
       const first = handler({
         channelPost: {
@@ -2135,9 +2093,7 @@ describe("createTelegramBot", () => {
           : undefined;
       // Cancel the real timer so it cannot fire a second time after we manually invoke it.
       if (flushTimerCallIndex >= 0) {
-        clearTimeout(
-          setTimeoutSpy.mock.results[flushTimerCallIndex]?.value as ReturnType<typeof setTimeout>,
-        );
+        clearTimeout(setTimeoutSpy.mock.results[flushTimerCallIndex]?.value as ReturnType<typeof setTimeout>);
       }
       expect(flushTimer).toBeTypeOf("function");
       await flushTimer?.();
@@ -2180,9 +2136,7 @@ describe("createTelegramBot", () => {
     const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
     try {
       createTelegramBot({ token: "tok", testTimings: TELEGRAM_TEST_TIMINGS });
-      const handler = getOnHandler("channel_post") as (
-        ctx: Record<string, unknown>,
-      ) => Promise<void>;
+      const handler = getOnHandler("channel_post") as (ctx: Record<string, unknown>) => Promise<void>;
 
       const first = handler({
         channelPost: {
@@ -2221,9 +2175,7 @@ describe("createTelegramBot", () => {
           : undefined;
       // Cancel the real timer so it cannot fire a second time after we manually invoke it.
       if (flushTimerCallIndex >= 0) {
-        clearTimeout(
-          setTimeoutSpy.mock.results[flushTimerCallIndex]?.value as ReturnType<typeof setTimeout>,
-        );
+        clearTimeout(setTimeoutSpy.mock.results[flushTimerCallIndex]?.value as ReturnType<typeof setTimeout>);
       }
       expect(flushTimer).toBeTypeOf("function");
       await flushTimer?.();

@@ -6,9 +6,7 @@ function runBrowserStatus(argv: string[]) {
   program.name("test");
   program.option("--profile <name>", "Global config profile");
 
-  const browser = program
-    .command("browser")
-    .option("--browser-profile <name>", "Browser profile name");
+  const browser = program.command("browser").option("--browser-profile <name>", "Browser profile name");
 
   let globalProfile: string | undefined;
   let browserProfile: string | undefined = "should-be-undefined";

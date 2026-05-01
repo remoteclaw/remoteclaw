@@ -3,22 +3,9 @@ import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk/feishu";
 import { listEnabledFeishuAccounts } from "./accounts.js";
 import { FeishuPermSchema, type FeishuPermParams } from "./perm-schema.js";
 import { createFeishuToolClient, resolveAnyEnabledFeishuToolsConfig } from "./tool-account.js";
-import {
-  jsonToolResult,
-  toolExecutionErrorResult,
-  unknownToolActionResult,
-} from "./tool-result.js";
+import { jsonToolResult, toolExecutionErrorResult, unknownToolActionResult } from "./tool-result.js";
 
-type ListTokenType =
-  | "doc"
-  | "sheet"
-  | "file"
-  | "wiki"
-  | "bitable"
-  | "docx"
-  | "mindnote"
-  | "minutes"
-  | "slides";
+type ListTokenType = "doc" | "sheet" | "file" | "wiki" | "bitable" | "docx" | "mindnote" | "minutes" | "slides";
 type CreateTokenType =
   | "doc"
   | "sheet"
@@ -90,13 +77,7 @@ async function addMember(
   };
 }
 
-async function removeMember(
-  client: Lark.Client,
-  token: string,
-  type: string,
-  memberType: string,
-  memberId: string,
-) {
+async function removeMember(client: Lark.Client, token: string, type: string, memberType: string, memberId: string) {
   const res = await client.drive.permissionMember.delete({
     path: { token, member_id: memberId },
     params: { type: type as CreateTokenType, member_type: memberType as MemberType },
@@ -152,13 +133,9 @@ export function registerFeishuPermTools(api: RemoteClawPluginApi) {
               case "list":
                 return jsonToolResult(await listMembers(client, p.token, p.type));
               case "add":
-                return jsonToolResult(
-                  await addMember(client, p.token, p.type, p.member_type, p.member_id, p.perm),
-                );
+                return jsonToolResult(await addMember(client, p.token, p.type, p.member_type, p.member_id, p.perm));
               case "remove":
-                return jsonToolResult(
-                  await removeMember(client, p.token, p.type, p.member_type, p.member_id),
-                );
+                return jsonToolResult(await removeMember(client, p.token, p.type, p.member_type, p.member_id));
               default:
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- exhaustive check fallback
                 return unknownToolActionResult((p as { action?: unknown }).action);

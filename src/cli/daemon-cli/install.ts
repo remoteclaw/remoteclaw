@@ -1,19 +1,12 @@
 import { buildGatewayInstallPlan } from "../../commands/daemon-install-helpers.js";
-import {
-  DEFAULT_GATEWAY_DAEMON_RUNTIME,
-  isGatewayDaemonRuntime,
-} from "../../commands/daemon-runtime.js";
+import { DEFAULT_GATEWAY_DAEMON_RUNTIME, isGatewayDaemonRuntime } from "../../commands/daemon-runtime.js";
 import { readBestEffortConfig, resolveGatewayPort } from "../../config/config.js";
 import { resolveIsNixMode } from "../../config/paths.js";
 import { resolveGatewayService } from "../../daemon/service.js";
 import { isNonFatalSystemdInstallProbeError } from "../../daemon/systemd.js";
 import { defaultRuntime } from "../../runtime.js";
 import { formatCliCommand } from "../command-format.js";
-import {
-  buildDaemonServiceSnapshot,
-  createDaemonActionContext,
-  installDaemonServiceAndEmit,
-} from "./response.js";
+import { buildDaemonServiceSnapshot, createDaemonActionContext, installDaemonServiceAndEmit } from "./response.js";
 import { parsePort } from "./shared.js";
 import type { DaemonInstallOptions } from "./types.js";
 
@@ -86,9 +79,7 @@ export async function runDaemonInstall(opts: DaemonInstallOptions) {
       });
       if (!json) {
         defaultRuntime.log(`Gateway service already ${service.loadedText}.`);
-        defaultRuntime.log(
-          `Reinstall with: ${formatCliCommand("remoteclaw gateway install --force")}`,
-        );
+        defaultRuntime.log(`Reinstall with: ${formatCliCommand("remoteclaw gateway install --force")}`);
       }
       return;
     }

@@ -19,9 +19,7 @@ const hoisted = vi.hoisted(() => {
     drainPendingDecryptions: vi.fn(async () => undefined),
   };
   const createMatrixRoomMessageHandler = vi.fn(() => vi.fn());
-  const resolveTextChunkLimit = vi.fn<
-    (cfg: unknown, channel: unknown, accountId?: unknown) => number
-  >(() => 4000);
+  const resolveTextChunkLimit = vi.fn<(cfg: unknown, channel: unknown, accountId?: unknown) => number>(() => 4000);
   const logger = {
     info: vi.fn(),
     warn: vi.fn(),
@@ -50,10 +48,7 @@ vi.mock("../../runtime-api.js", () => ({
   GROUP_POLICY_BLOCKED_LABEL: {
     room: "room",
   },
-  mergeAllowlist: ({ existing, additions }: { existing: string[]; additions: string[] }) => [
-    ...existing,
-    ...additions,
-  ],
+  mergeAllowlist: ({ existing, additions }: { existing: string[]; additions: string[] }) => [...existing, ...additions],
   resolveThreadBindingIdleTimeoutMsForChannel: () => 24 * 60 * 60 * 1000,
   resolveThreadBindingMaxAgeMsForChannel: () => 0,
   resolveAllowlistProviderRuntimeGroupPolicy: () => ({
@@ -192,12 +187,10 @@ vi.mock("./direct.js", () => ({
 }));
 
 vi.mock("./events.js", () => ({
-  registerMatrixMonitorEvents: vi.fn(
-    (params: { onRoomMessage: (roomId: string, event: unknown) => Promise<void> }) => {
-      hoisted.callOrder.push("register-events");
-      hoisted.registeredOnRoomMessage = params.onRoomMessage;
-    },
-  ),
+  registerMatrixMonitorEvents: vi.fn((params: { onRoomMessage: (roomId: string, event: unknown) => Promise<void> }) => {
+    hoisted.callOrder.push("register-events");
+    hoisted.registeredOnRoomMessage = params.onRoomMessage;
+  }),
 }));
 
 vi.mock("./handler.js", () => ({
@@ -254,12 +247,7 @@ describe("monitorMatrixProvider", () => {
 
     await monitorMatrixProvider({ abortSignal: abortController.signal });
 
-    expect(hoisted.callOrder).toEqual([
-      "prepare-client",
-      "create-manager",
-      "register-events",
-      "start-client",
-    ]);
+    expect(hoisted.callOrder).toEqual(["prepare-client", "create-manager", "register-events", "start-client"]);
     expect(hoisted.stopThreadBindingManager).toHaveBeenCalledTimes(1);
   });
 
@@ -270,11 +258,7 @@ describe("monitorMatrixProvider", () => {
 
     await monitorMatrixProvider({ abortSignal: abortController.signal });
 
-    expect(hoisted.resolveTextChunkLimit).toHaveBeenCalledWith(
-      expect.anything(),
-      "matrix",
-      "default",
-    );
+    expect(hoisted.resolveTextChunkLimit).toHaveBeenCalledWith(expect.anything(), "matrix", "default");
   });
 
   it("cleans up thread bindings and shared clients when startup fails", async () => {
@@ -361,20 +345,10 @@ describe("monitorMatrixProvider", () => {
     await roomMessagePromise;
     await monitorPromise;
 
-    expect(hoisted.callOrder.indexOf("pause-client")).toBeLessThan(
-      hoisted.callOrder.indexOf("drain-decrypts"),
-    );
-    expect(hoisted.callOrder.indexOf("drain-decrypts")).toBeLessThan(
-      hoisted.callOrder.indexOf("handler-done"),
-    );
-    expect(hoisted.callOrder.indexOf("handler-done")).toBeLessThan(
-      hoisted.callOrder.indexOf("stop-manager"),
-    );
-    expect(hoisted.callOrder.indexOf("stop-manager")).toBeLessThan(
-      hoisted.callOrder.indexOf("stop-deduper"),
-    );
-    expect(hoisted.callOrder.indexOf("stop-deduper")).toBeLessThan(
-      hoisted.callOrder.indexOf("release-client"),
-    );
+    expect(hoisted.callOrder.indexOf("pause-client")).toBeLessThan(hoisted.callOrder.indexOf("drain-decrypts"));
+    expect(hoisted.callOrder.indexOf("drain-decrypts")).toBeLessThan(hoisted.callOrder.indexOf("handler-done"));
+    expect(hoisted.callOrder.indexOf("handler-done")).toBeLessThan(hoisted.callOrder.indexOf("stop-manager"));
+    expect(hoisted.callOrder.indexOf("stop-manager")).toBeLessThan(hoisted.callOrder.indexOf("stop-deduper"));
+    expect(hoisted.callOrder.indexOf("stop-deduper")).toBeLessThan(hoisted.callOrder.indexOf("release-client"));
   });
 });

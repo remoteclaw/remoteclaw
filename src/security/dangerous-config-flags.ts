@@ -26,16 +26,11 @@ export function collectEnabledInsecureOrDangerousFlags(cfg: RemoteClawConfig): s
     typeof (cfg.plugins as Record<string, unknown>).entries === "object" &&
     ((cfg.plugins as Record<string, unknown>).entries as Record<string, unknown>)?.acpx &&
     typeof (
-      ((cfg.plugins as Record<string, unknown>).entries as Record<string, unknown>).acpx as Record<
-        string,
-        unknown
-      >
+      ((cfg.plugins as Record<string, unknown>).entries as Record<string, unknown>).acpx as Record<string, unknown>
     )?.config === "object" &&
     (
-      (
-        ((cfg.plugins as Record<string, unknown>).entries as Record<string, unknown>)
-          .acpx as Record<string, unknown>
-      ).config as Record<string, unknown>
+      (((cfg.plugins as Record<string, unknown>).entries as Record<string, unknown>).acpx as Record<string, unknown>)
+        .config as Record<string, unknown>
     )?.permissionMode === "approve-all"
   ) {
     enabledFlags.push("plugins.entries.acpx.config.permissionMode=approve-all");

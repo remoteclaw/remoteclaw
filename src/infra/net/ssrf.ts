@@ -14,11 +14,7 @@ import {
 } from "../../shared/net/ip.js";
 import { normalizeHostname } from "./hostname.js";
 
-type LookupCallback = (
-  err: NodeJS.ErrnoException | null,
-  address: string | LookupAddress[],
-  family?: number,
-) => void;
+type LookupCallback = (err: NodeJS.ErrnoException | null, address: string | LookupAddress[], family?: number) => void;
 
 export class SsrFBlockedError extends Error {
   constructor(message: string) {
@@ -37,11 +33,7 @@ export type SsrFPolicy = {
   hostnameAllowlist?: string[];
 };
 
-const BLOCKED_HOSTNAMES = new Set([
-  "localhost",
-  "localhost.localdomain",
-  "metadata.google.internal",
-]);
+const BLOCKED_HOSTNAMES = new Set(["localhost", "localhost.localdomain", "metadata.google.internal"]);
 
 function normalizeHostnameSet(values?: string[]): Set<string> {
   if (!values || values.length === 0) {
@@ -156,11 +148,7 @@ function isBlockedHostnameNormalized(normalized: string): boolean {
   if (BLOCKED_HOSTNAMES.has(normalized)) {
     return true;
   }
-  return (
-    normalized.endsWith(".localhost") ||
-    normalized.endsWith(".local") ||
-    normalized.endsWith(".internal")
-  );
+  return normalized.endsWith(".localhost") || normalized.endsWith(".local") || normalized.endsWith(".internal");
 }
 
 export function isBlockedHostnameOrIp(hostname: string, policy?: SsrFPolicy): boolean {
@@ -180,10 +168,7 @@ function assertAllowedHostOrIpOrThrow(hostnameOrIp: string, policy?: SsrFPolicy)
   }
 }
 
-function assertAllowedResolvedAddressesOrThrow(
-  results: readonly LookupAddress[],
-  policy?: SsrFPolicy,
-): void {
+function assertAllowedResolvedAddressesOrThrow(results: readonly LookupAddress[], policy?: SsrFPolicy): void {
   for (const entry of results) {
     // Reuse the exact same host/IP classifier as the pre-DNS check to avoid drift.
     if (isBlockedHostnameOrIp(entry.address, policy)) {
@@ -202,10 +187,7 @@ export function createPinnedLookup(params: {
     throw new Error(`Pinned lookup requires at least one address for ${params.hostname}`);
   }
   const fallback = params.fallback ?? dnsLookupCb;
-  const fallbackLookup = fallback as unknown as (
-    hostname: string,
-    callback: LookupCallback,
-  ) => void;
+  const fallbackLookup = fallback as unknown as (hostname: string, callback: LookupCallback) => void;
   const fallbackWithOptions = fallback as unknown as (
     hostname: string,
     options: unknown,
@@ -231,12 +213,8 @@ export function createPinnedLookup(params: {
       return fallbackWithOptions(host, options, cb);
     }
 
-    const opts =
-      typeof options === "object" && options !== null
-        ? (options as { all?: boolean; family?: number })
-        : {};
-    const requestedFamily =
-      typeof options === "number" ? options : typeof opts.family === "number" ? opts.family : 0;
+    const opts = typeof options === "object" && options !== null ? (options as { all?: boolean; family?: number }) : {};
+    const requestedFamily = typeof options === "number" ? options : typeof opts.family === "number" ? opts.family : 0;
     const candidates =
       requestedFamily === 4 || requestedFamily === 6
         ? records.filter((entry) => entry.family === requestedFamily)
@@ -341,10 +319,7 @@ export async function resolvePinnedHostnameWithPolicy(
   };
 }
 
-export async function resolvePinnedHostname(
-  hostname: string,
-  lookupFn: LookupFn = dnsLookup,
-): Promise<PinnedHostname> {
+export async function resolvePinnedHostname(hostname: string, lookupFn: LookupFn = dnsLookup): Promise<PinnedHostname> {
   return await resolvePinnedHostnameWithPolicy(hostname, { lookupFn });
 }
 
@@ -355,10 +330,7 @@ function withPinnedLookup(
   return connect ? { ...connect, lookup } : { lookup };
 }
 
-export function createPinnedDispatcher(
-  pinned: PinnedHostname,
-  policy?: PinnedDispatcherPolicy,
-): Dispatcher {
+export function createPinnedDispatcher(pinned: PinnedHostname, policy?: PinnedDispatcherPolicy): Dispatcher {
   if (!policy || policy.mode === "direct") {
     return new Agent({
       connect: withPinnedLookup(pinned.lookup, policy?.connect),
@@ -400,9 +372,6 @@ export async function closeDispatcher(dispatcher?: Dispatcher | null): Promise<v
   }
 }
 
-export async function assertPublicHostname(
-  hostname: string,
-  lookupFn: LookupFn = dnsLookup,
-): Promise<void> {
+export async function assertPublicHostname(hostname: string, lookupFn: LookupFn = dnsLookup): Promise<void> {
   await resolvePinnedHostname(hostname, lookupFn);
 }

@@ -16,19 +16,14 @@ const { listAccountIds, resolveDefaultAccountId } = createAccountListHelpers("im
 export const listIMessageAccountIds = listAccountIds;
 export const resolveDefaultIMessageAccountId = resolveDefaultAccountId;
 
-function resolveAccountConfig(
-  cfg: RemoteClawConfig,
-  accountId: string,
-): IMessageAccountConfig | undefined {
+function resolveAccountConfig(cfg: RemoteClawConfig, accountId: string): IMessageAccountConfig | undefined {
   return resolveAccountEntry(cfg.channels?.imessage?.accounts, accountId);
 }
 
-function mergeIMessageAccountConfig(
-  cfg: RemoteClawConfig,
-  accountId: string,
-): IMessageAccountConfig {
-  const { accounts: _ignored, ...base } = (cfg.channels?.imessage ??
-    {}) as IMessageAccountConfig & { accounts?: unknown };
+function mergeIMessageAccountConfig(cfg: RemoteClawConfig, accountId: string): IMessageAccountConfig {
+  const { accounts: _ignored, ...base } = (cfg.channels?.imessage ?? {}) as IMessageAccountConfig & {
+    accounts?: unknown;
+  };
   const account = resolveAccountConfig(cfg, accountId) ?? {};
   return { ...base, ...account };
 }

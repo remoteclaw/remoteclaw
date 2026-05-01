@@ -99,8 +99,6 @@ describe("shared ip helpers", () => {
 
     expect(isBlockedSpecialUseIpv4Address(loopback)).toBe(true);
     expect(isBlockedSpecialUseIpv4Address(benchmark)).toBe(true);
-    expect(isBlockedSpecialUseIpv4Address(benchmark, { allowRfc2544BenchmarkRange: true })).toBe(
-      false,
-    );
+    expect(isBlockedSpecialUseIpv4Address(benchmark, { allowRfc2544BenchmarkRange: true })).toBe(false);
   });
 });

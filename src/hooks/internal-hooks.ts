@@ -269,9 +269,7 @@ export function getRegisteredEventKeys(): string[] {
 }
 
 export function hasInternalHookListeners(type: InternalHookEventType, action: string): boolean {
-  return (
-    (handlers.get(type)?.length ?? 0) > 0 || (handlers.get(`${type}:${action}`)?.length ?? 0) > 0
-  );
+  return (handlers.get(type)?.length ?? 0) > 0 || (handlers.get(`${type}:${action}`)?.length ?? 0) > 0;
 }
 
 /**
@@ -329,17 +327,11 @@ export function createInternalHookEvent(
   };
 }
 
-function isHookEventTypeAndAction(
-  event: InternalHookEvent,
-  type: InternalHookEventType,
-  action: string,
-): boolean {
+function isHookEventTypeAndAction(event: InternalHookEvent, type: InternalHookEventType, action: string): boolean {
   return event.type === type && event.action === action;
 }
 
-function getHookContext<T extends Record<string, unknown>>(
-  event: InternalHookEvent,
-): Partial<T> | null {
+function getHookContext<T extends Record<string, unknown>>(event: InternalHookEvent): Partial<T> | null {
   const context = event.context as Partial<T> | null;
   if (!context || typeof context !== "object") {
     return null;
@@ -347,17 +339,11 @@ function getHookContext<T extends Record<string, unknown>>(
   return context;
 }
 
-function hasStringContextField<T extends Record<string, unknown>>(
-  context: Partial<T>,
-  key: keyof T,
-): boolean {
+function hasStringContextField<T extends Record<string, unknown>>(context: Partial<T>, key: keyof T): boolean {
   return typeof context[key] === "string";
 }
 
-function hasBooleanContextField<T extends Record<string, unknown>>(
-  context: Partial<T>,
-  key: keyof T,
-): boolean {
+function hasBooleanContextField<T extends Record<string, unknown>>(context: Partial<T>, key: keyof T): boolean {
   return typeof context[key] === "boolean";
 }
 
@@ -382,9 +368,7 @@ export function isGatewayStartupEvent(event: InternalHookEvent): event is Gatewa
   return Boolean(getHookContext<GatewayStartupHookContext>(event));
 }
 
-export function isMessageReceivedEvent(
-  event: InternalHookEvent,
-): event is MessageReceivedHookEvent {
+export function isMessageReceivedEvent(event: InternalHookEvent): event is MessageReceivedHookEvent {
   if (!isHookEventTypeAndAction(event, "message", "received")) {
     return false;
   }
@@ -410,9 +394,7 @@ export function isMessageSentEvent(event: InternalHookEvent): event is MessageSe
   );
 }
 
-export function isMessageTranscribedEvent(
-  event: InternalHookEvent,
-): event is MessageTranscribedHookEvent {
+export function isMessageTranscribedEvent(event: InternalHookEvent): event is MessageTranscribedHookEvent {
   if (!isHookEventTypeAndAction(event, "message", "transcribed")) {
     return false;
   }
@@ -420,14 +402,10 @@ export function isMessageTranscribedEvent(
   if (!context) {
     return false;
   }
-  return (
-    hasStringContextField(context, "transcript") && hasStringContextField(context, "channelId")
-  );
+  return hasStringContextField(context, "transcript") && hasStringContextField(context, "channelId");
 }
 
-export function isMessagePreprocessedEvent(
-  event: InternalHookEvent,
-): event is MessagePreprocessedHookEvent {
+export function isMessagePreprocessedEvent(event: InternalHookEvent): event is MessagePreprocessedHookEvent {
   if (!isHookEventTypeAndAction(event, "message", "preprocessed")) {
     return false;
   }

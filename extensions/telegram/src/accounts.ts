@@ -9,10 +9,7 @@ import {
   resolveAccountWithDefaultFallback,
 } from "../../../src/plugin-sdk/account-resolution.js";
 import { resolveAccountEntry } from "../../../src/routing/account-lookup.js";
-import {
-  listBoundAccountIds,
-  resolveSoleAgentBoundAccountId,
-} from "../../../src/routing/bindings.js";
+import { listBoundAccountIds, resolveSoleAgentBoundAccountId } from "../../../src/routing/bindings.js";
 import { formatSetExplicitDefaultInstruction } from "../../../src/routing/default-account-warnings.js";
 import {
   DEFAULT_ACCOUNT_ID,
@@ -57,9 +54,7 @@ function listConfiguredAccountIds(cfg: RemoteClawConfig): string[] {
 }
 
 export function listTelegramAccountIds(cfg: RemoteClawConfig): string[] {
-  const ids = Array.from(
-    new Set([...listConfiguredAccountIds(cfg), ...listBoundAccountIds(cfg, "telegram")]),
-  );
+  const ids = Array.from(new Set([...listConfiguredAccountIds(cfg), ...listBoundAccountIds(cfg, "telegram")]));
   debugAccounts("listTelegramAccountIds", ids);
   if (ids.length === 0) {
     return [DEFAULT_ACCOUNT_ID];
@@ -80,10 +75,7 @@ export function resolveDefaultTelegramAccountId(cfg: RemoteClawConfig): string {
     return boundSoleAgent;
   }
   const preferred = normalizeOptionalAccountId(cfg.channels?.telegram?.defaultAccount);
-  if (
-    preferred &&
-    listTelegramAccountIds(cfg).some((accountId) => normalizeAccountId(accountId) === preferred)
-  ) {
+  if (preferred && listTelegramAccountIds(cfg).some((accountId) => normalizeAccountId(accountId) === preferred)) {
     return preferred;
   }
   const ids = listTelegramAccountIds(cfg);
@@ -108,10 +100,7 @@ export function resolveTelegramAccountConfig(
   return resolveAccountEntry(cfg.channels?.telegram?.accounts, normalized);
 }
 
-export function mergeTelegramAccountConfig(
-  cfg: RemoteClawConfig,
-  accountId: string,
-): TelegramAccountConfig {
+export function mergeTelegramAccountConfig(cfg: RemoteClawConfig, accountId: string): TelegramAccountConfig {
   const {
     accounts: _ignored,
     defaultAccount: _ignoredDefaultAccount,

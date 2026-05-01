@@ -11,14 +11,9 @@ function formatDiscordAllowFromEntries(allowFrom: Array<string | number>): strin
     .map((entry) => entry.toLowerCase());
 }
 
-function resolveChannelAllowFrom(
-  cfg: Record<string, unknown>,
-  channelId: string,
-): Array<string | number> | undefined {
+function resolveChannelAllowFrom(cfg: Record<string, unknown>, channelId: string): Array<string | number> | undefined {
   const channels =
-    cfg.channels && typeof cfg.channels === "object"
-      ? (cfg.channels as Record<string, unknown>)
-      : undefined;
+    cfg.channels && typeof cfg.channels === "object" ? (cfg.channels as Record<string, unknown>) : undefined;
   const channel =
     channels?.[channelId] && typeof channels[channelId] === "object"
       ? (channels[channelId] as Record<string, unknown>)
@@ -35,8 +30,7 @@ export const createCommandAuthRegistry = () =>
         ...createOutboundTestPlugin({ id: "discord", outbound: { deliveryMode: "direct" } }),
         config: {
           listAccountIds: () => [],
-          resolveAllowFrom: ({ cfg }: { cfg: Record<string, unknown> }) =>
-            resolveChannelAllowFrom(cfg, "discord"),
+          resolveAllowFrom: ({ cfg }: { cfg: Record<string, unknown> }) => resolveChannelAllowFrom(cfg, "discord"),
           formatAllowFrom: ({ allowFrom }: { allowFrom: Array<string | number> }) =>
             formatDiscordAllowFromEntries(allowFrom),
         },
@@ -49,8 +43,7 @@ export const createCommandAuthRegistry = () =>
         ...createOutboundTestPlugin({ id: "whatsapp", outbound: { deliveryMode: "direct" } }),
         config: {
           listAccountIds: () => [],
-          resolveAllowFrom: ({ cfg }: { cfg: Record<string, unknown> }) =>
-            resolveChannelAllowFrom(cfg, "whatsapp"),
+          resolveAllowFrom: ({ cfg }: { cfg: Record<string, unknown> }) => resolveChannelAllowFrom(cfg, "whatsapp"),
           formatAllowFrom: ({ allowFrom }: { allowFrom: Array<string | number> }) =>
             normalizeWhatsAppAllowFromEntries(allowFrom),
         },

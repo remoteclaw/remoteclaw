@@ -3,14 +3,10 @@ import { isSystemdUnavailableDetail, renderSystemdUnavailableHints } from "./sys
 
 describe("isSystemdUnavailableDetail", () => {
   it("matches systemd unavailable error details", () => {
-    expect(
-      isSystemdUnavailableDetail("systemctl --user unavailable: Failed to connect to bus"),
-    ).toBe(true);
-    expect(
-      isSystemdUnavailableDetail(
-        "systemctl not available; systemd user services are required on Linux.",
-      ),
-    ).toBe(true);
+    expect(isSystemdUnavailableDetail("systemctl --user unavailable: Failed to connect to bus")).toBe(true);
+    expect(isSystemdUnavailableDetail("systemctl not available; systemd user services are required on Linux.")).toBe(
+      true,
+    );
     expect(isSystemdUnavailableDetail("permission denied")).toBe(false);
   });
 });

@@ -44,8 +44,7 @@ export function registerSystemCli(program: Command) {
     .description("System tools (events, heartbeat, presence)")
     .addHelpText(
       "after",
-      () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/system", "docs.remoteclaw.org/cli/system")}\n`,
+      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/system", "docs.remoteclaw.org/cli/system")}\n`,
     );
 
   addGatewayClientOptions(
@@ -73,10 +72,7 @@ export function registerSystemCli(program: Command) {
   const heartbeat = system.command("heartbeat").description("Heartbeat controls");
 
   addGatewayClientOptions(
-    heartbeat
-      .command("last")
-      .description("Show the last heartbeat event")
-      .option("--json", "Output JSON", false),
+    heartbeat.command("last").description("Show the last heartbeat event").option("--json", "Output JSON", false),
   ).action(async (opts: SystemGatewayOpts) => {
     await runSystemGatewayCommand(opts, async () => {
       return await callGatewayFromCli("last-heartbeat", opts, undefined, {
@@ -86,42 +82,23 @@ export function registerSystemCli(program: Command) {
   });
 
   addGatewayClientOptions(
-    heartbeat
-      .command("enable")
-      .description("Enable heartbeats")
-      .option("--json", "Output JSON", false),
+    heartbeat.command("enable").description("Enable heartbeats").option("--json", "Output JSON", false),
   ).action(async (opts: SystemGatewayOpts) => {
     await runSystemGatewayCommand(opts, async () => {
-      return await callGatewayFromCli(
-        "set-heartbeats",
-        opts,
-        { enabled: true },
-        { expectFinal: false },
-      );
+      return await callGatewayFromCli("set-heartbeats", opts, { enabled: true }, { expectFinal: false });
     });
   });
 
   addGatewayClientOptions(
-    heartbeat
-      .command("disable")
-      .description("Disable heartbeats")
-      .option("--json", "Output JSON", false),
+    heartbeat.command("disable").description("Disable heartbeats").option("--json", "Output JSON", false),
   ).action(async (opts: SystemGatewayOpts) => {
     await runSystemGatewayCommand(opts, async () => {
-      return await callGatewayFromCli(
-        "set-heartbeats",
-        opts,
-        { enabled: false },
-        { expectFinal: false },
-      );
+      return await callGatewayFromCli("set-heartbeats", opts, { enabled: false }, { expectFinal: false });
     });
   });
 
   addGatewayClientOptions(
-    system
-      .command("presence")
-      .description("List system presence entries")
-      .option("--json", "Output JSON", false),
+    system.command("presence").description("List system presence entries").option("--json", "Output JSON", false),
   ).action(async (opts: SystemGatewayOpts) => {
     await runSystemGatewayCommand(opts, async () => {
       return await callGatewayFromCli("system-presence", opts, undefined, {

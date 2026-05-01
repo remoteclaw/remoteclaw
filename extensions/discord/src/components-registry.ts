@@ -45,10 +45,7 @@ export function registerDiscordComponentEntries(params: {
   }
 }
 
-export function resolveDiscordComponentEntry(params: {
-  id: string;
-  consume?: boolean;
-}): DiscordComponentEntry | null {
+export function resolveDiscordComponentEntry(params: { id: string; consume?: boolean }): DiscordComponentEntry | null {
   const entry = componentEntries.get(params.id);
   if (!entry) {
     return null;
@@ -64,10 +61,7 @@ export function resolveDiscordComponentEntry(params: {
   return entry;
 }
 
-export function resolveDiscordModalEntry(params: {
-  id: string;
-  consume?: boolean;
-}): DiscordModalEntry | null {
+export function resolveDiscordModalEntry(params: { id: string; consume?: boolean }): DiscordModalEntry | null {
   const entry = modalEntries.get(params.id);
   if (!entry) {
     return null;

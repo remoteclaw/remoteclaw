@@ -5,11 +5,7 @@ import { describe, expect, it } from "vitest";
 import type { ResolvedMattermostAccount } from "./accounts.js";
 import { createSlashCommandHttpHandler } from "./slash-http.js";
 
-function createRequest(params: {
-  method?: string;
-  body?: string;
-  contentType?: string;
-}): IncomingMessage {
+function createRequest(params: { method?: string; body?: string; contentType?: string }): IncomingMessage {
   const req = new PassThrough();
   const incoming = req as unknown as IncomingMessage;
   incoming.method = params.method ?? "POST";
@@ -58,11 +54,7 @@ const accountFixture: ResolvedMattermostAccount = {
   config: {},
 };
 
-async function runSlashRequest(params: {
-  commandTokens: Set<string>;
-  body: string;
-  method?: string;
-}) {
+async function runSlashRequest(params: { commandTokens: Set<string>; body: string; method?: string }) {
   const handler = createSlashCommandHttpHandler({
     account: accountFixture,
     cfg: {} as RemoteClawConfig,

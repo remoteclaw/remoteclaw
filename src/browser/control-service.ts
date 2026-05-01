@@ -51,9 +51,7 @@ export async function startBrowserControlServiceFromConfig(): Promise<BrowserSer
     onWarn: (message) => logService.warn(message),
   });
 
-  logService.info(
-    `Browser control service ready (profiles=${Object.keys(resolved.profiles).length})`,
-  );
+  logService.info(`Browser control service ready (profiles=${Object.keys(resolved.profiles).length})`);
   return state;
 }
 

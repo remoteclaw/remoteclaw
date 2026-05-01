@@ -142,15 +142,11 @@ function pickIPv4Matching(
   return null;
 }
 
-function pickLanIPv4(
-  networkInterfaces: () => ReturnType<typeof os.networkInterfaces>,
-): string | null {
+function pickLanIPv4(networkInterfaces: () => ReturnType<typeof os.networkInterfaces>): string | null {
   return pickIPv4Matching(networkInterfaces, isPrivateIPv4);
 }
 
-function pickTailnetIPv4(
-  networkInterfaces: () => ReturnType<typeof os.networkInterfaces>,
-): string | null {
+function pickTailnetIPv4(networkInterfaces: () => ReturnType<typeof os.networkInterfaces>): string | null {
   return pickIPv4Matching(networkInterfaces, isTailnetIPv4);
 }
 
@@ -159,9 +155,7 @@ function resolveGatewayTokenFromEnv(env: NodeJS.ProcessEnv): string | undefined 
 }
 
 function resolveGatewayPasswordFromEnv(env: NodeJS.ProcessEnv): string | undefined {
-  return (
-    env.REMOTECLAW_GATEWAY_PASSWORD?.trim() || env.CLAWDBOT_GATEWAY_PASSWORD?.trim() || undefined
-  );
+  return env.REMOTECLAW_GATEWAY_PASSWORD?.trim() || env.CLAWDBOT_GATEWAY_PASSWORD?.trim() || undefined;
 }
 
 function resolveAuth(cfg: RemoteClawConfig, env: NodeJS.ProcessEnv): ResolveAuthResult {
@@ -177,11 +171,8 @@ function resolveAuth(cfg: RemoteClawConfig, env: NodeJS.ProcessEnv): ResolveAuth
   }).ref;
   const envToken = resolveGatewayTokenFromEnv(env);
   const envPassword = resolveGatewayPasswordFromEnv(env);
-  const token =
-    envToken || (tokenRef ? undefined : normalizeSecretInputString(cfg.gateway?.auth?.token));
-  const password =
-    envPassword ||
-    (passwordRef ? undefined : normalizeSecretInputString(cfg.gateway?.auth?.password));
+  const token = envToken || (tokenRef ? undefined : normalizeSecretInputString(cfg.gateway?.auth?.token));
+  const password = envPassword || (passwordRef ? undefined : normalizeSecretInputString(cfg.gateway?.auth?.password));
 
   if (mode === "password") {
     if (!password) {
@@ -204,10 +195,7 @@ function resolveAuth(cfg: RemoteClawConfig, env: NodeJS.ProcessEnv): ResolveAuth
   return { error: "Gateway auth is not configured (no token or password)." };
 }
 
-async function resolveGatewayTokenSecretRef(
-  cfg: RemoteClawConfig,
-  env: NodeJS.ProcessEnv,
-): Promise<RemoteClawConfig> {
+async function resolveGatewayTokenSecretRef(cfg: RemoteClawConfig, env: NodeJS.ProcessEnv): Promise<RemoteClawConfig> {
   const hasTokenEnvCandidate = Boolean(resolveGatewayTokenFromEnv(env));
   if (hasTokenEnvCandidate) {
     return cfg;
@@ -309,10 +297,7 @@ async function resolveGatewayUrl(
   }
 
   const remoteUrlRaw = cfg.gateway?.remote?.url;
-  const remoteUrl =
-    typeof remoteUrlRaw === "string" && remoteUrlRaw.trim()
-      ? normalizeUrl(remoteUrlRaw, scheme)
-      : null;
+  const remoteUrl = typeof remoteUrlRaw === "string" && remoteUrlRaw.trim() ? normalizeUrl(remoteUrlRaw, scheme) : null;
   if (opts.preferRemoteUrl && remoteUrl) {
     return { url: remoteUrl, source: "gateway.remote.url" };
   }

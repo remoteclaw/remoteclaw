@@ -18,8 +18,8 @@ export function formatNativeDependencyHint(params: NativeDependencyHintParams): 
   const approveBuildsCommand =
     params.approveBuildsCommand ??
     (manager === "pnpm" ? `pnpm approve-builds (select ${params.packageName})` : undefined);
-  const steps = [approveBuildsCommand, rebuildCommand, params.downloadCommand].filter(
-    (step): step is string => Boolean(step),
+  const steps = [approveBuildsCommand, rebuildCommand, params.downloadCommand].filter((step): step is string =>
+    Boolean(step),
   );
   if (steps.length === 0) {
     return `Install ${params.packageName} and rebuild its native module.`;

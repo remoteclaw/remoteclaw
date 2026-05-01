@@ -6,9 +6,7 @@ type DiscordAudioAttachment = {
   url?: string;
 };
 
-function collectAudioAttachments(
-  attachments: DiscordAudioAttachment[] | undefined,
-): DiscordAudioAttachment[] {
+function collectAudioAttachments(attachments: DiscordAudioAttachment[] | undefined): DiscordAudioAttachment[] {
   if (!Array.isArray(attachments)) {
     return [];
   }
@@ -50,8 +48,7 @@ export async function resolveDiscordPreflightAudioMentionContext(params: {
       };
     }
     try {
-      const { transcribeFirstAudio } =
-        await import("../../../../src/media-understanding/audio-preflight.js");
+      const { transcribeFirstAudio } = await import("../../../../src/media-understanding/audio-preflight.js");
       if (params.abortSignal?.aborted) {
         return {
           hasAudioAttachment,

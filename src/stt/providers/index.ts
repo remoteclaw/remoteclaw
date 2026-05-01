@@ -43,9 +43,6 @@ export function buildSttProviderRegistry(
   return registry;
 }
 
-export function getSttProvider(
-  id: string,
-  registry: Map<string, SttProvider>,
-): SttProvider | undefined {
+export function getSttProvider(id: string, registry: Map<string, SttProvider>): SttProvider | undefined {
   return registry.get(normalizeSttProviderId(id));
 }

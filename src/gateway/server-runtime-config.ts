@@ -1,22 +1,8 @@
-import type {
-  GatewayAuthConfig,
-  GatewayBindMode,
-  GatewayTailscaleConfig,
-  loadConfig,
-} from "../config/config.js";
-import {
-  assertGatewayAuthConfigured,
-  type ResolvedGatewayAuth,
-  resolveGatewayAuth,
-} from "./auth.js";
+import type { GatewayAuthConfig, GatewayBindMode, GatewayTailscaleConfig, loadConfig } from "../config/config.js";
+import { assertGatewayAuthConfigured, type ResolvedGatewayAuth, resolveGatewayAuth } from "./auth.js";
 import { normalizeControlUiBasePath } from "./control-ui-shared.js";
 import { resolveHooksConfig } from "./hooks.js";
-import {
-  isLoopbackHost,
-  isTrustedProxyAddress,
-  isValidIPv4,
-  resolveGatewayBindHost,
-} from "./net.js";
+import { isLoopbackHost, isValidIPv4, resolveGatewayBindHost } from "./net.js";
 import { mergeGatewayTailscaleConfig } from "./startup-auth.js";
 
 export type GatewayRuntimeConfig = {
@@ -62,9 +48,7 @@ export async function resolveGatewayRuntimeConfig(params: {
       throw new Error("gateway.bind=custom requires gateway.customBindHost");
     }
     if (!isValidIPv4(configuredCustomBindHost)) {
-      throw new Error(
-        `gateway.bind=custom requires a valid IPv4 customBindHost (got ${configuredCustomBindHost})`,
-      );
+      throw new Error(`gateway.bind=custom requires a valid IPv4 customBindHost (got ${configuredCustomBindHost})`);
     }
     if (bindHost !== configuredCustomBindHost) {
       throw new Error(
@@ -72,28 +56,23 @@ export async function resolveGatewayRuntimeConfig(params: {
       );
     }
   }
-  const controlUiEnabled =
-    params.controlUiEnabled ?? params.cfg.gateway?.controlUi?.enabled ?? true;
+  const controlUiEnabled = params.controlUiEnabled ?? params.cfg.gateway?.controlUi?.enabled ?? true;
   const openAiChatCompletionsConfig = params.cfg.gateway?.http?.endpoints?.chatCompletions;
   const openAiChatCompletionsEnabled =
     params.openAiChatCompletionsEnabled ?? openAiChatCompletionsConfig?.enabled ?? false;
   const openResponsesConfig = params.cfg.gateway?.http?.endpoints?.responses;
   const openResponsesEnabled = params.openResponsesEnabled ?? openResponsesConfig?.enabled ?? false;
-  const strictTransportSecurityConfig =
-    params.cfg.gateway?.http?.securityHeaders?.strictTransportSecurity;
+  const strictTransportSecurityConfig = params.cfg.gateway?.http?.securityHeaders?.strictTransportSecurity;
   const strictTransportSecurityHeader =
     strictTransportSecurityConfig === false
       ? undefined
-      : typeof strictTransportSecurityConfig === "string" &&
-          strictTransportSecurityConfig.trim().length > 0
+      : typeof strictTransportSecurityConfig === "string" && strictTransportSecurityConfig.trim().length > 0
         ? strictTransportSecurityConfig.trim()
         : undefined;
   const controlUiBasePath = normalizeControlUiBasePath(params.cfg.gateway?.controlUi?.basePath);
   const controlUiRootRaw = params.cfg.gateway?.controlUi?.root;
   const controlUiRoot =
-    typeof controlUiRootRaw === "string" && controlUiRootRaw.trim().length > 0
-      ? controlUiRootRaw.trim()
-      : undefined;
+    typeof controlUiRootRaw === "string" && controlUiRootRaw.trim().length > 0 ? controlUiRootRaw.trim() : undefined;
   const tailscaleBase = params.cfg.gateway?.tailscale ?? {};
   const tailscaleOverrides = params.tailscale ?? {};
   const tailscaleConfig = mergeGatewayTailscaleConfig(tailscaleBase, tailscaleOverrides);
@@ -106,13 +85,10 @@ export async function resolveGatewayRuntimeConfig(params: {
   });
   const authMode: ResolvedGatewayAuth["mode"] = resolvedAuth.mode;
   const hasToken = typeof resolvedAuth.token === "string" && resolvedAuth.token.trim().length > 0;
-  const hasPassword =
-    typeof resolvedAuth.password === "string" && resolvedAuth.password.trim().length > 0;
-  const hasSharedSecret =
-    (authMode === "token" && hasToken) || (authMode === "password" && hasPassword);
+  const hasPassword = typeof resolvedAuth.password === "string" && resolvedAuth.password.trim().length > 0;
+  const hasSharedSecret = (authMode === "token" && hasToken) || (authMode === "password" && hasPassword);
   const hooksConfig = resolveHooksConfig(params.cfg);
-  const canvasHostEnabled =
-    process.env.REMOTECLAW_SKIP_CANVAS_HOST !== "1" && params.cfg.canvasHost?.enabled !== false;
+  const canvasHostEnabled = process.env.REMOTECLAW_SKIP_CANVAS_HOST !== "1" && params.cfg.canvasHost?.enabled !== false;
 
   const trustedProxies = params.cfg.gateway?.trustedProxies ?? [];
   const controlUiAllowedOrigins = (params.cfg.gateway?.controlUi?.allowedOrigins ?? [])
@@ -152,16 +128,6 @@ export async function resolveGatewayRuntimeConfig(params: {
         "gateway auth mode=trusted-proxy requires gateway.trustedProxies to be configured with at least one proxy IP",
       );
     }
-    if (isLoopbackHost(bindHost)) {
-      const hasLoopbackTrustedProxy =
-        isTrustedProxyAddress("127.0.0.1", trustedProxies) ||
-        isTrustedProxyAddress("::1", trustedProxies);
-      if (!hasLoopbackTrustedProxy) {
-        throw new Error(
-          "gateway auth mode=trusted-proxy with bind=loopback requires gateway.trustedProxies to include 127.0.0.1, ::1, or a loopback CIDR",
-        );
-      }
-    }
   }
 
   return {
@@ -172,9 +138,7 @@ export async function resolveGatewayRuntimeConfig(params: {
       ? { ...openAiChatCompletionsConfig, enabled: openAiChatCompletionsEnabled }
       : undefined,
     openResponsesEnabled,
-    openResponsesConfig: openResponsesConfig
-      ? { ...openResponsesConfig, enabled: openResponsesEnabled }
-      : undefined,
+    openResponsesConfig: openResponsesConfig ? { ...openResponsesConfig, enabled: openResponsesEnabled } : undefined,
     strictTransportSecurityHeader,
     controlUiBasePath,
     controlUiRoot,

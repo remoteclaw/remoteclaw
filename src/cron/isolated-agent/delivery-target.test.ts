@@ -8,9 +8,7 @@ vi.mock("../../config/sessions.js", () => ({
 }));
 
 vi.mock("../../infra/outbound/channel-selection.js", () => ({
-  resolveMessageChannelSelection: vi
-    .fn()
-    .mockResolvedValue({ channel: "telegram", configured: ["telegram"] }),
+  resolveMessageChannelSelection: vi.fn().mockResolvedValue({ channel: "telegram", configured: ["telegram"] }),
 }));
 
 vi.mock("../../infra/outbound/target-resolver.js", () => ({

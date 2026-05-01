@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  isGoogleChatSpaceTarget,
-  isGoogleChatUserTarget,
-  normalizeGoogleChatTarget,
-} from "./targets.js";
+import { isGoogleChatSpaceTarget, isGoogleChatUserTarget, normalizeGoogleChatTarget } from "./targets.js";
 
 describe("normalizeGoogleChatTarget", () => {
   it("normalizes provider prefixes", () => {

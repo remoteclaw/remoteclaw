@@ -9,10 +9,7 @@ import { buildTalkConfigResponse, normalizeTalkSection } from "./talk.js";
 const envVar = (...parts: string[]) => parts.join("_");
 const elevenLabsApiKeyEnv = ["ELEVENLABS_API", "KEY"].join("_");
 
-async function withTempConfig(
-  config: unknown,
-  run: (configPath: string) => Promise<void>,
-): Promise<void> {
+async function withTempConfig(config: unknown, run: (configPath: string) => Promise<void>): Promise<void> {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-talk-"));
   const configPath = path.join(dir, "remoteclaw.json");
   await fs.writeFile(configPath, JSON.stringify(config, null, 2));

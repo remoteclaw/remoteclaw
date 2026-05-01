@@ -9,15 +9,7 @@ describe("BlockChunker", () => {
       breakPreference: "paragraph",
     });
 
-    const text = [
-      "Intro",
-      "```js",
-      "console.log('x')",
-      "```",
-      "",
-      "After first line",
-      "After second line",
-    ].join("\n");
+    const text = ["Intro", "```js", "console.log('x')", "```", "", "After first line", "After second line"].join("\n");
 
     chunker.append(text);
 
@@ -108,16 +100,7 @@ describe("BlockChunker", () => {
       flushOnParagraph: true,
     });
 
-    const text = [
-      "Intro",
-      "```js",
-      "const a = 1;",
-      "",
-      "const b = 2;",
-      "```",
-      "",
-      "After fence",
-    ].join("\n");
+    const text = ["Intro", "```js", "const a = 1;", "", "const b = 2;", "```", "", "After fence"].join("\n");
 
     chunker.append(text);
 

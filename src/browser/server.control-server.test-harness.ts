@@ -124,10 +124,7 @@ const server = await import("./server.js");
 export const startBrowserControlServerFromConfig = server.startBrowserControlServerFromConfig;
 export const stopBrowserControlServer = server.stopBrowserControlServer;
 
-export function makeResponse(
-  body: unknown,
-  init?: { ok?: boolean; status?: number; text?: string },
-): Response {
+export function makeResponse(body: unknown, init?: { ok?: boolean; status?: number; text?: string }): Response {
   const ok = init?.ok ?? true;
   const status = init?.status ?? 200;
   const text = init?.text ?? "";

@@ -11,8 +11,7 @@ import {
   resolveMergedAccountConfig,
 } from "./account-helpers.js";
 
-const { listConfiguredAccountIds, listAccountIds, resolveDefaultAccountId } =
-  createAccountListHelpers("testchannel");
+const { listConfiguredAccountIds, listAccountIds, resolveDefaultAccountId } = createAccountListHelpers("testchannel");
 
 function cfg(accounts?: Record<string, unknown> | null, defaultAccount?: string): RemoteClawConfig {
   if (accounts === null) {
@@ -75,10 +74,7 @@ describe("createAccountListHelpers", () => {
     });
 
     it("returns account keys", () => {
-      expect(listConfiguredAccountIds(cfg({ work: {}, personal: {} }))).toEqual([
-        "work",
-        "personal",
-      ]);
+      expect(listConfiguredAccountIds(cfg({ work: {}, personal: {} }))).toEqual(["work", "personal"]);
     });
   });
 
@@ -165,9 +161,7 @@ describe("createAccountListHelpers", () => {
         allowUnlistedDefaultAccount: true,
       });
 
-      expect(preserveDefault.resolveDefaultAccountId(cfg({ default: {}, zeta: {} }, "ops"))).toBe(
-        "ops",
-      );
+      expect(preserveDefault.resolveDefaultAccountId(cfg({ default: {}, zeta: {} }, "ops"))).toBe("ops");
     });
   });
 });

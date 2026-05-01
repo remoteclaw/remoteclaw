@@ -28,10 +28,7 @@ function getSilentTrailingRegex(token: string): RegExp {
   return regex;
 }
 
-export function isSilentReplyText(
-  text: string | undefined,
-  token: string = SILENT_REPLY_TOKEN,
-): boolean {
+export function isSilentReplyText(text: string | undefined, token: string = SILENT_REPLY_TOKEN): boolean {
   if (!text) {
     return false;
   }
@@ -42,10 +39,7 @@ export function isSilentReplyText(
 
 type SilentReplyActionEnvelope = { action?: unknown };
 
-export function isSilentReplyEnvelopeText(
-  text: string | undefined,
-  token: string = SILENT_REPLY_TOKEN,
-): boolean {
+export function isSilentReplyEnvelopeText(text: string | undefined, token: string = SILENT_REPLY_TOKEN): boolean {
   if (!text) {
     return false;
   }
@@ -60,20 +54,14 @@ export function isSilentReplyEnvelopeText(
     }
     const keys = Object.keys(parsed);
     return (
-      keys.length === 1 &&
-      keys[0] === "action" &&
-      typeof parsed.action === "string" &&
-      parsed.action.trim() === token
+      keys.length === 1 && keys[0] === "action" && typeof parsed.action === "string" && parsed.action.trim() === token
     );
   } catch {
     return false;
   }
 }
 
-export function isSilentReplyPayloadText(
-  text: string | undefined,
-  token: string = SILENT_REPLY_TOKEN,
-): boolean {
+export function isSilentReplyPayloadText(text: string | undefined, token: string = SILENT_REPLY_TOKEN): boolean {
   return isSilentReplyText(text, token) || isSilentReplyEnvelopeText(text, token);
 }
 
@@ -86,10 +74,7 @@ export function stripSilentToken(text: string, token: string = SILENT_REPLY_TOKE
   return text.replace(getSilentTrailingRegex(token), "").trim();
 }
 
-export function isSilentReplyPrefixText(
-  text: string | undefined,
-  token: string = SILENT_REPLY_TOKEN,
-): boolean {
+export function isSilentReplyPrefixText(text: string | undefined, token: string = SILENT_REPLY_TOKEN): boolean {
   if (!text) {
     return false;
   }

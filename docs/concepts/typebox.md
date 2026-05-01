@@ -194,10 +194,7 @@ Example: add a new `system.echo` request that returns `{ ok: true, text }`.
 Add to `src/gateway/protocol/schema.ts`:
 
 ```ts
-export const SystemEchoParamsSchema = Type.Object(
-  { text: NonEmptyString },
-  { additionalProperties: false },
-);
+export const SystemEchoParamsSchema = Type.Object({ text: NonEmptyString }, { additionalProperties: false });
 
 export const SystemEchoResultSchema = Type.Object(
   { ok: Type.Boolean(), text: NonEmptyString },

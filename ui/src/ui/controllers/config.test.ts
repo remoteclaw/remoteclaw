@@ -63,9 +63,7 @@ describe("applyConfigSnapshot", () => {
       raw: '{\n  "gateway": { "mode": "remote", "port": 9999 }\n}\n',
     });
 
-    expect(state.configRaw).toBe(
-      '{\n  "gateway": {\n    "mode": "local",\n    "port": 18789\n  }\n}\n',
-    );
+    expect(state.configRaw).toBe('{\n  "gateway": {\n    "mode": "local",\n    "port": 18789\n  }\n}\n');
   });
 
   it("updates config form when clean", () => {
@@ -110,6 +108,21 @@ describe("applyConfigSnapshot", () => {
     expect(state.configRawOriginal).toBe('{ "original": true }');
     expect(state.configFormOriginal).toEqual({ original: true });
   });
+
+  it("forces form mode when the snapshot does not include raw text", () => {
+    const state = createState();
+    state.configFormMode = "raw";
+
+    applyConfigSnapshot(state, {
+      config: { gateway: { mode: "local" } },
+      valid: true,
+      issues: [],
+      raw: null,
+    });
+
+    expect(state.configFormMode).toBe("form");
+    expect(state.configRaw).toBe('{\n  "gateway": {\n    "mode": "local"\n  }\n}\n');
+  });
 });
 
 describe("updateConfigFormValue", () => {
@@ -142,9 +155,7 @@ describe("updateConfigFormValue", () => {
 
     updateConfigFormValue(state, ["gateway", "port"], 18789);
 
-    expect(state.configRaw).toBe(
-      '{\n  "gateway": {\n    "mode": "local",\n    "port": 18789\n  }\n}\n',
-    );
+    expect(state.configRaw).toBe('{\n  "gateway": {\n    "mode": "local",\n    "port": 18789\n  }\n}\n');
   });
 });
 
@@ -242,6 +253,7 @@ describe("applyConfig", () => {
     state.configRaw = '{\n  agent: { workspace: "~/remoteclaw" }\n}\n';
     state.configSnapshot = {
       hash: "hash-123",
+      raw: "{\n}\n",
     };
 
     await applyConfig(state);

@@ -1,14 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import type { AuthProfileStore } from "../../../../src/agents/auth-profiles.js";
-import {
-  createDiscordAutoPresenceController,
-  resolveDiscordAutoPresenceDecision,
-} from "./auto-presence.js";
+import { createDiscordAutoPresenceController, resolveDiscordAutoPresenceDecision } from "./auto-presence.js";
 
-function createStore(params?: {
-  cooldownUntil?: number;
-  failureCounts?: Record<string, number>;
-}): AuthProfileStore {
+function createStore(params?: { cooldownUntil?: number; failureCounts?: Record<string, number> }): AuthProfileStore {
   return {
     version: 1,
     profiles: {
@@ -20,9 +14,7 @@ function createStore(params?: {
     },
     usageStats: {
       "openai:default": {
-        ...(typeof params?.cooldownUntil === "number"
-          ? { cooldownUntil: params.cooldownUntil }
-          : {}),
+        ...(typeof params?.cooldownUntil === "number" ? { cooldownUntil: params.cooldownUntil } : {}),
         ...(params?.failureCounts ? { failureCounts: params.failureCounts } : {}),
       },
     },

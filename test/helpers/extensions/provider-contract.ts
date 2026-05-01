@@ -9,8 +9,7 @@ import { installProviderPluginContractSuite } from "../../../src/plugins/contrac
 
 export function describeProviderContracts(pluginId: string) {
   const providerIds =
-    pluginRegistrationContractRegistry.find((entry) => entry.pluginId === pluginId)?.providerIds ??
-    [];
+    pluginRegistrationContractRegistry.find((entry) => entry.pluginId === pluginId)?.providerIds ?? [];
 
   describe(`${pluginId} provider contract registry load`, () => {
     it("loads bundled providers without import-time registry failure", () => {

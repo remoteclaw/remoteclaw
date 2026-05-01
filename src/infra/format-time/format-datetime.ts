@@ -54,10 +54,7 @@ export function formatUtcTimestamp(date: Date, options?: FormatTimestampOptions)
  *
  * Returns undefined if Intl formatting fails.
  */
-export function formatZonedTimestamp(
-  date: Date,
-  options?: FormatZonedTimestampOptions,
-): string | undefined {
+export function formatZonedTimestamp(date: Date, options?: FormatZonedTimestampOptions): string | undefined {
   try {
     const intlOptions: Intl.DateTimeFormatOptions = {
       timeZone: options?.timeZone,

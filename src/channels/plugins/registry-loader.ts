@@ -2,9 +2,7 @@ import type { PluginChannelRegistration, PluginRegistry } from "../../plugins/re
 import { getActivePluginRegistry } from "../../plugins/runtime.js";
 import type { ChannelId } from "./types.js";
 
-type ChannelRegistryValueResolver<TValue> = (
-  entry: PluginChannelRegistration,
-) => TValue | undefined;
+type ChannelRegistryValueResolver<TValue> = (entry: PluginChannelRegistration) => TValue | undefined;
 
 export function createChannelRegistryLoader<TValue>(
   resolveValue: ChannelRegistryValueResolver<TValue>,

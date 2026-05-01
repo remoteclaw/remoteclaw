@@ -14,10 +14,7 @@ import {
   resolveSessionTranscriptCandidates,
 } from "./session-utils.fs.js";
 
-function registerTempSessionStore(
-  prefix: string,
-  assignPaths: (tmpDir: string, storePath: string) => void,
-) {
+function registerTempSessionStore(prefix: string, assignPaths: (tmpDir: string, storePath: string) => void) {
   let dir = "";
   beforeAll(() => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
@@ -152,10 +149,7 @@ describe("readFirstUserMessageFromTranscript", () => {
   test("handles malformed JSON lines gracefully", () => {
     const sessionId = "test-session-5";
     const transcriptPath = path.join(tmpDir, `${sessionId}.jsonl`);
-    const lines = [
-      "not valid json",
-      JSON.stringify({ message: { role: "user", content: "Valid message" } }),
-    ];
+    const lines = ["not valid json", JSON.stringify({ message: { role: "user", content: "Valid message" } })];
     fs.writeFileSync(transcriptPath, lines.join("\n"), "utf-8");
 
     const result = readFirstUserMessageFromTranscript(sessionId, storePath);
@@ -251,10 +245,7 @@ describe("readLastMessagePreviewFromTranscript", () => {
   test("handles malformed JSON lines gracefully (last preview)", () => {
     const sessionId = "test-last-malformed";
     const transcriptPath = path.join(tmpDir, `${sessionId}.jsonl`);
-    const lines = [
-      JSON.stringify({ message: { role: "user", content: "Valid first" } }),
-      "not valid json at end",
-    ];
+    const lines = [JSON.stringify({ message: { role: "user", content: "Valid first" } }), "not valid json at end"];
     fs.writeFileSync(transcriptPath, lines.join("\n"), "utf-8");
 
     const result = readLastMessagePreviewFromTranscript(sessionId, storePath);
@@ -278,15 +269,12 @@ describe("readLastMessagePreviewFromTranscript", () => {
       },
       expected: "Output text response",
     },
-  ] as const)(
-    "handles array/output_text content format for $sessionId",
-    ({ sessionId, message, expected }) => {
-      const transcriptPath = path.join(tmpDir, `${sessionId}.jsonl`);
-      fs.writeFileSync(transcriptPath, JSON.stringify({ message }), "utf-8");
-      const result = readLastMessagePreviewFromTranscript(sessionId, storePath);
-      expect(result, sessionId).toBe(expected);
-    },
-  );
+  ] as const)("handles array/output_text content format for $sessionId", ({ sessionId, message, expected }) => {
+    const transcriptPath = path.join(tmpDir, `${sessionId}.jsonl`);
+    fs.writeFileSync(transcriptPath, JSON.stringify({ message }), "utf-8");
+    const result = readLastMessagePreviewFromTranscript(sessionId, storePath);
+    expect(result, sessionId).toBe(expected);
+  });
 
   test("skips empty content to find previous message", () => {
     const sessionId = "test-last-skip-empty";
@@ -379,12 +367,8 @@ describe("shared transcript read behaviors", () => {
       "utf-8",
     );
 
-    expect(readFirstUserMessageFromTranscript(sessionId, storePath, firstPath)).toBe(
-      "Custom file message",
-    );
-    expect(readLastMessagePreviewFromTranscript(sessionId, storePath, lastPath)).toBe(
-      "Custom file last",
-    );
+    expect(readFirstUserMessageFromTranscript(sessionId, storePath, firstPath)).toBe("Custom file message");
+    expect(readLastMessagePreviewFromTranscript(sessionId, storePath, lastPath)).toBe("Custom file last");
   });
 
   test("trims whitespace in extracted previews", () => {
@@ -434,11 +418,7 @@ describe("readSessionTitleFieldsFromTranscript cache", () => {
 
   test("invalidates cache when transcript changes", () => {
     const sessionId = "test-cache-2";
-    const transcriptPath = writeTranscript(
-      tmpDir,
-      sessionId,
-      buildBasicSessionTranscript(sessionId, "First", "Old"),
-    );
+    const transcriptPath = writeTranscript(tmpDir, sessionId, buildBasicSessionTranscript(sessionId, "First", "Old"));
 
     const readSpy = vi.spyOn(fs, "readSync");
 
@@ -522,10 +502,7 @@ describe("readSessionMessages", () => {
       fs.mkdirSync(path.dirname(sessionFile), { recursive: true });
       fs.writeFileSync(
         sessionFile,
-        [
-          JSON.stringify({ type: "session", version: 1, id: sessionId }),
-          JSON.stringify({ message }),
-        ].join("\n"),
+        [JSON.stringify({ type: "session", version: 1, id: sessionId }), JSON.stringify({ message })].join("\n"),
         "utf-8",
       );
 
@@ -552,14 +529,7 @@ describe("readSessionPreviewItemsFromTranscript", () => {
   }
 
   function readPreview(sessionId: string, maxItems = 3, maxChars = 120) {
-    return readSessionPreviewItemsFromTranscript(
-      sessionId,
-      storePath,
-      undefined,
-      undefined,
-      maxItems,
-      maxChars,
-    );
+    return readSessionPreviewItemsFromTranscript(sessionId, storePath, undefined, undefined, maxItems, maxChars);
   }
 
   test("returns recent preview items with tool summary", () => {
@@ -791,9 +761,7 @@ describe("resolveSessionTranscriptCandidates", () => {
 
     const candidates = resolveSessionTranscriptCandidates("sess-1", undefined);
     const fallback = candidates[candidates.length - 1];
-    expect(fallback).toBe(
-      path.join(path.resolve("/srv/remoteclaw-home"), ".remoteclaw", "sessions", "sess-1.jsonl"),
-    );
+    expect(fallback).toBe(path.join(path.resolve("/srv/remoteclaw-home"), ".remoteclaw", "sessions", "sess-1.jsonl"));
   });
 });
 
@@ -807,13 +775,10 @@ describe("resolveSessionTranscriptCandidates safety", () => {
       storePath: "/srv/custom/agents/main/sessions/sessions.json",
       sessionFile: "/srv/custom/agents/ops/sessions/sess-safe.jsonl",
     },
-  ] as const)(
-    "keeps cross-agent absolute sessionFile candidate for $storePath",
-    ({ storePath, sessionFile }) => {
-      const candidates = resolveSessionTranscriptCandidates("sess-safe", storePath, sessionFile);
-      expect(candidates.map((value) => path.resolve(value))).toContain(path.resolve(sessionFile));
-    },
-  );
+  ] as const)("keeps cross-agent absolute sessionFile candidate for $storePath", ({ storePath, sessionFile }) => {
+    const candidates = resolveSessionTranscriptCandidates("sess-safe", storePath, sessionFile);
+    expect(candidates.map((value) => path.resolve(value))).toContain(path.resolve(sessionFile));
+  });
 
   test("drops unsafe session IDs instead of producing traversal paths", () => {
     const candidates = resolveSessionTranscriptCandidates(
@@ -826,11 +791,7 @@ describe("resolveSessionTranscriptCandidates safety", () => {
 
   test("drops unsafe sessionFile candidates and keeps safe fallbacks", () => {
     const storePath = "/tmp/remoteclaw/agents/main/sessions/sessions.json";
-    const candidates = resolveSessionTranscriptCandidates(
-      "sess-safe",
-      storePath,
-      "../../etc/passwd",
-    );
+    const candidates = resolveSessionTranscriptCandidates("sess-safe", storePath, "../../etc/passwd");
     const normalizedCandidates = candidates.map((value) => path.resolve(value));
     const expectedFallback = path.resolve(path.dirname(storePath), "sess-safe.jsonl");
 
@@ -847,14 +808,10 @@ describe("resolveSessionTranscriptCandidates safety", () => {
     );
 
     expect(candidates[0]).toBe(
-      path.resolve(
-        "/tmp/remoteclaw/agents/main/sessions/11111111-1111-4111-8111-111111111111.jsonl",
-      ),
+      path.resolve("/tmp/remoteclaw/agents/main/sessions/11111111-1111-4111-8111-111111111111.jsonl"),
     );
     expect(candidates).toContain(
-      path.resolve(
-        "/tmp/remoteclaw/agents/main/sessions/22222222-2222-4222-8222-222222222222.jsonl",
-      ),
+      path.resolve("/tmp/remoteclaw/agents/main/sessions/22222222-2222-4222-8222-222222222222.jsonl"),
     );
   });
 
@@ -909,9 +866,7 @@ describe("resolveSessionTranscriptCandidates safety", () => {
     const candidates = resolveSessionTranscriptCandidates(sessionId, storePath, staleSessionFile);
 
     expect(candidates[0]).toBe(
-      path.resolve(
-        "/tmp/remoteclaw/agents/main/sessions/11111111-1111-4111-8111-111111111111.jsonl",
-      ),
+      path.resolve("/tmp/remoteclaw/agents/main/sessions/11111111-1111-4111-8111-111111111111.jsonl"),
     );
     expect(candidates).toContain(path.resolve(staleSessionFile));
   });

@@ -213,8 +213,7 @@ export function updateSystemPresence(payload: SystemPresencePayload): SystemPres
     deviceFamily: payload.deviceFamily ?? existing.deviceFamily,
     modelIdentifier: payload.modelIdentifier ?? existing.modelIdentifier,
     mode: payload.mode ?? parsed.mode ?? existing.mode,
-    lastInputSeconds:
-      payload.lastInputSeconds ?? parsed.lastInputSeconds ?? existing.lastInputSeconds,
+    lastInputSeconds: payload.lastInputSeconds ?? parsed.lastInputSeconds ?? existing.lastInputSeconds,
     reason: payload.reason ?? parsed.reason ?? existing.reason,
     deviceId: payload.deviceId ?? existing.deviceId,
     roles: mergeStringList(existing.roles, payload.roles),
@@ -260,9 +259,7 @@ export function upsertPresence(key: string, presence: Partial<SystemPresence>) {
     text:
       presence.text ||
       existing.text ||
-      `Node: ${presence.host ?? existing.host ?? "unknown"} · mode ${
-        presence.mode ?? existing.mode ?? "unknown"
-      }`,
+      `Node: ${presence.host ?? existing.host ?? "unknown"} · mode ${presence.mode ?? existing.mode ?? "unknown"}`,
   };
   entries.set(normalizedKey, merged);
 }

@@ -12,8 +12,7 @@ const mocks = vi.hoisted(() => ({
 const { createService, shutdown, registerUnhandledRejectionHandler, logWarn, logDebug } = mocks;
 const getLoggerInfo = vi.fn();
 
-const asString = (value: unknown, fallback: string) =>
-  typeof value === "string" && value.trim() ? value : fallback;
+const asString = (value: unknown, fallback: string) => (typeof value === "string" && value.trim() ? value : fallback);
 
 function enableAdvertiserUnitMode(hostname = "test-host") {
   // Allow advertiser to run in unit tests.
@@ -154,9 +153,7 @@ describe("gateway bonjour advertiser", () => {
     expect((gatewayCall?.[0]?.txt as Record<string, string>)?.lanHost).toBe("test-host.local");
     expect((gatewayCall?.[0]?.txt as Record<string, string>)?.gatewayPort).toBe("18789");
     expect((gatewayCall?.[0]?.txt as Record<string, string>)?.sshPort).toBe("2222");
-    expect((gatewayCall?.[0]?.txt as Record<string, string>)?.cliPath).toBe(
-      "/opt/homebrew/bin/remoteclaw",
-    );
+    expect((gatewayCall?.[0]?.txt as Record<string, string>)?.cliPath).toBe("/opt/homebrew/bin/remoteclaw");
     expect((gatewayCall?.[0]?.txt as Record<string, string>)?.transport).toBe("gateway");
 
     // We don't await `advertise()`, but it should still be called for each service.
@@ -253,23 +250,15 @@ describe("gateway bonjour advertiser", () => {
       sshPort: 2222,
     });
 
-    const handler = registerUnhandledRejectionHandler.mock.calls[0]?.[0] as
-      | ((reason: unknown) => boolean)
-      | undefined;
+    const handler = registerUnhandledRejectionHandler.mock.calls[0]?.[0] as ((reason: unknown) => boolean) | undefined;
     expect(handler).toBeTypeOf("function");
 
     expect(handler?.(new Error("CIAO PROBING CANCELLED"))).toBe(true);
-    expect(logDebug).toHaveBeenCalledWith(
-      expect.stringContaining("ignoring unhandled ciao rejection"),
-    );
+    expect(logDebug).toHaveBeenCalledWith(expect.stringContaining("ignoring unhandled ciao rejection"));
 
     logDebug.mockClear();
-    expect(
-      handler?.(new Error("Reached illegal state! IPV4 address change from defined to undefined!")),
-    ).toBe(true);
-    expect(logWarn).toHaveBeenCalledWith(
-      expect.stringContaining("suppressing ciao interface assertion"),
-    );
+    expect(handler?.(new Error("Reached illegal state! IPV4 address change from defined to undefined!"))).toBe(true);
+    expect(logWarn).toHaveBeenCalledWith(expect.stringContaining("suppressing ciao interface assertion"));
 
     await started.stop();
   });

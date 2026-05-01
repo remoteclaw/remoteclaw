@@ -3,10 +3,8 @@ import type { TelegramNetworkConfig } from "../../../src/config/types.telegram.j
 import { isTruthyEnvValue } from "../../../src/infra/env.js";
 import { isWSL2Sync } from "../../../src/infra/wsl.js";
 
-export const TELEGRAM_DISABLE_AUTO_SELECT_FAMILY_ENV =
-  "REMOTECLAW_TELEGRAM_DISABLE_AUTO_SELECT_FAMILY";
-export const TELEGRAM_ENABLE_AUTO_SELECT_FAMILY_ENV =
-  "REMOTECLAW_TELEGRAM_ENABLE_AUTO_SELECT_FAMILY";
+export const TELEGRAM_DISABLE_AUTO_SELECT_FAMILY_ENV = "REMOTECLAW_TELEGRAM_DISABLE_AUTO_SELECT_FAMILY";
+export const TELEGRAM_ENABLE_AUTO_SELECT_FAMILY_ENV = "REMOTECLAW_TELEGRAM_ENABLE_AUTO_SELECT_FAMILY";
 export const TELEGRAM_DNS_RESULT_ORDER_ENV = "REMOTECLAW_TELEGRAM_DNS_RESULT_ORDER";
 
 export type TelegramAutoSelectFamilyDecision = {
@@ -36,9 +34,7 @@ export function resolveTelegramAutoSelectFamilyDecision(params?: {
 }): TelegramAutoSelectFamilyDecision {
   const env = params?.env ?? process.env;
   const nodeMajor =
-    typeof params?.nodeMajor === "number"
-      ? params.nodeMajor
-      : Number(process.versions.node.split(".")[0]);
+    typeof params?.nodeMajor === "number" ? params.nodeMajor : Number(process.versions.node.split(".")[0]);
 
   if (isTruthyEnvValue(env[TELEGRAM_ENABLE_AUTO_SELECT_FAMILY_ENV])) {
     return { value: true, source: `env:${TELEGRAM_ENABLE_AUTO_SELECT_FAMILY_ENV}` };
@@ -76,9 +72,7 @@ export function resolveTelegramDnsResultOrderDecision(params?: {
 }): TelegramDnsResultOrderDecision {
   const env = params?.env ?? process.env;
   const nodeMajor =
-    typeof params?.nodeMajor === "number"
-      ? params.nodeMajor
-      : Number(process.versions.node.split(".")[0]);
+    typeof params?.nodeMajor === "number" ? params.nodeMajor : Number(process.versions.node.split(".")[0]);
 
   // Check environment variable
   const envValue = env[TELEGRAM_DNS_RESULT_ORDER_ENV]?.trim().toLowerCase();

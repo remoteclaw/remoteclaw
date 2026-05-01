@@ -76,13 +76,7 @@ const VALID_CATEGORIES = new Set(["live", "stub", "partial", "deprecated"]);
 
 // Test-file suffixes beyond the base set in ts-guard-utils. Matches the
 // convention in check-throwing-stub-callers.mjs and check-stub-debt.mjs.
-const extraTestSuffixes = [
-  ".test-helpers.ts",
-  ".test-mocks.ts",
-  ".mocks.ts",
-  ".mocks.shared.ts",
-  ".e2e-mocks.ts",
-];
+const extraTestSuffixes = [".test-helpers.ts", ".test-mocks.ts", ".mocks.ts", ".mocks.shared.ts", ".e2e-mocks.ts"];
 
 function normalizePath(filePath) {
   return path.relative(repoRoot, filePath).split(path.sep).join("/");
@@ -118,13 +112,7 @@ async function loadAllSources() {
   const map = new Map();
   for (const filePath of files) {
     const content = await fs.readFile(filePath, "utf8");
-    const sourceFile = ts.createSourceFile(
-      filePath,
-      content,
-      ts.ScriptTarget.Latest,
-      true,
-      ts.ScriptKind.TS,
-    );
+    const sourceFile = ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
     map.set(normalizePath(filePath), { filePath, sourceFile, content });
   }
   return map;
@@ -365,11 +353,7 @@ function findStubCallers(attestedModules, sourceFileIndex) {
         continue;
       }
 
-      const resolved = resolveModuleSpecifier(
-        statement.moduleSpecifier.text,
-        record.filePath,
-        sourceFileIndex,
-      );
+      const resolved = resolveModuleSpecifier(statement.moduleSpecifier.text, record.filePath, sourceFileIndex);
       if (!resolved) {
         continue;
       }
@@ -477,10 +461,7 @@ function validateModuleStructural({ relPath, exports, attestations, sourceFile }
     // Only fail if the module has runtime exports. A module with only
     // types / data constants has nothing to attest.
     if (exports.length > 0) {
-      pushFailure(
-        1,
-        `missing MODULE_ATTESTATIONS (module has ${exports.length} runtime export(s))`,
-      );
+      pushFailure(1, `missing MODULE_ATTESTATIONS (module has ${exports.length} runtime export(s))`);
     }
     return failures;
   }
@@ -496,20 +477,14 @@ function validateModuleStructural({ relPath, exports, attestations, sourceFile }
   // Invariant 1: every runtime export has an attestation.
   for (const exp of exports) {
     if (!attestedSymbols.has(exp.symbol)) {
-      pushFailure(
-        exp.line,
-        `export '${exp.symbol}' (${exp.kind}) has no MODULE_ATTESTATIONS entry`,
-      );
+      pushFailure(exp.line, `export '${exp.symbol}' (${exp.kind}) has no MODULE_ATTESTATIONS entry`);
     }
   }
 
   // Invariant 2: every attestation corresponds to a current export.
   for (const [symbol, entry] of attestations.entries) {
     if (!exportedSymbols.has(symbol)) {
-      pushFailure(
-        entry.line,
-        `stale attestation: '${symbol}' is no longer a runtime export — remove the entry`,
-      );
+      pushFailure(entry.line, `stale attestation: '${symbol}' is no longer a runtime export — remove the entry`);
     }
   }
 
@@ -548,13 +523,7 @@ function validateModuleStructural({ relPath, exports, attestations, sourceFile }
  * the real repo.
  */
 export function classifyFixture(sourceText, fileName = "fixture.ts") {
-  const sourceFile = ts.createSourceFile(
-    fileName,
-    sourceText,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.TS,
-  );
+  const sourceFile = ts.createSourceFile(fileName, sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
   const exports = enumerateRuntimeExports(sourceFile);
   const attestations = extractAttestations(sourceFile);
   const failures = validateModuleStructural({
@@ -648,9 +617,7 @@ function runSelfTests(streams) {
       const expected = [...fixture.expectedExports].toSorted();
       if (JSON.stringify(actual) !== JSON.stringify(expected)) {
         passed = false;
-        unmatched.push(
-          `exports mismatch: got ${JSON.stringify(actual)}, expected ${JSON.stringify(expected)}`,
-        );
+        unmatched.push(`exports mismatch: got ${JSON.stringify(actual)}, expected ${JSON.stringify(expected)}`);
       }
     }
 

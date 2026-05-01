@@ -115,9 +115,7 @@ export class TelegramPollingSession {
     if (!isRecoverableTelegramNetworkError(err, { context: "unknown" })) {
       throw err;
     }
-    return this.#waitBeforeRestart(
-      (delay) => `${logPrefix}: ${formatErrorMessage(err)}; retrying in ${delay}.`,
-    );
+    return this.#waitBeforeRestart((delay) => `${logPrefix}: ${formatErrorMessage(err)}; retrying in ${delay}.`);
   }
 
   async #createPollingBot(): Promise<TelegramBot | undefined> {
@@ -158,10 +156,7 @@ export class TelegramPollingSession {
       this.#webhookCleared = true;
       return "ready";
     } catch (err) {
-      const shouldRetry = await this.#waitBeforeRetryOnRecoverableSetupError(
-        err,
-        "Telegram webhook cleanup failed",
-      );
+      const shouldRetry = await this.#waitBeforeRetryOnRecoverableSetupError(err, "Telegram webhook cleanup failed");
       return shouldRetry ? "retry" : "exit";
     }
   }

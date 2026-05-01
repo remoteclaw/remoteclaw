@@ -281,16 +281,7 @@ describe("security/dm-policy-shared", () => {
     expect(resolved.effectiveAllowFrom).toEqual(["owner"]);
   });
 
-  const channels = [
-    "bluebubbles",
-    "imessage",
-    "signal",
-    "telegram",
-    "whatsapp",
-    "msteams",
-    "matrix",
-    "zalo",
-  ] as const;
+  const channels = ["bluebubbles", "imessage", "signal", "telegram", "whatsapp", "msteams", "matrix", "zalo"] as const;
 
   type ParityCase = {
     name: string;
@@ -313,10 +304,7 @@ describe("security/dm-policy-shared", () => {
       | Pick<ReturnType<typeof resolveDmGroupAccessDecision>, "decision">;
   };
 
-  function createParityCase({
-    name,
-    ...overrides
-  }: Partial<ParityCase> & Pick<ParityCase, "name">): ParityCase {
+  function createParityCase({ name, ...overrides }: Partial<ParityCase> & Pick<ParityCase, "name">): ParityCase {
     return {
       name,
       isGroup: false,
@@ -344,9 +332,7 @@ describe("security/dm-policy-shared", () => {
     });
     const reactionAllowed = access.decision === "allow";
     expect(access.decision, `[${channel}] ${testCase.name}`).toBe(testCase.expectedDecision);
-    expect(reactionAllowed, `[${channel}] ${testCase.name} reaction`).toBe(
-      testCase.expectedReactionAllowed,
-    );
+    expect(reactionAllowed, `[${channel}] ${testCase.name} reaction`).toBe(testCase.expectedReactionAllowed);
   }
 
   it.each(

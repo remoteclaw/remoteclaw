@@ -9,11 +9,11 @@ type DiscoveredBeacon = Awaited<
 >[number];
 
 const callGateway = vi.fn<(opts: unknown) => Promise<{ ok: true }>>(async () => ({ ok: true }));
-const startGatewayServer = vi.fn<
-  (port: number, opts?: unknown) => Promise<{ close: () => Promise<void> }>
->(async () => ({
-  close: vi.fn(async () => {}),
-}));
+const startGatewayServer = vi.fn<(port: number, opts?: unknown) => Promise<{ close: () => Promise<void> }>>(
+  async () => ({
+    close: vi.fn(async () => {}),
+  }),
+);
 const setVerbose = vi.fn();
 const forceFreePortAndWait = vi.fn<
   (port: number) => Promise<{ killed: unknown[]; waitedMs: number; escalatedToSigkill: boolean }>
@@ -23,23 +23,17 @@ const forceFreePortAndWait = vi.fn<
   escalatedToSigkill: false,
 }));
 const serviceIsLoaded = vi.fn().mockResolvedValue(true);
-const discoverGatewayBeacons = vi.fn<(opts: unknown) => Promise<DiscoveredBeacon[]>>(
-  async () => [],
-);
+const discoverGatewayBeacons = vi.fn<(opts: unknown) => Promise<DiscoveredBeacon[]>>(async () => []);
 const gatewayStatusCommand = vi.fn<(opts: unknown) => Promise<void>>(async () => {});
 const inspectPortUsage = vi.fn(async (_port: number) => ({ status: "free" as const }));
 const formatPortDiagnostics = vi.fn((_diagnostics: unknown) => [] as string[]);
 
-const { runtimeLogs, runtimeErrors, defaultRuntime, resetRuntimeCapture } =
-  createCliRuntimeCapture();
+const { runtimeLogs, runtimeErrors, defaultRuntime, resetRuntimeCapture } = createCliRuntimeCapture();
 
-vi.mock(
-  new URL("../../gateway/call.ts", new URL("./gateway-cli/call.ts", import.meta.url)).href,
-  () => ({
-    callGateway: (opts: unknown) => callGateway(opts),
-    randomIdempotencyKey: () => "rk_test",
-  }),
-);
+vi.mock(new URL("../../gateway/call.ts", new URL("./gateway-cli/call.ts", import.meta.url)).href, () => ({
+  callGateway: (opts: unknown) => callGateway(opts),
+  randomIdempotencyKey: () => "rk_test",
+}));
 
 vi.mock("../gateway/server.js", () => ({
   startGatewayServer: (port: number, opts?: unknown) => startGatewayServer(port, opts),
@@ -193,28 +187,13 @@ describe("gateway-cli coverage", () => {
     forceFreePortAndWait.mockImplementationOnce(async () => {
       throw new Error("boom");
     });
-    await expectGatewayExit([
-      "gateway",
-      "--port",
-      "18789",
-      "--token",
-      "test-token",
-      "--force",
-      "--allow-unconfigured",
-    ]);
+    await expectGatewayExit(["gateway", "--port", "18789", "--token", "test-token", "--force", "--allow-unconfigured"]);
 
     // Start failure (generic)
     startGatewayServer.mockRejectedValueOnce(new Error("nope"));
     const beforeSigterm = new Set(process.listeners("SIGTERM"));
     const beforeSigint = new Set(process.listeners("SIGINT"));
-    await expectGatewayExit([
-      "gateway",
-      "--port",
-      "18789",
-      "--token",
-      "test-token",
-      "--allow-unconfigured",
-    ]);
+    await expectGatewayExit(["gateway", "--port", "18789", "--token", "test-token", "--allow-unconfigured"]);
     for (const listener of process.listeners("SIGTERM")) {
       if (!beforeSigterm.has(listener)) {
         process.removeListener("SIGTERM", listener);
@@ -230,9 +209,7 @@ describe("gateway-cli coverage", () => {
   it("prints stop hints on GatewayLockError when service is loaded", async () => {
     resetRuntimeCapture();
     serviceIsLoaded.mockResolvedValue(true);
-    startGatewayServer.mockRejectedValueOnce(
-      new GatewayLockError("another gateway instance is already listening"),
-    );
+    startGatewayServer.mockRejectedValueOnce(new GatewayLockError("another gateway instance is already listening"));
     await expectGatewayExit(["gateway", "--token", "test-token", "--allow-unconfigured"]);
 
     expect(startGatewayServer).toHaveBeenCalled();

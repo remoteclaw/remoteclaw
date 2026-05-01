@@ -106,9 +106,7 @@ export async function callZaloApi<T = unknown>(
 ): Promise<ZaloApiResponse<T>> {
   const url = `${ZALO_API_BASE}/bot${token}/${method}`;
   const controller = new AbortController();
-  const timeoutId = options?.timeoutMs
-    ? setTimeout(() => controller.abort(), options.timeoutMs)
-    : undefined;
+  const timeoutId = options?.timeoutMs ? setTimeout(() => controller.abort(), options.timeoutMs) : undefined;
   const fetcher = options?.fetch ?? fetch;
 
   try {
@@ -124,11 +122,7 @@ export async function callZaloApi<T = unknown>(
     const data = (await response.json()) as ZaloApiResponse<T>;
 
     if (!data.ok) {
-      throw new ZaloApiError(
-        data.description ?? `Zalo API error: ${method}`,
-        data.error_code,
-        data.description,
-      );
+      throw new ZaloApiError(data.description ?? `Zalo API error: ${method}`, data.error_code, data.description);
     }
 
     return data;
@@ -230,9 +224,6 @@ export async function deleteWebhook(
 /**
  * Get current webhook info
  */
-export async function getWebhookInfo(
-  token: string,
-  fetcher?: ZaloFetch,
-): Promise<ZaloApiResponse<ZaloWebhookInfo>> {
+export async function getWebhookInfo(token: string, fetcher?: ZaloFetch): Promise<ZaloApiResponse<ZaloWebhookInfo>> {
   return callZaloApi<ZaloWebhookInfo>("getWebhookInfo", token, undefined, { fetch: fetcher });
 }

@@ -86,9 +86,7 @@ describe("contentToProfile", () => {
   it("handles empty content", () => {
     const content: ProfileContent = {};
     const profile = contentToProfile(content);
-    expect(
-      Object.keys(profile).filter((k) => profile[k as keyof NostrProfile] !== undefined),
-    ).toHaveLength(0);
+    expect(Object.keys(profile).filter((k) => profile[k as keyof NostrProfile] !== undefined)).toHaveLength(0);
   });
 
   it("round-trips profile data", () => {
@@ -299,9 +297,7 @@ describe("sanitizeProfileForDisplay", () => {
 
     const sanitized = sanitizeProfileForDisplay(profile);
 
-    expect(sanitized.about).toBe(
-      "Check out &lt;img src=&quot;x&quot; onerror=&quot;alert(1)&quot;&gt;",
-    );
+    expect(sanitized.about).toBe("Check out &lt;img src=&quot;x&quot; onerror=&quot;alert(1)&quot;&gt;");
   });
 
   it("preserves URLs without modification", () => {

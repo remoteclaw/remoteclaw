@@ -81,9 +81,7 @@ function managedStoppedAccount(lastError: string): Partial<ChannelAccountSnapsho
   };
 }
 
-function runningConnectedSlackAccount(
-  overrides: Partial<ChannelAccountSnapshot>,
-): Partial<ChannelAccountSnapshot> {
+function runningConnectedSlackAccount(overrides: Partial<ChannelAccountSnapshot>): Partial<ChannelAccountSnapshot> {
   return {
     running: true,
     connected: true,
@@ -125,11 +123,7 @@ function createBusyDisconnectedManager(lastRunActivityAt: number): ChannelManage
   });
 }
 
-async function expectRestartedChannel(
-  manager: ChannelManager,
-  channel: ChannelId,
-  accountId = "default",
-) {
+async function expectRestartedChannel(manager: ChannelManager, channel: ChannelId, accountId = "default") {
   const monitor = await startAndRunCheck(manager);
   expect(manager.stopChannel).toHaveBeenCalledWith(channel, accountId);
   expect(manager.startChannel).toHaveBeenCalledWith(channel, accountId);

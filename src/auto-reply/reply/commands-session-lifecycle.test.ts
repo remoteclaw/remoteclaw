@@ -20,10 +20,7 @@ const hoisted = vi.hoisted(() => {
 });
 
 vi.mock("../../../extensions/discord/src/monitor/thread-bindings.js", async (importOriginal) => {
-  const actual =
-    await importOriginal<
-      typeof import("../../../extensions/discord/src/monitor/thread-bindings.js")
-    >();
+  const actual = await importOriginal<typeof import("../../../extensions/discord/src/monitor/thread-bindings.js")>();
   return {
     ...actual,
     getThreadBindingManager: hoisted.getThreadBindingManagerMock,
@@ -33,20 +30,16 @@ vi.mock("../../../extensions/discord/src/monitor/thread-bindings.js", async (imp
 });
 
 vi.mock("../../telegram/thread-bindings.js", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("../../../extensions/telegram/src/thread-bindings.js")>();
+  const actual = await importOriginal<typeof import("../../../extensions/telegram/src/thread-bindings.js")>();
   return {
     ...actual,
-    setTelegramThreadBindingIdleTimeoutBySessionKey:
-      hoisted.setTelegramThreadBindingIdleTimeoutBySessionKeyMock,
-    setTelegramThreadBindingMaxAgeBySessionKey:
-      hoisted.setTelegramThreadBindingMaxAgeBySessionKeyMock,
+    setTelegramThreadBindingIdleTimeoutBySessionKey: hoisted.setTelegramThreadBindingIdleTimeoutBySessionKeyMock,
+    setTelegramThreadBindingMaxAgeBySessionKey: hoisted.setTelegramThreadBindingMaxAgeBySessionKeyMock,
   };
 });
 
 vi.mock("../../infra/outbound/session-binding-service.js", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("../../infra/outbound/session-binding-service.js")>();
+  const actual = await importOriginal<typeof import("../../infra/outbound/session-binding-service.js")>();
   return {
     ...actual,
     getSessionBindingService: () => ({
@@ -194,12 +187,7 @@ describe("/session idle and /session max-age", () => {
     const result = await handleSessionCommand(createDiscordCommandParams("/session idle 2h"), true);
     const text = result?.reply?.text ?? "";
 
-    expectIdleTimeoutSetReply(
-      hoisted.setThreadBindingIdleTimeoutBySessionKeyMock,
-      text,
-      2 * 60 * 60 * 1000,
-      "2h",
-    );
+    expectIdleTimeoutSetReply(hoisted.setThreadBindingIdleTimeoutBySessionKeyMock, text, 2 * 60 * 60 * 1000, "2h");
   });
 
   it("shows active idle timeout when no value is provided", async () => {
@@ -231,10 +219,7 @@ describe("/session idle and /session max-age", () => {
       },
     ]);
 
-    const result = await handleSessionCommand(
-      createDiscordCommandParams("/session max-age 3h"),
-      true,
-    );
+    const result = await handleSessionCommand(createDiscordCommandParams("/session max-age 3h"), true);
     const text = result?.reply?.text ?? "";
 
     expect(hoisted.setThreadBindingMaxAgeBySessionKeyMock).toHaveBeenCalledWith({
@@ -260,10 +245,7 @@ describe("/session idle and /session max-age", () => {
       },
     ]);
 
-    const result = await handleSessionCommand(
-      createTelegramCommandParams("/session idle 2h"),
-      true,
-    );
+    const result = await handleSessionCommand(createTelegramCommandParams("/session idle 2h"), true);
     const text = result?.reply?.text ?? "";
 
     expectIdleTimeoutSetReply(
@@ -279,9 +261,7 @@ describe("/session idle and /session max-age", () => {
     vi.setSystemTime(new Date("2026-02-20T00:00:00.000Z"));
 
     const boundAt = Date.parse("2026-02-19T22:00:00.000Z");
-    hoisted.sessionBindingResolveByConversationMock.mockReturnValue(
-      createTelegramBinding({ boundAt }),
-    );
+    hoisted.sessionBindingResolveByConversationMock.mockReturnValue(createTelegramBinding({ boundAt }));
     hoisted.setTelegramThreadBindingMaxAgeBySessionKeyMock.mockReturnValue([
       {
         targetSessionKey: "agent:main:subagent:child",
@@ -291,10 +271,7 @@ describe("/session idle and /session max-age", () => {
       },
     ]);
 
-    const result = await handleSessionCommand(
-      createTelegramCommandParams("/session max-age 3h"),
-      true,
-    );
+    const result = await handleSessionCommand(createTelegramCommandParams("/session max-age 3h"), true);
     const text = result?.reply?.text ?? "";
 
     expect(hoisted.setTelegramThreadBindingMaxAgeBySessionKeyMock).toHaveBeenCalledWith({
@@ -311,10 +288,7 @@ describe("/session idle and /session max-age", () => {
     hoisted.getThreadBindingManagerMock.mockReturnValue(createFakeThreadBindingManager(binding));
     hoisted.setThreadBindingMaxAgeBySessionKeyMock.mockReturnValue([{ ...binding, maxAgeMs: 0 }]);
 
-    const result = await handleSessionCommand(
-      createDiscordCommandParams("/session max-age off"),
-      true,
-    );
+    const result = await handleSessionCommand(createDiscordCommandParams("/session max-age off"), true);
 
     expect(hoisted.setThreadBindingMaxAgeBySessionKeyMock).toHaveBeenCalledWith({
       targetSessionKey: "agent:main:subagent:child",
@@ -327,9 +301,7 @@ describe("/session idle and /session max-age", () => {
   it("is unavailable outside discord and telegram", async () => {
     const params = buildCommandTestParams("/session idle 2h", baseCfg);
     const result = await handleSessionCommand(params, true);
-    expect(result?.reply?.text).toContain(
-      "currently available for Discord and Telegram bound sessions",
-    );
+    expect(result?.reply?.text).toContain("currently available for Discord and Telegram bound sessions");
   });
 
   it("requires binding owner for lifecycle updates", async () => {

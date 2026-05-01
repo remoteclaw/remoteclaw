@@ -28,9 +28,7 @@ describe("buildTelegramMessageContext implicitMention forum service messages", (
         reply_to_message: {
           message_id: 1,
           text: params.replyToMessageText ?? undefined,
-          ...(params.replyToMessageCaption != null
-            ? { caption: params.replyToMessageCaption }
-            : {}),
+          ...(params.replyToMessageCaption != null ? { caption: params.replyToMessageCaption } : {}),
           from: {
             id: params.replyFromId ?? BOT_ID,
             first_name: "RemoteClaw",
@@ -63,18 +61,15 @@ describe("buildTelegramMessageContext implicitMention forum service messages", (
     expect(ctx).toBeNull();
   });
 
-  it.each(TELEGRAM_FORUM_SERVICE_FIELDS)(
-    "does NOT trigger implicitMention for %s service message",
-    async (field) => {
-      const ctx = await buildGroupReplyCtx({
-        replyToMessageText: undefined,
-        replyFromIsBot: true,
-        replyToMessageExtra: { [field]: {} },
-      });
+  it.each(TELEGRAM_FORUM_SERVICE_FIELDS)("does NOT trigger implicitMention for %s service message", async (field) => {
+    const ctx = await buildGroupReplyCtx({
+      replyToMessageText: undefined,
+      replyFromIsBot: true,
+      replyToMessageExtra: { [field]: {} },
+    });
 
-      expect(ctx).toBeNull();
-    },
-  );
+    expect(ctx).toBeNull();
+  });
 
   it("does NOT trigger implicitMention for forum_topic_closed service message", async () => {
     const ctx = await buildGroupReplyCtx({

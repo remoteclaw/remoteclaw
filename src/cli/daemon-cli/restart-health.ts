@@ -1,12 +1,7 @@
 import type { GatewayServiceRuntime } from "../../daemon/service-runtime.js";
 import type { GatewayService } from "../../daemon/service.js";
 import { probeGateway } from "../../gateway/probe.js";
-import {
-  classifyPortListener,
-  formatPortDiagnostics,
-  inspectPortUsage,
-  type PortUsage,
-} from "../../infra/ports.js";
+import { classifyPortListener, formatPortDiagnostics, inspectPortUsage, type PortUsage } from "../../infra/ports.js";
 import { killProcessTree } from "../../process/kill-tree.js";
 import { sleep } from "../../utils.js";
 
@@ -38,10 +33,7 @@ function hasListenerAttributionGap(portUsage: PortUsage): boolean {
   return portUsage.hints.some((hint) => hint.includes("process details are unavailable"));
 }
 
-function listenerOwnedByRuntimePid(params: {
-  listener: PortUsage["listeners"][number];
-  runtimePid: number;
-}): boolean {
+function listenerOwnedByRuntimePid(params: { listener: PortUsage["listeners"][number]; runtimePid: number }): boolean {
   return params.listener.pid === params.runtimePid || params.listener.ppid === params.runtimePid;
 }
 
@@ -142,9 +134,7 @@ export async function inspectGatewayRestart(params: {
 
   const gatewayListeners =
     portUsage.status === "busy"
-      ? portUsage.listeners.filter(
-          (listener) => classifyPortListener(listener, params.port) === "gateway",
-        )
+      ? portUsage.listeners.filter((listener) => classifyPortListener(listener, params.port) === "gateway")
       : [];
   const fallbackListenerPids =
     params.includeUnknownListenersAsStale &&
@@ -161,9 +151,8 @@ export async function inspectGatewayRestart(params: {
   const listenerAttributionGap = hasListenerAttributionGap(portUsage);
   const ownsPort =
     runtimePid != null
-      ? portUsage.listeners.some((listener) =>
-          listenerOwnedByRuntimePid({ listener, runtimePid }),
-        ) || listenerAttributionGap
+      ? portUsage.listeners.some((listener) => listenerOwnedByRuntimePid({ listener, runtimePid })) ||
+        listenerAttributionGap
       : gatewayListeners.length > 0 || listenerAttributionGap;
   let healthy = running && ownsPort;
   if (!healthy && running && portUsage.status === "busy") {
@@ -187,9 +176,7 @@ export async function inspectGatewayRestart(params: {
           return !listenerOwnedByRuntimePid({ listener, runtimePid });
         })
         .map((listener) => listener.pid as number),
-      ...fallbackListenerPids.filter(
-        (pid) => runtime.pid == null || pid !== runtime.pid || !running,
-      ),
+      ...fallbackListenerPids.filter((pid) => runtime.pid == null || pid !== runtime.pid || !running),
     ]),
   );
 
@@ -300,9 +287,7 @@ export function renderGatewayPortHealthDiagnostics(snapshot: GatewayPortHealthSn
 }
 
 export async function terminateStaleGatewayPids(pids: number[]): Promise<number[]> {
-  const targets = Array.from(
-    new Set(pids.filter((pid): pid is number => Number.isFinite(pid) && pid > 0)),
-  );
+  const targets = Array.from(new Set(pids.filter((pid): pid is number => Number.isFinite(pid) && pid > 0)));
   for (const pid of targets) {
     killProcessTree(pid, { graceMs: 300 });
   }

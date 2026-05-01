@@ -20,12 +20,7 @@ export function isRecurringTopOfHourCronExpr(expr: string) {
 }
 
 export function normalizeCronStaggerMs(raw: unknown): number | undefined {
-  const numeric =
-    typeof raw === "number"
-      ? raw
-      : typeof raw === "string" && raw.trim()
-        ? Number(raw)
-        : Number.NaN;
+  const numeric = typeof raw === "number" ? raw : typeof raw === "string" && raw.trim() ? Number(raw) : Number.NaN;
   if (!Number.isFinite(numeric)) {
     return undefined;
   }

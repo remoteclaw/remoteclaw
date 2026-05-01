@@ -10,11 +10,7 @@ type MatrixSendQueueOptions = {
 // Serialize sends per room to preserve Matrix delivery order.
 const roomQueues = new KeyedAsyncQueue();
 
-export function enqueueSend<T>(
-  roomId: string,
-  fn: () => Promise<T>,
-  options?: MatrixSendQueueOptions,
-): Promise<T> {
+export function enqueueSend<T>(roomId: string, fn: () => Promise<T>, options?: MatrixSendQueueOptions): Promise<T> {
   const gapMs = options?.gapMs ?? DEFAULT_SEND_GAP_MS;
   const delayFn = options?.delayFn ?? delay;
   return roomQueues.enqueue(roomId, async () => {

@@ -54,8 +54,7 @@ export function resolveMarkdownTableMode(params: {
     return defaultMode;
   }
   const channelsConfig = params.cfg.channels as Record<string, unknown> | undefined;
-  const section = (channelsConfig?.[channel] ??
-    (params.cfg as Record<string, unknown> | undefined)?.[channel]) as
+  const section = (channelsConfig?.[channel] ?? (params.cfg as Record<string, unknown> | undefined)?.[channel]) as
     | MarkdownConfigSection
     | undefined;
   return resolveMarkdownModeFromSection(section, params.accountId) ?? defaultMode;

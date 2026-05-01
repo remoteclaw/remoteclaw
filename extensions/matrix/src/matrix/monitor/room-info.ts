@@ -24,9 +24,7 @@ export function createMatrixRoomInfoResolver(client: MatrixClient) {
       // ignore
     }
     try {
-      const aliasState = await client
-        .getRoomStateEvent(roomId, "m.room.canonical_alias", "")
-        .catch(() => null);
+      const aliasState = await client.getRoomStateEvent(roomId, "m.room.canonical_alias", "").catch(() => null);
       canonicalAlias = aliasState?.alias;
       altAliases = aliasState?.alt_aliases ?? [];
     } catch {
@@ -39,9 +37,7 @@ export function createMatrixRoomInfoResolver(client: MatrixClient) {
 
   const getMemberDisplayName = async (roomId: string, userId: string): Promise<string> => {
     try {
-      const memberState = await client
-        .getRoomStateEvent(roomId, "m.room.member", userId)
-        .catch(() => null);
+      const memberState = await client.getRoomStateEvent(roomId, "m.room.member", userId).catch(() => null);
       return memberState?.displayname ?? userId;
     } catch {
       return userId;

@@ -118,9 +118,7 @@ export function spawnSignalDaemon(opts: SignalDaemonOpts): SignalDaemonHandle {
       code: typeof code === "number" ? code : null,
       signal: signal ?? null,
     });
-    error(
-      formatSignalDaemonExit({ source: "process", code: code ?? null, signal: signal ?? null }),
-    );
+    error(formatSignalDaemonExit({ source: "process", code: code ?? null, signal: signal ?? null }));
   });
   child.once("close", (code, signal) => {
     settleExit({

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { formatCliCommand } from "../command-format.js";
+import { printDaemonStatus } from "./status.print.js";
 
 const runtime = vi.hoisted(() => ({
   log: vi.fn<(line: string) => void>(),
@@ -69,8 +70,6 @@ vi.mock("./status.gather.js", () => ({
   resolvePortListeningAddresses: () => ["127.0.0.1:18789"],
 }));
 
-const { printDaemonStatus } = await import("./status.print.js");
-
 describe("printDaemonStatus", () => {
   beforeEach(() => {
     runtime.log.mockReset();
@@ -117,8 +116,6 @@ describe("printDaemonStatus", () => {
     expect(runtime.error).toHaveBeenCalledWith(
       expect.stringContaining("Gateway runtime PID does not own the listening port"),
     );
-    expect(runtime.error).toHaveBeenCalledWith(
-      expect.stringContaining(formatCliCommand("remoteclaw gateway restart")),
-    );
+    expect(runtime.error).toHaveBeenCalledWith(expect.stringContaining(formatCliCommand("remoteclaw gateway restart")));
   });
 });

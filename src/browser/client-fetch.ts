@@ -3,10 +3,7 @@ import { loadConfig } from "../config/config.js";
 import { isLoopbackHost } from "../gateway/net.js";
 import { getBridgeAuthForPort } from "./bridge-auth-registry.js";
 import { resolveBrowserControlAuth } from "./control-auth.js";
-import {
-  createBrowserControlContext,
-  startBrowserControlServiceFromConfig,
-} from "./control-service.js";
+import { createBrowserControlContext, startBrowserControlServiceFromConfig } from "./control-service.js";
 import { createBrowserRouteDispatcher } from "./routes/dispatcher.js";
 
 type LoopbackBrowserAuthDeps = {
@@ -94,8 +91,7 @@ const BROWSER_TOOL_NO_RETRY_HINT =
   "Use an alternative approach or inform the user that the browser is currently unavailable.";
 
 const BROWSER_SERVICE_RATE_LIMIT_MESSAGE =
-  "Browser service rate limit reached. " +
-  "Wait for the current session to complete, or retry later.";
+  "Browser service rate limit reached. Wait for the current session to complete, or retry later.";
 
 const BROWSERBASE_RATE_LIMIT_MESSAGE =
   "Browserbase rate limit reached (max concurrent sessions). " +
@@ -118,9 +114,7 @@ function isBrowserbaseUrl(url: string): boolean {
 }
 
 export function resolveBrowserRateLimitMessage(url: string): string {
-  return isBrowserbaseUrl(url)
-    ? BROWSERBASE_RATE_LIMIT_MESSAGE
-    : BROWSER_SERVICE_RATE_LIMIT_MESSAGE;
+  return isBrowserbaseUrl(url) ? BROWSERBASE_RATE_LIMIT_MESSAGE : BROWSER_SERVICE_RATE_LIMIT_MESSAGE;
 }
 
 async function discardResponseBody(res: Response): Promise<void> {
@@ -155,15 +149,10 @@ function enhanceBrowserFetchError(url: string, err: unknown, timeoutMs: number):
       `Can't reach the RemoteClaw browser control service (timed out after ${timeoutMs}ms). ${operatorHint} ${modelHint}`,
     );
   }
-  return new Error(
-    `Can't reach the RemoteClaw browser control service. ${operatorHint} ${modelHint} (${msg})`,
-  );
+  return new Error(`Can't reach the RemoteClaw browser control service. ${operatorHint} ${modelHint} (${msg})`);
 }
 
-async function fetchHttpJson<T>(
-  url: string,
-  init: RequestInit & { timeoutMs?: number },
-): Promise<T> {
+async function fetchHttpJson<T>(url: string, init: RequestInit & { timeoutMs?: number }): Promise<T> {
   const timeoutMs = init.timeoutMs ?? 5000;
   const ctrl = new AbortController();
   const upstreamSignal = init.signal;
@@ -198,10 +187,7 @@ async function fetchHttpJson<T>(
   }
 }
 
-export async function fetchBrowserJson<T>(
-  url: string,
-  init?: RequestInit & { timeoutMs?: number },
-): Promise<T> {
+export async function fetchBrowserJson<T>(url: string, init?: RequestInit & { timeoutMs?: number }): Promise<T> {
   const timeoutMs = init?.timeoutMs ?? 5000;
   try {
     if (isAbsoluteHttp(url)) {
@@ -254,11 +240,7 @@ export async function fetchBrowserJson<T>(
 
     const dispatchPromise = dispatcher.dispatch({
       method:
-        init?.method?.toUpperCase() === "DELETE"
-          ? "DELETE"
-          : init?.method?.toUpperCase() === "POST"
-            ? "POST"
-            : "GET",
+        init?.method?.toUpperCase() === "DELETE" ? "DELETE" : init?.method?.toUpperCase() === "POST" ? "POST" : "GET",
       path: parsed.pathname,
       query,
       body,

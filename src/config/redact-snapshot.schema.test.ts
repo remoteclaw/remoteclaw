@@ -18,10 +18,7 @@ type TestSnapshot<TConfig extends Record<string, unknown>> = ConfigFileSnapshot 
   config: TConfig;
 };
 
-function makeSnapshot<TConfig extends Record<string, unknown>>(
-  config: TConfig,
-  raw?: string,
-): TestSnapshot<TConfig> {
+function makeSnapshot<TConfig extends Record<string, unknown>>(config: TConfig, raw?: string): TestSnapshot<TConfig> {
   return {
     path: "/home/user/.remoteclaw/config.json5",
     exists: true,
@@ -37,11 +34,7 @@ function makeSnapshot<TConfig extends Record<string, unknown>>(
   } as unknown as TestSnapshot<TConfig>;
 }
 
-function restoreRedactedValues<TOriginal>(
-  incoming: unknown,
-  original: TOriginal,
-  hints?: ConfigUiHints,
-): TOriginal {
+function restoreRedactedValues<TOriginal>(incoming: unknown, original: TOriginal, hints?: ConfigUiHints): TOriginal {
   const result = restoreRedactedValues_orig(incoming, original, hints);
   expect(result.ok).toBe(true);
   return result.result as TOriginal;

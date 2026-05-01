@@ -49,15 +49,8 @@ import {
 } from "../../auto-reply/command-detection.js";
 import { shouldHandleTextCommands } from "../../auto-reply/commands-registry.js";
 import { withReplyDispatcher } from "../../auto-reply/dispatch.js";
-import {
-  formatAgentEnvelope,
-  formatInboundEnvelope,
-  resolveEnvelopeFormatOptions,
-} from "../../auto-reply/envelope.js";
-import {
-  createInboundDebouncer,
-  resolveInboundDebounceMs,
-} from "../../auto-reply/inbound-debounce.js";
+import { formatAgentEnvelope, formatInboundEnvelope, resolveEnvelopeFormatOptions } from "../../auto-reply/envelope.js";
+import { createInboundDebouncer, resolveInboundDebounceMs } from "../../auto-reply/inbound-debounce.js";
 import { dispatchReplyFromConfig } from "../../auto-reply/reply/dispatch-from-config.js";
 import { finalizeInboundContext } from "../../auto-reply/reply/inbound-context.js";
 import {
@@ -73,10 +66,7 @@ import { discordMessageActions } from "../../channels/plugins/actions/discord.js
 import { signalMessageActions } from "../../channels/plugins/actions/signal.js";
 import { telegramMessageActions } from "../../channels/plugins/actions/telegram.js";
 import { recordInboundSession } from "../../channels/session.js";
-import {
-  resolveChannelGroupPolicy,
-  resolveChannelGroupRequireMention,
-} from "../../config/group-policy.js";
+import { resolveChannelGroupPolicy, resolveChannelGroupRequireMention } from "../../config/group-policy.js";
 import { resolveMarkdownTableMode } from "../../config/markdown-tables.js";
 import {
   readSessionUpdatedAt,
@@ -108,10 +98,7 @@ import { convertMarkdownTables } from "../../markdown/tables.js";
 import { fetchRemoteMedia } from "../../media/fetch.js";
 import { saveMediaBuffer } from "../../media/store.js";
 import { buildPairingReply } from "../../pairing/pairing-messages.js";
-import {
-  readChannelAllowFromStore,
-  upsertChannelPairingRequest,
-} from "../../pairing/pairing-store.js";
+import { readChannelAllowFromStore, upsertChannelPairingRequest } from "../../pairing/pairing-store.js";
 import { buildAgentSessionKey, resolveAgentRoute } from "../../routing/resolve-route.js";
 import { createRuntimeWhatsApp } from "./runtime-whatsapp.js";
 import type { PluginRuntime } from "./types.js";
@@ -149,8 +136,7 @@ export function createRuntimeChannel(): PluginRuntime["channel"] {
     },
     pairing: {
       buildPairingReply,
-      readAllowFromStore: ({ channel, accountId, env }) =>
-        readChannelAllowFromStore(channel, env, accountId),
+      readAllowFromStore: ({ channel, accountId, env }) => readChannelAllowFromStore(channel, env, accountId),
       upsertPairingRequest: ({ channel, id, accountId, meta, env, pairingAdapter }) =>
         upsertChannelPairingRequest({
           channel,

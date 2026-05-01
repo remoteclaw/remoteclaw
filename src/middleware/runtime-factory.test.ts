@@ -128,9 +128,7 @@ describe("createCliRuntime", () => {
       mockedExecFileSync.mockImplementation(() => {
         throw new Error("not found");
       });
-      expect(() => createCliRuntime("gemini")).toThrow(
-        "set agents.defaults.runtime to a different provider",
-      );
+      expect(() => createCliRuntime("gemini")).toThrow("set agents.defaults.runtime to a different provider");
     });
 
     it("caches validation per command — which is called only once", () => {

@@ -50,8 +50,7 @@ export function normalizeMessage(message: unknown): NormalizedMessage {
 
   const timestamp = typeof m.timestamp === "number" ? m.timestamp : Date.now();
   const id = typeof m.id === "string" ? m.id : undefined;
-  const senderLabel =
-    typeof m.senderLabel === "string" && m.senderLabel.trim() ? m.senderLabel.trim() : null;
+  const senderLabel = typeof m.senderLabel === "string" && m.senderLabel.trim() ? m.senderLabel.trim() : null;
 
   // Strip AI-injected metadata prefix blocks from user messages before display.
   if (role === "user" || role === "User") {
@@ -82,12 +81,7 @@ export function normalizeRoleForGrouping(role: string): string {
     return "system";
   }
   // Keep tool-related roles distinct so the UI can style/toggle them.
-  if (
-    lower === "toolresult" ||
-    lower === "tool_result" ||
-    lower === "tool" ||
-    lower === "function"
-  ) {
+  if (lower === "toolresult" || lower === "tool_result" || lower === "tool" || lower === "function") {
     return "tool";
   }
   return role;

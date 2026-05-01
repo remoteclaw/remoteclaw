@@ -47,10 +47,7 @@ import { createAuthRateLimiter, type AuthRateLimiter } from "./auth-rate-limit.j
 import { startChannelHealthMonitor } from "./channel-health-monitor.js";
 import { startGatewayConfigReloader } from "./config-reload.js";
 import type { ControlUiRootState } from "./control-ui.js";
-import {
-  GATEWAY_EVENT_UPDATE_AVAILABLE,
-  type GatewayUpdateAvailableEventPayload,
-} from "./events.js";
+import { GATEWAY_EVENT_UPDATE_AVAILABLE, type GatewayUpdateAvailableEventPayload } from "./events.js";
 import { NodeRegistry } from "./node-registry.js";
 import type { startBrowserControlServerIfEnabled } from "./server-browser.js";
 import { createChannelManager } from "./server-channels.js";
@@ -184,12 +181,8 @@ export type GatewayServerOptions = {
   ) => Promise<void>;
 };
 
-export async function startGatewayServer(
-  port = 18789,
-  opts: GatewayServerOptions = {},
-): Promise<GatewayServer> {
-  const minimalTestGateway =
-    process.env.VITEST === "1" && process.env.REMOTECLAW_TEST_MINIMAL_GATEWAY === "1";
+export async function startGatewayServer(port = 18789, opts: GatewayServerOptions = {}): Promise<GatewayServer> {
+  const minimalTestGateway = process.env.VITEST === "1" && process.env.REMOTECLAW_TEST_MINIMAL_GATEWAY === "1";
 
   // Ensure all default port derivations (browser/canvas) see the actual runtime port.
   process.env.REMOTECLAW_GATEWAY_PORT = String(port);
@@ -217,11 +210,7 @@ export async function startGatewayServer(
     } else {
       await writeConfigFile(migrated);
       if (changes.length > 0) {
-        log.info(
-          `gateway: migrated legacy config entries:\n${changes
-            .map((entry) => `- ${entry}`)
-            .join("\n")}`,
-        );
+        log.info(`gateway: migrated legacy config entries:\n${changes.map((entry) => `- ${entry}`).join("\n")}`);
       }
     }
   }
@@ -241,11 +230,7 @@ export async function startGatewayServer(
   if (autoEnable.changes.length > 0) {
     try {
       await writeConfigFile(autoEnable.config);
-      log.info(
-        `gateway: auto-enabled plugins:\n${autoEnable.changes
-          .map((entry) => `- ${entry}`)
-          .join("\n")}`,
-      );
+      log.info(`gateway: auto-enabled plugins:\n${autoEnable.changes.map((entry) => `- ${entry}`).join("\n")}`);
     } catch (err) {
       log.warn(`gateway: failed to persist plugin auto-enable changes: ${String(err)}`);
     }
@@ -276,9 +261,7 @@ export async function startGatewayServer(
   cfgAtStart = authBootstrap.cfg;
   if (authBootstrap.generatedToken) {
     if (authBootstrap.persistedGeneratedToken) {
-      log.info(
-        "Gateway auth token was missing. Generated a new token and saved it to config (gateway.auth.token).",
-      );
+      log.info("Gateway auth token was missing. Generated a new token and saved it to config (gateway.auth.token).");
     } else {
       log.warn(
         "Gateway auth token was missing. Generated a runtime token for this startup without changing config; restart will generate a different token. Persist one with `remoteclaw config set gateway.auth.mode token` and `remoteclaw config set gateway.auth.token <token>`.",
@@ -291,15 +274,11 @@ export async function startGatewayServer(
     startDiagnosticHeartbeat();
   }
   setGatewaySigusr1RestartPolicy({ allowExternal: isRestartEnabled(cfgAtStart) });
-  setPreRestartDeferralCheck(
-    () => getTotalQueueSize() + getTotalPendingReplies() + getActiveSessionRunCount(),
-  );
+  setPreRestartDeferralCheck(() => getTotalQueueSize() + getTotalPendingReplies() + getActiveSessionRunCount());
   initSubagentRegistry();
   const defaultWorkspaceDir = resolveFirstAgentWorkspace(cfgAtStart);
   if (!defaultWorkspaceDir) {
-    throw new Error(
-      "No agents configured — add at least one entry to agents.list in remoteclaw.json",
-    );
+    throw new Error("No agents configured — add at least one entry to agents.list in remoteclaw.json");
   }
   const baseMethods = listGatewayMethods();
   const emptyPluginRegistry = createEmptyPluginRegistry();
@@ -381,9 +360,7 @@ export async function startGatewayServer(
         cwd: process.cwd(),
       });
     }
-    controlUiRootState = resolvedRoot
-      ? { kind: "resolved", path: resolvedRoot }
-      : { kind: "missing" };
+    controlUiRootState = resolvedRoot ? { kind: "resolved", path: resolvedRoot } : { kind: "missing" };
   }
 
   const wizardRunner = opts.wizardRunner ?? runOnboardingWizard;
@@ -479,17 +456,14 @@ export async function startGatewayServer(
   });
   let { cron, storePath: cronStorePath } = cronState;
 
-  const { getRuntimeSnapshot, startChannels, startChannel, stopChannel, markChannelLoggedOut } =
-    channelManager;
+  const { getRuntimeSnapshot, startChannels, startChannel, stopChannel, markChannelLoggedOut } = channelManager;
 
   if (!minimalTestGateway) {
     const machineDisplayName = await getMachineDisplayName();
     const discovery = await startGatewayDiscovery({
       machineDisplayName,
       port,
-      gatewayTls: gatewayTls.enabled
-        ? { enabled: true, fingerprintSha256: gatewayTls.fingerprintSha256 }
-        : undefined,
+      gatewayTls: gatewayTls.enabled ? { enabled: true, fingerprintSha256: gatewayTls.fingerprintSha256 } : undefined,
       wideAreaDiscoveryEnabled: cfgAtStart.discovery?.wideArea?.enabled === true,
       wideAreaDiscoveryDomain: cfgAtStart.discovery?.wideArea?.domain,
       tailscaleMode,
@@ -648,9 +622,7 @@ export async function startGatewayServer(
     hasConnectedMobileNode: hasMobileNodeConnected,
     hasExecApprovalClients: () => {
       for (const gatewayClient of clients) {
-        const scopes = Array.isArray(gatewayClient.connect.scopes)
-          ? gatewayClient.connect.scopes
-          : [];
+        const scopes = Array.isArray(gatewayClient.connect.scopes) ? gatewayClient.connect.scopes : [];
         if (scopes.includes("operator.admin") || scopes.includes("operator.approvals")) {
           return true;
         }

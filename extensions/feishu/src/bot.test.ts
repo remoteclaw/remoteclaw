@@ -103,15 +103,9 @@ describe("buildFeishuAgentBody", () => {
 
 describe("handleFeishuMessage command authorization", () => {
   const mockFinalizeInboundContext = vi.fn((ctx: unknown) => ctx);
-  const mockDispatchReplyFromConfig = vi
-    .fn()
-    .mockResolvedValue({ queuedFinal: false, counts: { final: 1 } });
+  const mockDispatchReplyFromConfig = vi.fn().mockResolvedValue({ queuedFinal: false, counts: { final: 1 } });
   const mockWithReplyDispatcher = vi.fn(
-    async ({
-      dispatcher,
-      run,
-      onSettled,
-    }: Parameters<PluginRuntime["channel"]["reply"]["withReplyDispatcher"]>[0]) => {
+    async ({ dispatcher, run, onSettled }: Parameters<PluginRuntime["channel"]["reply"]["withReplyDispatcher"]>[0]) => {
       try {
         return await run();
       } finally {
@@ -182,8 +176,7 @@ describe("handleFeishuMessage command authorization", () => {
             resolveCommandAuthorizedFromAuthorizers: mockResolveCommandAuthorizedFromAuthorizers,
           },
           media: {
-            saveMediaBuffer:
-              mockSaveMediaBuffer as unknown as PluginRuntime["channel"]["media"]["saveMediaBuffer"],
+            saveMediaBuffer: mockSaveMediaBuffer as unknown as PluginRuntime["channel"]["media"]["saveMediaBuffer"],
           },
           pairing: {
             readAllowFromStore: mockReadAllowFromStore,
@@ -902,12 +895,7 @@ describe("handleFeishuMessage command authorization", () => {
         type: "file",
       }),
     );
-    expect(mockSaveMediaBuffer).toHaveBeenCalledWith(
-      expect.any(Buffer),
-      "video/mp4",
-      "inbound",
-      expect.any(Number),
-    );
+    expect(mockSaveMediaBuffer).toHaveBeenCalledWith(expect.any(Buffer), "video/mp4", "inbound", expect.any(Number));
   });
 
   it("includes message_id in BodyForAgent on its own line", async () => {
@@ -1016,9 +1004,7 @@ describe("handleFeishuMessage command authorization", () => {
     });
     expect(mockFinalizeInboundContext).toHaveBeenCalledWith(
       expect.objectContaining({
-        BodyForAgent: expect.stringContaining(
-          "[Merged and Forwarded Messages]\n- alpha\n- [File: report.pdf]",
-        ),
+        BodyForAgent: expect.stringContaining("[Merged and Forwarded Messages]\n- alpha\n- [File: report.pdf]"),
       }),
     );
   });
@@ -1121,9 +1107,7 @@ describe("handleFeishuMessage command authorization", () => {
     expect(mockDispatchReplyFromConfig).toHaveBeenCalledTimes(1);
     expect(mockFinalizeInboundContext).toHaveBeenCalledWith(
       expect.objectContaining({
-        BodyForAgent: expect.stringContaining(
-          "Permission grant URL: https://open.feishu.cn/app/cli_test",
-        ),
+        BodyForAgent: expect.stringContaining("Permission grant URL: https://open.feishu.cn/app/cli_test"),
       }),
     );
     expect(mockFinalizeInboundContext).toHaveBeenCalledWith(
@@ -1788,33 +1772,21 @@ describe("buildBroadcastSessionKey", () => {
   });
 
   it("handles compound peer IDs", () => {
-    expect(
-      buildBroadcastSessionKey(
-        "agent:main:feishu:group:oc_group123:sender:ou_user1",
-        "main",
-        "susan",
-      ),
-    ).toBe("agent:susan:feishu:group:oc_group123:sender:ou_user1");
+    expect(buildBroadcastSessionKey("agent:main:feishu:group:oc_group123:sender:ou_user1", "main", "susan")).toBe(
+      "agent:susan:feishu:group:oc_group123:sender:ou_user1",
+    );
   });
 
   it("returns base key unchanged when prefix does not match", () => {
-    expect(buildBroadcastSessionKey("custom:key:format", "main", "susan")).toBe(
-      "custom:key:format",
-    );
+    expect(buildBroadcastSessionKey("custom:key:format", "main", "susan")).toBe("custom:key:format");
   });
 });
 
 describe("broadcast dispatch", () => {
   const mockFinalizeInboundContext = vi.fn((ctx: unknown) => ctx);
-  const mockDispatchReplyFromConfig = vi
-    .fn()
-    .mockResolvedValue({ queuedFinal: false, counts: { final: 1 } });
+  const mockDispatchReplyFromConfig = vi.fn().mockResolvedValue({ queuedFinal: false, counts: { final: 1 } });
   const mockWithReplyDispatcher = vi.fn(
-    async ({
-      dispatcher,
-      run,
-      onSettled,
-    }: Parameters<PluginRuntime["channel"]["reply"]["withReplyDispatcher"]>[0]) => {
+    async ({ dispatcher, run, onSettled }: Parameters<PluginRuntime["channel"]["reply"]["withReplyDispatcher"]>[0]) => {
       try {
         return await run();
       } finally {
@@ -1907,9 +1879,7 @@ describe("broadcast dispatch", () => {
         chat_type: "group",
         message_type: "text",
         content: JSON.stringify({ text: "hello @bot" }),
-        mentions: [
-          { key: "@_user_1", id: { open_id: "bot-open-id" }, name: "Bot", tenant_key: "" },
-        ],
+        mentions: [{ key: "@_user_1", id: { open_id: "bot-open-id" }, name: "Bot", tenant_key: "" }],
       },
     };
 
@@ -1932,9 +1902,7 @@ describe("broadcast dispatch", () => {
 
     // Active agent (mentioned) gets the real Feishu reply dispatcher
     expect(mockCreateFeishuReplyDispatcher).toHaveBeenCalledTimes(1);
-    expect(mockCreateFeishuReplyDispatcher).toHaveBeenCalledWith(
-      expect.objectContaining({ agentId: "main" }),
-    );
+    expect(mockCreateFeishuReplyDispatcher).toHaveBeenCalledWith(expect.objectContaining({ agentId: "main" }));
   });
 
   it("skips broadcast dispatch when bot is NOT mentioned (requireMention=true)", async () => {
@@ -2100,8 +2068,7 @@ describe("broadcast dispatch", () => {
 
     // Only susan should get dispatched (unknown-agent skipped)
     expect(mockDispatchReplyFromConfig).toHaveBeenCalledTimes(1);
-    const sessionKey = (mockFinalizeInboundContext.mock.calls[0]?.[0] as { SessionKey: string })
-      .SessionKey;
+    const sessionKey = (mockFinalizeInboundContext.mock.calls[0]?.[0] as { SessionKey: string }).SessionKey;
     expect(sessionKey).toBe("agent:susan:feishu:group:oc-broadcast-group");
   });
 });

@@ -47,8 +47,7 @@ export async function runNodeHost(opts: NodeHostRunOptions): Promise<void> {
   if (nodeId !== config.nodeId) {
     config.nodeId = nodeId;
   }
-  const displayName =
-    opts.displayName?.trim() || config.displayName || (await getMachineDisplayName());
+  const displayName = opts.displayName?.trim() || config.displayName || (await getMachineDisplayName());
   config.displayName = displayName;
 
   const gateway: NodeHostGatewayConfig = {
@@ -62,8 +61,7 @@ export async function runNodeHost(opts: NodeHostRunOptions): Promise<void> {
 
   const cfg = loadConfig();
   const resolvedBrowser = resolveBrowserConfig(cfg.browser, cfg);
-  const browserProxyEnabled =
-    cfg.nodeHost?.browserProxy?.enabled !== false && resolvedBrowser.enabled;
+  const browserProxyEnabled = cfg.nodeHost?.browserProxy?.enabled !== false && resolvedBrowser.enabled;
   const { token, password } = await resolveNodeHostGatewayCredentials({
     config: cfg,
     env: process.env,
@@ -90,10 +88,7 @@ export async function runNodeHost(opts: NodeHostRunOptions): Promise<void> {
     role: "node",
     scopes: [],
     caps: ["system", ...(browserProxyEnabled ? ["browser"] : [])],
-    commands: [
-      ...NODE_SYSTEM_RUN_COMMANDS,
-      ...(browserProxyEnabled ? [NODE_BROWSER_PROXY_COMMAND] : []),
-    ],
+    commands: [...NODE_SYSTEM_RUN_COMMANDS, ...(browserProxyEnabled ? [NODE_BROWSER_PROXY_COMMAND] : [])],
     pathEnv,
     permissions: undefined,
     deviceIdentity: loadOrCreateDeviceIdentity(),

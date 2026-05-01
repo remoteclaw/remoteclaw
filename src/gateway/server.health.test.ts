@@ -34,36 +34,28 @@ afterAll(async () => {
 });
 
 describe("gateway server health/presence", () => {
-  test(
-    "connect + health + presence + status succeed",
-    { timeout: HEALTH_E2E_TIMEOUT_MS },
-    async () => {
-      const { ws } = await harness.openClient();
+  test("connect + health + presence + status succeed", { timeout: HEALTH_E2E_TIMEOUT_MS }, async () => {
+    const { ws } = await harness.openClient();
 
-      const healthP = onceMessage<GatewayFrame>(ws, (o) => o.type === "res" && o.id === "health1");
-      const statusP = onceMessage<GatewayFrame>(ws, (o) => o.type === "res" && o.id === "status1");
-      const presenceP = onceMessage<GatewayFrame>(
-        ws,
-        (o) => o.type === "res" && o.id === "presence1",
-      );
+    const healthP = onceMessage<GatewayFrame>(ws, (o) => o.type === "res" && o.id === "health1");
+    const statusP = onceMessage<GatewayFrame>(ws, (o) => o.type === "res" && o.id === "status1");
+    const presenceP = onceMessage<GatewayFrame>(ws, (o) => o.type === "res" && o.id === "presence1");
 
-      const sendReq = (id: string, method: string) =>
-        ws.send(JSON.stringify({ type: "req", id, method }));
-      sendReq("health1", "health");
-      sendReq("status1", "status");
-      sendReq("presence1", "system-presence");
+    const sendReq = (id: string, method: string) => ws.send(JSON.stringify({ type: "req", id, method }));
+    sendReq("health1", "health");
+    sendReq("status1", "status");
+    sendReq("presence1", "system-presence");
 
-      const health = await healthP;
-      const status = await statusP;
-      const presence = await presenceP;
-      expect(health.ok).toBe(true);
-      expect(status.ok).toBe(true);
-      expect(presence.ok).toBe(true);
-      expect(Array.isArray(presence.payload)).toBe(true);
+    const health = await healthP;
+    const status = await statusP;
+    const presence = await presenceP;
+    expect(health.ok).toBe(true);
+    expect(status.ok).toBe(true);
+    expect(presence.ok).toBe(true);
+    expect(Array.isArray(presence.payload)).toBe(true);
 
-      ws.close();
-    },
-  );
+    ws.close();
+  });
 
   test("broadcasts heartbeat events and serves last-heartbeat", async () => {
     type HeartbeatPayload = {
@@ -83,10 +75,7 @@ describe("gateway server health/presence", () => {
 
     const { ws } = await harness.openClient();
 
-    const waitHeartbeat = onceMessage<EventFrame>(
-      ws,
-      (o) => o.type === "event" && o.event === "heartbeat",
-    );
+    const waitHeartbeat = onceMessage<EventFrame>(ws, (o) => o.type === "event" && o.event === "heartbeat");
     emitHeartbeatEvent({ status: "sent", to: "+123", preview: "ping" });
     const evt = await waitHeartbeat;
     expect(evt.payload?.status).toBe("sent");
@@ -113,44 +102,34 @@ describe("gateway server health/presence", () => {
         params: { enabled: false },
       }),
     );
-    const toggle = await onceMessage<GatewayFrame>(
-      ws,
-      (o) => o.type === "res" && o.id === "hb-toggle-off",
-    );
+    const toggle = await onceMessage<GatewayFrame>(ws, (o) => o.type === "res" && o.id === "hb-toggle-off");
     expect(toggle.ok).toBe(true);
     expect((toggle.payload as { enabled?: boolean } | undefined)?.enabled).toBe(false);
 
     ws.close();
   });
 
-  test(
-    "presence events carry seq + stateVersion",
-    { timeout: PRESENCE_EVENT_TIMEOUT_MS },
-    async () => {
-      const { ws } = await harness.openClient();
+  test("presence events carry seq + stateVersion", { timeout: PRESENCE_EVENT_TIMEOUT_MS }, async () => {
+    const { ws } = await harness.openClient();
 
-      const presenceEventP = onceMessage<GatewayFrame>(
-        ws,
-        (o) => o.type === "event" && o.event === "presence",
-      );
-      ws.send(
-        JSON.stringify({
-          type: "req",
-          id: "evt-1",
-          method: "system-event",
-          params: { text: "note from test" },
-        }),
-      );
+    const presenceEventP = onceMessage<GatewayFrame>(ws, (o) => o.type === "event" && o.event === "presence");
+    ws.send(
+      JSON.stringify({
+        type: "req",
+        id: "evt-1",
+        method: "system-event",
+        params: { text: "note from test" },
+      }),
+    );
 
-      const evt = await presenceEventP;
-      expect(typeof evt.seq).toBe("number");
-      expect(evt.stateVersion?.presence).toBeGreaterThan(0);
-      const evtPayload = evt.payload as { presence?: unknown } | undefined;
-      expect(Array.isArray(evtPayload?.presence)).toBe(true);
+    const evt = await presenceEventP;
+    expect(typeof evt.seq).toBe("number");
+    expect(evt.stateVersion?.presence).toBeGreaterThan(0);
+    const evtPayload = evt.payload as { presence?: unknown } | undefined;
+    expect(Array.isArray(evtPayload?.presence)).toBe(true);
 
-      ws.close();
-    },
-  );
+    ws.close();
+  });
 
   test("agent events stream with seq", { timeout: PRESENCE_EVENT_TIMEOUT_MS }, async () => {
     const { ws } = await harness.openClient();
@@ -159,10 +138,7 @@ describe("gateway server health/presence", () => {
     const evtPromise = onceMessage<GatewayFrame>(
       ws,
       (o) =>
-        o.type === "event" &&
-        o.event === "agent" &&
-        o.payload?.runId === runId &&
-        o.payload?.stream === "lifecycle",
+        o.type === "event" && o.event === "agent" && o.payload?.runId === runId && o.payload?.stream === "lifecycle",
     );
     emitAgentEvent({ runId, stream: "lifecycle", data: { msg: "hi" } });
     const evt = await evtPromise;
@@ -189,37 +165,29 @@ describe("gateway server health/presence", () => {
     expect(evtPayload?.reason).toBeDefined();
   });
 
-  test(
-    "presence broadcast reaches multiple clients",
-    { timeout: PRESENCE_EVENT_TIMEOUT_MS },
-    async () => {
-      const clients = await Promise.all([
-        harness.openClient(),
-        harness.openClient(),
-        harness.openClient(),
-      ]);
-      const waits = clients.map(({ ws }) =>
-        onceMessage<GatewayFrame>(ws, (o) => o.type === "event" && o.event === "presence"),
-      );
-      clients[0].ws.send(
-        JSON.stringify({
-          type: "req",
-          id: "broadcast",
-          method: "system-event",
-          params: { text: "fanout" },
-        }),
-      );
-      const events = await Promise.all(waits);
-      for (const evt of events) {
-        const evtPayload = evt.payload as { presence?: unknown[] } | undefined;
-        expect(evtPayload?.presence?.length).toBeGreaterThan(0);
-        expect(typeof evt.seq).toBe("number");
-      }
-      for (const { ws } of clients) {
-        ws.close();
-      }
-    },
-  );
+  test("presence broadcast reaches multiple clients", { timeout: PRESENCE_EVENT_TIMEOUT_MS }, async () => {
+    const clients = await Promise.all([harness.openClient(), harness.openClient(), harness.openClient()]);
+    const waits = clients.map(({ ws }) =>
+      onceMessage<GatewayFrame>(ws, (o) => o.type === "event" && o.event === "presence"),
+    );
+    clients[0].ws.send(
+      JSON.stringify({
+        type: "req",
+        id: "broadcast",
+        method: "system-event",
+        params: { text: "fanout" },
+      }),
+    );
+    const events = await Promise.all(waits);
+    for (const evt of events) {
+      const evtPayload = evt.payload as { presence?: unknown[] } | undefined;
+      expect(evtPayload?.presence?.length).toBeGreaterThan(0);
+      expect(typeof evt.seq).toBe("number");
+    }
+    for (const { ws } of clients) {
+      ws.close();
+    }
+  });
 
   test("presence includes client fingerprint", async () => {
     const role = "operator";
@@ -259,9 +227,7 @@ describe("gateway server health/presence", () => {
       : Array.isArray((presencePayload as { presence?: unknown } | undefined)?.presence)
         ? ((presencePayload as { presence: Array<Record<string, unknown>> }).presence ?? [])
         : [];
-    const clientEntry = entries.find(
-      (e) => e.host === GATEWAY_CLIENT_NAMES.FINGERPRINT && e.version === "9.9.9",
-    );
+    const clientEntry = entries.find((e) => e.host === GATEWAY_CLIENT_NAMES.FINGERPRINT && e.version === "9.9.9");
     expect(clientEntry?.host).toBe(GATEWAY_CLIENT_NAMES.FINGERPRINT);
     expect(clientEntry?.version).toBe("9.9.9");
     expect(clientEntry?.mode).toBe("ui");

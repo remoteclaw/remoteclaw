@@ -23,10 +23,7 @@ export function resolveReplyToMode(
   return resolved ?? "all";
 }
 
-export function createReplyToModeFilter(
-  mode: ReplyToMode,
-  opts: { allowExplicitReplyTagsWhenOff?: boolean } = {},
-) {
+export function createReplyToModeFilter(mode: ReplyToMode, opts: { allowExplicitReplyTagsWhenOff?: boolean } = {}) {
   let hasThreaded = false;
   return (payload: ReplyPayload): ReplyPayload => {
     if (!payload.replyToId) {
@@ -50,10 +47,7 @@ export function createReplyToModeFilter(
   };
 }
 
-export function createReplyToModeFilterForChannel(
-  mode: ReplyToMode,
-  channel?: OriginatingChannelType,
-) {
+export function createReplyToModeFilterForChannel(mode: ReplyToMode, channel?: OriginatingChannelType) {
   const provider = normalizeChannelId(channel);
   const normalized = typeof channel === "string" ? channel.trim().toLowerCase() : undefined;
   const isWebchat = normalized === "webchat";

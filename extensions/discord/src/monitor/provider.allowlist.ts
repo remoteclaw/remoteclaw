@@ -31,9 +31,7 @@ type DiscordUserLogEntry = {
 };
 
 function formatResolutionLogDetails(base: string, details: Array<string | undefined>): string {
-  const nonEmpty = details
-    .map((value) => value?.trim())
-    .filter((value): value is string => Boolean(value));
+  const nonEmpty = details.map((value) => value?.trim()).filter((value): value is string => Boolean(value));
   return nonEmpty.length > 0 ? `${base} (${nonEmpty.join("; ")})` : base;
 }
 
@@ -49,16 +47,8 @@ function formatDiscordChannelResolved(entry: DiscordChannelLogEntry): string {
 
 function formatDiscordChannelUnresolved(entry: DiscordChannelLogEntry): string {
   return formatResolutionLogDetails(entry.input, [
-    entry.guildName
-      ? `guild:${entry.guildName}`
-      : entry.guildId
-        ? `guildId:${entry.guildId}`
-        : undefined,
-    entry.channelName
-      ? `channel:${entry.channelName}`
-      : entry.channelId
-        ? `channelId:${entry.channelId}`
-        : undefined,
+    entry.guildName ? `guild:${entry.guildName}` : entry.guildId ? `guildId:${entry.guildId}` : undefined,
+    entry.channelName ? `channel:${entry.channelName}` : entry.channelId ? `channelId:${entry.channelId}` : undefined,
     entry.note,
   ]);
 }
@@ -193,9 +183,7 @@ async function resolveGuildEntriesByChannelAllowlist(params: {
     summarizeMapping("discord channels", mapping, unresolved, params.runtime);
     return nextGuilds;
   } catch (err) {
-    params.runtime.log?.(
-      `discord channel resolve failed; using config entries. ${formatErrorMessage(err)}`,
-    );
+    params.runtime.log?.(`discord channel resolve failed; using config entries. ${formatErrorMessage(err)}`);
     return params.guildEntries;
   }
 }
@@ -227,9 +215,7 @@ async function resolveAllowFromByUserAllowlist(params: {
     summarizeMapping("discord users", mapping, unresolved, params.runtime);
     return allowFrom;
   } catch (err) {
-    params.runtime.log?.(
-      `discord user resolve failed; using config entries. ${formatErrorMessage(err)}`,
-    );
+    params.runtime.log?.(`discord user resolve failed; using config entries. ${formatErrorMessage(err)}`);
     return params.allowFrom;
   }
 }
@@ -295,9 +281,7 @@ async function resolveGuildEntriesByUserAllowlist(params: {
     summarizeMapping("discord channel users", mapping, unresolved, params.runtime);
     return nextGuilds;
   } catch (err) {
-    params.runtime.log?.(
-      `discord channel user resolve failed; using config entries. ${formatErrorMessage(err)}`,
-    );
+    params.runtime.log?.(`discord channel user resolve failed; using config entries. ${formatErrorMessage(err)}`);
     return params.guildEntries;
   }
 }

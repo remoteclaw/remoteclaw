@@ -4,11 +4,7 @@ import { formatDocsLink } from "../terminal/links.js";
 import { theme } from "../terminal/theme.js";
 import { inheritOptionFromParent } from "./command-options.js";
 import { formatHelpExamples } from "./help-format.js";
-import {
-  type UpdateCommandOptions,
-  type UpdateStatusOptions,
-  type UpdateWizardOptions,
-} from "./update-cli/shared.js";
+import { type UpdateCommandOptions, type UpdateStatusOptions, type UpdateWizardOptions } from "./update-cli/shared.js";
 import { updateStatusCommand } from "./update-cli/status.js";
 import { updateCommand } from "./update-cli/update-command.js";
 import { updateWizardCommand } from "./update-cli/wizard.js";
@@ -20,10 +16,7 @@ function inheritedUpdateJson(command?: Command): boolean {
   return Boolean(inheritOptionFromParent<boolean>(command, "json"));
 }
 
-function inheritedUpdateTimeout(
-  opts: { timeout?: unknown },
-  command?: Command,
-): string | undefined {
+function inheritedUpdateTimeout(opts: { timeout?: unknown }, command?: Command): string | undefined {
   const timeout = opts.timeout as string | undefined;
   if (timeout) {
     return timeout;
@@ -133,9 +126,7 @@ ${theme.muted("Docs:")} ${formatDocsLink("/cli/update", "docs.remoteclaw.org/cli
           ["remoteclaw update status --timeout 10", "Custom timeout."],
         ])}\n\n${theme.heading("Notes:")}\n${theme.muted(
           "- Shows current update channel (stable/beta/next) and source",
-        )}\n\n${theme.muted(
-          "Docs:",
-        )} ${formatDocsLink("/cli/update", "docs.remoteclaw.org/cli/update")}`,
+        )}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/update", "docs.remoteclaw.org/cli/update")}`,
     )
     .action(async (opts, command) => {
       try {

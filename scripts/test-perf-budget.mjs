@@ -43,15 +43,11 @@ try {
 }
 
 const allowedByBaseline =
-  opts.baselineWallMs !== null
-    ? opts.baselineWallMs * (1 + (opts.maxRegressionPct ?? 0) / 100)
-    : null;
+  opts.baselineWallMs !== null ? opts.baselineWallMs * (1 + (opts.maxRegressionPct ?? 0) / 100) : null;
 
 let failed = false;
 if (opts.maxWallMs !== null && elapsedMs > opts.maxWallMs) {
-  console.error(
-    `[test-perf-budget] wall time ${formatMs(elapsedMs)} exceeded max ${formatMs(opts.maxWallMs)}.`,
-  );
+  console.error(`[test-perf-budget] wall time ${formatMs(elapsedMs)} exceeded max ${formatMs(opts.maxWallMs)}.`);
   failed = true;
 }
 if (allowedByBaseline !== null && elapsedMs > allowedByBaseline) {

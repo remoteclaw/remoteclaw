@@ -25,10 +25,7 @@ export function registerMessageThreadCommands(message: Command, helpers: Message
   helpers
     .withMessageBase(
       helpers.withRequiredMessageTarget(
-        thread
-          .command("create")
-          .description("Create a thread")
-          .requiredOption("--thread-name <name>", "Thread name"),
+        thread.command("create").description("Create a thread").requiredOption("--thread-name <name>", "Thread name"),
       ),
     )
     .option("--message-id <id>", "Message id (optional)")
@@ -40,12 +37,7 @@ export function registerMessageThreadCommands(message: Command, helpers: Message
     });
 
   helpers
-    .withMessageBase(
-      thread
-        .command("list")
-        .description("List threads")
-        .requiredOption("--guild-id <id>", "Guild id"),
-    )
+    .withMessageBase(thread.command("list").description("List threads").requiredOption("--guild-id <id>", "Guild id"))
     .option("--channel-id <id>", "Channel id")
     .option("--include-archived", "Include archived threads", false)
     .option("--before <id>", "Read/search before id")
@@ -57,16 +49,10 @@ export function registerMessageThreadCommands(message: Command, helpers: Message
   helpers
     .withMessageBase(
       helpers.withRequiredMessageTarget(
-        thread
-          .command("reply")
-          .description("Reply in a thread")
-          .requiredOption("-m, --message <text>", "Message body"),
+        thread.command("reply").description("Reply in a thread").requiredOption("-m, --message <text>", "Message body"),
       ),
     )
-    .option(
-      "--media <path-or-url>",
-      "Attach media (image/audio/video/document). Accepts local paths or URLs.",
-    )
+    .option("--media <path-or-url>", "Attach media (image/audio/video/document). Accepts local paths or URLs.")
     .option("--reply-to <id>", "Reply-to message id")
     .action(async (opts) => {
       await helpers.runMessageAction("thread-reply", opts);

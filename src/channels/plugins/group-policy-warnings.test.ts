@@ -49,9 +49,9 @@ describe("group policy warning builders", () => {
   });
 
   it("projects cfg-only warning collector inputs", () => {
-    const collect = projectConfigWarningCollector<{ cfg: RemoteClawConfig; accountId: string }>(
-      ({ cfg }) => [cfg.channels ? "configured" : "none"],
-    );
+    const collect = projectConfigWarningCollector<{ cfg: RemoteClawConfig; accountId: string }>(({ cfg }) => [
+      cfg.channels ? "configured" : "none",
+    ]);
 
     expect(
       collect({
@@ -78,10 +78,9 @@ describe("group policy warning builders", () => {
   });
 
   it("projects account-only warning collector inputs", () => {
-    const collect = projectAccountWarningCollector<
-      { accountId: string },
-      { account: { accountId: string } }
-    >((account) => [account.accountId]);
+    const collect = projectAccountWarningCollector<{ accountId: string }, { account: { accountId: string } }>(
+      (account) => [account.accountId],
+    );
 
     expect(collect({ account: { accountId: "acct-1" } })).toEqual(["acct-1"]);
   });
@@ -115,21 +114,13 @@ describe("group policy warning builders", () => {
   });
 
   it("composes account-scoped warning collectors", () => {
-    const collect = composeAccountWarningCollectors<
-      { enabled: boolean },
-      { account: { enabled: boolean } }
-    >(
+    const collect = composeAccountWarningCollectors<{ enabled: boolean }, { account: { enabled: boolean } }>(
       () => ["base"],
       (account) => (account.enabled ? "enabled" : undefined),
       () => ["extra-a", "extra-b"],
     );
 
-    expect(collect({ account: { enabled: true } })).toEqual([
-      "base",
-      "enabled",
-      "extra-a",
-      "extra-b",
-    ]);
+    expect(collect({ account: { enabled: true } })).toEqual(["base", "enabled", "extra-a", "extra-b"]);
     expect(collect({ account: { enabled: false } })).toEqual(["base", "extra-a", "extra-b"]);
   });
 
@@ -354,8 +345,7 @@ describe("group policy warning builders", () => {
       missingRouteAllowlist: {
         surface: "Example channels",
         openBehavior: "with no route allowlist; any channel can trigger (mention-gated)",
-        remediation:
-          'Set channels.example.groupPolicy="allowlist" and configure channels.example.channels',
+        remediation: 'Set channels.example.groupPolicy="allowlist" and configure channels.example.channels',
       },
     };
 
@@ -414,8 +404,7 @@ describe("group policy warning builders", () => {
     }>({
       providerConfigPresent: (cfg) => cfg.channels?.example !== undefined,
       resolveGroupPolicy: ({ configuredGroupPolicy }) => configuredGroupPolicy,
-      collect: ({ channelLabel, groupPolicy }) =>
-        groupPolicy === "open" ? [`warn:${channelLabel}`] : [],
+      collect: ({ channelLabel, groupPolicy }) => (groupPolicy === "open" ? [`warn:${channelLabel}`] : []),
     });
 
     expect(
@@ -483,8 +472,7 @@ describe("group policy warning builders", () => {
       missingRouteAllowlist: {
         surface: "Example channels",
         openBehavior: "with no route allowlist; any channel can trigger (mention-gated)",
-        remediation:
-          'Set channels.example.groupPolicy="allowlist" and configure channels.example.channels',
+        remediation: 'Set channels.example.groupPolicy="allowlist" and configure channels.example.channels',
       },
     });
 
@@ -530,8 +518,7 @@ describe("group policy warning builders", () => {
       buildOpenWarning: {
         surface: "Example channels",
         openBehavior: "allows any channel to trigger (mention-gated)",
-        remediation:
-          'Set channels.example.groupPolicy="allowlist" and configure channels.example.channels',
+        remediation: 'Set channels.example.groupPolicy="allowlist" and configure channels.example.channels',
       },
     });
 
@@ -544,8 +531,7 @@ describe("group policy warning builders", () => {
       buildOpenGroupPolicyWarning({
         surface: "Example channels",
         openBehavior: "allows any channel to trigger (mention-gated)",
-        remediation:
-          'Set channels.example.groupPolicy="allowlist" and configure channels.example.channels',
+        remediation: 'Set channels.example.groupPolicy="allowlist" and configure channels.example.channels',
       }),
     ]);
   });

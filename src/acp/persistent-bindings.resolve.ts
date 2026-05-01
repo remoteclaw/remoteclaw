@@ -3,11 +3,7 @@ import { listAcpBindings } from "../config/bindings.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import type { AgentAcpBinding } from "../config/types.js";
 import { pickFirstExistingAgentId } from "../routing/resolve-route.js";
-import {
-  DEFAULT_ACCOUNT_ID,
-  normalizeAccountId,
-  parseAgentSessionKey,
-} from "../routing/session-key.js";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId, parseAgentSessionKey } from "../routing/session-key.js";
 import { parseTelegramTopicConversation } from "./conversation-id.js";
 import {
   buildConfiguredAcpSessionKey,
@@ -136,10 +132,7 @@ export function resolveConfiguredAcpBindingSpecBySessionKey(params: {
     if (!channel || channel !== parsedSessionKey.channel) {
       continue;
     }
-    const accountMatchPriority = resolveAccountMatchPriority(
-      binding.match.accountId,
-      parsedSessionKey.accountId,
-    );
+    const accountMatchPriority = resolveAccountMatchPriority(binding.match.accountId, parsedSessionKey.accountId);
     if (accountMatchPriority === 0) {
       continue;
     }
@@ -216,10 +209,7 @@ export function resolveConfiguredAcpBindingRecord(params: {
         if (normalizeBindingChannel(binding.match.channel) !== "discord") {
           continue;
         }
-        const accountMatchPriority = resolveAccountMatchPriority(
-          binding.match.accountId,
-          accountId,
-        );
+        const accountMatchPriority = resolveAccountMatchPriority(binding.match.accountId, accountId);
         if (accountMatchPriority === 0) {
           continue;
         }

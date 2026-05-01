@@ -8,15 +8,9 @@ type DiscordInboundJobRuntimeField =
   | "threadBindings"
   | "discordRestFetch";
 
-export type DiscordInboundJobRuntime = Pick<
-  DiscordMessagePreflightContext,
-  DiscordInboundJobRuntimeField
->;
+export type DiscordInboundJobRuntime = Pick<DiscordMessagePreflightContext, DiscordInboundJobRuntimeField>;
 
-export type DiscordInboundJobPayload = Omit<
-  DiscordMessagePreflightContext,
-  DiscordInboundJobRuntimeField
->;
+export type DiscordInboundJobPayload = Omit<DiscordMessagePreflightContext, DiscordInboundJobRuntimeField>;
 
 export type DiscordInboundJob = {
   queueKey: string;

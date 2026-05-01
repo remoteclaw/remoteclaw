@@ -132,9 +132,7 @@ const GATEWAY_SERVICE_REGISTRY: Record<SupportedGatewayServicePlatform, GatewayS
   },
 };
 
-function isSupportedGatewayServicePlatform(
-  platform: NodeJS.Platform,
-): platform is SupportedGatewayServicePlatform {
+function isSupportedGatewayServicePlatform(platform: NodeJS.Platform): platform is SupportedGatewayServicePlatform {
   return Object.hasOwn(GATEWAY_SERVICE_REGISTRY, platform);
 }
 

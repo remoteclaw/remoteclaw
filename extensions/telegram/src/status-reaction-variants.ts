@@ -1,7 +1,4 @@
-import {
-  DEFAULT_EMOJIS,
-  type StatusReactionEmojis,
-} from "../../../src/channels/status-reactions.js";
+import { DEFAULT_EMOJIS, type StatusReactionEmojis } from "../../../src/channels/status-reactions.js";
 
 type StatusReactionEmojiKey = keyof Required<StatusReactionEmojis>;
 
@@ -138,9 +135,7 @@ export function resolveTelegramStatusReactionEmojis(params: {
   };
 }
 
-export function buildTelegramStatusReactionVariants(
-  emojis: Required<StatusReactionEmojis>,
-): Map<string, string[]> {
+export function buildTelegramStatusReactionVariants(emojis: Required<StatusReactionEmojis>): Map<string, string[]> {
   const variantsByRequested = new Map<string, string[]>();
   for (const key of STATUS_REACTION_EMOJI_KEYS) {
     const requested = normalizeEmoji(emojis[key]);
@@ -158,9 +153,7 @@ export function isTelegramSupportedReactionEmoji(emoji: string): boolean {
   return TELEGRAM_SUPPORTED_REACTION_EMOJIS.has(emoji);
 }
 
-export function extractTelegramAllowedEmojiReactions(
-  chat: unknown,
-): Set<string> | null | undefined {
+export function extractTelegramAllowedEmojiReactions(chat: unknown): Set<string> | null | undefined {
   if (!chat || typeof chat !== "object") {
     return undefined;
   }
@@ -231,17 +224,11 @@ export function resolveTelegramReactionVariant(params: {
     return undefined;
   }
 
-  const configuredVariants = params.variantsByRequestedEmoji.get(requestedEmoji) ?? [
-    requestedEmoji,
-  ];
-  const variants = toUniqueNonEmpty([
-    ...configuredVariants,
-    ...TELEGRAM_GENERIC_REACTION_FALLBACKS,
-  ]);
+  const configuredVariants = params.variantsByRequestedEmoji.get(requestedEmoji) ?? [requestedEmoji];
+  const variants = toUniqueNonEmpty([...configuredVariants, ...TELEGRAM_GENERIC_REACTION_FALLBACKS]);
 
   for (const candidate of variants) {
-    const isAllowedByChat =
-      params.allowedEmojiReactions == null || params.allowedEmojiReactions.has(candidate);
+    const isAllowedByChat = params.allowedEmojiReactions == null || params.allowedEmojiReactions.has(candidate);
     if (isAllowedByChat && isTelegramSupportedReactionEmoji(candidate)) {
       return candidate;
     }

@@ -95,10 +95,7 @@ export const AUTHORIZED_WHATSAPP_COMMAND = {
   CommandAuthorized: true,
 } as const;
 
-export function assertModelSelection(
-  storePath: string,
-  selection: { model?: string; provider?: string } = {},
-) {
+export function assertModelSelection(storePath: string, selection: { model?: string; provider?: string } = {}) {
   const store = loadSessionStore(storePath);
   const entry = store[MAIN_SESSION_KEY];
   expect(entry).toBeDefined();

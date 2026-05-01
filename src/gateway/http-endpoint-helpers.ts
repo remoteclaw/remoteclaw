@@ -1,10 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { AuthRateLimiter } from "./auth-rate-limit.js";
 import type { ResolvedGatewayAuth } from "./auth.js";
-import {
-  authorizeGatewayBearerRequestOrReply,
-  resolveGatewayRequestedOperatorScopes,
-} from "./http-auth-helpers.js";
+import { authorizeGatewayBearerRequestOrReply, resolveGatewayRequestedOperatorScopes } from "./http-auth-helpers.js";
 import { readJsonBodyOrError, sendJson, sendMethodNotAllowed } from "./http-common.js";
 import { authorizeOperatorScopesForMethod } from "./method-scopes.js";
 
@@ -45,10 +42,7 @@ export async function handleGatewayPostJsonEndpoint(
 
   if (opts.requiredOperatorMethod) {
     const requestedScopes = resolveGatewayRequestedOperatorScopes(req);
-    const scopeAuth = authorizeOperatorScopesForMethod(
-      opts.requiredOperatorMethod,
-      requestedScopes,
-    );
+    const scopeAuth = authorizeOperatorScopesForMethod(opts.requiredOperatorMethod, requestedScopes);
     if (!scopeAuth.allowed) {
       sendJson(res, 403, {
         ok: false,

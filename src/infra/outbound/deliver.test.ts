@@ -36,9 +36,7 @@ const logMocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../../config/sessions.js", async () => {
-  const actual = await vi.importActual<typeof import("../../config/sessions.js")>(
-    "../../config/sessions.js",
-  );
+  const actual = await vi.importActual<typeof import("../../config/sessions.js")>("../../config/sessions.js");
   return {
     ...actual,
     appendAssistantMessageToSessionTranscript: mocks.appendAssistantMessageToSessionTranscript,
@@ -84,9 +82,7 @@ type DeliverOutboundPayload = DeliverOutboundArgs["payloads"][number];
 type DeliverSession = DeliverOutboundArgs["session"];
 
 async function deliverWhatsAppPayload(params: {
-  sendWhatsApp: NonNullable<
-    NonNullable<Parameters<typeof deliverOutboundPayloads>[0]["deps"]>["sendWhatsApp"]
-  >;
+  sendWhatsApp: NonNullable<NonNullable<Parameters<typeof deliverOutboundPayloads>[0]["deps"]>["sendWhatsApp"]>;
   payload: { text: string; mediaUrl?: string };
   cfg?: RemoteClawConfig;
 }) {
@@ -221,9 +217,7 @@ describe("deliverOutboundPayloads", () => {
 
       expect(sendTelegram).toHaveBeenCalledTimes(2);
       for (const call of sendTelegram.mock.calls) {
-        expect(call[2]).toEqual(
-          expect.objectContaining({ accountId: undefined, verbose: false, textMode: "html" }),
-        );
+        expect(call[2]).toEqual(expect.objectContaining({ accountId: undefined, verbose: false, textMode: "html" }));
       }
       expect(results).toHaveLength(2);
       expect(results[0]).toMatchObject({ channel: "telegram", chatId: "c1" });
@@ -300,11 +294,7 @@ describe("deliverOutboundPayloads", () => {
     });
 
     expect(sendTelegram).toHaveBeenCalledTimes(1);
-    expect(sendTelegram).toHaveBeenCalledWith(
-      "123",
-      "<b>hello</b>",
-      expect.objectContaining({ textMode: "html" }),
-    );
+    expect(sendTelegram).toHaveBeenCalledWith("123", "<b>hello</b>", expect.objectContaining({ textMode: "html" }));
   });
 
   it("does not inject telegram approval buttons from plain approval text", async () => {
@@ -541,18 +531,8 @@ describe("deliverOutboundPayloads", () => {
     });
 
     expect(sendWhatsApp).toHaveBeenCalledTimes(2);
-    expect(sendWhatsApp).toHaveBeenNthCalledWith(
-      1,
-      "+1555",
-      "Line one",
-      expect.objectContaining({ verbose: false }),
-    );
-    expect(sendWhatsApp).toHaveBeenNthCalledWith(
-      2,
-      "+1555",
-      "Line two",
-      expect.objectContaining({ verbose: false }),
-    );
+    expect(sendWhatsApp).toHaveBeenNthCalledWith(1, "+1555", "Line one", expect.objectContaining({ verbose: false }));
+    expect(sendWhatsApp).toHaveBeenNthCalledWith(2, "+1555", "Line two", expect.objectContaining({ verbose: false }));
   });
 
   it("strips leading blank lines for WhatsApp text payloads", async () => {
@@ -796,10 +776,7 @@ describe("deliverOutboundPayloads", () => {
 
     // Queue entry should NOT be acked — failDelivery should be called instead.
     expect(queueMocks.ackDelivery).not.toHaveBeenCalled();
-    expect(queueMocks.failDelivery).toHaveBeenCalledWith(
-      "mock-queue-id",
-      "partial delivery failure (bestEffort)",
-    );
+    expect(queueMocks.failDelivery).toHaveBeenCalledWith("mock-queue-id", "partial delivery failure (bestEffort)");
   });
 
   it("acks the queue entry when delivery is aborted", async () => {

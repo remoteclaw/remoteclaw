@@ -7,9 +7,7 @@ export function normalizeGoogleChatTarget(raw?: string | null): string | undefin
     return undefined;
   }
   const withoutPrefix = trimmed.replace(/^(googlechat|google-chat|gchat):/i, "");
-  const normalized = withoutPrefix
-    .replace(/^user:(users\/)?/i, "users/")
-    .replace(/^space:(spaces\/)?/i, "spaces/");
+  const normalized = withoutPrefix.replace(/^user:(users\/)?/i, "users/").replace(/^space:(spaces\/)?/i, "spaces/");
   if (isGoogleChatUserTarget(normalized)) {
     const suffix = normalized.slice("users/".length);
     return suffix.includes("@") ? `users/${suffix.toLowerCase()}` : normalized;

@@ -46,13 +46,10 @@ describe("runCommandWithTimeout", () => {
   });
 
   it("kills command when no output timeout elapses", async () => {
-    const result = await runCommandWithTimeout(
-      [process.execPath, "-e", "setTimeout(() => {}, 5_000)"],
-      {
-        timeoutMs: 2_000,
-        noOutputTimeoutMs: 200,
-      },
-    );
+    const result = await runCommandWithTimeout([process.execPath, "-e", "setTimeout(() => {}, 5_000)"], {
+      timeoutMs: 2_000,
+      noOutputTimeoutMs: 200,
+    });
 
     expect(result.termination).toBe("no-output-timeout");
     expect(result.noOutputTimedOut).toBe(true);
@@ -60,12 +57,9 @@ describe("runCommandWithTimeout", () => {
   });
 
   it("reports global timeout termination when overall timeout elapses", async () => {
-    const result = await runCommandWithTimeout(
-      [process.execPath, "-e", "setTimeout(() => {}, 5_000)"],
-      {
-        timeoutMs: 200,
-      },
-    );
+    const result = await runCommandWithTimeout([process.execPath, "-e", "setTimeout(() => {}, 5_000)"], {
+      timeoutMs: 200,
+    });
 
     expect(result.termination).toBe("timeout");
     expect(result.noOutputTimedOut).toBe(false);
@@ -81,19 +75,16 @@ describe("runCommandWithTimeout", () => {
     },
   );
 
-  it.runIf(process.platform === "win32")(
-    "falls back to npm.cmd when npm-cli.js is unavailable",
-    async () => {
-      const existsSpy = vi.spyOn(fs, "existsSync").mockReturnValue(false);
-      try {
-        const result = await runCommandWithTimeout(["npm", "--version"], { timeoutMs: 10_000 });
-        expect(result.code).toBe(0);
-        expect(result.stdout.trim()).toMatch(/^\d+\.\d+\.\d+$/);
-      } finally {
-        existsSpy.mockRestore();
-      }
-    },
-  );
+  it.runIf(process.platform === "win32")("falls back to npm.cmd when npm-cli.js is unavailable", async () => {
+    const existsSpy = vi.spyOn(fs, "existsSync").mockReturnValue(false);
+    try {
+      const result = await runCommandWithTimeout(["npm", "--version"], { timeoutMs: 10_000 });
+      expect(result.code).toBe(0);
+      expect(result.stdout.trim()).toMatch(/^\d+\.\d+\.\d+$/);
+    } finally {
+      existsSpy.mockRestore();
+    }
+  });
 });
 
 describe("attachChildProcessBridge", () => {

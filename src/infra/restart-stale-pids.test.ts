@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 // This entire file tests lsof-based Unix port polling. The feature is a deliberate
 // no-op on Windows (findGatewayPidsOnPortSync returns [] immediately). Running these
@@ -70,10 +70,7 @@ function createErrnoResult(code: string, message: string) {
   return createLsofResult({ error, status: null });
 }
 
-function installInitialBusyPoll(
-  stalePid: number,
-  resolvePoll: (call: number) => MockLsofResult,
-): () => number {
+function installInitialBusyPoll(stalePid: number, resolvePoll: (call: number) => MockLsofResult): () => number {
   let call = 0;
   mockSpawnSync.mockImplementation(() => {
     call += 1;
@@ -86,13 +83,12 @@ function installInitialBusyPoll(
 }
 
 describe.skipIf(isWindows)("restart-stale-pids", () => {
-  beforeEach(() => {
-    vi.resetModules();
-  });
-
-  beforeEach(async () => {
+  beforeAll(async () => {
     ({ __testing, cleanStaleGatewayProcessesSync, findGatewayPidsOnPortSync } =
       await import("./restart-stale-pids.js"));
+  });
+
+  beforeEach(() => {
     mockSpawnSync.mockReset();
     mockResolveGatewayPort.mockReset();
     mockRestartWarn.mockReset();
@@ -118,9 +114,7 @@ describe.skipIf(isWindows)("restart-stale-pids", () => {
     it("logs warning when initial lsof scan exits with status > 1", () => {
       mockSpawnSync.mockReturnValue({ error: null, status: 2, stdout: "", stderr: "lsof error" });
       expect(findGatewayPidsOnPortSync(18789)).toEqual([]);
-      expect(mockRestartWarn).toHaveBeenCalledWith(
-        expect.stringContaining("lsof exited with status 2"),
-      );
+      expect(mockRestartWarn).toHaveBeenCalledWith(expect.stringContaining("lsof exited with status 2"));
     });
 
     it("returns [] when lsof returns an error object (e.g. ENOENT)", () => {
@@ -166,11 +160,7 @@ describe.skipIf(isWindows)("restart-stale-pids", () => {
     it("forwards the spawnTimeoutMs argument to spawnSync", () => {
       mockSpawnSync.mockReturnValue({ error: null, status: 0, stdout: "", stderr: "" });
       findGatewayPidsOnPortSync(18789, 400);
-      expect(mockSpawnSync).toHaveBeenCalledWith(
-        "lsof",
-        expect.any(Array),
-        expect.objectContaining({ timeout: 400 }),
-      );
+      expect(mockSpawnSync).toHaveBeenCalledWith("lsof", expect.any(Array), expect.objectContaining({ timeout: 400 }));
     });
 
     it("deduplicates pids from dual-stack listeners (IPv4+IPv6 emit same pid twice)", () => {
@@ -477,9 +467,7 @@ describe.skipIf(isWindows)("restart-stale-pids", () => {
       // EPERM occurs when lsof exists but a MAC policy (SELinux/AppArmor) blocks
       // execution. Like ENOENT/EACCES, this is permanent — retrying is pointless.
       const stalePid = process.pid + 305;
-      const getCallCount = installInitialBusyPoll(stalePid, () =>
-        createErrnoResult("EPERM", "lsof eperm"),
-      );
+      const getCallCount = installInitialBusyPoll(stalePid, () => createErrnoResult("EPERM", "lsof eperm"));
       vi.spyOn(process, "kill").mockReturnValue(true);
       expect(() => cleanStaleGatewayProcessesSync()).not.toThrow();
       // Must bail after exactly 1 EPERM poll — same as ENOENT/EACCES

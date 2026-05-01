@@ -1,8 +1,5 @@
 export { CLAUDE_CLI_PROFILE_ID, CODEX_CLI_PROFILE_ID } from "./auth-profiles/constants.js";
-export type {
-  AuthCredentialReasonCode,
-  TokenExpiryState,
-} from "./auth-profiles/credential-state.js";
+export type { AuthCredentialReasonCode, TokenExpiryState } from "./auth-profiles/credential-state.js";
 export type { AuthProfileEligibilityReasonCode } from "./auth-profiles/order.js";
 export { resolveAuthProfileDisplayLabel } from "./auth-profiles/display.js";
 export { formatAuthDoctorHint } from "./auth-profiles/doctor.js";
@@ -17,10 +14,7 @@ export {
   upsertAuthProfile,
   upsertAuthProfileWithLock,
 } from "./auth-profiles/profiles.js";
-export {
-  repairOAuthProfileIdMismatch,
-  suggestOAuthProfileIdForLegacyDefault,
-} from "./auth-profiles/repair.js";
+export { repairOAuthProfileIdMismatch, suggestOAuthProfileIdForLegacyDefault } from "./auth-profiles/repair.js";
 export {
   clearRuntimeAuthProfileStoreSnapshots,
   ensureAuthProfileStore,

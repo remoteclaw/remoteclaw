@@ -1,8 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  addSubagentRunForTests,
-  resetSubagentRegistryForTests,
-} from "../../agents/subagent-registry.js";
+import { addSubagentRunForTests, resetSubagentRegistryForTests } from "../../agents/subagent-registry.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionBindingRecord } from "../../infra/outbound/session-binding-service.js";
 import { installSubagentsCommandCoreMocks } from "./commands-subagents.test-mocks.js";
@@ -60,8 +57,7 @@ vi.mock("../../acp/runtime/session-meta.js", async (importOriginal) => {
 });
 
 vi.mock("../../infra/outbound/session-binding-service.js", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("../../infra/outbound/session-binding-service.js")>();
+  const actual = await importOriginal<typeof import("../../infra/outbound/session-binding-service.js")>();
   return {
     ...actual,
     getSessionBindingService: () => buildFocusSessionBindingService(),
@@ -128,9 +124,7 @@ function createMatrixRoomCommandParams(commandBody: string, cfg: RemoteClawConfi
   return params;
 }
 
-function createSessionBindingRecord(
-  overrides?: Partial<SessionBindingRecord>,
-): SessionBindingRecord {
+function createSessionBindingRecord(overrides?: Partial<SessionBindingRecord>): SessionBindingRecord {
   return {
     bindingId: "default:thread-1",
     targetSessionKey: "agent:codex-acp:session-1",
@@ -183,8 +177,7 @@ async function focusCodexAcp(
         conversation: {
           channel: input.conversation.channel,
           accountId: input.conversation.accountId,
-          conversationId:
-            input.placement === "child" ? "thread-created" : input.conversation.conversationId,
+          conversationId: input.placement === "child" ? "thread-created" : input.conversation.conversationId,
           ...(input.conversation.parentConversationId
             ? { parentConversationId: input.conversation.parentConversationId }
             : {}),
@@ -209,9 +202,7 @@ describe("/focus, /unfocus, /agents", () => {
     resetSubagentRegistryForTests();
     hoisted.callGatewayMock.mockReset();
     hoisted.readAcpSessionEntryMock.mockReset().mockReturnValue(null);
-    hoisted.sessionBindingCapabilitiesMock
-      .mockReset()
-      .mockReturnValue(createSessionBindingCapabilities());
+    hoisted.sessionBindingCapabilitiesMock.mockReset().mockReturnValue(createSessionBindingCapabilities());
     hoisted.sessionBindingResolveByConversationMock.mockReset().mockReturnValue(null);
     hoisted.sessionBindingListBySessionMock.mockReset().mockReturnValue([]);
     hoisted.sessionBindingUnbindMock.mockReset().mockResolvedValue([]);

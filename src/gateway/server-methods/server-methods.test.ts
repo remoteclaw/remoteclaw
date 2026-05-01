@@ -243,9 +243,7 @@ describe("normalizeRpcAttachmentsToChatAttachments", () => {
     const res = normalizeRpcAttachmentsToChatAttachments([
       { type: "file", mimeType: "image/png", fileName: "a.png", content: "Zm9v" },
     ]);
-    expect(res).toEqual([
-      { type: "file", mimeType: "image/png", fileName: "a.png", content: "Zm9v" },
-    ]);
+    expect(res).toEqual([{ type: "file", mimeType: "image/png", fileName: "a.png", content: "Zm9v" }]);
   });
 
   it("converts Uint8Array content to base64", () => {
@@ -320,15 +318,12 @@ describe("gateway healthHandlers.status scope handling", () => {
   it.each([
     { scopes: ["operator.read"], includeSensitive: false },
     { scopes: ["operator.admin"], includeSensitive: true },
-  ])(
-    "requests includeSensitive=$includeSensitive for scopes $scopes",
-    async ({ scopes, includeSensitive }) => {
-      const respond = await runHealthStatus(scopes);
+  ])("requests includeSensitive=$includeSensitive for scopes $scopes", async ({ scopes, includeSensitive }) => {
+    const respond = await runHealthStatus(scopes);
 
-      expect(vi.mocked(statusModule.getStatusSummary)).toHaveBeenCalledWith({ includeSensitive });
-      expect(respond).toHaveBeenCalledWith(true, { ok: true }, undefined);
-    },
-  );
+    expect(vi.mocked(statusModule.getStatusSummary)).toHaveBeenCalledWith({ includeSensitive });
+    expect(respond).toHaveBeenCalledWith(true, { ok: true }, undefined);
+  });
 });
 
 describe("logs.tail", () => {

@@ -260,10 +260,7 @@ const syncRuntimeArtifacts = (deps) => {
   try {
     runRuntimePostBuild({ cwd: deps.cwd });
   } catch (error) {
-    logRunner(
-      `Failed to write runtime build artifacts: ${error?.message ?? "unknown error"}`,
-      deps,
-    );
+    logRunner(`Failed to write runtime build artifacts: ${error?.message ?? "unknown error"}`, deps);
     return false;
   }
   return true;

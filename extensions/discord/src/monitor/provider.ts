@@ -18,10 +18,7 @@ import {
   resolveThreadBindingMaxAgeMs,
   resolveThreadBindingsEnabled,
 } from "../../../../src/channels/thread-bindings-policy.js";
-import {
-  isNativeCommandsExplicitlyDisabled,
-  resolveNativeCommandsEnabled,
-} from "../../../../src/config/commands.js";
+import { isNativeCommandsExplicitlyDisabled, resolveNativeCommandsEnabled } from "../../../../src/config/commands.js";
 import type { RemoteClawConfig, ReplyToMode } from "../../../../src/config/config.js";
 import { loadConfig } from "../../../../src/config/config.js";
 import { isDangerousNameMatchingEnabled } from "../../../../src/config/dangerous-name-matching.js";
@@ -63,10 +60,7 @@ import {
   registerDiscordListener,
 } from "./listeners.js";
 import { createDiscordMessageHandler } from "./message-handler.js";
-import {
-  createDiscordCommandArgFallbackButton,
-  createDiscordNativeCommand,
-} from "./native-command.js";
+import { createDiscordCommandArgFallbackButton, createDiscordNativeCommand } from "./native-command.js";
 import { resolveDiscordPresenceUpdate } from "./presence.js";
 import { resolveDiscordAllowlistConfig } from "./provider.allowlist.js";
 import { runDiscordGatewayLifecycle } from "./provider.lifecycle.js";
@@ -111,11 +105,7 @@ function formatThreadBindingDurationForConfigLabel(durationMs: number): string {
   return label === "disabled" ? "off" : label;
 }
 
-async function deployDiscordCommands(params: {
-  client: Client;
-  runtime: RuntimeEnv;
-  enabled: boolean;
-}) {
+async function deployDiscordCommands(params: { client: Client; runtime: RuntimeEnv; enabled: boolean }) {
   if (!params.enabled) {
     return;
   }
@@ -124,9 +114,7 @@ async function deployDiscordCommands(params: {
     await runWithRetry(() => params.client.handleDeployRequest(), "command deploy");
   } catch (err) {
     const details = formatDiscordDeployErrorDetails(err);
-    params.runtime.error?.(
-      danger(`discord: failed to deploy native commands: ${formatErrorMessage(err)}${details}`),
-    );
+    params.runtime.error?.(danger(`discord: failed to deploy native commands: ${formatErrorMessage(err)}${details}`));
   }
 }
 
@@ -149,8 +137,7 @@ function formatDiscordDeployErrorDetails(err: unknown): string {
     try {
       bodyText = JSON.stringify(rawBody);
     } catch {
-      bodyText =
-        typeof rawBody === "string" ? rawBody : inspect(rawBody, { depth: 3, breakLength: 120 });
+      bodyText = typeof rawBody === "string" ? rawBody : inspect(rawBody, { depth: 3, breakLength: 120 });
     }
     if (bodyText) {
       const maxLen = 800;
@@ -177,8 +164,7 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
     cfg,
     accountId: opts.accountId,
   });
-  const token =
-    normalizeDiscordToken(opts.token ?? undefined, "channels.discord.token") ?? account.token;
+  const token = normalizeDiscordToken(opts.token ?? undefined, "channels.discord.token") ?? account.token;
   if (!token) {
     throw new Error(
       `Discord bot token missing for account "${account.accountId}" (set discord.accounts.${account.accountId}.token or DISCORD_BOT_TOKEN for default).`,
@@ -189,8 +175,7 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
 
   const rawDiscordCfg = account.config;
   const discordRootThreadBindings = cfg.channels?.discord?.threadBindings;
-  const discordAccountThreadBindings =
-    cfg.channels?.discord?.accounts?.[account.accountId]?.threadBindings;
+  const discordAccountThreadBindings = cfg.channels?.discord?.accounts?.[account.accountId]?.threadBindings;
   const discordRestFetch = resolveDiscordRestFetch(rawDiscordCfg.proxy, runtime);
   const dmConfig = rawDiscordCfg.dm;
   let guildEntries = rawDiscordCfg.guilds;
@@ -201,8 +186,7 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
     groupPolicy: rawDiscordCfg.groupPolicy,
     defaultGroupPolicy,
   });
-  const discordCfg =
-    rawDiscordCfg.groupPolicy === groupPolicy ? rawDiscordCfg : { ...rawDiscordCfg, groupPolicy };
+  const discordCfg = rawDiscordCfg.groupPolicy === groupPolicy ? rawDiscordCfg : { ...rawDiscordCfg, groupPolicy };
   warnMissingProviderGroupPolicyFallbackOnce({
     providerMissingFallbackApplied,
     providerKey: "discord",
@@ -223,13 +207,11 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
   const dmEnabled = dmConfig?.enabled ?? true;
   const dmPolicy = discordCfg.dmPolicy ?? dmConfig?.policy ?? "pairing";
   const threadBindingIdleTimeoutMs = resolveThreadBindingIdleTimeoutMs({
-    channelIdleHoursRaw:
-      discordAccountThreadBindings?.idleHours ?? discordRootThreadBindings?.idleHours,
+    channelIdleHoursRaw: discordAccountThreadBindings?.idleHours ?? discordRootThreadBindings?.idleHours,
     sessionIdleHoursRaw: cfg.session?.threadBindings?.idleHours,
   });
   const threadBindingMaxAgeMs = resolveThreadBindingMaxAgeMs({
-    channelMaxAgeHoursRaw:
-      discordAccountThreadBindings?.maxAgeHours ?? discordRootThreadBindings?.maxAgeHours,
+    channelMaxAgeHoursRaw: discordAccountThreadBindings?.maxAgeHours ?? discordRootThreadBindings?.maxAgeHours,
     sessionMaxAgeHoursRaw: cfg.session?.threadBindings?.maxAgeHours,
   });
   const threadBindingsEnabled = resolveThreadBindingsEnabled({
@@ -275,15 +257,9 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
   }
 
   const maxDiscordCommands = 100;
-  const commandSpecs = nativeEnabled
-    ? listNativeCommandSpecsForConfig(cfg, { provider: "discord" })
-    : [];
+  const commandSpecs = nativeEnabled ? listNativeCommandSpecsForConfig(cfg, { provider: "discord" }) : [];
   if (nativeEnabled && commandSpecs.length > maxDiscordCommands) {
-    runtime.log?.(
-      warn(
-        `discord: ${commandSpecs.length} commands exceeds limit; some commands may fail to deploy.`,
-      ),
-    );
+    runtime.log?.(warn(`discord: ${commandSpecs.length} commands exceeds limit; some commands may fail to deploy.`));
   }
   const voiceManagerRef: { current: DiscordVoiceManager | null } = { current: null };
   const threadBindings = threadBindingsEnabled
@@ -374,9 +350,7 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
       }
     }
 
-    const clientPlugins: Plugin[] = [
-      createDiscordGatewayPlugin({ discordConfig: discordCfg, runtime }),
-    ];
+    const clientPlugins: Plugin[] = [createDiscordGatewayPlugin({ discordConfig: discordCfg, runtime })];
     if (voiceEnabled) {
       clientPlugins.push(new VoicePlugin());
     }
@@ -473,16 +447,10 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
       logger,
     };
     registerDiscordListener(client.listeners, new DiscordReactionListener(reactionListenerOptions));
-    registerDiscordListener(
-      client.listeners,
-      new DiscordReactionRemoveListener(reactionListenerOptions),
-    );
+    registerDiscordListener(client.listeners, new DiscordReactionRemoveListener(reactionListenerOptions));
 
     if (discordCfg.intents?.presence) {
-      registerDiscordListener(
-        client.listeners,
-        new DiscordPresenceListener({ logger, accountId: account.accountId }),
-      );
+      registerDiscordListener(client.listeners, new DiscordPresenceListener({ logger, accountId: account.accountId }));
       runtime.log?.("discord: GuildPresences intent enabled — presence listener registered");
     }
 
@@ -509,11 +477,7 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
   }
 }
 
-async function clearDiscordNativeCommands(params: {
-  client: Client;
-  applicationId: string;
-  runtime: RuntimeEnv;
-}) {
+async function clearDiscordNativeCommands(params: { client: Client; applicationId: string; runtime: RuntimeEnv }) {
   try {
     await params.client.rest.put(Routes.applicationCommands(params.applicationId), {
       body: [],

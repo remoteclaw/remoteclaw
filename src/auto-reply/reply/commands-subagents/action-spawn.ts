@@ -2,9 +2,7 @@ import { spawnSubagentDirect } from "../../../agents/subagent-spawn.js";
 import type { CommandHandlerResult } from "../commands-types.js";
 import { type SubagentsCommandContext, stopWithText } from "./shared.js";
 
-export async function handleSubagentsSpawnAction(
-  ctx: SubagentsCommandContext,
-): Promise<CommandHandlerResult> {
+export async function handleSubagentsSpawnAction(ctx: SubagentsCommandContext): Promise<CommandHandlerResult> {
   const { params, requesterKey, restTokens } = ctx;
   const agentId = restTokens[0];
 
@@ -24,8 +22,7 @@ export async function handleSubagentsSpawnAction(
   }
 
   const commandTo = typeof params.command.to === "string" ? params.command.to.trim() : "";
-  const originatingTo =
-    typeof params.ctx.OriginatingTo === "string" ? params.ctx.OriginatingTo.trim() : "";
+  const originatingTo = typeof params.ctx.OriginatingTo === "string" ? params.ctx.OriginatingTo.trim() : "";
   const fallbackTo = typeof params.ctx.To === "string" ? params.ctx.To.trim() : "";
   const normalizedTo = originatingTo || commandTo || fallbackTo || undefined;
 

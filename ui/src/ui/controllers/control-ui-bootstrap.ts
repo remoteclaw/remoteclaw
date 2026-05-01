@@ -22,9 +22,7 @@ export async function loadControlUiBootstrapConfig(state: ControlUiBootstrapStat
   }
 
   const basePath = normalizeBasePath(state.basePath ?? "");
-  const url = basePath
-    ? `${basePath}${CONTROL_UI_BOOTSTRAP_CONFIG_PATH}`
-    : CONTROL_UI_BOOTSTRAP_CONFIG_PATH;
+  const url = basePath ? `${basePath}${CONTROL_UI_BOOTSTRAP_CONFIG_PATH}` : CONTROL_UI_BOOTSTRAP_CONFIG_PATH;
 
   try {
     const res = await fetch(url, {
@@ -37,14 +35,11 @@ export async function loadControlUiBootstrapConfig(state: ControlUiBootstrapStat
     }
     const parsed = (await res.json()) as ControlUiBootstrapConfig;
     const normalized = normalizeAssistantIdentity({
-      agentId: parsed.assistantAgentId ?? null,
       name: parsed.assistantName,
       avatar: parsed.assistantAvatar ?? null,
     });
     state.assistantName = normalized.name;
     state.assistantAvatar = normalized.avatar;
-    state.assistantAgentId = normalized.agentId ?? null;
-    state.serverVersion = parsed.serverVersion ?? null;
   } catch {
     // Ignore bootstrap failures; UI will update identity after connecting.
   }

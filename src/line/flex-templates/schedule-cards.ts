@@ -43,10 +43,7 @@ function buildCardHeaderSections(headerContents: FlexComponent[]): FlexComponent
   ];
 }
 
-function createMegaBubbleWithFooter(params: {
-  bodyContents: FlexComponent[];
-  footer?: string;
-}): FlexBubble {
+function createMegaBubbleWithFooter(params: { bodyContents: FlexComponent[]; footer?: string }): FlexBubble {
   const bubble: FlexBubble = {
     type: "bubble",
     size: "mega",

@@ -2,11 +2,7 @@ import { findNormalizedProviderValue, normalizeProviderId } from "../agents/prov
 import type { RemoteClawConfig } from "../config/config.js";
 import { dedupeProfileIds, listProfilesForProvider } from "./profiles.js";
 import type { AuthProfileStore } from "./types.js";
-import {
-  clearExpiredCooldowns,
-  isProfileInCooldown,
-  resolveProfileUnusableUntil,
-} from "./usage.js";
+import { clearExpiredCooldowns, isProfileInCooldown, resolveProfileUnusableUntil } from "./usage.js";
 
 export function resolveAuthProfileOrder(params: {
   cfg?: RemoteClawConfig;
@@ -31,8 +27,7 @@ export function resolveAuthProfileOrder(params: {
         .map(([profileId]) => profileId)
     : [];
   const baseOrder =
-    explicitOrder ??
-    (explicitProfiles.length > 0 ? explicitProfiles : listProfilesForProvider(store, providerKey));
+    explicitOrder ?? (explicitProfiles.length > 0 ? explicitProfiles : listProfilesForProvider(store, providerKey));
   if (baseOrder.length === 0) {
     return [];
   }
@@ -95,8 +90,7 @@ export function resolveAuthProfileOrder(params: {
 
     for (const profileId of deduped) {
       if (isProfileInCooldown(store, profileId)) {
-        const cooldownUntil =
-          resolveProfileUnusableUntil(store.usageStats?.[profileId] ?? {}) ?? now;
+        const cooldownUntil = resolveProfileUnusableUntil(store.usageStats?.[profileId] ?? {}) ?? now;
         inCooldown.push({ profileId, cooldownUntil });
       } else {
         available.push(profileId);

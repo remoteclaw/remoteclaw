@@ -88,9 +88,7 @@ export async function readDescendantSubagentFallbackReply(params: {
   }
 
   const replies: string[] = [];
-  const latestRuns = [...latestByChild.values()]
-    .toSorted((a, b) => (a.endedAt ?? 0) - (b.endedAt ?? 0))
-    .slice(-4);
+  const latestRuns = [...latestByChild.values()].toSorted((a, b) => (a.endedAt ?? 0) - (b.endedAt ?? 0)).slice(-4);
   for (const entry of latestRuns) {
     let reply = (await readLatestAssistantReply({ sessionKey: entry.childSessionKey }))?.trim();
     // Fall back to the registry's frozen result text when the session transcript
@@ -130,13 +128,10 @@ export async function waitForDescendantSubagentSummary(params: {
 
   // Snapshot the currently active descendant run IDs.
   const getActiveRuns = () =>
-    listDescendantRunsForRequester(params.sessionKey).filter(
-      (entry) => typeof entry.endedAt !== "number",
-    );
+    listDescendantRunsForRequester(params.sessionKey).filter((entry) => typeof entry.endedAt !== "number");
 
   const initialActiveRuns = getActiveRuns();
-  const sawActiveDescendants =
-    params.observedActiveDescendants === true || initialActiveRuns.length > 0;
+  const sawActiveDescendants = params.observedActiveDescendants === true || initialActiveRuns.length > 0;
 
   if (!sawActiveDescendants) {
     // No active descendants and none were observed before the call – nothing to wait for.

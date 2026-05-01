@@ -7,13 +7,7 @@ import { movePathToTrash } from "../infra/trash.js";
 import { parseHttpUrl, resolveProfile } from "./config.js";
 import { DEFAULT_BROWSER_DEFAULT_PROFILE_NAME } from "./constants.js";
 import { resolveRemoteClawUserDataDir } from "./profile-paths.js";
-import {
-  allocateCdpPort,
-  allocateColor,
-  getUsedColors,
-  getUsedPorts,
-  isValidProfileName,
-} from "./profiles.js";
+import { allocateCdpPort, allocateColor, getUsedColors, getUsedPorts, isValidProfileName } from "./profiles.js";
 import type { BrowserRouteContext, ProfileStatus } from "./server-context.js";
 
 export type CreateProfileParams = {
@@ -67,8 +61,7 @@ export function createBrowserProfilesService(ctx: BrowserRouteContext) {
     }
 
     const usedColors = getUsedColors(resolvedProfiles);
-    const profileColor =
-      params.color && HEX_COLOR_RE.test(params.color) ? params.color : allocateColor(usedColors);
+    const profileColor = params.color && HEX_COLOR_RE.test(params.color) ? params.color : allocateColor(usedColors);
 
     let profileConfig: BrowserProfileConfig;
     if (rawCdpUrl) {
@@ -138,9 +131,7 @@ export function createBrowserProfilesService(ctx: BrowserRouteContext) {
 
     const defaultProfile = cfg.browser?.defaultProfile ?? DEFAULT_BROWSER_DEFAULT_PROFILE_NAME;
     if (name === defaultProfile) {
-      throw new Error(
-        `cannot delete the default profile "${name}"; change browser.defaultProfile first`,
-      );
+      throw new Error(`cannot delete the default profile "${name}"; change browser.defaultProfile first`);
     }
 
     let deleted = false;

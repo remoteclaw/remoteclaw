@@ -22,11 +22,7 @@ export type {
   RemoteClawPluginServiceContext,
   PluginLogger,
 } from "../plugins/types.js";
-export type {
-  WindowsSpawnProgram,
-  WindowsSpawnProgramCandidate,
-  WindowsSpawnResolution,
-} from "./windows-spawn.js";
+export type { WindowsSpawnProgram, WindowsSpawnProgramCandidate, WindowsSpawnResolution } from "./windows-spawn.js";
 export {
   applyWindowsSpawnProgramPolicy,
   materializeWindowsSpawnProgram,

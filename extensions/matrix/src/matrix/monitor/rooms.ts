@@ -18,11 +18,7 @@ export function resolveMatrixRoomConfig(params: {
   const rooms = params.rooms ?? {};
   const keys = Object.keys(rooms);
   const allowlistConfigured = keys.length > 0;
-  const candidates = buildChannelKeyCandidates(
-    params.roomId,
-    `room:${params.roomId}`,
-    ...params.aliases,
-  );
+  const candidates = buildChannelKeyCandidates(params.roomId, `room:${params.roomId}`, ...params.aliases);
   const {
     entry: matched,
     key: matchedKey,

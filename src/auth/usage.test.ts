@@ -33,9 +33,7 @@ function makeStore(usageStats: AuthProfileStore["usageStats"]): AuthProfileStore
   };
 }
 
-function expectProfileErrorStateCleared(
-  stats: NonNullable<AuthProfileStore["usageStats"]>[string] | undefined,
-) {
+function expectProfileErrorStateCleared(stats: NonNullable<AuthProfileStore["usageStats"]>[string] | undefined) {
   expect(stats?.cooldownUntil).toBeUndefined();
   expect(stats?.disabledUntil).toBeUndefined();
   expect(stats?.disabledReason).toBeUndefined();
@@ -621,9 +619,7 @@ describe("getSoonestCooldownExpiry", () => {
       },
     });
 
-    expect(getSoonestCooldownExpiry(store, ["openai:p1", "openai:p2", "openai:p3"])).toBe(
-      1_700_000_001_000,
-    );
+    expect(getSoonestCooldownExpiry(store, ["openai:p1", "openai:p2", "openai:p3"])).toBe(1_700_000_001_000);
   });
 
   it("ignores unknown profiles and invalid cooldown values", () => {
@@ -642,15 +638,9 @@ describe("getSoonestCooldownExpiry", () => {
       },
     });
 
-    expect(
-      getSoonestCooldownExpiry(store, [
-        "missing",
-        "openai:p1",
-        "openai:p2",
-        "openai:p3",
-        "openai:p4",
-      ]),
-    ).toBe(1_700_000_005_000);
+    expect(getSoonestCooldownExpiry(store, ["missing", "openai:p1", "openai:p2", "openai:p3", "openai:p4"])).toBe(
+      1_700_000_005_000,
+    );
   });
 
   it("returns past timestamps when cooldown already expired", () => {

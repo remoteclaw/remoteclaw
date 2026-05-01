@@ -5,10 +5,7 @@ import * as path from "node:path";
 import { beforeEach, describe, expect, it, test, vi } from "vitest";
 import { defaultVoiceWakeTriggers } from "../infra/voicewake.js";
 import { handleControlUiHttpRequest } from "./control-ui.js";
-import {
-  DEFAULT_DANGEROUS_NODE_COMMANDS,
-  resolveNodeCommandAllowlist,
-} from "./node-command-policy.js";
+import { DEFAULT_DANGEROUS_NODE_COMMANDS, resolveNodeCommandAllowlist } from "./node-command-policy.js";
 import type { RequestFrame } from "./protocol/index.js";
 import { createGatewayBroadcaster } from "./server-broadcast.js";
 import { createChatRunRegistry } from "./server-chat.js";
@@ -122,11 +119,9 @@ describe("GatewayClient", () => {
   it("still serves SPA fallback for extensionless paths", async () => {
     await withControlUiRoot({}, async (tmp) => {
       const { res } = makeControlUiResponse();
-      const handled = handleControlUiHttpRequest(
-        { url: "/webchat/chat", method: "GET" } as IncomingMessage,
-        res,
-        { root: { kind: "resolved", path: tmp } },
-      );
+      const handled = handleControlUiHttpRequest({ url: "/webchat/chat", method: "GET" } as IncomingMessage, res, {
+        root: { kind: "resolved", path: tmp },
+      });
       expect(handled).toBe(true);
       expect(res.statusCode).toBe(200);
     });
@@ -149,11 +144,9 @@ describe("GatewayClient", () => {
     await withControlUiRoot({}, async (tmp) => {
       for (const route of ["/webchat/user/jane.doe", "/webchat/v2.0", "/settings/v1.2"]) {
         const { res } = makeControlUiResponse();
-        const handled = handleControlUiHttpRequest(
-          { url: route, method: "GET" } as IncomingMessage,
-          res,
-          { root: { kind: "resolved", path: tmp } },
-        );
+        const handled = handleControlUiHttpRequest({ url: route, method: "GET" } as IncomingMessage, res, {
+          root: { kind: "resolved", path: tmp },
+        });
         expect(handled).toBe(true);
         expect(res.statusCode, `expected 200 for ${route}`).toBe(200);
       }
@@ -163,11 +156,9 @@ describe("GatewayClient", () => {
   it("serves SPA fallback for .html paths that do not exist on disk", async () => {
     await withControlUiRoot({}, async (tmp) => {
       const { res } = makeControlUiResponse();
-      const handled = handleControlUiHttpRequest(
-        { url: "/webchat/foo.html", method: "GET" } as IncomingMessage,
-        res,
-        { root: { kind: "resolved", path: tmp } },
-      );
+      const handled = handleControlUiHttpRequest({ url: "/webchat/foo.html", method: "GET" } as IncomingMessage, res, {
+        root: { kind: "resolved", path: tmp },
+      });
       expect(handled).toBe(true);
       expect(res.statusCode).toBe(200);
     });
@@ -303,8 +294,7 @@ describe("node subscription manager", () => {
       event: string;
       payloadJSON?: string | null;
     }> = [];
-    const sendEvent = (evt: { nodeId: string; event: string; payloadJSON?: string | null }) =>
-      sent.push(evt);
+    const sendEvent = (evt: { nodeId: string; event: string; payloadJSON?: string | null }) => sent.push(evt);
 
     manager.subscribe("node-a", "main");
     manager.subscribe("node-b", "main");
@@ -318,8 +308,7 @@ describe("node subscription manager", () => {
   test("unsubscribeAll clears session mappings", () => {
     const manager = createNodeSubscriptionManager();
     const sent: string[] = [];
-    const sendEvent = (evt: { nodeId: string; event: string }) =>
-      sent.push(`${evt.nodeId}:${evt.event}`);
+    const sendEvent = (evt: { nodeId: string; event: string }) => sent.push(`${evt.nodeId}:${evt.event}`);
 
     manager.subscribe("node-a", "main");
     manager.subscribe("node-a", "secondary");
@@ -369,8 +358,12 @@ describe("resolveNodeCommandAllowlist", () => {
     expect(allow.has("device.permissions")).toBe(true);
     expect(allow.has("device.health")).toBe(true);
     expect(allow.has("callLog.search")).toBe(true);
-    expect(allow.has("sms.search")).toBe(true);
     expect(allow.has("system.notify")).toBe(true);
+    expect(allow.has("sms.search")).toBe(false);
+  });
+
+  it("treats sms.search as dangerous by default", () => {
+    expect(DEFAULT_DANGEROUS_NODE_COMMANDS).toContain("sms.search");
   });
 
   it("can explicitly allow dangerous commands via allowCommands", () => {

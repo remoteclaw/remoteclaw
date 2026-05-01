@@ -275,10 +275,7 @@ describe("gateway server sessions", () => {
     expect(patched.ok).toBe(true);
     expect(patched.payload?.key).toBe("agent:ops:work");
 
-    const stored = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<
-      string,
-      { verboseLevel?: string }
-    >;
+    const stored = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<string, { verboseLevel?: string }>;
     expect(stored["agent:ops:work"]?.verboseLevel).toBe("full");
     expect(stored.main).toBeUndefined();
   });

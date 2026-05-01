@@ -29,8 +29,7 @@ vi.mock("node:fs", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs")>();
   const wrapped = {
     ...actual,
-    existsSync: (p: string) =>
-      isFixturePath(p) ? state.entries.has(abs(p)) : actual.existsSync(p),
+    existsSync: (p: string) => (isFixturePath(p) ? state.entries.has(abs(p)) : actual.existsSync(p)),
     readFileSync: (p: string, encoding?: unknown) => {
       if (!isFixturePath(p)) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -94,8 +93,7 @@ describe("resolveRemoteClawPackageRoot", () => {
   let resolveRemoteClawPackageRootSync: typeof import("./remoteclaw-root.js").resolveRemoteClawPackageRootSync;
 
   beforeAll(async () => {
-    ({ resolveRemoteClawPackageRoot, resolveRemoteClawPackageRootSync } =
-      await import("./remoteclaw-root.js"));
+    ({ resolveRemoteClawPackageRoot, resolveRemoteClawPackageRootSync } = await import("./remoteclaw-root.js"));
   });
 
   beforeEach(() => {

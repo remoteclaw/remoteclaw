@@ -29,9 +29,7 @@ describe("McpSideEffectsWriter", () => {
 
     const result = await readMcpSideEffects(filePath);
     expect(result.sentTexts).toEqual(["Hello"]);
-    expect(result.sentTargets).toEqual([
-      { tool: "message", provider: "telegram", to: "group:123" },
-    ]);
+    expect(result.sentTargets).toEqual([{ tool: "message", provider: "telegram", to: "group:123" }]);
     expect(result.sentMediaUrls).toEqual([]);
     expect(result.cronAdds).toBe(0);
   });
@@ -49,9 +47,7 @@ describe("McpSideEffectsWriter", () => {
     const result = await readMcpSideEffects(filePath);
     expect(result.sentTexts).toEqual(["Check this out"]);
     expect(result.sentMediaUrls).toEqual(["https://example.com/image.png"]);
-    expect(result.sentTargets).toEqual([
-      { tool: "message_send_attachment", provider: "discord", to: "channel:456" },
-    ]);
+    expect(result.sentTargets).toEqual([{ tool: "message_send_attachment", provider: "discord", to: "channel:456" }]);
   });
 
   it("records a cron_added side effect", async () => {
@@ -99,9 +95,7 @@ describe("McpSideEffectsWriter", () => {
     });
 
     const result = await readMcpSideEffects(filePath);
-    expect(result.sentTargets).toEqual([
-      { tool: "message", provider: "slack", accountId: "T12345", to: "C67890" },
-    ]);
+    expect(result.sentTargets).toEqual([{ tool: "message", provider: "slack", accountId: "T12345", to: "C67890" }]);
   });
 });
 

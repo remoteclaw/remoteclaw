@@ -80,11 +80,7 @@ describe("runGatewayUpdate", () => {
 
   async function seedGlobalPackageRoot(pkgRoot: string, version = "1.0.0") {
     await fs.mkdir(pkgRoot, { recursive: true });
-    await fs.writeFile(
-      path.join(pkgRoot, "package.json"),
-      JSON.stringify({ name: "remoteclaw", version }),
-      "utf-8",
-    );
+    await fs.writeFile(path.join(pkgRoot, "package.json"), JSON.stringify({ name: "remoteclaw", version }), "utf-8");
     for (const sidecar of SIDECAR_PATHS) {
       const sidecarPath = path.join(pkgRoot, sidecar);
       await fs.mkdir(path.dirname(sidecarPath), { recursive: true });
@@ -99,8 +95,7 @@ describe("runGatewayUpdate", () => {
     onOmitOptionalInstall?: () => Promise<CommandResult>;
   }) {
     const baseInstallKey = "npm i -g remoteclaw@latest --no-fund --no-audit --loglevel=error";
-    const omitOptionalInstallKey =
-      "npm i -g remoteclaw@latest --omit=optional --no-fund --no-audit --loglevel=error";
+    const omitOptionalInstallKey = "npm i -g remoteclaw@latest --omit=optional --no-fund --no-audit --loglevel=error";
 
     return async (argv: string[]): Promise<CommandResult> => {
       const key = argv.join(" ");
@@ -117,9 +112,7 @@ describe("runGatewayUpdate", () => {
         return (await params.onBaseInstall?.()) ?? { stdout: "ok", stderr: "", code: 0 };
       }
       if (key === omitOptionalInstallKey) {
-        return (
-          (await params.onOmitOptionalInstall?.()) ?? { stdout: "", stderr: "not found", code: 1 }
-        );
+        return (await params.onOmitOptionalInstall?.()) ?? { stdout: "", stderr: "not found", code: 1 };
       }
       return { stdout: "", stderr: "", code: 0 };
     };

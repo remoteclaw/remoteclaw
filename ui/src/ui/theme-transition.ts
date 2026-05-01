@@ -43,12 +43,7 @@ const cleanupThemeTransition = (root: HTMLElement) => {
   root.style.removeProperty("--theme-switch-y");
 };
 
-export const startThemeTransition = ({
-  nextTheme,
-  applyTheme,
-  context,
-  currentTheme,
-}: ThemeTransitionOptions) => {
+export const startThemeTransition = ({ nextTheme, applyTheme, context, currentTheme }: ThemeTransitionOptions) => {
   if (currentTheme === nextTheme) {
     return;
   }

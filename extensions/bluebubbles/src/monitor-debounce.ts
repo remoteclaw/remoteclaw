@@ -65,15 +65,11 @@ function combineDebounceEntries(entries: BlueBubblesDebounceEntry[]): Normalized
   const allAttachments = entries.flatMap((e) => e.message.attachments ?? []);
 
   // Use the latest timestamp
-  const timestamps = entries
-    .map((e) => e.message.timestamp)
-    .filter((t): t is number => typeof t === "number");
+  const timestamps = entries.map((e) => e.message.timestamp).filter((t): t is number => typeof t === "number");
   const latestTimestamp = timestamps.length > 0 ? Math.max(...timestamps) : first.timestamp;
 
   // Collect all message IDs for reference
-  const messageIds = entries
-    .map((e) => e.message.messageId)
-    .filter((id): id is string => Boolean(id));
+  const messageIds = entries.map((e) => e.message.messageId).filter((id): id is string => Boolean(id));
 
   // Prefer reply context from any entry that has it
   const entryWithReply = entries.find((e) => e.message.replyToId);
@@ -94,10 +90,7 @@ function combineDebounceEntries(entries: BlueBubblesDebounceEntry[]): Normalized
   };
 }
 
-function resolveBlueBubblesDebounceMs(
-  config: RemoteClawConfig,
-  core: BlueBubblesCoreRuntime,
-): number {
+function resolveBlueBubblesDebounceMs(config: RemoteClawConfig, core: BlueBubblesCoreRuntime): number {
   const inbound = config.messages?.inbound;
   const hasExplicitDebounce =
     typeof inbound?.debounceMs === "number" || typeof inbound?.byChannel?.bluebubbles === "number";
@@ -133,7 +126,7 @@ export function createBlueBubblesDebounceRegistry(params: {
           const balloonBundleId = msg.balloonBundleId?.trim();
           const associatedMessageGuid = msg.associatedMessageGuid?.trim();
           if (balloonBundleId && associatedMessageGuid) {
-            return `bluebubbles:${account.accountId}:balloon:${associatedMessageGuid}`;
+            return `bluebubbles:${account.accountId}:msg:${associatedMessageGuid}`;
           }
 
           const messageId = msg.messageId?.trim();
@@ -142,9 +135,7 @@ export function createBlueBubblesDebounceRegistry(params: {
           }
 
           const chatKey =
-            msg.chatGuid?.trim() ??
-            msg.chatIdentifier?.trim() ??
-            (msg.chatId ? String(msg.chatId) : "dm");
+            msg.chatGuid?.trim() ?? msg.chatIdentifier?.trim() ?? (msg.chatId ? String(msg.chatId) : "dm");
           return `bluebubbles:${account.accountId}:${chatKey}:${msg.senderId}`;
         },
         shouldDebounce: (entry) => {
@@ -189,9 +180,7 @@ export function createBlueBubblesDebounceRegistry(params: {
           await params.processMessage(combined, flushTarget);
         },
         onError: (err) => {
-          runtime.error?.(
-            `[${account.accountId}] [bluebubbles] debounce flush failed: ${String(err)}`,
-          );
+          runtime.error?.(`[${account.accountId}] [bluebubbles] debounce flush failed: ${String(err)}`);
         },
       });
 

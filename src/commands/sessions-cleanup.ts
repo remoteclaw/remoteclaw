@@ -14,10 +14,7 @@ import {
 } from "../config/sessions.js";
 import { type RuntimeEnv, writeRuntimeJson } from "../runtime.js";
 import { isRich, theme } from "../terminal/theme.js";
-import {
-  resolveSessionStoreTargetsOrExit,
-  type SessionStoreTarget,
-} from "./session-store-targets.js";
+import { resolveSessionStoreTargetsOrExit, type SessionStoreTarget } from "./session-store-targets.js";
 import {
   formatSessionAgeCell,
   formatSessionFlagsCell,
@@ -42,12 +39,7 @@ export type SessionsCleanupOptions = {
   fixMissing?: boolean;
 };
 
-type SessionCleanupAction =
-  | "keep"
-  | "prune-missing"
-  | "prune-stale"
-  | "cap-overflow"
-  | "evict-budget";
+type SessionCleanupAction = "keep" | "prune-missing" | "prune-stale" | "cap-overflow" | "evict-budget";
 
 const ACTION_PAD = 12;
 

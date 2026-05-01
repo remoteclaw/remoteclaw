@@ -70,16 +70,11 @@ async function authorizeVoiceCommand(
   }
 
   const channelId = channelOverride?.id ?? channel?.id ?? "";
-  const rawChannelName =
-    channelOverride?.name ?? (channel && "name" in channel ? (channel.name as string) : undefined);
+  const rawChannelName = channelOverride?.name ?? (channel && "name" in channel ? (channel.name as string) : undefined);
   const rawParentId =
     channelOverride?.parentId ??
-    ("parentId" in (channel ?? {})
-      ? ((channel as { parentId?: string }).parentId ?? undefined)
-      : undefined);
-  const channelInfo = channelId
-    ? await resolveDiscordChannelInfo(interaction.client, channelId)
-    : null;
+    ("parentId" in (channel ?? {}) ? ((channel as { parentId?: string }).parentId ?? undefined) : undefined);
+  const channelInfo = channelId ? await resolveDiscordChannelInfo(interaction.client, channelId) : null;
   const channelName = rawChannelName ?? channelInfo?.name;
   const channelSlug = channelName ? normalizeDiscordSlug(channelName) : "";
   const isThreadChannel =
@@ -128,8 +123,7 @@ async function authorizeVoiceCommand(
     return { ok: false, message: "This channel is disabled." };
   }
 
-  const channelAllowlistConfigured =
-    Boolean(guildInfo?.channels) && Object.keys(guildInfo?.channels ?? {}).length > 0;
+  const channelAllowlistConfigured = Boolean(guildInfo?.channels) && Object.keys(guildInfo?.channels ?? {}).length > 0;
   const channelAllowed = channelConfig?.allowed !== false;
   if (
     !isDiscordGroupAllowedByPolicy({
@@ -262,10 +256,7 @@ export function createDiscordVoiceCommand(params: VoiceCommandContext): CommandW
         channelOverride: {
           id: channel.id,
           name: "name" in channel ? (channel.name as string) : undefined,
-          parentId:
-            "parentId" in channel
-              ? ((channel as { parentId?: string }).parentId ?? undefined)
-              : undefined,
+          parentId: "parentId" in channel ? ((channel as { parentId?: string }).parentId ?? undefined) : undefined,
         },
       });
       if (!access.ok) {
@@ -310,10 +301,7 @@ export function createDiscordVoiceCommand(params: VoiceCommandContext): CommandW
       if (!runtimeContext) {
         return;
       }
-      const sessionChannelId = resolveSessionChannelId(
-        runtimeContext.manager,
-        runtimeContext.guildId,
-      );
+      const sessionChannelId = resolveSessionChannelId(runtimeContext.manager, runtimeContext.guildId);
       const authorized = await ensureVoiceCommandAccess({
         interaction,
         context: params,
@@ -338,9 +326,7 @@ export function createDiscordVoiceCommand(params: VoiceCommandContext): CommandW
       if (!runtimeContext) {
         return;
       }
-      const sessions = runtimeContext.manager
-        .status()
-        .filter((entry) => entry.guildId === runtimeContext.guildId);
+      const sessions = runtimeContext.manager.status().filter((entry) => entry.guildId === runtimeContext.guildId);
       const sessionChannelId = sessions[0]?.channelId;
       const authorized = await ensureVoiceCommandAccess({
         interaction,

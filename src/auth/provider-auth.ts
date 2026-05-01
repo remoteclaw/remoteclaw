@@ -13,10 +13,7 @@ import { normalizeProviderId } from "../agents/provider-utils.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { getShellEnvAppliedKeys } from "../infra/shell-env.js";
-import {
-  normalizeOptionalSecretInput,
-  normalizeSecretInput,
-} from "../utils/normalize-secret-input.js";
+import { normalizeOptionalSecretInput, normalizeSecretInput } from "../utils/normalize-secret-input.js";
 import {
   type AuthProfileStore,
   ensureAuthProfileStore,
@@ -45,11 +42,7 @@ export function resolveAwsSdkEnvVarName(env: NodeJS.ProcessEnv = process.env): s
   return undefined;
 }
 
-function resolveEnvSourceLabel(params: {
-  applied: Set<string>;
-  envVars: string[];
-  label: string;
-}): string {
+function resolveEnvSourceLabel(params: { applied: Set<string>; envVars: string[]; label: string }): string {
   const shellApplied = params.envVars.some((envVar) => params.applied.has(envVar));
   const prefix = shellApplied ? "shell env: " : "env: ";
   return `${prefix}${params.label}`;
@@ -136,9 +129,7 @@ export async function resolveApiKeyForProvider(params: {
   const profiles = listProfilesForProvider(store, provider);
   const preferred = params.preferredProfile;
   const candidates =
-    preferred && profiles.includes(preferred)
-      ? [preferred, ...profiles.filter((id) => id !== preferred)]
-      : profiles;
+    preferred && profiles.includes(preferred) ? [preferred, ...profiles.filter((id) => id !== preferred)] : profiles;
 
   for (const candidate of candidates) {
     try {

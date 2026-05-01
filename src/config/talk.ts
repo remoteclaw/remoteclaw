@@ -1,12 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import type {
-  ResolvedTalkConfig,
-  TalkConfig,
-  TalkConfigResponse,
-  TalkProviderConfig,
-} from "./types.gateway.js";
+import type { ResolvedTalkConfig, TalkConfig, TalkConfigResponse, TalkProviderConfig } from "./types.gateway.js";
 import type { RemoteClawConfig } from "./types.js";
 import { coerceSecretRef } from "./types.secrets.js";
 
@@ -144,9 +139,7 @@ function normalizedLegacyTalkFields(source: Record<string, unknown>): Partial<Ta
   return legacy;
 }
 
-function legacyProviderConfigFromTalk(
-  source: Record<string, unknown>,
-): TalkProviderConfig | undefined {
+function legacyProviderConfigFromTalk(source: Record<string, unknown>): TalkProviderConfig | undefined {
   return normalizeTalkProviderConfig({
     voiceId: source.voiceId,
     voiceAliases: source.voiceAliases,
@@ -169,9 +162,7 @@ function activeProviderFromTalk(talk: TalkConfig): string | undefined {
   return providerIds.length === 1 ? providerIds[0] : undefined;
 }
 
-function legacyTalkFieldsFromProviderConfig(
-  config: TalkProviderConfig | undefined,
-): Partial<TalkConfig> {
+function legacyTalkFieldsFromProviderConfig(config: TalkProviderConfig | undefined): Partial<TalkConfig> {
   if (!config) {
     return {};
   }
@@ -179,11 +170,7 @@ function legacyTalkFieldsFromProviderConfig(
   if (typeof config.voiceId === "string") {
     legacy.voiceId = config.voiceId;
   }
-  if (
-    config.voiceAliases &&
-    typeof config.voiceAliases === "object" &&
-    !Array.isArray(config.voiceAliases)
-  ) {
+  if (config.voiceAliases && typeof config.voiceAliases === "object" && !Array.isArray(config.voiceAliases)) {
     const aliases = normalizeVoiceAliases(config.voiceAliases);
     if (aliases) {
       legacy.voiceAliases = aliases;
@@ -256,9 +243,7 @@ export function normalizeTalkConfig(config: RemoteClawConfig): RemoteClawConfig 
   };
 }
 
-export function resolveActiveTalkProviderConfig(
-  talk: TalkConfig | undefined,
-): ResolvedTalkConfig | undefined {
+export function resolveActiveTalkProviderConfig(talk: TalkConfig | undefined): ResolvedTalkConfig | undefined {
   const normalizedTalk = normalizeTalkSection(talk);
   if (!normalizedTalk) {
     return undefined;
@@ -318,18 +303,14 @@ export function readTalkApiKeyFromProfile(deps: TalkApiKeyDeps = {}): string | n
   const pathImpl = deps.path ?? path;
 
   const home = osImpl.homedir();
-  const candidates = [".profile", ".zprofile", ".zshrc", ".bashrc"].map((name) =>
-    pathImpl.join(home, name),
-  );
+  const candidates = [".profile", ".zprofile", ".zshrc", ".bashrc"].map((name) => pathImpl.join(home, name));
   for (const candidate of candidates) {
     if (!fsImpl.existsSync(candidate)) {
       continue;
     }
     try {
       const text = fsImpl.readFileSync(candidate, "utf-8");
-      const match = text.match(
-        /(?:^|\n)\s*(?:export\s+)?ELEVENLABS_API_KEY\s*=\s*["']?([^\n"']+)["']?/,
-      );
+      const match = text.match(/(?:^|\n)\s*(?:export\s+)?ELEVENLABS_API_KEY\s*=\s*["']?([^\n"']+)["']?/);
       const value = match?.[1]?.trim();
       if (value) {
         return value;
@@ -341,10 +322,7 @@ export function readTalkApiKeyFromProfile(deps: TalkApiKeyDeps = {}): string | n
   return null;
 }
 
-export function resolveTalkApiKey(
-  env: NodeJS.ProcessEnv = process.env,
-  deps: TalkApiKeyDeps = {},
-): string | null {
+export function resolveTalkApiKey(env: NodeJS.ProcessEnv = process.env, deps: TalkApiKeyDeps = {}): string | null {
   const envValue = (env.ELEVENLABS_API_KEY ?? "").trim();
   if (envValue) {
     return envValue;

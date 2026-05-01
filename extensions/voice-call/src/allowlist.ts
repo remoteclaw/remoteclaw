@@ -5,10 +5,7 @@ export function normalizePhoneNumber(input?: string): string {
   return input.replace(/\D/g, "");
 }
 
-export function isAllowlistedCaller(
-  normalizedFrom: string,
-  allowFrom: string[] | undefined,
-): boolean {
+export function isAllowlistedCaller(normalizedFrom: string, allowFrom: string[] | undefined): boolean {
   if (!normalizedFrom) {
     return false;
   }

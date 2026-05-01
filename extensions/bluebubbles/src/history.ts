@@ -99,11 +99,7 @@ export async function fetchBlueBubblesHistory(
   for (const path of possiblePaths) {
     try {
       const url = buildBlueBubblesApiUrl({ baseUrl, path, password });
-      const res = await blueBubblesFetchWithTimeout(
-        url,
-        { method: "GET" },
-        opts.timeoutMs ?? 10000,
-      );
+      const res = await blueBubblesFetchWithTimeout(url, { method: "GET" }, opts.timeoutMs ?? 10000);
 
       if (!res.ok) {
         continue; // Try next path

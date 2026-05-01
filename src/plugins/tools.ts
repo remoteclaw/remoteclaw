@@ -30,11 +30,7 @@ function normalizeAllowlist(list?: string[]) {
   return new Set((list ?? []).map(normalizeToolName).filter(Boolean));
 }
 
-function isOptionalToolAllowed(params: {
-  toolName: string;
-  pluginId: string;
-  allowlist: Set<string>;
-}): boolean {
+function isOptionalToolAllowed(params: { toolName: string; pluginId: string; allowlist: Set<string> }): boolean {
   if (params.allowlist.size === 0) {
     return false;
   }

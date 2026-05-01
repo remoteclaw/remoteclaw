@@ -23,8 +23,7 @@ const mockUnbind = vi.fn();
 
 // Event handler storage for testing
 // oxlint-disable-next-line typescript/no-explicit-any
-const messageHandlers: Array<(channel: string, user: string, message: string, msg: any) => void> =
-  [];
+const messageHandlers: Array<(channel: string, user: string, message: string, msg: any) => void> = [];
 
 // Mock functions that track handlers and return unbind objects
 // oxlint-disable-next-line typescript/no-explicit-any
@@ -142,9 +141,7 @@ describe("TwitchClientManager", () => {
 
       // New implementation: connect is called, channels are passed to constructor
       expect(mockConnect).toHaveBeenCalledTimes(1);
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        expect.stringContaining("Connected to Twitch as testbot"),
-      );
+      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining("Connected to Twitch as testbot"));
     });
 
     it("should use account username as default channel when channel not specified", async () => {
@@ -201,10 +198,7 @@ describe("TwitchClientManager", () => {
       await manager.getClient(testAccount);
 
       // Implementation strips oauth: prefix from all tokens
-      expect(mockAuthProvider.constructor).toHaveBeenCalledWith(
-        "test-client-id",
-        "mock-token-from-tests",
-      );
+      expect(mockAuthProvider.constructor).toHaveBeenCalledWith("test-client-id", "mock-token-from-tests");
     });
 
     it("should throw error when clientId is missing", async () => {
@@ -213,13 +207,9 @@ describe("TwitchClientManager", () => {
         clientId: "" as unknown as string,
       } as unknown as TwitchAccountConfig;
 
-      await expect(manager.getClient(accountWithoutClientId)).rejects.toThrow(
-        "Missing Twitch client ID",
-      );
+      await expect(manager.getClient(accountWithoutClientId)).rejects.toThrow("Missing Twitch client ID");
 
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        expect.stringContaining("Missing Twitch client ID"),
-      );
+      expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining("Missing Twitch client ID"));
     });
 
     it("should throw error when token is missing", async () => {
@@ -351,9 +341,7 @@ describe("TwitchClientManager", () => {
       const result = await manager.sendMessage(testAccount, "testchannel", "Hello, world!");
 
       expect(result).toMatchObject({ ok: true });
-      expect(result.messageId).toMatch(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
-      );
+      expect(result.messageId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
       expect(mockSay).toHaveBeenCalledWith("testchannel", "Hello, world!");
     });
 
@@ -383,9 +371,7 @@ describe("TwitchClientManager", () => {
 
       expect(result.ok).toBe(false);
       expect(result.error).toBe("Rate limited");
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        expect.stringContaining("Failed to send message"),
-      );
+      expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining("Failed to send message"));
     });
 
     it("should handle unknown error types", async () => {
@@ -577,11 +563,7 @@ describe("TwitchClientManager", () => {
     });
 
     it("should handle rapid client creation requests", async () => {
-      const promises = [
-        manager.getClient(testAccount),
-        manager.getClient(testAccount),
-        manager.getClient(testAccount),
-      ];
+      const promises = [manager.getClient(testAccount), manager.getClient(testAccount), manager.getClient(testAccount)];
 
       await Promise.all(promises);
 

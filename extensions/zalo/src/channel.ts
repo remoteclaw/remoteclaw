@@ -6,12 +6,7 @@ import {
   createAccountStatusSink,
   mapAllowFromEntries,
 } from "remoteclaw/plugin-sdk/compat";
-import type {
-  ChannelAccountSnapshot,
-  ChannelDock,
-  ChannelPlugin,
-  RemoteClawConfig,
-} from "remoteclaw/plugin-sdk/zalo";
+import type { ChannelAccountSnapshot, ChannelDock, ChannelPlugin, RemoteClawConfig } from "remoteclaw/plugin-sdk/zalo";
 import {
   applyAccountNameToChannelSection,
   applySetupAccountConfigPatch,
@@ -78,8 +73,7 @@ export const zaloDock: ChannelDock = {
   config: {
     resolveAllowFrom: ({ cfg, accountId }) =>
       mapAllowFromEntries(resolveZaloAccount({ cfg: cfg, accountId }).config.allowFrom),
-    formatAllowFrom: ({ allowFrom }) =>
-      formatAllowFromLowercase({ allowFrom, stripPrefixRe: /^(zalo|zl):/i }),
+    formatAllowFrom: ({ allowFrom }) => formatAllowFromLowercase({ allowFrom, stripPrefixRe: /^(zalo|zl):/i }),
   },
   groups: {
     resolveRequireMention: () => true,
@@ -133,8 +127,7 @@ export const zaloPlugin: ChannelPlugin<ResolvedZaloAccount> = {
     }),
     resolveAllowFrom: ({ cfg, accountId }) =>
       mapAllowFromEntries(resolveZaloAccount({ cfg: cfg, accountId }).config.allowFrom),
-    formatAllowFrom: ({ allowFrom }) =>
-      formatAllowFromLowercase({ allowFrom, stripPrefixRe: /^(zalo|zl):/i }),
+    formatAllowFrom: ({ allowFrom }) => formatAllowFromLowercase({ allowFrom, stripPrefixRe: /^(zalo|zl):/i }),
   },
   security: {
     resolveDmPolicy: ({ cfg, accountId, account }) => {
@@ -160,8 +153,7 @@ export const zaloPlugin: ChannelPlugin<ResolvedZaloAccount> = {
           }
           const explicitGroupAllowFrom = mapAllowFromEntries(account.config.groupAllowFrom);
           const dmAllowFrom = mapAllowFromEntries(account.config.allowFrom);
-          const effectiveAllowFrom =
-            explicitGroupAllowFrom.length > 0 ? explicitGroupAllowFrom : dmAllowFrom;
+          const effectiveAllowFrom = explicitGroupAllowFrom.length > 0 ? explicitGroupAllowFrom : dmAllowFrom;
           if (effectiveAllowFrom.length > 0) {
             return [
               buildOpenGroupPolicyRestrictSendersWarning({
@@ -175,10 +167,8 @@ export const zaloPlugin: ChannelPlugin<ResolvedZaloAccount> = {
           return [
             buildOpenGroupPolicyWarning({
               surface: "Zalo groups",
-              openBehavior:
-                "with no groupAllowFrom/allowFrom allowlist; any member can trigger (mention-gated)",
-              remediation:
-                'Set channels.zalo.groupPolicy="allowlist" + channels.zalo.groupAllowFrom',
+              openBehavior: "with no groupAllowFrom/allowFrom allowlist; any member can trigger (mention-gated)",
+              remediation: 'Set channels.zalo.groupPolicy="allowlist" + channels.zalo.groupAllowFrom',
             }),
           ];
         },

@@ -16,9 +16,7 @@ describe("collectChannelStatusIssues", () => {
     ]);
 
     expect(collectChannelStatusIssues({})).toEqual([]);
-    expect(collectChannelStatusIssues({ channelAccounts: { telegram: { bad: true } } })).toEqual(
-      [],
-    );
+    expect(collectChannelStatusIssues({ channelAccounts: { telegram: { bad: true } } })).toEqual([]);
     expect(collectTelegramIssues).not.toHaveBeenCalled();
   });
 

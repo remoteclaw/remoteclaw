@@ -3,8 +3,7 @@ import type { PluginRuntimeChannel } from "../../plugins/runtime/types-channel.j
 import { escapeRegExp } from "../../utils.js";
 import type { ChannelOutboundAdapter } from "./types.js";
 
-export const WHATSAPP_GROUP_INTRO_HINT =
-  "WhatsApp IDs: SenderId is the participant JID (group participant id).";
+export const WHATSAPP_GROUP_INTRO_HINT = "WhatsApp IDs: SenderId is the participant JID (group participant id).";
 
 export function resolveWhatsAppGroupIntroHint(): string {
   return WHATSAPP_GROUP_INTRO_HINT;
@@ -38,8 +37,7 @@ export function createWhatsAppOutboundBase({
   sendMessageWhatsApp,
   sendPollWhatsApp,
   shouldLogVerbose,
-  resolveTarget = ({ to, allowFrom, mode }) =>
-    resolveWhatsAppOutboundTarget({ to, allowFrom, mode }),
+  resolveTarget = ({ to, allowFrom, mode }) => resolveWhatsAppOutboundTarget({ to, allowFrom, mode }),
   normalizeText = (text) => text ?? "",
   skipEmptyText = false,
 }: CreateWhatsAppOutboundBaseParams): Pick<
@@ -75,16 +73,7 @@ export function createWhatsAppOutboundBase({
       });
       return { channel: "whatsapp", ...result };
     },
-    sendMedia: async ({
-      cfg,
-      to,
-      text,
-      mediaUrl,
-      mediaLocalRoots,
-      accountId,
-      deps,
-      gifPlayback,
-    }) => {
+    sendMedia: async ({ cfg, to, text, mediaUrl, mediaLocalRoots, accountId, deps, gifPlayback }) => {
       const send = deps?.sendWhatsApp ?? sendMessageWhatsApp;
       const result = await send(to, normalizeText(text), {
         verbose: false,

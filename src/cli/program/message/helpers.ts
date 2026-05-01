@@ -31,10 +31,7 @@ async function runPluginStopHooks(): Promise<void> {
   });
 }
 
-export function createMessageCliHelpers(
-  message: Command,
-  messageChannelOptions: string,
-): MessageCliHelpers {
+export function createMessageCliHelpers(message: Command, messageChannelOptions: string): MessageCliHelpers {
   const withMessageBase = (command: Command) =>
     command
       .option("--channel <channel>", `Channel: ${messageChannelOptions}`)
@@ -43,8 +40,7 @@ export function createMessageCliHelpers(
       .option("--dry-run", "Print payload and skip sending", false)
       .option("--verbose", "Verbose logging", false);
 
-  const withMessageTarget = (command: Command) =>
-    command.option("-t, --target <dest>", CHANNEL_TARGET_DESCRIPTION);
+  const withMessageTarget = (command: Command) => command.option("-t, --target <dest>", CHANNEL_TARGET_DESCRIPTION);
   const withRequiredMessageTarget = (command: Command) =>
     command.requiredOption("-t, --target <dest>", CHANNEL_TARGET_DESCRIPTION);
 

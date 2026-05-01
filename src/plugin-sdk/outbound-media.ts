@@ -5,10 +5,7 @@ export type OutboundMediaLoadOptions = {
   mediaLocalRoots?: readonly string[];
 };
 
-export async function loadOutboundMediaFromUrl(
-  mediaUrl: string,
-  options: OutboundMediaLoadOptions = {},
-) {
+export async function loadOutboundMediaFromUrl(mediaUrl: string, options: OutboundMediaLoadOptions = {}) {
   return await loadWebMedia(mediaUrl, {
     maxBytes: options.maxBytes,
     localRoots: options.mediaLocalRoots,

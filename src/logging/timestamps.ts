@@ -16,9 +16,7 @@ export type FormatTimestampOptions = {
 
 function resolveEffectiveTimeZone(timeZone?: string): string {
   const explicit = timeZone ?? process.env.TZ;
-  return explicit && isValidTimeZone(explicit)
-    ? explicit
-    : Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return explicit && isValidTimeZone(explicit) ? explicit : Intl.DateTimeFormat().resolvedOptions().timeZone;
 }
 
 function formatOffset(offsetRaw: string): string {

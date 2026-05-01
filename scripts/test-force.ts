@@ -9,11 +9,7 @@ function killGatewayListeners(port: number): PortProcess[] {
   try {
     const killed = forceFreePort(port);
     if (killed.length > 0) {
-      console.log(
-        `freed port ${port}; terminated: ${killed
-          .map((p) => `${p.command} (pid ${p.pid})`)
-          .join(", ")}`,
-      );
+      console.log(`freed port ${port}; terminated: ${killed.map((p) => `${p.command} (pid ${p.pid})`).join(", ")}`);
     } else {
       console.log(`port ${port} already free`);
     }
@@ -26,8 +22,7 @@ function killGatewayListeners(port: number): PortProcess[] {
 
 function runTests() {
   const isolatedLock =
-    process.env.REMOTECLAW_GATEWAY_LOCK ??
-    path.join(os.tmpdir(), `remoteclaw-gateway.lock.test.${Date.now()}`);
+    process.env.REMOTECLAW_GATEWAY_LOCK ?? path.join(os.tmpdir(), `remoteclaw-gateway.lock.test.${Date.now()}`);
   const result = spawnSync("pnpm", ["vitest", "run"], {
     stdio: "inherit",
     env: {

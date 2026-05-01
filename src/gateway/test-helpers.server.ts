@@ -323,8 +323,7 @@ export function onceMessage<T extends GatewayTestMessage = GatewayTestMessage>(
 
 export async function startGatewayServer(port: number, opts?: GatewayServerOptions) {
   const mod = await getServerModule();
-  const resolvedOpts =
-    opts?.controlUiEnabled === undefined ? { ...opts, controlUiEnabled: false } : opts;
+  const resolvedOpts = opts?.controlUiEnabled === undefined ? { ...opts, controlUiEnabled: false } : opts;
   if (
     resolvedOpts?.controlUiEnabled === true &&
     process.env.REMOTECLAW_TEST_MINIMAL_GATEWAY === "1" &&
@@ -388,14 +387,8 @@ async function waitForWebSocketOpen(ws: WebSocket, timeoutMs = 10_000): Promise<
   });
 }
 
-async function openTrackedWebSocket(params: {
-  port: number;
-  headers?: Record<string, string>;
-}): Promise<WebSocket> {
-  const ws = new WebSocket(
-    `ws://127.0.0.1:${params.port}`,
-    params.headers ? { headers: params.headers } : undefined,
-  );
+async function openTrackedWebSocket(params: { port: number; headers?: Record<string, string> }): Promise<WebSocket> {
+  const ws = new WebSocket(`ws://127.0.0.1:${params.port}`, params.headers ? { headers: params.headers } : undefined);
   trackConnectChallengeNonce(ws);
   await waitForWebSocketOpen(ws);
   return ws;
@@ -506,10 +499,7 @@ function resolveDefaultTestDeviceIdentityPath(params: {
   return path.join(suiteRoot, "test-device-identities", `${safe}.json`);
 }
 
-export async function readConnectChallengeNonce(
-  ws: WebSocket,
-  timeoutMs = 2_000,
-): Promise<string | undefined> {
+export async function readConnectChallengeNonce(ws: WebSocket, timeoutMs = 2_000): Promise<string | undefined> {
   const cached = getTrackedConnectChallengeNonce(ws);
   if (cached) {
     return cached;
@@ -593,16 +583,11 @@ export async function connectReq(
   const deviceToken = opts?.deviceToken?.trim() || undefined;
   const password = opts?.password ?? defaultPassword;
   const authTokenForSignature = token ?? deviceToken;
-  const requestedScopes = Array.isArray(opts?.scopes)
-    ? opts.scopes
-    : role === "operator"
-      ? ["operator.admin"]
-      : [];
+  const requestedScopes = Array.isArray(opts?.scopes) ? opts.scopes : role === "operator" ? ["operator.admin"] : [];
   if (opts?.skipConnectChallengeNonce && opts?.device === undefined) {
     throw new Error("skipConnectChallengeNonce requires an explicit device override");
   }
-  const connectChallengeNonce =
-    opts?.device !== undefined ? undefined : await readConnectChallengeNonce(ws);
+  const connectChallengeNonce = opts?.device !== undefined ? undefined : await readConnectChallengeNonce(ws);
   const device = (() => {
     if (opts?.device === null) {
       return undefined;

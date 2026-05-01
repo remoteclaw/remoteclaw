@@ -4,9 +4,7 @@ import type { ChannelAccountSnapshot } from "../../channels/plugins/types.js";
 import type { ChannelManager, ChannelRuntimeSnapshot } from "../server-channels.js";
 import { createReadinessChecker } from "./readiness.js";
 
-function snapshotWith(
-  accounts: Record<string, Partial<ChannelAccountSnapshot>>,
-): ChannelRuntimeSnapshot {
+function snapshotWith(accounts: Record<string, Partial<ChannelAccountSnapshot>>): ChannelRuntimeSnapshot {
   const channels: ChannelRuntimeSnapshot["channels"] = {};
   const channelAccounts: ChannelRuntimeSnapshot["channelAccounts"] = {};
 

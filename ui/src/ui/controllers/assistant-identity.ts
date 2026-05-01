@@ -10,10 +10,7 @@ export type AssistantIdentityState = {
   assistantAgentId: string | null;
 };
 
-export async function loadAssistantIdentity(
-  state: AssistantIdentityState,
-  opts?: { sessionKey?: string },
-) {
+export async function loadAssistantIdentity(state: AssistantIdentityState, opts?: { sessionKey?: string }) {
   if (!state.client || !state.connected) {
     return;
   }

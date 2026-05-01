@@ -12,12 +12,7 @@ import {
   setLastActiveSessionKey,
   type SettingsHost,
 } from "./app-settings.ts";
-import {
-  handleAgentEvent,
-  resetToolStream,
-  type AgentEventPayload,
-  type ToolStreamHost,
-} from "./app-tool-stream.ts";
+import { handleAgentEvent, resetToolStream, type AgentEventPayload, type ToolStreamHost } from "./app-tool-stream.ts";
 import type { RemoteClawApp } from "./app.ts";
 import { shouldReloadHistoryForFinalEvent } from "./chat-event-reload.ts";
 import { loadAgents, loadToolsCatalog } from "./controllers/agents.ts";
@@ -34,11 +29,7 @@ import {
 } from "./controllers/exec-approval.ts";
 import { loadNodes } from "./controllers/nodes.ts";
 import { loadSessions } from "./controllers/sessions.ts";
-import {
-  resolveGatewayErrorDetailCode,
-  type GatewayEventFrame,
-  type GatewayHelloOk,
-} from "./gateway.ts";
+import { resolveGatewayErrorDetailCode, type GatewayEventFrame, type GatewayHelloOk } from "./gateway.ts";
 import { GatewayBrowserClient } from "./gateway.ts";
 import type { AgentsListResult, PresenceEntry, HealthSnapshot, UpdateAvailable } from "./types.ts";
 
@@ -105,8 +96,7 @@ export function resolveControlUiClientVersion(params: {
   if (!serverVersion) {
     return undefined;
   }
-  const pageUrl =
-    params.pageUrl ?? (typeof window === "undefined" ? undefined : window.location.href);
+  const pageUrl = params.pageUrl ?? (typeof window === "undefined" ? undefined : window.location.href);
   if (!pageUrl) {
     return undefined;
   }
@@ -123,10 +113,7 @@ export function resolveControlUiClientVersion(params: {
   }
 }
 
-function normalizeSessionKeyForDefaults(
-  value: string | undefined,
-  defaults: SessionDefaultsSnapshot,
-): string {
+function normalizeSessionKeyForDefaults(value: string | undefined, defaults: SessionDefaultsSnapshot): string {
   const raw = (value ?? "").trim();
   const mainSessionKey = defaults.mainSessionKey?.trim();
   if (!mainSessionKey) {
@@ -140,8 +127,7 @@ function normalizeSessionKeyForDefaults(
   const isAlias =
     raw === "main" ||
     raw === mainKey ||
-    (defaultAgentId &&
-      (raw === `agent:${defaultAgentId}:main` || raw === `agent:${defaultAgentId}:${mainKey}`));
+    (defaultAgentId && (raw === `agent:${defaultAgentId}:main` || raw === `agent:${defaultAgentId}:${mainKey}`));
   return isAlias ? mainSessionKey : raw;
 }
 
@@ -150,14 +136,8 @@ function applySessionDefaults(host: GatewayHost, defaults?: SessionDefaultsSnaps
     return;
   }
   const resolvedSessionKey = normalizeSessionKeyForDefaults(host.sessionKey, defaults);
-  const resolvedSettingsSessionKey = normalizeSessionKeyForDefaults(
-    host.settings.sessionKey,
-    defaults,
-  );
-  const resolvedLastActiveSessionKey = normalizeSessionKeyForDefaults(
-    host.settings.lastActiveSessionKey,
-    defaults,
-  );
+  const resolvedSettingsSessionKey = normalizeSessionKeyForDefaults(host.settings.sessionKey, defaults);
+  const resolvedLastActiveSessionKey = normalizeSessionKeyForDefaults(host.settings.lastActiveSessionKey, defaults);
   const nextSessionKey = resolvedSessionKey || resolvedSettingsSessionKey || host.sessionKey;
   const nextSettings = {
     ...host.settings,
@@ -225,8 +205,7 @@ export function connectGateway(host: GatewayHost) {
       host.connected = false;
       // Code 1012 = Service Restart (expected during config saves, don't show as error)
       host.lastErrorCode =
-        resolveGatewayErrorDetailCode(error) ??
-        (typeof error?.code === "string" ? error.code : null);
+        resolveGatewayErrorDetailCode(error) ?? (typeof error?.code === "string" ? error.code : null);
       if (code !== 1012) {
         if (error?.message) {
           host.lastError =
@@ -310,10 +289,10 @@ function handleChatGatewayEvent(host: GatewayHost, payload: ChatEventPayload | u
 }
 
 function handleGatewayEventUnsafe(host: GatewayHost, evt: GatewayEventFrame) {
-  host.eventLogBuffer = [
-    { ts: Date.now(), event: evt.event, payload: evt.payload },
-    ...host.eventLogBuffer,
-  ].slice(0, 250);
+  host.eventLogBuffer = [{ ts: Date.now(), event: evt.event, payload: evt.payload }, ...host.eventLogBuffer].slice(
+    0,
+    250,
+  );
   if (host.tab === "debug") {
     host.eventLog = host.eventLogBuffer;
   }
@@ -327,11 +306,7 @@ function handleGatewayEventUnsafe(host: GatewayHost, evt: GatewayEventFrame) {
     // output replaces any truncated streaming fragments.
     const agentPayload = evt.payload as AgentEventPayload | undefined;
     const toolData = agentPayload?.data;
-    if (
-      agentPayload?.stream === "tool" &&
-      typeof toolData?.phase === "string" &&
-      toolData.phase === "result"
-    ) {
+    if (agentPayload?.stream === "tool" && typeof toolData?.phase === "string" && toolData.phase === "result") {
       void loadChatHistory(host as unknown as RemoteClawApp);
     }
     return;

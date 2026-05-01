@@ -82,10 +82,7 @@ export async function dispatchRequest(
   await new Promise((resolve) => setImmediate(resolve));
 }
 
-export async function withGatewayTempConfig(
-  prefix: string,
-  run: () => Promise<void>,
-): Promise<void> {
+export async function withGatewayTempConfig(prefix: string, run: () => Promise<void>): Promise<void> {
   await withTempConfig({
     cfg: { gateway: { trustedProxies: [] } },
     prefix,
@@ -140,10 +137,7 @@ export async function sendRequest(
   return response;
 }
 
-export function expectUnauthorizedResponse(
-  response: ReturnType<typeof createResponse>,
-  label?: string,
-): void {
+export function expectUnauthorizedResponse(response: ReturnType<typeof createResponse>, label?: string): void {
   expect(response.res.statusCode, label).toBe(401);
   expect(response.getBody(), label).toContain("Unauthorized");
 }
@@ -244,10 +238,7 @@ export function buildChannelPathFuzzCorpus(): RouteVariant[] {
   return variants.map((path) => ({ label: `fuzz:${path}`, path }));
 }
 
-export async function expectUnauthorizedVariants(params: {
-  server: GatewayHttpServer;
-  variants: RouteVariant[];
-}) {
+export async function expectUnauthorizedVariants(params: { server: GatewayHttpServer; variants: RouteVariant[] }) {
   for (const variant of params.variants) {
     const response = await sendRequest(params.server, { path: variant.path });
     expectUnauthorizedResponse(response, variant.label);

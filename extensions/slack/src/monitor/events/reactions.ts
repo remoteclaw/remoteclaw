@@ -5,10 +5,7 @@ import type { SlackMonitorContext } from "../context.js";
 import type { SlackReactionEvent } from "../types.js";
 import { authorizeAndResolveSlackSystemEventContext } from "./system-event-context.js";
 
-export function registerSlackReactionEvents(params: {
-  ctx: SlackMonitorContext;
-  trackEvent?: () => void;
-}) {
+export function registerSlackReactionEvents(params: { ctx: SlackMonitorContext; trackEvent?: () => void }) {
   const { ctx, trackEvent } = params;
 
   const handleReactionEvent = async (event: SlackReactionEvent, action: string) => {
@@ -50,23 +47,17 @@ export function registerSlackReactionEvents(params: {
     }
   };
 
-  ctx.app.event(
-    "reaction_added",
-    async ({ event, body }: SlackEventMiddlewareArgs<"reaction_added">) => {
-      if (ctx.shouldDropMismatchedSlackEvent(body)) {
-        return;
-      }
-      await handleReactionEvent(event as SlackReactionEvent, "added");
-    },
-  );
+  ctx.app.event("reaction_added", async ({ event, body }: SlackEventMiddlewareArgs<"reaction_added">) => {
+    if (ctx.shouldDropMismatchedSlackEvent(body)) {
+      return;
+    }
+    await handleReactionEvent(event as SlackReactionEvent, "added");
+  });
 
-  ctx.app.event(
-    "reaction_removed",
-    async ({ event, body }: SlackEventMiddlewareArgs<"reaction_removed">) => {
-      if (ctx.shouldDropMismatchedSlackEvent(body)) {
-        return;
-      }
-      await handleReactionEvent(event as SlackReactionEvent, "removed");
-    },
-  );
+  ctx.app.event("reaction_removed", async ({ event, body }: SlackEventMiddlewareArgs<"reaction_removed">) => {
+    if (ctx.shouldDropMismatchedSlackEvent(body)) {
+      return;
+    }
+    await handleReactionEvent(event as SlackReactionEvent, "removed");
+  });
 }

@@ -1,8 +1,5 @@
 import { html, nothing } from "lit";
-import type {
-  ExecApprovalsAllowlistEntry,
-  ExecApprovalsFile,
-} from "../controllers/exec-approvals.ts";
+import type { ExecApprovalsAllowlistEntry, ExecApprovalsFile } from "../controllers/exec-approvals.ts";
 import { clampText, formatRelativeTimestamp } from "../format.ts";
 import {
   resolveConfigAgents as resolveSharedConfigAgents,
@@ -78,9 +75,7 @@ function normalizeAsk(value?: string): ExecAsk {
   return "on-miss";
 }
 
-function resolveExecApprovalsDefaults(
-  form: ExecApprovalsFile | null,
-): ExecApprovalsResolvedDefaults {
+function resolveExecApprovalsDefaults(form: ExecApprovalsFile | null): ExecApprovalsResolvedDefaults {
   const defaults = form?.defaults ?? {};
   return {
     security: normalizeSecurity(defaults.security),
@@ -122,10 +117,7 @@ function resolveExecApprovalsAgents(
   return agents;
 }
 
-function resolveExecApprovalsScope(
-  selected: string | null,
-  agents: ExecApprovalsAgentOption[],
-): string {
+function resolveExecApprovalsScope(selected: string | null, agents: ExecApprovalsAgentOption[]): string {
   if (selected === EXEC_APPROVALS_DEFAULT_SCOPE) {
     return EXEC_APPROVALS_DEFAULT_SCOPE;
   }
@@ -142,8 +134,7 @@ export function resolveExecApprovalsState(props: NodesProps): ExecApprovalsState
   const agents = resolveExecApprovalsAgents(props.configForm, form);
   const targetNodes = resolveExecApprovalsNodes(props.nodes);
   const target = props.execApprovalsTarget;
-  let targetNodeId =
-    target === "node" && props.execApprovalsTargetNodeId ? props.execApprovalsTargetNodeId : null;
+  let targetNodeId = target === "node" && props.execApprovalsTargetNodeId ? props.execApprovalsTargetNodeId : null;
   if (target === "node" && targetNodeId && !targetNodes.some((node) => node.id === targetNodeId)) {
     targetNodeId = null;
   }
@@ -213,11 +204,7 @@ export function renderExecApprovals(state: ExecApprovalsState) {
           : html`
             ${renderExecApprovalsTabs(state)}
             ${renderExecApprovalsPolicy(state)}
-            ${
-              state.selectedScope === EXEC_APPROVALS_DEFAULT_SCOPE
-                ? nothing
-                : renderExecApprovalsAllowlist(state)
-            }
+            ${state.selectedScope === EXEC_APPROVALS_DEFAULT_SCOPE ? nothing : renderExecApprovalsAllowlist(state)}
           `
       }
     </section>
@@ -428,11 +415,7 @@ function renderExecApprovalsPolicy(state: ExecApprovalsState) {
         <div class="list-main">
           <div class="list-title">Ask fallback</div>
           <div class="list-sub">
-            ${
-              isDefaults
-                ? "Applied when the UI prompt is unavailable."
-                : `Default: ${defaults.askFallback}.`
-            }
+            ${isDefaults ? "Applied when the UI prompt is unavailable." : `Default: ${defaults.askFallback}.`}
           </div>
         </div>
         <div class="list-meta">
@@ -506,11 +489,7 @@ function renderExecApprovalsAllowlist(state: ExecApprovalsState) {
   `;
 }
 
-function renderAllowlistEntry(
-  state: ExecApprovalsState,
-  entry: ExecApprovalsAllowlistEntry,
-  index: number,
-) {
+function renderAllowlistEntry(state: ExecApprovalsState, entry: ExecApprovalsAllowlistEntry, index: number) {
   const lastUsed = entry.lastUsedAt ? formatRelativeTimestamp(entry.lastUsedAt) : "never";
   const lastCommand = entry.lastUsedCommand ? clampText(entry.lastUsedCommand, 120) : null;
   const lastPath = entry.lastResolvedPath ? clampText(entry.lastResolvedPath, 120) : null;
@@ -531,10 +510,7 @@ function renderAllowlistEntry(
             ?disabled=${state.disabled}
             @input=${(event: Event) => {
               const target = event.target as HTMLInputElement;
-              state.onPatch(
-                ["agents", state.selectedScope, "allowlist", index, "pattern"],
-                target.value,
-              );
+              state.onPatch(["agents", state.selectedScope, "allowlist", index, "pattern"], target.value);
             }}
           />
         </label>
@@ -556,8 +532,6 @@ function renderAllowlistEntry(
   `;
 }
 
-function resolveExecApprovalsNodes(
-  nodes: Array<Record<string, unknown>>,
-): ExecApprovalsTargetNode[] {
+function resolveExecApprovalsNodes(nodes: Array<Record<string, unknown>>): ExecApprovalsTargetNode[] {
   return resolveNodeTargets(nodes, ["system.execApprovals.get", "system.execApprovals.set"]);
 }

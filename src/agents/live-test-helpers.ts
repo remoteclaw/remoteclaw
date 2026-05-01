@@ -15,13 +15,8 @@ export const MODULE_ATTESTATIONS = {
 
 export const LIVE_OK_PROMPT = "Reply with the word ok.";
 
-export function isLiveTestEnabled(
-  extraEnvVars: readonly string[] = [],
-  env: NodeJS.ProcessEnv = process.env,
-): boolean {
-  return [...extraEnvVars, "LIVE", "REMOTECLAW_LIVE_TEST"].some((name) =>
-    isTruthyEnvValue(env[name]),
-  );
+export function isLiveTestEnabled(extraEnvVars: readonly string[] = [], env: NodeJS.ProcessEnv = process.env): boolean {
+  return [...extraEnvVars, "LIVE", "REMOTECLAW_LIVE_TEST"].some((name) => isTruthyEnvValue(env[name]));
 }
 
 export function isLiveProfileKeyModeEnabled(env: NodeJS.ProcessEnv = process.env): boolean {

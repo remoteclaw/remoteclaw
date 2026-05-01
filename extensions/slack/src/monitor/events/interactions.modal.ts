@@ -177,12 +177,11 @@ export async function emitSlackModalLifecycleEvent(params: {
   summarizeViewState: (values: unknown) => ModalInputSummary[];
   formatSystemEvent: (payload: Record<string, unknown>) => string;
 }): Promise<void> {
-  const { callbackId, userId, expectedUserId, viewId, sessionRouting, payload } =
-    resolveSlackModalEventBase({
-      ctx: params.ctx,
-      body: params.body,
-      summarizeViewState: params.summarizeViewState,
-    });
+  const { callbackId, userId, expectedUserId, viewId, sessionRouting, payload } = resolveSlackModalEventBase({
+    ctx: params.ctx,
+    body: params.body,
+    summarizeViewState: params.summarizeViewState,
+  });
   const isViewClosed = params.interactionType === "view_closed";
   const isCleared = params.body.is_cleared === true;
   const eventPayload = isViewClosed
@@ -245,9 +244,7 @@ export function registerModalLifecycleHandler(params: {
   params.register(params.matcher, async ({ ack, body }: SlackModalEventHandlerArgs) => {
     await ack();
     if (params.ctx.shouldDropMismatchedSlackEvent?.(body)) {
-      params.ctx.runtime.log?.(
-        `slack:interaction drop ${params.interactionType} payload (mismatched app/team)`,
-      );
+      params.ctx.runtime.log?.(`slack:interaction drop ${params.interactionType} payload (mismatched app/team)`);
       return;
     }
     await emitSlackModalLifecycleEvent({

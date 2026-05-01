@@ -507,11 +507,7 @@ describe("isSecureWebSocketUrl", () => {
   });
 
   it("still rejects non-unicast IPv6 ws:// even when opt-in is enabled", () => {
-    const disallowedWhenOptedIn = [
-      "ws://[::]:18789",
-      "ws://[0:0::0]:18789",
-      "ws://[ff02::1]:18789",
-    ];
+    const disallowedWhenOptedIn = ["ws://[::]:18789", "ws://[0:0::0]:18789", "ws://[ff02::1]:18789"];
 
     for (const input of disallowedWhenOptedIn) {
       expect(isSecureWebSocketUrl(input, { allowPrivateWs: true }), input).toBe(false);

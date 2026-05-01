@@ -110,9 +110,7 @@ function parseShellEnv(stdout: Buffer): Map<string, string> {
   return shellEnv;
 }
 
-type LoginShellEnvProbeResult =
-  | { ok: true; shellEnv: Map<string, string> }
-  | { ok: false; error: string };
+type LoginShellEnvProbeResult = { ok: true; shellEnv: Map<string, string> } | { ok: false; error: string };
 
 function probeLoginShellEnv(params: {
   env: NodeJS.ProcessEnv;

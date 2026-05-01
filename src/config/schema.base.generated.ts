@@ -2793,8 +2793,7 @@ export const GENERATED_BASE_CONFIG_SCHEMA = {
                     maximum: 5,
                   },
                   maxChildrenPerAgent: {
-                    description:
-                      "Maximum number of active children a single agent session can spawn (default: 5).",
+                    description: "Maximum number of active children a single agent session can spawn (default: 5).",
                     type: "integer",
                     minimum: 1,
                     maximum: 20,

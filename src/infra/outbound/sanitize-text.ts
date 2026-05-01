@@ -12,15 +12,7 @@
  */
 
 /** Channels where HTML tags should be converted/stripped. */
-const PLAIN_TEXT_SURFACES = new Set([
-  "whatsapp",
-  "signal",
-  "sms",
-  "irc",
-  "telegram",
-  "imessage",
-  "googlechat",
-]);
+const PLAIN_TEXT_SURFACES = new Set(["whatsapp", "signal", "sms", "irc", "telegram", "imessage", "googlechat"]);
 
 /** Returns `true` when the channel cannot render raw HTML. */
 export function isPlainTextSurface(channelId: string): boolean {

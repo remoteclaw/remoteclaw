@@ -1,10 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { createBoundDeliveryRouter } from "./bound-delivery-router.js";
-import {
-  __testing,
-  registerSessionBindingAdapter,
-  type SessionBindingRecord,
-} from "./session-binding-service.js";
+import { __testing, registerSessionBindingAdapter, type SessionBindingRecord } from "./session-binding-service.js";
 
 const TARGET_SESSION_KEY = "agent:main:subagent:child";
 
@@ -29,15 +25,11 @@ function createDiscordBinding(
   };
 }
 
-function registerDiscordSessionBindings(
-  targetSessionKey: string,
-  bindings: SessionBindingRecord[],
-): void {
+function registerDiscordSessionBindings(targetSessionKey: string, bindings: SessionBindingRecord[]): void {
   registerSessionBindingAdapter({
     channel: "discord",
     accountId: "runtime",
-    listBySession: (requestedSessionKey) =>
-      requestedSessionKey === targetSessionKey ? bindings : [],
+    listBySession: (requestedSessionKey) => (requestedSessionKey === targetSessionKey ? bindings : []),
     resolveByConversation: () => null,
   });
 }
@@ -54,10 +46,7 @@ describe("bound delivery router", () => {
     failClosed?: boolean;
   }) => {
     if (params.bindings) {
-      registerDiscordSessionBindings(
-        params.targetSessionKey ?? TARGET_SESSION_KEY,
-        params.bindings,
-      );
+      registerDiscordSessionBindings(params.targetSessionKey ?? TARGET_SESSION_KEY, params.bindings);
     }
     return createBoundDeliveryRouter().resolveDestination({
       eventKind: "task_completion",
@@ -135,14 +124,7 @@ describe("bound delivery router", () => {
     },
   ])(
     "$name",
-    ({
-      targetSessionKey,
-      bindings,
-      requesterConversationId,
-      failClosed,
-      expected,
-      expectedConversationId,
-    }) => {
+    ({ targetSessionKey, bindings, requesterConversationId, failClosed, expected, expectedConversationId }) => {
       const route = resolveDestination({
         targetSessionKey,
         bindings,

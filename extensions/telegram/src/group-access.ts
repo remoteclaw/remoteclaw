@@ -11,10 +11,7 @@ import { evaluateMatchedGroupAccessForPolicy } from "../../../src/plugin-sdk/gro
 import { isSenderAllowed, type NormalizedAllowFrom } from "./bot-access.js";
 import { firstDefined } from "./bot-access.js";
 
-export type TelegramGroupBaseBlockReason =
-  | "group-disabled"
-  | "topic-disabled"
-  | "group-override-unauthorized";
+export type TelegramGroupBaseBlockReason = "group-disabled" | "topic-disabled" | "group-override-unauthorized";
 
 export type TelegramGroupBaseAccessResult =
   | { allowed: true }
@@ -141,8 +138,7 @@ export const evaluateTelegramGroupPolicyAccess = (params: {
     defaultGroupPolicy: params.cfg.channels?.defaults?.groupPolicy,
   });
   const fallbackPolicy =
-    firstDefined(params.telegramCfg.groupPolicy, params.cfg.channels?.defaults?.groupPolicy) ??
-    runtimeFallbackPolicy;
+    firstDefined(params.telegramCfg.groupPolicy, params.cfg.channels?.defaults?.groupPolicy) ?? runtimeFallbackPolicy;
   const groupPolicy = params.useTopicAndGroupOverrides
     ? (firstDefined(
         params.topicConfig?.groupPolicy,
@@ -180,9 +176,7 @@ export const evaluateTelegramGroupPolicyAccess = (params: {
       requireMatchInput: params.requireSenderForAllowlistAuthorization,
       hasMatchInput: Boolean(senderId),
       allowlistConfigured:
-        chatExplicitlyAllowed ||
-        params.allowEmptyAllowlistEntries ||
-        params.effectiveGroupAllow.hasEntries,
+        chatExplicitlyAllowed || params.allowEmptyAllowlistEntries || params.effectiveGroupAllow.hasEntries,
       allowlistMatched:
         (chatExplicitlyAllowed && !params.effectiveGroupAllow.hasEntries) ||
         isSenderAllowed({

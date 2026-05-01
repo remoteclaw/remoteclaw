@@ -134,9 +134,7 @@ describe("web monitor inbox", () => {
     sock.ev.emit("messages.upsert", upsert);
     await tick();
 
-    expect(onMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ body: "ping", from: "+999", to: "+123" }),
-    );
+    expect(onMessage).toHaveBeenCalledWith(expect.objectContaining({ body: "ping", from: "+999", to: "+123" }));
     expect(sock.readMessages).toHaveBeenCalledWith([
       {
         remoteJid: "999@s.whatsapp.net",
@@ -197,9 +195,7 @@ describe("web monitor inbox", () => {
     await tick();
 
     expect(getPNForLID).toHaveBeenCalledWith("999@lid");
-    expect(onMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ body: "ping", from: "+999", to: "+123" }),
-    );
+    expect(onMessage).toHaveBeenCalledWith(expect.objectContaining({ body: "ping", from: "+999", to: "+123" }));
 
     await listener.close();
   });
@@ -208,10 +204,7 @@ describe("web monitor inbox", () => {
     const onMessage = vi.fn(async () => {
       return;
     });
-    fsSync.writeFileSync(
-      path.join(getAuthDir(), "lid-mapping-555_reverse.json"),
-      JSON.stringify("1555"),
-    );
+    fsSync.writeFileSync(path.join(getAuthDir(), "lid-mapping-555_reverse.json"), JSON.stringify("1555"));
 
     const { listener, sock } = await startInboxMonitor(onMessage);
     const getPNForLID = vi.spyOn(sock.signalRepository.lidMapping, "getPNForLID");
@@ -226,9 +219,7 @@ describe("web monitor inbox", () => {
     sock.ev.emit("messages.upsert", upsert);
     await tick();
 
-    expect(onMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ body: "ping", from: "+1555", to: "+123" }),
-    );
+    expect(onMessage).toHaveBeenCalledWith(expect.objectContaining({ body: "ping", from: "+1555", to: "+123" }));
     expect(getPNForLID).not.toHaveBeenCalled();
 
     await listener.close();

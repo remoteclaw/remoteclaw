@@ -13,10 +13,7 @@ export async function uploadEmojiDiscord(payload: DiscordEmojiUpload, opts: Disc
   const rest = resolveDiscordRest(opts);
   const media = await loadWebMediaRaw(payload.mediaUrl, DISCORD_MAX_EMOJI_BYTES);
   const contentType = media.contentType?.toLowerCase();
-  if (
-    !contentType ||
-    !["image/png", "image/jpeg", "image/jpg", "image/gif"].includes(contentType)
-  ) {
+  if (!contentType || !["image/png", "image/jpeg", "image/jpg", "image/gif"].includes(contentType)) {
     throw new Error("Discord emoji uploads require a PNG, JPG, or GIF image");
   }
   const image = `data:${contentType};base64,${media.buffer.toString("base64")}`;
@@ -30,10 +27,7 @@ export async function uploadEmojiDiscord(payload: DiscordEmojiUpload, opts: Disc
   });
 }
 
-export async function uploadStickerDiscord(
-  payload: DiscordStickerUpload,
-  opts: DiscordReactOpts = {},
-) {
+export async function uploadStickerDiscord(payload: DiscordStickerUpload, opts: DiscordReactOpts = {}) {
   const rest = resolveDiscordRest(opts);
   const media = await loadWebMediaRaw(payload.mediaUrl, DISCORD_MAX_STICKER_BYTES);
   const contentType = media.contentType?.toLowerCase();

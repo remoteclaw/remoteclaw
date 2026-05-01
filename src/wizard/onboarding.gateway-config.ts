@@ -1,16 +1,8 @@
-import {
-  normalizeGatewayTokenInput,
-  randomToken,
-  validateGatewayPasswordInput,
-} from "../commands/onboard-helpers.js";
+import { normalizeGatewayTokenInput, randomToken, validateGatewayPasswordInput } from "../commands/onboard-helpers.js";
 import type { GatewayAuthChoice, SecretInputMode } from "../commands/onboard-types.js";
 import type { GatewayBindMode, GatewayTailscaleMode, RemoteClawConfig } from "../config/config.js";
 import { ensureControlUiAllowedOriginsForNonLoopbackBind } from "../config/gateway-control-ui-origins.js";
-import {
-  normalizeSecretInputString,
-  resolveSecretInputRef,
-  type SecretInput,
-} from "../config/types.secrets.js";
+import { normalizeSecretInputString, resolveSecretInputRef, type SecretInput } from "../config/types.secrets.js";
 import {
   maybeAddTailnetOriginToControlUiAllowedOrigins,
   TAILSCALE_DOCS_LINES,
@@ -22,11 +14,7 @@ import { findTailscaleBinary } from "../infra/tailscale.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { validateIPv4AddressInput } from "../shared/net/ipv4.js";
 import { resolveOnboardingSecretInputString } from "./onboarding.secret-input.js";
-import type {
-  GatewayWizardSettings,
-  QuickstartGatewayDefaults,
-  WizardFlow,
-} from "./onboarding.types.js";
+import type { GatewayWizardSettings, QuickstartGatewayDefaults, WizardFlow } from "./onboarding.types.js";
 import type { WizardPrompter } from "./prompts.js";
 
 type ConfigureGatewayOptions = {
@@ -45,9 +33,7 @@ type ConfigureGatewayResult = {
   settings: GatewayWizardSettings;
 };
 
-export async function configureGatewayForOnboarding(
-  opts: ConfigureGatewayOptions,
-): Promise<ConfigureGatewayResult> {
+export async function configureGatewayForOnboarding(opts: ConfigureGatewayOptions): Promise<ConfigureGatewayResult> {
   const { flow, localPort, quickstartGateway, prompter } = opts;
   let { nextConfig } = opts;
 
@@ -174,18 +160,13 @@ export async function configureGatewayForOnboarding(
       });
     } else if (flow === "quickstart") {
       gatewayToken =
-        (quickstartTokenString ??
-          normalizeGatewayTokenInput(process.env.REMOTECLAW_GATEWAY_TOKEN)) ||
-        randomToken();
+        (quickstartTokenString ?? normalizeGatewayTokenInput(process.env.REMOTECLAW_GATEWAY_TOKEN)) || randomToken();
       gatewayTokenInput = gatewayToken;
     } else {
       const tokenInput = await prompter.text({
         message: "Gateway token (blank to generate)",
         placeholder: "Needed for multi-machine or non-loopback access",
-        initialValue:
-          quickstartTokenString ??
-          normalizeGatewayTokenInput(process.env.REMOTECLAW_GATEWAY_TOKEN) ??
-          "",
+        initialValue: quickstartTokenString ?? normalizeGatewayTokenInput(process.env.REMOTECLAW_GATEWAY_TOKEN) ?? "",
       });
       gatewayToken = normalizeGatewayTokenInput(tokenInput) || randomToken();
       gatewayTokenInput = gatewayToken;

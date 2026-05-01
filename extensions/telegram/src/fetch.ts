@@ -5,10 +5,7 @@ import { resolveFetch } from "../../../src/infra/fetch.js";
 import { hasEnvHttpProxyConfigured } from "../../../src/infra/net/proxy-env.js";
 import type { PinnedDispatcherPolicy } from "../../../src/infra/net/ssrf.js";
 import { createSubsystemLogger } from "../../../src/logging/subsystem.js";
-import {
-  resolveTelegramAutoSelectFamilyDecision,
-  resolveTelegramDnsResultOrderDecision,
-} from "./network-config.js";
+import { resolveTelegramAutoSelectFamilyDecision, resolveTelegramDnsResultOrderDecision } from "./network-config.js";
 import { getProxyUrlFromFetch } from "./proxy.js";
 
 const log = createSubsystemLogger("telegram/network");
@@ -77,24 +74,14 @@ function normalizeDnsResultOrder(value: string | null): TelegramDnsResultOrder |
   return null;
 }
 
-function createDnsResultOrderLookup(
-  order: TelegramDnsResultOrder | null,
-): LookupFunction | undefined {
+function createDnsResultOrderLookup(order: TelegramDnsResultOrder | null): LookupFunction | undefined {
   if (!order) {
     return undefined;
   }
-  const lookup = dns.lookup as unknown as (
-    hostname: string,
-    options: LookupOptions,
-    callback: LookupCallback,
-  ) => void;
+  const lookup = dns.lookup as unknown as (hostname: string, options: LookupOptions, callback: LookupCallback) => void;
   return (hostname, options, callback) => {
     const baseOptions: LookupOptions =
-      typeof options === "number"
-        ? { family: options }
-        : options
-          ? { ...(options as LookupOptions) }
-          : {};
+      typeof options === "number" ? { family: options } : options ? { ...(options as LookupOptions) } : {};
     const lookupOptions: LookupOptions = {
       ...baseOptions,
       order,
@@ -168,10 +155,7 @@ function shouldBypassEnvProxyForTelegramApi(env: NodeJS.ProcessEnv = process.env
     if (entryPort && entryPort !== targetPort) {
       continue;
     }
-    if (
-      targetHostname === entryHostname ||
-      targetHostname.slice(-(entryHostname.length + 1)) === `.${entryHostname}`
-    ) {
+    if (targetHostname === entryHostname || targetHostname.slice(-(entryHostname.length + 1)) === `.${entryHostname}`) {
       return true;
     }
   }
@@ -325,9 +309,7 @@ function logResolverNetworkDecisions(params: {
   dnsDecision: ReturnType<typeof resolveTelegramDnsResultOrderDecision>;
 }): void {
   if (params.autoSelectDecision.value !== null) {
-    const sourceLabel = params.autoSelectDecision.source
-      ? ` (${params.autoSelectDecision.source})`
-      : "";
+    const sourceLabel = params.autoSelectDecision.source ? ` (${params.autoSelectDecision.source})` : "";
     log.info(`autoSelectFamily=${params.autoSelectDecision.value}${sourceLabel}`);
   }
   if (params.dnsDecision.value !== null) {
@@ -377,8 +359,7 @@ function formatErrorCodes(err: unknown): string {
 
 function shouldRetryWithIpv4Fallback(err: unknown): boolean {
   const ctx: Ipv4FallbackContext = {
-    message:
-      err && typeof err === "object" && "message" in err ? String(err.message).toLowerCase() : "",
+    message: err && typeof err === "object" && "message" in err ? String(err.message).toLowerCase() : "",
     codes: collectErrorCodes(err),
   };
   for (const rule of IPV4_FALLBACK_RULES) {
@@ -440,8 +421,7 @@ export function resolveTelegramTransport(
   const defaultDispatcher = createTelegramDispatcher(defaultDispatcherResolution.policy);
   const shouldBypassEnvProxy = shouldBypassEnvProxyForTelegramApi();
   const allowStickyIpv4Fallback =
-    defaultDispatcher.mode === "direct" ||
-    (defaultDispatcher.mode === "env-proxy" && shouldBypassEnvProxy);
+    defaultDispatcher.mode === "direct" || (defaultDispatcher.mode === "env-proxy" && shouldBypassEnvProxy);
   const stickyShouldUseEnvProxy = defaultDispatcher.mode === "env-proxy";
   const fallbackPinnedDispatcherPolicy = allowStickyIpv4Fallback
     ? resolveTelegramDispatcherPolicy({
@@ -466,9 +446,7 @@ export function resolveTelegramTransport(
   };
 
   const resolvedFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    const callerProvidedDispatcher = Boolean(
-      (init as RequestInitWithDispatcher | undefined)?.dispatcher,
-    );
+    const callerProvidedDispatcher = Boolean((init as RequestInitWithDispatcher | undefined)?.dispatcher);
     const initialInit = withDispatcherIfMissing(
       init,
       stickyIpv4FallbackEnabled ? resolveStickyIpv4Dispatcher() : defaultDispatcher.dispatcher,
@@ -488,9 +466,7 @@ export function resolveTelegramTransport(
         }
         if (!stickyIpv4FallbackEnabled) {
           stickyIpv4FallbackEnabled = true;
-          log.warn(
-            `fetch fallback: enabling sticky IPv4-only dispatcher (codes=${formatErrorCodes(err)})`,
-          );
+          log.warn(`fetch fallback: enabling sticky IPv4-only dispatcher (codes=${formatErrorCodes(err)})`);
         }
         return sourceFetch(input, withDispatcherIfMissing(init, resolveStickyIpv4Dispatcher()));
       }

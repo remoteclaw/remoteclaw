@@ -24,8 +24,7 @@ describe("buildAllowlistResolutionSummary", () => {
   it("supports custom resolved formatting", () => {
     const resolvedUsers = [{ input: "a", resolved: true, id: "1", note: "x" }];
     const result = buildAllowlistResolutionSummary(resolvedUsers, {
-      formatResolved: (entry) =>
-        `${entry.input}→${entry.id}${(entry as { note?: string }).note ? " (note)" : ""}`,
+      formatResolved: (entry) => `${entry.input}→${entry.id}${(entry as { note?: string }).note ? " (note)" : ""}`,
     });
     expect(result.mapping).toEqual(["a→1 (note)"]);
   });
@@ -33,8 +32,7 @@ describe("buildAllowlistResolutionSummary", () => {
   it("supports custom unresolved formatting", () => {
     const resolvedUsers = [{ input: "a", resolved: false, note: "missing" }];
     const result = buildAllowlistResolutionSummary(resolvedUsers, {
-      formatUnresolved: (entry) =>
-        `${entry.input}${(entry as { note?: string }).note ? " (missing)" : ""}`,
+      formatUnresolved: (entry) => `${entry.input}${(entry as { note?: string }).note ? " (missing)" : ""}`,
     });
     expect(result.unresolved).toEqual(["a (missing)"]);
   });

@@ -8,9 +8,7 @@ export type CiaoUnhandledRejectionClassification =
   | { kind: "cancellation"; formatted: string }
   | { kind: "interface-assertion"; formatted: string };
 
-export function classifyCiaoUnhandledRejection(
-  reason: unknown,
-): CiaoUnhandledRejectionClassification | null {
+export function classifyCiaoUnhandledRejection(reason: unknown): CiaoUnhandledRejectionClassification | null {
   const formatted = formatBonjourError(reason);
   const message = formatted.toUpperCase();
   if (CIAO_CANCELLATION_MESSAGE_RE.test(message)) {

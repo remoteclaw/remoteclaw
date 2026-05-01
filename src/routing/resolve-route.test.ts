@@ -2,11 +2,7 @@ import { describe, expect, test, vi } from "vitest";
 import type { ChatType } from "../channels/chat-type.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import * as routingBindings from "./bindings.js";
-import {
-  deriveLastRoutePolicy,
-  resolveAgentRoute,
-  resolveInboundLastRouteSessionKey,
-} from "./resolve-route.js";
+import { deriveLastRoutePolicy, resolveAgentRoute, resolveInboundLastRouteSessionKey } from "./resolve-route.js";
 
 // Minimal sole-agent fixture used by tests that exercise the fallback path.
 // Supplying exactly one agent triggers sole-agent promotion, preserving the
@@ -738,10 +734,7 @@ describe("role-based agent routing", () => {
 
   test("guild+roles is more specific than guild-only", () => {
     expectDiscordRoleRoute({
-      bindings: [
-        makeDiscordRoleBinding("opus", { roles: ["r1"] }),
-        makeDiscordRoleBinding("sonnet"),
-      ],
+      bindings: [makeDiscordRoleBinding("opus", { roles: ["r1"] }), makeDiscordRoleBinding("sonnet")],
       memberRoleIds: ["r1"],
       expectedAgentId: "opus",
       expectedMatchedBy: "binding.guild+roles",

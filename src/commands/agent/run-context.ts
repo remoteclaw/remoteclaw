@@ -33,12 +33,7 @@ export function resolveAgentRunContext(opts: AgentCommandOpts): AgentRunContext 
     merged.groupSpace = groupSpace;
   }
 
-  if (
-    merged.currentThreadTs == null &&
-    opts.threadId != null &&
-    opts.threadId !== "" &&
-    opts.threadId !== null
-  ) {
+  if (merged.currentThreadTs == null && opts.threadId != null && opts.threadId !== "" && opts.threadId !== null) {
     merged.currentThreadTs = String(opts.threadId);
   }
 

@@ -1,8 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  resolveTelegramTransport,
-  shouldRetryTelegramIpv4Fallback,
-} from "../../extensions/telegram/src/fetch.js";
+import { resolveTelegramTransport, shouldRetryTelegramIpv4Fallback } from "../../extensions/telegram/src/fetch.js";
 import { fetchRemoteMedia } from "./fetch.js";
 
 const undiciMocks = vi.hoisted(() => {
@@ -44,9 +41,7 @@ describe("fetchRemoteMedia telegram network policy", () => {
   });
 
   it("preserves Telegram resolver transport policy for file downloads", async () => {
-    const lookupFn = vi.fn(async () => [
-      { address: "149.154.167.220", family: 4 },
-    ]) as unknown as LookupFn;
+    const lookupFn = vi.fn(async () => [{ address: "149.154.167.220", family: 4 }]) as unknown as LookupFn;
     undiciMocks.fetch.mockResolvedValueOnce(
       new Response(new Uint8Array([0xff, 0xd8, 0xff, 0x00]), {
         status: 200,
@@ -94,9 +89,7 @@ describe("fetchRemoteMedia telegram network policy", () => {
 
   it("keeps explicit proxy routing for file downloads", async () => {
     const { makeProxyFetch } = await import("../../extensions/telegram/src/proxy.js");
-    const lookupFn = vi.fn(async () => [
-      { address: "149.154.167.220", family: 4 },
-    ]) as unknown as LookupFn;
+    const lookupFn = vi.fn(async () => [{ address: "149.154.167.220", family: 4 }]) as unknown as LookupFn;
     undiciMocks.fetch.mockResolvedValueOnce(
       new Response(new Uint8Array([0x25, 0x50, 0x44, 0x46]), {
         status: 200,
@@ -142,14 +135,12 @@ describe("fetchRemoteMedia telegram network policy", () => {
       { address: "149.154.167.220", family: 4 },
       { address: "2001:67c:4e8:f004::9", family: 6 },
     ]) as unknown as LookupFn;
-    undiciMocks.fetch
-      .mockRejectedValueOnce(createTelegramFetchFailedError("EHOSTUNREACH"))
-      .mockResolvedValueOnce(
-        new Response(new Uint8Array([0xff, 0xd8, 0xff, 0x00]), {
-          status: 200,
-          headers: { "content-type": "image/jpeg" },
-        }),
-      );
+    undiciMocks.fetch.mockRejectedValueOnce(createTelegramFetchFailedError("EHOSTUNREACH")).mockResolvedValueOnce(
+      new Response(new Uint8Array([0xff, 0xd8, 0xff, 0x00]), {
+        status: 200,
+        headers: { "content-type": "image/jpeg" },
+      }),
+    );
 
     const telegramTransport = resolveTelegramTransport(undefined, {
       network: {

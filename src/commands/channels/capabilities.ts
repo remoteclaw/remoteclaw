@@ -143,11 +143,7 @@ function summarizeDiscordTarget(raw?: string): DiscordTargetSummary | undefined 
   return { raw, normalized: target.normalized };
 }
 
-function formatDiscordIntents(intents?: {
-  messageContent?: string;
-  guildMembers?: string;
-  presence?: string;
-}) {
+function formatDiscordIntents(intents?: { messageContent?: string; guildMembers?: string; presence?: string }) {
   if (!intents) {
     return "unknown";
   }
@@ -185,10 +181,8 @@ function formatProbeLines(channelId: string, probe: unknown): string[] {
     }
     const flags: string[] = [];
     const canJoinGroups = (bot as { canJoinGroups?: boolean | null })?.canJoinGroups;
-    const canReadAll = (bot as { canReadAllGroupMessages?: boolean | null })
-      ?.canReadAllGroupMessages;
-    const inlineQueries = (bot as { supportsInlineQueries?: boolean | null })
-      ?.supportsInlineQueries;
+    const canReadAll = (bot as { canReadAllGroupMessages?: boolean | null })?.canReadAllGroupMessages;
+    const inlineQueries = (bot as { supportsInlineQueries?: boolean | null })?.supportsInlineQueries;
     if (typeof canJoinGroups === "boolean") {
       flags.push(`joinGroups=${canJoinGroups}`);
     }
@@ -231,13 +225,9 @@ function formatProbeLines(channelId: string, probe: unknown): string[] {
     if (appId) {
       lines.push(`App: ${theme.accent(appId)}`);
     }
-    const graph = probeObj.graph as
-      | { ok?: boolean; roles?: unknown; scopes?: unknown; error?: string }
-      | undefined;
+    const graph = probeObj.graph as { ok?: boolean; roles?: unknown; scopes?: unknown; error?: string } | undefined;
     if (graph) {
-      const roles = Array.isArray(graph.roles)
-        ? graph.roles.map((role) => String(role).trim()).filter(Boolean)
-        : [];
+      const roles = Array.isArray(graph.roles) ? graph.roles.map((role) => String(role).trim()).filter(Boolean) : [];
       const scopes =
         typeof graph.scopes === "string"
           ? graph.scopes
@@ -271,8 +261,7 @@ function formatProbeLines(channelId: string, probe: unknown): string[] {
     lines.push("Probe: ok");
   }
   if (ok === false) {
-    const error =
-      typeof probeObj.error === "string" && probeObj.error ? ` (${probeObj.error})` : "";
+    const error = typeof probeObj.error === "string" && probeObj.error ? ` (${probeObj.error})` : "";
     lines.push(`Probe: ${theme.error(`failed${error}`)}`);
   }
   return lines;
@@ -309,9 +298,7 @@ async function buildDiscordPermissions(params: {
       token,
       accountId: params.account.accountId ?? undefined,
     });
-    const missing = REQUIRED_DISCORD_PERMISSIONS.filter(
-      (permission) => !perms.permissions.includes(permission),
-    );
+    const missing = REQUIRED_DISCORD_PERMISSIONS.filter((permission) => !perms.permissions.includes(permission));
     return {
       target,
       report: {
@@ -347,15 +334,11 @@ async function resolveChannelReports(params: {
     ? [params.accountOverride]
     : (() => {
         const ids = plugin.config.listAccountIds(cfg);
-        return ids.length > 0
-          ? ids
-          : [resolveChannelDefaultAccountId({ plugin, cfg, accountIds: ids })];
+        return ids.length > 0 ? ids : [resolveChannelDefaultAccountId({ plugin, cfg, accountIds: ids })];
       })();
   const reports: ChannelCapabilitiesReport[] = [];
   const listedActions = plugin.actions?.listActions?.({ cfg }) ?? [];
-  const actions = Array.from(
-    new Set<string>(["send", "broadcast", ...listedActions.map((action) => String(action))]),
-  );
+  const actions = Array.from(new Set<string>(["send", "broadcast", ...listedActions.map((action) => String(action))]));
 
   for (const accountId of accountIds) {
     const resolvedAccount = plugin.config.resolveAccount(cfg, accountId);

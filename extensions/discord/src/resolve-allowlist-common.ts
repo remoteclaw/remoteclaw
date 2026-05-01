@@ -13,10 +13,7 @@ export function buildDiscordUnresolvedResults<T extends { input: string; resolve
   return entries.map((input) => buildResult(input));
 }
 
-export function findDiscordGuildByName(
-  guilds: DiscordGuildSummary[],
-  input: string,
-): DiscordGuildSummary | undefined {
+export function findDiscordGuildByName(guilds: DiscordGuildSummary[], input: string): DiscordGuildSummary | undefined {
   const slug = normalizeDiscordSlug(input);
   if (!slug) {
     return undefined;

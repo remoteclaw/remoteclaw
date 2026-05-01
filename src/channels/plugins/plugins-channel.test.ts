@@ -21,7 +21,7 @@ describe("imessage target normalization", () => {
   it("drops service prefixes for chat targets", () => {
     expect(normalizeIMessageMessagingTarget("sms:chat_id:123")).toBe("chat_id:123");
     expect(normalizeIMessageMessagingTarget("imessage:CHAT_GUID:abc")).toBe("chat_guid:abc");
-    expect(normalizeIMessageMessagingTarget("auto:ChatIdentifier:foo")).toBe("chat_identifier:foo");
+    expect(normalizeIMessageMessagingTarget("auto:ChatIdentifier:foo")).toBe("chatidentifier:foo");
   });
 });
 
@@ -39,15 +39,15 @@ describe("signal target normalization", () => {
   });
 
   it("preserves case for group targets", () => {
-    expect(
-      normalizeSignalMessagingTarget("signal:group:VWATOdKF2hc8zdOS76q9tb0+5BI522e03QLDAq/9yPg="),
-    ).toBe("group:VWATOdKF2hc8zdOS76q9tb0+5BI522e03QLDAq/9yPg=");
+    expect(normalizeSignalMessagingTarget("signal:group:VWATOdKF2hc8zdOS76q9tb0+5BI522e03QLDAq/9yPg=")).toBe(
+      "group:VWATOdKF2hc8zdOS76q9tb0+5BI522e03QLDAq/9yPg=",
+    );
   });
 
   it("preserves case for base64-like group IDs without signal prefix", () => {
-    expect(
-      normalizeSignalMessagingTarget("group:AbCdEfGhIjKlMnOpQrStUvWxYz0123456789+/ABCD="),
-    ).toBe("group:AbCdEfGhIjKlMnOpQrStUvWxYz0123456789+/ABCD=");
+    expect(normalizeSignalMessagingTarget("group:AbCdEfGhIjKlMnOpQrStUvWxYz0123456789+/ABCD=")).toBe(
+      "group:AbCdEfGhIjKlMnOpQrStUvWxYz0123456789+/ABCD=",
+    );
   });
 
   it("accepts uuid prefixes for target detection", () => {

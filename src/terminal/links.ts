@@ -2,15 +2,9 @@ import { formatTerminalLink } from "../utils.js";
 
 export const DOCS_ROOT = "https://docs.remoteclaw.org";
 
-export function formatDocsLink(
-  path: string,
-  label?: string,
-  opts?: { fallback?: string; force?: boolean },
-): string {
+export function formatDocsLink(path: string, label?: string, opts?: { fallback?: string; force?: boolean }): string {
   const trimmed = path.trim();
-  const url = trimmed.startsWith("http")
-    ? trimmed
-    : `${DOCS_ROOT}${trimmed.startsWith("/") ? trimmed : `/${trimmed}`}`;
+  const url = trimmed.startsWith("http") ? trimmed : `${DOCS_ROOT}${trimmed.startsWith("/") ? trimmed : `/${trimmed}`}`;
   return formatTerminalLink(label ?? url, url, {
     fallback: opts?.fallback ?? url,
     force: opts?.force,

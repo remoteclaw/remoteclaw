@@ -77,10 +77,7 @@ describe("buildSystemPrompt", () => {
     });
 
     it("full prompt with LINE hints (worst case) is under 6,000 chars", () => {
-      const lineHints = Array.from(
-        { length: 9 },
-        (_, i) => `LINE directive ${i + 1}: ${"x".repeat(200)}`,
-      );
+      const lineHints = Array.from({ length: 9 }, (_, i) => `LINE directive ${i + 1}: ${"x".repeat(200)}`);
       const result = buildSystemPrompt(
         makeParams({
           userName: "Alice",

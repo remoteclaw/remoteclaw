@@ -7,11 +7,7 @@ import { buildAgentSessionKey } from "../../../../src/routing/resolve-route.js";
 import { truncateUtf16Safe } from "../../../../src/utils.js";
 import type { DiscordChannelConfigResolved } from "./allow-list.js";
 import type { DiscordMessageEvent } from "./listeners.js";
-import {
-  resolveDiscordChannelInfo,
-  resolveDiscordEmbedText,
-  resolveDiscordMessageChannelId,
-} from "./message-utils.js";
+import { resolveDiscordChannelInfo, resolveDiscordEmbedText, resolveDiscordMessageChannelId } from "./message-utils.js";
 
 export type DiscordThreadChannel = {
   id: string;
@@ -83,9 +79,7 @@ function setCachedThreadStarter(key: string, value: DiscordThreadStarter, now: n
 
 function isDiscordThreadType(type: ChannelType | undefined): boolean {
   return (
-    type === ChannelType.PublicThread ||
-    type === ChannelType.PrivateThread ||
-    type === ChannelType.AnnouncementThread
+    type === ChannelType.PublicThread || type === ChannelType.PrivateThread || type === ChannelType.AnnouncementThread
   );
 }
 
@@ -147,8 +141,7 @@ export async function resolveDiscordThreadParentInfo(params: {
   channelInfo: import("./message-utils.js").DiscordChannelInfo | null;
 }): Promise<DiscordThreadParentInfo> {
   const { threadChannel, channelInfo, client } = params;
-  let parentId =
-    threadChannel.parentId ?? threadChannel.parent?.id ?? channelInfo?.parentId ?? undefined;
+  let parentId = threadChannel.parentId ?? threadChannel.parent?.id ?? channelInfo?.parentId ?? undefined;
   if (!parentId && threadChannel.id) {
     const threadInfo = await resolveDiscordChannelInfo(client, threadChannel.id);
     parentId = threadInfo?.parentId ?? undefined;
@@ -178,15 +171,12 @@ export async function resolveDiscordThreadStarter(params: {
   }
   try {
     const parentType = params.parentType;
-    const isForumParent =
-      parentType === ChannelType.GuildForum || parentType === ChannelType.GuildMedia;
+    const isForumParent = parentType === ChannelType.GuildForum || parentType === ChannelType.GuildMedia;
     const messageChannelId = isForumParent ? params.channel.id : params.parentId;
     if (!messageChannelId) {
       return null;
     }
-    const starter = (await params.client.rest.get(
-      Routes.channelMessage(messageChannelId, params.channel.id),
-    )) as {
+    const starter = (await params.client.rest.get(Routes.channelMessage(messageChannelId, params.channel.id))) as {
       content?: string | null;
       embeds?: Array<{ title?: string | null; description?: string | null }>;
       member?: { nick?: string | null; displayName?: string | null };
@@ -392,10 +382,7 @@ export async function maybeCreateDiscordAutoThread(
     return undefined;
   }
   try {
-    const threadName = sanitizeDiscordThreadName(
-      params.baseText || params.combinedBody || "Thread",
-      params.message.id,
-    );
+    const threadName = sanitizeDiscordThreadName(params.baseText || params.combinedBody || "Thread", params.message.id);
 
     // Parse archive duration from config, default to 60 minutes
     const archiveDuration = params.channelConfig?.autoArchiveDuration
@@ -414,15 +401,13 @@ export async function maybeCreateDiscordAutoThread(
     const createdId = created?.id ? String(created.id) : "";
     return createdId || undefined;
   } catch (err) {
-    logVerbose(
-      `discord: autoThread creation failed for ${messageChannelId}/${params.message.id}: ${String(err)}`,
-    );
+    logVerbose(`discord: autoThread creation failed for ${messageChannelId}/${params.message.id}: ${String(err)}`);
     // Race condition: another agent may have already created a thread on this
     // message. Re-fetch the message to check for an existing thread.
     try {
-      const msg = (await params.client.rest.get(
-        Routes.channelMessage(messageChannelId, params.message.id),
-      )) as { thread?: { id?: string } };
+      const msg = (await params.client.rest.get(Routes.channelMessage(messageChannelId, params.message.id))) as {
+        thread?: { id?: string };
+      };
       const existingThreadId = msg?.thread?.id ? String(msg.thread.id) : "";
       if (existingThreadId) {
         logVerbose(

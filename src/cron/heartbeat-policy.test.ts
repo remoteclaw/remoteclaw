@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  shouldEnqueueCronMainSummary,
-  shouldSkipHeartbeatOnlyDelivery,
-} from "./heartbeat-policy.js";
+import { shouldEnqueueCronMainSummary, shouldSkipHeartbeatOnlyDelivery } from "./heartbeat-policy.js";
 
 describe("shouldSkipHeartbeatOnlyDelivery", () => {
   it("suppresses empty payloads", () => {
@@ -11,19 +8,13 @@ describe("shouldSkipHeartbeatOnlyDelivery", () => {
 
   it("suppresses when any payload is a heartbeat ack and no media is present", () => {
     expect(
-      shouldSkipHeartbeatOnlyDelivery(
-        [{ text: "Checked inbox and calendar." }, { text: "HEARTBEAT_OK" }],
-        300,
-      ),
+      shouldSkipHeartbeatOnlyDelivery([{ text: "Checked inbox and calendar." }, { text: "HEARTBEAT_OK" }], 300),
     ).toBe(true);
   });
 
   it("does not suppress when media is present", () => {
     expect(
-      shouldSkipHeartbeatOnlyDelivery(
-        [{ text: "HEARTBEAT_OK", mediaUrl: "https://example.com/image.png" }],
-        300,
-      ),
+      shouldSkipHeartbeatOnlyDelivery([{ text: "HEARTBEAT_OK", mediaUrl: "https://example.com/image.png" }], 300),
     ).toBe(false);
   });
 });

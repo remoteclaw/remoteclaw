@@ -201,9 +201,7 @@ export function isRecoverableTelegramNetworkError(
     return false;
   }
   const allowMessageMatch =
-    typeof options.allowMessageMatch === "boolean"
-      ? options.allowMessageMatch
-      : options.context !== "send";
+    typeof options.allowMessageMatch === "boolean" ? options.allowMessageMatch : options.context !== "send";
 
   for (const candidate of collectTelegramErrorCandidates(err)) {
     const code = normalizeCode(getErrorCode(candidate));

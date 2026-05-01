@@ -37,11 +37,7 @@ const findVerifiedGatewayListenerPidsOnPortSync = vi.fn<(port: number) => number
 const signalVerifiedGatewayPidSync = vi.fn<(pid: number, signal: "SIGTERM" | "SIGUSR1") => void>();
 const formatGatewayPidList = vi.fn<(pids: number[]) => string>((pids) => pids.join(", "));
 const probeGateway = vi.fn<
-  (opts: {
-    url: string;
-    auth?: { token?: string; password?: string };
-    timeoutMs: number;
-  }) => Promise<{
+  (opts: { url: string; auth?: { token?: string; password?: string }; timeoutMs: number }) => Promise<{
     ok: boolean;
     configSnapshot: unknown;
   }>
@@ -56,19 +52,15 @@ vi.mock("../../config/config.js", () => ({
 }));
 
 vi.mock("../../infra/gateway-processes.js", () => ({
-  findVerifiedGatewayListenerPidsOnPortSync: (port: number) =>
-    findVerifiedGatewayListenerPidsOnPortSync(port),
+  findVerifiedGatewayListenerPidsOnPortSync: (port: number) => findVerifiedGatewayListenerPidsOnPortSync(port),
   signalVerifiedGatewayPidSync: (pid: number, signal: "SIGTERM" | "SIGUSR1") =>
     signalVerifiedGatewayPidSync(pid, signal),
   formatGatewayPidList: (pids: number[]) => formatGatewayPidList(pids),
 }));
 
 vi.mock("../../gateway/probe.js", () => ({
-  probeGateway: (opts: {
-    url: string;
-    auth?: { token?: string; password?: string };
-    timeoutMs: number;
-  }) => probeGateway(opts),
+  probeGateway: (opts: { url: string; auth?: { token?: string; password?: string }; timeoutMs: number }) =>
+    probeGateway(opts),
 }));
 
 vi.mock("../../config/commands.js", () => ({
@@ -106,22 +98,20 @@ describe("runDaemonRestart health checks", () => {
   }: {
     runPostRestartCheck?: boolean;
   } = {}) {
-    runServiceRestart.mockImplementation(
-      async (params: RestartParams & { onNotLoaded?: () => Promise<unknown> }) => {
-        await params.onNotLoaded?.();
-        if (runPostRestartCheck) {
-          await params.postRestartCheck?.({
-            json: Boolean(params.opts?.json),
-            stdout: process.stdout,
-            warnings: [],
-            fail: (message: string) => {
-              throw new Error(message);
-            },
-          });
-        }
-        return true;
-      },
-    );
+    runServiceRestart.mockImplementation(async (params: RestartParams & { onNotLoaded?: () => Promise<unknown> }) => {
+      await params.onNotLoaded?.();
+      if (runPostRestartCheck) {
+        await params.postRestartCheck?.({
+          json: Boolean(params.opts?.json),
+          stdout: process.stdout,
+          warnings: [],
+          fail: (message: string) => {
+            throw new Error(message);
+          },
+        });
+      }
+      return true;
+    });
   }
 
   beforeAll(async () => {
@@ -242,10 +232,7 @@ describe("runDaemonRestart health checks", () => {
 
     await expect(runDaemonRestart({ json: true })).rejects.toMatchObject({
       message: "Gateway restart timed out after 60s waiting for health checks.",
-      hints: [
-        formatCliCommand("remoteclaw gateway status --deep"),
-        formatCliCommand("remoteclaw doctor"),
-      ],
+      hints: [formatCliCommand("remoteclaw gateway status --deep"), formatCliCommand("remoteclaw doctor")],
     });
     expect(terminateStaleGatewayPids).not.toHaveBeenCalled();
     expect(renderRestartDiagnostics).toHaveBeenCalledTimes(1);

@@ -1,18 +1,8 @@
 import { hasAnyWhatsAppAuth } from "../../extensions/whatsapp/src/accounts.js";
 import { normalizeProviderId } from "../agents/provider-utils.js";
-import {
-  getChannelPluginCatalogEntry,
-  listChannelPluginCatalogEntries,
-} from "../channels/plugins/catalog.js";
-import {
-  getChatChannelMeta,
-  listChatChannels,
-  normalizeChatChannelId,
-} from "../channels/registry.js";
-import {
-  loadPluginManifestRegistry,
-  type PluginManifestRegistry,
-} from "../plugins/manifest-registry.js";
+import { getChannelPluginCatalogEntry, listChannelPluginCatalogEntries } from "../channels/plugins/catalog.js";
+import { getChatChannelMeta, listChatChannels, normalizeChatChannelId } from "../channels/registry.js";
+import { loadPluginManifestRegistry, type PluginManifestRegistry } from "../plugins/manifest-registry.js";
 import { isRecord } from "../utils.js";
 import type { RemoteClawConfig } from "./config.js";
 import { ensurePluginAllowlisted } from "./plugins-allowlist.js";
@@ -61,10 +51,7 @@ function accountsHaveKeys(value: unknown, keys: readonly string[]): boolean {
   return false;
 }
 
-function resolveChannelConfig(
-  cfg: RemoteClawConfig,
-  channelId: string,
-): Record<string, unknown> | null {
+function resolveChannelConfig(cfg: RemoteClawConfig, channelId: string): Record<string, unknown> | null {
   const channels = cfg.channels as Record<string, unknown> | undefined;
   const entry = channels?.[channelId];
   return isRecord(entry) ? entry : null;
@@ -264,10 +251,7 @@ function buildChannelToPluginIdMap(registry: PluginManifestRegistry): Map<string
   return map;
 }
 
-function resolvePluginIdForChannel(
-  channelId: string,
-  channelToPluginId: ReadonlyMap<string, string>,
-): string {
+function resolvePluginIdForChannel(channelId: string, channelToPluginId: ReadonlyMap<string, string>): string {
   // Third-party plugins can expose a channel id that differs from their
   // manifest id; plugins.entries must always be keyed by manifest id.
   const builtInId = normalizeChatChannelId(channelId);
@@ -380,9 +364,7 @@ function registerPluginEntry(cfg: RemoteClawConfig, pluginId: string): RemoteCla
     const channels = cfg.channels as Record<string, unknown> | undefined;
     const existing = channels?.[builtInChannelId];
     const existingRecord =
-      existing && typeof existing === "object" && !Array.isArray(existing)
-        ? (existing as Record<string, unknown>)
-        : {};
+      existing && typeof existing === "object" && !Array.isArray(existing) ? (existing as Record<string, unknown>) : {};
     return {
       ...cfg,
       channels: {
@@ -454,18 +436,13 @@ export function applyPluginAutoEnable(params: {
       continue;
     }
     const allow = next.plugins?.allow;
-    const allowMissing =
-      builtInChannelId == null && Array.isArray(allow) && !allow.includes(entry.pluginId);
+    const allowMissing = builtInChannelId == null && Array.isArray(allow) && !allow.includes(entry.pluginId);
     const alreadyEnabled =
       builtInChannelId != null
         ? (() => {
             const channels = next.channels as Record<string, unknown> | undefined;
             const channelConfig = channels?.[builtInChannelId];
-            if (
-              !channelConfig ||
-              typeof channelConfig !== "object" ||
-              Array.isArray(channelConfig)
-            ) {
+            if (!channelConfig || typeof channelConfig !== "object" || Array.isArray(channelConfig)) {
               return false;
             }
             return (channelConfig as { enabled?: unknown }).enabled === true;

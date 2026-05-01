@@ -56,9 +56,7 @@ export class SessionMap {
       return undefined;
     }
     if (entry.lastAccessMs + this.#ttlMs < Date.now()) {
-      logDebug(
-        `[session-map] get: key=${compositeKey} expired (age=${Date.now() - entry.lastAccessMs}ms)`,
-      );
+      logDebug(`[session-map] get: key=${compositeKey} expired (age=${Date.now() - entry.lastAccessMs}ms)`);
       return undefined;
     }
     logDebug(`[session-map] get: key=${compositeKey} hit=${entry.sessionId}`);

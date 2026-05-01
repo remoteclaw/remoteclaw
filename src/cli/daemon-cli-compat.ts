@@ -12,9 +12,7 @@ type LegacyDaemonCliExport = (typeof LEGACY_DAEMON_CLI_EXPORTS)[number];
 export type LegacyDaemonCliAccessors = {
   registerDaemonCli: string;
   runDaemonRestart: string;
-} & Partial<
-  Record<Exclude<LegacyDaemonCliExport, "registerDaemonCli" | "runDaemonRestart">, string>
->;
+} & Partial<Record<Exclude<LegacyDaemonCliExport, "registerDaemonCli" | "runDaemonRestart">, string>>;
 
 const EXPORT_SPEC_RE = /^([A-Za-z_$][\w$]*)(?:\s+as\s+([A-Za-z_$][\w$]*))?$/;
 const REGISTER_CONTAINER_RE =
@@ -52,9 +50,7 @@ function findRegisterContainerSymbol(bundleSource: string): string | null {
   return bundleSource.match(REGISTER_CONTAINER_RE)?.[1] ?? null;
 }
 
-export function resolveLegacyDaemonCliAccessors(
-  bundleSource: string,
-): LegacyDaemonCliAccessors | null {
+export function resolveLegacyDaemonCliAccessors(bundleSource: string): LegacyDaemonCliAccessors | null {
   const aliases = parseExportAliases(bundleSource);
   if (!aliases) {
     return null;
@@ -75,9 +71,7 @@ export function resolveLegacyDaemonCliAccessors(
   }
 
   const accessors: LegacyDaemonCliAccessors = {
-    registerDaemonCli: registerContainerAlias
-      ? `${registerContainerAlias}.registerDaemonCli`
-      : registerDirectAlias!,
+    registerDaemonCli: registerContainerAlias ? `${registerContainerAlias}.registerDaemonCli` : registerDirectAlias!,
     runDaemonRestart,
   };
   if (runDaemonInstall) {

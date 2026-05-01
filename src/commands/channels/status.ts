@@ -77,11 +77,7 @@ function appendBaseUrlBit(bits: string[], account: Record<string, unknown>) {
   }
 }
 
-function buildChannelAccountLine(
-  provider: ChatChannel,
-  account: Record<string, unknown>,
-  bits: string[],
-): string {
+function buildChannelAccountLine(provider: ChatChannel, account: Record<string, unknown>, bits: string[]): string {
   const accountId = typeof account.accountId === "string" ? account.accountId : "default";
   const name = typeof account.name === "string" ? account.name.trim() : "";
   const labelText = formatChannelAccountLabel({
@@ -143,15 +139,9 @@ export function formatGatewayChannelsStatusLines(payload: Record<string, unknown
         bits.push(`allow:${account.allowFrom.slice(0, 2).join(",")}`);
       }
       appendTokenSourceBits(bits, account);
-      const application = account.application as
-        | { intents?: { messageContent?: string } }
-        | undefined;
+      const application = account.application as { intents?: { messageContent?: string } } | undefined;
       const messageContent = application?.intents?.messageContent;
-      if (
-        typeof messageContent === "string" &&
-        messageContent.length > 0 &&
-        messageContent !== "enabled"
-      ) {
+      if (typeof messageContent === "string" && messageContent.length > 0 && messageContent !== "enabled") {
         bits.push(`intents:content=${messageContent}`);
       }
       if (account.allowUnmentionedGroups === true) {
@@ -194,9 +184,7 @@ export function formatGatewayChannelsStatusLines(payload: Record<string, unknown
   if (issues.length > 0) {
     lines.push(theme.warn("Warnings:"));
     for (const issue of issues) {
-      lines.push(
-        `- ${issue.channel} ${issue.accountId}: ${issue.message}${issue.fix ? ` (${issue.fix})` : ""}`,
-      );
+      lines.push(`- ${issue.channel} ${issue.accountId}: ${issue.message}${issue.fix ? ` (${issue.fix})` : ""}`);
     }
     lines.push(`- Run: ${formatCliCommand("remoteclaw doctor")}`);
     lines.push("");
@@ -274,10 +262,7 @@ export async function formatConfigChannelsStatusLines(
   return lines;
 }
 
-export async function channelsStatusCommand(
-  opts: ChannelsStatusOptions,
-  runtime: RuntimeEnv = defaultRuntime,
-) {
+export async function channelsStatusCommand(opts: ChannelsStatusOptions, runtime: RuntimeEnv = defaultRuntime) {
   const timeoutMs = Number(opts.timeout ?? 10_000);
   const statusLabel = opts.probe ? "Checking channel status (probe)…" : "Checking channel status…";
   const shouldLogStatus = opts.json !== true && !process.stderr.isTTY;

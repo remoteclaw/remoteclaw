@@ -204,23 +204,15 @@ describe("mattermostPlugin", () => {
     });
 
     it("only treats boolean remove flag as removal", async () => {
-      const result = await runReactAction(
-        { messageId: "POST1", emoji: "thumbsup", remove: "true" },
-        "add",
-      );
+      const result = await runReactAction({ messageId: "POST1", emoji: "thumbsup", remove: "true" }, "add");
 
       expect(result?.content).toEqual([{ type: "text", text: "Reacted with :thumbsup: on POST1" }]);
     });
 
     it("removes reaction when remove flag is boolean true", async () => {
-      const result = await runReactAction(
-        { messageId: "POST1", emoji: "thumbsup", remove: true },
-        "remove",
-      );
+      const result = await runReactAction({ messageId: "POST1", emoji: "thumbsup", remove: true }, "remove");
 
-      expect(result?.content).toEqual([
-        { type: "text", text: "Removed reaction :thumbsup: from POST1" },
-      ]);
+      expect(result?.content).toEqual([{ type: "text", text: "Removed reaction :thumbsup: from POST1" }]);
       expect(result?.details).toEqual({});
     });
 

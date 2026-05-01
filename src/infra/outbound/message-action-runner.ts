@@ -1,16 +1,8 @@
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
-import {
-  readNumberParam,
-  readStringArrayParam,
-  readStringParam,
-} from "../../agents/tools/common.js";
+import { readNumberParam, readStringArrayParam, readStringParam } from "../../agents/tools/common.js";
 import { parseReplyDirectives } from "../../auto-reply/reply/reply-directives.js";
 import { dispatchChannelMessageAction } from "../../channels/plugins/message-actions.js";
-import type {
-  ChannelId,
-  ChannelMessageActionName,
-  ChannelThreadingToolContext,
-} from "../../channels/plugins/types.js";
+import type { ChannelId, ChannelMessageActionName, ChannelThreadingToolContext } from "../../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { getAgentScopedMediaLocalRoots } from "../../media/local-roots.js";
 import { hasPollCreationParams, resolveTelegramPollVisibility } from "../../poll-params.js";
@@ -20,10 +12,7 @@ import { normalizeAgentId } from "../../routing/session-key.js";
 import type { AgentToolResult } from "../../types/agent-types.js";
 import { type GatewayClientMode, type GatewayClientName } from "../../utils/message-channel.js";
 import { throwIfAborted } from "./abort.js";
-import {
-  listConfiguredMessageChannels,
-  resolveMessageChannelSelection,
-} from "./channel-selection.js";
+import { listConfiguredMessageChannels, resolveMessageChannelSelection } from "./channel-selection.js";
 import type { OutboundSendDeps } from "./deliver.js";
 import { normalizeMessageActionInput } from "./message-action-normalization.js";
 import {
@@ -250,8 +239,7 @@ async function resolveActionTarget(params: {
       throw resolved.error;
     }
   }
-  const channelIdRaw =
-    typeof params.args.channelId === "string" ? params.args.channelId.trim() : "";
+  const channelIdRaw = typeof params.args.channelId === "string" ? params.args.channelId.trim() : "";
   if (channelIdRaw) {
     const resolved = await resolveChannelTarget({
       cfg: params.cfg,
@@ -380,18 +368,7 @@ async function handleBroadcastAction(
 }
 
 async function handleSendAction(ctx: ResolvedActionContext): Promise<MessageActionRunResult> {
-  const {
-    cfg,
-    params,
-    channel,
-    accountId,
-    dryRun,
-    gateway,
-    input,
-    agentId,
-    resolvedTarget,
-    abortSignal,
-  } = ctx;
+  const { cfg, params, channel, accountId, dryRun, gateway, input, agentId, resolvedTarget, abortSignal } = ctx;
   throwIfAborted(abortSignal);
   const action: ChannelMessageActionName = "send";
   const to = readStringParam(params, "to", { required: true });
@@ -514,8 +491,7 @@ async function handleSendAction(ctx: ResolvedActionContext): Promise<MessageActi
   if (agentId) {
     params.__agentId = agentId;
   }
-  const mirrorMediaUrls =
-    mergedMediaUrls.length > 0 ? mergedMediaUrls : mediaUrl ? [mediaUrl] : undefined;
+  const mirrorMediaUrls = mergedMediaUrls.length > 0 ? mergedMediaUrls : mediaUrl ? [mediaUrl] : undefined;
   throwIfAborted(abortSignal);
   const send = await executeSendAction({
     ctx: {
@@ -689,16 +665,12 @@ async function handlePluginAction(ctx: ResolvedActionContext): Promise<MessageAc
   };
 }
 
-export async function runMessageAction(
-  input: RunMessageActionParams,
-): Promise<MessageActionRunResult> {
+export async function runMessageAction(input: RunMessageActionParams): Promise<MessageActionRunResult> {
   const cfg = input.cfg;
   let params = { ...input.params };
   const resolvedAgentId =
     input.agentId ??
-    (input.sessionKey
-      ? resolveSessionAgentId({ sessionKey: input.sessionKey, config: cfg })
-      : undefined);
+    (input.sessionKey ? resolveSessionAgentId({ sessionKey: input.sessionKey, config: cfg }) : undefined);
   parseButtonsParam(params);
   parseCardParam(params);
   parseComponentsParam(params);

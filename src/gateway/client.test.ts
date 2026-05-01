@@ -128,10 +128,7 @@ function getLatestWs(): MockWebSocket {
   return ws;
 }
 
-function createClientWithIdentity(
-  deviceId: string,
-  onClose: (code: number, reason: string) => void,
-) {
+function createClientWithIdentity(deviceId: string, onClose: (code: number, reason: string) => void) {
   const identity: DeviceIdentity = {
     deviceId,
     privateKeyPem: "private-key", // pragma: allowlist secret
@@ -279,17 +276,11 @@ describe("GatewayClient close handling", () => {
     const client = createClientWithIdentity("dev-1", onClose);
 
     client.start();
-    getLatestWs().emitClose(
-      1008,
-      "unauthorized: DEVICE token mismatch (rotate/reissue device token)",
-    );
+    getLatestWs().emitClose(1008, "unauthorized: DEVICE token mismatch (rotate/reissue device token)");
 
     expect(clearDeviceAuthTokenMock).toHaveBeenCalledWith({ deviceId: "dev-1", role: "operator" });
     expect(logDebugMock).toHaveBeenCalledWith("cleared stale device-auth token for device dev-1");
-    expect(onClose).toHaveBeenCalledWith(
-      1008,
-      "unauthorized: DEVICE token mismatch (rotate/reissue device token)",
-    );
+    expect(onClose).toHaveBeenCalledWith(1008, "unauthorized: DEVICE token mismatch (rotate/reissue device token)");
     client.stop();
   });
 
@@ -305,9 +296,7 @@ describe("GatewayClient close handling", () => {
       getLatestWs().emitClose(1008, "unauthorized: device token mismatch");
     }).not.toThrow();
 
-    expect(logDebugMock).toHaveBeenCalledWith(
-      expect.stringContaining("failed clearing stale device-auth token"),
-    );
+    expect(logDebugMock).toHaveBeenCalledWith(expect.stringContaining("failed clearing stale device-auth token"));
     expect(onClose).toHaveBeenCalledWith(1008, "unauthorized: device token mismatch");
     client.stop();
   });
@@ -460,11 +449,7 @@ describe("GatewayClient connect auth payload", () => {
     return { ws, connect: connectRequestFrom(ws) };
   }
 
-  function emitConnectFailure(
-    ws: MockWebSocket,
-    connectId: string | undefined,
-    details: Record<string, unknown>,
-  ) {
+  function emitConnectFailure(ws: MockWebSocket, connectId: string | undefined, details: Record<string, unknown>) {
     ws.emitMessage(
       JSON.stringify({
         type: "res",

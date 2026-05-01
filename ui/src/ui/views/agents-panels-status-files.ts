@@ -1,11 +1,6 @@
 import { html, nothing } from "lit";
 import { formatRelativeTimestamp } from "../format.ts";
-import {
-  formatCronPayload,
-  formatCronSchedule,
-  formatCronState,
-  formatNextRun,
-} from "../presenter.ts";
+import { formatCronPayload, formatCronSchedule, formatCronState, formatNextRun } from "../presenter.ts";
 import type {
   AgentFileEntry,
   AgentsFilesListResult,
@@ -131,9 +126,7 @@ export function renderAgentChannels(params: {
   onRefresh: () => void;
 }) {
   const entries = resolveChannelEntries(params.snapshot);
-  const lastSuccessLabel = params.lastSuccess
-    ? formatRelativeTimestamp(params.lastSuccess)
-    : "never";
+  const lastSuccessLabel = params.lastSuccess ? formatRelativeTimestamp(params.lastSuccess) : "never";
   return html`
     <section class="grid grid-cols-2">
       ${renderAgentContextCard(params.context, "Workspace, identity, and model configuration.")}
@@ -150,11 +143,7 @@ export function renderAgentChannels(params: {
         <div class="muted" style="margin-top: 8px;">
           Last refresh: ${lastSuccessLabel}
         </div>
-        ${
-          params.error
-            ? html`<div class="callout danger" style="margin-top: 12px;">${params.error}</div>`
-            : nothing
-        }
+        ${params.error ? html`<div class="callout danger" style="margin-top: 12px;">${params.error}</div>` : nothing}
         ${
           !params.snapshot
             ? html`
@@ -171,12 +160,8 @@ export function renderAgentChannels(params: {
                 <div class="list" style="margin-top: 16px;">
                   ${entries.map((entry) => {
                     const summary = summarizeChannelAccounts(entry.accounts);
-                    const status = summary.total
-                      ? `${summary.connected}/${summary.total} connected`
-                      : "no accounts";
-                    const config = summary.configured
-                      ? `${summary.configured} configured`
-                      : "not configured";
+                    const status = summary.total ? `${summary.connected}/${summary.total} connected` : "no accounts";
+                    const config = summary.configured ? `${summary.configured} configured` : "not configured";
                     const enabled = summary.total ? `${summary.enabled} enabled` : "disabled";
                     const extras = resolveChannelExtrasFromConfig({
                       configForm: params.configForm,
@@ -195,9 +180,7 @@ export function renderAgentChannels(params: {
                           <div>${enabled}</div>
                           ${
                             extras.length > 0
-                              ? extras.map(
-                                  (extra) => html`<div>${extra.label}: ${extra.value}</div>`,
-                                )
+                              ? extras.map((extra) => html`<div>${extra.label}: ${extra.value}</div>`)
                               : nothing
                           }
                         </div>
@@ -251,11 +234,7 @@ export function renderAgentCron(params: {
             <div class="stat-value">${formatNextRun(params.status?.nextWakeAtMs ?? null)}</div>
           </div>
         </div>
-        ${
-          params.error
-            ? html`<div class="callout danger" style="margin-top: 12px;">${params.error}</div>`
-            : nothing
-        }
+        ${params.error ? html`<div class="callout danger" style="margin-top: 12px;">${params.error}</div>` : nothing}
       </section>
     </section>
     <section class="card">
@@ -273,11 +252,7 @@ export function renderAgentCron(params: {
                     <div class="list-item">
                       <div class="list-main">
                         <div class="list-title">${job.name}</div>
-                        ${
-                          job.description
-                            ? html`<div class="list-sub">${job.description}</div>`
-                            : nothing
-                        }
+                        ${job.description ? html`<div class="list-sub">${job.description}</div>` : nothing}
                         <div class="chip-row" style="margin-top: 6px;">
                           <span class="chip">${formatCronSchedule(job)}</span>
                           <span class="chip ${job.enabled ? "chip-ok" : "chip-warn"}">
@@ -338,11 +313,7 @@ export function renderAgentFiles(params: {
           ${params.agentFilesLoading ? "Loading…" : "Refresh"}
         </button>
       </div>
-      ${
-        list
-          ? html`<div class="muted mono" style="margin-top: 8px;">Workspace: ${list.workspace}</div>`
-          : nothing
-      }
+      ${list ? html`<div class="muted mono" style="margin-top: 8px;">Workspace: ${list.workspace}</div>` : nothing}
       ${
         params.agentFilesError
           ? html`<div class="callout danger" style="margin-top: 12px;">${params.agentFilesError}</div>`
@@ -351,9 +322,7 @@ export function renderAgentFiles(params: {
       ${
         !list
           ? html`
-              <div class="callout info" style="margin-top: 12px">
-                Load the agent workspace files to edit core instructions.
-              </div>
+              <div class="callout info" style="margin-top: 12px">Load the agent workspace files to edit core instructions.</div>
             `
           : html`
               <div class="agent-files-grid" style="margin-top: 16px;">
@@ -363,9 +332,7 @@ export function renderAgentFiles(params: {
                       ? html`
                           <div class="muted">No files found.</div>
                         `
-                      : files.map((file) =>
-                          renderAgentFileRow(file, active, () => params.onSelectFile(file.name)),
-                        )
+                      : files.map((file) => renderAgentFileRow(file, active, () => params.onSelectFile(file.name)))
                   }
                 </div>
                 <div class="agent-files-editor">
@@ -411,10 +378,7 @@ export function renderAgentFiles(params: {
                             <textarea
                               .value=${draft}
                               @input=${(e: Event) =>
-                                params.onFileDraftChange(
-                                  activeEntry.name,
-                                  (e.target as HTMLTextAreaElement).value,
-                                )}
+                                params.onFileDraftChange(activeEntry.name, (e.target as HTMLTextAreaElement).value)}
                             ></textarea>
                           </label>
                         `

@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  normalizeUsage,
-  hasNonzeroUsage,
-  derivePromptTokens,
-  deriveSessionTotalTokens,
-} from "./usage.js";
+import { normalizeUsage, hasNonzeroUsage, derivePromptTokens, deriveSessionTotalTokens } from "./usage.js";
 
 describe("normalizeUsage", () => {
   it("normalizes cache fields from provider response", () => {

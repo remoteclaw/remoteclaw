@@ -60,9 +60,7 @@ export function resolveCanvasHostUrl(params: CanvasHostUrlParams) {
     return undefined;
   }
 
-  const scheme =
-    params.scheme ??
-    (parseForwardedProto(params.forwardedProto)?.trim() === "https" ? "https" : "http");
+  const scheme = params.scheme ?? (parseForwardedProto(params.forwardedProto)?.trim() === "https" ? "https" : "http");
 
   const override = normalizeHost(params.hostOverride, true);
   const parsedRequestHost = parseHostHeader(params.requestHost);

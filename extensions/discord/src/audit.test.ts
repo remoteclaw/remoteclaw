@@ -2,14 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 
 const sendModule = await import("./send.js");
 const fetchChannelPermissionsDiscordMock = vi.fn();
-vi.spyOn(sendModule, "fetchChannelPermissionsDiscord").mockImplementation(
-  fetchChannelPermissionsDiscordMock,
-);
+vi.spyOn(sendModule, "fetchChannelPermissionsDiscord").mockImplementation(fetchChannelPermissionsDiscordMock);
 
 describe("discord audit", () => {
   it("collects numeric channel ids and counts unresolved keys", async () => {
-    const { collectDiscordAuditChannelIds, auditDiscordChannelPermissions } =
-      await import("./audit.js");
+    const { collectDiscordAuditChannelIds, auditDiscordChannelPermissions } = await import("./audit.js");
 
     const cfg = {
       channels: {

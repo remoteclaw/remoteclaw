@@ -28,11 +28,7 @@ describe("applyModelDefaults", () => {
     } satisfies RemoteClawConfig;
   }
 
-  function buildMistralProviderConfig(overrides?: {
-    modelId?: string;
-    contextWindow?: number;
-    maxTokens?: number;
-  }) {
+  function buildMistralProviderConfig(overrides?: { modelId?: string; contextWindow?: number; maxTokens?: number }) {
     return {
       models: {
         providers: {
@@ -105,12 +101,8 @@ describe("applyModelDefaults", () => {
     const next = applyModelDefaults(cfg);
 
     expect(next.agents?.defaults?.models?.["google/gemini-3.1-pro-preview"]?.alias).toBe("");
-    expect(next.agents?.defaults?.models?.["google/gemini-3-flash-preview"]?.alias).toBe(
-      "gemini-flash",
-    );
-    expect(next.agents?.defaults?.models?.["google/gemini-3.1-flash-lite-preview"]?.alias).toBe(
-      "gemini-flash-lite",
-    );
+    expect(next.agents?.defaults?.models?.["google/gemini-3-flash-preview"]?.alias).toBe("gemini-flash");
+    expect(next.agents?.defaults?.models?.["google/gemini-3.1-flash-lite-preview"]?.alias).toBe("gemini-flash-lite");
   });
 
   it("fills missing model provider defaults", () => {

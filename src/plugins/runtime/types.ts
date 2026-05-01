@@ -55,9 +55,7 @@ export type PluginRuntime = PluginRuntimeCore & {
   subagent: {
     run: (params: SubagentRunParams) => Promise<SubagentRunResult>;
     waitForRun: (params: SubagentWaitParams) => Promise<SubagentWaitResult>;
-    getSessionMessages: (
-      params: SubagentGetSessionMessagesParams,
-    ) => Promise<SubagentGetSessionMessagesResult>;
+    getSessionMessages: (params: SubagentGetSessionMessagesParams) => Promise<SubagentGetSessionMessagesResult>;
     /** @deprecated Use getSessionMessages. */
     getSession: (params: SubagentGetSessionParams) => Promise<SubagentGetSessionResult>;
     deleteSession: (params: SubagentDeleteSessionParams) => Promise<void>;

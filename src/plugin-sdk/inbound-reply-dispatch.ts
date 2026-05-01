@@ -1,8 +1,5 @@
 import { withReplyDispatcher } from "../auto-reply/dispatch.js";
-import {
-  dispatchReplyFromConfig,
-  type DispatchFromConfigResult,
-} from "../auto-reply/reply/dispatch-from-config.js";
+import { dispatchReplyFromConfig, type DispatchFromConfigResult } from "../auto-reply/reply/dispatch-from-config.js";
 import type { ReplyDispatcher } from "../auto-reply/reply/reply-dispatcher.js";
 import type { FinalizedMsgContext } from "../auto-reply/templating.js";
 import type { GetReplyOptions } from "../auto-reply/types.js";
@@ -67,22 +64,16 @@ export function buildInboundReplyDispatchBase(params: {
     storePath: params.storePath,
     ctxPayload: params.ctxPayload,
     recordInboundSession: params.core.channel.session.recordInboundSession,
-    dispatchReplyWithBufferedBlockDispatcher:
-      params.core.channel.reply.dispatchReplyWithBufferedBlockDispatcher,
+    dispatchReplyWithBufferedBlockDispatcher: params.core.channel.reply.dispatchReplyWithBufferedBlockDispatcher,
   };
 }
 
 type BuildInboundReplyDispatchBaseParams = Parameters<typeof buildInboundReplyDispatchBase>[0];
-type RecordInboundSessionAndDispatchReplyParams = Parameters<
-  typeof recordInboundSessionAndDispatchReply
->[0];
+type RecordInboundSessionAndDispatchReplyParams = Parameters<typeof recordInboundSessionAndDispatchReply>[0];
 
 export async function dispatchInboundReplyWithBase(
   params: BuildInboundReplyDispatchBaseParams &
-    Pick<
-      RecordInboundSessionAndDispatchReplyParams,
-      "deliver" | "onRecordError" | "onDispatchError" | "replyOptions"
-    >,
+    Pick<RecordInboundSessionAndDispatchReplyParams, "deliver" | "onRecordError" | "onDispatchError" | "replyOptions">,
 ): Promise<void> {
   const dispatchBase = buildInboundReplyDispatchBase(params);
   await recordInboundSessionAndDispatchReply({

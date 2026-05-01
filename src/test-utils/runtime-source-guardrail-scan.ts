@@ -13,13 +13,15 @@ const DEFAULT_GUARDRAIL_SKIP_PATTERNS = [
   /\.test-helpers\.tsx?$/,
   /\.test-utils\.tsx?$/,
   /\.test-harness\.tsx?$/,
+  /\.test-support\.tsx?$/,
   /\.suite\.tsx?$/,
   /\.e2e\.tsx?$/,
   /\.d\.ts$/,
-  /[\\/](?:__tests__|tests|test-utils)[\\/]/,
+  /[\\/](?:__tests__|tests|test-utils|test-support)[\\/]/,
   /[\\/][^\\/]*test-helpers(?:\.[^\\/]+)?\.ts$/,
   /[\\/][^\\/]*test-utils(?:\.[^\\/]+)?\.ts$/,
   /[\\/][^\\/]*test-harness(?:\.[^\\/]+)?\.ts$/,
+  /[\\/][^\\/]*test-support(?:\.[^\\/]+)?\.ts$/,
 ];
 
 const runtimeSourceGuardrailCache = new Map<string, Promise<RuntimeSourceGuardrailFile[]>>();
@@ -64,9 +66,8 @@ async function readRuntimeSourceFiles(
     }
   };
 
-  const workers = Array.from(
-    { length: Math.min(FILE_READ_CONCURRENCY, Math.max(1, absolutePaths.length)) },
-    () => worker(),
+  const workers = Array.from({ length: Math.min(FILE_READ_CONCURRENCY, Math.max(1, absolutePaths.length)) }, () =>
+    worker(),
   );
   await Promise.all(workers);
   return output.filter((entry): entry is RuntimeSourceGuardrailFile => entry !== undefined);
@@ -96,9 +97,7 @@ function tryListTrackedRuntimeSourceFiles(repoRoot: string): string[] | null {
   }
 }
 
-export async function loadRuntimeSourceFilesForGuardrails(
-  repoRoot: string,
-): Promise<RuntimeSourceGuardrailFile[]> {
+export async function loadRuntimeSourceFilesForGuardrails(repoRoot: string): Promise<RuntimeSourceGuardrailFile[]> {
   let pending = runtimeSourceGuardrailCache.get(repoRoot);
   if (!pending) {
     pending = (async () => {

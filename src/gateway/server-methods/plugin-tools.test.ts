@@ -156,11 +156,7 @@ describe("plugin:tools:invoke", () => {
     // oxlint-disable-next-line typescript/no-explicit-any
     await pluginToolsHandlers["plugin:tools:invoke"](opts as any);
 
-    expect(respond).toHaveBeenCalledWith(
-      false,
-      undefined,
-      expect.objectContaining({ message: "toolName required" }),
-    );
+    expect(respond).toHaveBeenCalledWith(false, undefined, expect.objectContaining({ message: "toolName required" }));
   });
 
   it("returns error when tool is not found", async () => {

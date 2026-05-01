@@ -1,17 +1,11 @@
 import { listAgentEntries, resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
 import { resolveAgentIdentity } from "../agents/identity.js";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
-const loadAgentIdentity = (
-  ..._args: unknown[]
-): { name?: string; avatar?: string; emoji?: string } | null => null;
+const loadAgentIdentity = (..._args: unknown[]): { name?: string; avatar?: string; emoji?: string } | null => null;
 import type { RemoteClawConfig } from "../config/config.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import { coerceIdentityValue } from "../shared/assistant-identity-values.js";
-import {
-  isAvatarHttpUrl,
-  isAvatarImageDataUrl,
-  looksLikeAvatarPath,
-} from "../shared/avatar-policy.js";
+import { isAvatarHttpUrl, isAvatarImageDataUrl, looksLikeAvatarPath } from "../shared/avatar-policy.js";
 
 const MAX_ASSISTANT_NAME = 50;
 const MAX_ASSISTANT_AVATAR = 200;
@@ -86,9 +80,7 @@ export function resolveAssistantIdentity(params: {
   agentId?: string | null;
   workspaceDir?: string | null;
 }): AssistantIdentity {
-  const agentId = normalizeAgentId(
-    params.agentId ?? listAgentEntries(params.cfg)[0]?.id ?? "default",
-  );
+  const agentId = normalizeAgentId(params.agentId ?? listAgentEntries(params.cfg)[0]?.id ?? "default");
   const workspaceDir = params.workspaceDir ?? resolveAgentWorkspaceDir(params.cfg, agentId);
   const configAssistant = params.cfg.ui?.assistant;
   const agentIdentity = resolveAgentIdentity(params.cfg, agentId);

@@ -15,13 +15,7 @@ vi.mock("../infra/ports-probe.js", () => ({
 }));
 
 import { execFileSync } from "node:child_process";
-import {
-  forceFreePort,
-  forceFreePortAndWait,
-  listPortListeners,
-  type PortProcess,
-  parseLsofOutput,
-} from "./ports.js";
+import { forceFreePort, forceFreePortAndWait, listPortListeners, type PortProcess, parseLsofOutput } from "./ports.js";
 
 describe("gateway --force helpers", () => {
   let originalKill: typeof process.kill;
@@ -69,9 +63,7 @@ describe("gateway --force helpers", () => {
   });
 
   it("kills each listener and returns metadata", () => {
-    (execFileSync as unknown as Mock).mockReturnValue(
-      ["p42", "cnode", "p99", "cssh", ""].join("\n"),
-    );
+    (execFileSync as unknown as Mock).mockReturnValue(["p42", "cnode", "p99", "cssh", ""].join("\n"));
     const killMock = vi.fn();
     process.kill = killMock;
 
@@ -226,9 +218,7 @@ describe("gateway --force helpers", () => {
       throw err;
     });
 
-    await expect(forceFreePortAndWait(18789, { timeoutMs: 200, intervalMs: 100 })).rejects.toThrow(
-      /fuser not found/i,
-    );
+    await expect(forceFreePortAndWait(18789, { timeoutMs: 200, intervalMs: 100 })).rejects.toThrow(/fuser not found/i);
   });
 });
 
@@ -251,9 +241,7 @@ describe("gateway --force helpers (Windows netstat path)", () => {
   const makeNetstatOutput = (port: number, ...pids: number[]) =>
     [
       "Proto  Local Address          Foreign Address        State           PID",
-      ...pids.map(
-        (pid) => `  TCP    0.0.0.0:${port}           0.0.0.0:0              LISTENING       ${pid}`,
-      ),
+      ...pids.map((pid) => `  TCP    0.0.0.0:${port}           0.0.0.0:0              LISTENING       ${pid}`),
     ].join("\r\n");
 
   it("returns empty list when netstat finds no listeners on the port", () => {

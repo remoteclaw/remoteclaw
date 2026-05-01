@@ -72,16 +72,12 @@ describe("core gateway method classification", () => {
   });
 
   it("classifies every exposed core gateway handler method", () => {
-    const unclassified = Object.keys(coreGatewayHandlers).filter(
-      (method) => !isGatewayMethodClassified(method),
-    );
+    const unclassified = Object.keys(coreGatewayHandlers).filter((method) => !isGatewayMethodClassified(method));
     expect(unclassified).toEqual([]);
   });
 
   it("classifies every listed gateway method name", () => {
-    const unclassified = listGatewayMethods().filter(
-      (method) => !isGatewayMethodClassified(method),
-    );
+    const unclassified = listGatewayMethods().filter((method) => !isGatewayMethodClassified(method));
     expect(unclassified).toEqual([]);
   });
 });

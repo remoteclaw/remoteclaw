@@ -96,9 +96,7 @@ function createChatAbortContext(overrides: Record<string, unknown> = {}): {
     chatRunBuffers: new Map(),
     chatDeltaSentAt: new Map(),
     chatAbortedRuns: new Map<string, number>(),
-    removeChatRun: vi
-      .fn()
-      .mockImplementation((run: string) => ({ sessionKey: "main", clientRunId: run })),
+    removeChatRun: vi.fn().mockImplementation((run: string) => ({ sessionKey: "main", clientRunId: run })),
     agentRunSeq: new Map<string, number>(),
     broadcast: vi.fn(),
     nodeSendToSession: vi.fn(),
@@ -128,18 +126,14 @@ afterEach(() => {
 
 describe("chat abort transcript persistence", () => {
   it("persists run-scoped abort partial with rpc metadata and idempotency", async () => {
-    const { transcriptPath, sessionId } = await createTranscriptFixture(
-      "remoteclaw-chat-abort-run-",
-    );
+    const { transcriptPath, sessionId } = await createTranscriptFixture("remoteclaw-chat-abort-run-");
     const runId = "idem-abort-run-1";
     const respond = vi.fn();
     const context = createChatAbortContext({
       chatAbortControllers: new Map([[runId, createActiveRun("main", sessionId)]]),
       chatRunBuffers: new Map([[runId, "Partial from run abort"]]),
       chatDeltaSentAt: new Map([[runId, Date.now()]]),
-      removeChatRun: vi
-        .fn()
-        .mockReturnValue({ sessionKey: "main", clientRunId: "client-idem-abort-run-1" }),
+      removeChatRun: vi.fn().mockReturnValue({ sessionKey: "main", clientRunId: "client-idem-abort-run-1" }),
       agentRunSeq: new Map<string, number>([
         [runId, 2],
         ["client-idem-abort-run-1", 3],
@@ -178,9 +172,7 @@ describe("chat abort transcript persistence", () => {
   });
 
   it("persists session-scoped abort partials with rpc metadata", async () => {
-    const { transcriptPath, sessionId } = await createTranscriptFixture(
-      "remoteclaw-chat-abort-session-",
-    );
+    const { transcriptPath, sessionId } = await createTranscriptFixture("remoteclaw-chat-abort-session-");
     const respond = vi.fn();
     const context = createChatAbortContext({
       chatAbortControllers: new Map([
@@ -266,9 +258,7 @@ describe("chat abort transcript persistence", () => {
   });
 
   it("skips run-scoped transcript persistence when partial text is blank", async () => {
-    const { transcriptPath, sessionId } = await createTranscriptFixture(
-      "remoteclaw-chat-abort-run-blank-",
-    );
+    const { transcriptPath, sessionId } = await createTranscriptFixture("remoteclaw-chat-abort-run-blank-");
     const runId = "idem-abort-run-blank";
     const respond = vi.fn();
     const context = createChatAbortContext({

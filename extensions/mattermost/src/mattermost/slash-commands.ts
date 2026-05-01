@@ -213,10 +213,7 @@ export async function createMattermostCommand(
 /**
  * Delete a custom slash command.
  */
-export async function deleteMattermostCommand(
-  client: MattermostClient,
-  commandId: string,
-): Promise<void> {
+export async function deleteMattermostCommand(client: MattermostClient, commandId: string): Promise<void> {
   await client.request<Record<string, unknown>>(`/commands/${encodeURIComponent(commandId)}`, {
     method: "DELETE",
   });
@@ -229,13 +226,10 @@ export async function updateMattermostCommand(
   client: MattermostClient,
   params: MattermostCommandUpdate,
 ): Promise<MattermostCommandResponse> {
-  return await client.request<MattermostCommandResponse>(
-    `/commands/${encodeURIComponent(params.id)}`,
-    {
-      method: "PUT",
-      body: JSON.stringify(params),
-    },
-  );
+  return await client.request<MattermostCommandResponse>(`/commands/${encodeURIComponent(params.id)}`, {
+    method: "PUT",
+    body: JSON.stringify(params),
+  });
 }
 
 /**
@@ -280,12 +274,8 @@ export async function registerSlashCommands(params: {
 
   for (const spec of commands) {
     const existingForTrigger = existingByTrigger.get(spec.trigger) ?? [];
-    const ownedCommands = existingForTrigger.filter(
-      (cmd) => cmd.creator_id?.trim() === normalizedCreatorUserId,
-    );
-    const foreignCommands = existingForTrigger.filter(
-      (cmd) => cmd.creator_id?.trim() !== normalizedCreatorUserId,
-    );
+    const ownedCommands = existingForTrigger.filter((cmd) => cmd.creator_id?.trim() === normalizedCreatorUserId);
+    const foreignCommands = existingForTrigger.filter((cmd) => cmd.creator_id?.trim() !== normalizedCreatorUserId);
 
     if (ownedCommands.length === 0 && foreignCommands.length > 0) {
       log?.(
@@ -318,9 +308,7 @@ export async function registerSlashCommands(params: {
     // Exists but points to a different URL: attempt to reconcile by updating
     // (useful during callback URL migrations).
     if (existingCmd && existingCmd.url !== callbackUrl) {
-      log?.(
-        `mattermost: command /${spec.trigger} exists with different callback URL; updating (id=${existingCmd.id})`,
-      );
+      log?.(`mattermost: command /${spec.trigger} exists with different callback URL; updating (id=${existingCmd.id})`);
       try {
         const updated = await updateMattermostCommand(client, {
           id: existingCmd.id,
@@ -342,9 +330,7 @@ export async function registerSlashCommands(params: {
         });
         continue;
       } catch (err) {
-        log?.(
-          `mattermost: failed to update command /${spec.trigger} (id=${existingCmd.id}): ${String(err)}`,
-        );
+        log?.(`mattermost: failed to update command /${spec.trigger} (id=${existingCmd.id}): ${String(err)}`);
         // Fallback: try delete+recreate for commands owned by this bot user.
         try {
           await deleteMattermostCommand(client, existingCmd.id);
@@ -414,10 +400,7 @@ export async function cleanupSlashCommands(params: {
 /**
  * Parse a Mattermost slash command callback payload from a URL-encoded or JSON body.
  */
-export function parseSlashCommandPayload(
-  body: string,
-  contentType?: string,
-): MattermostSlashCommandPayload | null {
+export function parseSlashCommandPayload(body: string, contentType?: string): MattermostSlashCommandPayload | null {
   if (!body) {
     return null;
   }
@@ -486,14 +469,9 @@ export function parseSlashCommandPayload(
  * Map the trigger word back to the original RemoteClaw command name.
  * e.g. "oc_status" -> "/status", "oc_model" -> "/model"
  */
-export function resolveCommandText(
-  trigger: string,
-  text: string,
-  triggerMap?: ReadonlyMap<string, string>,
-): string {
+export function resolveCommandText(trigger: string, text: string, triggerMap?: ReadonlyMap<string, string>): string {
   // Use the trigger map if available for accurate name resolution
-  const commandName =
-    triggerMap?.get(trigger) ?? (trigger.startsWith("oc_") ? trigger.slice(3) : trigger);
+  const commandName = triggerMap?.get(trigger) ?? (trigger.startsWith("oc_") ? trigger.slice(3) : trigger);
   const args = text.trim();
   return args ? `/${commandName} ${args}` : `/${commandName}`;
 }
@@ -512,9 +490,7 @@ function normalizeCallbackPath(path: string): string {
   return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
 }
 
-export function resolveSlashCommandConfig(
-  raw?: Partial<MattermostSlashCommandConfig>,
-): MattermostSlashCommandConfig {
+export function resolveSlashCommandConfig(raw?: Partial<MattermostSlashCommandConfig>): MattermostSlashCommandConfig {
   return {
     native: raw?.native ?? "auto",
     nativeSkills: raw?.nativeSkills ?? "auto",
@@ -557,10 +533,7 @@ export function resolveCallbackUrl(params: {
     return host === "0.0.0.0" || host === "::" || host === "0:0:0:0:0:0:0:0" || host === "::0";
   };
 
-  let host =
-    params.gatewayHost && !isWildcardBindHost(params.gatewayHost)
-      ? params.gatewayHost
-      : "localhost";
+  let host = params.gatewayHost && !isWildcardBindHost(params.gatewayHost) ? params.gatewayHost : "localhost";
   const path = normalizeCallbackPath(params.config.callbackPath);
 
   // Bracket IPv6 literals so the URL is valid: http://[::1]:3015/...

@@ -34,8 +34,7 @@ beforeEach(async () => {
   vi.doMock("../../plugins/runtime.js", () => ({
     getActivePluginRegistryVersion: () => mocks.getActivePluginRegistryVersion(),
   }));
-  ({ resetDirectoryCache, resolveMessagingTarget, formatTargetDisplay } =
-    await import("./target-resolver.js"));
+  ({ resetDirectoryCache, resolveMessagingTarget, formatTargetDisplay } = await import("./target-resolver.js"));
 });
 
 describe("resolveMessagingTarget (directory fallback)", () => {

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const runFfprobeMock = vi.hoisted(() => vi.fn<(...args: unknown[]) => Promise<string>>());
 const runFfmpegMock = vi.hoisted(() => vi.fn<(...args: unknown[]) => Promise<void>>());
@@ -28,11 +28,13 @@ vi.mock("remoteclaw/plugin-sdk/media-runtime", async (importOriginal) => {
 let ensureOggOpus: typeof import("./voice-message.js").ensureOggOpus;
 
 describe("ensureOggOpus", () => {
-  beforeEach(async () => {
-    vi.resetModules();
+  beforeAll(async () => {
+    ({ ensureOggOpus } = await import("./voice-message.js"));
+  });
+
+  beforeEach(() => {
     runFfprobeMock.mockReset();
     runFfmpegMock.mockReset();
-    ({ ensureOggOpus } = await import("./voice-message.js"));
   });
 
   afterEach(() => {
@@ -41,9 +43,7 @@ describe("ensureOggOpus", () => {
   });
 
   it("rejects URL/protocol input paths", async () => {
-    await expect(ensureOggOpus("https://example.com/audio.ogg")).rejects.toThrow(
-      /local file path/i,
-    );
+    await expect(ensureOggOpus("https://example.com/audio.ogg")).rejects.toThrow(/local file path/i);
     expect(runFfprobeMock).not.toHaveBeenCalled();
     expect(runFfmpegMock).not.toHaveBeenCalled();
   });

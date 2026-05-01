@@ -88,12 +88,8 @@ export type ChannelOnboardingAdapter = {
   channel: ChannelId;
   getStatus: (ctx: ChannelOnboardingStatusContext) => Promise<ChannelOnboardingStatus>;
   configure: (ctx: ChannelOnboardingConfigureContext) => Promise<ChannelOnboardingResult>;
-  configureInteractive?: (
-    ctx: ChannelOnboardingInteractiveContext,
-  ) => Promise<ChannelOnboardingConfiguredResult>;
-  configureWhenConfigured?: (
-    ctx: ChannelOnboardingInteractiveContext,
-  ) => Promise<ChannelOnboardingConfiguredResult>;
+  configureInteractive?: (ctx: ChannelOnboardingInteractiveContext) => Promise<ChannelOnboardingConfiguredResult>;
+  configureWhenConfigured?: (ctx: ChannelOnboardingInteractiveContext) => Promise<ChannelOnboardingConfiguredResult>;
   dmPolicy?: ChannelOnboardingDmPolicy;
   onAccountRecorded?: (accountId: string, options?: SetupChannelsOptions) => void;
   disable?: (cfg: RemoteClawConfig) => RemoteClawConfig;

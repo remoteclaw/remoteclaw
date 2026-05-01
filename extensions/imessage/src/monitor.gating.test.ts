@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
-import {
-  buildIMessageInboundContext,
-  resolveIMessageInboundDecision,
-} from "./monitor/inbound-processing.js";
+import { buildIMessageInboundContext, resolveIMessageInboundDecision } from "./monitor/inbound-processing.js";
 import { parseIMessageNotification } from "./monitor/parse-notification.js";
 import type { IMessagePayload } from "./monitor/types.js";
 
@@ -25,11 +22,7 @@ function baseCfg(): RemoteClawConfig {
   } as unknown as RemoteClawConfig;
 }
 
-function resolve(params: {
-  cfg?: RemoteClawConfig;
-  message: IMessagePayload;
-  storeAllowFrom?: string[];
-}) {
+function resolve(params: { cfg?: RemoteClawConfig; message: IMessagePayload; storeAllowFrom?: string[] }) {
   const cfg = params.cfg ?? baseCfg();
   const groupHistories = new Map();
   return resolveIMessageInboundDecision({

@@ -35,9 +35,7 @@ async function runOpenAiMessageChannelRequest(params?: { messageChannelHeader?: 
       });
 
       expect(res.status).toBe(200);
-      firstCall = (agentCommand.mock.calls[0] as unknown[] | undefined)?.[0] as
-        | { messageChannel?: string }
-        | undefined;
+      firstCall = (agentCommand.mock.calls[0] as unknown[] | undefined)?.[0] as { messageChannel?: string } | undefined;
       await res.text();
     },
     { serverOptions: OPENAI_SERVER_OPTIONS },

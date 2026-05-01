@@ -12,12 +12,7 @@ import { loadAgentIdentities, loadAgentIdentity } from "./controllers/agent-iden
 import { loadAgents, loadToolsCatalog } from "./controllers/agents.ts";
 import { loadChannels } from "./controllers/channels.ts";
 import { loadConfig, loadConfigSchema } from "./controllers/config.ts";
-import {
-  loadCronJobs,
-  loadCronModelSuggestions,
-  loadCronRuns,
-  loadCronStatus,
-} from "./controllers/cron.ts";
+import { loadCronJobs, loadCronModelSuggestions, loadCronRuns, loadCronStatus } from "./controllers/cron.ts";
 import { loadDebug } from "./controllers/debug.ts";
 import { loadDevices } from "./controllers/devices.ts";
 import { loadExecApprovals } from "./controllers/exec-approvals.ts";
@@ -216,8 +211,7 @@ export async function refreshActiveTab(host: SettingsHost) {
     if (agentIds.length > 0) {
       void loadAgentIdentities(host as unknown as RemoteClawApp, agentIds);
     }
-    const agentId =
-      host.agentsSelectedId ?? host.agentsList?.defaultId ?? host.agentsList?.agents?.[0]?.id;
+    const agentId = host.agentsSelectedId ?? host.agentsList?.defaultId ?? host.agentsList?.agents?.[0]?.id;
     if (agentId) {
       void loadAgentIdentity(host as unknown as RemoteClawApp, agentId);
       if (host.agentsPanel === "channels") {

@@ -71,9 +71,7 @@ describe("sendMessageSlack file upload with user IDs", () => {
   });
 
   beforeEach(() => {
-    globalThis.fetch = vi.fn(
-      async () => new Response("ok", { status: 200 }),
-    ) as unknown as typeof fetch;
+    globalThis.fetch = vi.fn(async () => new Response("ok", { status: 200 })) as unknown as typeof fetch;
     fetchWithSsrFGuard.mockClear();
     clearSlackDmChannelCache();
   });

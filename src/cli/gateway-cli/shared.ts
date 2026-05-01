@@ -59,8 +59,7 @@ export function extractGatewayMiskeys(parsed: unknown): {
   }
   const hasGatewayToken = "token" in (gateway as Record<string, unknown>);
   const remote = (gateway as Record<string, unknown>).remote;
-  const hasRemoteToken =
-    remote && typeof remote === "object" ? "token" in (remote as Record<string, unknown>) : false;
+  const hasRemoteToken = remote && typeof remote === "object" ? "token" in (remote as Record<string, unknown>) : false;
   return { hasGatewayToken, hasRemoteToken };
 }
 

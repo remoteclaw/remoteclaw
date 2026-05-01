@@ -16,8 +16,7 @@ async function loadTargetNormalizationModule() {
     getChannelPlugin: (...args: unknown[]) => getChannelPluginMock(...args),
   }));
   vi.doMock("../../plugins/runtime.js", () => ({
-    getActivePluginRegistryVersion: (...args: unknown[]) =>
-      getActivePluginRegistryVersionMock(...args),
+    getActivePluginRegistryVersion: (...args: unknown[]) => getActivePluginRegistryVersionMock(...args),
   }));
   ({ buildTargetResolverSignature, normalizeChannelTargetInput, normalizeTargetForProvider } =
     await import("./target-normalization.js"));
@@ -57,10 +56,7 @@ describe("normalizeTargetForProvider", () => {
     const firstNormalizer = vi.fn((raw: string) => raw.trim().toUpperCase());
     const secondNormalizer = vi.fn((raw: string) => `next:${raw.trim()}`);
     normalizeChannelIdMock.mockReturnValue("telegram");
-    getActivePluginRegistryVersionMock
-      .mockReturnValueOnce(10)
-      .mockReturnValueOnce(10)
-      .mockReturnValueOnce(11);
+    getActivePluginRegistryVersionMock.mockReturnValueOnce(10).mockReturnValueOnce(10).mockReturnValueOnce(11);
     getChannelPluginMock
       .mockReturnValueOnce({
         messaging: { normalizeTarget: firstNormalizer },

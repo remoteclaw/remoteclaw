@@ -1,15 +1,8 @@
 import { describe, expect, it } from "vitest";
-import {
-  isVoiceCompatibleAudio,
-  TELEGRAM_VOICE_AUDIO_EXTENSIONS,
-  TELEGRAM_VOICE_MIME_TYPES,
-} from "./audio.js";
+import { isVoiceCompatibleAudio, TELEGRAM_VOICE_AUDIO_EXTENSIONS, TELEGRAM_VOICE_MIME_TYPES } from "./audio.js";
 
 describe("isVoiceCompatibleAudio", () => {
-  function expectVoiceCompatibilityCase(
-    opts: Parameters<typeof isVoiceCompatibleAudio>[0],
-    expected: boolean,
-  ) {
+  function expectVoiceCompatibilityCase(opts: Parameters<typeof isVoiceCompatibleAudio>[0], expected: boolean) {
     expect(isVoiceCompatibleAudio(opts)).toBe(expected);
   }
 

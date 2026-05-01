@@ -9,8 +9,13 @@ import { colorize, isRich, theme } from "../../terminal/theme.js";
 import type { GatewayRpcOpts } from "../gateway-rpc.js";
 import { callGatewayFromCli } from "../gateway-rpc.js";
 
-export const getCronChannelOptions = () =>
-  ["last", ...listChannelPlugins().map((plugin) => plugin.id)].join("|");
+export const getCronChannelOptions = () => {
+  // Keep help truthful even before the plugin registry is bootstrapped.
+  const pluginIds = listChannelPlugins()
+    .map((plugin) => plugin.id)
+    .filter(Boolean);
+  return pluginIds.length > 0 ? ["last", ...pluginIds].join("|") : "last|<channel-id>";
+};
 
 export function printCronJson(value: unknown) {
   defaultRuntime.writeJson(value);
@@ -60,22 +65,11 @@ export function parseDurationMs(input: string): number | null {
   }
   const unit = (match[2] ?? "").toLowerCase();
   const factor =
-    unit === "ms"
-      ? 1
-      : unit === "s"
-        ? 1000
-        : unit === "m"
-          ? 60_000
-          : unit === "h"
-            ? 3_600_000
-            : 86_400_000;
+    unit === "ms" ? 1 : unit === "s" ? 1000 : unit === "m" ? 60_000 : unit === "h" ? 3_600_000 : 86_400_000;
   return Math.floor(n * factor);
 }
 
-export function parseCronStaggerMs(params: {
-  staggerRaw: string;
-  useExact: boolean;
-}): number | undefined {
+export function parseCronStaggerMs(params: { staggerRaw: string; useExact: boolean }): number | undefined {
   if (params.useExact) {
     return 0;
   }
@@ -209,24 +203,15 @@ export function printCronList(jobs: CronJob[], runtime: RuntimeEnv = defaultRunt
   for (const job of jobs) {
     const idLabel = pad(job.id, CRON_ID_PAD);
     const nameLabel = pad(truncate(job.name, CRON_NAME_PAD), CRON_NAME_PAD);
-    const scheduleLabel = pad(
-      truncate(formatSchedule(job.schedule), CRON_SCHEDULE_PAD),
-      CRON_SCHEDULE_PAD,
-    );
-    const nextLabel = pad(
-      job.enabled ? formatRelative(job.state.nextRunAtMs, now) : "-",
-      CRON_NEXT_PAD,
-    );
+    const scheduleLabel = pad(truncate(formatSchedule(job.schedule), CRON_SCHEDULE_PAD), CRON_SCHEDULE_PAD);
+    const nextLabel = pad(job.enabled ? formatRelative(job.state.nextRunAtMs, now) : "-", CRON_NEXT_PAD);
     const lastLabel = pad(formatRelative(job.state.lastRunAtMs, now), CRON_LAST_PAD);
     const statusRaw = formatStatus(job);
     const statusLabel = pad(statusRaw, CRON_STATUS_PAD);
     const targetLabel = pad(job.sessionTarget ?? "-", CRON_TARGET_PAD);
     const agentLabel = pad(truncate(job.agentId ?? "-", CRON_AGENT_PAD), CRON_AGENT_PAD);
     const modelLabel = pad(
-      truncate(
-        (job.payload.kind === "agentTurn" ? job.payload.model : undefined) ?? "-",
-        CRON_MODEL_PAD,
-      ),
+      truncate((job.payload.kind === "agentTurn" ? job.payload.model : undefined) ?? "-", CRON_MODEL_PAD),
       CRON_MODEL_PAD,
     );
 
@@ -250,9 +235,7 @@ export function printCronList(jobs: CronJob[], runtime: RuntimeEnv = defaultRunt
       job.sessionTarget === "main"
         ? colorize(rich, theme.accent, targetLabel)
         : colorize(rich, theme.accentBright, targetLabel);
-    const coloredAgent = job.agentId
-      ? colorize(rich, theme.info, agentLabel)
-      : colorize(rich, theme.muted, agentLabel);
+    const coloredAgent = job.agentId ? colorize(rich, theme.info, agentLabel) : colorize(rich, theme.muted, agentLabel);
 
     const line = [
       colorize(rich, theme.accent, idLabel),

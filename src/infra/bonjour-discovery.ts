@@ -29,9 +29,7 @@ export type GatewayDiscoveryResolvedEndpoint = {
   wsUrl: string;
 };
 
-export function resolveGatewayDiscoveryEndpoint(
-  beacon: GatewayBonjourBeacon,
-): GatewayDiscoveryResolvedEndpoint | null {
+export function resolveGatewayDiscoveryEndpoint(beacon: GatewayBonjourBeacon): GatewayDiscoveryResolvedEndpoint | null {
   const host = beacon.host?.trim();
   const port = beacon.port;
   if (!host || typeof port !== "number" || !Number.isFinite(port) || port <= 0) {
@@ -379,10 +377,9 @@ async function discoverWideAreaViaTailnetDns(
         continue;
       }
       try {
-        const probe = await run(
-          ["dig", "+short", "+time=1", "+tries=1", `@${ip}`, probeName, "PTR"],
-          { timeoutMs: Math.max(1, Math.min(250, budget)) },
-        );
+        const probe = await run(["dig", "+short", "+time=1", "+tries=1", `@${ip}`, probeName, "PTR"], {
+          timeoutMs: Math.max(1, Math.min(250, budget)),
+        });
         const lines = parseDigShortLines(probe.stdout);
         if (lines.length === 0) {
           continue;
@@ -579,9 +576,7 @@ async function discoverViaAvahi(
   }));
 }
 
-export async function discoverGatewayBeacons(
-  opts: GatewayBonjourDiscoverOpts = {},
-): Promise<GatewayBonjourBeacon[]> {
+export async function discoverGatewayBeacons(opts: GatewayBonjourDiscoverOpts = {}): Promise<GatewayBonjourBeacon[]> {
   const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const platform = opts.platform ?? process.platform;
   const run = opts.run ?? runCommandWithTimeout;
@@ -601,14 +596,10 @@ export async function discoverGatewayBeacons(
       const discovered = perDomain.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
 
       const wantsWideArea = wideAreaDomain ? domains.includes(wideAreaDomain) : false;
-      const hasWideArea = wideAreaDomain
-        ? discovered.some((b) => b.domain === wideAreaDomain)
-        : false;
+      const hasWideArea = wideAreaDomain ? discovered.some((b) => b.domain === wideAreaDomain) : false;
 
       if (wantsWideArea && !hasWideArea && wideAreaDomain) {
-        const fallback = await discoverWideAreaViaTailnetDns(wideAreaDomain, timeoutMs, run).catch(
-          () => [],
-        );
+        const fallback = await discoverWideAreaViaTailnetDns(wideAreaDomain, timeoutMs, run).catch(() => []);
         return [...discovered, ...fallback];
       }
 

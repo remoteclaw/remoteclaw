@@ -2,22 +2,10 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { withTempDir } from "../test-utils/temp-dir.js";
-import {
-  getChannelActivity,
-  recordChannelActivity,
-  resetChannelActivityForTest,
-} from "./channel-activity.js";
+import { getChannelActivity, recordChannelActivity, resetChannelActivityForTest } from "./channel-activity.js";
 import { createDedupeCache } from "./dedupe.js";
-import {
-  emitDiagnosticEvent,
-  onDiagnosticEvent,
-  resetDiagnosticEventsForTest,
-} from "./diagnostic-events.js";
-import {
-  defaultVoiceWakeTriggers,
-  loadVoiceWakeConfig,
-  setVoiceWakeTriggers,
-} from "./voicewake.js";
+import { emitDiagnosticEvent, onDiagnosticEvent, resetDiagnosticEventsForTest } from "./diagnostic-events.js";
+import { defaultVoiceWakeTriggers, loadVoiceWakeConfig, setVoiceWakeTriggers } from "./voicewake.js";
 
 describe("infra store", () => {
   describe("voicewake store", () => {

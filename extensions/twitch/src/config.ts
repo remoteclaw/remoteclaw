@@ -16,10 +16,7 @@ export const DEFAULT_ACCOUNT_ID = "default";
  * For "default" account, base-level properties take precedence over accounts.default
  * For other accounts, only the accounts object is checked
  */
-export function getAccountConfig(
-  coreConfig: unknown,
-  accountId: string,
-): TwitchAccountConfig | null {
+export function getAccountConfig(coreConfig: unknown, accountId: string): TwitchAccountConfig | null {
   if (!coreConfig || typeof coreConfig !== "object") {
     return null;
   }
@@ -43,17 +40,12 @@ export function getAccountConfig(
       enabled: typeof twitchRaw?.enabled === "boolean" ? twitchRaw.enabled : undefined,
       allowFrom: Array.isArray(twitchRaw?.allowFrom) ? twitchRaw.allowFrom : undefined,
       allowedRoles: Array.isArray(twitchRaw?.allowedRoles) ? twitchRaw.allowedRoles : undefined,
-      requireMention:
-        typeof twitchRaw?.requireMention === "boolean" ? twitchRaw.requireMention : undefined,
-      clientSecret:
-        typeof twitchRaw?.clientSecret === "string" ? twitchRaw.clientSecret : undefined,
-      refreshToken:
-        typeof twitchRaw?.refreshToken === "string" ? twitchRaw.refreshToken : undefined,
+      requireMention: typeof twitchRaw?.requireMention === "boolean" ? twitchRaw.requireMention : undefined,
+      clientSecret: typeof twitchRaw?.clientSecret === "string" ? twitchRaw.clientSecret : undefined,
+      refreshToken: typeof twitchRaw?.refreshToken === "string" ? twitchRaw.refreshToken : undefined,
       expiresIn: typeof twitchRaw?.expiresIn === "number" ? twitchRaw.expiresIn : undefined,
       obtainmentTimestamp:
-        typeof twitchRaw?.obtainmentTimestamp === "number"
-          ? twitchRaw.obtainmentTimestamp
-          : undefined,
+        typeof twitchRaw?.obtainmentTimestamp === "number" ? twitchRaw.obtainmentTimestamp : undefined,
     };
 
     // Merge: base-level takes precedence over accounts.default

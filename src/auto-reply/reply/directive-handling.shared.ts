@@ -11,5 +11,4 @@ export const formatDirectiveAck = (text: string): string => {
 };
 
 export const formatOptionsLine = (options: string) => `Options: ${options}.`;
-export const withOptions = (line: string, options: string) =>
-  `${line}\n${formatOptionsLine(options)}`;
+export const withOptions = (line: string, options: string) => `${line}\n${formatOptionsLine(options)}`;

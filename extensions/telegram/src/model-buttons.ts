@@ -103,18 +103,13 @@ export function parseModelCallbackData(data: string): ParsedModelCallback | null
   return null;
 }
 
-export function buildModelSelectionCallbackData(params: {
-  provider: string;
-  model: string;
-}): string | null {
+export function buildModelSelectionCallbackData(params: { provider: string; model: string }): string | null {
   const fullCallbackData = `${CALLBACK_PREFIX.selectStandard}${params.provider}/${params.model}`;
   if (Buffer.byteLength(fullCallbackData, "utf8") <= MAX_CALLBACK_DATA_BYTES) {
     return fullCallbackData;
   }
   const compactCallbackData = `${CALLBACK_PREFIX.selectCompact}${params.model}`;
-  return Buffer.byteLength(compactCallbackData, "utf8") <= MAX_CALLBACK_DATA_BYTES
-    ? compactCallbackData
-    : null;
+  return Buffer.byteLength(compactCallbackData, "utf8") <= MAX_CALLBACK_DATA_BYTES ? compactCallbackData : null;
 }
 
 export function resolveModelSelection(params: {
@@ -129,9 +124,7 @@ export function resolveModelSelection(params: {
       model: params.callback.model,
     };
   }
-  const matchingProviders = params.providers.filter((id) =>
-    params.byProvider.get(id)?.has(params.callback.model),
-  );
+  const matchingProviders = params.providers.filter((id) => params.byProvider.get(id)?.has(params.callback.model));
   if (matchingProviders.length === 1) {
     return {
       kind: "resolved",
@@ -198,9 +191,7 @@ export function buildModelsKeyboard(params: ModelsKeyboardParams): ButtonRow[] {
   const pageModels = models.slice(startIndex, endIndex);
 
   // Model buttons - one per row
-  const currentModelId = currentModel?.includes("/")
-    ? currentModel.split("/").slice(1).join("/")
-    : currentModel;
+  const currentModelId = currentModel?.includes("/") ? currentModel.split("/").slice(1).join("/") : currentModel;
 
   for (const model of pageModels) {
     const callbackData = buildModelSelectionCallbackData({ provider, model });

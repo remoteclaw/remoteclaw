@@ -24,9 +24,7 @@ export function normalizeMattermostAllowEntry(entry: string): string {
 }
 
 export function normalizeMattermostAllowList(entries: Array<string | number>): string[] {
-  const normalized = entries
-    .map((entry) => normalizeMattermostAllowEntry(String(entry)))
-    .filter(Boolean);
+  const normalized = entries.map((entry) => normalizeMattermostAllowEntry(String(entry))).filter(Boolean);
   return Array.from(new Set(normalized));
 }
 
@@ -201,8 +199,7 @@ export function authorizeMattermostCommandInvocation(params: {
   // Direct command authorization always requires a sender-allowlist match; the prior
   // `dmPolicy === "open"` permissive bypass was withdrawn upstream (#74112) because an
   // open DM policy does not imply that any sender may invoke control commands.
-  const commandAuthorized =
-    kind === "direct" ? senderAllowedForCommands : commandGate.commandAuthorized;
+  const commandAuthorized = kind === "direct" ? senderAllowedForCommands : commandGate.commandAuthorized;
 
   if (kind === "direct") {
     if (dmPolicy === "disabled") {

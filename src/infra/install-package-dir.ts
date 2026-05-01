@@ -5,8 +5,7 @@ import { fileExists } from "./archive.js";
 import { assertCanonicalPathWithinBase } from "./install-safe-path.js";
 
 const INSTALL_BASE_CHANGED_ERROR_MESSAGE = "install base directory changed during install";
-const INSTALL_BASE_CHANGED_ABORT_WARNING =
-  "Install base directory changed during install; aborting staged publish.";
+const INSTALL_BASE_CHANGED_ABORT_WARNING = "Install base directory changed during install; aborting staged publish.";
 const INSTALL_BASE_CHANGED_BACKUP_WARNING =
   "Install base directory changed before backup cleanup; leaving backup in place.";
 const STAGED_NPM_PROJECT_CONFIG_NAME = ".npmrc";
@@ -82,9 +81,7 @@ async function hideProjectNpmConfigForInstall(targetDir: string): Promise<Hidden
   }
 }
 
-async function restoreProjectNpmConfigAfterInstall(
-  hiddenConfig: HiddenProjectConfigFile,
-): Promise<void> {
+async function restoreProjectNpmConfigAfterInstall(hiddenConfig: HiddenProjectConfigFile): Promise<void> {
   if (!hiddenConfig) {
     return;
   }
@@ -92,10 +89,7 @@ async function restoreProjectNpmConfigAfterInstall(
   await fs.rm(hiddenConfig.hiddenDir, { recursive: true, force: true });
 }
 
-async function assertInstallBoundaryPaths(params: {
-  installBaseDir: string;
-  candidatePaths: string[];
-}): Promise<void> {
+async function assertInstallBoundaryPaths(params: { installBaseDir: string; candidatePaths: string[] }): Promise<void> {
   for (const candidatePath of params.candidatePaths) {
     await assertCanonicalPathWithinBase({
       baseDir: params.installBaseDir,
@@ -106,19 +100,14 @@ async function assertInstallBoundaryPaths(params: {
 }
 
 function isRelativePathInsideBase(relativePath: string): boolean {
-  return (
-    Boolean(relativePath) && relativePath !== ".." && !relativePath.startsWith(`..${path.sep}`)
-  );
+  return Boolean(relativePath) && relativePath !== ".." && !relativePath.startsWith(`..${path.sep}`);
 }
 
 function isInstallBaseChangedError(error: unknown): boolean {
   return error instanceof Error && error.message === INSTALL_BASE_CHANGED_ERROR_MESSAGE;
 }
 
-async function assertInstallBaseStable(params: {
-  installBaseDir: string;
-  expectedRealPath: string;
-}): Promise<void> {
+async function assertInstallBaseStable(params: { installBaseDir: string; expectedRealPath: string }): Promise<void> {
   const baseLstat = await fs.lstat(params.installBaseDir);
   if (!baseLstat.isDirectory() || baseLstat.isSymbolicLink()) {
     throw new Error(INSTALL_BASE_CHANGED_ERROR_MESSAGE);

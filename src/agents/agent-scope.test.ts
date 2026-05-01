@@ -79,9 +79,7 @@ describe("resolveAgentConfig", () => {
       },
     } as unknown as RemoteClawConfig;
     expect(resolveAgentExplicitModelPrimary(cfgWithStringDefault, "main")).toBeUndefined();
-    expect(resolveAgentEffectiveModelPrimary(cfgWithStringDefault, "main")).toBe(
-      "anthropic/claude-sonnet-4-6",
-    );
+    expect(resolveAgentEffectiveModelPrimary(cfgWithStringDefault, "main")).toBe("anthropic/claude-sonnet-4-6");
 
     const cfgWithObjectDefault: RemoteClawConfig = {
       agents: {
@@ -461,9 +459,7 @@ describe("resolveAgentIdByWorkspacePath", () => {
       },
     };
 
-    expect(
-      resolveAgentIdByWorkspacePath(cfg, `/tmp/remoteclaw-agent-scope-${Date.now()}-unrelated`),
-    ).toBeUndefined();
+    expect(resolveAgentIdByWorkspacePath(cfg, `/tmp/remoteclaw-agent-scope-${Date.now()}-unrelated`)).toBeUndefined();
   });
 
   it("matches workspace paths through symlink aliases", () => {
@@ -473,11 +469,7 @@ describe("resolveAgentIdByWorkspacePath", () => {
     const aliasWorkspaceRoot = path.join(tempRoot, "alias-root");
     try {
       fs.mkdirSync(path.join(realOpsWorkspace, "src"), { recursive: true });
-      fs.symlinkSync(
-        realWorkspaceRoot,
-        aliasWorkspaceRoot,
-        process.platform === "win32" ? "junction" : "dir",
-      );
+      fs.symlinkSync(realWorkspaceRoot, aliasWorkspaceRoot, process.platform === "win32" ? "junction" : "dir");
 
       const cfg: RemoteClawConfig = {
         agents: {
@@ -488,12 +480,8 @@ describe("resolveAgentIdByWorkspacePath", () => {
         },
       };
 
-      expect(
-        resolveAgentIdByWorkspacePath(cfg, path.join(aliasWorkspaceRoot, "projects", "ops")),
-      ).toBe("ops");
-      expect(
-        resolveAgentIdByWorkspacePath(cfg, path.join(aliasWorkspaceRoot, "projects", "ops", "src")),
-      ).toBe("ops");
+      expect(resolveAgentIdByWorkspacePath(cfg, path.join(aliasWorkspaceRoot, "projects", "ops"))).toBe("ops");
+      expect(resolveAgentIdByWorkspacePath(cfg, path.join(aliasWorkspaceRoot, "projects", "ops", "src"))).toBe("ops");
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }
@@ -515,11 +503,7 @@ describe("resolveAgentIdsByWorkspacePath", () => {
       },
     };
 
-    expect(resolveAgentIdsByWorkspacePath(cfg, `${opsDevWorkspace}/pkg`)).toEqual([
-      "ops-dev",
-      "ops",
-      "main",
-    ]);
+    expect(resolveAgentIdsByWorkspacePath(cfg, `${opsDevWorkspace}/pkg`)).toEqual(["ops-dev", "ops", "main"]);
   });
 });
 
@@ -557,15 +541,11 @@ describe("resolveAgentRuntimeOrThrow", () => {
     const cfg: RemoteClawConfig = {
       agents: { list: [{ id: "main" }] },
     };
-    expect(() => resolveAgentRuntimeOrThrow(cfg, "main")).toThrow(
-      /No runtime configured for agent "main"/,
-    );
+    expect(() => resolveAgentRuntimeOrThrow(cfg, "main")).toThrow(/No runtime configured for agent "main"/);
   });
 
   it("throws message names the agent id and points to agents.defaults.runtime", () => {
     const cfg: RemoteClawConfig = {};
-    expect(() => resolveAgentRuntimeOrThrow(cfg, "worker-42")).toThrow(
-      /agent "worker-42".*agents\.defaults\.runtime/s,
-    );
+    expect(() => resolveAgentRuntimeOrThrow(cfg, "worker-42")).toThrow(/agent "worker-42".*agents\.defaults\.runtime/s);
   });
 });

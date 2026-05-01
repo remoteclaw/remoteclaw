@@ -34,10 +34,7 @@ describe("chat", () => {
     mockOkTextResponse();
   }
 
-  async function expectCalledUrlIncludesPassword(params: {
-    password: string;
-    invoke: () => Promise<void>;
-  }) {
+  async function expectCalledUrlIncludesPassword(params: { password: string; invoke: () => Promise<void> }) {
     mockOkTextResponse();
     await params.invoke();
     const calledUrl = mockFetch.mock.calls[0][0] as string;
@@ -47,9 +44,7 @@ describe("chat", () => {
   async function expectCalledUrlUsesConfigCredentials(params: {
     serverHost: string;
     password: string;
-    invoke: (cfg: {
-      channels: { bluebubbles: { serverUrl: string; password: string } };
-    }) => Promise<void>;
+    invoke: (cfg: { channels: { bluebubbles: { serverUrl: string; password: string } } }) => Promise<void>;
   }) {
     mockOkTextResponse();
     await params.invoke({
@@ -77,9 +72,7 @@ describe("chat", () => {
     });
 
     it("throws when required credentials are missing", async () => {
-      await expect(markBlueBubblesChatRead("chat-guid", {})).rejects.toThrow(
-        "serverUrl is required",
-      );
+      await expect(markBlueBubblesChatRead("chat-guid", {})).rejects.toThrow("serverUrl is required");
       await expect(
         markBlueBubblesChatRead("chat-guid", {
           serverUrl: "http://localhost:1234",
@@ -181,9 +174,7 @@ describe("chat", () => {
     });
 
     it("throws when required credentials are missing", async () => {
-      await expect(sendBlueBubblesTyping("chat-guid", true, {})).rejects.toThrow(
-        "serverUrl is required",
-      );
+      await expect(sendBlueBubblesTyping("chat-guid", true, {})).rejects.toThrow("serverUrl is required");
       await expect(
         sendBlueBubblesTyping("chat-guid", true, {
           serverUrl: "http://localhost:1234",
@@ -215,13 +206,9 @@ describe("chat", () => {
       });
 
       expect(mockFetch).toHaveBeenCalledTimes(2);
-      expect(mockFetch.mock.calls[0][0]).toContain(
-        "/api/v1/chat/iMessage%3B-%3B%2B15551234567/typing",
-      );
+      expect(mockFetch.mock.calls[0][0]).toContain("/api/v1/chat/iMessage%3B-%3B%2B15551234567/typing");
       expect(mockFetch.mock.calls[0][1].method).toBe("POST");
-      expect(mockFetch.mock.calls[1][0]).toContain(
-        "/api/v1/chat/iMessage%3B-%3B%2B15551234567/typing",
-      );
+      expect(mockFetch.mock.calls[1][0]).toContain("/api/v1/chat/iMessage%3B-%3B%2B15551234567/typing");
       expect(mockFetch.mock.calls[1][1].method).toBe("DELETE");
     });
 
@@ -502,9 +489,9 @@ describe("chat", () => {
     });
 
     it("throws when required credentials are missing", async () => {
-      await expect(
-        setGroupIconBlueBubbles("chat-guid", new Uint8Array([1, 2, 3]), "icon.png", {}),
-      ).rejects.toThrow("serverUrl is required");
+      await expect(setGroupIconBlueBubbles("chat-guid", new Uint8Array([1, 2, 3]), "icon.png", {})).rejects.toThrow(
+        "serverUrl is required",
+      );
       await expect(
         setGroupIconBlueBubbles("chat-guid", new Uint8Array([1, 2, 3]), "icon.png", {
           serverUrl: "http://localhost:1234",

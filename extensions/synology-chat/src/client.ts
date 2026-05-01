@@ -154,9 +154,7 @@ export async function fetchChatUsers(
               });
               resolve(users);
             } else {
-              log?.warn(
-                `fetchChatUsers: API returned success=${result.success}, using cached data`,
-              );
+              log?.warn(`fetchChatUsers: API returned success=${result.success}, using cached data`);
               resolve(cached?.users ?? []);
             }
           } catch {

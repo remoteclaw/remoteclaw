@@ -46,9 +46,7 @@ function normalizeOptionalText(value?: string | null): string | undefined {
   return trimmed || undefined;
 }
 
-export function normalizeSpawnedRunMetadata(
-  value?: SpawnedRunMetadata | null,
-): NormalizedSpawnedRunMetadata {
+export function normalizeSpawnedRunMetadata(value?: SpawnedRunMetadata | null): NormalizedSpawnedRunMetadata {
   return {
     spawnedBy: normalizeOptionalText(value?.spawnedBy),
     groupId: normalizeOptionalText(value?.groupId),
@@ -82,9 +80,7 @@ export function resolveSpawnedWorkspaceInheritance(params: {
   // For cross-agent spawns, use the target agent's workspace instead of the requester's.
   const agentId =
     params.targetAgentId ??
-    (params.requesterSessionKey
-      ? parseAgentSessionKey(params.requesterSessionKey)?.agentId
-      : undefined);
+    (params.requesterSessionKey ? parseAgentSessionKey(params.requesterSessionKey)?.agentId : undefined);
   return agentId ? resolveAgentWorkspaceDir(params.config, normalizeAgentId(agentId)) : undefined;
 }
 

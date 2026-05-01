@@ -21,10 +21,7 @@ async function makeOoxmlZip(opts: { mainMime: string; partPath: string }): Promi
 }
 
 describe("mime detection", () => {
-  async function expectDetectedMime(params: {
-    input: Parameters<typeof detectMime>[0];
-    expected: string;
-  }) {
+  async function expectDetectedMime(params: { input: Parameters<typeof detectMime>[0]; expected: string }) {
     expect(await detectMime(params.input)).toBe(params.expected);
   }
 
@@ -165,10 +162,7 @@ describe("mediaKindFromMime", () => {
     expect(mediaKindFromMime(mime)).toBe(expected);
   }
 
-  function expectMimeKindCase(
-    mime: Parameters<typeof kindFromMime>[0],
-    expected: ReturnType<typeof kindFromMime>,
-  ) {
+  function expectMimeKindCase(mime: Parameters<typeof kindFromMime>[0], expected: ReturnType<typeof kindFromMime>) {
     expect(kindFromMime(mime)).toBe(expected);
   }
 

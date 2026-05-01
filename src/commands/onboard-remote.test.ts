@@ -31,9 +31,7 @@ function createPrompter(overrides: Partial<WizardPrompter>): WizardPrompter {
   return createWizardPrompter(overrides, { defaultSelect: "" });
 }
 
-function createSelectPrompter(
-  responses: Partial<Record<string, string>>,
-): WizardPrompter["select"] {
+function createSelectPrompter(responses: Partial<Record<string, string>>): WizardPrompter["select"] {
   return vi.fn(async (params) => {
     const value = responses[params.message];
     if (value !== undefined) {
@@ -269,9 +267,7 @@ describe("promptRemoteGatewayConfig", () => {
     const next = await promptRemoteGatewayConfig({} as RemoteClawConfig, prompter);
 
     expect(next.gateway?.remote?.url).toBe("ws://127.0.0.1:18789");
-    expect(select).not.toHaveBeenCalledWith(
-      expect.objectContaining({ message: "Connection method" }),
-    );
+    expect(select).not.toHaveBeenCalledWith(expect.objectContaining({ message: "Connection method" }));
   });
 
   it("validates insecure ws:// remote URLs and allows only loopback ws:// by default", async () => {

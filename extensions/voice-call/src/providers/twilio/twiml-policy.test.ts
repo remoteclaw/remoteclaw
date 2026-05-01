@@ -32,9 +32,7 @@ describe("twiml policy", () => {
   });
 
   it("returns queue for inbound when another stream is active", () => {
-    const view = readTwimlRequestView(
-      createContext("CallStatus=ringing&Direction=inbound&CallSid=CA456"),
-    );
+    const view = readTwimlRequestView(createContext("CallStatus=ringing&Direction=inbound&CallSid=CA456"));
 
     const decision = decideTwimlResponse({
       ...view,
@@ -48,9 +46,7 @@ describe("twiml policy", () => {
   });
 
   it("returns stream + activation for inbound call when available", () => {
-    const view = readTwimlRequestView(
-      createContext("CallStatus=ringing&Direction=inbound&CallSid=CA789"),
-    );
+    const view = readTwimlRequestView(createContext("CallStatus=ringing&Direction=inbound&CallSid=CA789"));
 
     const decision = decideTwimlResponse({
       ...view,

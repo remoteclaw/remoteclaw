@@ -8,11 +8,7 @@ import { isPathInsideWithRealpath } from "../security/scan-paths.js";
 import { CONFIG_DIR, resolveUserPath } from "../utils.js";
 import { resolveBundledHooksDir } from "./bundled-dir.js";
 import { shouldIncludeHook } from "./config.js";
-import {
-  parseFrontmatter,
-  resolveRemoteClawMetadata,
-  resolveHookInvocationPolicy,
-} from "./frontmatter.js";
+import { parseFrontmatter, resolveRemoteClawMetadata, resolveHookInvocationPolicy } from "./frontmatter.js";
 import type {
   Hook,
   HookEligibilityContext,
@@ -161,9 +157,7 @@ function loadHooksFromDir(params: { dir: string; source: HookSource; pluginId?: 
       for (const hookPath of packageHooks) {
         const resolvedHookDir = resolveContainedDir(hookDir, hookPath);
         if (!resolvedHookDir) {
-          log.warn(
-            `Ignoring out-of-package hook path "${hookPath}" in ${hookDir} (must be within package directory)`,
-          );
+          log.warn(`Ignoring out-of-package hook path "${hookPath}" in ${hookDir} (must be within package directory)`);
           continue;
         }
         const hook = loadHookFromDir({
@@ -193,11 +187,7 @@ function loadHooksFromDir(params: { dir: string; source: HookSource; pluginId?: 
   return hooks;
 }
 
-export function loadHookEntriesFromDir(params: {
-  dir: string;
-  source: HookSource;
-  pluginId?: string;
-}): HookEntry[] {
+export function loadHookEntriesFromDir(params: { dir: string; source: HookSource; pluginId?: string }): HookEntry[] {
   const hooks = loadHooksFromDir({
     dir: params.dir,
     source: params.source,
@@ -239,9 +229,7 @@ function loadHookEntries(
   const workspaceHooksDir = path.join(workspaceDir, "hooks");
   const bundledHooksDir = opts?.bundledHooksDir ?? resolveBundledHooksDir();
   const extraDirsRaw = opts?.config?.hooks?.internal?.load?.extraDirs ?? [];
-  const extraDirs = extraDirsRaw
-    .map((d) => (typeof d === "string" ? d.trim() : ""))
-    .filter(Boolean);
+  const extraDirs = extraDirsRaw.map((d) => (typeof d === "string" ? d.trim() : "")).filter(Boolean);
 
   const bundledHooks = bundledHooksDir
     ? loadHooksFromDir({

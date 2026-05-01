@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  isProviderStatusTerminal,
-  mapProviderStatusToEndReason,
-  normalizeProviderStatus,
-} from "./call-status.js";
+import { isProviderStatusTerminal, mapProviderStatusToEndReason, normalizeProviderStatus } from "./call-status.js";
 
 describe("provider call status mapping", () => {
   it("normalizes missing statuses to unknown", () => {

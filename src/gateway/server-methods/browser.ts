@@ -1,8 +1,5 @@
 import crypto from "node:crypto";
-import {
-  createBrowserControlContext,
-  startBrowserControlServiceFromConfig,
-} from "../../browser/control-service.js";
+import { createBrowserControlContext, startBrowserControlServiceFromConfig } from "../../browser/control-service.js";
 import { createBrowserRouteDispatcher } from "../../browser/routes/dispatcher.js";
 import { loadConfig } from "../../config/config.js";
 import { isNodeCommandAllowed, resolveNodeCommandAllowlist } from "../node-command-policy.js";
@@ -20,12 +17,8 @@ type BrowserRequestParams = {
   timeoutMs?: number;
 };
 
-function resolveRequestedProfile(params: {
-  query?: Record<string, unknown>;
-  body?: unknown;
-}): string | undefined {
-  const queryProfile =
-    typeof params.query?.profile === "string" ? params.query.profile.trim() : undefined;
+function resolveRequestedProfile(params: { query?: Record<string, unknown>; body?: unknown }): string | undefined {
+  const queryProfile = typeof params.query?.profile === "string" ? params.query.profile.trim() : undefined;
   if (queryProfile) {
     return queryProfile;
   }
@@ -33,9 +26,7 @@ function resolveRequestedProfile(params: {
     return undefined;
   }
   const bodyProfile =
-    "profile" in params.body && typeof params.body.profile === "string"
-      ? params.body.profile.trim()
-      : undefined;
+    "profile" in params.body && typeof params.body.profile === "string" ? params.body.profile.trim() : undefined;
   return bodyProfile || undefined;
 }
 
@@ -152,19 +143,11 @@ export const browserHandlers: GatewayRequestHandlers = {
         : undefined;
 
     if (!methodRaw || !path) {
-      respond(
-        false,
-        undefined,
-        errorShape(ErrorCodes.INVALID_REQUEST, "method and path are required"),
-      );
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "method and path are required"));
       return;
     }
     if (methodRaw !== "GET" && methodRaw !== "POST" && methodRaw !== "DELETE") {
-      respond(
-        false,
-        undefined,
-        errorShape(ErrorCodes.INVALID_REQUEST, "method must be GET, POST, or DELETE"),
-      );
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "method must be GET, POST, or DELETE"));
       return;
     }
 

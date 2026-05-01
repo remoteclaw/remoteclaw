@@ -3,13 +3,7 @@ import * as path from "node:path";
 import { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
 import { normalizeHostname } from "../infra/net/hostname.js";
 import { resolveCliName } from "./cli-name.js";
-import {
-  asBoolean,
-  asNumber,
-  asRecord,
-  asString,
-  resolveTempPathParts,
-} from "./nodes-media-utils.js";
+import { asBoolean, asNumber, asRecord, asString, resolveTempPathParts } from "./nodes-media-utils.js";
 
 const MAX_CAMERA_URL_DOWNLOAD_BYTES = 250 * 1024 * 1024;
 
@@ -74,11 +68,7 @@ export function cameraTempPath(opts: {
   return path.join(tmpDir, `${cliName}-camera-${opts.kind}${facingPart}-${id}${ext}`);
 }
 
-export async function writeUrlToFile(
-  filePath: string,
-  url: string,
-  opts: { expectedHost: string },
-) {
+export async function writeUrlToFile(filePath: string, url: string, opts: { expectedHost: string }) {
   const parsed = new URL(url);
   if (parsed.protocol !== "https:") {
     throw new Error(`writeUrlToFile: only https URLs are allowed, got ${parsed.protocol}`);
@@ -88,9 +78,7 @@ export async function writeUrlToFile(
     throw new Error("writeUrlToFile: expectedHost is required");
   }
   if (normalizeHostname(parsed.hostname) !== expectedHost) {
-    throw new Error(
-      `writeUrlToFile: url host ${parsed.hostname} must match node host ${opts.expectedHost}`,
-    );
+    throw new Error(`writeUrlToFile: url host ${parsed.hostname} must match node host ${opts.expectedHost}`);
   }
 
   const policy = {
@@ -113,9 +101,7 @@ export async function writeUrlToFile(
       throw new Error(`writeUrlToFile: redirect resolved to non-https URL ${guarded.finalUrl}`);
     }
     if (normalizeHostname(finalUrl.hostname) !== expectedHost) {
-      throw new Error(
-        `writeUrlToFile: redirect host ${finalUrl.hostname} must match node host ${opts.expectedHost}`,
-      );
+      throw new Error(`writeUrlToFile: redirect host ${finalUrl.hostname} must match node host ${opts.expectedHost}`);
     }
     const res = guarded.response;
     if (!res.ok) {
@@ -129,9 +115,7 @@ export async function writeUrlToFile(
       Number.isFinite(contentLength) &&
       contentLength > MAX_CAMERA_URL_DOWNLOAD_BYTES
     ) {
-      throw new Error(
-        `writeUrlToFile: content-length ${contentLength} exceeds max ${MAX_CAMERA_URL_DOWNLOAD_BYTES}`,
-      );
+      throw new Error(`writeUrlToFile: content-length ${contentLength} exceeds max ${MAX_CAMERA_URL_DOWNLOAD_BYTES}`);
     }
 
     const body = res.body;
@@ -153,9 +137,7 @@ export async function writeUrlToFile(
         }
         bytes += value.byteLength;
         if (bytes > MAX_CAMERA_URL_DOWNLOAD_BYTES) {
-          throw new Error(
-            `writeUrlToFile: downloaded ${bytes} bytes, exceeds max ${MAX_CAMERA_URL_DOWNLOAD_BYTES}`,
-          );
+          throw new Error(`writeUrlToFile: downloaded ${bytes} bytes, exceeds max ${MAX_CAMERA_URL_DOWNLOAD_BYTES}`);
         }
         await fileHandle.write(value);
       }

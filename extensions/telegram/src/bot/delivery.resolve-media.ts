@@ -42,28 +42,14 @@ function isRetryableGetFileError(err: unknown): boolean {
 }
 
 function resolveMediaFileRef(msg: TelegramContext["message"]) {
-  return (
-    msg.photo?.[msg.photo.length - 1] ??
-    msg.video ??
-    msg.video_note ??
-    msg.document ??
-    msg.audio ??
-    msg.voice
-  );
+  return msg.photo?.[msg.photo.length - 1] ?? msg.video ?? msg.video_note ?? msg.document ?? msg.audio ?? msg.voice;
 }
 
 function resolveTelegramFileName(msg: TelegramContext["message"]): string | undefined {
-  return (
-    msg.document?.file_name ??
-    msg.audio?.file_name ??
-    msg.video?.file_name ??
-    msg.animation?.file_name
-  );
+  return msg.document?.file_name ?? msg.audio?.file_name ?? msg.video?.file_name ?? msg.animation?.file_name;
 }
 
-async function resolveTelegramFileWithRetry(
-  ctx: TelegramContext,
-): Promise<{ file_path?: string } | null> {
+async function resolveTelegramFileWithRetry(ctx: TelegramContext): Promise<{ file_path?: string } | null> {
   try {
     return await retryAsync(() => ctx.getFile(), {
       attempts: 3,
@@ -72,17 +58,12 @@ async function resolveTelegramFileWithRetry(
       jitter: 0.2,
       label: "telegram:getFile",
       shouldRetry: isRetryableGetFileError,
-      onRetry: ({ attempt, maxAttempts }) =>
-        logVerbose(`telegram: getFile retry ${attempt}/${maxAttempts}`),
+      onRetry: ({ attempt, maxAttempts }) => logVerbose(`telegram: getFile retry ${attempt}/${maxAttempts}`),
     });
   } catch (err) {
     // Handle "file is too big" separately - Telegram Bot API has a 20MB download limit
     if (isFileTooBigError(err)) {
-      logVerbose(
-        warn(
-          "telegram: getFile failed - file exceeds Telegram Bot API 20MB limit; skipping attachment",
-        ),
-      );
+      logVerbose(warn("telegram: getFile failed - file exceeds Telegram Bot API 20MB limit; skipping attachment"));
       return null;
     }
     // All retries exhausted — return null so the message still reaches the agent
@@ -128,13 +109,7 @@ async function downloadAndSaveTelegramFile(params: {
     ssrfPolicy: TELEGRAM_MEDIA_SSRF_POLICY,
   });
   const originalName = params.telegramFileName ?? fetched.fileName ?? params.filePath;
-  return saveMediaBuffer(
-    fetched.buffer,
-    fetched.contentType,
-    "inbound",
-    params.maxBytes,
-    originalName,
-  );
+  return saveMediaBuffer(fetched.buffer, fetched.contentType, "inbound", params.maxBytes, originalName);
 }
 
 async function resolveStickerMedia(params: {

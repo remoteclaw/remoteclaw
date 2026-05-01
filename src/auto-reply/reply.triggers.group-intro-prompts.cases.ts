@@ -13,9 +13,7 @@ function getLastExtraSystemPrompt() {
   return getRunAgentMock().mock.calls.at(-1)?.[0]?.extraSystemPrompt ?? "";
 }
 
-export function registerGroupIntroPromptCases(params: {
-  getReplyFromConfig: () => GetReplyFromConfig;
-}): void {
+export function registerGroupIntroPromptCases(params: { getReplyFromConfig: () => GetReplyFromConfig }): void {
   describe("group intro prompts", () => {
     type GroupIntroCase = {
       name: string;
@@ -119,9 +117,7 @@ export function registerGroupIntroPromptCases(params: {
           expect(getRunAgentMock(), testCase.name).toHaveBeenCalledOnce();
           const extraSystemPrompt = getLastExtraSystemPrompt();
           for (const expectedFragment of testCase.expected) {
-            expect(extraSystemPrompt, `${testCase.name}:${expectedFragment}`).toContain(
-              expectedFragment,
-            );
+            expect(extraSystemPrompt, `${testCase.name}:${expectedFragment}`).toContain(expectedFragment);
           }
           getRunAgentMock().mockClear();
         }

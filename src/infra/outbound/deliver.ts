@@ -1,9 +1,6 @@
 import type { sendMessageDiscord } from "../../../extensions/discord/src/send.js";
 import type { sendMessageIMessage } from "../../../extensions/imessage/src/send.js";
-import {
-  markdownToSignalTextChunks,
-  type SignalTextStyleRange,
-} from "../../../extensions/signal/src/format.js";
+import { markdownToSignalTextChunks, type SignalTextStyleRange } from "../../../extensions/signal/src/format.js";
 import { sendMessageSignal } from "../../../extensions/signal/src/send.js";
 import type { sendMessageSlack } from "../../../extensions/slack/src/send.js";
 import type { sendMessageTelegram } from "../../../extensions/telegram/src/send.js";
@@ -17,16 +14,10 @@ import {
 import type { ReplyPayload } from "../../auto-reply/types.js";
 import { resolveChannelMediaMaxBytes } from "../../channels/plugins/media-limits.js";
 import { loadChannelOutboundAdapter } from "../../channels/plugins/outbound/load.js";
-import type {
-  ChannelOutboundAdapter,
-  ChannelOutboundContext,
-} from "../../channels/plugins/types.js";
+import type { ChannelOutboundAdapter, ChannelOutboundContext } from "../../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { resolveMarkdownTableMode } from "../../config/markdown-tables.js";
-import {
-  appendAssistantMessageToSessionTranscript,
-  resolveMirroredTranscriptText,
-} from "../../config/sessions.js";
+import { appendAssistantMessageToSessionTranscript, resolveMirroredTranscriptText } from "../../config/sessions.js";
 import { fireAndForgetHook } from "../../hooks/fire-and-forget.js";
 import { createInternalHookEvent, triggerInternalHook } from "../../hooks/internal-hooks.js";
 import {
@@ -273,15 +264,11 @@ function hasChannelDataPayload(payload: ReplyPayload): boolean {
   return Boolean(payload.channelData && Object.keys(payload.channelData).length > 0);
 }
 
-function normalizePayloadForChannelDelivery(
-  payload: ReplyPayload,
-  channelId: string,
-): ReplyPayload | null {
+function normalizePayloadForChannelDelivery(payload: ReplyPayload, channelId: string): ReplyPayload | null {
   const hasMedia = hasMediaPayload(payload);
   const hasChannelData = hasChannelDataPayload(payload);
   const rawText = typeof payload.text === "string" ? payload.text : "";
-  const normalizedText =
-    channelId === "whatsapp" ? rawText.replace(/^(?:[ \t]*\r?\n)+/, "") : rawText;
+  const normalizedText = channelId === "whatsapp" ? rawText.replace(/^(?:[ \t]*\r?\n)+/, "") : rawText;
   if (!normalizedText.trim()) {
     if (!hasMedia && !hasChannelData) {
       return null;
@@ -367,10 +354,7 @@ function createMessageSentEmitter(params: {
     });
     if (hasMessageSentHooks) {
       fireAndForgetHook(
-        params.hookRunner!.runMessageSent(
-          toPluginMessageSentEvent(canonical),
-          toPluginMessageContext(canonical),
-        ),
+        params.hookRunner!.runMessageSent(toPluginMessageSentEvent(canonical), toPluginMessageContext(canonical)),
         "deliverOutboundPayloads: message_sent plugin hook failed",
         (message) => {
           log.warn(message);
@@ -521,9 +505,7 @@ export async function deliverOutboundPayloads(
       if (isAbortError(err)) {
         await ackDelivery(queueId).catch(() => {});
       } else {
-        await failDelivery(queueId, err instanceof Error ? err.message : String(err)).catch(
-          () => {},
-        );
+        await failDelivery(queueId, err instanceof Error ? err.message : String(err)).catch(() => {});
       }
     }
     throw err;
@@ -539,10 +521,7 @@ async function deliverOutboundPayloadsCore(
   const deps = params.deps;
   const abortSignal = params.abortSignal;
   const sendSignal = params.deps?.sendSignal ?? sendMessageSignal;
-  const mediaLocalRoots = getAgentScopedMediaLocalRoots(
-    cfg,
-    params.session?.agentId ?? params.mirror?.agentId,
-  );
+  const mediaLocalRoots = getAgentScopedMediaLocalRoots(cfg, params.session?.agentId ?? params.mirror?.agentId);
   const results: OutboundDeliveryResult[] = [];
   const handler = await createChannelHandler({
     cfg,
@@ -568,15 +547,12 @@ async function deliverOutboundPayloadsCore(
       : configuredTextLimit;
   const chunkMode = handler.chunker ? resolveChunkMode(cfg, channel, accountId) : "length";
   const isSignalChannel = channel === "signal";
-  const signalTableMode = isSignalChannel
-    ? resolveMarkdownTableMode({ cfg, channel: "signal", accountId })
-    : "code";
+  const signalTableMode = isSignalChannel ? resolveMarkdownTableMode({ cfg, channel: "signal", accountId }) : "code";
   const signalMaxBytes = isSignalChannel
     ? resolveChannelMediaMaxBytes({
         cfg,
         resolveChannelLimitMb: ({ cfg, accountId }) =>
-          cfg.channels?.signal?.accounts?.[accountId]?.mediaMaxMb ??
-          cfg.channels?.signal?.mediaMaxMb,
+          cfg.channels?.signal?.accounts?.[accountId]?.mediaMaxMb ?? cfg.channels?.signal?.mediaMaxMb,
         accountId,
       })
     : undefined;
@@ -593,9 +569,7 @@ async function deliverOutboundPayloadsCore(
     if (chunkMode === "newline") {
       const mode = handler.chunkerMode ?? "text";
       const blockChunks =
-        mode === "markdown"
-          ? chunkMarkdownTextWithMode(text, textLimit, "newline")
-          : chunkByParagraph(text, textLimit);
+        mode === "markdown" ? chunkMarkdownTextWithMode(text, textLimit, "newline") : chunkByParagraph(text, textLimit);
 
       if (!blockChunks.length && text) {
         blockChunks.push(text);
@@ -671,13 +645,7 @@ async function deliverOutboundPayloadsCore(
       })),
     };
   };
-  const normalizedPayloads = normalizePayloadsForChannelDelivery(
-    payloads,
-    channel,
-    cfg,
-    to,
-    accountId,
-  );
+  const normalizedPayloads = normalizePayloadsForChannelDelivery(payloads, channel, cfg, to, accountId);
   const hookRunner = getGlobalHookRunner();
   const sessionKeyForInternalHooks = params.mirror?.sessionKey ?? params.session?.key;
   const mirrorIsGroup = params.mirror?.isGroup;

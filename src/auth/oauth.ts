@@ -1,11 +1,7 @@
 import type { RemoteClawConfig } from "../config/config.js";
 import type { AuthProfileStore } from "./types.js";
 
-function isProfileConfigCompatible(params: {
-  cfg?: RemoteClawConfig;
-  profileId: string;
-  provider: string;
-}): boolean {
+function isProfileConfigCompatible(params: { cfg?: RemoteClawConfig; profileId: string; provider: string }): boolean {
   const profileConfig = params.cfg?.auth?.profiles?.[params.profileId];
   if (profileConfig && profileConfig.provider !== params.provider) {
     return false;

@@ -49,10 +49,7 @@ export async function sendFeishuMessageWithOptionalReply(params: {
           ...data,
         },
       });
-      assertFeishuMessageApiSuccess(
-        fallback,
-        params.fallbackSendErrorPrefix ?? params.sendErrorPrefix,
-      );
+      assertFeishuMessageApiSuccess(fallback, params.fallbackSendErrorPrefix ?? params.sendErrorPrefix);
       return toFeishuSendResult(fallback, params.receiveId);
     }
     assertFeishuMessageApiSuccess(response, params.replyErrorPrefix);

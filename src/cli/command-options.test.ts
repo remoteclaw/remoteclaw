@@ -74,9 +74,7 @@ describe("inheritOptionFromParent", () => {
 
   it("skips default-valued ancestor options and keeps traversing", async () => {
     const program = new Command().option("--token <token>", "Root token");
-    const gateway = program
-      .command("gateway")
-      .option("--token <token>", "Gateway token", "default");
+    const gateway = program.command("gateway").option("--token <token>", "Gateway token", "default");
     const getInherited = attachRunCommandAndCaptureInheritedToken(gateway);
 
     await program.parseAsync(["--token", "root-token", "gateway", "run"], {

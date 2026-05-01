@@ -114,9 +114,7 @@ type DispatchCronDeliveryParams = {
   abortSignal?: AbortSignal;
   isAborted: () => boolean;
   abortReason: () => string;
-  withRunSession: (
-    result: Omit<RunCronAgentTurnResult, "sessionId" | "sessionKey">,
-  ) => RunCronAgentTurnResult;
+  withRunSession: (result: Omit<RunCronAgentTurnResult, "sessionId" | "sessionKey">) => RunCronAgentTurnResult;
 };
 
 export type DispatchCronDeliveryState = {
@@ -129,9 +127,7 @@ export type DispatchCronDeliveryState = {
   deliveryPayloads: ReplyPayload[];
 };
 
-export async function dispatchCronDelivery(
-  params: DispatchCronDeliveryParams,
-): Promise<DispatchCronDeliveryState> {
+export async function dispatchCronDelivery(params: DispatchCronDeliveryParams): Promise<DispatchCronDeliveryState> {
   const skipMessagingToolDelivery = params.skipMessagingToolDelivery === true;
   let summary = params.summary;
   let outputText = params.outputText;
@@ -154,17 +150,11 @@ export async function dispatchCronDelivery(
       ...params.telemetry,
     });
 
-  const deliverViaDirect = async (
-    delivery: SuccessfulDeliveryTarget,
-  ): Promise<RunCronAgentTurnResult | null> => {
+  const deliverViaDirect = async (delivery: SuccessfulDeliveryTarget): Promise<RunCronAgentTurnResult | null> => {
     const identity = resolveAgentOutboundIdentity(params.cfgWithAgentDefaults, params.agentId);
     try {
       const payloadsForDelivery =
-        deliveryPayloads.length > 0
-          ? deliveryPayloads
-          : synthesizedText
-            ? [{ text: synthesizedText }]
-            : [];
+        deliveryPayloads.length > 0 ? deliveryPayloads : synthesizedText ? [{ text: synthesizedText }] : [];
       if (payloadsForDelivery.length === 0) {
         return null;
       }
@@ -212,9 +202,7 @@ export async function dispatchCronDelivery(
     }
   };
 
-  const deliverViaAnnounce = async (
-    delivery: SuccessfulDeliveryTarget,
-  ): Promise<RunCronAgentTurnResult | null> => {
+  const deliverViaAnnounce = async (delivery: SuccessfulDeliveryTarget): Promise<RunCronAgentTurnResult | null> => {
     if (!synthesizedText) {
       return null;
     }
@@ -234,9 +222,7 @@ export async function dispatchCronDelivery(
       },
     });
     const taskLabel =
-      typeof params.job.name === "string" && params.job.name.trim()
-        ? params.job.name.trim()
-        : `cron:${params.job.id}`;
+      typeof params.job.name === "string" && params.job.name.trim() ? params.job.name.trim() : `cron:${params.job.id}`;
     const initialSynthesizedText = synthesizedText.trim();
     let activeSubagentRuns = countActiveDescendantRuns(params.agentSessionKey);
     const expectedSubagentFollowup = expectsSubagentFollowup(initialSynthesizedText);
@@ -249,11 +235,7 @@ export async function dispatchCronDelivery(
         observedActiveDescendants: activeSubagentRuns > 0 || expectedSubagentFollowup,
       });
       activeSubagentRuns = countActiveDescendantRuns(params.agentSessionKey);
-      if (
-        !finalReply &&
-        activeSubagentRuns === 0 &&
-        (hadActiveDescendants || expectedSubagentFollowup)
-      ) {
+      if (!finalReply && activeSubagentRuns === 0 && (hadActiveDescendants || expectedSubagentFollowup)) {
         finalReply = await readDescendantSubagentFallbackReply({
           sessionKey: params.agentSessionKey,
           runStartedAt: params.runStartedAt,
@@ -430,8 +412,7 @@ export async function dispatchCronDelivery(
     // Forum/topic targets should also use direct delivery. Announce flow can
     // be swallowed by ANNOUNCE_SKIP/NO_REPLY in the target agent turn, which
     // silently drops cron output for topic-bound sessions.
-    const useDirectDelivery =
-      params.deliveryPayloadHasStructuredContent || params.resolvedDelivery.threadId != null;
+    const useDirectDelivery = params.deliveryPayloadHasStructuredContent || params.resolvedDelivery.threadId != null;
     if (useDirectDelivery) {
       const directResult = await deliverViaDirect(params.resolvedDelivery);
       if (directResult) {

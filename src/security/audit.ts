@@ -43,11 +43,7 @@ import {
   collectWorkspaceSkillSymlinkEscapeFindings,
   readConfigSnapshotForAudit,
 } from "./audit-extra.js";
-import {
-  formatPermissionDetail,
-  formatPermissionRemediation,
-  inspectPathPermissions,
-} from "./audit-fs.js";
+import { formatPermissionDetail, formatPermissionRemediation, inspectPathPermissions } from "./audit-fs.js";
 import { collectEnabledInsecureOrDangerousFlags } from "./dangerous-config-flags.js";
 import { DEFAULT_GATEWAY_HTTP_TOOL_DENY } from "./dangerous-tools.js";
 import type { ExecFn } from "./windows-acl.js";
@@ -335,10 +331,7 @@ async function collectFilesystemFindings(params: {
   return findings;
 }
 
-function collectGatewayConfigFindings(
-  cfg: RemoteClawConfig,
-  env: NodeJS.ProcessEnv,
-): SecurityAuditFinding[] {
+function collectGatewayConfigFindings(cfg: RemoteClawConfig, env: NodeJS.ProcessEnv): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
 
   const bind = typeof cfg.gateway?.bind === "string" ? cfg.gateway.bind : "loopback";
@@ -350,32 +343,18 @@ function collectGatewayConfigFindings(
     .filter(Boolean);
   const dangerouslyAllowHostHeaderOriginFallback =
     cfg.gateway?.controlUi?.dangerouslyAllowHostHeaderOriginFallback === true;
-  const trustedProxies = Array.isArray(cfg.gateway?.trustedProxies)
-    ? cfg.gateway.trustedProxies
-    : [];
+  const trustedProxies = Array.isArray(cfg.gateway?.trustedProxies) ? cfg.gateway.trustedProxies : [];
   const hasToken = typeof auth.token === "string" && auth.token.trim().length > 0;
   const hasPassword = typeof auth.password === "string" && auth.password.trim().length > 0;
   const envTokenConfigured =
-    hasNonEmptyString(env.REMOTECLAW_GATEWAY_TOKEN) ||
-    hasNonEmptyString(env.CLAWDBOT_GATEWAY_TOKEN);
+    hasNonEmptyString(env.REMOTECLAW_GATEWAY_TOKEN) || hasNonEmptyString(env.CLAWDBOT_GATEWAY_TOKEN);
   const envPasswordConfigured =
-    hasNonEmptyString(env.REMOTECLAW_GATEWAY_PASSWORD) ||
-    hasNonEmptyString(env.CLAWDBOT_GATEWAY_PASSWORD);
-  const tokenConfiguredFromConfig = hasConfiguredSecretInput(
-    cfg.gateway?.auth?.token,
-    cfg.secrets?.defaults,
-  );
-  const passwordConfiguredFromConfig = hasConfiguredSecretInput(
-    cfg.gateway?.auth?.password,
-    cfg.secrets?.defaults,
-  );
-  const remoteTokenConfigured = hasConfiguredSecretInput(
-    cfg.gateway?.remote?.token,
-    cfg.secrets?.defaults,
-  );
+    hasNonEmptyString(env.REMOTECLAW_GATEWAY_PASSWORD) || hasNonEmptyString(env.CLAWDBOT_GATEWAY_PASSWORD);
+  const tokenConfiguredFromConfig = hasConfiguredSecretInput(cfg.gateway?.auth?.token, cfg.secrets?.defaults);
+  const passwordConfiguredFromConfig = hasConfiguredSecretInput(cfg.gateway?.auth?.password, cfg.secrets?.defaults);
+  const remoteTokenConfigured = hasConfiguredSecretInput(cfg.gateway?.remote?.token, cfg.secrets?.defaults);
   const explicitAuthMode = cfg.gateway?.auth?.mode;
-  const tokenCanWin =
-    hasToken || envTokenConfigured || tokenConfiguredFromConfig || remoteTokenConfigured;
+  const tokenCanWin = hasToken || envTokenConfigured || tokenConfiguredFromConfig || remoteTokenConfigured;
   const passwordCanWin =
     explicitAuthMode === "password" ||
     (explicitAuthMode !== "token" &&
@@ -383,8 +362,7 @@ function collectGatewayConfigFindings(
       explicitAuthMode !== "trusted-proxy" &&
       !tokenCanWin);
   const tokenConfigured = tokenCanWin;
-  const passwordConfigured =
-    hasPassword || (passwordCanWin && (envPasswordConfigured || passwordConfiguredFromConfig));
+  const passwordConfigured = hasPassword || (passwordCanWin && (envPasswordConfigured || passwordConfiguredFromConfig));
   const hasSharedSecret =
     explicitAuthMode === "token"
       ? tokenConfigured
@@ -400,17 +378,11 @@ function collectGatewayConfigFindings(
 
   // HTTP /tools/invoke is intended for narrow automation, not session orchestration/admin operations.
   // If operators opt-in to re-enabling these tools over HTTP, warn loudly so the choice is explicit.
-  const gatewayToolsAllowRaw = Array.isArray(cfg.gateway?.tools?.allow)
-    ? cfg.gateway?.tools?.allow
-    : [];
+  const gatewayToolsAllowRaw = Array.isArray(cfg.gateway?.tools?.allow) ? cfg.gateway?.tools?.allow : [];
   const gatewayToolsAllow = new Set(
-    gatewayToolsAllowRaw
-      .map((v) => (typeof v === "string" ? v.trim().toLowerCase() : ""))
-      .filter(Boolean),
+    gatewayToolsAllowRaw.map((v) => (typeof v === "string" ? v.trim().toLowerCase() : "")).filter(Boolean),
   );
-  const reenabledOverHttp = DEFAULT_GATEWAY_HTTP_TOOL_DENY.filter((name) =>
-    gatewayToolsAllow.has(name),
-  );
+  const reenabledOverHttp = DEFAULT_GATEWAY_HTTP_TOOL_DENY.filter((name) => gatewayToolsAllow.has(name));
   if (reenabledOverHttp.length > 0) {
     const extraRisk = bind !== "loopback" || tailscaleMode === "funnel";
     findings.push({
@@ -444,8 +416,7 @@ function collectGatewayConfigFindings(
         "gateway.bind is loopback and gateway.trustedProxies is empty. " +
         "If you expose the Control UI through a reverse proxy, configure trusted proxies " +
         "so local-client checks cannot be spoofed.",
-      remediation:
-        "Set gateway.trustedProxies to your proxy IPs or keep the Control UI local-only.",
+      remediation: "Set gateway.trustedProxies to your proxy IPs or keep the Control UI local-only.",
     });
   }
 
@@ -486,8 +457,7 @@ function collectGatewayConfigFindings(
       title: "Control UI allowed origins contains wildcard",
       detail:
         'gateway.controlUi.allowedOrigins includes "*" which effectively disables origin allowlisting for Control UI/WebChat requests.',
-      remediation:
-        "Replace wildcard origins with explicit trusted origins (for example https://control.example.com).",
+      remediation: "Replace wildcard origins with explicit trusted origins (for example https://control.example.com).",
     });
   }
   if (dangerouslyAllowHostHeaderOriginFallback) {
@@ -505,11 +475,8 @@ function collectGatewayConfigFindings(
   }
 
   if (allowRealIpFallback) {
-    const hasNonLoopbackTrustedProxy = trustedProxies.some(
-      (proxy) => !isStrictLoopbackTrustedProxyEntry(proxy),
-    );
-    const exposed =
-      bind !== "loopback" || (auth.mode === "trusted-proxy" && hasNonLoopbackTrustedProxy);
+    const hasNonLoopbackTrustedProxy = trustedProxies.some((proxy) => !isStrictLoopbackTrustedProxyEntry(proxy));
+    const exposed = bind !== "loopback" || (auth.mode === "trusted-proxy" && hasNonLoopbackTrustedProxy);
     findings.push({
       checkId: "gateway.real_ip_fallback_enabled",
       severity: exposed ? "critical" : "warn",
@@ -570,8 +537,7 @@ function collectGatewayConfigFindings(
       checkId: "gateway.control_ui.device_auth_disabled",
       severity: "critical",
       title: "DANGEROUS: Control UI device auth disabled",
-      detail:
-        "gateway.controlUi.dangerouslyDisableDeviceAuth=true disables device identity checks for the Control UI.",
+      detail: "gateway.controlUi.dangerouslyDisableDeviceAuth=true disables device identity checks for the Control UI.",
       remediation: "Disable it unless you are in a short-lived break-glass scenario.",
     });
   }
@@ -583,8 +549,7 @@ function collectGatewayConfigFindings(
       title: "Feishu doc create can grant requester permissions",
       detail:
         'channels.feishu tools include "doc"; feishu_doc action "create" can grant document access to the trusted requesting Feishu user.',
-      remediation:
-        "Disable channels.feishu.tools.doc when not needed, and restrict tool access for untrusted prompts.",
+      remediation: "Disable channels.feishu.tools.doc when not needed, and restrict tool access for untrusted prompts.",
     });
   }
 
@@ -600,8 +565,7 @@ function collectGatewayConfigFindings(
     });
   }
 
-  const token =
-    typeof auth.token === "string" && auth.token.trim().length > 0 ? auth.token.trim() : null;
+  const token = typeof auth.token === "string" && auth.token.trim().length > 0 ? auth.token.trim() : null;
   if (auth.mode === "token" && token && token.length < 24) {
     findings.push({
       checkId: "gateway.token_too_short",
@@ -635,9 +599,7 @@ function collectGatewayConfigFindings(
         checkId: "gateway.trusted_proxy_no_proxies",
         severity: "critical",
         title: "Trusted-proxy auth enabled but no trusted proxies configured",
-        detail:
-          'gateway.auth.mode="trusted-proxy" but gateway.trustedProxies is empty. ' +
-          "All requests will be rejected.",
+        detail: 'gateway.auth.mode="trusted-proxy" but gateway.trustedProxies is empty. All requests will be rejected.',
         remediation: "Set gateway.trustedProxies to the IP(s) of your reverse proxy.",
       });
     }
@@ -647,8 +609,7 @@ function collectGatewayConfigFindings(
         checkId: "gateway.trusted_proxy_no_user_header",
         severity: "critical",
         title: "Trusted-proxy auth missing userHeader config",
-        detail:
-          'gateway.auth.mode="trusted-proxy" but gateway.auth.trustedProxy.userHeader is not configured.',
+        detail: 'gateway.auth.mode="trusted-proxy" but gateway.auth.trustedProxy.userHeader is not configured.',
         remediation:
           "Set gateway.auth.trustedProxy.userHeader to the header name your proxy uses " +
           '(e.g., "x-forwarded-user", "x-pomerium-claim-email").',
@@ -678,8 +639,7 @@ function collectGatewayConfigFindings(
       detail:
         "gateway.bind is not loopback but no gateway.auth.rateLimit is configured. " +
         "Without rate limiting, brute-force auth attacks are not mitigated.",
-      remediation:
-        "Set gateway.auth.rateLimit (e.g. { maxAttempts: 10, windowMs: 60000, lockoutMs: 300000 }).",
+      remediation: "Set gateway.auth.rateLimit (e.g. { maxAttempts: 10, windowMs: 60000, lockoutMs: 300000 }).",
     });
   }
 
@@ -715,10 +675,7 @@ function isStrictLoopbackTrustedProxyEntry(entry: string): boolean {
   return false;
 }
 
-function collectBrowserControlFindings(
-  cfg: RemoteClawConfig,
-  env: NodeJS.ProcessEnv,
-): SecurityAuditFinding[] {
+function collectBrowserControlFindings(cfg: RemoteClawConfig, env: NodeJS.ProcessEnv): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
 
   let resolved: ReturnType<typeof resolveBrowserConfig>;
@@ -908,9 +865,7 @@ function collectExecRuntimeFindings(cfg: RemoteClawConfig): SecurityAuditFinding
     if (!Array.isArray(entries)) {
       return [];
     }
-    return normalizeTrustedSafeBinDirs(
-      entries.filter((entry): entry is string => typeof entry === "string"),
-    );
+    return normalizeTrustedSafeBinDirs(entries.filter((entry): entry is string => typeof entry === "string"));
   };
   const classifyRiskySafeBinTrustedDir = (entry: string): string | null => {
     const raw = entry.trim();
@@ -939,11 +894,7 @@ function collectExecRuntimeFindings(cfg: RemoteClawConfig): SecurityAuditFinding
     ) {
       return "package-manager bin directory (often user-writable)";
     }
-    if (
-      normalized.startsWith("/users/") ||
-      normalized.startsWith("/home/") ||
-      normalized.includes("/.local/bin")
-    ) {
+    if (normalized.startsWith("/users/") || normalized.startsWith("/home/") || normalized.includes("/.local/bin")) {
       return "home-scoped bin directory (typically user-writable)";
     }
     if (/^[a-z]:\/users\//.test(normalized)) {
@@ -968,10 +919,7 @@ function collectExecRuntimeFindings(cfg: RemoteClawConfig): SecurityAuditFinding
     if (!entry || typeof entry !== "object" || typeof entry.id !== "string") {
       continue;
     }
-    collectRiskyTrustedDirHits(
-      `agents.list.${entry.id}.tools.exec`,
-      entry.tools?.exec?.safeBinTrustedDirs,
-    );
+    collectRiskyTrustedDirHits(`agents.list.${entry.id}.tools.exec`, entry.tools?.exec?.safeBinTrustedDirs);
   }
 
   const interpreterHits: string[] = [];
@@ -1002,9 +950,7 @@ function collectExecRuntimeFindings(cfg: RemoteClawConfig): SecurityAuditFinding
     if (interpreters.length === 0) {
       continue;
     }
-    interpreterHits.push(
-      `- agents.list.${entry.id}.tools.exec.safeBins: ${interpreters.join(", ")}`,
-    );
+    interpreterHits.push(`- agents.list.${entry.id}.tools.exec.safeBins: ${interpreters.join(", ")}`);
   }
 
   if (interpreterHits.length > 0) {
@@ -1027,9 +973,7 @@ function collectExecRuntimeFindings(cfg: RemoteClawConfig): SecurityAuditFinding
       title: "safeBinTrustedDirs includes risky mutable directories",
       detail:
         `Detected risky safeBinTrustedDirs entries:\n${riskyTrustedDirHits.slice(0, 10).join("\n")}` +
-        (riskyTrustedDirHits.length > 10
-          ? `\n- +${riskyTrustedDirHits.length - 10} more entries.`
-          : ""),
+        (riskyTrustedDirHits.length > 10 ? `\n- +${riskyTrustedDirHits.length - 10} more entries.` : ""),
       remediation:
         "Prefer root-owned immutable bins, keep default trust dirs (/bin, /usr/bin), and avoid trusting temporary/home/package-manager paths unless tightly controlled.",
     });
@@ -1050,27 +994,24 @@ async function maybeProbeGateway(params: {
   const connection = buildGatewayConnectionDetails({ config: params.cfg });
   const url = connection.url;
   const isRemoteMode = params.cfg.gateway?.mode === "remote";
-  const remoteUrlRaw =
-    typeof params.cfg.gateway?.remote?.url === "string" ? params.cfg.gateway.remote.url.trim() : "";
+  const remoteUrlRaw = typeof params.cfg.gateway?.remote?.url === "string" ? params.cfg.gateway.remote.url.trim() : "";
   const remoteUrlMissing = isRemoteMode && !remoteUrlRaw;
 
   const authResolution =
     !isRemoteMode || remoteUrlMissing
       ? resolveGatewayProbeAuthSafe({ cfg: params.cfg, env: params.env, mode: "local" })
       : resolveGatewayProbeAuthSafe({ cfg: params.cfg, env: params.env, mode: "remote" });
-  const res = await params
-    .probe({ url, auth: authResolution.auth, timeoutMs: params.timeoutMs })
-    .catch((err) => ({
-      ok: false,
-      url,
-      connectLatencyMs: null,
-      error: String(err),
-      close: null,
-      health: null,
-      status: null,
-      presence: null,
-      configSnapshot: null,
-    }));
+  const res = await params.probe({ url, auth: authResolution.auth, timeoutMs: params.timeoutMs }).catch((err) => ({
+    ok: false,
+    url,
+    connectLatencyMs: null,
+    error: String(err),
+    close: null,
+    health: null,
+    status: null,
+    presence: null,
+    configSnapshot: null,
+  }));
 
   if (authResolution.warning && !res.ok) {
     res.error = res.error ? `${res.error}; ${authResolution.warning}` : authResolution.warning;
@@ -1090,9 +1031,7 @@ async function maybeProbeGateway(params: {
   };
 }
 
-async function createAuditExecutionContext(
-  opts: SecurityAuditOptions,
-): Promise<AuditExecutionContext> {
+async function createAuditExecutionContext(opts: SecurityAuditOptions): Promise<AuditExecutionContext> {
   const cfg = opts.config;
   const sourceConfig = opts.sourceConfig ?? opts.config;
   const env = opts.env ?? process.env;

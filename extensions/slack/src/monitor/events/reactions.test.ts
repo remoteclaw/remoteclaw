@@ -1,9 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { registerSlackReactionEvents } from "./reactions.js";
-import {
-  createSlackSystemEventTestHarness,
-  type SlackSystemEventTestOverrides,
-} from "./system-event-test-harness.js";
+import { createSlackSystemEventTestHarness, type SlackSystemEventTestOverrides } from "./system-event-test-harness.js";
 
 const reactionQueueMock = vi.fn();
 const reactionAllowMock = vi.fn();

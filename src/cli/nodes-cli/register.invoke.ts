@@ -31,9 +31,7 @@ function normalizeExecSecurity(v: unknown): ExecSecurity | undefined {
     : undefined;
 }
 function normalizeExecAsk(v: unknown): ExecAsk | undefined {
-  return typeof v === "string" && (["off", "on-miss", "always"] as string[]).includes(v)
-    ? (v as ExecAsk)
-    : undefined;
+  return typeof v === "string" && (["off", "on-miss", "always"] as string[]).includes(v) ? (v as ExecAsk) : undefined;
 }
 async function resolveExecApprovalsFromFile(params: {
   file: ExecApprovalsFile;
@@ -41,9 +39,7 @@ async function resolveExecApprovalsFromFile(params: {
   overrides?: { security?: ExecSecurity; ask?: ExecAsk };
 }) {
   const file = params.file ?? {};
-  const defaults = file.defaults as
-    | { security?: ExecSecurity; ask?: ExecAsk; askFallback?: string }
-    | undefined;
+  const defaults = file.defaults as { security?: ExecSecurity; ask?: ExecAsk; askFallback?: string } | undefined;
   return {
     file: file as Record<string, unknown>,
     agent: {
@@ -200,8 +196,7 @@ async function resolveNodeApprovals(params: {
   })) as {
     file?: unknown;
   } | null;
-  const approvalsFile =
-    approvalsSnapshot && typeof approvalsSnapshot === "object" ? approvalsSnapshot.file : undefined;
+  const approvalsFile = approvalsSnapshot && typeof approvalsSnapshot === "object" ? approvalsSnapshot.file : undefined;
   if (!approvalsFile || typeof approvalsFile !== "object") {
     throw new Error("exec approvals unavailable");
   }
@@ -239,10 +234,7 @@ async function maybeRequestNodesRunApproval(params: {
   approvalId = crypto.randomUUID();
   const approvalTimeoutMs = DEFAULT_EXEC_APPROVAL_TIMEOUT_MS;
   // Keep client transport alive while the approver decides.
-  const transportTimeoutMs = Math.max(
-    parseTimeoutMs(params.opts.timeout) ?? 0,
-    approvalTimeoutMs + 10_000,
-  );
+  const transportTimeoutMs = Math.max(parseTimeoutMs(params.opts.timeout) ?? 0, approvalTimeoutMs + 10_000);
   const decisionResult = (await callGatewayCli(
     "exec.approval.request",
     params.opts,
@@ -263,8 +255,7 @@ async function maybeRequestNodesRunApproval(params: {
     },
     { transportTimeoutMs },
   )) as { decision?: string } | null;
-  const decision =
-    decisionResult && typeof decisionResult === "object" ? (decisionResult.decision ?? null) : null;
+  const decision = decisionResult && typeof decisionResult === "object" ? (decisionResult.decision ?? null) : null;
   if (decision === "deny") {
     throw new Error("exec denied: user denied");
   }
@@ -317,8 +308,7 @@ function buildSystemRunInvokeParams(params: {
     idempotencyKey: String(params.idempotencyKey ?? randomIdempotencyKey()),
   };
   if (params.approvalPlan.agentId ?? params.fallbackAgentId) {
-    (invokeParams.params as Record<string, unknown>).agentId =
-      params.approvalPlan.agentId ?? params.fallbackAgentId;
+    (invokeParams.params as Record<string, unknown>).agentId = params.approvalPlan.agentId ?? params.fallbackAgentId;
   }
   if (params.approvalPlan.sessionKey) {
     (invokeParams.params as Record<string, unknown>).sessionKey = params.approvalPlan.sessionKey;
@@ -357,9 +347,7 @@ export function registerNodesInvokeCommands(nodes: Command) {
             return;
           }
           const params = JSON.parse(String(opts.params ?? "{}")) as unknown;
-          const timeoutMs = opts.invokeTimeout
-            ? Number.parseInt(String(opts.invokeTimeout), 10)
-            : undefined;
+          const timeoutMs = opts.invokeTimeout ? Number.parseInt(String(opts.invokeTimeout), 10) : undefined;
 
           const invokeParams: Record<string, unknown> = {
             nodeId,
@@ -384,11 +372,10 @@ export function registerNodesInvokeCommands(nodes: Command) {
       .description("Run a shell command on a node (mac only)")
       .option("--node <idOrNameOrIp>", "Node id, name, or IP")
       .option("--cwd <path>", "Working directory")
-      .option(
-        "--env <key=val>",
-        "Environment override (repeatable)",
-        (value: string, prev: string[] = []) => [...prev, value],
-      )
+      .option("--env <key=val>", "Environment override (repeatable)", (value: string, prev: string[] = []) => [
+        ...prev,
+        value,
+      ])
       .option("--raw <command>", "Run a raw shell command string (sh -lc / cmd.exe /c)")
       .option("--agent <id>", "Agent id (default: configured default agent)")
       .option("--ask <mode>", "Exec ask mode (off|on-miss|always)")

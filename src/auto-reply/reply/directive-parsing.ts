@@ -13,10 +13,7 @@ export function skipDirectiveArgPrefix(raw: string): number {
   return i;
 }
 
-export function takeDirectiveToken(
-  raw: string,
-  startIndex: number,
-): { token: string | null; nextIndex: number } {
+export function takeDirectiveToken(raw: string, startIndex: number): { token: string | null; nextIndex: number } {
   let i = startIndex;
   const len = raw.length;
   while (i < len && /\s/.test(raw[i])) {

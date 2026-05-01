@@ -1,10 +1,7 @@
 import fs from "node:fs";
 import { parseStrictNonNegativeInteger } from "../infra/parse-finite-number.js";
 
-export function resolveCacheTtlMs(params: {
-  envValue: string | undefined;
-  defaultTtlMs: number;
-}): number {
+export function resolveCacheTtlMs(params: { envValue: string | undefined; defaultTtlMs: number }): number {
   const { envValue, defaultTtlMs } = params;
   if (envValue) {
     const parsed = parseStrictNonNegativeInteger(envValue);
@@ -41,10 +38,7 @@ function resolveCacheNumeric(value: CacheTtlResolver): number {
   return typeof value === "function" ? value() : value;
 }
 
-function resolvePruneIntervalMs(
-  ttlMs: number,
-  pruneIntervalMs: CachePruneIntervalResolver | undefined,
-): number {
+function resolvePruneIntervalMs(ttlMs: number, pruneIntervalMs: CachePruneIntervalResolver | undefined): number {
   if (typeof pruneIntervalMs === "function") {
     return Math.max(0, Math.floor(pruneIntervalMs(ttlMs)));
   }

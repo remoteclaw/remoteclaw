@@ -129,18 +129,12 @@ export function pruneExecApprovalQueue(queue: ExecApprovalRequest[]): ExecApprov
   return queue.filter((entry) => entry.expiresAtMs > now);
 }
 
-export function addExecApproval(
-  queue: ExecApprovalRequest[],
-  entry: ExecApprovalRequest,
-): ExecApprovalRequest[] {
+export function addExecApproval(queue: ExecApprovalRequest[], entry: ExecApprovalRequest): ExecApprovalRequest[] {
   const next = pruneExecApprovalQueue(queue).filter((item) => item.id !== entry.id);
-  next.push(entry);
+  next.unshift(entry);
   return next;
 }
 
-export function removeExecApproval(
-  queue: ExecApprovalRequest[],
-  id: string,
-): ExecApprovalRequest[] {
+export function removeExecApproval(queue: ExecApprovalRequest[], id: string): ExecApprovalRequest[] {
   return pruneExecApprovalQueue(queue).filter((entry) => entry.id !== id);
 }

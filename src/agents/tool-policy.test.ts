@@ -114,10 +114,7 @@ describe("tool-policy", () => {
     ] as unknown as AnyAgentTool[];
 
     expect(applyOwnerOnlyToolPolicy(tools, false).map((tool) => tool.name)).toEqual(["read"]);
-    expect(applyOwnerOnlyToolPolicy(tools, true).map((tool) => tool.name)).toEqual([
-      "read",
-      "nodes",
-    ]);
+    expect(applyOwnerOnlyToolPolicy(tools, true).map((tool) => tool.name)).toEqual(["read", "nodes"]);
   });
 });
 

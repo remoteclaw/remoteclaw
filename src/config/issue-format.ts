@@ -24,24 +24,17 @@ export function normalizeConfigIssue(issue: ConfigValidationIssue): ConfigValida
     path: normalizeConfigIssuePath(issue.path),
     message: issue.message,
     ...(hasAllowedValues ? { allowedValues: issue.allowedValues } : {}),
-    ...(hasAllowedValues &&
-    typeof issue.allowedValuesHiddenCount === "number" &&
-    issue.allowedValuesHiddenCount > 0
+    ...(hasAllowedValues && typeof issue.allowedValuesHiddenCount === "number" && issue.allowedValuesHiddenCount > 0
       ? { allowedValuesHiddenCount: issue.allowedValuesHiddenCount }
       : {}),
   };
 }
 
-export function normalizeConfigIssues(
-  issues: ReadonlyArray<ConfigValidationIssue>,
-): ConfigValidationIssue[] {
+export function normalizeConfigIssues(issues: ReadonlyArray<ConfigValidationIssue>): ConfigValidationIssue[] {
   return issues.map((issue) => normalizeConfigIssue(issue));
 }
 
-function resolveIssuePathForLine(
-  path: string | null | undefined,
-  opts?: ConfigIssueFormatOptions,
-): string {
+function resolveIssuePathForLine(path: string | null | undefined, opts?: ConfigIssueFormatOptions): string {
   if (opts?.normalizeRoot) {
     return normalizeConfigIssuePath(path);
   }

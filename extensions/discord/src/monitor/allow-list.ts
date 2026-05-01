@@ -169,10 +169,7 @@ export function resolveDiscordUserAllowed(params: {
   );
 }
 
-export function resolveDiscordRoleAllowed(params: {
-  allowList?: string[];
-  memberRoleIds: string[];
-}) {
+export function resolveDiscordRoleAllowed(params: { allowList?: string[]; memberRoleIds: string[] }) {
   // Role allowlists accept role IDs only. Names are ignored.
   const allowList = normalizeDiscordAllowList(params.allowList, ["role:"]);
   if (!allowList) {
@@ -277,10 +274,7 @@ export function resolveDiscordOwnerAccess(params: {
   ownerAllowList: DiscordAllowList | null;
   ownerAllowed: boolean;
 } {
-  const ownerAllowList = normalizeDiscordAllowList(
-    params.allowFrom,
-    DISCORD_OWNER_ALLOWLIST_PREFIXES,
-  );
+  const ownerAllowList = normalizeDiscordAllowList(params.allowFrom, DISCORD_OWNER_ALLOWLIST_PREFIXES);
   const ownerAllowed = ownerAllowList
     ? allowListMatches(
         ownerAllowList,
@@ -358,9 +352,7 @@ type DiscordChannelLookup = {
 };
 type DiscordChannelScope = "channel" | "thread";
 
-function buildDiscordChannelKeys(
-  params: DiscordChannelLookup & { allowNameMatch?: boolean },
-): string[] {
+function buildDiscordChannelKeys(params: DiscordChannelLookup & { allowNameMatch?: boolean }): string[] {
   const allowNameMatch = params.allowNameMatch !== false;
   return buildChannelKeyCandidates(
     params.id,
@@ -390,9 +382,7 @@ function hasConfiguredDiscordChannels(
   return Boolean(channels && Object.keys(channels).length > 0);
 }
 
-function resolveDiscordChannelConfigEntry(
-  entry: DiscordChannelEntry,
-): DiscordChannelConfigResolved {
+function resolveDiscordChannelConfigEntry(entry: DiscordChannelEntry): DiscordChannelConfigResolved {
   const resolved: DiscordChannelConfigResolved = {
     allowed: entry.allow !== false,
     requireMention: entry.requireMention,
@@ -440,16 +430,7 @@ export function resolveDiscordChannelConfigWithFallback(params: {
   parentSlug?: string;
   scope?: DiscordChannelScope;
 }): DiscordChannelConfigResolved | null {
-  const {
-    guildInfo,
-    channelId,
-    channelName,
-    channelSlug,
-    parentId,
-    parentName,
-    parentSlug,
-    scope,
-  } = params;
+  const { guildInfo, channelId, channelName, channelSlug, parentId, parentName, parentSlug, scope } = params;
   const channels = guildInfo?.channels;
   if (!hasConfiguredDiscordChannels(channels)) {
     return null;
@@ -523,10 +504,7 @@ export function isDiscordGroupAllowedByPolicy(params: {
   }
 
   return evaluateGroupRouteAccessForPolicy({
-    groupPolicy:
-      params.groupPolicy === "allowlist" && !params.channelAllowlistConfigured
-        ? "open"
-        : params.groupPolicy,
+    groupPolicy: params.groupPolicy === "allowlist" && !params.channelAllowlistConfigured ? "open" : params.groupPolicy,
     routeAllowlistConfigured: params.channelAllowlistConfigured,
     routeMatched: params.channelAllowed,
   }).allowed;
@@ -569,8 +547,7 @@ export function shouldEmitDiscordReactionNotification(params: {
     return false;
   }
   const accessGuildInfo =
-    params.guildInfo ??
-    (params.allowlist ? ({ users: params.allowlist } satisfies DiscordGuildEntryResolved) : null);
+    params.guildInfo ?? (params.allowlist ? ({ users: params.allowlist } satisfies DiscordGuildEntryResolved) : null);
   const { hasAccessRestrictions, memberAllowed } = resolveDiscordMemberAccessState({
     channelConfig: params.channelConfig,
     guildInfo: accessGuildInfo,

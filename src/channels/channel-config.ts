@@ -11,9 +11,10 @@ export type ChannelEntryMatch<T> = {
   matchSource?: ChannelMatchSource;
 };
 
-export function applyChannelMatchMeta<
-  TResult extends { matchKey?: string; matchSource?: ChannelMatchSource },
->(result: TResult, match: ChannelEntryMatch<unknown>): TResult {
+export function applyChannelMatchMeta<TResult extends { matchKey?: string; matchSource?: ChannelMatchSource }>(
+  result: TResult,
+  match: ChannelEntryMatch<unknown>,
+): TResult {
   if (match.matchKey && match.matchSource) {
     result.matchKey = match.matchKey;
     result.matchSource = match.matchSource;

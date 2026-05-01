@@ -1,9 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  dispatchReplyWithBufferedBlockDispatcher,
-  registerPluginHttpRouteMock,
-} from "./channel.test-mocks.js";
+import { dispatchReplyWithBufferedBlockDispatcher, registerPluginHttpRouteMock } from "./channel.test-mocks.js";
 import { makeFormBody, makeReq, makeRes } from "./test-http-utils.js";
 
 type RegisteredRoute = {

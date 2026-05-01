@@ -2,11 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { UpdateRunResult } from "../../infra/update-runner.js";
 import { inferUpdateFailureHints } from "./progress.js";
 
-function makeResult(
-  stepName: string,
-  stderrTail: string,
-  mode: UpdateRunResult["mode"] = "npm",
-): UpdateRunResult {
+function makeResult(stepName: string, stderrTail: string, mode: UpdateRunResult["mode"] = "npm"): UpdateRunResult {
   return {
     status: "error",
     mode,
@@ -27,10 +23,7 @@ function makeResult(
 
 describe("inferUpdateFailureHints", () => {
   it("returns EACCES hint for global update permission failures", () => {
-    const result = makeResult(
-      "global update",
-      "npm ERR! code EACCES\nnpm ERR! Error: EACCES: permission denied",
-    );
+    const result = makeResult("global update", "npm ERR! code EACCES\nnpm ERR! Error: EACCES: permission denied");
     const hints = inferUpdateFailureHints(result);
     expect(hints.join("\n")).toContain("EACCES");
     expect(hints.join("\n")).toContain("npm config set prefix ~/.local");

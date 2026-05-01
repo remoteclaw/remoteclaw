@@ -12,16 +12,10 @@ type FetchWithAbortSignalMarker = typeof fetch & {
   [wrapFetchWithAbortSignalMarker]?: true;
 };
 
-function withDuplex(
-  init: RequestInit | undefined,
-  input: RequestInfo | URL,
-): RequestInit | undefined {
+function withDuplex(init: RequestInit | undefined, input: RequestInfo | URL): RequestInit | undefined {
   const hasInitBody = init?.body != null;
   const hasRequestBody =
-    !hasInitBody &&
-    typeof Request !== "undefined" &&
-    input instanceof Request &&
-    input.body != null;
+    !hasInitBody && typeof Request !== "undefined" && input instanceof Request && input.body != null;
   if (!hasInitBody && !hasRequestBody) {
     return init;
   }

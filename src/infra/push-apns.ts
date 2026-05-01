@@ -21,9 +21,7 @@ export type ApnsAuthConfig = {
   privateKey: string;
 };
 
-export type ApnsAuthConfigResolution =
-  | { ok: true; value: ApnsAuthConfig }
-  | { ok: false; error: string };
+export type ApnsAuthConfigResolution = { ok: true; value: ApnsAuthConfig } | { ok: false; error: string };
 
 export type ApnsPushAlertResult = {
   ok: boolean;
@@ -113,11 +111,7 @@ function parseReason(body: string): string | undefined {
 }
 
 function toBase64UrlBytes(value: Uint8Array): string {
-  return Buffer.from(value)
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/g, "");
+  return Buffer.from(value).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
 function toBase64UrlJson(value: object): string {
@@ -176,10 +170,7 @@ async function loadRegistrationsState(baseDir?: string): Promise<ApnsRegistratio
   return { registrationsByNodeId: registrations };
 }
 
-async function persistRegistrationsState(
-  state: ApnsRegistrationState,
-  baseDir?: string,
-): Promise<void> {
+async function persistRegistrationsState(state: ApnsRegistrationState, baseDir?: string): Promise<void> {
   const filePath = resolveApnsRegistrationPath(baseDir);
   await writeJsonAtomic(filePath, state);
 }
@@ -232,10 +223,7 @@ export async function registerApnsToken(params: {
   });
 }
 
-export async function loadApnsRegistration(
-  nodeId: string,
-  baseDir?: string,
-): Promise<ApnsRegistration | null> {
+export async function loadApnsRegistration(nodeId: string, baseDir?: string): Promise<ApnsRegistration | null> {
   const normalizedNodeId = normalizeNodeId(nodeId);
   if (!normalizedNodeId) {
     return null;
@@ -274,8 +262,7 @@ export async function resolveApnsAuthConfigFromEnv(
   if (!keyPath) {
     return {
       ok: false,
-      error:
-        "APNs private key missing: set REMOTECLAW_APNS_PRIVATE_KEY_P8 or REMOTECLAW_APNS_PRIVATE_KEY_PATH",
+      error: "APNs private key missing: set REMOTECLAW_APNS_PRIVATE_KEY_P8 or REMOTECLAW_APNS_PRIVATE_KEY_PATH",
     };
   }
   try {
@@ -308,9 +295,7 @@ async function sendApnsRequest(params: {
   priority: "10" | "5";
 }): Promise<ApnsRequestResponse> {
   const authority =
-    params.environment === "production"
-      ? "https://api.push.apple.com"
-      : "https://api.sandbox.push.apple.com";
+    params.environment === "production" ? "https://api.push.apple.com" : "https://api.sandbox.push.apple.com";
 
   const body = JSON.stringify(params.payload);
   const requestPath = `/3/device/${params.token}`;
@@ -425,11 +410,12 @@ function toApnsPushResult(params: {
   };
 }
 
-function createRemoteClawPushMetadata(params: {
+function createRemoteClawPushMetadata(params: { kind: "push.test" | "node.wake"; nodeId: string; reason?: string }): {
   kind: "push.test" | "node.wake";
   nodeId: string;
+  ts: number;
   reason?: string;
-}): { kind: "push.test" | "node.wake"; nodeId: string; ts: number; reason?: string } {
+} {
   return {
     kind: params.kind,
     nodeId: params.nodeId,

@@ -158,7 +158,6 @@ export const EventFrameSchema = Type.Object(
 // Discriminated union of all top-level frames. Using a discriminator makes
 // downstream codegen (quicktype) produce tighter types instead of all-optional
 // blobs.
-export const GatewayFrameSchema = Type.Union(
-  [RequestFrameSchema, ResponseFrameSchema, EventFrameSchema],
-  { discriminator: "type" },
-);
+export const GatewayFrameSchema = Type.Union([RequestFrameSchema, ResponseFrameSchema, EventFrameSchema], {
+  discriminator: "type",
+});

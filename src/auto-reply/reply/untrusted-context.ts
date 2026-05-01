@@ -4,9 +4,7 @@ export function appendUntrustedContext(base: string, untrusted?: string[]): stri
   if (!Array.isArray(untrusted) || untrusted.length === 0) {
     return base;
   }
-  const entries = untrusted
-    .map((entry) => normalizeInboundTextNewlines(entry))
-    .filter((entry) => Boolean(entry));
+  const entries = untrusted.map((entry) => normalizeInboundTextNewlines(entry)).filter((entry) => Boolean(entry));
   if (entries.length === 0) {
     return base;
   }

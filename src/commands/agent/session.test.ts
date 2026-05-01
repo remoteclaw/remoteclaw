@@ -8,9 +8,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../../config/sessions.js", async () => {
-  const actual = await vi.importActual<typeof import("../../config/sessions.js")>(
-    "../../config/sessions.js",
-  );
+  const actual = await vi.importActual<typeof import("../../config/sessions.js")>("../../config/sessions.js");
   return {
     ...actual,
     loadSessionStore: mocks.loadSessionStore,
@@ -32,14 +30,12 @@ describe("resolveSessionKeyForRequest", () => {
 
   const setupMainAndMybotStorePaths = () => {
     mocks.listAgentIds.mockReturnValue(["main", "mybot"]);
-    mocks.resolveStorePath.mockImplementation(
-      (_store: string | undefined, opts?: { agentId?: string }) => {
-        if (opts?.agentId === "mybot") {
-          return MYBOT_STORE_PATH;
-        }
-        return MAIN_STORE_PATH;
-      },
-    );
+    mocks.resolveStorePath.mockImplementation((_store: string | undefined, opts?: { agentId?: string }) => {
+      if (opts?.agentId === "mybot") {
+        return MYBOT_STORE_PATH;
+      }
+      return MAIN_STORE_PATH;
+    });
   };
 
   const mockStoresByPath = (stores: Partial<Record<string, SessionStoreMap>>) => {

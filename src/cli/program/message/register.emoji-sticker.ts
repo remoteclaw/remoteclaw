@@ -14,10 +14,7 @@ export function registerMessageEmojiCommands(message: Command, helpers: MessageC
 
   helpers
     .withMessageBase(
-      emoji
-        .command("upload")
-        .description("Upload an emoji")
-        .requiredOption("--guild-id <id>", "Guild id"),
+      emoji.command("upload").description("Upload an emoji").requiredOption("--guild-id <id>", "Guild id"),
     )
     .requiredOption("--emoji-name <name>", "Emoji name")
     .requiredOption("--media <path-or-url>", "Emoji media (path or URL)")
@@ -31,9 +28,7 @@ export function registerMessageStickerCommands(message: Command, helpers: Messag
   const sticker = message.command("sticker").description("Sticker actions");
 
   helpers
-    .withMessageBase(
-      helpers.withRequiredMessageTarget(sticker.command("send").description("Send stickers")),
-    )
+    .withMessageBase(helpers.withRequiredMessageTarget(sticker.command("send").description("Send stickers")))
     .requiredOption("--sticker-id <id>", "Sticker id (repeat)", collectOption)
     .option("-m, --message <text>", "Optional message body")
     .action(async (opts) => {
@@ -42,10 +37,7 @@ export function registerMessageStickerCommands(message: Command, helpers: Messag
 
   helpers
     .withMessageBase(
-      sticker
-        .command("upload")
-        .description("Upload a sticker")
-        .requiredOption("--guild-id <id>", "Guild id"),
+      sticker.command("upload").description("Upload a sticker").requiredOption("--guild-id <id>", "Guild id"),
     )
     .requiredOption("--sticker-name <name>", "Sticker name")
     .requiredOption("--sticker-desc <text>", "Sticker description")

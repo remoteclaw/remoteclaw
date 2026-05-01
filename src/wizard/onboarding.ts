@@ -9,12 +9,7 @@ import type {
   ResetScope,
 } from "../commands/onboard-types.js";
 import type { RemoteClawConfig } from "../config/config.js";
-import {
-  DEFAULT_GATEWAY_PORT,
-  readConfigFileSnapshot,
-  resolveGatewayPort,
-  writeConfigFile,
-} from "../config/config.js";
+import { DEFAULT_GATEWAY_PORT, readConfigFileSnapshot, resolveGatewayPort, writeConfigFile } from "../config/config.js";
 import { normalizeSecretInputString } from "../config/types.secrets.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
@@ -53,9 +48,7 @@ const SKIP_GUIDANCE: Record<AgentRuntime, string> = {
 
 type UpsertAuthProfileFn = (params: {
   profileId: string;
-  credential:
-    | { type: "api_key"; provider: string; key: string }
-    | { type: "token"; provider: string; token: string };
+  credential: { type: "api_key"; provider: string; key: string } | { type: "token"; provider: string; token: string };
 }) => void;
 
 async function promptRuntimeCredential(params: {
@@ -110,9 +103,7 @@ async function promptRuntimeCredential(params: {
     });
 
     if (choice === "api-key") {
-      const key =
-        opts.anthropicApiKey ??
-        (await prompter.text({ message: "Anthropic API key", initialValue: "" }));
+      const key = opts.anthropicApiKey ?? (await prompter.text({ message: "Anthropic API key", initialValue: "" }));
       if (key.trim()) {
         upsertAuthProfile({
           profileId: "anthropic:default",
@@ -121,8 +112,7 @@ async function promptRuntimeCredential(params: {
         setAuthDefault("anthropic:default");
       }
     } else if (choice === "auth-token") {
-      const token =
-        opts.authToken ?? (await prompter.text({ message: "Claude auth token", initialValue: "" }));
+      const token = opts.authToken ?? (await prompter.text({ message: "Claude auth token", initialValue: "" }));
       if (token.trim()) {
         upsertAuthProfile({
           profileId: "claude:oauth-token",
@@ -149,8 +139,7 @@ async function promptRuntimeCredential(params: {
     });
 
     if (choice === "api-key") {
-      const key =
-        opts.geminiApiKey ?? (await prompter.text({ message: "Gemini API key", initialValue: "" }));
+      const key = opts.geminiApiKey ?? (await prompter.text({ message: "Gemini API key", initialValue: "" }));
       if (key.trim()) {
         upsertAuthProfile({
           profileId: "google:default",
@@ -177,8 +166,7 @@ async function promptRuntimeCredential(params: {
     });
 
     if (choice === "api-key") {
-      const key =
-        opts.codexApiKey ?? (await prompter.text({ message: "Codex API key", initialValue: "" }));
+      const key = opts.codexApiKey ?? (await prompter.text({ message: "Codex API key", initialValue: "" }));
       if (key.trim()) {
         upsertAuthProfile({
           profileId: "codex:default",
@@ -215,9 +203,7 @@ async function promptRuntimeCredential(params: {
       });
 
       if (provider === "anthropic") {
-        const key =
-          opts.anthropicApiKey ??
-          (await prompter.text({ message: "Anthropic API key", initialValue: "" }));
+        const key = opts.anthropicApiKey ?? (await prompter.text({ message: "Anthropic API key", initialValue: "" }));
         if (key.trim()) {
           upsertAuthProfile({
             profileId: "anthropic:default",
@@ -226,9 +212,7 @@ async function promptRuntimeCredential(params: {
           setAuthDefault("anthropic:default");
         }
       } else if (provider === "openai") {
-        const key =
-          opts.openaiApiKey ??
-          (await prompter.text({ message: "OpenAI API key", initialValue: "" }));
+        const key = opts.openaiApiKey ?? (await prompter.text({ message: "OpenAI API key", initialValue: "" }));
         if (key.trim()) {
           upsertAuthProfile({
             profileId: "openai:default",
@@ -267,10 +251,7 @@ async function promptRuntimeCredential(params: {
   return config;
 }
 
-async function requireRiskAcknowledgement(params: {
-  opts: OnboardOptions;
-  prompter: WizardPrompter;
-}) {
+async function requireRiskAcknowledgement(params: { opts: OnboardOptions; prompter: WizardPrompter }) {
   if (params.opts.acceptRisk === true) {
     return;
   }
@@ -299,8 +280,7 @@ async function requireRiskAcknowledgement(params: {
   );
 
   const ok = await params.prompter.confirm({
-    message:
-      "I understand this is personal-by-default and shared/multi-user use requires lock-down. Continue?",
+    message: "I understand this is personal-by-default and shared/multi-user use requires lock-down. Continue?",
     initialValue: false,
   });
   if (!ok) {
@@ -337,10 +317,7 @@ export async function runOnboardingWizard(
       });
       if (shouldImport) {
         await importCommand({ sourcePath: remoteclawDir }, runtime);
-        await prompter.note(
-          "RemoteClaw config imported. Continuing with setup.",
-          "Import complete",
-        );
+        await prompter.note("RemoteClaw config imported. Continuing with setup.", "Import complete");
       }
     }
   }
@@ -371,11 +348,7 @@ export async function runOnboardingWizard(
   const manualHint = "Configure port, network, Tailscale, and auth options.";
   const explicitFlowRaw = opts.flow?.trim();
   const normalizedExplicitFlow = explicitFlowRaw === "manual" ? "advanced" : explicitFlowRaw;
-  if (
-    normalizedExplicitFlow &&
-    normalizedExplicitFlow !== "quickstart" &&
-    normalizedExplicitFlow !== "advanced"
-  ) {
+  if (normalizedExplicitFlow && normalizedExplicitFlow !== "quickstart" && normalizedExplicitFlow !== "advanced") {
     runtime.error("Invalid --flow (use quickstart, manual, or advanced).");
     runtime.exit(1);
     return;
@@ -396,18 +369,12 @@ export async function runOnboardingWizard(
     }));
 
   if (opts.mode === "remote" && flow === "quickstart") {
-    await prompter.note(
-      "QuickStart only supports local gateways. Switching to Manual mode.",
-      "QuickStart",
-    );
+    await prompter.note("QuickStart only supports local gateways. Switching to Manual mode.", "QuickStart");
     flow = "advanced";
   }
 
   if (snapshot.exists) {
-    await prompter.note(
-      onboardHelpers.summarizeExistingConfig(baseConfig),
-      "Existing config detected",
-    );
+    await prompter.note(onboardHelpers.summarizeExistingConfig(baseConfig), "Existing config detected");
 
     const action = await prompter.select({
       message: "Config handling",
@@ -460,19 +427,12 @@ export async function runOnboardingWizard(
 
     const bindRaw = baseConfig.gateway?.bind;
     const bind =
-      bindRaw === "loopback" ||
-      bindRaw === "lan" ||
-      bindRaw === "auto" ||
-      bindRaw === "custom" ||
-      bindRaw === "tailnet"
+      bindRaw === "loopback" || bindRaw === "lan" || bindRaw === "auto" || bindRaw === "custom" || bindRaw === "tailnet"
         ? bindRaw
         : "loopback";
 
     let authMode: GatewayAuthChoice = "token";
-    if (
-      baseConfig.gateway?.auth?.mode === "token" ||
-      baseConfig.gateway?.auth?.mode === "password"
-    ) {
+    if (baseConfig.gateway?.auth?.mode === "token" || baseConfig.gateway?.auth?.mode === "password") {
       authMode = baseConfig.gateway.auth.mode;
     } else if (baseConfig.gateway?.auth?.token) {
       authMode = "token";
@@ -482,9 +442,7 @@ export async function runOnboardingWizard(
 
     const tailscaleRaw = baseConfig.gateway?.tailscale?.mode;
     const tailscaleMode =
-      tailscaleRaw === "off" || tailscaleRaw === "serve" || tailscaleRaw === "funnel"
-        ? tailscaleRaw
-        : "off";
+      tailscaleRaw === "off" || tailscaleRaw === "serve" || tailscaleRaw === "funnel" ? tailscaleRaw : "off";
 
     return {
       hasExisting,
@@ -554,8 +512,7 @@ export async function runOnboardingWizard(
 
   const localPort = resolveGatewayPort(baseConfig);
   const localUrl = `ws://127.0.0.1:${localPort}`;
-  let localGatewayToken =
-    process.env.REMOTECLAW_GATEWAY_TOKEN ?? process.env.CLAWDBOT_GATEWAY_TOKEN;
+  let localGatewayToken = process.env.REMOTECLAW_GATEWAY_TOKEN ?? process.env.CLAWDBOT_GATEWAY_TOKEN;
   try {
     const resolvedGatewayToken = await resolveOnboardingSecretInputString({
       config: baseConfig,
@@ -575,8 +532,7 @@ export async function runOnboardingWizard(
       "Gateway auth",
     );
   }
-  let localGatewayPassword =
-    process.env.REMOTECLAW_GATEWAY_PASSWORD ?? process.env.CLAWDBOT_GATEWAY_PASSWORD;
+  let localGatewayPassword = process.env.REMOTECLAW_GATEWAY_PASSWORD ?? process.env.CLAWDBOT_GATEWAY_PASSWORD;
   try {
     const resolvedGatewayPassword = await resolveOnboardingSecretInputString({
       config: baseConfig,
@@ -640,9 +596,7 @@ export async function runOnboardingWizard(
             {
               value: "local",
               label: "Local gateway (this machine)",
-              hint: localProbe.ok
-                ? `Gateway reachable (${localUrl})`
-                : `No gateway detected (${localUrl})`,
+              hint: localProbe.ok ? `Gateway reachable (${localUrl})` : `No gateway detected (${localUrl})`,
             },
             {
               value: "remote",
@@ -685,10 +639,7 @@ export async function runOnboardingWizard(
   const workspaceDir = resolveUserPath(trimmedWorkspace);
 
   const { applyOnboardingLocalWorkspaceConfig } = await import("../commands/onboard-config.js");
-  let nextConfig: RemoteClawConfig = applyOnboardingLocalWorkspaceConfig(
-    baseConfig,
-    trimmedWorkspace,
-  );
+  let nextConfig: RemoteClawConfig = applyOnboardingLocalWorkspaceConfig(baseConfig, trimmedWorkspace);
 
   const { upsertAuthProfile } = await import("../auth/index.js");
 

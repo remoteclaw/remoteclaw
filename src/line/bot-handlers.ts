@@ -16,10 +16,7 @@ import {
 import { danger, logVerbose } from "../globals.js";
 import { resolvePairingIdLabel } from "../pairing/pairing-labels.js";
 import { buildPairingReply } from "../pairing/pairing-messages.js";
-import {
-  readChannelAllowFromStore,
-  upsertChannelPairingRequest,
-} from "../pairing/pairing-store.js";
+import { readChannelAllowFromStore, upsertChannelPairingRequest } from "../pairing/pairing-store.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { firstDefined, isSenderAllowed, normalizeAllowFromWithStore } from "./bot-access.js";
 import {
@@ -117,11 +114,7 @@ async function shouldProcessLineEvent(
   const senderId = userId ?? "";
   const dmPolicy = account.config.dmPolicy ?? "pairing";
 
-  const storeAllowFrom = await readChannelAllowFromStore(
-    "line",
-    process.env,
-    account.accountId,
-  ).catch(() => []);
+  const storeAllowFrom = await readChannelAllowFromStore("line", process.env, account.accountId).catch(() => []);
   const effectiveDmAllow = normalizeAllowFromWithStore({
     allowFrom: account.config.allowFrom,
     storeAllowFrom,
@@ -129,26 +122,19 @@ async function shouldProcessLineEvent(
   });
   const groupConfig = resolveLineGroupConfig({ config: account.config, groupId, roomId });
   const groupAllowOverride = groupConfig?.allowFrom;
-  const fallbackGroupAllowFrom = account.config.allowFrom?.length
-    ? account.config.allowFrom
-    : undefined;
-  const groupAllowFrom = firstDefined(
-    groupAllowOverride,
-    account.config.groupAllowFrom,
-    fallbackGroupAllowFrom,
-  );
+  const fallbackGroupAllowFrom = account.config.allowFrom?.length ? account.config.allowFrom : undefined;
+  const groupAllowFrom = firstDefined(groupAllowOverride, account.config.groupAllowFrom, fallbackGroupAllowFrom);
   const effectiveGroupAllow = normalizeAllowFromWithStore({
     allowFrom: groupAllowFrom,
     storeAllowFrom,
     dmPolicy,
   });
   const defaultGroupPolicy = resolveDefaultGroupPolicy(cfg);
-  const { groupPolicy, providerMissingFallbackApplied } =
-    resolveAllowlistProviderRuntimeGroupPolicy({
-      providerConfigPresent: cfg.channels?.line !== undefined,
-      groupPolicy: account.config.groupPolicy,
-      defaultGroupPolicy,
-    });
+  const { groupPolicy, providerMissingFallbackApplied } = resolveAllowlistProviderRuntimeGroupPolicy({
+    providerConfigPresent: cfg.channels?.line !== undefined,
+    groupPolicy: account.config.groupPolicy,
+    defaultGroupPolicy,
+  });
   warnMissingProviderGroupPolicyFallbackOnce({
     providerMissingFallbackApplied,
     providerKey: "line",
@@ -272,10 +258,7 @@ async function handleFollowEvent(event: FollowEvent, _context: LineHandlerContex
   // Could implement welcome message here
 }
 
-async function handleUnfollowEvent(
-  event: UnfollowEvent,
-  _context: LineHandlerContext,
-): Promise<void> {
+async function handleUnfollowEvent(event: UnfollowEvent, _context: LineHandlerContext): Promise<void> {
   const userId = event.source.type === "user" ? event.source.userId : undefined;
   logVerbose(`line: user ${userId ?? "unknown"} unfollowed`);
 }
@@ -292,10 +275,7 @@ async function handleLeaveEvent(event: LeaveEvent, _context: LineHandlerContext)
   logVerbose(`line: bot left ${groupId ? `group ${groupId}` : `room ${roomId}`}`);
 }
 
-async function handlePostbackEvent(
-  event: PostbackEvent,
-  context: LineHandlerContext,
-): Promise<void> {
+async function handlePostbackEvent(event: PostbackEvent, context: LineHandlerContext): Promise<void> {
   const data = event.postback.data;
   logVerbose(`line: received postback: ${data}`);
 
@@ -316,10 +296,7 @@ async function handlePostbackEvent(
   await context.processMessage(postbackContext);
 }
 
-export async function handleLineWebhookEvents(
-  events: WebhookEvent[],
-  context: LineHandlerContext,
-): Promise<void> {
+export async function handleLineWebhookEvents(events: WebhookEvent[], context: LineHandlerContext): Promise<void> {
   for (const event of events) {
     try {
       switch (event.type) {

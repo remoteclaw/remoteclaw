@@ -86,12 +86,7 @@ describe("probeGateway", () => {
 
     expect(gatewayClientState.options?.scopes).toEqual(["operator.read"]);
     expect(gatewayClientState.options?.deviceIdentity).toEqual(deviceIdentityState.value);
-    expect(gatewayClientState.requests).toEqual([
-      "health",
-      "status",
-      "system-presence",
-      "config.get",
-    ]);
+    expect(gatewayClientState.requests).toEqual(["health", "status", "system-presence", "config.get"]);
     expect(result.ok).toBe(true);
   });
 
@@ -150,12 +145,7 @@ describe("probeGateway", () => {
 
     expect(result.ok).toBe(true);
     expect(gatewayClientState.options?.deviceIdentity).toBeNull();
-    expect(gatewayClientState.requests).toEqual([
-      "health",
-      "status",
-      "system-presence",
-      "config.get",
-    ]);
+    expect(gatewayClientState.requests).toEqual(["health", "status", "system-presence", "config.get"]);
   });
 
   it("fetches only presence for presence-only probes", async () => {

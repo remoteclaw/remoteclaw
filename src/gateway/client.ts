@@ -1,10 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { WebSocket, type ClientOptions, type CertMeta } from "ws";
-import {
-  clearDeviceAuthToken,
-  loadDeviceAuthToken,
-  storeDeviceAuthToken,
-} from "../infra/device-auth-store.js";
+import { clearDeviceAuthToken, loadDeviceAuthToken, storeDeviceAuthToken } from "../infra/device-auth-store.js";
 import type { DeviceIdentity } from "../infra/device-identity.js";
 import {
   loadOrCreateDeviceIdentity,
@@ -151,10 +147,7 @@ export class GatewayClient {
   constructor(opts: GatewayClientOptions) {
     this.opts = {
       ...opts,
-      deviceIdentity:
-        opts.deviceIdentity === null
-          ? undefined
-          : (opts.deviceIdentity ?? loadOrCreateDeviceIdentity()),
+      deviceIdentity: opts.deviceIdentity === null ? undefined : (opts.deviceIdentity ?? loadOrCreateDeviceIdentity()),
     };
     this.requestTimeoutMs =
       typeof opts.requestTimeoutMs === "number" && Number.isFinite(opts.requestTimeoutMs)
@@ -208,9 +201,7 @@ export class GatewayClient {
           typeof cert === "object" && cert && "fingerprint256" in cert
             ? ((cert as { fingerprint256?: string }).fingerprint256 ?? "")
             : "";
-        const fingerprint = normalizeFingerprint(
-          typeof fingerprintValue === "string" ? fingerprintValue : "",
-        );
+        const fingerprint = normalizeFingerprint(typeof fingerprintValue === "string" ? fingerprintValue : "");
         const expected = normalizeFingerprint(this.opts.tlsFingerprint ?? "");
         if (!expected) {
           return new Error("gateway tls fingerprint missing");
@@ -264,9 +255,7 @@ export class GatewayClient {
           clearDeviceAuthToken({ deviceId, role });
           logDebug(`cleared stale device-auth token for device ${deviceId}`);
         } catch (err) {
-          logDebug(
-            `failed clearing stale device-auth token for device ${deviceId}: ${String(err)}`,
-          );
+          logDebug(`failed clearing stale device-auth token for device ${deviceId}: ${String(err)}`);
         }
       }
       this.flushPendingErrors(new Error(`gateway closed (${code}): ${reasonText}`));
@@ -455,9 +444,7 @@ export class GatewayClient {
       caps: Array.isArray(this.opts.caps) ? this.opts.caps : [],
       commands: Array.isArray(this.opts.commands) ? this.opts.commands : undefined,
       permissions:
-        this.opts.permissions && typeof this.opts.permissions === "object"
-          ? this.opts.permissions
-          : undefined,
+        this.opts.permissions && typeof this.opts.permissions === "object" ? this.opts.permissions : undefined,
       pathEnv: this.opts.pathEnv,
       auth,
       role,
@@ -481,9 +468,7 @@ export class GatewayClient {
         }
         this.backoffMs = 1000;
         this.tickIntervalMs =
-          typeof helloOk.policy?.tickIntervalMs === "number"
-            ? helloOk.policy.tickIntervalMs
-            : 30_000;
+          typeof helloOk.policy?.tickIntervalMs === "number" ? helloOk.policy.tickIntervalMs : 30_000;
         this.lastTick = Date.now();
         this.startTickWatch();
         this.opts.onHelloOk?.(helloOk);
@@ -566,8 +551,7 @@ export class GatewayClient {
     }
     const detailCode = readConnectErrorDetailCode(params.error.details);
     const advice: ConnectErrorRecoveryAdvice = readConnectErrorRecoveryAdvice(params.error.details);
-    const retryWithDeviceTokenRecommended =
-      advice.recommendedNextStep === "retry_with_device_token";
+    const retryWithDeviceTokenRecommended = advice.recommendedNextStep === "retry_with_device_token";
     return (
       advice.canRetryWithDeviceToken === true ||
       retryWithDeviceTokenRecommended ||
@@ -579,12 +563,7 @@ export class GatewayClient {
     const rawUrl = this.opts.url ?? "ws://127.0.0.1:18789";
     try {
       const parsed = new URL(rawUrl);
-      const protocol =
-        parsed.protocol === "https:"
-          ? "wss:"
-          : parsed.protocol === "http:"
-            ? "ws:"
-            : parsed.protocol;
+      const protocol = parsed.protocol === "https:" ? "wss:" : parsed.protocol === "http:" ? "ws:" : parsed.protocol;
       if (isLoopbackHost(parsed.hostname)) {
         return true;
       }
@@ -617,8 +596,7 @@ export class GatewayClient {
     // Legacy compatibility: keep `auth.token` populated for device-token auth when
     // no explicit shared token is present.
     const authToken = explicitGatewayToken ?? resolvedDeviceToken;
-    const authBootstrapToken =
-      !explicitGatewayToken && !resolvedDeviceToken ? explicitBootstrapToken : undefined;
+    const authBootstrapToken = !explicitGatewayToken && !resolvedDeviceToken ? explicitBootstrapToken : undefined;
     return {
       authToken,
       authBootstrapToken,
@@ -699,8 +677,7 @@ export class GatewayClient {
     this.connectSent = false;
     const rawConnectChallengeTimeoutMs = this.opts.connectChallengeTimeoutMs;
     const connectChallengeTimeoutMs =
-      typeof rawConnectChallengeTimeoutMs === "number" &&
-      Number.isFinite(rawConnectChallengeTimeoutMs)
+      typeof rawConnectChallengeTimeoutMs === "number" && Number.isFinite(rawConnectChallengeTimeoutMs)
         ? Math.max(250, Math.min(10_000, rawConnectChallengeTimeoutMs))
         : 2_000;
     if (this.connectTimer) {
@@ -800,9 +777,7 @@ export class GatewayClient {
     const id = randomUUID();
     const frame: RequestFrame = { type: "req", id, method, params };
     if (!validateRequestFrame(frame)) {
-      throw new Error(
-        `invalid request frame: ${JSON.stringify(validateRequestFrame.errors, null, 2)}`,
-      );
+      throw new Error(`invalid request frame: ${JSON.stringify(validateRequestFrame.errors, null, 2)}`);
     }
     const expectFinal = opts?.expectFinal === true;
     const timeoutMs =

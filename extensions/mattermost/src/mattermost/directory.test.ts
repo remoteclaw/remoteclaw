@@ -35,8 +35,7 @@ describe("mattermost directory", () => {
   beforeEach(async () => {
     vi.resetModules();
     vi.clearAllMocks();
-    ({ listMattermostDirectoryGroups, listMattermostDirectoryPeers } =
-      await import("./directory.js"));
+    ({ listMattermostDirectoryGroups, listMattermostDirectoryPeers } = await import("./directory.js"));
   });
 
   it("deduplicates channels across enabled accounts and skips failing accounts", async () => {
@@ -67,10 +66,7 @@ describe("mattermost directory", () => {
       }
       return { enabled: true, botToken: `token-${accountId}`, baseUrl: "https://chat.example.com" };
     });
-    createMattermostClientMock
-      .mockReturnValueOnce(clientA)
-      .mockReturnValueOnce(clientB)
-      .mockReturnValueOnce(clientC);
+    createMattermostClientMock.mockReturnValueOnce(clientA).mockReturnValueOnce(clientB).mockReturnValueOnce(clientC);
     fetchMattermostMeMock.mockResolvedValue({ id: "me-1" });
 
     await expect(

@@ -78,9 +78,7 @@ describe("tool hook wrapping", () => {
     );
     expect(beforeCall).toBeDefined();
     // oxlint-disable-next-line typescript/no-explicit-any
-    expect((beforeCall![0] as any).params).toEqual(
-      expect.objectContaining({ toolName: "sessions_list" }),
-    );
+    expect((beforeCall![0] as any).params).toEqual(expect.objectContaining({ toolName: "sessions_list" }));
   });
 
   it("fires hooks.tool.after with durationMs after tool execution", async () => {

@@ -10,15 +10,11 @@ describe("resolveSafeExternalUrl", () => {
   const baseHref = "https://remoteclaw.org/chat";
 
   it("allows absolute https URLs", () => {
-    expect(resolveSafeExternalUrl("https://example.com/a.png?x=1#y", baseHref)).toBe(
-      "https://example.com/a.png?x=1#y",
-    );
+    expect(resolveSafeExternalUrl("https://example.com/a.png?x=1#y", baseHref)).toBe("https://example.com/a.png?x=1#y");
   });
 
   it("allows relative URLs resolved against the current origin", () => {
-    expect(resolveSafeExternalUrl("/assets/pic.png", baseHref)).toBe(
-      "https://remoteclaw.org/assets/pic.png",
-    );
+    expect(resolveSafeExternalUrl("/assets/pic.png", baseHref)).toBe("https://remoteclaw.org/assets/pic.png");
   });
 
   it("allows blob URLs", () => {
@@ -45,13 +41,9 @@ describe("resolveSafeExternalUrl", () => {
 
   it("rejects SVG data image URLs", () => {
     expect(
-      resolveSafeExternalUrl(
-        "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' />",
-        baseHref,
-        {
-          allowDataImage: true,
-        },
-      ),
+      resolveSafeExternalUrl("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' />", baseHref, {
+        allowDataImage: true,
+      }),
     ).toBeNull();
   });
 
@@ -89,19 +81,13 @@ describe("openExternalUrlSafe", () => {
     const openedLikeProxy = {
       opener: { postMessage: () => void 0 },
     } as unknown as WindowProxy;
-    const openMock = vi
-      .spyOn(window, "open")
-      .mockImplementation(() => openedLikeProxy as unknown as Window);
+    const openMock = vi.spyOn(window, "open").mockImplementation(() => openedLikeProxy as unknown as Window);
 
     const opened = openExternalUrlSafe("https://example.com/safe.png", {
       baseHref: "https://remoteclaw.org/chat",
     });
 
-    expect(openMock).toHaveBeenCalledWith(
-      "https://example.com/safe.png",
-      "_blank",
-      "noopener,noreferrer",
-    );
+    expect(openMock).toHaveBeenCalledWith("https://example.com/safe.png", "_blank", "noopener,noreferrer");
     expect(opened).toBe(openedLikeProxy);
     expect(openedLikeProxy.opener).toBeNull();
   });

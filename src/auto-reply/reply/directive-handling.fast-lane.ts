@@ -37,8 +37,7 @@ export async function applyInlineDirectivesFastLane(
 
   const agentCfg = params.agentCfg;
   const currentVerboseLevel =
-    (sessionEntry?.verboseLevel as VerboseLevel | undefined) ??
-    (agentCfg?.verboseDefault as VerboseLevel | undefined);
+    (sessionEntry?.verboseLevel as VerboseLevel | undefined) ?? (agentCfg?.verboseDefault as VerboseLevel | undefined);
 
   const directiveAck = await handleDirectiveOnly({
     cfg,

@@ -72,11 +72,7 @@ async function resolveMatrixDirectoryContext(
   return { query, auth };
 }
 
-function createGroupDirectoryEntry(params: {
-  id: string;
-  name: string;
-  handle?: string;
-}): ChannelDirectoryEntry {
+function createGroupDirectoryEntry(params: { id: string; name: string; handle?: string }): ChannelDirectoryEntry {
   return {
     kind: "group",
     id: params.id,
@@ -121,11 +117,7 @@ export async function listMatrixDirectoryPeersLive(
     .filter(Boolean) as ChannelDirectoryEntry[];
 }
 
-async function resolveMatrixRoomAlias(
-  homeserver: string,
-  accessToken: string,
-  alias: string,
-): Promise<string | null> {
+async function resolveMatrixRoomAlias(homeserver: string, accessToken: string, alias: string): Promise<string | null> {
   try {
     const res = await fetchMatrixJson<MatrixAliasLookup>({
       homeserver,
@@ -138,11 +130,7 @@ async function resolveMatrixRoomAlias(
   }
 }
 
-async function fetchMatrixRoomName(
-  homeserver: string,
-  accessToken: string,
-  roomId: string,
-): Promise<string | null> {
+async function fetchMatrixRoomName(homeserver: string, accessToken: string, roomId: string): Promise<string | null> {
   try {
     const res = await fetchMatrixJson<MatrixRoomNameState>({
       homeserver,

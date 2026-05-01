@@ -1,9 +1,6 @@
 import JSON5 from "json5";
 import { createSubsystemLogger } from "../logging/subsystem.js";
-import {
-  replaceSensitiveValuesInRaw,
-  shouldFallbackToStructuredRawRedaction,
-} from "./redact-snapshot.raw.js";
+import { replaceSensitiveValuesInRaw, shouldFallbackToStructuredRawRedaction } from "./redact-snapshot.raw.js";
 import { isSecretRefShape, redactSecretRefId } from "./redact-snapshot.secret-ref.js";
 import { isSensitiveConfigPath, type ConfigUiHints } from "./schema.hints.js";
 import type { ConfigFileSnapshot } from "./types.remoteclaw.js";
@@ -205,11 +202,7 @@ function redactObjectWithLookup(
             } else {
               result[key] = redactObjectWithLookup(value, lookup, candidate, values, hints);
             }
-          } else if (
-            hints[candidate]?.sensitive === true &&
-            value !== undefined &&
-            value !== null
-          ) {
+          } else if (hints[candidate]?.sensitive === true && value !== undefined && value !== null) {
             // Keep primitives at explicitly-sensitive paths fully redacted.
             result[key] = REDACTED_SENTINEL;
           }
@@ -221,12 +214,7 @@ function redactObjectWithLookup(
         // hints. This catches dynamic keys inside catchall objects (for example
         // env.GROQ_API_KEY) and extension/plugin config alike.
         const markedNonSensitive = isExplicitlyNonSensitivePath(hints, [path, wildcardPath]);
-        if (
-          typeof value === "string" &&
-          !markedNonSensitive &&
-          isSensitivePath(path) &&
-          !isEnvVarPlaceholder(value)
-        ) {
+        if (typeof value === "string" && !markedNonSensitive && isSensitivePath(path) && !isEnvVarPlaceholder(value)) {
           result[key] = REDACTED_SENTINEL;
           values.push(value);
         } else if (typeof value === "object" && value !== null) {
@@ -244,12 +232,7 @@ function redactObjectWithLookup(
  * Worker for redactObject() and collectSensitiveValues().
  * Used when ConfigUiHints are NOT available.
  */
-function redactObjectGuessing(
-  obj: unknown,
-  prefix: string,
-  values: string[],
-  hints?: ConfigUiHints,
-): unknown {
+function redactObjectGuessing(obj: unknown, prefix: string, values: string[], hints?: ConfigUiHints): unknown {
   if (obj === null || obj === undefined) {
     return obj;
   }
@@ -350,10 +333,7 @@ export function redactConfigObject<T>(value: T, uiHints?: ConfigUiHints): T {
   return redactObject(value, uiHints) as T;
 }
 
-export function redactConfigSnapshot(
-  snapshot: ConfigFileSnapshot,
-  uiHints?: ConfigUiHints,
-): ConfigFileSnapshot {
+export function redactConfigSnapshot(snapshot: ConfigFileSnapshot, uiHints?: ConfigUiHints): ConfigFileSnapshot {
   if (!snapshot.valid) {
     // This is bad. We could try to redact the raw string using known key names,
     // but then we would not be able to restore them, and would trash the user's
@@ -382,9 +362,7 @@ export function redactConfigSnapshot(
       redactedRaw,
       originalConfig: snapshot.config,
       restoreParsed: (parsed) =>
-        withRestoreWarningsSuppressed(() =>
-          restoreRedactedValues(parsed, snapshot.config, uiHints),
-        ),
+        withRestoreWarningsSuppressed(() => restoreRedactedValues(parsed, snapshot.config, uiHints)),
     })
   ) {
     redactedRaw = JSON5.stringify(redactedParsed ?? redactedConfig, null, 2);
@@ -415,11 +393,7 @@ export type RedactionResult = {
  * This is called by config.set / config.apply / config.patch before writing,
  * so that credentials survive a Web UI round-trip unmodified.
  */
-export function restoreRedactedValues(
-  incoming: unknown,
-  original: unknown,
-  hints?: ConfigUiHints,
-): RedactionResult {
+export function restoreRedactedValues(incoming: unknown, original: unknown, hints?: ConfigUiHints): RedactionResult {
   if (incoming === null || incoming === undefined) {
     return { ok: false, error: "no input" };
   }
@@ -499,10 +473,7 @@ function shouldPassThroughRestoreValue(incoming: unknown): boolean {
   return incoming === null || incoming === undefined || typeof incoming !== "object";
 }
 
-function toRestoreArrayContext(
-  incoming: unknown,
-  prefix: string,
-): { incoming: unknown[]; path: string } | null {
+function toRestoreArrayContext(incoming: unknown, prefix: string): { incoming: unknown[]; path: string } | null {
   if (!Array.isArray(incoming)) {
     return null;
   }
@@ -543,20 +514,10 @@ function restoreArrayItemWithGuessing(params: {
   ) {
     return params.originalArray[params.index];
   }
-  return restoreRedactedValuesGuessing(
-    params.item,
-    params.originalArray[params.index],
-    params.path,
-    params.hints,
-  );
+  return restoreRedactedValuesGuessing(params.item, params.originalArray[params.index], params.path, params.hints);
 }
 
-function restoreGuessingArray(
-  incoming: unknown[],
-  original: unknown,
-  path: string,
-  hints?: ConfigUiHints,
-): unknown[] {
+function restoreGuessingArray(incoming: unknown[], original: unknown, path: string, hints?: ConfigUiHints): unknown[] {
   return mapRedactedArray({
     incoming,
     original,

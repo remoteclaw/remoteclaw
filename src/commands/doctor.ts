@@ -26,10 +26,7 @@ import { loadAndMaybeMigrateDoctorConfig } from "./doctor-config-flow.js";
 import { maybeRepairLegacyCronStore } from "./doctor-cron.js";
 import { maybeRepairGatewayDaemon } from "./doctor-gateway-daemon-flow.js";
 import { checkGatewayHealth } from "./doctor-gateway-health.js";
-import {
-  maybeRepairGatewayServiceConfig,
-  maybeScanExtraGatewayServices,
-} from "./doctor-gateway-services.js";
+import { maybeRepairGatewayServiceConfig, maybeScanExtraGatewayServices } from "./doctor-gateway-services.js";
 import { noteSourceInstallIssues } from "./doctor-install.js";
 import {
   noteMacLaunchAgentOverrides,
@@ -55,10 +52,7 @@ function resolveMode(cfg: RemoteClawConfig): "local" | "remote" {
   return cfg.gateway?.mode === "remote" ? "remote" : "local";
 }
 
-export async function doctorCommand(
-  runtime: RuntimeEnv = defaultRuntime,
-  options: DoctorOptions = {},
-) {
+export async function doctorCommand(runtime: RuntimeEnv = defaultRuntime, options: DoctorOptions = {}) {
   const prompter = createDoctorPrompter({ runtime, options });
   printWizardHeader(runtime);
   intro("RemoteClaw doctor");
@@ -200,11 +194,7 @@ export async function doctorCommand(
     deep: options.deep === true,
   });
 
-  if (
-    options.nonInteractive !== true &&
-    process.platform === "linux" &&
-    resolveMode(cfg) === "local"
-  ) {
+  if (options.nonInteractive !== true && process.platform === "linux" && resolveMode(cfg) === "local") {
     const service = resolveGatewayService();
     let loaded = false;
     try {
@@ -247,8 +237,7 @@ export async function doctorCommand(
     healthOk,
   });
 
-  const shouldWriteConfig =
-    configResult.shouldWriteConfig || JSON.stringify(cfg) !== JSON.stringify(cfgForPersistence);
+  const shouldWriteConfig = configResult.shouldWriteConfig || JSON.stringify(cfg) !== JSON.stringify(cfgForPersistence);
   if (shouldWriteConfig) {
     cfg = applyWizardMetadata(cfg, { command: "doctor", mode: resolveMode(cfg) });
     await writeConfigFile(cfg);

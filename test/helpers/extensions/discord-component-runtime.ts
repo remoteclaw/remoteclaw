@@ -11,8 +11,7 @@ const runtimeMocks = vi.hoisted(() => ({
 export const readAllowFromStoreMock = runtimeMocks.readAllowFromStoreMock;
 export const upsertPairingRequestMock = runtimeMocks.upsertPairingRequestMock;
 export const recordInboundSessionMock = runtimeMocks.recordInboundSessionMock;
-export const resolvePluginConversationBindingApprovalMock =
-  runtimeMocks.resolvePluginConversationBindingApprovalMock;
+export const resolvePluginConversationBindingApprovalMock = runtimeMocks.resolvePluginConversationBindingApprovalMock;
 export const buildPluginBindingResolvedTextMock = runtimeMocks.buildPluginBindingResolvedTextMock;
 
 async function createConversationRuntimeMock(
@@ -24,8 +23,7 @@ async function createConversationRuntimeMock(
     upsertChannelPairingRequest: (...args: unknown[]) => upsertPairingRequestMock(...args),
     resolvePluginConversationBindingApproval: (...args: unknown[]) =>
       resolvePluginConversationBindingApprovalMock(...args),
-    buildPluginBindingResolvedText: (...args: unknown[]) =>
-      buildPluginBindingResolvedTextMock(...args),
+    buildPluginBindingResolvedText: (...args: unknown[]) => buildPluginBindingResolvedTextMock(...args),
     recordInboundSession: (...args: unknown[]) => recordInboundSessionMock(...args),
   };
 }
@@ -52,9 +50,7 @@ async function readStoreAllowFromForDmPolicy(params: {
   return await readAllowFromStoreMock(params.provider, params.accountId);
 }
 
-vi.mock("remoteclaw/plugin-sdk/security-runtime", (importOriginal) =>
-  createAllowFromRuntimeMock(importOriginal),
-);
+vi.mock("remoteclaw/plugin-sdk/security-runtime", (importOriginal) => createAllowFromRuntimeMock(importOriginal));
 
 vi.mock("remoteclaw/plugin-sdk/conversation-runtime", createConversationRuntimeMock);
 vi.mock("remoteclaw/plugin-sdk/conversation-runtime.js", createConversationRuntimeMock);
@@ -65,9 +61,7 @@ vi.mock("../../../src/pairing/pairing-store.js", async (importOriginal) => {
     upsertChannelPairingRequest: (...args: unknown[]) => upsertPairingRequestMock(...args),
   };
 });
-vi.mock("../../../src/security/dm-policy-shared.js", (importOriginal) =>
-  createAllowFromRuntimeMock(importOriginal),
-);
+vi.mock("../../../src/security/dm-policy-shared.js", (importOriginal) => createAllowFromRuntimeMock(importOriginal));
 
 export function resetDiscordComponentRuntimeMocks() {
   readAllowFromStoreMock.mockClear().mockResolvedValue([]);

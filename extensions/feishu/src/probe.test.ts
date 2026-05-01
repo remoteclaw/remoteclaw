@@ -87,10 +87,7 @@ async function expectErrorResultCached(params: {
   expect(params.requestFn).toHaveBeenCalledTimes(2);
 }
 
-async function expectFreshDefaultProbeAfter(
-  requestFn: ReturnType<typeof vi.fn>,
-  invalidate: () => void,
-) {
+async function expectFreshDefaultProbeAfter(requestFn: ReturnType<typeof vi.fn>, invalidate: () => void) {
   await probeFeishu(DEFAULT_CREDS);
   expect(requestFn).toHaveBeenCalledTimes(1);
 

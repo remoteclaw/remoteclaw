@@ -58,15 +58,8 @@ function validateRelativePathWithinBoundary(params: {
   return params.relativePath;
 }
 
-function toRelativePathUnderRoot(params: {
-  root: string;
-  candidate: string;
-  options?: RelativePathOptions;
-}): string {
-  const resolvedInput = resolveSandboxInputPath(
-    params.candidate,
-    params.options?.cwd ?? params.root,
-  );
+function toRelativePathUnderRoot(params: { root: string; candidate: string; options?: RelativePathOptions }): string {
+  const resolvedInput = resolveSandboxInputPath(params.candidate, params.options?.cwd ?? params.root);
 
   if (process.platform === "win32") {
     const rootResolved = path.win32.resolve(params.root);

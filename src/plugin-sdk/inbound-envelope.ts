@@ -94,12 +94,7 @@ export function resolveInboundRouteEnvelopeBuilder<
   return { route, buildEnvelope };
 }
 
-type InboundRouteEnvelopeRuntime<
-  TConfig,
-  TEnvelope,
-  TRoute extends RouteLike,
-  TPeer extends RoutePeerLike,
-> = {
+type InboundRouteEnvelopeRuntime<TConfig, TEnvelope, TRoute extends RouteLike, TPeer extends RoutePeerLike> = {
   routing: {
     resolveAgentRoute: (params: InboundRouteResolveParams<TConfig, TPeer>) => TRoute;
   };

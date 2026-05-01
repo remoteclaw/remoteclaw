@@ -84,9 +84,7 @@ function computeBaseConfigSchemaStablePayload(): BaseConfigSchemaStablePayload {
   };
 }
 
-export function computeBaseConfigSchemaResponse(params?: {
-  generatedAt?: string;
-}): BaseConfigSchemaResponse {
+export function computeBaseConfigSchemaResponse(params?: { generatedAt?: string }): BaseConfigSchemaResponse {
   const stablePayload = computeBaseConfigSchemaStablePayload();
   return {
     schema: stablePayload.schema,

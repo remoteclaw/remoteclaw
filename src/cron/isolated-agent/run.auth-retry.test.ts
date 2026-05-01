@@ -14,11 +14,7 @@ vi.mock("../../middleware/channel-bridge.js", async (importOriginal) => {
       readonly workspaceDir?: string;
       readonly runtimeEnv?: Record<string, string>;
 
-      constructor(opts: {
-        provider: string;
-        workspaceDir?: string;
-        runtimeEnv?: Record<string, string>;
-      }) {
+      constructor(opts: { provider: string; workspaceDir?: string; runtimeEnv?: Record<string, string> }) {
         this.provider = opts.provider;
         this.workspaceDir = opts.workspaceDir;
         this.runtimeEnv = opts.runtimeEnv;
@@ -316,8 +312,7 @@ describe("runCronIsolatedAgentTurn — auth key retry wiring", () => {
     };
 
     withAuthKeyRetryMock.mockImplementation(
-      async (_options: unknown, execute: (env: Record<string, string>) => Promise<unknown>) =>
-        execute(injectedEnv),
+      async (_options: unknown, execute: (env: Record<string, string>) => Promise<unknown>) => execute(injectedEnv),
     );
 
     await runCronIsolatedAgentTurn(makeParams());

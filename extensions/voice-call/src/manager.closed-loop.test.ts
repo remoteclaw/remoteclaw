@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createManagerHarness, FakeProvider, markCallAnswered } from "./manager.test-harness.js";
 
-function requireCall(
-  manager: Awaited<ReturnType<typeof createManagerHarness>>["manager"],
-  callId: string,
-) {
+function requireCall(manager: Awaited<ReturnType<typeof createManagerHarness>>["manager"], callId: string) {
   const call = manager.getCall(callId);
   if (!call) {
     throw new Error(`expected active call ${callId}`);
@@ -51,10 +48,7 @@ describe("CallManager closed-loop turns", () => {
     expect(provider.stopListeningCalls).toHaveLength(1);
 
     const call = requireCall(manager, started.callId);
-    expect(call.transcript.map((entry) => entry.text)).toEqual([
-      "How can I help?",
-      "Please check status",
-    ]);
+    expect(call.transcript.map((entry) => entry.text)).toEqual(["How can I help?", "Please check status"]);
     const metadata = (call.metadata ?? {}) as Record<string, unknown>;
     expect(typeof metadata.lastTurnLatencyMs).toBe("number");
     expect(typeof metadata.lastTurnListenWaitMs).toBe("number");

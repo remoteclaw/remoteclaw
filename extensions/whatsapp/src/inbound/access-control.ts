@@ -67,11 +67,9 @@ export async function checkInboundAccessControl(params: {
     dmPolicy,
   });
   // Without user config, default to self-only DM access so the owner can talk to themselves.
-  const defaultAllowFrom =
-    configuredAllowFrom.length === 0 && params.selfE164 ? [params.selfE164] : [];
+  const defaultAllowFrom = configuredAllowFrom.length === 0 && params.selfE164 ? [params.selfE164] : [];
   const dmAllowFrom = configuredAllowFrom.length > 0 ? configuredAllowFrom : defaultAllowFrom;
-  const groupAllowFrom =
-    account.groupAllowFrom ?? (configuredAllowFrom.length > 0 ? configuredAllowFrom : undefined);
+  const groupAllowFrom = account.groupAllowFrom ?? (configuredAllowFrom.length > 0 ? configuredAllowFrom : undefined);
   const isSamePhone = params.from === params.selfE164;
   const isSelfChat = account.selfChatMode ?? isSelfChatMode(params.selfE164, configuredAllowFrom);
   const pairingGraceMs =
@@ -100,8 +98,7 @@ export async function checkInboundAccessControl(params: {
     log: (message) => logVerbose(message),
   });
   const normalizedDmSender = normalizeE164(params.from);
-  const normalizedGroupSender =
-    typeof params.senderE164 === "string" ? normalizeE164(params.senderE164) : null;
+  const normalizedGroupSender = typeof params.senderE164 === "string" ? normalizeE164(params.senderE164) : null;
   const access = resolveDmGroupAccessWithLists({
     isGroup: params.group,
     dmPolicy,
@@ -116,9 +113,7 @@ export async function checkInboundAccessControl(params: {
         return true;
       }
       const normalizedEntrySet = new Set(
-        allowEntries
-          .map((entry) => normalizeE164(String(entry)))
-          .filter((entry): entry is string => Boolean(entry)),
+        allowEntries.map((entry) => normalizeE164(String(entry))).filter((entry): entry is string => Boolean(entry)),
       );
       if (!params.group && isSamePhone) {
         return true;
@@ -134,9 +129,7 @@ export async function checkInboundAccessControl(params: {
     } else if (access.reason === "groupPolicy=allowlist (empty allowlist)") {
       logVerbose("Blocked group message (groupPolicy: allowlist, no groupAllowFrom)");
     } else {
-      logVerbose(
-        `Blocked group message from ${params.senderE164 ?? "unknown sender"} (groupPolicy: allowlist)`,
-      );
+      logVerbose(`Blocked group message from ${params.senderE164 ?? "unknown sender"} (groupPolicy: allowlist)`);
     }
     return {
       allowed: false,
@@ -184,9 +177,7 @@ export async function checkInboundAccessControl(params: {
               meta,
             }),
           onCreated: () => {
-            logVerbose(
-              `whatsapp pairing request sender=${candidate} name=${params.pushName ?? "unknown"}`,
-            );
+            logVerbose(`whatsapp pairing request sender=${candidate} name=${params.pushName ?? "unknown"}`);
           },
           sendPairingReply: async (text) => {
             await params.sock.sendMessage(params.remoteJid, { text });

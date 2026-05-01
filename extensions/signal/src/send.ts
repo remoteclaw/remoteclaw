@@ -71,10 +71,7 @@ type SignalTargetAllowlist = {
   username?: boolean;
 };
 
-function buildTargetParams(
-  target: SignalTarget,
-  allow: SignalTargetAllowlist,
-): SignalTargetParams | null {
+function buildTargetParams(target: SignalTarget, allow: SignalTargetAllowlist): SignalTargetParams | null {
   if (target.type === "recipient") {
     if (!allow.recipient) {
       return null;
@@ -160,9 +157,7 @@ export async function sendMessageSignal(
 
   const params: Record<string, unknown> = { message };
   if (textStyles.length > 0) {
-    params["text-style"] = textStyles.map(
-      (style) => `${style.start}:${style.length}:${style.style}`,
-    );
+    params["text-style"] = textStyles.map((style) => `${style.start}:${style.length}:${style.style}`);
   }
   if (account) {
     params.account = account;
@@ -192,10 +187,7 @@ export async function sendMessageSignal(
   };
 }
 
-export async function sendTypingSignal(
-  to: string,
-  opts: SignalRpcOpts & { stop?: boolean } = {},
-): Promise<boolean> {
+export async function sendTypingSignal(to: string, opts: SignalRpcOpts & { stop?: boolean } = {}): Promise<boolean> {
   const { baseUrl, account } = resolveSignalRpcContext(opts);
   const targetParams = buildTargetParams(parseTarget(to), {
     recipient: true,

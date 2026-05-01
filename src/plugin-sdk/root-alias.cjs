@@ -7,9 +7,7 @@ let monolithicSdk = null;
 let diagnosticEventsModule = null;
 const jitiLoaders = new Map();
 const pluginSdkSubpathsCache = new Map();
-const isDistRootAlias = __filename.includes(
-  `${path.sep}dist${path.sep}plugin-sdk${path.sep}root-alias.cjs`,
-);
+const isDistRootAlias = __filename.includes(`${path.sep}dist${path.sep}plugin-sdk${path.sep}root-alias.cjs`);
 // Source plugin entry loading must stay on the source graph end-to-end. Mixing a
 // source root alias with dist compat/runtime shims can split singleton deps
 // (for example matrix-js-sdk) across two module graphs.
@@ -91,8 +89,7 @@ function findDistChunkByPrefix(prefix) {
   try {
     const entries = fs.readdirSync(distRoot, { withFileTypes: true });
     const match = entries.find(
-      (entry) =>
-        entry.isFile() && entry.name.startsWith(`${prefix}-`) && entry.name.endsWith(".js"),
+      (entry) => entry.isFile() && entry.name.startsWith(`${prefix}-`) && entry.name.endsWith(".js"),
     );
     return match ? path.join(distRoot, match.name) : null;
   } catch {
@@ -181,18 +178,10 @@ function loadDiagnosticEventsModule() {
     return diagnosticEventsModule;
   }
 
-  const directDistCandidate = path.resolve(
-    __dirname,
-    "..",
-    "..",
-    "dist",
-    "infra",
-    "diagnostic-events.js",
-  );
+  const directDistCandidate = path.resolve(__dirname, "..", "..", "dist", "infra", "diagnostic-events.js");
   if (!shouldPreferSourceGraph) {
     const distCandidate =
-      (fs.existsSync(directDistCandidate) && directDistCandidate) ||
-      findDistChunkByPrefix("diagnostic-events");
+      (fs.existsSync(directDistCandidate) && directDistCandidate) || findDistChunkByPrefix("diagnostic-events");
     if (distCandidate) {
       try {
         diagnosticEventsModule = normalizeDiagnosticEventsModule(getJiti(true)(distCandidate));

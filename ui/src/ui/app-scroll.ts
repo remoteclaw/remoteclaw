@@ -32,9 +32,7 @@ export function scheduleChatScroll(host: ScrollHost, force = false, smooth = fal
     if (container) {
       const overflowY = getComputedStyle(container).overflowY;
       const canScroll =
-        overflowY === "auto" ||
-        overflowY === "scroll" ||
-        container.scrollHeight - container.clientHeight > 1;
+        overflowY === "auto" || overflowY === "scroll" || container.scrollHeight - container.clientHeight > 1;
       if (canScroll) {
         return container;
       }
@@ -54,8 +52,7 @@ export function scheduleChatScroll(host: ScrollHost, force = false, smooth = fal
       // force=true only overrides when we haven't auto-scrolled yet (initial load).
       // After initial load, respect the user's scroll position.
       const effectiveForce = force && !host.chatHasAutoScrolled;
-      const shouldStick =
-        effectiveForce || host.chatUserNearBottom || distanceFromBottom < NEAR_BOTTOM_THRESHOLD;
+      const shouldStick = effectiveForce || host.chatUserNearBottom || distanceFromBottom < NEAR_BOTTOM_THRESHOLD;
 
       if (!shouldStick) {
         // User is scrolled up — flag that new content arrived below.
@@ -85,12 +82,9 @@ export function scheduleChatScroll(host: ScrollHost, force = false, smooth = fal
         if (!latest) {
           return;
         }
-        const latestDistanceFromBottom =
-          latest.scrollHeight - latest.scrollTop - latest.clientHeight;
+        const latestDistanceFromBottom = latest.scrollHeight - latest.scrollTop - latest.clientHeight;
         const shouldStickRetry =
-          effectiveForce ||
-          host.chatUserNearBottom ||
-          latestDistanceFromBottom < NEAR_BOTTOM_THRESHOLD;
+          effectiveForce || host.chatUserNearBottom || latestDistanceFromBottom < NEAR_BOTTOM_THRESHOLD;
         if (!shouldStickRetry) {
           return;
         }
@@ -112,8 +106,7 @@ export function scheduleLogsScroll(host: ScrollHost, force = false) {
       if (!container) {
         return;
       }
-      const distanceFromBottom =
-        container.scrollHeight - container.scrollTop - container.clientHeight;
+      const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
       const shouldStick = force || distanceFromBottom < 80;
       if (!shouldStick) {
         return;

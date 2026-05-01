@@ -123,11 +123,7 @@ export class ChatLog extends Container {
     existing.setArgs(args);
   }
 
-  updateToolResult(
-    toolCallId: string,
-    result: unknown,
-    opts?: { isError?: boolean; partial?: boolean },
-  ) {
+  updateToolResult(toolCallId: string, result: unknown, opts?: { isError?: boolean; partial?: boolean }) {
     const existing = this.toolById.get(toolCallId);
     if (!existing) {
       return;

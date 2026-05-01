@@ -4,9 +4,7 @@ export type ConnectedChannelStatusPatch = {
   lastEventAt: number;
 };
 
-export function createConnectedChannelStatusPatch(
-  at: number = Date.now(),
-): ConnectedChannelStatusPatch {
+export function createConnectedChannelStatusPatch(at: number = Date.now()): ConnectedChannelStatusPatch {
   return {
     connected: true,
     lastConnectedAt: at,

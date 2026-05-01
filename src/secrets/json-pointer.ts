@@ -22,8 +22,7 @@ export function readJsonPointer(
   if (!pointer.startsWith("/")) {
     return failOrUndefined({
       onMissing,
-      message:
-        'File-backed secret ids must be absolute JSON pointers (for example: "/providers/openai/apiKey").',
+      message: 'File-backed secret ids must be absolute JSON pointers (for example: "/providers/openai/apiKey").',
     });
   }
 
@@ -63,11 +62,7 @@ export function readJsonPointer(
   return current;
 }
 
-export function setJsonPointer(
-  root: Record<string, unknown>,
-  pointer: string,
-  value: unknown,
-): void {
+export function setJsonPointer(root: Record<string, unknown>, pointer: string, value: unknown): void {
   if (!pointer.startsWith("/")) {
     throw new Error(`Invalid JSON pointer "${pointer}".`);
   }

@@ -18,10 +18,7 @@ import {
   toWhatsappJid,
 } from "./utils.js";
 
-async function withTempDir<T>(
-  prefix: string,
-  run: (dir: string) => T | Promise<T>,
-): Promise<Awaited<T>> {
+async function withTempDir<T>(prefix: string, run: (dir: string) => T | Promise<T>): Promise<Awaited<T>> {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
   try {
     return await run(dir);
@@ -157,9 +154,9 @@ describe("shortenHomePath", () => {
     vi.stubEnv("REMOTECLAW_HOME", "/srv/remoteclaw-home");
     vi.stubEnv("HOME", "/home/other");
 
-    expect(
-      shortenHomePath(`${path.resolve("/srv/remoteclaw-home")}/.remoteclaw/remoteclaw.json`),
-    ).toBe("$REMOTECLAW_HOME/.remoteclaw/remoteclaw.json");
+    expect(shortenHomePath(`${path.resolve("/srv/remoteclaw-home")}/.remoteclaw/remoteclaw.json`)).toBe(
+      "$REMOTECLAW_HOME/.remoteclaw/remoteclaw.json",
+    );
 
     vi.unstubAllEnvs();
   });
@@ -170,11 +167,9 @@ describe("shortenHomeInString", () => {
     vi.stubEnv("REMOTECLAW_HOME", "/srv/remoteclaw-home");
     vi.stubEnv("HOME", "/home/other");
 
-    expect(
-      shortenHomeInString(
-        `config: ${path.resolve("/srv/remoteclaw-home")}/.remoteclaw/remoteclaw.json`,
-      ),
-    ).toBe("config: $REMOTECLAW_HOME/.remoteclaw/remoteclaw.json");
+    expect(shortenHomeInString(`config: ${path.resolve("/srv/remoteclaw-home")}/.remoteclaw/remoteclaw.json`)).toBe(
+      "config: $REMOTECLAW_HOME/.remoteclaw/remoteclaw.json",
+    );
 
     vi.unstubAllEnvs();
   });
@@ -225,9 +220,7 @@ describe("resolveUserPath", () => {
     vi.stubEnv("REMOTECLAW_HOME", "/srv/remoteclaw-home");
     vi.stubEnv("HOME", "/home/other");
 
-    expect(resolveUserPath("~/remoteclaw")).toBe(
-      path.resolve("/srv/remoteclaw-home", "remoteclaw"),
-    );
+    expect(resolveUserPath("~/remoteclaw")).toBe(path.resolve("/srv/remoteclaw-home", "remoteclaw"));
 
     vi.unstubAllEnvs();
   });
@@ -238,9 +231,7 @@ describe("resolveUserPath", () => {
       REMOTECLAW_HOME: "/srv/remoteclaw-home",
     } as NodeJS.ProcessEnv;
 
-    expect(resolveUserPath("~/remoteclaw", env)).toBe(
-      path.resolve("/srv/remoteclaw-home", "remoteclaw"),
-    );
+    expect(resolveUserPath("~/remoteclaw", env)).toBe(path.resolve("/srv/remoteclaw-home", "remoteclaw"));
   });
 
   it("keeps blank paths blank", () => {

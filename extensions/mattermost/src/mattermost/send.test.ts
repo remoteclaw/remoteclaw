@@ -1,8 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  expectProvidedCfgSkipsRuntimeLoad,
-  expectRuntimeCfgFallback,
-} from "../../../test-utils/send-config.js";
+import { expectProvidedCfgSkipsRuntimeLoad, expectRuntimeCfgFallback } from "../../../test-utils/send-config.js";
 import { parseMattermostTarget, sendMessageMattermost } from "./send.js";
 import { resetMattermostOpaqueTargetCacheForTests } from "./target-resolution.js";
 
@@ -152,12 +149,9 @@ describe("sendMessageMattermost", () => {
       mediaLocalRoots: ["/tmp/agent-workspace"],
     });
 
-    expect(mockState.loadOutboundMediaFromUrl).toHaveBeenCalledWith(
-      "file:///tmp/agent-workspace/photo.png",
-      {
-        mediaLocalRoots: ["/tmp/agent-workspace"],
-      },
-    );
+    expect(mockState.loadOutboundMediaFromUrl).toHaveBeenCalledWith("file:///tmp/agent-workspace/photo.png", {
+      mediaLocalRoots: ["/tmp/agent-workspace"],
+    });
     expect(mockState.uploadMattermostFile).toHaveBeenCalledWith(
       {},
       expect.objectContaining({
@@ -223,9 +217,7 @@ describe("sendMessageMattermost", () => {
 
   it("falls back to a channel target when bare Mattermost id is not a user", async () => {
     const channelId = "aaaaaaaaaaaaaaaaaaaaaaaaaa";
-    mockState.fetchMattermostUser.mockRejectedValueOnce(
-      new Error("Mattermost API 404 Not Found: user not found"),
-    );
+    mockState.fetchMattermostUser.mockRejectedValueOnce(new Error("Mattermost API 404 Not Found: user not found"));
     mockState.loadOutboundMediaFromUrl.mockResolvedValueOnce({
       buffer: Buffer.from("media-bytes"),
       fileName: "photo.png",

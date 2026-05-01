@@ -1,11 +1,6 @@
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import {
-  applyPathPrepend,
-  findPathKey,
-  mergePathPrepend,
-  normalizePathPrepend,
-} from "./path-prepend.js";
+import { applyPathPrepend, findPathKey, mergePathPrepend, normalizePathPrepend } from "./path-prepend.js";
 
 const env = (value: Record<string, string>) => value;
 const pathLine = (...parts: string[]) => parts.join(path.delimiter);

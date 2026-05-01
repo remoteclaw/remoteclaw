@@ -89,10 +89,7 @@ export function validateTwilioSignature(
   const dataToSign = buildTwilioDataToSign(url, params);
 
   // HMAC-SHA1 with auth token, then base64 encode
-  const expectedSignature = crypto
-    .createHmac("sha1", authToken)
-    .update(dataToSign)
-    .digest("base64");
+  const expectedSignature = crypto.createHmac("sha1", authToken).update(dataToSign).digest("base64");
 
   // Use timing-safe comparison to prevent timing attacks
   return timingSafeEqual(signature, expectedSignature);
@@ -100,9 +97,7 @@ export function validateTwilioSignature(
 
 function buildTwilioDataToSign(url: string, params: URLSearchParams): string {
   let dataToSign = url;
-  const sortedParams = Array.from(params.entries()).toSorted((a, b) =>
-    a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0,
-  );
+  const sortedParams = Array.from(params.entries()).toSorted((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
   for (const [key, value] of sortedParams) {
     dataToSign += key + value;
   }
@@ -174,8 +169,7 @@ function isValidHostname(hostname: string): boolean {
   }
   // RFC 1123 hostname: alphanumeric, hyphens, dots
   // Also allow ngrok/tunnel subdomains
-  const hostnameRegex =
-    /^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$/;
+  const hostnameRegex = /^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$/;
   return hostnameRegex.test(hostname);
 }
 
@@ -269,8 +263,7 @@ export function reconstructWebhookUrl(ctx: WebhookContext, options?: WebhookUrlO
   const trustedProxyIPs = options?.trustedProxyIPs?.filter(Boolean) ?? [];
   const hasTrustedProxyIPs = trustedProxyIPs.length > 0;
   const remoteIP = options?.remoteIP ?? ctx.remoteAddress;
-  const fromTrustedProxy =
-    !hasTrustedProxyIPs || (remoteIP ? trustedProxyIPs.includes(remoteIP) : false);
+  const fromTrustedProxy = !hasTrustedProxyIPs || (remoteIP ? trustedProxyIPs.includes(remoteIP) : false);
 
   // Only trust forwarding headers if: (has whitelist OR explicitly trusted) AND from trusted proxy
   const shouldTrustForwardingHeaders = (hasAllowedHosts || explicitlyTrusted) && fromTrustedProxy;
@@ -346,11 +339,7 @@ export function reconstructWebhookUrl(ctx: WebhookContext, options?: WebhookUrlO
   return `${proto}://${host}${path}`;
 }
 
-function buildTwilioVerificationUrl(
-  ctx: WebhookContext,
-  publicUrl?: string,
-  urlOptions?: WebhookUrlOptions,
-): string {
+function buildTwilioVerificationUrl(ctx: WebhookContext, publicUrl?: string, urlOptions?: WebhookUrlOptions): string {
   if (!publicUrl) {
     return reconstructWebhookUrl(ctx, urlOptions);
   }
@@ -445,9 +434,7 @@ function createTwilioReplayKey(params: {
   requestParams: URLSearchParams;
 }): string {
   const canonicalParams = buildCanonicalTwilioParamString(params.requestParams);
-  return `twilio:req:${sha256Hex(
-    `${params.verificationUrl}\n${canonicalParams}\n${params.signature}`,
-  )}`;
+  return `twilio:req:${sha256Hex(`${params.verificationUrl}\n${canonicalParams}\n${params.signature}`)}`;
 }
 
 function decodeBase64OrBase64Url(input: string): Buffer {
@@ -534,6 +521,8 @@ export function verifyTelnyxWebhook(
   try {
     const signedPayload = `${timestamp}|${ctx.rawBody}`;
     const signatureBuffer = decodeBase64OrBase64Url(signature);
+    // Canonicalize equivalent Base64/Base64URL encodings before replay hashing.
+    const canonicalSignature = signatureBuffer.toString("base64");
     const key = importEd25519PublicKey(publicKey);
 
     const isValid = crypto.verify(null, Buffer.from(signedPayload), key, signatureBuffer);
@@ -548,7 +537,7 @@ export function verifyTelnyxWebhook(
       return { ok: false, reason: "Timestamp too old" };
     }
 
-    const replayKey = `telnyx:${sha256Hex(`${timestamp}\n${signature}\n${ctx.rawBody}`)}`;
+    const replayKey = `telnyx:${sha256Hex(`${timestamp}\n${canonicalSignature}\n${ctx.rawBody}`)}`;
     const isReplay = markReplay(telnyxReplayCache, replayKey);
     return { ok: true, isReplay, verifiedRequestKey: replayKey };
   } catch (err) {
@@ -684,8 +673,7 @@ export function verifyTwilioWebhook(
   }
 
   // Check if this is ngrok free tier - the URL might have different format
-  const isNgrokFreeTier =
-    verificationUrl.includes(".ngrok-free.app") || verificationUrl.includes(".ngrok.io");
+  const isNgrokFreeTier = verificationUrl.includes(".ngrok-free.app") || verificationUrl.includes(".ngrok.io");
 
   return {
     ok: false,
@@ -802,11 +790,7 @@ function sortedParamsString(params: PlivoParamMap): string {
   return parts.join("");
 }
 
-function constructPlivoV3BaseUrl(params: {
-  method: "GET" | "POST";
-  url: string;
-  postParams: PlivoParamMap;
-}): string {
+function constructPlivoV3BaseUrl(params: { method: "GET" | "POST"; url: string; postParams: PlivoParamMap }): string {
   const hasPostParams = Object.keys(params.postParams).length > 0;
   const u = new URL(params.url);
   const baseNoQuery = `${u.protocol}//${u.host}${u.pathname}`;

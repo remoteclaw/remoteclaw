@@ -36,7 +36,7 @@ export interface TimestampInjectionOptions {
  * these handlers, so there is no double-stamping risk. The detection
  * pattern is a safety net for edge cases.
  *
- * @see https://github.com/moltbot/moltbot/issues/3658
+ * @see https://github.com/remoteclaw/remoteclaw/issues/3658
  */
 export function injectTimestamp(message: string, opts?: TimestampInjectionOptions): string {
   if (!message.trim()) {
@@ -63,9 +63,7 @@ export function injectTimestamp(message: string, opts?: TimestampInjectionOption
 
   // 3-letter DOW: small models (8B) can't reliably derive day-of-week from
   // a date, and may treat a bare "Wed" as a typo. Costs ~1 token.
-  const dow = new Intl.DateTimeFormat("en-US", { timeZone: timezone, weekday: "short" }).format(
-    now,
-  );
+  const dow = new Intl.DateTimeFormat("en-US", { timeZone: timezone, weekday: "short" }).format(now);
 
   return `[${dow} ${formatted}] ${message}`;
 }

@@ -46,9 +46,7 @@ describe("web auto-reply", () => {
       reply,
       dispatch: async (
         id = "msg1",
-        overrides?: Partial<
-          Pick<WebInboundMessage, "from" | "conversationId" | "to" | "accountId" | "chatId">
-        >,
+        overrides?: Partial<Pick<WebInboundMessage, "from" | "conversationId" | "to" | "accountId" | "chatId">>,
       ) => {
         await capturedOnMessage?.({
           body: "hello",
@@ -98,8 +96,7 @@ describe("web auto-reply", () => {
     return vi.spyOn(globalThis, "fetch").mockResolvedValue({
       ok: true,
       body: true,
-      arrayBuffer: async () =>
-        buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength),
+      arrayBuffer: async () => buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength),
       headers: { get: () => mime },
       status: 200,
     } as unknown as Response);
@@ -188,15 +185,13 @@ describe("web auto-reply", () => {
       let fetchIndex = 0;
 
       const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async () => {
-        const matched =
-          renderedFormats[Math.min(fetchIndex, renderedFormats.length - 1)] ?? renderedFormats[0];
+        const matched = renderedFormats[Math.min(fetchIndex, renderedFormats.length - 1)] ?? renderedFormats[0];
         fetchIndex += 1;
         const { image, mime } = matched;
         return {
           ok: true,
           body: true,
-          arrayBuffer: async () =>
-            image.buffer.slice(image.byteOffset, image.byteOffset + image.byteLength),
+          arrayBuffer: async () => image.buffer.slice(image.byteOffset, image.byteOffset + image.byteLength),
           headers: { get: () => mime },
           status: 200,
         } as unknown as Response;
@@ -350,8 +345,7 @@ describe("web auto-reply", () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
       ok: true,
       body: true,
-      arrayBuffer: async () =>
-        smallPng.buffer.slice(smallPng.byteOffset, smallPng.byteOffset + smallPng.byteLength),
+      arrayBuffer: async () => smallPng.buffer.slice(smallPng.byteOffset, smallPng.byteOffset + smallPng.byteLength),
       headers: { get: () => "image/png" },
       status: 200,
     } as unknown as Response);

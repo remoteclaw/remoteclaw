@@ -7,11 +7,7 @@ export type MattermostProbe = BaseProbeResult & {
   bot?: MattermostUser;
 };
 
-export async function probeMattermost(
-  baseUrl: string,
-  botToken: string,
-  timeoutMs = 2500,
-): Promise<MattermostProbe> {
+export async function probeMattermost(baseUrl: string, botToken: string, timeoutMs = 2500): Promise<MattermostProbe> {
   const normalized = normalizeMattermostBaseUrl(baseUrl);
   if (!normalized) {
     return { ok: false, error: "baseUrl missing" };

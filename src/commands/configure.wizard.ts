@@ -16,19 +16,8 @@ import { removeChannelConfigWizard } from "./configure.channels.js";
 import { maybeInstallDaemon } from "./configure.daemon.js";
 import { promptAuthConfig } from "./configure.gateway-auth.js";
 import { promptGatewayConfig } from "./configure.gateway.js";
-import type {
-  ChannelsWizardMode,
-  ConfigureWizardParams,
-  WizardSection,
-} from "./configure.shared.js";
-import {
-  CONFIGURE_SECTION_OPTIONS,
-  confirm,
-  intro,
-  outro,
-  select,
-  text,
-} from "./configure.shared.js";
+import type { ChannelsWizardMode, ConfigureWizardParams, WizardSection } from "./configure.shared.js";
+import { CONFIGURE_SECTION_OPTIONS, confirm, intro, outro, select, text } from "./configure.shared.js";
 import { formatHealthCheckFailure } from "./health-format.js";
 import { healthCommand } from "./health.js";
 import { noteChannelStatus, setupChannels } from "./onboard-channels.js";
@@ -87,12 +76,9 @@ async function runGatewayHealthCheck(params: {
     value: params.cfg.gateway?.auth?.password,
     path: "gateway.auth.password",
   });
-  const token =
-    process.env.REMOTECLAW_GATEWAY_TOKEN ?? process.env.CLAWDBOT_GATEWAY_TOKEN ?? configuredToken;
+  const token = process.env.REMOTECLAW_GATEWAY_TOKEN ?? process.env.CLAWDBOT_GATEWAY_TOKEN ?? configuredToken;
   const password =
-    process.env.REMOTECLAW_GATEWAY_PASSWORD ??
-    process.env.CLAWDBOT_GATEWAY_PASSWORD ??
-    configuredPassword;
+    process.env.REMOTECLAW_GATEWAY_PASSWORD ?? process.env.CLAWDBOT_GATEWAY_PASSWORD ?? configuredPassword;
 
   await waitForGatewayReachable({
     url: wsUrl,
@@ -116,10 +102,7 @@ async function runGatewayHealthCheck(params: {
   }
 }
 
-async function promptConfigureSection(
-  runtime: RuntimeEnv,
-  hasSelection: boolean,
-): Promise<ConfigureSectionChoice> {
+async function promptConfigureSection(runtime: RuntimeEnv, hasSelection: boolean): Promise<ConfigureSectionChoice> {
   return guardCancel(
     await select<ConfigureSectionChoice>({
       message: "Select sections to configure",
@@ -159,19 +142,11 @@ async function promptChannelMode(runtime: RuntimeEnv): Promise<ChannelsWizardMod
   ) as ChannelsWizardMode;
 }
 
-async function promptWebToolsConfig(
-  nextConfig: RemoteClawConfig,
-  runtime: RuntimeEnv,
-): Promise<RemoteClawConfig> {
+async function promptWebToolsConfig(nextConfig: RemoteClawConfig, runtime: RuntimeEnv): Promise<RemoteClawConfig> {
   const existingSearch = nextConfig.tools?.web?.search;
   const existingFetch = nextConfig.tools?.web?.fetch;
-  const {
-    SEARCH_PROVIDER_OPTIONS,
-    resolveExistingKey,
-    hasExistingKey,
-    applySearchKey,
-    hasKeyInEnv,
-  } = await import("./onboard-search.js");
+  const { SEARCH_PROVIDER_OPTIONS, resolveExistingKey, hasExistingKey, applySearchKey, hasKeyInEnv } =
+    await import("./onboard-search.js");
   type SP = (typeof SEARCH_PROVIDER_OPTIONS)[number]["value"];
 
   const hasKeyForProvider = (provider: string): boolean => {
@@ -187,10 +162,7 @@ async function promptWebToolsConfig(
     if (stored && SEARCH_PROVIDER_OPTIONS.some((e) => e.value === stored)) {
       return stored;
     }
-    return (
-      SEARCH_PROVIDER_OPTIONS.find((e) => hasKeyForProvider(e.value))?.value ??
-      SEARCH_PROVIDER_OPTIONS[0].value
-    );
+    return SEARCH_PROVIDER_OPTIONS.find((e) => hasKeyForProvider(e.value))?.value ?? SEARCH_PROVIDER_OPTIONS[0].value;
   })();
 
   note(
@@ -205,8 +177,7 @@ async function promptWebToolsConfig(
   const enableSearch = guardCancel(
     await confirm({
       message: "Enable web_search?",
-      initialValue:
-        existingSearch?.enabled ?? SEARCH_PROVIDER_OPTIONS.some((e) => hasKeyForProvider(e.value)),
+      initialValue: existingSearch?.enabled ?? SEARCH_PROVIDER_OPTIONS.some((e) => hasKeyForProvider(e.value)),
     }),
     runtime,
   );
@@ -302,10 +273,7 @@ async function promptWebToolsConfig(
   };
 }
 
-export async function runConfigureWizard(
-  opts: ConfigureWizardParams,
-  runtime: RuntimeEnv = defaultRuntime,
-) {
+export async function runConfigureWizard(opts: ConfigureWizardParams, runtime: RuntimeEnv = defaultRuntime) {
   try {
     printWizardHeader(runtime);
     intro(opts.command === "update" ? "RemoteClaw update wizard" : "RemoteClaw configure");
@@ -328,9 +296,7 @@ export async function runConfigureWizard(
         );
       }
       if (!snapshot.valid) {
-        outro(
-          `Config invalid. Run \`${formatCliCommand("remoteclaw doctor")}\` to repair it, then re-run configure.`,
-        );
+        outro(`Config invalid. Run \`${formatCliCommand("remoteclaw doctor")}\` to repair it, then re-run configure.`);
         runtime.exit(1);
         return;
       }
@@ -349,14 +315,9 @@ export async function runConfigureWizard(
     });
     const localProbe = await probeGatewayReachable({
       url: localUrl,
-      token:
-        process.env.REMOTECLAW_GATEWAY_TOKEN ??
-        process.env.CLAWDBOT_GATEWAY_TOKEN ??
-        baseLocalProbeToken,
+      token: process.env.REMOTECLAW_GATEWAY_TOKEN ?? process.env.CLAWDBOT_GATEWAY_TOKEN ?? baseLocalProbeToken,
       password:
-        process.env.REMOTECLAW_GATEWAY_PASSWORD ??
-        process.env.CLAWDBOT_GATEWAY_PASSWORD ??
-        baseLocalProbePassword,
+        process.env.REMOTECLAW_GATEWAY_PASSWORD ?? process.env.CLAWDBOT_GATEWAY_PASSWORD ?? baseLocalProbePassword,
     });
     const remoteUrl = baseConfig.gateway?.remote?.url?.trim() ?? "";
     const baseRemoteProbeToken = await resolveGatewaySecretInputForWizard({
@@ -378,9 +339,7 @@ export async function runConfigureWizard(
           {
             value: "local",
             label: "Local (this machine)",
-            hint: localProbe.ok
-              ? `Gateway reachable (${localUrl})`
-              : `No gateway detected (${localUrl})`,
+            hint: localProbe.ok ? `Gateway reachable (${localUrl})` : `No gateway detected (${localUrl})`,
           },
           {
             value: "remote",
@@ -421,9 +380,7 @@ export async function runConfigureWizard(
       didSetGatewayMode = true;
     }
     let workspaceDir =
-      nextConfig.agents?.defaults?.workspace ??
-      baseConfig.agents?.defaults?.workspace ??
-      DEFAULT_WORKSPACE;
+      nextConfig.agents?.defaults?.workspace ?? baseConfig.agents?.defaults?.workspace ?? DEFAULT_WORKSPACE;
     let gatewayPort = resolveGatewayPort(baseConfig);
 
     const persistConfig = async () => {
@@ -445,9 +402,7 @@ export async function runConfigureWizard(
       );
       workspaceDir = resolveUserPath(String(workspaceInput ?? "").trim() || DEFAULT_WORKSPACE);
       if (!snapshot.exists) {
-        const indicators = ["MEMORY.md", "memory", ".git"].map((name) =>
-          nodePath.join(workspaceDir, name),
-        );
+        const indicators = ["MEMORY.md", "memory", ".git"].map((name) => nodePath.join(workspaceDir, name));
         const hasExistingContent = (
           await Promise.all(
             indicators.map(async (candidate) => {

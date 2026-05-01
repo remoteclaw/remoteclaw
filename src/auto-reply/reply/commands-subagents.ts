@@ -34,9 +34,7 @@ export const handleSubagentsCommand: CommandHandler = async (params, allowTextCo
   }
 
   if (!params.command.isAuthorizedSender) {
-    logVerbose(
-      `Ignoring ${handledPrefix} from unauthorized sender: ${params.command.senderId || "<unknown>"}`,
-    );
+    logVerbose(`Ignoring ${handledPrefix} from unauthorized sender: ${params.command.senderId || "<unknown>"}`);
     return { shouldContinue: false };
   }
 

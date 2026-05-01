@@ -63,10 +63,7 @@ import { resolveDiscordDmCommandAccess } from "./dm-command-auth.js";
 import { handleDiscordDmCommandDecision } from "./dm-command-decision.js";
 import { resolveDiscordChannelInfo } from "./message-utils.js";
 import { buildDiscordNativeCommandContext } from "./native-command-context.js";
-import {
-  resolveDiscordBoundConversationRoute,
-  resolveDiscordEffectiveRoute,
-} from "./route-resolution.js";
+import { resolveDiscordBoundConversationRoute, resolveDiscordEffectiveRoute } from "./route-resolution.js";
 import { resolveDiscordSenderIdentity } from "./sender-identity.js";
 import type { ThreadBindingManager } from "./thread-bindings.js";
 import { resolveDiscordThreadParentInfo } from "./threading.js";
@@ -85,8 +82,7 @@ function resolveDiscordNativeCommandAllowlistAccess(params: {
   if (!commandsAllowFrom || typeof commandsAllowFrom !== "object") {
     return { configured: false, allowed: false } as const;
   }
-  const configured =
-    Array.isArray(commandsAllowFrom.discord) || Array.isArray(commandsAllowFrom["*"]);
+  const configured = Array.isArray(commandsAllowFrom.discord) || Array.isArray(commandsAllowFrom["*"]);
   if (!configured) {
     return { configured: false, allowed: false } as const;
   }
@@ -144,13 +140,11 @@ function buildDiscordCommandOptions(params: {
     const resolvedChoices = resolveCommandArgChoices({ command, arg, cfg });
     const shouldAutocomplete =
       arg.preferAutocomplete === true ||
-      (resolvedChoices.length > 0 &&
-        (typeof arg.choices === "function" || resolvedChoices.length > 25));
+      (resolvedChoices.length > 0 && (typeof arg.choices === "function" || resolvedChoices.length > 25));
     const autocomplete = shouldAutocomplete
       ? async (interaction: AutocompleteInteraction) => {
           const focused = interaction.options.getFocused();
-          const focusValue =
-            typeof focused?.value === "string" ? focused.value.trim().toLowerCase() : "";
+          const focusValue = typeof focused?.value === "string" ? focused.value.trim().toLowerCase() : "";
           const choices = resolveCommandArgChoices({ command, arg, cfg });
           const filtered = focusValue
             ? choices.filter((choice) => choice.label.toLowerCase().includes(focusValue))
@@ -162,9 +156,7 @@ function buildDiscordCommandOptions(params: {
       : undefined;
     const choices =
       resolvedChoices.length > 0 && !autocomplete
-        ? resolvedChoices
-            .slice(0, 25)
-            .map((choice) => ({ name: choice.label, value: choice.value }))
+        ? resolvedChoices.slice(0, 25).map((choice) => ({ name: choice.label, value: choice.value }))
         : undefined;
     return {
       name: arg.name,
@@ -255,10 +247,7 @@ function hasRenderableReplyPayload(payload: ReplyPayload): boolean {
   return false;
 }
 
-async function safeDiscordInteractionCall<T>(
-  label: string,
-  fn: () => Promise<T>,
-): Promise<T | null> {
+async function safeDiscordInteractionCall<T>(label: string, fn: () => Promise<T>): Promise<T | null> {
   try {
     return await fn();
   } catch (error) {
@@ -290,8 +279,7 @@ function parseDiscordCommandArgData(
   if (!data || typeof data !== "object") {
     return null;
   }
-  const coerce = (value: unknown) =>
-    typeof value === "string" || typeof value === "number" ? String(value) : "";
+  const coerce = (value: unknown) => (typeof value === "string" || typeof value === "number" ? String(value) : "");
   const rawCommand = coerce(data.command);
   const rawArg = coerce(data.arg);
   const rawValue = coerce(data.value);
@@ -474,8 +462,7 @@ function buildDiscordCommandArgMenu(params: {
     );
     return new Row(buttons);
   });
-  const content =
-    menu.title ?? `Choose ${menu.arg.description || menu.arg.name} for /${commandLabel}.`;
+  const content = menu.title ?? `Choose ${menu.arg.description || menu.arg.name} for /${commandLabel}.`;
   return { content, components: rows };
 }
 
@@ -488,15 +475,7 @@ export function createDiscordNativeCommand(params: {
   ephemeralDefault: boolean;
   threadBindings: ThreadBindingManager;
 }): Command {
-  const {
-    command,
-    cfg,
-    discordConfig,
-    accountId,
-    sessionPrefix,
-    ephemeralDefault,
-    threadBindings,
-  } = params;
+  const { command, cfg, discordConfig, accountId, sessionPrefix, ephemeralDefault, threadBindings } = params;
   const commandDefinition =
     findCommandByNativeName(command.name, "discord") ??
     ({
@@ -641,13 +620,7 @@ async function dispatchDiscordCommandInteraction(params: {
       name: sender.name,
       tag: sender.tag,
     },
-    chatType: isDirectMessage
-      ? "direct"
-      : isThreadChannel
-        ? "thread"
-        : interaction.guild
-          ? "channel"
-          : "group",
+    chatType: isDirectMessage ? "direct" : isThreadChannel ? "thread" : interaction.guild ? "channel" : "group",
     conversationId: rawChannelId || undefined,
   });
   const guildInfo = resolveDiscordGuildEntry({
@@ -1008,9 +981,7 @@ async function dispatchDiscordCommandInteraction(params: {
     replyOptions: {
       skillFilter: channelConfig?.skills,
       disableBlockStreaming:
-        typeof discordConfig?.blockStreaming === "boolean"
-          ? !discordConfig.blockStreaming
-          : undefined,
+        typeof discordConfig?.blockStreaming === "boolean" ? !discordConfig.blockStreaming : undefined,
     },
   });
 

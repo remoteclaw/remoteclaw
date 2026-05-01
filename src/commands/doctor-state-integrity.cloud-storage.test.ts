@@ -7,14 +7,7 @@ describe("detectMacCloudSyncedStateDir", () => {
   const home = "/Users/tester";
 
   it("detects state dir under iCloud Drive", () => {
-    const stateDir = path.join(
-      home,
-      "Library",
-      "Mobile Documents",
-      "com~apple~CloudDocs",
-      "RemoteClaw",
-      ".remoteclaw",
-    );
+    const stateDir = path.join(home, "Library", "Mobile Documents", "com~apple~CloudDocs", "RemoteClaw", ".remoteclaw");
 
     const result = detectMacCloudSyncedStateDir(stateDir, {
       platform: "darwin",
@@ -28,14 +21,7 @@ describe("detectMacCloudSyncedStateDir", () => {
   });
 
   it("detects state dir under Library/CloudStorage", () => {
-    const stateDir = path.join(
-      home,
-      "Library",
-      "CloudStorage",
-      "Dropbox",
-      "RemoteClaw",
-      ".remoteclaw",
-    );
+    const stateDir = path.join(home, "Library", "CloudStorage", "Dropbox", "RemoteClaw", ".remoteclaw");
 
     const result = detectMacCloudSyncedStateDir(stateDir, {
       platform: "darwin",
@@ -72,14 +58,7 @@ describe("detectMacCloudSyncedStateDir", () => {
   });
 
   it("ignores cloud-synced symlink prefix when resolved target is local", () => {
-    const symlinkPath = path.join(
-      home,
-      "Library",
-      "CloudStorage",
-      "OneDrive-Personal",
-      "RemoteClaw",
-      ".remoteclaw",
-    );
+    const symlinkPath = path.join(home, "Library", "CloudStorage", "OneDrive-Personal", "RemoteClaw", ".remoteclaw");
     const resolvedLocalPath = path.join(home, ".remoteclaw");
 
     const result = detectMacCloudSyncedStateDir(symlinkPath, {
@@ -116,14 +95,7 @@ describe("detectMacCloudSyncedStateDir", () => {
   });
 
   it("returns null outside darwin", () => {
-    const stateDir = path.join(
-      home,
-      "Library",
-      "Mobile Documents",
-      "com~apple~CloudDocs",
-      "RemoteClaw",
-      ".remoteclaw",
-    );
+    const stateDir = path.join(home, "Library", "Mobile Documents", "com~apple~CloudDocs", "RemoteClaw", ".remoteclaw");
 
     const result = detectMacCloudSyncedStateDir(stateDir, {
       platform: "linux",

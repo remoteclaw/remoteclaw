@@ -127,9 +127,7 @@ export async function addTypingIndicator(params: {
     const backoffCode = getBackoffCodeFromResponse(response);
     if (backoffCode !== undefined) {
       if (getFeishuRuntime().logging.shouldLogVerbose()) {
-        runtime?.log?.(
-          `[feishu] typing indicator response contains backoff code ${backoffCode}, stopping keepalive`,
-        );
+        runtime?.log?.(`[feishu] typing indicator response contains backoff code ${backoffCode}, stopping keepalive`);
       }
       throw new FeishuBackoffError(backoffCode);
     }
@@ -196,9 +194,7 @@ export async function removeTypingIndicator(params: {
   } catch (err) {
     if (isFeishuBackoffError(err)) {
       if (getFeishuRuntime().logging.shouldLogVerbose()) {
-        runtime?.log?.(
-          "[feishu] typing indicator removal hit rate-limit/quota, stopping keepalive",
-        );
+        runtime?.log?.("[feishu] typing indicator removal hit rate-limit/quota, stopping keepalive");
       }
       throw err;
     }

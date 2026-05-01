@@ -18,9 +18,7 @@ describe("msteams polls", () => {
       options: ["Pizza", "Sushi"],
     });
 
-    expect(card.pollId).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
-    );
+    expect(card.pollId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
     expect(card.fallbackText).toBe("Poll: Lunch?\n1. Pizza\n2. Sushi");
   });
 
@@ -153,8 +151,6 @@ describe("memory poll store", () => {
       }),
     );
 
-    await expect(
-      store.recordVote({ pollId: "missing", voterId: "nobody", selections: ["x"] }),
-    ).resolves.toBeNull();
+    await expect(store.recordVote({ pollId: "missing", voterId: "nobody", selections: ["x"] })).resolves.toBeNull();
   });
 });

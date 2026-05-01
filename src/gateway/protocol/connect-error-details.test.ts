@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  readConnectErrorDetailCode,
-  readConnectErrorRecoveryAdvice,
-} from "./connect-error-details.js";
+import { readConnectErrorDetailCode, readConnectErrorRecoveryAdvice } from "./connect-error-details.js";
 
 describe("readConnectErrorDetailCode", () => {
   it("reads structured detail codes", () => {

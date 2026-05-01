@@ -3,10 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { runCommandWithTimeout } from "../process/exec.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
-import {
-  resolveRemoteClawPackageRoot,
-  resolveRemoteClawPackageRootSync,
-} from "./remoteclaw-root.js";
+import { resolveRemoteClawPackageRoot, resolveRemoteClawPackageRootSync } from "./remoteclaw-root.js";
 
 const CONTROL_UI_DIST_PATH_SEGMENTS = ["dist", "control-ui", "index.html"] as const;
 
@@ -38,9 +35,7 @@ export async function resolveControlUiDistIndexHealth(
   };
 }
 
-export function resolveControlUiRepoRoot(
-  argv1: string | undefined = process.argv[1],
-): string | null {
+export function resolveControlUiRepoRoot(argv1: string | undefined = process.argv[1]): string | null {
   if (!argv1) {
     return null;
   }
@@ -56,10 +51,7 @@ export function resolveControlUiRepoRoot(
 
   let dir = path.dirname(normalized);
   for (let i = 0; i < 8; i++) {
-    if (
-      fs.existsSync(path.join(dir, "package.json")) &&
-      fs.existsSync(path.join(dir, "ui", "vite.config.ts"))
-    ) {
+    if (fs.existsSync(path.join(dir, "package.json")) && fs.existsSync(path.join(dir, "ui", "vite.config.ts"))) {
       return dir;
     }
     const parent = path.dirname(dir);
@@ -75,8 +67,7 @@ export function resolveControlUiRepoRoot(
 export async function resolveControlUiDistIndexPath(
   argv1OrOpts?: string | { argv1?: string; moduleUrl?: string },
 ): Promise<string | null> {
-  const argv1 =
-    typeof argv1OrOpts === "string" ? argv1OrOpts : (argv1OrOpts?.argv1 ?? process.argv[1]);
+  const argv1 = typeof argv1OrOpts === "string" ? argv1OrOpts : (argv1OrOpts?.argv1 ?? process.argv[1]);
   const moduleUrl = typeof argv1OrOpts === "object" ? argv1OrOpts?.moduleUrl : undefined;
   if (!argv1) {
     return null;
@@ -108,9 +99,7 @@ export async function resolveControlUiDistIndexPath(
 
   // Fallback: traverse up and find package.json with name "remoteclaw" + dist/control-ui/index.html
   // This handles global installs where path-based resolution might fail.
-  const fallbackStartDirs = new Set(
-    entrypointCandidates.map((candidate) => path.dirname(candidate)),
-  );
+  const fallbackStartDirs = new Set(entrypointCandidates.map((candidate) => path.dirname(candidate)));
   for (const startDir of fallbackStartDirs) {
     let dir = startDir;
     for (let i = 0; i < 8; i++) {
@@ -253,10 +242,7 @@ export function resolveControlUiRootSync(opts: ControlUiRootResolveOptions = {})
   return null;
 }
 
-export function isPackageProvenControlUiRootSync(
-  root: string,
-  opts: ControlUiRootResolveOptions = {},
-): boolean {
+export function isPackageProvenControlUiRootSync(root: string, opts: ControlUiRootResolveOptions = {}): boolean {
   const argv1 = opts.argv1 ?? process.argv[1];
   const cwd = opts.cwd ?? process.cwd();
   const packageRoot = resolveRemoteClawPackageRootSync({
@@ -304,9 +290,7 @@ export async function ensureControlUiAssetsBuilt(
 
   const repoRoot = resolveControlUiRepoRoot(process.argv[1]);
   if (!repoRoot) {
-    const hint = indexFromDist
-      ? `Missing Control UI assets at ${indexFromDist}`
-      : "Missing Control UI assets";
+    const hint = indexFromDist ? `Missing Control UI assets at ${indexFromDist}` : "Missing Control UI assets";
     return {
       ok: false,
       built: false,

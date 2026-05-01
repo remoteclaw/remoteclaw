@@ -2,10 +2,7 @@ import { ChannelType, type RequestClient } from "@buape/carbon";
 import { resolveAckReaction, resolveHumanDelayConfig } from "../../../../src/agents/identity.js";
 import { resolveChunkMode } from "../../../../src/auto-reply/chunk.js";
 import { dispatchInboundMessage } from "../../../../src/auto-reply/dispatch.js";
-import {
-  formatInboundEnvelope,
-  resolveEnvelopeFormatOptions,
-} from "../../../../src/auto-reply/envelope.js";
+import { formatInboundEnvelope, resolveEnvelopeFormatOptions } from "../../../../src/auto-reply/envelope.js";
 import {
   buildPendingHistoryContextFromMap,
   clearHistoryEntriesIfEnabled,
@@ -138,12 +135,7 @@ export async function processDiscordMessage(ctx: DiscordMessagePreflightContext)
   if (isProcessAborted(abortSignal)) {
     return;
   }
-  const forwardedMediaList = await resolveForwardedMediaList(
-    message,
-    mediaMaxBytes,
-    discordRestFetch,
-    ssrfPolicy,
-  );
+  const forwardedMediaList = await resolveForwardedMediaList(message, mediaMaxBytes, discordRestFetch, ssrfPolicy);
   if (isProcessAborted(abortSignal)) {
     return;
   }
@@ -220,22 +212,17 @@ export async function processDiscordMessage(ctx: DiscordMessagePreflightContext)
         channelId: messageChannelId,
       });
   const senderLabel = sender.label;
-  const isForumParent =
-    threadParentType === ChannelType.GuildForum || threadParentType === ChannelType.GuildMedia;
-  const forumParentSlug =
-    isForumParent && threadParentName ? normalizeDiscordSlug(threadParentName) : "";
+  const isForumParent = threadParentType === ChannelType.GuildForum || threadParentType === ChannelType.GuildMedia;
+  const forumParentSlug = isForumParent && threadParentName ? normalizeDiscordSlug(threadParentName) : "";
   const threadChannelId = threadChannel?.id;
-  const isForumStarter =
-    Boolean(threadChannelId && isForumParent && forumParentSlug) && message.id === threadChannelId;
+  const isForumStarter = Boolean(threadChannelId && isForumParent && forumParentSlug) && message.id === threadChannelId;
   const forumContextLine = isForumStarter ? `[Forum parent: #${forumParentSlug}]` : null;
   const groupChannel = isGuildMessage && displayChannelSlug ? `#${displayChannelSlug}` : undefined;
   const groupSubject = isDirectMessage ? undefined : groupChannel;
   const senderName = sender.isPluralKit
     ? (sender.name ?? author.username)
     : (data.member?.nickname ?? author.globalName ?? author.username);
-  const senderUsername = sender.isPluralKit
-    ? (sender.tag ?? sender.name ?? author.username)
-    : author.username;
+  const senderUsername = sender.isPluralKit ? (sender.tag ?? sender.name ?? author.username) : author.username;
   const senderTag = sender.tag;
   const { groupSystemPrompt, ownerAllowFrom, untrustedContext } = buildDiscordInboundAccessContext({
     channelConfig,
@@ -490,9 +477,7 @@ export async function processDiscordMessage(ctx: DiscordMessagePreflightContext)
       })
     : undefined;
   const draftChunking =
-    draftStream && discordStreamMode === "block"
-      ? resolveDiscordDraftStreamingChunking(cfg, accountId)
-      : undefined;
+    draftStream && discordStreamMode === "block" ? resolveDiscordDraftStreamingChunking(cfg, accountId) : undefined;
   const shouldSplitPreviewMessages = discordStreamMode === "block";
   const draftChunker = draftChunking ? new EmbeddedBlockChunker() : undefined;
   let lastPartialText = "";
@@ -521,11 +506,7 @@ export async function processDiscordMessage(ctx: DiscordMessagePreflightContext)
       return undefined;
     }
     const currentPreviewText = discordStreamMode === "block" ? draftText : lastPartialText;
-    if (
-      currentPreviewText &&
-      currentPreviewText.startsWith(trimmed) &&
-      trimmed.length < currentPreviewText.length
-    ) {
+    if (currentPreviewText && currentPreviewText.startsWith(trimmed) && trimmed.length < currentPreviewText.length) {
       return undefined;
     }
     return trimmed;
@@ -547,11 +528,7 @@ export async function processDiscordMessage(ctx: DiscordMessagePreflightContext)
     hasStreamedMessage = true;
     if (discordStreamMode === "partial") {
       // Keep the longer preview to avoid visible punctuation flicker.
-      if (
-        lastPartialText &&
-        lastPartialText.startsWith(cleaned) &&
-        cleaned.length < lastPartialText.length
-      ) {
+      if (lastPartialText && lastPartialText.startsWith(cleaned) && cleaned.length < lastPartialText.length) {
         return;
       }
       lastPartialText = cleaned;
@@ -608,44 +585,71 @@ export async function processDiscordMessage(ctx: DiscordMessagePreflightContext)
   // When draft streaming is active, suppress block streaming to avoid double-streaming.
   const disableBlockStreamingForDraft = draftStream ? true : undefined;
 
-  const { dispatcher, replyOptions, markDispatchIdle, markRunComplete } =
-    createReplyDispatcherWithTyping({
-      ...prefixOptions,
-      humanDelay: resolveHumanDelayConfig(cfg, route.agentId),
-      typingCallbacks,
-      deliver: async (payload: ReplyPayload, info) => {
-        if (isProcessAborted(abortSignal)) {
-          return;
-        }
-        const isFinal = info.kind === "final";
-        if (payload.isReasoning) {
-          // Reasoning/thinking payloads should not be delivered to Discord.
-          return;
-        }
-        if (draftStream && isFinal) {
-          await flushDraft();
-          const hasMedia = Boolean(payload.mediaUrl) || (payload.mediaUrls?.length ?? 0) > 0;
-          const finalText = payload.text;
-          const previewFinalText = resolvePreviewFinalText(finalText);
-          const previewMessageId = draftStream.messageId();
+  const { dispatcher, replyOptions, markDispatchIdle, markRunComplete } = createReplyDispatcherWithTyping({
+    ...prefixOptions,
+    humanDelay: resolveHumanDelayConfig(cfg, route.agentId),
+    typingCallbacks,
+    deliver: async (payload: ReplyPayload, info) => {
+      if (isProcessAborted(abortSignal)) {
+        return;
+      }
+      const isFinal = info.kind === "final";
+      if (payload.isReasoning) {
+        // Reasoning/thinking payloads should not be delivered to Discord.
+        return;
+      }
+      if (draftStream && isFinal) {
+        await flushDraft();
+        const hasMedia = Boolean(payload.mediaUrl) || (payload.mediaUrls?.length ?? 0) > 0;
+        const finalText = payload.text;
+        const previewFinalText = resolvePreviewFinalText(finalText);
+        const previewMessageId = draftStream.messageId();
 
-          // Try to finalize via preview edit (text-only, fits in 2000 chars, not an error)
-          const canFinalizeViaPreviewEdit =
-            !finalizedViaPreviewMessage &&
-            !hasMedia &&
+        // Try to finalize via preview edit (text-only, fits in 2000 chars, not an error)
+        const canFinalizeViaPreviewEdit =
+          !finalizedViaPreviewMessage &&
+          !hasMedia &&
+          typeof previewFinalText === "string" &&
+          typeof previewMessageId === "string" &&
+          !payload.isError;
+
+        if (canFinalizeViaPreviewEdit) {
+          await draftStream.stop();
+          if (isProcessAborted(abortSignal)) {
+            return;
+          }
+          try {
+            await editMessageDiscord(
+              deliverChannelId,
+              previewMessageId,
+              { content: previewFinalText },
+              { rest: client.rest },
+            );
+            finalizedViaPreviewMessage = true;
+            replyReference.markSent();
+            return;
+          } catch (err) {
+            logVerbose(`discord: preview final edit failed; falling back to standard send (${String(err)})`);
+          }
+        }
+
+        // Check if stop() flushed a message we can edit
+        if (!finalizedViaPreviewMessage) {
+          await draftStream.stop();
+          if (isProcessAborted(abortSignal)) {
+            return;
+          }
+          const messageIdAfterStop = draftStream.messageId();
+          if (
+            typeof messageIdAfterStop === "string" &&
             typeof previewFinalText === "string" &&
-            typeof previewMessageId === "string" &&
-            !payload.isError;
-
-          if (canFinalizeViaPreviewEdit) {
-            await draftStream.stop();
-            if (isProcessAborted(abortSignal)) {
-              return;
-            }
+            !hasMedia &&
+            !payload.isError
+          ) {
             try {
               await editMessageDiscord(
                 deliverChannelId,
-                previewMessageId,
+                messageIdAfterStop,
                 { content: previewFinalText },
                 { rest: client.rest },
               );
@@ -653,84 +657,52 @@ export async function processDiscordMessage(ctx: DiscordMessagePreflightContext)
               replyReference.markSent();
               return;
             } catch (err) {
-              logVerbose(
-                `discord: preview final edit failed; falling back to standard send (${String(err)})`,
-              );
+              logVerbose(`discord: post-stop preview edit failed; falling back to standard send (${String(err)})`);
             }
           }
-
-          // Check if stop() flushed a message we can edit
-          if (!finalizedViaPreviewMessage) {
-            await draftStream.stop();
-            if (isProcessAborted(abortSignal)) {
-              return;
-            }
-            const messageIdAfterStop = draftStream.messageId();
-            if (
-              typeof messageIdAfterStop === "string" &&
-              typeof previewFinalText === "string" &&
-              !hasMedia &&
-              !payload.isError
-            ) {
-              try {
-                await editMessageDiscord(
-                  deliverChannelId,
-                  messageIdAfterStop,
-                  { content: previewFinalText },
-                  { rest: client.rest },
-                );
-                finalizedViaPreviewMessage = true;
-                replyReference.markSent();
-                return;
-              } catch (err) {
-                logVerbose(
-                  `discord: post-stop preview edit failed; falling back to standard send (${String(err)})`,
-                );
-              }
-            }
-          }
-
-          // Clear the preview and fall through to standard delivery
-          if (!finalizedViaPreviewMessage) {
-            await draftStream.clear();
-          }
-        }
-        if (isProcessAborted(abortSignal)) {
-          return;
         }
 
-        const replyToId = replyReference.use();
-        await deliverDiscordReply({
-          cfg,
-          replies: [payload],
-          target: deliverTarget,
-          token,
-          accountId,
-          rest: client.rest,
-          runtime,
-          replyToId,
-          replyToMode,
-          textLimit,
-          maxLinesPerMessage,
-          tableMode,
-          chunkMode,
-          sessionKey: ctxPayload.SessionKey,
-          threadBindings,
-          mediaLocalRoots,
-        });
-        replyReference.markSent();
-      },
-      onError: (err, info) => {
-        runtime.error?.(danger(`discord ${info.kind} reply failed: ${String(err)}`));
-      },
-      onReplyStart: async () => {
-        if (isProcessAborted(abortSignal)) {
-          return;
+        // Clear the preview and fall through to standard delivery
+        if (!finalizedViaPreviewMessage) {
+          await draftStream.clear();
         }
-        await typingCallbacks.onReplyStart();
-        await statusReactions.setThinking();
-      },
-    });
+      }
+      if (isProcessAborted(abortSignal)) {
+        return;
+      }
+
+      const replyToId = replyReference.use();
+      await deliverDiscordReply({
+        cfg,
+        replies: [payload],
+        target: deliverTarget,
+        token,
+        accountId,
+        rest: client.rest,
+        runtime,
+        replyToId,
+        replyToMode,
+        textLimit,
+        maxLinesPerMessage,
+        tableMode,
+        chunkMode,
+        sessionKey: ctxPayload.SessionKey,
+        threadBindings,
+        mediaLocalRoots,
+      });
+      replyReference.markSent();
+    },
+    onError: (err, info) => {
+      runtime.error?.(danger(`discord ${info.kind} reply failed: ${String(err)}`));
+    },
+    onReplyStart: async () => {
+      if (isProcessAborted(abortSignal)) {
+        return;
+      }
+      await typingCallbacks.onReplyStart();
+      await statusReactions.setThinking();
+    },
+  });
 
   let dispatchResult: Awaited<ReturnType<typeof dispatchInboundMessage>> | null = null;
   let dispatchError = false;
@@ -750,9 +722,7 @@ export async function processDiscordMessage(ctx: DiscordMessagePreflightContext)
         skillFilter: channelConfig?.skills,
         disableBlockStreaming:
           disableBlockStreamingForDraft ??
-          (typeof discordConfig?.blockStreaming === "boolean"
-            ? !discordConfig.blockStreaming
-            : undefined),
+          (typeof discordConfig?.blockStreaming === "boolean" ? !discordConfig.blockStreaming : undefined),
         onPartialReply: draftStream ? (payload) => updateDraftFromPartial(payload.text) : undefined,
         onAssistantMessageStart: draftStream
           ? () => {
@@ -853,9 +823,7 @@ export async function processDiscordMessage(ctx: DiscordMessagePreflightContext)
   }
   if (shouldLogVerbose()) {
     const finalCount = dispatchResult.counts.final;
-    logVerbose(
-      `discord: delivered ${finalCount} reply${finalCount === 1 ? "" : "ies"} to ${replyTarget}`,
-    );
+    logVerbose(`discord: delivered ${finalCount} reply${finalCount === 1 ? "" : "ies"} to ${replyTarget}`);
   }
   if (isGuildMessage) {
     clearHistoryEntriesIfEnabled({

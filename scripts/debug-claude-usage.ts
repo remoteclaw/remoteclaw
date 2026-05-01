@@ -45,8 +45,7 @@ const parseArgs = (): Args => {
 };
 
 const loadAuthProfiles = (agentId: string) => {
-  const stateRoot =
-    process.env.REMOTECLAW_STATE_DIR?.trim() || path.join(os.homedir(), ".remoteclaw");
+  const stateRoot = process.env.REMOTECLAW_STATE_DIR?.trim() || path.join(os.homedir(), ".remoteclaw");
   const authPath = path.join(stateRoot, "agents", agentId, "agent", "auth-profiles.json");
   if (!fs.existsSync(authPath)) {
     throw new Error(`Missing: ${authPath}`);
@@ -97,11 +96,11 @@ const readClaudeCliKeychain = (): {
     return null;
   }
   try {
-    const raw = execFileSync(
-      "security",
-      ["find-generic-password", "-s", "Claude Code-credentials", "-w"],
-      { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 5000 },
-    );
+    const raw = execFileSync("security", ["find-generic-password", "-s", "Claude Code-credentials", "-w"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+      timeout: 5000,
+    });
     const parsed = JSON.parse(raw.trim()) as Record<string, unknown>;
     const oauth = parsed?.claudeAiOauth as Record<string, unknown> | undefined;
     if (!oauth || typeof oauth !== "object") {
@@ -245,13 +244,7 @@ const findClaudeSessionKey = (): { sessionKey: string; source: string } | null =
     return null;
   }
 
-  const firefoxRoot = path.join(
-    os.homedir(),
-    "Library",
-    "Application Support",
-    "Firefox",
-    "Profiles",
-  );
+  const firefoxRoot = path.join(os.homedir(), "Library", "Application Support", "Firefox", "Profiles");
   if (fs.existsSync(firefoxRoot)) {
     for (const entry of fs.readdirSync(firefoxRoot)) {
       const db = path.join(firefoxRoot, entry, "cookies.sqlite");
@@ -277,9 +270,7 @@ const findClaudeSessionKey = (): { sessionKey: string; source: string } | null =
     if (!fs.existsSync(root)) {
       continue;
     }
-    const profiles = fs
-      .readdirSync(root)
-      .filter((name) => name === "Default" || name.startsWith("Profile "));
+    const profiles = fs.readdirSync(root).filter((name) => name === "Default" || name.startsWith("Profile "));
     for (const profile of profiles) {
       const db = path.join(root, profile, "Cookies");
       if (!fs.existsSync(db)) {
@@ -331,9 +322,7 @@ const main = async () => {
       `Claude Code CLI keychain: accessToken=${opts.reveal ? keychain.accessToken : mask(keychain.accessToken)} scopes=${keychain.scopes?.join(",") ?? "(unknown)"}`,
     );
     const oauth = await fetchAnthropicOAuthUsage(keychain.accessToken);
-    console.log(
-      `OAuth usage (keychain): HTTP ${oauth.status} (${oauth.contentType ?? "no content-type"})`,
-    );
+    console.log(`OAuth usage (keychain): HTTP ${oauth.status} (${oauth.contentType ?? "no content-type"})`);
     console.log(oauth.text.slice(0, 200).replace(/\s+/g, " ").trim());
   } else {
     console.log("Claude Code CLI keychain: missing/unreadable");
@@ -344,13 +333,9 @@ const main = async () => {
     console.log("Auth profiles: no Anthropic token profiles found");
   } else {
     for (const entry of anthropic) {
-      console.log(
-        `Auth profiles: ${entry.profileId} token=${opts.reveal ? entry.token : mask(entry.token)}`,
-      );
+      console.log(`Auth profiles: ${entry.profileId} token=${opts.reveal ? entry.token : mask(entry.token)}`);
       const oauth = await fetchAnthropicOAuthUsage(entry.token);
-      console.log(
-        `OAuth usage (${entry.profileId}): HTTP ${oauth.status} (${oauth.contentType ?? "no content-type"})`,
-      );
+      console.log(`OAuth usage (${entry.profileId}): HTTP ${oauth.status} (${oauth.contentType ?? "no content-type"})`);
       console.log(oauth.text.slice(0, 200).replace(/\s+/g, " ").trim());
     }
   }
@@ -367,15 +352,11 @@ const main = async () => {
       : (findClaudeSessionKey()?.source ?? "auto");
 
   if (!sessionKey) {
-    console.log(
-      "Claude web: no sessionKey found (try --session-key or export CLAUDE_AI_SESSION_KEY)",
-    );
+    console.log("Claude web: no sessionKey found (try --session-key or export CLAUDE_AI_SESSION_KEY)");
     return;
   }
 
-  console.log(
-    `Claude web: sessionKey=${opts.reveal ? sessionKey : mask(sessionKey)} (source: ${source})`,
-  );
+  console.log(`Claude web: sessionKey=${opts.reveal ? sessionKey : mask(sessionKey)} (source: ${source})`);
   const web = await fetchClaudeWebUsage(sessionKey);
   if (!web.ok) {
     console.log(`Claude web: ${web.step} HTTP ${web.status}`);

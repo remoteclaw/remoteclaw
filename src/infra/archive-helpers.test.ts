@@ -89,9 +89,7 @@ describe("archive helpers", () => {
 
   it("returns work results and propagates errors before timeout", async () => {
     await expect(withTimeout(Promise.resolve("ok"), 100, "extract zip")).resolves.toBe("ok");
-    await expect(
-      withTimeout(Promise.reject(new Error("boom")), 100, "extract zip"),
-    ).rejects.toThrow("boom");
+    await expect(withTimeout(Promise.reject(new Error("boom")), 100, "extract zip")).rejects.toThrow("boom");
   });
 
   it("rejects when archive work exceeds the timeout", async () => {
@@ -118,11 +116,7 @@ describe("archive helpers", () => {
       { path: "package/link", type: "SymbolicLink", size: 0 },
       "tar entry is a link: package/link",
     );
-    expectTarPreflightError(
-      checker,
-      { path: "../escape.txt", type: "File", size: 1 },
-      /escapes destination|absolute/i,
-    );
+    expectTarPreflightError(checker, { path: "../escape.txt", type: "File", size: 1 }, /escapes destination|absolute/i);
 
     checker({ path: "package/ok.txt", type: "File", size: 8 });
     expectTarPreflightError(

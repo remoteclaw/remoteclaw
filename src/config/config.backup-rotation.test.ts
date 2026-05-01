@@ -6,11 +6,7 @@ import {
   hardenBackupPermissions,
   cleanOrphanBackups,
 } from "./backup-rotation.js";
-import {
-  expectPosixMode,
-  IS_WINDOWS,
-  resolveConfigPathFromTempState,
-} from "./config.backup-rotation.test-helpers.js";
+import { expectPosixMode, IS_WINDOWS, resolveConfigPathFromTempState } from "./config.backup-rotation.test-helpers.js";
 import { withTempHome } from "./test-helpers.js";
 import type { RemoteClawConfig } from "./types.js";
 
@@ -39,10 +35,7 @@ describe("config backup rotation", () => {
 
       const readName = async (suffix = "") => {
         const raw = await fs.readFile(`${configPath}${suffix}`, "utf-8");
-        return (
-          (JSON.parse(raw) as { agents?: { list?: Array<{ id?: string }> } }).agents?.list?.[0]
-            ?.id ?? null
-        );
+        return (JSON.parse(raw) as { agents?: { list?: Array<{ id?: string }> } }).agents?.list?.[0]?.id ?? null;
       };
 
       await expect(readName()).resolves.toBe("v6");
@@ -116,9 +109,7 @@ describe("config backup rotation", () => {
       await maintainConfigBackups(configPath, fs);
 
       // A new primary backup is created from the current config.
-      await expect(fs.readFile(`${configPath}.bak`, "utf-8")).resolves.toBe(
-        JSON.stringify({ token: "secret" }),
-      );
+      await expect(fs.readFile(`${configPath}.bak`, "utf-8")).resolves.toBe(JSON.stringify({ token: "secret" }));
       // Prior primary backup gets rotated into ring slot 1.
       await expect(fs.readFile(`${configPath}.bak.1`, "utf-8")).resolves.toBe("previous");
       // Windows cannot validate POSIX chmod bits, but all other compose assertions

@@ -14,9 +14,7 @@ import { updateCommand } from "./update-command.js";
 
 export async function updateWizardCommand(opts: UpdateWizardOptions = {}): Promise<void> {
   if (!process.stdin.isTTY) {
-    defaultRuntime.error(
-      "Update wizard requires a TTY. Use `remoteclaw update --channel <stable|beta|next>` instead.",
-    );
+    defaultRuntime.error("Update wizard requires a TTY. Use `remoteclaw update --channel <stable|beta|next>` instead.");
     defaultRuntime.exit(1);
     return;
   }
@@ -28,9 +26,7 @@ export async function updateWizardCommand(opts: UpdateWizardOptions = {}): Promi
 
   const configSnapshot = await readConfigFileSnapshot();
 
-  const configChannel = configSnapshot.valid
-    ? normalizeUpdateChannel(configSnapshot.config.update?.channel)
-    : null;
+  const configChannel = configSnapshot.valid ? normalizeUpdateChannel(configSnapshot.config.update?.channel) : null;
   const channelInfo = resolveEffectiveUpdateChannel({
     configChannel,
   });

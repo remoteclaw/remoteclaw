@@ -2,8 +2,7 @@ import type { ReplyPayload } from "../../../src/auto-reply/types.js";
 import type { TelegramInlineButtons } from "./button-types.js";
 import type { TelegramDraftStream } from "./draft-stream.js";
 
-const MESSAGE_NOT_MODIFIED_RE =
-  /400:\s*Bad Request:\s*message is not modified|MESSAGE_NOT_MODIFIED/i;
+const MESSAGE_NOT_MODIFIED_RE = /400:\s*Bad Request:\s*message is not modified|MESSAGE_NOT_MODIFIED/i;
 
 function isMessageNotModifiedError(err: unknown): boolean {
   const text =
@@ -124,32 +123,22 @@ function shouldSkipRegressivePreviewUpdate(args: {
 function resolvePreviewTarget(params: ResolvePreviewTargetParams): PreviewTargetResolution {
   const lanePreviewMessageId = params.lane.stream?.messageId();
   const previewMessageId =
-    typeof params.previewMessageIdOverride === "number"
-      ? params.previewMessageIdOverride
-      : lanePreviewMessageId;
+    typeof params.previewMessageIdOverride === "number" ? params.previewMessageIdOverride : lanePreviewMessageId;
   const hadPreviewMessage =
     typeof params.previewMessageIdOverride === "number" || typeof lanePreviewMessageId === "number";
   return {
     hadPreviewMessage,
     previewMessageId: typeof previewMessageId === "number" ? previewMessageId : undefined,
-    stopCreatesFirstPreview:
-      params.stopBeforeEdit && !hadPreviewMessage && params.context === "final",
+    stopCreatesFirstPreview: params.stopBeforeEdit && !hadPreviewMessage && params.context === "final",
   };
 }
 
 export function createLaneTextDeliverer(params: CreateLaneTextDelivererParams) {
   const getLanePreviewText = (lane: DraftLaneState) => lane.lastPartialText;
   const isDraftPreviewLane = (lane: DraftLaneState) => lane.stream?.previewMode?.() === "draft";
-  const canMaterializeDraftFinal = (
-    lane: DraftLaneState,
-    previewButtons?: TelegramInlineButtons,
-  ) => {
+  const canMaterializeDraftFinal = (lane: DraftLaneState, previewButtons?: TelegramInlineButtons) => {
     const hasPreviewButtons = Boolean(previewButtons && previewButtons.length > 0);
-    return (
-      isDraftPreviewLane(lane) &&
-      !hasPreviewButtons &&
-      typeof lane.stream?.materialize === "function"
-    );
+    return isDraftPreviewLane(lane) && !hasPreviewButtons && typeof lane.stream?.materialize === "function";
   };
 
   const tryMaterializeDraftPreviewForFinal = async (args: {
@@ -298,11 +287,7 @@ export function createLaneTextDeliverer(params: CreateLaneTextDelivererParams) {
     if (typeof previewTargetAfterStop.previewMessageId !== "number") {
       return false;
     }
-    return finalizePreview(
-      previewTargetAfterStop.previewMessageId,
-      false,
-      previewTargetAfterStop.hadPreviewMessage,
-    );
+    return finalizePreview(previewTargetAfterStop.previewMessageId, false, previewTargetAfterStop.hadPreviewMessage);
   };
 
   const consumeArchivedAnswerPreviewForFinal = async ({
@@ -341,9 +326,7 @@ export function createLaneTextDeliverer(params: CreateLaneTextDelivererParams) {
       try {
         await params.deletePreviewMessage(archivedPreview.messageId);
       } catch (err) {
-        params.log(
-          `telegram: archived answer preview cleanup failed (${archivedPreview.messageId}): ${String(err)}`,
-        );
+        params.log(`telegram: archived answer preview cleanup failed (${archivedPreview.messageId}): ${String(err)}`);
       }
     }
     return delivered ? "sent" : "skipped";
@@ -359,8 +342,7 @@ export function createLaneTextDeliverer(params: CreateLaneTextDelivererParams) {
   }: DeliverLaneTextParams): Promise<LaneDeliveryResult> => {
     const lane = params.lanes[laneName];
     const hasMedia = Boolean(payload.mediaUrl) || (payload.mediaUrls?.length ?? 0) > 0;
-    const canEditViaPreview =
-      !hasMedia && text.length > 0 && text.length <= params.draftMaxChars && !payload.isError;
+    const canEditViaPreview = !hasMedia && text.length > 0 && text.length <= params.draftMaxChars && !payload.isError;
 
     if (infoKind === "final") {
       if (laneName === "answer") {
@@ -432,9 +414,7 @@ export function createLaneTextDeliverer(params: CreateLaneTextDelivererParams) {
         await params.flushDraftLane(lane);
         const previewUpdated = (lane.stream?.previewRevision?.() ?? 0) > previewRevisionBeforeFlush;
         if (!previewUpdated) {
-          params.log(
-            `telegram: ${laneName} draft preview update not emitted; falling back to standard send`,
-          );
+          params.log(`telegram: ${laneName} draft preview update not emitted; falling back to standard send`);
           const delivered = await params.sendPayload(params.applyTextToPayload(payload, text));
           return delivered ? "sent" : "skipped";
         }

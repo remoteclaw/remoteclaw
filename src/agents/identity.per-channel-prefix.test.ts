@@ -117,9 +117,7 @@ describe("resolveResponsePrefix with per-channel override", () => {
           },
         },
       } satisfies RemoteClawConfig);
-      expect(
-        resolveResponsePrefix(cfg, "main", { channel: "whatsapp", accountId: "business" }),
-      ).toBe("[Biz] ");
+      expect(resolveResponsePrefix(cfg, "main", { channel: "whatsapp", accountId: "business" })).toBe("[Biz] ");
     });
 
     it("falls through to channel prefix when account prefix is undefined", () => {
@@ -133,9 +131,7 @@ describe("resolveResponsePrefix with per-channel override", () => {
           },
         },
       } satisfies RemoteClawConfig);
-      expect(
-        resolveResponsePrefix(cfg, "main", { channel: "whatsapp", accountId: "business" }),
-      ).toBe("[WA] ");
+      expect(resolveResponsePrefix(cfg, "main", { channel: "whatsapp", accountId: "business" })).toBe("[WA] ");
     });
 
     it("falls through to global when both account and channel are undefined", () => {
@@ -149,9 +145,7 @@ describe("resolveResponsePrefix with per-channel override", () => {
           },
         },
       } satisfies RemoteClawConfig);
-      expect(
-        resolveResponsePrefix(cfg, "main", { channel: "whatsapp", accountId: "business" }),
-      ).toBe("[Global] ");
+      expect(resolveResponsePrefix(cfg, "main", { channel: "whatsapp", accountId: "business" })).toBe("[Global] ");
     });
 
     it("account empty string stops cascade", () => {
@@ -166,9 +160,7 @@ describe("resolveResponsePrefix with per-channel override", () => {
           },
         },
       } satisfies RemoteClawConfig);
-      expect(
-        resolveResponsePrefix(cfg, "main", { channel: "whatsapp", accountId: "business" }),
-      ).toBe("");
+      expect(resolveResponsePrefix(cfg, "main", { channel: "whatsapp", accountId: "business" })).toBe("");
     });
 
     it("resolves 'auto' at account level to identity name", () => {
@@ -184,9 +176,7 @@ describe("resolveResponsePrefix with per-channel override", () => {
           },
         },
       } satisfies RemoteClawConfig);
-      expect(
-        resolveResponsePrefix(cfg, "main", { channel: "whatsapp", accountId: "business" }),
-      ).toBe("[BizBot]");
+      expect(resolveResponsePrefix(cfg, "main", { channel: "whatsapp", accountId: "business" })).toBe("[BizBot]");
     });
 
     it("different accounts on same channel get different prefixes", () => {
@@ -201,12 +191,8 @@ describe("resolveResponsePrefix with per-channel override", () => {
           },
         },
       } satisfies RemoteClawConfig);
-      expect(
-        resolveResponsePrefix(cfg, "main", { channel: "whatsapp", accountId: "business" }),
-      ).toBe("[Biz] ");
-      expect(
-        resolveResponsePrefix(cfg, "main", { channel: "whatsapp", accountId: "personal" }),
-      ).toBe("[Personal] ");
+      expect(resolveResponsePrefix(cfg, "main", { channel: "whatsapp", accountId: "business" })).toBe("[Biz] ");
+      expect(resolveResponsePrefix(cfg, "main", { channel: "whatsapp", accountId: "personal" })).toBe("[Personal] ");
     });
 
     it("unknown accountId falls through to channel level", () => {
@@ -220,9 +206,7 @@ describe("resolveResponsePrefix with per-channel override", () => {
           },
         },
       } satisfies RemoteClawConfig);
-      expect(
-        resolveResponsePrefix(cfg, "main", { channel: "whatsapp", accountId: "unknown" }),
-      ).toBe("[WA] ");
+      expect(resolveResponsePrefix(cfg, "main", { channel: "whatsapp", accountId: "unknown" })).toBe("[WA] ");
     });
   });
 
@@ -247,15 +231,15 @@ describe("resolveResponsePrefix with per-channel override", () => {
     } satisfies RemoteClawConfig);
 
     it("L1: account prefix wins when all levels set", () => {
-      expect(
-        resolveResponsePrefix(fullCfg, "main", { channel: "whatsapp", accountId: "business" }),
-      ).toBe("[L1-Account] ");
+      expect(resolveResponsePrefix(fullCfg, "main", { channel: "whatsapp", accountId: "business" })).toBe(
+        "[L1-Account] ",
+      );
     });
 
     it("L2: channel prefix when account undefined", () => {
-      expect(
-        resolveResponsePrefix(fullCfg, "main", { channel: "whatsapp", accountId: "default" }),
-      ).toBe("[L2-Channel] ");
+      expect(resolveResponsePrefix(fullCfg, "main", { channel: "whatsapp", accountId: "default" })).toBe(
+        "[L2-Channel] ",
+      );
     });
 
     it("L4: global prefix when channel has no prefix", () => {

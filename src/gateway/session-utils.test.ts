@@ -2,10 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import {
-  addSubagentRunForTests,
-  resetSubagentRegistryForTests,
-} from "../agents/subagent-registry.js";
+import { addSubagentRunForTests, resetSubagentRegistryForTests } from "../agents/subagent-registry.js";
 import { clearConfigCache, writeConfigFile } from "../config/config.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import type { SessionEntry } from "../config/sessions.js";
@@ -67,9 +64,7 @@ function createModelDefaultsConfig(params: {
   } as RemoteClawConfig;
 }
 
-function createLegacyRuntimeListConfig(
-  models?: Record<string, Record<string, never>>,
-): RemoteClawConfig {
+function createLegacyRuntimeListConfig(models?: Record<string, Record<string, never>>): RemoteClawConfig {
   return createModelDefaultsConfig({
     primary: "google-gemini-cli/gemini-3-pro-preview",
     ...(models ? { models } : {}),
@@ -137,12 +132,8 @@ describe("gateway session utils", () => {
       session: { mainKey: "main" },
       agents: { list: [{ id: "ops", default: true }] },
     } as RemoteClawConfig;
-    expect(resolveSessionStoreKey({ cfg, sessionKey: "discord:group:123" })).toBe(
-      "agent:ops:discord:group:123",
-    );
-    expect(resolveSessionStoreKey({ cfg, sessionKey: "agent:alpha:main" })).toBe(
-      "agent:alpha:main",
-    );
+    expect(resolveSessionStoreKey({ cfg, sessionKey: "discord:group:123" })).toBe("agent:ops:discord:group:123");
+    expect(resolveSessionStoreKey({ cfg, sessionKey: "agent:alpha:main" })).toBe("agent:alpha:main");
   });
 
   test("resolveSessionStoreKey falls back to first list entry when no agent is marked default", () => {
@@ -151,9 +142,7 @@ describe("gateway session utils", () => {
       agents: { list: [{ id: "ops" }, { id: "review" }] },
     } as RemoteClawConfig;
     expect(resolveSessionStoreKey({ cfg, sessionKey: "main" })).toBe("agent:ops:main");
-    expect(resolveSessionStoreKey({ cfg, sessionKey: "discord:group:123" })).toBe(
-      "agent:ops:discord:group:123",
-    );
+    expect(resolveSessionStoreKey({ cfg, sessionKey: "discord:group:123" })).toBe("agent:ops:discord:group:123");
   });
 
   test("resolveSessionStoreKey falls back to main when agents.list is missing", () => {
@@ -170,15 +159,11 @@ describe("gateway session utils", () => {
       agents: { list: [{ id: "ops", default: true }] },
     } as RemoteClawConfig;
     // Bare keys with different casing must resolve to the same canonical key
-    expect(resolveSessionStoreKey({ cfg, sessionKey: "CoP" })).toBe(
-      resolveSessionStoreKey({ cfg, sessionKey: "cop" }),
-    );
+    expect(resolveSessionStoreKey({ cfg, sessionKey: "CoP" })).toBe(resolveSessionStoreKey({ cfg, sessionKey: "cop" }));
     expect(resolveSessionStoreKey({ cfg, sessionKey: "MySession" })).toBe("agent:ops:mysession");
     // Prefixed agent keys with mixed-case rest must also normalize
     expect(resolveSessionStoreKey({ cfg, sessionKey: "agent:ops:CoP" })).toBe("agent:ops:cop");
-    expect(resolveSessionStoreKey({ cfg, sessionKey: "agent:alpha:MySession" })).toBe(
-      "agent:alpha:mysession",
-    );
+    expect(resolveSessionStoreKey({ cfg, sessionKey: "agent:alpha:MySession" })).toBe("agent:alpha:mysession");
   });
 
   test("resolveSessionStoreKey honors global scope", () => {
@@ -193,12 +178,7 @@ describe("gateway session utils", () => {
   });
 
   test("resolveGatewaySessionStoreTarget uses canonical key for main alias", () => {
-    const storeTemplate = path.join(
-      os.tmpdir(),
-      "remoteclaw-session-utils",
-      "{agentId}",
-      "sessions.json",
-    );
+    const storeTemplate = path.join(os.tmpdir(), "remoteclaw-session-utils", "{agentId}", "sessions.json");
     const cfg = {
       session: { mainKey: "main", store: storeTemplate },
       agents: { list: [{ id: "ops", default: true }] },
@@ -213,11 +193,7 @@ describe("gateway session utils", () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "session-utils-case-"));
     const storePath = path.join(dir, "sessions.json");
     // Simulate a legacy store with a mixed-case key
-    fs.writeFileSync(
-      storePath,
-      JSON.stringify({ "agent:ops:MySession": { sessionId: "s1", updatedAt: 1 } }),
-      "utf8",
-    );
+    fs.writeFileSync(storePath, JSON.stringify({ "agent:ops:MySession": { sessionId: "s1", updatedAt: 1 } }), "utf8");
     const cfg = {
       session: { mainKey: "main", store: storePath },
       agents: { list: [{ id: "ops", default: true }] },
@@ -226,9 +202,7 @@ describe("gateway session utils", () => {
     const target = resolveGatewaySessionStoreTarget({ cfg, key: "agent:ops:mysession" });
     expect(target.canonicalKey).toBe("agent:ops:mysession");
     // storeKeys must include the legacy mixed-case key from the on-disk store
-    expect(target.storeKeys).toEqual(
-      expect.arrayContaining(["agent:ops:mysession", "agent:ops:MySession"]),
-    );
+    expect(target.storeKeys).toEqual(expect.arrayContaining(["agent:ops:mysession", "agent:ops:MySession"]));
     // The legacy key must resolve to the actual entry in the store
     const store = JSON.parse(fs.readFileSync(storePath, "utf8"));
     const found = target.storeKeys.some((k) => Boolean(store[k]));
@@ -253,20 +227,14 @@ describe("gateway session utils", () => {
     } as RemoteClawConfig;
     const target = resolveGatewaySessionStoreTarget({ cfg, key: "agent:ops:mysession" });
     // storeKeys must include BOTH variants so delete/reset/patch can clean up all duplicates
-    expect(target.storeKeys).toEqual(
-      expect.arrayContaining(["agent:ops:mysession", "agent:ops:MySession"]),
-    );
+    expect(target.storeKeys).toEqual(expect.arrayContaining(["agent:ops:mysession", "agent:ops:MySession"]));
   });
 
   test("resolveGatewaySessionStoreTarget finds legacy main alias key when mainKey is customized", () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "session-utils-alias-"));
     const storePath = path.join(dir, "sessions.json");
     // Legacy store has entry under "agent:ops:MAIN" but mainKey is "work"
-    fs.writeFileSync(
-      storePath,
-      JSON.stringify({ "agent:ops:MAIN": { sessionId: "s1", updatedAt: 1 } }),
-      "utf8",
-    );
+    fs.writeFileSync(storePath, JSON.stringify({ "agent:ops:MAIN": { sessionId: "s1", updatedAt: 1 } }), "utf8");
     const cfg = {
       session: { mainKey: "work", store: storePath },
       agents: { list: [{ id: "ops", default: true }] },
@@ -528,10 +496,7 @@ describe("resolveSessionModelRef", () => {
 });
 
 describe("resolveSessionModelIdentityRef", () => {
-  const resolveLegacyIdentityRef = (
-    cfg: RemoteClawConfig,
-    modelProvider: string | undefined = undefined,
-  ) =>
+  const resolveLegacyIdentityRef = (cfg: RemoteClawConfig, modelProvider: string | undefined = undefined) =>
     resolveSessionModelIdentityRef(cfg, {
       sessionId: "legacy-session",
       updatedAt: Date.now(),
@@ -650,8 +615,7 @@ describe("deriveSessionTitle", () => {
       sessionId: "abc123",
       updatedAt: Date.now(),
     } as SessionEntry;
-    const longMsg =
-      "This is a very long message that exceeds sixty characters and should be truncated appropriately";
+    const longMsg = "This is a very long message that exceeds sixty characters and should be truncated appropriately";
     const result = deriveSessionTitle(entry, longMsg);
     expect(result).toBeDefined();
     expect(result!.length).toBeLessThanOrEqual(60);
@@ -1289,10 +1253,7 @@ describe("listSessionsFromStore subagent metadata", () => {
     });
 
     const main = result.sessions.find((session) => session.key === "agent:main:main");
-    expect(main?.childSessions).toEqual([
-      "agent:main:subagent:parent",
-      "agent:main:subagent:failed",
-    ]);
+    expect(main?.childSessions).toEqual(["agent:main:subagent:parent", "agent:main:subagent:failed"]);
     expect(main?.status).toBeUndefined();
 
     const parent = result.sessions.find((session) => session.key === "agent:main:subagent:parent");
@@ -1392,12 +1353,8 @@ describe("listSessionsFromStore subagent metadata", () => {
       opts: {},
     });
 
-    const oldParent = result.sessions.find(
-      (session) => session.key === "agent:main:subagent:old-parent",
-    );
-    const newParent = result.sessions.find(
-      (session) => session.key === "agent:main:subagent:new-parent",
-    );
+    const oldParent = result.sessions.find((session) => session.key === "agent:main:subagent:old-parent");
+    const newParent = result.sessions.find((session) => session.key === "agent:main:subagent:new-parent");
 
     expect(oldParent?.childSessions).toBeUndefined();
     expect(newParent?.childSessions).toEqual(["agent:main:subagent:shared-child"]);
@@ -1481,12 +1438,8 @@ describe("listSessionsFromStore subagent metadata", () => {
       opts: {},
     });
 
-    const oldParent = result.sessions.find(
-      (session) => session.key === "agent:main:subagent:old-parent-store",
-    );
-    const newParent = result.sessions.find(
-      (session) => session.key === "agent:main:subagent:new-parent-store",
-    );
+    const oldParent = result.sessions.find((session) => session.key === "agent:main:subagent:old-parent-store");
+    const newParent = result.sessions.find((session) => session.key === "agent:main:subagent:new-parent-store");
 
     expect(oldParent?.childSessions).toBeUndefined();
     expect(newParent?.childSessions).toEqual(["agent:main:subagent:shared-child-store"]);
@@ -1707,9 +1660,7 @@ describe("listSessionsFromStore subagent metadata", () => {
       opts: {},
     });
 
-    const followup = result.sessions.find(
-      (session) => session.key === "agent:main:subagent:followup",
-    );
+    const followup = result.sessions.find((session) => session.key === "agent:main:subagent:followup");
     expect(followup?.status).toBe("running");
     expect(followup?.startedAt).toBe(now - 150_000);
     expect(followup?.runtimeMs).toBeGreaterThanOrEqual(150_000);
@@ -1897,9 +1848,7 @@ describe("listSessionsFromStore subagent metadata", () => {
       opts: {},
     });
 
-    const archived = result.sessions.find(
-      (session) => session.key === "agent:main:subagent:archived",
-    );
+    const archived = result.sessions.find((session) => session.key === "agent:main:subagent:archived");
     expect(archived?.status).toBe("done");
     expect(archived?.startedAt).toBe(now - 20_000);
     expect(archived?.endedAt).toBe(now - 5_000);
@@ -1938,9 +1887,7 @@ describe("listSessionsFromStore subagent metadata", () => {
       opts: {},
     });
 
-    const timeout = result.sessions.find(
-      (session) => session.key === "agent:main:subagent:timeout",
-    );
+    const timeout = result.sessions.find((session) => session.key === "agent:main:subagent:timeout");
     expect(timeout?.status).toBe("timeout");
     expect(timeout?.runtimeMs).toBe(0);
   });

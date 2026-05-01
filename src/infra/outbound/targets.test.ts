@@ -3,11 +3,7 @@ import { telegramOutbound } from "../../channels/plugins/outbound/telegram.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
 import { createOutboundTestPlugin, createTestRegistry } from "../../test-utils/channel-plugins.js";
-import {
-  resolveHeartbeatDeliveryTarget,
-  resolveOutboundTarget,
-  resolveSessionDeliveryTarget,
-} from "./targets.js";
+import { resolveHeartbeatDeliveryTarget, resolveOutboundTarget, resolveSessionDeliveryTarget } from "./targets.js";
 import type { SessionDeliveryTarget } from "./targets.js";
 import {
   installResolveOutboundTargetPluginRegistryHooks,
@@ -73,9 +69,7 @@ describe("resolveOutboundTarget defaultTo config fallback", () => {
     setActivePluginRegistry(registry, "stale-registry-test");
 
     // Warm the cached channel map before mutating the registry in place.
-    expect(resolveOutboundTarget({ channel: "telegram", to: "123", mode: "explicit" }).ok).toBe(
-      false,
-    );
+    expect(resolveOutboundTarget({ channel: "telegram", to: "123", mode: "explicit" }).ok).toBe(false);
 
     registry.channels.push({
       pluginId: "telegram",
@@ -114,9 +108,7 @@ describe("resolveSessionDeliveryTarget", () => {
     });
   };
 
-  const expectTopicParsedFromExplicitTo = (
-    entry: Parameters<typeof resolveSessionDeliveryTarget>[0]["entry"],
-  ) => {
+  const expectTopicParsedFromExplicitTo = (entry: Parameters<typeof resolveSessionDeliveryTarget>[0]["entry"]) => {
     const resolved = resolveSessionDeliveryTarget({
       entry,
       requestedChannel: "last",

@@ -17,9 +17,7 @@ export function hasLegacyDeliveryHints(payload: Record<string, unknown>) {
   return false;
 }
 
-export function buildDeliveryFromLegacyPayload(
-  payload: Record<string, unknown>,
-): Record<string, unknown> {
+export function buildDeliveryFromLegacyPayload(payload: Record<string, unknown>): Record<string, unknown> {
   const deliver = payload.deliver;
   const mode = deliver === false ? "none" : "announce";
   const channelRaw =
@@ -57,12 +55,7 @@ export function buildDeliveryPatchFromLegacyPayload(payload: Record<string, unkn
   if (deliver === false) {
     next.mode = "none";
     hasPatch = true;
-  } else if (
-    deliver === true ||
-    channelRaw ||
-    toRaw ||
-    typeof payload.bestEffortDeliver === "boolean"
-  ) {
+  } else if (deliver === true || channelRaw || toRaw || typeof payload.bestEffortDeliver === "boolean") {
     next.mode = "announce";
     hasPatch = true;
   }
@@ -82,10 +75,7 @@ export function buildDeliveryPatchFromLegacyPayload(payload: Record<string, unkn
   return hasPatch ? next : null;
 }
 
-export function mergeLegacyDeliveryInto(
-  delivery: Record<string, unknown>,
-  payload: Record<string, unknown>,
-) {
+export function mergeLegacyDeliveryInto(delivery: Record<string, unknown>, payload: Record<string, unknown>) {
   const patch = buildDeliveryPatchFromLegacyPayload(payload);
   if (!patch) {
     return { delivery, mutated: false };

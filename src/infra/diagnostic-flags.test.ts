@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
-import {
-  isDiagnosticFlagEnabled,
-  matchesDiagnosticFlag,
-  resolveDiagnosticFlags,
-} from "./diagnostic-flags.js";
+import { isDiagnosticFlagEnabled, matchesDiagnosticFlag, resolveDiagnosticFlags } from "./diagnostic-flags.js";
 
 describe("resolveDiagnosticFlags", () => {
   it("normalizes and dedupes config and env flags", () => {

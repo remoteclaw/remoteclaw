@@ -49,23 +49,13 @@ function isAudioPath(path: string | undefined): boolean {
 export function buildInboundMediaNote(ctx: MsgContext): string | undefined {
   const pathsFromArray = Array.isArray(ctx.MediaPaths) ? ctx.MediaPaths : undefined;
   const paths =
-    pathsFromArray && pathsFromArray.length > 0
-      ? pathsFromArray
-      : ctx.MediaPath?.trim()
-        ? [ctx.MediaPath.trim()]
-        : [];
+    pathsFromArray && pathsFromArray.length > 0 ? pathsFromArray : ctx.MediaPath?.trim() ? [ctx.MediaPath.trim()] : [];
   if (paths.length === 0) {
     return undefined;
   }
 
-  const urls =
-    Array.isArray(ctx.MediaUrls) && ctx.MediaUrls.length === paths.length
-      ? ctx.MediaUrls
-      : undefined;
-  const types =
-    Array.isArray(ctx.MediaTypes) && ctx.MediaTypes.length === paths.length
-      ? ctx.MediaTypes
-      : undefined;
+  const urls = Array.isArray(ctx.MediaUrls) && ctx.MediaUrls.length === paths.length ? ctx.MediaUrls : undefined;
+  const types = Array.isArray(ctx.MediaTypes) && ctx.MediaTypes.length === paths.length ? ctx.MediaTypes : undefined;
   const hasTranscript = Boolean(ctx.Transcript?.trim());
   // Transcript alone does not identify an attachment index; only use it as a fallback
   // when there is a single attachment to avoid stripping unrelated audio files.

@@ -8,10 +8,7 @@ import {
   type BindingTargetKind,
   type SessionBindingRecord,
 } from "../../../../src/infra/outbound/session-binding-service.js";
-import {
-  normalizeAccountId,
-  resolveAgentIdFromSessionKey,
-} from "../../../../src/routing/session-key.js";
+import { normalizeAccountId, resolveAgentIdFromSessionKey } from "../../../../src/routing/session-key.js";
 import { createDiscordRestClient } from "../client.js";
 import {
   createThreadForBinding,
@@ -23,10 +20,7 @@ import {
   resolveChannelIdForBinding,
   summarizeDiscordError,
 } from "./thread-bindings.discord-api.js";
-import {
-  resolveThreadBindingFarewellText,
-  resolveThreadBindingThreadName,
-} from "./thread-bindings.messages.js";
+import { resolveThreadBindingFarewellText, resolveThreadBindingThreadName } from "./thread-bindings.messages.js";
 import {
   BINDINGS_BY_THREAD_ID,
   forgetThreadBindingToken,
@@ -185,14 +179,8 @@ export function createThreadBindingManager(
 
   const persist = params.persist ?? shouldDefaultPersist();
   PERSIST_BY_ACCOUNT_ID.set(accountId, persist);
-  const idleTimeoutMs = normalizeThreadBindingDurationMs(
-    params.idleTimeoutMs,
-    DEFAULT_THREAD_BINDING_IDLE_TIMEOUT_MS,
-  );
-  const maxAgeMs = normalizeThreadBindingDurationMs(
-    params.maxAgeMs,
-    DEFAULT_THREAD_BINDING_MAX_AGE_MS,
-  );
+  const idleTimeoutMs = normalizeThreadBindingDurationMs(params.idleTimeoutMs, DEFAULT_THREAD_BINDING_IDLE_TIMEOUT_MS);
+  const maxAgeMs = normalizeThreadBindingDurationMs(params.maxAgeMs, DEFAULT_THREAD_BINDING_MAX_AGE_MS);
   const resolveCurrentCfg = () => getRuntimeConfigSnapshot() ?? params.cfg;
   const resolveCurrentToken = () => getThreadBindingToken(accountId) ?? params.token;
 
@@ -229,8 +217,7 @@ export function createThreadBindingManager(
         .map((bindingKey) => BINDINGS_BY_THREAD_ID.get(bindingKey))
         .filter((entry): entry is ThreadBindingRecord => Boolean(entry));
     },
-    listBindings: () =>
-      [...BINDINGS_BY_THREAD_ID.values()].filter((entry) => entry.accountId === accountId),
+    listBindings: () => [...BINDINGS_BY_THREAD_ID.values()].filter((entry) => entry.accountId === accountId),
     touchThread: (touchParams) => {
       const key = resolveBindingRecordKey({
         accountId,
@@ -511,9 +498,7 @@ export function createThreadBindingManager(
           try {
             const channel = await rest.get(Routes.channel(binding.threadId));
             if (!channel || typeof channel !== "object") {
-              logVerbose(
-                `discord thread binding sweep probe returned invalid payload for ${binding.threadId}`,
-              );
+              logVerbose(`discord thread binding sweep probe returned invalid payload for ${binding.threadId}`);
               continue;
             }
             if (isThreadArchived(channel)) {
@@ -562,18 +547,11 @@ export function createThreadBindingManager(
       const conversationId = input.conversation.conversationId.trim();
       const placement = input.placement === "child" ? "child" : "current";
       const metadata = input.metadata ?? {};
-      const label =
-        typeof metadata.label === "string" ? metadata.label.trim() || undefined : undefined;
-      const threadName =
-        typeof metadata.threadName === "string"
-          ? metadata.threadName.trim() || undefined
-          : undefined;
-      const introText =
-        typeof metadata.introText === "string" ? metadata.introText.trim() || undefined : undefined;
-      const boundBy =
-        typeof metadata.boundBy === "string" ? metadata.boundBy.trim() || undefined : undefined;
-      const agentId =
-        typeof metadata.agentId === "string" ? metadata.agentId.trim() || undefined : undefined;
+      const label = typeof metadata.label === "string" ? metadata.label.trim() || undefined : undefined;
+      const threadName = typeof metadata.threadName === "string" ? metadata.threadName.trim() || undefined : undefined;
+      const introText = typeof metadata.introText === "string" ? metadata.introText.trim() || undefined : undefined;
+      const boundBy = typeof metadata.boundBy === "string" ? metadata.boundBy.trim() || undefined : undefined;
+      const agentId = typeof metadata.agentId === "string" ? metadata.agentId.trim() || undefined : undefined;
       let threadId: string | undefined;
       let channelId = input.conversation.parentConversationId?.trim() || undefined;
       let createThread = false;

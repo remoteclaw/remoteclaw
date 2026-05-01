@@ -23,19 +23,10 @@ export function formatCliCommand(
     return normalizedCommand;
   }
   const additions: string[] = [];
-  if (
-    container &&
-    !CONTAINER_FLAG_RE.test(normalizedCommand) &&
-    !UPDATE_COMMAND_RE.test(normalizedCommand)
-  ) {
+  if (container && !CONTAINER_FLAG_RE.test(normalizedCommand) && !UPDATE_COMMAND_RE.test(normalizedCommand)) {
     additions.push(`--container ${container}`);
   }
-  if (
-    !container &&
-    profile &&
-    !PROFILE_FLAG_RE.test(normalizedCommand) &&
-    !DEV_FLAG_RE.test(normalizedCommand)
-  ) {
+  if (!container && profile && !PROFILE_FLAG_RE.test(normalizedCommand) && !DEV_FLAG_RE.test(normalizedCommand)) {
     additions.push(`--profile ${profile}`);
   }
   if (additions.length === 0) {

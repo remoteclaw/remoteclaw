@@ -2,11 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { withTempDir } from "../test-utils/temp-dir.js";
-import {
-  clearDeviceAuthToken,
-  loadDeviceAuthToken,
-  storeDeviceAuthToken,
-} from "./device-auth-store.js";
+import { clearDeviceAuthToken, loadDeviceAuthToken, storeDeviceAuthToken } from "./device-auth-store.js";
 
 function createEnv(stateDir: string): NodeJS.ProcessEnv {
   return {

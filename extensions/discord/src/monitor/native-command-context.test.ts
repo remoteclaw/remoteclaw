@@ -87,9 +87,7 @@ describe("buildDiscordNativeCommandContext", () => {
     expect(ctx.MessageThreadId).toBe("chan-1");
     expect(ctx.ThreadParentId).toBe("parent-1");
     expect(ctx.OriginatingTo).toBe("channel:chan-1");
-    expect(ctx.UntrustedContext).toEqual([
-      expect.stringContaining("Discord channel topic:\nProduction alerts only"),
-    ]);
+    expect(ctx.UntrustedContext).toEqual([expect.stringContaining("Discord channel topic:\nProduction alerts only")]);
     expect(ctx.Timestamp).toBe(456);
   });
 });

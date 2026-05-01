@@ -93,58 +93,42 @@ describe("gateway server models + voicewake", () => {
     }
   };
 
-  test(
-    "voicewake.get returns defaults and voicewake.set broadcasts",
-    { timeout: 20_000 },
-    async () => {
-      await withTempHome(async (homeDir) => {
-        const initial = await rpcReq<{ triggers: string[] }>(ws, "voicewake.get");
-        expect(initial.ok).toBe(true);
-        expect(initial.payload?.triggers).toEqual(["remoteclaw", "claude", "computer"]);
+  test("voicewake.get returns defaults and voicewake.set broadcasts", { timeout: 20_000 }, async () => {
+    await withTempHome(async (homeDir) => {
+      const initial = await rpcReq<{ triggers: string[] }>(ws, "voicewake.get");
+      expect(initial.ok).toBe(true);
+      expect(initial.payload?.triggers).toEqual(["remoteclaw", "claude", "computer"]);
 
-        const changedP = onceMessage(
-          ws,
-          (o) => o.type === "event" && o.event === "voicewake.changed",
-        );
+      const changedP = onceMessage(ws, (o) => o.type === "event" && o.event === "voicewake.changed");
 
-        const setRes = await rpcReq<{ triggers: string[] }>(ws, "voicewake.set", {
-          triggers: ["  hi  ", "", "there"],
-        });
-        expect(setRes.ok).toBe(true);
-        expect(setRes.payload?.triggers).toEqual(["hi", "there"]);
-
-        const changed = (await changedP) as { event?: string; payload?: unknown };
-        expect(changed.event).toBe("voicewake.changed");
-        expect((changed.payload as { triggers?: unknown } | undefined)?.triggers).toEqual([
-          "hi",
-          "there",
-        ]);
-
-        const after = await rpcReq<{ triggers: string[] }>(ws, "voicewake.get");
-        expect(after.ok).toBe(true);
-        expect(after.payload?.triggers).toEqual(["hi", "there"]);
-
-        const onDisk = JSON.parse(
-          await fs.readFile(
-            path.join(homeDir, ".remoteclaw", "settings", "voicewake.json"),
-            "utf8",
-          ),
-        ) as { triggers?: unknown; updatedAtMs?: unknown };
-        expect(onDisk.triggers).toEqual(["hi", "there"]);
-        expect(typeof onDisk.updatedAtMs).toBe("number");
+      const setRes = await rpcReq<{ triggers: string[] }>(ws, "voicewake.set", {
+        triggers: ["  hi  ", "", "there"],
       });
-    },
-  );
+      expect(setRes.ok).toBe(true);
+      expect(setRes.payload?.triggers).toEqual(["hi", "there"]);
+
+      const changed = (await changedP) as { event?: string; payload?: unknown };
+      expect(changed.event).toBe("voicewake.changed");
+      expect((changed.payload as { triggers?: unknown } | undefined)?.triggers).toEqual(["hi", "there"]);
+
+      const after = await rpcReq<{ triggers: string[] }>(ws, "voicewake.get");
+      expect(after.ok).toBe(true);
+      expect(after.payload?.triggers).toEqual(["hi", "there"]);
+
+      const onDisk = JSON.parse(
+        await fs.readFile(path.join(homeDir, ".remoteclaw", "settings", "voicewake.json"), "utf8"),
+      ) as { triggers?: unknown; updatedAtMs?: unknown };
+      expect(onDisk.triggers).toEqual(["hi", "there"]);
+      expect(typeof onDisk.updatedAtMs).toBe("number");
+    });
+  });
 
   test("pushes voicewake.changed to nodes on connect and on updates", async () => {
     await withTempHome(async () => {
       const nodeWs = new WebSocket(`ws://127.0.0.1:${port}`);
       trackConnectChallengeNonce(nodeWs);
       await new Promise<void>((resolve) => nodeWs.once("open", resolve));
-      const firstEventP = onceMessage(
-        nodeWs,
-        (o) => o.type === "event" && o.event === "voicewake.changed",
-      );
+      const firstEventP = onceMessage(nodeWs, (o) => o.type === "event" && o.event === "voicewake.changed");
       await connectOk(nodeWs, {
         role: "node",
         client: {
@@ -163,10 +147,7 @@ describe("gateway server models + voicewake", () => {
         "computer",
       ]);
 
-      const broadcastP = onceMessage(
-        nodeWs,
-        (o) => o.type === "event" && o.event === "voicewake.changed",
-      );
+      const broadcastP = onceMessage(nodeWs, (o) => o.type === "event" && o.event === "voicewake.changed");
       const setRes = await rpcReq<{ triggers: string[] }>(ws, "voicewake.set", {
         triggers: ["remoteclaw", "computer"],
       });
@@ -174,10 +155,7 @@ describe("gateway server models + voicewake", () => {
 
       const broadcast = (await broadcastP) as { event?: string; payload?: unknown };
       expect(broadcast.event).toBe("voicewake.changed");
-      expect((broadcast.payload as { triggers?: unknown } | undefined)?.triggers).toEqual([
-        "remoteclaw",
-        "computer",
-      ]);
+      expect((broadcast.payload as { triggers?: unknown } | undefined)?.triggers).toEqual(["remoteclaw", "computer"]);
 
       nodeWs.close();
     });
@@ -292,8 +270,6 @@ describe("gateway server misc", () => {
       probe.once("error", reject);
       probe.listen(releasePort, "127.0.0.1", () => resolve());
     });
-    await new Promise<void>((resolve, reject) =>
-      probe.close((err) => (err ? reject(err) : resolve())),
-    );
+    await new Promise<void>((resolve, reject) => probe.close((err) => (err ? reject(err) : resolve())));
   });
 });

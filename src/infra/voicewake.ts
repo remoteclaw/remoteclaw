@@ -15,9 +15,7 @@ function resolvePath(baseDir?: string) {
 }
 
 function sanitizeTriggers(triggers: string[] | undefined | null): string[] {
-  const cleaned = (triggers ?? [])
-    .map((w) => (typeof w === "string" ? w.trim() : ""))
-    .filter((w) => w.length > 0);
+  const cleaned = (triggers ?? []).map((w) => (typeof w === "string" ? w.trim() : "")).filter((w) => w.length > 0);
   return cleaned.length > 0 ? cleaned : DEFAULT_TRIGGERS;
 }
 
@@ -35,17 +33,11 @@ export async function loadVoiceWakeConfig(baseDir?: string): Promise<VoiceWakeCo
   }
   return {
     triggers: sanitizeTriggers(existing.triggers),
-    updatedAtMs:
-      typeof existing.updatedAtMs === "number" && existing.updatedAtMs > 0
-        ? existing.updatedAtMs
-        : 0,
+    updatedAtMs: typeof existing.updatedAtMs === "number" && existing.updatedAtMs > 0 ? existing.updatedAtMs : 0,
   };
 }
 
-export async function setVoiceWakeTriggers(
-  triggers: string[],
-  baseDir?: string,
-): Promise<VoiceWakeConfig> {
+export async function setVoiceWakeTriggers(triggers: string[], baseDir?: string): Promise<VoiceWakeConfig> {
   const sanitized = sanitizeTriggers(triggers);
   const filePath = resolvePath(baseDir);
   return await withLock(async () => {

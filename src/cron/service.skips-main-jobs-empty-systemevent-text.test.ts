@@ -1,19 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CronService } from "./service.js";
-import {
-  createCronStoreHarness,
-  createNoopLogger,
-  withCronServiceForTest,
-} from "./service.test-harness.js";
+import { createCronStoreHarness, createNoopLogger, withCronServiceForTest } from "./service.test-harness.js";
 import type { CronJob } from "./types.js";
 
 const noopLogger = createNoopLogger();
 const { makeStorePath } = createCronStoreHarness();
 
-async function waitForFirstJob(
-  cron: CronService,
-  predicate: (job: CronJob | undefined) => boolean,
-) {
+async function waitForFirstJob(cron: CronService, predicate: (job: CronJob | undefined) => boolean) {
   let latest: CronJob | undefined;
   for (let i = 0; i < 30; i++) {
     const jobs = await cron.list({ includeDisabled: true });

@@ -29,10 +29,7 @@ import {
 } from "./accounts.js";
 import { NextcloudTalkConfigSchema } from "./config-schema.js";
 import { monitorNextcloudTalkProvider } from "./monitor.js";
-import {
-  looksLikeNextcloudTalkTargetId,
-  normalizeNextcloudTalkMessagingTarget,
-} from "./normalize.js";
+import { looksLikeNextcloudTalkTargetId, normalizeNextcloudTalkMessagingTarget } from "./normalize.js";
 import { nextcloudTalkOnboardingAdapter } from "./onboarding.js";
 import { resolveNextcloudTalkGroupToolPolicy } from "./policy.js";
 import { getNextcloudTalkRuntime } from "./runtime.js";
@@ -64,8 +61,7 @@ export const nextcloudTalkPlugin: ChannelPlugin<ResolvedNextcloudTalkAccount> = 
   onboarding: nextcloudTalkOnboardingAdapter,
   pairing: {
     idLabel: "nextcloudUserId",
-    normalizeAllowEntry: (entry) =>
-      entry.replace(/^(nextcloud-talk|nc-talk|nc):/i, "").toLowerCase(),
+    normalizeAllowEntry: (entry) => entry.replace(/^(nextcloud-talk|nc-talk|nc):/i, "").toLowerCase(),
     notifyApproval: async ({ id }) => {
       console.log(`[nextcloud-talk] User ${id} approved for pairing`);
     },
@@ -82,8 +78,7 @@ export const nextcloudTalkPlugin: ChannelPlugin<ResolvedNextcloudTalkAccount> = 
   configSchema: buildChannelConfigSchema(NextcloudTalkConfigSchema),
   config: {
     listAccountIds: (cfg) => listNextcloudTalkAccountIds(cfg as CoreConfig),
-    resolveAccount: (cfg, accountId) =>
-      resolveNextcloudTalkAccount({ cfg: cfg as CoreConfig, accountId }),
+    resolveAccount: (cfg, accountId) => resolveNextcloudTalkAccount({ cfg: cfg as CoreConfig, accountId }),
     defaultAccountId: (cfg) => resolveDefaultNextcloudTalkAccountId(cfg as CoreConfig),
     setAccountEnabled: ({ cfg, accountId, enabled }) =>
       setAccountEnabledInConfigSection({
@@ -110,9 +105,9 @@ export const nextcloudTalkPlugin: ChannelPlugin<ResolvedNextcloudTalkAccount> = 
       baseUrl: account.baseUrl ? "[set]" : "[missing]",
     }),
     resolveAllowFrom: ({ cfg, accountId }) =>
-      mapAllowFromEntries(
-        resolveNextcloudTalkAccount({ cfg: cfg as CoreConfig, accountId }).config.allowFrom,
-      ).map((entry) => entry.toLowerCase()),
+      mapAllowFromEntries(resolveNextcloudTalkAccount({ cfg: cfg as CoreConfig, accountId }).config.allowFrom).map(
+        (entry) => entry.toLowerCase(),
+      ),
     formatAllowFrom: ({ allowFrom }) =>
       formatAllowFromLowercase({
         allowFrom,
@@ -133,12 +128,10 @@ export const nextcloudTalkPlugin: ChannelPlugin<ResolvedNextcloudTalkAccount> = 
       });
     },
     collectWarnings: ({ account, cfg }) => {
-      const roomAllowlistConfigured =
-        account.config.rooms && Object.keys(account.config.rooms).length > 0;
+      const roomAllowlistConfigured = account.config.rooms && Object.keys(account.config.rooms).length > 0;
       return collectAllowlistProviderGroupPolicyWarnings({
         cfg,
-        providerConfigPresent:
-          (cfg.channels as Record<string, unknown> | undefined)?.["nextcloud-talk"] !== undefined,
+        providerConfigPresent: (cfg.channels as Record<string, unknown> | undefined)?.["nextcloud-talk"] !== undefined,
         configuredGroupPolicy: account.config.groupPolicy,
         collect: (groupPolicy) =>
           collectOpenGroupPolicyRouteAllowlistWarnings({
@@ -332,9 +325,7 @@ export const nextcloudTalkPlugin: ChannelPlugin<ResolvedNextcloudTalkAccount> = 
     startAccount: async (ctx) => {
       const account = ctx.account;
       if (!account.secret || !account.baseUrl) {
-        throw new Error(
-          `Nextcloud Talk not configured for account "${account.accountId}" (missing secret or baseUrl)`,
-        );
+        throw new Error(`Nextcloud Talk not configured for account "${account.accountId}" (missing secret or baseUrl)`);
       }
 
       ctx.log?.info(`[${account.accountId}] starting Nextcloud Talk webhook server`);
@@ -358,9 +349,7 @@ export const nextcloudTalkPlugin: ChannelPlugin<ResolvedNextcloudTalkAccount> = 
     },
     logoutAccount: async ({ accountId, cfg }) => {
       const nextCfg = { ...cfg } as RemoteClawConfig;
-      const nextSection = cfg.channels?.["nextcloud-talk"]
-        ? { ...cfg.channels["nextcloud-talk"] }
-        : undefined;
+      const nextSection = cfg.channels?.["nextcloud-talk"] ? { ...cfg.channels["nextcloud-talk"] } : undefined;
       let cleared = false;
       let changed = false;
 

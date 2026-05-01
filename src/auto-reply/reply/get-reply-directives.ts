@@ -152,9 +152,7 @@ export async function resolveReplyDirectives(params: {
     commandSource: ctx.CommandSource,
   });
   const reservedCommands = new Set(
-    listChatCommands().flatMap((cmd) =>
-      cmd.textAliases.map((a) => a.replace(/^\//, "").toLowerCase()),
-    ),
+    listChatCommands().flatMap((cmd) => cmd.textAliases.map((a) => a.replace(/^\//, "").toLowerCase())),
   );
 
   // Model catalog gutted — aliases extracted from legacy config for compat.
@@ -166,24 +164,20 @@ export async function resolveReplyDirectives(params: {
     .filter((alias): alias is string => Boolean(alias))
     .filter((alias) => !reservedCommands.has(alias.toLowerCase()));
 
-  const configuredAliases = rawAliases.filter(
-    (alias) => !reservedCommands.has(alias.toLowerCase()),
-  );
+  const configuredAliases = rawAliases.filter((alias) => !reservedCommands.has(alias.toLowerCase()));
   const allowStatusDirective = allowTextCommands && command.isAuthorizedSender;
   let parsedDirectives = parseInlineDirectives(commandText, {
     modelAliases: configuredAliases,
     allowStatusDirective,
   });
-  const hasInlineStatus =
-    parsedDirectives.hasStatusDirective && parsedDirectives.cleaned.trim().length > 0;
+  const hasInlineStatus = parsedDirectives.hasStatusDirective && parsedDirectives.cleaned.trim().length > 0;
   if (hasInlineStatus) {
     parsedDirectives = {
       ...parsedDirectives,
       hasStatusDirective: false,
     };
   }
-  const hasInlineDirective =
-    parsedDirectives.hasVerboseDirective || parsedDirectives.hasQueueDirective;
+  const hasInlineDirective = parsedDirectives.hasVerboseDirective || parsedDirectives.hasQueueDirective;
   if (hasInlineDirective) {
     const stripped = stripStructuralPrefixes(parsedDirectives.cleaned);
     const noMentions = isGroup ? stripMentions(stripped, ctx, cfg, agentId) : stripped;
@@ -251,8 +245,7 @@ export async function resolveReplyDirectives(params: {
   sessionCtx.Body = cleanedBody;
   sessionCtx.BodyStripped = cleanedBody;
 
-  const messageProviderKey =
-    sessionCtx.Provider?.trim().toLowerCase() ?? ctx.Provider?.trim().toLowerCase() ?? "";
+  const messageProviderKey = sessionCtx.Provider?.trim().toLowerCase() ?? ctx.Provider?.trim().toLowerCase() ?? "";
   const elevatedEnabled = false;
   const elevatedAllowed = false;
   const elevatedFailures: { gate: string; key: string }[] = [];
@@ -278,8 +271,7 @@ export async function resolveReplyDirectives(params: {
           : "off";
   const resolvedBlockStreamingBreak: "text_end" | "message_end" =
     agentCfg?.blockStreamingBreak === "message_end" ? "message_end" : "text_end";
-  const blockStreamingEnabled =
-    resolvedBlockStreaming === "on" && opts?.disableBlockStreaming !== true;
+  const blockStreamingEnabled = resolvedBlockStreaming === "on" && opts?.disableBlockStreaming !== true;
   const blockReplyChunking = blockStreamingEnabled
     ? resolveBlockStreamingChunking(cfg, sessionCtx.Provider, sessionCtx.AccountId)
     : undefined;

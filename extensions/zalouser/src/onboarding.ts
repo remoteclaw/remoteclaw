@@ -106,9 +106,7 @@ async function promptZalouserAllowFrom(params: {
       continue;
     }
 
-    const resolvedIds = resolvedEntries
-      .filter((item) => item.resolved && item.id)
-      .map((item) => item.id as string);
+    const resolvedIds = resolvedEntries.filter((item) => item.resolved && item.id).map((item) => item.id as string);
     const unique = mergeAllowFromEntries(existingAllowFrom, resolvedIds);
 
     const notes = resolvedEntries
@@ -135,11 +133,7 @@ function setZalouserGroupPolicy(
   });
 }
 
-function setZalouserGroupAllowlist(
-  cfg: RemoteClawConfig,
-  accountId: string,
-  groupKeys: string[],
-): RemoteClawConfig {
+function setZalouserGroupAllowlist(cfg: RemoteClawConfig, accountId: string, groupKeys: string[]): RemoteClawConfig {
   const groups = Object.fromEntries(groupKeys.map((key) => [key, { allow: true }]));
   return setZalouserAccountScopedConfig(cfg, accountId, {
     groups,
@@ -188,13 +182,7 @@ export const zalouserOnboardingAdapter: ChannelOnboardingAdapter = {
       quickstartScore: configured ? 1 : 15,
     };
   },
-  configure: async ({
-    cfg,
-    prompter,
-    accountOverrides,
-    shouldPromptAccountIds,
-    forceAllowFrom,
-  }) => {
+  configure: async ({ cfg, prompter, accountOverrides, shouldPromptAccountIds, forceAllowFrom }) => {
     const defaultAccountId = resolveDefaultZalouserAccountId(cfg);
     const accountId = await resolveAccountIdForConfigure({
       cfg,
@@ -262,9 +250,7 @@ export const zalouserOnboardingAdapter: ChannelOnboardingAdapter = {
         if (start.qrDataUrl) {
           const qrPath = await writeQrDataUrlToTempFile(start.qrDataUrl, account.profile);
           await prompter.note(
-            [start.message, qrPath ? `QR image saved to: ${qrPath}` : undefined]
-              .filter(Boolean)
-              .join("\n"),
+            [start.message, qrPath ? `QR image saved to: ${qrPath}` : undefined].filter(Boolean).join("\n"),
             "QR Login",
           );
           const waited = await waitForZaloQrLogin({ profile: account.profile, timeoutMs: 120_000 });
@@ -312,9 +298,7 @@ export const zalouserOnboardingAdapter: ChannelOnboardingAdapter = {
             const resolvedIds = resolved
               .filter((entry) => entry.resolved && entry.id)
               .map((entry) => entry.id as string);
-            const unresolved = resolved
-              .filter((entry) => !entry.resolved)
-              .map((entry) => entry.input);
+            const unresolved = resolved.filter((entry) => !entry.resolved).map((entry) => entry.input);
             keys = [...resolvedIds, ...unresolved.map((entry) => entry.trim()).filter(Boolean)];
             const resolution = formatResolvedUnresolvedNote({
               resolved: resolvedIds,
@@ -324,10 +308,7 @@ export const zalouserOnboardingAdapter: ChannelOnboardingAdapter = {
               await prompter.note(resolution, "Zalo groups");
             }
           } catch (err) {
-            await prompter.note(
-              `Group lookup failed; keeping entries as typed. ${String(err)}`,
-              "Zalo groups",
-            );
+            await prompter.note(`Group lookup failed; keeping entries as typed. ${String(err)}`, "Zalo groups");
           }
         }
         next = setZalouserGroupPolicy(next, accountId, "allowlist");

@@ -32,8 +32,7 @@ export async function resolveSessionKey(params: {
 }): Promise<string> {
   const requestedLabel = params.meta.sessionLabel ?? params.opts.defaultSessionLabel;
   const requestedKey = params.meta.sessionKey ?? params.opts.defaultSessionKey;
-  const requireExisting =
-    params.meta.requireExisting ?? params.opts.requireExistingSession ?? false;
+  const requireExisting = params.meta.requireExisting ?? params.opts.requireExistingSession ?? false;
 
   if (params.meta.sessionLabel) {
     const resolved = await params.gateway.request<{ ok: true; key: string }>("sessions.resolve", {

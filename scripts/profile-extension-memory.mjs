@@ -14,7 +14,7 @@ const RSS_MARKER = "__REMOTECLAW_MAX_RSS_KB__=";
 function printHelp() {
   console.log(`Usage: node scripts/profile-extension-memory.mjs [options]
 
-Profiles peak RSS for built extension entrypoints in dist/extensions/*/index.js.
+Profiles peak RSS for built bundled plugin entrypoints.
 Run pnpm build first if you want stats for the latest source changes.
 
 Options:
@@ -121,15 +121,11 @@ function summarizeStderr(stderr, lines = 8) {
 
 async function runCase({ repoRoot, env, hookPath, name, body, timeoutMs }) {
   return await new Promise((resolve) => {
-    const child = spawn(
-      process.execPath,
-      ["--import", hookPath, "--input-type=module", "--eval", body],
-      {
-        cwd: repoRoot,
-        env,
-        stdio: ["ignore", "pipe", "pipe"],
-      },
-    );
+    const child = spawn(process.execPath, ["--import", hookPath, "--input-type=module", "--eval", body], {
+      cwd: repoRoot,
+      env,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
 
     let stdout = "";
     let stderr = "";
@@ -161,9 +157,7 @@ async function runCase({ repoRoot, env, hookPath, name, body, timeoutMs }) {
 }
 
 function buildImportBody(entryFiles, label) {
-  const imports = entryFiles
-    .map((filePath) => `await import(${JSON.stringify(filePath)});`)
-    .join("\n");
+  const imports = entryFiles.map((filePath) => `await import(${JSON.stringify(filePath)});`).join("\n");
   return `${imports}\nconsole.log(${JSON.stringify(label)});\nprocess.exit(0);\n`;
 }
 
@@ -179,7 +173,7 @@ function findExtensionEntries(repoRoot) {
     .toSorted((a, b) => a.dir.localeCompare(b.dir));
 
   if (entries.length === 0) {
-    throw new Error("No built extension entrypoints found under dist/extensions/*/index.js");
+    throw new Error("No built bundled plugin entrypoints found in the dist plugin tree");
   }
   return entries;
 }
@@ -189,9 +183,7 @@ async function main() {
   const repoRoot = process.cwd();
   const allEntries = findExtensionEntries(repoRoot);
   const selectedEntries =
-    options.extensions.length === 0
-      ? allEntries
-      : allEntries.filter((entry) => options.extensions.includes(entry.dir));
+    options.extensions.length === 0 ? allEntries : allEntries.filter((entry) => options.extensions.includes(entry.dir));
 
   const missing = options.extensions.filter((id) => !allEntries.some((entry) => entry.dir === id));
   if (missing.length > 0) {
@@ -277,9 +269,7 @@ async function main() {
           status: result.timedOut ? "timeout" : result.code === 0 ? "ok" : "fail",
           maxRssMb: result.maxRssMb,
           deltaFromBaselineMb:
-            result.maxRssMb !== null && baseline.maxRssMb !== null
-              ? result.maxRssMb - baseline.maxRssMb
-              : null,
+            result.maxRssMb !== null && baseline.maxRssMb !== null ? result.maxRssMb - baseline.maxRssMb : null,
           stderrPreview: summarizeStderr(result.stderr),
         });
 
@@ -289,9 +279,7 @@ async function main() {
       }
     }
 
-    await Promise.all(
-      Array.from({ length: Math.min(options.concurrency, selectedEntries.length) }, () => worker()),
-    );
+    await Promise.all(Array.from({ length: Math.min(options.concurrency, selectedEntries.length) }, () => worker()));
 
     results.sort((a, b) => a.dir.localeCompare(b.dir));
     const top = results

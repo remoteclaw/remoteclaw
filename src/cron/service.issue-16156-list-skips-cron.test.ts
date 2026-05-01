@@ -2,10 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { CronService } from "./service.js";
-import {
-  createStartedCronServiceWithFinishedBarrier,
-  setupCronServiceSuite,
-} from "./service.test-harness.js";
+import { createStartedCronServiceWithFinishedBarrier, setupCronServiceSuite } from "./service.test-harness.js";
 
 const { logger: noopLogger, makeStorePath } = setupCronServiceSuite({
   prefix: "remoteclaw-cron-16156-",
@@ -73,10 +70,7 @@ describe("#16156: cron.list() must not silently advance past-due recurring jobs"
     const updated = jobs.find((j) => j.id === job.id);
 
     // Job must have actually executed.
-    expect(enqueueSystemEvent).toHaveBeenCalledWith(
-      "cron-tick",
-      expect.objectContaining({ agentId: undefined }),
-    );
+    expect(enqueueSystemEvent).toHaveBeenCalledWith("cron-tick", expect.objectContaining({ agentId: undefined }));
     expect(updated?.state.lastStatus).toBe("ok");
     // nextRunAtMs must advance to a future minute boundary after execution.
     expect(updated?.state.nextRunAtMs).toBeGreaterThan(firstDueAt);
@@ -118,10 +112,7 @@ describe("#16156: cron.list() must not silently advance past-due recurring jobs"
     const jobs = await cron.list({ includeDisabled: true });
     const updated = jobs.find((j) => j.id === job.id);
 
-    expect(enqueueSystemEvent).toHaveBeenCalledWith(
-      "tick-5",
-      expect.objectContaining({ agentId: undefined }),
-    );
+    expect(enqueueSystemEvent).toHaveBeenCalledWith("tick-5", expect.objectContaining({ agentId: undefined }));
     expect(updated?.state.lastStatus).toBe("ok");
 
     cron.stop();

@@ -2,10 +2,7 @@ import { inspectDiscordAccount } from "../../../extensions/discord/src/account-i
 import { inspectSlackAccount } from "../../../extensions/slack/src/account-inspect.js";
 import { inspectTelegramAccount } from "../../../extensions/telegram/src/account-inspect.js";
 import { resolveWhatsAppAccount } from "../../../extensions/whatsapp/src/accounts.js";
-import {
-  isWhatsAppGroupJid,
-  normalizeWhatsAppTarget,
-} from "../../../extensions/whatsapp/src/normalize.js";
+import { isWhatsAppGroupJid, normalizeWhatsAppTarget } from "../../../extensions/whatsapp/src/normalize.js";
 import type { RemoteClawConfig } from "../../config/types.js";
 import { mapAllowFromEntries } from "../../plugin-sdk/channel-config-helpers.js";
 import { applyDirectoryQueryAndLimit, toDirectoryEntries } from "./directory-config-helpers.js";
@@ -47,10 +44,7 @@ function addTrimmedEntries(ids: Set<string>, values: Iterable<unknown>) {
   }
 }
 
-function normalizeTrimmedSet(
-  ids: Set<string>,
-  normalize: (raw: string) => string | null,
-): string[] {
+function normalizeTrimmedSet(ids: Set<string>, normalize: (raw: string) => string | null): string[] {
   return Array.from(ids)
     .map((raw) => raw.trim())
     .filter(Boolean)
@@ -99,11 +93,7 @@ export async function listDiscordDirectoryPeersFromConfig(
   const account = inspectDiscordAccount({ cfg: params.cfg, accountId: params.accountId });
   const ids = new Set<string>();
 
-  addAllowFromAndDmsIds(
-    ids,
-    account.config.allowFrom ?? account.config.dm?.allowFrom,
-    account.config.dms,
-  );
+  addAllowFromAndDmsIds(ids, account.config.allowFrom ?? account.config.dm?.allowFrom, account.config.dms);
   for (const guild of Object.values(account.config.guilds ?? {})) {
     addTrimmedEntries(ids, guild.users ?? []);
     for (const channel of Object.values(guild.channels ?? {})) {
@@ -146,10 +136,7 @@ export async function listTelegramDirectoryPeersFromConfig(
   params: DirectoryConfigParams,
 ): Promise<ChannelDirectoryEntry[]> {
   const account = inspectTelegramAccount({ cfg: params.cfg, accountId: params.accountId });
-  const raw = [
-    ...mapAllowFromEntries(account.config.allowFrom),
-    ...Object.keys(account.config.dms ?? {}),
-  ];
+  const raw = [...mapAllowFromEntries(account.config.allowFrom), ...Object.keys(account.config.dms ?? {})];
   const ids = Array.from(
     new Set(
       raw

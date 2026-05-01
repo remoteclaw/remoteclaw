@@ -19,9 +19,7 @@ describe("CallManager inbound allowlist", () => {
     });
 
     expect(manager.getCallByProviderCallId("provider-missing")).toBeUndefined();
-    expect(provider.hangupCalls).toEqual([
-      expect.objectContaining({ providerCallId: "provider-missing" }),
-    ]);
+    expect(provider.hangupCalls).toEqual([expect.objectContaining({ providerCallId: "provider-missing" })]);
   });
 
   it("rejects inbound calls with anonymous caller ID when allowlist enabled", async () => {
@@ -42,9 +40,7 @@ describe("CallManager inbound allowlist", () => {
     });
 
     expect(manager.getCallByProviderCallId("provider-anon")).toBeUndefined();
-    expect(provider.hangupCalls).toEqual([
-      expect.objectContaining({ providerCallId: "provider-anon" }),
-    ]);
+    expect(provider.hangupCalls).toEqual([expect.objectContaining({ providerCallId: "provider-anon" })]);
   });
 
   it("rejects inbound calls that only match allowlist suffixes", async () => {
@@ -65,9 +61,7 @@ describe("CallManager inbound allowlist", () => {
     });
 
     expect(manager.getCallByProviderCallId("provider-suffix")).toBeUndefined();
-    expect(provider.hangupCalls).toEqual([
-      expect.objectContaining({ providerCallId: "provider-suffix" }),
-    ]);
+    expect(provider.hangupCalls).toEqual([expect.objectContaining({ providerCallId: "provider-suffix" })]);
   });
 
   it("rejects duplicate inbound events with a single hangup call", async () => {
@@ -98,9 +92,7 @@ describe("CallManager inbound allowlist", () => {
     });
 
     expect(manager.getCallByProviderCallId("provider-dup")).toBeUndefined();
-    expect(provider.hangupCalls).toEqual([
-      expect.objectContaining({ providerCallId: "provider-dup" }),
-    ]);
+    expect(provider.hangupCalls).toEqual([expect.objectContaining({ providerCallId: "provider-dup" })]);
   });
 
   it("accepts inbound calls that exactly match the allowlist", async () => {
@@ -130,8 +122,6 @@ describe("CallManager inbound allowlist", () => {
       from: "+15550001234",
       to: "+15550000000",
     });
-    expect(call.callId).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
-    );
+    expect(call.callId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
   });
 });

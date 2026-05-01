@@ -38,8 +38,7 @@ export class DiscordUiContainer extends Container {
     spoiler?: boolean;
   }) {
     const accentOverride = normalizeDiscordAccentColor(params.accentColor);
-    const accentColor =
-      accentOverride ?? resolveDiscordAccentColor({ cfg: params.cfg, accountId: params.accountId });
+    const accentColor = accentOverride ?? resolveDiscordAccentColor({ cfg: params.cfg, accountId: params.accountId });
     super(params.components, { accentColor, spoiler: params.spoiler });
   }
 }

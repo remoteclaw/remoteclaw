@@ -15,10 +15,7 @@ type FeishuBeforeResetEvent = {
 };
 
 type FeishuBeforeResetRunner = {
-  runBeforeReset: (
-    event: FeishuBeforeResetEvent,
-    ctx: { agentId: string; sessionKey: string },
-  ) => Promise<void>;
+  runBeforeReset: (event: FeishuBeforeResetEvent, ctx: { agentId: string; sessionKey: string }) => Promise<void>;
 };
 
 /**

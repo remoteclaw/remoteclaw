@@ -3,9 +3,7 @@ import { type RemoteClawConfig, readConfigFileSnapshot } from "../config/config.
 import { formatConfigIssueLines } from "../config/issue-format.js";
 import type { RuntimeEnv } from "../runtime.js";
 
-export async function requireValidConfigSnapshot(
-  runtime: RuntimeEnv,
-): Promise<RemoteClawConfig | null> {
+export async function requireValidConfigSnapshot(runtime: RuntimeEnv): Promise<RemoteClawConfig | null> {
   const snapshot = await readConfigFileSnapshot();
   if (snapshot.exists && !snapshot.valid) {
     const issues =

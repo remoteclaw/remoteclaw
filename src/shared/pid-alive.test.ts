@@ -17,10 +17,7 @@ async function withLinuxProcessPlatform<T>(run: () => Promise<T>): Promise<T> {
   return withProcessPlatform("linux", run);
 }
 
-async function withProcessPlatform<T>(
-  platform: NodeJS.Platform,
-  run: () => Promise<T>,
-): Promise<T> {
+async function withProcessPlatform<T>(platform: NodeJS.Platform, run: () => Promise<T>): Promise<T> {
   const originalPlatformDescriptor = Object.getOwnPropertyDescriptor(process, "platform");
   if (!originalPlatformDescriptor) {
     throw new Error("missing process.platform descriptor");
@@ -83,8 +80,7 @@ describe("isPidAlive", () => {
 describe("getProcessStartTime", () => {
   it("parses linux /proc stat start times and rejects malformed variants", async () => {
     const fakeStatPrefix = "42 (node) S 1 42 42 0 -1 4194304 12345 0 0 0 100 50 0 0 20 0 8 0 ";
-    const fakeStatSuffix =
-      " 123456789 5000 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0";
+    const fakeStatSuffix = " 123456789 5000 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0";
     mockProcReads({
       [`/proc/${process.pid}/stat`]: `${process.pid} (node) S 1 ${process.pid} ${process.pid} 0 -1 4194304 12345 0 0 0 100 50 0 0 20 0 8 0 98765 123456789 5000 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0`,
       "/proc/42/stat": `${fakeStatPrefix}55555${fakeStatSuffix}`,

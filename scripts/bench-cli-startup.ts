@@ -65,12 +65,7 @@ function percentile(values: number[], p: number): number {
   return sorted[index];
 }
 
-function runCase(params: {
-  entry: string;
-  runCase: CommandCase;
-  runs: number;
-  timeoutMs: number;
-}): Sample[] {
+function runCase(params: { entry: string; runCase: CommandCase; runs: number; timeoutMs: number }): Sample[] {
   const results: Sample[] = [];
   for (let i = 0; i < params.runs; i += 1) {
     const started = process.hrtime.bigint();
@@ -154,8 +149,7 @@ function printSuite(params: {
 }
 
 async function main(): Promise<void> {
-  const entryPrimary =
-    parseFlagValue("--entry-primary") ?? parseFlagValue("--entry") ?? DEFAULT_ENTRY;
+  const entryPrimary = parseFlagValue("--entry-primary") ?? parseFlagValue("--entry") ?? DEFAULT_ENTRY;
   const entrySecondary = parseFlagValue("--entry-secondary");
   const runs = parsePositiveInt(parseFlagValue("--runs"), DEFAULT_RUNS);
   const timeoutMs = parsePositiveInt(parseFlagValue("--timeout-ms"), DEFAULT_TIMEOUT_MS);
@@ -190,9 +184,7 @@ async function main(): Promise<void> {
       const delta = secondary.avg - primary.avg;
       const pct = primary.avg > 0 ? (delta / primary.avg) * 100 : 0;
       const sign = delta > 0 ? "+" : "";
-      console.log(
-        `${commandCase.name.padEnd(13)} ${sign}${formatMs(delta)} (${sign}${pct.toFixed(1)}%)`,
-      );
+      console.log(`${commandCase.name.padEnd(13)} ${sign}${formatMs(delta)} (${sign}${pct.toFixed(1)}%)`);
     }
   }
 }

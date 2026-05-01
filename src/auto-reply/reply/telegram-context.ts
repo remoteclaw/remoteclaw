@@ -11,11 +11,8 @@ type TelegramConversationParams = {
   };
 };
 
-export function resolveTelegramConversationId(
-  params: TelegramConversationParams,
-): string | undefined {
-  const rawThreadId =
-    params.ctx.MessageThreadId != null ? String(params.ctx.MessageThreadId).trim() : "";
+export function resolveTelegramConversationId(params: TelegramConversationParams): string | undefined {
+  const rawThreadId = params.ctx.MessageThreadId != null ? String(params.ctx.MessageThreadId).trim() : "";
   const threadId = rawThreadId || undefined;
   const toCandidates = [
     typeof params.ctx.OriginatingTo === "string" ? params.ctx.OriginatingTo : "",

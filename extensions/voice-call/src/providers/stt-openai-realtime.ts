@@ -70,12 +70,7 @@ export class OpenAIRealtimeSTTProvider {
    * Create a new realtime transcription session.
    */
   createSession(): RealtimeSTTSession {
-    return new OpenAIRealtimeSTTSession(
-      this.apiKey,
-      this.model,
-      this.silenceDurationMs,
-      this.vadThreshold,
-    );
+    return new OpenAIRealtimeSTTSession(this.apiKey, this.model, this.silenceDurationMs, this.vadThreshold);
   }
 }
 
@@ -161,9 +156,7 @@ class OpenAIRealtimeSTTSession implements RealtimeSTTSession {
       });
 
       this.ws.on("close", (code, reason) => {
-        console.log(
-          `[RealtimeSTT] WebSocket closed (code: ${code}, reason: ${reason?.toString() || "none"})`,
-        );
+        console.log(`[RealtimeSTT] WebSocket closed (code: ${code}, reason: ${reason?.toString() || "none"})`);
         this.connected = false;
 
         // Attempt reconnection if not intentionally closed
@@ -212,12 +205,7 @@ class OpenAIRealtimeSTTSession implements RealtimeSTTSession {
     }
   }
 
-  private handleEvent(event: {
-    type: string;
-    delta?: string;
-    transcript?: string;
-    error?: unknown;
-  }): void {
+  private handleEvent(event: { type: string; delta?: string; transcript?: string; error?: unknown }): void {
     switch (event.type) {
       case "transcription_session.created":
       case "transcription_session.updated":

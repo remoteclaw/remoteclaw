@@ -141,9 +141,7 @@ for (const entry of requiredRuntimeShimEntries) {
 }
 
 if (missing > 0) {
-  console.error(
-    `\nERROR: ${missing} required plugin-sdk artifact(s) missing (named exports or subpath files).`,
-  );
+  console.error(`\nERROR: ${missing} required plugin-sdk artifact(s) missing (named exports or subpath files).`);
   console.error("This will break channel extension plugins at runtime.");
   console.error("Check src/plugin-sdk/index.ts, subpath entries, and rebuild.");
   process.exit(1);

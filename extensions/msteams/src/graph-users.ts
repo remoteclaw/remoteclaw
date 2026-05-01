@@ -1,10 +1,6 @@
 import { escapeOData, fetchGraphJson, type GraphResponse, type GraphUser } from "./graph.js";
 
-export async function searchGraphUsers(params: {
-  token: string;
-  query: string;
-  top?: number;
-}): Promise<GraphUser[]> {
+export async function searchGraphUsers(params: { token: string; query: string; top?: number }): Promise<GraphUser[]> {
   const query = params.query.trim();
   if (!query) {
     return [];

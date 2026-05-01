@@ -96,10 +96,7 @@ function truncateSummary(text: string, max = 50): string {
   return clean.length <= max ? clean : clean.slice(0, max - 3) + "...";
 }
 
-export function mergeStreamingText(
-  previousText: string | undefined,
-  nextText: string | undefined,
-): string {
+export function mergeStreamingText(previousText: string | undefined, nextText: string | undefined): string {
   const previous = typeof previousText === "string" ? previousText : "";
   const next = typeof nextText === "string" ? nextText : "";
   if (!next) {

@@ -109,12 +109,8 @@ describe("applyMergePatch", () => {
     expect(main?.model).toBe("claude-opus-4-20250918");
     expect(main?.workspace).toBe("/home/main");
     expect(merged.agents?.list?.find((entry) => entry.id === "ota")?.workspace).toBe("/home/ota");
-    expect(merged.agents?.list?.find((entry) => entry.id === "trading")?.workspace).toBe(
-      "/home/trading",
-    );
-    expect(merged.agents?.list?.find((entry) => entry.id === "codex")?.workspace).toBe(
-      "/home/codex",
-    );
+    expect(merged.agents?.list?.find((entry) => entry.id === "trading")?.workspace).toBe("/home/trading");
+    expect(merged.agents?.list?.find((entry) => entry.id === "codex")?.workspace).toBe("/home/codex");
   });
 
   it("keeps existing id entries when patch mixes id and primitive entries", () => {

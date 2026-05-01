@@ -3,12 +3,7 @@ export { formatAuthDoctorHint } from "./doctor.js";
 export { resolveApiKeyForProfile } from "./oauth.js";
 export { resolveAuthProfileOrder } from "./order.js";
 export { resolveAuthStorePathForDisplay } from "./paths.js";
-export {
-  dedupeProfileIds,
-  listProfilesForProvider,
-  upsertAuthProfile,
-  upsertAuthProfileWithLock,
-} from "./profiles.js";
+export { dedupeProfileIds, listProfilesForProvider, upsertAuthProfile, upsertAuthProfileWithLock } from "./profiles.js";
 export { ensureAuthProfileStore, loadAuthProfileStore, saveAuthProfileStore } from "./store.js";
 export type {
   ApiKeyCredential,

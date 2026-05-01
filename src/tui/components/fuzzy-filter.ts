@@ -80,10 +80,7 @@ export function fuzzyMatchLower(queryLower: string, textLower: string): number |
  * Filter items using pre-lowercased searchTextLower field.
  * Supports space-separated tokens (all must match).
  */
-export function fuzzyFilterLower<T extends { searchTextLower?: string }>(
-  items: T[],
-  queryLower: string,
-): T[] {
+export function fuzzyFilterLower<T extends { searchTextLower?: string }>(items: T[], queryLower: string): T[] {
   const trimmed = queryLower.trim();
   if (!trimmed) {
     return items;
@@ -119,9 +116,9 @@ export function fuzzyFilterLower<T extends { searchTextLower?: string }>(
 /**
  * Prepare items for fuzzy filtering by pre-computing lowercase search text.
  */
-export function prepareSearchItems<
-  T extends { label?: string; description?: string; searchText?: string },
->(items: T[]): (T & { searchTextLower: string })[] {
+export function prepareSearchItems<T extends { label?: string; description?: string; searchText?: string }>(
+  items: T[],
+): (T & { searchTextLower: string })[] {
   return items.map((item) => {
     const parts: string[] = [];
     if (item.label) {

@@ -12,11 +12,7 @@ function createApp(): Record<string, unknown> {
   return document.createElement("remoteclaw-app") as unknown as Record<string, unknown>;
 }
 
-function assertAllDefined(
-  instance: Record<string, unknown>,
-  fields: readonly string[],
-  label: string,
-) {
+function assertAllDefined(instance: Record<string, unknown>, fields: readonly string[], label: string) {
   for (const field of fields) {
     expect(instance[field], `missing ${label} field: ${field}`).not.toBeUndefined();
   }
@@ -95,12 +91,7 @@ const TOOL_STREAM_HOST_FIELDS = [
 // as compile errors — but runtime assertions still catch regressions in
 // fixture-based tests that bypass the class.
 
-const POLLING_HOST_FIELDS = [
-  "nodesPollInterval",
-  "logsPollInterval",
-  "debugPollInterval",
-  "tab",
-] as const;
+const POLLING_HOST_FIELDS = ["nodesPollInterval", "logsPollInterval", "debugPollInterval", "tab"] as const;
 
 const CHAT_HOST_FIELDS = [
   "connected",

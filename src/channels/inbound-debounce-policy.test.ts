@@ -1,8 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  createChannelInboundDebouncer,
-  shouldDebounceTextInbound,
-} from "./inbound-debounce-policy.js";
+import { createChannelInboundDebouncer, shouldDebounceTextInbound } from "./inbound-debounce-policy.js";
 
 describe("shouldDebounceTextInbound", () => {
   it("rejects blank text, media, and control commands", () => {
@@ -16,9 +13,7 @@ describe("shouldDebounceTextInbound", () => {
   it("accepts normal text when debounce is allowed", () => {
     const cfg = {} as Parameters<typeof shouldDebounceTextInbound>[0]["cfg"];
     expect(shouldDebounceTextInbound({ text: "hello there", cfg })).toBe(true);
-    expect(shouldDebounceTextInbound({ text: "hello there", cfg, allowDebounce: false })).toBe(
-      false,
-    );
+    expect(shouldDebounceTextInbound({ text: "hello there", cfg, allowDebounce: false })).toBe(false);
   });
 });
 

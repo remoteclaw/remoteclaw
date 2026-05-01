@@ -69,10 +69,7 @@ export function createMattermostReactionFetchMock(params: {
   });
 }
 
-export async function withMockedGlobalFetch<T>(
-  fetchImpl: typeof fetch,
-  run: () => Promise<T>,
-): Promise<T> {
+export async function withMockedGlobalFetch<T>(fetchImpl: typeof fetch, run: () => Promise<T>): Promise<T> {
   const prevFetch = globalThis.fetch;
   (globalThis as any).fetch = fetchImpl;
   try {

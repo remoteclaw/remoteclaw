@@ -81,12 +81,7 @@ export class GeminiCliRuntime extends CLIRuntimeBase {
   // ── CLIRuntimeBase abstract method implementations ────────────────────
 
   protected buildArgs(params: AgentExecuteParams): string[] {
-    const args: string[] = [
-      "--output-format",
-      "stream-json",
-      "--prompt",
-      this.composePrompt(params),
-    ];
+    const args: string[] = ["--output-format", "stream-json", "--prompt", this.composePrompt(params)];
 
     if (params.sessionId) {
       args.push("--resume", params.sessionId);
@@ -175,15 +170,11 @@ export class GeminiCliRuntime extends CLIRuntimeBase {
   private handleResult(parsed: Record<string, unknown>): null {
     if (isObject(parsed.stats)) {
       this.resultStats = {
-        inputTokens:
-          typeof parsed.stats.input_tokens === "number" ? parsed.stats.input_tokens : undefined,
-        outputTokens:
-          typeof parsed.stats.output_tokens === "number" ? parsed.stats.output_tokens : undefined,
+        inputTokens: typeof parsed.stats.input_tokens === "number" ? parsed.stats.input_tokens : undefined,
+        outputTokens: typeof parsed.stats.output_tokens === "number" ? parsed.stats.output_tokens : undefined,
         cached: typeof parsed.stats.cached === "number" ? parsed.stats.cached : undefined,
-        durationMs:
-          typeof parsed.stats.duration_ms === "number" ? parsed.stats.duration_ms : undefined,
-        toolCalls:
-          typeof parsed.stats.tool_calls === "number" ? parsed.stats.tool_calls : undefined,
+        durationMs: typeof parsed.stats.duration_ms === "number" ? parsed.stats.duration_ms : undefined,
+        toolCalls: typeof parsed.stats.tool_calls === "number" ? parsed.stats.tool_calls : undefined,
       };
     }
     return null;

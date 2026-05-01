@@ -13,16 +13,13 @@ export type RuntimeGroupPolicyParams = {
   missingProviderFallbackPolicy?: GroupPolicy;
 };
 
-export function resolveRuntimeGroupPolicy(
-  params: RuntimeGroupPolicyParams,
-): RuntimeGroupPolicyResolution {
+export function resolveRuntimeGroupPolicy(params: RuntimeGroupPolicyParams): RuntimeGroupPolicyResolution {
   const configuredFallbackPolicy = params.configuredFallbackPolicy ?? "open";
   const missingProviderFallbackPolicy = params.missingProviderFallbackPolicy ?? "allowlist";
   const groupPolicy = params.providerConfigPresent
     ? (params.groupPolicy ?? params.defaultGroupPolicy ?? configuredFallbackPolicy)
     : (params.groupPolicy ?? missingProviderFallbackPolicy);
-  const providerMissingFallbackApplied =
-    !params.providerConfigPresent && params.groupPolicy === undefined;
+  const providerMissingFallbackApplied = !params.providerConfigPresent && params.groupPolicy === undefined;
   return { groupPolicy, providerMissingFallbackApplied };
 }
 

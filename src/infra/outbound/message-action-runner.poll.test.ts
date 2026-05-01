@@ -11,9 +11,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("./outbound-send-service.js", async () => {
-  const actual = await vi.importActual<typeof import("./outbound-send-service.js")>(
-    "./outbound-send-service.js",
-  );
+  const actual = await vi.importActual<typeof import("./outbound-send-service.js")>("./outbound-send-service.js");
   return {
     ...actual,
     executePollAction: mocks.executePollAction,

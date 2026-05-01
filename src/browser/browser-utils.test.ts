@@ -3,10 +3,7 @@ import { appendCdpPath, getHeadersWithAuth } from "./cdp.helpers.js";
 import { __test } from "./client-fetch.js";
 import { resolveBrowserConfig, resolveProfile } from "./config.js";
 import { shouldRejectBrowserMutation } from "./csrf.js";
-import {
-  ensureChromeExtensionRelayServer,
-  stopChromeExtensionRelayServer,
-} from "./extension-relay.js";
+import { ensureChromeExtensionRelayServer, stopChromeExtensionRelayServer } from "./extension-relay.js";
 import { toBoolean } from "./routes/utils.js";
 import type { BrowserServerState } from "./server-context.js";
 import { listKnownProfileNames } from "./server-context.js";
@@ -39,9 +36,7 @@ describe("browser target id resolution", () => {
   });
 
   it("resolves unique prefixes (case-insensitive)", () => {
-    const res = resolveTargetIdFromTabs("57a01309", [
-      { targetId: "57A01309E14B5DEE0FB41F908515A2FC" },
-    ]);
+    const res = resolveTargetIdFromTabs("57a01309", [{ targetId: "57A01309E14B5DEE0FB41F908515A2FC" }]);
     expect(res).toEqual({
       ok: true,
       targetId: "57A01309E14B5DEE0FB41F908515A2FC",
@@ -238,10 +233,6 @@ describe("browser server-context listKnownProfileNames", () => {
       ]),
     };
 
-    expect(listKnownProfileNames(state).toSorted()).toEqual([
-      "chrome",
-      "remoteclaw",
-      "stale-removed",
-    ]);
+    expect(listKnownProfileNames(state).toSorted()).toEqual(["chrome", "remoteclaw", "stale-removed"]);
   });
 });

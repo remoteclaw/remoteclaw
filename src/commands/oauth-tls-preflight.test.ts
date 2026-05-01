@@ -1,8 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  formatOpenAIOAuthTlsPreflightFix,
-  runOpenAIOAuthTlsPreflight,
-} from "./oauth-tls-preflight.js";
+import { formatOpenAIOAuthTlsPreflightFix, runOpenAIOAuthTlsPreflight } from "./oauth-tls-preflight.js";
 
 describe("runOpenAIOAuthTlsPreflight", () => {
   beforeEach(() => {
@@ -10,9 +7,7 @@ describe("runOpenAIOAuthTlsPreflight", () => {
   });
 
   it("returns ok when OpenAI auth endpoint is reachable", async () => {
-    const fetchImpl = vi.fn(
-      async () => new Response("", { status: 400 }),
-    ) as unknown as typeof fetch;
+    const fetchImpl = vi.fn(async () => new Response("", { status: 400 })) as unknown as typeof fetch;
     const result = await runOpenAIOAuthTlsPreflight({ fetchImpl, timeoutMs: 20 });
     expect(result).toEqual({ ok: true });
   });
@@ -36,9 +31,7 @@ describe("runOpenAIOAuthTlsPreflight", () => {
   it("keeps generic TLS transport failures in network classification", async () => {
     const networkFetchImpl = vi.fn(async () => {
       throw new TypeError("fetch failed", {
-        cause: new Error(
-          "Client network socket disconnected before secure TLS connection was established",
-        ),
+        cause: new Error("Client network socket disconnected before secure TLS connection was established"),
       });
     }) as unknown as typeof fetch;
     const result = await runOpenAIOAuthTlsPreflight({

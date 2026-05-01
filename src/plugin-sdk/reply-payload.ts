@@ -22,20 +22,13 @@ export type SendableOutboundReplyParts = {
 
 type SendPayloadContext = Parameters<NonNullable<ChannelOutboundAdapter["sendPayload"]>>[0];
 type SendPayloadResult = Awaited<ReturnType<NonNullable<ChannelOutboundAdapter["sendPayload"]>>>;
-type SendPayloadAdapter = Pick<
-  ChannelOutboundAdapter,
-  "sendMedia" | "sendText" | "chunker" | "textChunkLimit"
->;
+type SendPayloadAdapter = Pick<ChannelOutboundAdapter, "sendMedia" | "sendText" | "chunker" | "textChunkLimit">;
 
 /** Extract the supported outbound reply fields from loose tool or agent payload objects. */
-export function normalizeOutboundReplyPayload(
-  payload: Record<string, unknown>,
-): OutboundReplyPayload {
+export function normalizeOutboundReplyPayload(payload: Record<string, unknown>): OutboundReplyPayload {
   const text = typeof payload.text === "string" ? payload.text : undefined;
   const mediaUrls = Array.isArray(payload.mediaUrls)
-    ? payload.mediaUrls.filter(
-        (entry): entry is string => typeof entry === "string" && entry.length > 0,
-      )
+    ? payload.mediaUrls.filter((entry): entry is string => typeof entry === "string" && entry.length > 0)
     : undefined;
   const mediaUrl = typeof payload.mediaUrl === "string" ? payload.mediaUrl : undefined;
   const replyToId = typeof payload.replyToId === "string" ? payload.replyToId : undefined;
@@ -53,18 +46,13 @@ export function createNormalizedOutboundDeliverer(
 ): (payload: unknown) => Promise<void> {
   return async (payload: unknown) => {
     const normalized =
-      payload && typeof payload === "object"
-        ? normalizeOutboundReplyPayload(payload as Record<string, unknown>)
-        : {};
+      payload && typeof payload === "object" ? normalizeOutboundReplyPayload(payload as Record<string, unknown>) : {};
     await handler(normalized);
   };
 }
 
 /** Prefer multi-attachment payloads, then fall back to the legacy single-media field. */
-export function resolveOutboundMediaUrls(payload: {
-  mediaUrls?: string[];
-  mediaUrl?: string;
-}): string[] {
+export function resolveOutboundMediaUrls(payload: { mediaUrls?: string[]; mediaUrl?: string }): string[] {
   if (payload.mediaUrls?.length) {
     return payload.mediaUrls;
   }
@@ -139,10 +127,7 @@ export function resolveTextChunksWithFallback(text: string, chunks: readonly str
 }
 
 /** Send media-first payloads intact, or chunk text-only payloads through the caller's transport hooks. */
-export async function sendPayloadWithChunkedTextAndMedia<
-  TContext extends { payload: object },
-  TResult,
->(params: {
+export async function sendPayloadWithChunkedTextAndMedia<TContext extends { payload: object }, TResult>(params: {
   ctx: TContext;
   textChunkLimit?: number;
   chunker?: ((text: string, limit: number) => string[]) | null;
@@ -183,12 +168,7 @@ export async function sendPayloadWithChunkedTextAndMedia<
 export async function sendPayloadMediaSequence<TResult>(params: {
   text: string;
   mediaUrls: readonly string[];
-  send: (input: {
-    text: string;
-    mediaUrl: string;
-    index: number;
-    isFirst: boolean;
-  }) => Promise<TResult>;
+  send: (input: { text: string; mediaUrl: string; index: number; isFirst: boolean }) => Promise<TResult>;
 }): Promise<TResult | undefined> {
   let lastResult: TResult | undefined;
   for (let i = 0; i < params.mediaUrls.length; i += 1) {
@@ -209,12 +189,7 @@ export async function sendPayloadMediaSequence<TResult>(params: {
 export async function sendPayloadMediaSequenceOrFallback<TResult>(params: {
   text: string;
   mediaUrls: readonly string[];
-  send: (input: {
-    text: string;
-    mediaUrl: string;
-    index: number;
-    isFirst: boolean;
-  }) => Promise<TResult>;
+  send: (input: { text: string; mediaUrl: string; index: number; isFirst: boolean }) => Promise<TResult>;
   fallbackResult: TResult;
   sendNoMedia?: () => Promise<TResult>;
 }): Promise<TResult> {
@@ -227,12 +202,7 @@ export async function sendPayloadMediaSequenceOrFallback<TResult>(params: {
 export async function sendPayloadMediaSequenceAndFinalize<TMediaResult, TResult>(params: {
   text: string;
   mediaUrls: readonly string[];
-  send: (input: {
-    text: string;
-    mediaUrl: string;
-    index: number;
-    isFirst: boolean;
-  }) => Promise<TMediaResult>;
+  send: (input: { text: string; mediaUrl: string; index: number; isFirst: boolean }) => Promise<TMediaResult>;
   finalize: () => Promise<TResult>;
 }): Promise<TResult> {
   if (params.mediaUrls.length > 0) {
@@ -283,17 +253,12 @@ export function isNumericTargetId(raw: string): boolean {
 }
 
 /** Append attachment links to plain text when the channel cannot send media inline. */
-export function formatTextWithAttachmentLinks(
-  text: string | undefined,
-  mediaUrls: string[],
-): string {
+export function formatTextWithAttachmentLinks(text: string | undefined, mediaUrls: string[]): string {
   const trimmedText = text?.trim() ?? "";
   if (!trimmedText && mediaUrls.length === 0) {
     return "";
   }
-  const mediaBlock = mediaUrls.length
-    ? mediaUrls.map((url) => `Attachment: ${url}`).join("\n")
-    : "";
+  const mediaBlock = mediaUrls.length ? mediaUrls.map((url) => `Attachment: ${url}`).join("\n") : "";
   if (!trimmedText) {
     return mediaBlock;
   }
@@ -387,10 +352,7 @@ export async function deliverFormattedTextWithAttachments(params: {
   payload: OutboundReplyPayload;
   send: (params: { text: string; replyToId?: string }) => Promise<void>;
 }): Promise<boolean> {
-  const text = formatTextWithAttachmentLinks(
-    params.payload.text,
-    resolveOutboundMediaUrls(params.payload),
-  );
+  const text = formatTextWithAttachmentLinks(params.payload.text, resolveOutboundMediaUrls(params.payload));
   if (!text) {
     return false;
   }

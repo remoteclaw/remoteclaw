@@ -133,11 +133,7 @@ export async function prepareImageInfo(params: {
       const thumbMeta = await getCore()
         .media.getImageMetadata(thumbBuffer)
         .catch(() => null);
-      const thumbUri = await params.client.uploadContent(
-        thumbBuffer,
-        "image/jpeg",
-        "thumbnail.jpg",
-      );
+      const thumbUri = await params.client.uploadContent(thumbBuffer, "image/jpeg", "thumbnail.jpg");
       imageInfo.thumbnail_url = thumbUri;
       if (thumbMeta) {
         imageInfo.thumbnail_info = {

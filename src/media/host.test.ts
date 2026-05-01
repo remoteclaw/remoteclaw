@@ -9,8 +9,7 @@ const mocks = vi.hoisted(() => ({
   startMediaServer: vi.fn(),
   logInfo: vi.fn(),
 }));
-const { saveMediaSource, getTailnetHostname, ensurePortAvailable, startMediaServer, logInfo } =
-  mocks;
+const { saveMediaSource, getTailnetHostname, ensurePortAvailable, startMediaServer, logInfo } = mocks;
 
 vi.mock("./store.js", () => ({ saveMediaSource }));
 vi.mock("../infra/tailscale.js", () => ({ getTailnetHostname }));
@@ -67,9 +66,9 @@ describe("ensureMediaHosted", () => {
       ensurePortAvailable.mockResolvedValue(undefined);
       const rmSpy = vi.spyOn(fs, "rm").mockResolvedValue(undefined);
 
-      await expect(
-        ensureMediaHosted(params.filePath, { startServer: params.startServer }),
-      ).rejects.toThrow(params.expectedError);
+      await expect(ensureMediaHosted(params.filePath, { startServer: params.startServer })).rejects.toThrow(
+        params.expectedError,
+      );
       expect(rmSpy).toHaveBeenCalledWith(params.expectedCleanupPath);
       rmSpy.mockRestore();
       return;
@@ -89,11 +88,7 @@ describe("ensureMediaHosted", () => {
     });
 
     if (params.expectServerStart) {
-      expect(startMediaServer).toHaveBeenCalledWith(
-        params.port,
-        expect.any(Number),
-        expect.anything(),
-      );
+      expect(startMediaServer).toHaveBeenCalledWith(params.port, expect.any(Number), expect.anything());
       expect(logInfo).toHaveBeenCalled();
     } else {
       expect(startMediaServer).not.toHaveBeenCalled();

@@ -28,16 +28,12 @@ export function resolveToolFsConfig(params: { cfg?: RemoteClawConfig; agentId?: 
 } {
   const cfg = params.cfg;
   const globalFs = cfg?.tools?.fs;
-  const agentFs =
-    cfg && params.agentId ? resolveAgentConfig(cfg, params.agentId)?.tools?.fs : undefined;
+  const agentFs = cfg && params.agentId ? resolveAgentConfig(cfg, params.agentId)?.tools?.fs : undefined;
   return {
     workspaceOnly: agentFs?.workspaceOnly ?? globalFs?.workspaceOnly,
   };
 }
 
-export function resolveEffectiveToolFsWorkspaceOnly(params: {
-  cfg?: RemoteClawConfig;
-  agentId?: string;
-}): boolean {
+export function resolveEffectiveToolFsWorkspaceOnly(params: { cfg?: RemoteClawConfig; agentId?: string }): boolean {
   return resolveToolFsConfig(params).workspaceOnly === true;
 }

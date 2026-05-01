@@ -1,8 +1,4 @@
-import {
-  isAvatarHttpUrl,
-  isAvatarImageDataUrl,
-  looksLikeAvatarPath,
-} from "../shared/avatar-policy.js";
+import { isAvatarHttpUrl, isAvatarImageDataUrl, looksLikeAvatarPath } from "../shared/avatar-policy.js";
 
 const CONTROL_UI_AVATAR_PREFIX = "/avatar";
 
@@ -27,9 +23,7 @@ export function normalizeControlUiBasePath(basePath?: string): string {
 }
 
 export function buildControlUiAvatarUrl(basePath: string, agentId: string): string {
-  return basePath
-    ? `${basePath}${CONTROL_UI_AVATAR_PREFIX}/${agentId}`
-    : `${CONTROL_UI_AVATAR_PREFIX}/${agentId}`;
+  return basePath ? `${basePath}${CONTROL_UI_AVATAR_PREFIX}/${agentId}` : `${CONTROL_UI_AVATAR_PREFIX}/${agentId}`;
 }
 
 export function resolveAssistantAvatarUrl(params: {
@@ -46,9 +40,7 @@ export function resolveAssistantAvatarUrl(params: {
   }
 
   const basePath = normalizeControlUiBasePath(params.basePath);
-  const baseAvatarPrefix = basePath
-    ? `${basePath}${CONTROL_UI_AVATAR_PREFIX}/`
-    : `${CONTROL_UI_AVATAR_PREFIX}/`;
+  const baseAvatarPrefix = basePath ? `${basePath}${CONTROL_UI_AVATAR_PREFIX}/` : `${CONTROL_UI_AVATAR_PREFIX}/`;
   if (basePath && avatar.startsWith(`${CONTROL_UI_AVATAR_PREFIX}/`)) {
     return `${basePath}${avatar}`;
   }

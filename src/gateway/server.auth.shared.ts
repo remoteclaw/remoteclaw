@@ -26,15 +26,7 @@ let authIdentityPathSeq = 0;
 
 function nextAuthIdentityPath(prefix: string): string {
   const poolId = process.env.VITEST_POOL_ID ?? "0";
-  const fileName =
-    prefix +
-    "-" +
-    String(process.pid) +
-    "-" +
-    poolId +
-    "-" +
-    String(authIdentityPathSeq++) +
-    ".json";
+  const fileName = prefix + "-" + String(process.pid) + "-" + poolId + "-" + String(authIdentityPathSeq++) + ".json";
   return path.join(os.tmpdir(), fileName);
 }
 
@@ -98,10 +90,7 @@ function restoreGatewayToken(prevToken: string | undefined) {
   }
 }
 
-async function withRuntimeVersionEnv<T>(
-  env: Record<string, string | undefined>,
-  run: () => Promise<T>,
-): Promise<T> {
+async function withRuntimeVersionEnv<T>(env: Record<string, string | undefined>, run: () => Promise<T>): Promise<T> {
   return withEnvAsync(env, run);
 }
 
@@ -170,9 +159,7 @@ async function createSignedDevice(params: {
 }) {
   const { loadOrCreateDeviceIdentity, publicKeyRawBase64UrlFromPem, signDevicePayload } =
     await import("../infra/device-identity.js");
-  const identity = params.identityPath
-    ? loadOrCreateDeviceIdentity(params.identityPath)
-    : loadOrCreateDeviceIdentity();
+  const identity = params.identityPath ? loadOrCreateDeviceIdentity(params.identityPath) : loadOrCreateDeviceIdentity();
   const signedAtMs = params.signedAtMs ?? Date.now();
   const payload = buildDeviceAuthPayload({
     deviceId: identity.deviceId,
@@ -343,8 +330,7 @@ async function ensurePairedDeviceTokenForCurrentIdentity(ws: WebSocket): Promise
   if (!res.ok) {
     await approvePendingPairingIfNeeded();
   }
-  const { identity, deviceToken } =
-    await resolvePairedTokenForDeviceIdentityPath(deviceIdentityPath);
+  const { identity, deviceToken } = await resolvePairedTokenForDeviceIdentityPath(deviceIdentityPath);
   return {
     identity,
     deviceToken,

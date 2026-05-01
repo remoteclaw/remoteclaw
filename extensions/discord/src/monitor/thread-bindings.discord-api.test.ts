@@ -26,8 +26,7 @@ let maybeSendBindingMessage: typeof import("./thread-bindings.discord-api.js").m
 let resolveChannelIdForBinding: typeof import("./thread-bindings.discord-api.js").resolveChannelIdForBinding;
 
 beforeAll(async () => {
-  ({ maybeSendBindingMessage, resolveChannelIdForBinding } =
-    await import("./thread-bindings.discord-api.js"));
+  ({ maybeSendBindingMessage, resolveChannelIdForBinding } = await import("./thread-bindings.discord-api.js"));
 });
 
 describe("resolveChannelIdForBinding", () => {
@@ -46,13 +45,9 @@ describe("resolveChannelIdForBinding", () => {
     );
     vi.spyOn(discordClientModule, "createDiscordRestClient").mockImplementation(
       (...args) =>
-        createDiscordRestClient(...args) as unknown as ReturnType<
-          typeof discordClientModule.createDiscordRestClient
-        >,
+        createDiscordRestClient(...args) as unknown as ReturnType<typeof discordClientModule.createDiscordRestClient>,
     );
-    vi.spyOn(discordSendModule, "sendMessageDiscord").mockImplementation((...args) =>
-      sendMessageDiscord(...args),
-    );
+    vi.spyOn(discordSendModule, "sendMessageDiscord").mockImplementation((...args) => sendMessageDiscord(...args));
     vi.spyOn(discordSendModule, "sendWebhookMessageDiscord").mockImplementation((...args) =>
       sendWebhookMessageDiscord(...args),
     );
@@ -141,9 +136,7 @@ describe("maybeSendBindingMessage", () => {
     vi.restoreAllMocks();
     sendMessageDiscord.mockReset().mockResolvedValue(DEFAULT_SEND_RESULT);
     sendWebhookMessageDiscord.mockReset().mockResolvedValue(DEFAULT_SEND_RESULT);
-    vi.spyOn(discordSendModule, "sendMessageDiscord").mockImplementation((...args) =>
-      sendMessageDiscord(...args),
-    );
+    vi.spyOn(discordSendModule, "sendMessageDiscord").mockImplementation((...args) => sendMessageDiscord(...args));
     vi.spyOn(discordSendModule, "sendWebhookMessageDiscord").mockImplementation((...args) =>
       sendWebhookMessageDiscord(...args),
     );

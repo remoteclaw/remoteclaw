@@ -32,10 +32,8 @@ export type ResolvedMatrixAccount = {
   config: MatrixConfig;
 };
 
-const {
-  listAccountIds: listMatrixAccountIds,
-  resolveDefaultAccountId: resolveDefaultMatrixAccountId,
-} = createAccountListHelpers("matrix", { normalizeAccountId });
+const { listAccountIds: listMatrixAccountIds, resolveDefaultAccountId: resolveDefaultMatrixAccountId } =
+  createAccountListHelpers("matrix", { normalizeAccountId });
 export { listMatrixAccountIds, resolveDefaultMatrixAccountId };
 
 function resolveAccountConfig(cfg: CoreConfig, accountId: string): MatrixConfig | undefined {
@@ -57,10 +55,7 @@ function resolveAccountConfig(cfg: CoreConfig, accountId: string): MatrixConfig 
   return undefined;
 }
 
-export function resolveMatrixAccount(params: {
-  cfg: CoreConfig;
-  accountId?: string | null;
-}): ResolvedMatrixAccount {
+export function resolveMatrixAccount(params: { cfg: CoreConfig; accountId?: string | null }): ResolvedMatrixAccount {
   const accountId = normalizeAccountId(params.accountId);
   const matrixBase = params.cfg.channels?.matrix ?? {};
   const base = resolveMatrixAccountConfig({ cfg: params.cfg, accountId });
@@ -92,10 +87,7 @@ export function resolveMatrixAccount(params: {
   };
 }
 
-export function resolveMatrixAccountConfig(params: {
-  cfg: CoreConfig;
-  accountId?: string | null;
-}): MatrixConfig {
+export function resolveMatrixAccountConfig(params: { cfg: CoreConfig; accountId?: string | null }): MatrixConfig {
   const accountId = normalizeAccountId(params.accountId);
   const matrixBase = params.cfg.channels?.matrix ?? {};
   const accountConfig = resolveAccountConfig(params.cfg, accountId);

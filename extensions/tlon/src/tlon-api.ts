@@ -75,9 +75,7 @@ function getExtensionFromMimeType(mimeType?: string): string {
   return mimeToExt[mimeType.toLowerCase()] || ".jpg";
 }
 
-function hasCustomS3Creds(
-  credentials: StorageCredentials | null,
-): credentials is StorageCredentials {
+function hasCustomS3Creds(credentials: StorageCredentials | null): credentials is StorageCredentials {
   return Boolean(credentials?.accessKeyId && credentials?.endpoint && credentials?.secretAccessKey);
 }
 
@@ -127,13 +125,12 @@ async function scryJson<T>(config: ClientConfig, cookie: string, path: string): 
   )) as T;
 }
 
-async function getStorageConfiguration(
-  config: ClientConfig,
-  cookie: string,
-): Promise<StorageConfiguration> {
-  const result = await scryJson<
-    { "storage-update"?: { configuration?: StorageConfiguration } } | StorageConfiguration
-  >(config, cookie, "/storage/configuration.json");
+async function getStorageConfiguration(config: ClientConfig, cookie: string): Promise<StorageConfiguration> {
+  const result = await scryJson<{ "storage-update"?: { configuration?: StorageConfiguration } } | StorageConfiguration>(
+    config,
+    cookie,
+    "/storage/configuration.json",
+  );
 
   if ("storage-update" in result && result["storage-update"]?.configuration) {
     return result["storage-update"].configuration;
@@ -144,13 +141,12 @@ async function getStorageConfiguration(
   throw new Error("Invalid storage configuration response");
 }
 
-async function getStorageCredentials(
-  config: ClientConfig,
-  cookie: string,
-): Promise<StorageCredentials | null> {
-  const result = await scryJson<
-    { "storage-update"?: { credentials?: StorageCredentials } } | StorageCredentials
-  >(config, cookie, "/storage/credentials.json");
+async function getStorageCredentials(config: ClientConfig, cookie: string): Promise<StorageCredentials | null> {
+  const result = await scryJson<{ "storage-update"?: { credentials?: StorageCredentials } } | StorageCredentials>(
+    config,
+    cookie,
+    "/storage/credentials.json",
+  );
 
   if ("storage-update" in result) {
     return result["storage-update"]?.credentials ?? null;
@@ -168,11 +164,7 @@ async function getMemexUploadUrl(params: {
   contentType: string;
   fileName: string;
 }): Promise<{ hostedUrl: string; uploadUrl: string }> {
-  const token = await scryJson<string | { secret?: string }>(
-    params.config,
-    params.cookie,
-    "/genuine/secret.json",
-  );
+  const token = await scryJson<string | { secret?: string }>(params.config, params.cookie, "/genuine/secret.json");
   const resolvedToken = typeof token === "string" ? token : token.secret;
   if (!resolvedToken) {
     throw new Error("Missing genuine secret");
@@ -217,8 +209,7 @@ export async function uploadFile(params: UploadFileParams): Promise<UploadResult
   const fileKey = `${config.shipName}/${Date.now()}-${crypto.randomUUID()}-${fileName}`;
 
   const useMemex =
-    isHostedShipUrl(config.shipUrl) &&
-    (storageConfig.service === "presigned-url" || !hasCustomS3Creds(credentials));
+    isHostedShipUrl(config.shipUrl) && (storageConfig.service === "presigned-url" || !hasCustomS3Creds(credentials));
 
   if (useMemex) {
     const { hostedUrl, uploadUrl } = await getMemexUploadUrl({

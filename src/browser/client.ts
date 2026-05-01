@@ -52,10 +52,7 @@ function withBaseUrl(baseUrl: string | undefined, path: string): string {
   return `${trimmed.replace(/\/$/, "")}${path}`;
 }
 
-export async function browserStatus(
-  baseUrl?: string,
-  opts?: { profile?: string },
-): Promise<BrowserStatus> {
+export async function browserStatus(baseUrl?: string, opts?: { profile?: string }): Promise<BrowserStatus> {
   const q = buildProfileQuery(opts?.profile);
   return await fetchBrowserJson<BrowserStatus>(withBaseUrl(baseUrl, `/${q}`), {
     timeoutMs: 1500,
@@ -63,12 +60,9 @@ export async function browserStatus(
 }
 
 export async function browserProfiles(baseUrl?: string): Promise<ProfileStatus[]> {
-  const res = await fetchBrowserJson<{ profiles: ProfileStatus[] }>(
-    withBaseUrl(baseUrl, `/profiles`),
-    {
-      timeoutMs: 3000,
-    },
-  );
+  const res = await fetchBrowserJson<{ profiles: ProfileStatus[] }>(withBaseUrl(baseUrl, `/profiles`), {
+    timeoutMs: 3000,
+  });
   return res.profiles ?? [];
 }
 
@@ -93,13 +87,10 @@ export async function browserResetProfile(
   opts?: { profile?: string },
 ): Promise<BrowserResetProfileResult> {
   const q = buildProfileQuery(opts?.profile);
-  return await fetchBrowserJson<BrowserResetProfileResult>(
-    withBaseUrl(baseUrl, `/reset-profile${q}`),
-    {
-      method: "POST",
-      timeoutMs: 20000,
-    },
-  );
+  return await fetchBrowserJson<BrowserResetProfileResult>(withBaseUrl(baseUrl, `/reset-profile${q}`), {
+    method: "POST",
+    timeoutMs: 20000,
+  });
 }
 
 export type BrowserCreateProfileResult = {
@@ -120,20 +111,17 @@ export async function browserCreateProfile(
     driver?: "remoteclaw" | "extension";
   },
 ): Promise<BrowserCreateProfileResult> {
-  return await fetchBrowserJson<BrowserCreateProfileResult>(
-    withBaseUrl(baseUrl, `/profiles/create`),
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: opts.name,
-        color: opts.color,
-        cdpUrl: opts.cdpUrl,
-        driver: opts.driver,
-      }),
-      timeoutMs: 10000,
-    },
-  );
+  return await fetchBrowserJson<BrowserCreateProfileResult>(withBaseUrl(baseUrl, `/profiles/create`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: opts.name,
+      color: opts.color,
+      cdpUrl: opts.cdpUrl,
+      driver: opts.driver,
+    }),
+    timeoutMs: 10000,
+  });
 }
 
 export type BrowserDeleteProfileResult = {
@@ -155,15 +143,11 @@ export async function browserDeleteProfile(
   );
 }
 
-export async function browserTabs(
-  baseUrl?: string,
-  opts?: { profile?: string },
-): Promise<BrowserTab[]> {
+export async function browserTabs(baseUrl?: string, opts?: { profile?: string }): Promise<BrowserTab[]> {
   const q = buildProfileQuery(opts?.profile);
-  const res = await fetchBrowserJson<{ running: boolean; tabs: BrowserTab[] }>(
-    withBaseUrl(baseUrl, `/tabs${q}`),
-    { timeoutMs: 3000 },
-  );
+  const res = await fetchBrowserJson<{ running: boolean; tabs: BrowserTab[] }>(withBaseUrl(baseUrl, `/tabs${q}`), {
+    timeoutMs: 3000,
+  });
   return res.tabs ?? [];
 }
 

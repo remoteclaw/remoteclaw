@@ -58,12 +58,8 @@ describe("talk.config contract fixtures", () => {
         voiceId?: string;
         apiKey?: string;
       };
-      expect(talk.resolved?.provider ?? fixture.defaultProvider).toBe(
-        fixture.expectedSelection.provider,
-      );
-      expect(talk.resolved?.config?.voiceId ?? talk.voiceId).toBe(
-        fixture.expectedSelection.voiceId,
-      );
+      expect(talk.resolved?.provider ?? fixture.defaultProvider).toBe(fixture.expectedSelection.provider);
+      expect(talk.resolved?.config?.voiceId ?? talk.voiceId).toBe(fixture.expectedSelection.voiceId);
       expect(talk.resolved?.config?.apiKey ?? talk.apiKey).toBe(fixture.expectedSelection.apiKey);
     });
   }

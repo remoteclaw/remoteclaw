@@ -30,8 +30,7 @@ function setNextcloudTalkDmPolicy(cfg: CoreConfig, dmPolicy: DmPolicy): CoreConf
     cfg,
     channel: "nextcloud-talk",
     dmPolicy,
-    getAllowFrom: (inputCfg) =>
-      mapAllowFromEntries(inputCfg.channels?.["nextcloud-talk"]?.allowFrom),
+    getAllowFrom: (inputCfg) => mapAllowFromEntries(inputCfg.channels?.["nextcloud-talk"]?.allowFrom),
   }) as CoreConfig;
 }
 
@@ -161,13 +160,7 @@ export const nextcloudTalkOnboardingAdapter: ChannelOnboardingAdapter = {
       quickstartScore: configured ? 1 : 5,
     };
   },
-  configure: async ({
-    cfg,
-    prompter,
-    accountOverrides,
-    shouldPromptAccountIds,
-    forceAllowFrom,
-  }) => {
+  configure: async ({ cfg, prompter, accountOverrides, shouldPromptAccountIds, forceAllowFrom }) => {
     const defaultAccountId = resolveDefaultNextcloudTalkAccountId(cfg as CoreConfig);
     const accountId = await resolveAccountIdForConfigure({
       cfg,
@@ -187,8 +180,7 @@ export const nextcloudTalkOnboardingAdapter: ChannelOnboardingAdapter = {
     const accountConfigured = Boolean(resolvedAccount.secret && resolvedAccount.baseUrl);
     const allowEnv = accountId === DEFAULT_ACCOUNT_ID;
     const hasConfigSecret = Boolean(
-      hasConfiguredSecretInput(resolvedAccount.config.botSecret) ||
-      resolvedAccount.config.botSecretFile,
+      hasConfiguredSecretInput(resolvedAccount.config.botSecret) || resolvedAccount.config.botSecretFile,
     );
     const secretPromptState = buildSingleChannelSecretPromptState({
       accountConfigured,
@@ -247,8 +239,7 @@ export const nextcloudTalkOnboardingAdapter: ChannelOnboardingAdapter = {
 
     const existingApiUser = resolvedAccount.config.apiUser?.trim();
     const existingApiPasswordConfigured = Boolean(
-      hasConfiguredSecretInput(resolvedAccount.config.apiPassword) ||
-      resolvedAccount.config.apiPasswordFile,
+      hasConfiguredSecretInput(resolvedAccount.config.apiPassword) || resolvedAccount.config.apiPasswordFile,
     );
     const configureApiCredentials = await prompter.confirm({
       message: "Configure optional Nextcloud Talk API credentials for room lookups?",

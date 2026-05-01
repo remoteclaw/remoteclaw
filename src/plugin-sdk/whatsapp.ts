@@ -31,16 +31,14 @@ export {
   listWhatsAppDirectoryGroupsFromConfig,
   listWhatsAppDirectoryPeersFromConfig,
 } from "../channels/plugins/directory-config.js";
-export {
-  looksLikeWhatsAppTargetId,
-  normalizeWhatsAppMessagingTarget,
-} from "../channels/plugins/normalize/whatsapp.js";
+export { looksLikeWhatsAppTargetId, normalizeWhatsAppMessagingTarget } from "../channels/plugins/normalize/whatsapp.js";
 export { resolveWhatsAppOutboundTarget } from "../../extensions/whatsapp/src/resolve-outbound-target.js";
 
 export {
   resolveAllowlistProviderRuntimeGroupPolicy,
   resolveDefaultGroupPolicy,
 } from "../config/runtime-group-policy.js";
+export { loadOutboundMediaFromUrl } from "./outbound-media.js";
 export {
   resolveWhatsAppGroupRequireMention,
   resolveWhatsAppGroupToolPolicy,

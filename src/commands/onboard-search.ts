@@ -85,10 +85,7 @@ function rawKeyValue(config: RemoteClawConfig, provider: SearchProvider): unknow
 }
 
 /** Returns the plaintext key string, or undefined for SecretRefs/missing. */
-export function resolveExistingKey(
-  config: RemoteClawConfig,
-  provider: SearchProvider,
-): string | undefined {
+export function resolveExistingKey(config: RemoteClawConfig, provider: SearchProvider): string | undefined {
   return normalizeSecretInputString(rawKeyValue(config, provider));
 }
 
@@ -102,9 +99,7 @@ function buildSearchEnvRef(provider: SearchProvider): SecretRef {
   const entry = SEARCH_PROVIDER_OPTIONS.find((e) => e.value === provider);
   const envVar = entry?.envKeys.find((k) => Boolean(process.env[k]?.trim())) ?? entry?.envKeys[0];
   if (!envVar) {
-    throw new Error(
-      `No env var mapping for search provider "${provider}" in secret-input-mode=ref.`,
-    );
+    throw new Error(`No env var mapping for search provider "${provider}" in secret-input-mode=ref.`);
   }
   return { source: "env", provider: DEFAULT_SECRET_PROVIDER_ALIAS, id: envVar };
 }
@@ -122,11 +117,7 @@ function resolveSearchSecretInput(
   return key;
 }
 
-export function applySearchKey(
-  config: RemoteClawConfig,
-  provider: SearchProvider,
-  key: SecretInput,
-): RemoteClawConfig {
+export function applySearchKey(config: RemoteClawConfig, provider: SearchProvider, key: SecretInput): RemoteClawConfig {
   const search = { ...config.tools?.web?.search, provider, enabled: true };
   switch (provider) {
     case "brave":
@@ -171,10 +162,7 @@ function applyProviderOnly(config: RemoteClawConfig, provider: SearchProvider): 
   };
 }
 
-function preserveDisabledState(
-  original: RemoteClawConfig,
-  result: RemoteClawConfig,
-): RemoteClawConfig {
+function preserveDisabledState(original: RemoteClawConfig, result: RemoteClawConfig): RemoteClawConfig {
   if (original.tools?.web?.search?.enabled !== false) {
     return result;
   }
@@ -219,9 +207,7 @@ export async function setupSearch(
     if (existingProvider && SEARCH_PROVIDER_OPTIONS.some((e) => e.value === existingProvider)) {
       return existingProvider;
     }
-    const detected = SEARCH_PROVIDER_OPTIONS.find(
-      (e) => hasExistingKey(config, e.value) || hasKeyInEnv(e),
-    );
+    const detected = SEARCH_PROVIDER_OPTIONS.find((e) => hasExistingKey(config, e.value) || hasKeyInEnv(e));
     if (detected) {
       return detected.value;
     }
@@ -252,9 +238,7 @@ export async function setupSearch(
   const envAvailable = hasKeyInEnv(entry);
 
   if (opts?.quickstartDefaults && (keyConfigured || envAvailable)) {
-    const result = existingKey
-      ? applySearchKey(config, choice, existingKey)
-      : applyProviderOnly(config, choice);
+    const result = existingKey ? applySearchKey(config, choice, existingKey) : applyProviderOnly(config, choice);
     return preserveDisabledState(config, result);
   }
 

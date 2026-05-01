@@ -77,9 +77,7 @@ describe("extractAssistantText", () => {
     });
 
     const result = extractAssistantText(msg);
-    expect(result).toBe(
-      `Example:\n<invoke name="Bash">\n<parameter name="command">ls</parameter>\n</invoke>`,
-    );
+    expect(result).toBe(`Example:\n<invoke name="Bash">\n<parameter name="command">ls</parameter>\n</invoke>`);
   });
 
   it("preserves normal text without tool invocations", () => {

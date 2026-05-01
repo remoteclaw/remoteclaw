@@ -10,8 +10,7 @@ const hoisted = vi.hoisted(() => {
 });
 
 vi.mock("../infra/outbound/session-binding-service.js", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("../../../src/infra/outbound/session-binding-service.js")>();
+  const actual = await importOriginal<typeof import("../../../src/infra/outbound/session-binding-service.js")>();
   return {
     ...actual,
     getSessionBindingService: () => ({
@@ -25,8 +24,7 @@ vi.mock("../infra/outbound/session-binding-service.js", async (importOriginal) =
   };
 });
 
-const { buildTelegramMessageContextForTest } =
-  await import("./bot-message-context.test-harness.js");
+const { buildTelegramMessageContextForTest } = await import("./bot-message-context.test-harness.js");
 
 describe("buildTelegramMessageContext bound conversation override", () => {
   beforeEach(() => {

@@ -27,12 +27,7 @@ describe("tool meta formatting", () => {
 
   it("formats aggregates with grouping and brace-collapse", () => {
     vi.stubEnv("HOME", home);
-    const out = formatToolAggregate("  fs  ", [
-      `${home}/dir/a.txt`,
-      `${home}/dir/b.txt`,
-      "note",
-      "a→b",
-    ]);
+    const out = formatToolAggregate("  fs  ", [`${home}/dir/a.txt`, `${home}/dir/b.txt`, "note", "a→b"]);
     expect(out).toMatch(/^🧩 Fs/);
     expect(out).toContain("~/dir/{a.txt, b.txt}");
     expect(out).toContain("note");

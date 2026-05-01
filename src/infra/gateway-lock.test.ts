@@ -30,10 +30,7 @@ async function makeEnv() {
   };
 }
 
-async function acquireForTest(
-  env: NodeJS.ProcessEnv,
-  opts: Omit<GatewayLockOptions, "env" | "allowInTests"> = {},
-) {
+async function acquireForTest(env: NodeJS.ProcessEnv, opts: Omit<GatewayLockOptions, "env" | "allowInTests"> = {}) {
   return await acquireGatewayLock({
     env,
     allowInTests: true,
@@ -228,9 +225,7 @@ describe("gateway lock", () => {
     const env = await makeEnv();
     await writeLockFile(env);
     const procSpy = createEaccesProcStatSpy();
-    const statSpy = vi
-      .spyOn(fs, "stat")
-      .mockRejectedValue(Object.assign(new Error("EPERM"), { code: "EPERM" }));
+    const statSpy = vi.spyOn(fs, "stat").mockRejectedValue(Object.assign(new Error("EPERM"), { code: "EPERM" }));
 
     const pending = acquireForTest(env, {
       timeoutMs: 20,

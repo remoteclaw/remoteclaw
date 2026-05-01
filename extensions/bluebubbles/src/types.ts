@@ -109,11 +109,7 @@ export function normalizeBlueBubblesServerUrl(raw: string): string {
   return withScheme.replace(/\/+$/, "");
 }
 
-export function buildBlueBubblesApiUrl(params: {
-  baseUrl: string;
-  path: string;
-  password?: string;
-}): string {
+export function buildBlueBubblesApiUrl(params: { baseUrl: string; path: string; password?: string }): string {
   const normalized = normalizeBlueBubblesServerUrl(params.baseUrl);
   const url = new URL(params.path, `${normalized}/`);
   if (params.password) {
@@ -122,11 +118,7 @@ export function buildBlueBubblesApiUrl(params: {
   return url.toString();
 }
 
-export async function blueBubblesFetchWithTimeout(
-  url: string,
-  init: RequestInit,
-  timeoutMs = DEFAULT_TIMEOUT_MS,
-) {
+export async function blueBubblesFetchWithTimeout(url: string, init: RequestInit, timeoutMs = DEFAULT_TIMEOUT_MS) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {

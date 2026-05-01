@@ -43,10 +43,7 @@ describe("loader", () => {
     };
   });
 
-  async function writeHandlerModule(
-    fileName: string,
-    code = "export default async function() {}",
-  ): Promise<string> {
+  async function writeHandlerModule(fileName: string, code = "export default async function() {}"): Promise<string> {
     const handlerPath = path.join(tmpDir, fileName);
     await fs.writeFile(handlerPath, code, "utf-8");
     return handlerPath;
@@ -186,10 +183,7 @@ describe("loader", () => {
 
     it("should handle non-function exports", async () => {
       // Create a module with a non-function export
-      const handlerPath = await writeHandlerModule(
-        "bad-export.js",
-        'export default "not a function";',
-      );
+      const handlerPath = await writeHandlerModule("bad-export.js", 'export default "not a function";');
 
       const cfg = createEnabledHooksConfig([
         {
@@ -363,9 +357,7 @@ describe("loader", () => {
       await expectNoCommandHookRegistration(cfg);
 
       const messages = stripAnsi(
-        (error as ReturnType<typeof vi.fn>).mock.calls
-          .map((call) => String(call[0] ?? ""))
-          .join("\n"),
+        (error as ReturnType<typeof vi.fn>).mock.calls.map((call) => String(call[0] ?? "")).join("\n"),
       );
       expect(messages).toContain("forged-log");
       expect(messages).not.toContain("\u001b[31m");

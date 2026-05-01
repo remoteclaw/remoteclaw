@@ -44,10 +44,7 @@ import { getSlackRuntime } from "./runtime.js";
 const meta = getChatChannelMeta("slack");
 
 // Select the appropriate Slack token for read/write operations.
-function getTokenForOperation(
-  account: ResolvedSlackAccount,
-  operation: "read" | "write",
-): string | undefined {
+function getTokenForOperation(account: ResolvedSlackAccount, operation: "read" | "write"): string | undefined {
   const userToken = account.config.userToken?.trim() || undefined;
   const botToken = account.botToken?.trim();
   const allowUserWrites = account.config.userTokenReadOnly === false;
@@ -126,18 +123,11 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount> = {
       const botToken = account.botToken?.trim();
       const tokenOverride = token && token !== botToken ? token : undefined;
       if (tokenOverride) {
-        await getSlackRuntime().channel.slack.sendMessageSlack(
-          `user:${id}`,
-          PAIRING_APPROVED_MESSAGE,
-          {
-            token: tokenOverride,
-          },
-        );
+        await getSlackRuntime().channel.slack.sendMessageSlack(`user:${id}`, PAIRING_APPROVED_MESSAGE, {
+          token: tokenOverride,
+        });
       } else {
-        await getSlackRuntime().channel.slack.sendMessageSlack(
-          `user:${id}`,
-          PAIRING_APPROVED_MESSAGE,
-        );
+        await getSlackRuntime().channel.slack.sendMessageSlack(`user:${id}`, PAIRING_APPROVED_MESSAGE);
       }
     },
   },
@@ -211,8 +201,7 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount> = {
             missingRouteAllowlist: {
               surface: "Slack channels",
               openBehavior: "with no channel allowlist; any channel can trigger (mention-gated)",
-              remediation:
-                'Set channels.slack.groupPolicy="allowlist" and configure channels.slack.channels',
+              remediation: 'Set channels.slack.groupPolicy="allowlist" and configure channels.slack.channels',
             },
           }),
       });
@@ -240,14 +229,11 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount> = {
     listPeers: async (params) => listSlackDirectoryPeersFromConfig(params),
     listGroups: async (params) => listSlackDirectoryGroupsFromConfig(params),
     listPeersLive: async (params) => getSlackRuntime().channel.slack.listDirectoryPeersLive(params),
-    listGroupsLive: async (params) =>
-      getSlackRuntime().channel.slack.listDirectoryGroupsLive(params),
+    listGroupsLive: async (params) => getSlackRuntime().channel.slack.listDirectoryGroupsLive(params),
   },
   resolver: {
     resolveTargets: async ({ cfg, accountId, inputs, kind }) => {
-      const toResolvedTarget = <
-        T extends { input: string; resolved: boolean; id?: string; name?: string },
-      >(
+      const toResolvedTarget = <T extends { input: string; resolved: boolean; id?: string; name?: string }>(
         entry: T,
         note?: string,
       ) => ({
@@ -271,9 +257,7 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount> = {
           token,
           entries: inputs,
         });
-        return resolved.map((entry) =>
-          toResolvedTarget(entry, entry.archived ? "archived" : undefined),
-        );
+        return resolved.map((entry) => toResolvedTarget(entry, entry.archived ? "archived" : undefined));
       }
       const resolved = await getSlackRuntime().channel.slack.resolveUserAllowlist({
         token,
@@ -385,17 +369,7 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount> = {
       });
       return { channel: "slack", ...result };
     },
-    sendMedia: async ({
-      to,
-      text,
-      mediaUrl,
-      mediaLocalRoots,
-      accountId,
-      deps,
-      replyToId,
-      threadId,
-      cfg,
-    }) => {
+    sendMedia: async ({ to, text, mediaUrl, mediaLocalRoots, accountId, deps, replyToId, threadId, cfg }) => {
       const { send, threadTsValue, tokenOverride } = resolveSlackSendContext({
         cfg,
         accountId: accountId ?? undefined,
@@ -438,14 +412,9 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount> = {
       const mode = account.config.mode ?? "socket";
       const configured =
         (mode === "http"
-          ? resolveConfiguredFromRequiredCredentialStatuses(account, [
-              "botTokenStatus",
-              "signingSecretStatus",
-            ])
-          : resolveConfiguredFromRequiredCredentialStatuses(account, [
-              "botTokenStatus",
-              "appTokenStatus",
-            ])) ?? isSlackAccountConfigured(account);
+          ? resolveConfiguredFromRequiredCredentialStatuses(account, ["botTokenStatus", "signingSecretStatus"])
+          : resolveConfiguredFromRequiredCredentialStatuses(account, ["botTokenStatus", "appTokenStatus"])) ??
+        isSlackAccountConfigured(account);
       const base = buildComputedAccountStatusSnapshot({
         accountId: account.accountId,
         name: account.name,

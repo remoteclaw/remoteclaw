@@ -64,16 +64,12 @@ async function probeRpcSupport(cliPath: string, timeoutMs: number): Promise<RpcS
  * @param timeoutMs - Explicit timeout in ms. If undefined, uses config or default.
  * @param opts - Additional options (cliPath, dbPath, runtime).
  */
-export async function probeIMessage(
-  timeoutMs?: number,
-  opts: IMessageProbeOptions = {},
-): Promise<IMessageProbe> {
+export async function probeIMessage(timeoutMs?: number, opts: IMessageProbeOptions = {}): Promise<IMessageProbe> {
   const cfg = opts.cliPath || opts.dbPath ? undefined : loadConfig();
   const cliPath = opts.cliPath?.trim() || cfg?.channels?.imessage?.cliPath?.trim() || "imsg";
   const dbPath = opts.dbPath?.trim() || cfg?.channels?.imessage?.dbPath?.trim();
   // Use explicit timeout if provided, otherwise fall back to config, then default
-  const effectiveTimeout =
-    timeoutMs ?? cfg?.channels?.imessage?.probeTimeoutMs ?? DEFAULT_IMESSAGE_PROBE_TIMEOUT_MS;
+  const effectiveTimeout = timeoutMs ?? cfg?.channels?.imessage?.probeTimeoutMs ?? DEFAULT_IMESSAGE_PROBE_TIMEOUT_MS;
 
   const detected = await detectBinary(cliPath);
   if (!detected) {

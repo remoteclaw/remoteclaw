@@ -4,7 +4,7 @@
   "defaultMinDeltaKb": 262144,
   "lane": "unit-fast, unit-*",
   "files": {
-    "src/infra/outbound/targets.channel-resolution.test.ts": {
+    "src/infra/outbound/channel-resolution.test.ts": {
       "deltaKb": 1111491,
       "sources": ["remoteclaw-test-memory-trace:unit-heavy-2"]
     },
@@ -22,9 +22,7 @@
     },
     "src/cron/isolated-agent.uses-last-non-empty-agent-text-as.test.ts": {
       "deltaKb": 1048576,
-      "sources": [
-        "remoteclaw-test-memory-trace:unit-isolated-agent.uses-last-non-empty-agent-text-as-memory-isolated"
-      ]
+      "sources": ["remoteclaw-test-memory-trace:unit-isolated-agent.uses-last-non-empty-agent-text-as-memory-isolated"]
     },
     "src/cron/isolated-agent.skips-delivery-without-whatsapp-recipient-besteffortdeliver-true.test.ts": {
       "deltaKb": 1026355,
@@ -54,9 +52,7 @@
     },
     "src/infra/provider-usage.auth.normalizes-keys.test.ts": {
       "deltaKb": 494080,
-      "sources": [
-        "remoteclaw-test-memory-trace:unit-provider-usage.auth.normalizes-keys-memory-isolated"
-      ]
+      "sources": ["remoteclaw-test-memory-trace:unit-provider-usage.auth.normalizes-keys-memory-isolated"]
     },
     "src/plugins/conversation-binding.test.ts": {
       "deltaKb": 485786,

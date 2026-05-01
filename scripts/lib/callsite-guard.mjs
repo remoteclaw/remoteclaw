@@ -1,10 +1,6 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import {
-  collectTypeScriptFilesFromRoots,
-  resolveRepoRoot,
-  resolveSourceRoots,
-} from "./ts-guard-utils.mjs";
+import { collectTypeScriptFilesFromRoots, resolveRepoRoot, resolveSourceRoots } from "./ts-guard-utils.mjs";
 
 export async function runCallsiteGuard(params) {
   const repoRoot = resolveRepoRoot(params.importMetaUrl);

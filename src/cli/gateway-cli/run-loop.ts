@@ -62,10 +62,7 @@ export async function runGatewayLoop(params: {
     // Release the lock BEFORE spawning so the child can acquire it immediately.
     const respawn = restartGatewayProcessWithFreshPid();
     if (respawn.mode === "spawned" || respawn.mode === "supervised") {
-      const modeLabel =
-        respawn.mode === "spawned"
-          ? `spawned pid ${respawn.pid ?? "unknown"}`
-          : "supervisor restart";
+      const modeLabel = respawn.mode === "spawned" ? `spawned pid ${respawn.pid ?? "unknown"}` : "supervisor restart";
       gatewayLog.info(`restart mode: full process restart (${modeLabel})`);
       exitProcess(0);
       return;
@@ -75,9 +72,7 @@ export async function runGatewayLoop(params: {
         `full process restart failed (${respawn.detail ?? "unknown error"}); falling back to in-process restart`,
       );
     } else {
-      gatewayLog.info(
-        `restart mode: in-process restart (${respawn.detail ?? "REMOTECLAW_NO_RESPAWN"})`,
-      );
+      gatewayLog.info(`restart mode: in-process restart (${respawn.detail ?? "REMOTECLAW_NO_RESPAWN"})`);
     }
     if (hadLock && !(await reacquireLockForInProcessRestart())) {
       return;
@@ -122,9 +117,7 @@ export async function runGatewayLoop(params: {
           markGatewayDraining();
           const activeTasks = getActiveTaskCount();
           if (activeTasks > 0) {
-            gatewayLog.info(
-              `draining ${activeTasks} active task(s) before restart (timeout ${DRAIN_TIMEOUT_MS}ms)`,
-            );
+            gatewayLog.info(`draining ${activeTasks} active task(s) before restart (timeout ${DRAIN_TIMEOUT_MS}ms)`);
             const { drained } = await waitForActiveTasks(DRAIN_TIMEOUT_MS);
             if (drained) {
               gatewayLog.info("all active tasks drained");
@@ -164,9 +157,7 @@ export async function runGatewayLoop(params: {
     gatewayLog.info("signal SIGUSR1 received");
     const authorized = consumeGatewaySigusr1RestartAuthorization();
     if (!authorized && !isGatewaySigusr1RestartExternallyAllowed()) {
-      gatewayLog.warn(
-        "SIGUSR1 restart ignored (not authorized; commands.restart=false or use gateway tool).",
-      );
+      gatewayLog.warn("SIGUSR1 restart ignored (not authorized; commands.restart=false or use gateway tool).");
       return;
     }
     markGatewaySigusr1RestartHandled();
@@ -214,8 +205,7 @@ export async function runGatewayLoop(params: {
         const errMsg = err instanceof Error ? err.message : String(err);
         const errStack = err instanceof Error && err.stack ? `\n${err.stack}` : "";
         gatewayLog.error(
-          `gateway startup failed: ${errMsg}. ` +
-            `Process will stay alive; fix the issue and restart.${errStack}`,
+          `gateway startup failed: ${errMsg}. Process will stay alive; fix the issue and restart.${errStack}`,
         );
       }
       await new Promise<void>((resolve) => {

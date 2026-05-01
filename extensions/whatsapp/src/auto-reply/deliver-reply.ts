@@ -48,9 +48,7 @@ export async function deliverWebReply(params: {
   }
   const tableMode = params.tableMode ?? "code";
   const chunkMode = params.chunkMode ?? "length";
-  const convertedText = markdownToWhatsApp(
-    convertMarkdownTables(replyResult.text || "", tableMode),
-  );
+  const convertedText = markdownToWhatsApp(convertMarkdownTables(replyResult.text || "", tableMode));
   const textChunks = chunkMarkdownTextWithMode(convertedText, textLimit, chunkMode);
   const mediaList = replyResult.mediaUrls?.length
     ? replyResult.mediaUrls
@@ -89,9 +87,7 @@ export async function deliverWebReply(params: {
       await sendWithRetry(() => msg.reply(chunk), "text");
       if (!skipLog) {
         const durationMs = Date.now() - chunkStarted;
-        whatsappOutboundLog.debug(
-          `Sent chunk ${index + 1}/${totalChunks} to ${msg.from} (${durationMs.toFixed(0)}ms)`,
-        );
+        whatsappOutboundLog.debug(`Sent chunk ${index + 1}/${totalChunks} to ${msg.from} (${durationMs.toFixed(0)}ms)`);
       }
     }
     replyLogger.info(
@@ -122,9 +118,7 @@ export async function deliverWebReply(params: {
         localRoots: params.mediaLocalRoots,
       });
       if (shouldLogVerbose()) {
-        logVerbose(
-          `Web auto-reply media size: ${(media.buffer.length / (1024 * 1024)).toFixed(2)}MB`,
-        );
+        logVerbose(`Web auto-reply media size: ${(media.buffer.length / (1024 * 1024)).toFixed(2)}MB`);
         logVerbose(`Web auto-reply media source: ${mediaUrl} (kind ${media.kind})`);
       }
       if (media.kind === "image") {
@@ -193,8 +187,7 @@ export async function deliverWebReply(params: {
       whatsappOutboundLog.error(`Failed sending web media to ${msg.from}: ${formatError(err)}`);
       replyLogger.warn({ err, mediaUrl }, "failed to send web media reply");
       if (index === 0) {
-        const warning =
-          err instanceof Error ? `⚠️ Media failed: ${err.message}` : "⚠️ Media failed.";
+        const warning = err instanceof Error ? `⚠️ Media failed: ${err.message}` : "⚠️ Media failed.";
         const fallbackTextParts = [remainingText.shift() ?? caption ?? "", warning].filter(Boolean);
         const fallbackText = fallbackTextParts.join("\n");
         if (fallbackText) {

@@ -57,10 +57,7 @@ export function resolveNewStateDir(homedir: () => string = resolveDefaultHomeDir
  * Can be overridden via REMOTECLAW_STATE_DIR.
  * Default: ~/.remoteclaw
  */
-export function resolveStateDir(
-  env: NodeJS.ProcessEnv = process.env,
-  homedir: () => string = envHomedir(env),
-): string {
+export function resolveStateDir(env: NodeJS.ProcessEnv = process.env, homedir: () => string = envHomedir(env)): string {
   const effectiveHomedir = () => resolveRequiredHomeDir(env, homedir);
   const override = env.REMOTECLAW_STATE_DIR?.trim();
   if (override) {
@@ -282,10 +279,7 @@ function parseGatewayPortEnvValue(raw: string | undefined): number | null {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
-export function resolveGatewayPort(
-  cfg?: RemoteClawConfig,
-  env: NodeJS.ProcessEnv = process.env,
-): number {
+export function resolveGatewayPort(cfg?: RemoteClawConfig, env: NodeJS.ProcessEnv = process.env): number {
   const envRaw = env.REMOTECLAW_GATEWAY_PORT?.trim();
   const envPort = parseGatewayPortEnvValue(envRaw);
   if (envPort !== null) {

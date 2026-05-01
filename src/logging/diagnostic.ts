@@ -41,11 +41,7 @@ export function resolveStuckSessionWarnMs(config?: RemoteClawConfig): number {
   return rounded;
 }
 
-export function logWebhookReceived(params: {
-  channel: string;
-  updateType?: string;
-  chatId?: number | string;
-}) {
+export function logWebhookReceived(params: { channel: string; updateType?: string; chatId?: number | string }) {
   webhookStats.received += 1;
   webhookStats.lastReceived = Date.now();
   if (diag.isEnabled("debug")) {
@@ -75,9 +71,7 @@ export function logWebhookProcessed(params: {
     diag.debug(
       `webhook processed: channel=${params.channel} type=${
         params.updateType ?? "unknown"
-      } chatId=${params.chatId ?? "unknown"} duration=${params.durationMs ?? 0}ms processed=${
-        webhookStats.processed
-      }`,
+      } chatId=${params.chatId ?? "unknown"} duration=${params.durationMs ?? 0}ms processed=${webhookStats.processed}`,
     );
   }
   emitDiagnosticEvent({
@@ -158,9 +152,7 @@ export function logMessageProcessed(params: {
       params.sessionId ?? "unknown"
     } sessionKey=${params.sessionKey ?? "unknown"} outcome=${params.outcome} duration=${
       params.durationMs ?? 0
-    }ms${params.reason ? ` reason=${params.reason}` : ""}${
-      params.error ? ` error="${params.error}"` : ""
-    }`;
+    }ms${params.reason ? ` reason=${params.reason}` : ""}${params.error ? ` error="${params.error}"` : ""}`;
     if (params.outcome === "error") {
       diag.error(payload);
     } else {
@@ -200,9 +192,7 @@ export function logSessionStateChange(
     diag.debug(
       `session state: sessionId=${state.sessionId ?? "unknown"} sessionKey=${
         state.sessionKey ?? "unknown"
-      } prev=${prevState} new=${params.state} reason="${params.reason ?? ""}" queueDepth=${
-        state.queueDepth
-      }`,
+      } prev=${prevState} new=${params.state} reason="${params.reason ?? ""}" queueDepth=${state.queueDepth}`,
     );
   }
   emitDiagnosticEvent({
@@ -311,10 +301,7 @@ export function logToolLoopAction(
 export function logActiveRuns() {
   const activeSessions = Array.from(diagnosticSessionStates.entries())
     .filter(([, s]) => s.state === "processing")
-    .map(
-      ([id, s]) =>
-        `${id}(q=${s.queueDepth},age=${Math.round((Date.now() - s.lastActivity) / 1000)}s)`,
-    );
+    .map(([id, s]) => `${id}(q=${s.queueDepth},age=${Math.round((Date.now() - s.lastActivity) / 1000)}s)`);
   diag.debug(`active runs: count=${activeSessions.length} sessions=[${activeSessions.join(", ")}]`);
   markActivity();
 }
@@ -337,22 +324,11 @@ export function startDiagnosticHeartbeat(config?: RemoteClawConfig) {
     const stuckSessionWarnMs = resolveStuckSessionWarnMs(heartbeatConfig);
     const now = Date.now();
     pruneDiagnosticSessionStates(now, true);
-    const activeCount = Array.from(diagnosticSessionStates.values()).filter(
-      (s) => s.state === "processing",
-    ).length;
-    const waitingCount = Array.from(diagnosticSessionStates.values()).filter(
-      (s) => s.state === "waiting",
-    ).length;
-    const totalQueued = Array.from(diagnosticSessionStates.values()).reduce(
-      (sum, s) => sum + s.queueDepth,
-      0,
-    );
+    const activeCount = Array.from(diagnosticSessionStates.values()).filter((s) => s.state === "processing").length;
+    const waitingCount = Array.from(diagnosticSessionStates.values()).filter((s) => s.state === "waiting").length;
+    const totalQueued = Array.from(diagnosticSessionStates.values()).reduce((sum, s) => sum + s.queueDepth, 0);
     const hasActivity =
-      lastActivityAt > 0 ||
-      webhookStats.received > 0 ||
-      activeCount > 0 ||
-      waitingCount > 0 ||
-      totalQueued > 0;
+      lastActivityAt > 0 || webhookStats.received > 0 || activeCount > 0 || waitingCount > 0 || totalQueued > 0;
     if (!hasActivity) {
       return;
     }

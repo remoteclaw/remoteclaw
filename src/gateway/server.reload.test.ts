@@ -115,13 +115,11 @@ const hoisted = vi.hoisted(() => {
   let onHotReload: ((plan: unknown, nextConfig: unknown) => Promise<void>) | null = null;
   let onRestart: ((plan: unknown, nextConfig: unknown) => void) | null = null;
 
-  const startGatewayConfigReloader = vi.fn(
-    (opts: { onHotReload: typeof onHotReload; onRestart: typeof onRestart }) => {
-      onHotReload = opts.onHotReload;
-      onRestart = opts.onRestart;
-      return { stop: reloaderStop };
-    },
-  );
+  const startGatewayConfigReloader = vi.fn((opts: { onHotReload: typeof onHotReload; onRestart: typeof onRestart }) => {
+    onHotReload = opts.onHotReload;
+    onRestart = opts.onRestart;
+    return { stop: reloaderStop };
+  });
 
   return {
     CronService: CronServiceMock,
@@ -385,14 +383,23 @@ describe("gateway hot reload", () => {
       configPath,
       `${JSON.stringify(
         {
+          plugins: {
+            entries: {
+              google: {
+                enabled: true,
+                config: {
+                  webSearch: {
+                    apiKey: "gemini-startup-key",
+                  },
+                },
+              },
+            },
+          },
           tools: {
             web: {
               search: {
                 enabled: true,
                 provider: "gemini",
-                gemini: {
-                  apiKey: { source: "env", provider: "default", id: "GEMINI_API_KEY" },
-                },
               },
             },
           },
@@ -420,9 +427,7 @@ describe("gateway hot reload", () => {
   }) {
     await expect(params.applyReload()).rejects.toThrow(params.expectedError);
     const degradedEvents = drainSystemEvents(params.sessionKey);
-    expect(degradedEvents.some((event) => event.includes("[SECRETS_RELOADER_DEGRADED]"))).toBe(
-      true,
-    );
+    expect(degradedEvents.some((event) => event.includes("[SECRETS_RELOADER_DEGRADED]"))).toBe(true);
 
     await expect(params.applyReload()).rejects.toThrow(params.expectedError);
     expect(drainSystemEvents(params.sessionKey)).toEqual([]);
@@ -434,9 +439,7 @@ describe("gateway hot reload", () => {
   }) {
     await expect(params.applyReload()).resolves.toBeUndefined();
     const recoveredEvents = drainSystemEvents(params.sessionKey);
-    expect(recoveredEvents.some((event) => event.includes("[SECRETS_RELOADER_RECOVERED]"))).toBe(
-      true,
-    );
+    expect(recoveredEvents.some((event) => event.includes("[SECRETS_RELOADER_RECOVERED]"))).toBe(true);
   }
 
   it("applies hot reload actions and emits restart signal", async () => {
@@ -491,9 +494,7 @@ describe("gateway hot reload", () => {
 
       expect(hoisted.startHeartbeatRunner).toHaveBeenCalledTimes(1);
       expect(hoisted.heartbeatUpdateConfig).toHaveBeenCalledTimes(1);
-      expect(hoisted.heartbeatUpdateConfig).toHaveBeenCalledWith(
-        expect.objectContaining(nextConfig),
-      );
+      expect(hoisted.heartbeatUpdateConfig).toHaveBeenCalledWith(expect.objectContaining(nextConfig));
 
       expect(hoisted.cronInstances.length).toBe(2);
       expect(hoisted.cronInstances[0].stop).toHaveBeenCalledTimes(1);
@@ -542,9 +543,7 @@ describe("gateway hot reload", () => {
   it("fails startup when required secret refs are unresolved", async () => {
     await writeEnvRefConfig();
     delete process.env.OPENAI_API_KEY;
-    await expect(withGatewayServer(async () => {})).rejects.toThrow(
-      "Startup failed: required secrets are unavailable",
-    );
+    await expect(withGatewayServer(async () => {})).rejects.toThrow("Startup failed: required secrets are unavailable");
   });
 
   it("fails startup when an active exec ref id contains traversal segments", async () => {
@@ -554,9 +553,7 @@ describe("gateway hot reload", () => {
     testState.gatewayAuth = undefined;
     delete process.env.REMOTECLAW_GATEWAY_TOKEN;
     try {
-      await expect(withGatewayServer(async () => {})).rejects.toThrow(
-        /must not include "\." or "\.\." path segments/i,
-      );
+      await expect(withGatewayServer(async () => {})).rejects.toThrow(/must not include "\." or "\.\." path segments/i);
     } finally {
       testState.gatewayAuth = previousGatewayAuth;
       if (previousGatewayTokenEnv === undefined) {
@@ -648,19 +645,18 @@ describe("gateway hot reload", () => {
     });
   });
 
-  it("emits one-shot degraded and recovered system events for web search secret reload transitions", async () => {
+  it("does not emit secrets reloader events for web search secret reload transitions", async () => {
     await writeWebSearchGeminiRefConfig();
-    process.env.GEMINI_API_KEY = "gemini-startup-key"; // pragma: allowlist secret
 
     await withGatewayServer(async () => {
       const onHotReload = hoisted.getOnHotReload();
       expect(onHotReload).toBeTypeOf("function");
       const sessionKey = resolveMainSessionKeyFromConfig();
       const plan = {
-        changedPaths: ["tools.web.search.gemini.apiKey"],
+        changedPaths: ["plugins.entries.google.config.webSearch.apiKey"],
         restartGateway: false,
         restartReasons: [],
-        hotReasons: ["tools.web.search.gemini.apiKey"],
+        hotReasons: ["plugins.entries.google.config.webSearch.apiKey"],
         reloadHooks: false,
         restartGmailWatcher: false,
         restartCron: false,
@@ -668,14 +664,42 @@ describe("gateway hot reload", () => {
         restartChannels: new Set(),
         noopPaths: [],
       };
-      const nextConfig = {
+      const degradedConfig = {
         tools: {
           web: {
             search: {
               enabled: true,
               provider: "gemini",
-              gemini: {
-                apiKey: { source: "env", provider: "default", id: "GEMINI_API_KEY" },
+            },
+          },
+        },
+        plugins: {
+          entries: {
+            google: {
+              enabled: true,
+              config: {
+                webSearch: {
+                  apiKey: {
+                    source: "env",
+                    provider: "default",
+                    id: "REMOTECLAW_TEST_MISSING_GEMINI_API_KEY",
+                  },
+                },
+              },
+            },
+          },
+        },
+      };
+      const recoveredConfig = {
+        tools: degradedConfig.tools,
+        plugins: {
+          entries: {
+            google: {
+              enabled: true,
+              config: {
+                webSearch: {
+                  apiKey: "gemini-recovered-key",
+                },
               },
             },
           },
@@ -683,17 +707,13 @@ describe("gateway hot reload", () => {
       };
 
       delete process.env.GEMINI_API_KEY;
-      await expectOneShotSecretReloadEvents({
-        applyReload: () => onHotReload?.(plan, nextConfig),
-        sessionKey,
-        expectedError: "[WEB_SEARCH_KEY_UNRESOLVED_NO_FALLBACK]",
-      });
+      delete process.env.REMOTECLAW_TEST_MISSING_GEMINI_API_KEY;
+      expect(drainSystemEvents(sessionKey)).toEqual([]);
+      await expect(onHotReload?.(plan, degradedConfig)).resolves.toBeUndefined();
+      expect(drainSystemEvents(sessionKey)).toEqual([]);
 
-      process.env.GEMINI_API_KEY = "gemini-recovered-key"; // pragma: allowlist secret
-      await expectSecretReloadRecovered({
-        applyReload: () => onHotReload?.(plan, nextConfig),
-        sessionKey,
-      });
+      await expect(onHotReload?.(plan, recoveredConfig)).resolves.toBeUndefined();
+      expect(drainSystemEvents(sessionKey)).toEqual([]);
     });
   });
 

@@ -8,10 +8,7 @@ import { readJsonBody } from "./hooks.js";
  * Content-Security-Policy are intentionally omitted here because some handlers
  * (canvas host, A2UI) serve content that may be loaded inside frames.
  */
-export function setDefaultSecurityHeaders(
-  res: ServerResponse,
-  opts?: { strictTransportSecurity?: string },
-) {
+export function setDefaultSecurityHeaders(res: ServerResponse, opts?: { strictTransportSecurity?: string }) {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Referrer-Policy", "no-referrer");
   res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");

@@ -64,9 +64,7 @@ describe("tool-policy-pipeline", () => {
     });
     expect(warnings.length).toBe(1);
     expect(warnings[0]).toContain("unknown entries (apply_patch)");
-    expect(warnings[0]).toContain(
-      "shipped core tools but unavailable in the current runtime/provider/model/config",
-    );
+    expect(warnings[0]).toContain("shipped core tools but unavailable in the current runtime/provider/model/config");
     expect(warnings[0]).not.toContain("unless the plugin is enabled");
   });
 

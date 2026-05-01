@@ -11,9 +11,7 @@ export async function createConfiguredBindingConversationRuntimeModuleMock(
   const actual = await importOriginal();
   return {
     ...actual,
-    ensureConfiguredBindingRouteReady: (...args: unknown[]) =>
-      params.ensureConfiguredBindingRouteReadyMock(...args),
-    resolveConfiguredBindingRoute: (...args: unknown[]) =>
-      params.resolveConfiguredBindingRouteMock(...args),
+    ensureConfiguredBindingRouteReady: (...args: unknown[]) => params.ensureConfiguredBindingRouteReadyMock(...args),
+    resolveConfiguredBindingRoute: (...args: unknown[]) => params.resolveConfiguredBindingRouteMock(...args),
   };
 }

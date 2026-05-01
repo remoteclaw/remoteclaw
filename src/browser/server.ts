@@ -8,10 +8,7 @@ import { registerBrowserRoutes } from "./routes/index.js";
 import type { BrowserRouteRegistrar } from "./routes/types.js";
 import { type BrowserServerState, createBrowserRouteContext } from "./server-context.js";
 import { ensureExtensionRelayForProfiles, stopKnownBrowserProfiles } from "./server-lifecycle.js";
-import {
-  installBrowserAuthMiddleware,
-  installBrowserCommonMiddleware,
-} from "./server-middleware.js";
+import { installBrowserAuthMiddleware, installBrowserCommonMiddleware } from "./server-middleware.js";
 
 let state: BrowserServerState | null = null;
 const log = createSubsystemLogger("browser");

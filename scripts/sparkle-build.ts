@@ -11,9 +11,7 @@ export type SparkleBuildFloors = {
 
 const CALVER_REGEX = /^([0-9]{4})\.([0-9]{1,2})\.([0-9]{1,2})([.-].*)?$/;
 
-export function sparkleBuildFloorsFromShortVersion(
-  shortVersion: string,
-): SparkleBuildFloors | null {
+export function sparkleBuildFloorsFromShortVersion(shortVersion: string): SparkleBuildFloors | null {
   const match = CALVER_REGEX.exec(shortVersion.trim());
   if (!match) {
     return null;

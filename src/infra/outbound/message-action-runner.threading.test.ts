@@ -12,9 +12,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("./outbound-send-service.js", async () => {
-  const actual = await vi.importActual<typeof import("./outbound-send-service.js")>(
-    "./outbound-send-service.js",
-  );
+  const actual = await vi.importActual<typeof import("./outbound-send-service.js")>("./outbound-send-service.js");
   return {
     ...actual,
     executeSendAction: mocks.executeSendAction,
@@ -22,9 +20,7 @@ vi.mock("./outbound-send-service.js", async () => {
 });
 
 vi.mock("../../config/sessions.js", async () => {
-  const actual = await vi.importActual<typeof import("../../config/sessions.js")>(
-    "../../config/sessions.js",
-  );
+  const actual = await vi.importActual<typeof import("../../config/sessions.js")>("../../config/sessions.js");
   return {
     ...actual,
     recordSessionMetaFromInbound: mocks.recordSessionMetaFromInbound,

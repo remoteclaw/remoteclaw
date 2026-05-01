@@ -67,19 +67,12 @@ export function finalizeInboundContext<T extends Record<string, unknown>>(
       normalized.CommandBody ??
       normalized.RawBody ??
       normalized.Body);
-  normalized.BodyForAgent = sanitizeInboundSystemTags(
-    normalizeInboundTextNewlines(bodyForAgentSource),
-  );
+  normalized.BodyForAgent = sanitizeInboundSystemTags(normalizeInboundTextNewlines(bodyForAgentSource));
 
   const bodyForCommandsSource = opts.forceBodyForCommands
     ? (normalized.CommandBody ?? normalized.RawBody ?? normalized.Body)
-    : (normalized.BodyForCommands ??
-      normalized.CommandBody ??
-      normalized.RawBody ??
-      normalized.Body);
-  normalized.BodyForCommands = sanitizeInboundSystemTags(
-    normalizeInboundTextNewlines(bodyForCommandsSource),
-  );
+    : (normalized.BodyForCommands ?? normalized.CommandBody ?? normalized.RawBody ?? normalized.Body);
+  normalized.BodyForCommands = sanitizeInboundSystemTags(normalizeInboundTextNewlines(bodyForCommandsSource));
 
   const explicitLabel = normalized.ConversationLabel?.trim();
   if (opts.forceConversationLabel || !explicitLabel) {

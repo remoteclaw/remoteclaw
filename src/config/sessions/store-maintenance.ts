@@ -100,13 +100,7 @@ function resolveHighWaterBytes(
     if (maxDiskBytes <= 0) {
       return 0;
     }
-    return Math.max(
-      1,
-      Math.min(
-        maxDiskBytes,
-        Math.floor(maxDiskBytes * DEFAULT_SESSION_DISK_BUDGET_HIGH_WATER_RATIO),
-      ),
-    );
+    return Math.max(1, Math.min(maxDiskBytes, Math.floor(maxDiskBytes * DEFAULT_SESSION_DISK_BUDGET_HIGH_WATER_RATIO)));
   };
   if (maxDiskBytes == null) {
     return null;
@@ -272,10 +266,7 @@ async function getSessionFileSize(storePath: string): Promise<number | null> {
  * Renames the current file to `sessions.json.bak.{timestamp}` and cleans up
  * old rotation backups, keeping only the 3 most recent `.bak.*` files.
  */
-export async function rotateSessionFile(
-  storePath: string,
-  overrideBytes?: number,
-): Promise<boolean> {
+export async function rotateSessionFile(storePath: string, overrideBytes?: number): Promise<boolean> {
   const maxBytes = overrideBytes ?? resolveMaintenanceConfig().rotateBytes;
 
   // Check current file size (file may not exist yet).

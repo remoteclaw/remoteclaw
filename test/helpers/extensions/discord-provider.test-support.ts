@@ -28,11 +28,7 @@ type ProviderMonitorTestMocks = {
   reconcileAcpThreadBindingsOnStartupMock: Mock<() => unknown>;
   createdBindingManagers: Array<{ stop: ReturnType<typeof vi.fn> }>;
   getAcpSessionStatusMock: Mock<
-    (params: {
-      cfg: RemoteClawConfig;
-      sessionKey: string;
-      signal?: AbortSignal;
-    }) => Promise<{ state: string }>
+    (params: { cfg: RemoteClawConfig; sessionKey: string; signal?: AbortSignal }) => Promise<{ state: string }>
   >;
   getPluginCommandSpecsMock: Mock<() => PluginCommandSpecMock[]>;
   listNativeCommandSpecsForConfigMock: Mock<() => NativeCommandSpecMock[]>;
@@ -177,9 +173,7 @@ export function getFirstDiscordMessageHandlerParams<T extends object>() {
   return firstCall?.[0];
 }
 
-export function resetDiscordProviderMonitorMocks(params?: {
-  nativeCommands?: NativeCommandSpecMock[];
-}) {
+export function resetDiscordProviderMonitorMocks(params?: { nativeCommands?: NativeCommandSpecMock[] }) {
   clientHandleDeployRequestMock.mockClear().mockResolvedValue(undefined);
   clientFetchUserMock.mockClear().mockResolvedValue({ id: "bot-1" });
   clientGetPluginMock.mockClear().mockReturnValue(undefined);
@@ -214,9 +208,7 @@ export function resetDiscordProviderMonitorMocks(params?: {
   getPluginCommandSpecsMock.mockClear().mockReturnValue([]);
   listNativeCommandSpecsForConfigMock
     .mockClear()
-    .mockReturnValue(
-      params?.nativeCommands ?? [{ name: "cmd", description: "built-in", acceptsArgs: false }],
-    );
+    .mockReturnValue(params?.nativeCommands ?? [{ name: "cmd", description: "built-in", acceptsArgs: false }]);
   listSkillCommandsForAgentsMock.mockClear().mockReturnValue([]);
   monitorLifecycleMock.mockClear().mockImplementation(async (monitorParams) => {
     monitorParams.threadBindings.stop();
@@ -264,10 +256,7 @@ vi.mock("@buape/carbon", async (importOriginal) => {
     retryAfter: number;
     scope: string | null;
     bucket: string | null;
-    constructor(
-      response: Response,
-      body: { message: string; retry_after: number; global: boolean },
-    ) {
+    constructor(response: Response, body: { message: string; retry_after: number; global: boolean }) {
       super(body.message);
       this.retryAfter = body.retry_after;
       this.scope = body.global ? "global" : response.headers.get("X-RateLimit-Scope");
@@ -314,8 +303,7 @@ vi.mock("remoteclaw/plugin-sdk/acp-runtime", async () => {
     getAcpSessionManager: () => ({
       getSessionStatus: getAcpSessionStatusMock,
     }),
-    isAcpRuntimeError: (error: unknown): error is { code: string } =>
-      error instanceof Error && "code" in error,
+    isAcpRuntimeError: (error: unknown): error is { code: string } => error instanceof Error && "code" in error,
   };
 });
 

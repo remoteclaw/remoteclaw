@@ -10,10 +10,7 @@ import { buildGatewayConnectionDetails, callGateway } from "../gateway/call.js";
 import { info } from "../globals.js";
 import { isTruthyEnvValue } from "../infra/env.js";
 import { formatErrorMessage } from "../infra/errors.js";
-import {
-  type HeartbeatSummary,
-  resolveHeartbeatSummaryForAgent,
-} from "../infra/heartbeat-runner.js";
+import { type HeartbeatSummary, resolveHeartbeatSummaryForAgent } from "../infra/heartbeat-runner.js";
 import { buildChannelAccountBindings, resolvePreferredAccountId } from "../routing/bindings.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import type { RuntimeEnv } from "../runtime.js";
@@ -228,8 +225,7 @@ const formatAccountProbeTiming = (summary: ChannelAccountHealthSummary): string 
 
   const accountId = summary.accountId || "default";
   const botRecord = asRecord(probe.bot);
-  const botUsername =
-    botRecord && typeof botRecord.username === "string" ? botRecord.username : null;
+  const botUsername = botRecord && typeof botRecord.username === "string" ? botRecord.username : null;
   const handle = botUsername ? `@${botUsername}` : accountId;
   const timing = elapsedMs != null ? `${elapsedMs}ms` : "ok";
 
@@ -253,8 +249,7 @@ export const formatHealthChannelLines = (
   } = {},
 ): string[] => {
   const channels = summary.channels ?? {};
-  const channelOrder =
-    summary.channelOrder?.length > 0 ? summary.channelOrder : Object.keys(channels);
+  const channelOrder = summary.channelOrder?.length > 0 ? summary.channelOrder : Object.keys(channels);
   const accountMode = opts.accountMode ?? "default";
 
   const lines: string[] = [];
@@ -277,8 +272,7 @@ export const formatHealthChannelLines = (
       accountMode === "all"
         ? Object.values(accountSummaries)
         : (filteredSummaries ?? (channelSummary.accounts ? Object.values(accountSummaries) : []));
-    const baseSummary =
-      filteredSummaries && filteredSummaries.length > 0 ? filteredSummaries[0] : channelSummary;
+    const baseSummary = filteredSummaries && filteredSummaries.length > 0 ? filteredSummaries[0] : channelSummary;
     const botUsernames = listSummaries
       ? listSummaries
           .map((account) => {
@@ -341,10 +335,7 @@ export const formatHealthChannelLines = (
   return lines;
 };
 
-export async function getHealthSnapshot(params?: {
-  timeoutMs?: number;
-  probe?: boolean;
-}): Promise<HealthSummary> {
+export async function getHealthSnapshot(params?: { timeoutMs?: number; probe?: boolean }): Promise<HealthSummary> {
   const timeoutMs = params?.timeoutMs;
   const cfg = loadConfig();
   const { defaultAgentId, ordered } = resolveAgentOrder(cfg);
@@ -365,12 +356,9 @@ export async function getHealthSnapshot(params?: {
     }),
   );
   const defaultAgent = agents.find((agent) => agent.isDefault) ?? agents[0];
-  const heartbeatSeconds = defaultAgent?.heartbeat.everyMs
-    ? Math.round(defaultAgent.heartbeat.everyMs / 1000)
-    : 0;
+  const heartbeatSeconds = defaultAgent?.heartbeat.everyMs ? Math.round(defaultAgent.heartbeat.everyMs / 1000) : 0;
   const sessions =
-    defaultAgent?.sessions ??
-    buildSessionSummary(resolveStorePath(cfg.session?.store, { agentId: defaultAgentId }));
+    defaultAgent?.sessions ?? buildSessionSummary(resolveStorePath(cfg.session?.store, { agentId: defaultAgentId }));
 
   const start = Date.now();
   const cappedTimeout = timeoutMs === undefined ? DEFAULT_TIMEOUT_MS : Math.max(50, timeoutMs);
@@ -415,12 +403,8 @@ export async function getHealthSnapshot(params?: {
 
     for (const accountId of accountIdsToProbe) {
       const account = plugin.config.resolveAccount(cfg, accountId);
-      const enabled = plugin.config.isEnabled
-        ? plugin.config.isEnabled(account, cfg)
-        : isAccountEnabled(account);
-      const configured = plugin.config.isConfigured
-        ? await plugin.config.isConfigured(account, cfg)
-        : true;
+      const enabled = plugin.config.isEnabled ? plugin.config.isEnabled(account, cfg) : isAccountEnabled(account);
+      const configured = plugin.config.isConfigured ? await plugin.config.isConfigured(account, cfg) : true;
 
       let probe: unknown;
       let lastProbeAt: number | null = null;
@@ -438,12 +422,9 @@ export async function getHealthSnapshot(params?: {
         }
       }
 
-      const probeRecord =
-        probe && typeof probe === "object" ? (probe as Record<string, unknown>) : null;
+      const probeRecord = probe && typeof probe === "object" ? (probe as Record<string, unknown>) : null;
       const bot =
-        probeRecord && typeof probeRecord.bot === "object"
-          ? (probeRecord.bot as { username?: string | null })
-          : null;
+        probeRecord && typeof probeRecord.bot === "object" ? (probeRecord.bot as { username?: string | null }) : null;
       if (bot?.username) {
         debugHealth("probe.bot", { channel: plugin.id, accountId, username: bot.username });
       }
@@ -584,17 +565,12 @@ export async function healthCommand(
           cfg,
           accountIds,
         });
-        runtime.log(
-          `  ${plugin.id}: accounts=${accountIds.join(", ") || "(none)"} default=${defaultAccountId}`,
-        );
+        runtime.log(`  ${plugin.id}: accounts=${accountIds.join(", ") || "(none)"} default=${defaultAccountId}`);
         for (const accountId of accountIds) {
           const account = plugin.config.resolveAccount(cfg, accountId);
           const record = asRecord(account);
-          const tokenSource =
-            record && typeof record.tokenSource === "string" ? record.tokenSource : undefined;
-          const configured = plugin.config.isConfigured
-            ? await plugin.config.isConfigured(account, cfg)
-            : true;
+          const tokenSource = record && typeof record.tokenSource === "string" ? record.tokenSource : undefined;
+          const configured = plugin.config.isConfigured ? await plugin.config.isConfigured(account, cfg) : true;
           runtime.log(
             `    - ${accountId}: configured=${configured}${tokenSource ? ` tokenSource=${tokenSource}` : ""}`,
           );
@@ -602,9 +578,7 @@ export async function healthCommand(
       }
       runtime.log(info("[debug] bindings map"));
       for (const [channelId, byAgent] of channelBindings.entries()) {
-        const entries = Array.from(byAgent.entries()).map(
-          ([agentId, ids]) => `${agentId}=[${ids.join(", ")}]`,
-        );
+        const entries = Array.from(byAgent.entries()).map(([agentId, ids]) => `${agentId}=[${ids.join(", ")}]`);
         runtime.log(`  ${channelId}: ${entries.join(" ")}`);
       }
       runtime.log(info("[debug] gateway channel probes"));
@@ -717,9 +691,7 @@ export async function healthCommand(
       runtime.log(info(`Heartbeat interval: ${heartbeatParts.join(", ")}`));
     }
     if (displayAgents.length === 0) {
-      runtime.log(
-        info(`Session store: ${summary.sessions.path} (${summary.sessions.count} entries)`),
-      );
+      runtime.log(info(`Session store: ${summary.sessions.path} (${summary.sessions.count} entries)`));
       if (summary.sessions.recent.length > 0) {
         for (const r of summary.sessions.recent) {
           runtime.log(
@@ -729,11 +701,7 @@ export async function healthCommand(
       }
     } else {
       for (const agent of displayAgents) {
-        runtime.log(
-          info(
-            `Session store (${agent.agentId}): ${agent.sessions.path} (${agent.sessions.count} entries)`,
-          ),
-        );
+        runtime.log(info(`Session store (${agent.agentId}): ${agent.sessions.path} (${agent.sessions.count} entries)`));
         if (agent.sessions.recent.length > 0) {
           for (const r of agent.sessions.recent) {
             runtime.log(

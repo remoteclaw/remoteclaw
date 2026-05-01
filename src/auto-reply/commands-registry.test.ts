@@ -73,20 +73,14 @@ describe("commands registry", () => {
   });
 
   it("applies provider-specific native names", () => {
-    const native = listNativeCommandSpecsForConfig(
-      { commands: { native: true } },
-      { provider: "discord" },
-    );
+    const native = listNativeCommandSpecsForConfig({ commands: { native: true } }, { provider: "discord" });
     expect(native.find((spec) => spec.name === "voice")).toBeTruthy();
     expect(findCommandByNativeName("voice", "discord")?.key).toBe("tts");
     expect(findCommandByNativeName("tts", "discord")).toBeUndefined();
   });
 
   it("renames status to agentstatus for slack", () => {
-    const native = listNativeCommandSpecsForConfig(
-      { commands: { native: true } },
-      { provider: "slack" },
-    );
+    const native = listNativeCommandSpecsForConfig({ commands: { native: true } }, { provider: "slack" });
     expect(native.find((spec) => spec.name === "agentstatus")).toBeTruthy();
     expect(native.find((spec) => spec.name === "status")).toBeFalsy();
     expect(findCommandByNativeName("agentstatus", "slack")?.key).toBe("status");
@@ -233,9 +227,7 @@ describe("commands registry", () => {
   });
 
   it("keeps telegram-style command mentions for other bots", () => {
-    expect(normalizeCommandBody("/help@otherbot", { botUsername: "remoteclaw" })).toBe(
-      "/help@otherbot",
-    );
+    expect(normalizeCommandBody("/help@otherbot", { botUsername: "remoteclaw" })).toBe("/help@otherbot");
   });
 
   it("normalizes dock command aliases", () => {
@@ -295,12 +287,8 @@ describe("commands registry args", () => {
     };
 
     expect(serializeCommandArgs(command, { raw: "gpt-5.2-codex" })).toBe("gpt-5.2-codex");
-    expect(serializeCommandArgs(command, { values: { model: "gpt-5.2-codex" } })).toBe(
-      "gpt-5.2-codex",
-    );
-    expect(buildCommandTextFromArgs(command, { values: { model: "gpt-5.2-codex" } })).toBe(
-      "/model gpt-5.2-codex",
-    );
+    expect(serializeCommandArgs(command, { values: { model: "gpt-5.2-codex" } })).toBe("gpt-5.2-codex");
+    expect(buildCommandTextFromArgs(command, { values: { model: "gpt-5.2-codex" } })).toBe("/model gpt-5.2-codex");
   });
 
   it("resolves auto arg menus when missing a choice arg", () => {

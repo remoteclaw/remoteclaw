@@ -11,8 +11,7 @@ let installGaxiosFetchCompat: typeof import("./gaxios-fetch-compat.js").installG
 beforeAll(async () => {
   const require = createRequire(import.meta.url);
   ({ ProxyAgent } = require("undici") as typeof import("undici"));
-  ({ __testing, createGaxiosCompatFetch, installGaxiosFetchCompat } =
-    await import("./gaxios-fetch-compat.js"));
+  ({ __testing, createGaxiosCompatFetch, installGaxiosFetchCompat } = await import("./gaxios-fetch-compat.js"));
 });
 
 beforeEach(() => {

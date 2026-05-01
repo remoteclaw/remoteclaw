@@ -1,4 +1,5 @@
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { dashboardCommand } from "./dashboard.js";
 
 const readConfigFileSnapshotMock = vi.hoisted(() => vi.fn());
 const resolveGatewayPortMock = vi.hoisted(() => vi.fn());
@@ -28,8 +29,6 @@ vi.mock("../infra/clipboard.js", () => ({
 vi.mock("../secrets/resolve.js", () => ({
   resolveSecretRefValues: resolveSecretRefValuesMock,
 }));
-
-let dashboardCommand: typeof import("./dashboard.js").dashboardCommand;
 
 const runtime = {
   log: vi.fn(),
@@ -63,10 +62,6 @@ function mockSnapshot(token: unknown = "abc") {
 }
 
 describe("dashboardCommand", () => {
-  beforeAll(async () => {
-    ({ dashboardCommand } = await import("./dashboard.js"));
-  });
-
   beforeEach(() => {
     resetRuntime();
     readConfigFileSnapshotMock.mockClear();
@@ -95,9 +90,7 @@ describe("dashboardCommand", () => {
     });
     expect(copyToClipboardMock).toHaveBeenCalledWith("http://127.0.0.1:18789/#token=abc123");
     expect(openUrlMock).toHaveBeenCalledWith("http://127.0.0.1:18789/#token=abc123");
-    expect(runtime.log).toHaveBeenCalledWith(
-      "Opened in your browser. Keep that tab to control RemoteClaw.",
-    );
+    expect(runtime.log).toHaveBeenCalledWith("Opened in your browser. Keep that tab to control RemoteClaw.");
   });
 
   it("prints SSH hint when browser cannot open", async () => {
@@ -123,9 +116,7 @@ describe("dashboardCommand", () => {
 
     expect(detectBrowserOpenSupportMock).not.toHaveBeenCalled();
     expect(openUrlMock).not.toHaveBeenCalled();
-    expect(runtime.log).toHaveBeenCalledWith(
-      "Browser launch disabled (--no-open). Use the URL above.",
-    );
+    expect(runtime.log).toHaveBeenCalledWith("Browser launch disabled (--no-open). Use the URL above.");
   });
 
   it("prints non-tokenized URL with guidance when token SecretRef is unresolved", async () => {
@@ -142,13 +133,9 @@ describe("dashboardCommand", () => {
     await dashboardCommand(runtime);
 
     expect(copyToClipboardMock).toHaveBeenCalledWith("http://127.0.0.1:18789/");
+    expect(runtime.log).toHaveBeenCalledWith(expect.stringContaining("Token auto-auth unavailable"));
     expect(runtime.log).toHaveBeenCalledWith(
-      expect.stringContaining("Token auto-auth unavailable"),
-    );
-    expect(runtime.log).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "gateway.auth.token SecretRef is unresolved (env:default:MISSING_GATEWAY_TOKEN).",
-      ),
+      expect.stringContaining("gateway.auth.token SecretRef is unresolved (env:default:MISSING_GATEWAY_TOKEN)."),
     );
     expect(runtime.log).not.toHaveBeenCalledWith(expect.stringContaining("missing env var"));
   });
@@ -172,9 +159,7 @@ describe("dashboardCommand", () => {
     expect(runtime.log).toHaveBeenCalledWith(
       expect.stringContaining("Token auto-auth is disabled for SecretRef-managed"),
     );
-    expect(runtime.log).not.toHaveBeenCalledWith(
-      expect.stringContaining("Token auto-auth unavailable"),
-    );
+    expect(runtime.log).not.toHaveBeenCalledWith(expect.stringContaining("Token auto-auth unavailable"));
   });
 
   it("keeps URL non-tokenized when env-template gateway.auth.token is unresolved", async () => {

@@ -56,9 +56,7 @@ export function upsertAuthProfile(params: {
     params.credential.type === "api_key"
       ? {
           ...params.credential,
-          ...(typeof params.credential.key === "string"
-            ? { key: normalizeSecretInput(params.credential.key) }
-            : {}),
+          ...(typeof params.credential.key === "string" ? { key: normalizeSecretInput(params.credential.key) } : {}),
         }
       : params.credential.type === "token"
         ? { ...params.credential, token: normalizeSecretInput(params.credential.token) }

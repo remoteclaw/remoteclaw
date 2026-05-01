@@ -115,9 +115,7 @@ for (const login of ensureLogins) {
 
 // Fetch merged PRs and count per author
 const prsByLogin = new Map<string, number>();
-const prRaw = run(
-  `gh pr list -R ${REPO} --state merged --limit 5000 --json author --jq '.[].author.login'`,
-);
+const prRaw = run(`gh pr list -R ${REPO} --state merged --limit 5000 --json author --jq '.[].author.login'`);
 for (const login of prRaw.split("\n")) {
   const trimmed = login.trim().toLowerCase();
   if (!trimmed) {
@@ -142,9 +140,7 @@ const repoAgeDays = Math.max(1, (now - repoEpoch) / 86_400_000);
 // Day-1 = 1.5x, halfway through repo life = 1.125x, recent = ~1.0x.
 function computeScore(loc: number, commits: number, prs: number, firstDate: string): number {
   const base = commits * 2 + prs * 10 + Math.sqrt(loc);
-  const daysIn = firstDate
-    ? Math.max(0, (now - new Date(firstDate.slice(0, 10)).getTime()) / 86_400_000)
-    : 0;
+  const daysIn = firstDate ? Math.max(0, (now - new Date(firstDate.slice(0, 10)).getTime()) / 86_400_000) : 0;
   const tenureRatio = Math.min(1, daysIn / repoAgeDays);
   const tenure = 1.0 + tenureRatio * tenureRatio * 0.5;
   return base * tenure;
@@ -153,9 +149,7 @@ function computeScore(loc: number, commits: number, prs: number, firstDate: stri
 const entriesByKey = new Map<string, Entry>();
 
 for (const seed of seedEntries) {
-  const login =
-    loginFromUrl(seed.html_url) ??
-    resolveLogin(seed.display, null, apiByLogin, nameToLogin, emailToLogin);
+  const login = loginFromUrl(seed.html_url) ?? resolveLogin(seed.display, null, apiByLogin, nameToLogin, emailToLogin);
   if (!login) {
     continue;
   }
@@ -311,8 +305,7 @@ console.log("-".repeat(85));
 for (const entry of entries.slice(0, 25)) {
   const login = (entry.login ?? entry.key).slice(0, 24);
   const fd = entry.firstCommitDate || "?";
-  const daysIn =
-    fd !== "?" ? Math.max(0, (now - new Date(fd.slice(0, 10)).getTime()) / 86_400_000) : 0;
+  const daysIn = fd !== "?" ? Math.max(0, (now - new Date(fd.slice(0, 10)).getTime()) / 86_400_000) : 0;
   const tr = Math.min(1, daysIn / repoAgeDays);
   const tenure = 1.0 + tr * tr * 0.5;
   console.log(
@@ -472,11 +465,7 @@ function resolveLogin(
   return null;
 }
 
-function guessLoginFromEmailName(
-  name: string,
-  email: string,
-  apiByLogin: Map<string, User>,
-): string | null {
+function guessLoginFromEmailName(name: string, email: string, apiByLogin: Map<string, User>): string | null {
   const local = email.split("@", 1)[0]?.trim();
   if (!local) {
     return null;
@@ -505,9 +494,7 @@ function normalizeIdentifier(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-function parseReadmeEntries(
-  content: string,
-): Array<{ display: string; html_url: string; avatar_url: string }> {
+function parseReadmeEntries(content: string): Array<{ display: string; html_url: string; avatar_url: string }> {
   const start = content.indexOf('<p align="left">');
   const end = content.indexOf("</p>", start);
   if (start === -1 || end === -1) {
@@ -554,11 +541,7 @@ function fallbackHref(value: string): string {
   return encoded ? `https://github.com/search?q=${encoded}` : "https://github.com";
 }
 
-function pickDisplay(
-  baseName: string | null | undefined,
-  login: string,
-  existing?: string,
-): string {
+function pickDisplay(baseName: string | null | undefined, login: string, existing?: string): string {
   const key = login.toLowerCase();
   if (displayName[key]) {
     return displayName[key];

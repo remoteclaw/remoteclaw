@@ -2,10 +2,7 @@ import { resolveMatrixRoomId } from "../send.js";
 import { resolveActionClient } from "./client.js";
 import { EventType, type MatrixActionClientOpts } from "./types.js";
 
-export async function getMatrixMemberInfo(
-  userId: string,
-  opts: MatrixActionClientOpts & { roomId?: string } = {},
-) {
+export async function getMatrixMemberInfo(userId: string, opts: MatrixActionClientOpts & { roomId?: string } = {}) {
   const { client, stopOnDone } = await resolveActionClient(opts);
   try {
     const roomId = opts.roomId ? await resolveMatrixRoomId(client, opts.roomId) : undefined;

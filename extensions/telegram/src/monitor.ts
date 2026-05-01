@@ -86,9 +86,7 @@ export async function monitorTelegramProvider(opts: MonitorTelegramOpts = {}) {
       pollingSession?.markForceRestarted();
       pollingSession?.abortActiveFetch();
       void activeRunner.stop().catch(() => {});
-      log(
-        `[telegram] Restarting polling after unhandled network error: ${formatErrorMessage(err)}`,
-      );
+      log(`[telegram] Restarting polling after unhandled network error: ${formatErrorMessage(err)}`);
       return true;
     }
 
@@ -108,8 +106,7 @@ export async function monitorTelegramProvider(opts: MonitorTelegramOpts = {}) {
       );
     }
 
-    const proxyFetch =
-      opts.proxyFetch ?? (account.config.proxy ? makeProxyFetch(account.config.proxy) : undefined);
+    const proxyFetch = opts.proxyFetch ?? (account.config.proxy ? makeProxyFetch(account.config.proxy) : undefined);
 
     const persistedOffsetRaw = await readTelegramUpdateOffset({
       accountId: account.accountId,
@@ -139,9 +136,7 @@ export async function monitorTelegramProvider(opts: MonitorTelegramOpts = {}) {
           botToken: token,
         });
       } catch (err) {
-        (opts.runtime?.error ?? console.error)(
-          `telegram: failed to persist update offset: ${String(err)}`,
-        );
+        (opts.runtime?.error ?? console.error)(`telegram: failed to persist update offset: ${String(err)}`);
       }
     };
 

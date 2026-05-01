@@ -15,11 +15,7 @@ async function closeServerQuietly(httpServer: HttpServer): Promise<void> {
   });
 }
 
-export async function listenGatewayHttpServer(params: {
-  httpServer: HttpServer;
-  bindHost: string;
-  port: number;
-}) {
+export async function listenGatewayHttpServer(params: { httpServer: HttpServer; bindHost: string; port: number }) {
   const { httpServer, bindHost, port } = params;
 
   for (let attempt = 0; ; attempt++) {
@@ -47,15 +43,9 @@ export async function listenGatewayHttpServer(params: {
         continue;
       }
       if (code === "EADDRINUSE") {
-        throw new GatewayLockError(
-          `another gateway instance is already listening on ws://${bindHost}:${port}`,
-          err,
-        );
+        throw new GatewayLockError(`another gateway instance is already listening on ws://${bindHost}:${port}`, err);
       }
-      throw new GatewayLockError(
-        `failed to bind gateway socket on ws://${bindHost}:${port}: ${String(err)}`,
-        err,
-      );
+      throw new GatewayLockError(`failed to bind gateway socket on ws://${bindHost}:${port}: ${String(err)}`, err);
     }
   }
 }

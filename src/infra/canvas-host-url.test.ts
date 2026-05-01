@@ -69,8 +69,6 @@ describe("resolveCanvasHostUrl", () => {
       expected: "https://[2001:db8::1]:3000",
     },
   ])("$name", ({ params, expected }) => {
-    expect(resolveCanvasHostUrl(params as Parameters<typeof resolveCanvasHostUrl>[0])).toBe(
-      expected,
-    );
+    expect(resolveCanvasHostUrl(params as Parameters<typeof resolveCanvasHostUrl>[0])).toBe(expected);
   });
 });

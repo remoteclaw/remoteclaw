@@ -15,9 +15,7 @@ describe("messageAction", () => {
       { name: "defaults to label", label: "Click", text: undefined, expectedText: "Click" },
     ] as const;
     for (const testCase of cases) {
-      const action = testCase.text
-        ? messageAction(testCase.label, testCase.text)
-        : messageAction(testCase.label);
+      const action = testCase.text ? messageAction(testCase.label, testCase.text) : messageAction(testCase.label);
       expect(action.type, testCase.name).toBe("message");
       expect(action.label, testCase.name).toBe(testCase.label);
       expect((action as { text: string }).text, testCase.name).toBe(testCase.expectedText);

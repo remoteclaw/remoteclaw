@@ -62,8 +62,7 @@ export async function isWSL(): Promise<boolean> {
   }
   try {
     const release = await fs.readFile("/proc/sys/kernel/osrelease", "utf8");
-    wslCached =
-      release.toLowerCase().includes("microsoft") || release.toLowerCase().includes("wsl");
+    wslCached = release.toLowerCase().includes("microsoft") || release.toLowerCase().includes("wsl");
   } catch {
     wslCached = false;
   }

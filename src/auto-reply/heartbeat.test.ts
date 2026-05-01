@@ -31,38 +31,32 @@ describe("resolveHeartbeatPrompt", () => {
   });
 
   it("prompt takes precedence over file", async () => {
-    expect(await resolveHeartbeatPrompt({ prompt: "inline", file: "heartbeat.txt" })).toBe(
-      "inline",
-    );
+    expect(await resolveHeartbeatPrompt({ prompt: "inline", file: "heartbeat.txt" })).toBe("inline");
   });
 
   it("reads file when prompt is empty", async () => {
     vi.mocked(fs.readFile).mockResolvedValue("file prompt content");
-    expect(
-      await resolveHeartbeatPrompt({ file: "heartbeat.txt", workspaceDir: "/workspace" }),
-    ).toBe("file prompt content");
+    expect(await resolveHeartbeatPrompt({ file: "heartbeat.txt", workspaceDir: "/workspace" })).toBe(
+      "file prompt content",
+    );
     expect(fs.readFile).toHaveBeenCalledWith(path.join("/workspace", "heartbeat.txt"), "utf-8");
   });
 
   it("uses absolute file path as-is", async () => {
     vi.mocked(fs.readFile).mockResolvedValue("absolute content");
-    expect(
-      await resolveHeartbeatPrompt({ file: "/etc/heartbeat.txt", workspaceDir: "/workspace" }),
-    ).toBe("absolute content");
+    expect(await resolveHeartbeatPrompt({ file: "/etc/heartbeat.txt", workspaceDir: "/workspace" })).toBe(
+      "absolute content",
+    );
     expect(fs.readFile).toHaveBeenCalledWith("/etc/heartbeat.txt", "utf-8");
   });
 
   it("returns empty string when file is missing", async () => {
     vi.mocked(fs.readFile).mockRejectedValue(new Error("ENOENT"));
-    expect(await resolveHeartbeatPrompt({ file: "missing.txt", workspaceDir: "/workspace" })).toBe(
-      "",
-    );
+    expect(await resolveHeartbeatPrompt({ file: "missing.txt", workspaceDir: "/workspace" })).toBe("");
   });
 
   it("returns empty string when file content is empty", async () => {
     vi.mocked(fs.readFile).mockResolvedValue("   ");
-    expect(await resolveHeartbeatPrompt({ file: "empty.txt", workspaceDir: "/workspace" })).toBe(
-      "",
-    );
+    expect(await resolveHeartbeatPrompt({ file: "empty.txt", workspaceDir: "/workspace" })).toBe("");
   });
 });

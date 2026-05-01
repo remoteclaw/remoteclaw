@@ -1,9 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { registerSlackMessageEvents } from "./messages.js";
-import {
-  createSlackSystemEventTestHarness,
-  type SlackSystemEventTestOverrides,
-} from "./system-event-test-harness.js";
+import { createSlackSystemEventTestHarness, type SlackSystemEventTestOverrides } from "./system-event-test-harness.js";
 
 const messageQueueMock = vi.fn();
 const messageAllowMock = vi.fn();

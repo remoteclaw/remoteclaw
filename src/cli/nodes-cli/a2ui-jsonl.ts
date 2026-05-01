@@ -62,9 +62,7 @@ export function validateA2UIJsonl(jsonl: string) {
     const record = obj as Record<string, unknown>;
     const actionKeys = A2UI_ACTION_KEYS.filter((key) => key in record);
     if (actionKeys.length !== 1) {
-      errors.push(
-        `line ${idx + 1}: expected exactly one action key (${A2UI_ACTION_KEYS.join(", ")})`,
-      );
+      errors.push(`line ${idx + 1}: expected exactly one action key (${A2UI_ACTION_KEYS.join(", ")})`);
       return;
     }
     if (actionKeys[0] === "createSurface") {

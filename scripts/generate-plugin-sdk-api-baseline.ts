@@ -32,9 +32,7 @@ async function main(): Promise<void> {
       );
       process.exit(1);
     }
-    console.log(
-      `OK ${path.relative(repoRoot, result.jsonPath)} ${path.relative(repoRoot, result.statefilePath)}`,
-    );
+    console.log(`OK ${path.relative(repoRoot, result.jsonPath)} ${path.relative(repoRoot, result.statefilePath)}`);
     return;
   }
   console.log(

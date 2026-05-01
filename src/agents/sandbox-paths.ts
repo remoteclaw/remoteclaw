@@ -136,10 +136,7 @@ export function assertMediaNotDataUrl(media: string): void {
   }
 }
 
-export async function resolveSandboxedMediaSource(params: {
-  media: string;
-  sandboxRoot: string;
-}): Promise<string> {
+export async function resolveSandboxedMediaSource(params: { media: string; sandboxRoot: string }): Promise<string> {
   const raw = params.media.trim();
   if (!raw) {
     return raw;
@@ -188,10 +185,7 @@ export async function resolveSandboxedMediaSource(params: {
   return sandboxResult.resolved;
 }
 
-function mapContainerWorkspaceFileUrl(params: {
-  fileUrl: string;
-  sandboxRoot: string;
-}): string | undefined {
+function mapContainerWorkspaceFileUrl(params: { fileUrl: string; sandboxRoot: string }): string | undefined {
   let parsed: URL;
   try {
     parsed = new URL(params.fileUrl);
@@ -214,10 +208,7 @@ function mapContainerWorkspaceFileUrl(params: {
   });
 }
 
-function mapContainerWorkspacePath(params: {
-  candidate: string;
-  sandboxRoot: string;
-}): string | undefined {
+function mapContainerWorkspacePath(params: { candidate: string; sandboxRoot: string }): string | undefined {
   const normalized = params.candidate.replace(/\\/g, "/");
   if (normalized === SANDBOX_CONTAINER_WORKDIR) {
     return path.resolve(params.sandboxRoot);
@@ -250,10 +241,7 @@ async function resolveAllowedTmpMediaPath(params: {
   return resolved;
 }
 
-async function assertNoTmpAliasEscape(params: {
-  filePath: string;
-  tmpRoot: string;
-}): Promise<void> {
+async function assertNoTmpAliasEscape(params: { filePath: string; tmpRoot: string }): Promise<void> {
   await assertNoPathAliasEscape({
     absolutePath: params.filePath,
     rootPath: params.tmpRoot,

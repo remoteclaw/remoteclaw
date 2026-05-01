@@ -22,10 +22,7 @@ function getAssistantToolCallBlocks(messages: AgentMessage[]) {
 }
 
 describe("sanitizeToolUseResultPairing", () => {
-  const buildDuplicateToolResultInput = (opts?: {
-    middleMessage?: unknown;
-    secondText?: string;
-  }): AgentMessage[] =>
+  const buildDuplicateToolResultInput = (opts?: { middleMessage?: unknown; secondText?: string }): AgentMessage[] =>
     castAgentMessages([
       {
         role: "assistant",
@@ -100,10 +97,7 @@ describe("sanitizeToolUseResultPairing", () => {
   });
 
   it("drops duplicate tool results for the same id within a span", () => {
-    const input = castAgentMessages([
-      ...buildDuplicateToolResultInput(),
-      { role: "user", content: "ok" },
-    ]);
+    const input = castAgentMessages([...buildDuplicateToolResultInput(), { role: "user", content: "ok" }]);
 
     const out = sanitizeToolUseResultPairing(input);
     expect(out.filter((m) => m.role === "toolResult")).toHaveLength(1);
@@ -238,10 +232,7 @@ describe("sanitizeToolUseResultPairing", () => {
 });
 
 describe("sanitizeToolCallInputs", () => {
-  function sanitizeAssistantContent(
-    content: unknown[],
-    options?: Parameters<typeof sanitizeToolCallInputs>[1],
-  ) {
+  function sanitizeAssistantContent(content: unknown[], options?: Parameters<typeof sanitizeToolCallInputs>[1]) {
     return sanitizeToolCallInputs(
       castAgentMessages([
         {
@@ -253,10 +244,7 @@ describe("sanitizeToolCallInputs", () => {
     );
   }
 
-  function sanitizeAssistantToolCalls(
-    content: unknown[],
-    options?: Parameters<typeof sanitizeToolCallInputs>[1],
-  ) {
+  function sanitizeAssistantToolCalls(content: unknown[], options?: Parameters<typeof sanitizeToolCallInputs>[1]) {
     return getAssistantToolCallBlocks(sanitizeAssistantContent(content, options));
   }
 

@@ -127,9 +127,7 @@ describe("registerNodeTools", () => {
     const tool = mockServer.tools.get("node_pair_list");
     await tool!.handler({});
 
-    expect(mockCallGateway).toHaveBeenCalledWith(
-      expect.objectContaining({ method: "node.pair.list" }),
-    );
+    expect(mockCallGateway).toHaveBeenCalledWith(expect.objectContaining({ method: "node.pair.list" }));
   });
 
   it("node_pair_approve calls node.pair.approve with requestId", async () => {

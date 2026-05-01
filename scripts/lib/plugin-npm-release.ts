@@ -79,16 +79,12 @@ export function parsePluginReleaseSelection(value: string | undefined): string[]
   ].toSorted();
 }
 
-export function parsePluginReleaseSelectionMode(
-  value: string | undefined,
-): PluginReleaseSelectionMode {
+export function parsePluginReleaseSelectionMode(value: string | undefined): PluginReleaseSelectionMode {
   if (value === "selected" || value === "all-publishable") {
     return value;
   }
 
-  throw new Error(
-    `Unknown selection mode: ${value ?? "<missing>"}. Expected "selected" or "all-publishable".`,
-  );
+  throw new Error(`Unknown selection mode: ${value ?? "<missing>"}. Expected "selected" or "all-publishable".`);
 }
 
 export function parsePluginReleaseArgs(argv: string[]): ParsedPluginReleaseArgs {
@@ -149,9 +145,7 @@ export function parsePluginReleaseArgs(argv: string[]): ParsedPluginReleaseArgs 
   return { selection, selectionMode, pluginsFlagProvided, baseRef, headRef };
 }
 
-export function collectPublishablePluginPackageErrors(
-  candidate: PublishablePluginPackageCandidate,
-): string[] {
+export function collectPublishablePluginPackageErrors(candidate: PublishablePluginPackageCandidate): string[] {
   const { packageJson } = candidate;
   const errors: string[] = [];
   const packageName = packageJson.name?.trim() ?? "";
@@ -159,9 +153,7 @@ export function collectPublishablePluginPackageErrors(
   const extensions = packageJson.remoteclaw?.extensions ?? [];
 
   if (!packageName.startsWith("@remoteclaw/")) {
-    errors.push(
-      `package name must start with "@remoteclaw/"; found "${packageName || "<missing>"}".`,
-    );
+    errors.push(`package name must start with "@remoteclaw/"; found "${packageName || "<missing>"}".`);
   }
   if (packageJson.private === true) {
     errors.push("package.json private must not be true.");
@@ -169,9 +161,7 @@ export function collectPublishablePluginPackageErrors(
   if (!packageVersion) {
     errors.push("package.json version must be non-empty.");
   } else if (parseReleaseVersion(packageVersion) === null) {
-    errors.push(
-      `package.json version must match YYYY.M.D, YYYY.M.D-N, or YYYY.M.D-beta.N; found "${packageVersion}".`,
-    );
+    errors.push(`package.json version must match YYYY.M.D, YYYY.M.D-N, or YYYY.M.D-beta.N; found "${packageVersion}".`);
   }
   if (!Array.isArray(extensions) || extensions.length === 0) {
     errors.push("remoteclaw.extensions must contain at least one entry.");
@@ -183,13 +173,9 @@ export function collectPublishablePluginPackageErrors(
   return errors;
 }
 
-export function collectPublishablePluginPackages(
-  rootDir = resolve("."),
-): PublishablePluginPackage[] {
+export function collectPublishablePluginPackages(rootDir = resolve(".")): PublishablePluginPackage[] {
   const extensionsDir = join(rootDir, "extensions");
-  const dirs = readdirSync(extensionsDir, { withFileTypes: true }).filter((entry) =>
-    entry.isDirectory(),
-  );
+  const dirs = readdirSync(extensionsDir, { withFileTypes: true }).filter((entry) => entry.isDirectory());
 
   const publishable: PublishablePluginPackage[] = [];
   const validationErrors: string[] = [];
@@ -340,14 +326,10 @@ export function isPluginVersionPublished(packageName: string, version: string): 
   writeFileSync(userconfigPath, "");
 
   try {
-    execFileSync(
-      "npm",
-      ["view", `${packageName}@${version}`, "version", "--userconfig", userconfigPath],
-      {
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "pipe"],
-      },
-    );
+    execFileSync("npm", ["view", `${packageName}@${version}`, "version", "--userconfig", userconfigPath], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
     return true;
   } catch {
     return false;

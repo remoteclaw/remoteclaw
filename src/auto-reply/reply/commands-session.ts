@@ -138,9 +138,7 @@ export const handleActivationCommand: CommandHandler = async (params, allowTextC
     };
   }
   if (!params.command.isAuthorizedSender) {
-    logVerbose(
-      `Ignoring /activation from unauthorized sender in group: ${params.command.senderId || "<unknown>"}`,
-    );
+    logVerbose(`Ignoring /activation from unauthorized sender in group: ${params.command.senderId || "<unknown>"}`);
     return { shouldContinue: false };
   }
   if (!activationCommand.mode) {
@@ -171,9 +169,7 @@ export const handleSendPolicyCommand: CommandHandler = async (params, allowTextC
     return null;
   }
   if (!params.command.isAuthorizedSender) {
-    logVerbose(
-      `Ignoring /send from unauthorized sender: ${params.command.senderId || "<unknown>"}`,
-    );
+    logVerbose(`Ignoring /send from unauthorized sender: ${params.command.senderId || "<unknown>"}`);
     return { shouldContinue: false };
   }
   if (!sendPolicyCommand.mode) {
@@ -190,12 +186,7 @@ export const handleSendPolicyCommand: CommandHandler = async (params, allowTextC
     }
     await persistSessionEntry(params);
   }
-  const label =
-    sendPolicyCommand.mode === "inherit"
-      ? "inherit"
-      : sendPolicyCommand.mode === "allow"
-        ? "on"
-        : "off";
+  const label = sendPolicyCommand.mode === "inherit" ? "inherit" : sendPolicyCommand.mode === "allow" ? "on" : "off";
   return {
     shouldContinue: false,
     reply: { text: `⚙️ Send policy set to ${label}.` },
@@ -211,9 +202,7 @@ export const handleUsageCommand: CommandHandler = async (params, allowTextComman
     return null;
   }
   if (!params.command.isAuthorizedSender) {
-    logVerbose(
-      `Ignoring /usage from unauthorized sender: ${params.command.senderId || "<unknown>"}`,
-    );
+    logVerbose(`Ignoring /usage from unauthorized sender: ${params.command.senderId || "<unknown>"}`);
     return { shouldContinue: false };
   }
 
@@ -258,9 +247,7 @@ export const handleSessionCommand: CommandHandler = async (params, allowTextComm
     return null;
   }
   if (!params.command.isAuthorizedSender) {
-    logVerbose(
-      `Ignoring /session from unauthorized sender: ${params.command.senderId || "<unknown>"}`,
-    );
+    logVerbose(`Ignoring /session from unauthorized sender: ${params.command.senderId || "<unknown>"}`);
     return { shouldContinue: false };
   }
 
@@ -287,8 +274,7 @@ export const handleSessionCommand: CommandHandler = async (params, allowTextComm
 
   const accountId = resolveChannelAccountId(params);
   const sessionBindingService = getSessionBindingService();
-  const threadId =
-    params.ctx.MessageThreadId != null ? String(params.ctx.MessageThreadId).trim() : "";
+  const threadId = params.ctx.MessageThreadId != null ? String(params.ctx.MessageThreadId).trim() : "";
   const telegramConversationId = onTelegram ? resolveTelegramConversationId(params) : undefined;
 
   const discordManager = onDiscord ? getThreadBindingManager(accountId) : null;
@@ -299,8 +285,7 @@ export const handleSessionCommand: CommandHandler = async (params, allowTextComm
     };
   }
 
-  const discordBinding =
-    onDiscord && threadId ? discordManager?.getByThreadId(threadId) : undefined;
+  const discordBinding = onDiscord && threadId ? discordManager?.getByThreadId(threadId) : undefined;
   const telegramBinding =
     onTelegram && telegramConversationId
       ? sessionBindingService.resolveByConversation({
@@ -370,11 +355,7 @@ export const handleSessionCommand: CommandHandler = async (params, allowTextComm
   const durationArgRaw = tokens.slice(1).join("");
   if (!durationArgRaw) {
     if (action === SESSION_ACTION_IDLE) {
-      if (
-        typeof idleExpiresAt === "number" &&
-        Number.isFinite(idleExpiresAt) &&
-        idleExpiresAt > Date.now()
-      ) {
+      if (typeof idleExpiresAt === "number" && Number.isFinite(idleExpiresAt) && idleExpiresAt > Date.now()) {
         return {
           shouldContinue: false,
           reply: {
@@ -388,11 +369,7 @@ export const handleSessionCommand: CommandHandler = async (params, allowTextComm
       };
     }
 
-    if (
-      typeof maxAgeExpiresAt === "number" &&
-      Number.isFinite(maxAgeExpiresAt) &&
-      maxAgeExpiresAt > Date.now()
-    ) {
+    if (typeof maxAgeExpiresAt === "number" && Number.isFinite(maxAgeExpiresAt) && maxAgeExpiresAt > Date.now()) {
       return {
         shouldContinue: false,
         reply: {
@@ -407,9 +384,7 @@ export const handleSessionCommand: CommandHandler = async (params, allowTextComm
   }
 
   const senderId = params.command.senderId?.trim() || "";
-  const boundBy = onDiscord
-    ? discordBinding!.boundBy
-    : resolveTelegramBindingBoundBy(telegramBinding!);
+  const boundBy = onDiscord ? discordBinding!.boundBy : resolveTelegramBindingBoundBy(telegramBinding!);
   if (boundBy && boundBy !== "system" && senderId && senderId !== boundBy) {
     return {
       shouldContinue: false,
@@ -486,9 +461,7 @@ export const handleSessionCommand: CommandHandler = async (params, allowTextComm
     bindings: updatedBindings,
   });
   const expiryLabel =
-    typeof nextExpiry === "number" && Number.isFinite(nextExpiry)
-      ? formatSessionExpiry(nextExpiry)
-      : "n/a";
+    typeof nextExpiry === "number" && Number.isFinite(nextExpiry) ? formatSessionExpiry(nextExpiry) : "n/a";
 
   return {
     shouldContinue: false,
@@ -508,9 +481,7 @@ export const handleRestartCommand: CommandHandler = async (params, allowTextComm
     return null;
   }
   if (!params.command.isAuthorizedSender) {
-    logVerbose(
-      `Ignoring /restart from unauthorized sender: ${params.command.senderId || "<unknown>"}`,
-    );
+    logVerbose(`Ignoring /restart from unauthorized sender: ${params.command.senderId || "<unknown>"}`);
     return { shouldContinue: false };
   }
   if (!isRestartEnabled(params.cfg)) {

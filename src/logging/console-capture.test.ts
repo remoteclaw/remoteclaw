@@ -72,9 +72,7 @@ describe("enableConsoleCapture", () => {
     expect(warn).toHaveBeenCalledTimes(1);
     const firstArg = String(warn.mock.calls[0]?.[0] ?? "");
     // Timestamp uses local time with timezone offset instead of UTC "Z" suffix
-    expect(firstArg).toMatch(
-      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{2}:\d{2} \[EventQueue\]/,
-    );
+    expect(firstArg).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{2}:\d{2} \[EventQueue\]/);
     vi.useRealTimers();
   });
 
@@ -85,9 +83,7 @@ describe("enableConsoleCapture", () => {
       const warn = vi.fn();
       console.warn = warn;
       enableConsoleCapture();
-      console.warn(
-        `[EventQueue] Slow listener detected: ${listener} took 12.3 seconds for event MESSAGE_CREATE`,
-      );
+      console.warn(`[EventQueue] Slow listener detected: ${listener} took 12.3 seconds for event MESSAGE_CREATE`);
       expect(warn).not.toHaveBeenCalled();
     },
   );

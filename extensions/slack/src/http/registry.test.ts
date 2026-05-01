@@ -1,10 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  handleSlackHttpRequest,
-  normalizeSlackWebhookPath,
-  registerSlackHttpHandler,
-} from "./registry.js";
+import { handleSlackHttpRequest, normalizeSlackWebhookPath, registerSlackHttpHandler } from "./registry.js";
 
 describe("normalizeSlackWebhookPath", () => {
   it("returns the default path when input is empty", () => {
@@ -81,8 +77,6 @@ describe("registerSlackHttpHandler", () => {
 
     expect(handled).toBe(true);
     expect(handler).toHaveBeenCalledWith(req, res);
-    expect(log).toHaveBeenCalledWith(
-      'slack: webhook path /slack/events already registered for account "duplicate"',
-    );
+    expect(log).toHaveBeenCalledWith('slack: webhook path /slack/events already registered for account "duplicate"');
   });
 });

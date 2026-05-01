@@ -32,9 +32,7 @@ export function parseConfigureWizardSections(raw: unknown): {
   }
 
   const invalid = sectionsRaw.filter((s) => !CONFIGURE_WIZARD_SECTIONS.includes(s as never));
-  const sections = sectionsRaw.filter((s): s is WizardSection =>
-    CONFIGURE_WIZARD_SECTIONS.includes(s as never),
-  );
+  const sections = sectionsRaw.filter((s): s is WizardSection => CONFIGURE_WIZARD_SECTIONS.includes(s as never));
   return { sections, invalid };
 }
 
@@ -88,7 +86,5 @@ export const select = <T>(params: Parameters<typeof clackSelect<T>>[0]) =>
   clackSelect({
     ...params,
     message: stylePromptMessage(params.message),
-    options: params.options.map((opt) =>
-      opt.hint === undefined ? opt : { ...opt, hint: stylePromptHint(opt.hint) },
-    ),
+    options: params.options.map((opt) => (opt.hint === undefined ? opt : { ...opt, hint: stylePromptHint(opt.hint) })),
   });

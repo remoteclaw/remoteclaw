@@ -54,9 +54,6 @@
             ? "light"
             : "dark";
     document.documentElement.setAttribute("data-theme", resolved);
-    document.documentElement.setAttribute(
-      "data-theme-mode",
-      resolved.indexOf("light") !== -1 ? "light" : "dark",
-    );
+    document.documentElement.setAttribute("data-theme-mode", resolved.indexOf("light") !== -1 ? "light" : "dark");
   } catch {}
 })();

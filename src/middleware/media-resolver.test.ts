@@ -92,10 +92,7 @@ describe("resolveMediaAttachments", () => {
           fileName: "b.png",
         });
 
-      const result = await resolveMediaAttachments(
-        ["https://example.com/a.jpg", "https://example.com/b.png"],
-        tempDir,
-      );
+      const result = await resolveMediaAttachments(["https://example.com/a.jpg", "https://example.com/b.png"], tempDir);
 
       expect(result).toHaveLength(2);
       expect(result[0].filePath).toMatch(/inbound-media-0\.jpg$/);
@@ -158,10 +155,7 @@ describe("resolveMediaAttachments", () => {
         fileName: "ok.png",
       });
 
-      const result = await resolveMediaAttachments(
-        ["https://example.com/bad", "https://example.com/ok.png"],
-        tempDir,
-      );
+      const result = await resolveMediaAttachments(["https://example.com/bad", "https://example.com/ok.png"], tempDir);
 
       expect(result).toHaveLength(1);
       expect(result[0].sourceUrl).toBe("https://example.com/ok.png");
@@ -170,10 +164,7 @@ describe("resolveMediaAttachments", () => {
     it("returns empty array when all URLs fail", async () => {
       mockFetchRemoteMedia.mockRejectedValue(new Error("fail"));
 
-      const result = await resolveMediaAttachments(
-        ["https://example.com/a", "https://example.com/b"],
-        tempDir,
-      );
+      const result = await resolveMediaAttachments(["https://example.com/a", "https://example.com/b"], tempDir);
 
       expect(result).toHaveLength(0);
     });
@@ -193,10 +184,7 @@ describe("resolveMediaAttachments", () => {
       });
       mockDetectMime.mockResolvedValue("image/jpeg");
 
-      const result = await resolveMediaAttachments(
-        ["https://cdn.example.com/clip.mp4", "/local/photo.jpg"],
-        tempDir,
-      );
+      const result = await resolveMediaAttachments(["https://cdn.example.com/clip.mp4", "/local/photo.jpg"], tempDir);
 
       expect(result).toHaveLength(2);
       expect(result[0].sourceUrl).toBe("https://cdn.example.com/clip.mp4");

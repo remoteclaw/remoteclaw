@@ -1,12 +1,6 @@
-import {
-  listEnabledSignalAccounts,
-  resolveSignalAccount,
-} from "../../../../extensions/signal/src/accounts.js";
+import { listEnabledSignalAccounts, resolveSignalAccount } from "../../../../extensions/signal/src/accounts.js";
 import { resolveSignalReactionLevel } from "../../../../extensions/signal/src/reaction-level.js";
-import {
-  sendReactionSignal,
-  removeReactionSignal,
-} from "../../../../extensions/signal/src/send-reactions.js";
+import { sendReactionSignal, removeReactionSignal } from "../../../../extensions/signal/src/send-reactions.js";
 import { createActionGate, jsonResult, readStringParam } from "../../../agents/tools/common.js";
 import type { ChannelMessageActionAdapter, ChannelMessageActionName } from "../types.js";
 import { resolveReactionMessageId } from "./reaction-message-id.js";
@@ -63,12 +57,7 @@ async function mutateSignalReaction(params: {
     targetAuthorUuid: params.targetAuthorUuid,
   };
   if (params.remove) {
-    await removeReactionSignal(
-      params.target.recipient ?? "",
-      params.timestamp,
-      params.emoji,
-      options,
-    );
+    await removeReactionSignal(params.target.recipient ?? "", params.timestamp, params.emoji, options);
     return jsonResult({ ok: true, removed: params.emoji });
   }
   await sendReactionSignal(params.target.recipient ?? "", params.timestamp, params.emoji, options);

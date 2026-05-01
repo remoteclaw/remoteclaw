@@ -1,9 +1,6 @@
 import type { loadConfig } from "../../../../../src/config/config.js";
 import type { resolveAgentRoute } from "../../../../../src/routing/resolve-route.js";
-import {
-  buildAgentSessionKey,
-  deriveLastRoutePolicy,
-} from "../../../../../src/routing/resolve-route.js";
+import { buildAgentSessionKey, deriveLastRoutePolicy } from "../../../../../src/routing/resolve-route.js";
 import {
   buildAgentMainSessionKey,
   DEFAULT_MAIN_KEY,
@@ -78,9 +75,7 @@ export async function maybeBroadcastMessage(params: {
   const agentIds = params.cfg.agents?.list?.map((agent) => normalizeAgentId(agent.id));
   const hasKnownAgents = (agentIds?.length ?? 0) > 0;
   const groupHistorySnapshot =
-    params.msg.chatType === "group"
-      ? (params.groupHistories.get(params.groupHistoryKey) ?? [])
-      : undefined;
+    params.msg.chatType === "group" ? (params.groupHistories.get(params.groupHistoryKey) ?? []) : undefined;
 
   const processForAgent = async (agentId: string): Promise<boolean> => {
     const normalizedAgentId = normalizeAgentId(agentId);

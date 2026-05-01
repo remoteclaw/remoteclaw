@@ -38,9 +38,7 @@ export function extractToolCards(message: unknown): ToolCard[] {
 
   if (isToolResultMessage(message) && !cards.some((card) => card.kind === "result")) {
     const name =
-      (typeof m.toolName === "string" && m.toolName) ||
-      (typeof m.tool_name === "string" && m.tool_name) ||
-      "tool";
+      (typeof m.toolName === "string" && m.toolName) || (typeof m.tool_name === "string" && m.tool_name) || "tool";
     const text = extractTextCached(message) ?? undefined;
     cards.push({ kind: "result", name, text });
   }
@@ -96,9 +94,7 @@ export function renderToolCardSidebar(card: ToolCard, onOpenSidebar?: (content: 
           <span>${display.label}</span>
         </div>
         ${
-          canClick
-            ? html`<span class="chat-tool-card__action">${hasText ? "View" : ""} ${icons.check}</span>`
-            : nothing
+          canClick ? html`<span class="chat-tool-card__action">${hasText ? "View" : ""} ${icons.check}</span>` : nothing
         }
         ${isEmpty && !canClick ? html`<span class="chat-tool-card__status">${icons.check}</span>` : nothing}
       </div>

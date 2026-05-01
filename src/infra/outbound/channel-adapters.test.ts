@@ -26,11 +26,7 @@ describe("getChannelMessageAdapter", () => {
 
     expect(components).toHaveLength(1);
     expect(container).toBeInstanceOf(DiscordUiContainer);
-    expect(container?.components).toEqual([
-      expect.any(TextDisplay),
-      expect.any(Separator),
-      expect.any(TextDisplay),
-    ]);
+    expect(container?.components).toEqual([expect.any(TextDisplay), expect.any(Separator), expect.any(TextDisplay)]);
   });
 
   it("omits the message body block when the cross-context message is blank", () => {

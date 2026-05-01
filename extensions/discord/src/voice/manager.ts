@@ -170,9 +170,7 @@ function createOpusDecoder(): { decoder: OpusDecoder; name: string } | null {
   } catch (err) {
     if (!warnedOpusMissing) {
       warnedOpusMissing = true;
-      logger.warn(
-        `discord voice: opusscript unavailable (${formatErrorMessage(err)}); cannot decode voice audio`,
-      );
+      logger.warn(`discord voice: opusscript unavailable (${formatErrorMessage(err)}); cannot decode voice audio`);
     }
   }
   return null;
@@ -258,9 +256,7 @@ async function transcribeAudio(params: {
       config: params.cfg.tools?.media?.audio,
     });
     const typedResult = result as { outputs: Array<{ kind: string; text?: string }> };
-    const output = typedResult.outputs.find(
-      (entry: { kind: string }) => entry.kind === "audio.transcription",
-    );
+    const output = typedResult.outputs.find((entry: { kind: string }) => entry.kind === "audio.transcription");
     const text = output?.text?.trim();
     return text || undefined;
   } finally {
@@ -296,8 +292,7 @@ export class DiscordVoiceManager {
   ) {
     this.botUserId = params.botUserId;
     this.voiceEnabled = params.discordConfig.voice?.enabled !== false;
-    this.ownerAllowFrom =
-      params.discordConfig.allowFrom ?? params.discordConfig.dm?.allowFrom ?? [];
+    this.ownerAllowFrom = params.discordConfig.allowFrom ?? params.discordConfig.dm?.allowFrom ?? [];
     this.allowDangerousNameMatching = isDangerousNameMatchingEnabled(params.discordConfig);
   }
 
@@ -328,9 +323,7 @@ export class DiscordVoiceManager {
           continue;
         }
         if (seenGuilds.has(guildId)) {
-          logger.warn(
-            `discord voice: autoJoin has multiple entries for guild ${guildId}; skipping`,
-          );
+          logger.warn(`discord voice: autoJoin has multiple entries for guild ${guildId}; skipping`);
           continue;
         }
         seenGuilds.add(guildId);
@@ -428,9 +421,7 @@ export class DiscordVoiceManager {
     // Use the voice channel id as the session channel so text chat in the voice channel
     // shares the same session as spoken audio.
     if (sessionChannelId !== channelId) {
-      logVoiceVerbose(
-        `join: using session channel ${sessionChannelId} for voice channel ${channelId}`,
-      );
+      logVoiceVerbose(`join: using session channel ${sessionChannelId} for voice channel ${channelId}`);
     }
     const route = resolveAgentRoute({
       cfg: this.params.cfg,
@@ -572,9 +563,7 @@ export class DiscordVoiceManager {
     }
 
     entry.activeSpeakers.add(userId);
-    logVoiceVerbose(
-      `capture start: guild ${entry.guildId} channel ${entry.channelId} user ${userId}`,
-    );
+    logVoiceVerbose(`capture start: guild ${entry.guildId} channel ${entry.channelId} user ${userId}`);
     if (entry.player.state.status === AudioPlayerStatus.Playing) {
       entry.player.stop(true);
     }
@@ -592,9 +581,7 @@ export class DiscordVoiceManager {
     try {
       const pcm = await decodeOpusStream(stream);
       if (pcm.length === 0) {
-        logVoiceVerbose(
-          `capture empty: guild ${entry.guildId} channel ${entry.channelId} user ${userId}`,
-        );
+        logVoiceVerbose(`capture empty: guild ${entry.guildId} channel ${entry.channelId} user ${userId}`);
         return;
       }
       this.resetDecryptFailureState(entry);
@@ -632,14 +619,10 @@ export class DiscordVoiceManager {
       filePath: wavPath,
     });
     if (!transcript) {
-      logVoiceVerbose(
-        `transcription empty: guild ${entry.guildId} channel ${entry.channelId} user ${userId}`,
-      );
+      logVoiceVerbose(`transcription empty: guild ${entry.guildId} channel ${entry.channelId} user ${userId}`);
       return;
     }
-    logVoiceVerbose(
-      `transcription ok (${transcript.length} chars): guild ${entry.guildId} channel ${entry.channelId}`,
-    );
+    logVoiceVerbose(`transcription ok (${transcript.length} chars): guild ${entry.guildId} channel ${entry.channelId}`);
 
     const speaker = await this.resolveSpeakerContext(entry.guildId, userId);
     const prompt = speaker.label ? `${speaker.label}: ${transcript}` : transcript;
@@ -663,29 +646,19 @@ export class DiscordVoiceManager {
       .trim();
 
     if (!replyText) {
-      logVoiceVerbose(
-        `reply empty: guild ${entry.guildId} channel ${entry.channelId} user ${userId}`,
-      );
+      logVoiceVerbose(`reply empty: guild ${entry.guildId} channel ${entry.channelId} user ${userId}`);
       return;
     }
-    logVoiceVerbose(
-      `reply ok (${replyText.length} chars): guild ${entry.guildId} channel ${entry.channelId}`,
-    );
+    logVoiceVerbose(`reply ok (${replyText.length} chars): guild ${entry.guildId} channel ${entry.channelId}`);
 
     const { cfg: ttsCfg, resolved: ttsConfig } = resolveVoiceTtsConfig({
       cfg: this.params.cfg,
       override: this.params.discordConfig.voice?.tts,
     });
-    const directive = parseTtsDirectives(
-      replyText,
-      ttsConfig.modelOverrides,
-      ttsConfig.openai.baseUrl,
-    );
+    const directive = parseTtsDirectives(replyText, ttsConfig.modelOverrides, ttsConfig.openai.baseUrl);
     const speakText = directive.overrides.ttsText ?? directive.cleanedText.trim();
     if (!speakText) {
-      logVoiceVerbose(
-        `tts skipped (empty): guild ${entry.guildId} channel ${entry.channelId} user ${userId}`,
-      );
+      logVoiceVerbose(`tts skipped (empty): guild ${entry.guildId} channel ${entry.channelId} user ${userId}`);
       return;
     }
 
@@ -700,9 +673,7 @@ export class DiscordVoiceManager {
       return;
     }
     const audioPath = ttsResult.audioPath;
-    logVoiceVerbose(
-      `tts ok (${speakText.length} chars): guild ${entry.guildId} channel ${entry.channelId}`,
-    );
+    logVoiceVerbose(`tts ok (${speakText.length} chars): guild ${entry.guildId} channel ${entry.channelId}`);
 
     this.enqueuePlayback(entry, async () => {
       logVoiceVerbose(
@@ -710,12 +681,8 @@ export class DiscordVoiceManager {
       );
       const resource = createAudioResource(audioPath);
       entry.player.play(resource);
-      await entersState(entry.player, AudioPlayerStatus.Playing, PLAYBACK_READY_TIMEOUT_MS).catch(
-        () => undefined,
-      );
-      await entersState(entry.player, AudioPlayerStatus.Idle, SPEAKING_READY_TIMEOUT_MS).catch(
-        () => undefined,
-      );
+      await entersState(entry.player, AudioPlayerStatus.Playing, PLAYBACK_READY_TIMEOUT_MS).catch(() => undefined);
+      await entersState(entry.player, AudioPlayerStatus.Idle, SPEAKING_READY_TIMEOUT_MS).catch(() => undefined);
       logVoiceVerbose(`playback done: guild ${entry.guildId} channel ${entry.channelId}`);
     });
   }
@@ -737,18 +704,13 @@ export class DiscordVoiceManager {
         "discord voice: DAVE decrypt failures detected; voice receive may be unstable (upstream: discordjs/discord.js#11419)",
       );
     }
-    if (
-      entry.decryptFailureCount < DECRYPT_FAILURE_RECONNECT_THRESHOLD ||
-      entry.decryptRecoveryInFlight
-    ) {
+    if (entry.decryptFailureCount < DECRYPT_FAILURE_RECONNECT_THRESHOLD || entry.decryptRecoveryInFlight) {
       return;
     }
     entry.decryptRecoveryInFlight = true;
     this.resetDecryptFailureState(entry);
     void this.recoverFromDecryptFailures(entry)
-      .catch((recoverErr) =>
-        logger.warn(`discord voice: decrypt recovery failed: ${formatErrorMessage(recoverErr)}`),
-      )
+      .catch((recoverErr) => logger.warn(`discord voice: decrypt recovery failed: ${formatErrorMessage(recoverErr)}`))
       .finally(() => {
         entry.decryptRecoveryInFlight = false;
       });

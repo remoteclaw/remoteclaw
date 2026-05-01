@@ -74,11 +74,7 @@ import {
   resolveCallbackUrl,
   resolveSlashCommandConfig,
 } from "./slash-commands.js";
-import {
-  activateSlashCommands,
-  deactivateSlashCommands,
-  getSlashCommandState,
-} from "./slash-state.js";
+import { activateSlashCommands, deactivateSlashCommands, getSlashCommandState } from "./slash-state.js";
 
 export type MonitorMattermostOpts = {
   botToken?: string;
@@ -196,9 +192,7 @@ type MattermostMentionGateDecision = {
   dropReason: "onchar-not-triggered" | "missing-mention" | null;
 };
 
-export function evaluateMattermostMentionGate(
-  params: MattermostMentionGateInput,
-): MattermostMentionGateDecision {
+export function evaluateMattermostMentionGate(params: MattermostMentionGateInput): MattermostMentionGateDecision {
   const shouldRequireMention =
     params.kind !== "direct" &&
     params.resolveRequireMention({
@@ -209,18 +203,9 @@ export function evaluateMattermostMentionGate(
       requireMentionOverride: params.requireMentionOverride,
     });
   const shouldBypassMention =
-    params.isControlCommand &&
-    shouldRequireMention &&
-    !params.wasMentioned &&
-    params.commandAuthorized;
-  const effectiveWasMentioned =
-    params.wasMentioned || shouldBypassMention || params.oncharTriggered;
-  if (
-    params.oncharEnabled &&
-    !params.oncharTriggered &&
-    !params.wasMentioned &&
-    !params.isControlCommand
-  ) {
+    params.isControlCommand && shouldRequireMention && !params.wasMentioned && params.commandAuthorized;
+  const effectiveWasMentioned = params.wasMentioned || shouldBypassMention || params.oncharTriggered;
+  if (params.oncharEnabled && !params.oncharTriggered && !params.wasMentioned && !params.isControlCommand) {
     return {
       shouldRequireMention,
       shouldBypassMention,
@@ -228,12 +213,7 @@ export function evaluateMattermostMentionGate(
       dropReason: "onchar-not-triggered",
     };
   }
-  if (
-    params.kind !== "direct" &&
-    shouldRequireMention &&
-    params.canDetectMention &&
-    !effectiveWasMentioned
-  ) {
+  if (params.kind !== "direct" && shouldRequireMention && params.canDetectMention && !effectiveWasMentioned) {
     return {
       shouldRequireMention,
       shouldBypassMention,
@@ -363,9 +343,7 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
         // URL parse failed; ignore and continue (we'll fail naturally if registration requests break).
       }
 
-      const commandsToRegister: import("./slash-commands.js").MattermostCommandSpec[] = [
-        ...DEFAULT_COMMAND_SPECS,
-      ];
+      const commandsToRegister: import("./slash-commands.js").MattermostCommandSpec[] = [...DEFAULT_COMMAND_SPECS];
 
       // Deduplicate by trigger
       const seen = new Set<string>();
@@ -393,9 +371,7 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
           allRegistered.push(...registered);
         } catch (err) {
           teamRegistrationFailures += 1;
-          runtime.error?.(
-            `mattermost: failed to register slash commands for team ${team.id}: ${String(err)}`,
-          );
+          runtime.error?.(`mattermost: failed to register slash commands for team ${team.id}: ${String(err)}`);
         }
       }
 
@@ -450,9 +426,7 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
     interactions: account.config.interactions,
   });
   setInteractionCallbackUrl(account.accountId, callbackUrl);
-  const allowedInteractionSourceIps = normalizeInteractionSourceIps(
-    account.config.interactions?.allowedSourceIps,
-  );
+  const allowedInteractionSourceIps = normalizeInteractionSourceIps(account.config.interactions?.allowedSourceIps);
 
   try {
     const mmHost = new URL(baseUrl).hostname;
@@ -550,12 +524,9 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
           OriginatingTo: to,
         });
 
-        const textLimit = core.channel.text.resolveTextChunkLimit(
-          cfg,
-          "mattermost",
-          account.accountId,
-          { fallbackLimit: account.textChunkLimit ?? 4000 },
-        );
+        const textLimit = core.channel.text.resolveTextChunkLimit(cfg, "mattermost", account.accountId, {
+          fallbackLimit: account.textChunkLimit ?? 4000,
+        });
         const tableMode = core.channel.text.resolveMarkdownTableMode({
           cfg,
           channel: "mattermost",
@@ -578,29 +549,28 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
             });
           },
         });
-        const { dispatcher, replyOptions, markDispatchIdle } =
-          core.channel.reply.createReplyDispatcherWithTyping({
-            ...prefixOptions,
-            humanDelay: core.channel.reply.resolveHumanDelayConfig(cfg, route.agentId),
-            deliver: async (payload: ReplyPayload) => {
-              await deliverMattermostReplyPayload({
-                core,
-                cfg,
-                payload,
-                to,
-                accountId: account.accountId,
-                agentId: route.agentId,
-                textLimit,
-                tableMode,
-                sendMessage: sendMessageMattermost,
-              });
-              runtime.log?.(`delivered button-click reply to ${to}`);
-            },
-            onError: (err, info) => {
-              runtime.error?.(`mattermost button-click ${info.kind} reply failed: ${String(err)}`);
-            },
-            onReplyStart: typingCallbacks.onReplyStart,
-          });
+        const { dispatcher, replyOptions, markDispatchIdle } = core.channel.reply.createReplyDispatcherWithTyping({
+          ...prefixOptions,
+          humanDelay: core.channel.reply.resolveHumanDelayConfig(cfg, route.agentId),
+          deliver: async (payload: ReplyPayload) => {
+            await deliverMattermostReplyPayload({
+              core,
+              cfg,
+              payload,
+              to,
+              accountId: account.accountId,
+              agentId: route.agentId,
+              textLimit,
+              tableMode,
+              sendMessage: sendMessageMattermost,
+            });
+            runtime.log?.(`delivered button-click reply to ${to}`);
+          },
+          onError: (err, info) => {
+            runtime.error?.(`mattermost button-click ${info.kind} reply failed: ${String(err)}`);
+          },
+          onReplyStart: typingCallbacks.onReplyStart,
+        });
 
         await core.channel.reply.dispatchReplyFromConfig({
           ctx: ctxPayload,
@@ -608,8 +578,7 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
           dispatcher,
           replyOptions: {
             ...replyOptions,
-            disableBlockStreaming:
-              typeof account.blockStreaming === "boolean" ? !account.blockStreaming : undefined,
+            disableBlockStreaming: typeof account.blockStreaming === "boolean" ? !account.blockStreaming : undefined,
           },
         });
         markDispatchIdle();
@@ -637,18 +606,14 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
       resolveChannelLimitMb: () => undefined,
       accountId: account.accountId,
     }) ?? 8 * 1024 * 1024;
-  const historyLimit = Math.max(
-    0,
-    cfg.messages?.groupChat?.historyLimit ?? DEFAULT_GROUP_HISTORY_LIMIT,
-  );
+  const historyLimit = Math.max(0, cfg.messages?.groupChat?.historyLimit ?? DEFAULT_GROUP_HISTORY_LIMIT);
   const channelHistories = new Map<string, HistoryEntry[]>();
   const defaultGroupPolicy = resolveDefaultGroupPolicy(cfg);
-  const { groupPolicy, providerMissingFallbackApplied } =
-    resolveAllowlistProviderRuntimeGroupPolicy({
-      providerConfigPresent: cfg.channels?.mattermost !== undefined,
-      groupPolicy: account.config.groupPolicy,
-      defaultGroupPolicy,
-    });
+  const { groupPolicy, providerMissingFallbackApplied } = resolveAllowlistProviderRuntimeGroupPolicy({
+    providerConfigPresent: cfg.channels?.mattermost !== undefined,
+    groupPolicy: account.config.groupPolicy,
+    defaultGroupPolicy,
+  });
   warnMissingProviderGroupPolicyFallbackOnce({
     providerMissingFallbackApplied,
     providerKey: "mattermost",
@@ -656,9 +621,7 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
     log: (message) => logVerboseMessage(message),
   });
 
-  const resolveMattermostMedia = async (
-    fileIds?: string[] | null,
-  ): Promise<MattermostMediaInfo[]> => {
+  const resolveMattermostMedia = async (fileIds?: string[] | null): Promise<MattermostMediaInfo[]> => {
     const ids = (fileIds ?? []).map((id) => id?.trim()).filter(Boolean);
     if (ids.length === 0) {
       return [];
@@ -747,11 +710,7 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
     }
   };
 
-  const handlePost = async (
-    post: MattermostPost,
-    payload: MattermostEventPayload,
-    messageIds?: string[],
-  ) => {
+  const handlePost = async (post: MattermostPost, payload: MattermostEventPayload, messageIds?: string[]) => {
     const channelId = post.channel_id ?? payload.data?.channel_id ?? payload.broadcast?.channel_id;
     if (!channelId) {
       logVerboseMessage("mattermost: drop post (missing channel id)");
@@ -763,13 +722,9 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
       logVerboseMessage("mattermost: drop post (missing message id)");
       return;
     }
-    const dedupeEntries = allMessageIds.map((id) =>
-      recentInboundMessages.check(`${account.accountId}:${id}`),
-    );
+    const dedupeEntries = allMessageIds.map((id) => recentInboundMessages.check(`${account.accountId}:${id}`));
     if (dedupeEntries.length > 0 && dedupeEntries.every(Boolean)) {
-      logVerboseMessage(
-        `mattermost: drop post (dedupe account=${account.accountId} ids=${allMessageIds.length})`,
-      );
+      logVerboseMessage(`mattermost: drop post (dedupe account=${account.accountId} ids=${allMessageIds.length})`);
       return;
     }
 
@@ -793,15 +748,11 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
     const chatType = channelChatType(kind);
 
     const senderName =
-      payload.data?.sender_name?.trim() ||
-      (await resolveUserInfo(senderId))?.username?.trim() ||
-      senderId;
+      payload.data?.sender_name?.trim() || (await resolveUserInfo(senderId))?.username?.trim() || senderId;
     const rawText = post.message?.trim() || "";
     const dmPolicy = account.config.dmPolicy ?? "pairing";
     const normalizedAllowFrom = normalizeMattermostAllowList(account.config.allowFrom ?? []);
-    const normalizedGroupAllowFrom = normalizeMattermostAllowList(
-      account.config.groupAllowFrom ?? [],
-    );
+    const normalizedGroupAllowFrom = normalizeMattermostAllowList(account.config.groupAllowFrom ?? []);
     const storeAllowFrom = normalizeMattermostAllowList(
       await readStoreAllowFromForDmPolicy({
         provider: "mattermost",
@@ -906,9 +857,7 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
         logVerboseMessage(`mattermost: drop group sender=${senderId} (not in groupAllowFrom)`);
         return;
       }
-      logVerboseMessage(
-        `mattermost: drop group message (groupPolicy=${groupPolicy} reason=${accessDecision.reason})`,
-      );
+      logVerboseMessage(`mattermost: drop group message (groupPolicy=${groupPolicy} reason=${accessDecision.reason})`);
       return;
     }
 
@@ -924,8 +873,7 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
 
     const teamId = payload.data?.team_id ?? channelInfo?.team_id ?? undefined;
     const channelName = payload.data?.channel_name ?? channelInfo?.name ?? "";
-    const channelDisplay =
-      payload.data?.channel_display_name ?? channelInfo?.display_name ?? channelName;
+    const channelDisplay = payload.data?.channel_display_name ?? channelInfo?.display_name ?? channelName;
     const roomLabel = channelName ? `#${channelName}` : channelDisplay || `#${channelId}`;
 
     const route = core.channel.routing.resolveAgentRoute({
@@ -955,10 +903,7 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
       ((botUsername ? rawText.toLowerCase().includes(`@${botUsername.toLowerCase()}`) : false) ||
         core.channel.mentions.matchesMentionPatterns(rawText, mentionRegexes));
     const pendingBody =
-      rawText ||
-      (post.file_ids?.length
-        ? `[Mattermost ${post.file_ids.length === 1 ? "file" : "files"}]`
-        : "");
+      rawText || (post.file_ids?.length ? `[Mattermost ${post.file_ids.length === 1 ? "file" : "files"}]` : "");
     const pendingSender = senderName;
     const recordPendingHistory = () => {
       const trimmed = pendingBody.trim();
@@ -1046,9 +991,7 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
 
     const preview = bodyText.replace(/\s+/g, " ").slice(0, 160);
     const inboundLabel =
-      kind === "direct"
-        ? `Mattermost DM from ${senderName}`
-        : `Mattermost message in ${roomLabel} from ${senderName}`;
+      kind === "direct" ? `Mattermost DM from ${senderName}` : `Mattermost message in ${roomLabel} from ${senderName}`;
     core.system.enqueueSystemEvent(`${inboundLabel}: ${preview}`, {
       sessionKey,
       contextKey: `mattermost:message:${channelId}:${post.id ?? "unknown"}`,
@@ -1075,9 +1018,7 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
             channel: "Mattermost",
             from: fromLabel,
             timestamp: entry.timestamp,
-            body: `${entry.body}${
-              entry.messageId ? ` [id:${entry.messageId} channel:${channelId}]` : ""
-            }`,
+            body: `${entry.body}${entry.messageId ? ` [id:${entry.messageId} channel:${channelId}]` : ""}`,
             chatType,
             senderLabel: entry.sender,
           }),
@@ -1124,8 +1065,7 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
       MessageSid: post.id ?? undefined,
       MessageSids: allMessageIds.length > 1 ? allMessageIds : undefined,
       MessageSidFirst: allMessageIds.length > 1 ? allMessageIds[0] : undefined,
-      MessageSidLast:
-        allMessageIds.length > 1 ? allMessageIds[allMessageIds.length - 1] : undefined,
+      MessageSidLast: allMessageIds.length > 1 ? allMessageIds[allMessageIds.length - 1] : undefined,
       ReplyToId: threadRootId,
       MessageThreadId: threadRootId,
       Timestamp: typeof post.create_at === "number" ? post.create_at : undefined,
@@ -1153,18 +1093,11 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
     }
 
     const previewLine = bodyText.slice(0, 200).replace(/\n/g, "\\n");
-    logVerboseMessage(
-      `mattermost inbound: from=${ctxPayload.From} len=${bodyText.length} preview="${previewLine}"`,
-    );
+    logVerboseMessage(`mattermost inbound: from=${ctxPayload.From} len=${bodyText.length} preview="${previewLine}"`);
 
-    const textLimit = core.channel.text.resolveTextChunkLimit(
-      cfg,
-      "mattermost",
-      account.accountId,
-      {
-        fallbackLimit: account.textChunkLimit ?? 4000,
-      },
-    );
+    const textLimit = core.channel.text.resolveTextChunkLimit(cfg, "mattermost", account.accountId, {
+      fallbackLimit: account.textChunkLimit ?? 4000,
+    });
     const tableMode = core.channel.text.resolveMarkdownTableMode({
       cfg,
       channel: "mattermost",
@@ -1189,33 +1122,32 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
         });
       },
     });
-    const { dispatcher, replyOptions, markDispatchIdle } =
-      core.channel.reply.createReplyDispatcherWithTyping({
-        ...prefixOptions,
-        humanDelay: core.channel.reply.resolveHumanDelayConfig(cfg, route.agentId),
-        typingCallbacks,
-        deliver: async (payload: ReplyPayload) => {
-          await deliverMattermostReplyPayload({
-            core,
-            cfg,
-            payload,
-            to,
-            accountId: account.accountId,
-            agentId: route.agentId,
-            replyToId: resolveMattermostReplyRootId({
-              threadRootId,
-              replyToId: payload.replyToId,
-            }),
-            textLimit,
-            tableMode,
-            sendMessage: sendMessageMattermost,
-          });
-          runtime.log?.(`delivered reply to ${to}`);
-        },
-        onError: (err, info) => {
-          runtime.error?.(`mattermost ${info.kind} reply failed: ${String(err)}`);
-        },
-      });
+    const { dispatcher, replyOptions, markDispatchIdle } = core.channel.reply.createReplyDispatcherWithTyping({
+      ...prefixOptions,
+      humanDelay: core.channel.reply.resolveHumanDelayConfig(cfg, route.agentId),
+      typingCallbacks,
+      deliver: async (payload: ReplyPayload) => {
+        await deliverMattermostReplyPayload({
+          core,
+          cfg,
+          payload,
+          to,
+          accountId: account.accountId,
+          agentId: route.agentId,
+          replyToId: resolveMattermostReplyRootId({
+            threadRootId,
+            replyToId: payload.replyToId,
+          }),
+          textLimit,
+          tableMode,
+          sendMessage: sendMessageMattermost,
+        });
+        runtime.log?.(`delivered reply to ${to}`);
+      },
+      onError: (err, info) => {
+        runtime.error?.(`mattermost ${info.kind} reply failed: ${String(err)}`);
+      },
+    });
 
     await core.channel.reply.withReplyDispatcher({
       dispatcher,
@@ -1229,8 +1161,7 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
           dispatcher,
           replyOptions: {
             ...replyOptions,
-            disableBlockStreaming:
-              typeof account.blockStreaming === "boolean" ? !account.blockStreaming : undefined,
+            disableBlockStreaming: typeof account.blockStreaming === "boolean" ? !account.blockStreaming : undefined,
           },
         }),
     });
@@ -1284,9 +1215,7 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
     const channelId = payload.broadcast?.channel_id;
     if (!channelId) {
       // Without a channel id we cannot verify DM/group policies — drop to be safe
-      logVerboseMessage(
-        `mattermost: drop reaction (no channel_id in broadcast, cannot enforce policy)`,
-      );
+      logVerboseMessage(`mattermost: drop reaction (no channel_id in broadcast, cannot enforce policy)`);
       return;
     }
     const channelInfo = await resolveChannelInfo(channelId);
@@ -1355,9 +1284,7 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
       contextKey: `mattermost:reaction:${postId}:${emojiName}:${userId}:${action}`,
     });
 
-    logVerboseMessage(
-      `mattermost reaction: ${action} :${emojiName}: by ${senderName} on ${postId}`,
-    );
+    logVerboseMessage(`mattermost reaction: ${action} :${emojiName}: by ${senderName} on ${postId}`);
   };
 
   const inboundDebounceMs = core.channel.debounce.resolveInboundDebounceMs({
@@ -1370,10 +1297,7 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
   }>({
     debounceMs: inboundDebounceMs,
     buildKey: (entry) => {
-      const channelId =
-        entry.post.channel_id ??
-        entry.payload.data?.channel_id ??
-        entry.payload.broadcast?.channel_id;
+      const channelId = entry.post.channel_id ?? entry.payload.data?.channel_id ?? entry.payload.broadcast?.channel_id;
       if (!channelId) {
         return null;
       }

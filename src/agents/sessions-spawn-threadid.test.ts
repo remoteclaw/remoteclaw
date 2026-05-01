@@ -5,10 +5,7 @@ import {
   getSessionsSpawnTool,
   setSessionsSpawnConfigOverride,
 } from "./remoteclaw-tools.subagents.sessions-spawn.test-harness.js";
-import {
-  listSubagentRunsForRequester,
-  resetSubagentRegistryForTests,
-} from "./subagent-registry.js";
+import { listSubagentRunsForRequester, resetSubagentRegistryForTests } from "./subagent-registry.js";
 
 describe("sessions_spawn requesterOrigin threading", () => {
   const spawnAndReadRequesterRun = async (opts?: { agentThreadId?: number }) => {

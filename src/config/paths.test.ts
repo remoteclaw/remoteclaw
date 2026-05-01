@@ -19,9 +19,7 @@ describe("oauth paths", () => {
     } as NodeJS.ProcessEnv;
 
     expect(resolveOAuthDir(env, "/custom/state")).toBe(path.resolve("/custom/oauth"));
-    expect(resolveOAuthPath(env, "/custom/state")).toBe(
-      path.join(path.resolve("/custom/oauth"), "oauth.json"),
-    );
+    expect(resolveOAuthPath(env, "/custom/state")).toBe(path.join(path.resolve("/custom/oauth"), "oauth.json"));
   });
 
   it("derives oauth path from REMOTECLAW_STATE_DIR when unset", () => {
@@ -30,9 +28,7 @@ describe("oauth paths", () => {
     } as NodeJS.ProcessEnv;
 
     expect(resolveOAuthDir(env, "/custom/state")).toBe(path.join("/custom/state", "credentials"));
-    expect(resolveOAuthPath(env, "/custom/state")).toBe(
-      path.join("/custom/state", "credentials", "oauth.json"),
-    );
+    expect(resolveOAuthPath(env, "/custom/state")).toBe(path.join("/custom/state", "credentials", "oauth.json"));
   });
 });
 

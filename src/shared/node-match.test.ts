@@ -35,6 +35,40 @@ describe("shared/node-match", () => {
     ).toBe("ios-live");
   });
 
+  it("prefers the strongest match type before client heuristics", () => {
+    expect(
+      resolveNodeIdFromCandidates(
+        [
+          { nodeId: "mac-studio", displayName: "Other Node", connected: false },
+          { nodeId: "mac-2", displayName: "Mac Studio", connected: true },
+        ],
+        "mac-studio",
+      ),
+    ).toBe("mac-studio");
+  });
+
+  it("prefers a unique current RemoteClaw client over a legacy clawdbot client", () => {
+    expect(
+      resolveNodeIdFromCandidates(
+        [
+          {
+            nodeId: "legacy-mac",
+            displayName: "Peter’s Mac Studio",
+            clientId: "clawdbot-macos",
+            connected: false,
+          },
+          {
+            nodeId: "current-mac",
+            displayName: "Peter’s Mac Studio",
+            clientId: "remoteclaw-macos",
+            connected: false,
+          },
+        ],
+        "Peter's Mac Studio",
+      ),
+    ).toBe("current-mac");
+  });
+
   it("falls back to raw ambiguous matches when none of them are connected", () => {
     expect(() =>
       resolveNodeIdFromCandidates(
@@ -44,16 +78,13 @@ describe("shared/node-match", () => {
         ],
         "iphone",
       ),
-    ).toThrow(/ambiguous node: iphone.*matches: iPhone, iPhone/);
+    ).toThrow(/ambiguous node: iphone.*node=ios-a.*node=ios-b/);
   });
 
   it("throws clear unknown and ambiguous node errors", () => {
     expect(() =>
       resolveNodeIdFromCandidates(
-        [
-          { nodeId: "mac-123", displayName: "Mac Studio", remoteIp: "100.0.0.1" },
-          { nodeId: "pi-456" },
-        ],
+        [{ nodeId: "mac-123", displayName: "Mac Studio", remoteIp: "100.0.0.1" }, { nodeId: "pi-456" }],
         "nope",
       ),
     ).toThrow(/unknown node: nope.*known: Mac Studio, pi-456/);
@@ -66,17 +97,44 @@ describe("shared/node-match", () => {
         ],
         "iphone",
       ),
-    ).toThrow(/ambiguous node: iphone.*matches: iPhone, iPhone/);
+    ).toThrow(/ambiguous node: iphone.*node=ios-a.*node=ios-b/);
 
     expect(() => resolveNodeIdFromCandidates([], "")).toThrow(/node required/);
   });
 
-  it("lists remote ips in unknown-node errors when display names are missing", () => {
+  it("prints client ids in ambiguous-node errors when available", () => {
     expect(() =>
       resolveNodeIdFromCandidates(
-        [{ nodeId: "mac-123", remoteIp: "100.0.0.1" }, { nodeId: "pi-456" }],
-        "nope",
+        [
+          {
+            nodeId: "legacy-mac",
+            displayName: "Peter’s Mac Studio",
+            clientId: "clawdbot-macos",
+            connected: true,
+          },
+          {
+            nodeId: "other-mac",
+            displayName: "Peter’s Mac Studio",
+            clientId: "remoteclaw-macos",
+            connected: true,
+          },
+          {
+            nodeId: "third-mac",
+            displayName: "Peter’s Mac Studio",
+            clientId: "remoteclaw-macos",
+            connected: true,
+          },
+        ],
+        "Peter's Mac Studio",
       ),
+    ).toThrow(
+      /ambiguous node: Peter's Mac Studio.*node=other-mac.*client=remoteclaw-macos.*node=third-mac.*client=remoteclaw-macos/,
+    );
+  });
+
+  it("lists remote ips in unknown-node errors when display names are missing", () => {
+    expect(() =>
+      resolveNodeIdFromCandidates([{ nodeId: "mac-123", remoteIp: "100.0.0.1" }, { nodeId: "pi-456" }], "nope"),
     ).toThrow(/unknown node: nope.*known: 100.0.0.1, pi-456/);
   });
 });

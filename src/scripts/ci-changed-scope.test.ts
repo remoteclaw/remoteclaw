@@ -3,18 +3,17 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
-const { detectChangedScope, listChangedPaths } =
-  (await import("../../scripts/ci-changed-scope.mjs")) as unknown as {
-    detectChangedScope: (paths: string[]) => {
-      runNode: boolean;
-      runMacos: boolean;
-      runAndroid: boolean;
-      runWindows: boolean;
-      runSkillsPython: boolean;
-      runChangedSmoke: boolean;
-    };
-    listChangedPaths: (base: string, head?: string) => string[];
+const { detectChangedScope, listChangedPaths } = (await import("../../scripts/ci-changed-scope.mjs")) as unknown as {
+  detectChangedScope: (paths: string[]) => {
+    runNode: boolean;
+    runMacos: boolean;
+    runAndroid: boolean;
+    runWindows: boolean;
+    runSkillsPython: boolean;
+    runChangedSmoke: boolean;
   };
+  listChangedPaths: (base: string, head?: string) => string[];
+};
 
 const markerPaths: string[] = [];
 
@@ -81,9 +80,7 @@ describe("detectChangedScope", () => {
   });
 
   it("does not force macOS for generated protocol model-only changes", () => {
-    expect(
-      detectChangedScope(["apps/macos/Sources/RemoteClawProtocol/GatewayModels.swift"]),
-    ).toEqual({
+    expect(detectChangedScope(["apps/macos/Sources/RemoteClawProtocol/GatewayModels.swift"])).toEqual({
       runNode: false,
       runMacos: false,
       runAndroid: false,
@@ -192,9 +189,7 @@ describe("detectChangedScope", () => {
     markerPaths.push(markerPath);
 
     const injectedBase =
-      process.platform === "win32"
-        ? `HEAD & echo injected > "${markerPath}" & rem`
-        : `HEAD; touch "${markerPath}" #`;
+      process.platform === "win32" ? `HEAD & echo injected > "${markerPath}" & rem` : `HEAD; touch "${markerPath}" #`;
 
     expect(() => listChangedPaths(injectedBase, "HEAD")).toThrow();
     expect(fs.existsSync(markerPath)).toBe(false);

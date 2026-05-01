@@ -242,19 +242,13 @@ describe("diagnostics-otel service", () => {
     });
 
     expect(telemetryState.counters.get("remoteclaw.webhook.received")?.add).toHaveBeenCalled();
-    expect(
-      telemetryState.histograms.get("remoteclaw.webhook.duration_ms")?.record,
-    ).toHaveBeenCalled();
+    expect(telemetryState.histograms.get("remoteclaw.webhook.duration_ms")?.record).toHaveBeenCalled();
     expect(telemetryState.counters.get("remoteclaw.message.queued")?.add).toHaveBeenCalled();
     expect(telemetryState.counters.get("remoteclaw.message.processed")?.add).toHaveBeenCalled();
-    expect(
-      telemetryState.histograms.get("remoteclaw.message.duration_ms")?.record,
-    ).toHaveBeenCalled();
+    expect(telemetryState.histograms.get("remoteclaw.message.duration_ms")?.record).toHaveBeenCalled();
     expect(telemetryState.histograms.get("remoteclaw.queue.wait_ms")?.record).toHaveBeenCalled();
     expect(telemetryState.counters.get("remoteclaw.session.stuck")?.add).toHaveBeenCalled();
-    expect(
-      telemetryState.histograms.get("remoteclaw.session.stuck_age_ms")?.record,
-    ).toHaveBeenCalled();
+    expect(telemetryState.histograms.get("remoteclaw.session.stuck_age_ms")?.record).toHaveBeenCalled();
     expect(telemetryState.counters.get("remoteclaw.run.attempt")?.add).toHaveBeenCalled();
 
     const spanNames = telemetryState.tracer.startSpan.mock.calls.map((call) => call[0]);

@@ -4,15 +4,13 @@ import { deepMergeDefined } from "./deep-merge.js";
 import { convertPcmToMulaw8k } from "./telephony-audio.js";
 
 export type TelephonyTtsRuntime = {
-  textToSpeechTelephony: (params: {
-    text: string;
-    cfg: CoreConfig;
-    prefsPath?: string;
-  }) => Promise<{
+  textToSpeechTelephony: (params: { text: string; cfg: CoreConfig; prefsPath?: string }) => Promise<{
     success: boolean;
     audioBuffer?: Buffer;
     sampleRate?: number;
     provider?: string;
+    fallbackFrom?: string;
+    attemptedProviders?: string[];
     error?: string;
   }>;
 };
@@ -25,8 +23,11 @@ export function createTelephonyTtsProvider(params: {
   coreConfig: CoreConfig;
   ttsOverride?: VoiceCallTtsConfig;
   runtime: TelephonyTtsRuntime;
+  logger?: {
+    warn?: (message: string) => void;
+  };
 }): TelephonyTtsProvider {
-  const { coreConfig, ttsOverride, runtime } = params;
+  const { coreConfig, ttsOverride, runtime, logger } = params;
   const mergedConfig = applyTtsOverride(coreConfig, ttsOverride);
 
   return {
@@ -38,6 +39,16 @@ export function createTelephonyTtsProvider(params: {
 
       if (!result.success || !result.audioBuffer || !result.sampleRate) {
         throw new Error(result.error ?? "TTS conversion failed");
+      }
+
+      if (result.fallbackFrom && result.provider && result.fallbackFrom !== result.provider) {
+        const attemptedChain =
+          result.attemptedProviders && result.attemptedProviders.length > 0
+            ? result.attemptedProviders.join(" -> ")
+            : `${result.fallbackFrom} -> ${result.provider}`;
+        logger?.warn?.(
+          `[voice-call] Telephony TTS fallback used from=${result.fallbackFrom} to=${result.provider} attempts=${attemptedChain}`,
+        );
       }
 
       return convertPcmToMulaw8k(result.audioBuffer, result.sampleRate);
@@ -65,10 +76,7 @@ function applyTtsOverride(coreConfig: CoreConfig, override?: VoiceCallTtsConfig)
   };
 }
 
-function mergeTtsConfig(
-  base?: VoiceCallTtsConfig,
-  override?: VoiceCallTtsConfig,
-): VoiceCallTtsConfig | undefined {
+function mergeTtsConfig(base?: VoiceCallTtsConfig, override?: VoiceCallTtsConfig): VoiceCallTtsConfig | undefined {
   if (!base && !override) {
     return undefined;
   }

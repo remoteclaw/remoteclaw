@@ -57,9 +57,7 @@ function coerceAuthStore(raw: unknown): AuthProfileStore | null {
             if (!Array.isArray(value)) {
               return acc;
             }
-            const list = value
-              .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
-              .filter(Boolean);
+            const list = value.map((entry) => (typeof entry === "string" ? entry.trim() : "")).filter(Boolean);
             if (list.length === 0) {
               return acc;
             }
@@ -75,9 +73,7 @@ function coerceAuthStore(raw: unknown): AuthProfileStore | null {
     profiles: normalized,
     order,
     lastGood:
-      record.lastGood && typeof record.lastGood === "object"
-        ? (record.lastGood as Record<string, string>)
-        : undefined,
+      record.lastGood && typeof record.lastGood === "object" ? (record.lastGood as Record<string, string>) : undefined,
     usageStats:
       record.usageStats && typeof record.usageStats === "object"
         ? (record.usageStats as Record<string, ProfileUsageStats>)

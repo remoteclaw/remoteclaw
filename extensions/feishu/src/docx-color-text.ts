@@ -72,10 +72,7 @@ export function parseColorMarkup(content: string): Segment[] {
   // [red]text[/green] is treated as [red]text[/red] — opening style applies
   // and the closing tag is consumed regardless of its name.
   const KNOWN = "(?:bg:[a-z]+|bold|red|orange|yellow|green|blue|purple|gr[ae]y)";
-  const tagPattern = new RegExp(
-    `\\[(${KNOWN}(?:\\s+${KNOWN})*)\\](.*?)\\[\\/(?:[^\\]]+)\\]|([^[]+|\\[)`,
-    "gis",
-  );
+  const tagPattern = new RegExp(`\\[(${KNOWN}(?:\\s+${KNOWN})*)\\](.*?)\\[\\/(?:[^\\]]+)\\]|([^[]+|\\[)`, "gis");
   let match;
 
   while ((match = tagPattern.exec(content)) !== null) {
@@ -117,12 +114,7 @@ export function parseColorMarkup(content: string): Segment[] {
 /**
  * Update a text block with colored segments.
  */
-export async function updateColorText(
-  client: Lark.Client,
-  docToken: string,
-  blockId: string,
-  content: string,
-) {
+export async function updateColorText(client: Lark.Client, docToken: string, blockId: string, content: string) {
   const segments = parseColorMarkup(content);
 
   const elements: DocxTextElement[] = segments.map((seg) => ({

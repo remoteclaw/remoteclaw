@@ -5,15 +5,8 @@ import {
   resolveSubagentToolPolicy,
 } from "../agents/pi-tools.policy.js";
 import { createRemoteClawTools } from "../agents/remoteclaw-tools.js";
-import {
-  applyToolPolicyPipeline,
-  buildDefaultToolPolicyPipelineSteps,
-} from "../agents/tool-policy-pipeline.js";
-import {
-  collectExplicitAllowlist,
-  mergeAlsoAllowPolicy,
-  resolveToolProfilePolicy,
-} from "../agents/tool-policy.js";
+import { applyToolPolicyPipeline, buildDefaultToolPolicyPipelineSteps } from "../agents/tool-policy-pipeline.js";
+import { collectExplicitAllowlist, mergeAlsoAllowPolicy, resolveToolProfilePolicy } from "../agents/tool-policy.js";
 import { ToolInputError } from "../agents/tools/common.js";
 import { loadConfig } from "../config/config.js";
 import { resolveMainSessionKey } from "../config/sessions.js";
@@ -25,12 +18,7 @@ import { normalizeMessageChannel } from "../utils/message-channel.js";
 import type { AuthRateLimiter } from "./auth-rate-limit.js";
 import type { ResolvedGatewayAuth } from "./auth.js";
 import { authorizeGatewayBearerRequestOrReply } from "./http-auth-helpers.js";
-import {
-  readJsonBodyOrError,
-  sendInvalidRequest,
-  sendJson,
-  sendMethodNotAllowed,
-} from "./http-common.js";
+import { readJsonBodyOrError, sendInvalidRequest, sendJson, sendMethodNotAllowed } from "./http-common.js";
 import { getHeader } from "./http-utils.js";
 
 const DEFAULT_BODY_BYTES = 2 * 1024 * 1024;
@@ -65,10 +53,7 @@ function mergeActionIntoArgsIfSupported(params: {
   // TypeBox schemas are plain objects; many tools define an `action` property.
   const schemaObj = toolSchema as { properties?: Record<string, unknown> } | null;
   const hasAction = Boolean(
-    schemaObj &&
-    typeof schemaObj === "object" &&
-    schemaObj.properties &&
-    "action" in schemaObj.properties,
+    schemaObj && typeof schemaObj === "object" && schemaObj.properties && "action" in schemaObj.properties,
   );
   if (!hasAction) {
     return args;
@@ -155,18 +140,13 @@ export async function handleToolsInvokeHttpRequest(
 
   const argsRaw = body.args;
   const args =
-    argsRaw && typeof argsRaw === "object" && !Array.isArray(argsRaw)
-      ? (argsRaw as Record<string, unknown>)
-      : {};
+    argsRaw && typeof argsRaw === "object" && !Array.isArray(argsRaw) ? (argsRaw as Record<string, unknown>) : {};
 
   const rawSessionKey = resolveSessionKeyFromBody(body);
-  const sessionKey =
-    !rawSessionKey || rawSessionKey === "main" ? resolveMainSessionKey(cfg) : rawSessionKey;
+  const sessionKey = !rawSessionKey || rawSessionKey === "main" ? resolveMainSessionKey(cfg) : rawSessionKey;
 
   // Resolve message channel/account hints (optional headers) for policy inheritance.
-  const messageChannel = normalizeMessageChannel(
-    getHeader(req, "x-remoteclaw-message-channel") ?? "",
-  );
+  const messageChannel = normalizeMessageChannel(getHeader(req, "x-remoteclaw-message-channel") ?? "");
   const accountId = getHeader(req, "x-remoteclaw-account-id")?.trim() || undefined;
   const agentTo = getHeader(req, "x-remoteclaw-message-to")?.trim() || undefined;
   const agentThreadId = getHeader(req, "x-remoteclaw-thread-id")?.trim() || undefined;
@@ -186,19 +166,14 @@ export async function handleToolsInvokeHttpRequest(
   const providerProfilePolicy = resolveToolProfilePolicy(providerProfile);
 
   const profilePolicyWithAlsoAllow = mergeAlsoAllowPolicy(profilePolicy, profileAlsoAllow);
-  const providerProfilePolicyWithAlsoAllow = mergeAlsoAllowPolicy(
-    providerProfilePolicy,
-    providerProfileAlsoAllow,
-  );
+  const providerProfilePolicyWithAlsoAllow = mergeAlsoAllowPolicy(providerProfilePolicy, providerProfileAlsoAllow);
   const groupPolicy = resolveGroupToolPolicy({
     config: cfg,
     sessionKey,
     messageProvider: messageChannel ?? undefined,
     accountId: accountId ?? null,
   });
-  const subagentPolicy = isSubagentSessionKey(sessionKey)
-    ? resolveSubagentToolPolicy(cfg)
-    : undefined;
+  const subagentPolicy = isSubagentSessionKey(sessionKey) ? resolveSubagentToolPolicy(cfg) : undefined;
 
   // Build tool list (core + plugin tools).
   const allTools = createRemoteClawTools({
@@ -250,9 +225,7 @@ export async function handleToolsInvokeHttpRequest(
   const defaultGatewayDeny: string[] = DEFAULT_GATEWAY_HTTP_TOOL_DENY.filter(
     (name) => !gatewayToolsCfg?.allow?.includes(name),
   );
-  const gatewayDenyNames = defaultGatewayDeny.concat(
-    Array.isArray(gatewayToolsCfg?.deny) ? gatewayToolsCfg.deny : [],
-  );
+  const gatewayDenyNames = defaultGatewayDeny.concat(Array.isArray(gatewayToolsCfg?.deny) ? gatewayToolsCfg.deny : []);
   const gatewayDenySet = new Set(gatewayDenyNames);
   const gatewayFiltered = subagentFiltered.filter((t) => !gatewayDenySet.has(t.name));
 

@@ -15,7 +15,7 @@ export type ExtraGatewayService = {
   label: string;
   detail: string;
   scope: "user" | "system";
-  marker?: "remoteclaw" | "clawdbot" | "moltbot";
+  marker?: "remoteclaw" | "clawdbot";
   legacy?: boolean;
 };
 
@@ -23,7 +23,7 @@ export type FindExtraGatewayServicesOptions = {
   deep?: boolean;
 };
 
-const EXTRA_MARKERS = ["remoteclaw", "clawdbot", "moltbot"] as const;
+const EXTRA_MARKERS = ["remoteclaw", "clawdbot"] as const;
 
 export function renderGatewayServiceCleanupHints(
   env: Record<string, string | undefined> = process.env as Record<string, string | undefined>,
@@ -36,10 +36,7 @@ export function renderGatewayServiceCleanupHints(
     }
     case "linux": {
       const unit = resolveGatewaySystemdServiceName(profile);
-      return [
-        `systemctl --user disable --now ${unit}.service`,
-        `rm ~/.config/systemd/user/${unit}.service`,
-      ];
+      return [`systemctl --user disable --now ${unit}.service`, `rm ~/.config/systemd/user/${unit}.service`];
     }
     case "win32": {
       const task = resolveGatewayWindowsTaskName(profile);
@@ -80,21 +77,16 @@ export function detectMarkerLineWithGateway(contents: string): Marker | null {
 
 function hasGatewayServiceMarker(content: string): boolean {
   const lower = content.toLowerCase();
-  const markerKeys = ["remoteclaw_service_marker"];
-  const kindKeys = ["remoteclaw_service_kind"];
+  const markerKeys = ["openclaw_service_marker"];
+  const kindKeys = ["openclaw_service_kind"];
   const markerValues = [GATEWAY_SERVICE_MARKER.toLowerCase()];
   const hasMarkerKey = markerKeys.some((key) => lower.includes(key));
   const hasKindKey = kindKeys.some((key) => lower.includes(key));
   const hasMarkerValue = markerValues.some((value) => lower.includes(value));
-  return (
-    hasMarkerKey &&
-    hasKindKey &&
-    hasMarkerValue &&
-    lower.includes(GATEWAY_SERVICE_KIND.toLowerCase())
-  );
+  return hasMarkerKey && hasKindKey && hasMarkerValue && lower.includes(GATEWAY_SERVICE_KIND.toLowerCase());
 }
 
-function isRemoteClawGatewayLaunchdService(label: string, contents: string): boolean {
+function isOpenClawGatewayLaunchdService(label: string, contents: string): boolean {
   if (hasGatewayServiceMarker(contents)) {
     return true;
   }
@@ -105,7 +97,7 @@ function isRemoteClawGatewayLaunchdService(label: string, contents: string): boo
   return label.startsWith("org.remoteclaw.");
 }
 
-function isRemoteClawGatewaySystemdService(name: string, contents: string): boolean {
+function isOpenClawGatewaySystemdService(name: string, contents: string): boolean {
   if (hasGatewayServiceMarker(contents)) {
     return true;
   }
@@ -115,7 +107,7 @@ function isRemoteClawGatewaySystemdService(name: string, contents: string): bool
   return contents.toLowerCase().includes("gateway");
 }
 
-function isRemoteClawGatewayTaskName(name: string): boolean {
+function isOpenClawGatewayTaskName(name: string): boolean {
   const normalized = name.trim().toLowerCase();
   if (!normalized) {
     return false;
@@ -142,7 +134,7 @@ function isIgnoredSystemdName(name: string): boolean {
 
 function isLegacyLabel(label: string): boolean {
   const lower = label.toLowerCase();
-  return lower.includes("clawdbot") || lower.includes("moltbot");
+  return lower.includes("clawdbot");
 }
 
 async function readDirEntries(dir: string): Promise<string[]> {
@@ -193,10 +185,7 @@ async function collectServiceFiles(params: {
   return out;
 }
 
-async function scanLaunchdDir(params: {
-  dir: string;
-  scope: "user" | "system";
-}): Promise<ExtraGatewayService[]> {
+async function scanLaunchdDir(params: { dir: string; scope: "user" | "system" }): Promise<ExtraGatewayService[]> {
   const results: ExtraGatewayService[] = [];
   const candidates = await collectServiceFiles({
     dir: params.dir,
@@ -217,7 +206,7 @@ async function scanLaunchdDir(params: {
         label,
         detail: `plist: ${fullPath}`,
         scope: params.scope,
-        marker: isLegacyLabel(label) ? "clawdbot" : "moltbot",
+        marker: "clawdbot",
         legacy: true,
       });
       continue;
@@ -225,7 +214,7 @@ async function scanLaunchdDir(params: {
     if (isIgnoredLaunchdLabel(label)) {
       continue;
     }
-    if (marker === "remoteclaw" && isRemoteClawGatewayLaunchdService(label, contents)) {
+    if (marker === "remoteclaw" && isOpenClawGatewayLaunchdService(label, contents)) {
       continue;
     }
     results.push({
@@ -241,10 +230,7 @@ async function scanLaunchdDir(params: {
   return results;
 }
 
-async function scanSystemdDir(params: {
-  dir: string;
-  scope: "user" | "system";
-}): Promise<ExtraGatewayService[]> {
+async function scanSystemdDir(params: { dir: string; scope: "user" | "system" }): Promise<ExtraGatewayService[]> {
   const results: ExtraGatewayService[] = [];
   const candidates = await collectServiceFiles({
     dir: params.dir,
@@ -257,7 +243,7 @@ async function scanSystemdDir(params: {
     if (!marker) {
       continue;
     }
-    if (marker === "remoteclaw" && isRemoteClawGatewaySystemdService(name, contents)) {
+    if (marker === "remoteclaw" && isOpenClawGatewaySystemdService(name, contents)) {
       continue;
     }
     results.push({
@@ -377,11 +363,7 @@ export async function findExtraGatewayServices(
         push(svc);
       }
       if (opts.deep) {
-        for (const dir of [
-          "/etc/systemd/system",
-          "/usr/lib/systemd/system",
-          "/lib/systemd/system",
-        ]) {
+        for (const dir of ["/etc/systemd/system", "/usr/lib/systemd/system", "/lib/systemd/system"]) {
           for (const svc of await scanSystemdDir({
             dir,
             scope: "system",
@@ -410,7 +392,7 @@ export async function findExtraGatewayServices(
       if (!name) {
         continue;
       }
-      if (isRemoteClawGatewayTaskName(name)) {
+      if (isOpenClawGatewayTaskName(name)) {
         continue;
       }
       const lowerName = name.toLowerCase();

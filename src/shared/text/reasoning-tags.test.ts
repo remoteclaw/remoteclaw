@@ -7,9 +7,7 @@ describe("stripReasoningTagsFromText", () => {
     expected: string | null;
     opts?: Parameters<typeof stripReasoningTagsFromText>[1];
   }) {
-    expect(stripReasoningTagsFromText(params.input as unknown as string, params.opts)).toBe(
-      params.expected,
-    );
+    expect(stripReasoningTagsFromText(params.input as unknown as string, params.opts)).toBe(params.expected);
   }
 
   function expectPreservedReasoningTagCodeExample(input: string) {

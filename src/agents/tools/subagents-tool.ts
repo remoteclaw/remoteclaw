@@ -13,11 +13,7 @@ import type { SessionEntry } from "../../config/sessions.js";
 import { loadSessionStore, resolveStorePath, updateSessionStore } from "../../config/sessions.js";
 import { callGateway } from "../../gateway/call.js";
 import { logVerbose } from "../../globals.js";
-import {
-  isSubagentSessionKey,
-  parseAgentSessionKey,
-  type ParsedAgentSessionKey,
-} from "../../routing/session-key.js";
+import { isSubagentSessionKey, parseAgentSessionKey, type ParsedAgentSessionKey } from "../../routing/session-key.js";
 import {
   formatDurationCompact,
   formatTokenUsageDisplay,
@@ -108,8 +104,7 @@ function resolveModelRef(entry?: SessionEntry) {
   // Fall back to override fields which are populated at spawn time,
   // before the first run completes and writes model/modelProvider.
   const overrideModel = typeof entry?.modelOverride === "string" ? entry.modelOverride.trim() : "";
-  const overrideProvider =
-    typeof entry?.providerOverride === "string" ? entry.providerOverride.trim() : "";
+  const overrideProvider = typeof entry?.providerOverride === "string" ? entry.providerOverride.trim() : "";
   if (overrideModel.includes("/")) {
     return overrideModel;
   }
@@ -207,8 +202,7 @@ function resolveRequesterKey(params: {
   // Check if this sub-agent can spawn children (orchestrator).
   // If so, it should see its own children, not its parent's children.
   const callerDepth = getSubagentDepthFromSessionStore(callerSessionKey, { cfg: params.cfg });
-  const maxSpawnDepth =
-    params.cfg.agents?.defaults?.subagents?.maxSpawnDepth ?? DEFAULT_SUBAGENT_MAX_SPAWN_DEPTH;
+  const maxSpawnDepth = params.cfg.agents?.defaults?.subagents?.maxSpawnDepth ?? DEFAULT_SUBAGENT_MAX_SPAWN_DEPTH;
   if (callerDepth < maxSpawnDepth) {
     // Orchestrator sub-agent: use its own session key as requester
     // so it sees children it spawned.
@@ -421,13 +415,8 @@ export function createSubagentsTool(opts?: { agentSessionKey?: string }): AnyAge
           .filter((entry) => isActiveRun(entry))
           .map((entry) => buildListEntry(entry, now - (entry.startedAt ?? entry.createdAt)));
         const recent = runs
-          .filter(
-            (entry) =>
-              !isActiveRun(entry) && !!entry.endedAt && (entry.endedAt ?? 0) >= recentCutoff,
-          )
-          .map((entry) =>
-            buildListEntry(entry, (entry.endedAt ?? now) - (entry.startedAt ?? entry.createdAt)),
-          );
+          .filter((entry) => !isActiveRun(entry) && !!entry.endedAt && (entry.endedAt ?? 0) >= recentCutoff)
+          .map((entry) => buildListEntry(entry, (entry.endedAt ?? now) - (entry.startedAt ?? entry.createdAt)));
 
         const text = buildListText({ active, recent, recentMinutes });
         return jsonResult({
@@ -481,10 +470,7 @@ export function createSubagentsTool(opts?: { agentSessionKey?: string }): AnyAge
             target: "all",
             killed,
             labels: killedLabels,
-            text:
-              killed > 0
-                ? `killed ${killed} subagent${killed === 1 ? "" : "s"}.`
-                : "no running subagents to kill.",
+            text: killed > 0 ? `killed ${killed} subagent${killed === 1 ? "" : "s"}.` : "no running subagents to kill.",
           });
         }
         const resolved = resolveSubagentTarget(runs, target, {
@@ -528,9 +514,7 @@ export function createSubagentsTool(opts?: { agentSessionKey?: string }): AnyAge
           });
         }
         const cascadeText =
-          cascade.killed > 0
-            ? ` (+ ${cascade.killed} descendant${cascade.killed === 1 ? "" : "s"})`
-            : "";
+          cascade.killed > 0 ? ` (+ ${cascade.killed} descendant${cascade.killed === 1 ? "" : "s"})` : "";
         return jsonResult({
           status: "ok",
           action: "kill",
@@ -578,10 +562,7 @@ export function createSubagentsTool(opts?: { agentSessionKey?: string }): AnyAge
             text: `${resolveSubagentLabel(resolved.entry)} is already finished.`,
           });
         }
-        if (
-          requester.callerIsSubagent &&
-          requester.callerSessionKey === resolved.entry.childSessionKey
-        ) {
+        if (requester.callerIsSubagent && requester.callerSessionKey === resolved.entry.childSessionKey) {
           return jsonResult({
             status: "forbidden",
             action: "steer",

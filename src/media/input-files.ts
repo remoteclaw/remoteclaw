@@ -114,16 +114,10 @@ export const DEFAULT_INPUT_PDF_MIN_TEXT_CHARS = 200;
 const NORMALIZED_INPUT_IMAGE_MIME = "image/jpeg";
 const HEIC_INPUT_IMAGE_MIMES = new Set(["image/heic", "image/heif"]);
 
-function rejectOversizedBase64Payload(params: {
-  data: string;
-  maxBytes: number;
-  label: "Image" | "File";
-}): void {
+function rejectOversizedBase64Payload(params: { data: string; maxBytes: number; label: "Image" | "File" }): void {
   const estimated = estimateBase64DecodedBytes(params.data);
   if (estimated > params.maxBytes) {
-    throw new Error(
-      `${params.label} too large: ${estimated} bytes (limit: ${params.maxBytes} bytes)`,
-    );
+    throw new Error(`${params.label} too large: ${estimated} bytes (limit: ${params.maxBytes} bytes)`);
   }
 }
 
@@ -235,9 +229,7 @@ async function normalizeInputImage(params: {
   limits: InputImageLimits;
 }): Promise<InputImageContent> {
   const declaredMime = normalizeMimeType(params.mimeType) ?? "application/octet-stream";
-  const detectedMime = normalizeMimeType(
-    await detectMime({ buffer: params.buffer, headerMime: params.mimeType }),
-  );
+  const detectedMime = normalizeMimeType(await detectMime({ buffer: params.buffer, headerMime: params.mimeType }));
   if (declaredMime.startsWith("image/") && detectedMime && !detectedMime.startsWith("image/")) {
     throw new Error(`Unsupported image MIME type: ${detectedMime}`);
   }
@@ -283,9 +275,7 @@ export async function extractImageContentFromSource(
     }
     const buffer = Buffer.from(canonicalData, "base64");
     if (buffer.byteLength > limits.maxBytes) {
-      throw new Error(
-        `Image too large: ${buffer.byteLength} bytes (limit: ${limits.maxBytes} bytes)`,
-      );
+      throw new Error(`Image too large: ${buffer.byteLength} bytes (limit: ${limits.maxBytes} bytes)`);
     }
     return await normalizeInputImage({
       buffer,

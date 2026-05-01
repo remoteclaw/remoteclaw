@@ -44,9 +44,7 @@ export function resolveUserTimeFormat(preference?: TimeFormatPreference): Resolv
   return cachedTimeFormat;
 }
 
-export function normalizeTimestamp(
-  raw: unknown,
-): { timestampMs: number; timestampUtc: string } | undefined {
+export function normalizeTimestamp(raw: unknown): { timestampMs: number; timestampUtc: string } | undefined {
   if (raw == null) {
     return undefined;
   }
@@ -128,11 +126,10 @@ function detectSystemTimeFormat(): boolean {
 
   if (process.platform === "win32") {
     try {
-      const result = execFileSync(
-        "powershell",
-        ["-Command", "(Get-Culture).DateTimeFormat.ShortTimePattern"],
-        { encoding: "utf8", timeout: 1000 },
-      ).trim();
+      const result = execFileSync("powershell", ["-Command", "(Get-Culture).DateTimeFormat.ShortTimePattern"], {
+        encoding: "utf8",
+        timeout: 1000,
+      }).trim();
       if (result.startsWith("H")) {
         return true;
       }
@@ -169,11 +166,7 @@ function ordinalSuffix(day: number): string {
   }
 }
 
-export function formatUserTime(
-  date: Date,
-  timeZone: string,
-  format: ResolvedTimeFormat,
-): string | undefined {
+export function formatUserTime(date: Date, timeZone: string, format: ResolvedTimeFormat): string | undefined {
   const use24Hour = format === "24";
   try {
     const parts = new Intl.DateTimeFormat("en-US", {

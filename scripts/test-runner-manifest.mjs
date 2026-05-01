@@ -1,6 +1,7 @@
 import { normalizeTrackedRepoPath, tryReadJsonFile } from "./test-report-utils.mjs";
 
 export const behaviorManifestPath = "test/fixtures/test-parallel.behavior.json";
+export const cliStartupBenchManifestPath = "test/fixtures/cli-startup-bench.json";
 export const unitTimingManifestPath = "test/fixtures/test-timings.unit.json";
 export const channelTimingManifestPath = "test/fixtures/test-timings.channels.json";
 export const extensionTimingManifestPath = "test/fixtures/test-timings.extensions.json";
@@ -109,10 +110,8 @@ const loadTimingManifest = (manifestPath, fallbackManifest) => {
     Object.entries(raw.files ?? {})
       .map(([file, value]) => {
         const normalizedFile = normalizeTrackedRepoPath(file);
-        const durationMs =
-          Number.isFinite(value?.durationMs) && value.durationMs >= 0 ? value.durationMs : null;
-        const testCount =
-          Number.isFinite(value?.testCount) && value.testCount >= 0 ? value.testCount : null;
+        const durationMs = Number.isFinite(value?.durationMs) && value.durationMs >= 0 ? value.durationMs : null;
+        const testCount = Number.isFinite(value?.testCount) && value.testCount >= 0 ? value.testCount : null;
         if (!durationMs) {
           return [normalizedFile, null];
         }
@@ -157,8 +156,7 @@ export function loadUnitMemoryHotspotManifest() {
     Object.entries(raw.files ?? {})
       .map(([file, value]) => {
         const normalizedFile = normalizeTrackedRepoPath(file);
-        const deltaKb =
-          Number.isFinite(value?.deltaKb) && value.deltaKb > 0 ? Math.round(value.deltaKb) : null;
+        const deltaKb = Number.isFinite(value?.deltaKb) && value.deltaKb > 0 ? Math.round(value.deltaKb) : null;
         const sources = Array.isArray(value?.sources)
           ? value.sources.filter((source) => typeof source === "string" && source.length > 0)
           : [];
@@ -177,23 +175,14 @@ export function loadUnitMemoryHotspotManifest() {
   );
 
   return {
-    config:
-      typeof raw.config === "string" && raw.config
-        ? raw.config
-        : defaultMemoryHotspotManifest.config,
+    config: typeof raw.config === "string" && raw.config ? raw.config : defaultMemoryHotspotManifest.config,
     generatedAt: typeof raw.generatedAt === "string" ? raw.generatedAt : "",
     defaultMinDeltaKb,
     files,
   };
 }
 
-export function selectTimedHeavyFiles({
-  candidates,
-  limit,
-  minDurationMs,
-  exclude = new Set(),
-  timings,
-}) {
+export function selectTimedHeavyFiles({ candidates, limit, minDurationMs, exclude = new Set(), timings }) {
   return candidates
     .filter((file) => !exclude.has(file))
     .map((file) => ({
@@ -207,13 +196,7 @@ export function selectTimedHeavyFiles({
     .map((entry) => entry.file);
 }
 
-export function selectMemoryHeavyFiles({
-  candidates,
-  limit,
-  minDeltaKb,
-  exclude = new Set(),
-  hotspots,
-}) {
+export function selectMemoryHeavyFiles({ candidates, limit, minDeltaKb, exclude = new Set(), hotspots }) {
   return candidates
     .filter((file) => !exclude.has(file))
     .map((file) => ({
@@ -281,12 +264,7 @@ export function packFilesByDuration(files, bucketCount, estimateDurationMs) {
   ).filter((bucket) => bucket.length > 0);
 }
 
-export function packFilesByDurationWithBaseLoads(
-  files,
-  bucketCount,
-  estimateDurationMs,
-  baseLoadsMs = [],
-) {
+export function packFilesByDurationWithBaseLoads(files, bucketCount, estimateDurationMs, baseLoadsMs = []) {
   const normalizedBucketCount = Math.max(0, Math.floor(bucketCount));
   if (normalizedBucketCount <= 0) {
     return [];
@@ -295,10 +273,7 @@ export function packFilesByDurationWithBaseLoads(
   return packFilesIntoDurationBuckets(
     files,
     Array.from({ length: normalizedBucketCount }, (_, index) => ({
-      totalMs:
-        Number.isFinite(baseLoadsMs[index]) && baseLoadsMs[index] >= 0
-          ? Math.round(baseLoadsMs[index])
-          : 0,
+      totalMs: Number.isFinite(baseLoadsMs[index]) && baseLoadsMs[index] >= 0 ? Math.round(baseLoadsMs[index]) : 0,
       files: [],
     })),
     estimateDurationMs,
@@ -311,9 +286,7 @@ function packFilesIntoDurationBuckets(files, buckets, estimateDurationMs) {
   });
 
   for (const file of sortedFiles) {
-    const bucket = buckets.reduce((lightest, current) =>
-      current.totalMs < lightest.totalMs ? current : lightest,
-    );
+    const bucket = buckets.reduce((lightest, current) => (current.totalMs < lightest.totalMs ? current : lightest));
     bucket.files.push(file);
     bucket.totalMs += estimateDurationMs(file);
   }

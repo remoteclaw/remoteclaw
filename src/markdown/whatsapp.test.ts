@@ -9,11 +9,7 @@ describe("markdownToWhatsApp", () => {
     ["leaves single *italic* unchanged (already WhatsApp bold)", "*text*", "*text*"],
     ["leaves _italic_ unchanged (already WhatsApp italic)", "_text_", "_text_"],
     ["preserves inline code", "Use `**not bold**` here", "Use `**not bold**` here"],
-    [
-      "handles mixed formatting",
-      "**bold** and ~~strike~~ and _italic_",
-      "*bold* and ~strike~ and _italic_",
-    ],
+    ["handles mixed formatting", "**bold** and ~~strike~~ and _italic_", "*bold* and ~strike~ and _italic_"],
     ["handles multiple bold segments", "**one** then **two**", "*one* then *two*"],
     ["returns empty string for empty input", "", ""],
     ["returns plain text unchanged", "no formatting here", "no formatting here"],
@@ -29,8 +25,6 @@ describe("markdownToWhatsApp", () => {
 
   it("preserves code block with formatting inside", () => {
     const input = "Before ```**bold** and ~~strike~~``` after **real bold**";
-    expect(markdownToWhatsApp(input)).toBe(
-      "Before ```**bold** and ~~strike~~``` after *real bold*",
-    );
+    expect(markdownToWhatsApp(input)).toBe("Before ```**bold** and ~~strike~~``` after *real bold*");
   });
 });

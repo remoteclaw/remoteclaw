@@ -137,22 +137,14 @@ export async function listNodes(opts: GatewayCallOptions): Promise<NodeListNode[
   return loadNodes(opts);
 }
 
-export function resolveNodeIdFromList(
-  nodes: NodeListNode[],
-  query?: string,
-  allowDefault = false,
-): string {
+export function resolveNodeIdFromList(nodes: NodeListNode[], query?: string, allowDefault = false): string {
   return resolveNodeIdFromNodeList(nodes, query, {
     allowDefault,
     pickDefaultNode: pickDefaultNode,
   });
 }
 
-export async function resolveNodeId(
-  opts: GatewayCallOptions,
-  query?: string,
-  allowDefault = false,
-) {
+export async function resolveNodeId(opts: GatewayCallOptions, query?: string, allowDefault = false) {
   return (await resolveNode(opts, query, allowDefault)).nodeId;
 }
 

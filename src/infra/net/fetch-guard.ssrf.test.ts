@@ -1,6 +1,10 @@
 import { EnvHttpProxyAgent } from "undici";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchWithSsrFGuard, GUARDED_FETCH_MODE } from "./fetch-guard.js";
+import {
+  fetchWithSsrFGuard,
+  GUARDED_FETCH_MODE,
+  retainSafeHeadersForCrossOriginRedirectHeaders,
+} from "./fetch-guard.js";
 
 function redirectResponse(location: string): Response {
   return new Response(null, {
@@ -220,12 +224,23 @@ describe("fetchWithSsrFGuard hardening", () => {
     await result.release();
   });
 
+  it("keeps the exported redirect-header helper functional", () => {
+    const headers = retainSafeHeadersForCrossOriginRedirectHeaders({
+      Authorization: "Bearer secret",
+      Cookie: "session=abc",
+      Accept: "application/json",
+      "User-Agent": "RemoteClaw-Test/1.0",
+    });
+
+    expect(headers).toEqual({
+      accept: "application/json",
+      "user-agent": "RemoteClaw-Test/1.0",
+    });
+  });
+
   it("keeps headers when redirect stays on same origin", async () => {
     const lookupFn = createPublicLookup();
-    const fetchImpl = vi
-      .fn()
-      .mockResolvedValueOnce(redirectResponse("/next"))
-      .mockResolvedValueOnce(okResponse());
+    const fetchImpl = vi.fn().mockResolvedValueOnce(redirectResponse("/next")).mockResolvedValueOnce(okResponse());
 
     const result = await fetchWithSsrFGuard({
       url: "https://api.example.com/start",
@@ -252,19 +267,13 @@ describe("fetchWithSsrFGuard hardening", () => {
     },
     {
       name: "rejects redirect loops",
-      responses: [
-        redirectResponse("https://public.example/next"),
-        redirectResponse("https://public.example/next"),
-      ],
+      responses: [redirectResponse("https://public.example/next"), redirectResponse("https://public.example/next")],
       expectedError: /redirect loop/i,
       maxRedirects: undefined,
     },
     {
       name: "rejects too many redirects",
-      responses: [
-        redirectResponse("https://public.example/one"),
-        redirectResponse("https://public.example/two"),
-      ],
+      responses: [redirectResponse("https://public.example/one"), redirectResponse("https://public.example/two")],
       expectedError: /too many redirects/i,
       maxRedirects: 1,
     },
@@ -285,7 +294,7 @@ describe("fetchWithSsrFGuard hardening", () => {
     });
   });
 
-  it("uses env proxy only when dangerous proxy bypass is explicitly enabled", async () => {
+  it("routes through env proxy when trusted proxy mode is explicitly enabled", async () => {
     await runProxyModeDispatcherTest({
       mode: GUARDED_FETCH_MODE.TRUSTED_ENV_PROXY,
       expectEnvProxy: true,

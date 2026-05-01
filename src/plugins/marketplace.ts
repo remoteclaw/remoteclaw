@@ -10,16 +10,8 @@ import { resolveUserPath } from "../utils.js";
 import { installPluginFromPath, type InstallPluginResult } from "./install.js";
 
 const DEFAULT_GIT_TIMEOUT_MS = 120_000;
-const MARKETPLACE_MANIFEST_CANDIDATES = [
-  path.join(".claude-plugin", "marketplace.json"),
-  "marketplace.json",
-] as const;
-const CLAUDE_KNOWN_MARKETPLACES_PATH = path.join(
-  "~",
-  ".claude",
-  "plugins",
-  "known_marketplaces.json",
-);
+const MARKETPLACE_MANIFEST_CANDIDATES = [path.join(".claude-plugin", "marketplace.json"), "marketplace.json"] as const;
+const CLAUDE_KNOWN_MARKETPLACES_PATH = path.join("~", ".claude", "plugins", "known_marketplaces.json");
 
 type MarketplaceLogger = {
   info?: (message: string) => void;
@@ -105,9 +97,7 @@ function isHttpUrl(value: string): boolean {
 }
 
 function isGitUrl(value: string): boolean {
-  return (
-    /^git@/i.test(value) || /^ssh:\/\//i.test(value) || /^https?:\/\/.+\.git(?:#.*)?$/i.test(value)
-  );
+  return /^git@/i.test(value) || /^ssh:\/\//i.test(value) || /^https?:\/\/.+\.git(?:#.*)?$/i.test(value);
 }
 
 function looksLikeGitHubRepoShorthand(value: string): boolean {
@@ -347,9 +337,7 @@ function deriveMarketplaceRootFromManifestPath(manifestPath: string): string {
 
 async function resolveLocalMarketplaceSource(
   input: string,
-): Promise<
-  { ok: true; rootDir: string; manifestPath: string } | { ok: false; error: string } | null
-> {
+): Promise<{ ok: true; rootDir: string; manifestPath: string } | { ok: false; error: string } | null> {
   const resolved = resolveUserPath(input);
   if (!(await pathExists(resolved))) {
     return null;
@@ -379,9 +367,7 @@ async function resolveLocalMarketplaceSource(
   return { ok: false, error: `marketplace manifest not found under ${resolved}` };
 }
 
-function normalizeGitCloneSource(
-  source: string,
-): { url: string; ref?: string; label: string } | null {
+function normalizeGitCloneSource(source: string): { url: string; ref?: string; label: string } | null {
   const split = splitRef(source);
   if (looksLikeGitHubRepoShorthand(split.base)) {
     return {
@@ -427,10 +413,7 @@ async function cloneMarketplaceRepo(params: {
   source: string;
   timeoutMs?: number;
   logger?: MarketplaceLogger;
-}): Promise<
-  | { ok: true; rootDir: string; cleanup: () => Promise<void>; label: string }
-  | { ok: false; error: string }
-> {
+}): Promise<{ ok: true; rootDir: string; cleanup: () => Promise<void>; label: string } | { ok: false; error: string }> {
   const normalized = normalizeGitCloneSource(params.source);
   if (!normalized) {
     return { ok: false, error: `unsupported marketplace source: ${params.source}` };
@@ -712,11 +695,7 @@ async function resolveMarketplaceEntryInstallPath(params: {
     return { ok: true, path: resolved.path };
   }
 
-  if (
-    params.source.kind === "github" ||
-    params.source.kind === "git" ||
-    params.source.kind === "git-subdir"
-  ) {
+  if (params.source.kind === "github" || params.source.kind === "git" || params.source.kind === "git-subdir") {
     const sourceSpec =
       params.source.kind === "github"
         ? `${params.source.repo}${params.source.ref ? `#${params.source.ref}` : ""}`
@@ -795,9 +774,7 @@ export async function listMarketplacePlugins(params: {
   }
 }
 
-export async function resolveMarketplaceInstallShortcut(
-  raw: string,
-): Promise<MarketplaceShortcutResolution> {
+export async function resolveMarketplaceInstallShortcut(raw: string): Promise<MarketplaceShortcutResolution> {
   const trimmed = raw.trim();
   const atIndex = trimmed.lastIndexOf("@");
   if (atIndex <= 0 || atIndex >= trimmed.length - 1) {
@@ -861,9 +838,7 @@ export async function installPluginFromMarketplace(params: {
 
   let installCleanup: (() => Promise<void>) | undefined;
   try {
-    const entry = loaded.marketplace.manifest.plugins.find(
-      (plugin) => plugin.name === params.plugin,
-    );
+    const entry = loaded.marketplace.manifest.plugins.find((plugin) => plugin.name === params.plugin);
     if (!entry) {
       const known = loaded.marketplace.manifest.plugins.map((plugin) => plugin.name).toSorted();
       return {

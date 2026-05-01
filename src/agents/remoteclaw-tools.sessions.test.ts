@@ -320,9 +320,7 @@ describe("sessions tools", () => {
     expect(typeof details.bytes).toBe("number");
     expect((details.bytes ?? 0) <= 80 * 1024).toBe(true);
     expect(details.messages).toHaveLength(1);
-    expect(details.messages?.[0]?.content).toContain(
-      "[sessions_history omitted: message too large]",
-    );
+    expect(details.messages?.[0]?.content).toContain("[sessions_history omitted: message too large]");
   });
 
   it("sessions_history sets contentRedacted when sensitive data is redacted", async () => {
@@ -334,9 +332,7 @@ describe("sessions tools", () => {
           messages: [
             {
               role: "assistant",
-              content: [
-                { type: "text", text: "Use sk-1234567890abcdef1234 to authenticate with the API." },
-              ],
+              content: [{ type: "text", text: "Use sk-1234567890abcdef1234 to authenticate with the API." }],
             },
           ],
         };
@@ -587,18 +583,14 @@ describe("sessions tools", () => {
       agentCalls.some(
         (call) =>
           typeof (call.params as { extraSystemPrompt?: string })?.extraSystemPrompt === "string" &&
-          (call.params as { extraSystemPrompt?: string })?.extraSystemPrompt?.includes(
-            "Agent-to-agent reply step",
-          ),
+          (call.params as { extraSystemPrompt?: string })?.extraSystemPrompt?.includes("Agent-to-agent reply step"),
       ),
     ).toBe(true);
     expect(
       agentCalls.some(
         (call) =>
           typeof (call.params as { extraSystemPrompt?: string })?.extraSystemPrompt === "string" &&
-          (call.params as { extraSystemPrompt?: string })?.extraSystemPrompt?.includes(
-            "Agent-to-agent announce step",
-          ),
+          (call.params as { extraSystemPrompt?: string })?.extraSystemPrompt?.includes("Agent-to-agent announce step"),
       ),
     ).toBe(true);
     expect(waitCalls).toHaveLength(8);
@@ -645,9 +637,7 @@ describe("sessions tools", () => {
     });
     const details = result.details as { status?: string };
     expect(details.status).toBe("accepted");
-    const agentCall = callGatewayMock.mock.calls.find(
-      (call) => (call[0] as { method?: string }).method === "agent",
-    );
+    const agentCall = callGatewayMock.mock.calls.find((call) => (call[0] as { method?: string }).method === "agent");
     expect(agentCall?.[0]).toMatchObject({
       method: "agent",
       params: { sessionKey: targetKey },
@@ -707,9 +697,7 @@ describe("sessions tools", () => {
         };
       }
       if (request.method === "send") {
-        const params = request.params as
-          | { to?: string; channel?: string; message?: string }
-          | undefined;
+        const params = request.params as { to?: string; channel?: string; message?: string } | undefined;
         sendParams = {
           to: params?.to,
           channel: params?.channel,
@@ -759,9 +747,7 @@ describe("sessions tools", () => {
       (call) =>
         call.method === "agent" &&
         typeof (call.params as { extraSystemPrompt?: string })?.extraSystemPrompt === "string" &&
-        (call.params as { extraSystemPrompt?: string })?.extraSystemPrompt?.includes(
-          "Agent-to-agent reply step",
-        ),
+        (call.params as { extraSystemPrompt?: string })?.extraSystemPrompt?.includes("Agent-to-agent reply step"),
     );
     expect(replySteps).toHaveLength(2);
     expect(sendParams).toMatchObject({
@@ -845,19 +831,17 @@ describe("sessions tools", () => {
       startedAt: now - 2 * 60_000,
     });
 
-    const loadSessionStoreSpy = vi
-      .spyOn(sessionsModule, "loadSessionStore")
-      .mockImplementation(() => ({
-        "agent:main:subagent:usage-active": {
-          sessionId: "session-usage-active",
-          updatedAt: now,
-          modelProvider: "anthropic",
-          model: "claude-opus-4-6",
-          inputTokens: 12,
-          outputTokens: 1000,
-          totalTokens: 197000,
-        },
-      }));
+    const loadSessionStoreSpy = vi.spyOn(sessionsModule, "loadSessionStore").mockImplementation(() => ({
+      "agent:main:subagent:usage-active": {
+        sessionId: "session-usage-active",
+        updatedAt: now,
+        modelProvider: "anthropic",
+        model: "claude-opus-4-6",
+        inputTokens: 12,
+        outputTokens: 1000,
+        totalTokens: 197000,
+      },
+    }));
 
     try {
       const tool = createRemoteClawTools({
@@ -902,14 +886,12 @@ describe("sessions tools", () => {
       startedAt: Date.now() - 60_000,
     });
 
-    const loadSessionStoreSpy = vi
-      .spyOn(sessionsModule, "loadSessionStore")
-      .mockImplementation(() => ({
-        "agent:main:subagent:steer": {
-          sessionId: "child-session-steer",
-          updatedAt: Date.now(),
-        },
-      }));
+    const loadSessionStoreSpy = vi.spyOn(sessionsModule, "loadSessionStore").mockImplementation(() => ({
+      "agent:main:subagent:steer": {
+        sessionId: "child-session-steer",
+        updatedAt: Date.now(),
+      },
+    }));
 
     try {
       const tool = createRemoteClawTools({
@@ -932,8 +914,7 @@ describe("sessions tools", () => {
       const steerWaitIndex = callGatewayMock.mock.calls.findIndex(
         (call) =>
           (call[0] as { method?: string; params?: { runId?: string } }).method === "agent.wait" &&
-          (call[0] as { method?: string; params?: { runId?: string } }).params?.runId ===
-            "run-steer",
+          (call[0] as { method?: string; params?: { runId?: string } }).params?.runId === "run-steer",
       );
       expect(steerWaitIndex).toBeGreaterThanOrEqual(0);
       const steerRunIndex = callGatewayMock.mock.calls.findIndex(

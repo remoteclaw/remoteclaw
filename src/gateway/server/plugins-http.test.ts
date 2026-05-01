@@ -21,9 +21,7 @@ const loadRemoteClawPlugins = vi.hoisted(() => vi.fn());
 type HandleGatewayRequestOptions = GatewayRequestOptions & {
   extraHandlers?: Record<string, unknown>;
 };
-const handleGatewayRequest = vi.hoisted(() =>
-  vi.fn(async (_opts: HandleGatewayRequestOptions) => {}),
-);
+const handleGatewayRequest = vi.hoisted(() => vi.fn(async (_opts: HandleGatewayRequestOptions) => {}));
 
 vi.mock("../../plugins/loader.js", () => ({
   loadRemoteClawPlugins,
@@ -126,12 +124,9 @@ async function invokeSecureGatewayRoute(params: { gatewayAuthSatisfied: boolean 
     prefixGatewayHandler,
   });
   const { res } = makeMockHttpResponse();
-  const handled = await handler(
-    { url: "/plugin/secure/report" } as IncomingMessage,
-    res,
-    undefined,
-    { gatewayAuthSatisfied: params.gatewayAuthSatisfied },
-  );
+  const handled = await handler({ url: "/plugin/secure/report" } as IncomingMessage, res, undefined, {
+    gatewayAuthSatisfied: params.gatewayAuthSatisfied,
+  });
   return { handled, exactPluginHandler, prefixGatewayHandler };
 }
 
@@ -181,9 +176,7 @@ describe("createGatewayPluginRequestHandler", () => {
 
     expect(handled).toBe(true);
     expect(handleGatewayRequest).toHaveBeenCalledTimes(1);
-    expect(handleGatewayRequest.mock.calls[0]?.[0]?.client?.connect.scopes).toEqual([
-      "operator.write",
-    ]);
+    expect(handleGatewayRequest.mock.calls[0]?.[0]?.client?.connect.scopes).toEqual(["operator.write"]);
     expect(res.statusCode).toBe(500);
     expect(setHeader).toHaveBeenCalledWith("Content-Type", "text/plain; charset=utf-8");
     expect(end).toHaveBeenCalledWith("Internal Server Error");
@@ -416,8 +409,7 @@ describe("createGatewayPluginRequestHandler", () => {
 });
 
 describe("plugin HTTP route auth checks", () => {
-  const deeplyEncodedChannelPath =
-    "/api%2525252fchannels%2525252fnostr%2525252fdefault%2525252fprofile";
+  const deeplyEncodedChannelPath = "/api%2525252fchannels%2525252fnostr%2525252fdefault%2525252fprofile";
   const decodeOverflowPublicPath = `/googlechat${buildRepeatedEncodedSlash(40)}public`;
 
   it("detects registered route paths", () => {

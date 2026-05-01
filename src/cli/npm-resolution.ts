@@ -3,11 +3,11 @@ import {
   type NpmSpecResolution as NpmResolutionMetadata,
 } from "../infra/install-source-utils.js";
 
-export function resolvePinnedNpmSpec(params: {
-  rawSpec: string;
-  pin: boolean;
-  resolvedSpec?: string;
-}): { recordSpec: string; pinWarning?: string; pinNotice?: string } {
+export function resolvePinnedNpmSpec(params: { rawSpec: string; pin: boolean; resolvedSpec?: string }): {
+  recordSpec: string;
+  pinWarning?: string;
+  pinNotice?: string;
+} {
   const recordSpec = params.pin && params.resolvedSpec ? params.resolvedSpec : params.rawSpec;
   if (!params.pin) {
     return { recordSpec };

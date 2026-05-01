@@ -73,14 +73,7 @@ type SendGroupStoryParams = {
   replyToId?: string | null;
 };
 
-export async function sendGroupMessage({
-  api,
-  fromShip,
-  hostShip,
-  channelName,
-  text,
-  replyToId,
-}: SendGroupParams) {
+export async function sendGroupMessage({ api, fromShip, hostShip, channelName, text, replyToId }: SendGroupParams) {
   const story: Story = markdownToStory(text);
   return sendGroupMessageWithStory({ api, fromShip, hostShip, channelName, story, replyToId });
 }

@@ -258,8 +258,7 @@ describe("resolveSingleWebhookTarget", () => {
   }> = [
     {
       name: "sync",
-      run: async (targets, isMatch) =>
-        resolveSingleWebhookTarget(targets, (value) => Boolean(isMatch(value))),
+      run: async (targets, isMatch) => resolveSingleWebhookTarget(targets, (value) => Boolean(isMatch(value))),
     },
     {
       name: "async",

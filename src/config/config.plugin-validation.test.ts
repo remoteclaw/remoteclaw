@@ -38,39 +38,20 @@ async function writePluginFixture(params: {
   if (params.channels) {
     manifest.channels = params.channels;
   }
-  await fs.writeFile(
-    path.join(params.dir, "remoteclaw.plugin.json"),
-    JSON.stringify(manifest, null, 2),
-    "utf-8",
-  );
+  await fs.writeFile(path.join(params.dir, "remoteclaw.plugin.json"), JSON.stringify(manifest, null, 2), "utf-8");
 }
 
-async function writeBundleFixture(params: {
-  dir: string;
-  format: "codex" | "claude";
-  name: string;
-}) {
+async function writeBundleFixture(params: { dir: string; format: "codex" | "claude"; name: string }) {
   await mkdirSafe(params.dir);
-  const manifestDir = path.join(
-    params.dir,
-    params.format === "codex" ? ".codex-plugin" : ".claude-plugin",
-  );
+  const manifestDir = path.join(params.dir, params.format === "codex" ? ".codex-plugin" : ".claude-plugin");
   await mkdirSafe(manifestDir);
-  await fs.writeFile(
-    path.join(manifestDir, "plugin.json"),
-    JSON.stringify({ name: params.name }, null, 2),
-    "utf-8",
-  );
+  await fs.writeFile(path.join(manifestDir, "plugin.json"), JSON.stringify({ name: params.name }, null, 2), "utf-8");
 }
 
 async function writeManifestlessClaudeBundleFixture(params: { dir: string }) {
   await mkdirSafe(params.dir);
   await mkdirSafe(path.join(params.dir, "commands"));
-  await fs.writeFile(
-    path.join(params.dir, "commands", "review.md"),
-    "---\ndescription: fixture\n---\n",
-    "utf-8",
-  );
+  await fs.writeFile(path.join(params.dir, "commands", "review.md"), "---\ndescription: fixture\n---\n", "utf-8");
   await fs.writeFile(path.join(params.dir, "settings.json"), '{"hideThinkingBlock":true}', "utf-8");
 }
 
@@ -96,8 +77,7 @@ describe("config plugin validation", () => {
       VITEST: "true",
     }) satisfies NodeJS.ProcessEnv;
 
-  const validateInSuite = (raw: unknown) =>
-    validateConfigObjectWithPlugins(raw, { env: suiteEnv() });
+  const validateInSuite = (raw: unknown) => validateConfigObjectWithPlugins(raw, { env: suiteEnv() });
 
   beforeAll(async () => {
     fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-config-plugin-validation-"));
@@ -161,12 +141,7 @@ describe("config plugin validation", () => {
       dir: manifestlessClaudeBundleDir,
     });
     voiceCallSchemaPluginDir = path.join(suiteHome, "voice-call-schema-plugin");
-    const voiceCallManifestPath = path.join(
-      process.cwd(),
-      "extensions",
-      "voice-call",
-      "remoteclaw.plugin.json",
-    );
+    const voiceCallManifestPath = path.join(process.cwd(), "extensions", "voice-call", "remoteclaw.plugin.json");
     const voiceCallManifest = JSON.parse(await fs.readFile(voiceCallManifestPath, "utf-8")) as {
       configSchema?: Record<string, unknown>;
     };
@@ -223,24 +198,19 @@ describe("config plugin validation", () => {
     if (!res.ok) {
       expect(
         res.issues.some(
-          (issue) =>
-            issue.path === "plugins.load.paths" && issue.message.includes("plugin path not found"),
+          (issue) => issue.path === "plugins.load.paths" && issue.message.includes("plugin path not found"),
         ),
       ).toBe(true);
       expect(res.issues).toEqual(
-        expect.arrayContaining([
-          { path: "plugins.deny", message: "plugin not found: missing-deny" },
-        ]),
+        expect.arrayContaining([{ path: "plugins.deny", message: "plugin not found: missing-deny" }]),
       );
       expect(res.warnings).toContainEqual({
         path: "plugins.allow",
-        message:
-          "plugin not found: missing-allow (stale config entry ignored; remove it from plugins config)",
+        message: "plugin not found: missing-allow (stale config entry ignored; remove it from plugins config)",
       });
       expect(res.warnings).toContainEqual({
         path: "plugins.entries.missing-plugin",
-        message:
-          "plugin not found: missing-plugin (stale config entry ignored; remove it from plugins config)",
+        message: "plugin not found: missing-plugin (stale config entry ignored; remove it from plugins config)",
       });
     }
   });
@@ -338,8 +308,7 @@ describe("config plugin validation", () => {
     if (!res.ok) {
       const hasIssue = res.issues.some(
         (issue) =>
-          issue.path.startsWith("plugins.entries.bad-plugin.config") &&
-          issue.message.includes("invalid config"),
+          issue.path.startsWith("plugins.entries.bad-plugin.config") && issue.message.includes("invalid config"),
       );
       expect(hasIssue).toBe(true);
     }
@@ -382,9 +351,7 @@ describe("config plugin validation", () => {
     });
     expect(res.ok).toBe(false);
     if (!res.ok) {
-      const issue = res.issues.find(
-        (entry) => entry.path === "plugins.entries.enum-plugin.config.fileFormat",
-      );
+      const issue = res.issues.find((entry) => entry.path === "plugins.entries.enum-plugin.config.fileFormat");
       expect(issue).toBeDefined();
       expect(issue?.message).toContain('allowed: "markdown", "html"');
       expect(issue?.allowedValues).toEqual(["markdown", "html"]);
@@ -433,11 +400,13 @@ describe("config plugin validation", () => {
           "voice-call-schema-fixture": {
             config: {
               tts: {
-                openai: {
-                  baseUrl: "http://localhost:8880/v1",
-                  voice: "alloy",
-                  speed: 1.5,
-                  instructions: "Speak in a cheerful tone",
+                providers: {
+                  openai: {
+                    baseUrl: "http://localhost:8880/v1",
+                    voice: "alloy",
+                    speed: 1.5,
+                    instructions: "Speak in a cheerful tone",
+                  },
                 },
               },
             },
@@ -446,6 +415,72 @@ describe("config plugin validation", () => {
       },
     });
     expect(res.ok).toBe(true);
+  });
+
+  it("rejects out-of-range voice-call OpenAI TTS speed values", async () => {
+    const res = validateInSuite({
+      agents: { list: [{ id: "pi" }] },
+      plugins: {
+        enabled: true,
+        load: { paths: [voiceCallSchemaPluginDir] },
+        entries: {
+          "voice-call-schema-fixture": {
+            config: {
+              tts: {
+                providers: {
+                  openai: {
+                    speed: 10,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(res.ok).toBe(false);
+    if (!res.ok) {
+      expect(
+        res.issues.some(
+          (issue) => issue.path === "plugins.entries.voice-call-schema-fixture.config.tts.providers.openai.speed",
+        ),
+      ).toBe(true);
+    }
+  });
+
+  it("rejects out-of-range voice-call ElevenLabs voice settings", async () => {
+    const res = validateInSuite({
+      agents: { list: [{ id: "pi" }] },
+      plugins: {
+        enabled: true,
+        load: { paths: [voiceCallSchemaPluginDir] },
+        entries: {
+          "voice-call-schema-fixture": {
+            config: {
+              tts: {
+                providers: {
+                  elevenlabs: {
+                    voiceSettings: {
+                      stability: 5,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(res.ok).toBe(false);
+    if (!res.ok) {
+      expect(
+        res.issues.some(
+          (issue) =>
+            issue.path ===
+            "plugins.entries.voice-call-schema-fixture.config.tts.providers.elevenlabs.voiceSettings.stability",
+        ),
+      ).toBe(true);
+    }
   });
 
   it("accepts known plugin ids and valid channel/heartbeat enums", async () => {
@@ -502,9 +537,7 @@ describe("config plugin validation", () => {
     });
     expect(res.ok).toBe(false);
     if (!res.ok) {
-      expect(
-        res.issues.some((issue) => issue.path === "agents.defaults.heartbeat.directPolicy"),
-      ).toBe(true);
+      expect(res.issues.some((issue) => issue.path === "agents.defaults.heartbeat.directPolicy")).toBe(true);
     }
   });
 });

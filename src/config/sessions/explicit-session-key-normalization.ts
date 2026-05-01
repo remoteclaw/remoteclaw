@@ -5,12 +5,7 @@ type ExplicitSessionKeyNormalizer = (sessionKey: string, ctx: MsgContext) => str
 type ExplicitSessionKeyNormalizerEntry = {
   provider: string;
   normalize: ExplicitSessionKeyNormalizer;
-  matches: (params: {
-    sessionKey: string;
-    provider?: string;
-    surface?: string;
-    from: string;
-  }) => boolean;
+  matches: (params: { sessionKey: string; provider?: string; surface?: string; from: string }) => boolean;
 };
 
 const EXPLICIT_SESSION_KEY_NORMALIZERS: ExplicitSessionKeyNormalizerEntry[] = [

@@ -21,10 +21,7 @@ export function isConfigPathTruthy(config: RemoteClawConfig | undefined, pathStr
   return isConfigPathTruthyWithDefaults(config, pathStr, DEFAULT_CONFIG_VALUES);
 }
 
-export function resolveHookConfig(
-  config: RemoteClawConfig | undefined,
-  hookKey: string,
-): HookConfig | undefined {
+export function resolveHookConfig(config: RemoteClawConfig | undefined, hookKey: string): HookConfig | undefined {
   const hooks = config?.hooks?.internal?.entries;
   if (!hooks || typeof hooks !== "object") {
     return undefined;

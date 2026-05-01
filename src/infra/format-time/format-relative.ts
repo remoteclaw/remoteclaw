@@ -23,10 +23,7 @@ export type FormatTimeAgoOptions = {
  * With suffix (default):  "just now", "5m ago", "3h ago", "2d ago"
  * Without suffix:         "0s", "5m", "3h", "2d"
  */
-export function formatTimeAgo(
-  durationMs: number | null | undefined,
-  options?: FormatTimeAgoOptions,
-): string {
+export function formatTimeAgo(durationMs: number | null | undefined, options?: FormatTimeAgoOptions): string {
   const suffix = options?.suffix !== false;
   const fallback = options?.fallback ?? "unknown";
 

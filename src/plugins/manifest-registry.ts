@@ -119,8 +119,7 @@ function buildRecord(params: {
   return {
     id: params.manifest.id,
     name: normalizeManifestLabel(params.manifest.name) ?? params.candidate.packageName,
-    description:
-      normalizeManifestLabel(params.manifest.description) ?? params.candidate.packageDescription,
+    description: normalizeManifestLabel(params.manifest.description) ?? params.candidate.packageDescription,
     version: normalizeManifestLabel(params.manifest.version) ?? params.candidate.packageVersion,
     kind: params.manifest.kind,
     channels: params.manifest.channels ?? [],
@@ -201,9 +200,7 @@ export function loadPluginManifestRegistry(params: {
         return undefined;
       }
       const manifestMtime = safeStatMtimeMs(manifestRes.manifestPath);
-      return manifestMtime
-        ? `${manifestRes.manifestPath}:${manifestMtime}`
-        : manifestRes.manifestPath;
+      return manifestMtime ? `${manifestRes.manifestPath}:${manifestMtime}` : manifestRes.manifestPath;
     })();
 
     const existing = seenIds.get(manifest.id);

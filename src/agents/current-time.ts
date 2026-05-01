@@ -1,9 +1,4 @@
-import {
-  type TimeFormatPreference,
-  formatUserTime,
-  resolveUserTimeFormat,
-  resolveUserTimezone,
-} from "./date-time.js";
+import { type TimeFormatPreference, formatUserTime, resolveUserTimeFormat, resolveUserTimezone } from "./date-time.js";
 
 /**
  * Runtime attestation (ADR 0005 H9). Declares the implementation status
@@ -34,8 +29,7 @@ type TimeConfigLike = {
 export function resolveCronStyleNow(cfg: TimeConfigLike, nowMs: number): CronStyleNow {
   const userTimezone = resolveUserTimezone(cfg.agents?.defaults?.userTimezone);
   const userTimeFormat = resolveUserTimeFormat(cfg.agents?.defaults?.timeFormat);
-  const formattedTime =
-    formatUserTime(new Date(nowMs), userTimezone, userTimeFormat) ?? new Date(nowMs).toISOString();
+  const formattedTime = formatUserTime(new Date(nowMs), userTimezone, userTimeFormat) ?? new Date(nowMs).toISOString();
   const utcTime = new Date(nowMs).toISOString().replace("T", " ").slice(0, 16) + " UTC";
   const timeLine = `Current time: ${formattedTime} (${userTimezone}) / ${utcTime}`;
   return { userTimezone, formattedTime, timeLine };

@@ -120,38 +120,32 @@ describe("resolveAuthProfileOrder", () => {
     expect(order).toEqual(["anthropic:work", "anthropic:default"]);
   });
 
-  it.each(["store", "config"] as const)(
-    "pushes cooldown profiles to the end even with %s order",
-    (orderSource) => {
-      const now = Date.now();
-      const order = resolveWithAnthropicOrderAndUsage({
-        orderSource,
-        usageStats: {
-          "anthropic:default": { cooldownUntil: now + 60_000 },
-          "anthropic:work": { lastUsed: 1 },
-        },
-      });
-      expect(order).toEqual(["anthropic:work", "anthropic:default"]);
-    },
-  );
+  it.each(["store", "config"] as const)("pushes cooldown profiles to the end even with %s order", (orderSource) => {
+    const now = Date.now();
+    const order = resolveWithAnthropicOrderAndUsage({
+      orderSource,
+      usageStats: {
+        "anthropic:default": { cooldownUntil: now + 60_000 },
+        "anthropic:work": { lastUsed: 1 },
+      },
+    });
+    expect(order).toEqual(["anthropic:work", "anthropic:default"]);
+  });
 
-  it.each(["store", "config"] as const)(
-    "pushes disabled profiles to the end even with %s order",
-    (orderSource) => {
-      const now = Date.now();
-      const order = resolveWithAnthropicOrderAndUsage({
-        orderSource,
-        usageStats: {
-          "anthropic:default": {
-            disabledUntil: now + 60_000,
-            disabledReason: "billing",
-          },
-          "anthropic:work": { lastUsed: 1 },
+  it.each(["store", "config"] as const)("pushes disabled profiles to the end even with %s order", (orderSource) => {
+    const now = Date.now();
+    const order = resolveWithAnthropicOrderAndUsage({
+      orderSource,
+      usageStats: {
+        "anthropic:default": {
+          disabledUntil: now + 60_000,
+          disabledReason: "billing",
         },
-      });
-      expect(order).toEqual(["anthropic:work", "anthropic:default"]);
-    },
-  );
+        "anthropic:work": { lastUsed: 1 },
+      },
+    });
+    expect(order).toEqual(["anthropic:work", "anthropic:default"]);
+  });
 
   it.each(["store", "config"] as const)(
     "keeps OpenRouter explicit order even when cooldown fields exist (%s)",

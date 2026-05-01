@@ -10,8 +10,7 @@ import { createSandboxTestContext } from "../src/agents/sandbox/test-fixtures.js
 
 const REMOTECLAW_OPENSHELL_E2E = process.env.REMOTECLAW_E2E_OPENSHELL === "1";
 const REMOTECLAW_OPENSHELL_E2E_TIMEOUT_MS = 12 * 60_000;
-const REMOTECLAW_OPENSHELL_COMMAND =
-  process.env.REMOTECLAW_E2E_OPENSHELL_COMMAND?.trim() || "openshell";
+const REMOTECLAW_OPENSHELL_COMMAND = process.env.REMOTECLAW_E2E_OPENSHELL_COMMAND?.trim() || "openshell";
 
 const CUSTOM_IMAGE_DOCKERFILE = `FROM python:3.13-slim
 
@@ -438,15 +437,7 @@ describe("openshell sandbox backend e2e", () => {
 
         await runCommand({
           command: REMOTECLAW_OPENSHELL_COMMAND,
-          args: [
-            "gateway",
-            "start",
-            "--name",
-            gatewayName,
-            "--port",
-            String(gatewayPort),
-            "--recreate",
-          ],
+          args: ["gateway", "start", "--name", gatewayName, "--port", String(gatewayPort), "--recreate"],
           env,
           timeoutMs: 8 * 60_000,
         });
@@ -488,9 +479,7 @@ describe("openshell sandbox backend e2e", () => {
         }
 
         await bridge.writeFile({ filePath: "nested/remote-only.txt", data: "hello-remote\n" });
-        await expect(
-          fs.readFile(path.join(workspaceDir, "nested", "remote-only.txt"), "utf8"),
-        ).rejects.toThrow();
+        await expect(fs.readFile(path.join(workspaceDir, "nested", "remote-only.txt"), "utf8")).rejects.toThrow();
         await expect(bridge.readFile({ filePath: "nested/remote-only.txt" })).resolves.toEqual(
           Buffer.from("hello-remote\n"),
         );

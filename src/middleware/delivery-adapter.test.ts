@@ -35,11 +35,7 @@ describe("DeliveryAdapter", () => {
 
     it("accumulates multiple text events into one payload", async () => {
       const adapter = new DeliveryAdapter();
-      const events = eventStream([
-        { type: "text", text: "Hello " },
-        { type: "text", text: "world" },
-        makeDone(),
-      ]);
+      const events = eventStream([{ type: "text", text: "Hello " }, { type: "text", text: "world" }, makeDone()]);
       const payloads = await adapter.process(events);
       expect(payloads).toEqual([{ text: "Hello world" }]);
     });
@@ -139,10 +135,7 @@ describe("DeliveryAdapter", () => {
     it("calls onPartialReply when buffer flushed mid-stream", async () => {
       const onPartialReply = vi.fn();
       const adapter = new DeliveryAdapter({ chunkLimit: 10 });
-      const events = eventStream([
-        { type: "text", text: "Hello world, this is a long message" },
-        makeDone(),
-      ]);
+      const events = eventStream([{ type: "text", text: "Hello world, this is a long message" }, makeDone()]);
       await adapter.process(events, { onPartialReply });
       expect(onPartialReply).toHaveBeenCalled();
       for (const call of onPartialReply.mock.calls) {
@@ -169,10 +162,7 @@ describe("DeliveryAdapter", () => {
     it("calls onToolResult for tool result events", async () => {
       const onToolResult = vi.fn();
       const adapter = new DeliveryAdapter();
-      const events = eventStream([
-        { type: "tool_result", toolId: "t1", output: "result data" },
-        makeDone(),
-      ]);
+      const events = eventStream([{ type: "tool_result", toolId: "t1", output: "result data" }, makeDone()]);
       await adapter.process(events, { onToolResult });
       expect(onToolResult).toHaveBeenCalledWith({ text: "Tool t1 result: result data" });
     });
@@ -234,10 +224,7 @@ describe("DeliveryAdapter", () => {
 
     it("thinking events do not error when onThinking callback is omitted", async () => {
       const adapter = new DeliveryAdapter();
-      const events = eventStream([
-        { type: "thinking", text: "Thinking without a listener" },
-        makeDone(),
-      ]);
+      const events = eventStream([{ type: "thinking", text: "Thinking without a listener" }, makeDone()]);
       const payloads = await adapter.process(events);
       expect(payloads).toEqual([]);
     });
@@ -260,10 +247,7 @@ describe("DeliveryAdapter", () => {
     it("tool_result events produce formatted payload via onToolResult", async () => {
       const onToolResult = vi.fn();
       const adapter = new DeliveryAdapter();
-      const events = eventStream([
-        { type: "tool_result", toolId: "t1", output: "file contents here" },
-        makeDone(),
-      ]);
+      const events = eventStream([{ type: "tool_result", toolId: "t1", output: "file contents here" }, makeDone()]);
       await adapter.process(events, { onToolResult });
       expect(onToolResult).toHaveBeenCalledWith({
         text: "Tool t1 result: file contents here",
@@ -292,10 +276,7 @@ describe("DeliveryAdapter", () => {
 
     it("error events with code include code in message", async () => {
       const adapter = new DeliveryAdapter();
-      const events = eventStream([
-        { type: "error", message: "Rate limit exceeded", code: "RATE_LIMIT" },
-        makeDone(),
-      ]);
+      const events = eventStream([{ type: "error", message: "Rate limit exceeded", code: "RATE_LIMIT" }, makeDone()]);
       const payloads = await adapter.process(events);
       expect(payloads).toEqual([{ text: "[RATE_LIMIT] Rate limit exceeded", isError: true }]);
     });
@@ -457,10 +438,7 @@ describe("DeliveryAdapter", () => {
       ]);
       const payloads = await adapter.process(events);
       // /tmp/already-sent.png should appear only once (from streaming), /tmp/new.jpg from result
-      expect(payloads).toEqual([
-        { mediaUrl: "/tmp/already-sent.png" },
-        { mediaUrl: "/tmp/new.jpg" },
-      ]);
+      expect(payloads).toEqual([{ mediaUrl: "/tmp/already-sent.png" }, { mediaUrl: "/tmp/new.jpg" }]);
     });
   });
 

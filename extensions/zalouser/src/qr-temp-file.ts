@@ -2,10 +2,7 @@ import fsp from "node:fs/promises";
 import path from "node:path";
 import { resolvePreferredRemoteClawTmpDir } from "remoteclaw/plugin-sdk/zalouser";
 
-export async function writeQrDataUrlToTempFile(
-  qrDataUrl: string,
-  profile: string,
-): Promise<string | null> {
+export async function writeQrDataUrlToTempFile(qrDataUrl: string, profile: string): Promise<string | null> {
   const trimmed = qrDataUrl.trim();
   const match = trimmed.match(/^data:image\/png;base64,(.+)$/i);
   const base64 = (match?.[1] ?? "").trim();
@@ -13,10 +10,7 @@ export async function writeQrDataUrlToTempFile(
     return null;
   }
   const safeProfile = profile.replace(/[^a-zA-Z0-9_-]+/g, "-") || "default";
-  const filePath = path.join(
-    resolvePreferredRemoteClawTmpDir(),
-    `remoteclaw-zalouser-qr-${safeProfile}.png`,
-  );
+  const filePath = path.join(resolvePreferredRemoteClawTmpDir(), `remoteclaw-zalouser-qr-${safeProfile}.png`);
   await fsp.writeFile(filePath, Buffer.from(base64, "base64"));
   return filePath;
 }

@@ -75,9 +75,7 @@ function makeResolvedDelivery(): Extract<DeliveryTargetResolution, { ok: true }>
 }
 
 function makeWithRunSession() {
-  return (
-    result: Omit<RunCronAgentTurnResult, "sessionId" | "sessionKey">,
-  ): RunCronAgentTurnResult => ({
+  return (result: Omit<RunCronAgentTurnResult, "sessionId" | "sessionKey">): RunCronAgentTurnResult => ({
     ...result,
     sessionId: "test-session-id",
     sessionKey: "test-session-key",

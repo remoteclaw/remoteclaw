@@ -97,8 +97,7 @@ export function createDirectRoomTracker(client: MatrixClient, opts: DirectRoomTr
       }
 
       const selfUserId = params.selfUserId ?? (await ensureSelfUserId());
-      const directViaState =
-        (await hasDirectFlag(roomId, senderId)) || (await hasDirectFlag(roomId, selfUserId ?? ""));
+      const directViaState = (await hasDirectFlag(roomId, senderId)) || (await hasDirectFlag(roomId, selfUserId ?? ""));
       if (directViaState) {
         log(`matrix: dm detected via member state room=${roomId}`);
         return true;
@@ -135,9 +134,7 @@ export function createDirectRoomTracker(client: MatrixClient, opts: DirectRoomTr
             log(`matrix: dm detected via fallback (2 members, no room name) room=${roomId}`);
             return true;
           }
-          log(
-            `matrix: dm fallback skipped (room name check failed: ${String(err)}) room=${roomId}`,
-          );
+          log(`matrix: dm fallback skipped (room name check failed: ${String(err)}) room=${roomId}`);
         }
       }
 

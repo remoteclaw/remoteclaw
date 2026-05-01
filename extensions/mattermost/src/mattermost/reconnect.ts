@@ -26,10 +26,7 @@ export type RunWithReconnectOpts = {
  * used, then doubled for the next retry.
  * The loop exits when `abortSignal` fires.
  */
-export async function runWithReconnect(
-  connectFn: () => Promise<void>,
-  opts: RunWithReconnectOpts = {},
-): Promise<void> {
+export async function runWithReconnect(connectFn: () => Promise<void>, opts: RunWithReconnectOpts = {}): Promise<void> {
   const { initialDelayMs = 2000, maxDelayMs = 60_000 } = opts;
   const jitterRatio = Math.max(0, opts.jitterRatio ?? 0);
   const random = opts.random ?? Math.random;

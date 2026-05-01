@@ -58,9 +58,7 @@ describe("directive parsing", () => {
   });
 
   it("parses queue options and modes", () => {
-    const res = extractQueueDirective(
-      "please /queue steer+backlog debounce:2s cap:5 drop:summarize now",
-    );
+    const res = extractQueueDirective("please /queue steer+backlog debounce:2s cap:5 drop:summarize now");
     expect(res.hasDirective).toBe(true);
     expect(res.queueMode).toBe("steer-backlog");
     expect(res.debounceMs).toBe(2000);

@@ -10,9 +10,7 @@ function processMessageText(text: string, role: string): string {
   if (role === "assistant") {
     return stripThinkingTags(text);
   }
-  return shouldStripInboundMetadata
-    ? stripInboundMetadata(stripEnvelope(text))
-    : stripEnvelope(text);
+  return shouldStripInboundMetadata ? stripInboundMetadata(stripEnvelope(text)) : stripEnvelope(text);
 }
 
 export function extractText(message: unknown): string | null {
@@ -62,9 +60,7 @@ export function extractThinking(message: unknown): string | null {
   if (!rawText) {
     return null;
   }
-  const matches = [
-    ...rawText.matchAll(/<\s*think(?:ing)?\s*>([\s\S]*?)<\s*\/\s*think(?:ing)?\s*>/gi),
-  ];
+  const matches = [...rawText.matchAll(/<\s*think(?:ing)?\s*>([\s\S]*?)<\s*\/\s*think(?:ing)?\s*>/gi)];
   const extracted = matches.map((m) => (m[1] ?? "").trim()).filter(Boolean);
   return extracted.length > 0 ? extracted.join("\n") : null;
 }

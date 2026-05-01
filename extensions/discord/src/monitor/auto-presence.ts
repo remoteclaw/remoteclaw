@@ -8,10 +8,7 @@ import {
   type AuthProfileFailureReason,
   type AuthProfileStore,
 } from "../../../../src/agents/auth-profiles.js";
-import type {
-  DiscordAccountConfig,
-  DiscordAutoPresenceConfig,
-} from "../../../../src/config/config.js";
+import type { DiscordAccountConfig, DiscordAutoPresenceConfig } from "../../../../src/config/config.js";
 import { warn } from "../../../../src/globals.js";
 import { resolveDiscordPresenceUpdate } from "./presence.js";
 
@@ -63,9 +60,7 @@ function clampPositiveInt(value: unknown, fallback: number, minValue: number): n
   return Math.max(minValue, rounded);
 }
 
-function resolveAutoPresenceConfig(
-  config?: DiscordAutoPresenceConfig,
-): ResolvedDiscordAutoPresenceConfig {
+function resolveAutoPresenceConfig(config?: DiscordAutoPresenceConfig): ResolvedDiscordAutoPresenceConfig {
   const intervalMs = clampPositiveInt(config?.intervalMs, DEFAULT_INTERVAL_MS, MIN_INTERVAL_MS);
   const minUpdateIntervalMs = clampPositiveInt(
     config?.minUpdateIntervalMs,
@@ -91,10 +86,7 @@ function buildCustomStatusActivity(text: string): Activity {
   };
 }
 
-function renderTemplate(
-  template: string,
-  vars: Record<string, string | undefined>,
-): string | undefined {
+function renderTemplate(template: string, vars: Record<string, string | undefined>): string | undefined {
   const rendered = template
     .replace(/\{([a-zA-Z0-9_]+)\}/g, (_full, key: string) => vars[key] ?? "")
     .replace(/\s+/g, " ")
@@ -133,9 +125,7 @@ function resolveAuthAvailability(params: { store: AuthProfileStore; now: number 
 
   clearExpiredCooldowns(params.store, params.now);
 
-  const hasUsableProfile = profileIds.some(
-    (profileId) => !isProfileInCooldown(params.store, profileId, params.now),
-  );
+  const hasUsableProfile = profileIds.some((profileId) => !isProfileInCooldown(params.store, profileId, params.now));
   if (hasUsableProfile) {
     return { state: "healthy", unavailableReason: null };
   }
@@ -199,10 +189,7 @@ function resolvePresenceStatus(state: DiscordAutoPresenceState): UpdatePresenceD
 }
 
 export function resolveDiscordAutoPresenceDecision(params: {
-  discordConfig: Pick<
-    DiscordAccountConfig,
-    "autoPresence" | "activity" | "status" | "activityType" | "activityUrl"
-  >;
+  discordConfig: Pick<DiscordAccountConfig, "autoPresence" | "activity" | "status" | "activityType" | "activityUrl">;
   authStore: AuthProfileStore;
   gatewayConnected: boolean;
   now?: number;
@@ -267,10 +254,7 @@ export type DiscordAutoPresenceController = {
 
 export function createDiscordAutoPresenceController(params: {
   accountId: string;
-  discordConfig: Pick<
-    DiscordAccountConfig,
-    "autoPresence" | "activity" | "status" | "activityType" | "activityUrl"
-  >;
+  discordConfig: Pick<DiscordAccountConfig, "autoPresence" | "activity" | "status" | "activityType" | "activityUrl">;
   gateway: PresenceGateway;
   loadAuthStore?: () => AuthProfileStore;
   now?: () => number;
@@ -308,11 +292,7 @@ export function createDiscordAutoPresenceController(params: {
         now: now(),
       });
     } catch (err) {
-      params.log?.(
-        warn(
-          `discord: auto-presence evaluation failed for account ${params.accountId}: ${String(err)}`,
-        ),
-      );
+      params.log?.(warn(`discord: auto-presence evaluation failed for account ${params.accountId}: ${String(err)}`));
       return;
     }
 

@@ -57,17 +57,13 @@ export function registerStatusHealthSessionsCommands(program: Command) {
           ["remoteclaw status", "Show channel health + session summary."],
           ["remoteclaw status --all", "Full diagnosis (read-only)."],
           ["remoteclaw status --json", "Machine-readable output."],
-          [
-            "remoteclaw status --deep",
-            "Run channel probes (WA + Telegram + Discord + Slack + Signal).",
-          ],
+          ["remoteclaw status --deep", "Run channel probes (WA + Telegram + Discord + Slack + Signal)."],
           ["remoteclaw status --deep --timeout 5000", "Tighten probe timeout."],
         ])}`,
     )
     .addHelpText(
       "after",
-      () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/status", "docs.remoteclaw.org/cli/status")}\n`,
+      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/status", "docs.remoteclaw.org/cli/status")}\n`,
     )
     .action(async (opts) => {
       await runWithVerboseAndTimeout(opts, async ({ verbose, timeoutMs }) => {
@@ -93,8 +89,7 @@ export function registerStatusHealthSessionsCommands(program: Command) {
     .option("--debug", "Alias for --verbose", false)
     .addHelpText(
       "after",
-      () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/health", "docs.remoteclaw.org/cli/health")}\n`,
+      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/health", "docs.remoteclaw.org/cli/health")}\n`,
     )
     .action(async (opts) => {
       await runWithVerboseAndTimeout(opts, async ({ verbose, timeoutMs }) => {
@@ -132,8 +127,7 @@ export function registerStatusHealthSessionsCommands(program: Command) {
     )
     .addHelpText(
       "after",
-      () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/sessions", "docs.remoteclaw.org/cli/sessions")}\n`,
+      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/sessions", "docs.remoteclaw.org/cli/sessions")}\n`,
     )
     .action(async (opts) => {
       setVerbose(Boolean(opts.verbose));
@@ -177,10 +171,7 @@ export function registerStatusHealthSessionsCommands(program: Command) {
           ["remoteclaw sessions cleanup --enforce", "Apply maintenance now."],
           ["remoteclaw sessions cleanup --agent work --dry-run", "Preview one agent store."],
           ["remoteclaw sessions cleanup --all-agents --dry-run", "Preview all agent stores."],
-          [
-            "remoteclaw sessions cleanup --enforce --store ./tmp/sessions.json",
-            "Use a specific store.",
-          ],
+          ["remoteclaw sessions cleanup --enforce --store ./tmp/sessions.json", "Use a specific store."],
         ])}`,
     )
     .action(async (opts, command) => {

@@ -23,8 +23,6 @@ describe("shared/chat-envelope", () => {
     expect(stripMessageIdHints("[message_id: abc123]\nhello")).toBe("hello");
     expect(stripMessageIdHints("[message_id: abc123]")).toBe("");
     expect(stripMessageIdHints("hello\r\n[MESSAGE_ID: abc123]\r\nworld")).toBe("hello\nworld");
-    expect(stripMessageIdHints("I typed [message_id: abc123] inline")).toBe(
-      "I typed [message_id: abc123] inline",
-    );
+    expect(stripMessageIdHints("I typed [message_id: abc123] inline")).toBe("I typed [message_id: abc123] inline");
   });
 });

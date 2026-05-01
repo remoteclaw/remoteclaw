@@ -21,10 +21,7 @@ export function installBrowserCommonMiddleware(app: Express) {
   app.use(browserMutationGuardMiddleware());
 }
 
-export function installBrowserAuthMiddleware(
-  app: Express,
-  auth: { token?: string; password?: string },
-) {
+export function installBrowserAuthMiddleware(app: Express, auth: { token?: string; password?: string }) {
   if (!auth.token && !auth.password) {
     return;
   }

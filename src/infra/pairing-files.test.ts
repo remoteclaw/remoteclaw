@@ -1,10 +1,6 @@
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import {
-  pruneExpiredPending,
-  resolvePairingPaths,
-  upsertPendingPairingRequest,
-} from "./pairing-files.js";
+import { pruneExpiredPending, resolvePairingPaths, upsertPendingPairingRequest } from "./pairing-files.js";
 
 describe("pairing file helpers", () => {
   it("resolves pairing file paths from explicit base dirs", () => {
@@ -59,10 +55,7 @@ describe("pairing file helpers", () => {
       ts: 2,
       isRepair,
     }));
-    const pendingById: Record<
-      string,
-      { requestId: string; deviceId: string; ts: number; isRepair: boolean }
-    > = {};
+    const pendingById: Record<string, { requestId: string; deviceId: string; ts: number; isRepair: boolean }> = {};
 
     await expect(
       upsertPendingPairingRequest({

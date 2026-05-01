@@ -17,9 +17,7 @@ describe("completion-fish helpers", () => {
       name: "plugins",
       description: "Manage Bob's plugins",
     });
-    expect(line).toBe(
-      `complete -c remoteclaw -n "__fish_use_subcommand" -a "plugins" -d 'Manage Bob'\\''s plugins'\n`,
-    );
+    expect(line).toBe(`complete -c remoteclaw -n "__fish_use_subcommand" -a "plugins" -d 'Manage Bob'\\''s plugins'\n`);
   });
 
   it("builds option line with short and long flags", () => {
@@ -29,9 +27,7 @@ describe("completion-fish helpers", () => {
       flags: "-s, --shell <shell>",
       description: "Shell target",
     });
-    expect(line).toBe(
-      `complete -c remoteclaw -n "__fish_use_subcommand" -s s -l shell -d 'Shell target'\n`,
-    );
+    expect(line).toBe(`complete -c remoteclaw -n "__fish_use_subcommand" -s s -l shell -d 'Shell target'\n`);
   });
 
   it("builds option line with long-only flags", () => {

@@ -24,10 +24,7 @@ export function parseRemoteClawVersion(raw: string | null | undefined): RemoteCl
   };
 }
 
-export function compareRemoteClawVersions(
-  a: string | null | undefined,
-  b: string | null | undefined,
-): number | null {
+export function compareRemoteClawVersions(a: string | null | undefined, b: string | null | undefined): number | null {
   const parsedA = parseRemoteClawVersion(a);
   const parsedB = parseRemoteClawVersion(b);
   if (!parsedA || !parsedB) {

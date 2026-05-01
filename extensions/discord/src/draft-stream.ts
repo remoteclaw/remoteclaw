@@ -33,9 +33,7 @@ export function createDiscordDraftStream(params: {
   const channelId = params.channelId;
   const rest = params.rest;
   const resolveReplyToMessageId = () =>
-    typeof params.replyToMessageId === "function"
-      ? params.replyToMessageId()
-      : params.replyToMessageId;
+    typeof params.replyToMessageId === "function" ? params.replyToMessageId() : params.replyToMessageId;
 
   const streamState = { stopped: false, final: false };
   let streamMessageId: string | undefined;
@@ -98,9 +96,7 @@ export function createDiscordDraftStream(params: {
       return true;
     } catch (err) {
       streamState.stopped = true;
-      params.warn?.(
-        `discord stream preview failed: ${err instanceof Error ? err.message : String(err)}`,
-      );
+      params.warn?.(`discord stream preview failed: ${err instanceof Error ? err.message : String(err)}`);
       return false;
     }
   };

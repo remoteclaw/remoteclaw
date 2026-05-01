@@ -11,29 +11,16 @@ import {
   type HistoryEntry,
 } from "../../../../src/auto-reply/reply/history.js";
 import { finalizeInboundContext } from "../../../../src/auto-reply/reply/inbound-context.js";
-import {
-  buildMentionRegexes,
-  matchesMentionPatterns,
-} from "../../../../src/auto-reply/reply/mentions.js";
+import { buildMentionRegexes, matchesMentionPatterns } from "../../../../src/auto-reply/reply/mentions.js";
 import { resolveDualTextControlCommandGate } from "../../../../src/channels/command-gating.js";
 import { logInboundDrop } from "../../../../src/channels/logging.js";
 import type { RemoteClawConfig } from "../../../../src/config/config.js";
-import {
-  resolveChannelGroupPolicy,
-  resolveChannelGroupRequireMention,
-} from "../../../../src/config/group-policy.js";
+import { resolveChannelGroupPolicy, resolveChannelGroupRequireMention } from "../../../../src/config/group-policy.js";
 import { resolveAgentRoute } from "../../../../src/routing/resolve-route.js";
-import {
-  DM_GROUP_ACCESS_REASON,
-  resolveDmGroupAccessWithLists,
-} from "../../../../src/security/dm-policy-shared.js";
+import { DM_GROUP_ACCESS_REASON, resolveDmGroupAccessWithLists } from "../../../../src/security/dm-policy-shared.js";
 import { sanitizeTerminalText } from "../../../../src/terminal/safe-text.js";
 import { truncateUtf16Safe } from "../../../../src/utils.js";
-import {
-  formatIMessageChatTarget,
-  isAllowedIMessageSender,
-  normalizeIMessageHandle,
-} from "../targets.js";
+import { formatIMessageChatTarget, isAllowedIMessageSender, normalizeIMessageHandle } from "../targets.js";
 import { detectReflectedContent } from "./reflection-guard.js";
 import type { SelfChatCache } from "./self-chat-cache.js";
 import type { MonitorIMessageOpts, IMessagePayload } from "./types.js";
@@ -63,6 +50,43 @@ function describeReplyContext(message: IMessagePayload): IMessageReplyContext | 
   const id = normalizeReplyField(message.reply_to_id);
   const sender = normalizeReplyField(message.reply_to_sender);
   return { body, id, sender };
+}
+
+function resolveInboundEchoMessageIds(message: IMessagePayload): string[] {
+  const values = [message.id != null ? String(message.id) : undefined, normalizeReplyField(message.guid)];
+  const ids: string[] = [];
+  for (const value of values) {
+    if (!value || ids.includes(value)) {
+      continue;
+    }
+    ids.push(value);
+  }
+  return ids;
+}
+
+function hasIMessageEchoMatch(params: {
+  echoCache: {
+    has: (scope: string, lookup: { text?: string; messageId?: string }, skipIdShortCircuit?: boolean) => boolean;
+  };
+  scope: string;
+  text?: string;
+  messageIds: string[];
+  skipIdShortCircuit?: boolean;
+}): boolean {
+  for (const messageId of params.messageIds) {
+    if (params.echoCache.has(params.scope, { messageId })) {
+      return true;
+    }
+  }
+  const fallbackMessageId = params.messageIds[0];
+  if (!params.text && !fallbackMessageId) {
+    return false;
+  }
+  return params.echoCache.has(
+    params.scope,
+    { text: params.text, messageId: fallbackMessageId },
+    params.skipIdShortCircuit,
+  );
 }
 
 export type IMessageInboundDispatchDecision = {
@@ -105,7 +129,9 @@ export function resolveIMessageInboundDecision(params: {
   storeAllowFrom: string[];
   historyLimit: number;
   groupHistories: Map<string, HistoryEntry[]>;
-  echoCache?: { has: (scope: string, lookup: { text?: string; messageId?: string }) => boolean };
+  echoCache?: {
+    has: (scope: string, lookup: { text?: string; messageId?: string }, skipIdShortCircuit?: boolean) => boolean;
+  };
   selfChatCache?: SelfChatCache;
   logVerbose?: (msg: string) => void;
 }): IMessageInboundDecision {
@@ -119,6 +145,8 @@ export function resolveIMessageInboundDecision(params: {
   const chatGuid = params.message.chat_guid ?? undefined;
   const chatIdentifier = params.message.chat_identifier ?? undefined;
   const createdAt = params.message.created_at ? Date.parse(params.message.created_at) : undefined;
+  const messageText = params.messageText.trim();
+  const bodyText = params.bodyText.trim();
 
   const groupIdCandidate = chatId !== undefined ? String(chatId) : undefined;
   const groupListPolicy = groupIdCandidate
@@ -146,12 +174,61 @@ export function resolveIMessageInboundDecision(params: {
     isGroup,
     chatId,
     sender,
-    text: params.bodyText,
+    text: bodyText,
     createdAt,
   };
+  // Self-chat detection: in self-chat, sender == chat_identifier (both are the
+  // user's own handle). When is_from_me=true in self-chat, the message could be
+  // either: (a) a real user message typed by the user, or (b) an agent reply
+  // echo reflected back by iMessage. We must distinguish them.
+  const isSelfChat =
+    !isGroup && chatIdentifier != null && normalizeIMessageHandle(sender) === normalizeIMessageHandle(chatIdentifier);
+  // Track whether we already processed the is_from_me=true self-chat path.
+  // When true, the selfChatCache.has() check below must be skipped — we just
+  // called remember() and would immediately match our own entry.
+  let skipSelfChatHasCheck = false;
+  const inboundMessageIds = resolveInboundEchoMessageIds(params.message);
+  const inboundMessageId = inboundMessageIds[0];
+  const hasInboundGuid = Boolean(normalizeReplyField(params.message.guid));
+
   if (params.message.is_from_me) {
+    // Always cache in selfChatCache so the upcoming is_from_me=false reflection
+    // (which arrives 2-3s later) is correctly identified and dropped.
     params.selfChatCache?.remember(selfChatLookup);
-    return { kind: "drop", reason: "from me" };
+
+    if (isSelfChat) {
+      // In self-chat, is_from_me=true could be a real user message OR an agent
+      // reply echo. Use the echo cache with skipIdShortCircuit=true to check
+      // whether this text matches a recently-sent agent reply.
+      const echoScope = buildIMessageEchoScope({
+        accountId: params.accountId,
+        isGroup,
+        chatId,
+        sender,
+      });
+      if (
+        params.echoCache &&
+        (bodyText || inboundMessageId) &&
+        hasIMessageEchoMatch({
+          echoCache: params.echoCache,
+          scope: echoScope,
+          text: bodyText || undefined,
+          messageIds: inboundMessageIds,
+          skipIdShortCircuit: !hasInboundGuid,
+        })
+      ) {
+        return { kind: "drop", reason: "agent echo in self-chat" };
+      }
+      // Echo cache missed → this is a real user message in self-chat. Process it.
+      // Skip the selfChatCache.has() check below — we just remember()d ourselves
+      // and would immediately match our own entry.
+      skipSelfChatHasCheck = true;
+      // Fall through to rest of decision logic (access control, etc.)
+    } else {
+      // Normal DM or group: is_from_me=true means this is an outbound message
+      // notification that we sent. Drop it.
+      return { kind: "drop", reason: "from me" };
+    }
   }
   if (isGroup && !chatId) {
     return { kind: "drop", reason: "group without chat_id" };
@@ -185,9 +262,7 @@ export function resolveIMessageInboundDecision(params: {
         return { kind: "drop", reason: "groupPolicy disabled" };
       }
       if (accessDecision.reasonCode === DM_GROUP_ACCESS_REASON.GROUP_POLICY_EMPTY_ALLOWLIST) {
-        params.logVerbose?.(
-          "Blocked iMessage group message (groupPolicy: allowlist, no groupAllowFrom)",
-        );
+        params.logVerbose?.("Blocked iMessage group message (groupPolicy: allowlist, no groupAllowFrom)");
         return { kind: "drop", reason: "groupPolicy allowlist (empty groupAllowFrom)" };
       }
       if (accessDecision.reasonCode === DM_GROUP_ACCESS_REASON.GROUP_POLICY_NOT_ALLOWLISTED) {
@@ -208,9 +283,7 @@ export function resolveIMessageInboundDecision(params: {
   }
 
   if (isGroup && groupListPolicy.allowlistEnabled && !groupListPolicy.allowed) {
-    params.logVerbose?.(
-      `imessage: skipping group message (${groupId ?? "unknown"}) not in allowlist`,
-    );
+    params.logVerbose?.(`imessage: skipping group message (${groupId ?? "unknown"}) not in allowlist`);
     return { kind: "drop", reason: "group id not in allowlist" };
   }
 
@@ -224,18 +297,17 @@ export function resolveIMessageInboundDecision(params: {
     },
   });
   const mentionRegexes = buildMentionRegexes(params.cfg, route.agentId);
-  const messageText = params.messageText.trim();
-  const bodyText = params.bodyText.trim();
   if (!bodyText) {
     return { kind: "drop", reason: "empty body" };
   }
 
-  if (
-    params.selfChatCache?.has({
-      ...selfChatLookup,
-      text: bodyText,
-    })
-  ) {
+  const selfChatHit = skipSelfChatHasCheck
+    ? false
+    : params.selfChatCache?.has({
+        ...selfChatLookup,
+        text: bodyText,
+      });
+  if (selfChatHit) {
     const preview = sanitizeTerminalText(truncateUtf16Safe(bodyText, 50));
     params.logVerbose?.(`imessage: dropping self-chat reflected duplicate: "${preview}"`);
     return { kind: "drop", reason: "self-chat echo" };
@@ -243,7 +315,6 @@ export function resolveIMessageInboundDecision(params: {
 
   // Echo detection: check if the received message matches a recently sent message.
   // Scope by conversation so same text in different chats is not conflated.
-  const inboundMessageId = params.message.id != null ? String(params.message.id) : undefined;
   if (params.echoCache && (messageText || inboundMessageId)) {
     const echoScope = buildIMessageEchoScope({
       accountId: params.accountId,
@@ -252,14 +323,14 @@ export function resolveIMessageInboundDecision(params: {
       sender,
     });
     if (
-      params.echoCache.has(echoScope, {
-        text: messageText || undefined,
-        messageId: inboundMessageId,
+      hasIMessageEchoMatch({
+        echoCache: params.echoCache,
+        scope: echoScope,
+        text: bodyText || undefined,
+        messageIds: inboundMessageIds,
       })
     ) {
-      params.logVerbose?.(
-        describeIMessageEchoDropLog({ messageText, messageId: inboundMessageId }),
-      );
+      params.logVerbose?.(describeIMessageEchoDropLog({ messageText: bodyText, messageId: inboundMessageId }));
       return { kind: "drop", reason: "echo" };
     }
   }
@@ -276,9 +347,7 @@ export function resolveIMessageInboundDecision(params: {
   }
 
   const replyContext = describeReplyContext(params.message);
-  const historyKey = isGroup
-    ? String(chatId ?? chatGuid ?? chatIdentifier ?? "unknown")
-    : undefined;
+  const historyKey = isGroup ? String(chatId ?? chatGuid ?? chatIdentifier ?? "unknown") : undefined;
 
   const mentioned = isGroup ? matchesMentionPatterns(messageText, mentionRegexes) : true;
   const requireMention = resolveChannelGroupRequireMention({
@@ -401,8 +470,7 @@ export function buildIMessageInboundContext(params: {
   const envelopeOptions = params.envelopeOptions ?? resolveEnvelopeFormatOptions(params.cfg);
   const { decision } = params;
   const chatId = decision.chatId;
-  const chatTarget =
-    decision.isGroup && chatId != null ? formatIMessageChatTarget(chatId) : undefined;
+  const chatTarget = decision.isGroup && chatId != null ? formatIMessageChatTarget(chatId) : undefined;
 
   const replySuffix = decision.replyContext
     ? `\n\n[Replying to ${decision.replyContext.sender ?? "unknown sender"}${
@@ -466,18 +534,14 @@ export function buildIMessageInboundContext(params: {
     InboundHistory: inboundHistory,
     RawBody: decision.bodyText,
     CommandBody: decision.bodyText,
-    From: decision.isGroup
-      ? `imessage:group:${chatId ?? "unknown"}`
-      : `imessage:${decision.sender}`,
+    From: decision.isGroup ? `imessage:group:${chatId ?? "unknown"}` : `imessage:${decision.sender}`,
     To: imessageTo,
     SessionKey: decision.route.sessionKey,
     AccountId: decision.route.accountId,
     ChatType: decision.isGroup ? "group" : "direct",
     ConversationLabel: fromLabel,
     GroupSubject: decision.isGroup ? (params.message.chat_name ?? undefined) : undefined,
-    GroupMembers: decision.isGroup
-      ? (params.message.participants ?? []).filter(Boolean).join(", ")
-      : undefined,
+    GroupMembers: decision.isGroup ? (params.message.participants ?? []).filter(Boolean).join(", ") : undefined,
     SenderName: decision.senderNormalized,
     SenderId: decision.sender,
     Provider: "imessage",
@@ -490,12 +554,9 @@ export function buildIMessageInboundContext(params: {
     MediaPath: params.media?.path,
     MediaType: params.media?.type,
     MediaUrl: params.media?.path,
-    MediaPaths:
-      params.media?.paths && params.media.paths.length > 0 ? params.media.paths : undefined,
-    MediaTypes:
-      params.media?.types && params.media.types.length > 0 ? params.media.types : undefined,
-    MediaUrls:
-      params.media?.paths && params.media.paths.length > 0 ? params.media.paths : undefined,
+    MediaPaths: params.media?.paths && params.media.paths.length > 0 ? params.media.paths : undefined,
+    MediaTypes: params.media?.types && params.media.types.length > 0 ? params.media.types : undefined,
+    MediaUrls: params.media?.paths && params.media.paths.length > 0 ? params.media.paths : undefined,
     MediaRemoteHost: params.remoteHost,
     WasMentioned: decision.effectiveWasMentioned,
     CommandAuthorized: decision.commandAuthorized,
@@ -515,10 +576,7 @@ export function buildIMessageEchoScope(params: {
   return `${params.accountId}:${params.isGroup ? formatIMessageChatTarget(params.chatId) : `imessage:${params.sender}`}`;
 }
 
-export function describeIMessageEchoDropLog(params: {
-  messageText: string;
-  messageId?: string;
-}): string {
+export function describeIMessageEchoDropLog(params: { messageText: string; messageId?: string }): string {
   const preview = truncateUtf16Safe(params.messageText, 50);
   const messageIdPart = params.messageId ? ` id=${params.messageId}` : "";
   return `imessage: skipping echo message${messageIdPart}: "${preview}"`;

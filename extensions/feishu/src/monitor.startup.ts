@@ -33,9 +33,7 @@ export type FeishuMonitorBotIdentity = {
 };
 
 function isTimeoutErrorMessage(message: string | undefined): boolean {
-  return message?.toLowerCase().includes("timeout") || message?.toLowerCase().includes("timed out")
-    ? true
-    : false;
+  return message?.toLowerCase().includes("timeout") || message?.toLowerCase().includes("timed out") ? true : false;
 }
 
 function isAbortErrorMessage(message: string | undefined): boolean {
@@ -65,9 +63,7 @@ export async function fetchBotIdentityForMonitor(
 
   if (isTimeoutErrorMessage(result.error)) {
     const error = options.runtime?.error ?? console.error;
-    error(
-      `feishu[${account.accountId}]: bot info probe timed out after ${timeoutMs}ms; continuing startup`,
-    );
+    error(`feishu[${account.accountId}]: bot info probe timed out after ${timeoutMs}ms; continuing startup`);
   }
   return {};
 }

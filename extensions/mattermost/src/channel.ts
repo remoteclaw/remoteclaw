@@ -28,10 +28,7 @@ import {
   type ResolvedMattermostAccount,
 } from "./mattermost/accounts.js";
 import { normalizeMattermostBaseUrl } from "./mattermost/client.js";
-import {
-  listMattermostDirectoryGroups,
-  listMattermostDirectoryPeers,
-} from "./mattermost/directory.js";
+import { listMattermostDirectoryGroups, listMattermostDirectoryPeers } from "./mattermost/directory.js";
 import { monitorMattermostProvider } from "./mattermost/monitor.js";
 import { probeMattermost } from "./mattermost/probe.js";
 import { addMattermostReaction, removeMattermostReaction } from "./mattermost/reactions.js";
@@ -120,9 +117,7 @@ const mattermostMessageActions: ChannelMessageActionAdapter = {
           throw new Error(result.error);
         }
         return {
-          content: [
-            { type: "text" as const, text: `Removed reaction :${emojiName}: from ${postId}` },
-          ],
+          content: [{ type: "text" as const, text: `Removed reaction :${emojiName}: from ${postId}` }],
           details: {},
         };
       }
@@ -149,11 +144,7 @@ const mattermostMessageActions: ChannelMessageActionAdapter = {
 
     // Send action with optional interactive buttons
     const to =
-      typeof params.to === "string"
-        ? params.to.trim()
-        : typeof params.target === "string"
-          ? params.target.trim()
-          : "";
+      typeof params.to === "string" ? params.to.trim() : typeof params.target === "string" ? params.target.trim() : "";
     if (!to) {
       throw new Error("Mattermost send requires a target (to).");
     }
@@ -164,8 +155,7 @@ const mattermostMessageActions: ChannelMessageActionAdapter = {
     const replyToId = readMattermostReplyToId(params);
     const resolvedAccountId = accountId || undefined;
 
-    const mediaUrl =
-      typeof params.media === "string" ? params.media.trim() || undefined : undefined;
+    const mediaUrl = typeof params.media === "string" ? params.media.trim() || undefined : undefined;
 
     const result = await sendMessageMattermost(to, message, {
       accountId: resolvedAccountId,
@@ -369,9 +359,7 @@ export const mattermostPlugin: ChannelPlugin<ResolvedMattermostAccount> = {
       if (!trimmed) {
         return {
           ok: false,
-          error: new Error(
-            "Delivering to Mattermost requires --to <channelId|@username|user:ID|channel:ID>",
-          ),
+          error: new Error("Delivering to Mattermost requires --to <channelId|@username|user:ID|channel:ID>"),
         };
       }
       return { ok: true, to: trimmed };

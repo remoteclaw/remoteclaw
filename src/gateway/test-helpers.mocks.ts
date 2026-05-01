@@ -226,8 +226,7 @@ export const sessionStoreSaveDelayMs = hoisted.sessionStoreSaveDelayMs;
 export const embeddedRunMock = hoisted.embeddedRunMock;
 
 vi.mock("../cron/isolated-agent.js", () => ({
-  runCronIsolatedAgentTurn: (...args: unknown[]) =>
-    (cronIsolatedRun as (...args: unknown[]) => unknown)(...args),
+  runCronIsolatedAgentTurn: (...args: unknown[]) => (cronIsolatedRun as (...args: unknown[]) => unknown)(...args),
 }));
 
 vi.mock("../infra/tailnet.js", () => ({
@@ -236,8 +235,7 @@ vi.mock("../infra/tailnet.js", () => ({
 }));
 
 vi.mock("../infra/tailscale.js", async () => {
-  const actual =
-    await vi.importActual<typeof import("../infra/tailscale.js")>("../infra/tailscale.js");
+  const actual = await vi.importActual<typeof import("../infra/tailscale.js")>("../infra/tailscale.js");
   return {
     ...actual,
     readTailscaleWhoisIdentity: async () => testTailscaleWhois.value,
@@ -245,8 +243,7 @@ vi.mock("../infra/tailscale.js", async () => {
 });
 
 vi.mock("../config/sessions.js", async () => {
-  const actual =
-    await vi.importActual<typeof import("../config/sessions.js")>("../config/sessions.js");
+  const actual = await vi.importActual<typeof import("../config/sessions.js")>("../config/sessions.js");
   return {
     ...actual,
     saveSessionStore: vi.fn(async (storePath: string, store: unknown) => {
@@ -366,15 +363,11 @@ vi.mock("../config/config.js", async () => {
       }
 
       const fileAgents =
-        fileConfig.agents &&
-        typeof fileConfig.agents === "object" &&
-        !Array.isArray(fileConfig.agents)
+        fileConfig.agents && typeof fileConfig.agents === "object" && !Array.isArray(fileConfig.agents)
           ? (fileConfig.agents as Record<string, unknown>)
           : {};
       const fileDefaults =
-        fileAgents.defaults &&
-        typeof fileAgents.defaults === "object" &&
-        !Array.isArray(fileAgents.defaults)
+        fileAgents.defaults && typeof fileAgents.defaults === "object" && !Array.isArray(fileAgents.defaults)
           ? (fileAgents.defaults as Record<string, unknown>)
           : {};
       const defaults = {
@@ -387,20 +380,14 @@ vi.mock("../config/config.js", async () => {
         ? { ...fileAgents, ...testState.agentsConfig, defaults }
         : { ...fileAgents, defaults };
 
-      const fileBindings = Array.isArray(fileConfig.bindings)
-        ? (fileConfig.bindings as AgentBinding[])
-        : undefined;
+      const fileBindings = Array.isArray(fileConfig.bindings) ? (fileConfig.bindings as AgentBinding[]) : undefined;
 
       const fileChannels =
-        fileConfig.channels &&
-        typeof fileConfig.channels === "object" &&
-        !Array.isArray(fileConfig.channels)
+        fileConfig.channels && typeof fileConfig.channels === "object" && !Array.isArray(fileConfig.channels)
           ? ({ ...(fileConfig.channels as Record<string, unknown>) } as Record<string, unknown>)
           : {};
       const overrideChannels =
-        testState.channelsConfig && typeof testState.channelsConfig === "object"
-          ? { ...testState.channelsConfig }
-          : {};
+        testState.channelsConfig && typeof testState.channelsConfig === "object" ? { ...testState.channelsConfig } : {};
       const mergedChannels = { ...fileChannels, ...overrideChannels };
       if (testState.allowFrom !== undefined) {
         const existing =
@@ -417,9 +404,7 @@ vi.mock("../config/config.js", async () => {
       const channels = Object.keys(mergedChannels).length > 0 ? mergedChannels : undefined;
 
       const fileSession =
-        fileConfig.session &&
-        typeof fileConfig.session === "object" &&
-        !Array.isArray(fileConfig.session)
+        fileConfig.session && typeof fileConfig.session === "object" && !Array.isArray(fileConfig.session)
           ? (fileConfig.session as Record<string, unknown>)
           : {};
       const session: Record<string, unknown> = {
@@ -434,9 +419,7 @@ vi.mock("../config/config.js", async () => {
       }
 
       const fileGateway =
-        fileConfig.gateway &&
-        typeof fileConfig.gateway === "object" &&
-        !Array.isArray(fileConfig.gateway)
+        fileConfig.gateway && typeof fileConfig.gateway === "object" && !Array.isArray(fileConfig.gateway)
           ? ({ ...(fileConfig.gateway as Record<string, unknown>) } as Record<string, unknown>)
           : {};
       if (testState.gatewayBind) {
@@ -451,9 +434,7 @@ vi.mock("../config/config.js", async () => {
       const gateway = Object.keys(fileGateway).length > 0 ? fileGateway : undefined;
 
       const fileCanvasHost =
-        fileConfig.canvasHost &&
-        typeof fileConfig.canvasHost === "object" &&
-        !Array.isArray(fileConfig.canvasHost)
+        fileConfig.canvasHost && typeof fileConfig.canvasHost === "object" && !Array.isArray(fileConfig.canvasHost)
           ? ({ ...(fileConfig.canvasHost as Record<string, unknown>) } as Record<string, unknown>)
           : {};
       if (typeof testState.canvasHostPort === "number") {
@@ -512,19 +493,14 @@ vi.mock("../commands/status.js", () => ({
   getStatusSummary: vi.fn().mockResolvedValue({ ok: true }),
 }));
 vi.mock("../../extensions/whatsapp/src/outbound.js", () => ({
-  sendMessageWhatsApp: (...args: unknown[]) =>
-    (hoisted.sendWhatsAppMock as (...args: unknown[]) => unknown)(...args),
-  sendPollWhatsApp: (...args: unknown[]) =>
-    (hoisted.sendWhatsAppMock as (...args: unknown[]) => unknown)(...args),
+  sendMessageWhatsApp: (...args: unknown[]) => (hoisted.sendWhatsAppMock as (...args: unknown[]) => unknown)(...args),
+  sendPollWhatsApp: (...args: unknown[]) => (hoisted.sendWhatsAppMock as (...args: unknown[]) => unknown)(...args),
 }));
 vi.mock("../channels/web/index.js", async () => {
-  const actual = await vi.importActual<typeof import("../channels/web/index.js")>(
-    "../channels/web/index.js",
-  );
+  const actual = await vi.importActual<typeof import("../channels/web/index.js")>("../channels/web/index.js");
   return {
     ...actual,
-    sendMessageWhatsApp: (...args: unknown[]) =>
-      (hoisted.sendWhatsAppMock as (...args: unknown[]) => unknown)(...args),
+    sendMessageWhatsApp: (...args: unknown[]) => (hoisted.sendWhatsAppMock as (...args: unknown[]) => unknown)(...args),
   };
 });
 vi.mock("../commands/agent.js", () => ({
@@ -548,8 +524,7 @@ vi.mock("../cli/deps.js", async () => {
 });
 
 vi.mock("../plugins/loader.js", async () => {
-  const actual =
-    await vi.importActual<typeof import("../plugins/loader.js")>("../plugins/loader.js");
+  const actual = await vi.importActual<typeof import("../plugins/loader.js")>("../plugins/loader.js");
   return {
     ...actual,
     loadRemoteClawPlugins: () => pluginRegistryState.registry,

@@ -6,17 +6,12 @@ export type ZalouserProbeResult = BaseProbeResult<string> & {
   user?: ZcaUserInfo;
 };
 
-export async function probeZalouser(
-  profile: string,
-  timeoutMs?: number,
-): Promise<ZalouserProbeResult> {
+export async function probeZalouser(profile: string, timeoutMs?: number): Promise<ZalouserProbeResult> {
   try {
     const user = timeoutMs
       ? await Promise.race([
           getZaloUserInfo(profile),
-          new Promise<null>((resolve) =>
-            setTimeout(() => resolve(null), Math.max(timeoutMs, 1000)),
-          ),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), Math.max(timeoutMs, 1000))),
         ])
       : await getZaloUserInfo(profile);
 

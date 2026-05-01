@@ -28,14 +28,10 @@ export function normalizeRpcAttachmentsToChatAttachments(
     attachments
       ?.map((a) => {
         const source = a?.source && typeof a.source === "object" ? a.source : undefined;
-        const sourceRecord = source as
-          | { type?: unknown; media_type?: unknown; data?: unknown }
-          | undefined;
+        const sourceRecord = source as { type?: unknown; media_type?: unknown; data?: unknown } | undefined;
         const sourceType = typeof sourceRecord?.type === "string" ? sourceRecord.type : undefined;
-        const sourceMimeType =
-          typeof sourceRecord?.media_type === "string" ? sourceRecord.media_type : undefined;
-        const sourceContent =
-          sourceType === "base64" ? normalizeAttachmentContent(sourceRecord?.data) : undefined;
+        const sourceMimeType = typeof sourceRecord?.media_type === "string" ? sourceRecord.media_type : undefined;
+        const sourceContent = sourceType === "base64" ? normalizeAttachmentContent(sourceRecord?.data) : undefined;
 
         return {
           type: typeof a?.type === "string" ? a.type : undefined,

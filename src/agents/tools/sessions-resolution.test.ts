@@ -74,24 +74,18 @@ describe("resolveMainSessionAlias", () => {
 
 describe("session key display/internal mapping", () => {
   it("maps alias and main key to display main", () => {
-    expect(resolveDisplaySessionKey({ key: "global", alias: "global", mainKey: "main" })).toBe(
-      "main",
+    expect(resolveDisplaySessionKey({ key: "global", alias: "global", mainKey: "main" })).toBe("main");
+    expect(resolveDisplaySessionKey({ key: "main", alias: "global", mainKey: "main" })).toBe("main");
+    expect(resolveDisplaySessionKey({ key: "agent:ops:main", alias: "global", mainKey: "main" })).toBe(
+      "agent:ops:main",
     );
-    expect(resolveDisplaySessionKey({ key: "main", alias: "global", mainKey: "main" })).toBe(
-      "main",
-    );
-    expect(
-      resolveDisplaySessionKey({ key: "agent:ops:main", alias: "global", mainKey: "main" }),
-    ).toBe("agent:ops:main");
   });
 
   it("maps input main to alias for internal routing", () => {
-    expect(resolveInternalSessionKey({ key: "main", alias: "global", mainKey: "main" })).toBe(
-      "global",
+    expect(resolveInternalSessionKey({ key: "main", alias: "global", mainKey: "main" })).toBe("global");
+    expect(resolveInternalSessionKey({ key: "agent:ops:main", alias: "global", mainKey: "main" })).toBe(
+      "agent:ops:main",
     );
-    expect(
-      resolveInternalSessionKey({ key: "agent:ops:main", alias: "global", mainKey: "main" }),
-    ).toBe("agent:ops:main");
   });
 
   it("maps current to requester session key", () => {
@@ -106,9 +100,7 @@ describe("session key display/internal mapping", () => {
   });
 
   it("preserves literal current when no requester key is provided", () => {
-    expect(resolveInternalSessionKey({ key: "current", alias: "global", mainKey: "main" })).toBe(
-      "current",
-    );
+    expect(resolveInternalSessionKey({ key: "current", alias: "global", mainKey: "main" })).toBe("current");
   });
 });
 
@@ -192,21 +184,19 @@ describe("resolved session visibility checks", () => {
   });
 
   it("does not hide an exact spawned target behind the sessions.list visibility cap", async () => {
-    callGatewayMock.mockImplementation(
-      async (request: { method?: string; params?: { key?: string } }) => {
-        if (request.method === "sessions.resolve") {
-          return { key: request.params?.key };
-        }
-        if (request.method === "sessions.list") {
-          return {
-            sessions: Array.from({ length: 500 }, (_, index) => ({
-              key: `agent:main:subagent:worker-${index}`,
-            })),
-          };
-        }
-        return {};
-      },
-    );
+    callGatewayMock.mockImplementation(async (request: { method?: string; params?: { key?: string } }) => {
+      if (request.method === "sessions.resolve") {
+        return { key: request.params?.key };
+      }
+      if (request.method === "sessions.list") {
+        return {
+          sessions: Array.from({ length: 500 }, (_, index) => ({
+            key: `agent:main:subagent:worker-${index}`,
+          })),
+        };
+      }
+      return {};
+    });
 
     await expect(
       isResolvedSessionVisibleToRequester({

@@ -5,10 +5,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { ChannelPlugin } from "../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { withEnvAsync } from "../test-utils/env.js";
-import {
-  collectInstalledSkillsCodeSafetyFindings,
-  collectPluginsCodeSafetyFindings,
-} from "./audit-extra.js";
+import { collectInstalledSkillsCodeSafetyFindings, collectPluginsCodeSafetyFindings } from "./audit-extra.js";
 import type { SecurityAuditOptions, SecurityAuditReport } from "./audit.js";
 import { runSecurityAudit } from "./audit.js";
 import * as skillScanner from "./skill-scanner.js";
@@ -48,9 +45,7 @@ function stubChannelPlugin(params: {
       listAccountIds:
         params.listAccountIds ??
         ((cfg) => {
-          const enabled = Boolean(
-            (cfg.channels as Record<string, unknown> | undefined)?.[params.id],
-          );
+          const enabled = Boolean((cfg.channels as Record<string, unknown> | undefined)?.[params.id]);
           return enabled ? ["default"] : [];
         }),
       inspectAccount: params.inspectAccount,
@@ -133,9 +128,7 @@ async function audit(
 }
 
 function hasFinding(res: SecurityAuditReport, checkId: string, severity?: string): boolean {
-  return res.findings.some(
-    (f) => f.checkId === checkId && (severity == null || f.severity === severity),
-  );
+  return res.findings.some((f) => f.checkId === checkId && (severity == null || f.severity === severity));
 }
 
 function expectFinding(res: SecurityAuditReport, checkId: string, severity?: string): void {
@@ -263,9 +256,7 @@ description: test skill
     const summary = res.findings.find((f) => f.checkId === "summary.attack_surface");
 
     expect(res.findings).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ checkId: "summary.attack_surface", severity: "info" }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ checkId: "summary.attack_surface", severity: "info" })]),
     );
     expect(summary?.detail).toContain("trust model: personal assistant");
   });
@@ -354,9 +345,7 @@ description: test skill
     await Promise.all(
       cases.map(async (testCase) => {
         const res = await audit(testCase.cfg, { env: {} });
-        expect(hasFinding(res, "gateway.auth_no_rate_limit", "warn"), testCase.name).toBe(
-          testCase.expectWarn,
-        );
+        expect(hasFinding(res, "gateway.auth_no_rate_limit", "warn"), testCase.name).toBe(testCase.expectWarn);
       }),
     );
   });
@@ -405,9 +394,7 @@ description: test skill
     const cases: Array<{
       name: string;
       cfg: RemoteClawConfig;
-      checkId:
-        | "tools.exec.host_sandbox_no_sandbox_defaults"
-        | "tools.exec.host_sandbox_no_sandbox_agents";
+      checkId: "tools.exec.host_sandbox_no_sandbox_defaults" | "tools.exec.host_sandbox_no_sandbox_agents";
     }> = [
       {
         name: "defaults host is sandbox",
@@ -530,10 +517,9 @@ description: test skill
     await Promise.all(
       cases.map(async (testCase) => {
         const res = await audit(testCase.cfg);
-        expect(
-          hasFinding(res, "tools.exec.safe_bins_interpreter_unprofiled", "warn"),
-          testCase.name,
-        ).toBe(testCase.expected);
+        expect(hasFinding(res, "tools.exec.safe_bins_interpreter_unprofiled", "warn"), testCase.name).toBe(
+          testCase.expected,
+        );
       }),
     );
   });
@@ -564,9 +550,7 @@ description: test skill
     };
 
     const res = await audit(cfg);
-    const finding = res.findings.find(
-      (f) => f.checkId === "tools.exec.safe_bin_trusted_dirs_risky",
-    );
+    const finding = res.findings.find((f) => f.checkId === "tools.exec.safe_bin_trusted_dirs_risky");
     expect(finding?.severity).toBe("warn");
     expect(finding?.detail).toContain(riskyGlobalTrustedDirs[0]);
     expect(finding?.detail).toContain(riskyGlobalTrustedDirs[1]);
@@ -590,10 +574,7 @@ description: test skill
     const cases: Array<{
       name: string;
       cfg: RemoteClawConfig;
-      checkId:
-        | "gateway.trusted_proxies_missing"
-        | "gateway.loopback_no_auth"
-        | "logging.redact_off";
+      checkId: "gateway.trusted_proxies_missing" | "gateway.loopback_no_auth" | "logging.redact_off";
       severity: "warn" | "critical";
       opts?: Omit<SecurityAuditOptions, "config">;
     }> = [
@@ -710,11 +691,7 @@ description: test skill
       execDockerRawFn: execDockerRawUnavailable,
     });
 
-    expect(
-      res.findings.some(
-        (f) => f.checkId === "fs.state_dir.perms_readable" && f.severity === "warn",
-      ),
-    ).toBe(true);
+    expect(res.findings.some((f) => f.checkId === "fs.state_dir.perms_readable" && f.severity === "warn")).toBe(true);
   });
 
   it("warns when sandbox browser containers have missing or stale hash labels", async () => {
@@ -760,9 +737,7 @@ description: test skill
 
     expect(hasFinding(res, "sandbox.browser_container.hash_label_missing", "warn")).toBe(true);
     expect(hasFinding(res, "sandbox.browser_container.hash_epoch_stale", "warn")).toBe(true);
-    const staleEpoch = res.findings.find(
-      (f) => f.checkId === "sandbox.browser_container.hash_epoch_stale",
-    );
+    const staleEpoch = res.findings.find((f) => f.checkId === "sandbox.browser_container.hash_epoch_stale");
     expect(staleEpoch?.detail).toContain("remoteclaw-sbx-browser-old");
   });
 
@@ -787,9 +762,7 @@ description: test skill
   });
 
   it("flags sandbox browser containers with non-loopback published ports", async () => {
-    const { stateDir, configPath } = await createFilesystemAuditFixture(
-      "browser-non-loopback-publish",
-    );
+    const { stateDir, configPath } = await createFilesystemAuditFixture("browser-non-loopback-publish");
 
     const execDockerRawFn = (async (args: string[]) => {
       if (args[0] === "ps") {
@@ -829,9 +802,7 @@ description: test skill
       execDockerRawFn,
     });
 
-    expect(hasFinding(res, "sandbox.browser_container.non_loopback_publish", "critical")).toBe(
-      true,
-    );
+    expect(hasFinding(res, "sandbox.browser_container.non_loopback_publish", "critical")).toBe(true);
   });
 
   it("uses symlink target permissions for config checks", async () => {
@@ -859,9 +830,7 @@ description: test skill
       execDockerRawFn: execDockerRawUnavailable,
     });
 
-    expect(res.findings).toEqual(
-      expect.arrayContaining([expect.objectContaining({ checkId: "fs.config.symlink" })]),
-    );
+    expect(res.findings).toEqual(expect.arrayContaining([expect.objectContaining({ checkId: "fs.config.symlink" })]));
     expect(res.findings.some((f) => f.checkId === "fs.config.perms_writable")).toBe(false);
     expect(res.findings.some((f) => f.checkId === "fs.config.perms_world_readable")).toBe(false);
     expect(res.findings.some((f) => f.checkId === "fs.config.perms_group_readable")).toBe(false);
@@ -908,11 +877,7 @@ description: test skill
     const workspaceDir = path.join(tmp, "workspace");
     await fs.mkdir(stateDir, { recursive: true, mode: 0o700 });
     await fs.mkdir(path.join(workspaceDir, "skills", "safe"), { recursive: true });
-    await fs.writeFile(
-      path.join(workspaceDir, "skills", "safe", "SKILL.md"),
-      "# in workspace\n",
-      "utf-8",
-    );
+    await fs.writeFile(path.join(workspaceDir, "skills", "safe", "SKILL.md"), "# in workspace\n", "utf-8");
 
     const configPath = path.join(stateDir, "remoteclaw.json");
     await fs.writeFile(configPath, "{}\n", "utf-8");
@@ -1035,9 +1000,7 @@ description: test skill
 
     const res = await audit(cfg);
 
-    const finding = res.findings.find(
-      (f) => f.checkId === "gateway.nodes.deny_commands_ineffective",
-    );
+    const finding = res.findings.find((f) => f.checkId === "gateway.nodes.deny_commands_ineffective");
     expect(finding?.severity).toBe("warn");
     expect(finding?.detail).toContain("system.*");
     expect(finding?.detail).toContain("system.runx");
@@ -1055,9 +1018,7 @@ description: test skill
     };
 
     const res = await audit(cfg);
-    const finding = res.findings.find(
-      (f) => f.checkId === "gateway.nodes.deny_commands_ineffective",
-    );
+    const finding = res.findings.find((f) => f.checkId === "gateway.nodes.deny_commands_ineffective");
     expect(finding?.severity).toBe("warn");
     expect(finding?.detail).toContain("system.run.prep");
     expect(finding?.detail).toContain("did you mean");
@@ -1074,9 +1035,7 @@ description: test skill
     };
 
     const res = await audit(cfg);
-    const finding = res.findings.find(
-      (f) => f.checkId === "gateway.nodes.deny_commands_ineffective",
-    );
+    const finding = res.findings.find((f) => f.checkId === "gateway.nodes.deny_commands_ineffective");
     expect(finding?.severity).toBe("warn");
     expect(finding?.detail).toContain("zzzzzzzzzzzzzz");
     expect(finding?.detail).not.toContain("did you mean");
@@ -1113,9 +1072,7 @@ description: test skill
     await Promise.all(
       cases.map(async (testCase) => {
         const res = await audit(testCase.cfg);
-        const finding = res.findings.find(
-          (f) => f.checkId === "gateway.nodes.allow_commands_dangerous",
-        );
+        const finding = res.findings.find((f) => f.checkId === "gateway.nodes.allow_commands_dangerous");
         expect(finding?.severity, testCase.name).toBe(testCase.expectedSeverity);
         expect(finding?.detail, testCase.name).toContain("camera.snap");
         expect(finding?.detail, testCase.name).toContain("screen.record");
@@ -1359,9 +1316,7 @@ description: test skill
     expectFinding(res, "gateway.control_ui.host_header_origin_fallback", "critical");
     expectNoFinding(res, "gateway.control_ui.allowed_origins_required");
     const flags = res.findings.find((f) => f.checkId === "config.insecure_or_dangerous_flags");
-    expect(flags?.detail ?? "").toContain(
-      "gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback=true",
-    );
+    expect(flags?.detail ?? "").toContain("gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback=true");
   });
 
   it("warns when Feishu doc tool is enabled because create can grant requester access", async () => {
@@ -1486,10 +1441,9 @@ description: test skill
     await Promise.all(
       cases.map(async (testCase) => {
         const res = await audit(testCase.cfg);
-        expect(
-          hasFinding(res, "gateway.real_ip_fallback_enabled", testCase.expectedSeverity),
-          testCase.name,
-        ).toBe(true);
+        expect(hasFinding(res, "gateway.real_ip_fallback_enabled", testCase.expectedSeverity), testCase.name).toBe(
+          true,
+        );
       }),
     );
   });
@@ -1537,10 +1491,7 @@ description: test skill
     await Promise.all(
       cases.map(async (testCase) => {
         const res = await audit(testCase.cfg);
-        expect(
-          hasFinding(res, "discovery.mdns_full_mode", testCase.expectedSeverity),
-          testCase.name,
-        ).toBe(true);
+        expect(hasFinding(res, "discovery.mdns_full_mode", testCase.expectedSeverity), testCase.name).toBe(true);
       }),
     );
   });
@@ -1622,10 +1573,7 @@ description: test skill
     await Promise.all(
       cases.map(async (testCase) => {
         const res = await audit(testCase.cfg);
-        expect(
-          hasFinding(res, testCase.expectedCheckId, testCase.expectedSeverity),
-          testCase.name,
-        ).toBe(true);
+        expect(hasFinding(res, testCase.expectedCheckId, testCase.expectedSeverity), testCase.name).toBe(true);
         if (testCase.suppressesGenericSharedSecretFindings) {
           expect(hasFinding(res, "gateway.bind_no_auth"), testCase.name).toBe(false);
           expect(hasFinding(res, "gateway.auth_no_rate_limit"), testCase.name).toBe(false);
@@ -1763,24 +1711,14 @@ description: test skill
           return {
             accountId: "default",
             enabled: true,
-            configured:
-              Boolean(token) &&
-              typeof token === "object" &&
-              !Array.isArray(token) &&
-              "source" in token,
+            configured: Boolean(token) && typeof token === "object" && !Array.isArray(token) && "source" in token,
             token: "",
             tokenSource:
-              Boolean(token) &&
-              typeof token === "object" &&
-              !Array.isArray(token) &&
-              "source" in token
+              Boolean(token) && typeof token === "object" && !Array.isArray(token) && "source" in token
                 ? "config"
                 : "none",
             tokenStatus:
-              Boolean(token) &&
-              typeof token === "object" &&
-              !Array.isArray(token) &&
-              "source" in token
+              Boolean(token) && typeof token === "object" && !Array.isArray(token) && "source" in token
                 ? "configured_unavailable"
                 : "missing",
             config: channel,
@@ -2031,19 +1969,13 @@ description: test skill
         plugins: [discordPlugin],
       });
 
-      const finding = res.findings.find(
-        (entry) => entry.checkId === "channels.discord.allowFrom.name_based_entries",
-      );
+      const finding = res.findings.find((entry) => entry.checkId === "channels.discord.allowFrom.name_based_entries");
       expect(finding).toBeDefined();
       expect(finding?.severity).toBe("warn");
       expect(finding?.detail).toContain("channels.discord.allowFrom:Alice#1234");
       expect(finding?.detail).toContain("channels.discord.guilds.123.users:trusted.operator");
-      expect(finding?.detail).toContain(
-        "channels.discord.guilds.123.channels.general.users:security-team",
-      );
-      expect(finding?.detail).toContain(
-        "~/.remoteclaw/credentials/discord-allowFrom.json:team.owner",
-      );
+      expect(finding?.detail).toContain("channels.discord.guilds.123.channels.general.users:security-team");
+      expect(finding?.detail).toContain("~/.remoteclaw/credentials/discord-allowFrom.json:team.owner");
       expect(finding?.detail).not.toContain("<@123456789012345678>");
     });
   });
@@ -2068,9 +2000,7 @@ description: test skill
         plugins: [discordPlugin],
       });
 
-      const finding = res.findings.find(
-        (entry) => entry.checkId === "channels.discord.allowFrom.name_based_entries",
-      );
+      const finding = res.findings.find((entry) => entry.checkId === "channels.discord.allowFrom.name_based_entries");
       expect(finding).toBeDefined();
       expect(finding?.severity).toBe("info");
       expect(finding?.detail).toContain("out-of-scope");
@@ -2195,9 +2125,7 @@ description: test skill
         plugins: [discordPlugin],
       });
 
-      const finding = res.findings.find(
-        (entry) => entry.checkId === "channels.discord.allowFrom.name_based_entries",
-      );
+      const finding = res.findings.find((entry) => entry.checkId === "channels.discord.allowFrom.name_based_entries");
       expect(finding).toBeDefined();
       expect(finding?.detail).toContain("channels.discord.accounts.beta.allowFrom:Alice#1234");
     });
@@ -2239,9 +2167,7 @@ description: test skill
       });
 
       expect(res.findings).not.toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ checkId: "channels.discord.allowFrom.name_based_entries" }),
-        ]),
+        expect.arrayContaining([expect.objectContaining({ checkId: "channels.discord.allowFrom.name_based_entries" })]),
       );
     });
   });
@@ -2563,10 +2489,9 @@ description: test skill
     await Promise.all(
       cases.map(async (testCase) => {
         const res = await audit(testCase.cfg);
-        expect(
-          hasFinding(res, "hooks.request_session_key_enabled", testCase.expectedSeverity),
-          testCase.name,
-        ).toBe(true);
+        expect(hasFinding(res, "hooks.request_session_key_enabled", testCase.expectedSeverity), testCase.name).toBe(
+          true,
+        );
         if (testCase.expectsPrefixesMissing) {
           expect(hasFinding(res, "hooks.request_session_key_prefixes_missing", "warn")).toBe(true);
         }
@@ -2709,21 +2634,15 @@ description: test skill
       stateDir,
       configPath,
       platform: isWindows ? "win32" : undefined,
-      env: isWindows
-        ? { ...process.env, USERNAME: "Tester", USERDOMAIN: "DESKTOP-TEST" }
-        : undefined,
+      env: isWindows ? { ...process.env, USERNAME: "Tester", USERDOMAIN: "DESKTOP-TEST" } : undefined,
       execIcacls,
       execDockerRawFn: execDockerRawUnavailable,
     });
 
-    const expectedCheckId = isWindows
-      ? "fs.config_include.perms_writable"
-      : "fs.config_include.perms_world_readable";
+    const expectedCheckId = isWindows ? "fs.config_include.perms_writable" : "fs.config_include.perms_world_readable";
 
     expect(res.findings).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ checkId: expectedCheckId, severity: "critical" }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ checkId: expectedCheckId, severity: "critical" })]),
     );
   });
 
@@ -2951,9 +2870,7 @@ description: test skill
       execDockerRawFn: execDockerRawUnavailable,
     });
 
-    expect(
-      res.findings.some((f) => f.checkId === "plugins.tools_reachable_permissive_policy"),
-    ).toBe(false);
+    expect(res.findings.some((f) => f.checkId === "plugins.tools_reachable_permissive_policy")).toBe(false);
   });
 
   it("flags unallowlisted extensions as critical when native skill commands are exposed", async () => {
@@ -3094,9 +3011,7 @@ description: test skill
   });
 
   it("reports scan_failed when plugin code scanner throws during deep audit", async () => {
-    const scanSpy = vi
-      .spyOn(skillScanner, "scanDirectoryWithSummary")
-      .mockRejectedValueOnce(new Error("boom"));
+    const scanSpy = vi.spyOn(skillScanner, "scanDirectoryWithSummary").mockRejectedValueOnce(new Error("boom"));
 
     const tmpDir = await makeTmpDir("audit-scanner-throws");
     try {
@@ -3170,9 +3085,7 @@ description: test skill
 
     const res = await audit(cfg);
 
-    expect(
-      res.findings.some((f) => f.checkId === "security.exposure.open_groups_with_runtime_or_fs"),
-    ).toBe(false);
+    expect(res.findings.some((f) => f.checkId === "security.exposure.open_groups_with_runtime_or_fs")).toBe(false);
   });
 
   it("does not flag runtime/filesystem exposure for open groups when runtime is denied and fs is workspace-only", async () => {
@@ -3188,9 +3101,7 @@ description: test skill
 
     const res = await audit(cfg);
 
-    expect(
-      res.findings.some((f) => f.checkId === "security.exposure.open_groups_with_runtime_or_fs"),
-    ).toBe(false);
+    expect(res.findings.some((f) => f.checkId === "security.exposure.open_groups_with_runtime_or_fs")).toBe(false);
   });
 
   it("warns when config heuristics suggest a likely multi-user setup", async () => {
@@ -3211,14 +3122,10 @@ description: test skill
     };
 
     const res = await audit(cfg);
-    const finding = res.findings.find(
-      (f) => f.checkId === "security.trust_model.multi_user_heuristic",
-    );
+    const finding = res.findings.find((f) => f.checkId === "security.trust_model.multi_user_heuristic");
 
     expect(finding?.severity).toBe("warn");
-    expect(finding?.detail).toContain(
-      'channels.discord.groupPolicy="allowlist" with configured group targets',
-    );
+    expect(finding?.detail).toContain('channels.discord.groupPolicy="allowlist" with configured group targets');
     expect(finding?.detail).toContain("personal-assistant");
     expect(finding?.remediation).toContain('agents.defaults.sandbox.mode="all"');
   });
@@ -3242,10 +3149,7 @@ description: test skill
     const makeProbeCapture = () => {
       let capturedAuth: { token?: string; password?: string } | undefined;
       return {
-        probeGatewayFn: async (opts: {
-          url: string;
-          auth?: { token?: string; password?: string };
-        }) => {
+        probeGatewayFn: async (opts: { url: string; auth?: { token?: string; password?: string } }) => {
           capturedAuth = opts.auth;
           return successfulProbeResult(opts.url);
         },
@@ -3404,9 +3308,7 @@ description: test skill
         env: {},
       });
 
-      const warning = res.findings.find(
-        (finding) => finding.checkId === "gateway.probe_auth_secretref_unavailable",
-      );
+      const warning = res.findings.find((finding) => finding.checkId === "gateway.probe_auth_secretref_unavailable");
       expect(warning?.severity).toBe("warn");
       expect(warning?.detail).toContain("gateway.auth.token");
     });

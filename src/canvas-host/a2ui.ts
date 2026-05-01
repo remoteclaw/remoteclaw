@@ -139,18 +139,14 @@ export function injectCanvasLiveReload(html: string): string {
   return `${html}\n${snippet}\n`;
 }
 
-export async function handleA2uiHttpRequest(
-  req: IncomingMessage,
-  res: ServerResponse,
-): Promise<boolean> {
+export async function handleA2uiHttpRequest(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
   const urlRaw = req.url;
   if (!urlRaw) {
     return false;
   }
 
   const url = new URL(urlRaw, "http://localhost");
-  const basePath =
-    url.pathname === A2UI_PATH || url.pathname.startsWith(`${A2UI_PATH}/`) ? A2UI_PATH : undefined;
+  const basePath = url.pathname === A2UI_PATH || url.pathname.startsWith(`${A2UI_PATH}/`) ? A2UI_PATH : undefined;
   if (!basePath) {
     return false;
   }

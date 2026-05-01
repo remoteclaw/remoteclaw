@@ -21,10 +21,7 @@ function expectValidationIssue(
   return issue;
 }
 
-function expectIssueMessageIncludes(
-  issue: ReturnType<typeof expectValidationIssue>,
-  fragments: readonly string[],
-) {
+function expectIssueMessageIncludes(issue: ReturnType<typeof expectValidationIssue>, fragments: readonly string[]) {
   expect(issue?.message).toEqual(expect.stringContaining(fragments[0] ?? ""));
   fragments.slice(1).forEach((fragment) => {
     expect(issue?.message).toContain(fragment);
@@ -136,21 +133,7 @@ describe("schema validator", () => {
           properties: {
             mode: {
               type: "string",
-              enum: [
-                "v1",
-                "v2",
-                "v3",
-                "v4",
-                "v5",
-                "v6",
-                "v7",
-                "v8",
-                "v9",
-                "v10",
-                "v11",
-                "v12",
-                "v13",
-              ],
+              enum: ["v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9", "v10", "v11", "v12", "v13"],
             },
           },
           required: ["mode"],
@@ -302,15 +285,12 @@ describe("schema validator", () => {
       expectedPath: "apiRoot",
       expectedMessage: "must match format",
     },
-  ])(
-    "supports uri-formatted string schemas: $title",
-    ({ params, ok, expectedPath, expectedMessage }) => {
-      expectUriValidationCase({
-        input: params,
-        ok,
-        expectedPath,
-        expectedMessage,
-      });
-    },
-  );
+  ])("supports uri-formatted string schemas: $title", ({ params, ok, expectedPath, expectedMessage }) => {
+    expectUriValidationCase({
+      input: params,
+      ok,
+      expectedPath,
+      expectedMessage,
+    });
+  });
 });

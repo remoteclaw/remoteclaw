@@ -57,9 +57,7 @@ const mockResolveAgentRoute = vi.fn(() => ({
   matchedBy: "default",
 }));
 const mockBuildMentionRegexes = vi.fn(() => [/\bbert\b/i]);
-const mockMatchesMentionPatterns = vi.fn((text: string, regexes: RegExp[]) =>
-  regexes.some((r) => r.test(text)),
-);
+const mockMatchesMentionPatterns = vi.fn((text: string, regexes: RegExp[]) => regexes.some((r) => r.test(text)));
 const mockMatchesMentionWithExplicit = vi.fn(
   (params: { text: string; mentionRegexes: RegExp[]; explicitWasMentioned?: boolean }) => {
     if (params.explicitWasMentioned) {
@@ -70,9 +68,7 @@ const mockMatchesMentionWithExplicit = vi.fn(
 );
 const mockResolveRequireMention = vi.fn(() => false);
 const mockResolveGroupPolicy = vi.fn(() => "open" as const);
-type DispatchReplyParams = Parameters<
-  PluginRuntime["channel"]["reply"]["dispatchReplyWithBufferedBlockDispatcher"]
->[0];
+type DispatchReplyParams = Parameters<PluginRuntime["channel"]["reply"]["dispatchReplyWithBufferedBlockDispatcher"]>[0];
 const EMPTY_DISPATCH_RESULT = {
   queuedFinal: false,
   counts: { tool: 0, block: 0, final: 0 },
@@ -111,8 +107,7 @@ function createMockRuntime(): PluginRuntime {
         chunkByNewline: mockChunkByNewline,
         chunkMarkdownTextWithMode: mockChunkMarkdownTextWithMode,
         chunkTextWithMode: mockChunkTextWithMode,
-        resolveChunkMode:
-          mockResolveChunkMode as unknown as PluginRuntime["channel"]["text"]["resolveChunkMode"],
+        resolveChunkMode: mockResolveChunkMode as unknown as PluginRuntime["channel"]["text"]["resolveChunkMode"],
         hasControlCommand: mockHasControlCommand,
       },
       reply: {
@@ -124,8 +119,7 @@ function createMockRuntime(): PluginRuntime {
           mockResolveEnvelopeFormatOptions as unknown as PluginRuntime["channel"]["reply"]["resolveEnvelopeFormatOptions"],
       },
       routing: {
-        resolveAgentRoute:
-          mockResolveAgentRoute as unknown as PluginRuntime["channel"]["routing"]["resolveAgentRoute"],
+        resolveAgentRoute: mockResolveAgentRoute as unknown as PluginRuntime["channel"]["routing"]["resolveAgentRoute"],
       },
       pairing: {
         buildPairingReply: mockBuildPairingReply,
@@ -133,8 +127,7 @@ function createMockRuntime(): PluginRuntime {
         upsertPairingRequest: mockUpsertPairingRequest,
       },
       media: {
-        saveMediaBuffer:
-          mockSaveMediaBuffer as unknown as PluginRuntime["channel"]["media"]["saveMediaBuffer"],
+        saveMediaBuffer: mockSaveMediaBuffer as unknown as PluginRuntime["channel"]["media"]["saveMediaBuffer"],
       },
       session: {
         resolveStorePath: mockResolveStorePath,
@@ -157,9 +150,7 @@ function createMockRuntime(): PluginRuntime {
   });
 }
 
-function createMockAccount(
-  overrides: Partial<ResolvedBlueBubblesAccount["config"]> = {},
-): ResolvedBlueBubblesAccount {
+function createMockAccount(overrides: Partial<ResolvedBlueBubblesAccount["config"]> = {}): ResolvedBlueBubblesAccount {
   return {
     accountId: "default",
     enabled: true,
@@ -366,11 +357,7 @@ describe("BlueBubbles webhook monitor", () => {
     };
   }
 
-  async function expectWebhookStatus(
-    req: IncomingMessage,
-    expectedStatus: number,
-    expectedBody?: string,
-  ) {
+  async function expectWebhookStatus(req: IncomingMessage, expectedStatus: number, expectedBody?: string) {
     const { handled, res } = await dispatchWebhook(req);
     expect(handled).toBe(true);
     expect(res.statusCode).toBe(expectedStatus);

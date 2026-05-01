@@ -30,10 +30,7 @@ type Logger = {
   debug?: (message: string) => void;
 };
 
-function createRuntimeResourceLifecycle(params: {
-  config: VoiceCallConfig;
-  webhookServer: VoiceCallWebhookServer;
-}): {
+function createRuntimeResourceLifecycle(params: { config: VoiceCallConfig; webhookServer: VoiceCallWebhookServer }): {
   setTunnelResult: (result: TunnelResult | null) => void;
   stop: (opts?: { suppressErrors?: boolean }) => Promise<void>;
 } {
@@ -190,9 +187,7 @@ export async function createVoiceCallRuntime(params: {
         lifecycle.setTunnelResult(nextTunnelResult);
         publicUrl = nextTunnelResult?.publicUrl ?? null;
       } catch (err) {
-        log.error(
-          `[voice-call] Tunnel setup failed: ${err instanceof Error ? err.message : String(err)}`,
-        );
+        log.error(`[voice-call] Tunnel setup failed: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
 
@@ -214,14 +209,13 @@ export async function createVoiceCallRuntime(params: {
             coreConfig,
             ttsOverride: config.tts,
             runtime: ttsRuntime,
+            logger: log,
           });
           twilioProvider.setTTSProvider(ttsProvider);
           log.info("[voice-call] Telephony TTS provider configured");
         } catch (err) {
           log.warn(
-            `[voice-call] Failed to initialize telephony TTS: ${
-              err instanceof Error ? err.message : String(err)
-            }`,
+            `[voice-call] Failed to initialize telephony TTS: ${err instanceof Error ? err.message : String(err)}`,
           );
         }
       } else {

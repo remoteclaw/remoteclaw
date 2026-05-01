@@ -35,9 +35,7 @@ describe("handleDisconnected", () => {
   it("stops and clears gateway client on teardown", () => {
     const removeSpy = vi.spyOn(window, "removeEventListener").mockImplementation(() => undefined);
     const host = createHost();
-    const disconnectSpy = (
-      host.topbarObserver as unknown as { disconnect: ReturnType<typeof vi.fn> }
-    ).disconnect;
+    const disconnectSpy = (host.topbarObserver as unknown as { disconnect: ReturnType<typeof vi.fn> }).disconnect;
 
     handleDisconnected(host as unknown as RemoteClawApp);
 

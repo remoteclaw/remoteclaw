@@ -2,9 +2,7 @@ import { Type, type Static } from "@sinclair/typebox";
 
 const tableCreationProperties = {
   doc_token: Type.String({ description: "Document token" }),
-  parent_block_id: Type.Optional(
-    Type.String({ description: "Parent block ID (default: document root)" }),
-  ),
+  parent_block_id: Type.Optional(Type.String({ description: "Parent block ID (default: document root)" })),
   row_size: Type.Integer({ description: "Table row count", minimum: 1 }),
   column_size: Type.Integer({ description: "Table column count", minimum: 1 }),
   column_width: Type.Optional(
@@ -97,17 +95,13 @@ export const FeishuDocSchema = Type.Union([
     action: Type.Literal("insert_table_row"),
     doc_token: Type.String({ description: "Document token" }),
     block_id: Type.String({ description: "Table block ID" }),
-    row_index: Type.Optional(
-      Type.Number({ description: "Row index to insert at (-1 for end, default: -1)" }),
-    ),
+    row_index: Type.Optional(Type.Number({ description: "Row index to insert at (-1 for end, default: -1)" })),
   }),
   Type.Object({
     action: Type.Literal("insert_table_column"),
     doc_token: Type.String({ description: "Document token" }),
     block_id: Type.String({ description: "Table block ID" }),
-    column_index: Type.Optional(
-      Type.Number({ description: "Column index to insert at (-1 for end, default: -1)" }),
-    ),
+    column_index: Type.Optional(Type.Number({ description: "Column index to insert at (-1 for end, default: -1)" })),
   }),
   Type.Object({
     action: Type.Literal("delete_table_rows"),
@@ -121,9 +115,7 @@ export const FeishuDocSchema = Type.Union([
     doc_token: Type.String({ description: "Document token" }),
     block_id: Type.String({ description: "Table block ID" }),
     column_start: Type.Number({ description: "Start column index (0-based)" }),
-    column_count: Type.Optional(
-      Type.Number({ description: "Number of columns to delete (default: 1)" }),
-    ),
+    column_count: Type.Optional(Type.Number({ description: "Number of columns to delete (default: 1)" })),
   }),
   Type.Object({
     action: Type.Literal("merge_table_cells"),
@@ -146,9 +138,7 @@ export const FeishuDocSchema = Type.Union([
           "Image as data URI (data:image/png;base64,...) or plain base64 string. Use instead of url/file_path for DALL-E outputs, canvas screenshots, etc.",
       }),
     ),
-    parent_block_id: Type.Optional(
-      Type.String({ description: "Parent block ID (default: document root)" }),
-    ),
+    parent_block_id: Type.Optional(Type.String({ description: "Parent block ID (default: document root)" })),
     filename: Type.Optional(Type.String({ description: "Optional filename override" })),
     index: Type.Optional(
       Type.Integer({
@@ -162,9 +152,7 @@ export const FeishuDocSchema = Type.Union([
     doc_token: Type.String({ description: "Document token" }),
     url: Type.Optional(Type.String({ description: "Remote file URL (http/https)" })),
     file_path: Type.Optional(Type.String({ description: "Local file path" })),
-    parent_block_id: Type.Optional(
-      Type.String({ description: "Parent block ID (default: document root)" }),
-    ),
+    parent_block_id: Type.Optional(Type.String({ description: "Parent block ID (default: document root)" })),
     filename: Type.Optional(Type.String({ description: "Optional filename override" })),
   }),
   // Text color / style

@@ -48,8 +48,7 @@ function buildPlugin(params: {
   account?: Record<string, unknown>;
   probe?: unknown;
 }): ChannelPlugin {
-  const capabilities =
-    params.capabilities ?? ({ chatTypes: ["direct"] } as ChannelPlugin["capabilities"]);
+  const capabilities = params.capabilities ?? ({ chatTypes: ["direct"] } as ChannelPlugin["capabilities"]);
   return {
     id: params.id,
     meta: {

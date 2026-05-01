@@ -54,13 +54,9 @@ describe("channels command", () => {
     return configMocks.writeConfigFile.mock.calls[0]?.[0] as T;
   }
 
-  async function runRemoveWithConfirm(
-    args: Parameters<typeof channelsRemoveCommand>[0],
-  ): Promise<void> {
+  async function runRemoveWithConfirm(args: Parameters<typeof channelsRemoveCommand>[0]): Promise<void> {
     const prompt = { confirm: vi.fn().mockResolvedValue(true) };
-    const promptSpy = vi
-      .spyOn(clackPrompterModule, "createClackPrompter")
-      .mockReturnValue(prompt as never);
+    const promptSpy = vi.spyOn(clackPrompterModule, "createClackPrompter").mockReturnValue(prompt as never);
     try {
       await channelsRemoveCommand(args, runtime, { hasFlags: true });
     } finally {
@@ -226,11 +222,9 @@ describe("channels command", () => {
 
   it("adds a named WhatsApp account", async () => {
     configMocks.readConfigFileSnapshot.mockResolvedValue({ ...baseConfigSnapshot });
-    await channelsAddCommand(
-      { channel: "whatsapp", account: "family", name: "Family Phone" },
-      runtime,
-      { hasFlags: true },
-    );
+    await channelsAddCommand({ channel: "whatsapp", account: "family", name: "Family Phone" }, runtime, {
+      hasFlags: true,
+    });
 
     const next = getWrittenConfig<{
       channels?: {
@@ -553,13 +547,9 @@ describe("channels command", () => {
       },
     });
 
-    await channelsRemoveCommand(
-      { channel: "telegram", account: "default", delete: true },
-      runtime,
-      {
-        hasFlags: true,
-      },
-    );
+    await channelsRemoveCommand({ channel: "telegram", account: "default", delete: true }, runtime, {
+      hasFlags: true,
+    });
 
     expect(offsetMocks.deleteTelegramUpdateOffset).toHaveBeenCalledWith({ accountId: "default" });
   });

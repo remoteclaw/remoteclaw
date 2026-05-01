@@ -68,20 +68,14 @@ function sortComparableEntries(entries: ComparableProvider[]): ComparableProvide
   return [...entries].toSorted((left, right) => {
     const leftOrder = left.autoDetectOrder ?? Number.MAX_SAFE_INTEGER;
     const rightOrder = right.autoDetectOrder ?? Number.MAX_SAFE_INTEGER;
-    return (
-      leftOrder - rightOrder ||
-      left.id.localeCompare(right.id) ||
-      left.pluginId.localeCompare(right.pluginId)
-    );
+    return leftOrder - rightOrder || left.id.localeCompare(right.id) || left.pluginId.localeCompare(right.pluginId);
   });
 }
 
 export function describeBundledWebSearchFastPathContract(pluginId: string) {
   describe(`${pluginId} bundled web search fast-path contract`, () => {
     it("keeps provider-to-plugin ids aligned with bundled contracts", () => {
-      const providers = listBundledWebSearchProviders().filter(
-        (provider) => provider.pluginId === pluginId,
-      );
+      const providers = listBundledWebSearchProviders().filter((provider) => provider.pluginId === pluginId);
       expect(providers.length).toBeGreaterThan(0);
       for (const provider of providers) {
         expect(resolveBundledWebSearchPluginId(provider.id)).toBe(pluginId);
@@ -89,9 +83,7 @@ export function describeBundledWebSearchFastPathContract(pluginId: string) {
     });
 
     it("keeps fast-path provider metadata aligned with the bundled runtime registry", async () => {
-      const fastPathProviders = listBundledWebSearchProviders().filter(
-        (provider) => provider.pluginId === pluginId,
-      );
+      const fastPathProviders = listBundledWebSearchProviders().filter((provider) => provider.pluginId === pluginId);
       const bundledProviderEntries = loadBundledCapabilityRuntimeRegistry({
         pluginIds: BUNDLED_WEB_SEARCH_PLUGIN_IDS,
         pluginSdkResolution: "dist",
@@ -123,9 +115,7 @@ export function describeBundledWebSearchFastPathContract(pluginId: string) {
       );
 
       for (const fastPathProvider of fastPathProviders) {
-        const bundledEntry = bundledProviderEntries.find(
-          (entry) => entry.id === fastPathProvider.id,
-        );
+        const bundledEntry = bundledProviderEntries.find((entry) => entry.id === fastPathProvider.id);
         expect(bundledEntry).toBeDefined();
         const contractProvider = bundledEntry!;
 

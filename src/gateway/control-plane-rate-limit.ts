@@ -31,10 +31,7 @@ export function resolveControlPlaneRateLimitKey(client: GatewayClient | null): s
   return `${deviceId}|${clientIp}`;
 }
 
-export function consumeControlPlaneWriteBudget(params: {
-  client: GatewayClient | null;
-  nowMs?: number;
-}): {
+export function consumeControlPlaneWriteBudget(params: { client: GatewayClient | null; nowMs?: number }): {
   allowed: boolean;
   retryAfterMs: number;
   remaining: number;
@@ -58,10 +55,7 @@ export function consumeControlPlaneWriteBudget(params: {
   }
 
   if (bucket.count >= CONTROL_PLANE_RATE_LIMIT_MAX_REQUESTS) {
-    const retryAfterMs = Math.max(
-      0,
-      bucket.windowStartMs + CONTROL_PLANE_RATE_LIMIT_WINDOW_MS - nowMs,
-    );
+    const retryAfterMs = Math.max(0, bucket.windowStartMs + CONTROL_PLANE_RATE_LIMIT_WINDOW_MS - nowMs);
     return {
       allowed: false,
       retryAfterMs,

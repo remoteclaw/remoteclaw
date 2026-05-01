@@ -10,9 +10,7 @@ import {
   stripToolMessages,
 } from "./shared.js";
 
-export async function handleSubagentsLogAction(
-  ctx: SubagentsCommandContext,
-): Promise<CommandHandlerResult> {
+export async function handleSubagentsLogAction(ctx: SubagentsCommandContext): Promise<CommandHandlerResult> {
   const { runs, restTokens } = ctx;
   const target = restTokens[0];
   if (!target) {

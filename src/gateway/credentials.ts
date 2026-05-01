@@ -92,9 +92,7 @@ export function resolveGatewayCredentialsFromValues(params: {
   const passwordPrecedence = params.passwordPrecedence ?? "env-first";
 
   const token =
-    tokenPrecedence === "config-first"
-      ? firstDefined([configToken, envToken])
-      : firstDefined([envToken, configToken]);
+    tokenPrecedence === "config-first" ? firstDefined([configToken, envToken]) : firstDefined([envToken, configToken]);
   const password =
     passwordPrecedence === "config-first" // pragma: allowlist secret
       ? firstDefined([configPassword, envPassword])
@@ -153,20 +151,10 @@ function resolveLocalGatewayCredentials(params: {
   ) {
     throwUnresolvedGatewaySecretInput(params.plan.localPassword.refPath);
   }
-  if (
-    params.plan.localToken.refPath &&
-    !localResolved.token &&
-    !params.plan.envToken &&
-    localTokenCanWin
-  ) {
+  if (params.plan.localToken.refPath && !localResolved.token && !params.plan.envToken && localTokenCanWin) {
     throwUnresolvedGatewaySecretInput(params.plan.localToken.refPath);
   }
-  if (
-    params.plan.localPassword.refPath &&
-    !localResolved.password &&
-    !params.plan.envPassword &&
-    localPasswordCanWin
-  ) {
+  if (params.plan.localPassword.refPath && !localResolved.password && !params.plan.envPassword && localPasswordCanWin) {
     throwUnresolvedGatewaySecretInput(params.plan.localPassword.refPath);
   }
   return localResolved;
@@ -183,52 +171,23 @@ function resolveRemoteGatewayCredentials(params: {
     params.remoteTokenFallback === "remote-only"
       ? params.plan.remoteToken.value
       : params.remoteTokenPrecedence === "env-first"
-        ? firstDefined([
-            params.plan.envToken,
-            params.plan.remoteToken.value,
-            params.plan.localToken.value,
-          ])
-        : firstDefined([
-            params.plan.remoteToken.value,
-            params.plan.envToken,
-            params.plan.localToken.value,
-          ]);
+        ? firstDefined([params.plan.envToken, params.plan.remoteToken.value, params.plan.localToken.value])
+        : firstDefined([params.plan.remoteToken.value, params.plan.envToken, params.plan.localToken.value]);
   const password =
     params.remotePasswordFallback === "remote-only" // pragma: allowlist secret
       ? params.plan.remotePassword.value
       : params.remotePasswordPrecedence === "env-first" // pragma: allowlist secret
-        ? firstDefined([
-            params.plan.envPassword,
-            params.plan.remotePassword.value,
-            params.plan.localPassword.value,
-          ])
-        : firstDefined([
-            params.plan.remotePassword.value,
-            params.plan.envPassword,
-            params.plan.localPassword.value,
-          ]);
+        ? firstDefined([params.plan.envPassword, params.plan.remotePassword.value, params.plan.localPassword.value])
+        : firstDefined([params.plan.remotePassword.value, params.plan.envPassword, params.plan.localPassword.value]);
   const localTokenFallbackEnabled = params.remoteTokenFallback !== "remote-only";
-  const localTokenFallback =
-    params.remoteTokenFallback === "remote-only" ? undefined : params.plan.localToken.value;
+  const localTokenFallback = params.remoteTokenFallback === "remote-only" ? undefined : params.plan.localToken.value;
   const localPasswordFallback =
     params.remotePasswordFallback === "remote-only" ? undefined : params.plan.localPassword.value; // pragma: allowlist secret
 
-  if (
-    params.plan.remoteToken.refPath &&
-    !token &&
-    !params.plan.envToken &&
-    !localTokenFallback &&
-    !password
-  ) {
+  if (params.plan.remoteToken.refPath && !token && !params.plan.envToken && !localTokenFallback && !password) {
     throwUnresolvedGatewaySecretInput(params.plan.remoteToken.refPath);
   }
-  if (
-    params.plan.remotePassword.refPath &&
-    !password &&
-    !params.plan.envPassword &&
-    !localPasswordFallback &&
-    !token
-  ) {
+  if (params.plan.remotePassword.refPath && !password && !params.plan.envPassword && !localPasswordFallback && !token) {
     throwUnresolvedGatewaySecretInput(params.plan.remotePassword.refPath);
   }
   if (
@@ -286,8 +245,7 @@ export function resolveGatewayCredentialsFromConfig(params: {
   const mode: GatewayCredentialMode = params.modeOverride ?? plan.configuredMode;
 
   const localTokenPrecedence =
-    params.localTokenPrecedence ??
-    (env.REMOTECLAW_SERVICE_KIND === "gateway" ? "config-first" : "env-first");
+    params.localTokenPrecedence ?? (env.REMOTECLAW_SERVICE_KIND === "gateway" ? "config-first" : "env-first");
   const localPasswordPrecedence = params.localPasswordPrecedence ?? "env-first";
 
   if (mode === "local") {

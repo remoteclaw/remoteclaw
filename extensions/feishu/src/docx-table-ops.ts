@@ -110,10 +110,7 @@ export function calculateAdaptiveColumnWidths(
   // rejects as invalid column_width values.
   const totalLength = maxLengths.reduce((a, b) => a + b, 0);
   if (totalLength === 0) {
-    const equalWidth = Math.max(
-      MIN_COLUMN_WIDTH,
-      Math.min(MAX_COLUMN_WIDTH, Math.floor(totalWidth / column_size)),
-    );
+    const equalWidth = Math.max(MIN_COLUMN_WIDTH, Math.min(MAX_COLUMN_WIDTH, Math.floor(totalWidth / column_size)));
     return new Array(column_size).fill(equalWidth);
   }
 
@@ -200,12 +197,7 @@ export function cleanBlocksForDescendant(blocks: any[]): any[] {
 
 // ============ Table Row/Column Operations ============
 
-export async function insertTableRow(
-  client: Lark.Client,
-  docToken: string,
-  blockId: string,
-  rowIndex: number = -1,
-) {
+export async function insertTableRow(client: Lark.Client, docToken: string, blockId: string, rowIndex: number = -1) {
   const res = await client.docx.documentBlock.patch({
     path: { document_id: docToken, block_id: blockId },
     data: { insert_table_row: { row_index: rowIndex } },

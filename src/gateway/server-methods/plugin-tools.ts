@@ -32,9 +32,7 @@ export const pluginToolsHandlers: GatewayRequestHandlers = {
       const entries = tools.map((tool) => ({
         name: tool.name,
         description:
-          typeof tool.description === "string" && tool.description.trim()
-            ? tool.description.trim()
-            : "Plugin tool",
+          typeof tool.description === "string" && tool.description.trim() ? tool.description.trim() : "Plugin tool",
         inputSchema:
           tool.parameters && typeof tool.parameters === "object"
             ? (tool.parameters as Record<string, unknown>)
@@ -67,11 +65,7 @@ export const pluginToolsHandlers: GatewayRequestHandlers = {
       });
       const tool = tools.find((t) => t.name === toolName);
       if (!tool) {
-        respond(
-          false,
-          undefined,
-          errorShape(ErrorCodes.INVALID_REQUEST, `plugin tool not found: ${toolName}`),
-        );
+        respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, `plugin tool not found: ${toolName}`));
         return;
       }
       const toolCallId = crypto.randomUUID();

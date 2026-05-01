@@ -48,27 +48,21 @@ function resolveWebhookBodyReadLimits(params: {
   profile?: WebhookBodyReadProfile;
 }): { maxBytes: number; timeoutMs: number } {
   const defaults =
-    params.profile === "pre-auth"
-      ? WEBHOOK_BODY_READ_DEFAULTS.preAuth
-      : WEBHOOK_BODY_READ_DEFAULTS.postAuth;
+    params.profile === "pre-auth" ? WEBHOOK_BODY_READ_DEFAULTS.preAuth : WEBHOOK_BODY_READ_DEFAULTS.postAuth;
   const maxBytes =
     typeof params.maxBytes === "number" && Number.isFinite(params.maxBytes) && params.maxBytes > 0
       ? Math.floor(params.maxBytes)
       : defaults.maxBytes;
   const timeoutMs =
-    typeof params.timeoutMs === "number" &&
-    Number.isFinite(params.timeoutMs) &&
-    params.timeoutMs > 0
+    typeof params.timeoutMs === "number" && Number.isFinite(params.timeoutMs) && params.timeoutMs > 0
       ? Math.floor(params.timeoutMs)
       : defaults.timeoutMs;
   return { maxBytes, timeoutMs };
 }
 
-function respondWebhookBodyReadError(params: {
-  res: ServerResponse;
-  code: string;
-  invalidMessage?: string;
-}): { ok: false } {
+function respondWebhookBodyReadError(params: { res: ServerResponse; code: string; invalidMessage?: string }): {
+  ok: false;
+} {
   const { res, code, invalidMessage } = params;
   if (code === "PAYLOAD_TOO_LARGE") {
     res.statusCode = 413;
@@ -99,10 +93,7 @@ export function createWebhookInFlightLimiter(options?: {
     1,
     Math.floor(options?.maxInFlightPerKey ?? WEBHOOK_IN_FLIGHT_DEFAULTS.maxInFlightPerKey),
   );
-  const maxTrackedKeys = Math.max(
-    1,
-    Math.floor(options?.maxTrackedKeys ?? WEBHOOK_IN_FLIGHT_DEFAULTS.maxTrackedKeys),
-  );
+  const maxTrackedKeys = Math.max(1, Math.floor(options?.maxTrackedKeys ?? WEBHOOK_IN_FLIGHT_DEFAULTS.maxTrackedKeys));
   const active = new Map<string, number>();
 
   return {
@@ -268,8 +259,7 @@ export async function readWebhookBodyOrReject(params: {
     return respondWebhookBodyReadError({
       res: params.res,
       code: "INVALID_BODY",
-      invalidMessage:
-        params.invalidBodyMessage ?? (error instanceof Error ? error.message : String(error)),
+      invalidMessage: params.invalidBodyMessage ?? (error instanceof Error ? error.message : String(error)),
     });
   }
 }

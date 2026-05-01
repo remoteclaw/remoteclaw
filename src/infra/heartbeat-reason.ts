@@ -1,12 +1,4 @@
-export type HeartbeatReasonKind =
-  | "retry"
-  | "interval"
-  | "manual"
-  | "exec-event"
-  | "wake"
-  | "cron"
-  | "hook"
-  | "other";
+export type HeartbeatReasonKind = "retry" | "interval" | "manual" | "exec-event" | "wake" | "cron" | "hook" | "other";
 
 function trimReason(reason?: string): string {
   return typeof reason === "string" ? reason.trim() : "";

@@ -13,10 +13,7 @@ export interface BackupMaintenanceFs extends BackupRotationFs {
   copyFile: (from: string, to: string) => Promise<void>;
 }
 
-export async function rotateConfigBackups(
-  configPath: string,
-  ioFs: BackupRotationFs,
-): Promise<void> {
+export async function rotateConfigBackups(configPath: string, ioFs: BackupRotationFs): Promise<void> {
   if (CONFIG_BACKUP_COUNT <= 1) {
     return;
   }
@@ -41,10 +38,7 @@ export async function rotateConfigBackups(
  * (e.g. Windows, some NFS mounts), so we explicitly chmod each backup
  * to owner-only (0o600) to match the main config file.
  */
-export async function hardenBackupPermissions(
-  configPath: string,
-  ioFs: BackupRotationFs,
-): Promise<void> {
+export async function hardenBackupPermissions(configPath: string, ioFs: BackupRotationFs): Promise<void> {
   if (!ioFs.chmod) {
     return;
   }
@@ -69,10 +63,7 @@ export async function hardenBackupPermissions(
  * Only files matching `<configBasename>.bak.*` are considered; the primary
  * `.bak` and numbered `.bak.1` through `.bak.{N-1}` are preserved.
  */
-export async function cleanOrphanBackups(
-  configPath: string,
-  ioFs: BackupRotationFs,
-): Promise<void> {
+export async function cleanOrphanBackups(configPath: string, ioFs: BackupRotationFs): Promise<void> {
   if (!ioFs.readdir) {
     return;
   }
@@ -112,10 +103,7 @@ export async function cleanOrphanBackups(
  * Run the full backup maintenance cycle around config writes.
  * Order matters: rotate ring -> create new .bak -> harden modes -> prune orphan .bak.* files.
  */
-export async function maintainConfigBackups(
-  configPath: string,
-  ioFs: BackupMaintenanceFs,
-): Promise<void> {
+export async function maintainConfigBackups(configPath: string, ioFs: BackupMaintenanceFs): Promise<void> {
   await rotateConfigBackups(configPath, ioFs);
   await ioFs.copyFile(configPath, `${configPath}.bak`).catch(() => {
     // best-effort

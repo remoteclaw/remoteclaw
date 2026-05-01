@@ -91,8 +91,7 @@ async function promptDiscordAllowFrom(params: {
   });
   const resolved = resolveDiscordAccount({ cfg: params.cfg, accountId });
   const token = resolved.token;
-  const existing =
-    params.cfg.channels?.discord?.allowFrom ?? params.cfg.channels?.discord?.dm?.allowFrom ?? [];
+  const existing = params.cfg.channels?.discord?.allowFrom ?? params.cfg.channels?.discord?.dm?.allowFrom ?? [];
   const parseId = (value: string) =>
     parseMentionOrPrefixedId({
       value,
@@ -134,8 +133,7 @@ const dmPolicy: ChannelOnboardingDmPolicy = {
   channel,
   policyKey: "channels.discord.dmPolicy",
   allowFromKey: "channels.discord.allowFrom",
-  getCurrent: (cfg) =>
-    cfg.channels?.discord?.dmPolicy ?? cfg.channels?.discord?.dm?.policy ?? "pairing",
+  getCurrent: (cfg) => cfg.channels?.discord?.dmPolicy ?? cfg.channels?.discord?.dm?.policy ?? "pairing",
   setPolicy: (cfg, policy) =>
     setLegacyChannelDmPolicyWithAllowFrom({
       cfg,
@@ -212,17 +210,15 @@ export const discordOnboardingAdapter: ChannelOnboardingAdapter = {
     });
     next = tokenStep.cfg;
 
-    const currentEntries = Object.entries(resolvedAccount.config.guilds ?? {}).flatMap(
-      ([guildKey, value]) => {
-        const channels = value?.channels ?? {};
-        const channelKeys = Object.keys(channels);
-        if (channelKeys.length === 0) {
-          const input = /^\d+$/.test(guildKey) ? `guild:${guildKey}` : guildKey;
-          return [input];
-        }
-        return channelKeys.map((channelKey) => `${guildKey}/${channelKey}`);
-      },
-    );
+    const currentEntries = Object.entries(resolvedAccount.config.guilds ?? {}).flatMap(([guildKey, value]) => {
+      const channels = value?.channels ?? {};
+      const channelKeys = Object.keys(channels);
+      if (channelKeys.length === 0) {
+        const input = /^\d+$/.test(guildKey) ? `guild:${guildKey}` : guildKey;
+        return [input];
+      }
+      return channelKeys.map((channelKey) => `${guildKey}/${channelKey}`);
+    });
     next = await configureChannelAccessWithAllowlist({
       cfg: next,
       prompter,
@@ -255,12 +251,8 @@ export const discordOnboardingAdapter: ChannelOnboardingAdapter = {
               entries,
             });
             const resolvedChannels = resolved.filter((entry) => entry.resolved && entry.channelId);
-            const resolvedGuilds = resolved.filter(
-              (entry) => entry.resolved && entry.guildId && !entry.channelId,
-            );
-            const unresolved = resolved
-              .filter((entry) => !entry.resolved)
-              .map((entry) => entry.input);
+            const resolvedGuilds = resolved.filter((entry) => entry.resolved && entry.guildId && !entry.channelId);
+            const unresolved = resolved.filter((entry) => !entry.resolved).map((entry) => entry.input);
             await noteChannelLookupSummary({
               prompter,
               label: "Discord channels",
@@ -294,12 +286,9 @@ export const discordOnboardingAdapter: ChannelOnboardingAdapter = {
         const allowlistEntries: Array<{ guildKey: string; channelKey?: string }> = [];
         for (const entry of resolved) {
           const guildKey =
-            entry.guildId ??
-            (entry.guildName ? normalizeDiscordSlug(entry.guildName) : undefined) ??
-            "*";
+            entry.guildId ?? (entry.guildName ? normalizeDiscordSlug(entry.guildName) : undefined) ?? "*";
           const channelKey =
-            entry.channelId ??
-            (entry.channelName ? normalizeDiscordSlug(entry.channelName) : undefined);
+            entry.channelId ?? (entry.channelName ? normalizeDiscordSlug(entry.channelName) : undefined);
           if (!channelKey && guildKey === "*") {
             continue;
           }

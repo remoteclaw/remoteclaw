@@ -2,12 +2,7 @@
 
 import ts from "typescript";
 import { createPairingGuardContext } from "./lib/pairing-guard-context.mjs";
-import {
-  collectFileViolations,
-  getPropertyNameText,
-  runAsScript,
-  toLine,
-} from "./lib/ts-guard-utils.mjs";
+import { collectFileViolations, getPropertyNameText, runAsScript, toLine } from "./lib/ts-guard-utils.mjs";
 
 const { repoRoot, sourceRoots } = createPairingGuardContext(import.meta.url);
 
@@ -54,10 +49,7 @@ function findViolations(content, filePath) {
             reason: "readChannelAllowFromStore call must pass explicit accountId as 3rd arg",
           });
         }
-      } else if (
-        callName === "readLegacyChannelAllowFromStore" ||
-        callName === "readLegacyChannelAllowFromStoreSync"
-      ) {
+      } else if (callName === "readLegacyChannelAllowFromStore" || callName === "readLegacyChannelAllowFromStoreSync") {
         violations.push({
           line: toLine(sourceFile, node),
           reason: `${callName} is legacy-only; use account-scoped readChannelAllowFromStore* APIs`,

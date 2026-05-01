@@ -16,47 +16,33 @@ describe("isNonRecoverableAuthError", () => {
   });
 
   it("blocks reconnect for AUTH_TOKEN_MISSING (misconfigured client)", () => {
-    expect(isNonRecoverableAuthError(makeError(ConnectErrorDetailCodes.AUTH_TOKEN_MISSING))).toBe(
-      true,
-    );
+    expect(isNonRecoverableAuthError(makeError(ConnectErrorDetailCodes.AUTH_TOKEN_MISSING))).toBe(true);
   });
 
   it("blocks reconnect for AUTH_BOOTSTRAP_TOKEN_INVALID", () => {
-    expect(
-      isNonRecoverableAuthError(makeError(ConnectErrorDetailCodes.AUTH_BOOTSTRAP_TOKEN_INVALID)),
-    ).toBe(true);
+    expect(isNonRecoverableAuthError(makeError(ConnectErrorDetailCodes.AUTH_BOOTSTRAP_TOKEN_INVALID))).toBe(true);
   });
 
   it("blocks reconnect for AUTH_PASSWORD_MISSING", () => {
-    expect(
-      isNonRecoverableAuthError(makeError(ConnectErrorDetailCodes.AUTH_PASSWORD_MISSING)),
-    ).toBe(true);
+    expect(isNonRecoverableAuthError(makeError(ConnectErrorDetailCodes.AUTH_PASSWORD_MISSING))).toBe(true);
   });
 
   it("blocks reconnect for AUTH_PASSWORD_MISMATCH (wrong password won't self-correct)", () => {
-    expect(
-      isNonRecoverableAuthError(makeError(ConnectErrorDetailCodes.AUTH_PASSWORD_MISMATCH)),
-    ).toBe(true);
+    expect(isNonRecoverableAuthError(makeError(ConnectErrorDetailCodes.AUTH_PASSWORD_MISMATCH))).toBe(true);
   });
 
   it("blocks reconnect for AUTH_RATE_LIMITED (reconnecting burns more slots)", () => {
-    expect(isNonRecoverableAuthError(makeError(ConnectErrorDetailCodes.AUTH_RATE_LIMITED))).toBe(
-      true,
-    );
+    expect(isNonRecoverableAuthError(makeError(ConnectErrorDetailCodes.AUTH_RATE_LIMITED))).toBe(true);
   });
 
   it("blocks reconnect for PAIRING_REQUIRED", () => {
-    expect(isNonRecoverableAuthError(makeError(ConnectErrorDetailCodes.PAIRING_REQUIRED))).toBe(
-      true,
-    );
+    expect(isNonRecoverableAuthError(makeError(ConnectErrorDetailCodes.PAIRING_REQUIRED))).toBe(true);
   });
 
   it("allows reconnect for AUTH_TOKEN_MISMATCH (device-token fallback flow)", () => {
     // Browser client can queue a single trusted-device retry after shared token mismatch.
     // Blocking reconnect on mismatch here would skip that bounded recovery attempt.
-    expect(isNonRecoverableAuthError(makeError(ConnectErrorDetailCodes.AUTH_TOKEN_MISMATCH))).toBe(
-      false,
-    );
+    expect(isNonRecoverableAuthError(makeError(ConnectErrorDetailCodes.AUTH_TOKEN_MISMATCH))).toBe(false);
   });
 
   it("allows reconnect for unrecognized detail codes (future-proof)", () => {

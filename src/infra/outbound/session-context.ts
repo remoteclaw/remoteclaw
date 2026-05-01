@@ -23,9 +23,7 @@ export function buildOutboundSessionContext(params: {
 }): OutboundSessionContext | undefined {
   const key = normalizeOptionalString(params.sessionKey);
   const explicitAgentId = normalizeOptionalString(params.agentId);
-  const derivedAgentId = key
-    ? resolveSessionAgentId({ sessionKey: key, config: params.cfg })
-    : undefined;
+  const derivedAgentId = key ? resolveSessionAgentId({ sessionKey: key, config: params.cfg }) : undefined;
   const agentId = explicitAgentId ?? derivedAgentId;
   if (!key && !agentId) {
     return undefined;

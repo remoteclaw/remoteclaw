@@ -1,8 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { imageResult, parseAvailableTags } from "./common.js";
 
-const PNG_1X1_BASE64 =
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wn8n0sAAAAASUVORK5CYII=";
+const PNG_1X1_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wn8n0sAAAAASUVORK5CYII=";
 
 describe("parseAvailableTags", () => {
   test("returns undefined for non-array inputs", () => {

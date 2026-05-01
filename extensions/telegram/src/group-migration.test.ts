@@ -11,10 +11,7 @@ function createTelegramGlobalGroupConfig(groups: Record<string, Record<string, u
   };
 }
 
-function createTelegramAccountGroupConfig(
-  accountId: string,
-  groups: Record<string, Record<string, unknown>>,
-) {
+function createTelegramAccountGroupConfig(accountId: string, groups: Record<string, Record<string, unknown>>) {
   return {
     channels: {
       telegram: {

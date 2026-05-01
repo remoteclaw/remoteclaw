@@ -26,9 +26,7 @@ async function collectDoctorWarnings(config: Record<string, unknown>): Promise<s
       config,
       run: loadAndMaybeMigrateDoctorConfig,
     });
-    return noteSpy.mock.calls
-      .filter((call) => call[1] === "Doctor warnings")
-      .map((call) => String(call[0]));
+    return noteSpy.mock.calls.filter((call) => call[1] === "Doctor warnings").map((call) => String(call[0]));
   } finally {
     noteSpy.mockRestore();
   }
@@ -99,9 +97,7 @@ describe("doctor config flow", () => {
     });
 
     expect(
-      doctorWarnings.some(
-        (line) => line.includes('groupPolicy is "allowlist"') && line.includes("groupAllowFrom"),
-      ),
+      doctorWarnings.some((line) => line.includes('groupPolicy is "allowlist"') && line.includes("groupAllowFrom")),
     ).toBe(false);
   });
 
@@ -118,8 +114,7 @@ describe("doctor config flow", () => {
 
     expect(
       doctorWarnings.some(
-        (line) =>
-          line.includes("mutable allowlist") && line.includes("channels.zalouser.groups: Ops Room"),
+        (line) => line.includes("mutable allowlist") && line.includes("channels.zalouser.groups: Ops Room"),
       ),
     ).toBe(true);
   });
@@ -263,10 +258,7 @@ describe("doctor config flow", () => {
           telegram: {
             allowFrom?: string[];
             groupAllowFrom?: string[];
-            groups: Record<
-              string,
-              { allowFrom: string[]; topics: Record<string, { allowFrom: string[] }> }
-            >;
+            groups: Record<string, { allowFrom: string[]; topics: Record<string, { allowFrom: string[] }> }>;
             accounts: Record<string, { allowFrom?: string[]; groupAllowFrom?: string[] }>;
           };
         };
@@ -320,9 +312,7 @@ describe("doctor config flow", () => {
       expect(fetchSpy).not.toHaveBeenCalled();
       expect(
         noteSpy.mock.calls.some((call) =>
-          String(call[0]).includes(
-            "configured Telegram bot credentials are unavailable in this command path",
-          ),
+          String(call[0]).includes("configured Telegram bot credentials are unavailable in this command path"),
         ),
       ).toBe(true);
     } finally {
@@ -410,12 +400,8 @@ describe("doctor config flow", () => {
       expect(cfg.channels.discord.accounts.work.dm.groupChannels).toEqual(["777"]);
       expect(cfg.channels.discord.accounts.work.guilds["200"].users).toEqual(["999"]);
       expect(cfg.channels.discord.accounts.work.guilds["200"].roles).toEqual(["1010"]);
-      expect(cfg.channels.discord.accounts.work.guilds["200"].channels.help.users).toEqual([
-        "1111",
-      ]);
-      expect(cfg.channels.discord.accounts.work.guilds["200"].channels.help.roles).toEqual([
-        "1212",
-      ]);
+      expect(cfg.channels.discord.accounts.work.guilds["200"].channels.help.users).toEqual(["1111"]);
+      expect(cfg.channels.discord.accounts.work.guilds["200"].channels.help.roles).toEqual(["1212"]);
     });
   });
 

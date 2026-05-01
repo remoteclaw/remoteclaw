@@ -3,12 +3,7 @@ import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { saveSessionStore } from "../../../../src/config/sessions.js";
 import { withTempDir } from "../../../../src/test-utils/temp-dir.js";
-import {
-  debugMention,
-  isBotMentionedFromTargets,
-  resolveMentionTargets,
-  resolveOwnerList,
-} from "./mentions.js";
+import { debugMention, isBotMentionedFromTargets, resolveMentionTargets, resolveOwnerList } from "./mentions.js";
 import { getSessionSnapshot } from "./session-snapshot.js";
 import type { WebInboundMsg } from "./types.js";
 import { elide, isLikelyWhatsAppCryptoError } from "./util.js";
@@ -101,10 +96,7 @@ describe("isBotMentionedFromTargets", () => {
 describe("resolveMentionTargets with @lid mapping", () => {
   it("uses @lid reverse mapping for mentions and self identity", async () => {
     await withTempDir("remoteclaw-lid-mapping-", async (authDir) => {
-      await fs.writeFile(
-        path.join(authDir, "lid-mapping-777_reverse.json"),
-        JSON.stringify("+1777"),
-      );
+      await fs.writeFile(path.join(authDir, "lid-mapping-777_reverse.json"), JSON.stringify("+1777"));
 
       const mentionTargets = resolveMentionTargets(
         makeMsg({

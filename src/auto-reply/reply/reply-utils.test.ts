@@ -133,10 +133,7 @@ describe("normalizeReplyPayload", () => {
 
   it("suppresses message when stripping NO_REPLY leaves nothing", () => {
     const reasons: string[] = [];
-    const result = normalizeReplyPayload(
-      { text: "  NO_REPLY  " },
-      { onSkip: (reason) => reasons.push(reason) },
-    );
+    const result = normalizeReplyPayload({ text: "  NO_REPLY  " }, { onSkip: (reason) => reasons.push(reason) });
     expect(result).toBeNull();
     expect(reasons).toEqual(["silent"]);
   });
@@ -167,10 +164,7 @@ describe("typing controller", () => {
     return { typing, onReplyStart };
   }
 
-  function markTypingState(
-    typing: ReturnType<typeof createTypingController>,
-    state: "run" | "idle",
-  ) {
+  function markTypingState(typing: ReturnType<typeof createTypingController>, state: "run" | "idle") {
     if (state === "run") {
       typing.markRunComplete();
       return;
@@ -365,9 +359,7 @@ describe("resolveResponsePrefixTemplate", () => {
     }>,
   >(cases: T) {
     for (const testCase of cases) {
-      expect(resolveResponsePrefixTemplate(testCase.template, testCase.values), testCase.name).toBe(
-        testCase.expected,
-      );
+      expect(resolveResponsePrefixTemplate(testCase.template, testCase.values), testCase.name).toBe(testCase.expected);
     }
   }
 
@@ -466,9 +458,7 @@ describe("createTypingSignaler", () => {
       });
 
       await signaler.signalRunStart();
-      expect(typing.startTypingLoop, testCase.name).toHaveBeenCalledTimes(
-        testCase.expectedStartCalls,
-      );
+      expect(typing.startTypingLoop, testCase.name).toHaveBeenCalledTimes(testCase.expectedStartCalls);
     }
   });
 

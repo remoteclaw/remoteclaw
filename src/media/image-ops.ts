@@ -85,10 +85,8 @@ function readJpegExifOrientation(buffer: Buffer): number | null {
         const byteOrder = buffer.toString("ascii", tiffStart, tiffStart + 2);
         const isLittleEndian = byteOrder === "II";
 
-        const readU16 = (pos: number) =>
-          isLittleEndian ? buffer.readUInt16LE(pos) : buffer.readUInt16BE(pos);
-        const readU32 = (pos: number) =>
-          isLittleEndian ? buffer.readUInt32LE(pos) : buffer.readUInt32BE(pos);
+        const readU16 = (pos: number) => (isLittleEndian ? buffer.readUInt16LE(pos) : buffer.readUInt16BE(pos));
+        const readU32 = (pos: number) => (isLittleEndian ? buffer.readUInt32LE(pos) : buffer.readUInt32BE(pos));
 
         // Read IFD0 offset
         const ifd0Offset = readU32(tiffStart + 4);
@@ -146,14 +144,10 @@ async function sipsMetadataFromBuffer(buffer: Buffer): Promise<ImageMetadata | n
   return await withTempDir(async (dir) => {
     const input = path.join(dir, "in.img");
     await fs.writeFile(input, buffer);
-    const { stdout } = await runExec(
-      "/usr/bin/sips",
-      ["-g", "pixelWidth", "-g", "pixelHeight", input],
-      {
-        timeoutMs: 10_000,
-        maxBuffer: 512 * 1024,
-      },
-    );
+    const { stdout } = await runExec("/usr/bin/sips", ["-g", "pixelWidth", "-g", "pixelHeight", input], {
+      timeoutMs: 10_000,
+      maxBuffer: 512 * 1024,
+    });
     const w = stdout.match(/pixelWidth:\s*([0-9]+)/);
     const h = stdout.match(/pixelHeight:\s*([0-9]+)/);
     if (!w?.[1] || !h?.[1]) {
@@ -171,11 +165,7 @@ async function sipsMetadataFromBuffer(buffer: Buffer): Promise<ImageMetadata | n
   });
 }
 
-async function sipsResizeToJpeg(params: {
-  buffer: Buffer;
-  maxSide: number;
-  quality: number;
-}): Promise<Buffer> {
+async function sipsResizeToJpeg(params: { buffer: Buffer; maxSide: number; quality: number }): Promise<Buffer> {
   return await withTempDir(async (dir) => {
     const input = path.join(dir, "in.img");
     const output = path.join(dir, "out.jpg");

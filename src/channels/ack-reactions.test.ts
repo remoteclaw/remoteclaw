@@ -1,9 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  removeAckReactionAfterReply,
-  shouldAckReaction,
-  shouldAckReactionForWhatsApp,
-} from "./ack-reactions.js";
+import { removeAckReactionAfterReply, shouldAckReaction, shouldAckReactionForWhatsApp } from "./ack-reactions.js";
 
 const flushMicrotasks = async () => {
   await Promise.resolve();

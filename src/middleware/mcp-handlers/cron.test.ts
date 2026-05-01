@@ -72,9 +72,7 @@ describe("registerCronTools", () => {
     const tool = mockServer.tools.get("cron_status");
     await tool!.handler({});
 
-    expect(mockCallGateway).toHaveBeenCalledWith(
-      expect.objectContaining({ method: "cron.status" }),
-    );
+    expect(mockCallGateway).toHaveBeenCalledWith(expect.objectContaining({ method: "cron.status" }));
   });
 
   it("cron_add calls cron.add and records side effect", async () => {

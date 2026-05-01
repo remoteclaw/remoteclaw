@@ -94,9 +94,7 @@ function parseTableRow(row: string): string[] {
  * Convert a markdown table to a LINE Flex Message bubble
  */
 export function convertTableToFlexBubble(table: MarkdownTable): FlexBubble {
-  const parseCell = (
-    value: string | undefined,
-  ): { text: string; bold: boolean; hasMarkup: boolean } => {
+  const parseCell = (value: string | undefined): { text: string; bold: boolean; hasMarkup: boolean } => {
     const raw = value?.trim() ?? "";
     if (!raw) {
       return { text: "-", bold: false, hasMarkup: false };
@@ -116,8 +114,7 @@ export function convertTableToFlexBubble(table: MarkdownTable): FlexBubble {
   const headerCells = table.headers.map((header) => parseCell(header));
   const rowCells = table.rows.map((row) => row.map((cell) => parseCell(cell)));
   const hasInlineMarkup =
-    headerCells.some((cell) => cell.hasMarkup) ||
-    rowCells.some((row) => row.some((cell) => cell.hasMarkup));
+    headerCells.some((cell) => cell.hasMarkup) || rowCells.some((row) => row.some((cell) => cell.hasMarkup));
 
   // For simple 2-column tables, use receipt card format
   if (table.headers.length === 2 && !hasInlineMarkup) {

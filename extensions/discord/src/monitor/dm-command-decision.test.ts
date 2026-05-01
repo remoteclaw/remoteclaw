@@ -62,8 +62,7 @@ describe("handleDiscordDmCommandDecision", () => {
   });
 
   it("creates pairing reply for new pairing requests", async () => {
-    const { allowed, onPairingCreated, onUnauthorized, upsertPairingRequest } =
-      await runPairingDecision();
+    const { allowed, onPairingCreated, onUnauthorized, upsertPairingRequest } = await runPairingDecision();
 
     expect(allowed).toBe(false);
     expect(upsertPairingRequest).toHaveBeenCalledWith({

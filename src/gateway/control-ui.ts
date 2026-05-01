@@ -3,19 +3,12 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
 import type { RemoteClawConfig } from "../config/config.js";
 import { openBoundaryFileSync } from "../infra/boundary-file-read.js";
-import {
-  isPackageProvenControlUiRootSync,
-  resolveControlUiRootSync,
-} from "../infra/control-ui-assets.js";
+import { isPackageProvenControlUiRootSync, resolveControlUiRootSync } from "../infra/control-ui-assets.js";
 import { isWithinDir } from "../infra/path-safety.js";
 import { openVerifiedFileSync } from "../infra/safe-open-sync.js";
 import { AVATAR_MAX_BYTES } from "../shared/avatar-policy.js";
-import { resolveRuntimeServiceVersion } from "../version.js";
 import { DEFAULT_ASSISTANT_IDENTITY, resolveAssistantIdentity } from "./assistant-identity.js";
-import {
-  CONTROL_UI_BOOTSTRAP_CONFIG_PATH,
-  type ControlUiBootstrapConfig,
-} from "./control-ui-contract.js";
+import { CONTROL_UI_BOOTSTRAP_CONFIG_PATH, type ControlUiBootstrapConfig } from "./control-ui-contract.js";
 import { buildControlUiCspHeader, computeInlineScriptHashes } from "./control-ui-csp.js";
 import {
   isReadHttpMethod,
@@ -124,10 +117,7 @@ function sendJson(res: ServerResponse, status: number, body: unknown) {
   res.end(JSON.stringify(body));
 }
 
-function respondControlUiAssetsUnavailable(
-  res: ServerResponse,
-  options?: { configuredRootPath?: string },
-) {
+function respondControlUiAssetsUnavailable(res: ServerResponse, options?: { configuredRootPath?: string }) {
   if (options?.configuredRootPath) {
     respondPlainText(
       res,
@@ -169,9 +159,7 @@ export function handleControlUiAvatarRequest(
   const url = new URL(urlRaw, "http://localhost");
   const basePath = normalizeControlUiBasePath(opts.basePath);
   const pathname = url.pathname;
-  const pathWithBase = basePath
-    ? `${basePath}${CONTROL_UI_AVATAR_PREFIX}/`
-    : `${CONTROL_UI_AVATAR_PREFIX}/`;
+  const pathWithBase = basePath ? `${basePath}${CONTROL_UI_AVATAR_PREFIX}/` : `${CONTROL_UI_AVATAR_PREFIX}/`;
   if (!pathname.startsWith(pathWithBase)) {
     return false;
   }
@@ -236,10 +224,7 @@ function serveResolvedFile(res: ServerResponse, filePath: string, body: Buffer) 
 function serveResolvedIndexHtml(res: ServerResponse, body: string) {
   const hashes = computeInlineScriptHashes(body);
   if (hashes.length > 0) {
-    res.setHeader(
-      "Content-Security-Policy",
-      buildControlUiCspHeader({ inlineScriptHashes: hashes }),
-    );
+    res.setHeader("Content-Security-Policy", buildControlUiCspHeader({ inlineScriptHashes: hashes }));
   }
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.setHeader("Cache-Control", "no-cache");
@@ -247,8 +232,7 @@ function serveResolvedIndexHtml(res: ServerResponse, body: string) {
 }
 
 function isExpectedSafePathError(error: unknown): boolean {
-  const code =
-    typeof error === "object" && error !== null && "code" in error ? String(error.code) : "";
+  const code = typeof error === "object" && error !== null && "code" in error ? String(error.code) : "";
   return code === "ENOENT" || code === "ENOTDIR" || code === "ELOOP";
 }
 
@@ -363,8 +347,6 @@ export function handleControlUiHttpRequest(
       basePath,
       assistantName: identity.name,
       assistantAvatar: avatarValue ?? identity.avatar,
-      assistantAgentId: identity.agentId,
-      serverVersion: resolveRuntimeServiceVersion(process.env),
     } satisfies ControlUiBootstrapConfig);
     return true;
   }
@@ -407,8 +389,7 @@ export function handleControlUiHttpRequest(
     return true;
   }
 
-  const uiPath =
-    basePath && pathname.startsWith(`${basePath}/`) ? pathname.slice(basePath.length) : pathname;
+  const uiPath = basePath && pathname.startsWith(`${basePath}/`) ? pathname.slice(basePath.length) : pathname;
   const rel = (() => {
     if (uiPath === ROOT_PREFIX) {
       return "";

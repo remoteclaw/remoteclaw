@@ -24,9 +24,7 @@ describe("msteams inbound", () => {
 
   describe("normalizeMSTeamsConversationId", () => {
     it("strips the ;messageid suffix", () => {
-      expect(normalizeMSTeamsConversationId("19:abc@thread.tacv2;messageid=deadbeef")).toBe(
-        "19:abc@thread.tacv2",
-      );
+      expect(normalizeMSTeamsConversationId("19:abc@thread.tacv2;messageid=deadbeef")).toBe("19:abc@thread.tacv2");
     });
   });
 
@@ -121,9 +119,7 @@ describe("msteams inbound", () => {
     });
 
     it("returns undefined when no reply blockquote is present", () => {
-      expect(
-        extractMSTeamsQuoteInfo([{ contentType: "text/html", content: "<p>just a message</p>" }]),
-      ).toBeUndefined();
+      expect(extractMSTeamsQuoteInfo([{ contentType: "text/html", content: "<p>just a message</p>" }])).toBeUndefined();
     });
 
     it("uses 'unknown' as sender when sender element is absent", () => {
@@ -181,9 +177,7 @@ describe("msteams inbound", () => {
     });
 
     it("skips non-string content values", () => {
-      expect(
-        extractMSTeamsQuoteInfo([{ contentType: "application/json", content: { foo: "bar" } }]),
-      ).toBeUndefined();
+      expect(extractMSTeamsQuoteInfo([{ contentType: "application/json", content: { foo: "bar" } }])).toBeUndefined();
     });
 
     it("handles object content with .text property containing the reply HTML", () => {
@@ -192,9 +186,7 @@ describe("msteams inbound", () => {
         '<strong itemprop="mri">Dave</strong>' +
         '<p itemprop="copy">hello from object</p>' +
         "</blockquote>";
-      const result = extractMSTeamsQuoteInfo([
-        { contentType: "text/html", content: { text: htmlContent } },
-      ]);
+      const result = extractMSTeamsQuoteInfo([{ contentType: "text/html", content: { text: htmlContent } }]);
       expect(result).toEqual({ sender: "Dave", body: "hello from object" });
     });
 
@@ -204,17 +196,12 @@ describe("msteams inbound", () => {
         '<strong itemprop="mri">Eve</strong>' +
         '<p itemprop="copy">hello from body field</p>' +
         "</blockquote>";
-      const result = extractMSTeamsQuoteInfo([
-        { contentType: "text/html", content: { body: htmlContent } },
-      ]);
+      const result = extractMSTeamsQuoteInfo([{ contentType: "text/html", content: { body: htmlContent } }]);
       expect(result).toEqual({ sender: "Eve", body: "hello from body field" });
     });
 
     it("finds quote in second attachment when first has no quote", () => {
-      const result = extractMSTeamsQuoteInfo([
-        { contentType: "text/plain", content: "plain text" },
-        replyAttachment(),
-      ]);
+      const result = extractMSTeamsQuoteInfo([{ contentType: "text/plain", content: "plain text" }, replyAttachment()]);
       expect(result).toEqual({ sender: "Alice", body: "Hello world" });
     });
   });

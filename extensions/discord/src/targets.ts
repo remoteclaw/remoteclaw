@@ -16,10 +16,7 @@ export type DiscordTarget = MessagingTarget;
 
 type DiscordTargetParseOptions = MessagingTargetParseOptions;
 
-export function parseDiscordTarget(
-  raw: string,
-  options: DiscordTargetParseOptions = {},
-): DiscordTarget | undefined {
+export function parseDiscordTarget(raw: string, options: DiscordTargetParseOptions = {}): DiscordTarget | undefined {
   const trimmed = raw.trim();
   if (!trimmed) {
     return undefined;
@@ -116,10 +113,7 @@ export async function resolveDiscordTarget(
   return parseDiscordTarget(trimmed, parseOptions);
 }
 
-function safeParseDiscordTarget(
-  input: string,
-  options: DiscordTargetParseOptions,
-): MessagingTarget | undefined {
+function safeParseDiscordTarget(input: string, options: DiscordTargetParseOptions): MessagingTarget | undefined {
   try {
     return parseDiscordTarget(input, options);
   } catch {

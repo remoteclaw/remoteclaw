@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeSlackMessagingTarget } from "../../../src/channels/plugins/normalize/slack.js";
-import { parseSlackTarget, resolveSlackChannelId } from "./targets.js";
+import { normalizeSlackMessagingTarget, parseSlackTarget, resolveSlackChannelId } from "./targets.js";
 
 describe("parseSlackTarget", () => {
   it("parses user mentions and prefixes", () => {
@@ -38,9 +37,7 @@ describe("parseSlackTarget", () => {
       { input: "#general-1", expectedMessage: /Slack channels require a channel id/ },
     ] as const;
     for (const testCase of cases) {
-      expect(() => parseSlackTarget(testCase.input), testCase.input).toThrow(
-        testCase.expectedMessage,
-      );
+      expect(() => parseSlackTarget(testCase.input), testCase.input).toThrow(testCase.expectedMessage);
     }
   });
 });

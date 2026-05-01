@@ -5,9 +5,7 @@ import { noteMacLaunchctlGatewayEnvOverrides } from "./doctor-platform-notes.js"
 describe("noteMacLaunchctlGatewayEnvOverrides", () => {
   it("prints clear unsetenv instructions for token override", async () => {
     const noteFn = vi.fn();
-    const getenv = vi.fn(async (name: string) =>
-      name === "REMOTECLAW_GATEWAY_TOKEN" ? "launchctl-token" : undefined,
-    );
+    const getenv = vi.fn(async (name: string) => (name === "REMOTECLAW_GATEWAY_TOKEN" ? "launchctl-token" : undefined));
     const cfg = {
       gateway: {
         auth: {

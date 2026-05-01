@@ -28,9 +28,7 @@ describe("gateway control-plane write rate limit", () => {
     } as unknown as Parameters<typeof handleGatewayRequest>[0]["context"];
   }
 
-  function buildConnect(): NonNullable<
-    Parameters<typeof handleGatewayRequest>[0]["client"]
-  >["connect"] {
+  function buildConnect(): NonNullable<Parameters<typeof handleGatewayRequest>[0]["client"]>["connect"] {
     return {
       role: "operator",
       scopes: ["operator.admin"],
@@ -118,11 +116,7 @@ describe("gateway control-plane write rate limit", () => {
     await runRequest({ method: "update.run", context, client, handler });
 
     const blocked = await runRequest({ method: "update.run", context, client, handler });
-    expect(blocked).toHaveBeenCalledWith(
-      false,
-      undefined,
-      expect.objectContaining({ code: "UNAVAILABLE" }),
-    );
+    expect(blocked).toHaveBeenCalledWith(false, undefined, expect.objectContaining({ code: "UNAVAILABLE" }));
 
     vi.advanceTimersByTime(60_001);
 

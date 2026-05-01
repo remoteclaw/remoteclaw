@@ -14,9 +14,7 @@ export function normalizeDiscordListenerTimeoutMs(raw: number | undefined): numb
   return clampDiscordTimeoutMs(raw!, 1_000);
 }
 
-export function normalizeDiscordInboundWorkerTimeoutMs(
-  raw: number | undefined,
-): number | undefined {
+export function normalizeDiscordInboundWorkerTimeoutMs(raw: number | undefined): number | undefined {
   if (raw === 0) {
     return undefined;
   }
@@ -33,9 +31,7 @@ export function isAbortError(error: unknown): boolean {
   return "name" in error && String((error as { name?: unknown }).name) === "AbortError";
 }
 
-export function mergeAbortSignals(
-  signals: Array<AbortSignal | undefined>,
-): AbortSignal | undefined {
+export function mergeAbortSignals(signals: Array<AbortSignal | undefined>): AbortSignal | undefined {
   const activeSignals = signals.filter((signal): signal is AbortSignal => Boolean(signal));
   if (activeSignals.length === 0) {
     return undefined;
@@ -74,10 +70,7 @@ export async function runDiscordTaskWithTimeout(params: {
   onErrorAfterTimeout?: (error: unknown) => void;
 }): Promise<boolean> {
   const timeoutAbortController = params.timeoutMs ? new AbortController() : undefined;
-  const mergedAbortSignal = mergeAbortSignals([
-    ...(params.abortSignals ?? []),
-    timeoutAbortController?.signal,
-  ]);
+  const mergedAbortSignal = mergeAbortSignals([...(params.abortSignals ?? []), timeoutAbortController?.signal]);
 
   let timedOut = false;
   let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
@@ -101,10 +94,7 @@ export async function runDiscordTaskWithTimeout(params: {
       timeoutHandle = setTimeout(() => resolve("timeout"), params.timeoutMs);
       timeoutHandle.unref?.();
     });
-    const result = await Promise.race([
-      runPromise.then(() => "completed" as const),
-      timeoutPromise,
-    ]);
+    const result = await Promise.race([runPromise.then(() => "completed" as const), timeoutPromise]);
     if (result === "timeout") {
       timedOut = true;
       timeoutAbortController?.abort();

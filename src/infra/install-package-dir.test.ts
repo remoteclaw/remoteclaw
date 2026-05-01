@@ -16,9 +16,7 @@ vi.mock("../process/exec.js", async () => {
 
 async function listMatchingDirs(root: string, prefix: string): Promise<string[]> {
   const entries = await fs.readdir(root, { withFileTypes: true });
-  return entries
-    .filter((entry) => entry.isDirectory() && entry.name.startsWith(prefix))
-    .map((entry) => entry.name);
+  return entries.filter((entry) => entry.isDirectory() && entry.name.startsWith(prefix)).map((entry) => entry.name);
 }
 
 async function listMatchingEntries(root: string, prefix: string): Promise<string[]> {
@@ -41,8 +39,7 @@ function normalizeComparablePath(filePath: string): string {
   } catch {
     comparableParent = parent;
   }
-  const basename =
-    process.platform === "win32" ? path.basename(resolved).toLowerCase() : path.basename(resolved);
+  const basename = process.platform === "win32" ? path.basename(resolved).toLowerCase() : path.basename(resolved);
   return path.join(comparableParent, basename);
 }
 
@@ -52,11 +49,7 @@ async function rebindInstallBasePath(params: {
   outsideTarget: string;
 }): Promise<void> {
   await fs.rename(params.installBaseDir, params.preservedDir);
-  await fs.symlink(
-    params.outsideTarget,
-    params.installBaseDir,
-    process.platform === "win32" ? "junction" : undefined,
-  );
+  await fs.symlink(params.outsideTarget, params.installBaseDir, process.platform === "win32" ? "junction" : undefined);
 }
 
 async function withInstallBaseReboundOnRealpathCall<T>(params: {
@@ -69,22 +62,20 @@ async function withInstallBaseReboundOnRealpathCall<T>(params: {
   const installBasePath = normalizeComparablePath(params.installBaseDir);
   const realRealpath = fs.realpath.bind(fs);
   let installBaseRealpathCalls = 0;
-  const realpathSpy = vi
-    .spyOn(fs, "realpath")
-    .mockImplementation(async (...args: Parameters<typeof fs.realpath>) => {
-      const filePath = normalizeComparablePath(String(args[0]));
-      if (filePath === installBasePath) {
-        installBaseRealpathCalls += 1;
-        if (installBaseRealpathCalls === params.rebindAtCall) {
-          await rebindInstallBasePath({
-            installBaseDir: params.installBaseDir,
-            preservedDir: params.preservedDir,
-            outsideTarget: params.outsideTarget,
-          });
-        }
+  const realpathSpy = vi.spyOn(fs, "realpath").mockImplementation(async (...args: Parameters<typeof fs.realpath>) => {
+    const filePath = normalizeComparablePath(String(args[0]));
+    if (filePath === installBasePath) {
+      installBaseRealpathCalls += 1;
+      if (installBaseRealpathCalls === params.rebindAtCall) {
+        await rebindInstallBasePath({
+          installBaseDir: params.installBaseDir,
+          preservedDir: params.preservedDir,
+          outsideTarget: params.outsideTarget,
+        });
       }
-      return await realRealpath(...args);
-    });
+    }
+    return await realRealpath(...args);
+  });
   try {
     return await params.run();
   } finally {
@@ -123,9 +114,7 @@ describe("installPackageDir", () => {
       depsLogMessage: "Installing deps…",
       afterCopy: async (installedDir) => {
         expect(installedDir).not.toBe(targetDir);
-        await expect(fs.readFile(path.join(installedDir, "marker.txt"), "utf8")).resolves.toBe(
-          "new",
-        );
+        await expect(fs.readFile(path.join(installedDir, "marker.txt"), "utf8")).resolves.toBe("new");
         throw new Error("validation boom");
       },
     });
@@ -135,12 +124,8 @@ describe("installPackageDir", () => {
       error: "post-copy validation failed: Error: validation boom",
     });
     await expect(fs.readFile(path.join(targetDir, "marker.txt"), "utf8")).resolves.toBe("old");
-    await expect(
-      listMatchingDirs(installBaseDir, ".remoteclaw-install-stage-"),
-    ).resolves.toHaveLength(0);
-    await expect(
-      listMatchingDirs(installBaseDir, ".remoteclaw-install-backups"),
-    ).resolves.toHaveLength(0);
+    await expect(listMatchingDirs(installBaseDir, ".remoteclaw-install-stage-")).resolves.toHaveLength(0);
+    await expect(listMatchingDirs(installBaseDir, ".remoteclaw-install-backups")).resolves.toHaveLength(0);
   });
 
   it("restores the original install if publish rename fails", async () => {
@@ -178,9 +163,7 @@ describe("installPackageDir", () => {
       error: "failed to copy plugin: Error: publish boom",
     });
     await expect(fs.readFile(path.join(targetDir, "marker.txt"), "utf8")).resolves.toBe("old");
-    await expect(
-      listMatchingDirs(installBaseDir, ".remoteclaw-install-stage-"),
-    ).resolves.toHaveLength(0);
+    await expect(listMatchingDirs(installBaseDir, ".remoteclaw-install-stage-")).resolves.toHaveLength(0);
     const backupRoot = path.join(installBaseDir, ".remoteclaw-install-backups");
     await expect(fs.readdir(backupRoot)).resolves.toHaveLength(0);
   });
@@ -222,14 +205,10 @@ describe("installPackageDir", () => {
       },
     });
 
-    await expect(
-      fs.stat(path.join(outsideInstallRoot, "demo", "marker.txt")),
-    ).rejects.toMatchObject({
+    await expect(fs.stat(path.join(outsideInstallRoot, "demo", "marker.txt"))).rejects.toMatchObject({
       code: "ENOENT",
     });
-    expect(warnings).toContain(
-      "Install base directory changed during install; aborting staged publish.",
-    );
+    expect(warnings).toContain("Install base directory changed during install; aborting staged publish.");
   });
 
   it("warns and leaves the backup in place when the install base changes before backup cleanup", async () => {
@@ -266,12 +245,8 @@ describe("installPackageDir", () => {
     });
 
     expect(result).toEqual({ ok: true });
-    expect(warnings).toContain(
-      "Install base directory changed before backup cleanup; leaving backup in place.",
-    );
-    await expect(
-      fs.stat(path.join(outsideInstallRoot, "demo", "marker.txt")),
-    ).rejects.toMatchObject({
+    expect(warnings).toContain("Install base directory changed before backup cleanup; leaving backup in place.");
+    await expect(fs.stat(path.join(outsideInstallRoot, "demo", "marker.txt"))).rejects.toMatchObject({
       code: "ENOENT",
     });
     const backupRoot = path.join(preservedInstallRoot, ".remoteclaw-install-backups");
@@ -348,9 +323,7 @@ describe("installPackageDir", () => {
       await expect(fs.stat(path.join(cwd ?? "", ".npmrc"))).rejects.toMatchObject({
         code: "ENOENT",
       });
-      await expect(
-        listMatchingEntries(cwd ?? "", ".remoteclaw-install-hidden-npmrc-"),
-      ).resolves.toHaveLength(1);
+      await expect(listMatchingEntries(cwd ?? "", ".remoteclaw-install-hidden-npmrc-")).resolves.toHaveLength(1);
       return {
         stdout: "",
         stderr: "",
@@ -373,8 +346,6 @@ describe("installPackageDir", () => {
 
     expect(result).toEqual({ ok: true });
     await expect(fs.readFile(path.join(targetDir, ".npmrc"), "utf8")).resolves.toBe(npmrcContent);
-    await expect(
-      listMatchingEntries(targetDir, ".remoteclaw-install-hidden-npmrc-"),
-    ).resolves.toHaveLength(0);
+    await expect(listMatchingEntries(targetDir, ".remoteclaw-install-hidden-npmrc-")).resolves.toHaveLength(0);
   });
 });

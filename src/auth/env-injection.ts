@@ -74,10 +74,7 @@ export function resolveProviderEnvVarName(provider: string): string | undefined 
  * cooldown profiles pushed to the end. The selected profile is marked as
  * used so subsequent calls rotate to the next one.
  */
-async function pickNextProfile(
-  store: AuthProfileStore,
-  profiles: string[],
-): Promise<string | undefined> {
+async function pickNextProfile(store: AuthProfileStore, profiles: string[]): Promise<string | undefined> {
   if (profiles.length === 0) {
     return undefined;
   }
@@ -204,9 +201,7 @@ export async function resolveAuthEnv(params: {
   // (Bearer token vs x-api-key header).
   const credType = store.profiles[profileId]?.type;
   const effectiveEnvVar =
-    envVarName === "ANTHROPIC_API_KEY" && credType === "token"
-      ? "CLAUDE_CODE_OAUTH_TOKEN"
-      : envVarName;
+    envVarName === "ANTHROPIC_API_KEY" && credType === "token" ? "CLAUDE_CODE_OAUTH_TOKEN" : envVarName;
 
   return { [effectiveEnvVar]: resolved.apiKey };
 }

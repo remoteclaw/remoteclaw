@@ -3,16 +3,11 @@ import { createAccountListHelpers, type RemoteClawConfig } from "remoteclaw/plug
 import type { ResolvedZalouserAccount, ZalouserAccountConfig, ZalouserConfig } from "./types.js";
 import { checkZaloAuthenticated, getZaloUserInfo } from "./zalo-js.js";
 
-const {
-  listAccountIds: listZalouserAccountIds,
-  resolveDefaultAccountId: resolveDefaultZalouserAccountId,
-} = createAccountListHelpers("zalouser");
+const { listAccountIds: listZalouserAccountIds, resolveDefaultAccountId: resolveDefaultZalouserAccountId } =
+  createAccountListHelpers("zalouser");
 export { listZalouserAccountIds, resolveDefaultZalouserAccountId };
 
-function resolveAccountConfig(
-  cfg: RemoteClawConfig,
-  accountId: string,
-): ZalouserAccountConfig | undefined {
+function resolveAccountConfig(cfg: RemoteClawConfig, accountId: string): ZalouserAccountConfig | undefined {
   const accounts = (cfg.channels?.zalouser as ZalouserConfig | undefined)?.accounts;
   if (!accounts || typeof accounts !== "object") {
     return undefined;
@@ -20,10 +15,7 @@ function resolveAccountConfig(
   return accounts[accountId] as ZalouserAccountConfig | undefined;
 }
 
-function mergeZalouserAccountConfig(
-  cfg: RemoteClawConfig,
-  accountId: string,
-): ZalouserAccountConfig {
+function mergeZalouserAccountConfig(cfg: RemoteClawConfig, accountId: string): ZalouserAccountConfig {
   const raw = (cfg.channels?.zalouser ?? {}) as ZalouserConfig;
   const { accounts: _ignored, defaultAccount: _ignored2, ...base } = raw;
   const account = resolveAccountConfig(cfg, accountId) ?? {};
@@ -48,8 +40,7 @@ function resolveProfile(config: ZalouserAccountConfig, accountId: string): strin
 
 function resolveZalouserAccountBase(params: { cfg: RemoteClawConfig; accountId?: string | null }) {
   const accountId = normalizeAccountId(params.accountId);
-  const baseEnabled =
-    (params.cfg.channels?.zalouser as ZalouserConfig | undefined)?.enabled !== false;
+  const baseEnabled = (params.cfg.channels?.zalouser as ZalouserConfig | undefined)?.enabled !== false;
   const merged = mergeZalouserAccountConfig(params.cfg, accountId);
   return {
     accountId,
@@ -92,19 +83,13 @@ export function resolveZalouserAccountSync(params: {
   };
 }
 
-export async function listEnabledZalouserAccounts(
-  cfg: RemoteClawConfig,
-): Promise<ResolvedZalouserAccount[]> {
+export async function listEnabledZalouserAccounts(cfg: RemoteClawConfig): Promise<ResolvedZalouserAccount[]> {
   const ids = listZalouserAccountIds(cfg);
-  const accounts = await Promise.all(
-    ids.map((accountId) => resolveZalouserAccount({ cfg, accountId })),
-  );
+  const accounts = await Promise.all(ids.map((accountId) => resolveZalouserAccount({ cfg, accountId })));
   return accounts.filter((account) => account.enabled);
 }
 
-export async function getZcaUserInfo(
-  profile: string,
-): Promise<{ userId?: string; displayName?: string } | null> {
+export async function getZcaUserInfo(profile: string): Promise<{ userId?: string; displayName?: string } | null> {
   const info = await getZaloUserInfo(profile);
   if (!info) {
     return null;

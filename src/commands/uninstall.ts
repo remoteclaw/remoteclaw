@@ -26,9 +26,7 @@ const multiselectStyled = <T>(params: Parameters<typeof multiselect<T>>[0]) =>
   multiselect({
     ...params,
     message: stylePromptMessage(params.message),
-    options: params.options.map((opt) =>
-      opt.hint === undefined ? opt : { ...opt, hint: stylePromptHint(opt.hint) },
-    ),
+    options: params.options.map((opt) => (opt.hint === undefined ? opt : { ...opt, hint: stylePromptHint(opt.hint) })),
   });
 
 function buildScopeSelection(opts: UninstallOptions): {
@@ -173,11 +171,9 @@ export async function uninstallCommand(runtime: RuntimeEnv, opts: UninstallOptio
   }
 
   if (scopes.has("state")) {
-    await removeStateAndLinkedPaths(
-      { stateDir, configPath, oauthDir, configInsideState, oauthInsideState },
-      runtime,
-      { dryRun },
-    );
+    await removeStateAndLinkedPaths({ stateDir, configPath, oauthDir, configInsideState, oauthInsideState }, runtime, {
+      dryRun,
+    });
   }
 
   if (scopes.has("workspace")) {

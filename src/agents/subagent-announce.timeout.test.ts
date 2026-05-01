@@ -163,9 +163,7 @@ describe("subagent announce timeout config", () => {
   it("uses 90s timeout by default for direct announce agent call", async () => {
     await runAnnounceFlowForTest("run-default-timeout");
 
-    const directAgentCall = findGatewayCall(
-      (call) => call.method === "agent" && call.expectFinal === true,
-    );
+    const directAgentCall = findGatewayCall((call) => call.method === "agent" && call.expectFinal === true);
     expect(directAgentCall?.timeoutMs).toBe(90_000);
   });
 
@@ -173,9 +171,7 @@ describe("subagent announce timeout config", () => {
     setConfiguredAnnounceTimeout(90_000);
     await runAnnounceFlowForTest("run-config-timeout-agent");
 
-    const directAgentCall = findGatewayCall(
-      (call) => call.method === "agent" && call.expectFinal === true,
-    );
+    const directAgentCall = findGatewayCall((call) => call.method === "agent" && call.expectFinal === true);
     expect(directAgentCall?.timeoutMs).toBe(90_000);
   });
 
@@ -189,9 +185,7 @@ describe("subagent announce timeout config", () => {
       expectsCompletionMessage: true,
     });
 
-    const completionDirectAgentCall = findGatewayCall(
-      (call) => call.method === "agent" && call.expectFinal === true,
-    );
+    const completionDirectAgentCall = findGatewayCall((call) => call.method === "agent" && call.expectFinal === true);
     expect(completionDirectAgentCall?.timeoutMs).toBe(90_000);
   });
 
@@ -215,9 +209,7 @@ describe("subagent announce timeout config", () => {
         }),
       ).resolves.toBe(false);
 
-      const directAgentCalls = gatewayCalls.filter(
-        (call) => call.method === "agent" && call.expectFinal === true,
-      );
+      const directAgentCalls = gatewayCalls.filter((call) => call.method === "agent" && call.expectFinal === true);
       expect(directAgentCalls).toHaveLength(1);
     } finally {
       vi.useRealTimers();
@@ -234,9 +226,7 @@ describe("subagent announce timeout config", () => {
     });
 
     expect(didAnnounce).toBe(false);
-    expect(
-      findGatewayCall((call) => call.method === "agent" && call.expectFinal === true),
-    ).toBeUndefined();
+    expect(findGatewayCall((call) => call.method === "agent" && call.expectFinal === true)).toBeUndefined();
   });
 
   it("regression, supports cron announceType without declaration order errors", async () => {
@@ -247,11 +237,8 @@ describe("subagent announce timeout config", () => {
     });
 
     expect(didAnnounce).toBe(true);
-    const directAgentCall = findGatewayCall(
-      (call) => call.method === "agent" && call.expectFinal === true,
-    );
-    const internalEvents =
-      (directAgentCall?.params?.internalEvents as Array<{ announceType?: string }>) ?? [];
+    const directAgentCall = findGatewayCall((call) => call.method === "agent" && call.expectFinal === true);
+    const internalEvents = (directAgentCall?.params?.internalEvents as Array<{ announceType?: string }>) ?? [];
     expect(internalEvents[0]?.announceType).toBe("cron job");
   });
 
@@ -330,8 +317,7 @@ describe("subagent announce timeout config", () => {
     });
 
     const directAgentCall = findFinalDirectAgentCall();
-    const internalEvents =
-      (directAgentCall?.params?.internalEvents as Array<{ result?: string }>) ?? [];
+    const internalEvents = (directAgentCall?.params?.internalEvents as Array<{ result?: string }>) ?? [];
     expect(internalEvents[0]?.result).toContain("3 tool call(s)");
     expect(internalEvents[0]?.result).not.toContain("data");
   });
@@ -381,8 +367,7 @@ describe("subagent announce timeout config", () => {
     });
 
     const directAgentCall = findFinalDirectAgentCall();
-    const internalEvents =
-      (directAgentCall?.params?.internalEvents as Array<{ result?: string }>) ?? [];
+    const internalEvents = (directAgentCall?.params?.internalEvents as Array<{ result?: string }>) ?? [];
     expect(internalEvents[0]?.result).toContain("Read 12 files");
     expect(internalEvents[0]?.result).not.toContain("grep output");
   });
@@ -413,9 +398,7 @@ describe("subagent announce timeout config", () => {
       roundOneReply: undefined,
     });
 
-    expect(
-      findGatewayCall((call) => call.method === "agent" && call.expectFinal === true),
-    ).toBeUndefined();
+    expect(findGatewayCall((call) => call.method === "agent" && call.expectFinal === true)).toBeUndefined();
   });
 
   it("prefers NO_REPLY partial progress over a longer latest assistant reply", async () => {
@@ -444,8 +427,6 @@ describe("subagent announce timeout config", () => {
       roundOneReply: undefined,
     });
 
-    expect(
-      findGatewayCall((call) => call.method === "agent" && call.expectFinal === true),
-    ).toBeUndefined();
+    expect(findGatewayCall((call) => call.method === "agent" && call.expectFinal === true)).toBeUndefined();
   });
 });

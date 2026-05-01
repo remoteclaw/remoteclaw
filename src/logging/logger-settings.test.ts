@@ -1,13 +1,12 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { fallbackRequireMock, readLoggingConfigMock, shouldSkipMutatingLoggingConfigReadMock } =
-  vi.hoisted(() => ({
-    readLoggingConfigMock: vi.fn(() => undefined),
-    shouldSkipMutatingLoggingConfigReadMock: vi.fn(() => false),
-    fallbackRequireMock: vi.fn(() => {
-      throw new Error("config fallback should not be used in this test");
-    }),
-  }));
+const { fallbackRequireMock, readLoggingConfigMock, shouldSkipMutatingLoggingConfigReadMock } = vi.hoisted(() => ({
+  readLoggingConfigMock: vi.fn(() => undefined),
+  shouldSkipMutatingLoggingConfigReadMock: vi.fn(() => false),
+  fallbackRequireMock: vi.fn(() => {
+    throw new Error("config fallback should not be used in this test");
+  }),
+}));
 
 vi.mock("./config.js", () => ({
   readLoggingConfig: readLoggingConfigMock,

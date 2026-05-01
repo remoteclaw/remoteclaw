@@ -1,12 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { sendImageZalouser, sendLinkZalouser, sendMessageZalouser } from "./send.js";
 import { executeZalouserTool } from "./tool.js";
-import {
-  checkZaloAuthenticated,
-  getZaloUserInfo,
-  listZaloFriendsMatching,
-  listZaloGroupsMatching,
-} from "./zalo-js.js";
+import { checkZaloAuthenticated, getZaloUserInfo, listZaloFriendsMatching, listZaloGroupsMatching } from "./zalo-js.js";
 
 vi.mock("./send.js", () => ({
   sendMessageZalouser: vi.fn(),

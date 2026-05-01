@@ -34,10 +34,7 @@ function parseBasicPassword(authorization: string): string | undefined {
   }
 }
 
-export function isAuthorizedBrowserRequest(
-  req: IncomingMessage,
-  auth: { token?: string; password?: string },
-): boolean {
+export function isAuthorizedBrowserRequest(req: IncomingMessage, auth: { token?: string; password?: string }): boolean {
   const authorization = firstHeaderValue(req.headers.authorization).trim();
 
   if (auth.token) {

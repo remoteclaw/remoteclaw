@@ -21,10 +21,7 @@ import {
   sendVoiceMessageDiscord,
   unpinMessageDiscord,
 } from "../../../extensions/discord/src/send.js";
-import type {
-  DiscordSendComponents,
-  DiscordSendEmbeds,
-} from "../../../extensions/discord/src/send.shared.js";
+import type { DiscordSendComponents, DiscordSendEmbeds } from "../../../extensions/discord/src/send.shared.js";
 import { resolveDiscordChannelId } from "../../../extensions/discord/src/targets.js";
 import type { DiscordActionConfig } from "../../config/config.js";
 import type { RemoteClawConfig } from "../../config/config.js";
@@ -80,10 +77,7 @@ export async function handleDiscordMessagingAction(
     if (!message || typeof message !== "object") {
       return message;
     }
-    return withNormalizedTimestamp(
-      message as Record<string, unknown>,
-      (message as { timestamp?: unknown }).timestamp,
-    );
+    return withNormalizedTimestamp(message as Record<string, unknown>, (message as { timestamp?: unknown }).timestamp);
   };
   switch (action) {
     case "react": {
@@ -205,9 +199,7 @@ export async function handleDiscordMessagingAction(
         messageId = parsed.messageId;
       }
       if (!guildId || !channelId || !messageId) {
-        throw new Error(
-          "Discord message fetch requires guildId, channelId, and messageId (or a valid messageLink).",
-        );
+        throw new Error("Discord message fetch requires guildId, channelId, and messageId (or a valid messageLink).");
       }
       const message = accountId
         ? await fetchMessageDiscord(channelId, messageId, { accountId })
@@ -280,9 +272,7 @@ export async function handleDiscordMessagingAction(
           throw new Error("Discord components cannot include embeds.");
         }
         const normalizedContent = content?.trim() ? content : undefined;
-        const payload = componentSpec.text
-          ? componentSpec
-          : { ...componentSpec, text: normalizedContent };
+        const payload = componentSpec.text ? componentSpec : { ...componentSpec, text: normalizedContent };
         const result = await sendDiscordComponentMessage(to, payload, {
           ...cfgOptions,
           ...(accountId ? { accountId } : {}),
@@ -299,9 +289,7 @@ export async function handleDiscordMessagingAction(
       // Handle voice message sending
       if (asVoice) {
         if (!mediaUrl) {
-          throw new Error(
-            "Voice messages require a media file reference (mediaUrl, path, or filePath).",
-          );
+          throw new Error("Voice messages require a media file reference (mediaUrl, path, or filePath).");
         }
         if (content && content.trim()) {
           throw new Error(
@@ -468,9 +456,7 @@ export async function handleDiscordMessagingAction(
         throw new Error("Discord pins are disabled.");
       }
       const channelId = resolveChannelId();
-      const pins = accountId
-        ? await listPinsDiscord(channelId, { accountId })
-        : await listPinsDiscord(channelId);
+      const pins = accountId ? await listPinsDiscord(channelId, { accountId }) : await listPinsDiscord(channelId);
       return jsonResult({ ok: true, pins: pins.map((pin) => normalizeMessage(pin)) });
     }
     case "searchMessages": {
@@ -514,9 +500,7 @@ export async function handleDiscordMessagingAction(
       const resultsRecord = results as Record<string, unknown>;
       const messages = resultsRecord.messages;
       const normalizedMessages = Array.isArray(messages)
-        ? messages.map((group) =>
-            Array.isArray(group) ? group.map((msg) => normalizeMessage(msg)) : group,
-          )
+        ? messages.map((group) => (Array.isArray(group) ? group.map((msg) => normalizeMessage(msg)) : group))
         : messages;
       return jsonResult({
         ok: true,

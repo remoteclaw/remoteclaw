@@ -115,9 +115,7 @@ describe("handleGatewayPostJsonEndpoint", () => {
     );
 
     expect(result).toBeUndefined();
-    expect(vi.mocked(authorizeOperatorScopesForMethod)).toHaveBeenCalledWith("chat.send", [
-      "operator.approvals",
-    ]);
+    expect(vi.mocked(authorizeOperatorScopesForMethod)).toHaveBeenCalledWith("chat.send", ["operator.approvals"]);
     expect(mockedSendJson).toHaveBeenCalledWith(
       expect.anything(),
       403,

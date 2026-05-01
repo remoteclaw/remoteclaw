@@ -95,9 +95,7 @@ export const listGatewayAgentChannelAliases = (): string[] =>
 export type GatewayAgentChannelHint = GatewayMessageChannel | "last";
 
 export const listGatewayAgentChannelValues = (): string[] =>
-  Array.from(
-    new Set([...listGatewayMessageChannels(), "last", ...listGatewayAgentChannelAliases()]),
-  );
+  Array.from(new Set([...listGatewayMessageChannels(), "last", ...listGatewayAgentChannelAliases()]));
 
 export function isGatewayMessageChannel(value: string): value is GatewayMessageChannel {
   return listGatewayMessageChannels().includes(value as GatewayMessageChannel);
@@ -107,9 +105,7 @@ export function isDeliverableMessageChannel(value: string): value is Deliverable
   return listDeliverableMessageChannels().includes(value as DeliverableMessageChannel);
 }
 
-export function resolveGatewayMessageChannel(
-  raw?: string | null,
-): GatewayMessageChannel | undefined {
+export function resolveGatewayMessageChannel(raw?: string | null): GatewayMessageChannel | undefined {
   const normalized = normalizeMessageChannel(raw);
   if (!normalized) {
     return undefined;
@@ -117,10 +113,7 @@ export function resolveGatewayMessageChannel(
   return isGatewayMessageChannel(normalized) ? normalized : undefined;
 }
 
-export function resolveMessageChannel(
-  primary?: string | null,
-  fallback?: string | null,
-): string | undefined {
+export function resolveMessageChannel(primary?: string | null, fallback?: string | null): string | undefined {
   return normalizeMessageChannel(primary) ?? normalizeMessageChannel(fallback);
 }
 

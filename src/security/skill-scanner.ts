@@ -36,16 +36,7 @@ export type SkillScanOptions = {
 // Scannable extensions
 // ---------------------------------------------------------------------------
 
-const SCANNABLE_EXTENSIONS = new Set([
-  ".js",
-  ".ts",
-  ".mjs",
-  ".cjs",
-  ".mts",
-  ".cts",
-  ".jsx",
-  ".tsx",
-]);
+const SCANNABLE_EXTENSIONS = new Set([".js", ".ts", ".mjs", ".cjs", ".mts", ".cts", ".jsx", ".tsx"]);
 
 const DEFAULT_MAX_SCAN_FILES = 500;
 const DEFAULT_MAX_FILE_BYTES = 1024 * 1024;
@@ -85,11 +76,7 @@ function getCachedFileScanResult(params: {
   if (!cached) {
     return undefined;
   }
-  if (
-    cached.size !== params.size ||
-    cached.mtimeMs !== params.mtimeMs ||
-    cached.maxFileBytes !== params.maxFileBytes
-  ) {
+  if (cached.size !== params.size || cached.mtimeMs !== params.mtimeMs || cached.maxFileBytes !== params.maxFileBytes) {
     FILE_SCAN_CACHE.delete(params.filePath);
     return undefined;
   }
@@ -197,8 +184,7 @@ const SOURCE_RULES: SourceRule[] = [
   {
     ruleId: "env-harvesting",
     severity: "critical",
-    message:
-      "Environment variable access combined with network send — possible credential harvesting",
+    message: "Environment variable access combined with network send — possible credential harvesting",
     pattern: /process\.env/,
     requiresContext: /\bfetch\b|\bpost\b|http\.request/i,
   },
@@ -387,10 +373,7 @@ async function readDirEntriesWithCache(dirPath: string): Promise<CachedDirEntry[
   return entries;
 }
 
-async function resolveForcedFiles(params: {
-  rootDir: string;
-  includeFiles: string[];
-}): Promise<string[]> {
+async function resolveForcedFiles(params: { rootDir: string; includeFiles: string[] }): Promise<string[]> {
   if (params.includeFiles.length === 0) {
     return [];
   }
@@ -518,10 +501,7 @@ async function scanFileWithCache(params: {
   return { scanned: true, findings };
 }
 
-export async function scanDirectory(
-  dirPath: string,
-  opts?: SkillScanOptions,
-): Promise<SkillScanFinding[]> {
+export async function scanDirectory(dirPath: string, opts?: SkillScanOptions): Promise<SkillScanFinding[]> {
   const scanOptions = normalizeScanOptions(opts);
   const files = await collectScannableFiles(dirPath, scanOptions);
   const allFindings: SkillScanFinding[] = [];
@@ -540,10 +520,7 @@ export async function scanDirectory(
   return allFindings;
 }
 
-export async function scanDirectoryWithSummary(
-  dirPath: string,
-  opts?: SkillScanOptions,
-): Promise<SkillScanSummary> {
+export async function scanDirectoryWithSummary(dirPath: string, opts?: SkillScanOptions): Promise<SkillScanSummary> {
   const scanOptions = normalizeScanOptions(opts);
   const files = await collectScannableFiles(dirPath, scanOptions);
   const allFindings: SkillScanFinding[] = [];

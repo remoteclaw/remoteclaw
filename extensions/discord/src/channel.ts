@@ -42,10 +42,8 @@ import { getDiscordRuntime } from "./runtime.js";
 const meta = getChatChannelMeta("discord");
 
 const discordMessageActions: ChannelMessageActionAdapter = {
-  listActions: (ctx) =>
-    getDiscordRuntime().channel.discord.messageActions?.listActions?.(ctx) ?? [],
-  extractToolSend: (ctx) =>
-    getDiscordRuntime().channel.discord.messageActions?.extractToolSend?.(ctx) ?? null,
+  listActions: (ctx) => getDiscordRuntime().channel.discord.messageActions?.listActions?.(ctx) ?? [],
+  extractToolSend: (ctx) => getDiscordRuntime().channel.discord.messageActions?.extractToolSend?.(ctx) ?? null,
   handleAction: async (ctx) => {
     const ma = getDiscordRuntime().channel.discord.messageActions;
     if (!ma?.handleAction) {
@@ -81,10 +79,7 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
     idLabel: "discordUserId",
     normalizeAllowEntry: (entry) => entry.replace(/^(discord|user):/i, ""),
     notifyApproval: async ({ id }) => {
-      await getDiscordRuntime().channel.discord.sendMessageDiscord(
-        `user:${id}`,
-        PAIRING_APPROVED_MESSAGE,
-      );
+      await getDiscordRuntime().channel.discord.sendMessageDiscord(`user:${id}`, PAIRING_APPROVED_MESSAGE);
     },
   },
   capabilities: {
@@ -146,8 +141,7 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
             },
             missingRouteAllowlist: {
               surface: "Discord guilds",
-              openBehavior:
-                "with no guild/channel allowlist; any channel can trigger (mention-gated)",
+              openBehavior: "with no guild/channel allowlist; any channel can trigger (mention-gated)",
               remediation:
                 'Set channels.discord.groupPolicy="allowlist" and configure channels.discord.guilds.<id>.channels',
             },
@@ -182,10 +176,8 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
     self: async () => null,
     listPeers: async (params) => listDiscordDirectoryPeersFromConfig(params),
     listGroups: async (params) => listDiscordDirectoryGroupsFromConfig(params),
-    listPeersLive: async (params) =>
-      getDiscordRuntime().channel.discord.listDirectoryPeersLive(params),
-    listGroupsLive: async (params) =>
-      getDiscordRuntime().channel.discord.listDirectoryGroupsLive(params),
+    listPeersLive: async (params) => getDiscordRuntime().channel.discord.listDirectoryPeersLive(params),
+    listGroupsLive: async (params) => getDiscordRuntime().channel.discord.listDirectoryGroupsLive(params),
   },
   resolver: {
     resolveTargets: async ({ cfg, accountId, inputs, kind }) => {
@@ -207,10 +199,7 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
           input: entry.input,
           resolved: entry.resolved,
           id: entry.channelId ?? entry.guildId,
-          name:
-            entry.channelName ??
-            entry.guildName ??
-            (entry.guildId && !entry.channelId ? entry.guildId : undefined),
+          name: entry.channelName ?? entry.guildName ?? (entry.guildId && !entry.channelId ? entry.guildId : undefined),
           note: entry.note,
         }));
       }
@@ -310,17 +299,7 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
       });
       return { channel: "discord", ...result };
     },
-    sendMedia: async ({
-      cfg,
-      to,
-      text,
-      mediaUrl,
-      mediaLocalRoots,
-      accountId,
-      deps,
-      replyToId,
-      silent,
-    }) => {
+    sendMedia: async ({ cfg, to, text, mediaUrl, mediaLocalRoots, accountId, deps, replyToId, silent }) => {
       const send = deps?.sendDiscord ?? getDiscordRuntime().channel.discord.sendMessageDiscord;
       const result = await send(to, text, {
         verbose: false,
@@ -354,8 +333,7 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
       lastError: null,
     },
     collectStatusIssues: collectDiscordStatusIssues,
-    buildChannelSummary: ({ snapshot }) =>
-      buildTokenChannelStatusSummary(snapshot, { includeMode: false }),
+    buildChannelSummary: ({ snapshot }) => buildTokenChannelStatusSummary(snapshot, { includeMode: false }),
     probeAccount: async ({ account, timeoutMs }) =>
       getDiscordRuntime().channel.discord.probeDiscord(account.token, timeoutMs, {
         includeApplication: true,
@@ -387,8 +365,7 @@ export const discordPlugin: ChannelPlugin<ResolvedDiscordAccount> = {
       return { ...audit, unresolvedChannels };
     },
     buildAccountSnapshot: ({ account, runtime, probe, audit }) => {
-      const configured =
-        resolveConfiguredFromCredentialStatuses(account) ?? Boolean(account.token?.trim());
+      const configured = resolveConfiguredFromCredentialStatuses(account) ?? Boolean(account.token?.trim());
       const app = runtime?.application ?? (probe as { application?: unknown })?.application;
       const bot = runtime?.bot ?? (probe as { bot?: unknown })?.bot;
       const base = buildComputedAccountStatusSnapshot({

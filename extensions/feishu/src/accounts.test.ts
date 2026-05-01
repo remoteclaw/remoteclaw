@@ -16,10 +16,7 @@ function makeDefaultAndRouterAccounts() {
   };
 }
 
-function expectExplicitDefaultAccountSelection(
-  account: ReturnType<typeof resolveFeishuAccount>,
-  appId: string,
-) {
+function expectExplicitDefaultAccountSelection(account: ReturnType<typeof resolveFeishuAccount>, appId: string) {
   expect(account.accountId).toBe("router-d");
   expect(account.selectionSource).toBe("explicit-default");
   expect(account.configured).toBe(true);

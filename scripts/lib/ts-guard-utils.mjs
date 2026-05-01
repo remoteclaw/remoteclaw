@@ -36,13 +36,7 @@ export async function collectTypeScriptFiles(targetPath, options = {}) {
   try {
     stat = await fs.stat(targetPath);
   } catch (error) {
-    if (
-      ignoreMissing &&
-      error &&
-      typeof error === "object" &&
-      "code" in error &&
-      error.code === "ENOENT"
-    ) {
+    if (ignoreMissing && error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
       return [];
     }
     throw error;

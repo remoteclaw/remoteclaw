@@ -20,17 +20,14 @@ export function hasConfiguredMSTeamsCredentials(cfg?: MSTeamsConfig): boolean {
 }
 
 export function resolveMSTeamsCredentials(cfg?: MSTeamsConfig): MSTeamsCredentials | undefined {
-  const appId =
-    normalizeSecretInputString(cfg?.appId) ||
-    normalizeSecretInputString(process.env.MSTEAMS_APP_ID);
+  const appId = normalizeSecretInputString(cfg?.appId) || normalizeSecretInputString(process.env.MSTEAMS_APP_ID);
   const appPassword =
     normalizeResolvedSecretInputString({
       value: cfg?.appPassword,
       path: "channels.msteams.appPassword",
     }) || normalizeSecretInputString(process.env.MSTEAMS_APP_PASSWORD);
   const tenantId =
-    normalizeSecretInputString(cfg?.tenantId) ||
-    normalizeSecretInputString(process.env.MSTEAMS_TENANT_ID);
+    normalizeSecretInputString(cfg?.tenantId) || normalizeSecretInputString(process.env.MSTEAMS_TENANT_ID);
 
   if (!appId || !appPassword || !tenantId) {
     return undefined;

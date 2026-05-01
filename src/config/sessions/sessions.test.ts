@@ -91,9 +91,7 @@ describe("session path safety", () => {
       const viaAlias = path.join(aliasRoot, "agents", "test-agent", "sessions", "sess-1.jsonl");
       fs.writeFileSync(path.join(sessionsDir, "sess-1.jsonl"), "");
       const resolved = resolveSessionFilePath("sess-1", { sessionFile: viaAlias }, { sessionsDir });
-      expect(fs.realpathSync(resolved)).toBe(
-        fs.realpathSync(path.join(sessionsDir, "sess-1.jsonl")),
-      );
+      expect(fs.realpathSync(resolved)).toBe(fs.realpathSync(path.join(sessionsDir, "sess-1.jsonl")));
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }
@@ -114,11 +112,7 @@ describe("session path safety", () => {
       const symlinkPath = path.join(sessionsDir, "escaped.jsonl");
       fs.symlinkSync(outsideFile, symlinkPath, "file");
 
-      const resolved = resolveSessionFilePath(
-        "sess-1",
-        { sessionFile: symlinkPath },
-        { sessionsDir },
-      );
+      const resolved = resolveSessionFilePath("sess-1", { sessionFile: symlinkPath }, { sessionsDir });
       expect(fs.realpathSync(path.dirname(resolved))).toBe(fs.realpathSync(sessionsDir));
       expect(path.basename(resolved)).toBe("sess-1.jsonl");
     } finally {
@@ -151,9 +145,7 @@ describe("session store lock (Promise chain mutex)", () => {
   let lockCaseId = 0;
   let lockTmpDirs: string[] = [];
 
-  async function makeTmpStore(
-    initial: Record<string, unknown> = {},
-  ): Promise<{ dir: string; storePath: string }> {
+  async function makeTmpStore(initial: Record<string, unknown> = {}): Promise<{ dir: string; storePath: string }> {
     const dir = path.join(lockFixtureRoot, `case-${lockCaseId++}`);
     await fsPromises.mkdir(dir);
     lockTmpDirs.push(dir);
@@ -340,11 +332,7 @@ describe("resolveAndPersistSessionFile", () => {
     };
     fs.writeFileSync(fixture.storePath(), JSON.stringify(store), "utf-8");
     const sessionStore = loadSessionStore(fixture.storePath(), { skipCache: true });
-    const fallbackSessionFile = resolveSessionTranscriptPathInDir(
-      sessionId,
-      fixture.sessionsDir(),
-      456,
-    );
+    const fallbackSessionFile = resolveSessionTranscriptPathInDir(sessionId, fixture.sessionsDir(), 456);
 
     const result = await resolveAndPersistSessionFile({
       sessionId,

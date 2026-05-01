@@ -15,10 +15,7 @@ describe("cron schedule", () => {
   it("computes next run for cron expression with timezone", () => {
     // Saturday, Dec 13 2025 00:00:00Z
     const nowMs = Date.parse("2025-12-13T00:00:00.000Z");
-    const next = computeNextRunAtMs(
-      { kind: "cron", expr: "0 9 * * 3", tz: "America/Los_Angeles" },
-      nowMs,
-    );
+    const next = computeNextRunAtMs({ kind: "cron", expr: "0 9 * * 3", tz: "America/Los_Angeles" }, nowMs);
     // Next Wednesday at 09:00 PST -> 17:00Z
     expect(next).toBe(Date.parse("2025-12-17T17:00:00.000Z"));
   });
@@ -26,10 +23,7 @@ describe("cron schedule", () => {
   it("does not roll back year for Asia/Shanghai daily cron schedules (#30351)", () => {
     // 2026-03-01 08:00:00 in Asia/Shanghai
     const nowMs = Date.parse("2026-03-01T00:00:00.000Z");
-    const next = computeNextRunAtMs(
-      { kind: "cron", expr: "0 8 * * *", tz: "Asia/Shanghai" },
-      nowMs,
-    );
+    const next = computeNextRunAtMs({ kind: "cron", expr: "0 8 * * *", tz: "Asia/Shanghai" }, nowMs);
 
     // Next 08:00 local should be the following day, not a past year.
     expect(next).toBe(Date.parse("2026-03-02T00:00:00.000Z"));
@@ -105,20 +99,14 @@ describe("cron schedule", () => {
 
   it("never returns a past timestamp for Asia/Shanghai daily schedule (#30351)", () => {
     const nowMs = Date.parse("2026-03-01T00:00:00.000Z");
-    const next = computeNextRunAtMs(
-      { kind: "cron", expr: "0 8 * * *", tz: "Asia/Shanghai" },
-      nowMs,
-    );
+    const next = computeNextRunAtMs({ kind: "cron", expr: "0 8 * * *", tz: "Asia/Shanghai" }, nowMs);
     expect(next).toBeDefined();
     expect(next!).toBeGreaterThan(nowMs);
   });
 
   it("never returns a previous run that is at-or-after now", () => {
     const nowMs = Date.parse("2026-03-01T00:00:00.000Z");
-    const previous = computePreviousRunAtMs(
-      { kind: "cron", expr: "0 8 * * *", tz: "Asia/Shanghai" },
-      nowMs,
-    );
+    const previous = computePreviousRunAtMs({ kind: "cron", expr: "0 8 * * *", tz: "Asia/Shanghai" }, nowMs);
     if (previous !== undefined) {
       expect(previous).toBeLessThan(nowMs);
     }
@@ -128,14 +116,8 @@ describe("cron schedule", () => {
     const nowMs = Date.parse("2026-03-01T00:00:00.000Z");
     expect(getCronScheduleCacheSizeForTest()).toBe(0);
 
-    const first = computeNextRunAtMs(
-      { kind: "cron", expr: "0 8 * * *", tz: "Asia/Shanghai" },
-      nowMs,
-    );
-    const second = computeNextRunAtMs(
-      { kind: "cron", expr: "0 8 * * *", tz: "Asia/Shanghai" },
-      nowMs + 1_000,
-    );
+    const first = computeNextRunAtMs({ kind: "cron", expr: "0 8 * * *", tz: "Asia/Shanghai" }, nowMs);
+    const second = computeNextRunAtMs({ kind: "cron", expr: "0 8 * * *", tz: "Asia/Shanghai" }, nowMs + 1_000);
     const third = computeNextRunAtMs({ kind: "cron", expr: "0 8 * * *", tz: "UTC" }, nowMs);
 
     expect(first).toBeDefined();

@@ -12,11 +12,7 @@ import {
   type WizardPrompter,
   migrateBaseNameToDefaultAccount,
 } from "remoteclaw/plugin-sdk/googlechat";
-import {
-  listGoogleChatAccountIds,
-  resolveDefaultGoogleChatAccountId,
-  resolveGoogleChatAccount,
-} from "./accounts.js";
+import { listGoogleChatAccountIds, resolveDefaultGoogleChatAccountId, resolveGoogleChatAccount } from "./accounts.js";
 
 const channel = "googlechat" as const;
 
@@ -24,10 +20,7 @@ const ENV_SERVICE_ACCOUNT = "GOOGLE_CHAT_SERVICE_ACCOUNT";
 const ENV_SERVICE_ACCOUNT_FILE = "GOOGLE_CHAT_SERVICE_ACCOUNT_FILE";
 
 function setGoogleChatDmPolicy(cfg: RemoteClawConfig, policy: DmPolicy) {
-  const allowFrom =
-    policy === "open"
-      ? addWildcardAllowFrom(cfg.channels?.["googlechat"]?.dm?.allowFrom)
-      : undefined;
+  const allowFrom = policy === "open" ? addWildcardAllowFrom(cfg.channels?.["googlechat"]?.dm?.allowFrom) : undefined;
   return {
     ...cfg,
     channels: {
@@ -44,10 +37,7 @@ function setGoogleChatDmPolicy(cfg: RemoteClawConfig, policy: DmPolicy) {
   };
 }
 
-async function promptAllowFrom(params: {
-  cfg: RemoteClawConfig;
-  prompter: WizardPrompter;
-}): Promise<RemoteClawConfig> {
+async function promptAllowFrom(params: { cfg: RemoteClawConfig; prompter: WizardPrompter }): Promise<RemoteClawConfig> {
   const current = params.cfg.channels?.["googlechat"]?.dm?.allowFrom ?? [];
   const entry = await params.prompter.text({
     message: "Google Chat allowFrom (users/<id> or raw email; avoid users/<email>)",

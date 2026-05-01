@@ -122,10 +122,7 @@ export function withEnv<T>(env: Record<string, string | undefined>, fn: () => T)
   }
 }
 
-export async function withEnvAsync<T>(
-  env: Record<string, string | undefined>,
-  fn: () => Promise<T>,
-): Promise<T> {
+export async function withEnvAsync<T>(env: Record<string, string | undefined>, fn: () => Promise<T>): Promise<T> {
   const snapshot = captureEnv(Object.keys(env));
   try {
     applyEnvValues(env);

@@ -174,10 +174,7 @@ describe("UrbitSSEClient", () => {
     });
 
     it("normalizes cookie in constructor", () => {
-      const client = new UrbitSSEClient(
-        "https://example.com",
-        "urbauth-~zod=123; Path=/; HttpOnly",
-      );
+      const client = new UrbitSSEClient("https://example.com", "urbauth-~zod=123; Path=/; HttpOnly");
 
       expect(client.cookie).toBe("urbauth-~zod=123");
     });

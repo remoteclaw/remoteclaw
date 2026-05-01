@@ -119,11 +119,7 @@ export function collectTwitchStatusIssues(
         });
       }
 
-      if (
-        account.allowedRoles?.includes("all") &&
-        account.allowFrom &&
-        account.allowFrom.length > 0
-      ) {
+      if (account.allowedRoles?.includes("all") && account.allowFrom && account.allowFrom.length > 0) {
         issues.push({
           channel: "twitch",
           accountId,
@@ -144,13 +140,7 @@ export function collectTwitchStatusIssues(
       });
     }
 
-    if (
-      entry.configured &&
-      !entry.running &&
-      !entry.lastStartAt &&
-      !entry.lastInboundAt &&
-      !entry.lastOutboundAt
-    ) {
+    if (entry.configured && !entry.running && !entry.lastStartAt && !entry.lastInboundAt && !entry.lastOutboundAt) {
       issues.push({
         channel: "twitch",
         accountId,

@@ -25,7 +25,6 @@ let resolveWindowsUserPrincipal: typeof import("./windows-acl.js").resolveWindow
 let summarizeWindowsAcl: typeof import("./windows-acl.js").summarizeWindowsAcl;
 
 beforeAll(async () => {
-  vi.resetModules();
   ({
     createIcaclsResetCommand,
     formatIcaclsResetCommand,
@@ -62,10 +61,7 @@ function expectSinglePrincipal(entries: WindowsAclEntry[], principal: string): v
   expect(entries[0].principal).toBe(principal);
 }
 
-function expectAccessRights(
-  rights: string,
-  expected: { canWrite: boolean; canRead: boolean },
-): void {
+function expectAccessRights(rights: string, expected: { canWrite: boolean; canRead: boolean }): void {
   const output = `C:\\test\\file.txt BUILTIN\\Users:${rights}`;
   const entries = parseIcaclsOutput(output, "C:\\test\\file.txt");
   expect(entries[0].canWrite, rights).toBe(expected.canWrite);
@@ -82,10 +78,7 @@ function expectTrustedOnly(
   expect(summary.untrustedGroup).toHaveLength(0);
 }
 
-function expectInspectSuccess(
-  result: Awaited<ReturnType<typeof inspectWindowsAcl>>,
-  expectedEntries: number,
-): void {
+function expectInspectSuccess(result: Awaited<ReturnType<typeof inspectWindowsAcl>>, expectedEntries: number): void {
   expect(result.ok).toBe(true);
   expect(result.entries).toHaveLength(expectedEntries);
 }
@@ -182,8 +175,7 @@ Successfully processed 1 files`;
 
     it("parses SID-format principals", () => {
       const output =
-        "C:\\test\\file.txt S-1-5-18:(F)\n" +
-        "                  S-1-5-21-1824257776-4070701511-781240313-1001:(F)";
+        "C:\\test\\file.txt S-1-5-18:(F)\n                  S-1-5-21-1824257776-4070701511-781240313-1001:(F)";
       const entries = parseIcaclsOutput(output, "C:\\test\\file.txt");
       expect(entries).toHaveLength(2);
       expect(entries[0].principal).toBe("S-1-5-18");
@@ -449,8 +441,7 @@ Successfully processed 1 files`;
       const mockExec = vi
         .fn()
         .mockResolvedValueOnce({
-          stdout:
-            "C:\\test\\file.txt *S-1-5-21-111-222-333-1001:(F)\n                *S-1-5-18:(F)",
+          stdout: "C:\\test\\file.txt *S-1-5-21-111-222-333-1001:(F)\n                *S-1-5-18:(F)",
           stderr: "",
         })
         .mockResolvedValueOnce({

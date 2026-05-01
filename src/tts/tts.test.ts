@@ -356,9 +356,7 @@ describe("tts", () => {
       },
     };
 
-    const withMockedAutoTtsFetch = async (
-      run: (fetchMock: ReturnType<typeof vi.fn>) => Promise<void>,
-    ) => {
+    const withMockedAutoTtsFetch = async (run: (fetchMock: ReturnType<typeof vi.fn>) => Promise<void>) => {
       const prevPrefs = process.env.REMOTECLAW_TTS_PREFS;
       process.env.REMOTECLAW_TTS_PREFS = `/tmp/tts-test-${Date.now()}.json`;
       const originalFetch = globalThis.fetch;

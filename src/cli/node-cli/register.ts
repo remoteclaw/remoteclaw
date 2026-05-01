@@ -26,10 +26,7 @@ export function registerNodeCli(program: Command) {
       "after",
       () =>
         `\n${theme.heading("Examples:")}\n${formatHelpExamples([
-          [
-            "remoteclaw node run --host 127.0.0.1 --port 18789",
-            "Run the node host in the foreground.",
-          ],
+          ["remoteclaw node run --host 127.0.0.1 --port 18789", "Run the node host in the foreground."],
           ["remoteclaw node status", "Check node host service status."],
           ["remoteclaw node install", "Install the node host service."],
           ["remoteclaw node restart", "Restart the installed node host service."],
@@ -47,8 +44,7 @@ export function registerNodeCli(program: Command) {
     .option("--display-name <name>", "Override node display name")
     .action(async (opts) => {
       const existing = await loadNodeHostConfig();
-      const host =
-        (opts.host as string | undefined)?.trim() || existing?.gateway?.host || "127.0.0.1";
+      const host = (opts.host as string | undefined)?.trim() || existing?.gateway?.host || "127.0.0.1";
       const port = parsePortWithFallback(opts.port, existing?.gateway?.port ?? 18789);
       await runNodeHost({
         gatewayHost: host,

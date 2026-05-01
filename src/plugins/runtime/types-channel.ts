@@ -1,7 +1,5 @@
-type ReadChannelAllowFromStore =
-  typeof import("../../pairing/pairing-store.js").readChannelAllowFromStore;
-type UpsertChannelPairingRequest =
-  typeof import("../../pairing/pairing-store.js").upsertChannelPairingRequest;
+type ReadChannelAllowFromStore = typeof import("../../pairing/pairing-store.js").readChannelAllowFromStore;
+type UpsertChannelPairingRequest = typeof import("../../pairing/pairing-store.js").upsertChannelPairingRequest;
 
 type ReadChannelAllowFromStoreForAccount = (params: {
   channel: Parameters<ReadChannelAllowFromStore>[0];

@@ -134,9 +134,7 @@ export async function handleInlineActions(params: {
   }
 
   const inlineCommand =
-    allowTextCommands && command.isAuthorizedSender
-      ? extractInlineSimpleCommand(cleanedBody)
-      : null;
+    allowTextCommands && command.isAuthorizedSender ? extractInlineSimpleCommand(cleanedBody) : null;
   if (inlineCommand) {
     cleanedBody = inlineCommand.cleaned;
     sessionCtx.Body = cleanedBody;
@@ -232,13 +230,7 @@ export async function handleInlineActions(params: {
   const skipWhenConfigEmpty = command.channelId
     ? Boolean(getChannelDock(command.channelId)?.commands?.skipWhenConfigEmpty)
     : false;
-  if (
-    skipWhenConfigEmpty &&
-    isEmptyConfig &&
-    command.from &&
-    command.to &&
-    command.from !== command.to
-  ) {
+  if (skipWhenConfigEmpty && isEmptyConfig && command.from && command.to && command.from !== command.to) {
     typing.cleanup();
     return { kind: "reply", reply: undefined };
   }

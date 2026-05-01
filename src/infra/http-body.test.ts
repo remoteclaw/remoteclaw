@@ -62,17 +62,11 @@ async function expectGuardPayloadTooLarge(params: {
   return { req, res, guard };
 }
 
-async function readJsonBody(params: {
-  chunks?: string[];
-  maxBytes: number;
-  emptyObjectOnEmpty?: boolean;
-}) {
+async function readJsonBody(params: { chunks?: string[]; maxBytes: number; emptyObjectOnEmpty?: boolean }) {
   const req = createMockRequest({ chunks: params.chunks });
   return await readJsonBodyWithLimit(req, {
     maxBytes: params.maxBytes,
-    ...(params.emptyObjectOnEmpty === undefined
-      ? {}
-      : { emptyObjectOnEmpty: params.emptyObjectOnEmpty }),
+    ...(params.emptyObjectOnEmpty === undefined ? {} : { emptyObjectOnEmpty: params.emptyObjectOnEmpty }),
   });
 }
 
@@ -212,9 +206,7 @@ describe("http body limits", () => {
   it("timeout surfaces typed error when timeoutMs is clamped", async () => {
     const req = createMockRequest({ emitEnd: false });
     const promise = readRequestBodyWithLimit(req, { maxBytes: 128, timeoutMs: 0 });
-    await expect(promise).rejects.toSatisfy((error: unknown) =>
-      isRequestBodyLimitError(error, "REQUEST_BODY_TIMEOUT"),
-    );
+    await expect(promise).rejects.toSatisfy((error: unknown) => isRequestBodyLimitError(error, "REQUEST_BODY_TIMEOUT"));
     expect(req.__unhandledDestroyError).toBeUndefined();
   });
 
@@ -231,8 +223,6 @@ describe("http body limits", () => {
     const req = createMockRequest({ emitEnd: false });
     const promise = readRequestBodyWithLimit(req, { maxBytes: 128 });
     queueMicrotask(() => req.emit("close"));
-    await expect(promise).rejects.toSatisfy((error: unknown) =>
-      isRequestBodyLimitError(error, "CONNECTION_CLOSED"),
-    );
+    await expect(promise).rejects.toSatisfy((error: unknown) => isRequestBodyLimitError(error, "CONNECTION_CLOSED"));
   });
 });

@@ -17,9 +17,7 @@ export async function fetchGroupChanges(
     }
     return null;
   } catch (error: any) {
-    runtime.log?.(
-      `[tlon] Failed to fetch changes (falling back to full init): ${error?.message ?? String(error)}`,
-    );
+    runtime.log?.(`[tlon] Failed to fetch changes (falling back to full init): ${error?.message ?? String(error)}`);
     return null;
   }
 }
@@ -62,9 +60,7 @@ export async function fetchInitData(
 
     const foreigns = (initData?.foreigns as Foreigns) || null;
     if (foreigns) {
-      const pendingCount = Object.values(foreigns).filter((f) =>
-        f.invites?.some((i) => i.valid),
-      ).length;
+      const pendingCount = Object.values(foreigns).filter((f) => f.invites?.some((i) => i.valid)).length;
       if (pendingCount > 0) {
         runtime.log?.(`[tlon] Found ${pendingCount} pending group invite(s)`);
       }

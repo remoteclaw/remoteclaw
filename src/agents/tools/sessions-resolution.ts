@@ -115,9 +115,7 @@ export function shouldVerifyRequesterSpawnedSessionVisibility(params: {
   resolvedViaSessionId: boolean;
 }): boolean {
   return (
-    params.restrictToSpawned &&
-    !params.resolvedViaSessionId &&
-    params.requesterSessionKey !== params.targetSessionKey
+    params.restrictToSpawned && !params.resolvedViaSessionId && params.requesterSessionKey !== params.targetSessionKey
   );
 }
 
@@ -221,9 +219,7 @@ async function resolveSessionKeyFromSessionId(params: {
     });
     const key = typeof result?.key === "string" ? result.key.trim() : "";
     if (!key) {
-      throw new Error(
-        `Session not found: ${params.sessionId} (use the full sessionKey from sessions_list)`,
-      );
+      throw new Error(`Session not found: ${params.sessionId} (use the full sessionKey from sessions_list)`);
     }
     return {
       ok: true,
@@ -247,9 +243,7 @@ async function resolveSessionKeyFromSessionId(params: {
     return {
       ok: false,
       status: "error",
-      error:
-        message ||
-        `Session not found: ${params.sessionId} (use the full sessionKey from sessions_list)`,
+      error: message || `Session not found: ${params.sessionId} (use the full sessionKey from sessions_list)`,
     };
   }
 }
@@ -357,8 +351,7 @@ export async function resolveSessionReference(params: {
       return resolvedBySessionId;
     }
   }
-  const raw =
-    rawInput === "current" && params.requesterInternalKey ? params.requesterInternalKey : rawInput;
+  const raw = rawInput === "current" && params.requesterInternalKey ? params.requesterInternalKey : rawInput;
   if (shouldResolveSessionIdInput(raw)) {
     // Prefer key resolution to avoid misclassifying custom keys as sessionIds.
     const resolvedByKey = await resolveSessionKeyFromKey({

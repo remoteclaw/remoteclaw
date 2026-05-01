@@ -1,4 +1,4 @@
-import { z, type ZodTypeAny } from "zod";
+import { z, type ZodRawShape, type ZodTypeAny } from "zod";
 import { DmPolicySchema } from "../../config/zod-schema.core.js";
 import type { ChannelConfigSchema } from "./types.plugin.js";
 
@@ -13,19 +13,16 @@ type ExtendableZodObject = ZodTypeAny & {
 export const AllowFromEntrySchema = z.union([z.string(), z.number()]);
 export const AllowFromListSchema = z.array(AllowFromEntrySchema).optional();
 
-export function buildNestedDmConfigSchema() {
-  return z
-    .object({
-      enabled: z.boolean().optional(),
-      policy: DmPolicySchema.optional(),
-      allowFrom: AllowFromListSchema,
-    })
-    .optional();
+export function buildNestedDmConfigSchema<TExtraShape extends ZodRawShape = {}>(extraShape?: TExtraShape) {
+  const baseShape = {
+    enabled: z.boolean().optional(),
+    policy: DmPolicySchema.optional(),
+    allowFrom: AllowFromListSchema,
+  };
+  return z.object(extraShape ? { ...baseShape, ...extraShape } : baseShape).optional();
 }
 
-export function buildCatchallMultiAccountChannelSchema<T extends ExtendableZodObject>(
-  accountSchema: T,
-): T {
+export function buildCatchallMultiAccountChannelSchema<T extends ExtendableZodObject>(accountSchema: T): T {
   return accountSchema.extend({
     accounts: z.object({}).catchall(accountSchema).optional(),
     defaultAccount: z.string().optional(),

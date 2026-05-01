@@ -149,8 +149,7 @@ The `HOOK.md` file contains metadata in YAML frontmatter plus Markdown documenta
 name: my-hook
 description: "Short description of what this hook does"
 homepage: https://docs.remoteclaw.org/automation/hooks#my-hook
-metadata:
-  { "remoteclaw": { "emoji": "🔗", "events": ["command:new"], "requires": { "bins": ["node"] } } }
+metadata: { "remoteclaw": { "emoji": "🔗", "events": ["command:new"], "requires": { "bins": ["node"] } } }
 ---
 
 # My Hook

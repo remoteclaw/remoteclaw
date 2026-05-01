@@ -5,10 +5,7 @@ import type { ChannelPluginCatalogEntry } from "../../channels/plugins/catalog.j
 import { resolveBundledInstallPlanForCatalogEntry } from "../../cli/plugin-install-plan.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
-import {
-  findBundledPluginSourceInMap,
-  resolveBundledPluginSources,
-} from "../../plugins/bundled-sources.js";
+import { findBundledPluginSourceInMap, resolveBundledPluginSources } from "../../plugins/bundled-sources.js";
 import { clearPluginDiscoveryCache } from "../../plugins/discovery.js";
 import { enablePluginInConfig } from "../../plugins/enable.js";
 import { installPluginFromNpmSpec } from "../../plugins/install.js";
@@ -100,8 +97,7 @@ async function promptInstallChoice(params: {
     ...localOptions,
     { value: "skip", label: "Skip for now" },
   ];
-  const initialValue: InstallChoice =
-    defaultChoice === "local" && !localPath ? "npm" : defaultChoice;
+  const initialValue: InstallChoice = defaultChoice === "local" && !localPath ? "npm" : defaultChoice;
   return await prompter.select<InstallChoice>({
     message: `Install ${entry.meta.label} plugin?`,
     options,
@@ -151,8 +147,7 @@ export async function ensureOnboardingPluginInstalled(params: {
     resolveBundledInstallPlanForCatalogEntry({
       pluginId: entry.id,
       npmSpec: entry.install.npmSpec,
-      findBundledSource: (lookup) =>
-        findBundledPluginSourceInMap({ bundled: bundledSources, lookup }),
+      findBundledSource: (lookup) => findBundledPluginSourceInMap({ bundled: bundledSources, lookup }),
     })?.bundledSource.localPath ?? null;
   const localPath = bundledLocalPath ?? resolveLocalPath(entry, workspaceDir, allowLocal);
   const defaultChoice = resolveInstallDefaultChoice({
@@ -199,10 +194,7 @@ export async function ensureOnboardingPluginInstalled(params: {
     return { cfg: next, installed: true };
   }
 
-  await prompter.note(
-    `Failed to install ${entry.install.npmSpec}: ${result.error}`,
-    "Plugin install",
-  );
+  await prompter.note(`Failed to install ${entry.install.npmSpec}: ${result.error}`, "Plugin install");
 
   if (localPath) {
     const fallback = await prompter.confirm({
@@ -226,8 +218,7 @@ export function reloadOnboardingPluginRegistry(params: {
   workspaceDir?: string;
 }): void {
   clearPluginDiscoveryCache();
-  const workspaceDir =
-    params.workspaceDir ?? resolveAgentWorkspaceDir(params.cfg, resolveDefaultAgentId(params.cfg));
+  const workspaceDir = params.workspaceDir ?? resolveAgentWorkspaceDir(params.cfg, resolveDefaultAgentId(params.cfg));
   const log = createSubsystemLogger("plugins");
   loadRemoteClawPlugins({
     config: params.cfg,

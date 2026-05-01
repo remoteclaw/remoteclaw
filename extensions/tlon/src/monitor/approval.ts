@@ -5,6 +5,8 @@
  * a notification and can approve or deny the request.
  */
 
+// Extensions cannot import core internals directly, so use node:crypto here.
+import { randomBytes } from "node:crypto";
 import type { PendingApproval } from "../settings.js";
 
 export type { PendingApproval };
@@ -32,7 +34,7 @@ export type CreateApprovalParams = {
  */
 export function generateApprovalId(type: ApprovalType): string {
   const timestamp = Date.now();
-  const randomPart = Math.random().toString(36).substring(2, 6);
+  const randomPart = randomBytes(3).toString("hex");
   return `${type}-${timestamp}-${randomPart}`;
 }
 
@@ -130,10 +132,7 @@ export function isApprovalResponse(text: string): boolean {
 /**
  * Find a pending approval by ID, or return the most recent if no ID specified.
  */
-export function findPendingApproval(
-  pendingApprovals: PendingApproval[],
-  id?: string,
-): PendingApproval | undefined {
+export function findPendingApproval(pendingApprovals: PendingApproval[], id?: string): PendingApproval | undefined {
   if (id) {
     return pendingApprovals.find((a) => a.id === id);
   }
@@ -169,20 +168,14 @@ export function hasDuplicatePending(
 /**
  * Remove a pending approval from the list by ID.
  */
-export function removePendingApproval(
-  pendingApprovals: PendingApproval[],
-  id: string,
-): PendingApproval[] {
+export function removePendingApproval(pendingApprovals: PendingApproval[], id: string): PendingApproval[] {
   return pendingApprovals.filter((a) => a.id !== id);
 }
 
 /**
  * Format a confirmation message after an approval action.
  */
-export function formatApprovalConfirmation(
-  approval: PendingApproval,
-  action: "approve" | "deny" | "block",
-): string {
+export function formatApprovalConfirmation(approval: PendingApproval, action: "approve" | "deny" | "block"): string {
   if (action === "block") {
     return `Blocked ${approval.requestingShip}. They will no longer be able to contact the bot.`;
   }
@@ -214,10 +207,7 @@ export function formatApprovalConfirmation(
 // Admin Commands
 // ============================================================================
 
-export type AdminCommand =
-  | { type: "unblock"; ship: string }
-  | { type: "blocked" }
-  | { type: "pending" };
+export type AdminCommand = { type: "unblock"; ship: string } | { type: "blocked" } | { type: "pending" };
 
 /**
  * Parse an admin command from owner message.

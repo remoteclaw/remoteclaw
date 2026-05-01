@@ -37,11 +37,7 @@ describe("config io owner display secret autofill", () => {
     await withTempHome("remoteclaw-owner-display-secret-", async (home) => {
       const configPath = path.join(home, ".remoteclaw", "remoteclaw.json");
       await fs.mkdir(path.dirname(configPath), { recursive: true });
-      await fs.writeFile(
-        configPath,
-        JSON.stringify({ commands: { ownerDisplay: "hash" } }, null, 2),
-        "utf-8",
-      );
+      await fs.writeFile(configPath, JSON.stringify({ commands: { ownerDisplay: "hash" } }, null, 2), "utf-8");
 
       const io = createConfigIO({
         env: {} as NodeJS.ProcessEnv,

@@ -1,11 +1,6 @@
 import { mapAllowlistResolutionInputs } from "remoteclaw/plugin-sdk/allow-from";
 import { searchGraphUsers } from "./graph-users.js";
-import {
-  listChannelsForTeam,
-  listTeamsByName,
-  normalizeQuery,
-  resolveGraphToken,
-} from "./graph.js";
+import { listChannelsForTeam, listTeamsByName, normalizeQuery, resolveGraphToken } from "./graph.js";
 
 export type MSTeamsChannelResolution = {
   input: string;
@@ -80,17 +75,14 @@ export function parseMSTeamsTeamChannelInput(raw: string): { team?: string; chan
   }
   const parts = trimmed.split("/");
   const team = normalizeMSTeamsTeamKey(parts[0] ?? "");
-  const channel =
-    parts.length > 1 ? normalizeMSTeamsChannelKey(parts.slice(1).join("/")) : undefined;
+  const channel = parts.length > 1 ? normalizeMSTeamsChannelKey(parts.slice(1).join("/")) : undefined;
   return {
     ...(team ? { team } : {}),
     ...(channel ? { channel } : {}),
   };
 }
 
-export function parseMSTeamsTeamEntry(
-  raw: string,
-): { teamKey: string; channelKey?: string } | null {
+export function parseMSTeamsTeamEntry(raw: string): { teamKey: string; channelKey?: string } | null {
   const { team, channel } = parseMSTeamsTeamChannelInput(raw);
   if (!team) {
     return null;
@@ -153,9 +145,7 @@ export async function resolveMSTeamsChannelAllowlist(params: {
       const channelMatch =
         teamChannels.find((item) => item.id === channel) ??
         teamChannels.find((item) => item.displayName?.toLowerCase() === channel.toLowerCase()) ??
-        teamChannels.find((item) =>
-          item.displayName?.toLowerCase().includes(channel.toLowerCase() ?? ""),
-        );
+        teamChannels.find((item) => item.displayName?.toLowerCase().includes(channel.toLowerCase() ?? ""));
       if (!channelMatch?.id) {
         return { input, resolved: false, note: "channel not found" };
       }

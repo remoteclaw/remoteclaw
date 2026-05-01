@@ -2,14 +2,7 @@ import { TerminalStates, type CallRecord, type CallState, type TranscriptEntry }
 
 const ConversationStates = new Set<CallState>(["speaking", "listening"]);
 
-const StateOrder: readonly CallState[] = [
-  "initiated",
-  "ringing",
-  "answered",
-  "active",
-  "speaking",
-  "listening",
-];
+const StateOrder: readonly CallState[] = ["initiated", "ringing", "answered", "active", "speaking", "listening"];
 
 export function transitionState(call: CallRecord, newState: CallState): void {
   // No-op for same state or already terminal.

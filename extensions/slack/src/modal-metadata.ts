@@ -37,9 +37,7 @@ export function encodeSlackModalPrivateMetadata(input: SlackModalPrivateMetadata
   };
   const encoded = JSON.stringify(payload);
   if (encoded.length > SLACK_PRIVATE_METADATA_MAX) {
-    throw new Error(
-      `Slack modal private_metadata cannot exceed ${SLACK_PRIVATE_METADATA_MAX} chars`,
-    );
+    throw new Error(`Slack modal private_metadata cannot exceed ${SLACK_PRIVATE_METADATA_MAX} chars`);
   }
   return encoded;
 }

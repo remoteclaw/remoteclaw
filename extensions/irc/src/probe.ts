@@ -10,10 +10,7 @@ function formatError(err: unknown): string {
   return typeof err === "string" ? err : JSON.stringify(err);
 }
 
-export async function probeIrc(
-  cfg: CoreConfig,
-  opts?: { accountId?: string; timeoutMs?: number },
-): Promise<IrcProbe> {
+export async function probeIrc(cfg: CoreConfig, opts?: { accountId?: string; timeoutMs?: number }): Promise<IrcProbe> {
   const account = resolveIrcAccount({ cfg, accountId: opts?.accountId });
   const base: IrcProbe = {
     ok: false,

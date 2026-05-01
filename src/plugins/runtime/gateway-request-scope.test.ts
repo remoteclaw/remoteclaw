@@ -42,9 +42,7 @@ describe("gateway request scope", () => {
 
   async function withPluginIdScope(
     pluginId: string,
-    run: (
-      runtimeScope: Awaited<ReturnType<typeof importGatewayRequestScopeModule>>,
-    ) => Promise<void>,
+    run: (runtimeScope: Awaited<ReturnType<typeof importGatewayRequestScopeModule>>) => Promise<void>,
   ) {
     await withTestGatewayScope(async (runtimeScope) => {
       await runtimeScope.withPluginRuntimePluginIdScope(pluginId, async () => {

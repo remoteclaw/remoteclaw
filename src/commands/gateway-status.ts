@@ -54,8 +54,7 @@ export async function gatewayStatusCommand(
   });
 
   let sshTarget = sanitizeSshTarget(opts.ssh) ?? sanitizeSshTarget(cfg.gateway?.remote?.sshTarget);
-  let sshIdentity =
-    sanitizeSshTarget(opts.sshIdentity) ?? sanitizeSshTarget(cfg.gateway?.remote?.sshIdentity);
+  let sshIdentity = sanitizeSshTarget(opts.sshIdentity) ?? sanitizeSshTarget(cfg.gateway?.remote?.sshIdentity);
   const remotePort = resolveGatewayPort(cfg);
 
   let sshTunnelError: string | null = null;
@@ -119,17 +118,13 @@ export async function gatewayStatusCommand(
             const base = user ? `${user}@${host.trim()}` : host.trim();
             return sshPort !== 22 ? `${base}:${sshPort}` : base;
           })
-          .filter((candidate): candidate is string =>
-            Boolean(candidate && parseSshTarget(candidate)),
-          );
+          .filter((candidate): candidate is string => Boolean(candidate && parseSshTarget(candidate)));
         if (candidates.length > 0) {
           sshTarget = candidates[0] ?? null;
         }
       }
 
-      const tunnel =
-        tunnelFirst ||
-        (sshTarget && !sshTunnelStarted && !sshTunnelError ? await tryStartTunnel() : null);
+      const tunnel = tunnelFirst || (sshTarget && !sshTunnelStarted && !sshTunnelError ? await tryStartTunnel() : null);
 
       const tunnelTarget: GatewayStatusTarget | null = tunnel
         ? {
@@ -168,9 +163,7 @@ export async function gatewayStatusCommand(
               auth,
               timeoutMs,
             });
-            const configSummary = probe.configSnapshot
-              ? extractConfigSummary(probe.configSnapshot)
-              : null;
+            const configSummary = probe.configSnapshot ? extractConfigSummary(probe.configSnapshot) : null;
             const self = pickGatewaySelfPresence(probe.presence);
             return {
               target,
@@ -313,9 +306,7 @@ export async function gatewayStatusCommand(
 
   runtime.log(colorize(rich, theme.heading, "Gateway Status"));
   runtime.log(
-    ok
-      ? `${colorize(rich, theme.success, "Reachable")}: yes`
-      : `${colorize(rich, theme.error, "Reachable")}: no`,
+    ok ? `${colorize(rich, theme.success, "Reachable")}: yes` : `${colorize(rich, theme.error, "Reachable")}: no`,
   );
   runtime.log(colorize(rich, theme.muted, `Probe budget: ${overallTimeoutMs}ms`));
 
@@ -351,9 +342,7 @@ export async function gatewayStatusCommand(
     runtime.log(renderTargetHeader(p.target, rich));
     runtime.log(`  ${renderProbeSummaryLine(p.probe, rich)}`);
     if (p.target.tunnel?.kind === "ssh") {
-      runtime.log(
-        `  ${colorize(rich, theme.muted, "ssh")}: ${colorize(rich, theme.command, p.target.tunnel.target)}`,
-      );
+      runtime.log(`  ${colorize(rich, theme.muted, "ssh")}: ${colorize(rich, theme.command, p.target.tunnel.target)}`);
     }
     if (p.probe.ok && p.self) {
       const host = p.self.host ?? "unknown";
@@ -439,7 +428,6 @@ async function resolveSshTarget(
   if (!target) {
     return { target: rawTarget, identity: identity ?? undefined };
   }
-  const identityFile =
-    identity ?? config.identityFiles.find((entry) => entry.trim().length > 0)?.trim() ?? undefined;
+  const identityFile = identity ?? config.identityFiles.find((entry) => entry.trim().length > 0)?.trim() ?? undefined;
   return { target, identity: identityFile };
 }

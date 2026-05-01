@@ -35,11 +35,7 @@ export type ParsedHookFrontmatter = Record<string, string>;
 export type Hook = {
   name: string;
   description: string;
-  source:
-    | "remoteclaw-bundled"
-    | "remoteclaw-managed"
-    | "remoteclaw-workspace"
-    | "remoteclaw-plugin";
+  source: "remoteclaw-bundled" | "remoteclaw-managed" | "remoteclaw-workspace" | "remoteclaw-plugin";
   pluginId?: string;
   filePath: string; // Path to HOOK.md
   baseDir: string; // Directory containing hook

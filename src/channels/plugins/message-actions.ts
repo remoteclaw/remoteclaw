@@ -3,9 +3,7 @@ import type { AgentToolResult } from "../../types/agent-types.js";
 import { getChannelPlugin, listChannelPlugins } from "./index.js";
 import type { ChannelMessageActionContext, ChannelMessageActionName } from "./types.js";
 
-const trustedRequesterRequiredByChannel: Readonly<
-  Partial<Record<string, ReadonlySet<ChannelMessageActionName>>>
-> = {
+const trustedRequesterRequiredByChannel: Readonly<Partial<Record<string, ReadonlySet<ChannelMessageActionName>>>> = {
   discord: new Set<ChannelMessageActionName>(["timeout", "kick", "ban"]),
 };
 
@@ -34,34 +32,19 @@ export function supportsChannelMessageButtons(cfg: RemoteClawConfig): boolean {
   return supportsMessageFeature(cfg, (actions) => actions?.supportsButtons?.({ cfg }) === true);
 }
 
-export function supportsChannelMessageButtonsForChannel(params: {
-  cfg: RemoteClawConfig;
-  channel?: string;
-}): boolean {
-  return supportsMessageFeatureForChannel(
-    params,
-    (actions) => actions.supportsButtons?.(params) === true,
-  );
+export function supportsChannelMessageButtonsForChannel(params: { cfg: RemoteClawConfig; channel?: string }): boolean {
+  return supportsMessageFeatureForChannel(params, (actions) => actions.supportsButtons?.(params) === true);
 }
 
 export function supportsChannelMessageCards(cfg: RemoteClawConfig): boolean {
   return supportsMessageFeature(cfg, (actions) => actions?.supportsCards?.({ cfg }) === true);
 }
 
-export function supportsChannelMessageCardsForChannel(params: {
-  cfg: RemoteClawConfig;
-  channel?: string;
-}): boolean {
-  return supportsMessageFeatureForChannel(
-    params,
-    (actions) => actions.supportsCards?.(params) === true,
-  );
+export function supportsChannelMessageCardsForChannel(params: { cfg: RemoteClawConfig; channel?: string }): boolean {
+  return supportsMessageFeatureForChannel(params, (actions) => actions.supportsCards?.(params) === true);
 }
 
-function supportsMessageFeature(
-  cfg: RemoteClawConfig,
-  check: (actions: ChannelActions) => boolean,
-): boolean {
+function supportsMessageFeature(cfg: RemoteClawConfig, check: (actions: ChannelActions) => boolean): boolean {
   for (const plugin of listChannelPlugins()) {
     if (plugin.actions && check(plugin.actions)) {
       return true;
@@ -84,13 +67,9 @@ function supportsMessageFeatureForChannel(
   return plugin?.actions ? check(plugin.actions) : false;
 }
 
-export async function dispatchChannelMessageAction(
-  ctx: ChannelMessageActionContext,
-): Promise<AgentToolResult | null> {
+export async function dispatchChannelMessageAction(ctx: ChannelMessageActionContext): Promise<AgentToolResult | null> {
   if (requiresTrustedRequesterSender(ctx) && !ctx.requesterSenderId?.trim()) {
-    throw new Error(
-      `Trusted sender identity is required for ${ctx.channel}:${ctx.action} in tool-driven contexts.`,
-    );
+    throw new Error(`Trusted sender identity is required for ${ctx.channel}:${ctx.action} in tool-driven contexts.`);
   }
   const plugin = getChannelPlugin(ctx.channel);
   if (!plugin?.actions?.handleAction) {

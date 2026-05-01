@@ -13,8 +13,7 @@ export function logGatewayStartup(params: {
 }) {
   const scheme = params.tlsEnabled ? "wss" : "ws";
   const formatHost = (host: string) => (host.includes(":") ? `[${host}]` : host);
-  const hosts =
-    params.bindHosts && params.bindHosts.length > 0 ? params.bindHosts : [params.bindHost];
+  const hosts = params.bindHosts && params.bindHosts.length > 0 ? params.bindHosts : [params.bindHost];
   const listenEndpoints = hosts.map((host) => `${scheme}://${formatHost(host)}:${params.port}`);
   params.log.info(`listening on ${listenEndpoints.join(", ")} (PID ${process.pid})`);
   params.log.info(`log file: ${getResolvedLoggerSettings().file}`);

@@ -87,13 +87,10 @@ describe("sendMessageMSTeams", () => {
       mediaLocalRoots: ["/tmp/agent-workspace"],
     });
 
-    expect(mockState.loadOutboundMediaFromUrl).toHaveBeenCalledWith(
-      "file:///tmp/agent-workspace/inline.png",
-      {
-        maxBytes: 8 * 1024,
-        mediaLocalRoots: ["/tmp/agent-workspace"],
-      },
-    );
+    expect(mockState.loadOutboundMediaFromUrl).toHaveBeenCalledWith("file:///tmp/agent-workspace/inline.png", {
+      maxBytes: 8 * 1024,
+      mediaLocalRoots: ["/tmp/agent-workspace"],
+    });
 
     expect(mockState.sendMSTeamsMessages).toHaveBeenCalledWith(
       expect.objectContaining({

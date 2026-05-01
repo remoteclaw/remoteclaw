@@ -30,8 +30,7 @@ function splitGraphemes(value: string): string[] {
   }
 }
 
-const hasJsonFlag = (argv: string[]) =>
-  argv.some((arg) => arg === "--json" || arg.startsWith("--json="));
+const hasJsonFlag = (argv: string[]) => argv.some((arg) => arg === "--json" || arg.startsWith("--json="));
 
 const hasVersionFlag = (argv: string[]) =>
   argv.some((arg) => arg === "--version" || arg === "-V") || hasRootVersionAlias(argv);
@@ -59,8 +58,7 @@ function resolveTaglineMode(options: BannerOptions): TaglineMode | undefined {
 }
 
 export function formatCliBannerLine(version: string, options: BannerOptions = {}): string {
-  const commit =
-    options.commit ?? resolveCommitHash({ env: options.env, moduleUrl: import.meta.url });
+  const commit = options.commit ?? resolveCommitHash({ env: options.env, moduleUrl: import.meta.url });
   const commitLabel = commit ?? "unknown";
   const tagline = pickTagline({ ...options, mode: resolveTaglineMode(options) });
   const rich = options.richTty ?? isRich();
@@ -79,9 +77,7 @@ export function formatCliBannerLine(version: string, options: BannerOptions = {}
         `(${commitLabel})`,
       )} ${theme.muted("—")} ${theme.accentDim(tagline)}`;
     }
-    const line1 = `${theme.heading(title)} ${theme.info(version)} ${theme.muted(
-      `(${commitLabel})`,
-    )}`;
+    const line1 = `${theme.heading(title)} ${theme.info(version)} ${theme.muted(`(${commitLabel})`)}`;
     if (!tagline) {
       return line1;
     }
@@ -130,12 +126,7 @@ export function formatCliBannerArt(options: BannerOptions = {}): string {
 
   const colored = BANNER_ASCII.map((line) => {
     if (line.includes("REMOTECLAW")) {
-      return (
-        theme.muted("              ") +
-        theme.accent("🦀") +
-        theme.info(" REMOTECLAW ") +
-        theme.accent("🦀")
-      );
+      return theme.muted("              ") + theme.accent("🦀") + theme.info(" REMOTECLAW ") + theme.accent("🦀");
     }
     return splitGraphemes(line).map(colorChar).join("");
   });

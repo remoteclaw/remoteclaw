@@ -59,10 +59,7 @@ export function resolveGatewayWindowsTaskName(profile?: string): string {
   return `RemoteClaw Gateway (${normalized})`;
 }
 
-export function formatGatewayServiceDescription(params?: {
-  profile?: string;
-  version?: string;
-}): string {
+export function formatGatewayServiceDescription(params?: { profile?: string; version?: string }): string {
   const profile = normalizeGatewayProfile(params?.profile);
   const version = params?.version?.trim();
   const parts: string[] = [];
@@ -87,8 +84,7 @@ export function resolveGatewayServiceDescription(params: {
     params.description ??
     formatGatewayServiceDescription({
       profile: params.env.REMOTECLAW_PROFILE,
-      version:
-        params.environment?.REMOTECLAW_SERVICE_VERSION ?? params.env.REMOTECLAW_SERVICE_VERSION,
+      version: params.environment?.REMOTECLAW_SERVICE_VERSION ?? params.env.REMOTECLAW_SERVICE_VERSION,
     })
   );
 }

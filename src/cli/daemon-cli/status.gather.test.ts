@@ -30,14 +30,10 @@ const serviceReadCommand = vi.fn<
     REMOTECLAW_CONFIG_PATH: "/tmp/remoteclaw-daemon/remoteclaw.json",
   },
 }));
-const resolveGatewayBindHost = vi.fn(
-  async (_bindMode?: string, _customBindHost?: string) => "0.0.0.0",
-);
+const resolveGatewayBindHost = vi.fn(async (_bindMode?: string, _customBindHost?: string) => "0.0.0.0");
 const pickPrimaryTailnetIPv4 = vi.fn(() => "100.64.0.9");
 const resolveGatewayPort = vi.fn((_cfg?: unknown, _env?: unknown) => 18789);
-const resolveStateDir = vi.fn(
-  (env: NodeJS.ProcessEnv) => env.REMOTECLAW_STATE_DIR ?? "/tmp/remoteclaw-cli",
-);
+const resolveStateDir = vi.fn((env: NodeJS.ProcessEnv) => env.REMOTECLAW_STATE_DIR ?? "/tmp/remoteclaw-cli");
 const resolveConfigPath = vi.fn((env: NodeJS.ProcessEnv, stateDir: string) => {
   return env.REMOTECLAW_CONFIG_PATH ?? `${stateDir}/remoteclaw.json`;
 });

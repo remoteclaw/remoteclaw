@@ -11,8 +11,7 @@ function makeAttachment(mimeType: string, filePath?: string): MediaAttachment {
 function makeRuntime(acceptsInbound?: string[]): AgentRuntime {
   return {
     execute: async function* () {},
-    mediaCapabilities:
-      acceptsInbound !== undefined ? { acceptsInbound, emitsOutbound: false } : undefined,
+    mediaCapabilities: acceptsInbound !== undefined ? { acceptsInbound, emitsOutbound: false } : undefined,
   };
 }
 
@@ -43,11 +42,7 @@ describe("partitionMedia", () => {
 
   it("supports multiple accepted prefixes", () => {
     const runtime = makeRuntime(["image/", "audio/", "video/"]);
-    const media = [
-      makeAttachment("image/png"),
-      makeAttachment("audio/wav"),
-      makeAttachment("video/mp4"),
-    ];
+    const media = [makeAttachment("image/png"), makeAttachment("audio/wav"), makeAttachment("video/mp4")];
 
     const result = partitionMedia(runtime, media);
 
@@ -109,10 +104,7 @@ describe("formatUnsupportedMediaWarning", () => {
   });
 
   it("formats multiple unsupported media of different types", () => {
-    const warning = formatUnsupportedMediaWarning(
-      [makeAttachment("audio/ogg"), makeAttachment("video/mp4")],
-      "claude",
-    );
+    const warning = formatUnsupportedMediaWarning([makeAttachment("audio/ogg"), makeAttachment("video/mp4")], "claude");
 
     expect(warning).toContain("2 media attachments");
     expect(warning).toContain("audio/video");
@@ -120,10 +112,7 @@ describe("formatUnsupportedMediaWarning", () => {
   });
 
   it("formats multiple unsupported media of the same type", () => {
-    const warning = formatUnsupportedMediaWarning(
-      [makeAttachment("image/jpeg"), makeAttachment("image/png")],
-      "codex",
-    );
+    const warning = formatUnsupportedMediaWarning([makeAttachment("image/jpeg"), makeAttachment("image/png")], "codex");
 
     expect(warning).toContain("2 media attachments");
     expect(warning).toContain("image");

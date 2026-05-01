@@ -31,16 +31,12 @@ function isRawToolCallBlock(block: unknown): block is RawToolCallBlock {
     return false;
   }
   const type = (block as { type?: unknown }).type;
-  return (
-    typeof type === "string" &&
-    (type === "toolCall" || type === "toolUse" || type === "functionCall")
-  );
+  return typeof type === "string" && (type === "toolCall" || type === "toolUse" || type === "functionCall");
 }
 
 function hasToolCallInput(block: RawToolCallBlock): boolean {
   const hasInput = "input" in block ? block.input !== undefined && block.input !== null : false;
-  const hasArguments =
-    "arguments" in block ? block.arguments !== undefined && block.arguments !== null : false;
+  const hasArguments = "arguments" in block ? block.arguments !== undefined && block.arguments !== null : false;
   return hasInput || hasArguments;
 }
 
@@ -257,9 +253,7 @@ export function repairToolCallInputs(
     for (const block of msg.content) {
       if (
         isRawToolCallBlock(block) &&
-        (!hasToolCallInput(block) ||
-          !hasToolCallId(block) ||
-          !hasToolCallName(block, allowedToolNames))
+        (!hasToolCallInput(block) || !hasToolCallId(block) || !hasToolCallName(block, allowedToolNames))
       ) {
         droppedToolCalls += 1;
         droppedInMessage += 1;
@@ -334,10 +328,7 @@ export function repairToolCallInputs(
   };
 }
 
-export function sanitizeToolCallInputs(
-  messages: AgentMessage[],
-  options?: ToolCallInputRepairOptions,
-): AgentMessage[] {
+export function sanitizeToolCallInputs(messages: AgentMessage[], options?: ToolCallInputRepairOptions): AgentMessage[] {
   return repairToolCallInputs(messages, options).messages;
 }
 
@@ -450,10 +441,7 @@ export function repairToolUseResultPairing(messages: AgentMessage[]): ToolUseRep
             changed = true;
             continue;
           }
-          const normalizedToolResult = normalizeToolResultName(
-            toolResult,
-            toolCallNamesById.get(id),
-          );
+          const normalizedToolResult = normalizeToolResultName(toolResult, toolCallNamesById.get(id));
           if (normalizedToolResult !== toolResult) {
             changed = true;
           }

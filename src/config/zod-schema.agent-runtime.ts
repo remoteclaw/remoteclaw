@@ -169,8 +169,7 @@ export const SandboxDockerSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["network"],
-        message:
-          'Sandbox security: network mode "host" is blocked. Use "bridge" or "none" instead.',
+        message: 'Sandbox security: network mode "host" is blocked. Use "bridge" or "none" instead.',
       });
     }
     if (blockedNetworkReason === "container_namespace_join") {
@@ -263,13 +262,7 @@ export const ToolsWebSearchSchema = z
   .object({
     enabled: z.boolean().optional(),
     provider: z
-      .union([
-        z.literal("brave"),
-        z.literal("perplexity"),
-        z.literal("grok"),
-        z.literal("gemini"),
-        z.literal("kimi"),
-      ])
+      .union([z.literal("brave"), z.literal("perplexity"), z.literal("grok"), z.literal("gemini"), z.literal("kimi")])
       .optional(),
     apiKey: SecretInputSchema.optional().register(sensitive),
     maxResults: z.number().int().positive().optional(),
@@ -348,11 +341,7 @@ type AllowlistPolicy = {
   alsoAllow?: string[];
 };
 
-function addAllowAlsoAllowConflictIssue(
-  value: AllowlistPolicy,
-  ctx: z.RefinementCtx,
-  message: string,
-): void {
+function addAllowAlsoAllowConflictIssue(value: AllowlistPolicy, ctx: z.RefinementCtx, message: string): void {
   if (value.allow && value.allow.length > 0 && value.alsoAllow && value.alsoAllow.length > 0) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -378,9 +367,7 @@ export const ToolPolicyWithProfileSchema = z
   });
 
 // Provider docking: allowlists keyed by provider id (no schema updates when adding providers).
-export const ElevatedAllowFromSchema = z
-  .record(z.string(), z.array(z.union([z.string(), z.number()])))
-  .optional();
+export const ElevatedAllowFromSchema = z.record(z.string(), z.array(z.union([z.string(), z.number()]))).optional();
 
 const ToolExecApplyPatchSchema = z
   .object({
@@ -473,8 +460,7 @@ const ToolLoopDetectionSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["globalCircuitBreakerThreshold"],
-        message:
-          "tools.loopDetection.criticalThreshold must be lower than globalCircuitBreakerThreshold.",
+        message: "tools.loopDetection.criticalThreshold must be lower than globalCircuitBreakerThreshold.",
       });
     }
   })

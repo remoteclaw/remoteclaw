@@ -1,6 +1,6 @@
 import type { RequestClient } from "@buape/carbon";
 import { PermissionFlagsBits, Routes } from "discord-api-types/v10";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockRest = vi.hoisted(() => ({
   get: vi.fn(),
@@ -30,8 +30,7 @@ function mockGuildMemberRoutes(params: RouteMockParams): void {
         id: guildId,
         roles: params.roles.map((role) => ({
           id: role.id,
-          permissions:
-            typeof role.permissions === "bigint" ? role.permissions.toString() : role.permissions,
+          permissions: typeof role.permissions === "bigint" ? role.permissions.toString() : role.permissions,
         })),
       };
     }
@@ -43,13 +42,12 @@ function mockGuildMemberRoutes(params: RouteMockParams): void {
 }
 
 describe("discord guild permission authorization", () => {
-  beforeEach(async () => {
-    vi.resetModules();
-    ({
-      fetchMemberGuildPermissionsDiscord,
-      hasAllGuildPermissionsDiscord,
-      hasAnyGuildPermissionDiscord,
-    } = await import("./send.permissions.js"));
+  beforeAll(async () => {
+    ({ fetchMemberGuildPermissionsDiscord, hasAllGuildPermissionsDiscord, hasAnyGuildPermissionDiscord } =
+      await import("./send.permissions.js"));
+  });
+
+  beforeEach(() => {
     mockRest.get.mockReset();
   });
 
@@ -72,12 +70,8 @@ describe("discord guild permission authorization", () => {
 
       const result = await fetchMemberGuildPermissionsDiscord("guild-1", "user-1");
       expect(result).not.toBeNull();
-      expect((result! & PermissionFlagsBits.ViewChannel) === PermissionFlagsBits.ViewChannel).toBe(
-        true,
-      );
-      expect((result! & PermissionFlagsBits.KickMembers) === PermissionFlagsBits.KickMembers).toBe(
-        true,
-      );
+      expect((result! & PermissionFlagsBits.ViewChannel) === PermissionFlagsBits.ViewChannel).toBe(true);
+      expect((result! & PermissionFlagsBits.KickMembers) === PermissionFlagsBits.KickMembers).toBe(true);
     });
   });
 
@@ -91,9 +85,7 @@ describe("discord guild permission authorization", () => {
         memberRoles: ["role-mod"],
       });
 
-      const result = await hasAnyGuildPermissionDiscord("guild-1", "user-1", [
-        PermissionFlagsBits.KickMembers,
-      ]);
+      const result = await hasAnyGuildPermissionDiscord("guild-1", "user-1", [PermissionFlagsBits.KickMembers]);
       expect(result).toBe(true);
     });
 
@@ -109,9 +101,7 @@ describe("discord guild permission authorization", () => {
         memberRoles: ["role-admin"],
       });
 
-      const result = await hasAnyGuildPermissionDiscord("guild-1", "user-1", [
-        PermissionFlagsBits.KickMembers,
-      ]);
+      const result = await hasAnyGuildPermissionDiscord("guild-1", "user-1", [PermissionFlagsBits.KickMembers]);
       expect(result).toBe(true);
     });
 

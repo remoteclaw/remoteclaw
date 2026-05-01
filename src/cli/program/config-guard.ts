@@ -21,8 +21,7 @@ const ALLOWED_INVALID_GATEWAY_SUBCOMMANDS = new Set([
   "restart",
 ]);
 let didRunDoctorConfigFlow = false;
-let configSnapshotPromise: Promise<Awaited<ReturnType<typeof readConfigFileSnapshot>>> | null =
-  null;
+let configSnapshotPromise: Promise<Awaited<ReturnType<typeof readConfigFileSnapshot>>> | null = null;
 
 function resetConfigGuardStateForTests() {
   didRunDoctorConfigFlow = false;
@@ -78,16 +77,11 @@ export async function ensureConfigReady(params: {
   const allowInvalid = commandName
     ? params.allowInvalid === true ||
       ALLOWED_INVALID_COMMANDS.has(commandName) ||
-      (commandName === "gateway" &&
-        subcommandName &&
-        ALLOWED_INVALID_GATEWAY_SUBCOMMANDS.has(subcommandName))
+      (commandName === "gateway" && subcommandName && ALLOWED_INVALID_GATEWAY_SUBCOMMANDS.has(subcommandName))
     : false;
   const issues =
-    snapshot.exists && !snapshot.valid
-      ? formatConfigIssueLines(snapshot.issues, "-", { normalizeRoot: true })
-      : [];
-  const legacyIssues =
-    snapshot.legacyIssues.length > 0 ? formatConfigIssueLines(snapshot.legacyIssues, "-") : [];
+    snapshot.exists && !snapshot.valid ? formatConfigIssueLines(snapshot.issues, "-", { normalizeRoot: true }) : [];
+  const legacyIssues = snapshot.legacyIssues.length > 0 ? formatConfigIssueLines(snapshot.legacyIssues, "-") : [];
 
   const invalid = snapshot.exists && !snapshot.valid;
   if (!invalid) {
@@ -111,9 +105,7 @@ export async function ensureConfigReady(params: {
     params.runtime.error(legacyIssues.map((issue) => `  ${error(issue)}`).join("\n"));
   }
   params.runtime.error("");
-  params.runtime.error(
-    `${muted("Run:")} ${commandText(formatCliCommand("remoteclaw doctor --fix"))}`,
-  );
+  params.runtime.error(`${muted("Run:")} ${commandText(formatCliCommand("remoteclaw doctor --fix"))}`);
   if (!allowInvalid) {
     params.runtime.exit(1);
   }

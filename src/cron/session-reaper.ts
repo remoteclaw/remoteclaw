@@ -7,11 +7,7 @@
  */
 
 import { parseDurationMs } from "../cli/parse-duration.js";
-import {
-  archiveRemovedSessionTranscripts,
-  loadSessionStore,
-  updateSessionStore,
-} from "../config/sessions.js";
+import { archiveRemovedSessionTranscripts, loadSessionStore, updateSessionStore } from "../config/sessions.js";
 import type { CronConfig } from "../config/types.cron.js";
 import { cleanupArchivedSessionTranscripts } from "../gateway/session-utils.fs.js";
 import { isCronRunSessionKey } from "../sessions/session-key-utils.js";
@@ -137,10 +133,7 @@ export async function sweepCronRunSessions(params: {
   }
 
   if (pruned > 0) {
-    params.log.info(
-      { pruned, retentionMs },
-      `cron-reaper: pruned ${pruned} expired cron run session(s)`,
-    );
+    params.log.info({ pruned, retentionMs }, `cron-reaper: pruned ${pruned} expired cron run session(s)`);
   }
 
   return { swept: true, pruned };

@@ -2,11 +2,7 @@ import { html, nothing } from "lit";
 import { formatRelativeTimestamp, formatDurationHuman } from "../format.ts";
 import type { WhatsAppStatus } from "../types.ts";
 import { renderChannelConfigSection } from "./channels.config.ts";
-import {
-  formatNullableBoolean,
-  renderSingleAccountChannelCard,
-  resolveChannelConfigured,
-} from "./channels.shared.ts";
+import { formatNullableBoolean, renderSingleAccountChannelCard, resolveChannelConfigured } from "./channels.shared.ts";
 import type { ChannelsProps } from "./channels.types.ts";
 
 export function renderWhatsAppCard(params: {
@@ -28,9 +24,7 @@ export function renderWhatsAppCard(params: {
       { label: "Connected", value: whatsapp?.connected ? "Yes" : "No" },
       {
         label: "Last connect",
-        value: whatsapp?.lastConnectedAt
-          ? formatRelativeTimestamp(whatsapp.lastConnectedAt)
-          : "n/a",
+        value: whatsapp?.lastConnectedAt ? formatRelativeTimestamp(whatsapp.lastConnectedAt) : "n/a",
       },
       {
         label: "Last message",

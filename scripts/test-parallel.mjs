@@ -97,19 +97,13 @@ const nodeMajor = Number.parseInt(process.versions.node.split(".")[0] ?? "", 10)
 const supportsVmForks = Number.isFinite(nodeMajor) ? nodeMajor !== 24 : true;
 const useVmForks =
   process.env.REMOTECLAW_TEST_VM_FORKS === "1" ||
-  (process.env.REMOTECLAW_TEST_VM_FORKS !== "0" &&
-    !isWindows &&
-    supportsVmForks &&
-    !lowMemLocalHost);
+  (process.env.REMOTECLAW_TEST_VM_FORKS !== "0" && !isWindows && supportsVmForks && !lowMemLocalHost);
 const disableIsolation = process.env.REMOTECLAW_TEST_NO_ISOLATE === "1";
 const includeGatewaySuite = process.env.REMOTECLAW_TEST_INCLUDE_GATEWAY === "1";
 const includeExtensionsSuite = process.env.REMOTECLAW_TEST_INCLUDE_EXTENSIONS === "1";
 const rawTestProfile = process.env.REMOTECLAW_TEST_PROFILE?.trim().toLowerCase();
 const testProfile =
-  rawTestProfile === "low" ||
-  rawTestProfile === "max" ||
-  rawTestProfile === "normal" ||
-  rawTestProfile === "serial"
+  rawTestProfile === "low" || rawTestProfile === "max" || rawTestProfile === "normal" || rawTestProfile === "serial"
     ? rawTestProfile
     : "normal";
 const shouldSplitUnitRuns = testProfile !== "low" && testProfile !== "serial";
@@ -130,14 +124,7 @@ const runs = [
         },
         {
           name: "unit-isolated",
-          args: [
-            "vitest",
-            "run",
-            "--config",
-            "vitest.unit.config.ts",
-            "--pool=forks",
-            ...unitIsolatedFiles,
-          ],
+          args: ["vitest", "run", "--config", "vitest.unit.config.ts", "--pool=forks", ...unitIsolatedFiles],
         },
       ]
     : [
@@ -157,13 +144,7 @@ const runs = [
     ? [
         {
           name: "extensions",
-          args: [
-            "vitest",
-            "run",
-            "--config",
-            "vitest.extensions.config.ts",
-            ...(useVmForks ? ["--pool=vmForks"] : []),
-          ],
+          args: ["vitest", "run", "--config", "vitest.extensions.config.ts", ...(useVmForks ? ["--pool=vmForks"] : [])],
         },
       ]
     : []),
@@ -185,8 +166,7 @@ const runs = [
     : []),
 ];
 const shardOverride = Number.parseInt(process.env.REMOTECLAW_TEST_SHARDS ?? "", 10);
-const configuredShardCount =
-  Number.isFinite(shardOverride) && shardOverride > 1 ? shardOverride : null;
+const configuredShardCount = Number.isFinite(shardOverride) && shardOverride > 1 ? shardOverride : null;
 const shardCount = configuredShardCount ?? (isWindowsCi ? 2 : 1);
 const shardIndexOverride = (() => {
   const parsed = Number.parseInt(process.env.REMOTECLAW_TEST_SHARD_INDEX ?? "", 10);
@@ -195,9 +175,7 @@ const shardIndexOverride = (() => {
 
 if (shardIndexOverride !== null && shardCount <= 1) {
   console.error(
-    `[test-parallel] REMOTECLAW_TEST_SHARD_INDEX=${String(
-      shardIndexOverride,
-    )} requires REMOTECLAW_TEST_SHARDS>1.`,
+    `[test-parallel] REMOTECLAW_TEST_SHARD_INDEX=${String(shardIndexOverride)} requires REMOTECLAW_TEST_SHARDS>1.`,
   );
   process.exit(2);
 }
@@ -211,17 +189,13 @@ if (shardIndexOverride !== null && shardIndexOverride > shardCount) {
   process.exit(2);
 }
 const windowsCiArgs = isWindowsCi ? ["--dangerouslyIgnoreUnhandledErrors"] : [];
-const silentArgs =
-  process.env.REMOTECLAW_TEST_SHOW_PASSED_LOGS === "1" ? [] : ["--silent=passed-only"];
+const silentArgs = process.env.REMOTECLAW_TEST_SHOW_PASSED_LOGS === "1" ? [] : ["--silent=passed-only"];
 const rawPassthroughArgs = process.argv.slice(2);
-const passthroughArgs =
-  rawPassthroughArgs[0] === "--" ? rawPassthroughArgs.slice(1) : rawPassthroughArgs;
+const passthroughArgs = rawPassthroughArgs[0] === "--" ? rawPassthroughArgs.slice(1) : rawPassthroughArgs;
 const topLevelParallelEnabled = testProfile !== "low" && testProfile !== "serial";
 const overrideWorkers = Number.parseInt(process.env.REMOTECLAW_TEST_WORKERS ?? "", 10);
-const resolvedOverride =
-  Number.isFinite(overrideWorkers) && overrideWorkers > 0 ? overrideWorkers : null;
-const parallelGatewayEnabled =
-  process.env.REMOTECLAW_TEST_PARALLEL_GATEWAY === "1" || (!isCI && highMemLocalHost);
+const resolvedOverride = Number.isFinite(overrideWorkers) && overrideWorkers > 0 ? overrideWorkers : null;
+const parallelGatewayEnabled = process.env.REMOTECLAW_TEST_PARALLEL_GATEWAY === "1" || (!isCI && highMemLocalHost);
 // Keep gateway serial by default except when explicitly requested or on high-memory local hosts.
 const keepGatewaySerial =
   isWindowsCi ||
@@ -234,9 +208,7 @@ const baseLocalWorkers = Math.max(4, Math.min(16, hostCpuCount));
 const loadAwareDisabledRaw = process.env.REMOTECLAW_TEST_LOAD_AWARE?.trim().toLowerCase();
 const loadAwareDisabled = loadAwareDisabledRaw === "0" || loadAwareDisabledRaw === "false";
 const loadRatio =
-  !isCI && !loadAwareDisabled && process.platform !== "win32" && hostCpuCount > 0
-    ? os.loadavg()[0] / hostCpuCount
-    : 0;
+  !isCI && !loadAwareDisabled && process.platform !== "win32" && hostCpuCount > 0 ? os.loadavg()[0] / hostCpuCount : 0;
 // Keep the fast-path unchanged on normal load; only throttle under extreme host pressure.
 const extremeLoadScale = loadRatio >= 1.1 ? 0.75 : loadRatio >= 1 ? 0.85 : 1;
 const localWorkers = Math.max(4, Math.min(16, Math.floor(baseLocalWorkers * extremeLoadScale)));
@@ -341,14 +313,7 @@ const runOnce = (entry, extraArgs = []) =>
         ? entry.args.map((arg) => (arg === "--pool=vmForks" ? "--pool=forks" : arg))
         : entry.args;
     const args = maxWorkers
-      ? [
-          ...entryArgs,
-          "--maxWorkers",
-          String(maxWorkers),
-          ...silentArgs,
-          ...windowsCiArgs,
-          ...extraArgs,
-        ]
+      ? [...entryArgs, "--maxWorkers", String(maxWorkers), ...silentArgs, ...windowsCiArgs, ...extraArgs]
       : [...entryArgs, ...silentArgs, ...windowsCiArgs, ...extraArgs];
     const nodeOptions = process.env.NODE_OPTIONS ?? "";
     const nextNodeOptions = WARNING_SUPPRESSION_FLAGS.reduce(
@@ -359,9 +324,7 @@ const runOnce = (entry, extraArgs = []) =>
       maxOldSpaceSizeMb && !nextNodeOptions.includes("--max-old-space-size=")
         ? `--max-old-space-size=${maxOldSpaceSizeMb}`
         : null;
-    const resolvedNodeOptions = heapFlag
-      ? `${nextNodeOptions} ${heapFlag}`.trim()
-      : nextNodeOptions;
+    const resolvedNodeOptions = heapFlag ? `${nextNodeOptions} ${heapFlag}`.trim() : nextNodeOptions;
     let child;
     try {
       child = spawn(pnpm, args, {
@@ -430,15 +393,7 @@ process.on("SIGTERM", () => shutdown("SIGTERM"));
 if (passthroughArgs.length > 0) {
   const maxWorkers = maxWorkersForRun("unit");
   const args = maxWorkers
-    ? [
-        "vitest",
-        "run",
-        "--maxWorkers",
-        String(maxWorkers),
-        ...silentArgs,
-        ...windowsCiArgs,
-        ...passthroughArgs,
-      ]
+    ? ["vitest", "run", "--maxWorkers", String(maxWorkers), ...silentArgs, ...windowsCiArgs, ...passthroughArgs]
     : ["vitest", "run", ...silentArgs, ...windowsCiArgs, ...passthroughArgs];
   const nodeOptions = process.env.NODE_OPTIONS ?? "";
   const nextNodeOptions = WARNING_SUPPRESSION_FLAGS.reduce(

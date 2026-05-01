@@ -1,7 +1,4 @@
-import {
-  createDiscordActionGate,
-  listEnabledDiscordAccounts,
-} from "../../../../extensions/discord/src/accounts.js";
+import { createDiscordActionGate, listEnabledDiscordAccounts } from "../../../../extensions/discord/src/accounts.js";
 import type { DiscordActionConfig } from "../../../config/types.discord.js";
 import type { ChannelMessageActionAdapter, ChannelMessageActionName } from "../types.js";
 import { handleDiscordMessageAction } from "./discord/handle-action.js";
@@ -20,8 +17,7 @@ export const discordMessageActions: ChannelMessageActionAdapter = {
         accountId: account.accountId,
       }),
     );
-    const isEnabled = (key: keyof DiscordActionConfig, defaultValue = true) =>
-      gate(key, defaultValue);
+    const isEnabled = (key: keyof DiscordActionConfig, defaultValue = true) => gate(key, defaultValue);
     const actions = new Set<ChannelMessageActionName>(["send"]);
     if (isEnabled("polls")) {
       actions.add("poll");
@@ -115,15 +111,7 @@ export const discordMessageActions: ChannelMessageActionAdapter = {
     }
     return null;
   },
-  handleAction: async ({
-    action,
-    params,
-    cfg,
-    accountId,
-    requesterSenderId,
-    toolContext,
-    mediaLocalRoots,
-  }) => {
+  handleAction: async ({ action, params, cfg, accountId, requesterSenderId, toolContext, mediaLocalRoots }) => {
     return await handleDiscordMessageAction({
       action,
       params,

@@ -63,12 +63,9 @@ describe("fetchDiscord", () => {
       return jsonResponse([{ id: "1", name: "Guild" }], 200);
     });
 
-    const result = await fetchDiscord<Array<{ id: string; name: string }>>(
-      "/users/@me/guilds",
-      "test",
-      fetcher,
-      { retry: { attempts: 2, minDelayMs: 0, maxDelayMs: 0 } },
-    );
+    const result = await fetchDiscord<Array<{ id: string; name: string }>>("/users/@me/guilds", "test", fetcher, {
+      retry: { attempts: 2, minDelayMs: 0, maxDelayMs: 0 },
+    });
 
     expect(result).toHaveLength(1);
     expect(calls).toBe(2);

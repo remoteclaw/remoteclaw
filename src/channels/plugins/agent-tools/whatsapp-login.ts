@@ -18,8 +18,7 @@ export function createWhatsAppLoginTool(): ChannelAgentTool {
       force: Type.Optional(Type.Boolean()),
     }),
     execute: async (_toolCallId, args) => {
-      const { startWebLoginWithQr, waitForWebLogin } =
-        await import("../../../../extensions/whatsapp/src/login-qr.js");
+      const { startWebLoginWithQr, waitForWebLogin } = await import("../../../../extensions/whatsapp/src/login-qr.js");
       const action = (args as { action?: string })?.action ?? "start";
       if (action === "wait") {
         const result = await waitForWebLogin({
@@ -39,10 +38,7 @@ export function createWhatsAppLoginTool(): ChannelAgentTool {
           typeof (args as { timeoutMs?: unknown }).timeoutMs === "number"
             ? (args as { timeoutMs?: number }).timeoutMs
             : undefined,
-        force:
-          typeof (args as { force?: unknown }).force === "boolean"
-            ? (args as { force?: boolean }).force
-            : false,
+        force: typeof (args as { force?: unknown }).force === "boolean" ? (args as { force?: boolean }).force : false,
       });
 
       if (!result.qrDataUrl) {

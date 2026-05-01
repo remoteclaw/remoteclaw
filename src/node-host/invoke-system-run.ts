@@ -1,19 +1,12 @@
 import crypto from "node:crypto";
 import type { GatewayClient } from "../gateway/client.js";
 import { sanitizeSystemRunEnvOverrides } from "../infra/host-env-security.js";
-import type {
-  ExecEventPayload,
-  ExecFinishedEventParams,
-  RunResult,
-  SystemRunParams,
-} from "./invoke-types.js";
+import type { ExecEventPayload, ExecFinishedEventParams, RunResult, SystemRunParams } from "./invoke-types.js";
 
 function resolveSystemRunCommand(opts: {
   command?: unknown;
   rawCommand?: unknown;
-}):
-  | { ok: true; argv: string[]; shellCommand: string | null; cmdText: string }
-  | { ok: false; message: string } {
+}): { ok: true; argv: string[]; shellCommand: string | null; cmdText: string } | { ok: false; message: string } {
   const cmd = opts.command;
   const raw = opts.rawCommand;
   if (Array.isArray(cmd) && cmd.length > 0) {
@@ -70,10 +63,7 @@ export type HandleSystemRunInvokeOptions = {
 };
 
 async function sendSystemRunDenied(
-  opts: Pick<
-    HandleSystemRunInvokeOptions,
-    "client" | "sendNodeEvent" | "buildExecEventPayload" | "sendInvokeResult"
-  >,
+  opts: Pick<HandleSystemRunInvokeOptions, "client" | "sendNodeEvent" | "buildExecEventPayload" | "sendInvokeResult">,
   execution: SystemRunExecutionContext,
   params: {
     reason: SystemRunDeniedReason;
@@ -109,9 +99,7 @@ function applyOutputTruncation(result: RunResult) {
   }
 }
 
-async function parseSystemRunPhase(
-  opts: HandleSystemRunInvokeOptions,
-): Promise<SystemRunParsePhase | null> {
+async function parseSystemRunPhase(opts: HandleSystemRunInvokeOptions): Promise<SystemRunParsePhase | null> {
   const command = resolveSystemRunCommand({
     command: opts.params.command,
     rawCommand: opts.params.rawCommand,

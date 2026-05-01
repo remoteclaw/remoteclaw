@@ -1,16 +1,7 @@
 import { describe, expect, it } from "vitest";
-import {
-  getConfigValueAtPath,
-  parseConfigPath,
-  setConfigValueAtPath,
-  unsetConfigValueAtPath,
-} from "./config-paths.js";
+import { getConfigValueAtPath, parseConfigPath, setConfigValueAtPath, unsetConfigValueAtPath } from "./config-paths.js";
 import { migrateLegacyConfig, readConfigFileSnapshot, validateConfigObject } from "./config.js";
-import {
-  buildWebSearchProviderConfig,
-  withTempHome,
-  writeRemoteClawConfig,
-} from "./test-helpers.js";
+import { buildWebSearchProviderConfig, withTempHome, writeRemoteClawConfig } from "./test-helpers.js";
 import { RemoteClawSchema } from "./zod-schema.js";
 
 describe("$schema key in config (#14998)", () => {
@@ -332,9 +323,7 @@ describe("agents.defaults.embeddedPi legacy field (#2479)", () => {
       "Stripped obsolete agents.defaults.embeddedPi field — the Pi orchestrator was replaced by AgentRuntime.",
     );
     expect(res.config).not.toBeNull();
-    expect(
-      (res.config?.agents?.defaults as { embeddedPi?: unknown } | undefined)?.embeddedPi,
-    ).toBeUndefined();
+    expect((res.config?.agents?.defaults as { embeddedPi?: unknown } | undefined)?.embeddedPi).toBeUndefined();
   });
 });
 
@@ -394,9 +383,7 @@ describe("thinking-level legacy fields (#2480)", () => {
       | undefined;
     expect(defaults?.thinkingDefault).toBeUndefined();
     expect(defaults?.subagents?.thinking).toBeUndefined();
-    const list = res.config?.agents?.list as
-      | Array<{ subagents?: { thinking?: unknown } }>
-      | undefined;
+    const list = res.config?.agents?.list as Array<{ subagents?: { thinking?: unknown } }> | undefined;
     expect(list?.[0]?.subagents?.thinking).toBeUndefined();
   });
 
@@ -412,8 +399,7 @@ describe("thinking-level legacy fields (#2480)", () => {
       "Stripped obsolete hooks.mappings[].thinking field(s) — CLI runtimes own reasoning depth.",
     );
     expect(res.config).not.toBeNull();
-    const mappings = (res.config?.hooks as { mappings?: Array<{ thinking?: unknown }> } | undefined)
-      ?.mappings;
+    const mappings = (res.config?.hooks as { mappings?: Array<{ thinking?: unknown }> } | undefined)?.mappings;
     expect(mappings?.[0]?.thinking).toBeUndefined();
   });
 });
@@ -472,9 +458,7 @@ describe("agent params bag legacy fields (#2481)", () => {
     expect(res.config).not.toBeNull();
     const list = res.config?.agents?.list as Array<{ params?: unknown }> | undefined;
     expect(list?.[0]?.params).toBeUndefined();
-    const models = (
-      res.config?.agents?.defaults as { models?: Record<string, { params?: unknown }> }
-    )?.models;
+    const models = (res.config?.agents?.defaults as { models?: Record<string, { params?: unknown }> })?.models;
     expect(models?.["gpt-4o"]?.params).toBeUndefined();
     expect(models?.["claude-4-5"]?.params).toBeUndefined();
   });
@@ -570,9 +554,7 @@ describe("gutted LLM-platform fields are rejected (#2489)", () => {
     });
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues.some((i) => /Unrecognized key.*memory/.test(i.message))).toBe(
-        true,
-      );
+      expect(result.error.issues.some((i) => /Unrecognized key.*memory/.test(i.message))).toBe(true);
     }
   });
 
@@ -587,9 +569,7 @@ describe("gutted LLM-platform fields are rejected (#2489)", () => {
     });
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(
-        result.error.issues.some((i) => /Unrecognized key.*memorySearch/.test(i.message)),
-      ).toBe(true);
+      expect(result.error.issues.some((i) => /Unrecognized key.*memorySearch/.test(i.message))).toBe(true);
     }
   });
 
@@ -607,9 +587,7 @@ describe("gutted LLM-platform fields are rejected (#2489)", () => {
     });
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(
-        result.error.issues.some((i) => /Unrecognized key.*memorySearch/.test(i.message)),
-      ).toBe(true);
+      expect(result.error.issues.some((i) => /Unrecognized key.*memorySearch/.test(i.message))).toBe(true);
     }
   });
 

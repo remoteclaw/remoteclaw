@@ -3,10 +3,7 @@
  */
 
 import * as crypto from "node:crypto";
-import {
-  createFixedWindowRateLimiter,
-  type FixedWindowRateLimiter,
-} from "remoteclaw/plugin-sdk/synology-chat";
+import { createFixedWindowRateLimiter, type FixedWindowRateLimiter } from "remoteclaw/plugin-sdk/synology-chat";
 
 export type DmAuthorizationResult =
   | { allowed: true }

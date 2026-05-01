@@ -18,9 +18,7 @@ type SessionDefaultsSnapshot = {
 };
 
 function resolveSidebarChatSessionKey(state: AppViewState): string {
-  const snapshot = state.hello?.snapshot as
-    | { sessionDefaults?: SessionDefaultsSnapshot }
-    | undefined;
+  const snapshot = state.hello?.snapshot as { sessionDefaults?: SessionDefaultsSnapshot } | undefined;
   const mainSessionKey = snapshot?.sessionDefaults?.mainSessionKey?.trim();
   if (mainSessionKey) {
     return mainSessionKey;
@@ -125,15 +123,8 @@ function renderCronFilterIcon(hiddenCount: number) {
 export function renderChatControls(state: AppViewState) {
   const mainSessionKey = resolveMainSessionKey(state.hello, state.sessionsResult);
   const hideCron = state.sessionsHideCron ?? true;
-  const hiddenCronCount = hideCron
-    ? countHiddenCronSessions(state.sessionKey, state.sessionsResult)
-    : 0;
-  const sessionOptions = resolveSessionOptions(
-    state.sessionKey,
-    state.sessionsResult,
-    mainSessionKey,
-    hideCron,
-  );
+  const hiddenCronCount = hideCron ? countHiddenCronSessions(state.sessionKey, state.sessionsResult) : 0;
+  const sessionOptions = resolveSessionOptions(state.sessionKey, state.sessionsResult, mainSessionKey, hideCron);
   const disableThinkingToggle = state.onboarding;
   const disableFocusToggle = state.onboarding;
   const showThinking = state.onboarding ? false : state.settings.chatShowThinking;
@@ -287,10 +278,7 @@ export function renderChatControls(state: AppViewState) {
   `;
 }
 
-function resolveMainSessionKey(
-  hello: AppViewState["hello"],
-  sessions: SessionsListResult | null,
-): string | null {
+function resolveMainSessionKey(hello: AppViewState["hello"], sessions: SessionsListResult | null): string | null {
   const snapshot = hello?.snapshot as { sessionDefaults?: SessionDefaultsSnapshot } | undefined;
   const mainSessionKey = snapshot?.sessionDefaults?.mainSessionKey?.trim();
   if (mainSessionKey) {
@@ -383,10 +371,7 @@ export function parseSessionKey(key: string): SessionKeyInfo {
   return { prefix: "", fallbackName: key };
 }
 
-export function resolveSessionDisplayName(
-  key: string,
-  row?: SessionsListResult["sessions"][number],
-): string {
+export function resolveSessionDisplayName(key: string, row?: SessionsListResult["sessions"][number]): string {
   const label = row?.label?.trim() || "";
   const displayName = row?.displayName?.trim() || "";
   const { prefix, fallbackName } = parseSessionKey(key);

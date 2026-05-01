@@ -16,8 +16,7 @@ type LogLine = ReturnType<typeof parseLogLine>;
 const DEFAULT_LIMIT = 200;
 const MAX_BYTES = 1_000_000;
 
-const getChannelSet = () =>
-  new Set<string>([...listChannelPlugins().map((plugin) => plugin.id), "all"]);
+const getChannelSet = () => new Set<string>([...listChannelPlugins().map((plugin) => plugin.id), "all"]);
 
 function parseChannelFilter(raw?: string) {
   const trimmed = raw?.trim().toLowerCase();
@@ -73,22 +72,15 @@ async function readTailLines(file: string, limit: number): Promise<string[]> {
   }
 }
 
-export async function channelsLogsCommand(
-  opts: ChannelsLogsOptions,
-  runtime: RuntimeEnv = defaultRuntime,
-) {
+export async function channelsLogsCommand(opts: ChannelsLogsOptions, runtime: RuntimeEnv = defaultRuntime) {
   const channel = parseChannelFilter(opts.channel);
   const limitRaw = typeof opts.lines === "string" ? Number(opts.lines) : opts.lines;
   const limit =
-    typeof limitRaw === "number" && Number.isFinite(limitRaw) && limitRaw > 0
-      ? Math.floor(limitRaw)
-      : DEFAULT_LIMIT;
+    typeof limitRaw === "number" && Number.isFinite(limitRaw) && limitRaw > 0 ? Math.floor(limitRaw) : DEFAULT_LIMIT;
 
   const file = getResolvedLoggerSettings().file;
   const rawLines = await readTailLines(file, limit * 4);
-  const parsed = rawLines
-    .map(parseLogLine)
-    .filter((line): line is NonNullable<LogLine> => Boolean(line));
+  const parsed = rawLines.map(parseLogLine).filter((line): line is NonNullable<LogLine> => Boolean(line));
   const filtered = parsed.filter((line) => matchesChannel(line, channel));
   const lines = filtered.slice(Math.max(0, filtered.length - limit));
 

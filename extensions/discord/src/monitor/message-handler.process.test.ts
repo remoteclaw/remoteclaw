@@ -4,10 +4,7 @@ import {
   createBaseDiscordMessageContext,
   createDiscordDirectMessageContextOverrides,
 } from "./message-handler.test-harness.js";
-import {
-  __testing as threadBindingTesting,
-  createThreadBindingManager,
-} from "./thread-bindings.js";
+import { __testing as threadBindingTesting, createThreadBindingManager } from "./thread-bindings.js";
 
 const sendMocks = vi.hoisted(() => ({
   reactMessageDiscord: vi.fn(async () => {}),
@@ -34,14 +31,8 @@ const deliverDiscordReply = deliveryMocks.deliverDiscordReply;
 const createDiscordDraftStream = deliveryMocks.createDiscordDraftStream;
 type DispatchInboundParams = {
   dispatcher: {
-    sendBlockReply: (payload: {
-      text?: string;
-      isReasoning?: boolean;
-    }) => boolean | Promise<boolean>;
-    sendFinalReply: (payload: {
-      text?: string;
-      isReasoning?: boolean;
-    }) => boolean | Promise<boolean>;
+    sendBlockReply: (payload: { text?: string; isReasoning?: boolean }) => boolean | Promise<boolean>;
+    sendFinalReply: (payload: { text?: string; isReasoning?: boolean }) => boolean | Promise<boolean>;
   };
   replyOptions?: {
     onReasoningStream?: () => Promise<void> | void;
@@ -167,9 +158,7 @@ beforeEach(() => {
   threadBindingTesting.resetThreadBindingsForTests();
 });
 
-function getLastRouteUpdate():
-  | { sessionKey?: string; channel?: string; to?: string; accountId?: string }
-  | undefined {
+function getLastRouteUpdate(): { sessionKey?: string; channel?: string; to?: string; accountId?: string } | undefined {
   const callArgs = recordInboundSession.mock.calls.at(-1) as unknown[] | undefined;
   const params = callArgs?.[0] as
     | {
@@ -184,13 +173,9 @@ function getLastRouteUpdate():
   return params?.updateLastRoute;
 }
 
-function getLastDispatchCtx():
-  | { SessionKey?: string; MessageThreadId?: string | number }
-  | undefined {
+function getLastDispatchCtx(): { SessionKey?: string; MessageThreadId?: string | number } | undefined {
   const callArgs = dispatchInboundMessage.mock.calls.at(-1) as unknown[] | undefined;
-  const params = callArgs?.[0] as
-    | { ctx?: { SessionKey?: string; MessageThreadId?: string | number } }
-    | undefined;
+  const params = callArgs?.[0] as { ctx?: { SessionKey?: string; MessageThreadId?: string | number } } | undefined;
   return params?.ctx;
 }
 
@@ -207,9 +192,9 @@ async function runInPartialStreamMode(): Promise<void> {
 }
 
 function getReactionEmojis(): string[] {
-  return (
-    sendMocks.reactMessageDiscord.mock.calls as unknown as Array<[unknown, unknown, string]>
-  ).map((call) => call[2]);
+  return (sendMocks.reactMessageDiscord.mock.calls as unknown as Array<[unknown, unknown, string]>).map(
+    (call) => call[2],
+  );
 }
 
 function createMockDraftStreamForTest() {
@@ -219,12 +204,7 @@ function createMockDraftStreamForTest() {
 }
 
 function expectSinglePreviewEdit() {
-  expect(editMessageDiscord).toHaveBeenCalledWith(
-    "c1",
-    "preview-1",
-    { content: "Hello\nWorld" },
-    { rest: {} },
-  );
+  expect(editMessageDiscord).toHaveBeenCalledWith("c1", "preview-1", { content: "Hello\nWorld" }, { rest: {} });
   expect(deliverDiscordReply).not.toHaveBeenCalled();
 }
 
@@ -268,12 +248,7 @@ describe("processDiscordMessage ack reactions", () => {
     // oxlint-disable-next-line typescript/no-explicit-any
     await processDiscordMessage(ctx as any);
 
-    expect(sendMocks.reactMessageDiscord.mock.calls[0]).toEqual([
-      "fallback-channel",
-      "m1",
-      "👀",
-      { rest: {} },
-    ]);
+    expect(sendMocks.reactMessageDiscord.mock.calls[0]).toEqual(["fallback-channel", "m1", "👀", { rest: {} }]);
   });
 
   it("debounces intermediate phase reactions and jumps to done for short runs", async () => {
@@ -315,9 +290,9 @@ describe("processDiscordMessage ack reactions", () => {
     await vi.runAllTimersAsync();
 
     await runPromise;
-    const emojis = (
-      sendMocks.reactMessageDiscord.mock.calls as unknown as Array<[unknown, unknown, string]>
-    ).map((call) => call[2]);
+    const emojis = (sendMocks.reactMessageDiscord.mock.calls as unknown as Array<[unknown, unknown, string]>).map(
+      (call) => call[2],
+    );
     expect(emojis).toContain(DEFAULT_EMOJIS.stallSoft);
     expect(emojis).toContain(DEFAULT_EMOJIS.stallHard);
     expect(emojis).toContain(DEFAULT_EMOJIS.done);
@@ -562,12 +537,7 @@ describe("processDiscordMessage draft streaming", () => {
     // oxlint-disable-next-line typescript/no-explicit-any
     await processDiscordMessage(ctx as any);
 
-    expect(editMessageDiscord).toHaveBeenCalledWith(
-      "c1",
-      "preview-1",
-      { content: longReply },
-      { rest: {} },
-    );
+    expect(editMessageDiscord).toHaveBeenCalledWith("c1", "preview-1", { content: longReply }, { rest: {} });
     expect(deliverDiscordReply).not.toHaveBeenCalled();
   });
 

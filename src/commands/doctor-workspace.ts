@@ -6,9 +6,7 @@ export type LegacyWorkspaceDetection = {
   legacyDirs: string[];
 };
 
-export function detectLegacyWorkspaceDirs(params: {
-  workspaceDir: string;
-}): LegacyWorkspaceDetection {
+export function detectLegacyWorkspaceDirs(params: { workspaceDir: string }): LegacyWorkspaceDetection {
   const activeWorkspace = path.resolve(params.workspaceDir);
   const legacyDirs: string[] = [];
   return { activeWorkspace, legacyDirs };

@@ -156,9 +156,7 @@ export function collectBundledExtensionRootDependencyGapErrors(params: {
 
 function collectBundledExtensions(): BundledExtension[] {
   const extensionsDir = resolve("extensions");
-  const entries = readdirSync(extensionsDir, { withFileTypes: true }).filter((entry) =>
-    entry.isDirectory(),
-  );
+  const entries = readdirSync(extensionsDir, { withFileTypes: true }).filter((entry) => entry.isDirectory());
 
   return entries.flatMap((entry) => {
     const packagePath = join(extensionsDir, entry.name, "package.json");
@@ -210,11 +208,7 @@ function runPackDry(): PackResult[] {
 
 export function collectForbiddenPackPaths(paths: Iterable<string>): string[] {
   return [...paths]
-    .filter(
-      (path) =>
-        forbiddenPrefixes.some((prefix) => path.startsWith(prefix)) ||
-        /(^|\/)node_modules\//.test(path),
-    )
+    .filter((path) => forbiddenPrefixes.some((prefix) => path.startsWith(prefix)) || /(^|\/)node_modules\//.test(path))
     .toSorted();
 }
 
@@ -230,9 +224,7 @@ function checkPluginVersions() {
   }
 
   const extensionsDir = resolve("extensions");
-  const entries = readdirSync(extensionsDir, { withFileTypes: true }).filter((entry) =>
-    entry.isDirectory(),
-  );
+  const entries = readdirSync(extensionsDir, { withFileTypes: true }).filter((entry) => entry.isDirectory());
 
   const mismatches: string[] = [];
 
@@ -275,8 +267,7 @@ function extractTag(item: string, tag: string): string | null {
 export function collectAppcastSparkleVersionErrors(xml: string): string[] {
   const itemMatches = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
   const errors: string[] = [];
-  const calverItems: Array<{ title: string; sparkleBuild: number; floors: SparkleBuildFloors }> =
-    [];
+  const calverItems: Array<{ title: string; sparkleBuild: number; floors: SparkleBuildFloors }> = [];
 
   for (const [, item] of itemMatches) {
     const title = extractTag(item, "title") ?? "unknown";
@@ -313,8 +304,7 @@ export function collectAppcastSparkleVersionErrors(xml: string): string[] {
       : laneFloorAdoptionDateKey;
 
   for (const item of calverItems) {
-    const expectLaneFloor =
-      item.sparkleBuild >= laneBuildMin || item.floors.dateKey >= effectiveLaneAdoptionDateKey;
+    const expectLaneFloor = item.sparkleBuild >= laneBuildMin || item.floors.dateKey >= effectiveLaneAdoptionDateKey;
     const floor = expectLaneFloor ? item.floors.laneFloor : item.floors.legacyFloor;
     if (item.sparkleBuild < floor) {
       const floorLabel = expectLaneFloor ? "lane floor" : "legacy floor";
@@ -429,14 +419,10 @@ function main() {
       if (
         missing.some(
           (path) =>
-            path === "dist/build-info.json" ||
-            path === "dist/control-ui/index.html" ||
-            path.startsWith("dist/"),
+            path === "dist/build-info.json" || path === "dist/control-ui/index.html" || path.startsWith("dist/"),
         )
       ) {
-        console.error(
-          "release-check: build artifacts are missing. Run `pnpm build` before `pnpm release:check`.",
-        );
+        console.error("release-check: build artifacts are missing. Run `pnpm build` before `pnpm release:check`.");
       }
     }
     if (forbidden.length > 0) {

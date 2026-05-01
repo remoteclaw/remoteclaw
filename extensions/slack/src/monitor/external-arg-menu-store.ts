@@ -1,12 +1,8 @@
 import { generateSecureToken } from "../../../../src/infra/secure-random.js";
 
 const SLACK_EXTERNAL_ARG_MENU_TOKEN_BYTES = 18;
-const SLACK_EXTERNAL_ARG_MENU_TOKEN_LENGTH = Math.ceil(
-  (SLACK_EXTERNAL_ARG_MENU_TOKEN_BYTES * 8) / 6,
-);
-const SLACK_EXTERNAL_ARG_MENU_TOKEN_PATTERN = new RegExp(
-  `^[A-Za-z0-9_-]{${SLACK_EXTERNAL_ARG_MENU_TOKEN_LENGTH}}$`,
-);
+const SLACK_EXTERNAL_ARG_MENU_TOKEN_LENGTH = Math.ceil((SLACK_EXTERNAL_ARG_MENU_TOKEN_BYTES * 8) / 6);
+const SLACK_EXTERNAL_ARG_MENU_TOKEN_PATTERN = new RegExp(`^[A-Za-z0-9_-]{${SLACK_EXTERNAL_ARG_MENU_TOKEN_LENGTH}}$`);
 const SLACK_EXTERNAL_ARG_MENU_TTL_MS = 10 * 60 * 1000;
 
 export const SLACK_EXTERNAL_ARG_MENU_PREFIX = "remoteclaw_cmdarg_ext:";
@@ -18,10 +14,7 @@ export type SlackExternalArgMenuEntry = {
   expiresAt: number;
 };
 
-function pruneSlackExternalArgMenuStore(
-  store: Map<string, SlackExternalArgMenuEntry>,
-  now: number,
-): void {
+function pruneSlackExternalArgMenuStore(store: Map<string, SlackExternalArgMenuEntry>, now: number): void {
   for (const [token, entry] of store.entries()) {
     if (entry.expiresAt <= now) {
       store.delete(token);
@@ -41,10 +34,7 @@ export function createSlackExternalArgMenuStore() {
   const store = new Map<string, SlackExternalArgMenuEntry>();
 
   return {
-    create(
-      params: { choices: SlackExternalArgMenuChoice[]; userId: string },
-      now = Date.now(),
-    ): string {
+    create(params: { choices: SlackExternalArgMenuChoice[]; userId: string }, now = Date.now()): string {
       pruneSlackExternalArgMenuStore(store, now);
       const token = createSlackExternalArgMenuToken(store);
       store.set(token, {

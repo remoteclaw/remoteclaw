@@ -38,11 +38,8 @@ vi.mock("./browser-cli-shared.js", () => ({
 }));
 
 vi.mock("./cli-utils.js", () => ({
-  runCommandWithRuntime: async (
-    _runtime: unknown,
-    action: () => Promise<void>,
-    onError: (err: unknown) => void,
-  ) => await action().catch(onError),
+  runCommandWithRuntime: async (_runtime: unknown, action: () => Promise<void>, onError: (err: unknown) => void) =>
+    await action().catch(onError),
 }));
 
 vi.mock("../runtime.js", () => ({

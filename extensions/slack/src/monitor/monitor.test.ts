@@ -206,9 +206,7 @@ describe("normalizeSlackChannelType", () => {
 describe("resolveSlackSystemEventSessionKey", () => {
   it("defaults missing channel_type to channel sessions", () => {
     const ctx = createSlackMonitorContext(baseParams());
-    expect(ctx.resolveSlackSystemEventSessionKey({ channelId: "C123" })).toBe(
-      "agent:main:slack:channel:c123",
-    );
+    expect(ctx.resolveSlackSystemEventSessionKey({ channelId: "C123" })).toBe("agent:main:slack:channel:c123");
   });
 
   it("routes channel system events through account bindings", () => {
@@ -227,9 +225,9 @@ describe("resolveSlackSystemEventSessionKey", () => {
         ],
       },
     });
-    expect(
-      ctx.resolveSlackSystemEventSessionKey({ channelId: "C123", channelType: "channel" }),
-    ).toBe("agent:ops:slack:channel:c123");
+    expect(ctx.resolveSlackSystemEventSessionKey({ channelId: "C123", channelType: "channel" })).toBe(
+      "agent:ops:slack:channel:c123",
+    );
   });
 
   it("routes DM system events through direct-peer bindings when sender is known", () => {

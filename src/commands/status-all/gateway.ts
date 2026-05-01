@@ -34,10 +34,7 @@ function normalizeGwsLine(line: string): string {
     .trim();
 }
 
-function consumeJsonBlock(
-  lines: string[],
-  startIndex: number,
-): { json: string; endIndex: number } | null {
+function consumeJsonBlock(lines: string[], startIndex: number): { json: string; endIndex: number } | null {
   const startLine = lines[startIndex] ?? "";
   const braceAt = startLine.indexOf("{");
   if (braceAt < 0) {
@@ -128,9 +125,7 @@ export function summarizeLogTail(rawLines: string[], opts?: { maxLines?: number 
     }
 
     // "Embedded agent failed before reply: OAuth token refresh failed for openai-codex: ..."
-    const embedded = line.match(
-      /^Embedded agent failed before reply:\s+OAuth token refresh failed for ([^:]+):/,
-    );
+    const embedded = line.match(/^Embedded agent failed before reply:\s+OAuth token refresh failed for ([^:]+):/);
     if (embedded) {
       const provider = embedded[1]?.trim() || "unknown";
       addGroup(`embedded:${provider}`, `Embedded agent: OAuth token refresh failed (${provider})`);

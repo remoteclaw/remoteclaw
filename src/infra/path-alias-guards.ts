@@ -1,8 +1,4 @@
-import {
-  BOUNDARY_PATH_ALIAS_POLICIES,
-  resolveBoundaryPath,
-  type BoundaryPathAliasPolicy,
-} from "./boundary-path.js";
+import { BOUNDARY_PATH_ALIAS_POLICIES, resolveBoundaryPath, type BoundaryPathAliasPolicy } from "./boundary-path.js";
 import { assertNoHardlinkedFinalPath } from "./hardlink-guards.js";
 
 export type PathAliasPolicy = BoundaryPathAliasPolicy;

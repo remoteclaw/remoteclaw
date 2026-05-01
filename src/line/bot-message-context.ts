@@ -284,9 +284,7 @@ async function finalizeLineInboundContext(params: {
     AccountId: params.route.accountId,
     ChatType: params.source.isGroup ? "group" : "direct",
     ConversationLabel: conversationLabel,
-    GroupSubject: params.source.isGroup
-      ? (params.source.groupId ?? params.source.roomId)
-      : undefined,
+    GroupSubject: params.source.isGroup ? (params.source.groupId ?? params.source.roomId) : undefined,
     SenderId: senderId,
     Provider: "line",
     Surface: "line",
@@ -333,9 +331,7 @@ async function finalizeLineInboundContext(params: {
         ? ` mediaCount=${params.verboseLog.mediaCount}`
         : "";
     const label = params.verboseLog.kind === "inbound" ? "line inbound" : "line postback";
-    logVerbose(
-      `${label}: from=${ctxPayload.From} len=${body.length}${mediaInfo} preview="${preview}"`,
-    );
+    logVerbose(`${label}: from=${ctxPayload.From} len=${body.length}${mediaInfo} preview="${preview}"`);
   }
 
   return { ctxPayload, replyToken: (params.event as { replyToken: string }).replyToken };
@@ -406,10 +402,7 @@ export async function buildLineMessageContext(params: BuildLineMessageContextPar
       firstPath: allMedia[0]?.path,
       firstContentType: allMedia[0]?.contentType,
       paths: allMedia.length > 0 ? allMedia.map((m) => m.path) : undefined,
-      types:
-        allMedia.length > 0
-          ? (allMedia.map((m) => m.contentType).filter(Boolean) as string[])
-          : undefined,
+      types: allMedia.length > 0 ? (allMedia.map((m) => m.contentType).filter(Boolean) as string[]) : undefined,
     },
     locationContext,
     verboseLog: { kind: "inbound", mediaCount: allMedia.length },

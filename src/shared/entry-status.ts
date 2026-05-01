@@ -7,9 +7,7 @@ import {
   type RequirementsMetadata,
 } from "./requirements.js";
 
-export type EntryMetadataRequirementsParams = Parameters<
-  typeof evaluateEntryMetadataRequirements
->[0];
+export type EntryMetadataRequirementsParams = Parameters<typeof evaluateEntryMetadataRequirements>[0];
 
 export function evaluateEntryMetadataRequirements(params: {
   always: boolean;

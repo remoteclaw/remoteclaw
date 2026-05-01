@@ -1,16 +1,9 @@
 import type { RemoteClawConfig } from "../../../src/config/config.js";
-import {
-  hasConfiguredSecretInput,
-  normalizeSecretInputString,
-} from "../../../src/config/types.secrets.js";
+import { hasConfiguredSecretInput, normalizeSecretInputString } from "../../../src/config/types.secrets.js";
 import type { SlackAccountConfig } from "../../../src/config/types.slack.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../src/routing/session-key.js";
 import type { SlackAccountSurfaceFields } from "./account-surface-fields.js";
-import {
-  mergeSlackAccountConfig,
-  resolveDefaultSlackAccountId,
-  type SlackTokenSource,
-} from "./accounts.js";
+import { mergeSlackAccountConfig, resolveDefaultSlackAccountId, type SlackTokenSource } from "./accounts.js";
 
 export type SlackCredentialStatus = "available" | "configured_unavailable" | "missing";
 
@@ -67,9 +60,7 @@ export function inspectSlackAccount(params: {
   envAppToken?: string | null;
   envUserToken?: string | null;
 }): InspectedSlackAccount {
-  const accountId = normalizeAccountId(
-    params.accountId ?? resolveDefaultSlackAccountId(params.cfg),
-  );
+  const accountId = normalizeAccountId(params.accountId ?? resolveDefaultSlackAccountId(params.cfg));
   const merged = mergeSlackAccountConfig(params.cfg, accountId);
   const enabled = params.cfg.channels?.slack?.enabled !== false && merged.enabled !== false;
   const allowEnv = accountId === DEFAULT_ACCOUNT_ID;
@@ -81,12 +72,8 @@ export function inspectSlackAccount(params: {
   const configSigningSecret = inspectSlackToken(merged.signingSecret);
   const configUser = inspectSlackToken(merged.userToken);
 
-  const envBot = allowEnv
-    ? normalizeSecretInputString(params.envBotToken ?? process.env.SLACK_BOT_TOKEN)
-    : undefined;
-  const envApp = allowEnv
-    ? normalizeSecretInputString(params.envAppToken ?? process.env.SLACK_APP_TOKEN)
-    : undefined;
+  const envBot = allowEnv ? normalizeSecretInputString(params.envBotToken ?? process.env.SLACK_BOT_TOKEN) : undefined;
+  const envApp = allowEnv ? normalizeSecretInputString(params.envAppToken ?? process.env.SLACK_APP_TOKEN) : undefined;
   const envUser = allowEnv
     ? normalizeSecretInputString(params.envUserToken ?? process.env.SLACK_USER_TOKEN)
     : undefined;
@@ -166,10 +153,8 @@ export function inspectSlackAccount(params: {
           ? "available"
           : "missing",
     configured: isHttpMode
-      ? (configBot.status !== "missing" || Boolean(envBot)) &&
-        configSigningSecret.status !== "missing"
-      : (configBot.status !== "missing" || Boolean(envBot)) &&
-        (configApp.status !== "missing" || Boolean(envApp)),
+      ? (configBot.status !== "missing" || Boolean(envBot)) && configSigningSecret.status !== "missing"
+      : (configBot.status !== "missing" || Boolean(envBot)) && (configApp.status !== "missing" || Boolean(envApp)),
     config: merged,
     groupPolicy: merged.groupPolicy,
     textChunkLimit: merged.textChunkLimit,

@@ -73,9 +73,7 @@ export function resolveSubagentTargetFromRuns(params: {
   const recentCutoff = Date.now() - params.recentWindowMinutes * 60_000;
   const numericOrder = [
     ...deduped.filter((entry) => isActive(entry)),
-    ...deduped.filter(
-      (entry) => !isActive(entry) && !!entry.endedAt && (entry.endedAt ?? 0) >= recentCutoff,
-    ),
+    ...deduped.filter((entry) => !isActive(entry) && !!entry.endedAt && (entry.endedAt ?? 0) >= recentCutoff),
   ];
   if (/^\d+$/.test(trimmed)) {
     const idx = Number.parseInt(trimmed, 10);
@@ -86,9 +84,7 @@ export function resolveSubagentTargetFromRuns(params: {
   }
   if (trimmed.includes(":")) {
     const bySessionKey = deduped.find((entry) => entry.childSessionKey === trimmed);
-    return bySessionKey
-      ? { entry: bySessionKey }
-      : { error: params.errors.unknownSession(trimmed) };
+    return bySessionKey ? { entry: bySessionKey } : { error: params.errors.unknownSession(trimmed) };
   }
   const lowered = trimmed.toLowerCase();
   const byExactLabel = deduped.filter((entry) => params.label(entry).toLowerCase() === lowered);
@@ -98,9 +94,7 @@ export function resolveSubagentTargetFromRuns(params: {
   if (byExactLabel.length > 1) {
     return { error: params.errors.ambiguousLabel(trimmed) };
   }
-  const byLabelPrefix = deduped.filter((entry) =>
-    params.label(entry).toLowerCase().startsWith(lowered),
-  );
+  const byLabelPrefix = deduped.filter((entry) => params.label(entry).toLowerCase().startsWith(lowered));
   if (byLabelPrefix.length === 1) {
     return { entry: byLabelPrefix[0] };
   }

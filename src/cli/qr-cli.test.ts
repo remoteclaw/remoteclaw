@@ -182,9 +182,7 @@ describe("registerQrCli", () => {
 
   it("skips local password SecretRef resolution when --token override is provided", async () => {
     loadConfig.mockReturnValue(
-      createLocalGatewayConfigWithAuth(
-        createLocalGatewayPasswordRefAuth("MISSING_LOCAL_GATEWAY_PASSWORD"),
-      ),
+      createLocalGatewayConfigWithAuth(createLocalGatewayPasswordRefAuth("MISSING_LOCAL_GATEWAY_PASSWORD")),
     );
 
     await runQr(["--setup-code-only", "--token", "override-token"]);
@@ -199,9 +197,7 @@ describe("registerQrCli", () => {
   it("resolves local gateway auth password SecretRefs before setup code generation", async () => {
     vi.stubEnv("QR_LOCAL_GATEWAY_PASSWORD", "local-password-secret");
     loadConfig.mockReturnValue(
-      createLocalGatewayConfigWithAuth(
-        createLocalGatewayPasswordRefAuth("QR_LOCAL_GATEWAY_PASSWORD"),
-      ),
+      createLocalGatewayConfigWithAuth(createLocalGatewayPasswordRefAuth("QR_LOCAL_GATEWAY_PASSWORD")),
     );
 
     await runQr(["--setup-code-only"]);
@@ -216,9 +212,7 @@ describe("registerQrCli", () => {
   it("uses REMOTECLAW_GATEWAY_PASSWORD without resolving local password SecretRef", async () => {
     vi.stubEnv("REMOTECLAW_GATEWAY_PASSWORD", "password-from-env");
     loadConfig.mockReturnValue(
-      createLocalGatewayConfigWithAuth(
-        createLocalGatewayPasswordRefAuth("MISSING_LOCAL_GATEWAY_PASSWORD"),
-      ),
+      createLocalGatewayConfigWithAuth(createLocalGatewayPasswordRefAuth("MISSING_LOCAL_GATEWAY_PASSWORD")),
     );
 
     await runQr(["--setup-code-only"]);

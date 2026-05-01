@@ -16,12 +16,7 @@ const BLOCKED_IPV4_SPECIAL_USE_RANGES = new Set<Ipv4Range>([
   "reserved",
 ]);
 
-const PRIVATE_OR_LOOPBACK_IPV4_RANGES = new Set<Ipv4Range>([
-  "loopback",
-  "private",
-  "linkLocal",
-  "carrierGradeNat",
-]);
+const PRIVATE_OR_LOOPBACK_IPV4_RANGES = new Set<Ipv4Range>(["loopback", "private", "linkLocal", "carrierGradeNat"]);
 
 const BLOCKED_IPV6_SPECIAL_USE_RANGES = new Set<BlockedIpv6Range>([
   "unspecified",
@@ -46,12 +41,7 @@ const EMBEDDED_IPV4_SENTINEL_RULES: Array<{
   {
     // IPv4-compatible form ::w.x.y.z (deprecated, but still seen in parser edge-cases).
     matches: (parts) =>
-      parts[0] === 0 &&
-      parts[1] === 0 &&
-      parts[2] === 0 &&
-      parts[3] === 0 &&
-      parts[4] === 0 &&
-      parts[5] === 0,
+      parts[0] === 0 && parts[1] === 0 && parts[2] === 0 && parts[3] === 0 && parts[4] === 0 && parts[5] === 0,
     toHextets: (parts) => [parts[6], parts[7]],
   },
   {
@@ -275,12 +265,7 @@ export function isBlockedSpecialUseIpv4Address(
 }
 
 function decodeIpv4FromHextets(high: number, low: number): ipaddr.IPv4 {
-  const octets: [number, number, number, number] = [
-    (high >>> 8) & 0xff,
-    high & 0xff,
-    (low >>> 8) & 0xff,
-    low & 0xff,
-  ];
+  const octets: [number, number, number, number] = [(high >>> 8) & 0xff, high & 0xff, (low >>> 8) & 0xff, low & 0xff];
   return ipaddr.IPv4.parse(octets.join("."));
 }
 
@@ -320,10 +305,7 @@ export function isIpInCidr(ip: string, cidr: string): boolean {
       return false;
     }
     const comparableExact = normalizeIpv4MappedAddress(exact);
-    return (
-      comparableIp.kind() === comparableExact.kind() &&
-      comparableIp.toString() === comparableExact.toString()
-    );
+    return comparableIp.kind() === comparableExact.kind() && comparableIp.toString() === comparableExact.toString();
   }
 
   let parsedCidr: [ParsedIpAddress, number];

@@ -70,9 +70,7 @@ export async function promptChannelAccessConfig(params: {
   const hasEntries = (params.currentEntries ?? []).length > 0;
   const shouldPrompt = params.defaultPrompt ?? !hasEntries;
   const wants = await params.prompter.confirm({
-    message: params.updatePrompt
-      ? `Update ${params.label} access?`
-      : `Configure ${params.label} access?`,
+    message: params.updatePrompt ? `Update ${params.label} access?` : `Configure ${params.label} access?`,
     initialValue: shouldPrompt,
   });
   if (!wants) {

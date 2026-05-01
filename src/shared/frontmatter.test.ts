@@ -51,14 +51,10 @@ describe("shared/frontmatter", () => {
 
   test("resolveRemoteClawManifestBlock returns undefined for invalid input", () => {
     expect(resolveRemoteClawManifestBlock({ frontmatter: {} })).toBeUndefined();
-    expect(
-      resolveRemoteClawManifestBlock({ frontmatter: { metadata: "not-json5" } }),
-    ).toBeUndefined();
+    expect(resolveRemoteClawManifestBlock({ frontmatter: { metadata: "not-json5" } })).toBeUndefined();
     expect(resolveRemoteClawManifestBlock({ frontmatter: { metadata: "123" } })).toBeUndefined();
     expect(resolveRemoteClawManifestBlock({ frontmatter: { metadata: "[]" } })).toBeUndefined();
-    expect(
-      resolveRemoteClawManifestBlock({ frontmatter: { metadata: "{ nope: { a: 1 } }" } }),
-    ).toBeUndefined();
+    expect(resolveRemoteClawManifestBlock({ frontmatter: { metadata: "{ nope: { a: 1 } }" } })).toBeUndefined();
   });
 
   it("normalizes manifest requirement and os lists", () => {
@@ -78,10 +74,7 @@ describe("shared/frontmatter", () => {
       config: [],
     });
     expect(resolveRemoteClawManifestRequires({})).toBeUndefined();
-    expect(resolveRemoteClawManifestOs({ os: [" darwin ", "linux", ""] })).toEqual([
-      "darwin",
-      "linux",
-    ]);
+    expect(resolveRemoteClawManifestOs({ os: [" darwin ", "linux", ""] })).toEqual(["darwin", "linux"]);
   });
 
   it("parses and applies install common fields", () => {
@@ -145,12 +138,7 @@ describe("shared/frontmatter", () => {
       },
       kind: "npm",
     });
-    expect(
-      applyRemoteClawManifestInstallCommonFields(
-        { id: "keep", label: "Keep", bins: ["bun"] },
-        parsed!,
-      ),
-    ).toEqual({
+    expect(applyRemoteClawManifestInstallCommonFields({ id: "keep", label: "Keep", bins: ["bun"] }, parsed!)).toEqual({
       id: "keep",
       label: "Keep",
       bins: ["bun"],
@@ -164,11 +152,7 @@ describe("shared/frontmatter", () => {
           install: [{ id: "keep" }, { id: "drop" }, "bad"],
         },
         (entry) => {
-          if (
-            typeof entry === "object" &&
-            entry !== null &&
-            (entry as { id?: string }).id === "keep"
-          ) {
+          if (typeof entry === "object" && entry !== null && (entry as { id?: string }).id === "keep") {
             return { id: "keep" };
           }
           return undefined;

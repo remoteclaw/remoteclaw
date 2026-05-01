@@ -21,22 +21,8 @@ const CLI_RESUME = isTruthyEnvValue(process.env.REMOTECLAW_LIVE_CLI_BACKEND_RESU
 const describeLive = LIVE && CLI_LIVE ? describe : describe.skip;
 
 const DEFAULT_MODEL = "claude-cli/claude-sonnet-4-6";
-const DEFAULT_CLAUDE_ARGS = [
-  "-p",
-  "--output-format",
-  "json",
-  "--permission-mode",
-  "bypassPermissions",
-];
-const DEFAULT_CODEX_ARGS = [
-  "exec",
-  "--json",
-  "--color",
-  "never",
-  "--sandbox",
-  "read-only",
-  "--skip-git-repo-check",
-];
+const DEFAULT_CLAUDE_ARGS = ["-p", "--output-format", "json", "--permission-mode", "bypassPermissions"];
+const DEFAULT_CODEX_ARGS = ["exec", "--json", "--color", "never", "--sandbox", "read-only", "--skip-git-repo-check"];
 const DEFAULT_CLEAR_ENV = ["ANTHROPIC_API_KEY", "ANTHROPIC_API_KEY_OLD"];
 
 function randomImageProbeCode(len = 6): string {
@@ -156,10 +142,7 @@ async function connectClient(params: { url: string; token: string }) {
       onClose: failWithClose,
     });
 
-    const connectTimeout = setTimeout(
-      () => finish({ error: new Error("gateway connect timeout") }),
-      10_000,
-    );
+    const connectTimeout = setTimeout(() => finish({ error: new Error("gateway connect timeout") }), 10_000);
     connectTimeout.unref();
     client.start();
   });
@@ -192,9 +175,7 @@ describeLive("gateway live (cli backend)", () => {
     const rawModel = process.env.REMOTECLAW_LIVE_CLI_BACKEND_MODEL ?? DEFAULT_MODEL;
     const parsed = parseModelRef(rawModel, "claude-cli");
     if (!parsed) {
-      throw new Error(
-        `REMOTECLAW_LIVE_CLI_BACKEND_MODEL must resolve to a CLI backend model. Got: ${rawModel}`,
-      );
+      throw new Error(`REMOTECLAW_LIVE_CLI_BACKEND_MODEL must resolve to a CLI backend model. Got: ${rawModel}`);
     }
     const providerId = parsed.provider;
     const modelKey = `${providerId}/${parsed.model}`;
@@ -208,15 +189,11 @@ describeLive("gateway live (cli backend)", () => {
 
     const cliCommand = process.env.REMOTECLAW_LIVE_CLI_BACKEND_COMMAND ?? providerDefaults?.command;
     if (!cliCommand) {
-      throw new Error(
-        `REMOTECLAW_LIVE_CLI_BACKEND_COMMAND is required for provider "${providerId}".`,
-      );
+      throw new Error(`REMOTECLAW_LIVE_CLI_BACKEND_COMMAND is required for provider "${providerId}".`);
     }
     const baseCliArgs =
-      parseJsonStringArray(
-        "REMOTECLAW_LIVE_CLI_BACKEND_ARGS",
-        process.env.REMOTECLAW_LIVE_CLI_BACKEND_ARGS,
-      ) ?? providerDefaults?.args;
+      parseJsonStringArray("REMOTECLAW_LIVE_CLI_BACKEND_ARGS", process.env.REMOTECLAW_LIVE_CLI_BACKEND_ARGS) ??
+      providerDefaults?.args;
     if (!baseCliArgs || baseCliArgs.length === 0) {
       throw new Error(`REMOTECLAW_LIVE_CLI_BACKEND_ARGS is required for provider "${providerId}".`);
     }
@@ -229,9 +206,7 @@ describeLive("gateway live (cli backend)", () => {
     const cliImageMode = parseImageMode(process.env.REMOTECLAW_LIVE_CLI_BACKEND_IMAGE_MODE);
 
     if (cliImageMode && !cliImageArg) {
-      throw new Error(
-        "REMOTECLAW_LIVE_CLI_BACKEND_IMAGE_MODE requires REMOTECLAW_LIVE_CLI_BACKEND_IMAGE_ARG.",
-      );
+      throw new Error("REMOTECLAW_LIVE_CLI_BACKEND_IMAGE_MODE requires REMOTECLAW_LIVE_CLI_BACKEND_IMAGE_ARG.");
     }
 
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-live-cli-"));

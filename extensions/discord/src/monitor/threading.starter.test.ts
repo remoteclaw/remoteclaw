@@ -1,9 +1,6 @@
 import { ChannelType, type Client } from "@buape/carbon";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  __resetDiscordThreadStarterCacheForTest,
-  resolveDiscordThreadStarter,
-} from "./threading.js";
+import { __resetDiscordThreadStarterCacheForTest, resolveDiscordThreadStarter } from "./threading.js";
 
 async function resolveStarter(
   message: Partial<Awaited<ReturnType<Client["rest"]["get"]>>>,

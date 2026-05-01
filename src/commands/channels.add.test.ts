@@ -31,11 +31,9 @@ describe("channelsAddCommand", () => {
       },
     });
 
-    await channelsAddCommand(
-      { channel: "telegram", account: "default", token: "new-token" },
-      runtime,
-      { hasFlags: true },
-    );
+    await channelsAddCommand({ channel: "telegram", account: "default", token: "new-token" }, runtime, {
+      hasFlags: true,
+    });
 
     expect(offsetMocks.deleteTelegramUpdateOffset).toHaveBeenCalledTimes(1);
     expect(offsetMocks.deleteTelegramUpdateOffset).toHaveBeenCalledWith({ accountId: "default" });
@@ -51,11 +49,9 @@ describe("channelsAddCommand", () => {
       },
     });
 
-    await channelsAddCommand(
-      { channel: "telegram", account: "default", token: "same-token" },
-      runtime,
-      { hasFlags: true },
-    );
+    await channelsAddCommand({ channel: "telegram", account: "default", token: "same-token" }, runtime, {
+      hasFlags: true,
+    });
 
     expect(offsetMocks.deleteTelegramUpdateOffset).not.toHaveBeenCalled();
   });

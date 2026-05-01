@@ -24,9 +24,7 @@ function makeErrServer(code: string): net.Server {
     return fake;
   };
   (fake as unknown as { unref: () => net.Server }).unref = () => fake;
-  (fake as unknown as { listen: (...args: unknown[]) => net.Server }).listen = (
-    ..._args: unknown[]
-  ) => {
+  (fake as unknown as { listen: (...args: unknown[]) => net.Server }).listen = (..._args: unknown[]) => {
     setImmediate(() => fake.emit("error", err));
     return fake;
   };
@@ -60,16 +58,12 @@ describe("probePortFree", () => {
     // (A real-socket approach would bind to :0, release, then reprobe — the OS can
     // reassign the ephemeral port in between, causing a flaky EADDRINUSE failure.)
     const fakeServer = new EventEmitter() as unknown as net.Server;
-    (fakeServer as unknown as { close: (cb?: () => void) => net.Server }).close = (
-      cb?: () => void,
-    ) => {
+    (fakeServer as unknown as { close: (cb?: () => void) => net.Server }).close = (cb?: () => void) => {
       cb?.();
       return fakeServer;
     };
     (fakeServer as unknown as { unref: () => net.Server }).unref = () => fakeServer;
-    (fakeServer as unknown as { listen: (...args: unknown[]) => net.Server }).listen = (
-      ..._args: unknown[]
-    ) => {
+    (fakeServer as unknown as { listen: (...args: unknown[]) => net.Server }).listen = (..._args: unknown[]) => {
       // Simulate a successful bind by firing the "listening" callback.
       const callback = _args.find((a) => typeof a === "function") as (() => void) | undefined;
       setImmediate(() => callback?.());
@@ -86,16 +80,12 @@ describe("waitForPortBindable", () => {
   it("probes the provided host when waiting for bindability", async () => {
     const listenCalls: Array<{ port: number; host: string }> = [];
     const fakeServer = new EventEmitter() as unknown as net.Server;
-    (fakeServer as unknown as { close: (cb?: () => void) => net.Server }).close = (
-      cb?: () => void,
-    ) => {
+    (fakeServer as unknown as { close: (cb?: () => void) => net.Server }).close = (cb?: () => void) => {
       cb?.();
       return fakeServer;
     };
     (fakeServer as unknown as { unref: () => net.Server }).unref = () => fakeServer;
-    (fakeServer as unknown as { listen: (...args: unknown[]) => net.Server }).listen = (
-      ...args: unknown[]
-    ) => {
+    (fakeServer as unknown as { listen: (...args: unknown[]) => net.Server }).listen = (...args: unknown[]) => {
       const [port, host] = args as [number, string];
       listenCalls.push({ port, host });
       const callback = args.find((a) => typeof a === "function") as (() => void) | undefined;
@@ -104,9 +94,7 @@ describe("waitForPortBindable", () => {
     };
     mockCreateServer.mockReturnValue(fakeServer);
 
-    await expect(
-      waitForPortBindable(9999, { timeoutMs: 100, intervalMs: 10, host: "127.0.0.1" }),
-    ).resolves.toBe(0);
+    await expect(waitForPortBindable(9999, { timeoutMs: 100, intervalMs: 10, host: "127.0.0.1" })).resolves.toBe(0);
     expect(listenCalls[0]).toEqual({ port: 9999, host: "127.0.0.1" });
   });
 
@@ -115,9 +103,9 @@ describe("waitForPortBindable", () => {
     // mockCreateServer would be called many times. We assert it's called exactly once.
     mockCreateServer.mockClear();
     mockCreateServer.mockReturnValue(makeErrServer("EACCES"));
-    await expect(
-      waitForPortBindable(80, { timeoutMs: 5000, intervalMs: 50 }),
-    ).rejects.toMatchObject({ code: "EACCES" });
+    await expect(waitForPortBindable(80, { timeoutMs: 5000, intervalMs: 50 })).rejects.toMatchObject({
+      code: "EACCES",
+    });
     // Only one probe should have been attempted — no spinning through the retry loop.
     expect(mockCreateServer).toHaveBeenCalledTimes(1);
   });

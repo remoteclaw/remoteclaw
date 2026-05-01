@@ -1,13 +1,6 @@
 import { html, nothing, type TemplateResult } from "lit";
 import type { ConfigUiHints } from "../types.ts";
-import {
-  defaultValue,
-  hintForPath,
-  humanize,
-  pathKey,
-  schemaType,
-  type JsonSchema,
-} from "./config-form.shared.ts";
+import { defaultValue, hintForPath, humanize, pathKey, schemaType, type JsonSchema } from "./config-form.shared.ts";
 
 const META_KEYS = new Set(["title", "description", "default", "nullable", "tags", "x-tags"]);
 
@@ -151,11 +144,7 @@ function normalizeTags(raw: unknown): string[] {
   return tags;
 }
 
-function resolveFieldMeta(
-  path: Array<string | number>,
-  schema: JsonSchema,
-  hints: ConfigUiHints,
-): FieldMeta {
+function resolveFieldMeta(path: Array<string | number>, schema: JsonSchema, hints: ConfigUiHints): FieldMeta {
   const hint = hintForPath(path, hints);
   const label = hint?.label ?? schema.title ?? humanize(String(path.at(-1)));
   const help = hint?.help ?? schema.description;
@@ -207,22 +196,10 @@ function matchesNodeSelf(params: {
     return true;
   }
 
-  const pathLabel = path
-    .filter((segment): segment is string => typeof segment === "string")
-    .join(".");
-  const enumText =
-    schema.enum && schema.enum.length > 0
-      ? schema.enum.map((value) => String(value)).join(" ")
-      : "";
+  const pathLabel = path.filter((segment): segment is string => typeof segment === "string").join(".");
+  const enumText = schema.enum && schema.enum.length > 0 ? schema.enum.map((value) => String(value)).join(" ") : "";
 
-  return matchesText(criteria.text, [
-    label,
-    help,
-    schema.title,
-    schema.description,
-    pathLabel,
-    enumText,
-  ]);
+  return matchesText(criteria.text, [label, help, schema.title, schema.description, pathLabel, enumText]);
 }
 
 export function matchesNodeSearch(params: {
@@ -244,9 +221,7 @@ export function matchesNodeSearch(params: {
   if (type === "object") {
     const fallback = value ?? schema.default;
     const obj =
-      fallback && typeof fallback === "object" && !Array.isArray(fallback)
-        ? (fallback as Record<string, unknown>)
-        : {};
+      fallback && typeof fallback === "object" && !Array.isArray(fallback) ? (fallback as Record<string, unknown>) : {};
     const props = schema.properties ?? {};
     for (const [propKey, node] of Object.entries(props)) {
       if (
@@ -346,20 +321,14 @@ export function renderNode(params: {
       <div class="cfg-field__error">Unsupported schema node. Use Raw mode.</div>
     </div>`;
   }
-  if (
-    criteria &&
-    hasSearchCriteria(criteria) &&
-    !matchesNodeSearch({ schema, value, path, hints, criteria })
-  ) {
+  if (criteria && hasSearchCriteria(criteria) && !matchesNodeSearch({ schema, value, path, hints, criteria })) {
     return nothing;
   }
 
   // Handle anyOf/oneOf unions
   if (schema.anyOf || schema.oneOf) {
     const variants = schema.anyOf ?? schema.oneOf ?? [];
-    const nonNull = variants.filter(
-      (v) => !(v.type === "null" || (Array.isArray(v.type) && v.type.includes("null"))),
-    );
+    const nonNull = variants.filter((v) => !(v.type === "null" || (Array.isArray(v.type) && v.type.includes("null"))));
 
     if (nonNull.length === 1) {
       return renderNode({ ...params, schema: nonNull[0] });
@@ -417,9 +386,7 @@ export function renderNode(params: {
 
     // Handle mixed primitive types
     const primitiveTypes = new Set(nonNull.map((variant) => schemaType(variant)).filter(Boolean));
-    const normalizedTypes = new Set(
-      [...primitiveTypes].map((v) => (v === "integer" ? "number" : v)),
-    );
+    const normalizedTypes = new Set([...primitiveTypes].map((v) => (v === "integer" ? "number" : v)));
 
     if ([...normalizedTypes].every((v) => ["string", "number", "boolean"].includes(v as string))) {
       const hasString = normalizedTypes.has("string");
@@ -485,11 +452,7 @@ export function renderNode(params: {
   // Boolean - toggle row
   if (type === "boolean") {
     const displayValue =
-      typeof value === "boolean"
-        ? value
-        : typeof schema.default === "boolean"
-          ? schema.default
-          : false;
+      typeof value === "boolean" ? value : typeof schema.default === "boolean" ? schema.default : false;
     return html`
       <label class="cfg-toggle-row ${disabled ? "disabled" : ""}">
         <div class="cfg-toggle-row__content">
@@ -544,16 +507,11 @@ function renderTextInput(params: {
   const showLabel = params.showLabel ?? true;
   const hint = hintForPath(path, hints);
   const { label, help, tags } = resolveFieldMeta(path, schema, hints);
-  const isSensitive =
-    (hint?.sensitive ?? false) && !/^\$\{[^}]*\}$/.test(String(value ?? "").trim());
+  const isSensitive = (hint?.sensitive ?? false) && !/^\$\{[^}]*\}$/.test(String(value ?? "").trim());
   const placeholder =
     hint?.placeholder ??
     // oxlint-disable typescript/no-base-to-string
-    (isSensitive
-      ? "••••"
-      : schema.default !== undefined
-        ? `Default: ${String(schema.default)}`
-        : "");
+    (isSensitive ? "••••" : schema.default !== undefined ? `Default: ${String(schema.default)}` : "");
   const displayValue = value ?? "";
 
   return html`
@@ -672,9 +630,7 @@ function renderSelect(params: {
   const showLabel = params.showLabel ?? true;
   const { label, help, tags } = resolveFieldMeta(path, schema, hints);
   const resolvedValue = value ?? schema.default;
-  const currentIndex = options.findIndex(
-    (opt) => opt === resolvedValue || String(opt) === String(resolvedValue),
-  );
+  const currentIndex = options.findIndex((opt) => opt === resolvedValue || String(opt) === String(resolvedValue));
   const unset = "__unset__";
 
   return html`
@@ -724,9 +680,7 @@ function renderObject(params: {
 
   const fallback = value ?? schema.default;
   const obj =
-    fallback && typeof fallback === "object" && !Array.isArray(fallback)
-      ? (fallback as Record<string, unknown>)
-      : {};
+    fallback && typeof fallback === "object" && !Array.isArray(fallback) ? (fallback as Record<string, unknown>) : {};
   const props = schema.properties ?? {};
   const entries = Object.entries(props);
 
@@ -924,17 +878,7 @@ function renderMapField(params: {
   searchCriteria?: ConfigSearchCriteria;
   onPatch: (path: Array<string | number>, value: unknown) => void;
 }): TemplateResult {
-  const {
-    schema,
-    value,
-    path,
-    hints,
-    unsupported,
-    disabled,
-    reservedKeys,
-    onPatch,
-    searchCriteria,
-  } = params;
+  const { schema, value, path, hints, unsupported, disabled, reservedKeys, onPatch, searchCriteria } = params;
   const anySchema = isAnySchema(schema);
   const entries = Object.entries(value ?? {}).filter(([key]) => !reservedKeys.has(key));
   const visibleEntries =

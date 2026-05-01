@@ -49,19 +49,13 @@ describe("UnauthorizedFloodGuard", () => {
 
 describe("isUnauthorizedRoleError", () => {
   it("detects unauthorized role responses", () => {
-    expect(
-      isUnauthorizedRoleError(errorShape(ErrorCodes.INVALID_REQUEST, "unauthorized role: node")),
-    ).toBe(true);
+    expect(isUnauthorizedRoleError(errorShape(ErrorCodes.INVALID_REQUEST, "unauthorized role: node"))).toBe(true);
   });
 
   it("ignores non-role authorization errors", () => {
-    expect(
-      isUnauthorizedRoleError(
-        errorShape(ErrorCodes.INVALID_REQUEST, "missing scope: operator.admin"),
-      ),
-    ).toBe(false);
-    expect(isUnauthorizedRoleError(errorShape(ErrorCodes.UNAVAILABLE, "service unavailable"))).toBe(
+    expect(isUnauthorizedRoleError(errorShape(ErrorCodes.INVALID_REQUEST, "missing scope: operator.admin"))).toBe(
       false,
     );
+    expect(isUnauthorizedRoleError(errorShape(ErrorCodes.UNAVAILABLE, "service unavailable"))).toBe(false);
   });
 });

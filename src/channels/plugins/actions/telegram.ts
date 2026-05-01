@@ -78,8 +78,7 @@ export const telegramMessageActions: ChannelMessageActionAdapter = {
         accountId: account.accountId,
       }),
     );
-    const isEnabled = (key: keyof TelegramActionConfig, defaultValue = true) =>
-      gate(key, defaultValue);
+    const isEnabled = (key: keyof TelegramActionConfig, defaultValue = true) => gate(key, defaultValue);
     const actions = new Set<ChannelMessageActionName>(["send"]);
     const pollEnabledForAnyAccount = accounts.some((account) => {
       const accountGate = createTelegramActionGate({
@@ -114,9 +113,7 @@ export const telegramMessageActions: ChannelMessageActionAdapter = {
     if (accounts.length === 0) {
       return false;
     }
-    return accounts.some((account) =>
-      isTelegramInlineButtonsEnabled({ cfg, accountId: account.accountId }),
-    );
+    return accounts.some((account) => isTelegramInlineButtonsEnabled({ cfg, accountId: account.accountId }));
   },
   extractToolSend: ({ args }) => {
     return extractToolSend(args, "sendMessage");
@@ -227,8 +224,7 @@ export const telegramMessageActions: ChannelMessageActionAdapter = {
     }
 
     if (action === "sticker") {
-      const to =
-        readStringParam(params, "to") ?? readStringParam(params, "target", { required: true });
+      const to = readStringParam(params, "to") ?? readStringParam(params, "target", { required: true });
       // Accept stickerId (array from shared schema) and use first element as fileId
       const stickerIds = readStringArrayParam(params, "stickerId");
       const fileId = stickerIds?.[0] ?? readStringParam(params, "fileId", { required: true });

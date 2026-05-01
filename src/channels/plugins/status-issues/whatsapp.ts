@@ -27,9 +27,7 @@ function readWhatsAppAccountStatus(value: ChannelAccountSnapshot): WhatsAppAccou
   };
 }
 
-export function collectWhatsAppStatusIssues(
-  accounts: ChannelAccountSnapshot[],
-): ChannelStatusIssue[] {
+export function collectWhatsAppStatusIssues(accounts: ChannelAccountSnapshot[]): ChannelStatusIssue[] {
   return collectIssuesForEnabledAccounts({
     accounts,
     readAccount: readWhatsAppAccountStatus,
@@ -37,8 +35,7 @@ export function collectWhatsAppStatusIssues(
       const linked = account.linked === true;
       const running = account.running === true;
       const connected = account.connected === true;
-      const reconnectAttempts =
-        typeof account.reconnectAttempts === "number" ? account.reconnectAttempts : null;
+      const reconnectAttempts = typeof account.reconnectAttempts === "number" ? account.reconnectAttempts : null;
       const lastError = asString(account.lastError);
 
       if (!linked) {

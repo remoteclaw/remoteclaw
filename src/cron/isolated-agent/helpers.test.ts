@@ -8,10 +8,7 @@ import {
 
 describe("pickSummaryFromPayloads", () => {
   it("picks real text over error payload", () => {
-    const payloads = [
-      { text: "Here is your summary" },
-      { text: "Tool error: rate limited", isError: true },
-    ];
+    const payloads = [{ text: "Here is your summary" }, { text: "Tool error: rate limited", isError: true }];
     expect(pickSummaryFromPayloads(payloads)).toBe("Here is your summary");
   });
 
@@ -98,9 +95,7 @@ describe("isHeartbeatOnlyResponse", () => {
   });
 
   it("returns false for a single non-heartbeat payload", () => {
-    expect(isHeartbeatOnlyResponse([{ text: "Something important happened" }], ACK_MAX)).toBe(
-      false,
-    );
+    expect(isHeartbeatOnlyResponse([{ text: "Something important happened" }], ACK_MAX)).toBe(false);
   });
 
   it("returns true when multiple payloads include narration followed by HEARTBEAT_OK", () => {
@@ -118,21 +113,15 @@ describe("isHeartbeatOnlyResponse", () => {
   });
 
   it("returns false when media is present even with HEARTBEAT_OK text", () => {
-    expect(
-      isHeartbeatOnlyResponse(
-        [{ text: "HEARTBEAT_OK", mediaUrl: "https://example.com/img.png" }],
-        ACK_MAX,
-      ),
-    ).toBe(false);
+    expect(isHeartbeatOnlyResponse([{ text: "HEARTBEAT_OK", mediaUrl: "https://example.com/img.png" }], ACK_MAX)).toBe(
+      false,
+    );
   });
 
   it("returns false when media is in a different payload than HEARTBEAT_OK", () => {
     expect(
       isHeartbeatOnlyResponse(
-        [
-          { text: "HEARTBEAT_OK" },
-          { text: "Here's an image", mediaUrl: "https://example.com/img.png" },
-        ],
+        [{ text: "HEARTBEAT_OK" }, { text: "Here's an image", mediaUrl: "https://example.com/img.png" }],
         ACK_MAX,
       ),
     ).toBe(false);
@@ -140,10 +129,7 @@ describe("isHeartbeatOnlyResponse", () => {
 
   it("returns false when no payload contains HEARTBEAT_OK", () => {
     expect(
-      isHeartbeatOnlyResponse(
-        [{ text: "Checked emails — found 3 urgent messages from your manager." }],
-        ACK_MAX,
-      ),
+      isHeartbeatOnlyResponse([{ text: "Checked emails — found 3 urgent messages from your manager." }], ACK_MAX),
     ).toBe(false);
   });
 });

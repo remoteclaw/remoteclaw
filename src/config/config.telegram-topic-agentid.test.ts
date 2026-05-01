@@ -24,9 +24,7 @@ describe("telegram topic agentId schema", () => {
       console.error(res.error.format());
       return;
     }
-    expect(res.data.channels?.telegram?.groups?.["-1001234567890"]?.topics?.["42"]?.agentId).toBe(
-      "test-agent",
-    );
+    expect(res.data.channels?.telegram?.groups?.["-1001234567890"]?.topics?.["42"]?.agentId).toBe("test-agent");
   });
 
   it("accepts valid agentId in DM topic config", () => {
@@ -52,9 +50,7 @@ describe("telegram topic agentId schema", () => {
       console.error(res.error.format());
       return;
     }
-    expect(res.data.channels?.telegram?.direct?.["123456789"]?.topics?.["99"]?.agentId).toBe(
-      "support",
-    );
+    expect(res.data.channels?.telegram?.direct?.["123456789"]?.topics?.["99"]?.agentId).toBe("support");
   });
 
   it("accepts empty config without agentId (backward compatible)", () => {

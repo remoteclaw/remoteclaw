@@ -185,10 +185,7 @@ export function createTypingController(params: {
     if (!trimmed) {
       return;
     }
-    if (
-      silentToken &&
-      (isSilentReplyText(trimmed, silentToken) || isSilentReplyPrefixText(trimmed, silentToken))
-    ) {
+    if (silentToken && (isSilentReplyText(trimmed, silentToken) || isSilentReplyPrefixText(trimmed, silentToken))) {
       return;
     }
     refreshTypingTtl();

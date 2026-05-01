@@ -50,8 +50,7 @@ describe("redactSensitiveText", () => {
   });
 
   it("masks Telegram Bot API URL tokens", () => {
-    const input =
-      "GET https://api.telegram.org/bot123456:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef/getMe HTTP/1.1";
+    const input = "GET https://api.telegram.org/bot123456:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef/getMe HTTP/1.1";
     const output = redactSensitiveText(input, {
       mode: "tools",
       patterns: defaults,
@@ -79,9 +78,7 @@ describe("redactSensitiveText", () => {
       mode: "tools",
       patterns: defaults,
     });
-    expect(output).toBe(
-      ["-----BEGIN PRIVATE KEY-----", "…redacted…", "-----END PRIVATE KEY-----"].join("\n"),
-    );
+    expect(output).toBe(["-----BEGIN PRIVATE KEY-----", "…redacted…", "-----END PRIVATE KEY-----"].join("\n"));
   });
 
   it("honors custom patterns with flags", () => {

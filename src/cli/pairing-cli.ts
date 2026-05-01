@@ -16,13 +16,7 @@ import { formatCliCommand } from "./command-format.js";
 
 /** Parse channel, allowing extension channels not in core registry. */
 function parseChannel(raw: unknown, channels: PairingChannel[]): PairingChannel {
-  const value = (
-    typeof raw === "string"
-      ? raw
-      : typeof raw === "number" || typeof raw === "boolean"
-        ? String(raw)
-        : ""
-  )
+  const value = (typeof raw === "string" ? raw : typeof raw === "number" || typeof raw === "boolean" ? String(raw) : "")
     .trim()
     .toLowerCase();
   if (!value) {
@@ -56,8 +50,7 @@ export function registerPairingCli(program: Command) {
     .description("Secure DM pairing (approve inbound requests)")
     .addHelpText(
       "after",
-      () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/pairing", "docs.remoteclaw.org/cli/pairing")}\n`,
+      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/pairing", "docs.remoteclaw.org/cli/pairing")}\n`,
     );
 
   pairing
@@ -89,9 +82,7 @@ export function registerPairingCli(program: Command) {
       }
       const idLabel = resolvePairingIdLabel(channel);
       const tableWidth = getTerminalTableWidth();
-      defaultRuntime.log(
-        `${theme.heading("Pairing requests")} ${theme.muted(`(${requests.length})`)}`,
-      );
+      defaultRuntime.log(`${theme.heading("Pairing requests")} ${theme.muted(`(${requests.length})`)}`);
       defaultRuntime.log(
         renderTable({
           width: tableWidth,
@@ -123,16 +114,8 @@ export function registerPairingCli(program: Command) {
       const defaultChannel = channels.length === 1 ? channels[0] : "";
       const usingExplicitChannel = Boolean(opts.channel);
       const hasPositionalCode = code != null;
-      const channelRaw = usingExplicitChannel
-        ? opts.channel
-        : hasPositionalCode
-          ? codeOrChannel
-          : defaultChannel;
-      const resolvedCode = usingExplicitChannel
-        ? codeOrChannel
-        : hasPositionalCode
-          ? code
-          : codeOrChannel;
+      const channelRaw = usingExplicitChannel ? opts.channel : hasPositionalCode ? codeOrChannel : defaultChannel;
+      const resolvedCode = usingExplicitChannel ? codeOrChannel : hasPositionalCode ? code : codeOrChannel;
       if (!channelRaw || !resolvedCode) {
         throw new Error(
           `Usage: ${formatCliCommand("remoteclaw pairing approve <channel> <code>")} (or: ${formatCliCommand("remoteclaw pairing approve --channel <channel> <code>")})`,
@@ -159,9 +142,7 @@ export function registerPairingCli(program: Command) {
         throw new Error(`No pending pairing request found for code: ${String(resolvedCode)}`);
       }
 
-      defaultRuntime.log(
-        `${theme.success("Approved")} ${theme.muted(channel)} sender ${theme.command(approved.id)}.`,
-      );
+      defaultRuntime.log(`${theme.success("Approved")} ${theme.muted(channel)} sender ${theme.command(approved.id)}.`);
 
       if (!opts.notify) {
         return;

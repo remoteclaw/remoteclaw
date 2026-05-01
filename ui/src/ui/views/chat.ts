@@ -1,11 +1,7 @@
 import { html, nothing } from "lit";
 import { ref } from "lit/directives/ref.js";
 import { repeat } from "lit/directives/repeat.js";
-import {
-  renderMessageGroup,
-  renderReadingIndicatorGroup,
-  renderStreamingGroup,
-} from "../chat/grouped-render.ts";
+import { renderMessageGroup, renderReadingIndicatorGroup, renderStreamingGroup } from "../chat/grouped-render.ts";
 import { normalizeMessage, normalizeRoleForGrouping } from "../chat/message-normalizer.ts";
 import { icons } from "../icons.ts";
 import { detectTextDirection } from "../text-direction.ts";
@@ -240,12 +236,7 @@ export function renderChat(props: ChatProps) {
           }
 
           if (item.kind === "stream") {
-            return renderStreamingGroup(
-              item.text,
-              item.startedAt,
-              props.onOpenSidebar,
-              assistantIdentity,
-            );
+            return renderStreamingGroup(item.text, item.startedAt, props.onOpenSidebar, assistantIdentity);
           }
 
           if (item.kind === "group") {
@@ -330,10 +321,7 @@ export function renderChat(props: ChatProps) {
                   (item) => html`
                     <div class="chat-queue__item">
                       <div class="chat-queue__text">
-                        ${
-                          item.text ||
-                          (item.attachments?.length ? `Image (${item.attachments.length})` : "")
-                        }
+                        ${item.text || (item.attachments?.length ? `Image (${item.attachments.length})` : "")}
                       </div>
                       <button
                         class="btn chat-queue__remove"

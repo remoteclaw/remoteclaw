@@ -4,10 +4,7 @@ import { createRequire } from "node:module";
 import type { AddressInfo } from "node:net";
 import os from "node:os";
 import path from "node:path";
-import {
-  clearTimeout as clearNativeTimeout,
-  setTimeout as scheduleNativeTimeout,
-} from "node:timers";
+import { clearTimeout as clearNativeTimeout, setTimeout as scheduleNativeTimeout } from "node:timers";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { rawDataToString } from "../infra/ws.js";
 import { defaultRuntime } from "../runtime.js";
@@ -85,9 +82,7 @@ describe("canvas host", () => {
       port: 0,
       listenHost: "127.0.0.1",
       allowInTests: true,
-      watchFactory: watcherState.watchFactory as unknown as Parameters<
-        typeof startCanvasHost
-      >[0]["watchFactory"],
+      watchFactory: watcherState.watchFactory as unknown as Parameters<typeof startCanvasHost>[0]["watchFactory"],
       webSocketServerClass: WebSocketServerClass,
       ...overrides,
     });
@@ -240,9 +235,7 @@ describe("canvas host", () => {
       const miss = await realFetch(`http://127.0.0.1:${port}/`);
       expect(miss.status).toBe(404);
     } finally {
-      await new Promise<void>((resolve, reject) =>
-        server.close((err) => (err ? reject(err) : resolve())),
-      );
+      await new Promise<void>((resolve, reject) => server.close((err) => (err ? reject(err) : resolve())));
     }
     const originalClose = handler.close;
     const closeSpy = vi.fn(async () => originalClose());
@@ -295,10 +288,7 @@ describe("canvas host", () => {
 
         const ws = new WebSocketClient(`ws://127.0.0.1:${server.port}${CANVAS_WS_PATH}`);
         await new Promise<void>((resolve, reject) => {
-          const timer = scheduleNativeTimeout(
-            () => reject(new Error("ws open timeout")),
-            CANVAS_WS_OPEN_TIMEOUT_MS,
-          );
+          const timer = scheduleNativeTimeout(() => reject(new Error("ws open timeout")), CANVAS_WS_OPEN_TIMEOUT_MS);
           ws.on("open", () => {
             clearNativeTimeout(timer);
             resolve();
@@ -310,10 +300,7 @@ describe("canvas host", () => {
         });
 
         const msg = new Promise<string>((resolve, reject) => {
-          const timer = scheduleNativeTimeout(
-            () => reject(new Error("reload timeout")),
-            CANVAS_RELOAD_TIMEOUT_MS,
-          );
+          const timer = scheduleNativeTimeout(() => reject(new Error("reload timeout")), CANVAS_RELOAD_TIMEOUT_MS);
           ws.on("message", (data) => {
             clearNativeTimeout(timer);
             resolve(rawDataToString(data));
@@ -367,15 +354,11 @@ describe("canvas host", () => {
       expect(html).toContain("remoteclaw-a2ui-host");
       expect(html).toContain("remoteclawCanvasA2UIAction");
 
-      const bundleRes = await realFetch(
-        `http://127.0.0.1:${server.port}/__remoteclaw__/a2ui/a2ui.bundle.js`,
-      );
+      const bundleRes = await realFetch(`http://127.0.0.1:${server.port}/__remoteclaw__/a2ui/a2ui.bundle.js`);
       const js = await bundleRes.text();
       expect(bundleRes.status).toBe(200);
       expect(js).toContain("remoteclawA2UI");
-      const traversalRes = await realFetch(
-        `http://127.0.0.1:${server.port}${A2UI_PATH}/%2e%2e%2fpackage.json`,
-      );
+      const traversalRes = await realFetch(`http://127.0.0.1:${server.port}${A2UI_PATH}/%2e%2e%2fpackage.json`);
       expect(traversalRes.status).toBe(404);
       expect(await traversalRes.text()).toBe("not found");
       const symlinkRes = await realFetch(`http://127.0.0.1:${server.port}${A2UI_PATH}/${linkName}`);

@@ -1,10 +1,5 @@
 import { vi } from "vitest";
-import {
-  inspectPortUsage,
-  killProcessTree,
-  schtasksCalls,
-  schtasksResponses,
-} from "./schtasks-fixtures.js";
+import { inspectPortUsage, killProcessTree, schtasksCalls, schtasksResponses } from "./schtasks-fixtures.js";
 
 vi.mock("../schtasks-exec.js", () => ({
   execSchtasks: async (argv: string[]) => {

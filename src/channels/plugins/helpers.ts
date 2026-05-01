@@ -46,24 +46,22 @@ export function buildAccountScopedDmSecurityPolicy(params: {
   normalizeEntry?: (raw: string) => string;
 }): ChannelSecurityDmPolicy {
   const resolvedAccountId = params.accountId ?? params.fallbackAccountId ?? DEFAULT_ACCOUNT_ID;
-  const channelConfig = (params.cfg.channels as Record<string, unknown> | undefined)?.[
-    params.channelKey
-  ] as { accounts?: Record<string, unknown> } | undefined;
+  const channelConfig = (params.cfg.channels as Record<string, unknown> | undefined)?.[params.channelKey] as
+    | { accounts?: Record<string, unknown> }
+    | undefined;
   const useAccountPath = Boolean(channelConfig?.accounts?.[resolvedAccountId]);
   const basePath = useAccountPath
     ? `channels.${params.channelKey}.accounts.${resolvedAccountId}.`
     : `channels.${params.channelKey}.`;
   const allowFromPath = `${basePath}${params.allowFromPathSuffix ?? ""}`;
-  const policyPath =
-    params.policyPathSuffix != null ? `${basePath}${params.policyPathSuffix}` : undefined;
+  const policyPath = params.policyPathSuffix != null ? `${basePath}${params.policyPathSuffix}` : undefined;
 
   return {
     policy: params.policy ?? params.defaultPolicy ?? "pairing",
     allowFrom: params.allowFrom ?? [],
     policyPath,
     allowFromPath,
-    approveHint:
-      params.approveHint ?? formatPairingApproveHint(params.approveChannelId ?? params.channelKey),
+    approveHint: params.approveHint ?? formatPairingApproveHint(params.approveChannelId ?? params.channelKey),
     normalizeEntry: params.normalizeEntry,
   };
 }

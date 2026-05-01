@@ -34,11 +34,14 @@ const stubManager = {
 };
 
 const getMemorySearchManagerMock = vi.fn(async () => ({ manager: stubManager }));
-const readAgentMemoryFileMock = vi.fn(
-  async (params: MemoryReadParams) => await readFileImpl(params),
-);
+const readAgentMemoryFileMock = vi.fn(async (params: MemoryReadParams) => await readFileImpl(params));
 
-vi.mock("../../extensions/memory-core/src/memory/index.js", () => ({
+const { memoryIndexModuleId, memoryToolsRuntimeModuleId } = vi.hoisted(() => ({
+  memoryIndexModuleId: "../../extensions/memory-core/src/memory/index.js",
+  memoryToolsRuntimeModuleId: "../../extensions/memory-core/src/tools.runtime.js",
+}));
+
+vi.mock(memoryIndexModuleId, () => ({
   getMemorySearchManager: getMemorySearchManagerMock,
 }));
 
@@ -46,12 +49,8 @@ vi.mock("../../packages/memory-host-sdk/src/host/read-file.js", () => ({
   readAgentMemoryFile: readAgentMemoryFileMock,
 }));
 
-vi.mock("../../extensions/memory-core/src/tools.runtime.js", () => ({
-  resolveMemoryBackendConfig: ({
-    cfg,
-  }: {
-    cfg?: { memory?: { backend?: string; qmd?: unknown } };
-  }) => ({
+vi.mock(memoryToolsRuntimeModuleId, () => ({
+  resolveMemoryBackendConfig: ({ cfg }: { cfg?: { memory?: { backend?: string; qmd?: unknown } } }) => ({
     backend,
     qmd: cfg?.memory?.qmd,
   }),
@@ -67,9 +66,7 @@ export function setMemorySearchImpl(next: SearchImpl): void {
   searchImpl = next;
 }
 
-export function setMemoryReadFileImpl(
-  next: (params: MemoryReadParams) => Promise<MemoryReadResult>,
-): void {
+export function setMemoryReadFileImpl(next: (params: MemoryReadParams) => Promise<MemoryReadResult>): void {
   readFileImpl = next;
 }
 
@@ -80,9 +77,7 @@ export function resetMemoryToolMockState(overrides?: {
 }): void {
   backend = overrides?.backend ?? "builtin";
   searchImpl = overrides?.searchImpl ?? (async () => []);
-  readFileImpl =
-    overrides?.readFileImpl ??
-    (async (params: MemoryReadParams) => ({ text: "", path: params.relPath }));
+  readFileImpl = overrides?.readFileImpl ?? (async (params: MemoryReadParams) => ({ text: "", path: params.relPath }));
   vi.clearAllMocks();
 }
 

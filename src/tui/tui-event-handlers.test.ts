@@ -44,6 +44,7 @@ describe("tui-event-handlers: handleAgentEvent", () => {
     currentSessionKey: "agent:test-agent:main",
     currentSessionId: "session-1",
     activeChatRunId: "run-1",
+    pendingOptimisticUserMessage: false,
     historyLoaded: true,
     sessionInfo: { verboseLevel: "on" },
     initialSessionApplied: true,
@@ -84,10 +85,7 @@ describe("tui-event-handlers: handleAgentEvent", () => {
     };
   };
 
-  const createHandlersHarness = (params?: {
-    state?: Partial<TuiStateAccess>;
-    chatLog?: HandlerChatLog;
-  }) => {
+  const createHandlersHarness = (params?: { state?: Partial<TuiStateAccess>; chatLog?: HandlerChatLog }) => {
     const state = makeState(params?.state);
     const context = makeContext(state);
     const chatLog = (params?.chatLog ?? context.chatLog) as MockChatLog & HandlerChatLog;
@@ -97,6 +95,7 @@ describe("tui-event-handlers: handleAgentEvent", () => {
       state,
       setActivityStatus: context.setActivityStatus,
       loadHistory: context.loadHistory,
+      noteLocalRunId: context.noteLocalRunId,
       isLocalRunId: context.isLocalRunId,
       forgetLocalRunId: context.forgetLocalRunId,
     });
@@ -281,10 +280,9 @@ describe("tui-event-handlers: handleAgentEvent", () => {
   });
 
   it("ignores lifecycle updates for non-active runs in the same session", () => {
-    const { state, tui, setActivityStatus, handleChatEvent, handleAgentEvent } =
-      createHandlersHarness({
-        state: { activeChatRunId: "run-active" },
-      });
+    const { state, tui, setActivityStatus, handleChatEvent, handleAgentEvent } = createHandlersHarness({
+      state: { activeChatRunId: "run-active" },
+    });
 
     handleChatEvent({
       runId: "run-other",
@@ -355,11 +353,7 @@ describe("tui-event-handlers: handleAgentEvent", () => {
     });
 
     expect(chatLog.updateToolResult).toHaveBeenCalledTimes(1);
-    expect(chatLog.updateToolResult).toHaveBeenCalledWith(
-      "tc-on",
-      { content: [] },
-      { isError: false },
-    );
+    expect(chatLog.updateToolResult).toHaveBeenCalledWith("tc-on", { content: [] }, { isError: false });
   });
 
   it("refreshes history after a non-local chat final", () => {
@@ -377,11 +371,28 @@ describe("tui-event-handlers: handleAgentEvent", () => {
     expect(loadHistory).toHaveBeenCalledTimes(1);
   });
 
+  it("binds optimistic pending messages to the first gateway run id and skips history reload", () => {
+    const { state, loadHistory, isLocalRunId, handleChatEvent } = createHandlersHarness({
+      state: { activeChatRunId: null, pendingOptimisticUserMessage: true },
+    });
+
+    handleChatEvent({
+      runId: "run-gateway",
+      sessionKey: state.currentSessionKey,
+      state: "final",
+      message: { content: [{ type: "text", text: "done" }] },
+    });
+
+    expect(state.pendingOptimisticUserMessage).toBe(false);
+    expect(state.activeChatRunId).toBeNull();
+    expect(isLocalRunId("run-gateway")).toBe(false);
+    expect(loadHistory).not.toHaveBeenCalled();
+  });
+
   function createConcurrentRunHarness(localContent = "partial") {
-    const { state, chatLog, setActivityStatus, loadHistory, handleChatEvent } =
-      createHandlersHarness({
-        state: { activeChatRunId: "run-active" },
-      });
+    const { state, chatLog, setActivityStatus, loadHistory, handleChatEvent } = createHandlersHarness({
+      state: { activeChatRunId: "run-active" },
+    });
 
     handleChatEvent({
       runId: "run-active",
@@ -394,8 +405,7 @@ describe("tui-event-handlers: handleAgentEvent", () => {
   }
 
   it("does not reload history or clear active run when another run final arrives mid-stream", () => {
-    const { state, chatLog, setActivityStatus, loadHistory, handleChatEvent } =
-      createConcurrentRunHarness("partial");
+    const { state, chatLog, setActivityStatus, loadHistory, handleChatEvent } = createConcurrentRunHarness("partial");
 
     loadHistory.mockClear();
     setActivityStatus.mockClear();
@@ -422,8 +432,7 @@ describe("tui-event-handlers: handleAgentEvent", () => {
   });
 
   it("suppresses non-local empty final placeholders during concurrent runs", () => {
-    const { state, chatLog, loadHistory, handleChatEvent } =
-      createConcurrentRunHarness("local stream");
+    const { state, chatLog, loadHistory, handleChatEvent } = createConcurrentRunHarness("local stream");
 
     loadHistory.mockClear();
     chatLog.finalizeAssistant.mockClear();

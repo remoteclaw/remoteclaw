@@ -15,9 +15,7 @@ type BridgeConstructorOpts = {
 
 const bridgeConstructorCalls: BridgeConstructorOpts[] = [];
 const bridgeHandleMock =
-  vi.fn<
-    (message: ChannelMessage, callbacks?: unknown, abortSignal?: AbortSignal) => Promise<void>
-  >();
+  vi.fn<(message: ChannelMessage, callbacks?: unknown, abortSignal?: AbortSignal) => Promise<void>>();
 
 // ---------- mocks ----------
 
@@ -308,9 +306,7 @@ describe("followup-runner — ChannelBridge wiring", () => {
 
     const message = bridgeHandleMock.mock.calls[0][0];
     // crypto.randomUUID() produces a UUID v4 pattern
-    expect(message.id).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
-    );
+    expect(message.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
   });
 
   it("calls markRunComplete and markDispatchIdle on the typing controller in finally block", async () => {

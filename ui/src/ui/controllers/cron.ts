@@ -18,10 +18,7 @@ import type {
 } from "../types.ts";
 import { CRON_CHANNEL_LAST } from "../ui-types.ts";
 import type { CronFormState } from "../ui-types.ts";
-import {
-  formatMissingOperatorReadScopeMessage,
-  isMissingOperatorReadScopeError,
-} from "./scope-errors.ts";
+import { formatMissingOperatorReadScopeMessage, isMissingOperatorReadScopeError } from "./scope-errors.ts";
 
 export type CronFieldKey =
   | "name"
@@ -85,9 +82,7 @@ export type CronModelSuggestionsState = {
   cronModelSuggestions: string[];
 };
 
-export function supportsAnnounceDelivery(
-  form: Pick<CronFormState, "sessionTarget" | "payloadKind">,
-) {
+export function supportsAnnounceDelivery(form: Pick<CronFormState, "sessionTarget" | "payloadKind">) {
   return form.sessionTarget !== "main" && form.payloadKind === "agentTurn";
 }
 
@@ -135,9 +130,7 @@ export function validateCronForm(form: CronFormState): CronFieldErrors {
   }
   if (!form.payloadText.trim()) {
     errors.payloadText =
-      form.payloadKind === "systemEvent"
-        ? "cron.errors.systemTextRequired"
-        : "cron.errors.agentMessageRequired";
+      form.payloadKind === "systemEvent" ? "cron.errors.systemTextRequired" : "cron.errors.agentMessageRequired";
   }
   if (form.payloadKind === "agentTurn") {
     const timeoutRaw = form.timeoutSeconds.trim();
@@ -300,10 +293,7 @@ export async function loadCronJobsPage(state: CronState, opts?: { append?: boole
     state.cronJobsTotal = Math.max(meta.total, state.cronJobs.length);
     state.cronJobsHasMore = meta.hasMore;
     state.cronJobsNextOffset = meta.nextOffset;
-    if (
-      state.cronEditingJobId &&
-      !state.cronJobs.some((job) => job.id === state.cronEditingJobId)
-    ) {
+    if (state.cronEditingJobId && !state.cronJobs.some((job) => job.id === state.cronEditingJobId)) {
       clearCronEditState(state);
     }
   } catch (err) {
@@ -363,16 +353,10 @@ export function getVisibleCronJobs(
   state: Pick<CronState, "cronJobs" | "cronJobsScheduleKindFilter" | "cronJobsLastStatusFilter">,
 ): CronJob[] {
   return state.cronJobs.filter((job) => {
-    if (
-      state.cronJobsScheduleKindFilter !== "all" &&
-      job.schedule.kind !== state.cronJobsScheduleKindFilter
-    ) {
+    if (state.cronJobsScheduleKindFilter !== "all" && job.schedule.kind !== state.cronJobsScheduleKindFilter) {
       return false;
     }
-    if (
-      state.cronJobsLastStatusFilter !== "all" &&
-      job.state?.lastStatus !== state.cronJobsLastStatusFilter
-    ) {
+    if (state.cronJobsLastStatusFilter !== "all" && job.state?.lastStatus !== state.cronJobsLastStatusFilter) {
       return false;
     }
     return true;
@@ -462,27 +446,20 @@ function jobToForm(job: CronJob, prev: CronFormState): CronFormState {
     payloadText: job.payload.kind === "systemEvent" ? job.payload.text : job.payload.message,
     payloadModel: job.payload.kind === "agentTurn" ? (job.payload.model ?? "") : "",
     payloadThinking: job.payload.kind === "agentTurn" ? (job.payload.thinking ?? "") : "",
-    payloadLightContext:
-      job.payload.kind === "agentTurn" ? job.payload.lightContext === true : false,
+    payloadLightContext: job.payload.kind === "agentTurn" ? job.payload.lightContext === true : false,
     deliveryMode: job.delivery?.mode ?? "none",
     deliveryChannel: job.delivery?.channel ?? CRON_CHANNEL_LAST,
     deliveryTo: job.delivery?.to ?? "",
     deliveryAccountId: job.delivery?.accountId ?? "",
     deliveryBestEffort: job.delivery?.bestEffort ?? false,
     failureAlertMode:
-      failureAlert === false
-        ? "disabled"
-        : failureAlert && typeof failureAlert === "object"
-          ? "custom"
-          : "inherit",
+      failureAlert === false ? "disabled" : failureAlert && typeof failureAlert === "object" ? "custom" : "inherit",
     failureAlertAfter:
       failureAlert && typeof failureAlert === "object" && typeof failureAlert.after === "number"
         ? String(failureAlert.after)
         : DEFAULT_CRON_FORM.failureAlertAfter,
     failureAlertCooldownSeconds:
-      failureAlert &&
-      typeof failureAlert === "object" &&
-      typeof failureAlert.cooldownMs === "number"
+      failureAlert && typeof failureAlert === "object" && typeof failureAlert.cooldownMs === "number"
         ? String(Math.floor(failureAlert.cooldownMs / 1000))
         : DEFAULT_CRON_FORM.failureAlertCooldownSeconds,
     failureAlertChannel:
@@ -491,11 +468,8 @@ function jobToForm(job: CronJob, prev: CronFormState): CronFormState {
         : CRON_CHANNEL_LAST,
     failureAlertTo: failureAlert && typeof failureAlert === "object" ? (failureAlert.to ?? "") : "",
     failureAlertDeliveryMode:
-      failureAlert && typeof failureAlert === "object"
-        ? (failureAlert.mode ?? "announce")
-        : "announce",
-    failureAlertAccountId:
-      failureAlert && typeof failureAlert === "object" ? (failureAlert.accountId ?? "") : "",
+      failureAlert && typeof failureAlert === "object" ? (failureAlert.mode ?? "announce") : "announce",
+    failureAlertAccountId: failureAlert && typeof failureAlert === "object" ? (failureAlert.accountId ?? "") : "",
     timeoutSeconds:
       job.payload.kind === "agentTurn" && typeof job.payload.timeoutSeconds === "number"
         ? String(job.payload.timeoutSeconds)
@@ -650,11 +624,7 @@ export async function addCronJob(state: CronState) {
     if (payload.kind === "agentTurn") {
       const existingLightContext =
         editingJob?.payload.kind === "agentTurn" ? editingJob.payload.lightContext : undefined;
-      if (
-        !form.payloadLightContext &&
-        state.cronEditingJobId &&
-        existingLightContext !== undefined
-      ) {
+      if (!form.payloadLightContext && state.cronEditingJobId && existingLightContext !== undefined) {
         payload.lightContext = false;
       }
     }
@@ -663,13 +633,9 @@ export async function addCronJob(state: CronState) {
       selectedDeliveryMode && selectedDeliveryMode !== "none"
         ? {
             mode: selectedDeliveryMode,
-            channel:
-              selectedDeliveryMode === "announce"
-                ? form.deliveryChannel.trim() || "last"
-                : undefined,
+            channel: selectedDeliveryMode === "announce" ? form.deliveryChannel.trim() || "last" : undefined,
             to: form.deliveryTo.trim() || undefined,
-            accountId:
-              selectedDeliveryMode === "announce" ? form.deliveryAccountId.trim() : undefined,
+            accountId: selectedDeliveryMode === "announce" ? form.deliveryAccountId.trim() : undefined,
             bestEffort: form.deliveryBestEffort,
           }
         : selectedDeliveryMode === "none"
@@ -779,11 +745,7 @@ export async function removeCronJob(state: CronState, job: CronJob) {
   }
 }
 
-export async function loadCronRuns(
-  state: CronState,
-  jobId: string | null,
-  opts?: { append?: boolean },
-) {
+export async function loadCronRuns(state: CronState, jobId: string | null, opts?: { append?: boolean }) {
   if (!state.client || !state.connected) {
     return;
   }
@@ -812,16 +774,13 @@ export async function loadCronRuns(
       offset,
       statuses: state.cronRunsStatuses.length > 0 ? state.cronRunsStatuses : undefined,
       status: state.cronRunsStatusFilter,
-      deliveryStatuses:
-        state.cronRunsDeliveryStatuses.length > 0 ? state.cronRunsDeliveryStatuses : undefined,
+      deliveryStatuses: state.cronRunsDeliveryStatuses.length > 0 ? state.cronRunsDeliveryStatuses : undefined,
       query: state.cronRunsQuery.trim() || undefined,
       sortDir: state.cronRunsSortDir,
     });
     const entries = Array.isArray(res.entries) ? res.entries : [];
     state.cronRuns =
-      append && (scope === "all" || state.cronRunsJobId === activeJobId)
-        ? [...state.cronRuns, ...entries]
-        : entries;
+      append && (scope === "all" || state.cronRunsJobId === activeJobId) ? [...state.cronRuns, ...entries] : entries;
     if (scope === "job") {
       state.cronRunsJobId = activeJobId ?? null;
     }
@@ -871,16 +830,14 @@ export function updateCronRunsFilter(
   }
   if (Array.isArray(patch.cronRunsStatuses)) {
     state.cronRunsStatuses = patch.cronRunsStatuses;
-    state.cronRunsStatusFilter =
-      patch.cronRunsStatuses.length === 1 ? patch.cronRunsStatuses[0] : "all";
+    state.cronRunsStatusFilter = patch.cronRunsStatuses.length === 1 ? patch.cronRunsStatuses[0] : "all";
   }
   if (Array.isArray(patch.cronRunsDeliveryStatuses)) {
     state.cronRunsDeliveryStatuses = patch.cronRunsDeliveryStatuses;
   }
   if (patch.cronRunsStatusFilter) {
     state.cronRunsStatusFilter = patch.cronRunsStatusFilter;
-    state.cronRunsStatuses =
-      patch.cronRunsStatusFilter === "all" ? [] : [patch.cronRunsStatusFilter];
+    state.cronRunsStatuses = patch.cronRunsStatusFilter === "all" ? [] : [patch.cronRunsStatusFilter];
   }
   if (typeof patch.cronRunsQuery === "string") {
     state.cronRunsQuery = patch.cronRunsQuery;

@@ -235,8 +235,7 @@ export const FIELD_LABELS: Record<string, string> = {
   "gateway.controlUi.basePath": "Control UI Base Path",
   "gateway.controlUi.root": "Control UI Assets Root",
   "gateway.controlUi.allowedOrigins": "Control UI Allowed Origins",
-  "gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback":
-    "Dangerously Allow Host-Header Origin Fallback",
+  "gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback": "Dangerously Allow Host-Header Origin Fallback",
   "gateway.controlUi.allowInsecureAuth": "Insecure Control UI Auth Toggle",
   "gateway.controlUi.dangerouslyDisableDeviceAuth": "Dangerously Disable Control UI Device Auth",
   "gateway.push": "Gateway Push Delivery",
@@ -247,21 +246,14 @@ export const FIELD_LABELS: Record<string, string> = {
   "gateway.http.endpoints.chatCompletions.enabled": "OpenAI Chat Completions Endpoint",
   "gateway.http.endpoints.chatCompletions.maxBodyBytes": "OpenAI Chat Completions Max Body Bytes",
   "gateway.http.endpoints.chatCompletions.maxImageParts": "OpenAI Chat Completions Max Image Parts",
-  "gateway.http.endpoints.chatCompletions.maxTotalImageBytes":
-    "OpenAI Chat Completions Max Total Image Bytes",
+  "gateway.http.endpoints.chatCompletions.maxTotalImageBytes": "OpenAI Chat Completions Max Total Image Bytes",
   "gateway.http.endpoints.chatCompletions.images": "OpenAI Chat Completions Image Limits",
-  "gateway.http.endpoints.chatCompletions.images.allowUrl":
-    "OpenAI Chat Completions Allow Image URLs",
-  "gateway.http.endpoints.chatCompletions.images.urlAllowlist":
-    "OpenAI Chat Completions Image URL Allowlist",
-  "gateway.http.endpoints.chatCompletions.images.allowedMimes":
-    "OpenAI Chat Completions Image MIME Allowlist",
-  "gateway.http.endpoints.chatCompletions.images.maxBytes":
-    "OpenAI Chat Completions Image Max Bytes",
-  "gateway.http.endpoints.chatCompletions.images.maxRedirects":
-    "OpenAI Chat Completions Image Max Redirects",
-  "gateway.http.endpoints.chatCompletions.images.timeoutMs":
-    "OpenAI Chat Completions Image Timeout (ms)",
+  "gateway.http.endpoints.chatCompletions.images.allowUrl": "OpenAI Chat Completions Allow Image URLs",
+  "gateway.http.endpoints.chatCompletions.images.urlAllowlist": "OpenAI Chat Completions Image URL Allowlist",
+  "gateway.http.endpoints.chatCompletions.images.allowedMimes": "OpenAI Chat Completions Image MIME Allowlist",
+  "gateway.http.endpoints.chatCompletions.images.maxBytes": "OpenAI Chat Completions Image Max Bytes",
+  "gateway.http.endpoints.chatCompletions.images.maxRedirects": "OpenAI Chat Completions Image Max Redirects",
+  "gateway.http.endpoints.chatCompletions.images.timeoutMs": "OpenAI Chat Completions Image Timeout (ms)",
   "gateway.reload.mode": "Config Reload Mode",
   "gateway.reload.debounceMs": "Config Reload Debounce (ms)",
   "gateway.reload.deferralTimeoutMs": "Config Reload Deferral Timeout (ms)",
@@ -409,8 +401,7 @@ export const FIELD_LABELS: Record<string, string> = {
   "agents.defaults.compaction.model": "Compaction Model Override",
   "agents.defaults.compaction.memoryFlush": "Compaction Memory Flush",
   "agents.defaults.compaction.memoryFlush.enabled": "Compaction Memory Flush Enabled",
-  "agents.defaults.compaction.memoryFlush.softThresholdTokens":
-    "Compaction Memory Flush Soft Threshold",
+  "agents.defaults.compaction.memoryFlush.softThresholdTokens": "Compaction Memory Flush Soft Threshold",
   "agents.defaults.compaction.memoryFlush.forceFlushTranscriptBytes":
     "Compaction Memory Flush Transcript Size Threshold",
   "agents.defaults.compaction.memoryFlush.prompt": "Compaction Memory Flush Prompt",
@@ -718,8 +709,7 @@ export const FIELD_LABELS: Record<string, string> = {
   "channels.discord.status": "Discord Presence Status",
   "channels.discord.autoPresence.enabled": "Discord Auto Presence Enabled",
   "channels.discord.autoPresence.intervalMs": "Discord Auto Presence Check Interval (ms)",
-  "channels.discord.autoPresence.minUpdateIntervalMs":
-    "Discord Auto Presence Min Update Interval (ms)",
+  "channels.discord.autoPresence.minUpdateIntervalMs": "Discord Auto Presence Min Update Interval (ms)",
   "channels.discord.autoPresence.healthyText": "Discord Auto Presence Healthy Text",
   "channels.discord.autoPresence.degradedText": "Discord Auto Presence Degraded Text",
   "channels.discord.autoPresence.exhaustedText": "Discord Auto Presence Exhausted Text",
@@ -754,8 +744,7 @@ export const FIELD_LABELS: Record<string, string> = {
   "channels.imessage.cliPath": "iMessage CLI Path",
   "agents.list[].skills": "Agent Skill Filter",
   "agents.list[].identity.avatar": "Agent Avatar",
-  "agents.list[].heartbeat.suppressToolErrorWarnings":
-    "Agent Heartbeat Suppress Tool Error Warnings",
+  "agents.list[].heartbeat.suppressToolErrorWarnings": "Agent Heartbeat Suppress Tool Error Warnings",
   "agents.list[].sandbox.browser.network": "Agent Sandbox Browser Network",
   "agents.list[].sandbox.browser.cdpSourceRange": "Agent Sandbox Browser CDP Source Port Range",
   "agents.list[].sandbox.docker.dangerouslyAllowContainerNamespaceJoin":

@@ -131,8 +131,7 @@ describe("plugin-sdk/direct-dm", () => {
   });
 
   it("dispatches direct DMs through the standard route/session/reply pipeline", async () => {
-    const { recordInboundSession, dispatchReplyWithBufferedBlockDispatcher, runtime } =
-      createDirectDmRuntime();
+    const { recordInboundSession, dispatchReplyWithBufferedBlockDispatcher, runtime } = createDirectDmRuntime();
     const deliver = vi.fn(async () => {});
 
     const result = await dispatchInboundDirectDmWithRuntime({

@@ -8,11 +8,7 @@ import { Readable, Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import JSZip from "jszip";
 import * as tar from "tar";
-import {
-  resolveArchiveOutputPath,
-  stripArchivePath,
-  validateArchiveEntryPath,
-} from "./archive-path.js";
+import { resolveArchiveOutputPath, stripArchivePath, validateArchiveEntryPath } from "./archive-path.js";
 import {
   createArchiveSymlinkTraversalError,
   mergeExtractedTreeIntoDestination,
@@ -63,15 +59,11 @@ export const DEFAULT_MAX_ENTRY_BYTES = 256 * 1024 * 1024;
 
 const ERROR_ARCHIVE_SIZE_EXCEEDS_LIMIT = "archive size exceeds limit";
 const ERROR_ARCHIVE_ENTRY_COUNT_EXCEEDS_LIMIT = "archive entry count exceeds limit";
-const ERROR_ARCHIVE_ENTRY_EXTRACTED_SIZE_EXCEEDS_LIMIT =
-  "archive entry extracted size exceeds limit";
+const ERROR_ARCHIVE_ENTRY_EXTRACTED_SIZE_EXCEEDS_LIMIT = "archive entry extracted size exceeds limit";
 const ERROR_ARCHIVE_EXTRACTED_SIZE_EXCEEDS_LIMIT = "archive extracted size exceeds limit";
 const SUPPORTS_NOFOLLOW = process.platform !== "win32" && "O_NOFOLLOW" in fsConstants;
 const OPEN_WRITE_CREATE_FLAGS =
-  fsConstants.O_WRONLY |
-  fsConstants.O_CREAT |
-  fsConstants.O_EXCL |
-  (SUPPORTS_NOFOLLOW ? fsConstants.O_NOFOLLOW : 0);
+  fsConstants.O_WRONLY | fsConstants.O_CREAT | fsConstants.O_EXCL | (SUPPORTS_NOFOLLOW ? fsConstants.O_NOFOLLOW : 0);
 
 const TAR_SUFFIXES = [".tgz", ".tar.gz", ".tar"];
 
@@ -106,10 +98,7 @@ async function hasPackedRootMarker(extractDir: string, rootMarkers: string[]): P
   return false;
 }
 
-export async function resolvePackedRootDir(
-  extractDir: string,
-  options?: ResolvePackedRootDirOptions,
-): Promise<string> {
+export async function resolvePackedRootDir(extractDir: string, options?: ResolvePackedRootDirOptions): Promise<string> {
   const direct = path.join(extractDir, "package");
   try {
     const stat = await fs.stat(direct);
@@ -139,20 +128,13 @@ export async function resolvePackedRootDir(
   return path.join(extractDir, onlyDir);
 }
 
-export async function withTimeout<T>(
-  promise: Promise<T>,
-  timeoutMs: number,
-  label: string,
-): Promise<T> {
+export async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
   try {
     return await Promise.race([
       promise,
       new Promise<T>((_, reject) => {
-        timeoutId = setTimeout(
-          () => reject(new Error(`${label} timed out after ${timeoutMs}ms`)),
-          timeoutMs,
-        );
+        timeoutId = setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs);
       }),
     ]);
   } finally {
@@ -182,10 +164,7 @@ function resolveExtractLimits(limits?: ArchiveExtractLimits): ResolvedArchiveExt
   };
 }
 
-function assertArchiveEntryCountWithinLimit(
-  entryCount: number,
-  limits: ResolvedArchiveExtractLimits,
-) {
+function assertArchiveEntryCountWithinLimit(entryCount: number, limits: ResolvedArchiveExtractLimits) {
   if (entryCount > limits.maxEntries) {
     throw new Error(ERROR_ARCHIVE_ENTRY_COUNT_EXCEEDS_LIMIT);
   }
@@ -230,9 +209,7 @@ function createByteBudgetTracker(limits: ResolvedArchiveExtractLimits): {
   };
 }
 
-function createExtractBudgetTransform(params: {
-  onChunkBytes: (bytes: number) => void;
-}): Transform {
+function createExtractBudgetTransform(params: { onChunkBytes: (bytes: number) => void }): Transform {
   return new Transform({
     transform(chunk, _encoding, callback) {
       try {
@@ -272,9 +249,7 @@ async function openZipOutputFile(params: {
   } catch (err) {
     if (
       err instanceof SafeOpenError &&
-      (err.code === "invalid-path" ||
-        err.code === "outside-workspace" ||
-        err.code === "path-mismatch")
+      (err.code === "invalid-path" || err.code === "outside-workspace" || err.code === "path-mismatch")
     ) {
       throw symlinkTraversalError(params.originalPath);
     }
@@ -298,10 +273,7 @@ async function cleanupPartialRegularFile(filePath: string): Promise<void> {
 }
 
 function buildArchiveAtomicTempPath(targetPath: string): string {
-  return path.join(
-    path.dirname(targetPath),
-    `.${path.basename(targetPath)}.${process.pid}.${randomUUID()}.tmp`,
-  );
+  return path.join(path.dirname(targetPath), `.${path.basename(targetPath)}.${process.pid}.${randomUUID()}.tmp`);
 }
 
 async function verifyZipWriteResult(params: {
@@ -405,11 +377,7 @@ async function writeZipFileEntry(params: {
       handleClosedByStream = true;
     });
 
-    await pipeline(
-      readable,
-      createExtractBudgetTransform({ onChunkBytes: params.budget.addBytes }),
-      writable,
-    );
+    await pipeline(readable, createExtractBudgetTransform({ onChunkBytes: params.budget.addBytes }), writable);
     tempStat = await fs.stat(tempPath);
     if (!tempStat) {
       throw new Error("zip temp write did not produce file metadata");
@@ -506,24 +474,13 @@ async function extractZip(params: {
 
 export type TarEntryInfo = { path: string; type: string; size: number };
 
-const BLOCKED_TAR_ENTRY_TYPES = new Set([
-  "SymbolicLink",
-  "Link",
-  "BlockDevice",
-  "CharacterDevice",
-  "FIFO",
-  "Socket",
-]);
+const BLOCKED_TAR_ENTRY_TYPES = new Set(["SymbolicLink", "Link", "BlockDevice", "CharacterDevice", "FIFO", "Socket"]);
 
 function readTarEntryInfo(entry: unknown): TarEntryInfo {
   const p =
-    typeof entry === "object" && entry !== null && "path" in entry
-      ? String((entry as { path: unknown }).path)
-      : "";
+    typeof entry === "object" && entry !== null && "path" in entry ? String((entry as { path: unknown }).path) : "";
   const t =
-    typeof entry === "object" && entry !== null && "type" in entry
-      ? String((entry as { type: unknown }).type)
-      : "";
+    typeof entry === "object" && entry !== null && "type" in entry ? String((entry as { type: unknown }).type) : "";
   const s =
     typeof entry === "object" &&
     entry !== null &&

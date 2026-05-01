@@ -135,9 +135,7 @@ describe("subagent registry archive behavior", () => {
     });
 
     expect(replaced).toBe(true);
-    const run = mod
-      .listSubagentRunsForRequester("agent:main:main")
-      .find((entry) => entry.runId === "run-new");
+    const run = mod.listSubagentRunsForRequester("agent:main:main").find((entry) => entry.runId === "run-new");
     expect(run?.spawnMode).toBe("run");
     expect(run?.archiveAtMs).toBeUndefined();
   });
@@ -164,16 +162,12 @@ describe("subagent registry archive behavior", () => {
     });
 
     expect(replaced).toBe(true);
-    const run = mod
-      .listSubagentRunsForRequester("agent:main:main")
-      .find((entry) => entry.runId === "run-delete-new");
+    const run = mod.listSubagentRunsForRequester("agent:main:main").find((entry) => entry.runId === "run-delete-new");
     expect(run?.archiveAtMs).toBe(Date.now() + 60_000);
   });
 
   it("removes attachments for the replaced run after steer restart", async () => {
-    const attachmentsRootDir = await fs.mkdtemp(
-      path.join(os.tmpdir(), "remoteclaw-replace-attachments-"),
-    );
+    const attachmentsRootDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-replace-attachments-"));
     const attachmentsDir = path.join(attachmentsRootDir, "old");
     await fs.mkdir(attachmentsDir, { recursive: true });
     await fs.writeFile(path.join(attachmentsDir, "artifact.txt"), "artifact", "utf8");

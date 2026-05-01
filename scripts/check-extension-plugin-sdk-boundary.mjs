@@ -16,25 +16,11 @@ import { toLine } from "./lib/ts-guard-utils.mjs";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const extensionsRoot = path.join(repoRoot, "extensions");
 
-const MODES = new Set([
-  "src-outside-plugin-sdk",
-  "plugin-sdk-internal",
-  "relative-outside-package",
-]);
+const MODES = new Set(["src-outside-plugin-sdk", "plugin-sdk-internal", "relative-outside-package"]);
 
 const baselinePathByMode = {
-  "src-outside-plugin-sdk": path.join(
-    repoRoot,
-    "test",
-    "fixtures",
-    "extension-src-outside-plugin-sdk-inventory.json",
-  ),
-  "plugin-sdk-internal": path.join(
-    repoRoot,
-    "test",
-    "fixtures",
-    "extension-plugin-sdk-internal-inventory.json",
-  ),
+  "src-outside-plugin-sdk": path.join(repoRoot, "test", "fixtures", "extension-src-outside-plugin-sdk-inventory.json"),
+  "plugin-sdk-internal": path.join(repoRoot, "test", "fixtures", "extension-plugin-sdk-internal-inventory.json"),
   "relative-outside-package": path.join(
     repoRoot,
     "test",
@@ -47,10 +33,8 @@ let allInventoryByModePromise;
 let parsedExtensionSourceFilesPromise;
 
 const ruleTextByMode = {
-  "src-outside-plugin-sdk":
-    "Rule: production extensions/** must not import src/** outside src/plugin-sdk/**",
-  "plugin-sdk-internal":
-    "Rule: production extensions/** must not import src/plugin-sdk-internal/**",
+  "src-outside-plugin-sdk": "Rule: production extensions/** must not import src/** outside src/plugin-sdk/**",
+  "plugin-sdk-internal": "Rule: production extensions/** must not import src/plugin-sdk-internal/**",
   "relative-outside-package":
     "Rule: production extensions/** must not use relative imports that escape their own extension package root",
 };
@@ -104,18 +88,10 @@ async function collectParsedExtensionSourceFiles() {
         files.map(async (filePath) => {
           const source = await fs.readFile(filePath, "utf8");
           const scriptKind =
-            filePath.endsWith(".tsx") || filePath.endsWith(".jsx")
-              ? ts.ScriptKind.TSX
-              : ts.ScriptKind.TS;
+            filePath.endsWith(".tsx") || filePath.endsWith(".jsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
           return {
             filePath,
-            sourceFile: ts.createSourceFile(
-              filePath,
-              source,
-              ts.ScriptTarget.Latest,
-              true,
-              scriptKind,
-            ),
+            sourceFile: ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, true, scriptKind),
           };
         }),
       );
@@ -134,12 +110,7 @@ function resolveExtensionRoot(filePath) {
 }
 
 function classifyReason(mode, kind, resolvedPath, specifier) {
-  const verb =
-    kind === "export"
-      ? "re-exports"
-      : kind === "dynamic-import"
-        ? "dynamically imports"
-        : "imports";
+  const verb = kind === "export" ? "re-exports" : kind === "dynamic-import" ? "dynamically imports" : "imports";
   if (mode === "relative-outside-package") {
     if (resolvedPath?.startsWith("src/plugin-sdk/")) {
       return `${verb} plugin-sdk via relative path; use remoteclaw/plugin-sdk/<subpath>`;
@@ -263,9 +234,7 @@ export async function readExpectedInventory(mode) {
     return JSON.parse(await fs.readFile(baselinePathByMode[mode], "utf8"));
   } catch (error) {
     if (
-      (mode === "plugin-sdk-internal" ||
-        mode === "src-outside-plugin-sdk" ||
-        mode === "relative-outside-package") &&
+      (mode === "plugin-sdk-internal" || mode === "src-outside-plugin-sdk" || mode === "relative-outside-package") &&
       error &&
       typeof error === "object" &&
       "code" in error &&

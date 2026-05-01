@@ -110,10 +110,7 @@ describe("ensureRemoteClawCliOnPath", () => {
     const anchorIndex = parts.indexOf(anchor);
     expect(anchorIndex).toBeGreaterThanOrEqual(0);
     for (const expectedPath of expectedPaths) {
-      expect(
-        parts.indexOf(expectedPath),
-        `${expectedPath} should come after ${anchor}`,
-      ).toBeGreaterThan(anchorIndex);
+      expect(parts.indexOf(expectedPath), `${expectedPath} should come after ${anchor}`).toBeGreaterThan(anchorIndex);
     }
   }
 
@@ -172,43 +169,40 @@ describe("ensureRemoteClawCliOnPath", () => {
       envValue: "1",
       allowProjectLocalBin: undefined,
     },
-  ])(
-    "only appends project-local node_modules/.bin when enabled via $name",
-    ({ envValue, allowProjectLocalBin }) => {
-      const { tmp, appCli } = setupAppCliRoot("case-project-local");
-      const localBinDir = path.join(tmp, "node_modules", ".bin");
-      const localCli = path.join(localBinDir, "remoteclaw");
-      setDir(path.join(tmp, "node_modules"));
-      setDir(localBinDir);
-      setExe(localCli);
+  ])("only appends project-local node_modules/.bin when enabled via $name", ({ envValue, allowProjectLocalBin }) => {
+    const { tmp, appCli } = setupAppCliRoot("case-project-local");
+    const localBinDir = path.join(tmp, "node_modules", ".bin");
+    const localCli = path.join(localBinDir, "remoteclaw");
+    setDir(path.join(tmp, "node_modules"));
+    setDir(localBinDir);
+    setExe(localCli);
 
-      resetBootstrapEnv();
+    resetBootstrapEnv();
 
-      const withoutOptIn = bootstrapPath({
-        execPath: appCli,
-        cwd: tmp,
-        homeDir: tmp,
-        platform: "darwin",
-      });
-      expect(withoutOptIn.includes(localBinDir)).toBe(false);
+    const withoutOptIn = bootstrapPath({
+      execPath: appCli,
+      cwd: tmp,
+      homeDir: tmp,
+      platform: "darwin",
+    });
+    expect(withoutOptIn.includes(localBinDir)).toBe(false);
 
-      resetBootstrapEnv();
-      if (envValue === undefined) {
-        delete process.env.REMOTECLAW_ALLOW_PROJECT_LOCAL_BIN;
-      } else {
-        process.env.REMOTECLAW_ALLOW_PROJECT_LOCAL_BIN = envValue;
-      }
+    resetBootstrapEnv();
+    if (envValue === undefined) {
+      delete process.env.REMOTECLAW_ALLOW_PROJECT_LOCAL_BIN;
+    } else {
+      process.env.REMOTECLAW_ALLOW_PROJECT_LOCAL_BIN = envValue;
+    }
 
-      const withOptIn = bootstrapPath({
-        execPath: appCli,
-        cwd: tmp,
-        homeDir: tmp,
-        platform: "darwin",
-        ...(allowProjectLocalBin === undefined ? {} : { allowProjectLocalBin }),
-      });
-      expectPathsAfter(withOptIn, "/usr/bin", [localBinDir]);
-    },
-  );
+    const withOptIn = bootstrapPath({
+      execPath: appCli,
+      cwd: tmp,
+      homeDir: tmp,
+      platform: "darwin",
+      ...(allowProjectLocalBin === undefined ? {} : { allowProjectLocalBin }),
+    });
+    expectPathsAfter(withOptIn, "/usr/bin", [localBinDir]);
+  });
 
   it("prepends XDG_BIN_HOME ahead of other user bin fallbacks", () => {
     const { tmp, appCli } = setupAppCliRoot("case-xdg-bin-home");

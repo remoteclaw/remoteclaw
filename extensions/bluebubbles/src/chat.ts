@@ -20,9 +20,7 @@ function resolveAccount(params: BlueBubblesChatOpts) {
 
 function assertPrivateApiEnabled(accountId: string, feature: string): void {
   if (getCachedBlueBubblesPrivateApiStatus(accountId) === false) {
-    throw new Error(
-      `BlueBubbles ${feature} requires Private API, but it is disabled on the BlueBubbles server.`,
-    );
+    throw new Error(`BlueBubbles ${feature} requires Private API, but it is disabled on the BlueBubbles server.`);
   }
 }
 
@@ -50,11 +48,7 @@ async function sendBlueBubblesChatEndpointRequest(params: {
     path: `/api/v1/chat/${encodeURIComponent(trimmed)}/${params.endpoint}`,
     password,
   });
-  const res = await blueBubblesFetchWithTimeout(
-    url,
-    { method: params.method },
-    params.opts.timeoutMs,
-  );
+  const res = await blueBubblesFetchWithTimeout(url, { method: params.method }, params.opts.timeoutMs);
   await assertMultipartActionOk(res, params.action);
 }
 
@@ -84,10 +78,7 @@ async function sendPrivateApiJsonRequest(params: {
   await assertMultipartActionOk(res, params.action);
 }
 
-export async function markBlueBubblesChatRead(
-  chatGuid: string,
-  opts: BlueBubblesChatOpts = {},
-): Promise<void> {
+export async function markBlueBubblesChatRead(chatGuid: string, opts: BlueBubblesChatOpts = {}): Promise<void> {
   await sendBlueBubblesChatEndpointRequest({
     chatGuid,
     opts,
@@ -246,10 +237,7 @@ export async function removeBlueBubblesParticipant(
 /**
  * Leave a group chat via BlueBubbles API.
  */
-export async function leaveBlueBubblesChat(
-  chatGuid: string,
-  opts: BlueBubblesChatOpts = {},
-): Promise<void> {
+export async function leaveBlueBubblesChat(chatGuid: string, opts: BlueBubblesChatOpts = {}): Promise<void> {
   const trimmedGuid = chatGuid.trim();
   if (!trimmedGuid) {
     throw new Error("BlueBubbles leaveChat requires chatGuid");
@@ -300,12 +288,8 @@ export async function setGroupIconBlueBubbles(
 
   // Add file field named "icon" as per API spec
   parts.push(encoder.encode(`--${boundary}\r\n`));
-  parts.push(
-    encoder.encode(`Content-Disposition: form-data; name="icon"; filename="${safeFilename}"\r\n`),
-  );
-  parts.push(
-    encoder.encode(`Content-Type: ${opts.contentType ?? "application/octet-stream"}\r\n\r\n`),
-  );
+  parts.push(encoder.encode(`Content-Disposition: form-data; name="icon"; filename="${safeFilename}"\r\n`));
+  parts.push(encoder.encode(`Content-Type: ${opts.contentType ?? "application/octet-stream"}\r\n\r\n`));
   parts.push(buffer);
   parts.push(encoder.encode("\r\n"));
 

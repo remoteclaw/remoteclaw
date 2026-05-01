@@ -1,10 +1,6 @@
 import { spinner } from "@clack/prompts";
 import { formatDurationPrecise } from "../../infra/format-time/format-duration.ts";
-import type {
-  UpdateRunResult,
-  UpdateStepInfo,
-  UpdateStepProgress,
-} from "../../infra/update-runner.js";
+import type { UpdateRunResult, UpdateStepInfo, UpdateStepProgress } from "../../infra/update-runner.js";
 import { defaultRuntime } from "../../runtime.js";
 import { theme } from "../../terminal/theme.js";
 import type { UpdateCommandOptions } from "./shared.js";
@@ -55,10 +51,7 @@ export function inferUpdateFailureHints(result: UpdateRunResult): string[] {
     hints.push("Example: npm config set prefix ~/.local && npm i -g remoteclaw@latest");
   }
 
-  if (
-    failedStep.name.startsWith("global update") &&
-    (stderr.includes("node-gyp") || stderr.includes("prebuild"))
-  ) {
+  if (failedStep.name.startsWith("global update") && (stderr.includes("node-gyp") || stderr.includes("prebuild"))) {
     hints.push(
       "Detected native optional dependency build failure. The updater retries with --omit=optional automatically.",
     );
@@ -142,13 +135,10 @@ export function printResult(result: UpdateRunResult, opts: PrintResultOptions): 
     return;
   }
 
-  const statusColor =
-    result.status === "ok" ? theme.success : result.status === "skipped" ? theme.warn : theme.error;
+  const statusColor = result.status === "ok" ? theme.success : result.status === "skipped" ? theme.warn : theme.error;
 
   defaultRuntime.log("");
-  defaultRuntime.log(
-    `${theme.heading("Update Result:")} ${statusColor(result.status.toUpperCase())}`,
-  );
+  defaultRuntime.log(`${theme.heading("Update Result:")} ${statusColor(result.status.toUpperCase())}`);
   if (result.root) {
     defaultRuntime.log(`  Root: ${theme.muted(result.root)}`);
   }

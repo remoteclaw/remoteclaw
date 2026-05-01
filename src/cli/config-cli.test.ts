@@ -9,14 +9,13 @@ import type { ConfigFileSnapshot, RemoteClawConfig } from "../config/types.js";
  */
 
 const mockReadConfigFileSnapshot = vi.fn<() => Promise<ConfigFileSnapshot>>();
-const mockWriteConfigFile = vi.fn<
-  (cfg: RemoteClawConfig, options?: { unsetPaths?: string[][] }) => Promise<void>
->(async () => {});
+const mockWriteConfigFile = vi.fn<(cfg: RemoteClawConfig, options?: { unsetPaths?: string[][] }) => Promise<void>>(
+  async () => {},
+);
 
 vi.mock("../config/config.js", () => ({
   readConfigFileSnapshot: () => mockReadConfigFileSnapshot(),
-  writeConfigFile: (cfg: RemoteClawConfig, options?: { unsetPaths?: string[][] }) =>
-    mockWriteConfigFile(cfg, options),
+  writeConfigFile: (cfg: RemoteClawConfig, options?: { unsetPaths?: string[][] }) => mockWriteConfigFile(cfg, options),
 }));
 
 const mockLog = vi.fn();
@@ -34,10 +33,7 @@ vi.mock("../runtime.js", () => ({
   },
 }));
 
-function buildSnapshot(params: {
-  resolved: RemoteClawConfig;
-  config: RemoteClawConfig;
-}): ConfigFileSnapshot {
+function buildSnapshot(params: { resolved: RemoteClawConfig; config: RemoteClawConfig }): ConfigFileSnapshot {
   return {
     path: "/tmp/remoteclaw.json",
     exists: true,
@@ -72,10 +68,7 @@ function withRuntimeDefaults(resolved: RemoteClawConfig): RemoteClawConfig {
   };
 }
 
-function makeInvalidSnapshot(params: {
-  issues: ConfigFileSnapshot["issues"];
-  path?: string;
-}): ConfigFileSnapshot {
+function makeInvalidSnapshot(params: { issues: ConfigFileSnapshot["issues"]; path?: string }): ConfigFileSnapshot {
   return {
     path: params.path ?? "/tmp/custom-remoteclaw.json",
     exists: true,
@@ -248,9 +241,7 @@ describe("config cli", () => {
       await expect(runConfigCommand(["config", "validate"])).rejects.toThrow("__exit__:1");
 
       expect(mockError).toHaveBeenCalledWith(expect.stringContaining("Config invalid at"));
-      expect(mockError).toHaveBeenCalledWith(
-        expect.stringContaining("agents.defaults.suppressToolErrorWarnings"),
-      );
+      expect(mockError).toHaveBeenCalledWith(expect.stringContaining("agents.defaults.suppressToolErrorWarnings"));
       expect(mockLog).not.toHaveBeenCalled();
     });
 
@@ -328,18 +319,18 @@ describe("config cli", () => {
     });
 
     it("throws when strict parsing is enabled via --strict-json", async () => {
-      await expect(
-        runConfigCommand(["config", "set", "gateway.auth.mode", "{bad", "--strict-json"]),
-      ).rejects.toThrow("__exit__:1");
+      await expect(runConfigCommand(["config", "set", "gateway.auth.mode", "{bad", "--strict-json"])).rejects.toThrow(
+        "__exit__:1",
+      );
 
       expect(mockWriteConfigFile).not.toHaveBeenCalled();
       expect(mockReadConfigFileSnapshot).not.toHaveBeenCalled();
     });
 
     it("keeps --json as a strict parsing alias", async () => {
-      await expect(
-        runConfigCommand(["config", "set", "gateway.auth.mode", "{bad", "--json"]),
-      ).rejects.toThrow("__exit__:1");
+      await expect(runConfigCommand(["config", "set", "gateway.auth.mode", "{bad", "--json"])).rejects.toThrow(
+        "__exit__:1",
+      );
 
       expect(mockWriteConfigFile).not.toHaveBeenCalled();
       expect(mockReadConfigFileSnapshot).not.toHaveBeenCalled();
@@ -370,18 +361,18 @@ describe("config cli", () => {
     });
 
     it("rejects blocked prototype-key segments for config set", async () => {
-      await expect(
-        runConfigCommand(["config", "set", "tools.constructor.profile", '"sandbox"']),
-      ).rejects.toThrow("Invalid path segment: constructor");
+      await expect(runConfigCommand(["config", "set", "tools.constructor.profile", '"sandbox"'])).rejects.toThrow(
+        "Invalid path segment: constructor",
+      );
 
       expect(mockReadConfigFileSnapshot).not.toHaveBeenCalled();
       expect(mockWriteConfigFile).not.toHaveBeenCalled();
     });
 
     it("rejects blocked prototype-key segments for config unset", async () => {
-      await expect(
-        runConfigCommand(["config", "unset", "channels.prototype.enabled"]),
-      ).rejects.toThrow("Invalid path segment: prototype");
+      await expect(runConfigCommand(["config", "unset", "channels.prototype.enabled"])).rejects.toThrow(
+        "Invalid path segment: prototype",
+      );
 
       expect(mockReadConfigFileSnapshot).not.toHaveBeenCalled();
       expect(mockWriteConfigFile).not.toHaveBeenCalled();

@@ -1,8 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  clearAllDispatchers,
-  getTotalPendingReplies,
-} from "../auto-reply/reply/dispatcher-registry.js";
+import { clearAllDispatchers, getTotalPendingReplies } from "../auto-reply/reply/dispatcher-registry.js";
 import { createReplyDispatcher } from "../auto-reply/reply/reply-dispatcher.js";
 
 async function flushMicrotasks(count = 10): Promise<void> {

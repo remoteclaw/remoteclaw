@@ -300,9 +300,7 @@ describe("runMessageAction context isolation", () => {
       },
       toolContext: {
         currentChannelId: testCase.currentChannelId,
-        ...(testCase.currentChannelProvider
-          ? { currentChannelProvider: testCase.currentChannelProvider }
-          : {}),
+        ...(testCase.currentChannelProvider ? { currentChannelProvider: testCase.currentChannelProvider } : {}),
       },
     });
 

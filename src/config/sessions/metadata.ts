@@ -44,15 +44,12 @@ const mergeOrigin = (
 export function deriveSessionOrigin(ctx: MsgContext): SessionOrigin | undefined {
   const label = resolveConversationLabel(ctx)?.trim();
   const providerRaw =
-    (typeof ctx.OriginatingChannel === "string" && ctx.OriginatingChannel) ||
-    ctx.Surface ||
-    ctx.Provider;
+    (typeof ctx.OriginatingChannel === "string" && ctx.OriginatingChannel) || ctx.Surface || ctx.Provider;
   const provider = normalizeMessageChannel(providerRaw);
   const surface = ctx.Surface?.trim().toLowerCase();
   const chatType = normalizeChatType(ctx.ChatType) ?? undefined;
   const from = ctx.From?.trim();
-  const to =
-    (typeof ctx.OriginatingTo === "string" ? ctx.OriginatingTo : ctx.To)?.trim() ?? undefined;
+  const to = (typeof ctx.OriginatingTo === "string" ? ctx.OriginatingTo : ctx.To)?.trim() ?? undefined;
   const accountId = ctx.AccountId?.trim();
   const threadId = ctx.MessageThreadId ?? undefined;
 
@@ -109,8 +106,7 @@ export function deriveGroupSessionPatch(params: {
   const explicitChannel = params.ctx.GroupChannel?.trim();
   const normalizedChannel = normalizeChannelId(channel);
   const isChannelProvider = Boolean(
-    normalizedChannel &&
-    getChannelPlugin(normalizedChannel)?.capabilities.chatTypes.includes("channel"),
+    normalizedChannel && getChannelPlugin(normalizedChannel)?.capabilities.chatTypes.includes("channel"),
   );
   const nextGroupChannel =
     explicitChannel ??

@@ -71,13 +71,7 @@ async function loadSourceFiles({ includeTests }) {
   const out = new Map();
   for (const filePath of files) {
     const content = await fs.readFile(filePath, "utf8");
-    const sourceFile = ts.createSourceFile(
-      filePath,
-      content,
-      ts.ScriptTarget.Latest,
-      true,
-      ts.ScriptKind.TS,
-    );
+    const sourceFile = ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
     out.set(normalizePath(filePath), { filePath, sourceFile });
   }
   return out;
@@ -109,9 +103,7 @@ function findStubsInFile({ filePath, sourceFile }) {
   const fullText = sourceFile.text;
 
   for (const statement of sourceFile.statements) {
-    const isExported = statement.modifiers?.some(
-      (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword,
-    );
+    const isExported = statement.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword);
     if (!isExported) {
       continue;
     }
@@ -233,11 +225,7 @@ function findCallersInFile({ sourceFile, filePath }, stubIndex, sourceFileIndex)
       continue;
     }
 
-    const resolved = resolveModuleSpecifier(
-      statement.moduleSpecifier.text,
-      filePath,
-      sourceFileIndex,
-    );
+    const resolved = resolveModuleSpecifier(statement.moduleSpecifier.text, filePath, sourceFileIndex);
     if (!resolved) {
       continue;
     }
@@ -320,9 +308,7 @@ function formatInventory(violations) {
   }
   const lines = [];
   for (const v of violations) {
-    lines.push(
-      `  ${v.stub.file}::${v.stub.symbol} (line ${v.stub.line}, signals: ${v.stub.signals.join(", ")})`,
-    );
+    lines.push(`  ${v.stub.file}::${v.stub.symbol} (line ${v.stub.line}, signals: ${v.stub.signals.join(", ")})`);
     const callerCount = v.callers.length;
     const shown = v.callers.slice(0, 3);
     lines.push(`    callers: ${callerCount} site${callerCount === 1 ? "" : "s"}`);
@@ -445,10 +431,7 @@ export async function main(argv = process.argv.slice(2), io) {
   }
 
   if (result.stale.length > 0) {
-    writeLine(
-      streams.stdout,
-      `\nStale allowlist entries (no longer violate): ${result.stale.length}`,
-    );
+    writeLine(streams.stdout, `\nStale allowlist entries (no longer violate): ${result.stale.length}`);
     for (const key of result.stale.toSorted((a, b) => a.localeCompare(b))) {
       writeLine(streams.stdout, `  ${key}`);
     }
@@ -500,13 +483,7 @@ export async function main(argv = process.argv.slice(2), io) {
  * exercise the classifier without the full codebase scan.
  */
 export function classifyFixture(sourceText, fileName = "fixture.ts") {
-  const sourceFile = ts.createSourceFile(
-    fileName,
-    sourceText,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.TS,
-  );
+  const sourceFile = ts.createSourceFile(fileName, sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
   return findStubsInFile({ filePath: fileName, sourceFile });
 }
 

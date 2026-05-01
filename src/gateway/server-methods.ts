@@ -124,11 +124,7 @@ export async function handleGatewayRequest(
   }
   const handler = opts.extraHandlers?.[req.method] ?? coreGatewayHandlers[req.method];
   if (!handler) {
-    respond(
-      false,
-      undefined,
-      errorShape(ErrorCodes.INVALID_REQUEST, `unknown method: ${req.method}`),
-    );
+    respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, `unknown method: ${req.method}`));
     return;
   }
   const invokeHandler = () =>

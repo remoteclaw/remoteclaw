@@ -73,20 +73,7 @@ describe("resolveGatewayRuntimeConfig", () => {
         cfg: {
           gateway: { bind: "loopback" as const, auth: TRUSTED_PROXY_AUTH, trustedProxies: [] },
         },
-        expectedMessage:
-          "gateway auth mode=trusted-proxy requires gateway.trustedProxies to be configured",
-      },
-      {
-        name: "loopback binding without loopback trusted proxy",
-        cfg: {
-          gateway: {
-            bind: "loopback" as const,
-            auth: TRUSTED_PROXY_AUTH,
-            trustedProxies: ["10.0.0.1"],
-          },
-        },
-        expectedMessage:
-          "gateway auth mode=trusted-proxy with bind=loopback requires gateway.trustedProxies to include 127.0.0.1, ::1, or a loopback CIDR",
+        expectedMessage: "gateway auth mode=trusted-proxy requires gateway.trustedProxies to be configured",
       },
       {
         name: "lan binding without trusted proxies",
@@ -98,13 +85,26 @@ describe("resolveGatewayRuntimeConfig", () => {
             controlUi: { allowedOrigins: ["https://control.example.com"] },
           },
         },
-        expectedMessage:
-          "gateway auth mode=trusted-proxy requires gateway.trustedProxies to be configured",
+        expectedMessage: "gateway auth mode=trusted-proxy requires gateway.trustedProxies to be configured",
       },
     ])("rejects $name", async ({ cfg, expectedMessage }) => {
-      await expect(resolveGatewayRuntimeConfig({ cfg, port: 18789 })).rejects.toThrow(
-        expectedMessage,
-      );
+      await expect(resolveGatewayRuntimeConfig({ cfg, port: 18789 })).rejects.toThrow(expectedMessage);
+    });
+
+    it("allows loopback binding with non-loopback trusted proxies", async () => {
+      const result = await resolveGatewayRuntimeConfig({
+        cfg: {
+          gateway: {
+            bind: "loopback",
+            auth: TRUSTED_PROXY_AUTH,
+            trustedProxies: ["10.0.0.1"],
+          },
+        },
+        port: 18789,
+      });
+
+      expect(result.authMode).toBe("trusted-proxy");
+      expect(result.bindHost).toBe("127.0.0.1");
     });
   });
 
@@ -196,9 +196,7 @@ describe("resolveGatewayRuntimeConfig", () => {
         expectedMessage: "gateway bind=custom requested 192.168.1.100 but resolved 0.0.0.0",
       },
     ])("rejects $name", async ({ cfg, host, expectedMessage }) => {
-      await expect(resolveGatewayRuntimeConfig({ cfg, port: 18789, host })).rejects.toThrow(
-        expectedMessage,
-      );
+      await expect(resolveGatewayRuntimeConfig({ cfg, port: 18789, host })).rejects.toThrow(expectedMessage);
     });
 
     it.each([
@@ -240,9 +238,7 @@ describe("resolveGatewayRuntimeConfig", () => {
       },
     ])("$name", async ({ cfg, expectedError, expectedBindHost }) => {
       if (expectedError) {
-        await expect(resolveGatewayRuntimeConfig({ cfg, port: 18789 })).rejects.toThrow(
-          expectedError,
-        );
+        await expect(resolveGatewayRuntimeConfig({ cfg, port: 18789 })).rejects.toThrow(expectedError);
         return;
       }
       const result = await resolveGatewayRuntimeConfig({ cfg, port: 18789 });

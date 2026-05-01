@@ -17,9 +17,7 @@ const {
   return {
     attachDiscordGatewayLoggingMock: vi.fn(() => stopGatewayLoggingMock),
     getDiscordGatewayEmitterMock,
-    waitForDiscordGatewayStopMock: vi.fn((_params: WaitForDiscordGatewayStopParams) =>
-      Promise.resolve(),
-    ),
+    waitForDiscordGatewayStopMock: vi.fn((_params: WaitForDiscordGatewayStopParams) => Promise.resolve()),
     registerGatewayMock: vi.fn(),
     unregisterGatewayMock: vi.fn(),
     stopGatewayLoggingMock,
@@ -146,9 +144,7 @@ describe("runDiscordGatewayLifecycle", () => {
     waitForDiscordGatewayStopMock.mockRejectedValueOnce(new Error("gateway wait failed"));
     const { lifecycleParams, threadStop, releaseEarlyGatewayErrorGuard } = createLifecycleHarness();
 
-    await expect(runDiscordGatewayLifecycle(lifecycleParams)).rejects.toThrow(
-      "gateway wait failed",
-    );
+    await expect(runDiscordGatewayLifecycle(lifecycleParams)).rejects.toThrow("gateway wait failed");
 
     expectLifecycleCleanup({
       threadStop,
@@ -193,17 +189,14 @@ describe("runDiscordGatewayLifecycle", () => {
 
   it("handles queued disallowed intents errors without waiting for gateway events", async () => {
     const { runDiscordGatewayLifecycle } = await import("./provider.lifecycle.js");
-    const { lifecycleParams, threadStop, runtimeError, releaseEarlyGatewayErrorGuard } =
-      createLifecycleHarness({
-        pendingGatewayErrors: [new Error("Fatal Gateway error: 4014")],
-        isDisallowedIntentsError: (err) => String(err).includes("4014"),
-      });
+    const { lifecycleParams, threadStop, runtimeError, releaseEarlyGatewayErrorGuard } = createLifecycleHarness({
+      pendingGatewayErrors: [new Error("Fatal Gateway error: 4014")],
+      isDisallowedIntentsError: (err) => String(err).includes("4014"),
+    });
 
     await expect(runDiscordGatewayLifecycle(lifecycleParams)).resolves.toBeUndefined();
 
-    expect(runtimeError).toHaveBeenCalledWith(
-      expect.stringContaining("discord: gateway closed with code 4014"),
-    );
+    expect(runtimeError).toHaveBeenCalledWith(expect.stringContaining("discord: gateway closed with code 4014"));
     expectLifecycleCleanup({
       threadStop,
       waitCalls: 0,
@@ -217,9 +210,7 @@ describe("runDiscordGatewayLifecycle", () => {
       pendingGatewayErrors: [new Error("Fatal Gateway error: 4000")],
     });
 
-    await expect(runDiscordGatewayLifecycle(lifecycleParams)).rejects.toThrow(
-      "Fatal Gateway error: 4000",
-    );
+    await expect(runDiscordGatewayLifecycle(lifecycleParams)).rejects.toThrow("Fatal Gateway error: 4000");
 
     expectLifecycleCleanup({
       threadStop,
@@ -353,9 +344,7 @@ describe("runDiscordGatewayLifecycle", () => {
       emitter.emit("debug", "WebSocket connection opened");
       await vi.advanceTimersByTimeAsync(5 * 60_000 + 1_000);
 
-      expect(runtimeLog).not.toHaveBeenCalledWith(
-        expect.stringContaining("reconnect watchdog timeout"),
-      );
+      expect(runtimeLog).not.toHaveBeenCalledWith(expect.stringContaining("reconnect watchdog timeout"));
       resolveWait?.();
       await expect(lifecyclePromise).resolves.toBeUndefined();
     } finally {

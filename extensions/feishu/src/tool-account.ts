@@ -36,9 +36,7 @@ export function createFeishuToolClient(params: {
   return createFeishuClient(resolveFeishuToolAccount(params));
 }
 
-export function resolveAnyEnabledFeishuToolsConfig(
-  accounts: ResolvedFeishuAccount[],
-): Required<FeishuToolsConfig> {
+export function resolveAnyEnabledFeishuToolsConfig(accounts: ResolvedFeishuAccount[]): Required<FeishuToolsConfig> {
   const merged: Required<FeishuToolsConfig> = {
     doc: false,
     chat: false,

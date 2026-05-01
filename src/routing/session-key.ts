@@ -10,11 +10,7 @@ export {
   parseAgentSessionKey,
   type ParsedAgentSessionKey,
 } from "../sessions/session-key-utils.js";
-export {
-  DEFAULT_ACCOUNT_ID,
-  normalizeAccountId,
-  normalizeOptionalAccountId,
-} from "./account-id.js";
+export { DEFAULT_ACCOUNT_ID, normalizeAccountId, normalizeOptionalAccountId } from "./account-id.js";
 
 // The main session-key segment used to construct the canonical session key for
 // direct chats (format: `agent:{agentId}:{mainKey}`). Unrelated to the phantom
@@ -75,16 +71,12 @@ export function toAgentStoreSessionKey(params: {
 export function resolveAgentIdFromSessionKey(sessionKey: string | undefined | null): string {
   const agentId = resolveAgentIdFromSessionKeyOrNull(sessionKey);
   if (agentId === null) {
-    throw new Error(
-      `Cannot resolve agent id: session key has no agent segment (got ${sessionKey ?? "null"})`,
-    );
+    throw new Error(`Cannot resolve agent id: session key has no agent segment (got ${sessionKey ?? "null"})`);
   }
   return agentId;
 }
 
-export function resolveAgentIdFromSessionKeyOrNull(
-  sessionKey: string | undefined | null,
-): string | null {
+export function resolveAgentIdFromSessionKeyOrNull(sessionKey: string | undefined | null): string | null {
   const parsed = parseAgentSessionKey(sessionKey);
   return normalizeAgentIdOrNull(parsed?.agentId);
 }
@@ -136,10 +128,7 @@ export function sanitizeAgentId(value: string): string {
   return normalizeAgentId(value);
 }
 
-export function buildAgentMainSessionKey(params: {
-  agentId: string;
-  mainKey?: string | undefined;
-}): string {
+export function buildAgentMainSessionKey(params: { agentId: string; mainKey?: string | undefined }): string {
   const agentId = normalizeAgentId(params.agentId);
   const mainKey = normalizeMainKey(params.mainKey);
   return `agent:${agentId}:${mainKey}`;
@@ -263,12 +252,8 @@ export function resolveThreadSessionKeys(params: {
   if (!threadId) {
     return { sessionKey: params.baseSessionKey, parentSessionKey: undefined };
   }
-  const normalizedThreadId = (params.normalizeThreadId ?? ((value: string) => value.toLowerCase()))(
-    threadId,
-  );
+  const normalizedThreadId = (params.normalizeThreadId ?? ((value: string) => value.toLowerCase()))(threadId);
   const useSuffix = params.useSuffix ?? true;
-  const sessionKey = useSuffix
-    ? `${params.baseSessionKey}:thread:${normalizedThreadId}`
-    : params.baseSessionKey;
+  const sessionKey = useSuffix ? `${params.baseSessionKey}:thread:${normalizedThreadId}` : params.baseSessionKey;
   return { sessionKey, parentSessionKey: params.parentSessionKey };
 }

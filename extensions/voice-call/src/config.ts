@@ -1,9 +1,4 @@
-import {
-  TtsAutoSchema,
-  TtsConfigSchema,
-  TtsModeSchema,
-  TtsProviderSchema,
-} from "remoteclaw/plugin-sdk/voice-call";
+import { TtsAutoSchema, TtsConfigSchema, TtsModeSchema, TtsProviderSchema } from "remoteclaw/plugin-sdk/voice-call";
 import { z } from "zod";
 import { deepMergeDefined } from "./deep-merge.js";
 
@@ -15,9 +10,7 @@ import { deepMergeDefined } from "./deep-merge.js";
  * E.164 phone number format: +[country code][number]
  * Examples use 555 prefix (reserved for fictional numbers)
  */
-export const E164Schema = z
-  .string()
-  .regex(/^\+[1-9]\d{1,14}$/, "Expected E.164 format, e.g. +15550001234");
+export const E164Schema = z.string().regex(/^\+[1-9]\d{1,14}$/, "Expected E.164 format, e.g. +15550001234");
 
 // -----------------------------------------------------------------------------
 // Inbound Policy
@@ -352,11 +345,7 @@ export const VoiceCallConfigSchema = z
 
 export type VoiceCallConfig = z.infer<typeof VoiceCallConfigSchema>;
 type DeepPartial<T> =
-  T extends Array<infer U>
-    ? DeepPartial<U>[]
-    : T extends object
-      ? { [K in keyof T]?: DeepPartial<T[K]> }
-      : T;
+  T extends Array<infer U> ? DeepPartial<U>[] : T extends object ? { [K in keyof T]?: DeepPartial<T[K]> } : T;
 export type VoiceCallConfigInput = DeepPartial<VoiceCallConfig>;
 
 // -----------------------------------------------------------------------------
@@ -394,8 +383,7 @@ export function normalizeVoiceCallConfig(config: VoiceCallConfigInput): VoiceCal
       ...defaults.webhookSecurity,
       ...config.webhookSecurity,
       allowedHosts: config.webhookSecurity?.allowedHosts ?? defaults.webhookSecurity.allowedHosts,
-      trustedProxyIPs:
-        config.webhookSecurity?.trustedProxyIPs ?? defaults.webhookSecurity.trustedProxyIPs,
+      trustedProxyIPs: config.webhookSecurity?.trustedProxyIPs ?? defaults.webhookSecurity.trustedProxyIPs,
     },
     streaming: { ...defaults.streaming, ...config.streaming },
     stt: { ...defaults.stt, ...config.stt },
@@ -437,8 +425,7 @@ export function resolveVoiceCallConfig(config: VoiceCallConfigInput): VoiceCallC
     provider: "none",
     allowNgrokFreeTierLoopbackBypass: false,
   };
-  resolved.tunnel.allowNgrokFreeTierLoopbackBypass =
-    resolved.tunnel.allowNgrokFreeTierLoopbackBypass ?? false;
+  resolved.tunnel.allowNgrokFreeTierLoopbackBypass = resolved.tunnel.allowNgrokFreeTierLoopbackBypass ?? false;
   resolved.tunnel.ngrokAuthToken = resolved.tunnel.ngrokAuthToken ?? process.env.NGROK_AUTHTOKEN;
   resolved.tunnel.ngrokDomain = resolved.tunnel.ngrokDomain ?? process.env.NGROK_DOMAIN;
 
@@ -449,8 +436,7 @@ export function resolveVoiceCallConfig(config: VoiceCallConfigInput): VoiceCallC
     trustedProxyIPs: [],
   };
   resolved.webhookSecurity.allowedHosts = resolved.webhookSecurity.allowedHosts ?? [];
-  resolved.webhookSecurity.trustForwardingHeaders =
-    resolved.webhookSecurity.trustForwardingHeaders ?? false;
+  resolved.webhookSecurity.trustForwardingHeaders = resolved.webhookSecurity.trustForwardingHeaders ?? false;
   resolved.webhookSecurity.trustedProxyIPs = resolved.webhookSecurity.trustedProxyIPs ?? [];
 
   return normalizeVoiceCallConfig(resolved);
@@ -479,9 +465,7 @@ export function validateProviderConfig(config: VoiceCallConfig): {
 
   if (config.provider === "telnyx") {
     if (!config.telnyx?.apiKey) {
-      errors.push(
-        "plugins.entries.voice-call.config.telnyx.apiKey is required (or set TELNYX_API_KEY env)",
-      );
+      errors.push("plugins.entries.voice-call.config.telnyx.apiKey is required (or set TELNYX_API_KEY env)");
     }
     if (!config.telnyx?.connectionId) {
       errors.push(
@@ -489,35 +473,25 @@ export function validateProviderConfig(config: VoiceCallConfig): {
       );
     }
     if (!config.skipSignatureVerification && !config.telnyx?.publicKey) {
-      errors.push(
-        "plugins.entries.voice-call.config.telnyx.publicKey is required (or set TELNYX_PUBLIC_KEY env)",
-      );
+      errors.push("plugins.entries.voice-call.config.telnyx.publicKey is required (or set TELNYX_PUBLIC_KEY env)");
     }
   }
 
   if (config.provider === "twilio") {
     if (!config.twilio?.accountSid) {
-      errors.push(
-        "plugins.entries.voice-call.config.twilio.accountSid is required (or set TWILIO_ACCOUNT_SID env)",
-      );
+      errors.push("plugins.entries.voice-call.config.twilio.accountSid is required (or set TWILIO_ACCOUNT_SID env)");
     }
     if (!config.twilio?.authToken) {
-      errors.push(
-        "plugins.entries.voice-call.config.twilio.authToken is required (or set TWILIO_AUTH_TOKEN env)",
-      );
+      errors.push("plugins.entries.voice-call.config.twilio.authToken is required (or set TWILIO_AUTH_TOKEN env)");
     }
   }
 
   if (config.provider === "plivo") {
     if (!config.plivo?.authId) {
-      errors.push(
-        "plugins.entries.voice-call.config.plivo.authId is required (or set PLIVO_AUTH_ID env)",
-      );
+      errors.push("plugins.entries.voice-call.config.plivo.authId is required (or set PLIVO_AUTH_ID env)");
     }
     if (!config.plivo?.authToken) {
-      errors.push(
-        "plugins.entries.voice-call.config.plivo.authToken is required (or set PLIVO_AUTH_TOKEN env)",
-      );
+      errors.push("plugins.entries.voice-call.config.plivo.authToken is required (or set PLIVO_AUTH_TOKEN env)");
     }
   }
 

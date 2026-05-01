@@ -66,9 +66,7 @@ async function fetchDiscordApplicationMeResponse(
   );
 }
 
-export function resolveDiscordPrivilegedIntentsFromFlags(
-  flags: number,
-): DiscordPrivilegedIntentsSummary {
+export function resolveDiscordPrivilegedIntentsFromFlags(flags: number): DiscordPrivilegedIntentsSummary {
   const resolve = (enabledBit: number, limitedBit: number) => {
     if ((flags & enabledBit) !== 0) {
       return "enabled";
@@ -80,14 +78,8 @@ export function resolveDiscordPrivilegedIntentsFromFlags(
   };
   return {
     presence: resolve(DISCORD_APP_FLAG_GATEWAY_PRESENCE, DISCORD_APP_FLAG_GATEWAY_PRESENCE_LIMITED),
-    guildMembers: resolve(
-      DISCORD_APP_FLAG_GATEWAY_GUILD_MEMBERS,
-      DISCORD_APP_FLAG_GATEWAY_GUILD_MEMBERS_LIMITED,
-    ),
-    messageContent: resolve(
-      DISCORD_APP_FLAG_GATEWAY_MESSAGE_CONTENT,
-      DISCORD_APP_FLAG_GATEWAY_MESSAGE_CONTENT_LIMITED,
-    ),
+    guildMembers: resolve(DISCORD_APP_FLAG_GATEWAY_GUILD_MEMBERS, DISCORD_APP_FLAG_GATEWAY_GUILD_MEMBERS_LIMITED),
+    messageContent: resolve(DISCORD_APP_FLAG_GATEWAY_MESSAGE_CONTENT, DISCORD_APP_FLAG_GATEWAY_MESSAGE_CONTENT_LIMITED),
   };
 }
 
@@ -100,13 +92,11 @@ export async function fetchDiscordApplicationSummary(
   if (!json) {
     return undefined;
   }
-  const flags =
-    typeof json.flags === "number" && Number.isFinite(json.flags) ? json.flags : undefined;
+  const flags = typeof json.flags === "number" && Number.isFinite(json.flags) ? json.flags : undefined;
   return {
     id: json.id ?? null,
     flags: flags ?? null,
-    intents:
-      typeof flags === "number" ? resolveDiscordPrivilegedIntentsFromFlags(flags) : undefined,
+    intents: typeof flags === "number" ? resolveDiscordPrivilegedIntentsFromFlags(flags) : undefined,
   };
 }
 
@@ -159,8 +149,7 @@ export async function probeDiscord(
       username: json.username ?? null,
     };
     if (includeApplication) {
-      result.application =
-        (await fetchDiscordApplicationSummary(normalized, timeoutMs, fetcher)) ?? undefined;
+      result.application = (await fetchDiscordApplicationSummary(normalized, timeoutMs, fetcher)) ?? undefined;
     }
     return { ...result, elapsedMs: Date.now() - started };
   } catch (err) {

@@ -158,9 +158,7 @@ describe("Feishu monitor startup preflight", () => {
       }
 
       expect(started).toEqual(["alpha", "beta"]);
-      expect(runtime.error).toHaveBeenCalledWith(
-        expect.stringContaining("bot info probe timed out"),
-      );
+      expect(runtime.error).toHaveBeenCalledWith(expect.stringContaining("bot info probe timed out"));
     } finally {
       releaseBetaProbe();
       abortController.abort();
@@ -170,18 +168,14 @@ describe("Feishu monitor startup preflight", () => {
 
   it("stops sequential preflight when aborted during probe", async () => {
     const started: string[] = [];
-    probeFeishuMock.mockImplementation(
-      (account: { accountId: string }, options: { abortSignal?: AbortSignal }) => {
-        started.push(account.accountId);
-        return new Promise((resolve) => {
-          options.abortSignal?.addEventListener(
-            "abort",
-            () => resolve({ ok: false, error: "probe aborted" }),
-            { once: true },
-          );
+    probeFeishuMock.mockImplementation((account: { accountId: string }, options: { abortSignal?: AbortSignal }) => {
+      started.push(account.accountId);
+      return new Promise((resolve) => {
+        options.abortSignal?.addEventListener("abort", () => resolve({ ok: false, error: "probe aborted" }), {
+          once: true,
         });
-      },
-    );
+      });
+    });
 
     const abortController = new AbortController();
     const monitorPromise = monitorFeishuProvider({

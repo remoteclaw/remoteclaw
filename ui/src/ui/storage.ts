@@ -39,12 +39,9 @@ function normalizeGatewayTokenScope(gatewayUrl: string): string {
   }
   try {
     const base =
-      typeof location !== "undefined"
-        ? `${location.protocol}//${location.host}${location.pathname || "/"}`
-        : undefined;
+      typeof location !== "undefined" ? `${location.protocol}//${location.host}${location.pathname || "/"}` : undefined;
     const parsed = base ? new URL(trimmed, base) : new URL(trimmed);
-    const pathname =
-      parsed.pathname === "/" ? "" : parsed.pathname.replace(/\/+$/, "") || parsed.pathname;
+    const pathname = parsed.pathname === "/" ? "" : parsed.pathname.replace(/\/+$/, "") || parsed.pathname;
     return `${parsed.protocol}//${parsed.host}${pathname}`;
   } catch {
     return trimmed;
@@ -95,9 +92,7 @@ export function loadSettings(): UiSettings {
       typeof window !== "undefined" &&
       typeof window.__REMOTECLAW_CONTROL_UI_BASE_PATH__ === "string" &&
       window.__REMOTECLAW_CONTROL_UI_BASE_PATH__.trim();
-    const basePath = configured
-      ? normalizeBasePath(configured)
-      : inferBasePathFromPathname(location.pathname);
+    const basePath = configured ? normalizeBasePath(configured) : inferBasePathFromPathname(location.pathname);
     return `${proto}://${location.host}${basePath}`;
   })();
 
@@ -138,26 +133,19 @@ export function loadSettings(): UiSettings {
       lastActiveSessionKey:
         typeof parsed.lastActiveSessionKey === "string" && parsed.lastActiveSessionKey.trim()
           ? parsed.lastActiveSessionKey.trim()
-          : (typeof parsed.sessionKey === "string" && parsed.sessionKey.trim()) ||
-            defaults.lastActiveSessionKey,
+          : (typeof parsed.sessionKey === "string" && parsed.sessionKey.trim()) || defaults.lastActiveSessionKey,
       theme:
         parsed.theme === "light" || parsed.theme === "dark" || parsed.theme === "system"
           ? parsed.theme
           : defaults.theme,
-      chatFocusMode:
-        typeof parsed.chatFocusMode === "boolean" ? parsed.chatFocusMode : defaults.chatFocusMode,
+      chatFocusMode: typeof parsed.chatFocusMode === "boolean" ? parsed.chatFocusMode : defaults.chatFocusMode,
       chatShowThinking:
-        typeof parsed.chatShowThinking === "boolean"
-          ? parsed.chatShowThinking
-          : defaults.chatShowThinking,
+        typeof parsed.chatShowThinking === "boolean" ? parsed.chatShowThinking : defaults.chatShowThinking,
       splitRatio:
-        typeof parsed.splitRatio === "number" &&
-        parsed.splitRatio >= 0.4 &&
-        parsed.splitRatio <= 0.7
+        typeof parsed.splitRatio === "number" && parsed.splitRatio >= 0.4 && parsed.splitRatio <= 0.7
           ? parsed.splitRatio
           : defaults.splitRatio,
-      navCollapsed:
-        typeof parsed.navCollapsed === "boolean" ? parsed.navCollapsed : defaults.navCollapsed,
+      navCollapsed: typeof parsed.navCollapsed === "boolean" ? parsed.navCollapsed : defaults.navCollapsed,
       navGroupsCollapsed:
         typeof parsed.navGroupsCollapsed === "object" && parsed.navGroupsCollapsed !== null
           ? parsed.navGroupsCollapsed

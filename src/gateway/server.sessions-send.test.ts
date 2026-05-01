@@ -4,13 +4,7 @@ import { afterAll, beforeAll, describe, expect, it, type Mock } from "vitest";
 import { resolveSessionTranscriptPath } from "../config/sessions.js";
 import { emitAgentEvent } from "../infra/agent-events.js";
 import { captureEnv } from "../test-utils/env.js";
-import {
-  agentCommand,
-  getFreePort,
-  installGatewayTestHooks,
-  startGatewayServer,
-  testState,
-} from "./test-helpers.js";
+import { agentCommand, getFreePort, installGatewayTestHooks, startGatewayServer, testState } from "./test-helpers.js";
 
 const { createRemoteClawTools } = await import("../agents/remoteclaw-tools.js");
 
@@ -82,8 +76,7 @@ beforeAll(async () => {
   process.env.REMOTECLAW_GATEWAY_PORT = String(gatewayPort);
   process.env.REMOTECLAW_GATEWAY_TOKEN = gatewayToken;
   const { approveDevicePairing, requestDevicePairing } = await import("../infra/device-pairing.js");
-  const { loadOrCreateDeviceIdentity, publicKeyRawBase64UrlFromPem } =
-    await import("../infra/device-identity.js");
+  const { loadOrCreateDeviceIdentity, publicKeyRawBase64UrlFromPem } = await import("../infra/device-identity.js");
   const identity = loadOrCreateDeviceIdentity();
   const pending = await requestDevicePairing({
     deviceId: identity.deviceId,
@@ -151,55 +144,51 @@ describe("sessions_send gateway loopback", () => {
 });
 
 describe("sessions_send label lookup", () => {
-  it(
-    "finds session by label and sends message",
-    { timeout: SESSION_SEND_E2E_TIMEOUT_MS },
-    async () => {
-      // This is an operator feature; enable broader session tool targeting for this test.
-      const configPath = process.env.REMOTECLAW_CONFIG_PATH;
-      if (!configPath) {
-        throw new Error("REMOTECLAW_CONFIG_PATH missing in gateway test environment");
-      }
-      await fs.mkdir(path.dirname(configPath), { recursive: true });
-      await fs.writeFile(
-        configPath,
-        JSON.stringify({ tools: { sessions: { visibility: "all" } } }, null, 2) + "\n",
-        "utf-8",
-      );
+  it("finds session by label and sends message", { timeout: SESSION_SEND_E2E_TIMEOUT_MS }, async () => {
+    // This is an operator feature; enable broader session tool targeting for this test.
+    const configPath = process.env.REMOTECLAW_CONFIG_PATH;
+    if (!configPath) {
+      throw new Error("REMOTECLAW_CONFIG_PATH missing in gateway test environment");
+    }
+    await fs.mkdir(path.dirname(configPath), { recursive: true });
+    await fs.writeFile(
+      configPath,
+      JSON.stringify({ tools: { sessions: { visibility: "all" } } }, null, 2) + "\n",
+      "utf-8",
+    );
 
-      const spy = agentCommand as unknown as Mock<(opts: unknown) => Promise<void>>;
-      spy.mockImplementation(async (opts: unknown) =>
-        emitLifecycleAssistantReply({
-          opts,
-          defaultSessionId: "test-labeled",
-          resolveText: () => "labeled response",
-        }),
-      );
+    const spy = agentCommand as unknown as Mock<(opts: unknown) => Promise<void>>;
+    spy.mockImplementation(async (opts: unknown) =>
+      emitLifecycleAssistantReply({
+        opts,
+        defaultSessionId: "test-labeled",
+        resolveText: () => "labeled response",
+      }),
+    );
 
-      // First, create a session with a label via sessions.patch
-      const { callGateway } = await import("./call.js");
-      await callGateway({
-        method: "sessions.patch",
-        params: { key: "test-labeled-session", label: "my-test-worker" },
-        timeoutMs: 5000,
-      });
+    // First, create a session with a label via sessions.patch
+    const { callGateway } = await import("./call.js");
+    await callGateway({
+      method: "sessions.patch",
+      params: { key: "test-labeled-session", label: "my-test-worker" },
+      timeoutMs: 5000,
+    });
 
-      const tool = getSessionsSendTool();
+    const tool = getSessionsSendTool();
 
-      // Send using label instead of sessionKey
-      const result = await tool.execute("call-by-label", {
-        label: "my-test-worker",
-        message: "hello labeled session",
-        timeoutSeconds: 5,
-      });
-      const details = result.details as {
-        status?: string;
-        reply?: string;
-        sessionKey?: string;
-      };
-      expect(details.status).toBe("ok");
-      expect(details.reply).toBe("labeled response");
-      expect(details.sessionKey).toBe("agent:main:test-labeled-session");
-    },
-  );
+    // Send using label instead of sessionKey
+    const result = await tool.execute("call-by-label", {
+      label: "my-test-worker",
+      message: "hello labeled session",
+      timeoutSeconds: 5,
+    });
+    const details = result.details as {
+      status?: string;
+      reply?: string;
+      sessionKey?: string;
+    };
+    expect(details.status).toBe("ok");
+    expect(details.reply).toBe("labeled response");
+    expect(details.sessionKey).toBe("agent:main:test-labeled-session");
+  });
 });

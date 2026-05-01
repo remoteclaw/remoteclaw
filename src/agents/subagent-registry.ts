@@ -21,10 +21,7 @@ import {
   type SubagentLifecycleEndedReason,
 } from "./subagent-lifecycle-events.js";
 import { scheduleOrphanRecovery } from "./subagent-orphan-recovery.js";
-import {
-  resolveCleanupCompletionReason,
-  resolveDeferredCleanupDecision,
-} from "./subagent-registry-cleanup.js";
+import { resolveCleanupCompletionReason, resolveDeferredCleanupDecision } from "./subagent-registry-cleanup.js";
 import {
   emitSubagentEndedHookOnce,
   resolveLifecycleOutcomeFromRunOutcome,
@@ -122,8 +119,7 @@ function resolveAnnounceRetryDelayMs(retryCount: number) {
 
 function logAnnounceGiveUp(entry: SubagentRunRecord, reason: "retry-limit" | "expiry") {
   const retryCount = entry.announceRetryCount ?? 0;
-  const endedAgoMs =
-    typeof entry.endedAt === "number" ? Math.max(0, Date.now() - entry.endedAt) : undefined;
+  const endedAgoMs = typeof entry.endedAt === "number" ? Math.max(0, Date.now() - entry.endedAt) : undefined;
   const endedAgoLabel = endedAgoMs != null ? `${Math.round(endedAgoMs / 1000)}s` : "n/a";
   defaultRuntime.log(
     `[warn] Subagent announce give up (${reason}) run=${entry.runId} child=${entry.childSessionKey} requester=${entry.requesterSessionKey} retries=${retryCount} endedAgo=${endedAgoLabel}`,
@@ -314,20 +310,14 @@ function suppressAnnounceForSteerRestart(entry?: SubagentRunRecord) {
   return entry?.suppressAnnounceReason === "steer-restart";
 }
 
-function shouldKeepThreadBindingAfterRun(params: {
-  entry: SubagentRunRecord;
-  reason: SubagentLifecycleEndedReason;
-}) {
+function shouldKeepThreadBindingAfterRun(params: { entry: SubagentRunRecord; reason: SubagentLifecycleEndedReason }) {
   if (params.reason === SUBAGENT_ENDED_REASON_KILLED) {
     return false;
   }
   return params.entry.spawnMode === "session";
 }
 
-function shouldEmitEndedHookForRun(params: {
-  entry: SubagentRunRecord;
-  reason: SubagentLifecycleEndedReason;
-}) {
+function shouldEmitEndedHookForRun(params: { entry: SubagentRunRecord; reason: SubagentLifecycleEndedReason }) {
   return !shouldKeepThreadBindingAfterRun(params);
 }
 
@@ -442,9 +432,7 @@ function startSubagentAnnounceCleanupFlow(runId: string, entry: SubagentRunRecor
       void finalizeSubagentCleanup(runId, entry.cleanup, didAnnounce);
     })
     .catch((error) => {
-      defaultRuntime.log(
-        `[warn] Subagent announce flow failed during cleanup for run ${runId}: ${String(error)}`,
-      );
+      defaultRuntime.log(`[warn] Subagent announce flow failed during cleanup for run ${runId}: ${String(error)}`);
       void finalizeSubagentCleanup(runId, entry.cleanup, false);
     });
   return true;
@@ -496,11 +484,7 @@ function resumeSubagentRun(runId: string) {
   const now = Date.now();
   const delayMs = resolveAnnounceRetryDelayMs(entry.announceRetryCount ?? 0);
   const earliestRetryAt = (entry.lastAnnounceRetryAt ?? 0) + delayMs;
-  if (
-    entry.expectsCompletionMessage === true &&
-    entry.lastAnnounceRetryAt &&
-    now < earliestRetryAt
-  ) {
+  if (entry.expectsCompletionMessage === true && entry.lastAnnounceRetryAt && now < earliestRetryAt) {
     const waitMs = Math.max(1, earliestRetryAt - now);
     setTimeout(() => {
       resumedRuns.delete(runId);
@@ -577,10 +561,7 @@ function resolveArchiveAfterMs(cfg?: ReturnType<typeof loadConfig>) {
   return Math.max(1, Math.floor(minutes)) * 60_000;
 }
 
-function resolveSubagentWaitTimeoutMs(
-  cfg: ReturnType<typeof loadConfig>,
-  runTimeoutSeconds?: number,
-) {
+function resolveSubagentWaitTimeoutMs(cfg: ReturnType<typeof loadConfig>, runTimeoutSeconds?: number) {
   return resolveAgentTimeoutMs({ cfg, overrideSeconds: runTimeoutSeconds ?? 0 });
 }
 
@@ -674,9 +655,7 @@ function ensureListener() {
         return;
       }
       clearPendingLifecycleError(evt.runId);
-      const outcome: SubagentRunOutcome = evt.data?.aborted
-        ? { status: "timeout" }
-        : { status: "ok" };
+      const outcome: SubagentRunOutcome = evt.data?.aborted ? { status: "timeout" } : { status: "ok" };
       await completeSubagentRun({
         runId: evt.runId,
         endedAt,
@@ -728,11 +707,7 @@ async function safeRemoveAttachmentsDir(entry: SubagentRunRecord): Promise<void>
   }
 }
 
-async function finalizeSubagentCleanup(
-  runId: string,
-  cleanup: "delete" | "keep",
-  didAnnounce: boolean,
-) {
+async function finalizeSubagentCleanup(runId: string, cleanup: "delete" | "keep", didAnnounce: boolean) {
   const entry = subagentRuns.get(runId);
   if (!entry) {
     return;
@@ -815,10 +790,7 @@ async function finalizeSubagentCleanup(
   }, deferredDecision.resumeDelayMs).unref?.();
 }
 
-async function emitCompletionEndedHookIfNeeded(
-  entry: SubagentRunRecord,
-  reason: SubagentLifecycleEndedReason,
-) {
+async function emitCompletionEndedHookIfNeeded(entry: SubagentRunRecord, reason: SubagentLifecycleEndedReason) {
   if (
     entry.expectsCompletionMessage === true &&
     shouldEmitEndedHookForRun({
@@ -965,8 +937,7 @@ export function replaceSubagentRunAfterSteer(params: {
   const cfg = loadConfig();
   const archiveAfterMs = resolveArchiveAfterMs(cfg);
   const spawnMode = source.spawnMode === "session" ? "session" : "run";
-  const archiveAtMs =
-    spawnMode === "session" ? undefined : archiveAfterMs ? now + archiveAfterMs : undefined;
+  const archiveAtMs = spawnMode === "session" ? undefined : archiveAfterMs ? now + archiveAfterMs : undefined;
   const runTimeoutSeconds = params.runTimeoutSeconds ?? source.runTimeoutSeconds ?? 0;
   const waitTimeoutMs = resolveSubagentWaitTimeoutMs(cfg, runTimeoutSeconds);
 
@@ -1020,8 +991,7 @@ export function registerSubagentRun(params: {
   const cfg = loadConfig();
   const archiveAfterMs = resolveArchiveAfterMs(cfg);
   const spawnMode = params.spawnMode === "session" ? "session" : "run";
-  const archiveAtMs =
-    spawnMode === "session" ? undefined : archiveAfterMs ? now + archiveAfterMs : undefined;
+  const archiveAtMs = spawnMode === "session" ? undefined : archiveAfterMs ? now + archiveAfterMs : undefined;
   const runTimeoutSeconds = params.runTimeoutSeconds ?? 0;
   const waitTimeoutMs = resolveSubagentWaitTimeoutMs(cfg, runTimeoutSeconds);
   const requesterOrigin = normalizeDeliveryContext(params.requesterOrigin);
@@ -1111,8 +1081,7 @@ async function waitForSubagentCompletion(runId: string, waitTimeoutMs: number) {
       runId,
       endedAt: entry.endedAt,
       outcome,
-      reason:
-        wait.status === "error" ? SUBAGENT_ENDED_REASON_ERROR : SUBAGENT_ENDED_REASON_COMPLETE,
+      reason: wait.status === "error" ? SUBAGENT_ENDED_REASON_ERROR : SUBAGENT_ENDED_REASON_COMPLETE,
       sendFarewell: true,
       accountId: entry.requesterOrigin?.accountId,
       triggerCleanup: true,
@@ -1256,37 +1225,22 @@ export function listSubagentRunsForRequester(requesterSessionKey: string): Subag
 }
 
 export function listSubagentRunsForController(controllerSessionKey: string): SubagentRunRecord[] {
-  return listRunsForControllerFromRuns(
-    getSubagentRunsSnapshotForRead(subagentRuns),
-    controllerSessionKey,
-  );
+  return listRunsForControllerFromRuns(getSubagentRunsSnapshotForRead(subagentRuns), controllerSessionKey);
 }
 
 export function countActiveRunsForSession(requesterSessionKey: string): number {
-  return countActiveRunsForSessionFromRuns(
-    getSubagentRunsSnapshotForRead(subagentRuns),
-    requesterSessionKey,
-  );
+  return countActiveRunsForSessionFromRuns(getSubagentRunsSnapshotForRead(subagentRuns), requesterSessionKey);
 }
 
 export function countActiveDescendantRuns(rootSessionKey: string): number {
-  return countActiveDescendantRunsFromRuns(
-    getSubagentRunsSnapshotForRead(subagentRuns),
-    rootSessionKey,
-  );
+  return countActiveDescendantRunsFromRuns(getSubagentRunsSnapshotForRead(subagentRuns), rootSessionKey);
 }
 
 export function countPendingDescendantRuns(rootSessionKey: string): number {
-  return countPendingDescendantRunsFromRuns(
-    getSubagentRunsSnapshotForRead(subagentRuns),
-    rootSessionKey,
-  );
+  return countPendingDescendantRunsFromRuns(getSubagentRunsSnapshotForRead(subagentRuns), rootSessionKey);
 }
 
-export function countPendingDescendantRunsExcludingRun(
-  rootSessionKey: string,
-  excludeRunId: string,
-): number {
+export function countPendingDescendantRunsExcludingRun(rootSessionKey: string, excludeRunId: string): number {
   return countPendingDescendantRunsExcludingRunFromRuns(
     getSubagentRunsSnapshotForRead(subagentRuns),
     rootSessionKey,
@@ -1295,10 +1249,7 @@ export function countPendingDescendantRunsExcludingRun(
 }
 
 export function listDescendantRunsForRequester(rootSessionKey: string): SubagentRunRecord[] {
-  return listDescendantRunsForRequesterFromRuns(
-    getSubagentRunsSnapshotForRead(subagentRuns),
-    rootSessionKey,
-  );
+  return listDescendantRunsForRequesterFromRuns(getSubagentRunsSnapshotForRead(subagentRuns), rootSessionKey);
 }
 
 export function initSubagentRegistry() {

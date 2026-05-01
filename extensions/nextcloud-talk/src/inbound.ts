@@ -85,14 +85,12 @@ export async function handleNextcloudTalkInbound(params: {
 
   const dmPolicy = account.config.dmPolicy ?? "pairing";
   const defaultGroupPolicy = resolveDefaultGroupPolicy(config as RemoteClawConfig);
-  const { groupPolicy, providerMissingFallbackApplied } =
-    resolveAllowlistProviderRuntimeGroupPolicy({
-      providerConfigPresent:
-        ((config.channels as Record<string, unknown> | undefined)?.["nextcloud-talk"] ??
-          undefined) !== undefined,
-      groupPolicy: account.config.groupPolicy as GroupPolicy | undefined,
-      defaultGroupPolicy,
-    });
+  const { groupPolicy, providerMissingFallbackApplied } = resolveAllowlistProviderRuntimeGroupPolicy({
+    providerConfigPresent:
+      ((config.channels as Record<string, unknown> | undefined)?.["nextcloud-talk"] ?? undefined) !== undefined,
+    groupPolicy: account.config.groupPolicy as GroupPolicy | undefined,
+    defaultGroupPolicy,
+  });
   warnMissingProviderGroupPolicyFallbackOnce({
     providerMissingFallbackApplied,
     providerKey: "nextcloud-talk",
@@ -132,12 +130,8 @@ export async function handleNextcloudTalkInbound(params: {
     cfg: config as RemoteClawConfig,
     surface: CHANNEL_ID,
   });
-  const useAccessGroups =
-    (config.commands as Record<string, unknown> | undefined)?.useAccessGroups !== false;
-  const hasControlCommand = core.channel.text.hasControlCommand(
-    rawBody,
-    config as RemoteClawConfig,
-  );
+  const useAccessGroups = (config.commands as Record<string, unknown> | undefined)?.useAccessGroups !== false;
+  const hasControlCommand = core.channel.text.hasControlCommand(rawBody, config as RemoteClawConfig);
   const access = resolveDmGroupAccessWithCommandGate({
     isGroup,
     dmPolicy,
@@ -247,9 +241,7 @@ export async function handleNextcloudTalkInbound(params: {
       agentId: route.agentId,
     },
   );
-  const envelopeOptions = core.channel.reply.resolveEnvelopeFormatOptions(
-    config as RemoteClawConfig,
-  );
+  const envelopeOptions = core.channel.reply.resolveEnvelopeFormatOptions(config as RemoteClawConfig);
   const previousTimestamp = core.channel.session.readSessionUpdatedAt({
     storePath,
     sessionKey: route.sessionKey,
@@ -315,9 +307,7 @@ export async function handleNextcloudTalkInbound(params: {
     replyOptions: {
       skillFilter: roomConfig?.skills,
       disableBlockStreaming:
-        typeof account.config.blockStreaming === "boolean"
-          ? !account.config.blockStreaming
-          : undefined,
+        typeof account.config.blockStreaming === "boolean" ? !account.config.blockStreaming : undefined,
     },
   });
 }

@@ -20,9 +20,7 @@ type BuildTelegramMessageContextForTestParams = {
 
 export async function buildTelegramMessageContextForTest(
   params: BuildTelegramMessageContextForTestParams,
-): Promise<
-  Awaited<ReturnType<typeof import("./bot-message-context.js").buildTelegramMessageContext>>
-> {
+): Promise<Awaited<ReturnType<typeof import("./bot-message-context.js").buildTelegramMessageContext>>> {
   const { buildTelegramMessageContext } = await import("./bot-message-context.js");
   return await buildTelegramMessageContext({
     primaryCtx: {

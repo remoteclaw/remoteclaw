@@ -74,10 +74,7 @@ const DEFAULT_STATEFILE_OUTPUT = "docs/.generated/config-baseline.jsonl";
 let cachedConfigDocBaselinePromise: Promise<ConfigDocBaseline> | null = null;
 const uiHintIndexCache = new WeakMap<
   ConfigSchemaResponse["uiHints"],
-  Map<
-    number,
-    Array<{ path: string; parts: string[]; hint: ConfigSchemaResponse["uiHints"][string] }>
-  >
+  Map<number, Array<{ path: string; parts: string[]; hint: ConfigSchemaResponse["uiHints"][string] }>>
 >();
 const schemaHasChildrenCache = new WeakMap<JsonSchemaObject, boolean>();
 
@@ -272,10 +269,7 @@ function areJsonValuesEqual(left: JsonValue | undefined, right: JsonValue | unde
   return JSON.stringify(left) === JSON.stringify(right);
 }
 
-function mergeJsonValueArrays(
-  left: JsonValue[] | undefined,
-  right: JsonValue[] | undefined,
-): JsonValue[] | undefined {
+function mergeJsonValueArrays(left: JsonValue[] | undefined, right: JsonValue[] | undefined): JsonValue[] | undefined {
   if (!left?.length) {
     return right ? [...right] : undefined;
   }
@@ -311,9 +305,7 @@ function mergeConfigDocBaselineEntry(
     defaultValue,
     deprecated: current.deprecated || next.deprecated,
     sensitive: current.sensitive || next.sensitive,
-    tags: [...new Set([...current.tags, ...next.tags])].toSorted((left, right) =>
-      left.localeCompare(right),
-    ),
+    tags: [...new Set([...current.tags, ...next.tags])].toSorted((left, right) => left.localeCompare(right)),
     label,
     help,
     hasChildren: current.hasChildren || next.hasChildren,
@@ -343,15 +335,12 @@ function resolveFirstExistingPath(candidates: string[]): string | null {
 }
 
 async function loadBundledConfigSchemaResponse(): Promise<ConfigSchemaResponse> {
-  const [
-    { listChannelPluginCatalogEntries },
-    { loadPluginManifestRegistry },
-    { buildConfigSchema },
-  ] = await Promise.all([
-    import("../channels/plugins/catalog.js"),
-    import("../plugins/manifest-registry.js"),
-    import("./schema.js"),
-  ]);
+  const [{ listChannelPluginCatalogEntries }, { loadPluginManifestRegistry }, { buildConfigSchema }] =
+    await Promise.all([
+      import("../channels/plugins/catalog.js"),
+      import("../plugins/manifest-registry.js"),
+      import("./schema.js"),
+    ]);
   const repoRoot = resolveRepoRoot();
   const env = {
     ...process.env,
@@ -377,44 +366,29 @@ async function loadBundledConfigSchemaResponse(): Promise<ConfigSchemaResponse> 
   );
   const channelPlugins =
     process.env.REMOTECLAW_CONFIG_DOC_BASELINE_DEBUG === "1"
-      ? await bundledChannelPlugins.reduce<Promise<ChannelSurfaceMetadata[]>>(
-          async (promise, plugin) => {
-            const loaded = await promise;
-            const catalogMeta = channelCatalogById.get(plugin.id);
-            const label = catalogMeta?.label ?? plugin.name ?? plugin.id;
-            const description = catalogMeta?.blurb ?? plugin.description;
-            loaded.push(
-              (await loadChannelSurfaceMetadata(
-                plugin.rootDir,
-                plugin.id,
-                label,
-                description,
-                repoRoot,
-              )) ?? {
-                id: plugin.id,
-                label,
-                description,
-                configSchema: plugin.configSchema,
-                configUiHints: plugin.configUiHints,
-              },
-            );
-            return loaded;
-          },
-          Promise.resolve([]),
-        )
+      ? await bundledChannelPlugins.reduce<Promise<ChannelSurfaceMetadata[]>>(async (promise, plugin) => {
+          const loaded = await promise;
+          const catalogMeta = channelCatalogById.get(plugin.id);
+          const label = catalogMeta?.label ?? plugin.name ?? plugin.id;
+          const description = catalogMeta?.blurb ?? plugin.description;
+          loaded.push(
+            (await loadChannelSurfaceMetadata(plugin.rootDir, plugin.id, label, description, repoRoot)) ?? {
+              id: plugin.id,
+              label,
+              description,
+              configSchema: plugin.configSchema,
+              configUiHints: plugin.configUiHints,
+            },
+          );
+          return loaded;
+        }, Promise.resolve([]))
       : await Promise.all(
           bundledChannelPlugins.map(async (plugin) => {
             const catalogMeta = channelCatalogById.get(plugin.id);
             const label = catalogMeta?.label ?? plugin.name ?? plugin.id;
             const description = catalogMeta?.blurb ?? plugin.description;
             return (
-              (await loadChannelSurfaceMetadata(
-                plugin.rootDir,
-                plugin.id,
-                label,
-                description,
-                repoRoot,
-              )) ?? {
+              (await loadChannelSurfaceMetadata(plugin.rootDir, plugin.id, label, description, repoRoot)) ?? {
                 id: plugin.id,
                 label,
                 description,
@@ -424,9 +398,7 @@ async function loadBundledConfigSchemaResponse(): Promise<ConfigSchemaResponse> 
             );
           }),
         );
-  logConfigDocBaselineDebug(
-    `loaded ${channelPlugins.length} bundled channel entries from channel surfaces`,
-  );
+  logConfigDocBaselineDebug(`loaded ${channelPlugins.length} bundled channel entries from channel surfaces`);
 
   return buildConfigSchema({
     cache: false,
@@ -470,8 +442,7 @@ async function loadChannelSurfaceMetadata(
 
   logConfigDocBaselineDebug(`import channel config schema ${modulePath}`);
   try {
-    const { loadChannelConfigSurfaceModule } =
-      await import("../../scripts/load-channel-config-surface.ts");
+    const { loadChannelConfigSurfaceModule } = await import("../../scripts/load-channel-config-surface.ts");
     const configSurface = await loadChannelConfigSurfaceModule(modulePath, { repoRoot });
     if (!configSurface) {
       logConfigDocBaselineDebug(`channel config schema export missing ${modulePath}`);
@@ -486,9 +457,7 @@ async function loadChannelSurfaceMetadata(
       configUiHints: configSurface.uiHints as ConfigSchemaResponse["uiHints"] | undefined,
     };
   } catch (error) {
-    logConfigDocBaselineDebug(
-      `channel config schema import failed for ${modulePath}: ${String(error)}`,
-    );
+    logConfigDocBaselineDebug(`channel config schema import failed for ${modulePath}: ${String(error)}`);
     return null;
   }
 }
@@ -532,22 +501,13 @@ export function collectConfigDocBaselineEntries(
   }
 
   const requiredKeys = new Set(schema.required ?? []);
-  for (const key of Object.keys(schema.properties ?? {}).toSorted((left, right) =>
-    left.localeCompare(right),
-  )) {
+  for (const key of Object.keys(schema.properties ?? {}).toSorted((left, right) => left.localeCompare(right))) {
     const child = asSchemaObject(schema.properties?.[key]);
     if (!child) {
       continue;
     }
     const childPath = normalizedPath ? `${normalizedPath}.${key}` : key;
-    collectConfigDocBaselineEntries(
-      child,
-      uiHints,
-      childPath,
-      requiredKeys.has(key),
-      entries,
-      visited,
-    );
+    collectConfigDocBaselineEntries(child, uiHints, childPath, requiredKeys.has(key), entries, visited);
   }
 
   if (schema.additionalProperties && typeof schema.additionalProperties === "object") {
@@ -588,9 +548,7 @@ export function collectConfigDocBaselineEntries(
   return entries;
 }
 
-export function dedupeConfigDocBaselineEntries(
-  entries: ConfigDocBaselineEntry[],
-): ConfigDocBaselineEntry[] {
+export function dedupeConfigDocBaselineEntries(entries: ConfigDocBaselineEntry[]): ConfigDocBaselineEntry[] {
   const byPath = new Map<string, ConfigDocBaselineEntry>();
   for (const entry of entries) {
     const current = byPath.get(entry.path);
@@ -613,9 +571,7 @@ export async function buildConfigDocBaseline(): Promise<ConfigDocBaseline> {
     }
     const collectStart = Date.now();
     logConfigDocBaselineDebug("collect baseline entries start");
-    const entries = dedupeConfigDocBaselineEntries(
-      collectConfigDocBaselineEntries(schemaRoot, response.uiHints),
-    );
+    const entries = dedupeConfigDocBaselineEntries(collectConfigDocBaselineEntries(schemaRoot, response.uiHints));
     logConfigDocBaselineDebug(
       `collect baseline entries done count=${entries.length} elapsedMs=${Date.now() - collectStart}`,
     );
@@ -689,9 +645,7 @@ export async function writeConfigDocBaselineStatefile(params?: {
   const repoRoot = params?.repoRoot ?? resolveRepoRoot();
   const jsonPath = path.resolve(repoRoot, params?.jsonPath ?? DEFAULT_JSON_OUTPUT);
   const statefilePath = path.resolve(repoRoot, params?.statefilePath ?? DEFAULT_STATEFILE_OUTPUT);
-  const rendered = params?.rendered
-    ? await params.rendered
-    : await renderConfigDocBaselineStatefile();
+  const rendered = params?.rendered ? await params.rendered : await renderConfigDocBaselineStatefile();
   logConfigDocBaselineDebug(`render statefile done elapsedMs=${Date.now() - start}`);
   logConfigDocBaselineDebug(`read current json start ${jsonPath}`);
   const currentJson = await readIfExists(jsonPath);
@@ -700,9 +654,7 @@ export async function writeConfigDocBaselineStatefile(params?: {
   const currentStatefile = await readIfExists(statefilePath);
   logConfigDocBaselineDebug(`read current statefile done elapsedMs=${Date.now() - start}`);
   const changed = currentJson !== rendered.json || currentStatefile !== rendered.jsonl;
-  logConfigDocBaselineDebug(
-    `compare statefile done changed=${changed} elapsedMs=${Date.now() - start}`,
-  );
+  logConfigDocBaselineDebug(`compare statefile done changed=${changed} elapsedMs=${Date.now() - start}`);
 
   if (params?.check) {
     return {

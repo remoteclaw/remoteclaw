@@ -15,9 +15,7 @@ function isSlackHostname(hostname: string): boolean {
   // Include a small allowlist of known Slack domains to avoid leaking tokens if a file URL
   // is ever spoofed or mishandled.
   const allowedSuffixes = ["slack.com", "slack-edge.com", "slack-files.com"];
-  return allowedSuffixes.some(
-    (suffix) => normalized === suffix || normalized.endsWith(`.${suffix}`),
-  );
+  return allowedSuffixes.some((suffix) => normalized === suffix || normalized.endsWith(`.${suffix}`));
 }
 
 function assertSlackFileUrl(rawUrl: string): URL {
@@ -31,9 +29,7 @@ function assertSlackFileUrl(rawUrl: string): URL {
     throw new Error(`Refusing Slack file URL with non-HTTPS protocol: ${parsed.protocol}`);
   }
   if (!isSlackHostname(parsed.hostname)) {
-    throw new Error(
-      `Refusing to send Slack token to non-Slack host "${parsed.hostname}" (url: ${rawUrl})`,
-    );
+    throw new Error(`Refusing to send Slack token to non-Slack host "${parsed.hostname}" (url: ${rawUrl})`);
   }
   return parsed;
 }
@@ -110,10 +106,7 @@ const SLACK_MEDIA_SSRF_POLICY = {
  * `video/webm`).  Override the primary type to `audio/` so the
  * media-understanding pipeline routes them to transcription.
  */
-function resolveSlackMediaMimetype(
-  file: SlackFile,
-  fetchedContentType?: string,
-): string | undefined {
+function resolveSlackMediaMimetype(file: SlackFile, fetchedContentType?: string): string | undefined {
   const mime = fetchedContentType ?? file.mimetype;
   if (file.subtype === "slack_audio" && mime?.startsWith("video/")) {
     return mime.replace("video/", "audio/");
@@ -157,11 +150,7 @@ function resolveForwardedAttachmentImageUrl(attachment: SlackAttachment): string
   }
 }
 
-async function mapLimit<T, R>(
-  items: T[],
-  limit: number,
-  fn: (item: T) => Promise<R>,
-): Promise<R[]> {
+async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
   if (items.length === 0) {
     return [];
   }
@@ -193,8 +182,7 @@ export async function resolveSlackMedia(params: {
   maxBytes: number;
 }): Promise<SlackMediaResult[] | null> {
   const files = params.files ?? [];
-  const limitedFiles =
-    files.length > MAX_SLACK_MEDIA_FILES ? files.slice(0, MAX_SLACK_MEDIA_FILES) : files;
+  const limitedFiles = files.length > MAX_SLACK_MEDIA_FILES ? files.slice(0, MAX_SLACK_MEDIA_FILES) : files;
 
   const resolved = await mapLimit<SlackFile, SlackMediaResult | null>(
     limitedFiles,
@@ -224,8 +212,7 @@ export async function resolveSlackMedia(params: {
         // Allow user-provided HTML files through.
         const fileMime = file.mimetype?.toLowerCase();
         const fileName = file.name?.toLowerCase() ?? "";
-        const isExpectedHtml =
-          fileMime === "text/html" || fileName.endsWith(".html") || fileName.endsWith(".htm");
+        const isExpectedHtml = fileMime === "text/html" || fileName.endsWith(".html") || fileName.endsWith(".htm");
         if (!isExpectedHtml) {
           const detectedMime = fetched.contentType?.split(";")[0]?.trim().toLowerCase();
           if (detectedMime === "text/html" || looksLikeHtmlBuffer(fetched.buffer)) {
@@ -234,12 +221,7 @@ export async function resolveSlackMedia(params: {
         }
 
         const effectiveMime = resolveSlackMediaMimetype(file, fetched.contentType);
-        const saved = await saveMediaBuffer(
-          fetched.buffer,
-          effectiveMime,
-          "inbound",
-          params.maxBytes,
-        );
+        const saved = await saveMediaBuffer(fetched.buffer, effectiveMime, "inbound", params.maxBytes);
         const label = fetched.fileName ?? file.name;
         const contentType = effectiveMime ?? saved.contentType;
         return {
@@ -297,12 +279,7 @@ export async function resolveSlackAttachmentContent(params: {
           ssrfPolicy: SLACK_MEDIA_SSRF_POLICY,
         });
         if (fetched.buffer.byteLength <= params.maxBytes) {
-          const saved = await saveMediaBuffer(
-            fetched.buffer,
-            fetched.contentType,
-            "inbound",
-            params.maxBytes,
-          );
+          const saved = await saveMediaBuffer(fetched.buffer, fetched.contentType, "inbound", params.maxBytes);
           const label = fetched.fileName ?? "forwarded image";
           allMedia.push({
             path: saved.path,
@@ -496,9 +473,7 @@ export async function resolveSlackThreadHistory(params: {
 
     return retained.map((msg) => ({
       // For file-only messages, create a placeholder showing attached filenames
-      text: msg.text?.trim()
-        ? msg.text
-        : `[attached: ${msg.files?.map((f) => f.name ?? "file").join(", ")}]`,
+      text: msg.text?.trim() ? msg.text : `[attached: ${msg.files?.map((f) => f.name ?? "file").join(", ")}]`,
       userId: msg.user,
       botId: msg.bot_id,
       ts: msg.ts,

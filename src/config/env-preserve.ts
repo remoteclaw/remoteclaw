@@ -86,11 +86,7 @@ function tryResolveString(template: string, env: NodeJS.ProcessEnv): string | nu
  * @param env - Environment variables for verification
  * @returns A new config object with env var references restored where appropriate
  */
-export function restoreEnvVarRefs(
-  incoming: unknown,
-  parsed: unknown,
-  env: NodeJS.ProcessEnv = process.env,
-): unknown {
+export function restoreEnvVarRefs(incoming: unknown, parsed: unknown, env: NodeJS.ProcessEnv = process.env): unknown {
   // If parsed has no env var refs at this level, return incoming as-is
   if (parsed === null || parsed === undefined) {
     return incoming;
@@ -110,9 +106,7 @@ export function restoreEnvVarRefs(
 
   // Arrays: walk element by element
   if (Array.isArray(incoming) && Array.isArray(parsed)) {
-    return incoming.map((item, i) =>
-      i < parsed.length ? restoreEnvVarRefs(item, parsed[i], env) : item,
-    );
+    return incoming.map((item, i) => (i < parsed.length ? restoreEnvVarRefs(item, parsed[i], env) : item));
   }
 
   // Objects: walk key by key

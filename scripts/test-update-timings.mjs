@@ -1,10 +1,6 @@
 import { intFlag, parseFlagArgs, stringFlag } from "./lib/arg-utils.mjs";
 import { loadVitestReportFromArgs } from "./lib/vitest-report-cli-utils.mjs";
-import {
-  collectVitestFileDurations,
-  normalizeTrackedRepoPath,
-  writeJsonFile,
-} from "./test-report-utils.mjs";
+import { collectVitestFileDurations, normalizeTrackedRepoPath, writeJsonFile } from "./test-report-utils.mjs";
 import { extensionTimingManifestPath, unitTimingManifestPath } from "./test-runner-manifest.mjs";
 
 const resolveDefaultManifestSettings = (config) => {

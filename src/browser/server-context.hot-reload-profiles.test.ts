@@ -1,9 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveBrowserConfig } from "./config.js";
-import {
-  refreshResolvedBrowserConfigFromDisk,
-  resolveBrowserProfileWithHotReload,
-} from "./resolved-config-refresh.js";
+import { refreshResolvedBrowserConfigFromDisk, resolveBrowserProfileWithHotReload } from "./resolved-config-refresh.js";
 
 let cfgProfiles: Record<string, { cdpPort?: number; cdpUrl?: string; color?: string }> = {};
 

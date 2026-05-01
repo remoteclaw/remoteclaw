@@ -5,9 +5,7 @@ export function escapeFishDescription(value: string): string {
 function parseOptionFlags(flags: string): { long?: string; short?: string } {
   const parts = flags.split(/[ ,|]+/);
   const long = parts.find((flag) => flag.startsWith("--"))?.replace(/^--/, "");
-  const short = parts
-    .find((flag) => flag.startsWith("-") && !flag.startsWith("--"))
-    ?.replace(/^-/, "");
+  const short = parts.find((flag) => flag.startsWith("-") && !flag.startsWith("--"))?.replace(/^-/, "");
   return { long, short };
 }
 

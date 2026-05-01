@@ -15,15 +15,7 @@ import { type AnyAgentTool, imageResult, jsonResult, readStringParam } from "./c
 import { callGatewayTool, readGatewayCallOptions } from "./gateway.js";
 import { resolveNodeId } from "./nodes-utils.js";
 
-const CANVAS_ACTIONS = [
-  "present",
-  "hide",
-  "navigate",
-  "eval",
-  "snapshot",
-  "a2ui_push",
-  "a2ui_reset",
-] as const;
+const CANVAS_ACTIONS = ["present", "hide", "navigate", "eval", "snapshot", "a2ui_push", "a2ui_reset"] as const;
 
 const CANVAS_SNAPSHOT_FORMATS = ["png", "jpg", "jpeg"] as const;
 
@@ -90,11 +82,7 @@ export function createCanvasTool(options?: { config?: RemoteClawConfig }): AnyAg
       const action = readStringParam(params, "action", { required: true });
       const gatewayOpts = readGatewayCallOptions(params);
 
-      const nodeId = await resolveNodeId(
-        gatewayOpts,
-        readStringParam(params, "node", { trim: true }),
-        true,
-      );
+      const nodeId = await resolveNodeId(gatewayOpts, readStringParam(params, "node", { trim: true }), true);
 
       const invoke = async (command: string, invokeParams?: Record<string, unknown>) =>
         await callGatewayTool("node.invoke", gatewayOpts, {
@@ -116,8 +104,7 @@ export function createCanvasTool(options?: { config?: RemoteClawConfig }): AnyAg
           // Accept both `target` and `url` for present to match common caller expectations.
           // `target` remains the canonical field for CLI compatibility.
           const presentTarget =
-            readStringParam(params, "target", { trim: true }) ??
-            readStringParam(params, "url", { trim: true });
+            readStringParam(params, "target", { trim: true }) ?? readStringParam(params, "url", { trim: true });
           if (presentTarget) {
             invokeParams.url = presentTarget;
           }
@@ -160,17 +147,12 @@ export function createCanvasTool(options?: { config?: RemoteClawConfig }): AnyAg
           return jsonResult({ ok: true });
         }
         case "snapshot": {
-          const formatRaw =
-            typeof params.outputFormat === "string" ? params.outputFormat.toLowerCase() : "png";
+          const formatRaw = typeof params.outputFormat === "string" ? params.outputFormat.toLowerCase() : "png";
           const format = formatRaw === "jpg" || formatRaw === "jpeg" ? "jpeg" : "png";
           const maxWidth =
-            typeof params.maxWidth === "number" && Number.isFinite(params.maxWidth)
-              ? params.maxWidth
-              : undefined;
+            typeof params.maxWidth === "number" && Number.isFinite(params.maxWidth) ? params.maxWidth : undefined;
           const quality =
-            typeof params.quality === "number" && Number.isFinite(params.quality)
-              ? params.quality
-              : undefined;
+            typeof params.quality === "number" && Number.isFinite(params.quality) ? params.quality : undefined;
           const raw = (await invoke("canvas.snapshot", {
             format,
             maxWidth,

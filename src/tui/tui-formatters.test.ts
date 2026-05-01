@@ -137,8 +137,7 @@ Assistant body`,
   it("does not strip metadata-like blocks that are not a leading prefix", () => {
     const text = extractTextFromMessage({
       role: "user",
-      content:
-        'Hello world\nConversation info (untrusted metadata):\n```json\n{"message_id":"123"}\n```\n\nFollow-up',
+      content: 'Hello world\nConversation info (untrusted metadata):\n```json\n{"message_id":"123"}\n```\n\nFollow-up',
     });
 
     expect(text).toBe(
@@ -235,8 +234,7 @@ describe("sanitizeRenderableText", () => {
   });
 
   it("preserves long urls verbatim for copy safety", () => {
-    const input =
-      "https://example.com/this/is/a/very/long/url/segment/that/should/remain/contiguous/when/rendered";
+    const input = "https://example.com/this/is/a/very/long/url/segment/that/should/remain/contiguous/when/rendered";
     const sanitized = sanitizeRenderableText(input);
 
     expect(sanitized).toBe(input);

@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
-import {
-  collectAttackSurfaceSummaryFindings,
-  collectSmallModelRiskFindings,
-} from "./audit-extra.sync.js";
+import { collectAttackSurfaceSummaryFindings, collectSmallModelRiskFindings } from "./audit-extra.sync.js";
 import { safeEqualSecret } from "./secret-equal.js";
 
 describe("collectAttackSurfaceSummaryFindings", () => {

@@ -22,15 +22,10 @@ function decodeBase64Url(input: string): Buffer {
   return Buffer.from(padded, "base64");
 }
 
-function createSignedTelnyxCtx(params: {
-  privateKey: crypto.KeyObject;
-  rawBody: string;
-}): WebhookContext {
+function createSignedTelnyxCtx(params: { privateKey: crypto.KeyObject; rawBody: string }): WebhookContext {
   const timestamp = String(Math.floor(Date.now() / 1000));
   const signedPayload = `${timestamp}|${params.rawBody}`;
-  const signature = crypto
-    .sign(null, Buffer.from(signedPayload), params.privateKey)
-    .toString("base64");
+  const signature = crypto.sign(null, Buffer.from(signedPayload), params.privateKey).toString("base64");
 
   return createCtx({
     rawBody: params.rawBody,
@@ -41,9 +36,7 @@ function createSignedTelnyxCtx(params: {
   });
 }
 
-function expectReplayVerification(
-  results: Array<{ ok: boolean; isReplay?: boolean; verifiedRequestKey?: string }>,
-) {
+function expectReplayVerification(results: Array<{ ok: boolean; isReplay?: boolean; verifiedRequestKey?: string }>) {
   expect(results.map((result) => result.ok)).toEqual([true, true]);
   expect(results.map((result) => Boolean(result.isReplay))).toEqual([false, true]);
   const firstResult = results[0];
@@ -67,10 +60,7 @@ function requireJwkX(jwk: JsonWebKey) {
   return jwk.x;
 }
 
-function expectWebhookVerificationSucceeds(params: {
-  publicKey: string;
-  privateKey: crypto.KeyObject;
-}) {
+function expectWebhookVerificationSucceeds(params: { publicKey: string; privateKey: crypto.KeyObject }) {
   const provider = new TelnyxProvider(
     { apiKey: "KEY123", connectionId: "CONN456", publicKey: params.publicKey },
     { skipVerification: false },
@@ -80,9 +70,7 @@ function expectWebhookVerificationSucceeds(params: {
     event_type: "call.initiated",
     payload: { call_control_id: "x" },
   });
-  const result = provider.verifyWebhook(
-    createSignedTelnyxCtx({ privateKey: params.privateKey, rawBody }),
-  );
+  const result = provider.verifyWebhook(createSignedTelnyxCtx({ privateKey: params.privateKey, rawBody }));
   expect(result.ok).toBe(true);
 }
 

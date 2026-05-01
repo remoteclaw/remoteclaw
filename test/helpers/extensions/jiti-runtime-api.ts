@@ -3,18 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import ts from "typescript";
 
-const JITI_EXTENSIONS = [
-  ".ts",
-  ".tsx",
-  ".mts",
-  ".cts",
-  ".mtsx",
-  ".ctsx",
-  ".js",
-  ".mjs",
-  ".cjs",
-  ".json",
-] as const;
+const JITI_EXTENSIONS = [".ts", ".tsx", ".mts", ".cts", ".mtsx", ".ctsx", ".js", ".mjs", ".cjs", ".json"] as const;
 
 const PLUGIN_SDK_SPECIFIER_PREFIX = "remoteclaw/plugin-sdk/";
 const SOURCE_MODULE_EXTENSIONS = [".ts", ".tsx", ".mts", ".cts"] as const;

@@ -5,11 +5,8 @@ import type { HandleDirectiveOnlyParams } from "./directive-handling.params.js";
 import { maybeHandleQueueDirective } from "./directive-handling.queue-validation.js";
 import { formatDirectiveAck, withOptions } from "./directive-handling.shared.js";
 
-export async function handleDirectiveOnly(
-  params: HandleDirectiveOnlyParams,
-): Promise<ReplyPayload | undefined> {
-  const { directives, sessionEntry, sessionStore, sessionKey, storePath, currentVerboseLevel } =
-    params;
+export async function handleDirectiveOnly(params: HandleDirectiveOnlyParams): Promise<ReplyPayload | undefined> {
+  const { directives, sessionEntry, sessionStore, sessionKey, storePath, currentVerboseLevel } = params;
 
   if (directives.hasVerboseDirective && !directives.verboseLevel) {
     if (!directives.rawVerboseLevel) {

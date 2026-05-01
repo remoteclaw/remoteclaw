@@ -1,12 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  buildMessageWithAttachments,
-  type ChatAttachment,
-  parseMessageWithAttachments,
-} from "./chat-attachments.js";
+import { buildMessageWithAttachments, type ChatAttachment, parseMessageWithAttachments } from "./chat-attachments.js";
 
-const PNG_1x1 =
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/woAAn8B9FD5fHAAAAAASUVORK5CYII=";
+const PNG_1x1 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/woAAn8B9FD5fHAAAAAASUVORK5CYII=";
 
 async function parseWithWarnings(message: string, attachments: ChatAttachment[]) {
   const logs: string[] = [];
@@ -149,9 +144,7 @@ describe("shared attachment validation", () => {
     };
 
     expect(() => buildMessageWithAttachments("x", [bad])).toThrow(/base64/i);
-    await expect(
-      parseMessageWithAttachments("x", [bad], { log: { warn: () => {} } }),
-    ).rejects.toThrow(/base64/i);
+    await expect(parseMessageWithAttachments("x", [bad], { log: { warn: () => {} } })).rejects.toThrow(/base64/i);
   });
 
   it("rejects images over limit for both builder and parser without decoding base64", async () => {
@@ -165,12 +158,10 @@ describe("shared attachment validation", () => {
 
     const fromSpy = vi.spyOn(Buffer, "from");
     try {
-      expect(() => buildMessageWithAttachments("x", [att], { maxBytes: 16 })).toThrow(
+      expect(() => buildMessageWithAttachments("x", [att], { maxBytes: 16 })).toThrow(/exceeds size limit/i);
+      await expect(parseMessageWithAttachments("x", [att], { maxBytes: 16, log: { warn: () => {} } })).rejects.toThrow(
         /exceeds size limit/i,
       );
-      await expect(
-        parseMessageWithAttachments("x", [att], { maxBytes: 16, log: { warn: () => {} } }),
-      ).rejects.toThrow(/exceeds size limit/i);
       const base64Calls = fromSpy.mock.calls.filter((args) => (args as unknown[])[1] === "base64");
       expect(base64Calls).toHaveLength(0);
     } finally {

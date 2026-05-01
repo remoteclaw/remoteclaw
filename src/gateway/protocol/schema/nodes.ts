@@ -29,15 +29,9 @@ export const NodePairRequestParamsSchema = Type.Object(
 
 export const NodePairListParamsSchema = Type.Object({}, { additionalProperties: false });
 
-export const NodePairApproveParamsSchema = Type.Object(
-  { requestId: NonEmptyString },
-  { additionalProperties: false },
-);
+export const NodePairApproveParamsSchema = Type.Object({ requestId: NonEmptyString }, { additionalProperties: false });
 
-export const NodePairRejectParamsSchema = Type.Object(
-  { requestId: NonEmptyString },
-  { additionalProperties: false },
-);
+export const NodePairRejectParamsSchema = Type.Object({ requestId: NonEmptyString }, { additionalProperties: false });
 
 export const NodePairVerifyParamsSchema = Type.Object(
   { nodeId: NonEmptyString, token: NonEmptyString },
@@ -58,10 +52,7 @@ export const NodePendingAckParamsSchema = Type.Object(
   { additionalProperties: false },
 );
 
-export const NodeDescribeParamsSchema = Type.Object(
-  { nodeId: NonEmptyString },
-  { additionalProperties: false },
-);
+export const NodeDescribeParamsSchema = Type.Object({ nodeId: NonEmptyString }, { additionalProperties: false });
 
 export const NodeInvokeParamsSchema = Type.Object(
   {

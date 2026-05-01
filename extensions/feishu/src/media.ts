@@ -373,9 +373,7 @@ export async function sendFileFeishu(params: {
 /**
  * Helper to detect file type from extension
  */
-export function detectFileType(
-  fileName: string,
-): "opus" | "mp4" | "pdf" | "doc" | "xls" | "ppt" | "stream" {
+export function detectFileType(fileName: string): "opus" | "mp4" | "pdf" | "doc" | "xls" | "ppt" | "stream" {
   const ext = path.extname(fileName).toLowerCase();
   switch (ext) {
     case ".opus":
@@ -418,17 +416,8 @@ export async function sendMediaFeishu(params: {
   /** Allowed roots for local path reads; required for local filePath to work. */
   mediaLocalRoots?: readonly string[];
 }): Promise<SendMediaResult> {
-  const {
-    cfg,
-    to,
-    mediaUrl,
-    mediaBuffer,
-    fileName,
-    replyToMessageId,
-    replyInThread,
-    accountId,
-    mediaLocalRoots,
-  } = params;
+  const { cfg, to, mediaUrl, mediaBuffer, fileName, replyToMessageId, replyInThread, accountId, mediaLocalRoots } =
+    params;
   const account = resolveFeishuAccount({ cfg, accountId });
   if (!account.configured) {
     throw new Error(`Feishu account "${account.accountId}" not configured`);

@@ -28,10 +28,7 @@ export const MODULE_ATTESTATIONS = {
 // Tool policy types and helpers for allow/deny resolution.
 type ToolPolicy = { allow?: string[]; deny?: string[] };
 
-function normalizeToolPolicy(config?: {
-  allow?: string[];
-  deny?: string[];
-}): ToolPolicy | undefined {
+function normalizeToolPolicy(config?: { allow?: string[]; deny?: string[] }): ToolPolicy | undefined {
   if (!config) {
     return undefined;
   }
@@ -110,8 +107,7 @@ function resolveSubagentDenyList(depth: number, maxSpawnDepth: number): string[]
 
 export function resolveSubagentToolPolicy(cfg?: RemoteClawConfig, depth?: number): ToolPolicy {
   const configured = cfg?.tools?.subagents?.tools;
-  const maxSpawnDepth =
-    cfg?.agents?.defaults?.subagents?.maxSpawnDepth ?? DEFAULT_SUBAGENT_MAX_SPAWN_DEPTH;
+  const maxSpawnDepth = cfg?.agents?.defaults?.subagents?.maxSpawnDepth ?? DEFAULT_SUBAGENT_MAX_SPAWN_DEPTH;
   const effectiveDepth = typeof depth === "number" && depth >= 0 ? depth : 1;
   const baseDeny = resolveSubagentDenyList(effectiveDepth, maxSpawnDepth);
   const allow = Array.isArray(configured?.allow) ? configured.allow : undefined;
@@ -207,8 +203,7 @@ function resolveProviderToolPolicy(params: {
 
   const normalizedProvider = normalizeProviderKey(provider);
   const rawModelId = params.modelId?.trim().toLowerCase();
-  const fullModelId =
-    rawModelId && !rawModelId.includes("/") ? `${normalizedProvider}/${rawModelId}` : rawModelId;
+  const fullModelId = rawModelId && !rawModelId.includes("/") ? `${normalizedProvider}/${rawModelId}` : rawModelId;
 
   const candidates = [...(fullModelId ? [fullModelId] : []), normalizedProvider];
 
@@ -229,14 +224,9 @@ export function resolveEffectiveToolPolicy(params: {
   modelId?: string;
 }) {
   const explicitAgentId =
-    typeof params.agentId === "string" && params.agentId.trim()
-      ? normalizeAgentId(params.agentId)
-      : undefined;
-  const agentId =
-    explicitAgentId ??
-    (params.sessionKey ? resolveAgentIdFromSessionKey(params.sessionKey) : undefined);
-  const agentConfig =
-    params.config && agentId ? resolveAgentConfig(params.config, agentId) : undefined;
+    typeof params.agentId === "string" && params.agentId.trim() ? normalizeAgentId(params.agentId) : undefined;
+  const agentId = explicitAgentId ?? (params.sessionKey ? resolveAgentIdFromSessionKey(params.sessionKey) : undefined);
+  const agentConfig = params.config && agentId ? resolveAgentConfig(params.config, agentId) : undefined;
   const agentTools = agentConfig?.tools;
   const globalTools = params.config?.tools;
 

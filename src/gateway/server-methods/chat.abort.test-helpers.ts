@@ -36,18 +36,14 @@ export type ChatAbortTestContext = Record<string, unknown> & {
 
 export type ChatAbortRespondMock = Mock<RespondFn>;
 
-export function createChatAbortContext(
-  overrides: Record<string, unknown> = {},
-): ChatAbortTestContext {
+export function createChatAbortContext(overrides: Record<string, unknown> = {}): ChatAbortTestContext {
   return {
     chatAbortControllers: new Map(),
     chatRunBuffers: new Map(),
     chatDeltaSentAt: new Map(),
     chatDeltaLastBroadcastLen: new Map(),
     chatAbortedRuns: new Map<string, number>(),
-    removeChatRun: vi
-      .fn()
-      .mockImplementation((run: string) => ({ sessionKey: "main", clientRunId: run })),
+    removeChatRun: vi.fn().mockImplementation((run: string) => ({ sessionKey: "main", clientRunId: run })),
     agentRunSeq: new Map<string, number>(),
     broadcast: vi.fn(),
     nodeSendToSession: vi.fn(),

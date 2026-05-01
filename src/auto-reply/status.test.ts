@@ -1,17 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { normalizeTestText } from "../../test/helpers/normalize-text.js";
 import type { RemoteClawConfig } from "../config/config.js";
-import {
-  buildCommandsMessage,
-  buildCommandsMessagePaginated,
-  buildHelpMessage,
-  buildStatusMessage,
-} from "./status.js";
+import { buildCommandsMessage, buildCommandsMessagePaginated, buildHelpMessage, buildStatusMessage } from "./status.js";
 
 const { listPluginCommands } = vi.hoisted(() => ({
-  listPluginCommands: vi.fn(
-    (): Array<{ name: string; description: string; pluginId: string }> => [],
-  ),
+  listPluginCommands: vi.fn((): Array<{ name: string; description: string; pluginId: string }> => []),
 }));
 
 vi.mock("../plugins/commands.js", () => ({

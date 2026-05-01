@@ -1,9 +1,5 @@
 import type { proto } from "@whiskeysockets/baileys";
-import {
-  extractMessageContent,
-  getContentType,
-  normalizeMessageContent,
-} from "@whiskeysockets/baileys";
+import { extractMessageContent, getContentType, normalizeMessageContent } from "@whiskeysockets/baileys";
 import { formatLocationText, type NormalizedLocation } from "../../../../src/channels/location.js";
 import { logVerbose } from "../../../../src/globals.js";
 import { jidToE164 } from "../../../../src/utils.js";
@@ -37,9 +33,7 @@ const MESSAGE_CONTENT_KEYS = [
   "listMessage",
 ] as const;
 
-function fallbackNormalizeMessageContent(
-  message: proto.IMessage | undefined,
-): proto.IMessage | undefined {
+function fallbackNormalizeMessageContent(message: proto.IMessage | undefined): proto.IMessage | undefined {
   let current = message as unknown;
   while (current && typeof current === "object") {
     let unwrapped = false;
@@ -70,9 +64,7 @@ function normalizeMessage(message: proto.IMessage | undefined): proto.IMessage |
   return fallbackNormalizeMessageContent(message);
 }
 
-function fallbackGetContentType(
-  message: proto.IMessage | undefined,
-): keyof proto.IMessage | undefined {
+function fallbackGetContentType(message: proto.IMessage | undefined): keyof proto.IMessage | undefined {
   const normalized = fallbackNormalizeMessageContent(message);
   if (!normalized || typeof normalized !== "object") {
     return undefined;
@@ -85,9 +77,7 @@ function fallbackGetContentType(
   return undefined;
 }
 
-function getMessageContentType(
-  message: proto.IMessage | undefined,
-): keyof proto.IMessage | undefined {
+function getMessageContentType(message: proto.IMessage | undefined): keyof proto.IMessage | undefined {
   if (typeof getContentType === "function") {
     return getContentType(message);
   }
@@ -164,8 +154,7 @@ export function extractMentionedJids(rawMessage: proto.IMessage | undefined): st
 
   const candidates: Array<string[] | null | undefined> = [
     message.extendedTextMessage?.contextInfo?.mentionedJid,
-    message.extendedTextMessage?.contextInfo?.quotedMessage?.extendedTextMessage?.contextInfo
-      ?.mentionedJid,
+    message.extendedTextMessage?.contextInfo?.quotedMessage?.extendedTextMessage?.contextInfo?.mentionedJid,
     message.imageMessage?.contextInfo?.mentionedJid,
     message.videoMessage?.contextInfo?.mentionedJid,
     message.documentMessage?.contextInfo?.mentionedJid,
@@ -201,9 +190,7 @@ export function extractText(rawMessage: proto.IMessage | undefined): string | un
       return extended.trim();
     }
     const caption =
-      candidate.imageMessage?.caption ??
-      candidate.videoMessage?.caption ??
-      candidate.documentMessage?.caption;
+      candidate.imageMessage?.caption ?? candidate.videoMessage?.caption ?? candidate.documentMessage?.caption;
     if (caption?.trim()) {
       return caption.trim();
     }
@@ -219,9 +206,7 @@ export function extractText(rawMessage: proto.IMessage | undefined): string | un
   return undefined;
 }
 
-export function extractMediaPlaceholder(
-  rawMessage: proto.IMessage | undefined,
-): string | undefined {
+export function extractMediaPlaceholder(rawMessage: proto.IMessage | undefined): string | undefined {
   const message = unwrapMessage(rawMessage);
   if (!message) {
     return undefined;
@@ -322,19 +307,13 @@ function formatPhoneList(phones?: string[]): string | undefined {
   return `${primary} (+${remaining} more)`;
 }
 
-function summarizeList(
-  values: string[],
-  total: number,
-  maxShown: number,
-): { shown: string[]; remaining: number } {
+function summarizeList(values: string[], total: number, maxShown: number): { shown: string[]; remaining: number } {
   const shown = values.slice(0, maxShown);
   const remaining = Math.max(total - shown.length, 0);
   return { shown, remaining };
 }
 
-export function extractLocationData(
-  rawMessage: proto.IMessage | undefined,
-): NormalizedLocation | null {
+export function extractLocationData(rawMessage: proto.IMessage | undefined): NormalizedLocation | null {
   const message = unwrapMessage(rawMessage);
   if (!message) {
     return null;
@@ -411,9 +390,7 @@ export function describeReplyContext(rawMessage: proto.IMessage | undefined): {
   }
   if (!body) {
     const quotedType = quoted ? getMessageContentType(quoted) : undefined;
-    logVerbose(
-      `Quoted message missing extractable body${quotedType ? ` (type ${quotedType})` : ""}`,
-    );
+    logVerbose(`Quoted message missing extractable body${quotedType ? ` (type ${quotedType})` : ""}`);
     return null;
   }
   const senderJid = contextInfo?.participant ?? undefined;

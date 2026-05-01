@@ -1,11 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  createNoopLogger,
-  createCronStoreHarness,
-  withCronServiceStateForTest,
-} from "./service.test-harness.js";
+import { createNoopLogger, createCronStoreHarness, withCronServiceStateForTest } from "./service.test-harness.js";
 import { createCronServiceState } from "./service/state.js";
 import { onTimer } from "./service/timer.js";
 import { resetReaperThrottle } from "./session-reaper.js";
@@ -165,9 +161,7 @@ describe("CronService - session reaper runs in finally block (#31946)", () => {
     await withCronServiceStateForTest(state, async () => {
       await expect(onTimer(state)).rejects.toThrow("Failed to parse cron store");
 
-      const updatedSessionStore = JSON.parse(
-        await fs.readFile(sessionStorePath, "utf-8"),
-      ) as Record<string, unknown>;
+      const updatedSessionStore = JSON.parse(await fs.readFile(sessionStorePath, "utf-8")) as Record<string, unknown>;
       expect(updatedSessionStore).toEqual({});
       expect(state.running).toBe(false);
     });

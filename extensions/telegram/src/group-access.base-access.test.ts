@@ -2,10 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import type { TelegramAccountConfig } from "../../../src/config/types.js";
 import { normalizeAllowFrom, type NormalizedAllowFrom } from "./bot-access.js";
-import {
-  evaluateTelegramGroupBaseAccess,
-  evaluateTelegramGroupPolicyAccess,
-} from "./group-access.js";
+import { evaluateTelegramGroupBaseAccess, evaluateTelegramGroupPolicyAccess } from "./group-access.js";
 
 function allow(entries: string[], hasWildcard = false): NormalizedAllowFrom {
   return {
@@ -117,8 +114,7 @@ function runAccess(overrides: Partial<GroupAccessParams>) {
   return evaluateTelegramGroupPolicyAccess({
     ...DEFAULT_GROUP_ACCESS_PARAMS,
     ...overrides,
-    resolveGroupPolicy:
-      overrides.resolveGroupPolicy ?? DEFAULT_GROUP_ACCESS_PARAMS.resolveGroupPolicy,
+    resolveGroupPolicy: overrides.resolveGroupPolicy ?? DEFAULT_GROUP_ACCESS_PARAMS.resolveGroupPolicy,
   });
 }
 

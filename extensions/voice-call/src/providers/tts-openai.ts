@@ -87,8 +87,7 @@ export class OpenAITTSProvider {
   private instructions?: string;
 
   constructor(config: OpenAITTSConfig = {}) {
-    this.apiKey =
-      trimToUndefined(config.apiKey) ?? trimToUndefined(process.env.OPENAI_API_KEY) ?? "";
+    this.apiKey = trimToUndefined(config.apiKey) ?? trimToUndefined(process.env.OPENAI_API_KEY) ?? "";
     // Default to gpt-4o-mini-tts for intelligent realtime applications
     this.model = trimToUndefined(config.model) ?? "gpt-4o-mini-tts";
     // Default to coral - good balance of quality and natural tone

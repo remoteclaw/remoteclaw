@@ -6,10 +6,7 @@ function createAccountsWithPrototypePollution() {
   return Object.create(inherited) as Record<string, { id: string }>;
 }
 
-function expectResolvedAccountLookupCase(
-  actual: { id: string } | undefined,
-  expected: { id: string } | undefined,
-) {
+function expectResolvedAccountLookupCase(actual: { id: string } | undefined, expected: { id: string } | undefined) {
   expect(actual).toEqual(expected);
 }
 
@@ -37,14 +34,12 @@ describe("resolveAccountEntry", () => {
   it.each([
     {
       name: "resolves the default account key",
-      resolve: (localAccounts: Record<string, { id: string }>) =>
-        resolveAccountEntry(localAccounts, "default"),
+      resolve: (localAccounts: Record<string, { id: string }>) => resolveAccountEntry(localAccounts, "default"),
       expected: { id: "default" },
     },
     {
       name: "resolves a normalized business account key",
-      resolve: (localAccounts: Record<string, { id: string }>) =>
-        resolveAccountEntry(localAccounts, "business"),
+      resolve: (localAccounts: Record<string, { id: string }>) => resolveAccountEntry(localAccounts, "business"),
       expected: { id: "business" },
     },
   ] as const)("$name", ({ resolve, expected }) => {
@@ -52,15 +47,12 @@ describe("resolveAccountEntry", () => {
   });
 
   it("ignores prototype-chain values", () => {
-    expectPrototypePollutionIgnoredCase((localAccounts) =>
-      resolveAccountEntry(localAccounts, "default"),
-    );
+    expectPrototypePollutionIgnoredCase((localAccounts) => resolveAccountEntry(localAccounts, "default"));
   });
 });
 
 describe("resolveNormalizedAccountEntry", () => {
-  const normalizeAccountId = (accountId: string) =>
-    accountId.trim().toLowerCase().replaceAll(" ", "-");
+  const normalizeAccountId = (accountId: string) => accountId.trim().toLowerCase().replaceAll(" ", "-");
 
   it.each([
     {

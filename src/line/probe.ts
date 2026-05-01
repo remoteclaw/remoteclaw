@@ -2,10 +2,7 @@ import { messagingApi } from "@line/bot-sdk";
 import { withTimeout } from "../utils/with-timeout.js";
 import type { LineProbeResult } from "./types.js";
 
-export async function probeLineBot(
-  channelAccessToken: string,
-  timeoutMs = 5000,
-): Promise<LineProbeResult> {
+export async function probeLineBot(channelAccessToken: string, timeoutMs = 5000): Promise<LineProbeResult> {
   if (!channelAccessToken?.trim()) {
     return { ok: false, error: "Channel access token not configured" };
   }

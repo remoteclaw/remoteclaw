@@ -16,10 +16,7 @@ export function normalizeTextForComparison(text: string): string {
     .trim();
 }
 
-export function isMessagingToolDuplicateNormalized(
-  normalized: string,
-  normalizedSentTexts: string[],
-): boolean {
+export function isMessagingToolDuplicateNormalized(normalized: string, normalizedSentTexts: string[]): boolean {
   if (normalizedSentTexts.length === 0) {
     return false;
   }

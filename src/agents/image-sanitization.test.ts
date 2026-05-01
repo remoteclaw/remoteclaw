@@ -5,9 +5,7 @@ import { resolveImageSanitizationLimits } from "./image-sanitization.js";
 describe("image sanitization config", () => {
   it("defaults when no config value exists", () => {
     expect(resolveImageSanitizationLimits(undefined)).toEqual({});
-    expect(
-      resolveImageSanitizationLimits({ agents: { defaults: {} } } as unknown as RemoteClawConfig),
-    ).toEqual({});
+    expect(resolveImageSanitizationLimits({ agents: { defaults: {} } } as unknown as RemoteClawConfig)).toEqual({});
   });
 
   it("reads and normalizes agents.defaults.imageMaxDimensionPx", () => {

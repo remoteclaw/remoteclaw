@@ -4,7 +4,7 @@ import { defaultRuntime } from "../../runtime.js";
 import { shortenHomePath } from "../../utils.js";
 import { writeBase64ToFile } from "../nodes-camera.js";
 import { canvasSnapshotTempPath, parseCanvasSnapshotPayload } from "../nodes-canvas.js";
-import { parseTimeoutMs } from "../nodes-run.js";
+import { parseTimeoutMs } from "../parse-timeout.js";
 import { buildA2UITextJsonl, validateA2UIJsonl } from "./a2ui-jsonl.js";
 import { getNodesTheme, runNodesCommand } from "./cli-utils.js";
 import { buildNodeInvokeParams, callGatewayCli, nodesCallOpts, resolveNodeId } from "./rpc.js";
@@ -26,9 +26,7 @@ async function invokeCanvas(opts: NodesRpcOpts, command: string, params?: Record
 }
 
 export function registerNodesCanvasCommands(nodes: Command) {
-  const canvas = nodes
-    .command("canvas")
-    .description("Capture or render canvas content from a paired node");
+  const canvas = nodes.command("canvas").description("Capture or render canvas content from a paired node");
 
   nodesCallOpts(
     canvas
@@ -44,8 +42,7 @@ export function registerNodesCanvasCommands(nodes: Command) {
           const formatOpt = String(opts.format ?? "jpg")
             .trim()
             .toLowerCase();
-          const formatForParams =
-            formatOpt === "jpg" ? "jpeg" : formatOpt === "jpeg" ? "jpeg" : "png";
+          const formatForParams = formatOpt === "jpg" ? "jpeg" : formatOpt === "jpeg" ? "jpeg" : "png";
           if (formatForParams !== "png" && formatForParams !== "jpeg") {
             throw new Error(`invalid format: ${String(opts.format)} (expected png|jpg|jpeg)`);
           }
@@ -171,9 +168,7 @@ export function registerNodesCanvasCommands(nodes: Command) {
             return;
           }
           const payload =
-            typeof raw === "object" && raw !== null
-              ? (raw as { payload?: { result?: string } }).payload
-              : undefined;
+            typeof raw === "object" && raw !== null ? (raw as { payload?: { result?: string } }).payload : undefined;
           if (payload?.result) {
             defaultRuntime.log(payload.result);
           } else {
@@ -207,17 +202,13 @@ export function registerNodesCanvasCommands(nodes: Command) {
             : await fs.readFile(String(opts.jsonl), "utf8");
           const { version, messageCount } = validateA2UIJsonl(jsonl);
           if (version === "v0.9") {
-            throw new Error(
-              "Detected A2UI v0.9 JSONL (createSurface). RemoteClaw currently supports v0.8 only.",
-            );
+            throw new Error("Detected A2UI v0.9 JSONL (createSurface). RemoteClaw currently supports v0.8 only.");
           }
           await invokeCanvas(opts, "canvas.a2ui.pushJSONL", { jsonl });
           if (!opts.json) {
             const { ok } = getNodesTheme();
             defaultRuntime.log(
-              ok(
-                `canvas a2ui push ok (v0.8, ${messageCount} message${messageCount === 1 ? "" : "s"})`,
-              ),
+              ok(`canvas a2ui push ok (v0.8, ${messageCount} message${messageCount === 1 ? "" : "s"})`),
             );
           }
         });

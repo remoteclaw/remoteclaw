@@ -101,33 +101,25 @@ describe("resolveAndValidateIP", () => {
   });
 
   it("rejects a hostname resolving to 10.x.x.x", async () => {
-    await expect(resolveAndValidateIP("evil.test", privateResolve("10.0.0.1"))).rejects.toThrow(
-      "private/reserved IP",
-    );
+    await expect(resolveAndValidateIP("evil.test", privateResolve("10.0.0.1"))).rejects.toThrow("private/reserved IP");
   });
 
   it("rejects a hostname resolving to 169.254.169.254", async () => {
-    await expect(
-      resolveAndValidateIP("evil.test", privateResolve("169.254.169.254")),
-    ).rejects.toThrow("private/reserved IP");
+    await expect(resolveAndValidateIP("evil.test", privateResolve("169.254.169.254"))).rejects.toThrow(
+      "private/reserved IP",
+    );
   });
 
   it("rejects a hostname resolving to loopback", async () => {
-    await expect(resolveAndValidateIP("evil.test", privateResolve("127.0.0.1"))).rejects.toThrow(
-      "private/reserved IP",
-    );
+    await expect(resolveAndValidateIP("evil.test", privateResolve("127.0.0.1"))).rejects.toThrow("private/reserved IP");
   });
 
   it("rejects a hostname resolving to IPv6 loopback", async () => {
-    await expect(resolveAndValidateIP("evil.test", privateResolve("::1"))).rejects.toThrow(
-      "private/reserved IP",
-    );
+    await expect(resolveAndValidateIP("evil.test", privateResolve("::1"))).rejects.toThrow("private/reserved IP");
   });
 
   it("throws on DNS resolution failure", async () => {
-    await expect(resolveAndValidateIP("nonexistent.test", failingResolve)).rejects.toThrow(
-      "DNS resolution failed",
-    );
+    await expect(resolveAndValidateIP("nonexistent.test", failingResolve)).rejects.toThrow("DNS resolution failed");
   });
 });
 

@@ -11,11 +11,7 @@
 
 import { describe, expect, it, vi } from "vitest";
 import { twitchOutbound } from "./outbound.js";
-import {
-  BASE_TWITCH_TEST_ACCOUNT,
-  installTwitchTestHooks,
-  makeTwitchTestConfig,
-} from "./test-fixtures.js";
+import { BASE_TWITCH_TEST_ACCOUNT, installTwitchTestHooks, makeTwitchTestConfig } from "./test-fixtures.js";
 
 // Mock dependencies
 vi.mock("./config.js", () => ({
@@ -33,13 +29,10 @@ vi.mock("./utils/markdown.js", () => ({
 
 vi.mock("./utils/twitch.js", () => ({
   normalizeTwitchChannel: (channel: string) => channel.toLowerCase().replace(/^#/, ""),
-  missingTargetError: (channel: string, hint: string) =>
-    new Error(`Missing target for ${channel}. Provide ${hint}`),
+  missingTargetError: (channel: string, hint: string) => new Error(`Missing target for ${channel}. Provide ${hint}`),
 }));
 
-function assertResolvedTarget(
-  result: ReturnType<NonNullable<typeof twitchOutbound.resolveTarget>>,
-): string {
+function assertResolvedTarget(result: ReturnType<NonNullable<typeof twitchOutbound.resolveTarget>>): string {
   if (!result.ok) {
     throw result.error;
   }

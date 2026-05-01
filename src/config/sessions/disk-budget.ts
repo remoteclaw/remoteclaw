@@ -88,10 +88,7 @@ function buildSessionIdRefCounts(store: Record<string, SessionEntry>): Map<strin
   return counts;
 }
 
-function resolveSessionTranscriptPathForEntry(params: {
-  sessionsDir: string;
-  entry: SessionEntry;
-}): string | null {
+function resolveSessionTranscriptPathForEntry(params: { sessionsDir: string; entry: SessionEntry }): string | null {
   if (!params.entry.sessionId) {
     return null;
   }
@@ -129,9 +126,7 @@ function resolveReferencedSessionTranscriptPaths(params: {
 }
 
 async function readSessionsDirFiles(sessionsDir: string): Promise<SessionsDirFileStat[]> {
-  const dirEntries = await fs.promises
-    .readdir(sessionsDir, { withFileTypes: true })
-    .catch(() => []);
+  const dirEntries = await fs.promises.readdir(sessionsDir, { withFileTypes: true }).catch(() => []);
   const files: SessionsDirFileStat[] = [];
   for (const dirent of dirEntries) {
     if (!dirent.isFile()) {
@@ -208,8 +203,7 @@ export async function enforceSessionDiskBudget(params: {
   const resolvedStorePath = canonicalizePathForComparison(params.storePath);
   const storeFile = files.find((file) => file.canonicalPath === resolvedStorePath);
   let projectedStoreBytes = measureStoreBytes(params.store);
-  let total =
-    files.reduce((sum, file) => sum + file.size, 0) - (storeFile?.size ?? 0) + projectedStoreBytes;
+  let total = files.reduce((sum, file) => sum + file.size, 0) - (storeFile?.size ?? 0) + projectedStoreBytes;
   const totalBefore = total;
   if (total <= maxBytes) {
     return {

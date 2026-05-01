@@ -16,15 +16,18 @@ describe("TTS text preparation – stripMarkdown", () => {
   });
 
   it("strips bold and italic markers before TTS", () => {
-    expect(stripMarkdown("This is **important** and *useful*")).toBe(
-      "This is important and useful",
-    );
+    expect(stripMarkdown("This is **important** and *useful*")).toBe("This is important and useful");
+  });
+
+  it("preserves underscores inside words while still stripping italic markers", () => {
+    expect(stripMarkdown("here_is_a_message")).toBe("here_is_a_message");
+    expect(stripMarkdown("привет_мир_тест")).toBe("привет_мир_тест");
+    expect(stripMarkdown("東京_駅_前")).toBe("東京_駅_前");
+    expect(stripMarkdown("use foo_bar_baz and _italic_ text")).toBe("use foo_bar_baz and italic text");
   });
 
   it("strips inline code markers before TTS", () => {
-    expect(stripMarkdown("Use `consistent hashing` for distribution")).toBe(
-      "Use consistent hashing for distribution",
-    );
+    expect(stripMarkdown("Use `consistent hashing` for distribution")).toBe("Use consistent hashing for distribution");
   });
 
   it("handles a typical LLM reply with mixed markdown", () => {

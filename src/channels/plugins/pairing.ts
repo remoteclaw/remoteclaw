@@ -1,11 +1,6 @@
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { RuntimeEnv } from "../../runtime.js";
-import {
-  type ChannelId,
-  getChannelPlugin,
-  listChannelPlugins,
-  normalizeChannelId,
-} from "./index.js";
+import { type ChannelId, getChannelPlugin, listChannelPlugins, normalizeChannelId } from "./index.js";
 import type { ChannelPairingAdapter } from "./types.js";
 
 export function listPairingChannels(): ChannelId[] {
@@ -29,21 +24,13 @@ export function requirePairingAdapter(channelId: ChannelId): ChannelPairingAdapt
 }
 
 export function resolvePairingChannel(raw: unknown): ChannelId {
-  const value = (
-    typeof raw === "string"
-      ? raw
-      : typeof raw === "number" || typeof raw === "boolean"
-        ? String(raw)
-        : ""
-  )
+  const value = (typeof raw === "string" ? raw : typeof raw === "number" || typeof raw === "boolean" ? String(raw) : "")
     .trim()
     .toLowerCase();
   const normalized = normalizeChannelId(value);
   const channels = listPairingChannels();
   if (!normalized || !channels.includes(normalized)) {
-    throw new Error(
-      `Invalid channel: ${value || "(empty)"} (expected one of: ${channels.join(", ")})`,
-    );
+    throw new Error(`Invalid channel: ${value || "(empty)"} (expected one of: ${channels.join(", ")})`);
   }
   return normalized;
 }

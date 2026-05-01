@@ -5,12 +5,7 @@ import { GatewayClient } from "../gateway/client.js";
 import { sanitizeHostExecEnv } from "../infra/host-env-security.js";
 import { runBrowserProxyCommand } from "./invoke-browser.js";
 import { handleSystemRunInvoke } from "./invoke-system-run.js";
-import type {
-  ExecEventPayload,
-  ExecFinishedEventParams,
-  RunResult,
-  SystemRunParams,
-} from "./invoke-types.js";
+import type { ExecEventPayload, ExecFinishedEventParams, RunResult, SystemRunParams } from "./invoke-types.js";
 
 const OUTPUT_CAP = 200_000;
 const OUTPUT_EVENT_TAIL = 20_000;
@@ -80,8 +75,7 @@ function resolveWindowsConsoleEncoding(): string | null {
     });
     const raw = `${result.stdout ?? ""}\n${result.stderr ?? ""}`;
     const codePage = parseWindowsCodePage(raw);
-    cachedWindowsConsoleEncoding =
-      codePage !== null ? (WINDOWS_CODEPAGE_ENCODING_MAP[codePage] ?? null) : null;
+    cachedWindowsConsoleEncoding = codePage !== null ? (WINDOWS_CODEPAGE_ENCODING_MAP[codePage] ?? null) : null;
   } catch {
     cachedWindowsConsoleEncoding = null;
   }
@@ -202,11 +196,7 @@ async function runCommand(
 
 function resolveEnvPath(env?: Record<string, string>): string[] {
   const raw =
-    env?.PATH ??
-    (env as Record<string, string>)?.Path ??
-    process.env.PATH ??
-    process.env.Path ??
-    DEFAULT_NODE_PATH;
+    env?.PATH ?? (env as Record<string, string>)?.Path ?? process.env.PATH ?? process.env.Path ?? DEFAULT_NODE_PATH;
   return raw.split(path.delimiter).filter(Boolean);
 }
 
@@ -216,9 +206,7 @@ function resolveExecutable(bin: string, env?: Record<string, string>) {
   }
   const extensions =
     process.platform === "win32"
-      ? (process.env.PATHEXT ?? process.env.PathExt ?? ".EXE;.CMD;.BAT;.COM")
-          .split(";")
-          .map((ext) => ext.toLowerCase())
+      ? (process.env.PATHEXT ?? process.env.PathExt ?? ".EXE;.CMD;.BAT;.COM").split(";").map((ext) => ext.toLowerCase())
       : [""];
   for (const dir of resolveEnvPath(env)) {
     for (const ext of extensions) {
@@ -260,9 +248,7 @@ async function sendExecFinishedEvent(
     client: GatewayClient;
   },
 ) {
-  const combined = [params.result.stdout, params.result.stderr, params.result.error]
-    .filter(Boolean)
-    .join("\n");
+  const combined = [params.result.stdout, params.result.stderr, params.result.error].filter(Boolean).join("\n");
   await sendNodeEvent(
     params.client,
     "exec.finished",
@@ -280,45 +266,28 @@ async function sendExecFinishedEvent(
   );
 }
 
-async function sendJsonPayloadResult(
-  client: GatewayClient,
-  frame: NodeInvokeRequestPayload,
-  payload: unknown,
-) {
+async function sendJsonPayloadResult(client: GatewayClient, frame: NodeInvokeRequestPayload, payload: unknown) {
   await sendInvokeResult(client, frame, {
     ok: true,
     payloadJSON: JSON.stringify(payload),
   });
 }
 
-async function sendRawPayloadResult(
-  client: GatewayClient,
-  frame: NodeInvokeRequestPayload,
-  payloadJSON: string,
-) {
+async function sendRawPayloadResult(client: GatewayClient, frame: NodeInvokeRequestPayload, payloadJSON: string) {
   await sendInvokeResult(client, frame, {
     ok: true,
     payloadJSON,
   });
 }
 
-async function sendErrorResult(
-  client: GatewayClient,
-  frame: NodeInvokeRequestPayload,
-  code: string,
-  message: string,
-) {
+async function sendErrorResult(client: GatewayClient, frame: NodeInvokeRequestPayload, code: string, message: string) {
   await sendInvokeResult(client, frame, {
     ok: false,
     error: { code, message },
   });
 }
 
-async function sendInvalidRequestResult(
-  client: GatewayClient,
-  frame: NodeInvokeRequestPayload,
-  err: unknown,
-) {
+async function sendInvalidRequestResult(client: GatewayClient, frame: NodeInvokeRequestPayload, err: unknown) {
   await sendErrorResult(client, frame, "INVALID_REQUEST", String(err));
 }
 
@@ -423,11 +392,7 @@ export function coerceNodeInvokePayload(payload: unknown): NodeInvokeRequestPayl
     return null;
   }
   const paramsJSON =
-    typeof obj.paramsJSON === "string"
-      ? obj.paramsJSON
-      : obj.params !== undefined
-        ? JSON.stringify(obj.params)
-        : null;
+    typeof obj.paramsJSON === "string" ? obj.paramsJSON : obj.params !== undefined ? JSON.stringify(obj.params) : null;
   const timeoutMs = typeof obj.timeoutMs === "number" ? obj.timeoutMs : null;
   const idempotencyKey = typeof obj.idempotencyKey === "string" ? obj.idempotencyKey : null;
   return {

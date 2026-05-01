@@ -2,23 +2,19 @@ const DEFAULT_TAGLINE = "All your chats, one RemoteClaw.";
 export type TaglineMode = "random" | "default" | "off";
 
 const HOLIDAY_TAGLINES = {
-  newYear:
-    "New Year's Day: New year, new config—same old EADDRINUSE, but this time we resolve it like grown-ups.",
+  newYear: "New Year's Day: New year, new config—same old EADDRINUSE, but this time we resolve it like grown-ups.",
   lunarNewYear:
     "Lunar New Year: May your builds be lucky, your branches prosperous, and your merge conflicts chased away with fireworks.",
   christmas:
     "Christmas: Ho ho ho—Santa's little claw-sistant is here to ship joy, roll back chaos, and stash the keys safely.",
   eid: "Eid al-Fitr: Celebration mode: queues cleared, tasks completed, and good vibes committed to main with clean history.",
-  diwali:
-    "Diwali: Let the logs sparkle and the bugs flee—today we light up the terminal and ship with pride.",
-  easter:
-    "Easter: I found your missing environment variable—consider it a tiny CLI egg hunt with fewer jellybeans.",
+  diwali: "Diwali: Let the logs sparkle and the bugs flee—today we light up the terminal and ship with pride.",
+  easter: "Easter: I found your missing environment variable—consider it a tiny CLI egg hunt with fewer jellybeans.",
   hanukkah:
     "Hanukkah: Eight nights, eight retries, zero shame—may your gateway stay lit and your deployments stay peaceful.",
   halloween:
     "Halloween: Spooky season: beware haunted dependencies, cursed caches, and the ghost of node_modules past.",
-  thanksgiving:
-    "Thanksgiving: Grateful for stable ports, working DNS, and a bot that reads the logs so nobody has to.",
+  thanksgiving: "Thanksgiving: Grateful for stable ports, working DNS, and a bot that reads the logs so nobody has to.",
   valentines:
     "Valentine's Day: Roses are typed, violets are piped—I'll automate the chores so you can spend time with humans.",
 } as const;

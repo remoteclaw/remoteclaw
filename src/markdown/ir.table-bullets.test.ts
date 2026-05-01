@@ -81,9 +81,7 @@ describe("markdownToIR tableMode bullets", () => {
     const ir = markdownToIR(md, { tableMode: "bullets" });
 
     // Should have bold style for row label
-    const hasRowLabelBold = ir.styles.some(
-      (s) => s.style === "bold" && ir.text.slice(s.start, s.end) === "Row1",
-    );
+    const hasRowLabelBold = ir.styles.some((s) => s.style === "bold" && ir.text.slice(s.start, s.end) === "Row1");
     expect(hasRowLabelBold).toBe(true);
   });
 
@@ -110,9 +108,7 @@ describe("markdownToIR tableMode bullets", () => {
 
     const ir = markdownToIR(md, { tableMode: "bullets" });
 
-    const hasItalic = ir.styles.some(
-      (s) => s.style === "italic" && ir.text.slice(s.start, s.end) === "Row",
-    );
+    const hasItalic = ir.styles.some((s) => s.style === "italic" && ir.text.slice(s.start, s.end) === "Row");
     expect(hasItalic).toBe(true);
     expect(ir.links.some((link) => link.href === "https://example.com")).toBe(true);
   });

@@ -121,11 +121,7 @@ export function renderSessions(props: SessionsProps) {
         </label>
       </div>
 
-      ${
-        props.error
-          ? html`<div class="callout danger" style="margin-top: 12px;">${props.error}</div>`
-          : nothing
-      }
+      ${props.error ? html`<div class="callout danger" style="margin-top: 12px;">${props.error}</div>` : nothing}
 
       <div class="muted" style="margin-top: 12px;">
         ${props.result ? `Store: ${props.result.path}` : ""}
@@ -146,9 +142,7 @@ export function renderSessions(props: SessionsProps) {
             ? html`
                 <div class="muted">No sessions found.</div>
               `
-            : rows.map((row) =>
-                renderRow(row, props.basePath, props.onPatch, props.onDelete, props.loading),
-              )
+            : rows.map((row) => renderRow(row, props.basePath, props.onPatch, props.onDelete, props.loading))
         }
       </div>
     </section>
@@ -166,15 +160,11 @@ function renderRow(
   const verbose = row.verboseLevel ?? "";
   const verboseLevels = withCurrentLabeledOption(VERBOSE_LEVELS, verbose);
   const displayName =
-    typeof row.displayName === "string" && row.displayName.trim().length > 0
-      ? row.displayName.trim()
-      : null;
+    typeof row.displayName === "string" && row.displayName.trim().length > 0 ? row.displayName.trim() : null;
   const label = typeof row.label === "string" ? row.label.trim() : "";
   const showDisplayName = Boolean(displayName && displayName !== row.key && displayName !== label);
   const canLink = row.kind !== "global";
-  const chatUrl = canLink
-    ? `${pathForTab("chat", basePath)}?session=${encodeURIComponent(row.key)}`
-    : null;
+  const chatUrl = canLink ? `${pathForTab("chat", basePath)}?session=${encodeURIComponent(row.key)}` : null;
 
   return html`
     <div class="table-row">

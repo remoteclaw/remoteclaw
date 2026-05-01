@@ -31,9 +31,7 @@ describe("parseTimeoutMsWithFallback", () => {
   });
 
   it("throws on unsupported types when requested", () => {
-    expect(() => parseTimeoutMsWithFallback({}, 3000, { invalidType: "error" })).toThrow(
-      "invalid --timeout",
-    );
+    expect(() => parseTimeoutMsWithFallback({}, 3000, { invalidType: "error" })).toThrow("invalid --timeout");
   });
 
   it("throws on non-positive parsed values", () => {

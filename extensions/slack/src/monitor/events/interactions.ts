@@ -97,34 +97,30 @@ function sanitizeSlackInteractionPayloadValue(value: unknown, key?: string): unk
   return output;
 }
 
-function buildCompactSlackInteractionPayload(
-  payload: Record<string, unknown>,
-): Record<string, unknown> {
+function buildCompactSlackInteractionPayload(payload: Record<string, unknown>): Record<string, unknown> {
   const rawInputs = Array.isArray(payload.inputs) ? payload.inputs : [];
-  const compactInputs = rawInputs
-    .slice(0, SLACK_INTERACTION_COMPACT_INPUTS_MAX_ITEMS)
-    .flatMap((entry) => {
-      if (!entry || typeof entry !== "object") {
-        return [];
-      }
-      const typed = entry as Record<string, unknown>;
-      return [
-        {
-          actionId: typed.actionId,
-          blockId: typed.blockId,
-          actionType: typed.actionType,
-          inputKind: typed.inputKind,
-          selectedValues: typed.selectedValues,
-          selectedLabels: typed.selectedLabels,
-          inputValue: typed.inputValue,
-          inputNumber: typed.inputNumber,
-          selectedDate: typed.selectedDate,
-          selectedTime: typed.selectedTime,
-          selectedDateTime: typed.selectedDateTime,
-          richTextPreview: typed.richTextPreview,
-        },
-      ];
-    });
+  const compactInputs = rawInputs.slice(0, SLACK_INTERACTION_COMPACT_INPUTS_MAX_ITEMS).flatMap((entry) => {
+    if (!entry || typeof entry !== "object") {
+      return [];
+    }
+    const typed = entry as Record<string, unknown>;
+    return [
+      {
+        actionId: typed.actionId,
+        blockId: typed.blockId,
+        actionType: typed.actionType,
+        inputKind: typed.inputKind,
+        selectedValues: typed.selectedValues,
+        selectedLabels: typed.selectedLabels,
+        inputValue: typed.inputValue,
+        inputNumber: typed.inputNumber,
+        selectedDate: typed.selectedDate,
+        selectedTime: typed.selectedTime,
+        selectedDateTime: typed.selectedDateTime,
+        richTextPreview: typed.richTextPreview,
+      },
+    ];
+  });
 
   return {
     interactionType: payload.interactionType,
@@ -158,8 +154,7 @@ function formatSlackInteractionSystemEvent(payload: Record<string, unknown>): st
   const toEventText = (value: Record<string, unknown>): string =>
     `${SLACK_INTERACTION_EVENT_PREFIX}${JSON.stringify(value)}`;
 
-  const sanitizedPayload =
-    (sanitizeSlackInteractionPayloadValue(payload) as Record<string, unknown> | undefined) ?? {};
+  const sanitizedPayload = (sanitizeSlackInteractionPayloadValue(payload) as Record<string, unknown> | undefined) ?? {};
   let eventText = toEventText(sanitizedPayload);
   if (eventText.length <= SLACK_INTERACTION_EVENT_MAX_CHARS) {
     return eventText;
@@ -197,9 +192,7 @@ function readOptionLabels(options: unknown): string[] | undefined {
     return undefined;
   }
   const labels = options
-    .map((option) =>
-      option && typeof option === "object" ? ((option as SelectOption).text?.text ?? null) : null,
-    )
+    .map((option) => (option && typeof option === "object" ? ((option as SelectOption).text?.text ?? null) : null))
     .filter((label): label is string => typeof label === "string" && label.trim().length > 0);
   return labels.length > 0 ? labels : undefined;
 }
@@ -257,9 +250,7 @@ function readInteractionAction(raw: unknown) {
   return raw as Record<string, unknown>;
 }
 
-function summarizeAction(
-  action: Record<string, unknown>,
-): Omit<InteractionSummary, "actionId" | "blockId"> {
+function summarizeAction(action: Record<string, unknown>): Omit<InteractionSummary, "actionId" | "blockId"> {
   const typed = action as {
     type?: string;
     selected_option?: SelectOption;
@@ -305,11 +296,9 @@ function summarizeAction(
     ...(readOptionLabels(typed.selected_options) ?? []),
   ]);
   const inputValue = typeof typed.value === "string" ? typed.value : undefined;
-  const inputNumber =
-    actionType === "number_input" && inputValue != null ? Number.parseFloat(inputValue) : undefined;
+  const inputNumber = actionType === "number_input" && inputValue != null ? Number.parseFloat(inputValue) : undefined;
   const parsedNumber = Number.isFinite(inputNumber) ? inputNumber : undefined;
-  const inputEmail =
-    actionType === "email_text_input" && inputValue?.includes("@") ? inputValue : undefined;
+  const inputEmail = actionType === "email_text_input" && inputValue?.includes("@") ? inputValue : undefined;
   let inputUrl: string | undefined;
   if (actionType === "url_text_input" && inputValue) {
     try {
@@ -345,8 +334,7 @@ function summarizeAction(
     selectedLabels: selectedLabels.length > 0 ? selectedLabels : undefined,
     selectedDate: typed.selected_date,
     selectedTime: typed.selected_time,
-    selectedDateTime:
-      typeof typed.selected_date_time === "number" ? typed.selected_date_time : undefined,
+    selectedDateTime: typeof typed.selected_date_time === "number" ? typed.selected_date_time : undefined,
     inputValue,
     inputNumber: parsedNumber,
     inputEmail,
@@ -379,17 +367,13 @@ function formatInteractionSelectionLabel(params: {
     if (params.summary.selectedLabels.length <= 3) {
       return params.summary.selectedLabels.join(", ");
     }
-    return `${params.summary.selectedLabels.slice(0, 3).join(", ")} +${
-      params.summary.selectedLabels.length - 3
-    }`;
+    return `${params.summary.selectedLabels.slice(0, 3).join(", ")} +${params.summary.selectedLabels.length - 3}`;
   }
   if (params.summary.selectedValues?.length) {
     if (params.summary.selectedValues.length <= 3) {
       return params.summary.selectedValues.join(", ");
     }
-    return `${params.summary.selectedValues.slice(0, 3).join(", ")} +${
-      params.summary.selectedValues.length - 3
-    }`;
+    return `${params.summary.selectedValues.slice(0, 3).join(", ")} +${params.summary.selectedValues.length - 3}`;
   }
   if (params.summary.selectedDate) {
     return params.summary.selectedDate;
@@ -409,10 +393,7 @@ function formatInteractionSelectionLabel(params: {
   return params.actionId;
 }
 
-function formatInteractionConfirmationText(params: {
-  selectedLabel: string;
-  userId?: string;
-}): string {
+function formatInteractionConfirmationText(params: { selectedLabel: string; userId?: string }): string {
   const actor = params.userId?.trim() ? ` by <@${params.userId.trim()}>` : "";
   return `:white_check_mark: *${escapeSlackMrkdwn(params.selectedLabel)}* selected${actor}`;
 }
@@ -450,182 +431,176 @@ export function registerSlackInteractionEvents(params: { ctx: SlackMonitorContex
   // Handle Block Kit button clicks from RemoteClaw-generated messages
   // Only matches action_ids that start with our prefix to avoid interfering
   // with other Slack integrations or future features
-  ctx.app.action(
-    new RegExp(`^${REMOTECLAW_ACTION_PREFIX}`),
-    async (args: SlackActionMiddlewareArgs) => {
-      const { ack, body, action, respond } = args;
-      const typedBody = body as unknown as {
-        user?: { id?: string };
-        team?: { id?: string };
-        trigger_id?: string;
-        response_url?: string;
-        channel?: { id?: string };
-        container?: { channel_id?: string; message_ts?: string; thread_ts?: string };
-        message?: { ts?: string; text?: string; blocks?: unknown[] };
-      };
+  ctx.app.action(new RegExp(`^${REMOTECLAW_ACTION_PREFIX}`), async (args: SlackActionMiddlewareArgs) => {
+    const { ack, body, action, respond } = args;
+    const typedBody = body as unknown as {
+      user?: { id?: string };
+      team?: { id?: string };
+      trigger_id?: string;
+      response_url?: string;
+      channel?: { id?: string };
+      container?: { channel_id?: string; message_ts?: string; thread_ts?: string };
+      message?: { ts?: string; text?: string; blocks?: unknown[] };
+    };
 
-      // Acknowledge the action immediately to prevent the warning icon
-      await ack();
-      if (ctx.shouldDropMismatchedSlackEvent?.(body)) {
-        ctx.runtime.log?.("slack:interaction drop block action payload (mismatched app/team)");
-        return;
-      }
+    // Acknowledge the action immediately to prevent the warning icon
+    await ack();
+    if (ctx.shouldDropMismatchedSlackEvent?.(body)) {
+      ctx.runtime.log?.("slack:interaction drop block action payload (mismatched app/team)");
+      return;
+    }
 
-      // Extract action details using proper Bolt types
-      const typedAction = readInteractionAction(action);
-      if (!typedAction) {
-        ctx.runtime.log?.(
-          `slack:interaction malformed action payload channel=${typedBody.channel?.id ?? typedBody.container?.channel_id ?? "unknown"} user=${
-            typedBody.user?.id ?? "unknown"
-          }`,
-        );
-        return;
-      }
-      const typedActionWithText = typedAction as {
-        action_id?: string;
-        block_id?: string;
-        type?: string;
-        text?: { text?: string };
-      };
-      const actionId =
-        typeof typedActionWithText.action_id === "string"
-          ? typedActionWithText.action_id
-          : "unknown";
-      const blockId = typedActionWithText.block_id;
-      const userId = typedBody.user?.id ?? "unknown";
-      const channelId = typedBody.channel?.id ?? typedBody.container?.channel_id;
-      const messageTs = typedBody.message?.ts ?? typedBody.container?.message_ts;
-      const threadTs = typedBody.container?.thread_ts;
-      const auth = await authorizeSlackSystemEventSender({
-        ctx,
-        senderId: userId,
-        channelId,
-      });
-      if (!auth.allowed) {
-        ctx.runtime.log?.(
-          `slack:interaction drop action=${actionId} user=${userId} channel=${channelId ?? "unknown"} reason=${auth.reason ?? "unauthorized"}`,
-        );
-        if (respond) {
-          try {
-            await respond({
-              text: "You are not authorized to use this control.",
-              response_type: "ephemeral",
-            });
-          } catch {
-            // Best-effort feedback only.
-          }
-        }
-        return;
-      }
-      const actionSummary = summarizeAction(typedAction);
-      const eventPayload: InteractionSummary = {
-        interactionType: "block_action",
-        actionId,
-        blockId,
-        ...actionSummary,
-        userId,
-        teamId: typedBody.team?.id,
-        triggerId: typedBody.trigger_id,
-        responseUrl: typedBody.response_url,
-        channelId,
-        messageTs,
-        threadTs,
-      };
-
-      // Log the interaction for debugging
+    // Extract action details using proper Bolt types
+    const typedAction = readInteractionAction(action);
+    if (!typedAction) {
       ctx.runtime.log?.(
-        `slack:interaction action=${actionId} type=${actionSummary.actionType ?? "unknown"} user=${userId} channel=${channelId}`,
+        `slack:interaction malformed action payload channel=${typedBody.channel?.id ?? typedBody.container?.channel_id ?? "unknown"} user=${
+          typedBody.user?.id ?? "unknown"
+        }`,
       );
-
-      // Send a system event to notify the agent about the button click
-      // Pass undefined (not "unknown") to allow proper main session fallback
-      const sessionKey = ctx.resolveSlackSystemEventSessionKey({
-        channelId: channelId,
-        channelType: auth.channelType,
-        senderId: userId,
-      });
-
-      // Build context key - only include defined values to avoid "unknown" noise
-      const contextParts = ["slack:interaction", channelId, messageTs, actionId].filter(Boolean);
-      const contextKey = contextParts.join(":");
-
-      enqueueSystemEvent(formatSlackInteractionSystemEvent(eventPayload), {
-        sessionKey,
-        contextKey,
-      });
-
-      const originalBlocks = typedBody.message?.blocks;
-      if (!Array.isArray(originalBlocks) || !channelId || !messageTs) {
-        return;
-      }
-
-      if (!blockId) {
-        return;
-      }
-
-      const selectedLabel = formatInteractionSelectionLabel({
-        actionId,
-        summary: actionSummary,
-        buttonText: typedActionWithText.text?.text,
-      });
-      let updatedBlocks = originalBlocks.map((block) => {
-        const typedBlock = block as InteractionMessageBlock;
-        if (typedBlock.type === "actions" && typedBlock.block_id === blockId) {
-          return {
-            type: "context",
-            elements: [
-              {
-                type: "mrkdwn",
-                text: formatInteractionConfirmationText({ selectedLabel, userId }),
-              },
-            ],
-          };
-        }
-        return block;
-      });
-
-      const hasRemainingIndividualActionRows = updatedBlocks.some((block) => {
-        const typedBlock = block as InteractionMessageBlock;
-        return typedBlock.type === "actions" && !isBulkActionsBlock(typedBlock);
-      });
-
-      if (!hasRemainingIndividualActionRows) {
-        updatedBlocks = updatedBlocks.filter((block, index) => {
-          const typedBlock = block as InteractionMessageBlock;
-          if (isBulkActionsBlock(typedBlock)) {
-            return false;
-          }
-          if (typedBlock.type !== "divider") {
-            return true;
-          }
-          const next = updatedBlocks[index + 1] as InteractionMessageBlock | undefined;
-          return !next || !isBulkActionsBlock(next);
-        });
-      }
-
-      try {
-        await ctx.app.client.chat.update({
-          channel: channelId,
-          ts: messageTs,
-          text: typedBody.message?.text ?? "",
-          blocks: updatedBlocks as (Block | KnownBlock)[],
-        });
-      } catch {
-        // If update fails, fallback to ephemeral confirmation for immediate UX feedback.
-        if (!respond) {
-          return;
-        }
+      return;
+    }
+    const typedActionWithText = typedAction as {
+      action_id?: string;
+      block_id?: string;
+      type?: string;
+      text?: { text?: string };
+    };
+    const actionId = typeof typedActionWithText.action_id === "string" ? typedActionWithText.action_id : "unknown";
+    const blockId = typedActionWithText.block_id;
+    const userId = typedBody.user?.id ?? "unknown";
+    const channelId = typedBody.channel?.id ?? typedBody.container?.channel_id;
+    const messageTs = typedBody.message?.ts ?? typedBody.container?.message_ts;
+    const threadTs = typedBody.container?.thread_ts;
+    const auth = await authorizeSlackSystemEventSender({
+      ctx,
+      senderId: userId,
+      channelId,
+    });
+    if (!auth.allowed) {
+      ctx.runtime.log?.(
+        `slack:interaction drop action=${actionId} user=${userId} channel=${channelId ?? "unknown"} reason=${auth.reason ?? "unauthorized"}`,
+      );
+      if (respond) {
         try {
           await respond({
-            text: `Button "${actionId}" clicked!`,
+            text: "You are not authorized to use this control.",
             response_type: "ephemeral",
           });
         } catch {
-          // Action was acknowledged and system event enqueued even when response updates fail.
+          // Best-effort feedback only.
         }
       }
-    },
-  );
+      return;
+    }
+    const actionSummary = summarizeAction(typedAction);
+    const eventPayload: InteractionSummary = {
+      interactionType: "block_action",
+      actionId,
+      blockId,
+      ...actionSummary,
+      userId,
+      teamId: typedBody.team?.id,
+      triggerId: typedBody.trigger_id,
+      responseUrl: typedBody.response_url,
+      channelId,
+      messageTs,
+      threadTs,
+    };
+
+    // Log the interaction for debugging
+    ctx.runtime.log?.(
+      `slack:interaction action=${actionId} type=${actionSummary.actionType ?? "unknown"} user=${userId} channel=${channelId}`,
+    );
+
+    // Send a system event to notify the agent about the button click
+    // Pass undefined (not "unknown") to allow proper main session fallback
+    const sessionKey = ctx.resolveSlackSystemEventSessionKey({
+      channelId: channelId,
+      channelType: auth.channelType,
+      senderId: userId,
+    });
+
+    // Build context key - only include defined values to avoid "unknown" noise
+    const contextParts = ["slack:interaction", channelId, messageTs, actionId].filter(Boolean);
+    const contextKey = contextParts.join(":");
+
+    enqueueSystemEvent(formatSlackInteractionSystemEvent(eventPayload), {
+      sessionKey,
+      contextKey,
+    });
+
+    const originalBlocks = typedBody.message?.blocks;
+    if (!Array.isArray(originalBlocks) || !channelId || !messageTs) {
+      return;
+    }
+
+    if (!blockId) {
+      return;
+    }
+
+    const selectedLabel = formatInteractionSelectionLabel({
+      actionId,
+      summary: actionSummary,
+      buttonText: typedActionWithText.text?.text,
+    });
+    let updatedBlocks = originalBlocks.map((block) => {
+      const typedBlock = block as InteractionMessageBlock;
+      if (typedBlock.type === "actions" && typedBlock.block_id === blockId) {
+        return {
+          type: "context",
+          elements: [
+            {
+              type: "mrkdwn",
+              text: formatInteractionConfirmationText({ selectedLabel, userId }),
+            },
+          ],
+        };
+      }
+      return block;
+    });
+
+    const hasRemainingIndividualActionRows = updatedBlocks.some((block) => {
+      const typedBlock = block as InteractionMessageBlock;
+      return typedBlock.type === "actions" && !isBulkActionsBlock(typedBlock);
+    });
+
+    if (!hasRemainingIndividualActionRows) {
+      updatedBlocks = updatedBlocks.filter((block, index) => {
+        const typedBlock = block as InteractionMessageBlock;
+        if (isBulkActionsBlock(typedBlock)) {
+          return false;
+        }
+        if (typedBlock.type !== "divider") {
+          return true;
+        }
+        const next = updatedBlocks[index + 1] as InteractionMessageBlock | undefined;
+        return !next || !isBulkActionsBlock(next);
+      });
+    }
+
+    try {
+      await ctx.app.client.chat.update({
+        channel: channelId,
+        ts: messageTs,
+        text: typedBody.message?.text ?? "",
+        blocks: updatedBlocks as (Block | KnownBlock)[],
+      });
+    } catch {
+      // If update fails, fallback to ephemeral confirmation for immediate UX feedback.
+      if (!respond) {
+        return;
+      }
+      try {
+        await respond({
+          text: `Button "${actionId}" clicked!`,
+          response_type: "ephemeral",
+        });
+      } catch {
+        // Action was acknowledged and system event enqueued even when response updates fail.
+      }
+    }
+  });
 
   if (typeof ctx.app.view !== "function") {
     return;

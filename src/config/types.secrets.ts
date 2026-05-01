@@ -47,9 +47,7 @@ export function isSecretRef(value: unknown): value is SecretRef {
   );
 }
 
-function isLegacySecretRefWithoutProvider(
-  value: unknown,
-): value is { source: SecretRefSource; id: string } {
+function isLegacySecretRefWithoutProvider(value: unknown): value is { source: SecretRefSource; id: string } {
   if (!isRecord(value)) {
     return false;
   }
@@ -61,10 +59,7 @@ function isLegacySecretRefWithoutProvider(
   );
 }
 
-export function parseEnvTemplateSecretRef(
-  value: unknown,
-  provider = DEFAULT_SECRET_PROVIDER_ALIAS,
-): SecretRef | null {
+export function parseEnvTemplateSecretRef(value: unknown, provider = DEFAULT_SECRET_PROVIDER_ALIAS): SecretRef | null {
   if (typeof value !== "string") {
     return null;
   }
@@ -155,11 +150,7 @@ export function normalizeResolvedSecretInputString(params: {
   return undefined;
 }
 
-export function resolveSecretInputRef(params: {
-  value: unknown;
-  refValue?: unknown;
-  defaults?: SecretDefaults;
-}): {
+export function resolveSecretInputRef(params: { value: unknown; refValue?: unknown; defaults?: SecretDefaults }): {
   explicitRef: SecretRef | null;
   inlineRef: SecretRef | null;
   ref: SecretRef | null;
@@ -204,10 +195,7 @@ export type ExecSecretProviderConfig = {
   allowSymlinkCommand?: boolean;
 };
 
-export type SecretProviderConfig =
-  | EnvSecretProviderConfig
-  | FileSecretProviderConfig
-  | ExecSecretProviderConfig;
+export type SecretProviderConfig = EnvSecretProviderConfig | FileSecretProviderConfig | ExecSecretProviderConfig;
 
 export type SecretsConfig = {
   providers?: Record<string, SecretProviderConfig>;

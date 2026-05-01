@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  extractText,
-  extractTextCached,
-  extractThinking,
-  extractThinkingCached,
-} from "./message-extract.ts";
+import { extractText, extractTextCached, extractThinking, extractThinkingCached } from "./message-extract.ts";
 
 describe("extractTextCached", () => {
   it("matches extractText output", () => {
@@ -30,12 +25,9 @@ describe("extractTextCached", () => {
       content: [
         {
           type: "text",
-          text: [
-            "<relevant-memories>",
-            "Internal memory context",
-            "</relevant-memories>",
-            "Final user answer",
-          ].join("\n"),
+          text: ["<relevant-memories>", "Internal memory context", "</relevant-memories>", "Final user answer"].join(
+            "\n",
+          ),
         },
       ],
     };

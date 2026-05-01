@@ -82,9 +82,7 @@ export function resolveServicePrefixedChatTarget<TService extends string, TTarge
   });
 }
 
-export function parseChatTargetPrefixesOrThrow(
-  params: ChatTargetPrefixesParams,
-): ParsedChatTarget | null {
+export function parseChatTargetPrefixesOrThrow(params: ChatTargetPrefixesParams): ParsedChatTarget | null {
   for (const prefix of params.chatIdPrefixes) {
     if (params.lower.startsWith(prefix)) {
       const value = stripPrefix(params.trimmed, prefix);
@@ -138,9 +136,7 @@ export function resolveServicePrefixedAllowTarget<TAllowTarget>(params: {
   return null;
 }
 
-export function resolveServicePrefixedOrChatAllowTarget<
-  TAllowTarget extends ParsedChatAllowTarget,
->(params: {
+export function resolveServicePrefixedOrChatAllowTarget<TAllowTarget extends ParsedChatAllowTarget>(params: {
   trimmed: string;
   lower: string;
   servicePrefixes: Array<{ prefix: string }>;
@@ -188,9 +184,7 @@ export function createAllowedChatSenderMatcher<TParsed extends ParsedChatAllowTa
     });
 }
 
-export function parseChatAllowTargetPrefixes(
-  params: ChatTargetPrefixesParams,
-): ParsedChatTarget | null {
+export function parseChatAllowTargetPrefixes(params: ChatTargetPrefixesParams): ParsedChatTarget | null {
   for (const prefix of params.chatIdPrefixes) {
     if (params.lower.startsWith(prefix)) {
       const value = stripPrefix(params.trimmed, prefix);

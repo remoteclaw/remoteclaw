@@ -14,9 +14,7 @@ describe("createMatrixRoomMessageHandler BodyForAgent sender label", () => {
     const formatInboundEnvelope = vi
       .fn()
       .mockImplementation((params: { senderLabel?: string; body: string }) => params.body);
-    const finalizeInboundContext = vi
-      .fn()
-      .mockImplementation((ctx: Record<string, unknown>) => ctx);
+    const finalizeInboundContext = vi.fn().mockImplementation((ctx: Record<string, unknown>) => ctx);
 
     const core = {
       channel: {
@@ -46,9 +44,7 @@ describe("createMatrixRoomMessageHandler BodyForAgent sender label", () => {
         reply: {
           resolveEnvelopeFormatOptions: vi.fn().mockReturnValue({}),
           formatInboundEnvelope,
-          formatAgentEnvelope: vi
-            .fn()
-            .mockImplementation((params: { body: string }) => params.body),
+          formatAgentEnvelope: vi.fn().mockImplementation((params: { body: string }) => params.body),
           finalizeInboundContext,
           resolveHumanDelayConfig: vi.fn().mockReturnValue(undefined),
           createReplyDispatcherWithTyping: vi.fn().mockReturnValue({
@@ -152,9 +148,7 @@ describe("createMatrixRoomMessageHandler BodyForAgent sender label", () => {
   });
 
   it("uses room-scoped session keys for DM rooms matched via parentPeer binding", () => {
-    const buildAgentSessionKey = vi
-      .fn()
-      .mockReturnValue("agent:main:matrix:channel:!dmroom:example.org");
+    const buildAgentSessionKey = vi.fn().mockReturnValue("agent:main:matrix:channel:!dmroom:example.org");
 
     const resolved = resolveMatrixBaseRouteSession({
       buildAgentSessionKey,

@@ -31,9 +31,7 @@ export async function loginWeb(
       (err as { output?: { statusCode?: number } })?.output?.statusCode;
     if (code === 515) {
       console.log(
-        info(
-          "WhatsApp asked for a restart after pairing (code 515); creds are saved. Restarting connection once…",
-        ),
+        info("WhatsApp asked for a restart after pairing (code 515); creds are saved. Restarting connection once…"),
       );
       try {
         sock.ws?.close();

@@ -33,9 +33,7 @@ async function fileExists(p: string): Promise<boolean> {
   }
 }
 
-export async function getAgentLocalStatuses(
-  cfg: RemoteClawConfig = loadConfig(),
-): Promise<AgentLocalStatusesResult> {
+export async function getAgentLocalStatuses(cfg: RemoteClawConfig = loadConfig()): Promise<AgentLocalStatusesResult> {
   const agentList = listAgentsForGateway(cfg);
   const now = Date.now();
 

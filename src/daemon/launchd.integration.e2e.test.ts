@@ -35,11 +35,7 @@ function canRunLaunchdIntegration(): boolean {
 
 const describeLaunchdIntegration = canRunLaunchdIntegration() ? describe : describe.skip;
 
-async function withTimeout<T>(params: {
-  run: () => Promise<T>;
-  timeoutMs: number;
-  message: string;
-}): Promise<T> {
+async function withTimeout<T>(params: { run: () => Promise<T>; timeoutMs: number; message: string }): Promise<T> {
   let timer: NodeJS.Timeout | undefined;
   try {
     return await Promise.race([
@@ -80,9 +76,7 @@ async function waitForRunningRuntime(params: {
       setTimeout(resolve, WAIT_INTERVAL_MS);
     });
   }
-  throw new Error(
-    `Timed out waiting for launchd runtime (status=${lastStatus}, pid=${lastPid ?? "none"})`,
-  );
+  throw new Error(`Timed out waiting for launchd runtime (status=${lastStatus}, pid=${lastPid ?? "none"})`);
 }
 
 describeLaunchdIntegration("launchd integration", () => {

@@ -141,10 +141,7 @@ describe("buildGatewayReloadPlan", () => {
   });
 
   it("restarts heartbeat when model-related config changes", () => {
-    const plan = buildGatewayReloadPlan([
-      "models.providers.openai.models",
-      "agents.defaults.model",
-    ]);
+    const plan = buildGatewayReloadPlan(["models.providers.openai.models", "agents.defaults.model"]);
     expect(plan.restartGateway).toBe(false);
     expect(plan.restartHeartbeat).toBe(true);
     expect(plan.hotReasons).toEqual(

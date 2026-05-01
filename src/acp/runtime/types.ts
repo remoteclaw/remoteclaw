@@ -120,9 +120,7 @@ export interface AcpRuntime {
 
   runTurn(input: AcpRuntimeTurnInput): AsyncIterable<AcpRuntimeEvent>;
 
-  getCapabilities?(input: {
-    handle?: AcpRuntimeHandle;
-  }): Promise<AcpRuntimeCapabilities> | AcpRuntimeCapabilities;
+  getCapabilities?(input: { handle?: AcpRuntimeHandle }): Promise<AcpRuntimeCapabilities> | AcpRuntimeCapabilities;
 
   getStatus?(input: { handle: AcpRuntimeHandle; signal?: AbortSignal }): Promise<AcpRuntimeStatus>;
 

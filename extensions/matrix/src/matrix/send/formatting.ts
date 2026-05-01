@@ -69,11 +69,9 @@ export function resolveMatrixMsgType(contentType?: string, _fileName?: string): 
   }
 }
 
-export function resolveMatrixVoiceDecision(opts: {
-  wantsVoice: boolean;
-  contentType?: string;
-  fileName?: string;
-}): { useVoice: boolean } {
+export function resolveMatrixVoiceDecision(opts: { wantsVoice: boolean; contentType?: string; fileName?: string }): {
+  useVoice: boolean;
+} {
   if (!opts.wantsVoice) {
     return { useVoice: false };
   }

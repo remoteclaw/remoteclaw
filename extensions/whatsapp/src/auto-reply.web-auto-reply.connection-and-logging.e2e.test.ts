@@ -206,13 +206,9 @@ describe("web auto-reply connection", () => {
     try {
       const sleep = vi.fn(async () => {});
       const closeResolvers: Array<(reason: unknown) => void> = [];
-      let capturedOnMessage:
-        | ((msg: import("./inbound.js").WebInboundMessage) => Promise<void>)
-        | undefined;
+      let capturedOnMessage: ((msg: import("./inbound.js").WebInboundMessage) => Promise<void>) | undefined;
       const listenerFactory = vi.fn(
-        async (opts: {
-          onMessage: (msg: import("./inbound.js").WebInboundMessage) => Promise<void>;
-        }) => {
+        async (opts: { onMessage: (msg: import("./inbound.js").WebInboundMessage) => Promise<void> }) => {
           capturedOnMessage = opts.onMessage;
           let resolveClose: (reason: unknown) => void = () => {};
           const onClose = new Promise<unknown>((res) => {
@@ -345,9 +341,7 @@ describe("web auto-reply connection", () => {
         );
         expect(firstArgs.Body).not.toContain("second");
         expect(secondArgs.Body).toMatch(
-          new RegExp(
-            `\\[WhatsApp \\+1 (\\+\\d+[smhd] )?${secondPattern}\\] \\[remoteclaw\\] second`,
-          ),
+          new RegExp(`\\[WhatsApp \\+1 (\\+\\d+[smhd] )?${secondPattern}\\] \\[remoteclaw\\] second`),
         );
         expect(secondArgs.Body).not.toContain("first");
         expect(process.getMaxListeners?.()).toBeGreaterThanOrEqual(50);

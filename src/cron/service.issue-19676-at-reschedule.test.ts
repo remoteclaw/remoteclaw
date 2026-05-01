@@ -6,9 +6,7 @@ const ORIGINAL_AT_MS = Date.parse("2026-02-22T10:00:00.000Z");
 const LAST_RUN_AT_MS = Date.parse("2026-02-22T10:00:05.000Z"); // ran shortly after scheduled time
 const RESCHEDULED_AT_MS = Date.parse("2026-02-22T12:00:00.000Z"); // rescheduled to 2 hours later
 
-function createAtJob(
-  overrides: { state?: CronJob["state"]; schedule?: CronJob["schedule"] } = {},
-): CronJob {
+function createAtJob(overrides: { state?: CronJob["state"]; schedule?: CronJob["schedule"] } = {}): CronJob {
   return {
     id: "issue-19676",
     name: "one-shot-reminder",

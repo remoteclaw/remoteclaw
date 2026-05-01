@@ -55,9 +55,7 @@ async function createSignedDevice(params: {
   nonce: string;
   signedAtMs?: number;
 }) {
-  const identity = params.identityPath
-    ? loadOrCreateDeviceIdentity(params.identityPath)
-    : loadOrCreateDeviceIdentity();
+  const identity = params.identityPath ? loadOrCreateDeviceIdentity(params.identityPath) : loadOrCreateDeviceIdentity();
   const signedAtMs = params.signedAtMs ?? Date.now();
   const payload = buildDeviceAuthPayload({
     deviceId: identity.deviceId,
@@ -167,42 +165,39 @@ describe("gateway auth browser hardening", () => {
       origin: ALLOWED_BROWSER_ORIGIN,
       ok: true,
     },
-  ])(
-    "keeps non-proxy browser-origin behavior unchanged: $name",
-    async ({ origin, ok, expectedMessage }) => {
-      const { writeConfigFile } = await import("../config/config.js");
-      testState.gatewayAuth = { mode: "token", token: "secret" };
-      await writeConfigFile({
-        gateway: {
-          controlUi: {
-            allowedOrigins: [ALLOWED_BROWSER_ORIGIN],
-          },
+  ])("keeps non-proxy browser-origin behavior unchanged: $name", async ({ origin, ok, expectedMessage }) => {
+    const { writeConfigFile } = await import("../config/config.js");
+    testState.gatewayAuth = { mode: "token", token: "secret" };
+    await writeConfigFile({
+      gateway: {
+        controlUi: {
+          allowedOrigins: [ALLOWED_BROWSER_ORIGIN],
         },
-      });
+      },
+    });
 
-      await withGatewayServer(async ({ port }) => {
-        const ws = await openWs(port, { origin });
-        try {
-          const res = await connectReq(ws, {
-            token: "secret",
-            client: TEST_OPERATOR_CLIENT,
-            device: null,
-          });
-          expect(res.ok).toBe(ok);
-          if (ok) {
-            expect((res.payload as { type?: string } | undefined)?.type).toBe("hello-ok");
-          } else {
-            expect(res.error?.message ?? "").toContain(expectedMessage ?? "");
-            expect((res.error?.details as { code?: string } | undefined)?.code).toBe(
-              ConnectErrorDetailCodes.CONTROL_UI_ORIGIN_NOT_ALLOWED,
-            );
-          }
-        } finally {
-          ws.close();
+    await withGatewayServer(async ({ port }) => {
+      const ws = await openWs(port, { origin });
+      try {
+        const res = await connectReq(ws, {
+          token: "secret",
+          client: TEST_OPERATOR_CLIENT,
+          device: null,
+        });
+        expect(res.ok).toBe(ok);
+        if (ok) {
+          expect((res.payload as { type?: string } | undefined)?.type).toBe("hello-ok");
+        } else {
+          expect(res.error?.message ?? "").toContain(expectedMessage ?? "");
+          expect((res.error?.details as { code?: string } | undefined)?.code).toBe(
+            ConnectErrorDetailCodes.CONTROL_UI_ORIGIN_NOT_ALLOWED,
+          );
         }
-      });
-    },
-  );
+      } finally {
+        ws.close();
+      }
+    });
+  });
 
   test("rejects non-local browser origins for non-control-ui clients", async () => {
     testState.gatewayAuth = { mode: "token", token: "secret" };

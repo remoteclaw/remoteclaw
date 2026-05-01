@@ -99,10 +99,7 @@ function resolveSessionCapabilityEntry(params: {
   return store[params.sessionKey] ?? findEntryBySessionId(store, params.sessionKey);
 }
 
-export function resolveSubagentRoleForDepth(params: {
-  depth: number;
-  maxSpawnDepth?: number;
-}): SubagentSessionRole {
+export function resolveSubagentRoleForDepth(params: { depth: number; maxSpawnDepth?: number }): SubagentSessionRole {
   const depth = Number.isInteger(params.depth) ? Math.max(0, params.depth) : 0;
   const maxSpawnDepth =
     typeof params.maxSpawnDepth === "number" && Number.isFinite(params.maxSpawnDepth)
@@ -114,9 +111,7 @@ export function resolveSubagentRoleForDepth(params: {
   return depth < maxSpawnDepth ? "orchestrator" : "leaf";
 }
 
-export function resolveSubagentControlScopeForRole(
-  role: SubagentSessionRole,
-): SubagentControlScope {
+export function resolveSubagentControlScopeForRole(role: SubagentSessionRole): SubagentControlScope {
   return role === "leaf" ? "none" : "children";
 }
 
@@ -140,8 +135,7 @@ export function resolveStoredSubagentCapabilities(
   },
 ) {
   const normalizedSessionKey = normalizeSessionKey(sessionKey);
-  const maxSpawnDepth =
-    opts?.cfg?.agents?.defaults?.subagents?.maxSpawnDepth ?? DEFAULT_SUBAGENT_MAX_SPAWN_DEPTH;
+  const maxSpawnDepth = opts?.cfg?.agents?.defaults?.subagents?.maxSpawnDepth ?? DEFAULT_SUBAGENT_MAX_SPAWN_DEPTH;
   const depth = getSubagentDepthFromSessionStore(normalizedSessionKey, {
     cfg: opts?.cfg,
     store: opts?.store,

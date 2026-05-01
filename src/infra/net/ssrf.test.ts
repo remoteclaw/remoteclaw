@@ -91,10 +91,7 @@ function expectIpPrivacyCases(cases: string[], expected: boolean) {
 
 describe("ssrf ip classification", () => {
   it("classifies blocked ip literals as private", () => {
-    expectIpPrivacyCases(
-      [...privateIpCases, ...malformedIpv6Cases, ...unsupportedLegacyIpv4Cases],
-      true,
-    );
+    expectIpPrivacyCases([...privateIpCases, ...malformedIpv6Cases, ...unsupportedLegacyIpv4Cases], true);
   });
 
   it("classifies public ip literals as non-private", () => {
@@ -107,15 +104,12 @@ describe("ssrf ip classification", () => {
 });
 
 describe("isBlockedHostnameOrIp", () => {
-  it.each([
-    "localhost.localdomain",
-    "metadata.google.internal",
-    "api.localhost",
-    "svc.local",
-    "db.internal",
-  ])("blocks reserved hostname %s", (hostname) => {
-    expect(isBlockedHostnameOrIp(hostname)).toBe(true);
-  });
+  it.each(["localhost.localdomain", "metadata.google.internal", "api.localhost", "svc.local", "db.internal"])(
+    "blocks reserved hostname %s",
+    (hostname) => {
+      expect(isBlockedHostnameOrIp(hostname)).toBe(true);
+    },
+  );
 
   it.each([
     ["2001:db8:1234::5efe:127.0.0.1", true],
@@ -138,12 +132,9 @@ describe("isBlockedHostnameOrIp", () => {
     expect(isBlockedHostnameOrIp(value, policy)).toBe(expected);
   });
 
-  it.each(["0177.0.0.1", "8.8.2056", "127.1", "2130706433"])(
-    "blocks legacy IPv4 literal %s",
-    (address) => {
-      expect(isBlockedHostnameOrIp(address)).toBe(true);
-    },
-  );
+  it.each(["0177.0.0.1", "8.8.2056", "127.1", "2130706433"])("blocks legacy IPv4 literal %s", (address) => {
+    expect(isBlockedHostnameOrIp(address)).toBe(true);
+  });
 
   it.each(["example.com", "api.example.net"])("does not block ordinary hostname %s", (value) => {
     expect(isBlockedHostnameOrIp(value)).toBe(false);

@@ -34,8 +34,7 @@ import { getSignalRuntime } from "./runtime.js";
 
 const signalMessageActions: ChannelMessageActionAdapter = {
   listActions: (ctx) => getSignalRuntime().channel.signal.messageActions?.listActions?.(ctx) ?? [],
-  supportsAction: (ctx) =>
-    getSignalRuntime().channel.signal.messageActions?.supportsAction?.(ctx) ?? false,
+  supportsAction: (ctx) => getSignalRuntime().channel.signal.messageActions?.supportsAction?.(ctx) ?? false,
   handleAction: async (ctx) => {
     const ma = getSignalRuntime().channel.signal.messageActions;
     if (!ma?.handleAction) {
@@ -198,13 +197,7 @@ export const signalPlugin: ChannelPlugin<ResolvedSignalAccount> = {
         name,
       }),
     validateInput: ({ input }) => {
-      if (
-        !input.signalNumber &&
-        !input.httpUrl &&
-        !input.httpHost &&
-        !input.httpPort &&
-        !input.cliPath
-      ) {
+      if (!input.signalNumber && !input.httpUrl && !input.httpHost && !input.httpPort && !input.cliPath) {
         return "Signal requires --signal-number or --http-url/--http-host/--http-port/--cli-path.";
       }
       return null;

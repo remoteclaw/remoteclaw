@@ -80,9 +80,7 @@ export function renderBeaconLines(beacon: GatewayBonjourBeacon, rich: boolean): 
     lines.push(`  ${colorize(rich, theme.muted, "transport")}: ${beacon.transport}`);
   }
   if (beacon.gatewayTls) {
-    const fingerprint = beacon.gatewayTlsFingerprintSha256
-      ? `sha256 ${beacon.gatewayTlsFingerprintSha256}`
-      : "enabled";
+    const fingerprint = beacon.gatewayTlsFingerprintSha256 ? `sha256 ${beacon.gatewayTlsFingerprintSha256}` : "enabled";
     lines.push(`  ${colorize(rich, theme.muted, "tls")}: ${fingerprint}`);
   }
   if (typeof beacon.sshPort === "number" && beacon.sshPort > 0 && host) {

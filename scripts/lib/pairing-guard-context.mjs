@@ -7,7 +7,6 @@ export function createPairingGuardContext(importMetaUrl) {
   return {
     repoRoot,
     sourceRoots,
-    resolveFromRepo: (relativePath) =>
-      path.join(repoRoot, ...relativePath.split("/").filter(Boolean)),
+    resolveFromRepo: (relativePath) => path.join(repoRoot, ...relativePath.split("/").filter(Boolean)),
   };
 }

@@ -13,10 +13,7 @@ const RTL_CHAR_REGEX =
  * @param skipPattern - Characters to skip when looking for the first significant char.
  *   Defaults to whitespace and Unicode punctuation/symbols.
  */
-export function detectTextDirection(
-  text: string | null,
-  skipPattern: RegExp = /[\s\p{P}\p{S}]/u,
-): "rtl" | "ltr" {
+export function detectTextDirection(text: string | null, skipPattern: RegExp = /[\s\p{P}\p{S}]/u): "rtl" | "ltr" {
   if (!text) {
     return "ltr";
   }

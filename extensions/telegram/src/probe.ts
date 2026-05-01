@@ -32,9 +32,7 @@ export function resetTelegramProbeFetcherCacheForTests(): void {
   probeFetcherCache.clear();
 }
 
-function resolveProbeOptions(
-  proxyOrOptions?: string | TelegramProbeOptions,
-): TelegramProbeOptions | undefined {
+function resolveProbeOptions(proxyOrOptions?: string | TelegramProbeOptions): TelegramProbeOptions | undefined {
   if (!proxyOrOptions) {
     return undefined;
   }
@@ -53,8 +51,7 @@ function buildProbeFetcherCacheKey(token: string, options?: TelegramProbeOptions
   const cacheIdentityKind = options?.accountId?.trim() ? "account" : "token";
   const proxyKey = options?.proxyUrl?.trim() ?? "";
   const autoSelectFamily = options?.network?.autoSelectFamily;
-  const autoSelectFamilyKey =
-    typeof autoSelectFamily === "boolean" ? String(autoSelectFamily) : "default";
+  const autoSelectFamilyKey = typeof autoSelectFamily === "boolean" ? String(autoSelectFamily) : "default";
   const dnsResultOrderKey = options?.network?.dnsResultOrder ?? "default";
   return `${cacheIdentityKind}:${cacheIdentity}::${proxyKey}::${autoSelectFamilyKey}::${dnsResultOrderKey}`;
 }
@@ -168,16 +165,13 @@ export async function probeTelegram(
     result.bot = {
       id: meJson.result?.id ?? null,
       username: meJson.result?.username ?? null,
-      canJoinGroups:
-        typeof meJson.result?.can_join_groups === "boolean" ? meJson.result?.can_join_groups : null,
+      canJoinGroups: typeof meJson.result?.can_join_groups === "boolean" ? meJson.result?.can_join_groups : null,
       canReadAllGroupMessages:
         typeof meJson.result?.can_read_all_group_messages === "boolean"
           ? meJson.result?.can_read_all_group_messages
           : null,
       supportsInlineQueries:
-        typeof meJson.result?.supports_inline_queries === "boolean"
-          ? meJson.result?.supports_inline_queries
-          : null,
+        typeof meJson.result?.supports_inline_queries === "boolean" ? meJson.result?.supports_inline_queries : null,
     };
 
     // Try to fetch webhook info, but don't fail health if it errors.

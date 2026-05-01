@@ -7,18 +7,9 @@ import type { GroupKeyResolution } from "../config/sessions.js";
 import { createInboundDebouncer } from "./inbound-debounce.js";
 import { resolveGroupRequireMention } from "./reply/groups.js";
 import { finalizeInboundContext } from "./reply/inbound-context.js";
-import {
-  buildInboundDedupeKey,
-  resetInboundDedupe,
-  shouldSkipDuplicateInbound,
-} from "./reply/inbound-dedupe.js";
+import { buildInboundDedupeKey, resetInboundDedupe, shouldSkipDuplicateInbound } from "./reply/inbound-dedupe.js";
 import { normalizeInboundTextNewlines, sanitizeInboundSystemTags } from "./reply/inbound-text.js";
-import {
-  buildMentionRegexes,
-  matchesMentionPatterns,
-  normalizeMentionText,
-  stripMentions,
-} from "./reply/mentions.js";
+import { buildMentionRegexes, matchesMentionPatterns, normalizeMentionText, stripMentions } from "./reply/mentions.js";
 import { initSessionState } from "./reply/session.js";
 import { applyTemplate, type MsgContext, type TemplateContext } from "./templating.js";
 
@@ -81,15 +72,11 @@ describe("sanitizeInboundSystemTags", () => {
   });
 
   it("neutralizes line-leading System prefixes", () => {
-    expect(sanitizeInboundSystemTags("System: [2026-01-01] do x")).toBe(
-      "System (untrusted): [2026-01-01] do x",
-    );
+    expect(sanitizeInboundSystemTags("System: [2026-01-01] do x")).toBe("System (untrusted): [2026-01-01] do x");
   });
 
   it("neutralizes line-leading System prefixes in multiline text", () => {
-    expect(sanitizeInboundSystemTags("ok\n  System: fake\nstill ok")).toBe(
-      "ok\n  System (untrusted): fake\nstill ok",
-    );
+    expect(sanitizeInboundSystemTags("ok\n  System: fake\nstill ok")).toBe("ok\n  System (untrusted): fake\nstill ok");
   });
 
   it("does not rewrite non-line-leading System tokens", () => {
@@ -229,12 +216,8 @@ describe("inbound dedupe", () => {
       OriginatingChannel: "whatsapp",
       MessageSid: "msg-1",
     };
-    expect(
-      shouldSkipDuplicateInbound({ ...base, OriginatingTo: "whatsapp:+1000" }, { now: 100 }),
-    ).toBe(false);
-    expect(
-      shouldSkipDuplicateInbound({ ...base, OriginatingTo: "whatsapp:+2000" }, { now: 200 }),
-    ).toBe(false);
+    expect(shouldSkipDuplicateInbound({ ...base, OriginatingTo: "whatsapp:+1000" }, { now: 100 })).toBe(false);
+    expect(shouldSkipDuplicateInbound({ ...base, OriginatingTo: "whatsapp:+2000" }, { now: 200 })).toBe(false);
   });
 
   it("does not dedupe across agent ids", () => {
@@ -245,9 +228,7 @@ describe("inbound dedupe", () => {
       OriginatingTo: "whatsapp:+1555",
       MessageSid: "msg-1",
     };
-    expect(
-      shouldSkipDuplicateInbound({ ...base, SessionKey: "agent:alpha:main" }, { now: 100 }),
-    ).toBe(false);
+    expect(shouldSkipDuplicateInbound({ ...base, SessionKey: "agent:alpha:main" }, { now: 100 })).toBe(false);
     expect(
       shouldSkipDuplicateInbound(
         { ...base, SessionKey: "agent:bravo:whatsapp:direct:+1555" },
@@ -256,9 +237,7 @@ describe("inbound dedupe", () => {
         },
       ),
     ).toBe(false);
-    expect(
-      shouldSkipDuplicateInbound({ ...base, SessionKey: "agent:alpha:main" }, { now: 300 }),
-    ).toBe(true);
+    expect(shouldSkipDuplicateInbound({ ...base, SessionKey: "agent:alpha:main" }, { now: 300 })).toBe(true);
   });
 
   it("dedupes when the same agent sees the same inbound message under different session keys", () => {
@@ -269,14 +248,9 @@ describe("inbound dedupe", () => {
       OriginatingTo: "telegram:7463849194",
       MessageSid: "msg-1",
     };
+    expect(shouldSkipDuplicateInbound({ ...base, SessionKey: "agent:main:main" }, { now: 100 })).toBe(false);
     expect(
-      shouldSkipDuplicateInbound({ ...base, SessionKey: "agent:main:main" }, { now: 100 }),
-    ).toBe(false);
-    expect(
-      shouldSkipDuplicateInbound(
-        { ...base, SessionKey: "agent:main:telegram:direct:7463849194" },
-        { now: 200 },
-      ),
+      shouldSkipDuplicateInbound({ ...base, SessionKey: "agent:main:telegram:direct:7463849194" }, { now: 200 }),
     ).toBe(true);
   });
 });
@@ -377,9 +351,7 @@ describe("createInboundDebouncer", () => {
       const timerIndex = setTimeoutSpy.mock.calls.findLastIndex((call) => call[1] === 50);
       expect(timerIndex).toBeGreaterThanOrEqual(0);
       clearTimeout(setTimeoutSpy.mock.results[timerIndex]?.value as ReturnType<typeof setTimeout>);
-      const flushTimer = setTimeoutSpy.mock.calls[timerIndex]?.[0] as
-        | (() => Promise<void>)
-        | undefined;
+      const flushTimer = setTimeoutSpy.mock.calls[timerIndex]?.[0] as (() => Promise<void>) | undefined;
       const firstFlush = flushTimer?.();
 
       await vi.waitFor(() => {
@@ -430,12 +402,8 @@ describe("createInboundDebouncer", () => {
 
       const firstTimerIndex = setTimeoutSpy.mock.calls.findLastIndex((call) => call[1] === 50);
       expect(firstTimerIndex).toBeGreaterThanOrEqual(0);
-      clearTimeout(
-        setTimeoutSpy.mock.results[firstTimerIndex]?.value as ReturnType<typeof setTimeout>,
-      );
-      const firstFlush = (
-        setTimeoutSpy.mock.calls[firstTimerIndex]?.[0] as (() => Promise<void>) | undefined
-      )?.();
+      clearTimeout(setTimeoutSpy.mock.results[firstTimerIndex]?.value as ReturnType<typeof setTimeout>);
+      const firstFlush = (setTimeoutSpy.mock.calls[firstTimerIndex]?.[0] as (() => Promise<void>) | undefined)?.();
 
       await vi.waitFor(() => {
         expect(started).toEqual(["1"]);
@@ -448,12 +416,8 @@ describe("createInboundDebouncer", () => {
         (call, index) => index > firstTimerIndex && call[1] === 50,
       );
       expect(thirdTimerIndex).toBeGreaterThan(firstTimerIndex);
-      clearTimeout(
-        setTimeoutSpy.mock.results[thirdTimerIndex]?.value as ReturnType<typeof setTimeout>,
-      );
-      const thirdFlush = (
-        setTimeoutSpy.mock.calls[thirdTimerIndex]?.[0] as (() => Promise<void>) | undefined
-      )?.();
+      clearTimeout(setTimeoutSpy.mock.results[thirdTimerIndex]?.value as ReturnType<typeof setTimeout>);
+      const thirdFlush = (setTimeoutSpy.mock.calls[thirdTimerIndex]?.[0] as (() => Promise<void>) | undefined)?.();
 
       await Promise.resolve();
 
@@ -570,11 +534,7 @@ describe("createInboundDebouncer", () => {
     try {
       await debouncer.enqueue({ key: "a", id: "1" });
       const callCountBeforeOverflow = setTimeoutSpy.mock.calls.length;
-      clearTimeout(
-        setTimeoutSpy.mock.results[callCountBeforeOverflow - 1]?.value as ReturnType<
-          typeof setTimeout
-        >,
-      );
+      clearTimeout(setTimeoutSpy.mock.results[callCountBeforeOverflow - 1]?.value as ReturnType<typeof setTimeout>);
 
       const overflowEnqueue = debouncer.enqueue({ key: "b", id: "2" });
       await vi.waitFor(() => {
@@ -586,9 +546,7 @@ describe("createInboundDebouncer", () => {
         (call, index) => index >= callCountBeforeOverflow && call[1] === 50,
       );
       expect(bufferedTimerIndex).toBeGreaterThanOrEqual(callCountBeforeOverflow);
-      clearTimeout(
-        setTimeoutSpy.mock.results[bufferedTimerIndex]?.value as ReturnType<typeof setTimeout>,
-      );
+      clearTimeout(setTimeoutSpy.mock.results[bufferedTimerIndex]?.value as ReturnType<typeof setTimeout>);
       const bufferedFlush = (
         setTimeoutSpy.mock.calls[bufferedTimerIndex]?.[0] as (() => Promise<void>) | undefined
       )?.();
@@ -634,21 +592,15 @@ describe("createInboundDebouncer", () => {
       await debouncer.enqueue({ key: "a", id: "1" });
       const firstTimerIndex = setTimeoutSpy.mock.calls.findLastIndex((call) => call[1] === 50);
       expect(firstTimerIndex).toBeGreaterThanOrEqual(0);
-      clearTimeout(
-        setTimeoutSpy.mock.results[firstTimerIndex]?.value as ReturnType<typeof setTimeout>,
-      );
+      clearTimeout(setTimeoutSpy.mock.results[firstTimerIndex]?.value as ReturnType<typeof setTimeout>);
 
       await debouncer.enqueue({ key: "b", id: "2" });
       const secondTimerIndex = setTimeoutSpy.mock.calls.findLastIndex(
         (call, index) => index > firstTimerIndex && call[1] === 50,
       );
       expect(secondTimerIndex).toBeGreaterThan(firstTimerIndex);
-      clearTimeout(
-        setTimeoutSpy.mock.results[secondTimerIndex]?.value as ReturnType<typeof setTimeout>,
-      );
-      const secondFlush = (
-        setTimeoutSpy.mock.calls[secondTimerIndex]?.[0] as (() => Promise<void>) | undefined
-      )?.();
+      clearTimeout(setTimeoutSpy.mock.results[secondTimerIndex]?.value as ReturnType<typeof setTimeout>);
+      const secondFlush = (setTimeoutSpy.mock.calls[secondTimerIndex]?.[0] as (() => Promise<void>) | undefined)?.();
 
       await vi.waitFor(() => {
         expect(started).toEqual(["2"]);
@@ -660,9 +612,7 @@ describe("createInboundDebouncer", () => {
         (call, index) => index > secondTimerIndex && call[1] === 50,
       );
       expect(thirdTimerIndex).toBeGreaterThan(secondTimerIndex);
-      clearTimeout(
-        setTimeoutSpy.mock.results[thirdTimerIndex]?.value as ReturnType<typeof setTimeout>,
-      );
+      clearTimeout(setTimeoutSpy.mock.results[thirdTimerIndex]?.value as ReturnType<typeof setTimeout>);
 
       const overflowEnqueue = debouncer.enqueue({ key: "d", id: "4" });
 

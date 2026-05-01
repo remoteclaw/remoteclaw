@@ -56,10 +56,7 @@ function requireToken(token: string | undefined): string {
 
 async function overwritePairedOperatorTokenScopes(baseDir: string, scopes: string[]) {
   const { pairedPath } = resolvePairingPaths(baseDir, "devices");
-  const pairedByDeviceId = JSON.parse(await readFile(pairedPath, "utf8")) as Record<
-    string,
-    PairedDevice
-  >;
+  const pairedByDeviceId = JSON.parse(await readFile(pairedPath, "utf8")) as Record<string, PairedDevice>;
   const device = pairedByDeviceId["device-1"];
   expect(device?.tokens?.operator).toBeDefined();
   if (!device?.tokens?.operator) {
@@ -71,10 +68,7 @@ async function overwritePairedOperatorTokenScopes(baseDir: string, scopes: strin
 
 async function mutatePairedOperatorDevice(baseDir: string, mutate: (device: PairedDevice) => void) {
   const { pairedPath } = resolvePairingPaths(baseDir, "devices");
-  const pairedByDeviceId = JSON.parse(await readFile(pairedPath, "utf8")) as Record<
-    string,
-    PairedDevice
-  >;
+  const pairedByDeviceId = JSON.parse(await readFile(pairedPath, "utf8")) as Record<string, PairedDevice>;
   const device = pairedByDeviceId["device-1"];
   expect(device).toBeDefined();
   if (!device) {

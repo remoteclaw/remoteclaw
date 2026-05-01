@@ -47,12 +47,8 @@ describe("msteams errors", () => {
 
   describe("isRevokedProxyError", () => {
     it("returns true for revoked proxy TypeError", () => {
-      expect(
-        isRevokedProxyError(new TypeError("Cannot perform 'set' on a proxy that has been revoked")),
-      ).toBe(true);
-      expect(
-        isRevokedProxyError(new TypeError("Cannot perform 'get' on a proxy that has been revoked")),
-      ).toBe(true);
+      expect(isRevokedProxyError(new TypeError("Cannot perform 'set' on a proxy that has been revoked"))).toBe(true);
+      expect(isRevokedProxyError(new TypeError("Cannot perform 'get' on a proxy that has been revoked"))).toBe(true);
     });
 
     it("returns false for non-TypeError errors", () => {

@@ -67,10 +67,7 @@ export function isNativeCommandsExplicitlyDisabled(params: {
   return false;
 }
 
-function getOwnCommandFlagValue(
-  config: { commands?: unknown } | undefined,
-  key: CommandFlagKey,
-): unknown {
+function getOwnCommandFlagValue(config: { commands?: unknown } | undefined, key: CommandFlagKey): unknown {
   const { commands } = config ?? {};
   if (!isPlainObject(commands) || !Object.hasOwn(commands, key)) {
     return undefined;
@@ -78,10 +75,7 @@ function getOwnCommandFlagValue(
   return commands[key];
 }
 
-export function isCommandFlagEnabled(
-  config: { commands?: unknown } | undefined,
-  key: CommandFlagKey,
-): boolean {
+export function isCommandFlagEnabled(config: { commands?: unknown } | undefined, key: CommandFlagKey): boolean {
   return getOwnCommandFlagValue(config, key) === true;
 }
 

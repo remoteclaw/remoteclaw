@@ -43,8 +43,7 @@ export function registerGatewayTools(server: McpServer, ctx: McpHandlerContext):
   server.registerTool(
     "gateway_config_apply",
     {
-      description:
-        "Apply a full gateway configuration object, replacing the current configuration.",
+      description: "Apply a full gateway configuration object, replacing the current configuration.",
       inputSchema: z.object({
         config: z.object({}).passthrough(),
       }),

@@ -14,10 +14,7 @@ type ParsedYamlValue = {
 };
 
 function stripQuotes(value: string): string {
-  if (
-    (value.startsWith('"') && value.endsWith('"')) ||
-    (value.startsWith("'") && value.endsWith("'"))
-  ) {
+  if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
     return value.slice(1, -1);
   }
   return value;
@@ -149,9 +146,7 @@ function parseLineFrontmatter(block: string): Record<string, ParsedFrontmatterLi
   return result;
 }
 
-function lineFrontmatterToPlain(
-  parsed: Record<string, ParsedFrontmatterLineEntry>,
-): ParsedFrontmatter {
+function lineFrontmatterToPlain(parsed: Record<string, ParsedFrontmatterLineEntry>): ParsedFrontmatter {
   const result: ParsedFrontmatter = {};
   for (const [key, entry] of Object.entries(parsed)) {
     result[key] = entry.value;

@@ -20,9 +20,7 @@ vi.mock("../../gateway/probe.js", () => ({
 
 const originalPlatform = process.platform;
 
-function makeGatewayService(
-  runtime: { status: "running"; pid: number } | { status: "stopped" },
-): GatewayService {
+function makeGatewayService(runtime: { status: "running"; pid: number } | { status: "stopped" }): GatewayService {
   return {
     readRuntime: vi.fn(async () => runtime),
   } as unknown as GatewayService;
@@ -63,9 +61,7 @@ async function inspectUnknownListenerFallback(params: {
   });
 }
 
-async function inspectAmbiguousOwnershipWithProbe(
-  probeResult: Awaited<ReturnType<typeof probeGateway>>,
-) {
+async function inspectAmbiguousOwnershipWithProbe(probeResult: Awaited<ReturnType<typeof probeGateway>>) {
   classifyPortListener.mockReturnValue("unknown");
   probeGateway.mockResolvedValue(probeResult);
   return inspectGatewayRestartWithSnapshot({
@@ -183,9 +179,7 @@ describe("inspectGatewayRestart", () => {
     });
 
     expect(snapshot.healthy).toBe(true);
-    expect(probeGateway).toHaveBeenCalledWith(
-      expect.objectContaining({ url: "ws://127.0.0.1:18789" }),
-    );
+    expect(probeGateway).toHaveBeenCalledWith(expect.objectContaining({ url: "ws://127.0.0.1:18789" }));
   });
 
   it("treats a busy port as healthy when runtime status lags but the probe succeeds", async () => {
@@ -228,9 +222,7 @@ describe("inspectGatewayRestart", () => {
       port: 18789,
       status: "busy",
       listeners: [],
-      hints: [
-        "Port is in use but process details are unavailable (install lsof or run as an admin user).",
-      ],
+      hints: ["Port is in use but process details are unavailable (install lsof or run as an admin user)."],
       errors: ["Error: spawn lsof ENOENT"],
     });
 

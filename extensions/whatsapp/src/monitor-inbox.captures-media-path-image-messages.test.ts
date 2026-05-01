@@ -35,10 +35,7 @@ describe("web monitor inbox", () => {
     return { onMessage, listener, sock };
   }
 
-  function expectSingleGroupMessage(
-    onMessage: ReturnType<typeof vi.fn>,
-    expected: Record<string, unknown>,
-  ) {
+  function expectSingleGroupMessage(onMessage: ReturnType<typeof vi.fn>, expected: Record<string, unknown>) {
     expect(onMessage).toHaveBeenCalledTimes(1);
     expect(onMessage).toHaveBeenCalledWith(expect.objectContaining(expected));
   }
@@ -100,9 +97,7 @@ describe("web monitor inbox", () => {
       connection: "close",
       lastDisconnect: { error: { output: { statusCode: 500 } } },
     });
-    await expect(reasonPromise).resolves.toEqual(
-      expect.objectContaining({ status: 500, isLoggedOut: false }),
-    );
+    await expect(reasonPromise).resolves.toEqual(expect.objectContaining({ status: 500, isLoggedOut: false }));
     await listener.close();
   });
 

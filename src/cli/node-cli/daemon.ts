@@ -1,18 +1,12 @@
 import { buildNodeInstallPlan } from "../../commands/node-daemon-install-helpers.js";
-import {
-  DEFAULT_NODE_DAEMON_RUNTIME,
-  isNodeDaemonRuntime,
-} from "../../commands/node-daemon-runtime.js";
+import { DEFAULT_NODE_DAEMON_RUNTIME, isNodeDaemonRuntime } from "../../commands/node-daemon-runtime.js";
 import {
   resolveNodeLaunchAgentLabel,
   resolveNodeSystemdServiceName,
   resolveNodeWindowsTaskName,
 } from "../../daemon/constants.js";
 import { resolveNodeService } from "../../daemon/node-service.js";
-import {
-  buildPlatformRuntimeLogHints,
-  buildPlatformServiceStartHints,
-} from "../../daemon/runtime-hints.js";
+import { buildPlatformRuntimeLogHints, buildPlatformServiceStartHints } from "../../daemon/runtime-hints.js";
 import type { GatewayServiceRuntime } from "../../daemon/service-runtime.js";
 import { loadNodeHostConfig } from "../../node-host/config.js";
 import { defaultRuntime } from "../../runtime.js";
@@ -72,10 +66,7 @@ function buildNodeRuntimeHints(env: NodeJS.ProcessEnv = process.env): string[] {
   });
 }
 
-function resolveNodeDefaults(
-  opts: NodeDaemonInstallOptions,
-  config: Awaited<ReturnType<typeof loadNodeHostConfig>>,
-) {
+function resolveNodeDefaults(opts: NodeDaemonInstallOptions, config: Awaited<ReturnType<typeof loadNodeHostConfig>>) {
   const host = opts.host?.trim() || config?.gateway?.host || "127.0.0.1";
   const portOverride = parsePort(opts.port);
   if (opts.port !== undefined && portOverride === null) {
@@ -129,24 +120,23 @@ export async function runNodeDaemonInstall(opts: NodeDaemonInstallOptions) {
 
   const tlsFingerprint = opts.tlsFingerprint?.trim() || config?.gateway?.tlsFingerprint;
   const tls = Boolean(opts.tls) || Boolean(tlsFingerprint) || Boolean(config?.gateway?.tls);
-  const { programArguments, workingDirectory, environment, description } =
-    await buildNodeInstallPlan({
-      env: process.env,
-      host,
-      port: port ?? 18789,
-      tls,
-      tlsFingerprint: tlsFingerprint || undefined,
-      nodeId: opts.nodeId,
-      displayName: opts.displayName,
-      runtime: runtimeRaw,
-      warn: (message) => {
-        if (json) {
-          warnings.push(message);
-        } else {
-          defaultRuntime.log(message);
-        }
-      },
-    });
+  const { programArguments, workingDirectory, environment, description } = await buildNodeInstallPlan({
+    env: process.env,
+    host,
+    port: port ?? 18789,
+    tls,
+    tlsFingerprint: tlsFingerprint || undefined,
+    nodeId: opts.nodeId,
+    displayName: opts.displayName,
+    runtime: runtimeRaw,
+    warn: (message) => {
+      if (json) {
+        warnings.push(message);
+      } else {
+        defaultRuntime.log(message);
+      }
+    },
+  });
 
   await installDaemonServiceAndEmit({
     serviceNoun: "Node",
@@ -227,8 +217,7 @@ export async function runNodeDaemonStatus(opts: NodeDaemonStatusOptions = {}) {
     return;
   }
 
-  const { rich, label, accent, infoText, okText, warnText, errorText } =
-    createCliStatusTextStyles();
+  const { rich, label, accent, infoText, okText, warnText, errorText } = createCliStatusTextStyles();
 
   const serviceStatus = loaded ? okText(service.loadedText) : warnText(service.notLoadedText);
   defaultRuntime.log(`${label("Service:")} ${accent(service.label)} (${serviceStatus})`);

@@ -158,9 +158,7 @@ describe("subagent registry steer restarts", () => {
       task: string;
       requesterSessionKey?: string;
       requesterDisplayKey?: string;
-    } & Partial<
-      Pick<RegisterSubagentRunInput, "spawnMode" | "requesterOrigin" | "expectsCompletionMessage">
-    >,
+    } & Partial<Pick<RegisterSubagentRunInput, "spawnMode" | "requesterOrigin" | "expectsCompletionMessage">>,
   ): void => {
     mod.registerSubagentRun({
       runId: params.runId,
@@ -512,9 +510,7 @@ describe("subagent registry steer restarts", () => {
       task: "race test",
     });
 
-    expect(mod.markSubagentRunTerminated({ runId: "run-kill-race", reason: "manual kill" })).toBe(
-      1,
-    );
+    expect(mod.markSubagentRunTerminated({ runId: "run-kill-race", reason: "manual kill" })).toBe(1);
     expect(listMainRuns()[0]?.suppressAnnounceReason).toBe("killed");
     expect(listMainRuns()[0]?.cleanupHandled).toBe(true);
     expect(typeof listMainRuns()[0]?.cleanupCompletedAt).toBe("number");
@@ -566,9 +562,7 @@ describe("subagent registry steer restarts", () => {
     emitLifecycleEnd("run-child");
     await flushAnnounce();
 
-    const childRunIds = announceSpy.mock.calls.map(
-      (call) => ((call[0] ?? {}) as { childRunId?: string }).childRunId,
-    );
+    const childRunIds = announceSpy.mock.calls.map((call) => ((call[0] ?? {}) as { childRunId?: string }).childRunId);
     expect(childRunIds.filter((id) => id === "run-parent")).toHaveLength(2);
     expect(childRunIds.filter((id) => id === "run-child")).toHaveLength(1);
   });
@@ -579,11 +573,7 @@ describe("subagent registry steer restarts", () => {
       try {
         announceSpy.mockResolvedValue(false);
 
-        registerCompletionModeRun(
-          "run-completion-retry",
-          "agent:main:subagent:completion",
-          "completion retry",
-        );
+        registerCompletionModeRun("run-completion-retry", "agent:main:subagent:completion", "completion retry");
 
         emitLifecycleEnd("run-completion-retry");
 
@@ -615,11 +605,7 @@ describe("subagent registry steer restarts", () => {
   it("keeps completion cleanup pending while descendants are still active", async () => {
     announceSpy.mockResolvedValue(false);
 
-    registerCompletionModeRun(
-      "run-parent-expiry",
-      "agent:main:subagent:parent-expiry",
-      "parent completion expiry",
-    );
+    registerCompletionModeRun("run-parent-expiry", "agent:main:subagent:parent-expiry", "parent completion expiry");
     registerRun({
       runId: "run-child-active",
       childSessionKey: "agent:main:subagent:parent-expiry:subagent:child-active",

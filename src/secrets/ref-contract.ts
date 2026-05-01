@@ -1,8 +1,4 @@
-import {
-  DEFAULT_SECRET_PROVIDER_ALIAS,
-  type SecretRef,
-  type SecretRefSource,
-} from "../config/types.secrets.js";
+import { DEFAULT_SECRET_PROVIDER_ALIAS, type SecretRef, type SecretRefSource } from "../config/types.secrets.js";
 
 const FILE_SECRET_REF_SEGMENT_PATTERN = /^(?:[^~]|~0|~1)*$/;
 export const SECRET_PROVIDER_ALIAS_PATTERN = /^[a-z][a-z0-9_-]{0,63}$/;

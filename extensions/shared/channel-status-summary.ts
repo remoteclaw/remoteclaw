@@ -38,9 +38,7 @@ export function buildPassiveProbedChannelStatusSummary<TExtra extends object>(
   };
 }
 
-export function buildTrafficStatusSummary<TSnapshot extends TrafficStatusSnapshot>(
-  snapshot?: TSnapshot | null,
-) {
+export function buildTrafficStatusSummary<TSnapshot extends TrafficStatusSnapshot>(snapshot?: TSnapshot | null) {
   return {
     lastInboundAt: snapshot?.lastInboundAt ?? null,
     lastOutboundAt: snapshot?.lastOutboundAt ?? null,

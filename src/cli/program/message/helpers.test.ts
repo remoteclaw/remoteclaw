@@ -16,15 +16,9 @@ vi.mock("../../plugin-registry.js", () => ({
 }));
 
 const hasHooksMock = vi.fn((_hookName: string) => false);
-const runGatewayStopMock = vi.fn(
-  async (_event: { reason?: string }, _ctx: Record<string, unknown>) => {},
-);
+const runGatewayStopMock = vi.fn(async (_event: { reason?: string }, _ctx: Record<string, unknown>) => {});
 const runGlobalGatewayStopSafelyMock = vi.fn(
-  async (params: {
-    event: { reason?: string };
-    ctx: Record<string, unknown>;
-    onError?: (err: unknown) => void;
-  }) => {
+  async (params: { event: { reason?: string }; ctx: Record<string, unknown>; onError?: (err: unknown) => void }) => {
     if (!hasHooksMock("gateway_stop")) {
       return;
     }
@@ -71,9 +65,7 @@ async function runSendAction(opts: Record<string, unknown> = {}) {
 }
 
 function expectNoAccountFieldInPassedOptions() {
-  const passedOpts = (
-    messageCommandMock.mock.calls as unknown as Array<[Record<string, unknown>]>
-  )?.[0]?.[0];
+  const passedOpts = (messageCommandMock.mock.calls as unknown as Array<[Record<string, unknown>]>)?.[0]?.[0];
   expect(passedOpts).toBeTruthy();
   if (!passedOpts) {
     throw new Error("expected message command call");

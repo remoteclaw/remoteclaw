@@ -44,8 +44,7 @@ describe("msteams monitor handler authz", () => {
       },
       textLimit: 4000,
       mediaMaxBytes: 1024 * 1024,
-      conversationStore:
-        conversationStore as unknown as MSTeamsMessageHandlerDeps["conversationStore"],
+      conversationStore: conversationStore as unknown as MSTeamsMessageHandlerDeps["conversationStore"],
       pollStore: {
         recordVote: vi.fn(async () => null),
       } as unknown as MSTeamsMessageHandlerDeps["pollStore"],

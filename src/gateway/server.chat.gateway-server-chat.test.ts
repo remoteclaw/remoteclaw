@@ -83,9 +83,7 @@ describe("gateway server chat", () => {
       : []),
   ];
 
-  const loadChatHistoryWithMessages = async (
-    messages: Array<Record<string, unknown>>,
-  ): Promise<unknown[]> => {
+  const loadChatHistoryWithMessages = async (messages: Array<Record<string, unknown>>): Promise<unknown[]> => {
     return withMainSessionStore(async (dir) => {
       const lines = messages.map((message) => JSON.stringify({ message }));
       await fs.writeFile(path.join(dir, "sess-main.jsonl"), lines.join("\n"), "utf-8");
@@ -208,9 +206,7 @@ describe("gateway server chat", () => {
       idempotencyKey: "idem-null-byte-1",
     });
     expect(nullByteRes.ok).toBe(false);
-    expect((nullByteRes.error as { message?: string } | undefined)?.message ?? "").toMatch(
-      /null bytes/i,
-    );
+    expect((nullByteRes.error as { message?: string } | undefined)?.message ?? "").toMatch(/null bytes/i);
 
     const spy = vi.mocked(getReplyFromConfig);
     spy.mockClear();
@@ -224,9 +220,7 @@ describe("gateway server chat", () => {
     expect(sanitizedRes.ok).toBe(true);
 
     await waitFor(() => spyCalls.length > callsBeforeSanitized);
-    const ctx = spyCalls.at(-1)?.[0] as
-      | { Body?: string; RawBody?: string; BodyForCommands?: string }
-      | undefined;
+    const ctx = spyCalls.at(-1)?.[0] as { Body?: string; RawBody?: string; BodyForCommands?: string } | undefined;
     expect(ctx?.Body).toBe("Café\tline");
     expect(ctx?.RawBody).toBe("Café\tline");
     expect(ctx?.BodyForCommands).toBe("Café\tline");
@@ -318,9 +312,7 @@ describe("gateway server chat", () => {
         idempotencyKey: "idem-1",
       });
       expect(blockedRes.ok).toBe(false);
-      expect((blockedRes.error as { message?: string } | undefined)?.message ?? "").toMatch(
-        /send blocked/i,
-      );
+      expect((blockedRes.error as { message?: string } | undefined)?.message ?? "").toMatch(/send blocked/i);
 
       testState.sessionStorePath = undefined;
       testState.sessionConfig = undefined;
@@ -350,15 +342,12 @@ describe("gateway server chat", () => {
         idempotencyKey: "idem-2",
       });
       expect(agentBlockedRes.ok).toBe(false);
-      expect((agentBlockedRes.error as { message?: string } | undefined)?.message ?? "").toMatch(
-        /send blocked/i,
-      );
+      expect((agentBlockedRes.error as { message?: string } | undefined)?.message ?? "").toMatch(/send blocked/i);
 
       testState.sessionStorePath = undefined;
       testState.sessionConfig = undefined;
 
-      const pngB64 =
-        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/woAAn8B9FD5fHAAAAAASUVORK5CYII=";
+      const pngB64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/woAAn8B9FD5fHAAAAAASUVORK5CYII=";
 
       const reqId = "chat-img";
       ws.send(
@@ -382,11 +371,7 @@ describe("gateway server chat", () => {
         }),
       );
 
-      const imgRes = await onceMessage(
-        ws,
-        (o) => o.type === "res" && o.id === reqId,
-        CHAT_RESPONSE_TIMEOUT_MS,
-      );
+      const imgRes = await onceMessage(ws, (o) => o.type === "res" && o.id === reqId, CHAT_RESPONSE_TIMEOUT_MS);
       expect(imgRes.ok).toBe(true);
       expect(imgRes.payload?.runId).toBeDefined();
       const reqIdOnly = "chat-img-only";
@@ -411,11 +396,7 @@ describe("gateway server chat", () => {
         }),
       );
 
-      const imgOnlyRes = await onceMessage(
-        ws,
-        (o) => o.type === "res" && o.id === reqIdOnly,
-        CHAT_RESPONSE_TIMEOUT_MS,
-      );
+      const imgOnlyRes = await onceMessage(ws, (o) => o.type === "res" && o.id === reqIdOnly, CHAT_RESPONSE_TIMEOUT_MS);
       expect(imgOnlyRes.ok).toBe(true);
       expect(imgOnlyRes.payload?.runId).toBeDefined();
 
@@ -502,15 +483,11 @@ describe("gateway server chat", () => {
     const roleAndText = historyMessages
       .map((message) => {
         const role =
-          message &&
-          typeof message === "object" &&
-          typeof (message as { role?: unknown }).role === "string"
+          message && typeof message === "object" && typeof (message as { role?: unknown }).role === "string"
             ? (message as { role: string }).role
             : "unknown";
         const text =
-          message &&
-          typeof message === "object" &&
-          typeof (message as { text?: unknown }).text === "string"
+          message && typeof message === "object" && typeof (message as { text?: unknown }).text === "string"
             ? (message as { text: string }).text
             : (extractFirstTextBlock(message) ?? "");
         return `${role}:${text}`;

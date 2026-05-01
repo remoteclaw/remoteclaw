@@ -1,11 +1,5 @@
 import type { messagingApi } from "@line/bot-sdk";
-import {
-  datetimePickerAction,
-  messageAction,
-  postbackAction,
-  uriAction,
-  type Action,
-} from "./actions.js";
+import { datetimePickerAction, messageAction, postbackAction, uriAction, type Action } from "./actions.js";
 
 export { datetimePickerAction, messageAction, postbackAction, uriAction };
 
@@ -142,10 +136,7 @@ export function createCarouselColumn(params: {
 /**
  * Create an image carousel template (simpler, image-focused carousel)
  */
-export function createImageCarousel(
-  columns: ImageCarouselColumn[],
-  altText?: string,
-): TemplateMessage {
+export function createImageCarousel(columns: ImageCarouselColumn[], altText?: string): TemplateMessage {
   const template: ImageCarouselTemplate = {
     type: "image_carousel",
     columns: columns.slice(0, 10), // LINE limit: max 10 columns
@@ -269,9 +260,7 @@ export function createProductCarousel(
 
     return createCarouselColumn({
       title: product.title,
-      text: product.price
-        ? `${product.description}\n${product.price}`.slice(0, 120)
-        : product.description,
+      text: product.price ? `${product.description}\n${product.price}`.slice(0, 120) : product.description,
       thumbnailImageUrl: product.imageUrl,
       actions,
     });
@@ -289,9 +278,7 @@ import type { LineTemplateMessagePayload } from "./types.js";
 /**
  * Convert a TemplateMessagePayload from ReplyPayload to a LINE TemplateMessage
  */
-export function buildTemplateMessageFromPayload(
-  payload: LineTemplateMessagePayload,
-): TemplateMessage | null {
+export function buildTemplateMessageFromPayload(payload: LineTemplateMessagePayload): TemplateMessage | null {
   switch (payload.type) {
     case "confirm": {
       const confirmAction = payload.confirmData.startsWith("http")
@@ -310,9 +297,7 @@ export function buildTemplateMessageFromPayload(
     }
 
     case "buttons": {
-      const actions: Action[] = payload.actions
-        .slice(0, 4)
-        .map((action) => buildTemplatePayloadAction(action));
+      const actions: Action[] = payload.actions.slice(0, 4).map((action) => buildTemplatePayloadAction(action));
 
       return createButtonTemplate(payload.title, payload.text, actions, {
         thumbnailImageUrl: payload.thumbnailImageUrl,
@@ -322,9 +307,7 @@ export function buildTemplateMessageFromPayload(
 
     case "carousel": {
       const columns: CarouselColumn[] = payload.columns.slice(0, 10).map((col) => {
-        const colActions: Action[] = col.actions
-          .slice(0, 3)
-          .map((action) => buildTemplatePayloadAction(action));
+        const colActions: Action[] = col.actions.slice(0, 3).map((action) => buildTemplatePayloadAction(action));
 
         return createCarouselColumn({
           title: col.title,

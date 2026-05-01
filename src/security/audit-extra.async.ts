@@ -46,10 +46,7 @@ function loadWorkspaceSkillEntries(
   }
   return results;
 }
-import {
-  resolveAgentWorkspaceDirOrNull,
-  resolveFirstAgentWorkspace,
-} from "../agents/agent-scope.js";
+import { resolveAgentWorkspaceDirOrNull, resolveFirstAgentWorkspace } from "../agents/agent-scope.js";
 import { resolveToolProfilePolicy } from "../agents/tool-policy.js";
 function listAgentWorkspaceDirs(cfg: RemoteClawConfig): string[] {
   const dirs = new Set<string>();
@@ -82,12 +79,7 @@ import { hasConfiguredSecretInput } from "../config/types.secrets.js";
 import type { AgentToolsConfig } from "../config/types.tools.js";
 import { normalizePluginsConfig } from "../plugins/config-state.js";
 import { normalizeAgentId } from "../routing/session-key.js";
-import {
-  formatPermissionDetail,
-  formatPermissionRemediation,
-  inspectPathPermissions,
-  safeStat,
-} from "./audit-fs.js";
+import { formatPermissionDetail, formatPermissionRemediation, inspectPathPermissions, safeStat } from "./audit-fs.js";
 // Minimal stub: extracts deny/allow from tools config for policy resolution.
 function pickSandboxToolPolicy(config?: {
   allow?: string[];
@@ -158,9 +150,7 @@ async function readPluginManifestExtensions(pluginPath: string): Promise<string[
     return [];
   }
 
-  const parsed = JSON.parse(raw) as Partial<
-    Record<typeof MANIFEST_KEY, { extensions?: unknown }>
-  > | null;
+  const parsed = JSON.parse(raw) as Partial<Record<typeof MANIFEST_KEY, { extensions?: unknown }>> | null;
   const extensions = parsed?.[MANIFEST_KEY]?.extensions;
   if (!Array.isArray(extensions)) {
     return [];
@@ -172,10 +162,7 @@ function formatCodeSafetyDetails(findings: SkillScanFinding[], rootDir: string):
   return findings
     .map((finding) => {
       const relPath = path.relative(rootDir, finding.file);
-      const filePath =
-        relPath && relPath !== "." && !relPath.startsWith("..")
-          ? relPath
-          : path.basename(finding.file);
+      const filePath = relPath && relPath !== "." && !relPath.startsWith("..") ? relPath : path.basename(finding.file);
       const normalizedPath = filePath.replaceAll("\\", "/");
       return `  - [${finding.ruleId}] ${finding.message} (${normalizedPath}:${finding.line})`;
     })
@@ -225,10 +212,7 @@ function normalizePluginIdSet(entries: string[]): Set<string> {
   return new Set(entries.map((entry) => entry.trim().toLowerCase()).filter(Boolean));
 }
 
-function resolveEnabledExtensionPluginIds(params: {
-  cfg: RemoteClawConfig;
-  pluginDirs: string[];
-}): string[] {
+function resolveEnabledExtensionPluginIds(params: { cfg: RemoteClawConfig; pluginDirs: string[] }): string[] {
   const normalized = normalizePluginsConfig(params.cfg.plugins);
   if (!normalized.enabled) {
     return [];
@@ -272,13 +256,8 @@ function collectAllowEntries(config?: { allow?: string[]; alsoAllow?: string[] }
   return out.map((entry) => entry.trim().toLowerCase()).filter(Boolean);
 }
 
-function hasExplicitPluginAllow(params: {
-  allowEntries: string[];
-  enabledPluginIds: Set<string>;
-}): boolean {
-  return params.allowEntries.some(
-    (entry) => entry === "group:plugins" || params.enabledPluginIds.has(entry),
-  );
+function hasExplicitPluginAllow(params: { allowEntries: string[]; enabledPluginIds: Set<string> }): boolean {
+  return params.allowEntries.some((entry) => entry === "group:plugins" || params.enabledPluginIds.has(entry));
 }
 
 function hasProviderPluginAllow(params: {
@@ -324,10 +303,7 @@ async function readInstalledPackageVersion(dir: string): Promise<string | undefi
   }
 }
 
-function buildCodeSafetySummaryCacheKey(params: {
-  dirPath: string;
-  includeFiles?: string[];
-}): string {
+function buildCodeSafetySummaryCacheKey(params: { dirPath: string; includeFiles?: string[] }): string {
   const includeFiles = (params.includeFiles ?? []).map((entry) => entry.trim()).filter(Boolean);
   const includeKey = includeFiles.length > 0 ? includeFiles.toSorted().join("\u0000") : "";
   return `${params.dirPath}\u0000${includeKey}`;
@@ -423,9 +399,7 @@ function normalizeDockerLabelValue(raw: string | undefined): string | null {
   return trimmed;
 }
 
-async function listSandboxBrowserContainers(
-  dockerExecFn: ExecDockerRawFn,
-): Promise<string[] | null> {
+async function listSandboxBrowserContainers(dockerExecFn: ExecDockerRawFn): Promise<string[] | null> {
   try {
     const result = await dockerExecFn(
       ["ps", "-a", "--filter", "label=remoteclaw.sandboxBrowser=1", "--format", "{{.Names}}"],
@@ -612,28 +586,17 @@ export async function collectPluginsTrustFindings(params: {
     const allowConfigured = Array.isArray(allow) && allow.length > 0;
     if (!allowConfigured) {
       const hasString = (value: unknown) => typeof value === "string" && value.trim().length > 0;
-      const hasSecretInput = (value: unknown) =>
-        hasConfiguredSecretInput(value, params.cfg.secrets?.defaults);
+      const hasSecretInput = (value: unknown) => hasConfiguredSecretInput(value, params.cfg.secrets?.defaults);
       const hasAccountStringKey = (account: unknown, key: string) =>
-        Boolean(
-          account &&
-          typeof account === "object" &&
-          hasString((account as Record<string, unknown>)[key]),
-        );
+        Boolean(account && typeof account === "object" && hasString((account as Record<string, unknown>)[key]));
       const hasAccountSecretInputKey = (account: unknown, key: string) =>
-        Boolean(
-          account &&
-          typeof account === "object" &&
-          hasSecretInput((account as Record<string, unknown>)[key]),
-        );
+        Boolean(account && typeof account === "object" && hasSecretInput((account as Record<string, unknown>)[key]));
 
       const discordConfigured =
         hasSecretInput(params.cfg.channels?.discord?.token) ||
         Boolean(
           params.cfg.channels?.discord?.accounts &&
-          Object.values(params.cfg.channels.discord.accounts).some((a) =>
-            hasAccountSecretInputKey(a, "token"),
-          ),
+          Object.values(params.cfg.channels.discord.accounts).some((a) => hasAccountSecretInputKey(a, "token")),
         ) ||
         hasString(process.env.DISCORD_BOT_TOKEN);
 
@@ -654,8 +617,7 @@ export async function collectPluginsTrustFindings(params: {
         Boolean(
           params.cfg.channels?.slack?.accounts &&
           Object.values(params.cfg.channels.slack.accounts).some(
-            (a) =>
-              hasAccountSecretInputKey(a, "botToken") || hasAccountSecretInputKey(a, "appToken"),
+            (a) => hasAccountSecretInputKey(a, "botToken") || hasAccountSecretInputKey(a, "appToken"),
           ),
         ) ||
         hasString(process.env.SLACK_BOT_TOKEN) ||
@@ -768,9 +730,7 @@ export async function collectPluginsTrustFindings(params: {
   }
 
   const pluginInstalls = params.cfg.plugins?.installs ?? {};
-  const npmPluginInstalls = Object.entries(pluginInstalls).filter(
-    ([, record]) => record?.source === "npm",
-  );
+  const npmPluginInstalls = Object.entries(pluginInstalls).filter(([, record]) => record?.source === "npm");
   if (npmPluginInstalls.length > 0) {
     const unpinned = npmPluginInstalls
       .filter(([, record]) => typeof record.spec === "string" && !isPinnedRegistrySpec(record.spec))
@@ -787,9 +747,7 @@ export async function collectPluginsTrustFindings(params: {
     }
 
     const missingIntegrity = npmPluginInstalls
-      .filter(
-        ([, record]) => typeof record.integrity !== "string" || record.integrity.trim() === "",
-      )
+      .filter(([, record]) => typeof record.integrity !== "string" || record.integrity.trim() === "")
       .map(([pluginId]) => pluginId);
     if (missingIntegrity.length > 0) {
       findings.push({
@@ -797,8 +755,7 @@ export async function collectPluginsTrustFindings(params: {
         severity: "warn",
         title: "Plugin installs are missing integrity metadata",
         detail: `Plugin install records missing integrity:\n${missingIntegrity.map((entry) => `- ${entry}`).join("\n")}`,
-        remediation:
-          "Reinstall or update plugins to refresh install metadata with resolved integrity hashes.",
+        remediation: "Reinstall or update plugins to refresh install metadata with resolved integrity hashes.",
       });
     }
 
@@ -814,9 +771,7 @@ export async function collectPluginsTrustFindings(params: {
       if (!installedVersion || installedVersion === recordedVersion) {
         continue;
       }
-      pluginVersionDrift.push(
-        `${pluginId} (recorded ${recordedVersion}, installed ${installedVersion})`,
-      );
+      pluginVersionDrift.push(`${pluginId} (recorded ${recordedVersion}, installed ${installedVersion})`);
     }
     if (pluginVersionDrift.length > 0) {
       findings.push({
@@ -831,9 +786,7 @@ export async function collectPluginsTrustFindings(params: {
   }
 
   const hookInstalls = params.cfg.hooks?.internal?.installs ?? {};
-  const npmHookInstalls = Object.entries(hookInstalls).filter(
-    ([, record]) => record?.source === "npm",
-  );
+  const npmHookInstalls = Object.entries(hookInstalls).filter(([, record]) => record?.source === "npm");
   if (npmHookInstalls.length > 0) {
     const unpinned = npmHookInstalls
       .filter(([, record]) => typeof record.spec === "string" && !isPinnedRegistrySpec(record.spec))
@@ -850,9 +803,7 @@ export async function collectPluginsTrustFindings(params: {
     }
 
     const missingIntegrity = npmHookInstalls
-      .filter(
-        ([, record]) => typeof record.integrity !== "string" || record.integrity.trim() === "",
-      )
+      .filter(([, record]) => typeof record.integrity !== "string" || record.integrity.trim() === "")
       .map(([hookId]) => hookId);
     if (missingIntegrity.length > 0) {
       findings.push({
@@ -860,8 +811,7 @@ export async function collectPluginsTrustFindings(params: {
         severity: "warn",
         title: "Hook installs are missing integrity metadata",
         detail: `Hook install records missing integrity:\n${missingIntegrity.map((entry) => `- ${entry}`).join("\n")}`,
-        remediation:
-          "Reinstall or update hooks to refresh install metadata with resolved integrity hashes.",
+        remediation: "Reinstall or update hooks to refresh install metadata with resolved integrity hashes.",
       });
     }
 
@@ -877,9 +827,7 @@ export async function collectPluginsTrustFindings(params: {
       if (!installedVersion || installedVersion === recordedVersion) {
         continue;
       }
-      hookVersionDrift.push(
-        `${hookId} (recorded ${recordedVersion}, installed ${installedVersion})`,
-      );
+      hookVersionDrift.push(`${hookId} (recorded ${recordedVersion}, installed ${installedVersion})`);
     }
     if (hookVersionDrift.length > 0) {
       findings.push({
@@ -887,8 +835,7 @@ export async function collectPluginsTrustFindings(params: {
         severity: "warn",
         title: "Hook install records drift from installed package versions",
         detail: `Detected hook install metadata drift:\n${hookVersionDrift.map((entry) => `- ${entry}`).join("\n")}`,
-        remediation:
-          "Run `remoteclaw hooks update --all` (or reinstall affected hooks) to refresh install metadata.",
+        remediation: "Run `remoteclaw hooks update --all` (or reinstall affected hooks) to refresh install metadata.",
       });
     }
   }
@@ -1165,8 +1112,7 @@ export async function collectStateDeepFilesystemFindings(params: {
     }
   }
 
-  const logFile =
-    typeof params.cfg.logging?.file === "string" ? params.cfg.logging.file.trim() : "";
+  const logFile = typeof params.cfg.logging?.file === "string" ? params.cfg.logging.file.trim() : "";
   if (logFile) {
     const expanded = logFile.startsWith("~") ? expandTilde(logFile, params.env) : logFile;
     if (expanded) {
@@ -1222,8 +1168,7 @@ export async function collectPluginsCodeSafetyFindings(params: {
         severity: "warn",
         title: "Plugin extensions directory scan failed",
         detail: `Static code scan could not list extensions directory: ${String(err)}`,
-        remediation:
-          "Check file permissions and plugin layout, then rerun `remoteclaw security audit --deep`.",
+        remediation: "Check file permissions and plugin layout, then rerun `remoteclaw security audit --deep`.",
       });
     },
   });
@@ -1273,8 +1218,7 @@ export async function collectPluginsCodeSafetyFindings(params: {
         severity: "warn",
         title: `Plugin "${pluginName}" code scan failed`,
         detail: `Static code scan could not complete: ${String(err)}`,
-        remediation:
-          "Check file permissions and plugin layout, then rerun `remoteclaw security audit --deep`.",
+        remediation: "Check file permissions and plugin layout, then rerun `remoteclaw security audit --deep`.",
       });
       return null;
     });
@@ -1348,8 +1292,7 @@ export async function collectInstalledSkillsCodeSafetyFindings(params: {
           severity: "warn",
           title: `Skill "${skillName}" code scan failed`,
           detail: `Static code scan could not complete for ${skillDir}: ${String(err)}`,
-          remediation:
-            "Check file permissions and skill layout, then rerun `remoteclaw security audit --deep`.",
+          remediation: "Check file permissions and skill layout, then rerun `remoteclaw security audit --deep`.",
         });
         return null;
       });
@@ -1358,9 +1301,7 @@ export async function collectInstalledSkillsCodeSafetyFindings(params: {
       }
 
       if (summary.critical > 0) {
-        const criticalFindings = summary.findings.filter(
-          (finding) => finding.severity === "critical",
-        );
+        const criticalFindings = summary.findings.filter((finding) => finding.severity === "critical");
         const details = formatCodeSafetyDetails(criticalFindings, skillDir);
         findings.push({
           checkId: "skills.code_safety",

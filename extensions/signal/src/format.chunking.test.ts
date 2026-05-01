@@ -363,8 +363,7 @@ describe("markdownToSignalTextChunks", () => {
 
     it("preserves spoiler style through link expansion and chunking", () => {
       const limit = 40;
-      const markdown =
-        "||secret content|| and [link](https://example.com/path) with more text to chunk";
+      const markdown = "||secret content|| and [link](https://example.com/path) with more text to chunk";
 
       const chunks = markdownToSignalTextChunks(markdown, limit);
 
@@ -380,9 +379,7 @@ describe("markdownToSignalTextChunks", () => {
       const spoilerStyle = chunkWithSpoiler!.styles.find((s) => s.style === "SPOILER");
       expect(spoilerStyle).toBeDefined();
       expect(spoilerStyle!.start).toBeGreaterThanOrEqual(0);
-      expect(spoilerStyle!.start + spoilerStyle!.length).toBeLessThanOrEqual(
-        chunkWithSpoiler!.text.length,
-      );
+      expect(spoilerStyle!.start + spoilerStyle!.length).toBeLessThanOrEqual(chunkWithSpoiler!.text.length);
     });
   });
 });

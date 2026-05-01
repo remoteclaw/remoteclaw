@@ -1,7 +1,4 @@
-import {
-  buildMentionRegexes,
-  normalizeMentionText,
-} from "../../../../src/auto-reply/reply/mentions.js";
+import { buildMentionRegexes, normalizeMentionText } from "../../../../src/auto-reply/reply/mentions.js";
 import type { loadConfig } from "../../../../src/config/config.js";
 import { isSelfChatMode, jidToE164, normalizeE164 } from "../../../../src/utils.js";
 import type { WebInboundMsg } from "./types.js";
@@ -17,10 +14,7 @@ export type MentionTargets = {
   selfJid: string | null;
 };
 
-export function buildMentionConfig(
-  cfg: ReturnType<typeof loadConfig>,
-  agentId?: string,
-): MentionConfig {
+export function buildMentionConfig(cfg: ReturnType<typeof loadConfig>, agentId?: string): MentionConfig {
   const mentionRegexes = buildMentionRegexes(cfg, agentId);
   return { mentionRegexes, allowFrom: cfg.channels?.whatsapp?.allowFrom };
 }
@@ -98,9 +92,7 @@ export function debugMention(
     body: msg.body,
     bodyClean: normalizeMentionText(msg.body),
     mentionedJids: msg.mentionedJids ?? null,
-    normalizedMentionedJids: mentionTargets.normalizedMentions.length
-      ? mentionTargets.normalizedMentions
-      : null,
+    normalizedMentionedJids: mentionTargets.normalizedMentions.length ? mentionTargets.normalizedMentions : null,
     selfJid: msg.selfJid ?? null,
     selfJidBare: mentionTargets.selfJid,
     selfE164: msg.selfE164 ?? null,
@@ -111,8 +103,7 @@ export function debugMention(
 
 export function resolveOwnerList(mentionCfg: MentionConfig, selfE164?: string | null) {
   const allowFrom = mentionCfg.allowFrom;
-  const raw =
-    Array.isArray(allowFrom) && allowFrom.length > 0 ? allowFrom : selfE164 ? [selfE164] : [];
+  const raw = Array.isArray(allowFrom) && allowFrom.length > 0 ? allowFrom : selfE164 ? [selfE164] : [];
   return raw
     .filter((entry): entry is string => Boolean(entry && entry !== "*"))
     .map((entry) => normalizeE164(entry))

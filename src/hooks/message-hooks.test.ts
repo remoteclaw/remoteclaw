@@ -121,9 +121,7 @@ describe("message hooks", () => {
         const handler = vi.fn();
         registerInternalHook(testCase.key, handler);
 
-        await triggerInternalHook(
-          createInternalHookEvent("message", testCase.action, "session-1", testCase.context),
-        );
+        await triggerInternalHook(createInternalHookEvent("message", testCase.action, "session-1", testCase.context));
 
         expect(handler).toHaveBeenCalledOnce();
         const event = handler.mock.calls[0][0] as InternalHookEvent;
@@ -137,9 +135,7 @@ describe("message hooks", () => {
       const sentHandler = vi.fn();
       registerInternalHook("message:sent", sentHandler);
 
-      await triggerInternalHook(
-        createInternalHookEvent("message", "received", "session-1", { content: "hello" }),
-      );
+      await triggerInternalHook(createInternalHookEvent("message", "received", "session-1", { content: "hello" }));
 
       expect(sentHandler).not.toHaveBeenCalled();
     });
@@ -163,17 +159,10 @@ describe("message hooks", () => {
       ];
 
       for (const fixture of lifecycleFixtures) {
-        await triggerInternalHook(
-          createInternalHookEvent("message", fixture.action, "s1", fixture.context),
-        );
+        await triggerInternalHook(createInternalHookEvent("message", fixture.action, "s1", fixture.context));
       }
 
-      expect(events.map((event) => event.action)).toEqual([
-        "received",
-        "transcribed",
-        "preprocessed",
-        "sent",
-      ]);
+      expect(events.map((event) => event.action)).toEqual(["received", "transcribed", "preprocessed", "sent"]);
     });
 
     it("triggers both general and specific handlers", async () => {
@@ -182,9 +171,7 @@ describe("message hooks", () => {
       registerInternalHook("message", generalHandler);
       registerInternalHook("message:received", specificHandler);
 
-      await triggerInternalHook(
-        createInternalHookEvent("message", "received", "s1", { content: "test" }),
-      );
+      await triggerInternalHook(createInternalHookEvent("message", "received", "s1", { content: "test" }));
 
       expect(generalHandler).toHaveBeenCalledOnce();
       expect(specificHandler).toHaveBeenCalledOnce();
@@ -199,9 +186,7 @@ describe("message hooks", () => {
       registerInternalHook("message:received", badHandler);
 
       await expect(
-        triggerInternalHook(
-          createInternalHookEvent("message", "received", "s1", { content: "test" }),
-        ),
+        triggerInternalHook(createInternalHookEvent("message", "received", "s1", { content: "test" })),
       ).resolves.not.toThrow();
       expect(badHandler).toHaveBeenCalledOnce();
     });
@@ -214,9 +199,7 @@ describe("message hooks", () => {
       registerInternalHook("message:received", failHandler);
       registerInternalHook("message:received", successHandler);
 
-      await triggerInternalHook(
-        createInternalHookEvent("message", "received", "s1", { content: "test" }),
-      );
+      await triggerInternalHook(createInternalHookEvent("message", "received", "s1", { content: "test" }));
 
       expect(failHandler).toHaveBeenCalledOnce();
       expect(successHandler).toHaveBeenCalledOnce();
@@ -241,9 +224,7 @@ describe("message hooks", () => {
       registerInternalHook("message", handler);
 
       const before = new Date();
-      await triggerInternalHook(
-        createInternalHookEvent("message", "received", "s1", { content: "hi" }),
-      );
+      await triggerInternalHook(createInternalHookEvent("message", "received", "s1", { content: "hi" }));
       const after = new Date();
 
       const event = handler.mock.calls[0][0] as InternalHookEvent;
@@ -264,9 +245,7 @@ describe("message hooks", () => {
         content: "hi",
       });
       await triggerInternalHook(received);
-      await triggerInternalHook(
-        createInternalHookEvent("message", "sent", sessionKey, { content: "reply" }),
-      );
+      await triggerInternalHook(createInternalHookEvent("message", "sent", sessionKey, { content: "reply" }));
 
       expect(received.messages).toContain("Echo");
       expect(events[0]?.sessionKey).toBe(sessionKey);

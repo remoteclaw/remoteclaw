@@ -39,11 +39,7 @@ import type { AgentDefaultsConfig } from "../config/types.agent-defaults.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { getQueueSize } from "../process/command-queue.js";
 import { CommandLane } from "../process/lanes.js";
-import {
-  normalizeAgentId,
-  parseAgentSessionKey,
-  toAgentStoreSessionKey,
-} from "../routing/session-key.js";
+import { normalizeAgentId, parseAgentSessionKey, toAgentStoreSessionKey } from "../routing/session-key.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
 import { escapeRegExp } from "../utils.js";
 import { formatErrorMessage, hasErrnoCode } from "./errors.js";
@@ -68,10 +64,7 @@ import {
 import type { OutboundSendDeps } from "./outbound/deliver.js";
 import { deliverOutboundPayloads } from "./outbound/deliver.js";
 import { buildOutboundSessionContext } from "./outbound/session-context.js";
-import {
-  resolveHeartbeatDeliveryTarget,
-  resolveHeartbeatSenderContext,
-} from "./outbound/targets.js";
+import { resolveHeartbeatDeliveryTarget, resolveHeartbeatSenderContext } from "./outbound/targets.js";
 import { peekSystemEventEntries } from "./system-events.js";
 
 export type HeartbeatDeps = OutboundSendDeps &
@@ -127,17 +120,12 @@ export function isHeartbeatEnabledForAgent(cfg: RemoteClawConfig, agentId?: stri
   const list = cfg.agents?.list ?? [];
   const hasExplicit = hasExplicitHeartbeatAgents(cfg);
   if (hasExplicit) {
-    return list.some(
-      (entry) => Boolean(entry?.heartbeat) && normalizeAgentId(entry?.id) === resolvedAgentId,
-    );
+    return list.some((entry) => Boolean(entry?.heartbeat) && normalizeAgentId(entry?.id) === resolvedAgentId);
   }
   return listAgentIds(cfg).includes(resolvedAgentId);
 }
 
-function resolveHeartbeatConfig(
-  cfg: RemoteClawConfig,
-  agentId?: string,
-): HeartbeatConfig | undefined {
+function resolveHeartbeatConfig(cfg: RemoteClawConfig, agentId?: string): HeartbeatConfig | undefined {
   const defaults = cfg.agents?.defaults?.heartbeat;
   if (!agentId) {
     return defaults;
@@ -174,14 +162,10 @@ export async function resolveHeartbeatSummaryForAgent(
   const prompt = await resolveHeartbeatPromptText({
     prompt: merged?.prompt ?? defaults?.prompt ?? overrides?.prompt,
   });
-  const target =
-    merged?.target ?? defaults?.target ?? overrides?.target ?? DEFAULT_HEARTBEAT_TARGET;
+  const target = merged?.target ?? defaults?.target ?? overrides?.target ?? DEFAULT_HEARTBEAT_TARGET;
   const ackMaxChars = Math.max(
     0,
-    merged?.ackMaxChars ??
-      defaults?.ackMaxChars ??
-      overrides?.ackMaxChars ??
-      DEFAULT_HEARTBEAT_ACK_MAX_CHARS,
+    merged?.ackMaxChars ?? defaults?.ackMaxChars ?? overrides?.ackMaxChars ?? DEFAULT_HEARTBEAT_ACK_MAX_CHARS,
   );
 
   return {
@@ -211,16 +195,8 @@ function resolveHeartbeatAgents(cfg: RemoteClawConfig): HeartbeatAgent[] {
   }));
 }
 
-export function resolveHeartbeatIntervalMs(
-  cfg: RemoteClawConfig,
-  overrideEvery?: string,
-  heartbeat?: HeartbeatConfig,
-) {
-  const raw =
-    overrideEvery ??
-    heartbeat?.every ??
-    cfg.agents?.defaults?.heartbeat?.every ??
-    DEFAULT_HEARTBEAT_EVERY;
+export function resolveHeartbeatIntervalMs(cfg: RemoteClawConfig, overrideEvery?: string, heartbeat?: HeartbeatConfig) {
+  const raw = overrideEvery ?? heartbeat?.every ?? cfg.agents?.defaults?.heartbeat?.every ?? DEFAULT_HEARTBEAT_EVERY;
   if (!raw) {
     return null;
   }
@@ -249,9 +225,7 @@ export function resolveHeartbeatPrompt(cfg: RemoteClawConfig, heartbeat?: Heartb
 function resolveHeartbeatAckMaxChars(cfg: RemoteClawConfig, heartbeat?: HeartbeatConfig) {
   return Math.max(
     0,
-    heartbeat?.ackMaxChars ??
-      cfg.agents?.defaults?.heartbeat?.ackMaxChars ??
-      DEFAULT_HEARTBEAT_ACK_MAX_CHARS,
+    heartbeat?.ackMaxChars ?? cfg.agents?.defaults?.heartbeat?.ackMaxChars ?? DEFAULT_HEARTBEAT_ACK_MAX_CHARS,
   );
 }
 
@@ -265,8 +239,7 @@ function resolveHeartbeatSession(
   const scope = sessionCfg?.scope ?? "per-sender";
   const fallbackId = resolveSoleAgentId(cfg) ?? listAgentIds(cfg)[0];
   const resolvedAgentId = normalizeAgentId(agentId ?? fallbackId);
-  const mainSessionKey =
-    scope === "global" ? "global" : resolveAgentMainSessionKey({ cfg, agentId: resolvedAgentId });
+  const mainSessionKey = scope === "global" ? "global" : resolveAgentMainSessionKey({ cfg, agentId: resolvedAgentId });
   const storeAgentId = scope === "global" ? fallbackId : resolvedAgentId;
   const storePath = resolveStorePath(sessionCfg?.store, {
     agentId: storeAgentId,
@@ -338,9 +311,7 @@ function resolveHeartbeatSession(
   return { sessionKey: mainSessionKey, storePath, store, entry: mainEntry };
 }
 
-function resolveHeartbeatReasoningPayloads(
-  replyResult: ReplyPayload | ReplyPayload[] | undefined,
-): ReplyPayload[] {
+function resolveHeartbeatReasoningPayloads(replyResult: ReplyPayload | ReplyPayload[] | undefined): ReplyPayload[] {
   const payloads = Array.isArray(replyResult) ? replyResult : replyResult ? [replyResult] : [];
   return payloads.filter((payload) => {
     const text = typeof payload.text === "string" ? payload.text : "";
@@ -348,11 +319,7 @@ function resolveHeartbeatReasoningPayloads(
   });
 }
 
-async function restoreHeartbeatUpdatedAt(params: {
-  storePath: string;
-  sessionKey: string;
-  updatedAt?: number;
-}) {
+async function restoreHeartbeatUpdatedAt(params: { storePath: string; sessionKey: string; updatedAt?: number }) {
   const { storePath, sessionKey, updatedAt } = params;
   if (typeof updatedAt !== "number") {
     return;
@@ -384,10 +351,7 @@ async function restoreHeartbeatUpdatedAt(params: {
  * This removes the user+assistant turns that were written during a HEARTBEAT_OK run,
  * preventing context pollution from zero-information exchanges.
  */
-async function pruneHeartbeatTranscript(params: {
-  transcriptPath?: string;
-  preHeartbeatSize?: number;
-}) {
+async function pruneHeartbeatTranscript(params: { transcriptPath?: string; preHeartbeatSize?: number }) {
   const { transcriptPath, preHeartbeatSize } = params;
   if (!transcriptPath || typeof preHeartbeatSize !== "number" || preHeartbeatSize < 0) {
     return;
@@ -431,10 +395,7 @@ async function captureTranscriptState(params: {
   }
 }
 
-function stripLeadingHeartbeatResponsePrefix(
-  text: string,
-  responsePrefix: string | undefined,
-): string {
+function stripLeadingHeartbeatResponsePrefix(text: string, responsePrefix: string | undefined): string {
   const normalizedPrefix = responsePrefix?.trim();
   if (!normalizedPrefix) {
     return text;
@@ -442,18 +403,11 @@ function stripLeadingHeartbeatResponsePrefix(
 
   // Require a boundary after the configured prefix so short prefixes like "Hi"
   // do not strip the beginning of normal words like "History".
-  const prefixPattern = new RegExp(
-    `^${escapeRegExp(normalizedPrefix)}(?=$|\\s|[\\p{P}\\p{S}])\\s*`,
-    "iu",
-  );
+  const prefixPattern = new RegExp(`^${escapeRegExp(normalizedPrefix)}(?=$|\\s|[\\p{P}\\p{S}])\\s*`, "iu");
   return text.replace(prefixPattern, "");
 }
 
-function normalizeHeartbeatReply(
-  payload: ReplyPayload,
-  responsePrefix: string | undefined,
-  ackMaxChars: number,
-) {
+function normalizeHeartbeatReply(payload: ReplyPayload, responsePrefix: string | undefined, ackMaxChars: number) {
   const rawText = typeof payload.text === "string" ? payload.text : "";
   const textForStrip = stripLeadingHeartbeatResponsePrefix(rawText, responsePrefix);
   const stripped = stripHeartbeatToken(textForStrip, {
@@ -508,23 +462,13 @@ async function resolveHeartbeatPreflight(params: {
   reason?: string;
 }): Promise<HeartbeatPreflight> {
   const reasonFlags = resolveHeartbeatReasonFlags(params.reason);
-  const session = resolveHeartbeatSession(
-    params.cfg,
-    params.agentId,
-    params.heartbeat,
-    params.forcedSessionKey,
-  );
+  const session = resolveHeartbeatSession(params.cfg, params.agentId, params.heartbeat, params.forcedSessionKey);
   const pendingEventEntries = peekSystemEventEntries(session.sessionKey);
-  const hasTaggedCronEvents = pendingEventEntries.some((event) =>
-    event.contextKey?.startsWith("cron:"),
-  );
+  const hasTaggedCronEvents = pendingEventEntries.some((event) => event.contextKey?.startsWith("cron:"));
   const shouldInspectPendingEvents =
     reasonFlags.isExecEventReason || reasonFlags.isCronEventReason || hasTaggedCronEvents;
   const shouldBypassFileGates =
-    reasonFlags.isExecEventReason ||
-    reasonFlags.isCronEventReason ||
-    reasonFlags.isWakeReason ||
-    hasTaggedCronEvents;
+    reasonFlags.isExecEventReason || reasonFlags.isCronEventReason || reasonFlags.isWakeReason || hasTaggedCronEvents;
   const basePreflight = {
     ...reasonFlags,
     session,
@@ -588,8 +532,7 @@ async function resolveHeartbeatRunPrompt(params: {
     : [];
   const cronEvents = pendingEventEntries
     .filter((event) => {
-      const isCronTagged =
-        params.preflight.isCronEventReason || event.contextKey?.startsWith("cron:");
+      const isCronTagged = params.preflight.isCronEventReason || event.contextKey?.startsWith("cron:");
       if (!isCronTagged) {
         return false;
       }
@@ -626,8 +569,7 @@ export async function runHeartbeatOnce(opts: {
   const cfg = opts.cfg ?? loadConfig();
   const fallbackId = resolveSoleAgentId(cfg) ?? listAgentIds(cfg)[0];
   const explicitAgentId = typeof opts.agentId === "string" ? opts.agentId.trim() : "";
-  const forcedSessionAgentId =
-    explicitAgentId.length > 0 ? undefined : parseAgentSessionKey(opts.sessionKey)?.agentId;
+  const forcedSessionAgentId = explicitAgentId.length > 0 ? undefined : parseAgentSessionKey(opts.sessionKey)?.agentId;
   const agentId = normalizeAgentId(explicitAgentId || forcedSessionAgentId || fallbackId);
   const heartbeat = opts.heartbeat ?? resolveHeartbeatConfig(cfg, agentId);
   if (!areHeartbeatsEnabled()) {
@@ -696,9 +638,7 @@ export async function runHeartbeatOnce(opts: {
     accountId: delivery.accountId,
   }).responsePrefix;
 
-  const canRelayToUser = Boolean(
-    delivery.channel !== "none" && delivery.to && visibility.showAlerts,
-  );
+  const canRelayToUser = Boolean(delivery.channel !== "none" && delivery.to && visibility.showAlerts);
   const workspaceDir = resolveAgentWorkspaceDir(cfg, agentId);
   const { prompt, hasExecCompletion, hasCronEvents } = await resolveHeartbeatRunPrompt({
     cfg,
@@ -735,9 +675,7 @@ export async function runHeartbeatOnce(opts: {
     agentId,
     sessionKey,
   });
-  const canAttemptHeartbeatOk = Boolean(
-    visibility.showOk && delivery.channel !== "none" && delivery.to,
-  );
+  const canAttemptHeartbeatOk = Boolean(visibility.showOk && delivery.channel !== "none" && delivery.to);
   const maybeSendHeartbeatOk = async () => {
     if (!canAttemptHeartbeatOk || delivery.channel === "none" || !delivery.to) {
       return false;
@@ -789,10 +727,7 @@ export async function runHeartbeatOnce(opts: {
       ? resolveHeartbeatReasoningPayloads(replyResult).filter((payload) => payload !== replyPayload)
       : [];
 
-    if (
-      !replyPayload ||
-      (!replyPayload.text && !replyPayload.mediaUrl && !replyPayload.mediaUrls?.length)
-    ) {
+    if (!replyPayload || (!replyPayload.text && !replyPayload.mediaUrl && !replyPayload.mediaUrls?.length)) {
       await restoreHeartbeatUpdatedAt({
         storePath,
         sessionKey,
@@ -820,9 +755,7 @@ export async function runHeartbeatOnce(opts: {
     // Also, if normalized.text is empty due to token stripping but we have exec completion,
     // fall back to the original reply text.
     const execFallbackText =
-      hasExecCompletion && !normalized.text.trim() && replyPayload.text?.trim()
-        ? replyPayload.text.trim()
-        : null;
+      hasExecCompletion && !normalized.text.trim() && replyPayload.text?.trim() ? replyPayload.text.trim() : null;
     if (execFallbackText) {
       normalized.text = execFallbackText;
       normalized.shouldSkip = false;
@@ -849,15 +782,12 @@ export async function runHeartbeatOnce(opts: {
       return { status: "ran", durationMs: Date.now() - startedAt };
     }
 
-    const mediaUrls =
-      replyPayload.mediaUrls ?? (replyPayload.mediaUrl ? [replyPayload.mediaUrl] : []);
+    const mediaUrls = replyPayload.mediaUrls ?? (replyPayload.mediaUrl ? [replyPayload.mediaUrl] : []);
 
     // Suppress duplicate heartbeats (same payload) within a short window.
     // This prevents "nagging" when nothing changed but the model repeats the same items.
-    const prevHeartbeatText =
-      typeof entry?.lastHeartbeatText === "string" ? entry.lastHeartbeatText : "";
-    const prevHeartbeatAt =
-      typeof entry?.lastHeartbeatSentAt === "number" ? entry.lastHeartbeatSentAt : undefined;
+    const prevHeartbeatText = typeof entry?.lastHeartbeatText === "string" ? entry.lastHeartbeatText : "";
+    const prevHeartbeatAt = typeof entry?.lastHeartbeatSentAt === "number" ? entry.lastHeartbeatSentAt : undefined;
     const isDuplicateMain =
       !shouldSkipMain &&
       !mediaUrls.length &&

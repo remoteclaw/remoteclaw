@@ -27,45 +27,29 @@ describe("host env security policy parity", () => {
       repoRoot,
       "apps/macos/Sources/RemoteClaw/HostEnvSecurityPolicy.generated.swift",
     );
-    const sanitizerSwiftPath = path.join(
-      repoRoot,
-      "apps/macos/Sources/RemoteClaw/HostEnvSanitizer.swift",
-    );
+    const sanitizerSwiftPath = path.join(repoRoot, "apps/macos/Sources/RemoteClaw/HostEnvSanitizer.swift");
 
     const policy = JSON.parse(fs.readFileSync(policyPath, "utf8")) as HostEnvSecurityPolicy;
     const generatedSource = fs.readFileSync(generatedSwiftPath, "utf8");
     const sanitizerSource = fs.readFileSync(sanitizerSwiftPath, "utf8");
 
     const swiftBlockedKeys = parseSwiftStringArray(generatedSource, "static let blockedKeys");
-    const swiftBlockedOverrideKeys = parseSwiftStringArray(
-      generatedSource,
-      "static let blockedOverrideKeys",
-    );
-    const swiftBlockedOverridePrefixes = parseSwiftStringArray(
-      generatedSource,
-      "static let blockedOverridePrefixes",
-    );
-    const swiftBlockedPrefixes = parseSwiftStringArray(
-      generatedSource,
-      "static let blockedPrefixes",
-    );
+    const swiftBlockedOverrideKeys = parseSwiftStringArray(generatedSource, "static let blockedOverrideKeys");
+    const swiftBlockedOverridePrefixes = parseSwiftStringArray(generatedSource, "static let blockedOverridePrefixes");
+    const swiftBlockedPrefixes = parseSwiftStringArray(generatedSource, "static let blockedPrefixes");
 
     expect(swiftBlockedKeys).toEqual(policy.blockedKeys);
     expect(swiftBlockedOverrideKeys).toEqual(policy.blockedOverrideKeys ?? []);
     expect(swiftBlockedOverridePrefixes).toEqual(policy.blockedOverridePrefixes ?? []);
     expect(swiftBlockedPrefixes).toEqual(policy.blockedPrefixes);
 
-    expect(sanitizerSource).toContain(
-      "private static let blockedKeys = HostEnvSecurityPolicy.blockedKeys",
-    );
+    expect(sanitizerSource).toContain("private static let blockedKeys = HostEnvSecurityPolicy.blockedKeys");
     expect(sanitizerSource).toContain(
       "private static let blockedOverrideKeys = HostEnvSecurityPolicy.blockedOverrideKeys",
     );
     expect(sanitizerSource).toContain(
       "private static let blockedOverridePrefixes = HostEnvSecurityPolicy.blockedOverridePrefixes",
     );
-    expect(sanitizerSource).toContain(
-      "private static let blockedPrefixes = HostEnvSecurityPolicy.blockedPrefixes",
-    );
+    expect(sanitizerSource).toContain("private static let blockedPrefixes = HostEnvSecurityPolicy.blockedPrefixes");
   });
 });

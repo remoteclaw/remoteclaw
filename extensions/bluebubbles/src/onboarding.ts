@@ -34,11 +34,7 @@ function setBlueBubblesDmPolicy(cfg: RemoteClawConfig, dmPolicy: DmPolicy): Remo
   });
 }
 
-function setBlueBubblesAllowFrom(
-  cfg: RemoteClawConfig,
-  accountId: string,
-  allowFrom: string[],
-): RemoteClawConfig {
+function setBlueBubblesAllowFrom(cfg: RemoteClawConfig, accountId: string, allowFrom: string[]): RemoteClawConfig {
   return patchScopedAccountConfig({
     cfg,
     channelKey: channel,
@@ -198,10 +194,9 @@ export const blueBubblesOnboardingAdapter: ChannelOnboardingAdapter = {
     let password: unknown = existingPasswordText;
     if (!hasConfiguredPassword) {
       await prompter.note(
-        [
-          "Enter the BlueBubbles server password.",
-          "Find this in the BlueBubbles Server app under Settings.",
-        ].join("\n"),
+        ["Enter the BlueBubbles server password.", "Find this in the BlueBubbles Server app under Settings."].join(
+          "\n",
+        ),
         "BlueBubbles password",
       );
       const entered = await prompter.text({

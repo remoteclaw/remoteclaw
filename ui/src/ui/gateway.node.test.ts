@@ -79,8 +79,7 @@ vi.mock("./device-identity.ts", () => ({
   signDevicePayload: signDevicePayloadMock,
 }));
 
-const { CONTROL_UI_OPERATOR_SCOPES, GatewayBrowserClient, shouldRetryWithDeviceToken } =
-  await import("./gateway.ts");
+const { CONTROL_UI_OPERATOR_SCOPES, GatewayBrowserClient, shouldRetryWithDeviceToken } = await import("./gateway.ts");
 
 type ConnectFrame = {
   id?: string;
@@ -334,9 +333,7 @@ describe("GatewayBrowserClient", () => {
     });
     await vi.waitFor(() => expect(ws2.readyState).toBe(3));
     ws2.emitClose(4008, "connect failed");
-    expect(loadDeviceAuthToken({ deviceId: "device-1", role: "operator" })?.token).toBe(
-      "stored-device-token",
-    );
+    expect(loadDeviceAuthToken({ deviceId: "device-1", role: "operator" })?.token).toBe("stored-device-token");
     await vi.advanceTimersByTimeAsync(30_000);
     expect(wsInstances).toHaveLength(2);
 

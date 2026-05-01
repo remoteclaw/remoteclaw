@@ -44,9 +44,7 @@ const acpRuntimeMocks = vi.hoisted(() => ({
   requireAcpRuntimeBackend: vi.fn(),
 }));
 vi.mock("../auto-reply/reply/queue.js", async () => {
-  const actual = await vi.importActual<typeof import("../auto-reply/reply/queue.js")>(
-    "../auto-reply/reply/queue.js",
-  );
+  const actual = await vi.importActual<typeof import("../auto-reply/reply/queue.js")>("../auto-reply/reply/queue.js");
   return {
     ...actual,
     clearSessionQueues: sessionCleanupMocks.clearSessionQueues,
@@ -54,9 +52,7 @@ vi.mock("../auto-reply/reply/queue.js", async () => {
 });
 
 vi.mock("../auto-reply/reply/abort.js", async () => {
-  const actual = await vi.importActual<typeof import("../auto-reply/reply/abort.js")>(
-    "../auto-reply/reply/abort.js",
-  );
+  const actual = await vi.importActual<typeof import("../auto-reply/reply/abort.js")>("../auto-reply/reply/abort.js");
   return {
     ...actual,
     stopSubagentsForRequester: sessionCleanupMocks.stopSubagentsForRequester,
@@ -64,9 +60,7 @@ vi.mock("../auto-reply/reply/abort.js", async () => {
 });
 
 vi.mock("../hooks/internal-hooks.js", async () => {
-  const actual = await vi.importActual<typeof import("../hooks/internal-hooks.js")>(
-    "../hooks/internal-hooks.js",
-  );
+  const actual = await vi.importActual<typeof import("../hooks/internal-hooks.js")>("../hooks/internal-hooks.js");
   return {
     ...actual,
     triggerInternalHook: sessionHookMocks.triggerInternalHook,
@@ -78,22 +72,17 @@ vi.mock("../plugins/hook-runner-global.js", async (importOriginal) => {
   return {
     ...actual,
     getGlobalHookRunner: vi.fn(() => ({
-      hasHooks: (hookName: string) =>
-        hookName === "subagent_ended" && subagentLifecycleHookState.hasSubagentEndedHook,
+      hasHooks: (hookName: string) => hookName === "subagent_ended" && subagentLifecycleHookState.hasSubagentEndedHook,
       runSubagentEnded: subagentLifecycleHookMocks.runSubagentEnded,
     })),
   };
 });
 
 vi.mock("../../extensions/discord/src/monitor/thread-bindings.js", async (importOriginal) => {
-  const actual =
-    await importOriginal<
-      typeof import("../../extensions/discord/src/monitor/thread-bindings.js")
-    >();
+  const actual = await importOriginal<typeof import("../../extensions/discord/src/monitor/thread-bindings.js")>();
   return {
     ...actual,
-    unbindThreadBindingsBySessionKey: (params: unknown) =>
-      threadBindingMocks.unbindThreadBindingsBySessionKey(params),
+    unbindThreadBindingsBySessionKey: (params: unknown) => threadBindingMocks.unbindThreadBindingsBySessionKey(params),
   };
 });
 
@@ -139,11 +128,7 @@ async function createSessionStoreDir() {
 }
 
 async function writeSingleLineSession(dir: string, sessionId: string, content: string) {
-  await fs.writeFile(
-    path.join(dir, `${sessionId}.jsonl`),
-    `${JSON.stringify({ role: "user", content })}\n`,
-    "utf-8",
-  );
+  await fs.writeFile(path.join(dir, `${sessionId}.jsonl`), `${JSON.stringify({ role: "user", content })}\n`, "utf-8");
 }
 
 async function seedActiveMainSession() {
@@ -157,19 +142,13 @@ async function seedActiveMainSession() {
   return { dir, storePath };
 }
 
-function expectActiveRunCleanup(
-  requesterSessionKey: string,
-  expectedQueueKeys: string[],
-  sessionId: string,
-) {
+function expectActiveRunCleanup(requesterSessionKey: string, expectedQueueKeys: string[], sessionId: string) {
   expect(sessionCleanupMocks.stopSubagentsForRequester).toHaveBeenCalledWith({
     cfg: expect.any(Object),
     requesterSessionKey,
   });
   expect(sessionCleanupMocks.clearSessionQueues).toHaveBeenCalledTimes(1);
-  const clearedKeys = (
-    sessionCleanupMocks.clearSessionQueues.mock.calls as unknown as Array<[string[]]>
-  )[0]?.[0];
+  const clearedKeys = (sessionCleanupMocks.clearSessionQueues.mock.calls as unknown as Array<[string[]]>)[0]?.[0];
   expect(clearedKeys).toEqual(expect.arrayContaining(expectedQueueKeys));
   expect(embeddedRunMock.abortCalls).toEqual([sessionId]);
   expect(embeddedRunMock.waitCalls).toEqual([sessionId]);
@@ -403,9 +382,7 @@ describe("gateway server sessions", () => {
       label: "Briefing",
     });
     expect(listByLabel.ok).toBe(true);
-    expect(listByLabel.payload?.sessions.map((s) => s.key)).toEqual([
-      "agent:test-agent:subagent:one",
-    ]);
+    expect(listByLabel.payload?.sessions.map((s) => s.key)).toEqual(["agent:test-agent:subagent:one"]);
 
     const resolvedByLabel = await rpcReq<{ ok: true; key: string }>(ws, "sessions.resolve", {
       label: "Briefing",
@@ -422,9 +399,7 @@ describe("gateway server sessions", () => {
       spawnedBy: "agent:test-agent:main",
     });
     expect(spawnedOnly.ok).toBe(true);
-    expect(spawnedOnly.payload?.sessions.map((s) => s.key)).toEqual([
-      "agent:test-agent:subagent:one",
-    ]);
+    expect(spawnedOnly.payload?.sessions.map((s) => s.key)).toEqual(["agent:test-agent:subagent:one"]);
 
     const spawnedPatched = await rpcReq<{
       ok: true;
@@ -495,9 +470,7 @@ describe("gateway server sessions", () => {
       sessions: Array<{ key: string }>;
     }>(ws, "sessions.list", {});
     expect(listAfterDelete.ok).toBe(true);
-    expect(
-      listAfterDelete.payload?.sessions.some((s) => s.key === "agent:test-agent:discord:group:dev"),
-    ).toBe(false);
+    expect(listAfterDelete.payload?.sessions.some((s) => s.key === "agent:test-agent:discord:group:dev")).toBe(false);
     const filesAfterDelete = await fs.readdir(dir);
     expect(filesAfterDelete.some((f) => f.startsWith("sess-group.jsonl.deleted."))).toBe(true);
 
@@ -898,21 +871,13 @@ describe("gateway server sessions", () => {
 
     const { ws } = await openClient();
 
-    const reset = await rpcReq<{ ok: true; key: string; entry: { sessionId: string } }>(
-      ws,
-      "sessions.reset",
-      {
-        key: "main",
-      },
-    );
+    const reset = await rpcReq<{ ok: true; key: string; entry: { sessionId: string } }>(ws, "sessions.reset", {
+      key: "main",
+    });
     expect(reset.ok).toBe(true);
     expect(reset.payload?.key).toBe("agent:test-agent:main");
     expect(reset.payload?.entry.sessionId).not.toBe("sess-main");
-    expectActiveRunCleanup(
-      "agent:test-agent:main",
-      ["main", "agent:test-agent:main", "sess-main"],
-      "sess-main",
-    );
+    expectActiveRunCleanup("agent:test-agent:main", ["main", "agent:test-agent:main", "sess-main"], "sess-main");
     expect(subagentLifecycleHookMocks.runSubagentEnded).toHaveBeenCalledTimes(1);
     expect(subagentLifecycleHookMocks.runSubagentEnded).toHaveBeenCalledWith(
       {
@@ -998,13 +963,9 @@ describe("gateway server sessions", () => {
     });
 
     const { ws } = await openClient();
-    const reset = await rpcReq<{ ok: true; key: string; entry: { sessionId: string } }>(
-      ws,
-      "sessions.reset",
-      {
-        key: "agent:test-agent:subagent:missing",
-      },
-    );
+    const reset = await rpcReq<{ ok: true; key: string; entry: { sessionId: string } }>(ws, "sessions.reset", {
+      key: "agent:test-agent:subagent:missing",
+    });
 
     expect(reset.ok).toBe(true);
     expect(subagentLifecycleHookMocks.runSubagentEnded).not.toHaveBeenCalled();
@@ -1026,13 +987,9 @@ describe("gateway server sessions", () => {
     });
 
     const { ws } = await openClient();
-    const reset = await rpcReq<{ ok: true; key: string; entry: { sessionId: string } }>(
-      ws,
-      "sessions.reset",
-      {
-        key: "agent:test-agent:subagent:worker",
-      },
-    );
+    const reset = await rpcReq<{ ok: true; key: string; entry: { sessionId: string } }>(ws, "sessions.reset", {
+      key: "agent:test-agent:subagent:worker",
+    });
     expect(reset.ok).toBe(true);
     expect(reset.payload?.key).toBe("agent:test-agent:subagent:worker");
     expect(reset.payload?.entry.sessionId).not.toBe("sess-subagent");
@@ -1104,9 +1061,9 @@ describe("gateway server sessions", () => {
     });
     expect(reset.ok).toBe(true);
     expect(sessionHookMocks.triggerInternalHook).toHaveBeenCalledTimes(1);
-    const event = (
-      sessionHookMocks.triggerInternalHook.mock.calls as unknown as Array<[unknown]>
-    )[0]?.[0] as { context?: { previousSessionEntry?: unknown } } | undefined;
+    const event = (sessionHookMocks.triggerInternalHook.mock.calls as unknown as Array<[unknown]>)[0]?.[0] as
+      | { context?: { previousSessionEntry?: unknown } }
+      | undefined;
     if (!event) {
       throw new Error("expected session hook event");
     }
@@ -1136,16 +1093,9 @@ describe("gateway server sessions", () => {
     expect(reset.ok).toBe(false);
     expect(reset.error?.code).toBe("UNAVAILABLE");
     expect(reset.error?.message ?? "").toMatch(/still active/i);
-    expectActiveRunCleanup(
-      "agent:test-agent:main",
-      ["main", "agent:test-agent:main", "sess-main"],
-      "sess-main",
-    );
+    expectActiveRunCleanup("agent:test-agent:main", ["main", "agent:test-agent:main", "sess-main"], "sess-main");
 
-    const store = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<
-      string,
-      { sessionId?: string }
-    >;
+    const store = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<string, { sessionId?: string }>;
     expect(store["agent:test-agent:main"]?.sessionId).toBe("sess-main");
     const filesAfterResetAttempt = await fs.readdir(dir);
     expect(filesAfterResetAttempt.some((f) => f.startsWith("sess-main.jsonl.reset."))).toBe(false);
@@ -1183,15 +1133,10 @@ describe("gateway server sessions", () => {
       "sess-active",
     );
 
-    const store = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<
-      string,
-      { sessionId?: string }
-    >;
+    const store = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<string, { sessionId?: string }>;
     expect(store["agent:test-agent:discord:group:dev"]?.sessionId).toBe("sess-active");
     const filesAfterDeleteAttempt = await fs.readdir(dir);
-    expect(filesAfterDeleteAttempt.some((f) => f.startsWith("sess-active.jsonl.deleted."))).toBe(
-      false,
-    );
+    expect(filesAfterDeleteAttempt.some((f) => f.startsWith("sess-active.jsonl.deleted."))).toBe(false);
 
     ws.close();
   });
@@ -1282,10 +1227,7 @@ describe("gateway server sessions", () => {
     expect(deleted.ok).toBe(true);
     expect(deleted.payload?.deleted).toBe(true);
 
-    const store = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<
-      string,
-      { sessionId?: string }
-    >;
+    const store = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<string, { sessionId?: string }>;
     expect(store["agent:test-agent:discord:group:dev"]).toBeUndefined();
 
     ws.close();

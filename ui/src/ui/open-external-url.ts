@@ -55,10 +55,7 @@ export type OpenExternalUrlSafeOptions = ResolveSafeExternalUrlOptions & {
   baseHref?: string;
 };
 
-export function openExternalUrlSafe(
-  rawUrl: string,
-  opts: OpenExternalUrlSafeOptions = {},
-): WindowProxy | null {
+export function openExternalUrlSafe(rawUrl: string, opts: OpenExternalUrlSafeOptions = {}): WindowProxy | null {
   const baseHref = opts.baseHref ?? window.location.href;
   const safeUrl = resolveSafeExternalUrl(rawUrl, baseHref, opts);
   if (!safeUrl) {

@@ -52,14 +52,9 @@ export function describePackageManifestContract(params: PackageManifestContractP
         }
 
         const manifest = readJson<PackageManifest>(packagePath);
-        const requirement = parseMinHostVersionRequirement(
-          manifest.remoteclaw?.install?.minHostVersion ?? null,
-        );
+        const requirement = parseMinHostVersionRequirement(manifest.remoteclaw?.install?.minHostVersion ?? null);
 
-        expect(
-          requirement,
-          `${packagePath} should declare remoteclaw.install.minHostVersion`,
-        ).not.toBeNull();
+        expect(requirement, `${packagePath} should declare remoteclaw.install.minHostVersion`).not.toBeNull();
         if (!requirement) {
           return;
         }

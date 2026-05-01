@@ -1,8 +1,4 @@
-export type {
-  ChannelAccountSnapshot,
-  ChannelGatewayContext,
-  ChannelStatusIssue,
-} from "../channels/plugins/types.js";
+export type { ChannelAccountSnapshot, ChannelGatewayContext, ChannelStatusIssue } from "../channels/plugins/types.js";
 export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
 export type { RemoteClawConfig } from "../config/config.js";
 export type { ReplyPayload } from "../auto-reply/types.js";
@@ -21,10 +17,7 @@ export {
   resolveDefaultGroupPolicy,
 } from "../config/runtime-group-policy.js";
 
-export {
-  buildComputedAccountStatusSnapshot,
-  buildTokenChannelStatusSummary,
-} from "./status-helpers.js";
+export { buildComputedAccountStatusSnapshot, buildTokenChannelStatusSummary } from "./status-helpers.js";
 
 export { LineConfigSchema } from "../line/config-schema.js";
 export type { LineChannelData, LineConfig, ResolvedLineAccount } from "../line/types.js";

@@ -7,13 +7,7 @@ vi.mock("./credentials.js", () => ({
   credentialsMatchConfig: () => false,
 }));
 
-const envKeys = [
-  "MATRIX_HOMESERVER",
-  "MATRIX_USER_ID",
-  "MATRIX_ACCESS_TOKEN",
-  "MATRIX_PASSWORD",
-  "MATRIX_DEVICE_NAME",
-];
+const envKeys = ["MATRIX_HOMESERVER", "MATRIX_USER_ID", "MATRIX_ACCESS_TOKEN", "MATRIX_PASSWORD", "MATRIX_DEVICE_NAME"];
 
 describe("resolveMatrixAccount", () => {
   let prevEnv: Record<string, string | undefined> = {};

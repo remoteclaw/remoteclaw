@@ -94,8 +94,7 @@ export async function connectGatewayClient(params: {
       onEvent: params.onEvent,
       onHelloOk: () => stop(undefined, client),
       onConnectError: (err) => stop(err),
-      onClose: (code, reason) =>
-        stop(new Error(`gateway closed during connect (${code}): ${reason}`)),
+      onClose: (code, reason) => stop(new Error(`gateway closed during connect (${code}): ${reason}`)),
     });
     const timer = setTimeout(
       () => stop(new Error(params.timeoutMessage ?? "gateway connect timeout")),
@@ -113,10 +112,7 @@ export async function disconnectGatewayClient(client: GatewayClient): Promise<vo
 export async function connectDeviceAuthReq(params: { url: string; token?: string }) {
   const ws = new WebSocket(params.url);
   const connectNoncePromise = new Promise<string>((resolve, reject) => {
-    const timer = setTimeout(
-      () => reject(new Error("timeout waiting for connect challenge")),
-      5000,
-    );
+    const timer = setTimeout(() => reject(new Error("timeout waiting for connect challenge")), 5000);
     const closeHandler = (code: number, reason: Buffer) => {
       clearTimeout(timer);
       ws.off("message", handler);

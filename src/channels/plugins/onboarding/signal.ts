@@ -124,14 +124,7 @@ export const signalOnboardingAdapter: ChannelOnboardingAdapter = {
       quickstartScore: signalCliDetected ? 1 : 0,
     };
   },
-  configure: async ({
-    cfg,
-    runtime,
-    prompter,
-    accountOverrides,
-    shouldPromptAccountIds,
-    options,
-  }) => {
+  configure: async ({ cfg, runtime, prompter, accountOverrides, shouldPromptAccountIds, options }) => {
     const defaultSignalAccountId = resolveDefaultSignalAccountId(cfg);
     const signalAccountId = await onboardingHelpers.resolveAccountIdForConfigure({
       cfg,
@@ -153,9 +146,7 @@ export const signalOnboardingAdapter: ChannelOnboardingAdapter = {
     let cliDetected = await detectBinary(resolvedCliPath);
     if (options?.allowSignalInstall) {
       const wantsInstall = await prompter.confirm({
-        message: cliDetected
-          ? "signal-cli detected. Reinstall/update now?"
-          : "signal-cli not found. Install now?",
+        message: cliDetected ? "signal-cli detected. Reinstall/update now?" : "signal-cli not found. Install now?",
         initialValue: !cliDetected,
       });
       if (wantsInstall) {
@@ -185,10 +176,7 @@ export const signalOnboardingAdapter: ChannelOnboardingAdapter = {
     if (account) {
       const normalizedExisting = normalizeSignalAccountInput(account);
       if (!normalizedExisting) {
-        await prompter.note(
-          "Existing Signal account isn't a valid E.164 number. Please enter it again.",
-          "Signal",
-        );
+        await prompter.note("Existing Signal account isn't a valid E.164 number. Please enter it again.", "Signal");
         account = "";
       } else {
         account = normalizedExisting;
@@ -207,9 +195,7 @@ export const signalOnboardingAdapter: ChannelOnboardingAdapter = {
         await prompter.text({
           message: "Signal bot number (E.164)",
           validate: (value) =>
-            normalizeSignalAccountInput(String(value ?? ""))
-              ? undefined
-              : INVALID_SIGNAL_ACCOUNT_ERROR,
+            normalizeSignalAccountInput(String(value ?? "")) ? undefined : INVALID_SIGNAL_ACCOUNT_ERROR,
         }),
       );
       account = normalizeSignalAccountInput(rawAccount) ?? "";

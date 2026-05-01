@@ -53,9 +53,7 @@ describe("normalizeConfigPaths", () => {
         path.join(home, "Library", "Messages", "chat.db"),
       );
       expect(cfg.agents?.list?.[0]?.workspace).toBe(path.join(home, "ws-agent"));
-      expect(cfg.agents?.list?.[0]?.agentDir).toBe(
-        path.join(home, ".remoteclaw", "agents", "main"),
-      );
+      expect(cfg.agents?.list?.[0]?.agentDir).toBe(path.join(home, ".remoteclaw", "agents", "main"));
       expect(cfg.agents?.list?.[0]?.sandbox?.workspaceRoot).toBe(path.join(home, "sandbox-root"));
 
       // Non-path key => do not treat "~" as home expansion.

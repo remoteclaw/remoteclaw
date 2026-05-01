@@ -64,12 +64,10 @@ describe("assertHttpUrlTargetsPrivateNetwork", () => {
       policy: {
         allowPrivateNetwork: true,
         lookupFn: createLookupFn([{ address: "93.184.216.34", family: 4 }]),
-        errorMessage:
-          "Matrix homeserver must use https:// unless it targets a private or loopback host",
+        errorMessage: "Matrix homeserver must use https:// unless it targets a private or loopback host",
       },
       outcome: "reject",
-      expectedError:
-        "Matrix homeserver must use https:// unless it targets a private or loopback host",
+      expectedError: "Matrix homeserver must use https:// unless it targets a private or loopback host",
     },
   ])("$name", async ({ url, policy, outcome, expectedError }) => {
     const result = assertHttpUrlTargetsPrivateNetwork(url, policy);

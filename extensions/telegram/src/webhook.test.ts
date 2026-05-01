@@ -200,9 +200,7 @@ async function postWebhookHeadersOnly(params: {
     );
 
     const timeout = setTimeout(() => {
-      req.destroy(
-        new Error(`webhook header-only post timed out after ${params.timeoutMs ?? 5_000}ms`),
-      );
+      req.destroy(new Error(`webhook header-only post timed out after ${params.timeoutMs ?? 5_000}ms`));
       settle.reject(new Error("timed out waiting for webhook response"));
     }, params.timeoutMs ?? 5_000);
 
@@ -329,10 +327,7 @@ function sha256(text: string): string {
   return createHash("sha256").update(text).digest("hex");
 }
 
-type StartWebhookOptions = Omit<
-  Parameters<typeof startTelegramWebhook>[0],
-  "token" | "port" | "abortSignal"
->;
+type StartWebhookOptions = Omit<Parameters<typeof startTelegramWebhook>[0], "token" | "port" | "abortSignal">;
 
 type StartedWebhook = Awaited<ReturnType<typeof startTelegramWebhook>>;
 
@@ -373,9 +368,7 @@ function expectSingleNearLimitUpdate(params: {
   expect(params.seenUpdates).toHaveLength(1);
   expect(params.seenUpdates[0]?.update_id).toBe(params.expected.update_id);
   expect(params.seenUpdates[0]?.message.text.length).toBe(params.expected.message.text.length);
-  expect(sha256(params.seenUpdates[0]?.message.text ?? "")).toBe(
-    sha256(params.expected.message.text),
-  );
+  expect(sha256(params.seenUpdates[0]?.message.text ?? "")).toBe(sha256(params.expected.message.text));
 }
 
 async function runNearLimitPayloadTest(mode: "single" | "random-chunked"): Promise<void> {
@@ -459,13 +452,9 @@ describe("startTelegramWebhook", () => {
             timeoutMilliseconds: 10_000,
           },
         );
-        expect(runtimeLog).toHaveBeenCalledWith(
-          expect.stringContaining("webhook local listener on http://127.0.0.1:"),
-        );
+        expect(runtimeLog).toHaveBeenCalledWith(expect.stringContaining("webhook local listener on http://127.0.0.1:"));
         expect(runtimeLog).toHaveBeenCalledWith(expect.stringContaining("/telegram-webhook"));
-        expect(runtimeLog).toHaveBeenCalledWith(
-          expect.stringContaining("webhook advertised to telegram on http://"),
-        );
+        expect(runtimeLog).toHaveBeenCalledWith(expect.stringContaining("webhook advertised to telegram on http://"));
       },
     );
   });
@@ -728,9 +717,7 @@ describe("startTelegramWebhook", () => {
             secret_token: TELEGRAM_SECRET,
           }),
         );
-        expect(runtimeLog).toHaveBeenCalledWith(
-          `webhook local listener on ${webhookUrl(port, TELEGRAM_WEBHOOK_PATH)}`,
-        );
+        expect(runtimeLog).toHaveBeenCalledWith(`webhook local listener on ${webhookUrl(port, TELEGRAM_WEBHOOK_PATH)}`);
       },
     );
   });
@@ -865,8 +852,7 @@ describe("startTelegramWebhook", () => {
       },
       async ({ port }) => {
         const responseOrError = await new Promise<
-          | { kind: "response"; statusCode: number; body: string }
-          | { kind: "error"; code: string | undefined }
+          { kind: "response"; statusCode: number; body: string } | { kind: "error"; code: string | undefined }
         >((resolve) => {
           const req = request(
             {
@@ -915,7 +901,7 @@ describe("startTelegramWebhook", () => {
     });
 
     abort.abort();
-    await vi.waitFor(() => expect(deleteWebhookSpy).toHaveBeenCalledTimes(1));
+    expect(deleteWebhookSpy).toHaveBeenCalledTimes(1);
     expect(deleteWebhookSpy).toHaveBeenCalledWith({ drop_pending_updates: false });
   });
 });

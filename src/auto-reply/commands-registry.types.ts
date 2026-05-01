@@ -2,14 +2,7 @@ import type { RemoteClawConfig } from "../config/types.js";
 
 export type CommandScope = "text" | "native" | "both";
 
-export type CommandCategory =
-  | "session"
-  | "options"
-  | "status"
-  | "management"
-  | "media"
-  | "tools"
-  | "docks";
+export type CommandCategory = "session" | "options" | "status" | "management" | "media" | "tools" | "docks";
 
 export type CommandArgType = "string" | "number" | "boolean";
 

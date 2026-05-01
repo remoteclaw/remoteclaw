@@ -3,10 +3,7 @@ import path from "node:path";
 import { Logger as TsLogger } from "tslog";
 import { getCommandPathWithRootOptions } from "../cli/argv.js";
 import type { RemoteClawConfig } from "../config/types.js";
-import {
-  POSIX_REMOTECLAW_TMP_DIR,
-  resolvePreferredRemoteClawTmpDir,
-} from "../infra/tmp-remoteclaw-dir.js";
+import { POSIX_REMOTECLAW_TMP_DIR, resolvePreferredRemoteClawTmpDir } from "../infra/tmp-remoteclaw-dir.js";
 import { readLoggingConfig } from "./config.js";
 import type { ConsoleStyle } from "./console.js";
 import { resolveEnvLogLevelOverride } from "./env-log-level.js";
@@ -128,9 +125,7 @@ function resolveSettings(): ResolvedSettings {
     }
   }
   const defaultLevel =
-    process.env.VITEST === "true" && process.env.REMOTECLAW_TEST_FILE_LOG !== "1"
-      ? "silent"
-      : "info";
+    process.env.VITEST === "true" && process.env.REMOTECLAW_TEST_FILE_LOG !== "1" ? "silent" : "info";
   const fromConfig = normalizeLogLevel(cfg?.level, defaultLevel);
   const level = envLevel ?? fromConfig;
   const file = cfg?.file ?? defaultRollingPathForToday();
@@ -254,10 +249,7 @@ export function getLogger(): TsLogger<LogObj> {
   return loggingState.cachedLogger as TsLogger<LogObj>;
 }
 
-export function getChildLogger(
-  bindings?: Record<string, unknown>,
-  opts?: { level?: LogLevel },
-): TsLogger<LogObj> {
+export function getChildLogger(bindings?: Record<string, unknown>, opts?: { level?: LogLevel }): TsLogger<LogObj> {
   const base = getLogger();
   const minLevel = opts?.level ? levelToMinLevel(opts.level) : base.settings.minLevel;
   const name = bindings ? JSON.stringify(bindings) : undefined;

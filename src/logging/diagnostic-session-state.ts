@@ -79,8 +79,7 @@ function findStateBySessionId(sessionId: string): SessionState | undefined {
 export function getDiagnosticSessionState(ref: SessionRef): SessionState {
   pruneDiagnosticSessionStates();
   const key = resolveSessionKey(ref);
-  const existing =
-    diagnosticSessionStates.get(key) ?? (ref.sessionId && findStateBySessionId(ref.sessionId));
+  const existing = diagnosticSessionStates.get(key) ?? (ref.sessionId && findStateBySessionId(ref.sessionId));
   if (existing) {
     if (ref.sessionId) {
       existing.sessionId = ref.sessionId;

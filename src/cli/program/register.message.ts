@@ -6,10 +6,7 @@ import type { ProgramContext } from "./context.js";
 import { createMessageCliHelpers } from "./message/helpers.js";
 import { registerMessageBroadcastCommand } from "./message/register.broadcast.js";
 import { registerMessageDiscordAdminCommands } from "./message/register.discord-admin.js";
-import {
-  registerMessageEmojiCommands,
-  registerMessageStickerCommands,
-} from "./message/register.emoji-sticker.js";
+import { registerMessageEmojiCommands, registerMessageStickerCommands } from "./message/register.emoji-sticker.js";
 import {
   registerMessagePermissionsCommand,
   registerMessageSearchCommand,
@@ -32,18 +29,12 @@ export function registerMessageCommands(program: Command, ctx: ProgramContext) {
 ${theme.heading("Examples:")}
 ${formatHelpExamples([
   ['remoteclaw message send --target +15555550123 --message "Hi"', "Send a text message."],
-  [
-    'remoteclaw message send --target +15555550123 --message "Hi" --media photo.jpg',
-    "Send a message with media.",
-  ],
+  ['remoteclaw message send --target +15555550123 --message "Hi" --media photo.jpg', "Send a message with media."],
   [
     'remoteclaw message poll --channel discord --target channel:123 --poll-question "Snack?" --poll-option Pizza --poll-option Sushi',
     "Create a Discord poll.",
   ],
-  [
-    'remoteclaw message react --channel discord --target 123 --message-id 456 --emoji "✅"',
-    "React to a message.",
-  ],
+  ['remoteclaw message react --channel discord --target 123 --message-id 456 --emoji "✅"', "React to a message."],
 ])}
 
 ${theme.muted("Docs:")} ${formatDocsLink("/cli/message", "docs.remoteclaw.org/cli/message")}`,

@@ -38,10 +38,7 @@ function readDevicePairPublicUrlFromConfig(cfg: ReturnType<typeof loadConfig>): 
   return trimmed.length > 0 ? trimmed : undefined;
 }
 
-function shouldResolveLocalGatewayPasswordSecret(
-  cfg: ReturnType<typeof loadConfig>,
-  env: NodeJS.ProcessEnv,
-): boolean {
+function shouldResolveLocalGatewayPasswordSecret(cfg: ReturnType<typeof loadConfig>, env: NodeJS.ProcessEnv): boolean {
   if (readGatewayPasswordEnv(env)) {
     return false;
   }
@@ -53,16 +50,11 @@ function shouldResolveLocalGatewayPasswordSecret(
     return false;
   }
   const envToken = readGatewayTokenEnv(env);
-  const configTokenConfigured = hasConfiguredSecretInput(
-    cfg.gateway?.auth?.token,
-    cfg.secrets?.defaults,
-  );
+  const configTokenConfigured = hasConfiguredSecretInput(cfg.gateway?.auth?.token, cfg.secrets?.defaults);
   return !envToken && !configTokenConfigured;
 }
 
-async function resolveLocalGatewayPasswordSecretIfNeeded(
-  cfg: ReturnType<typeof loadConfig>,
-): Promise<void> {
+async function resolveLocalGatewayPasswordSecretIfNeeded(cfg: ReturnType<typeof loadConfig>): Promise<void> {
   const resolvedPassword = await resolveRequiredConfiguredSecretRefInputString({
     config: cfg,
     env: process.env,
@@ -99,8 +91,7 @@ export function registerQrCli(program: Command) {
     .description("Generate an iOS pairing QR code and setup code")
     .addHelpText(
       "after",
-      () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/qr", "docs.remoteclaw.org/cli/qr")}\n`,
+      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/qr", "docs.remoteclaw.org/cli/qr")}\n`,
     )
     .option(
       "--remote",
@@ -131,9 +122,7 @@ export function registerQrCli(program: Command) {
           const hasRemoteUrl = typeof remoteUrl === "string" && remoteUrl.trim().length > 0;
           const hasTailscaleServe = tailscaleMode === "serve" || tailscaleMode === "funnel";
           if (!hasRemoteUrl && !hasTailscaleServe) {
-            throw new Error(
-              "qr --remote requires gateway.remote.url (or gateway.tailscale.mode=serve/funnel).",
-            );
+            throw new Error("qr --remote requires gateway.remote.url (or gateway.tailscale.mode=serve/funnel).");
           }
         }
         const loaded = loadedRaw;
@@ -160,12 +149,9 @@ export function registerQrCli(program: Command) {
           cfg.gateway.auth.token = undefined;
         }
         if (wantsRemote && !token && !password) {
-          const remoteToken =
-            typeof cfg.gateway?.remote?.token === "string" ? cfg.gateway.remote.token.trim() : "";
+          const remoteToken = typeof cfg.gateway?.remote?.token === "string" ? cfg.gateway.remote.token.trim() : "";
           const remotePassword =
-            typeof cfg.gateway?.remote?.password === "string"
-              ? cfg.gateway.remote.password.trim()
-              : "";
+            typeof cfg.gateway?.remote?.password === "string" ? cfg.gateway.remote.password.trim() : "";
           if (remoteToken) {
             cfg.gateway.auth.mode = "token";
             cfg.gateway.auth.token = remoteToken;
@@ -176,12 +162,7 @@ export function registerQrCli(program: Command) {
             cfg.gateway.auth.token = undefined;
           }
         }
-        if (
-          !wantsRemote &&
-          !password &&
-          !token &&
-          shouldResolveLocalGatewayPasswordSecret(cfg, process.env)
-        ) {
+        if (!wantsRemote && !password && !token && shouldResolveLocalGatewayPasswordSecret(cfg, process.env)) {
           await resolveLocalGatewayPasswordSecretIfNeeded(cfg);
         }
 
@@ -191,8 +172,7 @@ export function registerQrCli(program: Command) {
             : typeof opts.publicUrl === "string" && opts.publicUrl.trim()
               ? opts.publicUrl.trim()
               : undefined;
-        const publicUrl =
-          explicitUrl ?? (wantsRemote ? undefined : readDevicePairPublicUrlFromConfig(cfg));
+        const publicUrl = explicitUrl ?? (wantsRemote ? undefined : readDevicePairPublicUrlFromConfig(cfg));
 
         const resolved = await resolvePairingSetupFromConfig(cfg, {
           publicUrl,

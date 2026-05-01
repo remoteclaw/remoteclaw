@@ -1,8 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  collectSlackCursorItems,
-  resolveSlackAllowlistEntries,
-} from "./resolve-allowlist-common.js";
+import { collectSlackCursorItems, resolveSlackAllowlistEntries } from "./resolve-allowlist-common.js";
 
 describe("collectSlackCursorItems", () => {
   it("collects items across cursor pages", async () => {

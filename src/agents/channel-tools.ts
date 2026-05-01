@@ -1,10 +1,6 @@
 import { getChannelDock } from "../channels/dock.js";
 import { getChannelPlugin, listChannelPlugins } from "../channels/plugins/index.js";
-import type {
-  ChannelAgentTool,
-  ChannelMessageActionName,
-  ChannelPlugin,
-} from "../channels/plugins/types.js";
+import type { ChannelAgentTool, ChannelMessageActionName, ChannelPlugin } from "../channels/plugins/types.js";
 import { normalizeAnyChannelId } from "../channels/registry.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { defaultRuntime } from "../runtime.js";
@@ -63,9 +59,7 @@ export function listChannelSupportedActions(params: {
 /**
  * Get the list of all supported message actions across all configured channels.
  */
-export function listAllChannelSupportedActions(params: {
-  cfg?: RemoteClawConfig;
-}): ChannelMessageActionName[] {
+export function listAllChannelSupportedActions(params: { cfg?: RemoteClawConfig }): ChannelMessageActionName[] {
   const actions = new Set<ChannelMessageActionName>();
   for (const plugin of listChannelPlugins()) {
     if (!plugin.actions?.listActions) {
@@ -114,17 +108,12 @@ export function resolveChannelMessageToolHints(params: {
     return [];
   }
   const cfg = params.cfg ?? ({} as RemoteClawConfig);
-  return (resolve({ cfg, accountId: params.accountId }) ?? [])
-    .map((entry) => entry.trim())
-    .filter(Boolean);
+  return (resolve({ cfg, accountId: params.accountId }) ?? []).map((entry) => entry.trim()).filter(Boolean);
 }
 
 const loggedListActionErrors = new Set<string>();
 
-function runPluginListActions(
-  plugin: ChannelPlugin,
-  cfg: RemoteClawConfig,
-): ChannelMessageActionName[] {
+function runPluginListActions(plugin: ChannelPlugin, cfg: RemoteClawConfig): ChannelMessageActionName[] {
   if (!plugin.actions?.listActions) {
     return [];
   }

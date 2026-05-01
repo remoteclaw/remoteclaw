@@ -86,8 +86,7 @@ function resolveAttachmentLimits(config: RemoteClawConfig): AttachmentLimits {
   return {
     enabled: attachmentsCfg?.enabled === true,
     maxTotalBytes:
-      typeof attachmentsCfg?.maxTotalBytes === "number" &&
-      Number.isFinite(attachmentsCfg.maxTotalBytes)
+      typeof attachmentsCfg?.maxTotalBytes === "number" && Number.isFinite(attachmentsCfg.maxTotalBytes)
         ? Math.max(0, Math.floor(attachmentsCfg.maxTotalBytes))
         : 5 * 1024 * 1024,
     maxFiles:
@@ -95,8 +94,7 @@ function resolveAttachmentLimits(config: RemoteClawConfig): AttachmentLimits {
         ? Math.max(0, Math.floor(attachmentsCfg.maxFiles))
         : 50,
     maxFileBytes:
-      typeof attachmentsCfg?.maxFileBytes === "number" &&
-      Number.isFinite(attachmentsCfg.maxFileBytes)
+      typeof attachmentsCfg?.maxFileBytes === "number" && Number.isFinite(attachmentsCfg.maxFileBytes)
         ? Math.max(0, Math.floor(attachmentsCfg.maxFileBytes))
         : 1 * 1024 * 1024,
     retainOnSessionKeep: attachmentsCfg?.retainOnSessionKeep === true,
@@ -118,8 +116,7 @@ export async function materializeSubagentAttachments(params: {
   if (!limits.enabled) {
     return {
       status: "forbidden",
-      error:
-        "attachments are disabled for sessions_spawn (enable tools.sessions_spawn.attachments.enabled)",
+      error: "attachments are disabled for sessions_spawn (enable tools.sessions_spawn.attachments.enabled)",
     };
   }
   if (requestedAttachments.length > limits.maxFiles) {
@@ -190,15 +187,11 @@ export async function materializeSubagentAttachments(params: {
 
       const bytes = buf.byteLength;
       if (bytes > limits.maxFileBytes) {
-        fail(
-          `attachments_file_bytes_exceeded (name=${name} bytes=${bytes} maxFileBytes=${limits.maxFileBytes})`,
-        );
+        fail(`attachments_file_bytes_exceeded (name=${name} bytes=${bytes} maxFileBytes=${limits.maxFileBytes})`);
       }
       totalBytes += bytes;
       if (totalBytes > limits.maxTotalBytes) {
-        fail(
-          `attachments_total_bytes_exceeded (totalBytes=${totalBytes} maxTotalBytes=${limits.maxTotalBytes})`,
-        );
+        fail(`attachments_total_bytes_exceeded (totalBytes=${totalBytes} maxTotalBytes=${limits.maxTotalBytes})`);
       }
 
       const sha256 = crypto.createHash("sha256").update(buf).digest("hex");
@@ -207,9 +200,7 @@ export async function materializeSubagentAttachments(params: {
       files.push({ name, bytes, sha256 });
     }
 
-    await Promise.all(
-      writeJobs.map(({ outPath, buf }) => fs.writeFile(outPath, buf, { mode: 0o600, flag: "wx" })),
-    );
+    await Promise.all(writeJobs.map(({ outPath, buf }) => fs.writeFile(outPath, buf, { mode: 0o600, flag: "wx" })));
 
     const manifest = {
       relDir,
@@ -217,14 +208,10 @@ export async function materializeSubagentAttachments(params: {
       totalBytes,
       files,
     };
-    await fs.writeFile(
-      path.join(absDir, ".manifest.json"),
-      JSON.stringify(manifest, null, 2) + "\n",
-      {
-        mode: 0o600,
-        flag: "wx",
-      },
-    );
+    await fs.writeFile(path.join(absDir, ".manifest.json"), JSON.stringify(manifest, null, 2) + "\n", {
+      mode: 0o600,
+      flag: "wx",
+    });
 
     return {
       status: "ok",

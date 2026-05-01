@@ -11,10 +11,7 @@ import { getChannelOnboardingAdapter } from "./onboarding/registry.js";
 import type { ChannelOnboardingAdapter } from "./onboarding/types.js";
 
 type ChannelOnboardingAdapterPatch = Partial<
-  Pick<
-    ChannelOnboardingAdapter,
-    "configure" | "configureInteractive" | "configureWhenConfigured" | "getStatus"
-  >
+  Pick<ChannelOnboardingAdapter, "configure" | "configureInteractive" | "configureWhenConfigured" | "getStatus">
 >;
 
 type PatchedOnboardingAdapterFields = {

@@ -36,10 +36,7 @@ export async function promptAccountId(params: PromptAccountIdParams): Promise<st
   });
   const normalized = normalizeAccountId(String(entered));
   if (String(entered).trim() !== normalized) {
-    await params.prompter.note(
-      `Normalized account id to "${normalized}".`,
-      `${params.label} account`,
-    );
+    await params.prompter.note(`Normalized account id to "${normalized}".`, `${params.label} account`);
   }
   return normalized;
 }

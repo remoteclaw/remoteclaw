@@ -37,16 +37,11 @@ describe("twilioApiRequest", () => {
         },
       }),
     );
-    expect(String(init?.body)).toBe(
-      "To=%2B14155550123&StatusCallbackEvent=initiated&StatusCallbackEvent=completed",
-    );
+    expect(String(init?.body)).toBe("To=%2B14155550123&StatusCallbackEvent=initiated&StatusCallbackEvent=completed");
   });
 
   it("passes through URLSearchParams, allows 404s, and returns undefined for empty bodies", async () => {
-    const responses = [
-      new Response(null, { status: 204 }),
-      new Response("missing", { status: 404 }),
-    ];
+    const responses = [new Response(null, { status: 204 }), new Response("missing", { status: 404 })];
     globalThis.fetch = vi.fn(async () => responses.shift()!) as unknown as typeof fetch;
 
     await expect(
@@ -72,9 +67,7 @@ describe("twilioApiRequest", () => {
   });
 
   it("throws twilio api errors for non-ok responses", async () => {
-    globalThis.fetch = vi.fn(
-      async () => new Response("bad request", { status: 400 }),
-    ) as unknown as typeof fetch;
+    globalThis.fetch = vi.fn(async () => new Response("bad request", { status: 400 })) as unknown as typeof fetch;
 
     await expect(
       twilioApiRequest({

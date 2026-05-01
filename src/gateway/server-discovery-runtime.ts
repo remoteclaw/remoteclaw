@@ -1,11 +1,7 @@
 import { startGatewayBonjourAdvertiser } from "../infra/bonjour.js";
 import { pickPrimaryTailnetIPv4, pickPrimaryTailnetIPv6 } from "../infra/tailnet.js";
 import { resolveWideAreaDiscoveryDomain, writeWideAreaGatewayZone } from "../infra/widearea-dns.js";
-import {
-  formatBonjourInstanceName,
-  resolveBonjourCliPath,
-  resolveTailnetDnsHint,
-} from "./server-discovery.js";
+import { formatBonjourInstanceName, resolveBonjourCliPath, resolveTailnetDnsHint } from "./server-discovery.js";
 
 export async function startGatewayDiscovery(params: {
   machineDisplayName: string;
@@ -30,9 +26,7 @@ export async function startGatewayDiscovery(params: {
   const mdnsMinimal = mdnsMode !== "full";
   const tailscaleEnabled = params.tailscaleMode !== "off";
   const needsTailnetDns = bonjourEnabled || params.wideAreaDiscoveryEnabled;
-  const tailnetDns = needsTailnetDns
-    ? await resolveTailnetDnsHint({ enabled: tailscaleEnabled })
-    : undefined;
+  const tailnetDns = needsTailnetDns ? await resolveTailnetDnsHint({ enabled: tailscaleEnabled }) : undefined;
   const sshPortEnv = mdnsMinimal ? undefined : process.env.REMOTECLAW_SSH_PORT?.trim();
   const sshPortParsed = sshPortEnv ? Number.parseInt(sshPortEnv, 10) : NaN;
   const sshPort = Number.isFinite(sshPortParsed) && sshPortParsed > 0 ? sshPortParsed : undefined;

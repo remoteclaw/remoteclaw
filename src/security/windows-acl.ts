@@ -97,10 +97,7 @@ function buildTrustedPrincipals(env?: NodeJS.ProcessEnv): Set<string> {
   return trusted;
 }
 
-function classifyPrincipal(
-  principal: string,
-  trustedPrincipals: Set<string>,
-): "trusted" | "world" | "group" {
+function classifyPrincipal(principal: string, trustedPrincipals: Set<string>): "trusted" | "world" | "group" {
   const normalized = normalize(principal);
 
   if (SID_RE.test(normalized)) {
@@ -118,16 +115,10 @@ function classifyPrincipal(
     return "group";
   }
 
-  if (
-    trustedPrincipals.has(normalized) ||
-    TRUSTED_SUFFIXES.some((suffix) => normalized.endsWith(suffix))
-  ) {
+  if (trustedPrincipals.has(normalized) || TRUSTED_SUFFIXES.some((suffix) => normalized.endsWith(suffix))) {
     return "trusted";
   }
-  if (
-    WORLD_PRINCIPALS.has(normalized) ||
-    WORLD_SUFFIXES.some((suffix) => normalized.endsWith(suffix))
-  ) {
+  if (WORLD_PRINCIPALS.has(normalized) || WORLD_SUFFIXES.some((suffix) => normalized.endsWith(suffix))) {
     return "world";
   }
 
@@ -152,8 +143,7 @@ function rightsFromTokens(tokens: string[]): {
   canWrite: boolean;
 } {
   const upper = tokens.join("").toUpperCase();
-  const canWrite =
-    upper.includes("F") || upper.includes("M") || upper.includes("W") || upper.includes("D");
+  const canWrite = upper.includes("F") || upper.includes("M") || upper.includes("W") || upper.includes("D");
   const canRead = upper.includes("F") || upper.includes("M") || upper.includes("R");
   return { canRead, canWrite };
 }
@@ -295,8 +285,7 @@ export async function inspectWindowsAcl(
     let { trusted, untrustedWorld, untrustedGroup } = summarizeWindowsAcl(entries, effectiveEnv);
 
     const needsUserSidResolution =
-      !effectiveEnv?.USERSID &&
-      untrustedGroup.some((entry) => SID_RE.test(normalize(entry.principal)));
+      !effectiveEnv?.USERSID && untrustedGroup.some((entry) => SID_RE.test(normalize(entry.principal)));
     if (needsUserSidResolution) {
       const currentUserSid = await resolveCurrentUserSid(exec);
       if (currentUserSid) {
@@ -347,14 +336,7 @@ export function createIcaclsResetCommand(
     return null;
   }
   const grant = opts.isDir ? "(OI)(CI)F" : "F";
-  const args = [
-    targetPath,
-    "/inheritance:r",
-    "/grant:r",
-    `${user}:${grant}`,
-    "/grant:r",
-    `*S-1-5-18:${grant}`,
-  ];
+  const args = [targetPath, "/inheritance:r", "/grant:r", `${user}:${grant}`, "/grant:r", `*S-1-5-18:${grant}`];
   return {
     command: "icacls",
     args,

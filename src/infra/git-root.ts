@@ -60,10 +60,7 @@ function resolveGitDirFromMarker(repoRoot: string): string | null {
   }
 }
 
-export function resolveGitHeadPath(
-  startDir: string,
-  opts: { maxDepth?: number } = {},
-): string | null {
+export function resolveGitHeadPath(startDir: string, opts: { maxDepth?: number } = {}): string | null {
   // Stricter than findGitRoot: keep walking until a resolvable git dir is found.
   return walkUpFrom(startDir, opts, (repoRoot) => {
     const gitDir = resolveGitDirFromMarker(repoRoot);

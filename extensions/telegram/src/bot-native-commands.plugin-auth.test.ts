@@ -14,30 +14,20 @@ let getPluginCommandSpecsMock: {
   ) => unknown;
 };
 let matchPluginCommandMock: {
-  mockReturnValue: (
-    value: ReturnType<typeof import("../../../src/plugins/commands.js").matchPluginCommand>,
-  ) => unknown;
+  mockReturnValue: (value: ReturnType<typeof import("../../../src/plugins/commands.js").matchPluginCommand>) => unknown;
 };
 let executePluginCommandMock: {
   mockResolvedValue: (
-    value: Awaited<
-      ReturnType<typeof import("../../../src/plugins/commands.js").executePluginCommand>
-    >,
+    value: Awaited<ReturnType<typeof import("../../../src/plugins/commands.js").executePluginCommand>>,
   ) => unknown;
 };
 
 describe("registerTelegramNativeCommands (plugin auth)", () => {
   beforeEach(async () => {
     vi.resetModules();
-    ({
-      createNativeCommandsHarness,
-      deliverReplies,
-      executePluginCommand,
-      getPluginCommandSpecs,
-      matchPluginCommand,
-    } = await import("./bot-native-commands.test-helpers.js"));
-    getPluginCommandSpecsMock =
-      getPluginCommandSpecs as unknown as typeof getPluginCommandSpecsMock;
+    ({ createNativeCommandsHarness, deliverReplies, executePluginCommand, getPluginCommandSpecs, matchPluginCommand } =
+      await import("./bot-native-commands.test-helpers.js"));
+    getPluginCommandSpecsMock = getPluginCommandSpecs as unknown as typeof getPluginCommandSpecsMock;
     matchPluginCommandMock = matchPluginCommand as unknown as typeof matchPluginCommandMock;
     executePluginCommandMock = executePluginCommand as unknown as typeof executePluginCommandMock;
     vi.clearAllMocks();
@@ -71,9 +61,7 @@ describe("registerTelegramNativeCommands (plugin auth)", () => {
       handler: vi.fn(),
     } as const;
 
-    getPluginCommandSpecsMock.mockReturnValue([
-      { name: "plugin", description: "Plugin command", acceptsArgs: false },
-    ]);
+    getPluginCommandSpecsMock.mockReturnValue([{ name: "plugin", description: "Plugin command", acceptsArgs: false }]);
     matchPluginCommandMock.mockReturnValue({ command, args: undefined });
     executePluginCommandMock.mockResolvedValue({ text: "ok" });
 

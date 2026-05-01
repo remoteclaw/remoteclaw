@@ -35,10 +35,7 @@ describe("ensureBrowserControlAuth", () => {
     expect(mocks.writeConfigFile).not.toHaveBeenCalled();
   };
 
-  const expectGeneratedTokenPersisted = (result: {
-    generatedToken?: string;
-    auth: { token?: string };
-  }) => {
+  const expectGeneratedTokenPersisted = (result: { generatedToken?: string; auth: { token?: string } }) => {
     expect(mocks.writeConfigFile).toHaveBeenCalledTimes(1);
     expectGeneratedTokenPersistedToGatewayAuth({
       generatedToken: result.generatedToken,

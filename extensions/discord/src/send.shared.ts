@@ -13,11 +13,7 @@ import type { ChunkMode } from "../../../src/auto-reply/chunk.js";
 import { loadConfig, type RemoteClawConfig } from "../../../src/config/config.js";
 import type { RetryRunner } from "../../../src/infra/retry-policy.js";
 import { buildOutboundMediaLoadOptions } from "../../../src/media/load-options.js";
-import {
-  normalizePollDurationHours,
-  normalizePollInput,
-  type PollInput,
-} from "../../../src/polls.js";
+import { normalizePollDurationHours, normalizePollInput, type PollInput } from "../../../src/polls.js";
 import { loadWebMedia } from "../../whatsapp/src/media.js";
 import { resolveDiscordAccount } from "./accounts.js";
 import { chunkDiscordTextWithMode } from "./chunk.js";
@@ -55,9 +51,7 @@ function normalizeReactionEmoji(raw: string) {
     throw new Error("emoji required");
   }
   const customMatch = trimmed.match(/^<a?:([^:>]+):(\d+)>$/);
-  const identifier = customMatch
-    ? `${customMatch[1]}:${customMatch[2]}`
-    : trimmed.replace(/[\uFE0E\uFE0F]/g, "");
+  const identifier = customMatch ? `${customMatch[1]}:${customMatch[2]}` : trimmed.replace(/[\uFE0E\uFE0F]/g, "");
   return encodeURIComponent(identifier);
 }
 
@@ -187,10 +181,9 @@ async function buildDiscordSendError(
   }
   const code = getDiscordErrorCode(err);
   if (code === DISCORD_CANNOT_DM) {
-    return new DiscordSendError(
-      "discord dm failed: user blocks dms or privacy settings disallow it",
-      { kind: "dm-blocked" },
-    );
+    return new DiscordSendError("discord dm failed: user blocks dms or privacy settings disallow it", {
+      kind: "dm-blocked",
+    });
   }
   if (code !== DISCORD_MISSING_PERMISSIONS) {
     return err;
@@ -218,14 +211,11 @@ async function buildDiscordSendError(
   const missingLabel = missing.length
     ? `missing permissions in channel ${ctx.channelId}: ${missing.join(", ")}`
     : `missing permissions in channel ${ctx.channelId}`;
-  return new DiscordSendError(
-    `${missingLabel}. bot might be muted or blocked by role/channel overrides`,
-    {
-      kind: "missing-permissions",
-      channelId: ctx.channelId,
-      missingPermissions: missing,
-    },
-  );
+  return new DiscordSendError(`${missingLabel}. bot might be muted or blocked by role/channel overrides`, {
+    kind: "missing-permissions",
+    channelId: ctx.channelId,
+    missingPermissions: missing,
+  });
 }
 
 async function resolveChannelId(
@@ -249,10 +239,7 @@ async function resolveChannelId(
   return { channelId: dmChannel.id, dm: true };
 }
 
-export async function resolveDiscordChannelType(
-  rest: RequestClient,
-  channelId: string,
-): Promise<number | undefined> {
+export async function resolveDiscordChannelType(rest: RequestClient, channelId: string): Promise<number | undefined> {
   try {
     const channel = (await rest.get(Routes.channel(channelId))) as APIChannel | undefined;
     return channel?.type;
@@ -294,9 +281,7 @@ export function resolveDiscordSendComponents(params: {
   if (!params.components || !params.isFirst) {
     return undefined;
   }
-  return typeof params.components === "function"
-    ? params.components(params.text)
-    : params.components;
+  return typeof params.components === "function" ? params.components(params.text) : params.components;
 }
 
 function normalizeDiscordEmbeds(embeds?: DiscordSendEmbeds): Embed[] | undefined {
@@ -428,10 +413,7 @@ async function sendDiscordMedia(
   chunkMode?: ChunkMode,
   silent?: boolean,
 ) {
-  const media = await loadWebMedia(
-    mediaUrl,
-    buildOutboundMediaLoadOptions({ maxBytes, mediaLocalRoots }),
-  );
+  const media = await loadWebMedia(mediaUrl, buildOutboundMediaLoadOptions({ maxBytes, mediaLocalRoots }));
   const chunks = text ? buildDiscordTextChunks(text, { maxLinesPerMessage, chunkMode }) : [];
   const caption = chunks[0] ?? "";
   const messageReference = replyTo ? { message_id: replyTo, fail_if_not_exists: false } : undefined;

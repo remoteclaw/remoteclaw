@@ -4,6 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   assertCanonicalPathWithinBase,
+  packageNameMatchesId,
   resolveSafeInstallDir,
   safeDirName,
   safePathSegmentHashed,
@@ -17,6 +18,18 @@ describe("unscopedPackageName", () => {
     { value: "", expected: "" },
   ])("normalizes package names for %j", ({ value, expected }) => {
     expect(unscopedPackageName(value)).toBe(expected);
+  });
+});
+
+describe("packageNameMatchesId", () => {
+  it.each([
+    { packageName: "@remoteclaw/matrix", id: "matrix", expected: true },
+    { packageName: "@remoteclaw/matrix", id: "@remoteclaw/matrix", expected: true },
+    { packageName: "@remoteclaw/matrix", id: "signal", expected: false },
+    { packageName: " ", id: "matrix", expected: false },
+    { packageName: "@remoteclaw/matrix", id: " ", expected: false },
+  ])("matches ids for %j", ({ packageName, id, expected }) => {
+    expect(packageNameMatchesId(packageName, id)).toBe(expected);
   });
 });
 
@@ -153,29 +166,24 @@ describe("assertCanonicalPathWithinBase", () => {
     }
   });
 
-  it.runIf(process.platform !== "win32")(
-    "rejects symlinked candidate directories that escape the base",
-    async () => {
-      const baseDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-install-safe-"));
-      const outsideDir = await fs.mkdtemp(
-        path.join(os.tmpdir(), "remoteclaw-install-safe-outside-"),
-      );
-      try {
-        const linkDir = path.join(baseDir, "alias");
-        await fs.symlink(outsideDir, linkDir);
-        await expect(
-          assertCanonicalPathWithinBase({
-            baseDir,
-            candidatePath: linkDir,
-            boundaryLabel: "install directory",
-          }),
-        ).rejects.toThrow(/must stay within install directory/i);
-      } finally {
-        await fs.rm(baseDir, { recursive: true, force: true });
-        await fs.rm(outsideDir, { recursive: true, force: true });
-      }
-    },
-  );
+  it.runIf(process.platform !== "win32")("rejects symlinked candidate directories that escape the base", async () => {
+    const baseDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-install-safe-"));
+    const outsideDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-install-safe-outside-"));
+    try {
+      const linkDir = path.join(baseDir, "alias");
+      await fs.symlink(outsideDir, linkDir);
+      await expect(
+        assertCanonicalPathWithinBase({
+          baseDir,
+          candidatePath: linkDir,
+          boundaryLabel: "install directory",
+        }),
+      ).rejects.toThrow(/must stay within install directory/i);
+    } finally {
+      await fs.rm(baseDir, { recursive: true, force: true });
+      await fs.rm(outsideDir, { recursive: true, force: true });
+    }
+  });
 
   it.runIf(process.platform !== "win32")("rejects symlinked base directories", async () => {
     const parentDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-install-safe-"));

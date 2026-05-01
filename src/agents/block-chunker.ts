@@ -34,11 +34,7 @@ type ParagraphBreak = {
   length: number;
 };
 
-function findSafeSentenceBreakIndex(
-  text: string,
-  fenceSpans: FenceSpan[],
-  minChars: number,
-): number {
+function findSafeSentenceBreakIndex(text: string, fenceSpans: FenceSpan[], minChars: number): number {
   const matches = text.matchAll(/[.!?](?=\s|$)/g);
   let sentenceIdx = -1;
   for (const match of matches) {
@@ -75,9 +71,7 @@ function findSafeParagraphBreakIndex(params: {
         return candidate;
       }
     }
-    paragraphIdx = reverse
-      ? text.lastIndexOf("\n\n", paragraphIdx - 1)
-      : text.indexOf("\n\n", paragraphIdx + 2);
+    paragraphIdx = reverse ? text.lastIndexOf("\n\n", paragraphIdx - 1) : text.indexOf("\n\n", paragraphIdx + 2);
   }
   return -1;
 }
@@ -94,9 +88,7 @@ function findSafeNewlineBreakIndex(params: {
     if (newlineIdx >= minChars && isSafeFenceBreak(fenceSpans, newlineIdx)) {
       return newlineIdx;
     }
-    newlineIdx = reverse
-      ? text.lastIndexOf("\n", newlineIdx - 1)
-      : text.indexOf("\n", newlineIdx + 1);
+    newlineIdx = reverse ? text.lastIndexOf("\n", newlineIdx - 1) : text.indexOf("\n", newlineIdx + 1);
   }
   return -1;
 }
@@ -203,9 +195,7 @@ export class BlockChunker {
       if (chunk.trim().length > 0) {
         emit(chunk);
       }
-      this.#buffer = stripLeadingNewlines(
-        this.#buffer.slice(paragraphBreak.index + paragraphBreak.length),
-      );
+      this.#buffer = stripLeadingNewlines(this.#buffer.slice(paragraphBreak.index + paragraphBreak.length));
     }
   }
 
@@ -240,10 +230,7 @@ export class BlockChunker {
     if (fenceSplit) {
       this.#buffer = nextBuffer;
     } else {
-      const nextStart =
-        breakIdx < this.#buffer.length && /\s/.test(this.#buffer[breakIdx])
-          ? breakIdx + 1
-          : breakIdx;
+      const nextStart = breakIdx < this.#buffer.length && /\s/.test(this.#buffer[breakIdx]) ? breakIdx + 1 : breakIdx;
       this.#buffer = stripLeadingNewlines(this.#buffer.slice(nextStart));
     }
 
@@ -372,11 +359,7 @@ function stripLeadingNewlines(value: string): string {
   return i > 0 ? value.slice(i) : value;
 }
 
-function findNextParagraphBreak(
-  buffer: string,
-  fenceSpans: FenceSpan[],
-  startIndex = 0,
-): ParagraphBreak | null {
+function findNextParagraphBreak(buffer: string, fenceSpans: FenceSpan[], startIndex = 0): ParagraphBreak | null {
   if (startIndex < 0) {
     return null;
   }

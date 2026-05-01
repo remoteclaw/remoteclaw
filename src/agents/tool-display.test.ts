@@ -93,8 +93,7 @@ describe("tool display details", () => {
       resolveToolDisplay({
         name: "exec",
         args: {
-          command:
-            "set -euo pipefail\ngit -C /Users/adityasingh/.remoteclaw/workspace status --short | head -n 3",
+          command: "set -euo pipefail\ngit -C /Users/adityasingh/.remoteclaw/workspace status --short | head -n 3",
           workdir: "/Users/adityasingh/.remoteclaw/workspace",
         },
       }),
@@ -182,9 +181,7 @@ describe("tool display details", () => {
       }),
     );
 
-    expect(detail).toBe(
-      "fetch git changes → rebase git branch, `git fetch && git rebase origin/main`",
-    );
+    expect(detail).toBe("fetch git changes → rebase git branch, `git fetch && git rebase origin/main`");
   });
 
   it("falls back to raw command for unknown binaries", () => {

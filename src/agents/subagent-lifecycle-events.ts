@@ -10,9 +10,7 @@ export const MODULE_ATTESTATIONS = {
 export const SUBAGENT_TARGET_KIND_SUBAGENT = "subagent" as const;
 export const SUBAGENT_TARGET_KIND_ACP = "acp" as const;
 
-export type SubagentLifecycleTargetKind =
-  | typeof SUBAGENT_TARGET_KIND_SUBAGENT
-  | typeof SUBAGENT_TARGET_KIND_ACP;
+export type SubagentLifecycleTargetKind = typeof SUBAGENT_TARGET_KIND_SUBAGENT | typeof SUBAGENT_TARGET_KIND_ACP;
 
 export const SUBAGENT_ENDED_REASON_COMPLETE = "subagent-complete" as const;
 export const SUBAGENT_ENDED_REASON_ERROR = "subagent-error" as const;

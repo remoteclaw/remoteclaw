@@ -40,15 +40,10 @@ export async function monitorIrcProvider(opts: IrcMonitorOptions): Promise<{ sto
     accountId: opts.accountId,
   });
 
-  const runtime: RuntimeEnv = resolveLoggerBackedRuntime(
-    opts.runtime,
-    core.logging.getChildLogger(),
-  );
+  const runtime: RuntimeEnv = resolveLoggerBackedRuntime(opts.runtime, core.logging.getChildLogger());
 
   if (!account.configured) {
-    throw new Error(
-      `IRC is not configured for account "${account.accountId}" (need host and nick in channels.irc).`,
-    );
+    throw new Error(`IRC is not configured for account "${account.accountId}" (need host and nick in channels.irc).`);
   }
 
   const logger = core.logging.getChildLogger({

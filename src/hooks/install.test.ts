@@ -36,8 +36,7 @@ function makeTempDir() {
 }
 
 const { runCommandWithTimeout } = await import("../process/exec.js");
-const { installHooksFromArchive, installHooksFromNpmSpec, installHooksFromPath } =
-  await import("./install.js");
+const { installHooksFromArchive, installHooksFromNpmSpec, installHooksFromPath } = await import("./install.js");
 
 afterAll(() => {
   try {
@@ -73,10 +72,7 @@ function writeArchiveFixture(params: { fileName: string; contents: Buffer }) {
   };
 }
 
-function expectInstallFailureContains(
-  result: Awaited<ReturnType<typeof installHooksFromArchive>>,
-  snippets: string[],
-) {
+function expectInstallFailureContains(result: Awaited<ReturnType<typeof installHooksFromArchive>>, snippets: string[]) {
   expect(result.ok).toBe(false);
   if (result.ok) {
     throw new Error("expected install failure");
@@ -86,11 +82,7 @@ function expectInstallFailureContains(
   }
 }
 
-function writeHookPackManifest(params: {
-  pkgDir: string;
-  hooks: string[];
-  dependencies?: Record<string, string>;
-}) {
+function writeHookPackManifest(params: { pkgDir: string; hooks: string[]; dependencies?: Record<string, string> }) {
   fs.writeFileSync(
     path.join(params.pkgDir, "package.json"),
     JSON.stringify({
@@ -112,10 +104,7 @@ async function installArchiveFixture(params: { fileName: string; contents: Buffe
   return { fixture, result };
 }
 
-function expectPathInstallFailureContains(
-  result: Awaited<ReturnType<typeof installHooksFromPath>>,
-  snippet: string,
-) {
+function expectPathInstallFailureContains(result: Awaited<ReturnType<typeof installHooksFromPath>>, snippet: string) {
   expect(result.ok).toBe(false);
   if (result.ok) {
     throw new Error("expected install failure");
@@ -152,9 +141,7 @@ describe("installHooksFromArchive", () => {
     expect(result.hookPackId).toBe(tc.expectedPackId);
     expect(result.hooks).toContain(tc.expectedHook);
     expect(result.targetDir).toBe(path.join(fixture.stateDir, "hooks", tc.expectedPackId));
-    expect(fs.existsSync(path.join(result.targetDir, "hooks", tc.expectedHook, "HOOK.md"))).toBe(
-      true,
-    );
+    expect(fs.existsSync(path.join(result.targetDir, "hooks", tc.expectedHook, "HOOK.md"))).toBe(true);
   });
 
   it.each([
@@ -220,11 +207,7 @@ describe("installHooksFromPath", () => {
       ].join("\n"),
       "utf-8",
     );
-    fs.writeFileSync(
-      path.join(pkgDir, "hooks", "one-hook", "handler.ts"),
-      "export default async () => {};\n",
-      "utf-8",
-    );
+    fs.writeFileSync(path.join(pkgDir, "hooks", "one-hook", "handler.ts"), "export default async () => {};\n", "utf-8");
 
     const run = vi.mocked(runCommandWithTimeout);
     await expectInstallUsesIgnoreScripts({
@@ -317,10 +300,7 @@ describe("installHooksFromPath", () => {
       hooksDir: path.join(stateDir, "hooks"),
     });
 
-    expectPathInstallFailureContains(
-      result,
-      "remoteclaw.hooks entry resolves outside package directory",
-    );
+    expectPathInstallFailureContains(result, "remoteclaw.hooks entry resolves outside package directory");
   });
 });
 

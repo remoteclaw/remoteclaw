@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  resolveInstallModeOptions,
-  resolveTimedInstallModeOptions,
-} from "./install-mode-options.js";
+import { resolveInstallModeOptions, resolveTimedInstallModeOptions } from "./install-mode-options.js";
 
 type LoggerKey = "default" | "explicit";
 

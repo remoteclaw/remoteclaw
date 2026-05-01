@@ -30,10 +30,7 @@ function createStartAccountCtx(params: {
   accountId: string;
   runtime: ReturnType<typeof createRuntimeEnv>;
 }): ChannelGatewayContext<ResolvedTelegramAccount> {
-  const account = telegramPlugin.config.resolveAccount(
-    params.cfg,
-    params.accountId,
-  ) as ResolvedTelegramAccount;
+  const account = telegramPlugin.config.resolveAccount(params.cfg, params.accountId) as ResolvedTelegramAccount;
   const snapshot: ChannelAccountSnapshot = {
     accountId: params.accountId,
     configured: true,
@@ -102,9 +99,7 @@ function configureOpsProxyNetwork(cfg: RemoteClawConfig) {
   };
 }
 
-function installSendMessageRuntime(
-  sendMessageTelegram: ReturnType<typeof vi.fn>,
-): ReturnType<typeof vi.fn> {
+function installSendMessageRuntime(sendMessageTelegram: ReturnType<typeof vi.fn>): ReturnType<typeof vi.fn> {
   setTelegramRuntime({
     channel: {
       telegram: {
@@ -126,9 +121,7 @@ describe("telegramPlugin duplicate token guard", () => {
     expect(await telegramPlugin.config.isConfigured!(workAccount, cfg)).toBe(false);
     expect(await telegramPlugin.config.isConfigured!(opsAccount, cfg)).toBe(true);
 
-    expect(telegramPlugin.config.unconfiguredReason?.(workAccount, cfg)).toContain(
-      'account "alerts"',
-    );
+    expect(telegramPlugin.config.unconfiguredReason?.(workAccount, cfg)).toContain('account "alerts"');
   });
 
   it("surfaces duplicate-token reason in status snapshot", async () => {
@@ -262,9 +255,7 @@ describe("telegramPlugin duplicate token guard", () => {
   });
 
   it("forwards mediaLocalRoots to sendMessageTelegram for outbound media sends", async () => {
-    const sendMessageTelegram = installSendMessageRuntime(
-      vi.fn(async () => ({ messageId: "tg-1" })),
-    );
+    const sendMessageTelegram = installSendMessageRuntime(vi.fn(async () => ({ messageId: "tg-1" })));
 
     const result = await telegramPlugin.outbound!.sendMedia!({
       cfg: createCfg(),
@@ -287,9 +278,7 @@ describe("telegramPlugin duplicate token guard", () => {
   });
 
   it("preserves buttons for outbound text payload sends", async () => {
-    const sendMessageTelegram = installSendMessageRuntime(
-      vi.fn(async () => ({ messageId: "tg-2" })),
-    );
+    const sendMessageTelegram = installSendMessageRuntime(vi.fn(async () => ({ messageId: "tg-2" })));
 
     const result = await telegramPlugin.outbound!.sendPayload!({
       cfg: createCfg(),
@@ -367,9 +356,7 @@ describe("telegramPlugin duplicate token guard", () => {
         silent: true,
       }),
     );
-    expect(
-      (sendMessageTelegram.mock.calls[1]?.[2] as Record<string, unknown>)?.buttons,
-    ).toBeUndefined();
+    expect((sendMessageTelegram.mock.calls[1]?.[2] as Record<string, unknown>)?.buttons).toBeUndefined();
     expect(result).toMatchObject({ channel: "telegram", messageId: "tg-4" });
   });
 

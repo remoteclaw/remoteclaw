@@ -17,10 +17,7 @@ function resolveCachedPreferredTmpDir(): string {
   return cachedPreferredTmpDir;
 }
 
-function buildMediaLocalRoots(
-  stateDir: string,
-  options: BuildMediaLocalRootsOptions = {},
-): string[] {
+function buildMediaLocalRoots(stateDir: string, options: BuildMediaLocalRootsOptions = {}): string[] {
   const resolvedStateDir = path.resolve(stateDir);
   const preferredTmpDir = options.preferredTmpDir ?? resolveCachedPreferredTmpDir();
   return [
@@ -35,10 +32,7 @@ export function getDefaultMediaLocalRoots(): readonly string[] {
   return buildMediaLocalRoots(resolveStateDir());
 }
 
-export function getAgentScopedMediaLocalRoots(
-  cfg: RemoteClawConfig,
-  agentId?: string,
-): readonly string[] {
+export function getAgentScopedMediaLocalRoots(cfg: RemoteClawConfig, agentId?: string): readonly string[] {
   const roots = buildMediaLocalRoots(resolveStateDir());
   if (!agentId?.trim()) {
     return roots;

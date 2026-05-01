@@ -5,10 +5,7 @@ import { loadConfig } from "../../config/config.js";
 import { resolveOutboundChannelPlugin } from "../../infra/outbound/channel-resolution.js";
 import { resolveMessageChannelSelection } from "../../infra/outbound/channel-selection.js";
 import { deliverOutboundPayloads } from "../../infra/outbound/deliver.js";
-import {
-  ensureOutboundSessionEntry,
-  resolveOutboundSessionRoute,
-} from "../../infra/outbound/outbound-session.js";
+import { ensureOutboundSessionEntry, resolveOutboundSessionRoute } from "../../infra/outbound/outbound-session.js";
 import { normalizeReplyPayloadsForDelivery } from "../../infra/outbound/payloads.js";
 import { buildOutboundSessionContext } from "../../infra/outbound/session-context.js";
 import { maybeResolveIdLikeTarget } from "../../infra/outbound/target-resolver.js";
@@ -31,10 +28,7 @@ type InflightResult = {
   meta?: Record<string, unknown>;
 };
 
-const inflightByContext = new WeakMap<
-  GatewayRequestContext,
-  Map<string, Promise<InflightResult>>
->();
+const inflightByContext = new WeakMap<GatewayRequestContext, Map<string, Promise<InflightResult>>>();
 
 const getInflightMap = (context: GatewayRequestContext) => {
   let inflight = inflightByContext.get(context);
@@ -58,8 +52,7 @@ async function resolveRequestedChannel(params: {
       error: ReturnType<typeof errorShape>;
     }
 > {
-  const channelInput =
-    typeof params.requestChannel === "string" ? params.requestChannel : undefined;
+  const channelInput = typeof params.requestChannel === "string" ? params.requestChannel : undefined;
   const normalizedChannel = channelInput ? normalizeChannelId(channelInput) : null;
   if (channelInput && !normalizedChannel) {
     const normalizedInput = channelInput.trim().toLowerCase();
@@ -134,9 +127,7 @@ export const sendHandlers: GatewayRequestHandlers = {
     const to = request.to.trim();
     const message = typeof request.message === "string" ? request.message.trim() : "";
     const mediaUrl =
-      typeof request.mediaUrl === "string" && request.mediaUrl.trim().length > 0
-        ? request.mediaUrl.trim()
-        : undefined;
+      typeof request.mediaUrl === "string" && request.mediaUrl.trim().length > 0 ? request.mediaUrl.trim() : undefined;
     const mediaUrls = Array.isArray(request.mediaUrls)
       ? request.mediaUrls
           .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
@@ -161,21 +152,13 @@ export const sendHandlers: GatewayRequestHandlers = {
     }
     const { cfg, channel } = resolvedChannel;
     const accountId =
-      typeof request.accountId === "string" && request.accountId.trim().length
-        ? request.accountId.trim()
-        : undefined;
+      typeof request.accountId === "string" && request.accountId.trim().length ? request.accountId.trim() : undefined;
     const threadId =
-      typeof request.threadId === "string" && request.threadId.trim().length
-        ? request.threadId.trim()
-        : undefined;
+      typeof request.threadId === "string" && request.threadId.trim().length ? request.threadId.trim() : undefined;
     const outboundChannel = channel;
     const plugin = resolveOutboundChannelPlugin({ channel, cfg });
     if (!plugin) {
-      respond(
-        false,
-        undefined,
-        errorShape(ErrorCodes.INVALID_REQUEST, `unsupported channel: ${channel}`),
-      );
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, `unsupported channel: ${channel}`));
       return;
     }
 
@@ -203,9 +186,7 @@ export const sendHandlers: GatewayRequestHandlers = {
         });
         const deliveryTarget = idLikeTarget?.to ?? resolved.to;
         const outboundDeps = context.deps ? createOutboundSendDeps(context.deps) : undefined;
-        const mirrorPayloads = normalizeReplyPayloadsForDelivery([
-          { text: message, mediaUrl, mediaUrls },
-        ]);
+        const mirrorPayloads = normalizeReplyPayloadsForDelivery([{ text: message, mediaUrl, mediaUrls }]);
         const mirrorText = mirrorPayloads
           .map((payload) => payload.text)
           .filter(Boolean)
@@ -218,9 +199,7 @@ export const sendHandlers: GatewayRequestHandlers = {
             ? request.sessionKey.trim().toLowerCase()
             : undefined;
         const explicitAgentId =
-          typeof request.agentId === "string" && request.agentId.trim()
-            ? request.agentId.trim()
-            : undefined;
+          typeof request.agentId === "string" && request.agentId.trim() ? request.agentId.trim() : undefined;
         const sessionAgentId = providedSessionKey
           ? resolveSessionAgentId({ sessionKey: providedSessionKey, config: cfg })
           : undefined;
@@ -378,10 +357,7 @@ export const sendHandlers: GatewayRequestHandlers = {
       respond(
         false,
         undefined,
-        errorShape(
-          ErrorCodes.INVALID_REQUEST,
-          "durationSeconds is only supported for Telegram polls",
-        ),
+        errorShape(ErrorCodes.INVALID_REQUEST, "durationSeconds is only supported for Telegram polls"),
       );
       return;
     }
@@ -401,22 +377,14 @@ export const sendHandlers: GatewayRequestHandlers = {
       durationHours: request.durationHours,
     };
     const threadId =
-      typeof request.threadId === "string" && request.threadId.trim().length
-        ? request.threadId.trim()
-        : undefined;
+      typeof request.threadId === "string" && request.threadId.trim().length ? request.threadId.trim() : undefined;
     const accountId =
-      typeof request.accountId === "string" && request.accountId.trim().length
-        ? request.accountId.trim()
-        : undefined;
+      typeof request.accountId === "string" && request.accountId.trim().length ? request.accountId.trim() : undefined;
     try {
       const plugin = resolveOutboundChannelPlugin({ channel, cfg });
       const outbound = plugin?.outbound;
       if (!outbound?.sendPoll) {
-        respond(
-          false,
-          undefined,
-          errorShape(ErrorCodes.INVALID_REQUEST, `unsupported poll channel: ${channel}`),
-        );
+        respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, `unsupported poll channel: ${channel}`));
         return;
       }
       const resolved = resolveOutboundTarget({

@@ -36,9 +36,7 @@ export const HOST_SHELL_WRAPPER_ALLOWED_OVERRIDE_ENV_KEY_VALUES: readonly string
   "FORCE_COLOR",
 ]);
 export const HOST_DANGEROUS_ENV_KEYS = new Set<string>(HOST_DANGEROUS_ENV_KEY_VALUES);
-export const HOST_DANGEROUS_OVERRIDE_ENV_KEYS = new Set<string>(
-  HOST_DANGEROUS_OVERRIDE_ENV_KEY_VALUES,
-);
+export const HOST_DANGEROUS_OVERRIDE_ENV_KEYS = new Set<string>(HOST_DANGEROUS_OVERRIDE_ENV_KEY_VALUES);
 export const HOST_SHELL_WRAPPER_ALLOWED_OVERRIDE_ENV_KEYS = new Set<string>(
   HOST_SHELL_WRAPPER_ALLOWED_OVERRIDE_ENV_KEY_VALUES,
 );
@@ -54,10 +52,7 @@ export type HostExecEnvOverrideDiagnostics = {
   rejectedOverrideInvalidKeys: string[];
 };
 
-export function normalizeEnvVarKey(
-  rawKey: string,
-  options?: { portable?: boolean },
-): string | null {
+export function normalizeEnvVarKey(rawKey: string, options?: { portable?: boolean }): string | null {
   const key = rawKey.trim();
   if (!key) {
     return null;

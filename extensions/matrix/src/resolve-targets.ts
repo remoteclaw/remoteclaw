@@ -7,10 +7,7 @@ import type {
 } from "remoteclaw/plugin-sdk/matrix";
 import { listMatrixDirectoryGroupsLive, listMatrixDirectoryPeersLive } from "./directory-live.js";
 
-function findExactDirectoryMatches(
-  matches: ChannelDirectoryEntry[],
-  query: string,
-): ChannelDirectoryEntry[] {
+function findExactDirectoryMatches(matches: ChannelDirectoryEntry[], query: string): ChannelDirectoryEntry[] {
   const normalized = query.trim().toLowerCase();
   if (!normalized) {
     return [];
@@ -23,10 +20,7 @@ function findExactDirectoryMatches(
   });
 }
 
-function pickBestGroupMatch(
-  matches: ChannelDirectoryEntry[],
-  query: string,
-): ChannelDirectoryEntry | undefined {
+function pickBestGroupMatch(matches: ChannelDirectoryEntry[], query: string): ChannelDirectoryEntry | undefined {
   if (matches.length === 0) {
     return undefined;
   }
@@ -34,10 +28,7 @@ function pickBestGroupMatch(
   return exact ?? matches[0];
 }
 
-function pickBestUserMatch(
-  matches: ChannelDirectoryEntry[],
-  query: string,
-): ChannelDirectoryEntry | undefined {
+function pickBestUserMatch(matches: ChannelDirectoryEntry[], query: string): ChannelDirectoryEntry | undefined {
   if (matches.length === 0) {
     return undefined;
   }

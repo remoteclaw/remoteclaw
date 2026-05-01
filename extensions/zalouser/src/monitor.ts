@@ -30,26 +30,12 @@ import {
   summarizeMapping,
   warnMissingProviderGroupPolicyFallbackOnce,
 } from "remoteclaw/plugin-sdk/zalouser";
-import {
-  buildZalouserGroupCandidates,
-  findZalouserGroupEntry,
-  isZalouserGroupEntryAllowed,
-} from "./group-policy.js";
+import { buildZalouserGroupCandidates, findZalouserGroupEntry, isZalouserGroupEntryAllowed } from "./group-policy.js";
 import { formatZalouserMessageSidFull, resolveZalouserMessageSid } from "./message-sid.js";
 import { getZalouserRuntime } from "./runtime.js";
-import {
-  sendDeliveredZalouser,
-  sendMessageZalouser,
-  sendSeenZalouser,
-  sendTypingZalouser,
-} from "./send.js";
+import { sendDeliveredZalouser, sendMessageZalouser, sendSeenZalouser, sendTypingZalouser } from "./send.js";
 import type { ResolvedZalouserAccount, ZaloInboundMessage } from "./types.js";
-import {
-  listZaloFriends,
-  listZaloGroups,
-  resolveZaloGroupContext,
-  startZaloListener,
-} from "./zalo-js.js";
+import { listZaloFriends, listZaloGroups, resolveZaloGroupContext, startZaloListener } from "./zalo-js.js";
 
 export type ZalouserMonitorOptions = {
   account: ResolvedZalouserAccount;
@@ -279,11 +265,7 @@ async function processMessage(
   const groupContext =
     isGroup && !configuredGroupName
       ? await resolveZaloGroupContext(account.profile, chatId).catch((err) => {
-          logVerbose(
-            core,
-            runtime,
-            `zalouser: group context lookup failed for ${chatId}: ${String(err)}`,
-          );
+          logVerbose(core, runtime, `zalouser: group context lookup failed for ${chatId}: ${String(err)}`);
           return null;
         })
       : null;
@@ -336,11 +318,7 @@ async function processMessage(
       if (routeAccess.reason === "disabled") {
         logVerbose(core, runtime, `zalouser: drop group ${chatId} (groupPolicy=disabled)`);
       } else if (routeAccess.reason === "empty_allowlist") {
-        logVerbose(
-          core,
-          runtime,
-          `zalouser: drop group ${chatId} (groupPolicy=allowlist, no allowlist)`,
-        );
+        logVerbose(core, runtime, `zalouser: drop group ${chatId} (groupPolicy=allowlist, no allowlist)`);
       } else if (routeAccess.reason === "route_not_allowlisted") {
         logVerbose(core, runtime, `zalouser: drop group ${chatId} (not allowlisted)`);
       } else if (routeAccess.reason === "route_disabled") {
@@ -353,10 +331,7 @@ async function processMessage(
   const dmPolicy = account.config.dmPolicy ?? "pairing";
   const configAllowFrom = (account.config.allowFrom ?? []).map((v) => String(v));
   const configGroupAllowFrom = (account.config.groupAllowFrom ?? []).map((v) => String(v));
-  const shouldComputeCommandAuth = core.channel.commands.shouldComputeCommandAuthorized(
-    commandBody,
-    config,
-  );
+  const shouldComputeCommandAuth = core.channel.commands.shouldComputeCommandAuthorized(commandBody, config);
   const storeAllowFrom =
     !isGroup && dmPolicy !== "allowlist" && (dmPolicy !== "open" || shouldComputeCommandAuth)
       ? await pairing.readAllowFromStore().catch(() => [])
@@ -374,11 +349,7 @@ async function processMessage(
     if (accessDecision.reasonCode === DM_GROUP_ACCESS_REASON.GROUP_POLICY_EMPTY_ALLOWLIST) {
       logVerbose(core, runtime, "Blocked zalouser group message (no group allowlist)");
     } else if (accessDecision.reasonCode === DM_GROUP_ACCESS_REASON.GROUP_POLICY_NOT_ALLOWLISTED) {
-      logVerbose(
-        core,
-        runtime,
-        `Blocked zalouser sender ${senderId} (not in groupAllowFrom/allowFrom)`,
-      );
+      logVerbose(core, runtime, `Blocked zalouser sender ${senderId} (not in groupAllowFrom/allowFrom)`);
     }
     return;
   }
@@ -399,11 +370,7 @@ async function processMessage(
           statusSink?.({ lastOutboundAt: Date.now() });
         },
         onReplyError: (err) => {
-          logVerbose(
-            core,
-            runtime,
-            `zalouser pairing reply failed for ${senderId}: ${String(err)}`,
-          );
+          logVerbose(core, runtime, `zalouser pairing reply failed for ${senderId}: ${String(err)}`);
         },
       });
       return;
@@ -411,11 +378,7 @@ async function processMessage(
     if (accessDecision.reasonCode === DM_GROUP_ACCESS_REASON.DM_POLICY_DISABLED) {
       logVerbose(core, runtime, `Blocked zalouser DM from ${senderId} (dmPolicy=disabled)`);
     } else {
-      logVerbose(
-        core,
-        runtime,
-        `Blocked unauthorized zalouser sender ${senderId} (dmPolicy=${dmPolicy})`,
-      );
+      logVerbose(core, runtime, `Blocked unauthorized zalouser sender ${senderId} (dmPolicy=${dmPolicy})`);
     }
     return;
   }
@@ -430,24 +393,17 @@ async function processMessage(
     senderId,
     isSenderAllowed,
     readAllowFromStore: async () => storeAllowFrom,
-    shouldComputeCommandAuthorized: (body, cfg) =>
-      core.channel.commands.shouldComputeCommandAuthorized(body, cfg),
+    shouldComputeCommandAuthorized: (body, cfg) => core.channel.commands.shouldComputeCommandAuthorized(body, cfg),
     resolveCommandAuthorizedFromAuthorizers: (params) =>
       core.channel.commands.resolveCommandAuthorizedFromAuthorizers(params),
   });
   const hasControlCommand = core.channel.commands.isControlCommandMessage(commandBody, config);
   if (isGroup && hasControlCommand && commandAuthorized !== true) {
-    logVerbose(
-      core,
-      runtime,
-      `zalouser: drop control command from unauthorized sender ${senderId}`,
-    );
+    logVerbose(core, runtime, `zalouser: drop control command from unauthorized sender ${senderId}`);
     return;
   }
 
-  const peer = isGroup
-    ? { kind: "group" as const, id: chatId }
-    : { kind: "direct" as const, id: senderId };
+  const peer = isGroup ? { kind: "group" as const, id: chatId } : { kind: "direct" as const, id: senderId };
 
   const route = core.channel.routing.resolveAgentRoute({
     cfg: config,
@@ -564,9 +520,7 @@ async function processMessage(
               from: fromLabel,
               timestamp: entry.timestamp,
               envelope: envelopeOptions,
-              body: `${entry.sender}: ${entry.body}${
-                entry.messageId ? ` [id:${entry.messageId}]` : ""
-              }`,
+              body: `${entry.sender}: ${entry.body}${entry.messageId ? ` [id:${entry.messageId}]` : ""}`,
             }),
         })
       : body;
@@ -639,9 +593,7 @@ async function processMessage(
       });
     },
     onStartError: (err) => {
-      runtime.error?.(
-        `[${account.accountId}] zalouser typing start failed for ${chatId}: ${String(err)}`,
-      );
+      runtime.error?.(`[${account.accountId}] zalouser typing start failed for ${chatId}: ${String(err)}`);
       logVerbose(core, runtime, `zalouser typing failed for ${chatId}: ${String(err)}`);
     },
   });
@@ -697,8 +649,7 @@ async function deliverZalouserReply(params: {
   statusSink?: (patch: { lastInboundAt?: number; lastOutboundAt?: number }) => void;
   tableMode?: MarkdownTableMode;
 }): Promise<void> {
-  const { payload, profile, chatId, isGroup, runtime, core, config, accountId, statusSink } =
-    params;
+  const { payload, profile, chatId, isGroup, runtime, core, config, accountId, statusSink } = params;
   const tableMode = params.tableMode ?? "code";
   const text = core.channel.text.convertMarkdownTables(payload.text ?? "", tableMode);
 
@@ -724,11 +675,7 @@ async function deliverZalouserReply(params: {
 
   if (text) {
     const chunkMode = core.channel.text.resolveChunkMode(config, "zalouser", accountId);
-    const chunks = core.channel.text.chunkMarkdownTextWithMode(
-      text,
-      ZALOUSER_TEXT_LIMIT,
-      chunkMode,
-    );
+    const chunks = core.channel.text.chunkMarkdownTextWithMode(text, ZALOUSER_TEXT_LIMIT, chunkMode);
     logVerbose(core, runtime, `Sending ${chunks.length} text chunk(s) to ${chatId}`);
     for (const chunk of chunks) {
       try {
@@ -741,9 +688,7 @@ async function deliverZalouserReply(params: {
   }
 }
 
-export async function monitorZalouserProvider(
-  options: ZalouserMonitorOptions,
-): Promise<ZalouserMonitorResult> {
+export async function monitorZalouserProvider(options: ZalouserMonitorOptions): Promise<ZalouserMonitorResult> {
   let { account, config } = options;
   const { abortSignal, statusSink, runtime } = options;
 
@@ -751,9 +696,7 @@ export async function monitorZalouserProvider(
   const inboundQueue = new KeyedAsyncQueue();
   const historyLimit = Math.max(
     0,
-    account.config.historyLimit ??
-      config.messages?.groupChat?.historyLimit ??
-      DEFAULT_GROUP_HISTORY_LIMIT,
+    account.config.historyLimit ?? config.messages?.groupChat?.historyLimit ?? DEFAULT_GROUP_HISTORY_LIMIT,
   );
   const groupHistories = new Map<string, HistoryEntry[]>();
 
@@ -770,10 +713,7 @@ export async function monitorZalouserProvider(
       const friends = await listZaloFriends(profile);
       const byName = buildNameIndex(friends, (friend) => friend.displayName);
       if (allowFromEntries.length > 0) {
-        const { additions, mapping, unresolved } = resolveUserAllowlistEntries(
-          allowFromEntries,
-          byName,
-        );
+        const { additions, mapping, unresolved } = resolveUserAllowlistEntries(allowFromEntries, byName);
         const allowFrom = mergeAllowlist({ existing: account.config.allowFrom, additions });
         account = {
           ...account,
@@ -785,10 +725,7 @@ export async function monitorZalouserProvider(
         summarizeMapping("zalouser users", mapping, unresolved, runtime);
       }
       if (groupAllowFromEntries.length > 0) {
-        const { additions, mapping, unresolved } = resolveUserAllowlistEntries(
-          groupAllowFromEntries,
-          byName,
-        );
+        const { additions, mapping, unresolved } = resolveUserAllowlistEntries(groupAllowFromEntries, byName);
         const groupAllowFrom = mergeAllowlist({
           existing: account.config.groupAllowFrom,
           additions,
@@ -902,15 +839,7 @@ export async function monitorZalouserProvider(
             if (stopped || abortSignal.aborted) {
               return;
             }
-            await processMessage(
-              msg,
-              account,
-              config,
-              core,
-              runtime,
-              { historyLimit, groupHistories },
-              statusSink,
-            );
+            await processMessage(msg, account, config, core, runtime, { historyLimit, groupHistories }, statusSink);
           })
           .catch((err) => {
             runtime.error(`[${account.accountId}] Failed to process message: ${String(err)}`);

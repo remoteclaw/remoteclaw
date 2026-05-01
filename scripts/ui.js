@@ -20,13 +20,9 @@ function usage() {
 function which(cmd) {
   try {
     const key = process.platform === "win32" ? "Path" : "PATH";
-    const paths = (process.env[key] ?? process.env.PATH ?? "")
-      .split(path.delimiter)
-      .filter(Boolean);
+    const paths = (process.env[key] ?? process.env.PATH ?? "").split(path.delimiter).filter(Boolean);
     const extensions =
-      process.platform === "win32"
-        ? (process.env.PATHEXT ?? ".EXE;.CMD;.BAT;.COM").split(";").filter(Boolean)
-        : [""];
+      process.platform === "win32" ? (process.env.PATHEXT ?? ".EXE;.CMD;.BAT;.COM").split(";").filter(Boolean) : [""];
     for (const entry of paths) {
       for (const ext of extensions) {
         const candidate = path.join(entry, process.platform === "win32" ? `${cmd}${ext}` : cmd);
@@ -71,9 +67,7 @@ export function assertSafeWindowsShellArgs(args, platform = process.platform) {
   }
   // SECURITY: `shell: true` routes through cmd.exe; reject risky metacharacters
   // in forwarded args to prevent shell control-flow/env-expansion injection.
-  throw new Error(
-    `Unsafe Windows shell argument: ${unsafeArg}. Remove shell metacharacters (" & | < > ^ % !).`,
-  );
+  throw new Error(`Unsafe Windows shell argument: ${unsafeArg}. Remove shell metacharacters (" & | < > ^ % !).`);
 }
 
 function createSpawnOptions(cmd, args, envOverride) {
@@ -184,8 +178,7 @@ export function main(argv = process.argv.slice(2)) {
   }
 
   if (!depsInstalled(action === "test" ? "test" : "build")) {
-    const installEnv =
-      action === "build" ? { ...process.env, NODE_ENV: "production" } : process.env;
+    const installEnv = action === "build" ? { ...process.env, NODE_ENV: "production" } : process.env;
     const installArgs = action === "build" ? ["install", "--prod"] : ["install"];
     runSync(runner.cmd, installArgs, installEnv);
   }

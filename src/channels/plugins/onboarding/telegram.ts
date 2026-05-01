@@ -89,8 +89,7 @@ async function promptTelegramAllowFrom(params: {
     label: "Telegram allowlist",
     parseInputs: splitOnboardingEntries,
     parseId: parseTelegramAllowFromId,
-    invalidWithoutTokenNote:
-      "Telegram token missing; use numeric sender ids (usernames require a bot token).",
+    invalidWithoutTokenNote: "Telegram token missing; use numeric sender ids (usernames require a bot token).",
     resolveEntries: async ({ token: tokenValue, entries }) => {
       const results = await Promise.all(
         entries.map(async (entry) => {
@@ -165,14 +164,7 @@ export const telegramOnboardingAdapter: ChannelOnboardingAdapter = {
       quickstartScore: configured ? 1 : 10,
     };
   },
-  configure: async ({
-    cfg,
-    prompter,
-    options,
-    accountOverrides,
-    shouldPromptAccountIds,
-    forceAllowFrom,
-  }) => {
+  configure: async ({ cfg, prompter, options, accountOverrides, shouldPromptAccountIds, forceAllowFrom }) => {
     const defaultTelegramAccountId = resolveDefaultTelegramAccountId(cfg);
     const telegramAccountId = await resolveAccountIdForConfigure({
       cfg,
@@ -190,8 +182,7 @@ export const telegramOnboardingAdapter: ChannelOnboardingAdapter = {
       accountId: telegramAccountId,
     });
     const hasConfiguredBotToken = hasConfiguredSecretInput(resolvedAccount.config.botToken);
-    const hasConfigToken =
-      hasConfiguredBotToken || Boolean(resolvedAccount.config.tokenFile?.trim());
+    const hasConfigToken = hasConfiguredBotToken || Boolean(resolvedAccount.config.tokenFile?.trim());
     const allowEnv = telegramAccountId === DEFAULT_ACCOUNT_ID;
     const tokenStep = await runSingleChannelSecretStep({
       cfg: next,

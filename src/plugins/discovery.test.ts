@@ -23,18 +23,11 @@ function buildDiscoveryEnv(stateDir: string): NodeJS.ProcessEnv {
   };
 }
 
-async function discoverWithStateDir(
-  stateDir: string,
-  params: Parameters<typeof discoverRemoteClawPlugins>[0],
-) {
+async function discoverWithStateDir(stateDir: string, params: Parameters<typeof discoverRemoteClawPlugins>[0]) {
   return discoverRemoteClawPlugins({ ...params, env: buildDiscoveryEnv(stateDir) });
 }
 
-function writePluginPackageManifest(params: {
-  packageDir: string;
-  packageName: string;
-  extensions: string[];
-}) {
+function writePluginPackageManifest(params: { packageDir: string; packageName: string; extensions: string[] }) {
   fs.writeFileSync(
     path.join(params.packageDir, "package.json"),
     JSON.stringify({
@@ -46,9 +39,7 @@ function writePluginPackageManifest(params: {
 }
 
 function expectEscapesPackageDiagnostic(diagnostics: Array<{ message: string }>) {
-  expect(diagnostics.some((entry) => entry.message.includes("escapes package directory"))).toBe(
-    true,
-  );
+  expect(diagnostics.some((entry) => entry.message.includes("escapes package directory"))).toBe(true);
 }
 
 afterEach(() => {
@@ -122,16 +113,8 @@ describe("discoverRemoteClawPlugins", () => {
       packageName: "pack",
       extensions: ["./src/one.ts", "./src/two.ts"],
     });
-    fs.writeFileSync(
-      path.join(globalExt, "src", "one.ts"),
-      "export default function () {}",
-      "utf-8",
-    );
-    fs.writeFileSync(
-      path.join(globalExt, "src", "two.ts"),
-      "export default function () {}",
-      "utf-8",
-    );
+    fs.writeFileSync(path.join(globalExt, "src", "one.ts"), "export default function () {}", "utf-8");
+    fs.writeFileSync(path.join(globalExt, "src", "two.ts"), "export default function () {}", "utf-8");
 
     const { candidates } = await discoverWithStateDir(stateDir, {});
 
@@ -150,11 +133,7 @@ describe("discoverRemoteClawPlugins", () => {
       packageName: "@remoteclaw/voice-call",
       extensions: ["./src/index.ts"],
     });
-    fs.writeFileSync(
-      path.join(globalExt, "src", "index.ts"),
-      "export default function () {}",
-      "utf-8",
-    );
+    fs.writeFileSync(path.join(globalExt, "src", "index.ts"), "export default function () {}", "utf-8");
 
     const { candidates } = await discoverWithStateDir(stateDir, {});
 
@@ -302,39 +281,32 @@ describe("discoverRemoteClawPlugins", () => {
     const result = await discoverWithStateDir(stateDir, {});
 
     expect(result.candidates).toHaveLength(0);
-    expect(result.diagnostics.some((diag) => diag.message.includes("world-writable path"))).toBe(
-      true,
-    );
+    expect(result.diagnostics.some((diag) => diag.message.includes("world-writable path"))).toBe(true);
   });
 
-  it.runIf(process.platform !== "win32")(
-    "repairs world-writable bundled plugin dirs before loading them",
-    async () => {
-      const stateDir = makeTempDir();
-      const bundledDir = path.join(stateDir, "bundled");
-      const packDir = path.join(bundledDir, "demo-pack");
-      fs.mkdirSync(packDir, { recursive: true });
-      fs.writeFileSync(path.join(packDir, "index.ts"), "export default function () {}", "utf-8");
-      fs.chmodSync(packDir, 0o777);
+  it.runIf(process.platform !== "win32")("repairs world-writable bundled plugin dirs before loading them", async () => {
+    const stateDir = makeTempDir();
+    const bundledDir = path.join(stateDir, "bundled");
+    const packDir = path.join(bundledDir, "demo-pack");
+    fs.mkdirSync(packDir, { recursive: true });
+    fs.writeFileSync(path.join(packDir, "index.ts"), "export default function () {}", "utf-8");
+    fs.chmodSync(packDir, 0o777);
 
-      const result = discoverRemoteClawPlugins({
-        env: {
-          ...process.env,
-          REMOTECLAW_STATE_DIR: stateDir,
-          CLAWDBOT_STATE_DIR: undefined,
-          REMOTECLAW_BUNDLED_PLUGINS_DIR: bundledDir,
-        },
-      });
+    const result = discoverRemoteClawPlugins({
+      env: {
+        ...process.env,
+        REMOTECLAW_STATE_DIR: stateDir,
+        CLAWDBOT_STATE_DIR: undefined,
+        REMOTECLAW_BUNDLED_PLUGINS_DIR: bundledDir,
+      },
+    });
 
-      expect(result.candidates.some((candidate) => candidate.idHint === "demo-pack")).toBe(true);
-      expect(
-        result.diagnostics.some(
-          (diag) => diag.source === packDir && diag.message.includes("world-writable path"),
-        ),
-      ).toBe(false);
-      expect(fs.statSync(packDir).mode & 0o777).toBe(0o755);
-    },
-  );
+    expect(result.candidates.some((candidate) => candidate.idHint === "demo-pack")).toBe(true);
+    expect(
+      result.diagnostics.some((diag) => diag.source === packDir && diag.message.includes("world-writable path")),
+    ).toBe(false);
+    expect(fs.statSync(packDir).mode & 0o777).toBe(0o755);
+  });
 
   it.runIf(process.platform !== "win32" && typeof process.getuid === "function")(
     "blocks suspicious ownership when uid mismatch is detected",
@@ -342,11 +314,7 @@ describe("discoverRemoteClawPlugins", () => {
       const stateDir = makeTempDir();
       const globalExt = path.join(stateDir, "extensions");
       fs.mkdirSync(globalExt, { recursive: true });
-      fs.writeFileSync(
-        path.join(globalExt, "owner-mismatch.ts"),
-        "export default function () {}",
-        "utf-8",
-      );
+      fs.writeFileSync(path.join(globalExt, "owner-mismatch.ts"), "export default function () {}", "utf-8");
 
       const actualUid = (process as NodeJS.Process & { getuid: () => number }).getuid();
       const result = await discoverWithStateDir(stateDir, { ownershipUid: actualUid + 1 });

@@ -103,9 +103,7 @@ describe("GatewayClient", () => {
       };
 
       const requestPromise = client.request("status");
-      const requestExpectation = expect(requestPromise).rejects.toThrow(
-        "gateway request timeout for status",
-      );
+      const requestExpectation = expect(requestPromise).rejects.toThrow("gateway request timeout for status");
       expect(send).toHaveBeenCalledTimes(1);
       expect((client as unknown as { pending: Map<string, unknown> }).pending.size).toBe(1);
 

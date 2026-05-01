@@ -9,9 +9,7 @@ import path from "node:path";
  *   - Versioned formula "node@22":  <prefix>/opt/node@22/bin/node  (keg-only)
  */
 export async function resolveStableNodePath(nodePath: string): Promise<string> {
-  const cellarMatch = nodePath.match(
-    /^(.+?)[\\/]Cellar[\\/]([^\\/]+)[\\/][^\\/]+[\\/]bin[\\/]node$/,
-  );
+  const cellarMatch = nodePath.match(/^(.+?)[\\/]Cellar[\\/]([^\\/]+)[\\/][^\\/]+[\\/]bin[\\/]node$/);
   if (!cellarMatch) {
     return nodePath;
   }

@@ -39,12 +39,7 @@ const createDmMessage = (params: { id: string; remoteJid: string; conversation: 
   messageTimestamp: nowSeconds(),
 });
 
-const createGroupMessage = (params: {
-  id: string;
-  remoteJid?: string;
-  participant: string;
-  conversation: string;
-}) => ({
+const createGroupMessage = (params: { id: string; remoteJid?: string; participant: string; conversation: string }) => ({
   key: {
     id: params.id,
     fromMe: false,
@@ -55,10 +50,7 @@ const createGroupMessage = (params: {
   messageTimestamp: nowSeconds(),
 });
 
-async function startWebInboxMonitor(params: {
-  config?: Record<string, unknown>;
-  sendReadReceipts?: boolean;
-}) {
+async function startWebInboxMonitor(params: { config?: Record<string, unknown>; sendReadReceipts?: boolean }) {
   if (params.config) {
     mockLoadConfig.mockReturnValue(params.config);
   }
@@ -150,9 +142,7 @@ describe("web monitor inbox", () => {
     await flushInboundQueue();
 
     expect(onMessage).toHaveBeenCalledTimes(1);
-    expect(onMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ from: "+123", to: "+123", body: "self ping" }),
-    );
+    expect(onMessage).toHaveBeenCalledWith(expect.objectContaining({ from: "+123", to: "+123", body: "self ping" }));
     expect(sock.readMessages).not.toHaveBeenCalled();
 
     await listener.close();

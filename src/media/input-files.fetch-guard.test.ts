@@ -25,8 +25,7 @@ let extractImageContentFromSource: typeof import("./input-files.js").extractImag
 let extractFileContentFromSource: typeof import("./input-files.js").extractFileContentFromSource;
 
 beforeAll(async () => {
-  ({ fetchWithGuard, extractImageContentFromSource, extractFileContentFromSource } =
-    await import("./input-files.js"));
+  ({ fetchWithGuard, extractImageContentFromSource, extractFileContentFromSource } = await import("./input-files.js"));
 });
 
 beforeEach(() => {
@@ -56,10 +55,7 @@ async function expectRejectedImageMimeCase(params: {
     const responseBody = Uint8Array.from(params.fetchedBody ?? Buffer.from("url-source"));
     fetchWithSsrFGuardMock.mockResolvedValueOnce({
       response: new Response(
-        responseBody.buffer.slice(
-          responseBody.byteOffset,
-          responseBody.byteOffset + responseBody.byteLength,
-        ),
+        responseBody.buffer.slice(responseBody.byteOffset, responseBody.byteOffset + responseBody.byteLength),
         {
           status: 200,
           headers: { "content-type": params.fetchedContentType ?? "application/octet-stream" },
@@ -69,9 +65,7 @@ async function expectRejectedImageMimeCase(params: {
       finalUrl: params.fetchedUrl ?? params.source.url,
     });
   }
-  await expect(extractImageContentFromSource(params.source, params.limits)).rejects.toThrow(
-    params.expectedError,
-  );
+  await expect(extractImageContentFromSource(params.source, params.limits)).rejects.toThrow(params.expectedError);
   if (params.source.type === "url") {
     expect(release).toHaveBeenCalledTimes(1);
   }
@@ -94,10 +88,7 @@ async function expectResolvedImageContentCase(params: {
     const responseBody = Uint8Array.from(params.fetchedBody ?? Buffer.from("url-source"));
     fetchWithSsrFGuardMock.mockResolvedValueOnce({
       response: new Response(
-        responseBody.buffer.slice(
-          responseBody.byteOffset,
-          responseBody.byteOffset + responseBody.byteLength,
-        ),
+        responseBody.buffer.slice(responseBody.byteOffset, responseBody.byteOffset + responseBody.byteLength),
         {
           status: 200,
           headers: { "content-type": params.fetchedContentType ?? "application/octet-stream" },
@@ -129,9 +120,7 @@ async function expectBase64ImageValidationCase(params: {
   expectedError?: string;
 }) {
   if (params.expectedError) {
-    await expect(extractImageContentFromSource(params.source, params.limits)).rejects.toThrow(
-      params.expectedError,
-    );
+    await expect(extractImageContentFromSource(params.source, params.limits)).rejects.toThrow(params.expectedError);
     return;
   }
 

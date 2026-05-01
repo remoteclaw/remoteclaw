@@ -50,12 +50,7 @@ const extractLevelDirective = <T>(
   }
   const rawLevel = match.rawLevel;
   const level = normalize(rawLevel);
-  const cleaned = body
-    .slice(0, match.start)
-    .concat(" ")
-    .concat(body.slice(match.end))
-    .replace(/\s+/g, " ")
-    .trim();
+  const cleaned = body.slice(0, match.start).concat(" ").concat(body.slice(match.end)).replace(/\s+/g, " ").trim();
   return {
     cleaned,
     level,
@@ -64,14 +59,9 @@ const extractLevelDirective = <T>(
   };
 };
 
-const extractSimpleDirective = (
-  body: string,
-  names: string[],
-): { cleaned: string; hasDirective: boolean } => {
+const extractSimpleDirective = (body: string, names: string[]): { cleaned: string; hasDirective: boolean } => {
   const namePattern = names.map(escapeRegExp).join("|");
-  const match = body.match(
-    new RegExp(`(?:^|\\s)\\/(?:${namePattern})(?=$|\\s|:)(?:\\s*:\\s*)?`, "i"),
-  );
+  const match = body.match(new RegExp(`(?:^|\\s)\\/(?:${namePattern})(?=$|\\s|:)(?:\\s*:\\s*)?`, "i"));
   const cleaned = match ? body.replace(match[0], " ").replace(/\s+/g, " ").trim() : body.trim();
   return {
     cleaned,

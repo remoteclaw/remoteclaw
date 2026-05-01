@@ -24,8 +24,7 @@ const resolveRepoPath = (filePath, cwd) => {
   return normalizePath(rawPath);
 };
 
-const isIgnoredWatchPath = (filePath, cwd) =>
-  !isRestartRelevantRunNodePath(resolveRepoPath(filePath, cwd));
+const isIgnoredWatchPath = (filePath, cwd) => !isRestartRelevantRunNodePath(resolveRepoPath(filePath, cwd));
 
 export async function runWatchMain(params = {}) {
   const deps = {
@@ -35,8 +34,7 @@ export async function runWatchMain(params = {}) {
     args: params.args ?? process.argv.slice(2),
     env: params.env ? { ...params.env } : { ...process.env },
     now: params.now ?? Date.now,
-    createWatcher:
-      params.createWatcher ?? ((watchPaths, options) => chokidar.watch(watchPaths, options)),
+    createWatcher: params.createWatcher ?? ((watchPaths, options) => chokidar.watch(watchPaths, options)),
     watchPaths: params.watchPaths ?? runNodeWatchedPaths,
   };
 

@@ -3,8 +3,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { describe, expect, it, vi } from "vitest";
 import { createLineNodeWebhookHandler } from "./webhook-node.js";
 
-const sign = (body: string, secret: string) =>
-  crypto.createHmac("SHA256", secret).update(body).digest("base64");
+const sign = (body: string, secret: string) => crypto.createHmac("SHA256", secret).update(body).digest("base64");
 
 function createRes() {
   const headers: Record<string, string> = {};
@@ -183,10 +182,7 @@ describe("createLineNodeWebhookHandler", () => {
     const { bot, handler } = createPostWebhookTestHarness(rawBody);
 
     const { res } = createRes();
-    await handler(
-      { method: "POST", headers: { "x-line-signature": "bad" } } as unknown as IncomingMessage,
-      res,
-    );
+    await handler({ method: "POST", headers: { "x-line-signature": "bad" } } as unknown as IncomingMessage, res);
 
     expect(res.statusCode).toBe(401);
     expect(bot.handleWebhook).not.toHaveBeenCalled();
@@ -200,9 +196,7 @@ describe("createLineNodeWebhookHandler", () => {
     await runSignedPost({ handler, rawBody, secret, res });
 
     expect(res.statusCode).toBe(200);
-    expect(bot.handleWebhook).toHaveBeenCalledWith(
-      expect.objectContaining({ events: expect.any(Array) }),
-    );
+    expect(bot.handleWebhook).toHaveBeenCalledWith(expect.objectContaining({ events: expect.any(Array) }));
   });
 
   it("returns 500 when event processing fails and does not acknowledge with 200", async () => {

@@ -146,10 +146,7 @@ export async function drainFileLockStateForTest(): Promise<void> {
 }
 
 /** Acquire a re-entrant process-local file lock backed by a `.lock` sidecar file. */
-export async function acquireFileLock(
-  filePath: string,
-  options: FileLockOptions,
-): Promise<FileLockHandle> {
+export async function acquireFileLock(filePath: string, options: FileLockOptions): Promise<FileLockHandle> {
   ensureExitCleanupRegistered();
   const normalizedFile = await resolveNormalizedFilePath(filePath);
   const lockPath = `${normalizedFile}.lock`;
@@ -195,11 +192,7 @@ export async function acquireFileLock(
 }
 
 /** Run an async callback while holding a file lock, always releasing the lock afterward. */
-export async function withFileLock<T>(
-  filePath: string,
-  options: FileLockOptions,
-  fn: () => Promise<T>,
-): Promise<T> {
+export async function withFileLock<T>(filePath: string, options: FileLockOptions, fn: () => Promise<T>): Promise<T> {
   const lock = await acquireFileLock(filePath, options);
   try {
     return await fn();

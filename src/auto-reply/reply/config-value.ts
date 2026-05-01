@@ -32,10 +32,7 @@ export function parseConfigValue(raw: string): {
     }
   }
 
-  if (
-    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
-    (trimmed.startsWith("'") && trimmed.endsWith("'"))
-  ) {
+  if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
     try {
       return { value: JSON.parse(trimmed) };
     } catch {

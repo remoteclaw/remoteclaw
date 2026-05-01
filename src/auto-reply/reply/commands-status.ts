@@ -1,10 +1,7 @@
 /* eslint-disable */
 import { resolveSessionKeyAgentId } from "../../agents/agent-scope.js";
 import { listSubagentRunsForRequester } from "../../agents/subagent-registry.js";
-import {
-  resolveInternalSessionKey,
-  resolveMainSessionAlias,
-} from "../../agents/tools/sessions-helpers.js";
+import { resolveInternalSessionKey, resolveMainSessionAlias } from "../../agents/tools/sessions-helpers.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry, SessionScope } from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";
@@ -74,9 +71,7 @@ export async function buildStatusReply(params: {
   });
   const queueKey = sessionKey ?? sessionEntry?.sessionId;
   const queueDepth = queueKey ? getFollowupQueueDepth(queueKey) : 0;
-  const queueOverrides = Boolean(
-    sessionEntry?.queueDebounceMs ?? sessionEntry?.queueCap ?? sessionEntry?.queueDrop,
-  );
+  const queueOverrides = Boolean(sessionEntry?.queueDebounceMs ?? sessionEntry?.queueCap ?? sessionEntry?.queueDrop);
 
   let subagentsLine: string | undefined;
   if (sessionKey) {

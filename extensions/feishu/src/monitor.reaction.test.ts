@@ -1,10 +1,7 @@
 import type { ClawdbotConfig, RuntimeEnv } from "remoteclaw/plugin-sdk/feishu";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { hasControlCommand } from "../../../src/auto-reply/command-detection.js";
-import {
-  createInboundDebouncer,
-  resolveInboundDebounceMs,
-} from "../../../src/auto-reply/inbound-debounce.js";
+import { createInboundDebouncer, resolveInboundDebounceMs } from "../../../src/auto-reply/inbound-debounce.js";
 import { createPluginRuntimeMock } from "../../test-utils/plugin-runtime-mock.js";
 import { parseFeishuMessageEvent, type FeishuMessageEvent } from "./bot.js";
 import * as dedup from "./dedup.js";
@@ -39,9 +36,7 @@ vi.mock("./monitor.transport.js", () => ({
 
 const cfg = {} as ClawdbotConfig;
 
-function makeReactionEvent(
-  overrides: Partial<FeishuReactionCreatedEvent> = {},
-): FeishuReactionCreatedEvent {
+function makeReactionEvent(overrides: Partial<FeishuReactionCreatedEvent> = {}): FeishuReactionCreatedEvent {
   return {
     message_id: "om_msg1",
     reaction_type: { emoji_type: "THUMBSUP" },
@@ -72,8 +67,7 @@ async function resolveReactionWithLookup(params: {
     accountId: "default",
     event: params.event ?? makeReactionEvent(),
     botOpenId: "ou_bot",
-    fetchMessage: async () =>
-      createFetchedReactionMessage(params.lookupChatId, params.lookupChatType),
+    fetchMessage: async () => createFetchedReactionMessage(params.lookupChatId, params.lookupChatType),
     uuid: () => "fixed-uuid",
   });
 }
@@ -496,9 +490,7 @@ describe("Feishu inbound debounce regressions", () => {
     await vi.advanceTimersByTimeAsync(25);
 
     expect(handleFeishuMessageMock).toHaveBeenCalledTimes(1);
-    const firstParams = handleFeishuMessageMock.mock.calls[0]?.[0] as
-      | { botName?: string }
-      | undefined;
+    const firstParams = handleFeishuMessageMock.mock.calls[0]?.[0] as { botName?: string } | undefined;
     expect(firstParams?.botName).toBe("RemoteClaw Bot");
   });
 
@@ -611,9 +603,7 @@ describe("Feishu inbound debounce regressions", () => {
       createPluginRuntimeMock({
         channel: {
           debounce: {
-            createInboundDebouncer: <T>(params: {
-              onError?: (err: unknown, items: T[]) => void;
-            }) => ({
+            createInboundDebouncer: <T>(params: { onError?: (err: unknown, items: T[]) => void }) => ({
               enqueue: async (item: T) => {
                 enqueueMock(item);
                 params.onError?.(new Error("dispatch failed"), [item]);

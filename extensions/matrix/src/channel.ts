@@ -19,10 +19,7 @@ import { buildTrafficStatusSummary } from "../../shared/channel-status-summary.j
 import { matrixMessageActions } from "./actions.js";
 import { MatrixConfigSchema } from "./config-schema.js";
 import { listMatrixDirectoryGroupsLive, listMatrixDirectoryPeersLive } from "./directory-live.js";
-import {
-  resolveMatrixGroupRequireMention,
-  resolveMatrixGroupToolPolicy,
-} from "./group-mentions.js";
+import { resolveMatrixGroupRequireMention, resolveMatrixGroupToolPolicy } from "./group-mentions.js";
 import {
   listMatrixAccountIds,
   resolveMatrixAccountConfig,
@@ -91,17 +88,14 @@ function buildMatrixConfigUpdate(
         ...(input.accessToken ? { accessToken: input.accessToken } : {}),
         ...(input.password ? { password: input.password } : {}),
         ...(input.deviceName ? { deviceName: input.deviceName } : {}),
-        ...(typeof input.initialSyncLimit === "number"
-          ? { initialSyncLimit: input.initialSyncLimit }
-          : {}),
+        ...(typeof input.initialSyncLimit === "number" ? { initialSyncLimit: input.initialSyncLimit } : {}),
       },
     },
   };
 }
 
 const matrixConfigAccessors = createScopedAccountConfigAccessors({
-  resolveAccount: ({ cfg, accountId }) =>
-    resolveMatrixAccountConfig({ cfg: cfg as CoreConfig, accountId }),
+  resolveAccount: ({ cfg, accountId }) => resolveMatrixAccountConfig({ cfg: cfg as CoreConfig, accountId }),
   resolveAllowFrom: (account) => account.dm?.allowFrom,
   formatAllowFrom: (allowFrom) => normalizeMatrixAllowList(allowFrom),
 });
@@ -111,15 +105,7 @@ const matrixConfigBase = createScopedChannelConfigBase<ResolvedMatrixAccount, Co
   listAccountIds: listMatrixAccountIds,
   resolveAccount: (cfg, accountId) => resolveMatrixAccount({ cfg, accountId }),
   defaultAccountId: resolveDefaultMatrixAccountId,
-  clearBaseFields: [
-    "name",
-    "homeserver",
-    "userId",
-    "accessToken",
-    "password",
-    "deviceName",
-    "initialSyncLimit",
-  ],
+  clearBaseFields: ["name", "homeserver", "userId", "accessToken", "password", "deviceName", "initialSyncLimit"],
 });
 
 const resolveMatrixDmPolicy = createScopedDmSecurityResolver<ResolvedMatrixAccount>({
@@ -194,8 +180,7 @@ export const matrixPlugin: ChannelPlugin<ResolvedMatrixAccount> = {
       const currentTarget = context.To;
       return {
         currentChannelId: currentTarget?.trim() || undefined,
-        currentThreadTs:
-          context.MessageThreadId != null ? String(context.MessageThreadId) : context.ReplyToId,
+        currentThreadTs: context.MessageThreadId != null ? String(context.MessageThreadId) : context.ReplyToId,
         hasRepliedRef,
       };
     },
@@ -302,8 +287,7 @@ export const matrixPlugin: ChannelPlugin<ResolvedMatrixAccount> = {
       listMatrixDirectoryGroupsLive({ cfg, accountId, query, limit }),
   },
   resolver: {
-    resolveTargets: async ({ cfg, inputs, kind, runtime }) =>
-      resolveMatrixTargets({ cfg, inputs, kind, runtime }),
+    resolveTargets: async ({ cfg, inputs, kind, runtime }) => resolveMatrixTargets({ cfg, inputs, kind, runtime }),
   },
   actions: matrixMessageActions,
   setup: {

@@ -136,10 +136,7 @@ export async function insertBlocksInBatches(
     }
 
     // If adding this first-level block would exceed limit, start new batch
-    if (
-      currentBatch.blocks.length + newBlocks.length > BATCH_SIZE &&
-      currentBatch.blocks.length > 0
-    ) {
+    if (currentBatch.blocks.length + newBlocks.length > BATCH_SIZE && currentBatch.blocks.length > 0) {
       batches.push(currentBatch);
       currentBatch = { firstLevelIds: [], blocks: [] };
     }
@@ -163,9 +160,7 @@ export async function insertBlocksInBatches(
   let currentIndex = startIndex;
   for (let i = 0; i < batches.length; i++) {
     const batch = batches[i];
-    logger?.info?.(
-      `feishu_doc: Inserting batch ${i + 1}/${batches.length} (${batch.blocks.length} blocks)...`,
-    );
+    logger?.info?.(`feishu_doc: Inserting batch ${i + 1}/${batches.length} (${batch.blocks.length} blocks)...`);
 
     const children = await insertBatch(
       client,

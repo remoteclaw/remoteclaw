@@ -29,10 +29,7 @@ function isTopLevelSlackMessage(message: SlackMessageEvent): boolean {
   return !message.thread_ts && !message.parent_user_id;
 }
 
-function buildTopLevelSlackConversationKey(
-  message: SlackMessageEvent,
-  accountId: string,
-): string | null {
+function buildTopLevelSlackConversationKey(message: SlackMessageEvent, accountId: string): string | null {
   if (!isTopLevelSlackMessage(message)) {
     return null;
   }
@@ -68,10 +65,7 @@ function buildSeenMessageKey(channelId: string | undefined, ts: string | undefin
  *
  * DMs intentionally stay channel-scoped to preserve short-message batching.
  */
-export function buildSlackDebounceKey(
-  message: SlackMessageEvent,
-  accountId: string,
-): string | null {
+export function buildSlackDebounceKey(message: SlackMessageEvent, accountId: string): string | null {
   const senderId = resolveSlackSenderId(message);
   if (!senderId) {
     return null;
@@ -108,10 +102,7 @@ export function createSlackMessageHandler(params: {
         return;
       }
       const flushedKey = buildSlackDebounceKey(last.message, ctx.accountId);
-      const topLevelConversationKey = buildTopLevelSlackConversationKey(
-        last.message,
-        ctx.accountId,
-      );
+      const topLevelConversationKey = buildTopLevelSlackConversationKey(last.message, ctx.accountId);
       if (flushedKey && topLevelConversationKey) {
         const pendingKeys = pendingTopLevelDebounceKeys.get(topLevelConversationKey);
         if (pendingKeys) {

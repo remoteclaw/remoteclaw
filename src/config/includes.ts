@@ -189,9 +189,7 @@ class IncludeProcessor {
 
   private resolvePath(includePath: string): string {
     const configDir = path.dirname(this.basePath);
-    const resolved = path.isAbsolute(includePath)
-      ? includePath
-      : path.resolve(configDir, includePath);
+    const resolved = path.isAbsolute(includePath) ? includePath : path.resolve(configDir, includePath);
     const normalized = path.normalize(resolved);
 
     // SECURITY: Reject paths outside top-level config directory (CWE-22: Path Traversal)

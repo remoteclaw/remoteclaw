@@ -3,6 +3,9 @@ import { baseConfigSnapshot, createTestRuntime } from "./test-runtime-config-hel
 
 const readConfigFileSnapshotMock = vi.hoisted(() => vi.fn());
 const writeConfigFileMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+const replaceConfigFileMock = vi.hoisted(() =>
+  vi.fn(async (params: { nextConfig: unknown }) => await writeConfigFileMock(params.nextConfig)),
+);
 
 const wizardMocks = vi.hoisted(() => ({
   createClackPrompter: vi.fn(),
@@ -15,6 +18,7 @@ vi.mock("../config/config.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../config/config.js")>()),
   readConfigFileSnapshot: readConfigFileSnapshotMock,
   writeConfigFile: writeConfigFileMock,
+  replaceConfigFile: replaceConfigFileMock,
 }));
 
 vi.mock("../wizard/clack-prompter.js", () => ({
@@ -40,6 +44,7 @@ describe("agents add command", () => {
   beforeEach(() => {
     readConfigFileSnapshotMock.mockClear();
     writeConfigFileMock.mockClear();
+    replaceConfigFileMock.mockClear();
     wizardMocks.createClackPrompter.mockClear();
     setupChannelsMock.mockClear();
     ensureWorkspaceAndSessionsMock.mockClear();
@@ -115,10 +120,7 @@ describe("agents add command", () => {
       2,
       expect.objectContaining({ message: "Agent id", initialValue: "my-agent" }),
     );
-    expect(textMock).toHaveBeenNthCalledWith(
-      3,
-      expect.objectContaining({ message: "Workspace directory" }),
-    );
+    expect(textMock).toHaveBeenNthCalledWith(3, expect.objectContaining({ message: "Workspace directory" }));
     expect(writeConfigFileMock).toHaveBeenCalled();
     expect(outroMock).toHaveBeenCalledWith(expect.stringContaining("my-agent"));
     expect(runtime.exit).not.toHaveBeenCalled();
@@ -186,20 +188,18 @@ describe("agents add command", () => {
     let capturedValidate: ((value: string) => string | undefined) | undefined;
     const textMock = vi
       .fn()
-      .mockImplementation(
-        (params: { validate?: (value: string) => string | undefined; message: string }) => {
-          if (params.message === "Agent id" && params.validate) {
-            capturedValidate = params.validate;
-          }
-          if (params.message === "Agent name") {
-            return Promise.resolve("My Agent");
-          }
-          if (params.message === "Agent id") {
-            return Promise.resolve("my-agent");
-          }
-          return Promise.resolve("/tmp/workspace");
-        },
-      );
+      .mockImplementation((params: { validate?: (value: string) => string | undefined; message: string }) => {
+        if (params.message === "Agent id" && params.validate) {
+          capturedValidate = params.validate;
+        }
+        if (params.message === "Agent name") {
+          return Promise.resolve("My Agent");
+        }
+        if (params.message === "Agent id") {
+          return Promise.resolve("my-agent");
+        }
+        return Promise.resolve("/tmp/workspace");
+      });
     const confirmMock = vi.fn().mockResolvedValue(false);
 
     wizardMocks.createClackPrompter.mockReturnValue({

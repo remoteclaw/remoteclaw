@@ -1,9 +1,5 @@
 import { describe, expect, test } from "vitest";
-import {
-  isRoleAuthorizedForMethod,
-  parseGatewayRole,
-  roleCanSkipDeviceIdentity,
-} from "./role-policy.js";
+import { isRoleAuthorizedForMethod, parseGatewayRole, roleCanSkipDeviceIdentity } from "./role-policy.js";
 
 describe("gateway role policy", () => {
   test("parses supported roles", () => {

@@ -39,10 +39,7 @@ function writeStore(store: DeviceAuthStore) {
   }
 }
 
-export function loadDeviceAuthToken(params: {
-  deviceId: string;
-  role: string;
-}): DeviceAuthEntry | null {
+export function loadDeviceAuthToken(params: { deviceId: string; role: string }): DeviceAuthEntry | null {
   return loadDeviceAuthTokenFromStore({
     adapter: { readStore, writeStore },
     deviceId: params.deviceId,

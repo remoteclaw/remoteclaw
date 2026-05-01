@@ -56,19 +56,14 @@ export async function getReplyFromConfig(
 ): Promise<ReplyPayload | ReplyPayload[] | undefined> {
   const isFastTestEnv = process.env.REMOTECLAW_TEST_FAST === "1";
   const cfg = configOverride ?? loadConfig();
-  const targetSessionKey =
-    ctx.CommandSource === "native" ? ctx.CommandTargetSessionKey?.trim() : undefined;
+  const targetSessionKey = ctx.CommandSource === "native" ? ctx.CommandTargetSessionKey?.trim() : undefined;
   const agentSessionKey = targetSessionKey || ctx.SessionKey;
   const agentId = resolveSessionAgentId({
     sessionKey: agentSessionKey,
     config: cfg,
   });
-  const mergedSkillFilter = mergeSkillFilters(
-    opts?.skillFilter,
-    resolveAgentSkillsFilter(cfg, agentId),
-  );
-  const resolvedOpts =
-    mergedSkillFilter !== undefined ? { ...opts, skillFilter: mergedSkillFilter } : opts;
+  const mergedSkillFilter = mergeSkillFilters(opts?.skillFilter, resolveAgentSkillsFilter(cfg, agentId));
+  const resolvedOpts = mergedSkillFilter !== undefined ? { ...opts, skillFilter: mergedSkillFilter } : opts;
   const agentCfg = cfg.agents?.defaults;
   const sessionCfg = cfg.session;
   const {
@@ -90,10 +85,8 @@ export async function getReplyFromConfig(
   const workspaceDir = workspace.dir;
   const agentDir = resolveAgentDir(cfg, agentId);
   const timeoutMs = resolveAgentTimeoutMs({ cfg, overrideSeconds: opts?.timeoutOverrideSeconds });
-  const configuredTypingSeconds =
-    agentCfg?.typingIntervalSeconds ?? sessionCfg?.typingIntervalSeconds;
-  const typingIntervalSeconds =
-    typeof configuredTypingSeconds === "number" ? configuredTypingSeconds : 6;
+  const configuredTypingSeconds = agentCfg?.typingIntervalSeconds ?? sessionCfg?.typingIntervalSeconds;
+  const typingIntervalSeconds = typeof configuredTypingSeconds === "number" ? configuredTypingSeconds : 6;
   const typing = createTypingController({
     onReplyStart: opts?.onReplyStart,
     onCleanup: opts?.onTypingCleanup,

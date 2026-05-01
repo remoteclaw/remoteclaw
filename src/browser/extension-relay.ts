@@ -51,10 +51,7 @@ type ExtensionForwardEventMessage = {
 type ExtensionPingMessage = { method: "ping" };
 type ExtensionPongMessage = { method: "pong" };
 
-type ExtensionMessage =
-  | ExtensionResponseMessage
-  | ExtensionForwardEventMessage
-  | ExtensionPongMessage;
+type ExtensionMessage = ExtensionResponseMessage | ExtensionForwardEventMessage | ExtensionPongMessage;
 
 type TargetInfo = {
   targetId: string;
@@ -124,8 +121,7 @@ type RelayRuntime = {
 };
 
 function parseUrlPort(parsed: URL): number | null {
-  const port =
-    parsed.port?.trim() !== "" ? Number(parsed.port) : parsed.protocol === "https:" ? 443 : 80;
+  const port = parsed.port?.trim() !== "" ? Number(parsed.port) : parsed.protocol === "https:" ? 443 : 80;
   if (!Number.isFinite(port) || port <= 0 || port > 65535) {
     return null;
   }
@@ -174,12 +170,7 @@ function rejectUpgrade(socket: Duplex, status: number, bodyText: string) {
 const relayRuntimeByPort = new Map<number, RelayRuntime>();
 
 function isAddrInUseError(err: unknown): boolean {
-  return (
-    typeof err === "object" &&
-    err !== null &&
-    "code" in err &&
-    (err as { code?: unknown }).code === "EADDRINUSE"
-  );
+  return typeof err === "object" && err !== null && "code" in err && (err as { code?: unknown }).code === "EADDRINUSE";
 }
 
 function relayAuthTokenForUrl(url: string): string | null {
@@ -206,9 +197,7 @@ export function getChromeExtensionRelayAuthHeaders(url: string): Record<string, 
   return { [RELAY_AUTH_HEADER]: token };
 }
 
-export async function ensureChromeExtensionRelayServer(opts: {
-  cdpUrl: string;
-}): Promise<ChromeExtensionRelayServer> {
+export async function ensureChromeExtensionRelayServer(opts: { cdpUrl: string }): Promise<ChromeExtensionRelayServer> {
   const info = parseBaseUrl(opts.cdpUrl);
   if (!isLoopbackHost(info.host)) {
     throw new Error(`extension relay requires loopback cdpUrl host (got ${info.host})`);
@@ -366,8 +355,7 @@ export async function ensureChromeExtensionRelayServer(opts: {
     const url = new URL(req.url ?? "/", info.baseUrl);
     const path = url.pathname;
     const origin = getHeader(req, "origin");
-    const isChromeExtensionOrigin =
-      typeof origin === "string" && origin.startsWith("chrome-extension://");
+    const isChromeExtensionOrigin = typeof origin === "string" && origin.startsWith("chrome-extension://");
 
     if (isChromeExtensionOrigin && origin) {
       // Let extension pages call relay HTTP endpoints cross-origin.
@@ -429,10 +417,7 @@ export async function ensureChromeExtensionRelayServer(opts: {
     const wsHost = `ws://${hostHeader}`;
     const cdpWsUrl = `${wsHost}/cdp`;
 
-    if (
-      (path === "/json/version" || path === "/json/version/") &&
-      (req.method === "GET" || req.method === "PUT")
-    ) {
+    if ((path === "/json/version" || path === "/json/version/") && (req.method === "GET" || req.method === "PUT")) {
       const payload: Record<string, unknown> = {
         Browser: "RemoteClaw/extension-relay",
         "Protocol-Version": "1.3",
@@ -752,9 +737,7 @@ export async function ensureChromeExtensionRelayServer(opts: {
           const params = (cmd.params ?? {}) as { targetId?: string };
           const targetId = typeof params.targetId === "string" ? params.targetId : undefined;
           if (targetId) {
-            const target = Array.from(connectedTargets.values()).find(
-              (t) => t.targetId === targetId,
-            );
+            const target = Array.from(connectedTargets.values()).find((t) => t.targetId === targetId);
             if (target) {
               ws.send(
                 JSON.stringify({

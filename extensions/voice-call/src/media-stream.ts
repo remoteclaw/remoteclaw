@@ -9,11 +9,8 @@
 
 import type { IncomingMessage } from "node:http";
 import type { Duplex } from "node:stream";
-import { WebSocket, WebSocketServer } from "ws";
-import type {
-  OpenAIRealtimeSTTProvider,
-  RealtimeSTTSession,
-} from "./providers/stt-openai-realtime.js";
+import { type RawData, WebSocket, WebSocketServer } from "ws";
+import type { OpenAIRealtimeSTTProvider, RealtimeSTTSession } from "./providers/stt-openai-realtime.js";
 
 /**
  * Configuration for the media stream handler.
@@ -76,6 +73,7 @@ const DEFAULT_PRE_START_TIMEOUT_MS = 5000;
 const DEFAULT_MAX_PENDING_CONNECTIONS = 32;
 const DEFAULT_MAX_PENDING_CONNECTIONS_PER_IP = 4;
 const DEFAULT_MAX_CONNECTIONS = 128;
+const MAX_INBOUND_MESSAGE_BYTES = 64 * 1024;
 const MAX_WS_BUFFERED_BYTES = 1024 * 1024;
 const CLOSE_REASON_LOG_MAX_CHARS = 120;
 
@@ -88,6 +86,16 @@ export function sanitizeLogText(value: string, maxChars: number): string {
     return sanitized;
   }
   return `${sanitized.slice(0, maxChars)}...`;
+}
+
+function normalizeWsMessageData(data: RawData): Buffer {
+  if (Buffer.isBuffer(data)) {
+    return data;
+  }
+  if (Array.isArray(data)) {
+    return Buffer.concat(data);
+  }
+  return Buffer.from(data);
 }
 
 /**
@@ -116,8 +124,7 @@ export class MediaStreamHandler {
     this.config = config;
     this.preStartTimeoutMs = config.preStartTimeoutMs ?? DEFAULT_PRE_START_TIMEOUT_MS;
     this.maxPendingConnections = config.maxPendingConnections ?? DEFAULT_MAX_PENDING_CONNECTIONS;
-    this.maxPendingConnectionsPerIp =
-      config.maxPendingConnectionsPerIp ?? DEFAULT_MAX_PENDING_CONNECTIONS_PER_IP;
+    this.maxPendingConnectionsPerIp = config.maxPendingConnectionsPerIp ?? DEFAULT_MAX_PENDING_CONNECTIONS_PER_IP;
     this.maxConnections = config.maxConnections ?? DEFAULT_MAX_CONNECTIONS;
   }
 
@@ -126,7 +133,11 @@ export class MediaStreamHandler {
    */
   handleUpgrade(request: IncomingMessage, socket: Duplex, head: Buffer): void {
     if (!this.wss) {
-      this.wss = new WebSocketServer({ noServer: true });
+      this.wss = new WebSocketServer({
+        noServer: true,
+        // Reject oversized frames before app-level parsing runs on unauthenticated sockets.
+        maxPayload: MAX_INBOUND_MESSAGE_BYTES,
+      });
       this.wss.on("connection", (ws, req) => this.handleConnection(ws, req));
     }
 
@@ -154,9 +165,10 @@ export class MediaStreamHandler {
       return;
     }
 
-    ws.on("message", async (data: Buffer) => {
+    ws.on("message", async (data: RawData) => {
       try {
-        const message = JSON.parse(data.toString()) as TwilioMediaMessage;
+        const raw = normalizeWsMessageData(data);
+        const message = JSON.parse(raw.toString("utf8")) as TwilioMediaMessage;
 
         switch (message.event) {
           case "connected":
@@ -193,9 +205,7 @@ export class MediaStreamHandler {
     ws.on("close", (code, reason) => {
       const rawReason = Buffer.isBuffer(reason) ? reason.toString("utf8") : String(reason || "");
       const reasonText = sanitizeLogText(rawReason, CLOSE_REASON_LOG_MAX_CHARS);
-      console.log(
-        `[MediaStream] WebSocket closed (code: ${code}, reason: ${reasonText || "none"})`,
-      );
+      console.log(`[MediaStream] WebSocket closed (code: ${code}, reason: ${reasonText || "none"})`);
       this.clearPendingConnection(ws);
       if (session) {
         this.handleStop(session);
@@ -318,9 +328,7 @@ export class MediaStreamHandler {
       if (!this.pendingConnections.has(ws)) {
         return;
       }
-      console.warn(
-        `[MediaStream] Closing pre-start idle connection after ${this.preStartTimeoutMs}ms (${ip})`,
-      );
+      console.warn(`[MediaStream] Closing pre-start idle connection after ${this.preStartTimeoutMs}ms (${ip})`);
       ws.close(1008, "Start timeout");
     }, this.preStartTimeoutMs);
 

@@ -1,9 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type {
-  ChannelMessageActionAdapter,
-  ChannelOutboundAdapter,
-  ChannelPlugin,
-} from "../channels/plugins/types.js";
+import type { ChannelMessageActionAdapter, ChannelOutboundAdapter, ChannelPlugin } from "../channels/plugins/types.js";
 import type { CliDeps } from "../cli/deps.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { createTestRegistry } from "../test-utils/channel-plugins.js";
@@ -117,9 +113,7 @@ const createStubPlugin = (params: {
   outbound: params.outbound,
 });
 
-type ChannelActionParams = Parameters<
-  NonNullable<NonNullable<ChannelPlugin["actions"]>["handleAction"]>
->[0];
+type ChannelActionParams = Parameters<NonNullable<NonNullable<ChannelPlugin["actions"]>["handleAction"]>>[0];
 
 const createDiscordPollPluginRegistration = () => ({
   pluginId: "discord",
@@ -130,10 +124,7 @@ const createDiscordPollPluginRegistration = () => ({
     actions: {
       listActions: () => ["poll"],
       handleAction: (async ({ action, params, cfg, accountId }: ChannelActionParams) => {
-        return await handleDiscordAction(
-          { action, to: params.to, accountId: accountId ?? undefined },
-          cfg,
-        );
+        return await handleDiscordAction({ action, to: params.to, accountId: accountId ?? undefined }, cfg);
       }) as unknown as NonNullable<ChannelPlugin["actions"]>["handleAction"],
     },
   }),
@@ -148,10 +139,7 @@ const createTelegramSendPluginRegistration = () => ({
     actions: {
       listActions: () => ["send"],
       handleAction: (async ({ action, params, cfg, accountId }: ChannelActionParams) => {
-        return await handleTelegramAction(
-          { action, to: params.to, accountId: accountId ?? undefined },
-          cfg,
-        );
+        return await handleTelegramAction({ action, to: params.to, accountId: accountId ?? undefined }, cfg);
       }) as unknown as NonNullable<ChannelPlugin["actions"]>["handleAction"],
     },
   }),
@@ -166,10 +154,7 @@ const createTelegramPollPluginRegistration = () => ({
     actions: {
       listActions: () => ["poll"],
       handleAction: (async ({ action, params, cfg, accountId }: ChannelActionParams) => {
-        return await handleTelegramAction(
-          { action, to: params.to, accountId: accountId ?? undefined },
-          cfg,
-        );
+        return await handleTelegramAction({ action, to: params.to, accountId: accountId ?? undefined }, cfg);
       }) as unknown as NonNullable<ChannelPlugin["actions"]>["handleAction"],
     },
   }),
@@ -332,9 +317,7 @@ describe("messageCommand", () => {
       }),
     );
     expect(sendText.mock.calls[0]?.[0]?.cfg).not.toBe(rawConfig);
-    expect(runtime.log).toHaveBeenCalledWith(
-      expect.stringContaining("[secrets] gateway secrets.resolve unavailable"),
-    );
+    expect(runtime.log).toHaveBeenCalledWith(expect.stringContaining("[secrets] gateway secrets.resolve unavailable"));
   });
 
   it("defaults channel when only one configured", async () => {

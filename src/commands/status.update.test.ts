@@ -1,11 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { UpdateCheckResult } from "../infra/update-check.js";
 import { VERSION } from "../version.js";
-import {
-  formatUpdateAvailableHint,
-  formatUpdateOneLiner,
-  resolveUpdateAvailability,
-} from "./status.update.js";
+import { formatUpdateAvailableHint, formatUpdateOneLiner, resolveUpdateAvailability } from "./status.update.js";
 
 function buildUpdate(partial: Partial<UpdateCheckResult>): UpdateCheckResult {
   return {
@@ -135,9 +131,7 @@ describe("formatUpdateOneLiner", () => {
       },
     });
 
-    expect(formatUpdateOneLiner(update)).toBe(
-      `Update: npm · up to date · npm latest ${VERSION} · deps ok`,
-    );
+    expect(formatUpdateOneLiner(update)).toBe(`Update: npm · up to date · npm latest ${VERSION} · deps ok`);
   });
 
   it("renders package-manager mode with registry error", () => {

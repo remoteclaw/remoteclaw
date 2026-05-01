@@ -263,33 +263,25 @@ function parsePayload(req: IncomingMessage, body: string): SynologyWebhookPayloa
   const queryFields = parseQueryParams(req);
   const headerToken = extractTokenFromHeaders(req);
 
-  const token =
-    pickAlias(bodyFields, ["token"]) ?? pickAlias(queryFields, ["token"]) ?? headerToken;
+  const token = pickAlias(bodyFields, ["token"]) ?? pickAlias(queryFields, ["token"]) ?? headerToken;
   const userId =
-    pickAlias(bodyFields, ["user_id", "userId", "user"]) ??
-    pickAlias(queryFields, ["user_id", "userId", "user"]);
+    pickAlias(bodyFields, ["user_id", "userId", "user"]) ?? pickAlias(queryFields, ["user_id", "userId", "user"]);
   const text =
-    pickAlias(bodyFields, ["text", "message", "content"]) ??
-    pickAlias(queryFields, ["text", "message", "content"]);
+    pickAlias(bodyFields, ["text", "message", "content"]) ?? pickAlias(queryFields, ["text", "message", "content"]);
 
   if (!token || !userId || !text) return null;
 
   return {
     token,
-    channel_id:
-      pickAlias(bodyFields, ["channel_id"]) ?? pickAlias(queryFields, ["channel_id"]) ?? undefined,
-    channel_name:
-      pickAlias(bodyFields, ["channel_name"]) ??
-      pickAlias(queryFields, ["channel_name"]) ??
-      undefined,
+    channel_id: pickAlias(bodyFields, ["channel_id"]) ?? pickAlias(queryFields, ["channel_id"]) ?? undefined,
+    channel_name: pickAlias(bodyFields, ["channel_name"]) ?? pickAlias(queryFields, ["channel_name"]) ?? undefined,
     user_id: userId,
     username:
       pickAlias(bodyFields, ["username", "user_name", "name"]) ??
       pickAlias(queryFields, ["username", "user_name", "name"]) ??
       "unknown",
     post_id: pickAlias(bodyFields, ["post_id"]) ?? pickAlias(queryFields, ["post_id"]) ?? undefined,
-    timestamp:
-      pickAlias(bodyFields, ["timestamp"]) ?? pickAlias(queryFields, ["timestamp"]) ?? undefined,
+    timestamp: pickAlias(bodyFields, ["timestamp"]) ?? pickAlias(queryFields, ["timestamp"]) ?? undefined,
     text,
     trigger_word:
       pickAlias(bodyFields, ["trigger_word", "triggerWord"]) ??
@@ -453,12 +445,7 @@ export function createWebhookHandler(deps: WebhookHandlerDeps) {
       // Synology Chat outgoing webhooks use a per-integration user_id that may
       // differ from the global Chat API user_id required by method=chatbot.
       // We resolve via the user_list API, matching by nickname/username.
-      const chatUserId = await resolveChatUserId(
-        account.incomingUrl,
-        payload.username,
-        account.allowInsecureSsl,
-        log,
-      );
+      const chatUserId = await resolveChatUserId(account.incomingUrl, payload.username, account.allowInsecureSsl, log);
       if (chatUserId !== undefined) {
         replyUserId = String(chatUserId);
       } else {

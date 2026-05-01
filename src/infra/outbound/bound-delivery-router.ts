@@ -31,9 +31,7 @@ function resolveBindingForRequester(
   bindings: SessionBindingRecord[],
 ): SessionBindingRecord | null {
   const matchingChannelAccount = bindings.filter(
-    (entry) =>
-      entry.conversation.channel === requester.channel &&
-      entry.conversation.accountId === requester.accountId,
+    (entry) => entry.conversation.channel === requester.channel && entry.conversation.accountId === requester.accountId,
   );
   if (matchingChannelAccount.length === 0) {
     return null;

@@ -86,10 +86,7 @@ function convertSpec(spec?: SharedToolDisplaySpec): ToolDisplaySpec {
 const SHARED_TOOL_DISPLAY_CONFIG = SHARED_TOOL_DISPLAY_JSON as SharedToolDisplayConfig;
 const FALLBACK = convertSpec(SHARED_TOOL_DISPLAY_CONFIG.fallback ?? { emoji: "🧩" });
 const TOOL_MAP: Record<string, ToolDisplaySpec> = Object.fromEntries(
-  Object.entries(SHARED_TOOL_DISPLAY_CONFIG.tools ?? {}).map(([key, spec]) => [
-    key,
-    convertSpec(spec),
-  ]),
+  Object.entries(SHARED_TOOL_DISPLAY_CONFIG.tools ?? {}).map(([key, spec]) => [key, convertSpec(spec)]),
 );
 TOOL_MAP.slack = SLACK_SPEC;
 
@@ -114,11 +111,7 @@ function shortenHomeInString(input: string): string {
   return input;
 }
 
-export function resolveToolDisplay(params: {
-  name?: string;
-  args?: unknown;
-  meta?: string;
-}): ToolDisplay {
+export function resolveToolDisplay(params: { name?: string; args?: unknown; meta?: string }): ToolDisplay {
   const name = normalizeToolName(params.name);
   const key = name.toLowerCase();
   const spec = TOOL_MAP[key];

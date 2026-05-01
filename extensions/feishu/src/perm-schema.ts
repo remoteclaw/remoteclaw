@@ -20,11 +20,7 @@ const MemberType = Type.Union([
   Type.Literal("opendepartmentid"),
 ]);
 
-const Permission = Type.Union([
-  Type.Literal("view"),
-  Type.Literal("edit"),
-  Type.Literal("full_access"),
-]);
+const Permission = Type.Union([Type.Literal("view"), Type.Literal("edit"), Type.Literal("full_access")]);
 
 export const FeishuPermSchema = Type.Union([
   Type.Object({

@@ -50,18 +50,8 @@ import { recordMSTeamsSentMessage, wasMSTeamsMessageSent } from "../sent-message
 import { resolveMSTeamsInboundMedia } from "./inbound-media.js";
 
 export function createMSTeamsMessageHandler(deps: MSTeamsMessageHandlerDeps) {
-  const {
-    cfg,
-    runtime,
-    appId,
-    adapter,
-    tokenProvider,
-    textLimit,
-    mediaMaxBytes,
-    conversationStore,
-    pollStore,
-    log,
-  } = deps;
+  const { cfg, runtime, appId, adapter, tokenProvider, textLimit, mediaMaxBytes, conversationStore, pollStore, log } =
+    deps;
   const core = getMSTeamsRuntime();
   const pairing = createScopedPairingAccess({
     core,
@@ -76,9 +66,7 @@ export function createMSTeamsMessageHandler(deps: MSTeamsMessageHandlerDeps) {
   const msteamsCfg = cfg.channels?.msteams;
   const historyLimit = Math.max(
     0,
-    msteamsCfg?.historyLimit ??
-      cfg.messages?.groupChat?.historyLimit ??
-      DEFAULT_GROUP_HISTORY_LIMIT,
+    msteamsCfg?.historyLimit ?? cfg.messages?.groupChat?.historyLimit ?? DEFAULT_GROUP_HISTORY_LIMIT,
   );
   const conversationHistories = new Map<string, HistoryEntry[]>();
   const inboundDebounceMs = core.channel.debounce.resolveInboundDebounceMs({
@@ -162,9 +150,7 @@ export function createMSTeamsMessageHandler(deps: MSTeamsMessageHandlerDeps) {
 
     const defaultGroupPolicy = resolveDefaultGroupPolicy(cfg);
     const groupPolicy =
-      !isDirectMessage && msteamsCfg
-        ? (msteamsCfg.groupPolicy ?? defaultGroupPolicy ?? "allowlist")
-        : "disabled";
+      !isDirectMessage && msteamsCfg ? (msteamsCfg.groupPolicy ?? defaultGroupPolicy ?? "allowlist") : "disabled";
     const effectiveGroupAllowFrom = resolvedAllowFromLists.effectiveGroupAllowFrom;
     const teamId = activity.channelData?.team?.id;
     const teamName = activity.channelData?.team?.name;
@@ -460,8 +446,7 @@ export function createMSTeamsMessageHandler(deps: MSTeamsMessageHandlerDeps) {
         channelData: activity.channelData,
       },
       log,
-      preserveFilenames: (cfg as { media?: { preserveFilenames?: boolean } }).media
-        ?.preserveFilenames,
+      preserveFilenames: (cfg as { media?: { preserveFilenames?: boolean } }).media?.preserveFilenames,
     });
 
     const mediaPayload = buildMSTeamsMediaPayload(mediaList);
@@ -594,9 +579,7 @@ export function createMSTeamsMessageHandler(deps: MSTeamsMessageHandlerDeps) {
         return;
       }
       const finalCount = counts.final;
-      logVerboseMessage(
-        `msteams: delivered ${finalCount} reply${finalCount === 1 ? "" : "ies"} to ${teamsTo}`,
-      );
+      logVerboseMessage(`msteams: delivered ${finalCount} reply${finalCount === 1 ? "" : "ies"} to ${teamsTo}`);
       if (isRoomish && historyKey) {
         clearHistoryEntriesIfEnabled({
           historyMap: conversationHistories,
@@ -608,9 +591,7 @@ export function createMSTeamsMessageHandler(deps: MSTeamsMessageHandlerDeps) {
       log.error("dispatch failed", { error: String(err) });
       runtime.error?.(`msteams dispatch failed: ${String(err)}`);
       try {
-        await context.sendActivity(
-          `⚠️ Agent failed: ${err instanceof Error ? err.message : String(err)}`,
-        );
+        await context.sendActivity(`⚠️ Agent failed: ${err instanceof Error ? err.message : String(err)}`);
       } catch {
         // Best effort.
       }
@@ -620,11 +601,8 @@ export function createMSTeamsMessageHandler(deps: MSTeamsMessageHandlerDeps) {
   const inboundDebouncer = core.channel.debounce.createInboundDebouncer<MSTeamsDebounceEntry>({
     debounceMs: inboundDebounceMs,
     buildKey: (entry) => {
-      const conversationId = normalizeMSTeamsConversationId(
-        entry.context.activity.conversation?.id ?? "",
-      );
-      const senderId =
-        entry.context.activity.from?.aadObjectId ?? entry.context.activity.from?.id ?? "";
+      const conversationId = normalizeMSTeamsConversationId(entry.context.activity.conversation?.id ?? "");
+      const senderId = entry.context.activity.from?.aadObjectId ?? entry.context.activity.from?.id ?? "";
       if (!senderId || !conversationId) {
         return null;
       }
@@ -685,9 +663,7 @@ export function createMSTeamsMessageHandler(deps: MSTeamsMessageHandlerDeps) {
     const wasMentioned = wasMSTeamsBotMentioned(activity);
     const conversationId = normalizeMSTeamsConversationId(activity.conversation?.id ?? "");
     const replyToId = activity.replyToId ?? undefined;
-    const implicitMention = Boolean(
-      conversationId && replyToId && wasMSTeamsMessageSent(conversationId, replyToId),
-    );
+    const implicitMention = Boolean(conversationId && replyToId && wasMSTeamsMessageSent(conversationId, replyToId));
 
     await inboundDebouncer.enqueue({
       context,

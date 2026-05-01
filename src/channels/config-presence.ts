@@ -104,20 +104,14 @@ function hasEnvConfiguredChannel(env: NodeJS.ProcessEnv): boolean {
     if (!hasNonEmptyString(value)) {
       continue;
     }
-    if (
-      CHANNEL_ENV_PREFIXES.some(([prefix]) => key.startsWith(prefix)) ||
-      key === "TELEGRAM_BOT_TOKEN"
-    ) {
+    if (CHANNEL_ENV_PREFIXES.some(([prefix]) => key.startsWith(prefix)) || key === "TELEGRAM_BOT_TOKEN") {
       return true;
     }
   }
   return hasWhatsAppAuthState(env);
 }
 
-export function hasPotentialConfiguredChannels(
-  cfg: RemoteClawConfig,
-  env: NodeJS.ProcessEnv = process.env,
-): boolean {
+export function hasPotentialConfiguredChannels(cfg: RemoteClawConfig, env: NodeJS.ProcessEnv = process.env): boolean {
   const channels = isRecord(cfg.channels) ? cfg.channels : null;
   if (channels) {
     for (const [key, value] of Object.entries(channels)) {

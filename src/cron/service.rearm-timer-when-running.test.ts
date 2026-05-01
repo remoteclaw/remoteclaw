@@ -1,11 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  createNoopLogger,
-  createCronStoreHarness,
-  createRunningCronServiceState,
-} from "./service.test-harness.js";
+import { createNoopLogger, createCronStoreHarness, createRunningCronServiceState } from "./service.test-harness.js";
 import { createCronServiceState } from "./service/state.js";
 import { onTimer } from "./service/timer.js";
 import type { CronJob } from "./types.js";
@@ -13,11 +9,7 @@ import type { CronJob } from "./types.js";
 const noopLogger = createNoopLogger();
 const { makeStorePath } = createCronStoreHarness();
 
-function createDueRecurringJob(params: {
-  id: string;
-  nowMs: number;
-  nextRunAtMs: number;
-}): CronJob {
+function createDueRecurringJob(params: { id: string; nowMs: number; nextRunAtMs: number }): CronJob {
   return {
     id: params.id,
     name: params.id,
@@ -80,9 +72,7 @@ describe("CronService - timer re-arm when running (#12025)", () => {
     // with a fixed 60s delay to avoid hot-looping.
     expect(state.timer).not.toBeNull();
     expect(timeoutSpy).toHaveBeenCalled();
-    const delays = timeoutSpy.mock.calls
-      .map(([, delay]) => delay)
-      .filter((d): d is number => typeof d === "number");
+    const delays = timeoutSpy.mock.calls.map(([, delay]) => delay).filter((d): d is number => typeof d === "number");
     expect(delays).toContain(60_000);
 
     // state.running should still be true (onTimer bailed out, didn't
@@ -140,9 +130,7 @@ describe("CronService - timer re-arm when running (#12025)", () => {
     expect(state.running).toBe(true);
     expect(state.timer).not.toBeNull();
 
-    const delays = timeoutSpy.mock.calls
-      .map(([, delay]) => delay)
-      .filter((d): d is number => typeof d === "number");
+    const delays = timeoutSpy.mock.calls.map(([, delay]) => delay).filter((d): d is number => typeof d === "number");
     expect(delays).toContain(60_000);
 
     deferredRun.resolve({ status: "ok", summary: "done" });

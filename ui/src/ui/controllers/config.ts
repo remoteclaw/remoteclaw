@@ -2,12 +2,7 @@ import type { GatewayBrowserClient } from "../gateway.ts";
 import type { ConfigSchemaResponse, ConfigSnapshot, ConfigUiHints } from "../types.ts";
 import type { JsonSchema } from "../views/config-form.shared.ts";
 import { coerceFormValues } from "./config/form-coerce.ts";
-import {
-  cloneConfigObject,
-  removePathValue,
-  serializeConfigForm,
-  setPathValue,
-} from "./config/form-utils.ts";
+import { cloneConfigObject, removePathValue, serializeConfigForm, setPathValue } from "./config/form-utils.ts";
 
 export type ConfigState = {
   client: GatewayBrowserClient | null;
@@ -78,7 +73,11 @@ export function applyConfigSchema(state: ConfigState, res: ConfigSchemaResponse)
 
 export function applyConfigSnapshot(state: ConfigState, snapshot: ConfigSnapshot) {
   state.configSnapshot = snapshot;
-  const rawFromSnapshot =
+  const rawAvailable = typeof snapshot.raw === "string";
+  if (!rawAvailable && state.configFormMode === "raw") {
+    state.configFormMode = "form";
+  }
+  const rawFromSnapshot: string =
     typeof snapshot.raw === "string"
       ? snapshot.raw
       : snapshot.config && typeof snapshot.config === "object"
@@ -117,13 +116,14 @@ function asJsonSchema(value: unknown): JsonSchema | null {
  * gateway's Zod validation always sees correctly typed values.
  */
 function serializeFormForSubmit(state: ConfigState): string {
+  if (state.configFormMode === "raw" && typeof state.configSnapshot?.raw !== "string") {
+    throw new Error("Raw config editing is unavailable for this snapshot. Switch to Form mode.");
+  }
   if (state.configFormMode !== "form" || !state.configForm) {
     return state.configRaw;
   }
   const schema = asJsonSchema(state.configSchema);
-  const form = schema
-    ? (coerceFormValues(state.configForm, schema) as Record<string, unknown>)
-    : state.configForm;
+  const form = schema ? (coerceFormValues(state.configForm, schema) as Record<string, unknown>) : state.configForm;
   return serializeConfigForm(form);
 }
 
@@ -194,11 +194,7 @@ export async function runUpdate(state: ConfigState) {
   }
 }
 
-export function updateConfigFormValue(
-  state: ConfigState,
-  path: Array<string | number>,
-  value: unknown,
-) {
+export function updateConfigFormValue(state: ConfigState, path: Array<string | number>, value: unknown) {
   const base = cloneConfigObject(state.configForm ?? state.configSnapshot?.config ?? {});
   setPathValue(base, path, value);
   state.configForm = base;
@@ -218,10 +214,7 @@ export function removeConfigFormValue(state: ConfigState, path: Array<string | n
   }
 }
 
-export function findAgentConfigEntryIndex(
-  config: Record<string, unknown> | null,
-  agentId: string,
-): number {
+export function findAgentConfigEntryIndex(config: Record<string, unknown> | null, agentId: string): number {
   const normalizedAgentId = agentId.trim();
   if (!normalizedAgentId) {
     return -1;
@@ -232,10 +225,7 @@ export function findAgentConfigEntryIndex(
   }
   return list.findIndex(
     (entry) =>
-      entry &&
-      typeof entry === "object" &&
-      "id" in entry &&
-      (entry as { id?: string }).id === normalizedAgentId,
+      entry && typeof entry === "object" && "id" in entry && (entry as { id?: string }).id === normalizedAgentId,
   );
 }
 
@@ -244,8 +234,7 @@ export function ensureAgentConfigEntry(state: ConfigState, agentId: string): num
   if (!normalizedAgentId) {
     return -1;
   }
-  const source =
-    state.configForm ?? (state.configSnapshot?.config as Record<string, unknown> | null);
+  const source = state.configForm ?? (state.configSnapshot?.config as Record<string, unknown> | null);
   const existingIndex = findAgentConfigEntryIndex(source, normalizedAgentId);
   if (existingIndex >= 0) {
     return existingIndex;

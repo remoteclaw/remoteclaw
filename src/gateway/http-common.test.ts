@@ -18,10 +18,7 @@ describe("setDefaultSecurityHeaders", () => {
   it("sets Permissions-Policy", () => {
     const { res, setHeader } = makeMockHttpResponse();
     setDefaultSecurityHeaders(res);
-    expect(setHeader).toHaveBeenCalledWith(
-      "Permissions-Policy",
-      "camera=(), microphone=(), geolocation=()",
-    );
+    expect(setHeader).toHaveBeenCalledWith("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   });
 
   it("sets Strict-Transport-Security when provided", () => {
@@ -29,10 +26,7 @@ describe("setDefaultSecurityHeaders", () => {
     setDefaultSecurityHeaders(res, {
       strictTransportSecurity: "max-age=63072000; includeSubDomains; preload",
     });
-    expect(setHeader).toHaveBeenCalledWith(
-      "Strict-Transport-Security",
-      "max-age=63072000; includeSubDomains; preload",
-    );
+    expect(setHeader).toHaveBeenCalledWith("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
   });
 
   it("does not set Strict-Transport-Security when not provided", () => {

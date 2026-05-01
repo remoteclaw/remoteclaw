@@ -20,9 +20,7 @@ vi.mock("../infra/outbound/deliver.js", () => ({
 }));
 
 vi.mock("../infra/outbound/targets.js", async () => {
-  const actual = await vi.importActual<typeof import("../infra/outbound/targets.js")>(
-    "../infra/outbound/targets.js",
-  );
+  const actual = await vi.importActual<typeof import("../infra/outbound/targets.js")>("../infra/outbound/targets.js");
   return {
     ...actual,
     resolveOutboundTarget: mocks.resolveOutboundTarget,
@@ -103,9 +101,7 @@ describe("deliverAgentCommandResult", () => {
       } as SessionEntry,
     });
 
-    expect(mocks.deliverOutboundPayloads).toHaveBeenCalledWith(
-      expect.objectContaining({ accountId: "kev" }),
-    );
+    expect(mocks.deliverOutboundPayloads).toHaveBeenCalledWith(expect.objectContaining({ accountId: "kev" }));
   });
 
   it("falls back to session accountId for implicit delivery", async () => {
@@ -121,9 +117,7 @@ describe("deliverAgentCommandResult", () => {
       } as SessionEntry,
     });
 
-    expect(mocks.deliverOutboundPayloads).toHaveBeenCalledWith(
-      expect.objectContaining({ accountId: "legacy" }),
-    );
+    expect(mocks.deliverOutboundPayloads).toHaveBeenCalledWith(expect.objectContaining({ accountId: "legacy" }));
   });
 
   it("does not infer accountId for explicit delivery targets", async () => {
@@ -143,9 +137,7 @@ describe("deliverAgentCommandResult", () => {
     expect(mocks.resolveOutboundTarget).toHaveBeenCalledWith(
       expect.objectContaining({ accountId: undefined, mode: "explicit" }),
     );
-    expect(mocks.deliverOutboundPayloads).toHaveBeenCalledWith(
-      expect.objectContaining({ accountId: undefined }),
-    );
+    expect(mocks.deliverOutboundPayloads).toHaveBeenCalledWith(expect.objectContaining({ accountId: undefined }));
   });
 
   it("skips session accountId when channel differs", async () => {

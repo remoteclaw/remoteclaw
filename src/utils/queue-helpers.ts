@@ -48,9 +48,7 @@ export function applyQueueRuntimeSettings<TMode extends string>(params: {
 }): void {
   params.target.mode = params.settings.mode;
   params.target.debounceMs =
-    typeof params.settings.debounceMs === "number"
-      ? Math.max(0, params.settings.debounceMs)
-      : params.target.debounceMs;
+    typeof params.settings.debounceMs === "number" ? Math.max(0, params.settings.debounceMs) : params.target.debounceMs;
   params.target.cap =
     typeof params.settings.cap === "number" && params.settings.cap > 0
       ? Math.floor(params.settings.cap)
@@ -108,10 +106,7 @@ export function applyQueueDropPolicy<T>(params: {
   return true;
 }
 
-export function waitForQueueDebounce(queue: {
-  debounceMs: number;
-  lastEnqueuedAt: number;
-}): Promise<void> {
+export function waitForQueueDebounce(queue: { debounceMs: number; lastEnqueuedAt: number }): Promise<void> {
   if (process.env.REMOTECLAW_TEST_FAST === "1") {
     return Promise.resolve();
   }
@@ -132,10 +127,7 @@ export function waitForQueueDebounce(queue: {
   });
 }
 
-export function beginQueueDrain<T extends { draining: boolean }>(
-  map: Map<string, T>,
-  key: string,
-): T | undefined {
+export function beginQueueDrain<T extends { draining: boolean }>(map: Map<string, T>, key: string): T | undefined {
   const queue = map.get(key);
   if (!queue || queue.draining) {
     return undefined;
@@ -144,10 +136,7 @@ export function beginQueueDrain<T extends { draining: boolean }>(
   return queue;
 }
 
-export async function drainNextQueueItem<T>(
-  items: T[],
-  run: (item: T) => Promise<void>,
-): Promise<boolean> {
+export async function drainNextQueueItem<T>(items: T[], run: (item: T) => Promise<void>): Promise<boolean> {
   const next = items[0];
   if (!next) {
     return false;

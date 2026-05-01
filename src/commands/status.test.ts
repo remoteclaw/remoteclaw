@@ -240,11 +240,8 @@ vi.mock("../config/sessions.js", () => ({
   loadSessionStore: mocks.loadSessionStore,
   resolveMainSessionKey: mocks.resolveMainSessionKey,
   resolveStorePath: mocks.resolveStorePath,
-  resolveFreshSessionTotalTokens: vi.fn(
-    (entry?: { totalTokens?: number; totalTokensFresh?: boolean }) =>
-      typeof entry?.totalTokens === "number" && entry?.totalTokensFresh !== false
-        ? entry.totalTokens
-        : undefined,
+  resolveFreshSessionTotalTokens: vi.fn((entry?: { totalTokens?: number; totalTokensFresh?: boolean }) =>
+    typeof entry?.totalTokens === "number" && entry?.totalTokensFresh !== false ? entry.totalTokens : undefined,
   ),
   readSessionUpdatedAt: vi.fn(() => undefined),
   recordSessionMetaFromInbound: vi.fn().mockResolvedValue(undefined),
@@ -463,8 +460,7 @@ describe("statusCommand", () => {
     expect(
       logs.some(
         (line) =>
-          line.includes("remoteclaw status --all") ||
-          line.includes("remoteclaw --profile isolated status --all"),
+          line.includes("remoteclaw status --all") || line.includes("remoteclaw --profile isolated status --all"),
       ),
     ).toBe(true);
   });
@@ -632,9 +628,7 @@ describe("statusCommand", () => {
     const payload = JSON.parse(String(runtimeLogMock.mock.calls.at(-1)?.[0]));
     expect(payload.sessions.count).toBe(2);
     expect(payload.sessions.paths.length).toBe(2);
-    expect(
-      payload.sessions.recent.some((sess: { key?: string }) => sess.key === "agent:ops:main"),
-    ).toBe(true);
+    expect(payload.sessions.recent.some((sess: { key?: string }) => sess.key === "agent:ops:main")).toBe(true);
 
     if (originalAgents) {
       mocks.listAgentsForGateway.mockImplementation(originalAgents);

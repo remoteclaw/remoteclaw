@@ -8,10 +8,7 @@ import type {
   ReplyToMode,
   SessionThreadBindingsConfig,
 } from "./types.base.js";
-import type {
-  ChannelHealthMonitorConfig,
-  ChannelHeartbeatVisibilityConfig,
-} from "./types.channels.js";
+import type { ChannelHealthMonitorConfig, ChannelHeartbeatVisibilityConfig } from "./types.channels.js";
 import type { DmConfig, ProviderCommandsConfig } from "./types.messages.js";
 import type { GroupToolPolicyBySenderConfig, GroupToolPolicyConfig } from "./types.tools.js";
 
@@ -61,7 +58,7 @@ export type TelegramExecApprovalTarget = "dm" | "channel" | "both";
 export type TelegramExecApprovalConfig = {
   /** Enable Telegram exec approvals for this account. Default: false. */
   enabled?: boolean;
-  /** Telegram user IDs allowed to approve exec requests. Required if enabled. */
+  /** Telegram user IDs allowed to approve exec requests. Optional: falls back to numeric owner IDs inferred from allowFrom/defaultTo when possible. */
   approvers?: Array<string | number>;
   /** Only forward approvals for these agent IDs. Omit = all agents. */
   agentFilter?: string[];

@@ -50,14 +50,8 @@ export function getFollowupQueue(key: string, settings: QueueSettings): Followup
     draining: false,
     lastEnqueuedAt: 0,
     mode: settings.mode,
-    debounceMs:
-      typeof settings.debounceMs === "number"
-        ? Math.max(0, settings.debounceMs)
-        : DEFAULT_QUEUE_DEBOUNCE_MS,
-    cap:
-      typeof settings.cap === "number" && settings.cap > 0
-        ? Math.floor(settings.cap)
-        : DEFAULT_QUEUE_CAP,
+    debounceMs: typeof settings.debounceMs === "number" ? Math.max(0, settings.debounceMs) : DEFAULT_QUEUE_DEBOUNCE_MS,
+    cap: typeof settings.cap === "number" && settings.cap > 0 ? Math.floor(settings.cap) : DEFAULT_QUEUE_CAP,
     dropPolicy: settings.dropPolicy ?? DEFAULT_QUEUE_DROP,
     droppedCount: 0,
     summaryLines: [],

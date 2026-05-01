@@ -19,9 +19,7 @@ function normalizePossibleLocalImagePath(text: string | undefined): string | nul
   if (/^(https?:\/\/|data:|file:\/\/)/i.test(raw)) return null;
 
   const ext = path.extname(raw).toLowerCase();
-  const isImageExt = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".ico", ".tiff"].includes(
-    ext,
-  );
+  const isImageExt = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".ico", ".tiff"].includes(ext);
   if (!isImageExt) return null;
 
   if (!path.isAbsolute(raw)) return null;
@@ -113,16 +111,7 @@ export const feishuOutbound: ChannelOutboundAdapter = {
     });
     return { channel: "feishu", ...result };
   },
-  sendMedia: async ({
-    cfg,
-    to,
-    text,
-    mediaUrl,
-    accountId,
-    mediaLocalRoots,
-    replyToId,
-    threadId,
-  }) => {
+  sendMedia: async ({ cfg, to, text, mediaUrl, accountId, mediaLocalRoots, replyToId, threadId }) => {
     const replyToMessageId = resolveReplyToMessageId({ replyToId, threadId });
     // Send text first if provided
     if (text?.trim()) {

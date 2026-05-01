@@ -1,16 +1,10 @@
-import {
-  readAcpSessionEntry,
-  type AcpSessionStoreEntry,
-} from "../../../../src/acp/runtime/session-meta.js";
+import { readAcpSessionEntry, type AcpSessionStoreEntry } from "../../../../src/acp/runtime/session-meta.js";
 import type { RemoteClawConfig } from "../../../../src/config/config.js";
 import { normalizeAccountId } from "../../../../src/routing/session-key.js";
 import { parseDiscordTarget } from "../targets.js";
 import { resolveChannelIdForBinding } from "./thread-bindings.discord-api.js";
 import { getThreadBindingManager } from "./thread-bindings.manager.js";
-import {
-  resolveThreadBindingIntroText,
-  resolveThreadBindingThreadName,
-} from "./thread-bindings.messages.js";
+import { resolveThreadBindingIntroText, resolveThreadBindingThreadName } from "./thread-bindings.messages.js";
 import {
   BINDINGS_BY_THREAD_ID,
   MANAGERS_BY_ACCOUNT_ID,
@@ -299,9 +293,7 @@ export function setThreadBindingMaxAgeBySessionKey(params: {
   }));
 }
 
-function resolveStoredAcpBindingHealth(params: {
-  session: AcpSessionStoreEntry;
-}): AcpThreadBindingHealthStatus {
+function resolveStoredAcpBindingHealth(params: { session: AcpSessionStoreEntry }): AcpThreadBindingHealthStatus {
   if (!params.session.acp) {
     return "stale";
   }

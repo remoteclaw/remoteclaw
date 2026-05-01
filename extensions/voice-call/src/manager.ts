@@ -107,9 +107,7 @@ export class CallManager {
           if (call.providerCallId) {
             this.providerCallIdMap.delete(call.providerCallId);
           }
-          console.log(
-            `[voice-call] Skipping restored call ${callId} (max duration already elapsed)`,
-          );
+          console.log(`[voice-call] Skipping restored call ${callId} (max duration already elapsed)`);
           continue;
         }
         startMaxDurationTimer({
@@ -155,9 +153,7 @@ export class CallManager {
 
       // Skip calls older than maxDurationSeconds (time-based fallback)
       if (now - call.startedAt > maxAgeMs) {
-        console.log(
-          `[voice-call] Skipping restored call ${callId} (older than maxDurationSeconds)`,
-        );
+        console.log(`[voice-call] Skipping restored call ${callId} (older than maxDurationSeconds)`);
         continue;
       }
 
@@ -168,13 +164,9 @@ export class CallManager {
           .getCallStatus({ providerCallId: call.providerCallId })
           .then((result) => {
             if (result.isTerminal) {
-              console.log(
-                `[voice-call] Skipping restored call ${callId} (provider status: ${result.status})`,
-              );
+              console.log(`[voice-call] Skipping restored call ${callId} (provider status: ${result.status})`);
             } else if (result.isUnknown) {
-              console.log(
-                `[voice-call] Keeping restored call ${callId} (provider status unknown, relying on timer)`,
-              );
+              console.log(`[voice-call] Keeping restored call ${callId} (provider status unknown, relying on timer)`);
               verified.set(callId, call);
             } else {
               verified.set(callId, call);
@@ -182,9 +174,7 @@ export class CallManager {
           })
           .catch(() => {
             // Verification failed entirely — keep the call, rely on timer
-            console.log(
-              `[voice-call] Keeping restored call ${callId} (verification failed, relying on timer)`,
-            );
+            console.log(`[voice-call] Keeping restored call ${callId} (verification failed, relying on timer)`);
             verified.set(callId, call);
           }),
       };
@@ -287,8 +277,7 @@ export class CallManager {
   }
 
   private maybeSpeakInitialMessageOnAnswered(call: CallRecord): void {
-    const initialMessage =
-      typeof call.metadata?.initialMessage === "string" ? call.metadata.initialMessage.trim() : "";
+    const initialMessage = typeof call.metadata?.initialMessage === "string" ? call.metadata.initialMessage.trim() : "";
 
     if (!initialMessage) {
       return;
@@ -299,8 +288,7 @@ export class CallManager {
     // is actually available; otherwise speak immediately on answered.
     const mode = (call.metadata?.mode as string | undefined) ?? "conversation";
     if (mode === "conversation") {
-      const shouldWaitForStreamConnect =
-        this.shouldDeferConversationInitialMessageUntilStreamConnect();
+      const shouldWaitForStreamConnect = this.shouldDeferConversationInitialMessageUntilStreamConnect();
       if (shouldWaitForStreamConnect) {
         return;
       }

@@ -4,9 +4,7 @@ function resolveProbeFailureMessage(result: {
   error?: string | null;
   close?: { code: number; reason: string } | null;
 }): string {
-  const closeHint = result.close
-    ? `gateway closed (${result.close.code}): ${result.close.reason}`
-    : null;
+  const closeHint = result.close ? `gateway closed (${result.close.code}): ${result.close.reason}` : null;
   if (closeHint && (!result.error || result.error === "timeout")) {
     return closeHint;
   }

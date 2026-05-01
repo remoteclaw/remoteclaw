@@ -73,23 +73,9 @@ export const DEFAULT_TIMING: Required<StatusReactionTiming> = {
   errorHoldMs: 2500,
 };
 
-export const CODING_TOOL_TOKENS: string[] = [
-  "exec",
-  "process",
-  "read",
-  "write",
-  "edit",
-  "session_status",
-  "bash",
-];
+export const CODING_TOOL_TOKENS: string[] = ["exec", "process", "read", "write", "edit", "session_status", "bash"];
 
-export const WEB_TOOL_TOKENS: string[] = [
-  "web_search",
-  "web-search",
-  "web_fetch",
-  "web-fetch",
-  "browser",
-];
+export const WEB_TOOL_TOKENS: string[] = ["web_search", "web-search", "web_fetch", "web-fetch", "browser"];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Functions
@@ -98,10 +84,7 @@ export const WEB_TOOL_TOKENS: string[] = [
 /**
  * Resolve the appropriate emoji for a tool invocation.
  */
-export function resolveToolEmoji(
-  toolName: string | undefined,
-  emojis: Required<StatusReactionEmojis>,
-): string {
+export function resolveToolEmoji(toolName: string | undefined, emojis: Required<StatusReactionEmojis>): string {
   const normalized = toolName?.trim().toLowerCase() ?? "";
   if (!normalized) {
     return emojis.tool;
@@ -254,10 +237,7 @@ export function createStatusReactionController(params: {
   /**
    * Schedule an emoji change (debounced or immediate).
    */
-  function scheduleEmoji(
-    emoji: string,
-    options: { immediate?: boolean; skipStallReset?: boolean } = {},
-  ): void {
+  function scheduleEmoji(emoji: string, options: { immediate?: boolean; skipStallReset?: boolean } = {}): void {
     if (!enabled || finished) {
       return;
     }
@@ -282,6 +262,7 @@ export function createStatusReactionController(params: {
     } else {
       // Debounced execution for intermediate states
       debounceTimer = setTimeout(() => {
+        debounceTimer = null;
         void enqueue(async () => {
           await applyEmoji(emoji);
           pendingEmoji = "";
@@ -379,7 +360,19 @@ export function createStatusReactionController(params: {
       return;
     }
 
+    const alreadyInitial = currentEmoji === initialEmoji;
+    const pendingBeforeClear = pendingEmoji;
+    const hadDebouncedPending = debounceTimer !== null;
     clearAllTimers();
+    if (alreadyInitial && (!pendingBeforeClear || hadDebouncedPending)) {
+      pendingEmoji = "";
+      return;
+    }
+    if (pendingBeforeClear === initialEmoji && !hadDebouncedPending) {
+      await chainPromise;
+      return;
+    }
+
     await enqueue(async () => {
       await applyEmoji(initialEmoji);
       pendingEmoji = "";

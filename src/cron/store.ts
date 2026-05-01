@@ -46,10 +46,7 @@ function parseCronStoreForBackupComparison(raw: string): CronStoreFile | null {
   }
 }
 
-function shouldSkipCronBackupForRuntimeOnlyChanges(
-  previousRaw: string | null,
-  nextStore: CronStoreFile,
-): boolean {
+function shouldSkipCronBackupForRuntimeOnlyChanges(previousRaw: string | null, nextStore: CronStoreFile): boolean {
   if (previousRaw === null) {
     return false;
   }
@@ -57,10 +54,7 @@ function shouldSkipCronBackupForRuntimeOnlyChanges(
   if (!previous) {
     return false;
   }
-  return (
-    JSON.stringify(stripRuntimeOnlyCronFields(previous)) ===
-    JSON.stringify(stripRuntimeOnlyCronFields(nextStore))
-  );
+  return JSON.stringify(stripRuntimeOnlyCronFields(previous)) === JSON.stringify(stripRuntimeOnlyCronFields(nextStore));
 }
 
 export function resolveCronStorePath(storePath?: string) {
@@ -86,9 +80,7 @@ export async function loadCronStore(storePath: string): Promise<CronStoreFile> {
       });
     }
     const parsedRecord =
-      parsed && typeof parsed === "object" && !Array.isArray(parsed)
-        ? (parsed as Record<string, unknown>)
-        : {};
+      parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : {};
     const jobs = Array.isArray(parsedRecord.jobs) ? (parsedRecord.jobs as never[]) : [];
     const store = {
       version: 1 as const,
@@ -113,11 +105,7 @@ async function setSecureFileMode(filePath: string): Promise<void> {
   await fs.promises.chmod(filePath, 0o600).catch(() => undefined);
 }
 
-export async function saveCronStore(
-  storePath: string,
-  store: CronStoreFile,
-  opts?: SaveCronStoreOptions,
-) {
+export async function saveCronStore(storePath: string, store: CronStoreFile, opts?: SaveCronStoreOptions) {
   const storeDir = path.dirname(storePath);
   await fs.promises.mkdir(storeDir, { recursive: true, mode: 0o700 });
   await fs.promises.chmod(storeDir, 0o700).catch(() => undefined);
@@ -141,8 +129,7 @@ export async function saveCronStore(
     serializedStoreCache.set(storePath, json);
     return;
   }
-  const skipBackup =
-    opts?.skipBackup === true || shouldSkipCronBackupForRuntimeOnlyChanges(previous, store);
+  const skipBackup = opts?.skipBackup === true || shouldSkipCronBackupForRuntimeOnlyChanges(previous, store);
   const tmp = `${storePath}.${process.pid}.${randomBytes(8).toString("hex")}.tmp`;
   await fs.promises.writeFile(tmp, json, { encoding: "utf-8", mode: 0o600 });
   await setSecureFileMode(tmp);

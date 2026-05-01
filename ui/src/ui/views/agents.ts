@@ -8,11 +8,7 @@ import type {
   CronStatus,
   ToolsCatalogResult,
 } from "../types.ts";
-import {
-  renderAgentFiles,
-  renderAgentChannels,
-  renderAgentCron,
-} from "./agents-panels-status-files.ts";
+import { renderAgentFiles, renderAgentChannels, renderAgentCron } from "./agents-panels-status-files.ts";
 import {
   buildAgentContext,
   buildModelOptions,
@@ -88,9 +84,7 @@ export function renderAgents(props: AgentsProps) {
   const agents = props.agentsList?.agents ?? [];
   const defaultId = props.agentsList?.defaultId ?? null;
   const selectedId = props.selectedAgentId ?? defaultId ?? agents[0]?.id ?? null;
-  const selectedAgent = selectedId
-    ? (agents.find((agent) => agent.id === selectedId) ?? null)
-    : null;
+  const selectedAgent = selectedId ? (agents.find((agent) => agent.id === selectedId) ?? null) : null;
 
   return html`
     <div class="agents-layout">
@@ -104,11 +98,7 @@ export function renderAgents(props: AgentsProps) {
             ${props.loading ? "Loading…" : "Refresh"}
           </button>
         </div>
-        ${
-          props.error
-            ? html`<div class="callout danger" style="margin-top: 12px;">${props.error}</div>`
-            : nothing
-        }
+        ${props.error ? html`<div class="callout danger" style="margin-top: 12px;">${props.error}</div>` : nothing}
         <div class="agent-list" style="margin-top: 12px;">
           ${
             agents.length === 0
@@ -144,10 +134,7 @@ export function renderAgents(props: AgentsProps) {
                 </div>
               `
             : html`
-                ${renderAgentHeader(
-                  selectedAgent,
-                  props.agentIdentityById[selectedAgent.id] ?? null,
-                )}
+                ${renderAgentHeader(selectedAgent, props.agentIdentityById[selectedAgent.id] ?? null)}
                 ${renderAgentTabs(props.activePanel, (panel) => props.onSelectPanel(panel))}
                 ${
                   props.activePanel === "overview"
@@ -230,10 +217,7 @@ export function renderAgents(props: AgentsProps) {
   `;
 }
 
-function renderAgentHeader(
-  agent: AgentsListResult["agents"][number],
-  agentIdentity: AgentIdentityResult | null,
-) {
+function renderAgentHeader(agent: AgentsListResult["agents"][number], agentIdentity: AgentIdentityResult | null) {
   const displayName = normalizeAgentLabel(agent);
   const subtitle = agent.identity?.theme?.trim() || "Agent workspace and routing.";
   const emoji = resolveAgentEmoji(agent, agentIdentity);
@@ -308,38 +292,23 @@ function renderAgentOverview(params: {
     onModelFallbacksChange,
   } = params;
   const config = resolveAgentConfig(configForm, agent.id);
-  const workspaceFromFiles =
-    agentFilesList && agentFilesList.agentId === agent.id ? agentFilesList.workspace : null;
-  const workspace =
-    workspaceFromFiles || config.entry?.workspace || config.defaults?.workspace || "default";
+  const workspaceFromFiles = agentFilesList && agentFilesList.agentId === agent.id ? agentFilesList.workspace : null;
+  const workspace = workspaceFromFiles || config.entry?.workspace || config.defaults?.workspace || "default";
   const model = config.entry?.model
     ? resolveModelLabel(config.entry?.model)
     : resolveModelLabel(config.defaults?.model);
   const defaultModel = resolveModelLabel(config.defaults?.model);
-  const modelPrimary =
-    resolveModelPrimary(config.entry?.model) || (model !== "-" ? normalizeModelValue(model) : null);
+  const modelPrimary = resolveModelPrimary(config.entry?.model) || (model !== "-" ? normalizeModelValue(model) : null);
   const defaultPrimary =
-    resolveModelPrimary(config.defaults?.model) ||
-    (defaultModel !== "-" ? normalizeModelValue(defaultModel) : null);
+    resolveModelPrimary(config.defaults?.model) || (defaultModel !== "-" ? normalizeModelValue(defaultModel) : null);
   const effectivePrimary = modelPrimary ?? defaultPrimary ?? null;
-  const modelFallbacks = resolveEffectiveModelFallbacks(
-    config.entry?.model,
-    config.defaults?.model,
-  );
+  const modelFallbacks = resolveEffectiveModelFallbacks(config.entry?.model, config.defaults?.model);
   const fallbackText = modelFallbacks ? modelFallbacks.join(", ") : "";
   const identityName =
-    agentIdentity?.name?.trim() ||
-    agent.identity?.name?.trim() ||
-    agent.name?.trim() ||
-    config.entry?.name ||
-    "-";
+    agentIdentity?.name?.trim() || agent.identity?.name?.trim() || agent.name?.trim() || config.entry?.name || "-";
   const resolvedEmoji = resolveAgentEmoji(agent, agentIdentity);
   const identityEmoji = resolvedEmoji || "-";
-  const identityStatus = agentIdentityLoading
-    ? "Loading…"
-    : agentIdentityError
-      ? "Unavailable"
-      : "";
+  const identityStatus = agentIdentityLoading ? "Loading…" : agentIdentityError ? "Unavailable" : "";
   return html`
     <section class="card">
       <div class="card-title">Overview</div>
@@ -372,8 +341,7 @@ function renderAgentOverview(params: {
             <select
               .value=${effectivePrimary ?? ""}
               ?disabled=${!configForm || configLoading || configSaving}
-              @change=${(e: Event) =>
-                onModelChange(agent.id, (e.target as HTMLSelectElement).value || null)}
+              @change=${(e: Event) => onModelChange(agent.id, (e.target as HTMLSelectElement).value || null)}
             >
               ${html`
                 <option value="">
@@ -390,10 +358,7 @@ function renderAgentOverview(params: {
               ?disabled=${!configForm || configLoading || configSaving}
               placeholder="provider/model, provider/model"
               @input=${(e: Event) =>
-                onModelFallbacksChange(
-                  agent.id,
-                  parseFallbackList((e.target as HTMLInputElement).value),
-                )}
+                onModelFallbacksChange(agent.id, parseFallbackList((e.target as HTMLInputElement).value))}
             />
           </label>
         </div>

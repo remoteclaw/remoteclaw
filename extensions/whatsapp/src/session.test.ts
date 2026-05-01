@@ -1,8 +1,8 @@
 import { EventEmitter } from "node:events";
 import fsSync from "node:fs";
 import path from "node:path";
+import { resetLogger, setLoggerOverride } from "remoteclaw/plugin-sdk/runtime-env";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { resetLogger, setLoggerOverride } from "../../../src/logging.js";
 import { baileys, getLastSocket, resetBaileysMocks, resetLoadConfigMock } from "./test-helpers.js";
 
 const useMultiFileAuthStateMock = vi.mocked(baileys.useMultiFileAuthState);
@@ -60,8 +60,7 @@ function mockCredsJsonSpies(readContents: string) {
 describe("web session", () => {
   beforeEach(async () => {
     vi.resetModules();
-    ({ createWaSocket, formatError, logWebSelfId, waitForWaConnection } =
-      await import("./session.js"));
+    ({ createWaSocket, formatError, logWebSelfId, waitForWaConnection } = await import("./session.js"));
     vi.clearAllMocks();
     resetBaileysMocks();
     resetLoadConfigMock();
@@ -76,9 +75,7 @@ describe("web session", () => {
   it("creates WA socket with QR handler", async () => {
     await createWaSocket(true, false);
     const makeWASocket = baileys.makeWASocket as ReturnType<typeof vi.fn>;
-    expect(makeWASocket).toHaveBeenCalledWith(
-      expect.objectContaining({ printQRInTerminal: false }),
-    );
+    expect(makeWASocket).toHaveBeenCalledWith(expect.objectContaining({ printQRInTerminal: false }));
     const passed = makeWASocket.mock.calls[0][0];
     const passedLogger = (passed as { logger?: { level?: string; trace?: unknown } }).logger;
     expect(passedLogger?.level).toBe("silent");
@@ -93,18 +90,14 @@ describe("web session", () => {
 
   it("waits for connection open", async () => {
     const ev = new EventEmitter();
-    const promise = waitForWaConnection({ ev } as unknown as ReturnType<
-      typeof baileys.makeWASocket
-    >);
+    const promise = waitForWaConnection({ ev } as unknown as ReturnType<typeof baileys.makeWASocket>);
     ev.emit("connection.update", { connection: "open" });
     await expect(promise).resolves.toBeUndefined();
   });
 
   it("rejects when connection closes", async () => {
     const ev = new EventEmitter();
-    const promise = waitForWaConnection({ ev } as unknown as ReturnType<
-      typeof baileys.makeWASocket
-    >);
+    const promise = waitForWaConnection({ ev } as unknown as ReturnType<typeof baileys.makeWASocket>);
     ev.emit("connection.update", {
       connection: "close",
       lastDisconnect: new Error("bye"),
@@ -133,9 +126,7 @@ describe("web session", () => {
 
     logWebSelfId("/tmp/wa-creds", runtime as never, true);
 
-    expect(runtime.log).toHaveBeenCalledWith(
-      expect.stringContaining("Web Channel: +12345 (jid 12345@s.whatsapp.net)"),
-    );
+    expect(runtime.log).toHaveBeenCalledWith(expect.stringContaining("Web Channel: +12345 (jid 12345@s.whatsapp.net)"));
     existsSpy.mockRestore();
     readSpy.mockRestore();
   });
@@ -242,13 +233,7 @@ describe("web session", () => {
 
   it("rotates creds backup when creds.json is valid JSON", async () => {
     const creds = mockCredsJsonSpies("{}");
-    const backupSuffix = path.join(
-      ".remoteclaw",
-      "credentials",
-      "whatsapp",
-      "default",
-      "creds.json.bak",
-    );
+    const backupSuffix = path.join(".remoteclaw", "credentials", "whatsapp", "default", "creds.json.bak");
 
     await createWaSocket(false, false);
     const saveCreds = await emitCredsUpdateAndReadSaveCreds();

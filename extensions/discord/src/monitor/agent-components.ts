@@ -19,10 +19,7 @@ import type { APIStringSelectComponent } from "discord-api-types/v10";
 import { ButtonStyle, ChannelType } from "discord-api-types/v10";
 import { resolveHumanDelayConfig } from "../../../../src/agents/identity.js";
 import { resolveChunkMode, resolveTextChunkLimit } from "../../../../src/auto-reply/chunk.js";
-import {
-  formatInboundEnvelope,
-  resolveEnvelopeFormatOptions,
-} from "../../../../src/auto-reply/envelope.js";
+import { formatInboundEnvelope, resolveEnvelopeFormatOptions } from "../../../../src/auto-reply/envelope.js";
 import { finalizeInboundContext } from "../../../../src/auto-reply/reply/inbound-context.js";
 import { dispatchReplyWithBufferedBlockDispatcher } from "../../../../src/auto-reply/reply/provider-dispatcher.js";
 import { createReplyReferencePlanner } from "../../../../src/auto-reply/reply/reply-reference.js";
@@ -69,10 +66,7 @@ import {
   resolveDiscordOwnerAccess,
 } from "./allow-list.js";
 import { formatDiscordUserTag } from "./format.js";
-import {
-  buildDiscordInboundAccessContext,
-  buildDiscordGroupSystemPrompt,
-} from "./inbound-context.js";
+import { buildDiscordInboundAccessContext, buildDiscordGroupSystemPrompt } from "./inbound-context.js";
 import { buildDirectLabel, buildGuildLabel } from "./reply-context.js";
 import { deliverDiscordReply } from "./reply-delivery.js";
 import { sendTyping } from "./typing.js";
@@ -92,9 +86,7 @@ type AgentComponentMessageInteraction =
 
 type AgentComponentInteraction = AgentComponentMessageInteraction | ModalInteraction;
 
-type ComponentInteractionContext = NonNullable<
-  Awaited<ReturnType<typeof resolveComponentInteractionContext>>
->;
+type ComponentInteractionContext = NonNullable<Awaited<ReturnType<typeof resolveComponentInteractionContext>>>;
 
 type DiscordChannelContext = {
   channelName: string | undefined;
@@ -144,9 +136,7 @@ async function ackComponentInteraction(params: {
   }
 }
 
-function resolveDiscordChannelContext(
-  interaction: AgentComponentInteraction,
-): DiscordChannelContext {
+function resolveDiscordChannelContext(interaction: AgentComponentInteraction): DiscordChannelContext {
   const channel = interaction.channel;
   const channelName = channel && "name" in channel ? (channel.name as string) : undefined;
   const channelSlug = channelName ? normalizeDiscordSlug(channelName) : "";
@@ -315,11 +305,7 @@ async function ensureComponentUserAllowed(params: {
   unauthorizedReply: string;
   allowNameMatching: boolean;
 }): Promise<boolean> {
-  const allowList = normalizeDiscordAllowList(params.entry.allowedUsers, [
-    "discord:",
-    "user:",
-    "pk:",
-  ]);
+  const allowList = normalizeDiscordAllowList(params.entry.allowedUsers, ["discord:", "user:", "pk:"]);
   if (!allowList) {
     return true;
   }
@@ -336,9 +322,7 @@ async function ensureComponentUserAllowed(params: {
     return true;
   }
 
-  logVerbose(
-    `discord component ${params.componentLabel}: blocked user ${params.user.id} (not in allowedUsers)`,
-  );
+  logVerbose(`discord component ${params.componentLabel}: blocked user ${params.user.id} (not in allowedUsers)`);
   try {
     await params.interaction.reply({
       content: params.unauthorizedReply,
@@ -425,9 +409,7 @@ function readParsedComponentId(data: ComponentData): unknown {
   if (!data || typeof data !== "object") {
     return undefined;
   }
-  return "cid" in data
-    ? (data as Record<string, unknown>).cid
-    : (data as Record<string, unknown>).componentId;
+  return "cid" in data ? (data as Record<string, unknown>).cid : (data as Record<string, unknown>).componentId;
 }
 
 function parseAgentComponentData(data: ComponentData): {
@@ -452,8 +434,7 @@ function parseAgentComponentData(data: ComponentData): {
     }
   };
 
-  const componentId =
-    typeof raw === "string" ? decodeSafe(raw) : typeof raw === "number" ? String(raw) : null;
+  const componentId = typeof raw === "string" ? decodeSafe(raw) : typeof raw === "number" ? String(raw) : null;
 
   if (!componentId) {
     return null;
@@ -623,8 +604,7 @@ function parseDiscordComponentData(
     return null;
   }
   const rawComponentId = readParsedComponentId(data);
-  const rawModalId =
-    "mid" in data ? (data as { mid?: unknown }).mid : (data as { modalId?: unknown }).modalId;
+  const rawModalId = "mid" in data ? (data as { mid?: unknown }).mid : (data as { modalId?: unknown }).modalId;
   let componentId = normalizeComponentId(rawComponentId);
   let modalId = normalizeComponentId(rawModalId);
   if (!componentId && customId) {
@@ -642,8 +622,7 @@ function parseDiscordComponentData(
 
 function parseDiscordModalId(data: ComponentData, customId?: string): string | null {
   if (data && typeof data === "object") {
-    const rawModalId =
-      "mid" in data ? (data as { mid?: unknown }).mid : (data as { modalId?: unknown }).modalId;
+    const rawModalId = "mid" in data ? (data as { mid?: unknown }).mid : (data as { modalId?: unknown }).modalId;
     const modalId = normalizeComponentId(rawModalId);
     if (modalId) {
       return modalId;
@@ -671,10 +650,7 @@ function resolveInteractionCustomId(interaction: AgentComponentInteraction): str
   return trimmed ? trimmed : undefined;
 }
 
-function mapOptionLabels(
-  options: Array<{ value: string; label: string }> | undefined,
-  values: string[],
-) {
+function mapOptionLabels(options: Array<{ value: string; label: string }> | undefined, values: string[]) {
   if (!options || options.length === 0) {
     return values;
   }
@@ -701,10 +677,7 @@ function mapSelectValues(entry: DiscordComponentEntry, values: string[]): string
   return values;
 }
 
-function resolveModalFieldValues(
-  field: DiscordModalEntry["fields"][number],
-  interaction: ModalInteraction,
-): string[] {
+function resolveModalFieldValues(field: DiscordModalEntry["fields"][number], interaction: ModalInteraction): string[] {
   const fields = interaction.fields;
   const optionLabels = field.options?.map((option) => ({
     value: option.value,
@@ -720,28 +693,20 @@ function resolveModalFieldValues(
       case "select":
       case "checkbox":
       case "radio": {
-        const values = required
-          ? fields.getStringSelect(field.id, true)
-          : (fields.getStringSelect(field.id) ?? []);
+        const values = required ? fields.getStringSelect(field.id, true) : (fields.getStringSelect(field.id) ?? []);
         return mapOptionLabels(optionLabels, values);
       }
       case "role-select": {
         try {
-          const roles = required
-            ? fields.getRoleSelect(field.id, true)
-            : (fields.getRoleSelect(field.id) ?? []);
+          const roles = required ? fields.getRoleSelect(field.id, true) : (fields.getRoleSelect(field.id) ?? []);
           return roles.map((role) => role.name ?? role.id);
         } catch {
-          const values = required
-            ? fields.getStringSelect(field.id, true)
-            : (fields.getStringSelect(field.id) ?? []);
+          const values = required ? fields.getStringSelect(field.id, true) : (fields.getStringSelect(field.id) ?? []);
           return values;
         }
       }
       case "user-select": {
-        const users = required
-          ? fields.getUserSelect(field.id, true)
-          : (fields.getUserSelect(field.id) ?? []);
+        const users = required ? fields.getUserSelect(field.id, true) : (fields.getUserSelect(field.id) ?? []);
         return users.map((user) => formatDiscordUserTag(user));
       }
       default:
@@ -753,10 +718,7 @@ function resolveModalFieldValues(
   }
 }
 
-function formatModalSubmissionText(
-  entry: DiscordModalEntry,
-  interaction: ModalInteraction,
-): string {
+function formatModalSubmissionText(entry: DiscordModalEntry, interaction: ModalInteraction): string {
   const lines: string[] = [`Form "${entry.title}" submitted.`];
   for (const field of entry.fields) {
     const values = resolveModalFieldValues(field, interaction);
@@ -858,9 +820,7 @@ async function dispatchDiscordComponentEvent(params: {
   const senderUsername = interactionCtx.user.username;
   const senderTag = formatDiscordUserTag(interactionCtx.user);
   const groupChannel =
-    !interactionCtx.isDirectMessage && channelCtx.channelSlug
-      ? `#${channelCtx.channelSlug}`
-      : undefined;
+    !interactionCtx.isDirectMessage && channelCtx.channelSlug ? `#${channelCtx.channelSlug}` : undefined;
   const groupSubject = interactionCtx.isDirectMessage ? undefined : groupChannel;
   const channelConfig = resolveDiscordChannelConfigWithFallback({
     guildInfo,
@@ -996,8 +956,7 @@ async function dispatchDiscordComponentEvent(params: {
   });
   const token = ctx.token ?? "";
   const mediaLocalRoots = getAgentScopedMediaLocalRoots(ctx.cfg, agentId);
-  const replyToMode =
-    ctx.discordConfig?.replyToMode ?? ctx.cfg.channels?.discord?.replyToMode ?? "off";
+  const replyToMode = ctx.discordConfig?.replyToMode ?? ctx.cfg.channels?.discord?.replyToMode ?? "off";
   const replyReference = createReplyReferencePlanner({
     replyToMode,
     startId: params.replyToId,
@@ -1056,10 +1015,7 @@ async function handleDiscordComponentEvent(params: {
   values?: string[];
   label: string;
 }): Promise<void> {
-  const parsed = parseDiscordComponentData(
-    params.data,
-    resolveInteractionCustomId(params.interaction),
-  );
+  const parsed = parseDiscordComponentData(params.data, resolveInteractionCustomId(params.interaction));
   if (!parsed) {
     logError(`${params.label}: failed to parse component data`);
     try {
@@ -1196,10 +1152,7 @@ async function handleDiscordModalTrigger(params: {
   data: ComponentData;
   label: string;
 }): Promise<void> {
-  const parsed = parseDiscordComponentData(
-    params.data,
-    resolveInteractionCustomId(params.interaction),
-  );
+  const parsed = parseDiscordComponentData(params.data, resolveInteractionCustomId(params.interaction));
   if (!parsed) {
     logError(`${params.label}: failed to parse modal trigger data`);
     try {
@@ -1361,16 +1314,7 @@ export class AgentComponentButton extends Button {
     if (!interactionCtx) {
       return;
     }
-    const {
-      channelId,
-      user,
-      username,
-      userId,
-      replyOpts,
-      rawGuildId,
-      isDirectMessage,
-      memberRoleIds,
-    } = interactionCtx;
+    const { channelId, user, username, userId, replyOpts, rawGuildId, isDirectMessage, memberRoleIds } = interactionCtx;
 
     // Check user allowlist before processing component interaction
     // This prevents unauthorized users from injecting system events.
@@ -1450,16 +1394,7 @@ export class AgentSelectMenu extends StringSelectMenu {
     if (!interactionCtx) {
       return;
     }
-    const {
-      channelId,
-      user,
-      username,
-      userId,
-      replyOpts,
-      rawGuildId,
-      isDirectMessage,
-      memberRoleIds,
-    } = interactionCtx;
+    const { channelId, user, username, userId, replyOpts, rawGuildId, isDirectMessage, memberRoleIds } = interactionCtx;
 
     // Check user allowlist before processing component interaction.
     const allowed = await ensureAgentComponentInteractionAllowed({
@@ -1787,9 +1722,7 @@ export function createDiscordComponentRoleSelect(ctx: AgentComponentContext): Ro
   return new DiscordComponentRoleSelect(ctx);
 }
 
-export function createDiscordComponentMentionableSelect(
-  ctx: AgentComponentContext,
-): MentionableSelectMenu {
+export function createDiscordComponentMentionableSelect(ctx: AgentComponentContext): MentionableSelectMenu {
   return new DiscordComponentMentionableSelect(ctx);
 }
 

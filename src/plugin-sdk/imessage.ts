@@ -10,10 +10,7 @@ export {
   resolveIMessageConfigAllowFrom,
   resolveIMessageConfigDefaultTo,
 } from "./channel-config-helpers.js";
-export {
-  looksLikeIMessageTargetId,
-  normalizeIMessageMessagingTarget,
-} from "../channels/plugins/normalize/imessage.js";
+export { looksLikeIMessageTargetId, normalizeIMessageMessagingTarget } from "../channels/plugins/normalize/imessage.js";
 
 export {
   resolveAllowlistProviderRuntimeGroupPolicy,

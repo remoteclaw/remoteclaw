@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   resolveOutboundTarget: vi.fn(() => ({ ok: true as const, to: "+1999" })),
@@ -32,27 +32,18 @@ const mocks = vi.hoisted(() => ({
       };
       const lastChannel = params.turnSourceChannel ?? sessionContext.channel;
       const lastTo = params.turnSourceChannel ? params.turnSourceTo : sessionContext.to;
-      const lastAccountId = params.turnSourceChannel
-        ? params.turnSourceAccountId
-        : sessionContext.accountId;
-      const lastThreadId = params.turnSourceChannel
-        ? params.turnSourceThreadId
-        : sessionContext.threadId;
+      const lastAccountId = params.turnSourceChannel ? params.turnSourceAccountId : sessionContext.accountId;
+      const lastThreadId = params.turnSourceChannel ? params.turnSourceThreadId : sessionContext.threadId;
       const channel =
-        params.requestedChannel === "last" || params.requestedChannel == null
-          ? lastChannel
-          : params.requestedChannel;
+        params.requestedChannel === "last" || params.requestedChannel == null ? lastChannel : params.requestedChannel;
       const mode = params.explicitTo ? "explicit" : "implicit";
-      const resolvedTo =
-        params.explicitTo ?? (channel && channel === lastChannel ? lastTo : undefined);
+      const resolvedTo = params.explicitTo ?? (channel && channel === lastChannel ? lastTo : undefined);
 
       return {
         channel,
         to: resolvedTo,
         accountId: channel && channel === lastChannel ? lastAccountId : undefined,
-        threadId:
-          params.explicitThreadId ??
-          (channel && channel === lastChannel ? lastThreadId : undefined),
+        threadId: params.explicitThreadId ?? (channel && channel === lastChannel ? lastThreadId : undefined),
         threadIdExplicit: params.explicitThreadId != null,
         mode,
         lastChannel,
@@ -73,9 +64,11 @@ import type { RemoteClawConfig } from "../../config/config.js";
 let resolveAgentDeliveryPlan: typeof import("./agent-delivery.js").resolveAgentDeliveryPlan;
 let resolveAgentOutboundTarget: typeof import("./agent-delivery.js").resolveAgentOutboundTarget;
 
-beforeEach(async () => {
-  vi.resetModules();
+beforeAll(async () => {
   ({ resolveAgentDeliveryPlan, resolveAgentOutboundTarget } = await import("./agent-delivery.js"));
+});
+
+beforeEach(() => {
   mocks.resolveOutboundTarget.mockClear();
   mocks.resolveSessionDeliveryTarget.mockClear();
 });

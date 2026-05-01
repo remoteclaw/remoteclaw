@@ -5,8 +5,7 @@ const CHAT_SCOPE = "https://www.googleapis.com/auth/chat.bot";
 const CHAT_ISSUER = "chat@system.gserviceaccount.com";
 // Google Workspace Add-ons use a different service account pattern
 const ADDON_ISSUER_PATTERN = /^service-\d+@gcp-sa-gsuiteaddons\.iam\.gserviceaccount\.com$/;
-const CHAT_CERTS_URL =
-  "https://www.googleapis.com/service_accounts/v1/metadata/x509/chat@system.gserviceaccount.com";
+const CHAT_CERTS_URL = "https://www.googleapis.com/service_accounts/v1/metadata/x509/chat@system.gserviceaccount.com";
 
 // Size-capped to prevent unbounded growth in long-running deployments (#4948)
 const MAX_AUTH_CACHE_SIZE = 32;
@@ -61,9 +60,7 @@ function getAuthInstance(account: ResolvedGoogleChatAccount): GoogleAuth {
   return auth;
 }
 
-export async function getGoogleChatAccessToken(
-  account: ResolvedGoogleChatAccount,
-): Promise<string> {
+export async function getGoogleChatAccessToken(account: ResolvedGoogleChatAccount): Promise<string> {
   const auth = getAuthInstance(account);
   const client = await auth.getClient();
   const access = await client.getAccessToken();

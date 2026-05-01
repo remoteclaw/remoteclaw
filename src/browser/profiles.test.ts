@@ -155,9 +155,7 @@ describe("port collision prevention", () => {
     expect(buggyAllocatedPort).toBe(CDP_PORT_RANGE_START);
 
     // Resolved config: includes implicit remoteclaw at 18800
-    const resolved = resolveBrowserConfig(
-      rawConfig.browser as Parameters<typeof resolveBrowserConfig>[0],
-    );
+    const resolved = resolveBrowserConfig(rawConfig.browser as Parameters<typeof resolveBrowserConfig>[0]);
     const fixedUsedPorts = getUsedPorts(resolved.profiles);
     const fixedAllocatedPort = allocateCdpPort(fixedUsedPorts);
 
@@ -207,11 +205,7 @@ describe("color allocation", () => {
 
   it("cycles based on count when palette exhausted", () => {
     // Add all colors plus some extras
-    const usedColors = new Set([
-      ...PROFILE_COLORS.map((c) => c.toUpperCase()),
-      "#AAAAAA",
-      "#BBBBBB",
-    ]);
+    const usedColors = new Set([...PROFILE_COLORS.map((c) => c.toUpperCase()), "#AAAAAA", "#BBBBBB"]);
     const result = allocateColor(usedColors);
     // Index should be (10 + 2) % 10 = 2
     expect(result).toBe(PROFILE_COLORS[2]);

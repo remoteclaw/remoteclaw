@@ -35,17 +35,8 @@ const EXTRA_LABEL_METADATA = new Map<
 ]);
 
 const configPath = resolve(".github/labeler.yml");
-const EXTRA_LABELS = [
-  "size: XS",
-  "size: S",
-  "size: M",
-  "size: L",
-  "size: XL",
-  "beta-blocker",
-] as const;
-const labelNames = [
-  ...new Set([...extractLabelNames(readFileSync(configPath, "utf8")), ...EXTRA_LABELS]),
-];
+const EXTRA_LABELS = ["size: XS", "size: S", "size: M", "size: L", "size: XL", "beta-blocker"] as const;
+const labelNames = [...new Set([...extractLabelNames(readFileSync(configPath, "utf8")), ...EXTRA_LABELS])];
 
 if (!labelNames.length) {
   throw new Error("labeler.yml must declare at least one label.");
@@ -62,16 +53,7 @@ if (!missing.length) {
 
 for (const label of missing) {
   const metadata = resolveLabelMetadata(label);
-  const args = [
-    "api",
-    "-X",
-    "POST",
-    `repos/${repo}/labels`,
-    "-f",
-    `name=${label}`,
-    "-f",
-    `color=${metadata.color}`,
-  ];
+  const args = ["api", "-X", "POST", `repos/${repo}/labels`, "-f", `name=${label}`, "-f", `color=${metadata.color}`];
   if (metadata.description) {
     args.push("-f", `description=${metadata.description}`);
   }

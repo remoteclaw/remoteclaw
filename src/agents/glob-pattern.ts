@@ -9,20 +9,14 @@ export const MODULE_ATTESTATIONS = {
   compileGlobPatterns: "live",
   matchesAnyGlobPattern: "live",
 } as const;
-export type CompiledGlobPattern =
-  | { kind: "all" }
-  | { kind: "exact"; value: string }
-  | { kind: "regex"; value: RegExp };
+export type CompiledGlobPattern = { kind: "all" } | { kind: "exact"; value: string } | { kind: "regex"; value: RegExp };
 
 function escapeRegex(value: string) {
   // Standard "escape string for regex literal" pattern.
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-export function compileGlobPattern(params: {
-  raw: string;
-  normalize: (value: string) => string;
-}): CompiledGlobPattern {
+export function compileGlobPattern(params: { raw: string; normalize: (value: string) => string }): CompiledGlobPattern {
   const normalized = params.normalize(params.raw);
   if (!normalized) {
     return { kind: "exact", value: "" };

@@ -31,16 +31,10 @@ export type NextcloudTalkReplayGuardOptions = {
 };
 
 export type NextcloudTalkReplayGuard = {
-  shouldProcessMessage: (params: {
-    accountId: string;
-    roomToken: string;
-    messageId: string;
-  }) => Promise<boolean>;
+  shouldProcessMessage: (params: { accountId: string; roomToken: string; messageId: string }) => Promise<boolean>;
 };
 
-export function createNextcloudTalkReplayGuard(
-  options: NextcloudTalkReplayGuardOptions,
-): NextcloudTalkReplayGuard {
+export function createNextcloudTalkReplayGuard(options: NextcloudTalkReplayGuardOptions): NextcloudTalkReplayGuard {
   const stateDir = options.stateDir.trim();
   const persistentDedupe = createPersistentDedupe({
     ttlMs: options.ttlMs ?? DEFAULT_REPLAY_TTL_MS,

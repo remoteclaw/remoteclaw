@@ -29,10 +29,7 @@ type MockWebListener = {
 
 export const TEST_NET_IP = "203.0.113.10";
 
-export async function rmDirWithRetries(
-  dir: string,
-  opts?: { attempts?: number; delayMs?: number },
-): Promise<void> {
+export async function rmDirWithRetries(dir: string, opts?: { attempts?: number; delayMs?: number }): Promise<void> {
   const attempts = opts?.attempts ?? 10;
   const delayMs = opts?.delayMs ?? 5;
   // Some tests can leave async session-store writes in-flight; recursive deletion can race and throw ENOTEMPTY.
@@ -123,18 +120,16 @@ export function installWebAutoReplyUnitTestHooks(opts?: { pinDns?: boolean }) {
     _resetBaileysMocks();
     _resetLoadConfigMock();
     if (opts?.pinDns) {
-      resolvePinnedHostnameSpy = vi
-        .spyOn(ssrf, "resolvePinnedHostname")
-        .mockImplementation(async (hostname) => {
-          // SSRF guard pins DNS; stub resolution to avoid live lookups in unit tests.
-          const normalized = hostname.trim().toLowerCase().replace(/\.$/, "");
-          const addresses = [TEST_NET_IP];
-          return {
-            hostname: normalized,
-            addresses,
-            lookup: ssrf.createPinnedLookup({ hostname: normalized, addresses }),
-          };
-        });
+      resolvePinnedHostnameSpy = vi.spyOn(ssrf, "resolvePinnedHostname").mockImplementation(async (hostname) => {
+        // SSRF guard pins DNS; stub resolution to avoid live lookups in unit tests.
+        const normalized = hostname.trim().toLowerCase().replace(/\.$/, "");
+        const addresses = [TEST_NET_IP];
+        return {
+          hostname: normalized,
+          addresses,
+          lookup: ssrf.createPinnedLookup({ hostname: normalized, addresses }),
+        };
+      });
     }
   });
 
@@ -149,9 +144,7 @@ export function installWebAutoReplyUnitTestHooks(opts?: { pinDns?: boolean }) {
 
 export function createWebListenerFactoryCapture(): AnyExport {
   let capturedOnMessage: ((msg: WebInboundMessage) => Promise<void>) | undefined;
-  const listenerFactory = async (opts: {
-    onMessage: (msg: WebInboundMessage) => Promise<void>;
-  }) => {
+  const listenerFactory = async (opts: { onMessage: (msg: WebInboundMessage) => Promise<void> }) => {
     capturedOnMessage = opts.onMessage;
     return { close: vi.fn() };
   };

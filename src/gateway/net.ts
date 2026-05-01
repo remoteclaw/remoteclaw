@@ -1,9 +1,6 @@
 import type { IncomingMessage } from "node:http";
 import net from "node:net";
-import {
-  pickMatchingExternalInterfaceAddress,
-  readNetworkInterfaces,
-} from "../infra/network-interfaces.js";
+import { pickMatchingExternalInterfaceAddress, readNetworkInterfaces } from "../infra/network-interfaces.js";
 import { pickPrimaryTailnetIPv4, pickPrimaryTailnetIPv6 } from "../infra/tailnet.js";
 import {
   isCanonicalDottedDecimalIPv4,
@@ -100,10 +97,7 @@ function parseRealIp(realIp?: string): string | undefined {
   return parseIpLiteral(realIp);
 }
 
-function resolveForwardedClientIp(params: {
-  forwardedFor?: string;
-  trustedProxies?: string[];
-}): string | undefined {
+function resolveForwardedClientIp(params: { forwardedFor?: string; trustedProxies?: string[] }): string | undefined {
   const { forwardedFor, trustedProxies } = params;
   if (!trustedProxies?.length) {
     return undefined;
@@ -393,9 +387,7 @@ export function isPrivateOrLoopbackHost(host: string): boolean {
   return true;
 }
 
-function parseHostForAddressChecks(
-  host: string,
-): { isLocalhost: boolean; unbracketedHost: string } | null {
+function parseHostForAddressChecks(host: string): { isLocalhost: boolean; unbracketedHost: string } | null {
   if (!host) {
     return null;
   }
@@ -407,9 +399,7 @@ function parseHostForAddressChecks(
     isLocalhost: false,
     // Handle bracketed IPv6 addresses like [::1]
     unbracketedHost:
-      normalizedHost.startsWith("[") && normalizedHost.endsWith("]")
-        ? normalizedHost.slice(1, -1)
-        : normalizedHost,
+      normalizedHost.startsWith("[") && normalizedHost.endsWith("]") ? normalizedHost.slice(1, -1) : normalizedHost,
   };
 }
 
@@ -440,8 +430,7 @@ export function isSecureWebSocketUrl(
   // Node's ws client accepts http(s) URLs and normalizes them to ws(s).
   // Treat those aliases the same way here so loopback cron announce delivery
   // and TLS-backed https endpoints follow the same security policy.
-  const protocol =
-    parsed.protocol === "https:" ? "wss:" : parsed.protocol === "http:" ? "ws:" : parsed.protocol;
+  const protocol = parsed.protocol === "https:" ? "wss:" : parsed.protocol === "http:" ? "ws:" : parsed.protocol;
 
   if (protocol === "wss:") {
     return true;
@@ -463,9 +452,7 @@ export function isSecureWebSocketUrl(
     // Hostnames may resolve to private networks (for example in VPN/Tailnet DNS),
     // but resolution is not available in this synchronous validator.
     const hostForIpCheck =
-      parsed.hostname.startsWith("[") && parsed.hostname.endsWith("]")
-        ? parsed.hostname.slice(1, -1)
-        : parsed.hostname;
+      parsed.hostname.startsWith("[") && parsed.hostname.endsWith("]") ? parsed.hostname.slice(1, -1) : parsed.hostname;
     return net.isIP(hostForIpCheck) === 0;
   }
   return false;

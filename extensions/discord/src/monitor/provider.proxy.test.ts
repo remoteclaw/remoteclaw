@@ -141,9 +141,7 @@ describe("createDiscordGatewayPlugin", () => {
       runtime,
     });
 
-    await expect(registerGatewayClient(plugin)).rejects.toThrow(
-      "Failed to get gateway information from Discord",
-    );
+    await expect(registerGatewayClient(plugin)).rejects.toThrow("Failed to get gateway information from Discord");
     expect(baseRegisterClientSpy).not.toHaveBeenCalled();
   }
 
@@ -166,10 +164,7 @@ describe("createDiscordGatewayPlugin", () => {
     );
   }
 
-  async function registerGatewayClientWithMetadata(params: {
-    plugin: unknown;
-    fetchMock: typeof globalFetchMock;
-  }) {
+  async function registerGatewayClientWithMetadata(params: { plugin: unknown; fetchMock: typeof globalFetchMock }) {
     params.fetchMock.mockResolvedValue({
       ok: true,
       status: 200,
@@ -213,8 +208,7 @@ describe("createDiscordGatewayPlugin", () => {
     await expectGatewayRegisterFallback({
       ok: false,
       status: 503,
-      text: async () =>
-        "upstream connect error or disconnect/reset before headers. reset reason: overflow",
+      text: async () => "upstream connect error or disconnect/reset before headers. reset reason: overflow",
     } as Response);
   });
 
@@ -236,8 +230,7 @@ describe("createDiscordGatewayPlugin", () => {
 
     expect(Object.getPrototypeOf(plugin)).not.toBe(GatewayPlugin.prototype);
 
-    const createWebSocket = (plugin as unknown as { createWebSocket: (url: string) => unknown })
-      .createWebSocket;
+    const createWebSocket = (plugin as unknown as { createWebSocket: (url: string) => unknown }).createWebSocket;
     createWebSocket("wss://gateway.discord.gg");
 
     expect(wsProxyAgentSpy).toHaveBeenCalledWith("http://proxy.test:8080");
@@ -320,8 +313,7 @@ describe("createDiscordGatewayPlugin", () => {
       .mockResolvedValueOnce({
         ok: false,
         status: 503,
-        text: async () =>
-          "upstream connect error or disconnect/reset before headers. reset reason: overflow",
+        text: async () => "upstream connect error or disconnect/reset before headers. reset reason: overflow",
       } as Response)
       .mockResolvedValueOnce({
         ok: true,
@@ -348,9 +340,7 @@ describe("createDiscordGatewayPlugin", () => {
 
     expect(globalFetchMock).toHaveBeenCalledTimes(2);
     expect(baseRegisterClientSpy).toHaveBeenCalledTimes(2);
-    expect(
-      (plugin as unknown as { gatewayInfo?: { url?: string; shards?: number } }).gatewayInfo,
-    ).toMatchObject({
+    expect((plugin as unknown as { gatewayInfo?: { url?: string; shards?: number } }).gatewayInfo).toMatchObject({
       url: "wss://gateway.discord.gg/?v=10",
       shards: 8,
     });

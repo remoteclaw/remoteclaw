@@ -1,9 +1,6 @@
 import { z } from "zod";
 import { ToolPolicySchema } from "./zod-schema.agent-runtime.js";
-import {
-  ChannelHealthMonitorSchema,
-  ChannelHeartbeatVisibilitySchema,
-} from "./zod-schema.channels.js";
+import { ChannelHealthMonitorSchema, ChannelHeartbeatVisibilitySchema } from "./zod-schema.channels.js";
 import {
   BlockStreamingCoalesceSchema,
   DmConfigSchema,
@@ -72,9 +69,7 @@ function enforceOpenDmPolicyAllowFromStar(params: {
   if (params.dmPolicy !== "open") {
     return;
   }
-  const allow = (Array.isArray(params.allowFrom) ? params.allowFrom : [])
-    .map((v) => String(v).trim())
-    .filter(Boolean);
+  const allow = (Array.isArray(params.allowFrom) ? params.allowFrom : []).map((v) => String(v).trim()).filter(Boolean);
   if (allow.includes("*")) {
     return;
   }
@@ -95,9 +90,7 @@ function enforceAllowlistDmPolicyAllowFrom(params: {
   if (params.dmPolicy !== "allowlist") {
     return;
   }
-  const allow = (Array.isArray(params.allowFrom) ? params.allowFrom : [])
-    .map((v) => String(v).trim())
-    .filter(Boolean);
+  const allow = (Array.isArray(params.allowFrom) ? params.allowFrom : []).map((v) => String(v).trim()).filter(Boolean);
   if (allow.length > 0) {
     return;
   }
@@ -135,8 +128,7 @@ export const WhatsAppConfigSchema = WhatsAppSharedSchema.extend({
       dmPolicy: value.dmPolicy,
       allowFrom: value.allowFrom,
       ctx,
-      message:
-        'channels.whatsapp.dmPolicy="open" requires channels.whatsapp.allowFrom to include "*"',
+      message: 'channels.whatsapp.dmPolicy="open" requires channels.whatsapp.allowFrom to include "*"',
     });
     enforceAllowlistDmPolicyAllowFrom({
       dmPolicy: value.dmPolicy,

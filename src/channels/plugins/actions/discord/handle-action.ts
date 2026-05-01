@@ -1,10 +1,6 @@
 import { resolveDiscordChannelId } from "../../../../../extensions/discord/src/targets.js";
 import type { AgentToolResult } from "../../../../agents/agent-types.js";
-import {
-  readNumberParam,
-  readStringArrayParam,
-  readStringParam,
-} from "../../../../agents/tools/common.js";
+import { readNumberParam, readStringArrayParam, readStringParam } from "../../../../agents/tools/common.js";
 import { readDiscordParentIdParam } from "../../../../agents/tools/discord-actions-shared.js";
 import { handleDiscordAction } from "../../../../agents/tools/discord-actions.js";
 import { readBooleanParam } from "../../../../plugin-sdk/boolean-param.js";
@@ -17,13 +13,7 @@ const providerId = "discord";
 export async function handleDiscordMessageAction(
   ctx: Pick<
     ChannelMessageActionContext,
-    | "action"
-    | "params"
-    | "cfg"
-    | "accountId"
-    | "requesterSenderId"
-    | "toolContext"
-    | "mediaLocalRoots"
+    "action" | "params" | "cfg" | "accountId" | "requesterSenderId" | "toolContext" | "mediaLocalRoots"
   >,
 ): Promise<AgentToolResult> {
   const { action, params, cfg } = ctx;
@@ -33,17 +23,14 @@ export async function handleDiscordMessageAction(
   } as const;
 
   const resolveChannelId = () =>
-    resolveDiscordChannelId(
-      readStringParam(params, "channelId") ?? readStringParam(params, "to", { required: true }),
-    );
+    resolveDiscordChannelId(readStringParam(params, "channelId") ?? readStringParam(params, "to", { required: true }));
 
   if (action === "send") {
     const to = readStringParam(params, "to", { required: true });
     const asVoice = readBooleanParam(params, "asVoice") === true;
     const rawComponents = params.components;
     const hasComponents =
-      Boolean(rawComponents) &&
-      (typeof rawComponents === "function" || typeof rawComponents === "object");
+      Boolean(rawComponents) && (typeof rawComponents === "function" || typeof rawComponents === "object");
     const components = hasComponents ? rawComponents : undefined;
     const content = readStringParam(params, "message", {
       required: !asVoice && !hasComponents,
@@ -113,9 +100,7 @@ export async function handleDiscordMessageAction(
     const messageIdRaw = resolveReactionMessageId({ args: params, toolContext: ctx.toolContext });
     const messageId = messageIdRaw != null ? String(messageIdRaw).trim() : "";
     if (!messageId) {
-      throw new Error(
-        "messageId required. Provide messageId explicitly or react to the current inbound message.",
-      );
+      throw new Error("messageId required. Provide messageId explicitly or react to the current inbound message.");
     }
     const emoji = readStringParam(params, "emoji", { allowEmpty: true });
     const remove = readBooleanParam(params, "remove");
@@ -197,8 +182,7 @@ export async function handleDiscordMessageAction(
   }
 
   if (action === "pin" || action === "unpin" || action === "list-pins") {
-    const messageId =
-      action === "list-pins" ? undefined : readStringParam(params, "messageId", { required: true });
+    const messageId = action === "list-pins" ? undefined : readStringParam(params, "messageId", { required: true });
     return await handleDiscordAction(
       {
         action: action === "pin" ? "pinMessage" : action === "unpin" ? "unpinMessage" : "listPins",

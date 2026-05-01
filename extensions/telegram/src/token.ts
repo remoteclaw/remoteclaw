@@ -41,16 +41,12 @@ export function resolveTelegramToken(
     return matchKey ? accounts[matchKey] : undefined;
   };
 
-  const accountCfg = resolveAccountCfg(
-    accountId !== DEFAULT_ACCOUNT_ID ? accountId : DEFAULT_ACCOUNT_ID,
-  );
+  const accountCfg = resolveAccountCfg(accountId !== DEFAULT_ACCOUNT_ID ? accountId : DEFAULT_ACCOUNT_ID);
   const accountTokenFile = accountCfg?.tokenFile?.trim();
   if (accountTokenFile) {
-    const token = tryReadSecretFileSync(
-      accountTokenFile,
-      `channels.telegram.accounts.${accountId}.tokenFile`,
-      { rejectSymlink: true },
-    );
+    const token = tryReadSecretFileSync(accountTokenFile, `channels.telegram.accounts.${accountId}.tokenFile`, {
+      rejectSymlink: true,
+    });
     if (token) {
       return { token, source: "tokenFile" };
     }

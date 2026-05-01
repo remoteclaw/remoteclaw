@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  parseIrcLine,
-  parseIrcPrefix,
-  sanitizeIrcOutboundText,
-  sanitizeIrcTarget,
-  splitIrcText,
-} from "./protocol.js";
+import { parseIrcLine, parseIrcPrefix, sanitizeIrcOutboundText, sanitizeIrcTarget, splitIrcText } from "./protocol.js";
 
 describe("irc protocol", () => {
   it("parses PRIVMSG lines with prefix and trailing", () => {

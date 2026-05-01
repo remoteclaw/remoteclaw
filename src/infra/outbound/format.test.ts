@@ -1,9 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  buildOutboundDeliveryJson,
-  formatGatewaySummary,
-  formatOutboundDeliverySummary,
-} from "./format.js";
+import { buildOutboundDeliveryJson, formatGatewaySummary, formatOutboundDeliverySummary } from "./format.js";
 
 const getChannelPluginMock = vi.hoisted(() => vi.fn((_channel: unknown) => undefined));
 

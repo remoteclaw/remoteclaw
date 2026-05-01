@@ -17,9 +17,7 @@ export function resetOutboundChannelResolutionStateForTest(): void {
   bootstrapAttempts.clear();
 }
 
-export function normalizeDeliverableOutboundChannel(
-  raw?: string | null,
-): DeliverableMessageChannel | undefined {
+export function normalizeDeliverableOutboundChannel(raw?: string | null): DeliverableMessageChannel | undefined {
   const normalized = normalizeMessageChannel(raw);
   if (!normalized || !isDeliverableMessageChannel(normalized)) {
     return undefined;
@@ -27,10 +25,7 @@ export function normalizeDeliverableOutboundChannel(
   return normalized;
 }
 
-function maybeBootstrapChannelPlugin(params: {
-  channel: DeliverableMessageChannel;
-  cfg?: RemoteClawConfig;
-}): void {
+function maybeBootstrapChannelPlugin(params: { channel: DeliverableMessageChannel; cfg?: RemoteClawConfig }): void {
   const cfg = params.cfg;
   if (!cfg) {
     return;
@@ -62,9 +57,7 @@ function maybeBootstrapChannelPlugin(params: {
   }
 }
 
-function resolveDirectFromActiveRegistry(
-  channel: DeliverableMessageChannel,
-): ChannelPlugin | undefined {
+function resolveDirectFromActiveRegistry(channel: DeliverableMessageChannel): ChannelPlugin | undefined {
   const activeRegistry = getActivePluginRegistry();
   if (!activeRegistry) {
     return undefined;

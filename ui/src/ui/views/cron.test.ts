@@ -102,9 +102,7 @@ describe("cron view", () => {
       container,
     );
 
-    const statusOk = container.querySelector(
-      '.cron-filter-dropdown[data-filter="status"] input[value="ok"]',
-    );
+    const statusOk = container.querySelector('.cron-filter-dropdown[data-filter="status"] input[value="ok"]');
     expect(statusOk).not.toBeNull();
     if (!(statusOk instanceof HTMLInputElement)) {
       return;
@@ -188,9 +186,7 @@ describe("cron view", () => {
 
     const link = container.querySelector("a.session-link");
     expect(link).not.toBeNull();
-    expect(link?.getAttribute("href")).toContain(
-      "/ui/chat?session=agent%3Amain%3Acron%3Ajob-1%3Arun%3Aabc",
-    );
+    expect(link?.getAttribute("href")).toContain("/ui/chat?session=agent%3Amain%3Acron%3Ajob-1%3Arun%3Aabc");
   });
 
   it("shows selected job name and sorts run history newest first", () => {
@@ -219,9 +215,9 @@ describe("cron view", () => {
     );
     expect(runHistoryCard).not.toBeUndefined();
 
-    const summaries = Array.from(
-      runHistoryCard?.querySelectorAll(".list-item .list-sub") ?? [],
-    ).map((el) => (el.textContent ?? "").trim());
+    const summaries = Array.from(runHistoryCard?.querySelectorAll(".list-item .list-sub") ?? []).map((el) =>
+      (el.textContent ?? "").trim(),
+    );
     expect(summaries[0]).toBe("newer run");
     expect(summaries[1]).toBe("older run");
   });
@@ -313,9 +309,7 @@ describe("cron view", () => {
       container,
     );
 
-    const options = Array.from(container.querySelectorAll("option")).map((opt) =>
-      (opt.textContent ?? "").trim(),
-    );
+    const options = Array.from(container.querySelectorAll("option")).map((opt) => (opt.textContent ?? "").trim());
     expect(options).toContain("Webhook POST");
   });
 
@@ -335,9 +329,7 @@ describe("cron view", () => {
       container,
     );
 
-    const options = Array.from(container.querySelectorAll("option")).map((opt) =>
-      (opt.textContent ?? "").trim(),
-    );
+    const options = Array.from(container.querySelectorAll("option")).map((opt) => (opt.textContent ?? "").trim());
     expect(options).not.toContain("Announce summary (default)");
     expect(options).toContain("Webhook POST");
     expect(options).toContain("None (internal)");
@@ -660,9 +652,7 @@ describe("cron view", () => {
     expect(enableButton).not.toBeUndefined();
     enableButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
-    const runButton = Array.from(container.querySelectorAll("button")).find(
-      (btn) => btn.textContent?.trim() === "Run",
-    );
+    const runButton = Array.from(container.querySelectorAll("button")).find((btn) => btn.textContent?.trim() === "Run");
     expect(runButton).not.toBeUndefined();
     runButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
@@ -734,8 +724,6 @@ describe("cron view", () => {
     expect(container.querySelector('input[list="cron-thinking-suggestions"]')).not.toBeNull();
     expect(container.querySelector('input[list="cron-tz-suggestions"]')).not.toBeNull();
     expect(container.querySelector('input[list="cron-delivery-to-suggestions"]')).not.toBeNull();
-    expect(
-      container.querySelector('input[list="cron-delivery-account-suggestions"]'),
-    ).not.toBeNull();
+    expect(container.querySelector('input[list="cron-delivery-account-suggestions"]')).not.toBeNull();
   });
 });

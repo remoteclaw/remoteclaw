@@ -27,9 +27,7 @@ const renderEnvDict = (env: Record<string, string | undefined> | undefined): str
   if (!env) {
     return "";
   }
-  const entries = Object.entries(env).filter(
-    ([, value]) => typeof value === "string" && value.trim(),
-  );
+  const entries = Object.entries(env).filter(([, value]) => typeof value === "string" && value.trim());
   if (entries.length === 0) {
     return "";
   }
@@ -54,19 +52,15 @@ export async function readLaunchAgentProgramArgumentsFromFile(plistPath: string)
     if (!programMatch) {
       return null;
     }
-    const args = Array.from(programMatch[1].matchAll(/<string>([\s\S]*?)<\/string>/gi)).map(
-      (match) => plistUnescape(match[1] ?? "").trim(),
+    const args = Array.from(programMatch[1].matchAll(/<string>([\s\S]*?)<\/string>/gi)).map((match) =>
+      plistUnescape(match[1] ?? "").trim(),
     );
-    const workingDirMatch = plist.match(
-      /<key>WorkingDirectory<\/key>\s*<string>([\s\S]*?)<\/string>/i,
-    );
+    const workingDirMatch = plist.match(/<key>WorkingDirectory<\/key>\s*<string>([\s\S]*?)<\/string>/i);
     const workingDirectory = workingDirMatch ? plistUnescape(workingDirMatch[1] ?? "").trim() : "";
     const envMatch = plist.match(/<key>EnvironmentVariables<\/key>\s*<dict>([\s\S]*?)<\/dict>/i);
     const environment: Record<string, string> = {};
     if (envMatch) {
-      for (const pair of envMatch[1].matchAll(
-        /<key>([\s\S]*?)<\/key>\s*<string>([\s\S]*?)<\/string>/gi,
-      )) {
+      for (const pair of envMatch[1].matchAll(/<key>([\s\S]*?)<\/key>\s*<string>([\s\S]*?)<\/string>/gi)) {
         const key = plistUnescape(pair[1] ?? "").trim();
         if (!key) {
           continue;
@@ -103,9 +97,7 @@ export function buildLaunchAgentPlist({
   stderrPath: string;
   environment?: Record<string, string | undefined>;
 }): string {
-  const argsXml = programArguments
-    .map((arg) => `\n      <string>${plistEscape(arg)}</string>`)
-    .join("");
+  const argsXml = programArguments.map((arg) => `\n      <string>${plistEscape(arg)}</string>`).join("");
   const workingDirXml = workingDirectory
     ? `\n    <key>WorkingDirectory</key>\n    <string>${plistEscape(workingDirectory)}</string>`
     : "";

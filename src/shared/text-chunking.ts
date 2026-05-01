@@ -15,9 +15,7 @@ export function chunkTextByBreakResolver(
     const window = remaining.slice(0, limit);
     const candidateBreak = resolveBreakIndex(window);
     const breakIdx =
-      Number.isFinite(candidateBreak) && candidateBreak > 0 && candidateBreak <= limit
-        ? candidateBreak
-        : limit;
+      Number.isFinite(candidateBreak) && candidateBreak > 0 && candidateBreak <= limit ? candidateBreak : limit;
     const rawChunk = remaining.slice(0, breakIdx);
     const chunk = rawChunk.trimEnd();
     if (chunk.length > 0) {

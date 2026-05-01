@@ -38,10 +38,7 @@ function buildScheduledTaskRestartScript(taskName: string): string {
 
 export function relaunchGatewayScheduledTask(env: NodeJS.ProcessEnv = process.env): RestartAttempt {
   const taskName = resolveWindowsTaskName(env);
-  const scriptPath = path.join(
-    resolvePreferredRemoteClawTmpDir(),
-    `remoteclaw-schtasks-restart-${randomUUID()}.cmd`,
-  );
+  const scriptPath = path.join(resolvePreferredRemoteClawTmpDir(), `remoteclaw-schtasks-restart-${randomUUID()}.cmd`);
   const quotedScriptPath = quoteCmdScriptArg(scriptPath);
   try {
     fs.writeFileSync(scriptPath, `${buildScheduledTaskRestartScript(taskName)}\r\n`, "utf8");

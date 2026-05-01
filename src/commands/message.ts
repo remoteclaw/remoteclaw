@@ -1,7 +1,4 @@
-import {
-  CHANNEL_MESSAGE_ACTION_NAMES,
-  type ChannelMessageActionName,
-} from "../channels/plugins/types.js";
+import { CHANNEL_MESSAGE_ACTION_NAMES, type ChannelMessageActionName } from "../channels/plugins/types.js";
 import { createOutboundSendDeps, type CliDeps } from "../cli/outbound-send-deps.js";
 import { withProgress } from "../cli/progress.js";
 import { loadConfig } from "../config/config.js";
@@ -11,11 +8,7 @@ import type { RuntimeEnv } from "../runtime.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../utils/message-channel.js";
 import { buildMessageCliJson, formatMessageCliText } from "./message-format.js";
 
-export async function messageCommand(
-  opts: Record<string, unknown>,
-  deps: CliDeps,
-  runtime: RuntimeEnv,
-) {
+export async function messageCommand(opts: Record<string, unknown>, deps: CliDeps, runtime: RuntimeEnv) {
   const cfg = loadConfig();
   const rawAction = typeof opts.action === "string" ? opts.action.trim() : "";
   const actionInput = rawAction || "send";

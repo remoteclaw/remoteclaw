@@ -14,10 +14,7 @@ export type BrowserResponse = {
   json: (body: unknown) => void;
 };
 
-export type BrowserRouteHandler = (
-  req: BrowserRequest,
-  res: BrowserResponse,
-) => void | Promise<void>;
+export type BrowserRouteHandler = (req: BrowserRequest, res: BrowserResponse) => void | Promise<void>;
 
 export type BrowserRouteRegistrar = {
   get: (path: string, handler: BrowserRouteHandler) => void;

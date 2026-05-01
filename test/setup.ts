@@ -12,11 +12,7 @@ if (process.getMaxListeners() > 0 && process.getMaxListeners() < TEST_PROCESS_MA
   process.setMaxListeners(TEST_PROCESS_MAX_LISTENERS);
 }
 
-import type {
-  ChannelId,
-  ChannelOutboundAdapter,
-  ChannelPlugin,
-} from "../src/channels/plugins/types.js";
+import type { ChannelId, ChannelOutboundAdapter, ChannelPlugin } from "../src/channels/plugins/types.js";
 import type { RemoteClawConfig } from "../src/config/config.js";
 import type { OutboundSendDeps } from "../src/infra/outbound/deliver.js";
 import { withIsolatedTestHome } from "./test-env.js";
@@ -25,15 +21,12 @@ import { withIsolatedTestHome } from "./test-env.js";
 const testEnv = withIsolatedTestHome();
 afterAll(() => testEnv.cleanup());
 
-const [
-  { installProcessWarningFilter },
-  { getActivePluginRegistry, setActivePluginRegistry },
-  { createTestRegistry },
-] = await Promise.all([
-  import("../src/infra/warning-filter.js"),
-  import("../src/plugins/runtime.js"),
-  import("../src/test-utils/channel-plugins.js"),
-]);
+const [{ installProcessWarningFilter }, { getActivePluginRegistry, setActivePluginRegistry }, { createTestRegistry }] =
+  await Promise.all([
+    import("../src/infra/warning-filter.js"),
+    import("../src/plugins/runtime.js"),
+    import("../src/test-utils/channel-plugins.js"),
+  ]);
 
 installProcessWarningFilter();
 

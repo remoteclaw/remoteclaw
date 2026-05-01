@@ -30,10 +30,7 @@ import { PROTOCOL_VERSION } from "@agentclientprotocol/sdk";
 import type { GatewayClient } from "../gateway/client.js";
 import type { EventFrame } from "../gateway/protocol/index.js";
 import type { GatewaySessionRow, SessionsListResult } from "../gateway/session-utils.js";
-import {
-  createFixedWindowRateLimiter,
-  type FixedWindowRateLimiter,
-} from "../infra/fixed-window-rate-limit.js";
+import { createFixedWindowRateLimiter, type FixedWindowRateLimiter } from "../infra/fixed-window-rate-limit.js";
 import { shortenHomePath } from "../utils.js";
 import { getAvailableCommands } from "./commands.js";
 import {
@@ -192,8 +189,7 @@ function buildSessionPresentation(params: {
     buildSelectConfigOption({
       id: ACP_VERBOSE_LEVEL_CONFIG_ID,
       name: "Tool verbosity",
-      description:
-        "Controls how much tool progress and output detail RemoteClaw keeps enabled for the session.",
+      description: "Controls how much tool progress and output detail RemoteClaw keeps enabled for the session.",
       currentValue: row.verboseLevel?.trim() || "off",
       values: ["off", "on", "full"],
     }),
@@ -207,8 +203,7 @@ function buildSessionPresentation(params: {
     buildSelectConfigOption({
       id: ACP_RESPONSE_USAGE_CONFIG_ID,
       name: "Usage detail",
-      description:
-        "Controls how much usage information RemoteClaw attaches to responses for the session.",
+      description: "Controls how much usage information RemoteClaw attaches to responses for the session.",
       currentValue: row.responseUsage?.trim() || "off",
       values: ["off", "tokens", "full"],
     }),
@@ -271,10 +266,7 @@ function extractReplayChunks(message: GatewayTranscriptMessage): ReplayChunk[] {
   return replayChunks;
 }
 
-function buildSessionMetadata(params: {
-  row?: GatewaySessionPresentationRow;
-  sessionKey: string;
-}): SessionMetadata {
+function buildSessionMetadata(params: { row?: GatewaySessionPresentationRow; sessionKey: string }): SessionMetadata {
   const title =
     params.row?.derivedTitle?.trim() ||
     params.row?.displayName?.trim() ||
@@ -287,9 +279,7 @@ function buildSessionMetadata(params: {
   return { title, updatedAt };
 }
 
-function buildSessionUsageSnapshot(
-  row?: GatewaySessionPresentationRow,
-): SessionUsageSnapshot | undefined {
+function buildSessionUsageSnapshot(row?: GatewaySessionPresentationRow): SessionUsageSnapshot | undefined {
   const totalTokens = row?.totalTokens;
   const contextTokens = row?.contextTokens;
   if (
@@ -316,11 +306,7 @@ function buildSystemInputProvenance(originSessionId: string) {
   };
 }
 
-function buildSystemProvenanceReceipt(params: {
-  cwd: string;
-  sessionId: string;
-  sessionKey: string;
-}) {
+function buildSystemProvenanceReceipt(params: { cwd: string; sessionId: string; sessionKey: string }) {
   return [
     "[Source Receipt]",
     "bridge=remoteclaw-acp",
@@ -342,11 +328,7 @@ export class AcpGatewayAgent implements Agent {
   private sessionCreateRateLimiter: FixedWindowRateLimiter;
   private pendingPrompts = new Map<string, PendingPrompt>();
 
-  constructor(
-    connection: AgentSideConnection,
-    gateway: GatewayClient,
-    opts: AcpGatewayAgentOptions = {},
-  ) {
+  constructor(connection: AgentSideConnection, gateway: GatewayClient, opts: AcpGatewayAgentOptions = {}) {
     this.connection = connection;
     this.gateway = gateway;
     this.opts = opts;
@@ -357,10 +339,7 @@ export class AcpGatewayAgent implements Agent {
         1,
         opts.sessionCreateRateLimit?.maxRequests ?? SESSION_CREATE_RATE_LIMIT_DEFAULT_MAX_REQUESTS,
       ),
-      windowMs: Math.max(
-        1_000,
-        opts.sessionCreateRateLimit?.windowMs ?? SESSION_CREATE_RATE_LIMIT_DEFAULT_WINDOW_MS,
-      ),
+      windowMs: Math.max(1_000, opts.sessionCreateRateLimit?.windowMs ?? SESSION_CREATE_RATE_LIMIT_DEFAULT_WINDOW_MS),
     });
   }
 
@@ -515,9 +494,7 @@ export class AcpGatewayAgent implements Agent {
     return {};
   }
 
-  async setSessionConfigOption(
-    params: SetSessionConfigOptionRequest,
-  ): Promise<SetSessionConfigOptionResponse> {
+  async setSessionConfigOption(params: SetSessionConfigOptionRequest): Promise<SetSessionConfigOptionResponse> {
     const session = this.sessionStore.getSession(params.sessionId);
     if (!session) {
       throw new Error(`Session ${params.sessionId} not found`);
@@ -529,13 +506,8 @@ export class AcpGatewayAgent implements Agent {
         key: session.sessionKey,
         ...sessionPatch.patch,
       });
-      this.log(
-        `setSessionConfigOption: ${session.sessionId} -> ${params.configId}=${params.value}`,
-      );
-      const sessionSnapshot = await this.getSessionSnapshot(
-        session.sessionKey,
-        sessionPatch.overrides,
-      );
+      this.log(`setSessionConfigOption: ${session.sessionId} -> ${params.configId}=${params.value}`);
+      const sessionSnapshot = await this.getSessionSnapshot(session.sessionKey, sessionPatch.overrides);
       await this.sendSessionSnapshotUpdate(session.sessionId, sessionSnapshot, {
         includeControls: true,
       });
@@ -567,8 +539,7 @@ export class AcpGatewayAgent implements Agent {
     const displayCwd = shortenHomePath(session.cwd);
     const message = prefixCwd ? `[Working directory: ${displayCwd}]\n\n${userText}` : userText;
     const provenanceMode = this.opts.provenanceMode ?? "off";
-    const systemInputProvenance =
-      provenanceMode === "off" ? undefined : buildSystemInputProvenance(params.sessionId);
+    const systemInputProvenance = provenanceMode === "off" ? undefined : buildSystemInputProvenance(params.sessionId);
     const systemProvenanceReceipt =
       provenanceMode === "meta+receipt"
         ? buildSystemProvenanceReceipt({
@@ -812,10 +783,7 @@ export class AcpGatewayAgent implements Agent {
     }
   }
 
-  private async handleDeltaEvent(
-    sessionId: string,
-    messageData: Record<string, unknown>,
-  ): Promise<void> {
+  private async handleDeltaEvent(sessionId: string, messageData: Record<string, unknown>): Promise<void> {
     const content = messageData.content as GatewayChatContentBlock[] | undefined;
     const pending = this.pendingPrompts.get(sessionId);
     if (!pending) {
@@ -863,11 +831,7 @@ export class AcpGatewayAgent implements Agent {
     });
   }
 
-  private async finishPrompt(
-    sessionId: string,
-    pending: PendingPrompt,
-    stopReason: StopReason,
-  ): Promise<void> {
+  private async finishPrompt(sessionId: string, pending: PendingPrompt, stopReason: StopReason): Promise<void> {
     this.pendingPrompts.delete(sessionId);
     this.sessionStore.clearActiveRun(sessionId);
     const sessionSnapshot = await this.getSessionSnapshot(pending.sessionKey);
@@ -924,9 +888,7 @@ export class AcpGatewayAgent implements Agent {
     }
   }
 
-  private async getGatewaySessionRow(
-    sessionKey: string,
-  ): Promise<GatewaySessionPresentationRow | undefined> {
+  private async getGatewaySessionRow(sessionKey: string): Promise<GatewaySessionPresentationRow | undefined> {
     const result = await this.gateway.request<SessionsListResult>("sessions.list", {
       limit: 200,
       search: sessionKey,
@@ -962,9 +924,7 @@ export class AcpGatewayAgent implements Agent {
     patch: Record<string, string | boolean>;
   } {
     if (typeof value !== "string") {
-      throw new Error(
-        `ACP bridge does not support non-string session config option values for "${configId}".`,
-      );
+      throw new Error(`ACP bridge does not support non-string session config option values for "${configId}".`);
     }
     switch (configId) {
       case ACP_FAST_MODE_CONFIG_ID:

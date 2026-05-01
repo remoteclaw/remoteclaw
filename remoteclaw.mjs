@@ -18,8 +18,7 @@ const parseNodeVersion = (rawVersion) => {
 };
 
 const isSupportedNodeVersion = (version) =>
-  version.major > MIN_NODE_MAJOR ||
-  (version.major === MIN_NODE_MAJOR && version.minor >= MIN_NODE_MINOR);
+  version.major > MIN_NODE_MAJOR || (version.major === MIN_NODE_MAJOR && version.minor >= MIN_NODE_MINOR);
 
 const ensureSupportedNodeVersion = () => {
   if (isSupportedNodeVersion(parseNodeVersion(process.versions.node))) {
@@ -63,8 +62,7 @@ const isDirectModuleNotFoundError = (err, specifier) => {
   const message = "message" in err && typeof err.message === "string" ? err.message : "";
   const expectedPath = fileURLToPath(expectedUrl);
   return (
-    message.includes(`Cannot find module '${expectedPath}'`) ||
-    message.includes(`Cannot find module "${expectedPath}"`)
+    message.includes(`Cannot find module '${expectedPath}'`) || message.includes(`Cannot find module "${expectedPath}"`)
   );
 };
 
@@ -115,9 +113,7 @@ const buildMissingEntryErrorMessage = async () => {
   }
 
   lines.push("This install looks like an unbuilt source tree or GitHub source archive.");
-  lines.push(
-    "Build locally with `pnpm install && pnpm build`, or install a built package instead.",
-  );
+  lines.push("Build locally with `pnpm install && pnpm build`, or install a built package instead.");
   lines.push(
     "For pinned GitHub installs, use `npm install -g github:remoteclaw/remoteclaw#<ref>` instead of a raw `/archive/<ref>.tar.gz` URL.",
   );
@@ -125,16 +121,13 @@ const buildMissingEntryErrorMessage = async () => {
   return lines.join("\n");
 };
 
-const isBareRootHelpInvocation = (argv) =>
-  argv.length === 3 && (argv[2] === "--help" || argv[2] === "-h");
+const isBareRootHelpInvocation = (argv) => argv.length === 3 && (argv[2] === "--help" || argv[2] === "-h");
 
 const loadPrecomputedRootHelpText = () => {
   try {
     const raw = readFileSync(new URL("./dist/cli-startup-metadata.json", import.meta.url), "utf8");
     const parsed = JSON.parse(raw);
-    return typeof parsed?.rootHelpText === "string" && parsed.rootHelpText.length > 0
-      ? parsed.rootHelpText
-      : null;
+    return typeof parsed?.rootHelpText === "string" && parsed.rootHelpText.length > 0 ? parsed.rootHelpText : null;
   } catch {
     return null;
   }

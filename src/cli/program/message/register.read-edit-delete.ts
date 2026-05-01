@@ -1,16 +1,9 @@
 import type { Command } from "commander";
 import type { MessageCliHelpers } from "./helpers.js";
 
-export function registerMessageReadEditDeleteCommands(
-  message: Command,
-  helpers: MessageCliHelpers,
-) {
+export function registerMessageReadEditDeleteCommands(message: Command, helpers: MessageCliHelpers) {
   helpers
-    .withMessageBase(
-      helpers.withRequiredMessageTarget(
-        message.command("read").description("Read recent messages"),
-      ),
-    )
+    .withMessageBase(helpers.withRequiredMessageTarget(message.command("read").description("Read recent messages")))
     .option("--limit <n>", "Result limit")
     .option("--before <id>", "Read/search before id")
     .option("--after <id>", "Read/search after id")
@@ -38,10 +31,7 @@ export function registerMessageReadEditDeleteCommands(
   helpers
     .withMessageBase(
       helpers.withRequiredMessageTarget(
-        message
-          .command("delete")
-          .description("Delete a message")
-          .requiredOption("--message-id <id>", "Message id"),
+        message.command("delete").description("Delete a message").requiredOption("--message-id <id>", "Message id"),
       ),
     )
     .action(async (opts) => {

@@ -36,9 +36,7 @@ export function renderOverview(props: OverviewProps) {
       }
     | undefined;
   const uptime = snapshot?.uptimeMs ? formatDurationHuman(snapshot.uptimeMs) : t("common.na");
-  const tick = snapshot?.policy?.tickIntervalMs
-    ? `${snapshot.policy.tickIntervalMs}ms`
-    : t("common.na");
+  const tick = snapshot?.policy?.tickIntervalMs ? `${snapshot.policy.tickIntervalMs}ms` : t("common.na");
   const authMode = snapshot?.authMode;
   const isTrustedProxy = authMode === "trusted-proxy";
 
@@ -102,9 +100,7 @@ export function renderOverview(props: OverviewProps) {
     }
     const hasToken = Boolean(props.settings.token.trim());
     const hasPassword = Boolean(props.password.trim());
-    const isAuthRequired = props.lastErrorCode
-      ? authRequiredCodes.has(props.lastErrorCode)
-      : !hasToken && !hasPassword;
+    const isAuthRequired = props.lastErrorCode ? authRequiredCodes.has(props.lastErrorCode) : !hasToken && !hasPassword;
     if (isAuthRequired) {
       return html`
         <div class="muted" style="margin-top: 8px">
@@ -155,11 +151,7 @@ export function renderOverview(props: OverviewProps) {
     const insecureContextCode =
       props.lastErrorCode === ConnectErrorDetailCodes.CONTROL_UI_DEVICE_IDENTITY_REQUIRED ||
       props.lastErrorCode === ConnectErrorDetailCodes.DEVICE_IDENTITY_REQUIRED;
-    if (
-      !insecureContextCode &&
-      !lower.includes("secure context") &&
-      !lower.includes("device identity required")
-    ) {
+    if (!insecureContextCode && !lower.includes("secure context") && !lower.includes("device identity required")) {
       return null;
     }
     return html`

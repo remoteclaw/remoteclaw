@@ -1,8 +1,7 @@
 import { vi } from "vitest";
 
 type SessionsSpawnTestConfig = ReturnType<(typeof import("../config/config.js"))["loadConfig"]>;
-type CreateSessionsSpawnTool =
-  (typeof import("./tools/sessions-spawn-tool.js"))["createSessionsSpawnTool"];
+type CreateSessionsSpawnTool = (typeof import("./tools/sessions-spawn-tool.js"))["createSessionsSpawnTool"];
 export type CreateRemoteClawToolsOpts = Parameters<CreateSessionsSpawnTool>[0];
 export type GatewayRequest = { method?: string; params?: unknown };
 export type AgentWaitCall = { runId?: string; timeoutMs?: number };

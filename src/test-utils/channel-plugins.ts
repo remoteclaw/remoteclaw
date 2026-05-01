@@ -50,10 +50,7 @@ export const createChannelTestPluginBase = (params: {
   },
 });
 
-export const createMSTeamsTestPluginBase = (): Pick<
-  ChannelPlugin,
-  "id" | "meta" | "capabilities" | "config"
-> => {
+export const createMSTeamsTestPluginBase = (): Pick<ChannelPlugin, "id" | "meta" | "capabilities" | "config"> => {
   const base = createChannelTestPluginBase({
     id: "msteams",
     label: "Microsoft Teams",

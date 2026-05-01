@@ -18,10 +18,7 @@ vi.mock("./slash-commands.runtime.js", () => {
   ];
   const fullReportPeriodChoices = [...baseReportPeriodChoices, { value: "year", label: "year" }];
   const hasNonEmptyArgValue = (values: unknown, key: string) => {
-    const raw =
-      typeof values === "object" && values !== null
-        ? (values as Record<string, unknown>)[key]
-        : undefined;
+    const raw = typeof values === "object" && values !== null ? (values as Record<string, unknown>)[key] : undefined;
     return typeof raw === "string" && raw.trim().length > 0;
   };
   const resolvePeriodMenu = (
@@ -124,21 +121,12 @@ vi.mock("./slash-commands.runtime.js", () => {
       },
     ],
     parseCommandArgs: () => ({ values: {} }),
-    resolveCommandArgMenu: (params: {
-      command?: { key?: string };
-      args?: { values?: unknown };
-    }) => {
+    resolveCommandArgMenu: (params: { command?: { key?: string }; args?: { values?: unknown } }) => {
       if (params.command?.key === "report") {
-        return resolvePeriodMenu(params, [
-          ...fullReportPeriodChoices,
-          { value: "all", label: "all" },
-        ]);
+        return resolvePeriodMenu(params, [...fullReportPeriodChoices, { value: "all", label: "all" }]);
       }
       if (params.command?.key === "reportlong") {
-        return resolvePeriodMenu(params, [
-          ...fullReportPeriodChoices,
-          { value: "x".repeat(90), label: "long" },
-        ]);
+        return resolvePeriodMenu(params, [...fullReportPeriodChoices, { value: "x".repeat(90), label: "long" }]);
       }
       if (params.command?.key === "reportcompact") {
         return resolvePeriodMenu(params, baseReportPeriodChoices);
@@ -345,9 +333,7 @@ type ActionsBlockPayload = {
   blocks?: Array<{ type: string; block_id?: string }>;
 };
 
-async function runCommandAndResolveActionsBlock(
-  handler: (args: unknown) => Promise<void>,
-): Promise<{
+async function runCommandAndResolveActionsBlock(handler: (args: unknown) => Promise<void>): Promise<{
   respond: ReturnType<typeof vi.fn>;
   payload: ActionsBlockPayload;
   blockId?: string;
@@ -419,11 +405,7 @@ describe("Slack native command argument menus", () => {
     unsafeConfirmHandler = requireHandler(harness.commands, "/unsafeconfirm", "/unsafeconfirm");
     agentStatusHandler = requireHandler(harness.commands, "/agentstatus", "/agentstatus");
     argMenuHandler = requireHandler(harness.actions, "remoteclaw_cmdarg", "arg-menu action");
-    argMenuOptionsHandler = requireHandler(
-      harness.options,
-      "remoteclaw_cmdarg",
-      "arg-menu options",
-    );
+    argMenuOptionsHandler = requireHandler(harness.options, "remoteclaw_cmdarg", "arg-menu options");
   });
 
   beforeEach(() => {
@@ -597,8 +579,7 @@ describe("Slack native command argument menus", () => {
   });
 
   it("shows an external_select menu when choices exceed static_select options max", async () => {
-    const { respond, payload, blockId } =
-      await runCommandAndResolveActionsBlock(reportExternalHandler);
+    const { respond, payload, blockId } = await runCommandAndResolveActionsBlock(reportExternalHandler);
 
     expect(respond).toHaveBeenCalledTimes(1);
     const actions = findFirstActionsBlock(payload);
@@ -743,10 +724,8 @@ function createPolicyHarness(overrides?: {
     textLimit: 4000,
     app,
     isChannelAllowed: () => true,
-    shouldDropMismatchedSlackEvent: (body: unknown) =>
-      overrides?.shouldDropMismatchedSlackEvent?.(body) ?? false,
-    resolveChannelName:
-      overrides?.resolveChannelName ?? (async () => ({ name: channelName, type: "channel" })),
+    shouldDropMismatchedSlackEvent: (body: unknown) => overrides?.shouldDropMismatchedSlackEvent?.(body) ?? false,
+    resolveChannelName: overrides?.resolveChannelName ?? (async () => ({ name: channelName, type: "channel" })),
     resolveUserName: async () => ({ name: "Ada" }),
   } as unknown;
 
@@ -860,9 +839,7 @@ describe("slack slash commands channel policy", () => {
     const { respond } = await registerAndRunPolicySlash({ harness });
 
     expect(dispatchMock).toHaveBeenCalledTimes(1);
-    expect(respond).not.toHaveBeenCalledWith(
-      expect.objectContaining({ text: "This channel is not allowed." }),
-    );
+    expect(respond).not.toHaveBeenCalledWith(expect.objectContaining({ text: "This channel is not allowed." }));
   });
 
   it("blocks explicitly denied channels when groupPolicy is open", async () => {
@@ -983,8 +960,12 @@ describe("slack slash command session metadata", () => {
   });
 
   it("awaits session metadata persistence before dispatch", async () => {
+    const recordStarted = createDeferred<void>();
     const deferred = createDeferred<void>();
-    recordSessionMetaFromInboundMock.mockClear().mockReturnValue(deferred.promise);
+    recordSessionMetaFromInboundMock.mockClear().mockImplementation(() => {
+      recordStarted.resolve();
+      return deferred.promise;
+    });
 
     const harness = createPolicyHarness({ groupPolicy: "open" });
     await registerCommands(harness.ctx, harness.account);
@@ -997,9 +978,8 @@ describe("slack slash command session metadata", () => {
       },
     });
 
-    await vi.waitFor(() => {
-      expect(recordSessionMetaFromInboundMock).toHaveBeenCalledTimes(1);
-    });
+    await recordStarted.promise;
+    expect(recordSessionMetaFromInboundMock).toHaveBeenCalledTimes(1);
     expect(dispatchMock).not.toHaveBeenCalled();
 
     deferred.resolve();

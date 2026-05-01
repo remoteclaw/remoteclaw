@@ -80,10 +80,7 @@ describe("wrapFileReferencesInHtml", () => {
   });
 
   it("preserves explicit links where label differs from href", () => {
-    const cases = [
-      '<a href="http://README.md">click here</a>',
-      '<a href="http://other.md">README.md</a>',
-    ] as const;
+    const cases = ['<a href="http://README.md">click here</a>', '<a href="http://other.md">README.md</a>'] as const;
     for (const input of cases) {
       expect(wrapFileReferencesInHtml(input)).toBe(input);
     }
@@ -196,9 +193,7 @@ describe("markdownToTelegramChunks - file reference wrapping", () => {
     expect(chunks.map((chunk) => chunk.text).join("")).toBe("alpha <<");
     expect(chunks[0]?.text).toBe("alpha ");
     expect(chunks.every((chunk) => chunk.html.length <= 13)).toBe(true);
-    expect(
-      chunks.every((chunk) => chunk.html.startsWith("<b>") && chunk.html.endsWith("</b>")),
-    ).toBe(true);
+    expect(chunks.every((chunk) => chunk.html.startsWith("<b>") && chunk.html.endsWith("</b>"))).toBe(true);
   });
 
   it("does not rely on monotonic html length for sliced file refs", () => {
@@ -295,12 +290,7 @@ describe("edge cases", () => {
       {
         name: "supported file-style extensions",
         input: "Makefile.am and code.at and app.be and main.cc",
-        contains: [
-          "<code>Makefile.am</code>",
-          "<code>code.at</code>",
-          "<code>app.be</code>",
-          "<code>main.cc</code>",
-        ],
+        contains: ["<code>Makefile.am</code>", "<code>code.at</code>", "<code>app.be</code>", "<code>main.cc</code>"],
       },
       {
         name: "popular domain TLDs stay links",
@@ -354,11 +344,7 @@ describe("edge cases", () => {
       {
         name: "multiple file refs",
         input: "README.md CHANGELOG.md LICENSE.md",
-        contains: [
-          "<code>README.md</code>",
-          "<code>CHANGELOG.md</code>",
-          "<code>LICENSE.md</code>",
-        ],
+        contains: ["<code>README.md</code>", "<code>CHANGELOG.md</code>", "<code>LICENSE.md</code>"],
       },
       {
         name: "nested path",
@@ -378,11 +364,7 @@ describe("edge cases", () => {
       {
         name: "hyphen underscore and uppercase extensions",
         input: "my-file_name.md README.MD and SCRIPT.PY",
-        contains: [
-          "<code>my-file_name.md</code>",
-          "<code>README.MD</code>",
-          "<code>SCRIPT.PY</code>",
-        ],
+        contains: ["<code>my-file_name.md</code>", "<code>README.MD</code>", "<code>SCRIPT.PY</code>"],
       },
     ] as const;
     for (const testCase of cases) {
@@ -406,8 +388,7 @@ describe("edge cases", () => {
   });
 
   it("handles multiple anchor tags in sequence", () => {
-    const input =
-      '<a href="https://a.com">link1</a> README.md <a href="https://b.com">link2</a> script.py';
+    const input = '<a href="https://a.com">link1</a> README.md <a href="https://b.com">link2</a> script.py';
     const result = wrapFileReferencesInHtml(input);
     expect(result).toContain("</a> <code>README.md</code> <a");
     expect(result).toContain("</a> <code>script.py</code>");

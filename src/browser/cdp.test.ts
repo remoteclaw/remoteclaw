@@ -17,10 +17,7 @@ describe("cdp", () => {
   };
 
   const startWsServerWithMessages = async (
-    onMessage: (
-      msg: { id?: number; method?: string; params?: Record<string, unknown> },
-      socket: WebSocket,
-    ) => void,
+    onMessage: (msg: { id?: number; method?: string; params?: Record<string, unknown> }, socket: WebSocket) => void,
   ) => {
     const wsPort = await startWsServer();
     if (!wsServer) {
@@ -230,10 +227,7 @@ describe("cdp", () => {
   });
 
   it("normalizes loopback websocket URLs for remote CDP hosts", () => {
-    const normalized = normalizeCdpWsUrl(
-      "ws://127.0.0.1:9222/devtools/browser/ABC",
-      "http://example.com:9222",
-    );
+    const normalized = normalizeCdpWsUrl("ws://127.0.0.1:9222/devtools/browser/ABC", "http://example.com:9222");
     expect(normalized).toBe("ws://example.com:9222/devtools/browser/ABC");
   });
 

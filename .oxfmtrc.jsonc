@@ -6,6 +6,14 @@
   "experimentalSortPackageJson": {
     "sortScripts": true,
   },
+  // printWidth is set explicitly to work around an oxfmt 0.38.0 darwin-arm64
+  // binding bug: the Mac native binding ignores the documented default (100)
+  // and leaves long lines unwrapped, while Linux bindings correctly wrap at
+  // 100. Without this explicit value, every sync from upstream forces a
+  // 2949-file format reflow on CI (Linux) that local Mac dev cannot reproduce.
+  // Setting the value matches the documented default, so Linux behavior is
+  // unchanged.
+  "printWidth": 100,
   "tabWidth": 2,
   "useTabs": false,
   "ignorePatterns": [

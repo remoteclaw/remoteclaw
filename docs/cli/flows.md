@@ -1,19 +1,19 @@
 ---
-summary: "CLI reference for `remoteclaw flows` (list, inspect, cancel)"
+summary: "CLI reference for `openclaw flows` (list, inspect, cancel)"
 read_when:
   - You want to inspect or cancel a flow
   - You want to see how background tasks roll up into a higher-level job
 title: "flows"
 ---
 
-# `remoteclaw flows`
+# `openclaw flows`
 
 Inspect and manage [ClawFlow](/automation/clawflow) jobs.
 
 ```bash
-remoteclaw flows list
-remoteclaw flows show <lookup>
-remoteclaw flows cancel <lookup>
+openclaw flows list
+openclaw flows show <lookup>
+openclaw flows cancel <lookup>
 ```
 
 ## Commands
@@ -23,9 +23,9 @@ remoteclaw flows cancel <lookup>
 List tracked flows and their task counts.
 
 ```bash
-remoteclaw flows list
-remoteclaw flows list --status blocked
-remoteclaw flows list --json
+openclaw flows list
+openclaw flows list --status blocked
+openclaw flows list --json
 ```
 
 ### `flows show`
@@ -33,8 +33,8 @@ remoteclaw flows list --json
 Show one flow by flow id or owner session key.
 
 ```bash
-remoteclaw flows show <lookup>
-remoteclaw flows show <lookup> --json
+openclaw flows show <lookup>
+openclaw flows show <lookup> --json
 ```
 
 The output includes the flow status, current step, wait target, blocked summary when present, stored output keys, and linked tasks.
@@ -44,7 +44,7 @@ The output includes the flow status, current step, wait target, blocked summary 
 Cancel a flow and any active child tasks.
 
 ```bash
-remoteclaw flows cancel <lookup>
+openclaw flows cancel <lookup>
 ```
 
 ## Related

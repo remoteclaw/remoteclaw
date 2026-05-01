@@ -1,5 +1,5 @@
 ---
-summary: "RemoteClaw CLI reference for `remoteclaw` commands, subcommands, and options"
+summary: "OpenClaw CLI reference for `openclaw` commands, subcommands, and options"
 read_when:
   - Adding or modifying CLI commands or options
   - Documenting new command surfaces
@@ -45,6 +45,7 @@ This page describes the current CLI behavior. If commands change, update this do
 - [`tui`](/cli/tui)
 - [`browser`](/cli/browser)
 - [`cron`](/cli/cron)
+- [`flows`](/cli/flows)
 - [`dns`](/cli/dns)
 - [`docs`](/cli/docs)
 - [`hooks`](/cli/hooks)
@@ -62,10 +63,11 @@ This page describes the current CLI behavior. If commands change, update this do
 
 ## Global flags
 
-- `--dev`: isolate state under `~/.remoteclaw-dev` and shift default ports.
-- `--profile <name>`: isolate state under `~/.remoteclaw-<name>`.
+- `--dev`: isolate state under `~/.openclaw-dev` and shift default ports.
+- `--profile <name>`: isolate state under `~/.openclaw-<name>`.
+- `--container <name>`: target a named container for execution.
 - `--no-color`: disable ANSI colors.
-- `--update`: shorthand for `remoteclaw update` (source installs only).
+- `--update`: shorthand for `openclaw update` (source installs only).
 - `-V`, `--version`, `-v`: print version and exit.
 
 ## Output styling
@@ -78,7 +80,7 @@ This page describes the current CLI behavior. If commands change, update this do
 
 ## Color palette
 
-RemoteClaw uses a lobster palette for CLI output.
+OpenClaw uses a lobster palette for CLI output.
 
 - `accent` (#FF5A2D): headings, labels, primary highlights.
 - `accentBright` (#FF7A3D): command names, emphasis.
@@ -94,7 +96,7 @@ Palette source of truth: `src/terminal/palette.ts` (the “lobster palette”).
 ## Command tree
 
 ```
-remoteclaw [--dev] [--profile <name>] <command>
+openclaw [--dev] [--profile <name>] <command>
   setup
   onboard
   configure
@@ -155,11 +157,25 @@ remoteclaw [--dev] [--profile <name>] <command>
     list
     add
     delete
+    bindings
+    bind
+    unbind
+    set-identity
   acp
   mcp
   status
   health
   sessions
+    cleanup
+  tasks
+    list
+    show
+    notify
+    cancel
+  flows
+    list
+    show
+    cancel
   gateway
     call
     health
@@ -193,7 +209,7 @@ remoteclaw [--dev] [--profile <name>] <command>
     fallbacks list|add|remove|clear
     image-fallbacks list|add|remove|clear
     scan
-    auth add|setup-token|paste-token
+    auth add|login|login-github-copilot|setup-token|paste-token
     auth order get|set|clear
   sandbox
     list
@@ -274,31 +290,31 @@ remoteclaw [--dev] [--profile <name>] <command>
   tui
 ```
 
-Note: plugins can add additional top-level commands (for example `remoteclaw voicecall`).
+Note: plugins can add additional top-level commands (for example `openclaw voicecall`).
 
 ## Security
 
-- `remoteclaw security audit` — audit config + local state for common security foot-guns.
-- `remoteclaw security audit --deep` — best-effort live Gateway probe.
-- `remoteclaw security audit --fix` — tighten safe defaults and chmod state/config.
+- `openclaw security audit` — audit config + local state for common security foot-guns.
+- `openclaw security audit --deep` — best-effort live Gateway probe.
+- `openclaw security audit --fix` — tighten safe defaults and chmod state/config.
 
 ## Secrets
 
-- `remoteclaw secrets reload` — re-resolve refs and atomically swap the runtime snapshot.
-- `remoteclaw secrets audit` — scan for plaintext residues, unresolved refs, and precedence drift (`--allow-exec` to execute exec providers during audit).
-- `remoteclaw secrets configure` — interactive helper for provider setup + SecretRef mapping + preflight/apply (`--allow-exec` to execute exec providers during preflight and exec-containing apply flows).
-- `remoteclaw secrets apply --from <plan.json>` — apply a previously generated plan (`--dry-run` supported; use `--allow-exec` to permit exec providers in dry-run and exec-containing write plans).
+- `openclaw secrets reload` — re-resolve refs and atomically swap the runtime snapshot.
+- `openclaw secrets audit` — scan for plaintext residues, unresolved refs, and precedence drift (`--allow-exec` to execute exec providers during audit).
+- `openclaw secrets configure` — interactive helper for provider setup + SecretRef mapping + preflight/apply (`--allow-exec` to execute exec providers during preflight and exec-containing apply flows).
+- `openclaw secrets apply --from <plan.json>` — apply a previously generated plan (`--dry-run` supported; use `--allow-exec` to permit exec providers in dry-run and exec-containing write plans).
 
 ## Plugins
 
 Manage extensions and their config:
 
-- `remoteclaw plugins list` — discover plugins (use `--json` for machine output).
-- `remoteclaw plugins inspect <id>` — show details for a plugin (`info` is an alias).
-- `remoteclaw plugins install <path|.tgz|npm-spec|plugin@marketplace>` — install a plugin (or add a plugin path to `plugins.load.paths`).
-- `remoteclaw plugins marketplace list <marketplace>` — list marketplace entries before install.
-- `remoteclaw plugins enable <id>` / `disable <id>` — toggle `plugins.entries.<id>.enabled`.
-- `remoteclaw plugins doctor` — report plugin load errors.
+- `openclaw plugins list` — discover plugins (use `--json` for machine output).
+- `openclaw plugins inspect <id>` — show details for a plugin (`info` is an alias).
+- `openclaw plugins install <path|.tgz|npm-spec|plugin@marketplace>` — install a plugin (or add a plugin path to `plugins.load.paths`).
+- `openclaw plugins marketplace list <marketplace>` — list marketplace entries before install.
+- `openclaw plugins enable <id>` / `disable <id>` — toggle `plugins.entries.<id>.enabled`.
+- `openclaw plugins doctor` — report plugin load errors.
 
 Most plugin changes require a gateway restart. See [/plugin](/tools/plugin).
 
@@ -306,9 +322,9 @@ Most plugin changes require a gateway restart. See [/plugin](/tools/plugin).
 
 Vector search over `MEMORY.md` + `memory/*.md`:
 
-- `remoteclaw memory status` — show index stats.
-- `remoteclaw memory index` — reindex memory files.
-- `remoteclaw memory search "<query>"` (or `--query "<query>"`) — semantic search over memory.
+- `openclaw memory status` — show index stats.
+- `openclaw memory index` — reindex memory files.
+- `openclaw memory search "<query>"` (or `--query "<query>"`) — semantic search over memory.
 
 ## Chat slash commands
 
@@ -328,7 +344,7 @@ Initialize config + workspace.
 
 Options:
 
-- `--workspace <dir>`: agent workspace path (default `~/.remoteclaw/workspace`).
+- `--workspace <dir>`: agent workspace path (default `~/.openclaw/workspace`).
 - `--wizard`: run onboarding.
 - `--non-interactive`: run onboarding without prompts.
 - `--mode <local|remote>`: onboard mode.
@@ -349,7 +365,18 @@ Options:
 - `--non-interactive`
 - `--mode <local|remote>`
 - `--flow <quickstart|advanced|manual>` (manual is an alias for advanced)
-- `--auth-choice <setup-token|token|chutes|openai-codex|openai-api-key|openrouter-api-key|ollama|ai-gateway-api-key|moonshot-api-key|moonshot-api-key-cn|kimi-code-api-key|synthetic-api-key|venice-api-key|gemini-api-key|zai-api-key|mistral-api-key|apiKey|minimax-api|minimax-api-lightning|opencode-zen|opencode-go|custom-api-key|skip>`
+- `--auth-choice <choice>` where `<choice>` is one of:
+  `setup-token`, `token`, `chutes`, `deepseek-api-key`, `openai-codex`, `openai-api-key`,
+  `openrouter-api-key`, `kilocode-api-key`, `litellm-api-key`, `ai-gateway-api-key`,
+  `cloudflare-ai-gateway-api-key`, `moonshot-api-key`, `moonshot-api-key-cn`,
+  `kimi-code-api-key`, `synthetic-api-key`, `venice-api-key`, `together-api-key`,
+  `huggingface-api-key`, `apiKey`, `gemini-api-key`, `google-gemini-cli`, `zai-api-key`,
+  `zai-coding-global`, `zai-coding-cn`, `zai-global`, `zai-cn`, `xiaomi-api-key`,
+  `minimax-global-oauth`, `minimax-global-api`, `minimax-cn-oauth`, `minimax-cn-api`,
+  `opencode-zen`, `opencode-go`, `github-copilot`, `copilot-proxy`, `xai-api-key`,
+  `mistral-api-key`, `volcengine-api-key`, `byteplus-api-key`, `qianfan-api-key`,
+  `modelstudio-standard-api-key-cn`, `modelstudio-standard-api-key`,
+  `modelstudio-api-key-cn`, `modelstudio-api-key`, `custom-api-key`, `skip`
 - `--token-provider <id>` (non-interactive; used with `--auth-choice token`)
 - `--token <token>` (non-interactive; used with `--auth-choice token`)
 - `--token-profile-id <id>` (non-interactive; default: `<provider>:manual`)
@@ -367,8 +394,8 @@ Options:
 - `--minimax-api-key <key>`
 - `--opencode-zen-api-key <key>`
 - `--opencode-go-api-key <key>`
-- `--custom-base-url <url>` (non-interactive; used with `--auth-choice custom-api-key` or `--auth-choice ollama`)
-- `--custom-model-id <id>` (non-interactive; used with `--auth-choice custom-api-key` or `--auth-choice ollama`)
+- `--custom-base-url <url>` (non-interactive; used with `--auth-choice custom-api-key`)
+- `--custom-model-id <id>` (non-interactive; used with `--auth-choice custom-api-key`)
 - `--custom-api-key <key>` (non-interactive; optional; used with `--auth-choice custom-api-key`; falls back to `CUSTOM_API_KEY` when omitted)
 - `--custom-provider-id <id>` (non-interactive; optional custom provider id)
 - `--custom-compatibility <openai|anthropic>` (non-interactive; optional; default `openai`)
@@ -387,8 +414,11 @@ Options:
 - `--daemon-runtime <node|bun>`
 - `--skip-channels`
 - `--skip-skills`
+- `--skip-search`
 - `--skip-health`
 - `--skip-ui`
+- `--cloudflare-ai-gateway-account-id <id>`
+- `--cloudflare-ai-gateway-gateway-id <id>`
 - `--node-manager <npm|pnpm|bun>` (pnpm recommended; bun not recommended for Gateway runtime)
 - `--json`
 
@@ -398,7 +428,7 @@ Interactive configuration wizard (models, channels, skills, gateway).
 
 ### `config`
 
-Non-interactive config helpers (get/set/unset/file/schema/validate). Running `remoteclaw config` with no
+Non-interactive config helpers (get/set/unset/file/schema/validate). Running `openclaw config` with no
 subcommand launches the wizard.
 
 Subcommands:
@@ -409,13 +439,13 @@ Subcommands:
   - SecretRef builder mode: `config set <path> --ref-provider <provider> --ref-source <source> --ref-id <id>`
   - provider builder mode: `config set secrets.providers.<alias> --provider-source <env|file|exec> ...`
   - batch mode: `config set --batch-json '<json>'` or `config set --batch-file <path>`
-- `config set --dry-run`: validate assignments without writing `remoteclaw.json` (exec SecretRef checks are skipped by default).
+- `config set --dry-run`: validate assignments without writing `openclaw.json` (exec SecretRef checks are skipped by default).
 - `config set --allow-exec --dry-run`: opt in to exec SecretRef dry-run checks (may execute provider commands).
 - `config set --dry-run --json`: emit machine-readable dry-run output (checks + completeness signal, operations, refs checked/skipped, errors).
 - `config set --strict-json`: require JSON5 parsing for path/value input. `--json` remains a legacy alias for strict parsing outside dry-run output mode.
 - `config unset <path>`: remove a value.
 - `config file`: print the active config file path.
-- `config schema`: print the generated JSON schema for `remoteclaw.json`.
+- `config schema`: print the generated JSON schema for `openclaw.json`.
 - `config validate`: validate the current config against the schema without starting the gateway.
 - `config validate --json`: emit machine-readable JSON output.
 
@@ -429,6 +459,9 @@ Options:
 - `--yes`: accept defaults without prompting (headless).
 - `--non-interactive`: skip prompts; apply safe migrations only.
 - `--deep`: scan system services for extra gateway installs.
+- `--repair` (alias: `--fix`): attempt automatic repairs for detected issues.
+- `--force`: force repairs even when not strictly needed.
+- `--generate-gateway-token`: generate a new gateway auth token.
 
 ## Channel helpers
 
@@ -439,11 +472,11 @@ Manage chat channel accounts (WhatsApp/Telegram/Discord/Google Chat/Slack/Matter
 Subcommands:
 
 - `channels list`: show configured channels and auth profiles.
-- `channels status`: check gateway reachability and channel health (`--probe` runs extra checks; use `remoteclaw health` or `remoteclaw status --deep` for gateway health probes).
-- Tip: `channels status` prints warnings with suggested fixes when it can detect common misconfigurations (then points you to `remoteclaw doctor`).
+- `channels status`: check gateway reachability and channel health (`--probe` runs extra checks; use `openclaw health` or `openclaw status --deep` for gateway health probes).
+- Tip: `channels status` prints warnings with suggested fixes when it can detect common misconfigurations (then points you to `openclaw doctor`).
 - `channels logs`: show recent channel logs from the gateway log file.
 - `channels add`: wizard-style setup when no flags are passed; flags switch to non-interactive mode.
-  - When adding a non-default account to a channel still using single-account top-level config, RemoteClaw moves account-scoped values into `channels.<channel>.accounts.default` before writing the new account.
+  - When adding a non-default account to a channel still using single-account top-level config, OpenClaw moves account-scoped values into `channels.<channel>.accounts.default` before writing the new account.
   - Non-interactive `channels add` does not auto-create/upgrade bindings; channel-only bindings continue to match the default account.
 - `channels remove`: disable by default; pass `--delete` to remove config entries without prompts.
 - `channels login`: interactive channel login (WhatsApp Web only).
@@ -482,11 +515,11 @@ More detail: [/concepts/oauth](/concepts/oauth)
 Examples:
 
 ```bash
-remoteclaw channels add --channel telegram --account alerts --name "Alerts Bot" --token $TELEGRAM_BOT_TOKEN
-remoteclaw channels add --channel discord --account work --name "Work Bot" --token $DISCORD_BOT_TOKEN
-remoteclaw channels remove --channel discord --account work --delete
-remoteclaw channels status --probe
-remoteclaw status --deep
+openclaw channels add --channel telegram --account alerts --name "Alerts Bot" --token $TELEGRAM_BOT_TOKEN
+openclaw channels add --channel discord --account work --name "Work Bot" --token $DISCORD_BOT_TOKEN
+openclaw channels remove --channel discord --account work --delete
+openclaw channels status --probe
+openclaw status --deep
 ```
 
 ### `skills`
@@ -508,7 +541,7 @@ Options:
 - `--json`: output JSON (no styling).
 - `-v`, `--verbose`: include missing requirements detail.
 
-Tip: use `remoteclaw skills search`, `remoteclaw skills install`, and `remoteclaw skills update` for ClawHub-backed skills.
+Tip: use `openclaw skills search`, `openclaw skills install`, and `openclaw skills update` for ClawHub-backed skills.
 
 ### `pairing`
 
@@ -573,8 +606,8 @@ Subcommands:
 
 Examples:
 
-- `remoteclaw message send --target +15555550123 --message "Hi"`
-- `remoteclaw message poll --channel discord --target channel:123 --poll-question "Snack?" --poll-option Pizza --poll-option Sushi`
+- `openclaw message send --target +15555550123 --message "Hi"`
+- `openclaw message poll --channel discord --target channel:123 --poll-question "Snack?" --poll-option Pizza --poll-option Sushi`
 
 ### `agent`
 
@@ -582,15 +615,19 @@ Run one agent turn via the Gateway (or `--local` embedded).
 
 Required:
 
-- `--message <text>`
+- `-m, --message <text>`
 
 Options:
 
-- `--to <dest>` (for session key and optional delivery)
+- `-t, --to <dest>` (for session key and optional delivery)
 - `--session-id <id>`
-- `--thinking <off|minimal|low|medium|high|xhigh>` (GPT-5.2 + Codex models only)
-- `--verbose <on|full|off>`
-- `--channel <whatsapp|telegram|discord|slack|mattermost|signal|imessage|msteams>`
+- `--agent <id>` (agent id; overrides routing bindings)
+- `--thinking <off|minimal|low|medium|high|xhigh>` (provider support varies; not model-gated at CLI level)
+- `--verbose <on|off>`
+- `--channel <channel>` (delivery channel; omit to use the main session channel)
+- `--reply-to <target>` (delivery target override, separate from session routing)
+- `--reply-channel <channel>` (delivery channel override)
+- `--reply-account <id>` (delivery account id override)
 - `--local`
 - `--deliver`
 - `--json`
@@ -622,7 +659,7 @@ Options:
 - `--non-interactive`
 - `--json`
 
-Binding specs use `channel[:accountId]`. When `accountId` is omitted, RemoteClaw may resolve account scope via channel defaults/plugin hooks; otherwise it is a channel binding without explicit account scope.
+Binding specs use `channel[:accountId]`. When `accountId` is omitted, OpenClaw may resolve account scope via channel defaults/plugin hooks; otherwise it is a channel binding without explicit account scope.
 
 #### `agents bindings`
 
@@ -689,12 +726,12 @@ Notes:
 
 ### Usage tracking
 
-RemoteClaw can surface provider usage/quota when OAuth/API creds are available.
+OpenClaw can surface provider usage/quota when OAuth/API creds are available.
 
 Surfaces:
 
 - `/status` (adds a short provider usage line when available)
-- `remoteclaw status --usage` (prints full provider breakdown)
+- `openclaw status --usage` (prints full provider breakdown)
 - macOS menu bar (Usage section under Context)
 
 Notes:
@@ -724,6 +761,12 @@ Options:
 - `--verbose`
 - `--store <path>`
 - `--active <minutes>`
+- `--agent <id>` (filter sessions by agent)
+- `--all-agents` (show sessions across all agents)
+
+Subcommands:
+
+- `sessions cleanup` — remove expired or orphaned sessions
 
 ## Reset / Uninstall
 
@@ -760,6 +803,24 @@ Options:
 Notes:
 
 - `--non-interactive` requires `--yes` and explicit scopes (or `--all`).
+
+### `tasks`
+
+List and manage [background task](/automation/tasks) runs across agents.
+
+- `tasks list` — show active and recent task runs
+- `tasks show <id>` — show details for a specific task run
+- `tasks notify <id>` — change notification policy for a task run
+- `tasks cancel <id>` — cancel a running task
+- `tasks audit` — surface operational issues (stale, lost, delivery failures)
+
+### `flows`
+
+List and manage [ClawFlow](/automation/clawflow) jobs across agents.
+
+- `flows list` — show active and recent flows
+- `flows show <id>` — show details for a specific flow
+- `flows cancel <id>` — cancel a flow and its active child tasks
 
 ## Gateway
 
@@ -806,7 +867,7 @@ Notes:
 
 - `gateway status` probes the Gateway RPC by default using the service’s resolved port/config (override with `--url/--token/--password`).
 - `gateway status` supports `--no-probe`, `--deep`, `--require-rpc`, and `--json` for scripting.
-- `gateway status` also surfaces legacy or extra gateway services when it can detect them (`--deep` adds system-level scans). Profile-named RemoteClaw services are treated as first-class and aren't flagged as "extra".
+- `gateway status` also surfaces legacy or extra gateway services when it can detect them (`--deep` adds system-level scans). Profile-named OpenClaw services are treated as first-class and aren't flagged as "extra".
 - `gateway status` prints which config path the CLI uses vs which config the service likely uses (service env), plus the resolved probe target URL.
 - If gateway auth SecretRefs are unresolved in the current command path, `gateway status --json` reports `rpc.authWarning` only when probe connectivity/auth fails (warnings are suppressed when probe succeeds).
 - On Linux systemd installs, status token-drift checks include both `Environment=` and `EnvironmentFile=` unit sources.
@@ -818,19 +879,25 @@ Notes:
 
 Tail Gateway file logs via RPC.
 
-Notes:
+Options:
 
-- TTY sessions render a colorized, structured view; non-TTY falls back to plain text.
-- `--json` emits line-delimited JSON (one log event per line).
+- `--limit <n>`: maximum number of log lines to return
+- `--max-bytes <n>`: maximum bytes to read from the log file
+- `--follow`: follow the log file (tail -f style)
+- `--interval <ms>`: polling interval in ms when following
+- `--local-time`: display timestamps in local time
+- `--json`: emit line-delimited JSON
+- `--plain`: disable structured formatting
+- `--no-color`: disable ANSI colors
 
 Examples:
 
 ```bash
-remoteclaw logs --follow
-remoteclaw logs --limit 200
-remoteclaw logs --plain
-remoteclaw logs --json
-remoteclaw logs --no-color
+openclaw logs --follow
+openclaw logs --limit 200
+openclaw logs --plain
+openclaw logs --json
+openclaw logs --no-color
 ```
 
 ### `gateway <subcommand>`
@@ -851,12 +918,14 @@ Subcommands:
 
 Common RPCs:
 
+- `config.set` (validate + write full config; use `baseHash` for optimistic concurrency)
 - `config.apply` (validate + write config + restart + wake)
 - `config.patch` (merge a partial update + restart + wake)
 - `update.run` (run update + restart + wake)
 
 Tip: when calling `config.set`/`config.apply`/`config.patch` directly, pass `baseHash` from
 `config.get` if a config already exists.
+Tip: these config write RPCs preflight active SecretRef resolution for refs in the submitted config payload and reject writes when an effectively active submitted ref is unresolved.
 
 ## Models
 
@@ -866,8 +935,8 @@ Anthropic setup-token (supported):
 
 ```bash
 claude setup-token
-remoteclaw models auth setup-token --provider anthropic
-remoteclaw models status
+openclaw models auth setup-token --provider anthropic
+openclaw models status
 ```
 
 Policy note: this is technical compatibility. Anthropic has blocked some
@@ -877,13 +946,14 @@ terms before relying on setup-token in production.
 Anthropic Claude CLI migration:
 
 ```bash
-remoteclaw models auth login --provider anthropic --method cli --set-default
-remoteclaw onboard --auth-choice anthropic-cli
+openclaw models auth login --provider anthropic --method cli --set-default
 ```
+
+Note: `--auth-choice anthropic-cli` is a deprecated legacy alias. Use `models auth login` instead.
 
 ### `models` (root)
 
-`remoteclaw models` is an alias for `models status`.
+`openclaw models` is an alias for `models status`.
 
 Root options:
 
@@ -968,11 +1038,13 @@ Options:
 - `--set-image`
 - `--json`
 
-### `models auth add|setup-token|paste-token`
+### `models auth add|login|login-github-copilot|setup-token|paste-token`
 
 Options:
 
 - `add`: interactive auth helper
+- `login`: `--provider <name>`, `--method <method>`, `--set-default`
+- `login-github-copilot`: GitHub Copilot OAuth login flow
 - `setup-token`: `--provider <name>` (default `anthropic`), `--yes`
 - `paste-token`: `--provider <name>`, `--profile-id <id>`, `--expires-in <duration>`
 
@@ -1039,7 +1111,7 @@ All `cron` commands accept `--url`, `--token`, `--timeout`, `--expect-final`.
 ## Node host
 
 `node` runs a **headless node host** or manages it as a background service. See
-[`remoteclaw node`](/cli/node).
+[`openclaw node`](/cli/node).
 
 Subcommands:
 
@@ -1052,8 +1124,8 @@ Subcommands:
 
 Auth notes:
 
-- `node` resolves gateway auth from env/config (no `--token`/`--password` flags): `REMOTECLAW_GATEWAY_TOKEN` / `REMOTECLAW_GATEWAY_PASSWORD`, then `gateway.auth.*`. In local mode, node host intentionally ignores `gateway.remote.*`; in `gateway.mode=remote`, `gateway.remote.*` participates per remote precedence rules.
-- Node-host auth resolution only honors `REMOTECLAW_GATEWAY_*` env vars.
+- `node` resolves gateway auth from env/config (no `--token`/`--password` flags): `OPENCLAW_GATEWAY_TOKEN` / `OPENCLAW_GATEWAY_PASSWORD`, then `gateway.auth.*`. In local mode, node host intentionally ignores `gateway.remote.*`; in `gateway.mode=remote`, `gateway.remote.*` participates per remote precedence rules.
+- Node-host auth resolution only honors `OPENCLAW_GATEWAY_*` env vars.
 
 ## Nodes
 
@@ -1073,7 +1145,6 @@ Subcommands:
 - `nodes reject <requestId>`
 - `nodes rename --node <id|name|ip> --name <displayName>`
 - `nodes invoke --node <id|name|ip> --command <command> [--params <json>] [--invoke-timeout <ms>] [--idempotency-key <key>]`
-- `nodes run --node <id|name|ip> [--cwd <path>] [--env KEY=VAL] [--command-timeout <ms>] [--needs-screen-recording] [--invoke-timeout <ms>] <command...>` (mac node or headless node host)
 - `nodes notify --node <id|name|ip> [--title <text>] [--body <text>] [--sound <name>] [--priority <passive|active|timeSensitive>] [--delivery <system|overlay|auto>] [--invoke-timeout <ms>]` (mac only)
 
 Camera:
@@ -1099,7 +1170,7 @@ Location:
 
 ## Browser
 
-Browser control CLI (dedicated Chrome/Brave/Edge/Chromium). See [`remoteclaw browser`](/cli/browser) and the [Browser tool](/tools/browser).
+Browser control CLI (dedicated Chrome/Brave/Edge/Chromium). See [`openclaw browser`](/cli/browser) and the [Browser tool](/tools/browser).
 
 Common options:
 

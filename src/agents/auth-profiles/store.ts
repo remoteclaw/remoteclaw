@@ -343,6 +343,7 @@ export function ensureAuthProfileStore(
 
 export function saveAuthProfileStore(store: AuthProfileStore, agentDir?: string): void {
   const authPath = resolveAuthStorePath(agentDir);
+  const runtimeKey = resolveRuntimeStoreKey(agentDir);
   const payload: AuthProfileStore = {
     version: AUTH_STORE_VERSION,
     profiles: { ...store.profiles },
@@ -351,4 +352,7 @@ export function saveAuthProfileStore(store: AuthProfileStore, agentDir?: string)
     usageStats: store.usageStats ?? undefined,
   };
   saveJsonFile(authPath, payload);
+  if (runtimeAuthStoreSnapshots.has(runtimeKey)) {
+    runtimeAuthStoreSnapshots.set(runtimeKey, cloneAuthProfileStore(payload));
+  }
 }

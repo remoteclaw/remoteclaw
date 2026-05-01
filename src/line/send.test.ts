@@ -111,7 +111,9 @@ describe("LINE send helpers", () => {
       "line:user:U123",
       "https://example.com/original.jpg",
       undefined,
-      { verbose: true },
+      {
+        verbose: true,
+      },
     );
 
     expect(pushMessageMock).toHaveBeenCalledWith({

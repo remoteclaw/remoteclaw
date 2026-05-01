@@ -175,7 +175,9 @@ export async function docsSearchCommand(queryParts: string[], runtime: RuntimeEn
   const res = await runTool(
     "mcporter",
     ["call", SEARCH_TOOL, "--args", payload, "--output", "text"],
-    { timeoutMs: SEARCH_TIMEOUT_MS },
+    {
+      timeoutMs: SEARCH_TIMEOUT_MS,
+    },
   );
 
   if (res.code !== 0) {

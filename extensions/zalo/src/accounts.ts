@@ -40,7 +40,9 @@ export function resolveZaloAccount(params: {
   const tokenResolution = resolveZaloToken(
     params.cfg.channels?.zalo as ZaloConfig | undefined,
     accountId,
-    { allowUnresolvedSecretRef: params.allowUnresolvedSecretRef },
+    {
+      allowUnresolvedSecretRef: params.allowUnresolvedSecretRef,
+    },
   );
 
   return {

@@ -433,7 +433,10 @@ function buildOversizedHistoryPlaceholder(message?: unknown): Record<string, unk
 function replaceOversizedChatHistoryMessages(params: {
   messages: unknown[];
   maxSingleMessageBytes: number;
-}): { messages: unknown[]; replacedCount: number } {
+}): {
+  messages: unknown[];
+  replacedCount: number;
+} {
   const { messages, maxSingleMessageBytes } = params;
   if (messages.length === 0) {
     return { messages, replacedCount: 0 };

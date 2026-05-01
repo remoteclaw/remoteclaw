@@ -49,7 +49,9 @@ export function resolveTelegramToken(
     const token = tryReadSecretFileSync(
       accountTokenFile,
       `channels.telegram.accounts.${accountId}.tokenFile`,
-      { rejectSymlink: true },
+      {
+        rejectSymlink: true,
+      },
     );
     if (token) {
       return { token, source: "tokenFile" };

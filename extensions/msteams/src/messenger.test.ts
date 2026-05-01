@@ -107,7 +107,10 @@ describe("msteams messenger", () => {
     it("does not filter non-exact silent reply prefixes", () => {
       const messages = renderReplyPayloadsToMessages(
         [{ text: `${SILENT_REPLY_TOKEN} -- ignored` }],
-        { textChunkLimit: 4000, tableMode: "code" },
+        {
+          textChunkLimit: 4000,
+          tableMode: "code",
+        },
       );
       expect(messages).toEqual([{ text: `${SILENT_REPLY_TOKEN} -- ignored` }]);
     });
@@ -115,7 +118,10 @@ describe("msteams messenger", () => {
     it("splits media into separate messages by default", () => {
       const messages = renderReplyPayloadsToMessages(
         [{ text: "hi", mediaUrl: "https://example.com/a.png" }],
-        { textChunkLimit: 4000, tableMode: "code" },
+        {
+          textChunkLimit: 4000,
+          tableMode: "code",
+        },
       );
       expect(messages).toEqual([{ text: "hi" }, { mediaUrl: "https://example.com/a.png" }]);
     });
@@ -123,7 +129,11 @@ describe("msteams messenger", () => {
     it("supports inline media mode", () => {
       const messages = renderReplyPayloadsToMessages(
         [{ text: "hi", mediaUrl: "https://example.com/a.png" }],
-        { textChunkLimit: 4000, mediaMode: "inline", tableMode: "code" },
+        {
+          textChunkLimit: 4000,
+          mediaMode: "inline",
+          tableMode: "code",
+        },
       );
       expect(messages).toEqual([{ text: "hi", mediaUrl: "https://example.com/a.png" }]);
     });

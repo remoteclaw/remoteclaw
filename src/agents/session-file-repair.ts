@@ -111,9 +111,7 @@ export async function repairSessionFileIfNeeded(params: {
   }
 
   params.warn?.(
-    `session file repaired: dropped ${droppedLines} malformed line(s) (${path.basename(
-      sessionFile,
-    )})`,
+    `session file repaired: dropped ${droppedLines} malformed line(s) (${path.basename(sessionFile)})`,
   );
   return { repaired: true, droppedLines, backupPath };
 }

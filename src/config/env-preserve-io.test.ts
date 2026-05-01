@@ -27,7 +27,6 @@ async function withWrapperEnvContext(configPath: string, run: () => Promise<void
   await withEnvAsync(
     {
       REMOTECLAW_CONFIG_PATH: configPath,
-      REMOTECLAW_DISABLE_CONFIG_CACHE: "1",
       MY_API_KEY: "original-key-123",
     },
     run,

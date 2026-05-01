@@ -1,4 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import type { RemoteClawConfig } from "../../config/config.js";
 import {
   defaultRuntime,
   resetLifecycleRuntimeLogs,
@@ -8,7 +9,7 @@ import {
   stubEmptyGatewayEnv,
 } from "./test-helpers/lifecycle-core-harness.js";
 
-const loadConfig = vi.fn(() => ({
+const loadConfig = vi.fn<() => RemoteClawConfig>(() => ({
   gateway: {
     auth: {
       token: "config-token",
@@ -97,6 +98,78 @@ describe("runServiceRestart token drift", () => {
     expect(payload.warnings).toEqual(
       expect.arrayContaining([expect.stringContaining("gateway install --force")]),
     );
+  });
+
+  // TODO(remoteclaw/remoteclaw#TBD): port upstream's SecretRef drift resolution.
+  // Upstream resolves config token SecretRefs from service-command env before drift
+  // checks. Fork's resolveGatewayTokenForDriftCheck is sync and lacks this logic;
+  // fork emits "Unable to verify gateway token drift" warnings instead.
+  it.skip("resolves config token SecretRefs using service command env before drift checks", async () => {
+    loadConfig.mockReturnValue({
+      secrets: {
+        providers: {
+          default: { source: "env" },
+        },
+      },
+      gateway: {
+        auth: {
+          mode: "token",
+          token: {
+            source: "env",
+            provider: "default",
+            id: "SERVICE_GATEWAY_TOKEN",
+          },
+        },
+      },
+    });
+    service.readCommand.mockResolvedValue({
+      programArguments: [],
+      environment: {
+        REMOTECLAW_GATEWAY_TOKEN: "service-token",
+        SERVICE_GATEWAY_TOKEN: "service-token",
+      },
+    });
+
+    await runServiceRestart(createServiceRunArgs(true));
+
+    const payload = readJsonLog<{ warnings?: string[] }>();
+    expect(payload.warnings).toBeUndefined();
+  });
+
+  // TODO(remoteclaw/remoteclaw#TBD): port upstream's SecretRef drift resolution.
+  // Same upstream feature as previous skipped test; fork lacks SecretRef resolution
+  // in resolveGatewayTokenForDriftCheck (kept sync per D.4 to match fork's gateway).
+  it.skip("prefers service command env over process env for SecretRef token drift resolution", async () => {
+    loadConfig.mockReturnValue({
+      secrets: {
+        providers: {
+          default: { source: "env" },
+        },
+      },
+      gateway: {
+        auth: {
+          mode: "token",
+          token: {
+            source: "env",
+            provider: "default",
+            id: "SERVICE_GATEWAY_TOKEN",
+          },
+        },
+      },
+    });
+    service.readCommand.mockResolvedValue({
+      programArguments: [],
+      environment: {
+        REMOTECLAW_GATEWAY_TOKEN: "service-token",
+        SERVICE_GATEWAY_TOKEN: "service-token",
+      },
+    });
+    vi.stubEnv("SERVICE_GATEWAY_TOKEN", "process-token");
+
+    await runServiceRestart(createServiceRunArgs(true));
+
+    const payload = readJsonLog<{ warnings?: string[] }>();
+    expect(payload.warnings).toBeUndefined();
   });
 
   it("skips drift warning when disabled", async () => {

@@ -260,9 +260,7 @@ export function upsertPresence(key: string, presence: Partial<SystemPresence>) {
     text:
       presence.text ||
       existing.text ||
-      `Node: ${presence.host ?? existing.host ?? "unknown"} · mode ${
-        presence.mode ?? existing.mode ?? "unknown"
-      }`,
+      `Node: ${presence.host ?? existing.host ?? "unknown"} · mode ${presence.mode ?? existing.mode ?? "unknown"}`,
   };
   entries.set(normalizedKey, merged);
 }

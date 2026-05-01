@@ -192,8 +192,7 @@ async function readBaseline(repoRoot, fileName) {
   } catch (error) {
     if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
       console.error(
-        `Error: ${fileName} not found.\n` +
-          `Create it with the current count: echo <count> > ${fileName}`,
+        `Error: ${fileName} not found.\nCreate it with the current count: echo <count> > ${fileName}`,
       );
       process.exit(1);
     }

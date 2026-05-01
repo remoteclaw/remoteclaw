@@ -41,16 +41,10 @@ export function renderTelegramCard(params: {
           <div>
             <span class="label">Last inbound</span>
             <span
-              >${
-                account.lastInboundAt ? formatRelativeTimestamp(account.lastInboundAt) : "n/a"
-              }</span
+              >${account.lastInboundAt ? formatRelativeTimestamp(account.lastInboundAt) : "n/a"}</span
             >
           </div>
-          ${
-            account.lastError
-              ? html` <div class="account-card-error">${account.lastError}</div> `
-              : nothing
-          }
+          ${account.lastError ? html` <div class="account-card-error">${account.lastError}</div> ` : nothing}
         </div>
       </div>
     `;

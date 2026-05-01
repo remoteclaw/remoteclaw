@@ -479,10 +479,7 @@ export function formatAssistantErrorText(
   }
 
   if (isReasoningConstraintErrorMessage(raw)) {
-    return (
-      "Reasoning is required for this model endpoint. " +
-      "Use /think minimal (or any non-off level) and try again."
-    );
+    return "Reasoning is required for this model endpoint. Use /think minimal (or any non-off level) and try again.";
   }
 
   // Catch role ordering errors - including JSON-wrapped and "400" prefix variants
@@ -491,10 +488,7 @@ export function formatAssistantErrorText(
       raw,
     )
   ) {
-    return (
-      "Message ordering conflict - please try again. " +
-      "If this persists, use /new to start a fresh session."
-    );
+    return "Message ordering conflict - please try again. If this persists, use /new to start a fresh session.";
   }
 
   if (isMissingToolCallInputError(raw)) {
@@ -549,10 +543,7 @@ export function sanitizeUserFacingText(text: string, opts?: { errorContext?: boo
   // Otherwise we risk swallowing legitimate assistant text that merely *mentions* these errors.
   if (errorContext) {
     if (/incorrect role information|roles must alternate/i.test(trimmed)) {
-      return (
-        "Message ordering conflict - please try again. " +
-        "If this persists, use /new to start a fresh session."
-      );
+      return "Message ordering conflict - please try again. If this persists, use /new to start a fresh session.";
     }
 
     if (shouldRewriteContextOverflowText(trimmed)) {

@@ -69,7 +69,9 @@ describe("probeIrc", () => {
 
       expect(buildIrcConnectOptionsMock).toHaveBeenCalledWith(
         expect.objectContaining({ host: "irc.libera.chat" }),
-        { connectTimeoutMs: 5000 },
+        {
+          connectTimeoutMs: 5000,
+        },
       );
       expect(result).toEqual({
         ok: true,

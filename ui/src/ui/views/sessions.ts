@@ -121,11 +121,7 @@ export function renderSessions(props: SessionsProps) {
         </label>
       </div>
 
-      ${
-        props.error
-          ? html`<div class="callout danger" style="margin-top: 12px;">${props.error}</div>`
-          : nothing
-      }
+      ${props.error ? html`<div class="callout danger" style="margin-top: 12px;">${props.error}</div>` : nothing}
 
       <div class="muted" style="margin-top: 12px;">
         ${props.result ? `Store: ${props.result.path}` : ""}

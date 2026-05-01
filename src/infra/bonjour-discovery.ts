@@ -381,7 +381,9 @@ async function discoverWideAreaViaTailnetDns(
       try {
         const probe = await run(
           ["dig", "+short", "+time=1", "+tries=1", `@${ip}`, probeName, "PTR"],
-          { timeoutMs: Math.max(1, Math.min(250, budget)) },
+          {
+            timeoutMs: Math.max(1, Math.min(250, budget)),
+          },
         );
         const lines = parseDigShortLines(probe.stdout);
         if (lines.length === 0) {

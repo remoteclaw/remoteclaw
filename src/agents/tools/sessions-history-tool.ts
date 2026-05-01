@@ -146,7 +146,11 @@ function enforceSessionsHistoryHardCap(params: {
   items: unknown[];
   bytes: number;
   maxBytes: number;
-}): { items: unknown[]; bytes: number; hardCapped: boolean } {
+}): {
+  items: unknown[];
+  bytes: number;
+  hardCapped: boolean;
+} {
   if (params.bytes <= params.maxBytes) {
     return { items: params.items, bytes: params.bytes, hardCapped: false };
   }

@@ -554,7 +554,9 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
           cfg,
           "mattermost",
           account.accountId,
-          { fallbackLimit: account.textChunkLimit ?? 4000 },
+          {
+            fallbackLimit: account.textChunkLimit ?? 4000,
+          },
         );
         const tableMode = core.channel.text.resolveMarkdownTableMode({
           cfg,
@@ -1075,9 +1077,7 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
             channel: "Mattermost",
             from: fromLabel,
             timestamp: entry.timestamp,
-            body: `${entry.body}${
-              entry.messageId ? ` [id:${entry.messageId} channel:${channelId}]` : ""
-            }`,
+            body: `${entry.body}${entry.messageId ? ` [id:${entry.messageId} channel:${channelId}]` : ""}`,
             chatType,
             senderLabel: entry.sender,
           }),

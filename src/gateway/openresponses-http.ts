@@ -105,7 +105,10 @@ function extractClientTools(body: CreateResponseBody): ClientToolDefinition[] {
 function applyToolChoice(params: {
   tools: ClientToolDefinition[];
   toolChoice: CreateResponseBody["tool_choice"];
-}): { tools: ClientToolDefinition[]; extraSystemPrompt?: string } {
+}): {
+  tools: ClientToolDefinition[];
+  extraSystemPrompt?: string;
+} {
   const { tools, toolChoice } = params;
   if (!toolChoice) {
     return { tools };

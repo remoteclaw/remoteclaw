@@ -125,7 +125,9 @@ describe("GatewayClient", () => {
       const handled = handleControlUiHttpRequest(
         { url: "/webchat/chat", method: "GET" } as IncomingMessage,
         res,
-        { root: { kind: "resolved", path: tmp } },
+        {
+          root: { kind: "resolved", path: tmp },
+        },
       );
       expect(handled).toBe(true);
       expect(res.statusCode).toBe(200);
@@ -152,7 +154,9 @@ describe("GatewayClient", () => {
         const handled = handleControlUiHttpRequest(
           { url: route, method: "GET" } as IncomingMessage,
           res,
-          { root: { kind: "resolved", path: tmp } },
+          {
+            root: { kind: "resolved", path: tmp },
+          },
         );
         expect(handled).toBe(true);
         expect(res.statusCode, `expected 200 for ${route}`).toBe(200);
@@ -166,7 +170,9 @@ describe("GatewayClient", () => {
       const handled = handleControlUiHttpRequest(
         { url: "/webchat/foo.html", method: "GET" } as IncomingMessage,
         res,
-        { root: { kind: "resolved", path: tmp } },
+        {
+          root: { kind: "resolved", path: tmp },
+        },
       );
       expect(handled).toBe(true);
       expect(res.statusCode).toBe(200);
@@ -369,8 +375,12 @@ describe("resolveNodeCommandAllowlist", () => {
     expect(allow.has("device.permissions")).toBe(true);
     expect(allow.has("device.health")).toBe(true);
     expect(allow.has("callLog.search")).toBe(true);
-    expect(allow.has("sms.search")).toBe(true);
     expect(allow.has("system.notify")).toBe(true);
+    expect(allow.has("sms.search")).toBe(false);
+  });
+
+  it("treats sms.search as dangerous by default", () => {
+    expect(DEFAULT_DANGEROUS_NODE_COMMANDS).toContain("sms.search");
   });
 
   it("can explicitly allow dangerous commands via allowCommands", () => {

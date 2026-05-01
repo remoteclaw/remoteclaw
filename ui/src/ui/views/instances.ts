@@ -94,11 +94,7 @@ function renderEntry(entry: PresenceEntry, masked: boolean) {
           ${scopesLabel ? html`<span class="chip">${scopesLabel}</span>` : nothing}
           ${entry.platform ? html`<span class="chip">${entry.platform}</span>` : nothing}
           ${entry.deviceFamily ? html`<span class="chip">${entry.deviceFamily}</span>` : nothing}
-          ${
-            entry.modelIdentifier
-              ? html`<span class="chip">${entry.modelIdentifier}</span>`
-              : nothing
-          }
+          ${entry.modelIdentifier ? html`<span class="chip">${entry.modelIdentifier}</span>` : nothing}
           ${entry.version ? html`<span class="chip">${entry.version}</span>` : nothing}
         </div>
       </div>

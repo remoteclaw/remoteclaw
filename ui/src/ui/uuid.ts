@@ -14,23 +14,7 @@ function uuidFromBytes(bytes: Uint8Array): string {
     hex += bytes[i].toString(16).padStart(2, "0");
   }
 
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(
-    16,
-    20,
-  )}-${hex.slice(20)}`;
-}
-
-function weakRandomBytes(): Uint8Array {
-  const bytes = new Uint8Array(16);
-  const now = Date.now();
-  for (let i = 0; i < bytes.length; i++) {
-    bytes[i] = Math.floor(Math.random() * 256);
-  }
-  bytes[0] ^= now & 0xff;
-  bytes[1] ^= (now >>> 8) & 0xff;
-  bytes[2] ^= (now >>> 16) & 0xff;
-  bytes[3] ^= (now >>> 24) & 0xff;
-  return bytes;
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
 function warnWeakCryptoOnce() {
@@ -38,7 +22,7 @@ function warnWeakCryptoOnce() {
     return;
   }
   warnedWeakCrypto = true;
-  console.warn("[uuid] crypto API missing; falling back to weak randomness");
+  console.warn("[uuid] crypto API missing; refusing insecure UUID generation");
 }
 
 export function generateUUID(cryptoLike: CryptoLike | null = globalThis.crypto): string {
@@ -53,5 +37,5 @@ export function generateUUID(cryptoLike: CryptoLike | null = globalThis.crypto):
   }
 
   warnWeakCryptoOnce();
-  return uuidFromBytes(weakRandomBytes());
+  throw new Error("Web Crypto is required for UUID generation");
 }

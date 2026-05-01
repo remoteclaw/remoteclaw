@@ -111,7 +111,10 @@ describe("node exec events", () => {
 
     expect(enqueueSystemEventMock).toHaveBeenCalledWith(
       "Exec started (node=node-1 id=run-1): ls -la",
-      { sessionKey: "agent:main:main", contextKey: "exec:run-1" },
+      {
+        sessionKey: "agent:main:main",
+        contextKey: "exec:run-1",
+      },
     );
     expect(requestHeartbeatNowMock).toHaveBeenCalledWith({
       reason: "exec-event",
@@ -133,7 +136,10 @@ describe("node exec events", () => {
 
     expect(enqueueSystemEventMock).toHaveBeenCalledWith(
       "Exec finished (node=node-2 id=run-2, code 0)\ndone",
-      { sessionKey: "node-node-2", contextKey: "exec:run-2" },
+      {
+        sessionKey: "node-node-2",
+        contextKey: "exec:run-2",
+      },
     );
     expect(requestHeartbeatNowMock).toHaveBeenCalledWith({ reason: "exec-event" });
   });
@@ -446,7 +452,10 @@ describe("notifications changed events", () => {
     expect(loadSessionEntryMock).toHaveBeenCalledWith("node-node-n5");
     expect(enqueueSystemEventMock).toHaveBeenCalledWith(
       "Notification posted (node=node-n5 key=notif-5)",
-      { sessionKey: "agent:main:node-node-n5", contextKey: "notification:notif-5" },
+      {
+        sessionKey: "agent:main:node-node-n5",
+        contextKey: "notification:notif-5",
+      },
     );
     expect(requestHeartbeatNowMock).toHaveBeenCalledWith({
       reason: "notifications-event",

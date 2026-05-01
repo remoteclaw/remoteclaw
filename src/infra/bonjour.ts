@@ -365,10 +365,7 @@ export async function startGatewayBonjourAdvertiser(
           Date.now() - tracked.sinceMs >= STUCK_ANNOUNCING_MS
         ) {
           void recreateAdvertiser(
-            `service stuck in ${stateUnknown} for ${Date.now() - tracked.sinceMs}ms (${serviceSummary(
-              label,
-              svc,
-            )})`,
+            `service stuck in ${stateUnknown} for ${Date.now() - tracked.sinceMs}ms (${serviceSummary(label, svc)})`,
           );
           return;
         }
@@ -390,10 +387,7 @@ export async function startGatewayBonjourAdvertiser(
         lastRepairAttempt.set(key, now);
 
         logWarn(
-          `bonjour: watchdog detected non-announced service; attempting re-advertise (${serviceSummary(
-            label,
-            svc,
-          )})`,
+          `bonjour: watchdog detected non-announced service; attempting re-advertise (${serviceSummary(label, svc)})`,
         );
         try {
           void svc.advertise().catch((err) => {

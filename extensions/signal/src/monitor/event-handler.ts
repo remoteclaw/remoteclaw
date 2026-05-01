@@ -165,9 +165,7 @@ export function createSignalEventHandler(deps: SignalEventHandlerDeps) {
             channel: "Signal",
             from: fromLabel,
             timestamp: historyEntry.timestamp,
-            body: `${historyEntry.body}${
-              historyEntry.messageId ? ` [id:${historyEntry.messageId}]` : ""
-            }`,
+            body: `${historyEntry.body}${historyEntry.messageId ? ` [id:${historyEntry.messageId}]` : ""}`,
             chatType: "group",
             senderLabel: historyEntry.sender,
             envelope: envelopeOptions,

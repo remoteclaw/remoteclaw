@@ -1,5 +1,5 @@
 ---
-description: "OpenProse: .prose workflows, slash commands, and state in RemoteClaw"
+summary: "OpenProse: .prose workflows, slash commands, and state in RemoteClaw"
 read_when:
   - You want to run or write .prose workflows
   - You want to enable the OpenProse plugin
@@ -9,7 +9,7 @@ title: "OpenProse"
 
 # OpenProse
 
-OpenProse is a portable, markdown-first workflow format for orchestrating AI sessions. In RemoteClaw it ships as a plugin that installs an OpenProse command set plus a `/prose` slash command. Programs live in `.prose` files and can spawn multiple sub-agents with explicit control flow.
+OpenProse is a portable, markdown-first workflow format for orchestrating AI sessions. In RemoteClaw it ships as a plugin that installs an OpenProse skill pack plus a `/prose` slash command. Programs live in `.prose` files and can spawn multiple sub-agents with explicit control flow.
 
 Official site: [https://www.prose.md](https://www.prose.md)
 
@@ -29,9 +29,9 @@ remoteclaw plugins enable open-prose
 
 Restart the Gateway after enabling the plugin.
 
-Dev/local checkout: `remoteclaw plugins install ./extensions/open-prose`
+Dev/local checkout: `remoteclaw plugins install ./path/to/local/open-prose-plugin`
 
-Related docs: [Plugins](/tools/plugin), [Plugin manifest](/plugins/manifest).
+Related docs: [Plugins](/tools/plugin), [Plugin manifest](/plugins/manifest), [Skills](/tools/skills).
 
 ## Slash command
 
@@ -57,11 +57,11 @@ Common commands:
 input topic: "What should we research?"
 
 agent researcher:
-  runtime: claude
+  model: sonnet
   prompt: "You research thoroughly and cite sources."
 
 agent writer:
-  runtime: claude
+  model: opus
   prompt: "You write a concise summary."
 
 parallel:
@@ -125,8 +125,10 @@ OpenProse programs map to RemoteClaw primitives:
 | File read/write           | `read` / `write` |
 | Web fetch                 | `web_fetch`      |
 
-If your tool allowlist blocks these tools, OpenProse programs will fail.
+If your tool allowlist blocks these tools, OpenProse programs will fail. See [Skills config](/tools/skills-config).
 
 ## Security + approvals
 
 Treat `.prose` files like code. Review before running. Use RemoteClaw tool allowlists and approval gates to control side effects.
+
+For deterministic, approval-gated workflows, compare with [Lobster](/tools/lobster).

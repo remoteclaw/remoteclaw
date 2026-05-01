@@ -3,7 +3,6 @@ import {
   AUTH_RATE_LIMIT_SCOPE_DEVICE_TOKEN,
   AUTH_RATE_LIMIT_SCOPE_SHARED_SECRET,
   type AuthRateLimiter,
-  type RateLimitCheckResult,
 } from "../../auth-rate-limit.js";
 import {
   authorizeHttpGatewayConnect,
@@ -86,7 +85,6 @@ export async function resolveConnectAuthState(params: {
   const sharedAuthProvided = Boolean(sharedConnectAuth);
   const { token: deviceTokenCandidate, source: deviceTokenCandidateSource } =
     params.hasDeviceIdentity ? resolveDeviceTokenCandidate(params.connectAuth) : {};
-  const hasDeviceTokenCandidate = Boolean(deviceTokenCandidate);
 
   let authResult: GatewayAuthResult = await authorizeWsControlUiGatewayConnect({
     auth: params.resolvedAuth,
@@ -94,32 +92,10 @@ export async function resolveConnectAuthState(params: {
     req: params.req,
     trustedProxies: params.trustedProxies,
     allowRealIpFallback: params.allowRealIpFallback,
-    rateLimiter: hasDeviceTokenCandidate ? undefined : params.rateLimiter,
+    rateLimiter: sharedAuthProvided ? params.rateLimiter : undefined,
     clientIp: params.clientIp,
     rateLimitScope: AUTH_RATE_LIMIT_SCOPE_SHARED_SECRET,
   });
-
-  if (
-    hasDeviceTokenCandidate &&
-    authResult.ok &&
-    params.rateLimiter &&
-    (authResult.method === "token" || authResult.method === "password")
-  ) {
-    const sharedRateCheck: RateLimitCheckResult = params.rateLimiter.check(
-      params.clientIp,
-      AUTH_RATE_LIMIT_SCOPE_SHARED_SECRET,
-    );
-    if (!sharedRateCheck.allowed) {
-      authResult = {
-        ok: false,
-        reason: "rate_limited",
-        rateLimited: true,
-        retryAfterMs: sharedRateCheck.retryAfterMs,
-      };
-    } else {
-      params.rateLimiter.reset(params.clientIp, AUTH_RATE_LIMIT_SCOPE_SHARED_SECRET);
-    }
-  }
 
   const sharedAuthResult =
     sharedConnectAuth &&
@@ -202,6 +178,9 @@ export async function resolveConnectAuthDecision(params: {
       authOk = true;
       authMethod = "device-token";
       params.rateLimiter?.reset(params.clientIp, AUTH_RATE_LIMIT_SCOPE_DEVICE_TOKEN);
+      if (params.state.sharedAuthProvided) {
+        params.rateLimiter?.reset(params.clientIp, AUTH_RATE_LIMIT_SCOPE_SHARED_SECRET);
+      }
     } else {
       authResult = {
         ok: false,

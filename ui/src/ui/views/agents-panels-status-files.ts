@@ -150,11 +150,7 @@ export function renderAgentChannels(params: {
         <div class="muted" style="margin-top: 8px;">
           Last refresh: ${lastSuccessLabel}
         </div>
-        ${
-          params.error
-            ? html`<div class="callout danger" style="margin-top: 12px;">${params.error}</div>`
-            : nothing
-        }
+        ${params.error ? html`<div class="callout danger" style="margin-top: 12px;">${params.error}</div>` : nothing}
         ${
           !params.snapshot
             ? html`
@@ -251,11 +247,7 @@ export function renderAgentCron(params: {
             <div class="stat-value">${formatNextRun(params.status?.nextWakeAtMs ?? null)}</div>
           </div>
         </div>
-        ${
-          params.error
-            ? html`<div class="callout danger" style="margin-top: 12px;">${params.error}</div>`
-            : nothing
-        }
+        ${params.error ? html`<div class="callout danger" style="margin-top: 12px;">${params.error}</div>` : nothing}
       </section>
     </section>
     <section class="card">
@@ -273,11 +265,7 @@ export function renderAgentCron(params: {
                     <div class="list-item">
                       <div class="list-main">
                         <div class="list-title">${job.name}</div>
-                        ${
-                          job.description
-                            ? html`<div class="list-sub">${job.description}</div>`
-                            : nothing
-                        }
+                        ${job.description ? html`<div class="list-sub">${job.description}</div>` : nothing}
                         <div class="chip-row" style="margin-top: 6px;">
                           <span class="chip">${formatCronSchedule(job)}</span>
                           <span class="chip ${job.enabled ? "chip-ok" : "chip-warn"}">
@@ -338,11 +326,7 @@ export function renderAgentFiles(params: {
           ${params.agentFilesLoading ? "Loading…" : "Refresh"}
         </button>
       </div>
-      ${
-        list
-          ? html`<div class="muted mono" style="margin-top: 8px;">Workspace: ${list.workspace}</div>`
-          : nothing
-      }
+      ${list ? html`<div class="muted mono" style="margin-top: 8px;">Workspace: ${list.workspace}</div>` : nothing}
       ${
         params.agentFilesError
           ? html`<div class="callout danger" style="margin-top: 12px;">${params.agentFilesError}</div>`

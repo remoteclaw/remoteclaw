@@ -641,7 +641,9 @@ export function createNodesTool(options?: {
         }
         throw new Error(
           `agent=${agentLabel} node=${nodeLabel} gateway=${gatewayLabel} action=${action}: ${message}`,
-          { cause: err },
+          {
+            cause: err,
+          },
         );
       }
     },

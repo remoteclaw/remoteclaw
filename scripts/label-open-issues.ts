@@ -675,7 +675,9 @@ function applyLabels(
   execFileSync(
     "gh",
     [ghTarget, "edit", String(item.number), "--add-label", labelsToAdd.join(",")],
-    { stdio: "inherit" },
+    {
+      stdio: "inherit",
+    },
   );
   return true;
 }

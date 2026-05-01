@@ -94,8 +94,7 @@ const BROWSER_TOOL_NO_RETRY_HINT =
   "Use an alternative approach or inform the user that the browser is currently unavailable.";
 
 const BROWSER_SERVICE_RATE_LIMIT_MESSAGE =
-  "Browser service rate limit reached. " +
-  "Wait for the current session to complete, or retry later.";
+  "Browser service rate limit reached. Wait for the current session to complete, or retry later.";
 
 const BROWSERBASE_RATE_LIMIT_MESSAGE =
   "Browserbase rate limit reached (max concurrent sessions). " +

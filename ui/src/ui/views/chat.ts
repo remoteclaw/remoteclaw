@@ -330,10 +330,7 @@ export function renderChat(props: ChatProps) {
                   (item) => html`
                     <div class="chat-queue__item">
                       <div class="chat-queue__text">
-                        ${
-                          item.text ||
-                          (item.attachments?.length ? `Image (${item.attachments.length})` : "")
-                        }
+                        ${item.text || (item.attachments?.length ? `Image (${item.attachments.length})` : "")}
                       </div>
                       <button
                         class="btn chat-queue__remove"

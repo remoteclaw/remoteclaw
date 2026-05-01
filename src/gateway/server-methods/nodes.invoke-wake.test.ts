@@ -273,7 +273,10 @@ describe("node.invoke APNs wake path", () => {
     mocks.isNodeCommandAllowed.mockReturnValue({ ok: true });
     mocks.sanitizeNodeInvokeParamsForForwarding.mockClear();
     mocks.sanitizeNodeInvokeParamsForForwarding.mockImplementation(
-      ({ rawParams }: { rawParams: unknown }) => ({ ok: true, params: rawParams }),
+      ({ rawParams }: { rawParams: unknown }) => ({
+        ok: true,
+        params: rawParams,
+      }),
     );
     mocks.loadApnsRegistration.mockClear();
     mocks.clearApnsRegistrationIfCurrent.mockClear();

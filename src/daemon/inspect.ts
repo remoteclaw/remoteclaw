@@ -15,7 +15,7 @@ export type ExtraGatewayService = {
   label: string;
   detail: string;
   scope: "user" | "system";
-  marker?: "remoteclaw" | "clawdbot" | "moltbot";
+  marker?: "remoteclaw" | "clawdbot";
   legacy?: boolean;
 };
 
@@ -23,7 +23,7 @@ export type FindExtraGatewayServicesOptions = {
   deep?: boolean;
 };
 
-const EXTRA_MARKERS = ["remoteclaw", "clawdbot", "moltbot"] as const;
+const EXTRA_MARKERS = ["remoteclaw", "clawdbot"] as const;
 
 export function renderGatewayServiceCleanupHints(
   env: Record<string, string | undefined> = process.env as Record<string, string | undefined>,
@@ -94,7 +94,7 @@ function hasGatewayServiceMarker(content: string): boolean {
   );
 }
 
-function isRemoteClawGatewayLaunchdService(label: string, contents: string): boolean {
+function isOpenClawGatewayLaunchdService(label: string, contents: string): boolean {
   if (hasGatewayServiceMarker(contents)) {
     return true;
   }
@@ -105,7 +105,7 @@ function isRemoteClawGatewayLaunchdService(label: string, contents: string): boo
   return label.startsWith("org.remoteclaw.");
 }
 
-function isRemoteClawGatewaySystemdService(name: string, contents: string): boolean {
+function isOpenClawGatewaySystemdService(name: string, contents: string): boolean {
   if (hasGatewayServiceMarker(contents)) {
     return true;
   }
@@ -115,7 +115,7 @@ function isRemoteClawGatewaySystemdService(name: string, contents: string): bool
   return contents.toLowerCase().includes("gateway");
 }
 
-function isRemoteClawGatewayTaskName(name: string): boolean {
+function isOpenClawGatewayTaskName(name: string): boolean {
   const normalized = name.trim().toLowerCase();
   if (!normalized) {
     return false;
@@ -142,7 +142,7 @@ function isIgnoredSystemdName(name: string): boolean {
 
 function isLegacyLabel(label: string): boolean {
   const lower = label.toLowerCase();
-  return lower.includes("clawdbot") || lower.includes("moltbot");
+  return lower.includes("clawdbot");
 }
 
 async function readDirEntries(dir: string): Promise<string[]> {
@@ -217,7 +217,7 @@ async function scanLaunchdDir(params: {
         label,
         detail: `plist: ${fullPath}`,
         scope: params.scope,
-        marker: isLegacyLabel(label) ? "clawdbot" : "moltbot",
+        marker: "clawdbot",
         legacy: true,
       });
       continue;
@@ -225,7 +225,7 @@ async function scanLaunchdDir(params: {
     if (isIgnoredLaunchdLabel(label)) {
       continue;
     }
-    if (marker === "remoteclaw" && isRemoteClawGatewayLaunchdService(label, contents)) {
+    if (marker === "remoteclaw" && isOpenClawGatewayLaunchdService(label, contents)) {
       continue;
     }
     results.push({
@@ -257,7 +257,7 @@ async function scanSystemdDir(params: {
     if (!marker) {
       continue;
     }
-    if (marker === "remoteclaw" && isRemoteClawGatewaySystemdService(name, contents)) {
+    if (marker === "remoteclaw" && isOpenClawGatewaySystemdService(name, contents)) {
       continue;
     }
     results.push({
@@ -410,7 +410,7 @@ export async function findExtraGatewayServices(
       if (!name) {
         continue;
       }
-      if (isRemoteClawGatewayTaskName(name)) {
+      if (isOpenClawGatewayTaskName(name)) {
         continue;
       }
       const lowerName = name.toLowerCase();

@@ -656,7 +656,10 @@ const runAttachmentAuthRetryCase = async ({
   const media = await downloadAttachmentsWithFetch(
     createImageAttachments(scenario.attachmentUrl),
     fetchMock,
-    { tokenProvider, ...scenario.overrides },
+    {
+      tokenProvider,
+      ...scenario.overrides,
+    },
   );
   expectAttachmentMediaLength(media, expectedMediaLength);
   expectMockCallState(tokenProvider.getAccessToken, expectTokenFetch);
@@ -735,7 +738,10 @@ describe("msteams attachments", () => {
       const media = await downloadAttachmentsWithFetch(
         createImageAttachments(TEST_URL_IMAGE),
         fetchMock,
-        { tokenProvider, authAllowHosts: [TEST_HOST] },
+        {
+          tokenProvider,
+          authAllowHosts: [TEST_HOST],
+        },
       );
 
       expectAttachmentMediaLength(media, 1);
@@ -761,7 +767,10 @@ describe("msteams attachments", () => {
       const media = await downloadAttachmentsWithFetch(
         createImageAttachments(TEST_URL_IMAGE),
         fetchMock,
-        { tokenProvider, authAllowHosts: [TEST_HOST] },
+        {
+          tokenProvider,
+          authAllowHosts: [TEST_HOST],
+        },
       );
 
       expectAttachmentMediaLength(media, 1);

@@ -41,9 +41,7 @@ export async function checkGatewayHealth(params: {
           issues
             .map(
               (issue) =>
-                `- ${issue.channel} ${issue.accountId}: ${issue.message}${
-                  issue.fix ? ` (${issue.fix})` : ""
-                }`,
+                `- ${issue.channel} ${issue.accountId}: ${issue.message}${issue.fix ? ` (${issue.fix})` : ""}`,
             )
             .join("\n"),
           "Channel warnings",

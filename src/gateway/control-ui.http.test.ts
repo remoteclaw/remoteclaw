@@ -429,7 +429,9 @@ describe("handleControlUiHttpRequest", () => {
           const handled = handleControlUiHttpRequest(
             { url: webhookPath, method: "POST" } as IncomingMessage,
             res,
-            { root: { kind: "resolved", path: tmp } },
+            {
+              root: { kind: "resolved", path: tmp },
+            },
           );
           expect(handled, `POST to ${webhookPath} should pass through to plugin handlers`).toBe(
             false,

@@ -468,9 +468,7 @@ export const agentsHandlers: GatewayRequestHandlers = {
         undefined,
         errorShape(
           ErrorCodes.INVALID_REQUEST,
-          `invalid agents.create params: ${formatValidationErrors(
-            validateAgentsCreateParams.errors,
-          )}`,
+          `invalid agents.create params: ${formatValidationErrors(validateAgentsCreateParams.errors)}`,
         ),
       );
       return;
@@ -596,9 +594,7 @@ export const agentsHandlers: GatewayRequestHandlers = {
         undefined,
         errorShape(
           ErrorCodes.INVALID_REQUEST,
-          `invalid agents.files.list params: ${formatValidationErrors(
-            validateAgentsFilesListParams.errors,
-          )}`,
+          `invalid agents.files.list params: ${formatValidationErrors(validateAgentsFilesListParams.errors)}`,
         ),
       );
       return;

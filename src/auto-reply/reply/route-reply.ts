@@ -87,7 +87,10 @@ export async function routeReply(params: RouteReplyParams): Promise<RouteReplyRe
     ? resolveEffectiveMessagesConfig(
         cfg,
         resolvedAgentId ?? resolveSessionAgentId({ config: cfg }),
-        { channel: normalizedChannel, accountId },
+        {
+          channel: normalizedChannel,
+          accountId,
+        },
       ).responsePrefix
     : cfg.messages?.responsePrefix === "auto"
       ? undefined

@@ -10,9 +10,7 @@ function killGatewayListeners(port: number): PortProcess[] {
     const killed = forceFreePort(port);
     if (killed.length > 0) {
       console.log(
-        `freed port ${port}; terminated: ${killed
-          .map((p) => `${p.command} (pid ${p.pid})`)
-          .join(", ")}`,
+        `freed port ${port}; terminated: ${killed.map((p) => `${p.command} (pid ${p.pid})`).join(", ")}`,
       );
     } else {
       console.log(`port ${port} already free`);

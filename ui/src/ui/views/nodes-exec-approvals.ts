@@ -213,11 +213,7 @@ export function renderExecApprovals(state: ExecApprovalsState) {
           : html`
             ${renderExecApprovalsTabs(state)}
             ${renderExecApprovalsPolicy(state)}
-            ${
-              state.selectedScope === EXEC_APPROVALS_DEFAULT_SCOPE
-                ? nothing
-                : renderExecApprovalsAllowlist(state)
-            }
+            ${state.selectedScope === EXEC_APPROVALS_DEFAULT_SCOPE ? nothing : renderExecApprovalsAllowlist(state)}
           `
       }
     </section>
@@ -428,11 +424,7 @@ function renderExecApprovalsPolicy(state: ExecApprovalsState) {
         <div class="list-main">
           <div class="list-title">Ask fallback</div>
           <div class="list-sub">
-            ${
-              isDefaults
-                ? "Applied when the UI prompt is unavailable."
-                : `Default: ${defaults.askFallback}.`
-            }
+            ${isDefaults ? "Applied when the UI prompt is unavailable." : `Default: ${defaults.askFallback}.`}
           </div>
         </div>
         <div class="list-meta">

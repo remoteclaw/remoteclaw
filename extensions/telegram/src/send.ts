@@ -286,7 +286,9 @@ async function resolveChatId(
     const detail = formatErrorMessage(err);
     throw new Error(
       `Telegram recipient ${lookupTarget} could not be resolved to a numeric chat ID (${detail})`,
-      { cause: err },
+      {
+        cause: err,
+      },
     );
   }
 }
@@ -411,9 +413,7 @@ async function withTelegramHtmlParseFallback<T>(params: {
     }
     if (params.verbose) {
       sendLogger.warn(
-        `telegram ${params.label} failed with HTML parse error, retrying as plain text: ${formatErrorMessage(
-          err,
-        )}`,
+        `telegram ${params.label} failed with HTML parse error, retrying as plain text: ${formatErrorMessage(err)}`,
       );
     }
     return await params.requestPlain(`${params.label}-plain`);
@@ -734,9 +734,7 @@ export async function sendMessageTelegram(
       htmlChunks = splitTelegramHtmlChunks(rawText, 4000);
     } catch (error) {
       logVerbose(
-        `telegram ${context} failed HTML chunk planning, retrying as plain text: ${formatErrorMessage(
-          error,
-        )}`,
+        `telegram ${context} failed HTML chunk planning, retrying as plain text: ${formatErrorMessage(error)}`,
       );
       return splitTelegramPlainTextChunks(fallbackText, 4000).map((plainText) => ({ plainText }));
     }

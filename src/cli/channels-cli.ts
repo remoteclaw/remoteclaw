@@ -76,10 +76,7 @@ export function registerChannelsCli(program: Command) {
             "Add or update a channel account non-interactively.",
           ],
           ["remoteclaw channels login --channel whatsapp", "Link a WhatsApp Web account."],
-        ])}\n\n${theme.muted("Docs:")} ${formatDocsLink(
-          "/cli/channels",
-          "docs.remoteclaw.org/cli/channels",
-        )}\n`,
+        ])}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/channels", "docs.remoteclaw.org/cli/channels")}\n`,
     );
 
   channels

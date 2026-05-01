@@ -4,6 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   assertCanonicalPathWithinBase,
+  packageNameMatchesId,
   resolveSafeInstallDir,
   safeDirName,
   safePathSegmentHashed,
@@ -17,6 +18,18 @@ describe("unscopedPackageName", () => {
     { value: "", expected: "" },
   ])("normalizes package names for %j", ({ value, expected }) => {
     expect(unscopedPackageName(value)).toBe(expected);
+  });
+});
+
+describe("packageNameMatchesId", () => {
+  it.each([
+    { packageName: "@remoteclaw/matrix", id: "matrix", expected: true },
+    { packageName: "@remoteclaw/matrix", id: "@remoteclaw/matrix", expected: true },
+    { packageName: "@remoteclaw/matrix", id: "signal", expected: false },
+    { packageName: " ", id: "matrix", expected: false },
+    { packageName: "@remoteclaw/matrix", id: " ", expected: false },
+  ])("matches ids for %j", ({ packageName, id, expected }) => {
+    expect(packageNameMatchesId(packageName, id)).toBe(expected);
   });
 });
 

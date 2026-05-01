@@ -95,7 +95,9 @@ describe("deliverLineAutoReply", () => {
     expect(pushMessagesLine).toHaveBeenCalledWith(
       "line:user:1",
       [createFlexMessage("Card", { type: "bubble" })],
-      { accountId: "acc" },
+      {
+        accountId: "acc",
+      },
     );
     expect(createQuickReplyItems).not.toHaveBeenCalled();
   });
@@ -160,7 +162,9 @@ describe("deliverLineAutoReply", () => {
     expect(pushMessagesLine).toHaveBeenCalledWith(
       "line:user:1",
       [createFlexMessage("Card", { type: "bubble" })],
-      { accountId: "acc" },
+      {
+        accountId: "acc",
+      },
     );
     expect(replyMessageLine).toHaveBeenCalledWith(
       "token",
@@ -203,7 +207,9 @@ describe("deliverLineAutoReply", () => {
     expect(pushMessagesLine).toHaveBeenCalledWith(
       "line:user:1",
       [createFlexMessage("Card", { type: "bubble" })],
-      { accountId: "acc" },
+      {
+        accountId: "acc",
+      },
     );
   });
 });

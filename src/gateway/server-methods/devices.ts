@@ -91,9 +91,7 @@ export const deviceHandlers: GatewayRequestHandlers = {
         undefined,
         errorShape(
           ErrorCodes.INVALID_REQUEST,
-          `invalid device.pair.list params: ${formatValidationErrors(
-            validateDevicePairListParams.errors,
-          )}`,
+          `invalid device.pair.list params: ${formatValidationErrors(validateDevicePairListParams.errors)}`,
         ),
       );
       return;
@@ -115,9 +113,7 @@ export const deviceHandlers: GatewayRequestHandlers = {
         undefined,
         errorShape(
           ErrorCodes.INVALID_REQUEST,
-          `invalid device.pair.approve params: ${formatValidationErrors(
-            validateDevicePairApproveParams.errors,
-          )}`,
+          `invalid device.pair.approve params: ${formatValidationErrors(validateDevicePairApproveParams.errors)}`,
         ),
       );
       return;
@@ -150,9 +146,7 @@ export const deviceHandlers: GatewayRequestHandlers = {
         undefined,
         errorShape(
           ErrorCodes.INVALID_REQUEST,
-          `invalid device.pair.reject params: ${formatValidationErrors(
-            validateDevicePairRejectParams.errors,
-          )}`,
+          `invalid device.pair.reject params: ${formatValidationErrors(validateDevicePairRejectParams.errors)}`,
         ),
       );
       return;
@@ -182,9 +176,7 @@ export const deviceHandlers: GatewayRequestHandlers = {
         undefined,
         errorShape(
           ErrorCodes.INVALID_REQUEST,
-          `invalid device.pair.remove params: ${formatValidationErrors(
-            validateDevicePairRemoveParams.errors,
-          )}`,
+          `invalid device.pair.remove params: ${formatValidationErrors(validateDevicePairRemoveParams.errors)}`,
         ),
       );
       return;
@@ -205,9 +197,7 @@ export const deviceHandlers: GatewayRequestHandlers = {
         undefined,
         errorShape(
           ErrorCodes.INVALID_REQUEST,
-          `invalid device.token.rotate params: ${formatValidationErrors(
-            validateDeviceTokenRotateParams.errors,
-          )}`,
+          `invalid device.token.rotate params: ${formatValidationErrors(validateDeviceTokenRotateParams.errors)}`,
         ),
       );
       return;
@@ -299,9 +289,7 @@ export const deviceHandlers: GatewayRequestHandlers = {
         undefined,
         errorShape(
           ErrorCodes.INVALID_REQUEST,
-          `invalid device.token.revoke params: ${formatValidationErrors(
-            validateDeviceTokenRevokeParams.errors,
-          )}`,
+          `invalid device.token.revoke params: ${formatValidationErrors(validateDeviceTokenRevokeParams.errors)}`,
         ),
       );
       return;

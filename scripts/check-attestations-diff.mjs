@@ -61,7 +61,10 @@ function listChangedAgentFiles(baseSha, headSha) {
   const out = execFileSync(
     "git",
     ["diff", "--name-only", `${baseSha}..${headSha}`, "--", "src/agents/*.ts"],
-    { cwd: repoRoot, encoding: "utf8" },
+    {
+      cwd: repoRoot,
+      encoding: "utf8",
+    },
   );
   return out
     .split("\n")

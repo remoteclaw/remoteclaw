@@ -443,11 +443,7 @@ export function renderConfigForm(props: ConfigFormProps) {
                   <span class="config-section-card__icon">${getSectionIcon(sectionKey)}</span>
                   <div class="config-section-card__titles">
                     <h3 class="config-section-card__title">${label}</h3>
-                    ${
-                      description
-                        ? html`<p class="config-section-card__desc">${description}</p>`
-                        : nothing
-                    }
+                    ${description ? html`<p class="config-section-card__desc">${description}</p>` : nothing}
                   </div>
                 </div>
                 <div class="config-section-card__content">
@@ -478,11 +474,7 @@ export function renderConfigForm(props: ConfigFormProps) {
                   <span class="config-section-card__icon">${getSectionIcon(key)}</span>
                   <div class="config-section-card__titles">
                     <h3 class="config-section-card__title">${meta.label}</h3>
-                    ${
-                      meta.description
-                        ? html`<p class="config-section-card__desc">${meta.description}</p>`
-                        : nothing
-                    }
+                    ${meta.description ? html`<p class="config-section-card__desc">${meta.description}</p>` : nothing}
                   </div>
                 </div>
                 <div class="config-section-card__content">

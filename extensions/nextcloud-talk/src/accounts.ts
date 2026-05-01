@@ -91,7 +91,9 @@ function resolveNextcloudTalkSecret(
     const fileSecret = tryReadSecretFileSync(
       merged.botSecretFile,
       "Nextcloud Talk bot secret file",
-      { rejectSymlink: true },
+      {
+        rejectSymlink: true,
+      },
     );
     if (fileSecret) {
       return { secret: fileSecret, source: "secretFile" };

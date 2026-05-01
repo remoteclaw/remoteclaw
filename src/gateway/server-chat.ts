@@ -57,7 +57,10 @@ function normalizeHeartbeatChatFinalText(params: {
   runId: string;
   sourceRunId?: string;
   text: string;
-}): { suppress: boolean; text: string } {
+}): {
+  suppress: boolean;
+  text: string;
+} {
   if (!shouldHideHeartbeatChatOutput(params.runId, params.sourceRunId)) {
     return { suppress: false, text: params.text };
   }

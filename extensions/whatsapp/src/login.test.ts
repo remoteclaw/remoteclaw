@@ -1,8 +1,8 @@
 import { EventEmitter } from "node:events";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { resetLogger, setLoggerOverride } from "remoteclaw/plugin-sdk/runtime-env";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { resetLogger, setLoggerOverride } from "../../../src/logging.js";
 import { renderQrPngBase64 } from "./qr-image.js";
 
 vi.mock("./session.js", async () => {

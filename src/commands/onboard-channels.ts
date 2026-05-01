@@ -306,7 +306,11 @@ export async function setupChannels(
   }
 
   const { installedPlugins, catalogEntries, statusByChannel, statusLines } =
-    await collectChannelStatus({ cfg: next, options, accountOverrides });
+    await collectChannelStatus({
+      cfg: next,
+      options,
+      accountOverrides,
+    });
   if (!options?.skipStatusNote && statusLines.length > 0) {
     await prompter.note(statusLines.join("\n"), "Channel status");
   }

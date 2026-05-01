@@ -101,8 +101,7 @@ export function startLineWebhook(options: StartLineWebhookOptions): {
     typeof options.channelSecret === "string" ? options.channelSecret.trim() : "";
   if (!channelSecret) {
     throw new Error(
-      "LINE webhook mode requires a non-empty channel secret. " +
-        "Set channels.line.channelSecret in your config.",
+      "LINE webhook mode requires a non-empty channel secret. Set channels.line.channelSecret in your config.",
     );
   }
   const path = options.path ?? "/line/webhook";

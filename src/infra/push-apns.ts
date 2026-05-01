@@ -429,7 +429,12 @@ function createRemoteClawPushMetadata(params: {
   kind: "push.test" | "node.wake";
   nodeId: string;
   reason?: string;
-}): { kind: "push.test" | "node.wake"; nodeId: string; ts: number; reason?: string } {
+}): {
+  kind: "push.test" | "node.wake";
+  nodeId: string;
+  ts: number;
+  reason?: string;
+} {
   return {
     kind: params.kind,
     nodeId: params.nodeId,

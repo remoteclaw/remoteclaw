@@ -91,7 +91,10 @@ function createInvokeContext(params: {
   conversationId: string;
   uploadId: string;
   action: "accept" | "decline";
-}): { context: MSTeamsTurnContext; sendActivity: ReturnType<typeof vi.fn> } {
+}): {
+  context: MSTeamsTurnContext;
+  sendActivity: ReturnType<typeof vi.fn>;
+} {
   const sendActivity = vi.fn(async () => ({ id: "activity-id" }));
   const uploadInfo =
     params.action === "accept"

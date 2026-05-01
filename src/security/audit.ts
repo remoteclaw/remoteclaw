@@ -636,8 +636,7 @@ function collectGatewayConfigFindings(
         severity: "critical",
         title: "Trusted-proxy auth enabled but no trusted proxies configured",
         detail:
-          'gateway.auth.mode="trusted-proxy" but gateway.trustedProxies is empty. ' +
-          "All requests will be rejected.",
+          'gateway.auth.mode="trusted-proxy" but gateway.trustedProxies is empty. All requests will be rejected.',
         remediation: "Set gateway.trustedProxies to the IP(s) of your reverse proxy.",
       });
     }

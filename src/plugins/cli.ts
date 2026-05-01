@@ -30,9 +30,7 @@ export function registerPluginCliCommands(program: Command, cfg?: RemoteClawConf
       const overlaps = entry.commands.filter((command) => existingCommands.has(command));
       if (overlaps.length > 0) {
         log.debug(
-          `plugin CLI register skipped (${entry.pluginId}): command already registered (${overlaps.join(
-            ", ",
-          )})`,
+          `plugin CLI register skipped (${entry.pluginId}): command already registered (${overlaps.join(", ")})`,
         );
         continue;
       }

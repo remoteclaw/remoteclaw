@@ -445,9 +445,7 @@ function createTwilioReplayKey(params: {
   requestParams: URLSearchParams;
 }): string {
   const canonicalParams = buildCanonicalTwilioParamString(params.requestParams);
-  return `twilio:req:${sha256Hex(
-    `${params.verificationUrl}\n${canonicalParams}\n${params.signature}`,
-  )}`;
+  return `twilio:req:${sha256Hex(`${params.verificationUrl}\n${canonicalParams}\n${params.signature}`)}`;
 }
 
 function decodeBase64OrBase64Url(input: string): Buffer {
@@ -534,6 +532,8 @@ export function verifyTelnyxWebhook(
   try {
     const signedPayload = `${timestamp}|${ctx.rawBody}`;
     const signatureBuffer = decodeBase64OrBase64Url(signature);
+    // Canonicalize equivalent Base64/Base64URL encodings before replay hashing.
+    const canonicalSignature = signatureBuffer.toString("base64");
     const key = importEd25519PublicKey(publicKey);
 
     const isValid = crypto.verify(null, Buffer.from(signedPayload), key, signatureBuffer);
@@ -548,7 +548,7 @@ export function verifyTelnyxWebhook(
       return { ok: false, reason: "Timestamp too old" };
     }
 
-    const replayKey = `telnyx:${sha256Hex(`${timestamp}\n${signature}\n${ctx.rawBody}`)}`;
+    const replayKey = `telnyx:${sha256Hex(`${timestamp}\n${canonicalSignature}\n${ctx.rawBody}`)}`;
     const isReplay = markReplay(telnyxReplayCache, replayKey);
     return { ok: true, isReplay, verifiedRequestKey: replayKey };
   } catch (err) {

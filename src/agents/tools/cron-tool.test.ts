@@ -25,7 +25,10 @@ describe("cron tool", () => {
     return (
       (callGatewayMock.mock.calls[index]?.[0] as
         | { method?: string; params?: Record<string, unknown> }
-        | undefined) ?? { method: undefined, params: undefined }
+        | undefined) ?? {
+        method: undefined,
+        params: undefined,
+      }
     );
   }
 

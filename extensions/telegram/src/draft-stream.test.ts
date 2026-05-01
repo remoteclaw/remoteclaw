@@ -332,7 +332,10 @@ describe("createTelegramDraftStream", () => {
     };
     const stream = createThreadedDraftStream(
       api as unknown as ReturnType<typeof createMockDraftApi>,
-      { id: 42, scope: "dm" },
+      {
+        id: 42,
+        scope: "dm",
+      },
     );
 
     stream.update("Message A");

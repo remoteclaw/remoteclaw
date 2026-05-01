@@ -305,7 +305,10 @@ export const msteamsOnboardingAdapter: ChannelOnboardingAdapter = {
       } else {
         let entries = accessConfig.entries
           .map((entry) => parseMSTeamsTeamEntry(entry))
-          .filter(Boolean) as Array<{ teamKey: string; channelKey?: string }>;
+          .filter(Boolean) as Array<{
+          teamKey: string;
+          channelKey?: string;
+        }>;
         if (accessConfig.entries.length > 0 && resolveMSTeamsCredentials(next.channels?.msteams)) {
           try {
             const resolved = await resolveMSTeamsChannelAllowlist({

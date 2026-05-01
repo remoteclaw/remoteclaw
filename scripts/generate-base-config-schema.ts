@@ -44,7 +44,11 @@ export function writeBaseConfigSchemaModule(params?: {
   repoRoot?: string;
   outputPath?: string;
   check?: boolean;
-}): { changed: boolean; wrote: boolean; outputPath: string } {
+}): {
+  changed: boolean;
+  wrote: boolean;
+  outputPath: string;
+} {
   const repoRoot = path.resolve(params?.repoRoot ?? REPO_ROOT);
   const outputPath = path.resolve(repoRoot, params?.outputPath ?? DEFAULT_OUTPUT_PATH);
   const current = readIfExists(outputPath);

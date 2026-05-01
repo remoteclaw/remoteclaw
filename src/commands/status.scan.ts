@@ -216,7 +216,10 @@ export async function scanStatus(
 
       progress.setLabel("Probing gateway…");
       const { gatewayConnection, remoteUrlMissing, gatewayMode, gatewayProbe } =
-        await resolveGatewayProbeSnapshot({ cfg, opts });
+        await resolveGatewayProbeSnapshot({
+          cfg,
+          opts,
+        });
       const gatewayReachable = gatewayProbe?.ok === true;
       const gatewaySelf = gatewayProbe?.presence
         ? pickGatewaySelfPresence(gatewayProbe.presence)

@@ -59,7 +59,10 @@ function canonicalizeToolGatewayWsUrl(raw: string): { origin: string; key: strin
 function validateGatewayUrlOverrideForAgentTools(params: {
   cfg: ReturnType<typeof loadConfig>;
   urlOverride: string;
-}): { url: string; target: GatewayOverrideTarget } {
+}): {
+  url: string;
+  target: GatewayOverrideTarget;
+} {
   const { cfg } = params;
   const port = resolveGatewayPort(cfg);
   const localAllowed = new Set<string>([

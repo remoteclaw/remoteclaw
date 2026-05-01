@@ -180,9 +180,7 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
     pluginId: string;
     error: unknown;
   }): never | void => {
-    const msg = `[hooks] ${params.hookName} handler from ${params.pluginId} failed: ${String(
-      params.error,
-    )}`;
+    const msg = `[hooks] ${params.hookName} handler from ${params.pluginId} failed: ${String(params.error)}`;
     if (catchErrors) {
       logger?.error(msg);
       return;

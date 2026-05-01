@@ -170,11 +170,7 @@ export function renderNostrProfileForm(params: {
         <div style="font-size: 12px; color: var(--text-muted);">Account: ${accountId}</div>
       </div>
 
-      ${
-        state.error
-          ? html`<div class="callout danger" style="margin-bottom: 12px;">${state.error}</div>`
-          : nothing
-      }
+      ${state.error ? html`<div class="callout danger" style="margin-bottom: 12px;">${state.error}</div>` : nothing}
 
       ${
         state.success

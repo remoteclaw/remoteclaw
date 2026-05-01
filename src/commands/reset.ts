@@ -142,7 +142,9 @@ export async function resetCommand(runtime: RuntimeEnv, opts: ResetOptions) {
     await removeStateAndLinkedPaths(
       { stateDir, configPath, oauthDir, configInsideState, oauthInsideState },
       runtime,
-      { dryRun },
+      {
+        dryRun,
+      },
     );
     await removeWorkspaceDirs(workspaceDirs, runtime, { dryRun });
     runtime.log(`Next: ${formatCliCommand("remoteclaw onboard --install-daemon")}`);

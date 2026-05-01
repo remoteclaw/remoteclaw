@@ -378,7 +378,9 @@ async function loadWebMediaInternal(
         throw new LocalMediaAccessError(
           "invalid-path",
           `Local media path is not safe to read: ${mediaUrl}`,
-          { cause: err },
+          {
+            cause: err,
+          },
         );
       }
       throw err;

@@ -104,9 +104,7 @@ export async function noteSecurityWarnings(cfg: RemoteClawConfig) {
             ]
           : [
               `  Fix: ${formatCliCommand("remoteclaw doctor --fix")} to generate a token`,
-              `  Or set token directly: ${formatCliCommand(
-                "remoteclaw config set gateway.auth.mode token",
-              )}`,
+              `  Or set token directly: ${formatCliCommand("remoteclaw config set gateway.auth.mode token")}`,
             ];
       warnings.push(
         `- CRITICAL: Gateway bound to ${bindDescriptor} without authentication.`,

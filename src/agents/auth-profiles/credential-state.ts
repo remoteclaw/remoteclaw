@@ -24,7 +24,10 @@ function hasNonEmptyString(value: unknown): boolean {
 export function evaluateStoredCredentialEligibility(params: {
   credential: AuthProfileCredential;
   now?: number;
-}): { eligible: boolean; reasonCode: AuthCredentialReasonCode } {
+}): {
+  eligible: boolean;
+  reasonCode: AuthCredentialReasonCode;
+} {
   const now = params.now ?? Date.now();
   const credential = params.credential;
 

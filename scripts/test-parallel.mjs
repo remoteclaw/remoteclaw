@@ -195,9 +195,7 @@ const shardIndexOverride = (() => {
 
 if (shardIndexOverride !== null && shardCount <= 1) {
   console.error(
-    `[test-parallel] REMOTECLAW_TEST_SHARD_INDEX=${String(
-      shardIndexOverride,
-    )} requires REMOTECLAW_TEST_SHARDS>1.`,
+    `[test-parallel] REMOTECLAW_TEST_SHARD_INDEX=${String(shardIndexOverride)} requires REMOTECLAW_TEST_SHARDS>1.`,
   );
   process.exit(2);
 }

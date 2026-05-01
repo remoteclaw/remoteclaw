@@ -130,7 +130,9 @@ async function invokeSecureGatewayRoute(params: { gatewayAuthSatisfied: boolean 
     { url: "/plugin/secure/report" } as IncomingMessage,
     res,
     undefined,
-    { gatewayAuthSatisfied: params.gatewayAuthSatisfied },
+    {
+      gatewayAuthSatisfied: params.gatewayAuthSatisfied,
+    },
   );
   return { handled, exactPluginHandler, prefixGatewayHandler };
 }

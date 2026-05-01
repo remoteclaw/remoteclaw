@@ -80,10 +80,7 @@ export function registerDirectoryCli(program: Command) {
             "remoteclaw directory groups members --channel discord --group-id <id>",
             "List members for a specific group.",
           ],
-        ])}\n\n${theme.muted("Docs:")} ${formatDocsLink(
-          "/cli/directory",
-          "docs.remoteclaw.org/cli/directory",
-        )}\n`,
+        ])}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/directory", "docs.remoteclaw.org/cli/directory")}\n`,
     )
     .action(() => {
       directory.help({ error: true });

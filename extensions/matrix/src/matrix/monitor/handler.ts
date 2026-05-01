@@ -270,9 +270,7 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
       // group settings (skills, systemPrompt, autoReply) even when a wildcard entry exists.
       const roomConfig = isRoom ? roomConfigInfo?.config : undefined;
       const roomMatchMeta = roomConfigInfo
-        ? `matchKey=${roomConfigInfo.matchKey ?? "none"} matchSource=${
-            roomConfigInfo.matchSource ?? "none"
-          }`
+        ? `matchKey=${roomConfigInfo.matchKey ?? "none"} matchSource=${roomConfigInfo.matchSource ?? "none"}`
         : "matchKey=none matchSource=none";
 
       if (isRoom) {

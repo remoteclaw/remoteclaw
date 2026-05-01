@@ -165,6 +165,8 @@ remoteclaw devices list \
   --token "$(sed -n 's/^REMOTECLAW_GATEWAY_TOKEN=//p' ~/.remoteclaw/.env | head -n1)"
 ```
 
+<a id="podman--tailscale"></a>
+
 ## Podman + Tailscale
 
 For HTTPS or remote browser access, follow the main Tailscale docs.

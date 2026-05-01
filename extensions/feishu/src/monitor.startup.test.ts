@@ -177,7 +177,9 @@ describe("Feishu monitor startup preflight", () => {
           options.abortSignal?.addEventListener(
             "abort",
             () => resolve({ ok: false, error: "probe aborted" }),
-            { once: true },
+            {
+              once: true,
+            },
           );
         });
       },

@@ -5,7 +5,7 @@ Twitch channel plugin for RemoteClaw.
 ## Install (local checkout)
 
 ```bash
-remoteclaw plugins install ./extensions/twitch
+remoteclaw plugins install ./path/to/local/twitch-plugin
 ```
 
 ## Install (npm)

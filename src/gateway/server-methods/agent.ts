@@ -734,9 +734,7 @@ export const agentHandlers: GatewayRequestHandlers = {
         undefined,
         errorShape(
           ErrorCodes.INVALID_REQUEST,
-          `invalid agent.identity.get params: ${formatValidationErrors(
-            validateAgentIdentityParams.errors,
-          )}`,
+          `invalid agent.identity.get params: ${formatValidationErrors(validateAgentIdentityParams.errors)}`,
         ),
       );
       return;

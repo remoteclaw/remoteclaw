@@ -189,7 +189,9 @@ async function buildDiscordSendError(
   if (code === DISCORD_CANNOT_DM) {
     return new DiscordSendError(
       "discord dm failed: user blocks dms or privacy settings disallow it",
-      { kind: "dm-blocked" },
+      {
+        kind: "dm-blocked",
+      },
     );
   }
   if (code !== DISCORD_MISSING_PERMISSIONS) {

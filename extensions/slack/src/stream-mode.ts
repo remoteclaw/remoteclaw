@@ -39,7 +39,11 @@ export function applyAppendOnlyStreamUpdate(params: {
   incoming: string;
   rendered: string;
   source: string;
-}): { rendered: string; source: string; changed: boolean } {
+}): {
+  rendered: string;
+  source: string;
+  changed: boolean;
+} {
   const incoming = params.incoming.trimEnd();
   if (!incoming) {
     return { rendered: params.rendered, source: params.source, changed: false };

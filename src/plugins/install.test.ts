@@ -477,7 +477,9 @@ describe("installPluginFromArchive", () => {
     }
     const manifest = JSON.parse(
       fs.readFileSync(path.join(second.targetDir, "package.json"), "utf-8"),
-    ) as { version?: string };
+    ) as {
+      version?: string;
+    };
     expect(manifest.version).toBe("0.0.2");
   });
 

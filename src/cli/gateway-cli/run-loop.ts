@@ -214,8 +214,7 @@ export async function runGatewayLoop(params: {
         const errMsg = err instanceof Error ? err.message : String(err);
         const errStack = err instanceof Error && err.stack ? `\n${err.stack}` : "";
         gatewayLog.error(
-          `gateway startup failed: ${errMsg}. ` +
-            `Process will stay alive; fix the issue and restart.${errStack}`,
+          `gateway startup failed: ${errMsg}. Process will stay alive; fix the issue and restart.${errStack}`,
         );
       }
       await new Promise<void>((resolve) => {

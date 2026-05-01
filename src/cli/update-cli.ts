@@ -133,9 +133,7 @@ ${theme.muted("Docs:")} ${formatDocsLink("/cli/update", "docs.remoteclaw.org/cli
           ["remoteclaw update status --timeout 10", "Custom timeout."],
         ])}\n\n${theme.heading("Notes:")}\n${theme.muted(
           "- Shows current update channel (stable/beta/next) and source",
-        )}\n\n${theme.muted(
-          "Docs:",
-        )} ${formatDocsLink("/cli/update", "docs.remoteclaw.org/cli/update")}`,
+        )}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/update", "docs.remoteclaw.org/cli/update")}`,
     )
     .action(async (opts, command) => {
       try {

@@ -117,7 +117,9 @@ describe("waitForPortBindable", () => {
     mockCreateServer.mockReturnValue(makeErrServer("EACCES"));
     await expect(
       waitForPortBindable(80, { timeoutMs: 5000, intervalMs: 50 }),
-    ).rejects.toMatchObject({ code: "EACCES" });
+    ).rejects.toMatchObject({
+      code: "EACCES",
+    });
     // Only one probe should have been attempted — no spinning through the retry loop.
     expect(mockCreateServer).toHaveBeenCalledTimes(1);
   });

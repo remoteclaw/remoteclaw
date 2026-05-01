@@ -200,9 +200,7 @@ function buildSlackCommandArgMenuBlocks(params: {
       ? [
           {
             type: "actions",
-            block_id: `${SLACK_EXTERNAL_ARG_MENU_PREFIX}${params.createExternalMenuToken(
-              encodedChoices,
-            )}`,
+            block_id: `${SLACK_EXTERNAL_ARG_MENU_PREFIX}${params.createExternalMenuToken(encodedChoices)}`,
             elements: [
               {
                 type: "external_select",

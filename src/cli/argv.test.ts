@@ -125,7 +125,7 @@ describe("argv helpers", () => {
     },
     {
       name: "help after -- terminator",
-      argv: ["node", "remoteclaw", "nodes", "run", "--", "git", "--help"],
+      argv: ["node", "remoteclaw", "nodes", "invoke", "--", "device.status", "--help"],
       expected: false,
     },
     {

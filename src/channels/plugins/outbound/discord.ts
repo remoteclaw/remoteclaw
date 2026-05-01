@@ -30,7 +30,10 @@ function resolveDiscordOutboundTarget(params: {
 function resolveDiscordWebhookIdentity(params: {
   identity?: OutboundIdentity;
   binding: ThreadBindingRecord;
-}): { username?: string; avatarUrl?: string } {
+}): {
+  username?: string;
+  avatarUrl?: string;
+} {
   const usernameRaw = params.identity?.name?.trim();
   const fallbackUsername = params.binding.label?.trim() || params.binding.agentId;
   const username = (usernameRaw || fallbackUsername || "").slice(0, 80) || undefined;

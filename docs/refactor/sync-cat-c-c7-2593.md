@@ -89,7 +89,9 @@ const transportTimeoutMs = Math.max(
 const decisionResult = (await callGatewayCli(
   "exec.approval.request",
   ...{ transportTimeoutMs },
-)) as { decision?: string } | null;
+)) as {
+  decision?: string;
+} | null;
 ```
 
 The fork's `callGatewayCli` (`src/cli/nodes-cli/rpc.ts:16-37`) is byte-identical to upstream and accepts the same `{ transportTimeoutMs }` 4th-arg `callOpts` parameter. The fix logic is fork-shared; only the constant and its location differ.

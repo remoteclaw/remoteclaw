@@ -25,7 +25,6 @@ let resolveWindowsUserPrincipal: typeof import("./windows-acl.js").resolveWindow
 let summarizeWindowsAcl: typeof import("./windows-acl.js").summarizeWindowsAcl;
 
 beforeAll(async () => {
-  vi.resetModules();
   ({
     createIcaclsResetCommand,
     formatIcaclsResetCommand,
@@ -182,8 +181,7 @@ Successfully processed 1 files`;
 
     it("parses SID-format principals", () => {
       const output =
-        "C:\\test\\file.txt S-1-5-18:(F)\n" +
-        "                  S-1-5-21-1824257776-4070701511-781240313-1001:(F)";
+        "C:\\test\\file.txt S-1-5-18:(F)\n                  S-1-5-21-1824257776-4070701511-781240313-1001:(F)";
       const entries = parseIcaclsOutput(output, "C:\\test\\file.txt");
       expect(entries).toHaveLength(2);
       expect(entries[0].principal).toBe("S-1-5-18");

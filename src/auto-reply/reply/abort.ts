@@ -216,7 +216,9 @@ function normalizeRequesterSessionKey(
 export function stopSubagentsForRequester(params: {
   cfg: RemoteClawConfig;
   requesterSessionKey?: string;
-}): { stopped: number } {
+}): {
+  stopped: number;
+} {
   const requesterKey = normalizeRequesterSessionKey(params.cfg, params.requesterSessionKey);
   if (!requesterKey) {
     return { stopped: 0 };

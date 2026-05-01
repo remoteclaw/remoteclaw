@@ -80,7 +80,9 @@ describe("git commit resolution", () => {
     execFileSync(
       "git",
       ["-c", "user.name=test", "-c", "user.email=test@example.com", "commit", "-q", "-m", "init"],
-      { cwd: otherRepo },
+      {
+        cwd: otherRepo,
+      },
     );
     const otherHead = execFileSync("git", ["rev-parse", "--short=7", "HEAD"], {
       cwd: otherRepo,
@@ -187,7 +189,9 @@ describe("git commit resolution", () => {
     execFileSync(
       "git",
       ["-c", "user.name=test", "-c", "user.email=test@example.com", "commit", "-q", "-m", "init"],
-      { cwd: hostRepo },
+      {
+        cwd: hostRepo,
+      },
     );
 
     const packageRoot = path.join(hostRepo, "node_modules", "remoteclaw");

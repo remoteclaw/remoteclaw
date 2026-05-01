@@ -224,11 +224,7 @@ function renderGenericChannelCard(
             </div>
           `
       }
-      ${
-        lastError
-          ? html`<div class="callout danger" style="margin-top: 12px;">${lastError}</div>`
-          : nothing
-      }
+      ${lastError ? html`<div class="callout danger" style="margin-top: 12px;">${lastError}</div>` : nothing}
       ${renderChannelConfigSection({ channelId: key, props })}
     </div>
   `;
@@ -311,11 +307,7 @@ function renderGenericAccount(account: ChannelAccountSnapshot) {
             >${account.lastInboundAt ? formatRelativeTimestamp(account.lastInboundAt) : "n/a"}</span
           >
         </div>
-        ${
-          account.lastError
-            ? html` <div class="account-card-error">${account.lastError}</div> `
-            : nothing
-        }
+        ${account.lastError ? html` <div class="account-card-error">${account.lastError}</div> ` : nothing}
       </div>
     </div>
   `;

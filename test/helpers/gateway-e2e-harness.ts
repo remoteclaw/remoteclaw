@@ -96,8 +96,7 @@ async function waitForPortOpen(
   const stdout = chunksOut.join("");
   const stderr = chunksErr.join("");
   throw new Error(
-    `timeout waiting for gateway to listen on port ${port}\n` +
-      `--- stdout ---\n${stdout}\n--- stderr ---\n${stderr}`,
+    `timeout waiting for gateway to listen on port ${port}\n--- stdout ---\n${stdout}\n--- stderr ---\n${stderr}`,
   );
 }
 

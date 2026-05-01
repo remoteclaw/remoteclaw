@@ -690,7 +690,10 @@ function createButtonComponent(params: {
   spec: DiscordComponentButtonSpec;
   componentId?: string;
   modalId?: string;
-}): { component: Button | LinkButton; entry?: DiscordComponentEntry } {
+}): {
+  component: Button | LinkButton;
+  entry?: DiscordComponentEntry;
+} {
   const style = mapButtonStyle(params.spec.style);
   const isLink = style === ButtonStyle.Link || Boolean(params.spec.url);
   if (isLink) {

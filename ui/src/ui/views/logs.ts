@@ -92,8 +92,7 @@ export function renderLogs(props: LogsProps) {
           <input
             type="checkbox"
             .checked=${props.autoFollow}
-            @change=${(e: Event) =>
-              props.onToggleAutoFollow((e.target as HTMLInputElement).checked)}
+            @change=${(e: Event) => props.onToggleAutoFollow((e.target as HTMLInputElement).checked)}
           />
         </label>
       </div>
@@ -105,8 +104,7 @@ export function renderLogs(props: LogsProps) {
               <input
                 type="checkbox"
                 .checked=${props.levelFilters[level]}
-                @change=${(e: Event) =>
-                  props.onLevelToggle(level, (e.target as HTMLInputElement).checked)}
+                @change=${(e: Event) => props.onLevelToggle(level, (e.target as HTMLInputElement).checked)}
               />
               <span>${level}</span>
             </label>
@@ -114,11 +112,7 @@ export function renderLogs(props: LogsProps) {
         )}
       </div>
 
-      ${
-        props.file
-          ? html`<div class="muted" style="margin-top: 10px;">File: ${props.file}</div>`
-          : nothing
-      }
+      ${props.file ? html`<div class="muted" style="margin-top: 10px;">File: ${props.file}</div>` : nothing}
       ${
         props.truncated
           ? html`
@@ -126,11 +120,7 @@ export function renderLogs(props: LogsProps) {
             `
           : nothing
       }
-      ${
-        props.error
-          ? html`<div class="callout danger" style="margin-top: 10px;">${props.error}</div>`
-          : nothing
-      }
+      ${props.error ? html`<div class="callout danger" style="margin-top: 10px;">${props.error}</div>` : nothing}
 
       <div class="log-stream" style="margin-top: 12px;" @scroll=${props.onScroll}>
         ${

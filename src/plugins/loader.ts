@@ -175,7 +175,11 @@ function validatePluginConfig(params: {
   schema?: Record<string, unknown>;
   cacheKey?: string;
   value?: unknown;
-}): { ok: boolean; value?: Record<string, unknown>; errors?: string[] } {
+}): {
+  ok: boolean;
+  value?: Record<string, unknown>;
+  errors?: string[];
+} {
   const schema = params.schema;
   if (!schema) {
     return { ok: true, value: params.value as Record<string, unknown> | undefined };

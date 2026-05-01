@@ -104,11 +104,7 @@ export function renderAgents(props: AgentsProps) {
             ${props.loading ? "Loading…" : "Refresh"}
           </button>
         </div>
-        ${
-          props.error
-            ? html`<div class="callout danger" style="margin-top: 12px;">${props.error}</div>`
-            : nothing
-        }
+        ${props.error ? html`<div class="callout danger" style="margin-top: 12px;">${props.error}</div>` : nothing}
         <div class="agent-list" style="margin-top: 12px;">
           ${
             agents.length === 0
@@ -144,10 +140,7 @@ export function renderAgents(props: AgentsProps) {
                 </div>
               `
             : html`
-                ${renderAgentHeader(
-                  selectedAgent,
-                  props.agentIdentityById[selectedAgent.id] ?? null,
-                )}
+                ${renderAgentHeader(selectedAgent, props.agentIdentityById[selectedAgent.id] ?? null)}
                 ${renderAgentTabs(props.activePanel, (panel) => props.onSelectPanel(panel))}
                 ${
                   props.activePanel === "overview"
@@ -372,8 +365,7 @@ function renderAgentOverview(params: {
             <select
               .value=${effectivePrimary ?? ""}
               ?disabled=${!configForm || configLoading || configSaving}
-              @change=${(e: Event) =>
-                onModelChange(agent.id, (e.target as HTMLSelectElement).value || null)}
+              @change=${(e: Event) => onModelChange(agent.id, (e.target as HTMLSelectElement).value || null)}
             >
               ${html`
                 <option value="">

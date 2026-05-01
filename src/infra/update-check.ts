@@ -150,7 +150,9 @@ export async function checkGitUpdateStatus(params: {
     upstream && upstream.length > 0
       ? await runCommandWithTimeout(
           ["git", "-C", root, "rev-list", "--left-right", "--count", `HEAD...${upstream}`],
-          { timeoutMs },
+          {
+            timeoutMs,
+          },
         ).catch(() => null)
       : null;
 

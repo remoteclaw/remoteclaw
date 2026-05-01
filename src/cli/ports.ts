@@ -227,7 +227,9 @@ export function forceFreePort(port: number): PortProcess[] {
     } catch (err) {
       throw new Error(
         `failed to kill pid ${proc.pid}${proc.command ? ` (${proc.command})` : ""}: ${String(err)}`,
-        { cause: err },
+        {
+          cause: err,
+        },
       );
     }
   }
@@ -241,7 +243,9 @@ function killPids(listeners: PortProcess[], signal: NodeJS.Signals) {
     } catch (err) {
       throw new Error(
         `failed to kill pid ${proc.pid}${proc.command ? ` (${proc.command})` : ""}: ${String(err)}`,
-        { cause: err },
+        {
+          cause: err,
+        },
       );
     }
   }

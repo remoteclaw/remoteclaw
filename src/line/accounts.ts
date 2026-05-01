@@ -22,7 +22,10 @@ function resolveToken(params: {
   accountId: string;
   baseConfig?: LineConfig;
   accountConfig?: LineAccountConfig;
-}): { token: string; tokenSource: LineTokenSource } {
+}): {
+  token: string;
+  tokenSource: LineTokenSource;
+} {
   const { accountId, baseConfig, accountConfig } = params;
 
   // Check account-level config first

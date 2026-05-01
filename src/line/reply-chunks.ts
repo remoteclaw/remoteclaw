@@ -65,7 +65,9 @@ export async function sendLineReplyChunks(
             params.to,
             remaining[i],
             params.quickReplies!,
-            { accountId: params.accountId },
+            {
+              accountId: params.accountId,
+            },
           );
         } else {
           await params.pushMessageLine(params.to, remaining[i], {
@@ -88,7 +90,9 @@ export async function sendLineReplyChunks(
         params.to,
         params.chunks[i],
         params.quickReplies!,
-        { accountId: params.accountId },
+        {
+          accountId: params.accountId,
+        },
       );
     } else {
       await params.pushMessageLine(params.to, params.chunks[i], {

@@ -24,7 +24,9 @@ function loadProfileEnv(): void {
     const output = execFileSync(
       "/bin/bash",
       ["-lc", `set -a; source "${profilePath}" >/dev/null 2>&1; env -0`],
-      { encoding: "utf8" },
+      {
+        encoding: "utf8",
+      },
     );
     const entries = output.split("\0");
     let applied = 0;

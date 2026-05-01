@@ -19,7 +19,11 @@ async function getRootFolderToken(client: Lark.Client): Promise<string> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accessing internal SDK property
   const res = (await (client as any).httpInstance.get(
     `${domain}/open-apis/drive/explorer/v2/root_folder/meta`,
-  )) as { code: number; msg?: string; data?: { token?: string } };
+  )) as {
+    code: number;
+    msg?: string;
+    data?: { token?: string };
+  };
   if (res.code !== 0) {
     throw new Error(res.msg ?? "Failed to get root folder");
   }

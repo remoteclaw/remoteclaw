@@ -137,7 +137,9 @@ export async function fetchRemoteMedia(options: FetchMediaOptions): Promise<Fetc
         } catch (fallbackErr) {
           const combined = new Error(
             `Primary fetch failed and fallback fetch also failed for ${sourceUrl}`,
-            { cause: fallbackErr },
+            {
+              cause: fallbackErr,
+            },
           );
           (combined as Error & { primaryError?: unknown }).primaryError = err;
           throw combined;

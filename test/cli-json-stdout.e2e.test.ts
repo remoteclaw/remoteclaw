@@ -27,7 +27,11 @@ describe("cli json stdout contract", () => {
         const result = spawnSync(
           process.execPath,
           [entry, "update", "status", "--json", "--timeout", "1"],
-          { cwd: process.cwd(), env, encoding: "utf8" },
+          {
+            cwd: process.cwd(),
+            env,
+            encoding: "utf8",
+          },
         );
 
         expect(result.status).toBe(0);

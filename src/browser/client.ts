@@ -162,7 +162,9 @@ export async function browserTabs(
   const q = buildProfileQuery(opts?.profile);
   const res = await fetchBrowserJson<{ running: boolean; tabs: BrowserTab[] }>(
     withBaseUrl(baseUrl, `/tabs${q}`),
-    { timeoutMs: 3000 },
+    {
+      timeoutMs: 3000,
+    },
   );
   return res.tabs ?? [];
 }

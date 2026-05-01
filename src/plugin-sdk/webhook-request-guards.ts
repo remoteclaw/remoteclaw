@@ -68,7 +68,9 @@ function respondWebhookBodyReadError(params: {
   res: ServerResponse;
   code: string;
   invalidMessage?: string;
-}): { ok: false } {
+}): {
+  ok: false;
+} {
   const { res, code, invalidMessage } = params;
   if (code === "PAYLOAD_TOO_LARGE") {
     res.statusCode = 413;

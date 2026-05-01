@@ -289,7 +289,10 @@ export function parseBindingSpecs(params: {
   agentId: string;
   specs?: string[];
   config: RemoteClawConfig;
-}): { bindings: AgentRouteBinding[]; errors: string[] } {
+}): {
+  bindings: AgentRouteBinding[];
+  errors: string[];
+} {
   const bindings: AgentRouteBinding[] = [];
   const errors: string[] = [];
   const specs = params.specs ?? [];

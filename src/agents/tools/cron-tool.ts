@@ -215,6 +215,8 @@ export function createCronTool(opts?: CronToolOptions, deps?: CronToolDeps): Any
     ownerOnly: true,
     description: `Manage Gateway cron jobs (status/list/add/update/remove/run/runs) and send wake events.
 
+Main-session cron jobs enqueue system events for heartbeat handling. Isolated cron jobs create background task runs that appear in \`remoteclaw tasks\`.
+
 ACTIONS:
 - status: Check cron scheduler status
 - list: List jobs (use includeDisabled:true to include disabled)

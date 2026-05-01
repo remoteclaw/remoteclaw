@@ -442,9 +442,7 @@ export function renderConfig(props: ConfigProps) {
         <div class="config-sidebar__header">
           <div class="config-sidebar__title">Settings</div>
           <span
-            class="pill pill--sm ${
-              validity === "valid" ? "pill--ok" : validity === "invalid" ? "pill--danger" : ""
-            }"
+            class="pill pill--sm ${validity === "valid" ? "pill--ok" : validity === "invalid" ? "pill--danger" : ""}"
             >${validity}</span
           >
         </div>
@@ -713,9 +711,7 @@ export function renderConfig(props: ConfigProps) {
                 ${subsections.map(
                   (entry) => html`
                     <button
-                      class="config-subnav__item ${
-                        effectiveSubsection === entry.key ? "active" : ""
-                      }"
+                      class="config-subnav__item ${effectiveSubsection === entry.key ? "active" : ""}"
                       title=${entry.description || entry.label}
                       @click=${() => props.onSubsectionChange(entry.key)}
                     >
@@ -768,8 +764,7 @@ export function renderConfig(props: ConfigProps) {
                   <span>Raw JSON5</span>
                   <textarea
                     .value=${props.raw}
-                    @input=${(e: Event) =>
-                      props.onRawChange((e.target as HTMLTextAreaElement).value)}
+                    @input=${(e: Event) => props.onRawChange((e.target as HTMLTextAreaElement).value)}
                   ></textarea>
                 </label>
               `

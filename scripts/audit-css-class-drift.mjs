@@ -517,7 +517,10 @@ function clusterByRemovingCommit(orphans) {
       log = execFileSync(
         "git",
         ["log", "--all", "--oneline", "-S", `.${className}`, "--", "ui/src/styles/"],
-        { encoding: "utf8", cwd: repoRoot },
+        {
+          encoding: "utf8",
+          cwd: repoRoot,
+        },
       ).trim();
     } catch {
       log = "";

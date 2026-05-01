@@ -3,6 +3,9 @@ import { baseConfigSnapshot, createTestRuntime } from "./test-runtime-config-hel
 
 const readConfigFileSnapshotMock = vi.hoisted(() => vi.fn());
 const writeConfigFileMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+const replaceConfigFileMock = vi.hoisted(() =>
+  vi.fn(async (params: { nextConfig: unknown }) => await writeConfigFileMock(params.nextConfig)),
+);
 
 const wizardMocks = vi.hoisted(() => ({
   createClackPrompter: vi.fn(),
@@ -15,6 +18,7 @@ vi.mock("../config/config.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../config/config.js")>()),
   readConfigFileSnapshot: readConfigFileSnapshotMock,
   writeConfigFile: writeConfigFileMock,
+  replaceConfigFile: replaceConfigFileMock,
 }));
 
 vi.mock("../wizard/clack-prompter.js", () => ({
@@ -40,6 +44,7 @@ describe("agents add command", () => {
   beforeEach(() => {
     readConfigFileSnapshotMock.mockClear();
     writeConfigFileMock.mockClear();
+    replaceConfigFileMock.mockClear();
     wizardMocks.createClackPrompter.mockClear();
     setupChannelsMock.mockClear();
     ensureWorkspaceAndSessionsMock.mockClear();

@@ -326,7 +326,9 @@ export async function gatherDaemonStatus(
 
   const extraServices = await findExtraGatewayServices(
     process.env as Record<string, string | undefined>,
-    { deep: Boolean(opts.deep) },
+    {
+      deep: Boolean(opts.deep),
+    },
   ).catch(() => []);
 
   const timeoutMs = parseStrictPositiveInteger(opts.rpc.timeout ?? "10000") ?? 10_000;

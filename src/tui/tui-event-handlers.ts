@@ -27,6 +27,7 @@ type EventHandlerContext = {
   setActivityStatus: (text: string) => void;
   refreshSessionInfo?: () => Promise<void>;
   loadHistory?: () => Promise<void>;
+  noteLocalRunId?: (runId: string) => void;
   isLocalRunId?: (runId: string) => boolean;
   forgetLocalRunId?: (runId: string) => void;
   clearLocalRunIds?: () => void;
@@ -40,6 +41,7 @@ export function createEventHandlers(context: EventHandlerContext) {
     setActivityStatus,
     refreshSessionInfo,
     loadHistory,
+    noteLocalRunId,
     isLocalRunId,
     forgetLocalRunId,
     clearLocalRunIds,
@@ -82,6 +84,7 @@ export function createEventHandlers(context: EventHandlerContext) {
     sessionRuns.clear();
     streamAssembler = new TuiStreamAssembler();
     pendingHistoryRefresh = false;
+    state.pendingOptimisticUserMessage = false;
     clearLocalRunIds?.();
   };
 
@@ -216,6 +219,10 @@ export function createEventHandlers(context: EventHandlerContext) {
     noteSessionRun(evt.runId);
     if (!state.activeChatRunId) {
       state.activeChatRunId = evt.runId;
+      if (state.pendingOptimisticUserMessage) {
+        noteLocalRunId?.(evt.runId);
+        state.pendingOptimisticUserMessage = false;
+      }
     }
     if (evt.state === "delta") {
       const displayText = streamAssembler.ingestDelta(evt.runId, evt.message, state.showThinking);

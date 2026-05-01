@@ -229,7 +229,9 @@ describe("channels command", () => {
     await channelsAddCommand(
       { channel: "whatsapp", account: "family", name: "Family Phone" },
       runtime,
-      { hasFlags: true },
+      {
+        hasFlags: true,
+      },
     );
 
     const next = getWrittenConfig<{

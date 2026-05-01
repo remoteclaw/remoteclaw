@@ -75,9 +75,7 @@ export function logWebhookProcessed(params: {
     diag.debug(
       `webhook processed: channel=${params.channel} type=${
         params.updateType ?? "unknown"
-      } chatId=${params.chatId ?? "unknown"} duration=${params.durationMs ?? 0}ms processed=${
-        webhookStats.processed
-      }`,
+      } chatId=${params.chatId ?? "unknown"} duration=${params.durationMs ?? 0}ms processed=${webhookStats.processed}`,
     );
   }
   emitDiagnosticEvent({
@@ -158,9 +156,7 @@ export function logMessageProcessed(params: {
       params.sessionId ?? "unknown"
     } sessionKey=${params.sessionKey ?? "unknown"} outcome=${params.outcome} duration=${
       params.durationMs ?? 0
-    }ms${params.reason ? ` reason=${params.reason}` : ""}${
-      params.error ? ` error="${params.error}"` : ""
-    }`;
+    }ms${params.reason ? ` reason=${params.reason}` : ""}${params.error ? ` error="${params.error}"` : ""}`;
     if (params.outcome === "error") {
       diag.error(payload);
     } else {
@@ -200,9 +196,7 @@ export function logSessionStateChange(
     diag.debug(
       `session state: sessionId=${state.sessionId ?? "unknown"} sessionKey=${
         state.sessionKey ?? "unknown"
-      } prev=${prevState} new=${params.state} reason="${params.reason ?? ""}" queueDepth=${
-        state.queueDepth
-      }`,
+      } prev=${prevState} new=${params.state} reason="${params.reason ?? ""}" queueDepth=${state.queueDepth}`,
     );
   }
   emitDiagnosticEvent({

@@ -406,7 +406,11 @@ export async function runServiceRestart(params: {
       const command = await params.service.readCommand(process.env);
       const serviceToken = command?.environment?.REMOTECLAW_GATEWAY_TOKEN;
       const cfg = await readBestEffortConfig();
-      const configToken = resolveGatewayTokenForDriftCheck({ cfg, env: process.env });
+      const driftEnv = {
+        ...process.env,
+        ...command?.environment,
+      };
+      const configToken = resolveGatewayTokenForDriftCheck({ cfg, env: driftEnv });
       const driftIssue = checkTokenDrift({ serviceToken, configToken });
       if (driftIssue) {
         const warning = driftIssue.detail

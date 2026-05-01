@@ -54,7 +54,9 @@ function resolveTargetAuthorParams(params: {
   targetAuthor?: string;
   targetAuthorUuid?: string;
   fallback?: string;
-}): { targetAuthor?: string } {
+}): {
+  targetAuthor?: string;
+} {
   const candidates = [params.targetAuthor, params.targetAuthorUuid, params.fallback];
   for (const candidate of candidates) {
     const raw = candidate?.trim();

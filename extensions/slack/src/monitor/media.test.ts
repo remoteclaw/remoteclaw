@@ -98,7 +98,9 @@ describe("fetchWithSlackAuth", () => {
     expect(mockFetch).toHaveBeenNthCalledWith(
       2,
       "https://cdn.slack-edge.com/presigned-url?sig=abc123",
-      { redirect: "follow" },
+      {
+        redirect: "follow",
+      },
     );
   });
 

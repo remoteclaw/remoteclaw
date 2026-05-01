@@ -379,17 +379,13 @@ function formatInteractionSelectionLabel(params: {
     if (params.summary.selectedLabels.length <= 3) {
       return params.summary.selectedLabels.join(", ");
     }
-    return `${params.summary.selectedLabels.slice(0, 3).join(", ")} +${
-      params.summary.selectedLabels.length - 3
-    }`;
+    return `${params.summary.selectedLabels.slice(0, 3).join(", ")} +${params.summary.selectedLabels.length - 3}`;
   }
   if (params.summary.selectedValues?.length) {
     if (params.summary.selectedValues.length <= 3) {
       return params.summary.selectedValues.join(", ");
     }
-    return `${params.summary.selectedValues.slice(0, 3).join(", ")} +${
-      params.summary.selectedValues.length - 3
-    }`;
+    return `${params.summary.selectedValues.slice(0, 3).join(", ")} +${params.summary.selectedValues.length - 3}`;
   }
   if (params.summary.selectedDate) {
     return params.summary.selectedDate;

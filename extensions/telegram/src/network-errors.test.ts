@@ -97,7 +97,9 @@ describe("isRecoverableTelegramNetworkError", () => {
     expect(
       isRecoverableTelegramNetworkError(
         new Error("Network request for 'sendMessage' failed after 2 attempts."),
-        { context: "send" },
+        {
+          context: "send",
+        },
       ),
     ).toBe(true);
   });

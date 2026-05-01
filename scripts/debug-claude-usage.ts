@@ -100,7 +100,11 @@ const readClaudeCliKeychain = (): {
     const raw = execFileSync(
       "security",
       ["find-generic-password", "-s", "Claude Code-credentials", "-w"],
-      { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 5000 },
+      {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+        timeout: 5000,
+      },
     );
     const parsed = JSON.parse(raw.trim()) as Record<string, unknown>;
     const oauth = parsed?.claudeAiOauth as Record<string, unknown> | undefined;

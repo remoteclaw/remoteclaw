@@ -564,9 +564,7 @@ async function processMessage(
               from: fromLabel,
               timestamp: entry.timestamp,
               envelope: envelopeOptions,
-              body: `${entry.sender}: ${entry.body}${
-                entry.messageId ? ` [id:${entry.messageId}]` : ""
-              }`,
+              body: `${entry.sender}: ${entry.body}${entry.messageId ? ` [id:${entry.messageId}]` : ""}`,
             }),
         })
       : body;

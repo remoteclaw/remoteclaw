@@ -294,7 +294,9 @@ export async function sendMessageMSTeams(
       const status = classification.statusCode ? ` (HTTP ${classification.statusCode})` : "";
       throw new Error(
         `msteams file send failed${status}: ${formatUnknownError(err)}${hint ? ` (${hint})` : ""}`,
-        { cause: err },
+        {
+          cause: err,
+        },
       );
     }
   }
@@ -344,7 +346,9 @@ async function sendTextWithMedia(
     const status = classification.statusCode ? ` (HTTP ${classification.statusCode})` : "";
     throw new Error(
       `msteams send failed${status}: ${formatUnknownError(err)}${hint ? ` (${hint})` : ""}`,
-      { cause: err },
+      {
+        cause: err,
+      },
     );
   }
 
@@ -407,7 +411,9 @@ async function sendProactiveActivity({
     const status = classification.statusCode ? ` (HTTP ${classification.statusCode})` : "";
     throw new Error(
       `${errorPrefix} failed${status}: ${formatUnknownError(err)}${hint ? ` (${hint})` : ""}`,
-      { cause: err },
+      {
+        cause: err,
+      },
     );
   }
 }

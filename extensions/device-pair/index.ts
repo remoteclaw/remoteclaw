@@ -423,9 +423,7 @@ export default function register(api: RemoteClawPluginApi) {
             autoNotifyArmed = await armPairNotifyOnce({ api, ctx });
           } catch (err) {
             api.logger.warn?.(
-              `device-pair: failed to arm one-shot pairing notify (${String(
-                (err as Error)?.message ?? err,
-              )})`,
+              `device-pair: failed to arm one-shot pairing notify (${String((err as Error)?.message ?? err)})`,
             );
           }
         }
@@ -463,9 +461,7 @@ export default function register(api: RemoteClawPluginApi) {
             }
           } catch (err) {
             api.logger.warn?.(
-              `device-pair: telegram QR send failed, falling back (${String(
-                (err as Error)?.message ?? err,
-              )})`,
+              `device-pair: telegram QR send failed, falling back (${String((err as Error)?.message ?? err)})`,
             );
           }
         }

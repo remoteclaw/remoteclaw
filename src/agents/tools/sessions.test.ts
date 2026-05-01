@@ -157,8 +157,7 @@ async function withStubbedStateDir<T>(
 describe("sanitizeTextContent", () => {
   it("strips minimax tool call XML and downgraded markers", () => {
     const input =
-      'Hello <invoke name="tool">payload</invoke></minimax:tool_call> ' +
-      "[Tool Call: foo (ID: 1)] world";
+      'Hello <invoke name="tool">payload</invoke></minimax:tool_call> [Tool Call: foo (ID: 1)] world';
     const result = sanitizeTextContent(input).trim();
     expect(result).toBe("Hello  world");
     expect(result).not.toContain("invoke");

@@ -73,7 +73,9 @@ export function resolveMatrixVoiceDecision(opts: {
   wantsVoice: boolean;
   contentType?: string;
   fileName?: string;
-}): { useVoice: boolean } {
+}): {
+  useVoice: boolean;
+} {
   if (!opts.wantsVoice) {
     return { useVoice: false };
   }

@@ -1977,7 +1977,9 @@ describe("subagent announce formatting", () => {
     expect(didAnnounce).toBe(true);
     expect(subagentRegistryMock.listSubagentRunsForRequester).toHaveBeenCalledWith(
       "agent:main:subagent:parent",
-      { requesterRunId: "run-parent-settled" },
+      {
+        requesterRunId: "run-parent-settled",
+      },
     );
     expect(agentSpy).toHaveBeenCalledTimes(1);
     const call = agentSpy.mock.calls[0]?.[0] as { params?: { message?: string } };

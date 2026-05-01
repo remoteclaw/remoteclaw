@@ -422,7 +422,9 @@ export async function maybeCreateDiscordAutoThread(
     try {
       const msg = (await params.client.rest.get(
         Routes.channelMessage(messageChannelId, params.message.id),
-      )) as { thread?: { id?: string } };
+      )) as {
+        thread?: { id?: string };
+      };
       const existingThreadId = msg?.thread?.id ? String(msg.thread.id) : "";
       if (existingThreadId) {
         logVerbose(

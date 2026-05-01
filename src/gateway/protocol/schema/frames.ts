@@ -160,5 +160,7 @@ export const EventFrameSchema = Type.Object(
 // blobs.
 export const GatewayFrameSchema = Type.Union(
   [RequestFrameSchema, ResponseFrameSchema, EventFrameSchema],
-  { discriminator: "type" },
+  {
+    discriminator: "type",
+  },
 );

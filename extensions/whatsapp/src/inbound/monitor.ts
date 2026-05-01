@@ -451,6 +451,20 @@ export async function monitorWebInbox(options: {
   };
   sock.ev.on("connection.update", handleConnectionUpdate);
 
+  void (async () => {
+    try {
+      const groups = await sock.groupFetchAllParticipating();
+      if (shouldLogVerbose()) {
+        logVerbose(`Hydrated ${Object.keys(groups ?? {}).length} participating groups on connect`);
+      }
+    } catch (err) {
+      const error = String(err);
+      inboundLogger.warn({ error }, "failed hydrating participating groups on connect");
+      inboundConsoleLog.warn(`Failed hydrating participating groups on connect: ${error}`);
+      logVerbose(`Failed to hydrate participating groups on connect: ${error}`);
+    }
+  })();
+
   const sendApi = createWebSendApi({
     sock: {
       sendMessage: (jid: string, content: AnyMessageContent) => sock.sendMessage(jid, content),

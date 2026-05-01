@@ -218,9 +218,7 @@ export async function startGatewayServer(
       await writeConfigFile(migrated);
       if (changes.length > 0) {
         log.info(
-          `gateway: migrated legacy config entries:\n${changes
-            .map((entry) => `- ${entry}`)
-            .join("\n")}`,
+          `gateway: migrated legacy config entries:\n${changes.map((entry) => `- ${entry}`).join("\n")}`,
         );
       }
     }
@@ -242,9 +240,7 @@ export async function startGatewayServer(
     try {
       await writeConfigFile(autoEnable.config);
       log.info(
-        `gateway: auto-enabled plugins:\n${autoEnable.changes
-          .map((entry) => `- ${entry}`)
-          .join("\n")}`,
+        `gateway: auto-enabled plugins:\n${autoEnable.changes.map((entry) => `- ${entry}`).join("\n")}`,
       );
     } catch (err) {
       log.warn(`gateway: failed to persist plugin auto-enable changes: ${String(err)}`);

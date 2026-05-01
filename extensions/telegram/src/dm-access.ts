@@ -59,9 +59,7 @@ export async function enforceTelegramDmAccess(params: {
     senderId: sender.candidateId,
     senderUsername: sender.username,
   });
-  const allowMatchMeta = `matchKey=${allowMatch.matchKey ?? "none"} matchSource=${
-    allowMatch.matchSource ?? "none"
-  }`;
+  const allowMatchMeta = `matchKey=${allowMatch.matchKey ?? "none"} matchSource=${allowMatch.matchSource ?? "none"}`;
   const allowed =
     effectiveDmAllow.hasWildcard || (effectiveDmAllow.hasEntries && allowMatch.allowed);
   if (allowed) {

@@ -39,7 +39,9 @@ describe("bonjour-ciao", () => {
   it("suppresses ciao interface assertion rejections as non-fatal", () => {
     const error = Object.assign(
       new Error("Reached illegal state! IPV4 address change from defined to undefined!"),
-      { name: "AssertionError" },
+      {
+        name: "AssertionError",
+      },
     );
 
     expect(ignoreCiaoUnhandledRejection(error)).toBe(true);

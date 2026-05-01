@@ -79,9 +79,7 @@ export function formatCliBannerLine(version: string, options: BannerOptions = {}
         `(${commitLabel})`,
       )} ${theme.muted("—")} ${theme.accentDim(tagline)}`;
     }
-    const line1 = `${theme.heading(title)} ${theme.info(version)} ${theme.muted(
-      `(${commitLabel})`,
-    )}`;
+    const line1 = `${theme.heading(title)} ${theme.info(version)} ${theme.muted(`(${commitLabel})`)}`;
     if (!tagline) {
       return line1;
     }

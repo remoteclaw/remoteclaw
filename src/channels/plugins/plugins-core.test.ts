@@ -482,7 +482,9 @@ describe("directory (config-backed)", () => {
       listDiscordDirectoryGroupsFromConfig,
       cfg,
       ["channel:555", "channel:666", "channel:777"],
-      { sorted: true },
+      {
+        sorted: true,
+      },
     );
   });
 

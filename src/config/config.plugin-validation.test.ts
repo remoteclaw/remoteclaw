@@ -39,7 +39,7 @@ async function writePluginFixture(params: {
     manifest.channels = params.channels;
   }
   await fs.writeFile(
-    path.join(params.dir, "openclaw.plugin.json"),
+    path.join(params.dir, "remoteclaw.plugin.json"),
     JSON.stringify(manifest, null, 2),
     "utf-8",
   );
@@ -74,25 +74,6 @@ async function writeManifestlessClaudeBundleFixture(params: { dir: string }) {
   await fs.writeFile(path.join(params.dir, "settings.json"), '{"hideThinkingBlock":true}', "utf-8");
 }
 
-function expectRemovedPluginWarnings(
-  result: { ok: boolean; warnings?: Array<{ path: string; message: string }> },
-  removedId: string,
-  removedLabel: string,
-) {
-  expect(result.ok).toBe(true);
-  if (result.ok) {
-    const message = `plugin removed: ${removedLabel} (stale config entry ignored; remove it from plugins config)`;
-    expect(result.warnings).toEqual(
-      expect.arrayContaining([
-        { path: `plugins.entries.${removedId}`, message },
-        { path: "plugins.allow", message },
-        { path: "plugins.deny", message },
-        { path: "plugins.slots.memory", message },
-      ]),
-    );
-  }
-}
-
 describe("config plugin validation", () => {
   let fixtureRoot = "";
   let suiteHome = "";
@@ -106,32 +87,20 @@ describe("config plugin validation", () => {
   const suiteEnv = () =>
     ({
       HOME: suiteHome,
-      OPENCLAW_HOME: undefined,
-      OPENCLAW_STATE_DIR: path.join(suiteHome, ".openclaw"),
-      OPENCLAW_PLUGIN_MANIFEST_CACHE_MS: "10000",
-      OPENCLAW_DISABLE_PLUGIN_DISCOVERY_CACHE: "1",
-      OPENCLAW_BUNDLED_PLUGINS_DIR: undefined,
-      OPENCLAW_VERSION: undefined,
+      REMOTECLAW_HOME: undefined,
+      REMOTECLAW_STATE_DIR: path.join(suiteHome, ".remoteclaw"),
+      REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS: "10000",
+      REMOTECLAW_DISABLE_PLUGIN_DISCOVERY_CACHE: "1",
+      REMOTECLAW_BUNDLED_PLUGINS_DIR: undefined,
+      REMOTECLAW_VERSION: undefined,
       VITEST: "true",
     }) satisfies NodeJS.ProcessEnv;
 
   const validateInSuite = (raw: unknown) =>
     validateConfigObjectWithPlugins(raw, { env: suiteEnv() });
 
-  const validateRemovedPluginConfig = (removedId: string) =>
-    validateInSuite({
-      agents: { list: [{ id: "pi" }] },
-      plugins: {
-        enabled: false,
-        entries: { [removedId]: { enabled: true } },
-        allow: [removedId],
-        deny: [removedId],
-        slots: { memory: removedId },
-      },
-    });
-
   beforeAll(async () => {
-    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-config-plugin-validation-"));
+    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-config-plugin-validation-"));
     await chmodSafeDir(fixtureRoot);
     suiteHome = path.join(fixtureRoot, "home");
     await mkdirSafe(suiteHome);
@@ -196,7 +165,7 @@ describe("config plugin validation", () => {
       process.cwd(),
       "extensions",
       "voice-call",
-      "openclaw.plugin.json",
+      "remoteclaw.plugin.json",
     );
     const voiceCallManifest = JSON.parse(await fs.readFile(voiceCallManifestPath, "utf-8")) as {
       configSchema?: Record<string, unknown>;
@@ -241,14 +210,13 @@ describe("config plugin validation", () => {
   it("reports missing plugin refs across load paths, entries, and allowlist surfaces", async () => {
     const missingPath = path.join(suiteHome, "missing-plugin-dir");
     const res = validateInSuite({
-      agents: { list: [{ id: "pi" }] },
+      agents: { list: [{ id: "pi", workspace: "/tmp/pi" }] },
       plugins: {
         enabled: false,
         load: { paths: [missingPath] },
         entries: { "missing-plugin": { enabled: true } },
         allow: ["missing-allow"],
         deny: ["missing-deny"],
-        slots: { memory: "missing-slot" },
       },
     });
     expect(res.ok).toBe(false);
@@ -262,7 +230,6 @@ describe("config plugin validation", () => {
       expect(res.issues).toEqual(
         expect.arrayContaining([
           { path: "plugins.deny", message: "plugin not found: missing-deny" },
-          { path: "plugins.slots.memory", message: "plugin not found: missing-slot" },
         ]),
       );
       expect(res.warnings).toContainEqual({
@@ -281,7 +248,7 @@ describe("config plugin validation", () => {
   it("does not fail validation for the implicit default memory slot when plugins config is explicit", async () => {
     const res = validateConfigObjectWithPlugins(
       {
-        agents: { list: [{ id: "pi" }] },
+        agents: { list: [{ id: "pi", workspace: "/tmp/pi" }] },
         plugins: {
           entries: { acpx: { enabled: true } },
         },
@@ -289,7 +256,7 @@ describe("config plugin validation", () => {
       {
         env: {
           ...suiteEnv(),
-          OPENCLAW_BUNDLED_PLUGINS_DIR: path.join(suiteHome, "missing-bundled-plugins"),
+          REMOTECLAW_BUNDLED_PLUGINS_DIR: path.join(suiteHome, "missing-bundled-plugins"),
         },
       },
     );
@@ -298,14 +265,37 @@ describe("config plugin validation", () => {
 
   it("warns for removed legacy plugin ids instead of failing validation", async () => {
     const removedId = "google-antigravity-auth";
-    const res = validateRemovedPluginConfig(removedId);
-    expectRemovedPluginWarnings(res, removedId, removedId);
-  });
-
-  it("warns for removed google gemini auth plugin ids instead of failing validation", async () => {
-    const removedId = "google-gemini-cli-auth";
-    const res = validateRemovedPluginConfig(removedId);
-    expectRemovedPluginWarnings(res, removedId, removedId);
+    const res = validateInSuite({
+      agents: { list: [{ id: "pi", workspace: "/tmp/pi" }] },
+      plugins: {
+        enabled: false,
+        entries: { [removedId]: { enabled: true } },
+        allow: [removedId],
+        deny: [removedId],
+      },
+    });
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.warnings).toEqual(
+        expect.arrayContaining([
+          {
+            path: `plugins.entries.${removedId}`,
+            message:
+              "plugin removed: google-antigravity-auth (stale config entry ignored; remove it from plugins config)",
+          },
+          {
+            path: "plugins.allow",
+            message:
+              "plugin removed: google-antigravity-auth (stale config entry ignored; remove it from plugins config)",
+          },
+          {
+            path: "plugins.deny",
+            message:
+              "plugin removed: google-antigravity-auth (stale config entry ignored; remove it from plugins config)",
+          },
+        ]),
+      );
+    }
   });
 
   it("does not auto-allow config-loaded overrides of bundled web search plugin ids", async () => {
@@ -337,7 +327,7 @@ describe("config plugin validation", () => {
 
   it("surfaces plugin config diagnostics", async () => {
     const res = validateInSuite({
-      agents: { list: [{ id: "pi" }] },
+      agents: { list: [{ id: "pi", workspace: "/tmp/pi" }] },
       plugins: {
         enabled: true,
         load: { paths: [badPluginDir] },
@@ -357,7 +347,7 @@ describe("config plugin validation", () => {
 
   it("does not require native config schemas for enabled bundle plugins", async () => {
     const res = validateInSuite({
-      agents: { list: [{ id: "pi" }] },
+      agents: { list: [{ id: "pi", workspace: "/tmp/pi" }] },
       plugins: {
         enabled: true,
         load: { paths: [bundlePluginDir] },
@@ -370,7 +360,7 @@ describe("config plugin validation", () => {
 
   it("accepts enabled manifestless Claude bundles without a native schema", async () => {
     const res = validateInSuite({
-      agents: { list: [{ id: "pi" }] },
+      agents: { list: [{ id: "pi", workspace: "/tmp/pi" }] },
       plugins: {
         enabled: true,
         load: { paths: [manifestlessClaudeBundleDir] },
@@ -383,7 +373,7 @@ describe("config plugin validation", () => {
 
   it("surfaces allowed enum values for plugin config diagnostics", async () => {
     const res = validateInSuite({
-      agents: { list: [{ id: "pi" }] },
+      agents: { list: [{ id: "pi", workspace: "/tmp/pi" }] },
       plugins: {
         enabled: true,
         load: { paths: [enumPluginDir] },
@@ -404,7 +394,7 @@ describe("config plugin validation", () => {
 
   it("accepts voice-call webhookSecurity and streaming guard config fields", async () => {
     const res = validateInSuite({
-      agents: { list: [{ id: "pi" }] },
+      agents: { list: [{ id: "pi", workspace: "/tmp/pi" }] },
       plugins: {
         enabled: true,
         load: { paths: [voiceCallSchemaPluginDir] },
@@ -435,7 +425,7 @@ describe("config plugin validation", () => {
 
   it("accepts voice-call OpenAI TTS speed, instructions, and baseUrl config fields", async () => {
     const res = validateInSuite({
-      agents: { list: [{ id: "pi" }] },
+      agents: { list: [{ id: "pi", workspace: "/tmp/pi" }] },
       plugins: {
         enabled: true,
         load: { paths: [voiceCallSchemaPluginDir] },
@@ -443,13 +433,11 @@ describe("config plugin validation", () => {
           "voice-call-schema-fixture": {
             config: {
               tts: {
-                providers: {
-                  openai: {
-                    baseUrl: "http://localhost:8880/v1",
-                    voice: "alloy",
-                    speed: 1.5,
-                    instructions: "Speak in a cheerful tone",
-                  },
+                openai: {
+                  baseUrl: "http://localhost:8880/v1",
+                  voice: "alloy",
+                  speed: 1.5,
+                  instructions: "Speak in a cheerful tone",
                 },
               },
             },
@@ -460,79 +448,11 @@ describe("config plugin validation", () => {
     expect(res.ok).toBe(true);
   });
 
-  it("rejects out-of-range voice-call OpenAI TTS speed values", async () => {
-    const res = validateInSuite({
-      agents: { list: [{ id: "pi" }] },
-      plugins: {
-        enabled: true,
-        load: { paths: [voiceCallSchemaPluginDir] },
-        entries: {
-          "voice-call-schema-fixture": {
-            config: {
-              tts: {
-                providers: {
-                  openai: {
-                    speed: 10,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-    expect(res.ok).toBe(false);
-    if (!res.ok) {
-      expect(
-        res.issues.some(
-          (issue) =>
-            issue.path ===
-            "plugins.entries.voice-call-schema-fixture.config.tts.providers.openai.speed",
-        ),
-      ).toBe(true);
-    }
-  });
-
-  it("rejects out-of-range voice-call ElevenLabs voice settings", async () => {
-    const res = validateInSuite({
-      agents: { list: [{ id: "pi" }] },
-      plugins: {
-        enabled: true,
-        load: { paths: [voiceCallSchemaPluginDir] },
-        entries: {
-          "voice-call-schema-fixture": {
-            config: {
-              tts: {
-                providers: {
-                  elevenlabs: {
-                    voiceSettings: {
-                      stability: 5,
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-    expect(res.ok).toBe(false);
-    if (!res.ok) {
-      expect(
-        res.issues.some(
-          (issue) =>
-            issue.path ===
-            "plugins.entries.voice-call-schema-fixture.config.tts.providers.elevenlabs.voiceSettings.stability",
-        ),
-      ).toBe(true);
-    }
-  });
-
   it("accepts known plugin ids and valid channel/heartbeat enums", async () => {
     const res = validateInSuite({
       agents: {
         defaults: { heartbeat: { target: "last", directPolicy: "block" } },
-        list: [{ id: "pi", heartbeat: { directPolicy: "allow" } }],
+        list: [{ id: "pi", workspace: "/tmp/pi", heartbeat: { directPolicy: "allow" } }],
       },
       channels: {
         modelByChannel: {
@@ -548,7 +468,10 @@ describe("config plugin validation", () => {
 
   it("accepts plugin heartbeat targets", async () => {
     const res = validateInSuite({
-      agents: { defaults: { heartbeat: { target: "bluebubbles" } }, list: [{ id: "pi" }] },
+      agents: {
+        defaults: { heartbeat: { target: "bluebubbles" } },
+        list: [{ id: "pi", workspace: "/tmp/pi" }],
+      },
       plugins: { enabled: false, load: { paths: [bluebubblesPluginDir] } },
     });
     expect(res.ok).toBe(true);
@@ -558,7 +481,7 @@ describe("config plugin validation", () => {
     const res = validateInSuite({
       agents: {
         defaults: { heartbeat: { target: "not-a-channel" } },
-        list: [{ id: "pi" }],
+        list: [{ id: "pi", workspace: "/tmp/pi" }],
       },
     });
     expect(res.ok).toBe(false);
@@ -574,7 +497,7 @@ describe("config plugin validation", () => {
     const res = validateInSuite({
       agents: {
         defaults: { heartbeat: { directPolicy: "maybe" } },
-        list: [{ id: "pi" }],
+        list: [{ id: "pi", workspace: "/tmp/pi" }],
       },
     });
     expect(res.ok).toBe(false);

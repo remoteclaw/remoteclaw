@@ -1,13 +1,22 @@
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/mattermost";
 import { createReplyPrefixOptions } from "remoteclaw/plugin-sdk/mattermost";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-const { sendMessageMattermostMock } = vi.hoisted(() => ({
+const { sendMessageMattermostMock, mockFetchGuard } = vi.hoisted(() => ({
   sendMessageMattermostMock: vi.fn(),
+  mockFetchGuard: vi.fn(async (p: { url: string; init?: RequestInit }) => {
+    const response = await globalThis.fetch(p.url, p.init);
+    return { response, release: async () => {}, finalUrl: p.url };
+  }),
 }));
 
 vi.mock("./mattermost/send.js", () => ({
   sendMessageMattermost: sendMessageMattermostMock,
 }));
+
+vi.mock("../../../src/infra/net/fetch-guard.js", async (importOriginal) => {
+  const original = (await importOriginal()) as Record<string, unknown>;
+  return { ...original, fetchWithSsrFGuard: mockFetchGuard };
+});
 
 import { mattermostPlugin } from "./channel.js";
 import { resetMattermostReactionBotUserCacheForTests } from "./mattermost/reactions.js";

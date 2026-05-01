@@ -1,7 +1,9 @@
 import { timingSafeEqual } from "node:crypto";
 import { createServer } from "node:http";
+import type { IncomingMessage } from "node:http";
 import { InputFile, webhookCallback } from "grammy";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
+import { resolveRequestClientIp } from "../../../src/gateway/net.js";
 import { isDiagnosticsEnabled } from "../../../src/infra/diagnostic-events.js";
 import { formatErrorMessage } from "../../../src/infra/errors.js";
 import { readJsonBodyWithLimit } from "../../../src/infra/http-body.js";
@@ -12,6 +14,11 @@ import {
   startDiagnosticHeartbeat,
   stopDiagnosticHeartbeat,
 } from "../../../src/logging/diagnostic.js";
+import {
+  createFixedWindowRateLimiter,
+  WEBHOOK_RATE_LIMIT_DEFAULTS,
+} from "../../../src/plugin-sdk/webhook-memory-guards.js";
+import { applyBasicWebhookRequestGuards } from "../../../src/plugin-sdk/webhook-request-guards.js";
 import type { RuntimeEnv } from "../../../src/runtime.js";
 import { defaultRuntime } from "../../../src/runtime.js";
 import { resolveTelegramAllowedUpdates } from "./allowed-updates.js";
@@ -97,6 +104,20 @@ function hasValidTelegramWebhookSecret(
   return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 
+function resolveTelegramWebhookRateLimitKey(
+  req: IncomingMessage,
+  path: string,
+  config?: RemoteClawConfig,
+): string {
+  const clientIp =
+    resolveRequestClientIp(
+      req,
+      config?.gateway?.trustedProxies,
+      config?.gateway?.allowRealIpFallback === true,
+    ) ?? "unknown";
+  return `${path}:${clientIp}`;
+}
+
 export async function startTelegramWebhook(opts: {
   token: string;
   accountId?: string;
@@ -137,6 +158,11 @@ export async function startTelegramWebhook(opts: {
     runtime,
     abortSignal: opts.abortSignal,
   });
+  const telegramWebhookRateLimiter = createFixedWindowRateLimiter({
+    windowMs: WEBHOOK_RATE_LIMIT_DEFAULTS.windowMs,
+    maxRequests: WEBHOOK_RATE_LIMIT_DEFAULTS.maxRequests,
+    maxTrackedKeys: WEBHOOK_RATE_LIMIT_DEFAULTS.maxTrackedKeys,
+  });
   const handler = webhookCallback(bot, "callback", {
     secretToken: secret,
     onTimeout: "return",
@@ -164,6 +190,18 @@ export async function startTelegramWebhook(opts: {
     if (req.url !== path || req.method !== "POST") {
       res.writeHead(404);
       res.end();
+      return;
+    }
+    // Apply the per-source limit before auth so invalid secret guesses consume budget
+    // in the same window as any later request from that source.
+    if (
+      !applyBasicWebhookRequestGuards({
+        req,
+        res,
+        rateLimiter: telegramWebhookRateLimiter,
+        rateLimitKey: resolveTelegramWebhookRateLimitKey(req, path, opts.config),
+      })
+    ) {
       return;
     }
     const startTime = Date.now();

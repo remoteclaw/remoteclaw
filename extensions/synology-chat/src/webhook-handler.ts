@@ -16,6 +16,82 @@ import type { SynologyWebhookPayload, ResolvedSynologyChatAccount } from "./type
 
 // One rate limiter per account, created lazily
 const rateLimiters = new Map<string, RateLimiter>();
+const invalidTokenRateLimiters = new Map<string, InvalidTokenRateLimiter>();
+
+const PREAUTH_MAX_REQUESTS_PER_MINUTE = 10;
+const INVALID_TOKEN_WINDOW_MS = 60_000;
+const INVALID_TOKEN_MAX_TRACKED_KEYS = 5_000;
+
+type InvalidTokenRateLimitState = {
+  count: number;
+  windowStartMs: number;
+};
+
+/**
+ * Pre-authentication rate limiter that locks out remote IPs after repeated
+ * invalid-token attempts within a sliding window. Defends against brute-force
+ * token guessing without affecting authenticated users (post-auth budget is
+ * still enforced separately by `RateLimiter`).
+ */
+class InvalidTokenRateLimiter {
+  private readonly limit: number;
+  private readonly state = new Map<string, InvalidTokenRateLimitState>();
+
+  constructor(limit: number) {
+    this.limit = limit;
+  }
+
+  private normalizeState(key: string, nowMs: number): InvalidTokenRateLimitState | undefined {
+    const existing = this.state.get(key);
+    if (!existing) {
+      return undefined;
+    }
+    if (nowMs - existing.windowStartMs >= INVALID_TOKEN_WINDOW_MS) {
+      this.state.delete(key);
+      return undefined;
+    }
+    return existing;
+  }
+
+  private touch(key: string, value: InvalidTokenRateLimitState): void {
+    this.state.delete(key);
+    this.state.set(key, value);
+    while (this.state.size > INVALID_TOKEN_MAX_TRACKED_KEYS) {
+      const oldestKey = this.state.keys().next().value;
+      if (!oldestKey) {
+        break;
+      }
+      this.state.delete(oldestKey);
+    }
+  }
+
+  isLocked(key: string, nowMs = Date.now()): boolean {
+    if (!key) {
+      return false;
+    }
+    const existing = this.normalizeState(key, nowMs);
+    return (existing?.count ?? 0) > this.limit;
+  }
+
+  recordFailure(key: string, nowMs = Date.now()): boolean {
+    if (!key) {
+      return false;
+    }
+    const existing = this.normalizeState(key, nowMs);
+    const nextCount = (existing?.count ?? 0) + 1;
+    const windowStartMs = existing?.windowStartMs ?? nowMs;
+    this.touch(key, { count: nextCount, windowStartMs });
+    return nextCount > this.limit;
+  }
+
+  clear(): void {
+    this.state.clear();
+  }
+
+  maxRequests(): number {
+    return this.limit;
+  }
+}
 
 function getRateLimiter(account: ResolvedSynologyChatAccount): RateLimiter {
   let rl = rateLimiters.get(account.accountId);
@@ -27,15 +103,34 @@ function getRateLimiter(account: ResolvedSynologyChatAccount): RateLimiter {
   return rl;
 }
 
+function getInvalidTokenRateLimiter(account: ResolvedSynologyChatAccount): InvalidTokenRateLimiter {
+  const limit = Math.min(account.rateLimitPerMinute, PREAUTH_MAX_REQUESTS_PER_MINUTE);
+  let rl = invalidTokenRateLimiters.get(account.accountId);
+  if (!rl || rl.maxRequests() !== limit) {
+    rl?.clear();
+    rl = new InvalidTokenRateLimiter(limit);
+    invalidTokenRateLimiters.set(account.accountId, rl);
+  }
+  return rl;
+}
+
+function getSynologyWebhookInvalidTokenRateLimitKey(req: IncomingMessage): string {
+  return req.socket?.remoteAddress ?? "unknown";
+}
+
 export function clearSynologyWebhookRateLimiterStateForTest(): void {
   for (const limiter of rateLimiters.values()) {
     limiter.clear();
   }
   rateLimiters.clear();
+  for (const limiter of invalidTokenRateLimiters.values()) {
+    limiter.clear();
+  }
+  invalidTokenRateLimiters.clear();
 }
 
 export function getSynologyWebhookRateLimiterCountForTest(): number {
-  return rateLimiters.size;
+  return rateLimiters.size + invalidTokenRateLimiters.size;
 }
 
 /** Read the full request body as a string. */
@@ -251,11 +346,22 @@ export interface WebhookHandlerDeps {
 export function createWebhookHandler(deps: WebhookHandlerDeps) {
   const { account, deliver, log } = deps;
   const rateLimiter = getRateLimiter(account);
+  const invalidTokenRateLimiter = getInvalidTokenRateLimiter(account);
 
   return async (req: IncomingMessage, res: ServerResponse) => {
     // Only accept POST
     if (req.method !== "POST") {
       respondJson(res, 405, { error: "Method not allowed" });
+      return;
+    }
+
+    // Pre-auth IP-based rate limit: once a source IP has exhausted its
+    // invalid-token budget within the sliding window, reject all further
+    // requests until the window expires. Prevents brute-force token guessing.
+    const invalidTokenRateLimitKey = getSynologyWebhookInvalidTokenRateLimitKey(req);
+    if (invalidTokenRateLimiter.isLocked(invalidTokenRateLimitKey)) {
+      log?.warn(`Rate limit exceeded for remote IP: ${invalidTokenRateLimitKey}`);
+      respondJson(res, 429, { error: "Rate limit exceeded" });
       return;
     }
 
@@ -283,6 +389,11 @@ export function createWebhookHandler(deps: WebhookHandlerDeps) {
 
     // Token validation
     if (!validateToken(payload.token, account.token)) {
+      if (invalidTokenRateLimiter.recordFailure(invalidTokenRateLimitKey)) {
+        log?.warn(`Rate limit exceeded for remote IP: ${invalidTokenRateLimitKey}`);
+        respondJson(res, 429, { error: "Rate limit exceeded" });
+        return;
+      }
       log?.warn(`Invalid token from ${req.socket?.remoteAddress}`);
       respondJson(res, 401, { error: "Invalid token" });
       return;
@@ -352,7 +463,8 @@ export function createWebhookHandler(deps: WebhookHandlerDeps) {
         replyUserId = String(chatUserId);
       } else {
         log?.warn(
-          `Could not resolve Chat API user_id for "${payload.username}" — falling back to webhook user_id ${payload.user_id}. Reply delivery may fail.`,
+          `Could not resolve Chat API user_id for "${payload.username}" — ` +
+            `falling back to webhook user_id ${payload.user_id}. Reply delivery may fail.`,
         );
       }
 

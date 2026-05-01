@@ -1,6 +1,6 @@
 [
   {
-    "callsite": "src/auto-reply/reply/commands-subagents-focus.test.ts:55",
+    "callsite": "src/auto-reply/reply/commands-subagents-focus.test.ts:52",
     "pattern": "acp/runtime/session-meta",
     "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
   },
@@ -20,7 +20,7 @@
     "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
   },
   {
-    "callsite": "extensions/discord/src/monitor/thread-bindings.lifecycle.ts:4",
+    "callsite": "extensions/discord/src/monitor/thread-bindings.lifecycle.ts:1",
     "pattern": "acp/runtime/session-meta",
     "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
   },
@@ -35,12 +35,12 @@
     "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
   },
   {
-    "callsite": "src/security/audit-extra.sync.ts:57",
+    "callsite": "src/security/audit-extra.sync.ts:55",
     "pattern": "agents/sandbox",
     "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
   },
   {
-    "callsite": "src/security/audit-extra.sync.ts:58",
+    "callsite": "src/security/audit-extra.sync.ts:56",
     "pattern": "agents/sandbox",
     "issue": "https://github.com/remoteclaw/remoteclaw/issues/2355"
   },

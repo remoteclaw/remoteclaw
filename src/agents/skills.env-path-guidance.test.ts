@@ -55,7 +55,7 @@ const CASES: GuidanceCase[] = [
 ];
 
 describe("bundled skill env-path guidance", () => {
-  it.each(CASES)("keeps $file aligned with OPENCLAW env overrides", ({ file, required, forbidden }) => {
+  it.each(CASES)("keeps $file aligned with REMOTECLAW env overrides", ({ file, required, forbidden }) => {
     const content = fs.readFileSync(path.join(REPO_ROOT, file), "utf8");
     for (const needle of required ?? []) {
       expect(content).toContain(needle);

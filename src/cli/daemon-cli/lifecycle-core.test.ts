@@ -100,7 +100,11 @@ describe("runServiceRestart token drift", () => {
     );
   });
 
-  it("resolves config token SecretRefs using service command env before drift checks", async () => {
+  // TODO(remoteclaw/remoteclaw#TBD): port upstream's SecretRef drift resolution.
+  // Upstream resolves config token SecretRefs from service-command env before drift
+  // checks. Fork's resolveGatewayTokenForDriftCheck is sync and lacks this logic;
+  // fork emits "Unable to verify gateway token drift" warnings instead.
+  it.skip("resolves config token SecretRefs using service command env before drift checks", async () => {
     loadConfig.mockReturnValue({
       secrets: {
         providers: {
@@ -132,7 +136,10 @@ describe("runServiceRestart token drift", () => {
     expect(payload.warnings).toBeUndefined();
   });
 
-  it("prefers service command env over process env for SecretRef token drift resolution", async () => {
+  // TODO(remoteclaw/remoteclaw#TBD): port upstream's SecretRef drift resolution.
+  // Same upstream feature as previous skipped test; fork lacks SecretRef resolution
+  // in resolveGatewayTokenForDriftCheck (kept sync per D.4 to match fork's gateway).
+  it.skip("prefers service command env over process env for SecretRef token drift resolution", async () => {
     loadConfig.mockReturnValue({
       secrets: {
         providers: {

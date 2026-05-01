@@ -263,25 +263,33 @@ function parsePayload(req: IncomingMessage, body: string): SynologyWebhookPayloa
   const queryFields = parseQueryParams(req);
   const headerToken = extractTokenFromHeaders(req);
 
-  const token = pickAlias(bodyFields, ["token"]) ?? pickAlias(queryFields, ["token"]) ?? headerToken;
+  const token =
+    pickAlias(bodyFields, ["token"]) ?? pickAlias(queryFields, ["token"]) ?? headerToken;
   const userId =
-    pickAlias(bodyFields, ["user_id", "userId", "user"]) ?? pickAlias(queryFields, ["user_id", "userId", "user"]);
+    pickAlias(bodyFields, ["user_id", "userId", "user"]) ??
+    pickAlias(queryFields, ["user_id", "userId", "user"]);
   const text =
-    pickAlias(bodyFields, ["text", "message", "content"]) ?? pickAlias(queryFields, ["text", "message", "content"]);
+    pickAlias(bodyFields, ["text", "message", "content"]) ??
+    pickAlias(queryFields, ["text", "message", "content"]);
 
   if (!token || !userId || !text) return null;
 
   return {
     token,
-    channel_id: pickAlias(bodyFields, ["channel_id"]) ?? pickAlias(queryFields, ["channel_id"]) ?? undefined,
-    channel_name: pickAlias(bodyFields, ["channel_name"]) ?? pickAlias(queryFields, ["channel_name"]) ?? undefined,
+    channel_id:
+      pickAlias(bodyFields, ["channel_id"]) ?? pickAlias(queryFields, ["channel_id"]) ?? undefined,
+    channel_name:
+      pickAlias(bodyFields, ["channel_name"]) ??
+      pickAlias(queryFields, ["channel_name"]) ??
+      undefined,
     user_id: userId,
     username:
       pickAlias(bodyFields, ["username", "user_name", "name"]) ??
       pickAlias(queryFields, ["username", "user_name", "name"]) ??
       "unknown",
     post_id: pickAlias(bodyFields, ["post_id"]) ?? pickAlias(queryFields, ["post_id"]) ?? undefined,
-    timestamp: pickAlias(bodyFields, ["timestamp"]) ?? pickAlias(queryFields, ["timestamp"]) ?? undefined,
+    timestamp:
+      pickAlias(bodyFields, ["timestamp"]) ?? pickAlias(queryFields, ["timestamp"]) ?? undefined,
     text,
     trigger_word:
       pickAlias(bodyFields, ["trigger_word", "triggerWord"]) ??

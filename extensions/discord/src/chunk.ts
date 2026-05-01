@@ -63,7 +63,11 @@ function closeFenceIfNeeded(text: string, openFence: OpenFence | null) {
   return `${text}${closeLine}`;
 }
 
-function splitLongLine(line: string, maxChars: number, opts: { preserveWhitespace: boolean }): string[] {
+function splitLongLine(
+  line: string,
+  maxChars: number,
+  opts: { preserveWhitespace: boolean },
+): string[] {
   const limit = Math.max(1, Math.floor(maxChars));
   if (line.length <= limit) {
     return [line];
@@ -145,7 +149,10 @@ export function chunkDiscordText(text: string, opts: ChunkDiscordTextOpts = {}):
     if (fenceInfo) {
       if (!openFence) {
         nextOpenFence = fenceInfo;
-      } else if (openFence.markerChar === fenceInfo.markerChar && fenceInfo.markerLen >= openFence.markerLen) {
+      } else if (
+        openFence.markerChar === fenceInfo.markerChar &&
+        fenceInfo.markerLen >= openFence.markerLen
+      ) {
         nextOpenFence = null;
       }
     }
@@ -235,7 +242,8 @@ function rebalanceReasoningItalics(source: string, chunks: string[]): string[] {
     return chunks;
   }
 
-  const opensWithReasoningItalics = source.startsWith("Reasoning:\n_") && source.trimEnd().endsWith("_");
+  const opensWithReasoningItalics =
+    source.startsWith("Reasoning:\n_") && source.trimEnd().endsWith("_");
   if (!opensWithReasoningItalics) {
     return chunks;
   }

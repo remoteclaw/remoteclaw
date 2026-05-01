@@ -6,32 +6,34 @@ const LEGACY_ALIAS = "main";
 
 describe("resolveCronAgentSessionKey", () => {
   it("builds an agent-scoped key for legacy aliases", () => {
-    expect(resolveCronAgentSessionKey({ sessionKey: LEGACY_ALIAS, agentId: LEGACY_ALIAS })).toBe("agent:main:main");
-  });
-
-  it("preserves canonical agent keys instead of prefixing twice", () => {
-    expect(resolveCronAgentSessionKey({ sessionKey: "agent:main:main", agentId: LEGACY_ALIAS })).toBe(
+    expect(resolveCronAgentSessionKey({ sessionKey: LEGACY_ALIAS, agentId: LEGACY_ALIAS })).toBe(
       "agent:main:main",
     );
   });
 
+  it("preserves canonical agent keys instead of prefixing twice", () => {
+    expect(
+      resolveCronAgentSessionKey({ sessionKey: "agent:main:main", agentId: LEGACY_ALIAS }),
+    ).toBe("agent:main:main");
+  });
+
   it("normalizes canonical keys to lowercase before reuse", () => {
-    expect(resolveCronAgentSessionKey({ sessionKey: "AGENT:Main:Hook:Webhook:42", agentId: "x" })).toBe(
-      "agent:main:hook:webhook:42",
-    );
+    expect(
+      resolveCronAgentSessionKey({ sessionKey: "AGENT:Main:Hook:Webhook:42", agentId: "x" }),
+    ).toBe("agent:main:hook:webhook:42");
   });
 
   it("keeps hook keys scoped under the target agent", () => {
-    expect(resolveCronAgentSessionKey({ sessionKey: "hook:webhook:42", agentId: LEGACY_ALIAS })).toBe(
-      "agent:main:hook:webhook:42",
-    );
+    expect(
+      resolveCronAgentSessionKey({ sessionKey: "hook:webhook:42", agentId: LEGACY_ALIAS }),
+    ).toBe("agent:main:hook:webhook:42");
   });
 
   it("canonicalizes main alias when cfg.session.mainKey differs from default (#29683)", () => {
     const cfg = { session: { mainKey: "work" } };
-    expect(resolveCronAgentSessionKey({ sessionKey: "main", agentId: "ops", mainKey: "work", cfg })).toBe(
-      "agent:ops:work",
-    );
+    expect(
+      resolveCronAgentSessionKey({ sessionKey: "main", agentId: "ops", mainKey: "work", cfg }),
+    ).toBe("agent:ops:work");
   });
 
   it("canonicalizes agent:id:main alias to configured mainKey (#29683)", () => {
@@ -59,6 +61,8 @@ describe("resolveCronAgentSessionKey", () => {
   });
 
   it("behaves unchanged when cfg is omitted (backward compat)", () => {
-    expect(resolveCronAgentSessionKey({ sessionKey: "main", agentId: "main" })).toBe("agent:main:main");
+    expect(resolveCronAgentSessionKey({ sessionKey: "main", agentId: "main" })).toBe(
+      "agent:main:main",
+    );
   });
 });

@@ -106,7 +106,11 @@ export class ToolExecutionComponent extends Container {
   }
 
   private refresh() {
-    const bg = this.isPartial ? theme.toolPendingBg : this.isError ? theme.toolErrorBg : theme.toolSuccessBg;
+    const bg = this.isPartial
+      ? theme.toolPendingBg
+      : this.isError
+        ? theme.toolErrorBg
+        : theme.toolSuccessBg;
     this.box.setBgFn((line) => bg(line));
 
     const display = resolveToolDisplay({
@@ -123,7 +127,8 @@ export class ToolExecutionComponent extends Container {
     const text = raw || (this.isPartial ? "…" : "");
     if (!this.expanded && text) {
       const lines = text.split("\n");
-      const preview = lines.length > PREVIEW_LINES ? `${lines.slice(0, PREVIEW_LINES).join("\n")}\n…` : text;
+      const preview =
+        lines.length > PREVIEW_LINES ? `${lines.slice(0, PREVIEW_LINES).join("\n")}\n…` : text;
       this.output.setText(preview);
     } else {
       this.output.setText(text);

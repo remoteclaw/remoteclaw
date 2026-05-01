@@ -37,7 +37,10 @@ describe("buildTelegramMessageContext per-topic agentId routing", () => {
     };
   }
 
-  async function buildForumContext(params: { threadId?: number; topicConfig?: Record<string, unknown> }) {
+  async function buildForumContext(params: {
+    threadId?: number;
+    topicConfig?: Record<string, unknown>;
+  }) {
     return await buildTelegramMessageContextForTest({
       message: buildForumMessage(params.threadId),
       options: { forceWasMentioned: true },

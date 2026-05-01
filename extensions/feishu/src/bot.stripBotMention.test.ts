@@ -37,7 +37,11 @@ describe("normalizeMentions (via parseFeishuMessageEvent)", () => {
 
   it("strips bot mention in group so slash commands work (#35994)", () => {
     const ctx = parseFeishuMessageEvent(
-      makeEvent("@_bot_1 hello", [{ key: "@_bot_1", name: "Bot", id: { open_id: "ou_bot" } }], "group"),
+      makeEvent(
+        "@_bot_1 hello",
+        [{ key: "@_bot_1", name: "Bot", id: { open_id: "ou_bot" } }],
+        "group",
+      ),
       BOT_OPEN_ID,
     );
     expect(ctx.content).toBe("hello");
@@ -45,7 +49,11 @@ describe("normalizeMentions (via parseFeishuMessageEvent)", () => {
 
   it("strips bot mention in group preserving slash command prefix (#35994)", () => {
     const ctx = parseFeishuMessageEvent(
-      makeEvent("@_bot_1 /model", [{ key: "@_bot_1", name: "Bot", id: { open_id: "ou_bot" } }], "group"),
+      makeEvent(
+        "@_bot_1 /model",
+        [{ key: "@_bot_1", name: "Bot", id: { open_id: "ou_bot" } }],
+        "group",
+      ),
       BOT_OPEN_ID,
     );
     expect(ctx.content).toBe("/model");
@@ -94,7 +102,9 @@ describe("normalizeMentions (via parseFeishuMessageEvent)", () => {
       ]),
       BOT_OPEN_ID,
     );
-    expect(ctx.content).toBe('<at user_id="ou_bot_1">Bot One</at> hi <at user_id="ou_user_2">User Two</at>');
+    expect(ctx.content).toBe(
+      '<at user_id="ou_bot_1">Bot One</at> hi <at user_id="ou_user_2">User Two</at>',
+    );
   });
 
   it("treats $ in display name as literal (no replacement-pattern interpolation)", () => {

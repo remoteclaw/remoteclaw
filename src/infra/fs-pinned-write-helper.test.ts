@@ -26,7 +26,9 @@ describe("fs pinned write helper", () => {
       },
     });
 
-    await expect(fs.readFile(path.join(root, "nested", "deeper", "note.txt"), "utf8")).resolves.toBe("hello");
+    await expect(
+      fs.readFile(path.join(root, "nested", "deeper", "note.txt"), "utf8"),
+    ).resolves.toBe("hello");
     expect(identity.dev).toBeGreaterThanOrEqual(0);
     expect(identity.ino).toBeGreaterThan(0);
   });

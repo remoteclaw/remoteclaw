@@ -2,7 +2,12 @@ import type { GatewayBrowserClient } from "../gateway.ts";
 import type { ConfigSchemaResponse, ConfigSnapshot, ConfigUiHints } from "../types.ts";
 import type { JsonSchema } from "../views/config-form.shared.ts";
 import { coerceFormValues } from "./config/form-coerce.ts";
-import { cloneConfigObject, removePathValue, serializeConfigForm, setPathValue } from "./config/form-utils.ts";
+import {
+  cloneConfigObject,
+  removePathValue,
+  serializeConfigForm,
+  setPathValue,
+} from "./config/form-utils.ts";
 
 export type ConfigState = {
   client: GatewayBrowserClient | null;
@@ -123,7 +128,9 @@ function serializeFormForSubmit(state: ConfigState): string {
     return state.configRaw;
   }
   const schema = asJsonSchema(state.configSchema);
-  const form = schema ? (coerceFormValues(state.configForm, schema) as Record<string, unknown>) : state.configForm;
+  const form = schema
+    ? (coerceFormValues(state.configForm, schema) as Record<string, unknown>)
+    : state.configForm;
   return serializeConfigForm(form);
 }
 
@@ -194,7 +201,11 @@ export async function runUpdate(state: ConfigState) {
   }
 }
 
-export function updateConfigFormValue(state: ConfigState, path: Array<string | number>, value: unknown) {
+export function updateConfigFormValue(
+  state: ConfigState,
+  path: Array<string | number>,
+  value: unknown,
+) {
   const base = cloneConfigObject(state.configForm ?? state.configSnapshot?.config ?? {});
   setPathValue(base, path, value);
   state.configForm = base;
@@ -214,7 +225,10 @@ export function removeConfigFormValue(state: ConfigState, path: Array<string | n
   }
 }
 
-export function findAgentConfigEntryIndex(config: Record<string, unknown> | null, agentId: string): number {
+export function findAgentConfigEntryIndex(
+  config: Record<string, unknown> | null,
+  agentId: string,
+): number {
   const normalizedAgentId = agentId.trim();
   if (!normalizedAgentId) {
     return -1;
@@ -225,7 +239,10 @@ export function findAgentConfigEntryIndex(config: Record<string, unknown> | null
   }
   return list.findIndex(
     (entry) =>
-      entry && typeof entry === "object" && "id" in entry && (entry as { id?: string }).id === normalizedAgentId,
+      entry &&
+      typeof entry === "object" &&
+      "id" in entry &&
+      (entry as { id?: string }).id === normalizedAgentId,
   );
 }
 
@@ -234,7 +251,8 @@ export function ensureAgentConfigEntry(state: ConfigState, agentId: string): num
   if (!normalizedAgentId) {
     return -1;
   }
-  const source = state.configForm ?? (state.configSnapshot?.config as Record<string, unknown> | null);
+  const source =
+    state.configForm ?? (state.configSnapshot?.config as Record<string, unknown> | null);
   const existingIndex = findAgentConfigEntryIndex(source, normalizedAgentId);
   if (existingIndex >= 0) {
     return existingIndex;

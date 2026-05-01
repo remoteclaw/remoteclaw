@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { matchesApprovalRequestFilters, matchesApprovalRequestSessionFilter } from "./approval-request-filters.js";
+import {
+  matchesApprovalRequestFilters,
+  matchesApprovalRequestSessionFilter,
+} from "./approval-request-filters.js";
 
 describe("approval request filters", () => {
   it("matches explicit agent ids and session substrings", () => {

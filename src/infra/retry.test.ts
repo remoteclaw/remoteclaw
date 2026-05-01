@@ -108,15 +108,18 @@ describe("retryAsync", () => {
       expectedError: "boom",
       expectedCalls: 2,
     },
-  ])("$name", async ({ fn, attempts, initialDelayMs, expectedValue, expectedError, expectedCalls }) => {
-    const result = runRetryNumberCase(fn, attempts, initialDelayMs);
-    if (expectedError) {
-      await expect(result).rejects.toThrow(expectedError);
-    } else {
-      await expect(result).resolves.toBe(expectedValue);
-    }
-    expect(fn).toHaveBeenCalledTimes(expectedCalls);
-  });
+  ])(
+    "$name",
+    async ({ fn, attempts, initialDelayMs, expectedValue, expectedError, expectedCalls }) => {
+      const result = runRetryNumberCase(fn, attempts, initialDelayMs);
+      if (expectedError) {
+        await expect(result).rejects.toThrow(expectedError);
+      } else {
+        await expect(result).resolves.toBe(expectedValue);
+      }
+      expect(fn).toHaveBeenCalledTimes(expectedCalls);
+    },
+  );
 
   it("stops when shouldRetry returns false", async () => {
     const err = new Error("boom");
@@ -161,7 +164,9 @@ describe("retryAsync", () => {
 
   it("clamps attempts to at least 1", async () => {
     const fn = vi.fn().mockRejectedValue(new Error("boom"));
-    await expect(retryAsync(fn, { attempts: 0, minDelayMs: 0, maxDelayMs: 0 })).rejects.toThrow("boom");
+    await expect(retryAsync(fn, { attempts: 0, minDelayMs: 0, maxDelayMs: 0 })).rejects.toThrow(
+      "boom",
+    );
     expect(fn).toHaveBeenCalledTimes(1);
   });
 

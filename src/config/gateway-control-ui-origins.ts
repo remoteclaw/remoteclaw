@@ -20,7 +20,10 @@ export function hasConfiguredControlUiAllowedOrigins(params: {
   );
 }
 
-export function resolveGatewayPortWithDefault(port: unknown, fallback = DEFAULT_GATEWAY_PORT): number {
+export function resolveGatewayPortWithDefault(
+  port: unknown,
+  fallback = DEFAULT_GATEWAY_PORT,
+): number {
   return typeof port === "number" && port > 0 ? port : fallback;
 }
 
@@ -37,7 +40,10 @@ export function buildDefaultControlUiAllowedOrigins(params: {
   bind: unknown;
   customBindHost?: string;
 }): string[] {
-  const origins = new Set<string>([`http://localhost:${params.port}`, `http://127.0.0.1:${params.port}`]);
+  const origins = new Set<string>([
+    `http://localhost:${params.port}`,
+    `http://127.0.0.1:${params.port}`,
+  ]);
   const customBindHost = params.customBindHost?.trim();
   if (params.bind === "custom" && customBindHost) {
     origins.add(`http://${customBindHost}:${params.port}`);
@@ -63,7 +69,8 @@ export function ensureControlUiAllowedOriginsForNonLoopbackBind(
   if (
     hasConfiguredControlUiAllowedOrigins({
       allowedOrigins: config.gateway?.controlUi?.allowedOrigins,
-      dangerouslyAllowHostHeaderOriginFallback: config.gateway?.controlUi?.dangerouslyAllowHostHeaderOriginFallback,
+      dangerouslyAllowHostHeaderOriginFallback:
+        config.gateway?.controlUi?.dangerouslyAllowHostHeaderOriginFallback,
     })
   ) {
     return { config, seededOrigins: null, bind };

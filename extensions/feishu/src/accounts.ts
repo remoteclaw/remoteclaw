@@ -71,7 +71,10 @@ export function resolveDefaultFeishuAccountId(cfg: ClawdbotConfig): string {
 /**
  * Get the raw account-specific config.
  */
-function resolveAccountConfig(cfg: ClawdbotConfig, accountId: string): FeishuAccountConfig | undefined {
+function resolveAccountConfig(
+  cfg: ClawdbotConfig,
+  accountId: string,
+): FeishuAccountConfig | undefined {
   const accounts = (cfg.channels?.feishu as FeishuConfig)?.accounts;
   if (!accounts || typeof accounts !== "object") {
     return undefined;
@@ -174,7 +177,10 @@ export function resolveFeishuCredentials(
       connectionMode === "webhook"
         ? resolveSecretLike(cfg?.encryptKey, "channels.feishu.encryptKey")
         : normalizeString(cfg?.encryptKey),
-    verificationToken: resolveSecretLike(cfg?.verificationToken, "channels.feishu.verificationToken"),
+    verificationToken: resolveSecretLike(
+      cfg?.verificationToken,
+      "channels.feishu.verificationToken",
+    ),
     domain: cfg?.domain ?? "feishu",
   };
 }
@@ -186,12 +192,17 @@ export function resolveFeishuAccount(params: {
   cfg: ClawdbotConfig;
   accountId?: string | null;
 }): ResolvedFeishuAccount {
-  const hasExplicitAccountId = typeof params.accountId === "string" && params.accountId.trim() !== "";
-  const defaultSelection = hasExplicitAccountId ? null : resolveDefaultFeishuAccountSelection(params.cfg);
+  const hasExplicitAccountId =
+    typeof params.accountId === "string" && params.accountId.trim() !== "";
+  const defaultSelection = hasExplicitAccountId
+    ? null
+    : resolveDefaultFeishuAccountSelection(params.cfg);
   const accountId = hasExplicitAccountId
     ? normalizeAccountId(params.accountId)
     : (defaultSelection?.accountId ?? DEFAULT_ACCOUNT_ID);
-  const selectionSource = hasExplicitAccountId ? "explicit" : (defaultSelection?.source ?? "fallback");
+  const selectionSource = hasExplicitAccountId
+    ? "explicit"
+    : (defaultSelection?.source ?? "fallback");
   const feishuCfg = params.cfg.channels?.feishu as FeishuConfig | undefined;
 
   // Base enabled state (top-level)

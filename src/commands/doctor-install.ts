@@ -19,7 +19,9 @@ export function noteSourceInstallIssues(root: string | null) {
   const srcEntry = path.join(root, "src", "entry.ts");
 
   if (fs.existsSync(nodeModules) && !fs.existsSync(pnpmStore)) {
-    warnings.push("- node_modules was not installed by pnpm (missing node_modules/.pnpm). Run: pnpm install");
+    warnings.push(
+      "- node_modules was not installed by pnpm (missing node_modules/.pnpm). Run: pnpm install",
+    );
   }
 
   if (fs.existsSync(path.join(root, "package-lock.json"))) {

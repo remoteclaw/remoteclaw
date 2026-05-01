@@ -226,8 +226,12 @@ function analyzeTokensForNestedRepetition(tokens: PatternToken[]): boolean {
         if (frame.hasAlternation) {
           recordAlternative(frame);
         }
-        const groupMinLength = frame.hasAlternation ? (frame.altMinLength ?? 0) : frame.branchMinLength;
-        const groupMaxLength = frame.hasAlternation ? (frame.altMaxLength ?? 0) : frame.branchMaxLength;
+        const groupMinLength = frame.hasAlternation
+          ? (frame.altMinLength ?? 0)
+          : frame.branchMinLength;
+        const groupMaxLength = frame.hasAlternation
+          ? (frame.altMaxLength ?? 0)
+          : frame.branchMaxLength;
         emitToken({
           containsRepetition: frame.containsRepetition,
           hasAmbiguousAlternation:
@@ -290,7 +294,11 @@ function testRegexFromStart(regex: RegExp, value: string): boolean {
   return regex.test(value);
 }
 
-export function testRegexWithBoundedInput(regex: RegExp, input: string, maxWindow = SAFE_REGEX_TEST_WINDOW): boolean {
+export function testRegexWithBoundedInput(
+  regex: RegExp,
+  input: string,
+  maxWindow = SAFE_REGEX_TEST_WINDOW,
+): boolean {
   if (maxWindow <= 0) {
     return false;
   }

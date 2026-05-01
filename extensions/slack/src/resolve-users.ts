@@ -1,6 +1,9 @@
 import type { WebClient } from "@slack/web-api";
 import { createSlackWebClient } from "./client.js";
-import { collectSlackCursorItems, resolveSlackAllowlistEntries } from "./resolve-allowlist-common.js";
+import {
+  collectSlackCursorItems,
+  resolveSlackAllowlistEntries,
+} from "./resolve-allowlist-common.js";
 
 export type SlackUserLookup = {
   id: string;

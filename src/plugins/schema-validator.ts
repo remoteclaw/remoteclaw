@@ -90,7 +90,11 @@ function appendPathSegment(path: string, segment: string): string {
 }
 
 function resolveMissingProperty(error: ErrorObject): string | null {
-  if (error.keyword !== "required" && error.keyword !== "dependentRequired" && error.keyword !== "dependencies") {
+  if (
+    error.keyword !== "required" &&
+    error.keyword !== "dependentRequired" &&
+    error.keyword !== "dependencies"
+  ) {
     return null;
   }
   const missingProperty = (error.params as { missingProperty?: unknown }).missingProperty;
@@ -139,7 +143,9 @@ function formatAjvErrors(errors: ErrorObject[] | null | undefined): JsonSchemaVa
     const path = resolveAjvErrorPath(error);
     const baseMessage = error.message ?? "invalid";
     const allowedValuesSummary = getAjvAllowedValuesSummary(error);
-    const message = allowedValuesSummary ? appendAllowedValuesHint(baseMessage, allowedValuesSummary) : baseMessage;
+    const message = allowedValuesSummary
+      ? appendAllowedValuesHint(baseMessage, allowedValuesSummary)
+      : baseMessage;
     const safePath = sanitizeTerminalText(path);
     const safeMessage = sanitizeTerminalText(message);
     return {

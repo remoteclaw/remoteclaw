@@ -86,7 +86,10 @@ export function killSessionRun(sessionKey: string): boolean {
  * Wait (poll) for a session run to end.
  * Resolves `true` if the run ended, `false` on timeout.
  */
-export async function waitForSessionRunEnd(sessionKey: string, timeoutMs: number): Promise<boolean> {
+export async function waitForSessionRunEnd(
+  sessionKey: string,
+  timeoutMs: number,
+): Promise<boolean> {
   if (!ACTIVE_SESSION_RUNS.has(sessionKey)) {
     return true;
   }

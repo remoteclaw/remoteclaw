@@ -20,8 +20,12 @@ function createReplyChunksHarness() {
 
 describe("sendLineReplyChunks", () => {
   it("uses reply token for all chunks when possible", async () => {
-    const { replyMessageLine, pushMessageLine, pushTextMessageWithQuickReplies, createTextMessageWithQuickReplies } =
-      createReplyChunksHarness();
+    const {
+      replyMessageLine,
+      pushMessageLine,
+      pushTextMessageWithQuickReplies,
+      createTextMessageWithQuickReplies,
+    } = createReplyChunksHarness();
 
     const result = await sendLineReplyChunks({
       to: "line:group:1",
@@ -53,7 +57,8 @@ describe("sendLineReplyChunks", () => {
   });
 
   it("attaches quick replies to a single reply chunk", async () => {
-    const { replyMessageLine, pushMessageLine, pushTextMessageWithQuickReplies } = createReplyChunksHarness();
+    const { replyMessageLine, pushMessageLine, pushTextMessageWithQuickReplies } =
+      createReplyChunksHarness();
     const createTextMessageWithQuickReplies = vi.fn((text: string, _quickReplies: string[]) => ({
       type: "text" as const,
       text,
@@ -80,8 +85,12 @@ describe("sendLineReplyChunks", () => {
   });
 
   it("replies with up to five chunks before pushing the rest", async () => {
-    const { replyMessageLine, pushMessageLine, pushTextMessageWithQuickReplies, createTextMessageWithQuickReplies } =
-      createReplyChunksHarness();
+    const {
+      replyMessageLine,
+      pushMessageLine,
+      pushTextMessageWithQuickReplies,
+      createTextMessageWithQuickReplies,
+    } = createReplyChunksHarness();
 
     const chunks = ["1", "2", "3", "4", "5", "6", "7"];
     const result = await sendLineReplyChunks({
@@ -119,8 +128,12 @@ describe("sendLineReplyChunks", () => {
   });
 
   it("falls back to push flow when replying fails", async () => {
-    const { replyMessageLine, pushMessageLine, pushTextMessageWithQuickReplies, createTextMessageWithQuickReplies } =
-      createReplyChunksHarness();
+    const {
+      replyMessageLine,
+      pushMessageLine,
+      pushTextMessageWithQuickReplies,
+      createTextMessageWithQuickReplies,
+    } = createReplyChunksHarness();
     const onReplyError = vi.fn();
     replyMessageLine.mockRejectedValueOnce(new Error("reply failed"));
 

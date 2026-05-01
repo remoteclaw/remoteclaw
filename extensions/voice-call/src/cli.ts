@@ -62,8 +62,14 @@ function summarizeSeries(values: number[]): {
     return { count: 0, minMs: 0, maxMs: 0, avgMs: 0, p50Ms: 0, p95Ms: 0 };
   }
 
-  const minMs = values.reduce((min, value) => (value < min ? value : min), Number.POSITIVE_INFINITY);
-  const maxMs = values.reduce((max, value) => (value > max ? value : max), Number.NEGATIVE_INFINITY);
+  const minMs = values.reduce(
+    (min, value) => (value < min ? value : min),
+    Number.POSITIVE_INFINITY,
+  );
+  const maxMs = values.reduce(
+    (max, value) => (value > max ? value : max),
+    Number.NEGATIVE_INFINITY,
+  );
   const avgMs = values.reduce((sum, value) => sum + value, 0) / values.length;
   return {
     count: values.length,
@@ -112,8 +118,15 @@ export function registerVoiceCallCli(params: {
     .command("call")
     .description("Initiate an outbound voice call")
     .requiredOption("-m, --message <text>", "Message to speak when call connects")
-    .option("-t, --to <phone>", "Phone number to call (E.164 format, uses config toNumber if not set)")
-    .option("--mode <mode>", "Call mode: notify (hangup after message) or conversation (stay open)", "conversation")
+    .option(
+      "-t, --to <phone>",
+      "Phone number to call (E.164 format, uses config toNumber if not set)",
+    )
+    .option(
+      "--mode <mode>",
+      "Call mode: notify (hangup after message) or conversation (stay open)",
+      "conversation",
+    )
     .action(async (options: { message: string; to?: string; mode?: string }) => {
       const rt = await ensureRuntime();
       const to = options.to ?? rt.config.toNumber;
@@ -133,7 +146,11 @@ export function registerVoiceCallCli(params: {
     .description("Alias for voicecall call")
     .requiredOption("--to <phone>", "Phone number to call")
     .option("--message <text>", "Message to speak when call connects")
-    .option("--mode <mode>", "Call mode: notify (hangup after message) or conversation (stay open)", "conversation")
+    .option(
+      "--mode <mode>",
+      "Call mode: notify (hangup after message) or conversation (stay open)",
+      "conversation",
+    )
     .action(async (options: { to: string; message?: string; mode?: string }) => {
       const rt = await ensureRuntime();
       await initiateCallAndPrintId({
@@ -310,50 +327,54 @@ export function registerVoiceCallCli(params: {
     .option("--path <path>", "Tailscale path to expose (recommend matching serve.path)")
     .option("--port <port>", "Local webhook port")
     .option("--serve-path <path>", "Local webhook path")
-    .action(async (options: { mode?: string; port?: string; path?: string; servePath?: string }) => {
-      const mode = resolveMode(options.mode ?? "funnel");
-      const servePort = Number(options.port ?? config.serve.port ?? 3334);
-      const servePath = String(options.servePath ?? config.serve.path ?? "/voice/webhook");
-      const tsPath = String(options.path ?? config.tailscale?.path ?? servePath);
+    .action(
+      async (options: { mode?: string; port?: string; path?: string; servePath?: string }) => {
+        const mode = resolveMode(options.mode ?? "funnel");
+        const servePort = Number(options.port ?? config.serve.port ?? 3334);
+        const servePath = String(options.servePath ?? config.serve.path ?? "/voice/webhook");
+        const tsPath = String(options.path ?? config.tailscale?.path ?? servePath);
 
-      const localUrl = `http://127.0.0.1:${servePort}`;
+        const localUrl = `http://127.0.0.1:${servePort}`;
 
-      if (mode === "off") {
-        await cleanupTailscaleExposureRoute({ mode: "serve", path: tsPath });
-        await cleanupTailscaleExposureRoute({ mode: "funnel", path: tsPath });
+        if (mode === "off") {
+          await cleanupTailscaleExposureRoute({ mode: "serve", path: tsPath });
+          await cleanupTailscaleExposureRoute({ mode: "funnel", path: tsPath });
+          // eslint-disable-next-line no-console
+          console.log(JSON.stringify({ ok: true, mode: "off", path: tsPath }, null, 2));
+          return;
+        }
+
+        const publicUrl = await setupTailscaleExposureRoute({
+          mode,
+          path: tsPath,
+          localUrl,
+        });
+
+        const tsInfo = publicUrl ? null : await getTailscaleSelfInfo();
+        const enableUrl = tsInfo?.nodeId
+          ? `https://login.tailscale.com/f/${mode}?node=${tsInfo.nodeId}`
+          : null;
+
         // eslint-disable-next-line no-console
-        console.log(JSON.stringify({ ok: true, mode: "off", path: tsPath }, null, 2));
-        return;
-      }
-
-      const publicUrl = await setupTailscaleExposureRoute({
-        mode,
-        path: tsPath,
-        localUrl,
-      });
-
-      const tsInfo = publicUrl ? null : await getTailscaleSelfInfo();
-      const enableUrl = tsInfo?.nodeId ? `https://login.tailscale.com/f/${mode}?node=${tsInfo.nodeId}` : null;
-
-      // eslint-disable-next-line no-console
-      console.log(
-        JSON.stringify(
-          {
-            ok: Boolean(publicUrl),
-            mode,
-            path: tsPath,
-            localUrl,
-            publicUrl,
-            hint: publicUrl
-              ? undefined
-              : {
-                  note: "Tailscale serve/funnel may be disabled on this tailnet (or require admin enable).",
-                  enableUrl,
-                },
-          },
-          null,
-          2,
-        ),
-      );
-    });
+        console.log(
+          JSON.stringify(
+            {
+              ok: Boolean(publicUrl),
+              mode,
+              path: tsPath,
+              localUrl,
+              publicUrl,
+              hint: publicUrl
+                ? undefined
+                : {
+                    note: "Tailscale serve/funnel may be disabled on this tailnet (or require admin enable).",
+                    enableUrl,
+                  },
+            },
+            null,
+            2,
+          ),
+        );
+      },
+    );
 }

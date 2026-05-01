@@ -19,7 +19,10 @@ function normalizePathValue(value: unknown): string | undefined {
   return trimmed ? trimmed : undefined;
 }
 
-export function resolveBrewPathDirs(opts?: { homeDir?: string; env?: NodeJS.ProcessEnv }): string[] {
+export function resolveBrewPathDirs(opts?: {
+  homeDir?: string;
+  env?: NodeJS.ProcessEnv;
+}): string[] {
   const homeDir = opts?.homeDir ?? os.homedir();
   const env = opts?.env ?? process.env;
 
@@ -40,7 +43,10 @@ export function resolveBrewPathDirs(opts?: { homeDir?: string; env?: NodeJS.Proc
   return dirs;
 }
 
-export function resolveBrewExecutable(opts?: { homeDir?: string; env?: NodeJS.ProcessEnv }): string | undefined {
+export function resolveBrewExecutable(opts?: {
+  homeDir?: string;
+  env?: NodeJS.ProcessEnv;
+}): string | undefined {
   const homeDir = opts?.homeDir ?? os.homedir();
   const env = opts?.env ?? process.env;
 

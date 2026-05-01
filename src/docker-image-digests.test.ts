@@ -5,7 +5,11 @@ import { describe, expect, it } from "vitest";
 
 const repoRoot = resolve(fileURLToPath(new URL(".", import.meta.url)), "..");
 
-const DIGEST_PINNED_DOCKERFILES = ["Dockerfile", "scripts/e2e/Dockerfile", "scripts/e2e/Dockerfile.qr-import"] as const;
+const DIGEST_PINNED_DOCKERFILES = [
+  "Dockerfile",
+  "scripts/e2e/Dockerfile",
+  "scripts/e2e/Dockerfile.qr-import",
+] as const;
 
 function resolveFirstFromReference(dockerfile: string): string | undefined {
   const argDefaults = new Map<string, string>();
@@ -37,7 +41,8 @@ function resolveFirstFromReference(dockerfile: string): string | undefined {
     return undefined;
   }
   const imageRef = fromMatch[1];
-  const argName = imageRef.match(/^\$\{([A-Z0-9_]+)\}$/)?.[1] ?? imageRef.match(/^\$([A-Z0-9_]+)$/)?.[1];
+  const argName =
+    imageRef.match(/^\$\{([A-Z0-9_]+)\}$/)?.[1] ?? imageRef.match(/^\$([A-Z0-9_]+)$/)?.[1];
 
   if (!argName) {
     return imageRef;
@@ -51,7 +56,9 @@ describe("docker base image pinning", () => {
       const dockerfile = await readFile(resolve(repoRoot, dockerfilePath), "utf8");
       const imageRef = resolveFirstFromReference(dockerfile);
       expect(imageRef, `${dockerfilePath} should define a FROM line`).toBeDefined();
-      expect(imageRef, `${dockerfilePath} FROM must be digest-pinned`).toMatch(/^\S+@sha256:[a-f0-9]{64}$/);
+      expect(imageRef, `${dockerfilePath} FROM must be digest-pinned`).toMatch(
+        /^\S+@sha256:[a-f0-9]{64}$/,
+      );
     }
   });
 

@@ -40,7 +40,9 @@ describe("ports helpers", () => {
       exit: vi.fn() as unknown as (code: number) => never,
     };
     // Avoid slow OS port inspection; this test only cares about messaging + exit behavior.
-    await handlePortError(new PortInUseError(1234, "details"), 1234, "context", runtime).catch(() => {});
+    await handlePortError(new PortInUseError(1234, "details"), 1234, "context", runtime).catch(
+      () => {},
+    );
     const messages = runtime.error.mock.calls.map((call) => stripAnsi(String(call[0] ?? "")));
     expect(messages.join("\n")).toContain("context failed: port 1234 is already in use.");
     expect(messages.join("\n")).toContain("Resolve by stopping the process");
@@ -72,7 +74,9 @@ describeUnix("inspectPortUsage", () => {
     await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
     const port = (server.address() as net.AddressInfo).port;
 
-    runCommandWithTimeoutMock.mockRejectedValueOnce(Object.assign(new Error("spawn lsof ENOENT"), { code: "ENOENT" }));
+    runCommandWithTimeoutMock.mockRejectedValueOnce(
+      Object.assign(new Error("spawn lsof ENOENT"), { code: "ENOENT" }),
+    );
 
     try {
       const result = await inspectPortUsage(port);

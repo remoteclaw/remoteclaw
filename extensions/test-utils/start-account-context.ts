@@ -1,4 +1,8 @@
-import type { ChannelAccountSnapshot, ChannelGatewayContext, RemoteClawConfig } from "remoteclaw/plugin-sdk";
+import type {
+  ChannelAccountSnapshot,
+  ChannelGatewayContext,
+  RemoteClawConfig,
+} from "remoteclaw/plugin-sdk";
 import { vi } from "vitest";
 import { createRuntimeEnv } from "./runtime-env.js";
 

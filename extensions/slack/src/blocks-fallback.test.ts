@@ -4,7 +4,9 @@ import { buildSlackBlocksFallbackText } from "./blocks-fallback.js";
 describe("buildSlackBlocksFallbackText", () => {
   it("prefers header text", () => {
     expect(
-      buildSlackBlocksFallbackText([{ type: "header", text: { type: "plain_text", text: "Deploy status" } }] as never),
+      buildSlackBlocksFallbackText([
+        { type: "header", text: { type: "plain_text", text: "Deploy status" } },
+      ] as never),
     ).toBe("Deploy status");
   });
 
@@ -17,9 +19,13 @@ describe("buildSlackBlocksFallbackText", () => {
   });
 
   it("uses generic defaults for file and unknown blocks", () => {
-    expect(buildSlackBlocksFallbackText([{ type: "file", source: "remote", external_id: "F123" }] as never)).toBe(
-      "Shared a file",
+    expect(
+      buildSlackBlocksFallbackText([
+        { type: "file", source: "remote", external_id: "F123" },
+      ] as never),
+    ).toBe("Shared a file");
+    expect(buildSlackBlocksFallbackText([{ type: "divider" }] as never)).toBe(
+      "Shared a Block Kit message",
     );
-    expect(buildSlackBlocksFallbackText([{ type: "divider" }] as never)).toBe("Shared a Block Kit message");
   });
 });

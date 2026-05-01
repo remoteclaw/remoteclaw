@@ -5,7 +5,10 @@ import { promptAccountId as promptAccountIdSdk } from "../../../plugin-sdk/onboa
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../routing/session-key.js";
 import type { WizardPrompter } from "../../../wizard/prompts.js";
 import type { PromptAccountId, PromptAccountIdParams } from "../onboarding-types.js";
-import { moveSingleAccountChannelSectionToDefaultAccount, patchScopedAccountConfig } from "../setup-helpers.js";
+import {
+  moveSingleAccountChannelSectionToDefaultAccount,
+  patchScopedAccountConfig,
+} from "../setup-helpers.js";
 
 export const promptAccountId: PromptAccountId = async (params: PromptAccountIdParams) => {
   return await promptAccountIdSdk(params);
@@ -110,7 +113,10 @@ export function normalizeAllowFromEntries(
   return [...new Set(normalized)];
 }
 
-export function resolveOnboardingAccountId(params: { accountId?: string; defaultAccountId: string }): string {
+export function resolveOnboardingAccountId(params: {
+  accountId?: string;
+  defaultAccountId: string;
+}): string {
   return params.accountId?.trim() ? normalizeAccountId(params.accountId) : params.defaultAccountId;
 }
 
@@ -160,7 +166,8 @@ export function setTopLevelChannelAllowFrom(params: {
   allowFrom: string[];
   enabled?: boolean;
 }): RemoteClawConfig {
-  const channelConfig = (params.cfg.channels?.[params.channel] as Record<string, unknown> | undefined) ?? {};
+  const channelConfig =
+    (params.cfg.channels?.[params.channel] as Record<string, unknown> | undefined) ?? {};
   return {
     ...params.cfg,
     channels: {
@@ -180,10 +187,14 @@ export function setTopLevelChannelDmPolicyWithAllowFrom(params: {
   dmPolicy: DmPolicy;
   getAllowFrom?: (cfg: RemoteClawConfig) => Array<string | number> | undefined;
 }): RemoteClawConfig {
-  const channelConfig = (params.cfg.channels?.[params.channel] as Record<string, unknown> | undefined) ?? {};
+  const channelConfig =
+    (params.cfg.channels?.[params.channel] as Record<string, unknown> | undefined) ?? {};
   const existingAllowFrom =
-    params.getAllowFrom?.(params.cfg) ?? (channelConfig.allowFrom as Array<string | number> | undefined) ?? undefined;
-  const allowFrom = params.dmPolicy === "open" ? addWildcardAllowFrom(existingAllowFrom) : undefined;
+    params.getAllowFrom?.(params.cfg) ??
+    (channelConfig.allowFrom as Array<string | number> | undefined) ??
+    undefined;
+  const allowFrom =
+    params.dmPolicy === "open" ? addWildcardAllowFrom(existingAllowFrom) : undefined;
   return {
     ...params.cfg,
     channels: {
@@ -203,7 +214,8 @@ export function setTopLevelChannelGroupPolicy(params: {
   groupPolicy: GroupPolicy;
   enabled?: boolean;
 }): RemoteClawConfig {
-  const channelConfig = (params.cfg.channels?.[params.channel] as Record<string, unknown> | undefined) ?? {};
+  const channelConfig =
+    (params.cfg.channels?.[params.channel] as Record<string, unknown> | undefined) ?? {};
   return {
     ...params.cfg,
     channels: {
@@ -223,7 +235,8 @@ export function setChannelDmPolicyWithAllowFrom(params: {
   dmPolicy: DmPolicy;
 }): RemoteClawConfig {
   const { cfg, channel, dmPolicy } = params;
-  const allowFrom = dmPolicy === "open" ? addWildcardAllowFrom(cfg.channels?.[channel]?.allowFrom) : undefined;
+  const allowFrom =
+    dmPolicy === "open" ? addWildcardAllowFrom(cfg.channels?.[channel]?.allowFrom) : undefined;
   return {
     ...cfg,
     channels: {
@@ -252,7 +265,8 @@ export function setLegacyChannelDmPolicyWithAllowFrom(params: {
     dm: undefined,
   };
   const existingAllowFrom = channelConfig.allowFrom ?? channelConfig.dm?.allowFrom;
-  const allowFrom = params.dmPolicy === "open" ? addWildcardAllowFrom(existingAllowFrom) : undefined;
+  const allowFrom =
+    params.dmPolicy === "open" ? addWildcardAllowFrom(existingAllowFrom) : undefined;
   return patchLegacyDmChannelConfig({
     cfg: params.cfg,
     channel: params.channel,
@@ -526,7 +540,9 @@ export async function runSingleChannelSecretStep(params: {
 
   if (result.action === "set") {
     return {
-      cfg: params.applySet ? await params.applySet(params.cfg, result.value, result.resolvedValue) : params.cfg,
+      cfg: params.applySet
+        ? await params.applySet(params.cfg, result.value, result.resolvedValue)
+        : params.cfg,
       action: result.action,
       resolvedValue: result.resolvedValue,
     };
@@ -583,7 +599,10 @@ export async function promptParsedAllowFromForScopedChannel(params: {
   message: string;
   placeholder: string;
   parseEntries: (raw: string) => ParsedAllowFromResult;
-  getExistingAllowFrom: (params: { cfg: RemoteClawConfig; accountId: string }) => Array<string | number>;
+  getExistingAllowFrom: (params: {
+    cfg: RemoteClawConfig;
+    accountId: string;
+  }) => Array<string | number>;
 }): Promise<RemoteClawConfig> {
   const accountId = resolveOnboardingAccountId({
     accountId: params.accountId,
@@ -642,7 +661,10 @@ export async function noteChannelLookupFailure(params: {
   label: string;
   error: unknown;
 }): Promise<void> {
-  await params.prompter.note(`Channel lookup failed; keeping entries as typed. ${String(params.error)}`, params.label);
+  await params.prompter.note(
+    `Channel lookup failed; keeping entries as typed. ${String(params.error)}`,
+    params.label,
+  );
 }
 
 type AllowFromResolution = {
@@ -692,7 +714,10 @@ export async function promptResolvedAllowFrom(params: {
     }
     const unresolved = results.filter((res) => !res.resolved || !res.id);
     if (unresolved.length > 0) {
-      await params.prompter.note(`Could not resolve: ${unresolved.map((res) => res.input).join(", ")}`, params.label);
+      await params.prompter.note(
+        `Could not resolve: ${unresolved.map((res) => res.input).join(", ")}`,
+        params.label,
+      );
       continue;
     }
     const ids = results.map((res) => res.id as string);

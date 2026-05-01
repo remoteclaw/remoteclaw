@@ -154,7 +154,9 @@ describe("status", () => {
     });
 
     it("should detect runtime errors", () => {
-      const snapshots: ChannelAccountSnapshot[] = [createSnapshot({ lastError: "Connection timeout" })];
+      const snapshots: ChannelAccountSnapshot[] = [
+        createSnapshot({ lastError: "Connection timeout" }),
+      ];
 
       const issues = collectTwitchStatusIssues(snapshots);
 

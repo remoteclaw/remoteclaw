@@ -11,7 +11,10 @@ function createSlackGlobalChannelConfig(channels: Record<string, Record<string, 
   };
 }
 
-function createSlackAccountChannelConfig(accountId: string, channels: Record<string, Record<string, unknown>>) {
+function createSlackAccountChannelConfig(
+  accountId: string,
+  channels: Record<string, Record<string, unknown>>,
+) {
   return {
     channels: {
       slack: {

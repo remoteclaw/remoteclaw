@@ -77,12 +77,14 @@ describe("shell env fallback", () => {
 
   function withEtcShells(shells: string[], fn: () => void) {
     const etcShellsContent = `${shells.join("\n")}\n`;
-    const readFileSyncSpy = vi.spyOn(fs, "readFileSync").mockImplementation((filePath, encoding) => {
-      if (filePath === "/etc/shells" && encoding === "utf8") {
-        return etcShellsContent;
-      }
-      throw new Error(`Unexpected readFileSync(${String(filePath)}) in test`);
-    });
+    const readFileSyncSpy = vi
+      .spyOn(fs, "readFileSync")
+      .mockImplementation((filePath, encoding) => {
+        if (filePath === "/etc/shells" && encoding === "utf8") {
+          return etcShellsContent;
+        }
+        throw new Error(`Unexpected readFileSync(${String(filePath)}) in test`);
+      });
     try {
       fn();
     } finally {
@@ -90,14 +92,20 @@ describe("shell env fallback", () => {
     }
   }
 
-  function getShellPathTwiceWithExec(params: { exec: ReturnType<typeof vi.fn>; platform: NodeJS.Platform }) {
+  function getShellPathTwiceWithExec(params: {
+    exec: ReturnType<typeof vi.fn>;
+    platform: NodeJS.Platform;
+  }) {
     return getShellPathTwice({
       exec: params.exec as unknown as Parameters<typeof getShellPathFromLoginShell>[0]["exec"],
       platform: params.platform,
     });
   }
 
-  function probeShellPathWithFreshCache(params: { exec: ReturnType<typeof vi.fn>; platform: NodeJS.Platform }) {
+  function probeShellPathWithFreshCache(params: {
+    exec: ReturnType<typeof vi.fn>;
+    platform: NodeJS.Platform;
+  }) {
     resetShellPathCacheForTests();
     return getShellPathTwiceWithExec(params);
   }
@@ -115,7 +123,9 @@ describe("shell env fallback", () => {
 
   it("uses the same truthy env parsing for deferred fallback", () => {
     expect(shouldDeferShellEnvFallback({} as NodeJS.ProcessEnv)).toBe(false);
-    expect(shouldDeferShellEnvFallback({ REMOTECLAW_DEFER_SHELL_ENV_FALLBACK: "false" })).toBe(false);
+    expect(shouldDeferShellEnvFallback({ REMOTECLAW_DEFER_SHELL_ENV_FALLBACK: "false" })).toBe(
+      false,
+    );
     expect(shouldDeferShellEnvFallback({ REMOTECLAW_DEFER_SHELL_ENV_FALLBACK: "yes" })).toBe(true);
   });
 
@@ -163,7 +173,9 @@ describe("shell env fallback", () => {
     expect(exec).toHaveBeenCalledTimes(1);
 
     env.OPENAI_API_KEY = "from-parent";
-    const exec2 = vi.fn(() => Buffer.from("OPENAI_API_KEY=from-shell\0DISCORD_BOT_TOKEN=discord2\0"));
+    const exec2 = vi.fn(() =>
+      Buffer.from("OPENAI_API_KEY=from-shell\0DISCORD_BOT_TOKEN=discord2\0"),
+    );
     const res2 = runShellEnvFallback({
       enabled: true,
       env,
@@ -179,7 +191,9 @@ describe("shell env fallback", () => {
 
   it("tracks last applied keys across success, skip, and failure paths", () => {
     const successEnv: NodeJS.ProcessEnv = {};
-    const successExec = vi.fn(() => Buffer.from("OPENAI_API_KEY=from-shell\0DISCORD_BOT_TOKEN=\0EXTRA=ignored\0"));
+    const successExec = vi.fn(() =>
+      Buffer.from("OPENAI_API_KEY=from-shell\0DISCORD_BOT_TOKEN=\0EXTRA=ignored\0"),
+    );
     expect(
       loadShellEnvFallback({
         enabled: true,

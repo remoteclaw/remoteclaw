@@ -55,7 +55,10 @@ describe("delivery context helpers", () => {
   });
 
   it("uses fallback route fields when fallback has no channel", () => {
-    const merged = mergeDeliveryContext({ channel: "demo-channel" }, { to: "123", accountId: "acct", threadId: "99" });
+    const merged = mergeDeliveryContext(
+      { channel: "demo-channel" },
+      { to: "123", accountId: "acct", threadId: "99" },
+    );
 
     expect(merged).toEqual({
       channel: "demo-channel",
@@ -66,22 +69,28 @@ describe("delivery context helpers", () => {
   });
 
   it("builds stable keys only when channel and to are present", () => {
-    expect(deliveryContextKey({ channel: "demo-channel", to: "+1555" })).toBe("demo-channel|+1555||");
+    expect(deliveryContextKey({ channel: "demo-channel", to: "+1555" })).toBe(
+      "demo-channel|+1555||",
+    );
     expect(deliveryContextKey({ channel: "demo-channel" })).toBeUndefined();
     expect(deliveryContextKey({ channel: "demo-channel", to: "+1555", accountId: "acct-1" })).toBe(
       "demo-channel|+1555|acct-1|",
     );
-    expect(deliveryContextKey({ channel: "demo-channel", to: "channel:C1", threadId: "123.456" })).toBe(
-      "demo-channel|channel:C1||123.456",
-    );
+    expect(
+      deliveryContextKey({ channel: "demo-channel", to: "channel:C1", threadId: "123.456" }),
+    ).toBe("demo-channel|channel:C1||123.456");
   });
 
   it("formats generic non-matrix conversation targets as channels", () => {
-    expect(formatConversationTarget({ channel: "demo-channel", conversationId: "123" })).toBe("channel:123");
+    expect(formatConversationTarget({ channel: "demo-channel", conversationId: "123" })).toBe(
+      "channel:123",
+    );
   });
 
   it("formats matrix conversation targets as rooms", () => {
-    expect(formatConversationTarget({ channel: "matrix", conversationId: "!room:example" })).toBe("room:!room:example");
+    expect(formatConversationTarget({ channel: "matrix", conversationId: "!room:example" })).toBe(
+      "room:!room:example",
+    );
     expect(
       formatConversationTarget({
         channel: "matrix",

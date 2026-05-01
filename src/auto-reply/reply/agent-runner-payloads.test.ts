@@ -48,7 +48,8 @@ describe("buildReplyPayloads media filter integration", () => {
 
   it("normalizes sent media URLs before deduping normalized reply media", async () => {
     const normalizeMediaPaths = async (payload: { mediaUrl?: string; mediaUrls?: string[] }) => {
-      const normalizeMedia = (value?: string) => (value === "./out/photo.jpg" ? "/tmp/workspace/out/photo.jpg" : value);
+      const normalizeMedia = (value?: string) =>
+        value === "./out/photo.jpg" ? "/tmp/workspace/out/photo.jpg" : value;
       return {
         ...payload,
         mediaUrl: normalizeMedia(payload.mediaUrl),
@@ -81,7 +82,10 @@ describe("buildReplyPayloads media filter integration", () => {
 
     const { replyPayloads } = await buildReplyPayloads({
       ...baseParams,
-      payloads: [{ text: "keep text", mediaUrl: "./bad.png", audioAsVoice: true }, { text: "keep second" }],
+      payloads: [
+        { text: "keep text", mediaUrl: "./bad.png", audioAsVoice: true },
+        { text: "keep second" },
+      ],
       normalizeMediaPaths,
     });
 
@@ -187,7 +191,9 @@ describe("buildReplyPayloads media filter integration", () => {
     // (e.g. from pre-tool flush), the key should match even if replyToId differs.
     const { createBlockReplyContentKey } = await import("./block-reply-pipeline.js");
     const directlySentBlockKeys = new Set<string>();
-    directlySentBlockKeys.add(createBlockReplyContentKey({ text: "response", replyToId: "post-1" }));
+    directlySentBlockKeys.add(
+      createBlockReplyContentKey({ text: "response", replyToId: "post-1" }),
+    );
 
     const { replyPayloads } = await buildReplyPayloads({
       ...baseParams,

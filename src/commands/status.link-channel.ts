@@ -11,9 +11,12 @@ export type LinkChannelContext = {
   plugin: ChannelPlugin;
 };
 
-export async function resolveLinkChannelContext(cfg: RemoteClawConfig): Promise<LinkChannelContext | null> {
+export async function resolveLinkChannelContext(
+  cfg: RemoteClawConfig,
+): Promise<LinkChannelContext | null> {
   for (const plugin of listChannelPlugins()) {
-    const { defaultAccountId, account, enabled, configured } = await resolveDefaultChannelAccountContext(plugin, cfg);
+    const { defaultAccountId, account, enabled, configured } =
+      await resolveDefaultChannelAccountContext(plugin, cfg);
     const snapshot = plugin.config.describeAccount
       ? plugin.config.describeAccount(account, cfg)
       : ({
@@ -30,11 +33,13 @@ export async function resolveLinkChannelContext(cfg: RemoteClawConfig): Promise<
         })
       : undefined;
     const summaryRecord = summary;
-    const linked = summaryRecord && typeof summaryRecord.linked === "boolean" ? summaryRecord.linked : null;
+    const linked =
+      summaryRecord && typeof summaryRecord.linked === "boolean" ? summaryRecord.linked : null;
     if (linked === null) {
       continue;
     }
-    const authAgeMs = summaryRecord && typeof summaryRecord.authAgeMs === "number" ? summaryRecord.authAgeMs : null;
+    const authAgeMs =
+      summaryRecord && typeof summaryRecord.authAgeMs === "number" ? summaryRecord.authAgeMs : null;
     return { linked, authAgeMs, account, accountId: defaultAccountId, plugin };
   }
   return null;

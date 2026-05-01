@@ -4,7 +4,9 @@ import type { MessageCliHelpers } from "./helpers.js";
 export function registerMessageDiscordAdminCommands(message: Command, helpers: MessageCliHelpers) {
   const role = message.command("role").description("Role actions");
   helpers
-    .withMessageBase(role.command("info").description("List roles").requiredOption("--guild-id <id>", "Guild id"))
+    .withMessageBase(
+      role.command("info").description("List roles").requiredOption("--guild-id <id>", "Guild id"),
+    )
     .action(async (opts) => {
       await helpers.runMessageAction("role-info", opts);
     });
@@ -37,13 +39,20 @@ export function registerMessageDiscordAdminCommands(message: Command, helpers: M
 
   const channel = message.command("channel").description("Channel actions");
   helpers
-    .withMessageBase(helpers.withRequiredMessageTarget(channel.command("info").description("Fetch channel info")))
+    .withMessageBase(
+      helpers.withRequiredMessageTarget(channel.command("info").description("Fetch channel info")),
+    )
     .action(async (opts) => {
       await helpers.runMessageAction("channel-info", opts);
     });
 
   helpers
-    .withMessageBase(channel.command("list").description("List channels").requiredOption("--guild-id <id>", "Guild id"))
+    .withMessageBase(
+      channel
+        .command("list")
+        .description("List channels")
+        .requiredOption("--guild-id <id>", "Guild id"),
+    )
     .action(async (opts) => {
       await helpers.runMessageAction("channel-list", opts);
     });
@@ -51,7 +60,10 @@ export function registerMessageDiscordAdminCommands(message: Command, helpers: M
   const member = message.command("member").description("Member actions");
   helpers
     .withMessageBase(
-      member.command("info").description("Fetch member info").requiredOption("--user-id <id>", "User id"),
+      member
+        .command("info")
+        .description("Fetch member info")
+        .requiredOption("--user-id <id>", "User id"),
     )
     .option("--guild-id <id>", "Guild id (Discord)")
     .action(async (opts) => {
@@ -74,7 +86,10 @@ export function registerMessageDiscordAdminCommands(message: Command, helpers: M
   const event = message.command("event").description("Event actions");
   helpers
     .withMessageBase(
-      event.command("list").description("List scheduled events").requiredOption("--guild-id <id>", "Guild id"),
+      event
+        .command("list")
+        .description("List scheduled events")
+        .requiredOption("--guild-id <id>", "Guild id"),
     )
     .action(async (opts) => {
       await helpers.runMessageAction("event-list", opts);

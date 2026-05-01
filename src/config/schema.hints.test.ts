@@ -49,7 +49,9 @@ describe("mapSensitivePaths", () => {
         z.object({ type: z.literal("none") }),
         z.object({ type: z.literal("token"), value: z.string().register(sensitive) }),
       ]),
-      merged: z.object({ id: z.string() }).and(z.object({ nested: z.string().register(sensitive) })),
+      merged: z
+        .object({ id: z.string() })
+        .and(z.object({ nested: z.string().register(sensitive) })),
     });
 
     const result = mapSensitivePaths(GrandSchema, "", {});
@@ -76,7 +78,10 @@ describe("mapSensitivePaths", () => {
       listOfObjects: z.array(z.object({ nested: z.string() })),
       headers: z.record(z.string(), z.string()),
       headersNested: z.record(z.string(), z.object({ nested: z.string() })),
-      auth: z.union([z.object({ type: z.literal("none") }), z.object({ type: z.literal("token"), value: z.string() })]),
+      auth: z.union([
+        z.object({ type: z.literal("none") }),
+        z.object({ type: z.literal("token"), value: z.string() }),
+      ]),
       merged: z.object({ id: z.string() }).and(z.object({ nested: z.string() })),
     });
 

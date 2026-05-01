@@ -9,7 +9,10 @@ export {
   type ConfiguredAcpBindingSpec,
   type ResolvedConfiguredAcpBinding,
 } from "./persistent-bindings.types.js";
-export { ensureConfiguredAcpBindingSession, resetAcpSessionInPlace } from "./persistent-bindings.lifecycle.js";
+export {
+  ensureConfiguredAcpBindingSession,
+  resetAcpSessionInPlace,
+} from "./persistent-bindings.lifecycle.js";
 export {
   resolveConfiguredAcpBindingRecord,
   resolveConfiguredAcpBindingSpecBySessionKey,

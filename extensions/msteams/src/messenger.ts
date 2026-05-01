@@ -13,7 +13,11 @@ import type { StoredConversationReference } from "./conversation-store.js";
 import { classifyMSTeamsSendError } from "./errors.js";
 import { prepareFileConsentActivity, requiresFileConsent } from "./file-consent-helpers.js";
 import { buildTeamsFileInfoCard } from "./graph-chat.js";
-import { getDriveItemProperties, uploadAndShareOneDrive, uploadAndShareSharePoint } from "./graph-upload.js";
+import {
+  getDriveItemProperties,
+  uploadAndShareOneDrive,
+  uploadAndShareSharePoint,
+} from "./graph-upload.js";
 import { extractFilename, extractMessageId, getMimeType, isLocalPath } from "./media-helpers.js";
 import { parseMentions } from "./mentions.js";
 import { withRevokedProxyFallback } from "./revoked-context.js";
@@ -51,7 +55,11 @@ export type MSTeamsAdapter = {
     reference: MSTeamsConversationReference,
     logic: (context: SendContext) => Promise<void>,
   ) => Promise<void>;
-  process: (req: unknown, res: unknown, logic: (context: unknown) => Promise<void>) => Promise<void>;
+  process: (
+    req: unknown,
+    res: unknown,
+    logic: (context: unknown) => Promise<void>,
+  ) => Promise<void>;
 };
 
 export type MSTeamsReplyRenderOptions = {
@@ -90,7 +98,9 @@ function normalizeConversationId(rawId: string): string {
   return rawId.split(";")[0] ?? rawId;
 }
 
-export function buildConversationReference(ref: StoredConversationReference): MSTeamsConversationReference {
+export function buildConversationReference(
+  ref: StoredConversationReference,
+): MSTeamsConversationReference {
   const conversationId = ref.conversation?.id?.trim();
   if (!conversationId) {
     throw new Error("Invalid stored reference: missing conversation.id");
@@ -207,7 +217,10 @@ export function renderReplyPayloadsToMessages(
 
   for (const payload of replies) {
     const mediaList = payload.mediaUrls ?? (payload.mediaUrl ? [payload.mediaUrl] : []);
-    const text = getMSTeamsRuntime().channel.text.convertMarkdownTables(payload.text ?? "", tableMode);
+    const text = getMSTeamsRuntime().channel.text.convertMarkdownTables(
+      payload.text ?? "",
+      tableMode,
+    );
 
     if (!text && mediaList.length === 0) {
       continue;
@@ -384,7 +397,9 @@ export async function sendMSTeamsMessages(params: {
   /** Max media size in bytes. Default: 100MB. */
   mediaMaxBytes?: number;
 }): Promise<string[]> {
-  const messages = params.messages.filter((m) => (m.text && m.text.trim().length > 0) || m.mediaUrl);
+  const messages = params.messages.filter(
+    (m) => (m.text && m.text.trim().length > 0) || m.mediaUrl,
+  );
   if (messages.length === 0) {
     return [];
   }
@@ -460,7 +475,10 @@ export async function sendMSTeamsMessages(params: {
     return messageIds;
   };
 
-  const sendProactively = async (batch: MSTeamsRenderedMessage[], startIndex: number): Promise<string[]> => {
+  const sendProactively = async (
+    batch: MSTeamsRenderedMessage[],
+    startIndex: number,
+  ): Promise<string[]> => {
     const baseRef = buildConversationReference(params.conversationRef);
     const proactiveRef: MSTeamsConversationReference = {
       ...baseRef,

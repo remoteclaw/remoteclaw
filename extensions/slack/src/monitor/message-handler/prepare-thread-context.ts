@@ -29,7 +29,9 @@ export async function resolveSlackThreadContextData(params: {
   roomLabel: string;
   storePath: string;
   sessionKey: string;
-  envelopeOptions: ReturnType<typeof import("../../../../../src/auto-reply/envelope.js").resolveEnvelopeFormatOptions>;
+  envelopeOptions: ReturnType<
+    typeof import("../../../../../src/auto-reply/envelope.js").resolveEnvelopeFormatOptions
+  >;
   effectiveDirectMedia: SlackMediaResult[] | null;
 }): Promise<SlackThreadContextData> {
   let threadStarterBody: string | undefined;
@@ -85,7 +87,9 @@ export async function resolveSlackThreadContextData(params: {
 
     if (threadHistory.length > 0) {
       const uniqueUserIds = [
-        ...new Set(threadHistory.map((item) => item.userId).filter((id): id is string => Boolean(id))),
+        ...new Set(
+          threadHistory.map((item) => item.userId).filter((id): id is string => Boolean(id)),
+        ),
       ];
       const userMap = new Map<string, { name?: string }>();
       await Promise.all(
@@ -100,7 +104,8 @@ export async function resolveSlackThreadContextData(params: {
       const historyParts: string[] = [];
       for (const historyMsg of threadHistory) {
         const msgUser = historyMsg.userId ? userMap.get(historyMsg.userId) : null;
-        const msgSenderName = msgUser?.name ?? (historyMsg.botId ? `Bot (${historyMsg.botId})` : "Unknown");
+        const msgSenderName =
+          msgUser?.name ?? (historyMsg.botId ? `Bot (${historyMsg.botId})` : "Unknown");
         const isBot = Boolean(historyMsg.botId);
         const role = isBot ? "assistant" : "user";
         const msgWithId = `${historyMsg.text}\n[slack message id: ${historyMsg.ts ?? "unknown"} channel: ${params.message.channel}]`;
@@ -116,7 +121,9 @@ export async function resolveSlackThreadContextData(params: {
         );
       }
       threadHistoryBody = historyParts.join("\n\n");
-      logVerbose(`slack: populated thread history with ${threadHistory.length} messages for new session`);
+      logVerbose(
+        `slack: populated thread history with ${threadHistory.length} messages for new session`,
+      );
     }
   }
 

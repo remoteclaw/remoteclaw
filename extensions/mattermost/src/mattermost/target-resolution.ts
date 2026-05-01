@@ -1,6 +1,10 @@
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/mattermost";
 import { resolveMattermostAccount } from "./accounts.js";
-import { createMattermostClient, fetchMattermostUser, normalizeMattermostBaseUrl } from "./client.js";
+import {
+  createMattermostClient,
+  fetchMattermostUser,
+  normalizeMattermostBaseUrl,
+} from "./client.js";
 
 export type MattermostOpaqueTargetResolution = {
   kind: "user" | "channel";
@@ -24,7 +28,11 @@ export function isExplicitMattermostTarget(raw: string): boolean {
   if (!trimmed) {
     return false;
   }
-  return /^(channel|user|mattermost):/i.test(trimmed) || trimmed.startsWith("@") || trimmed.startsWith("#");
+  return (
+    /^(channel|user|mattermost):/i.test(trimmed) ||
+    trimmed.startsWith("@") ||
+    trimmed.startsWith("#")
+  );
 }
 
 export function parseMattermostApiStatus(err: unknown): number | undefined {

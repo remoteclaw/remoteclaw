@@ -2,7 +2,11 @@ import type { BrowserRouteContext, ProfileContext } from "../server-context.js";
 import type { BrowserRequest, BrowserResponse, BrowserRouteRegistrar } from "./types.js";
 import { getProfileContext, jsonError, toNumber, toStringOrEmpty } from "./utils.js";
 
-function resolveTabsProfileContext(req: BrowserRequest, res: BrowserResponse, ctx: BrowserRouteContext) {
+function resolveTabsProfileContext(
+  req: BrowserRequest,
+  res: BrowserResponse,
+  ctx: BrowserRouteContext,
+) {
   const profileCtx = getProfileContext(req, ctx);
   if ("error" in profileCtx) {
     jsonError(res, profileCtx.status, profileCtx.error);
@@ -52,7 +56,10 @@ async function ensureBrowserRunning(profileCtx: ProfileContext, res: BrowserResp
   return true;
 }
 
-function resolveIndexedTab(tabs: Awaited<ReturnType<ProfileContext["listTabs"]>>, index: number | undefined) {
+function resolveIndexedTab(
+  tabs: Awaited<ReturnType<ProfileContext["listTabs"]>>,
+  index: number | undefined,
+) {
   return typeof index === "number" ? tabs[index] : tabs.at(0);
 }
 

@@ -17,7 +17,10 @@ const baseDeliveryParams = {
   textLimit: 4000,
 } as const;
 type DeliverRepliesParams = Parameters<typeof deliverReplies>[0];
-type DeliverWithParams = Omit<DeliverRepliesParams, "chatId" | "token" | "replyToMode" | "textLimit"> &
+type DeliverWithParams = Omit<
+  DeliverRepliesParams,
+  "chatId" | "token" | "replyToMode" | "textLimit"
+> &
   Partial<Pick<DeliverRepliesParams, "replyToMode" | "textLimit">>;
 type RuntimeStub = Pick<RuntimeEnv, "error" | "log" | "exit">;
 
@@ -89,11 +92,15 @@ function createSendMessageHarness(messageId = 4) {
 }
 
 function createVoiceMessagesForbiddenError() {
-  return new Error("GrammyError: Call to 'sendVoice' failed! (400: Bad Request: VOICE_MESSAGES_FORBIDDEN)");
+  return new Error(
+    "GrammyError: Call to 'sendVoice' failed! (400: Bad Request: VOICE_MESSAGES_FORBIDDEN)",
+  );
 }
 
 function createThreadNotFoundError(operation = "sendMessage") {
-  return new Error(`GrammyError: Call to '${operation}' failed! (400: Bad Request: message thread not found)`);
+  return new Error(
+    `GrammyError: Call to '${operation}' failed! (400: Bad Request: message thread not found)`,
+  );
 }
 
 function createVoiceFailureHarness(params: {
@@ -102,7 +109,9 @@ function createVoiceFailureHarness(params: {
 }) {
   const runtime = createRuntime();
   const sendVoice = vi.fn().mockRejectedValue(params.voiceError);
-  const sendMessage = params.sendMessageResult ? vi.fn().mockResolvedValue(params.sendMessageResult) : vi.fn();
+  const sendMessage = params.sendMessageResult
+    ? vi.fn().mockResolvedValue(params.sendMessageResult)
+    : vi.fn();
   const bot = createBot({ sendVoice, sendMessage });
   return { runtime, sendVoice, sendMessage, bot };
 }
@@ -618,7 +627,9 @@ describe("deliverReplies", () => {
     mockMediaLoad("note.ogg", "audio/ogg", "voice");
 
     await deliverWith({
-      replies: [{ mediaUrl: "https://example.com/note.ogg", text: "Hello there", audioAsVoice: true }],
+      replies: [
+        { mediaUrl: "https://example.com/note.ogg", text: "Hello there", audioAsVoice: true },
+      ],
       runtime,
       bot,
     });
@@ -627,7 +638,11 @@ describe("deliverReplies", () => {
     expect(sendVoice).toHaveBeenCalledTimes(1);
     // Fallback to text succeeded
     expect(sendMessage).toHaveBeenCalledTimes(1);
-    expect(sendMessage).toHaveBeenCalledWith("123", expect.stringContaining("Hello there"), expect.any(Object));
+    expect(sendMessage).toHaveBeenCalledWith(
+      "123",
+      expect.stringContaining("Hello there"),
+      expect.any(Object),
+    );
   });
 
   it("voice fallback applies reply-to only on first chunk when replyToMode is first", async () => {
@@ -672,7 +687,9 @@ describe("deliverReplies", () => {
         },
       }),
     );
-    expect(sendMessage.mock.calls[1][2]).not.toEqual(expect.objectContaining({ reply_to_message_id: 77 }));
+    expect(sendMessage.mock.calls[1][2]).not.toEqual(
+      expect.objectContaining({ reply_to_message_id: 77 }),
+    );
     expect(sendMessage.mock.calls[1][2]).not.toHaveProperty("reply_parameters");
     expect(sendMessage.mock.calls[1][2]).not.toHaveProperty("reply_markup");
   });
@@ -719,7 +736,9 @@ describe("deliverReplies", () => {
 
     expect(sendMessage.mock.calls.length).toBeGreaterThanOrEqual(2);
     // First chunk should have reply_to_message_id
-    expect(sendMessage.mock.calls[0][2]).toEqual(expect.objectContaining({ reply_to_message_id: 700 }));
+    expect(sendMessage.mock.calls[0][2]).toEqual(
+      expect.objectContaining({ reply_to_message_id: 700 }),
+    );
     // Second chunk should NOT have reply_to_message_id
     expect(sendMessage.mock.calls[1][2]).not.toHaveProperty("reply_to_message_id");
   });
@@ -772,7 +791,9 @@ describe("deliverReplies", () => {
 
     expect(sendPhoto).toHaveBeenCalledTimes(2);
     // First media should have reply_to_message_id
-    expect(sendPhoto.mock.calls[0][2]).toEqual(expect.objectContaining({ reply_to_message_id: 900 }));
+    expect(sendPhoto.mock.calls[0][2]).toEqual(
+      expect.objectContaining({ reply_to_message_id: 900 }),
+    );
     // Second media should NOT have reply_to_message_id
     expect(sendPhoto.mock.calls[1][2]).not.toHaveProperty("reply_to_message_id");
   });

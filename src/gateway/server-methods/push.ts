@@ -42,7 +42,10 @@ export const pushHandlers: GatewayRequestHandlers = {
         respond(
           false,
           undefined,
-          errorShape(ErrorCodes.INVALID_REQUEST, `node ${nodeId} has no APNs registration (connect iOS node first)`),
+          errorShape(
+            ErrorCodes.INVALID_REQUEST,
+            `node ${nodeId} has no APNs registration (connect iOS node first)`,
+          ),
         );
         return;
       }

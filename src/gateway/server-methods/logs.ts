@@ -2,7 +2,12 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { getResolvedLoggerSettings } from "../../logging.js";
 import { clamp } from "../../utils.js";
-import { ErrorCodes, errorShape, formatValidationErrors, validateLogsTailParams } from "../protocol/index.js";
+import {
+  ErrorCodes,
+  errorShape,
+  formatValidationErrors,
+  validateLogsTailParams,
+} from "../protocol/index.js";
 import type { GatewayRequestHandlers } from "./types.js";
 
 const DEFAULT_LIMIT = 500;
@@ -45,7 +50,12 @@ async function resolveLogFile(file: string): Promise<string> {
   return sorted[0]?.path ?? file;
 }
 
-async function readLogSlice(params: { file: string; cursor?: number; limit: number; maxBytes: number }) {
+async function readLogSlice(params: {
+  file: string;
+  cursor?: number;
+  limit: number;
+  maxBytes: number;
+}) {
   const stat = await fs.stat(params.file).catch(() => null);
   if (!stat) {
     return {
@@ -160,7 +170,11 @@ export const logsHandlers: GatewayRequestHandlers = {
       });
       respond(true, { file, ...result }, undefined);
     } catch (err) {
-      respond(false, undefined, errorShape(ErrorCodes.UNAVAILABLE, `log read failed: ${String(err)}`));
+      respond(
+        false,
+        undefined,
+        errorShape(ErrorCodes.UNAVAILABLE, `log read failed: ${String(err)}`),
+      );
     }
   },
 };

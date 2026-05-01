@@ -89,7 +89,9 @@ export function createInMemorySessionStore(options: AcpSessionStoreOptions = {})
     }
     reapIdleSessions(nowMs);
     if (sessions.size >= maxSessions && !evictOldestIdleSession()) {
-      throw new Error(`ACP session limit reached (max ${maxSessions}). Close idle ACP clients and retry.`);
+      throw new Error(
+        `ACP session limit reached (max ${maxSessions}). Close idle ACP clients and retry.`,
+      );
     }
     const session: AcpSession = {
       sessionId,

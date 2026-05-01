@@ -5,8 +5,16 @@ import type { Command } from "commander";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { loadConfig, writeConfigFile } from "../config/io.js";
-import { buildWorkspaceHookStatus, type HookStatusEntry, type HookStatusReport } from "../hooks/hooks-status.js";
-import { installHooksFromNpmSpec, installHooksFromPath, resolveHookInstallDir } from "../hooks/install.js";
+import {
+  buildWorkspaceHookStatus,
+  type HookStatusEntry,
+  type HookStatusReport,
+} from "../hooks/hooks-status.js";
+import {
+  installHooksFromNpmSpec,
+  installHooksFromPath,
+  resolveHookInstallDir,
+} from "../hooks/install.js";
 import { recordHookInstall } from "../hooks/installs.js";
 import type { HookEntry } from "../hooks/types.js";
 import { loadWorkspaceHookEntries } from "../hooks/workspace.js";
@@ -19,7 +27,10 @@ import { theme } from "../terminal/theme.js";
 import { resolveUserPath, shortenHomePath } from "../utils.js";
 import { formatCliCommand } from "./command-format.js";
 import { looksLikeLocalInstallSpec } from "./install-spec.js";
-import { buildNpmInstallRecordFields, resolvePinnedNpmInstallRecordForCli } from "./npm-resolution.js";
+import {
+  buildNpmInstallRecordFields,
+  resolvePinnedNpmInstallRecordForCli,
+} from "./npm-resolution.js";
 import { promptYesNo } from "./prompt.js";
 
 export type HooksListOptions = {
@@ -148,7 +159,9 @@ function formatHookMissingSummary(hook: HookStatusEntry): string {
 }
 
 function exitHooksCliWithError(err: unknown): never {
-  defaultRuntime.error(`${theme.error("Error:")} ${err instanceof Error ? err.message : String(err)}`);
+  defaultRuntime.error(
+    `${theme.error("Error:")} ${err instanceof Error ? err.message : String(err)}`,
+  );
   process.exit(1);
 }
 
@@ -202,7 +215,10 @@ async function readInstalledPackageVersion(dir: string): Promise<string | undefi
 
 type HookInternalEntryLike = Record<string, unknown> & { enabled?: boolean };
 
-function enableInternalHookEntries(config: RemoteClawConfig, hookNames: string[]): RemoteClawConfig {
+function enableInternalHookEntries(
+  config: RemoteClawConfig,
+  hookNames: string[],
+): RemoteClawConfig {
   const entries = { ...config.hooks?.internal?.entries } as Record<string, HookInternalEntryLike>;
 
   for (const hookName of hookNames) {
@@ -283,7 +299,9 @@ export function formatHooksList(report: HookStatusReport, opts: HooksListOptions
   }
 
   const lines: string[] = [];
-  lines.push(`${theme.heading("Hooks")} ${theme.muted(`(${eligible.length}/${hooks.length} ready)`)}`);
+  lines.push(
+    `${theme.heading("Hooks")} ${theme.muted(`(${eligible.length}/${hooks.length} ready)`)}`,
+  );
   lines.push(
     renderTable({
       width: tableWidth,
@@ -297,7 +315,11 @@ export function formatHooksList(report: HookStatusReport, opts: HooksListOptions
 /**
  * Format detailed info for a single hook
  */
-export function formatHookInfo(report: HookStatusReport, hookName: string, opts: HookInfoOptions): string {
+export function formatHookInfo(
+  report: HookStatusReport,
+  hookName: string,
+  opts: HookInfoOptions,
+): string {
   const hook = report.hooks.find((h) => h.name === hookName || h.hookKey === hookName);
 
   if (!hook) {
@@ -469,7 +491,9 @@ export async function enableHook(hookName: string): Promise<void> {
   });
 
   await writeConfigFile(nextConfig);
-  defaultRuntime.log(`${theme.success("✓")} Enabled hook: ${hook.emoji ?? "🔗"} ${theme.command(hookName)}`);
+  defaultRuntime.log(
+    `${theme.success("✓")} Enabled hook: ${hook.emoji ?? "🔗"} ${theme.command(hookName)}`,
+  );
 }
 
 export async function disableHook(hookName: string): Promise<void> {
@@ -478,7 +502,9 @@ export async function disableHook(hookName: string): Promise<void> {
   const nextConfig = buildConfigWithHookEnabled({ config, hookName, enabled: false });
 
   await writeConfigFile(nextConfig);
-  defaultRuntime.log(`${theme.warn("⏸")} Disabled hook: ${hook.emoji ?? "🔗"} ${theme.command(hookName)}`);
+  defaultRuntime.log(
+    `${theme.warn("⏸")} Disabled hook: ${hook.emoji ?? "🔗"} ${theme.command(hookName)}`,
+  );
 }
 
 export function registerHooksCli(program: Command): void {
@@ -487,7 +513,8 @@ export function registerHooksCli(program: Command): void {
     .description("Manage internal agent hooks")
     .addHelpText(
       "after",
-      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/hooks", "docs.remoteclaw.org/cli/hooks")}\n`,
+      () =>
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/hooks", "docs.remoteclaw.org/cli/hooks")}\n`,
     );
 
   hooks

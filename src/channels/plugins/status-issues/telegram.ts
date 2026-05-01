@@ -1,5 +1,10 @@
 import type { ChannelAccountSnapshot, ChannelStatusIssue } from "../types.js";
-import { appendMatchMetadata, asString, isRecord, resolveEnabledConfiguredAccountId } from "./shared.js";
+import {
+  appendMatchMetadata,
+  asString,
+  isRecord,
+  resolveEnabledConfiguredAccountId,
+} from "./shared.js";
 
 type TelegramAccountStatus = {
   accountId?: unknown;
@@ -35,7 +40,9 @@ function readTelegramAccountStatus(value: ChannelAccountSnapshot): TelegramAccou
   };
 }
 
-function readTelegramGroupMembershipAuditSummary(value: unknown): TelegramGroupMembershipAuditSummary {
+function readTelegramGroupMembershipAuditSummary(
+  value: unknown,
+): TelegramGroupMembershipAuditSummary {
   if (!isRecord(value)) {
     return {};
   }
@@ -44,7 +51,9 @@ function readTelegramGroupMembershipAuditSummary(value: unknown): TelegramGroupM
       ? value.unresolvedGroups
       : undefined;
   const hasWildcardUnmentionedGroups =
-    typeof value.hasWildcardUnmentionedGroups === "boolean" ? value.hasWildcardUnmentionedGroups : undefined;
+    typeof value.hasWildcardUnmentionedGroups === "boolean"
+      ? value.hasWildcardUnmentionedGroups
+      : undefined;
   const groupsRaw = value.groups;
   const groups = Array.isArray(groupsRaw)
     ? (groupsRaw
@@ -68,7 +77,9 @@ function readTelegramGroupMembershipAuditSummary(value: unknown): TelegramGroupM
   return { unresolvedGroups, hasWildcardUnmentionedGroups, groups };
 }
 
-export function collectTelegramStatusIssues(accounts: ChannelAccountSnapshot[]): ChannelStatusIssue[] {
+export function collectTelegramStatusIssues(
+  accounts: ChannelAccountSnapshot[],
+): ChannelStatusIssue[] {
   const issues: ChannelStatusIssue[] = [];
   for (const entry of accounts) {
     const account = readTelegramAccountStatus(entry);

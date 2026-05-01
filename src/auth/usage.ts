@@ -132,7 +132,10 @@ export function resolveProfilesUnavailableReason(params: {
  * profiles, or `null` when no profile has a recorded cooldown. Note: the
  * returned timestamp may be in the past if the cooldown has already expired.
  */
-export function getSoonestCooldownExpiry(store: AuthProfileStore, profileIds: string[]): number | null {
+export function getSoonestCooldownExpiry(
+  store: AuthProfileStore,
+  profileIds: string[],
+): number | null {
   let soonest: number | null = null;
   for (const id of profileIds) {
     const stats = store.usageStats?.[id];
@@ -225,7 +228,10 @@ export function clearExpiredCooldowns(store: AuthProfileStore, now?: number): bo
  * Mark a profile as successfully used. Resets error count and updates lastUsed.
  * Uses store lock to avoid overwriting concurrent usage updates.
  */
-export async function markAuthProfileUsed(params: { store: AuthProfileStore; profileId: string }): Promise<void> {
+export async function markAuthProfileUsed(params: {
+  store: AuthProfileStore;
+  profileId: string;
+}): Promise<void> {
   const { store, profileId } = params;
   const updated = await updateAuthProfileStoreWithLock({
     updater: (freshStore) => {
@@ -280,7 +286,10 @@ type ResolvedAuthCooldownConfig = {
   failureWindowMs: number;
 };
 
-function resolveAuthCooldownConfig(params: { cfg?: RemoteClawConfig; providerId: string }): ResolvedAuthCooldownConfig {
+function resolveAuthCooldownConfig(params: {
+  cfg?: RemoteClawConfig;
+  providerId: string;
+}): ResolvedAuthCooldownConfig {
   const defaults = {
     billingBackoffHours: 5,
     billingMaxHours: 24,
@@ -309,7 +318,10 @@ function resolveAuthCooldownConfig(params: { cfg?: RemoteClawConfig; providerId:
     defaults.billingBackoffHours,
   );
   const billingMaxHours = resolveHours(cooldowns?.billingMaxHours, defaults.billingMaxHours);
-  const failureWindowHours = resolveHours(cooldowns?.failureWindowHours, defaults.failureWindowHours);
+  const failureWindowHours = resolveHours(
+    cooldowns?.failureWindowHours,
+    defaults.failureWindowHours,
+  );
 
   return {
     billingBackoffMs: billingBackoffHours * 60 * 60 * 1000,
@@ -331,7 +343,10 @@ function calculateAuthProfileBillingDisableMsWithConfig(params: {
   return Math.min(maxMs, raw);
 }
 
-export function resolveProfileUnusableUntilForDisplay(store: AuthProfileStore, profileId: string): number | null {
+export function resolveProfileUnusableUntilForDisplay(
+  store: AuthProfileStore,
+  profileId: string,
+): number | null {
   if (isAuthCooldownBypassedForProvider(store.profiles[profileId]?.provider)) {
     return null;
   }
@@ -348,7 +363,8 @@ function keepActiveWindowOrRecompute(params: {
   recomputedUntil: number;
 }): number {
   const { existingUntil, now, recomputedUntil } = params;
-  const hasActiveWindow = typeof existingUntil === "number" && Number.isFinite(existingUntil) && existingUntil > now;
+  const hasActiveWindow =
+    typeof existingUntil === "number" && Number.isFinite(existingUntil) && existingUntil > now;
   return hasActiveWindow ? existingUntil : recomputedUntil;
 }
 
@@ -476,7 +492,10 @@ export async function markAuthProfileFailure(params: {
  * Cooldown times: 1min, 5min, 25min, max 1 hour.
  * Uses store lock to avoid overwriting concurrent usage updates.
  */
-export async function markAuthProfileCooldown(params: { store: AuthProfileStore; profileId: string }): Promise<void> {
+export async function markAuthProfileCooldown(params: {
+  store: AuthProfileStore;
+  profileId: string;
+}): Promise<void> {
   await markAuthProfileFailure({
     store: params.store,
     profileId: params.profileId,
@@ -488,7 +507,10 @@ export async function markAuthProfileCooldown(params: { store: AuthProfileStore;
  * Clear cooldown for a profile (e.g., manual reset).
  * Uses store lock to avoid overwriting concurrent usage updates.
  */
-export async function clearAuthProfileCooldown(params: { store: AuthProfileStore; profileId: string }): Promise<void> {
+export async function clearAuthProfileCooldown(params: {
+  store: AuthProfileStore;
+  profileId: string;
+}): Promise<void> {
   const { store, profileId } = params;
   const updated = await updateAuthProfileStoreWithLock({
     updater: (freshStore) => {

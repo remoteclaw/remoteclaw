@@ -148,7 +148,9 @@ describe("channel plugin catalog", () => {
       }),
     );
 
-    const ids = listChannelPluginCatalogEntries({ catalogPaths: [catalogPath] }).map((entry) => entry.id);
+    const ids = listChannelPluginCatalogEntries({ catalogPaths: [catalogPath] }).map(
+      (entry) => entry.id,
+    );
     expect(ids).toContain("demo-channel");
   });
 });
@@ -166,7 +168,9 @@ const msteamsPlugin: ChannelPlugin = {
   outbound: msteamsOutbound,
 };
 
-const registryWithMSTeams = createTestRegistry([{ pluginId: "msteams", plugin: msteamsPlugin, source: "test" }]);
+const registryWithMSTeams = createTestRegistry([
+  { pluginId: "msteams", plugin: msteamsPlugin, source: "test" },
+]);
 
 const msteamsOutboundV2: ChannelOutboundAdapter = {
   deliveryMode: "direct",
@@ -180,7 +184,9 @@ const msteamsPluginV2 = createOutboundTestPlugin({
   outbound: msteamsOutboundV2,
 });
 
-const registryWithMSTeamsV2 = createTestRegistry([{ pluginId: "msteams", plugin: msteamsPluginV2, source: "test-v2" }]);
+const registryWithMSTeamsV2 = createTestRegistry([
+  { pluginId: "msteams", plugin: msteamsPluginV2, source: "test-v2" },
+]);
 
 const mstNoOutboundPlugin = createChannelTestPluginBase({
   id: "msteams",
@@ -472,9 +478,14 @@ describe("directory (config-backed)", () => {
       ["user:111", "user:12345", "user:222", "user:333", "user:444"],
       { sorted: true },
     );
-    await expectDirectoryIds(listDiscordDirectoryGroupsFromConfig, cfg, ["channel:555", "channel:666", "channel:777"], {
-      sorted: true,
-    });
+    await expectDirectoryIds(
+      listDiscordDirectoryGroupsFromConfig,
+      cfg,
+      ["channel:555", "channel:666", "channel:777"],
+      {
+        sorted: true,
+      },
+    );
   });
 
   it("lists Telegram peers/groups from config", async () => {
@@ -490,9 +501,14 @@ describe("directory (config-backed)", () => {
       // oxlint-disable-next-line typescript/no-explicit-any
     } as any;
 
-    await expectDirectoryIds(listTelegramDirectoryPeersFromConfig, cfg, ["123", "456", "@alice", "@bob"], {
-      sorted: true,
-    });
+    await expectDirectoryIds(
+      listTelegramDirectoryPeersFromConfig,
+      cfg,
+      ["123", "456", "@alice", "@bob"],
+      {
+        sorted: true,
+      },
+    );
     await expectDirectoryIds(listTelegramDirectoryGroupsFromConfig, cfg, ["-1001"]);
   });
 

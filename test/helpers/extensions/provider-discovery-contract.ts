@@ -48,10 +48,11 @@ function setRuntimeAuthStore(store?: AuthProfileStore) {
     profiles: {},
   };
   ensureAuthProfileStoreMock.mockReturnValue(resolvedStore);
-  listProfilesForProviderMock.mockImplementation((authStore: AuthProfileStore, providerId: string) =>
-    Object.entries(authStore.profiles)
-      .filter(([, credential]) => credential.provider === providerId)
-      .map(([profileId]) => profileId),
+  listProfilesForProviderMock.mockImplementation(
+    (authStore: AuthProfileStore, providerId: string) =>
+      Object.entries(authStore.profiles)
+        .filter(([, credential]) => credential.provider === providerId)
+        .map(([profileId]) => profileId),
   );
 }
 
@@ -139,7 +140,9 @@ function installDiscoveryHooks(state: DiscoveryState) {
       };
     });
     vi.doMock("remoteclaw/plugin-sdk/self-hosted-provider-setup", async () => {
-      const actual = await vi.importActual<object>("remoteclaw/plugin-sdk/self-hosted-provider-setup");
+      const actual = await vi.importActual<object>(
+        "remoteclaw/plugin-sdk/self-hosted-provider-setup",
+      );
       return {
         ...actual,
         buildVllmProvider: (...args: unknown[]) => buildVllmProviderMock(...args),
@@ -160,7 +163,8 @@ function installDiscoveryHooks(state: DiscoveryState) {
         buildSglangProvider: (...args: unknown[]) => buildSglangProviderMock(...args),
       };
     });
-    ({ runProviderCatalog: state.runProviderCatalog } = await import("../../../src/plugins/provider-discovery.js"));
+    ({ runProviderCatalog: state.runProviderCatalog } =
+      await import("../../../src/plugins/provider-discovery.js"));
     const [
       { default: githubCopilotPlugin },
       { default: ollamaPlugin },
@@ -178,13 +182,22 @@ function installDiscoveryHooks(state: DiscoveryState) {
       import("../../../extensions/modelstudio/index.js"),
       import("../../../extensions/cloudflare-ai-gateway/index.js"),
     ]);
-    state.githubCopilotProvider = requireProvider(registerProviders(githubCopilotPlugin), "github-copilot");
+    state.githubCopilotProvider = requireProvider(
+      registerProviders(githubCopilotPlugin),
+      "github-copilot",
+    );
     state.ollamaProvider = requireProvider(registerProviders(ollamaPlugin), "ollama");
     state.vllmProvider = requireProvider(registerProviders(vllmPlugin), "vllm");
     state.sglangProvider = requireProvider(registerProviders(sglangPlugin), "sglang");
     state.minimaxProvider = requireProvider(registerProviders(minimaxPlugin), "minimax");
-    state.minimaxPortalProvider = requireProvider(registerProviders(minimaxPlugin), "minimax-portal");
-    state.modelStudioProvider = requireProvider(registerProviders(modelStudioPlugin), "modelstudio");
+    state.minimaxPortalProvider = requireProvider(
+      registerProviders(minimaxPlugin),
+      "minimax-portal",
+    );
+    state.modelStudioProvider = requireProvider(
+      registerProviders(modelStudioPlugin),
+      "modelstudio",
+    );
     state.cloudflareAiGatewayProvider = requireProvider(
       registerProviders(cloudflareAiGatewayPlugin),
       "cloudflare-ai-gateway",
@@ -210,7 +223,9 @@ export function describeGithubCopilotProviderDiscoveryContract() {
     installDiscoveryHooks(state);
 
     it("keeps catalog disabled without env tokens or profiles", async () => {
-      await expect(runCatalog(state, { provider: state.githubCopilotProvider! })).resolves.toBeNull();
+      await expect(
+        runCatalog(state, { provider: state.githubCopilotProvider! }),
+      ).resolves.toBeNull();
     });
 
     it("keeps profile-only catalog fallback provider-owned", async () => {

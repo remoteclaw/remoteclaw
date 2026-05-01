@@ -29,7 +29,8 @@ export function renderDebug(props: DebugProps) {
   const warn = securitySummary?.warn ?? 0;
   const info = securitySummary?.info ?? 0;
   const securityTone = critical > 0 ? "danger" : warn > 0 ? "warn" : "success";
-  const securityLabel = critical > 0 ? `${critical} critical` : warn > 0 ? `${warn} warnings` : "No critical issues";
+  const securityLabel =
+    critical > 0 ? `${critical} critical` : warn > 0 ? `${warn} warnings` : "No critical issues";
 
   return html`
     <section class="grid grid-cols-2">
@@ -107,7 +108,9 @@ export function renderDebug(props: DebugProps) {
             : nothing
         }
         ${
-          props.callResult ? html`<pre class="code-block" style="margin-top: 12px;">${props.callResult}</pre>` : nothing
+          props.callResult
+            ? html`<pre class="code-block" style="margin-top: 12px;">${props.callResult}</pre>`
+            : nothing
         }
       </div>
     </section>

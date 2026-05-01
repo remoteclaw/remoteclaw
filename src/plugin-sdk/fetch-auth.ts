@@ -42,7 +42,8 @@ export async function fetchWithBearerAuthScopeFallback(params: {
     return firstAttempt;
   }
 
-  const shouldRetry = params.shouldRetry ?? ((response: Response) => isAuthFailureStatus(response.status));
+  const shouldRetry =
+    params.shouldRetry ?? ((response: Response) => isAuthFailureStatus(response.status));
   if (!shouldRetry(firstAttempt)) {
     return firstAttempt;
   }

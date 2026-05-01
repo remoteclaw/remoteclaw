@@ -38,7 +38,11 @@ import {
   resolveBlueBubblesMessageId,
   resolveReplyContextFromCache,
 } from "./monitor-reply-cache.js";
-import type { BlueBubblesCoreRuntime, BlueBubblesRuntimeEnv, WebhookTarget } from "./monitor-shared.js";
+import type {
+  BlueBubblesCoreRuntime,
+  BlueBubblesRuntimeEnv,
+  WebhookTarget,
+} from "./monitor-shared.js";
 import { isBlueBubblesPrivateApiEnabled } from "./probe.js";
 import { normalizeBlueBubblesReactionInput, sendBlueBubblesReaction } from "./reactions.js";
 import { normalizeSecretInputString } from "./secret-input.js";
@@ -178,7 +182,11 @@ function consumePendingOutboundMessageId(params: {
   return null;
 }
 
-export function logVerbose(core: BlueBubblesCoreRuntime, runtime: BlueBubblesRuntimeEnv, message: string): void {
+export function logVerbose(
+  core: BlueBubblesCoreRuntime,
+  runtime: BlueBubblesRuntimeEnv,
+  message: string,
+): void {
   if (core.logging.shouldLogVerbose()) {
     runtime.log?.(`[bluebubbles] ${message}`);
   }
@@ -193,13 +201,17 @@ function logGroupAllowlistHint(params: {
 }): void {
   const log = params.runtime.log ?? console.log;
   const nameHint = params.chatName ? ` (group name: ${params.chatName})` : "";
-  const accountHint = params.accountId ? ` (or channels.bluebubbles.accounts.${params.accountId}.groupAllowFrom)` : "";
+  const accountHint = params.accountId
+    ? ` (or channels.bluebubbles.accounts.${params.accountId}.groupAllowFrom)`
+    : "";
   if (params.entry) {
     log(
       `[bluebubbles] group message blocked (${params.reason}). Allow this group by adding ` +
         `"${params.entry}" to channels.bluebubbles.groupAllowFrom${nameHint}.`,
     );
-    log(`[bluebubbles] add to config: channels.bluebubbles.groupAllowFrom=["${params.entry}"]${accountHint}.`);
+    log(
+      `[bluebubbles] add to config: channels.bluebubbles.groupAllowFrom=["${params.entry}"]${accountHint}.`,
+    );
     return;
   }
   log(
@@ -226,7 +238,11 @@ function resolveBlueBubblesAckReaction(params: {
     const key = raw.toLowerCase();
     if (!invalidAckReactions.has(key)) {
       invalidAckReactions.add(key);
-      logVerbose(params.core, params.runtime, `ack reaction skipped (unsupported for BlueBubbles): ${raw}`);
+      logVerbose(
+        params.core,
+        params.runtime,
+        `ack reaction skipped (unsupported for BlueBubbles): ${raw}`,
+      );
     }
     return null;
   }
@@ -352,7 +368,10 @@ function planHistoryBackfillAttempt(historyKey: string, now: number): HistoryBac
 
   const attempts = (existing?.attempts ?? 0) + 1;
   const firstAttemptAt = existing?.firstAttemptAt ?? now;
-  const backoffDelay = Math.min(HISTORY_BACKFILL_BASE_DELAY_MS * 2 ** (attempts - 1), HISTORY_BACKFILL_MAX_DELAY_MS);
+  const backoffDelay = Math.min(
+    HISTORY_BACKFILL_BASE_DELAY_MS * 2 ** (attempts - 1),
+    HISTORY_BACKFILL_MAX_DELAY_MS,
+  );
   const state: HistoryBackfillState = {
     attempts,
     firstAttemptAt,
@@ -401,7 +420,10 @@ function buildInboundHistorySnapshot(params: {
   return selected;
 }
 
-export async function processMessage(message: NormalizedWebhookMessage, target: WebhookTarget): Promise<void> {
+export async function processMessage(
+  message: NormalizedWebhookMessage,
+  target: WebhookTarget,
+): Promise<void> {
   const { account, config, runtime, core, statusSink } = target;
   const pairing = createScopedPairingAccess({
     core,
@@ -465,7 +487,9 @@ export async function processMessage(message: NormalizedWebhookMessage, target: 
       if (pending) {
         const displayId = getShortIdForUuid(cacheMessageId) || cacheMessageId;
         const previewSource = pending.snippetRaw || rawBody;
-        const preview = previewSource ? ` "${previewSource.slice(0, 12)}${previewSource.length > 12 ? "…" : ""}"` : "";
+        const preview = previewSource
+          ? ` "${previewSource.slice(0, 12)}${previewSource.length > 12 ? "…" : ""}"`
+          : "";
         core.system.enqueueSystemEvent(`Assistant sent${preview} [message_id:${displayId}]`, {
           sessionKey: pending.sessionKey,
           contextKey: `bluebubbles:outbound:${pending.outboundTarget}:${cacheMessageId}`,
@@ -544,7 +568,11 @@ export async function processMessage(message: NormalizedWebhookMessage, target: 
         return;
       }
       if (accessDecision.reasonCode === DM_GROUP_ACCESS_REASON.GROUP_POLICY_NOT_ALLOWLISTED) {
-        logVerbose(core, runtime, `Blocked BlueBubbles sender ${message.senderId} (not in groupAllowFrom)`);
+        logVerbose(
+          core,
+          runtime,
+          `Blocked BlueBubbles sender ${message.senderId} (not in groupAllowFrom)`,
+        );
         logVerbose(
           core,
           runtime,
@@ -587,14 +615,24 @@ export async function processMessage(message: NormalizedWebhookMessage, target: 
           statusSink?.({ lastOutboundAt: Date.now() });
         },
         onReplyError: (err) => {
-          logVerbose(core, runtime, `bluebubbles pairing reply failed for ${message.senderId}: ${String(err)}`);
-          runtime.error?.(`[bluebubbles] pairing reply failed sender=${message.senderId}: ${String(err)}`);
+          logVerbose(
+            core,
+            runtime,
+            `bluebubbles pairing reply failed for ${message.senderId}: ${String(err)}`,
+          );
+          runtime.error?.(
+            `[bluebubbles] pairing reply failed sender=${message.senderId}: ${String(err)}`,
+          );
         },
       });
       return;
     }
 
-    logVerbose(core, runtime, `Blocked unauthorized BlueBubbles sender ${message.senderId} (dmPolicy=${dmPolicy})`);
+    logVerbose(
+      core,
+      runtime,
+      `Blocked unauthorized BlueBubbles sender ${message.senderId} (dmPolicy=${dmPolicy})`,
+    );
     logVerbose(
       core,
       runtime,
@@ -606,7 +644,9 @@ export async function processMessage(message: NormalizedWebhookMessage, target: 
   const chatId = message.chatId ?? undefined;
   const chatGuid = message.chatGuid ?? undefined;
   const chatIdentifier = message.chatIdentifier ?? undefined;
-  const peerId = isGroup ? (chatGuid ?? chatIdentifier ?? (chatId ? String(chatId) : "group")) : message.senderId;
+  const peerId = isGroup
+    ? (chatGuid ?? chatIdentifier ?? (chatId ? String(chatId) : "group"))
+    : message.senderId;
 
   const route = core.channel.routing.resolveAgentRoute({
     cfg: config,
@@ -621,7 +661,9 @@ export async function processMessage(message: NormalizedWebhookMessage, target: 
   // Mention gating for group chats (parity with iMessage/WhatsApp)
   const messageText = text;
   const mentionRegexes = core.channel.mentions.buildMentionRegexes(config, route.agentId);
-  const wasMentioned = isGroup ? core.channel.mentions.matchesMentionPatterns(messageText, mentionRegexes) : true;
+  const wasMentioned = isGroup
+    ? core.channel.mentions.matchesMentionPatterns(messageText, mentionRegexes)
+    : true;
   const canDetectMention = mentionRegexes.length > 0;
   const requireMention = core.channel.groups.resolveRequireMention({
     cfg: config,
@@ -677,7 +719,8 @@ export async function processMessage(message: NormalizedWebhookMessage, target: 
   }
 
   // Allow control commands to bypass mention gating when authorized (parity with iMessage)
-  const shouldBypassMention = isGroup && requireMention && !wasMentioned && commandAuthorized && hasControlCmd;
+  const shouldBypassMention =
+    isGroup && requireMention && !wasMentioned && commandAuthorized && hasControlCmd;
   const effectiveWasMentioned = wasMentioned || shouldBypassMention;
 
   // Skip group messages that require mention but weren't mentioned
@@ -709,7 +752,11 @@ export async function processMessage(message: NormalizedWebhookMessage, target: 
           continue;
         }
         if (attachment.totalBytes && attachment.totalBytes > maxBytes) {
-          logVerbose(core, runtime, `attachment too large guid=${attachment.guid} bytes=${attachment.totalBytes}`);
+          logVerbose(
+            core,
+            runtime,
+            `attachment too large guid=${attachment.guid} bytes=${attachment.totalBytes}`,
+          );
           continue;
         }
         try {
@@ -730,7 +777,11 @@ export async function processMessage(message: NormalizedWebhookMessage, target: 
             mediaTypes.push(saved.contentType);
           }
         } catch (err) {
-          logVerbose(core, runtime, `attachment download failed guid=${attachment.guid} err=${String(err)}`);
+          logVerbose(
+            core,
+            runtime,
+            `attachment download failed guid=${attachment.guid} err=${String(err)}`,
+          );
         }
       }
     }
@@ -780,7 +831,11 @@ export async function processMessage(message: NormalizedWebhookMessage, target: 
   // For tapbacks/reactions: append at end (e.g., "reacted with ❤️ [[reply_to:4]]")
   // For regular replies: prepend at start (e.g., "[[reply_to:4]] Awesome")
   const replyTag = formatReplyTag({ replyToId, replyToShortId });
-  const baseBody = replyTag ? (isTapbackMessage ? `${rawBody} ${replyTag}` : `${replyTag} ${rawBody}`) : rawBody;
+  const baseBody = replyTag
+    ? isTapbackMessage
+      ? `${rawBody} ${replyTag}`
+      : `${replyTag} ${rawBody}`
+    : rawBody;
   // Build fromLabel the same way as iMessage/Signal (formatInboundFromLabel):
   // group label + id for groups, sender for DMs.
   // The sender identity is included in the envelope body via formatInboundEnvelope.
@@ -939,11 +994,19 @@ export async function processMessage(message: NormalizedWebhookMessage, target: 
   };
 
   // History: in-memory rolling map with bounded API backfill retries
-  const historyLimit = isGroup ? (account.config.historyLimit ?? 0) : (account.config.dmHistoryLimit ?? 0);
+  const historyLimit = isGroup
+    ? (account.config.historyLimit ?? 0)
+    : (account.config.dmHistoryLimit ?? 0);
 
   const historyIdentifier =
-    chatGuid || chatIdentifier || (chatId ? String(chatId) : null) || (isGroup ? null : message.senderId) || "";
-  const historyKey = historyIdentifier ? buildAccountScopedHistoryKey(account.accountId, historyIdentifier) : "";
+    chatGuid ||
+    chatIdentifier ||
+    (chatId ? String(chatId) : null) ||
+    (isGroup ? null : message.senderId) ||
+    "";
+  const historyKey = historyIdentifier
+    ? buildAccountScopedHistoryKey(account.accountId, historyIdentifier)
+    : "";
 
   // Record the current message into rolling history
   if (historyKey && historyLimit > 0) {
@@ -991,7 +1054,8 @@ export async function processMessage(message: NormalizedWebhookMessage, target: 
           }
           const merged = mergeHistoryEntries({
             apiEntries,
-            currentEntries: currentEntries.length > 0 ? currentEntries : (chatHistories.get(historyKey) ?? []),
+            currentEntries:
+              currentEntries.length > 0 ? currentEntries : (chatHistories.get(historyKey) ?? []),
             limit: historyLimit,
           });
           if (chatHistories.has(historyKey)) {
@@ -1120,12 +1184,18 @@ export async function processMessage(message: NormalizedWebhookMessage, target: 
         ...prefixOptions,
         deliver: async (payload, info) => {
           const rawReplyToId =
-            privateApiEnabled && typeof payload.replyToId === "string" ? payload.replyToId.trim() : "";
+            privateApiEnabled && typeof payload.replyToId === "string"
+              ? payload.replyToId.trim()
+              : "";
           // Resolve short ID (e.g., "5") to full UUID
           const replyToMessageGuid = rawReplyToId
             ? resolveBlueBubblesMessageId(rawReplyToId, { requireKnownShortId: true })
             : "";
-          const mediaList = payload.mediaUrls?.length ? payload.mediaUrls : payload.mediaUrl ? [payload.mediaUrl] : [];
+          const mediaList = payload.mediaUrls?.length
+            ? payload.mediaUrls
+            : payload.mediaUrl
+              ? [payload.mediaUrl]
+              : [];
           if (mediaList.length > 0) {
             const tableMode = core.channel.text.resolveMarkdownTableMode({
               cfg: config,
@@ -1263,11 +1333,14 @@ export async function processMessage(message: NormalizedWebhookMessage, target: 
       },
       replyOptions: {
         disableBlockStreaming:
-          typeof account.config.blockStreaming === "boolean" ? !account.config.blockStreaming : undefined,
+          typeof account.config.blockStreaming === "boolean"
+            ? !account.config.blockStreaming
+            : undefined,
       },
     });
   } finally {
-    const shouldStopTyping = Boolean(chatGuidForActions && baseUrl && password) && (streamingActive || !sentMessage);
+    const shouldStopTyping =
+      Boolean(chatGuidForActions && baseUrl && password) && (streamingActive || !sentMessage);
     streamingActive = false;
     clearTypingRestartTimer();
     if (sentMessage && chatGuidForActions && ackMessageId) {
@@ -1311,7 +1384,10 @@ export async function processMessage(message: NormalizedWebhookMessage, target: 
   }
 }
 
-export async function processReaction(reaction: NormalizedWebhookReaction, target: WebhookTarget): Promise<void> {
+export async function processReaction(
+  reaction: NormalizedWebhookReaction,
+  target: WebhookTarget,
+): Promise<void> {
   const { account, config, runtime, core } = target;
   const pairing = createScopedPairingAccess({
     core,

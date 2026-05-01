@@ -57,7 +57,9 @@ describe("formatValidationErrors", () => {
       message: "must have required property 'token'",
     });
 
-    expect(formatValidationErrors([err, err])).toBe("at /auth: must have required property 'token'");
+    expect(formatValidationErrors([err, err])).toBe(
+      "at /auth: must have required property 'token'",
+    );
   });
 });
 

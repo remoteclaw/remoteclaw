@@ -60,6 +60,8 @@ export async function waitForTransportReady(params: WaitForTransportReadyParams)
     }
   }
 
-  params.runtime.error?.(danger(`${params.label} not ready after ${timeoutMs}ms (${lastError ?? "unknown error"})`));
+  params.runtime.error?.(
+    danger(`${params.label} not ready after ${timeoutMs}ms (${lastError ?? "unknown error"})`),
+  );
   throw new Error(`${params.label} not ready (${lastError ?? "unknown error"})`);
 }

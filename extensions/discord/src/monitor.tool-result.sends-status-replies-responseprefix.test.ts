@@ -118,7 +118,11 @@ function createCategoryGuildClient() {
   } as unknown as Client;
 }
 
-function createCategoryGuildEvent(params: { messageId: string; timestamp?: string; author: Record<string, unknown> }) {
+function createCategoryGuildEvent(params: {
+  messageId: string;
+  timestamp?: string;
+  author: Record<string, unknown>;
+}) {
   return {
     message: {
       id: params.messageId,

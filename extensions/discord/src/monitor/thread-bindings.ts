@@ -1,4 +1,8 @@
-export type { ThreadBindingManager, ThreadBindingRecord, ThreadBindingTargetKind } from "./thread-bindings.types.js";
+export type {
+  ThreadBindingManager,
+  ThreadBindingRecord,
+  ThreadBindingTargetKind,
+} from "./thread-bindings.types.js";
 
 export {
   formatThreadBindingDurationLabel,

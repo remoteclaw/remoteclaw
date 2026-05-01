@@ -1,5 +1,9 @@
 import type { LocationMessageEventContent } from "@vector-im/matrix-bot-sdk";
-import { formatLocationText, toLocationContext, type NormalizedLocation } from "remoteclaw/plugin-sdk/matrix";
+import {
+  formatLocationText,
+  toLocationContext,
+  type NormalizedLocation,
+} from "remoteclaw/plugin-sdk/matrix";
 import { EventType } from "./types.js";
 
 export type MatrixLocationPayload = {
@@ -66,7 +70,8 @@ export function resolveMatrixLocation(params: {
 }): MatrixLocationPayload | null {
   const { eventType, content } = params;
   const isLocation =
-    eventType === EventType.Location || (eventType === EventType.RoomMessage && content.msgtype === EventType.Location);
+    eventType === EventType.Location ||
+    (eventType === EventType.RoomMessage && content.msgtype === EventType.Location);
   if (!isLocation) {
     return null;
   }

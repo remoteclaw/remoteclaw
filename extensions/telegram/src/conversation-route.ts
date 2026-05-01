@@ -9,8 +9,15 @@ import {
   resolveAgentRouteWithPolicy,
   type ResolvedAgentRoute,
 } from "../../../src/routing/resolve-route.js";
-import { buildAgentMainSessionKey, resolveAgentIdFromSessionKey } from "../../../src/routing/session-key.js";
-import { buildTelegramGroupPeerId, buildTelegramParentPeer, resolveTelegramDirectPeerId } from "./bot/helpers.js";
+import {
+  buildAgentMainSessionKey,
+  resolveAgentIdFromSessionKey,
+} from "../../../src/routing/session-key.js";
+import {
+  buildTelegramGroupPeerId,
+  buildTelegramParentPeer,
+  resolveTelegramDirectPeerId,
+} from "./bot/helpers.js";
 
 export function resolveTelegramConversationRoute(params: {
   cfg: RemoteClawConfig;
@@ -129,7 +136,9 @@ export function resolveTelegramConversationRoute(params: {
       configuredBinding = null;
       configuredBindingSessionKey = "";
       getSessionBindingService().touch(threadBinding.bindingId);
-      logVerbose(`telegram: routed via bound conversation ${threadBindingConversationId} -> ${boundSessionKey}`);
+      logVerbose(
+        `telegram: routed via bound conversation ${threadBindingConversationId} -> ${boundSessionKey}`,
+      );
     }
   }
 

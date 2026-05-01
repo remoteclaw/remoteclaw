@@ -5,7 +5,11 @@ import { parseTelegramTarget } from "../../../extensions/telegram/src/targets.js
 import { loadWebMedia } from "../../../extensions/whatsapp/src/media.js";
 import { assertMediaNotDataUrl, resolveSandboxedMediaSource } from "../../agents/sandbox-paths.js";
 import { readStringParam } from "../../agents/tools/common.js";
-import type { ChannelId, ChannelMessageActionName, ChannelThreadingToolContext } from "../../channels/plugins/types.js";
+import type {
+  ChannelId,
+  ChannelMessageActionName,
+  ChannelThreadingToolContext,
+} from "../../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { createRootScopedReadFile } from "../../infra/fs-safe.js";
 import { extensionForMime } from "../../media/mime.js";
@@ -74,15 +78,21 @@ function resolveAttachmentMaxBytes(params: {
 }): number | undefined {
   const accountId = typeof params.accountId === "string" ? params.accountId.trim() : "";
   const channelCfg = params.cfg.channels?.[params.channel];
-  const channelObj = channelCfg && typeof channelCfg === "object" ? (channelCfg as Record<string, unknown>) : undefined;
-  const channelMediaMax = typeof channelObj?.mediaMaxMb === "number" ? channelObj.mediaMaxMb : undefined;
+  const channelObj =
+    channelCfg && typeof channelCfg === "object"
+      ? (channelCfg as Record<string, unknown>)
+      : undefined;
+  const channelMediaMax =
+    typeof channelObj?.mediaMaxMb === "number" ? channelObj.mediaMaxMb : undefined;
   const accountsObj =
     channelObj?.accounts && typeof channelObj.accounts === "object"
       ? (channelObj.accounts as Record<string, unknown>)
       : undefined;
   const accountCfg = accountId && accountsObj ? accountsObj[accountId] : undefined;
   const accountMediaMax =
-    accountCfg && typeof accountCfg === "object" ? (accountCfg as Record<string, unknown>).mediaMaxMb : undefined;
+    accountCfg && typeof accountCfg === "object"
+      ? (accountCfg as Record<string, unknown>).mediaMaxMb
+      : undefined;
   // Priority: account-specific > channel-level > global default
   const limitMb =
     (typeof accountMediaMax === "number" ? accountMediaMax : undefined) ??
@@ -91,7 +101,10 @@ function resolveAttachmentMaxBytes(params: {
   return typeof limitMb === "number" ? limitMb * 1024 * 1024 : undefined;
 }
 
-function inferAttachmentFilename(params: { mediaHint?: string; contentType?: string }): string | undefined {
+function inferAttachmentFilename(params: {
+  mediaHint?: string;
+  contentType?: string;
+}): string | undefined {
   const mediaHint = params.mediaHint?.trim();
   if (mediaHint) {
     try {
@@ -166,7 +179,10 @@ export function resolveAttachmentMediaPolicy(params: {
   };
 }
 
-function buildAttachmentMediaLoadOptions(params: { policy: AttachmentMediaPolicy; maxBytes?: number }):
+function buildAttachmentMediaLoadOptions(params: {
+  policy: AttachmentMediaPolicy;
+  maxBytes?: number;
+}):
   | {
       maxBytes?: number;
       sandboxValidated: true;
@@ -251,7 +267,8 @@ export async function normalizeSandboxMediaParams(params: {
   args: Record<string, unknown>;
   mediaPolicy: AttachmentMediaPolicy;
 }): Promise<void> {
-  const sandboxRoot = params.mediaPolicy.mode === "sandbox" ? params.mediaPolicy.sandboxRoot.trim() : undefined;
+  const sandboxRoot =
+    params.mediaPolicy.mode === "sandbox" ? params.mediaPolicy.sandboxRoot.trim() : undefined;
   const mediaKeys: Array<"media" | "path" | "filePath"> = ["media", "path", "filePath"];
   for (const key of mediaKeys) {
     const raw = readStringParam(params.args, key, { trim: false });
@@ -269,7 +286,10 @@ export async function normalizeSandboxMediaParams(params: {
   }
 }
 
-export async function normalizeSandboxMediaList(params: { values: string[]; sandboxRoot?: string }): Promise<string[]> {
+export async function normalizeSandboxMediaList(params: {
+  values: string[];
+  sandboxRoot?: string;
+}): Promise<string[]> {
   const sandboxRoot = params.sandboxRoot?.trim();
   const normalized: string[] = [];
   const seen = new Set<string>();
@@ -279,7 +299,9 @@ export async function normalizeSandboxMediaList(params: { values: string[]; sand
       continue;
     }
     assertMediaNotDataUrl(raw);
-    const resolved = sandboxRoot ? await resolveSandboxedMediaSource({ media: raw, sandboxRoot }) : raw;
+    const resolved = sandboxRoot
+      ? await resolveSandboxedMediaSource({ media: raw, sandboxRoot })
+      : raw;
     if (seen.has(resolved)) {
       continue;
     }
@@ -301,8 +323,10 @@ async function hydrateAttachmentActionPayload(params: {
 }): Promise<void> {
   const mediaHint = readStringParam(params.args, "media", { trim: false });
   const fileHint =
-    readStringParam(params.args, "path", { trim: false }) ?? readStringParam(params.args, "filePath", { trim: false });
-  const contentTypeParam = readStringParam(params.args, "contentType") ?? readStringParam(params.args, "mimeType");
+    readStringParam(params.args, "path", { trim: false }) ??
+    readStringParam(params.args, "filePath", { trim: false });
+  const contentTypeParam =
+    readStringParam(params.args, "contentType") ?? readStringParam(params.args, "mimeType");
 
   if (params.allowMessageCaptionFallback) {
     const caption = readStringParam(params.args, "caption", { allowEmpty: true })?.trim();

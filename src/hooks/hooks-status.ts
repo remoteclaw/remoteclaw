@@ -87,7 +87,8 @@ function buildHookStatus(
   const disabled = managedByPlugin ? false : hookConfig?.enabled === false;
   const always = entry.metadata?.always === true;
   const events = entry.metadata?.events ?? [];
-  const isEnvSatisfied = (envName: string) => Boolean(process.env[envName] || hookConfig?.env?.[envName]);
+  const isEnvSatisfied = (envName: string) =>
+    Boolean(process.env[envName] || hookConfig?.env?.[envName]);
   const isConfigSatisfied = (pathStr: string) => isConfigPathTruthy(config, pathStr);
 
   const { emoji, homepage, required, missing, requirementsSatisfied, configChecks } =

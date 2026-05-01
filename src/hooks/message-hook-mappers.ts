@@ -80,12 +80,19 @@ export function deriveInboundMessageHookContext(
     body: ctx.Body,
     bodyForAgent: ctx.BodyForAgent,
     transcript: ctx.Transcript,
-    timestamp: typeof ctx.Timestamp === "number" && Number.isFinite(ctx.Timestamp) ? ctx.Timestamp : undefined,
+    timestamp:
+      typeof ctx.Timestamp === "number" && Number.isFinite(ctx.Timestamp)
+        ? ctx.Timestamp
+        : undefined,
     channelId,
     accountId: ctx.AccountId,
     conversationId,
     messageId:
-      overrides?.messageId ?? ctx.MessageSidFull ?? ctx.MessageSid ?? ctx.MessageSidFirst ?? ctx.MessageSidLast,
+      overrides?.messageId ??
+      ctx.MessageSidFull ??
+      ctx.MessageSid ??
+      ctx.MessageSidFirst ??
+      ctx.MessageSidLast,
     senderId: ctx.SenderId,
     senderName: ctx.SenderName,
     senderUsername: ctx.SenderUsername,
@@ -165,7 +172,9 @@ export function toPluginMessageReceivedEvent(
   };
 }
 
-export function toPluginMessageSentEvent(canonical: CanonicalSentMessageHookContext): PluginHookMessageSentEvent {
+export function toPluginMessageSentEvent(
+  canonical: CanonicalSentMessageHookContext,
+): PluginHookMessageSentEvent {
   return {
     to: canonical.to,
     content: canonical.content,
@@ -246,7 +255,9 @@ function toInternalInboundMessageHookContextBase(canonical: CanonicalInboundMess
   };
 }
 
-export function toInternalMessageSentContext(canonical: CanonicalSentMessageHookContext): MessageSentHookContext {
+export function toInternalMessageSentContext(
+  canonical: CanonicalSentMessageHookContext,
+): MessageSentHookContext {
   return {
     to: canonical.to,
     content: canonical.content,

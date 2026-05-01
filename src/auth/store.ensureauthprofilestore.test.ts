@@ -43,7 +43,11 @@ describe("ensureAuthProfileStore", () => {
         },
       },
     };
-    fs.writeFileSync(path.join(tempDir, "auth-profiles.json"), `${JSON.stringify(globalStore, null, 2)}\n`, "utf8");
+    fs.writeFileSync(
+      path.join(tempDir, "auth-profiles.json"),
+      `${JSON.stringify(globalStore, null, 2)}\n`,
+      "utf8",
+    );
 
     const store = ensureAuthProfileStore();
     expect(store.profiles["anthropic:default"]).toMatchObject({

@@ -9,7 +9,11 @@ import {
   writeCameraPayloadToFile,
 } from "../../cli/nodes-camera.js";
 import { parseEnvPairs, parseTimeoutMs } from "../../cli/nodes-run.js";
-import { parseScreenRecordPayload, screenRecordTempPath, writeScreenRecordToFile } from "../../cli/nodes-screen.js";
+import {
+  parseScreenRecordPayload,
+  screenRecordTempPath,
+  writeScreenRecordToFile,
+} from "../../cli/nodes-screen.js";
 import { parseDurationMs } from "../../cli/parse-duration.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { imageMimeFromFormat } from "../../media/mime.js";
@@ -138,7 +142,10 @@ const NodesToolSchema = Type.Object({
   invokeParamsJson: Type.Optional(Type.String()),
 });
 
-export function createNodesTool(options?: { agentSessionKey?: string; config?: RemoteClawConfig }): AnyAgentTool {
+export function createNodesTool(options?: {
+  agentSessionKey?: string;
+  config?: RemoteClawConfig;
+}): AnyAgentTool {
   const sessionKey = options?.agentSessionKey?.trim() || undefined;
   const agentId = resolveSessionAgentId({
     sessionKey: options?.agentSessionKey,
@@ -213,7 +220,8 @@ export function createNodesTool(options?: { agentSessionKey?: string; config?: R
             const node = readStringParam(params, "node", { required: true });
             const resolvedNode = await resolveNode(gatewayOpts, node);
             const nodeId = resolvedNode.nodeId;
-            const facingRaw = typeof params.facing === "string" ? params.facing.toLowerCase() : "both";
+            const facingRaw =
+              typeof params.facing === "string" ? params.facing.toLowerCase() : "both";
             const facings: CameraFacing[] =
               facingRaw === "both"
                 ? ["front", "back"]
@@ -223,13 +231,21 @@ export function createNodesTool(options?: { agentSessionKey?: string; config?: R
                       throw new Error("invalid facing (front|back|both)");
                     })();
             const maxWidth =
-              typeof params.maxWidth === "number" && Number.isFinite(params.maxWidth) ? params.maxWidth : undefined;
+              typeof params.maxWidth === "number" && Number.isFinite(params.maxWidth)
+                ? params.maxWidth
+                : undefined;
             const quality =
-              typeof params.quality === "number" && Number.isFinite(params.quality) ? params.quality : undefined;
+              typeof params.quality === "number" && Number.isFinite(params.quality)
+                ? params.quality
+                : undefined;
             const delayMs =
-              typeof params.delayMs === "number" && Number.isFinite(params.delayMs) ? params.delayMs : undefined;
+              typeof params.delayMs === "number" && Number.isFinite(params.delayMs)
+                ? params.delayMs
+                : undefined;
             const deviceId =
-              typeof params.deviceId === "string" && params.deviceId.trim() ? params.deviceId.trim() : undefined;
+              typeof params.deviceId === "string" && params.deviceId.trim()
+                ? params.deviceId.trim()
+                : undefined;
             if (deviceId && facings.length > 1) {
               throw new Error("facing=both is not allowed when deviceId is set");
             }
@@ -253,7 +269,11 @@ export function createNodesTool(options?: { agentSessionKey?: string; config?: R
               });
               const payload = parseCameraSnapPayload(raw?.payload);
               const normalizedFormat = payload.format.toLowerCase();
-              if (normalizedFormat !== "jpg" && normalizedFormat !== "jpeg" && normalizedFormat !== "png") {
+              if (
+                normalizedFormat !== "jpg" &&
+                normalizedFormat !== "jpeg" &&
+                normalizedFormat !== "png"
+              ) {
                 throw new Error(`unsupported camera.snap format: ${payload.format}`);
               }
 
@@ -274,7 +294,8 @@ export function createNodesTool(options?: { agentSessionKey?: string; config?: R
                 content.push({
                   type: "image",
                   data: payload.base64,
-                  mimeType: imageMimeFromFormat(payload.format) ?? (isJpeg ? "image/jpeg" : "image/png"),
+                  mimeType:
+                    imageMimeFromFormat(payload.format) ?? (isJpeg ? "image/jpeg" : "image/png"),
                 });
               }
               details.push({
@@ -302,7 +323,8 @@ export function createNodesTool(options?: { agentSessionKey?: string; config?: R
               params: {},
               idempotencyKey: crypto.randomUUID(),
             });
-            const payload = raw && typeof raw.payload === "object" && raw.payload !== null ? raw.payload : {};
+            const payload =
+              raw && typeof raw.payload === "object" && raw.payload !== null ? raw.payload : {};
             return jsonResult(payload);
           }
           case "notifications_action": {
@@ -312,7 +334,9 @@ export function createNodesTool(options?: { agentSessionKey?: string; config?: R
             });
             const notificationKey = readStringParam(params, "notificationKey", { required: true });
             const notificationReplyText =
-              typeof params.notificationReplyText === "string" ? params.notificationReplyText : undefined;
+              typeof params.notificationReplyText === "string"
+                ? params.notificationReplyText
+                : undefined;
             const payload = await invokeNodeCommandPayload({
               gatewayOpts,
               node,
@@ -329,7 +353,8 @@ export function createNodesTool(options?: { agentSessionKey?: string; config?: R
             const node = readStringParam(params, "node", { required: true });
             const resolvedNode = await resolveNode(gatewayOpts, node);
             const nodeId = resolvedNode.nodeId;
-            const facing = typeof params.facing === "string" ? params.facing.toLowerCase() : "front";
+            const facing =
+              typeof params.facing === "string" ? params.facing.toLowerCase() : "front";
             if (facing !== "front" && facing !== "back") {
               throw new Error("invalid facing (front|back)");
             }
@@ -339,9 +364,12 @@ export function createNodesTool(options?: { agentSessionKey?: string; config?: R
                 : typeof params.duration === "string"
                   ? parseDurationMs(params.duration)
                   : 3000;
-            const includeAudio = typeof params.includeAudio === "boolean" ? params.includeAudio : true;
+            const includeAudio =
+              typeof params.includeAudio === "boolean" ? params.includeAudio : true;
             const deviceId =
-              typeof params.deviceId === "string" && params.deviceId.trim() ? params.deviceId.trim() : undefined;
+              typeof params.deviceId === "string" && params.deviceId.trim()
+                ? params.deviceId.trim()
+                : undefined;
             const raw = await callGatewayTool<{ payload: unknown }>("node.invoke", gatewayOpts, {
               nodeId,
               command: "camera.clip",
@@ -381,10 +409,14 @@ export function createNodesTool(options?: { agentSessionKey?: string; config?: R
                   : 10_000,
               300_000,
             );
-            const fps = typeof params.fps === "number" && Number.isFinite(params.fps) ? params.fps : 10;
+            const fps =
+              typeof params.fps === "number" && Number.isFinite(params.fps) ? params.fps : 10;
             const screenIndex =
-              typeof params.screenIndex === "number" && Number.isFinite(params.screenIndex) ? params.screenIndex : 0;
-            const includeAudio = typeof params.includeAudio === "boolean" ? params.includeAudio : true;
+              typeof params.screenIndex === "number" && Number.isFinite(params.screenIndex)
+                ? params.screenIndex
+                : 0;
+            const includeAudio =
+              typeof params.includeAudio === "boolean" ? params.includeAudio : true;
             const raw = await callGatewayTool<{ payload: unknown }>("node.invoke", gatewayOpts, {
               nodeId,
               command: "screen.record",
@@ -418,7 +450,9 @@ export function createNodesTool(options?: { agentSessionKey?: string; config?: R
             const node = readStringParam(params, "node", { required: true });
             const nodeId = await resolveNodeId(gatewayOpts, node);
             const maxAgeMs =
-              typeof params.maxAgeMs === "number" && Number.isFinite(params.maxAgeMs) ? params.maxAgeMs : undefined;
+              typeof params.maxAgeMs === "number" && Number.isFinite(params.maxAgeMs)
+                ? params.maxAgeMs
+                : undefined;
             const desiredAccuracy =
               params.desiredAccuracy === "coarse" ||
               params.desiredAccuracy === "balanced" ||
@@ -426,7 +460,8 @@ export function createNodesTool(options?: { agentSessionKey?: string; config?: R
                 ? params.desiredAccuracy
                 : undefined;
             const locationTimeoutMs =
-              typeof params.locationTimeoutMs === "number" && Number.isFinite(params.locationTimeoutMs)
+              typeof params.locationTimeoutMs === "number" &&
+              Number.isFinite(params.locationTimeoutMs)
                 ? params.locationTimeoutMs
                 : undefined;
             const raw = await callGatewayTool<{ payload: unknown }>("node.invoke", gatewayOpts, {
@@ -445,7 +480,9 @@ export function createNodesTool(options?: { agentSessionKey?: string; config?: R
             const node = readStringParam(params, "node", { required: true });
             const nodes = await listNodes(gatewayOpts);
             if (nodes.length === 0) {
-              throw new Error("system.run requires a paired companion app or node host (no nodes available).");
+              throw new Error(
+                "system.run requires a paired companion app or node host (no nodes available).",
+              );
             }
             const nodeId = resolveNodeIdFromList(nodes, node);
             const nodeInfo = nodes.find((entry) => entry.nodeId === nodeId);
@@ -468,12 +505,15 @@ export function createNodesTool(options?: { agentSessionKey?: string; config?: R
             if (command.length === 0) {
               throw new Error("command must not be empty");
             }
-            const cwd = typeof params.cwd === "string" && params.cwd.trim() ? params.cwd.trim() : undefined;
+            const cwd =
+              typeof params.cwd === "string" && params.cwd.trim() ? params.cwd.trim() : undefined;
             const env = parseEnvPairs(params.env);
             const commandTimeoutMs = parseTimeoutMs(params.commandTimeoutMs);
             const invokeTimeoutMs = parseTimeoutMs(params.invokeTimeoutMs);
             const needsScreenRecording =
-              typeof params.needsScreenRecording === "boolean" ? params.needsScreenRecording : undefined;
+              typeof params.needsScreenRecording === "boolean"
+                ? params.needsScreenRecording
+                : undefined;
             const runParams = {
               command,
               cwd,
@@ -557,7 +597,8 @@ export function createNodesTool(options?: { agentSessionKey?: string; config?: R
             const node = readStringParam(params, "node", { required: true });
             const nodeId = await resolveNodeId(gatewayOpts, node);
             const invokeCommand = readStringParam(params, "invokeCommand", { required: true });
-            const invokeParamsJson = typeof params.invokeParamsJson === "string" ? params.invokeParamsJson.trim() : "";
+            const invokeParamsJson =
+              typeof params.invokeParamsJson === "string" ? params.invokeParamsJson.trim() : "";
             let invokeParams: unknown = {};
             if (invokeParamsJson) {
               try {
@@ -583,9 +624,12 @@ export function createNodesTool(options?: { agentSessionKey?: string; config?: R
             throw new Error(`Unknown action: ${action}`);
         }
       } catch (err) {
-        const nodeLabel = typeof params.node === "string" && params.node.trim() ? params.node.trim() : "auto";
+        const nodeLabel =
+          typeof params.node === "string" && params.node.trim() ? params.node.trim() : "auto";
         const gatewayLabel =
-          gatewayOpts.gatewayUrl && gatewayOpts.gatewayUrl.trim() ? gatewayOpts.gatewayUrl.trim() : "default";
+          gatewayOpts.gatewayUrl && gatewayOpts.gatewayUrl.trim()
+            ? gatewayOpts.gatewayUrl.trim()
+            : "default";
         const agentLabel = agentId ?? "unknown";
         let message = err instanceof Error ? err.message : String(err);
         if (action === "invoke" && isPairingRequiredMessage(message)) {
@@ -595,9 +639,12 @@ export function createNodesTool(options?: { agentSessionKey?: string; config?: R
             : "Approve the pending pairing request and retry.";
           message = `pairing required before node invoke. ${approveHint}`;
         }
-        throw new Error(`agent=${agentLabel} node=${nodeLabel} gateway=${gatewayLabel} action=${action}: ${message}`, {
-          cause: err,
-        });
+        throw new Error(
+          `agent=${agentLabel} node=${nodeLabel} gateway=${gatewayLabel} action=${action}: ${message}`,
+          {
+            cause: err,
+          },
+        );
       }
     },
   };

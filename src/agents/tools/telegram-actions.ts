@@ -2,7 +2,10 @@ import {
   createTelegramActionGate,
   resolveTelegramPollActionGateState,
 } from "../../../extensions/telegram/src/accounts.js";
-import type { TelegramButtonStyle, TelegramInlineButtons } from "../../../extensions/telegram/src/button-types.js";
+import type {
+  TelegramButtonStyle,
+  TelegramInlineButtons,
+} from "../../../extensions/telegram/src/button-types.js";
 import {
   resolveTelegramInlineButtonsScope,
   resolveTelegramTargetChatType,
@@ -34,7 +37,9 @@ import {
 
 const TELEGRAM_BUTTON_STYLES: readonly TelegramButtonStyle[] = ["danger", "success", "primary"];
 
-export function readTelegramButtons(params: Record<string, unknown>): TelegramInlineButtons | undefined {
+export function readTelegramButtons(
+  params: Record<string, unknown>,
+): TelegramInlineButtons | undefined {
   const raw = params.buttons;
   if (raw == null) {
     return undefined;
@@ -51,7 +56,9 @@ export function readTelegramButtons(params: Record<string, unknown>): TelegramIn
         throw new Error(`buttons[${rowIndex}][${buttonIndex}] must be an object`);
       }
       const text =
-        typeof (button as { text?: unknown }).text === "string" ? (button as { text: string }).text.trim() : "";
+        typeof (button as { text?: unknown }).text === "string"
+          ? (button as { text: string }).text.trim()
+          : "";
       const callbackData =
         typeof (button as { callback_data?: unknown }).callback_data === "string"
           ? (button as { callback_data: string }).callback_data.trim()
@@ -60,7 +67,9 @@ export function readTelegramButtons(params: Record<string, unknown>): TelegramIn
         throw new Error(`buttons[${rowIndex}][${buttonIndex}] requires text and callback_data`);
       }
       if (callbackData.length > 64) {
-        throw new Error(`buttons[${rowIndex}][${buttonIndex}] callback_data too long (max 64 chars)`);
+        throw new Error(
+          `buttons[${rowIndex}][${buttonIndex}] callback_data too long (max 64 chars)`,
+        );
       }
       const styleRaw = (button as { style?: unknown }).style;
       const style = typeof styleRaw === "string" ? styleRaw.trim().toLowerCase() : undefined;
@@ -211,7 +220,9 @@ export async function handleTelegramAction(
           throw new Error('Telegram inline buttons are limited to DMs when inlineButtons="dm".');
         }
         if (inlineButtonsScope === "group" && targetType !== "group") {
-          throw new Error('Telegram inline buttons are limited to groups when inlineButtons="group".');
+          throw new Error(
+            'Telegram inline buttons are limited to groups when inlineButtons="group".',
+          );
         }
       }
     }
@@ -225,7 +236,9 @@ export async function handleTelegramAction(
     const quoteText = readStringParam(params, "quoteText");
     const token = resolveTelegramToken(cfg, { accountId }).token;
     if (!token) {
-      throw new Error("Telegram bot token missing. Set TELEGRAM_BOT_TOKEN or channels.telegram.botToken.");
+      throw new Error(
+        "Telegram bot token missing. Set TELEGRAM_BOT_TOKEN or channels.telegram.botToken.",
+      );
     }
     const result = await sendMessageTelegram(to, content, {
       cfg,
@@ -271,7 +284,9 @@ export async function handleTelegramAction(
     const silent = readBooleanParam(params, "silent");
     const token = resolveTelegramToken(cfg, { accountId }).token;
     if (!token) {
-      throw new Error("Telegram bot token missing. Set TELEGRAM_BOT_TOKEN or channels.telegram.botToken.");
+      throw new Error(
+        "Telegram bot token missing. Set TELEGRAM_BOT_TOKEN or channels.telegram.botToken.",
+      );
     }
     const result = await sendPollTelegram(
       to,
@@ -313,7 +328,9 @@ export async function handleTelegramAction(
     });
     const token = resolveTelegramToken(cfg, { accountId }).token;
     if (!token) {
-      throw new Error("Telegram bot token missing. Set TELEGRAM_BOT_TOKEN or channels.telegram.botToken.");
+      throw new Error(
+        "Telegram bot token missing. Set TELEGRAM_BOT_TOKEN or channels.telegram.botToken.",
+      );
     }
     await deleteMessageTelegram(chatId ?? "", messageId ?? 0, {
       cfg,
@@ -352,7 +369,9 @@ export async function handleTelegramAction(
     }
     const token = resolveTelegramToken(cfg, { accountId }).token;
     if (!token) {
-      throw new Error("Telegram bot token missing. Set TELEGRAM_BOT_TOKEN or channels.telegram.botToken.");
+      throw new Error(
+        "Telegram bot token missing. Set TELEGRAM_BOT_TOKEN or channels.telegram.botToken.",
+      );
     }
     const result = await editMessageTelegram(chatId ?? "", messageId ?? 0, content, {
       cfg,
@@ -369,7 +388,9 @@ export async function handleTelegramAction(
 
   if (action === "sendSticker") {
     if (!isActionEnabled("sticker", false)) {
-      throw new Error("Telegram sticker actions are disabled. Set channels.telegram.actions.sticker to true.");
+      throw new Error(
+        "Telegram sticker actions are disabled. Set channels.telegram.actions.sticker to true.",
+      );
     }
     const to = readStringParam(params, "to", { required: true });
     const fileId = readStringParam(params, "fileId", { required: true });
@@ -381,7 +402,9 @@ export async function handleTelegramAction(
     });
     const token = resolveTelegramToken(cfg, { accountId }).token;
     if (!token) {
-      throw new Error("Telegram bot token missing. Set TELEGRAM_BOT_TOKEN or channels.telegram.botToken.");
+      throw new Error(
+        "Telegram bot token missing. Set TELEGRAM_BOT_TOKEN or channels.telegram.botToken.",
+      );
     }
     const result = await sendStickerTelegram(to, fileId, {
       cfg,
@@ -399,7 +422,9 @@ export async function handleTelegramAction(
 
   if (action === "searchSticker") {
     if (!isActionEnabled("sticker", false)) {
-      throw new Error("Telegram sticker actions are disabled. Set channels.telegram.actions.sticker to true.");
+      throw new Error(
+        "Telegram sticker actions are disabled. Set channels.telegram.actions.sticker to true.",
+      );
     }
     const query = readStringParam(params, "query", { required: true });
     const limit = readNumberParam(params, "limit", { integer: true }) ?? 5;
@@ -433,7 +458,9 @@ export async function handleTelegramAction(
     const iconCustomEmojiId = readStringParam(params, "iconCustomEmojiId");
     const token = resolveTelegramToken(cfg, { accountId }).token;
     if (!token) {
-      throw new Error("Telegram bot token missing. Set TELEGRAM_BOT_TOKEN or channels.telegram.botToken.");
+      throw new Error(
+        "Telegram bot token missing. Set TELEGRAM_BOT_TOKEN or channels.telegram.botToken.",
+      );
     }
     const result = await createForumTopicTelegram(chatId ?? "", name, {
       cfg,

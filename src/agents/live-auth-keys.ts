@@ -124,7 +124,9 @@ export function collectProviderApiKeys(provider: string): string[] {
   const primary = config.primaryVar ? process.env[config.primaryVar]?.trim() : undefined;
   const fromPrefixed = config.prefixedVar ? collectEnvPrefixedKeys(config.prefixedVar) : [];
 
-  const fallback = config.fallbackVars.map((envVar) => process.env[envVar]?.trim()).filter(Boolean) as string[];
+  const fallback = config.fallbackVars
+    .map((envVar) => process.env[envVar]?.trim())
+    .filter(Boolean) as string[];
 
   const seen = new Set<string>();
 

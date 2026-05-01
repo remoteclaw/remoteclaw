@@ -108,7 +108,9 @@ describe("registerTtsTools", () => {
     const tool = mockServer.tools.get("tts_providers");
     await tool!.handler({});
 
-    expect(mockCallGateway).toHaveBeenCalledWith(expect.objectContaining({ method: "tts.providers" }));
+    expect(mockCallGateway).toHaveBeenCalledWith(
+      expect.objectContaining({ method: "tts.providers" }),
+    );
   });
 
   it("tts_set_provider calls tts.setProvider with provider", async () => {
@@ -140,6 +142,8 @@ describe("registerTtsTools", () => {
     const tool = mockServer.tools.get("tts_disable");
     await tool!.handler({});
 
-    expect(mockCallGateway).toHaveBeenCalledWith(expect.objectContaining({ method: "tts.disable" }));
+    expect(mockCallGateway).toHaveBeenCalledWith(
+      expect.objectContaining({ method: "tts.disable" }),
+    );
   });
 });

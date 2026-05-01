@@ -21,7 +21,9 @@ export type OutboundMediaLoadOptions = {
   optimizeImages?: boolean;
 };
 
-export function resolveOutboundMediaLocalRoots(mediaLocalRoots?: readonly string[]): readonly string[] | undefined {
+export function resolveOutboundMediaLocalRoots(
+  mediaLocalRoots?: readonly string[],
+): readonly string[] | undefined {
   return mediaLocalRoots && mediaLocalRoots.length > 0 ? mediaLocalRoots : undefined;
 }
 
@@ -32,7 +34,9 @@ export function resolveOutboundMediaAccess(
     mediaReadFile?: OutboundMediaReadFile;
   } = {},
 ): OutboundMediaAccess | undefined {
-  const localRoots = resolveOutboundMediaLocalRoots(params.mediaAccess?.localRoots ?? params.mediaLocalRoots);
+  const localRoots = resolveOutboundMediaLocalRoots(
+    params.mediaAccess?.localRoots ?? params.mediaLocalRoots,
+  );
   const readFile = params.mediaAccess?.readFile ?? params.mediaReadFile;
   if (!localRoots && !readFile) {
     return undefined;
@@ -43,7 +47,9 @@ export function resolveOutboundMediaAccess(
   };
 }
 
-export function buildOutboundMediaLoadOptions(params: OutboundMediaLoadParams = {}): OutboundMediaLoadOptions {
+export function buildOutboundMediaLoadOptions(
+  params: OutboundMediaLoadParams = {},
+): OutboundMediaLoadOptions {
   const mediaAccess = resolveOutboundMediaAccess(params);
   if (mediaAccess?.readFile) {
     return {

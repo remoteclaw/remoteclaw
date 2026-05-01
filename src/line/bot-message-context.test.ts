@@ -20,7 +20,10 @@ describe("buildLineMessageContext", () => {
     config: {},
   };
 
-  const createMessageEvent = (source: MessageEvent["source"], overrides?: Partial<MessageEvent>): MessageEvent =>
+  const createMessageEvent = (
+    source: MessageEvent["source"],
+    overrides?: Partial<MessageEvent>,
+  ): MessageEvent =>
     ({
       type: "message",
       message: { id: "1", type: "text", text: "hello" },
@@ -33,7 +36,10 @@ describe("buildLineMessageContext", () => {
       ...overrides,
     }) as MessageEvent;
 
-  const createPostbackEvent = (source: PostbackEvent["source"], overrides?: Partial<PostbackEvent>): PostbackEvent =>
+  const createPostbackEvent = (
+    source: PostbackEvent["source"],
+    overrides?: Partial<PostbackEvent>,
+  ): PostbackEvent =>
     ({
       type: "postback",
       postback: { data: "action=select" },

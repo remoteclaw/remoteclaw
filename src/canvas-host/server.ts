@@ -5,7 +5,10 @@ import { createRequire } from "node:module";
 import type { Socket } from "node:net";
 import path from "node:path";
 import type { Duplex } from "node:stream";
-import { clearTimeout as clearNativeTimeout, setTimeout as scheduleNativeTimeout } from "node:timers";
+import {
+  clearTimeout as clearNativeTimeout,
+  setTimeout as scheduleNativeTimeout,
+} from "node:timers";
 import chokidar from "chokidar";
 import { type WebSocket, WebSocketServer } from "ws";
 import { resolveStateDir } from "../config/paths.js";
@@ -13,7 +16,12 @@ import { isTruthyEnvValue } from "../infra/env.js";
 import { detectMime } from "../media/mime.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { ensureDir, resolveUserPath } from "../utils.js";
-import { CANVAS_HOST_PATH, CANVAS_WS_PATH, handleA2uiHttpRequest, injectCanvasLiveReload } from "./a2ui.js";
+import {
+  CANVAS_HOST_PATH,
+  CANVAS_WS_PATH,
+  handleA2uiHttpRequest,
+  injectCanvasLiveReload,
+} from "./a2ui.js";
 import { normalizeUrlPath, resolveFileWithinRoot } from "./file-resolver.js";
 
 type ChokidarWatch = typeof import("chokidar").watch;
@@ -212,7 +220,9 @@ function resolveDefaultWatchFactory(): ChokidarWatch {
   }
 
   const require = createRequire(import.meta.url);
-  const runtime = require("chokidar") as { watch?: ChokidarWatch; default?: { watch?: ChokidarWatch } } | undefined;
+  const runtime = require("chokidar") as
+    | { watch?: ChokidarWatch; default?: { watch?: ChokidarWatch } }
+    | undefined;
   if (runtime && typeof runtime.watch === "function") {
     return runtime.watch.bind(runtime);
   }
@@ -222,7 +232,9 @@ function resolveDefaultWatchFactory(): ChokidarWatch {
   throw new Error("chokidar.watch unavailable");
 }
 
-export async function createCanvasHostHandler(opts: CanvasHostHandlerOpts): Promise<CanvasHostHandler> {
+export async function createCanvasHostHandler(
+  opts: CanvasHostHandlerOpts,
+): Promise<CanvasHostHandler> {
   const basePath = normalizeBasePath(opts.basePath);
   if (isDisabledByEnv() && opts.allowInTests !== true) {
     return {
@@ -470,7 +482,8 @@ export async function startCanvasHost(opts: CanvasHostServerOpts): Promise<Canva
     socket.destroy();
   });
 
-  const listenPort = typeof opts.port === "number" && Number.isFinite(opts.port) && opts.port > 0 ? opts.port : 0;
+  const listenPort =
+    typeof opts.port === "number" && Number.isFinite(opts.port) && opts.port > 0 ? opts.port : 0;
   await new Promise<void>((resolve, reject) => {
     const onError = (err: NodeJS.ErrnoException) => {
       server.off("listening", onListening);
@@ -487,7 +500,9 @@ export async function startCanvasHost(opts: CanvasHostServerOpts): Promise<Canva
 
   const addr = server.address();
   const boundPort = typeof addr === "object" && addr ? addr.port : 0;
-  opts.runtime.log(`canvas host listening on http://${bindHost}:${boundPort} (root ${handler.rootDir})`);
+  opts.runtime.log(
+    `canvas host listening on http://${bindHost}:${boundPort} (root ${handler.rootDir})`,
+  );
 
   return {
     port: boundPort,
@@ -496,7 +511,9 @@ export async function startCanvasHost(opts: CanvasHostServerOpts): Promise<Canva
       if (ownsHandler) {
         await handler.close();
       }
-      await new Promise<void>((resolve, reject) => server.close((err) => (err ? reject(err) : resolve())));
+      await new Promise<void>((resolve, reject) =>
+        server.close((err) => (err ? reject(err) : resolve())),
+      );
     },
   };
 }

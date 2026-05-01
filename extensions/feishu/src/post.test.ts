@@ -22,7 +22,9 @@ describe("parsePostContent", () => {
 
     const result = parsePostContent(content);
 
-    expect(result.textContent).toBe("Daily \\*Plan\\*\n\n**Bold** *Italic* <u>Underline</u> ~~Strike~~ `Code`");
+    expect(result.textContent).toBe(
+      "Daily \\*Plan\\*\n\n**Bold** *Italic* <u>Underline</u> ~~Strike~~ `Code`",
+    );
     expect(result.imageKeys).toEqual([]);
     expect(result.mentionedOpenIds).toEqual([]);
   });

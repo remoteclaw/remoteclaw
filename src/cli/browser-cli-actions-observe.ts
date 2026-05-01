@@ -77,8 +77,14 @@ export function registerBrowserActionObserveCommands(
     .description("Wait for a network response and return its body")
     .argument("<url>", "URL (exact, substring, or glob like **/api)")
     .option("--target-id <id>", "CDP target id (or unique prefix)")
-    .option("--timeout-ms <ms>", "How long to wait for the response (default: 20000)", (v: string) => Number(v))
-    .option("--max-chars <n>", "Max body chars to return (default: 200000)", (v: string) => Number(v))
+    .option(
+      "--timeout-ms <ms>",
+      "How long to wait for the response (default: 20000)",
+      (v: string) => Number(v),
+    )
+    .option("--max-chars <n>", "Max body chars to return (default: 200000)", (v: string) =>
+      Number(v),
+    )
     .action(async (url: string, opts, cmd) => {
       const parent = parentOpts(cmd);
       const profile = parent?.browserProfile;

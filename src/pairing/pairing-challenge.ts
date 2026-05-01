@@ -7,7 +7,10 @@ export type PairingChallengeParams = {
   senderId: string;
   senderIdLine: string;
   meta?: PairingMeta;
-  upsertPairingRequest: (params: { id: string; meta?: PairingMeta }) => Promise<{ code: string; created: boolean }>;
+  upsertPairingRequest: (params: {
+    id: string;
+    meta?: PairingMeta;
+  }) => Promise<{ code: string; created: boolean }>;
   sendPairingReply: (text: string) => Promise<void>;
   buildReplyText?: (params: { code: string; senderIdLine: string }) => string;
   onCreated?: (params: { code: string }) => void;

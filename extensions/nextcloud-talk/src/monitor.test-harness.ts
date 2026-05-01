@@ -19,14 +19,19 @@ afterEach(async () => {
   }
 });
 
-export type StartWebhookServerParams = Omit<NextcloudTalkWebhookServerOptions, "port" | "host" | "path" | "secret"> & {
+export type StartWebhookServerParams = Omit<
+  NextcloudTalkWebhookServerOptions,
+  "port" | "host" | "path" | "secret"
+> & {
   path: string;
   secret?: string;
   host?: string;
   port?: number;
 };
 
-export async function startWebhookServer(params: StartWebhookServerParams): Promise<WebhookHarness> {
+export async function startWebhookServer(
+  params: StartWebhookServerParams,
+): Promise<WebhookHarness> {
   const host = params.host ?? "127.0.0.1";
   const port = params.port ?? 0;
   const secret = params.secret ?? "nextcloud-secret";

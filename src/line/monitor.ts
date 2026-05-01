@@ -117,8 +117,18 @@ function startLineLoadingKeepalive(params: {
   };
 }
 
-export async function monitorLineProvider(opts: MonitorLineProviderOptions): Promise<LineProviderMonitor> {
-  const { channelAccessToken, channelSecret, accountId, config, runtime, abortSignal, webhookPath } = opts;
+export async function monitorLineProvider(
+  opts: MonitorLineProviderOptions,
+): Promise<LineProviderMonitor> {
+  const {
+    channelAccessToken,
+    channelSecret,
+    accountId,
+    config,
+    runtime,
+    abortSignal,
+    webhookPath,
+  } = opts;
   const resolvedAccountId = accountId ?? "default";
   const token = channelAccessToken.trim();
   const secret = channelSecret.trim();
@@ -225,7 +235,9 @@ export async function monitorLineProvider(opts: MonitorLineProviderOptions): Pro
                   createImageMessage,
                   createLocationMessage,
                   onReplyError: (replyErr) => {
-                    logVerbose(`line: reply token failed, falling back to push: ${String(replyErr)}`);
+                    logVerbose(
+                      `line: reply token failed, falling back to push: ${String(replyErr)}`,
+                    );
                   },
                 },
               });

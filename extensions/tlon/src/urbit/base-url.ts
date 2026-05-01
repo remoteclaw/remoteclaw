@@ -1,6 +1,8 @@
 import { isBlockedHostnameOrIp } from "remoteclaw/plugin-sdk/tlon";
 
-export type UrbitBaseUrlValidation = { ok: true; baseUrl: string; hostname: string } | { ok: false; error: string };
+export type UrbitBaseUrlValidation =
+  | { ok: true; baseUrl: string; hostname: string }
+  | { ok: false; error: string };
 
 function hasScheme(value: string): boolean {
   return /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(value);

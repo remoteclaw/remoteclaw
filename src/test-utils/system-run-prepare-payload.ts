@@ -11,7 +11,9 @@ type SystemRunPrepareInput = {
 export function buildSystemRunPreparePayload(params: SystemRunPrepareInput) {
   const argv = Array.isArray(params.command) ? params.command.map(String) : [];
   const previewCommand =
-    typeof params.rawCommand === "string" && params.rawCommand.trim().length > 0 ? params.rawCommand : null;
+    typeof params.rawCommand === "string" && params.rawCommand.trim().length > 0
+      ? params.rawCommand
+      : null;
   const commandText = formatExecCommand(argv) || "";
   const commandPreview = previewCommand && previewCommand !== commandText ? previewCommand : null;
   const cmdText = commandPreview ?? commandText;

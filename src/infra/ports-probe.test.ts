@@ -19,12 +19,16 @@ async function withListeningServer(cb: (address: net.AddressInfo) => Promise<voi
 
 describe("tryListenOnPort", () => {
   it("can bind and release an ephemeral loopback port", async () => {
-    await expect(tryListenOnPort({ port: 0, host: "127.0.0.1", exclusive: true })).resolves.toBe(undefined);
+    await expect(tryListenOnPort({ port: 0, host: "127.0.0.1", exclusive: true })).resolves.toBe(
+      undefined,
+    );
   });
 
   it("rejects when the port is already in use", async () => {
     await withListeningServer(async (address) => {
-      await expect(tryListenOnPort({ port: address.port, host: "127.0.0.1" })).rejects.toMatchObject({
+      await expect(
+        tryListenOnPort({ port: address.port, host: "127.0.0.1" }),
+      ).rejects.toMatchObject({
         code: "EADDRINUSE",
       });
     });

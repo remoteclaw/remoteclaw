@@ -23,7 +23,8 @@ export function registerDiscordSubagentHooks(api: RemoteClawPluginApi) {
       accountId,
     });
     const baseThreadBindings = api.config.channels?.discord?.threadBindings;
-    const accountThreadBindings = api.config.channels?.discord?.accounts?.[account.accountId]?.threadBindings;
+    const accountThreadBindings =
+      api.config.channels?.discord?.accounts?.[account.accountId]?.threadBindings;
     return {
       enabled:
         accountThreadBindings?.enabled ??
@@ -31,7 +32,9 @@ export function registerDiscordSubagentHooks(api: RemoteClawPluginApi) {
         api.config.session?.threadBindings?.enabled ??
         true,
       spawnSubagentSessions:
-        accountThreadBindings?.spawnSubagentSessions ?? baseThreadBindings?.spawnSubagentSessions ?? false,
+        accountThreadBindings?.spawnSubagentSessions ??
+        baseThreadBindings?.spawnSubagentSessions ??
+        false,
     };
   };
 

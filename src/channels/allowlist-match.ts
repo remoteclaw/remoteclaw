@@ -21,7 +21,9 @@ export type CompiledAllowlist = {
   wildcard: boolean;
 };
 
-export function formatAllowlistMatchMeta(match?: { matchKey?: string; matchSource?: string } | null): string {
+export function formatAllowlistMatchMeta(
+  match?: { matchKey?: string; matchSource?: string } | null,
+): string {
   return `matchKey=${match?.matchKey ?? "none"} matchSource=${match?.matchSource ?? "none"}`;
 }
 
@@ -34,7 +36,9 @@ export function compileAllowlist(entries: ReadonlyArray<string>): CompiledAllowl
 }
 
 function compileSimpleAllowlist(entries: ReadonlyArray<string | number>): CompiledAllowlist {
-  return compileAllowlist(entries.map((entry) => String(entry).trim().toLowerCase()).filter(Boolean));
+  return compileAllowlist(
+    entries.map((entry) => String(entry).trim().toLowerCase()).filter(Boolean),
+  );
 }
 
 export function resolveAllowlistCandidates<TSource extends string>(params: {

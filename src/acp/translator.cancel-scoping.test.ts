@@ -60,9 +60,13 @@ function createHarness(sessions: Array<{ sessionId: string; sessionKey: string }
     });
   }
 
-  const agent = new AcpGatewayAgent(connection, createAcpGateway(requestSpy as unknown as GatewayClient["request"]), {
-    sessionStore,
-  });
+  const agent = new AcpGatewayAgent(
+    connection,
+    createAcpGateway(requestSpy as unknown as GatewayClient["request"]),
+    {
+      sessionStore,
+    },
+  );
 
   return {
     agent,

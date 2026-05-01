@@ -1,4 +1,7 @@
-export function normalizePluginHttpPath(path?: string | null, fallback?: string | null): string | null {
+export function normalizePluginHttpPath(
+  path?: string | null,
+  fallback?: string | null,
+): string | null {
   const trimmed = path?.trim();
   if (!trimmed) {
     const fallbackTrimmed = fallback?.trim();

@@ -138,7 +138,9 @@ describe("parseMentions", () => {
 
   it("accepts org-scoped IDs with extra segments (8:orgid:...)", () => {
     const result = parseMentions("@[User](8:orgid:2d8c2d2c-1111-2222-3333-444444444444)");
-    expect(requireOnlyEntity(result).mentioned.id).toBe("8:orgid:2d8c2d2c-1111-2222-3333-444444444444");
+    expect(requireOnlyEntity(result).mentioned.id).toBe(
+      "8:orgid:2d8c2d2c-1111-2222-3333-444444444444",
+    );
   });
 
   it("accepts AAD object IDs (UUIDs)", () => {

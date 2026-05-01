@@ -16,7 +16,9 @@ describe("tlon urbit auth ssrf", () => {
     const mockFetch = vi.fn();
     vi.stubGlobal("fetch", mockFetch);
 
-    await expect(authenticate("http://127.0.0.1:8080", "code")).rejects.toBeInstanceOf(SsrFBlockedError);
+    await expect(authenticate("http://127.0.0.1:8080", "code")).rejects.toBeInstanceOf(
+      SsrFBlockedError,
+    );
     expect(mockFetch).not.toHaveBeenCalled();
   });
 

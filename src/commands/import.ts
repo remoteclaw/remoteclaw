@@ -110,12 +110,15 @@ export function transformConfigContent(content: string): {
   const barePattern = /("(?:[^"\\]|\\.)*")/g;
   transformed = transformed.replace(barePattern, (match) => {
     if (match.includes(ENV_VAR_PREFIX_OLD)) {
-      const updated = match.replace(new RegExp(`${ENV_VAR_PREFIX_OLD}(\\w+)`, "g"), (_m, suffix: string) => {
-        const oldName = `${ENV_VAR_PREFIX_OLD}${suffix}`;
-        const newName = `${ENV_VAR_PREFIX_NEW}${suffix}`;
-        renames.push(`${oldName} -> ${newName}`);
-        return newName;
-      });
+      const updated = match.replace(
+        new RegExp(`${ENV_VAR_PREFIX_OLD}(\\w+)`, "g"),
+        (_m, suffix: string) => {
+          const oldName = `${ENV_VAR_PREFIX_OLD}${suffix}`;
+          const newName = `${ENV_VAR_PREFIX_NEW}${suffix}`;
+          renames.push(`${oldName} -> ${newName}`);
+          return newName;
+        },
+      );
       return updated;
     }
     return match;
@@ -125,7 +128,9 @@ export function transformConfigContent(content: string): {
   const pathPattern = /("(?:[^"\\]|\\.)*")/g;
   transformed = transformed.replace(pathPattern, (match) => {
     if (match.includes("/.openclaw/") || match.includes("\\.openclaw\\")) {
-      return match.replace(/\/\.openclaw\//g, "/.remoteclaw/").replace(/\\\.openclaw\\/g, "\\.remoteclaw\\");
+      return match
+        .replace(/\/\.openclaw\//g, "/.remoteclaw/")
+        .replace(/\\\.openclaw\\/g, "\\.remoteclaw\\");
     }
     return match;
   });
@@ -153,7 +158,12 @@ type KeyTreeNode = {
 function buildKeyTree(schema: unknown): KeyTreeNode | null {
   // Unwrap optional / nullable / default wrappers (.unwrap())
   let current = schema;
-  while (current && typeof current === "object" && "unwrap" in current && typeof current.unwrap === "function") {
+  while (
+    current &&
+    typeof current === "object" &&
+    "unwrap" in current &&
+    typeof current.unwrap === "function"
+  ) {
     current = current.unwrap();
   }
 
@@ -408,7 +418,9 @@ export function materializeWorkspaceDefaults(jsonContent: string): string {
 
   // Step 3: Remove agents.defaults.workspace after consuming
   if (defaultsWorkspace && config.agents) {
-    const defaults = (config.agents as Record<string, unknown>).defaults as Record<string, unknown> | undefined;
+    const defaults = (config.agents as Record<string, unknown>).defaults as
+      | Record<string, unknown>
+      | undefined;
     if (defaults) {
       delete defaults.workspace;
       if (Object.keys(defaults).length === 0) {
@@ -509,7 +521,8 @@ function collectLegacyStore(filePath: string, out: DiscoveredAuthProfile[]): voi
       if (
         value &&
         typeof value === "object" &&
-        ((value as Record<string, unknown>).type === "api_key" || (value as Record<string, unknown>).type === "token")
+        ((value as Record<string, unknown>).type === "api_key" ||
+          (value as Record<string, unknown>).type === "token")
       ) {
         out.push({
           id: `${key}:default`,
@@ -531,7 +544,10 @@ function collectLegacyStore(filePath: string, out: DiscoveredAuthProfile[]): voi
  * detects the configured runtime and sets `agents.defaults.auth` to the
  * first profile whose provider matches the runtime.
  */
-export function materializeAuthDefaults(jsonContent: string, discoveredProfileIds: string[]): string {
+export function materializeAuthDefaults(
+  jsonContent: string,
+  discoveredProfileIds: string[],
+): string {
   if (discoveredProfileIds.length === 0) {
     return jsonContent;
   }
@@ -856,7 +872,10 @@ async function copyImportableFiles(params: {
 /**
  * Execute the import migration from an OpenClaw installation to RemoteClaw.
  */
-export async function importCommand(opts: ImportOptions, runtime: RuntimeEnv = defaultRuntime): Promise<ImportResult> {
+export async function importCommand(
+  opts: ImportOptions,
+  runtime: RuntimeEnv = defaultRuntime,
+): Promise<ImportResult> {
   const sourcePath = path.resolve(opts.sourcePath.replace(/^~/, process.env.HOME ?? "~"));
   const targetDir = resolveNewStateDir();
 
@@ -878,7 +897,9 @@ export async function importCommand(opts: ImportOptions, runtime: RuntimeEnv = d
   const targetExists = fs.existsSync(targetDir);
   if (targetExists && !opts.yes && !opts.dryRun) {
     if (opts.nonInteractive) {
-      runtime.error(`Target directory already exists: ${shortenHomePath(targetDir)}\nUse --yes to overwrite.`);
+      runtime.error(
+        `Target directory already exists: ${shortenHomePath(targetDir)}\nUse --yes to overwrite.`,
+      );
       runtime.exit(1);
       return null as never;
     }
@@ -910,7 +931,9 @@ export async function importCommand(opts: ImportOptions, runtime: RuntimeEnv = d
     runtime.log("Dry run — no files will be written.\n");
   }
 
-  runtime.log(`Importing from ${shortenHomePath(sourcePath)} to ${shortenHomePath(targetDir)}...\n`);
+  runtime.log(
+    `Importing from ${shortenHomePath(sourcePath)} to ${shortenHomePath(targetDir)}...\n`,
+  );
 
   const discoveredAuthProfiles = discoverSourceAuthProfiles(sourcePath);
   const discoveredAuthProfileIds = [...new Set(discoveredAuthProfiles.map((p) => p.id))];
@@ -959,7 +982,9 @@ export async function importCommand(opts: ImportOptions, runtime: RuntimeEnv = d
   }
 
   if (result.consolidatedAuthProfiles.length > 0) {
-    runtime.log(`\nConsolidated ${result.consolidatedAuthProfiles.length} auth profile(s) into global store:`);
+    runtime.log(
+      `\nConsolidated ${result.consolidatedAuthProfiles.length} auth profile(s) into global store:`,
+    );
     for (const id of result.consolidatedAuthProfiles) {
       runtime.log(`  ${id}`);
     }
@@ -985,7 +1010,9 @@ export async function importCommand(opts: ImportOptions, runtime: RuntimeEnv = d
  * Detect whether an OpenClaw installation exists at the default location.
  * Used by the onboarding wizard to offer migration.
  */
-export function detectOpenClawInstallation(homedir: string = process.env.HOME ?? ""): string | null {
+export function detectOpenClawInstallation(
+  homedir: string = process.env.HOME ?? "",
+): string | null {
   const openclawDir = path.join(homedir, ".openclaw");
   if (fs.existsSync(openclawDir)) {
     try {

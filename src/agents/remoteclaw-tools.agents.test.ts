@@ -41,7 +41,8 @@ describe("agents_list", () => {
   }
 
   function readAgentList(result: unknown) {
-    return (result as { details?: { agents?: Array<{ id: string; configured?: boolean }> } }).details?.agents;
+    return (result as { details?: { agents?: Array<{ id: string; configured?: boolean }> } })
+      .details?.agents;
   }
 
   beforeEach(async () => {

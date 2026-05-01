@@ -41,7 +41,9 @@ function applyWithSlackConfig(extra?: { plugins?: { allow?: string[] } }) {
   });
 }
 
-function applyWithApnChannelConfig(extra?: { plugins?: { entries?: Record<string, { enabled: boolean }> } }) {
+function applyWithApnChannelConfig(extra?: {
+  plugins?: { entries?: Record<string, { enabled: boolean }> };
+}) {
   return applyPluginAutoEnable({
     config: {
       ...makeApnChannelConfig(),

@@ -80,7 +80,9 @@ export function createSlackDraftStream(params: {
       params.onMessageSent?.();
     } catch (err) {
       stopped = true;
-      params.warn?.(`slack stream preview failed: ${err instanceof Error ? err.message : String(err)}`);
+      params.warn?.(
+        `slack stream preview failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
   };
   const loop = createDraftStreamLoop({
@@ -111,7 +113,9 @@ export function createSlackDraftStream(params: {
         accountId: params.accountId,
       });
     } catch (err) {
-      params.warn?.(`slack stream preview cleanup failed: ${err instanceof Error ? err.message : String(err)}`);
+      params.warn?.(
+        `slack stream preview cleanup failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
   };
 

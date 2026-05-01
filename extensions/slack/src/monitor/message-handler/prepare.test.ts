@@ -189,7 +189,9 @@ describe("slack prepareSlackMessage inbound contract", () => {
         },
       } as RemoteClawConfig,
       replyToMode: "all",
-      ...(params?.defaultRequireMention === undefined ? {} : { defaultRequireMention: params.defaultRequireMention }),
+      ...(params?.defaultRequireMention === undefined
+        ? {}
+        : { defaultRequireMention: params.defaultRequireMention }),
     });
     // oxlint-disable-next-line typescript/no-explicit-any
     slackCtx.resolveUserName = async () => ({ name: "Alice" }) as any;
@@ -479,7 +481,10 @@ describe("slack prepareSlackMessage inbound contract", () => {
       baseSessionKey: route.sessionKey,
       threadId: "200.000",
     });
-    fs.writeFileSync(storePath, JSON.stringify({ [threadKeys.sessionKey]: { updatedAt: Date.now() } }, null, 2));
+    fs.writeFileSync(
+      storePath,
+      JSON.stringify({ [threadKeys.sessionKey]: { updatedAt: Date.now() } }, null, 2),
+    );
 
     const replies = vi.fn().mockResolvedValueOnce({
       messages: [{ text: "starter", user: "U2", ts: "200.000" }],
@@ -561,7 +566,11 @@ describe("slack prepareSlackMessage inbound contract", () => {
     slackCtx.resolveUserName = async () => ({ name: "Alice" }) as any;
 
     const message = createSlackMessage({ ts: "500.000" });
-    const prepared = await prepareMessageWith(slackCtx, createSlackAccount({ replyToMode: "all" }), message);
+    const prepared = await prepareMessageWith(
+      slackCtx,
+      createSlackAccount({ replyToMode: "all" }),
+      message,
+    );
 
     expect(prepared).toBeTruthy();
     // Session key should include :thread:500.000 for the auto-threaded message

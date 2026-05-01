@@ -82,7 +82,15 @@ function ensureSuiteFixtureRoot() {
   return suiteFixtureRoot;
 }
 
-async function packToArchive({ pkgDir, outDir, outName }: { pkgDir: string; outDir: string; outName: string }) {
+async function packToArchive({
+  pkgDir,
+  outDir,
+  outName,
+}: {
+  pkgDir: string;
+  outDir: string;
+  outName: string;
+}) {
   const dest = path.join(outDir, outName);
   fs.rmSync(dest, { force: true });
   await tar.c(
@@ -100,7 +108,11 @@ function readVoiceCallArchiveBuffer(version: string): Buffer {
   return fs.readFileSync(path.join(pluginFixturesDir, `voice-call-${version}.tgz`));
 }
 
-function getArchiveFixturePath(params: { cacheKey: string; outName: string; buffer: Buffer }): string {
+function getArchiveFixturePath(params: {
+  cacheKey: string;
+  outName: string;
+  buffer: Buffer;
+}): string {
   const hit = archiveFixturePathCache.get(params.cacheKey);
   if (hit) {
     return hit;
@@ -219,7 +231,10 @@ function setupManifestInstallFixture(params: { manifestId: string }) {
   return { pluginDir, extensionsDir: path.join(stateDir, "extensions") };
 }
 
-async function expectArchiveInstallReservedSegmentRejection(params: { packageName: string; outName: string }) {
+async function expectArchiveInstallReservedSegmentRejection(params: {
+  packageName: string;
+  outName: string;
+}) {
   const result = await installArchivePackageAndReturnResult({
     packageJson: {
       name: params.packageName,
@@ -319,7 +334,10 @@ beforeAll(async () => {
   } = await import("./install.js"));
   ({ runCommandWithTimeout } = await import("../process/exec.js"));
 
-  installPluginFromDirTemplateDir = path.join(ensureSuiteFixtureRoot(), "install-from-dir-template");
+  installPluginFromDirTemplateDir = path.join(
+    ensureSuiteFixtureRoot(),
+    "install-from-dir-template",
+  );
   fs.mkdirSync(path.join(installPluginFromDirTemplateDir, "dist"), { recursive: true });
   fs.writeFileSync(
     path.join(installPluginFromDirTemplateDir, "package.json"),
@@ -331,7 +349,11 @@ beforeAll(async () => {
     }),
     "utf-8",
   );
-  fs.writeFileSync(path.join(installPluginFromDirTemplateDir, "dist", "index.js"), "export {};", "utf-8");
+  fs.writeFileSync(
+    path.join(installPluginFromDirTemplateDir, "dist", "index.js"),
+    "export {};",
+    "utf-8",
+  );
 
   manifestInstallTemplateDir = path.join(ensureSuiteFixtureRoot(), "manifest-install-template");
   fs.mkdirSync(path.join(manifestInstallTemplateDir, "dist"), { recursive: true });
@@ -344,7 +366,11 @@ beforeAll(async () => {
     }),
     "utf-8",
   );
-  fs.writeFileSync(path.join(manifestInstallTemplateDir, "dist", "index.js"), "export {};", "utf-8");
+  fs.writeFileSync(
+    path.join(manifestInstallTemplateDir, "dist", "index.js"),
+    "export {};",
+    "utf-8",
+  );
   fs.writeFileSync(
     path.join(manifestInstallTemplateDir, "remoteclaw.plugin.json"),
     JSON.stringify({
@@ -449,7 +475,9 @@ describe("installPluginFromArchive", () => {
     if (!second.ok) {
       return;
     }
-    const manifest = JSON.parse(fs.readFileSync(path.join(second.targetDir, "package.json"), "utf-8")) as {
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(second.targetDir, "package.json"), "utf-8"),
+    ) as {
       version?: string;
     };
     expect(manifest.version).toBe("0.0.2");
@@ -642,7 +670,9 @@ describe("installPluginFromDir", () => {
       return;
     }
 
-    const manifest = JSON.parse(fs.readFileSync(path.join(res.targetDir, "package.json"), "utf-8")) as {
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(res.targetDir, "package.json"), "utf-8"),
+    ) as {
       devDependencies?: Record<string, string>;
     };
     expect(manifest.devDependencies?.remoteclaw).toBeUndefined();
@@ -664,7 +694,9 @@ describe("installPluginFromDir", () => {
     expectInstalledAsMemoryCognee(res, extensionsDir);
     expect(
       infoMessages.some((msg) =>
-        msg.includes('Plugin manifest id "memory-cognee" differs from npm package name "cognee-remoteclaw"'),
+        msg.includes(
+          'Plugin manifest id "memory-cognee" differs from npm package name "cognee-remoteclaw"',
+        ),
       ),
     ).toBe(true);
   });

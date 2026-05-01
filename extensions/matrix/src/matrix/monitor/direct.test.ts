@@ -16,7 +16,12 @@ function createMockClient(opts: {
   stateEvents?: Record<string, StateEvent>;
   selfUserId?: string;
 }) {
-  const { dmRooms = {}, membersByRoom = {}, stateEvents = {}, selfUserId = "@bot:example.org" } = opts;
+  const {
+    dmRooms = {},
+    membersByRoom = {},
+    stateEvents = {},
+    selfUserId = "@bot:example.org",
+  } = opts;
 
   return {
     dms: {
@@ -27,21 +32,23 @@ function createMockClient(opts: {
     getJoinedRoomMembers: vi.fn().mockImplementation(async (roomId: string) => {
       return membersByRoom[roomId] ?? [];
     }),
-    getRoomStateEvent: vi.fn().mockImplementation(async (roomId: string, eventType: string, stateKey: string) => {
-      const key = `${roomId}|${eventType}|${stateKey}`;
-      const ev = stateEvents[key];
-      if (ev === undefined) {
-        // Simulate real homeserver M_NOT_FOUND response (matches MatrixError shape)
-        const err = new Error(`State event not found: ${key}`) as Error & {
-          errcode?: string;
-          statusCode?: number;
-        };
-        err.errcode = "M_NOT_FOUND";
-        err.statusCode = 404;
-        throw err;
-      }
-      return ev;
-    }),
+    getRoomStateEvent: vi
+      .fn()
+      .mockImplementation(async (roomId: string, eventType: string, stateKey: string) => {
+        const key = `${roomId}|${eventType}|${stateKey}`;
+        const ev = stateEvents[key];
+        if (ev === undefined) {
+          // Simulate real homeserver M_NOT_FOUND response (matches MatrixError shape)
+          const err = new Error(`State event not found: ${key}`) as Error & {
+            errcode?: string;
+            statusCode?: number;
+          };
+          err.errcode = "M_NOT_FOUND";
+          err.statusCode = 404;
+          throw err;
+        }
+        return ev;
+      }),
   };
 }
 
@@ -308,18 +315,20 @@ describe("createDirectRoomTracker", () => {
       });
       // Override to throw M_NOT_FOUND like a real homeserver
       const originalImpl = client.getRoomStateEvent.getMockImplementation()!;
-      client.getRoomStateEvent.mockImplementation(async (roomId: string, eventType: string, stateKey: string) => {
-        if (eventType === "m.room.name") {
-          const err = new Error("not found") as Error & {
-            errcode?: string;
-            statusCode?: number;
-          };
-          err.errcode = "M_NOT_FOUND";
-          err.statusCode = 404;
-          throw err;
-        }
-        return originalImpl(roomId, eventType, stateKey);
-      });
+      client.getRoomStateEvent.mockImplementation(
+        async (roomId: string, eventType: string, stateKey: string) => {
+          if (eventType === "m.room.name") {
+            const err = new Error("not found") as Error & {
+              errcode?: string;
+              statusCode?: number;
+            };
+            err.errcode = "M_NOT_FOUND";
+            err.statusCode = 404;
+            throw err;
+          }
+          return originalImpl(roomId, eventType, stateKey);
+        },
+      );
       const tracker = createDirectRoomTracker(client as never);
 
       const result = await tracker.isDirectMessage({
@@ -343,12 +352,14 @@ describe("createDirectRoomTracker", () => {
       });
       // Simulate a network/auth error (not M_NOT_FOUND)
       const originalImpl = client.getRoomStateEvent.getMockImplementation()!;
-      client.getRoomStateEvent.mockImplementation(async (roomId: string, eventType: string, stateKey: string) => {
-        if (eventType === "m.room.name") {
-          throw new Error("Connection refused");
-        }
-        return originalImpl(roomId, eventType, stateKey);
-      });
+      client.getRoomStateEvent.mockImplementation(
+        async (roomId: string, eventType: string, stateKey: string) => {
+          if (eventType === "m.room.name") {
+            throw new Error("Connection refused");
+          }
+          return originalImpl(roomId, eventType, stateKey);
+        },
+      );
       const tracker = createDirectRoomTracker(client as never);
 
       const result = await tracker.isDirectMessage({

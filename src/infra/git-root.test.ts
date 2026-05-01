@@ -10,7 +10,9 @@ async function makeTempDir(label: string): Promise<string> {
 
 async function expectGitRootResolution(params: {
   label: string;
-  setup: (temp: string) => Promise<{ startPath: string; expectedRoot: string | null; expectedHead: string | null }>;
+  setup: (
+    temp: string,
+  ) => Promise<{ startPath: string; expectedRoot: string | null; expectedHead: string | null }>;
 }): Promise<void> {
   const temp = await makeTempDir(params.label);
   const { startPath, expectedRoot, expectedHead } = await params.setup(temp);

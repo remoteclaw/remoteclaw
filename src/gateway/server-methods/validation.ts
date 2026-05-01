@@ -18,7 +18,10 @@ export function assertValidParams<T>(
   respond(
     false,
     undefined,
-    errorShape(ErrorCodes.INVALID_REQUEST, `invalid ${method} params: ${formatValidationErrors(validate.errors)}`),
+    errorShape(
+      ErrorCodes.INVALID_REQUEST,
+      `invalid ${method} params: ${formatValidationErrors(validate.errors)}`,
+    ),
   );
   return false;
 }

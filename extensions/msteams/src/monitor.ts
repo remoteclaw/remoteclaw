@@ -13,7 +13,10 @@ import { formatUnknownError } from "./errors.js";
 import type { MSTeamsAdapter } from "./messenger.js";
 import { registerMSTeamsHandlers, type MSTeamsActivityHandler } from "./monitor-handler.js";
 import { createMSTeamsPollStoreFs, type MSTeamsPollStore } from "./polls.js";
-import { resolveMSTeamsChannelAllowlist, resolveMSTeamsUserAllowlist } from "./resolve-allowlist.js";
+import {
+  resolveMSTeamsChannelAllowlist,
+  resolveMSTeamsUserAllowlist,
+} from "./resolve-allowlist.js";
 import { getMSTeamsRuntime } from "./runtime.js";
 import { createMSTeamsAdapter, loadMSTeamsSdkWithAuth } from "./sdk.js";
 import { resolveMSTeamsCredentials } from "./token.js";
@@ -34,7 +37,9 @@ export type MonitorMSTeamsResult = {
 
 const MSTEAMS_WEBHOOK_MAX_BODY_BYTES = DEFAULT_WEBHOOK_MAX_BODY_BYTES;
 
-export async function monitorMSTeamsProvider(opts: MonitorMSTeamsOpts): Promise<MonitorMSTeamsResult> {
+export async function monitorMSTeamsProvider(
+  opts: MonitorMSTeamsOpts,
+): Promise<MonitorMSTeamsResult> {
   const core = getMSTeamsRuntime();
   const log = core.logging.getChildLogger({ name: "msteams" });
   let cfg = opts.cfg;
@@ -83,14 +88,18 @@ export async function monitorMSTeamsProvider(opts: MonitorMSTeamsOpts): Promise<
         unresolved.push(entry.input);
       }
     }
-    const mapping = resolved.filter((entry) => entry.resolved && entry.id).map((entry) => `${entry.input}→${entry.id}`);
+    const mapping = resolved
+      .filter((entry) => entry.resolved && entry.id)
+      .map((entry) => `${entry.input}→${entry.id}`);
     summarizeMapping(label, mapping, unresolved, runtime);
     return { additions, unresolved };
   };
 
   try {
     const allowEntries =
-      allowFrom?.map((entry) => cleanAllowEntry(String(entry))).filter((entry) => entry && entry !== "*") ?? [];
+      allowFrom
+        ?.map((entry) => cleanAllowEntry(String(entry)))
+        .filter((entry) => entry && entry !== "*") ?? [];
     if (allowEntries.length > 0) {
       const { additions } = await resolveAllowlistUsers("msteams users", allowEntries);
       allowFrom = mergeAllowlist({ existing: allowFrom, additions });
@@ -147,7 +156,9 @@ export async function monitorMSTeamsProvider(opts: MonitorMSTeamsOpts): Promise<
             return;
           }
           mapping.push(
-            entry.channelId ? `${entry.input}→${entry.teamId}/${entry.channelId}` : `${entry.input}→${entry.teamId}`,
+            entry.channelId
+              ? `${entry.input}→${entry.teamId}/${entry.channelId}`
+              : `${entry.input}→${entry.teamId}`,
           );
           const existing = nextTeams[entry.teamId] ?? {};
           const mergedChannels = {

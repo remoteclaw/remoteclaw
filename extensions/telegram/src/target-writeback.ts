@@ -2,7 +2,11 @@ import type { RemoteClawConfig } from "../../../src/config/config.js";
 import { readConfigFileSnapshotForWrite, writeConfigFile } from "../../../src/config/config.js";
 import { loadCronStore, resolveCronStorePath, saveCronStore } from "../../../src/cron/store.js";
 import { createSubsystemLogger } from "../../../src/logging/subsystem.js";
-import { normalizeTelegramChatId, normalizeTelegramLookupTarget, parseTelegramTarget } from "./targets.js";
+import {
+  normalizeTelegramChatId,
+  normalizeTelegramLookupTarget,
+  parseTelegramTarget,
+} from "./targets.js";
 
 const writebackLogger = createSubsystemLogger("telegram/target-writeback");
 
@@ -68,7 +72,11 @@ function resolveLegacyRewrite(params: {
   };
 }
 
-function rewriteTargetIfMatch(params: { rawValue: unknown; matchKey: string; resolvedTarget: string }): string | null {
+function rewriteTargetIfMatch(params: {
+  rawValue: unknown;
+  matchKey: string;
+  resolvedTarget: string;
+}): string | null {
   if (typeof params.rawValue !== "string" && typeof params.rawValue !== "number") {
     return null;
   }

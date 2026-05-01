@@ -27,7 +27,9 @@ describe("resolveCliChannelOptions", () => {
   });
 
   it("uses precomputed startup metadata when available", async () => {
-    readFileSyncMock.mockReturnValue(JSON.stringify({ channelOptions: ["cached", "telegram", "cached"] }));
+    readFileSyncMock.mockReturnValue(
+      JSON.stringify({ channelOptions: ["cached", "telegram", "cached"] }),
+    );
 
     expect(resolveCliChannelOptions()).toEqual(["cached", "telegram"]);
   });

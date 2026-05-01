@@ -8,7 +8,9 @@ async function loadCanvasModule(): Promise<CanvasModule> {
   if (!canvasModulePromise) {
     canvasModulePromise = import("@napi-rs/canvas").catch((err) => {
       canvasModulePromise = null;
-      throw new Error(`Optional dependency @napi-rs/canvas is required for PDF image extraction: ${String(err)}`);
+      throw new Error(
+        `Optional dependency @napi-rs/canvas is required for PDF image extraction: ${String(err)}`,
+      );
     });
   }
   return canvasModulePromise;
@@ -18,7 +20,9 @@ async function loadPdfJsModule(): Promise<PdfJsModule> {
   if (!pdfJsModulePromise) {
     pdfJsModulePromise = import("pdfjs-dist/legacy/build/pdf.mjs").catch((err) => {
       pdfJsModulePromise = null;
-      throw new Error(`Optional dependency pdfjs-dist is required for PDF extraction: ${String(err)}`);
+      throw new Error(
+        `Optional dependency pdfjs-dist is required for PDF extraction: ${String(err)}`,
+      );
     });
   }
   return pdfJsModulePromise;

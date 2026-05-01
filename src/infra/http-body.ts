@@ -4,7 +4,10 @@ import { clearTimeout as clearNodeTimeout, setTimeout as setNodeTimeout } from "
 export const DEFAULT_WEBHOOK_MAX_BODY_BYTES = 1024 * 1024;
 export const DEFAULT_WEBHOOK_BODY_TIMEOUT_MS = 30_000;
 
-export type RequestBodyLimitErrorCode = "PAYLOAD_TOO_LARGE" | "REQUEST_BODY_TIMEOUT" | "CONNECTION_CLOSED";
+export type RequestBodyLimitErrorCode =
+  | "PAYLOAD_TOO_LARGE"
+  | "REQUEST_BODY_TIMEOUT"
+  | "CONNECTION_CLOSED";
 
 type RequestBodyLimitErrorInit = {
   code: RequestBodyLimitErrorCode;
@@ -88,8 +91,13 @@ type RequestBodyChunkProgress = {
   exceeded: boolean;
 };
 
-function resolveRequestBodyLimitValues(options: { maxBytes: number; timeoutMs?: number }): RequestBodyLimitValues {
-  const maxBytes = Number.isFinite(options.maxBytes) ? Math.max(1, Math.floor(options.maxBytes)) : 1;
+function resolveRequestBodyLimitValues(options: {
+  maxBytes: number;
+  timeoutMs?: number;
+}): RequestBodyLimitValues {
+  const maxBytes = Number.isFinite(options.maxBytes)
+    ? Math.max(1, Math.floor(options.maxBytes))
+    : 1;
   const timeoutMs =
     typeof options.timeoutMs === "number" && Number.isFinite(options.timeoutMs)
       ? Math.max(1, Math.floor(options.timeoutMs))
@@ -111,7 +119,10 @@ function advanceRequestBodyChunk(
   };
 }
 
-export async function readRequestBodyWithLimit(req: IncomingMessage, options: ReadRequestBodyOptions): Promise<string> {
+export async function readRequestBodyWithLimit(
+  req: IncomingMessage,
+  options: ReadRequestBodyOptions,
+): Promise<string> {
   const { maxBytes, timeoutMs } = resolveRequestBodyLimitValues(options);
   const encoding = options.encoding ?? "utf-8";
 

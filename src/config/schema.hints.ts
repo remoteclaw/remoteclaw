@@ -107,7 +107,13 @@ const NORMALIZED_SENSITIVE_KEY_WHITELIST_SUFFIXES = SENSITIVE_KEY_WHITELIST_SUFF
   suffix.toLowerCase(),
 );
 
-const SENSITIVE_PATTERNS = [/token$/i, /password/i, /secret/i, /api.?key/i, /serviceaccount(?:ref)?$/i];
+const SENSITIVE_PATTERNS = [
+  /token$/i,
+  /password/i,
+  /secret/i,
+  /api.?key/i,
+  /serviceaccount(?:ref)?$/i,
+];
 
 function isWhitelistedSensitivePath(path: string): boolean {
   const lowerPath = path.toLowerCase();
@@ -146,7 +152,10 @@ export function buildBaseHints(): ConfigUiHints {
   return applyDerivedTags(hints);
 }
 
-export function applySensitiveHints(hints: ConfigUiHints, allowedKeys?: ReadonlySet<string>): ConfigUiHints {
+export function applySensitiveHints(
+  hints: ConfigUiHints,
+  allowedKeys?: ReadonlySet<string>,
+): ConfigUiHints {
   const next = { ...hints };
   for (const key of Object.keys(next)) {
     if (allowedKeys && !allowedKeys.has(key)) {
@@ -178,7 +187,11 @@ function isUnwrappable(object: unknown): object is ZodDummy {
   );
 }
 
-export function mapSensitivePaths(schema: z.ZodType, path: string, hints: ConfigUiHints): ConfigUiHints {
+export function mapSensitivePaths(
+  schema: z.ZodType,
+  path: string,
+  hints: ConfigUiHints,
+): ConfigUiHints {
   let next = { ...hints };
   let currentSchema = schema;
   let isSensitive = sensitive.has(currentSchema);
@@ -211,7 +224,10 @@ export function mapSensitivePaths(schema: z.ZodType, path: string, hints: Config
   } else if (currentSchema instanceof z.ZodRecord) {
     const nextPath = path ? `${path}.*` : "*";
     next = mapSensitivePaths(currentSchema._def.valueType as z.ZodType, nextPath, next);
-  } else if (currentSchema instanceof z.ZodUnion || currentSchema instanceof z.ZodDiscriminatedUnion) {
+  } else if (
+    currentSchema instanceof z.ZodUnion ||
+    currentSchema instanceof z.ZodDiscriminatedUnion
+  ) {
     for (const option of currentSchema.options) {
       next = mapSensitivePaths(option as z.ZodType, path, next);
     }

@@ -51,7 +51,9 @@ export type MSTeamsActivity = {
 export type MSTeamsTurnContext = {
   activity: MSTeamsActivity;
   sendActivity: (textOrActivity: string | object) => Promise<unknown>;
-  sendActivities: (activities: Array<{ type: string } & Record<string, unknown>>) => Promise<unknown>;
+  sendActivities: (
+    activities: Array<{ type: string } & Record<string, unknown>>,
+  ) => Promise<unknown>;
   updateActivity: (activity: object) => Promise<{ id?: string } | void>;
   deleteActivity: (activityId: string) => Promise<void>;
 };

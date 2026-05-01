@@ -34,14 +34,23 @@ describe("check-no-conflict-markers", () => {
   it("finds git conflict markers at the start of lines", () => {
     expect(
       findConflictMarkerLines(
-        ["const ok = true;", "<<<<<<< HEAD", "value = left;", "=======", "value = right;", ">>>>>>> main"].join("\n"),
+        [
+          "const ok = true;",
+          "<<<<<<< HEAD",
+          "value = left;",
+          "=======",
+          "value = right;",
+          ">>>>>>> main",
+        ].join("\n"),
       ),
     ).toEqual([2, 4, 6]);
   });
 
   it("ignores marker-like text when it is indented or inline", () => {
     expect(
-      findConflictMarkerLines(["Example:", "  <<<<<<< HEAD", "const text = '======= not a conflict';"].join("\n")),
+      findConflictMarkerLines(
+        ["Example:", "  <<<<<<< HEAD", "const text = '======= not a conflict';"].join("\n"),
+      ),
     ).toEqual([]);
   });
 
@@ -72,7 +81,13 @@ describe("check-no-conflict-markers", () => {
     fs.mkdirSync(path.dirname(scriptFile), { recursive: true });
     fs.writeFileSync(
       scriptFile,
-      ["<<<<<<< HEAD", 'const left = "left";', "=======", 'const right = "right";', ">>>>>>> branch"].join("\n"),
+      [
+        "<<<<<<< HEAD",
+        'const left = "left";',
+        "=======",
+        'const right = "right";',
+        ">>>>>>> branch",
+      ].join("\n"),
     );
     git(rootDir, "add", "scripts/bundled-plugin-metadata-runtime.mjs");
 

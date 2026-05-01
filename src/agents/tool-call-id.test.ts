@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { AgentMessage } from "./agent-types.js";
 import { castAgentMessages } from "./test-helpers/agent-message-fixtures.js";
-import { isValidCloudCodeAssistToolId, sanitizeToolCallIdsForCloudCodeAssist } from "./tool-call-id.js";
+import {
+  isValidCloudCodeAssistToolId,
+  sanitizeToolCallIdsForCloudCodeAssist,
+} from "./tool-call-id.js";
 
 const buildDuplicateIdCollisionInput = () =>
   castAgentMessages([
@@ -46,7 +49,11 @@ function expectCollisionIdsRemainDistinct(
   return { aId: a.id as string, bId: b.id as string };
 }
 
-function expectSingleToolCallRewrite(out: AgentMessage[], expectedId: string, mode: "strict" | "strict9"): void {
+function expectSingleToolCallRewrite(
+  out: AgentMessage[],
+  expectedId: string,
+  mode: "strict" | "strict9",
+): void {
   const assistant = out[0] as Extract<AgentMessage, { role: "assistant" }>;
   const toolCall = assistant.content?.[0] as { id?: string };
   expect(toolCall.id).toBe(expectedId);

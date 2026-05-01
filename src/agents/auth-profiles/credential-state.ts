@@ -21,7 +21,10 @@ function hasNonEmptyString(value: unknown): boolean {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-export function evaluateStoredCredentialEligibility(params: { credential: AuthProfileCredential; now?: number }): {
+export function evaluateStoredCredentialEligibility(params: {
+  credential: AuthProfileCredential;
+  now?: number;
+}): {
   eligible: boolean;
   reasonCode: AuthCredentialReasonCode;
 } {

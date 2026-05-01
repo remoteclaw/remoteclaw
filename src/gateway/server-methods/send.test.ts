@@ -20,7 +20,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../../config/config.js", async () => {
-  const actual = await vi.importActual<typeof import("../../config/config.js")>("../../config/config.js");
+  const actual =
+    await vi.importActual<typeof import("../../config/config.js")>("../../config/config.js");
   return {
     ...actual,
     loadConfig: () => ({}),
@@ -46,8 +47,13 @@ function resolveAgentIdFromSessionKeyForTests(params: { sessionKey?: string }): 
 }
 
 vi.mock("../../agents/agent-scope.js", () => ({
-  resolveSessionAgentId: ({ sessionKey }: { sessionKey?: string; config?: unknown; agentId?: string }) =>
-    resolveAgentIdFromSessionKeyForTests({ sessionKey }),
+  resolveSessionAgentId: ({
+    sessionKey,
+  }: {
+    sessionKey?: string;
+    config?: unknown;
+    agentId?: string;
+  }) => resolveAgentIdFromSessionKeyForTests({ sessionKey }),
   resolveDefaultAgentId: () => "main",
   resolveAgentWorkspaceDir: () => TEST_AGENT_WORKSPACE,
 }));
@@ -79,7 +85,9 @@ vi.mock("../../infra/outbound/deliver.js", () => ({
 }));
 
 vi.mock("../../config/sessions.js", async () => {
-  const actual = await vi.importActual<typeof import("../../config/sessions.js")>("../../config/sessions.js");
+  const actual = await vi.importActual<typeof import("../../config/sessions.js")>(
+    "../../config/sessions.js",
+  );
   return {
     ...actual,
     appendAssistantMessageToSessionTranscript: mocks.appendAssistantMessageToSessionTranscript,
@@ -101,7 +109,10 @@ async function runSend(params: Record<string, unknown>) {
   return await runSendWithClient(params);
 }
 
-async function runSendWithClient(params: Record<string, unknown>, client?: { connect?: { scopes?: string[] } } | null) {
+async function runSendWithClient(
+  params: Record<string, unknown>,
+  client?: { connect?: { scopes?: string[] } } | null,
+) {
   const respond = vi.fn();
   await sendHandlers.send({
     params: params as never,
@@ -118,7 +129,10 @@ async function runPoll(params: Record<string, unknown>) {
   return await runPollWithClient(params);
 }
 
-async function runPollWithClient(params: Record<string, unknown>, client?: { connect?: { scopes?: string[] } } | null) {
+async function runPollWithClient(
+  params: Record<string, unknown>,
+  client?: { connect?: { scopes?: string[] } } | null,
+) {
   const respond = vi.fn();
   await sendHandlers.poll({
     params: params as never,
@@ -665,7 +679,9 @@ describe("gateway send mirroring", () => {
 
   it("recovers cold plugin resolution for threaded sends", async () => {
     mocks.resolveOutboundTarget.mockReturnValue({ ok: true, to: "123" });
-    mocks.deliverOutboundPayloads.mockResolvedValue([{ messageId: "m-threaded", channel: "slack" }]);
+    mocks.deliverOutboundPayloads.mockResolvedValue([
+      { messageId: "m-threaded", channel: "slack" },
+    ]);
     const outboundPlugin = { outbound: { sendPoll: mocks.sendPoll } };
     mocks.getChannelPlugin
       .mockReturnValueOnce(undefined)

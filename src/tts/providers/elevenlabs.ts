@@ -47,7 +47,9 @@ export const elevenLabsTtsProvider: TtsProviderImpl = {
       voiceSettings: extras.voiceSettings ?? DEFAULT_VOICE_SETTINGS,
       timeoutMs: req.timeoutMs,
     });
-    const sampleRate = outputFormat.startsWith("pcm_") ? Number.parseInt(outputFormat.split("_")[1], 10) : undefined;
+    const sampleRate = outputFormat.startsWith("pcm_")
+      ? Number.parseInt(outputFormat.split("_")[1], 10)
+      : undefined;
     return { audioBuffer: buffer, format: outputFormat, sampleRate };
   },
 };

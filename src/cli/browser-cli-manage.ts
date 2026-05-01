@@ -41,7 +41,10 @@ async function callTabAction(
   );
 }
 
-async function fetchBrowserStatus(parent: BrowserParentOpts, profile?: string): Promise<BrowserStatus> {
+async function fetchBrowserStatus(
+  parent: BrowserParentOpts,
+  profile?: string,
+): Promise<BrowserStatus> {
   return await callBrowserRequest<BrowserStatus>(
     parent,
     {
@@ -55,7 +58,10 @@ async function fetchBrowserStatus(parent: BrowserParentOpts, profile?: string): 
   );
 }
 
-async function runBrowserToggle(parent: BrowserParentOpts, params: { profile?: string; path: string }) {
+async function runBrowserToggle(
+  parent: BrowserParentOpts,
+  params: { profile?: string; path: string },
+) {
   await callBrowserRequest(parent, {
     method: "POST",
     path: params.path,
@@ -86,11 +92,16 @@ function logBrowserTabs(tabs: BrowserTab[], json?: boolean) {
     return;
   }
   defaultRuntime.log(
-    tabs.map((t, i) => `${i + 1}. ${t.title || "(untitled)"}\n   ${t.url}\n   id: ${t.targetId}`).join("\n"),
+    tabs
+      .map((t, i) => `${i + 1}. ${t.title || "(untitled)"}\n   ${t.url}\n   id: ${t.targetId}`)
+      .join("\n"),
   );
 }
 
-export function registerBrowserManageCommands(browser: Command, parentOpts: (cmd: Command) => BrowserParentOpts) {
+export function registerBrowserManageCommands(
+  browser: Command,
+  parentOpts: (cmd: Command) => BrowserParentOpts,
+) {
   browser
     .command("status")
     .description("Show browser status")
@@ -255,7 +266,8 @@ export function registerBrowserManageCommands(browser: Command, parentOpts: (cmd
     .action(async (index: number | undefined, _opts, cmd) => {
       const parent = parentOpts(cmd);
       const profile = parent?.browserProfile;
-      const idx = typeof index === "number" && Number.isFinite(index) ? Math.floor(index) - 1 : undefined;
+      const idx =
+        typeof index === "number" && Number.isFinite(index) ? Math.floor(index) - 1 : undefined;
       if (typeof idx === "number" && idx < 0) {
         defaultRuntime.error(danger("index must be >= 1"));
         defaultRuntime.exit(1);
@@ -389,36 +401,38 @@ export function registerBrowserManageCommands(browser: Command, parentOpts: (cmd
     .option("--color <hex>", "Profile color (hex format, e.g. #0066CC)")
     .option("--cdp-url <url>", "CDP URL for remote Chrome (http/https)")
     .option("--driver <driver>", "Profile driver (remoteclaw|extension). Default: remoteclaw")
-    .action(async (opts: { name: string; color?: string; cdpUrl?: string; driver?: string }, cmd) => {
-      const parent = parentOpts(cmd);
-      await runBrowserCommand(async () => {
-        const result = await callBrowserRequest<BrowserCreateProfileResult>(
-          parent,
-          {
-            method: "POST",
-            path: "/profiles/create",
-            body: {
-              name: opts.name,
-              color: opts.color,
-              cdpUrl: opts.cdpUrl,
-              driver: opts.driver === "extension" ? "extension" : undefined,
+    .action(
+      async (opts: { name: string; color?: string; cdpUrl?: string; driver?: string }, cmd) => {
+        const parent = parentOpts(cmd);
+        await runBrowserCommand(async () => {
+          const result = await callBrowserRequest<BrowserCreateProfileResult>(
+            parent,
+            {
+              method: "POST",
+              path: "/profiles/create",
+              body: {
+                name: opts.name,
+                color: opts.color,
+                cdpUrl: opts.cdpUrl,
+                driver: opts.driver === "extension" ? "extension" : undefined,
+              },
             },
-          },
-          { timeoutMs: 10_000 },
-        );
-        if (printJsonResult(parent, result)) {
-          return;
-        }
-        const loc = result.isRemote ? `  cdpUrl: ${result.cdpUrl}` : `  port: ${result.cdpPort}`;
-        defaultRuntime.log(
-          info(
-            `🦀 Created profile "${result.profile}"\n${loc}\n  color: ${result.color}${
-              opts.driver === "extension" ? "\n  driver: extension" : ""
-            }`,
-          ),
-        );
-      });
-    });
+            { timeoutMs: 10_000 },
+          );
+          if (printJsonResult(parent, result)) {
+            return;
+          }
+          const loc = result.isRemote ? `  cdpUrl: ${result.cdpUrl}` : `  port: ${result.cdpPort}`;
+          defaultRuntime.log(
+            info(
+              `🦀 Created profile "${result.profile}"\n${loc}\n  color: ${result.color}${
+                opts.driver === "extension" ? "\n  driver: extension" : ""
+              }`,
+            ),
+          );
+        });
+      },
+    );
 
   browser
     .command("delete-profile")

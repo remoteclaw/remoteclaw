@@ -20,7 +20,9 @@ describe("gateway tools.catalog", () => {
       expect(res.ok).toBe(true);
       expect(res.payload?.agentId).toBeTruthy();
       const mediaGroup = res.payload?.groups?.find((group) => group.id === "media");
-      expect(mediaGroup?.tools?.some((tool) => tool.id === "tts" && tool.source === "core")).toBe(true);
+      expect(mediaGroup?.tools?.some((tool) => tool.id === "tts" && tool.source === "core")).toBe(
+        true,
+      );
     });
   });
 
@@ -32,7 +34,9 @@ describe("gateway tools.catalog", () => {
         groups?: Array<{ source?: "core" | "plugin" }>;
       }>(ws, "tools.catalog", { includePlugins: false });
       expect(noPlugins.ok).toBe(true);
-      expect((noPlugins.payload?.groups ?? []).every((group) => group.source !== "plugin")).toBe(true);
+      expect((noPlugins.payload?.groups ?? []).every((group) => group.source !== "plugin")).toBe(
+        true,
+      );
 
       const unknownAgent = await rpcReq(ws, "tools.catalog", { agentId: "does-not-exist" });
       expect(unknownAgent.ok).toBe(false);

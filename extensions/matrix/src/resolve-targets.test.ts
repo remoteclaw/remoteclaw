@@ -24,7 +24,9 @@ describe("resolveMatrixTargets (users)", () => {
   });
 
   it("resolves exact unique display name matches", async () => {
-    const matches: ChannelDirectoryEntry[] = [{ kind: "user", id: "@alice:example.org", name: "Alice" }];
+    const matches: ChannelDirectoryEntry[] = [
+      { kind: "user", id: "@alice:example.org", name: "Alice" },
+    ];
     vi.mocked(listMatrixDirectoryPeersLive).mockResolvedValue(matches);
 
     const result = await resolveUserTarget();

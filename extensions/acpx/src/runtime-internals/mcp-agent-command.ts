@@ -102,7 +102,10 @@ export async function resolveAcpxAgentCommand(params: {
   return overrides[normalizedAgent] ?? ACPX_BUILTIN_AGENT_COMMANDS[normalizedAgent] ?? params.agent;
 }
 
-export function buildMcpProxyAgentCommand(params: { targetCommand: string; mcpServers: AcpMcpServer[] }): string {
+export function buildMcpProxyAgentCommand(params: {
+  targetCommand: string;
+  mcpServers: AcpMcpServer[];
+}): string {
   const payload = Buffer.from(
     JSON.stringify({
       targetCommand: params.targetCommand,

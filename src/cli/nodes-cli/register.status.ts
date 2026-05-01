@@ -21,7 +21,12 @@ function formatVersionLabel(raw: string) {
   return /^\d/.test(trimmed) ? `v${trimmed}` : trimmed;
 }
 
-function resolveNodeVersions(node: { platform?: string; version?: string; coreVersion?: string; uiVersion?: string }) {
+function resolveNodeVersions(node: {
+  platform?: string;
+  version?: string;
+  coreVersion?: string;
+  uiVersion?: string;
+}) {
   const core = node.coreVersion?.trim() || undefined;
   const ui = node.uiVersion?.trim() || undefined;
   if (core || ui) {
@@ -32,11 +37,17 @@ function resolveNodeVersions(node: { platform?: string; version?: string; coreVe
     return { core: undefined, ui: undefined };
   }
   const platform = node.platform?.trim().toLowerCase() ?? "";
-  const headless = platform === "darwin" || platform === "linux" || platform === "win32" || platform === "windows";
+  const headless =
+    platform === "darwin" || platform === "linux" || platform === "win32" || platform === "windows";
   return headless ? { core: legacy, ui: undefined } : { core: undefined, ui: legacy };
 }
 
-function formatNodeVersions(node: { platform?: string; version?: string; coreVersion?: string; uiVersion?: string }) {
+function formatNodeVersions(node: {
+  platform?: string;
+  version?: string;
+  coreVersion?: string;
+  uiVersion?: string;
+}) {
   const { core, ui } = resolveNodeVersions(node);
   const parts: string[] = [];
   if (core) {
@@ -57,7 +68,8 @@ function formatPathEnv(raw?: string): string | null {
     return null;
   }
   const parts = trimmed.split(":").filter(Boolean);
-  const display = parts.length <= 3 ? trimmed : `${parts.slice(0, 2).join(":")}:…:${parts.slice(-1)[0]}`;
+  const display =
+    parts.length <= 3 ? trimmed : `${parts.slice(0, 2).join(":")}:…:${parts.slice(-1)[0]}`;
   return shortenHomeInString(display);
 }
 
@@ -74,7 +86,8 @@ function parseSinceMs(raw: unknown, label: string): number | undefined {
   if (raw === undefined || raw === null) {
     return undefined;
   }
-  const value = typeof raw === "string" ? raw.trim() : typeof raw === "number" ? String(raw).trim() : null;
+  const value =
+    typeof raw === "string" ? raw.trim() : typeof raw === "number" ? String(raw).trim() : null;
   if (value === null) {
     defaultRuntime.error(`${label}: invalid duration value`);
     defaultRuntime.exit(1);
@@ -105,7 +118,8 @@ export function registerNodesStatusCommands(nodes: Command) {
           const connectedOnly = Boolean(opts.connected);
           const sinceMs = parseSinceMs(opts.lastConnected, "Invalid --last-connected");
           const result = await callGatewayCli("node.list", opts, {});
-          const obj: Record<string, unknown> = typeof result === "object" && result !== null ? result : {};
+          const obj: Record<string, unknown> =
+            typeof result === "object" && result !== null ? result : {};
           const { ok, warn, muted } = getNodesTheme();
           const tableWidth = getTerminalTableWidth();
           const now = Date.now();
@@ -113,10 +127,9 @@ export function registerNodesStatusCommands(nodes: Command) {
           const lastConnectedById =
             sinceMs !== undefined
               ? new Map(
-                  parsePairingList(await callGatewayCli("node.pair.list", opts, {})).paired.map((entry) => [
-                    entry.nodeId,
-                    entry,
-                  ]),
+                  parsePairingList(await callGatewayCli("node.pair.list", opts, {})).paired.map(
+                    (entry) => [entry.nodeId, entry],
+                  ),
                 )
               : null;
           const filtered = nodes.filter((n) => {
@@ -171,11 +184,15 @@ export function registerNodesStatusCommands(nodes: Command) {
               versions,
               pathEnv ? `path: ${pathEnv}` : null,
             ].filter(Boolean) as string[];
-            const caps = Array.isArray(n.caps) ? n.caps.map(String).filter(Boolean).toSorted().join(", ") : "?";
+            const caps = Array.isArray(n.caps)
+              ? n.caps.map(String).filter(Boolean).toSorted().join(", ")
+              : "?";
             const paired = n.paired ? ok("paired") : warn("unpaired");
             const connected = n.connected ? ok("connected") : muted("disconnected");
             const since =
-              typeof n.connectedAtMs === "number" ? ` (${formatTimeAgo(Math.max(0, now - n.connectedAtMs))})` : "";
+              typeof n.connectedAtMs === "number"
+                ? ` (${formatTimeAgo(Math.max(0, now - n.connectedAtMs))})`
+                : "";
 
             return {
               Node: name,
@@ -221,12 +238,17 @@ export function registerNodesStatusCommands(nodes: Command) {
             return;
           }
 
-          const obj: Record<string, unknown> = typeof result === "object" && result !== null ? result : {};
+          const obj: Record<string, unknown> =
+            typeof result === "object" && result !== null ? result : {};
           const displayName = typeof obj.displayName === "string" ? obj.displayName : nodeId;
           const connected = Boolean(obj.connected);
           const paired = Boolean(obj.paired);
-          const caps = Array.isArray(obj.caps) ? obj.caps.map(String).filter(Boolean).toSorted() : null;
-          const commands = Array.isArray(obj.commands) ? obj.commands.map(String).filter(Boolean).toSorted() : [];
+          const caps = Array.isArray(obj.caps)
+            ? obj.caps.map(String).filter(Boolean).toSorted()
+            : null;
+          const commands = Array.isArray(obj.commands)
+            ? obj.commands.map(String).filter(Boolean).toSorted()
+            : [];
           const perms = formatPermissions(obj.permissions);
           const family = typeof obj.deviceFamily === "string" ? obj.deviceFamily : null;
           const model = typeof obj.modelIdentifier === "string" ? obj.modelIdentifier : null;
@@ -303,7 +325,12 @@ export function registerNodesStatusCommands(nodes: Command) {
           const hasFilters = connectedOnly || sinceMs !== undefined;
           const pendingRows = hasFilters ? [] : pending;
           const connectedById = hasFilters
-            ? new Map(parseNodeList(await callGatewayCli("node.list", opts, {})).map((node) => [node.nodeId, node]))
+            ? new Map(
+                parseNodeList(await callGatewayCli("node.list", opts, {})).map((node) => [
+                  node.nodeId,
+                  node,
+                ]),
+              )
             : null;
           const filteredPaired = paired.filter((node) => {
             if (connectedOnly) {
@@ -329,8 +356,11 @@ export function registerNodesStatusCommands(nodes: Command) {
             }
             return true;
           });
-          const filteredLabel = hasFilters && filteredPaired.length !== paired.length ? ` (of ${paired.length})` : "";
-          defaultRuntime.log(`Pending: ${pendingRows.length} · Paired: ${filteredPaired.length}${filteredLabel}`);
+          const filteredLabel =
+            hasFilters && filteredPaired.length !== paired.length ? ` (of ${paired.length})` : "";
+          defaultRuntime.log(
+            `Pending: ${pendingRows.length} · Paired: ${filteredPaired.length}${filteredLabel}`,
+          );
 
           if (opts.json) {
             defaultRuntime.writeJson({ pending: pendingRows, paired: filteredPaired });

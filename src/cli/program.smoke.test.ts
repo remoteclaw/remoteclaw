@@ -15,7 +15,9 @@ installBaseProgramMocks();
 installSmokeProgramMocks();
 
 vi.mock("./config-cli.js", () => ({
-  registerConfigCli: (program: { command: (name: string) => { action: (fn: () => unknown) => void } }) => {
+  registerConfigCli: (program: {
+    command: (name: string) => { action: (fn: () => unknown) => void };
+  }) => {
     program.command("config").action(() => configureCommand({}, runtime));
   },
   runConfigGet: vi.fn(),

@@ -107,7 +107,9 @@ export function parsePostedEvent(
   return parsePostedPayload(payload);
 }
 
-export function createMattermostConnectOnce(opts: CreateMattermostConnectOnceOpts): () => Promise<void> {
+export function createMattermostConnectOnce(
+  opts: CreateMattermostConnectOnceOpts,
+): () => Promise<void> {
   const webSocketFactory = opts.webSocketFactory ?? defaultMattermostWebSocketFactory;
   const healthCheckIntervalMs = opts.healthCheckIntervalMs ?? 30_000;
   return async () => {

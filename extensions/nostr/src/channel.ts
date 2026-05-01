@@ -7,7 +7,10 @@ import {
   mapAllowFromEntries,
   type ChannelPlugin,
 } from "remoteclaw/plugin-sdk/nostr";
-import { buildPassiveChannelStatusSummary, buildTrafficStatusSummary } from "../../shared/channel-status-summary.js";
+import {
+  buildPassiveChannelStatusSummary,
+  buildTrafficStatusSummary,
+} from "../../shared/channel-status-summary.js";
 import type { NostrProfile } from "./config-schema.js";
 import { NostrConfigSchema } from "./config-schema.js";
 import type { MetricEvent, MetricsSnapshot } from "./metrics.js";
@@ -187,7 +190,9 @@ export const nostrPlugin: ChannelPlugin<ResolvedNostrAccount> = {
         accountId: account.accountId,
         publicKey: account.publicKey,
       });
-      ctx.log?.info(`[${account.accountId}] starting Nostr provider (pubkey: ${account.publicKey})`);
+      ctx.log?.info(
+        `[${account.accountId}] starting Nostr provider (pubkey: ${account.publicKey})`,
+      );
 
       if (!account.configured) {
         throw new Error("Nostr private key not configured");
@@ -203,7 +208,9 @@ export const nostrPlugin: ChannelPlugin<ResolvedNostrAccount> = {
         privateKey: account.privateKey,
         relays: account.relays,
         onMessage: async (senderPubkey, text, reply) => {
-          ctx.log?.debug?.(`[${account.accountId}] DM from ${senderPubkey}: ${text.slice(0, 50)}...`);
+          ctx.log?.debug?.(
+            `[${account.accountId}] DM from ${senderPubkey}: ${text.slice(0, 50)}...`,
+          );
 
           // Forward to RemoteClaw's message pipeline
           await (
@@ -235,11 +242,17 @@ export const nostrPlugin: ChannelPlugin<ResolvedNostrAccount> = {
         onMetric: (event: MetricEvent) => {
           // Log significant metrics at appropriate levels
           if (event.name.startsWith("event.rejected.")) {
-            ctx.log?.debug?.(`[${account.accountId}] Metric: ${event.name} ${JSON.stringify(event.labels)}`);
+            ctx.log?.debug?.(
+              `[${account.accountId}] Metric: ${event.name} ${JSON.stringify(event.labels)}`,
+            );
           } else if (event.name === "relay.circuit_breaker.open") {
-            ctx.log?.warn?.(`[${account.accountId}] Circuit breaker opened for relay: ${event.labels?.relay}`);
+            ctx.log?.warn?.(
+              `[${account.accountId}] Circuit breaker opened for relay: ${event.labels?.relay}`,
+            );
           } else if (event.name === "relay.circuit_breaker.close") {
-            ctx.log?.info?.(`[${account.accountId}] Circuit breaker closed for relay: ${event.labels?.relay}`);
+            ctx.log?.info?.(
+              `[${account.accountId}] Circuit breaker closed for relay: ${event.labels?.relay}`,
+            );
           } else if (event.name === "relay.error") {
             ctx.log?.debug?.(`[${account.accountId}] Relay error: ${event.labels?.relay}`);
           }
@@ -255,7 +268,9 @@ export const nostrPlugin: ChannelPlugin<ResolvedNostrAccount> = {
       // Store the bus handle
       activeBuses.set(account.accountId, bus);
 
-      ctx.log?.info(`[${account.accountId}] Nostr provider started, connected to ${account.relays.length} relay(s)`);
+      ctx.log?.info(
+        `[${account.accountId}] Nostr provider started, connected to ${account.relays.length} relay(s)`,
+      );
 
       // Return cleanup function
       return {
@@ -274,7 +289,9 @@ export const nostrPlugin: ChannelPlugin<ResolvedNostrAccount> = {
  * Get metrics snapshot for a Nostr account.
  * Returns undefined if account is not running.
  */
-export function getNostrMetrics(accountId: string = DEFAULT_ACCOUNT_ID): MetricsSnapshot | undefined {
+export function getNostrMetrics(
+  accountId: string = DEFAULT_ACCOUNT_ID,
+): MetricsSnapshot | undefined {
   const bus = activeBuses.get(accountId);
   if (bus) {
     return bus.getMetrics();

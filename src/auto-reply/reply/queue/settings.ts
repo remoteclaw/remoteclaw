@@ -49,7 +49,11 @@ export function resolveQueueSettings(params: ResolveQueueSettingsParams): QueueS
     resolvePluginDebounce(channelKey) ??
     queueCfg?.debounceMs ??
     DEFAULT_QUEUE_DEBOUNCE_MS;
-  const capRaw = params.inlineOptions?.cap ?? params.sessionEntry?.queueCap ?? queueCfg?.cap ?? DEFAULT_QUEUE_CAP;
+  const capRaw =
+    params.inlineOptions?.cap ??
+    params.sessionEntry?.queueCap ??
+    queueCfg?.cap ??
+    DEFAULT_QUEUE_CAP;
   const dropRaw =
     params.inlineOptions?.dropPolicy ??
     params.sessionEntry?.queueDrop ??

@@ -31,10 +31,14 @@ export function runPluginNpmReleaseCheck(argv: string[]) {
 
   console.log("plugin-npm-release-check: publishable plugin metadata looks OK.");
   if (baseRef && headRef && selected.length === 0) {
-    console.log(`  - no publishable plugin package changes detected between ${baseRef} and ${headRef}`);
+    console.log(
+      `  - no publishable plugin package changes detected between ${baseRef} and ${headRef}`,
+    );
   }
   for (const plugin of selected) {
-    console.log(`  - ${plugin.packageName}@${plugin.version} (${plugin.channel}, ${plugin.extensionId})`);
+    console.log(
+      `  - ${plugin.packageName}@${plugin.version} (${plugin.channel}, ${plugin.extensionId})`,
+    );
   }
 }
 

@@ -23,7 +23,8 @@ import type { CoreConfig } from "./types.js";
 const channel = "matrix" as const;
 
 function setMatrixDmPolicy(cfg: CoreConfig, policy: DmPolicy) {
-  const allowFrom = policy === "open" ? addWildcardAllowFrom(cfg.channels?.matrix?.dm?.allowFrom) : undefined;
+  const allowFrom =
+    policy === "open" ? addWildcardAllowFrom(cfg.channels?.matrix?.dm?.allowFrom) : undefined;
   return {
     ...cfg,
     channels: {
@@ -53,7 +54,10 @@ async function noteMatrixAuthHelp(prompter: WizardPrompter): Promise<void> {
   );
 }
 
-async function promptMatrixAllowFrom(params: { cfg: CoreConfig; prompter: WizardPrompter }): Promise<CoreConfig> {
+async function promptMatrixAllowFrom(params: {
+  cfg: CoreConfig;
+  prompter: WizardPrompter;
+}): Promise<CoreConfig> {
   const { cfg, prompter } = params;
   const existingAllowFrom = cfg.channels?.matrix?.dm?.allowFrom ?? [];
   const account = resolveMatrixAccount({ cfg });
@@ -114,7 +118,10 @@ async function promptMatrixAllowFrom(params: { cfg: CoreConfig; prompter: Wizard
 
     if (unresolved.length > 0) {
       const details = unresolvedNotes.length > 0 ? unresolvedNotes : unresolved;
-      await prompter.note(`Could not resolve:\n${details.join("\n")}\nUse full @user:server IDs.`, "Matrix allowlist");
+      await prompter.note(
+        `Could not resolve:\n${details.join("\n")}\nUse full @user:server IDs.`,
+        "Matrix allowlist",
+      );
       continue;
     }
 
@@ -180,8 +187,14 @@ export const matrixOnboardingAdapter: ChannelOnboardingAdapter = {
     return {
       channel,
       configured,
-      statusLines: [`Matrix: ${configured ? "configured" : "needs homeserver + access token or password"}`],
-      selectionHint: !sdkReady ? "install @vector-im/matrix-bot-sdk" : configured ? "configured" : "needs auth",
+      statusLines: [
+        `Matrix: ${configured ? "configured" : "needs homeserver + access token or password"}`,
+      ],
+      selectionHint: !sdkReady
+        ? "install @vector-im/matrix-bot-sdk"
+        : configured
+          ? "configured"
+          : "needs auth",
     };
   },
   configure: async ({ cfg, runtime, prompter, forceAllowFrom }) => {
@@ -206,7 +219,13 @@ export const matrixOnboardingAdapter: ChannelOnboardingAdapter = {
     const envPassword = process.env.MATRIX_PASSWORD?.trim();
     const envReady = Boolean(envHomeserver && (envAccessToken || (envUserId && envPassword)));
 
-    if (envReady && !existing.homeserver && !existing.userId && !existing.accessToken && !existing.password) {
+    if (
+      envReady &&
+      !existing.homeserver &&
+      !existing.userId &&
+      !existing.accessToken &&
+      !existing.password
+    ) {
       const useEnv = await prompter.confirm({
         message: "Matrix env vars detected. Use env values?",
         initialValue: true,
@@ -400,7 +419,9 @@ export const matrixOnboardingAdapter: ChannelOnboardingAdapter = {
                 query: trimmed,
                 limit: 10,
               });
-              const exact = matches.find((match) => (match.name ?? "").toLowerCase() === trimmed.toLowerCase());
+              const exact = matches.find(
+                (match) => (match.name ?? "").toLowerCase() === trimmed.toLowerCase(),
+              );
               const best = exact ?? matches[0];
               if (best?.id) {
                 resolvedIds.push(best.id);
@@ -417,7 +438,10 @@ export const matrixOnboardingAdapter: ChannelOnboardingAdapter = {
               await prompter.note(resolution, "Matrix rooms");
             }
           } catch (err) {
-            await prompter.note(`Room lookup failed; keeping entries as typed. ${String(err)}`, "Matrix rooms");
+            await prompter.note(
+              `Room lookup failed; keeping entries as typed. ${String(err)}`,
+              "Matrix rooms",
+            );
           }
         }
         next = setMatrixGroupPolicy(next, "allowlist");

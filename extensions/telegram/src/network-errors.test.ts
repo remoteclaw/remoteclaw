@@ -9,16 +9,20 @@ import {
   tagTelegramNetworkError,
 } from "./network-errors.js";
 
-const errorWithCode = (message: string, code: string) => Object.assign(new Error(message), { code });
+const errorWithCode = (message: string, code: string) =>
+  Object.assign(new Error(message), { code });
 const errorWithTelegramCode = (message: string, error_code: number) =>
   Object.assign(new Error(message), { error_code });
 
 describe("isRecoverableTelegramNetworkError", () => {
   it("tracks Telegram polling origin separately from generic network matching", () => {
-    const slackDnsError = Object.assign(new Error("A request error occurred: getaddrinfo ENOTFOUND slack.com"), {
-      code: "ENOTFOUND",
-      hostname: "slack.com",
-    });
+    const slackDnsError = Object.assign(
+      new Error("A request error occurred: getaddrinfo ENOTFOUND slack.com"),
+      {
+        code: "ENOTFOUND",
+        hostname: "slack.com",
+      },
+    );
     expect(isRecoverableTelegramNetworkError(slackDnsError)).toBe(true);
     expect(isTelegramPollingNetworkError(slackDnsError)).toBe(false);
 
@@ -60,7 +64,9 @@ describe("isRecoverableTelegramNetworkError", () => {
   it("treats undici fetch failed errors as recoverable in send context", () => {
     const err = new TypeError("fetch failed");
     expect(isRecoverableTelegramNetworkError(err, { context: "send" })).toBe(true);
-    expect(isRecoverableTelegramNetworkError(new Error("TypeError: fetch failed"), { context: "send" })).toBe(true);
+    expect(
+      isRecoverableTelegramNetworkError(new Error("TypeError: fetch failed"), { context: "send" }),
+    ).toBe(true);
     expect(isRecoverableTelegramNetworkError(err, { context: "polling" })).toBe(true);
   });
 
@@ -89,9 +95,12 @@ describe("isRecoverableTelegramNetworkError", () => {
 
   it("treats grammY failed-after envelope errors as recoverable in send context", () => {
     expect(
-      isRecoverableTelegramNetworkError(new Error("Network request for 'sendMessage' failed after 2 attempts."), {
-        context: "send",
-      }),
+      isRecoverableTelegramNetworkError(
+        new Error("Network request for 'sendMessage' failed after 2 attempts."),
+        {
+          context: "send",
+        },
+      ),
     ).toBe(true);
   });
 
@@ -127,7 +136,10 @@ describe("isRecoverableTelegramNetworkError", () => {
 
     it("detects network error wrapped in HttpError", () => {
       const fetchError = new TypeError("fetch failed");
-      const httpError = new MockHttpError("Network request for 'setMyCommands' failed!", fetchError);
+      const httpError = new MockHttpError(
+        "Network request for 'setMyCommands' failed!",
+        fetchError,
+      );
 
       expect(isRecoverableTelegramNetworkError(httpError)).toBe(true);
     });

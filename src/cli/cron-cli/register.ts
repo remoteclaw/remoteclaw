@@ -1,7 +1,11 @@
 import type { Command } from "commander";
 import { formatDocsLink } from "../../terminal/links.js";
 import { theme } from "../../terminal/theme.js";
-import { registerCronAddCommand, registerCronListCommand, registerCronStatusCommand } from "./register.cron-add.js";
+import {
+  registerCronAddCommand,
+  registerCronListCommand,
+  registerCronStatusCommand,
+} from "./register.cron-add.js";
 import { registerCronEditCommand } from "./register.cron-edit.js";
 import { registerCronSimpleCommands } from "./register.cron-simple.js";
 

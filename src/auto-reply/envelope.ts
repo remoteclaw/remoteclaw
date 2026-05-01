@@ -2,7 +2,11 @@ import { resolveUserTimezone } from "../agents/date-time.js";
 import { normalizeChatType } from "../channels/chat-type.js";
 import { resolveSenderLabel, type SenderLabelParams } from "../channels/sender-label.js";
 import type { RemoteClawConfig } from "../config/config.js";
-import { resolveTimezone, formatUtcTimestamp, formatZonedTimestamp } from "../infra/format-time/format-datetime.ts";
+import {
+  resolveTimezone,
+  formatUtcTimestamp,
+  formatZonedTimestamp,
+} from "../infra/format-time/format-datetime.ts";
 import { formatTimeAgo } from "../infra/format-time/format-relative.ts";
 
 export type AgentEnvelopeParams = {
@@ -42,7 +46,10 @@ type NormalizedEnvelopeOptions = {
   userTimezone?: string;
 };
 
-type ResolvedEnvelopeTimezone = { mode: "utc" } | { mode: "local" } | { mode: "iana"; timeZone: string };
+type ResolvedEnvelopeTimezone =
+  | { mode: "utc" }
+  | { mode: "local" }
+  | { mode: "iana"; timeZone: string };
 
 function sanitizeEnvelopeHeaderPart(value: string): string {
   // Header parts are metadata and must not be able to break the bracketed prefix.
@@ -121,7 +128,9 @@ export function formatEnvelopeTimestamp(
       if (zone.mode === "local") {
         return new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(date);
       }
-      return new Intl.DateTimeFormat("en-US", { timeZone: zone.timeZone, weekday: "short" }).format(date);
+      return new Intl.DateTimeFormat("en-US", { timeZone: zone.timeZone, weekday: "short" }).format(
+        date,
+      );
     } catch {
       return undefined;
     }
@@ -146,11 +155,17 @@ export function formatAgentEnvelope(params: AgentEnvelopeParams): string {
   const resolved = normalizeEnvelopeOptions(params.envelope);
   let elapsed: string | undefined;
   if (resolved.includeElapsed && params.timestamp && params.previousTimestamp) {
-    const currentMs = params.timestamp instanceof Date ? params.timestamp.getTime() : params.timestamp;
+    const currentMs =
+      params.timestamp instanceof Date ? params.timestamp.getTime() : params.timestamp;
     const previousMs =
-      params.previousTimestamp instanceof Date ? params.previousTimestamp.getTime() : params.previousTimestamp;
+      params.previousTimestamp instanceof Date
+        ? params.previousTimestamp.getTime()
+        : params.previousTimestamp;
     const elapsedMs = currentMs - previousMs;
-    elapsed = Number.isFinite(elapsedMs) && elapsedMs >= 0 ? formatTimeAgo(elapsedMs, { suffix: false }) : undefined;
+    elapsed =
+      Number.isFinite(elapsedMs) && elapsedMs >= 0
+        ? formatTimeAgo(elapsedMs, { suffix: false })
+        : undefined;
   }
   if (params.from?.trim()) {
     const from = sanitizeEnvelopeHeaderPart(params.from.trim());

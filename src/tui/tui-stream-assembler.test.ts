@@ -71,7 +71,11 @@ describe("TuiStreamAssembler", () => {
 
   it("omits thinking when showThinking is false", () => {
     const assembler = new TuiStreamAssembler();
-    const output = assembler.ingestDelta("run-2", messageWithContent([thinking("Hidden"), text("Visible")]), false);
+    const output = assembler.ingestDelta(
+      "run-2",
+      messageWithContent([thinking("Hidden"), text("Visible")]),
+      false,
+    );
     expect(output).toBe("Visible");
   });
 
@@ -119,7 +123,11 @@ describe("TuiStreamAssembler", () => {
     it(testCase.name, () => {
       const assembler = new TuiStreamAssembler();
       assembler.ingestDelta("run-boundary", messageWithContent(testCase.streamedContent), false);
-      const finalText = assembler.finalize("run-boundary", messageWithContent(testCase.finalContent), false);
+      const finalText = assembler.finalize(
+        "run-boundary",
+        messageWithContent(testCase.finalContent),
+        false,
+      );
       expect(finalText).toBe(testCase.expected);
     });
   }

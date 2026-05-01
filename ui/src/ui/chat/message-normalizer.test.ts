@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { normalizeMessage, normalizeRoleForGrouping, isToolResultMessage } from "./message-normalizer.ts";
+import {
+  normalizeMessage,
+  normalizeRoleForGrouping,
+  isToolResultMessage,
+} from "./message-normalizer.ts";
 
 describe("message-normalizer", () => {
   describe("normalizeMessage", () => {

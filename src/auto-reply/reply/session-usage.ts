@@ -1,6 +1,14 @@
 import { setCliSessionId } from "../../agents/cli-session.js";
-import { deriveSessionTotalTokens, hasNonzeroUsage, type NormalizedUsage } from "../../agents/usage.js";
-import { type SessionSystemPromptReport, type SessionEntry, updateSessionStoreEntry } from "../../config/sessions.js";
+import {
+  deriveSessionTotalTokens,
+  hasNonzeroUsage,
+  type NormalizedUsage,
+} from "../../agents/usage.js";
+import {
+  type SessionSystemPromptReport,
+  type SessionEntry,
+  updateSessionStoreEntry,
+} from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";
 
 function applyCliSessionIdToSessionPatch(
@@ -50,7 +58,9 @@ export async function persistSessionUsageUpdate(params: {
   const label = params.logLabel ? `${params.logLabel} ` : "";
   const hasUsage = hasNonzeroUsage(params.usage);
   const hasPromptTokens =
-    typeof params.promptTokens === "number" && Number.isFinite(params.promptTokens) && params.promptTokens > 0;
+    typeof params.promptTokens === "number" &&
+    Number.isFinite(params.promptTokens) &&
+    params.promptTokens > 0;
   const hasFreshContextSnapshot = Boolean(params.lastCallUsage) || hasPromptTokens;
 
   if (hasUsage || hasFreshContextSnapshot) {

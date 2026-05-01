@@ -1,5 +1,10 @@
 import type { MarkdownTableMode } from "../../../src/config/types.base.js";
-import { chunkMarkdownIR, markdownToIR, type MarkdownLinkSpan, type MarkdownIR } from "../../../src/markdown/ir.js";
+import {
+  chunkMarkdownIR,
+  markdownToIR,
+  type MarkdownLinkSpan,
+  type MarkdownIR,
+} from "../../../src/markdown/ir.js";
 import { renderMarkdownWithMarkers } from "../../../src/markdown/render.js";
 
 export type TelegramFormattedChunk = {
@@ -156,7 +161,12 @@ function wrapStandaloneFileRef(match: string, prefix: string, filename: string):
   return `${prefix}<code>${escapeHtml(filename)}</code>`;
 }
 
-function wrapSegmentFileRefs(text: string, codeDepth: number, preDepth: number, anchorDepth: number): string {
+function wrapSegmentFileRefs(
+  text: string,
+  codeDepth: number,
+  preDepth: number,
+  anchorDepth: number,
+): string {
   if (!text || codeDepth > 0 || preDepth > 0 || anchorDepth > 0) {
     return text;
   }
@@ -358,10 +368,13 @@ export function splitTelegramHtmlChunks(html: string, limit: number): string[] {
   const appendText = (segment: string) => {
     let remaining = segment;
     while (remaining.length > 0) {
-      const available = normalizedLimit - current.length - buildTelegramHtmlCloseSuffixLength(openTags);
+      const available =
+        normalizedLimit - current.length - buildTelegramHtmlCloseSuffixLength(openTags);
       if (available <= 0) {
         if (!chunkHasPayload) {
-          throw new Error(`Telegram HTML chunk limit exceeded by tag overhead (limit=${normalizedLimit})`);
+          throw new Error(
+            `Telegram HTML chunk limit exceeded by tag overhead (limit=${normalizedLimit})`,
+          );
         }
         flushCurrent();
         continue;
@@ -374,7 +387,9 @@ export function splitTelegramHtmlChunks(html: string, limit: number): string[] {
       const splitAt = findTelegramHtmlSafeSplitIndex(remaining, available);
       if (splitAt <= 0) {
         if (!chunkHasPayload) {
-          throw new Error(`Telegram HTML chunk limit exceeded by leading entity (limit=${normalizedLimit})`);
+          throw new Error(
+            `Telegram HTML chunk limit exceeded by leading entity (limit=${normalizedLimit})`,
+          );
         }
         flushCurrent();
         continue;
@@ -399,13 +414,17 @@ export function splitTelegramHtmlChunks(html: string, limit: number): string[] {
     const isClosing = match[1] === "</";
     const tagName = match[2].toLowerCase();
     const isSelfClosing =
-      !isClosing && (TELEGRAM_SELF_CLOSING_HTML_TAGS.has(tagName) || rawTag.trimEnd().endsWith("/>"));
+      !isClosing &&
+      (TELEGRAM_SELF_CLOSING_HTML_TAGS.has(tagName) || rawTag.trimEnd().endsWith("/>"));
 
     if (!isClosing) {
       const nextCloseLength = isSelfClosing ? 0 : `</${tagName}>`.length;
       if (
         chunkHasPayload &&
-        current.length + rawTag.length + buildTelegramHtmlCloseSuffixLength(openTags) + nextCloseLength >
+        current.length +
+          rawTag.length +
+          buildTelegramHtmlCloseSuffixLength(openTags) +
+          nextCloseLength >
           normalizedLimit
       ) {
         flushCurrent();
@@ -433,12 +452,18 @@ export function splitTelegramHtmlChunks(html: string, limit: number): string[] {
   return chunks.length > 0 ? chunks : [html];
 }
 
-function splitTelegramChunkByHtmlLimit(chunk: MarkdownIR, htmlLimit: number, renderedHtmlLength: number): MarkdownIR[] {
+function splitTelegramChunkByHtmlLimit(
+  chunk: MarkdownIR,
+  htmlLimit: number,
+  renderedHtmlLength: number,
+): MarkdownIR[] {
   const currentTextLength = chunk.text.length;
   if (currentTextLength <= 1) {
     return [chunk];
   }
-  const proportionalLimit = Math.floor((currentTextLength * htmlLimit) / Math.max(renderedHtmlLength, 1));
+  const proportionalLimit = Math.floor(
+    (currentTextLength * htmlLimit) / Math.max(renderedHtmlLength, 1),
+  );
   const candidateLimit = Math.min(currentTextLength - 1, proportionalLimit);
   const splitLimit =
     Number.isFinite(candidateLimit) && candidateLimit > 0
@@ -451,7 +476,11 @@ function splitTelegramChunkByHtmlLimit(chunk: MarkdownIR, htmlLimit: number, ren
   return splitMarkdownIRPreserveWhitespace(chunk, Math.max(1, Math.floor(currentTextLength / 2)));
 }
 
-function sliceStyleSpans(styles: MarkdownIR["styles"], start: number, end: number): MarkdownIR["styles"] {
+function sliceStyleSpans(
+  styles: MarkdownIR["styles"],
+  start: number,
+  end: number,
+): MarkdownIR["styles"] {
   return styles.flatMap((span) => {
     if (span.end <= start || span.start >= end) {
       return [];
@@ -465,7 +494,11 @@ function sliceStyleSpans(styles: MarkdownIR["styles"], start: number, end: numbe
   });
 }
 
-function sliceLinkSpans(links: MarkdownIR["links"], start: number, end: number): MarkdownIR["links"] {
+function sliceLinkSpans(
+  links: MarkdownIR["links"],
+  start: number,
+  end: number,
+): MarkdownIR["links"] {
   return links.flatMap((link) => {
     if (link.end <= start || link.start >= end) {
       return [];
@@ -501,7 +534,10 @@ function splitMarkdownIRPreserveWhitespace(ir: MarkdownIR, limit: number): Markd
   return chunks;
 }
 
-function renderTelegramChunksWithinHtmlLimit(ir: MarkdownIR, limit: number): TelegramFormattedChunk[] {
+function renderTelegramChunksWithinHtmlLimit(
+  ir: MarkdownIR,
+  limit: number,
+): TelegramFormattedChunk[] {
   const normalizedLimit = Math.max(1, Math.floor(limit));
   const pending = chunkMarkdownIR(ir, normalizedLimit);
   const rendered: TelegramFormattedChunk[] = [];

@@ -16,7 +16,11 @@ import path from "node:path";
 import { RateLimitError, type RequestClient } from "@buape/carbon";
 import type { RetryRunner } from "../../../src/infra/retry-policy.js";
 import { resolvePreferredRemoteClawTmpDir } from "../../../src/infra/tmp-remoteclaw-dir.js";
-import { parseFfprobeCodecAndSampleRate, runFfmpeg, runFfprobe } from "../../../src/media/ffmpeg-exec.js";
+import {
+  parseFfprobeCodecAndSampleRate,
+  runFfmpeg,
+  runFfprobe,
+} from "../../../src/media/ffmpeg-exec.js";
 import { MEDIA_FFMPEG_MAX_AUDIO_DURATION_SECS } from "../../../src/media/ffmpeg-limits.js";
 import { unlinkIfExists } from "../../../src/media/temp-files.js";
 
@@ -35,7 +39,15 @@ export type VoiceMessageMetadata = {
  */
 export async function getAudioDuration(filePath: string): Promise<number> {
   try {
-    const stdout = await runFfprobe(["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", filePath]);
+    const stdout = await runFfprobe([
+      "-v",
+      "error",
+      "-show_entries",
+      "format=duration",
+      "-of",
+      "csv=p=0",
+      filePath,
+    ]);
     const duration = parseFloat(stdout.trim());
     if (isNaN(duration)) {
       throw new Error("Could not parse duration");
@@ -143,7 +155,9 @@ export async function ensureOggOpus(filePath: string): Promise<{ path: string; c
   const trimmed = filePath.trim();
   // Defense-in-depth: callers should never hand ffmpeg/ffprobe a URL/protocol path.
   if (/^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)) {
-    throw new Error(`Voice message conversion requires a local file path; received a URL/protocol source: ${trimmed}`);
+    throw new Error(
+      `Voice message conversion requires a local file path; received a URL/protocol source: ${trimmed}`,
+    );
   }
 
   const ext = path.extname(filePath).toLowerCase();
@@ -203,7 +217,10 @@ export async function ensureOggOpus(filePath: string): Promise<{ path: string; c
  * Get voice message metadata (duration and waveform)
  */
 export async function getVoiceMessageMetadata(filePath: string): Promise<VoiceMessageMetadata> {
-  const [durationSecs, waveform] = await Promise.all([getAudioDuration(filePath), generateWaveform(filePath)]);
+  const [durationSecs, waveform] = await Promise.all([
+    getAudioDuration(filePath),
+    generateWaveform(filePath),
+  ]);
 
   return { durationSecs, waveform };
 }
@@ -305,7 +322,9 @@ export async function sendDiscordVoiceMessage(
   }
 
   // Step 3: Send the message with voice message flag and metadata
-  const flags = silent ? DISCORD_VOICE_MESSAGE_FLAG | SUPPRESS_NOTIFICATIONS_FLAG : DISCORD_VOICE_MESSAGE_FLAG;
+  const flags = silent
+    ? DISCORD_VOICE_MESSAGE_FLAG | SUPPRESS_NOTIFICATIONS_FLAG
+    : DISCORD_VOICE_MESSAGE_FLAG;
   const messagePayload: {
     flags: number;
     attachments: Array<{

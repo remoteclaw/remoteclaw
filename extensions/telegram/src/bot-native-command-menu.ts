@@ -50,7 +50,10 @@ function isBotCommandsTooMuchError(err: unknown): boolean {
   return false;
 }
 
-function formatTelegramCommandRetrySuccessLog(params: { initialCount: number; acceptedCount: number }): string {
+function formatTelegramCommandRetrySuccessLog(params: {
+  initialCount: number;
+  acceptedCount: number;
+}): string {
   const omittedCount = Math.max(0, params.initialCount - params.acceptedCount);
   return (
     `Telegram accepted ${params.acceptedCount} commands after BOT_COMMANDS_TOO_MUCH ` +
@@ -73,7 +76,9 @@ export function buildPluginTelegramMenuCommands(params: {
     const normalized = normalizeTelegramCommandName(rawName);
     if (!normalized || !TELEGRAM_COMMAND_NAME_PATTERN.test(normalized)) {
       const invalidName = rawName.trim() ? rawName : "<unknown>";
-      issues.push(`Plugin command "/${invalidName}" is invalid for Telegram (use a-z, 0-9, underscore; max 32 chars).`);
+      issues.push(
+        `Plugin command "/${invalidName}" is invalid for Telegram (use a-z, 0-9, underscore; max 32 chars).`,
+      );
       continue;
     }
     const description = typeof spec.description === "string" ? spec.description.trim() : "";
@@ -97,7 +102,10 @@ export function buildPluginTelegramMenuCommands(params: {
   return { commands, issues };
 }
 
-export function buildCappedTelegramMenuCommands(params: { allCommands: TelegramMenuCommand[]; maxCommands?: number }): {
+export function buildCappedTelegramMenuCommands(params: {
+  allCommands: TelegramMenuCommand[];
+  maxCommands?: number;
+}): {
   commandsToRegister: TelegramMenuCommand[];
   totalCommands: number;
   maxCommands: number;
@@ -132,7 +140,10 @@ function resolveCommandHashPath(accountId?: string, botIdentity?: string): strin
   return path.join(stateDir, "telegram", `command-hash-${normalizedAccount}-${botHash}.txt`);
 }
 
-async function readCachedCommandHash(accountId?: string, botIdentity?: string): Promise<string | null> {
+async function readCachedCommandHash(
+  accountId?: string,
+  botIdentity?: string,
+): Promise<string | null> {
   try {
     return (await fs.readFile(resolveCommandHashPath(accountId, botIdentity), "utf-8")).trim();
   } catch {
@@ -221,7 +232,8 @@ export function syncTelegramMenuCommands(params: {
           throw err;
         }
         const nextCount = Math.floor(retryCommands.length * TELEGRAM_COMMAND_RETRY_RATIO);
-        const reducedCount = nextCount < retryCommands.length ? nextCount : retryCommands.length - 1;
+        const reducedCount =
+          nextCount < retryCommands.length ? nextCount : retryCommands.length - 1;
         if (reducedCount <= 0) {
           runtime.error?.(
             "Telegram rejected native command registration (BOT_COMMANDS_TOO_MUCH); leaving menu empty. Reduce commands or disable channels.telegram.commands.native.",

@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildAuthHealthSummary, DEFAULT_OAUTH_WARN_MS, formatRemainingShort } from "./auth-health.js";
+import {
+  buildAuthHealthSummary,
+  DEFAULT_OAUTH_WARN_MS,
+  formatRemainingShort,
+} from "./auth-health.js";
 
 describe("buildAuthHealthSummary", () => {
   const profileStatuses = (summary: ReturnType<typeof buildAuthHealthSummary>) =>

@@ -3,7 +3,11 @@ import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk/feishu";
 import { listEnabledFeishuAccounts } from "./accounts.js";
 import { FeishuDriveSchema, type FeishuDriveParams } from "./drive-schema.js";
 import { createFeishuToolClient, resolveAnyEnabledFeishuToolsConfig } from "./tool-account.js";
-import { jsonToolResult, toolExecutionErrorResult, unknownToolActionResult } from "./tool-result.js";
+import {
+  jsonToolResult,
+  toolExecutionErrorResult,
+  unknownToolActionResult,
+} from "./tool-result.js";
 
 // ============ Actions ============
 
@@ -13,7 +17,9 @@ async function getRootFolderToken(client: Lark.Client): Promise<string> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accessing internal SDK property
   const domain = (client as any).domain ?? "https://open.feishu.cn";
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accessing internal SDK property
-  const res = (await (client as any).httpInstance.get(`${domain}/open-apis/drive/explorer/v2/root_folder/meta`)) as {
+  const res = (await (client as any).httpInstance.get(
+    `${domain}/open-apis/drive/explorer/v2/root_folder/meta`,
+  )) as {
     code: number;
     msg?: string;
     data?: { token?: string };
@@ -111,7 +117,15 @@ async function moveFile(client: Lark.Client, fileToken: string, type: string, fo
   const res = await client.drive.file.move({
     path: { file_token: fileToken },
     data: {
-      type: type as "doc" | "docx" | "sheet" | "bitable" | "folder" | "file" | "mindnote" | "slides",
+      type: type as
+        | "doc"
+        | "docx"
+        | "sheet"
+        | "bitable"
+        | "folder"
+        | "file"
+        | "mindnote"
+        | "slides",
       folder_token: folderToken,
     },
   });
@@ -129,7 +143,16 @@ async function deleteFile(client: Lark.Client, fileToken: string, type: string) 
   const res = await client.drive.file.delete({
     path: { file_token: fileToken },
     params: {
-      type: type as "doc" | "docx" | "sheet" | "bitable" | "folder" | "file" | "mindnote" | "slides" | "shortcut",
+      type: type as
+        | "doc"
+        | "docx"
+        | "sheet"
+        | "bitable"
+        | "folder"
+        | "file"
+        | "mindnote"
+        | "slides"
+        | "shortcut",
     },
   });
   if (res.code !== 0) {
@@ -170,7 +193,8 @@ export function registerFeishuDriveTools(api: RemoteClawPluginApi) {
       return {
         name: "feishu_drive",
         label: "Feishu Drive",
-        description: "Feishu cloud storage operations. Actions: list, info, create_folder, move, delete",
+        description:
+          "Feishu cloud storage operations. Actions: list, info, create_folder, move, delete",
         parameters: FeishuDriveSchema,
         async execute(_toolCallId, params) {
           const p = params as FeishuDriveExecuteParams;

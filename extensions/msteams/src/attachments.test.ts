@@ -83,10 +83,15 @@ function isUrlAllowedBySsrfPolicy(url: string, policy?: SsrFPolicy): boolean {
     return true;
   }
   const hostname = new URL(url).hostname.toLowerCase();
-  return policy.hostnameAllowlist.some((pattern) => isHostnameAllowedByPattern(hostname, pattern.toLowerCase()));
+  return policy.hostnameAllowlist.some((pattern) =>
+    isHostnameAllowedByPattern(hostname, pattern.toLowerCase()),
+  );
 }
 
-async function fetchRemoteMediaWithRedirects(params: RemoteMediaFetchParams, requestInit?: RequestInit) {
+async function fetchRemoteMediaWithRedirects(
+  params: RemoteMediaFetchParams,
+  requestInit?: RequestInit,
+) {
   const fetchFn = params.fetchImpl ?? fetch;
   let currentUrl = params.url;
   for (let i = 0; i <= MAX_REDIRECT_HOPS; i += 1) {
@@ -135,7 +140,9 @@ type DownloadAttachmentsNoFetchOverrides = Partial<
   Omit<DownloadAttachmentsParams, "attachments" | "maxBytes" | "allowHosts" | "fetchFn">
 > &
   Pick<DownloadAttachmentsParams, "allowHosts">;
-type DownloadGraphMediaOverrides = Partial<Omit<DownloadGraphMediaParams, "messageUrl" | "tokenProvider" | "maxBytes">>;
+type DownloadGraphMediaOverrides = Partial<
+  Omit<DownloadGraphMediaParams, "messageUrl" | "tokenProvider" | "maxBytes">
+>;
 type FetchFn = typeof fetch;
 type MSTeamsAttachments = DownloadAttachmentsParams["attachments"];
 type AttachmentPlaceholderInput = Parameters<typeof buildMSTeamsAttachmentPlaceholder>[0];
@@ -165,7 +172,9 @@ const IMAGE_ATTACHMENT = { contentType: CONTENT_TYPE_IMAGE_PNG, contentUrl: TEST
 const PNG_BUFFER = Buffer.from("png");
 const PNG_BASE64 = PNG_BUFFER.toString("base64");
 const PDF_BUFFER = Buffer.from("pdf");
-const createTokenProvider = (tokenOrResolver: string | ((scope: string) => string | Promise<string>) = "token") => ({
+const createTokenProvider = (
+  tokenOrResolver: string | ((scope: string) => string | Promise<string>) = "token",
+) => ({
   getAccessToken: vi.fn(async (scope: string) =>
     typeof tokenOrResolver === "function" ? await tokenOrResolver(scope) : tokenOrResolver,
   ),
@@ -179,7 +188,8 @@ const buildAttachment = <T extends Record<string, unknown>>(contentType: string,
   contentType,
   ...props,
 });
-const createHtmlAttachment = (content: string) => buildAttachment(CONTENT_TYPE_TEXT_HTML, { content });
+const createHtmlAttachment = (content: string) =>
+  buildAttachment(CONTENT_TYPE_TEXT_HTML, { content });
 const buildHtmlImageTag = (src: string) => `<img src="${src}" />`;
 const createHtmlImageAttachments = (sources: string[], prefix = "") =>
   asSingleItemArray(createHtmlAttachment(`${prefix}${sources.map(buildHtmlImageTag).join("")}`));
@@ -189,7 +199,10 @@ const createImageAttachments = (...contentUrls: string[]) =>
   createContentUrlAttachments(CONTENT_TYPE_IMAGE_PNG, ...contentUrls);
 const createPdfAttachments = (...contentUrls: string[]) =>
   createContentUrlAttachments(CONTENT_TYPE_APPLICATION_PDF, ...contentUrls);
-const createTeamsFileDownloadInfoAttachments = (downloadUrl = TEST_URL_FILE_DOWNLOAD, fileType = "png") =>
+const createTeamsFileDownloadInfoAttachments = (
+  downloadUrl = TEST_URL_FILE_DOWNLOAD,
+  fileType = "png",
+) =>
   asSingleItemArray(
     buildAttachment(CONTENT_TYPE_TEAMS_FILE_DOWNLOAD_INFO, {
       content: { downloadUrl, fileType },
@@ -199,8 +212,10 @@ const createMediaEntriesWithType = (contentType: string, ...paths: string[]) =>
   paths.map((path) => ({ path, contentType }));
 const createHostedContentsWithType = (contentType: string, ...ids: string[]) =>
   ids.map((id) => ({ id, contentType, contentBytes: PNG_BASE64 }));
-const createImageMediaEntries = (...paths: string[]) => createMediaEntriesWithType(CONTENT_TYPE_IMAGE_PNG, ...paths);
-const createHostedImageContents = (...ids: string[]) => createHostedContentsWithType(CONTENT_TYPE_IMAGE_PNG, ...ids);
+const createImageMediaEntries = (...paths: string[]) =>
+  createMediaEntriesWithType(CONTENT_TYPE_IMAGE_PNG, ...paths);
+const createHostedImageContents = (...ids: string[]) =>
+  createHostedContentsWithType(CONTENT_TYPE_IMAGE_PNG, ...ids);
 const createPdfResponse = (payload: Buffer | string = PDF_BUFFER) => {
   return createBufferResponse(payload, CONTENT_TYPE_APPLICATION_PDF);
 };
@@ -211,7 +226,8 @@ const createBufferResponse = (payload: Buffer | string, contentType: string, sta
     headers: { "content-type": contentType },
   });
 };
-const createJsonResponse = (payload: unknown, status = 200) => new Response(JSON.stringify(payload), { status });
+const createJsonResponse = (payload: unknown, status = 200) =>
+  new Response(JSON.stringify(payload), { status });
 const createTextResponse = (body: string, status = 200) => new Response(body, { status });
 const createGraphCollectionResponse = (value: unknown[]) => createJsonResponse({ value });
 const createNotFoundResponse = () => new Response("not found", { status: 404 });
@@ -305,7 +321,10 @@ const expectFirstMedia = (media: DownloadedMedia, expected: DownloadedMediaExpec
     expect(first?.placeholder).toBe(expected.placeholder);
   }
 };
-const expectMSTeamsMediaPayload = (payload: MSTeamsMediaPayload, expected: MSTeamsMediaPayloadExpectation) => {
+const expectMSTeamsMediaPayload = (
+  payload: MSTeamsMediaPayload,
+  expected: MSTeamsMediaPayloadExpectation,
+) => {
   expect(payload.MediaPath).toBe(expected.firstPath);
   expect(payload.MediaUrl).toBe(expected.firstPath);
   expect(payload.MediaPaths).toEqual(expected.paths);
@@ -569,7 +588,10 @@ const createGraphEndpointResponseHandlers = (params: {
     buildResponse: () => createJsonResponse({ attachments: params.messageAttachments }),
   },
 ];
-const resolveGraphEndpointResponse = (url: string, handlers: GraphEndpointResponseHandler[]): Response | undefined => {
+const resolveGraphEndpointResponse = (
+  url: string,
+  handlers: GraphEndpointResponseHandler[],
+): Response | undefined => {
   const handler = handlers.find((entry) => url.endsWith(entry.suffix));
   return handler ? handler.buildResponse() : undefined;
 };
@@ -631,14 +653,22 @@ const runAttachmentAuthRetryCase = async ({
     unauthStatus: scenario.unauthStatus,
     unauthBody: scenario.unauthBody,
   });
-  const media = await downloadAttachmentsWithFetch(createImageAttachments(scenario.attachmentUrl), fetchMock, {
-    tokenProvider,
-    ...scenario.overrides,
-  });
+  const media = await downloadAttachmentsWithFetch(
+    createImageAttachments(scenario.attachmentUrl),
+    fetchMock,
+    {
+      tokenProvider,
+      ...scenario.overrides,
+    },
+  );
   expectAttachmentMediaLength(media, expectedMediaLength);
   expectMockCallState(tokenProvider.getAccessToken, expectTokenFetch);
 };
-const runGraphMediaSuccessCase = async ({ buildOptions, expectedLength, assert }: GraphMediaSuccessCase) => {
+const runGraphMediaSuccessCase = async ({
+  buildOptions,
+  expectedLength,
+  assert,
+}: GraphMediaSuccessCase) => {
   const { fetchMock, media } = await downloadGraphMediaWithMockOptions(buildOptions());
   expectAttachmentMediaLength(media.media, expectedLength);
   assert?.({ fetchMock, media });
@@ -653,9 +683,12 @@ describe("msteams attachments", () => {
   });
 
   describe("buildMSTeamsAttachmentPlaceholder", () => {
-    it.each<AttachmentPlaceholderCase>(ATTACHMENT_PLACEHOLDER_CASES)("$label", ({ attachments, expected }) => {
-      expect(buildMSTeamsAttachmentPlaceholder(attachments)).toBe(expected);
-    });
+    it.each<AttachmentPlaceholderCase>(ATTACHMENT_PLACEHOLDER_CASES)(
+      "$label",
+      ({ attachments, expected }) => {
+        expect(buildMSTeamsAttachmentPlaceholder(attachments)).toBe(expected);
+      },
+    );
   });
 
   describe("downloadMSTeamsAttachments", () => {
@@ -666,14 +699,19 @@ describe("msteams attachments", () => {
 
     it("stores inline data:image base64 payloads", async () => {
       const media = await downloadMSTeamsAttachments(
-        buildDownloadParams([...createHtmlImageAttachments([`data:image/png;base64,${PNG_BASE64}`])]),
+        buildDownloadParams([
+          ...createHtmlImageAttachments([`data:image/png;base64,${PNG_BASE64}`]),
+        ]),
       );
 
       expectSingleMedia(media);
       expectMediaBufferSaved();
     });
 
-    it.each<AttachmentAuthRetryCase>(ATTACHMENT_AUTH_RETRY_CASES)("$label", runAttachmentAuthRetryCase);
+    it.each<AttachmentAuthRetryCase>(ATTACHMENT_AUTH_RETRY_CASES)(
+      "$label",
+      runAttachmentAuthRetryCase,
+    );
 
     it("preserves auth fallback when dispatcher-mode fetch returns a redirect", async () => {
       const redirectedUrl = createTestUrl("redirected.png");
@@ -681,7 +719,9 @@ describe("msteams attachments", () => {
       const fetchMock = vi.fn(async (url: string, opts?: RequestInit) => {
         const hasAuth = Boolean(new Headers(opts?.headers).get("Authorization"));
         if (url === TEST_URL_IMAGE) {
-          return hasAuth ? createRedirectResponse(redirectedUrl) : createTextResponse("unauthorized", 401);
+          return hasAuth
+            ? createRedirectResponse(redirectedUrl)
+            : createTextResponse("unauthorized", 401);
         }
         if (url === redirectedUrl) {
           return createBufferResponse(PNG_BUFFER, CONTENT_TYPE_IMAGE_PNG);
@@ -695,10 +735,14 @@ describe("msteams attachments", () => {
         } as RequestInit);
       });
 
-      const media = await downloadAttachmentsWithFetch(createImageAttachments(TEST_URL_IMAGE), fetchMock, {
-        tokenProvider,
-        authAllowHosts: [TEST_HOST],
-      });
+      const media = await downloadAttachmentsWithFetch(
+        createImageAttachments(TEST_URL_IMAGE),
+        fetchMock,
+        {
+          tokenProvider,
+          authAllowHosts: [TEST_HOST],
+        },
+      );
 
       expectAttachmentMediaLength(media, 1);
       expect(tokenProvider.getAccessToken).toHaveBeenCalledOnce();
@@ -720,10 +764,14 @@ describe("msteams attachments", () => {
         return createBufferResponse(PNG_BUFFER, CONTENT_TYPE_IMAGE_PNG);
       });
 
-      const media = await downloadAttachmentsWithFetch(createImageAttachments(TEST_URL_IMAGE), fetchMock, {
-        tokenProvider,
-        authAllowHosts: [TEST_HOST],
-      });
+      const media = await downloadAttachmentsWithFetch(
+        createImageAttachments(TEST_URL_IMAGE),
+        fetchMock,
+        {
+          tokenProvider,
+          authAllowHosts: [TEST_HOST],
+        },
+      );
 
       expectAttachmentMediaLength(media, 1);
       expect(tokenProvider.getAccessToken).toHaveBeenCalledTimes(2);
@@ -764,7 +812,9 @@ describe("msteams attachments", () => {
       );
 
       expectSingleMedia(media);
-      const redirected = seen.find((entry) => entry.url === "https://attacker.azureedge.net/collect");
+      const redirected = seen.find(
+        (entry) => entry.url === "https://attacker.azureedge.net/collect",
+      );
       expect(redirected).toBeDefined();
       expect(redirected?.auth).toBe("");
     });
@@ -796,9 +846,13 @@ describe("msteams attachments", () => {
         return createNotFoundResponse();
       });
 
-      const media = await downloadAttachmentsWithFetch(createImageAttachments(TEST_URL_IMAGE), fetchMock, {
-        allowHosts: [TEST_HOST],
-      });
+      const media = await downloadAttachmentsWithFetch(
+        createImageAttachments(TEST_URL_IMAGE),
+        fetchMock,
+        {
+          allowHosts: [TEST_HOST],
+        },
+      );
 
       expectAttachmentMediaLength(media, 0);
       expect(fetchMock).toHaveBeenCalledTimes(1);

@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 import type { SubagentRunRecord } from "../../agents/subagent-registry.js";
 import { formatDurationCompact } from "../../infra/format-time/format-duration.js";
 import { applyReplyThreading } from "./reply-payloads.js";
-import { formatRunLabel, formatRunStatus, resolveSubagentLabel, sortSubagentRuns } from "./subagents-utils.js";
+import {
+  formatRunLabel,
+  formatRunStatus,
+  resolveSubagentLabel,
+  sortSubagentRuns,
+} from "./subagents-utils.js";
 
 describe("applyReplyThreading auto-threading", () => {
   it("sets replyToId to currentMessageId even without [[rc:reply]] tag", () => {
@@ -144,7 +149,9 @@ describe("subagents utils", () => {
   it("resolves labels from label, task, or fallback", () => {
     expect(resolveSubagentLabel({ ...baseRun, label: "Label" })).toBe("Label");
     expect(resolveSubagentLabel({ ...baseRun, label: " ", task: "Task" })).toBe("Task");
-    expect(resolveSubagentLabel({ ...baseRun, label: " ", task: " " }, "fallback")).toBe("fallback");
+    expect(resolveSubagentLabel({ ...baseRun, label: " ", task: " " }, "fallback")).toBe(
+      "fallback",
+    );
   });
 
   it("formats run labels with truncation", () => {
@@ -168,7 +175,9 @@ describe("subagents utils", () => {
   it("formats run status from outcome and timestamps", () => {
     expect(formatRunStatus({ ...baseRun })).toBe("running");
     expect(formatRunStatus({ ...baseRun, endedAt: 2000, outcome: { status: "ok" } })).toBe("done");
-    expect(formatRunStatus({ ...baseRun, endedAt: 2000, outcome: { status: "timeout" } })).toBe("timeout");
+    expect(formatRunStatus({ ...baseRun, endedAt: 2000, outcome: { status: "timeout" } })).toBe(
+      "timeout",
+    );
   });
 
   it("formats duration compact for seconds and minutes", () => {

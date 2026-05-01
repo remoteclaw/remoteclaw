@@ -37,7 +37,10 @@ function resolveRuntimeAuthProfileStore(agentDir?: string): AuthProfileStore | n
   }
 
   if (mainStore && requestedStore) {
-    return mergeAuthProfileStores(cloneAuthProfileStore(mainStore), cloneAuthProfileStore(requestedStore));
+    return mergeAuthProfileStores(
+      cloneAuthProfileStore(mainStore),
+      cloneAuthProfileStore(requestedStore),
+    );
   }
   if (requestedStore) {
     return cloneAuthProfileStore(requestedStore);
@@ -54,7 +57,10 @@ export function replaceRuntimeAuthProfileStoreSnapshots(
 ): void {
   runtimeAuthStoreSnapshots.clear();
   for (const entry of entries) {
-    runtimeAuthStoreSnapshots.set(resolveRuntimeStoreKey(entry.agentDir), cloneAuthProfileStore(entry.store));
+    runtimeAuthStoreSnapshots.set(
+      resolveRuntimeStoreKey(entry.agentDir),
+      cloneAuthProfileStore(entry.store),
+    );
   }
 }
 
@@ -174,7 +180,9 @@ function coerceAuthStore(raw: unknown): AuthProfileStore | null {
             if (!Array.isArray(value)) {
               return acc;
             }
-            const list = value.map((entry) => (typeof entry === "string" ? entry.trim() : "")).filter(Boolean);
+            const list = value
+              .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+              .filter(Boolean);
             if (list.length === 0) {
               return acc;
             }
@@ -189,7 +197,9 @@ function coerceAuthStore(raw: unknown): AuthProfileStore | null {
     profiles: normalized,
     order,
     lastGood:
-      record.lastGood && typeof record.lastGood === "object" ? (record.lastGood as Record<string, string>) : undefined,
+      record.lastGood && typeof record.lastGood === "object"
+        ? (record.lastGood as Record<string, string>)
+        : undefined,
     usageStats:
       record.usageStats && typeof record.usageStats === "object"
         ? (record.usageStats as Record<string, ProfileUsageStats>)
@@ -197,7 +207,10 @@ function coerceAuthStore(raw: unknown): AuthProfileStore | null {
   };
 }
 
-function mergeRecord<T>(base?: Record<string, T>, override?: Record<string, T>): Record<string, T> | undefined {
+function mergeRecord<T>(
+  base?: Record<string, T>,
+  override?: Record<string, T>,
+): Record<string, T> | undefined {
   if (!base && !override) {
     return undefined;
   }
@@ -210,8 +223,16 @@ function mergeRecord<T>(base?: Record<string, T>, override?: Record<string, T>):
   return { ...base, ...override };
 }
 
-function mergeAuthProfileStores(base: AuthProfileStore, override: AuthProfileStore): AuthProfileStore {
-  if (Object.keys(override.profiles).length === 0 && !override.order && !override.lastGood && !override.usageStats) {
+function mergeAuthProfileStores(
+  base: AuthProfileStore,
+  override: AuthProfileStore,
+): AuthProfileStore {
+  if (
+    Object.keys(override.profiles).length === 0 &&
+    !override.order &&
+    !override.lastGood &&
+    !override.usageStats
+  ) {
     return base;
   }
   return {

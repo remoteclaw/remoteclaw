@@ -1,5 +1,8 @@
 import { html } from "lit";
-import { listCoreToolSections, PROFILE_OPTIONS as TOOL_PROFILE_OPTIONS } from "../../../../src/agents/tool-catalog.js";
+import {
+  listCoreToolSections,
+  PROFILE_OPTIONS as TOOL_PROFILE_OPTIONS,
+} from "../../../../src/agents/tool-catalog.js";
 import {
   expandToolGroups,
   normalizeToolName,
@@ -43,7 +46,11 @@ type ConfigSnapshot = {
   };
 };
 
-export function normalizeAgentLabel(agent: { id: string; name?: string; identity?: { name?: string } }) {
+export function normalizeAgentLabel(agent: {
+  id: string;
+  name?: string;
+  identity?: { name?: string };
+}) {
   return agent.name?.trim() || agent.identity?.name?.trim() || agent.id;
 }
 
@@ -136,13 +143,19 @@ export function buildAgentContext(
   agentIdentity?: AgentIdentityResult | null,
 ): AgentContext {
   const config = resolveAgentConfig(configForm, agent.id);
-  const workspaceFromFiles = agentFilesList && agentFilesList.agentId === agent.id ? agentFilesList.workspace : null;
-  const workspace = workspaceFromFiles || config.entry?.workspace || config.defaults?.workspace || "default";
+  const workspaceFromFiles =
+    agentFilesList && agentFilesList.agentId === agent.id ? agentFilesList.workspace : null;
+  const workspace =
+    workspaceFromFiles || config.entry?.workspace || config.defaults?.workspace || "default";
   const modelLabel = config.entry?.model
     ? resolveModelLabel(config.entry?.model)
     : resolveModelLabel(config.defaults?.model);
   const identityName =
-    agentIdentity?.name?.trim() || agent.identity?.name?.trim() || agent.name?.trim() || config.entry?.name || agent.id;
+    agentIdentity?.name?.trim() ||
+    agent.identity?.name?.trim() ||
+    agent.name?.trim() ||
+    config.entry?.name ||
+    agent.id;
   const identityEmoji = resolveAgentEmoji(agent, agentIdentity) || "-";
   return {
     workspace,
@@ -212,12 +225,17 @@ export function resolveModelFallbacks(model?: unknown): string[] | null {
       : Array.isArray(record.fallback)
         ? record.fallback
         : null;
-    return fallbacks ? fallbacks.filter((entry): entry is string => typeof entry === "string") : null;
+    return fallbacks
+      ? fallbacks.filter((entry): entry is string => typeof entry === "string")
+      : null;
   }
   return null;
 }
 
-export function resolveEffectiveModelFallbacks(entryModel?: unknown, defaultModel?: unknown): string[] | null {
+export function resolveEffectiveModelFallbacks(
+  entryModel?: unknown,
+  defaultModel?: unknown,
+): string[] | null {
   return resolveModelFallbacks(entryModel) ?? resolveModelFallbacks(defaultModel);
 }
 
@@ -295,7 +313,9 @@ export function sortLocaleStrings(values: Iterable<string>): string[] {
   return sorted;
 }
 
-export function resolveConfiguredCronModelSuggestions(configForm: Record<string, unknown> | null): string[] {
+export function resolveConfiguredCronModelSuggestions(
+  configForm: Record<string, unknown> | null,
+): string[] {
   if (!configForm || typeof configForm !== "object") {
     return [];
   }
@@ -339,7 +359,9 @@ type ConfiguredModelOption = {
   label: string;
 };
 
-function resolveConfiguredModels(configForm: Record<string, unknown> | null): ConfiguredModelOption[] {
+function resolveConfiguredModels(
+  configForm: Record<string, unknown> | null,
+): ConfiguredModelOption[] {
   const cfg = configForm as ConfigSnapshot | null;
   const models = cfg?.agents?.defaults?.models;
   if (!models || typeof models !== "object") {
@@ -363,7 +385,10 @@ function resolveConfiguredModels(configForm: Record<string, unknown> | null): Co
   return options;
 }
 
-export function buildModelOptions(configForm: Record<string, unknown> | null, current?: string | null) {
+export function buildModelOptions(
+  configForm: Record<string, unknown> | null,
+  current?: string | null,
+) {
   const options = resolveConfiguredModels(configForm);
   const hasCurrent = current ? options.some((option) => option.value === current) : false;
   if (current && !hasCurrent) {
@@ -377,7 +402,10 @@ export function buildModelOptions(configForm: Record<string, unknown> | null, cu
   return options.map((option) => html`<option value=${option.value}>${option.label}</option>`);
 }
 
-type CompiledPattern = { kind: "all" } | { kind: "exact"; value: string } | { kind: "regex"; value: RegExp };
+type CompiledPattern =
+  | { kind: "all" }
+  | { kind: "exact"; value: string }
+  | { kind: "regex"; value: RegExp };
 
 function compilePattern(pattern: string): CompiledPattern {
   const normalized = normalizeToolName(pattern);

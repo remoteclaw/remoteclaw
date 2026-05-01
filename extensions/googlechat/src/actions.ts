@@ -25,13 +25,19 @@ import { resolveGoogleChatOutboundSpace } from "./targets.js";
 const providerId = "googlechat";
 
 function listEnabledAccounts(cfg: RemoteClawConfig) {
-  return listEnabledGoogleChatAccounts(cfg).filter((account) => account.enabled && account.credentialSource !== "none");
+  return listEnabledGoogleChatAccounts(cfg).filter(
+    (account) => account.enabled && account.credentialSource !== "none",
+  );
 }
 
-function isReactionsEnabled(accounts: ReturnType<typeof listEnabledAccounts>, cfg: RemoteClawConfig) {
+function isReactionsEnabled(
+  accounts: ReturnType<typeof listEnabledAccounts>,
+  cfg: RemoteClawConfig,
+) {
   for (const account of accounts) {
     const gate = createActionGate(
-      (account.config.actions ?? (cfg.channels?.["googlechat"] as { actions?: unknown })?.actions) as Record<
+      (account.config.actions ??
+        (cfg.channels?.["googlechat"] as { actions?: unknown })?.actions) as Record<
         string,
         boolean | undefined
       >,

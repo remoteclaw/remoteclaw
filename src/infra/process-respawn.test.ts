@@ -13,7 +13,8 @@ vi.mock("./restart.js", () => ({
   triggerRemoteClawRestart: (...args: unknown[]) => triggerRemoteClawRestartMock(...args),
 }));
 vi.mock("../daemon/launchd-restart-handoff.js", () => ({
-  scheduleDetachedLaunchdRestartHandoff: (...args: unknown[]) => scheduleDetachedLaunchdRestartHandoffMock(...args),
+  scheduleDetachedLaunchdRestartHandoff: (...args: unknown[]) =>
+    scheduleDetachedLaunchdRestartHandoffMock(...args),
 }));
 
 import { restartGatewayProcessWithFreshPid } from "./process-respawn.js";
@@ -52,7 +53,10 @@ function clearSupervisorHints() {
   }
 }
 
-function expectLaunchdSupervisedWithoutKickstart(params?: { launchJobLabel?: string; detailContains?: string }) {
+function expectLaunchdSupervisedWithoutKickstart(params?: {
+  launchJobLabel?: string;
+  detailContains?: string;
+}) {
   setPlatform("darwin");
   if (params?.launchJobLabel) {
     process.env.LAUNCH_JOB_LABEL = params.launchJobLabel;

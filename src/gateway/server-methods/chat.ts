@@ -17,7 +17,11 @@ import {
   stripInlineDirectiveTagsForDisplay,
   stripInlineDirectiveTagsFromMessageForDisplay,
 } from "../../utils/directive-tags.js";
-import { INTERNAL_MESSAGE_CHANNEL, isWebchatClient, normalizeMessageChannel } from "../../utils/message-channel.js";
+import {
+  INTERNAL_MESSAGE_CHANNEL,
+  isWebchatClient,
+  normalizeMessageChannel,
+} from "../../utils/message-channel.js";
 import {
   abortChatRunById,
   abortChatRunsForSessionKey,
@@ -51,7 +55,11 @@ import { injectTimestamp, timestampOptsFromConfig } from "./agent-timestamp.js";
 import { setGatewayDedupeEntry } from "./agent-wait-dedupe.js";
 import { normalizeRpcAttachmentsToChatAttachments } from "./attachment-normalize.js";
 import { appendInjectedAssistantMessageToTranscript } from "./chat-transcript-inject.js";
-import type { GatewayRequestContext, GatewayRequestHandlerOptions, GatewayRequestHandlers } from "./types.js";
+import type {
+  GatewayRequestContext,
+  GatewayRequestHandlerOptions,
+  GatewayRequestHandlers,
+} from "./types.js";
 
 type TranscriptAppendResult = {
   ok: boolean;
@@ -129,8 +137,10 @@ function resolveChatSendOriginatingRoute(params: {
     params.entry?.deliveryContext?.channel ?? params.entry?.lastChannel,
   );
   const routeToCandidate = params.entry?.deliveryContext?.to ?? params.entry?.lastTo;
-  const routeAccountIdCandidate = params.entry?.deliveryContext?.accountId ?? params.entry?.lastAccountId ?? undefined;
-  const routeThreadIdCandidate = params.entry?.deliveryContext?.threadId ?? params.entry?.lastThreadId;
+  const routeAccountIdCandidate =
+    params.entry?.deliveryContext?.accountId ?? params.entry?.lastAccountId ?? undefined;
+  const routeThreadIdCandidate =
+    params.entry?.deliveryContext?.threadId ?? params.entry?.lastThreadId;
   if (params.sessionKey.length > CHAT_SEND_SESSION_KEY_MAX_LENGTH) {
     return {
       originatingChannel: INTERNAL_MESSAGE_CHANNEL,
@@ -139,17 +149,25 @@ function resolveChatSendOriginatingRoute(params: {
   }
 
   const parsedSessionKey = parseAgentSessionKey(params.sessionKey);
-  const sessionScopeParts = (parsedSessionKey?.rest ?? params.sessionKey).split(":", 3).filter(Boolean);
+  const sessionScopeParts = (parsedSessionKey?.rest ?? params.sessionKey)
+    .split(":", 3)
+    .filter(Boolean);
   const sessionScopeHead = sessionScopeParts[0];
   const sessionChannelHint = normalizeMessageChannel(sessionScopeHead);
   const normalizedSessionScopeHead = (sessionScopeHead ?? "").trim().toLowerCase();
   const sessionPeerShapeCandidates = [sessionScopeParts[1], sessionScopeParts[2]]
     .map((part) => (part ?? "").trim().toLowerCase())
     .filter(Boolean);
-  const isChannelAgnosticSessionScope = CHANNEL_AGNOSTIC_SESSION_SCOPES.has(normalizedSessionScopeHead);
-  const isChannelScopedSession = sessionPeerShapeCandidates.some((part) => CHANNEL_SCOPED_SESSION_SHAPES.has(part));
+  const isChannelAgnosticSessionScope = CHANNEL_AGNOSTIC_SESSION_SCOPES.has(
+    normalizedSessionScopeHead,
+  );
+  const isChannelScopedSession = sessionPeerShapeCandidates.some((part) =>
+    CHANNEL_SCOPED_SESSION_SHAPES.has(part),
+  );
   const hasLegacyChannelPeerShape =
-    !isChannelScopedSession && typeof sessionScopeParts[1] === "string" && sessionChannelHint === routeChannelCandidate;
+    !isChannelScopedSession &&
+    typeof sessionScopeParts[1] === "string" &&
+    sessionChannelHint === routeChannelCandidate;
   const isFromWebchatClient = isWebchatClient(params.client);
   const configuredMainKey = (params.mainKey ?? "main").trim().toLowerCase();
   const isConfiguredMainSessionScope =
@@ -393,11 +411,15 @@ function sanitizeChatHistoryMessages(messages: unknown[]): unknown[] {
 
 function buildOversizedHistoryPlaceholder(message?: unknown): Record<string, unknown> {
   const role =
-    message && typeof message === "object" && typeof (message as { role?: unknown }).role === "string"
+    message &&
+    typeof message === "object" &&
+    typeof (message as { role?: unknown }).role === "string"
       ? (message as { role: string }).role
       : "assistant";
   const timestamp =
-    message && typeof message === "object" && typeof (message as { timestamp?: unknown }).timestamp === "number"
+    message &&
+    typeof message === "object" &&
+    typeof (message as { timestamp?: unknown }).timestamp === "number"
       ? (message as { timestamp: number }).timestamp
       : Date.now();
   return {
@@ -408,7 +430,10 @@ function buildOversizedHistoryPlaceholder(message?: unknown): Record<string, unk
   };
 }
 
-function replaceOversizedChatHistoryMessages(params: { messages: unknown[]; maxSingleMessageBytes: number }): {
+function replaceOversizedChatHistoryMessages(params: {
+  messages: unknown[];
+  maxSingleMessageBytes: number;
+}): {
   messages: unknown[];
   replacedCount: number;
 } {
@@ -616,7 +641,9 @@ function persistAbortedPartials(params: {
       },
     });
     if (!appended.ok) {
-      params.context.logGateway.warn(`chat.abort transcript append failed: ${appended.error ?? "unknown error"}`);
+      params.context.logGateway.warn(
+        `chat.abort transcript append failed: ${appended.error ?? "unknown error"}`,
+      );
     }
   }
 }
@@ -674,7 +701,9 @@ function broadcastChatFinal(params: {
   message?: Record<string, unknown>;
 }) {
   const seq = nextChatSeq({ agentRunSeq: params.context.agentRunSeq }, params.runId);
-  const strippedEnvelopeMessage = stripEnvelopeFromMessage(params.message) as Record<string, unknown> | undefined;
+  const strippedEnvelopeMessage = stripEnvelopeFromMessage(params.message) as
+    | Record<string, unknown>
+    | undefined;
   const payload = {
     runId: params.runId,
     sessionKey: params.sessionKey,
@@ -725,7 +754,8 @@ export const chatHandlers: GatewayRequestHandlers = {
     };
     const { cfg, storePath, entry } = loadSessionEntry(sessionKey);
     const sessionId = entry?.sessionId;
-    const rawMessages = sessionId && storePath ? readSessionMessages(sessionId, storePath, entry?.sessionFile) : [];
+    const rawMessages =
+      sessionId && storePath ? readSessionMessages(sessionId, storePath, entry?.sessionFile) : [];
     const hardMax = 1000;
     const defaultLimit = 200;
     const requested = typeof limit === "number" ? limit : defaultLimit;
@@ -793,7 +823,11 @@ export const chatHandlers: GatewayRequestHandlers = {
       return;
     }
     if (active.sessionKey !== rawSessionKey) {
-      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "runId does not match sessionKey"));
+      respond(
+        false,
+        undefined,
+        errorShape(ErrorCodes.INVALID_REQUEST, "runId does not match sessionKey"),
+      );
       return;
     }
 
@@ -854,13 +888,20 @@ export const chatHandlers: GatewayRequestHandlers = {
       respond(
         false,
         undefined,
-        errorShape(ErrorCodes.INVALID_REQUEST, "system provenance fields are reserved for the ACP bridge"),
+        errorShape(
+          ErrorCodes.INVALID_REQUEST,
+          "system provenance fields are reserved for the ACP bridge",
+        ),
       );
       return;
     }
     const sanitizedMessageResult = sanitizeChatSendMessageInput(p.message);
     if (!sanitizedMessageResult.ok) {
-      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, sanitizedMessageResult.error));
+      respond(
+        false,
+        undefined,
+        errorShape(ErrorCodes.INVALID_REQUEST, sanitizedMessageResult.error),
+      );
       return;
     }
     const systemReceiptResult = normalizeOptionalChatSystemReceipt(p.systemProvenanceReceipt);
@@ -875,7 +916,11 @@ export const chatHandlers: GatewayRequestHandlers = {
     const normalizedAttachments = normalizeRpcAttachmentsToChatAttachments(p.attachments);
     const rawMessage = inboundMessage.trim();
     if (!rawMessage && normalizedAttachments.length === 0) {
-      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "message or attachment required"));
+      respond(
+        false,
+        undefined,
+        errorShape(ErrorCodes.INVALID_REQUEST, "message or attachment required"),
+      );
       return;
     }
     let parsedMessage = inboundMessage;
@@ -910,7 +955,11 @@ export const chatHandlers: GatewayRequestHandlers = {
       chatType: entry?.chatType,
     });
     if (sendPolicy === "deny") {
-      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "send blocked by session policy"));
+      respond(
+        false,
+        undefined,
+        errorShape(ErrorCodes.INVALID_REQUEST, "send blocked by session policy"),
+      );
       return;
     }
 
@@ -963,15 +1012,20 @@ export const chatHandlers: GatewayRequestHandlers = {
         ? [systemProvenanceReceipt, parsedMessage].filter(Boolean).join("\n\n")
         : parsedMessage;
       const clientInfo = client?.connect?.client;
-      const { originatingChannel, originatingTo, accountId, messageThreadId, explicitDeliverRoute } =
-        resolveChatSendOriginatingRoute({
-          client: clientInfo,
-          deliver: p.deliver,
-          entry,
-          hasConnectedClient: client?.connect !== undefined,
-          mainKey: cfg.session?.mainKey,
-          sessionKey,
-        });
+      const {
+        originatingChannel,
+        originatingTo,
+        accountId,
+        messageThreadId,
+        explicitDeliverRoute,
+      } = resolveChatSendOriginatingRoute({
+        client: clientInfo,
+        deliver: p.deliver,
+        entry,
+        hasConnectedClient: client?.connect !== undefined,
+        mainKey: cfg.session?.mainKey,
+        sessionKey,
+      });
       // Inject timestamp so agents know the current date/time.
       // Only BodyForAgent gets the timestamp — Body stays raw for UI display.
       // See: https://github.com/moltbot/moltbot/issues/3658
@@ -1040,7 +1094,10 @@ export const chatHandlers: GatewayRequestHandlers = {
           onAgentRunStart: (runId) => {
             agentRunStarted = true;
             const connId = typeof client?.connId === "string" ? client.connId : undefined;
-            const wantsToolEvents = hasGatewayClientCap(client?.connect?.caps, GATEWAY_CLIENT_CAPS.TOOL_EVENTS);
+            const wantsToolEvents = hasGatewayClientCap(
+              client?.connect?.caps,
+              GATEWAY_CLIENT_CAPS.TOOL_EVENTS,
+            );
             if (connId && wantsToolEvents) {
               context.registerToolEventRecipient(runId, connId);
               // Register for any other active runs *in the same session* so
@@ -1064,7 +1121,8 @@ export const chatHandlers: GatewayRequestHandlers = {
               .trim();
             let message: Record<string, unknown> | undefined;
             if (combinedReply) {
-              const { storePath: latestStorePath, entry: latestEntry } = loadSessionEntry(sessionKey);
+              const { storePath: latestStorePath, entry: latestEntry } =
+                loadSessionEntry(sessionKey);
               const sessionId = latestEntry?.sessionId ?? entry?.sessionId ?? clientRunId;
               const appended = appendAssistantTranscriptMessage({
                 message: combinedReply,
@@ -1077,7 +1135,9 @@ export const chatHandlers: GatewayRequestHandlers = {
               if (appended.ok) {
                 message = appended.message;
               } else {
-                context.logGateway.warn(`webchat transcript append failed: ${appended.error ?? "unknown error"}`);
+                context.logGateway.warn(
+                  `webchat transcript append failed: ${appended.error ?? "unknown error"}`,
+                );
                 const now = Date.now();
                 message = {
                   role: "assistant",
@@ -1196,7 +1256,10 @@ export const chatHandlers: GatewayRequestHandlers = {
       respond(
         false,
         undefined,
-        errorShape(ErrorCodes.UNAVAILABLE, `failed to write transcript: ${appended.error ?? "unknown error"}`),
+        errorShape(
+          ErrorCodes.UNAVAILABLE,
+          `failed to write transcript: ${appended.error ?? "unknown error"}`,
+        ),
       );
       return;
     }

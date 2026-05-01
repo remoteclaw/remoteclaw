@@ -48,11 +48,19 @@ function coercePositiveInt(value: unknown, fallback: number): number {
   return normalized > 0 ? normalized : fallback;
 }
 
-export function resolveFeishuWebhookRateLimitDefaultsForTest(defaults: unknown): WebhookRateLimitDefaults {
+export function resolveFeishuWebhookRateLimitDefaultsForTest(
+  defaults: unknown,
+): WebhookRateLimitDefaults {
   const resolved = defaults as Partial<WebhookRateLimitDefaults> | null | undefined;
   return {
-    windowMs: coercePositiveInt(resolved?.windowMs, FEISHU_WEBHOOK_RATE_LIMIT_FALLBACK_DEFAULTS.windowMs),
-    maxRequests: coercePositiveInt(resolved?.maxRequests, FEISHU_WEBHOOK_RATE_LIMIT_FALLBACK_DEFAULTS.maxRequests),
+    windowMs: coercePositiveInt(
+      resolved?.windowMs,
+      FEISHU_WEBHOOK_RATE_LIMIT_FALLBACK_DEFAULTS.windowMs,
+    ),
+    maxRequests: coercePositiveInt(
+      resolved?.maxRequests,
+      FEISHU_WEBHOOK_RATE_LIMIT_FALLBACK_DEFAULTS.maxRequests,
+    ),
     maxTrackedKeys: coercePositiveInt(
       resolved?.maxTrackedKeys,
       FEISHU_WEBHOOK_RATE_LIMIT_FALLBACK_DEFAULTS.maxTrackedKeys,
@@ -60,7 +68,9 @@ export function resolveFeishuWebhookRateLimitDefaultsForTest(defaults: unknown):
   };
 }
 
-export function resolveFeishuWebhookAnomalyDefaultsForTest(defaults: unknown): WebhookAnomalyDefaults {
+export function resolveFeishuWebhookAnomalyDefaultsForTest(
+  defaults: unknown,
+): WebhookAnomalyDefaults {
   const resolved = defaults as Partial<WebhookAnomalyDefaults> | null | undefined;
   return {
     maxTrackedKeys: coercePositiveInt(
@@ -68,7 +78,10 @@ export function resolveFeishuWebhookAnomalyDefaultsForTest(defaults: unknown): W
       FEISHU_WEBHOOK_ANOMALY_FALLBACK_DEFAULTS.maxTrackedKeys,
     ),
     ttlMs: coercePositiveInt(resolved?.ttlMs, FEISHU_WEBHOOK_ANOMALY_FALLBACK_DEFAULTS.ttlMs),
-    logEvery: coercePositiveInt(resolved?.logEvery, FEISHU_WEBHOOK_ANOMALY_FALLBACK_DEFAULTS.logEvery),
+    logEvery: coercePositiveInt(
+      resolved?.logEvery,
+      FEISHU_WEBHOOK_ANOMALY_FALLBACK_DEFAULTS.logEvery,
+    ),
   };
 }
 
@@ -123,7 +136,8 @@ export function recordWebhookStatus(
     key: `${accountId}:${path}:${statusCode}`,
     statusCode,
     log: runtime?.log ?? console.log,
-    message: (count) => `feishu[${accountId}]: webhook anomaly path=${path} status=${statusCode} count=${count}`,
+    message: (count) =>
+      `feishu[${accountId}]: webhook anomaly path=${path} status=${statusCode} count=${count}`,
   });
 }
 

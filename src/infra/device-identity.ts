@@ -62,7 +62,9 @@ function generateIdentity(): DeviceIdentity {
   return { deviceId, publicKeyPem, privateKeyPem };
 }
 
-export function loadOrCreateDeviceIdentity(filePath: string = resolveDefaultIdentityPath()): DeviceIdentity {
+export function loadOrCreateDeviceIdentity(
+  filePath: string = resolveDefaultIdentityPath(),
+): DeviceIdentity {
   try {
     if (fs.existsSync(filePath)) {
       const raw = fs.readFileSync(filePath, "utf8");
@@ -143,7 +145,9 @@ export function normalizeDevicePublicKeyBase64Url(publicKey: string): string | n
 
 export function deriveDeviceIdFromPublicKey(publicKey: string): string | null {
   try {
-    const raw = publicKey.includes("BEGIN") ? derivePublicKeyRaw(publicKey) : base64UrlDecode(publicKey);
+    const raw = publicKey.includes("BEGIN")
+      ? derivePublicKeyRaw(publicKey)
+      : base64UrlDecode(publicKey);
     if (raw.length === 0) {
       return null;
     }
@@ -157,7 +161,11 @@ export function publicKeyRawBase64UrlFromPem(publicKeyPem: string): string {
   return base64UrlEncode(derivePublicKeyRaw(publicKeyPem));
 }
 
-export function verifyDeviceSignature(publicKey: string, payload: string, signatureBase64Url: string): boolean {
+export function verifyDeviceSignature(
+  publicKey: string,
+  payload: string,
+  signatureBase64Url: string,
+): boolean {
   try {
     const key = publicKey.includes("BEGIN")
       ? crypto.createPublicKey(publicKey)

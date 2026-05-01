@@ -82,7 +82,8 @@ function createSnapshotFromLifecycleEvent(params: {
   data?: Record<string, unknown>;
 }): AgentRunSnapshot {
   const { runId, phase, data } = params;
-  const startedAt = typeof data?.startedAt === "number" ? data.startedAt : agentRunStarts.get(runId);
+  const startedAt =
+    typeof data?.startedAt === "number" ? data.startedAt : agentRunStarts.get(runId);
   const endedAt = typeof data?.endedAt === "number" ? data.endedAt : undefined;
   const error = typeof data?.error === "string" ? data.error : undefined;
   return {
@@ -183,7 +184,10 @@ export async function waitForAgentJob(params: {
       resolve(entry);
     };
 
-    const scheduleErrorFinish = (snapshot: AgentRunSnapshot, delayMs = AGENT_RUN_ERROR_RETRY_GRACE_MS) => {
+    const scheduleErrorFinish = (
+      snapshot: AgentRunSnapshot,
+      delayMs = AGENT_RUN_ERROR_RETRY_GRACE_MS,
+    ) => {
       clearPendingErrorTimer();
       const effectiveDelay = Math.max(1, Math.min(Math.floor(delayMs), 2_147_483_647));
       pendingErrorTimer = setTimeout(() => {

@@ -116,6 +116,8 @@ describe("printDaemonStatus", () => {
     expect(runtime.error).toHaveBeenCalledWith(
       expect.stringContaining("Gateway runtime PID does not own the listening port"),
     );
-    expect(runtime.error).toHaveBeenCalledWith(expect.stringContaining(formatCliCommand("remoteclaw gateway restart")));
+    expect(runtime.error).toHaveBeenCalledWith(
+      expect.stringContaining(formatCliCommand("remoteclaw gateway restart")),
+    );
   });
 });

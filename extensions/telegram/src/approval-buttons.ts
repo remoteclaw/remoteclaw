@@ -8,8 +8,14 @@ function fitsCallbackData(value: string): boolean {
   return Buffer.byteLength(value, "utf8") <= MAX_CALLBACK_DATA_BYTES;
 }
 
-export function buildTelegramExecApprovalButtons(approvalId: string): TelegramInlineButtons | undefined {
-  return buildTelegramExecApprovalButtonsForDecisions(approvalId, ["allow-once", "allow-always", "deny"]);
+export function buildTelegramExecApprovalButtons(
+  approvalId: string,
+): TelegramInlineButtons | undefined {
+  return buildTelegramExecApprovalButtonsForDecisions(approvalId, [
+    "allow-once",
+    "allow-always",
+    "deny",
+  ]);
 }
 
 function buildTelegramExecApprovalButtonsForDecisions(
@@ -21,7 +27,9 @@ function buildTelegramExecApprovalButtonsForDecisions(
     return undefined;
   }
 
-  const primaryRow: Array<{ text: string; callback_data: string }> = [{ text: "Allow Once", callback_data: allowOnce }];
+  const primaryRow: Array<{ text: string; callback_data: string }> = [
+    { text: "Allow Once", callback_data: allowOnce },
+  ];
   const allowAlways = `/approve ${approvalId} allow-always`;
   if (allowedDecisions.includes("allow-always") && fitsCallbackData(allowAlways)) {
     primaryRow.push({ text: "Allow Always", callback_data: allowAlways });

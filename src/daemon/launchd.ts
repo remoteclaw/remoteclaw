@@ -42,7 +42,10 @@ function resolveLaunchAgentLabel(args?: { env?: Record<string, string | undefine
   return resolveGatewayLaunchAgentLabel(args?.env?.REMOTECLAW_PROFILE);
 }
 
-function resolveLaunchAgentPlistPathForLabel(env: Record<string, string | undefined>, label: string): string {
+function resolveLaunchAgentPlistPathForLabel(
+  env: Record<string, string | undefined>,
+  label: string,
+): string {
   const home = toPosixPath(resolveHomeDir(env));
   return path.posix.join(home, "Library", "LaunchAgents", `${label}.plist`);
 }
@@ -102,14 +105,18 @@ export function buildLaunchAgentPlist({
   });
 }
 
-async function execLaunchctl(args: string[]): Promise<{ stdout: string; stderr: string; code: number }> {
+async function execLaunchctl(
+  args: string[],
+): Promise<{ stdout: string; stderr: string; code: number }> {
   const isWindows = process.platform === "win32";
   const file = isWindows ? (process.env.ComSpec ?? "cmd.exe") : "launchctl";
   const fileArgs = isWindows ? ["/d", "/s", "/c", "launchctl", ...args] : args;
   return await execFileUtf8(file, fileArgs, isWindows ? { windowsHide: true } : {});
 }
 
-function parseGatewayPortFromProgramArguments(programArguments: string[] | undefined): number | null {
+function parseGatewayPortFromProgramArguments(
+  programArguments: string[] | undefined,
+): number | null {
   if (!Array.isArray(programArguments) || programArguments.length === 0) {
     return null;
   }
@@ -152,7 +159,11 @@ function resolveGuiDomain(): string {
   return `gui/${process.getuid()}`;
 }
 
-function throwBootstrapGuiSessionError(params: { detail: string; domain: string; actionHint: string }) {
+function throwBootstrapGuiSessionError(params: {
+  detail: string;
+  domain: string;
+  actionHint: string;
+}) {
   throw new Error(
     [
       `launchctl bootstrap failed: ${params.detail}`,
@@ -164,7 +175,11 @@ function throwBootstrapGuiSessionError(params: { detail: string; domain: string;
   );
 }
 
-function writeLaunchAgentActionLine(stdout: NodeJS.WritableStream, label: string, value: string): void {
+function writeLaunchAgentActionLine(
+  stdout: NodeJS.WritableStream,
+  label: string,
+  value: string,
+): void {
   try {
     stdout.write(`${formatLine(label, value)}\n`);
   } catch (err: unknown) {
@@ -271,7 +286,9 @@ export async function launchAgentPlistExists(env: GatewayServiceEnv): Promise<bo
   }
 }
 
-export async function readLaunchAgentRuntime(env: Record<string, string | undefined>): Promise<GatewayServiceRuntime> {
+export async function readLaunchAgentRuntime(
+  env: Record<string, string | undefined>,
+): Promise<GatewayServiceRuntime> {
   const domain = resolveGuiDomain();
   const label = resolveLaunchAgentLabel({ env });
   const res = await execLaunchctl(["print", `${domain}/${label}`]);
@@ -385,7 +402,10 @@ export async function uninstallLegacyLaunchAgents({
   return agents;
 }
 
-export async function uninstallLaunchAgent({ env, stdout }: GatewayServiceManageArgs): Promise<void> {
+export async function uninstallLaunchAgent({
+  env,
+  stdout,
+}: GatewayServiceManageArgs): Promise<void> {
   const domain = resolveGuiDomain();
   const label = resolveLaunchAgentLabel({ env });
   const plistPath = resolveLaunchAgentPlistPath(env);
@@ -414,14 +434,17 @@ export async function uninstallLaunchAgent({ env, stdout }: GatewayServiceManage
 function isLaunchctlNotLoaded(res: { stdout: string; stderr: string; code: number }): boolean {
   const detail = (res.stderr || res.stdout).toLowerCase();
   return (
-    detail.includes("no such process") || detail.includes("could not find service") || detail.includes("not found")
+    detail.includes("no such process") ||
+    detail.includes("could not find service") ||
+    detail.includes("not found")
   );
 }
 
 function isUnsupportedGuiDomain(detail: string): boolean {
   const normalized = detail.toLowerCase();
   return (
-    normalized.includes("domain does not support specified action") || normalized.includes("bootstrap failed: 125")
+    normalized.includes("domain does not support specified action") ||
+    normalized.includes("bootstrap failed: 125")
   );
 }
 
@@ -480,7 +503,10 @@ async function writeLaunchAgentPlist({
   return { plistPath, stdoutPath };
 }
 
-export async function stageLaunchAgent({ stdout, ...args }: GatewayServiceInstallArgs): Promise<{ plistPath: string }> {
+export async function stageLaunchAgent({
+  stdout,
+  ...args
+}: GatewayServiceInstallArgs): Promise<{ plistPath: string }> {
   const { plistPath, stdoutPath } = await writeLaunchAgentPlist(args);
   writeFormattedLines(
     stdout,
@@ -508,7 +534,9 @@ async function activateLaunchAgent(params: { env: GatewayServiceEnv; plistPath: 
   });
 }
 
-export async function installLaunchAgent(args: GatewayServiceInstallArgs): Promise<{ plistPath: string }> {
+export async function installLaunchAgent(
+  args: GatewayServiceInstallArgs,
+): Promise<{ plistPath: string }> {
   const { plistPath, stdoutPath } = await writeLaunchAgentPlist(args);
   await activateLaunchAgent({ env: args.env, plistPath });
   // `bootstrap` already loads RunAtLoad agents. Avoid `kickstart -k` here:

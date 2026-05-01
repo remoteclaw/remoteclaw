@@ -129,7 +129,8 @@ export async function sessionsCommand(
             return {
               ...r,
               totalTokens: resolveFreshSessionTotalTokens(r) ?? null,
-              totalTokensFresh: typeof r.totalTokens === "number" ? r.totalTokensFresh !== false : false,
+              totalTokensFresh:
+                typeof r.totalTokens === "number" ? r.totalTokensFresh !== false : false,
               model,
             };
           }),
@@ -144,7 +145,9 @@ export async function sessionsCommand(
   if (targets.length === 1 && !aggregateAgents) {
     runtime.log(info(`Session store: ${targets[0]?.storePath}`));
   } else {
-    runtime.log(info(`Session stores: ${targets.length} (${targets.map((t) => t.agentId).join(", ")})`));
+    runtime.log(
+      info(`Session stores: ${targets.length} (${targets.map((t) => t.agentId).join(", ")})`),
+    );
   }
   runtime.log(info(`Sessions listed: ${rows.length}`));
   if (activeMinutes) {

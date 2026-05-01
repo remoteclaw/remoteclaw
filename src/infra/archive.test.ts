@@ -83,25 +83,28 @@ afterAll(async () => {
 });
 
 describe("archive utils", () => {
-  it.each([{ ext: "zip" as const }, { ext: "tar" as const }])("extracts $ext archives", async ({ ext }) => {
-    await withArchiveCase(ext, async ({ workDir, archivePath, extractDir }) => {
-      await writePackageArchive({
-        ext,
-        workDir,
-        archivePath,
-        fileName: "hello.txt",
-        content: "hi",
+  it.each([{ ext: "zip" as const }, { ext: "tar" as const }])(
+    "extracts $ext archives",
+    async ({ ext }) => {
+      await withArchiveCase(ext, async ({ workDir, archivePath, extractDir }) => {
+        await writePackageArchive({
+          ext,
+          workDir,
+          archivePath,
+          fileName: "hello.txt",
+          content: "hi",
+        });
+        await extractArchive({
+          archivePath,
+          destDir: extractDir,
+          timeoutMs: ARCHIVE_EXTRACT_TIMEOUT_MS,
+        });
+        const rootDir = await resolvePackedRootDir(extractDir);
+        const content = await fs.readFile(path.join(rootDir, "hello.txt"), "utf-8");
+        expect(content).toBe("hi");
       });
-      await extractArchive({
-        archivePath,
-        destDir: extractDir,
-        timeoutMs: ARCHIVE_EXTRACT_TIMEOUT_MS,
-      });
-      const rootDir = await resolvePackedRootDir(extractDir);
-      const content = await fs.readFile(path.join(rootDir, "hello.txt"), "utf-8");
-      expect(content).toBe("hi");
-    });
-  });
+    },
+  );
 
   it.each([{ ext: "zip" as const }, { ext: "tar" as const }])(
     "rejects $ext extraction when destination dir is a symlink",

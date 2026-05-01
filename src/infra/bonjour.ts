@@ -114,7 +114,9 @@ function handleCiaoUnhandledRejection(reason: unknown): boolean {
 }
 
 function shouldSuppressCiaoConsoleLog(args: unknown[]): boolean {
-  return args.some((arg) => typeof arg === "string" && arg.includes(CIAO_SELF_PROBE_RETRY_FRAGMENT));
+  return args.some(
+    (arg) => typeof arg === "string" && arg.includes(CIAO_SELF_PROBE_RETRY_FRAGMENT),
+  );
 }
 
 function installCiaoConsoleNoiseFilter(): () => void {
@@ -211,7 +213,9 @@ export async function startGatewayBonjourAdvertiser(
       });
 
       const cleanupUnhandledRejection =
-        services.length > 0 ? registerUnhandledRejectionHandler(handleCiaoUnhandledRejection) : undefined;
+        services.length > 0
+          ? registerUnhandledRejectionHandler(handleCiaoUnhandledRejection)
+          : undefined;
 
       return { responder, services, cleanupUnhandledRejection };
     }
@@ -259,7 +263,9 @@ export async function startGatewayBonjourAdvertiser(
           });
           svc.on("hostname-change", (nextHostname: unknown) => {
             const next = typeof nextHostname === "string" ? nextHostname : String(nextHostname);
-            logWarn(`bonjour: ${label} hostname conflict resolved; newHostname=${JSON.stringify(next)}`);
+            logWarn(
+              `bonjour: ${label} hostname conflict resolved; newHostname=${JSON.stringify(next)}`,
+            );
           });
         } catch (err) {
           logDebug(`bonjour: failed to attach listeners for ${label}: ${String(err)}`);
@@ -277,10 +283,14 @@ export async function startGatewayBonjourAdvertiser(
               getLogger().info(`bonjour: advertised ${serviceSummary(label, svc)}`);
             })
             .catch((err) => {
-              logWarn(`bonjour: advertise failed (${serviceSummary(label, svc)}): ${formatBonjourError(err)}`);
+              logWarn(
+                `bonjour: advertise failed (${serviceSummary(label, svc)}): ${formatBonjourError(err)}`,
+              );
             });
         } catch (err) {
-          logWarn(`bonjour: advertise threw (${serviceSummary(label, svc)}): ${formatBonjourError(err)}`);
+          logWarn(
+            `bonjour: advertise threw (${serviceSummary(label, svc)}): ${formatBonjourError(err)}`,
+          );
         }
       }
     }
@@ -305,7 +315,9 @@ export async function startGatewayBonjourAdvertiser(
           typeof svc.serviceState === "string" ? svc.serviceState : "unknown";
         const current = stateTracker.get(label);
         const nextEnteredAt =
-          current && !isAnnouncedState(current.state) && !isAnnouncedState(nextState) ? current.sinceMs : now;
+          current && !isAnnouncedState(current.state) && !isAnnouncedState(nextState)
+            ? current.sinceMs
+            : now;
         if (!current || current.state !== nextState || current.sinceMs !== nextEnteredAt) {
           stateTracker.set(label, { state: nextState, sinceMs: nextEnteredAt });
         }
@@ -347,7 +359,11 @@ export async function startGatewayBonjourAdvertiser(
           continue;
         }
         const tracked = stateTracker.get(label);
-        if (stateUnknown !== "announced" && tracked && Date.now() - tracked.sinceMs >= STUCK_ANNOUNCING_MS) {
+        if (
+          stateUnknown !== "announced" &&
+          tracked &&
+          Date.now() - tracked.sinceMs >= STUCK_ANNOUNCING_MS
+        ) {
           void recreateAdvertiser(
             `service stuck in ${stateUnknown} for ${Date.now() - tracked.sinceMs}ms (${serviceSummary(label, svc)})`,
           );
@@ -375,10 +391,14 @@ export async function startGatewayBonjourAdvertiser(
         );
         try {
           void svc.advertise().catch((err) => {
-            logWarn(`bonjour: watchdog advertise failed (${serviceSummary(label, svc)}): ${formatBonjourError(err)}`);
+            logWarn(
+              `bonjour: watchdog advertise failed (${serviceSummary(label, svc)}): ${formatBonjourError(err)}`,
+            );
           });
         } catch (err) {
-          logWarn(`bonjour: watchdog advertise threw (${serviceSummary(label, svc)}): ${formatBonjourError(err)}`);
+          logWarn(
+            `bonjour: watchdog advertise threw (${serviceSummary(label, svc)}): ${formatBonjourError(err)}`,
+          );
         }
       }
     }, WATCHDOG_INTERVAL_MS);

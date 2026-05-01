@@ -122,13 +122,18 @@ function stripNullVariants(variants: unknown[]): {
 
 type SchemaDefs = Map<string, unknown>;
 
-function extendSchemaDefs(defs: SchemaDefs | undefined, schema: Record<string, unknown>): SchemaDefs | undefined {
+function extendSchemaDefs(
+  defs: SchemaDefs | undefined,
+  schema: Record<string, unknown>,
+): SchemaDefs | undefined {
   const defsEntry =
     schema.$defs && typeof schema.$defs === "object" && !Array.isArray(schema.$defs)
       ? (schema.$defs as Record<string, unknown>)
       : undefined;
   const legacyDefsEntry =
-    schema.definitions && typeof schema.definitions === "object" && !Array.isArray(schema.definitions)
+    schema.definitions &&
+    typeof schema.definitions === "object" &&
+    !Array.isArray(schema.definitions)
       ? (schema.definitions as Record<string, unknown>)
       : undefined;
 
@@ -248,10 +253,14 @@ function cleanSchemaForGeminiWithDefs(
   const hasAnyOf = "anyOf" in obj && Array.isArray(obj.anyOf);
   const hasOneOf = "oneOf" in obj && Array.isArray(obj.oneOf);
   let cleanedAnyOf = hasAnyOf
-    ? (obj.anyOf as unknown[]).map((variant) => cleanSchemaForGeminiWithDefs(variant, nextDefs, refStack))
+    ? (obj.anyOf as unknown[]).map((variant) =>
+        cleanSchemaForGeminiWithDefs(variant, nextDefs, refStack),
+      )
     : undefined;
   let cleanedOneOf = hasOneOf
-    ? (obj.oneOf as unknown[]).map((variant) => cleanSchemaForGeminiWithDefs(variant, nextDefs, refStack))
+    ? (obj.oneOf as unknown[]).map((variant) =>
+        cleanSchemaForGeminiWithDefs(variant, nextDefs, refStack),
+      )
     : undefined;
 
   if (hasAnyOf) {
@@ -290,7 +299,11 @@ function cleanSchemaForGeminiWithDefs(
     if (key === "type" && (hasAnyOf || hasOneOf)) {
       continue;
     }
-    if (key === "type" && Array.isArray(value) && value.every((entry) => typeof entry === "string")) {
+    if (
+      key === "type" &&
+      Array.isArray(value) &&
+      value.every((entry) => typeof entry === "string")
+    ) {
       const types = value.filter((entry) => entry !== "null");
       cleaned.type = types.length === 1 ? types[0] : types;
       continue;
@@ -300,7 +313,10 @@ function cleanSchemaForGeminiWithDefs(
       if (value && typeof value === "object" && !Array.isArray(value)) {
         const props = value as Record<string, unknown>;
         cleaned[key] = Object.fromEntries(
-          Object.entries(props).map(([k, v]) => [k, cleanSchemaForGeminiWithDefs(v, nextDefs, refStack)]),
+          Object.entries(props).map(([k, v]) => [
+            k,
+            cleanSchemaForGeminiWithDefs(v, nextDefs, refStack),
+          ]),
         );
       } else {
         // Guard malformed schemas (e.g. properties: null) that can trigger
@@ -309,18 +325,26 @@ function cleanSchemaForGeminiWithDefs(
       }
     } else if (key === "items" && value) {
       if (Array.isArray(value)) {
-        cleaned[key] = value.map((entry) => cleanSchemaForGeminiWithDefs(entry, nextDefs, refStack));
+        cleaned[key] = value.map((entry) =>
+          cleanSchemaForGeminiWithDefs(entry, nextDefs, refStack),
+        );
       } else if (typeof value === "object") {
         cleaned[key] = cleanSchemaForGeminiWithDefs(value, nextDefs, refStack);
       } else {
         cleaned[key] = value;
       }
     } else if (key === "anyOf" && Array.isArray(value)) {
-      cleaned[key] = cleanedAnyOf ?? value.map((variant) => cleanSchemaForGeminiWithDefs(variant, nextDefs, refStack));
+      cleaned[key] =
+        cleanedAnyOf ??
+        value.map((variant) => cleanSchemaForGeminiWithDefs(variant, nextDefs, refStack));
     } else if (key === "oneOf" && Array.isArray(value)) {
-      cleaned[key] = cleanedOneOf ?? value.map((variant) => cleanSchemaForGeminiWithDefs(variant, nextDefs, refStack));
+      cleaned[key] =
+        cleanedOneOf ??
+        value.map((variant) => cleanSchemaForGeminiWithDefs(variant, nextDefs, refStack));
     } else if (key === "allOf" && Array.isArray(value)) {
-      cleaned[key] = value.map((variant) => cleanSchemaForGeminiWithDefs(variant, nextDefs, refStack));
+      cleaned[key] = value.map((variant) =>
+        cleanSchemaForGeminiWithDefs(variant, nextDefs, refStack),
+      );
     } else {
       cleaned[key] = value;
     }
@@ -351,8 +375,13 @@ function cleanSchemaForGeminiWithDefs(
  * by `simplifyUnionVariants`. Picks a representative type so the schema is
  * accepted by Google's restricted JSON Schema validation.
  */
-function flattenUnionFallback(obj: Record<string, unknown>, variants: unknown[]): Record<string, unknown> | undefined {
-  const objects = variants.filter((v): v is Record<string, unknown> => !!v && typeof v === "object");
+function flattenUnionFallback(
+  obj: Record<string, unknown>,
+  variants: unknown[],
+): Record<string, unknown> | undefined {
+  const objects = variants.filter(
+    (v): v is Record<string, unknown> => !!v && typeof v === "object",
+  );
   if (objects.length === 0) {
     return undefined;
   }

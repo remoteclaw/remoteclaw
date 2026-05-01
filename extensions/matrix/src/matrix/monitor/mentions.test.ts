@@ -5,7 +5,8 @@ vi.mock("../../runtime.js", () => ({
   getMatrixRuntime: () => ({
     channel: {
       mentions: {
-        matchesMentionPatterns: (text: string, patterns: RegExp[]) => patterns.some((p) => p.test(text)),
+        matchesMentionPatterns: (text: string, patterns: RegExp[]) =>
+          patterns.some((p) => p.test(text)),
       },
     },
   }),

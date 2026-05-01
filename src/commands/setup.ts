@@ -24,9 +24,14 @@ async function readConfigFileRaw(configPath: string): Promise<{
   }
 }
 
-export async function setupCommand(opts?: { workspace?: string }, runtime: RuntimeEnv = defaultRuntime) {
+export async function setupCommand(
+  opts?: { workspace?: string },
+  runtime: RuntimeEnv = defaultRuntime,
+) {
   const desiredWorkspace =
-    typeof opts?.workspace === "string" && opts.workspace.trim() ? opts.workspace.trim() : undefined;
+    typeof opts?.workspace === "string" && opts.workspace.trim()
+      ? opts.workspace.trim()
+      : undefined;
 
   const io = createConfigIO();
   const configPath = io.configPath;
@@ -51,7 +56,11 @@ export async function setupCommand(opts?: { workspace?: string }, runtime: Runti
     },
   };
 
-  if (!existingRaw.exists || defaults.workspace !== workspace || cfg.gateway?.mode !== next.gateway?.mode) {
+  if (
+    !existingRaw.exists ||
+    defaults.workspace !== workspace ||
+    cfg.gateway?.mode !== next.gateway?.mode
+  ) {
     await writeConfigFile(next);
     if (!existingRaw.exists) {
       runtime.log(`Wrote ${formatConfigPath(configPath)}`);

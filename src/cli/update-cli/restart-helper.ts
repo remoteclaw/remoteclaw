@@ -110,7 +110,8 @@ rm -f "$0"
       if (!isBatchSafe(taskName)) {
         return null;
       }
-      const port = Number.isFinite(gatewayPort) && gatewayPort > 0 ? gatewayPort : DEFAULT_GATEWAY_PORT;
+      const port =
+        Number.isFinite(gatewayPort) && gatewayPort > 0 ? gatewayPort : DEFAULT_GATEWAY_PORT;
       filename = `remoteclaw-restart-${timestamp}.bat`;
       scriptContent = `@echo off
 REM Standalone restart script — survives parent process termination.

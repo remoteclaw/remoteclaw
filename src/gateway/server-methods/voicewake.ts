@@ -15,7 +15,11 @@ export const voicewakeHandlers: GatewayRequestHandlers = {
   },
   "voicewake.set": async ({ params, respond, context }) => {
     if (!Array.isArray(params.triggers)) {
-      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "voicewake.set requires triggers: string[]"));
+      respond(
+        false,
+        undefined,
+        errorShape(ErrorCodes.INVALID_REQUEST, "voicewake.set requires triggers: string[]"),
+      );
       return;
     }
     try {

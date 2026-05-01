@@ -19,7 +19,11 @@ const mocks = vi.hoisted(() => ({
 const { callGatewayCli, gatewayStatusCommand, defaultRuntime } = mocks;
 
 vi.mock("../cli-utils.js", () => ({
-  runCommandWithRuntime: async (_runtime: unknown, action: () => Promise<void>, onError: (err: unknown) => void) => {
+  runCommandWithRuntime: async (
+    _runtime: unknown,
+    action: () => Promise<void>,
+    onError: (err: unknown) => void,
+  ) => {
     try {
       await action();
     } catch (err) {
@@ -34,7 +38,8 @@ vi.mock("../../runtime.js", async (importOriginal) => ({
 }));
 
 vi.mock("../../commands/gateway-status.js", () => ({
-  gatewayStatusCommand: (opts: unknown, runtime: unknown) => mocks.gatewayStatusCommand(opts, runtime),
+  gatewayStatusCommand: (opts: unknown, runtime: unknown) =>
+    mocks.gatewayStatusCommand(opts, runtime),
 }));
 
 vi.mock("./call.js", () => ({
@@ -46,12 +51,15 @@ vi.mock("./call.js", () => ({
       .option("--timeout <ms>", "Timeout in ms", "10000")
       .option("--expect-final", "Wait for final response (agent)", false)
       .option("--json", "Output JSON", false),
-  callGatewayCli: (method: string, opts: unknown, params?: unknown) => mocks.callGatewayCli(method, opts, params),
+  callGatewayCli: (method: string, opts: unknown, params?: unknown) =>
+    mocks.callGatewayCli(method, opts, params),
 }));
 
 vi.mock("./run.js", () => ({
   addGatewayRunCommand: (cmd: Command) =>
-    cmd.option("--token <token>", "Gateway token").option("--password <password>", "Gateway password"),
+    cmd
+      .option("--token <token>", "Gateway token")
+      .option("--password <password>", "Gateway password"),
 }));
 
 vi.mock("../daemon-cli.js", () => ({

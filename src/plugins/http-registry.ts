@@ -46,7 +46,9 @@ export function registerPluginHttpRoute(params: {
     );
     return () => {};
   }
-  const existingIndex = routes.findIndex((entry) => entry.path === normalizedPath && entry.match === routeMatch);
+  const existingIndex = routes.findIndex(
+    (entry) => entry.path === normalizedPath && entry.match === routeMatch,
+  );
   if (existingIndex >= 0) {
     const existing = routes[existingIndex];
     if (!existing) {
@@ -65,7 +67,9 @@ export function registerPluginHttpRoute(params: {
       return () => {};
     }
     const pluginHint = params.pluginId ? ` (${params.pluginId})` : "";
-    params.log?.(`plugin: replacing stale webhook path ${normalizedPath} (${routeMatch})${suffix}${pluginHint}`);
+    params.log?.(
+      `plugin: replacing stale webhook path ${normalizedPath} (${routeMatch})${suffix}${pluginHint}`,
+    );
     routes.splice(existingIndex, 1);
   }
 

@@ -117,7 +117,9 @@ export function mockExtractMessageContent(message: MessageContentInput): Message
     return normalized;
   }
   const candidate = (normalized as MessageLike)[contentType];
-  return (candidate && typeof candidate === "object" ? candidate : normalized) as MessageContentOutput;
+  return (
+    candidate && typeof candidate === "object" ? candidate : normalized
+  ) as MessageContentOutput;
 }
 
 export function mockIsJidGroup(jid: string | undefined | null): boolean {
@@ -147,7 +149,9 @@ export function createMockBaileys(): {
 
   const mod: MockBaileysModule = {
     DisconnectReason: { loggedOut: 401 },
-    extractMessageContent: vi.fn<ExtractMessageContentFn>((message) => mockExtractMessageContent(message)),
+    extractMessageContent: vi.fn<ExtractMessageContentFn>((message) =>
+      mockExtractMessageContent(message),
+    ),
     fetchLatestBaileysVersion: vi
       .fn<FetchLatestBaileysVersionFn>()
       .mockResolvedValue({ version: [1, 2, 3], isLatest: true }),
@@ -155,7 +159,9 @@ export function createMockBaileys(): {
     isJidGroup: vi.fn<IsJidGroupFn>((jid) => mockIsJidGroup(jid)),
     makeCacheableSignalKeyStore: vi.fn<MakeCacheableSignalKeyStoreFn>((keys) => keys),
     makeWASocket,
-    normalizeMessageContent: vi.fn<NormalizeMessageContentFn>((message) => mockNormalizeMessageContent(message)),
+    normalizeMessageContent: vi.fn<NormalizeMessageContentFn>((message) =>
+      mockNormalizeMessageContent(message),
+    ),
     useMultiFileAuthState: vi.fn<UseMultiFileAuthStateFn>(async () => ({
       state: { creds: {}, keys: {} } as Awaited<ReturnType<UseMultiFileAuthStateFn>>["state"],
       saveCreds: vi.fn(),

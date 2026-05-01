@@ -56,7 +56,10 @@ export function writeStore(data: unknown, prefix = "sessions"): string {
 }
 
 export async function runSessionsJson<T>(
-  run: (opts: { json?: boolean; store?: string; active?: string }, runtime: RuntimeEnv) => Promise<void>,
+  run: (
+    opts: { json?: boolean; store?: string; active?: string },
+    runtime: RuntimeEnv,
+  ) => Promise<void>,
   store: string,
   options?: {
     active?: string;

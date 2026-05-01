@@ -60,6 +60,8 @@ export function createCliRuntime(provider: string): AgentRuntime {
       validateExecutable(normalized);
       return new OpenCodeCliRuntime();
     default:
-      throw new Error(`Unknown runtime provider "${provider}". Supported providers: ${SUPPORTED_PROVIDERS.join(", ")}`);
+      throw new Error(
+        `Unknown runtime provider "${provider}". Supported providers: ${SUPPORTED_PROVIDERS.join(", ")}`,
+      );
   }
 }

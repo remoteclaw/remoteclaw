@@ -134,7 +134,9 @@ describe("DiscordMessageListener", () => {
 
     await expect(listener.handle(fakeEvent("ch-1"), {} as never)).resolves.toBeUndefined();
     await flushAsyncWork();
-    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining("discord handler failed: Error: boom"));
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.stringContaining("discord handler failed: Error: boom"),
+    );
   });
 
   it("calls onEvent callback for each message", async () => {

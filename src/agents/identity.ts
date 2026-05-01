@@ -20,7 +20,10 @@ export const MODULE_ATTESTATIONS = {
 
 const DEFAULT_ACK_REACTION = "👀";
 
-export function resolveAgentIdentity(cfg: RemoteClawConfig, agentId: string): IdentityConfig | undefined {
+export function resolveAgentIdentity(
+  cfg: RemoteClawConfig,
+  agentId: string,
+): IdentityConfig | undefined {
   return resolveAgentConfig(cfg, agentId)?.identity;
 }
 
@@ -59,7 +62,10 @@ export function resolveAckReaction(
   return emoji || DEFAULT_ACK_REACTION;
 }
 
-export function resolveIdentityNamePrefix(cfg: RemoteClawConfig, agentId: string): string | undefined {
+export function resolveIdentityNamePrefix(
+  cfg: RemoteClawConfig,
+  agentId: string,
+): string | undefined {
   const name = resolveAgentIdentity(cfg, agentId)?.name?.trim();
   if (!name) {
     return undefined;
@@ -91,10 +97,15 @@ export function resolveMessagePrefix(
 }
 
 /** Helper to extract a channel config value by dynamic key. */
-function getChannelConfig(cfg: RemoteClawConfig, channel: string): Record<string, unknown> | undefined {
+function getChannelConfig(
+  cfg: RemoteClawConfig,
+  channel: string,
+): Record<string, unknown> | undefined {
   const channels = cfg.channels as Record<string, unknown> | undefined;
   const value = channels?.[channel];
-  return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : undefined;
+  return typeof value === "object" && value !== null
+    ? (value as Record<string, unknown>)
+    : undefined;
 }
 
 export function resolveResponsePrefix(
@@ -160,7 +171,10 @@ export function resolveEffectiveMessagesConfig(
   };
 }
 
-export function resolveHumanDelayConfig(cfg: RemoteClawConfig, agentId: string): HumanDelayConfig | undefined {
+export function resolveHumanDelayConfig(
+  cfg: RemoteClawConfig,
+  agentId: string,
+): HumanDelayConfig | undefined {
   const defaults = cfg.agents?.defaults?.humanDelay;
   const overrides = resolveAgentConfig(cfg, agentId)?.humanDelay;
   if (!defaults && !overrides) {

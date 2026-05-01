@@ -3,16 +3,29 @@ import path from "node:path";
 import { fileExists, readJsonFile, resolveArchiveKind } from "../infra/archive.js";
 import { writeFileFromPathWithinRoot } from "../infra/fs-safe.js";
 import { resolveExistingInstallPath, withExtractedArchiveRoot } from "../infra/install-flow.js";
-import { resolveInstallModeOptions, resolveTimedInstallModeOptions } from "../infra/install-mode-options.js";
+import {
+  resolveInstallModeOptions,
+  resolveTimedInstallModeOptions,
+} from "../infra/install-mode-options.js";
 import { installPackageDir } from "../infra/install-package-dir.js";
-import { resolveSafeInstallDir, safeDirName, unscopedPackageName } from "../infra/install-safe-path.js";
+import {
+  resolveSafeInstallDir,
+  safeDirName,
+  unscopedPackageName,
+} from "../infra/install-safe-path.js";
 import {
   type NpmIntegrityDrift,
   type NpmSpecResolution,
   resolveArchiveSourcePath,
 } from "../infra/install-source-utils.js";
-import { ensureInstallTargetAvailable, resolveCanonicalInstallTarget } from "../infra/install-target.js";
-import { finalizeNpmSpecArchiveInstall, installFromNpmSpecArchiveWithInstaller } from "../infra/npm-pack-install.js";
+import {
+  ensureInstallTargetAvailable,
+  resolveCanonicalInstallTarget,
+} from "../infra/install-target.js";
+import {
+  finalizeNpmSpecArchiveInstall,
+  installFromNpmSpecArchiveWithInstaller,
+} from "../infra/npm-pack-install.js";
 import { validateRegistryNpmSpec } from "../infra/npm-registry-spec.js";
 import { extensionUsesSkippedScannerPath, isPathInside } from "../security/scan-paths.js";
 import * as skillScanner from "../security/skill-scanner.js";
@@ -43,7 +56,8 @@ export const PLUGIN_INSTALL_ERROR_CODE = {
   PLUGIN_ID_MISMATCH: "plugin_id_mismatch",
 } as const;
 
-export type PluginInstallErrorCode = (typeof PLUGIN_INSTALL_ERROR_CODE)[keyof typeof PLUGIN_INSTALL_ERROR_CODE];
+export type PluginInstallErrorCode =
+  (typeof PLUGIN_INSTALL_ERROR_CODE)[keyof typeof PLUGIN_INSTALL_ERROR_CODE];
 
 export type InstallPluginResult =
   | {
@@ -142,9 +156,14 @@ type PackageInstallCommonParams = {
   expectedPluginId?: string;
 };
 
-type FileInstallCommonParams = Pick<PackageInstallCommonParams, "extensionsDir" | "logger" | "mode" | "dryRun">;
+type FileInstallCommonParams = Pick<
+  PackageInstallCommonParams,
+  "extensionsDir" | "logger" | "mode" | "dryRun"
+>;
 
-function pickPackageInstallCommonParams(params: PackageInstallCommonParams): PackageInstallCommonParams {
+function pickPackageInstallCommonParams(
+  params: PackageInstallCommonParams,
+): PackageInstallCommonParams {
   return {
     extensionsDir: params.extensionsDir,
     timeoutMs: params.timeoutMs,
@@ -165,7 +184,9 @@ function pickFileInstallCommonParams(params: FileInstallCommonParams): FileInsta
 }
 
 export function resolvePluginInstallDir(pluginId: string, extensionsDir?: string): string {
-  const extensionsBase = extensionsDir ? resolveUserPath(extensionsDir) : path.join(CONFIG_DIR, "extensions");
+  const extensionsBase = extensionsDir
+    ? resolveUserPath(extensionsDir)
+    : path.join(CONFIG_DIR, "extensions");
   const pluginIdError = validatePluginId(pluginId);
   if (pluginIdError) {
     throw new Error(pluginIdError);
@@ -221,7 +242,9 @@ async function installPluginFromPackageDir(
   // uses the manifest id as the authoritative key, so the config entry must match it.
   const ocManifestResult = loadPluginManifest(params.packageDir);
   const manifestPluginId =
-    ocManifestResult.ok && ocManifestResult.manifest.id ? unscopedPackageName(ocManifestResult.manifest.id) : undefined;
+    ocManifestResult.ok && ocManifestResult.manifest.id
+      ? unscopedPackageName(ocManifestResult.manifest.id)
+      : undefined;
 
   const pluginId = manifestPluginId ?? npmPluginId;
   const pluginIdError = validatePluginId(pluginId);
@@ -268,7 +291,9 @@ async function installPluginFromPackageDir(
         .filter((f) => f.severity === "critical")
         .map((f) => `${f.message} (${f.file}:${f.line})`)
         .join("; ");
-      logger.warn?.(`WARNING: Plugin "${pluginId}" contains dangerous code patterns: ${criticalDetails}`);
+      logger.warn?.(
+        `WARNING: Plugin "${pluginId}" contains dangerous code patterns: ${criticalDetails}`,
+      );
     } else if (scanSummary.warn > 0) {
       logger.warn?.(
         `Plugin "${pluginId}" has ${scanSummary.warn} suspicious code pattern(s). Run "remoteclaw security audit --deep" for details.`,

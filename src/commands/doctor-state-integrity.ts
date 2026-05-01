@@ -21,7 +21,10 @@ import { note } from "../terminal/note.js";
 import { shortenHomePath } from "../utils.js";
 
 type DoctorPrompterLike = {
-  confirmSkipInNonInteractive: (params: { message: string; initialValue?: boolean }) => Promise<boolean>;
+  confirmSkipInNonInteractive: (params: {
+    message: string;
+    initialValue?: boolean;
+  }) => Promise<boolean>;
 };
 
 function countLabel(count: number, singular: string, plural = `${singular}s`): string {
@@ -116,7 +119,8 @@ function countJsonlLines(filePath: string): number {
 
 function findOtherStateDirs(stateDir: string): string[] {
   const resolvedState = path.resolve(stateDir);
-  const roots = process.platform === "darwin" ? ["/Users"] : process.platform === "linux" ? ["/home"] : [];
+  const roots =
+    process.platform === "darwin" ? ["/Users"] : process.platform === "linux" ? ["/home"] : [];
   const found: string[] = [];
   for (const root of roots) {
     let entries: fs.Dirent[] = [];
@@ -153,7 +157,10 @@ function isPathUnderRoot(targetPath: string, rootPath: string): boolean {
   if (normalizedRoot === rootToken) {
     return normalizedTarget.startsWith(rootToken);
   }
-  return normalizedTarget === normalizedRoot || normalizedTarget.startsWith(`${normalizedRoot}${path.sep}`);
+  return (
+    normalizedTarget === normalizedRoot ||
+    normalizedTarget.startsWith(`${normalizedRoot}${path.sep}`)
+  );
 }
 
 function tryResolveRealPath(targetPath: string): string | null {
@@ -165,7 +172,9 @@ function tryResolveRealPath(targetPath: string): string | null {
 }
 
 function decodeMountInfoPath(value: string): string {
-  return value.replace(/\\([0-7]{3})/g, (_, octal: string) => String.fromCharCode(Number.parseInt(octal, 8)));
+  return value.replace(/\\([0-7]{3})/g, (_, octal: string) =>
+    String.fromCharCode(Number.parseInt(octal, 8)),
+  );
 }
 
 function escapeControlCharsForTerminal(value: string): string {
@@ -254,7 +263,10 @@ function isPathUnderRootWithPathOps(
   if (normalizedRoot === rootToken) {
     return normalizedTarget.startsWith(rootToken);
   }
-  return normalizedTarget === normalizedRoot || normalizedTarget.startsWith(`${normalizedRoot}${pathOps.sep}`);
+  return (
+    normalizedTarget === normalizedRoot ||
+    normalizedTarget.startsWith(`${normalizedRoot}${pathOps.sep}`)
+  );
 }
 
 function findLinuxMountInfoEntryForPath(
@@ -268,7 +280,10 @@ function findLinuxMountInfoEntryForPath(
     if (!isPathUnderRootWithPathOps(normalizedTarget, entry.mountPoint, pathOps)) {
       continue;
     }
-    if (!bestMatch || pathOps.resolve(entry.mountPoint).length > pathOps.resolve(bestMatch.mountPoint).length) {
+    if (
+      !bestMatch ||
+      pathOps.resolve(entry.mountPoint).length > pathOps.resolve(bestMatch.mountPoint).length
+    ) {
       bestMatch = entry;
     }
   }
@@ -310,14 +325,20 @@ export function detectLinuxSdBackedStateDir(
     return null;
   }
 
-  const mountEntry = findLinuxMountInfoEntryForPath(resolvedStatePath, parseLinuxMountInfo(mountInfo), linuxPath);
+  const mountEntry = findLinuxMountInfoEntryForPath(
+    resolvedStatePath,
+    parseLinuxMountInfo(mountInfo),
+    linuxPath,
+  );
   if (!mountEntry) {
     return null;
   }
 
   const sourceCandidates = [mountEntry.source];
   if (mountEntry.source.startsWith("/dev/")) {
-    const resolvedDevicePath = (deps?.resolveDeviceRealPath ?? tryResolveRealPath)(mountEntry.source);
+    const resolvedDevicePath = (deps?.resolveDeviceRealPath ?? tryResolveRealPath)(
+      mountEntry.source,
+    );
     if (resolvedDevicePath) {
       sourceCandidates.push(linuxPath.resolve(resolvedDevicePath));
     }
@@ -339,7 +360,9 @@ export function formatLinuxSdBackedStateDirWarning(
   linuxSdBackedStateDir: LinuxSdBackedStateDir,
 ): string {
   const displayMountPoint =
-    linuxSdBackedStateDir.mountPoint === "/" ? "/" : shortenHomePath(linuxSdBackedStateDir.mountPoint);
+    linuxSdBackedStateDir.mountPoint === "/"
+      ? "/"
+      : shortenHomePath(linuxSdBackedStateDir.mountPoint);
   const safeSource = escapeControlCharsForTerminal(linuxSdBackedStateDir.source);
   const safeFsType = escapeControlCharsForTerminal(linuxSdBackedStateDir.fsType);
   const safeMountPoint = escapeControlCharsForTerminal(displayMountPoint);
@@ -457,7 +480,11 @@ function shouldRequireOAuthDir(cfg: RemoteClawConfig, env: NodeJS.ProcessEnv): b
   return false;
 }
 
-export async function noteStateIntegrity(cfg: RemoteClawConfig, prompter: DoctorPrompterLike, configPath?: string) {
+export async function noteStateIntegrity(
+  cfg: RemoteClawConfig,
+  prompter: DoctorPrompterLike,
+  configPath?: string,
+) {
   const warnings: string[] = [];
   const changes: string[] = [];
   const env = process.env;
@@ -499,7 +526,9 @@ export async function noteStateIntegrity(cfg: RemoteClawConfig, prompter: Doctor
       `- CRITICAL: state directory missing (${displayStateDir}). Sessions, credentials, logs, and config are stored there.`,
     );
     if (cfg.gateway?.mode === "remote") {
-      warnings.push("- Gateway is in remote mode; run doctor on the remote host where the gateway runs.");
+      warnings.push(
+        "- Gateway is in remote mode; run doctor on the remote host where the gateway runs.",
+      );
     }
     const create = await prompter.confirmSkipInNonInteractive({
       message: `Create ${displayStateDir} now?`,
@@ -548,7 +577,9 @@ export async function noteStateIntegrity(cfg: RemoteClawConfig, prompter: Doctor
       const resolvedDir = isDirSymlink ? fs.realpathSync(stateDir) : stateDir;
       const isImmutableStore = resolvedDir.startsWith("/nix/store/");
       if (!isImmutableStore && (stat.mode & 0o077) !== 0) {
-        warnings.push(`- State directory permissions are too open (${displayStateDir}). Recommend chmod 700.`);
+        warnings.push(
+          `- State directory permissions are too open (${displayStateDir}). Recommend chmod 700.`,
+        );
         const tighten = await prompter.confirmSkipInNonInteractive({
           message: `Tighten permissions on ${displayStateDir} to 700?`,
           initialValue: true,
@@ -586,7 +617,9 @@ export async function noteStateIntegrity(cfg: RemoteClawConfig, prompter: Doctor
         }
       }
     } catch (err) {
-      warnings.push(`- Failed to read config permissions (${displayConfigPath ?? configPath}): ${String(err)}`);
+      warnings.push(
+        `- Failed to read config permissions (${displayConfigPath ?? configPath}): ${String(err)}`,
+      );
     }
   }
 
@@ -710,7 +743,11 @@ export async function noteStateIntegrity(cfg: RemoteClawConfig, prompter: Doctor
     const mainKey = resolveMainSessionKey(cfg);
     const mainEntry = store[mainKey];
     if (mainEntry?.sessionId) {
-      const transcriptPath = resolveSessionFilePath(mainEntry.sessionId, mainEntry, sessionPathOpts);
+      const transcriptPath = resolveSessionFilePath(
+        mainEntry.sessionId,
+        mainEntry,
+        sessionPathOpts,
+      );
       if (!existsFile(transcriptPath)) {
         warnings.push(
           `- Main session transcript missing (${shortenHomePath(transcriptPath)}). History will appear to reset.`,
@@ -718,7 +755,9 @@ export async function noteStateIntegrity(cfg: RemoteClawConfig, prompter: Doctor
       } else {
         const lineCount = countJsonlLines(transcriptPath);
         if (lineCount <= 1) {
-          warnings.push(`- Main session transcript has only ${lineCount} line. Session history may not be appending.`);
+          warnings.push(
+            `- Main session transcript has only ${lineCount} line. Session history may not be appending.`,
+          );
         }
       }
     }
@@ -731,7 +770,9 @@ export async function noteStateIntegrity(cfg: RemoteClawConfig, prompter: Doctor
         continue;
       }
       try {
-        referencedTranscriptPaths.add(path.resolve(resolveSessionFilePath(entry.sessionId, entry, sessionPathOpts)));
+        referencedTranscriptPaths.add(
+          path.resolve(resolveSessionFilePath(entry.sessionId, entry, sessionPathOpts)),
+        );
       } catch {
         // ignore invalid legacy paths
       }
@@ -765,7 +806,9 @@ export async function noteStateIntegrity(cfg: RemoteClawConfig, prompter: Doctor
             fs.renameSync(orphanPath, archivedPath);
             archived += 1;
           } catch (err) {
-            warnings.push(`- Failed to archive orphan transcript ${shortenHomePath(orphanPath)}: ${String(err)}`);
+            warnings.push(
+              `- Failed to archive orphan transcript ${shortenHomePath(orphanPath)}: ${String(err)}`,
+            );
           }
         }
         if (archived > 0) {

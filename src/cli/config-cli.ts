@@ -253,10 +253,15 @@ function parseRequiredPath(path: string): PathSegment[] {
 }
 
 function pathEquals(path: PathSegment[], expected: PathSegment[]): boolean {
-  return path.length === expected.length && path.every((segment, index) => segment === expected[index]);
+  return (
+    path.length === expected.length && path.every((segment, index) => segment === expected[index])
+  );
 }
 
-function ensureValidOllamaProviderForApiKeySet(root: Record<string, unknown>, path: PathSegment[]): void {
+function ensureValidOllamaProviderForApiKeySet(
+  root: Record<string, unknown>,
+  path: PathSegment[],
+): void {
   if (!pathEquals(path, OLLAMA_API_KEY_PATH)) {
     return;
   }
@@ -287,7 +292,11 @@ export async function runConfigGet(opts: { path: string; json?: boolean; runtime
       runtime.log(JSON.stringify(res.value ?? null, null, 2));
       return;
     }
-    if (typeof res.value === "string" || typeof res.value === "number" || typeof res.value === "boolean") {
+    if (
+      typeof res.value === "string" ||
+      typeof res.value === "number" ||
+      typeof res.value === "boolean"
+    ) {
       runtime.log(String(res.value));
       return;
     }
@@ -391,7 +400,8 @@ export function registerConfigCli(program: Command) {
     )
     .addHelpText(
       "after",
-      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/config", "docs.remoteclaw.org/cli/config")}\n`,
+      () =>
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/config", "docs.remoteclaw.org/cli/config")}\n`,
     )
     .option(
       "--section <section>",

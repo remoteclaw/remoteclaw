@@ -1,4 +1,8 @@
-import type { ChannelAccountSnapshot, ChannelPlugin, RemoteClawConfig } from "remoteclaw/plugin-sdk/bluebubbles";
+import type {
+  ChannelAccountSnapshot,
+  ChannelPlugin,
+  RemoteClawConfig,
+} from "remoteclaw/plugin-sdk/bluebubbles";
 import {
   applyAccountNameToChannelSection,
   buildChannelConfigSchema,

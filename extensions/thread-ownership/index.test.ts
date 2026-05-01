@@ -112,7 +112,9 @@ describe("thread-ownership plugin", () => {
       const result = await sendSlackThreadMessage();
 
       expect(result).toBeUndefined();
-      expect(api.logger.warn).toHaveBeenCalledWith(expect.stringContaining("ownership check failed"));
+      expect(api.logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining("ownership check failed"),
+      );
     });
   });
 

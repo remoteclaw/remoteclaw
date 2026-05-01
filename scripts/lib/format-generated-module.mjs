@@ -17,7 +17,9 @@ export function formatGeneratedModule(source, { repoRoot, outputPath, errorLabel
 
   try {
     fs.writeFileSync(tempOutputPath, source, "utf8");
-    const args = useDirectFormatter ? ["--write", tempOutputPath] : ["exec", "oxfmt", "--write", tempOutputPath];
+    const args = useDirectFormatter
+      ? ["--write", tempOutputPath]
+      : ["exec", "oxfmt", "--write", tempOutputPath];
     const formatter = spawnSync(command, args, {
       cwd: resolvedRepoRoot,
       encoding: "utf8",
@@ -26,7 +28,10 @@ export function formatGeneratedModule(source, { repoRoot, outputPath, errorLabel
     });
     if (formatter.status !== 0) {
       const details =
-        formatter.stderr?.trim() || formatter.stdout?.trim() || formatter.error?.message || "unknown formatter failure";
+        formatter.stderr?.trim() ||
+        formatter.stdout?.trim() ||
+        formatter.error?.message ||
+        "unknown formatter failure";
       throw new Error(`failed to format generated ${errorLabel}: ${details}`);
     }
     return fs.readFileSync(tempOutputPath, "utf8");

@@ -84,7 +84,8 @@ const withRootMountedControlUiServer = (params: {
     run: params.run,
   });
 
-const withPluginGatewayServer = (params: Parameters<typeof withGatewayServer>[0]) => withGatewayServer(params);
+const withPluginGatewayServer = (params: Parameters<typeof withGatewayServer>[0]) =>
+  withGatewayServer(params);
 
 const PROBE_CASES = [
   { path: "/health", status: "live" },
@@ -97,7 +98,9 @@ async function expectProbeRoutesHealthy(server: Parameters<typeof sendRequest>[0
   for (const probeCase of PROBE_CASES) {
     const response = await sendRequest(server, { path: probeCase.path });
     expect(response.res.statusCode, probeCase.path).toBe(200);
-    expect(response.getBody(), probeCase.path).toBe(JSON.stringify({ ok: true, status: probeCase.status }));
+    expect(response.getBody(), probeCase.path).toBe(
+      JSON.stringify({ ok: true, status: probeCase.status }),
+    );
   }
 }
 
@@ -114,9 +117,15 @@ describe("gateway plugin HTTP auth boundary", () => {
     await withGatewayTempConfig("remoteclaw-plugin-http-security-headers-test-", async () => {
       const withoutHsts = createTestGatewayServer({ resolvedAuth: AUTH_NONE });
       const withoutHstsResponse = await sendRequest(withoutHsts, { path: "/missing" });
-      expect(withoutHstsResponse.setHeader).toHaveBeenCalledWith("X-Content-Type-Options", "nosniff");
+      expect(withoutHstsResponse.setHeader).toHaveBeenCalledWith(
+        "X-Content-Type-Options",
+        "nosniff",
+      );
       expect(withoutHstsResponse.setHeader).toHaveBeenCalledWith("Referrer-Policy", "no-referrer");
-      expect(withoutHstsResponse.setHeader).not.toHaveBeenCalledWith("Strict-Transport-Security", expect.any(String));
+      expect(withoutHstsResponse.setHeader).not.toHaveBeenCalledWith(
+        "Strict-Transport-Security",
+        expect.any(String),
+      );
 
       const withHsts = createTestGatewayServer({
         resolvedAuth: AUTH_NONE,
@@ -202,7 +211,8 @@ describe("gateway plugin HTTP auth boundary", () => {
       overrides: {
         handlePluginRequest,
         shouldEnforcePluginGatewayAuth: (pathContext) =>
-          isProtectedPluginRoutePath(pathContext.pathname) || pathContext.pathname === "/plugin/public",
+          isProtectedPluginRoutePath(pathContext.pathname) ||
+          pathContext.pathname === "/plugin/public",
       },
       run: async (server) => {
         const unauthenticated = await sendRequest(server, {
@@ -321,7 +331,8 @@ describe("gateway plugin HTTP auth boundary", () => {
       overrides: {
         handlePluginRequest,
         shouldEnforcePluginGatewayAuth: (pathContext) =>
-          pathContext.pathname.startsWith("/api/channels") || pathContext.pathname === "/plugin/routed",
+          pathContext.pathname.startsWith("/api/channels") ||
+          pathContext.pathname === "/plugin/routed",
       },
       run: async (server) => {
         const unauthenticatedRouted = await sendRequest(server, { path: "/plugin/routed" });
@@ -556,7 +567,9 @@ describe("gateway plugin HTTP auth boundary", () => {
   });
 
   test("enforces auth before plugin handlers on encoded protected-path variants", async () => {
-    const encodedVariants = buildChannelPathFuzzCorpus().filter((variant) => variant.path.includes("%"));
+    const encodedVariants = buildChannelPathFuzzCorpus().filter((variant) =>
+      variant.path.includes("%"),
+    );
     const handlePluginRequest = vi.fn(async (_req: IncomingMessage, res: ServerResponse) => {
       res.statusCode = 200;
       res.setHeader("Content-Type", "application/json; charset=utf-8");

@@ -86,7 +86,9 @@ async function restartLoginSocket(login: ActiveLogin, runtime: RuntimeEnv) {
     return false;
   }
   login.restartAttempted = true;
-  runtime.log(info("WhatsApp asked for a restart after pairing (code 515); retrying connection once…"));
+  runtime.log(
+    info("WhatsApp asked for a restart after pairing (code 515); retrying connection once…"),
+  );
   closeSocket(login.sock);
   try {
     const sock = await createWaSocket(false, login.verbose, {
@@ -246,7 +248,9 @@ export async function waitForWebLogin(
         message: "Still waiting for the QR scan. Let me know when you’ve scanned it.",
       };
     }
-    const timeout = new Promise<"timeout">((resolve) => setTimeout(() => resolve("timeout"), remaining));
+    const timeout = new Promise<"timeout">((resolve) =>
+      setTimeout(() => resolve("timeout"), remaining),
+    );
     const result = await Promise.race([login.waitPromise.then(() => "done"), timeout]);
 
     if (result === "timeout") {

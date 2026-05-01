@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { createArmableStallWatchdog } from "./stall-watchdog.js";
 
-function createTestWatchdog(onTimeout: Parameters<typeof createArmableStallWatchdog>[0]["onTimeout"]) {
+function createTestWatchdog(
+  onTimeout: Parameters<typeof createArmableStallWatchdog>[0]["onTimeout"],
+) {
   return createArmableStallWatchdog({
     label: "test-watchdog",
     timeoutMs: 1_000,

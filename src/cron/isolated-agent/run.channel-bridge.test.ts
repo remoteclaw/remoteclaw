@@ -39,7 +39,9 @@ vi.mock("../../middleware/channel-bridge.js", async (importOriginal) => {
         capturedRuntimeEnv = opts.runtimeEnv;
         capturedGatewayUrl = opts.gatewayUrl;
         capturedGatewayToken = opts.gatewayToken;
-        capturedSessionMap = opts.sessionMap as import("../../middleware/session-map.js").SessionMap | undefined;
+        capturedSessionMap = opts.sessionMap as
+          | import("../../middleware/session-map.js").SessionMap
+          | undefined;
       }
 
       handle(message: ChannelMessage, callbacks?: unknown, abortSignal?: AbortSignal) {
@@ -50,8 +52,9 @@ vi.mock("../../middleware/channel-bridge.js", async (importOriginal) => {
 });
 
 vi.mock("../../middleware/auth-key-retry.js", () => ({
-  withAuthKeyRetry: vi.fn(async (_options: unknown, execute: (env: Record<string, string>) => Promise<unknown>) =>
-    execute({}),
+  withAuthKeyRetry: vi.fn(
+    async (_options: unknown, execute: (env: Record<string, string>) => Promise<unknown>) =>
+      execute({}),
   ),
 }));
 

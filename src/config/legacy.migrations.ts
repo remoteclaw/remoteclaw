@@ -1,4 +1,9 @@
-import { ensureRecord, getAgentsList, getRecord, type LegacyConfigMigration } from "./legacy.shared.js";
+import {
+  ensureRecord,
+  getAgentsList,
+  getRecord,
+  type LegacyConfigMigration,
+} from "./legacy.shared.js";
 
 export const LEGACY_CONFIG_MIGRATIONS: LegacyConfigMigration[] = [
   {
@@ -38,17 +43,23 @@ export const LEGACY_CONFIG_MIGRATIONS: LegacyConfigMigration[] = [
   },
   {
     id: "strip-thinking-level-fields",
-    describe: "Strip obsolete thinkingDefault, subagents.thinking, and hooks.mappings[].thinking fields (#2480)",
+    describe:
+      "Strip obsolete thinkingDefault, subagents.thinking, and hooks.mappings[].thinking fields (#2480)",
     apply(raw, changes) {
       const agents = getRecord(raw.agents);
       const defaults = agents ? getRecord(agents.defaults) : null;
       if (defaults) {
         if (Object.prototype.hasOwnProperty.call(defaults, "thinkingDefault")) {
           delete defaults.thinkingDefault;
-          changes.push("Stripped obsolete agents.defaults.thinkingDefault field — CLI runtimes own reasoning depth.");
+          changes.push(
+            "Stripped obsolete agents.defaults.thinkingDefault field — CLI runtimes own reasoning depth.",
+          );
         }
         const defaultsSubagents = getRecord(defaults.subagents);
-        if (defaultsSubagents && Object.prototype.hasOwnProperty.call(defaultsSubagents, "thinking")) {
+        if (
+          defaultsSubagents &&
+          Object.prototype.hasOwnProperty.call(defaultsSubagents, "thinking")
+        ) {
           delete defaultsSubagents.thinking;
           changes.push(
             "Stripped obsolete agents.defaults.subagents.thinking field — CLI runtimes own reasoning depth.",
@@ -69,7 +80,9 @@ export const LEGACY_CONFIG_MIGRATIONS: LegacyConfigMigration[] = [
         }
       }
       if (strippedPerAgentSubagent) {
-        changes.push("Stripped obsolete agents.list[].subagents.thinking field(s) — CLI runtimes own reasoning depth.");
+        changes.push(
+          "Stripped obsolete agents.list[].subagents.thinking field(s) — CLI runtimes own reasoning depth.",
+        );
       }
       const hooks = getRecord(raw.hooks);
       const mappings = Array.isArray(hooks?.mappings) ? hooks.mappings : [];
@@ -82,18 +95,23 @@ export const LEGACY_CONFIG_MIGRATIONS: LegacyConfigMigration[] = [
         }
       }
       if (strippedHookMapping) {
-        changes.push("Stripped obsolete hooks.mappings[].thinking field(s) — CLI runtimes own reasoning depth.");
+        changes.push(
+          "Stripped obsolete hooks.mappings[].thinking field(s) — CLI runtimes own reasoning depth.",
+        );
       }
       const gmail = getRecord(hooks?.gmail);
       if (gmail && Object.prototype.hasOwnProperty.call(gmail, "thinking")) {
         delete gmail.thinking;
-        changes.push("Stripped obsolete hooks.gmail.thinking field — CLI runtimes own reasoning depth.");
+        changes.push(
+          "Stripped obsolete hooks.gmail.thinking field — CLI runtimes own reasoning depth.",
+        );
       }
     },
   },
   {
     id: "strip-agent-params-bags",
-    describe: "Strip obsolete agents.list[].params and agents.defaults.models[<id>].params fields (#2481)",
+    describe:
+      "Strip obsolete agents.list[].params and agents.defaults.models[<id>].params fields (#2481)",
     apply(raw, changes) {
       const agents = getRecord(raw.agents);
       const agentsList = getAgentsList(agents);
@@ -177,7 +195,9 @@ export const LEGACY_CONFIG_MIGRATIONS: LegacyConfigMigration[] = [
       const model = typeof agent.model === "string" ? agent.model.trim() : undefined;
       const modelFallbacks = Array.isArray(agent.modelFallbacks) ? agent.modelFallbacks : undefined;
       const imageModel = typeof agent.imageModel === "string" ? agent.imageModel.trim() : undefined;
-      const imageModelFallbacks = Array.isArray(agent.imageModelFallbacks) ? agent.imageModelFallbacks : undefined;
+      const imageModelFallbacks = Array.isArray(agent.imageModelFallbacks)
+        ? agent.imageModelFallbacks
+        : undefined;
       const allowedModels = Array.isArray(agent.allowedModels) ? agent.allowedModels : undefined;
       const modelAliases = getRecord(agent.modelAliases);
 
@@ -191,7 +211,9 @@ export const LEGACY_CONFIG_MIGRATIONS: LegacyConfigMigration[] = [
       if (model) {
         const modelObj: Record<string, unknown> = { primary: model };
         if (modelFallbacks && modelFallbacks.length > 0) {
-          modelObj.fallbacks = modelFallbacks.filter((f: unknown) => typeof f === "string" && f.trim());
+          modelObj.fallbacks = modelFallbacks.filter(
+            (f: unknown) => typeof f === "string" && f.trim(),
+          );
         }
         defaults.model = modelObj;
       }
@@ -199,7 +221,9 @@ export const LEGACY_CONFIG_MIGRATIONS: LegacyConfigMigration[] = [
       if (imageModel) {
         const imageModelObj: Record<string, unknown> = { primary: imageModel };
         if (imageModelFallbacks && imageModelFallbacks.length > 0) {
-          imageModelObj.fallbacks = imageModelFallbacks.filter((f: unknown) => typeof f === "string" && f.trim());
+          imageModelObj.fallbacks = imageModelFallbacks.filter(
+            (f: unknown) => typeof f === "string" && f.trim(),
+          );
         }
         defaults.imageModel = imageModelObj;
       }

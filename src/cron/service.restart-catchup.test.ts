@@ -82,7 +82,10 @@ describe("CronService restart catch-up", () => {
 
     await cron.start();
 
-    expect(enqueueSystemEvent).toHaveBeenCalledWith("digest now", expect.objectContaining({ agentId: undefined }));
+    expect(enqueueSystemEvent).toHaveBeenCalledWith(
+      "digest now",
+      expect.objectContaining({ agentId: undefined }),
+    );
     expect(requestHeartbeatNow).toHaveBeenCalled();
 
     const jobs = await cron.list({ includeDisabled: true });
@@ -388,8 +391,12 @@ describe("CronService restart catch-up", () => {
 
     expect(staggeredJobs).toHaveLength(2);
     expect(staggeredJobs[0]?.state.nextRunAtMs).toBeGreaterThan(now);
-    expect(staggeredJobs[1]?.state.nextRunAtMs).toBeGreaterThan(staggeredJobs[0]?.state.nextRunAtMs ?? 0);
-    expect((staggeredJobs[1]?.state.nextRunAtMs ?? 0) - (staggeredJobs[0]?.state.nextRunAtMs ?? 0)).toBe(5_000);
+    expect(staggeredJobs[1]?.state.nextRunAtMs).toBeGreaterThan(
+      staggeredJobs[0]?.state.nextRunAtMs ?? 0,
+    );
+    expect(
+      (staggeredJobs[1]?.state.nextRunAtMs ?? 0) - (staggeredJobs[0]?.state.nextRunAtMs ?? 0),
+    ).toBe(5_000);
 
     await store.cleanup();
   });

@@ -94,10 +94,14 @@ if (
     // Respawn guard (and keep recursion bounded if something goes wrong).
     process.env.REMOTECLAW_NODE_OPTIONS_READY = "1";
     // Pass flag as a Node CLI option, not via NODE_OPTIONS (--disable-warning is disallowed in NODE_OPTIONS).
-    const child = spawn(process.execPath, [EXPERIMENTAL_WARNING_FLAG, ...process.execArgv, ...process.argv.slice(1)], {
-      stdio: "inherit",
-      env: process.env,
-    });
+    const child = spawn(
+      process.execPath,
+      [EXPERIMENTAL_WARNING_FLAG, ...process.execArgv, ...process.argv.slice(1)],
+      {
+        stdio: "inherit",
+        env: process.env,
+      },
+    );
 
     attachChildProcessBridge(child);
 

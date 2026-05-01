@@ -38,7 +38,10 @@ function extractFileNameFromMediaUrl(value: string): string | null {
   }
 }
 
-export function resolveMirroredTranscriptText(params: { text?: string; mediaUrls?: string[] }): string | null {
+export function resolveMirroredTranscriptText(params: {
+  text?: string;
+  mediaUrls?: string[];
+}): string | null {
   const mediaUrls = params.mediaUrls?.filter((url) => url && url.trim()) ?? [];
   if (mediaUrls.length > 0) {
     const names = mediaUrls
@@ -55,7 +58,10 @@ export function resolveMirroredTranscriptText(params: { text?: string; mediaUrls
   return trimmed ? trimmed : null;
 }
 
-async function ensureSessionHeader(params: { sessionFile: string; sessionId: string }): Promise<void> {
+async function ensureSessionHeader(params: {
+  sessionFile: string;
+  sessionId: string;
+}): Promise<void> {
   if (fs.existsSync(params.sessionFile)) {
     return;
   }

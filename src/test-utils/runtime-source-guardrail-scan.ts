@@ -66,8 +66,9 @@ async function readRuntimeSourceFiles(
     }
   };
 
-  const workers = Array.from({ length: Math.min(FILE_READ_CONCURRENCY, Math.max(1, absolutePaths.length)) }, () =>
-    worker(),
+  const workers = Array.from(
+    { length: Math.min(FILE_READ_CONCURRENCY, Math.max(1, absolutePaths.length)) },
+    () => worker(),
   );
   await Promise.all(workers);
   return output.filter((entry): entry is RuntimeSourceGuardrailFile => entry !== undefined);
@@ -97,7 +98,9 @@ function tryListTrackedRuntimeSourceFiles(repoRoot: string): string[] | null {
   }
 }
 
-export async function loadRuntimeSourceFilesForGuardrails(repoRoot: string): Promise<RuntimeSourceGuardrailFile[]> {
+export async function loadRuntimeSourceFilesForGuardrails(
+  repoRoot: string,
+): Promise<RuntimeSourceGuardrailFile[]> {
   let pending = runtimeSourceGuardrailCache.get(repoRoot);
   if (!pending) {
     pending = (async () => {

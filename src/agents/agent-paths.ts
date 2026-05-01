@@ -20,7 +20,8 @@ export const MODULE_ATTESTATIONS = {
 const LEGACY_DEFAULT_AGENT_DIR_NAME = "main";
 
 export function resolveRemoteClawAgentDir(agentId?: string): string {
-  const override = process.env.REMOTECLAW_AGENT_DIR?.trim() || process.env.PI_CODING_AGENT_DIR?.trim();
+  const override =
+    process.env.REMOTECLAW_AGENT_DIR?.trim() || process.env.PI_CODING_AGENT_DIR?.trim();
   if (override) {
     return resolveUserPath(override);
   }

@@ -10,7 +10,9 @@ import {
   stopWithText,
 } from "./shared.js";
 
-export async function handleSubagentsUnfocusAction(ctx: SubagentsCommandContext): Promise<CommandHandlerResult> {
+export async function handleSubagentsUnfocusAction(
+  ctx: SubagentsCommandContext,
+): Promise<CommandHandlerResult> {
   const { params } = ctx;
   const channel = resolveCommandSurfaceChannel(params);
   if (channel !== "discord" && channel !== "telegram") {
@@ -54,7 +56,8 @@ export async function handleSubagentsUnfocusAction(ctx: SubagentsCommandContext)
   }
 
   const senderId = params.command.senderId?.trim() || "";
-  const boundBy = typeof binding.metadata?.boundBy === "string" ? binding.metadata.boundBy.trim() : "";
+  const boundBy =
+    typeof binding.metadata?.boundBy === "string" ? binding.metadata.boundBy.trim() : "";
   if (boundBy && boundBy !== "system" && senderId && senderId !== boundBy) {
     return stopWithText(
       channel === "discord"
@@ -67,5 +70,7 @@ export async function handleSubagentsUnfocusAction(ctx: SubagentsCommandContext)
     bindingId: binding.bindingId,
     reason: "manual",
   });
-  return stopWithText(channel === "discord" ? "✅ Thread unfocused." : "✅ Conversation unfocused.");
+  return stopWithText(
+    channel === "discord" ? "✅ Thread unfocused." : "✅ Conversation unfocused.",
+  );
 }

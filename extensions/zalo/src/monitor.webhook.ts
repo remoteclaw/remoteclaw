@@ -36,7 +36,10 @@ export type ZaloWebhookTarget = {
   fetcher?: ZaloFetch;
 };
 
-export type ZaloWebhookProcessUpdate = (params: { update: ZaloUpdate; target: ZaloWebhookTarget }) => Promise<void>;
+export type ZaloWebhookProcessUpdate = (params: {
+  update: ZaloUpdate;
+  target: ZaloWebhookTarget;
+}) => Promise<void>;
 
 const webhookTargets = new Map<string, ZaloWebhookTarget[]>();
 const webhookRateLimiter = createFixedWindowRateLimiter({
@@ -94,12 +97,17 @@ function isReplayEvent(target: ZaloWebhookTarget, update: ZaloUpdate, nowMs: num
   return recentWebhookEvents.check(key, nowMs);
 }
 
-function recordWebhookStatus(runtime: ZaloRuntimeEnv | undefined, path: string, statusCode: number): void {
+function recordWebhookStatus(
+  runtime: ZaloRuntimeEnv | undefined,
+  path: string,
+  statusCode: number,
+): void {
   webhookAnomalyTracker.record({
     key: `${path}:${statusCode}`,
     statusCode,
     log: runtime?.log,
-    message: (count) => `[zalo] webhook anomaly path=${path} status=${statusCode} count=${String(count)}`,
+    message: (count) =>
+      `[zalo] webhook anomaly path=${path} status=${statusCode} count=${String(count)}`,
   });
 }
 
@@ -111,7 +119,10 @@ export function registerZaloWebhookTarget(
   target: ZaloWebhookTarget,
   opts?: {
     route?: RegisterWebhookPluginRouteOptions;
-  } & Pick<RegisterWebhookTargetOptions<ZaloWebhookTarget>, "onFirstPathTarget" | "onLastPathTargetRemoved">,
+  } & Pick<
+    RegisterWebhookTargetOptions<ZaloWebhookTarget>,
+    "onFirstPathTarget" | "onLastPathTargetRemoved"
+  >,
 ): () => void {
   if (opts?.route) {
     return registerWebhookTargetWithPluginRoute({

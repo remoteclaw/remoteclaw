@@ -97,7 +97,10 @@ async function noteFeishuCredentialHelp(prompter: WizardPrompter): Promise<void>
   );
 }
 
-async function promptFeishuAppId(params: { prompter: WizardPrompter; initialValue?: string }): Promise<string> {
+async function promptFeishuAppId(params: {
+  prompter: WizardPrompter;
+  initialValue?: string;
+}): Promise<string> {
   const appId = String(
     await params.prompter.text({
       message: "Enter Feishu App ID",
@@ -108,7 +111,10 @@ async function promptFeishuAppId(params: { prompter: WizardPrompter; initialValu
   return appId;
 }
 
-function setFeishuGroupPolicy(cfg: ClawdbotConfig, groupPolicy: "open" | "allowlist" | "disabled"): ClawdbotConfig {
+function setFeishuGroupPolicy(
+  cfg: ClawdbotConfig,
+  groupPolicy: "open" | "allowlist" | "disabled",
+): ClawdbotConfig {
   return setTopLevelChannelGroupPolicy({
     cfg,
     channel: "feishu",
@@ -200,7 +206,9 @@ export const feishuOnboardingAdapter: ChannelOnboardingAdapter = {
     if (!configured) {
       statusLines.push("Feishu: needs app credentials");
     } else if (probeResult?.ok) {
-      statusLines.push(`Feishu: connected as ${probeResult.botName ?? probeResult.botOpenId ?? "bot"}`);
+      statusLines.push(
+        `Feishu: connected as ${probeResult.botName ?? probeResult.botOpenId ?? "bot"}`,
+      );
     } else {
       statusLines.push("Feishu: configured (connection not verified)");
     }
@@ -220,7 +228,9 @@ export const feishuOnboardingAdapter: ChannelOnboardingAdapter = {
       allowUnresolvedSecretRef: true,
     });
     const hasConfigSecret = hasConfiguredSecretInput(feishuCfg?.appSecret);
-    const hasConfigCreds = Boolean(typeof feishuCfg?.appId === "string" && feishuCfg.appId.trim() && hasConfigSecret);
+    const hasConfigCreds = Boolean(
+      typeof feishuCfg?.appId === "string" && feishuCfg.appId.trim() && hasConfigSecret,
+    );
     const appSecretPromptState = buildSingleChannelSecretPromptState({
       accountConfigured: Boolean(resolved),
       hasConfigToken: hasConfigSecret,
@@ -264,7 +274,8 @@ export const feishuOnboardingAdapter: ChannelOnboardingAdapter = {
       appSecretProbeValue = appSecretResult.resolvedValue;
       appId = await promptFeishuAppId({
         prompter,
-        initialValue: normalizeString(feishuCfg?.appId) ?? normalizeString(process.env.FEISHU_APP_ID),
+        initialValue:
+          normalizeString(feishuCfg?.appId) ?? normalizeString(process.env.FEISHU_APP_ID),
       });
     }
 
@@ -290,16 +301,23 @@ export const feishuOnboardingAdapter: ChannelOnboardingAdapter = {
           domain: (next.channels?.feishu as FeishuConfig | undefined)?.domain,
         });
         if (probe.ok) {
-          await prompter.note(`Connected as ${probe.botName ?? probe.botOpenId ?? "bot"}`, "Feishu connection test");
+          await prompter.note(
+            `Connected as ${probe.botName ?? probe.botOpenId ?? "bot"}`,
+            "Feishu connection test",
+          );
         } else {
-          await prompter.note(`Connection failed: ${probe.error ?? "unknown error"}`, "Feishu connection test");
+          await prompter.note(
+            `Connection failed: ${probe.error ?? "unknown error"}`,
+            "Feishu connection test",
+          );
         }
       } catch (err) {
         await prompter.note(`Connection test failed: ${String(err)}`, "Feishu connection test");
       }
     }
 
-    const currentMode = (next.channels?.feishu as FeishuConfig | undefined)?.connectionMode ?? "websocket";
+    const currentMode =
+      (next.channels?.feishu as FeishuConfig | undefined)?.connectionMode ?? "websocket";
     const connectionMode = (await prompter.select({
       message: "Feishu connection mode",
       options: [
@@ -320,7 +338,8 @@ export const feishuOnboardingAdapter: ChannelOnboardingAdapter = {
     };
 
     if (connectionMode === "webhook") {
-      const currentVerificationToken = (next.channels?.feishu as FeishuConfig | undefined)?.verificationToken;
+      const currentVerificationToken = (next.channels?.feishu as FeishuConfig | undefined)
+        ?.verificationToken;
       const verificationTokenPromptState = buildSingleChannelSecretPromptState({
         accountConfigured: hasConfiguredSecretInput(currentVerificationToken),
         hasConfigToken: hasConfiguredSecretInput(currentVerificationToken),

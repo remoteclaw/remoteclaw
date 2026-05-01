@@ -3,12 +3,18 @@ import path from "node:path";
 import type { RequestPermissionRequest } from "@agentclientprotocol/sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createTrackedTempDirs } from "../test-utils/tracked-temp-dirs.js";
-import { resolveAcpClientSpawnEnv, resolveAcpClientSpawnInvocation, resolvePermissionRequest } from "./client.js";
+import {
+  resolveAcpClientSpawnEnv,
+  resolveAcpClientSpawnInvocation,
+  resolvePermissionRequest,
+} from "./client.js";
 import { extractAttachmentsFromPrompt, extractTextFromPrompt } from "./event-mapper.js";
 
 const _envVar = (...parts: string[]) => parts.join("_");
 
-function makePermissionRequest(overrides: Partial<RequestPermissionRequest> = {}): RequestPermissionRequest {
+function makePermissionRequest(
+  overrides: Partial<RequestPermissionRequest> = {},
+): RequestPermissionRequest {
   const { toolCall: toolCallOverride, options: optionsOverride, ...restOverrides } = overrides;
   const base: RequestPermissionRequest = {
     sessionId: "session-1",
@@ -58,9 +64,10 @@ describe("resolveAcpClientSpawnEnv", () => {
   });
 
   it("strips skill-injected env keys when stripKeys is provided", () => {
-    const env = resolveAcpClientSpawnEnv({ PATH: "/usr/bin", SKILL_KEY: "injected", REMOTECLAW_SHELL: "old" }, [
-      "SKILL_KEY",
-    ]);
+    const env = resolveAcpClientSpawnEnv(
+      { PATH: "/usr/bin", SKILL_KEY: "injected", REMOTECLAW_SHELL: "old" },
+      ["SKILL_KEY"],
+    );
     expect(env.REMOTECLAW_SHELL).toBe("acp-client");
     expect(env.PATH).toBe("/usr/bin");
     expect(env.SKILL_KEY).toBeUndefined();
@@ -157,7 +164,10 @@ describe("resolvePermissionRequest", () => {
     expect(res).toEqual({ outcome: { outcome: "selected", optionId: "reject" } });
   }
 
-  async function expectAutoAllowWithoutPrompt(params: { request: Partial<RequestPermissionRequest>; cwd?: string }) {
+  async function expectAutoAllowWithoutPrompt(params: {
+    request: Partial<RequestPermissionRequest>;
+    cwd?: string;
+  }) {
     const prompt = vi.fn(async () => true);
     const res = await resolvePermissionRequest(makePermissionRequest(params.request), {
       prompt,
@@ -441,7 +451,10 @@ describe("acp event mapper", () => {
         return false;
       }
       return (
-        codePoint <= 0x1f || (codePoint >= 0x7f && codePoint <= 0x9f) || codePoint === 0x2028 || codePoint === 0x2029
+        codePoint <= 0x1f ||
+        (codePoint >= 0x7f && codePoint <= 0x9f) ||
+        codePoint === 0x2028 ||
+        codePoint === 0x2029
       );
     });
 

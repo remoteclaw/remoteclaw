@@ -23,8 +23,13 @@ export function formatError(err: unknown): string {
   const hasCode = codeValue !== undefined;
   if (hasStatus || hasCode) {
     const statusText =
-      typeof statusValue === "string" || typeof statusValue === "number" ? String(statusValue) : "unknown";
-    const codeText = typeof codeValue === "string" || typeof codeValue === "number" ? String(codeValue) : "unknown";
+      typeof statusValue === "string" || typeof statusValue === "number"
+        ? String(statusValue)
+        : "unknown";
+    const codeText =
+      typeof codeValue === "string" || typeof codeValue === "number"
+        ? String(codeValue)
+        : "unknown";
     return `status=${statusText} code=${codeText}`;
   }
   try {

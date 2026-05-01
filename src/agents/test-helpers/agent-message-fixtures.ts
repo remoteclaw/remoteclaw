@@ -1,4 +1,9 @@
-import type { AgentMessage, AssistantMessage, ToolResultMessage, UserMessage } from "../agent-types.js";
+import type {
+  AgentMessage,
+  AssistantMessage,
+  ToolResultMessage,
+  UserMessage,
+} from "../agent-types.js";
 const ZERO_USAGE_FIXTURE = {
   input: 0,
   output: 0,
@@ -16,7 +21,9 @@ export function castAgentMessages(messages: unknown[]): AgentMessage[] {
   return messages as AgentMessage[];
 }
 
-export function makeAgentUserMessage(overrides: Partial<UserMessage> & Pick<UserMessage, "content">): UserMessage {
+export function makeAgentUserMessage(
+  overrides: Partial<UserMessage> & Pick<UserMessage, "content">,
+): UserMessage {
   return {
     role: "user",
     timestamp: 0,
@@ -40,7 +47,8 @@ export function makeAgentAssistantMessage(
 }
 
 export function makeAgentToolResultMessage(
-  overrides: Partial<ToolResultMessage> & Pick<ToolResultMessage, "toolCallId" | "toolName" | "content">,
+  overrides: Partial<ToolResultMessage> &
+    Pick<ToolResultMessage, "toolCallId" | "toolName" | "content">,
 ): ToolResultMessage {
   const { toolCallId, toolName, content, ...rest } = overrides;
   return {

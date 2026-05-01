@@ -22,7 +22,12 @@ function normalizeNodeInvokeResultParams(params: unknown): unknown {
   return normalized;
 }
 
-export const handleNodeInvokeResult: GatewayRequestHandler = async ({ params, respond, context, client }) => {
+export const handleNodeInvokeResult: GatewayRequestHandler = async ({
+  params,
+  respond,
+  context,
+  client,
+}) => {
   const normalizedParams = normalizeNodeInvokeResultParams(params);
   if (!validateNodeInvokeResultParams(normalizedParams)) {
     respondInvalidParams({

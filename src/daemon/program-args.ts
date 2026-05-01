@@ -48,7 +48,9 @@ async function resolveCliEntrypointPathForService(): Promise<string> {
     }
   }
 
-  throw new Error(`Cannot find built CLI at ${distCandidates.join(" or ")}. Run "pnpm build" first, or use dev mode.`);
+  throw new Error(
+    `Cannot find built CLI at ${distCandidates.join(" or ")}. Run "pnpm build" first, or use dev mode.`,
+  );
 }
 
 async function resolveRealpathSafe(inputPath: string): Promise<string> {
@@ -93,7 +95,11 @@ function appendDistCandidates(candidates: string[], seen: Set<string>, baseDir: 
   }
 }
 
-function appendNodeModulesBinCandidates(candidates: string[], seen: Set<string>, inputPath: string): void {
+function appendNodeModulesBinCandidates(
+  candidates: string[],
+  seen: Set<string>,
+  inputPath: string,
+): void {
   const parts = inputPath.split(path.sep);
   const binIndex = parts.lastIndexOf(".bin");
   if (binIndex <= 0) {
@@ -147,7 +153,9 @@ async function resolveBinaryPath(binary: string): Promise<string> {
     if (binary === "bun") {
       throw new Error("Bun not found in PATH. Install bun: https://bun.sh");
     }
-    throw new Error("Node not found in PATH. Install Node 24 (recommended) or Node 22 LTS (22.14+).");
+    throw new Error(
+      "Node not found in PATH. Install Node 24 (recommended) or Node 22 LTS (22.14+).",
+    );
   }
 }
 
@@ -161,7 +169,8 @@ async function resolveCliProgramArguments(params: {
   const runtime = params.runtime ?? "auto";
 
   if (runtime === "node") {
-    const nodePath = params.nodePath ?? (isNodeRuntime(execPath) ? execPath : await resolveNodePath());
+    const nodePath =
+      params.nodePath ?? (isNodeRuntime(execPath) ? execPath : await resolveNodePath());
     const cliEntrypointPath = await resolveCliEntrypointPathForService();
     return {
       programArguments: [nodePath, cliEntrypointPath, ...params.args],

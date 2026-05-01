@@ -4,22 +4,25 @@ import type { BrowserRouteContext } from "../server-context.js";
 vi.mock("./index.js", () => {
   return {
     registerBrowserRoutes(app: { get: (path: string, handler: unknown) => void }) {
-      app.get("/slow", async (req: { signal?: AbortSignal }, res: { json: (body: unknown) => void }) => {
-        const signal = req.signal;
-        await new Promise<void>((resolve, reject) => {
-          if (signal?.aborted) {
-            reject(signal.reason ?? new Error("aborted"));
-            return;
-          }
-          const onAbort = () => reject(signal?.reason ?? new Error("aborted"));
-          signal?.addEventListener("abort", onAbort, { once: true });
-          queueMicrotask(() => {
-            signal?.removeEventListener("abort", onAbort);
-            resolve();
+      app.get(
+        "/slow",
+        async (req: { signal?: AbortSignal }, res: { json: (body: unknown) => void }) => {
+          const signal = req.signal;
+          await new Promise<void>((resolve, reject) => {
+            if (signal?.aborted) {
+              reject(signal.reason ?? new Error("aborted"));
+              return;
+            }
+            const onAbort = () => reject(signal?.reason ?? new Error("aborted"));
+            signal?.addEventListener("abort", onAbort, { once: true });
+            queueMicrotask(() => {
+              signal?.removeEventListener("abort", onAbort);
+              resolve();
+            });
           });
-        });
-        res.json({ ok: true });
-      });
+          res.json({ ok: true });
+        },
+      );
     },
   };
 });

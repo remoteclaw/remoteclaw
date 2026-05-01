@@ -30,7 +30,8 @@ export async function writeTextAtomic(
   options?: { mode?: number; ensureDirMode?: number; appendTrailingNewline?: boolean },
 ) {
   const mode = options?.mode ?? 0o600;
-  const payload = options?.appendTrailingNewline && !content.endsWith("\n") ? `${content}\n` : content;
+  const payload =
+    options?.appendTrailingNewline && !content.endsWith("\n") ? `${content}\n` : content;
   const mkdirOptions: { recursive: true; mode?: number } = { recursive: true };
   if (typeof options?.ensureDirMode === "number") {
     mkdirOptions.mode = options.ensureDirMode;

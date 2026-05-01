@@ -1,6 +1,9 @@
 import type { createSubsystemLogger } from "../logging/subsystem.js";
 import type { GatewayRequestContext, GatewayRequestHandlers } from "./server-methods/types.js";
-import { attachGatewayWsConnectionHandler, type GatewayWsSharedHandlerParams } from "./server/ws-connection.js";
+import {
+  attachGatewayWsConnectionHandler,
+  type GatewayWsSharedHandlerParams,
+} from "./server/ws-connection.js";
 
 type GatewayWsRuntimeParams = GatewayWsSharedHandlerParams & {
   logGateway: ReturnType<typeof createSubsystemLogger>;

@@ -92,34 +92,41 @@ describe("legacy config detection", () => {
     [
       "defaults imessage.dmPolicy to pairing when imessage section exists",
       { channels: { imessage: {} } },
-      (config: unknown) => (config as { channels?: { imessage?: { dmPolicy?: string } } }).channels?.imessage?.dmPolicy,
+      (config: unknown) =>
+        (config as { channels?: { imessage?: { dmPolicy?: string } } }).channels?.imessage
+          ?.dmPolicy,
       "pairing",
     ],
     [
       "defaults imessage.groupPolicy to allowlist when imessage section exists",
       { channels: { imessage: {} } },
       (config: unknown) =>
-        (config as { channels?: { imessage?: { groupPolicy?: string } } }).channels?.imessage?.groupPolicy,
+        (config as { channels?: { imessage?: { groupPolicy?: string } } }).channels?.imessage
+          ?.groupPolicy,
       "allowlist",
     ],
     [
       "defaults discord.groupPolicy to allowlist when discord section exists",
       { channels: { discord: {} } },
       (config: unknown) =>
-        (config as { channels?: { discord?: { groupPolicy?: string } } }).channels?.discord?.groupPolicy,
+        (config as { channels?: { discord?: { groupPolicy?: string } } }).channels?.discord
+          ?.groupPolicy,
       "allowlist",
     ],
     [
       "defaults slack.groupPolicy to allowlist when slack section exists",
       { channels: { slack: {} } },
-      (config: unknown) => (config as { channels?: { slack?: { groupPolicy?: string } } }).channels?.slack?.groupPolicy,
+      (config: unknown) =>
+        (config as { channels?: { slack?: { groupPolicy?: string } } }).channels?.slack
+          ?.groupPolicy,
       "allowlist",
     ],
     [
       "defaults msteams.groupPolicy to allowlist when msteams section exists",
       { channels: { msteams: {} } },
       (config: unknown) =>
-        (config as { channels?: { msteams?: { groupPolicy?: string } } }).channels?.msteams?.groupPolicy,
+        (config as { channels?: { msteams?: { groupPolicy?: string } } }).channels?.msteams
+          ?.groupPolicy,
       "allowlist",
     ],
   ])("defaults: %s", (_name, config, readValue, expectedValue) => {
@@ -207,7 +214,9 @@ describe("legacy config detection", () => {
     const res = migrateLegacyConfig({
       telegram: { requireMention: false },
     });
-    expect(res.changes).toContain('Moved telegram.requireMention → channels.telegram.groups."*".requireMention.');
+    expect(res.changes).toContain(
+      'Moved telegram.requireMention → channels.telegram.groups."*".requireMention.',
+    );
     expect(res.config?.channels?.telegram?.groups?.["*"]?.requireMention).toBe(false);
     expect(
       (res.config?.channels?.telegram as { requireMention?: boolean } | undefined)?.requireMention,
@@ -236,9 +245,15 @@ describe("legacy config detection", () => {
       },
     });
 
-    expect(resolveAgentModelPrimaryValue(res.config?.agents?.defaults?.model)).toBe("anthropic/claude-opus-4-5");
-    expect(resolveAgentModelFallbackValues(res.config?.agents?.defaults?.model)).toEqual(["openai/gpt-4.1-mini"]);
-    expect(resolveAgentModelPrimaryValue(res.config?.agents?.defaults?.imageModel)).toBe("openai/gpt-4.1-mini");
+    expect(resolveAgentModelPrimaryValue(res.config?.agents?.defaults?.model)).toBe(
+      "anthropic/claude-opus-4-5",
+    );
+    expect(resolveAgentModelFallbackValues(res.config?.agents?.defaults?.model)).toEqual([
+      "openai/gpt-4.1-mini",
+    ]);
+    expect(resolveAgentModelPrimaryValue(res.config?.agents?.defaults?.imageModel)).toBe(
+      "openai/gpt-4.1-mini",
+    );
     expect(resolveAgentModelFallbackValues(res.config?.agents?.defaults?.imageModel)).toEqual([
       "anthropic/claude-opus-4-5",
     ]);
@@ -313,7 +328,8 @@ describe("legacy config detection", () => {
         bindings: [{ agentId: "test-agent", match: { provider: "slack" } }],
       },
       readValue: (parsed) =>
-        (parsed as { bindings?: Array<{ match?: { provider?: string } }> }).bindings?.[0]?.match?.provider,
+        (parsed as { bindings?: Array<{ match?: { provider?: string } }> }).bindings?.[0]?.match
+          ?.provider,
       expectedValue: "slack",
     });
   });
@@ -323,16 +339,20 @@ describe("legacy config detection", () => {
         bindings: [{ agentId: "test-agent", match: { channel: "telegram", accountID: "work" } }],
       },
       readValue: (parsed) =>
-        (parsed as { bindings?: Array<{ match?: { accountID?: string } }> }).bindings?.[0]?.match?.accountID,
+        (parsed as { bindings?: Array<{ match?: { accountID?: string } }> }).bindings?.[0]?.match
+          ?.accountID,
       expectedValue: "work",
     });
   });
   it("accepts bindings[].comment on load", () => {
     expectValidConfigValue({
       config: {
-        bindings: [{ agentId: "test-agent", comment: "primary route", match: { channel: "telegram" } }],
+        bindings: [
+          { agentId: "test-agent", comment: "primary route", match: { channel: "telegram" } },
+        ],
       },
-      readValue: (config) => (config as { bindings?: Array<{ comment?: string }> }).bindings?.[0]?.comment,
+      readValue: (config) =>
+        (config as { bindings?: Array<{ comment?: string }> }).bindings?.[0]?.comment,
       expectedValue: "primary route",
     });
   });
@@ -356,18 +376,21 @@ describe("legacy config detection", () => {
     );
   });
   it("rejects messages.queue.byProvider on load", async () => {
-    await withSnapshotForConfig({ messages: { queue: { byProvider: { whatsapp: "queue" } } } }, async (ctx) => {
-      expect(ctx.snapshot.valid).toBe(false);
-      expect(ctx.snapshot.issues.length).toBeGreaterThan(0);
+    await withSnapshotForConfig(
+      { messages: { queue: { byProvider: { whatsapp: "queue" } } } },
+      async (ctx) => {
+        expect(ctx.snapshot.valid).toBe(false);
+        expect(ctx.snapshot.issues.length).toBeGreaterThan(0);
 
-      const parsed = ctx.parsed as {
-        messages?: {
-          queue?: {
-            byProvider?: Record<string, unknown>;
+        const parsed = ctx.parsed as {
+          messages?: {
+            queue?: {
+              byProvider?: Record<string, unknown>;
+            };
           };
         };
-      };
-      expect(parsed.messages?.queue?.byProvider?.whatsapp).toBe("queue");
-    });
+        expect(parsed.messages?.queue?.byProvider?.whatsapp).toBe("queue");
+      },
+    );
   });
 });

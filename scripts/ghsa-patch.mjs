@@ -124,7 +124,16 @@ const payload = {
 };
 
 const patchFile = writeTempJson(payload);
-runGh(["api", "-H", "X-GitHub-Api-Version: 2022-11-28", "-X", "PATCH", advisoryPath, "--input", patchFile]);
+runGh([
+  "api",
+  "-H",
+  "X-GitHub-Api-Version: 2022-11-28",
+  "-X",
+  "PATCH",
+  advisoryPath,
+  "--input",
+  patchFile,
+]);
 
 if (restoredCvss) {
   runGh([
@@ -139,7 +148,9 @@ if (restoredCvss) {
   ]);
 }
 
-const refreshed = JSON.parse(runGh(["api", "-H", "X-GitHub-Api-Version: 2022-11-28", advisoryPath]));
+const refreshed = JSON.parse(
+  runGh(["api", "-H", "X-GitHub-Api-Version: 2022-11-28", advisoryPath]),
+);
 console.log(
   JSON.stringify(
     {

@@ -69,7 +69,10 @@ async function createDockerSetupSandbox(): Promise<DockerSetupSandbox> {
   return { rootDir, scriptPath, logPath, binDir };
 }
 
-function createEnv(sandbox: DockerSetupSandbox, overrides: Record<string, string | undefined> = {}): NodeJS.ProcessEnv {
+function createEnv(
+  sandbox: DockerSetupSandbox,
+  overrides: Record<string, string | undefined> = {},
+): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = {
     PATH: `${sandbox.binDir}:${process.env.PATH ?? ""}`,
     HOME: process.env.HOME ?? sandbox.rootDir,
@@ -99,7 +102,10 @@ function requireSandbox(sandbox: DockerSetupSandbox | null): DockerSetupSandbox 
   return sandbox;
 }
 
-function runDockerSetup(sandbox: DockerSetupSandbox, overrides: Record<string, string | undefined> = {}) {
+function runDockerSetup(
+  sandbox: DockerSetupSandbox,
+  overrides: Record<string, string | undefined> = {},
+) {
   return spawnSync("bash", [sandbox.scriptPath], {
     cwd: sandbox.rootDir,
     env: createEnv(sandbox, overrides),
@@ -211,7 +217,10 @@ describe("scripts/docker/setup.sh", () => {
     expect(envFile).toContain("REMOTECLAW_DOCKER_APT_PACKAGES=ffmpeg build-essential");
     expect(envFile).toContain("REMOTECLAW_EXTRA_MOUNTS=");
     expect(envFile).toContain("REMOTECLAW_HOME_VOLUME=remoteclaw-home"); // pragma: allowlist secret
-    const extraCompose = await readFile(join(activeSandbox.rootDir, "docker-compose.extra.yml"), "utf8");
+    const extraCompose = await readFile(
+      join(activeSandbox.rootDir, "docker-compose.extra.yml"),
+      "utf8",
+    );
     expect(extraCompose).toContain("remoteclaw-home:/home/node");
     expect(extraCompose).toContain("volumes:");
     expect(extraCompose).toContain("remoteclaw-home:");
@@ -244,7 +253,9 @@ describe("scripts/docker/setup.sh", () => {
     expect(gatewayStartIdx).toBeGreaterThanOrEqual(0);
 
     const prestartLines = lines.slice(0, gatewayStartIdx);
-    expect(prestartLines.some((line) => /\bcompose\b.*\brun\b.*\bremoteclaw-cli\b/.test(line))).toBe(false);
+    expect(
+      prestartLines.some((line) => /\bcompose\b.*\brun\b.*\bremoteclaw-cli\b/.test(line)),
+    ).toBe(false);
   });
 
   it("forces BuildKit for local and sandbox docker builds", async () => {
@@ -257,7 +268,9 @@ describe("scripts/docker/setup.sh", () => {
     });
 
     expect(result.status).toBe(0);
-    const buildLines = (await readDockerLogLines(activeSandbox)).filter((line) => line.startsWith("build "));
+    const buildLines = (await readDockerLogLines(activeSandbox)).filter((line) =>
+      line.startsWith("build "),
+    );
     expect(buildLines.length).toBeGreaterThanOrEqual(2);
     expect(buildLines.every((line) => line.includes("DOCKER_BUILDKIT=1"))).toBe(true);
   });
@@ -337,7 +350,10 @@ describe("scripts/docker/setup.sh", () => {
       join(activeSandbox.rootDir, ".env"),
       "REMOTECLAW_GATEWAY_TOKEN=dotenv-token-123\nREMOTECLAW_GATEWAY_PORT=18789\n", // pragma: allowlist secret
     );
-    const { result, envFile } = await runDockerSetupWithUnsetGatewayToken(activeSandbox, "dotenv-token-reuse");
+    const { result, envFile } = await runDockerSetupWithUnsetGatewayToken(
+      activeSandbox,
+      "dotenv-token-reuse",
+    );
 
     expect(result.status).toBe(0);
     expect(envFile).toContain("REMOTECLAW_GATEWAY_TOKEN=dotenv-token-123"); // pragma: allowlist secret
@@ -354,7 +370,10 @@ describe("scripts/docker/setup.sh", () => {
         "REMOTECLAW_GATEWAY_TOKEN=last=token=value\r", // pragma: allowlist secret
       ].join("\n"),
     );
-    const { result, envFile } = await runDockerSetupWithUnsetGatewayToken(activeSandbox, "dotenv-last-wins");
+    const { result, envFile } = await runDockerSetupWithUnsetGatewayToken(
+      activeSandbox,
+      "dotenv-last-wins",
+    );
 
     expect(result.status).toBe(0);
     expect(envFile).toContain("REMOTECLAW_GATEWAY_TOKEN=last=token=value"); // pragma: allowlist secret
@@ -417,16 +436,22 @@ describe("scripts/docker/setup.sh", () => {
       expect(result.stderr).toContain("Skipping gateway restart to avoid exposing Docker socket");
 
       const log = await readDockerLog(activeSandbox);
-      const gatewayStarts = (await readDockerLogLines(activeSandbox)).filter((line) => isGatewayStartLine(line));
+      const gatewayStarts = (await readDockerLogLines(activeSandbox)).filter((line) =>
+        isGatewayStartLine(line),
+      );
       expect(gatewayStarts).toHaveLength(2);
-      expect(log).toContain("run --rm --no-deps remoteclaw-cli config set agents.defaults.sandbox.mode non-main");
+      expect(log).toContain(
+        "run --rm --no-deps remoteclaw-cli config set agents.defaults.sandbox.mode non-main",
+      );
       expect(log).toContain("config set agents.defaults.sandbox.mode off");
       const forceRecreateLine = log
         .split("\n")
         .find((line) => line.includes("up -d --force-recreate remoteclaw-gateway"));
       expect(forceRecreateLine).toBeDefined();
       expect(forceRecreateLine).not.toContain("docker-compose.sandbox.yml");
-      await expect(stat(join(activeSandbox.rootDir, "docker-compose.sandbox.yml"))).rejects.toThrow();
+      await expect(
+        stat(join(activeSandbox.rootDir, "docker-compose.sandbox.yml")),
+      ).rejects.toThrow();
     });
   });
 
@@ -492,9 +517,13 @@ describe("scripts/docker/setup.sh", () => {
       return;
     }
 
-    const syntaxCheck = spawnSync(systemBash, ["-n", join(repoRoot, "scripts", "docker", "setup.sh")], {
-      encoding: "utf8",
-    });
+    const syntaxCheck = spawnSync(
+      systemBash,
+      ["-n", join(repoRoot, "scripts", "docker", "setup.sh")],
+      {
+        encoding: "utf8",
+      },
+    );
 
     expect(syntaxCheck.status).toBe(0);
     expect(syntaxCheck.stderr).not.toContain("declare: -A: invalid option");
@@ -514,7 +543,9 @@ describe("scripts/docker/setup.sh", () => {
 
   it("keeps docker-compose gateway token env defaults aligned across services", async () => {
     const compose = await readFile(join(repoRoot, "docker-compose.yml"), "utf8");
-    expect(compose.match(/REMOTECLAW_GATEWAY_TOKEN: \$\{REMOTECLAW_GATEWAY_TOKEN:-\}/g)).toHaveLength(2);
+    expect(
+      compose.match(/REMOTECLAW_GATEWAY_TOKEN: \$\{REMOTECLAW_GATEWAY_TOKEN:-\}/g),
+    ).toHaveLength(2);
   });
 
   it("keeps docker-compose timezone env defaults aligned across services", async () => {

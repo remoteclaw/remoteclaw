@@ -30,7 +30,10 @@ type Logger = {
   debug?: (message: string) => void;
 };
 
-function createRuntimeResourceLifecycle(params: { config: VoiceCallConfig; webhookServer: VoiceCallWebhookServer }): {
+function createRuntimeResourceLifecycle(params: {
+  config: VoiceCallConfig;
+  webhookServer: VoiceCallWebhookServer;
+}): {
   setTunnelResult: (result: TunnelResult | null) => void;
   stop: (opts?: { suppressErrors?: boolean }) => Promise<void>;
 } {
@@ -187,7 +190,9 @@ export async function createVoiceCallRuntime(params: {
         lifecycle.setTunnelResult(nextTunnelResult);
         publicUrl = nextTunnelResult?.publicUrl ?? null;
       } catch (err) {
-        log.error(`[voice-call] Tunnel setup failed: ${err instanceof Error ? err.message : String(err)}`);
+        log.error(
+          `[voice-call] Tunnel setup failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
     }
 

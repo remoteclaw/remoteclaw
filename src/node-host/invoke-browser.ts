@@ -1,6 +1,9 @@
 import fsPromises from "node:fs/promises";
 import { resolveBrowserConfig } from "../browser/config.js";
-import { createBrowserControlContext, startBrowserControlServiceFromConfig } from "../browser/control-service.js";
+import {
+  createBrowserControlContext,
+  startBrowserControlServiceFromConfig,
+} from "../browser/control-service.js";
 import { createBrowserRouteDispatcher } from "../browser/routes/dispatcher.js";
 import { loadConfig } from "../config/config.js";
 import { detectMime } from "../media/mime.js";
@@ -75,7 +78,8 @@ function isProfileAllowed(params: { allowProfiles: string[]; profile?: string | 
 
 function collectBrowserProxyPaths(payload: unknown): string[] {
   const paths = new Set<string>();
-  const obj = typeof payload === "object" && payload !== null ? (payload as Record<string, unknown>) : null;
+  const obj =
+    typeof payload === "object" && payload !== null ? (payload as Record<string, unknown>) : null;
   if (!obj) {
     return [];
   }
@@ -101,7 +105,9 @@ async function readBrowserProxyFile(filePath: string): Promise<BrowserProxyFile 
     return null;
   }
   if (stat.size > BROWSER_PROXY_MAX_FILE_BYTES) {
-    throw new Error(`browser proxy file exceeds ${Math.round(BROWSER_PROXY_MAX_FILE_BYTES / (1024 * 1024))}MB`);
+    throw new Error(
+      `browser proxy file exceeds ${Math.round(BROWSER_PROXY_MAX_FILE_BYTES / (1024 * 1024))}MB`,
+    );
   }
   const buffer = await fsPromises.readFile(filePath);
   const mimeType = await detectMime({ buffer, filePath });
@@ -126,7 +132,13 @@ function isBrowserProxyTimeoutError(err: unknown): boolean {
 }
 
 function isWsBackedBrowserProxyPath(path: string): boolean {
-  return path === "/act" || path === "/navigate" || path === "/pdf" || path === "/screenshot" || path === "/snapshot";
+  return (
+    path === "/act" ||
+    path === "/navigate" ||
+    path === "/pdf" ||
+    path === "/screenshot" ||
+    path === "/snapshot"
+  );
 }
 
 async function readBrowserProxyStatus(params: {
@@ -285,7 +297,8 @@ export async function runBrowserProxyCommand(paramsJSON?: string | null): Promis
 
   const result = response.body;
   if (allowedProfiles.length > 0 && path === "/profiles") {
-    const obj = typeof result === "object" && result !== null ? (result as Record<string, unknown>) : {};
+    const obj =
+      typeof result === "object" && result !== null ? (result as Record<string, unknown>) : {};
     const profiles = Array.isArray(obj.profiles) ? obj.profiles : [];
     obj.profiles = profiles.filter((entry) => {
       if (!entry || typeof entry !== "object") {

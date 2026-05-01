@@ -25,9 +25,9 @@ class TestableGeminiCliRuntime extends GeminiCliRuntime {
   }
 
   public testPrepareMedia(params: AgentExecuteParams): Promise<AgentExecuteParams> {
-    return (this as unknown as { prepareMedia(p: AgentExecuteParams): Promise<AgentExecuteParams> }).prepareMedia(
-      params,
-    );
+    return (
+      this as unknown as { prepareMedia(p: AgentExecuteParams): Promise<AgentExecuteParams> }
+    ).prepareMedia(params);
   }
 
   public testCleanupMediaTempDir(): Promise<void> {
@@ -266,16 +266,24 @@ describe("GeminiCliRuntime", () => {
     });
 
     it("accumulates text across multiple message deltas", () => {
-      runtime.testExtractEvent(geminiEvent("message", { delta: true, role: "assistant", content: "Hello " }));
-      runtime.testExtractEvent(geminiEvent("message", { delta: true, role: "assistant", content: "World" }));
+      runtime.testExtractEvent(
+        geminiEvent("message", { delta: true, role: "assistant", content: "Hello " }),
+      );
+      runtime.testExtractEvent(
+        geminiEvent("message", { delta: true, role: "assistant", content: "World" }),
+      );
 
       const doneEvent: AgentDoneEvent = { type: "done", result: makeDoneResult() };
-      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(doneEvent);
+      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(
+        doneEvent,
+      );
       expect(doneEvent.result.text).toBe("Hello World");
     });
 
     it("skips message with missing content", () => {
-      const event = runtime.testExtractEvent(geminiEvent("message", { delta: true, role: "assistant" }));
+      const event = runtime.testExtractEvent(
+        geminiEvent("message", { delta: true, role: "assistant" }),
+      );
       expect(event).toBeNull();
     });
 
@@ -295,7 +303,9 @@ describe("GeminiCliRuntime", () => {
     });
 
     it("handles error without severity", () => {
-      const event = runtime.testExtractEvent(geminiEvent("error", { message: "Something went wrong" }));
+      const event = runtime.testExtractEvent(
+        geminiEvent("error", { message: "Something went wrong" }),
+      );
       expect(event).toEqual({
         type: "error",
         message: "Something went wrong",
@@ -327,8 +337,12 @@ describe("GeminiCliRuntime", () => {
       runtime.testExtractEvent(geminiEvent("init", { session_id: "sess-enrich" }));
 
       // message deltas → accumulated text
-      runtime.testExtractEvent(geminiEvent("message", { delta: true, role: "assistant", content: "Hello " }));
-      runtime.testExtractEvent(geminiEvent("message", { delta: true, role: "assistant", content: "World" }));
+      runtime.testExtractEvent(
+        geminiEvent("message", { delta: true, role: "assistant", content: "Hello " }),
+      );
+      runtime.testExtractEvent(
+        geminiEvent("message", { delta: true, role: "assistant", content: "World" }),
+      );
 
       // result → stats
       runtime.testExtractEvent(
@@ -348,7 +362,9 @@ describe("GeminiCliRuntime", () => {
         type: "done",
         result: makeDoneResult({ durationMs: 5000 }),
       };
-      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(doneEvent);
+      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(
+        doneEvent,
+      );
 
       expect(doneEvent.result.text).toBe("Hello World");
       expect(doneEvent.result.sessionId).toBe("sess-enrich");
@@ -377,7 +393,9 @@ describe("GeminiCliRuntime", () => {
       );
 
       const doneEvent: AgentDoneEvent = { type: "done", result: makeDoneResult() };
-      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(doneEvent);
+      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(
+        doneEvent,
+      );
 
       expect(doneEvent.result.apiDurationMs).toBe(1234);
       expect(doneEvent.result.numTurns).toBe(7);
@@ -386,13 +404,17 @@ describe("GeminiCliRuntime", () => {
     it("handles missing stats gracefully", () => {
       runtime.testExtractEvent(geminiEvent("init", { session_id: "sess-no-stats" }));
 
-      runtime.testExtractEvent(geminiEvent("message", { delta: true, role: "assistant", content: "response" }));
+      runtime.testExtractEvent(
+        geminiEvent("message", { delta: true, role: "assistant", content: "response" }),
+      );
 
       // result without stats
       runtime.testExtractEvent(geminiEvent("result", {}));
 
       const doneEvent: AgentDoneEvent = { type: "done", result: makeDoneResult() };
-      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(doneEvent);
+      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(
+        doneEvent,
+      );
 
       expect(doneEvent.result.text).toBe("response");
       expect(doneEvent.result.sessionId).toBe("sess-no-stats");
@@ -415,7 +437,9 @@ describe("GeminiCliRuntime", () => {
       );
 
       const doneEvent: AgentDoneEvent = { type: "done", result: makeDoneResult() };
-      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(doneEvent);
+      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(
+        doneEvent,
+      );
 
       expect(doneEvent.result.usage).toEqual({
         inputTokens: 100,
@@ -482,7 +506,10 @@ describe("GeminiCliRuntime", () => {
     });
 
     it("reads from filePath when base64 is not available", async () => {
-      const sourceDir = join(tmpdir(), `gemini-test-src-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+      const sourceDir = join(
+        tmpdir(),
+        `gemini-test-src-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      );
       await mkdir(sourceDir, { recursive: true });
       const sourcePath = join(sourceDir, "test.jpg");
       await writeFile(sourcePath, Buffer.from("testcontent"));
@@ -553,7 +580,12 @@ describe("GeminiCliRuntime", () => {
 
   describe("mediaCapabilities", () => {
     it("accepts inbound images, audio, video, and PDF", () => {
-      expect(runtime.mediaCapabilities.acceptsInbound).toEqual(["image/", "audio/", "video/", "application/pdf"]);
+      expect(runtime.mediaCapabilities.acceptsInbound).toEqual([
+        "image/",
+        "audio/",
+        "video/",
+        "application/pdf",
+      ]);
     });
 
     it("does not emit outbound media", () => {
@@ -569,7 +601,10 @@ describe("GeminiCliRuntime", () => {
     let settingsPath: string;
 
     beforeEach(async () => {
-      testDir = join(tmpdir(), `gemini-mcp-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+      testDir = join(
+        tmpdir(),
+        `gemini-mcp-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      );
       await mkdir(testDir, { recursive: true });
       geminiDir = join(testDir, ".gemini");
       settingsPath = join(geminiDir, "settings.json");

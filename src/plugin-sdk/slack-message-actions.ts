@@ -29,7 +29,8 @@ export async function handleSlackMessageAction(params: {
   const accountId = ctx.accountId ?? undefined;
   const resolveChannelId = () => {
     const channelId =
-      readStringParam(actionParams, "channelId") ?? readStringParam(actionParams, "to", { required: true });
+      readStringParam(actionParams, "channelId") ??
+      readStringParam(actionParams, "to", { required: true });
     return normalizeChannelId ? normalizeChannelId(channelId) : channelId;
   };
 
@@ -155,7 +156,9 @@ export async function handleSlackMessageAction(params: {
 
   if (action === "pin" || action === "unpin" || action === "list-pins") {
     const messageId =
-      action === "list-pins" ? undefined : readStringParam(actionParams, "messageId", { required: true });
+      action === "list-pins"
+        ? undefined
+        : readStringParam(actionParams, "messageId", { required: true });
     return await invoke(
       {
         action: action === "pin" ? "pinMessage" : action === "unpin" ? "unpinMessage" : "listPins",
@@ -179,8 +182,10 @@ export async function handleSlackMessageAction(params: {
 
   if (action === "download-file") {
     const fileId = readStringParam(actionParams, "fileId", { required: true });
-    const channelId = readStringParam(actionParams, "channelId") ?? readStringParam(actionParams, "to");
-    const threadId = readStringParam(actionParams, "threadId") ?? readStringParam(actionParams, "replyTo");
+    const channelId =
+      readStringParam(actionParams, "channelId") ?? readStringParam(actionParams, "to");
+    const threadId =
+      readStringParam(actionParams, "threadId") ?? readStringParam(actionParams, "replyTo");
     return await invoke(
       {
         action: "downloadFile",

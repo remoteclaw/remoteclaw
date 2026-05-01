@@ -58,7 +58,10 @@ export function handleSubagentsListAction(ctx: SubagentsCommandContext): Command
   const recentEntries = sorted.filter(
     (entry) => !isActiveRun(entry) && !!entry.endedAt && (entry.endedAt ?? 0) >= recentCutoff,
   );
-  const recentLines = mapRuns(recentEntries, (entry) => (entry.endedAt ?? now) - (entry.startedAt ?? entry.createdAt));
+  const recentLines = mapRuns(
+    recentEntries,
+    (entry) => (entry.endedAt ?? now) - (entry.startedAt ?? entry.createdAt),
+  );
 
   const lines = ["active subagents:", "-----"];
   if (activeLines.length === 0) {

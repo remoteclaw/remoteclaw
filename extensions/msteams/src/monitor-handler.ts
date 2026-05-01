@@ -15,8 +15,12 @@ export type MSTeamsAccessTokenProvider = {
 };
 
 export type MSTeamsActivityHandler = {
-  onMessage: (handler: (context: unknown, next: () => Promise<void>) => Promise<void>) => MSTeamsActivityHandler;
-  onMembersAdded: (handler: (context: unknown, next: () => Promise<void>) => Promise<void>) => MSTeamsActivityHandler;
+  onMessage: (
+    handler: (context: unknown, next: () => Promise<void>) => Promise<void>,
+  ) => MSTeamsActivityHandler;
+  onMembersAdded: (
+    handler: (context: unknown, next: () => Promise<void>) => Promise<void>,
+  ) => MSTeamsActivityHandler;
   run?: (context: unknown) => Promise<void>;
 };
 
@@ -36,8 +40,12 @@ export type MSTeamsMessageHandlerDeps = {
 /**
  * Handle fileConsent/invoke activities for large file uploads.
  */
-async function handleFileConsentInvoke(context: MSTeamsTurnContext, log: MSTeamsMonitorLogger): Promise<boolean> {
-  const expiredUploadMessage = "The file upload request has expired. Please try sending the file again.";
+async function handleFileConsentInvoke(
+  context: MSTeamsTurnContext,
+  log: MSTeamsMonitorLogger,
+): Promise<boolean> {
+  const expiredUploadMessage =
+    "The file upload request has expired. Please try sending the file again.";
   const activity = context.activity;
   if (activity.type !== "invoke" || activity.name !== "fileConsent/invoke") {
     return false;
@@ -49,7 +57,10 @@ async function handleFileConsentInvoke(context: MSTeamsTurnContext, log: MSTeams
     return false;
   }
 
-  const uploadId = typeof consentResponse.context?.uploadId === "string" ? consentResponse.context.uploadId : undefined;
+  const uploadId =
+    typeof consentResponse.context?.uploadId === "string"
+      ? consentResponse.context.uploadId
+      : undefined;
   const pendingFile = getPendingUpload(uploadId);
   if (pendingFile) {
     const pendingConversationId = normalizeMSTeamsConversationId(pendingFile.conversationId);
@@ -141,7 +152,9 @@ export function registerMSTeamsHandlers<T extends MSTeamsActivityHandler>(
             run: async () => await handleFileConsentInvoke(ctx, deps.log),
             onRevoked: async () => true,
             onRevokedLog: () => {
-              deps.log.debug?.("turn context revoked during file consent invoke; skipping delayed response");
+              deps.log.debug?.(
+                "turn context revoked during file consent invoke; skipping delayed response",
+              );
             },
           });
         } catch (err) {

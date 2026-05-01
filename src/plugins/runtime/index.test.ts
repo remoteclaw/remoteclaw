@@ -28,16 +28,18 @@ describe("plugin runtime command execution", () => {
     runCommandWithTimeoutMock.mockResolvedValue(commandResult);
 
     const runtime = createPluginRuntime();
-    await expect(runtime.system.runCommandWithTimeout(["echo", "hello"], { timeoutMs: 1000 })).resolves.toEqual(
-      commandResult,
-    );
+    await expect(
+      runtime.system.runCommandWithTimeout(["echo", "hello"], { timeoutMs: 1000 }),
+    ).resolves.toEqual(commandResult);
     expect(runCommandWithTimeoutMock).toHaveBeenCalledWith(["echo", "hello"], { timeoutMs: 1000 });
   });
 
   it("forwards runtime.system.runCommandWithTimeout errors", async () => {
     runCommandWithTimeoutMock.mockRejectedValue(new Error("boom"));
     const runtime = createPluginRuntime();
-    await expect(runtime.system.runCommandWithTimeout(["echo", "hello"], { timeoutMs: 1000 })).rejects.toThrow("boom");
+    await expect(
+      runtime.system.runCommandWithTimeout(["echo", "hello"], { timeoutMs: 1000 }),
+    ).rejects.toThrow("boom");
     expect(runCommandWithTimeoutMock).toHaveBeenCalledWith(["echo", "hello"], { timeoutMs: 1000 });
   });
 

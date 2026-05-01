@@ -2,7 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 import { handleSystemRunInvoke } from "./invoke-system-run.js";
 
 describe("handleSystemRunInvoke", () => {
-  async function runSystemInvoke(params: { command?: string[]; cwd?: string; needsScreenRecording?: boolean }) {
+  async function runSystemInvoke(params: {
+    command?: string[];
+    cwd?: string;
+    needsScreenRecording?: boolean;
+  }) {
     const runCommand = vi.fn(async () => ({
       success: true,
       stdout: "local-ok",

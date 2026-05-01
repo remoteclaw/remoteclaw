@@ -53,7 +53,12 @@ export class ClaudeCliRuntime extends CLIRuntimeBase {
   // ── CLIRuntimeBase overrides ──────────────────────────────────────────
 
   protected buildArgs(params: AgentExecuteParams): string[] {
-    const args: string[] = ["--output-format", "stream-json", "--verbose", "--include-partial-messages"];
+    const args: string[] = [
+      "--output-format",
+      "stream-json",
+      "--verbose",
+      "--include-partial-messages",
+    ];
 
     if (params.sessionId) {
       args.push("--resume", params.sessionId);
@@ -261,7 +266,8 @@ export class ClaudeCliRuntime extends CLIRuntimeBase {
     this.resultData = {
       sessionId: typeof parsed.session_id === "string" ? parsed.session_id : undefined,
       costUsd: typeof parsed.cost_usd === "number" ? parsed.cost_usd : undefined,
-      durationApiMs: typeof parsed.duration_api_ms === "number" ? parsed.duration_api_ms : undefined,
+      durationApiMs:
+        typeof parsed.duration_api_ms === "number" ? parsed.duration_api_ms : undefined,
       numTurns: typeof parsed.num_turns === "number" ? parsed.num_turns : undefined,
       subtype: typeof parsed.subtype === "string" ? parsed.subtype : undefined,
       usage: usage ? parseUsage(usage) : undefined,
@@ -361,7 +367,9 @@ function parseUsage(raw: Record<string, unknown>): AgentUsage {
   return {
     inputTokens: typeof raw.input_tokens === "number" ? raw.input_tokens : 0,
     outputTokens: typeof raw.output_tokens === "number" ? raw.output_tokens : 0,
-    ...(typeof raw.cache_read_input_tokens === "number" ? { cacheReadTokens: raw.cache_read_input_tokens } : {}),
+    ...(typeof raw.cache_read_input_tokens === "number"
+      ? { cacheReadTokens: raw.cache_read_input_tokens }
+      : {}),
     ...(typeof raw.cache_creation_input_tokens === "number"
       ? { cacheWriteTokens: raw.cache_creation_input_tokens }
       : {}),

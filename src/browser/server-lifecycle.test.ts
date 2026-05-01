@@ -66,7 +66,9 @@ describe("ensureExtensionRelayForProfiles", () => {
       onWarn,
     });
 
-    expect(onWarn).toHaveBeenCalledWith('Chrome extension relay init failed for profile "chrome": Error: boom');
+    expect(onWarn).toHaveBeenCalledWith(
+      'Chrome extension relay init failed for profile "chrome": Error: boom',
+    );
   });
 });
 

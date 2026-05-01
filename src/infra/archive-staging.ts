@@ -33,7 +33,10 @@ export async function prepareArchiveDestinationDir(destDir: string): Promise<str
     throw new ArchiveSecurityError("destination-symlink", "archive destination is a symlink");
   }
   if (!stat.isDirectory()) {
-    throw new ArchiveSecurityError("destination-not-directory", "archive destination is not a directory");
+    throw new ArchiveSecurityError(
+      "destination-not-directory",
+      "archive destination is not a directory",
+    );
   }
   return await fs.realpath(destDir);
 }

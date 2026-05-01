@@ -62,7 +62,10 @@ export type CronServiceDeps = {
    * See: https://github.com/openclaw/openclaw/issues/18892
    */
   maxMissedJobsPerRestart?: number;
-  enqueueSystemEvent: (text: string, opts?: { agentId?: string; sessionKey?: string; contextKey?: string }) => void;
+  enqueueSystemEvent: (
+    text: string,
+    opts?: { agentId?: string; sessionKey?: string; contextKey?: string },
+  ) => void;
   requestHeartbeatNow: (opts?: { reason?: string; agentId?: string; sessionKey?: string }) => void;
   runHeartbeatOnce?: (opts?: {
     reason?: string;
@@ -79,7 +82,11 @@ export type CronServiceDeps = {
   wakeNowHeartbeatBusyMaxWaitMs?: number;
   /** WakeMode=now: delay between runHeartbeatOnce retries while busy. */
   wakeNowHeartbeatBusyRetryDelayMs?: number;
-  runIsolatedAgentJob: (params: { job: CronJob; message: string; abortSignal?: AbortSignal }) => Promise<
+  runIsolatedAgentJob: (params: {
+    job: CronJob;
+    message: string;
+    abortSignal?: AbortSignal;
+  }) => Promise<
     {
       summary?: string;
       /** Last non-empty agent text output (not truncated). */

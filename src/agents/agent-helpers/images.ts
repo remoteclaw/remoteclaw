@@ -7,7 +7,9 @@ import { stripThoughtSignatures } from "./message-sanitization.js";
 
 type ContentBlock = AgentToolResult["content"][number];
 
-export function isEmptyAssistantMessageContent(message: Extract<AgentMessage, { role: "assistant" }>): boolean {
+export function isEmptyAssistantMessageContent(
+  message: Extract<AgentMessage, { role: "assistant" }>,
+): boolean {
   const content = message.content;
   if (content == null) {
     return true;

@@ -7,7 +7,11 @@
 
 import { DEFAULT_ACCOUNT_ID, getAccountConfig } from "./config.js";
 import { sendMessageTwitchInternal } from "./send.js";
-import type { ChannelOutboundAdapter, ChannelOutboundContext, OutboundDeliveryResult } from "./types.js";
+import type {
+  ChannelOutboundAdapter,
+  ChannelOutboundContext,
+  OutboundDeliveryResult,
+} from "./types.js";
 import { chunkTextForTwitch } from "./utils/markdown.js";
 import { missingTargetError, normalizeTwitchChannel } from "./utils/twitch.js";
 
@@ -38,7 +42,9 @@ export const twitchOutbound: ChannelOutboundAdapter = {
    */
   resolveTarget: ({ to, allowFrom, mode }) => {
     const trimmed = to?.trim() ?? "";
-    const allowListRaw = (allowFrom ?? []).map((entry: unknown) => String(entry).trim()).filter(Boolean);
+    const allowListRaw = (allowFrom ?? [])
+      .map((entry: unknown) => String(entry).trim())
+      .filter(Boolean);
     const hasWildcard = allowListRaw.includes("*");
     const allowList = allowListRaw
       .filter((entry: string) => entry !== "*")
@@ -112,7 +118,8 @@ export const twitchOutbound: ChannelOutboundAdapter = {
     if (!account) {
       const availableIds = Object.keys(cfg.channels?.twitch?.accounts ?? {});
       throw new Error(
-        `Twitch account not found: ${resolvedAccountId}. ` + `Available accounts: ${availableIds.join(", ") || "none"}`,
+        `Twitch account not found: ${resolvedAccountId}. ` +
+          `Available accounts: ${availableIds.join(", ") || "none"}`,
       );
     }
 

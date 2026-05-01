@@ -150,7 +150,9 @@ describe("isTransientNetworkError", () => {
   it("returns true for TLS/SSL transient message snippets", () => {
     expect(isTransientNetworkError(new Error("write EPROTO 00A8B0C9:error"))).toBe(true);
     expect(
-      isTransientNetworkError(new Error("SSL routines:OPENSSL_internal:WRONG_VERSION_NUMBER while connecting")),
+      isTransientNetworkError(
+        new Error("SSL routines:OPENSSL_internal:WRONG_VERSION_NUMBER while connecting"),
+      ),
     ).toBe(true);
     expect(isTransientNetworkError(new Error("tlsv1 alert protocol version"))).toBe(true);
   });

@@ -2,7 +2,9 @@ import { vi } from "vitest";
 import type { FollowupRun } from "./queue.js";
 import type { TypingController } from "./typing.js";
 
-export function createMockTypingController(overrides: Partial<TypingController> = {}): TypingController {
+export function createMockTypingController(
+  overrides: Partial<TypingController> = {},
+): TypingController {
   return {
     onReplyStart: vi.fn(async () => {}),
     startTypingLoop: vi.fn(async () => {}),

@@ -12,7 +12,9 @@ export function ensureNodeRuntime() {
   }
 }
 
-export async function resolveActionClient(opts: MatrixActionClientOpts = {}): Promise<MatrixActionClient> {
+export async function resolveActionClient(
+  opts: MatrixActionClientOpts = {},
+): Promise<MatrixActionClient> {
   ensureNodeRuntime();
   if (opts.client) {
     return { client: opts.client, stopOnDone: false };

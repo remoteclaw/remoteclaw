@@ -54,7 +54,9 @@ describe("sessionsCleanupCommand", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.loadConfig.mockReturnValue({ session: { store: "/cfg/sessions.json" } });
-    mocks.resolveSessionStoreTargets.mockReturnValue([{ agentId: "test-agent", storePath: "/resolved/sessions.json" }]);
+    mocks.resolveSessionStoreTargets.mockReturnValue([
+      { agentId: "test-agent", storePath: "/resolved/sessions.json" },
+    ]);
     mocks.resolveSessionStoreTargetsOrExit.mockImplementation(
       (params: { cfg: unknown; opts: unknown; runtime: RuntimeEnv }) => {
         try {
@@ -90,7 +92,9 @@ describe("sessionsCleanupCommand", () => {
       },
     );
     mocks.resolveSessionFilePathOptions.mockReturnValue({});
-    mocks.resolveSessionFilePath.mockImplementation((sessionId: string) => `/missing/${sessionId}.jsonl`);
+    mocks.resolveSessionFilePath.mockImplementation(
+      (sessionId: string) => `/missing/${sessionId}.jsonl`,
+    );
     mocks.capEntryCount.mockImplementation(() => 0);
     mocks.updateSessionStore.mockResolvedValue(0);
     mocks.enforceSessionDiskBudget.mockResolvedValue({

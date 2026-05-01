@@ -34,7 +34,9 @@ describe("buildSlackManifest", () => {
     it("disables socket mode and adds request_url for http", () => {
       const manifest = JSON.parse(buildSlackManifest({ transport: "http" }));
       expect(manifest.settings.socket_mode_enabled).toBe(false);
-      expect(manifest.settings.event_subscriptions.request_url).toBe("https://example.com/slack/events");
+      expect(manifest.settings.event_subscriptions.request_url).toBe(
+        "https://example.com/slack/events",
+      );
     });
   });
 

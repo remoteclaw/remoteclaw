@@ -51,7 +51,11 @@ export type MatrixReplyMeta = {
   "m.relates_to"?: MatrixRelation;
 };
 
-export type MatrixMediaInfo = FileWithThumbnailInfo | DimensionalFileInfo | TimedFileInfo | VideoFileInfo;
+export type MatrixMediaInfo =
+  | FileWithThumbnailInfo
+  | DimensionalFileInfo
+  | TimedFileInfo
+  | VideoFileInfo;
 
 export type MatrixTextContent = TextualMessageEventContent & MatrixReplyMeta;
 

@@ -57,7 +57,8 @@ export function resolveDiscordSenderIdentity(params: {
   }
 
   const senderTag = formatDiscordUserTag(params.author);
-  const senderDisplay = params.member?.nickname ?? params.author.globalName ?? params.author.username;
+  const senderDisplay =
+    params.member?.nickname ?? params.author.globalName ?? params.author.username;
   const senderLabel =
     senderDisplay && senderTag && senderDisplay !== senderTag
       ? `${senderDisplay} (${senderTag})`

@@ -100,7 +100,10 @@ function resolveGatewayPort(cfg: RemoteClawPluginApi["config"]): number {
   return DEFAULT_GATEWAY_PORT;
 }
 
-function resolveScheme(cfg: RemoteClawPluginApi["config"], opts?: { forceSecure?: boolean }): "ws" | "wss" {
+function resolveScheme(
+  cfg: RemoteClawPluginApi["config"],
+  opts?: { forceSecure?: boolean },
+): "ws" | "wss" {
   if (opts?.forceSecure) {
     return "wss";
   }
@@ -431,7 +434,9 @@ export default function register(api: RemoteClawPluginApi) {
             if (send) {
               await send(
                 target,
-                ["Scan this QR code with the RemoteClaw iOS app:", "", "```", qrAscii, "```"].join("\n"),
+                ["Scan this QR code with the RemoteClaw iOS app:", "", "```", qrAscii, "```"].join(
+                  "\n",
+                ),
                 {
                   ...(ctx.messageThreadId != null ? { messageThreadId: ctx.messageThreadId } : {}),
                   ...(ctx.accountId ? { accountId: ctx.accountId } : {}),
@@ -480,9 +485,15 @@ export default function register(api: RemoteClawPluginApi) {
 
         // WebUI + CLI/TUI: ASCII QR
         return {
-          text: ["Scan this QR code with the RemoteClaw iOS app:", "", "```", qrAscii, "```", "", ...infoLines].join(
-            "\n",
-          ),
+          text: [
+            "Scan this QR code with the RemoteClaw iOS app:",
+            "",
+            "```",
+            qrAscii,
+            "```",
+            "",
+            ...infoLines,
+          ].join("\n"),
         };
       }
 

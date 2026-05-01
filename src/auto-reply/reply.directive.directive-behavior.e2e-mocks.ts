@@ -22,7 +22,10 @@ vi.mock("../middleware/channel-bridge.js", () => ({
     constructor(opts: { provider: string }) {
       this.#provider = opts.provider;
     }
-    async handle(message: ChannelMessage, callbacks?: BridgeCallbacks): Promise<AgentDeliveryResult> {
+    async handle(
+      message: ChannelMessage,
+      callbacks?: BridgeCallbacks,
+    ): Promise<AgentDeliveryResult> {
       // Build embedded-agent-style params from the bridge interface
       const embeddedParams = {
         prompt: message.text,

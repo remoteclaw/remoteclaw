@@ -15,7 +15,9 @@ export function normalizeWindowsPathForComparison(input: string): string {
 }
 
 export function isNodeError(value: unknown): value is NodeJS.ErrnoException {
-  return Boolean(value && typeof value === "object" && "code" in (value as Record<string, unknown>));
+  return Boolean(
+    value && typeof value === "object" && "code" in (value as Record<string, unknown>),
+  );
 }
 
 export function hasNodeErrorCode(value: unknown, code: string): boolean {

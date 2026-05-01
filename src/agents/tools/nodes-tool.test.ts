@@ -228,7 +228,9 @@ describe("createNodesTool screen_record duration guardrails", () => {
         ],
       },
     });
-    nodesCameraMocks.cameraTempPath.mockReturnValueOnce("/tmp/photo-1.jpg").mockReturnValueOnce("/tmp/photo-2.jpg");
+    nodesCameraMocks.cameraTempPath
+      .mockReturnValueOnce("/tmp/photo-1.jpg")
+      .mockReturnValueOnce("/tmp/photo-2.jpg");
     nodesCameraMocks.parseCameraSnapPayload
       .mockReturnValueOnce({
         base64: "ZmFrZQ==",

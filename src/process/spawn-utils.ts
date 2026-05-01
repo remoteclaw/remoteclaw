@@ -54,7 +54,8 @@ export function formatSpawnError(err: unknown): string {
 }
 
 function shouldRetry(err: unknown, codes: string[]): boolean {
-  const code = err && typeof err === "object" && "code" in err ? String((err as { code?: unknown }).code) : "";
+  const code =
+    err && typeof err === "object" && "code" in err ? String((err as { code?: unknown }).code) : "";
   return code.length > 0 && codes.includes(code);
 }
 
@@ -101,7 +102,9 @@ async function spawnAndWaitForSpawn(
   });
 }
 
-export async function spawnWithFallback(params: SpawnWithFallbackParams): Promise<SpawnWithFallbackResult> {
+export async function spawnWithFallback(
+  params: SpawnWithFallbackParams,
+): Promise<SpawnWithFallbackResult> {
   const spawnImpl = params.spawnImpl ?? spawn;
   const retryCodes = params.retryCodes ?? DEFAULT_RETRY_CODES;
   const baseOptions = { ...params.options };

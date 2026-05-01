@@ -35,7 +35,10 @@ const registry = new Map<string, RegistryEntry>();
  * @param logger - Logger instance
  * @returns The client manager
  */
-export function getOrCreateClientManager(accountId: string, logger: ChannelLogSink): TwitchClientManager {
+export function getOrCreateClientManager(
+  accountId: string,
+  logger: ChannelLogSink,
+): TwitchClientManager {
   const existing = registry.get(accountId);
   if (existing) {
     return existing.manager;

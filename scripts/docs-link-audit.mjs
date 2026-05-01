@@ -176,7 +176,9 @@ const markdownLinkRegex = /!?\[[^\]]*\]\(([^)]+)\)/g;
 
 export function sanitizeDocsConfigForEnglishOnly(value) {
   if (Array.isArray(value)) {
-    return value.map((item) => sanitizeDocsConfigForEnglishOnly(item)).filter((item) => item !== undefined);
+    return value
+      .map((item) => sanitizeDocsConfigForEnglishOnly(item))
+      .filter((item) => item !== undefined);
   }
 
   if (!value || typeof value !== "object") {
@@ -201,7 +203,12 @@ export function sanitizeDocsConfigForEnglishOnly(value) {
     if (Array.isArray(next) && next.length === 0) {
       continue;
     }
-    if (next && typeof next === "object" && !Array.isArray(next) && Object.keys(next).length === 0) {
+    if (
+      next &&
+      typeof next === "object" &&
+      !Array.isArray(next) &&
+      Object.keys(next).length === 0
+    ) {
       continue;
     }
     sanitized[key] = next;
@@ -216,10 +223,18 @@ export function sanitizeDocsConfigForEnglishOnly(value) {
   if (record.tabs && !Array.isArray(sanitized.tabs)) {
     return undefined;
   }
-  if ("source" in record && typeof record.source === "string" && typeof sanitized.source !== "string") {
+  if (
+    "source" in record &&
+    typeof record.source === "string" &&
+    typeof sanitized.source !== "string"
+  ) {
     return undefined;
   }
-  if ("destination" in record && typeof record.destination === "string" && typeof sanitized.destination !== "string") {
+  if (
+    "destination" in record &&
+    typeof record.destination === "string" &&
+    typeof sanitized.destination !== "string"
+  ) {
     return undefined;
   }
 
@@ -380,9 +395,11 @@ export function runDocsLinkAuditCli(options = {}) {
   const args = options.args ?? process.argv.slice(2);
   if (args.includes("--anchors")) {
     const spawnSyncImpl = options.spawnSyncImpl ?? spawnSync;
-    const prepareAnchorAuditDocsDirImpl = options.prepareAnchorAuditDocsDirImpl ?? prepareAnchorAuditDocsDir;
+    const prepareAnchorAuditDocsDirImpl =
+      options.prepareAnchorAuditDocsDirImpl ?? prepareAnchorAuditDocsDir;
     const cleanupAnchorAuditDocsDirImpl =
-      options.cleanupAnchorAuditDocsDirImpl ?? ((dir) => fs.rmSync(dir, { recursive: true, force: true }));
+      options.cleanupAnchorAuditDocsDirImpl ??
+      ((dir) => fs.rmSync(dir, { recursive: true, force: true }));
     const anchorDocsDir = prepareAnchorAuditDocsDirImpl(DOCS_DIR);
 
     try {

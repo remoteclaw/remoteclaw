@@ -23,7 +23,10 @@ export type DoctorPrompter = {
   shouldForce: boolean;
 };
 
-export function createDoctorPrompter(params: { runtime: RuntimeEnv; options: DoctorOptions }): DoctorPrompter {
+export function createDoctorPrompter(params: {
+  runtime: RuntimeEnv;
+  options: DoctorOptions;
+}): DoctorPrompter {
   const yes = params.options.yes === true;
   const requestedNonInteractive = params.options.nonInteractive === true;
   const shouldRepair = params.options.repair === true || yes;
@@ -97,7 +100,9 @@ export function createDoctorPrompter(params: { runtime: RuntimeEnv; options: Doc
         await select({
           ...p,
           message: stylePromptMessage(p.message),
-          options: p.options.map((opt) => (opt.hint === undefined ? opt : { ...opt, hint: stylePromptHint(opt.hint) })),
+          options: p.options.map((opt) =>
+            opt.hint === undefined ? opt : { ...opt, hint: stylePromptHint(opt.hint) },
+          ),
         }),
         params.runtime,
       ) as T;

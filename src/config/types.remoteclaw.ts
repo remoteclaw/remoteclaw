@@ -4,9 +4,19 @@ import type { DiagnosticsConfig, LoggingConfig, SessionConfig, WebConfig } from 
 import type { BrowserConfig } from "./types.browser.js";
 import type { ChannelsConfig } from "./types.channels.js";
 import type { CronConfig } from "./types.cron.js";
-import type { CanvasHostConfig, DiscoveryConfig, GatewayConfig, TalkConfig } from "./types.gateway.js";
+import type {
+  CanvasHostConfig,
+  DiscoveryConfig,
+  GatewayConfig,
+  TalkConfig,
+} from "./types.gateway.js";
 import type { HooksConfig } from "./types.hooks.js";
-import type { AudioConfig, BroadcastConfig, CommandsConfig, MessagesConfig } from "./types.messages.js";
+import type {
+  AudioConfig,
+  BroadcastConfig,
+  CommandsConfig,
+  MessagesConfig,
+} from "./types.messages.js";
 import type { ModelsConfig } from "./types.models.js";
 import type { NodeHostConfig } from "./types.node-host.js";
 import type { PluginsConfig } from "./types.plugins.js";
@@ -30,7 +40,11 @@ export type RemoteClawConfig = {
     /** Inline env vars to apply when not already present in the process env. */
     vars?: Record<string, string>;
     /** Sugar: allow env vars directly under env (string values only). */
-    [key: string]: string | Record<string, string> | { enabled?: boolean; timeoutMs?: number } | undefined;
+    [key: string]:
+      | string
+      | Record<string, string>
+      | { enabled?: boolean; timeoutMs?: number }
+      | undefined;
   };
   wizard?: {
     lastRunAt?: string;

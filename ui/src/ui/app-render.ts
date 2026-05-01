@@ -133,7 +133,8 @@ export function renderApp(state: AppViewState) {
     state.updateAvailable?.currentVersion ||
     t("common.na");
   const availableUpdate =
-    state.updateAvailable && state.updateAvailable.latestVersion !== state.updateAvailable.currentVersion
+    state.updateAvailable &&
+    state.updateAvailable.latestVersion !== state.updateAvailable.currentVersion
       ? state.updateAvailable
       : null;
   const versionStatusClass = availableUpdate ? "warn" : "ok";
@@ -146,15 +147,21 @@ export function renderApp(state: AppViewState) {
   const showThinking = state.onboarding ? false : state.settings.chatShowThinking;
   const assistantAvatarUrl = resolveAssistantAvatarUrl(state);
   const chatAvatarUrl = state.chatAvatarUrl ?? assistantAvatarUrl ?? null;
-  const configValue = state.configForm ?? (state.configSnapshot?.config as Record<string, unknown> | null);
+  const configValue =
+    state.configForm ?? (state.configSnapshot?.config as Record<string, unknown> | null);
   const basePath = normalizeBasePath(state.basePath ?? "");
   const resolvedAgentId =
-    state.agentsSelectedId ?? state.agentsList?.defaultId ?? state.agentsList?.agents?.[0]?.id ?? null;
+    state.agentsSelectedId ??
+    state.agentsList?.defaultId ??
+    state.agentsList?.agents?.[0]?.id ??
+    null;
   const cronAgentSuggestions = Array.from(
     new Set(
       [
         ...(state.agentsList?.agents?.map((entry) => entry.id.trim()) ?? []),
-        ...state.cronJobs.map((job) => (typeof job.agentId === "string" ? job.agentId.trim() : "")).filter(Boolean),
+        ...state.cronJobs
+          .map((job) => (typeof job.agentId === "string" ? job.agentId.trim() : ""))
+          .filter(Boolean),
       ].filter(Boolean),
     ),
   ).toSorted((a, b) => a.localeCompare(b));
@@ -179,15 +186,23 @@ export function renderApp(state: AppViewState) {
     state.cronForm.deliveryChannel && state.cronForm.deliveryChannel.trim()
       ? state.cronForm.deliveryChannel.trim()
       : "last";
-  const jobToSuggestions = state.cronJobs.map((job) => normalizeSuggestionValue(job.delivery?.to)).filter(Boolean);
+  const jobToSuggestions = state.cronJobs
+    .map((job) => normalizeSuggestionValue(job.delivery?.to))
+    .filter(Boolean);
   const accountToSuggestions = (
     selectedDeliveryChannel === "last"
       ? Object.values(state.channelsSnapshot?.channelAccounts ?? {}).flat()
       : (state.channelsSnapshot?.channelAccounts?.[selectedDeliveryChannel] ?? [])
   )
-    .flatMap((account) => [normalizeSuggestionValue(account.accountId), normalizeSuggestionValue(account.name)])
+    .flatMap((account) => [
+      normalizeSuggestionValue(account.accountId),
+      normalizeSuggestionValue(account.name),
+    ])
     .filter(Boolean);
-  const rawDeliveryToSuggestions = uniquePreserveOrder([...jobToSuggestions, ...accountToSuggestions]);
+  const rawDeliveryToSuggestions = uniquePreserveOrder([
+    ...jobToSuggestions,
+    ...accountToSuggestions,
+  ]);
   const deliveryToSuggestions =
     state.cronForm.deliveryMode === "webhook"
       ? rawDeliveryToSuggestions.filter((value) => isHttpUrl(value))
@@ -371,9 +386,11 @@ export function renderApp(state: AppViewState) {
                 onConfigPatch: (path, value) => updateConfigFormValue(state, path, value),
                 onConfigSave: () => state.handleChannelConfigSave(),
                 onConfigReload: () => state.handleChannelConfigReload(),
-                onNostrProfileEdit: (accountId, profile) => state.handleNostrProfileEdit(accountId, profile),
+                onNostrProfileEdit: (accountId, profile) =>
+                  state.handleNostrProfileEdit(accountId, profile),
                 onNostrProfileCancel: () => state.handleNostrProfileCancel(),
-                onNostrProfileFieldChange: (field, value) => state.handleNostrProfileFieldChange(field, value),
+                onNostrProfileFieldChange: (field, value) =>
+                  state.handleNostrProfileFieldChange(field, value),
                 onNostrProfileSave: () => state.handleNostrProfileSave(),
                 onNostrProfileImport: () => state.handleNostrProfileImport(),
                 onNostrProfileToggleAdvanced: () => state.handleNostrProfileToggleAdvanced(),
@@ -548,7 +565,10 @@ export function renderApp(state: AppViewState) {
                 onRefresh: async () => {
                   await loadAgents(state);
                   const nextSelected =
-                    state.agentsSelectedId ?? state.agentsList?.defaultId ?? state.agentsList?.agents?.[0]?.id ?? null;
+                    state.agentsSelectedId ??
+                    state.agentsList?.defaultId ??
+                    state.agentsList?.agents?.[0]?.id ??
+                    null;
                   await loadToolsCatalog(state, nextSelected);
                   const agentIds = state.agentsList?.agents?.map((entry) => entry.id) ?? [];
                   if (agentIds.length > 0) {
@@ -609,7 +629,8 @@ export function renderApp(state: AppViewState) {
                   if (!resolvedAgentId) {
                     return;
                   }
-                  const content = state.agentFileDrafts[name] ?? state.agentFileContents[name] ?? "";
+                  const content =
+                    state.agentFileDrafts[name] ?? state.agentFileContents[name] ?? "";
                   void saveAgentFile(state, resolvedAgentId, name, content);
                 },
                 onToolsProfileChange: (agentId, profile, clearAllow) => {
@@ -622,7 +643,10 @@ export function renderApp(state: AppViewState) {
                   }
                   const index = list.findIndex(
                     (entry) =>
-                      entry && typeof entry === "object" && "id" in entry && (entry as { id?: string }).id === agentId,
+                      entry &&
+                      typeof entry === "object" &&
+                      "id" in entry &&
+                      (entry as { id?: string }).id === agentId,
                   );
                   if (index < 0) {
                     return;
@@ -647,7 +671,10 @@ export function renderApp(state: AppViewState) {
                   }
                   const index = list.findIndex(
                     (entry) =>
-                      entry && typeof entry === "object" && "id" in entry && (entry as { id?: string }).id === agentId,
+                      entry &&
+                      typeof entry === "object" &&
+                      "id" in entry &&
+                      (entry as { id?: string }).id === agentId,
                   );
                   if (index < 0) {
                     return;
@@ -678,7 +705,10 @@ export function renderApp(state: AppViewState) {
                   }
                   const index = list.findIndex(
                     (entry) =>
-                      entry && typeof entry === "object" && "id" in entry && (entry as { id?: string }).id === agentId,
+                      entry &&
+                      typeof entry === "object" &&
+                      "id" in entry &&
+                      (entry as { id?: string }).id === agentId,
                   );
                   if (index < 0) {
                     return;
@@ -711,7 +741,10 @@ export function renderApp(state: AppViewState) {
                   }
                   const index = list.findIndex(
                     (entry) =>
-                      entry && typeof entry === "object" && "id" in entry && (entry as { id?: string }).id === agentId,
+                      entry &&
+                      typeof entry === "object" &&
+                      "id" in entry &&
+                      (entry as { id?: string }).id === agentId,
                   );
                   if (index < 0) {
                     return;
@@ -742,7 +775,9 @@ export function renderApp(state: AppViewState) {
                     }
                     return;
                   }
-                  const next = primary ? { primary, fallbacks: normalized } : { fallbacks: normalized };
+                  const next = primary
+                    ? { primary, fallbacks: normalized }
+                    : { fallbacks: normalized };
                   updateConfigFormValue(state, basePath, next);
                 },
               })
@@ -757,7 +792,9 @@ export function renderApp(state: AppViewState) {
                 devicesLoading: state.devicesLoading,
                 devicesError: state.devicesError,
                 devicesList: state.devicesList,
-                configForm: state.configForm ?? (state.configSnapshot?.config as Record<string, unknown> | null),
+                configForm:
+                  state.configForm ??
+                  (state.configSnapshot?.config as Record<string, unknown> | null),
                 configLoading: state.configLoading,
                 configSaving: state.configSaving,
                 configDirty: state.configFormDirty,
@@ -774,7 +811,8 @@ export function renderApp(state: AppViewState) {
                 onDevicesRefresh: () => loadDevices(state),
                 onDeviceApprove: (requestId) => approveDevicePairing(state, requestId),
                 onDeviceReject: (requestId) => rejectDevicePairing(state, requestId),
-                onDeviceRotate: (deviceId, role, scopes) => rotateDeviceToken(state, { deviceId, role, scopes }),
+                onDeviceRotate: (deviceId, role, scopes) =>
+                  rotateDeviceToken(state, { deviceId, role, scopes }),
                 onDeviceRevoke: (deviceId, role) => revokeDeviceToken(state, { deviceId, role }),
                 onLoadConfig: () => loadConfig(state),
                 onLoadExecApprovals: () => {
@@ -811,7 +849,8 @@ export function renderApp(state: AppViewState) {
                 onExecApprovalsSelectAgent: (agentId) => {
                   state.execApprovalsSelectedAgent = agentId;
                 },
-                onExecApprovalsPatch: (path, value) => updateExecApprovalsFormValue(state, path, value),
+                onExecApprovalsPatch: (path, value) =>
+                  updateExecApprovalsFormValue(state, path, value),
                 onExecApprovalsRemove: (path) => removeExecApprovalsFormValue(state, path),
                 onSaveExecApprovals: () => {
                   const target =

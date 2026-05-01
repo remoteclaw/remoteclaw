@@ -34,12 +34,17 @@ async function readModuleSource(modulePath: string, seen: Set<string>): Promise<
   }
 
   const nestedSources = (
-    await Promise.all([...nestedTargets].map(async (targetPath) => await readModuleSource(targetPath, seen)))
+    await Promise.all(
+      [...nestedTargets].map(async (targetPath) => await readModuleSource(targetPath, seen)),
+    )
   ).filter(Boolean);
 
   return nestedSources.length > 0 ? [source, ...nestedSources].join("\n") : source;
 }
 
-export async function readCommandSource(relativePath: string, cwd = process.cwd()): Promise<string> {
+export async function readCommandSource(
+  relativePath: string,
+  cwd = process.cwd(),
+): Promise<string> {
   return await readModuleSource(path.join(cwd, relativePath), new Set<string>());
 }

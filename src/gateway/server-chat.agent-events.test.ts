@@ -2,7 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { loadConfig } from "../config/config.js";
 import { registerAgentRunContext, resetAgentRunContextForTest } from "../infra/agent-events.js";
 import { resolveHeartbeatVisibility } from "../infra/heartbeat-visibility.js";
-import { createAgentEventHandler, createChatRunState, createToolEventRecipientRegistry } from "./server-chat.js";
+import {
+  createAgentEventHandler,
+  createChatRunState,
+  createToolEventRecipientRegistry,
+} from "./server-chat.js";
 
 vi.mock("../config/config.js", () => ({
   loadConfig: vi.fn(() => ({})),
@@ -31,8 +35,12 @@ describe("agent event handler", () => {
     resetAgentRunContextForTest();
   });
 
-  function createHarness(params?: { now?: number; resolveSessionKeyForRun?: (runId: string) => string | undefined }) {
-    const nowSpy = params?.now === undefined ? undefined : vi.spyOn(Date, "now").mockReturnValue(params.now);
+  function createHarness(params?: {
+    now?: number;
+    resolveSessionKeyForRun?: (runId: string) => string | undefined;
+  }) {
+    const nowSpy =
+      params?.now === undefined ? undefined : vi.spyOn(Date, "now").mockReturnValue(params.now);
     const broadcast = vi.fn();
     const broadcastToConnIds = vi.fn();
     const nodeSendToSession = vi.fn();
@@ -97,7 +105,11 @@ describe("agent event handler", () => {
     activeModel: "moonshotai/Kimi-K2.5",
   } as const;
 
-  function emitLifecycleEnd(handler: ReturnType<typeof createHarness>["handler"], runId: string, seq = 2) {
+  function emitLifecycleEnd(
+    handler: ReturnType<typeof createHarness>["handler"],
+    runId: string,
+    seq = 2,
+  ) {
     handler({
       runId,
       seq,
@@ -420,7 +432,11 @@ describe("agent event handler", () => {
 
     const chatCalls = chatBroadcastCalls(broadcast);
     expect(chatCalls).toHaveLength(3);
-    expect(chatCalls.map(([, payload]) => (payload as { state?: string }).state)).toEqual(["delta", "delta", "final"]);
+    expect(chatCalls.map(([, payload]) => (payload as { state?: string }).state)).toEqual([
+      "delta",
+      "delta",
+      "final",
+    ]);
     expect(sessionChatCalls(nodeSendToSession)).toHaveLength(3);
     nowSpy.mockRestore();
   });
@@ -457,10 +473,16 @@ describe("agent event handler", () => {
   it("flushes buffered chat delta before tool start events", () => {
     let now = 12_000;
     const nowSpy = vi.spyOn(Date, "now").mockImplementation(() => now);
-    const { broadcast, broadcastToConnIds, nodeSendToSession, chatRunState, toolEventRecipients, handler } =
-      createHarness({
-        resolveSessionKeyForRun: () => "session-tool-flush",
-      });
+    const {
+      broadcast,
+      broadcastToConnIds,
+      nodeSendToSession,
+      chatRunState,
+      toolEventRecipients,
+      handler,
+    } = createHarness({
+      resolveSessionKeyForRun: () => "session-tool-flush",
+    });
 
     chatRunState.registry.add("run-tool-flush", {
       sessionKey: "session-tool-flush",
@@ -795,6 +817,8 @@ describe("agent event handler", () => {
     const payload = expectSingleFinalChatPayload(broadcast) as {
       message?: { content?: Array<{ text?: string }> };
     };
-    expect(payload.message?.content?.[0]?.text).toBe("Disk usage crossed 95 percent on /data and needs cleanup now.");
+    expect(payload.message?.content?.[0]?.text).toBe(
+      "Disk usage crossed 95 percent on /data and needs cleanup now.",
+    );
   });
 });

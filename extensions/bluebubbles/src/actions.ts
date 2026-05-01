@@ -108,7 +108,9 @@ export const bluebubblesMessageActions: ChannelMessageActionAdapter = {
     const opts = { cfg: cfg, accountId: accountId ?? undefined };
     const assertPrivateApiEnabled = () => {
       if (getCachedBlueBubblesPrivateApiStatus(account.accountId) === false) {
-        throw new Error(`BlueBubbles ${action} requires Private API, but it is disabled on the BlueBubbles server.`);
+        throw new Error(
+          `BlueBubbles ${action} requires Private API, but it is disabled on the BlueBubbles server.`,
+        );
       }
     };
 
@@ -199,7 +201,9 @@ export const bluebubblesMessageActions: ChannelMessageActionAdapter = {
       }
       const rawMessageId = readStringParam(params, "messageId");
       const newText =
-        readStringParam(params, "text") ?? readStringParam(params, "newText") ?? readStringParam(params, "message");
+        readStringParam(params, "text") ??
+        readStringParam(params, "newText") ??
+        readStringParam(params, "message");
       if (!rawMessageId || !newText) {
         const missing: string[] = [];
         if (!rawMessageId) {
@@ -336,8 +340,10 @@ export const bluebubblesMessageActions: ChannelMessageActionAdapter = {
       assertPrivateApiEnabled();
       const resolvedChatGuid = await resolveChatGuid();
       const base64Buffer = readStringParam(params, "buffer");
-      const filename = readStringParam(params, "filename") ?? readStringParam(params, "name") ?? "icon.png";
-      const contentType = readStringParam(params, "contentType") ?? readStringParam(params, "mimeType");
+      const filename =
+        readStringParam(params, "filename") ?? readStringParam(params, "name") ?? "icon.png";
+      const contentType =
+        readStringParam(params, "contentType") ?? readStringParam(params, "mimeType");
 
       if (!base64Buffer) {
         throw new Error(
@@ -400,7 +406,8 @@ export const bluebubblesMessageActions: ChannelMessageActionAdapter = {
       const to = readStringParam(params, "to", { required: true });
       const filename = readStringParam(params, "filename", { required: true });
       const caption = readStringParam(params, "caption");
-      const contentType = readStringParam(params, "contentType") ?? readStringParam(params, "mimeType");
+      const contentType =
+        readStringParam(params, "contentType") ?? readStringParam(params, "mimeType");
       const asVoice = readBooleanParam(params, "asVoice");
 
       // Buffer can come from params.buffer (base64) or params.path (file path)
@@ -413,7 +420,9 @@ export const bluebubblesMessageActions: ChannelMessageActionAdapter = {
         buffer = Uint8Array.from(atob(base64Buffer), (c) => c.charCodeAt(0));
       } else if (filePath) {
         // Read file from path (will be handled by caller providing buffer)
-        throw new Error("BlueBubbles sendAttachment: filePath not supported in action, provide buffer as base64.");
+        throw new Error(
+          "BlueBubbles sendAttachment: filePath not supported in action, provide buffer as base64.",
+        );
       } else {
         throw new Error("BlueBubbles sendAttachment requires buffer (base64) parameter.");
       }

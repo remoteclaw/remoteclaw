@@ -13,7 +13,10 @@ type ChannelConfigFormProps = {
   onPatch: (path: Array<string | number>, value: unknown) => void;
 };
 
-function resolveSchemaNode(schema: JsonSchema | null, path: Array<string | number>): JsonSchema | null {
+function resolveSchemaNode(
+  schema: JsonSchema | null,
+  path: Array<string | number>,
+): JsonSchema | null {
   let current = schema;
   for (const key of path) {
     if (!current) {
@@ -46,7 +49,10 @@ function resolveSchemaNode(schema: JsonSchema | null, path: Array<string | numbe
   return current;
 }
 
-function resolveChannelValue(config: Record<string, unknown>, channelId: string): Record<string, unknown> {
+function resolveChannelValue(
+  config: Record<string, unknown>,
+  channelId: string,
+): Record<string, unknown> {
   return resolveChannelConfigValue(config, channelId) ?? {};
 }
 

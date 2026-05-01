@@ -1,5 +1,10 @@
 import type { RemoteClawApp } from "./app.ts";
-import { loadChannels, logoutWhatsApp, startWhatsAppLogin, waitWhatsAppLogin } from "./controllers/channels.ts";
+import {
+  loadChannels,
+  logoutWhatsApp,
+  startWhatsAppLogin,
+  waitWhatsAppLogin,
+} from "./controllers/channels.ts";
 import { loadConfig, saveConfig } from "./controllers/config.ts";
 import type { NostrProfile } from "./types.ts";
 import { createNostrProfileFormState } from "./views/channels.nostr-profile-form.ts";
@@ -82,7 +87,11 @@ function buildGatewayHttpHeaders(host: RemoteClawApp): Record<string, string> {
   return authorization ? { Authorization: authorization } : {};
 }
 
-export function handleNostrProfileEdit(host: RemoteClawApp, accountId: string, profile: NostrProfile | null) {
+export function handleNostrProfileEdit(
+  host: RemoteClawApp,
+  accountId: string,
+  profile: NostrProfile | null,
+) {
   host.nostrProfileAccountId = accountId;
   host.nostrProfileFormState = createNostrProfileFormState(profile ?? undefined);
 }
@@ -92,7 +101,11 @@ export function handleNostrProfileCancel(host: RemoteClawApp) {
   host.nostrProfileAccountId = null;
 }
 
-export function handleNostrProfileFieldChange(host: RemoteClawApp, field: keyof NostrProfile, value: string) {
+export function handleNostrProfileFieldChange(
+  host: RemoteClawApp,
+  field: keyof NostrProfile,
+  value: string,
+) {
   const state = host.nostrProfileFormState;
   if (!state) {
     return;
@@ -237,7 +250,9 @@ export async function handleNostrProfileImport(host: RemoteClawApp) {
 
     const merged = data.merged ?? data.imported ?? null;
     const nextValues = merged ? { ...state.values, ...merged } : state.values;
-    const showAdvanced = Boolean(nextValues.banner || nextValues.website || nextValues.nip05 || nextValues.lud16);
+    const showAdvanced = Boolean(
+      nextValues.banner || nextValues.website || nextValues.nip05 || nextValues.lud16,
+    );
 
     host.nostrProfileFormState = {
       ...state,

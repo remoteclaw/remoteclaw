@@ -19,7 +19,9 @@ export function pickSummaryFromOutput(text: string | undefined) {
   return clean.length > limit ? `${truncateUtf16Safe(clean, limit)}…` : clean;
 }
 
-export function pickSummaryFromPayloads(payloads: Array<{ text?: string | undefined; isError?: boolean }>) {
+export function pickSummaryFromPayloads(
+  payloads: Array<{ text?: string | undefined; isError?: boolean }>,
+) {
   for (let i = payloads.length - 1; i >= 0; i--) {
     if (payloads[i]?.isError) {
       continue;
@@ -38,7 +40,9 @@ export function pickSummaryFromPayloads(payloads: Array<{ text?: string | undefi
   return undefined;
 }
 
-export function pickLastNonEmptyTextFromPayloads(payloads: Array<{ text?: string | undefined; isError?: boolean }>) {
+export function pickLastNonEmptyTextFromPayloads(
+  payloads: Array<{ text?: string | undefined; isError?: boolean }>,
+) {
   for (let i = payloads.length - 1; i >= 0; i--) {
     if (payloads[i]?.isError) {
       continue;

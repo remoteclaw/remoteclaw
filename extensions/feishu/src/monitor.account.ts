@@ -85,7 +85,9 @@ export async function resolveReactionSyntheticEvent(
   }
 
   if (reactionNotifications === "own" && !botOpenId) {
-    logger?.(`feishu[${accountId}]: bot open_id unavailable, skipping reaction ${emoji} on ${messageId}`);
+    logger?.(
+      `feishu[${accountId}]: bot open_id unavailable, skipping reaction ${emoji} on ${messageId}`,
+    );
     return null;
   }
 
@@ -107,7 +109,9 @@ export async function resolveReactionSyntheticEvent(
   const normalizedEventChatType = normalizeFeishuChatType(event.chat_type);
   const resolvedChatType = normalizedEventChatType ?? fallbackChatType;
   if (!resolvedChatType) {
-    logger?.(`feishu[${accountId}]: skipping reaction ${emoji} on ${messageId} without chat type context`);
+    logger?.(
+      `feishu[${accountId}]: skipping reaction ${emoji} on ${messageId} without chat type context`,
+    );
     return null;
   }
 
@@ -168,10 +172,12 @@ function mergeFeishuDebounceMentions(
   const merged = new Map<string, NonNullable<FeishuMessageEvent["message"]["mentions"]>[number]>();
   for (const entry of entries) {
     for (const mention of entry.message.mentions ?? []) {
-      const stableId = mention.id.open_id?.trim() || mention.id.user_id?.trim() || mention.id.union_id?.trim();
+      const stableId =
+        mention.id.open_id?.trim() || mention.id.user_id?.trim() || mention.id.union_id?.trim();
       const mentionName = mention.name?.trim();
       const mentionKey = mention.key?.trim();
-      const fallback = mentionName && mentionKey ? `${mentionName}|${mentionKey}` : mentionName || mentionKey;
+      const fallback =
+        mentionName && mentionKey ? `${mentionName}|${mentionKey}` : mentionName || mentionKey;
       const key = stableId || fallback;
       if (!key || merged.has(key)) {
         continue;
@@ -185,7 +191,9 @@ function mergeFeishuDebounceMentions(
   return Array.from(merged.values());
 }
 
-function dedupeFeishuDebounceEntriesByMessageId(entries: FeishuMessageEvent[]): FeishuMessageEvent[] {
+function dedupeFeishuDebounceEntriesByMessageId(
+  entries: FeishuMessageEvent[],
+): FeishuMessageEvent[] {
   const seen = new Set<string>();
   const deduped: FeishuMessageEvent[] = [];
   for (const entry of entries) {
@@ -226,11 +234,16 @@ function resolveFeishuDebounceMentions(params: {
   if (!normalizedBotOpenId) {
     return undefined;
   }
-  const botMentions = merged.filter((mention) => mention.id.open_id?.trim() === normalizedBotOpenId);
+  const botMentions = merged.filter(
+    (mention) => mention.id.open_id?.trim() === normalizedBotOpenId,
+  );
   return botMentions.length > 0 ? botMentions : undefined;
 }
 
-function registerEventHandlers(eventDispatcher: Lark.EventDispatcher, context: RegisterEventHandlersContext): void {
+function registerEventHandlers(
+  eventDispatcher: Lark.EventDispatcher,
+  context: RegisterEventHandlersContext,
+): void {
   const { cfg, accountId, runtime, chatHistories, fireAndForget } = context;
   const core = getFeishuRuntime();
   const inboundDebounceMs = core.channel.debounce.resolveInboundDebounceMs({
@@ -255,7 +268,8 @@ function registerEventHandlers(eventDispatcher: Lark.EventDispatcher, context: R
     await enqueue(chatId, task);
   };
   const resolveSenderDebounceId = (event: FeishuMessageEvent): string | undefined => {
-    const senderId = event.sender.sender_id.open_id?.trim() || event.sender.sender_id.user_id?.trim();
+    const senderId =
+      event.sender.sender_id.open_id?.trim() || event.sender.sender_id.user_id?.trim();
     return senderId || undefined;
   };
   const resolveDebounceText = (event: FeishuMessageEvent): string => {
@@ -263,7 +277,10 @@ function registerEventHandlers(eventDispatcher: Lark.EventDispatcher, context: R
     const parsed = parseFeishuMessageEvent(event, botOpenId, botNames.get(accountId));
     return parsed.content.trim();
   };
-  const recordSuppressedMessageIds = async (entries: FeishuMessageEvent[], dispatchMessageId?: string) => {
+  const recordSuppressedMessageIds = async (
+    entries: FeishuMessageEvent[],
+    dispatchMessageId?: string,
+  ) => {
     const keepMessageId = dispatchMessageId?.trim();
     const suppressedIds = new Set(
       entries
@@ -279,7 +296,9 @@ function registerEventHandlers(eventDispatcher: Lark.EventDispatcher, context: R
       try {
         await tryRecordMessagePersistent(messageId, accountId, log);
       } catch (err) {
-        error(`feishu[${accountId}]: failed to record merged dedupe id ${messageId}: ${String(err)}`);
+        error(
+          `feishu[${accountId}]: failed to record merged dedupe id ${messageId}: ${String(err)}`,
+        );
       }
     }
   };
@@ -479,7 +498,9 @@ function registerEventHandlers(eventDispatcher: Lark.EventDispatcher, context: R
   });
 }
 
-export type BotOpenIdSource = { kind: "prefetched"; botOpenId?: string; botName?: string } | { kind: "fetch" };
+export type BotOpenIdSource =
+  | { kind: "prefetched"; botOpenId?: string; botName?: string }
+  | { kind: "fetch" };
 
 export type MonitorSingleAccountParams = {
   cfg: ClawdbotConfig;

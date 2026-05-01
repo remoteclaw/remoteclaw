@@ -83,7 +83,10 @@ const resolveGitLookupDepth = (searchDir: string, packageRoot: string | null) =>
   return depth + 1;
 };
 
-const readCommitFromGit = (searchDir: string, packageRoot: string | null): string | null | undefined => {
+const readCommitFromGit = (
+  searchDir: string,
+  packageRoot: string | null,
+): string | null | undefined => {
   const headPath = resolveGitHeadPath(searchDir, {
     maxDepth: resolveGitLookupDepth(searchDir, packageRoot),
   });

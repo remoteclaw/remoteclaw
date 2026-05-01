@@ -116,7 +116,8 @@ export async function runCli(argv: string[] = process.argv) {
     await registerSubCliByName(program, primary);
   }
 
-  const hasBuiltinPrimary = primary !== null && program.commands.some((command) => command.name() === primary);
+  const hasBuiltinPrimary =
+    primary !== null && program.commands.some((command) => command.name() === primary);
   const shouldSkipPluginRegistration = shouldSkipPluginCommandRegistration({
     argv: parseArgv,
     primary,
@@ -125,7 +126,8 @@ export async function runCli(argv: string[] = process.argv) {
   if (!shouldSkipPluginRegistration) {
     // Register plugin CLI commands before parsing
     const { registerPluginCliCommands } = await import("../plugins/cli.js");
-    const { loadValidatedConfigForPluginRegistration } = await import("./program/register.subclis.js");
+    const { loadValidatedConfigForPluginRegistration } =
+      await import("./program/register.subclis.js");
     const config = await loadValidatedConfigForPluginRegistration();
     if (config) {
       registerPluginCliCommands(program, config);

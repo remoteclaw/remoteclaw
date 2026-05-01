@@ -12,7 +12,10 @@ function safeTrim(value: unknown): string | undefined {
   return trimmed ? trimmed : undefined;
 }
 
-function formatConversationTimestamp(value: unknown, envelope?: EnvelopeFormatOptions): string | undefined {
+function formatConversationTimestamp(
+  value: unknown,
+  envelope?: EnvelopeFormatOptions,
+): string | undefined {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     return undefined;
   }
@@ -69,12 +72,17 @@ export function buildInboundMetaSystemPrompt(ctx: TemplateContext): string {
   ].join("\n");
 }
 
-export function buildInboundUserContextPrefix(ctx: TemplateContext, envelope?: EnvelopeFormatOptions): string {
+export function buildInboundUserContextPrefix(
+  ctx: TemplateContext,
+  envelope?: EnvelopeFormatOptions,
+): string {
   const blocks: string[] = [];
   const chatType = normalizeChatType(ctx.ChatType);
   const isDirect = !chatType || chatType === "direct";
   const directChannelValue = resolveInboundChannel(ctx);
-  const includeDirectConversationInfo = Boolean(directChannelValue && directChannelValue !== "webchat");
+  const includeDirectConversationInfo = Boolean(
+    directChannelValue && directChannelValue !== "webchat",
+  );
   const shouldIncludeConversationInfo = !isDirect || includeDirectConversationInfo;
 
   const messageId = safeTrim(ctx.MessageSid);
@@ -88,7 +96,10 @@ export function buildInboundUserContextPrefix(ctx: TemplateContext, envelope?: E
     sender_id: shouldIncludeConversationInfo ? safeTrim(ctx.SenderId) : undefined,
     conversation_label: isDirect ? undefined : safeTrim(ctx.ConversationLabel),
     sender: shouldIncludeConversationInfo
-      ? (safeTrim(ctx.SenderName) ?? safeTrim(ctx.SenderE164) ?? safeTrim(ctx.SenderId) ?? safeTrim(ctx.SenderUsername))
+      ? (safeTrim(ctx.SenderName) ??
+        safeTrim(ctx.SenderE164) ??
+        safeTrim(ctx.SenderId) ??
+        safeTrim(ctx.SenderUsername))
       : undefined,
     timestamp: timestampStr,
     group_subject: safeTrim(ctx.GroupSubject),
@@ -103,13 +114,18 @@ export function buildInboundUserContextPrefix(ctx: TemplateContext, envelope?: E
     has_forwarded_context: ctx.ForwardedFrom ? true : undefined,
     has_thread_starter: safeTrim(ctx.ThreadStarterBody) ? true : undefined,
     history_count:
-      Array.isArray(ctx.InboundHistory) && ctx.InboundHistory.length > 0 ? ctx.InboundHistory.length : undefined,
+      Array.isArray(ctx.InboundHistory) && ctx.InboundHistory.length > 0
+        ? ctx.InboundHistory.length
+        : undefined,
   };
   if (Object.values(conversationInfo).some((v) => v !== undefined)) {
     blocks.push(
-      ["Conversation info (untrusted metadata):", "```json", JSON.stringify(conversationInfo, null, 2), "```"].join(
-        "\n",
-      ),
+      [
+        "Conversation info (untrusted metadata):",
+        "```json",
+        JSON.stringify(conversationInfo, null, 2),
+        "```",
+      ].join("\n"),
     );
   }
 
@@ -128,7 +144,11 @@ export function buildInboundUserContextPrefix(ctx: TemplateContext, envelope?: E
     e164: safeTrim(ctx.SenderE164),
   };
   if (senderInfo?.label) {
-    blocks.push(["Sender (untrusted metadata):", "```json", JSON.stringify(senderInfo, null, 2), "```"].join("\n"));
+    blocks.push(
+      ["Sender (untrusted metadata):", "```json", JSON.stringify(senderInfo, null, 2), "```"].join(
+        "\n",
+      ),
+    );
   }
 
   if (safeTrim(ctx.ThreadStarterBody)) {

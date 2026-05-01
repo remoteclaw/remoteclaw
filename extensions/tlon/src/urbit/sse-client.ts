@@ -123,7 +123,9 @@ export class UrbitSSEClient {
     try {
       if (!response.ok && response.status !== 204) {
         const errorText = await response.text().catch(() => "");
-        throw new Error(`Subscribe failed: ${response.status}${errorText ? ` - ${errorText}` : ""}`);
+        throw new Error(
+          `Subscribe failed: ${response.status}${errorText ? ` - ${errorText}` : ""}`,
+        );
       }
     } finally {
       await release();
@@ -259,7 +261,9 @@ export class UrbitSSEClient {
       if (eventId > this.lastHeardEventId) {
         this.lastHeardEventId = eventId;
         if (eventId - this.lastAcknowledgedEventId > this.ackThreshold) {
-          this.logger.log?.(`[SSE] Acking event ${eventId} (last acked: ${this.lastAcknowledgedEventId})`);
+          this.logger.log?.(
+            `[SSE] Acking event ${eventId} (last acked: ${this.lastAcknowledgedEventId})`,
+          );
           this.ack(eventId).catch((err) => {
             this.logger.error?.(`Failed to ack event ${eventId}: ${String(err)}`);
           });
@@ -375,7 +379,10 @@ export class UrbitSSEClient {
     }
 
     this.reconnectAttempts += 1;
-    const delay = Math.min(this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1), this.maxReconnectDelay);
+    const delay = Math.min(
+      this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1),
+      this.maxReconnectDelay,
+    );
 
     this.logger.log?.(
       `[SSE] Reconnection attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${delay}ms...`,
@@ -456,7 +463,10 @@ export class UrbitSSEClient {
     }
   }
 
-  private async putChannelPayload(payload: unknown, params: { timeoutMs: number; auditContext: string }) {
+  private async putChannelPayload(
+    payload: unknown,
+    params: { timeoutMs: number; auditContext: string },
+  ) {
     return await urbitFetch({
       baseUrl: this.url,
       path: `/~/channel/${this.channelId}`,

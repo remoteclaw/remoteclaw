@@ -29,7 +29,10 @@ export function isMessagingTool(toolName: string): boolean {
   return Boolean(providerId && getChannelPlugin(providerId)?.actions);
 }
 
-export function isMessagingToolSendAction(toolName: string, args: Record<string, unknown>): boolean {
+export function isMessagingToolSendAction(
+  toolName: string,
+  args: Record<string, unknown>,
+): boolean {
   const action = typeof args.action === "string" ? args.action.trim() : "";
   if (toolName === "sessions_send") {
     return true;

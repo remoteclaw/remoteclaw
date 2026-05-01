@@ -46,8 +46,9 @@ function resolveOriginRoutingMetadata(items: FollowupRun[]): OriginRoutingMetada
     originatingTo: items.find((item) => item.originatingTo)?.originatingTo,
     originatingAccountId: items.find((item) => item.originatingAccountId)?.originatingAccountId,
     // Support both number (Telegram topic) and string (Slack thread_ts) thread IDs.
-    originatingThreadId: items.find((item) => item.originatingThreadId != null && item.originatingThreadId !== "")
-      ?.originatingThreadId,
+    originatingThreadId: items.find(
+      (item) => item.originatingThreadId != null && item.originatingThreadId !== "",
+    )?.originatingThreadId,
   };
 }
 
@@ -67,7 +68,10 @@ function resolveCrossChannelKey(item: FollowupRun): { cross?: true; key?: string
   };
 }
 
-export function scheduleFollowupDrain(key: string, runFollowup: (run: FollowupRun) => Promise<void>): void {
+export function scheduleFollowupDrain(
+  key: string,
+  runFollowup: (run: FollowupRun) => Promise<void>,
+): void {
   const queue = beginQueueDrain(FOLLOWUP_QUEUES, key);
   if (!queue) {
     return;

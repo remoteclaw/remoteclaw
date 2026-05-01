@@ -79,7 +79,8 @@ export const GENERATED_BUNDLED_PLUGIN_METADATA = [
       },
       skills: ["./skills"],
       name: "ACPX Runtime",
-      description: "ACP runtime backend powered by acpx with configurable command path and version policy.",
+      description:
+        "ACP runtime backend powered by acpx with configurable command path and version policy.",
       uiHints: {
         command: {
           label: "acpx Command",
@@ -1621,7 +1622,8 @@ export const GENERATED_BUNDLED_PLUGIN_METADATA = [
     },
     packageName: "@remoteclaw/memory-lancedb",
     packageVersion: "2026.3.22",
-    packageDescription: "RemoteClaw LanceDB-backed long-term memory plugin with auto-recall/capture",
+    packageDescription:
+      "RemoteClaw LanceDB-backed long-term memory plugin with auto-recall/capture",
     packageManifest: {
       extensions: ["./index.ts"],
       install: {

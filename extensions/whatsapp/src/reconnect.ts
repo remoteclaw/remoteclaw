@@ -25,7 +25,10 @@ export function resolveHeartbeatSeconds(cfg: RemoteClawConfig, overrideSeconds?:
   return DEFAULT_HEARTBEAT_SECONDS;
 }
 
-export function resolveReconnectPolicy(cfg: RemoteClawConfig, overrides?: Partial<ReconnectPolicy>): ReconnectPolicy {
+export function resolveReconnectPolicy(
+  cfg: RemoteClawConfig,
+  overrides?: Partial<ReconnectPolicy>,
+): ReconnectPolicy {
   const reconnectOverrides = cfg.web?.reconnect ?? {};
   const overrideConfig = overrides ?? {};
   const merged = {

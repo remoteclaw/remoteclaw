@@ -10,7 +10,11 @@ const BARE_SESSION_RESET_PROMPT_BASE =
  * Without this, agents on /new or /reset guess the date from their training cutoff.
  */
 export function buildBareSessionResetPrompt(cfg?: RemoteClawConfig, nowMs?: number): string {
-  return appendCronStyleCurrentTimeLine(BARE_SESSION_RESET_PROMPT_BASE, cfg ?? {}, nowMs ?? Date.now());
+  return appendCronStyleCurrentTimeLine(
+    BARE_SESSION_RESET_PROMPT_BASE,
+    cfg ?? {},
+    nowMs ?? Date.now(),
+  );
 }
 
 /** @deprecated Use buildBareSessionResetPrompt(cfg) instead */

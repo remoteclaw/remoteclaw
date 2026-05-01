@@ -1,4 +1,11 @@
-import { SimplePool, finalizeEvent, getPublicKey, verifyEvent, nip19, type Event } from "nostr-tools";
+import {
+  SimplePool,
+  finalizeEvent,
+  getPublicKey,
+  verifyEvent,
+  nip19,
+  type Event,
+} from "nostr-tools";
 import { decrypt, encrypt } from "nostr-tools/nip04";
 import type { NostrProfile } from "./config-schema.js";
 import {
@@ -47,7 +54,11 @@ export interface NostrBusOptions {
   /** Account ID for state persistence (optional, defaults to pubkey prefix) */
   accountId?: string;
   /** Called when a DM is received */
-  onMessage: (pubkey: string, text: string, reply: (text: string) => Promise<void>) => Promise<void>;
+  onMessage: (
+    pubkey: string,
+    text: string,
+    reply: (text: string) => Promise<void>,
+  ) => Promise<void>;
   /** Called on errors (optional) */
   onError?: (error: Error, context: string) => void;
   /** Called on connection status changes (optional) */
@@ -243,7 +254,9 @@ function createRelayHealthTracker(): RelayHealthTracker {
       // Recency bonus (prefer recently successful relays)
       const now = Date.now();
       const recencyBonus =
-        s.lastSuccess > s.lastFailure ? Math.max(0, 1 - (now - s.lastSuccess) / HEALTH_WINDOW_MS) * 0.2 : 0;
+        s.lastSuccess > s.lastFailure
+          ? Math.max(0, 1 - (now - s.lastSuccess) / HEALTH_WINDOW_MS) * 0.2
+          : 0;
 
       // Latency penalty (lower is better)
       const avgLatency = s.latencyCount > 0 ? s.latencySum / s.latencyCount : 1000;
@@ -447,7 +460,17 @@ export async function startNostrBus(options: NostrBusOptions): Promise<NostrBusH
 
       // Create reply function (try relays by health score)
       const replyTo = async (text: string): Promise<void> => {
-        await sendEncryptedDm(pool, sk, event.pubkey, text, relays, metrics, circuitBreakers, healthTracker, onError);
+        await sendEncryptedDm(
+          pool,
+          sk,
+          event.pubkey,
+          text,
+          relays,
+          metrics,
+          circuitBreakers,
+          healthTracker,
+          onError,
+        );
       };
 
       // Call the message handler
@@ -490,7 +513,17 @@ export async function startNostrBus(options: NostrBusOptions): Promise<NostrBusH
 
   // Public sendDm function
   const sendDm = async (toPubkey: string, text: string): Promise<void> => {
-    await sendEncryptedDm(pool, sk, toPubkey, text, relays, metrics, circuitBreakers, healthTracker, onError);
+    await sendEncryptedDm(
+      pool,
+      sk,
+      toPubkey,
+      text,
+      relays,
+      metrics,
+      circuitBreakers,
+      healthTracker,
+      onError,
+    );
   };
 
   // Profile publishing function

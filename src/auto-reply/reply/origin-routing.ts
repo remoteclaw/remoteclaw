@@ -9,10 +9,15 @@ export function resolveOriginMessageProvider(params: {
   originatingChannel?: OriginatingChannelType;
   provider?: string;
 }): string | undefined {
-  return normalizeProviderValue(params.originatingChannel) ?? normalizeProviderValue(params.provider);
+  return (
+    normalizeProviderValue(params.originatingChannel) ?? normalizeProviderValue(params.provider)
+  );
 }
 
-export function resolveOriginMessageTo(params: { originatingTo?: string; to?: string }): string | undefined {
+export function resolveOriginMessageTo(params: {
+  originatingTo?: string;
+  to?: string;
+}): string | undefined {
   return params.originatingTo ?? params.to;
 }
 

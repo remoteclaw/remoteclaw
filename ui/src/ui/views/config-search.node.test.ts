@@ -43,6 +43,8 @@ describe("config search tag helper", () => {
   });
 
   it("replaces only tag filters and preserves free text", () => {
-    expect(replaceTagFilters("token tag:security mode", ["auth", "channels"])).toBe("token mode tag:auth tag:channels");
+    expect(replaceTagFilters("token tag:security mode", ["auth", "channels"])).toBe(
+      "token mode tag:auth tag:channels",
+    );
   });
 });

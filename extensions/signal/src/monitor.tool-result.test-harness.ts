@@ -49,7 +49,9 @@ export function setSignalToolResultTestConfig(next: Record<string, unknown>) {
   config = next;
 }
 
-export function createSignalToolResultConfig(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+export function createSignalToolResultConfig(
+  overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
   const base = config as { channels?: Record<string, unknown> };
   const channels = base.channels ?? {};
   const signal = (channels.signal ?? {}) as Record<string, unknown>;

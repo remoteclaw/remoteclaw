@@ -1,8 +1,15 @@
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import type { DiscordAccountConfig } from "../../../src/config/types.discord.js";
-import { hasConfiguredSecretInput, normalizeSecretInputString } from "../../../src/config/types.secrets.js";
+import {
+  hasConfiguredSecretInput,
+  normalizeSecretInputString,
+} from "../../../src/config/types.secrets.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../src/routing/session-key.js";
-import { mergeDiscordAccountConfig, resolveDefaultDiscordAccountId, resolveDiscordAccountConfig } from "./accounts.js";
+import {
+  mergeDiscordAccountConfig,
+  resolveDefaultDiscordAccountId,
+  resolveDiscordAccountConfig,
+} from "./accounts.js";
 
 export type DiscordCredentialStatus = "available" | "configured_unavailable" | "missing";
 
@@ -45,12 +52,15 @@ export function inspectDiscordAccount(params: {
   accountId?: string | null;
   envToken?: string | null;
 }): InspectedDiscordAccount {
-  const accountId = normalizeAccountId(params.accountId ?? resolveDefaultDiscordAccountId(params.cfg));
+  const accountId = normalizeAccountId(
+    params.accountId ?? resolveDefaultDiscordAccountId(params.cfg),
+  );
   const merged = mergeDiscordAccountConfig(params.cfg, accountId);
   const enabled = params.cfg.channels?.discord?.enabled !== false && merged.enabled !== false;
   const accountConfig = resolveDiscordAccountConfig(params.cfg, accountId);
   const hasAccountToken = Boolean(
-    accountConfig && Object.prototype.hasOwnProperty.call(accountConfig as Record<string, unknown>, "token"),
+    accountConfig &&
+    Object.prototype.hasOwnProperty.call(accountConfig as Record<string, unknown>, "token"),
   );
   const accountToken = inspectDiscordTokenValue(accountConfig?.token);
   if (accountToken) {
@@ -93,7 +103,9 @@ export function inspectDiscordAccount(params: {
   }
 
   const allowEnv = accountId === DEFAULT_ACCOUNT_ID;
-  const envToken = allowEnv ? normalizeSecretInputString(params.envToken ?? process.env.DISCORD_BOT_TOKEN) : undefined;
+  const envToken = allowEnv
+    ? normalizeSecretInputString(params.envToken ?? process.env.DISCORD_BOT_TOKEN)
+    : undefined;
   if (envToken) {
     return {
       accountId,

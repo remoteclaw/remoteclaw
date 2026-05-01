@@ -18,7 +18,9 @@ export type DiscordMessageEvent = import("./listeners.js").DiscordMessageEvent;
 
 type DiscordMessagePreflightSharedFields = {
   cfg: LoadedConfig;
-  discordConfig: NonNullable<import("../../../../src/config/config.js").RemoteClawConfig["channels"]>["discord"];
+  discordConfig: NonNullable<
+    import("../../../../src/config/config.js").RemoteClawConfig["channels"]
+  >["discord"];
   accountId: string;
   token: string;
   runtime: RuntimeEnv;

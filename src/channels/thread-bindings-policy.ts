@@ -36,7 +36,9 @@ function normalizeChannelId(value: string | undefined | null): string {
 
 export function supportsAutomaticThreadBindingSpawn(channel: string): boolean {
   const normalized = normalizeChannelId(channel);
-  return normalized === DISCORD_THREAD_BINDING_CHANNEL || normalized === MATRIX_THREAD_BINDING_CHANNEL;
+  return (
+    normalized === DISCORD_THREAD_BINDING_CHANNEL || normalized === MATRIX_THREAD_BINDING_CHANNEL
+  );
 }
 
 export function requiresNativeThreadContextForThreadHere(channel: string): boolean {
@@ -118,7 +120,9 @@ export function resolveThreadBindingLifecycle(params: {
       : params.defaultMaxAgeMs;
 
   const inactivityExpiresAt =
-    idleTimeoutMs > 0 ? Math.max(params.record.lastActivityAt, params.record.boundAt) + idleTimeoutMs : undefined;
+    idleTimeoutMs > 0
+      ? Math.max(params.record.lastActivityAt, params.record.boundAt) + idleTimeoutMs
+      : undefined;
   const maxAgeExpiresAt = maxAgeMs > 0 ? params.record.boundAt + maxAgeMs : undefined;
 
   if (inactivityExpiresAt != null && maxAgeExpiresAt != null) {
@@ -147,15 +151,23 @@ export function resolveThreadBindingsEnabled(params: {
   channelEnabledRaw: unknown;
   sessionEnabledRaw: unknown;
 }): boolean {
-  return normalizeBoolean(params.channelEnabledRaw) ?? normalizeBoolean(params.sessionEnabledRaw) ?? true;
+  return (
+    normalizeBoolean(params.channelEnabledRaw) ?? normalizeBoolean(params.sessionEnabledRaw) ?? true
+  );
 }
 
-function resolveChannelThreadBindings(params: { cfg: RemoteClawConfig; channel: string; accountId: string }): {
+function resolveChannelThreadBindings(params: {
+  cfg: RemoteClawConfig;
+  channel: string;
+  accountId: string;
+}): {
   root?: SessionThreadBindingsConfigShape;
   account?: SessionThreadBindingsConfigShape;
 } {
   const channels = params.cfg.channels as Record<string, unknown> | undefined;
-  const channelConfig = channels?.[params.channel] as ChannelThreadBindingsContainerShape | undefined;
+  const channelConfig = channels?.[params.channel] as
+    | ChannelThreadBindingsContainerShape
+    | undefined;
   const accountConfig = channelConfig?.accounts?.[params.accountId];
   return {
     root: channelConfig?.threadBindings,
@@ -163,7 +175,9 @@ function resolveChannelThreadBindings(params: { cfg: RemoteClawConfig; channel: 
   };
 }
 
-function resolveSpawnFlagKey(kind: ThreadBindingSpawnKind): "spawnSubagentSessions" | "spawnAcpSessions" {
+function resolveSpawnFlagKey(
+  kind: ThreadBindingSpawnKind,
+): "spawnSubagentSessions" | "spawnAcpSessions" {
   return kind === "subagent" ? "spawnSubagentSessions" : "spawnAcpSessions";
 }
 
@@ -186,7 +200,8 @@ export function resolveThreadBindingSpawnPolicy(params: {
     normalizeBoolean(params.cfg.session?.threadBindings?.enabled) ??
     true;
   const spawnFlagKey = resolveSpawnFlagKey(params.kind);
-  const spawnEnabledRaw = normalizeBoolean(account?.[spawnFlagKey]) ?? normalizeBoolean(root?.[spawnFlagKey]);
+  const spawnEnabledRaw =
+    normalizeBoolean(account?.[spawnFlagKey]) ?? normalizeBoolean(root?.[spawnFlagKey]);
   const spawnEnabled = spawnEnabledRaw ?? !supportsAutomaticThreadBindingSpawn(channel);
   return {
     channel,
@@ -220,7 +235,11 @@ export function resolveThreadBindingMaxAgeMsForChannel(params: {
   });
 }
 
-function resolveThreadBindingChannelScope(params: { cfg: RemoteClawConfig; channel: string; accountId?: string }) {
+function resolveThreadBindingChannelScope(params: {
+  cfg: RemoteClawConfig;
+  channel: string;
+  accountId?: string;
+}) {
   const channel = normalizeChannelId(params.channel);
   const accountId = normalizeAccountId(params.accountId);
   return resolveChannelThreadBindings({

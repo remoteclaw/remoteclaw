@@ -18,11 +18,14 @@ describe("config validation SecretRef policy guards", () => {
       const issue = result.issues.find((entry) => entry.path === "hooks.token");
       expect(issue).toBeDefined();
       expect(issue?.message).toContain("SecretRef objects are not supported at hooks.token");
-      expect(issue?.message).toContain("https://docs.remoteclaw.org/reference/secretref-credential-surface");
+      expect(issue?.message).toContain(
+        "https://docs.remoteclaw.org/reference/secretref-credential-surface",
+      );
       expect(
         result.issues.some(
           (entry) =>
-            entry.path === "hooks.token" && entry.message.includes("Invalid input: expected string, received object"),
+            entry.path === "hooks.token" &&
+            entry.message.includes("Invalid input: expected string, received object"),
         ),
       ).toBe(false);
     }
@@ -72,7 +75,9 @@ describe("config validation SecretRef policy guards", () => {
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      const policyIssue = result.issues.find((entry) => entry.path === "channels.discord.threadBindings.webhookToken");
+      const policyIssue = result.issues.find(
+        (entry) => entry.path === "channels.discord.threadBindings.webhookToken",
+      );
       expect(policyIssue).toBeDefined();
       expect(policyIssue?.message).toContain(
         "SecretRef objects are not supported at channels.discord.threadBindings.webhookToken",
@@ -114,7 +119,9 @@ describe("config validation SecretRef policy guards", () => {
       ).toBe(true);
       expect(
         result.issues.some(
-          (entry) => entry.path === "channels.discord.threadBindings" && entry.message.includes("webhookTokne"),
+          (entry) =>
+            entry.path === "channels.discord.threadBindings" &&
+            entry.message.includes("webhookTokne"),
         ),
       ).toBe(true);
     }

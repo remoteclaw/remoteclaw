@@ -38,13 +38,18 @@ function shouldBlockWorkspaceDotEnvKey(key: string): boolean {
   );
 }
 
-function loadDotEnvFile(params: { filePath: string; shouldBlockKey: (key: string) => boolean; quiet?: boolean }) {
+function loadDotEnvFile(params: {
+  filePath: string;
+  shouldBlockKey: (key: string) => boolean;
+  quiet?: boolean;
+}) {
   let content: string;
   try {
     content = fs.readFileSync(params.filePath, "utf8");
   } catch (error) {
     if (!params.quiet) {
-      const code = error && typeof error === "object" && "code" in error ? String(error.code) : undefined;
+      const code =
+        error && typeof error === "object" && "code" in error ? String(error.code) : undefined;
       if (code !== "ENOENT") {
         console.warn(`[dotenv] Failed to read ${params.filePath}: ${String(error)}`);
       }

@@ -1,7 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createRebindableDirectoryAlias, withRealpathSymlinkRebindRace } from "../test-utils/symlink-rebind-race.js";
+import {
+  createRebindableDirectoryAlias,
+  withRealpathSymlinkRebindRace,
+} from "../test-utils/symlink-rebind-race.js";
 import { createTrackedTempDirs } from "../test-utils/tracked-temp-dirs.js";
 import {
   appendFileWithinRoot,
@@ -163,7 +166,9 @@ describe("fs-safe", () => {
     const root = await tempDirs.make("remoteclaw-fs-safe-root-");
     await fs.mkdir(path.join(root, "memory"), { recursive: true });
 
-    await expect(openFileWithinRoot({ rootDir: root, relativePath: "memory" })).rejects.toMatchObject({
+    await expect(
+      openFileWithinRoot({ rootDir: root, relativePath: "memory" }),
+    ).rejects.toMatchObject({
       code: expect.stringMatching(/invalid-path|not-file/),
     });
 
@@ -271,7 +276,9 @@ describe("fs-safe", () => {
       relativePath: "nested/copied.txt",
     });
 
-    await expect(fs.readFile(path.join(root, "nested", "copied.txt"), "utf8")).resolves.toBe("copy-ok");
+    await expect(fs.readFile(path.join(root, "nested", "copied.txt"), "utf8")).resolves.toBe(
+      "copy-ok",
+    );
   });
 
   it("removes a file within root safely", async () => {
@@ -300,47 +307,55 @@ describe("fs-safe", () => {
     expect(stat.isDirectory()).toBe(true);
   });
 
-  it.runIf(process.platform !== "win32")("creates directories through in-root symlink parents", async () => {
-    const root = await tempDirs.make("remoteclaw-fs-safe-root-");
-    const realDir = path.join(root, "real");
-    const aliasDir = path.join(root, "alias");
-    await fs.mkdir(realDir, { recursive: true });
-    await fs.symlink(realDir, aliasDir);
+  it.runIf(process.platform !== "win32")(
+    "creates directories through in-root symlink parents",
+    async () => {
+      const root = await tempDirs.make("remoteclaw-fs-safe-root-");
+      const realDir = path.join(root, "real");
+      const aliasDir = path.join(root, "alias");
+      await fs.mkdir(realDir, { recursive: true });
+      await fs.symlink(realDir, aliasDir);
 
-    await mkdirPathWithinRoot({
-      rootDir: root,
-      relativePath: path.join("alias", "nested", "deeper"),
-    });
+      await mkdirPathWithinRoot({
+        rootDir: root,
+        relativePath: path.join("alias", "nested", "deeper"),
+      });
 
-    await expect(fs.stat(path.join(realDir, "nested", "deeper"))).resolves.toMatchObject({
-      isDirectory: expect.any(Function),
-    });
-  });
+      await expect(fs.stat(path.join(realDir, "nested", "deeper"))).resolves.toMatchObject({
+        isDirectory: expect.any(Function),
+      });
+    },
+  );
 
-  it.runIf(process.platform !== "win32")("removes files through in-root symlink parents", async () => {
-    const root = await tempDirs.make("remoteclaw-fs-safe-root-");
-    const realDir = path.join(root, "real");
-    const aliasDir = path.join(root, "alias");
-    await fs.mkdir(realDir, { recursive: true });
-    await fs.symlink(realDir, aliasDir);
-    await fs.writeFile(path.join(realDir, "target.txt"), "hello");
+  it.runIf(process.platform !== "win32")(
+    "removes files through in-root symlink parents",
+    async () => {
+      const root = await tempDirs.make("remoteclaw-fs-safe-root-");
+      const realDir = path.join(root, "real");
+      const aliasDir = path.join(root, "alias");
+      await fs.mkdir(realDir, { recursive: true });
+      await fs.symlink(realDir, aliasDir);
+      await fs.writeFile(path.join(realDir, "target.txt"), "hello");
 
-    await removePathWithinRoot({
-      rootDir: root,
-      relativePath: path.join("alias", "target.txt"),
-    });
+      await removePathWithinRoot({
+        rootDir: root,
+        relativePath: path.join("alias", "target.txt"),
+      });
 
-    await expect(fs.stat(path.join(realDir, "target.txt"))).rejects.toMatchObject({
-      code: "ENOENT",
-    });
-  });
+      await expect(fs.stat(path.join(realDir, "target.txt"))).rejects.toMatchObject({
+        code: "ENOENT",
+      });
+    },
+  );
 
   it.runIf(process.platform !== "win32")(
     "falls back to legacy remove when the pinned helper cannot spawn",
     async () => {
       vi.resetModules();
       vi.doMock("./fs-pinned-path-helper.js", async () => {
-        const actual = await vi.importActual<typeof import("./fs-pinned-path-helper.js")>("./fs-pinned-path-helper.js");
+        const actual = await vi.importActual<typeof import("./fs-pinned-path-helper.js")>(
+          "./fs-pinned-path-helper.js",
+        );
         const error = new Error("spawn missing python ENOENT") as NodeJS.ErrnoException;
         error.code = "ENOENT";
         error.syscall = "spawn python3";
@@ -352,7 +367,8 @@ describe("fs-safe", () => {
         };
       });
 
-      const { removePathWithinRoot: removePathWithinRootWithFallback } = await import("./fs-safe.js");
+      const { removePathWithinRoot: removePathWithinRootWithFallback } =
+        await import("./fs-safe.js");
 
       const root = await tempDirs.make("remoteclaw-fs-safe-root-");
       const targetPath = path.join(root, "nested", "out.txt");
@@ -370,36 +386,41 @@ describe("fs-safe", () => {
     },
   );
 
-  it.runIf(process.platform !== "win32")("falls back to legacy mkdir when the pinned helper cannot spawn", async () => {
-    vi.resetModules();
-    vi.doMock("./fs-pinned-path-helper.js", async () => {
-      const actual = await vi.importActual<typeof import("./fs-pinned-path-helper.js")>("./fs-pinned-path-helper.js");
-      const error = new Error("spawn missing python ENOENT") as NodeJS.ErrnoException;
-      error.code = "ENOENT";
-      error.syscall = "spawn python3";
-      return {
-        ...actual,
-        runPinnedPathHelper: vi.fn(async () => {
-          throw error;
-        }),
-      };
-    });
+  it.runIf(process.platform !== "win32")(
+    "falls back to legacy mkdir when the pinned helper cannot spawn",
+    async () => {
+      vi.resetModules();
+      vi.doMock("./fs-pinned-path-helper.js", async () => {
+        const actual = await vi.importActual<typeof import("./fs-pinned-path-helper.js")>(
+          "./fs-pinned-path-helper.js",
+        );
+        const error = new Error("spawn missing python ENOENT") as NodeJS.ErrnoException;
+        error.code = "ENOENT";
+        error.syscall = "spawn python3";
+        return {
+          ...actual,
+          runPinnedPathHelper: vi.fn(async () => {
+            throw error;
+          }),
+        };
+      });
 
-    const { mkdirPathWithinRoot: mkdirPathWithinRootWithFallback } = await import("./fs-safe.js");
+      const { mkdirPathWithinRoot: mkdirPathWithinRootWithFallback } = await import("./fs-safe.js");
 
-    const root = await tempDirs.make("remoteclaw-fs-safe-root-");
+      const root = await tempDirs.make("remoteclaw-fs-safe-root-");
 
-    await mkdirPathWithinRootWithFallback({
-      rootDir: root,
-      relativePath: "nested/deeper",
-    });
+      await mkdirPathWithinRootWithFallback({
+        rootDir: root,
+        relativePath: "nested/deeper",
+      });
 
-    await expect(fs.stat(path.join(root, "nested", "deeper"))).resolves.toMatchObject({
-      isDirectory: expect.any(Function),
-    });
-    vi.doUnmock("./fs-pinned-path-helper.js");
-    vi.resetModules();
-  });
+      await expect(fs.stat(path.join(root, "nested", "deeper"))).resolves.toMatchObject({
+        isDirectory: expect.any(Function),
+      });
+      vi.doUnmock("./fs-pinned-path-helper.js");
+      vi.resetModules();
+    },
+  );
 
   it("enforces maxBytes when copying into root", async () => {
     const root = await tempDirs.make("remoteclaw-fs-safe-root-");
@@ -430,7 +451,9 @@ describe("fs-safe", () => {
       relativePath: "nested/from-source.txt",
       sourcePath,
     });
-    await expect(fs.readFile(path.join(root, "nested", "from-source.txt"), "utf8")).resolves.toBe("hello-from-source");
+    await expect(fs.readFile(path.join(root, "nested", "from-source.txt"), "utf8")).resolves.toBe(
+      "hello-from-source",
+    );
   });
   it("rejects write traversal outside root", async () => {
     const root = await tempDirs.make("remoteclaw-fs-safe-root-");

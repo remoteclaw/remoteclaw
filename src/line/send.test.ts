@@ -107,9 +107,14 @@ describe("LINE send helpers", () => {
   });
 
   it("pushes images via normalized LINE target", async () => {
-    const result = await sendModule.pushImageMessage("line:user:U123", "https://example.com/original.jpg", undefined, {
-      verbose: true,
-    });
+    const result = await sendModule.pushImageMessage(
+      "line:user:U123",
+      "https://example.com/original.jpg",
+      undefined,
+      {
+        verbose: true,
+      },
+    );
 
     expect(pushMessageMock).toHaveBeenCalledWith({
       to: "U123",
@@ -158,7 +163,9 @@ describe("LINE send helpers", () => {
   });
 
   it("throws when push messages are empty", async () => {
-    await expect(sendModule.pushMessagesLine("U123", [])).rejects.toThrow("Message must be non-empty for LINE sends");
+    await expect(sendModule.pushMessagesLine("U123", [])).rejects.toThrow(
+      "Message must be non-empty for LINE sends",
+    );
   });
 
   it("logs HTTP body when push fails", async () => {
@@ -172,11 +179,13 @@ describe("LINE send helpers", () => {
     err.body = "invalid flex payload";
     pushMessageMock.mockRejectedValueOnce(err);
 
-    await expect(sendModule.pushMessagesLine("U999", [{ type: "text", text: "hello" }])).rejects.toThrow(
-      "LINE push failed",
-    );
+    await expect(
+      sendModule.pushMessagesLine("U999", [{ type: "text", text: "hello" }]),
+    ).rejects.toThrow("LINE push failed");
 
-    expect(logVerboseMock).toHaveBeenCalledWith("line: push message failed (400 Bad Request): invalid flex payload");
+    expect(logVerboseMock).toHaveBeenCalledWith(
+      "line: push message failed (400 Bad Request): invalid flex payload",
+    );
   });
 
   it("caches profile results by default", async () => {
@@ -201,7 +210,9 @@ describe("LINE send helpers", () => {
 
     await expect(sendModule.showLoadingAnimation("line:room:R1")).resolves.toBeUndefined();
 
-    expect(logVerboseMock).toHaveBeenCalledWith(expect.stringContaining("line: loading animation failed (non-fatal)"));
+    expect(logVerboseMock).toHaveBeenCalledWith(
+      expect.stringContaining("line: loading animation failed (non-fatal)"),
+    );
   });
 
   it("pushes quick-reply text and caps to 13 buttons", async () => {
@@ -212,7 +223,9 @@ describe("LINE send helpers", () => {
     );
 
     expect(pushMessageMock).toHaveBeenCalledTimes(1);
-    const firstCall = pushMessageMock.mock.calls[0] as [{ messages: Array<{ quickReply?: { items: unknown[] } }> }];
+    const firstCall = pushMessageMock.mock.calls[0] as [
+      { messages: Array<{ quickReply?: { items: unknown[] } }> },
+    ];
     expect(firstCall[0].messages[0].quickReply?.items).toHaveLength(13);
   });
 });

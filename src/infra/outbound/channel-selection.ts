@@ -11,7 +11,10 @@ import {
 import { resolveOutboundChannelPlugin } from "./channel-resolution.js";
 
 export type MessageChannelId = DeliverableMessageChannel;
-export type MessageChannelSelectionSource = "explicit" | "tool-context-fallback" | "single-configured";
+export type MessageChannelSelectionSource =
+  | "explicit"
+  | "tool-context-fallback"
+  | "single-configured";
 
 const getMessageChannels = () => listDeliverableMessageChannels();
 
@@ -95,7 +98,9 @@ async function isPluginConfigured(plugin: ChannelPlugin, cfg: RemoteClawConfig):
       });
       continue;
     }
-    const enabled = plugin.config.isEnabled ? plugin.config.isEnabled(account, cfg) : isAccountEnabled(account);
+    const enabled = plugin.config.isEnabled
+      ? plugin.config.isEnabled(account, cfg)
+      : isAccountEnabled(account);
     if (!enabled) {
       continue;
     }
@@ -122,7 +127,9 @@ async function isPluginConfigured(plugin: ChannelPlugin, cfg: RemoteClawConfig):
   return false;
 }
 
-export async function listConfiguredMessageChannels(cfg: RemoteClawConfig): Promise<MessageChannelId[]> {
+export async function listConfiguredMessageChannels(
+  cfg: RemoteClawConfig,
+): Promise<MessageChannelId[]> {
   const channels: MessageChannelId[] = [];
   for (const plugin of listChannelPlugins()) {
     if (!isKnownChannel(plugin.id)) {
@@ -193,7 +200,9 @@ export async function resolveMessageChannelSelection(params: {
   if (configured.length === 0) {
     throw new Error("Channel is required (no configured channels detected).");
   }
-  throw new Error(`Channel is required when multiple channels are configured: ${configured.join(", ")}`);
+  throw new Error(
+    `Channel is required when multiple channels are configured: ${configured.join(", ")}`,
+  );
 }
 
 export const __testing = {

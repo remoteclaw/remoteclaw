@@ -32,7 +32,10 @@ describe("Feishu reply fallback for withdrawn/deleted targets", () => {
   const replyMock = vi.fn();
   const createMock = vi.fn();
 
-  async function expectFallbackResult(send: () => Promise<{ messageId?: string }>, expectedMessageId: string) {
+  async function expectFallbackResult(
+    send: () => Promise<{ messageId?: string }>,
+    expectedMessageId: string,
+  ) {
     const result = await send();
     expect(replyMock).toHaveBeenCalledTimes(1);
     expect(createMock).toHaveBeenCalledTimes(1);

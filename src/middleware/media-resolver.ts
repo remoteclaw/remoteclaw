@@ -18,13 +18,18 @@ const MAX_INBOUND_MEDIA_BYTES = 100 * 1024 * 1024;
  * Individual resolution failures are silently skipped — a single bad URL
  * should not prevent the rest of the message from being processed.
  */
-export async function resolveMediaAttachments(mediaUrls: string[], tempDir: string): Promise<MediaAttachment[]> {
+export async function resolveMediaAttachments(
+  mediaUrls: string[],
+  tempDir: string,
+): Promise<MediaAttachment[]> {
   const results: MediaAttachment[] = [];
   for (const [index, url] of mediaUrls.entries()) {
     try {
       const attachment = await resolveOne(url, tempDir, index);
       if (attachment) {
-        logDebug(`[media-resolver] resolved: url=${url} mime=${attachment.mimeType} path=${attachment.filePath}`);
+        logDebug(
+          `[media-resolver] resolved: url=${url} mime=${attachment.mimeType} path=${attachment.filePath}`,
+        );
         results.push(attachment);
       }
     } catch (err) {
@@ -35,7 +40,11 @@ export async function resolveMediaAttachments(mediaUrls: string[], tempDir: stri
   return results;
 }
 
-async function resolveOne(url: string, tempDir: string, index: number): Promise<MediaAttachment | undefined> {
+async function resolveOne(
+  url: string,
+  tempDir: string,
+  index: number,
+): Promise<MediaAttachment | undefined> {
   if (/^https?:\/\//i.test(url)) {
     return downloadRemote(url, tempDir, index);
   }
@@ -43,7 +52,11 @@ async function resolveOne(url: string, tempDir: string, index: number): Promise<
   return resolveLocal(url);
 }
 
-async function downloadRemote(url: string, tempDir: string, index: number): Promise<MediaAttachment> {
+async function downloadRemote(
+  url: string,
+  tempDir: string,
+  index: number,
+): Promise<MediaAttachment> {
   const fetched = await fetchRemoteMedia({ url, maxBytes: MAX_INBOUND_MEDIA_BYTES });
   const mimeType = fetched.contentType ?? "application/octet-stream";
   const ext = extensionForMime(mimeType) ?? "";

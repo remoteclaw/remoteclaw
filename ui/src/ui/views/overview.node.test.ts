@@ -29,7 +29,11 @@ describe("shouldShowPairingHint", () => {
 
   it("returns true for structured pairing code", () => {
     expect(
-      shouldShowPairingHint(false, "disconnected (4008): connect failed", ConnectErrorDetailCodes.PAIRING_REQUIRED),
+      shouldShowPairingHint(
+        false,
+        "disconnected (4008): connect failed",
+        ConnectErrorDetailCodes.PAIRING_REQUIRED,
+      ),
     ).toBe(true);
   });
 });

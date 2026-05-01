@@ -59,7 +59,9 @@ describe("createTelephonyTtsProvider deepMerge hardening", () => {
   });
 
   it("blocks top-level __proto__ keys", async () => {
-    const tts = await mergeOverride(JSON.parse('{"__proto__":{"polluted":"top"},"openai":{"voice":"coral"}}'));
+    const tts = await mergeOverride(
+      JSON.parse('{"__proto__":{"polluted":"top"},"openai":{"voice":"coral"}}'),
+    );
     const openai = tts.openai as Record<string, unknown>;
 
     expect((Object.prototype as Record<string, unknown>).polluted).toBeUndefined();
@@ -68,7 +70,9 @@ describe("createTelephonyTtsProvider deepMerge hardening", () => {
   });
 
   it("blocks nested __proto__ keys", async () => {
-    const tts = await mergeOverride(JSON.parse('{"openai":{"model":"safe","__proto__":{"polluted":"nested"}}}'));
+    const tts = await mergeOverride(
+      JSON.parse('{"openai":{"model":"safe","__proto__":{"polluted":"nested"}}}'),
+    );
     const openai = tts.openai as Record<string, unknown>;
 
     expect((Object.prototype as Record<string, unknown>).polluted).toBeUndefined();

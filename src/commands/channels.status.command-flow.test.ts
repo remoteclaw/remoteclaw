@@ -20,8 +20,14 @@ vi.mock("../cli/command-secret-gateway.js", () => ({
 
 vi.mock("./shared.js", () => ({
   requireValidConfigSnapshot: (runtime: unknown) => requireValidConfigSnapshot(runtime),
-  formatChannelAccountLabel: ({ channel, accountId }: { channel: string; accountId: string; name?: string }) =>
-    `${channel} ${accountId}`,
+  formatChannelAccountLabel: ({
+    channel,
+    accountId,
+  }: {
+    channel: string;
+    accountId: string;
+    name?: string;
+  }) => `${channel} ${accountId}`,
 }));
 
 vi.mock("../channels/plugins/index.js", () => ({
@@ -136,9 +142,11 @@ describe("channelsStatusCommand SecretRef fallback flow", () => {
         mode: "read_only_status",
       }),
     );
-    expect(logs.some((line) => line.includes("[secrets] channels status: channels.discord.token is unavailable"))).toBe(
-      true,
-    );
+    expect(
+      logs.some((line) =>
+        line.includes("[secrets] channels status: channels.discord.token is unavailable"),
+      ),
+    ).toBe(true);
     const joined = logs.join("\n");
     expect(joined).toContain("configured, secret unavailable in this command path");
     expect(joined).toContain("token:config (unavailable)");

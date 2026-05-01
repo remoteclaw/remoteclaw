@@ -31,7 +31,8 @@ export function registerGetReplyCommonMocks(): void {
   // so tests driving the real resolveReplyDirectives chain can compile directives.
   // Only `resolveDefaultModel` is stubbed to avoid config/model catalog I/O.
   vi.mock("./directive-handling.js", async () => {
-    const actual = await vi.importActual<typeof import("./directive-handling.js")>("./directive-handling.js");
+    const actual =
+      await vi.importActual<typeof import("./directive-handling.js")>("./directive-handling.js");
     return {
       ...actual,
       resolveDefaultModel: vi.fn(() => ({

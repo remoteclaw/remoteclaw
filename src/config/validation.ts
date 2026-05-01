@@ -83,7 +83,9 @@ function collectAllowedValuesFromIssue(issue: unknown): AllowedValuesCollection 
   return { values: collected, incomplete: false, hasValues: collected.length > 0 };
 }
 
-function collectAllowedValuesFromIssueList(issues: ReadonlyArray<unknown>): AllowedValuesCollection {
+function collectAllowedValuesFromIssueList(
+  issues: ReadonlyArray<unknown>,
+): AllowedValuesCollection {
   const collected: unknown[] = [];
   let hasValues = false;
   for (const issue of issues) {
@@ -175,7 +177,10 @@ function validateIdentityAvatar(config: RemoteClawConfig): ConfigValidationIssue
       });
       continue;
     }
-    const workspaceDir = resolveAgentWorkspaceDir(config, entry.id ?? resolveDefaultAgentId(config));
+    const workspaceDir = resolveAgentWorkspaceDir(
+      config,
+      entry.id ?? resolveDefaultAgentId(config),
+    );
     if (!isWorkspaceAvatarPath(avatar, workspaceDir)) {
       issues.push({
         path: `agents.list.${index}.identity.avatar`,
@@ -196,7 +201,11 @@ function validateGatewayTailscaleBind(config: RemoteClawConfig): ConfigValidatio
     return [];
   }
   const customBindHost = config.gateway?.customBindHost;
-  if (bindMode === "custom" && isCanonicalDottedDecimalIPv4(customBindHost) && isLoopbackIpAddress(customBindHost)) {
+  if (
+    bindMode === "custom" &&
+    isCanonicalDottedDecimalIPv4(customBindHost) &&
+    isLoopbackIpAddress(customBindHost)
+  ) {
     return [];
   }
   return [
@@ -249,7 +258,9 @@ export function validateConfigObjectRaw(
   if (avatarIssues.length > 0) {
     return { ok: false, issues: avatarIssues };
   }
-  const gatewayTailscaleBindIssues = validateGatewayTailscaleBind(validated.data as RemoteClawConfig);
+  const gatewayTailscaleBindIssues = validateGatewayTailscaleBind(
+    validated.data as RemoteClawConfig,
+  );
   if (gatewayTailscaleBindIssues.length > 0) {
     return { ok: false, issues: gatewayTailscaleBindIssues };
   }
@@ -310,7 +321,8 @@ function validateConfigObjectWithPluginsBase(
   const config = base.config;
   const issues: ConfigValidationIssue[] = [];
   const warnings: ConfigValidationIssue[] = [];
-  const hasExplicitPluginsConfig = isRecord(raw) && Object.prototype.hasOwnProperty.call(raw, "plugins");
+  const hasExplicitPluginsConfig =
+    isRecord(raw) && Object.prototype.hasOwnProperty.call(raw, "plugins");
 
   const resolvePluginConfigIssuePath = (pluginId: string, errorPath: string): string => {
     const base = `plugins.entries.${pluginId}.config`;
@@ -437,7 +449,10 @@ function validateConfigObjectWithPluginsBase(
     issues.push({ path, message: `unknown heartbeat target: ${target}` });
   };
 
-  validateHeartbeatTarget(config.agents?.defaults?.heartbeat?.target, "agents.defaults.heartbeat.target");
+  validateHeartbeatTarget(
+    config.agents?.defaults?.heartbeat?.target,
+    "agents.defaults.heartbeat.target",
+  );
   if (Array.isArray(config.agents?.list)) {
     for (const [index, entry] of config.agents.list.entries()) {
       validateHeartbeatTarget(entry?.heartbeat?.target, `agents.list.${index}.heartbeat.target`);
@@ -454,7 +469,11 @@ function validateConfigObjectWithPluginsBase(
   const { registry } = ensureRegistry();
   const knownIds = ensureKnownIds();
   const normalizedPlugins = ensureNormalizedPlugins();
-  const pushMissingPluginIssue = (path: string, pluginId: string, opts?: { warnOnly?: boolean }) => {
+  const pushMissingPluginIssue = (
+    path: string,
+    pluginId: string,
+    opts?: { warnOnly?: boolean },
+  ) => {
     if (LEGACY_REMOVED_PLUGIN_IDS.has(pluginId)) {
       warnings.push({
         path,

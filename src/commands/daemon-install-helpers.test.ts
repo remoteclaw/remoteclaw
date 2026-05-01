@@ -31,7 +31,11 @@ vi.mock("../daemon/service-env.js", () => ({
   buildServiceEnvironment: mocks.buildServiceEnvironment,
 }));
 
-import { buildGatewayInstallPlan, gatewayInstallErrorHint, resolveGatewayDevMode } from "./daemon-install-helpers.js";
+import {
+  buildGatewayInstallPlan,
+  gatewayInstallErrorHint,
+  resolveGatewayDevMode,
+} from "./daemon-install-helpers.js";
 
 afterEach(() => {
   vi.resetAllMocks();
@@ -40,7 +44,9 @@ afterEach(() => {
 describe("resolveGatewayDevMode", () => {
   it("detects dev mode for src ts entrypoints", () => {
     expect(resolveGatewayDevMode(["node", "/Users/me/remoteclaw/src/cli/index.ts"])).toBe(true);
-    expect(resolveGatewayDevMode(["node", "C:\\Users\\me\\remoteclaw\\src\\cli\\index.ts"])).toBe(true);
+    expect(resolveGatewayDevMode(["node", "C:\\Users\\me\\remoteclaw\\src\\cli\\index.ts"])).toBe(
+      true,
+    );
     expect(resolveGatewayDevMode(["node", "/Users/me/remoteclaw/dist/cli/index.js"])).toBe(false);
   });
 });
@@ -494,6 +500,8 @@ describe("gatewayInstallErrorHint", () => {
   it("returns platform-specific hints", () => {
     expect(gatewayInstallErrorHint("win32")).toContain("Startup-folder login item");
     expect(gatewayInstallErrorHint("win32")).toContain("elevated PowerShell");
-    expect(gatewayInstallErrorHint("linux")).toMatch(/(?:remoteclaw|remoteclaw)( --profile isolated)? gateway install/);
+    expect(gatewayInstallErrorHint("linux")).toMatch(
+      /(?:remoteclaw|remoteclaw)( --profile isolated)? gateway install/,
+    );
   });
 });

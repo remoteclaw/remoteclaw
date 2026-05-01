@@ -22,7 +22,9 @@ type ResolveResult = {
   note?: string;
 };
 
-function resolvePreferredKind(kind?: ChannelsResolveOptions["kind"]): ChannelResolveKind | undefined {
+function resolvePreferredKind(
+  kind?: ChannelsResolveOptions["kind"],
+): ChannelResolveKind | undefined {
   if (!kind || kind === "auto") {
     return undefined;
   }
@@ -46,7 +48,11 @@ function detectAutoKind(input: string): ChannelResolveKind {
   if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
     return "user";
   }
-  if (/^(user|discord|slack|matrix|msteams|teams|zalo|zalouser|googlechat|google-chat|gchat):/i.test(trimmed)) {
+  if (
+    /^(user|discord|slack|matrix|msteams|teams|zalo|zalouser|googlechat|google-chat|gchat):/i.test(
+      trimmed,
+    )
+  ) {
     return "user";
   }
   return "group";

@@ -64,7 +64,12 @@ function isCopySensitiveToken(token: string): boolean {
   if (URL_PREFIX_RE.test(token)) {
     return true;
   }
-  if (token.startsWith("/") || token.startsWith("~/") || token.startsWith("./") || token.startsWith("../")) {
+  if (
+    token.startsWith("/") ||
+    token.startsWith("~/") ||
+    token.startsWith("./") ||
+    token.startsWith("../")
+  ) {
     return true;
   }
   if (WINDOWS_DRIVE_RE.test(token) || token.startsWith("\\\\")) {
@@ -95,7 +100,10 @@ function normalizeLongTokenForDisplay(token: string): string {
 
 function redactBinaryLikeLine(line: string): string {
   const replacementCount = (line.match(REPLACEMENT_CHAR_RE) || []).length;
-  if (replacementCount >= BINARY_LINE_REPLACEMENT_THRESHOLD && replacementCount * 2 >= line.length) {
+  if (
+    replacementCount >= BINARY_LINE_REPLACEMENT_THRESHOLD &&
+    replacementCount * 2 >= line.length
+  ) {
     return "[binary data omitted]";
   }
   return line;
@@ -191,7 +199,9 @@ function asMessageRecord(message: unknown): Record<string, unknown> | undefined 
   return message as Record<string, unknown>;
 }
 
-function resolveMessageRecord(message: unknown): { record: Record<string, unknown>; content: unknown } | undefined {
+function resolveMessageRecord(
+  message: unknown,
+): { record: Record<string, unknown>; content: unknown } | undefined {
   const record = asMessageRecord(message);
   if (!record) {
     return undefined;
@@ -305,7 +315,10 @@ function extractTextBlocks(content: unknown, opts?: { includeThinking?: boolean 
   });
 }
 
-export function extractTextFromMessage(message: unknown, opts?: { includeThinking?: boolean }): string {
+export function extractTextFromMessage(
+  message: unknown,
+  opts?: { includeThinking?: boolean },
+): string {
   const record = asMessageRecord(message);
   if (!record) {
     return "";
@@ -340,7 +353,10 @@ export function formatTokens(total?: number | null, context?: number | null) {
   if (context == null) {
     return `tokens ${totalLabel}`;
   }
-  const pct = typeof total === "number" && context > 0 ? Math.min(999, Math.round((total / context) * 100)) : null;
+  const pct =
+    typeof total === "number" && context > 0
+      ? Math.min(999, Math.round((total / context) * 100))
+      : null;
   return `tokens ${totalLabel}/${formatTokenCount(context)}${pct !== null ? ` (${pct}%)` : ""}`;
 }
 
@@ -353,7 +369,8 @@ export function formatContextUsageLine(params: {
   const totalLabel = typeof params.total === "number" ? formatTokenCount(params.total) : "?";
   const ctxLabel = typeof params.context === "number" ? formatTokenCount(params.context) : "?";
   const pct = typeof params.percent === "number" ? Math.min(999, Math.round(params.percent)) : null;
-  const remainingLabel = typeof params.remaining === "number" ? `${formatTokenCount(params.remaining)} left` : null;
+  const remainingLabel =
+    typeof params.remaining === "number" ? `${formatTokenCount(params.remaining)} left` : null;
   const pctLabel = pct !== null ? `${pct}%` : null;
   const extra = [remainingLabel, pctLabel].filter(Boolean).join(", ");
   return `tokens ${totalLabel}/${ctxLabel}${extra ? ` (${extra})` : ""}`;

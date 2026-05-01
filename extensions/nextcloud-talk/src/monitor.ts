@@ -74,7 +74,11 @@ function parseWebhookPayload(body: string): NextcloudTalkWebhookPayload | null {
   }
 }
 
-function writeJsonResponse(res: ServerResponse, status: number, body?: Record<string, unknown>): void {
+function writeJsonResponse(
+  res: ServerResponse,
+  status: number,
+  body?: Record<string, unknown>,
+): void {
   if (body) {
     res.writeHead(status, { "Content-Type": "application/json" });
     res.end(JSON.stringify(body));
@@ -96,7 +100,9 @@ function validateWebhookHeaders(params: {
   res: ServerResponse;
   isBackendAllowed?: (backend: string) => boolean;
 }): NextcloudTalkWebhookHeaders | null {
-  const headers = extractNextcloudTalkHeaders(params.req.headers as Record<string, string | string[] | undefined>);
+  const headers = extractNextcloudTalkHeaders(
+    params.req.headers as Record<string, string | string[] | undefined>,
+  );
   if (!headers) {
     writeWebhookError(params.res, 400, WEBHOOK_ERRORS.missingSignatureHeaders);
     return null;
@@ -134,7 +140,10 @@ function verifyWebhookSignature(params: {
 function decodeWebhookCreateMessage(params: {
   body: string;
   res: ServerResponse;
-}): { kind: "message"; message: NextcloudTalkInboundMessage } | { kind: "ignore" } | { kind: "invalid" } {
+}):
+  | { kind: "message"; message: NextcloudTalkInboundMessage }
+  | { kind: "ignore" }
+  | { kind: "invalid" } {
   const payload = parseWebhookPayload(params.body);
   if (!payload) {
     writeWebhookError(params.res, 400, WEBHOOK_ERRORS.invalidPayloadFormat);
@@ -146,7 +155,9 @@ function decodeWebhookCreateMessage(params: {
   return { kind: "message", message: payloadToInboundMessage(payload) };
 }
 
-function payloadToInboundMessage(payload: NextcloudTalkWebhookPayload): NextcloudTalkInboundMessage {
+function payloadToInboundMessage(
+  payload: NextcloudTalkWebhookPayload,
+): NextcloudTalkInboundMessage {
   // Payload doesn't indicate DM vs room; mark as group and let inbound handler refine.
   const isGroupChat = true;
 
@@ -163,7 +174,10 @@ function payloadToInboundMessage(payload: NextcloudTalkWebhookPayload): Nextclou
   };
 }
 
-export function readNextcloudTalkWebhookBody(req: IncomingMessage, maxBodyBytes: number): Promise<string> {
+export function readNextcloudTalkWebhookBody(
+  req: IncomingMessage,
+  maxBodyBytes: number,
+): Promise<string> {
   return readRequestBodyWithLimit(req, {
     maxBytes: maxBodyBytes,
     timeoutMs: DEFAULT_WEBHOOK_BODY_TIMEOUT_MS,
@@ -177,7 +191,9 @@ export function createNextcloudTalkWebhookServer(opts: NextcloudTalkWebhookServe
 } {
   const { port, host, path, secret, onMessage, onError, abortSignal } = opts;
   const maxBodyBytes =
-    typeof opts.maxBodyBytes === "number" && Number.isFinite(opts.maxBodyBytes) && opts.maxBodyBytes > 0
+    typeof opts.maxBodyBytes === "number" &&
+    Number.isFinite(opts.maxBodyBytes) &&
+    opts.maxBodyBytes > 0
       ? Math.floor(opts.maxBodyBytes)
       : DEFAULT_WEBHOOK_MAX_BODY_BYTES;
   const readBody = opts.readBody ?? readNextcloudTalkWebhookBody;
@@ -188,7 +204,9 @@ export function createNextcloudTalkWebhookServer(opts: NextcloudTalkWebhookServe
       ? opts.authRateLimit.maxRequests
       : DEFAULT_AUTH_RATE_LIMIT_MAX_REQUESTS;
   const authRateLimitWindowMs =
-    typeof opts.authRateLimit?.windowMs === "number" ? opts.authRateLimit.windowMs : DEFAULT_AUTH_RATE_LIMIT_WINDOW_MS;
+    typeof opts.authRateLimit?.windowMs === "number"
+      ? opts.authRateLimit.windowMs
+      : DEFAULT_AUTH_RATE_LIMIT_WINDOW_MS;
   // exemptLoopback: false — in production a same-host reverse proxy forwards
   // webhook traffic with socket.remoteAddress=127.0.0.1, so loopback cannot be
   // treated as trusted local-CLI traffic; exempting it would let abusive
@@ -328,14 +346,19 @@ export type NextcloudTalkMonitorOptions = {
   statusSink?: (patch: { lastInboundAt?: number; lastOutboundAt?: number }) => void;
 };
 
-export async function monitorNextcloudTalkProvider(opts: NextcloudTalkMonitorOptions): Promise<{ stop: () => void }> {
+export async function monitorNextcloudTalkProvider(
+  opts: NextcloudTalkMonitorOptions,
+): Promise<{ stop: () => void }> {
   const core = getNextcloudTalkRuntime();
   const cfg = opts.config ?? (core.config.loadConfig() as CoreConfig);
   const account = resolveNextcloudTalkAccount({
     cfg,
     accountId: opts.accountId,
   });
-  const runtime: RuntimeEnv = resolveLoggerBackedRuntime(opts.runtime, core.logging.getChildLogger());
+  const runtime: RuntimeEnv = resolveLoggerBackedRuntime(
+    opts.runtime,
+    core.logging.getChildLogger(),
+  );
 
   if (!account.secret) {
     throw new Error(`Nextcloud Talk bot secret not configured for account "${account.accountId}"`);
@@ -353,7 +376,9 @@ export async function monitorNextcloudTalkProvider(opts: NextcloudTalkMonitorOpt
   const replayGuard = createNextcloudTalkReplayGuard({
     stateDir: core.state.resolveStateDir(process.env, os.homedir),
     onDiskError: (error) => {
-      logger.warn(`[nextcloud-talk:${account.accountId}] replay guard disk error: ${String(error)}`);
+      logger.warn(
+        `[nextcloud-talk:${account.accountId}] replay guard disk error: ${String(error)}`,
+      );
     },
   });
 
@@ -417,7 +442,8 @@ export async function monitorNextcloudTalkProvider(opts: NextcloudTalkMonitorOpt
   }
 
   const publicUrl =
-    account.config.webhookPublicUrl ?? `http://${host === "0.0.0.0" ? "localhost" : host}:${port}${path}`;
+    account.config.webhookPublicUrl ??
+    `http://${host === "0.0.0.0" ? "localhost" : host}:${port}${path}`;
   logger.info(`[nextcloud-talk:${account.accountId}] webhook listening on ${publicUrl}`);
 
   return { stop };

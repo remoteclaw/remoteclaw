@@ -2,7 +2,11 @@ import type * as Lark from "@larksuiteoapi/node-sdk";
 import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk/feishu";
 import { listEnabledFeishuAccounts } from "./accounts.js";
 import { createFeishuToolClient, resolveAnyEnabledFeishuToolsConfig } from "./tool-account.js";
-import { jsonToolResult, toolExecutionErrorResult, unknownToolActionResult } from "./tool-result.js";
+import {
+  jsonToolResult,
+  toolExecutionErrorResult,
+  unknownToolActionResult,
+} from "./tool-result.js";
 import { FeishuWikiSchema, type FeishuWikiParams } from "./wiki-schema.js";
 
 type ObjType = "doc" | "sheet" | "mindnote" | "bitable" | "file" | "docx" | "slides";
@@ -173,7 +177,8 @@ export function registerFeishuWikiTools(api: RemoteClawPluginApi) {
       return {
         name: "feishu_wiki",
         label: "Feishu Wiki",
-        description: "Feishu knowledge base operations. Actions: spaces, nodes, get, create, move, rename",
+        description:
+          "Feishu knowledge base operations. Actions: spaces, nodes, get, create, move, rename",
         parameters: FeishuWikiSchema,
         async execute(_toolCallId, params) {
           const p = params as FeishuWikiExecuteParams;
@@ -196,10 +201,18 @@ export function registerFeishuWikiTools(api: RemoteClawPluginApi) {
                     "Search is not available. Use feishu_wiki with action: 'nodes' to browse or action: 'get' to lookup by token.",
                 });
               case "create":
-                return jsonToolResult(await createNode(client, p.space_id, p.title, p.obj_type, p.parent_node_token));
+                return jsonToolResult(
+                  await createNode(client, p.space_id, p.title, p.obj_type, p.parent_node_token),
+                );
               case "move":
                 return jsonToolResult(
-                  await moveNode(client, p.space_id, p.node_token, p.target_space_id, p.target_parent_token),
+                  await moveNode(
+                    client,
+                    p.space_id,
+                    p.node_token,
+                    p.target_space_id,
+                    p.target_parent_token,
+                  ),
                 );
               case "rename":
                 return jsonToolResult(await renameNode(client, p.space_id, p.node_token, p.title));

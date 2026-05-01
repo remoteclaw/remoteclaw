@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { resolveOriginAccountId, resolveOriginMessageProvider, resolveOriginMessageTo } from "./origin-routing.js";
+import {
+  resolveOriginAccountId,
+  resolveOriginMessageProvider,
+  resolveOriginMessageTo,
+} from "./origin-routing.js";
 
 describe("origin-routing helpers", () => {
   it("prefers originating channel over provider for message provider", () => {

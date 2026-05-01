@@ -117,14 +117,18 @@ function inferDefaultPlacement(ref: ConversationRef): SessionBindingPlacement {
 
 function resolveAdapterPlacements(adapter: SessionBindingAdapter): SessionBindingPlacement[] {
   const configured = adapter.capabilities?.placements?.map((value) => normalizePlacement(value));
-  const placements = configured?.filter((value): value is SessionBindingPlacement => Boolean(value));
+  const placements = configured?.filter((value): value is SessionBindingPlacement =>
+    Boolean(value),
+  );
   if (placements && placements.length > 0) {
     return [...new Set(placements)];
   }
   return ["current", "child"];
 }
 
-function resolveAdapterCapabilities(adapter: SessionBindingAdapter | null): SessionBindingCapabilities {
+function resolveAdapterCapabilities(
+  adapter: SessionBindingAdapter | null,
+): SessionBindingCapabilities {
   if (!adapter) {
     return {
       adapterAvailable: false,
@@ -214,7 +218,10 @@ function resolveAdapterForConversation(ref: ConversationRef): SessionBindingAdap
   });
 }
 
-function resolveAdapterForChannelAccount(params: { channel: string; accountId: string }): SessionBindingAdapter | null {
+function resolveAdapterForChannelAccount(params: {
+  channel: string;
+  accountId: string;
+}): SessionBindingAdapter | null {
   const key = toAdapterKey({
     channel: params.channel,
     accountId: params.accountId,
@@ -264,7 +271,8 @@ function createDefaultSessionBindingService(): SessionBindingService {
           },
         );
       }
-      const placement = normalizePlacement(input.placement) ?? inferDefaultPlacement(normalizedConversation);
+      const placement =
+        normalizePlacement(input.placement) ?? inferDefaultPlacement(normalizedConversation);
       const supportedPlacements = resolveAdapterPlacements(adapter);
       if (!supportedPlacements.includes(placement)) {
         throw new SessionBindingError(

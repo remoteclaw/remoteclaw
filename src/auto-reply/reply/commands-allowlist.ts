@@ -17,14 +17,22 @@ import { listPairingChannels } from "../../channels/plugins/pairing.js";
 import type { ChannelId } from "../../channels/plugins/types.js";
 import { normalizeChannelId } from "../../channels/registry.js";
 import type { RemoteClawConfig } from "../../config/config.js";
-import { readConfigFileSnapshot, validateConfigObjectWithPlugins, writeConfigFile } from "../../config/config.js";
+import {
+  readConfigFileSnapshot,
+  validateConfigObjectWithPlugins,
+  writeConfigFile,
+} from "../../config/config.js";
 import { isBlockedObjectKey } from "../../infra/prototype-keys.js";
 import {
   addChannelAllowFromStoreEntry,
   readChannelAllowFromStore,
   removeChannelAllowFromStoreEntry,
 } from "../../pairing/pairing-store.js";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId, normalizeOptionalAccountId } from "../../routing/session-key.js";
+import {
+  DEFAULT_ACCOUNT_ID,
+  normalizeAccountId,
+  normalizeOptionalAccountId,
+} from "../../routing/session-key.js";
 import { normalizeStringEntries } from "../../shared/string-normalization.js";
 import { rejectUnauthorizedCommand, requireCommandFlagEnabled } from "./command-gates.js";
 import type { CommandHandler } from "./commands-types.js";
@@ -219,7 +227,11 @@ async function updatePairingStoreAllowlist(params: {
   }
 }
 
-function resolveAccountTarget(parsed: Record<string, unknown>, channelId: ChannelId, accountId?: string | null) {
+function resolveAccountTarget(
+  parsed: Record<string, unknown>,
+  channelId: ChannelId,
+  accountId?: string | null,
+) {
   const channels = (parsed.channels ??= {}) as Record<string, unknown>;
   const channel = (channels[channelId] ??= {}) as Record<string, unknown>;
   const normalizedAccountId = normalizeAccountId(accountId);
@@ -242,7 +254,9 @@ function resolveAccountTarget(parsed: Record<string, unknown>, channelId: Channe
     };
   }
   const accounts = (channel.accounts ??= {}) as Record<string, unknown>;
-  const existingAccount = Object.hasOwn(accounts, normalizedAccountId) ? accounts[normalizedAccountId] : undefined;
+  const existingAccount = Object.hasOwn(accounts, normalizedAccountId)
+    ? accounts[normalizedAccountId]
+    : undefined;
   if (!existingAccount || typeof existingAccount !== "object") {
     accounts[normalizedAccountId] = {};
   }
@@ -269,7 +283,10 @@ function getNestedValue(root: Record<string, unknown>, path: string[]): unknown 
   return current;
 }
 
-function ensureNestedObject(root: Record<string, unknown>, path: string[]): Record<string, unknown> {
+function ensureNestedObject(
+  root: Record<string, unknown>,
+  path: string[],
+): Record<string, unknown> {
   let current = root;
   for (const key of path) {
     const existing = current[key];
@@ -308,9 +325,15 @@ function deleteNestedValue(root: Record<string, unknown>, path: string[]) {
   delete (parent as Record<string, unknown>)[path[path.length - 1]];
 }
 
-function resolveChannelAllowFromPaths(channelId: ChannelId, scope: AllowlistScope): string[] | null {
+function resolveChannelAllowFromPaths(
+  channelId: ChannelId,
+  scope: AllowlistScope,
+): string[] | null {
   const supportsGroupAllowlist =
-    channelId === "telegram" || channelId === "whatsapp" || channelId === "signal" || channelId === "imessage";
+    channelId === "telegram" ||
+    channelId === "whatsapp" ||
+    channelId === "signal" ||
+    channelId === "imessage";
   if (scope === "all") {
     return null;
   }
@@ -343,7 +366,11 @@ function mapResolvedAllowlistNames(entries: ResolvedAllowlistName[]): Map<string
   return map;
 }
 
-async function resolveSlackNames(params: { cfg: RemoteClawConfig; accountId?: string | null; entries: string[] }) {
+async function resolveSlackNames(params: {
+  cfg: RemoteClawConfig;
+  accountId?: string | null;
+  entries: string[];
+}) {
   const account = resolveSlackAccount({ cfg: params.cfg, accountId: params.accountId });
   const token = account.userToken || account.botToken?.trim();
   if (!token) {
@@ -353,7 +380,11 @@ async function resolveSlackNames(params: { cfg: RemoteClawConfig; accountId?: st
   return mapResolvedAllowlistNames(resolved);
 }
 
-async function resolveDiscordNames(params: { cfg: RemoteClawConfig; accountId?: string | null; entries: string[] }) {
+async function resolveDiscordNames(params: {
+  cfg: RemoteClawConfig;
+  accountId?: string | null;
+  entries: string[];
+}) {
   const account = resolveDiscordAccount({ cfg: params.cfg, accountId: params.accountId });
   const token = account.token?.trim();
   if (!token) {
@@ -380,7 +411,9 @@ export const handleAllowlistCommand: CommandHandler = async (params, allowTextCo
   }
 
   const channelId =
-    normalizeChannelId(parsed.channel) ?? params.command.channelId ?? normalizeChannelId(params.command.channel);
+    normalizeChannelId(parsed.channel) ??
+    params.command.channelId ??
+    normalizeChannelId(params.command.channel);
   if (!channelId) {
     return {
       shouldContinue: false,

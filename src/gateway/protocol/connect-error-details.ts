@@ -27,7 +27,8 @@ export const ConnectErrorDetailCodes = {
   PAIRING_REQUIRED: "PAIRING_REQUIRED",
 } as const;
 
-export type ConnectErrorDetailCode = (typeof ConnectErrorDetailCodes)[keyof typeof ConnectErrorDetailCodes];
+export type ConnectErrorDetailCode =
+  (typeof ConnectErrorDetailCodes)[keyof typeof ConnectErrorDetailCodes];
 
 export type ConnectRecoveryNextStep =
   | "retry_with_device_token"
@@ -49,7 +50,9 @@ const CONNECT_RECOVERY_NEXT_STEP_VALUES: ReadonlySet<ConnectRecoveryNextStep> = 
   "review_auth_configuration",
 ]);
 
-export function resolveAuthConnectErrorDetailCode(reason: string | undefined): ConnectErrorDetailCode {
+export function resolveAuthConnectErrorDetailCode(
+  reason: string | undefined,
+): ConnectErrorDetailCode {
   switch (reason) {
     case "token_missing":
       return ConnectErrorDetailCodes.AUTH_TOKEN_MISSING;
@@ -84,7 +87,9 @@ export function resolveAuthConnectErrorDetailCode(reason: string | undefined): C
   }
 }
 
-export function resolveDeviceAuthConnectErrorDetailCode(reason: string | undefined): ConnectErrorDetailCode {
+export function resolveDeviceAuthConnectErrorDetailCode(
+  reason: string | undefined,
+): ConnectErrorDetailCode {
   switch (reason) {
     case "device-id-mismatch":
       return ConnectErrorDetailCodes.DEVICE_AUTH_DEVICE_ID_MISMATCH;
@@ -121,8 +126,11 @@ export function readConnectErrorRecoveryAdvice(details: unknown): ConnectErrorRe
   };
   const canRetryWithDeviceToken =
     typeof raw.canRetryWithDeviceToken === "boolean" ? raw.canRetryWithDeviceToken : undefined;
-  const normalizedNextStep = typeof raw.recommendedNextStep === "string" ? raw.recommendedNextStep.trim() : "";
-  const recommendedNextStep = CONNECT_RECOVERY_NEXT_STEP_VALUES.has(normalizedNextStep as ConnectRecoveryNextStep)
+  const normalizedNextStep =
+    typeof raw.recommendedNextStep === "string" ? raw.recommendedNextStep.trim() : "";
+  const recommendedNextStep = CONNECT_RECOVERY_NEXT_STEP_VALUES.has(
+    normalizedNextStep as ConnectRecoveryNextStep,
+  )
     ? (normalizedNextStep as ConnectRecoveryNextStep)
     : undefined;
   return {

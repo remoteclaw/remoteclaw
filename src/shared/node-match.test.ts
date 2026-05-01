@@ -84,7 +84,10 @@ describe("shared/node-match", () => {
   it("throws clear unknown and ambiguous node errors", () => {
     expect(() =>
       resolveNodeIdFromCandidates(
-        [{ nodeId: "mac-123", displayName: "Mac Studio", remoteIp: "100.0.0.1" }, { nodeId: "pi-456" }],
+        [
+          { nodeId: "mac-123", displayName: "Mac Studio", remoteIp: "100.0.0.1" },
+          { nodeId: "pi-456" },
+        ],
         "nope",
       ),
     ).toThrow(/unknown node: nope.*known: Mac Studio, pi-456/);
@@ -134,7 +137,10 @@ describe("shared/node-match", () => {
 
   it("lists remote ips in unknown-node errors when display names are missing", () => {
     expect(() =>
-      resolveNodeIdFromCandidates([{ nodeId: "mac-123", remoteIp: "100.0.0.1" }, { nodeId: "pi-456" }], "nope"),
+      resolveNodeIdFromCandidates(
+        [{ nodeId: "mac-123", remoteIp: "100.0.0.1" }, { nodeId: "pi-456" }],
+        "nope",
+      ),
     ).toThrow(/unknown node: nope.*known: 100.0.0.1, pi-456/);
   });
 });

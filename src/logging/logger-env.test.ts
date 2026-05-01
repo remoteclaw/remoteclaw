@@ -1,7 +1,12 @@
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getResolvedConsoleSettings, getResolvedLoggerSettings, resetLogger, setLoggerOverride } from "../logging.js";
+import {
+  getResolvedConsoleSettings,
+  getResolvedLoggerSettings,
+  resetLogger,
+  setLoggerOverride,
+} from "../logging.js";
 import { loggingState } from "./state.js";
 
 const testLogPath = path.join(os.tmpdir(), "remoteclaw-test-env-log-level.log");

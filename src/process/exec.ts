@@ -83,7 +83,10 @@ function resolveCommand(command: string): string {
   });
 }
 
-export function shouldSpawnWithShell(params: { resolvedCommand: string; platform: NodeJS.Platform }): boolean {
+export function shouldSpawnWithShell(params: {
+  resolvedCommand: string;
+  platform: NodeJS.Platform;
+}): boolean {
   // SECURITY: never enable `shell` for argv-based execution.
   // `shell` routes through cmd.exe on Windows, which turns untrusted argv values
   // (like chat prompts passed as CLI args) into command-injection primitives.
@@ -246,7 +249,8 @@ export async function runCommandWithTimeout(
   const finalArgv = process.platform === "win32" ? (resolveNpmArgvForWindows(argv) ?? argv) : argv;
   const resolvedCommand = finalArgv !== argv ? (finalArgv[0] ?? "") : resolveCommand(argv[0] ?? "");
   const useCmdWrapper = isWindowsBatchCommand(resolvedCommand);
-  const usesWindowsExitCodeShim = process.platform === "win32" && (useCmdWrapper || finalArgv !== argv);
+  const usesWindowsExitCodeShim =
+    process.platform === "win32" && (useCmdWrapper || finalArgv !== argv);
 
   const child = spawn(
     useCmdWrapper ? (process.env.ComSpec ?? "cmd.exe") : resolvedCommand,
@@ -258,7 +262,9 @@ export async function runCommandWithTimeout(
       cwd,
       env: resolvedEnv,
       windowsVerbatimArguments: useCmdWrapper ? true : windowsVerbatimArguments,
-      ...(shouldSpawnWithShell({ resolvedCommand, platform: process.platform }) ? { shell: true } : {}),
+      ...(shouldSpawnWithShell({ resolvedCommand, platform: process.platform })
+        ? { shell: true }
+        : {}),
     },
   );
   // Spawn with inherited stdin (TTY) so tools like `pi` stay interactive when needed.
@@ -273,7 +279,9 @@ export async function runCommandWithTimeout(
     let closeFallbackTimer: NodeJS.Timeout | null = null;
     let noOutputTimer: NodeJS.Timeout | null = null;
     const shouldTrackOutputTimeout =
-      typeof noOutputTimeoutMs === "number" && Number.isFinite(noOutputTimeoutMs) && noOutputTimeoutMs > 0;
+      typeof noOutputTimeoutMs === "number" &&
+      Number.isFinite(noOutputTimeoutMs) &&
+      noOutputTimeoutMs > 0;
 
     const clearNoOutputTimer = () => {
       if (!noOutputTimer) {

@@ -115,7 +115,14 @@ export type SessionEntry = {
   groupActivation?: "mention" | "always";
   groupActivationNeedsSystemIntro?: boolean;
   sendPolicy?: "allow" | "deny";
-  queueMode?: "steer" | "followup" | "collect" | "steer-backlog" | "steer+backlog" | "queue" | "interrupt";
+  queueMode?:
+    | "steer"
+    | "followup"
+    | "collect"
+    | "steer-backlog"
+    | "steer+backlog"
+    | "queue"
+    | "interrupt";
   queueDebounceMs?: number;
   queueCap?: number;
   queueDrop?: "old" | "new" | "summarize";
@@ -208,7 +215,10 @@ export function normalizeSessionRuntimeModelFields(entry: SessionEntry): Session
   return next;
 }
 
-export function setSessionRuntimeModel(entry: SessionEntry, runtime: { provider: string; model: string }): boolean {
+export function setSessionRuntimeModel(
+  entry: SessionEntry,
+  runtime: { provider: string; model: string },
+): boolean {
   const provider = runtime.provider.trim();
   const model = runtime.model.trim();
   if (!provider || !model) {
@@ -261,7 +271,10 @@ export function mergeSessionEntryWithPolicy(
   return normalizeSessionRuntimeModelFields(next);
 }
 
-export function mergeSessionEntry(existing: SessionEntry | undefined, patch: Partial<SessionEntry>): SessionEntry {
+export function mergeSessionEntry(
+  existing: SessionEntry | undefined,
+  patch: Partial<SessionEntry>,
+): SessionEntry {
   return mergeSessionEntryWithPolicy(existing, patch);
 }
 

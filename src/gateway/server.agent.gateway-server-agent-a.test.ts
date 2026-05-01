@@ -38,7 +38,8 @@ afterAll(async () => {
   await fs.rm(sharedSessionStoreDir, { recursive: true, force: true });
 });
 
-const BASE_IMAGE_PNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+X3mIAAAAASUVORK5CYII=";
+const BASE_IMAGE_PNG =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+X3mIAAAAASUVORK5CYII=";
 
 type AgentCommandCall = Record<string, unknown>;
 
@@ -49,7 +50,10 @@ function expectChannels(call: Record<string, unknown>, channel: string) {
   expect(runContext?.messageChannel).toBe(channel);
 }
 
-async function setTestSessionStore(params: { entries: Record<string, Record<string, unknown>>; agentId?: string }) {
+async function setTestSessionStore(params: {
+  entries: Record<string, Record<string, unknown>>;
+  agentId?: string;
+}) {
   testState.sessionStorePath = sharedSessionStorePath;
   await writeSessionStore({
     entries: params.entries,
@@ -232,7 +236,10 @@ describe("gateway server agent", () => {
     expect(res.ok).toBe(true);
 
     const raw = await fs.readFile(sharedSessionStorePath, "utf-8");
-    const persisted = JSON.parse(raw) as Record<string, { spawnDepth?: number; spawnedBy?: string }>;
+    const persisted = JSON.parse(raw) as Record<
+      string,
+      { spawnDepth?: number; spawnedBy?: string }
+    >;
     expect(persisted["agent:main:subagent:depth"]?.spawnDepth).toBe(2);
     expect(persisted["agent:main:subagent:depth"]?.spawnedBy).toBe("agent:main:main");
   });

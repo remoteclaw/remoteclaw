@@ -133,7 +133,9 @@ describe("format-datetime", () => {
       { displaySeconds: true, expected: "2024-01-15T14:30:45Z" },
     ])("formats UTC timestamp (displaySeconds=$displaySeconds)", ({ displaySeconds, expected }) => {
       const date = new Date("2024-01-15T14:30:45.000Z");
-      const result = displaySeconds ? formatUtcTimestamp(date, { displaySeconds: true }) : formatUtcTimestamp(date);
+      const result = displaySeconds
+        ? formatUtcTimestamp(date, { displaySeconds: true })
+        : formatUtcTimestamp(date);
       expect(result).toBe(expected);
     });
   });
@@ -171,7 +173,9 @@ describe("format-datetime", () => {
         MissingPartsDateTimeFormat as unknown as typeof Intl.DateTimeFormat,
       );
 
-      expect(formatZonedTimestamp(new Date("2024-01-15T14:30:00.000Z"), { timeZone: "UTC" })).toBe(undefined);
+      expect(formatZonedTimestamp(new Date("2024-01-15T14:30:00.000Z"), { timeZone: "UTC" })).toBe(
+        undefined,
+      );
     });
 
     it("returns undefined when Intl formatting throws", () => {
@@ -187,7 +191,9 @@ describe("format-datetime", () => {
         ThrowingDateTimeFormat as unknown as typeof Intl.DateTimeFormat,
       );
 
-      expect(formatZonedTimestamp(new Date("2024-01-15T14:30:00.000Z"), { timeZone: "UTC" })).toBe(undefined);
+      expect(formatZonedTimestamp(new Date("2024-01-15T14:30:00.000Z"), { timeZone: "UTC" })).toBe(
+        undefined,
+      );
     });
   });
 });

@@ -82,9 +82,15 @@ describe("stripThinkingTags", () => {
   });
 
   it("keeps relevant-memories tags in fenced code blocks", () => {
-    const input = ["```xml", "<relevant-memories>", "sample", "</relevant-memories>", "```", "", "Visible text"].join(
-      "\n",
-    );
+    const input = [
+      "```xml",
+      "<relevant-memories>",
+      "sample",
+      "</relevant-memories>",
+      "```",
+      "",
+      "Visible text",
+    ].join("\n");
     expect(stripThinkingTags(input)).toBe(input);
   });
 

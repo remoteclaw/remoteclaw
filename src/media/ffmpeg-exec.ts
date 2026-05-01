@@ -1,6 +1,10 @@
 import { execFile, type ExecFileOptions } from "node:child_process";
 import { promisify } from "node:util";
-import { MEDIA_FFMPEG_MAX_BUFFER_BYTES, MEDIA_FFMPEG_TIMEOUT_MS, MEDIA_FFPROBE_TIMEOUT_MS } from "./ffmpeg-limits.js";
+import {
+  MEDIA_FFMPEG_MAX_BUFFER_BYTES,
+  MEDIA_FFMPEG_TIMEOUT_MS,
+  MEDIA_FFPROBE_TIMEOUT_MS,
+} from "./ffmpeg-limits.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -9,7 +13,10 @@ export type MediaExecOptions = {
   maxBufferBytes?: number;
 };
 
-function resolveExecOptions(defaultTimeoutMs: number, options: MediaExecOptions | undefined): ExecFileOptions {
+function resolveExecOptions(
+  defaultTimeoutMs: number,
+  options: MediaExecOptions | undefined,
+): ExecFileOptions {
   return {
     timeout: options?.timeoutMs ?? defaultTimeoutMs,
     maxBuffer: options?.maxBufferBytes ?? MEDIA_FFMPEG_MAX_BUFFER_BYTES,
@@ -17,12 +24,20 @@ function resolveExecOptions(defaultTimeoutMs: number, options: MediaExecOptions 
 }
 
 export async function runFfprobe(args: string[], options?: MediaExecOptions): Promise<string> {
-  const { stdout } = await execFileAsync("ffprobe", args, resolveExecOptions(MEDIA_FFPROBE_TIMEOUT_MS, options));
+  const { stdout } = await execFileAsync(
+    "ffprobe",
+    args,
+    resolveExecOptions(MEDIA_FFPROBE_TIMEOUT_MS, options),
+  );
   return stdout.toString();
 }
 
 export async function runFfmpeg(args: string[], options?: MediaExecOptions): Promise<string> {
-  const { stdout } = await execFileAsync("ffmpeg", args, resolveExecOptions(MEDIA_FFMPEG_TIMEOUT_MS, options));
+  const { stdout } = await execFileAsync(
+    "ffmpeg",
+    args,
+    resolveExecOptions(MEDIA_FFMPEG_TIMEOUT_MS, options),
+  );
   return stdout.toString();
 }
 

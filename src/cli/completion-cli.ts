@@ -7,7 +7,10 @@ import { routeLogsToStderr } from "../logging/console.js";
 import { formatDocsLink } from "../terminal/links.js";
 import { theme } from "../terminal/theme.js";
 import { pathExists } from "../utils.js";
-import { buildFishOptionCompletionLine, buildFishSubcommandCompletionLine } from "./completion-fish.js";
+import {
+  buildFishOptionCompletionLine,
+  buildFishSubcommandCompletionLine,
+} from "./completion-fish.js";
 import { getCoreCliCommandNames, registerCoreCliByName } from "./program/command-registry.js";
 import { getProgramContext } from "./program/program-context.js";
 import {
@@ -56,12 +59,16 @@ function resolveCompletionCacheDir(env: NodeJS.ProcessEnv = process.env): string
 
 export function resolveCompletionCachePath(shell: CompletionShell, binName: string): string {
   const basename = sanitizeCompletionBasename(binName);
-  const extension = shell === "powershell" ? "ps1" : shell === "fish" ? "fish" : shell === "bash" ? "bash" : "zsh";
+  const extension =
+    shell === "powershell" ? "ps1" : shell === "fish" ? "fish" : shell === "bash" ? "bash" : "zsh";
   return path.join(resolveCompletionCacheDir(), `${basename}.${extension}`);
 }
 
 /** Check if the completion cache file exists for the given shell. */
-export async function completionCacheExists(shell: CompletionShell, binName = "remoteclaw"): Promise<boolean> {
+export async function completionCacheExists(
+  shell: CompletionShell,
+  binName = "remoteclaw",
+): Promise<boolean> {
   const cachePath = resolveCompletionCachePath(shell, binName);
   return pathExists(cachePath);
 }
@@ -93,7 +100,11 @@ async function writeCompletionCache(params: {
   }
 }
 
-function formatCompletionSourceLine(shell: CompletionShell, binName: string, cachePath: string): string {
+function formatCompletionSourceLine(
+  shell: CompletionShell,
+  binName: string,
+  cachePath: string,
+): string {
   if (shell === "fish") {
     return `source "${cachePath}"`;
   }
@@ -118,7 +129,8 @@ function isCompletionProfileLine(line: string, binName: string, cachePath: strin
 function isSlowDynamicCompletionLine(line: string, binName: string): boolean {
   // Matches patterns like: source <(remoteclaw completion --shell zsh)
   return (
-    line.includes(`<(${binName} completion`) || (line.includes(`${binName} completion`) && line.includes("| source"))
+    line.includes(`<(${binName} completion`) ||
+    (line.includes(`${binName} completion`) && line.includes("| source"))
   );
 }
 
@@ -165,12 +177,20 @@ function getShellProfilePath(shell: CompletionShell): string {
   }
   // PowerShell
   if (process.platform === "win32") {
-    return path.join(process.env.USERPROFILE || home, "Documents", "PowerShell", "Microsoft.PowerShell_profile.ps1");
+    return path.join(
+      process.env.USERPROFILE || home,
+      "Documents",
+      "PowerShell",
+      "Microsoft.PowerShell_profile.ps1",
+    );
   }
   return path.join(home, ".config", "powershell", "Microsoft.PowerShell_profile.ps1");
 }
 
-export async function isCompletionInstalled(shell: CompletionShell, binName = "remoteclaw"): Promise<boolean> {
+export async function isCompletionInstalled(
+  shell: CompletionShell,
+  binName = "remoteclaw",
+): Promise<boolean> {
   const profilePath = getShellProfilePath(shell);
 
   if (!(await pathExists(profilePath))) {
@@ -180,14 +200,19 @@ export async function isCompletionInstalled(shell: CompletionShell, binName = "r
   const cachedPath = (await pathExists(cachePathCandidate)) ? cachePathCandidate : null;
   const content = await fs.readFile(profilePath, "utf-8");
   const lines = content.split("\n");
-  return lines.some((line) => isCompletionProfileHeader(line) || isCompletionProfileLine(line, binName, cachedPath));
+  return lines.some(
+    (line) => isCompletionProfileHeader(line) || isCompletionProfileLine(line, binName, cachedPath),
+  );
 }
 
 /**
  * Check if the profile uses the slow dynamic completion pattern.
  * Returns true if profile has `source <(remoteclaw completion ...)` instead of cached file.
  */
-export async function usesSlowDynamicCompletion(shell: CompletionShell, binName = "remoteclaw"): Promise<boolean> {
+export async function usesSlowDynamicCompletion(
+  shell: CompletionShell,
+  binName = "remoteclaw",
+): Promise<boolean> {
   const profilePath = getShellProfilePath(shell);
 
   if (!(await pathExists(profilePath))) {
@@ -213,13 +238,19 @@ export function registerCompletionCli(program: Command) {
     .description("Generate shell completion script")
     .addHelpText(
       "after",
-      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/completion", "docs.remoteclaw.org/cli/completion")}\n`,
+      () =>
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/completion", "docs.remoteclaw.org/cli/completion")}\n`,
     )
     .addOption(
-      new Option("-s, --shell <shell>", "Shell to generate completion for (default: zsh)").choices(COMPLETION_SHELLS),
+      new Option("-s, --shell <shell>", "Shell to generate completion for (default: zsh)").choices(
+        COMPLETION_SHELLS,
+      ),
     )
     .option("-i, --install", "Install completion script to shell profile")
-    .option("--write-state", "Write completion scripts to $REMOTECLAW_STATE_DIR/completions (no stdout)")
+    .option(
+      "--write-state",
+      "Write completion scripts to $REMOTECLAW_STATE_DIR/completions (no stdout)",
+    )
     .option("-y, --yes", "Skip confirmation (non-interactive)", false)
     .action(async (options) => {
       // Route logs to stderr so plugin loading messages do not corrupt
@@ -294,7 +325,9 @@ export async function installCompletion(shell: string, yes: boolean, binName = "
   const cachePath = resolveCompletionCachePath(shell, binName);
   const cacheExists = await pathExists(cachePath);
   if (!cacheExists) {
-    console.error(`Completion cache not found at ${cachePath}. Run \`${binName} completion --write-state\` first.`);
+    console.error(
+      `Completion cache not found at ${cachePath}. Run \`${binName} completion --write-state\` first.`,
+    );
     return;
   }
 

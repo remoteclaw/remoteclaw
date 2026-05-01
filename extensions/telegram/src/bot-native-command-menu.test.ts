@@ -70,7 +70,9 @@ describe("bot-native-command-menu", () => {
     expect(result.issues).toContain(
       'Plugin command "/bad-name!" is invalid for Telegram (use a-z, 0-9, underscore; max 32 chars).',
     );
-    expect(result.issues).toContain('Plugin command "/native" conflicts with an existing Telegram command.');
+    expect(result.issues).toContain(
+      'Plugin command "/native" conflicts with an existing Telegram command.',
+    );
     expect(result.issues).toContain('Plugin command "/valid" is duplicated.');
     expect(result.issues).toContain('Plugin command "/empty" is missing a description.');
   });
@@ -98,7 +100,9 @@ describe("bot-native-command-menu", () => {
     });
 
     expect(result.commands).toEqual([{ command: "valid", description: "Works" }]);
-    expect(result.issues).toContain('Plugin command "/missing_description" is missing a description.');
+    expect(result.issues).toContain(
+      'Plugin command "/missing_description" is missing a description.',
+    );
     expect(result.issues).toContain(
       'Plugin command "/<unknown>" is invalid for Telegram (use a-z, 0-9, underscore; max 32 chars).',
     );
@@ -209,7 +213,10 @@ describe("bot-native-command-menu", () => {
   });
 
   it("does not cache empty-menu hash when deleteMyCommands fails", async () => {
-    const deleteMyCommands = vi.fn().mockRejectedValueOnce(new Error("transient failure")).mockResolvedValue(undefined);
+    const deleteMyCommands = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("transient failure"))
+      .mockResolvedValue(undefined);
     const setMyCommands = vi.fn(async () => undefined);
     const runtimeLog = vi.fn();
     const accountId = `test-empty-delete-fail-${Date.now()}`;
@@ -296,6 +303,8 @@ describe("bot-native-command-menu", () => {
     await vi.waitFor(() => {
       expect(setMyCommands).toHaveBeenCalledTimes(2);
     });
-    expect(runtimeLog).toHaveBeenCalledWith("Telegram rejected 10 commands (BOT_COMMANDS_TOO_MUCH); retrying with 8.");
+    expect(runtimeLog).toHaveBeenCalledWith(
+      "Telegram rejected 10 commands (BOT_COMMANDS_TOO_MUCH); retrying with 8.",
+    );
   });
 });

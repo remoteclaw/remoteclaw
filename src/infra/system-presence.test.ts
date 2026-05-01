@@ -29,7 +29,9 @@ describe("system-presence", () => {
       reason: "beacon",
     });
 
-    const matches = listSystemPresence().filter((e) => (e.instanceId ?? "").toLowerCase() === instanceIdLower);
+    const matches = listSystemPresence().filter(
+      (e) => (e.instanceId ?? "").toLowerCase() === instanceIdLower,
+    );
     expect(matches).toHaveLength(1);
     expect(matches[0]?.host).toBe("Peter-Mac-Studio");
     expect(matches[0]?.ip).toBe("10.0.0.1");

@@ -9,7 +9,8 @@ vi.mock("./media-understanding.runtime.js", () => ({
   transcribeFirstAudio: (...args: unknown[]) => transcribeFirstAudioMock(...args),
 }));
 
-const { buildTelegramMessageContextForTest } = await import("./bot-message-context.test-harness.js");
+const { buildTelegramMessageContextForTest } =
+  await import("./bot-message-context.test-harness.js");
 
 async function buildGroupVoiceContext(params: {
   messageId: number;
@@ -59,7 +60,10 @@ async function buildGroupVoiceContext(params: {
   });
 }
 
-function expectTranscriptRendered(ctx: Awaited<ReturnType<typeof buildGroupVoiceContext>>, transcript: string) {
+function expectTranscriptRendered(
+  ctx: Awaited<ReturnType<typeof buildGroupVoiceContext>>,
+  transcript: string,
+) {
   expect(ctx).not.toBeNull();
   expect(ctx?.ctxPayload?.BodyForAgent).toBe(transcript);
   expect(ctx?.ctxPayload?.Body).toContain(transcript);

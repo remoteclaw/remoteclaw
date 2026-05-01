@@ -1,4 +1,9 @@
-import type { BlockStreamingCoalesceConfig, DmPolicy, GroupPolicy, ReplyToMode } from "./types.base.js";
+import type {
+  BlockStreamingCoalesceConfig,
+  DmPolicy,
+  GroupPolicy,
+  ReplyToMode,
+} from "./types.base.js";
 import type { ChannelHealthMonitorConfig } from "./types.channels.js";
 import type { DmConfig } from "./types.messages.js";
 import type { SecretRef } from "./types.secrets.js";

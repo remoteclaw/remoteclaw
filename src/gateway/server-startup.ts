@@ -3,13 +3,20 @@ import { cleanStaleLockFiles } from "../agents/session-write-lock.js";
 import type { CliDeps } from "../cli/deps.js";
 import type { loadConfig } from "../config/config.js";
 import { resolveStateDir } from "../config/paths.js";
-import { clearInternalHooks, createInternalHookEvent, triggerInternalHook } from "../hooks/internal-hooks.js";
+import {
+  clearInternalHooks,
+  createInternalHookEvent,
+  triggerInternalHook,
+} from "../hooks/internal-hooks.js";
 import { loadInternalHooks } from "../hooks/loader.js";
 import { isTruthyEnvValue } from "../infra/env.js";
 import type { loadRemoteClawPlugins } from "../plugins/loader.js";
 import { type PluginServicesHandle, startPluginServices } from "../plugins/services.js";
 import { startBrowserControlServerIfEnabled } from "./server-browser.js";
-import { scheduleRestartSentinelWake, shouldWakeFromRestartSentinel } from "./server-restart-sentinel.js";
+import {
+  scheduleRestartSentinelWake,
+  shouldWakeFromRestartSentinel,
+} from "./server-restart-sentinel.js";
 
 const SESSION_LOCK_STALE_MS = 30 * 60 * 1000;
 
@@ -57,7 +64,9 @@ export async function startGatewaySidecars(params: {
     clearInternalHooks();
     const loadedCount = await loadInternalHooks(params.cfg, params.defaultWorkspaceDir);
     if (loadedCount > 0) {
-      params.logHooks.info(`loaded ${loadedCount} internal hook handler${loadedCount > 1 ? "s" : ""}`);
+      params.logHooks.info(
+        `loaded ${loadedCount} internal hook handler${loadedCount > 1 ? "s" : ""}`,
+      );
     }
   } catch (err) {
     params.logHooks.error(`failed to load hooks: ${String(err)}`);
@@ -66,7 +75,8 @@ export async function startGatewaySidecars(params: {
   // Launch configured channels so gateway replies via the surface the message came from.
   // Tests can opt out via REMOTECLAW_SKIP_CHANNELS (or legacy REMOTECLAW_SKIP_PROVIDERS).
   const skipChannels =
-    isTruthyEnvValue(process.env.REMOTECLAW_SKIP_CHANNELS) || isTruthyEnvValue(process.env.REMOTECLAW_SKIP_PROVIDERS);
+    isTruthyEnvValue(process.env.REMOTECLAW_SKIP_CHANNELS) ||
+    isTruthyEnvValue(process.env.REMOTECLAW_SKIP_PROVIDERS);
   if (!skipChannels) {
     try {
       await params.startChannels();
@@ -74,7 +84,9 @@ export async function startGatewaySidecars(params: {
       params.logChannels.error(`channel startup failed: ${String(err)}`);
     }
   } else {
-    params.logChannels.info("skipping channel start (REMOTECLAW_SKIP_CHANNELS=1 or REMOTECLAW_SKIP_PROVIDERS=1)");
+    params.logChannels.info(
+      "skipping channel start (REMOTECLAW_SKIP_CHANNELS=1 or REMOTECLAW_SKIP_PROVIDERS=1)",
+    );
   }
 
   if (params.cfg.hooks?.internal?.enabled) {

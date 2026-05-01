@@ -70,7 +70,8 @@ export function deleteAccountFromConfigSection(params: {
     return params.cfg;
   }
 
-  const baseAccounts = base.accounts && typeof base.accounts === "object" ? { ...base.accounts } : undefined;
+  const baseAccounts =
+    base.accounts && typeof base.accounts === "object" ? { ...base.accounts } : undefined;
 
   if (accountKey !== DEFAULT_ACCOUNT_ID) {
     const accounts = baseAccounts ? { ...baseAccounts } : {};
@@ -130,7 +131,8 @@ export function clearAccountEntryFields<TAccountEntry extends object>(params: {
   cleared: boolean;
 } {
   const accountKey = params.accountId || DEFAULT_ACCOUNT_ID;
-  const baseAccounts = params.accounts && typeof params.accounts === "object" ? { ...params.accounts } : undefined;
+  const baseAccounts =
+    params.accounts && typeof params.accounts === "object" ? { ...params.accounts } : undefined;
   if (!baseAccounts || !(accountKey in baseAccounts)) {
     return { nextAccounts: baseAccounts, changed: false, cleared: false };
   }

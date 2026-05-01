@@ -27,7 +27,11 @@ import {
   updateSessionStore,
 } from "../config/sessions.js";
 import { resolveGatewayCredentialsFromConfig } from "../gateway/credentials.js";
-import { clearAgentRunContext, emitAgentEvent, registerAgentRunContext } from "../infra/agent-events.js";
+import {
+  clearAgentRunContext,
+  emitAgentEvent,
+  registerAgentRunContext,
+} from "../infra/agent-events.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { withAuthKeyRetry } from "../middleware/auth-key-retry.js";
 import { ChannelBridge } from "../middleware/channel-bridge.js";
@@ -269,7 +273,9 @@ export async function agentCommand(
   if (agentIdOverride && opts.sessionKey) {
     const sessionAgentId = resolveAgentIdFromSessionKey(opts.sessionKey);
     if (sessionAgentId !== agentIdOverride) {
-      throw new Error(`Agent id "${agentIdOverrideRaw}" does not match session key agent "${sessionAgentId}".`);
+      throw new Error(
+        `Agent id "${agentIdOverrideRaw}" does not match session key agent "${sessionAgentId}".`,
+      );
     }
   }
   const agentCfg = cfg.agents?.defaults;
@@ -340,7 +346,8 @@ export async function agentCommand(
 
     // Persist explicit /command overrides to the session store when we have a key.
     if (sessionStore && sessionKey) {
-      const entry = sessionStore[sessionKey] ?? sessionEntry ?? { sessionId, updatedAt: Date.now() };
+      const entry = sessionStore[sessionKey] ??
+        sessionEntry ?? { sessionId, updatedAt: Date.now() };
       const next: SessionEntry = { ...entry, sessionId, updatedAt: Date.now() };
       applyVerboseOverride(next, verboseOverride);
       await persistSessionEntry({
@@ -352,7 +359,10 @@ export async function agentCommand(
       sessionEntry = next;
     }
 
-    const { provider: defaultProvider, model: defaultModel } = normalizeModelRef("unknown", "unknown");
+    const { provider: defaultProvider, model: defaultModel } = normalizeModelRef(
+      "unknown",
+      "unknown",
+    );
     let provider = defaultProvider;
     let model = defaultModel;
 
@@ -372,7 +382,11 @@ export async function agentCommand(
     if (sessionStore && sessionKey) {
       const threadIdFromSessionKey = parseSessionThreadInfo(sessionKey).threadId;
       const fallbackSessionFile = !sessionEntry?.sessionFile
-        ? resolveSessionTranscriptPath(sessionId, sessionAgentId, opts.threadId ?? threadIdFromSessionKey)
+        ? resolveSessionTranscriptPath(
+            sessionId,
+            sessionAgentId,
+            opts.threadId ?? threadIdFromSessionKey,
+          )
         : undefined;
       const resolvedSessionFile = await resolveAndPersistSessionFile({
         sessionId,
@@ -393,7 +407,10 @@ export async function agentCommand(
     let result: AgentDeliveryResult;
     try {
       const runContext = resolveAgentRunContext(opts);
-      const messageChannel = resolveMessageChannel(runContext.messageChannel, opts.replyChannel ?? opts.channel);
+      const messageChannel = resolveMessageChannel(
+        runContext.messageChannel,
+        opts.replyChannel ?? opts.channel,
+      );
 
       const baseRuntimeEnv = resolveAgentRuntimeEnv(cfg, sessionAgentId);
 

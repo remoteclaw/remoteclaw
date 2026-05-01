@@ -4,7 +4,9 @@ import { ChannelType, PermissionFlagsBits, Routes } from "discord-api-types/v10"
 import { resolveDiscordRest } from "./client.js";
 import type { DiscordPermissionsSummary, DiscordReactOpts } from "./send.types.js";
 
-const PERMISSION_ENTRIES = Object.entries(PermissionFlagsBits).filter(([, value]) => typeof value === "bigint");
+const PERMISSION_ENTRIES = Object.entries(PermissionFlagsBits).filter(
+  ([, value]) => typeof value === "bigint",
+);
 const ALL_PERMISSIONS = PERMISSION_ENTRIES.reduce((acc, [, value]) => acc | value, 0n);
 const ADMINISTRATOR_BIT = PermissionFlagsBits.Administrator;
 
@@ -119,7 +121,8 @@ export async function hasAnyGuildPermissionDiscord(
     guildId,
     userId,
     requiredPermissions,
-    (permissions, required) => required.some((permission) => hasPermissionBit(permissions, permission)),
+    (permissions, required) =>
+      required.some((permission) => hasPermissionBit(permissions, permission)),
     opts,
   );
 }
@@ -137,7 +140,8 @@ export async function hasAllGuildPermissionsDiscord(
     guildId,
     userId,
     requiredPermissions,
-    (permissions, required) => required.every((permission) => hasPermissionBit(permissions, permission)),
+    (permissions, required) =>
+      required.every((permission) => hasPermissionBit(permissions, permission)),
     opts,
   );
 }
@@ -196,7 +200,8 @@ export async function fetchChannelPermissionsDiscord(
   }
 
   let permissions = base;
-  const overwrites = "permission_overwrites" in channel ? (channel.permission_overwrites ?? []) : [];
+  const overwrites =
+    "permission_overwrites" in channel ? (channel.permission_overwrites ?? []) : [];
   for (const overwrite of overwrites) {
     if (overwrite.id === guildId) {
       permissions = removePermissionBits(permissions, overwrite.deny ?? "0");

@@ -66,7 +66,8 @@ export function canonicalizeMainSessionAlias(params: {
     mainKey: "main",
   });
 
-  const isMainAlias = raw === "main" || raw === mainKey || raw === agentMainSessionKey || raw === agentMainAliasKey;
+  const isMainAlias =
+    raw === "main" || raw === mainKey || raw === agentMainSessionKey || raw === agentMainAliasKey;
 
   if (params.cfg?.session?.scope === "global" && isMainAlias) {
     return "global";

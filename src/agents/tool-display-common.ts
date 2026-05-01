@@ -62,7 +62,9 @@ export function defaultTitle(name: string): string {
   return cleaned
     .split(/\s+/)
     .map((part) =>
-      part.length <= 2 && part.toUpperCase() === part ? part : `${part.at(0)?.toUpperCase() ?? ""}${part.slice(1)}`,
+      part.length <= 2 && part.toUpperCase() === part
+        ? part
+        : `${part.at(0)?.toUpperCase() ?? ""}${part.slice(1)}`,
     )
     .join(" ");
 }
@@ -112,7 +114,10 @@ export function resolveToolVerbAndDetailForArgs(params: {
   });
 }
 
-export function coerceDisplayValue(value: unknown, opts: CoerceDisplayValueOptions = {}): string | undefined {
+export function coerceDisplayValue(
+  value: unknown,
+  opts: CoerceDisplayValueOptions = {},
+): string | undefined {
   const maxStringChars = opts.maxStringChars ?? 160;
   const maxArrayEntries = opts.maxArrayEntries ?? 3;
 
@@ -149,7 +154,9 @@ export function coerceDisplayValue(value: unknown, opts: CoerceDisplayValueOptio
     return String(value);
   }
   if (Array.isArray(value)) {
-    const values = value.map((item) => coerceDisplayValue(item, opts)).filter((item): item is string => Boolean(item));
+    const values = value
+      .map((item) => coerceDisplayValue(item, opts))
+      .filter((item): item is string => Boolean(item));
     if (values.length === 0) {
       return undefined;
     }
@@ -218,9 +225,13 @@ export function resolveReadDetail(args: unknown): string | undefined {
   }
 
   const offsetRaw =
-    typeof record.offset === "number" && Number.isFinite(record.offset) ? Math.floor(record.offset) : undefined;
+    typeof record.offset === "number" && Number.isFinite(record.offset)
+      ? Math.floor(record.offset)
+      : undefined;
   const limitRaw =
-    typeof record.limit === "number" && Number.isFinite(record.limit) ? Math.floor(record.limit) : undefined;
+    typeof record.limit === "number" && Number.isFinite(record.limit)
+      ? Math.floor(record.limit)
+      : undefined;
 
   const offset = offsetRaw !== undefined ? Math.max(1, offsetRaw) : undefined;
   const limit = limitRaw !== undefined ? Math.max(1, limitRaw) : undefined;
@@ -245,7 +256,8 @@ export function resolveWriteDetail(toolKey: string, args: unknown): string | und
     return undefined;
   }
 
-  const path = resolvePathArg(record) ?? (typeof record.url === "string" ? record.url.trim() : undefined);
+  const path =
+    resolvePathArg(record) ?? (typeof record.url === "string" ? record.url.trim() : undefined);
   if (!path) {
     return undefined;
   }
@@ -307,7 +319,10 @@ export function resolveWebFetchDetail(args: unknown): string | undefined {
       ? Math.floor(record.maxChars)
       : undefined;
 
-  const suffix = [mode ? `mode ${mode}` : undefined, maxChars !== undefined ? `max ${maxChars} chars` : undefined]
+  const suffix = [
+    mode ? `mode ${mode}` : undefined,
+    maxChars !== undefined ? `max ${maxChars} chars` : undefined,
+  ]
     .filter((value): value is string => Boolean(value))
     .join(", ");
 
@@ -321,7 +336,8 @@ function stripOuterQuotes(value: string | undefined): string | undefined {
   const trimmed = value.trim();
   if (
     trimmed.length >= 2 &&
-    ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'")))
+    ((trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+      (trimmed.startsWith("'") && trimmed.endsWith("'")))
   ) {
     return trimmed.slice(1, -1).trim();
   }
@@ -465,7 +481,11 @@ function positionalArgs(words: string[], from = 1, optionsWithValue: string[] = 
   return args;
 }
 
-function firstPositional(words: string[], from = 1, optionsWithValue: string[] = []): string | undefined {
+function firstPositional(
+  words: string[],
+  from = 1,
+  optionsWithValue: string[] = [],
+): string | undefined {
   return positionalArgs(words, from, optionsWithValue)[0];
 }
 
@@ -526,7 +546,10 @@ function unwrapShellWrapper(command: string): string {
   return inner ? (stripOuterQuotes(inner) ?? command) : command;
 }
 
-function scanTopLevelChars(command: string, visit: (char: string, index: number) => boolean | void): void {
+function scanTopLevelChars(
+  command: string,
+  visit: (char: string, index: number) => boolean | void,
+): void {
   let quote: '"' | "'" | undefined;
   let escaped = false;
 
@@ -647,7 +670,8 @@ function stripShellPreamble(command: string): PreambleResult {
     // stripped at least one preamble segment (handles chained cd's like `cd /tmp && cd /app`).
     // NOT for || — `cd /app || npm install` means npm runs when cd *fails*, so (in /app) is wrong.
     const isChdir = (first ? !first.isOr : i > 0) && isChdirCommand(head);
-    const isPreamble = head.startsWith("set ") || head.startsWith("export ") || head.startsWith("unset ") || isChdir;
+    const isPreamble =
+      head.startsWith("set ") || head.startsWith("export ") || head.startsWith("unset ") || isChdir;
 
     if (!isPreamble) {
       break;
@@ -680,7 +704,14 @@ function summarizeKnownExec(words: string[]): string {
   const bin = binaryName(words[0]) ?? "command";
 
   if (bin === "git") {
-    const globalWithValue = new Set(["-C", "-c", "--git-dir", "--work-tree", "--namespace", "--config-env"]);
+    const globalWithValue = new Set([
+      "-C",
+      "-c",
+      "--git-dir",
+      "--work-tree",
+      "--namespace",
+      "--config-env",
+    ]);
 
     const gitCwd = optionValue(words, ["-C"]);
 
@@ -817,7 +848,9 @@ function summarizeKnownExec(words: string[]): string {
       const compact = (stripOuterQuotes(script) ?? script).replace(/\s+/g, "");
       const range = compact.match(/^([0-9]+),([0-9]+)p$/);
       if (range) {
-        return target ? `print lines ${range[1]}-${range[2]} from ${target}` : `print lines ${range[1]}-${range[2]}`;
+        return target
+          ? `print lines ${range[1]}-${range[2]} from ${target}`
+          : `print lines ${range[1]}-${range[2]}`;
       }
       const single = compact.match(/^([0-9]+)p$/);
       if (single) {
@@ -898,13 +931,20 @@ function summarizeKnownExec(words: string[]): string {
 
     const nodeOptsWithValue = ["-e", "--eval", "-m"];
     const otherOptsWithValue = ["-c", "-e", "--eval", "-m"];
-    const script = firstPositional(words, 1, bin === "node" ? nodeOptsWithValue : otherOptsWithValue);
+    const script = firstPositional(
+      words,
+      1,
+      bin === "node" ? nodeOptsWithValue : otherOptsWithValue,
+    );
     if (!script) {
       return `run ${bin}`;
     }
 
     if (bin === "node") {
-      const mode = words.includes("--check") || words.includes("-c") ? "check js syntax for" : "run node script";
+      const mode =
+        words.includes("--check") || words.includes("-c")
+          ? "check js syntax for"
+          : "run node script";
       return `${mode} ${script}`;
     }
 
@@ -1049,7 +1089,11 @@ export function resolveExecDetail(args: unknown): string | undefined {
   const summary = result?.text || "run command";
 
   const cwdRaw =
-    typeof record.workdir === "string" ? record.workdir : typeof record.cwd === "string" ? record.cwd : undefined;
+    typeof record.workdir === "string"
+      ? record.workdir
+      : typeof record.cwd === "string"
+        ? record.cwd
+        : undefined;
   // Explicit workdir takes priority; fall back to cd path extracted from the command.
   const cwd = cwdRaw?.trim() || result?.chdirPath || undefined;
 
@@ -1167,7 +1211,10 @@ export function resolveToolVerbAndDetail(params: {
   if (!detail && params.toolKey === "read") {
     detail = resolveReadDetail(params.args);
   }
-  if (!detail && (params.toolKey === "write" || params.toolKey === "edit" || params.toolKey === "attach")) {
+  if (
+    !detail &&
+    (params.toolKey === "write" || params.toolKey === "edit" || params.toolKey === "attach")
+  ) {
     detail = resolveWriteDetail(params.toolKey, params.args);
   }
   if (!detail && params.toolKey === "web_search") {
@@ -1177,7 +1224,8 @@ export function resolveToolVerbAndDetail(params: {
     detail = resolveWebFetchDetail(params.args);
   }
 
-  const detailKeys = actionSpec?.detailKeys ?? params.spec?.detailKeys ?? params.fallbackDetailKeys ?? [];
+  const detailKeys =
+    actionSpec?.detailKeys ?? params.spec?.detailKeys ?? params.fallbackDetailKeys ?? [];
   if (!detail && detailKeys.length > 0) {
     detail = resolveDetailFromKeys(params.args, detailKeys, {
       mode: params.detailMode,

@@ -41,7 +41,9 @@ export function resolveMentions(params: {
   mentionRegexes: RegExp[];
 }) {
   const mentions = params.content["m.mentions"];
-  const mentionedUsers = Array.isArray(mentions?.user_ids) ? new Set(mentions.user_ids) : new Set<string>();
+  const mentionedUsers = Array.isArray(mentions?.user_ids)
+    ? new Set(mentions.user_ids)
+    : new Set<string>();
 
   // Check formatted_body for matrix.to mention links (legacy/alternative mention format)
   const mentionedInFormattedBody = params.userId
@@ -52,6 +54,9 @@ export function resolveMentions(params: {
     Boolean(mentions?.room) ||
     (params.userId ? mentionedUsers.has(params.userId) : false) ||
     mentionedInFormattedBody ||
-    getMatrixRuntime().channel.mentions.matchesMentionPatterns(params.text ?? "", params.mentionRegexes);
+    getMatrixRuntime().channel.mentions.matchesMentionPatterns(
+      params.text ?? "",
+      params.mentionRegexes,
+    );
   return { wasMentioned, hasExplicitMention: Boolean(mentions) };
 }

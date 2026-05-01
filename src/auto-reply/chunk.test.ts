@@ -62,7 +62,9 @@ function expectChunkModeCase(params: {
   expected: readonly string[];
   name?: string;
 }) {
-  expect(params.chunker(params.text, params.limit, params.mode), params.name).toEqual(params.expected);
+  expect(params.chunker(params.text, params.limit, params.mode), params.name).toEqual(
+    params.expected,
+  );
 }
 
 function expectMarkdownFenceSplitCases(
@@ -89,7 +91,9 @@ function expectMarkdownFenceSplitCases(
 function expectNoEmptyFencedChunks(text: string, limit: number) {
   const chunks = chunkMarkdownText(text, limit);
   for (const chunk of chunks) {
-    const nonFenceLines = chunk.split("\n").filter((line) => !/^( {0,3})(`{3,}|~{3,})(.*)$/.test(line));
+    const nonFenceLines = chunk
+      .split("\n")
+      .filter((line) => !/^( {0,3})(`{3,}|~{3,})(.*)$/.test(line));
     expect(nonFenceLines.join("\n").trim()).not.toBe("");
   }
 }
@@ -209,14 +213,16 @@ describe("chunkText", () => {
 
 describe("resolveTextChunkLimit", () => {
   it.each([
-    ...(["whatsapp", "telegram", "slack", "signal", "imessage", "discord"] as const).map((provider) => ({
-      name: `uses default limit for ${provider}`,
-      cfg: undefined,
-      provider,
-      accountId: undefined,
-      options: undefined,
-      expected: 4000,
-    })),
+    ...(["whatsapp", "telegram", "slack", "signal", "imessage", "discord"] as const).map(
+      (provider) => ({
+        name: `uses default limit for ${provider}`,
+        cfg: undefined,
+        provider,
+        accountId: undefined,
+        options: undefined,
+        expected: 4000,
+      }),
+    ),
     {
       name: "uses fallback limit override when provided",
       cfg: undefined,
@@ -493,16 +499,19 @@ describe("chunkTextWithMode", () => {
       mode: "newline" as const,
       expected: ["Para one", "Para two"],
     },
-  ] as const)("applies mode-specific chunking behavior: $name", ({ text, mode, expected, name }) => {
-    expectChunkModeCase({
-      chunker: chunkTextWithMode,
-      text,
-      limit: 1000,
-      mode,
-      expected,
-      name,
-    });
-  });
+  ] as const)(
+    "applies mode-specific chunking behavior: $name",
+    ({ text, mode, expected, name }) => {
+      expectChunkModeCase({
+        chunker: chunkTextWithMode,
+        text,
+        limit: 1000,
+        mode,
+        expected,
+        name,
+      });
+    },
+  );
 });
 
 describe("chunkMarkdownTextWithMode", () => {

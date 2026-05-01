@@ -39,7 +39,12 @@ function makeTempDir() {
   return dir;
 }
 
-function writePlugin(params: { id: string; body: string; dir?: string; filename?: string }): TempPlugin {
+function writePlugin(params: {
+  id: string;
+  body: string;
+  dir?: string;
+  filename?: string;
+}): TempPlugin {
   const dir = params.dir ?? makeTempDir();
   const filename = params.filename ?? `${params.id}.js`;
   const file = path.join(dir, filename);
@@ -410,7 +415,9 @@ describe("loadRemoteClawPlugins", () => {
         },
       },
     });
-    expect(warnings.some((msg) => msg.includes("plugins.allow is empty") && msg.includes(plugin.id))).toBe(true);
+    expect(
+      warnings.some((msg) => msg.includes("plugins.allow is empty") && msg.includes(plugin.id)),
+    ).toBe(true);
   });
 
   it("warns when loaded non-bundled plugin has no install/load-path provenance", () => {
@@ -444,7 +451,10 @@ describe("loadRemoteClawPlugins", () => {
       const rogue = registry.plugins.find((entry) => entry.id === "rogue");
       expect(rogue?.status).toBe("loaded");
       expect(
-        warnings.some((msg) => msg.includes("rogue") && msg.includes("loaded without install/load-path provenance")),
+        warnings.some(
+          (msg) =>
+            msg.includes("rogue") && msg.includes("loaded without install/load-path provenance"),
+        ),
       ).toBe(true);
     });
   });

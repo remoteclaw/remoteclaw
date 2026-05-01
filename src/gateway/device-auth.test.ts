@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { buildDeviceAuthPayload, buildDeviceAuthPayloadV3, normalizeDeviceMetadataForAuth } from "./device-auth.js";
+import {
+  buildDeviceAuthPayload,
+  buildDeviceAuthPayloadV3,
+  normalizeDeviceMetadataForAuth,
+} from "./device-auth.js";
 
 describe("device-auth payload vectors", () => {
   it.each([
@@ -16,7 +20,8 @@ describe("device-auth payload vectors", () => {
           token: null,
           nonce: "nonce-abc",
         }),
-      expected: "v2|dev-1|remoteclaw-macos|ui|operator|operator.admin,operator.read|1700000000000||nonce-abc",
+      expected:
+        "v2|dev-1|remoteclaw-macos|ui|operator|operator.admin,operator.read|1700000000000||nonce-abc",
     },
     {
       name: "builds canonical v3 payloads",

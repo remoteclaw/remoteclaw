@@ -15,7 +15,11 @@ vi.mock("../tts/tts.js", () => ({
 import { resolveApiKeyForProvider } from "../auth/provider-auth.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { isTtsProviderConfigured } from "../tts/tts.js";
-import { checkSttCredentials, checkTtsCredentials, validateVoiceCredentials } from "./voice-credentials.js";
+import {
+  checkSttCredentials,
+  checkTtsCredentials,
+  validateVoiceCredentials,
+} from "./voice-credentials.js";
 
 const mockResolveApiKey = vi.mocked(resolveApiKeyForProvider);
 const mockIsTtsConfigured = vi.mocked(isTtsProviderConfigured);

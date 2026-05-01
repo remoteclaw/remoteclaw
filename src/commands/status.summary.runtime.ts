@@ -3,7 +3,10 @@ import { resolveAgentModelPrimaryValue } from "../config/model-input.js";
 import type { SessionEntry } from "../config/sessions/types.js";
 import type { RemoteClawConfig } from "../config/types.js";
 
-function parseStatusModelRef(raw: string, defaultProvider: string): { provider: string; model: string } | null {
+function parseStatusModelRef(
+  raw: string,
+  defaultProvider: string,
+): { provider: string; model: string } | null {
   const trimmed = raw.trim();
   if (!trimmed) {
     return null;
@@ -55,7 +58,9 @@ function resolveConfiguredStatusModelRef(params: {
   agentId?: string;
 }): { provider: string; model: string } {
   const agentRawModel = params.agentId
-    ? resolveAgentModelPrimaryValue(params.cfg.agents?.list?.find((entry) => entry?.id === params.agentId)?.model)
+    ? resolveAgentModelPrimaryValue(
+        params.cfg.agents?.list?.find((entry) => entry?.id === params.agentId)?.model,
+      )
     : undefined;
   if (agentRawModel) {
     const parsed = resolveStatusModelRefFromRaw({
@@ -147,7 +152,9 @@ function classifySessionKey(key: string, entry?: SessionEntry) {
 
 function resolveSessionModelRef(
   cfg: RemoteClawConfig,
-  entry?: SessionEntry | Pick<SessionEntry, "model" | "modelProvider" | "modelOverride" | "providerOverride">,
+  entry?:
+    | SessionEntry
+    | Pick<SessionEntry, "model" | "modelProvider" | "modelOverride" | "providerOverride">,
   agentId?: string,
 ): { provider: string; model: string } {
   const resolved = resolveConfiguredStatusModelRef({
@@ -203,7 +210,11 @@ function resolveContextTokensForModel(params: {
     return params.contextTokensOverride;
   }
   if (params.provider && params.model) {
-    const configuredWindow = resolveConfiguredProviderContextWindow(params.cfg, params.provider, params.model);
+    const configuredWindow = resolveConfiguredProviderContextWindow(
+      params.cfg,
+      params.provider,
+      params.model,
+    );
     if (configuredWindow !== undefined) {
       return configuredWindow;
     }

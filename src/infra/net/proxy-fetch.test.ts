@@ -1,42 +1,49 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-const PROXY_ENV_KEYS = ["HTTPS_PROXY", "HTTP_PROXY", "ALL_PROXY", "https_proxy", "http_proxy", "all_proxy"] as const;
+const PROXY_ENV_KEYS = [
+  "HTTPS_PROXY",
+  "HTTP_PROXY",
+  "ALL_PROXY",
+  "https_proxy",
+  "http_proxy",
+  "all_proxy",
+] as const;
 
-const ORIGINAL_PROXY_ENV = Object.fromEntries(PROXY_ENV_KEYS.map((key) => [key, process.env[key]])) as Record<
-  (typeof PROXY_ENV_KEYS)[number],
-  string | undefined
->;
+const ORIGINAL_PROXY_ENV = Object.fromEntries(
+  PROXY_ENV_KEYS.map((key) => [key, process.env[key]]),
+) as Record<(typeof PROXY_ENV_KEYS)[number], string | undefined>;
 
-const { ProxyAgent, EnvHttpProxyAgent, undiciFetch, proxyAgentSpy, envAgentSpy, getLastAgent } = vi.hoisted(() => {
-  const undiciFetch = vi.fn();
-  const proxyAgentSpy = vi.fn();
-  const envAgentSpy = vi.fn();
-  class ProxyAgent {
-    static lastCreated: ProxyAgent | undefined;
-    proxyUrl: string;
-    constructor(proxyUrl: string) {
-      this.proxyUrl = proxyUrl;
-      ProxyAgent.lastCreated = this;
-      proxyAgentSpy(proxyUrl);
+const { ProxyAgent, EnvHttpProxyAgent, undiciFetch, proxyAgentSpy, envAgentSpy, getLastAgent } =
+  vi.hoisted(() => {
+    const undiciFetch = vi.fn();
+    const proxyAgentSpy = vi.fn();
+    const envAgentSpy = vi.fn();
+    class ProxyAgent {
+      static lastCreated: ProxyAgent | undefined;
+      proxyUrl: string;
+      constructor(proxyUrl: string) {
+        this.proxyUrl = proxyUrl;
+        ProxyAgent.lastCreated = this;
+        proxyAgentSpy(proxyUrl);
+      }
     }
-  }
-  class EnvHttpProxyAgent {
-    static lastCreated: EnvHttpProxyAgent | undefined;
-    constructor() {
-      EnvHttpProxyAgent.lastCreated = this;
-      envAgentSpy();
+    class EnvHttpProxyAgent {
+      static lastCreated: EnvHttpProxyAgent | undefined;
+      constructor() {
+        EnvHttpProxyAgent.lastCreated = this;
+        envAgentSpy();
+      }
     }
-  }
 
-  return {
-    ProxyAgent,
-    EnvHttpProxyAgent,
-    undiciFetch,
-    proxyAgentSpy,
-    envAgentSpy,
-    getLastAgent: () => ProxyAgent.lastCreated,
-  };
-});
+    return {
+      ProxyAgent,
+      EnvHttpProxyAgent,
+      undiciFetch,
+      proxyAgentSpy,
+      envAgentSpy,
+      getLastAgent: () => ProxyAgent.lastCreated,
+    };
+  });
 
 const mockedModuleIds = ["undici"] as const;
 
@@ -109,7 +116,9 @@ describe("makeProxyFetch", () => {
 
 describe("getProxyUrlFromFetch", () => {
   it("returns the trimmed proxy url from proxy fetch wrappers", () => {
-    expect(getProxyUrlFromFetch(makeProxyFetch("  http://proxy.test:8080  "))).toBe("http://proxy.test:8080");
+    expect(getProxyUrlFromFetch(makeProxyFetch("  http://proxy.test:8080  "))).toBe(
+      "http://proxy.test:8080",
+    );
   });
 
   it("returns undefined for plain fetch functions or blank metadata", () => {

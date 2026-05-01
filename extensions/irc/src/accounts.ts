@@ -111,7 +111,8 @@ function resolvePassword(accountId: string, merged: IrcAccountConfig) {
 
 function resolveNickServConfig(accountId: string, nickserv?: IrcNickServConfig): IrcNickServConfig {
   const base = nickserv ?? {};
-  const envPassword = accountId === DEFAULT_ACCOUNT_ID ? process.env.IRC_NICKSERV_PASSWORD?.trim() : undefined;
+  const envPassword =
+    accountId === DEFAULT_ACCOUNT_ID ? process.env.IRC_NICKSERV_PASSWORD?.trim() : undefined;
   const envRegisterEmail =
     accountId === DEFAULT_ACCOUNT_ID ? process.env.IRC_NICKSERV_REGISTER_EMAIL?.trim() : undefined;
 
@@ -140,7 +141,10 @@ function resolveNickServConfig(accountId: string, nickserv?: IrcNickServConfig):
   return merged;
 }
 
-export function resolveIrcAccount(params: { cfg: CoreConfig; accountId?: string | null }): ResolvedIrcAccount {
+export function resolveIrcAccount(params: {
+  cfg: CoreConfig;
+  accountId?: string | null;
+}): ResolvedIrcAccount {
   const hasExplicitAccountId = Boolean(params.accountId?.trim());
   const baseEnabled = params.cfg.channels?.irc?.enabled !== false;
 
@@ -156,10 +160,13 @@ export function resolveIrcAccount(params: { cfg: CoreConfig; accountId?: string 
           ? parseTruthy(process.env.IRC_TLS)
           : true;
 
-    const envPort = accountId === DEFAULT_ACCOUNT_ID ? parseIntEnv(process.env.IRC_PORT) : undefined;
+    const envPort =
+      accountId === DEFAULT_ACCOUNT_ID ? parseIntEnv(process.env.IRC_PORT) : undefined;
     const port = merged.port ?? envPort ?? (tls ? 6697 : 6667);
     const envChannels =
-      accountId === DEFAULT_ACCOUNT_ID ? parseOptionalDelimitedEntries(process.env.IRC_CHANNELS) : undefined;
+      accountId === DEFAULT_ACCOUNT_ID
+        ? parseOptionalDelimitedEntries(process.env.IRC_CHANNELS)
+        : undefined;
 
     const host = (
       merged.host?.trim() ||

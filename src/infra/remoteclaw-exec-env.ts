@@ -8,7 +8,9 @@ export function markRemoteClawExecEnv<T extends Record<string, string | undefine
   };
 }
 
-export function ensureRemoteClawExecMarkerOnProcess(env: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+export function ensureRemoteClawExecMarkerOnProcess(
+  env: NodeJS.ProcessEnv = process.env,
+): NodeJS.ProcessEnv {
   env[REMOTECLAW_CLI_ENV_VAR] = REMOTECLAW_CLI_ENV_VALUE;
   return env;
 }

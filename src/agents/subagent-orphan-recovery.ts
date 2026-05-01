@@ -239,12 +239,16 @@ export async function recoverOrphanedSubagentSessions(params: {
               }
             });
           } catch (err) {
-            log.warn(`resume succeeded but failed to update session store for ${childSessionKey}: ${String(err)}`);
+            log.warn(
+              `resume succeeded but failed to update session store for ${childSessionKey}: ${String(err)}`,
+            );
           }
           result.recovered++;
         } else {
           // Flag stays as abortedLastRun=true so next restart can retry
-          log.warn(`resume failed for ${childSessionKey}; abortedLastRun flag preserved for retry on next restart`);
+          log.warn(
+            `resume failed for ${childSessionKey}; abortedLastRun flag preserved for retry on next restart`,
+          );
           result.failed++;
         }
       } catch (err) {
@@ -309,7 +313,9 @@ export function scheduleOrphanRecovery(params: {
             );
             attemptRecovery(attempt + 1, nextDelay);
           } else {
-            log.warn(`scheduled orphan recovery failed after ${maxRetries} retries: ${String(err)}`);
+            log.warn(
+              `scheduled orphan recovery failed after ${maxRetries} retries: ${String(err)}`,
+            );
           }
         });
     }, delay).unref?.();

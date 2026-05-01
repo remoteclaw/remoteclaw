@@ -4,7 +4,10 @@ import {
   packNpmSpecToArchive,
   withTempDir,
 } from "./install-source-utils.js";
-import { type NpmIntegrityDriftPayload, resolveNpmIntegrityDriftWithDefaultMessage } from "./npm-integrity.js";
+import {
+  type NpmIntegrityDriftPayload,
+  resolveNpmIntegrityDriftWithDefaultMessage,
+} from "./npm-integrity.js";
 import {
   formatPrereleaseResolutionError,
   isPrereleaseResolutionAllowed,

@@ -78,10 +78,18 @@ const METHOD_MAP: Record<string, MethodMapping> = {
 
 // ── Shared handler ──────────────────────────────────────────────────────
 
-async function handleMessageMethod(method: string, params: Record<string, unknown>, respond: RespondFn): Promise<void> {
+async function handleMessageMethod(
+  method: string,
+  params: Record<string, unknown>,
+  respond: RespondFn,
+): Promise<void> {
   const mapping = METHOD_MAP[method];
   if (!mapping) {
-    respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, `unknown message method: ${method}`));
+    respond(
+      false,
+      undefined,
+      errorShape(ErrorCodes.INVALID_REQUEST, `unknown message method: ${method}`),
+    );
     return;
   }
 
@@ -96,7 +104,11 @@ async function handleMessageMethod(method: string, params: Record<string, unknow
     });
     respond(true, result);
   } catch (err) {
-    respond(false, undefined, errorShape(ErrorCodes.UNAVAILABLE, err instanceof Error ? err.message : String(err)));
+    respond(
+      false,
+      undefined,
+      errorShape(ErrorCodes.UNAVAILABLE, err instanceof Error ? err.message : String(err)),
+    );
   }
 }
 

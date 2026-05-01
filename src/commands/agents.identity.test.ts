@@ -103,7 +103,10 @@ describe("agents set-identity command", () => {
       config: { agents: { list: [{ id: "main" }] } },
     });
 
-    await agentsSetIdentityCommand({ agent: "main", avatar: "https://example.com/avatar.png" }, runtime);
+    await agentsSetIdentityCommand(
+      { agent: "main", avatar: "https://example.com/avatar.png" },
+      runtime,
+    );
 
     expect(getWrittenMainIdentity()).toEqual({
       avatar: "https://example.com/avatar.png",
@@ -118,7 +121,9 @@ describe("agents set-identity command", () => {
 
     await agentsSetIdentityCommand({ agent: "main" }, runtime);
 
-    expect(runtime.error).toHaveBeenCalledWith(expect.stringContaining("No identity fields provided"));
+    expect(runtime.error).toHaveBeenCalledWith(
+      expect.stringContaining("No identity fields provided"),
+    );
     expect(runtime.exit).toHaveBeenCalledWith(1);
     expect(configMocks.writeConfigFile).not.toHaveBeenCalled();
   });

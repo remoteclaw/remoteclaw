@@ -34,7 +34,9 @@ const stubManager = {
 };
 
 const getMemorySearchManagerMock = vi.fn(async () => ({ manager: stubManager }));
-const readAgentMemoryFileMock = vi.fn(async (params: MemoryReadParams) => await readFileImpl(params));
+const readAgentMemoryFileMock = vi.fn(
+  async (params: MemoryReadParams) => await readFileImpl(params),
+);
 
 const { memoryIndexModuleId, memoryToolsRuntimeModuleId } = vi.hoisted(() => ({
   memoryIndexModuleId: "../../extensions/memory-core/src/memory/index.js",
@@ -50,7 +52,11 @@ vi.mock("../../packages/memory-host-sdk/src/host/read-file.js", () => ({
 }));
 
 vi.mock(memoryToolsRuntimeModuleId, () => ({
-  resolveMemoryBackendConfig: ({ cfg }: { cfg?: { memory?: { backend?: string; qmd?: unknown } } }) => ({
+  resolveMemoryBackendConfig: ({
+    cfg,
+  }: {
+    cfg?: { memory?: { backend?: string; qmd?: unknown } };
+  }) => ({
     backend,
     qmd: cfg?.memory?.qmd,
   }),
@@ -66,7 +72,9 @@ export function setMemorySearchImpl(next: SearchImpl): void {
   searchImpl = next;
 }
 
-export function setMemoryReadFileImpl(next: (params: MemoryReadParams) => Promise<MemoryReadResult>): void {
+export function setMemoryReadFileImpl(
+  next: (params: MemoryReadParams) => Promise<MemoryReadResult>,
+): void {
   readFileImpl = next;
 }
 
@@ -77,7 +85,9 @@ export function resetMemoryToolMockState(overrides?: {
 }): void {
   backend = overrides?.backend ?? "builtin";
   searchImpl = overrides?.searchImpl ?? (async () => []);
-  readFileImpl = overrides?.readFileImpl ?? (async (params: MemoryReadParams) => ({ text: "", path: params.relPath }));
+  readFileImpl =
+    overrides?.readFileImpl ??
+    (async (params: MemoryReadParams) => ({ text: "", path: params.relPath }));
   vi.clearAllMocks();
 }
 

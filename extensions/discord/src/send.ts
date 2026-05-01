@@ -6,7 +6,11 @@ export {
   removeChannelPermissionDiscord,
   setChannelPermissionDiscord,
 } from "./send.channels.js";
-export { listGuildEmojisDiscord, uploadEmojiDiscord, uploadStickerDiscord } from "./send.emojis-stickers.js";
+export {
+  listGuildEmojisDiscord,
+  uploadEmojiDiscord,
+  uploadStickerDiscord,
+} from "./send.emojis-stickers.js";
 export {
   addRoleDiscord,
   banMemberDiscord,

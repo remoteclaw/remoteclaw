@@ -2,7 +2,11 @@ import path from "node:path";
 import { describe, expect, it, test, vi } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import type { RuntimeEnv } from "../runtime.js";
-import { buildCleanupPlan, removeStateAndLinkedPaths, removeWorkspaceDirs } from "./cleanup-utils.js";
+import {
+  buildCleanupPlan,
+  removeStateAndLinkedPaths,
+  removeWorkspaceDirs,
+} from "./cleanup-utils.js";
 
 describe("buildCleanupPlan", () => {
   test("resolves inside-state flags and workspace dirs", () => {
@@ -25,7 +29,10 @@ describe("buildCleanupPlan", () => {
     expect(plan.configInsideState).toBe(true);
     expect(plan.oauthInsideState).toBe(false);
     expect(new Set(plan.workspaceDirs)).toEqual(
-      new Set([path.join(tmpRoot, "remoteclaw-workspace-1"), path.join(tmpRoot, "remoteclaw-workspace-2")]),
+      new Set([
+        path.join(tmpRoot, "remoteclaw-workspace-1"),
+        path.join(tmpRoot, "remoteclaw-workspace-2"),
+      ]),
     );
   });
 });
@@ -56,7 +63,9 @@ describe("cleanup path removals", () => {
       { dryRun: true },
     );
 
-    const joinedLogs = runtime.log.mock.calls.map(([line]) => line.replaceAll("\\", "/")).join("\n");
+    const joinedLogs = runtime.log.mock.calls
+      .map(([line]) => line.replaceAll("\\", "/"))
+      .join("\n");
     expect(joinedLogs).toContain("/tmp/remoteclaw-cleanup/state");
     expect(joinedLogs).toContain("/tmp/remoteclaw-cleanup/oauth");
     expect(joinedLogs).not.toContain("remoteclaw.json");

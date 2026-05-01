@@ -60,7 +60,9 @@ function isChromeStaleTargetError(profile: string | undefined, err: unknown): bo
   return msg.includes("404:") && msg.includes("tab not found");
 }
 
-function stripTargetIdFromActRequest(request: Record<string, unknown>): Record<string, unknown> | null {
+function stripTargetIdFromActRequest(
+  request: Record<string, unknown>,
+): Record<string, unknown> | null {
   const targetId = typeof request.targetId === "string" ? request.targetId.trim() : undefined;
   if (!targetId) {
     return null;
@@ -109,7 +111,9 @@ export async function executeSnapshotAction(params: {
   const { input, baseUrl, profile, proxyRequest } = params;
   const snapshotDefaults = loadConfig().browser?.snapshotDefaults;
   const format: "ai" | "aria" | undefined =
-    input.snapshotFormat === "ai" || input.snapshotFormat === "aria" ? input.snapshotFormat : undefined;
+    input.snapshotFormat === "ai" || input.snapshotFormat === "aria"
+      ? input.snapshotFormat
+      : undefined;
   const mode: "efficient" | undefined =
     input.mode === "efficient"
       ? "efficient"
@@ -117,17 +121,20 @@ export async function executeSnapshotAction(params: {
         ? "efficient"
         : undefined;
   const labels = typeof input.labels === "boolean" ? input.labels : undefined;
-  const refs: "aria" | "role" | undefined = input.refs === "aria" || input.refs === "role" ? input.refs : undefined;
+  const refs: "aria" | "role" | undefined =
+    input.refs === "aria" || input.refs === "role" ? input.refs : undefined;
   const hasMaxChars = Object.hasOwn(input, "maxChars");
   const targetId = typeof input.targetId === "string" ? input.targetId.trim() : undefined;
-  const limit = typeof input.limit === "number" && Number.isFinite(input.limit) ? input.limit : undefined;
+  const limit =
+    typeof input.limit === "number" && Number.isFinite(input.limit) ? input.limit : undefined;
   const maxChars =
     typeof input.maxChars === "number" && Number.isFinite(input.maxChars) && input.maxChars > 0
       ? Math.floor(input.maxChars)
       : undefined;
   const interactive = typeof input.interactive === "boolean" ? input.interactive : undefined;
   const compact = typeof input.compact === "boolean" ? input.compact : undefined;
-  const depth = typeof input.depth === "number" && Number.isFinite(input.depth) ? input.depth : undefined;
+  const depth =
+    typeof input.depth === "number" && Number.isFinite(input.depth) ? input.depth : undefined;
   const selector = typeof input.selector === "string" ? input.selector.trim() : undefined;
   const frame = typeof input.frame === "string" ? input.frame.trim() : undefined;
   const resolvedMaxChars =

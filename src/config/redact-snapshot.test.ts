@@ -19,7 +19,10 @@ type TestSnapshot<TConfig extends Record<string, unknown>> = ConfigFileSnapshot 
   config: TConfig;
 };
 
-function makeSnapshot<TConfig extends Record<string, unknown>>(config: TConfig, raw?: string): TestSnapshot<TConfig> {
+function makeSnapshot<TConfig extends Record<string, unknown>>(
+  config: TConfig,
+  raw?: string,
+): TestSnapshot<TConfig> {
   return {
     path: "/home/user/.remoteclaw/config.json5",
     exists: true,
@@ -35,7 +38,11 @@ function makeSnapshot<TConfig extends Record<string, unknown>>(config: TConfig, 
   } as unknown as TestSnapshot<TConfig>;
 }
 
-function restoreRedactedValues<TOriginal>(incoming: unknown, original: TOriginal, hints?: ConfigUiHints): TOriginal {
+function restoreRedactedValues<TOriginal>(
+  incoming: unknown,
+  original: TOriginal,
+  hints?: ConfigUiHints,
+): TOriginal {
   var result = restoreRedactedValues_orig(incoming, original, hints);
   expect(result.ok).toBe(true);
   return result.result as TOriginal;
@@ -187,8 +194,9 @@ describe("redactConfigSnapshot", () => {
     const result = redactConfigSnapshot(snapshot);
     expect((result.config as Record<string, unknown>).maxTokens).toBe(16384);
     const models = result.config.models as Record<string, unknown>;
-    const providerList = (((models.providers as Record<string, unknown>).openai as Record<string, unknown>).models ??
-      []) as Array<Record<string, unknown>>;
+    const providerList = ((
+      (models.providers as Record<string, unknown>).openai as Record<string, unknown>
+    ).models ?? []) as Array<Record<string, unknown>>;
     expect(providerList[0]?.maxTokens).toBe(65536);
     expect(providerList[0]?.contextTokens).toBe(200000);
 
@@ -372,7 +380,10 @@ describe("redactConfigSnapshot", () => {
       },
     });
     const result = redactConfigSnapshot(snapshot);
-    const channels = result.config.channels as Record<string, Record<string, Record<string, Record<string, string>>>>;
+    const channels = result.config.channels as Record<
+      string,
+      Record<string, Record<string, Record<string, string>>>
+    >;
     expect(channels.slack.accounts.workspace1.botToken).toBe(REDACTED_SENTINEL);
     expect(channels.slack.accounts.workspace2.appToken).toBe(REDACTED_SENTINEL);
   });
@@ -537,7 +548,10 @@ describe("redactConfigSnapshot", () => {
       name: string;
       snapshot: TestSnapshot<Record<string, unknown>>;
       hints?: ConfigUiHints;
-      assert: (params: { redacted: Record<string, unknown>; restored: Record<string, unknown> }) => void;
+      assert: (params: {
+        redacted: Record<string, unknown>;
+        restored: Record<string, unknown>;
+      }) => void;
     }> = [
       {
         name: "nested values (schema)",
@@ -724,7 +738,11 @@ describe("redactConfigSnapshot", () => {
 
     for (const testCase of cases) {
       const redacted = redactConfigSnapshot(testCase.snapshot, testCase.hints);
-      const restored = restoreRedactedValues(redacted.config, testCase.snapshot.config, testCase.hints);
+      const restored = restoreRedactedValues(
+        redacted.config,
+        testCase.snapshot.config,
+        testCase.hints,
+      );
       testCase.assert({
         redacted: redacted.config as Record<string, unknown>,
         restored: restored as Record<string, unknown>,
@@ -852,12 +870,18 @@ describe("redactConfigSnapshot", () => {
     const snapshot = makeSnapshot({
       channels: {
         slack: {
-          accounts: [{ botToken: "first-account-token-value-here" }, { botToken: "second-account-token-value-here" }],
+          accounts: [
+            { botToken: "first-account-token-value-here" },
+            { botToken: "second-account-token-value-here" },
+          ],
         },
       },
     });
     const result = redactConfigSnapshot(snapshot, hints);
-    const channels = result.config.channels as Record<string, Record<string, Array<Record<string, string>>>>;
+    const channels = result.config.channels as Record<
+      string,
+      Record<string, Array<Record<string, string>>>
+    >;
     expect(channels.slack.accounts[0].botToken).toBe(REDACTED_SENTINEL);
     expect(channels.slack.accounts[1].botToken).toBe(REDACTED_SENTINEL);
   });
@@ -1016,7 +1040,11 @@ describe("restoreRedactedValues", () => {
     expect(custom.myApiKey).toBe(REDACTED_SENTINEL);
     expect(custom.displayName).toBe("My Bot");
 
-    const restored = restoreRedactedValues(redacted.config, snapshot.config, hints) as typeof originalConfig;
+    const restored = restoreRedactedValues(
+      redacted.config,
+      snapshot.config,
+      hints,
+    ) as typeof originalConfig;
     expect(restored).toEqual(originalConfig);
   });
 
@@ -1043,14 +1071,20 @@ describe("restoreRedactedValues", () => {
     const incoming = {
       channels: {
         slack: {
-          accounts: [{ botToken: REDACTED_SENTINEL }, { botToken: "user-provided-new-token-value" }],
+          accounts: [
+            { botToken: REDACTED_SENTINEL },
+            { botToken: "user-provided-new-token-value" },
+          ],
         },
       },
     };
     const original = {
       channels: {
         slack: {
-          accounts: [{ botToken: "original-token-first-account" }, { botToken: "original-token-second-account" }],
+          accounts: [
+            { botToken: "original-token-first-account" },
+            { botToken: "original-token-second-account" },
+          ],
         },
       },
     };

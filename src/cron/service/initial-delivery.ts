@@ -3,9 +3,13 @@ import type { CronDelivery, CronJobCreate } from "../types.js";
 
 export function normalizeCronCreateDeliveryInput(input: CronJobCreate): CronJobCreate {
   const payloadRecord =
-    input.payload && typeof input.payload === "object" ? ({ ...input.payload } as Record<string, unknown>) : null;
+    input.payload && typeof input.payload === "object"
+      ? ({ ...input.payload } as Record<string, unknown>)
+      : null;
   const deliveryRecord =
-    input.delivery && typeof input.delivery === "object" ? ({ ...input.delivery } as Record<string, unknown>) : null;
+    input.delivery && typeof input.delivery === "object"
+      ? ({ ...input.delivery } as Record<string, unknown>)
+      : null;
   const normalizedLegacy = normalizeLegacyDeliveryInput({
     delivery: deliveryRecord,
     payload: payloadRecord,

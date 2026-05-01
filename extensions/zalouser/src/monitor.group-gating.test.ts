@@ -58,7 +58,10 @@ function installRuntime(params: {
     return { queuedFinal: false, counts: { tool: 0, block: 0, final: 0 }, ctx };
   });
   const resolveCommandAuthorizedFromAuthorizers = vi.fn(
-    (input: { useAccessGroups: boolean; authorizers: Array<{ configured: boolean; allowed: boolean }> }) => {
+    (input: {
+      useAccessGroups: boolean;
+      authorizers: Array<{ configured: boolean; allowed: boolean }>;
+    }) => {
       if (params.resolveCommandAuthorizedFromAuthorizers) {
         return params.resolveCommandAuthorizedFromAuthorizers(input);
       }
@@ -70,7 +73,8 @@ function installRuntime(params: {
     const peerId = input.peer?.id ?? "1";
     return {
       agentId: "main",
-      sessionKey: peerKind === "direct" ? "agent:main:main" : `agent:main:zalouser:${peerKind}:${peerId}`,
+      sessionKey:
+        peerKind === "direct" ? "agent:main:main" : `agent:main:zalouser:${peerKind}:${peerId}`,
       accountId: "default",
       mainSessionKey: "agent:main:main",
     };
@@ -122,7 +126,9 @@ function installRuntime(params: {
       },
       mentions: {
         buildMentionRegexes: vi.fn(() => []),
-        matchesMentionWithExplicit: vi.fn((input) => input.explicit?.isExplicitlyMentioned === true),
+        matchesMentionWithExplicit: vi.fn(
+          (input) => input.explicit?.isExplicitlyMentioned === true,
+        ),
       },
       groups: {
         resolveRequireMention: vi.fn((input) => {
@@ -246,7 +252,10 @@ describe("zalouser monitor group mention gating", () => {
     account?: ResolvedZalouserAccount;
     historyState?: {
       historyLimit: number;
-      groupHistories: Map<string, Array<{ sender: string; body: string; timestamp?: number; messageId?: string }>>;
+      groupHistories: Map<
+        string,
+        Array<{ sender: string; body: string; timestamp?: number; messageId?: string }>
+      >;
     };
   }) {
     await __testing.processMessage({
@@ -288,7 +297,10 @@ describe("zalouser monitor group mention gating", () => {
 
   async function processOpenDmMessage(params?: {
     message?: Partial<ZaloInboundMessage>;
-    readSessionUpdatedAt?: (input?: { storePath: string; sessionKey: string }) => number | undefined;
+    readSessionUpdatedAt?: (input?: {
+      storePath: string;
+      sessionKey: string;
+    }) => number | undefined;
   }) {
     const runtime = installRuntime({
       commandAuthorized: false,
@@ -340,11 +352,16 @@ describe("zalouser monitor group mention gating", () => {
         },
       },
     });
-    expect(dispatchReplyWithBufferedBlockDispatcher).toHaveBeenCalledTimes(params.expectedDispatches);
+    expect(dispatchReplyWithBufferedBlockDispatcher).toHaveBeenCalledTimes(
+      params.expectedDispatches,
+    );
     return dispatchReplyWithBufferedBlockDispatcher;
   }
 
-  async function dispatchGroupMessage(params: { commandAuthorized: boolean; message: Partial<ZaloInboundMessage> }) {
+  async function dispatchGroupMessage(params: {
+    commandAuthorized: boolean;
+    message: Partial<ZaloInboundMessage>;
+  }) {
     const { dispatchReplyWithBufferedBlockDispatcher } = installRuntime({
       commandAuthorized: params.commandAuthorized,
     });

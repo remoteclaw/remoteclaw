@@ -29,7 +29,10 @@ function reportRestoreFailure(scope: string, err: unknown, reason?: string): voi
   }
 }
 
-export function restoreTerminalState(reason?: string, options: RestoreTerminalStateOptions = {}): void {
+export function restoreTerminalState(
+  reason?: string,
+  options: RestoreTerminalStateOptions = {},
+): void {
   // Docker TTY note: resuming stdin can keep a container process alive even
   // after the wizard is "done" (stdin_open: true), making installers appear hung.
   const resumeStdin = options.resumeStdinIfPaused ?? options.resumeStdin ?? false;

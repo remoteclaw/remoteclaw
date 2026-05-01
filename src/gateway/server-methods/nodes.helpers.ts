@@ -7,7 +7,11 @@ type ValidatorFn = ((value: unknown) => boolean) & {
   errors?: ErrorObject[] | null;
 };
 
-export function respondInvalidParams(params: { respond: RespondFn; method: string; validator: ValidatorFn }) {
+export function respondInvalidParams(params: {
+  respond: RespondFn;
+  method: string;
+  validator: ValidatorFn;
+}) {
   params.respond(
     false,
     undefined,
@@ -56,7 +60,9 @@ export function respondUnavailableOnNodeInvokeError<T extends { ok: boolean; err
     return true;
   }
   const nodeError =
-    res.error && typeof res.error === "object" ? (res.error as { code?: unknown; message?: unknown }) : null;
+    res.error && typeof res.error === "object"
+      ? (res.error as { code?: unknown; message?: unknown })
+      : null;
   const nodeCode = typeof nodeError?.code === "string" ? nodeError.code.trim() : "";
   const nodeMessage =
     typeof nodeError?.message === "string" && nodeError.message.trim().length > 0

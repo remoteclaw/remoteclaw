@@ -135,13 +135,18 @@ export class OpenCodeCliRuntime extends CLIRuntimeBase {
   private handleText(parsed: Record<string, unknown>): AgentEvent | null {
     // Text is in `text` field (from `part.text`) or legacy `content` field.
     const content =
-      typeof parsed.text === "string" ? parsed.text : typeof parsed.content === "string" ? parsed.content : "";
+      typeof parsed.text === "string"
+        ? parsed.text
+        : typeof parsed.content === "string"
+          ? parsed.content
+          : "";
     this.accumulatedText += content;
     return { type: "text", text: content } satisfies AgentTextEvent;
   }
 
   private handleToolUse(parsed: Record<string, unknown>): AgentEvent | null {
-    const toolId = typeof parsed.callID === "string" ? parsed.callID : `opencode-tool-${this.toolCounter++}`;
+    const toolId =
+      typeof parsed.callID === "string" ? parsed.callID : `opencode-tool-${this.toolCounter++}`;
 
     // Buffer the tool_result event for drain after yield
     const state = isObject(parsed.state) ? parsed.state : undefined;
@@ -178,7 +183,11 @@ export class OpenCodeCliRuntime extends CLIRuntimeBase {
 
   private handleReasoning(parsed: Record<string, unknown>): AgentEvent | null {
     const content =
-      typeof parsed.text === "string" ? parsed.text : typeof parsed.content === "string" ? parsed.content : "";
+      typeof parsed.text === "string"
+        ? parsed.text
+        : typeof parsed.content === "string"
+          ? parsed.content
+          : "";
     if (!content) {
       return null;
     }

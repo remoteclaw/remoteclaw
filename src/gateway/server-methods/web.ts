@@ -23,7 +23,11 @@ function resolveAccountId(params: unknown): string | undefined {
 }
 
 function respondProviderUnavailable(respond: RespondFn) {
-  respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "web login provider is not available"));
+  respond(
+    false,
+    undefined,
+    errorShape(ErrorCodes.INVALID_REQUEST, "web login provider is not available"),
+  );
 }
 
 function respondProviderUnsupported(respond: RespondFn, providerId: string) {

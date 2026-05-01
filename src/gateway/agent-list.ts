@@ -42,7 +42,9 @@ function listConfiguredAgentIds(cfg: RemoteClawConfig): string[] {
 
   const sorted = Array.from(ids).filter(Boolean);
   sorted.sort((a, b) => a.localeCompare(b));
-  return sorted.includes(defaultId) ? [defaultId, ...sorted.filter((id) => id !== defaultId)] : sorted;
+  return sorted.includes(defaultId)
+    ? [defaultId, ...sorted.filter((id) => id !== defaultId)]
+    : sorted;
 }
 
 export function listGatewayAgentsBasic(cfg: RemoteClawConfig): {
@@ -64,10 +66,14 @@ export function listGatewayAgentsBasic(cfg: RemoteClawConfig): {
     });
   }
   const explicitIds = new Set(
-    (cfg.agents?.list ?? []).map((entry) => (entry?.id ? normalizeAgentId(entry.id) : "")).filter(Boolean),
+    (cfg.agents?.list ?? [])
+      .map((entry) => (entry?.id ? normalizeAgentId(entry.id) : ""))
+      .filter(Boolean),
   );
   const allowedIds = explicitIds.size > 0 ? new Set([...explicitIds, defaultId]) : null;
-  let agentIds = listConfiguredAgentIds(cfg).filter((id) => (allowedIds ? allowedIds.has(id) : true));
+  let agentIds = listConfiguredAgentIds(cfg).filter((id) =>
+    allowedIds ? allowedIds.has(id) : true,
+  );
   if (mainKey && !agentIds.includes(mainKey) && (!allowedIds || allowedIds.has(mainKey))) {
     agentIds = [...agentIds, mainKey];
   }

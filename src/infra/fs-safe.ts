@@ -12,7 +12,12 @@ import { isPinnedPathHelperSpawnError, runPinnedPathHelper } from "./fs-pinned-p
 import { runPinnedWriteHelper } from "./fs-pinned-write-helper.js";
 import { expandHomePrefix } from "./home-dir.js";
 import { assertNoPathAliasEscape, PATH_ALIAS_POLICIES } from "./path-alias-guards.js";
-import { hasNodeErrorCode, isNotFoundPathError, isPathInside, isSymlinkOpenError } from "./path-guards.js";
+import {
+  hasNodeErrorCode,
+  isNotFoundPathError,
+  isPathInside,
+  isSymlinkOpenError,
+} from "./path-guards.js";
 
 export type SafeOpenErrorCode =
   | "invalid-path"
@@ -47,9 +52,13 @@ export type SafeLocalReadResult = {
 
 const SUPPORTS_NOFOLLOW = process.platform !== "win32" && "O_NOFOLLOW" in fsConstants;
 const OPEN_READ_FLAGS = fsConstants.O_RDONLY | (SUPPORTS_NOFOLLOW ? fsConstants.O_NOFOLLOW : 0);
-const OPEN_WRITE_EXISTING_FLAGS = fsConstants.O_WRONLY | (SUPPORTS_NOFOLLOW ? fsConstants.O_NOFOLLOW : 0);
+const OPEN_WRITE_EXISTING_FLAGS =
+  fsConstants.O_WRONLY | (SUPPORTS_NOFOLLOW ? fsConstants.O_NOFOLLOW : 0);
 const OPEN_WRITE_CREATE_FLAGS =
-  fsConstants.O_WRONLY | fsConstants.O_CREAT | fsConstants.O_EXCL | (SUPPORTS_NOFOLLOW ? fsConstants.O_NOFOLLOW : 0);
+  fsConstants.O_WRONLY |
+  fsConstants.O_CREAT |
+  fsConstants.O_EXCL |
+  (SUPPORTS_NOFOLLOW ? fsConstants.O_NOFOLLOW : 0);
 const OPEN_APPEND_EXISTING_FLAGS =
   fsConstants.O_RDWR | fsConstants.O_APPEND | (SUPPORTS_NOFOLLOW ? fsConstants.O_NOFOLLOW : 0);
 const OPEN_APPEND_CREATE_FLAGS =
@@ -342,7 +351,10 @@ async function verifyAtomicWriteResult(params: {
   }
 }
 
-export async function resolveOpenedFileRealPathForHandle(handle: FileHandle, ioPath: string): Promise<string> {
+export async function resolveOpenedFileRealPathForHandle(
+  handle: FileHandle,
+  ioPath: string,
+): Promise<string> {
   try {
     return await fs.realpath(ioPath);
   } catch (err) {
@@ -526,14 +538,18 @@ export async function appendFileWithinRoot(params: {
       return;
     }
 
-    const payload = prefix.length > 0 ? Buffer.concat([Buffer.from(prefix, "utf8"), params.data]) : params.data;
+    const payload =
+      prefix.length > 0 ? Buffer.concat([Buffer.from(prefix, "utf8"), params.data]) : params.data;
     await target.handle.appendFile(payload);
   } finally {
     await target.handle.close().catch(() => {});
   }
 }
 
-export async function removePathWithinRoot(params: { rootDir: string; relativePath: string }): Promise<void> {
+export async function removePathWithinRoot(params: {
+  rootDir: string;
+  relativePath: string;
+}): Promise<void> {
   const resolved = await resolvePinnedRemovePathWithinRoot(params);
   if (process.platform === "win32") {
     await removePathWithinRootLegacy(resolved);
@@ -636,7 +652,10 @@ export async function copyFileWithinRoot(params: {
   });
   if (params.maxBytes !== undefined && source.stat.size > params.maxBytes) {
     await source.handle.close().catch(() => {});
-    throw new SafeOpenError("too-large", `file exceeds limit of ${params.maxBytes} bytes (got ${source.stat.size})`);
+    throw new SafeOpenError(
+      "too-large",
+      `file exceeds limit of ${params.maxBytes} bytes (got ${source.stat.size})`,
+    );
   }
 
   try {
@@ -693,7 +712,10 @@ export async function writeFileFromPathWithinRoot(params: {
   });
 }
 
-async function resolvePinnedWriteTargetWithinRoot(params: { rootDir: string; relativePath: string }): Promise<{
+async function resolvePinnedWriteTargetWithinRoot(params: {
+  rootDir: string;
+  relativePath: string;
+}): Promise<{
   rootReal: string;
   targetPath: string;
   relativeParentPath: string;
@@ -715,7 +737,9 @@ async function resolvePinnedWriteTargetWithinRoot(params: { rootDir: string; rel
   if (relativeResolved.startsWith("..") || path.isAbsolute(relativeResolved)) {
     throw new SafeOpenError("outside-workspace", "file is outside workspace root");
   }
-  const relativePosix = relativeResolved ? relativeResolved.split(path.sep).join(path.posix.sep) : "";
+  const relativePosix = relativeResolved
+    ? relativeResolved.split(path.sep).join(path.posix.sep)
+    : "";
   const basename = path.posix.basename(relativePosix);
   if (!basename || basename === "." || basename === "/") {
     throw new SafeOpenError("invalid-path", "invalid target path");
@@ -744,7 +768,8 @@ async function resolvePinnedWriteTargetWithinRoot(params: { rootDir: string; rel
   return {
     rootReal,
     targetPath: resolved,
-    relativeParentPath: path.posix.dirname(relativePosix) === "." ? "" : path.posix.dirname(relativePosix),
+    relativeParentPath:
+      path.posix.dirname(relativePosix) === "." ? "" : path.posix.dirname(relativePosix),
     basename,
     mode: mode || 0o600,
   };
@@ -966,7 +991,9 @@ async function copyFileWithinRootLegacy(
     targetStream.once("close", () => {
       tempClosedByStream = true;
     });
-    await import("node:stream/promises").then(({ pipeline }) => pipeline(sourceStream, targetStream));
+    await import("node:stream/promises").then(({ pipeline }) =>
+      pipeline(sourceStream, targetStream),
+    );
     const writtenStat = await fs.stat(tempPath);
     if (!tempClosedByStream) {
       await tempHandle.close().catch(() => {});

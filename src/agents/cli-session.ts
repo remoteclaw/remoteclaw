@@ -12,7 +12,10 @@ export const MODULE_ATTESTATIONS = {
   setCliSessionId: "live",
 } as const;
 
-export function getCliSessionId(entry: SessionEntry | undefined, provider: string): string | undefined {
+export function getCliSessionId(
+  entry: SessionEntry | undefined,
+  provider: string,
+): string | undefined {
   if (!entry) {
     return undefined;
   }

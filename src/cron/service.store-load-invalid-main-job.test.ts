@@ -3,7 +3,11 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CronService } from "./service.js";
-import { createNoopLogger, installCronTestHooks, writeCronStoreSnapshot } from "./service.test-harness.js";
+import {
+  createNoopLogger,
+  installCronTestHooks,
+  writeCronStoreSnapshot,
+} from "./service.test-harness.js";
 import type { CronJob } from "./types.js";
 
 const noopLogger = createNoopLogger();

@@ -18,13 +18,19 @@ describe("parseModelCallbackData", () => {
       ["mdl_back", { type: "back" }],
       ["mdl_list_anthropic_2", { type: "list", provider: "anthropic", page: 2 }],
       ["mdl_list_open-ai_1", { type: "list", provider: "open-ai", page: 1 }],
-      ["mdl_sel_anthropic/claude-sonnet-4-5", { type: "select", provider: "anthropic", model: "claude-sonnet-4-5" }],
+      [
+        "mdl_sel_anthropic/claude-sonnet-4-5",
+        { type: "select", provider: "anthropic", model: "claude-sonnet-4-5" },
+      ],
       ["mdl_sel_openai/gpt-4/turbo", { type: "select", provider: "openai", model: "gpt-4/turbo" }],
       [
         "mdl_sel/us.anthropic.claude-3-5-sonnet-20240620-v1:0",
         { type: "select", model: "us.anthropic.claude-3-5-sonnet-20240620-v1:0" },
       ],
-      ["mdl_sel/anthropic/claude-3-7-sonnet", { type: "select", model: "anthropic/claude-3-7-sonnet" }],
+      [
+        "mdl_sel/anthropic/claude-3-7-sonnet",
+        { type: "select", model: "anthropic/claude-3-7-sonnet" },
+      ],
       ["  mdl_prov  ", { type: "providers" }],
     ] as const;
     for (const [input, expected] of cases) {
@@ -106,7 +112,9 @@ describe("resolveModelSelection", () => {
 
 describe("buildModelSelectionCallbackData", () => {
   it("uses standard callback when under limit and compact callback when needed", () => {
-    expect(buildModelSelectionCallbackData({ provider: "openai", model: "gpt-4.1" })).toBe("mdl_sel_openai/gpt-4.1");
+    expect(buildModelSelectionCallbackData({ provider: "openai", model: "gpt-4.1" })).toBe(
+      "mdl_sel_openai/gpt-4.1",
+    );
     const longModel = "us.anthropic.claude-3-5-sonnet-20240620-v1:0";
     expect(buildModelSelectionCallbackData({ provider: "amazon-bedrock", model: longModel })).toBe(
       `mdl_sel/${longModel}`,
@@ -232,7 +240,9 @@ describe("buildModelsKeyboard", () => {
     expect(result[0]?.[0]?.text).toBe("Claude Sonnet 4");
     expect(result[1]?.[0]?.text).toBe("Claude Opus 4");
     // callback_data still uses the raw model ID, not the display name
-    expect(result[0]?.[0]?.callback_data).toBe("mdl_sel_nexos/a1b2c3d4-e5f6-7890-abcd-ef1234567890");
+    expect(result[0]?.[0]?.callback_data).toBe(
+      "mdl_sel_nexos/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    );
   });
 
   it("falls back to model ID when modelNames does not contain an entry", () => {

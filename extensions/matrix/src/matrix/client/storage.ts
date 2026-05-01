@@ -57,7 +57,14 @@ export function resolveMatrixStoragePaths(params: {
   const userKey = sanitizePathSegment(params.userId);
   const serverKey = resolveHomeserverKey(params.homeserver);
   const tokenHash = hashAccessToken(params.accessToken);
-  const rootDir = path.join(stateDir, "matrix", "accounts", accountKey, `${serverKey}__${userKey}`, tokenHash);
+  const rootDir = path.join(
+    stateDir,
+    "matrix",
+    "accounts",
+    accountKey,
+    `${serverKey}__${userKey}`,
+    tokenHash,
+  );
   return {
     rootDir,
     storagePath: path.join(rootDir, "bot-storage.json"),
@@ -68,11 +75,15 @@ export function resolveMatrixStoragePaths(params: {
   };
 }
 
-export function maybeMigrateLegacyStorage(params: { storagePaths: MatrixStoragePaths; env?: NodeJS.ProcessEnv }): void {
+export function maybeMigrateLegacyStorage(params: {
+  storagePaths: MatrixStoragePaths;
+  env?: NodeJS.ProcessEnv;
+}): void {
   const legacy = resolveLegacyStoragePaths(params.env);
   const hasLegacyStorage = fs.existsSync(legacy.storagePath);
   const hasLegacyCrypto = fs.existsSync(legacy.cryptoPath);
-  const hasNewStorage = fs.existsSync(params.storagePaths.storagePath) || fs.existsSync(params.storagePaths.cryptoPath);
+  const hasNewStorage =
+    fs.existsSync(params.storagePaths.storagePath) || fs.existsSync(params.storagePaths.cryptoPath);
 
   if (!hasLegacyStorage && !hasLegacyCrypto) {
     return;

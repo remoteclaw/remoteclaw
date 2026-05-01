@@ -7,7 +7,10 @@ function readSlackNextCursor(response: SlackCursorResponse): string | undefined 
   return next ? next : undefined;
 }
 
-export async function collectSlackCursorItems<TItem, TResponse extends SlackCursorResponse>(params: {
+export async function collectSlackCursorItems<
+  TItem,
+  TResponse extends SlackCursorResponse,
+>(params: {
   fetchPage: (cursor?: string) => Promise<TResponse>;
   collectPageItems: (response: TResponse) => TItem[];
 }): Promise<TItem[]> {
@@ -21,13 +24,21 @@ export async function collectSlackCursorItems<TItem, TResponse extends SlackCurs
   return items;
 }
 
-export function resolveSlackAllowlistEntries<TParsed extends { id?: string }, TLookup, TResult>(params: {
+export function resolveSlackAllowlistEntries<
+  TParsed extends { id?: string },
+  TLookup,
+  TResult,
+>(params: {
   entries: string[];
   lookup: TLookup[];
   parseInput: (input: string) => TParsed;
   findById: (lookup: TLookup[], id: string) => TLookup | undefined;
   buildIdResolved: (params: { input: string; parsed: TParsed; match?: TLookup }) => TResult;
-  resolveNonId: (params: { input: string; parsed: TParsed; lookup: TLookup[] }) => TResult | undefined;
+  resolveNonId: (params: {
+    input: string;
+    parsed: TParsed;
+    lookup: TLookup[];
+  }) => TResult | undefined;
   buildUnresolved: (input: string) => TResult;
 }): TResult[] {
   const results: TResult[] = [];

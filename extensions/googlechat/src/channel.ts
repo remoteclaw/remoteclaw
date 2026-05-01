@@ -373,7 +373,16 @@ export const googlechatPlugin: ChannelPlugin<ResolvedGoogleChatAccount> = {
         chatId: space,
       };
     },
-    sendMedia: async ({ cfg, to, text, mediaUrl, mediaLocalRoots, accountId, replyToId, threadId }) => {
+    sendMedia: async ({
+      cfg,
+      to,
+      text,
+      mediaUrl,
+      mediaLocalRoots,
+      accountId,
+      replyToId,
+      threadId,
+    }) => {
       if (!mediaUrl) {
         throw new Error("Google Chat mediaUrl is required.");
       }

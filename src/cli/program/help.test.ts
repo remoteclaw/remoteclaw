@@ -5,7 +5,9 @@ import { configureProgramHelp } from "./help.js";
 
 const hasEmittedCliBannerMock = vi.hoisted(() => vi.fn(() => false));
 const formatCliBannerLineMock = vi.hoisted(() => vi.fn(() => "BANNER-LINE"));
-const formatDocsLinkMock = vi.hoisted(() => vi.fn((_path: string, full: string) => `https://${full}`));
+const formatDocsLinkMock = vi.hoisted(() =>
+  vi.fn((_path: string, full: string) => `https://${full}`),
+);
 const resolveCommitHashMock = vi.hoisted(() => vi.fn<() => string | null>(() => "abc1234"));
 
 vi.mock("../../terminal/links.js", () => ({
@@ -75,7 +77,9 @@ describe("configureProgramHelp", () => {
 
   function captureHelpOutput(program: Command): string {
     let output = "";
-    const writeSpy = vi.spyOn(process.stdout, "write").mockImplementation(((chunk: string | Uint8Array) => {
+    const writeSpy = vi.spyOn(process.stdout, "write").mockImplementation(((
+      chunk: string | Uint8Array,
+    ) => {
       output += String(chunk);
       return true;
     }) as typeof process.stdout.write);

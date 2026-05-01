@@ -13,7 +13,11 @@ function buildInputOptions(options: { onLog?: unknown; [key: string]: unknown })
 
   return {
     ...options,
-    onLog(level: string, log: { code?: string }, defaultHandler: (level: string, log: { code?: string }) => void) {
+    onLog(
+      level: string,
+      log: { code?: string },
+      defaultHandler: (level: string, log: { code?: string }) => void,
+    ) {
       if (log.code === "PLUGIN_TIMINGS") {
         return;
       }
@@ -99,7 +103,8 @@ export default defineConfig([
   nodeBuildConfig({
     // Keep sync lazy-runtime channel modules as concrete dist files.
     entry: {
-      "channels/plugins/agent-tools/whatsapp-login": "src/channels/plugins/agent-tools/whatsapp-login.ts",
+      "channels/plugins/agent-tools/whatsapp-login":
+        "src/channels/plugins/agent-tools/whatsapp-login.ts",
       "channels/plugins/actions/discord": "src/channels/plugins/actions/discord.ts",
       "channels/plugins/actions/signal": "src/channels/plugins/actions/signal.ts",
       "channels/plugins/actions/telegram": "src/channels/plugins/actions/telegram.ts",

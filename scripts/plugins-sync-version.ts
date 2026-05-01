@@ -19,7 +19,9 @@ function main() {
   }
 
   const extensionsDir = resolve("extensions");
-  const entries = readdirSync(extensionsDir, { withFileTypes: true }).filter((entry) => entry.isDirectory());
+  const entries = readdirSync(extensionsDir, { withFileTypes: true }).filter((entry) =>
+    entry.isDirectory(),
+  );
 
   let updated = 0;
 

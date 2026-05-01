@@ -114,7 +114,9 @@ describe("tools.catalog handler", () => {
       | undefined;
     const pluginGroups = (payload?.groups ?? []).filter((group) => group.source === "plugin");
     expect(pluginGroups.length).toBeGreaterThan(0);
-    const voiceCall = pluginGroups.flatMap((group) => group.tools).find((tool) => tool.id === "voice_call");
+    const voiceCall = pluginGroups
+      .flatMap((group) => group.tools)
+      .find((tool) => tool.id === "voice_call");
     expect(voiceCall).toMatchObject({
       source: "plugin",
       pluginId: "voice-call",

@@ -1,4 +1,7 @@
-export function resolveAccountEntry<T>(accounts: Record<string, T> | undefined, accountId: string): T | undefined {
+export function resolveAccountEntry<T>(
+  accounts: Record<string, T> | undefined,
+  accountId: string,
+): T | undefined {
   if (!accounts || typeof accounts !== "object") {
     return undefined;
   }

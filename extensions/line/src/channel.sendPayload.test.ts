@@ -33,17 +33,19 @@ function createRuntime(): { runtime: PluginRuntime; mocks: LineRuntimeMocks } {
   const sendMessageLine = vi.fn(async () => ({ messageId: "m-media", chatId: "c1" }));
   const chunkMarkdownText = vi.fn((text: string) => [text]);
   const resolveTextChunkLimit = vi.fn(() => 123);
-  const resolveLineAccount = vi.fn(({ cfg, accountId }: { cfg: RemoteClawConfig; accountId?: string }) => {
-    const resolved = accountId ?? "default";
-    const lineConfig = (cfg.channels?.line ?? {}) as {
-      accounts?: Record<string, Record<string, unknown>>;
-    };
-    const accountConfig = resolved !== "default" ? (lineConfig.accounts?.[resolved] ?? {}) : {};
-    return {
-      accountId: resolved,
-      config: { ...lineConfig, ...accountConfig },
-    };
-  });
+  const resolveLineAccount = vi.fn(
+    ({ cfg, accountId }: { cfg: RemoteClawConfig; accountId?: string }) => {
+      const resolved = accountId ?? "default";
+      const lineConfig = (cfg.channels?.line ?? {}) as {
+        accounts?: Record<string, Record<string, unknown>>;
+      };
+      const accountConfig = resolved !== "default" ? (lineConfig.accounts?.[resolved] ?? {}) : {};
+      return {
+        accountId: resolved,
+        config: { ...lineConfig, ...accountConfig },
+      };
+    },
+  );
 
   const runtime = {
     channel: {
@@ -231,11 +233,16 @@ describe("linePlugin outbound.sendPayload", () => {
         cfg,
       }),
     );
-    expect(mocks.pushTextMessageWithQuickReplies).toHaveBeenCalledWith("line:user:3", "Hello", ["One", "Two"], {
-      verbose: false,
-      accountId: "default",
-      cfg,
-    });
+    expect(mocks.pushTextMessageWithQuickReplies).toHaveBeenCalledWith(
+      "line:user:3",
+      "Hello",
+      ["One", "Two"],
+      {
+        verbose: false,
+        accountId: "default",
+        cfg,
+      },
+    );
     const mediaOrder = mocks.sendMessageLine.mock.invocationCallOrder[0];
     const quickReplyOrder = mocks.pushTextMessageWithQuickReplies.mock.invocationCallOrder[0];
     expect(mediaOrder).toBeLessThan(quickReplyOrder);

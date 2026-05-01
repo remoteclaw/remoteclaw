@@ -63,7 +63,9 @@ describe("applyConfigSnapshot", () => {
       raw: '{\n  "gateway": { "mode": "remote", "port": 9999 }\n}\n',
     });
 
-    expect(state.configRaw).toBe('{\n  "gateway": {\n    "mode": "local",\n    "port": 18789\n  }\n}\n');
+    expect(state.configRaw).toBe(
+      '{\n  "gateway": {\n    "mode": "local",\n    "port": 18789\n  }\n}\n',
+    );
   });
 
   it("updates config form when clean", () => {
@@ -155,7 +157,9 @@ describe("updateConfigFormValue", () => {
 
     updateConfigFormValue(state, ["gateway", "port"], 18789);
 
-    expect(state.configRaw).toBe('{\n  "gateway": {\n    "mode": "local",\n    "port": 18789\n  }\n}\n');
+    expect(state.configRaw).toBe(
+      '{\n  "gateway": {\n    "mode": "local",\n    "port": 18789\n  }\n}\n',
+    );
   });
 });
 

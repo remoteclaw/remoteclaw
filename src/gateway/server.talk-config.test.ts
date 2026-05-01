@@ -9,7 +9,12 @@ import {
 import { withEnvAsync } from "../test-utils/env.js";
 import { buildDeviceAuthPayload } from "./device-auth.js";
 import { validateTalkConfigResult } from "./protocol/index.js";
-import { connectOk, installGatewayTestHooks, readConnectChallengeNonce, rpcReq } from "./test-helpers.js";
+import {
+  connectOk,
+  installGatewayTestHooks,
+  readConnectChallengeNonce,
+  rpcReq,
+} from "./test-helpers.js";
 import { withServer } from "./test-with-server.js";
 
 installGatewayTestHooks({ scope: "suite" });
@@ -36,7 +41,10 @@ type TalkConfigPayload = {
   };
 };
 type TalkConfig = NonNullable<NonNullable<TalkConfigPayload["config"]>["talk"]>;
-const TALK_CONFIG_DEVICE_PATH = path.join(os.tmpdir(), `remoteclaw-talk-config-device-${process.pid}.json`);
+const TALK_CONFIG_DEVICE_PATH = path.join(
+  os.tmpdir(),
+  `remoteclaw-talk-config-device-${process.pid}.json`,
+);
 const TALK_CONFIG_DEVICE = loadOrCreateDeviceIdentity(TALK_CONFIG_DEVICE_PATH);
 
 async function createFreshOperatorDevice(scopes: string[], nonce: string) {
@@ -80,7 +88,10 @@ async function writeTalkConfig(config: {
   await writeConfigFile({ talk: config });
 }
 
-async function fetchTalkConfig(ws: GatewaySocket, params?: { includeSecrets?: boolean } | Record<string, unknown>) {
+async function fetchTalkConfig(
+  ws: GatewaySocket,
+  params?: { includeSecrets?: boolean } | Record<string, unknown>,
+) {
   return rpcReq<TalkConfigPayload>(ws, "talk.config", params ?? {});
 }
 

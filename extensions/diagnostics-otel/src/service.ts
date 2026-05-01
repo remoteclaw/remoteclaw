@@ -85,7 +85,8 @@ export function createDiagnosticsOtelService(): RemoteClawPluginService {
 
       const endpoint = normalizeEndpoint(otel.endpoint ?? process.env.OTEL_EXPORTER_OTLP_ENDPOINT);
       const headers = otel.headers ?? undefined;
-      const serviceName = otel.serviceName?.trim() || process.env.OTEL_SERVICE_NAME || DEFAULT_SERVICE_NAME;
+      const serviceName =
+        otel.serviceName?.trim() || process.env.OTEL_SERVICE_NAME || DEFAULT_SERVICE_NAME;
       const sampleRate = resolveSampleRate(otel.sampleRate);
 
       const tracesEnabled = otel.traces !== false;
@@ -316,7 +317,11 @@ export function createDiagnosticsOtelService(): RemoteClawPluginService {
             }
             if (bindings) {
               for (const [key, value] of Object.entries(bindings)) {
-                if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+                if (
+                  typeof value === "string" ||
+                  typeof value === "number" ||
+                  typeof value === "boolean"
+                ) {
                   attributes[`remoteclaw.${key}`] = value;
                 } else if (value != null) {
                   attributes[`remoteclaw.${key}`] = safeStringify(value);
@@ -353,8 +358,13 @@ export function createDiagnosticsOtelService(): RemoteClawPluginService {
         });
       }
 
-      const spanWithDuration = (name: string, attributes: Record<string, string | number>, durationMs?: number) => {
-        const startTime = typeof durationMs === "number" ? Date.now() - Math.max(0, durationMs) : undefined;
+      const spanWithDuration = (
+        name: string,
+        attributes: Record<string, string | number>,
+        durationMs?: number,
+      ) => {
+        const startTime =
+          typeof durationMs === "number" ? Date.now() - Math.max(0, durationMs) : undefined;
         const span = tracer.startSpan(name, {
           attributes,
           ...(startTime ? { startTime } : {}),
@@ -426,7 +436,9 @@ export function createDiagnosticsOtelService(): RemoteClawPluginService {
         span.end();
       };
 
-      const recordWebhookReceived = (evt: Extract<DiagnosticEventPayload, { type: "webhook.received" }>) => {
+      const recordWebhookReceived = (
+        evt: Extract<DiagnosticEventPayload, { type: "webhook.received" }>,
+      ) => {
         const attrs = {
           "remoteclaw.channel": evt.channel ?? "unknown",
           "remoteclaw.webhook": evt.updateType ?? "unknown",
@@ -434,7 +446,9 @@ export function createDiagnosticsOtelService(): RemoteClawPluginService {
         webhookReceivedCounter.add(1, attrs);
       };
 
-      const recordWebhookProcessed = (evt: Extract<DiagnosticEventPayload, { type: "webhook.processed" }>) => {
+      const recordWebhookProcessed = (
+        evt: Extract<DiagnosticEventPayload, { type: "webhook.processed" }>,
+      ) => {
         const attrs = {
           "remoteclaw.channel": evt.channel ?? "unknown",
           "remoteclaw.webhook": evt.updateType ?? "unknown",
@@ -453,7 +467,9 @@ export function createDiagnosticsOtelService(): RemoteClawPluginService {
         span.end();
       };
 
-      const recordWebhookError = (evt: Extract<DiagnosticEventPayload, { type: "webhook.error" }>) => {
+      const recordWebhookError = (
+        evt: Extract<DiagnosticEventPayload, { type: "webhook.error" }>,
+      ) => {
         const attrs = {
           "remoteclaw.channel": evt.channel ?? "unknown",
           "remoteclaw.webhook": evt.updateType ?? "unknown",
@@ -477,7 +493,9 @@ export function createDiagnosticsOtelService(): RemoteClawPluginService {
         span.end();
       };
 
-      const recordMessageQueued = (evt: Extract<DiagnosticEventPayload, { type: "message.queued" }>) => {
+      const recordMessageQueued = (
+        evt: Extract<DiagnosticEventPayload, { type: "message.queued" }>,
+      ) => {
         const attrs = {
           "remoteclaw.channel": evt.channel ?? "unknown",
           "remoteclaw.source": evt.source ?? "unknown",
@@ -500,7 +518,9 @@ export function createDiagnosticsOtelService(): RemoteClawPluginService {
         }
       };
 
-      const recordMessageProcessed = (evt: Extract<DiagnosticEventPayload, { type: "message.processed" }>) => {
+      const recordMessageProcessed = (
+        evt: Extract<DiagnosticEventPayload, { type: "message.processed" }>,
+      ) => {
         const attrs = {
           "remoteclaw.channel": evt.channel ?? "unknown",
           "remoteclaw.outcome": evt.outcome ?? "unknown",
@@ -530,13 +550,17 @@ export function createDiagnosticsOtelService(): RemoteClawPluginService {
         span.end();
       };
 
-      const recordLaneEnqueue = (evt: Extract<DiagnosticEventPayload, { type: "queue.lane.enqueue" }>) => {
+      const recordLaneEnqueue = (
+        evt: Extract<DiagnosticEventPayload, { type: "queue.lane.enqueue" }>,
+      ) => {
         const attrs = { "remoteclaw.lane": evt.lane };
         laneEnqueueCounter.add(1, attrs);
         queueDepthHistogram.record(evt.queueSize, attrs);
       };
 
-      const recordLaneDequeue = (evt: Extract<DiagnosticEventPayload, { type: "queue.lane.dequeue" }>) => {
+      const recordLaneDequeue = (
+        evt: Extract<DiagnosticEventPayload, { type: "queue.lane.dequeue" }>,
+      ) => {
         const attrs = { "remoteclaw.lane": evt.lane };
         laneDequeueCounter.add(1, attrs);
         queueDepthHistogram.record(evt.queueSize, attrs);
@@ -545,7 +569,9 @@ export function createDiagnosticsOtelService(): RemoteClawPluginService {
         }
       };
 
-      const recordSessionState = (evt: Extract<DiagnosticEventPayload, { type: "session.state" }>) => {
+      const recordSessionState = (
+        evt: Extract<DiagnosticEventPayload, { type: "session.state" }>,
+      ) => {
         const attrs: Record<string, string> = { "remoteclaw.state": evt.state };
         if (evt.reason) {
           attrs["remoteclaw.reason"] = redactSensitiveText(evt.reason);
@@ -553,7 +579,9 @@ export function createDiagnosticsOtelService(): RemoteClawPluginService {
         sessionStateCounter.add(1, attrs);
       };
 
-      const recordSessionStuck = (evt: Extract<DiagnosticEventPayload, { type: "session.stuck" }>) => {
+      const recordSessionStuck = (
+        evt: Extract<DiagnosticEventPayload, { type: "session.stuck" }>,
+      ) => {
         const attrs: Record<string, string> = { "remoteclaw.state": evt.state };
         sessionStuckCounter.add(1, attrs);
         if (typeof evt.ageMs === "number") {
@@ -575,7 +603,9 @@ export function createDiagnosticsOtelService(): RemoteClawPluginService {
         runAttemptCounter.add(1, { "remoteclaw.attempt": evt.attempt });
       };
 
-      const recordHeartbeat = (evt: Extract<DiagnosticEventPayload, { type: "diagnostic.heartbeat" }>) => {
+      const recordHeartbeat = (
+        evt: Extract<DiagnosticEventPayload, { type: "diagnostic.heartbeat" }>,
+      ) => {
         queueDepthHistogram.record(evt.queued, { "remoteclaw.channel": "heartbeat" });
       };
 
@@ -620,7 +650,9 @@ export function createDiagnosticsOtelService(): RemoteClawPluginService {
               return;
           }
         } catch (err) {
-          ctx.logger.error(`diagnostics-otel: event handler failed (${evt.type}): ${formatError(err)}`);
+          ctx.logger.error(
+            `diagnostics-otel: event handler failed (${evt.type}): ${formatError(err)}`,
+          );
         }
       });
 

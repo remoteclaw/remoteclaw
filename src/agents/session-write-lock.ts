@@ -322,7 +322,11 @@ async function readLockPayload(lockPath: string): Promise<LockFilePayload | null
   }
 }
 
-function inspectLockPayload(payload: LockFilePayload | null, staleMs: number, nowMs: number): LockInspectionDetails {
+function inspectLockPayload(
+  payload: LockFilePayload | null,
+  staleMs: number,
+  nowMs: number,
+): LockInspectionDetails {
   const pid = isValidLockNumber(payload?.pid) && payload.pid > 0 ? payload.pid : null;
   const pidAlive = pid !== null ? isPidAlive(pid) : false;
   const createdAt = typeof payload?.createdAt === "string" ? payload.createdAt : null;
@@ -367,7 +371,10 @@ function inspectLockPayload(payload: LockFilePayload | null, staleMs: number, no
 
 function lockInspectionNeedsMtimeStaleFallback(details: LockInspectionDetails): boolean {
   return (
-    details.stale && details.staleReasons.every((reason) => reason === "missing-pid" || reason === "invalid-createdAt")
+    details.stale &&
+    details.staleReasons.every(
+      (reason) => reason === "missing-pid" || reason === "invalid-createdAt",
+    )
   );
 }
 
@@ -454,7 +461,9 @@ export async function cleanStaleLockFiles(params: {
       await fs.rm(lockPath, { force: true });
       lockInfo.removed = true;
       cleaned.push(lockInfo);
-      params.log?.warn?.(`removed stale session lock: ${lockPath} (${lockInfo.staleReasons.join(", ") || "unknown"})`);
+      params.log?.warn?.(
+        `removed stale session lock: ${lockPath} (${lockInfo.staleReasons.join(", ") || "unknown"})`,
+      );
     }
 
     locks.push(lockInfo);

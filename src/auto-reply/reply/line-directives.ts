@@ -336,5 +336,7 @@ export function parseLineDirectives(payload: ReplyPayload): ReplyPayload {
  * Check if text contains any LINE directives
  */
 export function hasLineDirectives(text: string): boolean {
-  return /\[\[(quick_replies|location|confirm|buttons|media_player|event|agenda|device|appletv_remote):/i.test(text);
+  return /\[\[(quick_replies|location|confirm|buttons|media_player|event|agenda|device|appletv_remote):/i.test(
+    text,
+  );
 }

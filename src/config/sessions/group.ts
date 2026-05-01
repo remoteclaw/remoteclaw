@@ -54,7 +54,8 @@ export function buildGroupDisplayName(params: {
 export function resolveGroupSessionKey(ctx: MsgContext): GroupKeyResolution | null {
   const from = typeof ctx.From === "string" ? ctx.From.trim() : "";
   const chatType = ctx.ChatType?.trim().toLowerCase();
-  const normalizedChatType = chatType === "channel" ? "channel" : chatType === "group" ? "group" : undefined;
+  const normalizedChatType =
+    chatType === "channel" ? "channel" : chatType === "group" ? "group" : undefined;
 
   const isWhatsAppGroupId = from.toLowerCase().endsWith("@g.us");
   const looksLikeGroup =
@@ -73,7 +74,9 @@ export function resolveGroupSessionKey(ctx: MsgContext): GroupKeyResolution | nu
   const head = parts[0]?.trim().toLowerCase() ?? "";
   const headIsSurface = head ? getGroupSurfaces().has(head) : false;
 
-  const provider = headIsSurface ? head : (providerHint ?? (isWhatsAppGroupId ? "whatsapp" : undefined));
+  const provider = headIsSurface
+    ? head
+    : (providerHint ?? (isWhatsAppGroupId ? "whatsapp" : undefined));
   if (!provider) {
     return null;
   }
@@ -85,7 +88,11 @@ export function resolveGroupSessionKey(ctx: MsgContext): GroupKeyResolution | nu
     : from.includes(":channel:") || normalizedChatType === "channel"
       ? "channel"
       : "group";
-  const id = headIsSurface ? (secondIsKind ? parts.slice(2).join(":") : parts.slice(1).join(":")) : from;
+  const id = headIsSurface
+    ? secondIsKind
+      ? parts.slice(2).join(":")
+      : parts.slice(1).join(":")
+    : from;
   const finalId = id.trim().toLowerCase();
   if (!finalId) {
     return null;

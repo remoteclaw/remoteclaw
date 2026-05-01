@@ -25,7 +25,9 @@ function createRunEntry(): SubagentRunRecord {
 describe("emitSubagentEndedHookOnce", () => {
   let mod: typeof import("./subagent-registry-completion.js");
 
-  const createEmitParams = (overrides?: Partial<Parameters<typeof mod.emitSubagentEndedHookOnce>[0]>) => {
+  const createEmitParams = (
+    overrides?: Partial<Parameters<typeof mod.emitSubagentEndedHookOnce>[0]>,
+  ) => {
     const entry = overrides?.entry ?? createRunEntry();
     return {
       entry,

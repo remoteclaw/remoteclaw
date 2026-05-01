@@ -8,16 +8,28 @@ import {
 } from "remoteclaw/plugin-sdk";
 import { verifyGoogleChatRequest } from "./auth.js";
 import type { WebhookTarget } from "./monitor-types.js";
-import type { GoogleChatEvent, GoogleChatMessage, GoogleChatSpace, GoogleChatUser } from "./types.js";
+import type {
+  GoogleChatEvent,
+  GoogleChatMessage,
+  GoogleChatSpace,
+  GoogleChatUser,
+} from "./types.js";
 
 function extractBearerToken(header: unknown): string {
   const authHeader = Array.isArray(header) ? String(header[0] ?? "") : String(header ?? "");
-  return authHeader.toLowerCase().startsWith("bearer ") ? authHeader.slice("bearer ".length).trim() : "";
+  return authHeader.toLowerCase().startsWith("bearer ")
+    ? authHeader.slice("bearer ".length).trim()
+    : "";
 }
 
-type ParsedGoogleChatInboundPayload = { ok: true; event: GoogleChatEvent; addOnBearerToken: string } | { ok: false };
+type ParsedGoogleChatInboundPayload =
+  | { ok: true; event: GoogleChatEvent; addOnBearerToken: string }
+  | { ok: false };
 
-function parseGoogleChatInboundPayload(raw: unknown, res: ServerResponse): ParsedGoogleChatInboundPayload {
+function parseGoogleChatInboundPayload(
+  raw: unknown,
+  res: ServerResponse,
+): ParsedGoogleChatInboundPayload {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
     res.statusCode = 400;
     res.end("invalid payload");

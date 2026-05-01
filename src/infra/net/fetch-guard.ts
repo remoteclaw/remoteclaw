@@ -60,7 +60,9 @@ export function withStrictGuardedFetchMode(params: GuardedFetchPresetOptions): G
   return { ...params, mode: GUARDED_FETCH_MODE.STRICT };
 }
 
-export function withTrustedEnvProxyGuardedFetchMode(params: GuardedFetchPresetOptions): GuardedFetchOptions {
+export function withTrustedEnvProxyGuardedFetchMode(
+  params: GuardedFetchPresetOptions,
+): GuardedFetchOptions {
   return { ...params, mode: GUARDED_FETCH_MODE.TRUSTED_ENV_PROXY };
 }
 
@@ -142,7 +144,8 @@ export async function fetchWithSsrFGuard(params: GuardedFetchOptions): Promise<G
         lookupFn: params.lookupFn,
         policy: params.policy,
       });
-      const canUseTrustedEnvProxy = mode === GUARDED_FETCH_MODE.TRUSTED_ENV_PROXY && hasProxyEnvConfigured();
+      const canUseTrustedEnvProxy =
+        mode === GUARDED_FETCH_MODE.TRUSTED_ENV_PROXY && hasProxyEnvConfigured();
       if (canUseTrustedEnvProxy) {
         dispatcher = new EnvHttpProxyAgent();
       } else if (params.pinDns !== false) {

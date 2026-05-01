@@ -18,7 +18,11 @@ vi.mock("./graph-upload.js", async () => {
 });
 
 import { resolvePreferredRemoteClawTmpDir } from "../../../src/infra/tmp-remoteclaw-dir.js";
-import { type MSTeamsAdapter, renderReplyPayloadsToMessages, sendMSTeamsMessages } from "./messenger.js";
+import {
+  type MSTeamsAdapter,
+  renderReplyPayloadsToMessages,
+  sendMSTeamsMessages,
+} from "./messenger.js";
 import { setMSTeamsRuntime } from "./runtime.js";
 
 const chunkMarkdownText = (text: string, limit: number) => {
@@ -101,27 +105,36 @@ describe("msteams messenger", () => {
     });
 
     it("does not filter non-exact silent reply prefixes", () => {
-      const messages = renderReplyPayloadsToMessages([{ text: `${SILENT_REPLY_TOKEN} -- ignored` }], {
-        textChunkLimit: 4000,
-        tableMode: "code",
-      });
+      const messages = renderReplyPayloadsToMessages(
+        [{ text: `${SILENT_REPLY_TOKEN} -- ignored` }],
+        {
+          textChunkLimit: 4000,
+          tableMode: "code",
+        },
+      );
       expect(messages).toEqual([{ text: `${SILENT_REPLY_TOKEN} -- ignored` }]);
     });
 
     it("splits media into separate messages by default", () => {
-      const messages = renderReplyPayloadsToMessages([{ text: "hi", mediaUrl: "https://example.com/a.png" }], {
-        textChunkLimit: 4000,
-        tableMode: "code",
-      });
+      const messages = renderReplyPayloadsToMessages(
+        [{ text: "hi", mediaUrl: "https://example.com/a.png" }],
+        {
+          textChunkLimit: 4000,
+          tableMode: "code",
+        },
+      );
       expect(messages).toEqual([{ text: "hi" }, { mediaUrl: "https://example.com/a.png" }]);
     });
 
     it("supports inline media mode", () => {
-      const messages = renderReplyPayloadsToMessages([{ text: "hi", mediaUrl: "https://example.com/a.png" }], {
-        textChunkLimit: 4000,
-        mediaMode: "inline",
-        tableMode: "code",
-      });
+      const messages = renderReplyPayloadsToMessages(
+        [{ text: "hi", mediaUrl: "https://example.com/a.png" }],
+        {
+          textChunkLimit: 4000,
+          mediaMode: "inline",
+          tableMode: "code",
+        },
+      );
       expect(messages).toEqual([{ text: "hi", mediaUrl: "https://example.com/a.png" }]);
     });
 
@@ -214,7 +227,9 @@ describe("msteams messenger", () => {
     });
 
     it("preserves parsed mentions when appending OneDrive fallback file links", async () => {
-      const tmpDir = await mkdtemp(path.join(resolvePreferredRemoteClawTmpDir(), "msteams-mention-"));
+      const tmpDir = await mkdtemp(
+        path.join(resolvePreferredRemoteClawTmpDir(), "msteams-mention-"),
+      );
       const localFile = path.join(tmpDir, "note.txt");
       await writeFile(localFile, "hello");
 
@@ -251,7 +266,9 @@ describe("msteams messenger", () => {
         expect(graphUploadMockState.uploadAndShareOneDrive).toHaveBeenCalledOnce();
         expect(sent).toHaveLength(1);
         expect(sent[0]?.text).toContain("Hello <at>John</at>");
-        expect(sent[0]?.text).toContain("📎 [upload.txt](https://onedrive.example.com/share/item123)");
+        expect(sent[0]?.text).toContain(
+          "📎 [upload.txt](https://onedrive.example.com/share/item123)",
+        );
         expect(sent[0]?.entities).toEqual([
           {
             type: "mention",

@@ -39,7 +39,9 @@ const resolveSandboxConfigForAgent = (
     }
   }
   const mode: SandboxMode =
-    resolvedMode === "all" || resolvedMode === "non-main" || resolvedMode === "off" ? resolvedMode : "off";
+    resolvedMode === "all" || resolvedMode === "non-main" || resolvedMode === "off"
+      ? resolvedMode
+      : "off";
   return {
     mode,
     browser: { enabled: false, network: "", cdpSourceRange: "" },
@@ -58,10 +60,16 @@ import { resolveToolProfilePolicy } from "../agents/tool-policy.js";
 import { resolveBrowserConfig } from "../browser/config.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { RemoteClawConfig } from "../config/config.js";
-import { resolveAgentModelFallbackValues, resolveAgentModelPrimaryValue } from "../config/model-input.js";
+import {
+  resolveAgentModelFallbackValues,
+  resolveAgentModelPrimaryValue,
+} from "../config/model-input.js";
 import type { AgentToolsConfig } from "../config/types.tools.js";
 import { resolveGatewayAuth } from "../gateway/auth.js";
-import { DEFAULT_DANGEROUS_NODE_COMMANDS, resolveNodeCommandAllowlist } from "../gateway/node-command-policy.js";
+import {
+  DEFAULT_DANGEROUS_NODE_COMMANDS,
+  resolveNodeCommandAllowlist,
+} from "../gateway/node-command-policy.js";
 import { inferParamBFromIdOrName } from "../shared/model-param-b.js";
 
 export type SecurityAuditFinding = {
@@ -147,11 +155,19 @@ function addModel(models: ModelRef[], raw: unknown, source: string) {
 
 function collectModels(cfg: RemoteClawConfig): ModelRef[] {
   const out: ModelRef[] = [];
-  addModel(out, resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model), "agents.defaults.model.primary");
+  addModel(
+    out,
+    resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model),
+    "agents.defaults.model.primary",
+  );
   for (const f of resolveAgentModelFallbackValues(cfg.agents?.defaults?.model)) {
     addModel(out, f, "agents.defaults.model.fallbacks");
   }
-  addModel(out, resolveAgentModelPrimaryValue(cfg.agents?.defaults?.imageModel), "agents.defaults.imageModel.primary");
+  addModel(
+    out,
+    resolveAgentModelPrimaryValue(cfg.agents?.defaults?.imageModel),
+    "agents.defaults.imageModel.primary",
+  );
   for (const f of resolveAgentModelFallbackValues(cfg.agents?.defaults?.imageModel)) {
     addModel(out, f, "agents.defaults.imageModel.fallbacks");
   }
@@ -161,7 +177,8 @@ function collectModels(cfg: RemoteClawConfig): ModelRef[] {
     if (!agent || typeof agent !== "object") {
       continue;
     }
-    const id = typeof (agent as { id?: unknown }).id === "string" ? (agent as { id: string }).id : "";
+    const id =
+      typeof (agent as { id?: unknown }).id === "string" ? (agent as { id: string }).id : "";
     const model = (agent as { model?: unknown }).model;
     if (typeof model === "string") {
       addModel(out, model, `agents.list.${id}.model`);
@@ -202,7 +219,9 @@ function isClaudeModel(id: string): boolean {
 
 function isClaude45OrHigher(id: string): boolean {
   // Match claude-*-4-5+, claude-*-45+, claude-*4.5+, or future 5.x+ majors.
-  return /\bclaude-[^\s/]*?(?:-4-?(?:[5-9]|[1-9]\d)\b|4\.(?:[5-9]|[1-9]\d)\b|-[5-9](?:\b|[.-]))/i.test(id);
+  return /\bclaude-[^\s/]*?(?:-4-?(?:[5-9]|[1-9]\d)\b|4\.(?:[5-9]|[1-9]\d)\b|-[5-9](?:\b|[.-]))/i.test(
+    id,
+  );
 }
 
 function extractAgentIdFromSource(source: string): string | null {
@@ -254,7 +273,12 @@ function looksLikeNodeCommandPattern(value: string): boolean {
   if (/[?*[\]{}(),|]/.test(value)) {
     return true;
   }
-  if (value.startsWith("/") || value.endsWith("/") || value.startsWith("^") || value.endsWith("$")) {
+  if (
+    value.startsWith("/") ||
+    value.endsWith("/") ||
+    value.startsWith("^") ||
+    value.endsWith("$")
+  ) {
     return true;
   }
   return /\s/.test(value) || value.includes("group:");
@@ -355,7 +379,9 @@ function resolveToolPolicies(params: {
 
 function hasWebSearchKey(cfg: RemoteClawConfig, env: NodeJS.ProcessEnv): boolean {
   const search = cfg.tools?.web?.search;
-  return Boolean(search?.apiKey || search?.perplexity?.apiKey || env.BRAVE_API_KEY || env.PERPLEXITY_API_KEY);
+  return Boolean(
+    search?.apiKey || search?.perplexity?.apiKey || env.BRAVE_API_KEY || env.PERPLEXITY_API_KEY,
+  );
 }
 
 function isWebSearchEnabled(cfg: RemoteClawConfig, env: NodeJS.ProcessEnv): boolean {
@@ -481,7 +507,10 @@ function listPotentialMultiUserSignals(cfg: RemoteClawConfig): string[] {
       if (!accountValue || typeof accountValue !== "object") {
         continue;
       }
-      inspectSection(accountValue as Record<string, unknown>, `channels.${channelId}.accounts.${accountId}`);
+      inspectSection(
+        accountValue as Record<string, unknown>,
+        `channels.${channelId}.accounts.${accountId}`,
+      );
     }
   }
 
@@ -518,8 +547,12 @@ function collectRiskyToolExposureContexts(cfg: RemoteClawConfig): {
       sandboxMode,
       agentId: context.agentId ?? null,
     });
-    const runtimeTools = ["exec", "process"].filter((tool) => isToolAllowedByPolicies(tool, policies));
-    const fsTools = ["read", "write", "edit", "apply_patch"].filter((tool) => isToolAllowedByPolicies(tool, policies));
+    const runtimeTools = ["exec", "process"].filter((tool) =>
+      isToolAllowedByPolicies(tool, policies),
+    );
+    const fsTools = ["read", "write", "edit", "apply_patch"].filter((tool) =>
+      isToolAllowedByPolicies(tool, policies),
+    );
     const fsWorkspaceOnly = context.tools?.fs?.workspaceOnly ?? cfg.tools?.fs?.workspaceOnly;
     const runtimeUnguarded = runtimeTools.length > 0 && sandboxMode !== "all";
     const fsUnguarded = fsTools.length > 0 && sandboxMode !== "all" && fsWorkspaceOnly !== true;
@@ -573,7 +606,10 @@ export function collectAttackSurfaceSummaryFindings(cfg: RemoteClawConfig): Secu
   ];
 }
 
-export function collectSyncedFolderFindings(params: { stateDir: string; configPath: string }): SecurityAuditFinding[] {
+export function collectSyncedFolderFindings(params: {
+  stateDir: string;
+  configPath: string;
+}): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
   if (isProbablySyncedPath(params.stateDir) || isProbablySyncedPath(params.configPath)) {
     findings.push({
@@ -589,7 +625,8 @@ export function collectSyncedFolderFindings(params: { stateDir: string; configPa
 
 export function collectSecretsInConfigFindings(cfg: RemoteClawConfig): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
-  const password = typeof cfg.gateway?.auth?.password === "string" ? cfg.gateway.auth.password.trim() : "";
+  const password =
+    typeof cfg.gateway?.auth?.password === "string" ? cfg.gateway.auth.password.trim() : "";
   if (password && !looksLikeEnvRef(password)) {
     findings.push({
       checkId: "config.secrets.gateway_password_in_config",
@@ -597,7 +634,8 @@ export function collectSecretsInConfigFindings(cfg: RemoteClawConfig): SecurityA
       title: "Gateway password is stored in config",
       detail:
         "gateway.auth.password is set in the config file; prefer environment variables for secrets when possible.",
-      remediation: "Prefer REMOTECLAW_GATEWAY_PASSWORD (env) and remove gateway.auth.password from disk.",
+      remediation:
+        "Prefer REMOTECLAW_GATEWAY_PASSWORD (env) and remove gateway.auth.password from disk.",
     });
   }
 
@@ -607,7 +645,8 @@ export function collectSecretsInConfigFindings(cfg: RemoteClawConfig): SecurityA
       checkId: "config.secrets.hooks_token_in_config",
       severity: "info",
       title: "Hooks token is stored in config",
-      detail: "hooks.token is set in the config file; keep config perms tight and treat it like an API secret.",
+      detail:
+        "hooks.token is set in the config file; keep config perms tight and treat it like an API secret.",
     });
   }
 
@@ -643,7 +682,9 @@ export function collectHooksHardeningFindings(
       ? env.REMOTECLAW_GATEWAY_TOKEN.trim()
       : null;
   const gatewayToken =
-    gatewayAuth.mode === "token" && typeof gatewayAuth.token === "string" && gatewayAuth.token.trim()
+    gatewayAuth.mode === "token" &&
+    typeof gatewayAuth.token === "string" &&
+    gatewayAuth.token.trim()
       ? gatewayAuth.token.trim()
       : remoteclawGatewayToken
         ? remoteclawGatewayToken
@@ -653,7 +694,8 @@ export function collectHooksHardeningFindings(
       checkId: "hooks.token_reuse_gateway_token",
       severity: "critical",
       title: "Hooks token reuses the Gateway token",
-      detail: "hooks.token matches gateway.auth token; compromise of hooks expands blast radius to the Gateway API.",
+      detail:
+        "hooks.token matches gateway.auth token; compromise of hooks expands blast radius to the Gateway API.",
       remediation: "Use a separate hooks.token dedicated to hook ingress.",
     });
   }
@@ -670,9 +712,12 @@ export function collectHooksHardeningFindings(
   }
 
   const allowRequestSessionKey = cfg.hooks?.allowRequestSessionKey === true;
-  const defaultSessionKey = typeof cfg.hooks?.defaultSessionKey === "string" ? cfg.hooks.defaultSessionKey.trim() : "";
+  const defaultSessionKey =
+    typeof cfg.hooks?.defaultSessionKey === "string" ? cfg.hooks.defaultSessionKey.trim() : "";
   const allowedPrefixes = Array.isArray(cfg.hooks?.allowedSessionKeyPrefixes)
-    ? cfg.hooks.allowedSessionKeyPrefixes.map((prefix) => prefix.trim()).filter((prefix) => prefix.length > 0)
+    ? cfg.hooks.allowedSessionKeyPrefixes
+        .map((prefix) => prefix.trim())
+        .filter((prefix) => prefix.length > 0)
     : [];
   const remoteExposure = isGatewayRemotelyExposed(cfg);
 
@@ -694,7 +739,8 @@ export function collectHooksHardeningFindings(
       title: "External hook payloads may override sessionKey",
       detail:
         "hooks.allowRequestSessionKey=true allows `/hooks/agent` callers to choose the session key. Treat hook token holders as full-trust unless you also restrict prefixes.",
-      remediation: "Set hooks.allowRequestSessionKey=false (recommended) or constrain hooks.allowedSessionKeyPrefixes.",
+      remediation:
+        "Set hooks.allowRequestSessionKey=false (recommended) or constrain hooks.allowedSessionKeyPrefixes.",
     });
   }
 
@@ -705,14 +751,17 @@ export function collectHooksHardeningFindings(
       title: "Request sessionKey override is enabled without prefix restrictions",
       detail:
         "hooks.allowRequestSessionKey=true and hooks.allowedSessionKeyPrefixes is unset/empty, so request payloads can target arbitrary session key shapes.",
-      remediation: 'Set hooks.allowedSessionKeyPrefixes (for example, ["hook:"]) or disable request overrides.',
+      remediation:
+        'Set hooks.allowedSessionKeyPrefixes (for example, ["hook:"]) or disable request overrides.',
     });
   }
 
   return findings;
 }
 
-export function collectGatewayHttpSessionKeyOverrideFindings(cfg: RemoteClawConfig): SecurityAuditFinding[] {
+export function collectGatewayHttpSessionKeyOverrideFindings(
+  cfg: RemoteClawConfig,
+): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
   const chatCompletionsEnabled = cfg.gateway?.http?.endpoints?.chatCompletions?.enabled === true;
   const responsesEnabled = cfg.gateway?.http?.endpoints?.responses?.enabled === true;
@@ -777,7 +826,9 @@ export function collectSandboxDockerNoopFindings(cfg: RemoteClawConfig): Securit
   const agents = Array.isArray(cfg.agents?.list) ? cfg.agents.list : [];
 
   const defaultsSandbox = cfg.agents?.defaults?.sandbox;
-  const hasDefaultDocker = hasConfiguredDockerConfig(defaultsSandbox?.docker as Record<string, unknown> | undefined);
+  const hasDefaultDocker = hasConfiguredDockerConfig(
+    defaultsSandbox?.docker as Record<string, unknown> | undefined,
+  );
   const defaultMode = defaultsSandbox?.mode ?? "off";
   const hasAnySandboxEnabledAgent = agents.some((entry) => {
     if (!entry || typeof entry !== "object" || typeof entry.id !== "string") {
@@ -819,7 +870,9 @@ export function collectSandboxDockerNoopFindings(cfg: RemoteClawConfig): Securit
   return findings;
 }
 
-export function collectSandboxDangerousConfigFindings(cfg: RemoteClawConfig): SecurityAuditFinding[] {
+export function collectSandboxDangerousConfigFindings(
+  cfg: RemoteClawConfig,
+): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
   const agents = Array.isArray(cfg.agents?.list) ? cfg.agents.list : [];
 
@@ -900,7 +953,8 @@ export function collectSandboxDangerousConfigFindings(cfg: RemoteClawConfig): Se
       });
     }
 
-    const seccompProfile = typeof docker.seccompProfile === "string" ? docker.seccompProfile : undefined;
+    const seccompProfile =
+      typeof docker.seccompProfile === "string" ? docker.seccompProfile : undefined;
     if (seccompProfile && seccompProfile.trim().toLowerCase() === "unconfined") {
       findings.push({
         checkId: "sandbox.dangerous_seccomp_profile",
@@ -911,7 +965,8 @@ export function collectSandboxDangerousConfigFindings(cfg: RemoteClawConfig): Se
       });
     }
 
-    const apparmorProfile = typeof docker.apparmorProfile === "string" ? docker.apparmorProfile : undefined;
+    const apparmorProfile =
+      typeof docker.apparmorProfile === "string" ? docker.apparmorProfile : undefined;
     if (apparmorProfile && apparmorProfile.trim().toLowerCase() === "unconfined") {
       findings.push({
         checkId: "sandbox.dangerous_apparmor_profile",
@@ -965,7 +1020,9 @@ export function collectSandboxDangerousConfigFindings(cfg: RemoteClawConfig): Se
   return findings;
 }
 
-export function collectNodeDenyCommandPatternFindings(cfg: RemoteClawConfig): SecurityAuditFinding[] {
+export function collectNodeDenyCommandPatternFindings(
+  cfg: RemoteClawConfig,
+): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
   const denyListRaw = cfg.gateway?.nodes?.denyCommands;
   if (!Array.isArray(denyListRaw) || denyListRaw.length === 0) {
@@ -979,14 +1036,18 @@ export function collectNodeDenyCommandPatternFindings(cfg: RemoteClawConfig): Se
 
   const knownCommands = listKnownNodeCommands(cfg);
   const patternLike = denyList.filter((entry) => looksLikeNodeCommandPattern(entry));
-  const unknownExact = denyList.filter((entry) => !looksLikeNodeCommandPattern(entry) && !knownCommands.has(entry));
+  const unknownExact = denyList.filter(
+    (entry) => !looksLikeNodeCommandPattern(entry) && !knownCommands.has(entry),
+  );
   if (patternLike.length === 0 && unknownExact.length === 0) {
     return findings;
   }
 
   const detailParts: string[] = [];
   if (patternLike.length > 0) {
-    detailParts.push(`Pattern-like entries (not supported by exact matching): ${patternLike.join(", ")}`);
+    detailParts.push(
+      `Pattern-like entries (not supported by exact matching): ${patternLike.join(", ")}`,
+    );
   }
   if (unknownExact.length > 0) {
     const unknownDetails = unknownExact
@@ -1018,7 +1079,9 @@ export function collectNodeDenyCommandPatternFindings(cfg: RemoteClawConfig): Se
   return findings;
 }
 
-export function collectNodeDangerousAllowCommandFindings(cfg: RemoteClawConfig): SecurityAuditFinding[] {
+export function collectNodeDangerousAllowCommandFindings(
+  cfg: RemoteClawConfig,
+): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
   const allowRaw = cfg.gateway?.nodes?.allowCommands;
   if (!Array.isArray(allowRaw) || allowRaw.length === 0) {
@@ -1031,7 +1094,9 @@ export function collectNodeDangerousAllowCommandFindings(cfg: RemoteClawConfig):
   }
 
   const deny = new Set((cfg.gateway?.nodes?.denyCommands ?? []).map(normalizeNodeCommand));
-  const dangerousAllowed = DEFAULT_DANGEROUS_NODE_COMMANDS.filter((cmd) => allow.has(cmd) && !deny.has(cmd));
+  const dangerousAllowed = DEFAULT_DANGEROUS_NODE_COMMANDS.filter(
+    (cmd) => allow.has(cmd) && !deny.has(cmd),
+  );
   if (dangerousAllowed.length === 0) {
     return findings;
   }
@@ -1051,7 +1116,9 @@ export function collectNodeDangerousAllowCommandFindings(cfg: RemoteClawConfig):
   return findings;
 }
 
-export function collectMinimalProfileOverrideFindings(cfg: RemoteClawConfig): SecurityAuditFinding[] {
+export function collectMinimalProfileOverrideFindings(
+  cfg: RemoteClawConfig,
+): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
   if (cfg.tools?.profile !== "minimal") {
     return findings;
@@ -1142,7 +1209,10 @@ export function collectModelHygieneFindings(cfg: RemoteClawConfig): SecurityAudi
       checkId: "models.legacy",
       severity: "warn",
       title: "Some configured models look legacy",
-      detail: "Older/legacy models can be less robust against prompt injection and tool misuse.\n" + lines + more,
+      detail:
+        "Older/legacy models can be less robust against prompt injection and tool misuse.\n" +
+        lines +
+        more,
       remediation: "Prefer modern, instruction-hardened models for any bot that can run tools.",
     });
   }
@@ -1158,7 +1228,9 @@ export function collectModelHygieneFindings(cfg: RemoteClawConfig): SecurityAudi
       severity: "warn",
       title: "Some configured models are below recommended tiers",
       detail:
-        "Smaller/older models are generally more susceptible to prompt injection and tool misuse.\n" + lines + more,
+        "Smaller/older models are generally more susceptible to prompt injection and tool misuse.\n" +
+        lines +
+        more,
       remediation:
         "Use the latest, top-tier model for any bot with tools or untrusted inboxes. Avoid Haiku tiers; prefer GPT-5+ and Claude 4.5+.",
     });

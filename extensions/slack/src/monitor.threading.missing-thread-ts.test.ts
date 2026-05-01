@@ -51,7 +51,9 @@ async function runMissingThreadScenario(params: {
   if (params.historyError) {
     conversations.history.mockRejectedValueOnce(params.historyError);
   } else {
-    conversations.history.mockResolvedValueOnce(params.historyResponse ?? { messages: [{ ts: "456" }] });
+    conversations.history.mockResolvedValueOnce(
+      params.historyResponse ?? { messages: [{ ts: "456" }] },
+    );
   }
 
   const { controller, run } = startSlackMonitor(monitorSlackProvider);

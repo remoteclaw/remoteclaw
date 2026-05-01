@@ -2,7 +2,11 @@ import { html, nothing } from "lit";
 import { formatRelativeTimestamp } from "../format.ts";
 import type { SlackStatus } from "../types.ts";
 import { renderChannelConfigSection } from "./channels.config.ts";
-import { formatNullableBoolean, renderSingleAccountChannelCard, resolveChannelConfigured } from "./channels.shared.ts";
+import {
+  formatNullableBoolean,
+  renderSingleAccountChannelCard,
+  resolveChannelConfigured,
+} from "./channels.shared.ts";
 import type { ChannelsProps } from "./channels.types.ts";
 
 export function renderSlackCard(params: {

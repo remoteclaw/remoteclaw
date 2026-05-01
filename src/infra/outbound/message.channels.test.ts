@@ -148,7 +148,11 @@ describe("sendMessage channel normalization", () => {
         },
       },
       assertDeps: (deps: { sendIMessage?: ReturnType<typeof vi.fn> }) => {
-        expect(deps.sendIMessage).toHaveBeenCalledWith("someone@example.com", "hi", expect.any(Object));
+        expect(deps.sendIMessage).toHaveBeenCalledWith(
+          "someone@example.com",
+          "hi",
+          expect.any(Object),
+        );
       },
       expectedChannel: "imessage",
     },
@@ -333,7 +337,9 @@ const createMSTeamsOutbound = (opts?: { includePoll?: boolean }): ChannelOutboun
     : {}),
 });
 
-const createMattermostLikePlugin = (opts: { onSendText: (ctx: Record<string, unknown>) => void }): ChannelPlugin => ({
+const createMattermostLikePlugin = (opts: {
+  onSendText: (ctx: Record<string, unknown>) => void;
+}): ChannelPlugin => ({
   id: "mattermost",
   meta: {
     id: "mattermost",

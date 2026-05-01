@@ -38,7 +38,11 @@ export type ThreadBindingManager = {
   getBySessionKey: (targetSessionKey: string) => ThreadBindingRecord | undefined;
   listBySessionKey: (targetSessionKey: string) => ThreadBindingRecord[];
   listBindings: () => ThreadBindingRecord[];
-  touchThread: (params: { threadId: string; at?: number; persist?: boolean }) => ThreadBindingRecord | null;
+  touchThread: (params: {
+    threadId: string;
+    at?: number;
+    persist?: boolean;
+  }) => ThreadBindingRecord | null;
   bindTarget: (params: {
     threadId?: string | number;
     channelId?: string;

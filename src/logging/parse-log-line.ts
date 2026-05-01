@@ -45,7 +45,12 @@ export function parseLogLine(raw: string): ParsedLogLine | null {
     const nameMeta = parseMetaName(meta?.name);
     const levelRaw = typeof meta?.logLevelName === "string" ? meta.logLevelName : undefined;
     return {
-      time: typeof parsed.time === "string" ? parsed.time : typeof meta?.date === "string" ? meta.date : undefined,
+      time:
+        typeof parsed.time === "string"
+          ? parsed.time
+          : typeof meta?.date === "string"
+            ? meta.date
+            : undefined,
       level: levelRaw ? levelRaw.toLowerCase() : undefined,
       subsystem: nameMeta.subsystem,
       module: nameMeta.module,

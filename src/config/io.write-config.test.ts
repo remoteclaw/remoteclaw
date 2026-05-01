@@ -30,7 +30,9 @@ describe("config io write", () => {
         return;
       } catch (error) {
         const code =
-          error && typeof error === "object" && "code" in error ? String((error as { code?: unknown }).code) : "";
+          error && typeof error === "object" && "code" in error
+            ? String((error as { code?: unknown }).code)
+            : "";
         if ((code !== "ENOTEMPTY" && code !== "EBUSY") || attempt === 4) {
           throw error;
         }
@@ -65,7 +67,10 @@ describe("config io write", () => {
     configPath: string;
   }) {
     const next = structuredClone(params.snapshot.config);
-    const gateway = next.gateway && typeof next.gateway === "object" ? (next.gateway as Record<string, unknown>) : {};
+    const gateway =
+      next.gateway && typeof next.gateway === "object"
+        ? (next.gateway as Record<string, unknown>)
+        : {};
     next.gateway = {
       ...gateway,
       auth: { mode: "token" },
@@ -91,7 +96,10 @@ describe("config io write", () => {
     });
     const auditPath = path.join(params.home, ".remoteclaw", "logs", "config-audit.jsonl");
     const next = structuredClone(snapshot.config);
-    const gateway = next.gateway && typeof next.gateway === "object" ? (next.gateway as Record<string, unknown>) : {};
+    const gateway =
+      next.gateway && typeof next.gateway === "object"
+        ? (next.gateway as Record<string, unknown>)
+        : {};
     next.gateway = {
       ...gateway,
       ...params.gatewayPatch,
@@ -336,7 +344,9 @@ describe("config io write", () => {
         agents: { defaults: { cliBackends: { codex: { env: { OPENAI_API_KEY: string } } } } };
         gateway: { port: number; auth: { mode: string } };
       };
-      expect(persisted.agents.defaults.cliBackends.codex.env.OPENAI_API_KEY).toBe("${OPENAI_API_KEY}");
+      expect(persisted.agents.defaults.cliBackends.codex.env.OPENAI_API_KEY).toBe(
+        "${OPENAI_API_KEY}",
+      );
       expect(persisted.gateway).toEqual({
         port: 18789,
         auth: { mode: "token" },
@@ -456,7 +466,11 @@ describe("config io write", () => {
           };
         };
       };
-      expect(persisted.agents.defaults.cliBackends.codex.args).toEqual(["${DISCORD_USER_ID}", "123", "456"]);
+      expect(persisted.agents.defaults.cliBackends.codex.args).toEqual([
+        "${DISCORD_USER_ID}",
+        "123",
+        "456",
+      ]);
     });
   });
 

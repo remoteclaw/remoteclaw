@@ -19,7 +19,9 @@ export type SlashCommandOptions = {
 
 const COMMAND_ALIASES: Record<string, string> = {};
 
-function createLevelCompletion(levels: string[]): NonNullable<SlashCommand["getArgumentCompletions"]> {
+function createLevelCompletion(
+  levels: string[],
+): NonNullable<SlashCommand["getArgumentCompletions"]> {
   return (prefix) =>
     levels
       .filter((value) => value.startsWith(prefix.toLowerCase()))

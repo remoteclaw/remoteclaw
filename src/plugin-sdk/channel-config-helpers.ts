@@ -53,7 +53,12 @@ export type ConfigWriteAuthorizationResult =
 
 type ChannelCrudConfigAdapter<ResolvedAccount> = Pick<
   ChannelConfigAdapter<ResolvedAccount>,
-  "listAccountIds" | "resolveAccount" | "inspectAccount" | "defaultAccountId" | "setAccountEnabled" | "deleteAccount"
+  | "listAccountIds"
+  | "resolveAccount"
+  | "inspectAccount"
+  | "defaultAccountId"
+  | "setAccountEnabled"
+  | "deleteAccount"
 >;
 
 type ChannelConfigAdapterWithAccessors<ResolvedAccount> = Pick<
@@ -90,22 +95,24 @@ function buildAccountScopedDmSecurityPolicy(params: {
   normalizeEntry?: (raw: string) => string;
 }) {
   const resolvedAccountId = params.accountId ?? params.fallbackAccountId ?? DEFAULT_ACCOUNT_ID;
-  const channelConfig = (params.cfg.channels as Record<string, unknown> | undefined)?.[params.channelKey] as
-    | { accounts?: Record<string, unknown> }
-    | undefined;
+  const channelConfig = (params.cfg.channels as Record<string, unknown> | undefined)?.[
+    params.channelKey
+  ] as { accounts?: Record<string, unknown> } | undefined;
   const useAccountPath = Boolean(channelConfig?.accounts?.[resolvedAccountId]);
   const basePath = useAccountPath
     ? `channels.${params.channelKey}.accounts.${resolvedAccountId}.`
     : `channels.${params.channelKey}.`;
   const allowFromPath = `${basePath}${params.allowFromPathSuffix ?? ""}`;
-  const policyPath = params.policyPathSuffix != null ? `${basePath}${params.policyPathSuffix}` : undefined;
+  const policyPath =
+    params.policyPathSuffix != null ? `${basePath}${params.policyPathSuffix}` : undefined;
 
   return {
     policy: params.policy ?? params.defaultPolicy ?? "pairing",
     allowFrom: params.allowFrom ?? [],
     policyPath,
     allowFromPath,
-    approveHint: params.approveHint ?? formatPairingApproveHint(params.approveChannelId ?? params.channelKey),
+    approveHint:
+      params.approveHint ?? formatPairingApproveHint(params.approveChannelId ?? params.channelKey),
     normalizeEntry: params.normalizeEntry,
   };
 }
@@ -153,7 +160,10 @@ function normalizeLocalWhatsAppTarget(value: string): string | null {
   return normalized.length > 1 ? normalized : null;
 }
 
-function resolveChannelConfig(cfg: RemoteClawConfig, channelId?: string | null): ChannelConfigWithAccounts | undefined {
+function resolveChannelConfig(
+  cfg: RemoteClawConfig,
+  channelId?: string | null,
+): ChannelConfigWithAccounts | undefined {
   if (!channelId) {
     return undefined;
   }
@@ -297,7 +307,9 @@ type MultiAccountChannelConfigAdapterParams<
 };
 
 /** Coerce mixed allowlist config values into plain strings without trimming or deduping. */
-export function mapAllowFromEntries(allowFrom: Array<string | number> | null | undefined): string[] {
+export function mapAllowFromEntries(
+  allowFrom: Array<string | number> | null | undefined,
+): string[] {
   return (allowFrom ?? []).map((entry) => String(entry));
 }
 
@@ -307,7 +319,9 @@ export function formatTrimmedAllowFromEntries(allowFrom: Array<string | number>)
 }
 
 /** Collapse nullable config scalars into a trimmed optional string. */
-export function resolveOptionalConfigString(value: string | number | null | undefined): string | undefined {
+export function resolveOptionalConfigString(
+  value: string | number | null | undefined,
+): string | undefined {
   if (value == null) {
     return undefined;
   }
@@ -316,7 +330,10 @@ export function resolveOptionalConfigString(value: string | number | null | unde
 }
 
 /** Adapt `{ cfg, accountId }` accessors to callback sites that pass positional args. */
-export function adaptScopedAccountAccessor<Result, Config extends RemoteClawConfig = RemoteClawConfig>(
+export function adaptScopedAccountAccessor<
+  Result,
+  Config extends RemoteClawConfig = RemoteClawConfig,
+>(
   accessor: (params: { cfg: Config; accountId?: string | null }) => Result,
 ): (cfg: Config, accountId?: string | null) => Result {
   return (cfg, accountId) => accessor({ cfg, accountId });
@@ -331,10 +348,15 @@ export function createScopedAccountConfigAccessors<
   resolveAllowFrom: (account: ResolvedAccount) => Array<string | number> | null | undefined;
   formatAllowFrom: (allowFrom: Array<string | number>) => string[];
   resolveDefaultTo?: (account: ResolvedAccount) => string | number | null | undefined;
-}): Pick<ChannelConfigAdapter<ResolvedAccount>, "resolveAllowFrom" | "formatAllowFrom" | "resolveDefaultTo"> {
+}): Pick<
+  ChannelConfigAdapter<ResolvedAccount>,
+  "resolveAllowFrom" | "formatAllowFrom" | "resolveDefaultTo"
+> {
   const base = {
     resolveAllowFrom({ cfg, accountId }: { cfg: RemoteClawConfig; accountId?: string | null }) {
-      return mapAllowFromEntries(params.resolveAllowFrom(params.resolveAccount({ cfg: cfg as Config, accountId })));
+      return mapAllowFromEntries(
+        params.resolveAllowFrom(params.resolveAccount({ cfg: cfg as Config, accountId })),
+      );
     },
     formatAllowFrom({ allowFrom }: { allowFrom: Array<string | number> }) {
       return params.formatAllowFrom(allowFrom);
@@ -355,12 +377,19 @@ export function createScopedAccountConfigAccessors<
   };
 }
 
-function createNamedAccountConfigBase<ResolvedAccount, Config extends RemoteClawConfig = RemoteClawConfig>(params: {
+function createNamedAccountConfigBase<
+  ResolvedAccount,
+  Config extends RemoteClawConfig = RemoteClawConfig,
+>(params: {
   listAccountIds: (cfg: Config) => string[];
   resolveAccount: (cfg: Config, accountId?: string | null) => ResolvedAccount;
   inspectAccount?: (cfg: Config, accountId?: string | null) => unknown;
   defaultAccountId: (cfg: Config) => string;
-  setAccountEnabled: (params: { cfg: RemoteClawConfig; accountId: string; enabled: boolean }) => RemoteClawConfig;
+  setAccountEnabled: (params: {
+    cfg: RemoteClawConfig;
+    accountId: string;
+    enabled: boolean;
+  }) => RemoteClawConfig;
   deleteAccount: (params: { cfg: RemoteClawConfig; accountId: string }) => RemoteClawConfig;
 }): ChannelCrudConfigAdapter<ResolvedAccount> {
   return {
@@ -392,8 +421,13 @@ function createNamedAccountConfigBase<ResolvedAccount, Config extends RemoteClaw
   };
 }
 
-function resolveAccessorAccountWithFallback<AccessorAccount, Config extends RemoteClawConfig = RemoteClawConfig>(
-  resolveAccessorAccount: ((params: ChannelConfigAccessorParams<Config>) => AccessorAccount) | undefined,
+function resolveAccessorAccountWithFallback<
+  AccessorAccount,
+  Config extends RemoteClawConfig = RemoteClawConfig,
+>(
+  resolveAccessorAccount:
+    | ((params: ChannelConfigAccessorParams<Config>) => AccessorAccount)
+    | undefined,
   fallbackResolveAccessorAccount: (params: ChannelConfigAccessorParams<Config>) => AccessorAccount,
 ): (params: ChannelConfigAccessorParams<Config>) => AccessorAccount {
   return resolveAccessorAccount ?? fallbackResolveAccessorAccount;
@@ -461,7 +495,12 @@ export function createScopedChannelConfigBase<
   allowTopLevel?: boolean;
 }): Pick<
   ChannelConfigAdapter<ResolvedAccount>,
-  "listAccountIds" | "resolveAccount" | "inspectAccount" | "defaultAccountId" | "setAccountEnabled" | "deleteAccount"
+  | "listAccountIds"
+  | "resolveAccount"
+  | "inspectAccount"
+  | "defaultAccountId"
+  | "setAccountEnabled"
+  | "deleteAccount"
 > {
   return createNamedAccountConfigBase<ResolvedAccount, Config>({
     listAccountIds: params.listAccountIds,
@@ -587,7 +626,12 @@ export function createTopLevelChannelConfigBase<
   clearBaseFields?: string[];
 }): Pick<
   ChannelConfigAdapter<ResolvedAccount>,
-  "listAccountIds" | "resolveAccount" | "inspectAccount" | "defaultAccountId" | "setAccountEnabled" | "deleteAccount"
+  | "listAccountIds"
+  | "resolveAccount"
+  | "inspectAccount"
+  | "defaultAccountId"
+  | "setAccountEnabled"
+  | "deleteAccount"
 > {
   return {
     listAccountIds(cfg) {
@@ -596,7 +640,9 @@ export function createTopLevelChannelConfigBase<
     resolveAccount(cfg) {
       return params.resolveAccount(cfg as Config);
     },
-    inspectAccount: params.inspectAccount ? (cfg) => params.inspectAccount?.(cfg as Config) : undefined,
+    inspectAccount: params.inspectAccount
+      ? (cfg) => params.inspectAccount?.(cfg as Config)
+      : undefined,
     defaultAccountId(cfg) {
       return params.defaultAccountId?.(cfg as Config) ?? DEFAULT_ACCOUNT_ID;
     },
@@ -674,7 +720,12 @@ export function createHybridChannelConfigBase<
   preserveSectionOnDefaultDelete?: boolean;
 }): Pick<
   ChannelConfigAdapter<ResolvedAccount>,
-  "listAccountIds" | "resolveAccount" | "inspectAccount" | "defaultAccountId" | "setAccountEnabled" | "deleteAccount"
+  | "listAccountIds"
+  | "resolveAccount"
+  | "inspectAccount"
+  | "defaultAccountId"
+  | "setAccountEnabled"
+  | "deleteAccount"
 > {
   return createNamedAccountConfigBase<ResolvedAccount, Config>({
     listAccountIds: params.listAccountIds,
@@ -753,7 +804,9 @@ export function createHybridChannelConfigAdapter<
 }
 
 /** Convert account-specific DM security fields into the shared runtime policy resolver shape. */
-export function createScopedDmSecurityResolver<ResolvedAccount extends { accountId?: string | null }>(params: {
+export function createScopedDmSecurityResolver<
+  ResolvedAccount extends { accountId?: string | null },
+>(params: {
   channelKey: string;
   resolvePolicy: (account: ResolvedAccount) => string | null | undefined;
   resolveAllowFrom: (account: ResolvedAccount) => Array<string | number> | null | undefined;
@@ -797,7 +850,9 @@ function resolveMergedSimpleChannelAccountConfig(params: {
   accountId?: string | null;
   omitKeys?: string[];
 }): SimpleDirectMessageConfig {
-  const channelRoot = params.cfg.channels?.[params.channelKey] as SimpleScopedChannelConfig | undefined;
+  const channelRoot = params.cfg.channels?.[params.channelKey] as
+    | SimpleScopedChannelConfig
+    | undefined;
   return resolveMergedAccountConfig<SimpleDirectMessageConfig>({
     channelConfig: channelRoot,
     accounts: channelRoot?.accounts,
@@ -807,7 +862,10 @@ function resolveMergedSimpleChannelAccountConfig(params: {
 }
 
 /** Read the effective WhatsApp allowlist from merged root/account config without registry indirection. */
-export function resolveWhatsAppConfigAllowFrom(params: { cfg: RemoteClawConfig; accountId?: string | null }): string[] {
+export function resolveWhatsAppConfigAllowFrom(params: {
+  cfg: RemoteClawConfig;
+  accountId?: string | null;
+}): string[] {
   return mapAllowFromEntries(
     resolveMergedSimpleChannelAccountConfig({
       cfg: params.cfg,
@@ -843,7 +901,10 @@ export function resolveWhatsAppConfigDefaultTo(params: {
 }
 
 /** Read iMessage allowlist entries from merged root/account config without registry indirection. */
-export function resolveIMessageConfigAllowFrom(params: { cfg: RemoteClawConfig; accountId?: string | null }): string[] {
+export function resolveIMessageConfigAllowFrom(params: {
+  cfg: RemoteClawConfig;
+  accountId?: string | null;
+}): string[] {
   return mapAllowFromEntries(
     resolveMergedSimpleChannelAccountConfig({
       cfg: params.cfg,

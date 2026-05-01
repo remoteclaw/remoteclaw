@@ -61,7 +61,16 @@ function resolveWindowsStartupDir(env: GatewayServiceEnv): string {
   if (!home) {
     throw new Error("Windows startup folder unavailable: APPDATA/USERPROFILE not set");
   }
-  return path.join(home, "AppData", "Roaming", "Microsoft", "Windows", "Start Menu", "Programs", "Startup");
+  return path.join(
+    home,
+    "AppData",
+    "Roaming",
+    "Microsoft",
+    "Windows",
+    "Start Menu",
+    "Programs",
+    "Startup",
+  );
 }
 
 function sanitizeWindowsFilename(value: string): string {
@@ -97,7 +106,9 @@ function resolveTaskUser(env: GatewayServiceEnv): string | null {
   return username;
 }
 
-export async function readScheduledTaskCommand(env: GatewayServiceEnv): Promise<GatewayServiceCommandConfig | null> {
+export async function readScheduledTaskCommand(
+  env: GatewayServiceEnv,
+): Promise<GatewayServiceCommandConfig | null> {
   const scriptPath = resolveTaskScriptPath(env);
   try {
     const content = await fs.readFile(scriptPath, "utf8");
@@ -150,7 +161,9 @@ export type ScheduledTaskInfo = {
   lastRunResult?: string;
 };
 
-function hasListenerPid<T extends { pid?: number | null }>(listener: T): listener is T & { pid: number } {
+function hasListenerPid<T extends { pid?: number | null }>(
+  listener: T,
+): listener is T & { pid: number } {
   return typeof listener.pid === "number";
 }
 
@@ -198,7 +211,8 @@ function normalizeTaskResultCode(value?: string): string | null {
 }
 
 const RUNNING_RESULT_CODES = new Set(["0x41301"]);
-const UNKNOWN_STATUS_DETAIL = "Task status is locale-dependent and no numeric Last Run Result was available.";
+const UNKNOWN_STATUS_DETAIL =
+  "Task status is locale-dependent and no numeric Last Run Result was available.";
 
 export function deriveScheduledTaskRuntimeStatus(parsed: ScheduledTaskInfo): {
   status: GatewayServiceRuntime["status"];
@@ -424,7 +438,11 @@ async function terminateGatewayProcessTree(pid: number, graceMs: number): Promis
     killProcessTree(pid, { graceMs });
     return;
   }
-  const taskkillPath = path.join(process.env.SystemRoot ?? "C:\\Windows", "System32", "taskkill.exe");
+  const taskkillPath = path.join(
+    process.env.SystemRoot ?? "C:\\Windows",
+    "System32",
+    "taskkill.exe",
+  );
   spawnSync(taskkillPath, ["/T", "/PID", String(pid)], {
     stdio: "ignore",
     timeout: 5_000,
@@ -497,7 +515,10 @@ async function resolveFallbackRuntime(env: GatewayServiceEnv): Promise<GatewaySe
   };
 }
 
-async function stopStartupEntry(env: GatewayServiceEnv, stdout: NodeJS.WritableStream): Promise<void> {
+async function stopStartupEntry(
+  env: GatewayServiceEnv,
+  stdout: NodeJS.WritableStream,
+): Promise<void> {
   const runtime = await resolveFallbackRuntime(env);
   if (typeof runtime.pid === "number" && runtime.pid > 0) {
     await terminateGatewayProcessTree(runtime.pid, 300);
@@ -573,9 +594,22 @@ async function activateScheduledTask(params: {
 
   const taskName = resolveTaskName(params.env);
   const quotedScript = quoteSchtasksArg(params.scriptPath);
-  const baseArgs = ["/Create", "/F", "/SC", "ONLOGON", "/RL", "LIMITED", "/TN", taskName, "/TR", quotedScript];
+  const baseArgs = [
+    "/Create",
+    "/F",
+    "/SC",
+    "ONLOGON",
+    "/RL",
+    "LIMITED",
+    "/TN",
+    taskName,
+    "/TR",
+    quotedScript,
+  ];
   const taskUser = resolveTaskUser(params.env);
-  let create = await execSchtasks(taskUser ? [...baseArgs, "/RU", taskUser, "/NP", "/IT"] : baseArgs);
+  let create = await execSchtasks(
+    taskUser ? [...baseArgs, "/RU", taskUser, "/NP", "/IT"] : baseArgs,
+  );
   if (create.code !== 0 && taskUser) {
     create = await execSchtasks(baseArgs);
   }
@@ -615,7 +649,9 @@ async function activateScheduledTask(params: {
   );
 }
 
-export async function installScheduledTask(args: GatewayServiceInstallArgs): Promise<{ scriptPath: string }> {
+export async function installScheduledTask(
+  args: GatewayServiceInstallArgs,
+): Promise<{ scriptPath: string }> {
   const staged = await writeScheduledTaskScript(args);
   await activateScheduledTask({
     env: args.env,
@@ -626,7 +662,10 @@ export async function installScheduledTask(args: GatewayServiceInstallArgs): Pro
   return { scriptPath: staged.scriptPath };
 }
 
-export async function uninstallScheduledTask({ env, stdout }: GatewayServiceManageArgs): Promise<void> {
+export async function uninstallScheduledTask({
+  env,
+  stdout,
+}: GatewayServiceManageArgs): Promise<void> {
   await assertSchtasksAvailable();
   const taskName = resolveTaskName(env);
   const taskInstalled = await isRegisteredScheduledTask(env).catch(() => false);

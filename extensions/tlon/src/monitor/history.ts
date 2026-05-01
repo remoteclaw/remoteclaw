@@ -122,7 +122,9 @@ export async function fetchThreadHistory(
     // Format: /channels/v4/{nest}/posts/post/{parentId}/replies/newest/{count}.json
     // parentId needs @ud formatting (dots every 3 digits)
     const formattedParentId = formatUd(parentId);
-    runtime?.log?.(`[tlon] Thread history - parentId: ${parentId} -> formatted: ${formattedParentId}`);
+    runtime?.log?.(
+      `[tlon] Thread history - parentId: ${parentId} -> formatted: ${formattedParentId}`,
+    );
 
     const scryPath = `/channels/v4/${channelNest}/posts/post/id/${formattedParentId}/replies/newest/${count}.json`;
     runtime?.log?.(`[tlon] Fetching thread history: ${scryPath}`);

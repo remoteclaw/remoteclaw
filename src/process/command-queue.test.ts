@@ -317,7 +317,9 @@ describe("command queue", () => {
 
   it("rejects new enqueues with GatewayDrainingError after markGatewayDraining", async () => {
     markGatewayDraining();
-    await expect(enqueueCommand(async () => "blocked")).rejects.toBeInstanceOf(GatewayDrainingError);
+    await expect(enqueueCommand(async () => "blocked")).rejects.toBeInstanceOf(
+      GatewayDrainingError,
+    );
   });
 
   it("does not affect already-active tasks after markGatewayDraining", async () => {

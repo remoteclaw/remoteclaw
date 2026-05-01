@@ -35,7 +35,13 @@ const attestedRoot = path.join(repoRoot, "src/agents");
 
 // Matches the suffix list used by check-attestations.mjs so the two scripts
 // agree on which files under src/agents/ are attested-production modules.
-const extraTestSuffixes = [".test-helpers.ts", ".test-mocks.ts", ".mocks.ts", ".mocks.shared.ts", ".e2e-mocks.ts"];
+const extraTestSuffixes = [
+  ".test-helpers.ts",
+  ".test-mocks.ts",
+  ".mocks.ts",
+  ".mocks.shared.ts",
+  ".e2e-mocks.ts",
+];
 
 function classify(entry) {
   return entry.looksLikeStub ? "stub" : "live";
@@ -217,7 +223,13 @@ function renderAttestationBlock(exports) {
 
 async function processFile(filePath) {
   const content = await fs.readFile(filePath, "utf8");
-  const sourceFile = ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const sourceFile = ts.createSourceFile(
+    filePath,
+    content,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
 
   if (hasExistingAttestations(sourceFile)) {
     return { status: "skipped-existing", filePath };

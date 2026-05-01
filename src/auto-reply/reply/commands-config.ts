@@ -11,7 +11,11 @@ import {
   setConfigValueAtPath,
   unsetConfigValueAtPath,
 } from "../../config/config-paths.js";
-import { readConfigFileSnapshot, validateConfigObjectWithPlugins, writeConfigFile } from "../../config/config.js";
+import {
+  readConfigFileSnapshot,
+  validateConfigObjectWithPlugins,
+  writeConfigFile,
+} from "../../config/config.js";
 import {
   getConfigOverrides,
   resetConfigOverrides,
@@ -41,7 +45,8 @@ export const handleConfigCommand: CommandHandler = async (params, allowTextComma
   if (unauthorized) {
     return unauthorized;
   }
-  const allowInternalReadOnlyShow = configCommand.action === "show" && isInternalMessageChannel(params.command.channel);
+  const allowInternalReadOnlyShow =
+    configCommand.action === "show" && isInternalMessageChannel(params.command.channel);
   const nonOwner = allowInternalReadOnlyShow ? null : rejectNonOwnerCommand(params, "/config");
   if (nonOwner) {
     return nonOwner;
@@ -174,7 +179,9 @@ export const handleConfigCommand: CommandHandler = async (params, allowTextComma
     }
     await writeConfigFile(validated.config);
     const valueLabel =
-      typeof configCommand.value === "string" ? `"${configCommand.value}"` : JSON.stringify(configCommand.value);
+      typeof configCommand.value === "string"
+        ? `"${configCommand.value}"`
+        : JSON.stringify(configCommand.value);
     return {
       shouldContinue: false,
       reply: {
@@ -269,7 +276,9 @@ export const handleDebugCommand: CommandHandler = async (params, allowTextComman
       };
     }
     const valueLabel =
-      typeof debugCommand.value === "string" ? `"${debugCommand.value}"` : JSON.stringify(debugCommand.value);
+      typeof debugCommand.value === "string"
+        ? `"${debugCommand.value}"`
+        : JSON.stringify(debugCommand.value);
     return {
       shouldContinue: false,
       reply: {

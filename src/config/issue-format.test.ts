@@ -17,10 +17,12 @@ describe("config issue format", () => {
 
   it("formats issue lines with and without markers", () => {
     expect(formatConfigIssueLine({ path: "", message: "broken" }, "-")).toBe("- : broken");
-    expect(formatConfigIssueLine({ path: "", message: "broken" }, "-", { normalizeRoot: true })).toBe(
-      "- <root>: broken",
+    expect(
+      formatConfigIssueLine({ path: "", message: "broken" }, "-", { normalizeRoot: true }),
+    ).toBe("- <root>: broken");
+    expect(formatConfigIssueLine({ path: "gateway.bind", message: "invalid" }, "")).toBe(
+      "gateway.bind: invalid",
     );
-    expect(formatConfigIssueLine({ path: "gateway.bind", message: "invalid" }, "")).toBe("gateway.bind: invalid");
     expect(
       formatConfigIssueLines(
         [

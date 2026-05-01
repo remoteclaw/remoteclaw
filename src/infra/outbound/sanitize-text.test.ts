@@ -73,7 +73,9 @@ describe("sanitizeForPlainText", () => {
   });
 
   it("converts <li> to bullet points", () => {
-    expect(sanitizeForPlainText("<li>item one</li><li>item two</li>")).toBe("• item one\n• item two\n");
+    expect(sanitizeForPlainText("<li>item one</li><li>item two</li>")).toBe(
+      "• item one\n• item two\n",
+    );
   });
 
   // --- tag stripping ------------------------------------------------------
@@ -84,7 +86,9 @@ describe("sanitizeForPlainText", () => {
   });
 
   it("preserves angle-bracket autolinks", () => {
-    expect(sanitizeForPlainText("See <https://example.com/path?q=1> now")).toBe("See https://example.com/path?q=1 now");
+    expect(sanitizeForPlainText("See <https://example.com/path?q=1> now")).toBe(
+      "See https://example.com/path?q=1 now",
+    );
   });
 
   // --- passthrough --------------------------------------------------------

@@ -72,7 +72,9 @@ export function summarizeMSTeamsHtmlAttachments(
   };
 }
 
-export function buildMSTeamsAttachmentPlaceholder(attachments: MSTeamsAttachmentLike[] | undefined): string {
+export function buildMSTeamsAttachmentPlaceholder(
+  attachments: MSTeamsAttachmentLike[] | undefined,
+): string {
   const list = Array.isArray(attachments) ? attachments : [];
   if (list.length === 0) {
     return "";

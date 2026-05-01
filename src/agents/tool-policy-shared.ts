@@ -1,4 +1,8 @@
-import { CORE_TOOL_GROUPS, resolveCoreToolProfilePolicy, type ToolProfileId } from "./tool-catalog.js";
+import {
+  CORE_TOOL_GROUPS,
+  resolveCoreToolProfilePolicy,
+  type ToolProfileId,
+} from "./tool-catalog.js";
 
 /**
  * Runtime attestation (ADR 0005 H9). Declares the implementation status

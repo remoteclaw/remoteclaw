@@ -44,7 +44,9 @@ export type ResolvedBoundaryPath = {
   kind: ResolvedBoundaryPathKind;
 };
 
-export async function resolveBoundaryPath(params: ResolveBoundaryPathParams): Promise<ResolvedBoundaryPath> {
+export async function resolveBoundaryPath(
+  params: ResolveBoundaryPathParams,
+): Promise<ResolvedBoundaryPath> {
   const rootPath = path.resolve(params.rootPath);
   const absolutePath = path.resolve(params.absolutePath);
   const rootCanonicalPath = params.rootCanonicalPath
@@ -328,7 +330,9 @@ function readLexicalStat(params: {
   try {
     const stat = params.read(params.state.lexicalCursor);
     if (isPromiseLike<fs.Stats>(stat)) {
-      return Promise.resolve(stat).catch((error) => handleLexicalStatReadFailure({ ...params, error }));
+      return Promise.resolve(stat).catch((error) =>
+        handleLexicalStatReadFailure({ ...params, error }),
+      );
     }
     return stat;
   } catch (error) {
@@ -721,7 +725,9 @@ async function getPathKind(
   preserveFinalSymlink: boolean,
 ): Promise<{ exists: boolean; kind: ResolvedBoundaryPathKind }> {
   try {
-    const stat = preserveFinalSymlink ? await fsp.lstat(absolutePath) : await fsp.stat(absolutePath);
+    const stat = preserveFinalSymlink
+      ? await fsp.lstat(absolutePath)
+      : await fsp.stat(absolutePath);
     return { exists: true, kind: toResolvedKind(stat) };
   } catch (error) {
     if (isNotFoundPathError(error)) {
@@ -784,13 +790,21 @@ function assertInsideBoundary(params: {
   );
 }
 
-function pathEscapeError(params: { boundaryLabel: string; rootPath: string; absolutePath: string }): Error {
+function pathEscapeError(params: {
+  boundaryLabel: string;
+  rootPath: string;
+  absolutePath: string;
+}): Error {
   return new Error(
     `Path escapes ${params.boundaryLabel} (${shortPath(params.rootPath)}): ${shortPath(params.absolutePath)}`,
   );
 }
 
-function symlinkEscapeError(params: { boundaryLabel: string; rootCanonicalPath: string; symlinkPath: string }): Error {
+function symlinkEscapeError(params: {
+  boundaryLabel: string;
+  rootCanonicalPath: string;
+  symlinkPath: string;
+}): Error {
   return new Error(
     `Symlink escapes ${params.boundaryLabel} (${shortPath(params.rootCanonicalPath)}): ${shortPath(params.symlinkPath)}`,
   );

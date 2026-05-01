@@ -1,5 +1,9 @@
 import type { IncomingMessage } from "node:http";
-import type { GatewayAuthConfig, GatewayTailscaleMode, GatewayTrustedProxyConfig } from "../config/config.js";
+import type {
+  GatewayAuthConfig,
+  GatewayTailscaleMode,
+  GatewayTrustedProxyConfig,
+} from "../config/config.js";
 import { resolveSecretInputRef } from "../config/types.secrets.js";
 import { readTailscaleWhoisIdentity, type TailscaleWhoisIdentity } from "../infra/tailscale.js";
 import { safeEqualSecret } from "../security/secret-equal.js";
@@ -9,11 +13,21 @@ import {
   type RateLimitCheckResult,
 } from "./auth-rate-limit.js";
 import { resolveGatewayCredentialsFromValues } from "./credentials.js";
-import { isLoopbackAddress, resolveRequestClientIp, isTrustedProxyAddress, resolveClientIp } from "./net.js";
+import {
+  isLoopbackAddress,
+  resolveRequestClientIp,
+  isTrustedProxyAddress,
+  resolveClientIp,
+} from "./net.js";
 import { checkBrowserOrigin } from "./origin-check.js";
 
 export type ResolvedGatewayAuthMode = "none" | "token" | "password" | "trusted-proxy";
-export type ResolvedGatewayAuthModeSource = "override" | "config" | "password" | "token" | "default";
+export type ResolvedGatewayAuthModeSource =
+  | "override"
+  | "config"
+  | "password"
+  | "token"
+  | "default";
 
 export type ResolvedGatewayAuth = {
   mode: ResolvedGatewayAuthMode;
@@ -26,7 +40,14 @@ export type ResolvedGatewayAuth = {
 
 export type GatewayAuthResult = {
   ok: boolean;
-  method?: "none" | "token" | "password" | "tailscale" | "device-token" | "bootstrap-token" | "trusted-proxy";
+  method?:
+    | "none"
+    | "token"
+    | "password"
+    | "tailscale"
+    | "device-token"
+    | "bootstrap-token"
+    | "trusted-proxy";
   user?: string;
   reason?: string;
   /** Present when the request was blocked by the rate limiter. */
@@ -144,7 +165,11 @@ function hasTailscaleProxyHeaders(req?: IncomingMessage): boolean {
   if (!req) {
     return false;
   }
-  return Boolean(req.headers["x-forwarded-for"] && req.headers["x-forwarded-proto"] && req.headers["x-forwarded-host"]);
+  return Boolean(
+    req.headers["x-forwarded-for"] &&
+    req.headers["x-forwarded-proto"] &&
+    req.headers["x-forwarded-host"],
+  );
 }
 
 function isTailscaleProxyRequest(req?: IncomingMessage): boolean {
@@ -250,7 +275,8 @@ export function resolveGatewayAuth(params: {
   }
 
   const allowTailscale =
-    authConfig.allowTailscale ?? (params.tailscaleMode === "serve" && mode !== "password" && mode !== "trusted-proxy");
+    authConfig.allowTailscale ??
+    (params.tailscaleMode === "serve" && mode !== "password" && mode !== "trusted-proxy");
 
   return {
     mode,
@@ -262,7 +288,10 @@ export function resolveGatewayAuth(params: {
   };
 }
 
-export function assertGatewayAuthConfigured(auth: ResolvedGatewayAuth, rawAuthConfig?: GatewayAuthConfig | null): void {
+export function assertGatewayAuthConfigured(
+  auth: ResolvedGatewayAuth,
+  rawAuthConfig?: GatewayAuthConfig | null,
+): void {
   if (auth.mode === "token" && !auth.token) {
     if (auth.allowTailscale) {
       return;
@@ -401,7 +430,9 @@ function authorizeTokenAuth(params: {
   return { ok: true, method: "token" };
 }
 
-export async function authorizeGatewayConnect(params: AuthorizeGatewayConnectParams): Promise<GatewayAuthResult> {
+export async function authorizeGatewayConnect(
+  params: AuthorizeGatewayConnectParams,
+): Promise<GatewayAuthResult> {
   const { auth, connectAuth, req, trustedProxies } = params;
   const tailscaleWhois = params.tailscaleWhois ?? readTailscaleWhoisIdentity;
   const authSurface = params.authSurface ?? "http";
@@ -412,7 +443,11 @@ export async function authorizeGatewayConnect(params: AuthorizeGatewayConnectPar
     resolveRequestClientIp(req, trustedProxies, params.allowRealIpFallback === true) ??
     req?.socket?.remoteAddress;
   const rateLimitScope = params.rateLimitScope ?? AUTH_RATE_LIMIT_SCOPE_SHARED_SECRET;
-  const localDirect = isLocalDirectRequest(req, trustedProxies, params.allowRealIpFallback === true);
+  const localDirect = isLocalDirectRequest(
+    req,
+    trustedProxies,
+    params.allowRealIpFallback === true,
+  );
 
   if (auth.mode === "trusted-proxy") {
     // Same-host reverse proxies may forward identity headers without a full

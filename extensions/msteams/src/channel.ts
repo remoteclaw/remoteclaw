@@ -2,7 +2,11 @@ import {
   collectAllowlistProviderRestrictSendersWarnings,
   formatAllowFromLowercase,
 } from "remoteclaw/plugin-sdk/compat";
-import type { ChannelMessageActionName, ChannelPlugin, RemoteClawConfig } from "remoteclaw/plugin-sdk/msteams";
+import type {
+  ChannelMessageActionName,
+  ChannelPlugin,
+  RemoteClawConfig,
+} from "remoteclaw/plugin-sdk/msteams";
 import {
   buildProbeChannelStatusSummary,
   buildRuntimeAccountStatusSnapshot,
@@ -228,8 +232,10 @@ export const msteamsPlugin: ChannelPlugin<ResolvedMSTeamsAccount> = {
         .slice(0, limit && limit > 0 ? limit : undefined)
         .map((id) => ({ kind: "group", id }) as const);
     },
-    listPeersLive: async ({ cfg, query, limit }) => listMSTeamsDirectoryPeersLive({ cfg, query, limit }),
-    listGroupsLive: async ({ cfg, query, limit }) => listMSTeamsDirectoryGroupsLive({ cfg, query, limit }),
+    listPeersLive: async ({ cfg, query, limit }) =>
+      listMSTeamsDirectoryPeersLive({ cfg, query, limit }),
+    listGroupsLive: async ({ cfg, query, limit }) =>
+      listMSTeamsDirectoryGroupsLive({ cfg, query, limit }),
   },
   resolver: {
     resolveTargets: async ({ cfg, inputs, kind, runtime }) => {
@@ -362,14 +368,18 @@ export const msteamsPlugin: ChannelPlugin<ResolvedMSTeamsAccount> = {
   actions: {
     listActions: ({ cfg }) => {
       const enabled =
-        cfg.channels?.msteams?.enabled !== false && Boolean(resolveMSTeamsCredentials(cfg.channels?.msteams));
+        cfg.channels?.msteams?.enabled !== false &&
+        Boolean(resolveMSTeamsCredentials(cfg.channels?.msteams));
       if (!enabled) {
         return [];
       }
       return ["poll"] satisfies ChannelMessageActionName[];
     },
     supportsCards: ({ cfg }) => {
-      return cfg.channels?.msteams?.enabled !== false && Boolean(resolveMSTeamsCredentials(cfg.channels?.msteams));
+      return (
+        cfg.channels?.msteams?.enabled !== false &&
+        Boolean(resolveMSTeamsCredentials(cfg.channels?.msteams))
+      );
     },
     handleAction: async (ctx) => {
       // Handle send action with card parameter

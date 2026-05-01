@@ -39,7 +39,11 @@ function escapeSlackMrkdwnContent(text: string): string {
   const out: string[] = [];
   let lastIndex = 0;
 
-  for (let match = SLACK_ANGLE_TOKEN_RE.exec(text); match; match = SLACK_ANGLE_TOKEN_RE.exec(text)) {
+  for (
+    let match = SLACK_ANGLE_TOKEN_RE.exec(text);
+    match;
+    match = SLACK_ANGLE_TOKEN_RE.exec(text)
+  ) {
     const matchIndex = match.index ?? 0;
     out.push(escapeSlackMrkdwnSegment(text.slice(lastIndex, matchIndex)));
     const token = match[0] ?? "";
@@ -78,7 +82,8 @@ function buildSlackLink(link: MarkdownLinkSpan, text: string) {
   const label = text.slice(link.start, link.end);
   const trimmedLabel = label.trim();
   const comparableHref = href.startsWith("mailto:") ? href.slice("mailto:".length) : href;
-  const useMarkup = trimmedLabel.length > 0 && trimmedLabel !== href && trimmedLabel !== comparableHref;
+  const useMarkup =
+    trimmedLabel.length > 0 && trimmedLabel !== href && trimmedLabel !== comparableHref;
   if (!useMarkup) {
     return null;
   }
@@ -109,7 +114,10 @@ function buildSlackRenderOptions() {
   };
 }
 
-export function markdownToSlackMrkdwn(markdown: string, options: SlackMarkdownOptions = {}): string {
+export function markdownToSlackMrkdwn(
+  markdown: string,
+  options: SlackMarkdownOptions = {},
+): string {
   const ir = markdownToIR(markdown ?? "", {
     linkify: false,
     autolink: false,

@@ -112,7 +112,9 @@ describe("installUnhandledRejectionHandler - fatal detection", () => {
       ];
 
       // Wrapped fetch-failed (e.g. Discord: "Failed to get gateway information from Discord: fetch failed")
-      transientCases.push(new Error("Failed to get gateway information from Discord: fetch failed"));
+      transientCases.push(
+        new Error("Failed to get gateway information from Discord: fetch failed"),
+      );
 
       for (const transientErr of transientCases) {
         expectExitCodeFromUnhandled(transientErr, []);
@@ -158,9 +160,12 @@ describe("installUnhandledRejectionHandler - fatal detection", () => {
     });
 
     it("exits on non-transient Slack request errors", () => {
-      const slackErr = Object.assign(new Error("A request error occurred: invalid request payload"), {
-        code: "slack_webapi_request_error",
-      });
+      const slackErr = Object.assign(
+        new Error("A request error occurred: invalid request payload"),
+        {
+          code: "slack_webapi_request_error",
+        },
+      );
 
       expectExitCodeFromUnhandled(slackErr, [1]);
     });

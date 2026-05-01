@@ -1,6 +1,9 @@
 import type { GatewayBrowserClient } from "../gateway.ts";
 import type { PresenceEntry } from "../types.ts";
-import { formatMissingOperatorReadScopeMessage, isMissingOperatorReadScopeError } from "./scope-errors.ts";
+import {
+  formatMissingOperatorReadScopeMessage,
+  isMissingOperatorReadScopeError,
+} from "./scope-errors.ts";
 
 export type PresenceState = {
   client: GatewayBrowserClient | null;

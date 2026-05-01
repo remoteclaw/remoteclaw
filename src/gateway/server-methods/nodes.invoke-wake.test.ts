@@ -11,9 +11,9 @@ type MockNodeCommandPolicyParams = {
 const mocks = vi.hoisted(() => ({
   loadConfig: vi.fn(() => ({})),
   resolveNodeCommandAllowlist: vi.fn<() => Set<string>>(() => new Set()),
-  isNodeCommandAllowed: vi.fn<(params: MockNodeCommandPolicyParams) => { ok: true } | { ok: false; reason: string }>(
-    () => ({ ok: true }),
-  ),
+  isNodeCommandAllowed: vi.fn<
+    (params: MockNodeCommandPolicyParams) => { ok: true } | { ok: false; reason: string }
+  >(() => ({ ok: true })),
   sanitizeNodeInvokeParamsForForwarding: vi.fn(({ rawParams }: { rawParams: unknown }) => ({
     ok: true,
     params: rawParams,
@@ -272,10 +272,12 @@ describe("node.invoke APNs wake path", () => {
     mocks.isNodeCommandAllowed.mockClear();
     mocks.isNodeCommandAllowed.mockReturnValue({ ok: true });
     mocks.sanitizeNodeInvokeParamsForForwarding.mockClear();
-    mocks.sanitizeNodeInvokeParamsForForwarding.mockImplementation(({ rawParams }: { rawParams: unknown }) => ({
-      ok: true,
-      params: rawParams,
-    }));
+    mocks.sanitizeNodeInvokeParamsForForwarding.mockImplementation(
+      ({ rawParams }: { rawParams: unknown }) => ({
+        ok: true,
+        params: rawParams,
+      }),
+    );
     mocks.loadApnsRegistration.mockClear();
     mocks.clearApnsRegistrationIfCurrent.mockClear();
     mocks.resolveApnsAuthConfigFromEnv.mockClear();
@@ -506,7 +508,8 @@ describe("node.invoke APNs wake path", () => {
       ],
     });
 
-    const queuedActionId = (pullCall?.[1] as { actions?: Array<{ id?: string }> } | undefined)?.actions?.[0]?.id;
+    const queuedActionId = (pullCall?.[1] as { actions?: Array<{ id?: string }> } | undefined)
+      ?.actions?.[0]?.id;
     expect(queuedActionId).toBeTruthy();
 
     const ackRespond = await ackPending("ios-node-queued", [queuedActionId!], ["canvas.navigate"]);
@@ -568,7 +571,10 @@ describe("node.invoke APNs wake path", () => {
       },
     });
 
-    const preChangePullRespond = await pullPending("ios-node-policy", ["camera.snap", "canvas.navigate"]);
+    const preChangePullRespond = await pullPending("ios-node-policy", [
+      "camera.snap",
+      "canvas.navigate",
+    ]);
     const preChangePullCall = preChangePullRespond.mock.calls[0] as RespondCall | undefined;
     expect(preChangePullCall?.[0]).toBe(true);
     expect(preChangePullCall?.[1]).toMatchObject({

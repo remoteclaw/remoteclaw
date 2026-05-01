@@ -24,7 +24,10 @@ export { createAccountStatusSink, runPassiveAccountLifecycle } from "./channel-l
 export { resolveGoogleChatGroupRequireMention } from "../channels/plugins/group-mentions.js";
 export { formatPairingApproveHint } from "../channels/plugins/helpers.js";
 export { resolveChannelMediaMaxBytes } from "../channels/plugins/media-limits.js";
-export type { ChannelOnboardingAdapter, ChannelOnboardingDmPolicy } from "../channels/plugins/onboarding-types.js";
+export type {
+  ChannelOnboardingAdapter,
+  ChannelOnboardingDmPolicy,
+} from "../channels/plugins/onboarding-types.js";
 export {
   addWildcardAllowFrom,
   mergeAllowFromEntries,
@@ -72,7 +75,10 @@ export type { WizardPrompter } from "../wizard/prompts.js";
 export { resolveInboundRouteEnvelopeBuilderWithRuntime } from "./inbound-envelope.js";
 export { createScopedPairingAccess } from "./pairing-access.js";
 export { issuePairingChallenge } from "../pairing/pairing-challenge.js";
-export { evaluateGroupRouteAccessForPolicy, resolveSenderScopedGroupPolicy } from "./group-access.js";
+export {
+  evaluateGroupRouteAccessForPolicy,
+  resolveSenderScopedGroupPolicy,
+} from "./group-access.js";
 export { extractToolSend } from "./tool-send.js";
 export { resolveWebhookPath } from "./webhook-path.js";
 export type { WebhookInFlightLimiter } from "./webhook-request-guards.js";

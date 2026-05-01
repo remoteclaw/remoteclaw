@@ -1,7 +1,13 @@
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
 import { killSessionRun } from "../../agents/session-run-registry.js";
-import { listSubagentRunsForController, markSubagentRunTerminated } from "../../agents/subagent-registry.js";
-import { resolveInternalSessionKey, resolveMainSessionAlias } from "../../agents/tools/sessions-helpers.js";
+import {
+  listSubagentRunsForController,
+  markSubagentRunTerminated,
+} from "../../agents/subagent-registry.js";
+import {
+  resolveInternalSessionKey,
+  resolveMainSessionAlias,
+} from "../../agents/tools/sessions-helpers.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import {
   loadSessionStore,
@@ -195,7 +201,10 @@ function resolveAbortTargetKey(ctx: MsgContext): string | undefined {
   return sessionKey || undefined;
 }
 
-function normalizeRequesterSessionKey(cfg: RemoteClawConfig, key: string | undefined): string | undefined {
+function normalizeRequesterSessionKey(
+  cfg: RemoteClawConfig,
+  key: string | undefined,
+): string | undefined {
   const cleaned = key?.trim();
   if (!cleaned) {
     return undefined;
@@ -204,7 +213,10 @@ function normalizeRequesterSessionKey(cfg: RemoteClawConfig, key: string | undef
   return resolveInternalSessionKey({ key: cleaned, alias, mainKey });
 }
 
-export function stopSubagentsForRequester(params: { cfg: RemoteClawConfig; requesterSessionKey?: string }): {
+export function stopSubagentsForRequester(params: {
+  cfg: RemoteClawConfig;
+  requesterSessionKey?: string;
+}): {
   stopped: number;
 } {
   const requesterKey = normalizeRequesterSessionKey(params.cfg, params.requesterSessionKey);
@@ -303,7 +315,9 @@ export async function tryFastAbortFromMessage(params: {
     const acpResolution = { kind: "none" as const };
     if (acpResolution.kind !== "none") {
       try {
-        await /* eslint-disable-next-line @typescript-eslint/no-explicit-any */ (undefined as any)?.cancelSession({
+        await /* eslint-disable-next-line @typescript-eslint/no-explicit-any */ (
+          undefined as any
+        )?.cancelSession({
           cfg,
           sessionKey: resolvedTargetKey,
           reason: "fast-abort",

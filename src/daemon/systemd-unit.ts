@@ -21,7 +21,9 @@ function renderEnvLines(env: Record<string, string | undefined> | undefined): st
   if (!env) {
     return [];
   }
-  const entries = Object.entries(env).filter(([, value]) => typeof value === "string" && value.trim());
+  const entries = Object.entries(env).filter(
+    ([, value]) => typeof value === "string" && value.trim(),
+  );
   if (entries.length === 0) {
     return [];
   }
@@ -43,7 +45,9 @@ export function buildSystemdUnit({
   const descriptionValue = description?.trim() || "RemoteClaw Gateway";
   assertNoSystemdLineBreaks(descriptionValue, "Systemd Description");
   const descriptionLine = `Description=${descriptionValue}`;
-  const workingDirLine = workingDirectory ? `WorkingDirectory=${systemdEscapeArg(workingDirectory)}` : null;
+  const workingDirLine = workingDirectory
+    ? `WorkingDirectory=${systemdEscapeArg(workingDirectory)}`
+    : null;
   const envLines = renderEnvLines(environment);
   return [
     "[Unit]",

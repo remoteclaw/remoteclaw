@@ -4,7 +4,9 @@ import { resolveMatrixRoomConfig } from "./matrix/monitor/rooms.js";
 import type { CoreConfig } from "./types.js";
 
 function stripLeadingPrefixCaseInsensitive(value: string, prefix: string): string {
-  return value.toLowerCase().startsWith(prefix.toLowerCase()) ? value.slice(prefix.length).trim() : value;
+  return value.toLowerCase().startsWith(prefix.toLowerCase())
+    ? value.slice(prefix.length).trim()
+    : value;
 }
 
 function resolveMatrixRoomConfigForGroup(params: ChannelGroupContext) {
@@ -42,7 +44,9 @@ export function resolveMatrixGroupRequireMention(params: ChannelGroupContext): b
   return true;
 }
 
-export function resolveMatrixGroupToolPolicy(params: ChannelGroupContext): GroupToolPolicyConfig | undefined {
+export function resolveMatrixGroupToolPolicy(
+  params: ChannelGroupContext,
+): GroupToolPolicyConfig | undefined {
   const resolved = resolveMatrixRoomConfigForGroup(params);
   return resolved?.tools;
 }

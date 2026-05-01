@@ -9,7 +9,11 @@ const formatKv = (line: string, rich: boolean) => {
   const value = line.slice(idx + 2);
 
   const valueColor =
-    key === "Gateway target" || key === "Config" ? theme.command : key === "Source" ? theme.muted : theme.info;
+    key === "Gateway target" || key === "Config"
+      ? theme.command
+      : key === "Source"
+        ? theme.muted
+        : theme.info;
 
   return `${colorize(rich, theme.muted, `${key}:`)} ${colorize(rich, valueColor, value)}`;
 };
@@ -29,7 +33,9 @@ export function formatHealthCheckFailure(err: unknown, opts: { rich?: boolean } 
     .filter(Boolean);
   const detailsIdx = lines.findIndex((l) => l.startsWith("Gateway target: "));
 
-  const summaryLines = (detailsIdx >= 0 ? lines.slice(0, detailsIdx) : lines).map((l) => l.trim()).filter(Boolean);
+  const summaryLines = (detailsIdx >= 0 ? lines.slice(0, detailsIdx) : lines)
+    .map((l) => l.trim())
+    .filter(Boolean);
   const detailLines = detailsIdx >= 0 ? lines.slice(detailsIdx) : [];
 
   const summary = summaryLines.length > 0 ? summaryLines.join(" ") : message;

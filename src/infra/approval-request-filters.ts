@@ -6,7 +6,10 @@ export type ApprovalRequestFilterInput = {
   sessionKey?: string | null;
 };
 
-export function matchesApprovalRequestSessionFilter(sessionKey: string, patterns: string[]): boolean {
+export function matchesApprovalRequestSessionFilter(
+  sessionKey: string,
+  patterns: string[],
+): boolean {
   return patterns.some((pattern) => {
     if (sessionKey.includes(pattern)) {
       return true;

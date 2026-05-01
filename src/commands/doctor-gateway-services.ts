@@ -65,7 +65,10 @@ function extractDetailPath(detail: string, prefix: string): string | null {
   return value.length > 0 ? value : null;
 }
 
-async function cleanupLegacyLaunchdService(params: { label: string; plistPath: string }): Promise<string | null> {
+async function cleanupLegacyLaunchdService(params: {
+  label: string;
+  plistPath: string;
+}): Promise<string | null> {
   const domain = typeof process.getuid === "function" ? `gui/${process.getuid()}` : "gui/501";
   await execFileAsync("launchctl", ["bootout", domain, params.plistPath]).catch(() => undefined);
   await execFileAsync("launchctl", ["unload", params.plistPath]).catch(() => undefined);
@@ -226,13 +229,16 @@ export async function maybeRepairGatewayServiceConfig(
   if (tokenRefConfigured && serviceToken) {
     audit.issues.push({
       code: SERVICE_AUDIT_CODES.gatewayTokenMismatch,
-      message: "Gateway service REMOTECLAW_GATEWAY_TOKEN should be unset when gateway.auth.token is SecretRef-managed",
+      message:
+        "Gateway service REMOTECLAW_GATEWAY_TOKEN should be unset when gateway.auth.token is SecretRef-managed",
       detail: "service token is stale",
       level: "recommended",
     });
   }
   const needsNodeRuntime = needsNodeRuntimeMigration(audit.issues);
-  const systemNodeInfo = needsNodeRuntime ? await resolveSystemNodeInfo({ env: process.env }) : null;
+  const systemNodeInfo = needsNodeRuntime
+    ? await resolveSystemNodeInfo({ env: process.env })
+    : null;
   const systemNodePath = systemNodeInfo?.supported ? systemNodeInfo.path : null;
   if (needsNodeRuntime && !systemNodePath) {
     const warning = renderSystemNodeWarning(systemNodeInfo);
@@ -276,7 +282,9 @@ export async function maybeRepairGatewayServiceConfig(
 
   note(
     audit.issues
-      .map((issue) => (issue.detail ? `- ${issue.message} (${issue.detail})` : `- ${issue.message}`))
+      .map((issue) =>
+        issue.detail ? `- ${issue.message} (${issue.detail})` : `- ${issue.message}`,
+      )
       .join("\n"),
     "Gateway service config",
   );
@@ -285,7 +293,10 @@ export async function maybeRepairGatewayServiceConfig(
   const needsAggressive = aggressiveIssues.length > 0;
 
   if (needsAggressive && !prompter.shouldForce) {
-    note("Custom or unexpected service edits detected. Rerun with --force to overwrite.", "Gateway service config");
+    note(
+      "Custom or unexpected service edits detected. Rerun with --force to overwrite.",
+      "Gateway service config",
+    );
   }
 
   const repair = needsAggressive
@@ -303,7 +314,9 @@ export async function maybeRepairGatewayServiceConfig(
   const serviceEmbeddedToken = readEmbeddedGatewayToken(command);
   const gatewayTokenForRepair = expectedGatewayToken ?? serviceEmbeddedToken;
   const configuredGatewayToken =
-    typeof cfg.gateway?.auth?.token === "string" ? cfg.gateway.auth.token.trim() || undefined : undefined;
+    typeof cfg.gateway?.auth?.token === "string"
+      ? cfg.gateway.auth.token.trim() || undefined
+      : undefined;
   let cfgForServiceInstall = cfg;
   if (!tokenRefConfigured && !configuredGatewayToken && gatewayTokenForRepair) {
     const nextCfg: RemoteClawConfig = {
@@ -379,7 +392,8 @@ export async function maybeScanExtraGatewayServices(
     });
     if (shouldRemove) {
       const removed: string[] = [];
-      const { darwinUserServices, linuxUserServices, failed } = classifyLegacyServices(legacyServices);
+      const { darwinUserServices, linuxUserServices, failed } =
+        classifyLegacyServices(legacyServices);
 
       if (darwinUserServices.length > 0) {
         const result = await cleanupLegacyDarwinServices(darwinUserServices);

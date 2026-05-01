@@ -23,10 +23,17 @@ import {
   sendMattermostTyping,
   type MattermostChannel,
 } from "./client.js";
-import { authorizeMattermostCommandInvocation, normalizeMattermostAllowList } from "./monitor-auth.js";
+import {
+  authorizeMattermostCommandInvocation,
+  normalizeMattermostAllowList,
+} from "./monitor-auth.js";
 import { deliverMattermostReplyPayload } from "./reply-delivery.js";
 import { sendMessageMattermost } from "./send.js";
-import { parseSlashCommandPayload, resolveCommandText, type MattermostSlashCommandResponse } from "./slash-commands.js";
+import {
+  parseSlashCommandPayload,
+  resolveCommandText,
+  type MattermostSlashCommandResponse,
+} from "./slash-commands.js";
 
 type SlashHttpHandlerParams = {
   account: ResolvedMattermostAccount;
@@ -60,7 +67,11 @@ function readBody(req: IncomingMessage, maxBytes: number): Promise<string> {
   });
 }
 
-function sendJsonResponse(res: ServerResponse, status: number, body: MattermostSlashCommandResponse) {
+function sendJsonResponse(
+  res: ServerResponse,
+  status: number,
+  body: MattermostSlashCommandResponse,
+) {
   res.statusCode = status;
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.end(JSON.stringify(body));
@@ -259,7 +270,11 @@ export function createSlashCommandHttpHandler(params: SlashHttpHandlerParams) {
     });
 
     if (!auth.ok) {
-      sendJsonResponse(res, 200, auth.denyResponse ?? { response_type: "ephemeral", text: "Unauthorized." });
+      sendJsonResponse(
+        res,
+        200,
+        auth.denyResponse ?? { response_type: "ephemeral", text: "Unauthorized." },
+      );
       return;
     }
 
@@ -358,7 +373,9 @@ async function handleSlashCommandAsync(params: {
   });
 
   const fromLabel =
-    kind === "direct" ? `Mattermost DM from ${senderName}` : `Mattermost message in ${roomLabel} from ${senderName}`;
+    kind === "direct"
+      ? `Mattermost DM from ${senderName}`
+      : `Mattermost message in ${roomLabel} from ${senderName}`;
 
   const to = kind === "direct" ? `user:${senderId}` : `channel:${channelId}`;
 
@@ -421,28 +438,29 @@ async function handleSlashCommandAsync(params: {
     },
   });
 
-  const { dispatcher, replyOptions, markDispatchIdle } = core.channel.reply.createReplyDispatcherWithTyping({
-    ...prefixOptions,
-    humanDelay: core.channel.reply.resolveHumanDelayConfig(cfg, route.agentId),
-    deliver: async (payload: ReplyPayload) => {
-      await deliverMattermostReplyPayload({
-        core,
-        cfg,
-        payload,
-        to,
-        accountId: account.accountId,
-        agentId: route.agentId,
-        textLimit,
-        tableMode,
-        sendMessage: sendMessageMattermost,
-      });
-      runtime.log?.(`delivered slash reply to ${to}`);
-    },
-    onError: (err, info) => {
-      runtime.error?.(`mattermost slash ${info.kind} reply failed: ${String(err)}`);
-    },
-    onReplyStart: typingCallbacks.onReplyStart,
-  });
+  const { dispatcher, replyOptions, markDispatchIdle } =
+    core.channel.reply.createReplyDispatcherWithTyping({
+      ...prefixOptions,
+      humanDelay: core.channel.reply.resolveHumanDelayConfig(cfg, route.agentId),
+      deliver: async (payload: ReplyPayload) => {
+        await deliverMattermostReplyPayload({
+          core,
+          cfg,
+          payload,
+          to,
+          accountId: account.accountId,
+          agentId: route.agentId,
+          textLimit,
+          tableMode,
+          sendMessage: sendMessageMattermost,
+        });
+        runtime.log?.(`delivered slash reply to ${to}`);
+      },
+      onError: (err, info) => {
+        runtime.error?.(`mattermost slash ${info.kind} reply failed: ${String(err)}`);
+      },
+      onReplyStart: typingCallbacks.onReplyStart,
+    });
 
   await core.channel.reply.withReplyDispatcher({
     dispatcher,
@@ -456,7 +474,8 @@ async function handleSlashCommandAsync(params: {
         dispatcher,
         replyOptions: {
           ...replyOptions,
-          disableBlockStreaming: typeof account.blockStreaming === "boolean" ? !account.blockStreaming : undefined,
+          disableBlockStreaming:
+            typeof account.blockStreaming === "boolean" ? !account.blockStreaming : undefined,
         },
       }),
   });

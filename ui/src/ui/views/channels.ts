@@ -83,7 +83,9 @@ export function renderChannels(props: ChannelsProps) {
         </div>
       </div>
       ${
-        props.lastError ? html`<div class="callout danger" style="margin-top: 12px;">${props.lastError}</div>` : nothing
+        props.lastError
+          ? html`<div class="callout danger" style="margin-top: 12px;">${props.lastError}</div>`
+          : nothing
       }
       <pre class="code-block" style="margin-top: 12px;">
 ${props.snapshot ? JSON.stringify(props.snapshot, null, 2) : "No snapshot yet."}
@@ -153,8 +155,10 @@ function renderChannel(key: ChannelKey, props: ChannelsProps, data: ChannelsChan
       const nostrAccounts = data.channelAccounts?.nostr ?? [];
       const primaryAccount = nostrAccounts[0];
       const accountId = primaryAccount?.accountId ?? "default";
-      const profile = (primaryAccount as { profile?: NostrProfile | null } | undefined)?.profile ?? null;
-      const showForm = props.nostrProfileAccountId === accountId ? props.nostrProfileFormState : null;
+      const profile =
+        (primaryAccount as { profile?: NostrProfile | null } | undefined)?.profile ?? null;
+      const showForm =
+        props.nostrProfileAccountId === accountId ? props.nostrProfileFormState : null;
       const profileFormCallbacks = showForm
         ? {
             onFieldChange: props.onNostrProfileFieldChange,
@@ -186,7 +190,8 @@ function renderGenericChannelCard(
 ) {
   const label = resolveChannelLabel(props.snapshot, key);
   const displayState = resolveChannelDisplayState(key, props);
-  const lastError = typeof displayState.status?.lastError === "string" ? displayState.status.lastError : undefined;
+  const lastError =
+    typeof displayState.status?.lastError === "string" ? displayState.status.lastError : undefined;
   const accounts = channelAccounts[key] ?? [];
   const accountCountLabel = renderChannelAccountCount(key, channelAccounts);
 
@@ -225,7 +230,9 @@ function renderGenericChannelCard(
   `;
 }
 
-function resolveChannelMetaMap(snapshot: ChannelsStatusSnapshot | null): Record<string, ChannelUiMetaEntry> {
+function resolveChannelMetaMap(
+  snapshot: ChannelsStatusSnapshot | null,
+): Record<string, ChannelUiMetaEntry> {
   if (!snapshot?.channelMeta?.length) {
     return {};
   }

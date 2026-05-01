@@ -69,7 +69,10 @@ export function resolveSessionDisplayDefaults(_cfg: RemoteClawConfig): SessionDi
 
 export function resolveSessionDisplayModel(
   cfg: RemoteClawConfig,
-  row: Pick<SessionDisplayRow, "key" | "model" | "modelProvider" | "modelOverride" | "providerOverride">,
+  row: Pick<
+    SessionDisplayRow,
+    "key" | "model" | "modelProvider" | "modelOverride" | "providerOverride"
+  >,
   defaults: SessionDisplayDefaults,
 ): string {
   const resolved = resolveSessionModelRef(cfg, row, parseAgentSessionKey(row.key)?.agentId);
@@ -103,7 +106,12 @@ export function formatSessionModelCell(model: string | null | undefined, rich: b
 export function formatSessionFlagsCell(
   row: Pick<
     SessionDisplayRow,
-    "verboseLevel" | "responseUsage" | "groupActivation" | "systemSent" | "abortedLastRun" | "sessionId"
+    | "verboseLevel"
+    | "responseUsage"
+    | "groupActivation"
+    | "systemSent"
+    | "abortedLastRun"
+    | "sessionId"
   >,
   rich: boolean,
 ): string {

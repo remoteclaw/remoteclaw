@@ -15,7 +15,9 @@ describe("inbound-path-policy", () => {
   }
 
   function expectInboundPathAllowedCase(filePath: string, expected: boolean) {
-    expect(isInboundPathAllowed({ filePath, roots: ["/Users/*/Library/Messages/Attachments"] })).toBe(expected);
+    expect(
+      isInboundPathAllowed({ filePath, roots: ["/Users/*/Library/Messages/Attachments"] }),
+    ).toBe(expected);
   }
 
   function expectResolvedIMessageRootsCase(resolve: () => string[], expected: readonly string[]) {
@@ -72,7 +74,10 @@ describe("inbound-path-policy", () => {
       name: "normalizes and de-duplicates merged roots",
       run: () =>
         expectMergedInboundPathRootsCase({
-          defaults: ["/Users/*/Library/Messages/Attachments/", "/Users/*/Library/Messages/Attachments"],
+          defaults: [
+            "/Users/*/Library/Messages/Attachments/",
+            "/Users/*/Library/Messages/Attachments",
+          ],
           additions: ["/Volumes/relay/attachments"],
           expected: ["/Users/*/Library/Messages/Attachments", "/Volumes/relay/attachments"],
         }),
@@ -89,7 +94,8 @@ describe("inbound-path-policy", () => {
       name: "resolves configured remote attachment roots with account overrides",
       run: () =>
         expectResolvedIMessageRootsCase(
-          () => resolveIMessageRemoteAttachmentRoots({ cfg: accountOverrideCfg, accountId: "work" }),
+          () =>
+            resolveIMessageRemoteAttachmentRoots({ cfg: accountOverrideCfg, accountId: "work" }),
           [
             "/srv/work/attachments",
             "/Volumes/shared/imessage",

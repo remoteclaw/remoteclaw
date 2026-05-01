@@ -125,7 +125,9 @@ export function getCacheStats(): { count: number; oldestAt?: string; newestAt?: 
   if (stickers.length === 0) {
     return { count: 0 };
   }
-  const sorted = [...stickers].toSorted((a, b) => new Date(a.cachedAt).getTime() - new Date(b.cachedAt).getTime());
+  const sorted = [...stickers].toSorted(
+    (a, b) => new Date(a.cachedAt).getTime() - new Date(b.cachedAt).getTime(),
+  );
   return {
     count: stickers.length,
     oldestAt: sorted[0]?.cachedAt,
@@ -135,8 +137,9 @@ export function getCacheStats(): { count: number; oldestAt?: string; newestAt?: 
 
 const STICKER_DESCRIPTION_PROMPT =
   "Describe this sticker image in 1-2 sentences. Focus on what the sticker depicts (character, object, action, emotion). Be concise and objective.";
-let imageRuntimePromise: Promise<typeof import("../../../src/media-understanding/providers/image-runtime.js")> | null =
-  null;
+let imageRuntimePromise: Promise<
+  typeof import("../../../src/media-understanding/providers/image-runtime.js")
+> | null = null;
 
 function loadImageRuntime() {
   imageRuntimePromise ??= import("../../../src/media-understanding/providers/image-runtime.js");
@@ -171,7 +174,10 @@ export async function describeStickerImage(params: DescribeStickerParams): Promi
   };
 
   let resolved = null as { provider: string; model?: string } | null;
-  if (AUTO_IMAGE_KEY_PROVIDERS.includes(activeModel.provider) && (await hasProviderKey(activeModel.provider))) {
+  if (
+    AUTO_IMAGE_KEY_PROVIDERS.includes(activeModel.provider) &&
+    (await hasProviderKey(activeModel.provider))
+  ) {
     resolved = activeModel;
   }
 

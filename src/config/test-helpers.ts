@@ -71,7 +71,9 @@ export async function withEnvOverride<T>(
 }
 
 export function buildWebSearchProviderConfig(params: {
-  provider: NonNullable<NonNullable<NonNullable<NonNullable<RemoteClawConfig["tools"]>["web"]>["search"]>["provider"]>;
+  provider: NonNullable<
+    NonNullable<NonNullable<NonNullable<RemoteClawConfig["tools"]>["web"]>["search"]>["provider"]
+  >;
   enabled?: boolean;
   providerConfig?: Record<string, unknown>;
 }): Record<string, unknown> {

@@ -213,7 +213,8 @@ export function updateSystemPresence(payload: SystemPresencePayload): SystemPres
     deviceFamily: payload.deviceFamily ?? existing.deviceFamily,
     modelIdentifier: payload.modelIdentifier ?? existing.modelIdentifier,
     mode: payload.mode ?? parsed.mode ?? existing.mode,
-    lastInputSeconds: payload.lastInputSeconds ?? parsed.lastInputSeconds ?? existing.lastInputSeconds,
+    lastInputSeconds:
+      payload.lastInputSeconds ?? parsed.lastInputSeconds ?? existing.lastInputSeconds,
     reason: payload.reason ?? parsed.reason ?? existing.reason,
     deviceId: payload.deviceId ?? existing.deviceId,
     roles: mergeStringList(existing.roles, payload.roles),

@@ -17,9 +17,20 @@ export {
   editMessageFeishu,
   getMessageFeishu,
 } from "./src/send.js";
-export { uploadImageFeishu, uploadFileFeishu, sendImageFeishu, sendFileFeishu, sendMediaFeishu } from "./src/media.js";
+export {
+  uploadImageFeishu,
+  uploadFileFeishu,
+  sendImageFeishu,
+  sendFileFeishu,
+  sendMediaFeishu,
+} from "./src/media.js";
 export { probeFeishu } from "./src/probe.js";
-export { addReactionFeishu, removeReactionFeishu, listReactionsFeishu, FeishuEmoji } from "./src/reactions.js";
+export {
+  addReactionFeishu,
+  removeReactionFeishu,
+  listReactionsFeishu,
+  FeishuEmoji,
+} from "./src/reactions.js";
 export {
   extractMentionTargets,
   extractMessageBody,

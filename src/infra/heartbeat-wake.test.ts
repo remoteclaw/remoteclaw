@@ -22,7 +22,9 @@ describe("heartbeat-wake", () => {
     initialReason: string;
     expectedRetryReason: string;
   }) {
-    setHeartbeatWakeHandler(params.handler as unknown as Parameters<typeof setHeartbeatWakeHandler>[0]);
+    setHeartbeatWakeHandler(
+      params.handler as unknown as Parameters<typeof setHeartbeatWakeHandler>[0],
+    );
     requestHeartbeatNow({ reason: params.initialReason, coalesceMs: 0 });
 
     await vi.advanceTimersByTimeAsync(1);
@@ -190,7 +192,9 @@ describe("heartbeat-wake", () => {
     const hangPromise = new Promise<void>((r) => {
       resolveHang = r;
     });
-    const handlerA = vi.fn().mockReturnValue(hangPromise.then(() => ({ status: "ran" as const, durationMs: 1 })));
+    const handlerA = vi
+      .fn()
+      .mockReturnValue(hangPromise.then(() => ({ status: "ran" as const, durationMs: 1 })));
     setHeartbeatWakeHandler(handlerA);
 
     // Trigger the handler — it starts running but never finishes

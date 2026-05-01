@@ -1,12 +1,20 @@
 import crypto from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { verifyPlivoWebhook, verifyTelnyxWebhook, verifyTwilioWebhook } from "./webhook-security.js";
+import {
+  verifyPlivoWebhook,
+  verifyTelnyxWebhook,
+  verifyTwilioWebhook,
+} from "./webhook-security.js";
 
 function canonicalizeBase64(input: string): string {
   return Buffer.from(input, "base64").toString("base64");
 }
 
-function plivoV2Signature(params: { authToken: string; urlNoQuery: string; nonce: string }): string {
+function plivoV2Signature(params: {
+  authToken: string;
+  urlNoQuery: string;
+  nonce: string;
+}): string {
   const digest = crypto
     .createHmac("sha256", params.authToken)
     .update(params.urlNoQuery + params.nonce)
@@ -58,7 +66,10 @@ function plivoV3Signature(params: {
   }
   baseUrl = `${baseUrl}${sortedPost}`;
 
-  const digest = crypto.createHmac("sha256", params.authToken).update(`${baseUrl}.${params.nonce}`).digest("base64");
+  const digest = crypto
+    .createHmac("sha256", params.authToken)
+    .update(`${baseUrl}.${params.nonce}`)
+    .digest("base64");
   return canonicalizeBase64(digest);
 }
 
@@ -89,7 +100,10 @@ function expectReplayResultPair(
   expect(second.verifiedRequestKey).toBe(first.verifiedRequestKey);
 }
 
-function expectAcceptedWebhookVersion(result: { ok: boolean; version?: string }, version: "v2" | "v3") {
+function expectAcceptedWebhookVersion(
+  result: { ok: boolean; version?: string },
+  version: "v2" | "v3",
+) {
   expect(result).toMatchObject({ ok: true, version });
 }
 

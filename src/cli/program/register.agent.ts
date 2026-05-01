@@ -35,10 +35,17 @@ export function registerAgentCommands(program: Command, args: { agentChannelOpti
     .option("--reply-to <target>", "Delivery target override (separate from session routing)")
     .option("--reply-channel <channel>", "Delivery channel override (separate from routing)")
     .option("--reply-account <id>", "Delivery account id override")
-    .option("--local", "Run the embedded agent locally (requires model provider API keys in your shell)", false)
+    .option(
+      "--local",
+      "Run the embedded agent locally (requires model provider API keys in your shell)",
+      false,
+    )
     .option("--deliver", "Send the agent's reply back to the selected channel", false)
     .option("--json", "Output result as JSON", false)
-    .option("--timeout <seconds>", "Override agent command timeout (seconds, default 600 or config value)")
+    .option(
+      "--timeout <seconds>",
+      "Override agent command timeout (seconds, default 600 or config value)",
+    )
     .addHelpText(
       "after",
       () =>
@@ -75,7 +82,8 @@ ${theme.muted("Docs:")} ${formatDocsLink("/cli/agent", "docs.remoteclaw.org/cli/
     .description("Manage isolated agents (workspaces + auth + routing)")
     .addHelpText(
       "after",
-      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/agents", "docs.remoteclaw.org/cli/agents")}\n`,
+      () =>
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/agents", "docs.remoteclaw.org/cli/agents")}\n`,
     );
 
   agents
@@ -85,7 +93,10 @@ ${theme.muted("Docs:")} ${formatDocsLink("/cli/agent", "docs.remoteclaw.org/cli/
     .option("--bindings", "Include routing bindings", false)
     .action(async (opts) => {
       await runCommandWithRuntime(defaultRuntime, async () => {
-        await agentsListCommand({ json: Boolean(opts.json), bindings: Boolean(opts.bindings) }, defaultRuntime);
+        await agentsListCommand(
+          { json: Boolean(opts.json), bindings: Boolean(opts.bindings) },
+          defaultRuntime,
+        );
       });
     });
 
@@ -162,7 +173,13 @@ ${theme.muted("Docs:")} ${formatDocsLink("/cli/agent", "docs.remoteclaw.org/cli/
     .option("--json", "Output JSON summary", false)
     .action(async (name, opts, command) => {
       await runCommandWithRuntime(defaultRuntime, async () => {
-        const hasFlags = hasExplicitOptions(command, ["workspace", "model", "agentDir", "bind", "nonInteractive"]);
+        const hasFlags = hasExplicitOptions(command, [
+          "workspace",
+          "model",
+          "agentDir",
+          "bind",
+          "nonInteractive",
+        ]);
         await agentsAddCommand(
           {
             name: typeof name === "string" ? name : undefined,
@@ -195,8 +212,14 @@ ${theme.muted("Docs:")} ${formatDocsLink("/cli/agent", "docs.remoteclaw.org/cli/
         `
 ${theme.heading("Examples:")}
 ${formatHelpExamples([
-  ['remoteclaw agents set-identity --agent main --name "RemoteClaw" --emoji "🦀"', "Set name + emoji."],
-  ["remoteclaw agents set-identity --agent main --avatar avatars/remoteclaw.png", "Set avatar path."],
+  [
+    'remoteclaw agents set-identity --agent main --name "RemoteClaw" --emoji "🦀"',
+    "Set name + emoji.",
+  ],
+  [
+    "remoteclaw agents set-identity --agent main --avatar avatars/remoteclaw.png",
+    "Set avatar path.",
+  ],
 ])}
 `,
     )

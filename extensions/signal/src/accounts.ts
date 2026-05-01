@@ -17,7 +17,10 @@ const { listAccountIds, resolveDefaultAccountId } = createAccountListHelpers("si
 export const listSignalAccountIds = listAccountIds;
 export const resolveDefaultSignalAccountId = resolveDefaultAccountId;
 
-function resolveAccountConfig(cfg: RemoteClawConfig, accountId: string): SignalAccountConfig | undefined {
+function resolveAccountConfig(
+  cfg: RemoteClawConfig,
+  accountId: string,
+): SignalAccountConfig | undefined {
   return resolveAccountEntry(cfg.channels?.signal?.accounts, accountId);
 }
 

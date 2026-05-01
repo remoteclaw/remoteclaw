@@ -31,7 +31,10 @@ export async function probeSlack(token: string, timeoutMs = 2500): Promise<Slack
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    const status = typeof (err as { status?: number }).status === "number" ? (err as { status?: number }).status : null;
+    const status =
+      typeof (err as { status?: number }).status === "number"
+        ? (err as { status?: number }).status
+        : null;
     return {
       ok: false,
       status,

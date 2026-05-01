@@ -62,7 +62,9 @@ function notifyWaiters(runId: string): void {
   }
 }
 
-export function readTerminalSnapshotFromDedupeEntry(entry: DedupeEntry): AgentWaitTerminalSnapshot | null {
+export function readTerminalSnapshotFromDedupeEntry(
+  entry: DedupeEntry,
+): AgentWaitTerminalSnapshot | null {
   const payload = entry.payload as
     | {
         status?: unknown;
@@ -201,7 +203,11 @@ export async function waitForTerminalGatewayDedupe(params: {
   });
 }
 
-export function setGatewayDedupeEntry(params: { dedupe: Map<string, DedupeEntry>; key: string; entry: DedupeEntry }) {
+export function setGatewayDedupeEntry(params: {
+  dedupe: Map<string, DedupeEntry>;
+  key: string;
+  entry: DedupeEntry;
+}) {
   params.dedupe.set(params.key, params.entry);
   const runId = parseRunIdFromDedupeKey(params.key);
   if (!runId) {

@@ -4,7 +4,10 @@ import type { RemoteClawConfig } from "../config/types.js";
 import { resolveGatewayLaunchAgentLabel } from "../daemon/constants.js";
 import { resolveGatewayProgramArguments } from "../daemon/program-args.js";
 import { buildServiceEnvironment } from "../daemon/service-env.js";
-import { emitDaemonInstallRuntimeWarning, resolveDaemonInstallRuntimeInputs } from "./daemon-install-plan.shared.js";
+import {
+  emitDaemonInstallRuntimeWarning,
+  resolveDaemonInstallRuntimeInputs,
+} from "./daemon-install-plan.shared.js";
 import type { DaemonInstallWarnFn } from "./daemon-install-runtime-warning.js";
 import type { GatewayDaemonRuntime } from "./daemon-runtime.js";
 
@@ -49,7 +52,9 @@ export async function buildGatewayInstallPlan(params: {
     env: params.env,
     port: params.port,
     launchdLabel:
-      process.platform === "darwin" ? resolveGatewayLaunchAgentLabel(params.env.REMOTECLAW_PROFILE) : undefined,
+      process.platform === "darwin"
+        ? resolveGatewayLaunchAgentLabel(params.env.REMOTECLAW_PROFILE)
+        : undefined,
   });
 
   // Merge config env vars into the service environment (vars + inline env keys).

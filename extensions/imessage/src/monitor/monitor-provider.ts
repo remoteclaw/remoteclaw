@@ -31,7 +31,10 @@ import {
 } from "../../../../src/media/inbound-path-policy.js";
 import { kindFromMime } from "../../../../src/media/mime.js";
 import { issuePairingChallenge } from "../../../../src/pairing/pairing-challenge.js";
-import { readChannelAllowFromStore, upsertChannelPairingRequest } from "../../../../src/pairing/pairing-store.js";
+import {
+  readChannelAllowFromStore,
+  upsertChannelPairingRequest,
+} from "../../../../src/pairing/pairing-store.js";
 import { resolvePinnedMainDmOwnerFromAllowlist } from "../../../../src/security/dm-policy-shared.js";
 import { truncateUtf16Safe } from "../../../../src/utils.js";
 import { resolveIMessageAccount } from "../accounts.js";
@@ -43,7 +46,10 @@ import { normalizeIMessageHandle } from "../targets.js";
 import { attachIMessageMonitorAbortHandler } from "./abort-handler.js";
 import { deliverReplies } from "./deliver.js";
 import { createSentMessageCache } from "./echo-cache.js";
-import { buildIMessageInboundContext, resolveIMessageInboundDecision } from "./inbound-processing.js";
+import {
+  buildIMessageInboundContext,
+  resolveIMessageInboundDecision,
+} from "./inbound-processing.js";
 import { createLoopRateLimiter } from "./loop-rate-limiter.js";
 import { parseIMessageNotification } from "./parse-notification.js";
 import { normalizeAllowList, resolveRuntime } from "./runtime.js";
@@ -59,7 +65,9 @@ import type { IMessagePayload, MonitorIMessageOpts } from "./types.js";
 async function detectRemoteHostFromCliPath(cliPath: string): Promise<string | undefined> {
   try {
     // Expand ~ to home directory
-    const expanded = cliPath.startsWith("~") ? cliPath.replace(/^~/, process.env.HOME ?? "") : cliPath;
+    const expanded = cliPath.startsWith("~")
+      ? cliPath.replace(/^~/, process.env.HOME ?? "")
+      : cliPath;
     const content = await fs.readFile(expanded, "utf8");
 
     // Match user@host pattern first (e.g., remoteclaw@192.168.64.3)
@@ -86,7 +94,9 @@ export async function monitorIMessageProvider(opts: MonitorIMessageOpts = {}): P
   const imessageCfg = accountInfo.config;
   const historyLimit = Math.max(
     0,
-    imessageCfg.historyLimit ?? cfg.messages?.groupChat?.historyLimit ?? DEFAULT_GROUP_HISTORY_LIMIT,
+    imessageCfg.historyLimit ??
+      cfg.messages?.groupChat?.historyLimit ??
+      DEFAULT_GROUP_HISTORY_LIMIT,
   );
   const groupHistories = new Map<string, HistoryEntry[]>();
   const sentMessageCache = createSentMessageCache();
@@ -217,12 +227,18 @@ export async function monitorIMessageProvider(opts: MonitorIMessageOpts = {}): P
     const mediaPaths = validAttachments.map((a) => a.original_path).filter(Boolean) as string[];
     const mediaTypes = validAttachments.map((a) => a.mime_type ?? undefined);
     const kind = kindFromMime(mediaType ?? undefined);
-    const placeholder = kind ? `<media:${kind}>` : validAttachments.length ? "<media:attachment>" : "";
+    const placeholder = kind
+      ? `<media:${kind}>`
+      : validAttachments.length
+        ? "<media:attachment>"
+        : "";
     const bodyText = messageText || placeholder;
 
-    const storeAllowFrom = await readChannelAllowFromStore("imessage", process.env, accountInfo.accountId).catch(
-      () => [],
-    );
+    const storeAllowFrom = await readChannelAllowFromStore(
+      "imessage",
+      process.env,
+      accountInfo.accountId,
+    ).catch(() => []);
     const decision = resolveIMessageInboundDecision({
       cfg,
       accountId: accountInfo.accountId,
@@ -415,7 +431,9 @@ export async function monitorIMessageProvider(opts: MonitorIMessageOpts = {}): P
       dispatcher,
       replyOptions: {
         disableBlockStreaming:
-          typeof accountInfo.config.blockStreaming === "boolean" ? !accountInfo.config.blockStreaming : undefined,
+          typeof accountInfo.config.blockStreaming === "boolean"
+            ? !accountInfo.config.blockStreaming
+            : undefined,
       },
     });
 

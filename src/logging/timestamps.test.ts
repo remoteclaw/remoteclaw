@@ -58,13 +58,17 @@ describe("formatTimestamp", () => {
   });
 
   it("formats medium style with milliseconds and offset", () => {
-    expect(formatTimestamp(testDate, { style: "medium", timeZone: "UTC" })).toBe("14:30:45.123+00:00");
+    expect(formatTimestamp(testDate, { style: "medium", timeZone: "UTC" })).toBe(
+      "14:30:45.123+00:00",
+    );
   });
 
   it.each(["UTC", "America/New_York", "Europe/Paris"])(
     "matches formatLocalIsoWithOffset for long style in %s",
     (timeZone) => {
-      expect(formatTimestamp(testDate, { style: "long", timeZone })).toBe(formatLocalIsoWithOffset(testDate, timeZone));
+      expect(formatTimestamp(testDate, { style: "long", timeZone })).toBe(
+        formatLocalIsoWithOffset(testDate, timeZone),
+      );
     },
   );
 

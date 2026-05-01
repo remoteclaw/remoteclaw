@@ -80,7 +80,9 @@ describe("config discord", () => {
 
     expect(res.ok).toBe(false);
     if (!res.ok) {
-      expect(res.issues.some((issue) => issue.message.includes("Discord IDs must be strings"))).toBe(true);
+      expect(
+        res.issues.some((issue) => issue.message.includes("Discord IDs must be strings")),
+      ).toBe(true);
     }
   });
 });

@@ -50,13 +50,16 @@ describe("createDiscordMessageHandler bot-self filter", () => {
   it("enqueues non-bot messages for processing", async () => {
     preflightDiscordMessageMock.mockReset();
     processDiscordMessageMock.mockReset();
-    preflightDiscordMessageMock.mockImplementation(async (params: { data: { channel_id: string } }) =>
-      createPreflightContext(params.data.channel_id),
+    preflightDiscordMessageMock.mockImplementation(
+      async (params: { data: { channel_id: string } }) =>
+        createPreflightContext(params.data.channel_id),
     );
 
     const handler = createDiscordMessageHandler(createDiscordHandlerParams());
 
-    await expect(handler(createMessageData("user-456") as never, {} as never)).resolves.toBeUndefined();
+    await expect(
+      handler(createMessageData("user-456") as never, {} as never),
+    ).resolves.toBeUndefined();
 
     await flushAsyncWork();
     expect(preflightDiscordMessageMock).toHaveBeenCalledTimes(1);

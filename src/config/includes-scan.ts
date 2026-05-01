@@ -39,11 +39,16 @@ function listDirectIncludes(parsed: unknown): string[] {
 
 function resolveIncludePath(baseConfigPath: string, includePath: string): string {
   return path.normalize(
-    path.isAbsolute(includePath) ? includePath : path.resolve(path.dirname(baseConfigPath), includePath),
+    path.isAbsolute(includePath)
+      ? includePath
+      : path.resolve(path.dirname(baseConfigPath), includePath),
   );
 }
 
-export async function collectIncludePathsRecursive(params: { configPath: string; parsed: unknown }): Promise<string[]> {
+export async function collectIncludePathsRecursive(params: {
+  configPath: string;
+  parsed: unknown;
+}): Promise<string[]> {
   const visited = new Set<string>();
   const result: string[] = [];
 

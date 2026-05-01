@@ -42,7 +42,9 @@ function resolveSessionTranscriptCandidates(
   if (storePath) {
     const sessionsDir = path.dirname(storePath);
     if (sessionFile) {
-      pushCandidate(() => resolveSessionFilePath(sessionId, { sessionFile }, { sessionsDir, agentId }));
+      pushCandidate(() =>
+        resolveSessionFilePath(sessionId, { sessionFile }, { sessionsDir, agentId }),
+      );
     }
     pushCandidate(() => resolveSessionTranscriptPathInDir(sessionId, sessionsDir));
   } else if (sessionFile) {
@@ -84,7 +86,9 @@ export function archiveSessionTranscripts(opts: {
 }): string[] {
   const archived: string[] = [];
   const storeDir =
-    opts.restrictToStoreDir && opts.storePath ? canonicalizePathForComparison(path.dirname(opts.storePath)) : null;
+    opts.restrictToStoreDir && opts.storePath
+      ? canonicalizePathForComparison(path.dirname(opts.storePath))
+      : null;
   for (const candidate of resolveSessionTranscriptCandidates(
     opts.sessionId,
     opts.storePath,

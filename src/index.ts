@@ -21,7 +21,12 @@ import { normalizeEnv } from "./infra/env.js";
 import { formatUncaughtError } from "./infra/errors.js";
 import { isMainModule } from "./infra/is-main.js";
 import { ensureRemoteClawCliOnPath } from "./infra/path-env.js";
-import { describePortOwner, ensurePortAvailable, handlePortError, PortInUseError } from "./infra/ports.js";
+import {
+  describePortOwner,
+  ensurePortAvailable,
+  handlePortError,
+  PortInUseError,
+} from "./infra/ports.js";
 import { assertSupportedRuntime } from "./infra/runtime-guard.js";
 import { installUnhandledRejectionHandler } from "./infra/unhandled-rejections.js";
 import { enableConsoleCapture } from "./logging.js";

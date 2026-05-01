@@ -54,7 +54,11 @@ describe("gateway tool defaults", () => {
 
   it("accepts allowlisted gatewayUrl overrides (SSRF hardening)", async () => {
     callGatewayMock.mockResolvedValueOnce({ ok: true });
-    await callGatewayTool("health", { gatewayUrl: "ws://127.0.0.1:18789", gatewayToken: "t", timeoutMs: 5000 }, {});
+    await callGatewayTool(
+      "health",
+      { gatewayUrl: "ws://127.0.0.1:18789", gatewayToken: "t", timeoutMs: 5000 },
+      {},
+    );
     expect(callGatewayMock).toHaveBeenCalledWith(
       expect.objectContaining({
         url: "ws://127.0.0.1:18789",
@@ -172,7 +176,12 @@ describe("gateway tool defaults", () => {
 
   it("allows explicit scope overrides for dynamic callers", async () => {
     callGatewayMock.mockResolvedValueOnce({ ok: true });
-    await callGatewayTool("node.pair.approve", {}, { requestId: "req-1" }, { scopes: ["operator.admin"] });
+    await callGatewayTool(
+      "node.pair.approve",
+      {},
+      { requestId: "req-1" },
+      { scopes: ["operator.admin"] },
+    );
     expect(callGatewayMock).toHaveBeenCalledWith(
       expect.objectContaining({
         method: "node.pair.approve",

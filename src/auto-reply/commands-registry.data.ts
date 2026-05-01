@@ -1,7 +1,11 @@
 import { listChannelDocks } from "../channels/dock.js";
 import { getActivePluginRegistry } from "../plugins/runtime.js";
 import { COMMAND_ARG_FORMATTERS } from "./commands-args.js";
-import type { ChatCommandDefinition, CommandCategory, CommandScope } from "./commands-registry.types.js";
+import type {
+  ChatCommandDefinition,
+  CommandCategory,
+  CommandScope,
+} from "./commands-registry.types.js";
 
 type DefineChatCommandInput = {
   key: string;
@@ -22,7 +26,8 @@ function defineChatCommand(command: DefineChatCommandInput): ChatCommandDefiniti
   const aliases = (command.textAliases ?? (command.textAlias ? [command.textAlias] : []))
     .map((alias) => alias.trim())
     .filter(Boolean);
-  const scope = command.scope ?? (command.nativeName ? (aliases.length ? "both" : "native") : "text");
+  const scope =
+    command.scope ?? (command.nativeName ? (aliases.length ? "both" : "native") : "text");
   const acceptsArgs = command.acceptsArgs ?? Boolean(command.args?.length);
   const argsParsing = command.argsParsing ?? (command.args?.length ? "positional" : "none");
   return {

@@ -34,12 +34,20 @@ export function renderNostrCard(params: {
   /** Called when Edit Profile is clicked */
   onEditProfile?: () => void;
 }) {
-  const { props, nostr, nostrAccounts, accountCountLabel, profileFormState, profileFormCallbacks, onEditProfile } =
-    params;
+  const {
+    props,
+    nostr,
+    nostrAccounts,
+    accountCountLabel,
+    profileFormState,
+    profileFormCallbacks,
+    onEditProfile,
+  } = params;
   const primaryAccount = nostrAccounts[0];
   const summaryConfigured = nostr?.configured ?? primaryAccount?.configured ?? false;
   const summaryRunning = nostr?.running ?? primaryAccount?.running ?? false;
-  const summaryPublicKey = nostr?.publicKey ?? (primaryAccount as { publicKey?: string } | undefined)?.publicKey;
+  const summaryPublicKey =
+    nostr?.publicKey ?? (primaryAccount as { publicKey?: string } | undefined)?.publicKey;
   const summaryLastStartAt = nostr?.lastStartAt ?? primaryAccount?.lastStartAt ?? null;
   const summaryLastError = nostr?.lastError ?? primaryAccount?.lastError ?? null;
   const hasMultipleAccounts = nostrAccounts.length > 1;

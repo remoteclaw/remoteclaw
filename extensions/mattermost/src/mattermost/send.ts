@@ -39,7 +39,9 @@ export type MattermostSendResult = {
   channelId: string;
 };
 
-export type MattermostReplyButtons = Array<MattermostInteractiveButtonInput | MattermostInteractiveButtonInput[]>;
+export type MattermostReplyButtons = Array<
+  MattermostInteractiveButtonInput | MattermostInteractiveButtonInput[]
+>;
 
 type MattermostTarget =
   | { kind: "channel"; id: string }
@@ -135,7 +137,11 @@ async function resolveBotUser(baseUrl: string, token: string): Promise<Mattermos
   return user;
 }
 
-async function resolveUserIdByUsername(params: { baseUrl: string; token: string; username: string }): Promise<string> {
+async function resolveUserIdByUsername(params: {
+  baseUrl: string;
+  token: string;
+  username: string;
+}): Promise<string> {
   const { baseUrl, token, username } = params;
   const key = `${cacheKey(baseUrl, token)}::${username.toLowerCase()}`;
   const cached = userByNameCache.get(key);
@@ -148,7 +154,11 @@ async function resolveUserIdByUsername(params: { baseUrl: string; token: string;
   return user.id;
 }
 
-async function resolveChannelIdByName(params: { baseUrl: string; token: string; name: string }): Promise<string> {
+async function resolveChannelIdByName(params: {
+  baseUrl: string;
+  token: string;
+  name: string;
+}): Promise<string> {
   const { baseUrl, token, name } = params;
   const key = `${cacheKey(baseUrl, token)}::channel::${name.toLowerCase()}`;
   const cached = channelByNameCache.get(key);
@@ -217,7 +227,10 @@ type MattermostSendContext = {
   channelId: string;
 };
 
-async function resolveMattermostSendContext(to: string, opts: MattermostSendOpts = {}): Promise<MattermostSendContext> {
+async function resolveMattermostSendContext(
+  to: string,
+  opts: MattermostSendOpts = {},
+): Promise<MattermostSendContext> {
   const core = getCore();
   const cfg = opts.cfg ?? core.config.loadConfig();
   const account = resolveMattermostAccount({
@@ -264,7 +277,10 @@ async function resolveMattermostSendContext(to: string, opts: MattermostSendOpts
   };
 }
 
-export async function resolveMattermostSendChannelId(to: string, opts: MattermostSendOpts = {}): Promise<string> {
+export async function resolveMattermostSendChannelId(
+  to: string,
+  opts: MattermostSendOpts = {},
+): Promise<string> {
   return (await resolveMattermostSendContext(to, opts)).channelId;
 }
 
@@ -275,7 +291,10 @@ export async function sendMessageMattermost(
 ): Promise<MattermostSendResult> {
   const core = getCore();
   const logger = core.logging.getChildLogger({ module: "mattermost" });
-  const { cfg, accountId, token, baseUrl, channelId } = await resolveMattermostSendContext(to, opts);
+  const { cfg, accountId, token, baseUrl, channelId } = await resolveMattermostSendContext(
+    to,
+    opts,
+  );
 
   const client = createMattermostClient({ baseUrl, botToken: token });
   let props = opts.props;
@@ -314,7 +333,9 @@ export async function sendMessageMattermost(
     } catch (err) {
       uploadError = err instanceof Error ? err : new Error(String(err));
       if (core.logging.shouldLogVerbose()) {
-        logger.debug?.(`mattermost send: media upload failed, falling back to URL text: ${String(err)}`);
+        logger.debug?.(
+          `mattermost send: media upload failed, falling back to URL text: ${String(err)}`,
+        );
       }
       message = normalizeMessage(message, isHttpUrl(mediaUrl) ? mediaUrl : "");
     }

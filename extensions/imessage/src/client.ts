@@ -213,7 +213,8 @@ export class IMessageRpcClient {
           suffixes.push(`code=${code}`);
         }
         if (details !== undefined) {
-          const detailText = typeof details === "string" ? details : JSON.stringify(details, null, 2);
+          const detailText =
+            typeof details === "string" ? details : JSON.stringify(details, null, 2);
           if (detailText) {
             suffixes.push(detailText);
           }
@@ -245,7 +246,9 @@ export class IMessageRpcClient {
   }
 }
 
-export async function createIMessageRpcClient(opts: IMessageRpcClientOptions = {}): Promise<IMessageRpcClient> {
+export async function createIMessageRpcClient(
+  opts: IMessageRpcClientOptions = {},
+): Promise<IMessageRpcClient> {
   const client = new IMessageRpcClient(opts);
   await client.start();
   return client;

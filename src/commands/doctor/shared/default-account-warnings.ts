@@ -6,7 +6,11 @@ import {
   formatSetExplicitDefaultInstruction,
   formatSetExplicitDefaultToConfiguredInstruction,
 } from "../../../routing/default-account-warnings.js";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId, normalizeOptionalAccountId } from "../../../routing/session-key.js";
+import {
+  DEFAULT_ACCOUNT_ID,
+  normalizeAccountId,
+  normalizeOptionalAccountId,
+} from "../../../routing/session-key.js";
 import { asObjectRecord } from "./object.js";
 
 type ChannelMissingDefaultAccountContext = {
@@ -23,7 +27,9 @@ function normalizeBindingChannelKey(raw?: string | null): string {
   return (raw ?? "").trim().toLowerCase();
 }
 
-function collectChannelsMissingDefaultAccount(cfg: RemoteClawConfig): ChannelMissingDefaultAccountContext[] {
+function collectChannelsMissingDefaultAccount(
+  cfg: RemoteClawConfig,
+): ChannelMissingDefaultAccountContext[] {
   const channels = asObjectRecord(cfg.channels);
   if (!channels) {
     return [];
@@ -75,7 +81,8 @@ export function collectMissingDefaultAccountBindingWarnings(cfg: RemoteClawConfi
         continue;
       }
 
-      const matchChannel = typeof match.channel === "string" ? normalizeBindingChannelKey(match.channel) : "";
+      const matchChannel =
+        typeof match.channel === "string" ? normalizeBindingChannelKey(match.channel) : "";
       if (!matchChannel || matchChannel !== channelPattern) {
         continue;
       }
@@ -98,7 +105,9 @@ export function collectMissingDefaultAccountBindingWarnings(cfg: RemoteClawConfi
       continue;
     }
 
-    const uncoveredAccountIds = normalizedAccountIds.filter((accountId) => !coveredAccountIds.has(accountId));
+    const uncoveredAccountIds = normalizedAccountIds.filter(
+      (accountId) => !coveredAccountIds.has(accountId),
+    );
     if (uncoveredAccountIds.length === 0) {
       continue;
     }
@@ -119,7 +128,9 @@ export function collectMissingDefaultAccountBindingWarnings(cfg: RemoteClawConfi
 
 export function collectMissingExplicitDefaultAccountWarnings(cfg: RemoteClawConfig): string[] {
   const warnings: string[] = [];
-  for (const { channelKey, channel, normalizedAccountIds } of collectChannelsMissingDefaultAccount(cfg)) {
+  for (const { channelKey, channel, normalizedAccountIds } of collectChannelsMissingDefaultAccount(
+    cfg,
+  )) {
     if (normalizedAccountIds.length < 2) {
       continue;
     }

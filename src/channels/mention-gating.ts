@@ -35,7 +35,9 @@ export function resolveMentionGating(params: MentionGateParams): MentionGateResu
   return { effectiveWasMentioned, shouldSkip };
 }
 
-export function resolveMentionGatingWithBypass(params: MentionGateWithBypassParams): MentionGateWithBypassResult {
+export function resolveMentionGatingWithBypass(
+  params: MentionGateWithBypassParams,
+): MentionGateWithBypassResult {
   const shouldBypassMention =
     params.isGroup &&
     params.requireMention &&

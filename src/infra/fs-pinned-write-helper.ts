@@ -211,7 +211,10 @@ export async function runPinnedWriteHelper(params: {
 
     const [code, signal] = await exitPromise;
     if (code !== 0) {
-      throw new Error(stderr.trim() || `Pinned write helper failed with code ${code ?? "null"} (${signal ?? "?"})`);
+      throw new Error(
+        stderr.trim() ||
+          `Pinned write helper failed with code ${code ?? "null"} (${signal ?? "?"})`,
+      );
     }
     return parsePinnedIdentity(stdout);
   } catch (error) {

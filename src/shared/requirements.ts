@@ -87,7 +87,10 @@ export function resolveMissingOs(params: {
   return params.required;
 }
 
-export function resolveMissingEnv(params: { required: string[]; isSatisfied: (envName: string) => boolean }): string[] {
+export function resolveMissingEnv(params: {
+  required: string[];
+  isSatisfied: (envName: string) => boolean;
+}): string[] {
   const missing: string[] = [];
   for (const envName of params.required) {
     if (params.isSatisfied(envName)) {

@@ -10,7 +10,9 @@ import {
   verifyDeviceSignature,
 } from "./device-identity.js";
 
-async function withIdentity(run: (identity: ReturnType<typeof loadOrCreateDeviceIdentity>) => void) {
+async function withIdentity(
+  run: (identity: ReturnType<typeof loadOrCreateDeviceIdentity>) => void,
+) {
   await withTempDir("remoteclaw-device-identity-", async (dir) => {
     const identity = loadOrCreateDeviceIdentity(path.join(dir, "device.json"));
     run(identity);

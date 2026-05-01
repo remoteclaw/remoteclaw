@@ -280,10 +280,14 @@ const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
   },
 ];
 
-const CORE_TOOL_BY_ID = new Map<string, CoreToolDefinition>(CORE_TOOL_DEFINITIONS.map((tool) => [tool.id, tool]));
+const CORE_TOOL_BY_ID = new Map<string, CoreToolDefinition>(
+  CORE_TOOL_DEFINITIONS.map((tool) => [tool.id, tool]),
+);
 
 function listCoreToolIdsForProfile(profile: ToolProfileId): string[] {
-  return CORE_TOOL_DEFINITIONS.filter((tool) => tool.profiles.includes(profile)).map((tool) => tool.id);
+  return CORE_TOOL_DEFINITIONS.filter((tool) => tool.profiles.includes(profile)).map(
+    (tool) => tool.id,
+  );
 }
 
 const CORE_TOOL_PROFILES: Record<ToolProfileId, ToolProfilePolicy> = {
@@ -307,7 +311,9 @@ function buildCoreToolGroupMap() {
     list.push(tool.id);
     sectionToolMap.set(groupId, list);
   }
-  const remoteclawTools = CORE_TOOL_DEFINITIONS.filter((tool) => tool.includeInRemoteClawGroup).map((tool) => tool.id);
+  const remoteclawTools = CORE_TOOL_DEFINITIONS.filter((tool) => tool.includeInRemoteClawGroup).map(
+    (tool) => tool.id,
+  );
   return {
     "group:remoteclaw": remoteclawTools,
     ...Object.fromEntries(sectionToolMap.entries()),

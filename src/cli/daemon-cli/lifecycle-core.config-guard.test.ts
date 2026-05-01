@@ -16,8 +16,11 @@ vi.mock("../../config/config.js", () => ({
 }));
 
 vi.mock("../../config/issue-format.js", () => ({
-  formatConfigIssueLines: (issues: Array<{ path: string; message: string }>, _prefix: string, _opts?: unknown) =>
-    issues.map((i) => `${i.path}: ${i.message}`),
+  formatConfigIssueLines: (
+    issues: Array<{ path: string; message: string }>,
+    _prefix: string,
+    _opts?: unknown,
+  ) => issues.map((i) => `${i.path}: ${i.message}`),
 }));
 
 vi.mock("../../runtime.js", () => ({

@@ -7,7 +7,9 @@ describe("buildExternalLinkRel", () => {
   });
 
   it("preserves extra rel tokens while deduping required ones", () => {
-    expect(buildExternalLinkRel("noreferrer nofollow NOOPENER")).toBe("noopener noreferrer nofollow");
+    expect(buildExternalLinkRel("noreferrer nofollow NOOPENER")).toBe(
+      "noopener noreferrer nofollow",
+    );
   });
 
   it("ignores whitespace-only rel input", () => {

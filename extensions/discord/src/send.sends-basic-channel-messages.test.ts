@@ -1,7 +1,10 @@
 import { ChannelType, PermissionFlagsBits, Routes } from "discord-api-types/v10";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { loadWebMedia } from "../../whatsapp/src/media.js";
-import { __resetDiscordDirectoryCacheForTest, rememberDiscordDirectoryUser } from "./directory-cache.js";
+import {
+  __resetDiscordDirectoryCacheForTest,
+  rememberDiscordDirectoryUser,
+} from "./directory-cache.js";
 import {
   deleteMessageDiscord,
   editMessageDiscord,
@@ -24,7 +27,10 @@ vi.mock("../../whatsapp/src/media.js", async () => {
 });
 
 describe("sendMessageDiscord", () => {
-  function expectReplyReference(body: { message_reference?: unknown } | undefined, messageId: string) {
+  function expectReplyReference(
+    body: { message_reference?: unknown } | undefined,
+    messageId: string,
+  ) {
     expect(body?.message_reference).toEqual({
       message_id: messageId,
       fail_if_not_exists: false,
@@ -177,7 +183,9 @@ describe("sendMessageDiscord", () => {
 
   it("starts DM when recipient is a user", async () => {
     const { rest, postMock } = makeDiscordRest();
-    postMock.mockResolvedValueOnce({ id: "chan1" }).mockResolvedValueOnce({ id: "msg1", channel_id: "chan1" });
+    postMock
+      .mockResolvedValueOnce({ id: "chan1" })
+      .mockResolvedValueOnce({ id: "msg1", channel_id: "chan1" });
     const res = await sendMessageDiscord("user:123", "hiya", {
       rest,
       token: "t",
@@ -197,15 +205,15 @@ describe("sendMessageDiscord", () => {
 
   it("rejects bare numeric IDs as ambiguous", async () => {
     const { rest } = makeDiscordRest();
-    await expect(sendMessageDiscord("273512430271856640", "hello", { rest, token: "t" })).rejects.toThrow(
-      /Ambiguous Discord recipient/,
-    );
-    await expect(sendMessageDiscord("273512430271856640", "hello", { rest, token: "t" })).rejects.toThrow(
-      /user:273512430271856640/,
-    );
-    await expect(sendMessageDiscord("273512430271856640", "hello", { rest, token: "t" })).rejects.toThrow(
-      /channel:273512430271856640/,
-    );
+    await expect(
+      sendMessageDiscord("273512430271856640", "hello", { rest, token: "t" }),
+    ).rejects.toThrow(/Ambiguous Discord recipient/);
+    await expect(
+      sendMessageDiscord("273512430271856640", "hello", { rest, token: "t" }),
+    ).rejects.toThrow(/user:273512430271856640/);
+    await expect(
+      sendMessageDiscord("273512430271856640", "hello", { rest, token: "t" }),
+    ).rejects.toThrow(/channel:273512430271856640/);
   });
 
   it("adds missing permission hints on 50013", async () => {
@@ -354,13 +362,17 @@ describe("reactMessageDiscord", () => {
   it("reacts with unicode emoji", async () => {
     const { rest, putMock } = makeDiscordRest();
     await reactMessageDiscord("chan1", "msg1", "✅", { rest, token: "t" });
-    expect(putMock).toHaveBeenCalledWith(Routes.channelMessageOwnReaction("chan1", "msg1", "%E2%9C%85"));
+    expect(putMock).toHaveBeenCalledWith(
+      Routes.channelMessageOwnReaction("chan1", "msg1", "%E2%9C%85"),
+    );
   });
 
   it("normalizes variation selectors in unicode emoji", async () => {
     const { rest, putMock } = makeDiscordRest();
     await reactMessageDiscord("chan1", "msg1", "⭐️", { rest, token: "t" });
-    expect(putMock).toHaveBeenCalledWith(Routes.channelMessageOwnReaction("chan1", "msg1", "%E2%AD%90"));
+    expect(putMock).toHaveBeenCalledWith(
+      Routes.channelMessageOwnReaction("chan1", "msg1", "%E2%AD%90"),
+    );
   });
 
   it("reacts with custom emoji syntax", async () => {
@@ -369,7 +381,9 @@ describe("reactMessageDiscord", () => {
       rest,
       token: "t",
     });
-    expect(putMock).toHaveBeenCalledWith(Routes.channelMessageOwnReaction("chan1", "msg1", "party_blob%3A123"));
+    expect(putMock).toHaveBeenCalledWith(
+      Routes.channelMessageOwnReaction("chan1", "msg1", "party_blob%3A123"),
+    );
   });
 });
 
@@ -381,7 +395,9 @@ describe("removeReactionDiscord", () => {
   it("removes a unicode emoji reaction", async () => {
     const { rest, deleteMock } = makeDiscordRest();
     await removeReactionDiscord("chan1", "msg1", "✅", { rest, token: "t" });
-    expect(deleteMock).toHaveBeenCalledWith(Routes.channelMessageOwnReaction("chan1", "msg1", "%E2%9C%85"));
+    expect(deleteMock).toHaveBeenCalledWith(
+      Routes.channelMessageOwnReaction("chan1", "msg1", "%E2%9C%85"),
+    );
   });
 });
 
@@ -393,15 +409,22 @@ describe("removeOwnReactionsDiscord", () => {
   it("removes all own reactions on a message", async () => {
     const { rest, getMock, deleteMock } = makeDiscordRest();
     getMock.mockResolvedValue({
-      reactions: [{ emoji: { name: "✅", id: null } }, { emoji: { name: "party_blob", id: "123" } }],
+      reactions: [
+        { emoji: { name: "✅", id: null } },
+        { emoji: { name: "party_blob", id: "123" } },
+      ],
     });
     const res = await removeOwnReactionsDiscord("chan1", "msg1", {
       rest,
       token: "t",
     });
     expect(res).toEqual({ ok: true, removed: ["✅", "party_blob:123"] });
-    expect(deleteMock).toHaveBeenCalledWith(Routes.channelMessageOwnReaction("chan1", "msg1", "%E2%9C%85"));
-    expect(deleteMock).toHaveBeenCalledWith(Routes.channelMessageOwnReaction("chan1", "msg1", "party_blob%3A123"));
+    expect(deleteMock).toHaveBeenCalledWith(
+      Routes.channelMessageOwnReaction("chan1", "msg1", "%E2%9C%85"),
+    );
+    expect(deleteMock).toHaveBeenCalledWith(
+      Routes.channelMessageOwnReaction("chan1", "msg1", "party_blob%3A123"),
+    );
   });
 });
 
@@ -564,7 +587,10 @@ describe("searchMessagesDiscord", () => {
   it("uses URLSearchParams for search", async () => {
     const { rest, getMock } = makeDiscordRest();
     getMock.mockResolvedValue({ total_results: 0, messages: [] });
-    await searchMessagesDiscord({ guildId: "g1", content: "hello", limit: 5 }, { rest, token: "t" });
+    await searchMessagesDiscord(
+      { guildId: "g1", content: "hello", limit: 5 },
+      { rest, token: "t" },
+    );
     const call = getMock.mock.calls[0];
     expect(call?.[0]).toBe("/guilds/g1/messages/search?content=hello&limit=5");
   });

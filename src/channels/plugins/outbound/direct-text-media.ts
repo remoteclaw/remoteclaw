@@ -38,7 +38,10 @@ export {
 export function resolveScopedChannelMediaMaxBytes(params: {
   cfg: RemoteClawConfig;
   accountId?: string | null;
-  resolveChannelLimitMb: (params: { cfg: RemoteClawConfig; accountId: string }) => number | undefined;
+  resolveChannelLimitMb: (params: {
+    cfg: RemoteClawConfig;
+    accountId: string;
+  }) => number | undefined;
 }): number | undefined {
   return resolveChannelMediaMaxBytes({
     cfg: params.cfg,
@@ -53,7 +56,8 @@ export function createScopedChannelMediaMaxBytesResolver(channel: "imessage" | "
       cfg: params.cfg,
       accountId: params.accountId,
       resolveChannelLimitMb: ({ cfg, accountId }) =>
-        cfg.channels?.[channel]?.accounts?.[accountId]?.mediaMaxMb ?? cfg.channels?.[channel]?.mediaMaxMb,
+        cfg.channels?.[channel]?.accounts?.[accountId]?.mediaMaxMb ??
+        cfg.channels?.[channel]?.mediaMaxMb,
     });
 }
 
@@ -63,7 +67,10 @@ export function createDirectTextMediaOutbound<
 >(params: {
   channel: "imessage" | "signal";
   resolveSender: (deps: OutboundSendDeps | undefined) => DirectSendFn<TOpts, TResult>;
-  resolveMaxBytes: (params: { cfg: RemoteClawConfig; accountId?: string | null }) => number | undefined;
+  resolveMaxBytes: (params: {
+    cfg: RemoteClawConfig;
+    accountId?: string | null;
+  }) => number | undefined;
   buildTextOptions: (params: DirectSendOptions) => TOpts;
   buildMediaOptions: (params: DirectSendOptions) => TOpts;
 }): ChannelOutboundAdapter {
@@ -103,7 +110,8 @@ export function createDirectTextMediaOutbound<
     chunker: chunkText,
     chunkerMode: "text",
     textChunkLimit: 4000,
-    sendPayload: async (ctx) => await sendTextMediaPayload({ channel: params.channel, ctx, adapter: outbound }),
+    sendPayload: async (ctx) =>
+      await sendTextMediaPayload({ channel: params.channel, ctx, adapter: outbound }),
     sendText: async ({ cfg, to, text, accountId, deps, replyToId }) => {
       return await sendDirect({
         cfg,

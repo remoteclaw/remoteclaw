@@ -1,6 +1,9 @@
 import { PassThrough } from "node:stream";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { LAUNCH_AGENT_THROTTLE_INTERVAL_SECONDS, LAUNCH_AGENT_UMASK_DECIMAL } from "./launchd-plist.js";
+import {
+  LAUNCH_AGENT_THROTTLE_INTERVAL_SECONDS,
+  LAUNCH_AGENT_UMASK_DECIMAL,
+} from "./launchd-plist.js";
 import {
   installLaunchAgent,
   isLaunchAgentListed,
@@ -26,7 +29,9 @@ const launchdRestartHandoffState = vi.hoisted(() => ({
   isCurrentProcessLaunchdServiceLabel: vi.fn<(label: string) => boolean>(() => false),
   scheduleDetachedLaunchdRestartHandoff: vi.fn((_params: unknown) => ({ ok: true, pid: 7331 })),
 }));
-const cleanStaleGatewayProcessesSync = vi.hoisted(() => vi.fn<(port?: number) => number[]>(() => []));
+const cleanStaleGatewayProcessesSync = vi.hoisted(() =>
+  vi.fn<(port?: number) => number[]>(() => []),
+);
 const defaultProgramArguments = ["node", "-e", "process.exit(0)"];
 
 function expectLaunchctlEnableBootstrapOrder(env: Record<string, string | undefined>) {
@@ -34,7 +39,9 @@ function expectLaunchctlEnableBootstrapOrder(env: Record<string, string | undefi
   const label = "org.remoteclaw.gateway";
   const plistPath = resolveLaunchAgentPlistPath(env);
   const serviceId = `${domain}/${label}`;
-  const enableIndex = state.launchctlCalls.findIndex((c) => c[0] === "enable" && c[1] === serviceId);
+  const enableIndex = state.launchctlCalls.findIndex(
+    (c) => c[0] === "enable" && c[1] === serviceId,
+  );
   const bootstrapIndex = state.launchctlCalls.findIndex(
     (c) => c[0] === "bootstrap" && c[1] === domain && c[2] === plistPath,
   );
@@ -165,7 +172,12 @@ beforeEach(() => {
 
 describe("launchd runtime parsing", () => {
   it("parses state, pid, and exit status", () => {
-    const output = ["state = running", "pid = 4242", "last exit status = 1", "last exit reason = exited"].join("\n");
+    const output = [
+      "state = running",
+      "pid = 4242",
+      "last exit status = 1",
+      "last exit reason = exited",
+    ].join("\n");
     expect(parseLaunchctlPrint(output)).toEqual({
       state: "running",
       pid: 4242,
@@ -195,9 +207,12 @@ describe("launchd runtime parsing", () => {
   });
 
   it("rejects pid and exit status values with junk suffixes", () => {
-    const output = ["state = waiting", "pid = 123abc", "last exit status = 7ms", "last exit reason = exited"].join(
-      "\n",
-    );
+    const output = [
+      "state = waiting",
+      "pid = 123abc",
+      "last exit status = 7ms",
+      "last exit reason = exited",
+    ].join("\n");
     expect(parseLaunchctlPrint(output)).toEqual({
       state: "waiting",
       lastExitReason: "exited",
@@ -259,7 +274,9 @@ describe("launchd install", () => {
     });
 
     const { serviceId } = expectLaunchctlEnableBootstrapOrder(env);
-    const installKickstartIndex = state.launchctlCalls.findIndex((c) => c[0] === "kickstart" && c[2] === serviceId);
+    const installKickstartIndex = state.launchctlCalls.findIndex(
+      (c) => c[0] === "kickstart" && c[2] === serviceId,
+    );
     expect(installKickstartIndex).toBe(-1);
   });
 

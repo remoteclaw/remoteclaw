@@ -67,7 +67,11 @@ function resolveMinutesInTimeZone(nowMs: number, timeZone: string): number | nul
   }
 }
 
-export function isWithinActiveHours(cfg: RemoteClawConfig, heartbeat?: HeartbeatConfig, nowMs?: number): boolean {
+export function isWithinActiveHours(
+  cfg: RemoteClawConfig,
+  heartbeat?: HeartbeatConfig,
+  nowMs?: number,
+): boolean {
   const active = heartbeat?.activeHours;
   if (!active) {
     return true;

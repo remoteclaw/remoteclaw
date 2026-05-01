@@ -1,6 +1,10 @@
 import { formatCliCommand } from "../cli/command-format.js";
 import { withProgress } from "../cli/progress.js";
-import { readBestEffortConfig, readConfigFileSnapshot, resolveGatewayPort } from "../config/config.js";
+import {
+  readBestEffortConfig,
+  readConfigFileSnapshot,
+  resolveGatewayPort,
+} from "../config/config.js";
 import { readLastGatewayErrorLine } from "../daemon/diagnostics.js";
 import { resolveNodeService } from "../daemon/node-service.js";
 import type { GatewayService } from "../daemon/service.js";
@@ -29,7 +33,10 @@ import { buildStatusAllReportLines } from "./status-all/report-lines.js";
 import { readServiceStatusSummary } from "./status.service-summary.js";
 import { formatUpdateOneLiner } from "./status.update.js";
 
-export async function statusAllCommand(runtime: RuntimeEnv, opts?: { timeoutMs?: number }): Promise<void> {
+export async function statusAllCommand(
+  runtime: RuntimeEnv,
+  opts?: { timeoutMs?: number },
+): Promise<void> {
   await withProgress({ label: "Scanning status --all…", total: 11 }, async (progress) => {
     progress.setLabel("Loading config…");
     const cfg = await readBestEffortConfig();
@@ -46,7 +53,9 @@ export async function statusAllCommand(runtime: RuntimeEnv, opts?: { timeoutMs?:
         });
         const backendState = typeof parsed.BackendState === "string" ? parsed.BackendState : null;
         const self =
-          typeof parsed.Self === "object" && parsed.Self !== null ? (parsed.Self as Record<string, unknown>) : null;
+          typeof parsed.Self === "object" && parsed.Self !== null
+            ? (parsed.Self as Record<string, unknown>)
+            : null;
         const dnsNameRaw = self && typeof self.DNSName === "string" ? self.DNSName : null;
         const dnsName = dnsNameRaw ? dnsNameRaw.replace(/\.$/, "") : null;
         const ips =
@@ -98,7 +107,8 @@ export async function statusAllCommand(runtime: RuntimeEnv, opts?: { timeoutMs?:
     progress.setLabel("Probing gateway…");
     const connection = buildGatewayConnectionDetails({ config: cfg });
     const isRemoteMode = cfg.gateway?.mode === "remote";
-    const remoteUrlRaw = typeof cfg.gateway?.remote?.url === "string" ? cfg.gateway.remote.url.trim() : "";
+    const remoteUrlRaw =
+      typeof cfg.gateway?.remote?.url === "string" ? cfg.gateway.remote.url.trim() : "";
     const remoteUrlMissing = isRemoteMode && !remoteUrlRaw;
     const gatewayMode = isRemoteMode ? "remote" : "local";
 
@@ -204,7 +214,8 @@ export async function statusAllCommand(runtime: RuntimeEnv, opts?: { timeoutMs?:
       agentStatus.agents.find((a) => a.id === agentStatus.defaultId)?.workspaceDir ??
       agentStatus.agents[0]?.workspaceDir ??
       null;
-    const skillStatus = defaultWorkspace != null ? { loaded: false, count: 0, workspaceDir: "", skills: [] } : null;
+    const skillStatus =
+      defaultWorkspace != null ? { loaded: false, count: 0, workspaceDir: "", skills: [] } : null;
 
     const controlUiEnabled = cfg.gateway?.controlUi?.enabled ?? true;
     const dashboard = controlUiEnabled
@@ -250,7 +261,9 @@ export async function statusAllCommand(runtime: RuntimeEnv, opts?: { timeoutMs?:
         Item: "Config",
         Value: snap?.path?.trim() ? snap.path.trim() : "(unknown config path)",
       },
-      dashboard ? { Item: "Dashboard", Value: dashboard } : { Item: "Dashboard", Value: "disabled" },
+      dashboard
+        ? { Item: "Dashboard", Value: dashboard }
+        : { Item: "Dashboard", Value: "disabled" },
       {
         Item: "Tailscale",
         Value:
@@ -267,9 +280,13 @@ export async function statusAllCommand(runtime: RuntimeEnv, opts?: { timeoutMs?:
         Item: "Gateway",
         Value: `${gatewayMode}${remoteUrlMissing ? " (remote.url missing)" : ""} · ${gatewayTarget} (${connection.urlSource}) · ${gatewayStatus}${gatewayAuth}`,
       },
-      ...(probeAuthResolution.warning ? [{ Item: "Gateway auth warning", Value: probeAuthResolution.warning }] : []),
+      ...(probeAuthResolution.warning
+        ? [{ Item: "Gateway auth warning", Value: probeAuthResolution.warning }]
+        : []),
       { Item: "Security", Value: `Run: ${formatCliCommand("remoteclaw security audit --deep")}` },
-      gatewaySelfLine ? { Item: "Gateway self", Value: gatewaySelfLine } : { Item: "Gateway self", Value: "unknown" },
+      gatewaySelfLine
+        ? { Item: "Gateway self", Value: gatewaySelfLine }
+        : { Item: "Gateway self", Value: "unknown" },
       daemon
         ? {
             Item: "Gateway service",

@@ -171,8 +171,12 @@ describe("validateGatewayPasswordInput", () => {
   });
 
   it("rejects literal string coercion artifacts", () => {
-    expect(validateGatewayPasswordInput("undefined")).toBe('Cannot be the literal string "undefined" or "null"');
-    expect(validateGatewayPasswordInput("null")).toBe('Cannot be the literal string "undefined" or "null"');
+    expect(validateGatewayPasswordInput("undefined")).toBe(
+      'Cannot be the literal string "undefined" or "null"',
+    );
+    expect(validateGatewayPasswordInput("null")).toBe(
+      'Cannot be the literal string "undefined" or "null"',
+    );
   });
 
   it("accepts a normal password", () => {

@@ -87,7 +87,11 @@ function createActivityHandler(): MSTeamsActivityHandler {
   return handler;
 }
 
-function createInvokeContext(params: { conversationId: string; uploadId: string; action: "accept" | "decline" }): {
+function createInvokeContext(params: {
+  conversationId: string;
+  uploadId: string;
+  action: "accept" | "decline";
+}): {
   context: MSTeamsTurnContext;
   sendActivity: ReturnType<typeof vi.fn>;
 } {

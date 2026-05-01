@@ -37,7 +37,11 @@ function evictOldest(): void {
   }
 }
 
-export function recordSlackThreadParticipation(accountId: string, channelId: string, threadTs: string): void {
+export function recordSlackThreadParticipation(
+  accountId: string,
+  channelId: string,
+  threadTs: string,
+): void {
   if (!accountId || !channelId || !threadTs) {
     return;
   }
@@ -50,7 +54,11 @@ export function recordSlackThreadParticipation(accountId: string, channelId: str
   threadParticipation.set(makeKey(accountId, channelId, threadTs), Date.now());
 }
 
-export function hasSlackThreadParticipation(accountId: string, channelId: string, threadTs: string): boolean {
+export function hasSlackThreadParticipation(
+  accountId: string,
+  channelId: string,
+  threadTs: string,
+): boolean {
   if (!accountId || !channelId || !threadTs) {
     return false;
   }

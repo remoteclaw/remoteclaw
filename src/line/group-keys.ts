@@ -59,7 +59,9 @@ export function resolveExactLineGroupConfigKey(params: {
   if (!groups) {
     return undefined;
   }
-  return resolveLineGroupLookupIds(params.groupId).find((candidate) => Object.hasOwn(groups, candidate));
+  return resolveLineGroupLookupIds(params.groupId).find((candidate) =>
+    Object.hasOwn(groups, candidate),
+  );
 }
 
 export function resolveLineGroupHistoryKey(params: {

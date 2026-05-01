@@ -35,12 +35,16 @@ export function findAgentEntryIndex(list: AgentEntry[], agentId: string): number
 }
 
 function resolveAgentName(cfg: RemoteClawConfig, agentId: string) {
-  const entry = listAgentEntries(cfg).find((agent) => normalizeAgentId(agent.id) === normalizeAgentId(agentId));
+  const entry = listAgentEntries(cfg).find(
+    (agent) => normalizeAgentId(agent.id) === normalizeAgentId(agentId),
+  );
   return entry?.name?.trim() || undefined;
 }
 
 function resolveAgentModel(cfg: RemoteClawConfig, agentId: string) {
-  const entry = listAgentEntries(cfg).find((agent) => normalizeAgentId(agent.id) === normalizeAgentId(agentId));
+  const entry = listAgentEntries(cfg).find(
+    (agent) => normalizeAgentId(agent.id) === normalizeAgentId(agentId),
+  );
   if (entry?.model) {
     if (typeof entry.model === "string" && entry.model.trim()) {
       return entry.model.trim();
@@ -82,7 +86,9 @@ export function buildAgentSummaries(cfg: RemoteClawConfig): AgentSummary[] {
   return ordered.map((id) => {
     const workspace = resolveAgentWorkspaceDir(cfg, id);
     const identity = loadAgentIdentity(workspace);
-    const configIdentity = configuredAgents.find((agent) => normalizeAgentId(agent.id) === id)?.identity;
+    const configIdentity = configuredAgents.find(
+      (agent) => normalizeAgentId(agent.id) === id,
+    )?.identity;
     const identityName = (identity?.name as string | undefined) ?? configIdentity?.name?.trim();
     const identityEmoji = (identity?.emoji as string | undefined) ?? configIdentity?.emoji?.trim();
     const identitySource = identity

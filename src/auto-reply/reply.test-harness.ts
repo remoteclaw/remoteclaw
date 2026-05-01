@@ -154,7 +154,9 @@ export function installReplyRuntimeMocks(mocks: ReplyRuntimeMocks) {
 export function resetReplyRuntimeMocks(mocks: ReplyRuntimeMocks) {
   mocks.runEmbeddedPiAgent.mockClear();
   mocks.loadModelCatalog.mockClear();
-  mocks.loadModelCatalog.mockResolvedValue([{ id: "claude-opus-4-5", name: "Opus 4.5", provider: "anthropic" }]);
+  mocks.loadModelCatalog.mockResolvedValue([
+    { id: "claude-opus-4-5", name: "Opus 4.5", provider: "anthropic" },
+  ]);
 }
 
 export function makeEmbeddedTextResult(text: string) {

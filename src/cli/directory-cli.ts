@@ -71,7 +71,10 @@ export function registerDirectoryCli(program: Command) {
       () =>
         `\n${theme.heading("Examples:")}\n${formatHelpExamples([
           ["remoteclaw directory self --channel slack", "Show the connected account identity."],
-          ['remoteclaw directory peers list --channel slack --query "alice"', "Search contact/user IDs by name."],
+          [
+            'remoteclaw directory peers list --channel slack --query "alice"',
+            "Search contact/user IDs by name.",
+          ],
           ["remoteclaw directory groups list --channel discord", "List available groups/channels."],
           [
             "remoteclaw directory groups members --channel discord --group-id <id>",
@@ -121,7 +124,8 @@ export function registerDirectoryCli(program: Command) {
       channel: params.opts.channel as string | undefined,
       account: params.opts.account as string | undefined,
     });
-    const fn = params.action === "listPeers" ? plugin.directory?.listPeers : plugin.directory?.listGroups;
+    const fn =
+      params.action === "listPeers" ? plugin.directory?.listPeers : plugin.directory?.listGroups;
     if (!fn) {
       throw new Error(`Channel ${channelId} does not support directory ${params.unsupported}`);
     }
@@ -139,42 +143,44 @@ export function registerDirectoryCli(program: Command) {
     printDirectoryList({ title: params.title, emptyMessage: params.emptyMessage, entries: result });
   };
 
-  withChannel(directory.command("self").description("Show the current account user")).action(async (opts) => {
-    try {
-      const { cfg, channelId, accountId, plugin } = await resolve({
-        channel: opts.channel as string | undefined,
-        account: opts.account as string | undefined,
-      });
-      const fn = plugin.directory?.self;
-      if (!fn) {
-        throw new Error(`Channel ${channelId} does not support directory self`);
+  withChannel(directory.command("self").description("Show the current account user")).action(
+    async (opts) => {
+      try {
+        const { cfg, channelId, accountId, plugin } = await resolve({
+          channel: opts.channel as string | undefined,
+          account: opts.account as string | undefined,
+        });
+        const fn = plugin.directory?.self;
+        if (!fn) {
+          throw new Error(`Channel ${channelId} does not support directory self`);
+        }
+        const result = await fn({ cfg, accountId, runtime: defaultRuntime });
+        if (opts.json) {
+          defaultRuntime.log(JSON.stringify(result, null, 2));
+          return;
+        }
+        if (!result) {
+          defaultRuntime.log(theme.muted("Not available."));
+          return;
+        }
+        const tableWidth = getTerminalTableWidth();
+        defaultRuntime.log(theme.heading("Self"));
+        defaultRuntime.log(
+          renderTable({
+            width: tableWidth,
+            columns: [
+              { key: "ID", header: "ID", minWidth: 16, flex: true },
+              { key: "Name", header: "Name", minWidth: 18, flex: true },
+            ],
+            rows: buildRows([result]),
+          }).trimEnd(),
+        );
+      } catch (err) {
+        defaultRuntime.error(danger(String(err)));
+        defaultRuntime.exit(1);
       }
-      const result = await fn({ cfg, accountId, runtime: defaultRuntime });
-      if (opts.json) {
-        defaultRuntime.log(JSON.stringify(result, null, 2));
-        return;
-      }
-      if (!result) {
-        defaultRuntime.log(theme.muted("Not available."));
-        return;
-      }
-      const tableWidth = getTerminalTableWidth();
-      defaultRuntime.log(theme.heading("Self"));
-      defaultRuntime.log(
-        renderTable({
-          width: tableWidth,
-          columns: [
-            { key: "ID", header: "ID", minWidth: 16, flex: true },
-            { key: "Name", header: "Name", minWidth: 18, flex: true },
-          ],
-          rows: buildRows([result]),
-        }).trimEnd(),
-      );
-    } catch (err) {
-      defaultRuntime.error(danger(String(err)));
-      defaultRuntime.exit(1);
-    }
-  });
+    },
+  );
 
   const peers = directory.command("peers").description("Peer directory (contacts/users)");
   withChannel(peers.command("list").description("List peers"))
@@ -214,7 +220,12 @@ export function registerDirectoryCli(program: Command) {
       }
     });
 
-  withChannel(groups.command("members").description("List group members").requiredOption("--group-id <id>", "Group id"))
+  withChannel(
+    groups
+      .command("members")
+      .description("List group members")
+      .requiredOption("--group-id <id>", "Group id"),
+  )
     .option("--limit <n>", "Limit results")
     .action(async (opts) => {
       try {

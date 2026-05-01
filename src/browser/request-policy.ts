@@ -24,14 +24,19 @@ export function isPersistentBrowserProfileMutation(method: string, path: string)
   return method === "DELETE" && /^\/profiles\/[^/]+$/.test(normalizedPath);
 }
 
-export function resolveRequestedBrowserProfile(params: BrowserRequestProfileParams): string | undefined {
-  const queryProfile = typeof params.query?.profile === "string" ? params.query.profile.trim() : undefined;
+export function resolveRequestedBrowserProfile(
+  params: BrowserRequestProfileParams,
+): string | undefined {
+  const queryProfile =
+    typeof params.query?.profile === "string" ? params.query.profile.trim() : undefined;
   if (queryProfile) {
     return queryProfile;
   }
   if (params.body && typeof params.body === "object") {
     const bodyProfile =
-      "profile" in params.body && typeof params.body.profile === "string" ? params.body.profile.trim() : undefined;
+      "profile" in params.body && typeof params.body.profile === "string"
+        ? params.body.profile.trim()
+        : undefined;
     if (bodyProfile) {
       return bodyProfile;
     }

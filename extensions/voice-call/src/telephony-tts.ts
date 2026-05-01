@@ -4,7 +4,11 @@ import { deepMergeDefined } from "./deep-merge.js";
 import { convertPcmToMulaw8k } from "./telephony-audio.js";
 
 export type TelephonyTtsRuntime = {
-  textToSpeechTelephony: (params: { text: string; cfg: CoreConfig; prefsPath?: string }) => Promise<{
+  textToSpeechTelephony: (params: {
+    text: string;
+    cfg: CoreConfig;
+    prefsPath?: string;
+  }) => Promise<{
     success: boolean;
     audioBuffer?: Buffer;
     sampleRate?: number;
@@ -76,7 +80,10 @@ function applyTtsOverride(coreConfig: CoreConfig, override?: VoiceCallTtsConfig)
   };
 }
 
-function mergeTtsConfig(base?: VoiceCallTtsConfig, override?: VoiceCallTtsConfig): VoiceCallTtsConfig | undefined {
+function mergeTtsConfig(
+  base?: VoiceCallTtsConfig,
+  override?: VoiceCallTtsConfig,
+): VoiceCallTtsConfig | undefined {
   if (!base && !override) {
     return undefined;
   }

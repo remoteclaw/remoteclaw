@@ -77,9 +77,13 @@ describe("git commit resolution", () => {
     execFileSync("git", ["init", "-q"], { cwd: otherRepo });
     await fs.writeFile(path.join(otherRepo, "note.txt"), "x\n", "utf-8");
     execFileSync("git", ["add", "note.txt"], { cwd: otherRepo });
-    execFileSync("git", ["-c", "user.name=test", "-c", "user.email=test@example.com", "commit", "-q", "-m", "init"], {
-      cwd: otherRepo,
-    });
+    execFileSync(
+      "git",
+      ["-c", "user.name=test", "-c", "user.email=test@example.com", "commit", "-q", "-m", "init"],
+      {
+        cwd: otherRepo,
+      },
+    );
     const otherHead = execFileSync("git", ["rev-parse", "--short=7", "HEAD"], {
       cwd: otherRepo,
       encoding: "utf-8",
@@ -119,10 +123,14 @@ describe("git commit resolution", () => {
     const temp = await makeTempDir("git-commit-build-info-cache");
     const readBuildInfoCommit = vi.fn(() => "deadbee");
 
-    expect(resolveCommitHash({ cwd: temp, env: {}, readers: { readBuildInfoCommit } })).toBe("deadbee");
+    expect(resolveCommitHash({ cwd: temp, env: {}, readers: { readBuildInfoCommit } })).toBe(
+      "deadbee",
+    );
     const firstCallRequires = readBuildInfoCommit.mock.calls.length;
     expect(firstCallRequires).toBeGreaterThan(0);
-    expect(resolveCommitHash({ cwd: temp, env: {}, readers: { readBuildInfoCommit } })).toBe("deadbee");
+    expect(resolveCommitHash({ cwd: temp, env: {}, readers: { readBuildInfoCommit } })).toBe(
+      "deadbee",
+    );
     expect(readBuildInfoCommit.mock.calls.length).toBe(firstCallRequires);
   });
 
@@ -163,8 +171,12 @@ describe("git commit resolution", () => {
       .trim()
       .slice(0, 7);
 
-    expect(() => resolveCommitHash({ moduleUrl: "not-a-file-url", cwd: repoRoot, env: {} })).not.toThrow();
-    expect(resolveCommitHash({ moduleUrl: "not-a-file-url", cwd: repoRoot, env: {} })).toBe(repoHead);
+    expect(() =>
+      resolveCommitHash({ moduleUrl: "not-a-file-url", cwd: repoRoot, env: {} }),
+    ).not.toThrow();
+    expect(resolveCommitHash({ moduleUrl: "not-a-file-url", cwd: repoRoot, env: {} })).toBe(
+      repoHead,
+    );
   });
 
   it("does not walk out of the remoteclaw package into a host repo", async () => {
@@ -174,9 +186,13 @@ describe("git commit resolution", () => {
     execFileSync("git", ["init", "-q"], { cwd: hostRepo });
     await fs.writeFile(path.join(hostRepo, "host.txt"), "x\n", "utf-8");
     execFileSync("git", ["add", "host.txt"], { cwd: hostRepo });
-    execFileSync("git", ["-c", "user.name=test", "-c", "user.email=test@example.com", "commit", "-q", "-m", "init"], {
-      cwd: hostRepo,
-    });
+    execFileSync(
+      "git",
+      ["-c", "user.name=test", "-c", "user.email=test@example.com", "commit", "-q", "-m", "init"],
+      {
+        cwd: hostRepo,
+      },
+    );
 
     const packageRoot = path.join(hostRepo, "node_modules", "remoteclaw");
     await fs.mkdir(path.join(packageRoot, "dist"), { recursive: true });
@@ -274,8 +290,12 @@ describe("git commit resolution", () => {
 
   it("formats env-provided commit strings consistently", async () => {
     const temp = await makeTempDir("git-commit-env");
-    expect(resolveCommitHash({ cwd: temp, env: { GIT_COMMIT: "ABCDEF0123456789" } })).toBe("abcdef0");
-    expect(resolveCommitHash({ cwd: temp, env: { GIT_SHA: "commit abcdef0123456789 dirty" } })).toBe("abcdef0");
+    expect(resolveCommitHash({ cwd: temp, env: { GIT_COMMIT: "ABCDEF0123456789" } })).toBe(
+      "abcdef0",
+    );
+    expect(
+      resolveCommitHash({ cwd: temp, env: { GIT_SHA: "commit abcdef0123456789 dirty" } }),
+    ).toBe("abcdef0");
     expect(resolveCommitHash({ cwd: temp, env: { GIT_COMMIT: "not-a-sha" } })).toBeNull();
     expect(resolveCommitHash({ cwd: temp, env: { GIT_COMMIT: "" } })).toBeNull();
   });

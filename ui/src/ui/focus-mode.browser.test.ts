@@ -28,7 +28,9 @@ describe("chat focus mode", () => {
     expect(shell?.classList.contains("shell--chat-focus")).toBe(false);
 
     const chatLink = app.querySelector<HTMLAnchorElement>('a.nav-item[href="/chat"]');
-    chatLink?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 }));
+    chatLink?.dispatchEvent(
+      new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 }),
+    );
 
     await app.updateComplete;
     expect(app.tab).toBe("chat");

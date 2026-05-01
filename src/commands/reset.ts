@@ -6,7 +6,12 @@ import type { RuntimeEnv } from "../runtime.js";
 import { selectStyled } from "../terminal/prompt-select-styled.js";
 import { stylePromptMessage, stylePromptTitle } from "../terminal/prompt-style.js";
 import { resolveCleanupPlanFromDisk } from "./cleanup-plan.js";
-import { listAgentSessionDirs, removePath, removeStateAndLinkedPaths, removeWorkspaceDirs } from "./cleanup-utils.js";
+import {
+  listAgentSessionDirs,
+  removePath,
+  removeStateAndLinkedPaths,
+  removeWorkspaceDirs,
+} from "./cleanup-utils.js";
 
 export type ResetScope = "config" | "config+creds+sessions" | "full";
 
@@ -134,9 +139,13 @@ export async function resetCommand(runtime: RuntimeEnv, opts: ResetOptions) {
   }
 
   if (scope === "full") {
-    await removeStateAndLinkedPaths({ stateDir, configPath, oauthDir, configInsideState, oauthInsideState }, runtime, {
-      dryRun,
-    });
+    await removeStateAndLinkedPaths(
+      { stateDir, configPath, oauthDir, configInsideState, oauthInsideState },
+      runtime,
+      {
+        dryRun,
+      },
+    );
     await removeWorkspaceDirs(workspaceDirs, runtime, { dryRun });
     runtime.log(`Next: ${formatCliCommand("remoteclaw onboard --install-daemon")}`);
     return;

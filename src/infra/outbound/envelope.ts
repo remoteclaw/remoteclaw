@@ -15,8 +15,9 @@ type BuildEnvelopeParams = {
   flattenDelivery?: boolean;
 };
 
-const isOutboundPayloadJson = (payload: ReplyPayload | OutboundPayloadJson): payload is OutboundPayloadJson =>
-  "mediaUrl" in payload;
+const isOutboundPayloadJson = (
+  payload: ReplyPayload | OutboundPayloadJson,
+): payload is OutboundPayloadJson => "mediaUrl" in payload;
 
 export function buildOutboundResultEnvelope(
   params: BuildEnvelopeParams,

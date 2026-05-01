@@ -57,7 +57,12 @@ describe("downloadMatrixMedia", () => {
 
     // decryptMedia should be called with just the file object (it handles download internally)
     expect(decryptMedia).toHaveBeenCalledWith(file);
-    expect(saveMediaBuffer).toHaveBeenCalledWith(Buffer.from("decrypted"), "image/png", "inbound", 1024);
+    expect(saveMediaBuffer).toHaveBeenCalledWith(
+      Buffer.from("decrypted"),
+      "image/png",
+      "inbound",
+      1024,
+    );
     expect(result?.path).toBe("/tmp/media");
   });
 

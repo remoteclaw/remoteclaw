@@ -146,7 +146,9 @@ export async function autoMigrateLegacyStateDir(params: {
   while (legacyStat.isSymbolicLink()) {
     const legacyTarget = legacyDir ? resolveSymlinkTarget(legacyDir) : null;
     if (!legacyTarget) {
-      warnings.push(`Legacy state dir is a symlink (${legacyDir ?? "unknown"}); could not resolve target.`);
+      warnings.push(
+        `Legacy state dir is a symlink (${legacyDir ?? "unknown"}); could not resolve target.`,
+      );
       return { migrated: false, skipped: false, changes, warnings };
     }
     if (path.resolve(legacyTarget) === path.resolve(targetDir)) {
@@ -184,7 +186,9 @@ export async function autoMigrateLegacyStateDir(params: {
     if (legacyDir && isLegacyDirSymlinkMirror(legacyDir, targetDir)) {
       return { migrated: false, skipped: false, changes, warnings };
     }
-    warnings.push(`State dir migration skipped: target already exists (${targetDir}). Remove or merge manually.`);
+    warnings.push(
+      `State dir migration skipped: target already exists (${targetDir}). Remove or merge manually.`,
+    );
     return { migrated: false, skipped: false, changes, warnings };
   }
 
@@ -194,7 +198,9 @@ export async function autoMigrateLegacyStateDir(params: {
     }
     fs.renameSync(legacyDir, targetDir);
   } catch (err) {
-    warnings.push(`Failed to move legacy state dir (${legacyDir ?? "unknown"} → ${targetDir}): ${String(err)}`);
+    warnings.push(
+      `Failed to move legacy state dir (${legacyDir ?? "unknown"} → ${targetDir}): ${String(err)}`,
+    );
     return { migrated: false, skipped: false, changes, warnings };
   }
 
@@ -222,7 +228,9 @@ export async function autoMigrateLegacyStateDir(params: {
           throw new Error("Legacy state dir not found", { cause: fallbackErr });
         }
         fs.renameSync(targetDir, legacyDir);
-        warnings.push(`State dir migration rolled back (failed to link legacy path): ${String(fallbackErr)}`);
+        warnings.push(
+          `State dir migration rolled back (failed to link legacy path): ${String(fallbackErr)}`,
+        );
         return { migrated: false, skipped: false, changes: [], warnings };
       } catch (rollbackErr) {
         warnings.push(

@@ -25,7 +25,10 @@ export const MODULE_ATTESTATIONS = {
   getApiKeyForModel: "partial", // returns undefined; callers tolerate
 } as const;
 
-function resolveProviderConfig(cfg: RemoteClawConfig | undefined, provider: string): ModelProviderConfig | undefined {
+function resolveProviderConfig(
+  cfg: RemoteClawConfig | undefined,
+  provider: string,
+): ModelProviderConfig | undefined {
   const providers = cfg?.models?.providers ?? {};
   const direct = providers[provider] as ModelProviderConfig | undefined;
   if (direct) {
@@ -33,13 +36,18 @@ function resolveProviderConfig(cfg: RemoteClawConfig | undefined, provider: stri
   }
   const normalized = normalizeProviderId(provider);
   if (normalized === provider) {
-    const matched = Object.entries(providers).find(([key]) => normalizeProviderId(key) === normalized);
+    const matched = Object.entries(providers).find(
+      ([key]) => normalizeProviderId(key) === normalized,
+    );
     return matched?.[1];
   }
   return Object.entries(providers).find(([key]) => normalizeProviderId(key) === normalized)?.[1];
 }
 
-export function getCustomProviderApiKey(cfg: RemoteClawConfig | undefined, provider: string): string | undefined {
+export function getCustomProviderApiKey(
+  cfg: RemoteClawConfig | undefined,
+  provider: string,
+): string | undefined {
   const entry = resolveProviderConfig(cfg, provider);
   return normalizeOptionalSecretInput(entry?.apiKey);
 }

@@ -31,7 +31,10 @@ function makeParams(overrides: Partial<AgentExecuteParams> = {}): AgentExecutePa
   };
 }
 
-function streamEventLine(innerEvent: Record<string, unknown>, envelope: Record<string, unknown> = {}): string {
+function streamEventLine(
+  innerEvent: Record<string, unknown>,
+  envelope: Record<string, unknown> = {},
+): string {
   return JSON.stringify({
     type: "stream_event",
     uuid: "test-uuid",
@@ -138,7 +141,9 @@ describe("ClaudeCliRuntime", () => {
     });
 
     it("adds --append-system-prompt when systemPrompt is provided", () => {
-      const args = runtime.testBuildArgs(makeParams({ systemPrompt: "You are a helpful assistant." }));
+      const args = runtime.testBuildArgs(
+        makeParams({ systemPrompt: "You are a helpful assistant." }),
+      );
       expect(args).toContain("--append-system-prompt");
       const idx = args.indexOf("--append-system-prompt");
       expect(args[idx + 1]).toBe("You are a helpful assistant.");
@@ -174,7 +179,9 @@ describe("ClaudeCliRuntime", () => {
         }),
       );
       const idx = args.indexOf("--append-system-prompt");
-      expect(args[idx + 1]).toBe("System instructions\n\n[Thread history - for context]\nAlice: Hi");
+      expect(args[idx + 1]).toBe(
+        "System instructions\n\n[Thread history - for context]\nAlice: Hi",
+      );
     });
 
     it("excludes threadContext from --append-system-prompt on resume", () => {
@@ -351,7 +358,9 @@ describe("ClaudeCliRuntime", () => {
       );
 
       // Stop block → emit tool event
-      const event = runtime.testExtractEvent(streamEventLine({ type: "content_block_stop", index: 1 }));
+      const event = runtime.testExtractEvent(
+        streamEventLine({ type: "content_block_stop", index: 1 }),
+      );
 
       expect(event).toEqual({
         type: "tool_use",
@@ -362,7 +371,9 @@ describe("ClaudeCliRuntime", () => {
     });
 
     it("skips content_block_stop when no tool is buffered (text block end)", () => {
-      const event = runtime.testExtractEvent(streamEventLine({ type: "content_block_stop", index: 0 }));
+      const event = runtime.testExtractEvent(
+        streamEventLine({ type: "content_block_stop", index: 0 }),
+      );
       expect(event).toBeNull();
     });
 
@@ -415,7 +426,9 @@ describe("ClaudeCliRuntime", () => {
     });
 
     it("skips ping events", () => {
-      const event = runtime.testExtractEvent(streamEventLine({ type: "ping" }, { session_id: "sess-abc" }));
+      const event = runtime.testExtractEvent(
+        streamEventLine({ type: "ping" }, { session_id: "sess-abc" }),
+      );
       expect(event).toBeNull();
     });
 
@@ -455,7 +468,9 @@ describe("ClaudeCliRuntime", () => {
       runtime.testExtractEvent(resultLine());
 
       const doneEvent: AgentDoneEvent = { type: "done", result: makeDoneResult() };
-      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(doneEvent);
+      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(
+        doneEvent,
+      );
       expect(doneEvent.result.text).toBe("Hello World");
     });
 
@@ -469,7 +484,9 @@ describe("ClaudeCliRuntime", () => {
       );
 
       // Stop immediately (no input_json_delta)
-      const event = runtime.testExtractEvent(streamEventLine({ type: "content_block_stop", index: 1 }));
+      const event = runtime.testExtractEvent(
+        streamEventLine({ type: "content_block_stop", index: 1 }),
+      );
 
       expect(event).toEqual({
         type: "tool_use",
@@ -512,7 +529,9 @@ describe("ClaudeCliRuntime", () => {
         }),
       );
 
-      const event = runtime.testExtractEvent(streamEventLine({ type: "content_block_stop", index: 1 }));
+      const event = runtime.testExtractEvent(
+        streamEventLine({ type: "content_block_stop", index: 1 }),
+      );
 
       expect(event).toEqual({
         type: "tool_use",
@@ -540,7 +559,9 @@ describe("ClaudeCliRuntime", () => {
       runtime.testExtractEvent(resultLine({ session_id: undefined }));
 
       const doneEvent: AgentDoneEvent = { type: "done", result: makeDoneResult() };
-      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(doneEvent);
+      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(
+        doneEvent,
+      );
       expect(doneEvent.result.sessionId).toBe("first-session");
     });
   });
@@ -721,7 +742,9 @@ describe("ClaudeCliRuntime", () => {
   describe("done event enrichment", () => {
     it("enriches done event with accumulated text, session, usage, and result metadata", () => {
       // Simulate a stream sequence
-      runtime.testExtractEvent(streamEventLine({ type: "message_start", message: {} }, { session_id: "sess-enrich" }));
+      runtime.testExtractEvent(
+        streamEventLine({ type: "message_start", message: {} }, { session_id: "sess-enrich" }),
+      );
 
       runtime.testExtractEvent(
         streamEventLine({
@@ -769,7 +792,9 @@ describe("ClaudeCliRuntime", () => {
       };
 
       // Call enrichDoneEvent via the instance
-      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(doneEvent);
+      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(
+        doneEvent,
+      );
 
       expect(doneEvent.result.text).toBe("Hello World");
       expect(doneEvent.result.sessionId).toBe("sess-enrich");
@@ -800,7 +825,9 @@ describe("ClaudeCliRuntime", () => {
         result: makeDoneResult(),
       };
 
-      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(doneEvent);
+      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(
+        doneEvent,
+      );
 
       expect(doneEvent.result.sessionId).toBe("from-envelope");
     });
@@ -822,7 +849,9 @@ describe("ClaudeCliRuntime", () => {
         result: makeDoneResult(),
       };
 
-      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(doneEvent);
+      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(
+        doneEvent,
+      );
 
       expect(doneEvent.result.usage).toEqual({
         inputTokens: 0,

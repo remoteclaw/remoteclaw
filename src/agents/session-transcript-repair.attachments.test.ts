@@ -69,9 +69,9 @@ describe("sanitizeToolCallInputs redacts sessions_spawn attachments", () => {
       input?: { attachments?: Array<{ content?: string }> };
       arguments?: { attachments?: Array<{ content?: string }> };
     } | null;
-    expect(tool?.input?.attachments?.[0]?.content || tool?.arguments?.attachments?.[0]?.content).toBe(
-      "__REMOTECLAW_REDACTED__",
-    );
+    expect(
+      tool?.input?.attachments?.[0]?.content || tool?.arguments?.attachments?.[0]?.content,
+    ).toBe("__REMOTECLAW_REDACTED__");
     expect(JSON.stringify(out)).not.toContain(secret);
   });
 });

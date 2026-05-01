@@ -38,7 +38,10 @@ export function registerAppMountHooks() {
     document.body.innerHTML = "";
     await i18n.setLocale("en");
     vi.stubGlobal("WebSocket", MockWebSocket as unknown as typeof WebSocket);
-    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>(() => undefined)) as unknown as typeof fetch);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>(() => undefined)) as unknown as typeof fetch,
+    );
   });
 
   afterEach(async () => {

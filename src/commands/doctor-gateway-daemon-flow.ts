@@ -1,7 +1,10 @@
 import { formatCliCommand } from "../cli/command-format.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { resolveGatewayPort } from "../config/config.js";
-import { resolveGatewayLaunchAgentLabel, resolveNodeLaunchAgentLabel } from "../daemon/constants.js";
+import {
+  resolveGatewayLaunchAgentLabel,
+  resolveNodeLaunchAgentLabel,
+} from "../daemon/constants.js";
 import { readLastGatewayErrorLine } from "../daemon/diagnostics.js";
 import {
   isLaunchAgentListed,
@@ -66,7 +69,9 @@ async function maybeRepairLaunchAgentBootstrap(params: {
   params.runtime.log(`Bootstrapping ${params.title} LaunchAgent...`);
   const repair = await repairLaunchAgentBootstrap({ env: params.env });
   if (!repair.ok) {
-    params.runtime.error(`${params.title} LaunchAgent bootstrap failed: ${repair.detail ?? "unknown error"}`);
+    params.runtime.error(
+      `${params.title} LaunchAgent bootstrap failed: ${repair.detail ?? "unknown error"}`,
+    );
     return false;
   }
 

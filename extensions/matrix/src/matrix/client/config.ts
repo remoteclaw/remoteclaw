@@ -1,7 +1,10 @@
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
 import { fetchWithSsrFGuard } from "remoteclaw/plugin-sdk/matrix";
 import { getMatrixRuntime } from "../../runtime.js";
-import { normalizeResolvedSecretInputString, normalizeSecretInputString } from "../../secret-input.js";
+import {
+  normalizeResolvedSecretInputString,
+  normalizeSecretInputString,
+} from "../../secret-input.js";
 import type { CoreConfig } from "../../types.js";
 import { loadMatrixSdk } from "../sdk-runtime.js";
 import { ensureMatrixSdkLoggingConfigured } from "./logging.js";
@@ -55,20 +58,26 @@ export function resolveMatrixConfigForAccount(
   const matrix = accountConfig ? deepMergeConfig(matrixBase, accountConfig) : matrixBase;
 
   const homeserver =
-    clean(matrix.homeserver, "channels.matrix.homeserver") || clean(env.MATRIX_HOMESERVER, "MATRIX_HOMESERVER");
-  const userId = clean(matrix.userId, "channels.matrix.userId") || clean(env.MATRIX_USER_ID, "MATRIX_USER_ID");
+    clean(matrix.homeserver, "channels.matrix.homeserver") ||
+    clean(env.MATRIX_HOMESERVER, "MATRIX_HOMESERVER");
+  const userId =
+    clean(matrix.userId, "channels.matrix.userId") || clean(env.MATRIX_USER_ID, "MATRIX_USER_ID");
   const accessToken =
     clean(matrix.accessToken, "channels.matrix.accessToken") ||
     clean(env.MATRIX_ACCESS_TOKEN, "MATRIX_ACCESS_TOKEN") ||
     undefined;
   const password =
-    clean(matrix.password, "channels.matrix.password") || clean(env.MATRIX_PASSWORD, "MATRIX_PASSWORD") || undefined;
+    clean(matrix.password, "channels.matrix.password") ||
+    clean(env.MATRIX_PASSWORD, "MATRIX_PASSWORD") ||
+    undefined;
   const deviceName =
     clean(matrix.deviceName, "channels.matrix.deviceName") ||
     clean(env.MATRIX_DEVICE_NAME, "MATRIX_DEVICE_NAME") ||
     undefined;
   const initialSyncLimit =
-    typeof matrix.initialSyncLimit === "number" ? Math.max(0, Math.floor(matrix.initialSyncLimit)) : undefined;
+    typeof matrix.initialSyncLimit === "number"
+      ? Math.max(0, Math.floor(matrix.initialSyncLimit))
+      : undefined;
   const encryption = matrix.encryption ?? false;
   return {
     homeserver,
@@ -103,8 +112,12 @@ export async function resolveMatrixAuth(params?: {
     throw new Error("Matrix homeserver is required (matrix.homeserver)");
   }
 
-  const { loadMatrixCredentials, saveMatrixCredentials, credentialsMatchConfig, touchMatrixCredentials } =
-    await import("../credentials.js");
+  const {
+    loadMatrixCredentials,
+    saveMatrixCredentials,
+    credentialsMatchConfig,
+    touchMatrixCredentials,
+  } = await import("../credentials.js");
 
   const accountId = params?.accountId;
   const cached = loadMatrixCredentials(env, accountId);
@@ -167,7 +180,9 @@ export async function resolveMatrixAuth(params?: {
   }
 
   if (!resolved.password) {
-    throw new Error("Matrix password is required when no access token is configured (matrix.password)");
+    throw new Error(
+      "Matrix password is required when no access token is configured (matrix.password)",
+    );
   }
 
   // Login with password using HTTP API.

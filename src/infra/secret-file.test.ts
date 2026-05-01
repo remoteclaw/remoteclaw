@@ -24,9 +24,9 @@ async function expectSecretFileError(params: {
 }): Promise<void> {
   const dir = await createTempDir();
   const file = await params.setup(dir);
-  expect(() => readSecretFileSync(file, params.secretLabel ?? "Gateway password", params.options)).toThrow(
-    params.expectedMessage(file),
-  );
+  expect(() =>
+    readSecretFileSync(file, params.secretLabel ?? "Gateway password", params.options),
+  ).toThrow(params.expectedMessage(file));
 }
 
 async function createSecretPath(setup: (dir: string) => Promise<string>): Promise<string> {
@@ -36,7 +36,9 @@ async function createSecretPath(setup: (dir: string) => Promise<string>): Promis
 
 describe("readSecretFileSync", () => {
   it("rejects blank file paths", () => {
-    expect(() => readSecretFileSync("   ", "Gateway password")).toThrow("Gateway password file path is empty.");
+    expect(() => readSecretFileSync("   ", "Gateway password")).toThrow(
+      "Gateway password file path is empty.",
+    );
   });
 
   it("reads and trims a regular secret file", async () => {

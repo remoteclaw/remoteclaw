@@ -125,7 +125,10 @@ export class PlivoProvider implements VoiceCallProvider {
     };
   }
 
-  parseWebhookEvent(ctx: WebhookContext, options?: WebhookParseOptions): ProviderWebhookParseResult {
+  parseWebhookEvent(
+    ctx: WebhookContext,
+    options?: WebhookParseOptions,
+  ): ProviderWebhookParseResult {
     const flow = typeof ctx.query?.flow === "string" ? ctx.query.flow.trim() : "";
 
     const parsed = this.parseBody(ctx.rawBody);
@@ -150,7 +153,9 @@ export class PlivoProvider implements VoiceCallProvider {
         this.pendingSpeakByCallId.delete(callId);
       }
 
-      const xml = pending ? PlivoProvider.xmlSpeak(pending.text, pending.locale) : PlivoProvider.xmlKeepAlive();
+      const xml = pending
+        ? PlivoProvider.xmlSpeak(pending.text, pending.locale)
+        : PlivoProvider.xmlKeepAlive();
       return {
         events: [],
         providerResponseBody: xml,
@@ -195,13 +200,19 @@ export class PlivoProvider implements VoiceCallProvider {
     return {
       events: event ? [event] : [],
       providerResponseBody:
-        flow === "answer" || flow === "getinput" ? PlivoProvider.xmlKeepAlive() : PlivoProvider.xmlEmpty(),
+        flow === "answer" || flow === "getinput"
+          ? PlivoProvider.xmlKeepAlive()
+          : PlivoProvider.xmlEmpty(),
       providerResponseHeaders: { "Content-Type": "text/xml" },
       statusCode: 200,
     };
   }
 
-  private normalizeEvent(params: URLSearchParams, callIdOverride?: string, dedupeKey?: string): NormalizedEvent | null {
+  private normalizeEvent(
+    params: URLSearchParams,
+    callIdOverride?: string,
+    dedupeKey?: string,
+  ): NormalizedEvent | null {
     const callUuid = params.get("CallUUID") || "";
     const requestUuid = params.get("RequestUUID") || "";
 
@@ -221,7 +232,11 @@ export class PlivoProvider implements VoiceCallProvider {
       providerCallId: callUuid || requestUuid || undefined,
       timestamp: Date.now(),
       direction:
-        direction === "inbound" ? ("inbound" as const) : direction === "outbound" ? ("outbound" as const) : undefined,
+        direction === "inbound"
+          ? ("inbound" as const)
+          : direction === "outbound"
+            ? ("outbound" as const)
+            : undefined,
       from,
       to,
     };
@@ -250,7 +265,12 @@ export class PlivoProvider implements VoiceCallProvider {
       return { ...baseEvent, type: "call.answered" };
     }
 
-    if (callStatus === "completed" || callStatus === "busy" || callStatus === "no-answer" || callStatus === "failed") {
+    if (
+      callStatus === "completed" ||
+      callStatus === "busy" ||
+      callStatus === "no-answer" ||
+      callStatus === "failed"
+    ) {
       return {
         ...baseEvent,
         type: "call.ended",
@@ -304,7 +324,9 @@ export class PlivoProvider implements VoiceCallProvider {
       },
     });
 
-    const requestUuid = Array.isArray(result.request_uuid) ? result.request_uuid[0] : result.request_uuid;
+    const requestUuid = Array.isArray(result.request_uuid)
+      ? result.request_uuid[0]
+      : result.request_uuid;
     if (!requestUuid) {
       throw new Error("Plivo call create returned no request_uuid");
     }
@@ -336,12 +358,17 @@ export class PlivoProvider implements VoiceCallProvider {
     });
   }
 
-  private resolveCallContext(params: { providerCallId: string; callId: string; operation: string }): {
+  private resolveCallContext(params: {
+    providerCallId: string;
+    callId: string;
+    operation: string;
+  }): {
     callUuid: string;
     webhookBase: string;
   } {
     const callUuid = this.requestUuidToCallUuid.get(params.providerCallId) ?? params.providerCallId;
-    const webhookBase = this.callUuidToWebhookUrl.get(callUuid) || this.callIdToWebhookUrl.get(params.callId);
+    const webhookBase =
+      this.callUuidToWebhookUrl.get(callUuid) || this.callIdToWebhookUrl.get(params.callId);
     if (!webhookBase) {
       throw new Error("Missing webhook URL for this call (provider state missing)");
     }
@@ -491,11 +518,16 @@ export class PlivoProvider implements VoiceCallProvider {
 
   private getCallIdFromQuery(ctx: WebhookContext): string | undefined {
     const callId =
-      typeof ctx.query?.callId === "string" && ctx.query.callId.trim() ? ctx.query.callId.trim() : undefined;
+      typeof ctx.query?.callId === "string" && ctx.query.callId.trim()
+        ? ctx.query.callId.trim()
+        : undefined;
     return callId || undefined;
   }
 
-  private buildActionUrl(ctx: WebhookContext, opts: { flow: string; callId?: string }): string | null {
+  private buildActionUrl(
+    ctx: WebhookContext,
+    opts: { flow: string; callId?: string },
+  ): string | null {
     const base = this.baseWebhookUrlFromCtx(ctx);
     if (!base) {
       return null;

@@ -6,7 +6,10 @@ export {
   resolveDefaultSignalAccountId,
   resolveSignalAccount,
 } from "../../extensions/signal/src/accounts.js";
-export { looksLikeSignalTargetId, normalizeSignalMessagingTarget } from "../channels/plugins/normalize/signal.js";
+export {
+  looksLikeSignalTargetId,
+  normalizeSignalMessagingTarget,
+} from "../channels/plugins/normalize/signal.js";
 
 export {
   resolveAllowlistProviderRuntimeGroupPolicy,

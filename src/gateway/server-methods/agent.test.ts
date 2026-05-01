@@ -21,14 +21,21 @@ vi.mock("../session-utils.js", async () => {
 });
 
 vi.mock("../../config/sessions.js", async () => {
-  const actual = await vi.importActual<typeof import("../../config/sessions.js")>("../../config/sessions.js");
+  const actual = await vi.importActual<typeof import("../../config/sessions.js")>(
+    "../../config/sessions.js",
+  );
   return {
     ...actual,
     updateSessionStore: mocks.updateSessionStore,
     resolveAgentIdFromSessionKey: () => "main",
     resolveExplicitAgentSessionKey: () => undefined,
-    resolveAgentMainSessionKey: ({ cfg, agentId }: { cfg?: { session?: { mainKey?: string } }; agentId: string }) =>
-      `agent:${agentId}:${cfg?.session?.mainKey ?? "main"}`,
+    resolveAgentMainSessionKey: ({
+      cfg,
+      agentId,
+    }: {
+      cfg?: { session?: { mainKey?: string } };
+      agentId: string;
+    }) => `agent:${agentId}:${cfg?.session?.mainKey ?? "main"}`,
   };
 });
 
@@ -38,7 +45,8 @@ vi.mock("../../commands/agent.js", () => ({
 }));
 
 vi.mock("../../config/config.js", async () => {
-  const actual = await vi.importActual<typeof import("../../config/config.js")>("../../config/config.js");
+  const actual =
+    await vi.importActual<typeof import("../../config/config.js")>("../../config/config.js");
   return {
     ...actual,
     loadConfig: () => mocks.loadConfigReturn,
@@ -155,7 +163,10 @@ async function expectResetCall(expectedMessage: string) {
 }
 
 function primeMainAgentRun(params?: { sessionId?: string; cfg?: Record<string, unknown> }) {
-  mockMainSessionEntry({ sessionId: params?.sessionId ?? "existing-session-id" }, params?.cfg ?? {});
+  mockMainSessionEntry(
+    { sessionId: params?.sessionId ?? "existing-session-id" },
+    params?.cfg ?? {},
+  );
   mocks.updateSessionStore.mockResolvedValue(undefined);
   mocks.agentCommand.mockResolvedValue({
     payloads: [{ text: "ok" }],
@@ -183,10 +194,16 @@ function readLastAgentCommandCall():
       sessionId?: string;
     }
   | undefined {
-  return mocks.agentCommand.mock.calls.at(-1)?.[0] as { message?: string; sessionId?: string } | undefined;
+  return mocks.agentCommand.mock.calls.at(-1)?.[0] as
+    | { message?: string; sessionId?: string }
+    | undefined;
 }
 
-function mockSessionResetSuccess(params: { reason: "new" | "reset"; key?: string; sessionId?: string }) {
+function mockSessionResetSuccess(params: {
+  reason: "new" | "reset";
+  key?: string;
+  sessionId?: string;
+}) {
   const key = params.key ?? "agent:main:main";
   const sessionId = params.sessionId ?? "reset-session-id";
   mocks.performGatewaySessionReset.mockImplementation(
@@ -359,7 +376,9 @@ describe("gateway agent handler", () => {
     );
 
     await vi.waitFor(() => expect(mocks.agentCommand).toHaveBeenCalled());
-    const callArgs = mocks.agentCommand.mock.calls.at(-1)?.[0] as { senderIsOwner?: boolean } | undefined;
+    const callArgs = mocks.agentCommand.mock.calls.at(-1)?.[0] as
+      | { senderIsOwner?: boolean }
+      | undefined;
     expect(callArgs?.senderIsOwner).toBe(senderIsOwner);
   });
 

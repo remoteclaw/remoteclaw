@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { buildGatewayAuthConfig } from "./configure.js";
 
-function expectGeneratedTokenFromInput(token: string | undefined, forbiddenValues: string[] = ["undefined"]) {
+function expectGeneratedTokenFromInput(
+  token: string | undefined,
+  forbiddenValues: string[] = ["undefined"],
+) {
   const result = buildGatewayAuthConfig({
     mode: "token",
     token,

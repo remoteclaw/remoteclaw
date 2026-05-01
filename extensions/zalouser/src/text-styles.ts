@@ -113,7 +113,10 @@ export function parseZalouserTextStyles(input: string): { text: string; styles: 
     const { text: unquotedLine, indent: baseIndent } = stripQuotePrefix(rawLine);
 
     if (activeFence) {
-      const codeLine = activeFence.quoteIndent > 0 ? stripQuotePrefix(rawLine, activeFence.quoteIndent).text : rawLine;
+      const codeLine =
+        activeFence.quoteIndent > 0
+          ? stripQuotePrefix(rawLine, activeFence.quoteIndent).text
+          : rawLine;
       if (isClosingFence(codeLine, activeFence)) {
         activeFence = null;
         continue;
@@ -285,7 +288,10 @@ export function parseZalouserTextStyles(input: string): { text: string; styles: 
       style.len -= endDelta - startDelta;
     }
 
-    plainText = plainText.replace(escapeRegex, (_match, index) => escapeMap[Number.parseInt(index, 10)]);
+    plainText = plainText.replace(
+      escapeRegex,
+      (_match, index) => escapeMap[Number.parseInt(index, 10)],
+    );
   }
 
   const finalLines = plainText.split("\n");
@@ -333,7 +339,8 @@ function stripOptionalMarkdownPadding(line: string): { text: string; size: numbe
 
 function hasClosingFence(lines: string[], startIndex: number, fence: ActiveFence): boolean {
   for (let index = startIndex; index < lines.length; index += 1) {
-    const candidate = fence.quoteIndent > 0 ? stripQuotePrefix(lines[index], fence.quoteIndent).text : lines[index];
+    const candidate =
+      fence.quoteIndent > 0 ? stripQuotePrefix(lines[index], fence.quoteIndent).text : lines[index];
     if (isClosingFence(candidate, fence)) {
       return true;
     }
@@ -363,7 +370,10 @@ function resolveOpeningFence(line: string): ActiveFence | null {
   };
 }
 
-function stripQuotePrefix(line: string, maxDepth = Number.POSITIVE_INFINITY): { text: string; indent: number } {
+function stripQuotePrefix(
+  line: string,
+  maxDepth = Number.POSITIVE_INFINITY,
+): { text: string; indent: number } {
   let cursor = 0;
   while (cursor < line.length && cursor < 3 && line[cursor] === " ") {
     cursor += 1;
@@ -465,7 +475,8 @@ function findNextInlineMatch(text: string, startIndex: number): ResolvedInlineMa
 
     if (
       bestMatch &&
-      (match.index > bestMatch.match.index || (match.index === bestMatch.match.index && priority > bestMatch.priority))
+      (match.index > bestMatch.match.index ||
+        (match.index === bestMatch.match.index && priority > bestMatch.priority))
     ) {
       continue;
     }

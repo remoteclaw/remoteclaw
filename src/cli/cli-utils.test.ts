@@ -18,12 +18,12 @@ describe("waitForever", () => {
 });
 
 describe("shouldSkipRespawnForArgv", () => {
-  it.each([{ argv: ["node", "remoteclaw", "--help"] }, { argv: ["node", "remoteclaw", "-V"] }] as const)(
-    "skips respawn for argv %j",
-    ({ argv }) => {
-      expect(shouldSkipRespawnForArgv([...argv]), argv.join(" ")).toBe(true);
-    },
-  );
+  it.each([
+    { argv: ["node", "remoteclaw", "--help"] },
+    { argv: ["node", "remoteclaw", "-V"] },
+  ] as const)("skips respawn for argv %j", ({ argv }) => {
+    expect(shouldSkipRespawnForArgv([...argv]), argv.join(" ")).toBe(true);
+  });
 
   it("keeps respawn path for normal commands", () => {
     expect(shouldSkipRespawnForArgv(["node", "remoteclaw", "status"])).toBe(false);
@@ -39,7 +39,9 @@ describe("nodes canvas helpers", () => {
   });
 
   it("rejects invalid canvas.snapshot payload", () => {
-    expect(() => parseCanvasSnapshotPayload({ format: "png" })).toThrow(/invalid canvas\.snapshot payload/i);
+    expect(() => parseCanvasSnapshotPayload({ format: "png" })).toThrow(
+      /invalid canvas\.snapshot payload/i,
+    );
   });
 });
 

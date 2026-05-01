@@ -6,7 +6,11 @@ import { SILENT_REPLY_TOKEN } from "../tokens.js";
 import type { ReplyPayload } from "../types.js";
 import { formatBunFetchSocketError, isBunFetchSocketError } from "./agent-runner-utils.js";
 import { createBlockReplyContentKey, type BlockReplyPipeline } from "./block-reply-pipeline.js";
-import { resolveOriginAccountId, resolveOriginMessageProvider, resolveOriginMessageTo } from "./origin-routing.js";
+import {
+  resolveOriginAccountId,
+  resolveOriginMessageProvider,
+  resolveOriginMessageTo,
+} from "./origin-routing.js";
 import { normalizeReplyPayloadDirectives } from "./reply-delivery.js";
 import {
   applyReplyThreading,
@@ -100,7 +104,9 @@ export async function buildReplyPayloads(params: {
   messageProvider?: string;
   messagingToolSentTexts?: string[];
   messagingToolSentMediaUrls?: string[];
-  messagingToolSentTargets?: Parameters<typeof shouldSuppressMessagingToolReplies>[0]["messagingToolSentTargets"];
+  messagingToolSentTargets?: Parameters<
+    typeof shouldSuppressMessagingToolReplies
+  >[0]["messagingToolSentTargets"];
   originatingChannel?: OriginatingChannelType;
   originatingTo?: string;
   accountId?: string;
@@ -178,7 +184,8 @@ export async function buildReplyPayloads(params: {
   // Cross-target sends (for example posting to another channel) must not
   // suppress the current conversation's final reply.
   // If target metadata is unavailable, keep legacy dedupe behavior.
-  const dedupeMessagingToolPayloads = suppressMessagingToolReplies || messagingToolSentTargets.length === 0;
+  const dedupeMessagingToolPayloads =
+    suppressMessagingToolReplies || messagingToolSentTargets.length === 0;
   const messagingToolSentMediaUrls = dedupeMessagingToolPayloads
     ? await normalizeSentMediaUrlsForDedupe({
         sentMediaUrls: params.messagingToolSentMediaUrls ?? [],
@@ -201,7 +208,9 @@ export async function buildReplyPayloads(params: {
   const filteredPayloads = shouldDropFinalPayloads
     ? []
     : params.blockStreamingEnabled
-      ? mediaFilteredPayloads.filter((payload) => !params.blockReplyPipeline?.hasSentPayload(payload))
+      ? mediaFilteredPayloads.filter(
+          (payload) => !params.blockReplyPipeline?.hasSentPayload(payload),
+        )
       : params.directlySentBlockKeys?.size
         ? mediaFilteredPayloads.filter(
             (payload) => !params.directlySentBlockKeys!.has(createBlockReplyContentKey(payload)),

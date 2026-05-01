@@ -1,6 +1,10 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { isTrustedProxyAddress, resolveClientIp, type RemoteClawConfig } from "remoteclaw/plugin-sdk/mattermost";
+import {
+  isTrustedProxyAddress,
+  resolveClientIp,
+  type RemoteClawConfig,
+} from "remoteclaw/plugin-sdk/mattermost";
 import { getMattermostRuntime } from "../runtime.js";
 import { updateMattermostPost, type MattermostClient } from "./client.js";
 
@@ -108,12 +112,16 @@ function isAllowedInteractionSource(params: {
  * Resolve the interaction callback URL for an account.
  * Falls back to computing it from interactions.callbackBaseUrl or gateway host config.
  */
-export function computeInteractionCallbackUrl(accountId: string, cfg?: InteractionCallbackConfig): string {
+export function computeInteractionCallbackUrl(
+  accountId: string,
+  cfg?: InteractionCallbackConfig,
+): string {
   const path = resolveInteractionCallbackPath(accountId);
   // Prefer merged per-account config when available, but keep the top-level path for
   // callers/tests that still pass the root Mattermost config shape directly.
   const callbackBaseUrl =
-    cfg?.interactions?.callbackBaseUrl?.trim() ?? cfg?.channels?.mattermost?.interactions?.callbackBaseUrl?.trim();
+    cfg?.interactions?.callbackBaseUrl?.trim() ??
+    cfg?.channels?.mattermost?.interactions?.callbackBaseUrl?.trim();
   if (callbackBaseUrl) {
     return `${normalizeCallbackBaseUrl(callbackBaseUrl)}${path}`;
   }
@@ -136,7 +144,10 @@ export function computeInteractionCallbackUrl(accountId: string, cfg?: Interacti
  * Prefers the in-memory registered URL (set by the gateway monitor) so callers outside the
  * monitor lifecycle can reuse the runtime-validated callback destination.
  */
-export function resolveInteractionCallbackUrl(accountId: string, cfg?: InteractionCallbackConfig): string {
+export function resolveInteractionCallbackUrl(
+  accountId: string,
+  cfg?: InteractionCallbackConfig,
+): string {
   const cached = callbackUrls.get(accountId);
   if (cached) {
     return cached;
@@ -178,7 +189,9 @@ export function getInteractionSecret(accountId?: string): string {
       return first;
     }
   }
-  throw new Error("Interaction secret not initialized — call setInteractionSecret(accountId, botToken) first");
+  throw new Error(
+    "Interaction secret not initialized — call setInteractionSecret(accountId, botToken) first",
+  );
 }
 
 function canonicalizeInteractionContext(value: unknown): unknown {
@@ -195,13 +208,20 @@ function canonicalizeInteractionContext(value: unknown): unknown {
   return value;
 }
 
-export function generateInteractionToken(context: Record<string, unknown>, accountId?: string): string {
+export function generateInteractionToken(
+  context: Record<string, unknown>,
+  accountId?: string,
+): string {
   const secret = getInteractionSecret(accountId);
   const payload = JSON.stringify(canonicalizeInteractionContext(context));
   return createHmac("sha256", secret).update(payload).digest("hex");
 }
 
-export function verifyInteractionToken(context: Record<string, unknown>, token: string, accountId?: string): boolean {
+export function verifyInteractionToken(
+  context: Record<string, unknown>,
+  token: string,
+  accountId?: string,
+): boolean {
   const expected = generateInteractionToken(context, accountId);
   if (expected.length !== token.length) {
     return false;
@@ -410,7 +430,9 @@ export function createMattermostInteractionHandler(params: {
         allowRealIpFallback: params.allowRealIpFallback,
       })
     ) {
-      log?.(`mattermost interaction: rejected callback source remote=${req.socket?.remoteAddress ?? "?"}`);
+      log?.(
+        `mattermost interaction: rejected callback source remote=${req.socket?.remoteAddress ?? "?"}`,
+      );
       res.statusCode = 403;
       res.setHeader("Content-Type", "application/json");
       res.end(JSON.stringify({ error: "Forbidden origin" }));
@@ -470,7 +492,9 @@ export function createMattermostInteractionHandler(params: {
         ? contextWithoutToken[SIGNED_CHANNEL_ID_CONTEXT_KEY].trim()
         : "";
     if (signedChannelId && signedChannelId !== payload.channel_id) {
-      log?.(`mattermost interaction: signed channel mismatch payload=${payload.channel_id} signed=${signedChannelId}`);
+      log?.(
+        `mattermost interaction: signed channel mismatch payload=${payload.channel_id} signed=${signedChannelId}`,
+      );
       res.statusCode = 403;
       res.setHeader("Content-Type", "application/json");
       res.end(JSON.stringify({ error: "Channel mismatch" }));

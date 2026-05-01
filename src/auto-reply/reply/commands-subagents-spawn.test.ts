@@ -54,9 +54,15 @@ describe("/subagents spawn command", () => {
     hoisted.callGatewayMock.mockClear();
   });
 
-  async function runSpawnWithFlag(flagSegment: string, result: SpawnSubagentResult = acceptedResult()) {
+  async function runSpawnWithFlag(
+    flagSegment: string,
+    result: SpawnSubagentResult = acceptedResult(),
+  ) {
     spawnSubagentDirectMock.mockResolvedValue(result);
-    const params = buildCommandTestParams(`/subagents spawn beta do the thing ${flagSegment}`, baseCfg);
+    const params = buildCommandTestParams(
+      `/subagents spawn beta do the thing ${flagSegment}`,
+      baseCfg,
+    );
     const commandResult = await handleSubagentsCommand(params, true);
     expect(commandResult).not.toBeNull();
     expect(commandResult?.reply?.text).toContain("Spawned subagent beta");
@@ -114,7 +120,10 @@ describe("/subagents spawn command", () => {
   });
 
   it("spawns with --model flag and passes model to spawnSubagentDirect", async () => {
-    const spawnParams = await runSpawnWithFlag("--model openai/gpt-4o", acceptedResult({ modelApplied: true }));
+    const spawnParams = await runSpawnWithFlag(
+      "--model openai/gpt-4o",
+      acceptedResult({ modelApplied: true }),
+    );
     expect(spawnParams.model).toBe("openai/gpt-4o");
     expect(spawnParams.task).toBe("do the thing");
   });

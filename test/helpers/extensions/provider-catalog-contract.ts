@@ -9,7 +9,8 @@ import { registerProviderPlugin, requireRegisteredProvider } from "./provider-re
 
 const PROVIDER_CATALOG_CONTRACT_TIMEOUT_MS = 300_000;
 
-type ResolvePluginProviders = typeof import("../../../src/plugins/providers.runtime.js").resolvePluginProviders;
+type ResolvePluginProviders =
+  typeof import("../../../src/plugins/providers.runtime.js").resolvePluginProviders;
 type ResolveOwningPluginIdsForProvider =
   typeof import("../../../src/plugins/providers.js").resolveOwningPluginIdsForProvider;
 type ResolveCatalogHookProviderPluginIds =
@@ -24,8 +25,10 @@ const resolveCatalogHookProviderPluginIdsMock = vi.hoisted(() =>
 );
 
 vi.mock("../../../src/plugins/providers.js", () => ({
-  resolveOwningPluginIdsForProvider: (params: unknown) => resolveOwningPluginIdsForProviderMock(params as never),
-  resolveCatalogHookProviderPluginIds: (params: unknown) => resolveCatalogHookProviderPluginIdsMock(params as never),
+  resolveOwningPluginIdsForProvider: (params: unknown) =>
+    resolveOwningPluginIdsForProviderMock(params as never),
+  resolveCatalogHookProviderPluginIds: (params: unknown) =>
+    resolveCatalogHookProviderPluginIdsMock(params as never),
 }));
 
 vi.mock("../../../src/plugins/providers.runtime.js", () => ({
@@ -39,61 +42,67 @@ export function describeOpenAIProviderCatalogContract() {
   let openaiProviders: ProviderPlugin[];
   let openaiProvider: ProviderPlugin;
 
-  describe("openai provider catalog contract", { timeout: PROVIDER_CATALOG_CONTRACT_TIMEOUT_MS }, () => {
-    beforeAll(async () => {
-      vi.resetModules();
-      const openaiPlugin = await import("../../../extensions/openai/index.ts");
-      openaiProviders = registerProviderPlugin({
-        plugin: openaiPlugin.default,
-        id: "openai",
-        name: "OpenAI",
-      }).providers;
-      openaiProvider = requireRegisteredProvider(openaiProviders, "openai", "provider");
-      ({
-        augmentModelCatalogWithProviderPlugins,
-        resetProviderRuntimeHookCacheForTest,
-        resolveProviderBuiltInModelSuppression,
-      } = await import("../../../src/plugins/provider-runtime.js"));
-    });
-
-    beforeEach(() => {
-      resetProviderRuntimeHookCacheForTest();
-
-      resolvePluginProvidersMock.mockReset();
-      resolvePluginProvidersMock.mockImplementation((params?: { onlyPluginIds?: string[] }) => {
-        const onlyPluginIds = params?.onlyPluginIds;
-        if (!onlyPluginIds || onlyPluginIds.length === 0) {
-          return openaiProviders;
-        }
-        return onlyPluginIds.includes("openai") ? openaiProviders : [];
+  describe(
+    "openai provider catalog contract",
+    { timeout: PROVIDER_CATALOG_CONTRACT_TIMEOUT_MS },
+    () => {
+      beforeAll(async () => {
+        vi.resetModules();
+        const openaiPlugin = await import("../../../extensions/openai/index.ts");
+        openaiProviders = registerProviderPlugin({
+          plugin: openaiPlugin.default,
+          id: "openai",
+          name: "OpenAI",
+        }).providers;
+        openaiProvider = requireRegisteredProvider(openaiProviders, "openai", "provider");
+        ({
+          augmentModelCatalogWithProviderPlugins,
+          resetProviderRuntimeHookCacheForTest,
+          resolveProviderBuiltInModelSuppression,
+        } = await import("../../../src/plugins/provider-runtime.js"));
       });
 
-      resolveOwningPluginIdsForProviderMock.mockReset();
-      resolveOwningPluginIdsForProviderMock.mockImplementation((params) => {
-        switch (params.provider) {
-          case "azure-openai-responses":
-          case "openai":
-          case "openai-codex":
-            return ["openai"];
-          default:
-            return undefined;
-        }
+      beforeEach(() => {
+        resetProviderRuntimeHookCacheForTest();
+
+        resolvePluginProvidersMock.mockReset();
+        resolvePluginProvidersMock.mockImplementation((params?: { onlyPluginIds?: string[] }) => {
+          const onlyPluginIds = params?.onlyPluginIds;
+          if (!onlyPluginIds || onlyPluginIds.length === 0) {
+            return openaiProviders;
+          }
+          return onlyPluginIds.includes("openai") ? openaiProviders : [];
+        });
+
+        resolveOwningPluginIdsForProviderMock.mockReset();
+        resolveOwningPluginIdsForProviderMock.mockImplementation((params) => {
+          switch (params.provider) {
+            case "azure-openai-responses":
+            case "openai":
+            case "openai-codex":
+              return ["openai"];
+            default:
+              return undefined;
+          }
+        });
+
+        resolveCatalogHookProviderPluginIdsMock.mockReset();
+        resolveCatalogHookProviderPluginIdsMock.mockReturnValue(["openai"]);
       });
 
-      resolveCatalogHookProviderPluginIdsMock.mockReset();
-      resolveCatalogHookProviderPluginIdsMock.mockReturnValue(["openai"]);
-    });
+      it("keeps codex-only missing-auth hints wired through the provider runtime", () => {
+        expectCodexMissingAuthHint(
+          (params) => openaiProvider.buildMissingAuthMessage?.(params.context) ?? undefined,
+        );
+      });
 
-    it("keeps codex-only missing-auth hints wired through the provider runtime", () => {
-      expectCodexMissingAuthHint((params) => openaiProvider.buildMissingAuthMessage?.(params.context) ?? undefined);
-    });
+      it("keeps built-in model suppression wired through the provider runtime", () => {
+        expectCodexBuiltInSuppression(resolveProviderBuiltInModelSuppression);
+      });
 
-    it("keeps built-in model suppression wired through the provider runtime", () => {
-      expectCodexBuiltInSuppression(resolveProviderBuiltInModelSuppression);
-    });
-
-    it("keeps bundled model augmentation wired through the provider runtime", async () => {
-      await expectAugmentedCodexCatalog(augmentModelCatalogWithProviderPlugins);
-    });
-  });
+      it("keeps bundled model augmentation wired through the provider runtime", async () => {
+        await expectAugmentedCodexCatalog(augmentModelCatalogWithProviderPlugins);
+      });
+    },
+  );
 }

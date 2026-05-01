@@ -81,7 +81,11 @@ async function makeTempFile(
   return { dir: resolvedDir, filePath };
 }
 
-async function sendLocalMedia(params: { cfg: RemoteClawConfig; mediaPath: string; accountId?: string }) {
+async function sendLocalMedia(params: {
+  cfg: RemoteClawConfig;
+  mediaPath: string;
+  accountId?: string;
+}) {
   return sendBlueBubblesMedia({
     cfg: params.cfg,
     to: "chat:123",
@@ -122,7 +126,9 @@ async function expectAllowedLocalMedia(params: {
 
   expect(result).toEqual({ messageId: "msg-1" });
   expect(sendBlueBubblesAttachmentMock).toHaveBeenCalledTimes(1);
-  expect(sendBlueBubblesAttachmentMock.mock.calls[0]?.[0]).toEqual(expect.objectContaining(params.expectedAttachment));
+  expect(sendBlueBubblesAttachmentMock.mock.calls[0]?.[0]).toEqual(
+    expect.objectContaining(params.expectedAttachment),
+  );
   if (params.expectMimeDetection) {
     expect(runtimeMocks.detectMime).toHaveBeenCalled();
   }
@@ -176,7 +182,10 @@ describe("sendBlueBubblesMedia local-path hardening", () => {
   });
 
   it("allows local paths that are explicitly configured", async () => {
-    const { dir: allowedRoot, filePath: allowedFile } = await makeTempFile("allowed.txt", "allowed");
+    const { dir: allowedRoot, filePath: allowedFile } = await makeTempFile(
+      "allowed.txt",
+      "allowed",
+    );
 
     await expectAllowedLocalMedia({
       cfg: createConfig({ mediaLocalRoots: [allowedRoot] }),
@@ -190,7 +199,10 @@ describe("sendBlueBubblesMedia local-path hardening", () => {
   });
 
   it("allows file:// media paths and file:// local roots", async () => {
-    const { dir: allowedRoot, filePath: allowedFile } = await makeTempFile("allowed.txt", "allowed");
+    const { dir: allowedRoot, filePath: allowedFile } = await makeTempFile(
+      "allowed.txt",
+      "allowed",
+    );
 
     await expectAllowedLocalMedia({
       cfg: createConfig({ mediaLocalRoots: [pathToFileURL(allowedRoot).toString()] }),

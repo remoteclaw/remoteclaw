@@ -18,7 +18,10 @@ export type LoopRateLimiter = {
   record: (conversationKey: string) => void;
 };
 
-export function createLoopRateLimiter(opts?: { windowMs?: number; maxHits?: number }): LoopRateLimiter {
+export function createLoopRateLimiter(opts?: {
+  windowMs?: number;
+  maxHits?: number;
+}): LoopRateLimiter {
   const windowMs = opts?.windowMs ?? DEFAULT_WINDOW_MS;
   const maxHits = opts?.maxHits ?? DEFAULT_MAX_HITS;
   const conversations = new Map<string, ConversationWindow>();

@@ -12,7 +12,10 @@ export type TelegramGroupMigrationResult = {
   scopes: MigrationScope[];
 };
 
-function resolveAccountGroups(cfg: RemoteClawConfig, accountId?: string | null): { groups?: TelegramGroups } {
+function resolveAccountGroups(
+  cfg: RemoteClawConfig,
+  accountId?: string | null,
+): { groups?: TelegramGroups } {
   if (!accountId) {
     return {};
   }
@@ -25,7 +28,9 @@ function resolveAccountGroups(cfg: RemoteClawConfig, accountId?: string | null):
   if (exact?.groups) {
     return { groups: exact.groups };
   }
-  const matchKey = Object.keys(accounts).find((key) => key.toLowerCase() === normalized.toLowerCase());
+  const matchKey = Object.keys(accounts).find(
+    (key) => key.toLowerCase() === normalized.toLowerCase(),
+  );
   return { groups: matchKey ? accounts[matchKey]?.groups : undefined };
 }
 

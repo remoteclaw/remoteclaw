@@ -73,13 +73,18 @@ function normalizeAttachment(
   return { label, mime, base64 };
 }
 
-function validateAttachmentBase64OrThrow(normalized: NormalizedAttachment, opts: { maxBytes: number }): number {
+function validateAttachmentBase64OrThrow(
+  normalized: NormalizedAttachment,
+  opts: { maxBytes: number },
+): number {
   if (!isValidBase64(normalized.base64)) {
     throw new Error(`attachment ${normalized.label}: invalid base64 content`);
   }
   const sizeBytes = estimateBase64DecodedBytes(normalized.base64);
   if (sizeBytes <= 0 || sizeBytes > opts.maxBytes) {
-    throw new Error(`attachment ${normalized.label}: exceeds size limit (${sizeBytes} > ${opts.maxBytes} bytes)`);
+    throw new Error(
+      `attachment ${normalized.label}: exceeds size limit (${sizeBytes} > ${opts.maxBytes} bytes)`,
+    );
   }
   return sizeBytes;
 }
@@ -124,7 +129,9 @@ export async function parseMessageWithAttachments(
       continue;
     }
     if (sniffedMime && providedMime && sniffedMime !== providedMime) {
-      log?.warn(`attachment ${label}: mime mismatch (${providedMime} -> ${sniffedMime}), using sniffed`);
+      log?.warn(
+        `attachment ${label}: mime mismatch (${providedMime} -> ${sniffedMime}), using sniffed`,
+      );
     }
 
     images.push({

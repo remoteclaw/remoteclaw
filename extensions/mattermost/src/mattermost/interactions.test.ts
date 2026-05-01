@@ -172,7 +172,9 @@ describe("generateInteractionToken / verifyInteractionToken", () => {
 describe("callback URL registry", () => {
   it("stores and retrieves callback URLs", () => {
     setInteractionCallbackUrl("acct1", "http://localhost:18789/mattermost/interactions/acct1");
-    expect(getInteractionCallbackUrl("acct1")).toBe("http://localhost:18789/mattermost/interactions/acct1");
+    expect(getInteractionCallbackUrl("acct1")).toBe(
+      "http://localhost:18789/mattermost/interactions/acct1",
+    );
   });
 
   it("returns undefined for unknown account", () => {
@@ -534,7 +536,10 @@ describe("createMattermostInteractionHandler", () => {
     return res;
   }
 
-  function expectForbiddenResponse(res: ServerResponse & { body: string }, expectedMessage: string) {
+  function expectForbiddenResponse(
+    res: ServerResponse & { body: string },
+    expectedMessage: string,
+  ) {
     expect(res.statusCode).toBe(403);
     expect(res.body).toContain(expectedMessage);
   }

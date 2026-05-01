@@ -18,7 +18,10 @@ describe("message_sending hook runner", () => {
       { channelId: "telegram" },
     );
 
-    expect(handler).toHaveBeenCalledWith({ to: "user-123", content: "original content" }, { channelId: "telegram" });
+    expect(handler).toHaveBeenCalledWith(
+      { to: "user-123", content: "original content" },
+      { channelId: "telegram" },
+    );
     expect(result?.content).toBe("modified content");
   });
 
@@ -27,7 +30,10 @@ describe("message_sending hook runner", () => {
     const registry = createMockPluginRegistry([{ hookName: "message_sending", handler }]);
     const runner = createHookRunner(registry);
 
-    const result = await runner.runMessageSending({ to: "user-123", content: "blocked" }, { channelId: "telegram" });
+    const result = await runner.runMessageSending(
+      { to: "user-123", content: "blocked" },
+      { channelId: "telegram" },
+    );
 
     expect(result?.cancel).toBe(true);
   });
@@ -39,7 +45,10 @@ describe("message_sent hook runner", () => {
     const registry = createMockPluginRegistry([{ hookName: "message_sent", handler }]);
     const runner = createHookRunner(registry);
 
-    await runner.runMessageSent({ to: "user-123", content: "hello", success: true }, { channelId: "telegram" });
+    await runner.runMessageSent(
+      { to: "user-123", content: "hello", success: true },
+      { channelId: "telegram" },
+    );
 
     expect(handler).toHaveBeenCalledWith(
       { to: "user-123", content: "hello", success: true },

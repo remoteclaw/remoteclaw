@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { isCronSessionKey, parseSessionKey, resolveSessionDisplayName } from "./app-render.helpers.ts";
+import {
+  isCronSessionKey,
+  parseSessionKey,
+  resolveSessionDisplayName,
+} from "./app-render.helpers.ts";
 import type { SessionsListResult } from "./types.ts";
 
 type SessionRow = SessionsListResult["sessions"][number];
@@ -120,7 +124,9 @@ describe("resolveSessionDisplayName", () => {
   });
 
   it("parses direct chat key with channel", () => {
-    expect(resolveSessionDisplayName("agent:main:bluebubbles:direct:+19257864429")).toBe("iMessage · +19257864429");
+    expect(resolveSessionDisplayName("agent:main:bluebubbles:direct:+19257864429")).toBe(
+      "iMessage · +19257864429",
+    );
   });
 
   it("parses channel-prefixed legacy key", () => {
@@ -134,11 +140,15 @@ describe("resolveSessionDisplayName", () => {
   // ── With row data (label / displayName) ──────────
 
   it("returns parsed fallback when row has no label or displayName", () => {
-    expect(resolveSessionDisplayName("agent:main:main", row({ key: "agent:main:main" }))).toBe("Main Session");
+    expect(resolveSessionDisplayName("agent:main:main", row({ key: "agent:main:main" }))).toBe(
+      "Main Session",
+    );
   });
 
   it("returns parsed fallback when displayName matches key", () => {
-    expect(resolveSessionDisplayName("mykey", row({ key: "mykey", displayName: "mykey" }))).toBe("mykey");
+    expect(resolveSessionDisplayName("mykey", row({ key: "mykey", displayName: "mykey" }))).toBe(
+      "mykey",
+    );
   });
 
   it("returns parsed fallback when label matches key", () => {
@@ -146,15 +156,21 @@ describe("resolveSessionDisplayName", () => {
   });
 
   it("uses label alone when available", () => {
-    expect(resolveSessionDisplayName("discord:123:456", row({ key: "discord:123:456", label: "General" }))).toBe(
-      "General",
-    );
+    expect(
+      resolveSessionDisplayName(
+        "discord:123:456",
+        row({ key: "discord:123:456", label: "General" }),
+      ),
+    ).toBe("General");
   });
 
   it("falls back to displayName when label is absent", () => {
-    expect(resolveSessionDisplayName("discord:123:456", row({ key: "discord:123:456", displayName: "My Chat" }))).toBe(
-      "My Chat",
-    );
+    expect(
+      resolveSessionDisplayName(
+        "discord:123:456",
+        row({ key: "discord:123:456", displayName: "My Chat" }),
+      ),
+    ).toBe("My Chat");
   });
 
   it("prefers label over displayName when both are present", () => {
@@ -176,14 +192,16 @@ describe("resolveSessionDisplayName", () => {
   });
 
   it("uses parsed fallback when whitespace-only label and no displayName", () => {
-    expect(resolveSessionDisplayName("discord:123:456", row({ key: "discord:123:456", label: "   " }))).toBe(
-      "Discord Session",
-    );
+    expect(
+      resolveSessionDisplayName("discord:123:456", row({ key: "discord:123:456", label: "   " })),
+    ).toBe("Discord Session");
   });
 
   it("trims label and displayName", () => {
     expect(resolveSessionDisplayName("k", row({ key: "k", label: "  General  " }))).toBe("General");
-    expect(resolveSessionDisplayName("k", row({ key: "k", displayName: "  My Chat  " }))).toBe("My Chat");
+    expect(resolveSessionDisplayName("k", row({ key: "k", displayName: "  My Chat  " }))).toBe(
+      "My Chat",
+    );
   });
 
   // ── Type prefixes applied to labels / displayNames ──

@@ -1,4 +1,8 @@
-import { type MSTeamsPoll, type MSTeamsPollStore, normalizeMSTeamsPollSelections } from "./polls.js";
+import {
+  type MSTeamsPoll,
+  type MSTeamsPollStore,
+  normalizeMSTeamsPollSelections,
+} from "./polls.js";
 
 export function createMSTeamsPollStoreMemory(initial: MSTeamsPoll[] = []): MSTeamsPollStore {
   const polls = new Map<string, MSTeamsPoll>();

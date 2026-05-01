@@ -53,7 +53,11 @@ export async function withAuthKeyRetry<T>(
       agentId: options.agentId,
       store: options.store,
     });
-    const env = authEnv ? { ...options.baseEnv, ...authEnv } : options.baseEnv ? { ...options.baseEnv } : {};
+    const env = authEnv
+      ? { ...options.baseEnv, ...authEnv }
+      : options.baseEnv
+        ? { ...options.baseEnv }
+        : {};
 
     try {
       const result = await execute(env);
@@ -61,7 +65,9 @@ export async function withAuthKeyRetry<T>(
       // Check for rate-limit / auth errors returned in the result (not thrown).
       const errorMsg = getErrorMessage(result);
       if (errorMsg && isAuthRotatableError(errorMsg) && attempt + 1 < maxAttempts) {
-        log.info(`Auth key rate-limited (attempt ${attempt + 1}/${maxAttempts}), rotating to next profile`);
+        log.info(
+          `Auth key rate-limited (attempt ${attempt + 1}/${maxAttempts}), rotating to next profile`,
+        );
         lastResult = result;
         continue;
       }
@@ -71,7 +77,9 @@ export async function withAuthKeyRetry<T>(
       lastError = err;
       const errMsg = err instanceof Error ? err.message : String(err);
       if (isAuthRotatableError(errMsg) && attempt + 1 < maxAttempts) {
-        log.info(`Auth key rate-limited (attempt ${attempt + 1}/${maxAttempts}), rotating to next profile`);
+        log.info(
+          `Auth key rate-limited (attempt ${attempt + 1}/${maxAttempts}), rotating to next profile`,
+        );
         continue;
       }
       throw err;

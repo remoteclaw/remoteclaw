@@ -53,7 +53,9 @@ function buildBootPrompt(content: string) {
   ].join("\n");
 }
 
-async function loadBootFile(workspaceDir: string): Promise<{ content?: string; status: "ok" | "missing" | "empty" }> {
+async function loadBootFile(
+  workspaceDir: string,
+): Promise<{ content?: string; status: "ok" | "missing" | "empty" }> {
   const bootPath = path.join(workspaceDir, BOOT_FILENAME);
   try {
     const content = await fs.readFile(bootPath, "utf-8");
@@ -71,7 +73,10 @@ async function loadBootFile(workspaceDir: string): Promise<{ content?: string; s
   }
 }
 
-function snapshotMainSessionMapping(params: { cfg: RemoteClawConfig; sessionKey: string }): SessionMappingSnapshot {
+function snapshotMainSessionMapping(params: {
+  cfg: RemoteClawConfig;
+  sessionKey: string;
+}): SessionMappingSnapshot {
   const agentId = resolveAgentIdFromSessionKey(params.sessionKey);
   const storePath = resolveStorePath(params.cfg.session?.store, { agentId });
   try {
@@ -106,7 +111,9 @@ function snapshotMainSessionMapping(params: { cfg: RemoteClawConfig; sessionKey:
   }
 }
 
-async function restoreMainSessionMapping(snapshot: SessionMappingSnapshot): Promise<string | undefined> {
+async function restoreMainSessionMapping(
+  snapshot: SessionMappingSnapshot,
+): Promise<string | undefined> {
   if (!snapshot.canRestore) {
     return undefined;
   }

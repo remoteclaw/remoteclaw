@@ -19,7 +19,8 @@ vi.mock("remoteclaw/plugin-sdk/msteams", () => ({
   DEFAULT_WEBHOOK_MAX_BODY_BYTES: 1024 * 1024,
   normalizeSecretInputString: (value: unknown) =>
     typeof value === "string" && value.trim() ? value.trim() : undefined,
-  hasConfiguredSecretInput: (value: unknown) => typeof value === "string" && value.trim().length > 0,
+  hasConfiguredSecretInput: (value: unknown) =>
+    typeof value === "string" && value.trim().length > 0,
   normalizeResolvedSecretInputString: (params: { value?: unknown }) =>
     typeof params?.value === "string" && params.value.trim() ? params.value.trim() : undefined,
   keepHttpServerTaskAlive: vi.fn(
@@ -92,7 +93,9 @@ const loadMSTeamsSdkWithAuth = vi.hoisted(() =>
     sdk: {
       ActivityHandler: class {},
       MsalTokenProvider: class {},
-      authorizeJWT: () => (_req: unknown, _res: unknown, next: ((err?: unknown) => void) | undefined) => next?.(),
+      authorizeJWT:
+        () => (_req: unknown, _res: unknown, next: ((err?: unknown) => void) | undefined) =>
+          next?.(),
     },
     authConfig: {},
   })),

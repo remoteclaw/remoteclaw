@@ -9,8 +9,14 @@ export {
 } from "../channels/plugins/config-helpers.js";
 export { createAccountListHelpers } from "../channels/plugins/account-helpers.js";
 export { buildChannelConfigSchema } from "../channels/plugins/config-schema.js";
-export { formatPairingApproveHint, parseOptionalDelimitedEntries } from "../channels/plugins/helpers.js";
-export type { ChannelOnboardingAdapter, ChannelOnboardingDmPolicy } from "../channels/plugins/onboarding-types.js";
+export {
+  formatPairingApproveHint,
+  parseOptionalDelimitedEntries,
+} from "../channels/plugins/helpers.js";
+export type {
+  ChannelOnboardingAdapter,
+  ChannelOnboardingDmPolicy,
+} from "../channels/plugins/onboarding-types.js";
 export { promptChannelAccessConfig } from "../channels/plugins/onboarding/channel-access.js";
 export {
   addWildcardAllowFrom,
@@ -59,7 +65,10 @@ export type { RemoteClawPluginApi } from "../plugins/types.js";
 export { DEFAULT_ACCOUNT_ID } from "../routing/session-key.js";
 export type { RuntimeEnv } from "../runtime.js";
 export { createAccountStatusSink, runPassiveAccountLifecycle } from "./channel-lifecycle.js";
-export { readStoreAllowFromForDmPolicy, resolveEffectiveAllowFromLists } from "../security/dm-policy-shared.js";
+export {
+  readStoreAllowFromForDmPolicy,
+  resolveEffectiveAllowFromLists,
+} from "../security/dm-policy-shared.js";
 export { formatDocsLink } from "../terminal/links.js";
 export type { WizardPrompter } from "../wizard/prompts.js";
 export { createScopedPairingAccess } from "./pairing-access.js";

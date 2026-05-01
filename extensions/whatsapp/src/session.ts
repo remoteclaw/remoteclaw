@@ -119,29 +119,36 @@ export async function createWaSocket(
   });
 
   sock.ev.on("creds.update", () => enqueueSaveCreds(authDir, saveCreds, sessionLogger));
-  sock.ev.on("connection.update", (update: Partial<import("@whiskeysockets/baileys").ConnectionState>) => {
-    try {
-      const { connection, lastDisconnect, qr } = update;
-      if (qr) {
-        opts.onQr?.(qr);
-        if (printQr) {
-          console.log("Scan this QR in WhatsApp (Linked Devices):");
-          qrcode.generate(qr, { small: true });
+  sock.ev.on(
+    "connection.update",
+    (update: Partial<import("@whiskeysockets/baileys").ConnectionState>) => {
+      try {
+        const { connection, lastDisconnect, qr } = update;
+        if (qr) {
+          opts.onQr?.(qr);
+          if (printQr) {
+            console.log("Scan this QR in WhatsApp (Linked Devices):");
+            qrcode.generate(qr, { small: true });
+          }
         }
-      }
-      if (connection === "close") {
-        const status = getStatusCode(lastDisconnect?.error);
-        if (status === DisconnectReason.loggedOut) {
-          console.error(danger(`WhatsApp session logged out. Run: ${formatCliCommand("remoteclaw channels login")}`));
+        if (connection === "close") {
+          const status = getStatusCode(lastDisconnect?.error);
+          if (status === DisconnectReason.loggedOut) {
+            console.error(
+              danger(
+                `WhatsApp session logged out. Run: ${formatCliCommand("remoteclaw channels login")}`,
+              ),
+            );
+          }
         }
+        if (connection === "open" && verbose) {
+          console.log(success("WhatsApp Web connected."));
+        }
+      } catch (err) {
+        sessionLogger.error({ error: String(err) }, "connection.update handler error");
       }
-      if (connection === "open" && verbose) {
-        console.log(success("WhatsApp Web connected."));
-      }
-    } catch (err) {
-      sessionLogger.error({ error: String(err) }, "connection.update handler error");
-    }
-  });
+    },
+  );
 
   // Handle WebSocket-level errors to prevent unhandled exceptions from crashing the process
   if (sock.ws && typeof (sock.ws as unknown as { on?: unknown }).on === "function") {
@@ -177,7 +184,10 @@ export async function waitForWaConnection(sock: ReturnType<typeof makeWASocket>)
 }
 
 export function getStatusCode(err: unknown) {
-  return (err as { output?: { statusCode?: number } })?.output?.statusCode ?? (err as { status?: number })?.status;
+  return (
+    (err as { output?: { statusCode?: number } })?.output?.statusCode ??
+    (err as { status?: number })?.status
+  );
 }
 
 function safeStringify(value: unknown, limit = 800): string {
@@ -191,7 +201,8 @@ function safeStringify(value: unknown, limit = 800): string {
         }
         if (typeof v === "function") {
           const maybeName = (v as { name?: unknown }).name;
-          const name = typeof maybeName === "string" && maybeName.length > 0 ? maybeName : "anonymous";
+          const name =
+            typeof maybeName === "string" && maybeName.length > 0 ? maybeName : "anonymous";
           return `[Function ${name}]`;
         }
         if (typeof v === "object" && v) {
@@ -221,7 +232,9 @@ function extractBoomDetails(err: unknown): {
   if (!err || typeof err !== "object") {
     return null;
   }
-  const output = (err as { output?: unknown })?.output as { statusCode?: unknown; payload?: unknown } | undefined;
+  const output = (err as { output?: unknown })?.output as
+    | { statusCode?: unknown; payload?: unknown }
+    | undefined;
   if (!output || typeof output !== "object") {
     return null;
   }

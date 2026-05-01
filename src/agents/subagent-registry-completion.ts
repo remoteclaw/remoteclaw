@@ -22,7 +22,10 @@ export const MODULE_ATTESTATIONS = {
   emitSubagentEndedHookOnce: "live",
 } as const;
 
-export function runOutcomesEqual(a: SubagentRunOutcome | undefined, b: SubagentRunOutcome | undefined): boolean {
+export function runOutcomesEqual(
+  a: SubagentRunOutcome | undefined,
+  b: SubagentRunOutcome | undefined,
+): boolean {
   if (!a && !b) {
     return true;
   }

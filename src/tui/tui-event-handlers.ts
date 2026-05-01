@@ -5,7 +5,11 @@ import type { AgentEvent, ChatEvent, TuiStateAccess } from "./tui-types.js";
 
 type EventHandlerChatLog = {
   startTool: (toolCallId: string, toolName: string, args: unknown) => void;
-  updateToolResult: (toolCallId: string, result: unknown, options?: { partial?: boolean; isError?: boolean }) => void;
+  updateToolResult: (
+    toolCallId: string,
+    result: unknown,
+    options?: { partial?: boolean; isError?: boolean },
+  ) => void;
   addSystem: (text: string) => void;
   updateAssistant: (text: string, runId: string) => void;
   finalizeAssistant: (text: string, runId: string) => void;
@@ -110,7 +114,11 @@ export function createEventHandlers(context: EventHandlerContext) {
     }
   };
 
-  const finalizeRun = (params: { runId: string; wasActiveRun: boolean; status: "idle" | "error" }) => {
+  const finalizeRun = (params: {
+    runId: string;
+    wasActiveRun: boolean;
+    status: "idle" | "error";
+  }) => {
     noteFinalizedRun(params.runId);
     clearActiveRunIfMatch(params.runId);
     flushPendingHistoryRefreshIfIdle();
@@ -120,7 +128,11 @@ export function createEventHandlers(context: EventHandlerContext) {
     void refreshSessionInfo?.();
   };
 
-  const terminateRun = (params: { runId: string; wasActiveRun: boolean; status: "aborted" | "error" }) => {
+  const terminateRun = (params: {
+    runId: string;
+    wasActiveRun: boolean;
+    status: "aborted" | "error";
+  }) => {
     streamAssembler.drop(params.runId);
     sessionRuns.delete(params.runId);
     clearActiveRunIfMatch(params.runId);
@@ -139,7 +151,10 @@ export function createEventHandlers(context: EventHandlerContext) {
     return sessionRuns.has(activeRunId);
   };
 
-  const maybeRefreshHistoryForRun = (runId: string, opts?: { allowLocalWithoutDisplayableFinal?: boolean }) => {
+  const maybeRefreshHistoryForRun = (
+    runId: string,
+    opts?: { allowLocalWithoutDisplayableFinal?: boolean },
+  ) => {
     const isLocalRun = isLocalRunId?.(runId) ?? false;
     if (isLocalRun) {
       forgetLocalRunId?.(runId);
@@ -246,8 +261,14 @@ export function createEventHandlers(context: EventHandlerContext) {
             : ""
           : "";
 
-      const finalText = streamAssembler.finalize(evt.runId, evt.message, state.showThinking, evt.errorMessage);
-      const suppressEmptyExternalPlaceholder = finalText === "(no output)" && !isLocalRunId?.(evt.runId);
+      const finalText = streamAssembler.finalize(
+        evt.runId,
+        evt.message,
+        state.showThinking,
+        evt.errorMessage,
+      );
+      const suppressEmptyExternalPlaceholder =
+        finalText === "(no output)" && !isLocalRunId?.(evt.runId);
       if (suppressEmptyExternalPlaceholder) {
         chatLog.dropAssistant(evt.runId);
       } else {

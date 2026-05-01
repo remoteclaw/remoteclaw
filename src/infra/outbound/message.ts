@@ -11,7 +11,11 @@ import {
 } from "../../utils/message-channel.js";
 import { resolveOutboundChannelPlugin } from "./channel-resolution.js";
 import { resolveMessageChannelSelection } from "./channel-selection.js";
-import { deliverOutboundPayloads, type OutboundDeliveryResult, type OutboundSendDeps } from "./deliver.js";
+import {
+  deliverOutboundPayloads,
+  type OutboundDeliveryResult,
+  type OutboundSendDeps,
+} from "./deliver.js";
 import { normalizeReplyPayloadsForDelivery } from "./payloads.js";
 import { buildOutboundSessionContext } from "./session-context.js";
 import { resolveOutboundTarget } from "./targets.js";
@@ -100,7 +104,10 @@ export type MessagePollResult = {
   dryRun?: boolean;
 };
 
-async function resolveRequiredChannel(params: { cfg: RemoteClawConfig; channel?: string }): Promise<string> {
+async function resolveRequiredChannel(params: {
+  cfg: RemoteClawConfig;
+  channel?: string;
+}): Promise<string> {
   return (
     await resolveMessageChannelSelection({
       cfg: params.cfg,
@@ -121,7 +128,8 @@ function resolveGatewayOptions(opts?: MessageGatewayOptions) {
   // Security: backend callers (tools/agents) must not accept user-controlled gateway URLs.
   // Use config-derived gateway target only.
   const url =
-    opts?.mode === GATEWAY_CLIENT_MODES.BACKEND || opts?.clientName === GATEWAY_CLIENT_NAMES.GATEWAY_CLIENT
+    opts?.mode === GATEWAY_CLIENT_MODES.BACKEND ||
+    opts?.clientName === GATEWAY_CLIENT_NAMES.GATEWAY_CLIENT
       ? undefined
       : opts?.url;
   return {

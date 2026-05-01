@@ -1,6 +1,10 @@
 import type { TUI } from "@mariozechner/pi-tui";
 import type { SessionsPatchResult } from "../gateway/protocol/index.js";
-import { normalizeAgentId, normalizeMainKey, parseAgentSessionKey } from "../routing/session-key.js";
+import {
+  normalizeAgentId,
+  normalizeMainKey,
+  parseAgentSessionKey,
+} from "../routing/session-key.js";
 import type { ChatLog } from "./components/chat-log.js";
 import type { GatewayAgentsList, GatewayChatClient } from "./gateway-chat.js";
 import { asString, extractTextFromMessage, isCommandMessage } from "./tui-formatters.js";
@@ -74,7 +78,8 @@ export function createSessionActions(context: SessionActionContext) {
           state.currentAgentId = initialSessionAgentId;
         }
       } else if (!state.agents.some((agent) => agent.id === state.currentAgentId)) {
-        state.currentAgentId = state.agents[0]?.id ?? normalizeAgentId(result.defaultId ?? state.currentAgentId);
+        state.currentAgentId =
+          state.agents[0]?.id ?? normalizeAgentId(result.defaultId ?? state.currentAgentId);
       }
       const nextSessionKey = resolveSessionKey(initialSessionInput);
       if (nextSessionKey !== state.currentSessionKey) {
@@ -82,7 +87,8 @@ export function createSessionActions(context: SessionActionContext) {
       }
       state.initialSessionApplied = true;
     } else if (!state.agents.some((agent) => agent.id === state.currentAgentId)) {
-      state.currentAgentId = state.agents[0]?.id ?? normalizeAgentId(result.defaultId ?? state.currentAgentId);
+      state.currentAgentId =
+        state.agents[0]?.id ?? normalizeAgentId(result.defaultId ?? state.currentAgentId);
     }
     updateHeader();
     updateFooter();
@@ -175,7 +181,8 @@ export function createSessionActions(context: SessionActionContext) {
       next.totalTokens = entry.totalTokens;
     }
     if (entry?.contextTokens !== undefined || defaults?.contextTokens !== undefined) {
-      next.contextTokens = entry?.contextTokens ?? defaults?.contextTokens ?? state.sessionInfo.contextTokens;
+      next.contextTokens =
+        entry?.contextTokens ?? defaults?.contextTokens ?? state.sessionInfo.contextTokens;
     }
     if (entry?.displayName !== undefined) {
       next.displayName = entry.displayName;
@@ -238,7 +245,10 @@ export function createSessionActions(context: SessionActionContext) {
   };
 
   const refreshSessionInfo = async () => {
-    refreshSessionInfoPromise = refreshSessionInfoPromise.then(runRefreshSessionInfo, runRefreshSessionInfo);
+    refreshSessionInfoPromise = refreshSessionInfoPromise.then(
+      runRefreshSessionInfo,
+      runRefreshSessionInfo,
+    );
     await refreshSessionInfoPromise;
   };
 
@@ -316,7 +326,9 @@ export function createSessionActions(context: SessionActionContext) {
           const component = chatLog.startTool(toolCallId, toolName, {});
           component.setResult(
             {
-              content: Array.isArray(message.content) ? (message.content as Record<string, unknown>[]) : [],
+              content: Array.isArray(message.content)
+                ? (message.content as Record<string, unknown>[])
+                : [],
               details:
                 typeof message.details === "object" && message.details
                   ? (message.details as Record<string, unknown>)

@@ -45,7 +45,17 @@ const MIME_BY_EXT: Record<string, string> = {
   ".js": "text/javascript",
 };
 
-const AUDIO_FILE_EXTENSIONS = new Set([".aac", ".caf", ".flac", ".m4a", ".mp3", ".oga", ".ogg", ".opus", ".wav"]);
+const AUDIO_FILE_EXTENSIONS = new Set([
+  ".aac",
+  ".caf",
+  ".flac",
+  ".m4a",
+  ".mp3",
+  ".oga",
+  ".ogg",
+  ".opus",
+  ".wav",
+]);
 
 export function normalizeMimeType(mime?: string | null): string | undefined {
   if (!mime) {
@@ -147,7 +157,10 @@ export function extensionForMime(mime?: string | null): string | undefined {
   return EXT_BY_MIME[normalized];
 }
 
-export function isGifMedia(opts: { contentType?: string | null; fileName?: string | null }): boolean {
+export function isGifMedia(opts: {
+  contentType?: string | null;
+  fileName?: string | null;
+}): boolean {
   if (opts.contentType?.toLowerCase() === "image/gif") {
     return true;
   }

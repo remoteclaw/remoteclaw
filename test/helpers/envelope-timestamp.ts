@@ -1,4 +1,7 @@
-import { formatUtcTimestamp, formatZonedTimestamp } from "../../src/infra/format-time/format-datetime.js";
+import {
+  formatUtcTimestamp,
+  formatZonedTimestamp,
+} from "../../src/infra/format-time/format-datetime.js";
 
 export { escapeRegExp } from "../../src/utils.js";
 
@@ -15,7 +18,9 @@ export function formatEnvelopeTimestamp(date: Date, zone: EnvelopeTimestampZone 
       if (normalized === "local" || normalized === "host") {
         return new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(date);
       }
-      return new Intl.DateTimeFormat("en-US", { timeZone: trimmedZone, weekday: "short" }).format(date);
+      return new Intl.DateTimeFormat("en-US", { timeZone: trimmedZone, weekday: "short" }).format(
+        date,
+      );
     } catch {
       return undefined;
     }

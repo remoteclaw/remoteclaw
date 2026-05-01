@@ -22,7 +22,9 @@ describe("gateway startup log", () => {
 
     expect(warn).toHaveBeenCalledTimes(1);
     expect(warn).toHaveBeenCalledWith(expect.stringContaining("dangerous config flags enabled"));
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining("gateway.controlUi.dangerouslyDisableDeviceAuth=true"));
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("gateway.controlUi.dangerouslyDisableDeviceAuth=true"),
+    );
     expect(warn).toHaveBeenCalledWith(expect.stringContaining("remoteclaw security audit"));
   });
 
@@ -57,6 +59,8 @@ describe("gateway startup log", () => {
     const listenMessages = info.mock.calls
       .map((call) => call[0])
       .filter((message) => message.startsWith("listening on "));
-    expect(listenMessages).toEqual([`listening on ws://127.0.0.1:18789, ws://[::1]:18789 (PID ${process.pid})`]);
+    expect(listenMessages).toEqual([
+      `listening on ws://127.0.0.1:18789, ws://[::1]:18789 (PID ${process.pid})`,
+    ]);
   });
 });

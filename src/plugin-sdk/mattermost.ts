@@ -80,7 +80,11 @@ export { registerPluginHttpRoute } from "../plugins/http-registry.js";
 export { emptyPluginConfigSchema } from "../plugins/config-schema.js";
 export type { PluginRuntime } from "../plugins/runtime/types.js";
 export type { RemoteClawPluginApi } from "../plugins/types.js";
-export { DEFAULT_ACCOUNT_ID, normalizeAccountId, resolveThreadSessionKeys } from "../routing/session-key.js";
+export {
+  DEFAULT_ACCOUNT_ID,
+  normalizeAccountId,
+  resolveThreadSessionKeys,
+} from "../routing/session-key.js";
 export type { RuntimeEnv } from "../runtime.js";
 export {
   DM_GROUP_ACCESS_REASON,

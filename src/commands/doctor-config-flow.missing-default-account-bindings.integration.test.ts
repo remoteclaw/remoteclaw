@@ -81,7 +81,9 @@ describe("doctor missing default account binding warning", () => {
     );
 
     expect(noteSpy).toHaveBeenCalledWith(
-      expect.stringContaining("channels.telegram: multiple accounts are configured but no explicit default is set"),
+      expect.stringContaining(
+        "channels.telegram: multiple accounts are configured but no explicit default is set",
+      ),
       "Doctor warnings",
     );
   });

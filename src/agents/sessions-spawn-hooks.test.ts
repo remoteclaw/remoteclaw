@@ -107,7 +107,9 @@ async function executeDiscordThreadSessionSpawn(toolCallId: string) {
 }
 
 function getSpawnedEventCall(): Record<string, unknown> {
-  const [event] = (hookRunnerMocks.runSubagentSpawned.mock.calls[0] ?? []) as unknown as [Record<string, unknown>];
+  const [event] = (hookRunnerMocks.runSubagentSpawned.mock.calls[0] ?? []) as unknown as [
+    Record<string, unknown>,
+  ];
   return event;
 }
 
@@ -117,7 +119,10 @@ function expectErrorResultMessage(result: { details: unknown }, pattern: RegExp)
   expect(details.error).toMatch(pattern);
 }
 
-function expectThreadBindFailureCleanup(details: { childSessionKey?: string; error?: string }, pattern: RegExp): void {
+function expectThreadBindFailureCleanup(
+  details: { childSessionKey?: string; error?: string },
+  pattern: RegExp,
+): void {
   expect(details.error).toMatch(pattern);
   expect(hookRunnerMocks.runSubagentSpawned).not.toHaveBeenCalled();
   expectSessionsDeleteWithoutAgentStart();
@@ -238,7 +243,9 @@ describe("sessions_spawn subagent lifecycle hooks", () => {
     expect(result.details).toMatchObject({ status: "accepted", runId: "run-1" });
     expect(hookRunnerMocks.runSubagentSpawning).not.toHaveBeenCalled();
     expect(hookRunnerMocks.runSubagentSpawned).toHaveBeenCalledTimes(1);
-    const [event] = (hookRunnerMocks.runSubagentSpawned.mock.calls[0] ?? []) as unknown as [Record<string, unknown>];
+    const [event] = (hookRunnerMocks.runSubagentSpawned.mock.calls[0] ?? []) as unknown as [
+      Record<string, unknown>,
+    ];
     expect(event).toMatchObject({
       mode: "run",
       threadRequested: false,
@@ -338,7 +345,9 @@ describe("sessions_spawn subagent lifecycle hooks", () => {
 
     expect(result.details).toMatchObject({ status: "error" });
     expect(hookRunnerMocks.runSubagentEnded).toHaveBeenCalledTimes(1);
-    const [event] = (hookRunnerMocks.runSubagentEnded.mock.calls[0] ?? []) as unknown as [Record<string, unknown>];
+    const [event] = (hookRunnerMocks.runSubagentEnded.mock.calls[0] ?? []) as unknown as [
+      Record<string, unknown>,
+    ];
     expect(event).toMatchObject({
       targetSessionKey: expect.stringMatching(/^agent:main:subagent:/),
       accountId: "work",

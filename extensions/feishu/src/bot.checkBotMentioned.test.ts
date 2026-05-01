@@ -69,7 +69,9 @@ describe("parseFeishuMessageEvent – mentionedBot", () => {
   });
 
   it("returns mentionedBot=true when bot is mentioned", () => {
-    const event = makeEvent("group", [{ key: "@_user_1", name: "Bot", id: { open_id: BOT_OPEN_ID } }]);
+    const event = makeEvent("group", [
+      { key: "@_user_1", name: "Bot", id: { open_id: BOT_OPEN_ID } },
+    ]);
     const ctx = parseFeishuMessageEvent(event, BOT_OPEN_ID);
     expect(ctx.mentionedBot).toBe(true);
   });
@@ -83,31 +85,45 @@ describe("parseFeishuMessageEvent – mentionedBot", () => {
   });
 
   it("returns mentionedBot=false when only other users are mentioned", () => {
-    const event = makeEvent("group", [{ key: "@_user_1", name: "Alice", id: { open_id: "ou_alice" } }]);
+    const event = makeEvent("group", [
+      { key: "@_user_1", name: "Alice", id: { open_id: "ou_alice" } },
+    ]);
     const ctx = parseFeishuMessageEvent(event, BOT_OPEN_ID);
     expect(ctx.mentionedBot).toBe(false);
   });
 
   it("returns mentionedBot=false when botOpenId is undefined (unknown bot)", () => {
-    const event = makeEvent("group", [{ key: "@_user_1", name: "Alice", id: { open_id: "ou_alice" } }]);
+    const event = makeEvent("group", [
+      { key: "@_user_1", name: "Alice", id: { open_id: "ou_alice" } },
+    ]);
     const ctx = parseFeishuMessageEvent(event, undefined);
     expect(ctx.mentionedBot).toBe(false);
   });
 
   it("returns mentionedBot=false when botOpenId is empty string (probe failed)", () => {
-    const event = makeEvent("group", [{ key: "@_user_1", name: "Alice", id: { open_id: "ou_alice" } }]);
+    const event = makeEvent("group", [
+      { key: "@_user_1", name: "Alice", id: { open_id: "ou_alice" } },
+    ]);
     const ctx = parseFeishuMessageEvent(event, "");
     expect(ctx.mentionedBot).toBe(false);
   });
 
   it("treats mention.name regex metacharacters as literals when stripping", () => {
-    const event = makeEvent("group", [{ key: "@_bot_1", name: ".*", id: { open_id: BOT_OPEN_ID } }], "@NotBot hello");
+    const event = makeEvent(
+      "group",
+      [{ key: "@_bot_1", name: ".*", id: { open_id: BOT_OPEN_ID } }],
+      "@NotBot hello",
+    );
     const ctx = parseFeishuMessageEvent(event, BOT_OPEN_ID);
     expect(ctx.content).toBe("@NotBot hello");
   });
 
   it("treats mention.key regex metacharacters as literals when stripping", () => {
-    const event = makeEvent("group", [{ key: ".*", name: "Bot", id: { open_id: BOT_OPEN_ID } }], "hello world");
+    const event = makeEvent(
+      "group",
+      [{ key: ".*", name: "Bot", id: { open_id: BOT_OPEN_ID } }],
+      "hello world",
+    );
     const ctx = parseFeishuMessageEvent(event, BOT_OPEN_ID);
     expect(ctx.content).toBe("hello world");
   });
@@ -134,7 +150,10 @@ describe("parseFeishuMessageEvent – mentionedBot", () => {
 
   it("returns mentionedBot=false for post message with at for another user", () => {
     const event = makePostEvent({
-      content: [[{ tag: "at", user_id: "ou_other", user_name: "other" }], [{ tag: "text", text: "hello" }]],
+      content: [
+        [{ tag: "at", user_id: "ou_other", user_name: "other" }],
+        [{ tag: "text", text: "hello" }],
+      ],
     });
     const ctx = parseFeishuMessageEvent(event, "ou_bot_123");
     expect(ctx.mentionedBot).toBe(false);

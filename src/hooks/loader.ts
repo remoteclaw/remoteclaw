@@ -26,11 +26,15 @@ function safeLogValue(value: string): string {
 
 function maybeWarnTrustedHookSource(source: string): void {
   if (source === "remoteclaw-workspace") {
-    log.warn("Loading workspace hook code into the gateway process. Workspace hooks are trusted local code.");
+    log.warn(
+      "Loading workspace hook code into the gateway process. Workspace hooks are trusted local code.",
+    );
     return;
   }
   if (source === "remoteclaw-managed") {
-    log.warn("Loading managed hook code into the gateway process. Managed hooks are trusted local code.");
+    log.warn(
+      "Loading managed hook code into the gateway process. Managed hooks are trusted local code.",
+    );
   }
 }
 
@@ -115,7 +119,9 @@ export async function loadInternalHooks(
         });
 
         if (!handler) {
-          log.error(`Handler '${safeLogValue(exportName)}' from ${safeLogValue(entry.hook.name)} is not a function`);
+          log.error(
+            `Handler '${safeLogValue(exportName)}' from ${safeLogValue(entry.hook.name)} is not a function`,
+          );
           continue;
         }
 
@@ -157,19 +163,25 @@ export async function loadInternalHooks(
         continue;
       }
       if (path.isAbsolute(rawModule)) {
-        log.error(`Handler module path must be workspace-relative (got absolute path): ${safeLogValue(rawModule)}`);
+        log.error(
+          `Handler module path must be workspace-relative (got absolute path): ${safeLogValue(rawModule)}`,
+        );
         continue;
       }
       const baseDir = path.resolve(workspaceDir);
       const modulePath = path.resolve(baseDir, rawModule);
       const baseDirReal = resolveExistingRealpath(baseDir);
       if (!baseDirReal) {
-        log.error(`Workspace directory is no longer readable while loading hooks: ${safeLogValue(baseDir)}`);
+        log.error(
+          `Workspace directory is no longer readable while loading hooks: ${safeLogValue(baseDir)}`,
+        );
         continue;
       }
       const modulePathSafe = resolveExistingRealpath(modulePath);
       if (!modulePathSafe) {
-        log.error(`Handler module path could not be resolved with realpath: ${safeLogValue(rawModule)}`);
+        log.error(
+          `Handler module path could not be resolved with realpath: ${safeLogValue(rawModule)}`,
+        );
         continue;
       }
       const rel = path.relative(baseDirReal, modulePathSafe);
@@ -183,7 +195,9 @@ export async function loadInternalHooks(
         boundaryLabel: "workspace directory",
       });
       if (!opened.ok) {
-        log.error(`Handler module path fails boundary checks under workspaceDir: ${safeLogValue(rawModule)}`);
+        log.error(
+          `Handler module path fails boundary checks under workspaceDir: ${safeLogValue(rawModule)}`,
+        );
         continue;
       }
       const safeModulePath = opened.path;
@@ -204,7 +218,9 @@ export async function loadInternalHooks(
       });
 
       if (!handler) {
-        log.error(`Handler '${safeLogValue(exportName)}' from ${safeLogValue(modulePath)} is not a function`);
+        log.error(
+          `Handler '${safeLogValue(exportName)}' from ${safeLogValue(modulePath)} is not a function`,
+        );
         continue;
       }
 

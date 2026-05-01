@@ -132,7 +132,9 @@ describe("initSessionState thread forking", () => {
       parentSession?: string;
     };
     const expectedParentSession = await fs.realpath(parentSessionFile);
-    const actualParentSession = parsedHeader.parentSession ? await fs.realpath(parsedHeader.parentSession) : undefined;
+    const actualParentSession = parsedHeader.parentSession
+      ? await fs.realpath(parsedHeader.parentSession)
+      : undefined;
     expect(actualParentSession).toBe(expectedParentSession);
     warn.mockRestore();
   });
@@ -357,7 +359,9 @@ describe("initSessionState thread forking", () => {
     const [headerLine] = forkedContent.split(/\r?\n/).filter((line) => line.trim().length > 0);
     const parsedHeader = JSON.parse(headerLine) as { parentSession?: string };
     const expectedParentSession = await fs.realpath(parentSessionFile);
-    const actualParentSession = parsedHeader.parentSession ? await fs.realpath(parsedHeader.parentSession) : undefined;
+    const actualParentSession = parsedHeader.parentSession
+      ? await fs.realpath(parsedHeader.parentSession)
+      : undefined;
     expect(actualParentSession).toBe(expectedParentSession);
   });
 
@@ -381,7 +385,9 @@ describe("initSessionState thread forking", () => {
 
     const sessionFile = result.sessionEntry.sessionFile;
     expect(sessionFile).toBeTruthy();
-    expect(path.basename(sessionFile ?? "")).toBe(`${result.sessionEntry.sessionId}-topic-456.jsonl`);
+    expect(path.basename(sessionFile ?? "")).toBe(
+      `${result.sessionEntry.sessionId}-topic-456.jsonl`,
+    );
   });
 });
 
@@ -1085,7 +1091,11 @@ describe("initSessionState channel reset overrides", () => {
 });
 
 describe("initSessionState reset triggers in WhatsApp groups", () => {
-  async function seedSessionStore(params: { storePath: string; sessionKey: string; sessionId: string }): Promise<void> {
+  async function seedSessionStore(params: {
+    storePath: string;
+    sessionKey: string;
+    sessionId: string;
+  }): Promise<void> {
     await writeSessionStoreFast(params.storePath, {
       [params.sessionKey]: {
         sessionId: params.sessionId,
@@ -1174,7 +1184,11 @@ describe("initSessionState reset triggers in WhatsApp groups", () => {
 });
 
 describe("initSessionState reset triggers in Slack channels", () => {
-  async function seedSessionStore(params: { storePath: string; sessionKey: string; sessionId: string }): Promise<void> {
+  async function seedSessionStore(params: {
+    storePath: string;
+    sessionKey: string;
+    sessionId: string;
+  }): Promise<void> {
     await writeSessionStoreFast(params.storePath, {
       [params.sessionKey]: {
         sessionId: params.sessionId,
@@ -1450,9 +1464,17 @@ describe("drainFormattedSystemEvents", () => {
 });
 
 describe("persistSessionUsageUpdate", () => {
-  async function seedSessionStore(params: { storePath: string; sessionKey: string; entry: Record<string, unknown> }) {
+  async function seedSessionStore(params: {
+    storePath: string;
+    sessionKey: string;
+    entry: Record<string, unknown>;
+  }) {
     await fs.mkdir(path.dirname(params.storePath), { recursive: true });
-    await fs.writeFile(params.storePath, JSON.stringify({ [params.sessionKey]: params.entry }, null, 2), "utf-8");
+    await fs.writeFile(
+      params.storePath,
+      JSON.stringify({ [params.sessionKey]: params.entry }, null, 2),
+      "utf-8",
+    );
   }
 
   it("uses lastCallUsage for totalTokens when provided", async () => {
@@ -1699,12 +1721,17 @@ describe("initSessionState dmScope delivery migration", () => {
     });
 
     expect(result.sessionKey).toBe("agent:main:telegram:direct:6101296751");
-    const persisted = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<string, SessionEntry>;
+    const persisted = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<
+      string,
+      SessionEntry
+    >;
     expect(persisted["agent:main:main"]?.sessionId).toBe("legacy-main");
     expect(persisted["agent:main:main"]?.deliveryContext).toBeUndefined();
     expect(persisted["agent:main:main"]?.lastChannel).toBeUndefined();
     expect(persisted["agent:main:main"]?.lastTo).toBeUndefined();
-    expect(persisted["agent:main:telegram:direct:6101296751"]?.deliveryContext?.to).toBe("6101296751");
+    expect(persisted["agent:main:telegram:direct:6101296751"]?.deliveryContext?.to).toBe(
+      "6101296751",
+    );
   });
 
   it("keeps legacy main-session delivery route when current DM target does not match", async () => {
@@ -1739,7 +1766,10 @@ describe("initSessionState dmScope delivery migration", () => {
       commandAuthorized: true,
     });
 
-    const persisted = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<string, SessionEntry>;
+    const persisted = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<
+      string,
+      SessionEntry
+    >;
     expect(persisted["agent:main:main"]?.deliveryContext).toEqual({
       channel: "telegram",
       to: "1111",

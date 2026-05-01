@@ -18,7 +18,9 @@ export function isSessionArchiveArtifactName(fileName: string): boolean {
     return true;
   }
   return (
-    hasArchiveSuffix(fileName, "deleted") || hasArchiveSuffix(fileName, "reset") || hasArchiveSuffix(fileName, "bak")
+    hasArchiveSuffix(fileName, "deleted") ||
+    hasArchiveSuffix(fileName, "reset") ||
+    hasArchiveSuffix(fileName, "bak")
   );
 }
 
@@ -65,7 +67,10 @@ function restoreSessionArchiveTimestamp(raw: string): string {
   return `${datePart}T${timePart.replace(/-/g, ":")}`;
 }
 
-export function parseSessionArchiveTimestamp(fileName: string, reason: SessionArchiveReason): number | null {
+export function parseSessionArchiveTimestamp(
+  fileName: string,
+  reason: SessionArchiveReason,
+): number | null {
   const marker = `.${reason}.`;
   const index = fileName.lastIndexOf(marker);
   if (index < 0) {

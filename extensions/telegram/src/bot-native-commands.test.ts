@@ -32,7 +32,9 @@ describe("registerTelegramNativeCommands", () => {
     description: string;
   };
 
-  async function waitForRegisteredCommands(setMyCommands: ReturnType<typeof vi.fn>): Promise<RegisteredCommand[]> {
+  async function waitForRegisteredCommands(
+    setMyCommands: ReturnType<typeof vi.fn>,
+  ): Promise<RegisteredCommand[]> {
     await vi.waitFor(() => {
       expect(setMyCommands).toHaveBeenCalled();
     });

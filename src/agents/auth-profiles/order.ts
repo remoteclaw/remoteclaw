@@ -93,7 +93,8 @@ export function resolveAuthProfileOrder(params: {
         .map(([profileId]) => profileId)
     : [];
   const baseOrder =
-    explicitOrder ?? (explicitProfiles.length > 0 ? explicitProfiles : listProfilesForProvider(store, provider));
+    explicitOrder ??
+    (explicitProfiles.length > 0 ? explicitProfiles : listProfilesForProvider(store, provider));
   if (baseOrder.length === 0) {
     return [];
   }

@@ -64,7 +64,12 @@ function sanitizeData(value: unknown): PersistentDedupeData {
   return out;
 }
 
-function pruneData(data: PersistentDedupeData, now: number, ttlMs: number, maxEntries: number): void {
+function pruneData(
+  data: PersistentDedupeData,
+  now: number,
+  ttlMs: number,
+  maxEntries: number,
+): void {
   if (ttlMs > 0) {
     for (const [key, ts] of Object.entries(data)) {
       if (now - ts >= ttlMs) {
@@ -151,7 +156,10 @@ export function createPersistentDedupe(options: PersistentDedupeOptions): Persis
     }
   }
 
-  async function checkAndRecord(key: string, dedupeOptions?: PersistentDedupeCheckOptions): Promise<boolean> {
+  async function checkAndRecord(
+    key: string,
+    dedupeOptions?: PersistentDedupeCheckOptions,
+  ): Promise<boolean> {
     const trimmed = key.trim();
     if (!trimmed) {
       return true;

@@ -631,7 +631,9 @@ describe("consolidateAuthProfiles", () => {
     });
 
     // First occurrence wins
-    const store = JSON.parse(await fsp.readFile(path.join(targetDir, "auth-profiles.json"), "utf-8"));
+    const store = JSON.parse(
+      await fsp.readFile(path.join(targetDir, "auth-profiles.json"), "utf-8"),
+    );
     expect(store.profiles["anthropic:default"].key).toBe("key-first");
 
     // Only one profile consolidated (deduped)
@@ -786,7 +788,9 @@ describe("materializeAuthDefaults", () => {
         list: [{ id: "test-agent", workspace: "~/ws" }],
       },
     });
-    const result = JSON.parse(materializeAuthDefaults(input, ["google:key", "anthropic:first", "anthropic:second"]));
+    const result = JSON.parse(
+      materializeAuthDefaults(input, ["google:key", "anthropic:first", "anthropic:second"]),
+    );
     expect(result.agents.defaults.auth).toBe("anthropic:first");
   });
 
@@ -935,7 +939,10 @@ describe("discoverImportableFiles", () => {
   it("excludes agent working directories (only sessions are imported)", async () => {
     await fsp.mkdir(path.join(tmpDir, "agents", "test-agent", "agent"), { recursive: true });
     await fsp.mkdir(path.join(tmpDir, "agents", "test-agent", "sessions"), { recursive: true });
-    await fsp.writeFile(path.join(tmpDir, "agents", "test-agent", "agent", "auth-profiles.json"), '{"profiles":{}}');
+    await fsp.writeFile(
+      path.join(tmpDir, "agents", "test-agent", "agent", "auth-profiles.json"),
+      '{"profiles":{}}',
+    );
     await fsp.writeFile(path.join(tmpDir, "agents", "test-agent", "agent", "auth.json"), "{}");
     await fsp.writeFile(path.join(tmpDir, "agents", "test-agent", "agent", "data.bin"), "bin");
     await fsp.writeFile(path.join(tmpDir, "agents", "test-agent", "sessions", "log.json"), "{}");
@@ -1117,8 +1124,14 @@ describe("importCommand", () => {
 
   it("copies files matching glob patterns within allowed directories", async () => {
     await fsp.mkdir(path.join(sourceDir, "agents", "test-agent", "sessions"), { recursive: true });
-    await fsp.writeFile(path.join(sourceDir, "agents", "test-agent", "sessions", "custom-data.bin"), "bin");
-    await fsp.writeFile(path.join(sourceDir, "agents", "test-agent", "sessions", "notes.txt"), "notes");
+    await fsp.writeFile(
+      path.join(sourceDir, "agents", "test-agent", "sessions", "custom-data.bin"),
+      "bin",
+    );
+    await fsp.writeFile(
+      path.join(sourceDir, "agents", "test-agent", "sessions", "notes.txt"),
+      "notes",
+    );
 
     const pathsMod = await import("../config/paths.js");
     vi.spyOn(pathsMod, "resolveNewStateDir").mockReturnValue(targetDir);
@@ -1126,8 +1139,12 @@ describe("importCommand", () => {
     const result = await importCommand({ sourcePath: sourceDir, yes: true }, runtime as RuntimeEnv);
 
     expect(result.copiedFiles).toHaveLength(2);
-    expect(fs.existsSync(path.join(targetDir, "agents", "test-agent", "sessions", "custom-data.bin"))).toBe(true);
-    expect(fs.existsSync(path.join(targetDir, "agents", "test-agent", "sessions", "notes.txt"))).toBe(true);
+    expect(
+      fs.existsSync(path.join(targetDir, "agents", "test-agent", "sessions", "custom-data.bin")),
+    ).toBe(true);
+    expect(
+      fs.existsSync(path.join(targetDir, "agents", "test-agent", "sessions", "notes.txt")),
+    ).toBe(true);
   });
 
   it("imports workspace-{agentId} directories", async () => {
@@ -1219,7 +1236,10 @@ describe("importCommand", () => {
     const pathsMod = await import("../config/paths.js");
     vi.spyOn(pathsMod, "resolveNewStateDir").mockReturnValue(targetDir);
 
-    const result = await importCommand({ sourcePath: sourceDir, dryRun: true }, runtime as RuntimeEnv);
+    const result = await importCommand(
+      { sourcePath: sourceDir, dryRun: true },
+      runtime as RuntimeEnv,
+    );
 
     expect(result.copiedFiles).toHaveLength(1);
     expect(fs.existsSync(targetDir)).toBe(false);
@@ -1244,7 +1264,9 @@ describe("importCommand", () => {
     const pathsMod = await import("../config/paths.js");
     vi.spyOn(pathsMod, "resolveNewStateDir").mockReturnValue(targetDir);
 
-    await expect(importCommand({ sourcePath: filePath }, runtime as RuntimeEnv)).rejects.toThrow("exit");
+    await expect(importCommand({ sourcePath: filePath }, runtime as RuntimeEnv)).rejects.toThrow(
+      "exit",
+    );
 
     expect(runtime.error).toHaveBeenCalledWith(expect.stringContaining("not a directory"));
   });
@@ -1256,9 +1278,9 @@ describe("importCommand", () => {
     const pathsMod = await import("../config/paths.js");
     vi.spyOn(pathsMod, "resolveNewStateDir").mockReturnValue(targetDir);
 
-    await expect(importCommand({ sourcePath: sourceDir, nonInteractive: true }, runtime as RuntimeEnv)).rejects.toThrow(
-      "exit",
-    );
+    await expect(
+      importCommand({ sourcePath: sourceDir, nonInteractive: true }, runtime as RuntimeEnv),
+    ).rejects.toThrow("exit");
 
     expect(runtime.error).toHaveBeenCalledWith(expect.stringContaining("already exists"));
   });
@@ -1479,14 +1501,20 @@ describe("importCommand", () => {
     const result = await importCommand({ sourcePath: sourceDir, yes: true }, runtime as RuntimeEnv);
 
     // Global store should exist with both profiles
-    const globalStore = JSON.parse(await fsp.readFile(path.join(targetDir, "auth-profiles.json"), "utf-8"));
+    const globalStore = JSON.parse(
+      await fsp.readFile(path.join(targetDir, "auth-profiles.json"), "utf-8"),
+    );
     expect(globalStore.version).toBe(1);
     expect(globalStore.profiles["anthropic:default"].key).toBe("key-1");
     expect(globalStore.profiles["google:my-key"].key).toBe("key-2");
 
     // Per-agent auth-profiles.json should NOT be copied
-    expect(fs.existsSync(path.join(targetDir, "agents", "test-agent", "agent", "auth-profiles.json"))).toBe(false);
-    expect(fs.existsSync(path.join(targetDir, "agents", "helper", "agent", "auth-profiles.json"))).toBe(false);
+    expect(
+      fs.existsSync(path.join(targetDir, "agents", "test-agent", "agent", "auth-profiles.json")),
+    ).toBe(false);
+    expect(
+      fs.existsSync(path.join(targetDir, "agents", "helper", "agent", "auth-profiles.json")),
+    ).toBe(false);
 
     expect(result.consolidatedAuthProfiles).toContain("anthropic:default");
     expect(result.consolidatedAuthProfiles).toContain("google:my-key");
@@ -1532,7 +1560,9 @@ describe("importCommand", () => {
     const result = await importCommand({ sourcePath: sourceDir, yes: true }, runtime as RuntimeEnv);
 
     // One of the two keys wins (walk order is OS-dependent)
-    const globalStore = JSON.parse(await fsp.readFile(path.join(targetDir, "auth-profiles.json"), "utf-8"));
+    const globalStore = JSON.parse(
+      await fsp.readFile(path.join(targetDir, "auth-profiles.json"), "utf-8"),
+    );
     expect(["key-main", "key-helper"]).toContain(globalStore.profiles["anthropic:default"].key);
 
     // Conflict reported
@@ -1549,8 +1579,14 @@ describe("importCommand", () => {
       path.join(sourceDir, "openclaw.json"),
       '{"gateway": {"port": 18789}, "env": {"vars": {"token": "${OPENCLAW_GATEWAY_TOKEN}"}}}',
     );
-    await fsp.writeFile(path.join(sourceDir, "agents", "default", "sessions", "sessions.json"), '{"sessions": []}');
-    await fsp.writeFile(path.join(sourceDir, "credentials", "oauth.json"), '{"token": "fake-token"}');
+    await fsp.writeFile(
+      path.join(sourceDir, "agents", "default", "sessions", "sessions.json"),
+      '{"sessions": []}',
+    );
+    await fsp.writeFile(
+      path.join(sourceDir, "credentials", "oauth.json"),
+      '{"token": "fake-token"}',
+    );
 
     const pathsMod = await import("../config/paths.js");
     vi.spyOn(pathsMod, "resolveNewStateDir").mockReturnValue(targetDir);
@@ -1559,7 +1595,9 @@ describe("importCommand", () => {
 
     expect(result.copiedFiles.length).toBeGreaterThanOrEqual(3);
     expect(fs.existsSync(path.join(targetDir, "remoteclaw.json"))).toBe(true);
-    expect(fs.existsSync(path.join(targetDir, "agents", "default", "sessions", "sessions.json"))).toBe(true);
+    expect(
+      fs.existsSync(path.join(targetDir, "agents", "default", "sessions", "sessions.json")),
+    ).toBe(true);
     expect(fs.existsSync(path.join(targetDir, "credentials", "oauth.json"))).toBe(true);
 
     // Verify main config was transformed

@@ -22,19 +22,31 @@ import type {
 } from "./types.core.js";
 
 export type ChannelSetupAdapter = {
-  resolveAccountId?: (params: { cfg: RemoteClawConfig; accountId?: string; input?: ChannelSetupInput }) => string;
+  resolveAccountId?: (params: {
+    cfg: RemoteClawConfig;
+    accountId?: string;
+    input?: ChannelSetupInput;
+  }) => string;
   resolveBindingAccountId?: (params: {
     cfg: RemoteClawConfig;
     agentId: string;
     accountId?: string;
   }) => string | undefined;
-  applyAccountName?: (params: { cfg: RemoteClawConfig; accountId: string; name?: string }) => RemoteClawConfig;
+  applyAccountName?: (params: {
+    cfg: RemoteClawConfig;
+    accountId: string;
+    name?: string;
+  }) => RemoteClawConfig;
   applyAccountConfig: (params: {
     cfg: RemoteClawConfig;
     accountId: string;
     input: ChannelSetupInput;
   }) => RemoteClawConfig;
-  validateInput?: (params: { cfg: RemoteClawConfig; accountId: string; input: ChannelSetupInput }) => string | null;
+  validateInput?: (params: {
+    cfg: RemoteClawConfig;
+    accountId: string;
+    input: ChannelSetupInput;
+  }) => string | null;
 };
 
 export type ChannelConfigAdapter<ResolvedAccount> = {
@@ -42,7 +54,11 @@ export type ChannelConfigAdapter<ResolvedAccount> = {
   resolveAccount: (cfg: RemoteClawConfig, accountId?: string | null) => ResolvedAccount;
   inspectAccount?: (cfg: RemoteClawConfig, accountId?: string | null) => unknown;
   defaultAccountId?: (cfg: RemoteClawConfig) => string;
-  setAccountEnabled?: (params: { cfg: RemoteClawConfig; accountId: string; enabled: boolean }) => RemoteClawConfig;
+  setAccountEnabled?: (params: {
+    cfg: RemoteClawConfig;
+    accountId: string;
+    enabled: boolean;
+  }) => RemoteClawConfig;
   deleteAccount?: (params: { cfg: RemoteClawConfig; accountId: string }) => RemoteClawConfig;
   isEnabled?: (account: ResolvedAccount, cfg: RemoteClawConfig) => boolean;
   disabledReason?: (account: ResolvedAccount, cfg: RemoteClawConfig) => string;
@@ -58,7 +74,10 @@ export type ChannelConfigAdapter<ResolvedAccount> = {
     accountId?: string | null;
     allowFrom: Array<string | number>;
   }) => string[];
-  resolveDefaultTo?: (params: { cfg: RemoteClawConfig; accountId?: string | null }) => string | undefined;
+  resolveDefaultTo?: (params: {
+    cfg: RemoteClawConfig;
+    accountId?: string | null;
+  }) => string | undefined;
 };
 
 export type ChannelGroupAdapter = {
@@ -113,7 +132,11 @@ export type ChannelStatusAdapter<ResolvedAccount, Probe = unknown, Audit = unkno
     defaultAccountId: string;
     snapshot: ChannelAccountSnapshot;
   }) => Record<string, unknown> | Promise<Record<string, unknown>>;
-  probeAccount?: (params: { account: ResolvedAccount; timeoutMs: number; cfg: RemoteClawConfig }) => Promise<Probe>;
+  probeAccount?: (params: {
+    account: ResolvedAccount;
+    timeoutMs: number;
+    cfg: RemoteClawConfig;
+  }) => Promise<Probe>;
   auditAccount?: (params: {
     account: ResolvedAccount;
     timeoutMs: number;
@@ -242,7 +265,11 @@ export type ChannelLogoutContext<ResolvedAccount = unknown> = {
 export type ChannelPairingAdapter = {
   idLabel: string;
   normalizeAllowEntry?: (entry: string) => string;
-  notifyApproval?: (params: { cfg: RemoteClawConfig; id: string; runtime?: RuntimeEnv }) => Promise<void>;
+  notifyApproval?: (params: {
+    cfg: RemoteClawConfig;
+    id: string;
+    runtime?: RuntimeEnv;
+  }) => Promise<void>;
 };
 
 export type ChannelGatewayAdapter<ResolvedAccount = unknown> = {
@@ -254,7 +281,10 @@ export type ChannelGatewayAdapter<ResolvedAccount = unknown> = {
     timeoutMs?: number;
     verbose?: boolean;
   }) => Promise<ChannelLoginWithQrStartResult>;
-  loginWithQrWait?: (params: { accountId?: string; timeoutMs?: number }) => Promise<ChannelLoginWithQrWaitResult>;
+  loginWithQrWait?: (params: {
+    accountId?: string;
+    timeoutMs?: number;
+  }) => Promise<ChannelLoginWithQrWaitResult>;
   logoutAccount?: (ctx: ChannelLogoutContext<ResolvedAccount>) => Promise<ChannelLogoutResult>;
 };
 
@@ -274,7 +304,10 @@ export type ChannelHeartbeatAdapter = {
     accountId?: string | null;
     deps?: ChannelHeartbeatDeps;
   }) => Promise<{ ok: boolean; reason: string }>;
-  resolveRecipients?: (params: { cfg: RemoteClawConfig; opts?: { to?: string; all?: boolean } }) => {
+  resolveRecipients?: (params: {
+    cfg: RemoteClawConfig;
+    opts?: { to?: string; all?: boolean };
+  }) => {
     recipients: string[];
     source: string;
   };
@@ -308,7 +341,9 @@ export type ChannelDirectoryAdapter = {
   listPeersLive?: (params: ChannelDirectoryListParams) => Promise<ChannelDirectoryEntry[]>;
   listGroups?: (params: ChannelDirectoryListParams) => Promise<ChannelDirectoryEntry[]>;
   listGroupsLive?: (params: ChannelDirectoryListParams) => Promise<ChannelDirectoryEntry[]>;
-  listGroupMembers?: (params: ChannelDirectoryListGroupMembersParams) => Promise<ChannelDirectoryEntry[]>;
+  listGroupMembers?: (
+    params: ChannelDirectoryListGroupMembersParams,
+  ) => Promise<ChannelDirectoryEntry[]>;
 };
 
 export type ChannelResolveKind = "user" | "group";
@@ -344,6 +379,8 @@ export type ChannelCommandAdapter = {
 };
 
 export type ChannelSecurityAdapter<ResolvedAccount = unknown> = {
-  resolveDmPolicy?: (ctx: ChannelSecurityContext<ResolvedAccount>) => ChannelSecurityDmPolicy | null;
+  resolveDmPolicy?: (
+    ctx: ChannelSecurityContext<ResolvedAccount>,
+  ) => ChannelSecurityDmPolicy | null;
   collectWarnings?: (ctx: ChannelSecurityContext<ResolvedAccount>) => Promise<string[]> | string[];
 };

@@ -10,7 +10,9 @@ import {
 } from "./slash-commands.js";
 
 describe("slash-commands", () => {
-  async function registerSingleStatusCommand(request: (path: string, init?: { method?: string }) => Promise<unknown>) {
+  async function registerSingleStatusCommand(
+    request: (path: string, init?: { method?: string }) => Promise<unknown>,
+  ) {
     const client = { request } as unknown as MattermostClient;
     return registerSlashCommands({
       client,
@@ -62,7 +64,10 @@ describe("slash-commands", () => {
   });
 
   it("returns null for malformed payloads missing required fields", () => {
-    const payload = parseSlashCommandPayload(JSON.stringify({ token: "t3", command: "/oc_help" }), "application/json");
+    const payload = parseSlashCommandPayload(
+      JSON.stringify({ token: "t3", command: "/oc_help" }),
+      "application/json",
+    );
     expect(payload).toBeNull();
   });
 
@@ -76,9 +81,9 @@ describe("slash-commands", () => {
 
   it("registers both public model slash commands", () => {
     expect(
-      DEFAULT_COMMAND_SPECS.filter((spec) => spec.trigger === "oc_model" || spec.trigger === "oc_models").map(
-        (spec) => spec.trigger,
-      ),
+      DEFAULT_COMMAND_SPECS.filter(
+        (spec) => spec.trigger === "oc_model" || spec.trigger === "oc_models",
+      ).map((spec) => spec.trigger),
     ).toEqual(["oc_model", "oc_models"]);
   });
 

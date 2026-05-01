@@ -19,7 +19,11 @@ import { createHooksRequestHandler } from "./server-http.js";
 
 type HooksHandlerDeps = Parameters<typeof createHooksRequestHandler>[0];
 
-function createRequest(params?: { authorization?: string; remoteAddress?: string; url?: string }): IncomingMessage {
+function createRequest(params?: {
+  authorization?: string;
+  remoteAddress?: string;
+  url?: string;
+}): IncomingMessage {
   return createGatewayRequest({
     method: "POST",
     path: params?.url ?? "/hooks/wake",
@@ -64,7 +68,8 @@ function createHandler(params?: {
       ((() => {
         return;
       }) as HooksHandlerDeps["dispatchWakeHook"]),
-    dispatchAgentHook: params?.dispatchAgentHook ?? ((() => "run-1") as HooksHandlerDeps["dispatchAgentHook"]),
+    dispatchAgentHook:
+      params?.dispatchAgentHook ?? ((() => "run-1") as HooksHandlerDeps["dispatchAgentHook"]),
   });
 }
 

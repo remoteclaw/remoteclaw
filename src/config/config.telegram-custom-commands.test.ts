@@ -16,7 +16,9 @@ describe("telegram custom commands schema", () => {
       return;
     }
 
-    expect(res.data.channels?.telegram?.customCommands).toEqual([{ command: "backup", description: "Git backup" }]);
+    expect(res.data.channels?.telegram?.customCommands).toEqual([
+      { command: "backup", description: "Git backup" },
+    ]);
   });
 
   it("normalizes hyphens in custom command names", () => {

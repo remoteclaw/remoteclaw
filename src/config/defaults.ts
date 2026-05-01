@@ -50,18 +50,22 @@ const MISTRAL_SAFE_MAX_TOKENS_BY_MODEL = {
   "pixtral-large-latest": 32_768,
 } as const;
 
-type ModelDefinitionLike = Partial<ModelDefinitionConfig> & Pick<ModelDefinitionConfig, "id" | "name">;
+type ModelDefinitionLike = Partial<ModelDefinitionConfig> &
+  Pick<ModelDefinitionConfig, "id" | "name">;
 
 function isPositiveNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value) && value > 0;
 }
 
-function resolveModelCost(raw?: Partial<ModelDefinitionConfig["cost"]>): ModelDefinitionConfig["cost"] {
+function resolveModelCost(
+  raw?: Partial<ModelDefinitionConfig["cost"]>,
+): ModelDefinitionConfig["cost"] {
   return {
     input: typeof raw?.input === "number" ? raw.input : DEFAULT_MODEL_COST.input,
     output: typeof raw?.output === "number" ? raw.output : DEFAULT_MODEL_COST.output,
     cacheRead: typeof raw?.cacheRead === "number" ? raw.cacheRead : DEFAULT_MODEL_COST.cacheRead,
-    cacheWrite: typeof raw?.cacheWrite === "number" ? raw.cacheWrite : DEFAULT_MODEL_COST.cacheWrite,
+    cacheWrite:
+      typeof raw?.cacheWrite === "number" ? raw.cacheWrite : DEFAULT_MODEL_COST.cacheWrite,
   };
 }
 
@@ -77,14 +81,17 @@ export function resolveNormalizedProviderModelMaxTokens(params: {
   }
 
   const safeMaxTokens =
-    MISTRAL_SAFE_MAX_TOKENS_BY_MODEL[params.modelId as keyof typeof MISTRAL_SAFE_MAX_TOKENS_BY_MODEL] ??
-    DEFAULT_MODEL_MAX_TOKENS;
+    MISTRAL_SAFE_MAX_TOKENS_BY_MODEL[
+      params.modelId as keyof typeof MISTRAL_SAFE_MAX_TOKENS_BY_MODEL
+    ] ?? DEFAULT_MODEL_MAX_TOKENS;
   return Math.min(safeMaxTokens, params.contextWindow);
 }
 
 function resolveAnthropicDefaultAuthMode(cfg: RemoteClawConfig): AnthropicAuthDefaultsMode | null {
   const profiles = cfg.auth?.profiles ?? {};
-  const anthropicProfiles = Object.entries(profiles).filter(([, profile]) => profile?.provider === "anthropic");
+  const anthropicProfiles = Object.entries(profiles).filter(
+    ([, profile]) => profile?.provider === "anthropic",
+  );
 
   const order = cfg.auth?.order?.anthropic ?? [];
   for (const profileId of order) {
@@ -101,7 +108,9 @@ function resolveAnthropicDefaultAuthMode(cfg: RemoteClawConfig): AnthropicAuthDe
   }
 
   const hasApiKey = anthropicProfiles.some(([, profile]) => profile?.mode === "api_key");
-  const hasOauth = anthropicProfiles.some(([, profile]) => profile?.mode === "oauth" || profile?.mode === "token");
+  const hasOauth = anthropicProfiles.some(
+    ([, profile]) => profile?.mode === "oauth" || profile?.mode === "token",
+  );
   if (hasApiKey && !hasOauth) {
     return "api_key";
   }
@@ -150,7 +159,10 @@ export function applyMessageDefaults(cfg: RemoteClawConfig): RemoteClawConfig {
   };
 }
 
-export function applySessionDefaults(cfg: RemoteClawConfig, options: SessionDefaultsOptions = {}): RemoteClawConfig {
+export function applySessionDefaults(
+  cfg: RemoteClawConfig,
+  options: SessionDefaultsOptions = {},
+): RemoteClawConfig {
   const session = cfg.session;
   if (!session || session.mainKey === undefined) {
     return cfg;
@@ -252,7 +264,9 @@ export function applyModelDefaults(cfg: RemoteClawConfig): RemoteClawConfig {
           modelMutated = true;
         }
 
-        const contextWindow = isPositiveNumber(raw.contextWindow) ? raw.contextWindow : DEFAULT_CONTEXT_TOKENS;
+        const contextWindow = isPositiveNumber(raw.contextWindow)
+          ? raw.contextWindow
+          : DEFAULT_CONTEXT_TOKENS;
         if (raw.contextWindow !== contextWindow) {
           modelMutated = true;
         }
@@ -345,9 +359,11 @@ export function applyAgentDefaults(cfg: RemoteClawConfig): RemoteClawConfig {
     return cfg;
   }
   const defaults = agents.defaults;
-  const hasMax = typeof defaults?.maxConcurrent === "number" && Number.isFinite(defaults.maxConcurrent);
+  const hasMax =
+    typeof defaults?.maxConcurrent === "number" && Number.isFinite(defaults.maxConcurrent);
   const hasSubMax =
-    typeof defaults?.subagents?.maxConcurrent === "number" && Number.isFinite(defaults.subagents.maxConcurrent);
+    typeof defaults?.subagents?.maxConcurrent === "number" &&
+    Number.isFinite(defaults.subagents.maxConcurrent);
   if (hasMax && hasSubMax) {
     return cfg;
   }
@@ -440,7 +456,8 @@ export function applyContextPruningDefaults(cfg: RemoteClawConfig): RemoteClawCo
       Boolean(
         parsed &&
         (parsed.provider === "anthropic" ||
-          (parsed.provider === "amazon-bedrock" && parsed.model.toLowerCase().includes("anthropic.claude"))),
+          (parsed.provider === "amazon-bedrock" &&
+            parsed.model.toLowerCase().includes("anthropic.claude"))),
       );
 
     for (const [key, entry] of Object.entries(nextModels)) {
@@ -460,7 +477,9 @@ export function applyContextPruningDefaults(cfg: RemoteClawConfig): RemoteClawCo
       modelsMutated = true;
     }
 
-    const primary = resolvePrimaryModelRef(resolveAgentModelPrimaryValue(defaults.model) ?? undefined);
+    const primary = resolvePrimaryModelRef(
+      resolveAgentModelPrimaryValue(defaults.model) ?? undefined,
+    );
     if (primary) {
       const parsedPrimary = parseModelRef(primary, "anthropic");
       if (isAnthropicCacheRetentionTarget(parsedPrimary)) {

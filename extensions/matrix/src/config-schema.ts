@@ -1,4 +1,8 @@
-import { AllowFromListSchema, buildNestedDmConfigSchema, GroupPolicySchema } from "remoteclaw/plugin-sdk/compat";
+import {
+  AllowFromListSchema,
+  buildNestedDmConfigSchema,
+  GroupPolicySchema,
+} from "remoteclaw/plugin-sdk/compat";
 import { MarkdownConfigSchema, ToolPolicySchema } from "remoteclaw/plugin-sdk/matrix";
 import { z } from "zod";
 import { buildSecretInputSchema } from "./secret-input.js";

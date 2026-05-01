@@ -1,18 +1,31 @@
 import { normalizeCommandBody } from "../../../src/auto-reply/commands-registry.js";
-import { formatInboundEnvelope, resolveEnvelopeFormatOptions } from "../../../src/auto-reply/envelope.js";
-import { buildPendingHistoryContextFromMap, type HistoryEntry } from "../../../src/auto-reply/reply/history.js";
+import {
+  formatInboundEnvelope,
+  resolveEnvelopeFormatOptions,
+} from "../../../src/auto-reply/envelope.js";
+import {
+  buildPendingHistoryContextFromMap,
+  type HistoryEntry,
+} from "../../../src/auto-reply/reply/history.js";
 import { finalizeInboundContext } from "../../../src/auto-reply/reply/inbound-context.js";
 import { toLocationContext } from "../../../src/channels/location.js";
 import { recordInboundSession } from "../../../src/channels/session.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import { readSessionUpdatedAt, resolveStorePath } from "../../../src/config/sessions.js";
-import type { TelegramDirectConfig, TelegramGroupConfig, TelegramTopicConfig } from "../../../src/config/types.js";
+import type {
+  TelegramDirectConfig,
+  TelegramGroupConfig,
+  TelegramTopicConfig,
+} from "../../../src/config/types.js";
 import { logVerbose, shouldLogVerbose } from "../../../src/globals.js";
 import type { ResolvedAgentRoute } from "../../../src/routing/resolve-route.js";
 import { resolveInboundLastRouteSessionKey } from "../../../src/routing/resolve-route.js";
 import { resolvePinnedMainDmOwnerFromAllowlist } from "../../../src/security/dm-policy-shared.js";
 import { normalizeAllowFrom } from "./bot-access.js";
-import type { TelegramMediaRef, TelegramMessageContextOptions } from "./bot-message-context.types.js";
+import type {
+  TelegramMediaRef,
+  TelegramMessageContextOptions,
+} from "./bot-message-context.types.js";
 import {
   buildGroupLabel,
   buildSenderLabel,
@@ -90,7 +103,9 @@ export async function buildTelegramInboundContextPayload(params: {
   const forwardOrigin = normalizeForwardedContext(msg);
   const replyForwardAnnotation = replyTarget?.forwardedFrom
     ? `[Forwarded from ${replyTarget.forwardedFrom.from}${
-        replyTarget.forwardedFrom.date ? ` at ${new Date(replyTarget.forwardedFrom.date * 1000).toISOString()}` : ""
+        replyTarget.forwardedFrom.date
+          ? ` at ${new Date(replyTarget.forwardedFrom.date * 1000).toISOString()}`
+          : ""
       }]\n`
     : "";
   const replySuffix = replyTarget
@@ -109,7 +124,9 @@ export async function buildTelegramInboundContextPayload(params: {
     : "";
   const groupLabel = isGroup ? buildGroupLabel(msg, chatId, resolvedThreadId) : undefined;
   const senderName = buildSenderName(msg);
-  const conversationLabel = isGroup ? (groupLabel ?? `group:${chatId}`) : buildSenderLabel(msg, senderId || chatId);
+  const conversationLabel = isGroup
+    ? (groupLabel ?? `group:${chatId}`)
+    : buildSenderLabel(msg, senderId || chatId);
   const storePath = resolveStorePath(cfg.session?.store, {
     agentId: route.agentId,
   });
@@ -199,7 +216,9 @@ export async function buildTelegramInboundContextPayload(params: {
     ReplyToForwardedFromId: replyTarget?.forwardedFrom?.fromId,
     ReplyToForwardedFromUsername: replyTarget?.forwardedFrom?.fromUsername,
     ReplyToForwardedFromTitle: replyTarget?.forwardedFrom?.fromTitle,
-    ReplyToForwardedDate: replyTarget?.forwardedFrom?.date ? replyTarget.forwardedFrom.date * 1000 : undefined,
+    ReplyToForwardedDate: replyTarget?.forwardedFrom?.date
+      ? replyTarget.forwardedFrom.date * 1000
+      : undefined,
     ForwardedFrom: forwardOrigin?.from,
     ForwardedFromType: forwardOrigin?.fromType,
     ForwardedFromId: forwardOrigin?.fromId,
@@ -217,7 +236,9 @@ export async function buildTelegramInboundContextPayload(params: {
     MediaPaths: contextMedia.length > 0 ? contextMedia.map((m) => m.path) : undefined,
     MediaUrls: contextMedia.length > 0 ? contextMedia.map((m) => m.path) : undefined,
     MediaTypes:
-      contextMedia.length > 0 ? (contextMedia.map((m) => m.contentType).filter(Boolean) as string[]) : undefined,
+      contextMedia.length > 0
+        ? (contextMedia.map((m) => m.contentType).filter(Boolean) as string[])
+        : undefined,
     Sticker: allMedia[0]?.stickerMetadata,
     StickerMediaIncluded: allMedia[0]?.stickerMetadata ? !stickerCacheHit : undefined,
     ...(locationData ? toLocationContext(locationData) : undefined),
@@ -262,7 +283,10 @@ export async function buildTelegramInboundContextPayload(params: {
             accountId: route.accountId,
             threadId: updateLastRouteThreadId,
             mainDmOwnerPin:
-              !isGroup && updateLastRouteSessionKey === route.mainSessionKey && pinnedMainDmOwner && senderId
+              !isGroup &&
+              updateLastRouteSessionKey === route.mainSessionKey &&
+              pinnedMainDmOwner &&
+              senderId
                 ? {
                     ownerRecipient: pinnedMainDmOwner,
                     senderRecipient: senderId,
@@ -288,7 +312,9 @@ export async function buildTelegramInboundContextPayload(params: {
   }
 
   if (forwardOrigin && shouldLogVerbose()) {
-    logVerbose(`telegram forward-context: forwardedFrom="${forwardOrigin.from}" type=${forwardOrigin.fromType}`);
+    logVerbose(
+      `telegram forward-context: forwardedFrom="${forwardOrigin.from}" type=${forwardOrigin.fromType}`,
+    );
   }
 
   if (shouldLogVerbose()) {

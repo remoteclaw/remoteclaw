@@ -37,7 +37,9 @@ export type PluginConfigUiHint = {
 
 export type PluginKind = "context-engine";
 
-export type PluginConfigValidation = { ok: true; value?: unknown } | { ok: false; errors: string[] };
+export type PluginConfigValidation =
+  | { ok: true; value?: unknown }
+  | { ok: false; errors: string[] };
 
 export type RemoteClawPluginConfigSchema = {
   safeParse?: (value: unknown) => {
@@ -174,7 +176,9 @@ export type PluginCommandResult = ReplyPayload;
 /**
  * Handler function for plugin commands.
  */
-export type PluginCommandHandler = (ctx: PluginCommandContext) => PluginCommandResult | Promise<PluginCommandResult>;
+export type PluginCommandHandler = (
+  ctx: PluginCommandContext,
+) => PluginCommandResult | Promise<PluginCommandResult>;
 
 /**
  * Definition for a plugin-registered command.
@@ -221,7 +225,9 @@ export type RemoteClawPluginCliContext = {
   logger: PluginLogger;
 };
 
-export type RemoteClawPluginCliRegistrar = (ctx: RemoteClawPluginCliContext) => void | Promise<void>;
+export type RemoteClawPluginCliRegistrar = (
+  ctx: RemoteClawPluginCliContext,
+) => void | Promise<void>;
 
 export type RemoteClawPluginServiceContext = {
   config: RemoteClawConfig;
@@ -252,7 +258,9 @@ export type RemoteClawPluginDefinition = {
   activate?: (api: RemoteClawPluginApi) => void | Promise<void>;
 };
 
-export type RemoteClawPluginModule = RemoteClawPluginDefinition | ((api: RemoteClawPluginApi) => void | Promise<void>);
+export type RemoteClawPluginModule =
+  | RemoteClawPluginDefinition
+  | ((api: RemoteClawPluginApi) => void | Promise<void>);
 
 export type RemoteClawPluginApi = {
   id: string;
@@ -264,8 +272,15 @@ export type RemoteClawPluginApi = {
   pluginConfig?: Record<string, unknown>;
   runtime: PluginRuntime;
   logger: PluginLogger;
-  registerTool: (tool: AnyAgentTool | RemoteClawPluginToolFactory, opts?: RemoteClawPluginToolOptions) => void;
-  registerHook: (events: string | string[], handler: InternalHookHandler, opts?: RemoteClawPluginHookOptions) => void;
+  registerTool: (
+    tool: AnyAgentTool | RemoteClawPluginToolFactory,
+    opts?: RemoteClawPluginToolOptions,
+  ) => void;
+  registerHook: (
+    events: string | string[],
+    handler: InternalHookHandler,
+    opts?: RemoteClawPluginHookOptions,
+  ) => void;
   registerHttpRoute: (params: RemoteClawPluginHttpRouteParams) => void;
   registerChannel: (registration: RemoteClawPluginChannelRegistration | ChannelPlugin) => void;
   registerGatewayMethod: (method: string, handler: GatewayRequestHandler) => void;
@@ -279,10 +294,17 @@ export type RemoteClawPluginApi = {
    */
   registerCommand: (command: RemoteClawPluginCommandDefinition) => void;
   /** Register a context engine implementation (exclusive slot — only one active at a time). */
-  registerContextEngine: (id: string, factory: import("../context-engine/registry.js").ContextEngineFactory) => void;
+  registerContextEngine: (
+    id: string,
+    factory: import("../context-engine/registry.js").ContextEngineFactory,
+  ) => void;
   resolvePath: (input: string) => string;
   /** Register a lifecycle hook handler */
-  on: <K extends PluginHookName>(hookName: K, handler: PluginHookHandlerMap[K], opts?: { priority?: number }) => void;
+  on: <K extends PluginHookName>(
+    hookName: K,
+    handler: PluginHookHandlerMap[K],
+    opts?: { priority?: number },
+  ) => void;
 };
 
 export type PluginOrigin = "bundled" | "global" | "workspace" | "config";
@@ -440,9 +462,8 @@ type MissingPluginPromptMutationResultFields = Exclude<
   keyof PluginHookBeforePromptBuildResult,
   (typeof PLUGIN_PROMPT_MUTATION_RESULT_FIELDS)[number]
 >;
-type AssertAllPluginPromptMutationResultFieldsListed = MissingPluginPromptMutationResultFields extends never
-  ? true
-  : never;
+type AssertAllPluginPromptMutationResultFieldsListed =
+  MissingPluginPromptMutationResultFields extends never ? true : never;
 const assertAllPluginPromptMutationResultFieldsListed: AssertAllPluginPromptMutationResultFieldsListed = true;
 void assertAllPluginPromptMutationResultFieldsListed;
 
@@ -453,7 +474,8 @@ export type PluginHookBeforeAgentStartEvent = {
   messages?: unknown[];
 };
 
-export type PluginHookBeforeAgentStartResult = PluginHookBeforePromptBuildResult & PluginHookBeforeModelResolveResult;
+export type PluginHookBeforeAgentStartResult = PluginHookBeforePromptBuildResult &
+  PluginHookBeforeModelResolveResult;
 
 export type PluginHookBeforeAgentStartOverrideResult = Omit<
   PluginHookBeforeAgentStartResult,
@@ -470,7 +492,9 @@ export const stripPromptMutationFieldsFromLegacyHookResult = (
   for (const field of PLUGIN_PROMPT_MUTATION_RESULT_FIELDS) {
     delete remaining[field];
   }
-  return Object.keys(remaining).length > 0 ? (remaining as PluginHookBeforeAgentStartOverrideResult) : undefined;
+  return Object.keys(remaining).length > 0
+    ? (remaining as PluginHookBeforeAgentStartOverrideResult)
+    : undefined;
 };
 
 // llm_input hook
@@ -776,7 +800,10 @@ export type PluginHookHandlerMap = {
   before_model_resolve: (
     event: PluginHookBeforeModelResolveEvent,
     ctx: PluginHookAgentContext,
-  ) => Promise<PluginHookBeforeModelResolveResult | void> | PluginHookBeforeModelResolveResult | void;
+  ) =>
+    | Promise<PluginHookBeforeModelResolveResult | void>
+    | PluginHookBeforeModelResolveResult
+    | void;
   before_prompt_build: (
     event: PluginHookBeforePromptBuildEvent,
     ctx: PluginHookAgentContext,
@@ -786,22 +813,43 @@ export type PluginHookHandlerMap = {
     ctx: PluginHookAgentContext,
   ) => Promise<PluginHookBeforeAgentStartResult | void> | PluginHookBeforeAgentStartResult | void;
   llm_input: (event: PluginHookLlmInputEvent, ctx: PluginHookAgentContext) => Promise<void> | void;
-  llm_output: (event: PluginHookLlmOutputEvent, ctx: PluginHookAgentContext) => Promise<void> | void;
+  llm_output: (
+    event: PluginHookLlmOutputEvent,
+    ctx: PluginHookAgentContext,
+  ) => Promise<void> | void;
   agent_end: (event: PluginHookAgentEndEvent, ctx: PluginHookAgentContext) => Promise<void> | void;
-  before_compaction: (event: PluginHookBeforeCompactionEvent, ctx: PluginHookAgentContext) => Promise<void> | void;
-  after_compaction: (event: PluginHookAfterCompactionEvent, ctx: PluginHookAgentContext) => Promise<void> | void;
-  before_reset: (event: PluginHookBeforeResetEvent, ctx: PluginHookAgentContext) => Promise<void> | void;
-  message_received: (event: PluginHookMessageReceivedEvent, ctx: PluginHookMessageContext) => Promise<void> | void;
+  before_compaction: (
+    event: PluginHookBeforeCompactionEvent,
+    ctx: PluginHookAgentContext,
+  ) => Promise<void> | void;
+  after_compaction: (
+    event: PluginHookAfterCompactionEvent,
+    ctx: PluginHookAgentContext,
+  ) => Promise<void> | void;
+  before_reset: (
+    event: PluginHookBeforeResetEvent,
+    ctx: PluginHookAgentContext,
+  ) => Promise<void> | void;
+  message_received: (
+    event: PluginHookMessageReceivedEvent,
+    ctx: PluginHookMessageContext,
+  ) => Promise<void> | void;
   message_sending: (
     event: PluginHookMessageSendingEvent,
     ctx: PluginHookMessageContext,
   ) => Promise<PluginHookMessageSendingResult | void> | PluginHookMessageSendingResult | void;
-  message_sent: (event: PluginHookMessageSentEvent, ctx: PluginHookMessageContext) => Promise<void> | void;
+  message_sent: (
+    event: PluginHookMessageSentEvent,
+    ctx: PluginHookMessageContext,
+  ) => Promise<void> | void;
   before_tool_call: (
     event: PluginHookBeforeToolCallEvent,
     ctx: PluginHookToolContext,
   ) => Promise<PluginHookBeforeToolCallResult | void> | PluginHookBeforeToolCallResult | void;
-  after_tool_call: (event: PluginHookAfterToolCallEvent, ctx: PluginHookToolContext) => Promise<void> | void;
+  after_tool_call: (
+    event: PluginHookAfterToolCallEvent,
+    ctx: PluginHookToolContext,
+  ) => Promise<void> | void;
   tool_result_persist: (
     event: PluginHookToolResultPersistEvent,
     ctx: PluginHookToolResultPersistContext,
@@ -810,8 +858,14 @@ export type PluginHookHandlerMap = {
     event: PluginHookBeforeMessageWriteEvent,
     ctx: { agentId?: string; sessionKey?: string },
   ) => PluginHookBeforeMessageWriteResult | void;
-  session_start: (event: PluginHookSessionStartEvent, ctx: PluginHookSessionContext) => Promise<void> | void;
-  session_end: (event: PluginHookSessionEndEvent, ctx: PluginHookSessionContext) => Promise<void> | void;
+  session_start: (
+    event: PluginHookSessionStartEvent,
+    ctx: PluginHookSessionContext,
+  ) => Promise<void> | void;
+  session_end: (
+    event: PluginHookSessionEndEvent,
+    ctx: PluginHookSessionContext,
+  ) => Promise<void> | void;
   subagent_spawning: (
     event: PluginHookSubagentSpawningEvent,
     ctx: PluginHookSubagentContext,
@@ -819,9 +873,18 @@ export type PluginHookHandlerMap = {
   subagent_delivery_target: (
     event: PluginHookSubagentDeliveryTargetEvent,
     ctx: PluginHookSubagentContext,
-  ) => Promise<PluginHookSubagentDeliveryTargetResult | void> | PluginHookSubagentDeliveryTargetResult | void;
-  subagent_spawned: (event: PluginHookSubagentSpawnedEvent, ctx: PluginHookSubagentContext) => Promise<void> | void;
-  subagent_ended: (event: PluginHookSubagentEndedEvent, ctx: PluginHookSubagentContext) => Promise<void> | void;
+  ) =>
+    | Promise<PluginHookSubagentDeliveryTargetResult | void>
+    | PluginHookSubagentDeliveryTargetResult
+    | void;
+  subagent_spawned: (
+    event: PluginHookSubagentSpawnedEvent,
+    ctx: PluginHookSubagentContext,
+  ) => Promise<void> | void;
+  subagent_ended: (
+    event: PluginHookSubagentEndedEvent,
+    ctx: PluginHookSubagentContext,
+  ) => Promise<void> | void;
   session_resumed: (
     event: {
       sessionId: string;
@@ -862,8 +925,14 @@ export type PluginHookHandlerMap = {
     },
     ctx: PluginHookAgentContext,
   ) => Promise<void> | void;
-  gateway_start: (event: PluginHookGatewayStartEvent, ctx: PluginHookGatewayContext) => Promise<void> | void;
-  gateway_stop: (event: PluginHookGatewayStopEvent, ctx: PluginHookGatewayContext) => Promise<void> | void;
+  gateway_start: (
+    event: PluginHookGatewayStartEvent,
+    ctx: PluginHookGatewayContext,
+  ) => Promise<void> | void;
+  gateway_stop: (
+    event: PluginHookGatewayStopEvent,
+    ctx: PluginHookGatewayContext,
+  ) => Promise<void> | void;
 };
 
 export type PluginHookRegistration<K extends PluginHookName = PluginHookName> = {

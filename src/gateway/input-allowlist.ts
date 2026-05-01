@@ -5,7 +5,9 @@
  * - missing / empty / whitespace-only list => no hostname allowlist restriction
  * - deny-all URL fetching => use the corresponding `allowUrl: false` switch
  */
-export function normalizeInputHostnameAllowlist(values: string[] | undefined): string[] | undefined {
+export function normalizeInputHostnameAllowlist(
+  values: string[] | undefined,
+): string[] | undefined {
   if (!values || values.length === 0) {
     return undefined;
   }

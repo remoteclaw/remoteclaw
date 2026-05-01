@@ -1,9 +1,16 @@
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { detectLinuxSdBackedStateDir, formatLinuxSdBackedStateDirWarning } from "./doctor-state-integrity.js";
+import {
+  detectLinuxSdBackedStateDir,
+  formatLinuxSdBackedStateDirWarning,
+} from "./doctor-state-integrity.js";
 
 function encodeMountInfoPath(value: string): string {
-  return value.replace(/\\/g, "\\134").replace(/\n/g, "\\012").replace(/\t/g, "\\011").replace(/ /g, "\\040");
+  return value
+    .replace(/\\/g, "\\134")
+    .replace(/\n/g, "\\012")
+    .replace(/\t/g, "\\011")
+    .replace(/ /g, "\\040");
 }
 
 describe("detectLinuxSdBackedStateDir", () => {

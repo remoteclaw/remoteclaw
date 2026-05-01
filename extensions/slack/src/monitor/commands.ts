@@ -15,7 +15,9 @@ export function normalizeSlackSlashCommandName(raw: string) {
   return raw.replace(/^\/+/, "");
 }
 
-export function resolveSlackSlashCommandConfig(raw?: SlackSlashCommandConfig): Required<SlackSlashCommandConfig> {
+export function resolveSlackSlashCommandConfig(
+  raw?: SlackSlashCommandConfig,
+): Required<SlackSlashCommandConfig> {
   const normalizedName = normalizeSlackSlashCommandName(raw?.name?.trim() || "remoteclaw");
   const name = normalizedName || "remoteclaw";
   return {

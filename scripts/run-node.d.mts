@@ -19,7 +19,10 @@ export function runNodeMain(params?: {
     args: string[],
     options: unknown,
   ) => {
-    on: (event: "exit", cb: (code: number | null, signal: string | null) => void) => void | undefined;
+    on: (
+      event: "exit",
+      cb: (code: number | null, signal: string | null) => void,
+    ) => void | undefined;
   };
   spawnSync?: unknown;
   fs?: unknown;

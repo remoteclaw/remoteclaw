@@ -1,7 +1,9 @@
 import { missingTargetError } from "../../../src/infra/outbound/target-errors.js";
 import { isWhatsAppGroupJid, normalizeWhatsAppTarget } from "./normalize.js";
 
-export type WhatsAppOutboundTargetResolution = { ok: true; to: string } | { ok: false; error: Error };
+export type WhatsAppOutboundTargetResolution =
+  | { ok: true; to: string }
+  | { ok: false; error: Error };
 
 export function resolveWhatsAppOutboundTarget(params: {
   to: string | null | undefined;
@@ -9,7 +11,9 @@ export function resolveWhatsAppOutboundTarget(params: {
   mode: string | null | undefined;
 }): WhatsAppOutboundTargetResolution {
   const trimmed = params.to?.trim() ?? "";
-  const allowListRaw = (params.allowFrom ?? []).map((entry) => String(entry).trim()).filter(Boolean);
+  const allowListRaw = (params.allowFrom ?? [])
+    .map((entry) => String(entry).trim())
+    .filter(Boolean);
   const hasWildcard = allowListRaw.includes("*");
   const allowList = allowListRaw
     .filter((entry) => entry !== "*")

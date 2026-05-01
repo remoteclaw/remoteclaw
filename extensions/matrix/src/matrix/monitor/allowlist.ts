@@ -67,10 +67,15 @@ export function normalizeMatrixAllowList(list?: Array<string | number>) {
   return normalizeAllowList(list).map((entry) => normalizeMatrixAllowListEntry(entry));
 }
 
-export type MatrixAllowListMatch = AllowlistMatch<"wildcard" | "id" | "prefixed-id" | "prefixed-user">;
+export type MatrixAllowListMatch = AllowlistMatch<
+  "wildcard" | "id" | "prefixed-id" | "prefixed-user"
+>;
 type MatrixAllowListSource = Exclude<MatrixAllowListMatch["matchSource"], undefined>;
 
-export function resolveMatrixAllowListMatch(params: { allowList: string[]; userId?: string }): MatrixAllowListMatch {
+export function resolveMatrixAllowListMatch(params: {
+  allowList: string[];
+  userId?: string;
+}): MatrixAllowListMatch {
   const compiledAllowList = compileAllowlist(params.allowList);
   const userId = normalizeMatrixUser(params.userId);
   const candidates: Array<{ value?: string; source: MatrixAllowListSource }> = [

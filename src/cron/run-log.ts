@@ -197,7 +197,8 @@ function normalizeRunStatuses(opts?: {
 }): CronRunStatus[] | null {
   if (Array.isArray(opts?.statuses) && opts.statuses.length > 0) {
     const filtered = opts.statuses.filter(
-      (status): status is CronRunStatus => status === "ok" || status === "error" || status === "skipped",
+      (status): status is CronRunStatus =>
+        status === "ok" || status === "error" || status === "skipped",
     );
     if (filtered.length > 0) {
       return Array.from(new Set(filtered));
@@ -217,7 +218,10 @@ function normalizeDeliveryStatuses(opts?: {
   if (Array.isArray(opts?.deliveryStatuses) && opts.deliveryStatuses.length > 0) {
     const filtered = opts.deliveryStatuses.filter(
       (status): status is CronDeliveryStatus =>
-        status === "delivered" || status === "not-delivered" || status === "unknown" || status === "not-requested",
+        status === "delivered" ||
+        status === "not-delivered" ||
+        status === "unknown" ||
+        status === "not-requested",
     );
     if (filtered.length > 0) {
       return Array.from(new Set(filtered));
@@ -263,7 +267,10 @@ function parseAllRunLogEntries(raw: string, opts?: { jobId?: string }): CronRunL
       if (jobId && obj.jobId !== jobId) {
         continue;
       }
-      const usage = obj.usage && typeof obj.usage === "object" ? (obj.usage as Record<string, unknown>) : undefined;
+      const usage =
+        obj.usage && typeof obj.usage === "object"
+          ? (obj.usage as Record<string, unknown>)
+          : undefined;
       const entry: CronRunLogEntry = {
         ts: obj.ts,
         jobId: obj.jobId,
@@ -275,14 +282,18 @@ function parseAllRunLogEntries(raw: string, opts?: { jobId?: string }): CronRunL
         durationMs: obj.durationMs,
         nextRunAtMs: obj.nextRunAtMs,
         model: typeof obj.model === "string" && obj.model.trim() ? obj.model : undefined,
-        provider: typeof obj.provider === "string" && obj.provider.trim() ? obj.provider : undefined,
+        provider:
+          typeof obj.provider === "string" && obj.provider.trim() ? obj.provider : undefined,
         usage: usage
           ? {
               input_tokens: typeof usage.input_tokens === "number" ? usage.input_tokens : undefined,
-              output_tokens: typeof usage.output_tokens === "number" ? usage.output_tokens : undefined,
+              output_tokens:
+                typeof usage.output_tokens === "number" ? usage.output_tokens : undefined,
               total_tokens: typeof usage.total_tokens === "number" ? usage.total_tokens : undefined,
-              cache_read_tokens: typeof usage.cache_read_tokens === "number" ? usage.cache_read_tokens : undefined,
-              cache_write_tokens: typeof usage.cache_write_tokens === "number" ? usage.cache_write_tokens : undefined,
+              cache_read_tokens:
+                typeof usage.cache_read_tokens === "number" ? usage.cache_read_tokens : undefined,
+              cache_write_tokens:
+                typeof usage.cache_write_tokens === "number" ? usage.cache_write_tokens : undefined,
             }
           : undefined,
       };
@@ -359,7 +370,9 @@ export async function readCronRunLogEntriesPage(
     queryTextForEntry: (entry) => [entry.summary ?? "", entry.error ?? "", entry.jobId].join(" "),
   });
   const sorted =
-    sortDir === "asc" ? filtered.toSorted((a, b) => a.ts - b.ts) : filtered.toSorted((a, b) => b.ts - a.ts);
+    sortDir === "asc"
+      ? filtered.toSorted((a, b) => a.ts - b.ts)
+      : filtered.toSorted((a, b) => b.ts - a.ts);
   const total = sorted.length;
   const offset = Math.max(0, Math.min(total, Math.floor(opts?.offset ?? 0)));
   const entries = sorted.slice(offset, offset + limit);
@@ -374,7 +387,9 @@ export async function readCronRunLogEntriesPage(
   };
 }
 
-export async function readCronRunLogEntriesPageAll(opts: ReadCronRunLogAllPageOptions): Promise<CronRunLogPageResult> {
+export async function readCronRunLogEntriesPageAll(
+  opts: ReadCronRunLogAllPageOptions,
+): Promise<CronRunLogPageResult> {
   const limit = Math.max(1, Math.min(200, Math.floor(opts.limit ?? 50)));
   const statuses = normalizeRunStatuses(opts);
   const deliveryStatuses = normalizeDeliveryStatuses(opts);
@@ -413,7 +428,9 @@ export async function readCronRunLogEntriesPageAll(opts: ReadCronRunLogAllPageOp
     },
   });
   const sorted =
-    sortDir === "asc" ? filtered.toSorted((a, b) => a.ts - b.ts) : filtered.toSorted((a, b) => b.ts - a.ts);
+    sortDir === "asc"
+      ? filtered.toSorted((a, b) => a.ts - b.ts)
+      : filtered.toSorted((a, b) => b.ts - a.ts);
   const total = sorted.length;
   const offset = Math.max(0, Math.min(total, Math.floor(opts.offset ?? 0)));
   const entries = sorted.slice(offset, offset + limit);

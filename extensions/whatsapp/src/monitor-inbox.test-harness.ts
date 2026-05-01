@@ -31,7 +31,9 @@ export const DEFAULT_WEB_INBOX_CONFIG = {
 export const mockLoadConfig: AnyMockFn = vi.fn().mockReturnValue(DEFAULT_WEB_INBOX_CONFIG);
 
 export const readAllowFromStoreMock: AnyMockFn = vi.fn().mockResolvedValue([]);
-export const upsertPairingRequestMock: AnyMockFn = vi.fn().mockResolvedValue({ code: "PAIRCODE", created: true });
+export const upsertPairingRequestMock: AnyMockFn = vi
+  .fn()
+  .mockResolvedValue({ code: "PAIRCODE", created: true });
 
 export type MockSock = {
   ev: EventEmitter;

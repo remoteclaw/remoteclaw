@@ -7,7 +7,9 @@ import { createDeferred, createNoopLogger, installCronTestHooks } from "./servic
 const noopLogger = createNoopLogger();
 installCronTestHooks({ logger: noopLogger });
 
-type FakeFsEntry = { kind: "file"; content: string; mtimeMs: number } | { kind: "dir"; mtimeMs: number };
+type FakeFsEntry =
+  | { kind: "file"; content: string; mtimeMs: number }
+  | { kind: "dir"; mtimeMs: number };
 
 const fsState = vi.hoisted(() => ({
   entries: new Map<string, FakeFsEntry>(),
@@ -274,7 +276,9 @@ async function createMainOneShotHarness() {
   return { ...harness, events: harness.events };
 }
 
-async function createIsolatedAnnounceHarness(runIsolatedAgentJob: CronServiceDeps["runIsolatedAgentJob"]) {
+async function createIsolatedAnnounceHarness(
+  runIsolatedAgentJob: CronServiceDeps["runIsolatedAgentJob"],
+) {
   const harness = await createCronHarness({
     runIsolatedAgentJob,
   });
@@ -374,7 +378,10 @@ async function addMainOneShotHelloJob(
 }
 
 function expectMainSystemEventPosted(enqueueSystemEvent: unknown, text: string) {
-  expect(enqueueSystemEvent).toHaveBeenCalledWith(text, expect.objectContaining({ agentId: undefined }));
+  expect(enqueueSystemEvent).toHaveBeenCalledWith(
+    text,
+    expect.objectContaining({ agentId: undefined }),
+  );
 }
 
 async function stopCronAndCleanup(cron: CronService, store: { cleanup: () => Promise<void> }) {
@@ -382,7 +389,10 @@ async function stopCronAndCleanup(cron: CronService, store: { cleanup: () => Pro
   await store.cleanup();
 }
 
-function createStartedCronService(storePath: string, runIsolatedAgentJob?: CronServiceDeps["runIsolatedAgentJob"]) {
+function createStartedCronService(
+  storePath: string,
+  runIsolatedAgentJob?: CronServiceDeps["runIsolatedAgentJob"],
+) {
   return new CronService({
     storePath,
     cronEnabled: true,
@@ -408,9 +418,8 @@ async function expectNoMainSummaryForIsolatedRun(params: {
   runIsolatedAgentJob: CronServiceDeps["runIsolatedAgentJob"];
   name: string;
 }) {
-  const { store, cron, enqueueSystemEvent, requestHeartbeatNow, events } = await createIsolatedAnnounceHarness(
-    params.runIsolatedAgentJob,
-  );
+  const { store, cron, enqueueSystemEvent, requestHeartbeatNow, events } =
+    await createIsolatedAnnounceHarness(params.runIsolatedAgentJob);
   await runIsolatedAnnounceScenario({
     cron,
     events,
@@ -446,9 +455,10 @@ describe("CronService", () => {
   });
 
   it("runs a one-shot job and deletes it after success by default", async () => {
-    const { store, cron, enqueueSystemEvent, requestHeartbeatNow, events, job } = await createMainOneShotJobHarness({
-      name: "one-shot delete",
-    });
+    const { store, cron, enqueueSystemEvent, requestHeartbeatNow, events, job } =
+      await createMainOneShotJobHarness({
+        name: "one-shot delete",
+      });
 
     vi.setSystemTime(new Date("2025-12-13T00:00:02.000Z"));
     await vi.runOnlyPendingTimersAsync();
@@ -667,7 +677,9 @@ describe("CronService", () => {
 
     vi.setSystemTime(new Date("2025-12-13T00:00:01.000Z"));
     await vi.runOnlyPendingTimersAsync();
-    await events.waitFor((evt) => evt.jobId === "job-1" && evt.action === "finished" && evt.status === "skipped");
+    await events.waitFor(
+      (evt) => evt.jobId === "job-1" && evt.action === "finished" && evt.status === "skipped",
+    );
 
     expect(enqueueSystemEvent).not.toHaveBeenCalled();
     expect(requestHeartbeatNow).not.toHaveBeenCalled();

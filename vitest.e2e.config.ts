@@ -9,7 +9,9 @@ const cpuCount = os.cpus().length;
 const defaultWorkers = isCI ? Math.min(2, Math.max(1, Math.floor(cpuCount * 0.25))) : 1;
 const requestedWorkers = Number.parseInt(process.env.REMOTECLAW_E2E_WORKERS ?? "", 10);
 const e2eWorkers =
-  Number.isFinite(requestedWorkers) && requestedWorkers > 0 ? Math.min(16, requestedWorkers) : defaultWorkers;
+  Number.isFinite(requestedWorkers) && requestedWorkers > 0
+    ? Math.min(16, requestedWorkers)
+    : defaultWorkers;
 const verboseE2E = process.env.REMOTECLAW_E2E_VERBOSE === "1";
 
 const baseTest = (baseConfig as { test?: { exclude?: string[] } }).test ?? {};

@@ -1,4 +1,9 @@
-import type { EditorTheme, MarkdownTheme, SelectListTheme, SettingsListTheme } from "@mariozechner/pi-tui";
+import type {
+  EditorTheme,
+  MarkdownTheme,
+  SelectListTheme,
+  SettingsListTheme,
+} from "@mariozechner/pi-tui";
 import chalk from "chalk";
 import { highlight, supportsLanguage } from "cli-highlight";
 import type { SearchableSelectListTheme } from "../components/searchable-select-list.js";
@@ -205,7 +210,8 @@ export const filterableSelectListTheme = {
 };
 
 export const settingsListTheme: SettingsListTheme = {
-  label: (text, selected) => (selected ? chalk.bold(fg(palette.accent)(text)) : fg(palette.text)(text)),
+  label: (text, selected) =>
+    selected ? chalk.bold(fg(palette.accent)(text)) : fg(palette.text)(text),
   value: (text, selected) => (selected ? fg(palette.accentSoft)(text) : fg(palette.dim)(text)),
   description: (text) => fg(palette.systemText)(text),
   cursor: fg(palette.accent)("→ "),

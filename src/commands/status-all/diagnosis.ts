@@ -2,7 +2,10 @@ import type { ProgressReporter } from "../../cli/progress.js";
 import { formatConfigIssueLine } from "../../config/issue-format.js";
 import { resolveGatewayLogPaths } from "../../daemon/launchd.js";
 import { formatPortDiagnostics } from "../../infra/ports.js";
-import { type RestartSentinelPayload, summarizeRestartSentinel } from "../../infra/restart-sentinel.js";
+import {
+  type RestartSentinelPayload,
+  summarizeRestartSentinel,
+} from "../../infra/restart-sentinel.js";
 import { formatTimeAgo, redactSecrets } from "./format.js";
 import { readFileTailLines, summarizeLogTail } from "./gateway.js";
 
@@ -82,7 +85,8 @@ export async function appendStatusAllDiagnosis(params: {
     emitCheck(`Config: ${params.snap.path ?? "(unknown)"}`, status);
     const issues = [...(params.snap.legacyIssues ?? []), ...(params.snap.issues ?? [])];
     const uniqueIssues = issues.filter(
-      (issue, index) => issues.findIndex((x) => x.path === issue.path && x.message === issue.message) === index,
+      (issue, index) =>
+        issues.findIndex((x) => x.path === issue.path && x.message === issue.message) === index,
     );
     for (const issue of uniqueIssues.slice(0, 12)) {
       lines.push(`  ${formatConfigIssueLine(issue, "-")}`);
@@ -196,13 +200,18 @@ export async function appendStatusAllDiagnosis(params: {
     );
     for (const issue of params.channelIssues.slice(0, 12)) {
       const fixText = issue.fix ? ` · fix: ${issue.fix}` : "";
-      lines.push(`  - ${issue.channel}[${issue.accountId}] ${issue.kind}: ${issue.message}${fixText}`);
+      lines.push(
+        `  - ${issue.channel}[${issue.accountId}] ${issue.kind}: ${issue.message}${fixText}`,
+      );
     }
     if (params.channelIssues.length > 12) {
       lines.push(`  ${muted(`… +${params.channelIssues.length - 12} more`)}`);
     }
   } else {
-    emitCheck(`Channel issues skipped (gateway ${params.gatewayReachable ? "query failed" : "unreachable"})`, "warn");
+    emitCheck(
+      `Channel issues skipped (gateway ${params.gatewayReachable ? "query failed" : "unreachable"})`,
+      "warn",
+    );
   }
 
   const healthErr = (() => {

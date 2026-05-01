@@ -54,7 +54,9 @@ export async function monitorFeishuProvider(opts: MonitorFeishuOpts = {}): Promi
     throw new Error("No enabled Feishu accounts configured");
   }
 
-  log(`feishu: starting ${accounts.length} account(s): ${accounts.map((a) => a.accountId).join(", ")}`);
+  log(
+    `feishu: starting ${accounts.length} account(s): ${accounts.map((a) => a.accountId).join(", ")}`,
+  );
 
   const monitorPromises: Promise<void>[] = [];
   for (const account of accounts) {

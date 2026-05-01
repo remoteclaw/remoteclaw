@@ -44,7 +44,8 @@ export type ToolDisplay = {
 
 const SHARED_TOOL_DISPLAY_CONFIG = SHARED_TOOL_DISPLAY_JSON as ToolDisplayConfig;
 const TOOL_DISPLAY_OVERRIDES = TOOL_DISPLAY_OVERRIDES_JSON as ToolDisplayConfig;
-const FALLBACK = TOOL_DISPLAY_OVERRIDES.fallback ?? SHARED_TOOL_DISPLAY_CONFIG.fallback ?? { emoji: "🧩" };
+const FALLBACK = TOOL_DISPLAY_OVERRIDES.fallback ??
+  SHARED_TOOL_DISPLAY_CONFIG.fallback ?? { emoji: "🧩" };
 const TOOL_MAP = Object.assign({}, SHARED_TOOL_DISPLAY_CONFIG.tools, TOOL_DISPLAY_OVERRIDES.tools);
 const DETAIL_LABEL_OVERRIDES: Record<string, string> = {
   agentId: "agent",
@@ -66,7 +67,11 @@ const DETAIL_LABEL_OVERRIDES: Record<string, string> = {
 };
 const MAX_DETAIL_ENTRIES = 8;
 
-export function resolveToolDisplay(params: { name?: string; args?: unknown; meta?: string }): ToolDisplay {
+export function resolveToolDisplay(params: {
+  name?: string;
+  args?: unknown;
+  meta?: string;
+}): ToolDisplay {
   const name = normalizeToolName(params.name);
   const key = name.toLowerCase();
   const spec = TOOL_MAP[key];
@@ -105,5 +110,7 @@ export function formatToolDetail(display: ToolDisplay): string | undefined {
 
 export function formatToolSummary(display: ToolDisplay): string {
   const detail = formatToolDetail(display);
-  return detail ? `${display.emoji} ${display.label}: ${detail}` : `${display.emoji} ${display.label}`;
+  return detail
+    ? `${display.emoji} ${display.label}: ${detail}`
+    : `${display.emoji} ${display.label}`;
 }

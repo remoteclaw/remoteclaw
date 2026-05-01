@@ -131,7 +131,10 @@ describe("scripts/ios-team-id.sh", () => {
     sharedHomeBinDir = path.join(sharedHomeDir, "bin");
     await mkdir(sharedHomeBinDir, { recursive: true });
     await mkdir(path.join(sharedHomeDir, "Library", "Preferences"), { recursive: true });
-    await writeFile(path.join(sharedHomeDir, "Library", "Preferences", "com.apple.dt.Xcode.plist"), "");
+    await writeFile(
+      path.join(sharedHomeDir, "Library", "Preferences", "com.apple.dt.Xcode.plist"),
+      "",
+    );
     await writeExecutable(
       path.join(sharedBinDir, "plutil"),
       `#!/usr/bin/env bash
@@ -186,7 +189,9 @@ printf 'BBBBB22222\\t0\\tBeta Team\\r\\n'`,
   });
 
   it("parses team listings and prioritizes preferred IDs without shelling out", () => {
-    const rows = parseTeamCandidateRows("AAAAA11111\t1\tAlpha Team\r\nBBBBB22222\t0\tBeta Team\r\n");
+    const rows = parseTeamCandidateRows(
+      "AAAAA11111\t1\tAlpha Team\r\nBBBBB22222\t0\tBeta Team\r\n",
+    );
     expect(rows).toStrictEqual([
       { teamId: "AAAAA11111", isFree: true, teamName: "Alpha Team" },
       { teamId: "BBBBB22222", isFree: false, teamName: "Beta Team" },
@@ -219,7 +224,8 @@ printf 'BBBBB22222\\t0\\tBeta Team\\r\\n'`,
         result.stderr.includes("No Apple Team ID found in Xcode accounts"),
     ).toBe(true);
     expect(
-      result.stderr.includes("IOS_DEVELOPMENT_TEAM") || result.stderr.includes("IOS_ALLOW_KEYCHAIN_TEAM_FALLBACK"),
+      result.stderr.includes("IOS_DEVELOPMENT_TEAM") ||
+        result.stderr.includes("IOS_ALLOW_KEYCHAIN_TEAM_FALLBACK"),
     ).toBe(true);
   });
 });

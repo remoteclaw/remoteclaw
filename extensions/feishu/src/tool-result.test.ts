@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { jsonToolResult, toolExecutionErrorResult, unknownToolActionResult } from "./tool-result.js";
+import {
+  jsonToolResult,
+  toolExecutionErrorResult,
+  unknownToolActionResult,
+} from "./tool-result.js";
 
 describe("jsonToolResult", () => {
   it("formats tool result with text content and details", () => {
@@ -12,7 +16,9 @@ describe("jsonToolResult", () => {
 
   it("formats unknown action errors", () => {
     expect(unknownToolActionResult("create")).toEqual({
-      content: [{ type: "text", text: JSON.stringify({ error: "Unknown action: create" }, null, 2) }],
+      content: [
+        { type: "text", text: JSON.stringify({ error: "Unknown action: create" }, null, 2) },
+      ],
       details: { error: "Unknown action: create" },
     });
   });

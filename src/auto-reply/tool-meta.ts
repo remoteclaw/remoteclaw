@@ -16,7 +16,11 @@ export function shortenMeta(meta: string): string {
   return shortenHomeInString(meta);
 }
 
-export function formatToolAggregate(toolName?: string, metas?: string[], options?: ToolAggregateOptions): string {
+export function formatToolAggregate(
+  toolName?: string,
+  metas?: string[],
+  options?: ToolAggregateOptions,
+): string {
   const filtered = (metas ?? []).filter(Boolean).map(shortenMeta);
   const display = resolveToolDisplay({ name: toolName });
   const prefix = `${display.emoji} ${display.label}`;
@@ -71,7 +75,11 @@ export function formatToolPrefix(toolName?: string, meta?: string) {
   return formatToolSummary(display);
 }
 
-function formatMetaForDisplay(toolName: string | undefined, meta: string, markdown?: boolean): string {
+function formatMetaForDisplay(
+  toolName: string | undefined,
+  meta: string,
+  markdown?: boolean,
+): string {
   const normalized = (toolName ?? "").trim().toLowerCase();
   if (normalized === "exec" || normalized === "bash") {
     const { flags, body } = splitExecFlags(meta);

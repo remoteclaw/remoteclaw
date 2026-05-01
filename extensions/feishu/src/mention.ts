@@ -19,7 +19,10 @@ export type MentionTarget = {
 /**
  * Extract mention targets from message event (excluding the bot itself)
  */
-export function extractMentionTargets(event: FeishuMessageEvent, botOpenId?: string): MentionTarget[] {
+export function extractMentionTargets(
+  event: FeishuMessageEvent,
+  botOpenId?: string,
+): MentionTarget[] {
   const mentions = event.message.mentions ?? [];
 
   return mentions

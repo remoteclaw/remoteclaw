@@ -189,7 +189,9 @@ export function isRevokedProxyError(err: unknown): boolean {
   return /proxy that has been revoked/i.test(err.message);
 }
 
-export function formatMSTeamsSendErrorHint(classification: MSTeamsSendErrorClassification): string | undefined {
+export function formatMSTeamsSendErrorHint(
+  classification: MSTeamsSendErrorClassification,
+): string | undefined {
   if (classification.kind === "auth") {
     return "check msteams appId/appPassword/tenantId (or env vars MSTEAMS_APP_ID/MSTEAMS_APP_PASSWORD/MSTEAMS_TENANT_ID)";
   }

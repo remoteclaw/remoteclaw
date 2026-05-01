@@ -2,7 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { acquireSessionWriteLock } from "../../agents/session-write-lock.js";
 import type { MsgContext } from "../../auto-reply/templating.js";
-import { archiveSessionTranscripts, cleanupArchivedSessionTranscripts } from "../../gateway/session-archive.fs.js";
+import {
+  archiveSessionTranscripts,
+  cleanupArchivedSessionTranscripts,
+} from "../../gateway/session-archive.fs.js";
 import { writeTextAtomic } from "../../infra/json-files.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import {
@@ -93,7 +96,10 @@ export function normalizeStoreSessionKey(sessionKey: string): string {
   return sessionKey.trim().toLowerCase();
 }
 
-export function resolveSessionStoreEntry(params: { store: Record<string, SessionEntry>; sessionKey: string }): {
+export function resolveSessionStoreEntry(params: {
+  store: Record<string, SessionEntry>;
+  sessionKey: string;
+}): {
   normalizedKey: string;
   existing: SessionEntry | undefined;
   legacyKeys: string[];
@@ -101,10 +107,14 @@ export function resolveSessionStoreEntry(params: { store: Record<string, Session
   const trimmedKey = params.sessionKey.trim();
   const normalizedKey = normalizeStoreSessionKey(trimmedKey);
   const legacyKeySet = new Set<string>();
-  if (trimmedKey !== normalizedKey && Object.prototype.hasOwnProperty.call(params.store, trimmedKey)) {
+  if (
+    trimmedKey !== normalizedKey &&
+    Object.prototype.hasOwnProperty.call(params.store, trimmedKey)
+  ) {
     legacyKeySet.add(trimmedKey);
   }
-  let existing = params.store[normalizedKey] ?? (legacyKeySet.size > 0 ? params.store[trimmedKey] : undefined);
+  let existing =
+    params.store[normalizedKey] ?? (legacyKeySet.size > 0 ? params.store[trimmedKey] : undefined);
   let existingUpdatedAt = existing?.updatedAt ?? 0;
   for (const [candidateKey, candidateEntry] of Object.entries(params.store)) {
     if (candidateKey === normalizedKey) {
@@ -166,7 +176,10 @@ type LoadSessionStoreOptions = {
   skipCache?: boolean;
 };
 
-export function loadSessionStore(storePath: string, opts: LoadSessionStoreOptions = {}): Record<string, SessionEntry> {
+export function loadSessionStore(
+  storePath: string,
+  opts: LoadSessionStoreOptions = {},
+): Record<string, SessionEntry> {
   // Check cache first if enabled
   if (!opts.skipCache && isSessionStoreCacheEnabled()) {
     const currentFileStat = getFileStatSnapshot(storePath);
@@ -239,7 +252,10 @@ export function loadSessionStore(storePath: string, opts: LoadSessionStoreOption
   return structuredClone(store);
 }
 
-export function readSessionUpdatedAt(params: { storePath: string; sessionKey: string }): number | undefined {
+export function readSessionUpdatedAt(params: {
+  storePath: string;
+  sessionKey: string;
+}): number | undefined {
   try {
     const store = loadSessionStore(params.storePath);
     const resolved = resolveSessionStoreEntry({ store, sessionKey: params.sessionKey });
@@ -310,7 +326,10 @@ function updateSessionStoreWriteCaches(params: {
   });
 }
 
-function resolveMutableSessionStoreKey(store: Record<string, SessionEntry>, sessionKey: string): string | undefined {
+function resolveMutableSessionStoreKey(
+  store: Record<string, SessionEntry>,
+  sessionKey: string,
+): string | undefined {
   const trimmed = sessionKey.trim();
   if (!trimmed) {
     return undefined;
@@ -342,7 +361,9 @@ function preserveExistingAcpMetadata(params: {
   nextStore: Record<string, SessionEntry>;
   allowDropSessionKeys?: string[];
 }): void {
-  const allowDrop = new Set((params.allowDropSessionKeys ?? []).map((key) => normalizeStoreSessionKey(key)));
+  const allowDrop = new Set(
+    (params.allowDropSessionKeys ?? []).map((key) => normalizeStoreSessionKey(key)),
+  );
   for (const [previousKey, previousAcp] of params.previousAcpByKey.entries()) {
     const normalizedKey = normalizeStoreSessionKey(previousKey);
     if (allowDrop.has(normalizedKey)) {
@@ -442,7 +463,8 @@ async function saveSessionStoreUnlocked(
         archivedDirs.add(archivedDir);
       }
       if (archivedDirs.size > 0 || maintenance.resetArchiveRetentionMs != null) {
-        const targetDirs = archivedDirs.size > 0 ? [...archivedDirs] : [path.dirname(path.resolve(storePath))];
+        const targetDirs =
+          archivedDirs.size > 0 ? [...archivedDirs] : [path.dirname(path.resolve(storePath))];
         await cleanupArchivedSessionTranscripts({
           directories: targetDirs,
           olderThanMs: maintenance.pruneAfterMs,
@@ -591,7 +613,10 @@ function getErrorCode(error: unknown): string | null {
   return String((error as { code?: unknown }).code);
 }
 
-function rememberRemovedSessionFile(removedSessionFiles: Map<string, string | undefined>, entry: SessionEntry): void {
+function rememberRemovedSessionFile(
+  removedSessionFiles: Map<string, string | undefined>,
+  entry: SessionEntry,
+): void {
   if (!removedSessionFiles.has(entry.sessionId) || entry.sessionFile) {
     removedSessionFiles.set(entry.sessionId, entry.sessionFile);
   }
@@ -726,7 +751,9 @@ async function withSessionStoreLock<T>(
   opts: SessionStoreLockOptions = {},
 ): Promise<T> {
   if (!storePath || typeof storePath !== "string") {
-    throw new Error(`withSessionStoreLock: storePath must be a non-empty string, got ${JSON.stringify(storePath)}`);
+    throw new Error(
+      `withSessionStoreLock: storePath must be a non-empty string, got ${JSON.stringify(storePath)}`,
+    );
   }
   const timeoutMs = opts.timeoutMs ?? 10_000;
   const staleMs = opts.staleMs ?? 30_000;
@@ -853,13 +880,18 @@ export async function updateLastRoute(params: {
     const mergedInput = mergeDeliveryContext(explicitContext, inlineContext);
     const explicitDeliveryContext = params.deliveryContext;
     const explicitThreadFromDeliveryContext =
-      explicitDeliveryContext != null && Object.prototype.hasOwnProperty.call(explicitDeliveryContext, "threadId")
+      explicitDeliveryContext != null &&
+      Object.prototype.hasOwnProperty.call(explicitDeliveryContext, "threadId")
         ? explicitDeliveryContext.threadId
         : undefined;
     const explicitThreadValue =
-      explicitThreadFromDeliveryContext ?? (threadId != null && threadId !== "" ? threadId : undefined);
+      explicitThreadFromDeliveryContext ??
+      (threadId != null && threadId !== "" ? threadId : undefined);
     const explicitRouteProvided = Boolean(
-      explicitContext?.channel || explicitContext?.to || inlineContext?.channel || inlineContext?.to,
+      explicitContext?.channel ||
+      explicitContext?.to ||
+      inlineContext?.channel ||
+      inlineContext?.to,
     );
     const clearThreadFromFallback = explicitRouteProvided && explicitThreadValue == null;
     const fallbackContext = clearThreadFromFallback
@@ -890,7 +922,10 @@ export async function updateLastRoute(params: {
       lastAccountId: normalized.lastAccountId,
       lastThreadId: normalized.lastThreadId,
     };
-    const next = mergeSessionEntry(existing, metaPatch ? { ...basePatch, ...metaPatch } : basePatch);
+    const next = mergeSessionEntry(
+      existing,
+      metaPatch ? { ...basePatch, ...metaPatch } : basePatch,
+    );
     return await persistResolvedSessionEntry({
       storePath,
       store,

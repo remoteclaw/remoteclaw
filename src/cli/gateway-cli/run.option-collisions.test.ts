@@ -45,7 +45,9 @@ vi.mock("../../gateway/auth.js", () => ({
       (typeof params.authConfig?.token === "string" ? params.authConfig.token : undefined) ??
       params.env?.REMOTECLAW_GATEWAY_TOKEN;
     const password =
-      (typeof params.authOverride?.password === "string" ? params.authOverride.password : undefined) ??
+      (typeof params.authOverride?.password === "string"
+        ? params.authOverride.password
+        : undefined) ??
       (typeof params.authConfig?.password === "string" ? params.authConfig.password : undefined) ??
       params.env?.REMOTECLAW_GATEWAY_PASSWORD;
     return {
@@ -165,7 +167,10 @@ describe("gateway run option collisions", () => {
     ]);
 
     expect(forceFreePortAndWait).toHaveBeenCalledWith(18789, expect.anything());
-    expect(waitForPortBindable).toHaveBeenCalledWith(18789, expect.objectContaining({ host: "127.0.0.1" }));
+    expect(waitForPortBindable).toHaveBeenCalledWith(
+      18789,
+      expect.objectContaining({ host: "127.0.0.1" }),
+    );
     expect(setGatewayWsLogStyle).toHaveBeenCalledWith("full");
     expect(startGatewayServer).toHaveBeenCalledWith(
       18789,
@@ -220,11 +225,13 @@ describe("gateway run option collisions", () => {
   });
 
   it("prints all supported modes on invalid --auth value", async () => {
-    await expect(runGatewayCli(["gateway", "run", "--auth", "bad-mode", "--allow-unconfigured"])).rejects.toThrow(
-      "__exit__:1",
-    );
+    await expect(
+      runGatewayCli(["gateway", "run", "--auth", "bad-mode", "--allow-unconfigured"]),
+    ).rejects.toThrow("__exit__:1");
 
-    expect(runtimeErrors).toContain('Invalid --auth (use "none", "token", "password", or "trusted-proxy")');
+    expect(runtimeErrors).toContain(
+      'Invalid --auth (use "none", "token", "password", or "trusted-proxy")',
+    );
   });
 
   it("allows password mode preflight when password is configured via SecretRef", async () => {
@@ -254,17 +261,21 @@ describe("gateway run option collisions", () => {
   });
 
   it("reads gateway password from --password-file", async () => {
-    await withTempSecretFiles("remoteclaw-gateway-run-", { password: "pw_from_file\n" }, async ({ passwordFile }) => {
-      await runGatewayCli([
-        "gateway",
-        "run",
-        "--auth",
-        "password",
-        "--password-file",
-        passwordFile ?? "",
-        "--allow-unconfigured",
-      ]);
-    });
+    await withTempSecretFiles(
+      "remoteclaw-gateway-run-",
+      { password: "pw_from_file\n" },
+      async ({ passwordFile }) => {
+        await runGatewayCli([
+          "gateway",
+          "run",
+          "--auth",
+          "password",
+          "--password-file",
+          passwordFile ?? "",
+          "--allow-unconfigured",
+        ]);
+      },
+    );
 
     expect(startGatewayServer).toHaveBeenCalledWith(
       18789,
@@ -281,7 +292,15 @@ describe("gateway run option collisions", () => {
   });
 
   it("warns when gateway password is passed inline", async () => {
-    await runGatewayCli(["gateway", "run", "--auth", "password", "--password", "pw_inline", "--allow-unconfigured"]);
+    await runGatewayCli([
+      "gateway",
+      "run",
+      "--auth",
+      "password",
+      "--password",
+      "pw_inline",
+      "--allow-unconfigured",
+    ]);
 
     expect(runtimeErrors).toContain(
       "Warning: --password can be exposed via process listings. Prefer --password-file or REMOTECLAW_GATEWAY_PASSWORD.",
@@ -289,19 +308,23 @@ describe("gateway run option collisions", () => {
   });
 
   it("rejects using both --password and --password-file", async () => {
-    await withTempSecretFiles("remoteclaw-gateway-run-", { password: "pw_from_file\n" }, async ({ passwordFile }) => {
-      await expect(
-        runGatewayCli([
-          "gateway",
-          "run",
-          "--password",
-          "pw_inline",
-          "--password-file",
-          passwordFile ?? "",
-          "--allow-unconfigured",
-        ]),
-      ).rejects.toThrow("__exit__:1");
-    });
+    await withTempSecretFiles(
+      "remoteclaw-gateway-run-",
+      { password: "pw_from_file\n" },
+      async ({ passwordFile }) => {
+        await expect(
+          runGatewayCli([
+            "gateway",
+            "run",
+            "--password",
+            "pw_inline",
+            "--password-file",
+            passwordFile ?? "",
+            "--allow-unconfigured",
+          ]),
+        ).rejects.toThrow("__exit__:1");
+      },
+    );
 
     expect(runtimeErrors).toContain("Use either --password or --password-file.");
   });

@@ -20,7 +20,9 @@ function buildUserRank(user: DiscordUser): number {
   return user.bot ? 0 : 1;
 }
 
-function resolveDiscordDirectoryAccess(params: DirectoryConfigParams): DiscordDirectoryAccess | null {
+function resolveDiscordDirectoryAccess(
+  params: DirectoryConfigParams,
+): DiscordDirectoryAccess | null {
   const account = resolveDiscordAccount({ cfg: params.cfg, accountId: params.accountId });
   const token = normalizeDiscordToken(account.token, "channels.discord.token");
   if (!token) {
@@ -34,7 +36,9 @@ async function listDiscordGuilds(token: string): Promise<DiscordGuild[]> {
   return rawGuilds.filter((guild) => guild.id && guild.name);
 }
 
-export async function listDiscordDirectoryGroupsLive(params: DirectoryConfigParams): Promise<ChannelDirectoryEntry[]> {
+export async function listDiscordDirectoryGroupsLive(
+  params: DirectoryConfigParams,
+): Promise<ChannelDirectoryEntry[]> {
   const access = resolveDiscordDirectoryAccess(params);
   if (!access) {
     return [];
@@ -69,7 +73,9 @@ export async function listDiscordDirectoryGroupsLive(params: DirectoryConfigPara
   return rows;
 }
 
-export async function listDiscordDirectoryPeersLive(params: DirectoryConfigParams): Promise<ChannelDirectoryEntry[]> {
+export async function listDiscordDirectoryPeersLive(
+  params: DirectoryConfigParams,
+): Promise<ChannelDirectoryEntry[]> {
   const access = resolveDiscordDirectoryAccess(params);
   if (!access) {
     return [];
@@ -100,7 +106,12 @@ export async function listDiscordDirectoryPeersLive(params: DirectoryConfigParam
       rememberDiscordDirectoryUser({
         accountId: params.accountId,
         userId: user.id,
-        handles: [user.username, user.global_name, member.nick, user.username ? `@${user.username}` : null],
+        handles: [
+          user.username,
+          user.global_name,
+          member.nick,
+          user.username ? `@${user.username}` : null,
+        ],
       });
       const name = member.nick?.trim() || user.global_name?.trim() || user.username?.trim();
       rows.push({

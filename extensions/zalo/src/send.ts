@@ -21,7 +21,10 @@ export type ZaloSendResult = {
   error?: string;
 };
 
-function toZaloSendResult(response: { ok?: boolean; result?: { message_id?: string } }): ZaloSendResult {
+function toZaloSendResult(response: {
+  ok?: boolean;
+  result?: { message_id?: string };
+}): ZaloSendResult {
   if (response.ok && response.result) {
     return { ok: true, messageId: response.result.message_id };
   }
@@ -77,7 +80,9 @@ function resolveValidatedSendContext(
 function resolveSendContextOrFailure(
   chatId: string,
   options: ZaloSendOptions,
-): { context: { chatId: string; token: string; fetcher?: ZaloFetch } } | { failure: ZaloSendResult } {
+):
+  | { context: { chatId: string; token: string; fetcher?: ZaloFetch } }
+  | { failure: ZaloSendResult } {
   const context = resolveValidatedSendContext(chatId, options);
   return context.ok
     ? { context }

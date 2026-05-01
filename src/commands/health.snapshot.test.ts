@@ -99,7 +99,8 @@ function resolveTelegramAccountForTest(params: {
     ...channelConfig,
     ...accounts[accountId],
   };
-  const tokenFromConfig = typeof merged.botToken === "string" && merged.botToken.trim() ? merged.botToken.trim() : "";
+  const tokenFromConfig =
+    typeof merged.botToken === "string" && merged.botToken.trim() ? merged.botToken.trim() : "";
   const token =
     tokenFromConfig ||
     readTokenFromFile(merged.tokenFile) ||
@@ -109,11 +110,15 @@ function resolveTelegramAccountForTest(params: {
     token,
     configured: token.length > 0,
     config: {
-      ...(typeof merged.proxy === "string" && merged.proxy.trim() ? { proxy: merged.proxy.trim() } : {}),
+      ...(typeof merged.proxy === "string" && merged.proxy.trim()
+        ? { proxy: merged.proxy.trim() }
+        : {}),
       ...(merged.network && typeof merged.network === "object" && !Array.isArray(merged.network)
         ? { network: merged.network as Record<string, unknown> }
         : {}),
-      ...(typeof merged.apiRoot === "string" && merged.apiRoot.trim() ? { apiRoot: merged.apiRoot.trim() } : {}),
+      ...(typeof merged.apiRoot === "string" && merged.apiRoot.trim()
+        ? { apiRoot: merged.apiRoot.trim() }
+        : {}),
     },
   };
 }
@@ -125,7 +130,9 @@ function buildTelegramHealthSummary(snapshot: {
   lastProbeAt?: number | null;
 }) {
   const probeRecord =
-    snapshot.probe && typeof snapshot.probe === "object" ? (snapshot.probe as Record<string, unknown>) : null;
+    snapshot.probe && typeof snapshot.probe === "object"
+      ? (snapshot.probe as Record<string, unknown>)
+      : null;
   return {
     accountId: snapshot.accountId,
     configured: Boolean(snapshot.configured),
@@ -235,7 +242,10 @@ function stubTelegramFetchOk(calls: string[]) {
   );
 }
 
-async function runSuccessfulTelegramProbe(config: Record<string, unknown>, options?: { clearTokenEnv?: boolean }) {
+async function runSuccessfulTelegramProbe(
+  config: Record<string, unknown>,
+  options?: { clearTokenEnv?: boolean },
+) {
   testConfig = config;
   testStore = {};
   vi.stubEnv("DISCORD_BOT_TOKEN", "");
@@ -259,7 +269,10 @@ async function runSuccessfulTelegramProbe(config: Record<string, unknown>, optio
   return { calls, telegram };
 }
 
-function createTelegramHealthPlugin(): Pick<ChannelPlugin, "id" | "meta" | "capabilities" | "config" | "status"> {
+function createTelegramHealthPlugin(): Pick<
+  ChannelPlugin,
+  "id" | "meta" | "capabilities" | "config" | "status"
+> {
   return {
     ...createChannelTestPluginBase({ id: "telegram", label: "Telegram" }),
     config: {
@@ -278,13 +291,19 @@ function createTelegramHealthPlugin(): Pick<ChannelPlugin, "id" | "meta" | "capa
 
 describe("getHealthSnapshot", () => {
   beforeAll(async () => {
-    ({ setActivePluginRegistry, createChannelTestPluginBase, createTestRegistry, getHealthSnapshot } =
-      await loadFreshHealthModulesForTest());
+    ({
+      setActivePluginRegistry,
+      createChannelTestPluginBase,
+      createTestRegistry,
+      getHealthSnapshot,
+    } = await loadFreshHealthModulesForTest());
   });
 
   beforeEach(() => {
     setActivePluginRegistry(
-      createTestRegistry([{ pluginId: "telegram", plugin: createTelegramHealthPlugin(), source: "test" }]),
+      createTestRegistry([
+        { pluginId: "telegram", plugin: createTelegramHealthPlugin(), source: "test" },
+      ]),
     );
   });
 

@@ -74,6 +74,8 @@ describe("sessions view", () => {
     const selects = container.querySelectorAll("select");
     const elevated = selects[2] as HTMLSelectElement | undefined;
     expect(elevated?.value).toBe("custom-mode");
-    expect(Array.from(elevated?.options ?? []).some((option) => option.value === "custom-mode")).toBe(true);
+    expect(
+      Array.from(elevated?.options ?? []).some((option) => option.value === "custom-mode"),
+    ).toBe(true);
   });
 });

@@ -77,7 +77,8 @@ export const LEGACY_CONFIG_RULES: LegacyConfigRule[] = [
   },
   {
     path: ["session", "threadBindings"],
-    message: "session.threadBindings.ttlHours was renamed to session.threadBindings.idleHours (auto-migrated on load).",
+    message:
+      "session.threadBindings.ttlHours was renamed to session.threadBindings.idleHours (auto-migrated on load).",
     match: (value) => hasLegacyThreadBindingTtl(value),
   },
   {
@@ -94,7 +95,8 @@ export const LEGACY_CONFIG_RULES: LegacyConfigRule[] = [
   },
   {
     path: ["routing", "allowFrom"],
-    message: "routing.allowFrom was removed; use channels.whatsapp.allowFrom instead (auto-migrated on load).",
+    message:
+      "routing.allowFrom was removed; use channels.whatsapp.allowFrom instead (auto-migrated on load).",
   },
   {
     path: ["routing", "bindings"],
@@ -106,11 +108,13 @@ export const LEGACY_CONFIG_RULES: LegacyConfigRule[] = [
   },
   {
     path: ["routing", "defaultAgentId"],
-    message: "routing.defaultAgentId was moved; use agents.list[].default instead (auto-migrated on load).",
+    message:
+      "routing.defaultAgentId was moved; use agents.list[].default instead (auto-migrated on load).",
   },
   {
     path: ["routing", "agentToAgent"],
-    message: "routing.agentToAgent was moved; use tools.agentToAgent instead (auto-migrated on load).",
+    message:
+      "routing.agentToAgent was moved; use tools.agentToAgent instead (auto-migrated on load).",
   },
   {
     path: ["routing", "groupChat", "requireMention"],
@@ -128,7 +132,8 @@ export const LEGACY_CONFIG_RULES: LegacyConfigRule[] = [
   },
   {
     path: ["routing", "transcribeAudio"],
-    message: "routing.transcribeAudio was moved; use tools.media.audio.models instead (auto-migrated on load).",
+    message:
+      "routing.transcribeAudio was moved; use tools.media.audio.models instead (auto-migrated on load).",
   },
   {
     path: ["telegram", "requireMention"],
@@ -166,15 +171,18 @@ export const LEGACY_CONFIG_RULES: LegacyConfigRule[] = [
   },
   {
     path: ["agent", "modelAliases"],
-    message: "agent.modelAliases was replaced by agents.defaults.models.*.alias (auto-migrated on load).",
+    message:
+      "agent.modelAliases was replaced by agents.defaults.models.*.alias (auto-migrated on load).",
   },
   {
     path: ["agent", "modelFallbacks"],
-    message: "agent.modelFallbacks was replaced by agents.defaults.model.fallbacks (auto-migrated on load).",
+    message:
+      "agent.modelFallbacks was replaced by agents.defaults.model.fallbacks (auto-migrated on load).",
   },
   {
     path: ["agent", "imageModelFallbacks"],
-    message: "agent.imageModelFallbacks was replaced by agents.defaults.imageModel.fallbacks (auto-migrated on load).",
+    message:
+      "agent.imageModelFallbacks was replaced by agents.defaults.imageModel.fallbacks (auto-migrated on load).",
   },
   {
     path: ["messages", "tts", "enabled"],
@@ -203,7 +211,10 @@ export const LEGACY_CONFIG_RULES: LegacyConfigRule[] = [
     match: (value) =>
       Array.isArray(value) &&
       value.some(
-        (entry) => isRecord(entry) && Object.prototype.hasOwnProperty.call(entry, "default") && entry.default === true,
+        (entry) =>
+          isRecord(entry) &&
+          Object.prototype.hasOwnProperty.call(entry, "default") &&
+          entry.default === true,
       ),
   },
   {
@@ -227,7 +238,9 @@ export const LEGACY_CONFIG_RULES: LegacyConfigRule[] = [
       "agents.list[].params is obsolete and ignored (#2481) — LLM request parameters are the CLI runtime's concern, not middleware's. Remove it from your config (auto-migrated on load).",
     match: (value) =>
       Array.isArray(value) &&
-      value.some((entry) => isRecord(entry) && Object.prototype.hasOwnProperty.call(entry, "params")),
+      value.some(
+        (entry) => isRecord(entry) && Object.prototype.hasOwnProperty.call(entry, "params"),
+      ),
   },
   {
     path: ["agents", "defaults", "models"],
@@ -235,6 +248,8 @@ export const LEGACY_CONFIG_RULES: LegacyConfigRule[] = [
       "agents.defaults.models[<id>].params is obsolete and ignored (#2481) — LLM request parameters are the CLI runtime's concern, not middleware's. Remove it from your config (auto-migrated on load).",
     match: (value) =>
       isRecord(value) &&
-      Object.values(value).some((entry) => isRecord(entry) && Object.prototype.hasOwnProperty.call(entry, "params")),
+      Object.values(value).some(
+        (entry) => isRecord(entry) && Object.prototype.hasOwnProperty.call(entry, "params"),
+      ),
   },
 ];

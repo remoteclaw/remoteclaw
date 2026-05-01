@@ -27,7 +27,8 @@ export function buildGatewayDiscoveryTarget(
   const sshPort = pickSshPort(beacon);
   const sshUser = opts?.sshUser?.trim() ?? "";
   const baseSshTarget = endpoint ? (sshUser ? `${sshUser}@${endpoint.host}` : endpoint.host) : null;
-  const sshTarget = baseSshTarget && sshPort && sshPort !== 22 ? `${baseSshTarget}:${sshPort}` : baseSshTarget;
+  const sshTarget =
+    baseSshTarget && sshPort && sshPort !== 22 ? `${baseSshTarget}:${sshPort}` : baseSshTarget;
   return {
     title: (beacon.displayName || beacon.instanceName || "Gateway").trim(),
     domain: (beacon.domain || "local.").trim(),

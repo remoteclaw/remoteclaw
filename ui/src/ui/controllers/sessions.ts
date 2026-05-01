@@ -1,7 +1,10 @@
 import { toNumber } from "../format.ts";
 import type { GatewayBrowserClient } from "../gateway.ts";
 import type { SessionsListResult } from "../types.ts";
-import { formatMissingOperatorReadScopeMessage, isMissingOperatorReadScopeError } from "./scope-errors.ts";
+import {
+  formatMissingOperatorReadScopeMessage,
+  isMissingOperatorReadScopeError,
+} from "./scope-errors.ts";
 
 export type SessionsState = {
   client: GatewayBrowserClient | null;

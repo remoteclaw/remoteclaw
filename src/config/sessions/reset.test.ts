@@ -3,7 +3,8 @@ import { isThreadSessionKey, resolveSessionResetType } from "./reset.js";
 
 describe("session reset thread detection", () => {
   it("does not treat feishu conversation ids with embedded :topic: as thread suffixes", () => {
-    const sessionKey = "agent:main:feishu:group:oc_group_chat:topic:om_topic_root:sender:ou_topic_user";
+    const sessionKey =
+      "agent:main:feishu:group:oc_group_chat:topic:om_topic_root:sender:ou_topic_user";
     expect(isThreadSessionKey(sessionKey)).toBe(false);
     expect(resolveSessionResetType({ sessionKey })).toBe("group");
   });

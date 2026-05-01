@@ -15,7 +15,11 @@ const WINDOWS_ABS_PATH_PATTERN = /^[A-Za-z]:[\\/]/;
 const WINDOWS_UNC_PATH_PATTERN = /^\\\\[^\\]+\\[^\\]+/;
 
 function isAbsolutePath(value: string): boolean {
-  return path.isAbsolute(value) || WINDOWS_ABS_PATH_PATTERN.test(value) || WINDOWS_UNC_PATH_PATTERN.test(value);
+  return (
+    path.isAbsolute(value) ||
+    WINDOWS_ABS_PATH_PATTERN.test(value) ||
+    WINDOWS_UNC_PATH_PATTERN.test(value)
+  );
 }
 
 const EnvSecretRefSchema = z
@@ -104,7 +108,10 @@ const SecretsExecProviderSchema = z
       .string()
       .min(1)
       .refine((value) => isSafeExecutableValue(value), "secrets.providers.*.command is unsafe.")
-      .refine((value) => isAbsolutePath(value), "secrets.providers.*.command must be an absolute path."),
+      .refine(
+        (value) => isAbsolutePath(value),
+        "secrets.providers.*.command must be an absolute path.",
+      ),
     args: z.array(z.string().max(1024)).max(128).optional(),
     timeoutMs: z.number().int().positive().max(120000).optional(),
     noOutputTimeoutMs: z.number().int().positive().max(120000).optional(),
@@ -195,7 +202,9 @@ export const ModelProviderSchema = z
   .object({
     baseUrl: z.string().min(1),
     apiKey: SecretInputSchema.optional().register(sensitive),
-    auth: z.union([z.literal("api-key"), z.literal("aws-sdk"), z.literal("oauth"), z.literal("token")]).optional(),
+    auth: z
+      .union([z.literal("api-key"), z.literal("aws-sdk"), z.literal("oauth"), z.literal("token")])
+      .optional(),
     injectNumCtxForOpenAICompat: z.boolean().optional(),
     headers: z.record(z.string(), SecretInputSchema.register(sensitive)).optional(),
     authHeader: z.boolean().optional(),
@@ -257,7 +266,11 @@ export const QueueModeSchema = z.union([
   z.literal("queue"),
   z.literal("interrupt"),
 ]);
-export const QueueDropSchema = z.union([z.literal("old"), z.literal("new"), z.literal("summarize")]);
+export const QueueDropSchema = z.union([
+  z.literal("old"),
+  z.literal("new"),
+  z.literal("summarize"),
+]);
 export const ReplyToModeSchema = z.union([z.literal("off"), z.literal("first"), z.literal("all")]);
 export const TypingModeSchema = z.union([
   z.literal("never"),
@@ -298,7 +311,9 @@ export const BlockStreamingChunkSchema = z
   .object({
     minChars: z.number().int().positive().optional(),
     maxChars: z.number().int().positive().optional(),
-    breakPreference: z.union([z.literal("paragraph"), z.literal("newline"), z.literal("sentence")]).optional(),
+    breakPreference: z
+      .union([z.literal("paragraph"), z.literal("newline"), z.literal("sentence")])
+      .optional(),
   })
   .strict();
 
@@ -422,11 +437,15 @@ export const CliBackendSchema = z
     sessionArg: z.string().optional(),
     sessionArgs: z.array(z.string()).optional(),
     resumeArgs: z.array(z.string()).optional(),
-    sessionMode: z.union([z.literal("always"), z.literal("existing"), z.literal("none")]).optional(),
+    sessionMode: z
+      .union([z.literal("always"), z.literal("existing"), z.literal("none")])
+      .optional(),
     sessionIdFields: z.array(z.string()).optional(),
     systemPromptArg: z.string().optional(),
     systemPromptMode: z.union([z.literal("append"), z.literal("replace")]).optional(),
-    systemPromptWhen: z.union([z.literal("first"), z.literal("always"), z.literal("never")]).optional(),
+    systemPromptWhen: z
+      .union([z.literal("first"), z.literal("always"), z.literal("never")])
+      .optional(),
     imageArg: z.string().optional(),
     imageMode: z.union([z.literal("repeat"), z.literal("list")]).optional(),
     serialize: z.boolean().optional(),
@@ -523,7 +542,9 @@ export const QueueModeBySurfaceSchema = z
   .strict()
   .optional();
 
-export const DebounceMsBySurfaceSchema = z.record(z.string(), z.number().int().nonnegative()).optional();
+export const DebounceMsBySurfaceSchema = z
+  .record(z.string(), z.number().int().nonnegative())
+  .optional();
 
 export const QueueSchema = z
   .object({
@@ -564,7 +585,9 @@ export const TranscribeAudioSchema = z
 
 export const HexColorSchema = z.string().regex(/^#?[0-9a-fA-F]{6}$/, "expected hex color (RRGGBB)");
 
-export const ExecutableTokenSchema = z.string().refine(isSafeExecutableValue, "expected safe executable name or path");
+export const ExecutableTokenSchema = z
+  .string()
+  .refine(isSafeExecutableValue, "expected safe executable name or path");
 
 export const MediaUnderstandingScopeSchema = createAllowDenyChannelRulesSchema();
 
@@ -576,7 +599,9 @@ export const MediaUnderstandingAttachmentsSchema = z
   .object({
     mode: z.union([z.literal("first"), z.literal("all")]).optional(),
     maxAttachments: z.number().int().positive().optional(),
-    prefer: z.union([z.literal("first"), z.literal("last"), z.literal("path"), z.literal("url")]).optional(),
+    prefer: z
+      .union([z.literal("first"), z.literal("last"), z.literal("path"), z.literal("url")])
+      .optional(),
   })
   .strict()
   .optional();
@@ -591,7 +616,9 @@ const DeepgramAudioSchema = z
   .optional();
 
 const ProviderOptionValueSchema = z.union([z.string(), z.number(), z.boolean()]);
-const ProviderOptionsSchema = z.record(z.string(), z.record(z.string(), ProviderOptionValueSchema)).optional();
+const ProviderOptionsSchema = z
+  .record(z.string(), z.record(z.string(), ProviderOptionValueSchema))
+  .optional();
 
 const MediaUnderstandingRuntimeFields = {
   prompt: z.string().optional(),

@@ -77,7 +77,10 @@ type PluginToolListResult = {
  * as an MCP tool. Handlers delegate execution back to the gateway via
  * `plugin:tools:invoke`, keeping plugin closures intact.
  */
-export async function registerPluginTools(server: McpServer, ctx: McpHandlerContext): Promise<void> {
+export async function registerPluginTools(
+  server: McpServer,
+  ctx: McpHandlerContext,
+): Promise<void> {
   let result: PluginToolListResult;
   try {
     result = await callMcpGateway<PluginToolListResult>(ctx, "plugin:tools:list");

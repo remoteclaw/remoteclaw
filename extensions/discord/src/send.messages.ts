@@ -57,25 +57,40 @@ export async function editMessageDiscord(
   })) as APIMessage;
 }
 
-export async function deleteMessageDiscord(channelId: string, messageId: string, opts: DiscordReactOpts = {}) {
+export async function deleteMessageDiscord(
+  channelId: string,
+  messageId: string,
+  opts: DiscordReactOpts = {},
+) {
   const rest = resolveDiscordRest(opts);
   await rest.delete(Routes.channelMessage(channelId, messageId));
   return { ok: true };
 }
 
-export async function pinMessageDiscord(channelId: string, messageId: string, opts: DiscordReactOpts = {}) {
+export async function pinMessageDiscord(
+  channelId: string,
+  messageId: string,
+  opts: DiscordReactOpts = {},
+) {
   const rest = resolveDiscordRest(opts);
   await rest.put(Routes.channelPin(channelId, messageId));
   return { ok: true };
 }
 
-export async function unpinMessageDiscord(channelId: string, messageId: string, opts: DiscordReactOpts = {}) {
+export async function unpinMessageDiscord(
+  channelId: string,
+  messageId: string,
+  opts: DiscordReactOpts = {},
+) {
   const rest = resolveDiscordRest(opts);
   await rest.delete(Routes.channelPin(channelId, messageId));
   return { ok: true };
 }
 
-export async function listPinsDiscord(channelId: string, opts: DiscordReactOpts = {}): Promise<APIMessage[]> {
+export async function listPinsDiscord(
+  channelId: string,
+  opts: DiscordReactOpts = {},
+): Promise<APIMessage[]> {
   const rest = resolveDiscordRest(opts);
   return (await rest.get(Routes.channelPins(channelId))) as APIMessage[];
 }
@@ -104,7 +119,8 @@ export async function createThreadDiscord(
       channelType = undefined;
     }
   }
-  const isForumLike = channelType === ChannelType.GuildForum || channelType === ChannelType.GuildMedia;
+  const isForumLike =
+    channelType === ChannelType.GuildForum || channelType === ChannelType.GuildMedia;
   if (isForumLike) {
     const starterContent = payload.content?.trim() ? payload.content : payload.name;
     body.message = { content: starterContent };
@@ -118,7 +134,9 @@ export async function createThreadDiscord(
   if (!payload.messageId && !isForumLike && body.type === undefined) {
     body.type = ChannelType.PublicThread;
   }
-  const route = payload.messageId ? Routes.threads(channelId, payload.messageId) : Routes.threads(channelId);
+  const route = payload.messageId
+    ? Routes.threads(channelId, payload.messageId)
+    : Routes.threads(channelId);
   const thread = (await rest.post(route, { body })) as { id: string };
 
   // For non-forum channels, send the initial message separately after thread creation.
@@ -150,7 +168,10 @@ export async function listThreadsDiscord(payload: DiscordThreadList, opts: Disco
   return await rest.get(Routes.guildActiveThreads(payload.guildId));
 }
 
-export async function searchMessagesDiscord(query: DiscordSearchQuery, opts: DiscordReactOpts = {}) {
+export async function searchMessagesDiscord(
+  query: DiscordSearchQuery,
+  opts: DiscordReactOpts = {},
+) {
   const rest = resolveDiscordRest(opts);
   const params = new URLSearchParams();
   params.set("content", query.content);

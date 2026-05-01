@@ -20,7 +20,8 @@ vi.mock("../channels/plugins/index.js", () => ({
     meta: { label: "Telegram" },
     config: {},
     outbound: {
-      resolveTarget: ({ to }: { to?: string }) => (to ? { ok: true, to } : { ok: false, error: new Error("missing") }),
+      resolveTarget: ({ to }: { to?: string }) =>
+        to ? { ok: true, to } : { ok: false, error: new Error("missing") },
     },
   })),
   normalizeChannelId: vi.fn((id: string) => id),

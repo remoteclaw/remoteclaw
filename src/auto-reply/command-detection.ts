@@ -7,7 +7,11 @@ import {
 } from "./commands-registry.js";
 import { isAbortTrigger } from "./reply/abort-primitives.js";
 
-export function hasControlCommand(text?: string, cfg?: RemoteClawConfig, options?: CommandNormalizeOptions): boolean {
+export function hasControlCommand(
+  text?: string,
+  cfg?: RemoteClawConfig,
+  options?: CommandNormalizeOptions,
+): boolean {
   if (!text) {
     return false;
   }

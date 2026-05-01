@@ -34,7 +34,12 @@ import { getIMessageRuntime } from "./runtime.js";
 
 const meta = getChatChannelMeta("imessage");
 
-function buildIMessageSetupPatch(input: { cliPath?: string; dbPath?: string; service?: string; region?: string }) {
+function buildIMessageSetupPatch(input: {
+  cliPath?: string;
+  dbPath?: string;
+  service?: string;
+  region?: string;
+}) {
   return {
     ...(input.cliPath ? { cliPath: input.cliPath } : {}),
     ...(input.dbPath ? { dbPath: input.dbPath } : {}),
@@ -43,7 +48,9 @@ function buildIMessageSetupPatch(input: { cliPath?: string; dbPath?: string; ser
   };
 }
 
-type IMessageSendFn = ReturnType<typeof getIMessageRuntime>["channel"]["imessage"]["sendMessageIMessage"];
+type IMessageSendFn = ReturnType<
+  typeof getIMessageRuntime
+>["channel"]["imessage"]["sendMessageIMessage"];
 
 async function sendIMessageOutbound(params: {
   cfg: Parameters<typeof resolveIMessageAccount>[0]["cfg"];
@@ -55,11 +62,13 @@ async function sendIMessageOutbound(params: {
   deps?: { sendIMessage?: IMessageSendFn };
   replyToId?: string;
 }) {
-  const send = params.deps?.sendIMessage ?? getIMessageRuntime().channel.imessage.sendMessageIMessage;
+  const send =
+    params.deps?.sendIMessage ?? getIMessageRuntime().channel.imessage.sendMessageIMessage;
   const maxBytes = resolveChannelMediaMaxBytes({
     cfg: params.cfg,
     resolveChannelLimitMb: ({ cfg, accountId }) =>
-      cfg.channels?.imessage?.accounts?.[accountId]?.mediaMaxMb ?? cfg.channels?.imessage?.mediaMaxMb,
+      cfg.channels?.imessage?.accounts?.[accountId]?.mediaMaxMb ??
+      cfg.channels?.imessage?.mediaMaxMb,
     accountId: params.accountId,
   });
   return await send(params.to, params.text, {
@@ -261,7 +270,8 @@ export const imessagePlugin: ChannelPlugin<ResolvedIMessageAccount> = {
         cliPath: snapshot.cliPath ?? null,
         dbPath: snapshot.dbPath ?? null,
       }),
-    probeAccount: async ({ timeoutMs }) => getIMessageRuntime().channel.imessage.probeIMessage(timeoutMs),
+    probeAccount: async ({ timeoutMs }) =>
+      getIMessageRuntime().channel.imessage.probeIMessage(timeoutMs),
     buildAccountSnapshot: ({ account, runtime, probe }) => ({
       accountId: account.accountId,
       name: account.name,
@@ -289,7 +299,9 @@ export const imessagePlugin: ChannelPlugin<ResolvedIMessageAccount> = {
         cliPath,
         dbPath: dbPath ?? null,
       });
-      ctx.log?.info(`[${account.accountId}] starting provider (${cliPath}${dbPath ? ` db=${dbPath}` : ""})`);
+      ctx.log?.info(
+        `[${account.accountId}] starting provider (${cliPath}${dbPath ? ` db=${dbPath}` : ""})`,
+      );
       return getIMessageRuntime().channel.imessage.monitorIMessageProvider({
         accountId: account.accountId,
         config: ctx.cfg,

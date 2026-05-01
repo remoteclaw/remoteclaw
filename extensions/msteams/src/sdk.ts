@@ -8,7 +8,10 @@ export async function loadMSTeamsSdk(): Promise<MSTeamsSdk> {
   return await import("@microsoft/agents-hosting");
 }
 
-export function buildMSTeamsAuthConfig(creds: MSTeamsCredentials, sdk: MSTeamsSdk): MSTeamsAuthConfig {
+export function buildMSTeamsAuthConfig(
+  creds: MSTeamsCredentials,
+  sdk: MSTeamsSdk,
+): MSTeamsAuthConfig {
   return sdk.getAuthConfigWithDefaults({
     clientId: creds.appId,
     clientSecret: creds.appPassword,
@@ -16,7 +19,10 @@ export function buildMSTeamsAuthConfig(creds: MSTeamsCredentials, sdk: MSTeamsSd
   });
 }
 
-export function createMSTeamsAdapter(authConfig: MSTeamsAuthConfig, sdk: MSTeamsSdk): MSTeamsAdapter {
+export function createMSTeamsAdapter(
+  authConfig: MSTeamsAuthConfig,
+  sdk: MSTeamsSdk,
+): MSTeamsAdapter {
   return new sdk.CloudAdapter(authConfig) as unknown as MSTeamsAdapter;
 }
 

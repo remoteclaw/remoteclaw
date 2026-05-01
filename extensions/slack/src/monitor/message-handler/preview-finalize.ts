@@ -10,7 +10,10 @@ type SlackReadbackMessage = {
   blocks?: unknown[];
 };
 
-function buildExpectedSlackEditText(params: { text: string; blocks?: (Block | KnownBlock)[] }): string {
+function buildExpectedSlackEditText(params: {
+  text: string;
+  blocks?: (Block | KnownBlock)[];
+}): string {
   const trimmed = normalizeSlackOutboundText(params.text.trim());
   if (trimmed) {
     return trimmed;

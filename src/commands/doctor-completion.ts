@@ -47,7 +47,9 @@ export type ShellCompletionStatus = {
 };
 
 /** Check the status of shell completion for the current shell. */
-export async function checkShellCompletionStatus(binName = "remoteclaw"): Promise<ShellCompletionStatus> {
+export async function checkShellCompletionStatus(
+  binName = "remoteclaw",
+): Promise<ShellCompletionStatus> {
   const shell = resolveShellFromEnv() as CompletionShell;
   const profileInstalled = await isCompletionInstalled(shell, binName);
   const cacheExists = await completionCacheExists(shell, binName);

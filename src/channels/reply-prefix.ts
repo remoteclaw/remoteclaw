@@ -1,7 +1,10 @@
 import { isSlackInteractiveRepliesEnabled } from "../../extensions/slack/src/interactive-replies.js";
 import { resolveAgentEffectiveModelPrimary } from "../agents/agent-scope.js";
 import { resolveEffectiveMessagesConfig, resolveIdentityName } from "../agents/identity.js";
-import { extractShortModelName, type ResponsePrefixContext } from "../auto-reply/reply/response-prefix-template.js";
+import {
+  extractShortModelName,
+  type ResponsePrefixContext,
+} from "../auto-reply/reply/response-prefix-template.js";
 import type { RemoteClawConfig } from "../config/config.js";
 
 export type ReplyPrefixContextBundle = {
@@ -41,7 +44,9 @@ export function createReplyPrefixContext(params: {
       accountId: params.accountId,
     }).responsePrefix,
     enableSlackInteractiveReplies:
-      params.channel === "slack" ? isSlackInteractiveRepliesEnabled({ cfg, accountId: params.accountId }) : undefined,
+      params.channel === "slack"
+        ? isSlackInteractiveRepliesEnabled({ cfg, accountId: params.accountId })
+        : undefined,
     responsePrefixContextProvider: () => prefixContext,
   };
 }

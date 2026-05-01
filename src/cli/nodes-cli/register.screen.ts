@@ -1,14 +1,20 @@
 import type { Command } from "commander";
 import { defaultRuntime } from "../../runtime.js";
 import { shortenHomePath } from "../../utils.js";
-import { parseScreenRecordPayload, screenRecordTempPath, writeScreenRecordToFile } from "../nodes-screen.js";
+import {
+  parseScreenRecordPayload,
+  screenRecordTempPath,
+  writeScreenRecordToFile,
+} from "../nodes-screen.js";
 import { parseDurationMs } from "../parse-duration.js";
 import { runNodesCommand } from "./cli-utils.js";
 import { buildNodeInvokeParams, callGatewayCli, nodesCallOpts, resolveNodeId } from "./rpc.js";
 import type { NodesRpcOpts } from "./types.js";
 
 export function registerNodesScreenCommands(nodes: Command) {
-  const screen = nodes.command("screen").description("Capture screen recordings from a paired node");
+  const screen = nodes
+    .command("screen")
+    .description("Capture screen recordings from a paired node");
 
   nodesCallOpts(
     screen
@@ -27,7 +33,9 @@ export function registerNodesScreenCommands(nodes: Command) {
           const durationMs = parseDurationMs(opts.duration ?? "");
           const screenIndex = Number.parseInt(String(opts.screen ?? "0"), 10);
           const fps = Number.parseFloat(String(opts.fps ?? "10"));
-          const timeoutMs = opts.invokeTimeout ? Number.parseInt(String(opts.invokeTimeout), 10) : undefined;
+          const timeoutMs = opts.invokeTimeout
+            ? Number.parseInt(String(opts.invokeTimeout), 10)
+            : undefined;
 
           const invokeParams = buildNodeInvokeParams({
             nodeId,

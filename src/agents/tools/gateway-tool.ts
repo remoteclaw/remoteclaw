@@ -45,12 +45,19 @@ function getSnapshotConfig(snapshot: unknown): Record<string, unknown> {
   return config as Record<string, unknown>;
 }
 
-function parseGatewayConfigMutationRaw(raw: string, action: "config.apply" | "config.patch"): unknown {
+function parseGatewayConfigMutationRaw(
+  raw: string,
+  action: "config.apply" | "config.patch",
+): unknown {
   const parsedRes = parseConfigJson5(raw);
   if (!parsedRes.ok) {
     throw new Error(parsedRes.error);
   }
-  if (!parsedRes.parsed || typeof parsedRes.parsed !== "object" || Array.isArray(parsedRes.parsed)) {
+  if (
+    !parsedRes.parsed ||
+    typeof parsedRes.parsed !== "object" ||
+    Array.isArray(parsedRes.parsed)
+  ) {
     throw new Error(`${action} raw must be an object.`);
   }
   return parsedRes.parsed;
@@ -81,12 +88,15 @@ function assertGatewayConfigMutationAllowed(params: {
         }) as Record<string, unknown>);
   const migratedNextConfig = applyLegacyMigrations(nextConfig).next ?? nextConfig;
   const changedProtectedPaths = PROTECTED_GATEWAY_CONFIG_PATHS.filter(
-    (path) => getValueAtPath(params.currentConfig, path) !== getValueAtPath(migratedNextConfig, path),
+    (path) =>
+      getValueAtPath(params.currentConfig, path) !== getValueAtPath(migratedNextConfig, path),
   );
   if (changedProtectedPaths.length === 0) {
     return;
   }
-  throw new Error(`gateway ${params.action} cannot change protected config paths: ${changedProtectedPaths.join(", ")}`);
+  throw new Error(
+    `gateway ${params.action} cannot change protected config paths: ${changedProtectedPaths.join(", ")}`,
+  );
 }
 
 const GATEWAY_ACTIONS = [
@@ -125,7 +135,10 @@ const GatewayToolSchema = Type.Object({
 // - Claude/Vertex has other JSON Schema quirks.
 // Conditional requirements (like `raw` for config.apply) are enforced at runtime.
 
-export function createGatewayTool(opts?: { agentSessionKey?: string; config?: RemoteClawConfig }): AnyAgentTool {
+export function createGatewayTool(opts?: {
+  agentSessionKey?: string;
+  config?: RemoteClawConfig;
+}): AnyAgentTool {
   return {
     label: "Gateway",
     name: "gateway",
@@ -149,8 +162,11 @@ export function createGatewayTool(opts?: { agentSessionKey?: string; config?: Re
             ? Math.floor(params.delayMs)
             : undefined;
         const reason =
-          typeof params.reason === "string" && params.reason.trim() ? params.reason.trim().slice(0, 200) : undefined;
-        const note = typeof params.note === "string" && params.note.trim() ? params.note.trim() : undefined;
+          typeof params.reason === "string" && params.reason.trim()
+            ? params.reason.trim().slice(0, 200)
+            : undefined;
+        const note =
+          typeof params.note === "string" && params.note.trim() ? params.note.trim() : undefined;
         // Extract channel + threadId for routing after restart
         // Supports both :thread: (most channels) and :topic: (Telegram)
         const { deliveryContext, threadId } = extractDeliveryInfo(sessionKey);
@@ -173,7 +189,9 @@ export function createGatewayTool(opts?: { agentSessionKey?: string; config?: Re
         } catch {
           // ignore: sentinel is best-effort
         }
-        log.info(`gateway tool: restart requested (delayMs=${delayMs ?? "default"}, reason=${reason ?? "none"})`);
+        log.info(
+          `gateway tool: restart requested (delayMs=${delayMs ?? "default"}, reason=${reason ?? "none"})`,
+        );
         const scheduled = scheduleGatewaySigusr1Restart({
           delayMs,
           reason,
@@ -192,7 +210,8 @@ export function createGatewayTool(opts?: { agentSessionKey?: string; config?: Re
           typeof params.sessionKey === "string" && params.sessionKey.trim()
             ? params.sessionKey.trim()
             : opts?.agentSessionKey?.trim() || undefined;
-        const note = typeof params.note === "string" && params.note.trim() ? params.note.trim() : undefined;
+        const note =
+          typeof params.note === "string" && params.note.trim() ? params.note.trim() : undefined;
         const restartDelayMs =
           typeof params.restartDelayMs === "number" && Number.isFinite(params.restartDelayMs)
             ? Math.floor(params.restartDelayMs)
@@ -236,7 +255,8 @@ export function createGatewayTool(opts?: { agentSessionKey?: string; config?: Re
         return jsonResult({ ok: true, result });
       }
       if (action === "config.apply") {
-        const { raw, baseHash, snapshotConfig, sessionKey, note, restartDelayMs } = await resolveConfigWriteParams();
+        const { raw, baseHash, snapshotConfig, sessionKey, note, restartDelayMs } =
+          await resolveConfigWriteParams();
         assertGatewayConfigMutationAllowed({
           action: "config.apply",
           currentConfig: snapshotConfig,
@@ -252,7 +272,8 @@ export function createGatewayTool(opts?: { agentSessionKey?: string; config?: Re
         return jsonResult({ ok: true, result });
       }
       if (action === "config.patch") {
-        const { raw, baseHash, snapshotConfig, sessionKey, note, restartDelayMs } = await resolveConfigWriteParams();
+        const { raw, baseHash, snapshotConfig, sessionKey, note, restartDelayMs } =
+          await resolveConfigWriteParams();
         assertGatewayConfigMutationAllowed({
           action: "config.patch",
           currentConfig: snapshotConfig,

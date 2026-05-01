@@ -1,6 +1,10 @@
 import os from "node:os";
 import path from "node:path";
-import { createDedupeCache, createPersistentDedupe, readJsonFileWithFallback } from "remoteclaw/plugin-sdk/feishu";
+import {
+  createDedupeCache,
+  createPersistentDedupe,
+  readJsonFileWithFallback,
+} from "remoteclaw/plugin-sdk/feishu";
 
 // Persistent TTL: 24 hours — survives restarts & WebSocket reconnects.
 const DEDUP_TTL_MS = 24 * 60 * 60 * 1000;
@@ -39,7 +43,10 @@ const persistentDedupe = createPersistentDedupe({
   resolveFilePath: resolveNamespaceFilePath,
 });
 
-function resolveEventDedupeKey(namespace: string, messageId: string | undefined | null): string | null {
+function resolveEventDedupeKey(
+  namespace: string,
+  messageId: string | undefined | null,
+): string | null {
   const trimmed = messageId?.trim();
   if (!trimmed) {
     return null;
@@ -52,7 +59,10 @@ function normalizeMessageId(messageId: string | undefined | null): string | null
   return trimmed ? trimmed : null;
 }
 
-function resolveMemoryDedupeKey(namespace: string, messageId: string | undefined | null): string | null {
+function resolveMemoryDedupeKey(
+  namespace: string,
+  messageId: string | undefined | null,
+): string | null {
   const trimmed = normalizeMessageId(messageId);
   if (!trimmed) {
     return null;
@@ -60,11 +70,17 @@ function resolveMemoryDedupeKey(namespace: string, messageId: string | undefined
   return `${namespace}:${trimmed}`;
 }
 
-export function tryBeginFeishuMessageProcessing(messageId: string | undefined | null, namespace = "global"): boolean {
+export function tryBeginFeishuMessageProcessing(
+  messageId: string | undefined | null,
+  namespace = "global",
+): boolean {
   return !processingClaims.check(resolveEventDedupeKey(namespace, messageId));
 }
 
-export function releaseFeishuMessageProcessing(messageId: string | undefined | null, namespace = "global"): void {
+export function releaseFeishuMessageProcessing(
+  messageId: string | undefined | null,
+  namespace = "global",
+): void {
   processingClaims.delete(resolveEventDedupeKey(namespace, messageId));
 }
 
@@ -177,7 +193,10 @@ export async function hasRecordedMessagePersistent(
   }
 }
 
-export async function warmupDedupFromDisk(namespace: string, log?: (...args: unknown[]) => void): Promise<number> {
+export async function warmupDedupFromDisk(
+  namespace: string,
+  log?: (...args: unknown[]) => void,
+): Promise<number> {
   return persistentDedupe.warmup(namespace, (error) => {
     log?.(`feishu-dedup: warmup disk error: ${String(error)}`);
   });

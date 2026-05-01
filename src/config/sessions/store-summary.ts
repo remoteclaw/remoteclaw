@@ -13,7 +13,9 @@ function isSummaryRecord(value: unknown): value is Record<string, SessionStoreSu
 // Heartbeat recipient resolution only needs a shallow snapshot of the session
 // store. A direct read avoids dragging in the full session maintenance/cache
 // stack on cold imports.
-export function loadSessionStoreSummary(storePath: string): Record<string, SessionStoreSummaryEntry> {
+export function loadSessionStoreSummary(
+  storePath: string,
+): Record<string, SessionStoreSummaryEntry> {
   try {
     const raw = fs.readFileSync(storePath, "utf8");
     if (!raw) {

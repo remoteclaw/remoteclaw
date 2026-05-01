@@ -34,7 +34,9 @@ export function resolveZaloToken(
     return matchKey ? ((accounts as Record<string, ZaloConfig>)[matchKey] ?? undefined) : undefined;
   };
   const accountConfig = resolveAccountConfig(resolvedAccountId);
-  const accountHasBotToken = Boolean(accountConfig && Object.prototype.hasOwnProperty.call(accountConfig, "botToken"));
+  const accountHasBotToken = Boolean(
+    accountConfig && Object.prototype.hasOwnProperty.call(accountConfig, "botToken"),
+  );
 
   if (accountConfig && accountHasBotToken) {
     const token = options?.allowUnresolvedSecretRef

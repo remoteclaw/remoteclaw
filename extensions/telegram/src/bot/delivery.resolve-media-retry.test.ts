@@ -172,7 +172,9 @@ describe("resolveMedia getFile retry", () => {
 
   it("retries getFile on transient failure and succeeds on second attempt", async () => {
     const result = await expectTransientGetFileRetrySuccess();
-    expect(result).toEqual(expect.objectContaining({ path: "/tmp/file_0.oga", placeholder: "<media:audio>" }));
+    expect(result).toEqual(
+      expect.objectContaining({ path: "/tmp/file_0.oga", placeholder: "<media:audio>" }),
+    );
   });
 
   it.each(["voice", "photo", "video"] as const)(
@@ -193,9 +195,9 @@ describe("resolveMedia getFile retry", () => {
     const getFile = vi.fn().mockResolvedValue({ file_path: "voice/file_0.oga" });
     fetchRemoteMedia.mockRejectedValueOnce(new Error("download failed"));
 
-    await expect(resolveMedia(makeCtx("voice", getFile), MAX_MEDIA_BYTES, BOT_TOKEN)).rejects.toThrow(
-      "download failed",
-    );
+    await expect(
+      resolveMedia(makeCtx("voice", getFile), MAX_MEDIA_BYTES, BOT_TOKEN),
+    ).rejects.toThrow("download failed");
 
     expect(getFile).toHaveBeenCalledTimes(1);
   });
@@ -227,20 +229,23 @@ describe("resolveMedia getFile retry", () => {
     expect(result).toBeNull();
   });
 
-  it.each(["audio", "voice"] as const)("returns null for %s when file is too big", async (mediaField) => {
-    const getFile = vi.fn().mockRejectedValue(createFileTooBigError());
+  it.each(["audio", "voice"] as const)(
+    "returns null for %s when file is too big",
+    async (mediaField) => {
+      const getFile = vi.fn().mockRejectedValue(createFileTooBigError());
 
-    const result = await resolveMedia(makeCtx(mediaField, getFile), MAX_MEDIA_BYTES, BOT_TOKEN);
+      const result = await resolveMedia(makeCtx(mediaField, getFile), MAX_MEDIA_BYTES, BOT_TOKEN);
 
-    expect(getFile).toHaveBeenCalledTimes(1);
-    expect(result).toBeNull();
-  });
+      expect(getFile).toHaveBeenCalledTimes(1);
+      expect(result).toBeNull();
+    },
+  );
 
   it("throws when getFile returns no file_path", async () => {
     const getFile = vi.fn().mockResolvedValue({});
-    await expect(resolveMedia(makeCtx("voice", getFile), MAX_MEDIA_BYTES, BOT_TOKEN)).rejects.toThrow(
-      "Telegram getFile returned no file_path",
-    );
+    await expect(
+      resolveMedia(makeCtx("voice", getFile), MAX_MEDIA_BYTES, BOT_TOKEN),
+    ).rejects.toThrow("Telegram getFile returned no file_path");
     expect(getFile).toHaveBeenCalledTimes(1);
   });
 
@@ -272,7 +277,9 @@ describe("resolveMedia getFile retry", () => {
     const result = await promise;
 
     expect(getFile).toHaveBeenCalledTimes(2);
-    expect(result).toEqual(expect.objectContaining({ path: "/tmp/file_0.webp", placeholder: "<media:sticker>" }));
+    expect(result).toEqual(
+      expect.objectContaining({ path: "/tmp/file_0.webp", placeholder: "<media:sticker>" }),
+    );
   });
 
   it("returns null for sticker when getFile exhausts retries", async () => {
@@ -300,7 +307,12 @@ describe("resolveMedia getFile retry", () => {
       contentType: "application/pdf",
     });
 
-    const result = await resolveMedia(makeCtx("document", getFile), MAX_MEDIA_BYTES, BOT_TOKEN, callerFetch);
+    const result = await resolveMedia(
+      makeCtx("document", getFile),
+      MAX_MEDIA_BYTES,
+      BOT_TOKEN,
+      callerFetch,
+    );
 
     expect(result).not.toBeNull();
     expect(fetchRemoteMedia).toHaveBeenCalledWith(
@@ -323,7 +335,12 @@ describe("resolveMedia getFile retry", () => {
       contentType: "image/webp",
     });
 
-    const result = await resolveMedia(makeCtx("sticker", getFile), MAX_MEDIA_BYTES, BOT_TOKEN, callerFetch);
+    const result = await resolveMedia(
+      makeCtx("sticker", getFile),
+      MAX_MEDIA_BYTES,
+      BOT_TOKEN,
+      callerFetch,
+    );
 
     expect(result).not.toBeNull();
     expect(fetchRemoteMedia).toHaveBeenCalledWith(

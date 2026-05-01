@@ -12,7 +12,11 @@ export type { GatewayRequestHandlerOptions } from "../gateway/server-methods/typ
 
 export { emptyPluginConfigSchema } from "../plugins/config-schema.js";
 
-export { approveDevicePairing, listDevicePairing, rejectDevicePairing } from "../infra/device-pairing.js";
+export {
+  approveDevicePairing,
+  listDevicePairing,
+  rejectDevicePairing,
+} from "../infra/device-pairing.js";
 
 export {
   runPluginCommandWithTimeout,
@@ -33,4 +37,7 @@ export { resolveGatewayBindUrl } from "../shared/gateway-bind-url.js";
 export type { GatewayBindUrlResult } from "../shared/gateway-bind-url.js";
 
 export { resolveTailnetHostWithRunner } from "../shared/tailscale-status.js";
-export type { TailscaleStatusCommandResult, TailscaleStatusCommandRunner } from "../shared/tailscale-status.js";
+export type {
+  TailscaleStatusCommandResult,
+  TailscaleStatusCommandRunner,
+} from "../shared/tailscale-status.js";

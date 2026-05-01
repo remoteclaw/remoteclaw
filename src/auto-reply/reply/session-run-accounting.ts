@@ -4,7 +4,10 @@ import { persistSessionUsageUpdate } from "./session-usage.js";
 
 type PersistRunSessionUsageParams = Parameters<typeof persistSessionUsageUpdate>[0];
 
-type IncrementRunCompactionCountParams = Omit<Parameters<typeof incrementCompactionCount>[0], "tokensAfter"> & {
+type IncrementRunCompactionCountParams = Omit<
+  Parameters<typeof incrementCompactionCount>[0],
+  "tokensAfter"
+> & {
   lastCallUsage?: NormalizedUsage;
 };
 

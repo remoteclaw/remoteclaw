@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { CronService } from "./service.js";
-import { createCronStoreHarness, createNoopLogger, installCronTestHooks } from "./service.test-harness.js";
+import {
+  createCronStoreHarness,
+  createNoopLogger,
+  installCronTestHooks,
+} from "./service.test-harness.js";
 
 const logger = createNoopLogger();
 const { makeStorePath } = createCronStoreHarness({ prefix: "remoteclaw-cron-get-job-" });

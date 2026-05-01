@@ -66,7 +66,9 @@ function isDroppedBoundaryTextBlockSubset(params: {
     return false;
   }
 
-  const prefixMatches = finalTextBlocks.every((block, index) => streamedTextBlocks[index] === block);
+  const prefixMatches = finalTextBlocks.every(
+    (block, index) => streamedTextBlocks[index] === block,
+  );
   if (prefixMatches) {
     return true;
   }

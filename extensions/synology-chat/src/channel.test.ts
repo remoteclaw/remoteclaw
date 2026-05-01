@@ -226,7 +226,10 @@ describe("createSynologyChatPlugin", () => {
   });
 
   describe("gateway", () => {
-    function makeStartAccountCtx(accountConfig: Record<string, unknown>, abortController = new AbortController()) {
+    function makeStartAccountCtx(
+      accountConfig: Record<string, unknown>,
+      abortController = new AbortController(),
+    ) {
       return {
         abortController,
         ctx: {
@@ -240,9 +243,15 @@ describe("createSynologyChatPlugin", () => {
       };
     }
 
-    async function expectPendingStartAccountPromise(result: Promise<unknown>, abortController: AbortController) {
+    async function expectPendingStartAccountPromise(
+      result: Promise<unknown>,
+      abortController: AbortController,
+    ) {
       expect(result).toBeInstanceOf(Promise);
-      const resolved = await Promise.race([result, new Promise((r) => setTimeout(() => r("pending"), 50))]);
+      const resolved = await Promise.race([
+        result,
+        new Promise((r) => setTimeout(() => r("pending"), 50)),
+      ]);
       expect(resolved).toBe("pending");
       abortController.abort();
       await result;

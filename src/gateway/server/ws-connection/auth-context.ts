@@ -83,9 +83,8 @@ export async function resolveConnectAuthState(params: {
 }): Promise<ConnectAuthState> {
   const sharedConnectAuth = resolveSharedConnectAuth(params.connectAuth);
   const sharedAuthProvided = Boolean(sharedConnectAuth);
-  const { token: deviceTokenCandidate, source: deviceTokenCandidateSource } = params.hasDeviceIdentity
-    ? resolveDeviceTokenCandidate(params.connectAuth)
-    : {};
+  const { token: deviceTokenCandidate, source: deviceTokenCandidateSource } =
+    params.hasDeviceIdentity ? resolveDeviceTokenCandidate(params.connectAuth) : {};
 
   let authResult: GatewayAuthResult = await authorizeWsControlUiGatewayConnect({
     auth: params.resolvedAuth,
@@ -121,7 +120,8 @@ export async function resolveConnectAuthState(params: {
   return {
     authResult,
     authOk: authResult.ok,
-    authMethod: authResult.method ?? (params.resolvedAuth.mode === "password" ? "password" : "token"),
+    authMethod:
+      authResult.method ?? (params.resolvedAuth.mode === "password" ? "password" : "token"),
     sharedAuthOk,
     sharedAuthProvided,
     deviceTokenCandidate,
@@ -154,7 +154,10 @@ export async function resolveConnectAuthDecision(params: {
   }
 
   if (params.rateLimiter) {
-    const deviceRateCheck = params.rateLimiter.check(params.clientIp, AUTH_RATE_LIMIT_SCOPE_DEVICE_TOKEN);
+    const deviceRateCheck = params.rateLimiter.check(
+      params.clientIp,
+      AUTH_RATE_LIMIT_SCOPE_DEVICE_TOKEN,
+    );
     if (!deviceRateCheck.allowed) {
       authResult = {
         ok: false,

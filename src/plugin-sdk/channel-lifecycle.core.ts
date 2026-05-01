@@ -27,7 +27,10 @@ export function createAccountStatusSink(params: {
  * If no signal is provided, the promise stays pending forever. When provided,
  * `onAbort` runs once before the promise resolves.
  */
-export function waitUntilAbort(signal?: AbortSignal, onAbort?: () => void | Promise<void>): Promise<void> {
+export function waitUntilAbort(
+  signal?: AbortSignal,
+  onAbort?: () => void | Promise<void>,
+): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const complete = () => {
       Promise.resolve(onAbort?.()).then(() => resolve(), reject);
@@ -46,7 +49,9 @@ export function waitUntilAbort(signal?: AbortSignal, onAbort?: () => void | Prom
 /**
  * Keep a passive account task alive until abort, then run optional cleanup.
  */
-export async function runPassiveAccountLifecycle<Handle>(params: PassiveAccountLifecycleParams<Handle>): Promise<void> {
+export async function runPassiveAccountLifecycle<Handle>(
+  params: PassiveAccountLifecycleParams<Handle>,
+): Promise<void> {
   const handle = await params.start();
 
   try {

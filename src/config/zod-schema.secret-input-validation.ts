@@ -25,7 +25,10 @@ type SlackConfigLike = {
   accounts?: Record<string, SlackAccountLike | undefined>;
 };
 
-export function validateTelegramWebhookSecretRequirements(value: TelegramConfigLike, ctx: z.RefinementCtx): void {
+export function validateTelegramWebhookSecretRequirements(
+  value: TelegramConfigLike,
+  ctx: z.RefinementCtx,
+): void {
   const baseWebhookUrl = typeof value.webhookUrl === "string" ? value.webhookUrl.trim() : "";
   const hasBaseWebhookSecret = hasConfiguredSecretInput(value.webhookSecret);
   if (baseWebhookUrl && !hasBaseWebhookSecret) {
@@ -45,7 +48,8 @@ export function validateTelegramWebhookSecretRequirements(value: TelegramConfigL
     if (account.enabled === false) {
       continue;
     }
-    const accountWebhookUrl = typeof account.webhookUrl === "string" ? account.webhookUrl.trim() : "";
+    const accountWebhookUrl =
+      typeof account.webhookUrl === "string" ? account.webhookUrl.trim() : "";
     if (!accountWebhookUrl) {
       continue;
     }
@@ -61,7 +65,10 @@ export function validateTelegramWebhookSecretRequirements(value: TelegramConfigL
   }
 }
 
-export function validateSlackSigningSecretRequirements(value: SlackConfigLike, ctx: z.RefinementCtx): void {
+export function validateSlackSigningSecretRequirements(
+  value: SlackConfigLike,
+  ctx: z.RefinementCtx,
+): void {
   const baseMode = value.mode === "http" || value.mode === "socket" ? value.mode : "socket";
   if (baseMode === "http" && !hasConfiguredSecretInput(value.signingSecret)) {
     ctx.addIssue({
@@ -80,7 +87,8 @@ export function validateSlackSigningSecretRequirements(value: SlackConfigLike, c
     if (account.enabled === false) {
       continue;
     }
-    const accountMode = account.mode === "http" || account.mode === "socket" ? account.mode : baseMode;
+    const accountMode =
+      account.mode === "http" || account.mode === "socket" ? account.mode : baseMode;
     if (accountMode !== "http") {
       continue;
     }

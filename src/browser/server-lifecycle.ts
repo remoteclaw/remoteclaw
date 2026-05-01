@@ -1,7 +1,11 @@
 import type { ResolvedBrowserConfig } from "./config.js";
 import { resolveProfile } from "./config.js";
 import { ensureChromeExtensionRelayServer } from "./extension-relay.js";
-import { type BrowserServerState, createBrowserRouteContext, listKnownProfileNames } from "./server-context.js";
+import {
+  type BrowserServerState,
+  createBrowserRouteContext,
+  listKnownProfileNames,
+} from "./server-context.js";
 
 export async function ensureExtensionRelayForProfiles(params: {
   resolved: ResolvedBrowserConfig;

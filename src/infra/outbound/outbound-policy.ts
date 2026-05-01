@@ -1,6 +1,13 @@
-import type { ChannelId, ChannelMessageActionName, ChannelThreadingToolContext } from "../../channels/plugins/types.js";
+import type {
+  ChannelId,
+  ChannelMessageActionName,
+  ChannelThreadingToolContext,
+} from "../../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../../config/config.js";
-import { getChannelMessageAdapter, type CrossContextComponentsBuilder } from "./channel-adapters.js";
+import {
+  getChannelMessageAdapter,
+  type CrossContextComponentsBuilder,
+} from "./channel-adapters.js";
 import { normalizeTargetForProvider } from "./target-normalization.js";
 import { formatTargetDisplay, lookupDirectoryDisplay } from "./target-resolver.js";
 
@@ -101,8 +108,10 @@ export function enforceCrossContextPolicy(params: {
   }
 
   const currentProvider = params.toolContext?.currentChannelProvider;
-  const allowWithinProvider = params.cfg.tools?.message?.crossContext?.allowWithinProvider !== false;
-  const allowAcrossProviders = params.cfg.tools?.message?.crossContext?.allowAcrossProviders === true;
+  const allowWithinProvider =
+    params.cfg.tools?.message?.crossContext?.allowWithinProvider !== false;
+  const allowAcrossProviders =
+    params.cfg.tools?.message?.crossContext?.allowAcrossProviders === true;
 
   if (currentProvider && currentProvider !== params.channel) {
     if (!allowAcrossProviders) {

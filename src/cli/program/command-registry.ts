@@ -68,7 +68,8 @@ const coreEntries: CoreCliEntry[] = [
     commands: [
       {
         name: "configure",
-        description: "Interactive setup wizard for credentials, channels, gateway, and agent defaults",
+        description:
+          "Interactive setup wizard for credentials, channels, gateway, and agent defaults",
         hasSubcommands: false,
       },
     ],
@@ -81,7 +82,8 @@ const coreEntries: CoreCliEntry[] = [
     commands: [
       {
         name: "config",
-        description: "Non-interactive config helpers (get/set/unset/file/validate). Default: starts setup wizard.",
+        description:
+          "Non-interactive config helpers (get/set/unset/file/validate). Default: starts setup wizard.",
         hasSubcommands: true,
       },
     ],
@@ -245,7 +247,9 @@ export async function registerCoreCliByName(
   name: string,
   argv: string[] = process.argv,
 ): Promise<boolean> {
-  const entry = coreEntries.find((candidate) => candidate.commands.some((cmd) => cmd.name === name));
+  const entry = coreEntries.find((candidate) =>
+    candidate.commands.some((cmd) => cmd.name === name),
+  );
   if (!entry) {
     return false;
   }
@@ -258,7 +262,9 @@ export async function registerCoreCliByName(
 export function registerCoreCliCommands(program: Command, ctx: ProgramContext, argv: string[]) {
   const primary = getPrimaryCommand(argv);
   if (primary && shouldRegisterCorePrimaryOnly(argv)) {
-    const entry = coreEntries.find((candidate) => candidate.commands.some((cmd) => cmd.name === primary));
+    const entry = coreEntries.find((candidate) =>
+      candidate.commands.some((cmd) => cmd.name === primary),
+    );
     if (entry) {
       const cmd = entry.commands.find((c) => c.name === primary);
       if (cmd) {
@@ -275,7 +281,11 @@ export function registerCoreCliCommands(program: Command, ctx: ProgramContext, a
   }
 }
 
-export function registerProgramCommands(program: Command, ctx: ProgramContext, argv: string[] = process.argv) {
+export function registerProgramCommands(
+  program: Command,
+  ctx: ProgramContext,
+  argv: string[] = process.argv,
+) {
   registerCoreCliCommands(program, ctx, argv);
   registerSubCliCommands(program, argv);
 }

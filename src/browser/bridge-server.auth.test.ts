@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { startBrowserBridgeServer, stopBrowserBridgeServer } from "./bridge-server.js";
 import type { ResolvedBrowserConfig } from "./config.js";
-import { DEFAULT_REMOTECLAW_BROWSER_COLOR, DEFAULT_REMOTECLAW_BROWSER_PROFILE_NAME } from "./constants.js";
+import {
+  DEFAULT_REMOTECLAW_BROWSER_COLOR,
+  DEFAULT_REMOTECLAW_BROWSER_PROFILE_NAME,
+} from "./constants.js";
 
 function buildResolvedConfig(): ResolvedBrowserConfig {
   return {
@@ -63,7 +66,10 @@ describe("startBrowserBridgeServer auth", () => {
   });
 
   it("accepts x-remoteclaw-password when authPassword is set", async () => {
-    await expectAuthFlow({ authPassword: "secret-password" }, { "x-remoteclaw-password": "secret-password" });
+    await expectAuthFlow(
+      { authPassword: "secret-password" },
+      { "x-remoteclaw-password": "secret-password" },
+    );
   });
 
   it("requires auth params", async () => {

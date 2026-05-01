@@ -5,9 +5,17 @@ import { getFollowupQueueDepth, resolveQueueSettings } from "../../auto-reply/re
 import { buildStatusMessage } from "../../auto-reply/status.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { loadConfig } from "../../config/config.js";
-import { loadSessionStore, resolveStorePath, type SessionEntry, updateSessionStore } from "../../config/sessions.js";
+import {
+  loadSessionStore,
+  resolveStorePath,
+  type SessionEntry,
+  updateSessionStore,
+} from "../../config/sessions.js";
 import { loadCombinedSessionStoreForGateway } from "../../gateway/session-utils.js";
-import { buildAgentMainSessionKey, resolveAgentIdFromSessionKey } from "../../routing/session-key.js";
+import {
+  buildAgentMainSessionKey,
+  resolveAgentIdFromSessionKey,
+} from "../../routing/session-key.js";
 // Model override infrastructure gutted in RemoteClaw — inline override logic.
 import { formatUserTime, resolveUserTimeFormat, resolveUserTimezone } from "../date-time.js";
 // Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
@@ -126,7 +134,10 @@ async function resolveModelOverride(params: {
   };
 }
 
-export function createSessionStatusTool(opts?: { agentSessionKey?: string; config?: RemoteClawConfig }): AnyAgentTool {
+export function createSessionStatusTool(opts?: {
+  agentSessionKey?: string;
+  config?: RemoteClawConfig;
+}): AnyAgentTool {
   return {
     label: "Session Status",
     name: "session_status",
@@ -145,7 +156,9 @@ export function createSessionStatusTool(opts?: { agentSessionKey?: string; confi
         throw new Error("sessionKey required");
       }
 
-      const requesterAgentId = resolveAgentIdFromSessionKey(opts?.agentSessionKey ?? requestedKeyRaw);
+      const requesterAgentId = resolveAgentIdFromSessionKey(
+        opts?.agentSessionKey ?? requestedKeyRaw,
+      );
       const ensureAgentAccess = (targetAgentId: string) => {
         if (targetAgentId === requesterAgentId) {
           return;
@@ -166,7 +179,9 @@ export function createSessionStatusTool(opts?: { agentSessionKey?: string; confi
       }
 
       const isExplicitAgentKey = requestedKeyRaw.startsWith("agent:");
-      let agentId = isExplicitAgentKey ? resolveAgentIdFromSessionKey(requestedKeyRaw) : requesterAgentId;
+      let agentId = isExplicitAgentKey
+        ? resolveAgentIdFromSessionKey(requestedKeyRaw)
+        : requesterAgentId;
       let storePath = resolveStorePath(cfg.session?.store, { agentId });
       let store = loadSessionStore(storePath);
 
@@ -239,7 +254,8 @@ export function createSessionStatusTool(opts?: { agentSessionKey?: string; confi
           nextEntry.providerOverride = overrideSelection.provider;
           nextEntry.modelOverride = overrideSelection.model;
         }
-        const overrideUpdated = nextEntry.providerOverride !== prevProvider || nextEntry.modelOverride !== prevModel;
+        const overrideUpdated =
+          nextEntry.providerOverride !== prevProvider || nextEntry.modelOverride !== prevModel;
         if (overrideUpdated) {
           store[resolved.key] = nextEntry;
           await updateSessionStore(storePath, (nextStore) => {
@@ -273,7 +289,9 @@ export function createSessionStatusTool(opts?: { agentSessionKey?: string; confi
       const userTimezone = resolveUserTimezone(cfg.agents?.defaults?.userTimezone);
       const userTimeFormat = resolveUserTimeFormat(cfg.agents?.defaults?.timeFormat);
       const userTime = formatUserTime(new Date(), userTimezone, userTimeFormat);
-      const timeLine = userTime ? `🕒 Time: ${userTime} (${userTimezone})` : `🕒 Time zone: ${userTimezone}`;
+      const timeLine = userTime
+        ? `🕒 Time: ${userTime} (${userTimezone})`
+        : `🕒 Time zone: ${userTimezone}`;
 
       const agentDefaults = cfg.agents?.defaults ?? {};
       const statusText = await buildStatusMessage({

@@ -1,4 +1,7 @@
-import { loadSubagentRegistryFromDisk, saveSubagentRegistryToDisk } from "./subagent-registry.store.js";
+import {
+  loadSubagentRegistryFromDisk,
+  saveSubagentRegistryToDisk,
+} from "./subagent-registry.store.js";
 import type { SubagentRunRecord } from "./subagent-registry.types.js";
 
 /**
@@ -21,7 +24,10 @@ export function persistSubagentRunsToDisk(runs: Map<string, SubagentRunRecord>) 
   }
 }
 
-export function restoreSubagentRunsFromDisk(params: { runs: Map<string, SubagentRunRecord>; mergeOnly?: boolean }) {
+export function restoreSubagentRunsFromDisk(params: {
+  runs: Map<string, SubagentRunRecord>;
+  mergeOnly?: boolean;
+}) {
   const restored = loadSubagentRegistryFromDisk();
   if (restored.size === 0) {
     return 0;

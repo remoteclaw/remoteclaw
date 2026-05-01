@@ -85,7 +85,11 @@ function extractImportSpecifiers(content, fileName) {
     }
 
     // Re-export: export { x } from "specifier"
-    if (ts.isExportDeclaration(node) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
+    if (
+      ts.isExportDeclaration(node) &&
+      node.moduleSpecifier &&
+      ts.isStringLiteral(node.moduleSpecifier)
+    ) {
       specifiers.push(node.moduleSpecifier.text);
     }
 
@@ -100,7 +104,11 @@ function extractImportSpecifiers(content, fileName) {
     }
 
     // Import type: typeof import("specifier")
-    if (ts.isImportTypeNode(node) && ts.isLiteralTypeNode(node.argument) && ts.isStringLiteral(node.argument.literal)) {
+    if (
+      ts.isImportTypeNode(node) &&
+      ts.isLiteralTypeNode(node.argument) &&
+      ts.isStringLiteral(node.argument.literal)
+    ) {
       specifiers.push(node.argument.literal.text);
     }
 
@@ -128,7 +136,12 @@ function resolveSpecifierToRelPath(repoRoot, importerAbsPath, specifier) {
   const base = resolved.replace(/\.[cm]?js$/, "");
 
   // Try direct .ts, .tsx, then /index.ts, /index.tsx.
-  const candidates = [base + ".ts", base + ".tsx", path.join(base, "index.ts"), path.join(base, "index.tsx")];
+  const candidates = [
+    base + ".ts",
+    base + ".tsx",
+    path.join(base, "index.ts"),
+    path.join(base, "index.tsx"),
+  ];
   for (const candidate of candidates) {
     const rel = path.relative(repoRoot, candidate).replaceAll(path.sep, "/");
     // Only accept paths within source roots.
@@ -178,7 +191,9 @@ async function readBaseline(repoRoot, fileName) {
     return value;
   } catch (error) {
     if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
-      console.error(`Error: ${fileName} not found.\nCreate it with the current count: echo <count> > ${fileName}`);
+      console.error(
+        `Error: ${fileName} not found.\nCreate it with the current count: echo <count> > ${fileName}`,
+      );
       process.exit(1);
     }
     throw error;
@@ -246,7 +261,9 @@ export async function main() {
 
     // Classify importers: test, stub, or production.
     const importerList = [...importers];
-    const productionCallers = importerList.filter((f) => !isTestLikeTypeScriptFile(f) && !stubPaths.has(f));
+    const productionCallers = importerList.filter(
+      (f) => !isTestLikeTypeScriptFile(f) && !stubPaths.has(f),
+    );
 
     if (productionCallers.length === 0) {
       deadChainFindings.push({
@@ -300,7 +317,9 @@ export async function main() {
   console.log();
 
   // Rule 2: Dead caller chain summary.
-  console.log(`--- Rule 2: Dead caller chains (${deadChainFindings.length} of ${sortedStubs.length} stubs) ---\n`);
+  console.log(
+    `--- Rule 2: Dead caller chains (${deadChainFindings.length} of ${sortedStubs.length} stubs) ---\n`,
+  );
   if (deadChainFindings.length > 0) {
     for (const f of deadChainFindings) {
       console.log(`  ${f.path}  (${f.reason})`);

@@ -8,7 +8,11 @@ import { finalizeInboundContext } from "./inbound-context.js";
 import { normalizeInboundTextNewlines } from "./inbound-text.js";
 import { parseLineDirectives, hasLineDirectives } from "./line-directives.js";
 import type { FollowupRun, QueueSettings } from "./queue.js";
-import { enqueueFollowupRun, resetRecentQueuedMessageIdDedupe, scheduleFollowupDrain } from "./queue.js";
+import {
+  enqueueFollowupRun,
+  resetRecentQueuedMessageIdDedupe,
+  scheduleFollowupDrain,
+} from "./queue.js";
 import { createReplyDispatcher } from "./reply-dispatcher.js";
 import { createReplyToModeFilter, resolveReplyToMode } from "./reply-threading.js";
 
@@ -332,7 +336,9 @@ describe("parseLineDirectives", () => {
 
       for (const testCase of cases) {
         const result = parseLineDirectives({ text: testCase.text });
-        expect(getLineData(result).templateMessage, testCase.name).toEqual(testCase.expectedTemplate);
+        expect(getLineData(result).templateMessage, testCase.name).toEqual(
+          testCase.expectedTemplate,
+        );
         expect(result.text, testCase.name).toBe(testCase.expectedText);
       }
     });
@@ -391,10 +397,14 @@ describe("parseLineDirectives", () => {
           expect(templateMessage, testCase.name).toEqual(testCase.expectedTemplate);
         }
         if ("expectedFirstAction" in testCase) {
-          expect(templateMessage?.actions?.[0], testCase.name).toEqual(testCase.expectedFirstAction);
+          expect(templateMessage?.actions?.[0], testCase.name).toEqual(
+            testCase.expectedFirstAction,
+          );
         }
         if ("expectedActionCount" in testCase) {
-          expect(templateMessage?.actions?.length, testCase.name).toBe(testCase.expectedActionCount);
+          expect(templateMessage?.actions?.length, testCase.name).toBe(
+            testCase.expectedActionCount,
+          );
         }
       }
     });
@@ -1413,7 +1423,8 @@ describe("createReplyDispatcher", () => {
   });
 
   it("fires onIdle when the queue drains", async () => {
-    const deliver: Parameters<typeof createReplyDispatcher>[0]["deliver"] = async () => await Promise.resolve();
+    const deliver: Parameters<typeof createReplyDispatcher>[0]["deliver"] = async () =>
+      await Promise.resolve();
     const onIdle = vi.fn();
     const dispatcher = createReplyDispatcher({ deliver, onIdle });
 
@@ -1534,7 +1545,9 @@ describe("resolveReplyToMode", () => {
       { cfg: legacyDmCfg, channel: "slack", chatType: "channel", expected: "off" },
     ];
     for (const testCase of cases) {
-      expect(resolveReplyToMode(testCase.cfg, testCase.channel, null, testCase.chatType)).toBe(testCase.expected);
+      expect(resolveReplyToMode(testCase.cfg, testCase.channel, null, testCase.chatType)).toBe(
+        testCase.expected,
+      );
     }
   });
 });

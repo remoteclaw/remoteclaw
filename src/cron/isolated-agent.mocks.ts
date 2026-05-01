@@ -1,5 +1,8 @@
 import { vi } from "vitest";
-import { makeIsolatedAgentJobFixture, makeIsolatedAgentParamsFixture } from "./isolated-agent/job-fixtures.js";
+import {
+  makeIsolatedAgentJobFixture,
+  makeIsolatedAgentParamsFixture,
+} from "./isolated-agent/job-fixtures.js";
 
 vi.mock("../agents/provider-utils.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../agents/provider-utils.js")>();

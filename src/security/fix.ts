@@ -220,7 +220,9 @@ function setGroupPolicyAllowlist(params: {
     const account = accountValue as Record<string, unknown>;
     if (account.groupPolicy === "open") {
       account.groupPolicy = "allowlist";
-      params.changes.push(`channels.${params.channel}.accounts.${accountId}.groupPolicy=open -> allowlist`);
+      params.changes.push(
+        `channels.${params.channel}.accounts.${accountId}.groupPolicy=open -> allowlist`,
+      );
       params.policyFlips.add(`channels.${params.channel}.accounts.${accountId}.`);
     }
   }
@@ -285,7 +287,15 @@ function applyConfigFixes(params: { cfg: RemoteClawConfig; env: NodeJS.ProcessEn
     changes.push('logging.redactSensitive=off -> "tools"');
   }
 
-  for (const channel of ["telegram", "whatsapp", "discord", "signal", "imessage", "slack", "msteams"]) {
+  for (const channel of [
+    "telegram",
+    "whatsapp",
+    "discord",
+    "signal",
+    "imessage",
+    "slack",
+    "msteams",
+  ]) {
     setGroupPolicyAllowlist({ cfg: next, channel, changes, policyFlips });
   }
 
@@ -297,7 +307,11 @@ async function chmodCredentialsAndAgentState(params: {
   stateDir: string;
   cfg: RemoteClawConfig;
   actions: SecurityFixAction[];
-  applyPerms: (params: { path: string; mode: number; require: "dir" | "file" }) => Promise<SecurityFixAction>;
+  applyPerms: (params: {
+    path: string;
+    mode: number;
+    require: "dir" | "file";
+  }) => Promise<SecurityFixAction>;
 }): Promise<void> {
   const credsDir = resolveOAuthDir(params.env, params.stateDir);
   params.actions.push(await safeChmod({ path: credsDir, mode: 0o700, require: "dir" }));
@@ -338,7 +352,9 @@ async function chmodCredentialsAndAgentState(params: {
     params.actions.push(await params.applyPerms({ path: authPath, mode: 0o600, require: "file" }));
 
     // eslint-disable-next-line no-await-in-loop
-    params.actions.push(await params.applyPerms({ path: sessionsDir, mode: 0o700, require: "dir" }));
+    params.actions.push(
+      await params.applyPerms({ path: sessionsDir, mode: 0o700, require: "dir" }),
+    );
 
     const storePath = path.join(sessionsDir, "sessions.json");
     // eslint-disable-next-line no-await-in-loop
@@ -389,7 +405,11 @@ export async function fixSecurityFootguns(opts?: {
     const fixed = applyConfigFixes({ cfg: snap.config, env });
     changes = fixed.changes;
 
-    const whatsappStoreAllowFrom = await readChannelAllowFromStore("whatsapp", env, DEFAULT_ACCOUNT_ID).catch(() => []);
+    const whatsappStoreAllowFrom = await readChannelAllowFromStore(
+      "whatsapp",
+      env,
+      DEFAULT_ACCOUNT_ID,
+    ).catch(() => []);
     if (whatsappStoreAllowFrom.length > 0) {
       setWhatsAppGroupAllowFromFromStore({
         cfg: fixed.cfg,

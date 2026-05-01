@@ -6,7 +6,10 @@ export type TailscaleSelfInfo = {
   nodeId: string | null;
 };
 
-function runTailscaleCommand(args: string[], timeoutMs = 2500): Promise<{ code: number; stdout: string }> {
+function runTailscaleCommand(
+  args: string[],
+  timeoutMs = 2500,
+): Promise<{ code: number; stdout: string }> {
   return new Promise((resolve) => {
     const proc = spawn("tailscale", args, {
       stdio: ["ignore", "pipe", "pipe"],
@@ -62,7 +65,14 @@ export async function setupTailscaleExposureRoute(opts: {
     return null;
   }
 
-  const { code } = await runTailscaleCommand([opts.mode, "--bg", "--yes", "--set-path", opts.path, opts.localUrl]);
+  const { code } = await runTailscaleCommand([
+    opts.mode,
+    "--bg",
+    "--yes",
+    "--set-path",
+    opts.path,
+    opts.localUrl,
+  ]);
 
   if (code === 0) {
     const publicUrl = `https://${dnsName}${opts.path}`;
@@ -74,7 +84,10 @@ export async function setupTailscaleExposureRoute(opts: {
   return null;
 }
 
-export async function cleanupTailscaleExposureRoute(opts: { mode: "serve" | "funnel"; path: string }): Promise<void> {
+export async function cleanupTailscaleExposureRoute(opts: {
+  mode: "serve" | "funnel";
+  path: string;
+}): Promise<void> {
   await runTailscaleCommand([opts.mode, "off", opts.path]);
 }
 

@@ -20,10 +20,18 @@ describe("runtime-guard", () => {
   });
 
   it("compares versions correctly", () => {
-    expect(isAtLeast({ major: 22, minor: 14, patch: 0 }, { major: 22, minor: 14, patch: 0 })).toBe(true);
-    expect(isAtLeast({ major: 22, minor: 15, patch: 0 }, { major: 22, minor: 14, patch: 0 })).toBe(true);
-    expect(isAtLeast({ major: 22, minor: 13, patch: 0 }, { major: 22, minor: 14, patch: 0 })).toBe(false);
-    expect(isAtLeast({ major: 21, minor: 9, patch: 0 }, { major: 22, minor: 14, patch: 0 })).toBe(false);
+    expect(isAtLeast({ major: 22, minor: 14, patch: 0 }, { major: 22, minor: 14, patch: 0 })).toBe(
+      true,
+    );
+    expect(isAtLeast({ major: 22, minor: 15, patch: 0 }, { major: 22, minor: 14, patch: 0 })).toBe(
+      true,
+    );
+    expect(isAtLeast({ major: 22, minor: 13, patch: 0 }, { major: 22, minor: 14, patch: 0 })).toBe(
+      false,
+    );
+    expect(isAtLeast({ major: 21, minor: 9, patch: 0 }, { major: 22, minor: 14, patch: 0 })).toBe(
+      false,
+    );
   });
 
   it("validates runtime thresholds", () => {
@@ -114,6 +122,8 @@ describe("runtime-guard", () => {
     };
 
     expect(() => assertSupportedRuntime(runtime, details)).toThrow("exit");
-    expect(runtime.error).toHaveBeenCalledWith(expect.stringContaining("Detected: unknown runtime (exec: unknown)."));
+    expect(runtime.error).toHaveBeenCalledWith(
+      expect.stringContaining("Detected: unknown runtime (exec: unknown)."),
+    );
   });
 });

@@ -5,7 +5,11 @@ import {
   resolveDmGroupAccessWithLists,
   resolveSenderScopedGroupPolicy,
 } from "remoteclaw/plugin-sdk/matrix";
-import { normalizeMatrixAllowList, resolveMatrixAllowListMatch, resolveMatrixAllowListMatches } from "./allowlist.js";
+import {
+  normalizeMatrixAllowList,
+  resolveMatrixAllowListMatch,
+  resolveMatrixAllowListMatches,
+} from "./allowlist.js";
 
 type MatrixDmPolicy = "open" | "pairing" | "allowlist" | "disabled";
 type MatrixGroupPolicy = "open" | "allowlist" | "disabled";
@@ -64,7 +68,10 @@ export async function enforceMatrixDirectMessageAccess(params: {
   senderId: string;
   senderName: string;
   effectiveAllowFrom: string[];
-  upsertPairingRequest: (input: { id: string; meta?: Record<string, string | undefined> }) => Promise<{
+  upsertPairingRequest: (input: {
+    id: string;
+    meta?: Record<string, string | undefined>;
+  }) => Promise<{
     code: string;
     created: boolean;
   }>;
@@ -105,7 +112,9 @@ export async function enforceMatrixDirectMessageAccess(params: {
         );
       },
       onReplyError: (err) => {
-        params.logVerboseMessage(`matrix pairing reply failed for ${params.senderId}: ${String(err)}`);
+        params.logVerboseMessage(
+          `matrix pairing reply failed for ${params.senderId}: ${String(err)}`,
+        );
       },
     });
     return false;

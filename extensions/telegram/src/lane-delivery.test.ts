@@ -11,7 +11,8 @@ function createHarness(params?: {
   answerHasStreamedMessage?: boolean;
   answerLastPartialText?: string;
 }) {
-  const answer = params?.answerStream ?? createTestDraftStream({ messageId: params?.answerMessageId });
+  const answer =
+    params?.answerStream ?? createTestDraftStream({ messageId: params?.answerMessageId });
   const reasoning = createTestDraftStream();
   const lanes: Record<LaneName, DraftLaneState> = {
     answer: {
@@ -182,7 +183,9 @@ describe("createLaneTextDeliverer", () => {
 
     expect(result).toBe("sent");
     expect(harness.editPreview).toHaveBeenCalledTimes(1);
-    expect(harness.sendPayload).toHaveBeenCalledWith(expect.objectContaining({ text: "Hello final" }));
+    expect(harness.sendPayload).toHaveBeenCalledWith(
+      expect.objectContaining({ text: "Hello final" }),
+    );
   });
 
   it("falls back to normal delivery when stop-created preview has no message id", async () => {
@@ -197,7 +200,9 @@ describe("createLaneTextDeliverer", () => {
 
     expect(result).toBe("sent");
     expect(harness.editPreview).not.toHaveBeenCalled();
-    expect(harness.sendPayload).toHaveBeenCalledWith(expect.objectContaining({ text: "Short final" }));
+    expect(harness.sendPayload).toHaveBeenCalledWith(
+      expect.objectContaining({ text: "Short final" }),
+    );
   });
 
   it("keeps existing preview when final text regresses", async () => {
@@ -304,7 +309,9 @@ describe("createLaneTextDeliverer", () => {
 
     expect(result).toBe("sent");
     expect(answerStream.materialize).toHaveBeenCalledTimes(1);
-    expect(harness.sendPayload).toHaveBeenCalledWith(expect.objectContaining({ text: "Hello final" }));
+    expect(harness.sendPayload).toHaveBeenCalledWith(
+      expect.objectContaining({ text: "Hello final" }),
+    );
     expect(harness.log).toHaveBeenCalledWith(
       expect.stringContaining("draft preview materialize produced no message id"),
     );
@@ -349,7 +356,9 @@ describe("createLaneTextDeliverer", () => {
     });
 
     expect(result).toBe("sent");
-    expect(harness.sendPayload).toHaveBeenCalledWith(expect.objectContaining({ text: "Choose one" }));
+    expect(harness.sendPayload).toHaveBeenCalledWith(
+      expect.objectContaining({ text: "Choose one" }),
+    );
     expect(harness.markDelivered).not.toHaveBeenCalled();
   });
 

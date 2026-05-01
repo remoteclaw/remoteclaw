@@ -94,7 +94,9 @@ export function applyExclusiveSlotSelection(params: {
 
     const inferredPrevSlot = prevSlot ?? defaultSlotIdForKey(slotKey);
     if (inferredPrevSlot && inferredPrevSlot !== params.selectedId) {
-      warnings.push(`Exclusive slot "${slotKey}" switched from "${inferredPrevSlot}" to "${params.selectedId}".`);
+      warnings.push(
+        `Exclusive slot "${slotKey}" switched from "${inferredPrevSlot}" to "${params.selectedId}".`,
+      );
     }
 
     const disabledIds: string[] = [];
@@ -103,7 +105,9 @@ export function applyExclusiveSlotSelection(params: {
         if (plugin.id === params.selectedId) {
           continue;
         }
-        const kindForSlot = (Object.keys(SLOT_BY_KIND) as PluginKind[]).find((k) => SLOT_BY_KIND[k] === slotKey);
+        const kindForSlot = (Object.keys(SLOT_BY_KIND) as PluginKind[]).find(
+          (k) => SLOT_BY_KIND[k] === slotKey,
+        );
         if (!kindForSlot || !hasKind(plugin.kind, kindForSlot)) {
           continue;
         }
@@ -127,7 +131,9 @@ export function applyExclusiveSlotSelection(params: {
     }
 
     if (disabledIds.length > 0) {
-      warnings.push(`Disabled other "${slotKey}" slot plugins: ${disabledIds.toSorted().join(", ")}.`);
+      warnings.push(
+        `Disabled other "${slotKey}" slot plugins: ${disabledIds.toSorted().join(", ")}.`,
+      );
     }
 
     if (prevSlot !== params.selectedId || disabledIds.length > 0) {

@@ -73,7 +73,9 @@ export type StopSlackStreamParams = {
  *
  * The first chunk of text can optionally be included via `text`.
  */
-export async function startSlackStream(params: StartSlackStreamParams): Promise<SlackStreamSession> {
+export async function startSlackStream(
+  params: StartSlackStreamParams,
+): Promise<SlackStreamSession> {
   const { client, channel, threadTs, text, teamId, userId } = params;
 
   logVerbose(

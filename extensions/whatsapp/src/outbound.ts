@@ -33,7 +33,9 @@ export async function sendMessageWhatsApp(
   }
   const correlationId = generateSecureUuid();
   const startedAt = Date.now();
-  const { listener: active, accountId: resolvedAccountId } = requireActiveWebListener(options.accountId);
+  const { listener: active, accountId: resolvedAccountId } = requireActiveWebListener(
+    options.accountId,
+  );
   const cfg = options.cfg;
   const account = resolveWhatsAppAccount({
     cfg,
@@ -137,7 +139,13 @@ export async function sendReactionWhatsApp(
     const redactedJid = redactIdentifier(jid);
     outboundLog.info(`Sending reaction "${emoji}" -> message ${messageId}`);
     logger.info({ chatJid: redactedJid, messageId, emoji }, "sending reaction");
-    await active.sendReaction(chatJid, messageId, emoji, options.fromMe ?? false, options.participant);
+    await active.sendReaction(
+      chatJid,
+      messageId,
+      emoji,
+      options.fromMe ?? false,
+      options.participant,
+    );
     outboundLog.info(`Sent reaction "${emoji}" -> message ${messageId}`);
     logger.info({ chatJid: redactedJid, messageId, emoji }, "sent reaction");
   } catch (err) {

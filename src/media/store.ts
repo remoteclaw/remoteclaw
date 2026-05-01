@@ -73,7 +73,9 @@ export function extractOriginalFilename(filePath: string): string {
   const nameWithoutExt = path.basename(basename, ext);
 
   // Check for ---{uuid} pattern (36 chars: 8-4-4-4-12 with hyphens)
-  const match = nameWithoutExt.match(/^(.+)---[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i);
+  const match = nameWithoutExt.match(
+    /^(.+)---[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i,
+  );
   if (match?.[1]) {
     return `${match[1]}${ext}`;
   }
@@ -261,17 +263,28 @@ export type SavedMedia = {
   contentType?: string;
 };
 
-function buildSavedMediaId(params: { baseId: string; ext: string; originalFilename?: string }): string {
+function buildSavedMediaId(params: {
+  baseId: string;
+  ext: string;
+  originalFilename?: string;
+}): string {
   if (!params.originalFilename) {
     return params.ext ? `${params.baseId}${params.ext}` : params.baseId;
   }
 
   const base = path.parse(params.originalFilename).name;
   const sanitized = sanitizeFilename(base);
-  return sanitized ? `${sanitized}---${params.baseId}${params.ext}` : `${params.baseId}${params.ext}`;
+  return sanitized
+    ? `${sanitized}---${params.baseId}${params.ext}`
+    : `${params.baseId}${params.ext}`;
 }
 
-function buildSavedMediaResult(params: { dir: string; id: string; size: number; contentType?: string }): SavedMedia {
+function buildSavedMediaResult(params: {
+  dir: string;
+  id: string;
+  size: number;
+  contentType?: string;
+}): SavedMedia {
   return {
     id: params.id,
     path: path.join(params.dir, params.id),
@@ -280,13 +293,24 @@ function buildSavedMediaResult(params: { dir: string; id: string; size: number; 
   };
 }
 
-async function writeSavedMediaBuffer(params: { dir: string; id: string; buffer: Buffer }): Promise<string> {
+async function writeSavedMediaBuffer(params: {
+  dir: string;
+  id: string;
+  buffer: Buffer;
+}): Promise<string> {
   const dest = path.join(params.dir, params.id);
-  await retryAfterRecreatingDir(params.dir, () => fs.writeFile(dest, params.buffer, { mode: MEDIA_FILE_MODE }));
+  await retryAfterRecreatingDir(params.dir, () =>
+    fs.writeFile(dest, params.buffer, { mode: MEDIA_FILE_MODE }),
+  );
   return dest;
 }
 
-export type SaveMediaSourceErrorCode = "invalid-path" | "not-found" | "not-file" | "path-mismatch" | "too-large";
+export type SaveMediaSourceErrorCode =
+  | "invalid-path"
+  | "not-found"
+  | "not-file"
+  | "path-mismatch"
+  | "too-large";
 
 export class SaveMediaSourceError extends Error {
   code: SaveMediaSourceErrorCode;
@@ -410,7 +434,10 @@ export async function saveMediaBuffer(
  * @throws        If the ID is unsafe, the file does not exist, or is not a
  *                regular file.
  */
-export async function resolveMediaBufferPath(id: string, subdir: "inbound" = "inbound"): Promise<string> {
+export async function resolveMediaBufferPath(
+  id: string,
+  subdir: "inbound" = "inbound",
+): Promise<string> {
   // Guard against path traversal and null-byte injection.
   //
   // - Separator checks: reject any ID containing "/" or "\" (covers all
@@ -443,10 +470,14 @@ export async function resolveMediaBufferPath(id: string, subdir: "inbound" = "in
   const stat = await fs.lstat(resolved);
 
   if (stat.isSymbolicLink()) {
-    throw new Error(`resolveMediaBufferPath: refusing to follow symlink for media ID: ${JSON.stringify(id)}`);
+    throw new Error(
+      `resolveMediaBufferPath: refusing to follow symlink for media ID: ${JSON.stringify(id)}`,
+    );
   }
   if (!stat.isFile()) {
-    throw new Error(`resolveMediaBufferPath: media ID does not resolve to a file: ${JSON.stringify(id)}`);
+    throw new Error(
+      `resolveMediaBufferPath: media ID does not resolve to a file: ${JSON.stringify(id)}`,
+    );
   }
 
   return resolved;

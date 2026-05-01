@@ -91,7 +91,11 @@ export function formatModelName(modelString?: string | null): string {
     .join(" ");
 }
 
-export function isBotMentioned(messageText: string, botShipName: string, nickname?: string): boolean {
+export function isBotMentioned(
+  messageText: string,
+  botShipName: string,
+  nickname?: string,
+): boolean {
   if (!messageText || !botShipName) {
     return false;
   }
@@ -145,7 +149,10 @@ export function isDmAllowed(senderShip: string, allowlist: string[] | undefined)
  * ALL invites are rejected - even if autoAcceptGroupInvites is enabled.
  * This prevents misconfigured bots from accepting malicious invites.
  */
-export function isGroupInviteAllowed(inviterShip: string, allowlist: string[] | undefined): boolean {
+export function isGroupInviteAllowed(
+  inviterShip: string,
+  allowlist: string[] | undefined,
+): boolean {
   // SECURITY: Fail-safe to deny when no allowlist configured
   if (!allowlist || allowlist.length === 0) {
     return false;
@@ -263,7 +270,10 @@ export function extractMessageText(content: unknown): string {
 
         // Header blocks
         if (block.header && typeof block.header === "object") {
-          const text = block.header.content?.map((item: any) => (typeof item === "string" ? item : "")).join("") || "";
+          const text =
+            block.header.content
+              ?.map((item: any) => (typeof item === "string" ? item : ""))
+              .join("") || "";
           return `\n## ${text}\n`;
         }
 

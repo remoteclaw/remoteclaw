@@ -53,7 +53,8 @@ export function createSafeStreamWriter(options: SafeStreamWriterOptions = {}): S
     }
   };
 
-  const writeLine = (stream: NodeJS.WriteStream, text: string): boolean => write(stream, `${text}\n`);
+  const writeLine = (stream: NodeJS.WriteStream, text: string): boolean =>
+    write(stream, `${text}\n`);
 
   return {
     write,

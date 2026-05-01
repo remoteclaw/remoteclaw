@@ -51,7 +51,9 @@ function toAllowedValueDedupKey(value: unknown): string {
   return `${kind}:${safeStringify(value)}`;
 }
 
-export function summarizeAllowedValues(values: ReadonlyArray<unknown>): AllowedValuesSummary | null {
+export function summarizeAllowedValues(
+  values: ReadonlyArray<unknown>,
+): AllowedValuesSummary | null {
   if (values.length === 0) {
     return null;
   }
@@ -73,7 +75,8 @@ export function summarizeAllowedValues(values: ReadonlyArray<unknown>): AllowedV
   const shown = deduped.slice(0, MAX_ALLOWED_VALUES_HINT);
   const hiddenCount = deduped.length - shown.length;
   const formattedCore = shown.map((entry) => entry.label).join(", ");
-  const formatted = hiddenCount > 0 ? `${formattedCore}, ... (+${hiddenCount} more)` : formattedCore;
+  const formatted =
+    hiddenCount > 0 ? `${formattedCore}, ... (+${hiddenCount} more)` : formattedCore;
 
   return {
     values: shown.map((entry) => entry.value),

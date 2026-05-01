@@ -81,7 +81,9 @@ export function normalizeInboundPathRoots(roots?: readonly string[]): string[] {
   return normalized;
 }
 
-export function mergeInboundPathRoots(...rootsLists: Array<readonly string[] | undefined>): string[] {
+export function mergeInboundPathRoots(
+  ...rootsLists: Array<readonly string[] | undefined>
+): string[] {
   const merged: string[] = [];
   const seen = new Set<string>();
   for (const roots of rootsLists) {
@@ -107,14 +109,18 @@ export function isInboundPathAllowed(params: {
     return false;
   }
   const roots = normalizeInboundPathRoots(params.roots);
-  const effectiveRoots = roots.length > 0 ? roots : normalizeInboundPathRoots(params.fallbackRoots ?? undefined);
+  const effectiveRoots =
+    roots.length > 0 ? roots : normalizeInboundPathRoots(params.fallbackRoots ?? undefined);
   if (effectiveRoots.length === 0) {
     return false;
   }
   return effectiveRoots.some((rootPattern) => matchesRootPattern({ candidatePath, rootPattern }));
 }
 
-function resolveIMessageAccountConfig(params: { cfg: RemoteClawConfig; accountId?: string | null }) {
+function resolveIMessageAccountConfig(params: {
+  cfg: RemoteClawConfig;
+  accountId?: string | null;
+}) {
   const accountId = normalizeAccountId(params.accountId);
   if (!params.accountId?.trim()) {
     return undefined;
@@ -122,7 +128,10 @@ function resolveIMessageAccountConfig(params: { cfg: RemoteClawConfig; accountId
   return resolveAccountEntry(params.cfg.channels?.imessage?.accounts, accountId);
 }
 
-export function resolveIMessageAttachmentRoots(params: { cfg: RemoteClawConfig; accountId?: string | null }): string[] {
+export function resolveIMessageAttachmentRoots(params: {
+  cfg: RemoteClawConfig;
+  accountId?: string | null;
+}): string[] {
   const accountConfig = resolveIMessageAccountConfig(params);
   return mergeInboundPathRoots(
     accountConfig?.attachmentRoots,

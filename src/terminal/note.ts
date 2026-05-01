@@ -36,7 +36,12 @@ function isCopySensitiveToken(word: string): boolean {
   if (URL_PREFIX_RE.test(word)) {
     return true;
   }
-  if (word.startsWith("/") || word.startsWith("~/") || word.startsWith("./") || word.startsWith("../")) {
+  if (
+    word.startsWith("/") ||
+    word.startsWith("~/") ||
+    word.startsWith("./") ||
+    word.startsWith("../")
+  ) {
     return true;
   }
   if (WINDOWS_DRIVE_RE.test(word) || word.startsWith("\\\\")) {
@@ -140,7 +145,10 @@ function wrapLine(line: string, maxWidth: number): string[] {
   return lines;
 }
 
-export function wrapNoteMessage(message: string, options: { maxWidth?: number; columns?: number } = {}): string {
+export function wrapNoteMessage(
+  message: string,
+  options: { maxWidth?: number; columns?: number } = {},
+): string {
   const columns = options.columns ?? process.stdout.columns ?? 80;
   const maxWidth = options.maxWidth ?? Math.max(40, Math.min(88, columns - 10));
   return message

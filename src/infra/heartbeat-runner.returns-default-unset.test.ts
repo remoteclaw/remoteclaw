@@ -23,7 +23,10 @@ import {
   resolveHeartbeatPrompt,
   runHeartbeatOnce,
 } from "./heartbeat-runner.js";
-import { resolveHeartbeatDeliveryTarget, resolveHeartbeatSenderContext } from "./outbound/targets.js";
+import {
+  resolveHeartbeatDeliveryTarget,
+  resolveHeartbeatSenderContext,
+} from "./outbound/targets.js";
 import { enqueueSystemEvent, resetSystemEventsForTest } from "./system-events.js";
 
 // Avoid pulling optional runtime deps during isolated runs.
@@ -47,7 +50,8 @@ beforeAll(async () => {
   const whatsappPlugin = createOutboundTestPlugin({ id: "whatsapp", outbound: whatsappOutbound });
   whatsappPlugin.config = {
     ...whatsappPlugin.config,
-    resolveAllowFrom: ({ cfg }) => cfg.channels?.whatsapp?.allowFrom?.map((entry) => String(entry)) ?? [],
+    resolveAllowFrom: ({ cfg }) =>
+      cfg.channels?.whatsapp?.allowFrom?.map((entry) => String(entry)) ?? [],
   };
 
   const telegramPlugin = createOutboundTestPlugin({
@@ -153,7 +157,11 @@ describe("resolveHeartbeatIntervalMs", () => {
 
   it("uses explicit heartbeat overrides when provided", () => {
     expect(
-      resolveHeartbeatIntervalMs({ agents: { defaults: { heartbeat: { every: "30m" } } } }, undefined, { every: "5m" }),
+      resolveHeartbeatIntervalMs(
+        { agents: { defaults: { heartbeat: { every: "30m" } } } },
+        undefined,
+        { every: "5m" },
+      ),
     ).toBe(5 * 60_000);
   });
 });
@@ -342,9 +350,10 @@ describe("resolveHeartbeatDeliveryTarget", () => {
       },
     ];
     for (const testCase of cases) {
-      expect(resolveHeartbeatDeliveryTarget({ cfg: testCase.cfg, entry: testCase.entry }), testCase.name).toEqual(
-        testCase.expected,
-      );
+      expect(
+        resolveHeartbeatDeliveryTarget({ cfg: testCase.cfg, entry: testCase.entry }),
+        testCase.name,
+      ).toEqual(testCase.expected);
     }
   });
 
@@ -460,7 +469,10 @@ describe("resolveHeartbeatSenderContext", () => {
 });
 
 describe("runHeartbeatOnce", () => {
-  const createHeartbeatDeps = (sendWhatsApp: NonNullable<HeartbeatDeps["sendWhatsApp"]>, nowMs = 0): HeartbeatDeps => ({
+  const createHeartbeatDeps = (
+    sendWhatsApp: NonNullable<HeartbeatDeps["sendWhatsApp"]>,
+    nowMs = 0,
+  ): HeartbeatDeps => ({
     sendWhatsApp,
     getQueueSize: () => 0,
     nowMs: () => nowMs,
@@ -550,7 +562,11 @@ describe("runHeartbeatOnce", () => {
       });
 
       expect(sendWhatsApp).toHaveBeenCalledTimes(1);
-      expect(sendWhatsApp).toHaveBeenCalledWith("120363401234567890@g.us", "Final alert", expect.any(Object));
+      expect(sendWhatsApp).toHaveBeenCalledWith(
+        "120363401234567890@g.us",
+        "Final alert",
+        expect.any(Object),
+      );
     } finally {
       replySpy.mockRestore();
     }
@@ -602,7 +618,11 @@ describe("runHeartbeatOnce", () => {
         deps: createHeartbeatDeps(sendWhatsApp),
       });
       expect(sendWhatsApp).toHaveBeenCalledTimes(1);
-      expect(sendWhatsApp).toHaveBeenCalledWith("120363401234567890@g.us", "Final alert", expect.any(Object));
+      expect(sendWhatsApp).toHaveBeenCalledWith(
+        "120363401234567890@g.us",
+        "Final alert",
+        expect.any(Object),
+      );
       expect(replySpy).toHaveBeenCalledWith(
         expect.objectContaining({
           Body: expect.stringMatching(/Ops check[\s\S]*Current time: /),
@@ -678,7 +698,11 @@ describe("runHeartbeatOnce", () => {
 
       expect(result.status).toBe("ran");
       expect(sendWhatsApp).toHaveBeenCalledTimes(1);
-      expect(sendWhatsApp).toHaveBeenCalledWith("120363401234567890@g.us", "Final alert", expect.any(Object));
+      expect(sendWhatsApp).toHaveBeenCalledWith(
+        "120363401234567890@g.us",
+        "Final alert",
+        expect.any(Object),
+      );
       expect(replySpy).toHaveBeenCalledWith(
         expect.objectContaining({
           SessionKey: sessionKey,
@@ -790,7 +814,11 @@ describe("runHeartbeatOnce", () => {
         });
 
         expect(sendWhatsApp, testCase.name).toHaveBeenCalledTimes(1);
-        expect(sendWhatsApp, testCase.name).toHaveBeenCalledWith(testCase.peerId, testCase.message, expect.any(Object));
+        expect(sendWhatsApp, testCase.name).toHaveBeenCalledWith(
+          testCase.peerId,
+          testCase.message,
+          expect.any(Object),
+        );
         expect(replySpy, testCase.name).toHaveBeenCalledWith(
           expect.objectContaining({
             SessionKey: overrideSessionKey,
@@ -980,7 +1008,11 @@ describe("runHeartbeatOnce", () => {
       });
 
       expect(sendWhatsApp).toHaveBeenCalledTimes(1);
-      expect(sendWhatsApp).toHaveBeenCalledWith("120363401234567890@g.us", "Hello from heartbeat", expect.any(Object));
+      expect(sendWhatsApp).toHaveBeenCalledWith(
+        "120363401234567890@g.us",
+        "Hello from heartbeat",
+        expect.any(Object),
+      );
     } finally {
       replySpy.mockRestore();
     }
@@ -1000,7 +1032,11 @@ describe("runHeartbeatOnce", () => {
     await fs.mkdir(workspaceDir, { recursive: true });
 
     if (params.fileState === "empty") {
-      await fs.writeFile(path.join(workspaceDir, "HEARTBEAT.md"), "# HEARTBEAT.md\n\n## Tasks\n\n", "utf-8");
+      await fs.writeFile(
+        path.join(workspaceDir, "HEARTBEAT.md"),
+        "# HEARTBEAT.md\n\n## Tasks\n\n",
+        "utf-8",
+      );
     } else if (params.fileState === "actionable") {
       await fs.writeFile(
         path.join(workspaceDir, "HEARTBEAT.md"),

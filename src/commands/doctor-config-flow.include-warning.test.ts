@@ -19,6 +19,9 @@ describe("doctor include warning", () => {
       });
     });
 
-    expect(noteSpy).toHaveBeenCalledWith(expect.stringContaining("$include paths must stay under:"), "Doctor warnings");
+    expect(noteSpy).toHaveBeenCalledWith(
+      expect.stringContaining("$include paths must stay under:"),
+      "Doctor warnings",
+    );
   });
 });

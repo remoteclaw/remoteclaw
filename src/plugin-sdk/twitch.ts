@@ -22,7 +22,10 @@ export type {
   ChannelStatusIssue,
 } from "../channels/plugins/types.js";
 export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
-export type { ChannelOnboardingAdapter, ChannelOnboardingDmPolicy } from "../channels/plugins/onboarding-types.js";
+export type {
+  ChannelOnboardingAdapter,
+  ChannelOnboardingDmPolicy,
+} from "../channels/plugins/onboarding-types.js";
 export { promptChannelAccessConfig } from "../channels/plugins/onboarding/channel-access.js";
 export { createReplyPrefixOptions } from "../channels/reply-prefix.js";
 export type { RemoteClawConfig } from "../config/config.js";

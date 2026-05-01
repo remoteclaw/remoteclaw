@@ -44,7 +44,9 @@ describe("ssrf pinning", () => {
       });
     });
     expect(Array.isArray(all)).toBe(true);
-    expect((all as Array<{ address: string }>).map((entry) => entry.address)).toEqual(pinned.addresses);
+    expect((all as Array<{ address: string }>).map((entry) => entry.address)).toEqual(
+      pinned.addresses,
+    );
   });
 
   it.each([
@@ -57,9 +59,13 @@ describe("ssrf pinning", () => {
   });
 
   it("allows RFC2544 benchmark range addresses only when policy explicitly opts in", async () => {
-    const lookup = vi.fn(async () => [{ address: "198.18.0.153", family: 4 }]) as unknown as LookupFn;
+    const lookup = vi.fn(async () => [
+      { address: "198.18.0.153", family: 4 },
+    ]) as unknown as LookupFn;
 
-    await expect(resolvePinnedHostname("api.telegram.org", lookup)).rejects.toThrow(/private|internal/i);
+    await expect(resolvePinnedHostname("api.telegram.org", lookup)).rejects.toThrow(
+      /private|internal/i,
+    );
 
     const pinned = await resolvePinnedHostnameWithPolicy("api.telegram.org", {
       lookupFn: lookup,
@@ -103,7 +109,9 @@ describe("ssrf pinning", () => {
   });
 
   it("enforces hostname allowlist when configured", async () => {
-    const lookup = vi.fn(async () => [{ address: "93.184.216.34", family: 4 }]) as unknown as LookupFn;
+    const lookup = vi.fn(async () => [
+      { address: "93.184.216.34", family: 4 },
+    ]) as unknown as LookupFn;
 
     await expect(
       resolvePinnedHostnameWithPolicy("api.example.com", {
@@ -115,7 +123,9 @@ describe("ssrf pinning", () => {
   });
 
   it("supports wildcard hostname allowlist patterns", async () => {
-    const lookup = vi.fn(async () => [{ address: "93.184.216.34", family: 4 }]) as unknown as LookupFn;
+    const lookup = vi.fn(async () => [
+      { address: "93.184.216.34", family: 4 },
+    ]) as unknown as LookupFn;
 
     await expect(
       resolvePinnedHostnameWithPolicy("assets.example.com", {
@@ -148,7 +158,9 @@ describe("ssrf pinning", () => {
   ])("blocks $name before DNS lookup", async ({ hostname }) => {
     const lookup = createPublicLookupMock();
 
-    await expect(resolvePinnedHostnameWithPolicy(hostname, { lookupFn: lookup })).rejects.toThrow(SsrFBlockedError);
+    await expect(resolvePinnedHostnameWithPolicy(hostname, { lookupFn: lookup })).rejects.toThrow(
+      SsrFBlockedError,
+    );
     expect(lookup).not.toHaveBeenCalled();
   });
 
@@ -180,7 +192,9 @@ describe("ssrf pinning", () => {
   });
 
   it("allows ISATAP embedded private IPv4 when private network is explicitly enabled", async () => {
-    const lookup = vi.fn(async () => [{ address: "2001:db8:1234::5efe:127.0.0.1", family: 6 }]) as unknown as LookupFn;
+    const lookup = vi.fn(async () => [
+      { address: "2001:db8:1234::5efe:127.0.0.1", family: 6 },
+    ]) as unknown as LookupFn;
 
     await expect(
       resolvePinnedHostnameWithPolicy("2001:db8:1234::5efe:127.0.0.1", {

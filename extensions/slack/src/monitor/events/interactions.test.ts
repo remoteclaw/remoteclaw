@@ -117,7 +117,9 @@ function createContext(overrides?: {
         type?: "im" | "mpim" | "channel" | "group";
       }>
     >()
-    .mockImplementation((channelId) => overrides?.resolveChannelName?.(channelId) ?? Promise.resolve({}));
+    .mockImplementation(
+      (channelId) => overrides?.resolveChannelName?.(channelId) ?? Promise.resolve({}),
+    );
   const ctx = {
     app,
     runtime: { log: runtimeLog },
@@ -127,7 +129,8 @@ function createContext(overrides?: {
     allowNameMatching: overrides?.allowNameMatching ?? false,
     channelsConfig: overrides?.channelsConfig ?? {},
     defaultRequireMention: true,
-    shouldDropMismatchedSlackEvent: (body: unknown) => overrides?.shouldDropMismatchedSlackEvent?.(body) ?? false,
+    shouldDropMismatchedSlackEvent: (body: unknown) =>
+      overrides?.shouldDropMismatchedSlackEvent?.(body) ?? false,
     isChannelAllowed,
     resolveUserName,
     resolveChannelName,
@@ -731,7 +734,9 @@ describe("registerSlackInteractionEvents", () => {
         blocks: [
           {
             type: "context",
-            elements: [{ type: "mrkdwn", text: ":white_check_mark: *2026-02-16* selected by <@U333>" }],
+            elements: [
+              { type: "mrkdwn", text: ":white_check_mark: *2026-02-16* selected by <@U333>" },
+            ],
           },
           expect.anything(),
           expect.anything(),
@@ -823,7 +828,16 @@ describe("registerSlackInteractionEvents", () => {
       selectedDateTime?: number;
     };
     expect(payload.actionType).toBe("multi_conversations_select");
-    expect(payload.selectedValues).toEqual(["alpha", "beta", "U777", "U888", "C777", "C888", "G777", "G888"]);
+    expect(payload.selectedValues).toEqual([
+      "alpha",
+      "beta",
+      "U777",
+      "U888",
+      "C777",
+      "C888",
+      "G777",
+      "G888",
+    ]);
     expect(payload.selectedUsers).toEqual(["U777", "U888"]);
     expect(payload.selectedChannels).toEqual(["C777", "C888"]);
     expect(payload.selectedConversations).toEqual(["G777", "G888"]);
@@ -1341,7 +1355,10 @@ describe("registerSlackInteractionEvents", () => {
     expect(ack).toHaveBeenCalled();
     expect(resolveSessionKey).not.toHaveBeenCalled();
     expect(enqueueSystemEventMock).toHaveBeenCalledTimes(1);
-    const [eventText, options] = enqueueSystemEventMock.mock.calls[0] as [string, { sessionKey?: string }];
+    const [eventText, options] = enqueueSystemEventMock.mock.calls[0] as [
+      string,
+      { sessionKey?: string },
+    ];
     const payload = JSON.parse(eventText.replace("Slack interaction: ", "")) as {
       interactionType: string;
       actionId: string;
@@ -1372,7 +1389,9 @@ describe("registerSlackInteractionEvents", () => {
       isStackedView: true,
     });
     expect(payload.inputs).toEqual(
-      expect.arrayContaining([expect.objectContaining({ actionId: "env_select", selectedValues: ["canary"] })]),
+      expect.arrayContaining([
+        expect.objectContaining({ actionId: "env_select", selectedValues: ["canary"] }),
+      ]),
     );
     expect(options.sessionKey).toBe("agent:main:slack:channel:C99");
   });

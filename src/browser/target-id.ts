@@ -2,7 +2,10 @@ export type TargetIdResolution =
   | { ok: true; targetId: string }
   | { ok: false; reason: "not_found" | "ambiguous"; matches?: string[] };
 
-export function resolveTargetIdFromTabs(input: string, tabs: Array<{ targetId: string }>): TargetIdResolution {
+export function resolveTargetIdFromTabs(
+  input: string,
+  tabs: Array<{ targetId: string }>,
+): TargetIdResolution {
   const needle = input.trim();
   if (!needle) {
     return { ok: false, reason: "not_found" };

@@ -1,6 +1,8 @@
 import type { SlackMessageEvent } from "../types.js";
 
-export function inferSlackChannelType(channelId?: string | null): SlackMessageEvent["channel_type"] | undefined {
+export function inferSlackChannelType(
+  channelId?: string | null,
+): SlackMessageEvent["channel_type"] | undefined {
   const trimmed = channelId?.trim();
   if (!trimmed) {
     return undefined;
@@ -23,7 +25,12 @@ export function normalizeSlackChannelType(
 ): SlackMessageEvent["channel_type"] {
   const normalized = channelType?.trim().toLowerCase();
   const inferred = inferSlackChannelType(channelId);
-  if (normalized === "im" || normalized === "mpim" || normalized === "channel" || normalized === "group") {
+  if (
+    normalized === "im" ||
+    normalized === "mpim" ||
+    normalized === "channel" ||
+    normalized === "group"
+  ) {
     // D-prefix channel IDs are always DMs — override a contradicting channel_type.
     if (inferred === "im" && normalized !== "im") {
       return "im";

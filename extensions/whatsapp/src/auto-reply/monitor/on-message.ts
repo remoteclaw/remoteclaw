@@ -2,7 +2,10 @@ import type { getReplyFromConfig } from "../../../../../src/auto-reply/reply.js"
 import type { MsgContext } from "../../../../../src/auto-reply/templating.js";
 import { loadConfig } from "../../../../../src/config/config.js";
 import { logVerbose } from "../../../../../src/globals.js";
-import { resolveAgentRoute, type ResolvedAgentRoute } from "../../../../../src/routing/resolve-route.js";
+import {
+  resolveAgentRoute,
+  type ResolvedAgentRoute,
+} from "../../../../../src/routing/resolve-route.js";
 import { buildGroupHistoryKey } from "../../../../../src/routing/session-key.js";
 import { normalizeE164 } from "../../../../../src/utils.js";
 import type { MentionConfig } from "../mentions.js";

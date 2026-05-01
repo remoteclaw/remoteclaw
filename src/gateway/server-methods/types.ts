@@ -22,7 +22,12 @@ export type GatewayClient = {
   canvasCapabilityExpiresAtMs?: number;
 };
 
-export type RespondFn = (ok: boolean, payload?: unknown, error?: ErrorShape, meta?: Record<string, unknown>) => void;
+export type RespondFn = (
+  ok: boolean,
+  payload?: unknown,
+  error?: ErrorShape,
+  meta?: Record<string, unknown>,
+) => void;
 
 export type GatewayRequestContext = {
   deps: ReturnType<typeof createDefaultDeps>;
@@ -61,8 +66,14 @@ export type GatewayRequestContext = {
   findRunningWizard: () => string | null;
   purgeWizardSession: (id: string) => void;
   getRuntimeSnapshot: () => ChannelRuntimeSnapshot;
-  startChannel: (channel: import("../../channels/plugins/types.js").ChannelId, accountId?: string) => Promise<void>;
-  stopChannel: (channel: import("../../channels/plugins/types.js").ChannelId, accountId?: string) => Promise<void>;
+  startChannel: (
+    channel: import("../../channels/plugins/types.js").ChannelId,
+    accountId?: string,
+  ) => Promise<void>;
+  stopChannel: (
+    channel: import("../../channels/plugins/types.js").ChannelId,
+    accountId?: string,
+  ) => Promise<void>;
   markChannelLoggedOut: (
     channelId: import("../../channels/plugins/types.js").ChannelId,
     cleared: boolean,

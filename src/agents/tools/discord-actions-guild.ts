@@ -31,7 +31,11 @@ import {
 } from "./common.js";
 import { readDiscordParentIdParam } from "./discord-actions-shared.js";
 
-type DiscordRoleMutation = (params: { guildId: string; userId: string; roleId: string }) => Promise<unknown>;
+type DiscordRoleMutation = (params: {
+  guildId: string;
+  userId: string;
+  roleId: string;
+}) => Promise<unknown>;
 type DiscordRoleMutationWithAccount = (
   params: {
     guildId: string;

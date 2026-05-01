@@ -1495,7 +1495,14 @@ For `type: "acp"` entries, RemoteClaw resolves by exact conversation identity (`
         workspace: "~/.remoteclaw/workspace-family",
         sandbox: { mode: "all", scope: "agent", workspaceAccess: "ro" },
         tools: {
-          allow: ["read", "sessions_list", "sessions_history", "sessions_send", "sessions_spawn", "session_status"],
+          allow: [
+            "read",
+            "sessions_list",
+            "sessions_history",
+            "sessions_send",
+            "sessions_spawn",
+            "session_status",
+          ],
           deny: ["write", "edit", "apply_patch", "exec", "process", "browser"],
         },
       },

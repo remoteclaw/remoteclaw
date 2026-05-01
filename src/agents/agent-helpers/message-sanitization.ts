@@ -40,7 +40,10 @@ function isBase64Signature(value: string): boolean {
  * Gemini expects thought signatures as base64-encoded bytes, but Claude stores message ids
  * like "msg_abc123...". We only strip "msg_*" to preserve any provider-valid signatures.
  */
-export function stripThoughtSignatures<T>(content: T, options?: ThoughtSignatureSanitizeOptions): T {
+export function stripThoughtSignatures<T>(
+  content: T,
+  options?: ThoughtSignatureSanitizeOptions,
+): T {
   if (!Array.isArray(content)) {
     return content;
   }
@@ -78,7 +81,11 @@ export function sanitizeGoogleTurnOrdering(messages: AgentMessage[]): AgentMessa
   const first = messages[0] as { role?: unknown; content?: unknown } | undefined;
   const role = first?.role;
   const content = first?.content;
-  if (role === "user" && typeof content === "string" && content.trim() === GOOGLE_TURN_ORDER_BOOTSTRAP_TEXT) {
+  if (
+    role === "user" &&
+    typeof content === "string" &&
+    content.trim() === GOOGLE_TURN_ORDER_BOOTSTRAP_TEXT
+  ) {
     return messages;
   }
   if (role !== "assistant") {

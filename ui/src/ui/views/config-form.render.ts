@@ -82,7 +82,9 @@ const sectionIcons = {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
       <circle cx="12" cy="12" r="10"></circle>
       <line x1="2" y1="12" x2="22" y2="12"></line>
-      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+      <path
+        d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
+      ></path>
     </svg>
   `,
   // Additional sections
@@ -168,7 +170,9 @@ const sectionIcons = {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
       <circle cx="12" cy="12" r="10"></circle>
       <line x1="2" y1="12" x2="22" y2="12"></line>
-      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+      <path
+        d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
+      ></path>
     </svg>
   `,
   discovery: html`
@@ -389,7 +393,8 @@ export function renderConfigForm(props: ConfigFormProps) {
     return true;
   });
 
-  let subsectionContext: { sectionKey: string; subsectionKey: string; schema: JsonSchema } | null = null;
+  let subsectionContext: { sectionKey: string; subsectionKey: string; schema: JsonSchema } | null =
+    null;
   if (activeSection && activeSubsection && filteredEntries.length === 1) {
     const sectionSchema = filteredEntries[0]?.[1];
     if (

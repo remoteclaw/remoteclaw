@@ -35,7 +35,11 @@ export function resolveSlackStreamingConfig(params: {
   };
 }
 
-export function applyAppendOnlyStreamUpdate(params: { incoming: string; rendered: string; source: string }): {
+export function applyAppendOnlyStreamUpdate(params: {
+  incoming: string;
+  rendered: string;
+  source: string;
+}): {
   rendered: string;
   source: string;
   changed: boolean;

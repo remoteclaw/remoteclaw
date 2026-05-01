@@ -176,7 +176,9 @@ export async function buildExportSessionReply(params: HandleCommandsParams): Pro
   const defaultFileName = `remoteclaw-session-${entry.sessionId.slice(0, 8)}-${timestamp}.html`;
   const outputPath = args.outputPath
     ? path.resolve(
-        args.outputPath.startsWith("~") ? args.outputPath.replace("~", process.env.HOME ?? "") : args.outputPath,
+        args.outputPath.startsWith("~")
+          ? args.outputPath.replace("~", process.env.HOME ?? "")
+          : args.outputPath,
       )
     : path.join(params.workspaceDir, defaultFileName);
 
@@ -193,6 +195,11 @@ export async function buildExportSessionReply(params: HandleCommandsParams): Pro
   const displayPath = relativePath.startsWith("..") ? outputPath : relativePath;
 
   return {
-    text: ["✅ Session exported!", "", `📄 File: ${displayPath}`, `📊 Entries: ${entries.length}`].join("\n"),
+    text: [
+      "✅ Session exported!",
+      "",
+      `📄 File: ${displayPath}`,
+      `📊 Entries: ${entries.length}`,
+    ].join("\n"),
   };
 }

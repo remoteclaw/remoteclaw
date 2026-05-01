@@ -194,7 +194,10 @@ async function runCronJobForce(ws: WebSocket, id: string) {
 }
 
 async function runCronJobAndWaitForFinished(ws: WebSocket, jobId: string) {
-  const finished = waitForCronEvent(ws, (payload) => payload?.jobId === jobId && payload?.action === "finished");
+  const finished = waitForCronEvent(
+    ws,
+    (payload) => payload?.jobId === jobId && payload?.action === "finished",
+  );
   await runCronJobForce(ws, jobId);
   await finished;
 }
@@ -262,7 +265,9 @@ describe("gateway server cron", () => {
       expect(Array.isArray(jobs)).toBe(true);
       expect((jobs as unknown[]).length).toBe(1);
       expect(((jobs as Array<{ name?: unknown }>)[0]?.name as string) ?? "").toBe("daily");
-      expect(((jobs as Array<{ delivery?: { mode?: unknown } }>)[0]?.delivery?.mode as string) ?? "").toBe("webhook");
+      expect(
+        ((jobs as Array<{ delivery?: { mode?: unknown } }>)[0]?.delivery?.mode as string) ?? "",
+      ).toBe("webhook");
 
       const routeAtMs = Date.now() - 1;
       const routeRes = await rpcReq(ws, "cron.add", {
@@ -311,7 +316,9 @@ describe("gateway server cron", () => {
         },
       });
       expect(updateRes.ok).toBe(true);
-      const updated = updateRes.payload as { schedule?: { kind?: unknown }; payload?: { kind?: unknown } } | undefined;
+      const updated = updateRes.payload as
+        | { schedule?: { kind?: unknown }; payload?: { kind?: unknown } }
+        | undefined;
       expect(updated?.schedule?.kind).toBe("at");
       expect(updated?.payload?.kind).toBe("systemEvent");
 
@@ -479,7 +486,10 @@ describe("gateway server cron", () => {
       const jobId = typeof jobIdValue === "string" ? jobIdValue : "";
       expect(jobId.length > 0).toBe(true);
 
-      const finishedRun = waitForCronEvent(ws, (payload) => payload?.jobId === jobId && payload?.action === "finished");
+      const finishedRun = waitForCronEvent(
+        ws,
+        (payload) => payload?.jobId === jobId && payload?.action === "finished",
+      );
       const runRes = await rpcReq(ws, "cron.run", { id: jobId, mode: "force" }, 20_000);
       expect(runRes.ok).toBe(true);
       expect(runRes.payload).toEqual({ ok: true, enqueued: true, runId: expect.any(String) });
@@ -498,7 +508,9 @@ describe("gateway server cron", () => {
       expect(Array.isArray(entries)).toBe(true);
       expect((entries as Array<{ jobId?: unknown }>).at(-1)?.jobId).toBe(jobId);
       expect((entries as Array<{ summary?: unknown }>).at(-1)?.summary).toBe("hello");
-      expect((entries as Array<{ deliveryStatus?: unknown }>).at(-1)?.deliveryStatus).toBe("not-requested");
+      expect((entries as Array<{ deliveryStatus?: unknown }>).at(-1)?.deliveryStatus).toBe(
+        "not-requested",
+      );
       const allRunsRes = await rpcReq(ws, "cron.runs", {
         scope: "all",
         limit: 50,
@@ -507,11 +519,15 @@ describe("gateway server cron", () => {
       expect(allRunsRes.ok).toBe(true);
       const allEntries = (allRunsRes.payload as { entries?: unknown } | null)?.entries;
       expect(Array.isArray(allEntries)).toBe(true);
-      expect((allEntries as Array<{ jobId?: unknown }>).some((entry) => entry.jobId === jobId)).toBe(true);
+      expect(
+        (allEntries as Array<{ jobId?: unknown }>).some((entry) => entry.jobId === jobId),
+      ).toBe(true);
 
       const statusRes = await rpcReq(ws, "cron.status", {});
       expect(statusRes.ok).toBe(true);
-      const statusPayload = statusRes.payload as { enabled?: unknown; storePath?: unknown } | undefined;
+      const statusPayload = statusRes.payload as
+        | { enabled?: unknown; storePath?: unknown }
+        | undefined;
       expect(statusPayload?.enabled).toBe(true);
       const storePath = typeof statusPayload?.storePath === "string" ? statusPayload.storePath : "";
       expect(storePath).toContain("jobs.json");
@@ -529,7 +545,10 @@ describe("gateway server cron", () => {
       const autoJobId = typeof autoJobIdValue === "string" ? autoJobIdValue : "";
       expect(autoJobId.length > 0).toBe(true);
 
-      await waitForCronEvent(ws, (payload) => payload?.jobId === autoJobId && payload?.action === "finished");
+      await waitForCronEvent(
+        ws,
+        (payload) => payload?.jobId === autoJobId && payload?.action === "finished",
+      );
       const autoEntries = (await rpcReq(ws, "cron.runs", { id: autoJobId, limit: 10 })).payload as
         | { entries?: Array<{ jobId?: unknown }> }
         | undefined;
@@ -572,8 +591,14 @@ describe("gateway server cron", () => {
       const jobId = typeof jobIdValue === "string" ? jobIdValue : "";
       expect(jobId.length > 0).toBe(true);
 
-      const startedRun = waitForCronEvent(ws, (payload) => payload?.jobId === jobId && payload?.action === "started");
-      const finishedRun = waitForCronEvent(ws, (payload) => payload?.jobId === jobId && payload?.action === "finished");
+      const startedRun = waitForCronEvent(
+        ws,
+        (payload) => payload?.jobId === jobId && payload?.action === "started",
+      );
+      const finishedRun = waitForCronEvent(
+        ws,
+        (payload) => payload?.jobId === jobId && payload?.action === "finished",
+      );
       const runRes = await rpcReq(ws, "cron.run", { id: jobId, mode: "force" }, 1_000);
       expect(runRes.ok).toBe(true);
       expect(runRes.payload).toEqual({ ok: true, enqueued: true, runId: expect.any(String) });
@@ -754,7 +779,12 @@ describe("gateway server cron", () => {
         ws,
         (payload) => payload?.jobId === "legacy-notify-job" && payload?.action === "finished",
       );
-      const legacyRunRes = await rpcReq(ws, "cron.run", { id: "legacy-notify-job", mode: "force" }, 20_000);
+      const legacyRunRes = await rpcReq(
+        ws,
+        "cron.run",
+        { id: "legacy-notify-job", mode: "force" },
+        20_000,
+      );
       expect(legacyRunRes.ok).toBe(true);
       expect(legacyRunRes.payload).toEqual({ ok: true, enqueued: true, runId: expect.any(String) });
       await legacyFinished;
@@ -814,7 +844,9 @@ describe("gateway server cron", () => {
       const failureDestCall = getWebhookCall(0);
       expect(failureDestCall.url).toBe("https://example.invalid/failure-destination");
       const failureDestBody = failureDestCall.body;
-      expect(failureDestBody.message).toBe('Cron job "failure destination webhook" failed: unknown error');
+      expect(failureDestBody.message).toBe(
+        'Cron job "failure destination webhook" failed: unknown error',
+      );
 
       fetchWithSsrFGuardMock.mockClear();
       cronIsolatedRun.mockResolvedValueOnce({ status: "error", summary: "best-effort failed" });
@@ -835,7 +867,8 @@ describe("gateway server cron", () => {
       });
       const bestEffortFailureDestFinished = waitForCronEvent(
         ws,
-        (payload) => payload?.jobId === bestEffortFailureDestJobId && payload?.action === "finished",
+        (payload) =>
+          payload?.jobId === bestEffortFailureDestJobId && payload?.action === "finished",
       );
       await runCronJobForce(ws, bestEffortFailureDestJobId);
       await bestEffortFailureDestFinished;

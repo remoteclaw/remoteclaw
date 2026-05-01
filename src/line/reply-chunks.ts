@@ -25,7 +25,9 @@ export type SendLineReplyChunksParams = {
   onReplyError?: (err: unknown) => void;
 };
 
-export async function sendLineReplyChunks(params: SendLineReplyChunksParams): Promise<{ replyTokenUsed: boolean }> {
+export async function sendLineReplyChunks(
+  params: SendLineReplyChunksParams,
+): Promise<{ replyTokenUsed: boolean }> {
   const hasQuickReplies = Boolean(params.quickReplies?.length);
   let replyTokenUsed = Boolean(params.replyTokenUsed);
 
@@ -59,9 +61,14 @@ export async function sendLineReplyChunks(params: SendLineReplyChunksParams): Pr
       for (let i = 0; i < remaining.length; i += 1) {
         const isLastChunk = i === remaining.length - 1;
         if (isLastChunk && hasQuickReplies) {
-          await params.pushTextMessageWithQuickReplies(params.to, remaining[i], params.quickReplies!, {
-            accountId: params.accountId,
-          });
+          await params.pushTextMessageWithQuickReplies(
+            params.to,
+            remaining[i],
+            params.quickReplies!,
+            {
+              accountId: params.accountId,
+            },
+          );
         } else {
           await params.pushMessageLine(params.to, remaining[i], {
             accountId: params.accountId,
@@ -79,9 +86,14 @@ export async function sendLineReplyChunks(params: SendLineReplyChunksParams): Pr
   for (let i = 0; i < params.chunks.length; i += 1) {
     const isLastChunk = i === params.chunks.length - 1;
     if (isLastChunk && hasQuickReplies) {
-      await params.pushTextMessageWithQuickReplies(params.to, params.chunks[i], params.quickReplies!, {
-        accountId: params.accountId,
-      });
+      await params.pushTextMessageWithQuickReplies(
+        params.to,
+        params.chunks[i],
+        params.quickReplies!,
+        {
+          accountId: params.accountId,
+        },
+      );
     } else {
       await params.pushMessageLine(params.to, params.chunks[i], {
         accountId: params.accountId,

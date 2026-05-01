@@ -101,7 +101,14 @@ describe("registerMaintenanceCommands doctor action", () => {
   it("passes reset options to reset command", async () => {
     resetCommand.mockResolvedValue(undefined);
 
-    await runMaintenanceCli(["reset", "--scope", "full", "--yes", "--non-interactive", "--dry-run"]);
+    await runMaintenanceCli([
+      "reset",
+      "--scope",
+      "full",
+      "--yes",
+      "--non-interactive",
+      "--dry-run",
+    ]);
 
     expect(resetCommand).toHaveBeenCalledWith(
       runtime,

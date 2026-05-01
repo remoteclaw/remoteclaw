@@ -8,7 +8,10 @@ export type FormatDurationCompactOptions = {
   spaced?: boolean;
 };
 
-export function formatDurationSeconds(ms: number, options: FormatDurationSecondsOptions = {}): string {
+export function formatDurationSeconds(
+  ms: number,
+  options: FormatDurationSecondsOptions = {},
+): string {
   if (!Number.isFinite(ms)) {
     return "unknown";
   }
@@ -21,7 +24,10 @@ export function formatDurationSeconds(ms: number, options: FormatDurationSeconds
 }
 
 /** Precise decimal-seconds output: "500ms" or "1.23s". Input is milliseconds. */
-export function formatDurationPrecise(ms: number, options: FormatDurationSecondsOptions = {}): string {
+export function formatDurationPrecise(
+  ms: number,
+  options: FormatDurationSecondsOptions = {},
+): string {
   if (!Number.isFinite(ms)) {
     return "unknown";
   }
@@ -40,7 +46,10 @@ export function formatDurationPrecise(ms: number, options: FormatDurationSeconds
  * Omits trailing zero components: "1m" not "1m 0s", "2h" not "2h 0m".
  * Returns undefined for null/undefined/non-finite/non-positive input.
  */
-export function formatDurationCompact(ms?: number | null, options?: FormatDurationCompactOptions): string | undefined {
+export function formatDurationCompact(
+  ms?: number | null,
+  options?: FormatDurationCompactOptions,
+): string | undefined {
   if (ms == null || !Number.isFinite(ms) || ms <= 0) {
     return undefined;
   }

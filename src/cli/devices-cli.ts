@@ -223,7 +223,9 @@ function formatPendingScopes(request: PendingDevice): string {
   return scopes.join(", ");
 }
 
-function resolveRequiredDeviceRole(opts: DevicesRpcOpts): { deviceId: string; role: string } | null {
+function resolveRequiredDeviceRole(
+  opts: DevicesRpcOpts,
+): { deviceId: string; role: string } | null {
   const deviceId = String(opts.device ?? "").trim();
   const role = String(opts.role ?? "").trim();
   if (deviceId && role) {
@@ -249,7 +251,9 @@ export function registerDevicesCli(program: Command) {
         }
         if (list.pending?.length) {
           const tableWidth = getTerminalTableWidth();
-          defaultRuntime.log(`${theme.heading("Pending")} ${theme.muted(`(${list.pending.length})`)}`);
+          defaultRuntime.log(
+            `${theme.heading("Pending")} ${theme.muted(`(${list.pending.length})`)}`,
+          );
           defaultRuntime.log(
             renderTable({
               width: tableWidth,
@@ -276,7 +280,9 @@ export function registerDevicesCli(program: Command) {
         }
         if (list.paired?.length) {
           const tableWidth = getTerminalTableWidth();
-          defaultRuntime.log(`${theme.heading("Paired")} ${theme.muted(`(${list.paired.length})`)}`);
+          defaultRuntime.log(
+            `${theme.heading("Paired")} ${theme.muted(`(${list.paired.length})`)}`,
+          );
           defaultRuntime.log(
             renderTable({
               width: tableWidth,

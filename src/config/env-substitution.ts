@@ -36,7 +36,9 @@ export class MissingEnvVarError extends Error {
   }
 }
 
-type EnvToken = { kind: "escaped"; name: string; end: number } | { kind: "substitution"; name: string; end: number };
+type EnvToken =
+  | { kind: "escaped"; name: string; end: number }
+  | { kind: "substitution"; name: string; end: number };
 
 function parseEnvTokenAt(value: string, index: number): EnvToken | null {
   if (value[index] !== "$") {
@@ -83,7 +85,12 @@ export type SubstituteOptions = {
   onMissing?: (warning: EnvSubstitutionWarning) => void;
 };
 
-function substituteString(value: string, env: NodeJS.ProcessEnv, configPath: string, opts?: SubstituteOptions): string {
+function substituteString(
+  value: string,
+  env: NodeJS.ProcessEnv,
+  configPath: string,
+  opts?: SubstituteOptions,
+): string {
   if (!value.includes("$")) {
     return value;
   }
@@ -151,7 +158,12 @@ export function containsEnvVarReference(value: string): boolean {
   return false;
 }
 
-function substituteAny(value: unknown, env: NodeJS.ProcessEnv, path: string, opts?: SubstituteOptions): unknown {
+function substituteAny(
+  value: unknown,
+  env: NodeJS.ProcessEnv,
+  path: string,
+  opts?: SubstituteOptions,
+): unknown {
   if (typeof value === "string") {
     return substituteString(value, env, path, opts);
   }

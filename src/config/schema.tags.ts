@@ -41,7 +41,12 @@ const TAG_PRIORITY: Record<ConfigTag, number> = {
 const TAG_OVERRIDES: Record<string, ConfigTag[]> = {
   "gateway.auth.token": ["security", "auth", "access", "network"],
   "gateway.auth.password": ["security", "auth", "access", "network"],
-  "gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback": ["security", "access", "network", "advanced"],
+  "gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback": [
+    "security",
+    "access",
+    "network",
+    "advanced",
+  ],
   "gateway.controlUi.dangerouslyDisableDeviceAuth": ["security", "access", "network", "advanced"],
   "gateway.controlUi.allowInsecureAuth": ["security", "access", "network", "advanced"],
 };
@@ -185,7 +190,10 @@ export function applyDerivedTags(hints: ConfigUiHints): ConfigUiHints {
   for (const [path, hint] of Object.entries(hints)) {
     const existingTags = Array.isArray(hint?.tags) ? hint.tags : [];
     const derivedTags = deriveTagsForPath(path, hint);
-    const tags = [...normalizeTags([...derivedTags, ...existingTags]), ...collectUnknownTags(existingTags)];
+    const tags = [
+      ...normalizeTags([...derivedTags, ...existingTags]),
+      ...collectUnknownTags(existingTags),
+    ];
     next[path] = { ...hint, tags };
   }
   return next;

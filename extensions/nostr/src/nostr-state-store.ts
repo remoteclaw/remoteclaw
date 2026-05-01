@@ -50,7 +50,10 @@ function resolveNostrStatePath(accountId?: string, env: NodeJS.ProcessEnv = proc
   return path.join(stateDir, "nostr", `bus-state-${normalized}.json`);
 }
 
-function resolveNostrProfileStatePath(accountId?: string, env: NodeJS.ProcessEnv = process.env): string {
+function resolveNostrProfileStatePath(
+  accountId?: string,
+  env: NodeJS.ProcessEnv = process.env,
+): string {
   const stateDir = getNostrRuntime().state.resolveStateDir(env, os.homedir);
   const normalized = normalizeAccountId(accountId);
   return path.join(stateDir, "nostr", `profile-state-${normalized}.json`);
@@ -64,7 +67,8 @@ function safeParseState(raw: string): NostrBusState | null {
       return {
         version: 2,
         lastProcessedAt: typeof parsed.lastProcessedAt === "number" ? parsed.lastProcessedAt : null,
-        gatewayStartedAt: typeof parsed.gatewayStartedAt === "number" ? parsed.gatewayStartedAt : null,
+        gatewayStartedAt:
+          typeof parsed.gatewayStartedAt === "number" ? parsed.gatewayStartedAt : null,
         recentEventIds: Array.isArray(parsed.recentEventIds)
           ? parsed.recentEventIds.filter((x): x is string => typeof x === "string")
           : [],
@@ -76,7 +80,8 @@ function safeParseState(raw: string): NostrBusState | null {
       return {
         version: 2,
         lastProcessedAt: typeof parsed.lastProcessedAt === "number" ? parsed.lastProcessedAt : null,
-        gatewayStartedAt: typeof parsed.gatewayStartedAt === "number" ? parsed.gatewayStartedAt : null,
+        gatewayStartedAt:
+          typeof parsed.gatewayStartedAt === "number" ? parsed.gatewayStartedAt : null,
         recentEventIds: [],
       };
     }
@@ -142,7 +147,9 @@ export function computeSinceTimestamp(
   }
 
   // Use the most recent timestamp we have
-  const candidates = [state.lastProcessedAt, state.gatewayStartedAt].filter((t): t is number => t !== null && t > 0);
+  const candidates = [state.lastProcessedAt, state.gatewayStartedAt].filter(
+    (t): t is number => t !== null && t > 0,
+  );
 
   if (candidates.length === 0) {
     return nowSec;
@@ -162,9 +169,12 @@ function safeParseProfileState(raw: string): NostrProfileState | null {
       return {
         version: 1,
         lastPublishedAt: typeof parsed.lastPublishedAt === "number" ? parsed.lastPublishedAt : null,
-        lastPublishedEventId: typeof parsed.lastPublishedEventId === "string" ? parsed.lastPublishedEventId : null,
+        lastPublishedEventId:
+          typeof parsed.lastPublishedEventId === "string" ? parsed.lastPublishedEventId : null,
         lastPublishResults:
-          parsed.lastPublishResults && typeof parsed.lastPublishResults === "object" ? parsed.lastPublishResults : null,
+          parsed.lastPublishResults && typeof parsed.lastPublishResults === "object"
+            ? parsed.lastPublishResults
+            : null,
       };
     }
 

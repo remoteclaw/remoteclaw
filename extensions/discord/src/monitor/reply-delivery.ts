@@ -45,7 +45,11 @@ function getDiscordRetryAfterMs(err: unknown): number | undefined {
   if (!err || typeof err !== "object") {
     return undefined;
   }
-  if ("retryAfter" in err && typeof err.retryAfter === "number" && Number.isFinite(err.retryAfter)) {
+  if (
+    "retryAfter" in err &&
+    typeof err.retryAfter === "number" &&
+    Number.isFinite(err.retryAfter)
+  ) {
     return err.retryAfter * 1000;
   }
   const retryAfterRaw = (err as { headers?: Record<string, string> }).headers?.["retry-after"];
@@ -60,7 +64,10 @@ function resolveDeliveryRetryConfig(retry?: RetryConfig): ResolvedRetryConfig {
   return resolveRetryConfig(DISCORD_DELIVERY_RETRY_DEFAULTS, retry);
 }
 
-async function sendWithRetry(fn: () => Promise<unknown>, retryConfig: ResolvedRetryConfig): Promise<void> {
+async function sendWithRetry(
+  fn: () => Promise<unknown>,
+  retryConfig: ResolvedRetryConfig,
+): Promise<void> {
   await retryAsync(fn, {
     ...retryConfig,
     shouldRetry: (err) => isRetryableDiscordError(err),

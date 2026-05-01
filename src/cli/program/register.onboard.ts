@@ -16,11 +16,15 @@ import { formatDocsLink } from "../../terminal/links.js";
 import { theme } from "../../terminal/theme.js";
 import { runCommandWithRuntime } from "../cli-utils.js";
 
-function resolveInstallDaemonFlag(command: unknown, opts: { installDaemon?: boolean }): boolean | undefined {
+function resolveInstallDaemonFlag(
+  command: unknown,
+  opts: { installDaemon?: boolean },
+): boolean | undefined {
   if (!command || typeof command !== "object") {
     return undefined;
   }
-  const getOptionValueSource = "getOptionValueSource" in command ? command.getOptionValueSource : undefined;
+  const getOptionValueSource =
+    "getOptionValueSource" in command ? command.getOptionValueSource : undefined;
   if (typeof getOptionValueSource !== "function") {
     return undefined;
   }
@@ -45,7 +49,8 @@ export function registerOnboardCommand(program: Command) {
     .description("Interactive wizard to set up the gateway, workspace, and skills")
     .addHelpText(
       "after",
-      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/onboard", "docs.remoteclaw.org/cli/onboard")}\n`,
+      () =>
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/onboard", "docs.remoteclaw.org/cli/onboard")}\n`,
     )
     .option("--workspace <dir>", "Agent workspace directory (default: ~/.remoteclaw/workspace)")
     .option(
@@ -62,11 +67,20 @@ export function registerOnboardCommand(program: Command) {
     .option("--flow <flow>", "Wizard flow: quickstart|advanced|manual")
     .option("--mode <mode>", "Wizard mode: local|remote")
     .option("--auth-choice <choice>", `Auth: ${AUTH_CHOICE_HELP}`)
-    .option("--token-provider <id>", "Token provider id (non-interactive; used with --auth-choice token)")
+    .option(
+      "--token-provider <id>",
+      "Token provider id (non-interactive; used with --auth-choice token)",
+    )
     .option("--token <token>", "Token value (non-interactive; used with --auth-choice token)")
-    .option("--token-profile-id <id>", "Auth profile id (non-interactive; default: <provider>:manual)")
+    .option(
+      "--token-profile-id <id>",
+      "Auth profile id (non-interactive; default: <provider>:manual)",
+    )
     .option("--token-expires-in <duration>", "Optional token expiry duration (e.g. 365d, 12h)")
-    .option("--secret-input-mode <mode>", "API key persistence mode: plaintext|ref (default: plaintext)")
+    .option(
+      "--secret-input-mode <mode>",
+      "API key persistence mode: plaintext|ref (default: plaintext)",
+    )
     .option("--cloudflare-ai-gateway-account-id <id>", "Cloudflare Account ID")
     .option("--cloudflare-ai-gateway-gateway-id <id>", "Cloudflare AI Gateway ID");
 
@@ -79,7 +93,10 @@ export function registerOnboardCommand(program: Command) {
     .option("--custom-api-key <key>", "Custom provider API key (optional)")
     .option("--custom-model-id <id>", "Custom provider model ID")
     .option("--custom-provider-id <id>", "Custom provider ID (optional; auto-derived by default)")
-    .option("--custom-compatibility <mode>", "Custom provider API compatibility: openai|anthropic (default: openai)")
+    .option(
+      "--custom-compatibility <mode>",
+      "Custom provider API compatibility: openai|anthropic (default: openai)",
+    )
     .option("--gateway-port <port>", "Gateway port")
     .option("--gateway-bind <mode>", "Gateway bind: loopback|tailnet|lan|auto|custom")
     .option("--gateway-auth <mode>", "Gateway auth: token|password")
@@ -110,7 +127,8 @@ export function registerOnboardCommand(program: Command) {
       const installDaemon = resolveInstallDaemonFlag(commandRuntime, {
         installDaemon: Boolean(opts.installDaemon),
       });
-      const gatewayPort = typeof opts.gatewayPort === "string" ? Number.parseInt(opts.gatewayPort, 10) : undefined;
+      const gatewayPort =
+        typeof opts.gatewayPort === "string" ? Number.parseInt(opts.gatewayPort, 10) : undefined;
       await onboardCommand(
         {
           workspace: opts.workspace as string | undefined,
@@ -135,7 +153,10 @@ export function registerOnboardCommand(program: Command) {
           customModelId: opts.customModelId as string | undefined,
           customProviderId: opts.customProviderId as string | undefined,
           customCompatibility: opts.customCompatibility as "openai" | "anthropic" | undefined,
-          gatewayPort: typeof gatewayPort === "number" && Number.isFinite(gatewayPort) ? gatewayPort : undefined,
+          gatewayPort:
+            typeof gatewayPort === "number" && Number.isFinite(gatewayPort)
+              ? gatewayPort
+              : undefined,
           gatewayBind: opts.gatewayBind as GatewayBind | undefined,
           gatewayAuth: opts.gatewayAuth as GatewayAuthChoice | undefined,
           gatewayToken: opts.gatewayToken as string | undefined,

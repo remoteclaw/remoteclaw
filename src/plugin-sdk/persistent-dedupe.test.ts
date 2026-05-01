@@ -22,7 +22,9 @@ function createDedupe(root: string, overrides?: { ttlMs?: number }) {
 }
 
 afterEach(async () => {
-  await Promise.all(tmpRoots.splice(0).map((root) => fs.rm(root, { recursive: true, force: true })));
+  await Promise.all(
+    tmpRoots.splice(0).map((root) => fs.rm(root, { recursive: true, force: true })),
+  );
 });
 
 describe("createPersistentDedupe", () => {
@@ -88,7 +90,9 @@ describe("createPersistentDedupe", () => {
       setup: async (root: string) => {
         const writer = createDedupe(root, { ttlMs: 1000 });
         const oldNow = Date.now() - 2000;
-        expect(await writer.checkAndRecord("old-msg", { namespace: "acct", now: oldNow })).toBe(true);
+        expect(await writer.checkAndRecord("old-msg", { namespace: "acct", now: oldNow })).toBe(
+          true,
+        );
         expect(await writer.checkAndRecord("new-msg", { namespace: "acct" })).toBe(true);
         return createDedupe(root, { ttlMs: 1000 });
       },

@@ -19,7 +19,8 @@ export function resolveControlUiAuthPolicy(params: {
     | undefined;
   deviceRaw: ConnectParams["device"] | null | undefined;
 }): ControlUiAuthPolicy {
-  const allowInsecureAuthConfigured = params.isControlUi && params.controlUiConfig?.allowInsecureAuth === true;
+  const allowInsecureAuthConfigured =
+    params.isControlUi && params.controlUiConfig?.allowInsecureAuth === true;
   const dangerouslyDisableDeviceAuth =
     params.isControlUi && params.controlUiConfig?.dangerouslyDisableDeviceAuth === true;
   return {

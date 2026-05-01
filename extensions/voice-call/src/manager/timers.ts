@@ -6,10 +6,16 @@ type TimerContext = Pick<
   CallManagerContext,
   "activeCalls" | "maxDurationTimers" | "config" | "storePath" | "transcriptWaiters"
 >;
-type MaxDurationTimerContext = Pick<TimerContext, "activeCalls" | "maxDurationTimers" | "config" | "storePath">;
+type MaxDurationTimerContext = Pick<
+  TimerContext,
+  "activeCalls" | "maxDurationTimers" | "config" | "storePath"
+>;
 type TranscriptWaiterContext = Pick<TimerContext, "transcriptWaiters">;
 
-export function clearMaxDurationTimer(ctx: Pick<MaxDurationTimerContext, "maxDurationTimers">, callId: CallId): void {
+export function clearMaxDurationTimer(
+  ctx: Pick<MaxDurationTimerContext, "maxDurationTimers">,
+  callId: CallId,
+): void {
   const timer = ctx.maxDurationTimers.get(callId);
   if (timer) {
     clearTimeout(timer);
@@ -54,7 +60,11 @@ export function clearTranscriptWaiter(ctx: TranscriptWaiterContext, callId: Call
   ctx.transcriptWaiters.delete(callId);
 }
 
-export function rejectTranscriptWaiter(ctx: TranscriptWaiterContext, callId: CallId, reason: string): void {
+export function rejectTranscriptWaiter(
+  ctx: TranscriptWaiterContext,
+  callId: CallId,
+  reason: string,
+): void {
   const waiter = ctx.transcriptWaiters.get(callId);
   if (!waiter) {
     return;
@@ -81,7 +91,11 @@ export function resolveTranscriptWaiter(
   return true;
 }
 
-export function waitForFinalTranscript(ctx: TimerContext, callId: CallId, turnToken?: string): Promise<string> {
+export function waitForFinalTranscript(
+  ctx: TimerContext,
+  callId: CallId,
+  turnToken?: string,
+): Promise<string> {
   if (ctx.transcriptWaiters.has(callId)) {
     return Promise.reject(new Error("Already waiting for transcript"));
   }

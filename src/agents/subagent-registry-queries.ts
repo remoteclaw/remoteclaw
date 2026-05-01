@@ -55,7 +55,8 @@ export function listRunsForRequesterFromRuns(
 
   const requesterRunId = options?.requesterRunId?.trim();
   const requesterRun = requesterRunId ? runs.get(requesterRunId) : undefined;
-  const requesterRunMatchesScope = requesterRun && requesterRun.childSessionKey === key ? requesterRun : undefined;
+  const requesterRunMatchesScope =
+    requesterRun && requesterRun.childSessionKey === key ? requesterRun : undefined;
   const lowerBound = requesterRunMatchesScope?.startedAt ?? requesterRunMatchesScope?.createdAt;
   const upperBound = requesterRunMatchesScope?.endedAt;
 

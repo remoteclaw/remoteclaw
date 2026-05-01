@@ -1,6 +1,11 @@
 import crypto from "node:crypto";
 import type { CallMode } from "../config.js";
-import { TerminalStates, type CallId, type CallRecord, type OutboundCallOptions } from "../types.js";
+import {
+  TerminalStates,
+  type CallId,
+  type CallRecord,
+  type OutboundCallOptions,
+} from "../types.js";
 import { mapVoiceToPolly } from "../voice-mapping.js";
 import type { CallManagerContext } from "./context.js";
 import { getCallByProviderCallId } from "./lookup.js";
@@ -19,7 +24,10 @@ type InitiateContext = Pick<
   "activeCalls" | "providerCallIdMap" | "provider" | "config" | "storePath" | "webhookUrl"
 >;
 
-type SpeakContext = Pick<CallManagerContext, "activeCalls" | "providerCallIdMap" | "provider" | "config" | "storePath">;
+type SpeakContext = Pick<
+  CallManagerContext,
+  "activeCalls" | "providerCallIdMap" | "provider" | "config" | "storePath"
+>;
 
 type ConversationContext = Pick<
   CallManagerContext,
@@ -36,7 +44,12 @@ type ConversationContext = Pick<
 
 type EndCallContext = Pick<
   CallManagerContext,
-  "activeCalls" | "providerCallIdMap" | "provider" | "storePath" | "transcriptWaiters" | "maxDurationTimers"
+  | "activeCalls"
+  | "providerCallIdMap"
+  | "provider"
+  | "storePath"
+  | "transcriptWaiters"
+  | "maxDurationTimers"
 >;
 
 type ConnectedCallContext = Pick<CallManagerContext, "activeCalls" | "provider">;
@@ -96,7 +109,8 @@ export async function initiateCall(
   sessionKey?: string,
   options?: OutboundCallOptions | string,
 ): Promise<{ callId: CallId; success: boolean; error?: string }> {
-  const opts: OutboundCallOptions = typeof options === "string" ? { message: options } : (options ?? {});
+  const opts: OutboundCallOptions =
+    typeof options === "string" ? { message: options } : (options ?? {});
   const initialMessage = opts.message;
   const mode = opts.mode ?? ctx.config.outbound.defaultMode;
 
@@ -116,7 +130,8 @@ export async function initiateCall(
   }
 
   const callId = crypto.randomUUID();
-  const from = ctx.config.fromNumber || (ctx.provider?.name === "mock" ? "+15550000000" : undefined);
+  const from =
+    ctx.config.fromNumber || (ctx.provider?.name === "mock" ? "+15550000000" : undefined);
   if (!from) {
     return { callId: "", success: false, error: "fromNumber not configured" };
   }
@@ -216,7 +231,10 @@ export async function speak(
   }
 }
 
-export async function speakInitialMessage(ctx: ConversationContext, providerCallId: string): Promise<void> {
+export async function speakInitialMessage(
+  ctx: ConversationContext,
+  providerCallId: string,
+): Promise<void> {
   const call = getCallByProviderCallId({
     activeCalls: ctx.activeCalls,
     providerCallIdMap: ctx.providerCallIdMap,
@@ -236,7 +254,9 @@ export async function speakInitialMessage(ctx: ConversationContext, providerCall
   }
 
   if (ctx.initialMessageInFlight.has(call.callId)) {
-    console.log(`[voice-call] speakInitialMessage: initial message already in flight for ${call.callId}`);
+    console.log(
+      `[voice-call] speakInitialMessage: initial message already in flight for ${call.callId}`,
+    );
     return;
   }
   ctx.initialMessageInFlight.add(call.callId);
@@ -307,7 +327,10 @@ export async function continueCall(
 
     const lastTurnLatencyMs = transcriptReceivedAt - turnStartedAt;
     const lastTurnListenWaitMs = transcriptReceivedAt - listenStartedAt;
-    const turnCount = call.metadata && typeof call.metadata.turnCount === "number" ? call.metadata.turnCount + 1 : 1;
+    const turnCount =
+      call.metadata && typeof call.metadata.turnCount === "number"
+        ? call.metadata.turnCount + 1
+        : 1;
 
     call.metadata = {
       ...(call.metadata ?? {}),
@@ -336,7 +359,10 @@ export async function continueCall(
   }
 }
 
-export async function endCall(ctx: EndCallContext, callId: CallId): Promise<{ success: boolean; error?: string }> {
+export async function endCall(
+  ctx: EndCallContext,
+  callId: CallId,
+): Promise<{ success: boolean; error?: string }> {
   const lookup = lookupConnectedCall(ctx, callId);
   if (lookup.kind === "error") {
     return { success: false, error: lookup.error };

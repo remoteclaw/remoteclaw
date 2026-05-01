@@ -43,7 +43,10 @@ export function listNextcloudTalkAccountIds(cfg: CoreConfig): string[] {
   return ids;
 }
 
-function resolveAccountConfig(cfg: CoreConfig, accountId: string): NextcloudTalkAccountConfig | undefined {
+function resolveAccountConfig(
+  cfg: CoreConfig,
+  accountId: string,
+): NextcloudTalkAccountConfig | undefined {
   const accounts = cfg.channels?.["nextcloud-talk"]?.accounts;
   if (!accounts || typeof accounts !== "object") {
     return undefined;
@@ -57,7 +60,10 @@ function resolveAccountConfig(cfg: CoreConfig, accountId: string): NextcloudTalk
   return matchKey ? (accounts[matchKey] as NextcloudTalkAccountConfig | undefined) : undefined;
 }
 
-function mergeNextcloudTalkAccountConfig(cfg: CoreConfig, accountId: string): NextcloudTalkAccountConfig {
+function mergeNextcloudTalkAccountConfig(
+  cfg: CoreConfig,
+  accountId: string,
+): NextcloudTalkAccountConfig {
   const {
     accounts: _ignored,
     defaultAccount: _ignoredDefaultAccount,
@@ -82,9 +88,13 @@ function resolveNextcloudTalkSecret(
   }
 
   if (merged.botSecretFile) {
-    const fileSecret = tryReadSecretFileSync(merged.botSecretFile, "Nextcloud Talk bot secret file", {
-      rejectSymlink: true,
-    });
+    const fileSecret = tryReadSecretFileSync(
+      merged.botSecretFile,
+      "Nextcloud Talk bot secret file",
+      {
+        rejectSymlink: true,
+      },
+    );
     if (fileSecret) {
       return { secret: fileSecret, source: "secretFile" };
     }

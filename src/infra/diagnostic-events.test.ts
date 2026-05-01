@@ -107,7 +107,9 @@ describe("diagnostic-events", () => {
 
     expect(calls).toBe(101);
     expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("recursion guard tripped at depth=101, dropping type=queue.lane.enqueue"),
+      expect.stringContaining(
+        "recursion guard tripped at depth=101, dropping type=queue.lane.enqueue",
+      ),
     );
   });
 

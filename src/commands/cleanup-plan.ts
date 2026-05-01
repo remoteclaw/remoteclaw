@@ -1,5 +1,10 @@
 import type { RemoteClawConfig } from "../config/config.js";
-import { loadConfig, resolveConfigPath, resolveOAuthDir, resolveStateDir } from "../config/config.js";
+import {
+  loadConfig,
+  resolveConfigPath,
+  resolveOAuthDir,
+  resolveStateDir,
+} from "../config/config.js";
 import { buildCleanupPlan } from "./cleanup-utils.js";
 
 export function resolveCleanupPlanFromDisk(): {

@@ -127,7 +127,8 @@ export class NodeRegistry {
       id: requestId,
       nodeId: params.nodeId,
       command: params.command,
-      paramsJSON: "params" in params && params.params !== undefined ? JSON.stringify(params.params) : null,
+      paramsJSON:
+        "params" in params && params.params !== undefined ? JSON.stringify(params.params) : null,
       timeoutMs: params.timeoutMs,
       idempotencyKey: params.idempotencyKey,
     };

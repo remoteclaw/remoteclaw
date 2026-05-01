@@ -3,7 +3,10 @@ import { withEnv } from "../test-utils/env.js";
 import { decodeCapturedOutputBuffer, parseWindowsCodePage, sanitizeEnv } from "./invoke.js";
 import { buildNodeInvokeResultParams } from "./runner.js";
 
-function getEnvValueCaseInsensitive(env: Record<string, string>, expectedKey: string): string | undefined {
+function getEnvValueCaseInsensitive(
+  env: Record<string, string>,
+  expectedKey: string,
+): string | undefined {
   const direct = env[expectedKey];
   if (direct !== undefined) {
     return direct;
@@ -22,22 +25,25 @@ describe("node-host sanitizeEnv", () => {
   });
 
   it("blocks dangerous env keys/prefixes", () => {
-    withEnv({ PYTHONPATH: undefined, LD_PRELOAD: undefined, BASH_ENV: undefined, SHELLOPTS: undefined }, () => {
-      const env = sanitizeEnv({
-        PYTHONPATH: "/tmp/pwn",
-        LD_PRELOAD: "/tmp/pwn.so",
-        BASH_ENV: "/tmp/pwn.sh",
-        SHELLOPTS: "xtrace",
-        PS4: "$(touch /tmp/pwned)",
-        FOO: "bar",
-      });
-      expect(env.FOO).toBe("bar");
-      expect(env.PYTHONPATH).toBeUndefined();
-      expect(env.LD_PRELOAD).toBeUndefined();
-      expect(env.BASH_ENV).toBeUndefined();
-      expect(env.SHELLOPTS).toBeUndefined();
-      expect(env.PS4).toBeUndefined();
-    });
+    withEnv(
+      { PYTHONPATH: undefined, LD_PRELOAD: undefined, BASH_ENV: undefined, SHELLOPTS: undefined },
+      () => {
+        const env = sanitizeEnv({
+          PYTHONPATH: "/tmp/pwn",
+          LD_PRELOAD: "/tmp/pwn.so",
+          BASH_ENV: "/tmp/pwn.sh",
+          SHELLOPTS: "xtrace",
+          PS4: "$(touch /tmp/pwned)",
+          FOO: "bar",
+        });
+        expect(env.FOO).toBe("bar");
+        expect(env.PYTHONPATH).toBeUndefined();
+        expect(env.LD_PRELOAD).toBeUndefined();
+        expect(env.BASH_ENV).toBeUndefined();
+        expect(env.SHELLOPTS).toBeUndefined();
+        expect(env.PS4).toBeUndefined();
+      },
+    );
   });
 
   it("blocks dangerous override-only env keys", () => {

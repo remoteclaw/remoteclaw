@@ -90,7 +90,9 @@ function resolveImportCandidates(basePath: string): string[] {
 }
 
 function resolveRelativeImportPath(fromFile: string, specifier: string): string | null {
-  for (const candidate of resolveImportCandidates(path.resolve(path.dirname(fromFile), specifier))) {
+  for (const candidate of resolveImportCandidates(
+    path.resolve(path.dirname(fromFile), specifier),
+  )) {
     if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
       return candidate;
     }
@@ -146,7 +148,10 @@ function resolveCommonAncestor(paths: Iterable<string>): string {
   return ancestor;
 }
 
-function copyModuleImportGraphWithoutNodeModules(params: { modulePath: string; repoRoot: string }): {
+function copyModuleImportGraphWithoutNodeModules(params: {
+  modulePath: string;
+  repoRoot: string;
+}): {
   copiedModulePath: string;
   cleanup: () => void;
 } {

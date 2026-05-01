@@ -50,14 +50,21 @@ type CoreAgentDeps = {
     gatewayToken: string;
     workspaceDir?: string;
   }) => {
-    handle(message: ChannelMessage, callbacks?: unknown, abortSignal?: AbortSignal): Promise<AgentDeliveryResult>;
+    handle(
+      message: ChannelMessage,
+      callbacks?: unknown,
+      abortSignal?: AbortSignal,
+    ): Promise<AgentDeliveryResult>;
   };
   resolveGatewayPort: (cfg?: CoreConfig) => number;
   resolveGatewayCredentialsFromConfig: (params: { cfg: CoreConfig; env?: NodeJS.ProcessEnv }) => {
     token?: string;
   };
   resolveAgentWorkspaceDir: (cfg: CoreConfig, agentId: string) => string;
-  resolveAgentIdentity: (cfg: CoreConfig, agentId: string) => { name?: string | null } | null | undefined;
+  resolveAgentIdentity: (
+    cfg: CoreConfig,
+    agentId: string,
+  ) => { name?: string | null } | null | undefined;
   ensureAgentWorkspace: (dir: string) => Promise<string>;
   resolveStorePath: (store?: string, opts?: { agentId?: string }) => string;
   loadSessionStore: (storePath: string) => Record<string, unknown>;
@@ -143,7 +150,9 @@ async function importCoreExtensionAPI(): Promise<{
   // Do not import any other module. You can't touch this or you will be fired.
   const distPath = path.join(resolveRemoteClawRoot(), "dist", "extensionAPI.js");
   if (!fs.existsSync(distPath)) {
-    throw new Error(`Missing core module at ${distPath}. Run \`pnpm build\` or install the official package.`);
+    throw new Error(
+      `Missing core module at ${distPath}. Run \`pnpm build\` or install the official package.`,
+    );
   }
   return await import(pathToFileURL(distPath).href);
 }

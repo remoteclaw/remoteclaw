@@ -19,7 +19,8 @@ function isLikelyLocalMediaSource(media: string): boolean {
     media.startsWith("~") ||
     WINDOWS_DRIVE_RE.test(media) ||
     media.startsWith("\\") ||
-    (!SCHEME_RE.test(media) && (media.includes("/") || media.includes("\\") || HAS_FILE_EXT_RE.test(media)))
+    (!SCHEME_RE.test(media) &&
+      (media.includes("/") || media.includes("\\") || HAS_FILE_EXT_RE.test(media)))
   );
 }
 

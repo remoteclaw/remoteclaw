@@ -32,7 +32,9 @@ describe("buildSlackDebounceKey", () => {
       thread_ts: undefined,
       ts: "1709000000.000200",
     });
-    expect(buildSlackDebounceKey(msg, accountId)).toBe("slack:default:C123:maybe-thread:1709000000.000200:U456");
+    expect(buildSlackDebounceKey(msg, accountId)).toBe(
+      "slack:default:C123:maybe-thread:1709000000.000200:U456",
+    );
   });
 
   it("scopes top-level messages by their own timestamp to prevent cross-thread collisions", () => {

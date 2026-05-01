@@ -4,7 +4,9 @@ import type { SessionEntry } from "../config/sessions.js";
 import { resolveSendPolicy } from "./send-policy.js";
 
 describe("resolveSendPolicy", () => {
-  const cfgWithRules = (rules: NonNullable<NonNullable<RemoteClawConfig["session"]>["sendPolicy"]>["rules"]) =>
+  const cfgWithRules = (
+    rules: NonNullable<NonNullable<RemoteClawConfig["session"]>["sendPolicy"]>["rules"],
+  ) =>
     ({
       session: {
         sendPolicy: {
@@ -34,7 +36,9 @@ describe("resolveSendPolicy", () => {
   it.each([
     {
       name: "rule match by channel + chatType",
-      cfg: cfgWithRules([{ action: "deny", match: { channel: "demo-channel", chatType: "group" } }]),
+      cfg: cfgWithRules([
+        { action: "deny", match: { channel: "demo-channel", chatType: "group" } },
+      ]),
       entry: {
         sessionId: "s",
         updatedAt: 0,

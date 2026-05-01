@@ -3,7 +3,10 @@ import type { RemoteClawConfig } from "../config/config.js";
 import { createEmptyPluginRegistry } from "../plugins/registry.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
-import { patchChannelOnboardingAdapter, setDefaultChannelPluginRegistryForTests } from "./channel-test-helpers.js";
+import {
+  patchChannelOnboardingAdapter,
+  setDefaultChannelPluginRegistryForTests,
+} from "./channel-test-helpers.js";
 import { setupChannels } from "./onboard-channels.js";
 import { createExitThrowingRuntime, createWizardPrompter } from "./test-wizard-helpers.js";
 
@@ -30,14 +33,21 @@ function createUnexpectedPromptGuards() {
 
 type SetupChannelsOptions = Parameters<typeof setupChannels>[3];
 
-function runSetupChannels(cfg: RemoteClawConfig, prompter: WizardPrompter, options?: SetupChannelsOptions) {
+function runSetupChannels(
+  cfg: RemoteClawConfig,
+  prompter: WizardPrompter,
+  options?: SetupChannelsOptions,
+) {
   return setupChannels(cfg, createExitThrowingRuntime(), prompter, {
     skipConfirm: true,
     ...options,
   });
 }
 
-function createQuickstartTelegramSelect(options?: { configuredAction?: "skip"; strictUnexpected?: boolean }) {
+function createQuickstartTelegramSelect(options?: {
+  configuredAction?: "skip";
+  strictUnexpected?: boolean;
+}) {
   return vi.fn(async ({ message }: { message: string }) => {
     if (message === "Select channel (QuickStart)") {
       return "telegram";
@@ -93,7 +103,9 @@ function createUnexpectedConfigureCall(message: string) {
 
 async function runConfiguredTelegramSetup(params: {
   strictUnexpected?: boolean;
-  configureWhenConfigured: NonNullable<Parameters<typeof patchTelegramAdapter>[0]["configureWhenConfigured"]>;
+  configureWhenConfigured: NonNullable<
+    Parameters<typeof patchTelegramAdapter>[0]["configureWhenConfigured"]
+  >;
   configureErrorMessage: string;
 }) {
   const select = createQuickstartTelegramSelect({ strictUnexpected: params.strictUnexpected });
@@ -105,7 +117,9 @@ async function runConfiguredTelegramSetup(params: {
     configureWhenConfigured: params.configureWhenConfigured,
     configure,
   });
-  const { prompter } = createUnexpectedQuickstartPrompter(select as unknown as WizardPrompter["select"]);
+  const { prompter } = createUnexpectedQuickstartPrompter(
+    select as unknown as WizardPrompter["select"],
+  );
 
   try {
     const cfg = await runSetupChannels(createTelegramCfg("old-token"), prompter, {
@@ -120,7 +134,9 @@ async function runConfiguredTelegramSetup(params: {
 }
 
 async function runQuickstartTelegramSetupWithInteractive(params: {
-  configureInteractive: NonNullable<Parameters<typeof patchTelegramAdapter>[0]["configureInteractive"]>;
+  configureInteractive: NonNullable<
+    Parameters<typeof patchTelegramAdapter>[0]["configureInteractive"]
+  >;
   configure?: NonNullable<Parameters<typeof patchTelegramAdapter>[0]["configure"]>;
 }) {
   const select = createQuickstartTelegramSelect();
@@ -130,7 +146,9 @@ async function runQuickstartTelegramSetupWithInteractive(params: {
     configureInteractive: params.configureInteractive,
     ...(params.configure ? { configure: params.configure } : {}),
   });
-  const { prompter } = createUnexpectedQuickstartPrompter(select as unknown as WizardPrompter["select"]);
+  const { prompter } = createUnexpectedQuickstartPrompter(
+    select as unknown as WizardPrompter["select"],
+  );
 
   try {
     const cfg = await runSetupChannels({} as RemoteClawConfig, prompter, {
@@ -199,7 +217,9 @@ describe("setupChannels", () => {
       forceAllowFromChannels: ["whatsapp"],
     });
 
-    expect(select).toHaveBeenCalledWith(expect.objectContaining({ message: "Select channel (QuickStart)" }));
+    expect(select).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "Select channel (QuickStart)" }),
+    );
     expect(multiselect).not.toHaveBeenCalled();
   });
 
@@ -232,7 +252,9 @@ describe("setupChannels", () => {
     const sawHardStop = note.mock.calls.some((call) => {
       const message = call[0];
       const title = call[1];
-      return title === "Channel setup" && String(message).trim() === "telegram plugin not available.";
+      return (
+        title === "Channel setup" && String(message).trim() === "telegram plugin not available."
+      );
     });
     expect(sawHardStop).toBe(false);
   });
@@ -253,7 +275,8 @@ describe("setupChannels", () => {
 
     const sawPrimer = note.mock.calls.some(
       ([message, title]) =>
-        title === "How channels work" && String(message).includes('config set session.dmScope "per-channel-peer"'),
+        title === "How channels work" &&
+        String(message).includes('config set session.dmScope "per-channel-peer"'),
     );
     expect(sawPrimer).toBe(true);
     expect(multiselect).not.toHaveBeenCalled();
@@ -272,7 +295,9 @@ describe("setupChannels", () => {
       quickstartDefaults: true,
     });
 
-    expect(select).toHaveBeenCalledWith(expect.objectContaining({ message: "Select channel (QuickStart)" }));
+    expect(select).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "Select channel (QuickStart)" }),
+    );
     expect(select).toHaveBeenCalledWith(
       expect.objectContaining({ message: expect.stringContaining("already configured") }),
     );
@@ -363,7 +388,8 @@ describe("setupChannels", () => {
     }));
     const { cfg, selection, onAccountId, configure } = await runConfiguredTelegramSetup({
       configureWhenConfigured,
-      configureErrorMessage: "configure should not be called when configureWhenConfigured handles updates",
+      configureErrorMessage:
+        "configure should not be called when configureWhenConfigured handles updates",
     });
 
     expect(configureWhenConfigured).toHaveBeenCalledTimes(1);
@@ -405,7 +431,9 @@ describe("setupChannels", () => {
       configureInteractive,
       configureWhenConfigured,
     });
-    const { prompter } = createUnexpectedQuickstartPrompter(select as unknown as WizardPrompter["select"]);
+    const { prompter } = createUnexpectedQuickstartPrompter(
+      select as unknown as WizardPrompter["select"],
+    );
 
     try {
       await runSetupChannels(createTelegramCfg("old-token"), prompter, {

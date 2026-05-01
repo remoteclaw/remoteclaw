@@ -1,5 +1,8 @@
 import type { GatewayBonjourBeacon } from "../../infra/bonjour-discovery.js";
-import { buildGatewayDiscoveryTarget, serializeGatewayDiscoveryBeacon } from "../../infra/gateway-discovery-targets.js";
+import {
+  buildGatewayDiscoveryTarget,
+  serializeGatewayDiscoveryBeacon,
+} from "../../infra/gateway-discovery-targets.js";
 
 export function inferSshTargetFromRemoteUrl(rawUrl?: string | null): string | null {
   if (typeof rawUrl !== "string") {
@@ -22,7 +25,11 @@ export function inferSshTargetFromRemoteUrl(rawUrl?: string | null): string | nu
   return user ? `${user}@${host}` : host;
 }
 
-export function buildSshTarget(input: { user?: string; host?: string; port?: number }): string | null {
+export function buildSshTarget(input: {
+  user?: string;
+  host?: string;
+  port?: number;
+}): string | null {
   const host = input.host?.trim() ?? "";
   if (!host) {
     return null;
@@ -67,7 +74,9 @@ export async function resolveSshTarget(params: {
     return { target: params.rawTarget, identity: params.identity ?? undefined };
   }
   const identityFile =
-    params.identity ?? config.identityFiles.find((entry) => entry.trim().length > 0)?.trim() ?? undefined;
+    params.identity ??
+    config.identityFiles.find((entry) => entry.trim().length > 0)?.trim() ??
+    undefined;
   return { target, identity: identityFile };
 }
 

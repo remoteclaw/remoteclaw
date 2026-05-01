@@ -49,7 +49,8 @@ beforeEach(async () => {
       resolveGatewayPort: (...args: unknown[]) => resolveGatewayPortMock(...args),
     };
   });
-  ({ __testing, cleanStaleGatewayProcessesSync, findGatewayPidsOnPortSync } = await import("./restart-stale-pids.js"));
+  ({ __testing, cleanStaleGatewayProcessesSync, findGatewayPidsOnPortSync } =
+    await import("./restart-stale-pids.js"));
   spawnSyncMock.mockReset();
   resolveLsofCommandSyncMock.mockReset();
   resolveGatewayPortMock.mockReset();

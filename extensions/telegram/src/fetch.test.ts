@@ -8,12 +8,18 @@ const setDefaultAutoSelectFamily = vi.hoisted(() => vi.fn());
 const undiciFetch = vi.hoisted(() => vi.fn());
 const setGlobalDispatcher = vi.hoisted(() => vi.fn());
 const AgentCtor = vi.hoisted(() =>
-  vi.fn(function MockAgent(this: { options?: Record<string, unknown> }, options?: Record<string, unknown>) {
+  vi.fn(function MockAgent(
+    this: { options?: Record<string, unknown> },
+    options?: Record<string, unknown>,
+  ) {
     this.options = options;
   }),
 );
 const EnvHttpProxyAgentCtor = vi.hoisted(() =>
-  vi.fn(function MockEnvHttpProxyAgent(this: { options?: Record<string, unknown> }, options?: Record<string, unknown>) {
+  vi.fn(function MockEnvHttpProxyAgent(
+    this: { options?: Record<string, unknown> },
+    options?: Record<string, unknown>,
+  ) {
     this.options = options;
   }),
 );
@@ -148,7 +154,9 @@ function expectPinnedIpv4ConnectDispatcher(args: {
 
 function expectCallerDispatcherPreserved(callIndexes: number[], dispatcher: unknown) {
   for (const callIndex of callIndexes) {
-    const callInit = undiciFetch.mock.calls[callIndex - 1]?.[1] as (RequestInit & { dispatcher?: unknown }) | undefined;
+    const callInit = undiciFetch.mock.calls[callIndex - 1]?.[1] as
+      | (RequestInit & { dispatcher?: unknown })
+      | undefined;
     expect(callInit?.dispatcher).toBe(dispatcher);
   }
 }
@@ -158,7 +166,9 @@ async function expectNoStickyRetryWithSameDispatcher(params: {
   expectedAgentCtor: typeof ProxyAgentCtor | typeof EnvHttpProxyAgentCtor;
   field: "connect" | "proxyTls";
 }) {
-  await expect(params.resolved("https://api.telegram.org/botx/sendMessage")).rejects.toThrow("fetch failed");
+  await expect(params.resolved("https://api.telegram.org/botx/sendMessage")).rejects.toThrow(
+    "fetch failed",
+  );
   await params.resolved("https://api.telegram.org/botx/sendChatAction");
 
   expect(undiciFetch).toHaveBeenCalledTimes(2);
@@ -577,7 +587,9 @@ describe("resolveTelegramFetch", () => {
       },
     });
 
-    await expect(resolved("https://api.telegram.org/botx/sendMessage")).rejects.toThrow("fetch failed");
+    await expect(resolved("https://api.telegram.org/botx/sendMessage")).rejects.toThrow(
+      "fetch failed",
+    );
 
     expect(undiciFetch).toHaveBeenCalledTimes(1);
   });

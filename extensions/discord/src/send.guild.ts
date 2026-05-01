@@ -24,7 +24,10 @@ export async function fetchMemberInfoDiscord(
   return (await rest.get(Routes.guildMember(guildId, userId))) as APIGuildMember;
 }
 
-export async function fetchRoleInfoDiscord(guildId: string, opts: DiscordReactOpts = {}): Promise<APIRole[]> {
+export async function fetchRoleInfoDiscord(
+  guildId: string,
+  opts: DiscordReactOpts = {},
+): Promise<APIRole[]> {
   const rest = resolveDiscordRest(opts);
   return (await rest.get(Routes.guildRoles(guildId))) as APIRole[];
 }
@@ -41,12 +44,18 @@ export async function removeRoleDiscord(payload: DiscordRoleChange, opts: Discor
   return { ok: true };
 }
 
-export async function fetchChannelInfoDiscord(channelId: string, opts: DiscordReactOpts = {}): Promise<APIChannel> {
+export async function fetchChannelInfoDiscord(
+  channelId: string,
+  opts: DiscordReactOpts = {},
+): Promise<APIChannel> {
   const rest = resolveDiscordRest(opts);
   return (await rest.get(Routes.channel(channelId))) as APIChannel;
 }
 
-export async function listGuildChannelsDiscord(guildId: string, opts: DiscordReactOpts = {}): Promise<APIChannel[]> {
+export async function listGuildChannelsDiscord(
+  guildId: string,
+  opts: DiscordReactOpts = {},
+): Promise<APIChannel[]> {
   const rest = resolveDiscordRest(opts);
   return (await rest.get(Routes.guildChannels(guildId))) as APIChannel[];
 }
@@ -91,14 +100,21 @@ export async function timeoutMemberDiscord(
   }
   return (await rest.patch(Routes.guildMember(payload.guildId, payload.userId), {
     body: { communication_disabled_until: until ?? null },
-    headers: payload.reason ? { "X-Audit-Log-Reason": encodeURIComponent(payload.reason) } : undefined,
+    headers: payload.reason
+      ? { "X-Audit-Log-Reason": encodeURIComponent(payload.reason) }
+      : undefined,
   })) as APIGuildMember;
 }
 
-export async function kickMemberDiscord(payload: DiscordModerationTarget, opts: DiscordReactOpts = {}) {
+export async function kickMemberDiscord(
+  payload: DiscordModerationTarget,
+  opts: DiscordReactOpts = {},
+) {
   const rest = resolveDiscordRest(opts);
   await rest.delete(Routes.guildMember(payload.guildId, payload.userId), {
-    headers: payload.reason ? { "X-Audit-Log-Reason": encodeURIComponent(payload.reason) } : undefined,
+    headers: payload.reason
+      ? { "X-Audit-Log-Reason": encodeURIComponent(payload.reason) }
+      : undefined,
   });
   return { ok: true };
 }
@@ -114,7 +130,9 @@ export async function banMemberDiscord(
       : undefined;
   await rest.put(Routes.guildBan(payload.guildId, payload.userId), {
     body: deleteMessageDays !== undefined ? { delete_message_days: deleteMessageDays } : undefined,
-    headers: payload.reason ? { "X-Audit-Log-Reason": encodeURIComponent(payload.reason) } : undefined,
+    headers: payload.reason
+      ? { "X-Audit-Log-Reason": encodeURIComponent(payload.reason) }
+      : undefined,
   });
   return { ok: true };
 }

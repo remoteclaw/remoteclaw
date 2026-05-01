@@ -172,10 +172,15 @@ function resolveGatewayLockPath(env: NodeJS.ProcessEnv, lockDir = resolveGateway
   return { lockPath, configPath };
 }
 
-export async function acquireGatewayLock(opts: GatewayLockOptions = {}): Promise<GatewayLockHandle | null> {
+export async function acquireGatewayLock(
+  opts: GatewayLockOptions = {},
+): Promise<GatewayLockHandle | null> {
   const env = opts.env ?? process.env;
   const allowInTests = opts.allowInTests === true;
-  if (env.REMOTECLAW_ALLOW_MULTI_GATEWAY === "1" || (!allowInTests && (env.VITEST || env.NODE_ENV === "test"))) {
+  if (
+    env.REMOTECLAW_ALLOW_MULTI_GATEWAY === "1" ||
+    (!allowInTests && (env.VITEST || env.NODE_ENV === "test"))
+  ) {
     return null;
   }
 
@@ -185,7 +190,8 @@ export async function acquireGatewayLock(opts: GatewayLockOptions = {}): Promise
   const platform = opts.platform ?? process.platform;
   const port = opts.port;
   const now = opts.now ?? Date.now;
-  const sleep = opts.sleep ?? (async (ms: number) => await new Promise((resolve) => setTimeout(resolve, ms)));
+  const sleep =
+    opts.sleep ?? (async (ms: number) => await new Promise((resolve) => setTimeout(resolve, ms)));
   const { lockPath, configPath } = resolveGatewayLockPath(env, opts.lockDir);
   await fs.mkdir(path.dirname(lockPath), { recursive: true });
 
@@ -221,7 +227,9 @@ export async function acquireGatewayLock(opts: GatewayLockOptions = {}): Promise
 
       lastPayload = await readLockPayload(lockPath);
       const ownerPid = lastPayload?.pid;
-      const ownerStatus = ownerPid ? await resolveGatewayOwnerStatus(ownerPid, lastPayload, platform, port) : "unknown";
+      const ownerStatus = ownerPid
+        ? await resolveGatewayOwnerStatus(ownerPid, lastPayload, platform, port)
+        : "unknown";
       if (ownerStatus === "dead" && ownerPid) {
         await fs.rm(lockPath, { force: true });
         continue;

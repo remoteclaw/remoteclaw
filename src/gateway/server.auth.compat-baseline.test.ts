@@ -34,7 +34,10 @@ function expectAuthErrorDetails(params: {
   }
 }
 
-async function expectSharedOperatorScopesCleared(port: number, auth: { token?: string; password?: string }) {
+async function expectSharedOperatorScopesCleared(
+  port: number,
+  auth: { token?: string; password?: string },
+) {
   const ws = await openWs(port);
   try {
     const res = await connectReq(ws, {

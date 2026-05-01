@@ -110,7 +110,10 @@ async function promptMSTeamsAllowFrom(params: {
     if (!resolved) {
       const ids = parts.filter((part) => looksLikeGuid(part));
       if (ids.length !== parts.length) {
-        await params.prompter.note("Graph lookup unavailable. Use user IDs only.", "MS Teams allowlist");
+        await params.prompter.note(
+          "Graph lookup unavailable. Use user IDs only.",
+          "MS Teams allowlist",
+        );
         continue;
       }
       const unique = mergeAllowFromEntries(existing, ids);
@@ -235,7 +238,8 @@ export const msteamsOnboardingAdapter: ChannelOnboardingAdapter = {
 
     if (canUseEnv) {
       const keepEnv = await prompter.confirm({
-        message: "MSTEAMS_APP_ID + MSTEAMS_APP_PASSWORD + MSTEAMS_TENANT_ID detected. Use env vars?",
+        message:
+          "MSTEAMS_APP_ID + MSTEAMS_APP_PASSWORD + MSTEAMS_TENANT_ID detected. Use env vars?",
         initialValue: true,
       });
       if (keepEnv) {
@@ -277,14 +281,16 @@ export const msteamsOnboardingAdapter: ChannelOnboardingAdapter = {
       };
     }
 
-    const currentEntries = Object.entries(next.channels?.msteams?.teams ?? {}).flatMap(([teamKey, value]) => {
-      const channels = value?.channels ?? {};
-      const channelKeys = Object.keys(channels);
-      if (channelKeys.length === 0) {
-        return [teamKey];
-      }
-      return channelKeys.map((channelKey) => `${teamKey}/${channelKey}`);
-    });
+    const currentEntries = Object.entries(next.channels?.msteams?.teams ?? {}).flatMap(
+      ([teamKey, value]) => {
+        const channels = value?.channels ?? {};
+        const channelKeys = Object.keys(channels);
+        if (channelKeys.length === 0) {
+          return [teamKey];
+        }
+        return channelKeys.map((channelKey) => `${teamKey}/${channelKey}`);
+      },
+    );
     const accessConfig = await promptChannelAccessConfig({
       prompter,
       label: "MS Teams channels",
@@ -297,7 +303,9 @@ export const msteamsOnboardingAdapter: ChannelOnboardingAdapter = {
       if (accessConfig.policy !== "allowlist") {
         next = setMSTeamsGroupPolicy(next, accessConfig.policy);
       } else {
-        let entries = accessConfig.entries.map((entry) => parseMSTeamsTeamEntry(entry)).filter(Boolean) as Array<{
+        let entries = accessConfig.entries
+          .map((entry) => parseMSTeamsTeamEntry(entry))
+          .filter(Boolean) as Array<{
           teamKey: string;
           channelKey?: string;
         }>;
@@ -307,9 +315,15 @@ export const msteamsOnboardingAdapter: ChannelOnboardingAdapter = {
               cfg: next,
               entries: accessConfig.entries,
             });
-            const resolvedChannels = resolved.filter((entry) => entry.resolved && entry.teamId && entry.channelId);
-            const resolvedTeams = resolved.filter((entry) => entry.resolved && entry.teamId && !entry.channelId);
-            const unresolved = resolved.filter((entry) => !entry.resolved).map((entry) => entry.input);
+            const resolvedChannels = resolved.filter(
+              (entry) => entry.resolved && entry.teamId && entry.channelId,
+            );
+            const resolvedTeams = resolved.filter(
+              (entry) => entry.resolved && entry.teamId && !entry.channelId,
+            );
+            const unresolved = resolved
+              .filter((entry) => !entry.resolved)
+              .map((entry) => entry.input);
 
             entries = [
               ...resolvedChannels.map((entry) => ({
@@ -346,7 +360,10 @@ export const msteamsOnboardingAdapter: ChannelOnboardingAdapter = {
               await prompter.note(summary.join("\n"), "MS Teams channels");
             }
           } catch (err) {
-            await prompter.note(`Channel lookup failed; keeping entries as typed. ${String(err)}`, "MS Teams channels");
+            await prompter.note(
+              `Channel lookup failed; keeping entries as typed. ${String(err)}`,
+              "MS Teams channels",
+            );
           }
         }
         next = setMSTeamsGroupPolicy(next, "allowlist");

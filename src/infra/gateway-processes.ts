@@ -43,11 +43,15 @@ function readWindowsProcessArgsViaPowerShell(pid: number): string[] | null {
 }
 
 function readWindowsProcessArgsViaWmic(pid: number): string[] | null {
-  const wmic = spawnSync("wmic", ["process", "where", `ProcessId=${pid}`, "get", "CommandLine", "/value"], {
-    encoding: "utf8",
-    timeout: WINDOWS_GATEWAY_DISCOVERY_TIMEOUT_MS,
-    windowsHide: true,
-  });
+  const wmic = spawnSync(
+    "wmic",
+    ["process", "where", `ProcessId=${pid}`, "get", "CommandLine", "/value"],
+    {
+      encoding: "utf8",
+      timeout: WINDOWS_GATEWAY_DISCOVERY_TIMEOUT_MS,
+      windowsHide: true,
+    },
+  );
   if (wmic.error || wmic.status !== 0) {
     return null;
   }
@@ -141,7 +145,9 @@ export function signalVerifiedGatewayPidSync(pid: number, signal: "SIGTERM" | "S
 
 export function findVerifiedGatewayListenerPidsOnPortSync(port: number): number[] {
   const rawPids =
-    process.platform === "win32" ? readWindowsListeningPidsOnPortSync(port) : findUnixGatewayPidsOnPortSync(port);
+    process.platform === "win32"
+      ? readWindowsListeningPidsOnPortSync(port)
+      : findUnixGatewayPidsOnPortSync(port);
 
   return Array.from(new Set(rawPids))
     .filter((pid): pid is number => Number.isFinite(pid) && pid > 0 && pid !== process.pid)

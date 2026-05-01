@@ -71,10 +71,14 @@ export async function maybeRemoveDeprecatedCliAuthProfiles(
 
   const lines = ["Deprecated external CLI auth profiles detected (no longer supported):"];
   if (deprecated.has(CLAUDE_CLI_PROFILE_ID)) {
-    lines.push(`- ${CLAUDE_CLI_PROFILE_ID} (Anthropic): use ${formatCliCommand("remoteclaw configure")}`);
+    lines.push(
+      `- ${CLAUDE_CLI_PROFILE_ID} (Anthropic): use ${formatCliCommand("remoteclaw configure")}`,
+    );
   }
   if (deprecated.has(CODEX_CLI_PROFILE_ID)) {
-    lines.push(`- ${CODEX_CLI_PROFILE_ID} (OpenAI Codex): use ${formatCliCommand("remoteclaw configure")}`);
+    lines.push(
+      `- ${CODEX_CLI_PROFILE_ID} (OpenAI Codex): use ${formatCliCommand("remoteclaw configure")}`,
+    );
   }
   note(lines.join("\n"), "Auth profiles");
 
@@ -117,7 +121,10 @@ type AuthIssue = {
   status: string;
 };
 
-export function resolveUnusableProfileHint(params: { kind: "cooldown" | "disabled"; reason?: string }): string {
+export function resolveUnusableProfileHint(params: {
+  kind: "cooldown" | "disabled";
+  reason?: string;
+}): string {
   if (params.kind === "disabled") {
     if (params.reason === "billing") {
       return "Top up credits (provider billing) or switch provider.";

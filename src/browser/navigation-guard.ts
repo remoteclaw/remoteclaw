@@ -25,7 +25,9 @@ export type BrowserNavigationPolicyOptions = {
   ssrfPolicy?: SsrFPolicy;
 };
 
-export function withBrowserNavigationPolicy(ssrfPolicy?: SsrFPolicy): BrowserNavigationPolicyOptions {
+export function withBrowserNavigationPolicy(
+  ssrfPolicy?: SsrFPolicy,
+): BrowserNavigationPolicyOptions {
   return ssrfPolicy ? { ssrfPolicy } : {};
 }
 
@@ -51,7 +53,9 @@ export async function assertBrowserNavigationAllowed(
     if (isAllowedNonNetworkNavigationUrl(parsed)) {
       return;
     }
-    throw new InvalidBrowserNavigationUrlError(`Navigation blocked: unsupported protocol "${parsed.protocol}"`);
+    throw new InvalidBrowserNavigationUrlError(
+      `Navigation blocked: unsupported protocol "${parsed.protocol}"`,
+    );
   }
 
   // Browser network stacks may apply env proxy routing at connect-time, which
@@ -91,7 +95,10 @@ export async function assertBrowserNavigationResultAllowed(
   } catch {
     return;
   }
-  if (NETWORK_NAVIGATION_PROTOCOLS.has(parsed.protocol) || isAllowedNonNetworkNavigationUrl(parsed)) {
+  if (
+    NETWORK_NAVIGATION_PROTOCOLS.has(parsed.protocol) ||
+    isAllowedNonNetworkNavigationUrl(parsed)
+  ) {
     await assertBrowserNavigationAllowed(opts);
   }
 }

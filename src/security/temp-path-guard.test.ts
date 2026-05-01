@@ -10,7 +10,8 @@ type QuoteScanState = {
   quote: QuoteChar | null;
   escaped: boolean;
 };
-const WEAK_RANDOM_SAME_LINE_PATTERN = /(?:Date\.now[^\r\n]*Math\.random|Math\.random[^\r\n]*Date\.now)/u;
+const WEAK_RANDOM_SAME_LINE_PATTERN =
+  /(?:Date\.now[^\r\n]*Math\.random|Math\.random[^\r\n]*Date\.now)/u;
 const PATH_JOIN_CALL_PATTERN = /path\s*\.\s*join\s*\(/u;
 const OS_TMPDIR_CALL_PATTERN = /os\s*\.\s*tmpdir\s*\(/u;
 
@@ -221,7 +222,10 @@ describe("temp path guard", () => {
       const relativePath = file.relativePath;
       const source = file.source;
       const mightContainTmpdirJoin =
-        source.includes("tmpdir") && source.includes("path") && source.includes("join") && source.includes("`");
+        source.includes("tmpdir") &&
+        source.includes("path") &&
+        source.includes("join") &&
+        source.includes("`");
       const mightContainWeakRandom = source.includes("Date.now") && source.includes("Math.random");
 
       if (!mightContainTmpdirJoin && !mightContainWeakRandom) {

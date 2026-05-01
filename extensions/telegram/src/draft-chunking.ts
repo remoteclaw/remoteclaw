@@ -23,9 +23,15 @@ export function resolveTelegramDraftStreamingChunking(
   const accountCfg = resolveAccountEntry(cfg?.channels?.telegram?.accounts, normalizedAccountId);
   const draftCfg = accountCfg?.draftChunk ?? cfg?.channels?.telegram?.draftChunk;
 
-  const maxRequested = Math.max(1, Math.floor(draftCfg?.maxChars ?? DEFAULT_TELEGRAM_DRAFT_STREAM_MAX));
+  const maxRequested = Math.max(
+    1,
+    Math.floor(draftCfg?.maxChars ?? DEFAULT_TELEGRAM_DRAFT_STREAM_MAX),
+  );
   const maxChars = Math.max(1, Math.min(maxRequested, textLimit));
-  const minRequested = Math.max(1, Math.floor(draftCfg?.minChars ?? DEFAULT_TELEGRAM_DRAFT_STREAM_MIN));
+  const minRequested = Math.max(
+    1,
+    Math.floor(draftCfg?.minChars ?? DEFAULT_TELEGRAM_DRAFT_STREAM_MIN),
+  );
   const minChars = Math.min(minRequested, maxChars);
   const breakPreference =
     draftCfg?.breakPreference === "newline" || draftCfg?.breakPreference === "sentence"

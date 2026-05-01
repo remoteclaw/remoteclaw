@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { SubagentRunRecord } from "../../agents/subagent-registry.js";
-import { resolveSubagentLabel, resolveSubagentTargetFromRuns, sortSubagentRuns } from "./subagents-utils.js";
+import {
+  resolveSubagentLabel,
+  resolveSubagentTargetFromRuns,
+  sortSubagentRuns,
+} from "./subagents-utils.js";
 
 const NOW_MS = 1_700_000_000_000;
 
@@ -119,7 +123,10 @@ describe("subagents utils", () => {
   });
 
   it("returns ambiguous exact label error before prefix/run id matching", () => {
-    const runs = [makeRun({ runId: "run-a", label: "dup" }), makeRun({ runId: "run-b", label: "dup" })];
+    const runs = [
+      makeRun({ runId: "run-a", label: "dup" }),
+      makeRun({ runId: "run-b", label: "dup" }),
+    ];
     expect(resolveTarget(runs, "dup").error).toBe("ambiguous-label:dup");
   });
 

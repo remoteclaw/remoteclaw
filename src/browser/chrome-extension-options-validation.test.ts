@@ -16,7 +16,10 @@ type RelayCheckStatus =
 type RelayCheckExceptionStatus = { kind: "error"; message: string };
 
 type OptionsValidationModule = {
-  classifyRelayCheckResponse: (res: RelayCheckResponse | null | undefined, port: number) => RelayCheckStatus;
+  classifyRelayCheckResponse: (
+    res: RelayCheckResponse | null | undefined,
+    port: number,
+  ) => RelayCheckStatus;
   classifyRelayCheckException: (err: unknown, port: number) => RelayCheckExceptionStatus;
 };
 
@@ -94,7 +97,8 @@ describe("chrome extension options validation", () => {
     const result = classifyRelayCheckException(new Error("SyntaxError: Unexpected token <"), 18792);
     expect(result).toEqual({
       kind: "error",
-      message: "Wrong port: this is not a relay endpoint. Use gateway port + 3 (for gateway 18789, relay is 18792).",
+      message:
+        "Wrong port: this is not a relay endpoint. Use gateway port + 3 (for gateway 18789, relay is 18792).",
     });
   });
 

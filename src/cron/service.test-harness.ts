@@ -67,7 +67,10 @@ export async function writeCronStoreSnapshot(params: { storePath: string; jobs: 
   );
 }
 
-export function installCronTestHooks(options: { logger: ReturnType<typeof createNoopLogger>; baseTimeIso?: string }) {
+export function installCronTestHooks(options: {
+  logger: ReturnType<typeof createNoopLogger>;
+  baseTimeIso?: string;
+}) {
   beforeEach(() => {
     vi.useFakeTimers();
     // Shared unit-thread workers run with isolate disabled, so leaked cron
@@ -165,7 +168,8 @@ export async function withCronServiceForTest(
     enqueueSystemEvent,
     requestHeartbeatNow,
     runIsolatedAgentJob:
-      params.runIsolatedAgentJob ?? (vi.fn(async () => ({ status: "ok" as const, summary: "done" })) as never),
+      params.runIsolatedAgentJob ??
+      (vi.fn(async () => ({ status: "ok" as const, summary: "done" })) as never),
   });
 
   await cron.start();
@@ -228,7 +232,10 @@ export function createDeferred<T>() {
   return { promise, resolve, reject };
 }
 
-export function createMockCronStateForJobs(params: { jobs: CronJob[]; nowMs?: number }): CronServiceState {
+export function createMockCronStateForJobs(params: {
+  jobs: CronJob[];
+  nowMs?: number;
+}): CronServiceState {
   const nowMs = params.nowMs ?? Date.now();
   return {
     store: { version: 1, jobs: params.jobs },

@@ -19,7 +19,8 @@ let ensureGatewayStartupAuth: typeof import("./startup-auth.js").ensureGatewaySt
 
 async function loadFreshStartupAuthModuleForTest() {
   vi.resetModules();
-  ({ assertHooksTokenSeparateFromGatewayAuth, ensureGatewayStartupAuth } = await import("./startup-auth.js"));
+  ({ assertHooksTokenSeparateFromGatewayAuth, ensureGatewayStartupAuth } =
+    await import("./startup-auth.js"));
 }
 
 describe("ensureGatewayStartupAuth", () => {

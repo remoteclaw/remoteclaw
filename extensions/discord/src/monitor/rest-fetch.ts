@@ -3,7 +3,10 @@ import { danger } from "../../../../src/globals.js";
 import { wrapFetchWithAbortSignal } from "../../../../src/infra/fetch.js";
 import type { RuntimeEnv } from "../../../../src/runtime.js";
 
-export function resolveDiscordRestFetch(proxyUrl: string | undefined, runtime: RuntimeEnv): typeof fetch {
+export function resolveDiscordRestFetch(
+  proxyUrl: string | undefined,
+  runtime: RuntimeEnv,
+): typeof fetch {
   const proxy = proxyUrl?.trim();
   if (!proxy) {
     return fetch;

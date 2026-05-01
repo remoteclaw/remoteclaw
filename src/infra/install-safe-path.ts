@@ -68,7 +68,12 @@ export function resolveSafeInstallDir(params: {
   const resolvedBase = path.resolve(params.baseDir);
   const resolvedTarget = path.resolve(targetDir);
   const relative = path.relative(resolvedBase, resolvedTarget);
-  if (!relative || relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+  if (
+    !relative ||
+    relative === ".." ||
+    relative.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relative)
+  ) {
     return { ok: false, error: params.invalidNameMessage };
   }
   return { ok: true, path: targetDir };

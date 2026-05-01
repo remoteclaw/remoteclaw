@@ -3,7 +3,12 @@ export { resolveAgentDir, resolveAgentWorkspaceDir } from "./agents/agent-scope.
 export { resolveAgentIdentity } from "./agents/identity.ts";
 export { resolveAgentTimeoutMs } from "./agents/timeout.ts";
 export { ensureAgentWorkspace } from "./agents/workspace.ts";
-export { resolveStorePath, loadSessionStore, saveSessionStore, resolveSessionFilePath } from "./config/sessions.ts";
+export {
+  resolveStorePath,
+  loadSessionStore,
+  saveSessionStore,
+  resolveSessionFilePath,
+} from "./config/sessions.ts";
 
 export { ChannelBridge } from "./middleware/channel-bridge.ts";
 export { resolveGatewayPort } from "./config/paths.ts";

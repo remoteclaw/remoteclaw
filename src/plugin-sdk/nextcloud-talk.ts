@@ -17,7 +17,10 @@ export {
 } from "../channels/plugins/config-helpers.js";
 export { buildChannelConfigSchema } from "../channels/plugins/config-schema.js";
 export { formatPairingApproveHint } from "../channels/plugins/helpers.js";
-export type { ChannelOnboardingAdapter, ChannelOnboardingDmPolicy } from "../channels/plugins/onboarding-types.js";
+export type {
+  ChannelOnboardingAdapter,
+  ChannelOnboardingDmPolicy,
+} from "../channels/plugins/onboarding-types.js";
 export {
   buildSingleChannelSecretPromptState,
   addWildcardAllowFrom,
@@ -28,7 +31,10 @@ export {
   resolveAccountIdForConfigure,
   setTopLevelChannelDmPolicyWithAllowFrom,
 } from "../channels/plugins/onboarding/helpers.js";
-export { applyAccountNameToChannelSection, patchScopedAccountConfig } from "../channels/plugins/setup-helpers.js";
+export {
+  applyAccountNameToChannelSection,
+  patchScopedAccountConfig,
+} from "../channels/plugins/setup-helpers.js";
 export { createAccountListHelpers } from "../channels/plugins/account-helpers.js";
 export type { ChannelGroupContext, ChannelSetupInput } from "../channels/plugins/types.js";
 export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
@@ -67,7 +73,11 @@ export {
   requireOpenAllowFrom,
 } from "../config/zod-schema.core.js";
 export { createAuthRateLimiter } from "../gateway/auth-rate-limit.js";
-export { isRequestBodyLimitError, readRequestBodyWithLimit, requestBodyErrorToText } from "../infra/http-body.js";
+export {
+  isRequestBodyLimitError,
+  readRequestBodyWithLimit,
+  requestBodyErrorToText,
+} from "../infra/http-body.js";
 export { waitForAbortSignal } from "../infra/abort-signal.js";
 export { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
 export { emptyPluginConfigSchema } from "../plugins/config-schema.js";
@@ -75,10 +85,16 @@ export type { PluginRuntime } from "../plugins/runtime/types.js";
 export type { RemoteClawPluginApi } from "../plugins/types.js";
 export { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../routing/session-key.js";
 export type { RuntimeEnv } from "../runtime.js";
-export { readStoreAllowFromForDmPolicy, resolveDmGroupAccessWithCommandGate } from "../security/dm-policy-shared.js";
+export {
+  readStoreAllowFromForDmPolicy,
+  resolveDmGroupAccessWithCommandGate,
+} from "../security/dm-policy-shared.js";
 export { formatDocsLink } from "../terminal/links.js";
 export type { WizardPrompter } from "../wizard/prompts.js";
-export { listConfiguredAccountIds, resolveAccountWithDefaultFallback } from "./account-resolution.js";
+export {
+  listConfiguredAccountIds,
+  resolveAccountWithDefaultFallback,
+} from "./account-resolution.js";
 export { createScopedPairingAccess } from "./pairing-access.js";
 export { issuePairingChallenge } from "../pairing/pairing-challenge.js";
 export { createPersistentDedupe } from "./persistent-dedupe.js";
@@ -90,4 +106,7 @@ export {
 } from "./reply-payload.js";
 export { dispatchInboundReplyWithBase } from "./inbound-reply-dispatch.js";
 export { createLoggerBackedRuntime } from "./runtime.js";
-export { buildBaseChannelStatusSummary, buildRuntimeAccountStatusSnapshot } from "./status-helpers.js";
+export {
+  buildBaseChannelStatusSummary,
+  buildRuntimeAccountStatusSnapshot,
+} from "./status-helpers.js";

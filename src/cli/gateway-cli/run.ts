@@ -84,7 +84,12 @@ const GATEWAY_RUN_BOOLEAN_KEYS = [
 
 const SUPERVISED_GATEWAY_LOCK_RETRY_MS = 5000;
 
-const GATEWAY_AUTH_MODES: readonly GatewayAuthMode[] = ["none", "token", "password", "trusted-proxy"];
+const GATEWAY_AUTH_MODES: readonly GatewayAuthMode[] = [
+  "none",
+  "token",
+  "password",
+  "trusted-proxy",
+];
 const GATEWAY_TAILSCALE_MODES: readonly GatewayTailscaleMode[] = ["off", "serve", "funnel"];
 
 function warnInlinePasswordFlag() {
@@ -105,7 +110,10 @@ function resolveGatewayPasswordOption(opts: GatewayRunOpts): string | undefined 
   return direct;
 }
 
-function parseEnumOption<T extends string>(raw: string | undefined, allowed: readonly T[]): T | null {
+function parseEnumOption<T extends string>(
+  raw: string | undefined,
+  allowed: readonly T[],
+): T | null {
   if (!raw) {
     return null;
   }
@@ -184,8 +192,14 @@ async function runGatewayCommand(opts: GatewayRunOpts) {
     process.env.REMOTECLAW_CLAUDE_CLI_LOG_OUTPUT = "1";
   }
   const wsLogRaw = (opts.compact ? "compact" : opts.wsLog) as string | undefined;
-  const wsLogStyle: GatewayWsLogStyle = wsLogRaw === "compact" ? "compact" : wsLogRaw === "full" ? "full" : "auto";
-  if (wsLogRaw !== undefined && wsLogRaw !== "auto" && wsLogRaw !== "compact" && wsLogRaw !== "full") {
+  const wsLogStyle: GatewayWsLogStyle =
+    wsLogRaw === "compact" ? "compact" : wsLogRaw === "full" ? "full" : "auto";
+  if (
+    wsLogRaw !== undefined &&
+    wsLogRaw !== "auto" &&
+    wsLogRaw !== "compact" &&
+    wsLogRaw !== "full"
+  ) {
     defaultRuntime.error('Invalid --ws-log (use "auto", "full", "compact")');
     defaultRuntime.exit(1);
   }
@@ -212,7 +226,11 @@ async function runGatewayCommand(opts: GatewayRunOpts) {
   }
   const bindRaw = toOptionString(opts.bind) ?? cfg.gateway?.bind ?? "loopback";
   const bind =
-    bindRaw === "loopback" || bindRaw === "lan" || bindRaw === "auto" || bindRaw === "custom" || bindRaw === "tailnet"
+    bindRaw === "loopback" ||
+    bindRaw === "lan" ||
+    bindRaw === "auto" ||
+    bindRaw === "custom" ||
+    bindRaw === "tailnet"
       ? bindRaw
       : null;
   if (!bind) {
@@ -223,7 +241,9 @@ async function runGatewayCommand(opts: GatewayRunOpts) {
   if (process.env.REMOTECLAW_SERVICE_MARKER?.trim()) {
     const stale = cleanStaleGatewayProcessesSync(port);
     if (stale.length > 0) {
-      gatewayLog.info(`service-mode: cleared ${stale.length} stale gateway pid(s) before bind on port ${port}`);
+      gatewayLog.info(
+        `service-mode: cleared ${stale.length} stale gateway pid(s) before bind on port ${port}`,
+      );
     }
   }
   if (opts.force) {
@@ -237,7 +257,9 @@ async function runGatewayCommand(opts: GatewayRunOpts) {
         gatewayLog.info(`force: no listeners on port ${port}`);
       } else {
         for (const proc of killed) {
-          gatewayLog.info(`force: killed pid ${proc.pid}${proc.command ? ` (${proc.command})` : ""} on port ${port}`);
+          gatewayLog.info(
+            `force: killed pid ${proc.pid}${proc.command ? ` (${proc.command})` : ""} on port ${port}`,
+          );
         }
         if (escalatedToSigkill) {
           gatewayLog.info(`force: escalated to SIGKILL while freeing port ${port}`);
@@ -285,7 +307,9 @@ async function runGatewayCommand(opts: GatewayRunOpts) {
   const tailscaleRaw = toOptionString(opts.tailscale);
   const tailscaleMode = parseEnumOption(tailscaleRaw, GATEWAY_TAILSCALE_MODES);
   if (tailscaleRaw && !tailscaleMode) {
-    defaultRuntime.error(`Invalid --tailscale (use ${formatModeErrorList(GATEWAY_TAILSCALE_MODES)})`);
+    defaultRuntime.error(
+      `Invalid --tailscale (use ${formatModeErrorList(GATEWAY_TAILSCALE_MODES)})`,
+    );
     defaultRuntime.exit(1);
     return;
   }
@@ -342,19 +366,29 @@ async function runGatewayCommand(opts: GatewayRunOpts) {
   const hasToken = typeof tokenValue === "string" && tokenValue.trim().length > 0;
   const hasPassword = typeof passwordValue === "string" && passwordValue.trim().length > 0;
   const tokenConfigured =
-    hasToken || hasConfiguredSecretInput(authOverride?.token ?? cfg.gateway?.auth?.token, cfg.secrets?.defaults);
+    hasToken ||
+    hasConfiguredSecretInput(
+      authOverride?.token ?? cfg.gateway?.auth?.token,
+      cfg.secrets?.defaults,
+    );
   const passwordConfigured =
     hasPassword ||
-    hasConfiguredSecretInput(authOverride?.password ?? cfg.gateway?.auth?.password, cfg.secrets?.defaults);
+    hasConfiguredSecretInput(
+      authOverride?.password ?? cfg.gateway?.auth?.password,
+      cfg.secrets?.defaults,
+    );
   const hasSharedSecret =
-    (resolvedAuthMode === "token" && tokenConfigured) || (resolvedAuthMode === "password" && passwordConfigured);
+    (resolvedAuthMode === "token" && tokenConfigured) ||
+    (resolvedAuthMode === "password" && passwordConfigured);
   const canBootstrapToken = resolvedAuthMode === "token" && !tokenConfigured;
   const authHints: string[] = [];
   if (miskeys.hasGatewayToken) {
     authHints.push('Found "gateway.token" in config. Use "gateway.auth.token" instead.');
   }
   if (miskeys.hasRemoteToken) {
-    authHints.push('"gateway.remote.token" is for remote CLI calls; it does not enable local gateway auth.');
+    authHints.push(
+      '"gateway.remote.token" is for remote CLI calls; it does not enable local gateway auth.',
+    );
   }
   if (resolvedAuthMode === "password" && !passwordConfigured) {
     defaultRuntime.error(
@@ -370,9 +404,16 @@ async function runGatewayCommand(opts: GatewayRunOpts) {
     return;
   }
   if (resolvedAuthMode === "none") {
-    gatewayLog.warn("Gateway auth mode=none explicitly configured; all gateway connections are unauthenticated.");
+    gatewayLog.warn(
+      "Gateway auth mode=none explicitly configured; all gateway connections are unauthenticated.",
+    );
   }
-  if (bind !== "loopback" && !hasSharedSecret && !canBootstrapToken && resolvedAuthMode !== "trusted-proxy") {
+  if (
+    bind !== "loopback" &&
+    !hasSharedSecret &&
+    !canBootstrapToken &&
+    resolvedAuthMode !== "trusted-proxy"
+  ) {
     defaultRuntime.error(
       [
         `Refusing to bind gateway to ${bind} without auth.`,
@@ -464,14 +505,33 @@ export function addGatewayRunCommand(cmd: Command): Command {
     .option("--auth <mode>", `Gateway auth mode (${formatModeChoices(GATEWAY_AUTH_MODES)})`)
     .option("--password <password>", "Password for auth mode=password")
     .option("--password-file <path>", "Read gateway password from file")
-    .option("--tailscale <mode>", `Tailscale exposure mode (${formatModeChoices(GATEWAY_TAILSCALE_MODES)})`)
-    .option("--tailscale-reset-on-exit", "Reset Tailscale serve/funnel configuration on shutdown", false)
-    .option("--allow-unconfigured", "Allow gateway start without gateway.mode=local in config", false)
+    .option(
+      "--tailscale <mode>",
+      `Tailscale exposure mode (${formatModeChoices(GATEWAY_TAILSCALE_MODES)})`,
+    )
+    .option(
+      "--tailscale-reset-on-exit",
+      "Reset Tailscale serve/funnel configuration on shutdown",
+      false,
+    )
+    .option(
+      "--allow-unconfigured",
+      "Allow gateway start without gateway.mode=local in config",
+      false,
+    )
     .option("--dev", "Create a dev config + workspace if missing (no BOOTSTRAP.md)", false)
-    .option("--reset", "Reset dev config + credentials + sessions + workspace (requires --dev)", false)
+    .option(
+      "--reset",
+      "Reset dev config + credentials + sessions + workspace (requires --dev)",
+      false,
+    )
     .option("--force", "Kill any existing listener on the target port before starting", false)
     .option("--verbose", "Verbose logging to stdout/stderr", false)
-    .option("--claude-cli-logs", "Only show claude-cli logs in the console (includes stdout/stderr)", false)
+    .option(
+      "--claude-cli-logs",
+      "Only show claude-cli logs in the console (includes stdout/stderr)",
+      false,
+    )
     .option("--ws-log <style>", 'WebSocket log style ("auto"|"full"|"compact")', "auto")
     .option("--compact", 'Alias for "--ws-log compact"', false)
     .option("--raw-stream", "Log raw model stream events to jsonl", false)

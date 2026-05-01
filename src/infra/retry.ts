@@ -48,8 +48,14 @@ export function resolveRetryConfig(
   overrides?: RetryConfig,
 ): Required<RetryConfig> {
   const attempts = Math.max(1, Math.round(clampNumber(overrides?.attempts, defaults.attempts, 1)));
-  const minDelayMs = Math.max(0, Math.round(clampNumber(overrides?.minDelayMs, defaults.minDelayMs, 0)));
-  const maxDelayMs = Math.max(minDelayMs, Math.round(clampNumber(overrides?.maxDelayMs, defaults.maxDelayMs, 0)));
+  const minDelayMs = Math.max(
+    0,
+    Math.round(clampNumber(overrides?.minDelayMs, defaults.minDelayMs, 0)),
+  );
+  const maxDelayMs = Math.max(
+    minDelayMs,
+    Math.round(clampNumber(overrides?.maxDelayMs, defaults.maxDelayMs, 0)),
+  );
   const jitter = clampNumber(overrides?.jitter, defaults.jitter, 0, 1);
   return { attempts, minDelayMs, maxDelayMs, jitter };
 }
@@ -91,7 +97,9 @@ export async function retryAsync<T>(
   const maxAttempts = resolved.attempts;
   const minDelayMs = resolved.minDelayMs;
   const maxDelayMs =
-    Number.isFinite(resolved.maxDelayMs) && resolved.maxDelayMs > 0 ? resolved.maxDelayMs : Number.POSITIVE_INFINITY;
+    Number.isFinite(resolved.maxDelayMs) && resolved.maxDelayMs > 0
+      ? resolved.maxDelayMs
+      : Number.POSITIVE_INFINITY;
   const jitter = resolved.jitter;
   const shouldRetry = options.shouldRetry ?? (() => true);
   let lastErr: unknown;
@@ -107,7 +115,9 @@ export async function retryAsync<T>(
 
       const retryAfterMs = options.retryAfterMs?.(err);
       const hasRetryAfter = typeof retryAfterMs === "number" && Number.isFinite(retryAfterMs);
-      const baseDelay = hasRetryAfter ? Math.max(retryAfterMs, minDelayMs) : minDelayMs * 2 ** (attempt - 1);
+      const baseDelay = hasRetryAfter
+        ? Math.max(retryAfterMs, minDelayMs)
+        : minDelayMs * 2 ** (attempt - 1);
       let delay = Math.min(baseDelay, maxDelayMs);
       delay = applyJitter(delay, jitter);
       delay = Math.min(Math.max(delay, minDelayMs), maxDelayMs);

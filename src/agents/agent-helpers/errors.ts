@@ -9,7 +9,8 @@ const log = createSubsystemLogger("errors");
 export function formatBillingErrorMessage(provider?: string, model?: string): string {
   const providerName = provider?.trim();
   const modelName = model?.trim();
-  const providerLabel = providerName && modelName ? `${providerName} (${modelName})` : providerName || undefined;
+  const providerLabel =
+    providerName && modelName ? `${providerName} (${modelName})` : providerName || undefined;
   if (providerLabel) {
     return `⚠️ ${providerLabel} returned a billing error — your API key has run out of credits or has an insufficient balance. Check your ${providerName} billing dashboard and top up or switch to a different API key.`;
   }
@@ -19,7 +20,8 @@ export function formatBillingErrorMessage(provider?: string, model?: string): st
 export const BILLING_ERROR_USER_MESSAGE = formatBillingErrorMessage();
 
 const RATE_LIMIT_ERROR_USER_MESSAGE = "⚠️ API rate limit reached. Please try again later.";
-const OVERLOADED_ERROR_USER_MESSAGE = "The AI service is temporarily overloaded. Please try again in a moment.";
+const OVERLOADED_ERROR_USER_MESSAGE =
+  "The AI service is temporarily overloaded. Please try again in a moment.";
 
 function formatRateLimitOrOverloadedErrorCopy(raw: string): string | undefined {
   if (isRateLimitErrorMessage(raw)) {
@@ -61,7 +63,9 @@ export function isContextOverflowError(errorMessage?: string): boolean {
 
   const hasRequestSizeExceeds = lower.includes("request size exceeds");
   const hasContextWindow =
-    lower.includes("context window") || lower.includes("context length") || lower.includes("maximum context length");
+    lower.includes("context window") ||
+    lower.includes("context length") ||
+    lower.includes("maximum context length");
   return (
     lower.includes("request_too_large") ||
     lower.includes("request exceeds the maximum size") ||
@@ -89,7 +93,8 @@ export function isContextOverflowError(errorMessage?: string): boolean {
 const CONTEXT_WINDOW_TOO_SMALL_RE = /context window.*(too small|minimum is)/i;
 const CONTEXT_OVERFLOW_HINT_RE =
   /context.*overflow|context window.*(too (?:large|long)|exceed|over|limit|max(?:imum)?|requested|sent|tokens)|prompt.*(too (?:large|long)|exceed|over|limit|max(?:imum)?)|(?:request|input).*(?:context|window|length|token).*(too (?:large|long)|exceed|over|limit|max(?:imum)?)/i;
-const RATE_LIMIT_HINT_RE = /rate limit|too many requests|requests per (?:minute|hour|day)|quota|throttl|429\b/i;
+const RATE_LIMIT_HINT_RE =
+  /rate limit|too many requests|requests per (?:minute|hour|day)|quota|throttl|429\b/i;
 
 export function isLikelyContextOverflowError(errorMessage?: string): boolean {
   if (!errorMessage) {
@@ -207,7 +212,9 @@ export function isCloudflareOrHtmlErrorPage(raw: string): boolean {
     return true;
   }
 
-  return status.code < 600 && HTML_ERROR_PREFIX_RE.test(status.rest) && /<\/html>/i.test(status.rest);
+  return (
+    status.code < 600 && HTML_ERROR_PREFIX_RE.test(status.rest) && /<\/html>/i.test(status.rest)
+  );
 }
 
 export function isTransientHttpError(raw: string): boolean {
@@ -476,7 +483,11 @@ export function formatAssistantErrorText(
   }
 
   // Catch role ordering errors - including JSON-wrapped and "400" prefix variants
-  if (/incorrect role information|roles must alternate|400.*role|"message".*role.*information/i.test(raw)) {
+  if (
+    /incorrect role information|roles must alternate|400.*role|"message".*role.*information/i.test(
+      raw,
+    )
+  ) {
     return "Message ordering conflict - please try again. If this persists, use /new to start a fresh session.";
   }
 
@@ -590,7 +601,12 @@ const ERROR_PATTERNS = {
     "tpm",
     "tokens per minute",
   ],
-  overloaded: [/overloaded_error|"type"\s*:\s*"overloaded_error"/i, "overloaded", "service unavailable", "high demand"],
+  overloaded: [
+    /overloaded_error|"type"\s*:\s*"overloaded_error"/i,
+    "overloaded",
+    "service unavailable",
+    "high demand",
+  ],
   timeout: [
     "timeout",
     "timed out",
@@ -639,10 +655,13 @@ const ERROR_PATTERNS = {
   ],
 } as const;
 
-const TOOL_CALL_INPUT_MISSING_RE = /tool_(?:use|call)\.(?:input|arguments).*?(?:field required|required)/i;
-const TOOL_CALL_INPUT_PATH_RE = /messages\.\d+\.content\.\d+\.tool_(?:use|call)\.(?:input|arguments)/i;
+const TOOL_CALL_INPUT_MISSING_RE =
+  /tool_(?:use|call)\.(?:input|arguments).*?(?:field required|required)/i;
+const TOOL_CALL_INPUT_PATH_RE =
+  /messages\.\d+\.content\.\d+\.tool_(?:use|call)\.(?:input|arguments)/i;
 
-const IMAGE_DIMENSION_ERROR_RE = /image dimensions exceed max allowed size for many-image requests:\s*(\d+)\s*pixels/i;
+const IMAGE_DIMENSION_ERROR_RE =
+  /image dimensions exceed max allowed size for many-image requests:\s*(\d+)\s*pixels/i;
 const IMAGE_DIMENSION_PATH_RE = /messages\.(\d+)\.content\.(\d+)\.image/i;
 const IMAGE_SIZE_ERROR_RE = /image exceeds\s*(\d+(?:\.\d+)?)\s*mb/i;
 
@@ -651,7 +670,9 @@ function matchesErrorPatterns(raw: string, patterns: readonly ErrorPattern[]): b
     return false;
   }
   const value = raw.toLowerCase();
-  return patterns.some((pattern) => (pattern instanceof RegExp ? pattern.test(value) : value.includes(pattern)));
+  return patterns.some((pattern) =>
+    pattern instanceof RegExp ? pattern.test(value) : value.includes(pattern),
+  );
 }
 
 export function isRateLimitErrorMessage(raw: string): boolean {
@@ -688,7 +709,12 @@ export function isBillingErrorMessage(raw: string): boolean {
   if (!BILLING_ERROR_HEAD_RE.test(raw)) {
     return false;
   }
-  return value.includes("upgrade") || value.includes("credits") || value.includes("payment") || value.includes("plan");
+  return (
+    value.includes("upgrade") ||
+    value.includes("credits") ||
+    value.includes("payment") ||
+    value.includes("plan")
+  );
 }
 
 export function isMissingToolCallInputError(raw: string): boolean {

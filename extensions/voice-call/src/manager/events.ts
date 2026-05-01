@@ -48,7 +48,9 @@ function shouldAcceptInbound(config: EventContext["config"], from: string | unde
       }
       const allowed = isAllowlistedCaller(normalized, allowFrom);
       const status = allowed ? "accepted" : "rejected";
-      console.log(`[voice-call] Inbound call ${status}: ${from} ${allowed ? "is in" : "not in"} allowlist`);
+      console.log(
+        `[voice-call] Inbound call ${status}: ${from} ${allowed ? "is in" : "not in"} allowlist`,
+      );
       return allowed;
     }
 
@@ -89,7 +91,9 @@ function createWebhookCall(params: {
   params.ctx.providerCallIdMap.set(params.providerCallId, callId);
   persistCallRecord(params.ctx.storePath, callRecord);
 
-  console.log(`[voice-call] Created ${params.direction} call record: ${callId} from ${params.from}`);
+  console.log(
+    `[voice-call] Created ${params.direction} call record: ${callId} from ${params.from}`,
+  );
   return callRecord;
 }
 
@@ -107,7 +111,8 @@ export function processEvent(ctx: EventContext, event: NormalizedEvent): void {
   });
 
   const providerCallId = event.providerCallId;
-  const eventDirection = event.direction === "inbound" || event.direction === "outbound" ? event.direction : undefined;
+  const eventDirection =
+    event.direction === "inbound" || event.direction === "outbound" ? event.direction : undefined;
 
   // Auto-register untracked calls arriving via webhook. This covers both
   // true inbound calls and externally-initiated outbound-api calls (e.g. calls
@@ -205,9 +210,16 @@ export function processEvent(ctx: EventContext, event: NormalizedEvent): void {
     case "call.speech":
       if (event.isFinal) {
         const hadWaiter = ctx.transcriptWaiters.has(call.callId);
-        const resolved = resolveTranscriptWaiter(ctx, call.callId, event.transcript, event.turnToken);
+        const resolved = resolveTranscriptWaiter(
+          ctx,
+          call.callId,
+          event.transcript,
+          event.turnToken,
+        );
         if (hadWaiter && !resolved) {
-          console.warn(`[voice-call] Ignoring speech event with mismatched turn token for ${call.callId}`);
+          console.warn(
+            `[voice-call] Ignoring speech event with mismatched turn token for ${call.callId}`,
+          );
           break;
         }
         addTranscriptEntry(call, "user", event.transcript);

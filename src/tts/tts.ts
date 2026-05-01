@@ -15,7 +15,13 @@ import { normalizeChannelId } from "../channels/plugins/index.js";
 import type { ChannelId } from "../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { normalizeResolvedSecretInputString } from "../config/types.secrets.js";
-import type { TtsConfig, TtsAutoMode, TtsMode, TtsProvider, TtsModelOverrideConfig } from "../config/types.tts.js";
+import type {
+  TtsConfig,
+  TtsAutoMode,
+  TtsMode,
+  TtsProvider,
+  TtsModelOverrideConfig,
+} from "../config/types.tts.js";
 import { logVerbose } from "../globals.js";
 import { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-remoteclaw-dir.js";
 import { stripMarkdown } from "../line/markdown-to-line.js";
@@ -222,7 +228,9 @@ export function normalizeTtsAutoMode(value: unknown): TtsAutoMode | undefined {
   return undefined;
 }
 
-function resolveModelOverridePolicy(overrides: TtsModelOverrideConfig | undefined): ResolvedTtsModelOverrides {
+function resolveModelOverridePolicy(
+  overrides: TtsModelOverrideConfig | undefined,
+): ResolvedTtsModelOverrides {
   const enabled = overrides?.enabled ?? true;
   if (!enabled) {
     return {
@@ -274,12 +282,15 @@ export function resolveTtsConfig(cfg: RemoteClawConfig): ResolvedTtsConfig {
       applyTextNormalization: raw.elevenlabs?.applyTextNormalization,
       languageCode: raw.elevenlabs?.languageCode,
       voiceSettings: {
-        stability: raw.elevenlabs?.voiceSettings?.stability ?? DEFAULT_ELEVENLABS_VOICE_SETTINGS.stability,
+        stability:
+          raw.elevenlabs?.voiceSettings?.stability ?? DEFAULT_ELEVENLABS_VOICE_SETTINGS.stability,
         similarityBoost:
-          raw.elevenlabs?.voiceSettings?.similarityBoost ?? DEFAULT_ELEVENLABS_VOICE_SETTINGS.similarityBoost,
+          raw.elevenlabs?.voiceSettings?.similarityBoost ??
+          DEFAULT_ELEVENLABS_VOICE_SETTINGS.similarityBoost,
         style: raw.elevenlabs?.voiceSettings?.style ?? DEFAULT_ELEVENLABS_VOICE_SETTINGS.style,
         useSpeakerBoost:
-          raw.elevenlabs?.voiceSettings?.useSpeakerBoost ?? DEFAULT_ELEVENLABS_VOICE_SETTINGS.useSpeakerBoost,
+          raw.elevenlabs?.voiceSettings?.useSpeakerBoost ??
+          DEFAULT_ELEVENLABS_VOICE_SETTINGS.useSpeakerBoost,
         speed: raw.elevenlabs?.voiceSettings?.speed ?? DEFAULT_ELEVENLABS_VOICE_SETTINGS.speed,
       },
     },
@@ -414,7 +425,11 @@ function updatePrefs(prefsPath: string, update: (prefs: TtsUserPrefs) => void): 
   atomicWriteFileSync(prefsPath, JSON.stringify(prefs, null, 2));
 }
 
-export function isTtsEnabled(config: ResolvedTtsConfig, prefsPath: string, sessionAuto?: string): boolean {
+export function isTtsEnabled(
+  config: ResolvedTtsConfig,
+  prefsPath: string,
+  sessionAuto?: string,
+): boolean {
   return resolveTtsAutoMode({ config, prefsPath, sessionAuto }) !== "off";
 }
 
@@ -503,7 +518,10 @@ function resolveEdgeOutputFormat(config: ResolvedTtsConfig): string {
   return config.edge.outputFormat;
 }
 
-export function resolveTtsApiKey(config: ResolvedTtsConfig, provider: TtsProvider): string | undefined {
+export function resolveTtsApiKey(
+  config: ResolvedTtsConfig,
+  provider: TtsProvider,
+): string | undefined {
   if (provider === "elevenlabs") {
     return config.elevenlabs.apiKey || process.env.ELEVENLABS_API_KEY || process.env.XI_API_KEY;
   }
@@ -629,7 +647,9 @@ export async function textToSpeech(params: {
           edgeResult = await attemptEdgeTts(edgeOutputFormat);
         } catch (err) {
           if (fallbackEdgeOutputFormat && fallbackEdgeOutputFormat !== edgeOutputFormat) {
-            logVerbose(`TTS: Edge output ${edgeOutputFormat} failed; retrying with ${fallbackEdgeOutputFormat}.`);
+            logVerbose(
+              `TTS: Edge output ${edgeOutputFormat} failed; retrying with ${fallbackEdgeOutputFormat}.`,
+            );
             edgeOutputFormat = fallbackEdgeOutputFormat;
             try {
               edgeResult = await attemptEdgeTts(edgeOutputFormat);
@@ -891,7 +911,9 @@ export async function maybeApplyTtsToPayload(params: {
 
   if (textForAudio.length > maxLength) {
     if (!isSummarizationEnabled(prefsPath)) {
-      logVerbose(`TTS: truncating long text (${textForAudio.length} > ${maxLength}), summarization disabled.`);
+      logVerbose(
+        `TTS: truncating long text (${textForAudio.length} > ${maxLength}), summarization disabled.`,
+      );
       textForAudio = `${textForAudio.slice(0, maxLength - 3)}...`;
     } else {
       try {
@@ -943,7 +965,8 @@ export async function maybeApplyTtsToPayload(params: {
     };
 
     const channelId = resolveChannelId(params.channel);
-    const shouldVoice = channelId !== null && VOICE_BUBBLE_CHANNELS.has(channelId) && result.voiceCompatible === true;
+    const shouldVoice =
+      channelId !== null && VOICE_BUBBLE_CHANNELS.has(channelId) && result.voiceCompatible === true;
     const finalPayload = {
       ...nextPayload,
       mediaUrl: result.audioPath,

@@ -77,7 +77,9 @@ export async function monitorWebInbox(options: {
     debounceMs: options.debounceMs ?? 0,
     buildKey: (msg) => {
       const senderKey =
-        msg.chatType === "group" ? (msg.senderJid ?? msg.senderE164 ?? msg.senderName ?? msg.from) : msg.from;
+        msg.chatType === "group"
+          ? (msg.senderJid ?? msg.senderE164 ?? msg.senderName ?? msg.from)
+          : msg.from;
       if (!senderKey) {
         return null;
       }
@@ -116,7 +118,10 @@ export async function monitorWebInbox(options: {
       inboundConsoleLog.error(`Failed handling inbound web message: ${String(err)}`);
     },
   });
-  const groupMetaCache = new Map<string, { subject?: string; participants?: string[]; expires: number }>();
+  const groupMetaCache = new Map<
+    string,
+    { subject?: string; participants?: string[]; expires: number }
+  >();
   const GROUP_META_TTL_MS = 5 * 60 * 1000; // 5 minutes
   const lidLookup = sock.signalRepository?.lidMapping;
 
@@ -165,7 +170,9 @@ export async function monitorWebInbox(options: {
     access: Awaited<ReturnType<typeof checkInboundAccessControl>>;
   };
 
-  const normalizeInboundMessage = async (msg: WAMessage): Promise<NormalizedInboundMessage | null> => {
+  const normalizeInboundMessage = async (
+    msg: WAMessage,
+  ): Promise<NormalizedInboundMessage | null> => {
     const id = msg.key?.id ?? undefined;
     const remoteJid = msg.key?.remoteJid;
     if (!remoteJid) {
@@ -187,7 +194,11 @@ export async function monitorWebInbox(options: {
     if (!from) {
       return null;
     }
-    const senderE164 = group ? (participantJid ? await resolveInboundJid(participantJid) : null) : from;
+    const senderE164 = group
+      ? participantJid
+        ? await resolveInboundJid(participantJid)
+        : null
+      : from;
 
     let groupSubject: string | undefined;
     let groupParticipants: string[] | undefined;
@@ -196,7 +207,9 @@ export async function monitorWebInbox(options: {
       groupSubject = meta.subject;
       groupParticipants = meta.participants;
     }
-    const messageTimestampMs = msg.messageTimestamp ? Number(msg.messageTimestamp) * 1000 : undefined;
+    const messageTimestampMs = msg.messageTimestamp
+      ? Number(msg.messageTimestamp) * 1000
+      : undefined;
 
     const access = await checkInboundAccessControl({
       accountId: options.accountId,
@@ -277,7 +290,10 @@ export async function monitorWebInbox(options: {
     try {
       const inboundMedia = await downloadInboundMedia(msg as proto.IWebMessageInfo, sock);
       if (inboundMedia) {
-        const maxMb = typeof options.mediaMaxMb === "number" && options.mediaMaxMb > 0 ? options.mediaMaxMb : 50;
+        const maxMb =
+          typeof options.mediaMaxMb === "number" && options.mediaMaxMb > 0
+            ? options.mediaMaxMb
+            : 50;
         const maxBytes = maxMb * 1024 * 1024;
         const saved = await saveMediaBuffer(
           inboundMedia.buffer,
@@ -416,7 +432,9 @@ export async function monitorWebInbox(options: {
   };
   sock.ev.on("messages.upsert", handleMessagesUpsert);
 
-  const handleConnectionUpdate = (update: Partial<import("@whiskeysockets/baileys").ConnectionState>) => {
+  const handleConnectionUpdate = (
+    update: Partial<import("@whiskeysockets/baileys").ConnectionState>,
+  ) => {
     try {
       if (update.connection === "close") {
         const status = getStatusCode(update.lastDisconnect?.error);
@@ -462,8 +480,12 @@ export async function monitorWebInbox(options: {
           off?: (event: string, listener: (...args: unknown[]) => void) => void;
           removeListener?: (event: string, listener: (...args: unknown[]) => void) => void;
         };
-        const messagesUpsertHandler = handleMessagesUpsert as unknown as (...args: unknown[]) => void;
-        const connectionUpdateHandler = handleConnectionUpdate as unknown as (...args: unknown[]) => void;
+        const messagesUpsertHandler = handleMessagesUpsert as unknown as (
+          ...args: unknown[]
+        ) => void;
+        const connectionUpdateHandler = handleConnectionUpdate as unknown as (
+          ...args: unknown[]
+        ) => void;
         if (typeof ev.off === "function") {
           ev.off("messages.upsert", messagesUpsertHandler);
           ev.off("connection.update", connectionUpdateHandler);

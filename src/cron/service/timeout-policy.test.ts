@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { CronJob } from "../types.js";
-import { AGENT_TURN_SAFETY_TIMEOUT_MS, DEFAULT_JOB_TIMEOUT_MS, resolveCronJobTimeoutMs } from "./timeout-policy.js";
+import {
+  AGENT_TURN_SAFETY_TIMEOUT_MS,
+  DEFAULT_JOB_TIMEOUT_MS,
+  resolveCronJobTimeoutMs,
+} from "./timeout-policy.js";
 
 function makeJob(payload: CronJob["payload"]): CronJob {
   const sessionTarget = payload.kind === "agentTurn" ? "isolated" : "main";
@@ -30,12 +34,16 @@ describe("timeout-policy", () => {
   });
 
   it("disables timeout when timeoutSeconds <= 0", () => {
-    const timeout = resolveCronJobTimeoutMs(makeJob({ kind: "agentTurn", message: "hi", timeoutSeconds: 0 }));
+    const timeout = resolveCronJobTimeoutMs(
+      makeJob({ kind: "agentTurn", message: "hi", timeoutSeconds: 0 }),
+    );
     expect(timeout).toBeUndefined();
   });
 
   it("applies explicit timeoutSeconds when positive", () => {
-    const timeout = resolveCronJobTimeoutMs(makeJob({ kind: "agentTurn", message: "hi", timeoutSeconds: 1.9 }));
+    const timeout = resolveCronJobTimeoutMs(
+      makeJob({ kind: "agentTurn", message: "hi", timeoutSeconds: 1.9 }),
+    );
     expect(timeout).toBe(1_900);
   });
 });

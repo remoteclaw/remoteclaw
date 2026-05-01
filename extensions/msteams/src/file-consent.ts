@@ -74,7 +74,10 @@ export interface FileConsentResponse {
  * Parse a fileConsent/invoke activity.
  * Returns null if the activity is not a file consent invoke.
  */
-export function parseFileConsentInvoke(activity: { name?: string; value?: unknown }): FileConsentResponse | null {
+export function parseFileConsentInvoke(activity: {
+  name?: string;
+  value?: unknown;
+}): FileConsentResponse | null {
   if (activity.name !== "fileConsent/invoke") {
     return null;
   }

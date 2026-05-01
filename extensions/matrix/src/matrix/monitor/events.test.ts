@@ -53,7 +53,8 @@ describe("registerMatrixMonitorEvents", () => {
       warnedEncryptedRooms: new Set<string>(),
       warnedCryptoMissingRooms: new Set<string>(),
       logger,
-      formatNativeDependencyHint: (() => "") as PluginRuntime["system"]["formatNativeDependencyHint"],
+      formatNativeDependencyHint: (() =>
+        "") as PluginRuntime["system"]["formatNativeDependencyHint"],
       onRoomMessage,
     });
 
@@ -131,7 +132,9 @@ describe("registerMatrixMonitorEvents", () => {
 
     await vi.waitFor(() => {
       expect(onRoomMessage).toHaveBeenCalledWith("!room:example.org", event);
-      expect(logVerboseMessage).toHaveBeenCalledWith(expect.stringContaining("matrix: early read receipt failed"));
+      expect(logVerboseMessage).toHaveBeenCalledWith(
+        expect.stringContaining("matrix: early read receipt failed"),
+      );
     });
   });
 
@@ -167,7 +170,8 @@ describe("registerMatrixMonitorEvents", () => {
       warnedEncryptedRooms: new Set<string>(),
       warnedCryptoMissingRooms: new Set<string>(),
       logger: { warn: vi.fn() } as unknown as RuntimeLogger,
-      formatNativeDependencyHint: (() => "") as PluginRuntime["system"]["formatNativeDependencyHint"],
+      formatNativeDependencyHint: (() =>
+        "") as PluginRuntime["system"]["formatNativeDependencyHint"],
       onRoomMessage: vi.fn(),
     };
     registerMatrixMonitorEvents(params);

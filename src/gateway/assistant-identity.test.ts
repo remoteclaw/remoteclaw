@@ -26,7 +26,9 @@ describe("resolveAssistantIdentity avatar normalization", () => {
       },
     };
 
-    expect(resolveAssistantIdentity({ cfg, workspaceDir: "/tmp/remoteclaw-test" }).avatar).toBe("PS");
+    expect(resolveAssistantIdentity({ cfg, workspaceDir: "/tmp/remoteclaw-test" }).avatar).toBe(
+      "PS",
+    );
   });
 
   it("keeps path avatars", () => {

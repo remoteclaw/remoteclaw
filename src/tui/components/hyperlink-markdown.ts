@@ -11,7 +11,13 @@ export class HyperlinkMarkdown implements Component {
   private inner: Markdown;
   private urls: string[];
 
-  constructor(text: string, paddingX: number, paddingY: number, theme: MarkdownTheme, options?: DefaultTextStyle) {
+  constructor(
+    text: string,
+    paddingX: number,
+    paddingY: number,
+    theme: MarkdownTheme,
+    options?: DefaultTextStyle,
+  ) {
     this.inner = new Markdown(text, paddingX, paddingY, theme, options);
     this.urls = extractUrls(text);
   }

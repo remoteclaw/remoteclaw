@@ -89,7 +89,8 @@ export const en: TranslationMap = {
     },
     auth: {
       required: "This gateway requires auth. Add a token or password, then click Connect.",
-      failed: "Auth failed. Re-copy a tokenized URL with {command}, or update the token, then click Connect.",
+      failed:
+        "Auth failed. Re-copy a tokenized URL with {command}, or update the token, then click Connect.",
     },
     pairing: {
       hint: "This device needs pairing approval from the gateway host.",
@@ -224,11 +225,13 @@ export const en: TranslationMap = {
       payloadKind: "What should run?",
       systemEvent: "Post message to main timeline",
       agentTurn: "Run assistant task (isolated)",
-      systemEventHelp: "Sends your text to the gateway main timeline (good for reminders/triggers).",
+      systemEventHelp:
+        "Sends your text to the gateway main timeline (good for reminders/triggers).",
       agentTurnHelp: "Starts an assistant run in its own session using your prompt.",
       timeoutSeconds: "Timeout (seconds)",
       timeoutPlaceholder: "Optional, e.g. 90",
-      timeoutHelp: "Optional. Leave blank to use the gateway default timeout behavior for this run.",
+      timeoutHelp:
+        "Optional. Leave blank to use the gateway default timeout behavior for this run.",
       mainTimelineMessage: "Main timeline message",
       assistantTaskPrompt: "Assistant task prompt",
       deliverySection: "Delivery",
@@ -247,7 +250,8 @@ export const en: TranslationMap = {
       toPlaceholder: "+1555... or chat id",
       toHelp: "Optional recipient override (chat id, phone, or user id).",
       advanced: "Advanced",
-      advancedHelp: "Optional overrides for delivery guarantees, schedule jitter, and model controls.",
+      advancedHelp:
+        "Optional overrides for delivery guarantees, schedule jitter, and model controls.",
       deleteAfterRun: "Delete after run",
       deleteAfterRunHelp: "Best for one-shot reminders that should auto-clean up.",
       clearAgentOverride: "Clear agent override",

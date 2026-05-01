@@ -151,7 +151,9 @@ export type ShellMultiplexerUnwrapResult =
   | { kind: "blocked"; wrapper: string }
   | { kind: "unwrapped"; wrapper: string; argv: string[] };
 
-export function unwrapKnownShellMultiplexerInvocation(argv: string[]): ShellMultiplexerUnwrapResult {
+export function unwrapKnownShellMultiplexerInvocation(
+  argv: string[],
+): ShellMultiplexerUnwrapResult {
   const token0 = argv[0]?.trim();
   if (!token0) {
     return { kind: "not-wrapper" };
@@ -404,8 +406,13 @@ function blockDispatchWrapper(wrapper: string): DispatchWrapperUnwrapResult {
   return { kind: "blocked", wrapper };
 }
 
-function unwrapDispatchWrapper(wrapper: string, unwrapped: string[] | null): DispatchWrapperUnwrapResult {
-  return unwrapped ? { kind: "unwrapped", wrapper, argv: unwrapped } : blockDispatchWrapper(wrapper);
+function unwrapDispatchWrapper(
+  wrapper: string,
+  unwrapped: string[] | null,
+): DispatchWrapperUnwrapResult {
+  return unwrapped
+    ? { kind: "unwrapped", wrapper, argv: unwrapped }
+    : blockDispatchWrapper(wrapper);
 }
 
 export function unwrapKnownDispatchWrapperInvocation(argv: string[]): DispatchWrapperUnwrapResult {
@@ -437,7 +444,10 @@ export function unwrapKnownDispatchWrapperInvocation(argv: string[]): DispatchWr
   }
 }
 
-export function unwrapDispatchWrappersForResolution(argv: string[], maxDepth = MAX_DISPATCH_WRAPPER_DEPTH): string[] {
+export function unwrapDispatchWrappersForResolution(
+  argv: string[],
+  maxDepth = MAX_DISPATCH_WRAPPER_DEPTH,
+): string[] {
   const plan = resolveDispatchWrapperExecutionPlan(argv, maxDepth);
   return plan.argv;
 }
@@ -524,7 +534,11 @@ function hasEnvManipulationBeforeShellWrapperInternal(
   if (dispatchUnwrap.kind === "unwrapped") {
     const nextEnvManipulationSeen =
       envManipulationSeen || (dispatchUnwrap.wrapper === "env" && envInvocationUsesModifiers(argv));
-    return hasEnvManipulationBeforeShellWrapperInternal(dispatchUnwrap.argv, depth + 1, nextEnvManipulationSeen);
+    return hasEnvManipulationBeforeShellWrapperInternal(
+      dispatchUnwrap.argv,
+      depth + 1,
+      nextEnvManipulationSeen,
+    );
   }
 
   const shellMultiplexerUnwrap = unwrapKnownShellMultiplexerInvocation(argv);
@@ -532,7 +546,11 @@ function hasEnvManipulationBeforeShellWrapperInternal(
     return false;
   }
   if (shellMultiplexerUnwrap.kind === "unwrapped") {
-    return hasEnvManipulationBeforeShellWrapperInternal(shellMultiplexerUnwrap.argv, depth + 1, envManipulationSeen);
+    return hasEnvManipulationBeforeShellWrapperInternal(
+      shellMultiplexerUnwrap.argv,
+      depth + 1,
+      envManipulationSeen,
+    );
   }
 
   const wrapper = findShellWrapperSpec(normalizeExecutableToken(token0));
@@ -642,6 +660,9 @@ export function extractShellWrapperInlineCommand(argv: string[]): string | null 
   return extracted.isWrapper ? extracted.command : null;
 }
 
-export function extractShellWrapperCommand(argv: string[], rawCommand?: string | null): ShellWrapperCommand {
+export function extractShellWrapperCommand(
+  argv: string[],
+  rawCommand?: string | null,
+): ShellWrapperCommand {
   return extractShellWrapperCommandInternal(argv, normalizeRawCommand(rawCommand), 0);
 }

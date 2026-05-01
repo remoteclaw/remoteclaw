@@ -73,7 +73,10 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
     delete process.env.REMOTECLAW_CONFIG_PATH;
     return stateDir;
   };
-  const withStateDir = async (prefix: string, run: (stateDir: string) => Promise<void>): Promise<void> => {
+  const withStateDir = async (
+    prefix: string,
+    run: (stateDir: string) => Promise<void>,
+  ): Promise<void> => {
     const stateDir = await initStateDir(prefix);
     try {
       await run(stateDir);

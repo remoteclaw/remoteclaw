@@ -3,7 +3,11 @@ import os from "node:os";
 import path from "node:path";
 import type { PluginRuntime } from "remoteclaw/plugin-sdk/nostr";
 import { describe, expect, it } from "vitest";
-import { readNostrBusState, writeNostrBusState, computeSinceTimestamp } from "./nostr-state-store.js";
+import {
+  readNostrBusState,
+  writeNostrBusState,
+  computeSinceTimestamp,
+} from "./nostr-state-store.js";
 import { setNostrRuntime } from "./runtime.js";
 
 async function withTempStateDir<T>(fn: (dir: string) => Promise<T>) {
@@ -14,7 +18,8 @@ async function withTempStateDir<T>(fn: (dir: string) => Promise<T>) {
     state: {
       resolveStateDir: (env, homedir) => {
         const stateEnv = env ?? process.env;
-        const override = stateEnv.REMOTECLAW_STATE_DIR?.trim() || stateEnv.CLAWDBOT_STATE_DIR?.trim();
+        const override =
+          stateEnv.REMOTECLAW_STATE_DIR?.trim() || stateEnv.CLAWDBOT_STATE_DIR?.trim();
         if (override) {
           return override;
         }

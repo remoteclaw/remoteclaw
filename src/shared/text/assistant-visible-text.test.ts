@@ -7,7 +7,15 @@ describe("stripAssistantInternalScaffolding", () => {
   }
 
   function createLiteralRelevantMemoriesCodeBlock() {
-    return ["```xml", "<relevant-memories>", "sample", "</relevant-memories>", "```", "", "Visible text"].join("\n");
+    return [
+      "```xml",
+      "<relevant-memories>",
+      "sample",
+      "</relevant-memories>",
+      "```",
+      "",
+      "Visible text",
+    ].join("\n");
   }
 
   function expectLiteralVisibleText(input: string) {
@@ -34,7 +42,12 @@ describe("stripAssistantInternalScaffolding", () => {
     },
     {
       name: "supports relevant_memories tag variants",
-      input: ["<relevant_memories>", "Internal memory note", "</relevant_memories>", "Visible"].join("\n"),
+      input: [
+        "<relevant_memories>",
+        "Internal memory note",
+        "</relevant_memories>",
+        "Visible",
+      ].join("\n"),
       expected: "Visible",
     },
     {

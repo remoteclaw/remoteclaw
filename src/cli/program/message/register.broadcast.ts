@@ -4,7 +4,9 @@ import type { MessageCliHelpers } from "./helpers.js";
 
 export function registerMessageBroadcastCommand(message: Command, helpers: MessageCliHelpers) {
   helpers
-    .withMessageBase(message.command("broadcast").description("Broadcast a message to multiple targets"))
+    .withMessageBase(
+      message.command("broadcast").description("Broadcast a message to multiple targets"),
+    )
     .requiredOption("--targets <target...>", CHANNEL_TARGETS_DESCRIPTION)
     .option("--message <text>", "Message to send")
     .option("--media <url>", "Media URL")

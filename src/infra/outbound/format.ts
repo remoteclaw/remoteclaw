@@ -41,7 +41,10 @@ const resolveChannelLabel = (channel: string) => {
   return channel;
 };
 
-export function formatOutboundDeliverySummary(channel: string, result?: OutboundDeliveryResult): string {
+export function formatOutboundDeliverySummary(
+  channel: string,
+  result?: OutboundDeliveryResult,
+): string {
   if (!result) {
     return `✅ Sent via ${resolveChannelLabel(channel)}. Message ID: unknown`;
   }
@@ -106,7 +109,11 @@ export function buildOutboundDeliveryJson(params: {
   return payload;
 }
 
-export function formatGatewaySummary(params: { action?: string; channel?: string; messageId?: string | null }): string {
+export function formatGatewaySummary(params: {
+  action?: string;
+  channel?: string;
+  messageId?: string | null;
+}): string {
   const action = params.action ?? "Sent";
   const channelSuffix = params.channel ? ` (${params.channel})` : "";
   const messageId = params.messageId ?? "unknown";

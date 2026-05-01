@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { clearMSTeamsSentMessageCache, recordMSTeamsSentMessage, wasMSTeamsMessageSent } from "./sent-message-cache.js";
+import {
+  clearMSTeamsSentMessageCache,
+  recordMSTeamsSentMessage,
+  wasMSTeamsMessageSent,
+} from "./sent-message-cache.js";
 
 describe("msteams sent message cache", () => {
   it("records and resolves sent message ids", () => {

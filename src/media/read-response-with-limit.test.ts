@@ -44,7 +44,9 @@ async function expectReadResponseTextSnippetCase(params: {
   options: Parameters<typeof readResponseTextSnippet>[1];
   expected: string;
 }) {
-  await expect(readResponseTextSnippet(params.response, params.options)).resolves.toBe(params.expected);
+  await expect(readResponseTextSnippet(params.response, params.options)).resolves.toBe(
+    params.expected,
+  );
 }
 
 async function expectReadResponseWithLimitSuccessCase(params: {
@@ -63,9 +65,9 @@ async function expectReadResponseWithLimitFailureCase(params: {
   options?: Parameters<typeof readResponseWithLimit>[2];
   expectedError: RegExp | string;
 }) {
-  await expect(readResponseWithLimit(params.response, params.maxBytes, params.options)).rejects.toThrow(
-    params.expectedError,
-  );
+  await expect(
+    readResponseWithLimit(params.response, params.maxBytes, params.options),
+  ).rejects.toThrow(params.expectedError);
 }
 
 describe("readResponseWithLimit", () => {
@@ -121,7 +123,8 @@ describe("readResponseWithLimit", () => {
       expectedError: "custom idle 50",
       options: {
         chunkTimeoutMs: 50,
-        onIdleTimeout: ({ chunkTimeoutMs }: { chunkTimeoutMs: number }) => new Error(`custom idle ${chunkTimeoutMs}`),
+        onIdleTimeout: ({ chunkTimeoutMs }: { chunkTimeoutMs: number }) =>
+          new Error(`custom idle ${chunkTimeoutMs}`),
       },
     },
   ] as const)(
@@ -170,7 +173,9 @@ describe("readResponseTextSnippet", () => {
     },
     {
       name: "truncates to the byte limit without reading the full body",
-      response: new Response(makeStream([new TextEncoder().encode("12345"), new TextEncoder().encode("67890")])),
+      response: new Response(
+        makeStream([new TextEncoder().encode("12345"), new TextEncoder().encode("67890")]),
+      ),
       options: { maxBytes: 7, maxChars: 50 },
       expected: "1234567…",
     },

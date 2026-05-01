@@ -78,8 +78,12 @@ export async function sendDiscordComponentMessage(
     accountId: accountInfo.accountId,
   });
   const flags = buildDiscordComponentMessageFlags(buildResult.components);
-  const finalFlags = opts.silent ? (flags ?? 0) | SUPPRESS_NOTIFICATIONS_FLAG : (flags ?? undefined);
-  const messageReference = opts.replyTo ? { message_id: opts.replyTo, fail_if_not_exists: false } : undefined;
+  const finalFlags = opts.silent
+    ? (flags ?? 0) | SUPPRESS_NOTIFICATIONS_FLAG
+    : (flags ?? undefined);
+  const messageReference = opts.replyTo
+    ? { message_id: opts.replyTo, fail_if_not_exists: false }
+    : undefined;
 
   const attachmentNames = extractComponentAttachmentNames(spec);
   const uniqueAttachmentNames = [...new Set(attachmentNames)];
@@ -102,7 +106,9 @@ export async function sendDiscordComponentMessage(
     const fileData = toDiscordFileBlob(media.buffer);
     files = [{ data: fileData, name: fileName }];
   } else if (expectedAttachmentName) {
-    throw new Error("Discord component file blocks require a media attachment (media/path/filePath).");
+    throw new Error(
+      "Discord component file blocks require a media attachment (media/path/filePath).",
+    );
   }
 
   const payload: MessagePayloadObject = {

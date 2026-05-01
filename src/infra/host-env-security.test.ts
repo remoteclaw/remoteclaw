@@ -72,7 +72,12 @@ async function runGitCommand(
   });
 }
 
-async function runGitClone(gitPath: string, source: string, destination: string, env: NodeJS.ProcessEnv) {
+async function runGitClone(
+  gitPath: string,
+  source: string,
+  destination: string,
+  env: NodeJS.ProcessEnv,
+) {
   await runGitCommand(gitPath, ["clone", source, destination], { env });
 }
 
@@ -802,7 +807,10 @@ describe("git env exploit regression", () => {
     );
     const editorPath = path.join(repoDir, "sequence-editor.sh");
     const safeEditorPath = path.join(safeRepoDir, "sequence-editor.sh");
-    const marker = path.join(os.tmpdir(), `remoteclaw-git-sequence-editor-marker-${process.pid}-${Date.now()}`);
+    const marker = path.join(
+      os.tmpdir(),
+      `remoteclaw-git-sequence-editor-marker-${process.pid}-${Date.now()}`,
+    );
 
     try {
       await initGitRepoWithCommits(gitPath, repoDir, 2);
@@ -852,9 +860,14 @@ describe("git env exploit regression", () => {
       return;
     }
 
-    const helperDir = fs.mkdtempSync(path.join(os.tmpdir(), `remoteclaw-git-exec-path-${process.pid}-${Date.now()}-`));
+    const helperDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), `remoteclaw-git-exec-path-${process.pid}-${Date.now()}-`),
+    );
     const helperPath = path.join(helperDir, "git-remote-https");
-    const marker = path.join(os.tmpdir(), `remoteclaw-git-exec-path-marker-${process.pid}-${Date.now()}`);
+    const marker = path.join(
+      os.tmpdir(),
+      `remoteclaw-git-exec-path-marker-${process.pid}-${Date.now()}`,
+    );
     try {
       clearMarker(marker);
       fs.writeFileSync(helperPath, `#!/bin/sh\ntouch ${JSON.stringify(marker)}\nexit 1\n`, "utf8");
@@ -894,18 +907,31 @@ describe("git env exploit regression", () => {
     const repoDir = fs.mkdtempSync(
       path.join(os.tmpdir(), `remoteclaw-git-template-source-${process.pid}-${Date.now()}-`),
     );
-    const cloneDir = path.join(os.tmpdir(), `remoteclaw-git-template-clone-${process.pid}-${Date.now()}`);
-    const safeCloneDir = path.join(os.tmpdir(), `remoteclaw-git-template-safe-clone-${process.pid}-${Date.now()}`);
+    const cloneDir = path.join(
+      os.tmpdir(),
+      `remoteclaw-git-template-clone-${process.pid}-${Date.now()}`,
+    );
+    const safeCloneDir = path.join(
+      os.tmpdir(),
+      `remoteclaw-git-template-safe-clone-${process.pid}-${Date.now()}`,
+    );
     const templateDir = fs.mkdtempSync(
       path.join(os.tmpdir(), `remoteclaw-git-template-dir-${process.pid}-${Date.now()}-`),
     );
     const hooksDir = path.join(templateDir, "hooks");
-    const marker = path.join(os.tmpdir(), `remoteclaw-git-template-marker-${process.pid}-${Date.now()}`);
+    const marker = path.join(
+      os.tmpdir(),
+      `remoteclaw-git-template-marker-${process.pid}-${Date.now()}`,
+    );
 
     try {
       fs.mkdirSync(hooksDir, { recursive: true });
       clearMarker(marker);
-      fs.writeFileSync(path.join(hooksDir, "post-checkout"), `#!/bin/sh\ntouch ${JSON.stringify(marker)}\n`, "utf8");
+      fs.writeFileSync(
+        path.join(hooksDir, "post-checkout"),
+        `#!/bin/sh\ntouch ${JSON.stringify(marker)}\n`,
+        "utf8",
+      );
       fs.chmodSync(path.join(hooksDir, "post-checkout"), 0o755);
 
       await runGitCommand(gitPath, ["init", repoDir]);
@@ -963,7 +989,10 @@ describe("git env exploit regression", () => {
       return;
     }
 
-    const marker = path.join(os.tmpdir(), `remoteclaw-git-ssh-command-${process.pid}-${Date.now()}`);
+    const marker = path.join(
+      os.tmpdir(),
+      `remoteclaw-git-ssh-command-${process.pid}-${Date.now()}`,
+    );
     clearMarker(marker);
 
     const target = "ssh://127.0.0.1:1/does-not-matter";
@@ -1007,13 +1036,20 @@ describe("compiler override exploit regression", () => {
       path.join(os.tmpdir(), `remoteclaw-compiler-override-${process.pid}-${Date.now()}-`),
     );
     const exploitPath = path.join(tempDir, "evil-cc");
-    const marker = path.join(os.tmpdir(), `remoteclaw-compiler-override-marker-${process.pid}-${Date.now()}`);
+    const marker = path.join(
+      os.tmpdir(),
+      `remoteclaw-compiler-override-marker-${process.pid}-${Date.now()}`,
+    );
 
     try {
       // `CC` is a representative proof for the whole class because all compiler override keys
       // flow through the same host env sanitization boundary; unit tests cover the sibling keys.
       clearMarker(marker);
-      fs.writeFileSync(path.join(tempDir, "Makefile"), "all:\n\t@$(CC) --version >/dev/null 2>&1 || true\n", "utf8");
+      fs.writeFileSync(
+        path.join(tempDir, "Makefile"),
+        "all:\n\t@$(CC) --version >/dev/null 2>&1 || true\n",
+        "utf8",
+      );
       fs.writeFileSync(exploitPath, `#!/bin/sh\ntouch ${JSON.stringify(marker)}\nexit 1\n`, "utf8");
       fs.chmodSync(exploitPath, 0o755);
 

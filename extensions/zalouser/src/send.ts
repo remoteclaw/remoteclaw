@@ -29,7 +29,9 @@ export async function sendMessageZalouser(
   options: ZalouserSendOptions = {},
 ): Promise<ZalouserSendResult> {
   const prepared =
-    options.textMode === "markdown" ? parseZalouserTextStyles(text) : { text, styles: options.textStyles };
+    options.textMode === "markdown"
+      ? parseZalouserTextStyles(text)
+      : { text, styles: options.textStyles };
   const textChunkLimit = options.textChunkLimit ?? ZALO_TEXT_LIMIT;
   const chunks = splitStyledText(
     prepared.text,
@@ -186,7 +188,11 @@ function sliceTextStyles(
   return chunkStyles.length > 0 ? chunkStyles : undefined;
 }
 
-function splitTextRanges(text: string, limit: number, mode: TextChunkMode): Array<{ start: number; end: number }> {
+function splitTextRanges(
+  text: string,
+  limit: number,
+  mode: TextChunkMode,
+): Array<{ start: number; end: number }> {
   if (mode === "newline") {
     return splitTextRangesByPreferredBreaks(text, limit);
   }
@@ -201,7 +207,10 @@ function splitTextRanges(text: string, limit: number, mode: TextChunkMode): Arra
   return ranges;
 }
 
-function splitTextRangesByPreferredBreaks(text: string, limit: number): Array<{ start: number; end: number }> {
+function splitTextRangesByPreferredBreaks(
+  text: string,
+  limit: number,
+): Array<{ start: number; end: number }> {
   const ranges: Array<{ start: number; end: number }> = [];
   let start = 0;
 
@@ -240,7 +249,12 @@ function findParagraphBreak(text: string, start: number, end: number): number | 
   return start + lastMatch.index + lastMatch[0].length;
 }
 
-function findLastBreak(text: string, marker: string, start: number, end: number): number | undefined {
+function findLastBreak(
+  text: string,
+  marker: string,
+  start: number,
+  end: number,
+): number | undefined {
   const index = text.lastIndexOf(marker, end - 1);
   if (index < start) {
     return undefined;

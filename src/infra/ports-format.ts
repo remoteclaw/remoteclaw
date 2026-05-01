@@ -8,7 +8,9 @@ export function classifyPortListener(listener: PortListener, port: number): Port
   }
   if (raw.includes("ssh")) {
     const portToken = String(port);
-    const tunnelPattern = new RegExp(`-(l|r)\\s*${portToken}\\b|-(l|r)${portToken}\\b|:${portToken}\\b`);
+    const tunnelPattern = new RegExp(
+      `-(l|r)\\s*${portToken}\\b|-(l|r)${portToken}\\b|:${portToken}\\b`,
+    );
     if (!raw || tunnelPattern.test(raw)) {
       return "ssh";
     }
@@ -55,7 +57,10 @@ function classifyLoopbackAddressFamily(host: string): "ipv4" | "ipv6" | null {
   return null;
 }
 
-export function isDualStackLoopbackGatewayListeners(listeners: PortListener[], port: number): boolean {
+export function isDualStackLoopbackGatewayListeners(
+  listeners: PortListener[],
+  port: number,
+): boolean {
   if (listeners.length < 2) {
     return false;
   }
@@ -98,7 +103,9 @@ export function buildPortHints(listeners: PortListener[], port: number): string[
     );
   }
   if (kinds.has("ssh")) {
-    hints.push("SSH tunnel already bound to this port. Close the tunnel or use a different local port in -L.");
+    hints.push(
+      "SSH tunnel already bound to this port. Close the tunnel or use a different local port in -L.",
+    );
   }
   if (kinds.has("unknown")) {
     hints.push("Another process is listening on this port.");

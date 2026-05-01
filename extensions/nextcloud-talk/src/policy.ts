@@ -21,7 +21,9 @@ function normalizeAllowEntry(raw: string): string {
     .replace(/^(nextcloud-talk|nc-talk|nc):/i, "");
 }
 
-export function normalizeNextcloudTalkAllowlist(values: Array<string | number> | undefined): string[] {
+export function normalizeNextcloudTalkAllowlist(
+  values: Array<string | number> | undefined,
+): string[] {
   return (values ?? []).map((value) => normalizeAllowEntry(String(value))).filter(Boolean);
 }
 
@@ -89,7 +91,9 @@ export function resolveNextcloudTalkRoomMatch(params: {
   };
 }
 
-export function resolveNextcloudTalkGroupToolPolicy(params: ChannelGroupContext): GroupToolPolicyConfig | undefined {
+export function resolveNextcloudTalkGroupToolPolicy(
+  params: ChannelGroupContext,
+): GroupToolPolicyConfig | undefined {
   const cfg = params.cfg as {
     channels?: { "nextcloud-talk"?: { rooms?: Record<string, NextcloudTalkRoomConfig> } };
   };

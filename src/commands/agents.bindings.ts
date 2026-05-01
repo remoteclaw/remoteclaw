@@ -48,7 +48,10 @@ function canUpgradeBindingAccountScope(params: {
   if (normalizeAgentId(params.existing.agentId) !== params.normalizedIncomingAgentId) {
     return false;
   }
-  return bindingMatchIdentityKey(params.existing.match) === bindingMatchIdentityKey(params.incoming.match);
+  return (
+    bindingMatchIdentityKey(params.existing.match) ===
+    bindingMatchIdentityKey(params.incoming.match)
+  );
 }
 
 export function describeBinding(binding: AgentRouteBinding) {
@@ -282,7 +285,11 @@ export function buildChannelBindings(params: {
   return bindings;
 }
 
-export function parseBindingSpecs(params: { agentId: string; specs?: string[]; config: RemoteClawConfig }): {
+export function parseBindingSpecs(params: {
+  agentId: string;
+  specs?: string[];
+  config: RemoteClawConfig;
+}): {
   bindings: AgentRouteBinding[];
   errors: string[];
 } {

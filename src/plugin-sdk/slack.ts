@@ -19,13 +19,25 @@ export {
   listSlackDirectoryGroupsFromConfig,
   listSlackDirectoryPeersFromConfig,
 } from "../channels/plugins/directory-config.js";
-export { looksLikeSlackTargetId, normalizeSlackMessagingTarget } from "../channels/plugins/normalize/slack.js";
-export { extractSlackToolSend, listSlackMessageActions } from "../../extensions/slack/src/message-actions.js";
+export {
+  looksLikeSlackTargetId,
+  normalizeSlackMessagingTarget,
+} from "../channels/plugins/normalize/slack.js";
+export {
+  extractSlackToolSend,
+  listSlackMessageActions,
+} from "../../extensions/slack/src/message-actions.js";
 export { buildSlackThreadingToolContext } from "../../extensions/slack/src/threading-tool-context.js";
 export { buildComputedAccountStatusSnapshot } from "./status-helpers.js";
 
-export { resolveDefaultGroupPolicy, resolveOpenProviderRuntimeGroupPolicy } from "../config/runtime-group-policy.js";
-export { resolveSlackGroupRequireMention, resolveSlackGroupToolPolicy } from "../channels/plugins/group-mentions.js";
+export {
+  resolveDefaultGroupPolicy,
+  resolveOpenProviderRuntimeGroupPolicy,
+} from "../config/runtime-group-policy.js";
+export {
+  resolveSlackGroupRequireMention,
+  resolveSlackGroupToolPolicy,
+} from "../channels/plugins/group-mentions.js";
 export { slackOnboardingAdapter } from "../channels/plugins/onboarding/slack.js";
 export { SlackConfigSchema } from "../config/zod-schema.providers-core.js";
 

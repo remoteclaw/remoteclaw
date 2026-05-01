@@ -8,11 +8,13 @@ export type RegisteredRoute = {
   handler: (req: IncomingMessage, res: ServerResponse) => Promise<void>;
 };
 
-export const registerPluginHttpRouteMock: Mock<(params: RegisteredRoute) => () => void> = vi.fn(() => vi.fn());
+export const registerPluginHttpRouteMock: Mock<(params: RegisteredRoute) => () => void> = vi.fn(
+  () => vi.fn(),
+);
 
-export const dispatchReplyWithBufferedBlockDispatcher: Mock<() => Promise<{ counts: Record<string, number> }>> = vi
-  .fn()
-  .mockResolvedValue({ counts: {} });
+export const dispatchReplyWithBufferedBlockDispatcher: Mock<
+  () => Promise<{ counts: Record<string, number> }>
+> = vi.fn().mockResolvedValue({ counts: {} });
 
 async function readRequestBodyWithLimitForTest(req: IncomingMessage): Promise<string> {
   return await new Promise<string>((resolve, reject) => {

@@ -29,12 +29,17 @@ function dedupeApiKeys(raw: string[]): string[] {
   return keys;
 }
 
-export function collectProviderApiKeysForExecution(params: { provider: string; primaryApiKey?: string }): string[] {
+export function collectProviderApiKeysForExecution(params: {
+  provider: string;
+  primaryApiKey?: string;
+}): string[] {
   const { primaryApiKey, provider } = params;
   return dedupeApiKeys([primaryApiKey?.trim() ?? "", ...collectProviderApiKeys(provider)]);
 }
 
-export async function executeWithApiKeyRotation<T>(params: ExecuteWithApiKeyRotationOptions<T>): Promise<T> {
+export async function executeWithApiKeyRotation<T>(
+  params: ExecuteWithApiKeyRotationOptions<T>,
+): Promise<T> {
   const keys = dedupeApiKeys(params.apiKeys);
   if (keys.length === 0) {
     throw new Error(`No API keys configured for provider "${params.provider}".`);

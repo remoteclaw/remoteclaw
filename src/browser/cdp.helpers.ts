@@ -19,14 +19,20 @@ type Pending = {
   reject: (err: Error) => void;
 };
 
-export type CdpSendFn = (method: string, params?: Record<string, unknown>, sessionId?: string) => Promise<unknown>;
+export type CdpSendFn = (
+  method: string,
+  params?: Record<string, unknown>,
+  sessionId?: string,
+) => Promise<unknown>;
 
 export function getHeadersWithAuth(url: string, headers: Record<string, string> = {}) {
   const relayHeaders = getChromeExtensionRelayAuthHeaders(url);
   const mergedHeaders = { ...relayHeaders, ...headers };
   try {
     const parsed = new URL(url);
-    const hasAuthHeader = Object.keys(mergedHeaders).some((key) => key.toLowerCase() === "authorization");
+    const hasAuthHeader = Object.keys(mergedHeaders).some(
+      (key) => key.toLowerCase() === "authorization",
+    );
     if (hasAuthHeader) {
       return mergedHeaders;
     }
@@ -52,7 +58,11 @@ function createCdpSender(ws: WebSocket) {
   let nextId = 1;
   const pending = new Map<number, Pending>();
 
-  const send: CdpSendFn = (method: string, params?: Record<string, unknown>, sessionId?: string) => {
+  const send: CdpSendFn = (
+    method: string,
+    params?: Record<string, unknown>,
+    sessionId?: string,
+  ) => {
     const id = nextId++;
     const msg = { id, method, params, sessionId };
     ws.send(JSON.stringify(msg));
@@ -123,7 +133,9 @@ export async function fetchCdpChecked(
   const t = setTimeout(ctrl.abort.bind(ctrl), timeoutMs);
   try {
     const headers = getHeadersWithAuth(url, (init?.headers as Record<string, string>) || {});
-    const res = await withNoProxyForCdpUrl(url, () => fetch(url, { ...init, headers, signal: ctrl.signal }));
+    const res = await withNoProxyForCdpUrl(url, () =>
+      fetch(url, { ...init, headers, signal: ctrl.signal }),
+    );
     if (!res.ok) {
       if (res.status === 429) {
         // Do not reflect upstream response text into the error surface (log/agent injection risk)
@@ -137,7 +149,11 @@ export async function fetchCdpChecked(
   }
 }
 
-export async function fetchOk(url: string, timeoutMs = CDP_HTTP_REQUEST_TIMEOUT_MS, init?: RequestInit): Promise<void> {
+export async function fetchOk(
+  url: string,
+  timeoutMs = CDP_HTTP_REQUEST_TIMEOUT_MS,
+  init?: RequestInit,
+): Promise<void> {
   await fetchCdpChecked(url, timeoutMs, init);
 }
 

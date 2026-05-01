@@ -5,9 +5,11 @@ import {
   type DiscordGuildEntryResolved,
 } from "./allow-list.js";
 
-export function buildDiscordGroupSystemPrompt(channelConfig?: DiscordChannelConfigResolved | null): string | undefined {
-  const systemPromptParts = [channelConfig?.systemPrompt?.trim() || null].filter((entry): entry is string =>
-    Boolean(entry),
+export function buildDiscordGroupSystemPrompt(
+  channelConfig?: DiscordChannelConfigResolved | null,
+): string | undefined {
+  const systemPromptParts = [channelConfig?.systemPrompt?.trim() || null].filter(
+    (entry): entry is string => Boolean(entry),
   );
   return systemPromptParts.length > 0 ? systemPromptParts.join("\n\n") : undefined;
 }
@@ -40,7 +42,9 @@ export function buildDiscordInboundAccessContext(params: {
   channelTopic?: string;
 }) {
   return {
-    groupSystemPrompt: params.isGuild ? buildDiscordGroupSystemPrompt(params.channelConfig) : undefined,
+    groupSystemPrompt: params.isGuild
+      ? buildDiscordGroupSystemPrompt(params.channelConfig)
+      : undefined,
     untrustedContext: buildDiscordUntrustedContext({
       isGuild: params.isGuild,
       channelTopic: params.channelTopic,

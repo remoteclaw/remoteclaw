@@ -42,11 +42,16 @@ describe("ports-format", () => {
       { pid: 4242, commandLine: "remoteclaw-gateway", address: "[::1]:18789" },
     ];
     expect(isDualStackLoopbackGatewayListeners(listeners, 18789)).toBe(true);
-    expect(buildPortHints(listeners, 18789)).toEqual([expect.stringContaining("Gateway already running locally.")]);
+    expect(buildPortHints(listeners, 18789)).toEqual([
+      expect.stringContaining("Gateway already running locally."),
+    ]);
   });
 
   it.each([
-    [{ pid: 123, user: "alice", commandLine: "ssh -N", address: "::1" }, "pid 123 alice: ssh -N (::1)"],
+    [
+      { pid: 123, user: "alice", commandLine: "ssh -N", address: "::1" },
+      "pid 123 alice: ssh -N (::1)",
+    ],
     [{ command: "ssh", address: "127.0.0.1:18789" }, "pid ?: ssh (127.0.0.1:18789)"],
     [{}, "pid ?: unknown"],
   ] as const)("formats port listener %j", (listener, expected) => {

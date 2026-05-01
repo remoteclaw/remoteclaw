@@ -58,6 +58,8 @@ describe("slack/allow-list", () => {
 
   it("allows all users when allowList is empty and denies unknown entries", () => {
     expect(resolveSlackUserAllowed({ allowList: [], userId: "u1", userName: "alice" })).toBe(true);
-    expect(resolveSlackUserAllowed({ allowList: ["u2"], userId: "u1", userName: "alice" })).toBe(false);
+    expect(resolveSlackUserAllowed({ allowList: ["u2"], userId: "u1", userName: "alice" })).toBe(
+      false,
+    );
   });
 });

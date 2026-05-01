@@ -1,5 +1,9 @@
 import { expect, vi } from "vitest";
-import type { ClawdbotConfig, PluginRuntime, RuntimeEnv } from "../../../extensions/feishu/runtime-api.js";
+import type {
+  ClawdbotConfig,
+  PluginRuntime,
+  RuntimeEnv,
+} from "../../../extensions/feishu/runtime-api.js";
 import { monitorSingleAccount } from "../../../extensions/feishu/src/monitor.account.js";
 import { setFeishuRuntime } from "../../../extensions/feishu/src/runtime.js";
 import type { ResolvedFeishuAccount } from "../../../extensions/feishu/src/types.js";
@@ -91,8 +95,10 @@ export function installFeishuLifecycleRuntime(params: {
           withReplyDispatcher: params.withReplyDispatcher,
         },
         commands: {
-          shouldComputeCommandAuthorized: params.shouldComputeCommandAuthorized ?? vi.fn(() => false),
-          resolveCommandAuthorizedFromAuthorizers: params.resolveCommandAuthorizedFromAuthorizers ?? vi.fn(() => false),
+          shouldComputeCommandAuthorized:
+            params.shouldComputeCommandAuthorized ?? vi.fn(() => false),
+          resolveCommandAuthorizedFromAuthorizers:
+            params.resolveCommandAuthorizedFromAuthorizers ?? vi.fn(() => false),
         },
         session: {
           readSessionUpdatedAt: vi.fn(),
@@ -119,12 +125,14 @@ export function installFeishuLifecycleReplyRuntime(params: {
   storePath: string;
 }) {
   installFeishuLifecycleRuntime({
-    resolveAgentRoute: params.resolveAgentRouteMock as PluginRuntime["channel"]["routing"]["resolveAgentRoute"],
+    resolveAgentRoute:
+      params.resolveAgentRouteMock as PluginRuntime["channel"]["routing"]["resolveAgentRoute"],
     finalizeInboundContext:
       params.finalizeInboundContextMock as PluginRuntime["channel"]["reply"]["finalizeInboundContext"],
     dispatchReplyFromConfig:
       params.dispatchReplyFromConfigMock as PluginRuntime["channel"]["reply"]["dispatchReplyFromConfig"],
-    withReplyDispatcher: params.withReplyDispatcherMock as PluginRuntime["channel"]["reply"]["withReplyDispatcher"],
+    withReplyDispatcher:
+      params.withReplyDispatcherMock as PluginRuntime["channel"]["reply"]["withReplyDispatcher"],
     resolveStorePath: vi.fn(() => params.storePath),
   });
 }

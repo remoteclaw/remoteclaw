@@ -77,7 +77,12 @@ export async function resolveSlackEffectiveAllowFrom(
   const ttlMs = getPairingAllowFromCacheTtlMs();
   const nowMs = Date.now();
   const pairingKey = `${ctx.accountId}:${ctx.dmPolicy}`;
-  if (ttlMs > 0 && cache.pairing && cache.pairingKey === pairingKey && (cache.pairingExpiresAtMs ?? 0) >= nowMs) {
+  if (
+    ttlMs > 0 &&
+    cache.pairing &&
+    cache.pairingKey === pairingKey &&
+    (cache.pairingExpiresAtMs ?? 0) >= nowMs
+  ) {
     return cache.pairing;
   }
   if (cache.pairingPending && cache.pairingKey === pairingKey) {
@@ -200,7 +205,9 @@ export async function authorizeSlackSystemEventSender(params: {
     }
   }
 
-  const senderInfo: { name?: string } = await params.ctx.resolveUserName(senderId).catch(() => ({}));
+  const senderInfo: { name?: string } = await params.ctx
+    .resolveUserName(senderId)
+    .catch(() => ({}));
   const senderName = senderInfo.name;
 
   const resolveAllowFromLower = async (includePairingStore = false) =>
@@ -251,7 +258,8 @@ export async function authorizeSlackSystemEventSender(params: {
       defaultRequireMention: params.ctx.defaultRequireMention,
       allowNameMatching: params.ctx.allowNameMatching,
     });
-    const channelUsersAllowlistConfigured = Array.isArray(channelConfig?.users) && channelConfig.users.length > 0;
+    const channelUsersAllowlistConfigured =
+      Array.isArray(channelConfig?.users) && channelConfig.users.length > 0;
     if (channelUsersAllowlistConfigured) {
       const channelUserAllowed = resolveSlackUserAllowed({
         allowList: channelConfig?.users,

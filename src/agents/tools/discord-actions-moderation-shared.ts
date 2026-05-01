@@ -23,7 +23,9 @@ export function isDiscordModerationAction(action: string): action is DiscordMode
   return action === "timeout" || action === "kick" || action === "ban";
 }
 
-export function requiredGuildPermissionForModerationAction(action: DiscordModerationAction): bigint {
+export function requiredGuildPermissionForModerationAction(
+  action: DiscordModerationAction,
+): bigint {
   return moderationPermissions[action];
 }
 

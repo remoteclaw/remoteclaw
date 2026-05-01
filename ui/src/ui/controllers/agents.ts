@@ -2,7 +2,10 @@ import type { GatewayBrowserClient } from "../gateway.ts";
 import type { AgentsListResult, ToolsCatalogResult } from "../types.ts";
 import { saveConfig } from "./config.ts";
 import type { ConfigState } from "./config.ts";
-import { formatMissingOperatorReadScopeMessage, isMissingOperatorReadScopeError } from "./scope-errors.ts";
+import {
+  formatMissingOperatorReadScopeMessage,
+  isMissingOperatorReadScopeError,
+} from "./scope-errors.ts";
 
 export type AgentsState = {
   client: GatewayBrowserClient | null;

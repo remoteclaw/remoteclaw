@@ -23,7 +23,9 @@ export type InboundLastRouteUpdate = {
   };
 };
 
-function shouldSkipPinnedMainDmRouteUpdate(pin: InboundLastRouteUpdate["mainDmOwnerPin"] | undefined): boolean {
+function shouldSkipPinnedMainDmRouteUpdate(
+  pin: InboundLastRouteUpdate["mainDmOwnerPin"] | undefined,
+): boolean {
   if (!pin) {
     return false;
   }

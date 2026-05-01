@@ -1,4 +1,9 @@
-export type UrbitErrorCode = "invalid_url" | "http_error" | "auth_failed" | "missing_cookie" | "channel_not_open";
+export type UrbitErrorCode =
+  | "invalid_url"
+  | "http_error"
+  | "auth_failed"
+  | "missing_cookie"
+  | "channel_not_open";
 
 export class UrbitError extends Error {
   readonly code: UrbitErrorCode;
@@ -35,7 +40,11 @@ export class UrbitHttpError extends UrbitError {
 }
 
 export class UrbitAuthError extends UrbitError {
-  constructor(code: "auth_failed" | "missing_cookie", message: string, options?: { cause?: unknown }) {
+  constructor(
+    code: "auth_failed" | "missing_cookie",
+    message: string,
+    options?: { cause?: unknown },
+  ) {
     super(code, message, options);
     this.name = "UrbitAuthError";
   }

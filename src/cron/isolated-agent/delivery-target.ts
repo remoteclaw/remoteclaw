@@ -2,11 +2,18 @@ import { resolveWhatsAppAccount } from "../../../extensions/whatsapp/src/account
 import { normalizeWhatsAppTarget } from "../../../extensions/whatsapp/src/normalize.js";
 import type { ChannelId } from "../../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../../config/config.js";
-import { loadSessionStore, resolveAgentMainSessionKey, resolveStorePath } from "../../config/sessions.js";
+import {
+  loadSessionStore,
+  resolveAgentMainSessionKey,
+  resolveStorePath,
+} from "../../config/sessions.js";
 import { resolveMessageChannelSelection } from "../../infra/outbound/channel-selection.js";
 import { maybeResolveIdLikeTarget } from "../../infra/outbound/target-resolver.js";
 import type { OutboundChannel } from "../../infra/outbound/targets.js";
-import { resolveOutboundTarget, resolveSessionDeliveryTarget } from "../../infra/outbound/targets.js";
+import {
+  resolveOutboundTarget,
+  resolveSessionDeliveryTarget,
+} from "../../infra/outbound/targets.js";
 import { readChannelAllowFromStoreSync } from "../../pairing/pairing-store.js";
 import { buildChannelAccountBindings } from "../../routing/bindings.js";
 import { normalizeAccountId, normalizeAgentId } from "../../routing/session-key.js";
@@ -100,7 +107,9 @@ export async function resolveDeliveryTarget(
   // --account on cron add/edit). Fall back to the session's lastAccountId,
   // then to the agent's bound account from bindings config.
   const explicitAccountId =
-    typeof jobPayload.accountId === "string" && jobPayload.accountId.trim() ? jobPayload.accountId.trim() : undefined;
+    typeof jobPayload.accountId === "string" && jobPayload.accountId.trim()
+      ? jobPayload.accountId.trim()
+      : undefined;
   let accountId = explicitAccountId ?? resolved.accountId;
   if (!accountId && channel) {
     const bindings = buildChannelAccountBindings(cfg);
@@ -121,7 +130,8 @@ export async function resolveDeliveryTarget(
   // Session-derived threadIds are dropped when the target differs to prevent
   // stale thread IDs from leaking to a different chat.
   const threadId =
-    resolved.threadId && (resolved.threadIdExplicit || (resolved.to && resolved.to === resolved.lastTo))
+    resolved.threadId &&
+    (resolved.threadIdExplicit || (resolved.to && resolved.to === resolved.lastTo))
       ? resolved.threadId
       : undefined;
 
@@ -134,14 +144,16 @@ export async function resolveDeliveryTarget(
       threadId,
       mode,
       error:
-        channelResolutionError ?? new Error("Channel is required when delivery.channel=last has no previous channel."),
+        channelResolutionError ??
+        new Error("Channel is required when delivery.channel=last has no previous channel."),
     };
   }
 
   let allowFromOverride: string[] | undefined;
   if (channel === "whatsapp") {
     const resolvedAccountId = normalizeAccountId(accountId);
-    const configuredAllowFromRaw = resolveWhatsAppAccount({ cfg, accountId: resolvedAccountId }).allowFrom ?? [];
+    const configuredAllowFromRaw =
+      resolveWhatsAppAccount({ cfg, accountId: resolvedAccountId }).allowFrom ?? [];
     const configuredAllowFrom = configuredAllowFromRaw
       .map((entry) => String(entry).trim())
       .filter((entry) => entry && entry !== "*")

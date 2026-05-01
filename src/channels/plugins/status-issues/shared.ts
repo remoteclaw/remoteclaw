@@ -6,7 +6,10 @@ export function asString(value: unknown): string | undefined {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
 }
 
-export function formatMatchMetadata(params: { matchKey?: unknown; matchSource?: unknown }): string | undefined {
+export function formatMatchMetadata(params: {
+  matchKey?: unknown;
+  matchSource?: unknown;
+}): string | undefined {
   const matchKey =
     typeof params.matchKey === "string"
       ? params.matchKey
@@ -14,13 +17,17 @@ export function formatMatchMetadata(params: { matchKey?: unknown; matchSource?: 
         ? String(params.matchKey)
         : undefined;
   const matchSource = asString(params.matchSource);
-  const parts = [matchKey ? `matchKey=${matchKey}` : null, matchSource ? `matchSource=${matchSource}` : null].filter(
-    (entry): entry is string => Boolean(entry),
-  );
+  const parts = [
+    matchKey ? `matchKey=${matchKey}` : null,
+    matchSource ? `matchSource=${matchSource}` : null,
+  ].filter((entry): entry is string => Boolean(entry));
   return parts.length > 0 ? parts.join(" ") : undefined;
 }
 
-export function appendMatchMetadata(message: string, params: { matchKey?: unknown; matchSource?: unknown }): string {
+export function appendMatchMetadata(
+  message: string,
+  params: { matchKey?: unknown; matchSource?: unknown },
+): string {
   const meta = formatMatchMetadata(params);
   return meta ? `${message} (${meta})` : message;
 }
@@ -36,7 +43,9 @@ export function resolveEnabledConfiguredAccountId(account: {
   return enabled && configured ? accountId : null;
 }
 
-export function collectIssuesForEnabledAccounts<T extends { accountId?: unknown; enabled?: unknown }>(params: {
+export function collectIssuesForEnabledAccounts<
+  T extends { accountId?: unknown; enabled?: unknown },
+>(params: {
   accounts: ChannelAccountSnapshot[];
   readAccount: (value: ChannelAccountSnapshot) => T | null;
   collectIssues: (params: { account: T; accountId: string; issues: ChannelStatusIssue[] }) => void;

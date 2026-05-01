@@ -139,7 +139,8 @@ export const tlonOnboardingAdapter: ChannelOnboardingAdapter = {
     let allowPrivateNetwork = resolved.allowPrivateNetwork ?? false;
     if (isBlockedUrbitHostname(validatedUrl.hostname)) {
       allowPrivateNetwork = await prompter.confirm({
-        message: "Ship URL looks like a private/internal host. Allow private network access? (SSRF risk)",
+        message:
+          "Ship URL looks like a private/internal host. Allow private network access? (SSRF risk)",
         initialValue: allowPrivateNetwork,
       });
       if (!allowPrivateNetwork) {

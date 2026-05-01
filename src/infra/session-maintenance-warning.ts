@@ -89,7 +89,9 @@ function resolveWarningDeliveryTarget(entry: SessionEntry): {
   threadId?: string | number;
 } {
   const context = deliveryContextFromSession(entry);
-  const channel = context?.channel ? (normalizeMessageChannel(context.channel) ?? context.channel) : undefined;
+  const channel = context?.channel
+    ? (normalizeMessageChannel(context.channel) ?? context.channel)
+    : undefined;
   return {
     channel: channel && isDeliverableMessageChannel(channel) ? channel : undefined,
     to: context?.to,

@@ -29,7 +29,11 @@ describe("chat image open safety", () => {
     image?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
     expect(openSpy).toHaveBeenCalledTimes(1);
-    expect(openSpy).toHaveBeenCalledWith("https://example.com/cat.png", "_blank", "noopener,noreferrer");
+    expect(openSpy).toHaveBeenCalledWith(
+      "https://example.com/cat.png",
+      "_blank",
+      "noopener,noreferrer",
+    );
   });
 
   it("does not open unsafe image URLs", async () => {
@@ -52,7 +56,9 @@ describe("chat image open safety", () => {
     await app.updateComplete;
 
     const openSpy = vi.spyOn(window, "open").mockReturnValue(null);
-    app.chatMessages = [renderAssistantImage("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' />")];
+    app.chatMessages = [
+      renderAssistantImage("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' />"),
+    ];
     await app.updateComplete;
 
     const image = app.querySelector<HTMLImageElement>(".chat-message-image");

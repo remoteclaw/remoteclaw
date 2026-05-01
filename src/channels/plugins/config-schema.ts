@@ -13,7 +13,9 @@ type ExtendableZodObject = ZodTypeAny & {
 export const AllowFromEntrySchema = z.union([z.string(), z.number()]);
 export const AllowFromListSchema = z.array(AllowFromEntrySchema).optional();
 
-export function buildNestedDmConfigSchema<TExtraShape extends ZodRawShape = {}>(extraShape?: TExtraShape) {
+export function buildNestedDmConfigSchema<TExtraShape extends ZodRawShape = {}>(
+  extraShape?: TExtraShape,
+) {
   const baseShape = {
     enabled: z.boolean().optional(),
     policy: DmPolicySchema.optional(),
@@ -22,7 +24,9 @@ export function buildNestedDmConfigSchema<TExtraShape extends ZodRawShape = {}>(
   return z.object(extraShape ? { ...baseShape, ...extraShape } : baseShape).optional();
 }
 
-export function buildCatchallMultiAccountChannelSchema<T extends ExtendableZodObject>(accountSchema: T): T {
+export function buildCatchallMultiAccountChannelSchema<T extends ExtendableZodObject>(
+  accountSchema: T,
+): T {
   return accountSchema.extend({
     accounts: z.object({}).catchall(accountSchema).optional(),
     defaultAccount: z.string().optional(),

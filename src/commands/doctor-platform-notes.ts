@@ -81,14 +81,19 @@ export async function noteMacLaunchctlGatewayEnvOverrides(
     const lines = [
       "- Deprecated launchctl environment variables detected (ignored).",
       ...deprecatedLaunchctlEntries.map(
-        ([key]) => `- \`${key}\` is set; use \`REMOTECLAW_${key.slice(key.indexOf("_") + 1)}\` instead.`,
+        ([key]) =>
+          `- \`${key}\` is set; use \`REMOTECLAW_${key.slice(key.indexOf("_") + 1)}\` instead.`,
       ),
     ];
     (deps?.noteFn ?? note)(lines.join("\n"), "Gateway (macOS)");
   }
 
-  const tokenEntries = [["REMOTECLAW_GATEWAY_TOKEN", await getenv("REMOTECLAW_GATEWAY_TOKEN")]] as const;
-  const passwordEntries = [["REMOTECLAW_GATEWAY_PASSWORD", await getenv("REMOTECLAW_GATEWAY_PASSWORD")]] as const;
+  const tokenEntries = [
+    ["REMOTECLAW_GATEWAY_TOKEN", await getenv("REMOTECLAW_GATEWAY_TOKEN")],
+  ] as const;
+  const passwordEntries = [
+    ["REMOTECLAW_GATEWAY_PASSWORD", await getenv("REMOTECLAW_GATEWAY_PASSWORD")],
+  ] as const;
   const tokenEntry = tokenEntries.find(([, value]) => value?.trim());
   const passwordEntry = passwordEntries.find(([, value]) => value?.trim());
   const envToken = tokenEntry?.[1]?.trim() ?? "";
@@ -101,7 +106,9 @@ export async function noteMacLaunchctlGatewayEnvOverrides(
 
   const lines = [
     "- launchctl environment overrides detected (can cause confusing unauthorized errors).",
-    envToken && envTokenKey ? `- \`${envTokenKey}\` is set; it overrides config tokens.` : undefined,
+    envToken && envTokenKey
+      ? `- \`${envTokenKey}\` is set; it overrides config tokens.`
+      : undefined,
     envPassword
       ? `- \`${envPasswordKey ?? "REMOTECLAW_GATEWAY_PASSWORD"}\` is set; it overrides config passwords.`
       : undefined,
@@ -113,7 +120,10 @@ export async function noteMacLaunchctlGatewayEnvOverrides(
   (deps?.noteFn ?? note)(lines.join("\n"), "Gateway (macOS)");
 }
 
-export function noteDeprecatedLegacyEnvVars(env: NodeJS.ProcessEnv = process.env, deps?: { noteFn?: typeof note }) {
+export function noteDeprecatedLegacyEnvVars(
+  env: NodeJS.ProcessEnv = process.env,
+  deps?: { noteFn?: typeof note },
+) {
   const entries = Object.entries(env)
     .filter(([key, value]) => key.startsWith("CLAWDBOT_") && value?.trim())
     .map(([key]) => key);
@@ -162,7 +172,8 @@ export function noteStartupOptimizationHints(
   const arch = deps?.arch ?? os.arch();
   const totalMemBytes = deps?.totalMemBytes ?? os.totalmem();
   const isArmHost = arch === "arm" || arch === "arm64";
-  const isLowMemoryLinux = platform === "linux" && totalMemBytes > 0 && totalMemBytes <= 8 * 1024 ** 3;
+  const isLowMemoryLinux =
+    platform === "linux" && totalMemBytes > 0 && totalMemBytes <= 8 * 1024 ** 3;
   const isStartupTuneTarget = platform === "linux" && (isArmHost || isLowMemoryLinux);
   if (!isStartupTuneTarget) {
     return;
@@ -175,7 +186,9 @@ export function noteStartupOptimizationHints(
   const lines: string[] = [];
 
   if (!compileCache) {
-    lines.push("- NODE_COMPILE_CACHE is not set; repeated CLI runs can be slower on small hosts (Pi/VM).");
+    lines.push(
+      "- NODE_COMPILE_CACHE is not set; repeated CLI runs can be slower on small hosts (Pi/VM).",
+    );
   } else if (isTmpCompileCachePath(compileCache)) {
     lines.push(
       "- NODE_COMPILE_CACHE points to /tmp; use /var/tmp so cache survives reboots and warms startup reliably.",
@@ -187,7 +200,9 @@ export function noteStartupOptimizationHints(
   }
 
   if (noRespawn !== "1") {
-    lines.push("- REMOTECLAW_NO_RESPAWN is not set to 1; set it to avoid extra startup overhead from self-respawn.");
+    lines.push(
+      "- REMOTECLAW_NO_RESPAWN is not set to 1; set it to avoid extra startup overhead from self-respawn.",
+    );
   }
 
   if (lines.length === 0) {

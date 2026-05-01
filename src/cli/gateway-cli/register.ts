@@ -32,7 +32,10 @@ function runGatewayCommand(action: () => Promise<void>, label?: string) {
   });
 }
 
-function resolveGatewayRpcOptions<T extends { token?: string; password?: string }>(opts: T, command?: Command): T {
+function resolveGatewayRpcOptions<T extends { token?: string; password?: string }>(
+  opts: T,
+  command?: Command,
+): T {
   const parentToken = inheritOptionFromParent<string>(command, "token");
   const parentPassword = inheritOptionFromParent<string>(command, "password");
   return {
@@ -59,7 +62,9 @@ export function registerGatewayCli(program: Command) {
       ),
   );
 
-  addGatewayRunCommand(gateway.command("run").description("Run the WebSocket Gateway (foreground)"));
+  addGatewayRunCommand(
+    gateway.command("run").description("Run the WebSocket Gateway (foreground)"),
+  );
 
   addGatewayServiceCommands(gateway, {
     statusDescription: "Show gateway service status + probe the Gateway",
@@ -107,7 +112,9 @@ export function registerGatewayCli(program: Command) {
           const obj: Record<string, unknown> = result && typeof result === "object" ? result : {};
           const durationMs = typeof obj.durationMs === "number" ? obj.durationMs : null;
           defaultRuntime.log(colorize(rich, theme.heading, "Gateway Health"));
-          defaultRuntime.log(`${colorize(rich, theme.success, "OK")}${durationMs != null ? ` (${durationMs}ms)` : ""}`);
+          defaultRuntime.log(
+            `${colorize(rich, theme.success, "OK")}${durationMs != null ? ` (${durationMs}ms)` : ""}`,
+          );
           if (obj.channels && typeof obj.channels === "object") {
             for (const line of formatHealthChannelLines(obj as HealthSummary)) {
               defaultRuntime.log(styleHealthChannelLine(line, rich));
@@ -159,7 +166,9 @@ export function registerGatewayCli(program: Command) {
         );
 
         const deduped = dedupeBeacons(beacons).toSorted((a, b) =>
-          String(a.displayName || a.instanceName).localeCompare(String(b.displayName || b.instanceName)),
+          String(a.displayName || a.instanceName).localeCompare(
+            String(b.displayName || b.instanceName),
+          ),
         );
 
         if (opts.json) {
@@ -186,7 +195,11 @@ export function registerGatewayCli(program: Command) {
         const rich = isRich();
         defaultRuntime.log(colorize(rich, theme.heading, "Gateway Discovery"));
         defaultRuntime.log(
-          colorize(rich, theme.muted, `Found ${deduped.length} gateway(s) · domains: ${domains.join(", ")}`),
+          colorize(
+            rich,
+            theme.muted,
+            `Found ${deduped.length} gateway(s) · domains: ${domains.join(", ")}`,
+          ),
         );
         if (deduped.length === 0) {
           return;

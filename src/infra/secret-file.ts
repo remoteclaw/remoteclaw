@@ -115,7 +115,11 @@ export function loadSecretFileSync(
   }
 }
 
-export function readSecretFileSync(filePath: string, label: string, options: SecretFileReadOptions = {}): string {
+export function readSecretFileSync(
+  filePath: string,
+  label: string,
+  options: SecretFileReadOptions = {},
+): string {
   const result = loadSecretFileSync(filePath, label, options);
   if (result.ok) {
     return result.secret;

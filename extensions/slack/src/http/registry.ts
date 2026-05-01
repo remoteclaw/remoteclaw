@@ -1,6 +1,9 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-export type SlackHttpRequestHandler = (req: IncomingMessage, res: ServerResponse) => Promise<void> | void;
+export type SlackHttpRequestHandler = (
+  req: IncomingMessage,
+  res: ServerResponse,
+) => Promise<void> | void;
 
 type RegisterSlackHttpHandlerArgs = {
   path?: string | null;
@@ -32,7 +35,10 @@ export function registerSlackHttpHandler(params: RegisterSlackHttpHandlerArgs): 
   };
 }
 
-export async function handleSlackHttpRequest(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
+export async function handleSlackHttpRequest(
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<boolean> {
   const url = new URL(req.url ?? "/", "http://localhost");
   const handler = slackHttpRoutes.get(url.pathname);
   if (!handler) {

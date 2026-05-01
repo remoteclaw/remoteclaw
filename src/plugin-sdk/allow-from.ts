@@ -1,4 +1,8 @@
-export type { AllowlistMatch, AllowlistMatchSource, CompiledAllowlist } from "../channels/allowlist-match.js";
+export type {
+  AllowlistMatch,
+  AllowlistMatchSource,
+  CompiledAllowlist,
+} from "../channels/allowlist-match.js";
 export type { AllowlistUserResolutionLike } from "../channels/allowlists/resolve-utils.js";
 export {
   compileAllowlist,

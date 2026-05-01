@@ -9,7 +9,10 @@ type CdpVersion = {
   "User-Agent"?: string;
 };
 
-async function fetchCdpVersion(cdpUrl: string, timeoutMs = CDP_REACHABILITY_TIMEOUT_MS): Promise<CdpVersion | null> {
+async function fetchCdpVersion(
+  cdpUrl: string,
+  timeoutMs = CDP_REACHABILITY_TIMEOUT_MS,
+): Promise<CdpVersion | null> {
   const ctrl = new AbortController();
   const t = setTimeout(ctrl.abort.bind(ctrl), timeoutMs);
   try {
@@ -27,7 +30,10 @@ async function fetchCdpVersion(cdpUrl: string, timeoutMs = CDP_REACHABILITY_TIME
   }
 }
 
-export async function isCdpHttpReachable(cdpUrl: string, timeoutMs = CDP_REACHABILITY_TIMEOUT_MS): Promise<boolean> {
+export async function isCdpHttpReachable(
+  cdpUrl: string,
+  timeoutMs = CDP_REACHABILITY_TIMEOUT_MS,
+): Promise<boolean> {
   const version = await fetchCdpVersion(cdpUrl, timeoutMs);
   return Boolean(version);
 }
@@ -44,7 +50,10 @@ export async function getCdpWebSocketUrl(
   return normalizeCdpWsUrl(wsUrl, cdpUrl);
 }
 
-async function canRunCdpHealthCommand(wsUrl: string, timeoutMs = CDP_WS_READY_TIMEOUT_MS): Promise<boolean> {
+async function canRunCdpHealthCommand(
+  wsUrl: string,
+  timeoutMs = CDP_WS_READY_TIMEOUT_MS,
+): Promise<boolean> {
   return await new Promise<boolean>((resolve) => {
     const ws = openCdpWebSocket(wsUrl, {
       handshakeTimeoutMs: timeoutMs,

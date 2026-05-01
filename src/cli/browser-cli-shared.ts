@@ -39,7 +39,9 @@ export async function callBrowserRequest<T>(
         ? Number.parseInt(opts.timeout, 10)
         : undefined;
   const resolvedTimeout =
-    typeof resolvedTimeoutMs === "number" && Number.isFinite(resolvedTimeoutMs) ? resolvedTimeoutMs : undefined;
+    typeof resolvedTimeoutMs === "number" && Number.isFinite(resolvedTimeoutMs)
+      ? resolvedTimeoutMs
+      : undefined;
   const timeout = typeof resolvedTimeout === "number" ? String(resolvedTimeout) : opts.timeout;
   const payload = await callGatewayFromCli(
     "browser.request",

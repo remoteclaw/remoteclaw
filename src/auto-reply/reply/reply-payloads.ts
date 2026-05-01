@@ -25,7 +25,10 @@ function resolveReplyThreadingForPayload(params: {
 
   // 2) Parse explicit reply tags from text (if present) and clean them.
   if (typeof resolved.text === "string" && resolved.text.includes("[[")) {
-    const { cleaned, replyToId, replyToCurrent, hasTag } = extractReplyToTag(resolved.text, currentMessageId);
+    const { cleaned, replyToId, replyToCurrent, hasTag } = extractReplyToTag(
+      resolved.text,
+      currentMessageId,
+    );
     resolved = {
       ...resolved,
       text: cleaned ? cleaned : undefined,
@@ -49,7 +52,10 @@ function resolveReplyThreadingForPayload(params: {
 
 // Backward-compatible helper: apply explicit reply tags/directives to a single payload.
 // This intentionally does not apply implicit threading.
-export function applyReplyTagsToPayload(payload: ReplyPayload, currentMessageId?: string): ReplyPayload {
+export function applyReplyTagsToPayload(
+  payload: ReplyPayload,
+  currentMessageId?: string,
+): ReplyPayload {
   return resolveReplyThreadingForPayload({ payload, currentMessageId });
 }
 
@@ -77,7 +83,9 @@ export function applyReplyThreading(params: {
   const applyReplyToMode = createReplyToModeFilterForChannel(replyToMode, replyToChannel);
   const implicitReplyToId = currentMessageId?.trim() || undefined;
   return payloads
-    .map((payload) => resolveReplyThreadingForPayload({ payload, implicitReplyToId, currentMessageId }))
+    .map((payload) =>
+      resolveReplyThreadingForPayload({ payload, implicitReplyToId, currentMessageId }),
+    )
     .filter(isRenderablePayload)
     .map(applyReplyToMode);
 }
@@ -165,7 +173,10 @@ function normalizeThreadIdForComparison(value?: string): string | undefined {
   return trimmed.toLowerCase();
 }
 
-function resolveTargetProviderForComparison(params: { currentProvider: string; targetProvider?: string }): string {
+function resolveTargetProviderForComparison(params: {
+  currentProvider: string;
+  targetProvider?: string;
+}): string {
   const targetProvider = normalizeProviderForComparison(params.targetProvider);
   if (!targetProvider || targetProvider === "message") {
     return params.currentProvider;
@@ -187,8 +198,10 @@ function targetsMatchForSuppression(params: {
   const target = parseTelegramTarget(params.targetKey);
   const explicitTargetThreadId = normalizeThreadIdForComparison(params.targetThreadId);
   const targetThreadId =
-    explicitTargetThreadId ?? (target.messageThreadId != null ? String(target.messageThreadId) : undefined);
-  const originThreadId = origin.messageThreadId != null ? String(origin.messageThreadId) : undefined;
+    explicitTargetThreadId ??
+    (target.messageThreadId != null ? String(target.messageThreadId) : undefined);
+  const originThreadId =
+    origin.messageThreadId != null ? String(origin.messageThreadId) : undefined;
   if (origin.chatId.trim().toLowerCase() !== target.chatId.trim().toLowerCase()) {
     return false;
   }

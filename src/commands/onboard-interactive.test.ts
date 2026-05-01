@@ -62,9 +62,11 @@ describe("runInteractiveOnboarding", () => {
     expect(mocks.restoreTerminalState).toHaveBeenCalledWith("onboarding finish", {
       resumeStdinIfPaused: false,
     });
-    const restoreOrder = mocks.restoreTerminalState.mock.invocationCallOrder[0] ?? Number.MAX_SAFE_INTEGER;
+    const restoreOrder =
+      mocks.restoreTerminalState.mock.invocationCallOrder[0] ?? Number.MAX_SAFE_INTEGER;
     const exitOrder =
-      (runtime.exit as unknown as ReturnType<typeof vi.fn>).mock.invocationCallOrder[0] ?? Number.MAX_SAFE_INTEGER;
+      (runtime.exit as unknown as ReturnType<typeof vi.fn>).mock.invocationCallOrder[0] ??
+      Number.MAX_SAFE_INTEGER;
     expect(restoreOrder).toBeLessThan(exitOrder);
   });
 

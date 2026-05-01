@@ -82,7 +82,9 @@ function resolveQueueEntryPaths(
 }
 
 function getErrnoCode(err: unknown): string | null {
-  return err && typeof err === "object" && "code" in err ? String((err as { code?: unknown }).code) : null;
+  return err && typeof err === "object" && "code" in err
+    ? String((err as { code?: unknown }).code)
+    : null;
 }
 
 async function unlinkBestEffort(filePath: string): Promise<void> {
@@ -104,7 +106,10 @@ export async function ensureQueueDir(stateDir?: string): Promise<string> {
 /** Persist a delivery entry to disk before attempting send. Returns the entry ID. */
 type QueuedDeliveryParams = QueuedDeliveryPayload;
 
-export async function enqueueDelivery(params: QueuedDeliveryParams, stateDir?: string): Promise<string> {
+export async function enqueueDelivery(
+  params: QueuedDeliveryParams,
+  stateDir?: string,
+): Promise<string> {
   const queueDir = await ensureQueueDir(stateDir);
   const id = generateSecureUuid();
   const entry: QueuedDelivery = {
@@ -257,8 +262,12 @@ export function isEntryEligibleForRecoveryRetry(
     return { eligible: true };
   }
   const hasAttemptTimestamp =
-    typeof entry.lastAttemptAt === "number" && Number.isFinite(entry.lastAttemptAt) && entry.lastAttemptAt > 0;
-  const baseAttemptAt = hasAttemptTimestamp ? (entry.lastAttemptAt ?? entry.enqueuedAt) : entry.enqueuedAt;
+    typeof entry.lastAttemptAt === "number" &&
+    Number.isFinite(entry.lastAttemptAt) &&
+    entry.lastAttemptAt > 0;
+  const baseAttemptAt = hasAttemptTimestamp
+    ? (entry.lastAttemptAt ?? entry.enqueuedAt)
+    : entry.enqueuedAt;
   const nextEligibleAt = baseAttemptAt + backoff;
   if (now >= nextEligibleAt) {
     return { eligible: true };
@@ -271,12 +280,16 @@ function normalizeLegacyQueuedDeliveryEntry(entry: QueuedDelivery): {
   migrated: boolean;
 } {
   const hasAttemptTimestamp =
-    typeof entry.lastAttemptAt === "number" && Number.isFinite(entry.lastAttemptAt) && entry.lastAttemptAt > 0;
+    typeof entry.lastAttemptAt === "number" &&
+    Number.isFinite(entry.lastAttemptAt) &&
+    entry.lastAttemptAt > 0;
   if (hasAttemptTimestamp || entry.retryCount <= 0) {
     return { entry, migrated: false };
   }
   const hasEnqueuedTimestamp =
-    typeof entry.enqueuedAt === "number" && Number.isFinite(entry.enqueuedAt) && entry.enqueuedAt > 0;
+    typeof entry.enqueuedAt === "number" &&
+    Number.isFinite(entry.enqueuedAt) &&
+    entry.enqueuedAt > 0;
   if (!hasEnqueuedTimestamp) {
     return { entry, migrated: false };
   }

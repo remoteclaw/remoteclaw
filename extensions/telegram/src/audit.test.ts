@@ -38,7 +38,8 @@ async function auditSingleGroup() {
 
 describe("telegram audit", () => {
   beforeAll(async () => {
-    ({ collectTelegramUnmentionedGroupIds, auditTelegramGroupMembership } = await import("./audit.js"));
+    ({ collectTelegramUnmentionedGroupIds, auditTelegramGroupMembership } =
+      await import("./audit.js"));
   });
 
   beforeEach(() => {

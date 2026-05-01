@@ -151,7 +151,10 @@ export async function promptGatewayConfig(
   // trusted-proxy + loopback is valid when the reverse proxy runs on the same
   // host (e.g. cloudflared, nginx, Caddy). trustedProxies must include 127.0.0.1.
   if (authMode === "trusted-proxy" && tailscaleMode !== "off") {
-    note("Trusted proxy auth is incompatible with Tailscale serve/funnel. Disabling Tailscale.", "Note");
+    note(
+      "Trusted proxy auth is incompatible with Tailscale serve/funnel. Disabling Tailscale.",
+      "Note",
+    );
     tailscaleMode = "off";
     tailscaleResetOnExit = false;
   }
@@ -159,7 +162,9 @@ export async function promptGatewayConfig(
   let gatewayToken: SecretInput | undefined;
   let gatewayTokenForCalls: string | undefined;
   let gatewayPassword: string | undefined;
-  let trustedProxyConfig: { userHeader: string; requiredHeaders?: string[]; allowUsers?: string[] } | undefined;
+  let trustedProxyConfig:
+    | { userHeader: string; requiredHeaders?: string[]; allowUsers?: string[] }
+    | undefined;
   let trustedProxies: string[] | undefined;
   let next = cfg;
 

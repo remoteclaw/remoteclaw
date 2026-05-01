@@ -97,7 +97,9 @@ describe("TwilioProvider", () => {
 
     const result = provider.parseWebhookEvent(ctx);
 
-    expect(result.providerResponseBody).toBe('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+    expect(result.providerResponseBody).toBe(
+      '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+    );
   });
 
   it("returns streaming TwiML for inbound calls", () => {
@@ -177,7 +179,9 @@ describe("TwilioProvider", () => {
     provider.parseWebhookEvent(firstInbound);
     const result = provider.parseWebhookEvent(secondInbound);
 
-    expect(requireResponseBody(result.providerResponseBody)).toContain('waitUrl="/voice/hold-music"');
+    expect(requireResponseBody(result.providerResponseBody)).toContain(
+      'waitUrl="/voice/hold-music"',
+    );
   });
 
   it("uses a stable fallback dedupeKey for identical request payloads", () => {
@@ -214,11 +218,17 @@ describe("TwilioProvider", () => {
       headers: { "i-twilio-idempotency-token": "idem-b" },
     };
 
-    const eventA = provider.parseWebhookEvent(ctxA, { verifiedRequestKey: "twilio:req:abc" }).events[0];
-    const eventB = provider.parseWebhookEvent(ctxB, { verifiedRequestKey: "twilio:req:abc" }).events[0];
+    const eventA = provider.parseWebhookEvent(ctxA, { verifiedRequestKey: "twilio:req:abc" })
+      .events[0];
+    const eventB = provider.parseWebhookEvent(ctxB, { verifiedRequestKey: "twilio:req:abc" })
+      .events[0];
 
-    expect(requireEvent(eventA, "expected verified first Twilio event").dedupeKey).toBe("twilio:req:abc");
-    expect(requireEvent(eventB, "expected verified second Twilio event").dedupeKey).toBe("twilio:req:abc");
+    expect(requireEvent(eventA, "expected verified first Twilio event").dedupeKey).toBe(
+      "twilio:req:abc",
+    );
+    expect(requireEvent(eventB, "expected verified second Twilio event").dedupeKey).toBe(
+      "twilio:req:abc",
+    );
   });
 
   it("keeps turnToken from query on speech events", () => {
@@ -290,7 +300,10 @@ describe("TwilioProvider", () => {
       const sendAudio = vi.fn();
       const sendMark = vi.fn();
       const mediaStreamHandler = {
-        queueTts: async (_streamSid: string, playFn: (signal: AbortSignal) => Promise<void>): Promise<void> => {
+        queueTts: async (
+          _streamSid: string,
+          playFn: (signal: AbortSignal) => Promise<void>,
+        ): Promise<void> => {
           await playFn(new AbortController().signal);
         },
         sendAudio,
@@ -325,7 +338,10 @@ describe("TwilioProvider", () => {
     const sendAudio = vi.fn(() => ({ sent: false }));
     const sendMark = vi.fn(() => ({ sent: false }));
     const mediaStreamHandler = {
-      queueTts: async (_streamSid: string, playFn: (signal: AbortSignal) => Promise<void>): Promise<void> => {
+      queueTts: async (
+        _streamSid: string,
+        playFn: (signal: AbortSignal) => Promise<void>,
+      ): Promise<void> => {
         await playFn(new AbortController().signal);
       },
       sendAudio,

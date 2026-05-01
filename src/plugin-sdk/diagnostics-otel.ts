@@ -6,4 +6,8 @@ export { emitDiagnosticEvent, onDiagnosticEvent } from "../infra/diagnostic-even
 export { registerLogTransport } from "../logging/logger.js";
 export { redactSensitiveText } from "../logging/redact.js";
 export { emptyPluginConfigSchema } from "../plugins/config-schema.js";
-export type { RemoteClawPluginApi, RemoteClawPluginService, RemoteClawPluginServiceContext } from "../plugins/types.js";
+export type {
+  RemoteClawPluginApi,
+  RemoteClawPluginService,
+  RemoteClawPluginServiceContext,
+} from "../plugins/types.js";

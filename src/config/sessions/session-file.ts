@@ -14,10 +14,13 @@ export async function resolveAndPersistSessionFile(params: {
   activeSessionKey?: string;
 }): Promise<{ sessionFile: string; sessionEntry: SessionEntry }> {
   const { sessionId, sessionKey, sessionStore, storePath } = params;
-  const baseEntry = params.sessionEntry ?? sessionStore[sessionKey] ?? { sessionId, updatedAt: Date.now() };
+  const baseEntry = params.sessionEntry ??
+    sessionStore[sessionKey] ?? { sessionId, updatedAt: Date.now() };
   const fallbackSessionFile = params.fallbackSessionFile?.trim();
   const entryForResolve =
-    !baseEntry.sessionFile && fallbackSessionFile ? { ...baseEntry, sessionFile: fallbackSessionFile } : baseEntry;
+    !baseEntry.sessionFile && fallbackSessionFile
+      ? { ...baseEntry, sessionFile: fallbackSessionFile }
+      : baseEntry;
   const sessionFile = resolveSessionFilePath(sessionId, entryForResolve, {
     agentId: params.agentId,
     sessionsDir: params.sessionsDir,

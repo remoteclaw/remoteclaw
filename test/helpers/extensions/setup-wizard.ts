@@ -5,7 +5,9 @@ import { createRuntimeEnv } from "./runtime-env.js";
 
 export type { WizardPrompter } from "../../../src/wizard/prompts.js";
 
-export async function selectFirstWizardOption<T>(params: { options: Array<{ value: T }> }): Promise<T> {
+export async function selectFirstWizardOption<T>(params: {
+  options: Array<{ value: T }>;
+}): Promise<T> {
   const first = params.options[0];
   if (!first) {
     throw new Error("no options");
@@ -108,9 +110,9 @@ export function createSetupWizardAdapter(params: SetupWizardAdapterParams) {
   return buildChannelSetupWizardAdapterFromSetupWizard(params);
 }
 
-export function createPluginSetupWizardAdapter<TPlugin extends SetupWizardPlugin & { setupWizard?: SetupWizard }>(
-  plugin: TPlugin,
-) {
+export function createPluginSetupWizardAdapter<
+  TPlugin extends SetupWizardPlugin & { setupWizard?: SetupWizard },
+>(plugin: TPlugin) {
   const wizard = plugin.setupWizard;
   if (!wizard) {
     throw new Error(`${plugin.id} is missing setupWizard`);
@@ -121,15 +123,15 @@ export function createPluginSetupWizardAdapter<TPlugin extends SetupWizardPlugin
   });
 }
 
-export function createPluginSetupWizardConfigure<TPlugin extends SetupWizardPlugin & { setupWizard?: SetupWizard }>(
-  plugin: TPlugin,
-) {
+export function createPluginSetupWizardConfigure<
+  TPlugin extends SetupWizardPlugin & { setupWizard?: SetupWizard },
+>(plugin: TPlugin) {
   return createPluginSetupWizardAdapter(plugin).configure;
 }
 
-export function createPluginSetupWizardStatus<TPlugin extends SetupWizardPlugin & { setupWizard?: SetupWizard }>(
-  plugin: TPlugin,
-) {
+export function createPluginSetupWizardStatus<
+  TPlugin extends SetupWizardPlugin & { setupWizard?: SetupWizard },
+>(plugin: TPlugin) {
   return createPluginSetupWizardAdapter(plugin).getStatus;
 }
 
@@ -168,7 +170,12 @@ export async function runSetupWizardConfigure<
   });
 }
 
-export async function runSetupWizardPrepare<TCfg, TOptions extends Record<string, unknown>, TRuntime, TResult>(params: {
+export async function runSetupWizardPrepare<
+  TCfg,
+  TOptions extends Record<string, unknown>,
+  TRuntime,
+  TResult,
+>(params: {
   prepare?: (args: {
     cfg: TCfg;
     accountId: string;
@@ -235,7 +242,11 @@ export async function runSetupWizardFinalize<
 }
 
 export async function promptSetupWizardAllowFrom<TCfg, TResult>(params: {
-  promptAllowFrom?: (args: { cfg: TCfg; prompter: WizardPrompter; accountId: string }) => Promise<TResult> | TResult;
+  promptAllowFrom?: (args: {
+    cfg: TCfg;
+    prompter: WizardPrompter;
+    accountId: string;
+  }) => Promise<TResult> | TResult;
   cfg?: TCfg;
   prompter?: WizardPrompter;
   accountId?: string;

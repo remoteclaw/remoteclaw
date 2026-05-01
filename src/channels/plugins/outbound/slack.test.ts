@@ -39,7 +39,9 @@ const sendSlackText = async (ctx: SlackSendTextCtx) => {
   });
 };
 
-const sendSlackTextWithDefaults = async (overrides: Partial<SlackSendTextCtx> & Pick<SlackSendTextCtx, "text">) => {
+const sendSlackTextWithDefaults = async (
+  overrides: Partial<SlackSendTextCtx> & Pick<SlackSendTextCtx, "text">,
+) => {
   return await sendSlackText({
     ...BASE_SLACK_SEND_CTX,
     ...overrides,

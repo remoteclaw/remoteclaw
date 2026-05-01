@@ -42,7 +42,9 @@ describe("runHeartbeatOnce heartbeat_report handling", () => {
     } = {},
   ) {
     return {
-      ...(params.sendWhatsApp ? { sendWhatsApp: params.sendWhatsApp as unknown as HeartbeatDeps["sendWhatsApp"] } : {}),
+      ...(params.sendWhatsApp
+        ? { sendWhatsApp: params.sendWhatsApp as unknown as HeartbeatDeps["sendWhatsApp"] }
+        : {}),
       getQueueSize: params.getQueueSize ?? (() => 0),
       nowMs: params.nowMs ?? (() => 0),
       webAuthExists: params.webAuthExists ?? (async () => true),

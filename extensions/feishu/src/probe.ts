@@ -33,7 +33,11 @@ type FeishuRequestClient = ReturnType<typeof createFeishuClient> & {
   }): Promise<FeishuBotInfoResponse>;
 };
 
-function setCachedProbeResult(cacheKey: string, result: FeishuProbeResult, ttlMs: number): FeishuProbeResult {
+function setCachedProbeResult(
+  cacheKey: string,
+  result: FeishuProbeResult,
+  ttlMs: number,
+): FeishuProbeResult {
   probeCache.set(cacheKey, { result, expiresAt: Date.now() + ttlMs });
   if (probeCache.size > MAX_PROBE_CACHE_SIZE) {
     const oldest = probeCache.keys().next().value;

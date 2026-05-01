@@ -59,7 +59,10 @@ function removeNewSignalListeners(signal: LoopSignal, existing: Set<(...args: un
   }
 }
 
-function addedSignalListener(signal: LoopSignal, existing: Set<(...args: unknown[]) => void>): (() => void) | null {
+function addedSignalListener(
+  signal: LoopSignal,
+  existing: Set<(...args: unknown[]) => void>,
+): (() => void) | null {
   const listeners = process.listeners(signal) as Array<(...args: unknown[]) => void>;
   for (let i = listeners.length - 1; i >= 0; i -= 1) {
     const listener = listeners[i];
@@ -74,7 +77,10 @@ async function withIsolatedSignals(
   run: (helpers: { captureSignal: (signal: LoopSignal) => () => void }) => Promise<void>,
 ) {
   const existingListeners = Object.fromEntries(
-    LOOP_SIGNALS.map((signal) => [signal, new Set(process.listeners(signal) as Array<(...args: unknown[]) => void>)]),
+    LOOP_SIGNALS.map((signal) => [
+      signal,
+      new Set(process.listeners(signal) as Array<(...args: unknown[]) => void>),
+    ]),
   ) as Record<LoopSignal, Set<(...args: unknown[]) => void>>;
   const captureSignal = (signal: LoopSignal) => {
     const listener = addedSignalListener(signal, existingListeners[signal]);
@@ -131,7 +137,11 @@ function createSignaledStart(close: GatewayCloseFn) {
   return { start, started };
 }
 
-async function runLoopWithStart(params: { start: ReturnType<typeof vi.fn>; runtime: LoopRuntime; lockPort?: number }) {
+async function runLoopWithStart(params: {
+  start: ReturnType<typeof vi.fn>;
+  runtime: LoopRuntime;
+  lockPort?: number;
+}) {
   vi.resetModules();
   const { runGatewayLoop } = await import("./run-loop.js");
   const loopPromise = runGatewayLoop({

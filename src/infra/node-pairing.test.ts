@@ -2,7 +2,12 @@ import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
-import { approveNodePairing, getPairedNode, requestNodePairing, verifyNodeToken } from "./node-pairing.js";
+import {
+  approveNodePairing,
+  getPairedNode,
+  requestNodePairing,
+  verifyNodeToken,
+} from "./node-pairing.js";
 
 async function setupPairedNode(baseDir: string): Promise<string> {
   const request = await requestNodePairing(
@@ -87,7 +92,11 @@ describe("node pairing tokens", () => {
     );
 
     await expect(
-      approveNodePairing(request.request.requestId, { callerScopes: ["operator.pairing"] }, baseDir),
+      approveNodePairing(
+        request.request.requestId,
+        { callerScopes: ["operator.pairing"] },
+        baseDir,
+      ),
     ).resolves.toEqual({
       status: "forbidden",
       missingScope: "operator.admin",
@@ -107,7 +116,11 @@ describe("node pairing tokens", () => {
     );
 
     await expect(
-      approveNodePairing(request.request.requestId, { callerScopes: ["operator.pairing"] }, baseDir),
+      approveNodePairing(
+        request.request.requestId,
+        { callerScopes: ["operator.pairing"] },
+        baseDir,
+      ),
     ).resolves.toEqual({
       status: "forbidden",
       missingScope: "operator.write",

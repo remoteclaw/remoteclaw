@@ -39,7 +39,15 @@
     "sessions_spawn": {
       "emoji": "🧑‍🔧",
       "title": "Sub-agent",
-      "detailKeys": ["label", "task", "agentId", "model", "thinking", "runTimeoutSeconds", "cleanup"]
+      "detailKeys": [
+        "label",
+        "task",
+        "agentId",
+        "model",
+        "thinking",
+        "runTimeoutSeconds",
+        "cleanup"
+      ]
     },
     "subagents": {
       "emoji": "🤖",

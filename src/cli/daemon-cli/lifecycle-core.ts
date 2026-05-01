@@ -413,7 +413,9 @@ export async function runServiceRestart(params: {
       const configToken = resolveGatewayTokenForDriftCheck({ cfg, env: driftEnv });
       const driftIssue = checkTokenDrift({ serviceToken, configToken });
       if (driftIssue) {
-        const warning = driftIssue.detail ? `${driftIssue.message} ${driftIssue.detail}` : driftIssue.message;
+        const warning = driftIssue.detail
+          ? `${driftIssue.message} ${driftIssue.detail}`
+          : driftIssue.message;
         warnings.push(warning);
         if (!json) {
           defaultRuntime.log(`\n⚠️  ${driftIssue.message}`);

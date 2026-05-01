@@ -335,7 +335,9 @@ describe("gateway hooks helpers", () => {
           allowedSessionKeyPrefixes: ["agent:"],
         },
       } as RemoteClawConfig),
-    ).toThrow("hooks.allowedSessionKeyPrefixes must include 'hook:' when hooks.defaultSessionKey is unset");
+    ).toThrow(
+      "hooks.allowedSessionKeyPrefixes must include 'hook:' when hooks.defaultSessionKey is unset",
+    );
   });
 });
 

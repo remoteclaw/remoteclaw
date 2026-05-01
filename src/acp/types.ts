@@ -5,7 +5,9 @@ export const ACP_PROVENANCE_MODE_VALUES = ["off", "meta", "meta+receipt"] as con
 
 export type AcpProvenanceMode = (typeof ACP_PROVENANCE_MODE_VALUES)[number];
 
-export function normalizeAcpProvenanceMode(value: string | undefined): AcpProvenanceMode | undefined {
+export function normalizeAcpProvenanceMode(
+  value: string | undefined,
+): AcpProvenanceMode | undefined {
   if (!value) {
     return undefined;
   }

@@ -2,7 +2,11 @@
 
 import ts from "typescript";
 import { runCallsiteGuard } from "./lib/callsite-guard.mjs";
-import { collectCallExpressionLines, runAsScript, unwrapExpression } from "./lib/ts-guard-utils.mjs";
+import {
+  collectCallExpressionLines,
+  runAsScript,
+  unwrapExpression,
+} from "./lib/ts-guard-utils.mjs";
 
 const sourceRoots = ["src/channels", "src/routing", "src/line", "extensions"];
 
@@ -53,7 +57,9 @@ function isRawFetchCall(expression) {
   }
   if (ts.isPropertyAccessExpression(callee)) {
     return (
-      ts.isIdentifier(callee.expression) && callee.expression.text === "globalThis" && callee.name.text === "fetch"
+      ts.isIdentifier(callee.expression) &&
+      callee.expression.text === "globalThis" &&
+      callee.name.text === "fetch"
     );
   }
   return false;

@@ -10,7 +10,9 @@ import { sendMessageZalo } from "./send.js";
 const providerId = "zalo";
 
 function listEnabledAccounts(cfg: RemoteClawConfig) {
-  return listEnabledZaloAccounts(cfg).filter((account) => account.enabled && account.tokenSource !== "none");
+  return listEnabledZaloAccounts(cfg).filter(
+    (account) => account.enabled && account.tokenSource !== "none",
+  );
 }
 
 export const zaloMessageActions: ChannelMessageActionAdapter = {

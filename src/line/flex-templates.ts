@@ -6,7 +6,11 @@ export {
   createListCard,
   createNotificationBubble,
 } from "./flex-templates/basic-cards.js";
-export { createAgendaCard, createEventCard, createReceiptCard } from "./flex-templates/schedule-cards.js";
+export {
+  createAgendaCard,
+  createEventCard,
+  createReceiptCard,
+} from "./flex-templates/schedule-cards.js";
 export {
   createAppleTvRemoteCard,
   createDeviceControlCard,

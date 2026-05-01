@@ -120,7 +120,10 @@ describe("agents add command", () => {
       2,
       expect.objectContaining({ message: "Agent id", initialValue: "my-agent" }),
     );
-    expect(textMock).toHaveBeenNthCalledWith(3, expect.objectContaining({ message: "Workspace directory" }));
+    expect(textMock).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({ message: "Workspace directory" }),
+    );
     expect(writeConfigFileMock).toHaveBeenCalled();
     expect(outroMock).toHaveBeenCalledWith(expect.stringContaining("my-agent"));
     expect(runtime.exit).not.toHaveBeenCalled();
@@ -188,18 +191,20 @@ describe("agents add command", () => {
     let capturedValidate: ((value: string) => string | undefined) | undefined;
     const textMock = vi
       .fn()
-      .mockImplementation((params: { validate?: (value: string) => string | undefined; message: string }) => {
-        if (params.message === "Agent id" && params.validate) {
-          capturedValidate = params.validate;
-        }
-        if (params.message === "Agent name") {
-          return Promise.resolve("My Agent");
-        }
-        if (params.message === "Agent id") {
-          return Promise.resolve("my-agent");
-        }
-        return Promise.resolve("/tmp/workspace");
-      });
+      .mockImplementation(
+        (params: { validate?: (value: string) => string | undefined; message: string }) => {
+          if (params.message === "Agent id" && params.validate) {
+            capturedValidate = params.validate;
+          }
+          if (params.message === "Agent name") {
+            return Promise.resolve("My Agent");
+          }
+          if (params.message === "Agent id") {
+            return Promise.resolve("my-agent");
+          }
+          return Promise.resolve("/tmp/workspace");
+        },
+      );
     const confirmMock = vi.fn().mockResolvedValue(false);
 
     wizardMocks.createClackPrompter.mockReturnValue({

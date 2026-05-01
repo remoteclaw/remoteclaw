@@ -21,7 +21,11 @@ export function consumeRootOptionToken(args: ReadonlyArray<string>, index: numbe
   if (ROOT_BOOLEAN_FLAGS.has(arg)) {
     return 1;
   }
-  if (arg.startsWith("--profile=") || arg.startsWith("--log-level=") || arg.startsWith("--container=")) {
+  if (
+    arg.startsWith("--profile=") ||
+    arg.startsWith("--log-level=") ||
+    arg.startsWith("--container=")
+  ) {
     return 1;
   }
   if (ROOT_VALUE_FLAGS.has(arg)) {

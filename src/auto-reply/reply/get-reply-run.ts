@@ -48,7 +48,10 @@ function buildResetSessionNoticeText(params: {
     : `✅ New session started · model: ${modelLabel} (default: ${defaultLabel})`;
 }
 
-function resolveResetSessionNoticeRoute(params: { ctx: MsgContext; command: ReturnType<typeof buildCommandContext> }): {
+function resolveResetSessionNoticeRoute(params: {
+  ctx: MsgContext;
+  command: ReturnType<typeof buildCommandContext>;
+}): {
   channel: Parameters<typeof routeReply>[0]["channel"];
   to: string;
 } | null {
@@ -232,7 +235,12 @@ export async function runPreparedReply(
   const inboundMetaPrompt = buildInboundMetaSystemPrompt(
     isNewSession ? sessionCtx : { ...sessionCtx, ThreadStarterBody: undefined },
   );
-  const extraSystemPromptParts = [inboundMetaPrompt, groupChatContext, groupIntro, groupSystemPrompt].filter(Boolean);
+  const extraSystemPromptParts = [
+    inboundMetaPrompt,
+    groupChatContext,
+    groupIntro,
+    groupSystemPrompt,
+  ].filter(Boolean);
   const baseBody = sessionCtx.BodyStripped ?? sessionCtx.Body ?? "";
   // Use CommandBody/RawBody for bare reset detection (clean message without structural context).
   const rawBodyTrimmed = (ctx.CommandBody ?? ctx.RawBody ?? ctx.Body ?? "").trim();
@@ -248,13 +256,16 @@ export async function runPreparedReply(
   }
   const isBareNewOrReset = rawBodyTrimmed === "/new" || rawBodyTrimmed === "/reset";
   const isBareSessionReset =
-    isNewSession && ((baseBodyTrimmedRaw.length === 0 && rawBodyTrimmed.length > 0) || isBareNewOrReset);
+    isNewSession &&
+    ((baseBodyTrimmedRaw.length === 0 && rawBodyTrimmed.length > 0) || isBareNewOrReset);
   const baseBodyFinal = isBareSessionReset ? buildBareSessionResetPrompt(cfg) : baseBody;
   const inboundUserContext = buildInboundUserContextPrefix(
     isNewSession
       ? {
           ...sessionCtx,
-          ...(sessionCtx.ThreadHistoryBody?.trim() ? { InboundHistory: undefined, ThreadStarterBody: undefined } : {}),
+          ...(sessionCtx.ThreadHistoryBody?.trim()
+            ? { InboundHistory: undefined, ThreadStarterBody: undefined }
+            : {}),
         }
       : { ...sessionCtx, ThreadStarterBody: undefined },
   );
@@ -275,7 +286,9 @@ export async function runPreparedReply(
   }
   // When the user sends media without text, provide a minimal body so the agent
   // run proceeds and the image/document is injected by the embedded runner.
-  const effectiveBaseBody = baseBodyTrimmed ? baseBodyForPrompt : "[User sent media without caption]";
+  const effectiveBaseBody = baseBodyTrimmed
+    ? baseBodyForPrompt
+    : "[User sent media without caption]";
   let prefixedBodyBase = await applySessionHints({
     baseBody: effectiveBaseBody,
     abortedLastRun,
@@ -369,7 +382,9 @@ export async function runPreparedReply(
     logVerbose(`Interrupting ${queueKey} (aborted=${aborted})`);
   }
   const shouldFollowup =
-    resolvedQueue.mode === "followup" || resolvedQueue.mode === "collect" || resolvedQueue.mode === "steer-backlog";
+    resolvedQueue.mode === "followup" ||
+    resolvedQueue.mode === "collect" ||
+    resolvedQueue.mode === "steer-backlog";
   const authProfileId = undefined;
   const authProfileIdSource = sessionEntry?.authProfileOverrideSource;
   const followupRun = {

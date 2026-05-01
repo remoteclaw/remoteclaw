@@ -38,7 +38,13 @@ export type DiscordComponentButtonStyle = "primary" | "secondary" | "success" | 
 
 export type DiscordComponentSelectType = "string" | "user" | "role" | "mentionable" | "channel";
 
-export type DiscordComponentModalFieldType = "text" | "checkbox" | "radio" | "select" | "role-select" | "user-select";
+export type DiscordComponentModalFieldType =
+  | "text"
+  | "checkbox"
+  | "radio"
+  | "select"
+  | "role-select"
+  | "user-select";
 
 export type DiscordComponentButtonSpec = {
   label: string;
@@ -280,7 +286,9 @@ function normalizeAttachmentRef(value: string, label: string): `attachment://${s
 export function resolveDiscordComponentAttachmentName(value: string): string {
   const trimmed = value.trim();
   if (!trimmed.startsWith(DISCORD_COMPONENT_ATTACHMENT_PREFIX)) {
-    throw new Error(`Attachment reference must start with "${DISCORD_COMPONENT_ATTACHMENT_PREFIX}"`);
+    throw new Error(
+      `Attachment reference must start with "${DISCORD_COMPONENT_ATTACHMENT_PREFIX}"`,
+    );
   }
   const attachmentName = trimmed.slice(DISCORD_COMPONENT_ATTACHMENT_PREFIX.length).trim();
   if (!attachmentName) {
@@ -314,7 +322,10 @@ function normalizeBlockType(raw: string) {
   return BLOCK_ALIASES.get(lowered) ?? (lowered as DiscordComponentBlock["type"]);
 }
 
-function parseSelectOptions(raw: unknown, label: string): DiscordComponentSelectOption[] | undefined {
+function parseSelectOptions(
+  raw: unknown,
+  label: string,
+): DiscordComponentSelectOption[] | undefined {
   if (raw === undefined) {
     return undefined;
   }
@@ -330,7 +341,10 @@ function parseSelectOptions(raw: unknown, label: string): DiscordComponentSelect
       emoji:
         typeof obj.emoji === "object" && obj.emoji && !Array.isArray(obj.emoji)
           ? {
-              name: readString((obj.emoji as { name?: unknown }).name, `${label}[${index}].emoji.name`),
+              name: readString(
+                (obj.emoji as { name?: unknown }).name,
+                `${label}[${index}].emoji.name`,
+              ),
               id: readOptionalString((obj.emoji as { id?: unknown }).id),
               animated:
                 typeof (obj.emoji as { animated?: unknown }).animated === "boolean"
@@ -373,7 +387,13 @@ function parseButtonSpec(raw: unknown, label: string): DiscordComponentButtonSpe
 function parseSelectSpec(raw: unknown, label: string): DiscordComponentSelectSpec {
   const obj = requireObject(raw, label);
   const type = readOptionalString(obj.type) as DiscordComponentSelectType | undefined;
-  const allowedTypes: DiscordComponentSelectType[] = ["string", "user", "role", "mentionable", "channel"];
+  const allowedTypes: DiscordComponentSelectType[] = [
+    "string",
+    "user",
+    "role",
+    "mentionable",
+    "channel",
+  ];
   if (type && !allowedTypes.includes(type)) {
     throw new Error(`${label}.type must be one of ${allowedTypes.join(", ")}`);
   }
@@ -388,7 +408,10 @@ function parseSelectSpec(raw: unknown, label: string): DiscordComponentSelectSpe
 
 function parseModalField(raw: unknown, label: string, index: number): DiscordModalFieldSpec {
   const obj = requireObject(raw, label);
-  const type = readString(obj.type, `${label}.type`).toLowerCase() as DiscordComponentModalFieldType;
+  const type = readString(
+    obj.type,
+    `${label}.type`,
+  ).toLowerCase() as DiscordComponentModalFieldType;
   const supported: DiscordComponentModalFieldType[] = [
     "text",
     "checkbox",
@@ -442,7 +465,10 @@ function parseComponentBlock(raw: unknown, label: string): DiscordComponentBlock
       let accessory: DiscordComponentSectionAccessory | undefined;
       if (obj.accessory !== undefined) {
         const accessoryObj = requireObject(obj.accessory, `${label}.accessory`);
-        const accessoryType = readString(accessoryObj.type, `${label}.accessory.type`).toLowerCase();
+        const accessoryType = readString(
+          accessoryObj.type,
+          `${label}.accessory.type`,
+        ).toLowerCase();
         if (accessoryType === "thumbnail") {
           accessory = {
             type: "thumbnail",
@@ -551,7 +577,9 @@ export function readDiscordComponentSpec(raw: unknown): DiscordComponentMessageS
     if (fieldsRaw.length > 5) {
       throw new Error("components.modal.fields supports up to 5 inputs");
     }
-    const fields = fieldsRaw.map((entry, idx) => parseModalField(entry, `components.modal.fields[${idx}]`, idx));
+    const fields = fieldsRaw.map((entry, idx) =>
+      parseModalField(entry, `components.modal.fields[${idx}]`, idx),
+    );
     modal = {
       title: readString(modalObj.title, "components.modal.title"),
       triggerLabel: readOptionalString(modalObj.triggerLabel),
@@ -565,7 +593,10 @@ export function readDiscordComponentSpec(raw: unknown): DiscordComponentMessageS
     container:
       typeof obj.container === "object" && obj.container && !Array.isArray(obj.container)
         ? {
-            accentColor: (obj.container as { accentColor?: unknown }).accentColor as string | number | undefined,
+            accentColor: (obj.container as { accentColor?: unknown }).accentColor as
+              | string
+              | number
+              | undefined,
             spoiler:
               typeof (obj.container as { spoiler?: unknown }).spoiler === "boolean"
                 ? ((obj.container as { spoiler?: boolean }).spoiler as boolean)
@@ -577,7 +608,10 @@ export function readDiscordComponentSpec(raw: unknown): DiscordComponentMessageS
   };
 }
 
-export function buildDiscordComponentCustomId(params: { componentId: string; modalId?: string }): string {
+export function buildDiscordComponentCustomId(params: {
+  componentId: string;
+  modalId?: string;
+}): string {
   const base = `${DISCORD_COMPONENT_CUSTOM_ID_KEY}:cid=${params.componentId}`;
   return params.modalId ? `${base};mid=${params.modalId}` : base;
 }
@@ -586,7 +620,9 @@ export function buildDiscordModalCustomId(modalId: string): string {
   return `${DISCORD_MODAL_CUSTOM_ID_KEY}:mid=${modalId}`;
 }
 
-export function parseDiscordComponentCustomId(id: string): { componentId: string; modalId?: string } | null {
+export function parseDiscordComponentCustomId(
+  id: string,
+): { componentId: string; modalId?: string } | null {
   const parsed = parseCustomId(id);
   if (parsed.key !== DISCORD_COMPONENT_CUSTOM_ID_KEY) {
     return null;
@@ -650,7 +686,11 @@ function buildTextDisplays(text?: string, texts?: string[]): TextDisplay[] {
   return [];
 }
 
-function createButtonComponent(params: { spec: DiscordComponentButtonSpec; componentId?: string; modalId?: string }): {
+function createButtonComponent(params: {
+  spec: DiscordComponentButtonSpec;
+  componentId?: string;
+  modalId?: string;
+}): {
   component: Button | LinkButton;
   entry?: DiscordComponentEntry;
 } {
@@ -691,8 +731,16 @@ function createButtonComponent(params: { spec: DiscordComponentButtonSpec; compo
   };
 }
 
-function createSelectComponent(params: { spec: DiscordComponentSelectSpec; componentId?: string }): {
-  component: StringSelectMenu | UserSelectMenu | RoleSelectMenu | MentionableSelectMenu | ChannelSelectMenu;
+function createSelectComponent(params: {
+  spec: DiscordComponentSelectSpec;
+  componentId?: string;
+}): {
+  component:
+    | StringSelectMenu
+    | UserSelectMenu
+    | RoleSelectMenu
+    | MentionableSelectMenu
+    | ChannelSelectMenu;
   entry: DiscordComponentEntry;
 } {
   const type = (params.spec.type ?? "string").toLowerCase() as DiscordComponentSelectType;
@@ -796,7 +844,12 @@ function createSelectComponent(params: { spec: DiscordComponentSelectSpec; compo
 
 function isSelectComponent(
   component: unknown,
-): component is StringSelectMenu | UserSelectMenu | RoleSelectMenu | MentionableSelectMenu | ChannelSelectMenu {
+): component is
+  | StringSelectMenu
+  | UserSelectMenu
+  | RoleSelectMenu
+  | MentionableSelectMenu
+  | ChannelSelectMenu {
   return (
     component instanceof StringSelectMenu ||
     component instanceof UserSelectMenu ||
@@ -1045,7 +1098,9 @@ export function buildDiscordComponentMessage(params: {
   return { components, entries, modals };
 }
 
-export function buildDiscordComponentMessageFlags(components: TopLevelComponents[]): number | undefined {
+export function buildDiscordComponentMessageFlags(
+  components: TopLevelComponents[],
+): number | undefined {
   const hasV2 = components.some((component) => component.isV2);
   return hasV2 ? MessageFlags.IsComponentsV2 : undefined;
 }

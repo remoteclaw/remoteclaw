@@ -78,7 +78,10 @@ export async function assertOkOrThrowHttpError(res: Response, label: string): Pr
   throw new Error(`${label} (HTTP ${res.status})${suffix}`);
 }
 
-export function requireTranscriptionText(value: string | undefined, missingMessage: string): string {
+export function requireTranscriptionText(
+  value: string | undefined,
+  missingMessage: string,
+): string {
   const text = value?.trim();
   if (!text) {
     throw new Error(missingMessage);

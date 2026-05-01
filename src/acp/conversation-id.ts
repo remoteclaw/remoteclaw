@@ -26,7 +26,10 @@ export function parseTelegramChatIdFromTarget(raw: unknown): string | undefined 
   return match[1];
 }
 
-export function buildTelegramTopicConversationId(params: { chatId: string; topicId: string }): string | null {
+export function buildTelegramTopicConversationId(params: {
+  chatId: string;
+  topicId: string;
+}): string | null {
   const chatId = params.chatId.trim();
   const topicId = params.topicId.trim();
   if (!/^-?\d+$/.test(chatId) || !/^\d+$/.test(topicId)) {

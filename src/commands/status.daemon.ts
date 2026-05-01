@@ -12,7 +12,9 @@ type DaemonStatusSummary = {
   runtimeShort: string | null;
 };
 
-async function buildDaemonStatusSummary(serviceLabel: "gateway" | "node"): Promise<DaemonStatusSummary> {
+async function buildDaemonStatusSummary(
+  serviceLabel: "gateway" | "node",
+): Promise<DaemonStatusSummary> {
   const service = serviceLabel === "gateway" ? resolveGatewayService() : resolveNodeService();
   const fallbackLabel = serviceLabel === "gateway" ? "Daemon" : "Node";
   const summary = await readServiceStatusSummary(service, fallbackLabel);

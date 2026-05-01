@@ -9,7 +9,9 @@ import {
 import type { GatewayService, GatewayServiceInstallArgs } from "./service.js";
 import { resolveGatewayService } from "./service.js";
 
-function withNodeServiceEnv(env: Record<string, string | undefined>): Record<string, string | undefined> {
+function withNodeServiceEnv(
+  env: Record<string, string | undefined>,
+): Record<string, string | undefined> {
   return {
     ...env,
     REMOTECLAW_LAUNCHD_LABEL: resolveNodeLaunchAgentLabel(),

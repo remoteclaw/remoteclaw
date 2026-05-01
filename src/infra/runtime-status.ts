@@ -5,7 +5,12 @@ type RuntimeStatusFormatInput = {
   details?: string[];
 };
 
-export function formatRuntimeStatusWithDetails({ status, pid, state, details = [] }: RuntimeStatusFormatInput): string {
+export function formatRuntimeStatusWithDetails({
+  status,
+  pid,
+  state,
+  details = [],
+}: RuntimeStatusFormatInput): string {
   const runtimeStatus = status?.trim() || "unknown";
   const fullDetails: string[] = [];
   if (pid) {

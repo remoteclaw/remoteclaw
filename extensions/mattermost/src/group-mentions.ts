@@ -10,7 +10,9 @@ export function resolveMattermostGroupRequireMention(
     accountId: params.accountId,
   });
   const requireMentionOverride =
-    typeof params.requireMentionOverride === "boolean" ? params.requireMentionOverride : account.requireMention;
+    typeof params.requireMentionOverride === "boolean"
+      ? params.requireMentionOverride
+      : account.requireMention;
   return resolveChannelGroupRequireMention({
     cfg: params.cfg,
     channel: "mattermost",

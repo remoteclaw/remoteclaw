@@ -35,7 +35,10 @@ function normalizeForCompare(input: string, platform: NodeJS.Platform): string {
   return normalized;
 }
 
-function buildSystemNodeCandidates(env: Record<string, string | undefined>, platform: NodeJS.Platform): string[] {
+function buildSystemNodeCandidates(
+  env: Record<string, string | undefined>,
+  platform: NodeJS.Platform,
+): string[] {
   if (platform === "darwin") {
     return ["/opt/homebrew/bin/node", "/usr/local/bin/node", "/usr/bin/node"];
   }
@@ -62,7 +65,10 @@ type ExecFileAsync = (
 
 const execFileAsync = promisify(execFile) as unknown as ExecFileAsync;
 
-async function resolveNodeVersion(nodePath: string, execFileImpl: ExecFileAsync): Promise<string | null> {
+async function resolveNodeVersion(
+  nodePath: string,
+  execFileImpl: ExecFileAsync,
+): Promise<string | null> {
   try {
     const { stdout } = await execFileImpl(nodePath, ["-p", "process.versions.node"], {
       encoding: "utf8",
@@ -80,7 +86,10 @@ export type SystemNodeInfo = {
   supported: boolean;
 };
 
-export function isVersionManagedNodePath(nodePath: string, platform: NodeJS.Platform = process.platform): boolean {
+export function isVersionManagedNodePath(
+  nodePath: string,
+  platform: NodeJS.Platform = process.platform,
+): boolean {
   const normalized = normalizeForCompare(nodePath, platform);
   return VERSION_MANAGER_MARKERS.some((marker) => normalized.includes(marker));
 }
@@ -133,7 +142,10 @@ export async function resolveSystemNodeInfo(params: {
   };
 }
 
-export function renderSystemNodeWarning(systemNode: SystemNodeInfo | null, selectedNodePath?: string): string | null {
+export function renderSystemNodeWarning(
+  systemNode: SystemNodeInfo | null,
+  selectedNodePath?: string,
+): string | null {
   if (!systemNode || systemNode.supported) {
     return null;
   }

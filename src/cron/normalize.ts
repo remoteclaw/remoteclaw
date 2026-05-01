@@ -41,7 +41,11 @@ function coerceSchedule(schedule: UnknownRecord) {
   if (kind) {
     next.kind = kind;
   } else {
-    if (typeof schedule.atMs === "number" || typeof schedule.at === "string" || typeof schedule.atMs === "string") {
+    if (
+      typeof schedule.atMs === "number" ||
+      typeof schedule.at === "string" ||
+      typeof schedule.atMs === "string"
+    ) {
       next.kind = "at";
     } else if (typeof schedule.everyMs === "number") {
       next.kind = "every";
@@ -137,7 +141,10 @@ function coercePayload(payload: UnknownRecord) {
       delete next.timeoutSeconds;
     }
   }
-  if ("allowUnsafeExternalContent" in next && typeof next.allowUnsafeExternalContent !== "boolean") {
+  if (
+    "allowUnsafeExternalContent" in next &&
+    typeof next.allowUnsafeExternalContent !== "boolean"
+  ) {
     delete next.allowUnsafeExternalContent;
   }
   return next;
@@ -241,7 +248,10 @@ function copyTopLevelAgentTurnFields(next: UnknownRecord, payload: UnknownRecord
   if (typeof payload.timeoutSeconds !== "number" && typeof next.timeoutSeconds === "number") {
     payload.timeoutSeconds = next.timeoutSeconds;
   }
-  if (typeof payload.allowUnsafeExternalContent !== "boolean" && typeof next.allowUnsafeExternalContent === "boolean") {
+  if (
+    typeof payload.allowUnsafeExternalContent !== "boolean" &&
+    typeof next.allowUnsafeExternalContent === "boolean"
+  ) {
     payload.allowUnsafeExternalContent = next.allowUnsafeExternalContent;
   }
 }
@@ -250,16 +260,27 @@ function copyTopLevelLegacyDeliveryFields(next: UnknownRecord, payload: UnknownR
   if (typeof payload.deliver !== "boolean" && typeof next.deliver === "boolean") {
     payload.deliver = next.deliver;
   }
-  if (typeof payload.channel !== "string" && typeof next.channel === "string" && next.channel.trim()) {
+  if (
+    typeof payload.channel !== "string" &&
+    typeof next.channel === "string" &&
+    next.channel.trim()
+  ) {
     payload.channel = next.channel.trim();
   }
   if (typeof payload.to !== "string" && typeof next.to === "string" && next.to.trim()) {
     payload.to = next.to.trim();
   }
-  if (typeof payload.bestEffortDeliver !== "boolean" && typeof next.bestEffortDeliver === "boolean") {
+  if (
+    typeof payload.bestEffortDeliver !== "boolean" &&
+    typeof next.bestEffortDeliver === "boolean"
+  ) {
     payload.bestEffortDeliver = next.bestEffortDeliver;
   }
-  if (typeof payload.provider !== "string" && typeof next.provider === "string" && next.provider.trim()) {
+  if (
+    typeof payload.provider !== "string" &&
+    typeof next.provider === "string" &&
+    next.provider.trim()
+  ) {
     payload.provider = next.provider.trim();
   }
 }
@@ -277,7 +298,10 @@ function stripLegacyTopLevelFields(next: UnknownRecord) {
   delete next.provider;
 }
 
-export function normalizeCronJobInput(raw: unknown, options: NormalizeOptions = DEFAULT_OPTIONS): UnknownRecord | null {
+export function normalizeCronJobInput(
+  raw: unknown,
+  options: NormalizeOptions = DEFAULT_OPTIONS,
+): UnknownRecord | null {
   if (!isRecord(raw)) {
     return null;
   }
@@ -385,7 +409,11 @@ export function normalizeCronJobInput(raw: unknown, options: NormalizeOptions = 
     if (typeof next.enabled !== "boolean") {
       next.enabled = true;
     }
-    if ((typeof next.name !== "string" || !next.name.trim()) && isRecord(next.schedule) && isRecord(next.payload)) {
+    if (
+      (typeof next.name !== "string" || !next.name.trim()) &&
+      isRecord(next.schedule) &&
+      isRecord(next.payload)
+    ) {
       next.name = inferLegacyName({
         schedule: next.schedule as { kind?: unknown; everyMs?: unknown; expr?: unknown },
         payload: next.payload as { kind?: unknown; text?: unknown; message?: unknown },
@@ -432,7 +460,12 @@ export function normalizeCronJobInput(raw: unknown, options: NormalizeOptions = 
         next.sessionTarget = "isolated";
       }
     }
-    if ("schedule" in next && isRecord(next.schedule) && next.schedule.kind === "at" && !("deleteAfterRun" in next)) {
+    if (
+      "schedule" in next &&
+      isRecord(next.schedule) &&
+      next.schedule.kind === "at" &&
+      !("deleteAfterRun" in next)
+    ) {
       next.deleteAfterRun = true;
     }
     if ("schedule" in next && isRecord(next.schedule) && next.schedule.kind === "cron") {
@@ -465,7 +498,12 @@ export function normalizeCronJobInput(raw: unknown, options: NormalizeOptions = 
     if (normalizedLegacy.mutated && normalizedLegacy.delivery) {
       next.delivery = normalizedLegacy.delivery;
     }
-    if (!hasDelivery && !normalizedLegacy.delivery && isIsolatedAgentTurn && payloadKind === "agentTurn") {
+    if (
+      !hasDelivery &&
+      !normalizedLegacy.delivery &&
+      isIsolatedAgentTurn &&
+      payloadKind === "agentTurn"
+    ) {
       next.delivery = { mode: "announce" };
     }
   }
@@ -483,7 +521,10 @@ export function normalizeCronJobCreate(
   }) as CronJobCreate | null;
 }
 
-export function normalizeCronJobPatch(raw: unknown, options?: NormalizeOptions): CronJobPatch | null {
+export function normalizeCronJobPatch(
+  raw: unknown,
+  options?: NormalizeOptions,
+): CronJobPatch | null {
   return normalizeCronJobInput(raw, {
     applyDefaults: false,
     ...options,

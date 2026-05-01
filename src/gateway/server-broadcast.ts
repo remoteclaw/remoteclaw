@@ -1,4 +1,10 @@
-import { ADMIN_SCOPE, APPROVALS_SCOPE, PAIRING_SCOPE, READ_SCOPE, WRITE_SCOPE } from "./method-scopes.js";
+import {
+  ADMIN_SCOPE,
+  APPROVALS_SCOPE,
+  PAIRING_SCOPE,
+  READ_SCOPE,
+  WRITE_SCOPE,
+} from "./method-scopes.js";
 import { MAX_BUFFERED_BYTES } from "./server-constants.js";
 import type { GatewayWsClient } from "./server/ws-types.js";
 import { logWs, shouldLogWs, summarizeAgentEventForWsLog } from "./ws-log.js";
@@ -27,7 +33,11 @@ export type GatewayBroadcastOpts = {
   stateVersion?: GatewayBroadcastStateVersion;
 };
 
-export type GatewayBroadcastFn = (event: string, payload: unknown, opts?: GatewayBroadcastOpts) => void;
+export type GatewayBroadcastFn = (
+  event: string,
+  payload: unknown,
+  opts?: GatewayBroadcastOpts,
+) => void;
 
 export type GatewayBroadcastToConnIdsFn = (
   event: string,
@@ -118,7 +128,8 @@ export function createGatewayBroadcaster(params: { clients: Set<GatewayWsClient>
     }
   };
 
-  const broadcast: GatewayBroadcastFn = (event, payload, opts) => broadcastInternal(event, payload, opts);
+  const broadcast: GatewayBroadcastFn = (event, payload, opts) =>
+    broadcastInternal(event, payload, opts);
 
   const broadcastToConnIds: GatewayBroadcastToConnIdsFn = (event, payload, connIds, opts) => {
     if (connIds.size === 0) {

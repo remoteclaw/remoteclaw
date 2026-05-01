@@ -95,12 +95,17 @@ export function normalizeContentType(value: unknown): string | undefined {
   return trimmed ? trimmed : undefined;
 }
 
-export function inferPlaceholder(params: { contentType?: string; fileName?: string; fileType?: string }): string {
+export function inferPlaceholder(params: {
+  contentType?: string;
+  fileName?: string;
+  fileType?: string;
+}): string {
   const mime = params.contentType?.toLowerCase() ?? "";
   const name = params.fileName?.toLowerCase() ?? "";
   const fileType = params.fileType?.toLowerCase() ?? "";
 
-  const looksLikeImage = mime.startsWith("image/") || IMAGE_EXT_RE.test(name) || IMAGE_EXT_RE.test(`x.${fileType}`);
+  const looksLikeImage =
+    mime.startsWith("image/") || IMAGE_EXT_RE.test(name) || IMAGE_EXT_RE.test(`x.${fileType}`);
 
   return looksLikeImage ? "<media:image>" : "<media:document>";
 }
@@ -115,7 +120,10 @@ export function isLikelyImageAttachment(att: MSTeamsAttachmentLike): boolean {
     return true;
   }
 
-  if (contentType === "application/vnd.microsoft.teams.file.download.info" && isRecord(att.content)) {
+  if (
+    contentType === "application/vnd.microsoft.teams.file.download.info" &&
+    isRecord(att.content)
+  ) {
     const fileType = typeof att.content.fileType === "string" ? att.content.fileType : "";
     if (fileType && IMAGE_EXT_RE.test(`x.${fileType}`)) {
       return true;
@@ -211,7 +219,9 @@ function fileHintFromUrl(src: string): string | undefined {
   }
 }
 
-export function extractInlineImageCandidates(attachments: MSTeamsAttachmentLike[]): InlineImageCandidate[] {
+export function extractInlineImageCandidates(
+  attachments: MSTeamsAttachmentLike[],
+): InlineImageCandidate[] {
   const out: InlineImageCandidate[] = [];
   for (const att of attachments) {
     const html = extractHtmlFromAttachment(att);

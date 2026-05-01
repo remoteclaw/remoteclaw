@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createActionGate, readNumberParam, readReactionParams, readStringOrNumberParam } from "./common.js";
+import {
+  createActionGate,
+  readNumberParam,
+  readReactionParams,
+  readStringOrNumberParam,
+} from "./common.js";
 
 type TestActions = {
   reactions?: boolean;
@@ -66,8 +71,12 @@ describe("readNumberParam", () => {
 
 describe("required parameter validation", () => {
   it("throws when required values are missing", () => {
-    expect(() => readStringOrNumberParam({}, "chatId", { required: true })).toThrow(/chatId required/);
-    expect(() => readNumberParam({}, "messageId", { required: true })).toThrow(/messageId required/);
+    expect(() => readStringOrNumberParam({}, "chatId", { required: true })).toThrow(
+      /chatId required/,
+    );
+    expect(() => readNumberParam({}, "messageId", { required: true })).toThrow(
+      /messageId required/,
+    );
   });
 });
 

@@ -12,7 +12,11 @@ import { TEST_IMAGE_PATH } from "./test-image.js";
 const LIVE = isTruthyEnvValue(process.env.LIVE);
 
 /** Env vars that Claude Code sets and that cause nesting rejection in `claude -p`. */
-const CLAUDE_CODE_ENV_KEYS = ["CLAUDECODE", "CLAUDE_CODE_ENTRYPOINT", "CLAUDE_CODE_MAX_OUTPUT_TOKENS"];
+const CLAUDE_CODE_ENV_KEYS = [
+  "CLAUDECODE",
+  "CLAUDE_CODE_ENTRYPOINT",
+  "CLAUDE_CODE_MAX_OUTPUT_TOKENS",
+];
 
 describe.skipIf(!LIVE)("claude CLI middleware smoke test", () => {
   let bridge: ChannelBridge;

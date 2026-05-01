@@ -8,7 +8,10 @@ import {
   supportsChannelMessageCards,
   supportsChannelMessageCardsForChannel,
 } from "../../channels/plugins/message-actions.js";
-import { CHANNEL_MESSAGE_ACTION_NAMES, type ChannelMessageActionName } from "../../channels/plugins/types.js";
+import {
+  CHANNEL_MESSAGE_ACTION_NAMES,
+  type ChannelMessageActionName,
+} from "../../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { loadConfig } from "../../config/config.js";
 import { GATEWAY_CLIENT_IDS, GATEWAY_CLIENT_MODES } from "../../gateway/protocol/client-info.js";
@@ -157,7 +160,11 @@ const discordComponentMessageSchema = Type.Object(
   },
 );
 
-function buildSendSchema(options: { includeButtons: boolean; includeCards: boolean; includeComponents: boolean }) {
+function buildSendSchema(options: {
+  includeButtons: boolean;
+  includeCards: boolean;
+  includeComponents: boolean;
+}) {
   const props: Record<string, unknown> = {
     message: Type.Optional(Type.String()),
     effectId: Type.Optional(
@@ -165,7 +172,9 @@ function buildSendSchema(options: { includeButtons: boolean; includeCards: boole
         description: "Message effect name/id for sendWithEffect (e.g., invisible ink).",
       }),
     ),
-    effect: Type.Optional(Type.String({ description: "Alias for effectId (e.g., invisible-ink, balloons)." })),
+    effect: Type.Optional(
+      Type.String({ description: "Alias for effectId (e.g., invisible-ink, balloons)." }),
+    ),
     media: Type.Optional(
       Type.String({
         description: "Media URL or local path. data: URLs are not supported here, use buffer.",
@@ -186,7 +195,9 @@ function buildSendSchema(options: { includeButtons: boolean; includeCards: boole
     threadId: Type.Optional(Type.String()),
     asVoice: Type.Optional(Type.Boolean()),
     silent: Type.Optional(Type.Boolean()),
-    quoteText: Type.Optional(Type.String({ description: "Quote text for Telegram reply_parameters" })),
+    quoteText: Type.Optional(
+      Type.String({ description: "Quote text for Telegram reply_parameters" }),
+    ),
     bestEffort: Type.Optional(Type.Boolean()),
     gifPlayback: Type.Optional(Type.Boolean()),
     buttons: Type.Optional(
@@ -271,8 +282,12 @@ function buildPollSchema() {
 
 function buildChannelTargetSchema() {
   return {
-    channelId: Type.Optional(Type.String({ description: "Channel id filter (search/thread list/event create)." })),
-    channelIds: Type.Optional(Type.Array(Type.String({ description: "Channel id filter (repeatable)." }))),
+    channelId: Type.Optional(
+      Type.String({ description: "Channel id filter (search/thread list/event create)." }),
+    ),
+    channelIds: Type.Optional(
+      Type.Array(Type.String({ description: "Channel id filter (repeatable)." })),
+    ),
     guildId: Type.Optional(Type.String()),
     userId: Type.Optional(Type.String()),
     authorId: Type.Optional(Type.String()),
@@ -344,15 +359,19 @@ function buildPresenceSchema() {
     ),
     activityUrl: Type.Optional(
       Type.String({
-        description: "Streaming URL (Twitch or YouTube). Only used with streaming type; may not render for bots.",
+        description:
+          "Streaming URL (Twitch or YouTube). Only used with streaming type; may not render for bots.",
       }),
     ),
     activityState: Type.Optional(
       Type.String({
-        description: "State text. For custom type this is the status text; for others it shows in the flyout.",
+        description:
+          "State text. For custom type this is the status text; for others it shows in the flyout.",
       }),
     ),
-    status: Type.Optional(Type.String({ description: "Bot status: online, dnd, idle, invisible." })),
+    status: Type.Optional(
+      Type.String({ description: "Bot status: online, dnd, idle, invisible." }),
+    ),
   };
 }
 
@@ -460,7 +479,10 @@ function resolveMessageToolSchemaActions(params: {
   return actions.length > 0 ? actions : ["send"];
 }
 
-function resolveIncludeComponents(params: { cfg: RemoteClawConfig; currentChannelProvider?: string }): boolean {
+function resolveIncludeComponents(params: {
+  cfg: RemoteClawConfig;
+  currentChannelProvider?: string;
+}): boolean {
   const currentChannel = normalizeMessageChannel(params.currentChannelProvider);
   if (currentChannel) {
     return currentChannel === "discord";
@@ -511,7 +533,8 @@ function filterActionsForContext(params: {
   if (!currentChannelId) {
     return params.actions;
   }
-  const normalizedTarget = normalizeTargetForProvider(channel, currentChannelId) ?? currentChannelId;
+  const normalizedTarget =
+    normalizeTargetForProvider(channel, currentChannelId) ?? currentChannelId;
   const lowered = normalizedTarget.trim().toLowerCase();
   const isGroupTarget =
     lowered.startsWith("chat_guid:") ||
@@ -627,7 +650,9 @@ export function createMessageTool(options?: MessageToolOptions): AnyAgentTool {
           (typeof params.to === "string" && params.to.trim().length > 0) ||
           (typeof params.channelId === "string" && params.channelId.trim().length > 0) ||
           (Array.isArray(params.targets) &&
-            params.targets.some((value: unknown) => typeof value === "string" && value.trim().length > 0));
+            params.targets.some(
+              (value: unknown) => typeof value === "string" && value.trim().length > 0,
+            ));
         if (!explicitTarget) {
           throw new Error(
             "Explicit message target required for this run. Provide target/targets (and channel when needed).",
@@ -655,7 +680,8 @@ export function createMessageTool(options?: MessageToolOptions): AnyAgentTool {
       };
       const hasCurrentMessageId =
         typeof options?.currentMessageId === "number" ||
-        (typeof options?.currentMessageId === "string" && options.currentMessageId.trim().length > 0);
+        (typeof options?.currentMessageId === "string" &&
+          options.currentMessageId.trim().length > 0);
 
       const toolContext =
         options?.currentChannelId ||

@@ -32,7 +32,9 @@ export async function noteVoiceChannelHealth(cfg: RemoteClawConfig): Promise<voi
   }
 
   if (issues.length > 0) {
-    issues.push(`Configure auth via ${formatCliCommand("remoteclaw configure")} or set provider API keys.`);
+    issues.push(
+      `Configure auth via ${formatCliCommand("remoteclaw configure")} or set provider API keys.`,
+    );
     note(issues.join("\n"), "Voice channel");
   }
 }

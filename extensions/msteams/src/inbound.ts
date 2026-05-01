@@ -42,7 +42,11 @@ export function extractMSTeamsQuoteInfo(
       typeof att.content === "string"
         ? att.content
         : typeof att.content === "object" && att.content !== null
-          ? String((att.content as Record<string, unknown>).text ?? (att.content as Record<string, unknown>).body ?? "")
+          ? String(
+              (att.content as Record<string, unknown>).text ??
+                (att.content as Record<string, unknown>).body ??
+                "",
+            )
           : "";
     if (!content) continue;
 

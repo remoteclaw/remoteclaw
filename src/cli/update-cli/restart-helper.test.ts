@@ -203,7 +203,9 @@ describe("restart-helper", () => {
 
     it("returns null when script creation fails", async () => {
       Object.defineProperty(process, "platform", { value: "linux" });
-      const writeFileSpy = vi.spyOn(fs, "writeFile").mockRejectedValueOnce(new Error("simulated write failure"));
+      const writeFileSpy = vi
+        .spyOn(fs, "writeFile")
+        .mockRejectedValueOnce(new Error("simulated write failure"));
 
       const scriptPath = await prepareRestartScript({
         REMOTECLAW_PROFILE: "default",

@@ -152,7 +152,9 @@ export const MessagesSchema = z
     queue: QueueSchema,
     inbound: InboundDebounceSchema,
     ackReaction: z.string().optional(),
-    ackReactionScope: z.enum(["group-mentions", "group-all", "direct", "all", "off", "none"]).optional(),
+    ackReactionScope: z
+      .enum(["group-mentions", "group-all", "direct", "all", "off", "none"])
+      .optional(),
     removeAckAfterReply: z.boolean().optional(),
     statusReactions: z
       .object({
@@ -207,4 +209,6 @@ export const CommandsSchema = z
   })
   .strict()
   .optional()
-  .default(() => ({ native: "auto", nativeSkills: "auto", restart: true, ownerDisplay: "raw" }) as const);
+  .default(
+    () => ({ native: "auto", nativeSkills: "auto", restart: true, ownerDisplay: "raw" }) as const,
+  );

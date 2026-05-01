@@ -18,7 +18,8 @@ let PAIRING_TOKEN_BYTES: PairingTokenModule["PAIRING_TOKEN_BYTES"];
 let verifyPairingToken: PairingTokenModule["verifyPairingToken"];
 
 beforeAll(async () => {
-  ({ generatePairingToken, PAIRING_TOKEN_BYTES, verifyPairingToken } = await import("./pairing-token.js"));
+  ({ generatePairingToken, PAIRING_TOKEN_BYTES, verifyPairingToken } =
+    await import("./pairing-token.js"));
 });
 
 beforeEach(() => {

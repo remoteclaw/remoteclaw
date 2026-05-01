@@ -42,7 +42,9 @@ export function readTwimlRequestView(ctx: WebhookContext): TwimlRequestView {
   const params = new URLSearchParams(ctx.rawBody);
   const type = typeof ctx.query?.type === "string" ? ctx.query.type.trim() : undefined;
   const callIdFromQuery =
-    typeof ctx.query?.callId === "string" && ctx.query.callId.trim() ? ctx.query.callId.trim() : undefined;
+    typeof ctx.query?.callId === "string" && ctx.query.callId.trim()
+      ? ctx.query.callId.trim()
+      : undefined;
 
   return {
     callStatus: params.get("CallStatus"),

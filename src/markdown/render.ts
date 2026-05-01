@@ -20,9 +20,19 @@ export type RenderOptions = {
   buildLink?: (link: MarkdownLinkSpan, text: string) => RenderLink | null;
 };
 
-const STYLE_ORDER: MarkdownStyle[] = ["blockquote", "code_block", "code", "bold", "italic", "strikethrough", "spoiler"];
+const STYLE_ORDER: MarkdownStyle[] = [
+  "blockquote",
+  "code_block",
+  "code",
+  "bold",
+  "italic",
+  "strikethrough",
+  "spoiler",
+];
 
-const STYLE_RANK = new Map<MarkdownStyle, number>(STYLE_ORDER.map((style, index) => [style, index]));
+const STYLE_RANK = new Map<MarkdownStyle, number>(
+  STYLE_ORDER.map((style, index) => [style, index]),
+);
 
 function sortStyleSpans(spans: MarkdownStyleSpan[]): MarkdownStyleSpan[] {
   return [...spans].toSorted((a, b) => {

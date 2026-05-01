@@ -4,7 +4,9 @@ export async function withTimeout<T>(
   label?: string,
 ): Promise<T> {
   const resolved =
-    typeof timeoutMs === "number" && Number.isFinite(timeoutMs) ? Math.max(1, Math.floor(timeoutMs)) : undefined;
+    typeof timeoutMs === "number" && Number.isFinite(timeoutMs)
+      ? Math.max(1, Math.floor(timeoutMs))
+      : undefined;
   if (!resolved) {
     return await work(undefined);
   }

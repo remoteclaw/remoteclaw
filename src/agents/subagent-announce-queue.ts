@@ -1,6 +1,10 @@
 import { type QueueDropPolicy, type QueueMode } from "../auto-reply/reply/queue.js";
 import { defaultRuntime } from "../runtime.js";
-import { type DeliveryContext, deliveryContextKey, normalizeDeliveryContext } from "../utils/delivery-context.js";
+import {
+  type DeliveryContext,
+  deliveryContextKey,
+  normalizeDeliveryContext,
+} from "../utils/delivery-context.js";
 import {
   applyQueueRuntimeSettings,
   applyQueueDropPolicy,

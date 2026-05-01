@@ -60,7 +60,9 @@ describe("PlivoProvider", () => {
     );
 
     expect(result.events).toHaveLength(1);
-    expect(requireEvent(result.events[0], "expected verified Plivo event").dedupeKey).toBe("plivo:v3:verified");
+    expect(requireEvent(result.events[0], "expected verified Plivo event").dedupeKey).toBe(
+      "plivo:v3:verified",
+    );
   });
 
   it("pins stored callback bases to publicUrl instead of request Host", () => {
@@ -83,7 +85,8 @@ describe("PlivoProvider", () => {
       query: { provider: "plivo", flow: "answer", callId: "internal-call-id" },
     });
 
-    const callbackMap = (provider as unknown as { callUuidToWebhookUrl: Map<string, string> }).callUuidToWebhookUrl;
+    const callbackMap = (provider as unknown as { callUuidToWebhookUrl: Map<string, string> })
+      .callUuidToWebhookUrl;
 
     expect(callbackMap.get("call-uuid")).toBe("https://voice.remoteclaw.org/voice/webhook");
   });

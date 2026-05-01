@@ -9,7 +9,10 @@ import { handleControlUiAvatarRequest, handleControlUiHttpRequest } from "./cont
 import { makeMockHttpResponse } from "./test-http-response.js";
 
 describe("handleControlUiHttpRequest", () => {
-  async function withControlUiRoot<T>(params: { indexHtml?: string; fn: (tmp: string) => Promise<T> }) {
+  async function withControlUiRoot<T>(params: {
+    indexHtml?: string;
+    fn: (tmp: string) => Promise<T>;
+  }) {
     const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-ui-"));
     try {
       await fs.writeFile(path.join(tmp, "index.html"), params.indexHtml ?? "<html></html>\n");
@@ -46,10 +49,14 @@ describe("handleControlUiHttpRequest", () => {
     rootKind?: "resolved" | "bundled";
   }) {
     const { res, end } = makeMockHttpResponse();
-    const handled = handleControlUiHttpRequest({ url: params.url, method: params.method } as IncomingMessage, res, {
-      ...(params.basePath ? { basePath: params.basePath } : {}),
-      root: { kind: params.rootKind ?? "resolved", path: params.rootPath },
-    });
+    const handled = handleControlUiHttpRequest(
+      { url: params.url, method: params.method } as IncomingMessage,
+      res,
+      {
+        ...(params.basePath ? { basePath: params.basePath } : {}),
+        root: { kind: params.rootKind ?? "resolved", path: params.rootPath },
+      },
+    );
     return { res, end, handled };
   }
 
@@ -60,10 +67,14 @@ describe("handleControlUiHttpRequest", () => {
     basePath?: string;
   }) {
     const { res, end } = makeMockHttpResponse();
-    const handled = handleControlUiAvatarRequest({ url: params.url, method: params.method } as IncomingMessage, res, {
-      ...(params.basePath ? { basePath: params.basePath } : {}),
-      resolveAvatar: params.resolveAvatar,
-    });
+    const handled = handleControlUiAvatarRequest(
+      { url: params.url, method: params.method } as IncomingMessage,
+      res,
+      {
+        ...(params.basePath ? { basePath: params.basePath } : {}),
+        resolveAvatar: params.resolveAvatar,
+      },
+    );
     return { res, end, handled };
   }
 
@@ -103,9 +114,13 @@ describe("handleControlUiHttpRequest", () => {
     await withControlUiRoot({
       fn: async (tmp) => {
         const { res, setHeader } = makeMockHttpResponse();
-        const handled = handleControlUiHttpRequest({ url: "/", method: "GET" } as IncomingMessage, res, {
-          root: { kind: "resolved", path: tmp },
-        });
+        const handled = handleControlUiHttpRequest(
+          { url: "/", method: "GET" } as IncomingMessage,
+          res,
+          {
+            root: { kind: "resolved", path: tmp },
+          },
+        );
         expect(handled).toBe(true);
         expect(setHeader).toHaveBeenCalledWith("X-Frame-Options", "DENY");
         const csp = setHeader.mock.calls.find((call) => call[0] === "Content-Security-Policy")?.[1];
@@ -128,7 +143,9 @@ describe("handleControlUiHttpRequest", () => {
         handleControlUiHttpRequest({ url: "/", method: "GET" } as IncomingMessage, res, {
           root: { kind: "resolved", path: tmp },
         });
-        const cspCalls = setHeader.mock.calls.filter((call) => call[0] === "Content-Security-Policy");
+        const cspCalls = setHeader.mock.calls.filter(
+          (call) => call[0] === "Content-Security-Policy",
+        );
         const lastCsp = String(cspCalls[cspCalls.length - 1]?.[1] ?? "");
         expect(lastCsp).toContain(`'sha256-${expectedHash}'`);
         expect(lastCsp).not.toMatch(/script-src[^;]*'unsafe-inline'/);
@@ -142,13 +159,17 @@ describe("handleControlUiHttpRequest", () => {
       indexHtml: html,
       fn: async (tmp) => {
         const { res, end } = makeMockHttpResponse();
-        const handled = handleControlUiHttpRequest({ url: "/", method: "GET" } as IncomingMessage, res, {
-          root: { kind: "resolved", path: tmp },
-          config: {
-            agents: { defaults: { workspace: tmp } },
-            ui: { assistant: { name: "</script><script>alert(1)//", avatar: "evil.png" } },
+        const handled = handleControlUiHttpRequest(
+          { url: "/", method: "GET" } as IncomingMessage,
+          res,
+          {
+            root: { kind: "resolved", path: tmp },
+            config: {
+              agents: { defaults: { workspace: tmp } },
+              ui: { assistant: { name: "</script><script>alert(1)//", avatar: "evil.png" } },
+            },
           },
-        });
+        );
         expect(handled).toBe(true);
         expect(end).toHaveBeenCalledWith(html);
       },
@@ -341,7 +362,9 @@ describe("handleControlUiHttpRequest", () => {
   it("rejects hardlinked index.html for non-package control-ui roots", async () => {
     await withControlUiRoot({
       fn: async (tmp) => {
-        const outsideDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-ui-index-hardlink-"));
+        const outsideDir = await fs.mkdtemp(
+          path.join(os.tmpdir(), "remoteclaw-ui-index-hardlink-"),
+        );
         try {
           const outsideIndex = path.join(outsideDir, "index.html");
           await fs.writeFile(outsideIndex, "<html>outside-hardlink</html>\n");
@@ -403,10 +426,16 @@ describe("handleControlUiHttpRequest", () => {
       fn: async (tmp) => {
         for (const webhookPath of ["/bluebubbles-webhook", "/custom-webhook", "/callback"]) {
           const { res } = makeMockHttpResponse();
-          const handled = handleControlUiHttpRequest({ url: webhookPath, method: "POST" } as IncomingMessage, res, {
-            root: { kind: "resolved", path: tmp },
-          });
-          expect(handled, `POST to ${webhookPath} should pass through to plugin handlers`).toBe(false);
+          const handled = handleControlUiHttpRequest(
+            { url: webhookPath, method: "POST" } as IncomingMessage,
+            res,
+            {
+              root: { kind: "resolved", path: tmp },
+            },
+          );
+          expect(handled, `POST to ${webhookPath} should pass through to plugin handlers`).toBe(
+            false,
+          );
         }
       },
     });

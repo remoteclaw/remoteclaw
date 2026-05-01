@@ -1,14 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
 
-const { listTeamsByName, listChannelsForTeam, normalizeQuery, resolveGraphToken, searchGraphUsers } = vi.hoisted(
-  () => ({
-    listTeamsByName: vi.fn(),
-    listChannelsForTeam: vi.fn(),
-    normalizeQuery: vi.fn((value: string) => value.trim().toLowerCase()),
-    resolveGraphToken: vi.fn(async () => "graph-token"),
-    searchGraphUsers: vi.fn(),
-  }),
-);
+const {
+  listTeamsByName,
+  listChannelsForTeam,
+  normalizeQuery,
+  resolveGraphToken,
+  searchGraphUsers,
+} = vi.hoisted(() => ({
+  listTeamsByName: vi.fn(),
+  listChannelsForTeam: vi.fn(),
+  normalizeQuery: vi.fn((value: string) => value.trim().toLowerCase()),
+  resolveGraphToken: vi.fn(async () => "graph-token"),
+  searchGraphUsers: vi.fn(),
+}));
 
 vi.mock("./graph.js", () => ({
   listTeamsByName,
@@ -21,7 +25,10 @@ vi.mock("./graph-users.js", () => ({
   searchGraphUsers,
 }));
 
-import { resolveMSTeamsChannelAllowlist, resolveMSTeamsUserAllowlist } from "./resolve-allowlist.js";
+import {
+  resolveMSTeamsChannelAllowlist,
+  resolveMSTeamsUserAllowlist,
+} from "./resolve-allowlist.js";
 
 describe("resolveMSTeamsUserAllowlist", () => {
   it("marks empty input unresolved", async () => {

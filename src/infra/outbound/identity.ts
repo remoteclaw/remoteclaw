@@ -9,7 +9,9 @@ export type OutboundIdentity = {
   theme?: string;
 };
 
-export function normalizeOutboundIdentity(identity?: OutboundIdentity | null): OutboundIdentity | undefined {
+export function normalizeOutboundIdentity(
+  identity?: OutboundIdentity | null,
+): OutboundIdentity | undefined {
   if (!identity) {
     return undefined;
   }
@@ -23,7 +25,10 @@ export function normalizeOutboundIdentity(identity?: OutboundIdentity | null): O
   return { name, avatarUrl, emoji, theme };
 }
 
-export function resolveAgentOutboundIdentity(cfg: RemoteClawConfig, agentId: string): OutboundIdentity | undefined {
+export function resolveAgentOutboundIdentity(
+  cfg: RemoteClawConfig,
+  agentId: string,
+): OutboundIdentity | undefined {
   const agentIdentity = resolveAgentIdentity(cfg, agentId);
   const avatar = resolveAgentAvatar(cfg, agentId);
   return normalizeOutboundIdentity({

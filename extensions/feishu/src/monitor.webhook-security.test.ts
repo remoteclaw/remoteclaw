@@ -12,10 +12,12 @@ vi.mock("./client.js", () => ({}));
 vi.mock("./runtime.js", () => ({}));
 
 vi.mock("@larksuiteoapi/node-sdk", () => ({
-  adaptDefault: vi.fn(() => (_req: unknown, res: { statusCode?: number; end: (s: string) => void }) => {
-    res.statusCode = 200;
-    res.end("ok");
-  }),
+  adaptDefault: vi.fn(
+    () => (_req: unknown, res: { statusCode?: number; end: (s: string) => void }) => {
+      res.statusCode = 200;
+      res.end("ok");
+    },
+  ),
 }));
 
 import {
@@ -129,7 +131,9 @@ describe("Feishu webhook security hardening", () => {
       port: await getFreePort(),
     });
 
-    await expect(monitorFeishuProvider({ config: cfg })).rejects.toThrow(/requires verificationToken/i);
+    await expect(monitorFeishuProvider({ config: cfg })).rejects.toThrow(
+      /requires verificationToken/i,
+    );
   });
 
   it("returns 415 for POST requests without json content type", async () => {

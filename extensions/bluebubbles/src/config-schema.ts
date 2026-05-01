@@ -64,6 +64,8 @@ const bluebubblesAccountSchema = z
     }
   });
 
-export const BlueBubblesConfigSchema = buildCatchallMultiAccountChannelSchema(bluebubblesAccountSchema).extend({
+export const BlueBubblesConfigSchema = buildCatchallMultiAccountChannelSchema(
+  bluebubblesAccountSchema,
+).extend({
   actions: bluebubblesActionSchema,
 });

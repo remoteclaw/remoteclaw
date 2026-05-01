@@ -16,7 +16,9 @@ export function buildDiscordRoutePeer(params: {
 }): RoutePeer {
   return {
     kind: params.isDirectMessage ? "direct" : params.isGroupDm ? "group" : "channel",
-    id: params.isDirectMessage ? params.directUserId?.trim() || params.conversationId : params.conversationId,
+    id: params.isDirectMessage
+      ? params.directUserId?.trim() || params.conversationId
+      : params.conversationId,
   };
 }
 
@@ -40,7 +42,9 @@ export function resolveDiscordConversationRoute(params: {
     guildId: params.guildId ?? undefined,
     memberRoleIds: params.memberRoleIds,
     peer: params.peer,
-    parentPeer: params.parentConversationId ? { kind: "channel", id: params.parentConversationId } : undefined,
+    parentPeer: params.parentConversationId
+      ? { kind: "channel", id: params.parentConversationId }
+      : undefined,
   });
 }
 
@@ -78,7 +82,9 @@ export function resolveDiscordBoundConversationRoute(params: {
       directUserId: params.directUserId,
       conversationId: params.conversationId,
     }),
-    parentPeer: params.parentConversationId ? { kind: "channel", id: params.parentConversationId } : undefined,
+    parentPeer: params.parentConversationId
+      ? { kind: "channel", id: params.parentConversationId }
+      : undefined,
   });
   return resolveDiscordEffectiveRoute({
     route,

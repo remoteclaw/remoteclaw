@@ -29,7 +29,11 @@ describe("waitForAbortSignal", () => {
 
   it("registers and removes the abort listener exactly once", async () => {
     let handler: (() => void) | undefined;
-    const addEventListener = (_type: string, listener: () => void, options?: AddEventListenerOptions) => {
+    const addEventListener = (
+      _type: string,
+      listener: () => void,
+      options?: AddEventListenerOptions,
+    ) => {
       handler = listener;
       expect(options).toEqual({ once: true });
     };

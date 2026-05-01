@@ -7,7 +7,10 @@ import {
 import { formatRuntimeStatus } from "../daemon/runtime-format.js";
 import { buildPlatformRuntimeLogHints } from "../daemon/runtime-hints.js";
 import type { GatewayServiceRuntime } from "../daemon/service-runtime.js";
-import { isSystemdUnavailableDetail, renderSystemdUnavailableHints } from "../daemon/systemd-hints.js";
+import {
+  isSystemdUnavailableDetail,
+  renderSystemdUnavailableHints,
+} from "../daemon/systemd-hints.js";
 import { isWSLEnv } from "../infra/wsl.js";
 import { getResolvedLoggerSettings } from "../logging.js";
 
@@ -16,7 +19,9 @@ type RuntimeHintOptions = {
   env?: Record<string, string | undefined>;
 };
 
-export function formatGatewayRuntimeSummary(runtime: GatewayServiceRuntime | undefined): string | null {
+export function formatGatewayRuntimeSummary(
+  runtime: GatewayServiceRuntime | undefined,
+): string | null {
   return formatRuntimeStatus(runtime);
 }
 
@@ -46,11 +51,15 @@ export function buildGatewayRuntimeHints(
   }
   if (runtime.cachedLabel && platform === "darwin") {
     const label = resolveGatewayLaunchAgentLabel(env.REMOTECLAW_PROFILE);
-    hints.push(`LaunchAgent label cached but plist missing. Clear with: launchctl bootout gui/$UID/${label}`);
+    hints.push(
+      `LaunchAgent label cached but plist missing. Clear with: launchctl bootout gui/$UID/${label}`,
+    );
     hints.push(`Then reinstall: ${formatCliCommand("remoteclaw gateway install", env)}`);
   }
   if (runtime.missingUnit) {
-    hints.push(`Service not installed. Run: ${formatCliCommand("remoteclaw gateway install", env)}`);
+    hints.push(
+      `Service not installed. Run: ${formatCliCommand("remoteclaw gateway install", env)}`,
+    );
     if (fileLog) {
       hints.push(`File logs: ${fileLog}`);
     }

@@ -51,7 +51,8 @@ class I18nManager {
     if (isSupportedLocale(saved)) {
       return saved;
     }
-    const language = typeof globalThis.navigator?.language === "string" ? globalThis.navigator.language : null;
+    const language =
+      typeof globalThis.navigator?.language === "string" ? globalThis.navigator.language : null;
     return resolveNavigatorLocale(language ?? "");
   }
 

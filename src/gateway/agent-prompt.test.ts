@@ -9,9 +9,11 @@ describe("gateway agent prompt", () => {
   });
 
   it("returns current body when there is no history", () => {
-    expect(buildAgentMessageFromConversationEntries([{ role: "user", entry: { sender: "User", body: "hi" } }])).toBe(
-      "hi",
-    );
+    expect(
+      buildAgentMessageFromConversationEntries([
+        { role: "user", entry: { sender: "User", body: "hi" } },
+      ]),
+    ).toBe("hi");
   });
 
   it("extracts text from content-array body when there is no history", () => {

@@ -4,7 +4,13 @@ import type { FeishuConfig, FeishuDomain, ResolvedFeishuAccount } from "./types.
 
 type FeishuClientSdk = Pick<
   typeof Lark,
-  "AppType" | "Client" | "defaultHttpInstance" | "Domain" | "EventDispatcher" | "LoggerLevel" | "WSClient"
+  | "AppType"
+  | "Client"
+  | "defaultHttpInstance"
+  | "Domain"
+  | "EventDispatcher"
+  | "LoggerLevel"
+  | "WSClient"
 >;
 
 const defaultFeishuClientSdk: FeishuClientSdk = {
@@ -32,7 +38,10 @@ type FeishuHttpInstanceLike = Pick<
 
 function getWsProxyAgent(): HttpsProxyAgent<string> | undefined {
   const proxyUrl =
-    process.env.https_proxy || process.env.HTTPS_PROXY || process.env.http_proxy || process.env.HTTP_PROXY;
+    process.env.https_proxy ||
+    process.env.HTTPS_PROXY ||
+    process.env.http_proxy ||
+    process.env.HTTP_PROXY;
   if (!proxyUrl) return undefined;
   return new httpsProxyAgentCtor(proxyUrl);
 }
@@ -100,7 +109,11 @@ function resolveConfiguredHttpTimeoutMs(creds: FeishuClientCredentials): number 
   };
 
   const fromDirectField = creds.httpTimeoutMs;
-  if (typeof fromDirectField === "number" && Number.isFinite(fromDirectField) && fromDirectField > 0) {
+  if (
+    typeof fromDirectField === "number" &&
+    Number.isFinite(fromDirectField) &&
+    fromDirectField > 0
+  ) {
     return clampTimeout(fromDirectField);
   }
 
@@ -215,6 +228,8 @@ export function setFeishuClientRuntimeForTest(overrides?: {
   sdk?: Partial<FeishuClientSdk>;
   HttpsProxyAgent?: typeof HttpsProxyAgent;
 }): void {
-  feishuClientSdk = overrides?.sdk ? { ...defaultFeishuClientSdk, ...overrides.sdk } : defaultFeishuClientSdk;
+  feishuClientSdk = overrides?.sdk
+    ? { ...defaultFeishuClientSdk, ...overrides.sdk }
+    : defaultFeishuClientSdk;
   httpsProxyAgentCtor = overrides?.HttpsProxyAgent ?? HttpsProxyAgent;
 }

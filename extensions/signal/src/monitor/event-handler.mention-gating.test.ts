@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import type { MsgContext } from "../../../../src/auto-reply/templating.js";
 import type { RemoteClawConfig } from "../../../../src/config/types.js";
 import { buildDispatchInboundCaptureMock } from "../../../../test/helpers/dispatch-inbound-capture.js";
-import { createBaseSignalEventHandlerDeps, createSignalReceiveEvent } from "./event-handler.test-harness.js";
+import {
+  createBaseSignalEventHandlerDeps,
+  createSignalReceiveEvent,
+} from "./event-handler.test-harness.js";
 
 type SignalMsgContext = Pick<MsgContext, "Body" | "WasMentioned"> & {
   Body?: string;
@@ -138,7 +141,10 @@ describe("signal mention gating", () => {
   });
 
   it("records attachment placeholder in pending history for skipped attachment-only group messages", async () => {
-    await expectSkippedGroupHistory({ message: "", attachments: [{ id: "a1" }] }, "<media:attachment>");
+    await expectSkippedGroupHistory(
+      { message: "", attachments: [{ id: "a1" }] },
+      "<media:attachment>",
+    );
   });
 
   it("normalizes mixed-case parameterized attachment MIME in skipped pending history", async () => {

@@ -20,8 +20,13 @@ let generateSecureToken: typeof import("./secure-random.js").generateSecureToken
 let generateSecureUuid: typeof import("./secure-random.js").generateSecureUuid;
 
 beforeAll(async () => {
-  ({ generateSecureFraction, generateSecureHex, generateSecureInt, generateSecureToken, generateSecureUuid } =
-    await import("./secure-random.js"));
+  ({
+    generateSecureFraction,
+    generateSecureHex,
+    generateSecureInt,
+    generateSecureToken,
+    generateSecureUuid,
+  } = await import("./secure-random.js"));
 });
 
 beforeEach(() => {

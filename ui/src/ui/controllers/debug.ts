@@ -45,7 +45,9 @@ export async function callDebugMethod(state: DebugState) {
   state.debugCallError = null;
   state.debugCallResult = null;
   try {
-    const params = state.debugCallParams.trim() ? (JSON.parse(state.debugCallParams) as unknown) : {};
+    const params = state.debugCallParams.trim()
+      ? (JSON.parse(state.debugCallParams) as unknown)
+      : {};
     const res = await state.client.request(state.debugCallMethod.trim(), params);
     state.debugCallResult = JSON.stringify(res, null, 2);
   } catch (err) {

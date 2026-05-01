@@ -10,7 +10,12 @@ import {
 import { defaultRuntime } from "../../runtime.js";
 import { theme } from "../../terminal/theme.js";
 import { formatCliCommand } from "../command-format.js";
-import { runServiceRestart, runServiceStart, runServiceStop, runServiceUninstall } from "./lifecycle-core.js";
+import {
+  runServiceRestart,
+  runServiceStart,
+  runServiceStop,
+  runServiceUninstall,
+} from "./lifecycle-core.js";
 import {
   DEFAULT_RESTART_HEALTH_ATTEMPTS,
   DEFAULT_RESTART_HEALTH_DELAY_MS,
@@ -126,7 +131,9 @@ export async function runDaemonStart(opts: DaemonLifecycleOptions = {}) {
 
 export async function runDaemonStop(opts: DaemonLifecycleOptions = {}) {
   const service = resolveGatewayService();
-  const gatewayPort = await resolveGatewayLifecyclePort(service).catch(() => resolveGatewayPortFallback());
+  const gatewayPort = await resolveGatewayLifecyclePort(service).catch(() =>
+    resolveGatewayPortFallback(),
+  );
   return await runServiceStop({
     serviceNoun: "Gateway",
     service,
@@ -144,7 +151,9 @@ export async function runDaemonRestart(opts: DaemonLifecycleOptions = {}): Promi
   const json = Boolean(opts.json);
   const service = resolveGatewayService();
   let restartedWithoutServiceManager = false;
-  const restartPort = await resolveGatewayLifecyclePort(service).catch(() => resolveGatewayPortFallback());
+  const restartPort = await resolveGatewayLifecyclePort(service).catch(() =>
+    resolveGatewayPortFallback(),
+  );
   const restartWaitMs = POST_RESTART_HEALTH_ATTEMPTS * POST_RESTART_HEALTH_DELAY_MS;
   const restartWaitSeconds = Math.round(restartWaitMs / 1000);
 

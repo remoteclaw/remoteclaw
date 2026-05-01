@@ -12,10 +12,16 @@ function isSourceCheckoutRoot(packageRoot: string): boolean {
   );
 }
 
-function resolveBundledDirFromPackageRoot(packageRoot: string, preferSourceCheckout: boolean): string | undefined {
+function resolveBundledDirFromPackageRoot(
+  packageRoot: string,
+  preferSourceCheckout: boolean,
+): string | undefined {
   const sourceExtensionsDir = path.join(packageRoot, "extensions");
   const builtExtensionsDir = path.join(packageRoot, "dist", "extensions");
-  if ((preferSourceCheckout || isSourceCheckoutRoot(packageRoot)) && fs.existsSync(sourceExtensionsDir)) {
+  if (
+    (preferSourceCheckout || isSourceCheckoutRoot(packageRoot)) &&
+    fs.existsSync(sourceExtensionsDir)
+  ) {
     return sourceExtensionsDir;
   }
   // Local source checkouts stage a runtime-complete bundled plugin tree under
@@ -62,7 +68,9 @@ export function resolveBundledPluginsDir(env: NodeJS.ProcessEnv = process.env): 
       resolveRemoteClawPackageRootSync({ argv1: process.argv[1] }),
       resolveRemoteClawPackageRootSync({ cwd: process.cwd() }),
       resolveRemoteClawPackageRootSync({ moduleUrl: import.meta.url }),
-    ].filter((entry, index, all): entry is string => Boolean(entry) && all.indexOf(entry) === index);
+    ].filter(
+      (entry, index, all): entry is string => Boolean(entry) && all.indexOf(entry) === index,
+    );
     for (const packageRoot of packageRoots) {
       const bundledDir = resolveBundledDirFromPackageRoot(packageRoot, preferSourceCheckout);
       if (bundledDir) {

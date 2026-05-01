@@ -27,11 +27,15 @@ function asOptionalBoolean(value: unknown): boolean | undefined {
   return typeof value === "boolean" ? value : undefined;
 }
 
-export function isDangerousNameMatchingEnabled(config: DangerousNameMatchingConfig | null | undefined): boolean {
+export function isDangerousNameMatchingEnabled(
+  config: DangerousNameMatchingConfig | null | undefined,
+): boolean {
   return config?.dangerouslyAllowNameMatching === true;
 }
 
-export function resolveDangerousNameMatchingEnabled(input: DangerousNameMatchingResolverInput): boolean {
+export function resolveDangerousNameMatchingEnabled(
+  input: DangerousNameMatchingResolverInput,
+): boolean {
   if (typeof input.accountConfig?.dangerouslyAllowNameMatching === "boolean") {
     return input.accountConfig.dangerouslyAllowNameMatching;
   }
@@ -81,7 +85,8 @@ export function collectProviderDangerousNameMatchingScopes(
     scopes.push({
       prefix: accountPrefix,
       account,
-      dangerousNameMatchingEnabled: accountDangerousNameMatching ?? providerDangerousNameMatchingEnabled,
+      dangerousNameMatchingEnabled:
+        accountDangerousNameMatching ?? providerDangerousNameMatchingEnabled,
       dangerousFlagPath:
         accountDangerousNameMatching == null
           ? providerDangerousFlagPath

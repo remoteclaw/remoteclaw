@@ -10,7 +10,10 @@ export const MAX_HISTORY_KEYS = 1000;
  * Evict oldest keys from a history map when it exceeds MAX_HISTORY_KEYS.
  * Uses Map's insertion order for LRU-like behavior.
  */
-export function evictOldHistoryKeys<T>(historyMap: Map<string, T[]>, maxKeys: number = MAX_HISTORY_KEYS): void {
+export function evictOldHistoryKeys<T>(
+  historyMap: Map<string, T[]>,
+  maxKeys: number = MAX_HISTORY_KEYS,
+): void {
   if (historyMap.size <= maxKeys) {
     return;
   }
@@ -41,7 +44,9 @@ export function buildHistoryContext(params: {
   if (!historyText.trim()) {
     return currentMessage;
   }
-  return [HISTORY_CONTEXT_MARKER, historyText, "", CURRENT_MESSAGE_MARKER, currentMessage].join(lineBreak);
+  return [HISTORY_CONTEXT_MARKER, historyText, "", CURRENT_MESSAGE_MARKER, currentMessage].join(
+    lineBreak,
+  );
 }
 
 export function appendHistoryEntry<T extends HistoryEntry>(params: {
@@ -149,7 +154,10 @@ export function buildHistoryContextFromMap(params: {
   });
 }
 
-export function clearHistoryEntries(params: { historyMap: Map<string, HistoryEntry[]>; historyKey: string }): void {
+export function clearHistoryEntries(params: {
+  historyMap: Map<string, HistoryEntry[]>;
+  historyKey: string;
+}): void {
   params.historyMap.set(params.historyKey, []);
 }
 

@@ -49,12 +49,16 @@ describe("web logout", () => {
     vi.restoreAllMocks();
   });
 
-  it("deletes cached credentials when present", { timeout: WEB_LOGOUT_TEST_TIMEOUT_MS }, async () => {
-    const authDir = await createAuthCase({ "creds.json": "{}" });
-    const result = await logoutWeb({ authDir, runtime: runtime as never });
-    expect(result).toBe(true);
-    expect(fs.existsSync(authDir)).toBe(false);
-  });
+  it(
+    "deletes cached credentials when present",
+    { timeout: WEB_LOGOUT_TEST_TIMEOUT_MS },
+    async () => {
+      const authDir = await createAuthCase({ "creds.json": "{}" });
+      const result = await logoutWeb({ authDir, runtime: runtime as never });
+      expect(result).toBe(true);
+      expect(fs.existsSync(authDir)).toBe(false);
+    },
+  );
 
   it("removes oauth.json too when not using legacy auth dir", async () => {
     const authDir = await createAuthCase({

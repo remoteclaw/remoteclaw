@@ -190,6 +190,8 @@ describe("restart sentinel message dedup", () => {
   });
 
   it("formats the non-interactive doctor command", () => {
-    expect(formatDoctorNonInteractiveHint({ PATH: "/usr/bin:/bin" })).toContain("remoteclaw doctor --non-interactive");
+    expect(formatDoctorNonInteractiveHint({ PATH: "/usr/bin:/bin" })).toContain(
+      "remoteclaw doctor --non-interactive",
+    );
   });
 });

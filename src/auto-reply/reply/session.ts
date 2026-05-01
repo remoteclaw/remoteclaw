@@ -1,6 +1,9 @@
 import crypto from "node:crypto";
 import path from "node:path";
-import { buildTelegramTopicConversationId, parseTelegramChatIdFromTarget } from "../../acp/conversation-id.js";
+import {
+  buildTelegramTopicConversationId,
+  parseTelegramChatIdFromTarget,
+} from "../../acp/conversation-id.js";
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
 import { normalizeChatType } from "../../channels/chat-type.js";
 import type { RemoteClawConfig } from "../../config/config.js";
@@ -38,7 +41,11 @@ import type { MsgContext, TemplateContext } from "../templating.js";
 import { resolveEffectiveResetTargetSessionKey } from "./acp-reset-target.js";
 import { normalizeInboundTextNewlines } from "./inbound-text.js";
 import { stripMentions, stripStructuralPrefixes } from "./mentions.js";
-import { maybeRetireLegacyMainDeliveryRoute, resolveLastChannelRaw, resolveLastToRaw } from "./session-delivery.js";
+import {
+  maybeRetireLegacyMainDeliveryRoute,
+  resolveLastChannelRaw,
+  resolveLastToRaw,
+} from "./session-delivery.js";
 import { forkSessionFromParent, resolveParentForkMaxTokens } from "./session-fork.js";
 import { buildSessionEndHookPayload, buildSessionStartHookPayload } from "./session-hooks.js";
 
@@ -92,12 +99,15 @@ function resolveAcpResetBindingContext(ctx: MsgContext): {
   conversationId: string;
   parentConversationId?: string;
 } | null {
-  const channelRaw = normalizeSessionText(ctx.OriginatingChannel ?? ctx.Surface ?? ctx.Provider ?? "").toLowerCase();
+  const channelRaw = normalizeSessionText(
+    ctx.OriginatingChannel ?? ctx.Surface ?? ctx.Provider ?? "",
+  ).toLowerCase();
   if (!channelRaw) {
     return null;
   }
   const accountId = normalizeSessionText(ctx.AccountId) || "default";
-  const normalizedThreadId = ctx.MessageThreadId != null ? normalizeSessionText(String(ctx.MessageThreadId)) : "";
+  const normalizedThreadId =
+    ctx.MessageThreadId != null ? normalizeSessionText(String(ctx.MessageThreadId)) : "";
 
   if (channelRaw === "telegram") {
     const parentConversationId =
@@ -159,7 +169,10 @@ function resolveAcpResetBindingContext(ctx: MsgContext): {
   };
 }
 
-function resolveBoundAcpSessionForReset(params: { cfg: RemoteClawConfig; ctx: MsgContext }): string | undefined {
+function resolveBoundAcpSessionForReset(params: {
+  cfg: RemoteClawConfig;
+  ctx: MsgContext;
+}): string | undefined {
   const activeSessionKey = normalizeSessionText(params.ctx.SessionKey);
   const bindingContext = resolveAcpResetBindingContext(params.ctx);
   return resolveEffectiveResetTargetSessionKey({
@@ -183,9 +196,12 @@ export async function initSessionState(params: {
   const { ctx, cfg, commandAuthorized } = params;
   // Native slash commands (Telegram/Discord/Slack) are delivered on a separate
   // "slash session" key, but should mutate the target chat session.
-  const targetSessionKey = ctx.CommandSource === "native" ? ctx.CommandTargetSessionKey?.trim() : undefined;
+  const targetSessionKey =
+    ctx.CommandSource === "native" ? ctx.CommandTargetSessionKey?.trim() : undefined;
   const sessionCtxForState =
-    targetSessionKey && targetSessionKey !== ctx.SessionKey ? { ...ctx, SessionKey: targetSessionKey } : ctx;
+    targetSessionKey && targetSessionKey !== ctx.SessionKey
+      ? { ...ctx, SessionKey: targetSessionKey }
+      : ctx;
   const sessionCfg = cfg.session;
   const mainKey = normalizeMainKey(sessionCfg?.mainKey);
   const agentId = resolveSessionAgentId({
@@ -193,7 +209,9 @@ export async function initSessionState(params: {
     config: cfg,
   });
   const groupResolution = resolveGroupSessionKey(sessionCtxForState) ?? undefined;
-  const resetTriggers = sessionCfg?.resetTriggers?.length ? sessionCfg.resetTriggers : DEFAULT_RESET_TRIGGERS;
+  const resetTriggers = sessionCfg?.resetTriggers?.length
+    ? sessionCfg.resetTriggers
+    : DEFAULT_RESET_TRIGGERS;
   const parentForkMaxTokens = resolveParentForkMaxTokens(cfg);
   const sessionScope = sessionCfg?.scope ?? "per-sender";
   const storePath = resolveStorePath(sessionCfg?.store, { agentId });
@@ -223,7 +241,8 @@ export async function initSessionState(params: {
   let persistedLabel: string | undefined;
 
   const normalizedChatType = normalizeChatType(ctx.ChatType);
-  const isGroup = normalizedChatType != null && normalizedChatType !== "direct" ? true : Boolean(groupResolution);
+  const isGroup =
+    normalizedChatType != null && normalizedChatType !== "direct" ? true : Boolean(groupResolution);
   // Prefer CommandBody/RawBody (clean message) for command detection; fall back
   // to Body which may contain structural context (history, sender labels).
   const commandSource = ctx.BodyForCommands ?? ctx.CommandBody ?? ctx.RawBody ?? ctx.Body ?? "";
@@ -243,7 +262,9 @@ export async function initSessionState(params: {
   // Timestamp/message prefixes (e.g. "[Dec 4 17:35] ") are added by the
   // web inbox before we get here. They prevented reset triggers like "/new"
   // from matching, so strip structural wrappers when checking for resets.
-  const strippedForReset = isGroup ? stripMentions(triggerBodyNormalized, ctx, cfg, agentId) : triggerBodyNormalized;
+  const strippedForReset = isGroup
+    ? stripMentions(triggerBodyNormalized, ctx, cfg, agentId)
+    : triggerBodyNormalized;
   const shouldUseAcpInPlaceReset = Boolean(
     resolveBoundAcpSessionForReset({
       cfg,
@@ -280,7 +301,10 @@ export async function initSessionState(params: {
       break;
     }
     const triggerPrefixLower = `${triggerLower} `;
-    if (trimmedBodyLower.startsWith(triggerPrefixLower) || strippedForResetLower.startsWith(triggerPrefixLower)) {
+    if (
+      trimmedBodyLower.startsWith(triggerPrefixLower) ||
+      strippedForResetLower.startsWith(triggerPrefixLower)
+    ) {
       if (shouldBypassAcpResetForTrigger(triggerLower)) {
         break;
       }
@@ -316,7 +340,11 @@ export async function initSessionState(params: {
   const resetType = resolveSessionResetType({ sessionKey, isGroup, isThread });
   const channelReset = resolveChannelResetConfig({
     sessionCfg,
-    channel: groupResolution?.channel ?? (ctx.OriginatingChannel as string | undefined) ?? ctx.Surface ?? ctx.Provider,
+    channel:
+      groupResolution?.channel ??
+      (ctx.OriginatingChannel as string | undefined) ??
+      ctx.Surface ??
+      ctx.Provider,
   });
   const resetPolicy = resolveSessionResetPolicy({
     sessionCfg,
@@ -444,7 +472,12 @@ export async function initSessionState(params: {
   }
   const parentSessionKey = ctx.ParentSessionKey?.trim();
   const alreadyForked = sessionEntry.forkedFromParent === true;
-  if (parentSessionKey && parentSessionKey !== sessionKey && sessionStore[parentSessionKey] && !alreadyForked) {
+  if (
+    parentSessionKey &&
+    parentSessionKey !== sessionKey &&
+    sessionStore[parentSessionKey] &&
+    !alreadyForked
+  ) {
     const parentTokens = sessionStore[parentSessionKey].totalTokens ?? 0;
     if (parentForkMaxTokens > 0 && parentTokens > parentForkMaxTokens) {
       // Parent context is too large — forking would create a thread session
@@ -539,7 +572,13 @@ export async function initSessionState(params: {
     // Keep BodyStripped aligned with Body (best default for agent prompts).
     // RawBody is reserved for command/directive parsing and may omit context.
     BodyStripped: normalizeInboundTextNewlines(
-      bodyStripped ?? ctx.BodyForAgent ?? ctx.Body ?? ctx.CommandBody ?? ctx.RawBody ?? ctx.BodyForCommands ?? "",
+      bodyStripped ??
+        ctx.BodyForAgent ??
+        ctx.Body ??
+        ctx.CommandBody ??
+        ctx.RawBody ??
+        ctx.BodyForCommands ??
+        "",
     ),
     SessionId: sessionId,
     IsNewSession: isNewSession ? "true" : "false",

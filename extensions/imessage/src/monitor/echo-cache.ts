@@ -72,9 +72,12 @@ class DefaultSentMessageCache implements SentMessageCache {
         return true;
       }
       const textTimestamp = textKey ? this.textCache.get(`${scope}:${textKey}`) : undefined;
-      const textBackedByIdTimestamp = textKey ? this.textBackedByIdCache.get(`${scope}:${textKey}`) : undefined;
+      const textBackedByIdTimestamp = textKey
+        ? this.textBackedByIdCache.get(`${scope}:${textKey}`)
+        : undefined;
       const hasTextOnlyMatch =
-        typeof textTimestamp === "number" && (!textBackedByIdTimestamp || textTimestamp > textBackedByIdTimestamp);
+        typeof textTimestamp === "number" &&
+        (!textBackedByIdTimestamp || textTimestamp > textBackedByIdTimestamp);
       if (!skipIdShortCircuit && !hasTextOnlyMatch) {
         return false;
       }

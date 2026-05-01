@@ -3,7 +3,10 @@ import type { AnyAgentTool } from "../agents/tools/common.js";
 import type { ChannelDock } from "../channels/dock.js";
 import type { ChannelPlugin } from "../channels/plugins/types.js";
 import { registerContextEngine } from "../context-engine/registry.js";
-import type { GatewayRequestHandler, GatewayRequestHandlers } from "../gateway/server-methods/types.js";
+import type {
+  GatewayRequestHandler,
+  GatewayRequestHandlers,
+} from "../gateway/server-methods/types.js";
 import { registerInternalHook } from "../hooks/internal-hooks.js";
 import type { HookEntry } from "../hooks/types.js";
 import { resolveUserPath } from "../utils.js";
@@ -11,7 +14,11 @@ import { registerPluginCommand } from "./commands.js";
 import { normalizePluginHttpPath } from "./http-path.js";
 import { findOverlappingPluginHttpRoute } from "./http-route-overlap.js";
 import type { PluginRuntime } from "./runtime/types.js";
-import { isPluginHookName, isPromptInjectionHookName, stripPromptMutationFieldsFromLegacyHookResult } from "./types.js";
+import {
+  isPluginHookName,
+  isPromptInjectionHookName,
+  stripPromptMutationFieldsFromLegacyHookResult,
+} from "./types.js";
 import type {
   RemoteClawPluginApi,
   RemoteClawPluginChannelRegistration,
@@ -150,7 +157,9 @@ const constrainLegacyPromptInjectionHook = (
   return (event, ctx) => {
     const result = handler(event, ctx);
     if (result && typeof result === "object" && "then" in result) {
-      return Promise.resolve(result).then((resolved) => stripPromptMutationFieldsFromLegacyHookResult(resolved));
+      return Promise.resolve(result).then((resolved) =>
+        stripPromptMutationFieldsFromLegacyHookResult(resolved),
+      );
     }
     return stripPromptMutationFieldsFromLegacyHookResult(result);
   };
@@ -278,7 +287,11 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
     }
   };
 
-  const registerGatewayMethod = (record: PluginRecord, method: string, handler: GatewayRequestHandler) => {
+  const registerGatewayMethod = (
+    record: PluginRecord,
+    method: string,
+    handler: GatewayRequestHandler,
+  ) => {
     const trimmed = method.trim();
     if (!trimmed) {
       return;
@@ -386,7 +399,10 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
     });
   };
 
-  const registerChannel = (record: PluginRecord, registration: RemoteClawPluginChannelRegistration | ChannelPlugin) => {
+  const registerChannel = (
+    record: PluginRecord,
+    registration: RemoteClawPluginChannelRegistration | ChannelPlugin,
+  ) => {
     const normalized =
       typeof (registration as RemoteClawPluginChannelRegistration).plugin === "object"
         ? (registration as RemoteClawPluginChannelRegistration)
@@ -575,7 +591,8 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
       runtime: registryParams.runtime,
       logger: normalizeLogger(registryParams.logger),
       registerTool: (tool, opts) => registerTool(record, tool, opts),
-      registerHook: (events, handler, opts) => registerHook(record, events, handler, opts, params.config),
+      registerHook: (events, handler, opts) =>
+        registerHook(record, events, handler, opts, params.config),
       registerHttpRoute: (params) => registerHttpRoute(record, params),
       registerChannel: (registration) => registerChannel(record, registration),
       registerProvider: (provider) => registerProvider(record, provider),
@@ -585,7 +602,8 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
       registerCommand: (command) => registerCommand(record, command),
       registerContextEngine: (id, factory) => registerContextEngine(id, factory),
       resolvePath: (input: string) => resolveUserPath(input),
-      on: (hookName, handler, opts) => registerTypedHook(record, hookName, handler, opts, params.hookPolicy),
+      on: (hookName, handler, opts) =>
+        registerTypedHook(record, hookName, handler, opts, params.hookPolicy),
     };
   };
 

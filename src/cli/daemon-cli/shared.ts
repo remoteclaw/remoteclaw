@@ -5,7 +5,10 @@ import {
   resolveGatewayWindowsTaskName,
 } from "../../daemon/constants.js";
 import { formatRuntimeStatus } from "../../daemon/runtime-format.js";
-import { buildPlatformRuntimeLogHints, buildPlatformServiceStartHints } from "../../daemon/runtime-hints.js";
+import {
+  buildPlatformRuntimeLogHints,
+  buildPlatformServiceStartHints,
+} from "../../daemon/runtime-hints.js";
 import { getResolvedLoggerSettings } from "../../logging.js";
 import { colorize, isRich, theme } from "../../terminal/theme.js";
 import { formatCliCommand } from "../command-format.js";
@@ -81,7 +84,11 @@ export function parsePortFromArgs(programArguments: string[] | undefined): numbe
   return null;
 }
 
-export function pickProbeHostForBind(bindMode: string, tailnetIPv4: string | undefined, customBindHost?: string) {
+export function pickProbeHostForBind(
+  bindMode: string,
+  tailnetIPv4: string | undefined,
+  customBindHost?: string,
+) {
   if (bindMode === "custom" && customBindHost?.trim()) {
     return customBindHost.trim();
   }
@@ -151,7 +158,9 @@ export function renderRuntimeHints(
     }
   })();
   if (runtime.missingUnit) {
-    hints.push(`Service not installed. Run: ${formatCliCommand("remoteclaw gateway install", env)}`);
+    hints.push(
+      `Service not installed. Run: ${formatCliCommand("remoteclaw gateway install", env)}`,
+    );
     if (fileLog) {
       hints.push(`File logs: ${fileLog}`);
     }

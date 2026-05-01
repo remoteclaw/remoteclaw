@@ -8,7 +8,9 @@ export type ExternalNetworkInterfaceAddress = {
   family: NetworkInterfaceFamily;
 };
 
-function normalizeNetworkInterfaceFamily(family: string | number | undefined): NetworkInterfaceFamily | undefined {
+function normalizeNetworkInterfaceFamily(
+  family: string | number | undefined,
+): NetworkInterfaceFamily | undefined {
   if (family === "IPv4" || family === 4) {
     return "IPv4";
   }

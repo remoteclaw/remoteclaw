@@ -308,7 +308,9 @@ describe("resolveConfigEnvVars", () => {
     });
 
     it("still throws when onMissing is not set", () => {
-      expect(() => resolveConfigEnvVars({ key: "${MISSING}" }, {} as NodeJS.ProcessEnv)).toThrow(MissingEnvVarError);
+      expect(() => resolveConfigEnvVars({ key: "${MISSING}" }, {} as NodeJS.ProcessEnv)).toThrow(
+        MissingEnvVarError,
+      );
     });
   });
 

@@ -65,7 +65,10 @@ function inferPayloadIfMissing(raw: Record<string, unknown>) {
   return false;
 }
 
-function copyTopLevelAgentTurnFields(raw: Record<string, unknown>, payload: Record<string, unknown>) {
+function copyTopLevelAgentTurnFields(
+  raw: Record<string, unknown>,
+  payload: Record<string, unknown>,
+) {
   let mutated = false;
 
   const copyTrimmedString = (field: "model") => {
@@ -90,7 +93,10 @@ function copyTopLevelAgentTurnFields(raw: Record<string, unknown>, payload: Reco
     mutated = true;
   }
 
-  if (typeof payload.allowUnsafeExternalContent !== "boolean" && typeof raw.allowUnsafeExternalContent === "boolean") {
+  if (
+    typeof payload.allowUnsafeExternalContent !== "boolean" &&
+    typeof raw.allowUnsafeExternalContent === "boolean"
+  ) {
     payload.allowUnsafeExternalContent = raw.allowUnsafeExternalContent;
     mutated = true;
   }
@@ -99,7 +105,11 @@ function copyTopLevelAgentTurnFields(raw: Record<string, unknown>, payload: Reco
     payload.deliver = raw.deliver;
     mutated = true;
   }
-  if (typeof payload.channel !== "string" && typeof raw.channel === "string" && raw.channel.trim()) {
+  if (
+    typeof payload.channel !== "string" &&
+    typeof raw.channel === "string" &&
+    raw.channel.trim()
+  ) {
     payload.channel = raw.channel.trim();
     mutated = true;
   }
@@ -107,11 +117,18 @@ function copyTopLevelAgentTurnFields(raw: Record<string, unknown>, payload: Reco
     payload.to = raw.to.trim();
     mutated = true;
   }
-  if (typeof payload.bestEffortDeliver !== "boolean" && typeof raw.bestEffortDeliver === "boolean") {
+  if (
+    typeof payload.bestEffortDeliver !== "boolean" &&
+    typeof raw.bestEffortDeliver === "boolean"
+  ) {
     payload.bestEffortDeliver = raw.bestEffortDeliver;
     mutated = true;
   }
-  if (typeof payload.provider !== "string" && typeof raw.provider === "string" && raw.provider.trim()) {
+  if (
+    typeof payload.provider !== "string" &&
+    typeof raw.provider === "string" &&
+    raw.provider.trim()
+  ) {
     payload.provider = raw.provider.trim();
     mutated = true;
   }
@@ -158,7 +175,9 @@ function stripLegacyTopLevelFields(raw: Record<string, unknown>) {
   }
 }
 
-export function normalizeStoredCronJobs(jobs: Array<Record<string, unknown>>): NormalizeCronStoreJobsResult {
+export function normalizeStoredCronJobs(
+  jobs: Array<Record<string, unknown>>,
+): NormalizeCronStoreJobsResult {
   const issues: CronStoreIssues = {};
   let mutated = false;
 
@@ -219,7 +238,8 @@ export function normalizeStoredCronJobs(jobs: Array<Record<string, unknown>>): N
     }
 
     if ("sessionKey" in raw) {
-      const sessionKey = typeof raw.sessionKey === "string" ? normalizeOptionalText(raw.sessionKey) : undefined;
+      const sessionKey =
+        typeof raw.sessionKey === "string" ? normalizeOptionalText(raw.sessionKey) : undefined;
       if (raw.sessionKey !== sessionKey) {
         raw.sessionKey = sessionKey;
         mutated = true;
@@ -248,7 +268,10 @@ export function normalizeStoredCronJobs(jobs: Array<Record<string, unknown>>): N
     }
 
     const payload = raw.payload;
-    if ((!payload || typeof payload !== "object" || Array.isArray(payload)) && inferPayloadIfMissing(raw)) {
+    if (
+      (!payload || typeof payload !== "object" || Array.isArray(payload)) &&
+      inferPayloadIfMissing(raw)
+    ) {
       mutated = true;
       trackIssue("legacyTopLevelPayloadFields");
     }
@@ -288,7 +311,11 @@ export function normalizeStoredCronJobs(jobs: Array<Record<string, unknown>>): N
       "command" in raw ||
       "timeout" in raw;
     const hadLegacyTopLevelDeliveryFields =
-      "deliver" in raw || "channel" in raw || "to" in raw || "bestEffortDeliver" in raw || "provider" in raw;
+      "deliver" in raw ||
+      "channel" in raw ||
+      "to" in raw ||
+      "bestEffortDeliver" in raw ||
+      "provider" in raw;
     if (hadLegacyTopLevelPayloadFields || hadLegacyTopLevelDeliveryFields) {
       stripLegacyTopLevelFields(raw);
       mutated = true;
@@ -417,7 +444,8 @@ export function normalizeStoredCronJobs(jobs: Array<Record<string, unknown>>): N
       mutated = true;
     }
 
-    const payloadKind = payloadRecord && typeof payloadRecord.kind === "string" ? payloadRecord.kind : "";
+    const payloadKind =
+      payloadRecord && typeof payloadRecord.kind === "string" ? payloadRecord.kind : "";
     const rawSessionTarget = typeof raw.sessionTarget === "string" ? raw.sessionTarget.trim() : "";
     const loweredSessionTarget = rawSessionTarget.toLowerCase();
     if (loweredSessionTarget === "main" || loweredSessionTarget === "isolated") {
@@ -447,7 +475,8 @@ export function normalizeStoredCronJobs(jobs: Array<Record<string, unknown>>): N
       }
     }
 
-    const sessionTarget = typeof raw.sessionTarget === "string" ? raw.sessionTarget.trim().toLowerCase() : "";
+    const sessionTarget =
+      typeof raw.sessionTarget === "string" ? raw.sessionTarget.trim().toLowerCase() : "";
     const isIsolatedAgentTurn =
       sessionTarget === "isolated" ||
       sessionTarget === "current" ||

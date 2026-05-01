@@ -33,7 +33,8 @@ export type ResolvedWhatsAppAccount = {
 
 export const DEFAULT_WHATSAPP_MEDIA_MAX_MB = 50;
 
-const { listConfiguredAccountIds, listAccountIds, resolveDefaultAccountId } = createAccountListHelpers("whatsapp");
+const { listConfiguredAccountIds, listAccountIds, resolveDefaultAccountId } =
+  createAccountListHelpers("whatsapp");
 export const listWhatsAppAccountIds = listAccountIds;
 export const resolveDefaultWhatsAppAccountId = resolveDefaultAccountId;
 
@@ -66,7 +67,10 @@ export function hasAnyWhatsAppAuth(cfg: RemoteClawConfig): boolean {
   return listWhatsAppAuthDirs(cfg).some((authDir) => hasWebCredsSync(authDir));
 }
 
-function resolveAccountConfig(cfg: RemoteClawConfig, accountId: string): WhatsAppAccountConfig | undefined {
+function resolveAccountConfig(
+  cfg: RemoteClawConfig,
+  accountId: string,
+): WhatsAppAccountConfig | undefined {
   return resolveAccountEntry(cfg.channels?.whatsapp?.accounts, accountId);
 }
 
@@ -126,7 +130,8 @@ export function resolveWhatsAppAccount(params: {
     name: accountCfg?.name?.trim() || undefined,
     enabled,
     sendReadReceipts: accountCfg?.sendReadReceipts ?? rootCfg?.sendReadReceipts ?? true,
-    messagePrefix: accountCfg?.messagePrefix ?? rootCfg?.messagePrefix ?? params.cfg.messages?.messagePrefix,
+    messagePrefix:
+      accountCfg?.messagePrefix ?? rootCfg?.messagePrefix ?? params.cfg.messages?.messagePrefix,
     authDir,
     isLegacyAuthDir: isLegacy,
     selfChatMode: accountCfg?.selfChatMode ?? rootCfg?.selfChatMode,
@@ -144,7 +149,9 @@ export function resolveWhatsAppAccount(params: {
   };
 }
 
-export function resolveWhatsAppMediaMaxBytes(account: Pick<ResolvedWhatsAppAccount, "mediaMaxMb">): number {
+export function resolveWhatsAppMediaMaxBytes(
+  account: Pick<ResolvedWhatsAppAccount, "mediaMaxMb">,
+): number {
   const mediaMaxMb =
     typeof account.mediaMaxMb === "number" && account.mediaMaxMb > 0
       ? account.mediaMaxMb

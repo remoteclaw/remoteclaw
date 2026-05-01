@@ -79,7 +79,10 @@ export function createGatewayWsClient(params: {
 
   const waitOpen = () =>
     new Promise<void>((resolve, reject) => {
-      const t = setTimeout(() => reject(new Error("ws open timeout")), params.openTimeoutMs ?? 8000);
+      const t = setTimeout(
+        () => reject(new Error("ws open timeout")),
+        params.openTimeoutMs ?? 8000,
+      );
       ws.once("open", () => {
         clearTimeout(t);
         resolve();

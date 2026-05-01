@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { clearPluginCommands, getPluginCommandSpecs, listPluginCommands, registerPluginCommand } from "./commands.js";
+import {
+  clearPluginCommands,
+  getPluginCommandSpecs,
+  listPluginCommands,
+  registerPluginCommand,
+} from "./commands.js";
 
 afterEach(() => {
   clearPluginCommands();

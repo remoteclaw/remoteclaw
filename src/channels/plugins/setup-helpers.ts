@@ -45,7 +45,8 @@ export function applyAccountNameToChannelSection(params: {
   const accountId = normalizeAccountId(params.accountId);
   const channels = params.cfg.channels as Record<string, unknown> | undefined;
   const baseConfig = channels?.[params.channelKey];
-  const base = typeof baseConfig === "object" && baseConfig ? (baseConfig as ChannelSectionBase) : undefined;
+  const base =
+    typeof baseConfig === "object" && baseConfig ? (baseConfig as ChannelSectionBase) : undefined;
   const useAccounts = shouldStoreNameInAccounts({
     cfg: params.cfg,
     channelKey: params.channelKey,
@@ -68,7 +69,9 @@ export function applyAccountNameToChannelSection(params: {
   const baseAccounts: Record<string, Record<string, unknown>> = base?.accounts ?? {};
   const existingAccount = baseAccounts[accountId] ?? {};
   const baseWithoutName =
-    accountId === DEFAULT_ACCOUNT_ID ? (({ name: _ignored, ...rest }) => rest)(base ?? {}) : (base ?? {});
+    accountId === DEFAULT_ACCOUNT_ID
+      ? (({ name: _ignored, ...rest }) => rest)(base ?? {})
+      : (base ?? {});
   return {
     ...params.cfg,
     channels: {
@@ -242,7 +245,11 @@ function hasPresentSetupValue(value: unknown): boolean {
 export function createSetupInputPresenceValidator(params: {
   defaultAccountOnlyEnvError?: string;
   whenNotUseEnv?: SetupInputPresenceRequirement[];
-  validate?: (params: { cfg: RemoteClawConfig; accountId: string; input: ChannelSetupInput }) => string | null;
+  validate?: (params: {
+    cfg: RemoteClawConfig;
+    accountId: string;
+    input: ChannelSetupInput;
+  }) => string | null;
 }): NonNullable<ChannelSetupAdapter["validateInput"]> {
   return createZodSetupInputValidator({
     schema: GenericSetupInputSchema,
@@ -349,7 +356,8 @@ export function patchScopedAccountConfig(params: {
             ...existingAccount,
             ...(ensureAccountEnabled
               ? {
-                  enabled: typeof existingAccount.enabled === "boolean" ? existingAccount.enabled : true,
+                  enabled:
+                    typeof existingAccount.enabled === "boolean" ? existingAccount.enabled : true,
                 }
               : {}),
             ...accountPatch,
@@ -466,7 +474,10 @@ export const MATRIX_SHARED_MULTI_ACCOUNT_DEFAULT_KEYS = new Set([
   "actions",
 ]);
 
-export function shouldMoveSingleAccountChannelKey(params: { channelKey: string; key: string }): boolean {
+export function shouldMoveSingleAccountChannelKey(params: {
+  channelKey: string;
+  key: string;
+}): boolean {
   if (COMMON_SINGLE_ACCOUNT_KEYS_TO_MOVE.has(params.key)) {
     return true;
   }
@@ -478,7 +489,8 @@ export function resolveSingleAccountKeysToMove(params: {
   channel: Record<string, unknown>;
 }): string[] {
   const hasNamedAccounts =
-    Object.keys((params.channel.accounts as Record<string, unknown>) ?? {}).filter(Boolean).length > 0;
+    Object.keys((params.channel.accounts as Record<string, unknown>) ?? {}).filter(Boolean).length >
+    0;
   return Object.entries(params.channel)
     .filter(([key, value]) => {
       if (key === "accounts" || key === "enabled" || value === undefined) {
@@ -487,7 +499,11 @@ export function resolveSingleAccountKeysToMove(params: {
       if (!shouldMoveSingleAccountChannelKey({ channelKey: params.channelKey, key })) {
         return false;
       }
-      if (params.channelKey === "matrix" && hasNamedAccounts && !MATRIX_NAMED_ACCOUNT_PROMOTION_KEYS.has(key)) {
+      if (
+        params.channelKey === "matrix" &&
+        hasNamedAccounts &&
+        !MATRIX_NAMED_ACCOUNT_PROMOTION_KEYS.has(key)
+      ) {
         return false;
       }
       return true;
@@ -511,7 +527,10 @@ export function resolveSingleAccountPromotionTarget(params: {
     if (normalizedDefaultAccount !== DEFAULT_ACCOUNT_ID) {
       const matchedAccountId = Object.entries(accounts).find(
         ([accountId, value]) =>
-          accountId && value && typeof value === "object" && normalizeAccountId(accountId) === normalizedDefaultAccount,
+          accountId &&
+          value &&
+          typeof value === "object" &&
+          normalizeAccountId(accountId) === normalizedDefaultAccount,
       )?.[0];
       if (matchedAccountId) {
         return matchedAccountId;
@@ -525,7 +544,11 @@ export function resolveSingleAccountPromotionTarget(params: {
   if (namedAccounts.length === 1) {
     return namedAccounts[0][0];
   }
-  if (namedAccounts.length > 1 && accounts[DEFAULT_ACCOUNT_ID] && typeof accounts[DEFAULT_ACCOUNT_ID] === "object") {
+  if (
+    namedAccounts.length > 1 &&
+    accounts[DEFAULT_ACCOUNT_ID] &&
+    typeof accounts[DEFAULT_ACCOUNT_ID] === "object"
+  ) {
     return DEFAULT_ACCOUNT_ID;
   }
   return DEFAULT_ACCOUNT_ID;
@@ -579,7 +602,8 @@ export function moveSingleAccountChannelSectionToDefaultAccount(params: {
 }): RemoteClawConfig {
   const channels = params.cfg.channels as Record<string, unknown> | undefined;
   const baseConfig = channels?.[params.channelKey];
-  const base = typeof baseConfig === "object" && baseConfig ? (baseConfig as ChannelSectionRecord) : undefined;
+  const base =
+    typeof baseConfig === "object" && baseConfig ? (baseConfig as ChannelSectionRecord) : undefined;
   if (!base) {
     return params.cfg;
   }

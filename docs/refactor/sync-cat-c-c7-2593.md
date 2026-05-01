@@ -82,8 +82,14 @@ Both rewrites are mechanical, but together they constitute a divergent fork-spec
 approvalId = crypto.randomUUID();
 const approvalTimeoutMs = DEFAULT_EXEC_APPROVAL_TIMEOUT_MS;
 // Keep client transport alive while the approver decides.
-const transportTimeoutMs = Math.max(parseTimeoutMs(params.opts.timeout) ?? 0, approvalTimeoutMs + 10_000);
-const decisionResult = (await callGatewayCli("exec.approval.request", ...{ transportTimeoutMs })) as {
+const transportTimeoutMs = Math.max(
+  parseTimeoutMs(params.opts.timeout) ?? 0,
+  approvalTimeoutMs + 10_000,
+);
+const decisionResult = (await callGatewayCli(
+  "exec.approval.request",
+  ...{ transportTimeoutMs },
+)) as {
   decision?: string;
 } | null;
 ```

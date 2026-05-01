@@ -33,7 +33,9 @@ describe("startHeartbeatRunner", () => {
     await vi.advanceTimersByTimeAsync(30 * 60_000 + 1_000);
 
     expect(runSpy).toHaveBeenCalledTimes(1);
-    expect(runSpy.mock.calls[0]?.[0]).toEqual(expect.objectContaining({ agentId: "alpha", reason: "interval" }));
+    expect(runSpy.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({ agentId: "alpha", reason: "interval" }),
+    );
 
     runner.updateConfig({
       agents: {
@@ -55,7 +57,9 @@ describe("startHeartbeatRunner", () => {
     await vi.advanceTimersByTimeAsync(5 * 60_000 + 1_000);
 
     expect(runSpy).toHaveBeenCalledTimes(3);
-    expect(runSpy.mock.calls[2]?.[0]).toEqual(expect.objectContaining({ agentId: "ops", heartbeat: { every: "15m" } }));
+    expect(runSpy.mock.calls[2]?.[0]).toEqual(
+      expect.objectContaining({ agentId: "ops", heartbeat: { every: "15m" } }),
+    );
 
     runner.stop();
   });

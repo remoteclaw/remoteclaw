@@ -120,9 +120,12 @@ export async function checkGitUpdateStatus(params: {
     runCommandWithTimeout(["git", "-C", root, "rev-parse", "--abbrev-ref", "@{upstream}"], {
       timeoutMs,
     }).catch(() => null),
-    runCommandWithTimeout(["git", "-C", root, "status", "--porcelain", "--", ":!dist/control-ui/"], {
-      timeoutMs,
-    }).catch(() => null),
+    runCommandWithTimeout(
+      ["git", "-C", root, "status", "--porcelain", "--", ":!dist/control-ui/"],
+      {
+        timeoutMs,
+      },
+    ).catch(() => null),
   ]);
   if (!branchRes || branchRes.code !== 0) {
     return { ...base, error: branchRes?.stderr?.trim() || "git unavailable" };
@@ -145,9 +148,12 @@ export async function checkGitUpdateStatus(params: {
 
   const counts =
     upstream && upstream.length > 0
-      ? await runCommandWithTimeout(["git", "-C", root, "rev-list", "--left-right", "--count", `HEAD...${upstream}`], {
-          timeoutMs,
-        }).catch(() => null)
+      ? await runCommandWithTimeout(
+          ["git", "-C", root, "rev-list", "--left-right", "--count", `HEAD...${upstream}`],
+          {
+            timeoutMs,
+          },
+        ).catch(() => null)
       : null;
 
   const parseCounts = (raw: string): { ahead: number; behind: number } | null => {
@@ -212,7 +218,10 @@ function resolveDepsMarker(params: { root: string; manager: PackageManager }): {
   return { lockfilePath: null, markerPath: null };
 }
 
-export async function checkDepsStatus(params: { root: string; manager: PackageManager }): Promise<DepsStatus> {
+export async function checkDepsStatus(params: {
+  root: string;
+  manager: PackageManager;
+}): Promise<DepsStatus> {
   const root = path.resolve(params.root);
   const { lockfilePath, markerPath } = resolveDepsMarker({
     root,
@@ -277,7 +286,9 @@ export async function checkDepsStatus(params: { root: string; manager: PackageMa
   };
 }
 
-export async function fetchNpmLatestVersion(params?: { timeoutMs?: number }): Promise<RegistryStatus> {
+export async function fetchNpmLatestVersion(params?: {
+  timeoutMs?: number;
+}): Promise<RegistryStatus> {
   const res = await fetchNpmTagVersion({ tag: "latest", timeoutMs: params?.timeoutMs });
   return {
     latestVersion: res.version,
@@ -285,7 +296,10 @@ export async function fetchNpmLatestVersion(params?: { timeoutMs?: number }): Pr
   };
 }
 
-export async function fetchNpmTagVersion(params: { tag: string; timeoutMs?: number }): Promise<NpmTagStatus> {
+export async function fetchNpmTagVersion(params: {
+  tag: string;
+  timeoutMs?: number;
+}): Promise<NpmTagStatus> {
   const timeoutMs = params?.timeoutMs ?? 3500;
   const tag = params.tag;
   try {
@@ -359,7 +373,9 @@ function parseComparableSemver(version: string | null): ComparableSemver | null 
     return null;
   }
   const normalized = normalizeLegacyDotBetaVersion(version.trim());
-  const match = /^v?([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$/.exec(normalized);
+  const match = /^v?([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$/.exec(
+    normalized,
+  );
   if (!match) {
     return null;
   }

@@ -10,7 +10,11 @@ import {
   type GatewayMessageChannel,
 } from "../../utils/message-channel.js";
 import type { OutboundTargetResolution } from "./targets.js";
-import { resolveOutboundTarget, resolveSessionDeliveryTarget, type SessionDeliveryTarget } from "./targets.js";
+import {
+  resolveOutboundTarget,
+  resolveSessionDeliveryTarget,
+  type SessionDeliveryTarget,
+} from "./targets.js";
 
 export type AgentDeliveryPlan = {
   baseDelivery: SessionDeliveryTarget;
@@ -43,22 +47,33 @@ export function resolveAgentDeliveryPlan(params: {
   /** Turn-source `threadId` — paired with `turnSourceChannel`. */
   turnSourceThreadId?: string | number;
 }): AgentDeliveryPlan {
-  const requestedRaw = typeof params.requestedChannel === "string" ? params.requestedChannel.trim() : "";
+  const requestedRaw =
+    typeof params.requestedChannel === "string" ? params.requestedChannel.trim() : "";
   const normalizedRequested = requestedRaw ? normalizeMessageChannel(requestedRaw) : undefined;
   const requestedChannel = normalizedRequested || "last";
 
   const explicitTo =
-    typeof params.explicitTo === "string" && params.explicitTo.trim() ? params.explicitTo.trim() : undefined;
+    typeof params.explicitTo === "string" && params.explicitTo.trim()
+      ? params.explicitTo.trim()
+      : undefined;
 
   // Resolve turn-source channel for cross-channel safety.
-  const normalizedTurnSource = params.turnSourceChannel ? normalizeMessageChannel(params.turnSourceChannel) : undefined;
+  const normalizedTurnSource = params.turnSourceChannel
+    ? normalizeMessageChannel(params.turnSourceChannel)
+    : undefined;
   const turnSourceChannel =
-    normalizedTurnSource && isDeliverableMessageChannel(normalizedTurnSource) ? normalizedTurnSource : undefined;
+    normalizedTurnSource && isDeliverableMessageChannel(normalizedTurnSource)
+      ? normalizedTurnSource
+      : undefined;
   const turnSourceTo =
-    typeof params.turnSourceTo === "string" && params.turnSourceTo.trim() ? params.turnSourceTo.trim() : undefined;
+    typeof params.turnSourceTo === "string" && params.turnSourceTo.trim()
+      ? params.turnSourceTo.trim()
+      : undefined;
   const turnSourceAccountId = normalizeAccountId(params.turnSourceAccountId);
   const turnSourceThreadId =
-    params.turnSourceThreadId != null && params.turnSourceThreadId !== "" ? params.turnSourceThreadId : undefined;
+    params.turnSourceThreadId != null && params.turnSourceThreadId !== ""
+      ? params.turnSourceThreadId
+      : undefined;
 
   const baseDelivery = resolveSessionDeliveryTarget({
     entry: params.sessionEntry,
@@ -99,10 +114,15 @@ export function resolveAgentDeliveryPlan(params: {
       : undefined;
 
   const resolvedAccountId =
-    normalizeAccountId(params.accountId) ?? (deliveryTargetMode === "implicit" ? baseDelivery.accountId : undefined);
+    normalizeAccountId(params.accountId) ??
+    (deliveryTargetMode === "implicit" ? baseDelivery.accountId : undefined);
 
   let resolvedTo = explicitTo;
-  if (!resolvedTo && isDeliverableMessageChannel(resolvedChannel) && resolvedChannel === baseDelivery.lastChannel) {
+  if (
+    !resolvedTo &&
+    isDeliverableMessageChannel(resolvedChannel) &&
+    resolvedChannel === baseDelivery.lastChannel
+  ) {
     resolvedTo = baseDelivery.lastTo;
   }
 
@@ -127,7 +147,9 @@ export function resolveAgentOutboundTarget(params: {
   targetMode: ChannelOutboundTargetMode;
 } {
   const targetMode =
-    params.targetMode ?? params.plan.deliveryTargetMode ?? (params.plan.resolvedTo ? "explicit" : "implicit");
+    params.targetMode ??
+    params.plan.deliveryTargetMode ??
+    (params.plan.resolvedTo ? "explicit" : "implicit");
   if (!isDeliverableMessageChannel(params.plan.resolvedChannel)) {
     return {
       resolvedTarget: null,

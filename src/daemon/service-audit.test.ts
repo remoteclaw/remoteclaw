@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { auditGatewayServiceConfig, checkTokenDrift, SERVICE_AUDIT_CODES } from "./service-audit.js";
+import {
+  auditGatewayServiceConfig,
+  checkTokenDrift,
+  SERVICE_AUDIT_CODES,
+} from "./service-audit.js";
 import { buildMinimalServicePath } from "./service-env.js";
 
 function hasIssue(
@@ -59,7 +63,9 @@ describe("auditGatewayServiceConfig", () => {
         environment: { PATH: "/usr/bin:/bin" },
       },
     });
-    expect(audit.issues.some((issue) => issue.code === SERVICE_AUDIT_CODES.gatewayRuntimeBun)).toBe(true);
+    expect(audit.issues.some((issue) => issue.code === SERVICE_AUDIT_CODES.gatewayRuntimeBun)).toBe(
+      true,
+    );
   });
 
   it("flags version-managed node paths", async () => {
@@ -73,11 +79,17 @@ describe("auditGatewayServiceConfig", () => {
         },
       },
     });
-    expect(audit.issues.some((issue) => issue.code === SERVICE_AUDIT_CODES.gatewayRuntimeNodeVersionManager)).toBe(
-      true,
-    );
-    expect(audit.issues.some((issue) => issue.code === SERVICE_AUDIT_CODES.gatewayPathNonMinimal)).toBe(true);
-    expect(audit.issues.some((issue) => issue.code === SERVICE_AUDIT_CODES.gatewayPathMissingDirs)).toBe(true);
+    expect(
+      audit.issues.some(
+        (issue) => issue.code === SERVICE_AUDIT_CODES.gatewayRuntimeNodeVersionManager,
+      ),
+    ).toBe(true);
+    expect(
+      audit.issues.some((issue) => issue.code === SERVICE_AUDIT_CODES.gatewayPathNonMinimal),
+    ).toBe(true);
+    expect(
+      audit.issues.some((issue) => issue.code === SERVICE_AUDIT_CODES.gatewayPathMissingDirs),
+    ).toBe(true);
   });
 
   it("accepts Linux minimal PATH with user directories", async () => {
@@ -92,8 +104,12 @@ describe("auditGatewayServiceConfig", () => {
       },
     });
 
-    expect(audit.issues.some((issue) => issue.code === SERVICE_AUDIT_CODES.gatewayPathNonMinimal)).toBe(false);
-    expect(audit.issues.some((issue) => issue.code === SERVICE_AUDIT_CODES.gatewayPathMissingDirs)).toBe(false);
+    expect(
+      audit.issues.some((issue) => issue.code === SERVICE_AUDIT_CODES.gatewayPathNonMinimal),
+    ).toBe(false);
+    expect(
+      audit.issues.some((issue) => issue.code === SERVICE_AUDIT_CODES.gatewayPathMissingDirs),
+    ).toBe(false);
   });
 
   it("flags gateway token mismatch when service token is stale", async () => {

@@ -145,7 +145,9 @@ describe("waitForTransportReady", () => {
       check: async () => ({ ok: false, error: null }),
     });
 
-    const asserted = expect(waitPromise).rejects.toThrow("test transport not ready (unknown error)");
+    const asserted = expect(waitPromise).rejects.toThrow(
+      "test transport not ready (unknown error)",
+    );
     await vi.advanceTimersByTimeAsync(200);
     await asserted;
 

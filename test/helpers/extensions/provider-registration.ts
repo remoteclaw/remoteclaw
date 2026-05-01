@@ -52,7 +52,11 @@ export function registerProviderPlugin(params: {
   return { providers, speechProviders, mediaProviders, imageProviders };
 }
 
-export function requireRegisteredProvider<T extends { id: string }>(entries: T[], id: string, label = "provider"): T {
+export function requireRegisteredProvider<T extends { id: string }>(
+  entries: T[],
+  id: string,
+  label = "provider",
+): T {
   const entry = entries.find((candidate) => candidate.id === id);
   if (!entry) {
     throw new Error(`${label} ${id} was not registered`);

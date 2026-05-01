@@ -1,7 +1,12 @@
 import type { RemoteClawConfig } from "../config/config.js";
 import { loadSessionStore, updateSessionStore } from "../config/sessions.js";
 import { parseSessionLabel } from "../sessions/session-label.js";
-import { ErrorCodes, type ErrorShape, errorShape, type SessionsResolveParams } from "./protocol/index.js";
+import {
+  ErrorCodes,
+  type ErrorShape,
+  errorShape,
+  type SessionsResolveParams,
+} from "./protocol/index.js";
 import {
   listSessionsFromStore,
   loadCombinedSessionStoreForGateway,
@@ -26,7 +31,10 @@ export async function resolveSessionKeyFromResolveParams(params: {
   if (selectionCount > 1) {
     return {
       ok: false,
-      error: errorShape(ErrorCodes.INVALID_REQUEST, "Provide either key, sessionId, or label (not multiple)"),
+      error: errorShape(
+        ErrorCodes.INVALID_REQUEST,
+        "Provide either key, sessionId, or label (not multiple)",
+      ),
     };
   }
   if (selectionCount === 0) {
@@ -112,7 +120,9 @@ export async function resolveSessionKeyFromResolveParams(params: {
         agentId: p.agentId,
       },
     });
-    const matches = list.sessions.filter((session) => session.sessionId === sessionId || session.key === sessionId);
+    const matches = list.sessions.filter(
+      (session) => session.sessionId === sessionId || session.key === sessionId,
+    );
     if (matches.length === 0) {
       return {
         ok: false,
@@ -123,7 +133,10 @@ export async function resolveSessionKeyFromResolveParams(params: {
       const keys = matches.map((session) => session.key).join(", ");
       return {
         ok: false,
-        error: errorShape(ErrorCodes.INVALID_REQUEST, `Multiple sessions found for sessionId: ${sessionId} (${keys})`),
+        error: errorShape(
+          ErrorCodes.INVALID_REQUEST,
+          `Multiple sessions found for sessionId: ${sessionId} (${keys})`,
+        ),
       };
     }
     return { ok: true, key: String(matches[0]?.key ?? "") };
@@ -154,7 +167,10 @@ export async function resolveSessionKeyFromResolveParams(params: {
   if (list.sessions.length === 0) {
     return {
       ok: false,
-      error: errorShape(ErrorCodes.INVALID_REQUEST, `No session found with label: ${parsedLabel.label}`),
+      error: errorShape(
+        ErrorCodes.INVALID_REQUEST,
+        `No session found with label: ${parsedLabel.label}`,
+      ),
     };
   }
   if (list.sessions.length > 1) {

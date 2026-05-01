@@ -2,7 +2,11 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { packNpmSpecToArchive, resolveArchiveSourcePath, withTempDir } from "./install-source-utils.js";
+import {
+  packNpmSpecToArchive,
+  resolveArchiveSourcePath,
+  withTempDir,
+} from "./install-source-utils.js";
 
 const runCommandWithTimeoutMock = vi.fn();
 const TEMP_DIR_PREFIX = "remoteclaw-install-source-utils-";
@@ -143,15 +147,18 @@ describe("resolveArchiveSourcePath", () => {
     expectPackError(await resolveArchiveSourcePath(await resolvePath()), [expected]);
   });
 
-  it.each(["plugin.zip", "plugin.tgz", "plugin.tar.gz"])("accepts supported archive extension %s", async (fileName) => {
-    const { filePath } = await createFixtureFile({
-      fileName,
-      contents: "",
-    });
+  it.each(["plugin.zip", "plugin.tgz", "plugin.tar.gz"])(
+    "accepts supported archive extension %s",
+    async (fileName) => {
+      const { filePath } = await createFixtureFile({
+        fileName,
+        contents: "",
+      });
 
-    const result = await resolveArchiveSourcePath(filePath);
-    expect(result).toEqual({ ok: true, path: filePath });
-  });
+      const result = await resolveArchiveSourcePath(filePath);
+      expect(result).toEqual({ ok: true, path: filePath });
+    },
+  );
 });
 
 describe("packNpmSpecToArchive", () => {
@@ -252,12 +259,17 @@ describe("packNpmSpecToArchive", () => {
     const cwd = await createFixtureDir();
     mockPackCommandResult({
       stdout: "",
-      stderr: "npm error code E404\nnpm error 404  '@remoteclaw/whatsapp@*' is not in this registry.",
+      stderr:
+        "npm error code E404\nnpm error 404  '@remoteclaw/whatsapp@*' is not in this registry.",
       code: 1,
     });
 
     const result = await runPack("@remoteclaw/whatsapp", cwd);
-    expectPackError(result, ["Package not found on npm", "@remoteclaw/whatsapp", "docs.remoteclaw.org/tools/plugin"]);
+    expectPackError(result, [
+      "Package not found on npm",
+      "@remoteclaw/whatsapp",
+      "docs.remoteclaw.org/tools/plugin",
+    ]);
   });
 
   it("returns explicit error when npm pack produces no archive name", async () => {

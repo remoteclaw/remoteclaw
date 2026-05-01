@@ -193,7 +193,10 @@ describe("prepareFileConsentActivity", () => {
       conversationId: "conv456",
     });
 
-    const attachment = (result.activity.attachments as unknown[])[0] as Record<string, { description: string }>;
+    const attachment = (result.activity.attachments as unknown[])[0] as Record<
+      string,
+      { description: string }
+    >;
     expect(attachment.content.description).toBe("File: document.docx");
   });
 
@@ -208,7 +211,10 @@ describe("prepareFileConsentActivity", () => {
       description: "Q4 Financial Report",
     });
 
-    const attachment = (result.activity.attachments as unknown[])[0] as Record<string, { description: string }>;
+    const attachment = (result.activity.attachments as unknown[])[0] as Record<
+      string,
+      { description: string }
+    >;
     expect(attachment.content.description).toBe("Q4 Financial Report");
   });
 

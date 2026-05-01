@@ -42,7 +42,8 @@ function loadRegistry(candidates: PluginCandidate[]) {
 
 function countDuplicateWarnings(registry: ReturnType<typeof loadPluginManifestRegistry>): number {
   return registry.diagnostics.filter(
-    (diagnostic) => diagnostic.level === "warn" && diagnostic.message?.includes("duplicate plugin id"),
+    (diagnostic) =>
+      diagnostic.level === "warn" && diagnostic.message?.includes("duplicate plugin id"),
   ).length;
 }
 
@@ -55,7 +56,11 @@ function prepareLinkedManifestFixture(params: { id: string; mode: "symlink" | "h
   const outsideManifest = path.join(outsideDir, "remoteclaw.plugin.json");
   const linkedManifest = path.join(rootDir, "remoteclaw.plugin.json");
   fs.writeFileSync(path.join(rootDir, "index.ts"), "export default function () {}", "utf-8");
-  fs.writeFileSync(outsideManifest, JSON.stringify({ id: params.id, configSchema: { type: "object" } }), "utf-8");
+  fs.writeFileSync(
+    outsideManifest,
+    JSON.stringify({ id: params.id, configSchema: { type: "object" } }),
+    "utf-8",
+  );
 
   try {
     if (params.mode === "symlink") {
@@ -93,7 +98,10 @@ function hasUnsafeManifestDiagnostic(registry: ReturnType<typeof loadPluginManif
   return registry.diagnostics.some((diag) => diag.message.includes("unsafe plugin manifest path"));
 }
 
-function expectUnsafeWorkspaceManifestRejected(params: { id: string; mode: "symlink" | "hardlink" }) {
+function expectUnsafeWorkspaceManifestRejected(params: {
+  id: string;
+  mode: "symlink" | "hardlink";
+}) {
   const fixture = prepareLinkedManifestFixture({ id: params.id, mode: params.mode });
   if (!fixture.linked) {
     return;

@@ -26,7 +26,8 @@ async function loadBackgroundUtils(): Promise<BackgroundUtilsModule> {
   }
 }
 
-const { buildRelayWsUrl, deriveRelayToken, isRetryableReconnectError, reconnectDelayMs } = await loadBackgroundUtils();
+const { buildRelayWsUrl, deriveRelayToken, isRetryableReconnectError, reconnectDelayMs } =
+  await loadBackgroundUtils();
 
 describe("chrome extension background utils", () => {
   it("derives relay token as HMAC-SHA256 of gateway token and port", async () => {
@@ -49,9 +50,15 @@ describe("chrome extension background utils", () => {
   });
 
   it("uses exponential backoff from attempt index", () => {
-    expect(reconnectDelayMs(0, { baseMs: 1000, maxMs: 30000, jitterMs: 0, random: () => 0 })).toBe(1000);
-    expect(reconnectDelayMs(1, { baseMs: 1000, maxMs: 30000, jitterMs: 0, random: () => 0 })).toBe(2000);
-    expect(reconnectDelayMs(4, { baseMs: 1000, maxMs: 30000, jitterMs: 0, random: () => 0 })).toBe(16000);
+    expect(reconnectDelayMs(0, { baseMs: 1000, maxMs: 30000, jitterMs: 0, random: () => 0 })).toBe(
+      1000,
+    );
+    expect(reconnectDelayMs(1, { baseMs: 1000, maxMs: 30000, jitterMs: 0, random: () => 0 })).toBe(
+      2000,
+    );
+    expect(reconnectDelayMs(4, { baseMs: 1000, maxMs: 30000, jitterMs: 0, random: () => 0 })).toBe(
+      16000,
+    );
   });
 
   it("caps reconnect delay at max", () => {
@@ -75,7 +82,9 @@ describe("chrome extension background utils", () => {
   });
 
   it("sanitizes invalid attempts and options", () => {
-    expect(reconnectDelayMs(-2, { baseMs: 1000, maxMs: 30000, jitterMs: 0, random: () => 0 })).toBe(1000);
+    expect(reconnectDelayMs(-2, { baseMs: 1000, maxMs: 30000, jitterMs: 0, random: () => 0 })).toBe(
+      1000,
+    );
     expect(
       reconnectDelayMs(Number.NaN, {
         baseMs: Number.NaN,

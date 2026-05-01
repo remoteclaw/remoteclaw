@@ -1,4 +1,7 @@
-import { normalizeTelegramLookupTarget, parseTelegramTarget } from "../../../../extensions/telegram/src/targets.js";
+import {
+  normalizeTelegramLookupTarget,
+  parseTelegramTarget,
+} from "../../../../extensions/telegram/src/targets.js";
 
 const TELEGRAM_PREFIX_RE = /^(telegram|tg):/i;
 
@@ -25,7 +28,9 @@ function normalizeTelegramTargetBody(raw: string): string | undefined {
   if (parsed.messageThreadId == null) {
     return chatSegment;
   }
-  const threadSuffix = hasTopicSuffix ? `:topic:${parsed.messageThreadId}` : `:${parsed.messageThreadId}`;
+  const threadSuffix = hasTopicSuffix
+    ? `:topic:${parsed.messageThreadId}`
+    : `:${parsed.messageThreadId}`;
   return `${chatSegment}${threadSuffix}`;
 }
 

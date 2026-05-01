@@ -56,7 +56,9 @@ describe("detectReflectedContent", () => {
   });
 
   it("ignores reflection markers inside inline code", () => {
-    const result = detectReflectedContent("Please keep `<thinking>debug trace</thinking>` in the example output");
+    const result = detectReflectedContent(
+      "Please keep `<thinking>debug trace</thinking>` in the example output",
+    );
     expect(result.isReflection).toBe(false);
     expect(result.matchedLabels).toEqual([]);
   });

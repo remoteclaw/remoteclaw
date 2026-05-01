@@ -4,7 +4,10 @@ import path from "node:path";
 import type { StreamFn } from "@mariozechner/pi-agent-core";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ProviderPlugin, ProviderRuntimeModel } from "../../../src/plugins/types.js";
-import { createProviderUsageFetch, makeResponse } from "../../../src/test-utils/provider-usage-fetch.js";
+import {
+  createProviderUsageFetch,
+  makeResponse,
+} from "../../../src/test-utils/provider-usage-fetch.js";
 import { registerProviderPlugin, requireRegisteredProvider } from "./provider-registration.js";
 
 const CONTRACT_SETUP_TIMEOUT_MS = 300_000;
@@ -19,7 +22,9 @@ const getOAuthProvidersMock = vi.hoisted(() =>
 );
 
 vi.mock("@mariozechner/pi-ai/oauth", async () => {
-  const actual = await vi.importActual<typeof import("@mariozechner/pi-ai/oauth")>("@mariozechner/pi-ai/oauth");
+  const actual = await vi.importActual<typeof import("@mariozechner/pi-ai/oauth")>(
+    "@mariozechner/pi-ai/oauth",
+  );
   return {
     ...actual,
     refreshOpenAICodexToken: refreshOpenAICodexTokenMock,
@@ -132,7 +137,10 @@ function installRuntimeHooks() {
     );
     for (const { fixture, providers } of registeredFixtures) {
       for (const providerId of fixture.providerIds) {
-        providerRuntimeContractProviders.set(providerId, requireRegisteredProvider(providers, providerId, "provider"));
+        providerRuntimeContractProviders.set(
+          providerId,
+          requireRegisteredProvider(providers, providerId, "provider"),
+        );
       }
     }
   }, CONTRACT_SETUP_TIMEOUT_MS);
@@ -257,34 +265,38 @@ export function describeAnthropicProviderRuntimeContract() {
 }
 
 export function describeGithubCopilotProviderRuntimeContract() {
-  describe("github-copilot provider runtime contract", { timeout: CONTRACT_SETUP_TIMEOUT_MS }, () => {
-    installRuntimeHooks();
+  describe(
+    "github-copilot provider runtime contract",
+    { timeout: CONTRACT_SETUP_TIMEOUT_MS },
+    () => {
+      installRuntimeHooks();
 
-    it("owns Copilot-specific forward-compat fallbacks", () => {
-      const provider = requireProviderContractProvider("github-copilot");
-      const model = provider.resolveDynamicModel?.({
-        provider: "github-copilot",
-        modelId: "gpt-5.4",
-        modelRegistry: {
-          find: (_provider: string, id: string) =>
-            id === "gpt-5.2-codex"
-              ? createModel({
-                  id,
-                  api: "openai-codex-responses",
-                  provider: "github-copilot",
-                  baseUrl: "https://api.copilot.example",
-                })
-              : null,
-        } as never,
-      });
+      it("owns Copilot-specific forward-compat fallbacks", () => {
+        const provider = requireProviderContractProvider("github-copilot");
+        const model = provider.resolveDynamicModel?.({
+          provider: "github-copilot",
+          modelId: "gpt-5.4",
+          modelRegistry: {
+            find: (_provider: string, id: string) =>
+              id === "gpt-5.2-codex"
+                ? createModel({
+                    id,
+                    api: "openai-codex-responses",
+                    provider: "github-copilot",
+                    baseUrl: "https://api.copilot.example",
+                  })
+                : null,
+          } as never,
+        });
 
-      expect(model).toMatchObject({
-        id: "gpt-5.4",
-        provider: "github-copilot",
-        api: "openai-codex-responses",
+        expect(model).toMatchObject({
+          id: "gpt-5.4",
+          provider: "github-copilot",
+          api: "openai-codex-responses",
+        });
       });
-    });
-  });
+    },
+  );
 }
 
 export function describeGoogleProviderRuntimeContract() {
@@ -512,7 +524,9 @@ export function describeOpenAIProviderRuntimeContract() {
         expires: Date.now() - 60_000,
       };
 
-      refreshOpenAICodexTokenMock.mockRejectedValueOnce(new Error("Failed to extract accountId from token"));
+      refreshOpenAICodexTokenMock.mockRejectedValueOnce(
+        new Error("Failed to extract accountId from token"),
+      );
 
       await expect(provider.refreshOAuth?.(credential)).resolves.toEqual(credential);
     });

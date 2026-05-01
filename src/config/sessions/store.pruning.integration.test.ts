@@ -93,7 +93,8 @@ describe("Integration: saveSessionStore with pruning", () => {
   beforeEach(async () => {
     vi.resetModules();
     ({ loadConfig } = await import("../config.js"));
-    ({ clearSessionStoreCacheForTest, loadSessionStore, saveSessionStore } = await import("./store.js"));
+    ({ clearSessionStoreCacheForTest, loadSessionStore, saveSessionStore } =
+      await import("./store.js"));
     mockLoadConfig = vi.mocked(loadConfig) as ReturnType<typeof vi.fn>;
     testDir = await createCaseDir("pruning-integ");
     storePath = path.join(testDir, "sessions.json");
@@ -150,7 +151,9 @@ describe("Integration: saveSessionStore with pruning", () => {
     await expect(fs.stat(staleTranscript)).rejects.toThrow();
     await expect(fs.stat(freshTranscript)).resolves.toBeDefined();
     const dirEntries = await fs.readdir(testDir);
-    const archived = dirEntries.filter((entry) => entry.startsWith(`${staleSessionId}.jsonl.deleted.`));
+    const archived = dirEntries.filter((entry) =>
+      entry.startsWith(`${staleSessionId}.jsonl.deleted.`),
+    );
     expect(archived).toHaveLength(1);
   });
 
@@ -167,9 +170,18 @@ describe("Integration: saveSessionStore with pruning", () => {
     const staleTranscript = path.join(testDir, `${staleSessionId}.jsonl`);
     await fs.writeFile(staleTranscript, '{"type":"session"}\n', "utf-8");
 
-    const oldArchived = path.join(testDir, `old-session.jsonl.deleted.${archiveTimestamp(now - 9 * DAY_MS)}`);
-    const recentArchived = path.join(testDir, `recent-session.jsonl.deleted.${archiveTimestamp(now - 2 * DAY_MS)}`);
-    const bakArchived = path.join(testDir, `bak-session.jsonl.bak.${archiveTimestamp(now - 20 * DAY_MS)}`);
+    const oldArchived = path.join(
+      testDir,
+      `old-session.jsonl.deleted.${archiveTimestamp(now - 9 * DAY_MS)}`,
+    );
+    const recentArchived = path.join(
+      testDir,
+      `recent-session.jsonl.deleted.${archiveTimestamp(now - 2 * DAY_MS)}`,
+    );
+    const bakArchived = path.join(
+      testDir,
+      `bak-session.jsonl.bak.${archiveTimestamp(now - 20 * DAY_MS)}`,
+    );
     await fs.writeFile(oldArchived, "old", "utf-8");
     await fs.writeFile(recentArchived, "recent", "utf-8");
     await fs.writeFile(bakArchived, "bak", "utf-8");
@@ -198,8 +210,14 @@ describe("Integration: saveSessionStore with pruning", () => {
     const store: Record<string, SessionEntry> = {
       fresh: { sessionId: "fresh-session", updatedAt: now },
     };
-    const oldReset = path.join(testDir, `old-reset.jsonl.reset.${archiveTimestamp(now - 10 * DAY_MS)}`);
-    const freshReset = path.join(testDir, `fresh-reset.jsonl.reset.${archiveTimestamp(now - 1 * DAY_MS)}`);
+    const oldReset = path.join(
+      testDir,
+      `old-reset.jsonl.reset.${archiveTimestamp(now - 10 * DAY_MS)}`,
+    );
+    const freshReset = path.join(
+      testDir,
+      `fresh-reset.jsonl.reset.${archiveTimestamp(now - 1 * DAY_MS)}`,
+    );
     await fs.writeFile(oldReset, "old", "utf-8");
     await fs.writeFile(freshReset, "fresh", "utf-8");
 

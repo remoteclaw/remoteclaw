@@ -43,7 +43,9 @@ describe("ensureOggOpus", () => {
   });
 
   it("rejects URL/protocol input paths", async () => {
-    await expect(ensureOggOpus("https://example.com/audio.ogg")).rejects.toThrow(/local file path/i);
+    await expect(ensureOggOpus("https://example.com/audio.ogg")).rejects.toThrow(
+      /local file path/i,
+    );
     expect(runFfprobeMock).not.toHaveBeenCalled();
     expect(runFfmpegMock).not.toHaveBeenCalled();
   });

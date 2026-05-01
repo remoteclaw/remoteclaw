@@ -52,7 +52,13 @@ import { assertValidParams } from "./validation.js";
 
 function requireSessionKey(key: unknown, respond: RespondFn): string | null {
   const raw =
-    typeof key === "string" ? key : typeof key === "number" ? String(key) : typeof key === "bigint" ? String(key) : "";
+    typeof key === "string"
+      ? key
+      : typeof key === "number"
+        ? String(key)
+        : typeof key === "bigint"
+          ? String(key)
+          : "";
   const normalized = raw.trim();
   if (!normalized) {
     respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "key required"));
@@ -186,11 +192,17 @@ async function ensureSessionRuntimeCleanup(params: {
   clearSessionQueues([...queueKeys]);
   stopSubagentsForRequester({ cfg: params.cfg, requesterSessionKey: params.target.canonicalKey });
   killSessionRun(params.target.canonicalKey);
-  const ended = await waitForSessionRunEnd(params.target.canonicalKey, SESSION_RUN_TERMINATION_TIMEOUT_MS);
+  const ended = await waitForSessionRunEnd(
+    params.target.canonicalKey,
+    SESSION_RUN_TERMINATION_TIMEOUT_MS,
+  );
   if (ended) {
     return undefined;
   }
-  return errorShape(ErrorCodes.UNAVAILABLE, `Session ${params.key} is still active; try again in a moment.`);
+  return errorShape(
+    ErrorCodes.UNAVAILABLE,
+    `Session ${params.key} is still active; try again in a moment.`,
+  );
 }
 
 async function runAcpCleanupStep(params: {
@@ -222,7 +234,9 @@ async function closeAcpRuntimeForSession(params: {
   }
   const cancelOutcome = await runAcpCleanupStep({
     op: async () => {
-      await (undefined as unknown as { cancelSession: (...args: unknown[]) => Promise<void> })?.cancelSession({
+      await (
+        undefined as unknown as { cancelSession: (...args: unknown[]) => Promise<void> }
+      )?.cancelSession({
         cfg: params.cfg,
         sessionKey: params.sessionKey,
         reason: params.reason,
@@ -230,15 +244,22 @@ async function closeAcpRuntimeForSession(params: {
     },
   });
   if (cancelOutcome.status === "timeout") {
-    return errorShape(ErrorCodes.UNAVAILABLE, `Session ${params.sessionKey} is still active; try again in a moment.`);
+    return errorShape(
+      ErrorCodes.UNAVAILABLE,
+      `Session ${params.sessionKey} is still active; try again in a moment.`,
+    );
   }
   if (cancelOutcome.status === "error") {
-    logVerbose(`sessions.${params.reason}: ACP cancel failed for ${params.sessionKey}: ${String(cancelOutcome.error)}`);
+    logVerbose(
+      `sessions.${params.reason}: ACP cancel failed for ${params.sessionKey}: ${String(cancelOutcome.error)}`,
+    );
   }
 
   const closeOutcome = await runAcpCleanupStep({
     op: async () => {
-      await /* eslint-disable-next-line @typescript-eslint/no-explicit-any */ (undefined as any)?.closeSession({
+      await /* eslint-disable-next-line @typescript-eslint/no-explicit-any */ (
+        undefined as any
+      )?.closeSession({
         cfg: params.cfg,
         sessionKey: params.sessionKey,
         reason: params.reason,
@@ -248,7 +269,10 @@ async function closeAcpRuntimeForSession(params: {
     },
   });
   if (closeOutcome.status === "timeout") {
-    return errorShape(ErrorCodes.UNAVAILABLE, `Session ${params.sessionKey} is still active; try again in a moment.`);
+    return errorShape(
+      ErrorCodes.UNAVAILABLE,
+      `Session ${params.sessionKey} is still active; try again in a moment.`,
+    );
   }
   if (closeOutcome.status === "error") {
     logVerbose(
@@ -310,8 +334,12 @@ export const sessionsHandlers: GatewayRequestHandlers = {
       .map((key) => String(key ?? "").trim())
       .filter(Boolean)
       .slice(0, 64);
-    const limit = typeof p.limit === "number" && Number.isFinite(p.limit) ? Math.max(1, p.limit) : 12;
-    const maxChars = typeof p.maxChars === "number" && Number.isFinite(p.maxChars) ? Math.max(20, p.maxChars) : 240;
+    const limit =
+      typeof p.limit === "number" && Number.isFinite(p.limit) ? Math.max(1, p.limit) : 12;
+    const maxChars =
+      typeof p.maxChars === "number" && Number.isFinite(p.maxChars)
+        ? Math.max(20, p.maxChars)
+        : 240;
 
     if (keys.length === 0) {
       respond(true, { ts: Date.now(), previews: [] } satisfies SessionsPreviewResult, undefined);
@@ -325,7 +353,8 @@ export const sessionsHandlers: GatewayRequestHandlers = {
     for (const key of keys) {
       try {
         const storeTarget = resolveGatewaySessionStoreTarget({ cfg, key, scanLegacyKeys: false });
-        const store = storeCache.get(storeTarget.storePath) ?? loadSessionStore(storeTarget.storePath);
+        const store =
+          storeCache.get(storeTarget.storePath) ?? loadSessionStore(storeTarget.storePath);
         storeCache.set(storeTarget.storePath, store);
         const target = resolveGatewaySessionStoreTarget({
           cfg,
@@ -426,12 +455,17 @@ export const sessionsHandlers: GatewayRequestHandlers = {
     const { entry, legacyKey, canonicalKey } = loadSessionEntry(key);
     const hadExistingEntry = Boolean(entry);
     const commandReason = p.reason === "new" ? "new" : "reset";
-    const hookEvent = createInternalHookEvent("command", commandReason, target.canonicalKey ?? key, {
-      sessionEntry: entry,
-      previousSessionEntry: entry,
-      commandSource: "gateway:sessions.reset",
-      cfg,
-    });
+    const hookEvent = createInternalHookEvent(
+      "command",
+      commandReason,
+      target.canonicalKey ?? key,
+      {
+        sessionEntry: entry,
+        previousSessionEntry: entry,
+        commandSource: "gateway:sessions.reset",
+        cfg,
+      },
+    );
     await triggerInternalHook(hookEvent);
     const mutationCleanupError = await cleanupSessionBeforeMutation({
       cfg,
@@ -514,7 +548,11 @@ export const sessionsHandlers: GatewayRequestHandlers = {
     const { cfg, target, storePath } = resolveGatewaySessionTargetFromKey(key);
     const mainKey = resolveMainSessionKey(cfg);
     if (target.canonicalKey === mainKey) {
-      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, `Cannot delete the main session (${mainKey}).`));
+      respond(
+        false,
+        undefined,
+        errorShape(ErrorCodes.INVALID_REQUEST, `Cannot delete the main session (${mainKey}).`),
+      );
       return;
     }
 
@@ -571,7 +609,10 @@ export const sessionsHandlers: GatewayRequestHandlers = {
     if (!key) {
       return;
     }
-    const limit = typeof p.limit === "number" && Number.isFinite(p.limit) ? Math.max(1, Math.floor(p.limit)) : 200;
+    const limit =
+      typeof p.limit === "number" && Number.isFinite(p.limit)
+        ? Math.max(1, Math.floor(p.limit))
+        : 200;
 
     const { target, storePath } = resolveGatewaySessionTargetFromKey(key);
     const store = loadSessionStore(storePath);
@@ -595,7 +636,9 @@ export const sessionsHandlers: GatewayRequestHandlers = {
     }
 
     const maxLines =
-      typeof p.maxLines === "number" && Number.isFinite(p.maxLines) ? Math.max(1, Math.floor(p.maxLines)) : 400;
+      typeof p.maxLines === "number" && Number.isFinite(p.maxLines)
+        ? Math.max(1, Math.floor(p.maxLines))
+        : 400;
 
     const { cfg, target, storePath } = resolveGatewaySessionTargetFromKey(key);
     // Lock + read in a short critical section; transcript work happens outside.
@@ -619,9 +662,12 @@ export const sessionsHandlers: GatewayRequestHandlers = {
       return;
     }
 
-    const filePath = resolveSessionTranscriptCandidates(sessionId, storePath, entry?.sessionFile, target.agentId).find(
-      (candidate) => fs.existsSync(candidate),
-    );
+    const filePath = resolveSessionTranscriptCandidates(
+      sessionId,
+      storePath,
+      entry?.sessionFile,
+      target.agentId,
+    ).find((candidate) => fs.existsSync(candidate));
     if (!filePath) {
       respond(
         true,

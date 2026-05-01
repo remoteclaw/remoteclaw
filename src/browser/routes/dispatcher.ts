@@ -39,10 +39,11 @@ function compileRoute(path: string): { regex: RegExp; paramNames: string[] } {
 
 function createRegistry() {
   const routes: RouteEntry[] = [];
-  const register = (method: RouteEntry["method"]) => (path: string, handler: RouteEntry["handler"]) => {
-    const { regex, paramNames } = compileRoute(path);
-    routes.push({ method, path, regex, paramNames, handler });
-  };
+  const register =
+    (method: RouteEntry["method"]) => (path: string, handler: RouteEntry["handler"]) => {
+      const { regex, paramNames } = compileRoute(path);
+      routes.push({ method, path, regex, paramNames, handler });
+    };
   const router: BrowserRouteRegistrar = {
     get: register("GET"),
     post: register("POST"),

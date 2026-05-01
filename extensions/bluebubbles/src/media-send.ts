@@ -3,7 +3,10 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { resolveChannelMediaMaxBytes, type RemoteClawConfig } from "remoteclaw/plugin-sdk/bluebubbles";
+import {
+  resolveChannelMediaMaxBytes,
+  type RemoteClawConfig,
+} from "remoteclaw/plugin-sdk/bluebubbles";
 import { resolveBlueBubblesAccount } from "./accounts.js";
 import { sendBlueBubblesAttachment } from "./attachments.js";
 import { resolveBlueBubblesMessageId } from "./monitor.js";
@@ -73,7 +76,9 @@ function resolveConfiguredPath(input: string): string {
 function isPathInsideRoot(candidate: string, root: string): boolean {
   const normalizedCandidate = path.normalize(candidate);
   const normalizedRoot = path.normalize(root);
-  const rootWithSep = normalizedRoot.endsWith(path.sep) ? normalizedRoot : normalizedRoot + path.sep;
+  const rootWithSep = normalizedRoot.endsWith(path.sep)
+    ? normalizedRoot
+    : normalizedRoot + path.sep;
   if (process.platform === "win32") {
     const candidateLower = normalizedCandidate.toLowerCase();
     const rootLower = normalizedRoot.toLowerCase();
@@ -88,7 +93,9 @@ function resolveMediaLocalRoots(params: { cfg: RemoteClawConfig; accountId?: str
     cfg: params.cfg,
     accountId: params.accountId,
   });
-  return (account.config.mediaLocalRoots ?? []).map((entry) => entry.trim()).filter((entry) => entry.length > 0);
+  return (account.config.mediaLocalRoots ?? [])
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
 }
 
 async function assertLocalMediaPathAllowed(params: {
@@ -99,7 +106,9 @@ async function assertLocalMediaPathAllowed(params: {
   if (params.localRoots.length === 0) {
     throw new Error(
       `Local BlueBubbles media paths are disabled by default. Set channels.bluebubbles.mediaLocalRoots${
-        params.accountId ? ` or channels.bluebubbles.accounts.${params.accountId}.mediaLocalRoots` : ""
+        params.accountId
+          ? ` or channels.bluebubbles.accounts.${params.accountId}.mediaLocalRoots`
+          : ""
       } to explicitly allow local file directories.`,
     );
   }
@@ -111,7 +120,11 @@ async function assertLocalMediaPathAllowed(params: {
   for (const rootEntry of params.localRoots) {
     const resolvedRootInput = resolveConfiguredPath(rootEntry);
     const relativeToRoot = path.relative(resolvedRootInput, resolvedLocalPath);
-    if (relativeToRoot.startsWith("..") || path.isAbsolute(relativeToRoot) || relativeToRoot === "") {
+    if (
+      relativeToRoot.startsWith("..") ||
+      path.isAbsolute(relativeToRoot) ||
+      relativeToRoot === ""
+    ) {
       continue;
     }
 
@@ -156,7 +169,9 @@ async function assertLocalMediaPathAllowed(params: {
     }
   }
 
-  throw new Error(`Local media path is not under any configured mediaLocalRoots entry: ${params.localPath}`);
+  throw new Error(
+    `Local media path is not under any configured mediaLocalRoots entry: ${params.localPath}`,
+  );
 }
 
 function resolveFilenameFromSource(source?: string): string | undefined {
@@ -194,13 +209,25 @@ export async function sendBlueBubblesMedia(params: {
   accountId?: string;
   asVoice?: boolean;
 }) {
-  const { cfg, to, mediaUrl, mediaPath, mediaBuffer, contentType, filename, caption, replyToId, accountId, asVoice } =
-    params;
+  const {
+    cfg,
+    to,
+    mediaUrl,
+    mediaPath,
+    mediaBuffer,
+    contentType,
+    filename,
+    caption,
+    replyToId,
+    accountId,
+    asVoice,
+  } = params;
   const core = getBlueBubblesRuntime();
   const maxBytes = resolveChannelMediaMaxBytes({
     cfg,
     resolveChannelLimitMb: ({ cfg, accountId }) =>
-      cfg.channels?.bluebubbles?.accounts?.[accountId]?.mediaMaxMb ?? cfg.channels?.bluebubbles?.mediaMaxMb,
+      cfg.channels?.bluebubbles?.accounts?.[accountId]?.mediaMaxMb ??
+      cfg.channels?.bluebubbles?.mediaMaxMb,
     accountId,
   });
   const mediaLocalRoots = resolveMediaLocalRoots({ cfg, accountId });

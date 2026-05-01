@@ -73,7 +73,10 @@ export function normalizeVersionTag(tag: string): string | null {
 
 export { readPackageName, readPackageVersion };
 
-export async function resolveTargetVersion(tag: string, timeoutMs?: number): Promise<string | null> {
+export async function resolveTargetVersion(
+  tag: string,
+  timeoutMs?: number,
+): Promise<string | null> {
   const direct = normalizeVersionTag(tag);
   if (direct) {
     return direct;
@@ -226,7 +229,11 @@ export async function resolveGlobalManager(params: {
   const runCommand = createGlobalCommandRunner();
 
   if (params.installKind === "package") {
-    const detected = await detectGlobalInstallManagerForRoot(runCommand, params.root, params.timeoutMs);
+    const detected = await detectGlobalInstallManagerForRoot(
+      runCommand,
+      params.root,
+      params.timeoutMs,
+    );
     if (detected) {
       return detected;
     }

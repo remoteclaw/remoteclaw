@@ -6,7 +6,11 @@ export function isStatusCommand(body: string) {
   return trimmed === "/status" || trimmed === "status" || trimmed.startsWith("/status ");
 }
 
-export function stripMentionsForCommand(text: string, mentionRegexes: RegExp[], selfE164?: string | null) {
+export function stripMentionsForCommand(
+  text: string,
+  mentionRegexes: RegExp[],
+  selfE164?: string | null,
+) {
   let result = text;
   for (const re of mentionRegexes) {
     result = result.replace(re, " ");

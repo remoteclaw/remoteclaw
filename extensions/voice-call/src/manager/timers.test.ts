@@ -90,7 +90,9 @@ describe("voice-call manager timers", () => {
 
     const pending = waitForFinalTranscript(ctx as never, "call-1", "turn-1");
     expect(resolveTranscriptWaiter(ctx as never, "call-1", "ignored", "turn-2")).toBe(false);
-    expect(resolveTranscriptWaiter(ctx as never, "call-1", "final transcript", "turn-1")).toBe(true);
+    expect(resolveTranscriptWaiter(ctx as never, "call-1", "final transcript", "turn-1")).toBe(
+      true,
+    );
     await expect(pending).resolves.toBe("final transcript");
 
     const another = waitForFinalTranscript(ctx as never, "call-2");
@@ -118,7 +120,9 @@ describe("voice-call manager timers", () => {
     };
 
     const pending = waitForFinalTranscript(ctx as never, "call-1");
-    await expect(waitForFinalTranscript(ctx as never, "call-1")).rejects.toThrow("Already waiting for transcript");
+    await expect(waitForFinalTranscript(ctx as never, "call-1")).rejects.toThrow(
+      "Already waiting for transcript",
+    );
     rejectTranscriptWaiter(ctx as never, "call-1", "done");
     await expect(pending).rejects.toThrow("done");
   });

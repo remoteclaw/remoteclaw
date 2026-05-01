@@ -2,7 +2,10 @@ import type { BundledPluginSource } from "../plugins/bundled-sources.js";
 import { PLUGIN_INSTALL_ERROR_CODE } from "../plugins/install.js";
 import { shortenHomePath } from "../utils.js";
 
-type BundledLookup = (params: { kind: "pluginId" | "npmSpec"; value: string }) => BundledPluginSource | undefined;
+type BundledLookup = (params: {
+  kind: "pluginId" | "npmSpec";
+  value: string;
+}) => BundledPluginSource | undefined;
 
 function isBareNpmPackageName(spec: string): boolean {
   const trimmed = spec.trim();

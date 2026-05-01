@@ -109,10 +109,13 @@ describe("node exec events", () => {
       }),
     });
 
-    expect(enqueueSystemEventMock).toHaveBeenCalledWith("Exec started (node=node-1 id=run-1): ls -la", {
-      sessionKey: "agent:main:main",
-      contextKey: "exec:run-1",
-    });
+    expect(enqueueSystemEventMock).toHaveBeenCalledWith(
+      "Exec started (node=node-1 id=run-1): ls -la",
+      {
+        sessionKey: "agent:main:main",
+        contextKey: "exec:run-1",
+      },
+    );
     expect(requestHeartbeatNowMock).toHaveBeenCalledWith({
       reason: "exec-event",
       sessionKey: "agent:main:main",
@@ -131,10 +134,13 @@ describe("node exec events", () => {
       }),
     });
 
-    expect(enqueueSystemEventMock).toHaveBeenCalledWith("Exec finished (node=node-2 id=run-2, code 0)\ndone", {
-      sessionKey: "node-node-2",
-      contextKey: "exec:run-2",
-    });
+    expect(enqueueSystemEventMock).toHaveBeenCalledWith(
+      "Exec finished (node=node-2 id=run-2, code 0)\ndone",
+      {
+        sessionKey: "node-node-2",
+        contextKey: "exec:run-2",
+      },
+    );
     expect(requestHeartbeatNowMock).toHaveBeenCalledWith({ reason: "exec-event" });
   });
 
@@ -444,10 +450,13 @@ describe("notifications changed events", () => {
     });
 
     expect(loadSessionEntryMock).toHaveBeenCalledWith("node-node-n5");
-    expect(enqueueSystemEventMock).toHaveBeenCalledWith("Notification posted (node=node-n5 key=notif-5)", {
-      sessionKey: "agent:main:node-node-n5",
-      contextKey: "notification:notif-5",
-    });
+    expect(enqueueSystemEventMock).toHaveBeenCalledWith(
+      "Notification posted (node=node-n5 key=notif-5)",
+      {
+        sessionKey: "agent:main:node-node-n5",
+        contextKey: "notification:notif-5",
+      },
+    );
     expect(requestHeartbeatNowMock).toHaveBeenCalledWith({
       reason: "notifications-event",
       sessionKey: "agent:main:node-node-n5",
@@ -545,7 +554,9 @@ describe("agent request events", () => {
       channel: undefined,
       to: undefined,
     });
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining("agent delivery disabled node=node-route-miss"));
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("agent delivery disabled node=node-route-miss"),
+    );
   });
 
   it("reuses the current session route when delivery target is omitted", async () => {

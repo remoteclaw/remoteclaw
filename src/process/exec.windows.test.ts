@@ -69,7 +69,10 @@ type ExecCall = [
   (err: Error | null, stdout: string, stderr: string) => void,
 ];
 
-function expectCmdWrappedInvocation(params: { captured: SpawnCall | ExecCall | undefined; expectedComSpec: string }) {
+function expectCmdWrappedInvocation(params: {
+  captured: SpawnCall | ExecCall | undefined;
+  expectedComSpec: string;
+}) {
   if (!params.captured) {
     throw new Error("expected command wrapper to be called");
   }
@@ -95,8 +98,8 @@ describe("windows command wrapper behavior", () => {
     const platformSpy = vi.spyOn(process, "platform", "get").mockReturnValue("win32");
     const expectedComSpec = process.env.ComSpec ?? "cmd.exe";
 
-    spawnMock.mockImplementation((_command: string, _args: string[], _options: Record<string, unknown>) =>
-      createMockChild(),
+    spawnMock.mockImplementation(
+      (_command: string, _args: string[], _options: Record<string, unknown>) => createMockChild(),
     );
 
     try {
@@ -155,8 +158,8 @@ describe("windows command wrapper behavior", () => {
     const existsSpy = vi.spyOn(fs, "existsSync").mockReturnValue(false);
     const expectedComSpec = process.env.ComSpec ?? "cmd.exe";
 
-    spawnMock.mockImplementation((_command: string, _args: string[], _options: Record<string, unknown>) =>
-      createMockChild(),
+    spawnMock.mockImplementation(
+      (_command: string, _args: string[], _options: Record<string, unknown>) => createMockChild(),
     );
 
     try {

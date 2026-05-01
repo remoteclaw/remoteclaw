@@ -1,5 +1,8 @@
 import { parseDiscordTarget } from "../../../../extensions/discord/src/targets.js";
-import { countPendingDescendantRuns, type SubagentRunRecord } from "../../../agents/subagent-registry.js";
+import {
+  countPendingDescendantRuns,
+  type SubagentRunRecord,
+} from "../../../agents/subagent-registry.js";
 import {
   extractAssistantText,
   resolveInternalSessionKey,
@@ -17,7 +20,11 @@ import { formatTimeAgo } from "../../../infra/format-time/format-relative.ts";
 import { parseAgentSessionKey } from "../../../routing/session-key.js";
 import { looksLikeSessionId } from "../../../sessions/session-id.js";
 import { extractTextFromChatContent } from "../../../shared/chat-content.js";
-import { formatDurationCompact, formatTokenUsageDisplay, truncateLine } from "../../../shared/subagents-format.js";
+import {
+  formatDurationCompact,
+  formatTokenUsageDisplay,
+  truncateLine,
+} from "../../../shared/subagents-format.js";
 import {
   isDiscordSurface,
   isTelegramSurface,
@@ -90,8 +97,10 @@ function resolveModelDisplay(
   const provider = typeof entry?.modelProvider === "string" ? entry.modelProvider.trim() : "";
   let combined = model.includes("/") ? model : model && provider ? `${provider}/${model}` : model;
   if (!combined) {
-    const overrideModel = typeof entry?.modelOverride === "string" ? entry.modelOverride.trim() : "";
-    const overrideProvider = typeof entry?.providerOverride === "string" ? entry.providerOverride.trim() : "";
+    const overrideModel =
+      typeof entry?.modelOverride === "string" ? entry.modelOverride.trim() : "";
+    const overrideProvider =
+      typeof entry?.providerOverride === "string" ? entry.providerOverride.trim() : "";
     combined = overrideModel.includes("/")
       ? overrideModel
       : overrideModel && overrideProvider
@@ -111,7 +120,10 @@ function resolveModelDisplay(
   return combined;
 }
 
-export function resolveDisplayStatus(entry: SubagentRunRecord, options?: { pendingDescendants?: number }) {
+export function resolveDisplayStatus(
+  entry: SubagentRunRecord,
+  options?: { pendingDescendants?: number },
+) {
   const pendingDescendants = Math.max(0, options?.pendingDescendants ?? 0);
   if (pendingDescendants > 0) {
     const childLabel = pendingDescendants === 1 ? "child" : "children";
@@ -183,13 +195,17 @@ export function stopWithUnknownTargetError(error?: string): CommandHandlerResult
   return stopWithText(`⚠️ ${error ?? "Unknown subagent."}`);
 }
 
-export function resolveSubagentTarget(runs: SubagentRunRecord[], token: string | undefined): SubagentTargetResolution {
+export function resolveSubagentTarget(
+  runs: SubagentRunRecord[],
+  token: string | undefined,
+): SubagentTargetResolution {
   return resolveSubagentTargetFromRuns({
     runs,
     token,
     recentWindowMinutes: RECENT_WINDOW_MINUTES,
     label: (entry) => formatRunLabel(entry),
-    isActive: (entry) => !entry.endedAt || Math.max(0, countPendingDescendantRuns(entry.childSessionKey)) > 0,
+    isActive: (entry) =>
+      !entry.endedAt || Math.max(0, countPendingDescendantRuns(entry.childSessionKey)) > 0,
     errors: {
       missingTarget: "Missing subagent id.",
       invalidIndex: (value) => `Invalid subagent index: ${value}`,
@@ -219,8 +235,11 @@ export function resolveRequesterSessionKey(
 ): string | undefined {
   const commandTarget = params.ctx.CommandTargetSessionKey?.trim();
   const commandSession = params.sessionKey?.trim();
-  const shouldPreferCommandTarget = opts?.preferCommandTarget ?? params.ctx.CommandSource === "native";
-  const raw = shouldPreferCommandTarget ? commandTarget || commandSession : commandSession || commandTarget;
+  const shouldPreferCommandTarget =
+    opts?.preferCommandTarget ?? params.ctx.CommandSource === "native";
+  const raw = shouldPreferCommandTarget
+    ? commandTarget || commandSession
+    : commandSession || commandTarget;
   if (!raw) {
     return undefined;
   }
@@ -281,7 +300,9 @@ export type FocusTargetResolution = {
   label?: string;
 };
 
-export function resolveDiscordChannelIdForFocus(params: SubagentsCommandParams): string | undefined {
+export function resolveDiscordChannelIdForFocus(
+  params: SubagentsCommandParams,
+): string | undefined {
   const toCandidates = [
     typeof params.ctx.OriginatingTo === "string" ? params.ctx.OriginatingTo.trim() : "",
     typeof params.command.to === "string" ? params.command.to.trim() : "",

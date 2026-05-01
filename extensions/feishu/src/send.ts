@@ -31,7 +31,10 @@ function isWithdrawnReplyError(err: unknown): boolean {
   }
   // AxiosError shape: err.response.data.code
   const response = (err as { response?: { data?: { code?: number; msg?: string } } }).response;
-  if (typeof response?.data?.code === "number" && WITHDRAWN_REPLY_ERROR_CODES.has(response.data.code)) {
+  if (
+    typeof response?.data?.code === "number" &&
+    WITHDRAWN_REPLY_ERROR_CODES.has(response.data.code)
+  ) {
     return true;
   }
   return false;
@@ -244,7 +247,8 @@ export async function getMessageFeishu(params: {
     // Support both list shape (data.items[0]) and single-object shape (data as message)
     const rawItem = response.data?.items?.[0] ?? response.data;
     const item =
-      rawItem && (rawItem.body !== undefined || (rawItem as { message_id?: string }).message_id !== undefined)
+      rawItem &&
+      (rawItem.body !== undefined || (rawItem as { message_id?: string }).message_id !== undefined)
         ? rawItem
         : null;
     if (!item) {
@@ -309,7 +313,9 @@ function buildFeishuPostMessagePayload(params: { messageText: string }): {
   };
 }
 
-export async function sendMessageFeishu(params: SendFeishuMessageParams): Promise<FeishuSendResult> {
+export async function sendMessageFeishu(
+  params: SendFeishuMessageParams,
+): Promise<FeishuSendResult> {
   const { cfg, to, text, replyToMessageId, replyInThread, mentions, accountId } = params;
   const { client, receiveId, receiveIdType } = resolveFeishuSendTarget({ cfg, to, accountId });
   const tableMode = getFeishuRuntime().channel.text.resolveMarkdownTableMode({

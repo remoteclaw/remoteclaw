@@ -330,7 +330,9 @@ describe("gateway-status command", () => {
       rpcOk: false,
       scopeLimited: true,
     });
-    const scopeLimitedWarning = parsed.warnings?.find((warning) => warning.code === "probe_scope_limited");
+    const scopeLimitedWarning = parsed.warnings?.find(
+      (warning) => warning.code === "probe_scope_limited",
+    );
     expect(scopeLimitedWarning?.targetIds).toContain("localLoopback");
   });
 
@@ -362,7 +364,9 @@ describe("gateway-status command", () => {
         presence: null,
         configSnapshot: null,
       });
-      await expect(runGatewayStatus(runtime, { timeout: "1000", json: true })).rejects.toThrow("__exit__:1");
+      await expect(runGatewayStatus(runtime, { timeout: "1000", json: true })).rejects.toThrow(
+        "__exit__:1",
+      );
     });
 
     expect(runtimeErrors).toHaveLength(0);
@@ -484,7 +488,9 @@ describe("gateway-status command", () => {
     const parsed = JSON.parse(runtimeLogs.join("\n")) as {
       warnings?: Array<{ code?: string }>;
     };
-    const unresolvedWarning = parsed.warnings?.find((warning) => warning.code === "auth_secretref_unresolved");
+    const unresolvedWarning = parsed.warnings?.find(
+      (warning) => warning.code === "auth_secretref_unresolved",
+    );
     expect(unresolvedWarning).toBeUndefined();
   });
 
@@ -718,7 +724,9 @@ describe("gateway-status command", () => {
   it("falls back to host-only when USER is missing and ssh config is unavailable", async () => {
     const { runtime } = createRuntimeCapture();
     await withEnvAsync({ USER: "" }, async () => {
-      readBestEffortConfig.mockResolvedValueOnce(makeRemoteGatewayConfig("wss://studio.example:18789"));
+      readBestEffortConfig.mockResolvedValueOnce(
+        makeRemoteGatewayConfig("wss://studio.example:18789"),
+      );
       resolveSshConfig.mockResolvedValueOnce(null);
 
       startSshPortForward.mockClear();
@@ -734,7 +742,9 @@ describe("gateway-status command", () => {
   it("keeps explicit SSH identity even when ssh config provides one", async () => {
     const { runtime } = createRuntimeCapture();
 
-    readBestEffortConfig.mockResolvedValueOnce(makeRemoteGatewayConfig("wss://studio.example:18789"));
+    readBestEffortConfig.mockResolvedValueOnce(
+      makeRemoteGatewayConfig("wss://studio.example:18789"),
+    );
     resolveSshConfig.mockResolvedValueOnce({
       user: "me",
       host: "studio.example",

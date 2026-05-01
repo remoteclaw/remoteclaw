@@ -29,7 +29,9 @@ describe("ensureBinary", () => {
       throw new Error("exit");
     });
 
-    await expect(ensureBinary("ghost", exec, { log: vi.fn(), error, exit })).rejects.toThrow("exit");
+    await expect(ensureBinary("ghost", exec, { log: vi.fn(), error, exit })).rejects.toThrow(
+      "exit",
+    );
     expect(error).toHaveBeenCalledWith("Missing required binary: ghost. Please install it.");
     expect(exit).toHaveBeenCalledWith(1);
   });

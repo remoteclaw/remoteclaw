@@ -32,7 +32,8 @@ vi.mock("node:fs", async (importOriginal) => {
 
   const wrapped = {
     ...actual,
-    existsSync: (p: string) => (isFixturePath(p) ? state.entries.has(absInMock(p)) : actual.existsSync(p)),
+    existsSync: (p: string) =>
+      isFixturePath(p) ? state.entries.has(absInMock(p)) : actual.existsSync(p),
     readFileSync: (p: string, encoding?: BufferEncoding) => {
       if (!isFixturePath(p)) {
         return actual.readFileSync(p, encoding);
@@ -57,7 +58,9 @@ vi.mock("node:fs", async (importOriginal) => {
       throw new Error(`ENOENT: no such file or directory, stat '${p}'`);
     },
     realpathSync: (p: string) =>
-      isFixturePath(p) ? (state.realpaths.get(absInMock(p)) ?? absInMock(p)) : actual.realpathSync(p),
+      isFixturePath(p)
+        ? (state.realpaths.get(absInMock(p)) ?? absInMock(p))
+        : actual.realpathSync(p),
   };
 
   return { ...wrapped, default: wrapped };
@@ -115,7 +118,9 @@ describe("control UI assets helpers (fs-mocked)", () => {
   it("resolves dist control-ui index path for dist argv1", async () => {
     const argv1 = abs(path.join("fixtures", "pkg", "dist", "index.js"));
     const distDir = path.dirname(argv1);
-    await expect(resolveControlUiDistIndexPath(argv1)).resolves.toBe(path.join(distDir, "control-ui", "index.html"));
+    await expect(resolveControlUiDistIndexPath(argv1)).resolves.toBe(
+      path.join(distDir, "control-ui", "index.html"),
+    );
   });
 
   it("resolves dist control-ui index path for symlinked argv1 via realpath", async () => {
@@ -132,7 +137,9 @@ describe("control UI assets helpers (fs-mocked)", () => {
 
   it("uses resolveRemoteClawPackageRoot when available", async () => {
     const pkgRoot = abs("fixtures/remoteclaw");
-    (remoteclawRoot.resolveRemoteClawPackageRoot as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(pkgRoot);
+    (
+      remoteclawRoot.resolveRemoteClawPackageRoot as unknown as ReturnType<typeof vi.fn>
+    ).mockResolvedValueOnce(pkgRoot);
 
     await expect(resolveControlUiDistIndexPath(abs("fixtures/bin/remoteclaw"))).resolves.toBe(
       path.join(pkgRoot, "dist", "control-ui", "index.html"),
@@ -188,15 +195,17 @@ describe("control UI assets helpers (fs-mocked)", () => {
 
   it("resolves control-ui root for dist bundle argv1 and moduleUrl candidates", async () => {
     const pkgRoot = abs("fixtures/remoteclaw-bundle");
-    (remoteclawRoot.resolveRemoteClawPackageRootSync as unknown as ReturnType<typeof vi.fn>).mockReturnValueOnce(
-      pkgRoot,
-    );
+    (
+      remoteclawRoot.resolveRemoteClawPackageRootSync as unknown as ReturnType<typeof vi.fn>
+    ).mockReturnValueOnce(pkgRoot);
 
     const uiDir = path.join(pkgRoot, "dist", "control-ui");
     setFile(path.join(uiDir, "index.html"), "<html></html>\n");
 
     // argv1Dir candidate: <argv1Dir>/control-ui
-    expect(resolveControlUiRootSync({ argv1: path.join(pkgRoot, "dist", "bundle.js") })).toBe(uiDir);
+    expect(resolveControlUiRootSync({ argv1: path.join(pkgRoot, "dist", "bundle.js") })).toBe(
+      uiDir,
+    );
 
     // moduleUrl candidate: <moduleDir>/control-ui
     const moduleUrl = pathToFileURL(path.join(pkgRoot, "dist", "bundle.js")).toString();
@@ -230,9 +239,9 @@ describe("control UI assets helpers (fs-mocked)", () => {
     const uiDir = path.join(pkgRoot, "dist", "control-ui");
     setDir(uiDir);
     setFile(path.join(uiDir, "index.html"), "<html></html>\n");
-    (remoteclawRoot.resolveRemoteClawPackageRootSync as unknown as ReturnType<typeof vi.fn>).mockReturnValueOnce(
-      pkgRoot,
-    );
+    (
+      remoteclawRoot.resolveRemoteClawPackageRootSync as unknown as ReturnType<typeof vi.fn>
+    ).mockReturnValueOnce(pkgRoot);
 
     expect(
       isPackageProvenControlUiRootSync(uiDir, {
@@ -246,9 +255,9 @@ describe("control UI assets helpers (fs-mocked)", () => {
     const fallbackRoot = abs("fixtures/fallback-root/dist/control-ui");
     setDir(fallbackRoot);
     setFile(path.join(fallbackRoot, "index.html"), "<html></html>\n");
-    (remoteclawRoot.resolveRemoteClawPackageRootSync as unknown as ReturnType<typeof vi.fn>).mockReturnValueOnce(
-      pkgRoot,
-    );
+    (
+      remoteclawRoot.resolveRemoteClawPackageRootSync as unknown as ReturnType<typeof vi.fn>
+    ).mockReturnValueOnce(pkgRoot);
 
     expect(
       isPackageProvenControlUiRootSync(fallbackRoot, {

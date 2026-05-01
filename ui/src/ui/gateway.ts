@@ -48,7 +48,9 @@ export class GatewayRequestError extends Error {
   }
 }
 
-export function resolveGatewayErrorDetailCode(error: { details?: unknown } | null | undefined): string | null {
+export function resolveGatewayErrorDetailCode(
+  error: { details?: unknown } | null | undefined,
+): string | null {
   return readConnectErrorDetailCode(error?.details);
 }
 
@@ -81,7 +83,8 @@ function isTrustedRetryEndpoint(url: string): boolean {
   try {
     const gatewayUrl = new URL(url, window.location.href);
     const host = gatewayUrl.hostname.trim().toLowerCase();
-    const isLoopbackHost = host === "localhost" || host === "::1" || host === "[::1]" || host === "127.0.0.1";
+    const isLoopbackHost =
+      host === "localhost" || host === "::1" || host === "[::1]" || host === "127.0.0.1";
     const isLoopbackIPv4 = host.startsWith("127.");
     if (isLoopbackHost || isLoopbackIPv4) {
       return true;
@@ -209,7 +212,9 @@ export type GatewayBrowserClientOptions = {
 // 4008 = application-defined code (browser rejects 1008 "Policy Violation")
 const CONNECT_FAILED_CLOSE_CODE = 4008;
 
-function buildGatewayConnectAuth(selectedAuth: SelectedConnectAuth): GatewayConnectAuth | undefined {
+function buildGatewayConnectAuth(
+  selectedAuth: SelectedConnectAuth,
+): GatewayConnectAuth | undefined {
   const authToken = selectedAuth.authToken;
   if (!(authToken || selectedAuth.authPassword)) {
     return undefined;
@@ -441,9 +446,12 @@ export class GatewayBrowserClient {
   }
 
   private handleConnectFailure(err: unknown, plan: ConnectPlan) {
-    const connectErrorCode = err instanceof GatewayRequestError ? resolveGatewayErrorDetailCode(err) : null;
-    const recoveryAdvice = err instanceof GatewayRequestError ? readConnectErrorRecoveryAdvice(err.details) : {};
-    const retryWithDeviceTokenRecommended = recoveryAdvice.recommendedNextStep === "retry_with_device_token";
+    const connectErrorCode =
+      err instanceof GatewayRequestError ? resolveGatewayErrorDetailCode(err) : null;
+    const recoveryAdvice =
+      err instanceof GatewayRequestError ? readConnectErrorRecoveryAdvice(err.details) : {};
+    const retryWithDeviceTokenRecommended =
+      recoveryAdvice.recommendedNextStep === "retry_with_device_token";
     const canRetryWithDeviceTokenHint =
       recoveryAdvice.canRetryWithDeviceToken === true ||
       retryWithDeviceTokenRecommended ||
@@ -574,7 +582,9 @@ export class GatewayBrowserClient {
       Boolean(explicitGatewayToken) &&
       Boolean(storedToken) &&
       isTrustedRetryEndpoint(this.opts.url);
-    const resolvedDeviceToken = !(explicitGatewayToken || authPassword) ? (storedToken ?? undefined) : undefined;
+    const resolvedDeviceToken = !(explicitGatewayToken || authPassword)
+      ? (storedToken ?? undefined)
+      : undefined;
     const authToken = explicitGatewayToken ?? resolvedDeviceToken;
     return {
       authToken,

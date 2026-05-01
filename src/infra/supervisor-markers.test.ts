@@ -17,7 +17,9 @@ describe("SUPERVISOR_HINT_ENV_VARS", () => {
 
 describe("detectRespawnSupervisor", () => {
   it("detects launchd and systemd only from non-blank platform-specific hints", () => {
-    expect(detectRespawnSupervisor({ LAUNCH_JOB_LABEL: " org.remoteclaw.gateway " }, "darwin")).toBe("launchd");
+    expect(
+      detectRespawnSupervisor({ LAUNCH_JOB_LABEL: " org.remoteclaw.gateway " }, "darwin"),
+    ).toBe("launchd");
     expect(detectRespawnSupervisor({ LAUNCH_JOB_LABEL: "   " }, "darwin")).toBeNull();
 
     expect(detectRespawnSupervisor({ INVOCATION_ID: "abc123" }, "linux")).toBe("systemd");
@@ -25,7 +27,9 @@ describe("detectRespawnSupervisor", () => {
   });
 
   it("detects scheduled-task supervision on Windows from either hint family", () => {
-    expect(detectRespawnSupervisor({ REMOTECLAW_WINDOWS_TASK_NAME: "RemoteClaw Gateway" }, "win32")).toBe("schtasks");
+    expect(
+      detectRespawnSupervisor({ REMOTECLAW_WINDOWS_TASK_NAME: "RemoteClaw Gateway" }, "win32"),
+    ).toBe("schtasks");
     expect(
       detectRespawnSupervisor(
         {
@@ -56,6 +60,8 @@ describe("detectRespawnSupervisor", () => {
         "linux",
       ),
     ).toBeNull();
-    expect(detectRespawnSupervisor({ LAUNCH_JOB_LABEL: "org.remoteclaw.gateway" }, "freebsd")).toBeNull();
+    expect(
+      detectRespawnSupervisor({ LAUNCH_JOB_LABEL: "org.remoteclaw.gateway" }, "freebsd"),
+    ).toBeNull();
   });
 });

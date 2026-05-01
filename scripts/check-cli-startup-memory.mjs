@@ -48,13 +48,17 @@ const cases = [
     id: "statusJson",
     label: "status --json",
     args: ["remoteclaw.mjs", "status", "--json"],
-    limitMb: Number(process.env.REMOTECLAW_STARTUP_MEMORY_STATUS_JSON_MB ?? DEFAULT_LIMITS_MB.statusJson),
+    limitMb: Number(
+      process.env.REMOTECLAW_STARTUP_MEMORY_STATUS_JSON_MB ?? DEFAULT_LIMITS_MB.statusJson,
+    ),
   },
   {
     id: "gatewayStatus",
     label: "gateway status",
     args: ["remoteclaw.mjs", "gateway", "status"],
-    limitMb: Number(process.env.REMOTECLAW_STARTUP_MEMORY_GATEWAY_STATUS_MB ?? DEFAULT_LIMITS_MB.gatewayStatus),
+    limitMb: Number(
+      process.env.REMOTECLAW_STARTUP_MEMORY_GATEWAY_STATUS_MB ?? DEFAULT_LIMITS_MB.gatewayStatus,
+    ),
   },
 ];
 
@@ -153,15 +157,22 @@ function runCase(testCase) {
     throw new Error(formatFailure(testCase, `${testCase.label} did not report max RSS`, stderr));
   }
   if (matrixBootstrapWarning) {
-    throw new Error(formatFailure(testCase, `${testCase.label} triggered Matrix crypto bootstrap during startup`));
+    throw new Error(
+      formatFailure(testCase, `${testCase.label} triggered Matrix crypto bootstrap during startup`),
+    );
   }
   if (maxRssMb > testCase.limitMb) {
     throw new Error(
-      formatFailure(testCase, `${testCase.label} used ${maxRssMb.toFixed(1)} MB RSS (limit ${testCase.limitMb} MB)`),
+      formatFailure(
+        testCase,
+        `${testCase.label} used ${maxRssMb.toFixed(1)} MB RSS (limit ${testCase.limitMb} MB)`,
+      ),
     );
   }
 
-  console.log(`[startup-memory] ${testCase.label}: ${maxRssMb.toFixed(1)} MB RSS (limit ${testCase.limitMb} MB)`);
+  console.log(
+    `[startup-memory] ${testCase.label}: ${maxRssMb.toFixed(1)} MB RSS (limit ${testCase.limitMb} MB)`,
+  );
 }
 
 try {

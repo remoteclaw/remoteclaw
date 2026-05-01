@@ -31,7 +31,11 @@ async function expectLockRemovedOnlyAfterFinalRelease(params: {
   await expect(fs.access(params.lockPath)).rejects.toThrow();
 }
 
-async function expectCurrentPidOwnsLock(params: { sessionFile: string; timeoutMs: number; staleMs?: number }) {
+async function expectCurrentPidOwnsLock(params: {
+  sessionFile: string;
+  timeoutMs: number;
+  staleMs?: number;
+}) {
   const { sessionFile, timeoutMs, staleMs } = params;
   const lockPath = `${sessionFile}.lock`;
   const lock = await acquireSessionWriteLock({ sessionFile, timeoutMs, staleMs });
@@ -65,7 +69,9 @@ async function writeCurrentProcessLock(lockPath: string, extra?: Record<string, 
   );
 }
 
-async function expectActiveInProcessLockIsNotReclaimed(params?: { legacyStarttime?: unknown }): Promise<void> {
+async function expectActiveInProcessLockIsNotReclaimed(params?: {
+  legacyStarttime?: unknown;
+}): Promise<void> {
   await withTempSessionLockFile(async ({ sessionFile, lockPath }) => {
     const lock = await acquireSessionWriteLock({ sessionFile, timeoutMs: 500 });
     const lockPayload = {
@@ -175,9 +181,9 @@ describe("acquireSessionWriteLock", () => {
       const lockPath = `${sessionFile}.lock`;
       await fs.writeFile(lockPath, "{}", "utf8");
 
-      await expect(acquireSessionWriteLock({ sessionFile, timeoutMs: 50, staleMs: 60_000 })).rejects.toThrow(
-        /session file locked/,
-      );
+      await expect(
+        acquireSessionWriteLock({ sessionFile, timeoutMs: 50, staleMs: 60_000 }),
+      ).rejects.toThrow(/session file locked/);
       await expect(fs.access(lockPath)).resolves.toBeUndefined();
     } finally {
       await fs.rm(root, { recursive: true, force: true });

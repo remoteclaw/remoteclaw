@@ -313,7 +313,10 @@ describe("createFeishuReplyDispatcher streaming behavior", () => {
   it("suppresses duplicate final text while still sending media", async () => {
     const options = setupNonStreamingAutoDispatcher();
     await options.deliver({ text: "plain final" }, { kind: "final" });
-    await options.deliver({ text: "plain final", mediaUrl: "https://example.com/a.png" }, { kind: "final" });
+    await options.deliver(
+      { text: "plain final", mediaUrl: "https://example.com/a.png" },
+      { kind: "final" },
+    );
 
     expect(sendMessageFeishuMock).toHaveBeenCalledTimes(1);
     expect(sendMessageFeishuMock).toHaveBeenLastCalledWith(
@@ -335,8 +338,14 @@ describe("createFeishuReplyDispatcher streaming behavior", () => {
     await options.deliver({ text: "actual answer body" }, { kind: "final" });
 
     expect(sendMessageFeishuMock).toHaveBeenCalledTimes(2);
-    expect(sendMessageFeishuMock).toHaveBeenNthCalledWith(1, expect.objectContaining({ text: "notice header" }));
-    expect(sendMessageFeishuMock).toHaveBeenNthCalledWith(2, expect.objectContaining({ text: "actual answer body" }));
+    expect(sendMessageFeishuMock).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ text: "notice header" }),
+    );
+    expect(sendMessageFeishuMock).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ text: "actual answer body" }),
+    );
   });
 
   it("treats block updates as delta chunks", async () => {
@@ -381,7 +390,10 @@ describe("createFeishuReplyDispatcher streaming behavior", () => {
 
   it("falls back to legacy mediaUrl when mediaUrls is an empty array", async () => {
     const { options } = createDispatcherHarness();
-    await options.deliver({ text: "caption", mediaUrl: "https://example.com/a.png", mediaUrls: [] }, { kind: "final" });
+    await options.deliver(
+      { text: "caption", mediaUrl: "https://example.com/a.png", mediaUrls: [] },
+      { kind: "final" },
+    );
 
     expect(sendMessageFeishuMock).toHaveBeenCalledTimes(1);
     expect(sendMediaFeishuMock).toHaveBeenCalledTimes(1);

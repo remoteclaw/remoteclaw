@@ -9,7 +9,11 @@ import { describeBinding } from "./agents.bindings.js";
 import { requireValidConfig } from "./agents.command-shared.js";
 import type { AgentSummary } from "./agents.config.js";
 import { buildAgentSummaries } from "./agents.config.js";
-import { buildProviderStatusIndex, listProvidersForAgent, summarizeBindings } from "./agents.providers.js";
+import {
+  buildProviderStatusIndex,
+  listProvidersForAgent,
+  summarizeBindings,
+} from "./agents.providers.js";
 
 type AgentsListOptions = {
   json?: boolean;
@@ -32,7 +36,11 @@ function formatSummary(summary: AgentSummary) {
   }
   const identityLine = identityParts.length > 0 ? identityParts.join(" ") : null;
   const identitySource =
-    summary.identitySource === "identity" ? "IDENTITY.md" : summary.identitySource === "config" ? "config" : null;
+    summary.identitySource === "identity"
+      ? "IDENTITY.md"
+      : summary.identitySource === "config"
+        ? "config"
+        : null;
 
   const lines = [`- ${header}`];
   if (identityLine) {
@@ -64,7 +72,10 @@ function formatSummary(summary: AgentSummary) {
   return lines.join("\n");
 }
 
-export async function agentsListCommand(opts: AgentsListOptions, runtime: RuntimeEnv = defaultRuntime) {
+export async function agentsListCommand(
+  opts: AgentsListOptions,
+  runtime: RuntimeEnv = defaultRuntime,
+) {
   const cfg = await requireValidConfig(runtime);
   if (!cfg) {
     return;

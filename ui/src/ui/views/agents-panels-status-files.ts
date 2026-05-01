@@ -1,6 +1,11 @@
 import { html, nothing } from "lit";
 import { formatRelativeTimestamp } from "../format.ts";
-import { formatCronPayload, formatCronSchedule, formatCronState, formatNextRun } from "../presenter.ts";
+import {
+  formatCronPayload,
+  formatCronSchedule,
+  formatCronState,
+  formatNextRun,
+} from "../presenter.ts";
 import type {
   AgentFileEntry,
   AgentsFilesListResult,
@@ -126,7 +131,9 @@ export function renderAgentChannels(params: {
   onRefresh: () => void;
 }) {
   const entries = resolveChannelEntries(params.snapshot);
-  const lastSuccessLabel = params.lastSuccess ? formatRelativeTimestamp(params.lastSuccess) : "never";
+  const lastSuccessLabel = params.lastSuccess
+    ? formatRelativeTimestamp(params.lastSuccess)
+    : "never";
   return html`
     <section class="grid grid-cols-2">
       ${renderAgentContextCard(params.context, "Workspace, identity, and model configuration.")}
@@ -160,8 +167,12 @@ export function renderAgentChannels(params: {
                 <div class="list" style="margin-top: 16px;">
                   ${entries.map((entry) => {
                     const summary = summarizeChannelAccounts(entry.accounts);
-                    const status = summary.total ? `${summary.connected}/${summary.total} connected` : "no accounts";
-                    const config = summary.configured ? `${summary.configured} configured` : "not configured";
+                    const status = summary.total
+                      ? `${summary.connected}/${summary.total} connected`
+                      : "no accounts";
+                    const config = summary.configured
+                      ? `${summary.configured} configured`
+                      : "not configured";
                     const enabled = summary.total ? `${summary.enabled} enabled` : "disabled";
                     const extras = resolveChannelExtrasFromConfig({
                       configForm: params.configForm,
@@ -180,7 +191,9 @@ export function renderAgentChannels(params: {
                           <div>${enabled}</div>
                           ${
                             extras.length > 0
-                              ? extras.map((extra) => html`<div>${extra.label}: ${extra.value}</div>`)
+                              ? extras.map(
+                                  (extra) => html`<div>${extra.label}: ${extra.value}</div>`,
+                                )
                               : nothing
                           }
                         </div>
@@ -322,7 +335,9 @@ export function renderAgentFiles(params: {
       ${
         !list
           ? html`
-              <div class="callout info" style="margin-top: 12px">Load the agent workspace files to edit core instructions.</div>
+              <div class="callout info" style="margin-top: 12px">
+                Load the agent workspace files to edit core instructions.
+              </div>
             `
           : html`
               <div class="agent-files-grid" style="margin-top: 16px;">
@@ -332,7 +347,9 @@ export function renderAgentFiles(params: {
                       ? html`
                           <div class="muted">No files found.</div>
                         `
-                      : files.map((file) => renderAgentFileRow(file, active, () => params.onSelectFile(file.name)))
+                      : files.map((file) =>
+                          renderAgentFileRow(file, active, () => params.onSelectFile(file.name)),
+                        )
                   }
                 </div>
                 <div class="agent-files-editor">
@@ -378,7 +395,10 @@ export function renderAgentFiles(params: {
                             <textarea
                               .value=${draft}
                               @input=${(e: Event) =>
-                                params.onFileDraftChange(activeEntry.name, (e.target as HTMLTextAreaElement).value)}
+                                params.onFileDraftChange(
+                                  activeEntry.name,
+                                  (e.target as HTMLTextAreaElement).value,
+                                )}
                             ></textarea>
                           </label>
                         `

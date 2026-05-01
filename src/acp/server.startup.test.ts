@@ -109,7 +109,10 @@ describe("serveAcpGateway startup", () => {
 
   function captureProcessSignalHandlers() {
     const signalHandlers = new Map<NodeJS.Signals, () => void>();
-    const onceSpy = vi.spyOn(process, "once").mockImplementation(((signal: NodeJS.Signals, handler: () => void) => {
+    const onceSpy = vi.spyOn(process, "once").mockImplementation(((
+      signal: NodeJS.Signals,
+      handler: () => void,
+    ) => {
       signalHandlers.set(signal, handler);
       return process;
     }) as typeof process.once);
@@ -151,7 +154,9 @@ describe("serveAcpGateway startup", () => {
   it("rejects startup when gateway connect fails before hello", async () => {
     const onceSpy = vi
       .spyOn(process, "once")
-      .mockImplementation(((_signal: NodeJS.Signals, _handler: () => void) => process) as typeof process.once);
+      .mockImplementation(
+        ((_signal: NodeJS.Signals, _handler: () => void) => process) as typeof process.once,
+      );
 
     try {
       const servePromise = serveAcpGateway({});

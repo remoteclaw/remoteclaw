@@ -342,7 +342,12 @@ tail -f ~/.remoteclaw/logs/gateway.log | grep broadcast
 {
   "broadcast": {
     "strategy": "parallel",
-    "120363403215116621@g.us": ["code-formatter", "security-scanner", "test-coverage", "docs-checker"]
+    "120363403215116621@g.us": [
+      "code-formatter",
+      "security-scanner",
+      "test-coverage",
+      "docs-checker"
+    ]
   },
   "agents": {
     "list": [

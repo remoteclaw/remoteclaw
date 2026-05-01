@@ -11,12 +11,16 @@ export function normalizeDiscordMessagingTarget(raw: string): string | undefined
  * prefixed with "channel:" to avoid the ambiguous-target error in
  * parseDiscordTarget. All other formats pass through unchanged.
  */
-export function normalizeDiscordOutboundTarget(to?: string): { ok: true; to: string } | { ok: false; error: Error } {
+export function normalizeDiscordOutboundTarget(
+  to?: string,
+): { ok: true; to: string } | { ok: false; error: Error } {
   const trimmed = to?.trim();
   if (!trimmed) {
     return {
       ok: false,
-      error: new Error('Discord recipient is required. Use "channel:<id>" for channels or "user:<id>" for DMs.'),
+      error: new Error(
+        'Discord recipient is required. Use "channel:<id>" for channels or "user:<id>" for DMs.',
+      ),
     };
   }
   if (/^\d+$/.test(trimmed)) {

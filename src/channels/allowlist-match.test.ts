@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { resolveAllowlistMatchByCandidates, resolveAllowlistMatchSimple } from "./allowlist-match.js";
+import {
+  resolveAllowlistMatchByCandidates,
+  resolveAllowlistMatchSimple,
+} from "./allowlist-match.js";
 
 describe("channels/allowlist-match", () => {
   it("reflects in-place allowFrom edits even when array length stays the same", () => {

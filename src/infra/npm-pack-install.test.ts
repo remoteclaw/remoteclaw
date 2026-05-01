@@ -44,7 +44,9 @@ describe("installFromNpmSpecArchive", () => {
     expectedIntegrity?: string;
     onIntegrityDrift?: (payload: NpmIntegrityDriftPayload) => boolean | Promise<boolean>;
     warn?: (message: string) => void;
-    installFromArchive: (params: { archivePath: string }) => Promise<{ ok: boolean; [k: string]: unknown }>;
+    installFromArchive: (params: {
+      archivePath: string;
+    }) => Promise<{ ok: boolean; [k: string]: unknown }>;
   }) =>
     await installFromNpmSpecArchive({
       tempDirPrefix: "remoteclaw-test-",
@@ -308,7 +310,9 @@ describe("finalizeNpmSpecArchiveInstall", () => {
   });
 
   it("attaches npm metadata to successful install results", () => {
-    const result = finalizeNpmSpecArchiveInstall<{ ok: true; pluginId: string } | { ok: false; error: string }>({
+    const result = finalizeNpmSpecArchiveInstall<
+      { ok: true; pluginId: string } | { ok: false; error: string }
+    >({
       ok: true,
       installResult: { ok: true, pluginId: "voice-call" },
       npmResolution: {

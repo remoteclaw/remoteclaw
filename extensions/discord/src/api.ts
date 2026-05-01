@@ -68,8 +68,12 @@ function formatDiscordApiErrorText(text: string): string | undefined {
     return looksJson ? "unknown error" : trimmed;
   }
   const message =
-    typeof payload.message === "string" && payload.message.trim() ? payload.message.trim() : "unknown error";
-  const retryAfter = formatRetryAfterSeconds(typeof payload.retry_after === "number" ? payload.retry_after : undefined);
+    typeof payload.message === "string" && payload.message.trim()
+      ? payload.message.trim()
+      : "unknown error";
+  const retryAfter = formatRetryAfterSeconds(
+    typeof payload.retry_after === "number" ? payload.retry_after : undefined,
+  );
   return retryAfter ? `${message} (retry after ${retryAfter})` : message;
 }
 
@@ -111,7 +115,11 @@ export async function fetchDiscord<T>(
         const detail = formatDiscordApiErrorText(text);
         const suffix = detail ? `: ${detail}` : "";
         const retryAfter = res.status === 429 ? parseRetryAfterSeconds(text, res) : undefined;
-        throw new DiscordApiError(`Discord API ${path} failed (${res.status})${suffix}`, res.status, retryAfter);
+        throw new DiscordApiError(
+          `Discord API ${path} failed (${res.status})${suffix}`,
+          res.status,
+          retryAfter,
+        );
       }
       return (await res.json()) as T;
     },
@@ -120,7 +128,9 @@ export async function fetchDiscord<T>(
       label: options?.label ?? path,
       shouldRetry: (err) => err instanceof DiscordApiError && err.status === 429,
       retryAfterMs: (err) =>
-        err instanceof DiscordApiError && typeof err.retryAfter === "number" ? err.retryAfter * 1000 : undefined,
+        err instanceof DiscordApiError && typeof err.retryAfter === "number"
+          ? err.retryAfter * 1000
+          : undefined,
     },
   );
 }

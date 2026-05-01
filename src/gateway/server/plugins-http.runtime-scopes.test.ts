@@ -2,7 +2,10 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { SubsystemLogger } from "../../logging/subsystem.js";
 import { createEmptyPluginRegistry } from "../../plugins/registry.js";
-import { releasePinnedPluginHttpRouteRegistry, setActivePluginRegistry } from "../../plugins/runtime.js";
+import {
+  releasePinnedPluginHttpRouteRegistry,
+  setActivePluginRegistry,
+} from "../../plugins/runtime.js";
 import { getPluginRuntimeGatewayRequestScope } from "../../plugins/runtime/gateway-request-scope.js";
 import { authorizeOperatorScopesForMethod } from "../method-scopes.js";
 import { makeMockHttpResponse } from "../test-http-response.js";
@@ -56,7 +59,11 @@ describe("plugin HTTP route runtime scopes", () => {
     setActivePluginRegistry(createEmptyPluginRegistry());
   });
 
-  async function invokeRoute(params: { path: string; auth: "gateway" | "plugin"; gatewayAuthSatisfied: boolean }) {
+  async function invokeRoute(params: {
+    path: string;
+    auth: "gateway" | "plugin";
+    gatewayAuthSatisfied: boolean;
+  }) {
     const log = createMockLogger();
     const handler = createGatewayPluginRequestHandler({
       registry: createTestRegistry({
@@ -75,9 +82,14 @@ describe("plugin HTTP route runtime scopes", () => {
     });
 
     const response = makeMockHttpResponse();
-    const handled = await handler({ url: params.path } as IncomingMessage, response.res, undefined, {
-      gatewayAuthSatisfied: params.gatewayAuthSatisfied,
-    });
+    const handled = await handler(
+      { url: params.path } as IncomingMessage,
+      response.res,
+      undefined,
+      {
+        gatewayAuthSatisfied: params.gatewayAuthSatisfied,
+      },
+    );
     return { handled, log, ...response };
   }
 
@@ -120,31 +132,35 @@ describe("plugin HTTP route runtime scopes", () => {
       path: "/secure-hook",
       expectedScopes: ["operator.write"],
     },
-  ])("maps $auth routes to $expectedScopes", async ({ auth, gatewayAuthSatisfied, path, expectedScopes }) => {
-    let observedScopes: string[] | undefined;
-    const handler = createGatewayPluginRequestHandler({
-      registry: createTestRegistry({
-        httpRoutes: [
-          createRoute({
-            path,
-            auth,
-            handler: vi.fn(async () => {
-              observedScopes = getPluginRuntimeGatewayRequestScope()?.client?.connect?.scopes?.slice() ?? [];
-              return true;
+  ])(
+    "maps $auth routes to $expectedScopes",
+    async ({ auth, gatewayAuthSatisfied, path, expectedScopes }) => {
+      let observedScopes: string[] | undefined;
+      const handler = createGatewayPluginRequestHandler({
+        registry: createTestRegistry({
+          httpRoutes: [
+            createRoute({
+              path,
+              auth,
+              handler: vi.fn(async () => {
+                observedScopes =
+                  getPluginRuntimeGatewayRequestScope()?.client?.connect?.scopes?.slice() ?? [];
+                return true;
+              }),
             }),
-          }),
-        ],
-      }),
-      log: createMockLogger(),
-    });
+          ],
+        }),
+        log: createMockLogger(),
+      });
 
-    const { res } = makeMockHttpResponse();
-    const handled = await handler({ url: path } as IncomingMessage, res, undefined, {
-      gatewayAuthSatisfied,
-    });
+      const { res } = makeMockHttpResponse();
+      const handled = await handler({ url: path } as IncomingMessage, res, undefined, {
+        gatewayAuthSatisfied,
+      });
 
-    expect(handled).toBe(true);
-    expect(res.statusCode).toBe(200);
-    expect(observedScopes).toEqual(expectedScopes);
-  });
+      expect(handled).toBe(true);
+      expect(res.statusCode).toBe(200);
+      expect(observedScopes).toEqual(expectedScopes);
+    },
+  );
 });

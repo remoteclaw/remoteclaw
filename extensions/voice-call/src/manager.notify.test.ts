@@ -37,7 +37,10 @@ class DelayedPlayTtsProvider extends FakeProvider {
   }
 }
 
-function requireCall(manager: Awaited<ReturnType<typeof createManagerHarness>>["manager"], callId: string) {
+function requireCall(
+  manager: Awaited<ReturnType<typeof createManagerHarness>>["manager"],
+  callId: string,
+) {
   const call = manager.getCall(callId);
   if (!call) {
     throw new Error(`expected active call ${callId}`);
@@ -191,7 +194,10 @@ describe("CallManager notify and mapping", () => {
   it("speaks on answered when Twilio streaming is enabled but stream-connect path is unavailable", async () => {
     const twilioProvider = new FakeProvider("twilio");
     twilioProvider.twilioStreamConnectEnabled = false;
-    const { manager, provider } = await createManagerHarness({ streaming: { enabled: true } }, twilioProvider);
+    const { manager, provider } = await createManagerHarness(
+      { streaming: { enabled: true } },
+      twilioProvider,
+    );
 
     const { callId, success } = await manager.initiateCall("+15550000009", undefined, {
       message: "Twilio stream unavailable",

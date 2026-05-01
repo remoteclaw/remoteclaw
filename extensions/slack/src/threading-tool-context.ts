@@ -1,4 +1,7 @@
-import type { ChannelThreadingContext, ChannelThreadingToolContext } from "../../../src/channels/plugins/types.js";
+import type {
+  ChannelThreadingContext,
+  ChannelThreadingToolContext,
+} from "../../../src/channels/plugins/types.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import { resolveSlackAccount, resolveSlackReplyToMode } from "./accounts.js";
 

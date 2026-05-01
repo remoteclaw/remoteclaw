@@ -8,7 +8,10 @@ export type TailscaleStatusCommandRunner = (
   opts: { timeoutMs: number },
 ) => Promise<TailscaleStatusCommandResult>;
 
-const TAILSCALE_STATUS_COMMAND_CANDIDATES = ["tailscale", "/Applications/Tailscale.app/Contents/MacOS/Tailscale"];
+const TAILSCALE_STATUS_COMMAND_CANDIDATES = [
+  "tailscale",
+  "/Applications/Tailscale.app/Contents/MacOS/Tailscale",
+];
 
 function parsePossiblyNoisyJsonObject(raw: string): Record<string, unknown> {
   const start = raw.indexOf("{");
@@ -26,7 +29,9 @@ function parsePossiblyNoisyJsonObject(raw: string): Record<string, unknown> {
 function extractTailnetHostFromStatusJson(raw: string): string | null {
   const parsed = parsePossiblyNoisyJsonObject(raw);
   const self =
-    typeof parsed.Self === "object" && parsed.Self !== null ? (parsed.Self as Record<string, unknown>) : undefined;
+    typeof parsed.Self === "object" && parsed.Self !== null
+      ? (parsed.Self as Record<string, unknown>)
+      : undefined;
   const dns = typeof self?.DNSName === "string" ? self.DNSName : undefined;
   if (dns && dns.length > 0) {
     return dns.replace(/\.$/, "");

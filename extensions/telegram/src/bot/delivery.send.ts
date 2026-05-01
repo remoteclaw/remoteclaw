@@ -24,7 +24,9 @@ function hasMessageThreadIdParam(params: Record<string, unknown> | undefined): b
   return typeof params.message_thread_id === "number";
 }
 
-function removeMessageThreadIdParam(params: Record<string, unknown> | undefined): Record<string, unknown> {
+function removeMessageThreadIdParam(
+  params: Record<string, unknown> | undefined,
+): Record<string, unknown> {
   if (!params) {
     return {};
   }
@@ -60,7 +62,9 @@ export async function sendTelegramWithThreadFallback<T>(params: {
       throw err;
     }
     const retryParams = removeMessageThreadIdParam(params.requestParams);
-    params.runtime.log?.(`telegram ${params.operation}: message thread not found; retrying without message_thread_id`);
+    params.runtime.log?.(
+      `telegram ${params.operation}: message thread not found; retrying without message_thread_id`,
+    );
     return await withTelegramApiErrorLogging({
       operation: `${params.operation} (threadless retry)`,
       runtime: params.runtime,

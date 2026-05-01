@@ -35,19 +35,32 @@ function createDraftStream(
   });
 }
 
-async function expectInitialForumSend(api: ReturnType<typeof createMockDraftApi>, text = "Hello"): Promise<void> {
-  await vi.waitFor(() => expect(api.sendMessage).toHaveBeenCalledWith(123, text, { message_thread_id: 99 }));
+async function expectInitialForumSend(
+  api: ReturnType<typeof createMockDraftApi>,
+  text = "Hello",
+): Promise<void> {
+  await vi.waitFor(() =>
+    expect(api.sendMessage).toHaveBeenCalledWith(123, text, { message_thread_id: 99 }),
+  );
 }
 
-function expectDmMessagePreviewViaSendMessage(api: ReturnType<typeof createMockDraftApi>, text = "Hello"): void {
+function expectDmMessagePreviewViaSendMessage(
+  api: ReturnType<typeof createMockDraftApi>,
+  text = "Hello",
+): void {
   expect(api.sendMessage).toHaveBeenCalledWith(123, text, { message_thread_id: 42 });
   expect(api.editMessageText).not.toHaveBeenCalled();
 }
 
 function createForceNewMessageHarness(params: { throttleMs?: number } = {}) {
   const api = createMockDraftApi();
-  api.sendMessage.mockResolvedValueOnce({ message_id: 17 }).mockResolvedValueOnce({ message_id: 42 });
-  const stream = createDraftStream(api, params.throttleMs != null ? { throttleMs: params.throttleMs } : {});
+  api.sendMessage
+    .mockResolvedValueOnce({ message_id: 17 })
+    .mockResolvedValueOnce({ message_id: 42 });
+  const stream = createDraftStream(
+    api,
+    params.throttleMs != null ? { throttleMs: params.throttleMs } : {},
+  );
   return { api, stream };
 }
 
@@ -317,10 +330,13 @@ describe("createTelegramDraftStream", () => {
       editMessageText: vi.fn().mockResolvedValue(true),
       deleteMessage: vi.fn().mockResolvedValue(true),
     };
-    const stream = createThreadedDraftStream(api as unknown as ReturnType<typeof createMockDraftApi>, {
-      id: 42,
-      scope: "dm",
-    });
+    const stream = createThreadedDraftStream(
+      api as unknown as ReturnType<typeof createMockDraftApi>,
+      {
+        id: 42,
+        scope: "dm",
+      },
+    );
 
     stream.update("Message A");
     await vi.waitFor(() => expect(api.sendMessageDraft).toHaveBeenCalledTimes(1));
@@ -436,7 +452,9 @@ describe("createTelegramDraftStream", () => {
 
   it("clears sendMayHaveLanded on pre-connect first preview send failures", async () => {
     const api = createMockDraftApi();
-    api.sendMessage.mockRejectedValueOnce(Object.assign(new Error("connect ECONNREFUSED"), { code: "ECONNREFUSED" }));
+    api.sendMessage.mockRejectedValueOnce(
+      Object.assign(new Error("connect ECONNREFUSED"), { code: "ECONNREFUSED" }),
+    );
     const stream = createDraftStream(api);
 
     stream.update("Hello");
@@ -448,7 +466,9 @@ describe("createTelegramDraftStream", () => {
 
   it("clears sendMayHaveLanded on Telegram 4xx client rejections", async () => {
     const api = createMockDraftApi();
-    api.sendMessage.mockRejectedValueOnce(Object.assign(new Error("403: Forbidden"), { error_code: 403 }));
+    api.sendMessage.mockRejectedValueOnce(
+      Object.assign(new Error("403: Forbidden"), { error_code: 403 }),
+    );
     const stream = createDraftStream(api);
 
     stream.update("Hello");

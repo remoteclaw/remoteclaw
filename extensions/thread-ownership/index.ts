@@ -28,12 +28,16 @@ function cleanExpiredMentions(): void {
 
 function resolveOwnershipAgent(config: RemoteClawConfig): { id: string; name: string } {
   const list = Array.isArray(config.agents?.list)
-    ? config.agents.list.filter((entry): entry is AgentEntry => Boolean(entry && typeof entry === "object"))
+    ? config.agents.list.filter((entry): entry is AgentEntry =>
+        Boolean(entry && typeof entry === "object"),
+      )
     : [];
   const selected = list.find((entry) => entry.default === true) ?? list[0];
 
-  const id = typeof selected?.id === "string" && selected.id.trim() ? selected.id.trim() : "unknown";
-  const identityName = typeof selected?.identity?.name === "string" ? selected.identity.name.trim() : "";
+  const id =
+    typeof selected?.id === "string" && selected.id.trim() ? selected.id.trim() : "unknown";
+  const identityName =
+    typeof selected?.identity?.name === "string" ? selected.identity.name.trim() : "";
   const fallbackName = typeof selected?.name === "string" ? selected.name.trim() : "";
   const name = identityName || fallbackName;
 
@@ -49,7 +53,9 @@ export default function register(api: RemoteClawPluginApi) {
   ).replace(/\/$/, "");
 
   const abTestChannels = new Set(
-    pluginCfg.abTestChannels ?? process.env.THREAD_OWNERSHIP_CHANNELS?.split(",").filter(Boolean) ?? [],
+    pluginCfg.abTestChannels ??
+      process.env.THREAD_OWNERSHIP_CHANNELS?.split(",").filter(Boolean) ??
+      [],
   );
 
   const { id: agentId, name: agentName } = resolveOwnershipAgent(api.config);
@@ -69,7 +75,9 @@ export default function register(api: RemoteClawPluginApi) {
     if (!threadTs || !channelId) return;
 
     // Check if this agent was @-mentioned.
-    const mentioned = (agentName && text.includes(`@${agentName}`)) || (botUserId && text.includes(`<@${botUserId}>`));
+    const mentioned =
+      (agentName && text.includes(`@${agentName}`)) ||
+      (botUserId && text.includes(`<@${botUserId}>`));
 
     if (mentioned) {
       cleanExpiredMentions();
@@ -122,7 +130,9 @@ export default function register(api: RemoteClawPluginApi) {
         if (resp.status === 409) {
           // Another agent owns this thread — cancel the send.
           const body = (await resp.json()) as { owner?: string };
-          api.logger.info?.(`thread-ownership: cancelled send to ${channelId}:${threadTs} — owned by ${body.owner}`);
+          api.logger.info?.(
+            `thread-ownership: cancelled send to ${channelId}:${threadTs} — owned by ${body.owner}`,
+          );
           return { cancel: true };
         }
 

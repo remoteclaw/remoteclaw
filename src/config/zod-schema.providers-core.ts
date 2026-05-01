@@ -13,7 +13,10 @@ import {
   resolveTelegramCustomCommands,
 } from "./telegram-custom-commands.js";
 import { ToolPolicySchema } from "./zod-schema.agent-runtime.js";
-import { ChannelHealthMonitorSchema, ChannelHeartbeatVisibilitySchema } from "./zod-schema.channels.js";
+import {
+  ChannelHealthMonitorSchema,
+  ChannelHeartbeatVisibilitySchema,
+} from "./zod-schema.channels.js";
 import {
   BlockStreamingChunkSchema,
   BlockStreamingCoalesceSchema,
@@ -41,9 +44,11 @@ import { sensitive } from "./zod-schema.sensitive.js";
 
 const ToolPolicyBySenderSchema = z.record(z.string(), ToolPolicySchema).optional();
 
-const DiscordIdSchema = z.union([z.string(), z.number()]).refine((value) => typeof value === "string", {
-  message: "Discord IDs must be strings (wrap numeric IDs in quotes).",
-});
+const DiscordIdSchema = z
+  .union([z.string(), z.number()])
+  .refine((value) => typeof value === "string", {
+    message: "Discord IDs must be strings (wrap numeric IDs in quotes).",
+  });
 const DiscordIdListSchema = z.array(DiscordIdSchema);
 
 const TelegramInlineButtonsScopeSchema = z.enum(["off", "dm", "group", "all", "allowlist"]);
@@ -223,7 +228,9 @@ export const TelegramAccountSchemaBase = z
     webhookPath: z
       .string()
       .optional()
-      .describe("Local webhook route path served by the gateway listener. Defaults to /telegram-webhook."),
+      .describe(
+        "Local webhook route path served by the gateway listener. Defaults to /telegram-webhook.",
+      ),
     webhookHost: z
       .string()
       .optional()
@@ -299,7 +306,8 @@ export const TelegramConfigSchema = TelegramAccountSchemaBase.extend({
     allowFrom: value.allowFrom,
     ctx,
     path: ["allowFrom"],
-    message: 'channels.telegram.dmPolicy="open" requires channels.telegram.allowFrom to include "*"',
+    message:
+      'channels.telegram.dmPolicy="open" requires channels.telegram.allowFrom to include "*"',
   });
   requireAllowlistAllowFrom({
     policy: value.dmPolicy,
@@ -349,7 +357,9 @@ export const TelegramConfigSchema = TelegramAccountSchemaBase.extend({
       continue;
     }
     const effectiveDmPolicy = account.dmPolicy ?? value.dmPolicy;
-    const effectiveAllowFrom = Array.isArray(account.allowFrom) ? account.allowFrom : value.allowFrom;
+    const effectiveAllowFrom = Array.isArray(account.allowFrom)
+      ? account.allowFrom
+      : value.allowFrom;
     requireOpenAllowFrom({
       policy: effectiveDmPolicy,
       allowFrom: effectiveAllowFrom,
@@ -554,7 +564,9 @@ export const DiscordAccountSchema = z
       .optional(),
     responsePrefix: z.string().optional(),
     ackReaction: z.string().optional(),
-    ackReactionScope: z.enum(["group-mentions", "group-all", "direct", "all", "off", "none"]).optional(),
+    ackReactionScope: z
+      .enum(["group-mentions", "group-all", "direct", "all", "off", "none"])
+      .optional(),
     activity: z.string().optional(),
     status: z.enum(["online", "dnd", "idle", "invisible"]).optional(),
     autoPresence: z
@@ -646,7 +658,8 @@ export const DiscordConfigSchema = DiscordAccountSchema.extend({
 }).superRefine((value, ctx) => {
   const dmPolicy = value.dmPolicy ?? value.dm?.policy ?? "pairing";
   const allowFrom = value.allowFrom ?? value.dm?.allowFrom;
-  const allowFromPath = value.allowFrom !== undefined ? (["allowFrom"] as const) : (["dm", "allowFrom"] as const);
+  const allowFromPath =
+    value.allowFrom !== undefined ? (["allowFrom"] as const) : (["dm", "allowFrom"] as const);
   requireOpenAllowFrom({
     policy: dmPolicy,
     allowFrom,
@@ -671,8 +684,10 @@ export const DiscordConfigSchema = DiscordAccountSchema.extend({
     if (!account) {
       continue;
     }
-    const effectivePolicy = account.dmPolicy ?? account.dm?.policy ?? value.dmPolicy ?? value.dm?.policy ?? "pairing";
-    const effectiveAllowFrom = account.allowFrom ?? account.dm?.allowFrom ?? value.allowFrom ?? value.dm?.allowFrom;
+    const effectivePolicy =
+      account.dmPolicy ?? account.dm?.policy ?? value.dmPolicy ?? value.dm?.policy ?? "pairing";
+    const effectiveAllowFrom =
+      account.allowFrom ?? account.dm?.allowFrom ?? value.allowFrom ?? value.dm?.allowFrom;
     requireOpenAllowFrom({
       policy: effectivePolicy,
       allowFrom: effectiveAllowFrom,
@@ -705,7 +720,8 @@ export const GoogleChatDmSchema = z
       allowFrom: value.allowFrom,
       ctx,
       path: ["allowFrom"],
-      message: 'channels.googlechat.dm.policy="open" requires channels.googlechat.dm.allowFrom to include "*"',
+      message:
+        'channels.googlechat.dm.policy="open" requires channels.googlechat.dm.allowFrom to include "*"',
     });
     requireAllowlistAllowFrom({
       policy: value.policy,
@@ -919,7 +935,8 @@ export const SlackConfigSchema = SlackAccountSchema.safeExtend({
 }).superRefine((value, ctx) => {
   const dmPolicy = value.dmPolicy ?? value.dm?.policy ?? "pairing";
   const allowFrom = value.allowFrom ?? value.dm?.allowFrom;
-  const allowFromPath = value.allowFrom !== undefined ? (["allowFrom"] as const) : (["dm", "allowFrom"] as const);
+  const allowFromPath =
+    value.allowFrom !== undefined ? (["allowFrom"] as const) : (["dm", "allowFrom"] as const);
   requireOpenAllowFrom({
     policy: dmPolicy,
     allowFrom,
@@ -950,8 +967,10 @@ export const SlackConfigSchema = SlackAccountSchema.safeExtend({
       continue;
     }
     const accountMode = account.mode ?? baseMode;
-    const effectivePolicy = account.dmPolicy ?? account.dm?.policy ?? value.dmPolicy ?? value.dm?.policy ?? "pairing";
-    const effectiveAllowFrom = account.allowFrom ?? account.dm?.allowFrom ?? value.allowFrom ?? value.dm?.allowFrom;
+    const effectivePolicy =
+      account.dmPolicy ?? account.dm?.policy ?? value.dmPolicy ?? value.dm?.policy ?? "pairing";
+    const effectiveAllowFrom =
+      account.allowFrom ?? account.dm?.allowFrom ?? value.allowFrom ?? value.dm?.allowFrom;
     requireOpenAllowFrom({
       policy: effectivePolicy,
       allowFrom: effectiveAllowFrom,
@@ -1162,7 +1181,8 @@ function refineIrcAllowFromAndNickserv(value: IrcBaseConfig, ctx: z.RefinementCt
     allowFrom: value.allowFrom,
     ctx,
     path: ["allowFrom"],
-    message: 'channels.irc.dmPolicy="allowlist" requires channels.irc.allowFrom to contain at least one sender ID',
+    message:
+      'channels.irc.dmPolicy="allowlist" requires channels.irc.allowFrom to contain at least one sender ID',
   });
   if (value.nickserv?.register && !value.nickserv.registerEmail?.trim()) {
     ctx.addIssue({
@@ -1229,7 +1249,10 @@ export const IMessageAccountSchemaBase = z
     configWrites: z.boolean().optional(),
     cliPath: ExecutableTokenSchema.optional(),
     dbPath: z.string().optional(),
-    remoteHost: z.string().refine(isSafeScpRemoteHost, "expected SSH host or user@host (no spaces/options)").optional(),
+    remoteHost: z
+      .string()
+      .refine(isSafeScpRemoteHost, "expected SSH host or user@host (no spaces/options)")
+      .optional(),
     service: z.union([z.literal("imessage"), z.literal("sms"), z.literal("auto")]).optional(),
     region: z.string().optional(),
     dmPolicy: DmPolicySchema.optional().default("pairing"),
@@ -1285,7 +1308,8 @@ export const IMessageConfigSchema = IMessageAccountSchemaBase.extend({
     allowFrom: value.allowFrom,
     ctx,
     path: ["allowFrom"],
-    message: 'channels.imessage.dmPolicy="open" requires channels.imessage.allowFrom to include "*"',
+    message:
+      'channels.imessage.dmPolicy="open" requires channels.imessage.allowFrom to include "*"',
   });
   requireAllowlistAllowFrom({
     policy: value.dmPolicy,
@@ -1397,7 +1421,8 @@ export const BlueBubblesConfigSchema = BlueBubblesAccountSchemaBase.extend({
     allowFrom: value.allowFrom,
     ctx,
     path: ["allowFrom"],
-    message: 'channels.bluebubbles.dmPolicy="open" requires channels.bluebubbles.allowFrom to include "*"',
+    message:
+      'channels.bluebubbles.dmPolicy="open" requires channels.bluebubbles.allowFrom to include "*"',
   });
   requireAllowlistAllowFrom({
     policy: value.dmPolicy,
@@ -1503,7 +1528,8 @@ export const MSTeamsConfigSchema = z
       allowFrom: value.allowFrom,
       ctx,
       path: ["allowFrom"],
-      message: 'channels.msteams.dmPolicy="open" requires channels.msteams.allowFrom to include "*"',
+      message:
+        'channels.msteams.dmPolicy="open" requires channels.msteams.allowFrom to include "*"',
     });
     requireAllowlistAllowFrom({
       policy: value.dmPolicy,

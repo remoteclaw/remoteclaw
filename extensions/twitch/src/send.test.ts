@@ -12,7 +12,11 @@
 
 import { describe, expect, it, vi } from "vitest";
 import { sendMessageTwitchInternal } from "./send.js";
-import { BASE_TWITCH_TEST_ACCOUNT, installTwitchTestHooks, makeTwitchTestConfig } from "./test-fixtures.js";
+import {
+  BASE_TWITCH_TEST_ACCOUNT,
+  installTwitchTestHooks,
+  makeTwitchTestConfig,
+} from "./test-fixtures.js";
 
 // Mock dependencies
 vi.mock("./config.js", () => ({
@@ -51,7 +55,10 @@ describe("send", () => {
   installTwitchTestHooks();
 
   describe("sendMessageTwitchInternal", () => {
-    async function mockSuccessfulSend(params: { messageId: string; stripMarkdown?: (text: string) => string }) {
+    async function mockSuccessfulSend(params: {
+      messageId: string;
+      stripMarkdown?: (text: string) => string;
+    }) {
       const { getAccountConfig } = await import("./config.js");
       const { getClientManager } = await import("./client-manager-registry.js");
       const { stripMarkdownForTwitch } = await import("./utils/markdown.js");
@@ -63,7 +70,9 @@ describe("send", () => {
           messageId: params.messageId,
         }),
       } as unknown as ReturnType<typeof getClientManager>);
-      vi.mocked(stripMarkdownForTwitch).mockImplementation(params.stripMarkdown ?? ((text) => text));
+      vi.mocked(stripMarkdownForTwitch).mockImplementation(
+        params.stripMarkdown ?? ((text) => text),
+      );
 
       return { stripMarkdownForTwitch };
     }
@@ -249,7 +258,14 @@ describe("send", () => {
         sendMessage: mockSend,
       } as unknown as ReturnType<typeof getClientManager>);
 
-      await sendMessageTwitchInternal("", "Hello!", mockConfig, "default", false, mockLogger as unknown as Console);
+      await sendMessageTwitchInternal(
+        "",
+        "Hello!",
+        mockConfig,
+        "default",
+        false,
+        mockLogger as unknown as Console,
+      );
 
       expect(mockSend).toHaveBeenCalledWith(
         mockAccount,

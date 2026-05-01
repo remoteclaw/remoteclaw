@@ -4,7 +4,11 @@ import { ensureSkillsWatcher, getSkillsSnapshotVersion } from "../../agents/skil
 import type { RemoteClawConfig } from "../../config/config.js";
 import { type SessionEntry, updateSessionStore } from "../../config/sessions.js";
 import { buildChannelSummary } from "../../infra/channel-summary.js";
-import { resolveTimezone, formatUtcTimestamp, formatZonedTimestamp } from "../../infra/format-time/format-datetime.ts";
+import {
+  resolveTimezone,
+  formatUtcTimestamp,
+  formatZonedTimestamp,
+} from "../../infra/format-time/format-datetime.ts";
 import { drainSystemEventEntries } from "../../infra/system-events.js";
 
 /** Drain queued system events, format as `System:` lines, return the block (or undefined). */
@@ -72,7 +76,10 @@ export async function drainFormattedSystemEvents(params: {
     if (zone.mode === "local") {
       return formatZonedTimestamp(date, { displaySeconds: true }) ?? "unknown-time";
     }
-    return formatZonedTimestamp(date, { timeZone: zone.timeZone, displaySeconds: true }) ?? "unknown-time";
+    return (
+      formatZonedTimestamp(date, { timeZone: zone.timeZone, displaySeconds: true }) ??
+      "unknown-time"
+    );
   };
 
   const systemLines: string[] = [];
@@ -103,7 +110,9 @@ export async function drainFormattedSystemEvents(params: {
   // so these gateway-originated lines are distinguishable by the model.
   // Each sub-line of a multi-line event gets its own System: prefix so continuation
   // lines can't be mistaken for user content.
-  return systemLines.flatMap((line) => line.split("\n").map((subline) => `System: ${subline}`)).join("\n");
+  return systemLines
+    .flatMap((line) => line.split("\n").map((subline) => `System: ${subline}`))
+    .join("\n");
 }
 
 export async function ensureSkillSnapshot(params: {
@@ -132,14 +141,23 @@ export async function ensureSkillSnapshot(params: {
     };
   }
 
-  const { sessionEntry, sessionStore, sessionKey, storePath, sessionId, isFirstTurnInSession, workspaceDir, cfg } =
-    params;
+  const {
+    sessionEntry,
+    sessionStore,
+    sessionKey,
+    storePath,
+    sessionId,
+    isFirstTurnInSession,
+    workspaceDir,
+    cfg,
+  } = params;
 
   let nextEntry = sessionEntry;
   let systemSent = sessionEntry?.systemSent ?? false;
   const snapshotVersion = getSkillsSnapshotVersion(workspaceDir);
   ensureSkillsWatcher({ workspaceDir, config: cfg });
-  const shouldRefreshSnapshot = snapshotVersion > 0 && (nextEntry?.skillsSnapshot?.version ?? 0) < snapshotVersion;
+  const shouldRefreshSnapshot =
+    snapshotVersion > 0 && (nextEntry?.skillsSnapshot?.version ?? 0) < snapshotVersion;
 
   if (isFirstTurnInSession && sessionStore && sessionKey) {
     const current = nextEntry ??
@@ -204,7 +222,14 @@ export async function incrementCompactionCount(params: {
   /** Token count after compaction - if provided, updates session token counts */
   tokensAfter?: number;
 }): Promise<number | undefined> {
-  const { sessionEntry, sessionStore, sessionKey, storePath, now = Date.now(), tokensAfter } = params;
+  const {
+    sessionEntry,
+    sessionStore,
+    sessionKey,
+    storePath,
+    now = Date.now(),
+    tokensAfter,
+  } = params;
   if (!sessionStore || !sessionKey) {
     return undefined;
   }

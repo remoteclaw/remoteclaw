@@ -79,7 +79,10 @@ function chunkUserIds(userIds: string[]): string[][] {
  * Create a new rich menu
  * @returns The rich menu ID
  */
-export async function createRichMenu(menu: CreateRichMenuParams, opts: RichMenuOpts = {}): Promise<string> {
+export async function createRichMenu(
+  menu: CreateRichMenuParams,
+  opts: RichMenuOpts = {},
+): Promise<string> {
   const client = getClient(opts);
 
   const richMenuRequest: RichMenuRequest = {
@@ -126,7 +129,10 @@ export async function uploadRichMenuImage(
 /**
  * Set the default rich menu for all users
  */
-export async function setDefaultRichMenu(richMenuId: string, opts: RichMenuOpts = {}): Promise<void> {
+export async function setDefaultRichMenu(
+  richMenuId: string,
+  opts: RichMenuOpts = {},
+): Promise<void> {
   const client = getClient(opts);
 
   await client.setDefaultRichMenu(richMenuId);
@@ -166,7 +172,11 @@ export async function getDefaultRichMenuId(opts: RichMenuOpts = {}): Promise<str
 /**
  * Link a rich menu to a specific user
  */
-export async function linkRichMenuToUser(userId: string, richMenuId: string, opts: RichMenuOpts = {}): Promise<void> {
+export async function linkRichMenuToUser(
+  userId: string,
+  richMenuId: string,
+  opts: RichMenuOpts = {},
+): Promise<void> {
   const client = getClient(opts);
 
   await client.linkRichMenuIdToUser(userId, richMenuId);
@@ -201,7 +211,10 @@ export async function linkRichMenuToUsers(
 /**
  * Unlink a rich menu from a specific user
  */
-export async function unlinkRichMenuFromUser(userId: string, opts: RichMenuOpts = {}): Promise<void> {
+export async function unlinkRichMenuFromUser(
+  userId: string,
+  opts: RichMenuOpts = {},
+): Promise<void> {
   const client = getClient(opts);
 
   await client.unlinkRichMenuIdFromUser(userId);
@@ -214,7 +227,10 @@ export async function unlinkRichMenuFromUser(userId: string, opts: RichMenuOpts 
 /**
  * Unlink rich menus from multiple users (up to 500)
  */
-export async function unlinkRichMenuFromUsers(userIds: string[], opts: RichMenuOpts = {}): Promise<void> {
+export async function unlinkRichMenuFromUsers(
+  userIds: string[],
+  opts: RichMenuOpts = {},
+): Promise<void> {
   const client = getClient(opts);
 
   for (const batch of chunkUserIds(userIds)) {
@@ -231,7 +247,10 @@ export async function unlinkRichMenuFromUsers(userIds: string[], opts: RichMenuO
 /**
  * Get the rich menu linked to a specific user
  */
-export async function getRichMenuIdOfUser(userId: string, opts: RichMenuOpts = {}): Promise<string | null> {
+export async function getRichMenuIdOfUser(
+  userId: string,
+  opts: RichMenuOpts = {},
+): Promise<string | null> {
   const client = getClient(opts);
 
   try {
@@ -255,7 +274,10 @@ export async function getRichMenuList(opts: RichMenuOpts = {}): Promise<RichMenu
 /**
  * Get a specific rich menu by ID
  */
-export async function getRichMenu(richMenuId: string, opts: RichMenuOpts = {}): Promise<RichMenuResponse | null> {
+export async function getRichMenu(
+  richMenuId: string,
+  opts: RichMenuOpts = {},
+): Promise<RichMenuResponse | null> {
   const client = getClient(opts);
 
   try {
@@ -281,7 +303,11 @@ export async function deleteRichMenu(richMenuId: string, opts: RichMenuOpts = {}
 /**
  * Create a rich menu alias
  */
-export async function createRichMenuAlias(richMenuId: string, aliasId: string, opts: RichMenuOpts = {}): Promise<void> {
+export async function createRichMenuAlias(
+  richMenuId: string,
+  aliasId: string,
+  opts: RichMenuOpts = {},
+): Promise<void> {
   const client = getClient(opts);
 
   await client.createRichMenuAlias({

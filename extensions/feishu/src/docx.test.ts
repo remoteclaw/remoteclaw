@@ -323,7 +323,9 @@ describe("feishu_doc image fetch hardening", () => {
 
   it("skips image upload when markdown image URL is blocked", async () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    fetchRemoteMediaMock.mockRejectedValueOnce(new Error("Blocked: resolves to private/internal IP address"));
+    fetchRemoteMediaMock.mockRejectedValueOnce(
+      new Error("Blocked: resolves to private/internal IP address"),
+    );
 
     const feishuDocTool = resolveFeishuDocTool();
 

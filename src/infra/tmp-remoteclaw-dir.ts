@@ -21,10 +21,17 @@ type ResolvePreferredRemoteClawTmpDirOptions = {
 type MaybeNodeError = { code?: string };
 
 function isNodeErrorWithCode(err: unknown, code: string): err is MaybeNodeError {
-  return typeof err === "object" && err !== null && "code" in err && (err as MaybeNodeError).code === code;
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "code" in err &&
+    (err as MaybeNodeError).code === code
+  );
 }
 
-export function resolvePreferredRemoteClawTmpDir(options: ResolvePreferredRemoteClawTmpDirOptions = {}): string {
+export function resolvePreferredRemoteClawTmpDir(
+  options: ResolvePreferredRemoteClawTmpDirOptions = {},
+): string {
   const accessSync = options.accessSync ?? fs.accessSync;
   const lstatSync = options.lstatSync ?? fs.lstatSync;
   const mkdirSync = options.mkdirSync ?? fs.mkdirSync;

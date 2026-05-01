@@ -42,7 +42,9 @@ export class ToolAuthorizationError extends ToolInputError {
   }
 }
 
-export function createActionGate<T extends Record<string, boolean | undefined>>(actions: T | undefined): ActionGate<T> {
+export function createActionGate<T extends Record<string, boolean | undefined>>(
+  actions: T | undefined,
+): ActionGate<T> {
   return (key, defaultValue = true) => {
     const value = actions?.[key];
     if (value === undefined) {
@@ -80,7 +82,11 @@ export function readStringParam(
   key: string,
   options?: StringParamOptions,
 ): string | undefined;
-export function readStringParam(params: Record<string, unknown>, key: string, options: StringParamOptions = {}) {
+export function readStringParam(
+  params: Record<string, unknown>,
+  key: string,
+  options: StringParamOptions = {},
+) {
   const { required = false, trim = true, label = key, allowEmpty = false } = options;
   const raw = readParamRaw(params, key);
   if (typeof raw !== "string") {
@@ -159,7 +165,11 @@ export function readStringArrayParam(
   key: string,
   options?: StringParamOptions,
 ): string[] | undefined;
-export function readStringArrayParam(params: Record<string, unknown>, key: string, options: StringParamOptions = {}) {
+export function readStringArrayParam(
+  params: Record<string, unknown>,
+  key: string,
+  options: StringParamOptions = {},
+) {
   const { required = false, label = key } = options;
   const raw = readParamRaw(params, key);
   if (Array.isArray(raw)) {
@@ -230,7 +240,10 @@ export function jsonResult(payload: unknown): AgentToolResult {
   };
 }
 
-export function wrapOwnerOnlyToolExecution(tool: AnyAgentTool, senderIsOwner: boolean): AnyAgentTool {
+export function wrapOwnerOnlyToolExecution(
+  tool: AnyAgentTool,
+  senderIsOwner: boolean,
+): AnyAgentTool {
   if (tool.ownerOnly !== true || senderIsOwner || !tool.execute) {
     return tool;
   }
@@ -310,13 +323,18 @@ export function parseAvailableTags(raw: unknown): AvailableTag[] | undefined {
     return undefined;
   }
   const result = raw
-    .filter((t): t is Record<string, unknown> => typeof t === "object" && t !== null && typeof t.name === "string")
+    .filter(
+      (t): t is Record<string, unknown> =>
+        typeof t === "object" && t !== null && typeof t.name === "string",
+    )
     .map((t) => ({
       ...(t.id !== undefined && typeof t.id === "string" ? { id: t.id } : {}),
       name: t.name as string,
       ...(typeof t.moderated === "boolean" ? { moderated: t.moderated } : {}),
       ...(t.emoji_id === null || typeof t.emoji_id === "string" ? { emoji_id: t.emoji_id } : {}),
-      ...(t.emoji_name === null || typeof t.emoji_name === "string" ? { emoji_name: t.emoji_name } : {}),
+      ...(t.emoji_name === null || typeof t.emoji_name === "string"
+        ? { emoji_name: t.emoji_name }
+        : {}),
     }));
   // Return undefined instead of empty array to avoid accidentally clearing all tags
   return result.length ? result : undefined;

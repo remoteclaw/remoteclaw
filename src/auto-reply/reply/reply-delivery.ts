@@ -24,7 +24,9 @@ export function normalizeReplyPayloadDirectives(params: {
   const shouldParse =
     parseMode === "always" ||
     (parseMode === "auto" &&
-      (sourceText.includes("[[") || sourceText.includes("MEDIA:") || sourceText.includes(silentToken)));
+      (sourceText.includes("[[") ||
+        sourceText.includes("MEDIA:") ||
+        sourceText.includes(silentToken)));
 
   const parsed = shouldParse
     ? parseReplyDirectives(sourceText, {
@@ -78,7 +80,9 @@ export function createBlockReplyDeliveryHandler(params: {
         ...payload,
         text,
         mediaUrl: payload.mediaUrl ?? payload.mediaUrls?.[0],
-        replyToId: payload.replyToId ?? (payload.replyToCurrent === false ? undefined : params.currentMessageId),
+        replyToId:
+          payload.replyToId ??
+          (payload.replyToCurrent === false ? undefined : params.currentMessageId),
       },
       params.currentMessageId,
     );

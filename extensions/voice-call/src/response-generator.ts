@@ -36,7 +36,9 @@ type SessionEntry = {
  * Generate a voice response by routing through ChannelBridge.
  * Uses the same middleware pipeline as messaging, cron, and CLI dispatch sites.
  */
-export async function generateVoiceResponse(params: VoiceResponseParams): Promise<VoiceResponseResult> {
+export async function generateVoiceResponse(
+  params: VoiceResponseParams,
+): Promise<VoiceResponseResult> {
   const { voiceConfig, callId, from, transcript, userMessage, coreConfig } = params;
 
   if (!coreConfig) {
@@ -94,7 +96,8 @@ export async function generateVoiceResponse(params: VoiceResponseParams): Promis
   // Gateway credentials
   const gatewayPort = deps.resolveGatewayPort(cfg);
   const gatewayUrl = `ws://127.0.0.1:${gatewayPort}`;
-  const gatewayToken = deps.resolveGatewayCredentialsFromConfig({ cfg, env: process.env }).token ?? "";
+  const gatewayToken =
+    deps.resolveGatewayCredentialsFromConfig({ cfg, env: process.env }).token ?? "";
 
   // Create ChannelBridge
   const bridge = new deps.ChannelBridge({

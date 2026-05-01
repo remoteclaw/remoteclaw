@@ -6,7 +6,11 @@ export type ZaloProbeResult = BaseProbeResult<string> & {
   elapsedMs: number;
 };
 
-export async function probeZalo(token: string, timeoutMs = 5000, fetcher?: ZaloFetch): Promise<ZaloProbeResult> {
+export async function probeZalo(
+  token: string,
+  timeoutMs = 5000,
+  fetcher?: ZaloFetch,
+): Promise<ZaloProbeResult> {
   if (!token?.trim()) {
     return { ok: false, error: "No token provided", elapsedMs: 0 };
   }

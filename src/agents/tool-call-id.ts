@@ -55,7 +55,9 @@ export function sanitizeToolCallId(id: string, mode: ToolCallIdMode = "strict"):
   return alphanumericOnly.length > 0 ? alphanumericOnly : "sanitizedtoolid";
 }
 
-export function extractToolCallsFromAssistant(msg: Extract<AgentMessage, { role: "assistant" }>): ToolCallLike[] {
+export function extractToolCallsFromAssistant(
+  msg: Extract<AgentMessage, { role: "assistant" }>,
+): ToolCallLike[] {
   const content = msg.content;
   if (!Array.isArray(content)) {
     return [];
@@ -80,7 +82,9 @@ export function extractToolCallsFromAssistant(msg: Extract<AgentMessage, { role:
   return toolCalls;
 }
 
-export function extractToolResultId(msg: Extract<AgentMessage, { role: "toolResult" }>): string | null {
+export function extractToolResultId(
+  msg: Extract<AgentMessage, { role: "toolResult" }>,
+): string | null {
   const toolCallId = (msg as { toolCallId?: unknown }).toolCallId;
   if (typeof toolCallId === "string" && toolCallId) {
     return toolCallId;
@@ -171,7 +175,11 @@ function rewriteAssistantToolCallIds(params: {
     const rec = block as { type?: unknown; id?: unknown };
     const type = rec.type;
     const id = rec.id;
-    if ((type !== "functionCall" && type !== "toolUse" && type !== "toolCall") || typeof id !== "string" || !id) {
+    if (
+      (type !== "functionCall" && type !== "toolUse" && type !== "toolCall") ||
+      typeof id !== "string" ||
+      !id
+    ) {
       return block;
     }
     const nextId = params.resolve(id);
@@ -193,7 +201,9 @@ function rewriteToolResultIds(params: {
   resolve: (id: string) => string;
 }): Extract<AgentMessage, { role: "toolResult" }> {
   const toolCallId =
-    typeof params.message.toolCallId === "string" && params.message.toolCallId ? params.message.toolCallId : undefined;
+    typeof params.message.toolCallId === "string" && params.message.toolCallId
+      ? params.message.toolCallId
+      : undefined;
   const toolUseId = (params.message as { toolUseId?: unknown }).toolUseId;
   const toolUseIdStr = typeof toolUseId === "string" && toolUseId ? toolUseId : undefined;
 

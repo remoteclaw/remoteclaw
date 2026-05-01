@@ -47,15 +47,17 @@ export const NextcloudTalkAccountSchemaBase = z
   })
   .strict();
 
-export const NextcloudTalkAccountSchema = NextcloudTalkAccountSchemaBase.superRefine((value, ctx) => {
-  requireChannelOpenAllowFrom({
-    channel: "nextcloud-talk",
-    policy: value.dmPolicy,
-    allowFrom: value.allowFrom,
-    ctx,
-    requireOpenAllowFrom,
-  });
-});
+export const NextcloudTalkAccountSchema = NextcloudTalkAccountSchemaBase.superRefine(
+  (value, ctx) => {
+    requireChannelOpenAllowFrom({
+      channel: "nextcloud-talk",
+      policy: value.dmPolicy,
+      allowFrom: value.allowFrom,
+      ctx,
+      requireOpenAllowFrom,
+    });
+  },
+);
 
 export const NextcloudTalkConfigSchema = NextcloudTalkAccountSchemaBase.extend({
   accounts: z.record(z.string(), NextcloudTalkAccountSchema.optional()).optional(),

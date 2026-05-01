@@ -50,7 +50,11 @@ vi.mock("./client.js", () => ({
     }) {
       lastClientOptions = opts;
     }
-    async request(method: string, params: unknown, opts?: { expectFinal?: boolean; timeoutMs?: number | null }) {
+    async request(
+      method: string,
+      params: unknown,
+      opts?: { expectFinal?: boolean; timeoutMs?: number | null },
+    ) {
       lastRequestOptions = { method, params, opts };
       return { ok: true };
     }
@@ -69,7 +73,8 @@ vi.mock("./client.js", () => ({
   },
 }));
 
-const { buildGatewayConnectionDetails, callGateway, callGatewayCli, callGatewayScoped } = await import("./call.js");
+const { buildGatewayConnectionDetails, callGateway, callGatewayCli, callGatewayScoped } =
+  await import("./call.js");
 
 function resetGatewayCallMocks() {
   loadConfig.mockClear();
@@ -319,7 +324,13 @@ describe("callGateway url resolution", () => {
     {
       label: "keeps legacy admin scopes for explicit CLI callers",
       call: () => callGatewayCli({ method: "health" }),
-      expectedScopes: ["operator.admin", "operator.read", "operator.write", "operator.approvals", "operator.pairing"],
+      expectedScopes: [
+        "operator.admin",
+        "operator.read",
+        "operator.write",
+        "operator.approvals",
+        "operator.pairing",
+      ],
     },
   ])("scope selection: $label", async ({ call, expectedScopes }) => {
     setLocalLoopbackGatewayConfig();
@@ -371,7 +382,9 @@ describe("buildGatewayConnectionDetails", () => {
     expect(details.url).toBe("ws://127.0.0.1:18789");
     expect(details.urlSource).toBe("missing gateway.remote.url (fallback local)");
     expect(details.bindDetail).toBe("Bind: loopback");
-    expect(details.remoteFallbackNote).toContain("gateway.mode=remote but gateway.remote.url is missing");
+    expect(details.remoteFallbackNote).toContain(
+      "gateway.mode=remote but gateway.remote.url is missing",
+    );
     expect(details.message).toContain("Gateway target: ws://127.0.0.1:18789");
   });
 
@@ -621,7 +634,11 @@ describe("callGateway url override auth requirements", () => {
   let envSnapshot: ReturnType<typeof captureEnv>;
 
   beforeEach(() => {
-    envSnapshot = captureEnv(["REMOTECLAW_GATEWAY_TOKEN", "REMOTECLAW_GATEWAY_PASSWORD", "REMOTECLAW_GATEWAY_URL"]);
+    envSnapshot = captureEnv([
+      "REMOTECLAW_GATEWAY_TOKEN",
+      "REMOTECLAW_GATEWAY_PASSWORD",
+      "REMOTECLAW_GATEWAY_URL",
+    ]);
     resetGatewayCallMocks();
     delete process.env.REMOTECLAW_GATEWAY_TOKEN;
     delete process.env.REMOTECLAW_GATEWAY_PASSWORD;
@@ -643,9 +660,9 @@ describe("callGateway url override auth requirements", () => {
       },
     });
 
-    await expect(callGateway({ method: "health", url: "wss://override.example/ws" })).rejects.toThrow(
-      "explicit credentials",
-    );
+    await expect(
+      callGateway({ method: "health", url: "wss://override.example/ws" }),
+    ).rejects.toThrow("explicit credentials");
   });
 
   it("throws when env URL override is set without env credentials", async () => {

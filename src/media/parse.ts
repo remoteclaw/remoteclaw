@@ -59,7 +59,10 @@ function isLikelyLocalPath(candidate: string): boolean {
   );
 }
 
-function isValidMedia(candidate: string, opts?: { allowSpaces?: boolean; allowBareFilename?: boolean }) {
+function isValidMedia(
+  candidate: string,
+  opts?: { allowSpaces?: boolean; allowBareFilename?: boolean },
+) {
   if (!candidate) {
     return false;
   }
@@ -197,8 +200,15 @@ export function splitMediaFromOutput(raw: string): {
       }
 
       const trimmedPayload = payloadValue.trim();
-      const looksLikeLocalPath = looksLikeLocalFilePath(trimmedPayload) || trimmedPayload.startsWith("file://");
-      if (!unwrapped && validCount === 1 && invalidParts.length > 0 && /\s/.test(payloadValue) && looksLikeLocalPath) {
+      const looksLikeLocalPath =
+        looksLikeLocalFilePath(trimmedPayload) || trimmedPayload.startsWith("file://");
+      if (
+        !unwrapped &&
+        validCount === 1 &&
+        invalidParts.length > 0 &&
+        /\s/.test(payloadValue) &&
+        looksLikeLocalPath
+      ) {
         const fallback = normalizeMediaSource(cleanCandidate(payloadValue));
         if (isValidMedia(fallback, { allowSpaces: true })) {
           media.splice(mediaStartIndex, media.length - mediaStartIndex, fallback);

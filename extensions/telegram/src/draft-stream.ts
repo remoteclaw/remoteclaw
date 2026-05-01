@@ -8,7 +8,8 @@ const TELEGRAM_STREAM_MAX_CHARS = 4096;
 const DEFAULT_THROTTLE_MS = 1000;
 const TELEGRAM_DRAFT_ID_MAX = 2_147_483_647;
 const THREAD_NOT_FOUND_RE = /400:\s*Bad Request:\s*message thread not found/i;
-const DRAFT_METHOD_UNAVAILABLE_RE = /(unknown method|method .*not (found|available|supported)|unsupported)/i;
+const DRAFT_METHOD_UNAVAILABLE_RE =
+  /(unknown method|method .*not (found|available|supported)|unsupported)/i;
 const DRAFT_CHAT_UNSUPPORTED_RE = /(can't be used|can be used only)/i;
 
 type TelegramSendMessageDraft = (
@@ -43,7 +44,9 @@ let draftStreamState: { nextDraftId: number } | undefined;
 function getDraftStreamState(): { nextDraftId: number } {
   if (!draftStreamState) {
     const globalStore = globalThis as Record<PropertyKey, unknown>;
-    draftStreamState = (globalStore[TELEGRAM_DRAFT_STREAM_STATE_KEY] as { nextDraftId: number } | undefined) ?? {
+    draftStreamState = (globalStore[TELEGRAM_DRAFT_STREAM_STATE_KEY] as
+      | { nextDraftId: number }
+      | undefined) ?? {
       nextDraftId: 0,
     };
     globalStore[TELEGRAM_DRAFT_STREAM_STATE_KEY] = draftStreamState;
@@ -58,7 +61,8 @@ function allocateTelegramDraftId(): number {
 }
 
 function resolveSendMessageDraftApi(api: Bot["api"]): TelegramSendMessageDraft | undefined {
-  const sendMessageDraft = (api as Bot["api"] & { sendMessageDraft?: TelegramSendMessageDraft }).sendMessageDraft;
+  const sendMessageDraft = (api as Bot["api"] & { sendMessageDraft?: TelegramSendMessageDraft })
+    .sendMessageDraft;
   if (typeof sendMessageDraft !== "function") {
     return undefined;
   }
@@ -127,7 +131,10 @@ export function createTelegramDraftStream(params: {
   log?: (message: string) => void;
   warn?: (message: string) => void;
 }): TelegramDraftStream {
-  const maxChars = Math.min(params.maxChars ?? TELEGRAM_STREAM_MAX_CHARS, TELEGRAM_STREAM_MAX_CHARS);
+  const maxChars = Math.min(
+    params.maxChars ?? TELEGRAM_STREAM_MAX_CHARS,
+    TELEGRAM_STREAM_MAX_CHARS,
+  );
   const throttleMs = Math.max(250, params.throttleMs ?? DEFAULT_THROTTLE_MS);
   const minInitialChars = params.minInitialChars;
   const chatId = params.chatId;
@@ -148,10 +155,14 @@ export function createTelegramDraftStream(params: {
           allow_sending_without_reply: true,
         }
       : threadParams;
-  const resolvedDraftApi = prefersDraftTransport ? resolveSendMessageDraftApi(params.api) : undefined;
+  const resolvedDraftApi = prefersDraftTransport
+    ? resolveSendMessageDraftApi(params.api)
+    : undefined;
   const usesDraftTransport = Boolean(prefersDraftTransport && resolvedDraftApi);
   if (prefersDraftTransport && !usesDraftTransport) {
-    params.warn?.("telegram stream preview: sendMessageDraft unavailable; falling back to sendMessage/editMessageText");
+    params.warn?.(
+      "telegram stream preview: sendMessageDraft unavailable; falling back to sendMessage/editMessageText",
+    );
   }
 
   const streamState = { stopped: false, final: false };
@@ -224,7 +235,8 @@ export function createTelegramDraftStream(params: {
       ({ sent } = await sendRenderedMessageWithThreadFallback({
         renderedText,
         renderedParseMode,
-        fallbackWarnMessage: "telegram stream preview send failed with message_thread_id, retrying without thread",
+        fallbackWarnMessage:
+          "telegram stream preview send failed with message_thread_id, retrying without thread",
       }));
     } catch (err) {
       // Pre-connect failures (DNS, refused) and explicit Telegram rejections (4xx)
@@ -260,7 +272,9 @@ export function createTelegramDraftStream(params: {
     const draftId = streamDraftId ?? allocateTelegramDraftId();
     streamDraftId = draftId;
     const draftParams = {
-      ...(threadParams?.message_thread_id != null ? { message_thread_id: threadParams.message_thread_id } : {}),
+      ...(threadParams?.message_thread_id != null
+        ? { message_thread_id: threadParams.message_thread_id }
+        : {}),
       ...(renderedParseMode ? { parse_mode: renderedParseMode } : {}),
     };
     await resolvedDraftApi!(
@@ -291,7 +305,9 @@ export function createTelegramDraftStream(params: {
       // Telegram text messages/edits cap at 4096 chars.
       // Stop streaming once we exceed the cap to avoid repeated API failures.
       streamState.stopped = true;
-      params.warn?.(`telegram stream preview stopped (text length ${renderedText.length} > ${maxChars})`);
+      params.warn?.(
+        `telegram stream preview stopped (text length ${renderedText.length} > ${maxChars})`,
+      );
       return false;
     }
     if (renderedText === lastSentText && renderedParseMode === lastSentParseMode) {
@@ -346,7 +362,9 @@ export function createTelegramDraftStream(params: {
       return sent;
     } catch (err) {
       streamState.stopped = true;
-      params.warn?.(`telegram stream preview failed: ${err instanceof Error ? err.message : String(err)}`);
+      params.warn?.(
+        `telegram stream preview failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
       return false;
     }
   };
@@ -359,7 +377,8 @@ export function createTelegramDraftStream(params: {
     clearMessageId: () => {
       streamMessageId = undefined;
     },
-    isValidMessageId: (value): value is number => typeof value === "number" && Number.isFinite(value),
+    isValidMessageId: (value): value is number =>
+      typeof value === "number" && Number.isFinite(value),
     deleteMessage: async (messageId) => {
       await params.api.deleteMessage(chatId, messageId);
     },
@@ -432,7 +451,9 @@ export function createTelegramDraftStream(params: {
         return streamMessageId;
       }
     } catch (err) {
-      params.warn?.(`telegram stream preview materialize failed: ${err instanceof Error ? err.message : String(err)}`);
+      params.warn?.(
+        `telegram stream preview materialize failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
     return undefined;
   };

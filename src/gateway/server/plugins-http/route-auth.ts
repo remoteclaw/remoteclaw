@@ -17,7 +17,9 @@ export function shouldEnforceGatewayAuthForPluginPath(
   pathnameOrContext: string | PluginRoutePathContext,
 ): boolean {
   const pathContext =
-    typeof pathnameOrContext === "string" ? resolvePluginRoutePathContext(pathnameOrContext) : pathnameOrContext;
+    typeof pathnameOrContext === "string"
+      ? resolvePluginRoutePathContext(pathnameOrContext)
+      : pathnameOrContext;
   if (pathContext.malformedEncoding || pathContext.decodePassLimitReached) {
     return true;
   }

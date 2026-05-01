@@ -159,7 +159,8 @@ describe("trigger handling", () => {
       const errorCases = [
         {
           error: "sandbox is not defined.",
-          expected: "⚠️ Agent failed before reply: sandbox is not defined.\nLogs: remoteclaw logs --follow",
+          expected:
+            "⚠️ Agent failed before reply: sandbox is not defined.\nLogs: remoteclaw logs --follow",
         },
         {
           error: "Context window exceeded",

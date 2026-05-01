@@ -1,5 +1,11 @@
-import { parseDiscordTarget, type DiscordTargetKind } from "../../../extensions/discord/src/targets.js";
-import { parseIMessageTarget, normalizeIMessageHandle } from "../../../extensions/imessage/src/targets.js";
+import {
+  parseDiscordTarget,
+  type DiscordTargetKind,
+} from "../../../extensions/discord/src/targets.js";
+import {
+  parseIMessageTarget,
+  normalizeIMessageHandle,
+} from "../../../extensions/imessage/src/targets.js";
 import {
   looksLikeUuid,
   resolveSignalPeerId,
@@ -14,7 +20,10 @@ import { buildTelegramGroupPeerId } from "../../../extensions/telegram/src/bot/h
 import { resolveTelegramTargetChatType } from "../../../extensions/telegram/src/inline-buttons.js";
 import { parseTelegramThreadId } from "../../../extensions/telegram/src/outbound-params.js";
 import { parseTelegramTarget } from "../../../extensions/telegram/src/targets.js";
-import { isWhatsAppGroupJid, normalizeWhatsAppTarget } from "../../../extensions/whatsapp/src/normalize.js";
+import {
+  isWhatsAppGroupJid,
+  normalizeWhatsAppTarget,
+} from "../../../extensions/whatsapp/src/normalize.js";
 import type { MsgContext } from "../../auto-reply/templating.js";
 import type { ChatType } from "../../channels/chat-type.js";
 import { getChannelPlugin } from "../../channels/plugins/index.js";
@@ -77,7 +86,10 @@ function stripKindPrefix(raw: string): string {
   return raw.replace(/^(user|channel|group|conversation|room|dm):/i, "").trim();
 }
 
-function inferPeerKind(params: { channel: ChannelId; resolvedTarget?: ResolvedMessagingTarget }): ChatType {
+function inferPeerKind(params: {
+  channel: ChannelId;
+  resolvedTarget?: ResolvedMessagingTarget;
+}): ChatType {
   const resolvedKind = params.resolvedTarget?.kind;
   if (resolvedKind === "user") {
     return "direct";
@@ -178,7 +190,9 @@ async function resolveSlackChannelType(params: {
   }
 }
 
-async function resolveSlackSession(params: ResolveOutboundSessionRouteParams): Promise<OutboundSessionRoute | null> {
+async function resolveSlackSession(
+  params: ResolveOutboundSessionRouteParams,
+): Promise<OutboundSessionRoute | null> {
   const parsed = parseSlackTarget(params.target, { defaultKind: "channel" });
   if (!parsed) {
     return null;
@@ -231,7 +245,9 @@ async function resolveSlackSession(params: ResolveOutboundSessionRouteParams): P
   };
 }
 
-function resolveDiscordSession(params: ResolveOutboundSessionRouteParams): OutboundSessionRoute | null {
+function resolveDiscordSession(
+  params: ResolveOutboundSessionRouteParams,
+): OutboundSessionRoute | null {
   const parsed = parseDiscordTarget(params.target, {
     defaultKind: resolveDiscordOutboundTargetKindHint(params),
   });
@@ -290,7 +306,9 @@ function resolveDiscordOutboundTargetKindHint(
   return undefined;
 }
 
-function resolveTelegramSession(params: ResolveOutboundSessionRouteParams): OutboundSessionRoute | null {
+function resolveTelegramSession(
+  params: ResolveOutboundSessionRouteParams,
+): OutboundSessionRoute | null {
   const parsed = parseTelegramTarget(params.target);
   const chatId = parsed.chatId.trim();
   if (!chatId) {
@@ -304,9 +322,12 @@ function resolveTelegramSession(params: ResolveOutboundSessionRouteParams): Outb
   // If the target is a username and we lack a resolvedTarget, default to DM to avoid group keys.
   const isGroup =
     chatType === "group" ||
-    (chatType === "unknown" && params.resolvedTarget?.kind && params.resolvedTarget.kind !== "user");
+    (chatType === "unknown" &&
+      params.resolvedTarget?.kind &&
+      params.resolvedTarget.kind !== "user");
   // For groups: include thread ID in peerId. For DMs: use simple chatId (thread handled via suffix).
-  const peerId = isGroup && resolvedThreadId ? buildTelegramGroupPeerId(chatId, resolvedThreadId) : chatId;
+  const peerId =
+    isGroup && resolvedThreadId ? buildTelegramGroupPeerId(chatId, resolvedThreadId) : chatId;
   const peer: RoutePeer = {
     kind: isGroup ? "group" : "direct",
     id: peerId,
@@ -320,7 +341,9 @@ function resolveTelegramSession(params: ResolveOutboundSessionRouteParams): Outb
   });
   // Use thread suffix for DM topics to match inbound session key format
   const threadKeys =
-    resolvedThreadId && !isGroup ? { sessionKey: `${baseSessionKey}:thread:${resolvedThreadId}` } : null;
+    resolvedThreadId && !isGroup
+      ? { sessionKey: `${baseSessionKey}:thread:${resolvedThreadId}` }
+      : null;
   return {
     sessionKey: threadKeys?.sessionKey ?? baseSessionKey,
     baseSessionKey,
@@ -336,7 +359,9 @@ function resolveTelegramSession(params: ResolveOutboundSessionRouteParams): Outb
   };
 }
 
-function resolveWhatsAppSession(params: ResolveOutboundSessionRouteParams): OutboundSessionRoute | null {
+function resolveWhatsAppSession(
+  params: ResolveOutboundSessionRouteParams,
+): OutboundSessionRoute | null {
   const normalized = normalizeWhatsAppTarget(params.target);
   if (!normalized) {
     return null;
@@ -363,7 +388,9 @@ function resolveWhatsAppSession(params: ResolveOutboundSessionRouteParams): Outb
   };
 }
 
-function resolveSignalSession(params: ResolveOutboundSessionRouteParams): OutboundSessionRoute | null {
+function resolveSignalSession(
+  params: ResolveOutboundSessionRouteParams,
+): OutboundSessionRoute | null {
   const stripped = stripProviderPrefix(params.target, "signal");
   const lowered = stripped.toLowerCase();
   if (lowered.startsWith("group:")) {
@@ -399,7 +426,9 @@ function resolveSignalSession(params: ResolveOutboundSessionRouteParams): Outbou
     return null;
   }
 
-  const uuidCandidate = recipient.toLowerCase().startsWith("uuid:") ? recipient.slice("uuid:".length) : recipient;
+  const uuidCandidate = recipient.toLowerCase().startsWith("uuid:")
+    ? recipient.slice("uuid:".length)
+    : recipient;
   const sender = resolveSignalSender({
     sourceUuid: looksLikeUuid(uuidCandidate) ? uuidCandidate : null,
     sourceNumber: looksLikeUuid(uuidCandidate) ? null : recipient,
@@ -424,7 +453,9 @@ function resolveSignalSession(params: ResolveOutboundSessionRouteParams): Outbou
   };
 }
 
-function resolveIMessageSession(params: ResolveOutboundSessionRouteParams): OutboundSessionRoute | null {
+function resolveIMessageSession(
+  params: ResolveOutboundSessionRouteParams,
+): OutboundSessionRoute | null {
   const parsed = parseIMessageTarget(params.target);
   if (parsed.kind === "handle") {
     const handle = normalizeIMessageHandle(parsed.to);
@@ -467,7 +498,11 @@ function resolveIMessageSession(params: ResolveOutboundSessionRouteParams): Outb
     peer,
   });
   const toPrefix =
-    parsed.kind === "chat_id" ? "chat_id" : parsed.kind === "chat_guid" ? "chat_guid" : "chat_identifier";
+    parsed.kind === "chat_id"
+      ? "chat_id"
+      : parsed.kind === "chat_guid"
+        ? "chat_guid"
+        : "chat_identifier";
   return {
     sessionKey: baseSessionKey,
     baseSessionKey,
@@ -478,9 +513,12 @@ function resolveIMessageSession(params: ResolveOutboundSessionRouteParams): Outb
   };
 }
 
-function resolveMatrixSession(params: ResolveOutboundSessionRouteParams): OutboundSessionRoute | null {
+function resolveMatrixSession(
+  params: ResolveOutboundSessionRouteParams,
+): OutboundSessionRoute | null {
   const stripped = stripProviderPrefix(params.target, "matrix");
-  const isUser = params.resolvedTarget?.kind === "user" || stripped.startsWith("@") || /^user:/i.test(stripped);
+  const isUser =
+    params.resolvedTarget?.kind === "user" || stripped.startsWith("@") || /^user:/i.test(stripped);
   const rawId = stripKindPrefix(stripped);
   if (!rawId) {
     return null;
@@ -518,7 +556,9 @@ function buildSimpleBaseSession(params: {
   return { baseSessionKey, peer: params.peer };
 }
 
-function resolveMSTeamsSession(params: ResolveOutboundSessionRouteParams): OutboundSessionRoute | null {
+function resolveMSTeamsSession(
+  params: ResolveOutboundSessionRouteParams,
+): OutboundSessionRoute | null {
   let trimmed = params.target.trim();
   if (!trimmed) {
     return null;
@@ -558,7 +598,9 @@ function resolveMSTeamsSession(params: ResolveOutboundSessionRouteParams): Outbo
   };
 }
 
-function resolveMattermostSession(params: ResolveOutboundSessionRouteParams): OutboundSessionRoute | null {
+function resolveMattermostSession(
+  params: ResolveOutboundSessionRouteParams,
+): OutboundSessionRoute | null {
   let trimmed = params.target.trim();
   if (!trimmed) {
     return null;
@@ -568,7 +610,9 @@ function resolveMattermostSession(params: ResolveOutboundSessionRouteParams): Ou
   const resolvedKind = params.resolvedTarget?.kind;
   const isUser =
     resolvedKind === "user" ||
-    (resolvedKind !== "channel" && resolvedKind !== "group" && (lower.startsWith("user:") || trimmed.startsWith("@")));
+    (resolvedKind !== "channel" &&
+      resolvedKind !== "group" &&
+      (lower.startsWith("user:") || trimmed.startsWith("@")));
   if (trimmed.startsWith("@")) {
     trimmed = trimmed.slice(1).trim();
   }
@@ -597,7 +641,9 @@ function resolveMattermostSession(params: ResolveOutboundSessionRouteParams): Ou
   };
 }
 
-function resolveBlueBubblesSession(params: ResolveOutboundSessionRouteParams): OutboundSessionRoute | null {
+function resolveBlueBubblesSession(
+  params: ResolveOutboundSessionRouteParams,
+): OutboundSessionRoute | null {
   const stripped = stripProviderPrefix(params.target, "bluebubbles");
   const lower = stripped.toLowerCase();
   const isGroup =
@@ -605,9 +651,13 @@ function resolveBlueBubblesSession(params: ResolveOutboundSessionRouteParams): O
     lower.startsWith("chat_guid:") ||
     lower.startsWith("chat_identifier:") ||
     lower.startsWith("group:");
-  const rawPeerId = isGroup ? stripKindPrefix(stripped) : stripped.replace(/^(imessage|sms|auto):/i, "");
+  const rawPeerId = isGroup
+    ? stripKindPrefix(stripped)
+    : stripped.replace(/^(imessage|sms|auto):/i, "");
   // BlueBubbles inbound group ids omit chat_* prefixes; strip them to align sessions.
-  const peerId = isGroup ? rawPeerId.replace(/^(chat_id|chat_guid|chat_identifier):/i, "") : rawPeerId;
+  const peerId = isGroup
+    ? rawPeerId.replace(/^(chat_id|chat_guid|chat_identifier):/i, "")
+    : rawPeerId;
   if (!peerId) {
     return null;
   }
@@ -632,7 +682,9 @@ function resolveBlueBubblesSession(params: ResolveOutboundSessionRouteParams): O
   };
 }
 
-function resolveNextcloudTalkSession(params: ResolveOutboundSessionRouteParams): OutboundSessionRoute | null {
+function resolveNextcloudTalkSession(
+  params: ResolveOutboundSessionRouteParams,
+): OutboundSessionRoute | null {
   let trimmed = params.target.trim();
   if (!trimmed) {
     return null;
@@ -660,7 +712,9 @@ function resolveNextcloudTalkSession(params: ResolveOutboundSessionRouteParams):
   };
 }
 
-function resolveZaloSession(params: ResolveOutboundSessionRouteParams): OutboundSessionRoute | null {
+function resolveZaloSession(
+  params: ResolveOutboundSessionRouteParams,
+): OutboundSessionRoute | null {
   return resolveZaloLikeSession(params, "zalo", /^(zl):/i);
 }
 
@@ -693,12 +747,16 @@ function resolveZaloLikeSession(
   };
 }
 
-function resolveZalouserSession(params: ResolveOutboundSessionRouteParams): OutboundSessionRoute | null {
+function resolveZalouserSession(
+  params: ResolveOutboundSessionRouteParams,
+): OutboundSessionRoute | null {
   // Keep DM vs group aligned with inbound sessions for Zalo Personal.
   return resolveZaloLikeSession(params, "zalouser", /^(zlu):/i);
 }
 
-function resolveNostrSession(params: ResolveOutboundSessionRouteParams): OutboundSessionRoute | null {
+function resolveNostrSession(
+  params: ResolveOutboundSessionRouteParams,
+): OutboundSessionRoute | null {
   const trimmed = stripProviderPrefix(params.target, "nostr").trim();
   if (!trimmed) {
     return null;
@@ -729,14 +787,17 @@ function normalizeTlonShip(raw: string): string {
   return trimmed.startsWith("~") ? trimmed : `~${trimmed}`;
 }
 
-function resolveTlonSession(params: ResolveOutboundSessionRouteParams): OutboundSessionRoute | null {
+function resolveTlonSession(
+  params: ResolveOutboundSessionRouteParams,
+): OutboundSessionRoute | null {
   let trimmed = stripProviderPrefix(params.target, "tlon");
   trimmed = trimmed.trim();
   if (!trimmed) {
     return null;
   }
   const lower = trimmed.toLowerCase();
-  let isGroup = lower.startsWith("group:") || lower.startsWith("room:") || lower.startsWith("chat/");
+  let isGroup =
+    lower.startsWith("group:") || lower.startsWith("room:") || lower.startsWith("chat/");
   let peerId = trimmed;
   if (lower.startsWith("group:") || lower.startsWith("room:")) {
     peerId = trimmed.replace(/^(group|room):/i, "").trim();
@@ -788,7 +849,9 @@ function resolveTlonSession(params: ResolveOutboundSessionRouteParams): Outbound
  * - on_xxx: user union_id (DM)
  * - cli_xxx: app_id (not a valid send target)
  */
-function resolveFeishuSession(params: ResolveOutboundSessionRouteParams): OutboundSessionRoute | null {
+function resolveFeishuSession(
+  params: ResolveOutboundSessionRouteParams,
+): OutboundSessionRoute | null {
   let trimmed = stripProviderPrefix(params.target, "feishu");
   trimmed = stripProviderPrefix(trimmed, "lark").trim();
   if (!trimmed) {
@@ -841,7 +904,9 @@ function resolveFeishuSession(params: ResolveOutboundSessionRouteParams): Outbou
   };
 }
 
-function resolveFallbackSession(params: ResolveOutboundSessionRouteParams): OutboundSessionRoute | null {
+function resolveFallbackSession(
+  params: ResolveOutboundSessionRouteParams,
+): OutboundSessionRoute | null {
   const trimmed = stripProviderPrefix(params.target, params.channel).trim();
   if (!trimmed) {
     return null;
@@ -862,7 +927,10 @@ function resolveFallbackSession(params: ResolveOutboundSessionRouteParams): Outb
     peer,
   });
   const chatType = peerKind === "direct" ? "direct" : peerKind === "channel" ? "channel" : "group";
-  const from = peerKind === "direct" ? `${params.channel}:${peerId}` : `${params.channel}:${peerKind}:${peerId}`;
+  const from =
+    peerKind === "direct"
+      ? `${params.channel}:${peerId}`
+      : `${params.channel}:${peerKind}:${peerId}`;
   const toPrefix = peerKind === "direct" ? "user" : "channel";
   return {
     sessionKey: baseSessionKey,

@@ -65,7 +65,9 @@ function isRecoverableLsofError(err: unknown): boolean {
     return true;
   }
   const message = err instanceof Error ? err.message : String(err);
-  return /lsof.*(permission denied|not permitted|operation not permitted|eacces|eperm)/i.test(message);
+  return /lsof.*(permission denied|not permitted|operation not permitted|eacces|eperm)/i.test(
+    message,
+  );
 }
 
 function parseFuserPidList(output: string): number[] {
@@ -110,7 +112,11 @@ function killPortWithFuser(port: number, signal: "SIGTERM" | "SIGKILL"): PortPro
       return parsed.map((pid) => ({ pid }));
     }
     if (code === "ENOENT") {
-      throw withErrnoCode("fuser not found; required for --force when lsof is unavailable", "ENOENT", err);
+      throw withErrnoCode(
+        "fuser not found; required for --force when lsof is unavailable",
+        "ENOENT",
+        err,
+      );
     }
     if (code === "EACCES" || code === "EPERM") {
       throw withErrnoCode("fuser permission denied while forcing gateway port", code, err);
@@ -197,8 +203,15 @@ export function listPortListeners(port: number): PortProcess[] {
     }
     if (status === 1) {
       const stderr = readExecOutput(execErr.stderr).trim();
-      if (stderr && /permission denied|not permitted|operation not permitted|can't stat/i.test(stderr)) {
-        throw withErrnoCode(`lsof permission denied while inspecting gateway port: ${stderr}`, "EACCES", err);
+      if (
+        stderr &&
+        /permission denied|not permitted|operation not permitted|can't stat/i.test(stderr)
+      ) {
+        throw withErrnoCode(
+          `lsof permission denied while inspecting gateway port: ${stderr}`,
+          "EACCES",
+          err,
+        );
       }
       return [];
     } // no listeners
@@ -212,9 +225,12 @@ export function forceFreePort(port: number): PortProcess[] {
     try {
       process.kill(proc.pid, "SIGTERM");
     } catch (err) {
-      throw new Error(`failed to kill pid ${proc.pid}${proc.command ? ` (${proc.command})` : ""}: ${String(err)}`, {
-        cause: err,
-      });
+      throw new Error(
+        `failed to kill pid ${proc.pid}${proc.command ? ` (${proc.command})` : ""}: ${String(err)}`,
+        {
+          cause: err,
+        },
+      );
     }
   }
   return listeners;
@@ -225,9 +241,12 @@ function killPids(listeners: PortProcess[], signal: NodeJS.Signals) {
     try {
       process.kill(proc.pid, signal);
     } catch (err) {
-      throw new Error(`failed to kill pid ${proc.pid}${proc.command ? ` (${proc.command})` : ""}: ${String(err)}`, {
-        cause: err,
-      });
+      throw new Error(
+        `failed to kill pid ${proc.pid}${proc.command ? ` (${proc.command})` : ""}: ${String(err)}`,
+        {
+          cause: err,
+        },
+      );
     }
   }
 }
@@ -306,7 +325,9 @@ export async function forceFreePortAndWait(
     throw new Error(`port ${port} still has listeners after --force (fuser fallback)`);
   }
   const still = listPortListeners(port);
-  throw new Error(`port ${port} still has listeners after --force: ${still.map((p) => p.pid).join(", ")}`);
+  throw new Error(
+    `port ${port} still has listeners after --force: ${still.map((p) => p.pid).join(", ")}`,
+  );
 }
 
 /**

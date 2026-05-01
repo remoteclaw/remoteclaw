@@ -83,9 +83,14 @@ type HookTransformResult = Partial<{
   timeoutSeconds: number;
 }> | null;
 
-type HookTransformFn = (ctx: HookMappingContext) => HookTransformResult | Promise<HookTransformResult>;
+type HookTransformFn = (
+  ctx: HookMappingContext,
+) => HookTransformResult | Promise<HookTransformResult>;
 
-export function resolveHookMappings(hooks?: HooksConfig, opts?: { configDir?: string }): HookMappingResolved[] {
+export function resolveHookMappings(
+  hooks?: HooksConfig,
+  opts?: { configDir?: string },
+): HookMappingResolved[] {
   const presets = hooks?.presets ?? [];
   const mappings: HookMappingConfig[] = [];
   if (hooks?.mappings) {
@@ -104,7 +109,11 @@ export function resolveHookMappings(hooks?: HooksConfig, opts?: { configDir?: st
 
   const configDir = path.resolve(opts?.configDir ?? path.dirname(CONFIG_PATH));
   const transformsRootDir = path.join(configDir, "hooks", "transforms");
-  const transformsDir = resolveOptionalContainedPath(transformsRootDir, hooks?.transformsDir, "Hook transformsDir");
+  const transformsDir = resolveOptionalContainedPath(
+    transformsRootDir,
+    hooks?.transformsDir,
+    "Hook transformsDir",
+  );
 
   return mappings.map((mapping, index) => normalizeHookMapping(mapping, index, transformsDir));
 }
@@ -147,7 +156,11 @@ export async function applyHookMappings(
   return null;
 }
 
-function normalizeHookMapping(mapping: HookMappingConfig, index: number, transformsDir: string): HookMappingResolved {
+function normalizeHookMapping(
+  mapping: HookMappingConfig,
+  index: number,
+  transformsDir: string,
+): HookMappingResolved {
   const id = mapping.id?.trim() || `mapping-${index + 1}`;
   const matchPath = normalizeMatchPath(mapping.match?.path);
   const matchSource = mapping.match?.source?.trim();
@@ -196,7 +209,10 @@ function mappingMatches(mapping: HookMappingResolved, ctx: HookMappingContext) {
   return true;
 }
 
-function buildActionFromMapping(mapping: HookMappingResolved, ctx: HookMappingContext): HookMappingResult {
+function buildActionFromMapping(
+  mapping: HookMappingResolved,
+  ctx: HookMappingContext,
+): HookMappingResult {
   if (mapping.action === "wake") {
     const text = renderTemplate(mapping.textTemplate ?? "", ctx);
     return {
@@ -244,8 +260,10 @@ function mergeAction(
     return validateAction({ kind: "wake", text, mode });
   }
   const baseAgent = base.kind === "agent" ? base : undefined;
-  const message = typeof override.message === "string" ? override.message : (baseAgent?.message ?? "");
-  const wakeMode = override.wakeMode === "next-heartbeat" ? "next-heartbeat" : (baseAgent?.wakeMode ?? "now");
+  const message =
+    typeof override.message === "string" ? override.message : (baseAgent?.message ?? "");
+  const wakeMode =
+    override.wakeMode === "next-heartbeat" ? "next-heartbeat" : (baseAgent?.wakeMode ?? "now");
   return validateAction({
     kind: "agent",
     message,
@@ -353,13 +371,21 @@ function resolveContainedPath(baseDir: string, target: string, label: string): s
   const baseRealpath = safeRealpathSync(base);
   const existingAncestor = resolveExistingAncestor(resolved);
   const existingAncestorRealpath = existingAncestor ? safeRealpathSync(existingAncestor) : null;
-  if (baseRealpath && existingAncestorRealpath && escapesBase(baseRealpath, existingAncestorRealpath)) {
+  if (
+    baseRealpath &&
+    existingAncestorRealpath &&
+    escapesBase(baseRealpath, existingAncestorRealpath)
+  ) {
     throw new Error(`${label} module path must be within ${base}: ${target}`);
   }
   return resolved;
 }
 
-function resolveOptionalContainedPath(baseDir: string, target: string | undefined, label: string): string {
+function resolveOptionalContainedPath(
+  baseDir: string,
+  target: string | undefined,
+  label: string,
+): string {
   const trimmed = target?.trim();
   if (!trimmed) {
     return path.resolve(baseDir);
@@ -416,7 +442,10 @@ function resolveTemplateExpr(expr: string, ctx: HookMappingContext) {
     return getByPath(ctx.headers, expr.slice("headers.".length));
   }
   if (expr.startsWith("query.")) {
-    return getByPath(Object.fromEntries(ctx.url.searchParams.entries()), expr.slice("query.".length));
+    return getByPath(
+      Object.fromEntries(ctx.url.searchParams.entries()),
+      expr.slice("query.".length),
+    );
   }
   if (expr.startsWith("payload.")) {
     return getByPath(ctx.payload, expr.slice("payload.".length));

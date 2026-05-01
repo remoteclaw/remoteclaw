@@ -16,12 +16,17 @@ export type CliDeps = {
   sendMessageIMessage: typeof sendMessageIMessage;
 };
 
-let whatsappSenderRuntimePromise: Promise<typeof import("./deps-send-whatsapp.runtime.js")> | null = null;
-let telegramSenderRuntimePromise: Promise<typeof import("./deps-send-telegram.runtime.js")> | null = null;
-let discordSenderRuntimePromise: Promise<typeof import("./deps-send-discord.runtime.js")> | null = null;
+let whatsappSenderRuntimePromise: Promise<typeof import("./deps-send-whatsapp.runtime.js")> | null =
+  null;
+let telegramSenderRuntimePromise: Promise<typeof import("./deps-send-telegram.runtime.js")> | null =
+  null;
+let discordSenderRuntimePromise: Promise<typeof import("./deps-send-discord.runtime.js")> | null =
+  null;
 let slackSenderRuntimePromise: Promise<typeof import("./deps-send-slack.runtime.js")> | null = null;
-let signalSenderRuntimePromise: Promise<typeof import("./deps-send-signal.runtime.js")> | null = null;
-let imessageSenderRuntimePromise: Promise<typeof import("./deps-send-imessage.runtime.js")> | null = null;
+let signalSenderRuntimePromise: Promise<typeof import("./deps-send-signal.runtime.js")> | null =
+  null;
+let imessageSenderRuntimePromise: Promise<typeof import("./deps-send-imessage.runtime.js")> | null =
+  null;
 
 function loadWhatsAppSenderRuntime() {
   whatsappSenderRuntimePromise ??= import("./deps-send-whatsapp.runtime.js");

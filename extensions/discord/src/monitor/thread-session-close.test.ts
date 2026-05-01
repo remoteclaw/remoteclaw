@@ -14,8 +14,8 @@ vi.mock("../../../../src/config/sessions.js", () => ({
 let closeDiscordThreadSessions: typeof import("./thread-session-close.js").closeDiscordThreadSessions;
 
 function setupStore(store: Record<string, { updatedAt: number }>) {
-  hoisted.updateSessionStore.mockImplementation(async (_storePath: string, mutator: (s: typeof store) => unknown) =>
-    mutator(store),
+  hoisted.updateSessionStore.mockImplementation(
+    async (_storePath: string, mutator: (s: typeof store) => unknown) => mutator(store),
   );
 }
 

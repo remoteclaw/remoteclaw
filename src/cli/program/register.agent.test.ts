@@ -169,7 +169,17 @@ describe("registerAgentCommands", () => {
   });
 
   it("forwards agents bind options", async () => {
-    await runCli(["agents", "bind", "--agent", "ops", "--bind", "matrix-js:ops", "--bind", "telegram", "--json"]);
+    await runCli([
+      "agents",
+      "bind",
+      "--agent",
+      "ops",
+      "--bind",
+      "matrix-js:ops",
+      "--bind",
+      "telegram",
+      "--json",
+    ]);
     expect(agentsBindCommandMock).toHaveBeenCalledWith(
       {
         agent: "ops",

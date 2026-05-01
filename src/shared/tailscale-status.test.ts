@@ -42,20 +42,26 @@ describe("shared/tailscale-status", () => {
   });
 
   it("continues to later command candidates when earlier output has no usable host", async () => {
-    const run = vi.fn().mockResolvedValueOnce({ code: 0, stdout: '{"Self":{}}' }).mockResolvedValueOnce({
-      code: 0,
-      stdout: '{"Self":{"DNSName":"backup.tail.ts.net."}}',
-    });
+    const run = vi
+      .fn()
+      .mockResolvedValueOnce({ code: 0, stdout: '{"Self":{}}' })
+      .mockResolvedValueOnce({
+        code: 0,
+        stdout: '{"Self":{"DNSName":"backup.tail.ts.net."}}',
+      });
 
     await expect(resolveTailnetHostWithRunner(run)).resolves.toBe("backup.tail.ts.net");
     expect(run).toHaveBeenCalledTimes(2);
   });
 
   it("continues when the first candidate returns success but malformed Self data", async () => {
-    const run = vi.fn().mockResolvedValueOnce({ code: 0, stdout: '{"Self":"bad"}' }).mockResolvedValueOnce({
-      code: 0,
-      stdout: 'prefix {"Self":{"TailscaleIPs":["100.64.0.11"]}} suffix',
-    });
+    const run = vi
+      .fn()
+      .mockResolvedValueOnce({ code: 0, stdout: '{"Self":"bad"}' })
+      .mockResolvedValueOnce({
+        code: 0,
+        stdout: 'prefix {"Self":{"TailscaleIPs":["100.64.0.11"]}} suffix',
+      });
 
     await expect(resolveTailnetHostWithRunner(run)).resolves.toBe("100.64.0.11");
     expect(run).toHaveBeenCalledTimes(2);

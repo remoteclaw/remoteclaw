@@ -20,7 +20,9 @@ function listRegisteredChannelPluginEntries(): RegisteredChannelPluginEntry[] {
   return getActivePluginRegistry()?.channels ?? [];
 }
 
-function findRegisteredChannelPluginEntry(normalizedKey: string): RegisteredChannelPluginEntry | undefined {
+function findRegisteredChannelPluginEntry(
+  normalizedKey: string,
+): RegisteredChannelPluginEntry | undefined {
   return listRegisteredChannelPluginEntries().find((entry) => {
     const id = String(entry.plugin.id ?? "")
       .trim()
@@ -28,7 +30,9 @@ function findRegisteredChannelPluginEntry(normalizedKey: string): RegisteredChan
     if (id && id === normalizedKey) {
       return true;
     }
-    return (entry.plugin.meta?.aliases ?? []).some((alias) => alias.trim().toLowerCase() === normalizedKey);
+    return (entry.plugin.meta?.aliases ?? []).some(
+      (alias) => alias.trim().toLowerCase() === normalizedKey,
+    );
   });
 }
 
@@ -200,7 +204,9 @@ export function formatChannelSelectionLine(
 ): string {
   const docsPrefix = meta.selectionDocsPrefix ?? "Docs:";
   const docsLabel = meta.docsLabel ?? meta.id;
-  const docs = meta.selectionDocsOmitLabel ? docsLink(meta.docsPath) : docsLink(meta.docsPath, docsLabel);
+  const docs = meta.selectionDocsOmitLabel
+    ? docsLink(meta.docsPath)
+    : docsLink(meta.docsPath, docsLabel);
   const extras = (meta.selectionExtras ?? []).filter(Boolean).join(" ");
   return `${meta.label} — ${meta.blurb} ${docsPrefix ? `${docsPrefix} ` : ""}${docs}${extras ? ` ${extras}` : ""}`;
 }

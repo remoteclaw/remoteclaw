@@ -13,7 +13,8 @@ async function runRetryCase(params: {
   vi.useFakeTimers();
   const runner = createTelegramRetryRunner(params.runnerOptions);
   const fn = vi.fn();
-  const allRejects = params.fnSteps.length > 0 && params.fnSteps.every((step) => step.type === "reject");
+  const allRejects =
+    params.fnSteps.length > 0 && params.fnSteps.every((step) => step.type === "reject");
   if (allRejects) {
     fn.mockRejectedValue(params.fnSteps[0]?.value);
   }

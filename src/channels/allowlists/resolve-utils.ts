@@ -26,7 +26,10 @@ function dedupeAllowlistEntries(entries: string[]): string[] {
   return deduped;
 }
 
-export function mergeAllowlist(params: { existing?: Array<string | number>; additions: string[] }): string[] {
+export function mergeAllowlist(params: {
+  existing?: Array<string | number>;
+  additions: string[];
+}): string[] {
   return dedupeAllowlistEntries([...mapAllowFromEntries(params.existing), ...params.additions]);
 }
 
@@ -67,10 +70,9 @@ export function resolveAllowlistIdAdditions<T extends AllowlistUserResolutionLik
   return additions;
 }
 
-export function canonicalizeAllowlistWithResolvedIds<T extends AllowlistUserResolutionLike>(params: {
-  existing?: Array<string | number>;
-  resolvedMap: Map<string, T>;
-}): string[] {
+export function canonicalizeAllowlistWithResolvedIds<
+  T extends AllowlistUserResolutionLike,
+>(params: { existing?: Array<string | number>; resolvedMap: Map<string, T> }): string[] {
   const canonicalized: string[] = [];
   for (const entry of params.existing ?? []) {
     const trimmed = String(entry).trim();
@@ -90,7 +92,11 @@ export function canonicalizeAllowlistWithResolvedIds<T extends AllowlistUserReso
 export function patchAllowlistUsersInConfigEntries<
   T extends AllowlistUserResolutionLike,
   TEntries extends Record<string, unknown>,
->(params: { entries: TEntries; resolvedMap: Map<string, T>; strategy?: "merge" | "canonicalize" }): TEntries {
+>(params: {
+  entries: TEntries;
+  resolvedMap: Map<string, T>;
+  strategy?: "merge" | "canonicalize";
+}): TEntries {
   const nextEntries: Record<string, unknown> = { ...params.entries };
   for (const [entryKey, entryConfig] of Object.entries(params.entries)) {
     if (!entryConfig || typeof entryConfig !== "object") {
@@ -137,7 +143,12 @@ export function addAllowlistUserEntriesFromConfigEntry(target: Set<string>, entr
   }
 }
 
-export function summarizeMapping(label: string, mapping: string[], unresolved: string[], runtime: RuntimeEnv): void {
+export function summarizeMapping(
+  label: string,
+  mapping: string[],
+  unresolved: string[],
+  runtime: RuntimeEnv,
+): void {
   const lines: string[] = [];
   if (mapping.length > 0) {
     lines.push(`${label} resolved: ${summarizeStringEntries({ entries: mapping, limit: 6 })}`);

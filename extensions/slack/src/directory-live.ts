@@ -58,7 +58,9 @@ function buildChannelRank(channel: SlackChannel): number {
   return channel.is_archived ? 0 : 1;
 }
 
-export async function listSlackDirectoryPeersLive(params: DirectoryConfigParams): Promise<ChannelDirectoryEntry[]> {
+export async function listSlackDirectoryPeersLive(
+  params: DirectoryConfigParams,
+): Promise<ChannelDirectoryEntry[]> {
   const token = resolveReadToken(params);
   if (!token) {
     return [];
@@ -84,7 +86,9 @@ export async function listSlackDirectoryPeersLive(params: DirectoryConfigParams)
     const name = member.profile?.display_name || member.profile?.real_name || member.real_name;
     const handle = member.name;
     const email = member.profile?.email;
-    const candidates = [name, handle, email].map((item) => item?.trim().toLowerCase()).filter(Boolean);
+    const candidates = [name, handle, email]
+      .map((item) => item?.trim().toLowerCase())
+      .filter(Boolean);
     if (!query) {
       return true;
     }
@@ -99,7 +103,10 @@ export async function listSlackDirectoryPeersLive(params: DirectoryConfigParams)
       }
       const handle = member.name?.trim();
       const display =
-        member.profile?.display_name?.trim() || member.profile?.real_name?.trim() || member.real_name?.trim() || handle;
+        member.profile?.display_name?.trim() ||
+        member.profile?.real_name?.trim() ||
+        member.real_name?.trim() ||
+        handle;
       return {
         kind: "user",
         id: `user:${id}`,
@@ -117,7 +124,9 @@ export async function listSlackDirectoryPeersLive(params: DirectoryConfigParams)
   return rows;
 }
 
-export async function listSlackDirectoryGroupsLive(params: DirectoryConfigParams): Promise<ChannelDirectoryEntry[]> {
+export async function listSlackDirectoryGroupsLive(
+  params: DirectoryConfigParams,
+): Promise<ChannelDirectoryEntry[]> {
   const token = resolveReadToken(params);
   if (!token) {
     return [];

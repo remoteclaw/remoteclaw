@@ -104,7 +104,15 @@ export function registerFeishuChatTools(api: RemoteClawPluginApi) {
           const client = getClient();
           switch (p.action) {
             case "members":
-              return json(await getChatMembers(client, p.chat_id, p.page_size, p.page_token, p.member_id_type));
+              return json(
+                await getChatMembers(
+                  client,
+                  p.chat_id,
+                  p.page_size,
+                  p.page_token,
+                  p.member_id_type,
+                ),
+              );
             case "info":
               return json(await getChatInfo(client, p.chat_id));
             default:

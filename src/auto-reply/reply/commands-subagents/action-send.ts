@@ -49,10 +49,14 @@ export async function handleSubagentsSendAction(
     return stopWithText(`${formatRunLabel(targetResolution.entry)} is already finished.`);
   }
 
-  const { entry: targetSessionEntry } = loadSubagentSessionEntry(params, targetResolution.entry.childSessionKey, {
-    loadSessionStore,
-    resolveStorePath,
-  });
+  const { entry: targetSessionEntry } = loadSubagentSessionEntry(
+    params,
+    targetResolution.entry.childSessionKey,
+    {
+      loadSessionStore,
+      resolveStorePath,
+    },
+  );
   const targetSessionId =
     typeof targetSessionEntry?.sessionId === "string" && targetSessionEntry.sessionId.trim()
       ? targetSessionEntry.sessionId.trim()
@@ -109,7 +113,8 @@ export async function handleSubagentsSendAction(
     if (steerRequested) {
       clearSubagentRunSteerRestart(targetResolution.entry.runId);
     }
-    const messageText = err instanceof Error ? err.message : typeof err === "string" ? err : "error";
+    const messageText =
+      err instanceof Error ? err.message : typeof err === "string" ? err : "error";
     return stopWithText(`send failed: ${messageText}`);
   }
 
@@ -120,7 +125,9 @@ export async function handleSubagentsSendAction(
       fallback: targetResolution.entry,
       runTimeoutSeconds: targetResolution.entry.runTimeoutSeconds ?? 0,
     });
-    return stopWithText(`steered ${formatRunLabel(targetResolution.entry)} (run ${runId.slice(0, 8)}).`);
+    return stopWithText(
+      `steered ${formatRunLabel(targetResolution.entry)} (run ${runId.slice(0, 8)}).`,
+    );
   }
 
   const waitMs = 30_000;
@@ -144,5 +151,7 @@ export async function handleSubagentsSendAction(
   const filtered = stripToolMessages(Array.isArray(history?.messages) ? history.messages : []);
   const last = filtered.length > 0 ? filtered[filtered.length - 1] : undefined;
   const replyText = last ? extractAssistantText(last) : undefined;
-  return stopWithText(replyText ?? `✅ Sent to ${formatRunLabel(targetResolution.entry)} (run ${runId.slice(0, 8)}).`);
+  return stopWithText(
+    replyText ?? `✅ Sent to ${formatRunLabel(targetResolution.entry)} (run ${runId.slice(0, 8)}).`,
+  );
 }

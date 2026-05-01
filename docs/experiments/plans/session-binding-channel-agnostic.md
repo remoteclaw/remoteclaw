@@ -83,7 +83,11 @@ export interface SessionBindingService {
   listBySession(targetSessionKey: string): SessionBindingRecord[];
   resolveByConversation(ref: ConversationRef): SessionBindingRecord | null;
   touch(bindingId: string, at?: number): void;
-  unbind(input: { bindingId?: string; targetSessionKey?: string; reason: string }): Promise<SessionBindingRecord[]>;
+  unbind(input: {
+    bindingId?: string;
+    targetSessionKey?: string;
+    reason: string;
+  }): Promise<SessionBindingRecord[]>;
 }
 ```
 

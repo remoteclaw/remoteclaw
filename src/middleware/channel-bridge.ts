@@ -185,7 +185,9 @@ export class ChannelBridge {
             runtimeName: this.#provider,
           },
         );
-        const spawnOverrides = spawnResult as { workspaceDir?: string; env?: Record<string, string> } | undefined;
+        const spawnOverrides = spawnResult as
+          | { workspaceDir?: string; env?: Record<string, string> }
+          | undefined;
         if (spawnOverrides?.workspaceDir) {
           logDebug(
             // oxlint-disable-next-line
@@ -194,7 +196,9 @@ export class ChannelBridge {
           workspaceDir = spawnOverrides.workspaceDir;
         }
         if (spawnOverrides?.env) {
-          logDebug(`[channel-bridge] hook injected env keys: ${Object.keys(spawnOverrides.env).join(", ")}`);
+          logDebug(
+            `[channel-bridge] hook injected env keys: ${Object.keys(spawnOverrides.env).join(", ")}`,
+          );
           hookEnv = spawnOverrides.env;
         }
       }
@@ -204,7 +208,9 @@ export class ChannelBridge {
         ? await resolveMediaAttachments(message.mediaUrls, invocationDir)
         : undefined;
       if (resolvedMedia?.length) {
-        logDebug(`[channel-bridge] resolved ${resolvedMedia.length}/${message.mediaUrls!.length} media attachments`);
+        logDebug(
+          `[channel-bridge] resolved ${resolvedMedia.length}/${message.mediaUrls!.length} media attachments`,
+        );
       }
 
       // 5b. Partition media by runtime capability
@@ -250,7 +256,9 @@ export class ChannelBridge {
         // 7. Error classification
         const errMsg = String(err);
         const category = classifyError(errMsg);
-        logDebug(`[channel-bridge] runtime threw: category=${category} error=${errMsg.slice(0, 500)}`);
+        logDebug(
+          `[channel-bridge] runtime threw: category=${category} error=${errMsg.slice(0, 500)}`,
+        );
         lastError = errMsg;
         payloads = [];
         runResult = {

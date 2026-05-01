@@ -43,7 +43,9 @@ export function renderInstances(props: InstancesProps) {
         </div>
       </div>
       ${
-        props.lastError ? html`<div class="callout danger" style="margin-top: 12px;">${props.lastError}</div>` : nothing
+        props.lastError
+          ? html`<div class="callout danger" style="margin-top: 12px;">${props.lastError}</div>`
+          : nothing
       }
       ${
         props.statusMessage
@@ -71,7 +73,11 @@ function renderEntry(entry: PresenceEntry, masked: boolean) {
   const roles = Array.isArray(entry.roles) ? entry.roles.filter(Boolean) : [];
   const scopes = Array.isArray(entry.scopes) ? entry.scopes.filter(Boolean) : [];
   const scopesLabel =
-    scopes.length > 0 ? (scopes.length > 3 ? `${scopes.length} scopes` : `scopes: ${scopes.join(", ")}`) : null;
+    scopes.length > 0
+      ? scopes.length > 3
+        ? `${scopes.length} scopes`
+        : `scopes: ${scopes.join(", ")}`
+      : null;
   return html`
     <div class="list-item">
       <div class="list-main">

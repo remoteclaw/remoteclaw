@@ -51,7 +51,8 @@ const slackBoltModule = SlackBolt as typeof import("@slack/bolt") & {
 };
 // Bun allows named imports from CJS; Node ESM doesn't. Use default+fallback for compatibility.
 // Fix: Check if module has App property directly (Node 25.x ESM/CJS compat issue)
-const slackBolt = (slackBoltModule.App ? slackBoltModule : slackBoltModule.default) ?? slackBoltModule;
+const slackBolt =
+  (slackBoltModule.App ? slackBoltModule : slackBoltModule.default) ?? slackBoltModule;
 const { App, HTTPReceiver } = slackBolt;
 
 const SLACK_WEBHOOK_MAX_BODY_BYTES = 1024 * 1024;
@@ -77,7 +78,10 @@ function publishSlackConnectedStatus(setStatus?: (next: Record<string, unknown>)
   });
 }
 
-function publishSlackDisconnectedStatus(setStatus?: (next: Record<string, unknown>) => void, error?: unknown) {
+function publishSlackDisconnectedStatus(
+  setStatus?: (next: Record<string, unknown>) => void,
+  error?: unknown,
+) {
   if (!setStatus) {
     return;
   }
@@ -114,7 +118,9 @@ export async function monitorSlackProvider(opts: MonitorSlackOpts = {}) {
 
   const historyLimit = Math.max(
     0,
-    account.config.historyLimit ?? cfg.messages?.groupChat?.historyLimit ?? DEFAULT_GROUP_HISTORY_LIMIT,
+    account.config.historyLimit ??
+      cfg.messages?.groupChat?.historyLimit ??
+      DEFAULT_GROUP_HISTORY_LIMIT,
   );
 
   const sessionCfg = cfg.session;
@@ -347,12 +353,17 @@ export async function monitorSlackProvider(opts: MonitorSlackOpts = {}) {
             token: resolveToken,
             entries: allowEntries,
           });
-          const { mapping, unresolved, additions } = buildAllowlistResolutionSummary(resolvedUsers, {
-            formatResolved: (entry) => {
-              const note = (entry as { note?: string }).note ? ` (${(entry as { note?: string }).note})` : "";
-              return `${entry.input}→${entry.id}${note}`;
+          const { mapping, unresolved, additions } = buildAllowlistResolutionSummary(
+            resolvedUsers,
+            {
+              formatResolved: (entry) => {
+                const note = (entry as { note?: string }).note
+                  ? ` (${(entry as { note?: string }).note})`
+                  : "";
+                return `${entry.input}→${entry.id}${note}`;
+              },
             },
-          });
+          );
           allowFrom = mergeAllowlist({ existing: allowFrom, additions });
           ctx.allowFrom = normalizeAllowList(allowFrom);
           summarizeMapping("slack users", mapping, unresolved, runtime);
@@ -373,7 +384,8 @@ export async function monitorSlackProvider(opts: MonitorSlackOpts = {}) {
               token: resolveToken,
               entries: Array.from(userEntries),
             });
-            const { resolvedMap, mapping, unresolved } = buildAllowlistResolutionSummary(resolvedUsers);
+            const { resolvedMap, mapping, unresolved } =
+              buildAllowlistResolutionSummary(resolvedUsers);
 
             const nextChannels = patchAllowlistUsersInConfigEntries({
               entries: channelsConfig,
@@ -383,7 +395,9 @@ export async function monitorSlackProvider(opts: MonitorSlackOpts = {}) {
             ctx.channelsConfig = nextChannels;
             summarizeMapping("slack channel users", mapping, unresolved, runtime);
           } catch (err) {
-            runtime.log?.(`slack channel user resolve failed; using config entries. ${String(err)}`);
+            runtime.log?.(
+              `slack channel user resolve failed; using config entries. ${String(err)}`,
+            );
           }
         }
       }
@@ -449,7 +463,9 @@ export async function monitorSlackProvider(opts: MonitorSlackOpts = {}) {
           runtime.error?.(
             `slack socket mode disconnected due to non-recoverable auth error — skipping channel (${formatUnknownError(disconnect.error)})`,
           );
-          throw disconnect.error instanceof Error ? disconnect.error : new Error(formatUnknownError(disconnect.error));
+          throw disconnect.error instanceof Error
+            ? disconnect.error
+            : new Error(formatUnknownError(disconnect.error));
         }
 
         reconnectAttempts += 1;

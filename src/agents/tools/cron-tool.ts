@@ -42,7 +42,9 @@ const CronToolSchema = Type.Object(
     text: Type.Optional(Type.String()),
     mode: optionalStringEnum(CRON_WAKE_MODES),
     runMode: optionalStringEnum(CRON_RUN_MODES),
-    contextMessages: Type.Optional(Type.Number({ minimum: 0, maximum: REMINDER_CONTEXT_MESSAGES_MAX })),
+    contextMessages: Type.Optional(
+      Type.Number({ minimum: 0, maximum: REMINDER_CONTEXT_MESSAGES_MAX }),
+    ),
   },
   { additionalProperties: true },
 );
@@ -93,7 +95,10 @@ async function buildReminderContextLines(params: {
   contextMessages: number;
   callGatewayTool: GatewayToolCaller;
 }) {
-  const maxMessages = Math.min(REMINDER_CONTEXT_MESSAGES_MAX, Math.max(0, Math.floor(params.contextMessages)));
+  const maxMessages = Math.min(
+    REMINDER_CONTEXT_MESSAGES_MAX,
+    Math.max(0, Math.floor(params.contextMessages)),
+  );
   if (maxMessages <= 0) {
     return [];
   }
@@ -105,10 +110,14 @@ async function buildReminderContextLines(params: {
   const { mainKey, alias } = resolveMainSessionAlias(cfg);
   const resolvedKey = resolveInternalSessionKey({ key: sessionKey, alias, mainKey });
   try {
-    const res = await params.callGatewayTool<{ messages: Array<unknown> }>("chat.history", params.gatewayOpts, {
-      sessionKey: resolvedKey,
-      limit: maxMessages,
-    });
+    const res = await params.callGatewayTool<{ messages: Array<unknown> }>(
+      "chat.history",
+      params.gatewayOpts,
+      {
+        sessionKey: resolvedKey,
+        limit: maxMessages,
+      },
+    );
     const messages = Array.isArray(res?.messages) ? res.messages : [];
     const parsed = messages
       .map((msg) => extractMessageText(msg as ChatMessage))
@@ -280,7 +289,9 @@ Use jobId as the canonical identifier; id is accepted for compatibility. Use con
       const gatewayOpts: GatewayCallOptions = {
         ...readGatewayCallOptions(params),
         timeoutMs:
-          typeof params.timeoutMs === "number" && Number.isFinite(params.timeoutMs) ? params.timeoutMs : 60_000,
+          typeof params.timeoutMs === "number" && Number.isFinite(params.timeoutMs)
+            ? params.timeoutMs
+            : 60_000,
       };
 
       switch (action) {
@@ -384,7 +395,9 @@ Use jobId as the canonical identifier; id is accepted for compatibility. Use con
             if (mode === "webhook") {
               const webhookUrl = normalizeHttpWebhookUrl(delivery?.to);
               if (!webhookUrl) {
-                throw new Error('delivery.mode="webhook" requires delivery.to to be a valid http(s) URL');
+                throw new Error(
+                  'delivery.mode="webhook" requires delivery.to to be a valid http(s) URL',
+                );
               }
               if (delivery) {
                 delivery.to = webhookUrl;
@@ -395,7 +408,9 @@ Use jobId as the canonical identifier; id is accepted for compatibility. Use con
               (typeof delivery?.channel === "string" && delivery.channel.trim()) ||
               (typeof delivery?.to === "string" && delivery.to.trim());
             const shouldInfer =
-              (deliveryValue == null || delivery) && (mode === "" || mode === "announce") && !hasTarget;
+              (deliveryValue == null || delivery) &&
+              (mode === "" || mode === "announce") &&
+              !hasTarget;
             if (shouldInfer) {
               const inferred = inferDeliveryFromSessionKey(opts.agentSessionKey);
               if (inferred) {
@@ -497,7 +512,8 @@ Use jobId as the canonical identifier; id is accepted for compatibility. Use con
           if (!id) {
             throw new Error("jobId required (id accepted for backward compatibility)");
           }
-          const runMode = params.runMode === "due" || params.runMode === "force" ? params.runMode : "force";
+          const runMode =
+            params.runMode === "due" || params.runMode === "force" ? params.runMode : "force";
           return jsonResult(await callGateway("cron.run", gatewayOpts, { id, mode: runMode }));
         }
         case "runs": {
@@ -509,8 +525,13 @@ Use jobId as the canonical identifier; id is accepted for compatibility. Use con
         }
         case "wake": {
           const text = readStringParam(params, "text", { required: true });
-          const mode = params.mode === "now" || params.mode === "next-heartbeat" ? params.mode : "next-heartbeat";
-          return jsonResult(await callGateway("wake", gatewayOpts, { mode, text }, { expectFinal: false }));
+          const mode =
+            params.mode === "now" || params.mode === "next-heartbeat"
+              ? params.mode
+              : "next-heartbeat";
+          return jsonResult(
+            await callGateway("wake", gatewayOpts, { mode, text }, { expectFinal: false }),
+          );
         }
         default:
           throw new Error(`Unknown action: ${action}`);

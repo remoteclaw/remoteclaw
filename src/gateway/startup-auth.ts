@@ -1,13 +1,24 @@
 import crypto from "node:crypto";
-import type { GatewayAuthConfig, GatewayTailscaleConfig, RemoteClawConfig } from "../config/config.js";
+import type {
+  GatewayAuthConfig,
+  GatewayTailscaleConfig,
+  RemoteClawConfig,
+} from "../config/config.js";
 import { writeConfigFile } from "../config/config.js";
 import { hasConfiguredSecretInput } from "../config/types.secrets.js";
 import { assertExplicitGatewayAuthModeWhenBothConfigured } from "./auth-mode-policy.js";
 import { resolveGatewayAuth, type ResolvedGatewayAuth } from "./auth.js";
-import { hasGatewayPasswordEnvCandidate, hasGatewayTokenEnvCandidate, readGatewayTokenEnv } from "./credentials.js";
+import {
+  hasGatewayPasswordEnvCandidate,
+  hasGatewayTokenEnvCandidate,
+  readGatewayTokenEnv,
+} from "./credentials.js";
 import { resolveRequiredConfiguredSecretRefInputString } from "./resolve-configured-secret-input-string.js";
 
-export function mergeGatewayAuthConfig(base?: GatewayAuthConfig, override?: GatewayAuthConfig): GatewayAuthConfig {
+export function mergeGatewayAuthConfig(
+  base?: GatewayAuthConfig,
+  override?: GatewayAuthConfig,
+): GatewayAuthConfig {
   const merged: GatewayAuthConfig = { ...base };
   if (!override) {
     return merged;
@@ -56,7 +67,10 @@ function resolveGatewayAuthFromConfig(params: {
   authOverride?: GatewayAuthConfig;
   tailscaleOverride?: GatewayTailscaleConfig;
 }) {
-  const tailscaleConfig = mergeGatewayTailscaleConfig(params.cfg.gateway?.tailscale, params.tailscaleOverride);
+  const tailscaleConfig = mergeGatewayTailscaleConfig(
+    params.cfg.gateway?.tailscale,
+    params.tailscaleOverride,
+  );
   return resolveGatewayAuth({
     authConfig: params.cfg.gateway?.auth,
     authOverride: params.authOverride,
@@ -91,14 +105,19 @@ function hasGatewayTokenCandidate(params: {
   if (envToken) {
     return true;
   }
-  if (typeof params.authOverride?.token === "string" && params.authOverride.token.trim().length > 0) {
+  if (
+    typeof params.authOverride?.token === "string" &&
+    params.authOverride.token.trim().length > 0
+  ) {
     return true;
   }
   return hasConfiguredSecretInput(params.cfg.gateway?.auth?.token, params.cfg.secrets?.defaults);
 }
 
 function hasGatewayTokenOverrideCandidate(params: { authOverride?: GatewayAuthConfig }): boolean {
-  return Boolean(typeof params.authOverride?.token === "string" && params.authOverride.token.trim().length > 0);
+  return Boolean(
+    typeof params.authOverride?.token === "string" && params.authOverride.token.trim().length > 0,
+  );
 }
 
 function hasGatewayPasswordOverrideCandidate(params: {
@@ -108,7 +127,10 @@ function hasGatewayPasswordOverrideCandidate(params: {
   if (hasGatewayPasswordEnvCandidate(params.env)) {
     return true;
   }
-  return Boolean(typeof params.authOverride?.password === "string" && params.authOverride.password.trim().length > 0);
+  return Boolean(
+    typeof params.authOverride?.password === "string" &&
+    params.authOverride.password.trim().length > 0,
+  );
 }
 
 function shouldResolveGatewayTokenSecretRef(params: {
@@ -133,7 +155,10 @@ function shouldResolveGatewayTokenSecretRef(params: {
   if (hasGatewayPasswordOverrideCandidate(params)) {
     return false;
   }
-  return !hasConfiguredSecretInput(params.cfg.gateway?.auth?.password, params.cfg.secrets?.defaults);
+  return !hasConfiguredSecretInput(
+    params.cfg.gateway?.auth?.password,
+    params.cfg.secrets?.defaults,
+  );
 }
 
 async function resolveGatewayTokenSecretRef(
@@ -270,12 +295,15 @@ export function assertHooksTokenSeparateFromGatewayAuth(params: {
   if (params.cfg.hooks?.enabled !== true) {
     return;
   }
-  const hooksToken = typeof params.cfg.hooks.token === "string" ? params.cfg.hooks.token.trim() : "";
+  const hooksToken =
+    typeof params.cfg.hooks.token === "string" ? params.cfg.hooks.token.trim() : "";
   if (!hooksToken) {
     return;
   }
   const gatewayToken =
-    params.auth.mode === "token" && typeof params.auth.token === "string" ? params.auth.token.trim() : "";
+    params.auth.mode === "token" && typeof params.auth.token === "string"
+      ? params.auth.token.trim()
+      : "";
   if (!gatewayToken) {
     return;
   }

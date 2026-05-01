@@ -88,7 +88,8 @@ describe("listConfiguredMessageChannels", () => {
         makePlugin({
           id: "telegram",
           accountIds: ["disabled", "enabled"],
-          resolveAccount: (accountId) => (accountId === "disabled" ? { enabled: false } : { enabled: true }),
+          resolveAccount: (accountId) =>
+            accountId === "disabled" ? { enabled: false } : { enabled: true },
           isConfigured: (account) => (account as { enabled?: boolean }).enabled === true,
         }),
       ],
@@ -175,7 +176,9 @@ describe("resolveMessageChannelSelection", () => {
     },
     {
       setup: () => {
-        mocks.listChannelPlugins.mockReturnValue([makePlugin({ id: "discord", isConfigured: async () => true })]);
+        mocks.listChannelPlugins.mockReturnValue([
+          makePlugin({ id: "discord", isConfigured: async () => true }),
+        ]);
       },
       params: { cfg: {} as never },
       expected: {
@@ -227,7 +230,8 @@ describe("resolveMessageChannelSelection", () => {
         ]);
       },
       params: { cfg: {} as never },
-      expectedMessage: "Channel is required when multiple channels are configured: discord, telegram",
+      expectedMessage:
+        "Channel is required when multiple channels are configured: discord, telegram",
     },
   ])("rejects invalid channel selection for %j", async ({ setup, params, expectedMessage }) => {
     setup?.();

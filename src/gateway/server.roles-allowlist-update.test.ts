@@ -96,7 +96,9 @@ const connectNodeClientWithPairing = async (params: Parameters<typeof connectNod
   }
 };
 
-const connectNodeClientWithNodePairing = async (params: Parameters<typeof connectNodeClient>[0]) => {
+const connectNodeClientWithNodePairing = async (
+  params: Parameters<typeof connectNodeClient>[0],
+) => {
   const provisionalClient = await connectNodeClientWithPairing(params);
   const listRes = await rpcReq<{
     nodes?: Array<{ nodeId: string; displayName?: string; connected?: boolean }>;
@@ -252,7 +254,11 @@ describe("gateway node command allowlist", () => {
     };
 
     const getConnectedNodeId = async () => {
-      const listRes = await rpcReq<{ nodes?: Array<{ nodeId: string; connected?: boolean }> }>(ws, "node.list", {});
+      const listRes = await rpcReq<{ nodes?: Array<{ nodeId: string; connected?: boolean }> }>(
+        ws,
+        "node.list",
+        {},
+      );
       const nodeId = listRes.payload?.nodes?.find((node) => node.connected)?.nodeId ?? "";
       expect(nodeId).toBeTruthy();
       return nodeId;
@@ -383,7 +389,9 @@ describe("gateway node command allowlist", () => {
           commands?: string[];
         }>;
       }>(ws, "node.list", {});
-      return (listRes.payload?.nodes ?? []).find((node) => node.connected && node.displayName === displayName);
+      return (listRes.payload?.nodes ?? []).find(
+        (node) => node.connected && node.displayName === displayName,
+      );
     };
 
     const displayName = "node-device-paired-only";
@@ -473,7 +481,9 @@ describe("gateway node command allowlist", () => {
         }>;
       }>(ws, "node.list", {});
       const nodeId =
-        (listRes.payload?.nodes ?? []).find((node) => node.connected && node.displayName === displayName)?.nodeId ?? "";
+        (listRes.payload?.nodes ?? []).find(
+          (node) => node.connected && node.displayName === displayName,
+        )?.nodeId ?? "";
       expect(nodeId).toBeTruthy();
 
       const pairingList = await rpcReq<{
@@ -515,7 +525,11 @@ describe("gateway node command allowlist", () => {
       await iosClient.stopAndWait();
       await expect
         .poll(async () => {
-          const listRes = await rpcReq<{ nodes?: Array<{ connected?: boolean }> }>(ws, "node.list", {});
+          const listRes = await rpcReq<{ nodes?: Array<{ connected?: boolean }> }>(
+            ws,
+            "node.list",
+            {},
+          );
           return (listRes.payload?.nodes ?? []).filter((node) => node.connected).length;
         }, FAST_WAIT_OPTS)
         .toBe(0);
@@ -568,7 +582,9 @@ describe("gateway node command allowlist", () => {
             commands?: string[];
           }>;
         }>(ws, "node.list", {});
-        return (listRes.payload?.nodes ?? []).find((node) => node.connected && node.displayName === displayName);
+        return (listRes.payload?.nodes ?? []).find(
+          (node) => node.connected && node.displayName === displayName,
+        );
       };
 
       let client: GatewayClient | undefined;

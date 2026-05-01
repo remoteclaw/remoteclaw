@@ -19,7 +19,10 @@ const channel = "twitch" as const;
 /**
  * Set Twitch account configuration
  */
-function setTwitchAccount(cfg: RemoteClawConfig, account: Partial<TwitchAccountConfig>): RemoteClawConfig {
+function setTwitchAccount(
+  cfg: RemoteClawConfig,
+  account: Partial<TwitchAccountConfig>,
+): RemoteClawConfig {
   const existing = getAccountConfig(cfg, DEFAULT_ACCOUNT_ID);
   const merged: TwitchAccountConfig = {
     username: account.username ?? existing?.username ?? "",
@@ -41,12 +44,14 @@ function setTwitchAccount(cfg: RemoteClawConfig, account: Partial<TwitchAccountC
     channels: {
       ...cfg.channels,
       twitch: {
-        ...((cfg.channels as Record<string, unknown>)?.twitch as Record<string, unknown> | undefined),
+        ...((cfg.channels as Record<string, unknown>)?.twitch as
+          | Record<string, unknown>
+          | undefined),
         enabled: true,
         accounts: {
-          ...(((cfg.channels as Record<string, unknown>)?.twitch as Record<string, unknown> | undefined)?.accounts as
-            | Record<string, unknown>
-            | undefined),
+          ...((
+            (cfg.channels as Record<string, unknown>)?.twitch as Record<string, unknown> | undefined
+          )?.accounts as Record<string, unknown> | undefined),
           [DEFAULT_ACCOUNT_ID]: merged,
         },
       },
@@ -115,7 +120,10 @@ async function promptToken(
 /**
  * Prompt for Twitch username.
  */
-async function promptUsername(prompter: WizardPrompter, account: TwitchAccountConfig | null): Promise<string> {
+async function promptUsername(
+  prompter: WizardPrompter,
+  account: TwitchAccountConfig | null,
+): Promise<string> {
   return String(
     await prompter.text({
       message: "Twitch bot username",
@@ -128,7 +136,10 @@ async function promptUsername(prompter: WizardPrompter, account: TwitchAccountCo
 /**
  * Prompt for Twitch Client ID.
  */
-async function promptClientId(prompter: WizardPrompter, account: TwitchAccountConfig | null): Promise<string> {
+async function promptClientId(
+  prompter: WizardPrompter,
+  account: TwitchAccountConfig | null,
+): Promise<string> {
   return String(
     await prompter.text({
       message: "Twitch Client ID",
@@ -141,7 +152,10 @@ async function promptClientId(prompter: WizardPrompter, account: TwitchAccountCo
 /**
  * Prompt for optional channel name.
  */
-async function promptChannelName(prompter: WizardPrompter, account: TwitchAccountConfig | null): Promise<string> {
+async function promptChannelName(
+  prompter: WizardPrompter,
+  account: TwitchAccountConfig | null,
+): Promise<string> {
   const channelName = String(
     await prompter.text({
       message: "Channel to join",
@@ -262,7 +276,8 @@ const dmPolicy: ChannelOnboardingDmPolicy = {
     return "disabled";
   },
   setPolicy: (cfg, policy) => {
-    const allowedRoles: TwitchRole[] = policy === "open" ? ["all"] : policy === "allowlist" ? [] : ["moderator"];
+    const allowedRoles: TwitchRole[] =
+      policy === "open" ? ["all"] : policy === "allowlist" ? [] : ["moderator"];
     return setTwitchAccessControl(cfg, allowedRoles, true);
   },
   promptAllowFrom: async ({ cfg, prompter }) => {
@@ -311,7 +326,14 @@ export const twitchOnboardingAdapter: ChannelOnboardingAdapter = {
 
     // Check if env var is set and config is empty
     if (envToken && !account?.accessToken) {
-      const envResult = await configureWithEnvToken(cfg, prompter, account, envToken, forceAllowFrom, dmPolicy);
+      const envResult = await configureWithEnvToken(
+        cfg,
+        prompter,
+        account,
+        envToken,
+        forceAllowFrom,
+        dmPolicy,
+      );
       if (envResult) {
         return envResult;
       }
@@ -356,7 +378,11 @@ export const twitchOnboardingAdapter: ChannelOnboardingAdapter = {
 
       if (accessConfig) {
         const allowedRoles: TwitchRole[] =
-          accessConfig.policy === "open" ? ["all"] : accessConfig.policy === "allowlist" ? ["moderator", "vip"] : [];
+          accessConfig.policy === "open"
+            ? ["all"]
+            : accessConfig.policy === "allowlist"
+              ? ["moderator", "vip"]
+              : [];
 
         const cfgWithAccessControl = setTwitchAccessControl(cfgWithAllowFrom, allowedRoles, true);
         return { cfg: cfgWithAccessControl };
@@ -367,7 +393,9 @@ export const twitchOnboardingAdapter: ChannelOnboardingAdapter = {
   },
   dmPolicy,
   disable: (cfg) => {
-    const twitch = (cfg.channels as Record<string, unknown>)?.twitch as Record<string, unknown> | undefined;
+    const twitch = (cfg.channels as Record<string, unknown>)?.twitch as
+      | Record<string, unknown>
+      | undefined;
     return {
       ...cfg,
       channels: {

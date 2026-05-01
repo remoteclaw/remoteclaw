@@ -26,7 +26,10 @@ export function resolveDiscordAccountConfig(
   return resolveAccountEntry(cfg.channels?.discord?.accounts, accountId);
 }
 
-export function mergeDiscordAccountConfig(cfg: RemoteClawConfig, accountId: string): DiscordAccountConfig {
+export function mergeDiscordAccountConfig(
+  cfg: RemoteClawConfig,
+  accountId: string,
+): DiscordAccountConfig {
   const { accounts: _ignored, ...base } = (cfg.channels?.discord ?? {}) as DiscordAccountConfig & {
     accounts?: unknown;
   };

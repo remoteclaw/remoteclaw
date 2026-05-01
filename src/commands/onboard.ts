@@ -46,7 +46,8 @@ export async function onboardCommand(opts: OnboardOptions, runtime: RuntimeEnv =
   if (normalizedOpts.reset) {
     const snapshot = await readConfigFileSnapshot();
     const baseConfig = snapshot.valid ? snapshot.config : {};
-    const workspaceDefault = normalizedOpts.workspace ?? baseConfig.agents?.defaults?.workspace ?? DEFAULT_WORKSPACE;
+    const workspaceDefault =
+      normalizedOpts.workspace ?? baseConfig.agents?.defaults?.workspace ?? DEFAULT_WORKSPACE;
     const resetScope: ResetScope = normalizedOpts.resetScope ?? "config+creds+sessions";
     await handleReset(resetScope, resolveUserPath(workspaceDefault), runtime);
   }

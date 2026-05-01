@@ -1,7 +1,11 @@
 import path from "node:path";
 import { Type } from "@sinclair/typebox";
 import { loadConfig } from "../../config/config.js";
-import { resolveSessionFilePath, resolveSessionFilePathOptions, resolveStorePath } from "../../config/sessions.js";
+import {
+  resolveSessionFilePath,
+  resolveSessionFilePathOptions,
+  resolveStorePath,
+} from "../../config/sessions.js";
 import { callGateway } from "../../gateway/call.js";
 import { resolveAgentIdFromSessionKey } from "../../routing/session-key.js";
 import type { AnyAgentTool } from "./common.js";
@@ -42,18 +46,21 @@ export function createSessionsListTool(opts?: {
       // oxlint-disable-next-line
       const params = args as Record<string, unknown>;
       const cfg = loadConfig();
-      const { mainKey, alias, requesterInternalKey, restrictToSpawned } = resolveSandboxedSessionToolContext({
-        cfg,
-        agentSessionKey: opts?.agentSessionKey,
-        sandboxed: opts?.sandboxed,
-      });
+      const { mainKey, alias, requesterInternalKey, restrictToSpawned } =
+        resolveSandboxedSessionToolContext({
+          cfg,
+          agentSessionKey: opts?.agentSessionKey,
+          sandboxed: opts?.sandboxed,
+        });
       const effectiveRequesterKey = requesterInternalKey ?? alias;
       const visibility = resolveEffectiveSessionToolsVisibility({
         cfg,
         sandboxed: opts?.sandboxed === true,
       });
 
-      const kindsRaw = readStringArrayParam(params, "kinds")?.map((value) => value.trim().toLowerCase());
+      const kindsRaw = readStringArrayParam(params, "kinds")?.map((value) =>
+        value.trim().toLowerCase(),
+      );
       const allowedKindsList = (kindsRaw ?? []).filter((value) =>
         ["main", "group", "cron", "hook", "node", "other"].includes(value),
       );
@@ -134,13 +141,17 @@ export function createSessionsListTool(opts?: {
           entry.deliveryContext && typeof entry.deliveryContext === "object"
             ? (entry.deliveryContext as Record<string, unknown>)
             : undefined;
-        const deliveryChannel = typeof deliveryContext?.channel === "string" ? deliveryContext.channel : undefined;
+        const deliveryChannel =
+          typeof deliveryContext?.channel === "string" ? deliveryContext.channel : undefined;
         const deliveryTo = typeof deliveryContext?.to === "string" ? deliveryContext.to : undefined;
         const deliveryAccountId =
           typeof deliveryContext?.accountId === "string" ? deliveryContext.accountId : undefined;
-        const lastChannel = deliveryChannel ?? (typeof entry.lastChannel === "string" ? entry.lastChannel : undefined);
+        const lastChannel =
+          deliveryChannel ??
+          (typeof entry.lastChannel === "string" ? entry.lastChannel : undefined);
         const lastAccountId =
-          deliveryAccountId ?? (typeof entry.lastAccountId === "string" ? entry.lastAccountId : undefined);
+          deliveryAccountId ??
+          (typeof entry.lastAccountId === "string" ? entry.lastAccountId : undefined);
         const derivedChannel = deriveChannel({
           key,
           kind,
@@ -168,7 +179,11 @@ export function createSessionsListTool(opts?: {
               agentId,
               storePath: effectiveStorePath,
             });
-            transcriptPath = resolveSessionFilePath(sessionId, sessionFile ? { sessionFile } : undefined, filePathOpts);
+            transcriptPath = resolveSessionFilePath(
+              sessionId,
+              sessionFile ? { sessionFile } : undefined,
+              filePathOpts,
+            );
           } catch {
             transcriptPath = undefined;
           }
@@ -194,7 +209,8 @@ export function createSessionsListTool(opts?: {
           totalTokens: typeof entry.totalTokens === "number" ? entry.totalTokens : undefined,
           verboseLevel: typeof entry.verboseLevel === "string" ? entry.verboseLevel : undefined,
           systemSent: typeof entry.systemSent === "boolean" ? entry.systemSent : undefined,
-          abortedLastRun: typeof entry.abortedLastRun === "boolean" ? entry.abortedLastRun : undefined,
+          abortedLastRun:
+            typeof entry.abortedLastRun === "boolean" ? entry.abortedLastRun : undefined,
           sendPolicy: typeof entry.sendPolicy === "string" ? entry.sendPolicy : undefined,
           lastChannel,
           lastTo: deliveryTo ?? (typeof entry.lastTo === "string" ? entry.lastTo : undefined),
@@ -229,7 +245,8 @@ export function createSessionsListTool(opts?: {
             });
             const rawMessages = Array.isArray(history?.messages) ? history.messages : [];
             const filtered = stripToolMessages(rawMessages);
-            target.row.messages = filtered.length > messageLimit ? filtered.slice(-messageLimit) : filtered;
+            target.row.messages =
+              filtered.length > messageLimit ? filtered.slice(-messageLimit) : filtered;
           }
         };
         await Promise.all(Array.from({ length: maxConcurrent }, () => worker()));

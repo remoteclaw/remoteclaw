@@ -1,6 +1,11 @@
 import { Type } from "@sinclair/typebox";
 import { sendImageZalouser, sendLinkZalouser, sendMessageZalouser } from "./send.js";
-import { checkZaloAuthenticated, getZaloUserInfo, listZaloFriendsMatching, listZaloGroupsMatching } from "./zalo-js.js";
+import {
+  checkZaloAuthenticated,
+  getZaloUserInfo,
+  listZaloFriendsMatching,
+  listZaloGroupsMatching,
+} from "./zalo-js.js";
 
 const ACTIONS = ["send", "image", "link", "friends", "groups", "me", "status"] as const;
 
@@ -9,7 +14,10 @@ type AgentToolResult = {
   details?: unknown;
 };
 
-function stringEnum<T extends readonly string[]>(values: T, options: { description?: string } = {}) {
+function stringEnum<T extends readonly string[]>(
+  values: T,
+  options: { description?: string } = {},
+) {
   return Type.Unsafe<T[number]>({
     type: "string",
     enum: [...values],

@@ -184,7 +184,9 @@ export function formatConsoleTimestamp(style: ConsoleStyle): string {
 }
 
 function hasTimestampPrefix(value: string): boolean {
-  return /^(?:\d{2}:\d{2}:\d{2}|\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?)/.test(value);
+  return /^(?:\d{2}:\d{2}:\d{2}|\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?)/.test(
+    value,
+  );
 }
 
 /**
@@ -248,7 +250,9 @@ export function enableConsoleCapture(): void {
       const trimmed = stripAnsi(formatted).trimStart();
       const shouldPrefixTimestamp =
         loggingState.consoleTimestampPrefix && trimmed.length > 0 && !hasTimestampPrefix(trimmed);
-      const timestamp = shouldPrefixTimestamp ? formatConsoleTimestamp(getConsoleSettings().style) : "";
+      const timestamp = shouldPrefixTimestamp
+        ? formatConsoleTimestamp(getConsoleSettings().style)
+        : "";
       try {
         const resolvedLogger = getLoggerLazy();
         // Map console levels to file logger

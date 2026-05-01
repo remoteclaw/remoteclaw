@@ -4,7 +4,9 @@ export function mergeDmAllowFromSources(params: {
   dmPolicy?: string;
 }): string[] {
   const storeEntries = params.dmPolicy === "allowlist" ? [] : (params.storeAllowFrom ?? []);
-  return [...(params.allowFrom ?? []), ...storeEntries].map((value) => String(value).trim()).filter(Boolean);
+  return [...(params.allowFrom ?? []), ...storeEntries]
+    .map((value) => String(value).trim())
+    .filter(Boolean);
 }
 
 export function resolveGroupAllowFromSources(params: {
@@ -13,7 +15,9 @@ export function resolveGroupAllowFromSources(params: {
   fallbackToAllowFrom?: boolean;
 }): string[] {
   const explicitGroupAllowFrom =
-    Array.isArray(params.groupAllowFrom) && params.groupAllowFrom.length > 0 ? params.groupAllowFrom : undefined;
+    Array.isArray(params.groupAllowFrom) && params.groupAllowFrom.length > 0
+      ? params.groupAllowFrom
+      : undefined;
   const scoped = explicitGroupAllowFrom
     ? explicitGroupAllowFrom
     : params.fallbackToAllowFrom === false

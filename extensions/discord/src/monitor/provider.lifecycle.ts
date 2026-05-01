@@ -62,7 +62,9 @@ export async function runDiscordGatewayLifecycle(params: {
         return;
       }
       const at = Date.now();
-      const error = new Error(`discord reconnect watchdog timeout after ${RECONNECT_STALL_TIMEOUT_MS}ms`);
+      const error = new Error(
+        `discord reconnect watchdog timeout after ${RECONNECT_STALL_TIMEOUT_MS}ms`,
+      );
       pushStatus({
         connected: false,
         lastEventAt: at,

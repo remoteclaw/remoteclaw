@@ -1,7 +1,10 @@
 import type { ReplyPayload } from "remoteclaw/plugin-sdk/zalouser";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "./accounts.test-mocks.js";
-import { installSendPayloadContractSuite, primeSendMock } from "../../../src/test-utils/send-payload-contract.js";
+import {
+  installSendPayloadContractSuite,
+  primeSendMock,
+} from "../../../src/test-utils/send-payload-contract.js";
 import { zalouserPlugin } from "./channel.js";
 import { setZalouserRuntime } from "./runtime.js";
 

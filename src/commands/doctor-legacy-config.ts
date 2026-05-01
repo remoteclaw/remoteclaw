@@ -127,12 +127,16 @@ export function normalizeCompatibilityConfigValues(cfg: RemoteClawConfig): {
       const { streamMode: _ignored, ...rest } = updated;
       updated = rest;
       changed = true;
-      changes.push(`Moved ${params.pathPrefix}.streamMode → ${params.pathPrefix}.streaming (${resolved}).`);
+      changes.push(
+        `Moved ${params.pathPrefix}.streamMode → ${params.pathPrefix}.streaming (${resolved}).`,
+      );
     }
     if (typeof beforeStreaming === "boolean") {
       changes.push(`Normalized ${params.pathPrefix}.streaming boolean → enum (${resolved}).`);
     } else if (typeof beforeStreaming === "string" && beforeStreaming !== resolved) {
-      changes.push(`Normalized ${params.pathPrefix}.streaming (${beforeStreaming}) → (${resolved}).`);
+      changes.push(
+        `Normalized ${params.pathPrefix}.streaming (${beforeStreaming}) → (${resolved}).`,
+      );
     }
 
     return { entry: updated, changed };
@@ -162,7 +166,10 @@ export function normalizeCompatibilityConfigValues(cfg: RemoteClawConfig): {
       updated = { ...updated, streaming: resolvedStreaming };
       changed = true;
     }
-    if (typeof beforeNativeStreaming !== "boolean" || beforeNativeStreaming !== resolvedNativeStreaming) {
+    if (
+      typeof beforeNativeStreaming !== "boolean" ||
+      beforeNativeStreaming !== resolvedNativeStreaming
+    ) {
       updated = { ...updated, nativeStreaming: resolvedNativeStreaming };
       changed = true;
     }
@@ -173,9 +180,13 @@ export function normalizeCompatibilityConfigValues(cfg: RemoteClawConfig): {
       changes.push(formatSlackStreamModeMigrationMessage(params.pathPrefix, resolvedStreaming));
     }
     if (typeof legacyStreaming === "boolean") {
-      changes.push(formatSlackStreamingBooleanMigrationMessage(params.pathPrefix, resolvedNativeStreaming));
+      changes.push(
+        formatSlackStreamingBooleanMigrationMessage(params.pathPrefix, resolvedNativeStreaming),
+      );
     } else if (typeof legacyStreaming === "string" && legacyStreaming !== resolvedStreaming) {
-      changes.push(`Normalized ${params.pathPrefix}.streaming (${legacyStreaming}) → (${resolvedStreaming}).`);
+      changes.push(
+        `Normalized ${params.pathPrefix}.streaming (${legacyStreaming}) → (${resolvedStreaming}).`,
+      );
     }
 
     return { entry: updated, changed };
@@ -369,7 +380,10 @@ export function normalizeCompatibilityConfigValues(cfg: RemoteClawConfig): {
     const currentDangerousAllowPrivateNetwork = rawSsrFPolicy.dangerouslyAllowPrivateNetwork;
 
     let resolvedDangerousAllowPrivateNetwork: unknown = currentDangerousAllowPrivateNetwork;
-    if (typeof legacyAllowPrivateNetwork === "boolean" || typeof currentDangerousAllowPrivateNetwork === "boolean") {
+    if (
+      typeof legacyAllowPrivateNetwork === "boolean" ||
+      typeof currentDangerousAllowPrivateNetwork === "boolean"
+    ) {
       // Preserve runtime behavior while collapsing to the canonical key.
       resolvedDangerousAllowPrivateNetwork =
         legacyAllowPrivateNetwork === true || currentDangerousAllowPrivateNetwork === true;
@@ -428,7 +442,9 @@ export function normalizeCompatibilityConfigValues(cfg: RemoteClawConfig): {
           },
         },
       };
-      changes.push(`Copied messages.ackReaction → channels.whatsapp.ackReaction (scope: ${legacyScope}).`);
+      changes.push(
+        `Copied messages.ackReaction → channels.whatsapp.ackReaction (scope: ${legacyScope}).`,
+      );
     }
   }
 

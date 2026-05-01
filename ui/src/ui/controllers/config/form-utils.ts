@@ -66,7 +66,11 @@ function resolvePathContainer(
   };
 }
 
-export function setPathValue(obj: Record<string, unknown> | unknown[], path: Array<string | number>, value: unknown) {
+export function setPathValue(
+  obj: Record<string, unknown> | unknown[],
+  path: Array<string | number>,
+  value: unknown,
+) {
   const container = resolvePathContainer(obj, path, true);
   if (!container) {
     return;
@@ -83,7 +87,10 @@ export function setPathValue(obj: Record<string, unknown> | unknown[], path: Arr
   }
 }
 
-export function removePathValue(obj: Record<string, unknown> | unknown[], path: Array<string | number>) {
+export function removePathValue(
+  obj: Record<string, unknown> | unknown[],
+  path: Array<string | number>,
+) {
   const container = resolvePathContainer(obj, path, false);
   if (!container) {
     return;

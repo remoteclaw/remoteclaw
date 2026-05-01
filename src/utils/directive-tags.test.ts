@@ -61,10 +61,18 @@ describe("parseInlineDirectives", () => {
   });
 
   test("preserves fenced code block indentation after stripping a reply tag", () => {
-    const input = ["[[reply_to_current]]", "```python", "    if True:", "        print('ok')", "```"].join("\n");
+    const input = [
+      "[[reply_to_current]]",
+      "```python",
+      "    if True:",
+      "        print('ok')",
+      "```",
+    ].join("\n");
     const result = parseInlineDirectives(input);
     expect(result.hasReplyTag).toBe(true);
-    expect(result.text).toBe(["```python", "    if True:", "        print('ok')", "```"].join("\n"));
+    expect(result.text).toBe(
+      ["```python", "    if True:", "        print('ok')", "```"].join("\n"),
+    );
   });
 
   test("preserves word boundaries when a reply tag is adjacent to text", () => {

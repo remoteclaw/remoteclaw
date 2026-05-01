@@ -17,7 +17,11 @@ function createActiveEntry(sessionKey: string): ChatAbortControllerEntry {
   };
 }
 
-function createOps(params: { runId: string; entry: ChatAbortControllerEntry; buffer?: string }): ChatAbortOps & {
+function createOps(params: {
+  runId: string;
+  entry: ChatAbortControllerEntry;
+  buffer?: string;
+}): ChatAbortOps & {
   broadcast: ReturnType<typeof vi.fn>;
   nodeSendToSession: ReturnType<typeof vi.fn>;
   removeChatRun: ReturnType<typeof vi.fn>;

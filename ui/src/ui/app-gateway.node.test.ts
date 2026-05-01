@@ -26,7 +26,9 @@ const gatewayClientInstances: GatewayClientMock[] = [];
 vi.mock("./gateway.ts", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./gateway.ts")>();
 
-  function resolveGatewayErrorDetailCode(error: { details?: unknown } | null | undefined): string | null {
+  function resolveGatewayErrorDetailCode(
+    error: { details?: unknown } | null | undefined,
+  ): string | null {
     const details = error?.details;
     if (!details || typeof details !== "object") {
       return null;
@@ -482,7 +484,9 @@ describe("connectGateway", () => {
     });
     client.emitClose({ code: 1006 });
 
-    expect(host.lastError).toBe("Restarting: config change requires gateway restart (plugins.installs)");
+    expect(host.lastError).toBe(
+      "Restarting: config change requires gateway restart (plugins.installs)",
+    );
     expect(host.lastErrorCode).toBeNull();
   });
 

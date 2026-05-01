@@ -92,7 +92,10 @@ describe("maybeRemoveDeprecatedCliAuthProfiles", () => {
       },
     } as const;
 
-    const next = await maybeRemoveDeprecatedCliAuthProfiles(cfg as unknown as RemoteClawConfig, makePrompter(true));
+    const next = await maybeRemoveDeprecatedCliAuthProfiles(
+      cfg as unknown as RemoteClawConfig,
+      makePrompter(true),
+    );
 
     const raw = JSON.parse(fs.readFileSync(authPath, "utf8")) as {
       profiles?: Record<string, unknown>;

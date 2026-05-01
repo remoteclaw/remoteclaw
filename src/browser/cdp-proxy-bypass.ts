@@ -23,7 +23,9 @@ export function getDirectAgentForCdp(url: string): http.Agent | https.Agent | un
   try {
     const parsed = new URL(url);
     if (isLoopbackHost(parsed.hostname)) {
-      return parsed.protocol === "https:" || parsed.protocol === "wss:" ? directHttpsAgent : directHttpAgent;
+      return parsed.protocol === "https:" || parsed.protocol === "wss:"
+        ? directHttpsAgent
+        : directHttpAgent;
     }
   } catch {
     // not a valid URL — let caller handle it
@@ -43,7 +45,9 @@ const LOOPBACK_ENTRIES = "localhost,127.0.0.1,[::1]";
 
 function noProxyAlreadyCoversLocalhost(): boolean {
   const current = process.env.NO_PROXY || process.env.no_proxy || "";
-  return current.includes("localhost") && current.includes("127.0.0.1") && current.includes("[::1]");
+  return (
+    current.includes("localhost") && current.includes("127.0.0.1") && current.includes("[::1]")
+  );
 }
 
 export async function withNoProxyForLocalhost<T>(fn: () => Promise<T>): Promise<T> {
@@ -107,7 +111,8 @@ class NoProxyLeaseManager {
     const currentNoProxy = process.env.NO_PROXY;
     const currentNoProxyLower = process.env.no_proxy;
     const untouched =
-      currentNoProxy === applied && (currentNoProxyLower === applied || currentNoProxyLower === undefined);
+      currentNoProxy === applied &&
+      (currentNoProxyLower === applied || currentNoProxyLower === undefined);
     if (untouched) {
       if (noProxy !== undefined) {
         process.env.NO_PROXY = noProxy;

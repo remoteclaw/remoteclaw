@@ -62,7 +62,10 @@ export class McpSideEffectsWriter {
     await this.appendRecord(record);
   }
 
-  async recordHeartbeatReport(params: { anythingDone: boolean; summary?: string | null }): Promise<void> {
+  async recordHeartbeatReport(params: {
+    anythingDone: boolean;
+    summary?: string | null;
+  }): Promise<void> {
     const record: HeartbeatReportRecord = {
       type: "heartbeat_report",
       anythingDone: params.anythingDone,

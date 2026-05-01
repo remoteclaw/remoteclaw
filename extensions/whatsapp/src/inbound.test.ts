@@ -27,7 +27,13 @@ describe("web inbound helpers", () => {
     const body = extractText({
       contactMessage: {
         displayName: "Ada Lovelace",
-        vcard: ["BEGIN:VCARD", "VERSION:3.0", "FN:Ada Lovelace", "TEL;TYPE=CELL:+15555550123", "END:VCARD"].join("\n"),
+        vcard: [
+          "BEGIN:VCARD",
+          "VERSION:3.0",
+          "FN:Ada Lovelace",
+          "TEL;TYPE=CELL:+15555550123",
+          "END:VCARD",
+        ].join("\n"),
       },
     } as unknown as import("@whiskeysockets/baileys").proto.IMessage);
     expect(body).toBe("<contact: Ada Lovelace, +15555550123>");
@@ -52,9 +58,13 @@ describe("web inbound helpers", () => {
   it("normalizes tel: prefixes in WhatsApp vcards", () => {
     const body = extractText({
       contactMessage: {
-        vcard: ["BEGIN:VCARD", "VERSION:3.0", "FN:Ada Lovelace", "TEL;TYPE=CELL:tel:+15555550123", "END:VCARD"].join(
-          "\n",
-        ),
+        vcard: [
+          "BEGIN:VCARD",
+          "VERSION:3.0",
+          "FN:Ada Lovelace",
+          "TEL;TYPE=CELL:tel:+15555550123",
+          "END:VCARD",
+        ].join("\n"),
       },
     } as unknown as import("@whiskeysockets/baileys").proto.IMessage);
     expect(body).toBe("<contact: Ada Lovelace, +15555550123>");
@@ -83,11 +93,23 @@ describe("web inbound helpers", () => {
         contacts: [
           {
             displayName: "Alice",
-            vcard: ["BEGIN:VCARD", "VERSION:3.0", "FN:Alice", "TEL;TYPE=CELL:+15555550101", "END:VCARD"].join("\n"),
+            vcard: [
+              "BEGIN:VCARD",
+              "VERSION:3.0",
+              "FN:Alice",
+              "TEL;TYPE=CELL:+15555550101",
+              "END:VCARD",
+            ].join("\n"),
           },
           {
             displayName: "Bob",
-            vcard: ["BEGIN:VCARD", "VERSION:3.0", "FN:Bob", "TEL;TYPE=CELL:+15555550102", "END:VCARD"].join("\n"),
+            vcard: [
+              "BEGIN:VCARD",
+              "VERSION:3.0",
+              "FN:Bob",
+              "TEL;TYPE=CELL:+15555550102",
+              "END:VCARD",
+            ].join("\n"),
           },
           {
             displayName: "Charlie",
@@ -102,7 +124,13 @@ describe("web inbound helpers", () => {
           },
           {
             displayName: "Dana",
-            vcard: ["BEGIN:VCARD", "VERSION:3.0", "FN:Dana", "TEL;TYPE=CELL:+15555550105", "END:VCARD"].join("\n"),
+            vcard: [
+              "BEGIN:VCARD",
+              "VERSION:3.0",
+              "FN:Dana",
+              "TEL;TYPE=CELL:+15555550105",
+              "END:VCARD",
+            ].join("\n"),
           },
         ],
       },
@@ -118,7 +146,13 @@ describe("web inbound helpers", () => {
         contacts: [
           {
             displayName: "Alice",
-            vcard: ["BEGIN:VCARD", "VERSION:3.0", "FN:Alice", "TEL;TYPE=CELL:+15555550101", "END:VCARD"].join("\n"),
+            vcard: [
+              "BEGIN:VCARD",
+              "VERSION:3.0",
+              "FN:Alice",
+              "TEL;TYPE=CELL:+15555550101",
+              "END:VCARD",
+            ].join("\n"),
           },
           {},
           {},

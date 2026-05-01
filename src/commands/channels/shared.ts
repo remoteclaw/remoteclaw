@@ -6,7 +6,9 @@ import { requireValidConfigSnapshot } from "../config-validation.js";
 
 export type ChatChannel = ChannelId;
 
-export async function requireValidConfig(runtime: RuntimeEnv = defaultRuntime): Promise<RemoteClawConfig | null> {
+export async function requireValidConfig(
+  runtime: RuntimeEnv = defaultRuntime,
+): Promise<RemoteClawConfig | null> {
   return await requireValidConfigSnapshot(runtime);
 }
 

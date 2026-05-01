@@ -3,7 +3,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildSessionKey, ChannelBridge, type ChannelBridgeOptions } from "./channel-bridge.js";
-import type { AgentEvent, AgentExecuteParams, AgentRunResult, AgentRuntime, ChannelMessage } from "./types.js";
+import type {
+  AgentEvent,
+  AgentExecuteParams,
+  AgentRunResult,
+  AgentRuntime,
+  ChannelMessage,
+} from "./types.js";
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -311,7 +317,10 @@ describe("ChannelBridge", () => {
     it("invokes onPartialReply for chunked text", async () => {
       // Text exceeding chunk limit triggers onPartialReply
       const longText = "a".repeat(50);
-      mockRuntimeInstance = mockRuntime([{ type: "text", text: longText }, makeDone({ text: longText })]);
+      mockRuntimeInstance = mockRuntime([
+        { type: "text", text: longText },
+        makeDone({ text: longText }),
+      ]);
 
       const onPartialReply = vi.fn();
       const bridge = createBridge({ chunkLimit: 20 });
@@ -321,7 +330,10 @@ describe("ChannelBridge", () => {
     });
 
     it("invokes onBlockReply for final text flush", async () => {
-      mockRuntimeInstance = mockRuntime([{ type: "text", text: "Final reply" }, makeDone({ text: "Final reply" })]);
+      mockRuntimeInstance = mockRuntime([
+        { type: "text", text: "Final reply" },
+        makeDone({ text: "Final reply" }),
+      ]);
 
       const onBlockReply = vi.fn();
       const bridge = createBridge();
@@ -331,7 +343,10 @@ describe("ChannelBridge", () => {
     });
 
     it("invokes onToolResult for tool result events", async () => {
-      mockRuntimeInstance = mockRuntime([{ type: "tool_result", toolId: "t1", output: "file contents" }, makeDone()]);
+      mockRuntimeInstance = mockRuntime([
+        { type: "tool_result", toolId: "t1", output: "file contents" },
+        makeDone(),
+      ]);
 
       const onToolResult = vi.fn();
       const bridge = createBridge();
@@ -481,7 +496,9 @@ describe("ChannelBridge", () => {
       mockRuntimeInstance = { execute: executeFn };
 
       const bridge = createBridge();
-      await bridge.handle(makeMessage({ channelId: "ch-1", from: "user-2", replyToId: "thread-3" }));
+      await bridge.handle(
+        makeMessage({ channelId: "ch-1", from: "user-2", replyToId: "thread-3" }),
+      );
 
       const mcpEnv = executeFn.mock.calls[0][0].mcpServers!.remoteclaw.env!;
       expect(mcpEnv.REMOTECLAW_SESSION_KEY).toBe("ch-1:user-2:thread-3");
@@ -644,7 +661,9 @@ describe("ChannelBridge", () => {
       await bridge.handle(
         makeMessage({
           provider: "feishu",
-          messageToolHints: ["Feishu auto-detects markdown patterns and renders them as Card Kit 2.0."],
+          messageToolHints: [
+            "Feishu auto-detects markdown patterns and renders them as Card Kit 2.0.",
+          ],
         }),
       );
 
@@ -739,7 +758,9 @@ describe("ChannelBridge", () => {
     });
 
     it("classifies context overflow errors", async () => {
-      const executeFn = vi.fn((_p: AgentExecuteParams) => failingStream("context_window limit exceeded"));
+      const executeFn = vi.fn((_p: AgentExecuteParams) =>
+        failingStream("context_window limit exceeded"),
+      );
       mockRuntimeInstance = { execute: executeFn };
 
       const bridge = createBridge();
@@ -759,7 +780,10 @@ describe("ChannelBridge", () => {
     });
 
     it("captures error from error events in the stream", async () => {
-      mockRuntimeInstance = mockRuntime([{ type: "error", message: "Tool execution failed" }, makeDone()]);
+      mockRuntimeInstance = mockRuntime([
+        { type: "error", message: "Tool execution failed" },
+        makeDone(),
+      ]);
 
       const bridge = createBridge();
       const result = await bridge.handle(makeMessage());
@@ -794,7 +818,9 @@ describe("ChannelBridge", () => {
       await bridge.handle(makeMessage({ mediaUrls: ["https://cdn.example.com/photo.jpg"] }));
 
       expect(mockResolveMediaAttachments).toHaveBeenCalledOnce();
-      expect(mockResolveMediaAttachments.mock.calls[0][0]).toEqual(["https://cdn.example.com/photo.jpg"]);
+      expect(mockResolveMediaAttachments.mock.calls[0][0]).toEqual([
+        "https://cdn.example.com/photo.jpg",
+      ]);
       const params = executeFn.mock.calls[0][0];
       expect(params.media).toEqual([
         {
@@ -921,10 +947,14 @@ describe("ChannelBridge", () => {
         execute: executeFn,
         mediaCapabilities: { acceptsInbound: ["image/"], emitsOutbound: false },
       };
-      mockResolveMediaAttachments.mockResolvedValue([{ mimeType: "image/jpeg", filePath: "/tmp/photo.jpg" }]);
+      mockResolveMediaAttachments.mockResolvedValue([
+        { mimeType: "image/jpeg", filePath: "/tmp/photo.jpg" },
+      ]);
 
       const bridge = createBridge();
-      const result = await bridge.handle(makeMessage({ mediaUrls: ["https://cdn.example.com/photo.jpg"] }));
+      const result = await bridge.handle(
+        makeMessage({ mediaUrls: ["https://cdn.example.com/photo.jpg"] }),
+      );
 
       expect(result.payloads).toEqual([{ text: "Reply" }]);
     });
@@ -932,10 +962,14 @@ describe("ChannelBridge", () => {
     it("passes all media through when runtime has no mediaCapabilities", async () => {
       const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone()]));
       mockRuntimeInstance = { execute: executeFn };
-      mockResolveMediaAttachments.mockResolvedValue([{ mimeType: "audio/ogg", filePath: "/tmp/voice.ogg" }]);
+      mockResolveMediaAttachments.mockResolvedValue([
+        { mimeType: "audio/ogg", filePath: "/tmp/voice.ogg" },
+      ]);
 
       const bridge = createBridge();
-      const result = await bridge.handle(makeMessage({ mediaUrls: ["https://cdn.example.com/voice.ogg"] }));
+      const result = await bridge.handle(
+        makeMessage({ mediaUrls: ["https://cdn.example.com/voice.ogg"] }),
+      );
 
       const params = executeFn.mock.calls[0][0];
       expect(params.media).toEqual([{ mimeType: "audio/ogg", filePath: "/tmp/voice.ogg" }]);
@@ -949,10 +983,14 @@ describe("ChannelBridge", () => {
         execute: executeFn,
         mediaCapabilities: { acceptsInbound: [], emitsOutbound: false },
       };
-      mockResolveMediaAttachments.mockResolvedValue([{ mimeType: "image/jpeg", filePath: "/tmp/photo.jpg" }]);
+      mockResolveMediaAttachments.mockResolvedValue([
+        { mimeType: "image/jpeg", filePath: "/tmp/photo.jpg" },
+      ]);
 
       const bridge = createBridge();
-      const result = await bridge.handle(makeMessage({ mediaUrls: ["https://cdn.example.com/photo.jpg"] }));
+      const result = await bridge.handle(
+        makeMessage({ mediaUrls: ["https://cdn.example.com/photo.jpg"] }),
+      );
 
       const params = executeFn.mock.calls[0][0];
       expect(params.media).toBeUndefined();
@@ -990,7 +1028,10 @@ describe("ChannelBridge", () => {
       const bridge = createBridge();
       const result = await bridge.handle(makeMessage());
 
-      expect(result.payloads).toEqual([{ text: "Here is the chart:" }, { mediaUrl: "/workspace/chart.png" }]);
+      expect(result.payloads).toEqual([
+        { text: "Here is the chart:" },
+        { mediaUrl: "/workspace/chart.png" },
+      ]);
     });
   });
 
@@ -1128,7 +1169,9 @@ describe("ChannelBridge", () => {
 
 describe("buildSessionKey", () => {
   it("maps ChannelMessage fields to SessionKey", () => {
-    const key = buildSessionKey(makeMessage({ channelId: "ch-1", from: "user-2", replyToId: "thread-3" }));
+    const key = buildSessionKey(
+      makeMessage({ channelId: "ch-1", from: "user-2", replyToId: "thread-3" }),
+    );
     expect(key).toEqual({ channelId: "ch-1", userId: "user-2", threadId: "thread-3" });
   });
 

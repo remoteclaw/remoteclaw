@@ -57,7 +57,9 @@ describe("requirements helpers", () => {
   });
 
   it("resolveMissingEnv uses predicate", () => {
-    expect(resolveMissingEnv({ required: ["A", "B"], isSatisfied: (name) => name === "B" })).toEqual(["A"]);
+    expect(
+      resolveMissingEnv({ required: ["A", "B"], isSatisfied: (name) => name === "B" }),
+    ).toEqual(["A"]);
   });
 
   it("buildConfigChecks includes status", () => {

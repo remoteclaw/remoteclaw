@@ -13,9 +13,13 @@ export function registerSetupCommand(program: Command) {
     .description("Initialize ~/.remoteclaw/remoteclaw.json and the agent workspace")
     .addHelpText(
       "after",
-      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/setup", "docs.remoteclaw.org/cli/setup")}\n`,
+      () =>
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/setup", "docs.remoteclaw.org/cli/setup")}\n`,
     )
-    .option("--workspace <dir>", "Agent workspace directory (required; stored per-agent in agents.list[].workspace)")
+    .option(
+      "--workspace <dir>",
+      "Agent workspace directory (required; stored per-agent in agents.list[].workspace)",
+    )
     .option("--wizard", "Run the interactive onboarding wizard", false)
     .option("--non-interactive", "Run the wizard without prompts", false)
     .option("--mode <mode>", "Wizard mode: local|remote")

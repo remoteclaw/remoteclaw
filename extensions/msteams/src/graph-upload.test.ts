@@ -11,10 +11,13 @@ describe("graph upload helpers", () => {
   it("uploads to OneDrive with the personal drive path", async () => {
     const fetchFn = vi.fn(
       async () =>
-        new Response(JSON.stringify({ id: "item-1", webUrl: "https://example.com/1", name: "a.txt" }), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        }),
+        new Response(
+          JSON.stringify({ id: "item-1", webUrl: "https://example.com/1", name: "a.txt" }),
+          {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          },
+        ),
     );
 
     const result = await uploadToOneDrive({
@@ -44,10 +47,13 @@ describe("graph upload helpers", () => {
   it("uploads to SharePoint with the site drive path", async () => {
     const fetchFn = vi.fn(
       async () =>
-        new Response(JSON.stringify({ id: "item-2", webUrl: "https://example.com/2", name: "b.txt" }), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        }),
+        new Response(
+          JSON.stringify({ id: "item-2", webUrl: "https://example.com/2", name: "b.txt" }),
+          {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          },
+        ),
     );
 
     const result = await uploadToSharePoint({

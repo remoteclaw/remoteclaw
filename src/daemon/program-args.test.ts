@@ -44,13 +44,21 @@ describe("resolveGatewayProgramArguments", () => {
 
     const result = await resolveGatewayProgramArguments({ port: 18789 });
 
-    expect(result.programArguments).toEqual([process.execPath, entryPath, "gateway", "--port", "18789"]);
+    expect(result.programArguments).toEqual([
+      process.execPath,
+      entryPath,
+      "gateway",
+      "--port",
+      "18789",
+    ]);
   });
 
   it("prefers symlinked path over realpath for stable service config", async () => {
     // Simulates pnpm global install where node_modules/remoteclaw is a symlink
     // to .pnpm/remoteclaw@X.Y.Z/node_modules/remoteclaw
-    const symlinkPath = path.resolve("/Users/test/Library/pnpm/global/5/node_modules/remoteclaw/dist/entry.js");
+    const symlinkPath = path.resolve(
+      "/Users/test/Library/pnpm/global/5/node_modules/remoteclaw/dist/entry.js",
+    );
     const realpathResolved = path.resolve(
       "/Users/test/Library/pnpm/global/5/node_modules/.pnpm/remoteclaw@2026.1.21-2/node_modules/remoteclaw/dist/entry.js",
     );
@@ -79,7 +87,13 @@ describe("resolveGatewayProgramArguments", () => {
 
     const result = await resolveGatewayProgramArguments({ port: 18789 });
 
-    expect(result.programArguments).toEqual([process.execPath, indexPath, "gateway", "--port", "18789"]);
+    expect(result.programArguments).toEqual([
+      process.execPath,
+      indexPath,
+      "gateway",
+      "--port",
+      "18789",
+    ]);
   });
 
   it("uses src/entry.ts for bun dev mode", async () => {
@@ -96,7 +110,13 @@ describe("resolveGatewayProgramArguments", () => {
       runtime: "bun",
     });
 
-    expect(result.programArguments).toEqual(["/usr/local/bin/bun", repoEntryPath, "gateway", "--port", "18789"]);
+    expect(result.programArguments).toEqual([
+      "/usr/local/bin/bun",
+      repoEntryPath,
+      "gateway",
+      "--port",
+      "18789",
+    ]);
     expect(result.workingDirectory).toBe(path.resolve("/repo"));
   });
 });

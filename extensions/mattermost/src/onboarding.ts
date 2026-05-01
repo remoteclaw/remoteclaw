@@ -30,7 +30,10 @@ async function noteMattermostSetup(prompter: WizardPrompter): Promise<void> {
   );
 }
 
-async function promptMattermostBaseUrl(params: { prompter: WizardPrompter; initialValue?: string }): Promise<string> {
+async function promptMattermostBaseUrl(params: {
+  prompter: WizardPrompter;
+  initialValue?: string;
+}): Promise<string> {
   const baseUrl = String(
     await params.prompter.text({
       message: "Enter Mattermost base URL",
@@ -50,7 +53,8 @@ export const mattermostOnboardingAdapter: ChannelOnboardingAdapter = {
         accountId,
         allowUnresolvedSecretRef: true,
       });
-      const tokenConfigured = Boolean(account.botToken) || hasConfiguredSecretInput(account.config.botToken);
+      const tokenConfigured =
+        Boolean(account.botToken) || hasConfiguredSecretInput(account.config.botToken);
       return tokenConfigured && Boolean(account.baseUrl);
     });
     return {

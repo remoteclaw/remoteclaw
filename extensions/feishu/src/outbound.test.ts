@@ -71,7 +71,9 @@ describe("feishuOutbound.sendText local-image auto-convert", () => {
         }),
       );
       expect(sendMessageFeishuMock).not.toHaveBeenCalled();
-      expect(result).toEqual(expect.objectContaining({ channel: "feishu", messageId: "media_msg" }));
+      expect(result).toEqual(
+        expect.objectContaining({ channel: "feishu", messageId: "media_msg" }),
+      );
     } finally {
       await fs.rm(dir, { recursive: true, force: true });
     }

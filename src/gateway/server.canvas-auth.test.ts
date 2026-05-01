@@ -28,12 +28,18 @@ async function listen(
     host,
     port,
     close: async () => {
-      await new Promise<void>((resolve, reject) => server.close((err) => (err ? reject(err) : resolve())));
+      await new Promise<void>((resolve, reject) =>
+        server.close((err) => (err ? reject(err) : resolve())),
+      );
     },
   };
 }
 
-async function expectWsRejected(url: string, headers: Record<string, string>, expectedStatus = 401): Promise<void> {
+async function expectWsRejected(
+  url: string,
+  headers: Record<string, string>,
+  expectedStatus = 401,
+): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     const ws = new WebSocket(url, { headers });
     const timer = setTimeout(() => reject(new Error("timeout")), WS_REJECT_TIMEOUT_MS);
@@ -113,7 +119,10 @@ async function withCanvasGatewayHarness(params: {
   listenHost?: string;
   rateLimiter?: ReturnType<typeof createAuthRateLimiter>;
   handleHttpRequest: CanvasHostHandler["handleHttpRequest"];
-  run: (ctx: { listener: Awaited<ReturnType<typeof listen>>; clients: Set<GatewayWsClient> }) => Promise<void>;
+  run: (ctx: {
+    listener: Awaited<ReturnType<typeof listen>>;
+    clients: Set<GatewayWsClient>;
+  }) => Promise<void>;
 }) {
   const clients = new Set<GatewayWsClient>();
   const canvasWss = new WebSocketServer({ noServer: true });
@@ -202,7 +211,9 @@ describe("gateway canvas host auth", () => {
           const unauthCanvas = await fetch(`http://${host}:${listener.port}${CANVAS_HOST_PATH}/`);
           expect(unauthCanvas.status).toBe(401);
 
-          const malformedScoped = await fetch(`http://${host}:${listener.port}${CANVAS_CAPABILITY_PATH_PREFIX}/broken`);
+          const malformedScoped = await fetch(
+            `http://${host}:${listener.port}${CANVAS_CAPABILITY_PATH_PREFIX}/broken`,
+          );
           expect(malformedScoped.status).toBe(401);
 
           clients.add(
@@ -260,7 +271,9 @@ describe("gateway canvas host auth", () => {
 
           clients.delete(activeNodeClient);
 
-          const disconnectedNodeBlocked = await fetch(`http://${host}:${listener.port}${activeCanvasPath}`);
+          const disconnectedNodeBlocked = await fetch(
+            `http://${host}:${listener.port}${activeCanvasPath}`,
+          );
           expect(disconnectedNodeBlocked.status).toBe(401);
           await expectWsRejected(`ws://${host}:${listener.port}${activeWsPath}`, {});
         },

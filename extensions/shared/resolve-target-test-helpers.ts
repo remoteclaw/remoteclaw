@@ -8,7 +8,11 @@ type ResolveTargetResult = {
   error?: unknown;
 };
 
-type ResolveTargetFn = (params: { to?: string; mode: ResolveTargetMode; allowFrom: string[] }) => ResolveTargetResult;
+type ResolveTargetFn = (params: {
+  to?: string;
+  mode: ResolveTargetMode;
+  allowFrom: string[];
+}) => ResolveTargetResult;
 
 export function installCommonResolveTargetErrorCases(params: {
   resolveTarget: ResolveTargetFn;

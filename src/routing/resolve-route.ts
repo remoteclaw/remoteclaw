@@ -270,7 +270,9 @@ function resolveAccountPatternKey(accountPattern: string): string {
   return normalizeAccountId(accountPattern);
 }
 
-function buildEvaluatedBindingsByChannel(cfg: RemoteClawConfig): Map<string, EvaluatedBindingsByChannel> {
+function buildEvaluatedBindingsByChannel(
+  cfg: RemoteClawConfig,
+): Map<string, EvaluatedBindingsByChannel> {
   const byChannel = new Map<string, EvaluatedBindingsByChannel>();
   let order = 0;
   for (const binding of listBindings(cfg)) {
@@ -327,7 +329,10 @@ function mergeEvaluatedBindingsInSourceOrder(
   while (accountIdx < accountScoped.length && anyIdx < anyAccount.length) {
     const accountBinding = accountScoped[accountIdx];
     const anyBinding = anyAccount[anyIdx];
-    if ((accountBinding?.order ?? Number.MAX_SAFE_INTEGER) <= (anyBinding?.order ?? Number.MAX_SAFE_INTEGER)) {
+    if (
+      (accountBinding?.order ?? Number.MAX_SAFE_INTEGER) <=
+      (anyBinding?.order ?? Number.MAX_SAFE_INTEGER)
+    ) {
       if (accountBinding) {
         merged.push(accountBinding);
       }
@@ -348,7 +353,11 @@ function mergeEvaluatedBindingsInSourceOrder(
   return merged;
 }
 
-function pushToIndexMap(map: Map<string, EvaluatedBinding[]>, key: string | null, binding: EvaluatedBinding): void {
+function pushToIndexMap(
+  map: Map<string, EvaluatedBinding[]>,
+  key: string | null,
+  binding: EvaluatedBinding,
+): void {
   if (!key) {
     return;
   }
@@ -370,7 +379,10 @@ function peerLookupKeys(kind: ChatType, id: string): string[] {
   return [`${kind}:${id}`];
 }
 
-function collectPeerIndexedBindings(index: EvaluatedBindingsIndex, peer: RoutePeer | null): EvaluatedBinding[] {
+function collectPeerIndexedBindings(
+  index: EvaluatedBindingsIndex,
+  peer: RoutePeer | null,
+): EvaluatedBinding[] {
   if (!peer) {
     return [];
   }
@@ -496,7 +508,9 @@ function getEvaluatedBindingIndexForChannelAccount(
   return built;
 }
 
-function normalizePeerConstraint(peer: { kind?: string; id?: string } | undefined): NormalizedPeerConstraint {
+function normalizePeerConstraint(
+  peer: { kind?: string; id?: string } | undefined,
+): NormalizedPeerConstraint {
   if (!peer) {
     return { state: "none" };
   }
@@ -649,7 +663,11 @@ function matchesBindingScope(match: NormalizedBindingMatch, scope: BindingScope)
     return false;
   }
   if (match.peer.state === "valid") {
-    if (!scope.peer || !peerKindMatches(match.peer.kind, scope.peer.kind) || scope.peer.id !== match.peer.id) {
+    if (
+      !scope.peer ||
+      !peerKindMatches(match.peer.kind, scope.peer.kind) ||
+      scope.peer.id !== match.peer.id
+    ) {
       return false;
     }
   }
@@ -707,7 +725,8 @@ export function resolveAgentRouteExplicit(input: ResolveAgentRouteInput): AgentR
     teamId: teamId || null,
   };
 
-  const routeCache = !shouldLogDebug && !identityLinks ? resolveRouteCacheForConfig(input.cfg) : null;
+  const routeCache =
+    !shouldLogDebug && !identityLinks ? resolveRouteCacheForConfig(input.cfg) : null;
   const routeCacheKey = routeCache
     ? buildResolvedRouteCacheKey({
         channel,
@@ -747,7 +766,8 @@ export function resolveAgentRouteExplicit(input: ResolveAgentRouteInput): AgentR
     return route;
   };
 
-  const formatPeer = (value?: RoutePeer | null) => (value?.kind && value?.id ? `${value.kind}:${value.id}` : "none");
+  const formatPeer = (value?: RoutePeer | null) =>
+    value?.kind && value?.id ? `${value.kind}:${value.id}` : "none";
   const formatNormalizedPeer = (value: NormalizedPeerConstraint) => {
     if (value.state === "none") {
       return "none";
@@ -801,14 +821,16 @@ export function resolveAgentRouteExplicit(input: ResolveAgentRouteInput): AgentR
       enabled: Boolean(guildId && memberRoleIds.length > 0),
       scopePeer: peer,
       candidates: guildId ? (bindingsIndex.byGuildWithRoles.get(guildId) ?? []) : [],
-      predicate: (candidate) => hasGuildConstraint(candidate.match) && hasRolesConstraint(candidate.match),
+      predicate: (candidate) =>
+        hasGuildConstraint(candidate.match) && hasRolesConstraint(candidate.match),
     },
     {
       matchedBy: "binding.guild",
       enabled: Boolean(guildId),
       scopePeer: peer,
       candidates: guildId ? (bindingsIndex.byGuild.get(guildId) ?? []) : [],
-      predicate: (candidate) => hasGuildConstraint(candidate.match) && !hasRolesConstraint(candidate.match),
+      predicate: (candidate) =>
+        hasGuildConstraint(candidate.match) && !hasRolesConstraint(candidate.match),
     },
     {
       matchedBy: "binding.team",
@@ -886,7 +908,9 @@ export function resolveAgentRouteExplicit(input: ResolveAgentRouteInput): AgentR
  * `resolveAgentRoute` to this wrapper with a one-line change: add
  * `if (!route) return;` after the call.
  */
-export function resolveAgentRouteWithPolicy(input: ResolveAgentRouteInput): MatchedAgentRoute | null {
+export function resolveAgentRouteWithPolicy(
+  input: ResolveAgentRouteInput,
+): MatchedAgentRoute | null {
   const outcome = resolveAgentRouteExplicit(input);
   if (outcome.matched) {
     return outcome;

@@ -28,7 +28,9 @@ function filterInheritedParentFiles(params: {
   const starterFileIds = new Set(threadStarter.files.map((file) => file.id));
   const filtered = files.filter((file) => !file.id || !starterFileIds.has(file.id));
   if (filtered.length < files.length) {
-    logVerbose(`slack: filtered ${files.length - filtered.length} inherited parent file(s) from thread reply`);
+    logVerbose(
+      `slack: filtered ${files.length - filtered.length} inherited parent file(s) from thread reply`,
+    );
   }
   return filtered.length > 0 ? filtered : undefined;
 }

@@ -86,7 +86,8 @@ function redactMatch(match: string, groups: string[]): string {
   if (match.includes("PRIVATE KEY-----")) {
     return redactPemBlock(match);
   }
-  const token = groups.filter((value) => typeof value === "string" && value.length > 0).at(-1) ?? match;
+  const token =
+    groups.filter((value) => typeof value === "string" && value.length > 0).at(-1) ?? match;
   const masked = maskToken(token);
   if (token === match) {
     return masked;

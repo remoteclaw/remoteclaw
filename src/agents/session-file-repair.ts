@@ -69,7 +69,9 @@ export async function repairSessionFileIfNeeded(params: {
   }
 
   if (!isSessionHeader(entries[0])) {
-    params.warn?.(`session file repair skipped: invalid session header (${path.basename(sessionFile)})`);
+    params.warn?.(
+      `session file repair skipped: invalid session header (${path.basename(sessionFile)})`,
+    );
     return { repaired: false, droppedLines, reason: "invalid session header" };
   }
 
@@ -108,6 +110,8 @@ export async function repairSessionFileIfNeeded(params: {
     };
   }
 
-  params.warn?.(`session file repaired: dropped ${droppedLines} malformed line(s) (${path.basename(sessionFile)})`);
+  params.warn?.(
+    `session file repaired: dropped ${droppedLines} malformed line(s) (${path.basename(sessionFile)})`,
+  );
   return { repaired: true, droppedLines, backupPath };
 }

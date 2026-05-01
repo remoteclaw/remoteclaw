@@ -125,7 +125,10 @@ export function createGatewayCloseHandler(params: {
       await params.browserControl.stop().catch(() => {});
     }
     await new Promise<void>((resolve) => params.wss.close(() => resolve()));
-    const servers = params.httpServers && params.httpServers.length > 0 ? params.httpServers : [params.httpServer];
+    const servers =
+      params.httpServers && params.httpServers.length > 0
+        ? params.httpServers
+        : [params.httpServer];
     for (const server of servers) {
       const httpServer = server as HttpServer & {
         closeIdleConnections?: () => void;
@@ -133,7 +136,9 @@ export function createGatewayCloseHandler(params: {
       if (typeof httpServer.closeIdleConnections === "function") {
         httpServer.closeIdleConnections();
       }
-      await new Promise<void>((resolve, reject) => httpServer.close((err) => (err ? reject(err) : resolve())));
+      await new Promise<void>((resolve, reject) =>
+        httpServer.close((err) => (err ? reject(err) : resolve())),
+      );
     }
   };
 }

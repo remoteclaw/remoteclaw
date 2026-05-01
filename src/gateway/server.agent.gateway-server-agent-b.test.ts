@@ -58,7 +58,10 @@ const createMSTeamsPlugin = (params?: { aliases?: string[] }): ChannelPlugin => 
   },
 });
 
-const createStubChannelPlugin = (params: { id: ChannelPlugin["id"]; label: string }): ChannelPlugin => ({
+const createStubChannelPlugin = (params: {
+  id: ChannelPlugin["id"];
+  label: string;
+}): ChannelPlugin => ({
   ...createChannelTestPluginBase({
     id: params.id,
     label: params.label,
@@ -74,7 +77,10 @@ const createStubChannelPlugin = (params: { id: ChannelPlugin["id"]; label: strin
   },
 });
 
-const createConfiguredChannelPlugin = (params: { id: ChannelPlugin["id"]; label: string }): ChannelPlugin => ({
+const createConfiguredChannelPlugin = (params: {
+  id: ChannelPlugin["id"];
+  label: string;
+}): ChannelPlugin => ({
   ...createChannelTestPluginBase({
     id: params.id,
     label: params.label,
@@ -110,7 +116,12 @@ function readAgentCommandCall(fromEnd = 1) {
   return (calls.at(-fromEnd)?.[0] ?? {}) as Record<string, unknown>;
 }
 
-function expectAgentRoutingCall(params: { channel: string; deliver: boolean; to?: string; fromEnd?: number }) {
+function expectAgentRoutingCall(params: {
+  channel: string;
+  deliver: boolean;
+  to?: string;
+  fromEnd?: number;
+}) {
   const call = readAgentCommandCall(params.fromEnd);
   expectChannels(call, params.channel);
   if ("to" in params) {
@@ -123,7 +134,11 @@ function expectAgentRoutingCall(params: { channel: string; deliver: boolean; to?
   expect(typeof call.sessionId).toBe("string");
 }
 
-async function writeMainSessionEntry(params: { sessionId: string; lastChannel?: string; lastTo?: string }) {
+async function writeMainSessionEntry(params: {
+  sessionId: string;
+  lastChannel?: string;
+  lastTo?: string;
+}) {
   await useTempSessionStorePath();
   await writeSessionStore({
     entries: {
@@ -137,7 +152,10 @@ async function writeMainSessionEntry(params: { sessionId: string; lastChannel?: 
   });
 }
 
-function sendAgentWsRequest(socket: WebSocket, params: { reqId: string; message: string; idempotencyKey: string }) {
+function sendAgentWsRequest(
+  socket: WebSocket,
+  params: { reqId: string; message: string; idempotencyKey: string },
+) {
   socket.send(
     JSON.stringify({
       type: "req",
@@ -411,7 +429,10 @@ describe("gateway server agent", () => {
       expect(viaAgent.ok).toBe(false);
       expect(viaAgent.error?.message).toContain("missing scope: operator.admin");
 
-      const store = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<string, { sessionId?: string }>;
+      const store = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<
+        string,
+        { sessionId?: string }
+      >;
       expect(store["agent:main:main"]?.sessionId).toBeDefined();
       expect(store["agent:main:main"]?.sessionId).toBe("sess-main-before-write-reset");
       expect(vi.mocked(agentCommand)).not.toHaveBeenCalled();
@@ -421,8 +442,14 @@ describe("gateway server agent", () => {
   });
 
   test("agent ack response then final response", { timeout: 8000 }, async () => {
-    const ackP = onceMessage(ws, (o) => o.type === "res" && o.id === "ag1" && o.payload?.status === "accepted");
-    const finalP = onceMessage(ws, (o) => o.type === "res" && o.id === "ag1" && o.payload?.status !== "accepted");
+    const ackP = onceMessage(
+      ws,
+      (o) => o.type === "res" && o.id === "ag1" && o.payload?.status === "accepted",
+    );
+    const finalP = onceMessage(
+      ws,
+      (o) => o.type === "res" && o.id === "ag1" && o.payload?.status !== "accepted",
+    );
     sendAgentWsRequest(ws, {
       reqId: "ag1",
       message: "hi",

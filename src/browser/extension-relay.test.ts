@@ -270,7 +270,9 @@ describe("chrome extension relay server", () => {
 
     const token = relayAuthHeaders(`ws://127.0.0.1:${port}/extension`)["x-remoteclaw-relay-token"];
     expect(token).toBeTruthy();
-    const ext = new WebSocket(`ws://127.0.0.1:${port}/extension?token=${encodeURIComponent(String(token))}`);
+    const ext = new WebSocket(
+      `ws://127.0.0.1:${port}/extension?token=${encodeURIComponent(String(token))}`,
+    );
     await waitForOpen(ext);
     ext.close();
   });
@@ -285,7 +287,9 @@ describe("chrome extension relay server", () => {
     });
     expect(versionRes.status).toBe(200);
 
-    const ext = new WebSocket(`ws://127.0.0.1:${port}/extension?token=${encodeURIComponent(TEST_GATEWAY_TOKEN)}`);
+    const ext = new WebSocket(
+      `ws://127.0.0.1:${port}/extension?token=${encodeURIComponent(TEST_GATEWAY_TOKEN)}`,
+    );
     await waitForOpen(ext);
     ext.close();
   });
@@ -352,10 +356,18 @@ describe("chrome extension relay server", () => {
             title?: string;
           }>,
         (list) =>
-          list.some((t) => t.id === "t1" && t.url === "https://www.derstandard.at/" && t.title === "DER STANDARD"),
+          list.some(
+            (t) =>
+              t.id === "t1" &&
+              t.url === "https://www.derstandard.at/" &&
+              t.title === "DER STANDARD",
+          ),
       );
       expect(
-        list2.some((t) => t.id === "t1" && t.url === "https://www.derstandard.at/" && t.title === "DER STANDARD"),
+        list2.some(
+          (t) =>
+            t.id === "t1" && t.url === "https://www.derstandard.at/" && t.title === "DER STANDARD",
+        ),
       ).toBe(true);
 
       const cdp = new WebSocket(`ws://127.0.0.1:${port}/cdp`, {
@@ -518,7 +530,9 @@ describe("chrome extension relay server", () => {
       blocker.once("error", reject);
     });
     const blockedUrl = `http://127.0.0.1:${port}`;
-    await expect(ensureChromeExtensionRelayServer({ cdpUrl: blockedUrl })).rejects.toThrow(/EADDRINUSE/i);
+    await expect(ensureChromeExtensionRelayServer({ cdpUrl: blockedUrl })).rejects.toThrow(
+      /EADDRINUSE/i,
+    );
     await new Promise<void>((resolve) => blocker.close(() => resolve()));
   });
 });

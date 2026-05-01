@@ -171,7 +171,11 @@ function findPositionalInterpreterSpec(executable: string): PositionalInterprete
   return null;
 }
 
-function createInlineEvalHit(executable: string, argv: string[], flag: string): InterpreterInlineEvalHit {
+function createInlineEvalHit(
+  executable: string,
+  argv: string[],
+  flag: string,
+): InterpreterInlineEvalHit {
   return {
     executable,
     normalizedExecutable: normalizeExecutableToken(executable),
@@ -180,7 +184,9 @@ function createInlineEvalHit(executable: string, argv: string[], flag: string): 
   };
 }
 
-export function detectInterpreterInlineEvalArgv(argv: string[] | undefined | null): InterpreterInlineEvalHit | null {
+export function detectInterpreterInlineEvalArgv(
+  argv: string[] | undefined | null,
+): InterpreterInlineEvalHit | null {
   if (!Array.isArray(argv) || argv.length === 0) {
     return null;
   }
@@ -245,7 +251,11 @@ export function detectInterpreterInlineEvalArgv(argv: string[] | undefined | nul
     if (positionalSpec.fileFlags?.has(token)) {
       return null;
     }
-    if (positionalSpec.fileFlagPrefixes?.some((prefix) => token.startsWith(prefix) && token.length > prefix.length)) {
+    if (
+      positionalSpec.fileFlagPrefixes?.some(
+        (prefix) => token.startsWith(prefix) && token.length > prefix.length,
+      )
+    ) {
       return null;
     }
     if (positionalSpec.exactValueFlags?.has(token)) {
@@ -255,7 +265,11 @@ export function detectInterpreterInlineEvalArgv(argv: string[] | undefined | nul
     if (positionalSpec.exactOptionalValueFlags?.has(token)) {
       continue;
     }
-    if (positionalSpec.prefixValueFlags?.some((prefix) => token.startsWith(prefix) && token.length > prefix.length)) {
+    if (
+      positionalSpec.prefixValueFlags?.some(
+        (prefix) => token.startsWith(prefix) && token.length > prefix.length,
+      )
+    ) {
       continue;
     }
     if (token.startsWith("-")) {

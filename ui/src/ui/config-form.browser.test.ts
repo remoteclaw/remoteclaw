@@ -60,9 +60,9 @@ describe("config form renderer", () => {
     tokenInput.dispatchEvent(new Event("input", { bubbles: true }));
     expect(onPatch).toHaveBeenCalledWith(["gateway", "auth", "token"], "abc123");
 
-    const tokenButton = Array.from(container.querySelectorAll<HTMLButtonElement>(".cfg-segmented__btn")).find(
-      (btn) => btn.textContent?.trim() === "token",
-    );
+    const tokenButton = Array.from(
+      container.querySelectorAll<HTMLButtonElement>(".cfg-segmented__btn"),
+    ).find((btn) => btn.textContent?.trim() === "token");
     expect(tokenButton).not.toBeUndefined();
     tokenButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     expect(onPatch).toHaveBeenCalledWith(["mode"], "token");
@@ -118,9 +118,9 @@ describe("config form renderer", () => {
       container,
     );
 
-    const tailnetButton = Array.from(container.querySelectorAll<HTMLButtonElement>(".cfg-segmented__btn")).find(
-      (btn) => btn.textContent?.trim() === "tailnet",
-    );
+    const tailnetButton = Array.from(
+      container.querySelectorAll<HTMLButtonElement>(".cfg-segmented__btn"),
+    ).find((btn) => btn.textContent?.trim() === "tailnet");
     expect(tailnetButton).not.toBeUndefined();
     tailnetButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     expect(onPatch).toHaveBeenCalledWith(["bind"], "tailnet");
@@ -214,7 +214,9 @@ describe("config form renderer", () => {
       container,
     );
 
-    const tags = Array.from(container.querySelectorAll(".cfg-tag")).map((node) => node.textContent?.trim());
+    const tags = Array.from(container.querySelectorAll(".cfg-tag")).map((node) =>
+      node.textContent?.trim(),
+    );
     expect(tags).toContain("security");
     expect(tags).toContain("secret");
   });

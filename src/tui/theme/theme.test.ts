@@ -7,9 +7,11 @@ const cliHighlightMocks = vi.hoisted(() => ({
 
 vi.mock("cli-highlight", () => cliHighlightMocks);
 
-const { markdownTheme, searchableSelectListTheme, selectListTheme, theme } = await import("./theme.js");
+const { markdownTheme, searchableSelectListTheme, selectListTheme, theme } =
+  await import("./theme.js");
 
-const stripAnsi = (str: string) => str.replace(new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, "g"), "");
+const stripAnsi = (str: string) =>
+  str.replace(new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, "g"), "");
 
 function relativeLuminance(hex: string): number {
   const channels = hex
@@ -24,7 +26,9 @@ function relativeLuminance(hex: string): number {
 }
 
 function contrastRatio(foreground: string, background: string): number {
-  const [lighter, darker] = [relativeLuminance(foreground), relativeLuminance(background)].toSorted((a, b) => b - a);
+  const [lighter, darker] = [relativeLuminance(foreground), relativeLuminance(background)].toSorted(
+    (a, b) => b - a,
+  );
   return (lighter + 0.05) / (darker + 0.05);
 }
 
@@ -280,9 +284,13 @@ describe("light palette accessibility", () => {
 describe("list themes", () => {
   it("reuses shared select-list styles in searchable list theme", () => {
     expect(searchableSelectListTheme.selectedPrefix(">")).toBe(selectListTheme.selectedPrefix(">"));
-    expect(searchableSelectListTheme.selectedText("entry")).toBe(selectListTheme.selectedText("entry"));
+    expect(searchableSelectListTheme.selectedText("entry")).toBe(
+      selectListTheme.selectedText("entry"),
+    );
     expect(searchableSelectListTheme.description("desc")).toBe(selectListTheme.description("desc"));
-    expect(searchableSelectListTheme.scrollInfo("scroll")).toBe(selectListTheme.scrollInfo("scroll"));
+    expect(searchableSelectListTheme.scrollInfo("scroll")).toBe(
+      selectListTheme.scrollInfo("scroll"),
+    );
     expect(searchableSelectListTheme.noMatch("none")).toBe(selectListTheme.noMatch("none"));
   });
 

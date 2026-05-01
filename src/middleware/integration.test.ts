@@ -5,7 +5,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReplyPayload } from "../auto-reply/types.js";
 import { buildSessionKey, ChannelBridge, type ChannelBridgeOptions } from "./channel-bridge.js";
 import { SessionMap } from "./session-map.js";
-import type { AgentEvent, AgentExecuteParams, AgentRunResult, AgentRuntime, ChannelMessage } from "./types.js";
+import type {
+  AgentEvent,
+  AgentExecuteParams,
+  AgentRunResult,
+  AgentRuntime,
+  ChannelMessage,
+} from "./types.js";
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -172,7 +178,9 @@ describe("M2 middleware integration", () => {
       await bridge.handle(msg);
 
       // Second call — should resume
-      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone({ sessionId: "sess-resume" })]));
+      const executeFn = vi.fn((_p: AgentExecuteParams) =>
+        eventStream([makeDone({ sessionId: "sess-resume" })]),
+      );
       mockRuntimeInstance = { execute: executeFn };
       await bridge.handle(msg);
 
@@ -184,7 +192,10 @@ describe("M2 middleware integration", () => {
 
   describe("streaming callbacks", () => {
     it("fires onBlockReply with final text payload", async () => {
-      mockRuntimeInstance = mockRuntime([{ type: "text", text: "Final answer" }, makeDone({ text: "Final answer" })]);
+      mockRuntimeInstance = mockRuntime([
+        { type: "text", text: "Final answer" },
+        makeDone({ text: "Final answer" }),
+      ]);
 
       const onBlockReply = vi.fn();
       const bridge = createBridge();
@@ -194,7 +205,10 @@ describe("M2 middleware integration", () => {
     });
 
     it("fires onToolResult when runtime emits tool_result events", async () => {
-      mockRuntimeInstance = mockRuntime([{ type: "tool_result", toolId: "tool-1", output: "result data" }, makeDone()]);
+      mockRuntimeInstance = mockRuntime([
+        { type: "tool_result", toolId: "tool-1", output: "result data" },
+        makeDone(),
+      ]);
 
       const onToolResult = vi.fn();
       const bridge = createBridge();
@@ -205,7 +219,10 @@ describe("M2 middleware integration", () => {
 
     it("fires onPartialReply when text exceeds chunk limit", async () => {
       const longText = "word ".repeat(100); // 500 chars
-      mockRuntimeInstance = mockRuntime([{ type: "text", text: longText }, makeDone({ text: longText })]);
+      mockRuntimeInstance = mockRuntime([
+        { type: "text", text: longText },
+        makeDone({ text: longText }),
+      ]);
 
       const onPartialReply = vi.fn();
       const bridge = createBridge({ chunkLimit: 50 });
@@ -285,7 +302,10 @@ describe("M2 middleware integration", () => {
     });
 
     it("captures error from error events in the stream", async () => {
-      mockRuntimeInstance = mockRuntime([{ type: "error", message: "Something went wrong" }, makeDone()]);
+      mockRuntimeInstance = mockRuntime([
+        { type: "error", message: "Something went wrong" },
+        makeDone(),
+      ]);
 
       const bridge = createBridge();
       const result = await bridge.handle(makeMessage());
@@ -344,7 +364,9 @@ describe("M2 middleware integration", () => {
       await bridge.handle(msg);
 
       // Second call with same key — should resume
-      const executeFn = vi.fn((_p: AgentExecuteParams) => eventStream([makeDone({ sessionId: "sess-shared" })]));
+      const executeFn = vi.fn((_p: AgentExecuteParams) =>
+        eventStream([makeDone({ sessionId: "sess-shared" })]),
+      );
       mockRuntimeInstance = { execute: executeFn };
       await bridge.handle(msg);
 

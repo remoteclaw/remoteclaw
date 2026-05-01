@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const prepareSlackMessageMock =
-  vi.fn<(params: { opts: { source: "message" | "app_mention"; wasMentioned?: boolean } }) => Promise<unknown>>();
+  vi.fn<
+    (params: {
+      opts: { source: "message" | "app_mention"; wasMentioned?: boolean };
+    }) => Promise<unknown>
+  >();
 const dispatchPreparedSlackMessageMock = vi.fn<(prepared: unknown) => Promise<void>>();
 
 vi.mock("../../../../src/channels/inbound-debounce-policy.js", () => ({
@@ -42,7 +46,8 @@ vi.mock("./message-handler/prepare.js", () => ({
 vi.mock("./message-handler/dispatch.js", () => ({
   dispatchPreparedSlackMessage: (
     prepared: Parameters<typeof dispatchPreparedSlackMessageMock>[0],
-  ): ReturnType<typeof dispatchPreparedSlackMessageMock> => dispatchPreparedSlackMessageMock(prepared),
+  ): ReturnType<typeof dispatchPreparedSlackMessageMock> =>
+    dispatchPreparedSlackMessageMock(prepared),
 }));
 
 let createSlackMessageHandler: typeof import("./message-handler.js").createSlackMessageHandler;
@@ -138,7 +143,8 @@ describe("createSlackMessageHandler app_mention race handling", () => {
   });
 
   it("allows app_mention while message handling is still in-flight, then keeps later duplicates deduped", async () => {
-    const { handler, messagePending, resolveMessagePrepare } = await createInFlightMessageScenario("1700000000.000150");
+    const { handler, messagePending, resolveMessagePrepare } =
+      await createInFlightMessageScenario("1700000000.000150");
 
     await sendMentionEvent(handler, "1700000000.000150");
 
@@ -152,7 +158,8 @@ describe("createSlackMessageHandler app_mention race handling", () => {
   });
 
   it("suppresses message dispatch when app_mention already dispatched during in-flight race", async () => {
-    const { handler, messagePending, resolveMessagePrepare } = await createInFlightMessageScenario("1700000000.000175");
+    const { handler, messagePending, resolveMessagePrepare } =
+      await createInFlightMessageScenario("1700000000.000175");
 
     await sendMentionEvent(handler, "1700000000.000175");
 

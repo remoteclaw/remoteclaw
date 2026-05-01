@@ -60,9 +60,13 @@ async function main() {
     .filter((filePath) => existsSync(filePath))
     .filter((filePath) => filePath.endsWith(".ts") || filePath.endsWith(".tsx"));
 
-  const results = await Promise.all(files.map(async (filePath) => ({ filePath, lines: await countLines(filePath) })));
+  const results = await Promise.all(
+    files.map(async (filePath) => ({ filePath, lines: await countLines(filePath) })),
+  );
 
-  const offenders = results.filter((result) => result.lines > maxLines).toSorted((a, b) => b.lines - a.lines);
+  const offenders = results
+    .filter((result) => result.lines > maxLines)
+    .toSorted((a, b) => b.lines - a.lines);
 
   if (!offenders.length) {
     return;

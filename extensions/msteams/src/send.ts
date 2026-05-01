@@ -1,10 +1,18 @@
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/msteams";
 import { loadOutboundMediaFromUrl } from "remoteclaw/plugin-sdk/msteams";
 import { createMSTeamsConversationStoreFs } from "./conversation-store-fs.js";
-import { classifyMSTeamsSendError, formatMSTeamsSendErrorHint, formatUnknownError } from "./errors.js";
+import {
+  classifyMSTeamsSendError,
+  formatMSTeamsSendErrorHint,
+  formatUnknownError,
+} from "./errors.js";
 import { prepareFileConsentActivity, requiresFileConsent } from "./file-consent-helpers.js";
 import { buildTeamsFileInfoCard } from "./graph-chat.js";
-import { getDriveItemProperties, uploadAndShareOneDrive, uploadAndShareSharePoint } from "./graph-upload.js";
+import {
+  getDriveItemProperties,
+  uploadAndShareOneDrive,
+  uploadAndShareSharePoint,
+} from "./graph-upload.js";
 import { extractFilename, extractMessageId } from "./media-helpers.js";
 import { buildConversationReference, sendMSTeamsMessages } from "./messenger.js";
 import { buildMSTeamsPollCard } from "./polls.js";
@@ -83,7 +91,9 @@ export type SendMSTeamsCardResult = {
  * - Personal (1:1) chats: small images (<4MB) use base64, large files and non-images use FileConsentCard
  * - Group chats / channels: files are uploaded to OneDrive and shared via link
  */
-export async function sendMessageMSTeams(params: SendMSTeamsMessageParams): Promise<SendMSTeamsMessageResult> {
+export async function sendMessageMSTeams(
+  params: SendMSTeamsMessageParams,
+): Promise<SendMSTeamsMessageResult> {
   const { cfg, to, text, mediaUrl, mediaLocalRoots } = params;
   const tableMode = getMSTeamsRuntime().channel.text.resolveMarkdownTableMode({
     cfg,
@@ -91,7 +101,16 @@ export async function sendMessageMSTeams(params: SendMSTeamsMessageParams): Prom
   });
   const messageText = getMSTeamsRuntime().channel.text.convertMarkdownTables(text ?? "", tableMode);
   const ctx = await resolveMSTeamsSendContext({ cfg, to });
-  const { adapter, appId, conversationId, ref, log, conversationType, tokenProvider, sharePointSiteId } = ctx;
+  const {
+    adapter,
+    appId,
+    conversationId,
+    ref,
+    log,
+    conversationType,
+    tokenProvider,
+    sharePointSiteId,
+  } = ctx;
 
   log.debug?.("sending proactive message", {
     conversationId,
@@ -273,9 +292,12 @@ export async function sendMessageMSTeams(params: SendMSTeamsMessageParams): Prom
       const classification = classifyMSTeamsSendError(err);
       const hint = formatMSTeamsSendErrorHint(classification);
       const status = classification.statusCode ? ` (HTTP ${classification.statusCode})` : "";
-      throw new Error(`msteams file send failed${status}: ${formatUnknownError(err)}${hint ? ` (${hint})` : ""}`, {
-        cause: err,
-      });
+      throw new Error(
+        `msteams file send failed${status}: ${formatUnknownError(err)}${hint ? ` (${hint})` : ""}`,
+        {
+          cause: err,
+        },
+      );
     }
   }
 
@@ -291,7 +313,16 @@ async function sendTextWithMedia(
   text: string,
   mediaUrl: string | undefined,
 ): Promise<SendMSTeamsMessageResult> {
-  const { adapter, appId, conversationId, ref, log, tokenProvider, sharePointSiteId, mediaMaxBytes } = ctx;
+  const {
+    adapter,
+    appId,
+    conversationId,
+    ref,
+    log,
+    tokenProvider,
+    sharePointSiteId,
+    mediaMaxBytes,
+  } = ctx;
 
   let messageIds: string[];
   try {
@@ -313,9 +344,12 @@ async function sendTextWithMedia(
     const classification = classifyMSTeamsSendError(err);
     const hint = formatMSTeamsSendErrorHint(classification);
     const status = classification.statusCode ? ` (HTTP ${classification.statusCode})` : "";
-    throw new Error(`msteams send failed${status}: ${formatUnknownError(err)}${hint ? ` (${hint})` : ""}`, {
-      cause: err,
-    });
+    throw new Error(
+      `msteams send failed${status}: ${formatUnknownError(err)}${hint ? ` (${hint})` : ""}`,
+      {
+        cause: err,
+      },
+    );
   }
 
   const messageId = messageIds[0] ?? "unknown";
@@ -375,16 +409,21 @@ async function sendProactiveActivity({
     const classification = classifyMSTeamsSendError(err);
     const hint = formatMSTeamsSendErrorHint(classification);
     const status = classification.statusCode ? ` (HTTP ${classification.statusCode})` : "";
-    throw new Error(`${errorPrefix} failed${status}: ${formatUnknownError(err)}${hint ? ` (${hint})` : ""}`, {
-      cause: err,
-    });
+    throw new Error(
+      `${errorPrefix} failed${status}: ${formatUnknownError(err)}${hint ? ` (${hint})` : ""}`,
+      {
+        cause: err,
+      },
+    );
   }
 }
 
 /**
  * Send a poll (Adaptive Card) to a Teams conversation or user.
  */
-export async function sendPollMSTeams(params: SendMSTeamsPollParams): Promise<SendMSTeamsPollResult> {
+export async function sendPollMSTeams(
+  params: SendMSTeamsPollParams,
+): Promise<SendMSTeamsPollResult> {
   const { cfg, to, question, options, maxSelections } = params;
   const { adapter, appId, conversationId, ref, log } = await resolveMSTeamsSendContext({
     cfg,
@@ -434,7 +473,9 @@ export async function sendPollMSTeams(params: SendMSTeamsPollParams): Promise<Se
 /**
  * Send an arbitrary Adaptive Card to a Teams conversation or user.
  */
-export async function sendAdaptiveCardMSTeams(params: SendMSTeamsCardParams): Promise<SendMSTeamsCardResult> {
+export async function sendAdaptiveCardMSTeams(
+  params: SendMSTeamsCardParams,
+): Promise<SendMSTeamsCardResult> {
   const { cfg, to, card } = params;
   const { adapter, appId, conversationId, ref, log } = await resolveMSTeamsSendContext({
     cfg,

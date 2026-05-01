@@ -35,7 +35,8 @@ describe("sessions", () => {
     await fs.rm(fixtureRoot, { recursive: true, force: true });
   });
 
-  const withStateDir = <T>(stateDir: string, fn: () => T): T => withEnv({ REMOTECLAW_STATE_DIR: stateDir }, fn);
+  const withStateDir = <T>(stateDir: string, fn: () => T): T =>
+    withEnv({ REMOTECLAW_STATE_DIR: stateDir }, fn);
 
   async function createSessionStoreFixture(params: {
     prefix: string;
@@ -48,7 +49,13 @@ describe("sessions", () => {
   }
 
   function expectedBot1FallbackSessionPath() {
-    return path.join(path.resolve("/different/state"), "agents", "bot1", "sessions", "sess-1.jsonl");
+    return path.join(
+      path.resolve("/different/state"),
+      "agents",
+      "bot1",
+      "sessions",
+      "sess-1.jsonl",
+    );
   }
 
   function buildMainSessionEntry(overrides: Record<string, unknown> = {}) {
@@ -201,7 +208,9 @@ describe("sessions", () => {
 
   for (const testCase of resolveSessionKeyCases) {
     it(testCase.name, () => {
-      expect(resolveSessionKey(testCase.scope, testCase.ctx, "main", testCase.mainKey)).toBe(testCase.expected);
+      expect(resolveSessionKey(testCase.scope, testCase.ctx, "main", testCase.mainKey)).toBe(
+        testCase.expected,
+      );
     });
   }
 
@@ -542,7 +551,13 @@ describe("sessions", () => {
     withStateDir("/custom/state", () => {
       const sessionFile = resolveSessionTranscriptPath("sess-1", "main", 123);
       expect(sessionFile).toBe(
-        path.join(path.resolve("/custom/state"), "agents", "main", "sessions", "sess-1-topic-123.jsonl"),
+        path.join(
+          path.resolve("/custom/state"),
+          "agents",
+          "main",
+          "sessions",
+          "sess-1-topic-123.jsonl",
+        ),
       );
     });
   });
@@ -552,7 +567,9 @@ describe("sessions", () => {
       const sessionFile = resolveSessionFilePath("sess-2", undefined, {
         agentId: "codex",
       });
-      expect(sessionFile).toBe(path.join(path.resolve("/custom/state"), "agents", "codex", "sessions", "sess-2.jsonl"));
+      expect(sessionFile).toBe(
+        path.join(path.resolve("/custom/state"), "agents", "codex", "sessions", "sess-2.jsonl"),
+      );
     });
   });
 
@@ -562,7 +579,9 @@ describe("sessions", () => {
       // Agent bot1 resolves a sessionFile that belongs to agent bot2
       resolveSessionFilePath("sess-1", { sessionFile: bot2SessionPath }, { agentId: "bot1" }),
     );
-    expect(await normalizePathForComparison(sessionFile)).toBe(await normalizePathForComparison(bot2SessionPath));
+    expect(await normalizePathForComparison(sessionFile)).toBe(
+      await normalizePathForComparison(bot2SessionPath),
+    );
   });
 
   it("resolves cross-agent paths when REMOTECLAW_STATE_DIR differs from stored paths", () => {
@@ -570,7 +589,11 @@ describe("sessions", () => {
       const originalBase = path.resolve("/original/state");
       const bot2Session = path.join(originalBase, "agents", "bot2", "sessions", "sess-1.jsonl");
       // sessionFile was created under a different state dir than current env
-      const sessionFile = resolveSessionFilePath("sess-1", { sessionFile: bot2Session }, { agentId: "bot1" });
+      const sessionFile = resolveSessionFilePath(
+        "sess-1",
+        { sessionFile: bot2Session },
+        { agentId: "bot1" },
+      );
       expect(sessionFile).toBe(bot2Session);
     });
   });
@@ -591,8 +614,19 @@ describe("sessions", () => {
   it("falls back when structural cross-root path nests under sessions", () => {
     withStateDir(path.resolve("/different/state"), () => {
       const originalBase = path.resolve("/original/state");
-      const nested = path.join(originalBase, "agents", "bot2", "sessions", "nested", "sess-1.jsonl");
-      const sessionFile = resolveSessionFilePath("sess-1", { sessionFile: nested }, { agentId: "bot1" });
+      const nested = path.join(
+        originalBase,
+        "agents",
+        "bot2",
+        "sessions",
+        "nested",
+        "sess-1.jsonl",
+      );
+      const sessionFile = resolveSessionFilePath(
+        "sess-1",
+        { sessionFile: nested },
+        { agentId: "bot1" },
+      );
       expect(sessionFile).toBe(expectedBot1FallbackSessionPath());
     });
   });
@@ -608,7 +642,8 @@ describe("sessions", () => {
   });
 
   it("resolves sibling agent absolute sessionFile using alternate agentId from options", async () => {
-    const { stateDir, mainStorePath, bot2SessionPath } = await createAgentSessionsLayout("sibling-agent");
+    const { stateDir, mainStorePath, bot2SessionPath } =
+      await createAgentSessionsLayout("sibling-agent");
     const sessionFile = withStateDir(stateDir, () => {
       const opts = resolveSessionFilePathOptions({
         agentId: "bot2",
@@ -617,7 +652,9 @@ describe("sessions", () => {
 
       return resolveSessionFilePath("sess-1", { sessionFile: bot2SessionPath }, opts);
     });
-    expect(await normalizePathForComparison(sessionFile)).toBe(await normalizePathForComparison(bot2SessionPath));
+    expect(await normalizePathForComparison(sessionFile)).toBe(
+      await normalizePathForComparison(bot2SessionPath),
+    );
   });
 
   it("falls back to derived transcript path when sessionFile is outside agent sessions directories", async () => {
@@ -626,7 +663,9 @@ describe("sessions", () => {
       resolveSessionFilePath("sess-1", { sessionFile: outsidePath }, { agentId: "bot1" }),
     );
     const expectedPath = path.join(stateDir, "agents", "bot1", "sessions", "sess-1.jsonl");
-    expect(await normalizePathForComparison(sessionFile)).toBe(await normalizePathForComparison(expectedPath));
+    expect(await normalizePathForComparison(sessionFile)).toBe(
+      await normalizePathForComparison(expectedPath),
+    );
   });
 
   it("updateSessionStoreEntry merges concurrent patches", async () => {
@@ -700,7 +739,10 @@ describe("sessions", () => {
     const originalStat = await fs.stat(storePath);
 
     // Simulate an external writer that updates the store but preserves mtime.
-    const externalStore = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<string, Record<string, unknown>>;
+    const externalStore = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<
+      string,
+      Record<string, unknown>
+    >;
     externalStore[mainSessionKey] = {
       ...externalStore[mainSessionKey],
       providerOverride: "anthropic",

@@ -8,9 +8,15 @@ export const DevicePairApproveParamsSchema = Type.Object(
   { additionalProperties: false },
 );
 
-export const DevicePairRejectParamsSchema = Type.Object({ requestId: NonEmptyString }, { additionalProperties: false });
+export const DevicePairRejectParamsSchema = Type.Object(
+  { requestId: NonEmptyString },
+  { additionalProperties: false },
+);
 
-export const DevicePairRemoveParamsSchema = Type.Object({ deviceId: NonEmptyString }, { additionalProperties: false });
+export const DevicePairRemoveParamsSchema = Type.Object(
+  { deviceId: NonEmptyString },
+  { additionalProperties: false },
+);
 
 export const DeviceTokenRotateParamsSchema = Type.Object(
   {

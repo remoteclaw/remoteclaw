@@ -1,4 +1,7 @@
-export function readString(meta: Record<string, unknown> | null | undefined, keys: string[]): string | undefined {
+export function readString(
+  meta: Record<string, unknown> | null | undefined,
+  keys: string[],
+): string | undefined {
   if (!meta) {
     return undefined;
   }
@@ -11,7 +14,10 @@ export function readString(meta: Record<string, unknown> | null | undefined, key
   return undefined;
 }
 
-export function readBool(meta: Record<string, unknown> | null | undefined, keys: string[]): boolean | undefined {
+export function readBool(
+  meta: Record<string, unknown> | null | undefined,
+  keys: string[],
+): boolean | undefined {
   if (!meta) {
     return undefined;
   }
@@ -24,7 +30,10 @@ export function readBool(meta: Record<string, unknown> | null | undefined, keys:
   return undefined;
 }
 
-export function readNumber(meta: Record<string, unknown> | null | undefined, keys: string[]): number | undefined {
+export function readNumber(
+  meta: Record<string, unknown> | null | undefined,
+  keys: string[],
+): number | undefined {
   if (!meta) {
     return undefined;
   }

@@ -51,7 +51,10 @@ async function createWorkspaceWithEscape(workspaceRoot: string, agentId: string)
   return workspaceDir;
 }
 
-async function createWorkspaceWithoutEscape(workspaceRoot: string, agentId: string): Promise<string> {
+async function createWorkspaceWithoutEscape(
+  workspaceRoot: string,
+  agentId: string,
+): Promise<string> {
   const workspaceDir = path.join(workspaceRoot, agentId);
   await fs.mkdir(workspaceDir, { recursive: true });
   return workspaceDir;

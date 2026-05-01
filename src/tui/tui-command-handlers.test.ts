@@ -19,7 +19,8 @@ function createHarness(params?: {
   const addUser = vi.fn();
   const addSystem = vi.fn();
   const requestRender = vi.fn();
-  const loadHistory = params?.loadHistory ?? (vi.fn().mockResolvedValue(undefined) as LoadHistoryMock);
+  const loadHistory =
+    params?.loadHistory ?? (vi.fn().mockResolvedValue(undefined) as LoadHistoryMock);
   const setActivityStatus = params?.setActivityStatus ?? (vi.fn() as SetActivityStatusMock);
 
   const { handleCommand } = createCommandHandlers({

@@ -27,7 +27,9 @@ export function resolveTelegramVoiceSend(opts: {
 }): { useVoice: boolean } {
   const decision = resolveTelegramVoiceDecision(opts);
   if (decision.reason && opts.logFallback) {
-    opts.logFallback(`Telegram voice requested but ${decision.reason}; sending as audio file instead.`);
+    opts.logFallback(
+      `Telegram voice requested but ${decision.reason}; sending as audio file instead.`,
+    );
   }
   return { useVoice: decision.useVoice };
 }

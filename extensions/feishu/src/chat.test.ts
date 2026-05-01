@@ -50,7 +50,9 @@ describe("registerFeishuChatTools", () => {
       data: { name: "group name", user_count: 3 },
     });
     const infoResult = await tool.execute("tc_1", { action: "info", chat_id: "oc_1" });
-    expect(infoResult.details).toEqual(expect.objectContaining({ chat_id: "oc_1", name: "group name", user_count: 3 }));
+    expect(infoResult.details).toEqual(
+      expect.objectContaining({ chat_id: "oc_1", name: "group name", user_count: 3 }),
+    );
 
     chatMembersGetMock.mockResolvedValueOnce({
       code: 0,

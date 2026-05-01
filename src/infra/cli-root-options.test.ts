@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { consumeRootOptionToken, isValueToken } from "./cli-root-options.js";
 
-function expectValueTokenCases(cases: ReadonlyArray<{ value: string | undefined; expected: boolean }>): void {
+function expectValueTokenCases(
+  cases: ReadonlyArray<{ value: string | undefined; expected: boolean }>,
+): void {
   for (const { value, expected } of cases) {
     expect(isValueToken(value)).toBe(expected);
   }

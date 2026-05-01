@@ -373,7 +373,15 @@ const ENUM_EXPECTATIONS: Record<string, string[]> = {
   "wizard.lastRunMode": ['"local"', '"remote"'],
   "diagnostics.otel.protocol": ['"http/protobuf"', '"grpc"'],
   "logging.level": ['"silent"', '"fatal"', '"error"', '"warn"', '"info"', '"debug"', '"trace"'],
-  "logging.consoleLevel": ['"silent"', '"fatal"', '"error"', '"warn"', '"info"', '"debug"', '"trace"'],
+  "logging.consoleLevel": [
+    '"silent"',
+    '"fatal"',
+    '"error"',
+    '"warn"',
+    '"info"',
+    '"debug"',
+    '"trace"',
+  ],
   "logging.consoleStyle": ['"pretty"', '"compact"', '"json"'],
   "logging.redactSensitive": ['"off"', '"tools"'],
   "cli.banner.taglineMode": ['"random"', '"default"', '"off"'],
@@ -493,12 +501,19 @@ const FINAL_BACKLOG_TARGET_KEYS = [
 ] as const;
 
 describe("config help copy quality", () => {
-  function expectOperationalGuidance(keys: readonly string[], guidancePattern: RegExp, minLength = 80) {
+  function expectOperationalGuidance(
+    keys: readonly string[],
+    guidancePattern: RegExp,
+    minLength = 80,
+  ) {
     for (const key of keys) {
       const help = FIELD_HELP[key];
       expect(help, `missing help for ${key}`).toBeDefined();
       expect(help.length, `help too short for ${key}`).toBeGreaterThanOrEqual(minLength);
-      expect(guidancePattern.test(help), `help should include operational guidance for ${key}`).toBe(true);
+      expect(
+        guidancePattern.test(help),
+        `help should include operational guidance for ${key}`,
+      ).toBe(true);
     }
   }
 
@@ -516,7 +531,10 @@ describe("config help copy quality", () => {
   });
 
   it("covers the target confusing fields with non-trivial explanations", () => {
-    expectOperationalGuidance(TARGET_KEYS, /(default|keep|use|enable|disable|controls|selects|sets|defines)/i);
+    expectOperationalGuidance(
+      TARGET_KEYS,
+      /(default|keep|use|enable|disable|controls|selects|sets|defines)/i,
+    );
   });
 
   it("covers tools/hooks help keys with non-trivial operational guidance", () => {

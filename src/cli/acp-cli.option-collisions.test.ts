@@ -79,7 +79,12 @@ describe("acp cli option collisions", () => {
       { token: "tok_file\n", [passwordKey()]: "pw_file\n" },
       async (files) => {
         // pragma: allowlist secret
-        await parseAcp(["--token-file", files.tokenFile ?? "", "--password-file", files.passwordFile ?? ""]);
+        await parseAcp([
+          "--token-file",
+          files.tokenFile ?? "",
+          "--password-file",
+          files.passwordFile ?? "",
+        ]);
       },
     );
 
@@ -101,7 +106,12 @@ describe("acp cli option collisions", () => {
     {
       name: "rejects mixed password flags and file flags",
       files: { password: "pw_file\n" }, // pragma: allowlist secret
-      args: (_tokenFile: string, passwordFile: string) => ["--password", "pw_inline", "--password-file", passwordFile],
+      args: (_tokenFile: string, passwordFile: string) => [
+        "--password",
+        "pw_inline",
+        "--password-file",
+        passwordFile,
+      ],
       expected: /Use either --password or --password-file/,
     },
   ])("$name", async ({ files, args, expected }) => {

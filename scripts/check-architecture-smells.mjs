@@ -11,7 +11,12 @@ import {
   writeLine,
 } from "./lib/guard-inventory-utils.mjs";
 import { GENERATED_PLUGIN_SDK_FACADES_SCRIPT } from "./lib/plugin-sdk-facades.mjs";
-import { collectTypeScriptFilesFromRoots, resolveSourceRoots, runAsScript, toLine } from "./lib/ts-guard-utils.mjs";
+import {
+  collectTypeScriptFilesFromRoots,
+  resolveSourceRoots,
+  runAsScript,
+  toLine,
+} from "./lib/ts-guard-utils.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const scanRoots = resolveSourceRoots(repoRoot, ["src/plugin-sdk", "src/plugins/runtime"]);
@@ -72,7 +77,11 @@ function scanRuntimeTypeImplementationSmells(sourceFile, filePath) {
   const entries = [];
 
   function visit(node) {
-    if (ts.isImportTypeNode(node) && ts.isLiteralTypeNode(node.argument) && ts.isStringLiteral(node.argument.literal)) {
+    if (
+      ts.isImportTypeNode(node) &&
+      ts.isLiteralTypeNode(node.argument) &&
+      ts.isStringLiteral(node.argument.literal)
+    ) {
       const specifier = node.argument.literal.text;
       const resolvedPath = resolveRepoSpecifier(repoRoot, specifier, filePath);
       if (
@@ -101,7 +110,10 @@ function scanRuntimeTypeImplementationSmells(sourceFile, filePath) {
 
 function scanRuntimeServiceLocatorSmells(sourceFile, filePath) {
   const relativeFile = normalizeRepoPath(repoRoot, filePath);
-  if (!relativeFile.startsWith("src/plugin-sdk/") && !relativeFile.startsWith("src/plugins/runtime/")) {
+  if (
+    !relativeFile.startsWith("src/plugin-sdk/") &&
+    !relativeFile.startsWith("src/plugins/runtime/")
+  ) {
     return [];
   }
 
@@ -112,12 +124,16 @@ function scanRuntimeServiceLocatorSmells(sourceFile, filePath) {
 
   for (const statement of sourceFile.statements) {
     if (ts.isFunctionDeclaration(statement) && statement.name) {
-      const isExported = statement.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword);
+      const isExported = statement.modifiers?.some(
+        (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword,
+      );
       if (isExported) {
         exportedNames.add(statement.name.text);
       }
     } else if (ts.isVariableStatement(statement)) {
-      const isExported = statement.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword);
+      const isExported = statement.modifiers?.some(
+        (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword,
+      );
       for (const declaration of statement.declarationList.declarations) {
         if (ts.isIdentifier(declaration.name) && isExported) {
           exportedNames.add(declaration.name.text);

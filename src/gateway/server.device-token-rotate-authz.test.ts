@@ -9,7 +9,12 @@ import {
   pairDeviceIdentity,
   resolveDeviceIdentityPath,
 } from "./device-authz.test-helpers.js";
-import { connectOk, installGatewayTestHooks, rpcReq, startServerWithClient } from "./test-helpers.js";
+import {
+  connectOk,
+  installGatewayTestHooks,
+  rpcReq,
+  startServerWithClient,
+} from "./test-helpers.js";
 
 installGatewayTestHooks({ scope: "suite" });
 
@@ -87,7 +92,11 @@ async function connectApprovedNode(params: {
 }
 
 async function getConnectedNodeId(ws: WebSocket): Promise<string> {
-  const nodes = await rpcReq<{ nodes?: Array<{ nodeId: string; connected?: boolean }> }>(ws, "node.list", {});
+  const nodes = await rpcReq<{ nodes?: Array<{ nodeId: string; connected?: boolean }> }>(
+    ws,
+    "node.list",
+    {},
+  );
   expect(nodes.ok).toBe(true);
   const nodeId = nodes.payload?.nodes?.find((node) => node.connected)?.nodeId ?? "";
   expect(nodeId).toBeTruthy();
@@ -165,11 +174,15 @@ describe("gateway device.token.rotate/revoke ownership guard (IDOR)", () => {
     try {
       await connectOk(started.ws);
 
-      const rotate = await rpcReq<{ rotatedAtMs?: number; token?: string }>(started.ws, "device.token.rotate", {
-        deviceId: device.deviceId,
-        role: "operator",
-        scopes: ["operator.pairing"],
-      });
+      const rotate = await rpcReq<{ rotatedAtMs?: number; token?: string }>(
+        started.ws,
+        "device.token.rotate",
+        {
+          deviceId: device.deviceId,
+          role: "operator",
+          scopes: ["operator.pairing"],
+        },
+      );
       expect(rotate.ok).toBe(true);
       expect(rotate.payload?.rotatedAtMs).toBeTypeOf("number");
       // Cross-device rotation MUST NOT echo the new token in the response.

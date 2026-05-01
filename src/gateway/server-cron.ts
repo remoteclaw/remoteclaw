@@ -11,7 +11,11 @@ import { resolveStorePath } from "../config/sessions/paths.js";
 import { resolveFailureDestination, sendFailureNotificationAnnounce } from "../cron/delivery.js";
 import { runCronIsolatedAgentTurn } from "../cron/isolated-agent.js";
 import { resolveDeliveryTarget } from "../cron/isolated-agent/delivery-target.js";
-import { appendCronRunLog, resolveCronRunLogPath, resolveCronRunLogPruneOptions } from "../cron/run-log.js";
+import {
+  appendCronRunLog,
+  resolveCronRunLogPath,
+  resolveCronRunLogPruneOptions,
+} from "../cron/run-log.js";
 import { CronService } from "../cron/service.js";
 import { resolveCronStorePath } from "../cron/store.js";
 import { normalizeHttpWebhookUrl } from "../cron/webhook-url.js";
@@ -144,16 +148,19 @@ export function buildGatewayCronService(params: {
 }): GatewayCronState {
   const cronLogger = getChildLogger({ module: "cron" });
   const storePath = resolveCronStorePath(params.cfg.cron?.store);
-  const cronEnabled = process.env.REMOTECLAW_SKIP_CRON !== "1" && params.cfg.cron?.enabled !== false;
+  const cronEnabled =
+    process.env.REMOTECLAW_SKIP_CRON !== "1" && params.cfg.cron?.enabled !== false;
 
   const resolveCronAgent = (requested?: string | null) => {
     const runtimeConfig = loadConfig();
-    const normalized = typeof requested === "string" && requested.trim() ? normalizeAgentId(requested) : undefined;
+    const normalized =
+      typeof requested === "string" && requested.trim() ? normalizeAgentId(requested) : undefined;
     const hasAgent =
       normalized !== undefined &&
       Array.isArray(runtimeConfig.agents?.list) &&
       runtimeConfig.agents.list.some(
-        (entry) => entry && typeof entry.id === "string" && normalizeAgentId(entry.id) === normalized,
+        (entry) =>
+          entry && typeof entry.id === "string" && normalizeAgentId(entry.id) === normalized,
       );
     const agentId = hasAgent ? normalized : resolveDefaultAgentId(runtimeConfig);
     return { agentId, cfg: runtimeConfig };
@@ -198,7 +205,9 @@ export function buildGatewayCronService(params: {
     const requestedAgentId = opts?.agentId ? resolveCronAgent(opts.agentId).agentId : undefined;
     const derivedAgentId =
       requestedAgentId ??
-      (opts?.sessionKey ? normalizeAgentId(resolveAgentIdFromSessionKey(opts.sessionKey)) : undefined);
+      (opts?.sessionKey
+        ? normalizeAgentId(resolveAgentIdFromSessionKey(opts.sessionKey))
+        : undefined);
     const agentId = derivedAgentId || undefined;
     const sessionKey =
       opts?.sessionKey && agentId
@@ -253,14 +262,18 @@ export function buildGatewayCronService(params: {
       const agentEntry =
         Array.isArray(runtimeConfig.agents?.list) &&
         runtimeConfig.agents.list.find(
-          (entry) => entry && typeof entry.id === "string" && normalizeAgentId(entry.id) === agentId,
+          (entry) =>
+            entry && typeof entry.id === "string" && normalizeAgentId(entry.id) === agentId,
         );
-      const agentHeartbeat = agentEntry && typeof agentEntry === "object" ? agentEntry.heartbeat : undefined;
+      const agentHeartbeat =
+        agentEntry && typeof agentEntry === "object" ? agentEntry.heartbeat : undefined;
       const baseHeartbeat = {
         ...runtimeConfig.agents?.defaults?.heartbeat,
         ...agentHeartbeat,
       };
-      const heartbeatOverride = opts?.heartbeat ? { ...baseHeartbeat, ...opts.heartbeat } : undefined;
+      const heartbeatOverride = opts?.heartbeat
+        ? { ...baseHeartbeat, ...opts.heartbeat }
+        : undefined;
       return await runHeartbeatOnce({
         cfg: runtimeConfig,
         reason: opts?.reason,
@@ -296,7 +309,10 @@ export function buildGatewayCronService(params: {
 
       // Webhook mode requires a URL - fail closed if missing
       if (mode === "webhook" && !to) {
-        cronLogger.warn({ jobId: job.id }, "cron: failure alert webhook mode requires URL, skipping");
+        cronLogger.warn(
+          { jobId: job.id },
+          "cron: failure alert webhook mode requires URL, skipping",
+        );
         return;
       }
 

@@ -71,14 +71,18 @@ type ResolvedResponsesLimits = {
   images: InputImageLimits;
 };
 
-function resolveResponsesLimits(config: GatewayHttpResponsesConfig | undefined): ResolvedResponsesLimits {
+function resolveResponsesLimits(
+  config: GatewayHttpResponsesConfig | undefined,
+): ResolvedResponsesLimits {
   const files = config?.files;
   const images = config?.images;
   const fileLimits = resolveInputFileLimits(files);
   return {
     maxBodyBytes: config?.maxBodyBytes ?? DEFAULT_BODY_BYTES,
     maxUrlParts:
-      typeof config?.maxUrlParts === "number" ? Math.max(0, Math.floor(config.maxUrlParts)) : DEFAULT_MAX_URL_PARTS,
+      typeof config?.maxUrlParts === "number"
+        ? Math.max(0, Math.floor(config.maxUrlParts))
+        : DEFAULT_MAX_URL_PARTS,
     files: {
       ...fileLimits,
       urlAllowlist: normalizeInputHostnameAllowlist(files?.urlAllowlist),
@@ -98,7 +102,10 @@ function extractClientTools(body: CreateResponseBody): ClientToolDefinition[] {
   return (body.tools ?? []) as ClientToolDefinition[];
 }
 
-function applyToolChoice(params: { tools: ClientToolDefinition[]; toolChoice: CreateResponseBody["tool_choice"] }): {
+function applyToolChoice(params: {
+  tools: ClientToolDefinition[];
+  toolChoice: CreateResponseBody["tool_choice"];
+}): {
   tools: ClientToolDefinition[];
   extraSystemPrompt?: string;
 } {
@@ -175,7 +182,9 @@ function extractUsageFromResult(result: unknown): Usage {
   const meta = (result as { meta?: { agentMeta?: { usage?: unknown } } } | null)?.meta;
   const usage = meta && typeof meta === "object" ? meta.agentMeta?.usage : undefined;
   return toUsage(
-    usage as { input?: number; output?: number; cacheRead?: number; cacheWrite?: number; total?: number } | undefined,
+    usage as
+      | { input?: number; output?: number; cacheRead?: number; cacheWrite?: number; total?: number }
+      | undefined,
   );
 }
 
@@ -306,7 +315,9 @@ export async function handleOpenResponsesHttpRequest(
   const markUrlPart = () => {
     urlParts += 1;
     if (urlParts > limits.maxUrlParts) {
-      throw new Error(`Too many URL-based input sources: ${urlParts} (limit: ${limits.maxUrlParts})`);
+      throw new Error(
+        `Too many URL-based input sources: ${urlParts} (limit: ${limits.maxUrlParts})`,
+      );
     }
   };
   try {
@@ -321,7 +332,8 @@ export async function handleOpenResponsesHttpRequest(
                 data?: string;
                 media_type?: string;
               };
-              const sourceType = source.type === "base64" || source.type === "url" ? source.type : undefined;
+              const sourceType =
+                source.type === "base64" || source.type === "url" ? source.type : undefined;
               if (!sourceType) {
                 throw new Error("input_image must have 'source.url' or 'source.data'");
               }
@@ -353,7 +365,8 @@ export async function handleOpenResponsesHttpRequest(
                 media_type?: string;
                 filename?: string;
               };
-              const sourceType = source.type === "base64" || source.type === "url" ? source.type : undefined;
+              const sourceType =
+                source.type === "base64" || source.type === "url" ? source.type : undefined;
               if (!sourceType) {
                 throw new Error("input_file must have 'source.url' or 'source.data'");
               }
@@ -380,7 +393,9 @@ export async function handleOpenResponsesHttpRequest(
               if (file.text?.trim()) {
                 fileContexts.push(`<file name="${file.filename}">\n${file.text}\n</file>`);
               } else if (file.images && file.images.length > 0) {
-                fileContexts.push(`<file name="${file.filename}">[PDF content rendered to images]</file>`);
+                fileContexts.push(
+                  `<file name="${file.filename}">[PDF content rendered to images]</file>`,
+                );
               }
               if (file.images && file.images.length > 0) {
                 images = images.concat(file.images);
@@ -431,7 +446,9 @@ export async function handleOpenResponsesHttpRequest(
   const toolChoiceContext = toolChoicePrompt?.trim();
 
   // Handle instructions + file context as extra system prompt
-  const extraSystemPrompt = [payload.instructions, toolChoiceContext, fileContext].filter(Boolean).join("\n\n");
+  const extraSystemPrompt = [payload.instructions, toolChoiceContext, fileContext]
+    .filter(Boolean)
+    .join("\n\n");
 
   if (!prompt.message) {
     sendJson(res, 400, {
@@ -447,7 +464,9 @@ export async function handleOpenResponsesHttpRequest(
   const outputItemId = `msg_${randomUUID()}`;
   const deps = createDefaultDeps();
   const streamParams =
-    typeof payload.max_output_tokens === "number" ? { maxTokens: payload.max_output_tokens } : undefined;
+    typeof payload.max_output_tokens === "number"
+      ? { maxTokens: payload.max_output_tokens }
+      : undefined;
 
   if (!stream) {
     try {
@@ -503,7 +522,9 @@ export async function handleOpenResponsesHttpRequest(
         id: responseId,
         model,
         status: "completed",
-        output: [createAssistantOutputItem({ id: outputItemId, text: content, status: "completed" })],
+        output: [
+          createAssistantOutputItem({ id: outputItemId, text: content, status: "completed" }),
+        ],
         usage,
       });
 

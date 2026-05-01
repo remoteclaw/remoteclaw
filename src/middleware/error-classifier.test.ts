@@ -120,9 +120,12 @@ describe("classifyError", () => {
       ["Unauthorized", "fatal"],
       ["AUTHENTICATION", "fatal"],
       ["Authentication", "fatal"],
-    ] as [string, ErrorCategory][])("classifies %s correctly regardless of case", (message, expected) => {
-      expect(classifyError(message)).toBe(expected);
-    });
+    ] as [string, ErrorCategory][])(
+      "classifies %s correctly regardless of case",
+      (message, expected) => {
+        expect(classifyError(message)).toBe(expected);
+      },
+    );
   });
 
   describe("first-match-wins verification", () => {

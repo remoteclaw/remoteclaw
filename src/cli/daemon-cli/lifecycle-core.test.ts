@@ -73,7 +73,9 @@ describe("runServiceRestart token drift", () => {
 
     expect(loadConfig).toHaveBeenCalledTimes(1);
     const payload = readJsonLog<{ warnings?: string[] }>();
-    expect(payload.warnings).toEqual(expect.arrayContaining([expect.stringContaining("gateway install --force")]));
+    expect(payload.warnings).toEqual(
+      expect.arrayContaining([expect.stringContaining("gateway install --force")]),
+    );
   });
 
   it("compares restart drift against config token even when caller env is set", async () => {
@@ -93,7 +95,9 @@ describe("runServiceRestart token drift", () => {
     await runServiceRestart(createServiceRunArgs(true));
 
     const payload = readJsonLog<{ warnings?: string[] }>();
-    expect(payload.warnings).toEqual(expect.arrayContaining([expect.stringContaining("gateway install --force")]));
+    expect(payload.warnings).toEqual(
+      expect.arrayContaining([expect.stringContaining("gateway install --force")]),
+    );
   });
 
   it("resolves config token SecretRefs using service command env before drift checks", async () => {

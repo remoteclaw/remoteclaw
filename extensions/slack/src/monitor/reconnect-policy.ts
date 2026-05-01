@@ -18,7 +18,10 @@ type EmitterLike = {
 
 export function getSocketEmitter(app: unknown): EmitterLike | null {
   const receiver = (app as { receiver?: unknown }).receiver;
-  const client = receiver && typeof receiver === "object" ? (receiver as { client?: unknown }).client : undefined;
+  const client =
+    receiver && typeof receiver === "object"
+      ? (receiver as { client?: unknown }).client
+      : undefined;
   if (!client || typeof client !== "object") {
     return null;
   }
@@ -29,17 +32,13 @@ export function getSocketEmitter(app: unknown): EmitterLike | null {
   }
   return {
     on: (event, listener) =>
-      (on as (this: unknown, event: string, listener: (...args: unknown[]) => void) => unknown).call(
-        client,
-        event,
-        listener,
-      ),
+      (
+        on as (this: unknown, event: string, listener: (...args: unknown[]) => void) => unknown
+      ).call(client, event, listener),
     off: (event, listener) =>
-      (off as (this: unknown, event: string, listener: (...args: unknown[]) => void) => unknown).call(
-        client,
-        event,
-        listener,
-      ),
+      (
+        off as (this: unknown, event: string, listener: (...args: unknown[]) => void) => unknown
+      ).call(client, event, listener),
   };
 }
 
@@ -60,7 +59,8 @@ export function waitForSlackSocketDisconnect(
     }
 
     const disconnectListener = () => resolveOnce({ event: "disconnect" });
-    const startFailListener = (error?: unknown) => resolveOnce({ event: "unable_to_socket_mode_start", error });
+    const startFailListener = (error?: unknown) =>
+      resolveOnce({ event: "unable_to_socket_mode_start", error });
     const errorListener = (error: unknown) => resolveOnce({ event: "error", error });
     const abortListener = () => resolveOnce({ event: "disconnect" });
 

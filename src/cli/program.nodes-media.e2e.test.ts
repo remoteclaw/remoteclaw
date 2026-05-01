@@ -286,7 +286,17 @@ describe("cli program (nodes media)", () => {
 
   it("fails nodes camera snap when --facing both and --device-id are combined", async () => {
     await expectCameraSnapParseFailure(
-      ["nodes", "camera", "snap", "--node", "ios-node", "--facing", "both", "--device-id", "cam-123"],
+      [
+        "nodes",
+        "camera",
+        "snap",
+        "--node",
+        "ios-node",
+        "--facing",
+        "both",
+        "--device-id",
+        "cam-123",
+      ],
       /facing=both is not allowed when --device-id is set/i,
     );
   });

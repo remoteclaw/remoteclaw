@@ -9,7 +9,11 @@
  * 2. Environment variable: REMOTECLAW_TWITCH_ACCESS_TOKEN (default account only)
  */
 
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId, type RemoteClawConfig } from "remoteclaw/plugin-sdk/twitch";
+import {
+  DEFAULT_ACCOUNT_ID,
+  normalizeAccountId,
+  type RemoteClawConfig,
+} from "remoteclaw/plugin-sdk/twitch";
 
 export type TwitchTokenSource = "env" | "config" | "none";
 

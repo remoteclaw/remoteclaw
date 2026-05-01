@@ -65,8 +65,14 @@ export async function resolveInboundDirectDmAccessWithRuntime(params: {
     isSenderAllowed: (allowEntries) => params.isSenderAllowed(params.senderId, allowEntries),
   });
 
-  const shouldComputeAuth = params.runtime.shouldComputeCommandAuthorized(params.rawBody, params.cfg);
-  const senderAllowedForCommands = params.isSenderAllowed(params.senderId, access.effectiveAllowFrom);
+  const shouldComputeAuth = params.runtime.shouldComputeCommandAuthorized(
+    params.rawBody,
+    params.cfg,
+  );
+  const senderAllowedForCommands = params.isSenderAllowed(
+    params.senderId,
+    access.effectiveAllowFrom,
+  );
   const commandAuthorized = shouldComputeAuth
     ? dmPolicy === "open"
       ? true
@@ -100,8 +106,15 @@ export function createPreCryptoDirectDmAuthorizer(params: {
   resolveAccess: (
     senderId: string,
   ) => Promise<Pick<ResolvedInboundDirectDmAccess, "access"> | ResolvedInboundDirectDmAccess>;
-  issuePairingChallenge?: (params: { senderId: string; reply: (text: string) => Promise<void> }) => Promise<void>;
-  onBlocked?: (params: { senderId: string; reason: string; reasonCode: DmGroupAccessReasonCode }) => void;
+  issuePairingChallenge?: (params: {
+    senderId: string;
+    reply: (text: string) => Promise<void>;
+  }) => Promise<void>;
+  onBlocked?: (params: {
+    senderId: string;
+    reason: string;
+    reasonCode: DmGroupAccessReasonCode;
+  }) => void;
 }) {
   return async (input: {
     senderId: string;
@@ -143,7 +156,9 @@ export type DirectDmPreCryptoGuardPolicy = {
   };
 };
 
-export type DirectDmPreCryptoGuardPolicyOverrides = Partial<Omit<DirectDmPreCryptoGuardPolicy, "rateLimit">> & {
+export type DirectDmPreCryptoGuardPolicyOverrides = Partial<
+  Omit<DirectDmPreCryptoGuardPolicy, "rateLimit">
+> & {
   rateLimit?: Partial<DirectDmPreCryptoGuardPolicy["rateLimit"]>;
 };
 
@@ -188,7 +203,10 @@ type DirectDmRuntime = {
     };
     session: {
       resolveStorePath: typeof import("../config/sessions.js").resolveStorePath;
-      readSessionUpdatedAt: (params: { storePath: string; sessionKey: string }) => number | undefined;
+      readSessionUpdatedAt: (params: {
+        storePath: string;
+        sessionKey: string;
+      }) => number | undefined;
       recordInboundSession: typeof import("../channels/session.js").recordInboundSession;
     };
     reply: {
@@ -281,7 +299,8 @@ export async function dispatchInboundDirectDmWithRuntime(params: {
     storePath,
     ctxPayload,
     recordInboundSession: params.runtime.channel.session.recordInboundSession,
-    dispatchReplyWithBufferedBlockDispatcher: params.runtime.channel.reply.dispatchReplyWithBufferedBlockDispatcher,
+    dispatchReplyWithBufferedBlockDispatcher:
+      params.runtime.channel.reply.dispatchReplyWithBufferedBlockDispatcher,
     deliver: params.deliver,
     onRecordError: params.onRecordError,
     onDispatchError: params.onDispatchError,

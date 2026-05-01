@@ -30,14 +30,18 @@ export type DiscordMessageHandlerWithLifecycle = DiscordMessageHandler & {
   deactivate: () => void;
 };
 
-export function createDiscordMessageHandler(params: DiscordMessageHandlerParams): DiscordMessageHandlerWithLifecycle {
+export function createDiscordMessageHandler(
+  params: DiscordMessageHandlerParams,
+): DiscordMessageHandlerWithLifecycle {
   const { groupPolicy } = resolveOpenProviderRuntimeGroupPolicy({
     providerConfigPresent: params.cfg.channels?.discord !== undefined,
     groupPolicy: params.discordConfig?.groupPolicy,
     defaultGroupPolicy: params.cfg.channels?.defaults?.groupPolicy,
   });
   const ackReactionScope =
-    params.discordConfig?.ackReactionScope ?? params.cfg.messages?.ackReactionScope ?? "group-mentions";
+    params.discordConfig?.ackReactionScope ??
+    params.cfg.messages?.ackReactionScope ??
+    "group-mentions";
   const inboundWorker = createDiscordInboundWorker({
     runtime: params.runtime,
     setStatus: params.setStatus,
@@ -77,7 +81,8 @@ export function createDiscordMessageHandler(params: DiscordMessageHandlerParams)
         text: baseText,
         cfg: params.cfg,
         hasMedia: Boolean(
-          (message.attachments && message.attachments.length > 0) || hasDiscordMessageStickers(message),
+          (message.attachments && message.attachments.length > 0) ||
+          hasDiscordMessageStickers(message),
         ),
       });
     },

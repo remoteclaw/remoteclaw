@@ -40,6 +40,9 @@ export function isTelegramVoiceCompatibleAudio(opts: {
  * Backward-compatible alias used across plugin/runtime call sites.
  * Keeps existing behavior while making Telegram-specific policy explicit.
  */
-export function isVoiceCompatibleAudio(opts: { contentType?: string | null; fileName?: string | null }): boolean {
+export function isVoiceCompatibleAudio(opts: {
+  contentType?: string | null;
+  fileName?: string | null;
+}): boolean {
   return isTelegramVoiceCompatibleAudio(opts);
 }

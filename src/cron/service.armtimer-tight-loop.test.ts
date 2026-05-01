@@ -25,7 +25,8 @@ describe("CronService - armTimer tight loop prevention", () => {
       nowMs: () => params.now,
       enqueueSystemEvent: vi.fn(),
       requestHeartbeatNow: vi.fn(),
-      runIsolatedAgentJob: params.runIsolatedAgentJob ?? vi.fn().mockResolvedValue({ status: "ok" }),
+      runIsolatedAgentJob:
+        params.runIsolatedAgentJob ?? vi.fn().mockResolvedValue({ status: "ok" }),
     });
   }
 

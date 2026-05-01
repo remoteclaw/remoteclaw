@@ -65,7 +65,10 @@ export function resolveSpawnCommand(
   const cachedProgram = options?.cache;
 
   const cacheHit = cachedProgram?.key === cacheKey && cachedProgram.candidate != null;
-  let candidate = cachedProgram?.key === cacheKey && cachedProgram.candidate ? cachedProgram.candidate : undefined;
+  let candidate =
+    cachedProgram?.key === cacheKey && cachedProgram.candidate
+      ? cachedProgram.candidate
+      : undefined;
   if (!candidate) {
     candidate = resolveWindowsSpawnProgramCandidate({
       command: params.command,
@@ -254,7 +257,10 @@ export async function spawnAndCollect(
   }
 }
 
-export function resolveSpawnFailure(err: unknown, cwd: string): "missing-command" | "missing-cwd" | null {
+export function resolveSpawnFailure(
+  err: unknown,
+  cwd: string,
+): "missing-command" | "missing-cwd" | null {
   if (!err || typeof err !== "object") {
     return null;
   }

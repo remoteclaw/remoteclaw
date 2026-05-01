@@ -15,7 +15,10 @@ import {
 } from "@agentclientprotocol/sdk";
 import { isKnownCoreToolId } from "../agents/tool-catalog.js";
 import { ensureRemoteClawCliOnPath } from "../infra/path-env.js";
-import { resolveWindowsSpawnProgram, materializeWindowsSpawnProgram } from "../plugin-sdk/windows-spawn.js";
+import {
+  resolveWindowsSpawnProgram,
+  materializeWindowsSpawnProgram,
+} from "../plugin-sdk/windows-spawn.js";
 import { DANGEROUS_ACP_TOOLS } from "../security/dangerous-tools.js";
 import { sanitizeTerminalText } from "../terminal/safe-text.js";
 
@@ -47,10 +50,15 @@ type PermissionResolverDeps = {
 };
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
-  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined;
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined;
 }
 
-function readFirstStringValue(source: Record<string, unknown> | undefined, keys: string[]): string | undefined {
+function readFirstStringValue(
+  source: Record<string, unknown> | undefined,
+  keys: string[],
+): string | undefined {
   if (!source) {
     return undefined;
   }
@@ -103,7 +111,10 @@ function resolveToolNameForPermission(params: RequestPermissionRequest): string 
   return normalizeToolName(fromMeta ?? fromRawInput ?? fromTitle ?? "");
 }
 
-function extractPathFromToolTitle(toolTitle: string | undefined, toolName: string | undefined): string | undefined {
+function extractPathFromToolTitle(
+  toolTitle: string | undefined,
+  toolName: string | undefined,
+): string | undefined {
   if (!toolTitle) {
     return undefined;
   }
@@ -154,7 +165,9 @@ function resolveAbsoluteScopedPath(value: string, cwd: string): string | undefin
   } else if (candidate.startsWith("~/")) {
     candidate = path.join(homedir(), candidate.slice(2));
   }
-  const absolute = path.isAbsolute(candidate) ? path.normalize(candidate) : path.resolve(cwd, candidate);
+  const absolute = path.isAbsolute(candidate)
+    ? path.normalize(candidate)
+    : path.resolve(cwd, candidate);
   return absolute;
 }
 
@@ -203,7 +216,10 @@ function shouldAutoApproveToolCall(
   return true;
 }
 
-function pickOption(options: PermissionOption[], kinds: PermissionOption["kind"][]): PermissionOption | undefined {
+function pickOption(
+  options: PermissionOption[],
+  kinds: PermissionOption["kind"][],
+): PermissionOption | undefined {
   for (const kind of kinds) {
     const match = options.find((option) => option.kind === kind);
     if (match) {
@@ -248,7 +264,11 @@ function promptUserPermission(toolName: string | undefined, toolTitle?: string):
       finish(false);
     }, 30_000);
 
-    const label = toolTitle ? (toolName ? `${toolTitle} (${toolName})` : toolTitle) : (toolName ?? "unknown tool");
+    const label = toolTitle
+      ? toolName
+        ? `${toolTitle} (${toolName})`
+        : toolTitle
+      : (toolName ?? "unknown tool");
     rl.question(`\n[permission] Allow "${label}"? (y/N) `, (answer) => {
       const approved = answer.trim().toLowerCase() === "y";
       console.error(`[permission ${approved ? "approved" : "denied"}] ${toolName ?? "unknown"}`);
@@ -289,7 +309,9 @@ export async function resolvePermissionRequest(
     return selectedPermission(option.optionId);
   }
 
-  log(`\n[permission requested] ${toolTitle}${toolName ? ` (${toolName})` : ""}${toolKind ? ` [${toolKind}]` : ""}`);
+  log(
+    `\n[permission requested] ${toolTitle}${toolName ? ` (${toolName})` : ""}${toolKind ? ` [${toolKind}]` : ""}`,
+  );
   const approved = await prompt(toolName, toolTitle);
 
   if (approved && allowOption) {
@@ -299,7 +321,9 @@ export async function resolvePermissionRequest(
     return selectedPermission(rejectOption.optionId);
   }
 
-  log(`[permission cancelled] ${toolName ?? "unknown"}: missing ${approved ? "allow" : "reject"} option`);
+  log(
+    `[permission cancelled] ${toolName ?? "unknown"}: missing ${approved ? "allow" : "reject"} option`,
+  );
   return cancelledPermission();
 }
 

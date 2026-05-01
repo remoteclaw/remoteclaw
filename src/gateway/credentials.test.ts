@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
-import { resolveGatewayCredentialsFromConfig, resolveGatewayCredentialsFromValues } from "./credentials.js";
+import {
+  resolveGatewayCredentialsFromConfig,
+  resolveGatewayCredentialsFromValues,
+} from "./credentials.js";
 
 function cfg(input: Partial<RemoteClawConfig>): RemoteClawConfig {
   return input as RemoteClawConfig;
@@ -34,7 +37,9 @@ function expectEnvGatewayCredentials(resolved: { token?: string; password?: stri
   });
 }
 
-function resolveRemoteModeWithRemoteCredentials(overrides: Partial<Omit<ResolveFromConfigInput, "cfg" | "env">> = {}) {
+function resolveRemoteModeWithRemoteCredentials(
+  overrides: Partial<Omit<ResolveFromConfigInput, "cfg" | "env">> = {},
+) {
   return resolveGatewayCredentialsFor(
     {
       mode: "remote",

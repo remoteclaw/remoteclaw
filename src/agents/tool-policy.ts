@@ -45,7 +45,12 @@ function wrapOwnerOnlyToolExecution(tool: AnyAgentTool, senderIsOwner: boolean):
   };
 }
 
-const OWNER_ONLY_TOOL_NAME_FALLBACKS = new Set<string>(["whatsapp_login", "cron", "gateway", "nodes"]);
+const OWNER_ONLY_TOOL_NAME_FALLBACKS = new Set<string>([
+  "whatsapp_login",
+  "cron",
+  "gateway",
+  "nodes",
+]);
 
 export function isOwnerOnlyToolName(name: string) {
   return OWNER_ONLY_TOOL_NAME_FALLBACKS.has(normalizeToolName(name));
@@ -124,7 +129,10 @@ export function buildPluginToolGroups<T extends { name: string }>(params: {
   return { all, byPlugin };
 }
 
-export function expandPluginGroups(list: string[] | undefined, groups: PluginToolGroups): string[] | undefined {
+export function expandPluginGroups(
+  list: string[] | undefined,
+  groups: PluginToolGroups,
+): string[] | undefined {
   if (!list || list.length === 0) {
     return list;
   }
@@ -183,7 +191,8 @@ export function stripPluginOnlyAllowlist(
       hasCoreEntry = true;
       continue;
     }
-    const isPluginEntry = entry === "group:plugins" || pluginIds.has(entry) || pluginTools.has(entry);
+    const isPluginEntry =
+      entry === "group:plugins" || pluginIds.has(entry) || pluginTools.has(entry);
     const expanded = expandToolGroups([entry]);
     const isCoreEntry = expanded.some((tool) => coreTools.has(tool));
     if (isCoreEntry) {

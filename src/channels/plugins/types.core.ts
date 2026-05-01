@@ -60,7 +60,13 @@ export type ChannelStatusIssue = {
   fix?: string;
 };
 
-export type ChannelAccountState = "linked" | "not linked" | "configured" | "not configured" | "enabled" | "disabled";
+export type ChannelAccountState =
+  | "linked"
+  | "not linked"
+  | "configured"
+  | "not configured"
+  | "enabled"
+  | "disabled";
 
 export type ChannelHeartbeatDeps = {
   webAuthExists?: () => Promise<boolean>;
@@ -203,7 +209,11 @@ export type ChannelSecurityContext<ResolvedAccount = unknown> = {
 };
 
 export type ChannelMentionAdapter = {
-  stripPatterns?: (params: { ctx: MsgContext; cfg: RemoteClawConfig | undefined; agentId?: string }) => string[];
+  stripPatterns?: (params: {
+    ctx: MsgContext;
+    cfg: RemoteClawConfig | undefined;
+    agentId?: string;
+  }) => string[];
   stripMentions?: (params: {
     text: string;
     ctx: MsgContext;
@@ -291,7 +301,11 @@ export type ChannelMessagingAdapter = {
       source?: "normalized" | "directory";
     } | null>;
   };
-  formatTargetDisplay?: (params: { target: string; display?: string; kind?: ChannelDirectoryEntryKind }) => string;
+  formatTargetDisplay?: (params: {
+    target: string;
+    display?: string;
+    kind?: ChannelDirectoryEntryKind;
+  }) => string;
 };
 
 export type ChannelAgentPromptAdapter = {

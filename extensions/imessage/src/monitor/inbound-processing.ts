@@ -11,16 +11,29 @@ import {
   type HistoryEntry,
 } from "../../../../src/auto-reply/reply/history.js";
 import { finalizeInboundContext } from "../../../../src/auto-reply/reply/inbound-context.js";
-import { buildMentionRegexes, matchesMentionPatterns } from "../../../../src/auto-reply/reply/mentions.js";
+import {
+  buildMentionRegexes,
+  matchesMentionPatterns,
+} from "../../../../src/auto-reply/reply/mentions.js";
 import { resolveDualTextControlCommandGate } from "../../../../src/channels/command-gating.js";
 import { logInboundDrop } from "../../../../src/channels/logging.js";
 import type { RemoteClawConfig } from "../../../../src/config/config.js";
-import { resolveChannelGroupPolicy, resolveChannelGroupRequireMention } from "../../../../src/config/group-policy.js";
+import {
+  resolveChannelGroupPolicy,
+  resolveChannelGroupRequireMention,
+} from "../../../../src/config/group-policy.js";
 import { resolveAgentRoute } from "../../../../src/routing/resolve-route.js";
-import { DM_GROUP_ACCESS_REASON, resolveDmGroupAccessWithLists } from "../../../../src/security/dm-policy-shared.js";
+import {
+  DM_GROUP_ACCESS_REASON,
+  resolveDmGroupAccessWithLists,
+} from "../../../../src/security/dm-policy-shared.js";
 import { sanitizeTerminalText } from "../../../../src/terminal/safe-text.js";
 import { truncateUtf16Safe } from "../../../../src/utils.js";
-import { formatIMessageChatTarget, isAllowedIMessageSender, normalizeIMessageHandle } from "../targets.js";
+import {
+  formatIMessageChatTarget,
+  isAllowedIMessageSender,
+  normalizeIMessageHandle,
+} from "../targets.js";
 import { detectReflectedContent } from "./reflection-guard.js";
 import type { SelfChatCache } from "./self-chat-cache.js";
 import type { MonitorIMessageOpts, IMessagePayload } from "./types.js";
@@ -53,7 +66,10 @@ function describeReplyContext(message: IMessagePayload): IMessageReplyContext | 
 }
 
 function resolveInboundEchoMessageIds(message: IMessagePayload): string[] {
-  const values = [message.id != null ? String(message.id) : undefined, normalizeReplyField(message.guid)];
+  const values = [
+    message.id != null ? String(message.id) : undefined,
+    normalizeReplyField(message.guid),
+  ];
   const ids: string[] = [];
   for (const value of values) {
     if (!value || ids.includes(value)) {
@@ -66,7 +82,11 @@ function resolveInboundEchoMessageIds(message: IMessagePayload): string[] {
 
 function hasIMessageEchoMatch(params: {
   echoCache: {
-    has: (scope: string, lookup: { text?: string; messageId?: string }, skipIdShortCircuit?: boolean) => boolean;
+    has: (
+      scope: string,
+      lookup: { text?: string; messageId?: string },
+      skipIdShortCircuit?: boolean,
+    ) => boolean;
   };
   scope: string;
   text?: string;
@@ -130,7 +150,11 @@ export function resolveIMessageInboundDecision(params: {
   historyLimit: number;
   groupHistories: Map<string, HistoryEntry[]>;
   echoCache?: {
-    has: (scope: string, lookup: { text?: string; messageId?: string }, skipIdShortCircuit?: boolean) => boolean;
+    has: (
+      scope: string,
+      lookup: { text?: string; messageId?: string },
+      skipIdShortCircuit?: boolean,
+    ) => boolean;
   };
   selfChatCache?: SelfChatCache;
   logVerbose?: (msg: string) => void;
@@ -182,7 +206,9 @@ export function resolveIMessageInboundDecision(params: {
   // either: (a) a real user message typed by the user, or (b) an agent reply
   // echo reflected back by iMessage. We must distinguish them.
   const isSelfChat =
-    !isGroup && chatIdentifier != null && normalizeIMessageHandle(sender) === normalizeIMessageHandle(chatIdentifier);
+    !isGroup &&
+    chatIdentifier != null &&
+    normalizeIMessageHandle(sender) === normalizeIMessageHandle(chatIdentifier);
   // Track whether we already processed the is_from_me=true self-chat path.
   // When true, the selfChatCache.has() check below must be skipped — we just
   // called remember() and would immediately match our own entry.
@@ -262,7 +288,9 @@ export function resolveIMessageInboundDecision(params: {
         return { kind: "drop", reason: "groupPolicy disabled" };
       }
       if (accessDecision.reasonCode === DM_GROUP_ACCESS_REASON.GROUP_POLICY_EMPTY_ALLOWLIST) {
-        params.logVerbose?.("Blocked iMessage group message (groupPolicy: allowlist, no groupAllowFrom)");
+        params.logVerbose?.(
+          "Blocked iMessage group message (groupPolicy: allowlist, no groupAllowFrom)",
+        );
         return { kind: "drop", reason: "groupPolicy allowlist (empty groupAllowFrom)" };
       }
       if (accessDecision.reasonCode === DM_GROUP_ACCESS_REASON.GROUP_POLICY_NOT_ALLOWLISTED) {
@@ -283,7 +311,9 @@ export function resolveIMessageInboundDecision(params: {
   }
 
   if (isGroup && groupListPolicy.allowlistEnabled && !groupListPolicy.allowed) {
-    params.logVerbose?.(`imessage: skipping group message (${groupId ?? "unknown"}) not in allowlist`);
+    params.logVerbose?.(
+      `imessage: skipping group message (${groupId ?? "unknown"}) not in allowlist`,
+    );
     return { kind: "drop", reason: "group id not in allowlist" };
   }
 
@@ -330,7 +360,9 @@ export function resolveIMessageInboundDecision(params: {
         messageIds: inboundMessageIds,
       })
     ) {
-      params.logVerbose?.(describeIMessageEchoDropLog({ messageText: bodyText, messageId: inboundMessageId }));
+      params.logVerbose?.(
+        describeIMessageEchoDropLog({ messageText: bodyText, messageId: inboundMessageId }),
+      );
       return { kind: "drop", reason: "echo" };
     }
   }
@@ -347,7 +379,9 @@ export function resolveIMessageInboundDecision(params: {
   }
 
   const replyContext = describeReplyContext(params.message);
-  const historyKey = isGroup ? String(chatId ?? chatGuid ?? chatIdentifier ?? "unknown") : undefined;
+  const historyKey = isGroup
+    ? String(chatId ?? chatGuid ?? chatIdentifier ?? "unknown")
+    : undefined;
 
   const mentioned = isGroup ? matchesMentionPatterns(messageText, mentionRegexes) : true;
   const requireMention = resolveChannelGroupRequireMention({
@@ -470,7 +504,8 @@ export function buildIMessageInboundContext(params: {
   const envelopeOptions = params.envelopeOptions ?? resolveEnvelopeFormatOptions(params.cfg);
   const { decision } = params;
   const chatId = decision.chatId;
-  const chatTarget = decision.isGroup && chatId != null ? formatIMessageChatTarget(chatId) : undefined;
+  const chatTarget =
+    decision.isGroup && chatId != null ? formatIMessageChatTarget(chatId) : undefined;
 
   const replySuffix = decision.replyContext
     ? `\n\n[Replying to ${decision.replyContext.sender ?? "unknown sender"}${
@@ -534,14 +569,18 @@ export function buildIMessageInboundContext(params: {
     InboundHistory: inboundHistory,
     RawBody: decision.bodyText,
     CommandBody: decision.bodyText,
-    From: decision.isGroup ? `imessage:group:${chatId ?? "unknown"}` : `imessage:${decision.sender}`,
+    From: decision.isGroup
+      ? `imessage:group:${chatId ?? "unknown"}`
+      : `imessage:${decision.sender}`,
     To: imessageTo,
     SessionKey: decision.route.sessionKey,
     AccountId: decision.route.accountId,
     ChatType: decision.isGroup ? "group" : "direct",
     ConversationLabel: fromLabel,
     GroupSubject: decision.isGroup ? (params.message.chat_name ?? undefined) : undefined,
-    GroupMembers: decision.isGroup ? (params.message.participants ?? []).filter(Boolean).join(", ") : undefined,
+    GroupMembers: decision.isGroup
+      ? (params.message.participants ?? []).filter(Boolean).join(", ")
+      : undefined,
     SenderName: decision.senderNormalized,
     SenderId: decision.sender,
     Provider: "imessage",
@@ -554,9 +593,12 @@ export function buildIMessageInboundContext(params: {
     MediaPath: params.media?.path,
     MediaType: params.media?.type,
     MediaUrl: params.media?.path,
-    MediaPaths: params.media?.paths && params.media.paths.length > 0 ? params.media.paths : undefined,
-    MediaTypes: params.media?.types && params.media.types.length > 0 ? params.media.types : undefined,
-    MediaUrls: params.media?.paths && params.media.paths.length > 0 ? params.media.paths : undefined,
+    MediaPaths:
+      params.media?.paths && params.media.paths.length > 0 ? params.media.paths : undefined,
+    MediaTypes:
+      params.media?.types && params.media.types.length > 0 ? params.media.types : undefined,
+    MediaUrls:
+      params.media?.paths && params.media.paths.length > 0 ? params.media.paths : undefined,
     MediaRemoteHost: params.remoteHost,
     WasMentioned: decision.effectiveWasMentioned,
     CommandAuthorized: decision.commandAuthorized,
@@ -576,7 +618,10 @@ export function buildIMessageEchoScope(params: {
   return `${params.accountId}:${params.isGroup ? formatIMessageChatTarget(params.chatId) : `imessage:${params.sender}`}`;
 }
 
-export function describeIMessageEchoDropLog(params: { messageText: string; messageId?: string }): string {
+export function describeIMessageEchoDropLog(params: {
+  messageText: string;
+  messageId?: string;
+}): string {
   const preview = truncateUtf16Safe(params.messageText, 50);
   const messageIdPart = params.messageId ? ` id=${params.messageId}` : "";
   return `imessage: skipping echo message${messageIdPart}: "${preview}"`;

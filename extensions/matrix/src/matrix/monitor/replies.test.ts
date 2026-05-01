@@ -5,7 +5,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const sendMessageMatrixMock = vi.hoisted(() => vi.fn().mockResolvedValue({ messageId: "mx-1" }));
 
 vi.mock("../send.js", () => ({
-  sendMessageMatrix: (to: string, message: string, opts?: unknown) => sendMessageMatrixMock(to, message, opts),
+  sendMessageMatrix: (to: string, message: string, opts?: unknown) =>
+    sendMessageMatrixMock(to, message, opts),
 }));
 
 import { setMatrixRuntime } from "../../runtime.js";
@@ -102,7 +103,9 @@ describe("deliverMatrixReplies", () => {
       "",
       expect.objectContaining({ mediaUrl: "https://example.com/b.jpg", replyToId: "reply-media" }),
     ]);
-    expect(sendMessageMatrixMock.mock.calls[2]?.[2]).toEqual(expect.objectContaining({ replyToId: "reply-text" }));
+    expect(sendMessageMatrixMock.mock.calls[2]?.[2]).toEqual(
+      expect.objectContaining({ replyToId: "reply-text" }),
+    );
   });
 
   it("skips reasoning-only replies with Reasoning prefix", async () => {

@@ -7,7 +7,10 @@ export type TypingKeepaliveLoop = {
   isRunning: () => boolean;
 };
 
-export function createTypingKeepaliveLoop(params: { intervalMs: number; onTick: AsyncTick }): TypingKeepaliveLoop {
+export function createTypingKeepaliveLoop(params: {
+  intervalMs: number;
+  onTick: AsyncTick;
+}): TypingKeepaliveLoop {
   let timer: ReturnType<typeof setInterval> | undefined;
   let tickInFlight = false;
 

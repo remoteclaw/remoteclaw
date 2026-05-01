@@ -17,7 +17,10 @@ import {
   updateSessionStore,
 } from "../../config/sessions.js";
 import { registerAgentRunContext } from "../../infra/agent-events.js";
-import { resolveAgentDeliveryPlan, resolveAgentOutboundTarget } from "../../infra/outbound/agent-delivery.js";
+import {
+  resolveAgentDeliveryPlan,
+  resolveAgentOutboundTarget,
+} from "../../infra/outbound/agent-delivery.js";
 import { resolveMessageChannelSelection } from "../../infra/outbound/channel-selection.js";
 import { classifySessionKeyShape, normalizeAgentId } from "../../routing/session-key.js";
 import { defaultRuntime } from "../../runtime.js";
@@ -88,11 +91,16 @@ async function runSessionResetFromAgent(params: {
   context: GatewayRequestHandlerOptions["context"];
   client: GatewayRequestHandlerOptions["client"];
   isWebchatConnect: GatewayRequestHandlerOptions["isWebchatConnect"];
-}): Promise<{ ok: true; key: string; sessionId?: string } | { ok: false; error: ReturnType<typeof errorShape> }> {
+}): Promise<
+  | { ok: true; key: string; sessionId?: string }
+  | { ok: false; error: ReturnType<typeof errorShape> }
+> {
   return await new Promise((resolve) => {
     let settled = false;
     const settle = (
-      result: { ok: true; key: string; sessionId?: string } | { ok: false; error: ReturnType<typeof errorShape> },
+      result:
+        | { ok: true; key: string; sessionId?: string }
+        | { ok: false; error: ReturnType<typeof errorShape> },
     ) => {
       if (settled) {
         return;
@@ -121,7 +129,9 @@ async function runSessionResetFromAgent(params: {
         | undefined;
       const key = typeof payloadObj?.key === "string" ? payloadObj.key : params.key;
       const sessionId =
-        payloadObj?.entry && typeof payloadObj.entry.sessionId === "string" ? payloadObj.entry.sessionId : undefined;
+        payloadObj?.entry && typeof payloadObj.entry.sessionId === "string"
+          ? payloadObj.entry.sessionId
+          : undefined;
       settle({ ok: true, key, sessionId });
     };
 
@@ -147,7 +157,10 @@ async function runSessionResetFromAgent(params: {
         if (!settled) {
           settle({
             ok: false,
-            error: errorShape(ErrorCodes.UNAVAILABLE, "sessions.reset completed without returning a response"),
+            error: errorShape(
+              ErrorCodes.UNAVAILABLE,
+              "sessions.reset completed without returning a response",
+            ),
           });
         }
       } catch (err: unknown) {
@@ -313,7 +326,10 @@ export const agentHandlers: GatewayRequestHandlers = {
         respond(
           false,
           undefined,
-          errorShape(ErrorCodes.INVALID_REQUEST, `invalid agent params: unknown channel: ${String(normalized)}`),
+          errorShape(
+            ErrorCodes.INVALID_REQUEST,
+            `invalid agent params: unknown channel: ${String(normalized)}`,
+          ),
         );
         return;
       }
@@ -327,15 +343,23 @@ export const agentHandlers: GatewayRequestHandlers = {
         respond(
           false,
           undefined,
-          errorShape(ErrorCodes.INVALID_REQUEST, `invalid agent params: unknown agent id "${request.agentId}"`),
+          errorShape(
+            ErrorCodes.INVALID_REQUEST,
+            `invalid agent params: unknown agent id "${request.agentId}"`,
+          ),
         );
         return;
       }
     }
 
     const requestedSessionKeyRaw =
-      typeof request.sessionKey === "string" && request.sessionKey.trim() ? request.sessionKey.trim() : undefined;
-    if (requestedSessionKeyRaw && classifySessionKeyShape(requestedSessionKeyRaw) === "malformed_agent") {
+      typeof request.sessionKey === "string" && request.sessionKey.trim()
+        ? request.sessionKey.trim()
+        : undefined;
+    if (
+      requestedSessionKeyRaw &&
+      classifySessionKeyShape(requestedSessionKeyRaw) === "malformed_agent"
+    ) {
       respond(
         false,
         undefined,
@@ -376,7 +400,11 @@ export const agentHandlers: GatewayRequestHandlers = {
     const resetCommandMatch = message.match(RESET_COMMAND_RE);
     if (resetCommandMatch && requestedSessionKey) {
       if (!canResetSession) {
-        respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, `missing scope: ${ADMIN_SCOPE}`));
+        respond(
+          false,
+          undefined,
+          errorShape(ErrorCodes.INVALID_REQUEST, `missing scope: ${ADMIN_SCOPE}`),
+        );
         return;
       }
       const resetReason = resetCommandMatch[1]?.toLowerCase() === "new" ? "new" : "reset";
@@ -422,8 +450,14 @@ export const agentHandlers: GatewayRequestHandlers = {
       const sessionId = entry?.sessionId ?? randomUUID();
       const labelValue = request.label?.trim() || entry?.label;
       const sessionAgent = resolveAgentIdFromSessionKey(canonicalKey);
-      spawnedByValue = canonicalizeSpawnedByForAgent(cfg, sessionAgent, spawnedByValue || entry?.spawnedBy);
-      let inheritedGroup: { groupId?: string; groupChannel?: string; groupSpace?: string } | undefined;
+      spawnedByValue = canonicalizeSpawnedByForAgent(
+        cfg,
+        sessionAgent,
+        spawnedByValue || entry?.spawnedBy,
+      );
+      let inheritedGroup:
+        | { groupId?: string; groupChannel?: string; groupSpace?: string }
+        | undefined;
       if (spawnedByValue && (!resolvedGroupId || !resolvedGroupChannel || !resolvedGroupSpace)) {
         try {
           const parentEntry = loadSessionEntry(spawnedByValue)?.entry;
@@ -473,7 +507,11 @@ export const agentHandlers: GatewayRequestHandlers = {
         chatType: entry?.chatType,
       });
       if (sendPolicy === "deny") {
-        respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "send blocked by session policy"));
+        respond(
+          false,
+          undefined,
+          errorShape(ErrorCodes.INVALID_REQUEST, "send blocked by session policy"),
+        );
         return;
       }
       resolvedSessionId = sessionId;
@@ -513,7 +551,10 @@ export const agentHandlers: GatewayRequestHandlers = {
 
     const runId = idem;
     const connId = typeof client?.connId === "string" ? client.connId : undefined;
-    const wantsToolEvents = hasGatewayClientCap(client?.connect?.caps, GATEWAY_CLIENT_CAPS.TOOL_EVENTS);
+    const wantsToolEvents = hasGatewayClientCap(
+      client?.connect?.caps,
+      GATEWAY_CLIENT_CAPS.TOOL_EVENTS,
+    );
     if (connId && wantsToolEvents) {
       context.registerToolEventRecipient(runId, connId);
       // Register for any other active runs *in the same session* so
@@ -534,12 +575,19 @@ export const agentHandlers: GatewayRequestHandlers = {
           ? request.to.trim()
           : undefined;
     const explicitThreadId =
-      typeof request.threadId === "string" && request.threadId.trim() ? request.threadId.trim() : undefined;
+      typeof request.threadId === "string" && request.threadId.trim()
+        ? request.threadId.trim()
+        : undefined;
     const turnSourceChannel =
-      typeof request.channel === "string" && request.channel.trim() ? request.channel.trim() : undefined;
-    const turnSourceTo = typeof request.to === "string" && request.to.trim() ? request.to.trim() : undefined;
+      typeof request.channel === "string" && request.channel.trim()
+        ? request.channel.trim()
+        : undefined;
+    const turnSourceTo =
+      typeof request.to === "string" && request.to.trim() ? request.to.trim() : undefined;
     const turnSourceAccountId =
-      typeof request.accountId === "string" && request.accountId.trim() ? request.accountId.trim() : undefined;
+      typeof request.accountId === "string" && request.accountId.trim()
+        ? request.accountId.trim()
+        : undefined;
     const deliveryPlan = resolveAgentDeliveryPlan({
       sessionEntry,
       requestedChannel: request.replyChannel ?? request.channel,
@@ -604,10 +652,14 @@ export const agentHandlers: GatewayRequestHandlers = {
 
     const normalizedTurnSource = normalizeMessageChannel(turnSourceChannel);
     const turnSourceMessageChannel =
-      normalizedTurnSource && isGatewayMessageChannel(normalizedTurnSource) ? normalizedTurnSource : undefined;
+      normalizedTurnSource && isGatewayMessageChannel(normalizedTurnSource)
+        ? normalizedTurnSource
+        : undefined;
     const originMessageChannel =
       turnSourceMessageChannel ??
-      (client?.connect && isWebchatConnect(client.connect) ? INTERNAL_MESSAGE_CHANNEL : resolvedChannel);
+      (client?.connect && isWebchatConnect(client.connect)
+        ? INTERNAL_MESSAGE_CHANNEL
+        : resolvedChannel);
 
     const deliver = request.deliver === true && resolvedChannel !== INTERNAL_MESSAGE_CHANNEL;
 
@@ -742,7 +794,9 @@ export const agentHandlers: GatewayRequestHandlers = {
     const p = params;
     const runId = (p.runId ?? "").trim();
     const timeoutMs =
-      typeof p.timeoutMs === "number" && Number.isFinite(p.timeoutMs) ? Math.max(0, Math.floor(p.timeoutMs)) : 30_000;
+      typeof p.timeoutMs === "number" && Number.isFinite(p.timeoutMs)
+        ? Math.max(0, Math.floor(p.timeoutMs))
+        : 30_000;
     const hasActiveChatRun = context.chatAbortControllers.has(runId);
 
     const cachedGatewaySnapshot = readTerminalSnapshotFromGatewayDedupe({
@@ -784,7 +838,8 @@ export const agentHandlers: GatewayRequestHandlers = {
       dedupePromise.then((snapshot) => ({ source: "dedupe" as const, snapshot })),
     ]);
 
-    let snapshot: AgentWaitTerminalSnapshot | Awaited<ReturnType<typeof waitForAgentJob>> = first.snapshot;
+    let snapshot: AgentWaitTerminalSnapshot | Awaited<ReturnType<typeof waitForAgentJob>> =
+      first.snapshot;
     if (snapshot) {
       if (first.source === "lifecycle") {
         dedupeAbortController.abort();

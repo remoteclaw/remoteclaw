@@ -274,7 +274,11 @@ export type API = {
       type: number;
     },
   ): Promise<unknown>;
-  sendDeliveredEvent(isSeen: boolean, messages: DeliveryEventMessages, type?: number): Promise<unknown>;
+  sendDeliveredEvent(
+    isSeen: boolean,
+    messages: DeliveryEventMessages,
+    type?: number,
+  ): Promise<unknown>;
   sendSeenEvent(messages: DeliveryEventMessages, type?: number): Promise<unknown>;
 };
 

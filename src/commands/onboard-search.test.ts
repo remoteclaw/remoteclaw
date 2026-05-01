@@ -23,7 +23,9 @@ function createPrompter(params: { selectValue?: string; textValue?: string }): {
     note: vi.fn(async (message: string, title?: string) => {
       notes.push({ title, message });
     }),
-    select: vi.fn(async () => params.selectValue ?? "perplexity") as unknown as WizardPrompter["select"],
+    select: vi.fn(
+      async () => params.selectValue ?? "perplexity",
+    ) as unknown as WizardPrompter["select"],
     multiselect: vi.fn(async () => []) as unknown as WizardPrompter["multiselect"],
     text: vi.fn(async () => params.textValue ?? ""),
     confirm: vi.fn(async () => true),
@@ -46,7 +48,10 @@ function createPerplexityConfig(apiKey: string, enabled?: boolean): RemoteClawCo
   };
 }
 
-async function runBlankPerplexityKeyEntry(apiKey: string, enabled?: boolean): Promise<RemoteClawConfig> {
+async function runBlankPerplexityKeyEntry(
+  apiKey: string,
+  enabled?: boolean,
+): Promise<RemoteClawConfig> {
   const cfg = createPerplexityConfig(apiKey, enabled);
   const { prompter } = createPrompter({
     selectValue: "perplexity",

@@ -4,7 +4,10 @@ import { loadConfig } from "../../config/config.js";
 import { callGateway } from "../../gateway/call.js";
 import { normalizeAgentId, resolveAgentIdFromSessionKey } from "../../routing/session-key.js";
 import { SESSION_LABEL_MAX_LENGTH } from "../../sessions/session-label.js";
-import { type GatewayMessageChannel, INTERNAL_MESSAGE_CHANNEL } from "../../utils/message-channel.js";
+import {
+  type GatewayMessageChannel,
+  INTERNAL_MESSAGE_CHANNEL,
+} from "../../utils/message-channel.js";
 import { AGENT_LANE_NESTED } from "../lanes.js";
 import type { AnyAgentTool } from "./common.js";
 import { jsonResult, readStringParam } from "./common.js";
@@ -40,18 +43,20 @@ export function createSessionsSendTool(opts?: {
   return {
     label: "Session Send",
     name: "sessions_send",
-    description: "Send a message into another session. Use sessionKey or label to identify the target.",
+    description:
+      "Send a message into another session. Use sessionKey or label to identify the target.",
     parameters: SessionsSendToolSchema,
     execute: async (_toolCallId, args) => {
       const params = args;
       const gatewayCall = opts?.callGateway ?? callGateway;
       const message = readStringParam(params, "message", { required: true });
       const cfg = loadConfig();
-      const { mainKey, alias, effectiveRequesterKey, restrictToSpawned } = resolveSandboxedSessionToolContext({
-        cfg,
-        agentSessionKey: opts?.agentSessionKey,
-        sandboxed: opts?.sandboxed,
-      });
+      const { mainKey, alias, effectiveRequesterKey, restrictToSpawned } =
+        resolveSandboxedSessionToolContext({
+          cfg,
+          agentSessionKey: opts?.agentSessionKey,
+          sandboxed: opts?.sandboxed,
+        });
 
       const a2aPolicy = createAgentToAgentPolicy(cfg);
       const sessionVisibility = resolveEffectiveSessionToolsVisibility({
@@ -73,7 +78,9 @@ export function createSessionsSendTool(opts?: {
       let sessionKey = sessionKeyParam;
       if (!sessionKey && labelParam) {
         const requesterAgentId = resolveAgentIdFromSessionKey(effectiveRequesterKey);
-        const requestedAgentId = labelAgentIdParam ? normalizeAgentId(labelAgentIdParam) : undefined;
+        const requestedAgentId = labelAgentIdParam
+          ? normalizeAgentId(labelAgentIdParam)
+          : undefined;
 
         if (restrictToSpawned && requestedAgentId && requestedAgentId !== requesterAgentId) {
           return jsonResult({
@@ -265,7 +272,8 @@ export function createSessionsSendTool(opts?: {
             delivery,
           });
         } catch (err) {
-          const messageText = err instanceof Error ? err.message : typeof err === "string" ? err : "error";
+          const messageText =
+            err instanceof Error ? err.message : typeof err === "string" ? err : "error";
           return jsonResult({
             runId,
             status: "error",
@@ -285,7 +293,8 @@ export function createSessionsSendTool(opts?: {
           runId = response.runId;
         }
       } catch (err) {
-        const messageText = err instanceof Error ? err.message : typeof err === "string" ? err : "error";
+        const messageText =
+          err instanceof Error ? err.message : typeof err === "string" ? err : "error";
         return jsonResult({
           runId,
           status: "error",
@@ -308,7 +317,8 @@ export function createSessionsSendTool(opts?: {
         waitStatus = typeof wait?.status === "string" ? wait.status : undefined;
         waitError = typeof wait?.error === "string" ? wait.error : undefined;
       } catch (err) {
-        const messageText = err instanceof Error ? err.message : typeof err === "string" ? err : "error";
+        const messageText =
+          err instanceof Error ? err.message : typeof err === "string" ? err : "error";
         return jsonResult({
           runId,
           status: messageText.includes("gateway timeout") ? "timeout" : "error",

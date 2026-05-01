@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../../config/config.js";
-import { resolveBlockStreamingChunking, resolveEffectiveBlockStreamingConfig } from "./block-streaming.js";
+import {
+  resolveBlockStreamingChunking,
+  resolveEffectiveBlockStreamingConfig,
+} from "./block-streaming.js";
 
 describe("resolveEffectiveBlockStreamingConfig", () => {
   it("applies ACP-style overrides while preserving chunk/coalescer bounds", () => {

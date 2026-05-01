@@ -165,7 +165,10 @@ function writeSnapshot(snapshotDir) {
     dist,
     distRuntime,
   };
-  fs.writeFileSync(path.join(snapshotDir, "snapshot.json"), `${JSON.stringify(snapshot, null, 2)}\n`);
+  fs.writeFileSync(
+    path.join(snapshotDir, "snapshot.json"),
+    `${JSON.stringify(snapshot, null, 2)}\n`,
+  );
   fs.writeFileSync(
     path.join(snapshotDir, "stats.txt"),
     [
@@ -230,7 +233,15 @@ function buildTimedWatchCommand(pidFilePath, timeFilePath, isolatedHomeDir) {
 
   return {
     command: "/usr/bin/time",
-    args: ["-f", "__TIMING__ user=%U sys=%S elapsed=%e", "-o", timeFilePath, "/bin/sh", "-lc", shellSource],
+    args: [
+      "-f",
+      "__TIMING__ user=%U sys=%S elapsed=%e",
+      "-o",
+      timeFilePath,
+      "/bin/sh",
+      "-lc",
+      shellSource,
+    ],
     env,
   };
 }
@@ -302,7 +313,10 @@ async function runTimedWatch(options, outputDir) {
     }
   }
 
-  const gracefulExit = await Promise.race([exitPromise, sleep(options.sigkillGraceMs).then(() => null)]);
+  const gracefulExit = await Promise.race([
+    exitPromise,
+    sleep(options.sigkillGraceMs).then(() => null),
+  ]);
 
   if (gracefulExit === null) {
     if (watchPid) {
@@ -377,7 +391,9 @@ function buildRunNodeDeps(env) {
       name: sourceRoot,
       path: path.join(cwd, sourceRoot),
     })),
-    configFiles: ["tsconfig.json", "package.json", "tsdown.config.ts"].map((filePath) => path.join(cwd, filePath)),
+    configFiles: ["tsconfig.json", "package.json", "tsdown.config.ts"].map((filePath) =>
+      path.join(cwd, filePath),
+    ),
   };
 }
 
@@ -389,7 +405,10 @@ async function main() {
   }
 
   const preflightBuildRequirement = resolveBuildRequirement(buildRunNodeDeps(process.env));
-  if (preflightBuildRequirement.shouldBuild && preflightBuildRequirement.reason === "dirty_watched_tree") {
+  if (
+    preflightBuildRequirement.shouldBuild &&
+    preflightBuildRequirement.reason === "dirty_watched_tree"
+  ) {
     const summary = {
       windowMs: options.windowMs,
       invalidated: true,
@@ -397,7 +416,10 @@ async function main() {
       invalidationMessage:
         "gateway-watch-regression cannot run on a dirty watched tree because run-node will intentionally rebuild during the watch window.",
     };
-    fs.writeFileSync(path.join(options.outputDir, "summary.json"), `${JSON.stringify(summary, null, 2)}\n`);
+    fs.writeFileSync(
+      path.join(options.outputDir, "summary.json"),
+      `${JSON.stringify(summary, null, 2)}\n`,
+    );
     console.log(JSON.stringify(summary, null, 2));
     fail(
       "gateway-watch-regression invalid local run: dirty watched source tree would force a rebuild inside the watch window",
@@ -418,10 +440,14 @@ async function main() {
 
   const distRuntimeFileGrowth = post.distRuntime.files - pre.distRuntime.files;
   const distRuntimeByteGrowth = post.distRuntime.apparentBytes - pre.distRuntime.apparentBytes;
-  const distRuntimeAddedPaths = diff.added.filter((entry) => entry.startsWith("dist-runtime/")).length;
+  const distRuntimeAddedPaths = diff.added.filter((entry) =>
+    entry.startsWith("dist-runtime/"),
+  ).length;
   const cpuMs = Math.round((watchResult.timing.userSeconds + watchResult.timing.sysSeconds) * 1000);
   const watchTriggeredBuild =
-    fs.readFileSync(watchResult.stderrPath, "utf8").includes("Building TypeScript (dist is stale") ||
+    fs
+      .readFileSync(watchResult.stderrPath, "utf8")
+      .includes("Building TypeScript (dist is stale") ||
     fs.readFileSync(watchResult.stdoutPath, "utf8").includes("Building TypeScript (dist is stale");
   const watchBuildReason = detectWatchBuildReason(
     fs.readFileSync(watchResult.stdoutPath, "utf8"),
@@ -445,7 +471,10 @@ async function main() {
     watchExit: watchResult.exit,
     timing: watchResult.timing,
   };
-  fs.writeFileSync(path.join(options.outputDir, "summary.json"), `${JSON.stringify(summary, null, 2)}\n`);
+  fs.writeFileSync(
+    path.join(options.outputDir, "summary.json"),
+    `${JSON.stringify(summary, null, 2)}\n`,
+  );
 
   console.log(JSON.stringify(summary, null, 2));
 
@@ -456,7 +485,9 @@ async function main() {
     );
   }
   if (distRuntimeFileGrowth > options.distRuntimeFileGrowthMax) {
-    failures.push(`dist-runtime file growth ${distRuntimeFileGrowth} exceeded max ${options.distRuntimeFileGrowthMax}`);
+    failures.push(
+      `dist-runtime file growth ${distRuntimeFileGrowth} exceeded max ${options.distRuntimeFileGrowthMax}`,
+    );
   }
   if (distRuntimeByteGrowth > options.distRuntimeByteGrowthMax) {
     failures.push(

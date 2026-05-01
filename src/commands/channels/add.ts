@@ -14,7 +14,10 @@ import { applyAgentBindings, describeBinding } from "../agents.bindings.js";
 import { buildAgentSummaries } from "../agents.config.js";
 import { setupChannels } from "../onboard-channels.js";
 import type { ChannelChoice } from "../onboard-types.js";
-import { ensureOnboardingPluginInstalled, reloadOnboardingPluginRegistry } from "../onboarding/plugin-install.js";
+import {
+  ensureOnboardingPluginInstalled,
+  reloadOnboardingPluginRegistry,
+} from "../onboarding/plugin-install.js";
 import { applyAccountName, applyChannelAccountConfig } from "./add-mutators.js";
 import { channelLabel, requireValidConfig, shouldUseWizard } from "./shared.js";
 
@@ -81,7 +84,9 @@ export async function channelsAddCommand(
       for (const channel of selection) {
         const accountId = accountIds[channel] ?? DEFAULT_ACCOUNT_ID;
         const plugin = getChannelPlugin(channel);
-        const account = plugin?.config.resolveAccount(nextConfig, accountId) as { name?: string } | undefined;
+        const account = plugin?.config.resolveAccount(nextConfig, accountId) as
+          | { name?: string }
+          | undefined;
         const snapshot = plugin?.config.describeAccount?.(account, nextConfig);
         const existingName = snapshot?.name ?? account?.name;
         const name = await prompter.text({
@@ -150,7 +155,8 @@ export async function channelsAddCommand(
               [
                 "Skipped bindings already claimed by another agent:",
                 ...bindingResult.conflicts.map(
-                  (conflict) => `- ${describeBinding(conflict.binding)} (agent=${conflict.existingAgentId})`,
+                  (conflict) =>
+                    `- ${describeBinding(conflict.binding)} (agent=${conflict.existingAgentId})`,
                 ),
               ].join("\n"),
               "Routing bindings",
@@ -264,7 +270,9 @@ export async function channelsAddCommand(
   }
 
   const previousTelegramToken =
-    channel === "telegram" ? resolveTelegramAccount({ cfg: nextConfig, accountId }).token.trim() : "";
+    channel === "telegram"
+      ? resolveTelegramAccount({ cfg: nextConfig, accountId }).token.trim()
+      : "";
 
   if (accountId !== DEFAULT_ACCOUNT_ID) {
     nextConfig = moveSingleAccountChannelSectionToDefaultAccount({

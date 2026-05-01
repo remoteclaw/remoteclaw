@@ -21,7 +21,10 @@ function formatCommandError(result: { stderr: string; stdout: string }): string 
 
 function isMissingMatrixCryptoRuntimeError(err: unknown): boolean {
   const message = err instanceof Error ? err.message : String(err ?? "");
-  return message.includes("Cannot find module") && message.includes("@matrix-org/matrix-sdk-crypto-nodejs-");
+  return (
+    message.includes("Cannot find module") &&
+    message.includes("@matrix-org/matrix-sdk-crypto-nodejs-")
+  );
 }
 
 export function isMatrixSdkAvailable(): boolean {
@@ -111,9 +114,13 @@ export async function ensureMatrixSdkInstalled(params: {
     env: { COREPACK_ENABLE_DOWNLOAD_PROMPT: "0" },
   });
   if (result.code !== 0) {
-    throw new Error(result.stderr.trim() || result.stdout.trim() || "Matrix dependency install failed.");
+    throw new Error(
+      result.stderr.trim() || result.stdout.trim() || "Matrix dependency install failed.",
+    );
   }
   if (!isMatrixSdkAvailable()) {
-    throw new Error("Matrix dependency install completed but @vector-im/matrix-bot-sdk is still missing.");
+    throw new Error(
+      "Matrix dependency install completed but @vector-im/matrix-bot-sdk is still missing.",
+    );
   }
 }

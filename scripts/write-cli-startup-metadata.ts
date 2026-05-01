@@ -38,7 +38,9 @@ type ExtensionChannelEntry = {
   label: string;
 };
 
-export function readBundledChannelCatalogIds(extensionsDirOverride: string = extensionsDir): string[] {
+export function readBundledChannelCatalogIds(
+  extensionsDirOverride: string = extensionsDir,
+): string[] {
   const entries: ExtensionChannelEntry[] = [];
   for (const dirEntry of readdirSync(extensionsDirOverride, { withFileTypes: true })) {
     if (!dirEntry.isDirectory()) {
@@ -92,7 +94,9 @@ async function captureStdout(action: () => void | Promise<void>): Promise<string
   return output;
 }
 
-export async function renderBundledRootHelpText(distDirOverride: string = distDir): Promise<string> {
+export async function renderBundledRootHelpText(
+  distDirOverride: string = distDir,
+): Promise<string> {
   const bundleName = readdirSync(distDirOverride).find(
     (entry) => entry.startsWith("root-help-") && entry.endsWith(".js"),
   );

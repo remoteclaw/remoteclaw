@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { INVALID_EXEC_SECRET_REF_IDS, VALID_EXEC_SECRET_REF_IDS } from "../test-utils/secret-ref-test-vectors.js";
+import {
+  INVALID_EXEC_SECRET_REF_IDS,
+  VALID_EXEC_SECRET_REF_IDS,
+} from "../test-utils/secret-ref-test-vectors.js";
 import { validateConfigObjectRaw } from "./validation.js";
 
 function validateOpenAiApiKeyRef(apiKey: unknown) {
@@ -115,7 +118,9 @@ describe("config secret refs schema", () => {
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      expect(result.issues.some((issue) => issue.path.includes("models.providers.openai.apiKey"))).toBe(true);
+      expect(
+        result.issues.some((issue) => issue.path.includes("models.providers.openai.apiKey")),
+      ).toBe(true);
     }
   });
 
@@ -131,7 +136,8 @@ describe("config secret refs schema", () => {
       expect(
         result.issues.some(
           (issue) =>
-            issue.path.includes("models.providers.openai.apiKey") && issue.message.includes("Env secret reference id"),
+            issue.path.includes("models.providers.openai.apiKey") &&
+            issue.message.includes("Env secret reference id"),
         ),
       ).toBe(true);
     }
@@ -149,7 +155,8 @@ describe("config secret refs schema", () => {
       expect(
         result.issues.some(
           (issue) =>
-            issue.path.includes("models.providers.openai.apiKey") && issue.message.includes("absolute JSON pointer"),
+            issue.path.includes("models.providers.openai.apiKey") &&
+            issue.message.includes("absolute JSON pointer"),
         ),
       ).toBe(true);
     }
@@ -175,7 +182,9 @@ describe("config secret refs schema", () => {
       });
       expect(result.ok, `expected invalid exec ref id: ${id}`).toBe(false);
       if (!result.ok) {
-        expect(result.issues.some((issue) => issue.path.includes("models.providers.openai.apiKey"))).toBe(true);
+        expect(
+          result.issues.some((issue) => issue.path.includes("models.providers.openai.apiKey")),
+        ).toBe(true);
       }
     }
   });

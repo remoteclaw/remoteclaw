@@ -4,7 +4,10 @@ import type { ApiClientOptions } from "grammy";
 import { Bot } from "grammy";
 import { resolveDefaultAgentId } from "../../../src/agents/agent-scope.js";
 import { resolveTextChunkLimit } from "../../../src/auto-reply/chunk.js";
-import { DEFAULT_GROUP_HISTORY_LIMIT, type HistoryEntry } from "../../../src/auto-reply/reply/history.js";
+import {
+  DEFAULT_GROUP_HISTORY_LIMIT,
+  type HistoryEntry,
+} from "../../../src/auto-reply/reply/history.js";
 import {
   resolveThreadBindingIdleTimeoutMsForChannel,
   resolveThreadBindingMaxAgeMsForChannel,
@@ -17,7 +20,10 @@ import {
 } from "../../../src/config/commands.js";
 import type { RemoteClawConfig, ReplyToMode } from "../../../src/config/config.js";
 import { loadConfig } from "../../../src/config/config.js";
-import { resolveChannelGroupPolicy, resolveChannelGroupRequireMention } from "../../../src/config/group-policy.js";
+import {
+  resolveChannelGroupPolicy,
+  resolveChannelGroupRequireMention,
+} from "../../../src/config/group-policy.js";
 import { loadSessionStore, resolveStorePath } from "../../../src/config/sessions.js";
 import { danger, logVerbose, shouldLogVerbose } from "../../../src/globals.js";
 import { formatUncaughtError } from "../../../src/infra/errors.js";
@@ -109,7 +115,8 @@ export function createTelegramBot(opts: TelegramBotOptions) {
   // its own poll triggers a 409 Conflict from Telegram.
   let finalFetch = shouldProvideFetch && fetchImpl ? fetchForClient : undefined;
   if (opts.fetchAbortSignal) {
-    const baseFetch = finalFetch ?? (globalThis.fetch as unknown as NonNullable<ApiClientOptions["fetch"]>);
+    const baseFetch =
+      finalFetch ?? (globalThis.fetch as unknown as NonNullable<ApiClientOptions["fetch"]>);
     const shutdownSignal = opts.fetchAbortSignal;
     // Cast baseFetch to global fetch to avoid node-fetch ↔ global-fetch type divergence;
     // they are runtime-compatible (the codebase already casts at every fetch boundary).
@@ -164,7 +171,8 @@ export function createTelegramBot(opts: TelegramBotOptions) {
   });
 
   const recentUpdates = createTelegramUpdateDedupe();
-  const initialUpdateId = typeof opts.updateOffset?.lastUpdateId === "number" ? opts.updateOffset.lastUpdateId : null;
+  const initialUpdateId =
+    typeof opts.updateOffset?.lastUpdateId === "number" ? opts.updateOffset.lastUpdateId : null;
 
   // Track update_ids that have entered the middleware pipeline but have not completed yet.
   // This includes updates that are "queued" behind sequentialize(...) for a chat/topic key.
@@ -244,7 +252,10 @@ export function createTelegramBot(opts: TelegramBotOptions) {
         return `${value.slice(0, MAX_RAW_UPDATE_STRING)}...`;
       }
       if (Array.isArray(value) && value.length > MAX_RAW_UPDATE_ARRAY) {
-        return [...value.slice(0, MAX_RAW_UPDATE_ARRAY), `...(${value.length - MAX_RAW_UPDATE_ARRAY} more)`];
+        return [
+          ...value.slice(0, MAX_RAW_UPDATE_ARRAY),
+          `...(${value.length - MAX_RAW_UPDATE_ARRAY} more)`,
+        ];
       }
       if (value && typeof value === "object") {
         if (seen.has(value)) {
@@ -260,7 +271,8 @@ export function createTelegramBot(opts: TelegramBotOptions) {
     if (shouldLogVerbose()) {
       try {
         const raw = stringifyUpdate(ctx.update);
-        const preview = raw.length > MAX_RAW_UPDATE_CHARS ? `${raw.slice(0, MAX_RAW_UPDATE_CHARS)}...` : raw;
+        const preview =
+          raw.length > MAX_RAW_UPDATE_CHARS ? `${raw.slice(0, MAX_RAW_UPDATE_CHARS)}...` : raw;
         rawUpdateLogger.debug(`telegram update: ${preview}`);
       } catch (err) {
         rawUpdateLogger.debug(`telegram update log failed: ${String(err)}`);
@@ -271,13 +283,16 @@ export function createTelegramBot(opts: TelegramBotOptions) {
 
   const historyLimit = Math.max(
     0,
-    telegramCfg.historyLimit ?? cfg.messages?.groupChat?.historyLimit ?? DEFAULT_GROUP_HISTORY_LIMIT,
+    telegramCfg.historyLimit ??
+      cfg.messages?.groupChat?.historyLimit ??
+      DEFAULT_GROUP_HISTORY_LIMIT,
   );
   const groupHistories = new Map<string, HistoryEntry[]>();
   const textLimit = resolveTextChunkLimit(cfg, "telegram", account.accountId);
   const dmPolicy = telegramCfg.dmPolicy ?? "pairing";
   const allowFrom = opts.allowFrom ?? telegramCfg.allowFrom;
-  const groupAllowFrom = opts.groupAllowFrom ?? telegramCfg.groupAllowFrom ?? telegramCfg.allowFrom ?? allowFrom;
+  const groupAllowFrom =
+    opts.groupAllowFrom ?? telegramCfg.groupAllowFrom ?? telegramCfg.allowFrom ?? allowFrom;
   const replyToMode = opts.replyToMode ?? telegramCfg.replyToMode ?? "off";
   const nativeEnabled = resolveNativeCommandsEnabled({
     providerId: "telegram",
@@ -348,7 +363,8 @@ export function createTelegramBot(opts: TelegramBotOptions) {
     if (isDm) {
       const directConfig = direct?.[chatIdStr] ?? direct?.["*"];
       if (directConfig) {
-        const topicConfig = messageThreadId != null ? directConfig.topics?.[String(messageThreadId)] : undefined;
+        const topicConfig =
+          messageThreadId != null ? directConfig.topics?.[String(messageThreadId)] : undefined;
         return { groupConfig: directConfig, topicConfig };
       }
       // DMs without direct config: don't fall through to groups lookup
@@ -359,7 +375,8 @@ export function createTelegramBot(opts: TelegramBotOptions) {
       return { groupConfig: undefined, topicConfig: undefined };
     }
     const groupConfig = groups[chatIdStr] ?? groups["*"];
-    const topicConfig = messageThreadId != null ? groupConfig?.topics?.[String(messageThreadId)] : undefined;
+    const topicConfig =
+      messageThreadId != null ? groupConfig?.topics?.[String(messageThreadId)] : undefined;
     return { groupConfig, topicConfig };
   };
 
@@ -369,7 +386,11 @@ export function createTelegramBot(opts: TelegramBotOptions) {
   // from ANY chat are tracked together — prevents infinite retry storms.
   const sendChatActionHandler = createTelegramSendChatActionHandler({
     sendChatActionFn: (chatId, action, threadParams) =>
-      bot.api.sendChatAction(chatId, action, threadParams as Parameters<typeof bot.api.sendChatAction>[2]),
+      bot.api.sendChatAction(
+        chatId,
+        action,
+        threadParams as Parameters<typeof bot.api.sendChatAction>[2],
+      ),
     logger: (message) => logVerbose(`telegram: ${message}`),
   });
 

@@ -140,7 +140,10 @@ export function canBypassConfigWritePolicy(params: {
   channel?: string | null;
   gatewayClientScopes?: string[] | null;
 }): boolean {
-  return isInternalMessageChannel(params.channel) && params.gatewayClientScopes?.includes("operator.admin") === true;
+  return (
+    isInternalMessageChannel(params.channel) &&
+    params.gatewayClientScopes?.includes("operator.admin") === true
+  );
 }
 
 export function formatConfigWriteDeniedMessage(params: {

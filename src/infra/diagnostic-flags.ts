@@ -41,7 +41,10 @@ function uniqueFlags(flags: string[]): string[] {
   return out;
 }
 
-export function resolveDiagnosticFlags(cfg?: RemoteClawConfig, env: NodeJS.ProcessEnv = process.env): string[] {
+export function resolveDiagnosticFlags(
+  cfg?: RemoteClawConfig,
+  env: NodeJS.ProcessEnv = process.env,
+): string[] {
   const configFlags = Array.isArray(cfg?.diagnostics?.flags) ? cfg?.diagnostics?.flags : [];
   const envFlags = parseEnvFlags(env[DIAGNOSTICS_ENV]);
   return uniqueFlags([...configFlags, ...envFlags]);

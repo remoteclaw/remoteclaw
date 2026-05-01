@@ -24,12 +24,16 @@ const CHANNEL_ONBOARDING_ADAPTERS = () => {
 
   // Fall back to built-in adapters to keep onboarding working even when the plugin registry
   // fails to populate (see #25545).
-  const fromBuiltins = BUILTIN_ONBOARDING_ADAPTERS.map((adapter) => [adapter.channel, adapter] as const);
+  const fromBuiltins = BUILTIN_ONBOARDING_ADAPTERS.map(
+    (adapter) => [adapter.channel, adapter] as const,
+  );
 
   return new Map<ChannelChoice, ChannelOnboardingAdapter>([...fromBuiltins, ...fromRegistry]);
 };
 
-export function getChannelOnboardingAdapter(channel: ChannelChoice): ChannelOnboardingAdapter | undefined {
+export function getChannelOnboardingAdapter(
+  channel: ChannelChoice,
+): ChannelOnboardingAdapter | undefined {
   return CHANNEL_ONBOARDING_ADAPTERS().get(channel);
 }
 

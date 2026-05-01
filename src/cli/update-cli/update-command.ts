@@ -1,6 +1,9 @@
 import path from "node:path";
 import { confirm, isCancel } from "@clack/prompts";
-import { checkShellCompletionStatus, ensureCompletionCacheExists } from "../../commands/doctor-completion.js";
+import {
+  checkShellCompletionStatus,
+  ensureCompletionCacheExists,
+} from "../../commands/doctor-completion.js";
 import { doctorCommand } from "../../commands/doctor.js";
 import {
   readConfigFileSnapshot,
@@ -17,8 +20,16 @@ import {
   normalizeUpdateChannel,
   type UpdateChannel,
 } from "../../infra/update-channels.js";
-import { compareSemverStrings, resolveNpmChannelTag, checkUpdateStatus } from "../../infra/update-check.js";
-import { cleanupGlobalRenameDirs, globalInstallArgs, resolveGlobalPackageRoot } from "../../infra/update-global.js";
+import {
+  compareSemverStrings,
+  resolveNpmChannelTag,
+  checkUpdateStatus,
+} from "../../infra/update-check.js";
+import {
+  cleanupGlobalRenameDirs,
+  globalInstallArgs,
+  resolveGlobalPackageRoot,
+} from "../../infra/update-global.js";
 import { runGatewayUpdate, type UpdateRunResult } from "../../infra/update-runner.js";
 import { syncPluginsForUpdateChannel, updateNpmInstalledPlugins } from "../../plugins/update.js";
 import { runCommandWithTimeout } from "../../process/exec.js";
@@ -165,7 +176,10 @@ function printDryRunPreview(preview: UpdateDryRunPreview, jsonMode: boolean): vo
   }
 }
 
-async function refreshGatewayServiceEnv(params: { result: UpdateRunResult; jsonMode: boolean }): Promise<void> {
+async function refreshGatewayServiceEnv(params: {
+  result: UpdateRunResult;
+  jsonMode: boolean;
+}): Promise<void> {
   const args = ["gateway", "install", "--force"];
   if (params.jsonMode) {
     args.push("--json");
@@ -181,13 +195,18 @@ async function refreshGatewayServiceEnv(params: { result: UpdateRunResult; jsonM
     if (res.code === 0) {
       return;
     }
-    throw new Error(`updated install refresh failed (${candidate}): ${formatCommandFailure(res.stdout, res.stderr)}`);
+    throw new Error(
+      `updated install refresh failed (${candidate}): ${formatCommandFailure(res.stdout, res.stderr)}`,
+    );
   }
 
   await runDaemonInstall({ force: true, json: params.jsonMode || undefined });
 }
 
-async function tryInstallShellCompletion(opts: { jsonMode: boolean; skipPrompt: boolean }): Promise<void> {
+async function tryInstallShellCompletion(opts: {
+  jsonMode: boolean;
+  skipPrompt: boolean;
+}): Promise<void> {
   if (opts.jsonMode || !process.stdin.isTTY) {
     return;
   }
@@ -256,7 +275,8 @@ async function runPackageInstallUpdate(params: {
 
   const pkgRoot = await resolveGlobalPackageRoot(manager, runCommand, params.timeoutMs);
   const packageName =
-    (pkgRoot ? await readPackageName(pkgRoot) : await readPackageName(params.root)) ?? DEFAULT_PACKAGE_NAME;
+    (pkgRoot ? await readPackageName(pkgRoot) : await readPackageName(params.root)) ??
+    DEFAULT_PACKAGE_NAME;
 
   const beforeVersion = pkgRoot ? await readPackageVersion(pkgRoot) : null;
   if (pkgRoot) {
@@ -441,11 +461,15 @@ async function updatePluginsAfterCoreUpdate(params: {
 
   if (syncResult.summary.switchedToBundled.length > 0) {
     defaultRuntime.log(
-      theme.muted(`Switched to bundled plugins: ${summarizeList(syncResult.summary.switchedToBundled)}.`),
+      theme.muted(
+        `Switched to bundled plugins: ${summarizeList(syncResult.summary.switchedToBundled)}.`,
+      ),
     );
   }
   if (syncResult.summary.switchedToNpm.length > 0) {
-    defaultRuntime.log(theme.muted(`Restored npm plugins: ${summarizeList(syncResult.summary.switchedToNpm)}.`));
+    defaultRuntime.log(
+      theme.muted(`Restored npm plugins: ${summarizeList(syncResult.summary.switchedToNpm)}.`),
+    );
   }
   for (const warning of syncResult.summary.warnings) {
     defaultRuntime.log(theme.warn(warning));
@@ -506,7 +530,9 @@ async function maybeRestartService(params: {
         } catch (err) {
           if (!params.opts.json) {
             defaultRuntime.log(
-              theme.warn(`Failed to refresh gateway service environment from updated install: ${String(err)}`),
+              theme.warn(
+                `Failed to refresh gateway service environment from updated install: ${String(err)}`,
+              ),
             );
           }
         }
@@ -523,7 +549,8 @@ async function maybeRestartService(params: {
         defaultRuntime.log("");
         process.env.REMOTECLAW_UPDATE_IN_PROGRESS = "1";
         try {
-          const interactiveDoctor = Boolean(process.stdin.isTTY) && !params.opts.json && params.opts.yes !== true;
+          const interactiveDoctor =
+            Boolean(process.stdin.isTTY) && !params.opts.json && params.opts.yes !== true;
           await doctorCommand(defaultRuntime, {
             nonInteractive: !interactiveDoctor,
           });
@@ -620,7 +647,9 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
   });
 
   const configSnapshot = await readConfigFileSnapshot();
-  const storedChannel = configSnapshot.valid ? normalizeUpdateChannel(configSnapshot.config.update?.channel) : null;
+  const storedChannel = configSnapshot.valid
+    ? normalizeUpdateChannel(configSnapshot.config.update?.channel)
+    : null;
 
   const requestedChannel = normalizeUpdateChannel(opts.channel);
   if (opts.channel && !requestedChannel) {
@@ -637,9 +666,11 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
 
   const installKind = updateStatus.installKind;
   const switchToGit = requestedChannel === "dev" && installKind !== "git";
-  const switchToPackage = requestedChannel !== null && requestedChannel !== "dev" && installKind === "git";
+  const switchToPackage =
+    requestedChannel !== null && requestedChannel !== "dev" && installKind === "git";
   const updateInstallKind = switchToGit ? "git" : switchToPackage ? "package" : installKind;
-  const defaultChannel = updateInstallKind === "git" ? DEFAULT_GIT_CHANNEL : DEFAULT_PACKAGE_CHANNEL;
+  const defaultChannel =
+    updateInstallKind === "git" ? DEFAULT_GIT_CHANNEL : DEFAULT_PACKAGE_CHANNEL;
   const channel = requestedChannel ?? storedChannel ?? defaultChannel;
 
   const explicitTag = normalizeTag(opts.tag);
@@ -658,8 +689,12 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
           fallbackToLatest = channel === "beta" && resolved.tag === "latest";
           return resolved.version;
         });
-    const cmp = currentVersion && targetVersion ? compareSemverStrings(currentVersion, targetVersion) : null;
-    downgradeRisk = !fallbackToLatest && currentVersion != null && (targetVersion == null || (cmp != null && cmp > 0));
+    const cmp =
+      currentVersion && targetVersion ? compareSemverStrings(currentVersion, targetVersion) : null;
+    downgradeRisk =
+      !fallbackToLatest &&
+      currentVersion != null &&
+      (targetVersion == null || (cmp != null && cmp > 0));
   }
 
   if (opts.dryRun) {
@@ -690,7 +725,9 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
     actions.push("Run plugin update sync after core update");
     actions.push("Refresh shell completion cache (if needed)");
     actions.push(
-      shouldRestart ? "Restart gateway service and run doctor checks" : "Skip restart (because --no-restart is set)",
+      shouldRestart
+        ? "Restart gateway service and run doctor checks"
+        : "Skip restart (because --no-restart is set)",
     );
 
     const notes: string[] = [];
@@ -729,9 +766,10 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
   if (downgradeRisk && !opts.yes) {
     if (!process.stdin.isTTY || opts.json) {
       defaultRuntime.error(
-        ["Downgrade confirmation required.", "Downgrading can break configuration. Re-run in a TTY to confirm."].join(
-          "\n",
-        ),
+        [
+          "Downgrade confirmation required.",
+          "Downgrading can break configuration. Re-run in a TTY to confirm.",
+        ].join("\n"),
       );
       defaultRuntime.exit(1);
       return;
@@ -753,7 +791,9 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
   }
 
   if (updateInstallKind === "git" && opts.tag && !opts.json) {
-    defaultRuntime.log(theme.muted("Note: --tag applies to npm installs only; git updates ignore it."));
+    defaultRuntime.log(
+      theme.muted("Note: --tag applies to npm installs only; git updates ignore it."),
+    );
   }
 
   if (requestedChannel && configSnapshot.valid) {
@@ -781,7 +821,10 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
 
   let restartScriptPath: string | null = null;
   let refreshGatewayServiceEnv = false;
-  const gatewayPort = resolveGatewayPort(configSnapshot.valid ? configSnapshot.config : undefined, process.env);
+  const gatewayPort = resolveGatewayPort(
+    configSnapshot.valid ? configSnapshot.config : undefined,
+    process.env,
+  );
   if (shouldRestart) {
     try {
       const loaded = await resolveGatewayService().isLoaded({ env: process.env });
@@ -827,7 +870,11 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
 
   if (result.status === "skipped") {
     if (result.reason === "dirty") {
-      defaultRuntime.log(theme.warn("Skipped: working directory has uncommitted changes. Commit or stash them first."));
+      defaultRuntime.log(
+        theme.warn(
+          "Skipped: working directory has uncommitted changes. Commit or stash them first.",
+        ),
+      );
     }
     if (result.reason === "not-git-install") {
       defaultRuntime.log(

@@ -1,9 +1,14 @@
 import { evaluateSenderGroupAccessForPolicy } from "../../../src/plugin-sdk/group-access.js";
 import { normalizeE164 } from "../../../src/utils.js";
 
-export type SignalSender = { kind: "phone"; raw: string; e164: string } | { kind: "uuid"; raw: string };
+export type SignalSender =
+  | { kind: "phone"; raw: string; e164: string }
+  | { kind: "uuid"; raw: string };
 
-type SignalAllowEntry = { kind: "any" } | { kind: "phone"; e164: string } | { kind: "uuid"; raw: string };
+type SignalAllowEntry =
+  | { kind: "any" }
+  | { kind: "phone"; e164: string }
+  | { kind: "uuid"; raw: string };
 
 const UUID_HYPHENATED_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const UUID_COMPACT_RE = /^[0-9a-f]{32}$/i;
@@ -103,7 +108,9 @@ export function isSignalSenderAllowed(sender: SignalSender, allowFrom: string[])
   if (allowFrom.length === 0) {
     return false;
   }
-  const parsed = allowFrom.map(parseSignalAllowEntry).filter((entry): entry is SignalAllowEntry => entry !== null);
+  const parsed = allowFrom
+    .map(parseSignalAllowEntry)
+    .filter((entry): entry is SignalAllowEntry => entry !== null);
   if (parsed.some((entry) => entry.kind === "any")) {
     return true;
   }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-const { classifyCiaoUnhandledRejection, ignoreCiaoUnhandledRejection } = await import("./bonjour-ciao.js");
+const { classifyCiaoUnhandledRejection, ignoreCiaoUnhandledRejection } =
+  await import("./bonjour-ciao.js");
 
 describe("bonjour-ciao", () => {
   it("classifies ciao cancellation rejections separately from side effects", () => {
@@ -22,7 +23,9 @@ describe("bonjour-ciao", () => {
   });
 
   it("suppresses ciao announcement cancellation rejections", () => {
-    expect(ignoreCiaoUnhandledRejection(new Error("Ciao announcement cancelled by shutdown"))).toBe(true);
+    expect(ignoreCiaoUnhandledRejection(new Error("Ciao announcement cancelled by shutdown"))).toBe(
+      true,
+    );
   });
 
   it("suppresses ciao probing cancellation rejections", () => {
@@ -34,9 +37,12 @@ describe("bonjour-ciao", () => {
   });
 
   it("suppresses ciao interface assertion rejections as non-fatal", () => {
-    const error = Object.assign(new Error("Reached illegal state! IPV4 address change from defined to undefined!"), {
-      name: "AssertionError",
-    });
+    const error = Object.assign(
+      new Error("Reached illegal state! IPV4 address change from defined to undefined!"),
+      {
+        name: "AssertionError",
+      },
+    );
 
     expect(ignoreCiaoUnhandledRejection(error)).toBe(true);
   });

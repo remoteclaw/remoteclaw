@@ -1,6 +1,9 @@
 import { sendMessageSignal } from "../../../../extensions/signal/src/send.js";
 import type { OutboundSendDeps } from "../../../infra/outbound/deliver.js";
-import { createScopedChannelMediaMaxBytesResolver, createDirectTextMediaOutbound } from "./direct-text-media.js";
+import {
+  createScopedChannelMediaMaxBytesResolver,
+  createDirectTextMediaOutbound,
+} from "./direct-text-media.js";
 
 function resolveSignalSender(deps: OutboundSendDeps | undefined) {
   return deps?.sendSignal ?? sendMessageSignal;

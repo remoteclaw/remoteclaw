@@ -18,7 +18,10 @@ export function normalizeStringList(input: unknown): string[] {
   return [];
 }
 
-export function getFrontmatterString(frontmatter: Record<string, unknown>, key: string): string | undefined {
+export function getFrontmatterString(
+  frontmatter: Record<string, unknown>,
+  key: string,
+): string | undefined {
   const raw = frontmatter[key];
   return typeof raw === "string" ? raw : undefined;
 }
@@ -86,7 +89,9 @@ export function resolveRemoteClawManifestInstall<T>(
   parseInstallSpec: (input: unknown) => T | undefined,
 ): T[] {
   const installRaw = Array.isArray(metadataObj.install) ? (metadataObj.install as unknown[]) : [];
-  return installRaw.map((entry) => parseInstallSpec(entry)).filter((entry): entry is T => Boolean(entry));
+  return installRaw
+    .map((entry) => parseInstallSpec(entry))
+    .filter((entry): entry is T => Boolean(entry));
 }
 
 export function resolveRemoteClawManifestOs(metadataObj: Record<string, unknown>): string[] {
@@ -109,7 +114,8 @@ export function parseRemoteClawManifestInstallBase(
     return undefined;
   }
   const raw = input as Record<string, unknown>;
-  const kindRaw = typeof raw.kind === "string" ? raw.kind : typeof raw.type === "string" ? raw.type : "";
+  const kindRaw =
+    typeof raw.kind === "string" ? raw.kind : typeof raw.type === "string" ? raw.type : "";
   const kind = kindRaw.trim().toLowerCase();
   if (!allowedKinds.includes(kind)) {
     return undefined;
@@ -132,10 +138,9 @@ export function parseRemoteClawManifestInstallBase(
   return spec;
 }
 
-export function applyRemoteClawManifestInstallCommonFields<T extends { id?: string; label?: string; bins?: string[] }>(
-  spec: T,
-  parsed: Pick<ParsedRemoteClawManifestInstallBase, "id" | "label" | "bins">,
-): T {
+export function applyRemoteClawManifestInstallCommonFields<
+  T extends { id?: string; label?: string; bins?: string[] },
+>(spec: T, parsed: Pick<ParsedRemoteClawManifestInstallBase, "id" | "label" | "bins">): T {
   if (parsed.id) {
     spec.id = parsed.id;
   }

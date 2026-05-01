@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { NostrProfile } from "./config-schema.js";
-import { createProfileEvent, profileToContent, validateProfile, sanitizeProfileForDisplay } from "./nostr-profile.js";
+import {
+  createProfileEvent,
+  profileToContent,
+  validateProfile,
+  sanitizeProfileForDisplay,
+} from "./nostr-profile.js";
 
 // Test private key
 const TEST_HEX_KEY = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";

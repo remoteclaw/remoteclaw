@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import { defaultRuntime } from "../runtime.js";
-import { applyCustomApiConfig, parseNonInteractiveCustomApiFlags, promptCustomApiConfig } from "./onboard-custom.js";
+import {
+  applyCustomApiConfig,
+  parseNonInteractiveCustomApiFlags,
+  promptCustomApiConfig,
+} from "./onboard-custom.js";
 
 // Mock dependencies
 vi.mock("./model-picker.js", () => ({
@@ -35,7 +39,9 @@ function createTestPrompter(params: { text: string[]; select?: string[] }): {
   };
 }
 
-function stubFetchSequence(responses: Array<{ ok: boolean; status?: number }>): ReturnType<typeof vi.fn> {
+function stubFetchSequence(
+  responses: Array<{ ok: boolean; status?: number }>,
+): ReturnType<typeof vi.fn> {
   const fetchMock = vi.fn();
   for (const response of responses) {
     fetchMock.mockResolvedValueOnce({
@@ -48,7 +54,10 @@ function stubFetchSequence(responses: Array<{ ok: boolean; status?: number }>): 
   return fetchMock;
 }
 
-async function runPromptCustomApi(prompter: ReturnType<typeof createTestPrompter>, config: object = {}) {
+async function runPromptCustomApi(
+  prompter: ReturnType<typeof createTestPrompter>,
+  config: object = {},
+) {
   return promptCustomApiConfig({
     prompter: prompter as unknown as Parameters<typeof promptCustomApiConfig>[0]["prompter"],
     runtime: { ...defaultRuntime, log: vi.fn() },
@@ -163,7 +172,13 @@ describe("promptCustomApiConfig", () => {
 
   it("uses azure-specific headers and body for openai verification probes", async () => {
     const prompter = createTestPrompter({
-      text: ["https://my-resource.openai.azure.com", "azure-test-key", "gpt-4.1", "custom", "alias"],
+      text: [
+        "https://my-resource.openai.azure.com",
+        "azure-test-key",
+        "gpt-4.1",
+        "custom",
+        "alias",
+      ],
       select: ["plaintext", "openai"],
     });
     const fetchMock = stubFetchSequence([{ ok: true }]);
@@ -172,7 +187,9 @@ describe("promptCustomApiConfig", () => {
 
     const firstCall = fetchMock.mock.calls[0];
     const firstUrl = firstCall?.[0];
-    const firstInit = firstCall?.[1] as { body?: string; headers?: Record<string, string> } | undefined;
+    const firstInit = firstCall?.[1] as
+      | { body?: string; headers?: Record<string, string> }
+      | undefined;
     if (typeof firstUrl !== "string") {
       throw new Error("Expected first verification call URL");
     }
@@ -209,13 +226,24 @@ describe("promptCustomApiConfig", () => {
 
   it("re-prompts base url when unknown detection fails", async () => {
     const prompter = createTestPrompter({
-      text: ["https://bad.example.com/v1", "bad-key", "bad-model", "https://ok.example.com/v1", "ok-key", "custom", ""],
+      text: [
+        "https://bad.example.com/v1",
+        "bad-key",
+        "bad-model",
+        "https://ok.example.com/v1",
+        "ok-key",
+        "custom",
+        "",
+      ],
       select: ["plaintext", "unknown", "baseUrl", "plaintext"],
     });
     stubFetchSequence([{ ok: false, status: 404 }, { ok: false, status: 404 }, { ok: true }]);
     await runPromptCustomApi(prompter);
 
-    expect(prompter.note).toHaveBeenCalledWith(expect.stringContaining("did not respond"), "Endpoint detection");
+    expect(prompter.note).toHaveBeenCalledWith(
+      expect.stringContaining("did not respond"),
+      "Endpoint detection",
+    );
   });
 
   it("renames provider id when baseUrl differs", async () => {
@@ -291,7 +319,9 @@ describe("promptCustomApiConfig", () => {
       provider: "default",
       id: "CUSTOM_PROVIDER_API_KEY",
     });
-    const firstCall = fetchMock.mock.calls[0]?.[1] as { headers?: Record<string, string> } | undefined;
+    const firstCall = fetchMock.mock.calls[0]?.[1] as
+      | { headers?: Record<string, string> }
+      | undefined;
     expect(firstCall?.headers?.Authorization).toBe("Bearer test-env-key");
   });
 
@@ -353,7 +383,9 @@ describe("applyCustomApiConfig", () => {
     },
   ])("$name", ({ existingContextWindow, expectedContextWindow }) => {
     const result = applyCustomModelConfigWithContextWindow(existingContextWindow);
-    const model = result.config.models?.providers?.custom?.models?.find((entry) => entry.id === "foo-large");
+    const model = result.config.models?.providers?.custom?.models?.find(
+      (entry) => entry.id === "foo-large",
+    );
     expect(model?.contextWindow).toBe(expectedContextWindow);
   });
 

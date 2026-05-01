@@ -18,7 +18,10 @@ const ALL_PACKAGE_NAMES = [PRIMARY_PACKAGE_NAME] as const;
 const GLOBAL_RENAME_PREFIX = ".";
 export const REMOTECLAW_MAIN_PACKAGE_SPEC = "github:remoteclaw/remoteclaw#main";
 const NPM_GLOBAL_INSTALL_QUIET_FLAGS = ["--no-fund", "--no-audit", "--loglevel=error"] as const;
-const NPM_GLOBAL_INSTALL_OMIT_OPTIONAL_FLAGS = ["--omit=optional", ...NPM_GLOBAL_INSTALL_QUIET_FLAGS] as const;
+const NPM_GLOBAL_INSTALL_OMIT_OPTIONAL_FLAGS = [
+  "--omit=optional",
+  ...NPM_GLOBAL_INSTALL_QUIET_FLAGS,
+] as const;
 
 function normalizePackageTarget(value: string): string {
   return value.trim();
@@ -40,7 +43,10 @@ export function isExplicitPackageInstallSpec(value: string): boolean {
   );
 }
 
-export function resolveExpectedInstalledVersionFromSpec(packageName: string, spec: string): string | null {
+export function resolveExpectedInstalledVersionFromSpec(
+  packageName: string,
+  spec: string,
+): string | null {
   const normalizedPackageName = packageName.trim();
   const normalizedSpec = normalizePackageTarget(spec);
   if (!normalizedPackageName || !normalizedSpec.startsWith(`${normalizedPackageName}@`)) {
@@ -66,7 +72,9 @@ export async function collectInstalledGlobalPackageErrors(params: {
   const errors: string[] = [];
   const installedVersion = await readPackageVersion(params.packageRoot);
   if (params.expectedVersion && installedVersion !== params.expectedVersion) {
-    errors.push(`expected installed version ${params.expectedVersion}, found ${installedVersion ?? "<missing>"}`);
+    errors.push(
+      `expected installed version ${params.expectedVersion}, found ${installedVersion ?? "<missing>"}`,
+    );
   }
   for (const relativePath of BUNDLED_RUNTIME_SIDECAR_PATHS) {
     if (!(await pathExists(path.join(params.packageRoot, relativePath)))) {
@@ -84,7 +92,9 @@ export function canResolveRegistryVersionForPackageTarget(value: string): boolea
   return !isMainPackageTarget(trimmed) && !isExplicitPackageInstallSpec(trimmed);
 }
 
-async function resolvePortableGitPathPrepend(env: NodeJS.ProcessEnv | undefined): Promise<string[]> {
+async function resolvePortableGitPathPrepend(
+  env: NodeJS.ProcessEnv | undefined,
+): Promise<string[]> {
   if (process.platform !== "win32") {
     return [];
   }
@@ -125,7 +135,8 @@ export function resolveGlobalInstallSpec(params: {
   env?: NodeJS.ProcessEnv;
 }): string {
   const override =
-    params.env?.REMOTECLAW_UPDATE_PACKAGE_SPEC?.trim() || process.env.REMOTECLAW_UPDATE_PACKAGE_SPEC?.trim();
+    params.env?.REMOTECLAW_UPDATE_PACKAGE_SPEC?.trim() ||
+    process.env.REMOTECLAW_UPDATE_PACKAGE_SPEC?.trim();
   if (override) {
     return override;
   }
@@ -139,7 +150,9 @@ export function resolveGlobalInstallSpec(params: {
   return `${params.packageName}@${target}`;
 }
 
-export async function createGlobalInstallEnv(env?: NodeJS.ProcessEnv): Promise<NodeJS.ProcessEnv | undefined> {
+export async function createGlobalInstallEnv(
+  env?: NodeJS.ProcessEnv,
+): Promise<NodeJS.ProcessEnv | undefined> {
   const pathPrepend = await resolvePortableGitPathPrepend(env);
   if (pathPrepend.length === 0 && process.platform !== "win32") {
     return env;
@@ -278,7 +291,10 @@ export function globalInstallArgs(manager: GlobalInstallManager, spec: string): 
   return ["npm", "i", "-g", spec, ...NPM_GLOBAL_INSTALL_QUIET_FLAGS];
 }
 
-export function globalInstallFallbackArgs(manager: GlobalInstallManager, spec: string): string[] | null {
+export function globalInstallFallbackArgs(
+  manager: GlobalInstallManager,
+  spec: string,
+): string[] | null {
   if (manager !== "npm") {
     return null;
   }

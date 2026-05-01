@@ -80,12 +80,14 @@ describe("createMattermostDirectChannelWithRetry", () => {
 
   it("retries on port 443 connection errors (not misclassified as 4xx)", async () => {
     // This tests that port numbers like :443 don't trigger false 4xx classification
-    mockFetch.mockRejectedValueOnce(new Error("connect ECONNRESET 104.18.32.10:443")).mockResolvedValueOnce({
-      ok: true,
-      status: 201,
-      headers: new Headers({ "content-type": "application/json" }),
-      json: async () => ({ id: "dm-channel-port" }),
-    } as Response);
+    mockFetch
+      .mockRejectedValueOnce(new Error("connect ECONNRESET 104.18.32.10:443"))
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        headers: new Headers({ "content-type": "application/json" }),
+        json: async () => ({ id: "dm-channel-port" }),
+      } as Response);
 
     const client = createMockClient();
 

@@ -21,6 +21,8 @@ describe("resolveUnusableProfileHint", () => {
   });
 
   it("returns cooldown guidance for cooldown windows", () => {
-    expect(resolveUnusableProfileHint({ kind: "cooldown" })).toBe("Wait for cooldown or switch provider.");
+    expect(resolveUnusableProfileHint({ kind: "cooldown" })).toBe(
+      "Wait for cooldown or switch provider.",
+    );
   });
 });

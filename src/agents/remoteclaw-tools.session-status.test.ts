@@ -69,7 +69,9 @@ function resetSessionStore(store: Record<string, unknown>) {
 }
 
 function getSessionStatusTool(agentSessionKey = "main") {
-  const tool = createRemoteClawTools({ agentSessionKey }).find((candidate) => candidate.name === "session_status");
+  const tool = createRemoteClawTools({ agentSessionKey }).find(
+    (candidate) => candidate.name === "session_status",
+  );
   expect(tool).toBeDefined();
   if (!tool) {
     throw new Error("missing session_status tool");
@@ -103,7 +105,9 @@ describe("session_status tool", () => {
 
     const tool = getSessionStatusTool();
 
-    await expect(tool.execute("call2", { sessionKey: "nope" })).rejects.toThrow("Unknown sessionId");
+    await expect(tool.execute("call2", { sessionKey: "nope" })).rejects.toThrow(
+      "Unknown sessionId",
+    );
     expect(updateSessionStoreMock).not.toHaveBeenCalled();
   });
 
@@ -175,12 +179,14 @@ describe("session_status tool", () => {
     loadSessionStoreMock.mockImplementation((storePath: string) => {
       return stores.get(storePath) ?? {};
     });
-    updateSessionStoreMock.mockImplementation((_storePath: string, store: Record<string, unknown>) => {
-      // Keep map in sync for resolveSessionEntry fallbacks if needed.
-      if (_storePath) {
-        stores.set(_storePath, store);
-      }
-    });
+    updateSessionStoreMock.mockImplementation(
+      (_storePath: string, store: Record<string, unknown>) => {
+        // Keep map in sync for resolveSessionEntry fallbacks if needed.
+        if (_storePath) {
+          stores.set(_storePath, store);
+        }
+      },
+    );
 
     const tool = getSessionStatusTool("agent:support:main");
 
@@ -205,7 +211,10 @@ describe("session_status tool", () => {
 
     await tool.execute("call3", { model: "default" });
     expect(updateSessionStoreMock).toHaveBeenCalled();
-    const [, savedStore] = updateSessionStoreMock.mock.calls.at(-1) as [string, Record<string, unknown>];
+    const [, savedStore] = updateSessionStoreMock.mock.calls.at(-1) as [
+      string,
+      Record<string, unknown>,
+    ];
     const saved = savedStore.main as Record<string, unknown>;
     expect(saved.providerOverride).toBeUndefined();
     expect(saved.modelOverride).toBeUndefined();

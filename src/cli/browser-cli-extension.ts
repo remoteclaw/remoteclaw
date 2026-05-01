@@ -12,7 +12,9 @@ import { theme } from "../terminal/theme.js";
 import { shortenHomePath } from "../utils.js";
 import { formatCliCommand } from "./command-format.js";
 
-export function resolveBundledExtensionRootDir(here = path.dirname(fileURLToPath(import.meta.url))) {
+export function resolveBundledExtensionRootDir(
+  here = path.dirname(fileURLToPath(import.meta.url)),
+) {
   let current = here;
   while (true) {
     const candidate = path.join(current, "assets", "chrome-extension");
@@ -65,7 +67,10 @@ export async function installChromeExtension(opts?: {
   return { path: dest };
 }
 
-export function registerBrowserExtensionCommands(browser: Command, parentOpts: (cmd: Command) => { json?: boolean }) {
+export function registerBrowserExtensionCommands(
+  browser: Command,
+  parentOpts: (cmd: Command) => { json?: boolean },
+) {
   const ext = browser.command("extension").description("Chrome extension helpers");
 
   ext

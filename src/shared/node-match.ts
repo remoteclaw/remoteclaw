@@ -46,7 +46,9 @@ function isLegacyClawdbotClient(clientId: string | undefined): boolean {
   return normalized.startsWith("clawdbot-") || normalized.startsWith("moldbot-");
 }
 
-function pickPreferredLegacyMigrationMatch(matches: NodeMatchCandidate[]): NodeMatchCandidate | undefined {
+function pickPreferredLegacyMigrationMatch(
+  matches: NodeMatchCandidate[],
+): NodeMatchCandidate | undefined {
   const current = matches.filter((match) => isCurrentOpenClawClient(match.clientId));
   if (current.length !== 1) {
     return undefined;
@@ -58,7 +60,11 @@ function pickPreferredLegacyMigrationMatch(matches: NodeMatchCandidate[]): NodeM
   return current[0];
 }
 
-function resolveMatchScore(node: NodeMatchCandidate, query: string, queryNormalized: string): number {
+function resolveMatchScore(
+  node: NodeMatchCandidate,
+  query: string,
+  queryNormalized: string,
+): number {
   if (node.nodeId === query) {
     return 4_000;
   }
@@ -109,7 +115,10 @@ function resolveScoredMatches(nodes: NodeMatchCandidate[], query: string): Score
     .filter((entry): entry is ScoredNodeMatch => entry !== null);
 }
 
-export function resolveNodeMatches(nodes: NodeMatchCandidate[], query: string): NodeMatchCandidate[] {
+export function resolveNodeMatches(
+  nodes: NodeMatchCandidate[],
+  query: string,
+): NodeMatchCandidate[] {
   return resolveScoredMatches(nodes, query).map((entry) => entry.node);
 }
 

@@ -21,7 +21,10 @@ const channel = "zalo" as const;
 
 type UpdateMode = "polling" | "webhook";
 
-function setZaloDmPolicy(cfg: RemoteClawConfig, dmPolicy: "pairing" | "allowlist" | "open" | "disabled") {
+function setZaloDmPolicy(
+  cfg: RemoteClawConfig,
+  dmPolicy: "pairing" | "allowlist" | "open" | "disabled",
+) {
   return setTopLevelChannelDmPolicyWithAllowFrom({
     cfg,
     channel: "zalo",
@@ -40,7 +43,12 @@ function setZaloUpdateMode(
   const isDefault = accountId === DEFAULT_ACCOUNT_ID;
   if (mode === "polling") {
     if (isDefault) {
-      const { webhookUrl: _url, webhookSecret: _secret, webhookPath: _path, ...rest } = cfg.channels?.zalo ?? {};
+      const {
+        webhookUrl: _url,
+        webhookSecret: _secret,
+        webhookPath: _path,
+        ...rest
+      } = cfg.channels?.zalo ?? {};
       return {
         ...cfg,
         channels: {
@@ -218,7 +226,13 @@ export const zaloOnboardingAdapter: ChannelOnboardingAdapter = {
       quickstartScore: configured ? 1 : 10,
     };
   },
-  configure: async ({ cfg, prompter, accountOverrides, shouldPromptAccountIds, forceAllowFrom }) => {
+  configure: async ({
+    cfg,
+    prompter,
+    accountOverrides,
+    shouldPromptAccountIds,
+    forceAllowFrom,
+  }) => {
     const defaultZaloAccountId = resolveDefaultZaloAccountId(cfg);
     const zaloAccountId = await resolveAccountIdForConfigure({
       cfg,
@@ -325,7 +339,8 @@ export const zaloOnboardingAdapter: ChannelOnboardingAdapter = {
         await prompter.text({
           message: "Webhook URL (https://...) ",
           initialValue: resolvedAccount.config.webhookUrl,
-          validate: (value) => (value?.trim()?.startsWith("https://") ? undefined : "HTTPS URL required"),
+          validate: (value) =>
+            value?.trim()?.startsWith("https://") ? undefined : "HTTPS URL required",
         }),
       ).trim();
       const defaultPath = (() => {
@@ -373,14 +388,23 @@ export const zaloOnboardingAdapter: ChannelOnboardingAdapter = {
         });
       }
       const webhookSecret =
-        webhookSecretResult.action === "set" ? webhookSecretResult.value : resolvedAccount.config.webhookSecret;
+        webhookSecretResult.action === "set"
+          ? webhookSecretResult.value
+          : resolvedAccount.config.webhookSecret;
       const webhookPath = String(
         await prompter.text({
           message: "Webhook path (optional)",
           initialValue: resolvedAccount.config.webhookPath ?? defaultPath,
         }),
       ).trim();
-      next = setZaloUpdateMode(next, zaloAccountId, "webhook", webhookUrl, webhookSecret, webhookPath || undefined);
+      next = setZaloUpdateMode(
+        next,
+        zaloAccountId,
+        "webhook",
+        webhookUrl,
+        webhookSecret,
+        webhookPath || undefined,
+      );
     } else {
       next = setZaloUpdateMode(next, zaloAccountId, "polling");
     }

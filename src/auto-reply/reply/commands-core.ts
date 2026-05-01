@@ -25,7 +25,11 @@ import {
 } from "./commands-session.js";
 import { handleSubagentsCommand } from "./commands-subagents.js";
 import { handleTtsCommands } from "./commands-tts.js";
-import type { CommandHandler, CommandHandlerResult, HandleCommandsParams } from "./commands-types.js";
+import type {
+  CommandHandler,
+  CommandHandlerResult,
+  HandleCommandsParams,
+} from "./commands-types.js";
 import { routeReply } from "./route-reply.js";
 
 let HANDLERS: CommandHandler[] | null = null;
@@ -147,7 +151,9 @@ export async function handleCommands(params: HandleCommandsParams): Promise<Comm
   const resetMatch = params.command.commandBodyNormalized.match(/^\/(new|reset)(?:\s|$)/);
   const resetRequested = Boolean(resetMatch);
   if (resetRequested && !params.command.isAuthorizedSender) {
-    logVerbose(`Ignoring /reset from unauthorized sender: ${params.command.senderId || "<unknown>"}`);
+    logVerbose(
+      `Ignoring /reset from unauthorized sender: ${params.command.senderId || "<unknown>"}`,
+    );
     return { shouldContinue: false };
   }
 

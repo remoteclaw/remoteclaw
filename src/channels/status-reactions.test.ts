@@ -28,7 +28,9 @@ const createMockAdapter = () => {
   };
 };
 
-const createEnabledController = (overrides: Partial<Parameters<typeof createStatusReactionController>[0]> = {}) => {
+const createEnabledController = (
+  overrides: Partial<Parameters<typeof createStatusReactionController>[0]> = {},
+) => {
   const { adapter, calls } = createMockAdapter();
   const controller = createStatusReactionController({
     enabled: true,
@@ -188,26 +190,31 @@ describe("createStatusReactionController", () => {
     },
   ] as const;
 
-  it.each(immediateTerminalCases)("should execute $name immediately without debounce", async ({ run, expected }) => {
-    const { calls, controller } = createEnabledController();
+  it.each(immediateTerminalCases)(
+    "should execute $name immediately without debounce",
+    async ({ run, expected }) => {
+      const { calls, controller } = createEnabledController();
 
-    await run(controller);
-    await vi.runAllTimersAsync();
+      await run(controller);
+      await vi.runAllTimersAsync();
 
-    expectSetEmojiCall(calls, expected);
-  });
+      expectSetEmojiCall(calls, expected);
+    },
+  );
 
   const terminalIgnoreCases = [
     {
       name: "ignore setThinking after setDone (terminal state)",
-      terminal: (controller: ReturnType<typeof createStatusReactionController>) => controller.setDone(),
+      terminal: (controller: ReturnType<typeof createStatusReactionController>) =>
+        controller.setDone(),
       followup: (controller: ReturnType<typeof createStatusReactionController>) => {
         void controller.setThinking();
       },
     },
     {
       name: "ignore setTool after setError (terminal state)",
-      terminal: (controller: ReturnType<typeof createStatusReactionController>) => controller.setError(),
+      terminal: (controller: ReturnType<typeof createStatusReactionController>) =>
+        controller.setError(),
       followup: (controller: ReturnType<typeof createStatusReactionController>) => {
         void controller.setTool("exec");
       },
@@ -471,6 +478,12 @@ describe("constants", () => {
   });
 
   it("should export DEFAULT_TIMING with all required keys", () => {
-    expectObjectHasKeys(DEFAULT_TIMING, ["debounceMs", "stallSoftMs", "stallHardMs", "doneHoldMs", "errorHoldMs"]);
+    expectObjectHasKeys(DEFAULT_TIMING, [
+      "debounceMs",
+      "stallSoftMs",
+      "stallHardMs",
+      "doneHoldMs",
+      "errorHoldMs",
+    ]);
   });
 });

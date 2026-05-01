@@ -77,8 +77,12 @@ describe("update-startup", () => {
       ({ resolveRemoteClawPackageRoot } = await import("./remoteclaw-root.js"));
       ({ checkUpdateStatus, resolveNpmChannelTag } = await import("./update-check.js"));
       ({ runCommandWithTimeout } = await import("../process/exec.js"));
-      ({ runGatewayUpdateCheck, scheduleGatewayUpdateCheck, getUpdateAvailable, resetUpdateAvailableStateForTest } =
-        await import("./update-startup.js"));
+      ({
+        runGatewayUpdateCheck,
+        scheduleGatewayUpdateCheck,
+        getUpdateAvailable,
+        resetUpdateAvailableStateForTest,
+      } = await import("./update-startup.js"));
       loaded = true;
     }
     vi.mocked(resolveRemoteClawPackageRoot).mockClear();
@@ -178,14 +182,18 @@ describe("update-startup", () => {
   }
 
   async function runStableUpdateCheck(params: {
-    onUpdateAvailableChange?: Parameters<typeof runGatewayUpdateCheck>[0]["onUpdateAvailableChange"];
+    onUpdateAvailableChange?: Parameters<
+      typeof runGatewayUpdateCheck
+    >[0]["onUpdateAvailableChange"];
   }) {
     await runGatewayUpdateCheck({
       cfg: { update: { channel: "stable" } },
       log: { info: vi.fn() },
       isNixMode: false,
       allowInTests: true,
-      ...(params.onUpdateAvailableChange ? { onUpdateAvailableChange: params.onUpdateAvailableChange } : {}),
+      ...(params.onUpdateAvailableChange
+        ? { onUpdateAvailableChange: params.onUpdateAvailableChange }
+        : {}),
     });
   }
 
@@ -201,7 +209,9 @@ describe("update-startup", () => {
   ])("logs latest update hint for $name", async ({ channel }) => {
     const { log, parsed } = await runUpdateCheckAndReadState(channel);
 
-    expect(log.info).toHaveBeenCalledWith(expect.stringContaining("update available (latest): v2.0.0"));
+    expect(log.info).toHaveBeenCalledWith(
+      expect.stringContaining("update available (latest): v2.0.0"),
+    );
     expect(parsed.lastNotifiedVersion).toBe("2.0.0");
     expect(parsed.lastAvailableVersion).toBe("2.0.0");
     expect(parsed.lastNotifiedTag).toBe("latest");
@@ -381,7 +391,15 @@ describe("update-startup", () => {
     }
 
     expect(runCommandWithTimeout).toHaveBeenCalledWith(
-      [process.execPath, "/opt/remoteclaw/dist/entry.js", "update", "--yes", "--channel", "beta", "--json"],
+      [
+        process.execPath,
+        "/opt/remoteclaw/dist/entry.js",
+        "update",
+        "--yes",
+        "--channel",
+        "beta",
+        "--json",
+      ],
       expect.objectContaining({
         timeoutMs: 45 * 60 * 1000,
         env: expect.objectContaining({

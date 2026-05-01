@@ -88,7 +88,10 @@ export function registerCronAddCommand(cron: Command) {
       .option("--deliver", "Deprecated (use --announce). Announces a summary to a chat.")
       .option("--no-deliver", "Disable announce delivery and skip main-session summary")
       .option("--channel <channel>", `Delivery channel (${getCronChannelOptions()})`, "last")
-      .option("--to <dest>", "Delivery destination (E.164, Telegram chatId, or Discord channel/user)")
+      .option(
+        "--to <dest>",
+        "Delivery destination (E.164, Telegram chatId, or Discord channel/user)",
+      )
       .option("--account <id>", "Channel account id for delivery (multi-account setups)")
       .option("--best-effort-deliver", "Do not fail the job if delivery fails", false)
       .option("--json", "Output JSON", false)
@@ -141,7 +144,9 @@ export function registerCronAddCommand(cron: Command) {
           }
 
           const agentId =
-            typeof opts.agent === "string" && opts.agent.trim() ? sanitizeAgentId(opts.agent.trim()) : undefined;
+            typeof opts.agent === "string" && opts.agent.trim()
+              ? sanitizeAgentId(opts.agent.trim())
+              : undefined;
 
           const hasAnnounce = Boolean(opts.announce) || opts.deliver === true;
           const hasNoDeliver = opts.deliver === false;
@@ -164,8 +169,10 @@ export function registerCronAddCommand(cron: Command) {
             return {
               kind: "agentTurn" as const,
               message,
-              model: typeof opts.model === "string" && opts.model.trim() ? opts.model.trim() : undefined,
-              timeoutSeconds: timeoutSeconds && Number.isFinite(timeoutSeconds) ? timeoutSeconds : undefined,
+              model:
+                typeof opts.model === "string" && opts.model.trim() ? opts.model.trim() : undefined,
+              timeoutSeconds:
+                timeoutSeconds && Number.isFinite(timeoutSeconds) ? timeoutSeconds : undefined,
               lightContext: opts.lightContext === true ? true : undefined,
             };
           })();
@@ -177,9 +184,11 @@ export function registerCronAddCommand(cron: Command) {
           const sessionSource = optionSource("session");
           const sessionTargetRaw = typeof opts.session === "string" ? opts.session.trim() : "";
           const inferredSessionTarget = payload.kind === "agentTurn" ? "isolated" : "main";
-          const sessionTarget = sessionSource === "cli" ? sessionTargetRaw || "" : inferredSessionTarget;
+          const sessionTarget =
+            sessionSource === "cli" ? sessionTargetRaw || "" : inferredSessionTarget;
           const isCustomSessionTarget =
-            sessionTarget.toLowerCase().startsWith("session:") && sessionTarget.slice(8).trim().length > 0;
+            sessionTarget.toLowerCase().startsWith("session:") &&
+            sessionTarget.slice(8).trim().length > 0;
           const isIsolatedLikeSessionTarget =
             sessionTarget === "isolated" || sessionTarget === "current" || isCustomSessionTarget;
           if (sessionTarget !== "main" && !isIsolatedLikeSessionTarget) {
@@ -203,7 +212,10 @@ export function registerCronAddCommand(cron: Command) {
             throw new Error("--announce/--no-deliver require a non-main agentTurn session target.");
           }
 
-          const accountId = typeof opts.account === "string" && opts.account.trim() ? opts.account.trim() : undefined;
+          const accountId =
+            typeof opts.account === "string" && opts.account.trim()
+              ? opts.account.trim()
+              : undefined;
 
           if (accountId && (!isIsolatedLikeSessionTarget || payload.kind !== "agentTurn")) {
             throw new Error("--account requires a non-main agentTurn job with delivery.");
@@ -225,10 +237,14 @@ export function registerCronAddCommand(cron: Command) {
           }
 
           const description =
-            typeof opts.description === "string" && opts.description.trim() ? opts.description.trim() : undefined;
+            typeof opts.description === "string" && opts.description.trim()
+              ? opts.description.trim()
+              : undefined;
 
           const sessionKey =
-            typeof opts.sessionKey === "string" && opts.sessionKey.trim() ? opts.sessionKey.trim() : undefined;
+            typeof opts.sessionKey === "string" && opts.sessionKey.trim()
+              ? opts.sessionKey.trim()
+              : undefined;
 
           const params = {
             name,
@@ -244,7 +260,10 @@ export function registerCronAddCommand(cron: Command) {
             delivery: deliveryMode
               ? {
                   mode: deliveryMode,
-                  channel: typeof opts.channel === "string" && opts.channel.trim() ? opts.channel.trim() : undefined,
+                  channel:
+                    typeof opts.channel === "string" && opts.channel.trim()
+                      ? opts.channel.trim()
+                      : undefined,
                   to: typeof opts.to === "string" && opts.to.trim() ? opts.to.trim() : undefined,
                   accountId,
                   bestEffort: opts.bestEffortDeliver ? true : undefined,

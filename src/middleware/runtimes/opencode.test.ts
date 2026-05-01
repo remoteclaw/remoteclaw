@@ -85,11 +85,20 @@ describe("OpenCodeCliRuntime", () => {
 
     it("produces run --format json --session <id> <prompt> for session resume", () => {
       const args = runtime.testBuildArgs(makeParams({ sessionId: "sess-123" }));
-      expect(args).toEqual(["run", "--format", "json", "--session", "sess-123", "Hello, OpenCode!"]);
+      expect(args).toEqual([
+        "run",
+        "--format",
+        "json",
+        "--session",
+        "sess-123",
+        "Hello, OpenCode!",
+      ]);
     });
 
     it("includes prompt on session resume", () => {
-      const args = runtime.testBuildArgs(makeParams({ sessionId: "sess-123", prompt: "Follow up prompt" }));
+      const args = runtime.testBuildArgs(
+        makeParams({ sessionId: "sess-123", prompt: "Follow up prompt" }),
+      );
       expect(args).toContain("Follow up prompt");
     });
 
@@ -127,7 +136,9 @@ describe("OpenCodeCliRuntime", () => {
 
   describe("extractEvent", () => {
     it("extracts sessionID from envelope and returns appropriate event", () => {
-      const event = runtime.testExtractEvent(openCodeEvent("text", { content: "Hello", sessionID: "sess-xyz" }));
+      const event = runtime.testExtractEvent(
+        openCodeEvent("text", { content: "Hello", sessionID: "sess-xyz" }),
+      );
       expect(event).toEqual({ type: "text", text: "Hello" });
     });
 
@@ -141,7 +152,9 @@ describe("OpenCodeCliRuntime", () => {
       runtime.testExtractEvent(openCodeEvent("text", { content: "World" }));
 
       const doneEvent: AgentDoneEvent = { type: "done", result: makeDoneResult() };
-      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(doneEvent);
+      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(
+        doneEvent,
+      );
       expect(doneEvent.result.text).toBe("Hello World");
     });
 
@@ -250,7 +263,9 @@ describe("OpenCodeCliRuntime", () => {
       );
 
       const doneEvent: AgentDoneEvent = { type: "done", result: makeDoneResult() };
-      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(doneEvent);
+      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(
+        doneEvent,
+      );
       expect(doneEvent.result.totalCostUsd).toBe(0.0015);
     });
 
@@ -264,7 +279,9 @@ describe("OpenCodeCliRuntime", () => {
       );
 
       const doneEvent: AgentDoneEvent = { type: "done", result: makeDoneResult() };
-      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(doneEvent);
+      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(
+        doneEvent,
+      );
       expect(doneEvent.result.stopReason).toBe("max_tokens");
     });
 
@@ -274,12 +291,16 @@ describe("OpenCodeCliRuntime", () => {
     });
 
     it("maps reasoning event to AgentThinkingEvent", () => {
-      const event = runtime.testExtractEvent(openCodeEvent("reasoning", { content: "thinking..." }));
+      const event = runtime.testExtractEvent(
+        openCodeEvent("reasoning", { content: "thinking..." }),
+      );
       expect(event).toEqual({ type: "thinking", text: "thinking..." });
     });
 
     it("maps reasoning event with text field to AgentThinkingEvent", () => {
-      const event = runtime.testExtractEvent(openCodeEvent("reasoning", { part: { text: "reasoning text" } }));
+      const event = runtime.testExtractEvent(
+        openCodeEvent("reasoning", { part: { text: "reasoning text" } }),
+      );
       expect(event).toEqual({ type: "thinking", text: "reasoning text" });
     });
 
@@ -289,7 +310,9 @@ describe("OpenCodeCliRuntime", () => {
     });
 
     it("maps error event to AgentErrorEvent", () => {
-      const event = runtime.testExtractEvent(openCodeEvent("error", { message: "Rate limit exceeded" }));
+      const event = runtime.testExtractEvent(
+        openCodeEvent("error", { message: "Rate limit exceeded" }),
+      );
       expect(event).toEqual({
         type: "error",
         message: "Rate limit exceeded",
@@ -344,7 +367,9 @@ describe("OpenCodeCliRuntime", () => {
   describe("done event enrichment", () => {
     it("enriches done event with accumulated text, session ID, and usage", () => {
       // text events → accumulated text + sessionID capture
-      runtime.testExtractEvent(openCodeEvent("text", { content: "Hello ", sessionID: "sess-enrich" }));
+      runtime.testExtractEvent(
+        openCodeEvent("text", { content: "Hello ", sessionID: "sess-enrich" }),
+      );
       runtime.testExtractEvent(openCodeEvent("text", { content: "World" }));
 
       // step_finish → usage
@@ -360,7 +385,9 @@ describe("OpenCodeCliRuntime", () => {
         type: "done",
         result: makeDoneResult({ durationMs: 5000 }),
       };
-      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(doneEvent);
+      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(
+        doneEvent,
+      );
 
       expect(doneEvent.result.text).toBe("Hello World");
       expect(doneEvent.result.sessionId).toBe("sess-enrich");
@@ -385,7 +412,9 @@ describe("OpenCodeCliRuntime", () => {
       );
 
       const doneEvent: AgentDoneEvent = { type: "done", result: makeDoneResult() };
-      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(doneEvent);
+      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(
+        doneEvent,
+      );
 
       expect(doneEvent.result.usage).toEqual({
         inputTokens: 100,
@@ -404,7 +433,9 @@ describe("OpenCodeCliRuntime", () => {
       );
 
       const doneEvent: AgentDoneEvent = { type: "done", result: makeDoneResult() };
-      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(doneEvent);
+      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(
+        doneEvent,
+      );
 
       expect(doneEvent.result.usage).toEqual({
         inputTokens: 100,
@@ -424,17 +455,23 @@ describe("OpenCodeCliRuntime", () => {
       );
 
       const doneEvent: AgentDoneEvent = { type: "done", result: makeDoneResult() };
-      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(doneEvent);
+      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(
+        doneEvent,
+      );
 
       expect(doneEvent.result.totalCostUsd).toBe(0.0042);
       expect(doneEvent.result.stopReason).toBe("end_turn");
     });
 
     it("handles missing step_finish gracefully (no usage, no cost)", () => {
-      runtime.testExtractEvent(openCodeEvent("text", { content: "response", sessionID: "sess-no-finish" }));
+      runtime.testExtractEvent(
+        openCodeEvent("text", { content: "response", sessionID: "sess-no-finish" }),
+      );
 
       const doneEvent: AgentDoneEvent = { type: "done", result: makeDoneResult() };
-      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(doneEvent);
+      (runtime as unknown as { enrichDoneEvent: (e: AgentDoneEvent) => void }).enrichDoneEvent(
+        doneEvent,
+      );
 
       expect(doneEvent.result.text).toBe("response");
       expect(doneEvent.result.sessionId).toBe("sess-no-finish");
@@ -452,7 +489,10 @@ describe("OpenCodeCliRuntime", () => {
     let configPath: string;
 
     beforeEach(async () => {
-      testDir = join(tmpdir(), `opencode-mcp-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+      testDir = join(
+        tmpdir(),
+        `opencode-mcp-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      );
       await mkdir(testDir, { recursive: true });
       openCodeDir = join(testDir, ".opencode");
       configPath = join(openCodeDir, "config.json");

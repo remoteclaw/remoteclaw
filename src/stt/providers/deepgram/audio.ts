@@ -24,7 +24,9 @@ type DeepgramTranscriptResponse = {
   };
 };
 
-export async function transcribeDeepgramAudio(params: AudioTranscriptionRequest): Promise<AudioTranscriptionResult> {
+export async function transcribeDeepgramAudio(
+  params: AudioTranscriptionRequest,
+): Promise<AudioTranscriptionResult> {
   const fetchFn = params.fetchFn ?? fetch;
   const baseUrl = normalizeBaseUrl(params.baseUrl, DEFAULT_DEEPGRAM_AUDIO_BASE_URL);
   const allowPrivate = Boolean(params.baseUrl?.trim());

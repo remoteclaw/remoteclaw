@@ -23,7 +23,9 @@ const fetchRemoteMediaMock = vi.fn(
     const res = await fetchFn(params.url);
     if (!res.ok) {
       const text = await res.text().catch(() => "unknown");
-      throw new Error(`Failed to fetch media from ${params.url}: HTTP ${res.status}; body: ${text}`);
+      throw new Error(
+        `Failed to fetch media from ${params.url}: HTTP ${res.status}; body: ${text}`,
+      );
     }
     const buffer = Buffer.from(await res.arrayBuffer());
     if (typeof params.maxBytes === "number" && buffer.byteLength > params.maxBytes) {
@@ -49,7 +51,8 @@ installBlueBubblesFetchTestHooks({
 const runtimeStub = {
   channel: {
     media: {
-      fetchRemoteMedia: fetchRemoteMediaMock as unknown as PluginRuntime["channel"]["media"]["fetchRemoteMedia"],
+      fetchRemoteMedia:
+        fetchRemoteMediaMock as unknown as PluginRuntime["channel"]["media"]["fetchRemoteMedia"],
     },
   },
 } as unknown as PluginRuntime;
@@ -110,7 +113,9 @@ describe("downloadBlueBubblesAttachment", () => {
 
   it("throws when serverUrl is missing", async () => {
     const attachment: BlueBubblesAttachment = { guid: "att-123" };
-    await expect(downloadBlueBubblesAttachment(attachment, {})).rejects.toThrow("serverUrl is required");
+    await expect(downloadBlueBubblesAttachment(attachment, {})).rejects.toThrow(
+      "serverUrl is required",
+    );
   });
 
   it("throws when password is missing", async () => {

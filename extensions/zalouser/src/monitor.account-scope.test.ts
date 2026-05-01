@@ -21,7 +21,9 @@ describe("zalouser monitor pairing account scoping", () => {
         accountId?: string,
       ) => {
         const scopedAccountId =
-          typeof channelOrParams === "object" && channelOrParams !== null ? channelOrParams.accountId : accountId;
+          typeof channelOrParams === "object" && channelOrParams !== null
+            ? channelOrParams.accountId
+            : accountId;
         return scopedAccountId === "beta" ? [] : ["attacker"];
       },
     );

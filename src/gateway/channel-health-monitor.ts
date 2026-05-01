@@ -54,15 +54,22 @@ type RestartRecord = {
 };
 
 function resolveTimingPolicy(
-  deps: Pick<ChannelHealthMonitorDeps, "startupGraceMs" | "channelStartupGraceMs" | "staleEventThresholdMs" | "timing">,
+  deps: Pick<
+    ChannelHealthMonitorDeps,
+    "startupGraceMs" | "channelStartupGraceMs" | "staleEventThresholdMs" | "timing"
+  >,
 ): ChannelHealthTimingPolicy {
   return {
     monitorStartupGraceMs:
       deps.timing?.monitorStartupGraceMs ?? deps.startupGraceMs ?? DEFAULT_MONITOR_STARTUP_GRACE_MS,
     channelConnectGraceMs:
-      deps.timing?.channelConnectGraceMs ?? deps.channelStartupGraceMs ?? DEFAULT_CHANNEL_CONNECT_GRACE_MS,
+      deps.timing?.channelConnectGraceMs ??
+      deps.channelStartupGraceMs ??
+      DEFAULT_CHANNEL_CONNECT_GRACE_MS,
     staleEventThresholdMs:
-      deps.timing?.staleEventThresholdMs ?? deps.staleEventThresholdMs ?? DEFAULT_CHANNEL_STALE_EVENT_THRESHOLD_MS,
+      deps.timing?.staleEventThresholdMs ??
+      deps.staleEventThresholdMs ??
+      DEFAULT_CHANNEL_STALE_EVENT_THRESHOLD_MS,
   };
 }
 
@@ -160,7 +167,9 @@ export function startChannelHealthMonitor(deps: ChannelHealthMonitorDeps): Chann
             record.restartsThisHour.push({ at: now });
             restartRecords.set(key, record);
           } catch (err) {
-            log.error?.(`[${channelId}:${accountId}] health-monitor: restart failed: ${String(err)}`);
+            log.error?.(
+              `[${channelId}:${accountId}] health-monitor: restart failed: ${String(err)}`,
+            );
           }
         }
       }

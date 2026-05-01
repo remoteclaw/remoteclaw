@@ -138,7 +138,9 @@ export function validateSystemRunCommandConsistency(params: {
   if (raw) {
     const matchesCanonicalArgv = raw === display.commandText;
     const matchesLegacyShellText =
-      params.allowLegacyShellText === true && display.previewText !== null && raw === display.previewText;
+      params.allowLegacyShellText === true &&
+      display.previewText !== null &&
+      raw === display.previewText;
     if (!matchesCanonicalArgv && !matchesLegacyShellText) {
       return {
         ok: false,
@@ -161,7 +163,10 @@ export function validateSystemRunCommandConsistency(params: {
   };
 }
 
-export function resolveSystemRunCommand(params: { command?: unknown; rawCommand?: unknown }): ResolvedSystemRunCommand {
+export function resolveSystemRunCommand(params: {
+  command?: unknown;
+  rawCommand?: unknown;
+}): ResolvedSystemRunCommand {
   return resolveSystemRunCommandWithMode(params, false);
 }
 

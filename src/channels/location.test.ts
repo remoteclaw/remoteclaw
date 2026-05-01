@@ -20,7 +20,9 @@ describe("provider location helpers", () => {
       accuracy: 8,
       caption: "Bring snacks",
     });
-    expect(text).toBe("📍 Statue of Liberty — Liberty Island, NY (40.689247, -74.044502 ±8m)\nBring snacks");
+    expect(text).toBe(
+      "📍 Statue of Liberty — Liberty Island, NY (40.689247, -74.044502 ±8m)\nBring snacks",
+    );
   });
 
   it("formats live locations with live label", () => {

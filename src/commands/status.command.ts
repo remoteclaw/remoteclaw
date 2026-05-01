@@ -20,7 +20,11 @@ import { getDaemonStatusSummary, getNodeDaemonStatusSummary } from "./status.dae
 import { formatDuration, formatTokensCompact, shortenText } from "./status.format.js";
 import { resolveGatewayProbeAuth } from "./status.gateway-probe.js";
 import { scanStatus } from "./status.scan.js";
-import { formatUpdateAvailableHint, formatUpdateOneLiner, resolveUpdateAvailability } from "./status.update.js";
+import {
+  formatUpdateAvailableHint,
+  formatUpdateOneLiner,
+  resolveUpdateAvailability,
+} from "./status.update.js";
 
 function resolvePairingRecoveryContext(params: {
   error?: string | null;
@@ -44,7 +48,8 @@ function resolvePairingRecoveryContext(params: {
     return null;
   }
   const requestIdMatch = source.match(/requestId:\s*([^\s)]+)/i);
-  const requestId = requestIdMatch && requestIdMatch[1] ? sanitizeRequestId(requestIdMatch[1]) : null;
+  const requestId =
+    requestIdMatch && requestIdMatch[1] ? sanitizeRequestId(requestIdMatch[1]) : null;
   return { requestId: requestId || null };
 }
 
@@ -142,7 +147,10 @@ export async function statusCommand(
   });
 
   if (opts.json) {
-    const [daemon, nodeDaemon] = await Promise.all([getDaemonStatusSummary(), getNodeDaemonStatusSummary()]);
+    const [daemon, nodeDaemon] = await Promise.all([
+      getDaemonStatusSummary(),
+      getNodeDaemonStatusSummary(),
+    ]);
     runtime.log(
       JSON.stringify(
         {
@@ -214,7 +222,9 @@ export async function statusCommand(
         ? ok(`reachable ${formatDuration(gatewayProbe?.connectLatencyMs)}`)
         : warn(gatewayProbe?.error ? `unreachable (${gatewayProbe.error})` : "unreachable");
     const auth =
-      gatewayReachable && !remoteUrlMissing ? ` · auth ${formatGatewayAuthUsed(resolveGatewayProbeAuth(cfg))}` : "";
+      gatewayReachable && !remoteUrlMissing
+        ? ` · auth ${formatGatewayAuthUsed(resolveGatewayProbeAuth(cfg))}`
+        : "";
     const self =
       gatewaySelf?.host || gatewaySelf?.version || gatewaySelf?.platform
         ? [
@@ -245,7 +255,10 @@ export async function statusCommand(
     return `${agentStatus.agents.length} · ${pending} · sessions ${agentStatus.totalSessions}${defSuffix}`;
   })();
 
-  const [daemon, nodeDaemon] = await Promise.all([getDaemonStatusSummary(), getNodeDaemonStatusSummary()]);
+  const [daemon, nodeDaemon] = await Promise.all([
+    getDaemonStatusSummary(),
+    getNodeDaemonStatusSummary(),
+  ]);
   const daemonValue = (() => {
     if (daemon.installed === false) {
       return `${daemon.label} not installed`;
@@ -262,7 +275,8 @@ export async function statusCommand(
   })();
 
   const defaults = summary.sessions.defaults;
-  const eventsValue = summary.queuedSystemEvents.length > 0 ? `${summary.queuedSystemEvents.length} queued` : "none";
+  const eventsValue =
+    summary.queuedSystemEvents.length > 0 ? `${summary.queuedSystemEvents.length} queued` : "none";
 
   const probesValue = health ? ok("enabled") : muted("skipped (use --deep)");
 
@@ -355,10 +369,14 @@ export async function statusCommand(
     runtime.log(theme.warn("Gateway pairing approval required."));
     if (pairingRecovery.requestId) {
       runtime.log(
-        theme.muted(`Recovery: ${formatCliCommand(`remoteclaw devices approve ${pairingRecovery.requestId}`)}`),
+        theme.muted(
+          `Recovery: ${formatCliCommand(`remoteclaw devices approve ${pairingRecovery.requestId}`)}`,
+        ),
       );
     }
-    runtime.log(theme.muted(`Fallback: ${formatCliCommand("remoteclaw devices approve --latest")}`));
+    runtime.log(
+      theme.muted(`Fallback: ${formatCliCommand("remoteclaw devices approve --latest")}`),
+    );
     runtime.log(theme.muted(`Inspect: ${formatCliCommand("remoteclaw devices list")}`));
   }
 
@@ -373,7 +391,9 @@ export async function statusCommand(
     return parts.join(" · ");
   };
   runtime.log(theme.muted(`Summary: ${fmtSummary(securityAudit.summary)}`));
-  const importantFindings = securityAudit.findings.filter((f) => f.severity === "critical" || f.severity === "warn");
+  const importantFindings = securityAudit.findings.filter(
+    (f) => f.severity === "critical" || f.severity === "warn",
+  );
   if (importantFindings.length === 0) {
     runtime.log(theme.muted("No critical or warn findings detected."));
   } else {
@@ -386,8 +406,11 @@ export async function statusCommand(
       }
       return theme.muted("INFO");
     };
-    const sevRank = (sev: "critical" | "warn" | "info") => (sev === "critical" ? 0 : sev === "warn" ? 1 : 2);
-    const sorted = [...importantFindings].toSorted((a, b) => sevRank(a.severity) - sevRank(b.severity));
+    const sevRank = (sev: "critical" | "warn" | "info") =>
+      sev === "critical" ? 0 : sev === "warn" ? 1 : 2;
+    const sorted = [...importantFindings].toSorted(
+      (a, b) => sevRank(a.severity) - sevRank(b.severity),
+    );
     const shown = sorted.slice(0, 6);
     for (const f of shown) {
       runtime.log(`  ${severityLabel(f.severity)} ${f.title}`);
@@ -419,7 +442,9 @@ export async function statusCommand(
         const issues = channelIssuesByChannel.get(row.id) ?? [];
         const effectiveState = row.state === "off" ? "off" : issues.length > 0 ? "warn" : row.state;
         const issueSuffix =
-          issues.length > 0 ? ` · ${warn(`gateway: ${shortenText(issues[0]?.message ?? "issue", 84)}`)}` : "";
+          issues.length > 0
+            ? ` · ${warn(`gateway: ${shortenText(issues[0]?.message ?? "issue", 84)}`)}`
+            : "";
         return {
           Channel: row.label,
           Enabled: row.enabled ? ok("ON") : muted("OFF"),

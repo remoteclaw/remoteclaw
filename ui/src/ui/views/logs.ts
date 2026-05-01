@@ -35,7 +35,10 @@ function matchesFilter(entry: LogEntry, needle: string) {
   if (!needle) {
     return true;
   }
-  const haystack = [entry.message, entry.subsystem, entry.raw].filter(Boolean).join(" ").toLowerCase();
+  const haystack = [entry.message, entry.subsystem, entry.raw]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
   return haystack.includes(needle);
 }
 

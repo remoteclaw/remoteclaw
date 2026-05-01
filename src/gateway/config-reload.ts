@@ -167,7 +167,9 @@ export function startGatewayConfigReloader(opts: {
     }
     if (plan.restartGateway) {
       if (settings.mode === "hot") {
-        opts.log.warn(`config reload requires gateway restart; hot mode ignoring (${plan.restartReasons.join(", ")})`);
+        opts.log.warn(
+          `config reload requires gateway restart; hot mode ignoring (${plan.restartReasons.join(", ")})`,
+        );
         return;
       }
       queueRestart(plan, nextConfig);

@@ -14,7 +14,10 @@ type DiscordGatewayMetadataResponse = Pick<Response, "ok" | "status" | "text">;
 type DiscordGatewayFetchInit = Record<string, unknown> & {
   headers?: Record<string, string>;
 };
-type DiscordGatewayFetch = (input: string, init?: DiscordGatewayFetchInit) => Promise<DiscordGatewayMetadataResponse>;
+type DiscordGatewayFetch = (
+  input: string,
+  init?: DiscordGatewayFetchInit,
+) => Promise<DiscordGatewayMetadataResponse>;
 
 export function resolveDiscordGatewayIntents(
   intentsConfig?: import("../../../../src/config/types.discord.js").DiscordIntentsConfig,
@@ -56,7 +59,11 @@ function isTransientDiscordGatewayResponse(status: number, body: string): boolea
   );
 }
 
-function createGatewayMetadataError(params: { detail: string; transient: boolean; cause?: unknown }): Error {
+function createGatewayMetadataError(params: {
+  detail: string;
+  transient: boolean;
+  cause?: unknown;
+}): Error {
   if (params.transient) {
     return new Error("Failed to get gateway information from Discord: fetch failed", {
       cause: params.cause ?? new Error(params.detail),
@@ -113,7 +120,10 @@ async function fetchDiscordGatewayInfo(params: {
     const parsed = JSON.parse(body) as Partial<APIGatewayBotInfo>;
     return {
       ...parsed,
-      url: typeof parsed.url === "string" && parsed.url.trim() ? parsed.url : DEFAULT_DISCORD_GATEWAY_URL,
+      url:
+        typeof parsed.url === "string" && parsed.url.trim()
+          ? parsed.url
+          : DEFAULT_DISCORD_GATEWAY_URL,
     } as APIGatewayBotInfo;
   } catch (error) {
     throw createGatewayMetadataError({

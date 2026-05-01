@@ -48,8 +48,12 @@ export function resolveLaunchdRestartTarget(
   };
 }
 
-export function isCurrentProcessLaunchdServiceLabel(label: string, env: NodeJS.ProcessEnv = process.env): boolean {
-  const launchdLabel = env.LAUNCH_JOB_LABEL?.trim() || env.LAUNCH_JOB_NAME?.trim() || env.XPC_SERVICE_NAME?.trim();
+export function isCurrentProcessLaunchdServiceLabel(
+  label: string,
+  env: NodeJS.ProcessEnv = process.env,
+): boolean {
+  const launchdLabel =
+    env.LAUNCH_JOB_LABEL?.trim() || env.LAUNCH_JOB_NAME?.trim() || env.XPC_SERVICE_NAME?.trim();
   if (launchdLabel) {
     return launchdLabel === label;
   }
@@ -102,7 +106,9 @@ export function scheduleDetachedLaunchdRestartHandoff(params: {
 }): LaunchdRestartHandoffResult {
   const target = resolveLaunchdRestartTarget(params.env);
   const waitForPid =
-    typeof params.waitForPid === "number" && Number.isFinite(params.waitForPid) ? Math.floor(params.waitForPid) : 0;
+    typeof params.waitForPid === "number" && Number.isFinite(params.waitForPid)
+      ? Math.floor(params.waitForPid)
+      : 0;
   try {
     const child = spawn(
       "/bin/sh",

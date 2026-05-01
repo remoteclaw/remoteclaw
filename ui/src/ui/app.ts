@@ -22,7 +22,12 @@ import {
 import { DEFAULT_CRON_FORM, DEFAULT_LOG_LEVEL_FILTERS } from "./app-defaults.ts";
 import type { EventLogEntry } from "./app-events.ts";
 import { connectGateway as connectGatewayInternal } from "./app-gateway.ts";
-import { handleConnected, handleDisconnected, handleFirstUpdated, handleUpdated } from "./app-lifecycle.ts";
+import {
+  handleConnected,
+  handleDisconnected,
+  handleFirstUpdated,
+  handleUpdated,
+} from "./app-lifecycle.ts";
 import { renderApp } from "./app-render.ts";
 import {
   exportLogs as exportLogsInternal,
@@ -243,8 +248,10 @@ export class RemoteClawApp extends LitElement {
   @state() cronJobsLimit = 50;
   @state() cronJobsQuery = "";
   @state() cronJobsEnabledFilter: import("./types.js").CronJobsEnabledFilter = "all";
-  @state() cronJobsScheduleKindFilter: import("./controllers/cron.js").CronJobsScheduleKindFilter = "all";
-  @state() cronJobsLastStatusFilter: import("./controllers/cron.js").CronJobsLastStatusFilter = "all";
+  @state() cronJobsScheduleKindFilter: import("./controllers/cron.js").CronJobsScheduleKindFilter =
+    "all";
+  @state() cronJobsLastStatusFilter: import("./controllers/cron.js").CronJobsLastStatusFilter =
+    "all";
   @state() cronJobsSortBy: import("./types.js").CronJobsSortBy = "nextRunAtMs";
   @state() cronJobsSortDir: import("./types.js").CronSortDir = "asc";
   @state() cronStatus: CronStatus | null = null;
@@ -398,7 +405,10 @@ export class RemoteClawApp extends LitElement {
     removeQueuedMessageInternal(this, id);
   }
 
-  async handleSendChat(messageOverride?: string, opts?: Parameters<typeof handleSendChatInternal>[2]) {
+  async handleSendChat(
+    messageOverride?: string,
+    opts?: Parameters<typeof handleSendChatInternal>[2],
+  ) {
     await handleSendChatInternal(this, messageOverride, opts);
   }
 

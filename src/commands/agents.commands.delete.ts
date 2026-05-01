@@ -16,7 +16,10 @@ type AgentsDeleteOptions = {
   json?: boolean;
 };
 
-export async function agentsDeleteCommand(opts: AgentsDeleteOptions, runtime: RuntimeEnv = defaultRuntime) {
+export async function agentsDeleteCommand(
+  opts: AgentsDeleteOptions,
+  runtime: RuntimeEnv = defaultRuntime,
+) {
   const cfg = await requireValidConfig(runtime);
   if (!cfg) {
     return;

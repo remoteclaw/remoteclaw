@@ -71,7 +71,8 @@ export const DM_GROUP_ACCESS_REASON = {
   DM_POLICY_PAIRING_REQUIRED: "dm_policy_pairing_required",
   DM_POLICY_NOT_ALLOWLISTED: "dm_policy_not_allowlisted",
 } as const;
-export type DmGroupAccessReasonCode = (typeof DM_GROUP_ACCESS_REASON)[keyof typeof DM_GROUP_ACCESS_REASON];
+export type DmGroupAccessReasonCode =
+  (typeof DM_GROUP_ACCESS_REASON)[keyof typeof DM_GROUP_ACCESS_REASON];
 
 type DmGroupAccessInputParams = {
   isGroup: boolean;
@@ -96,7 +97,8 @@ export async function readStoreAllowFromForDmPolicy(params: {
   }
   const readStore =
     params.readStore ??
-    ((provider: ChannelId, accountId: string) => readChannelAllowFromStore(provider, process.env, accountId));
+    ((provider: ChannelId, accountId: string) =>
+      readChannelAllowFromStore(provider, process.env, accountId));
   return await readStore(params.provider, params.accountId).catch(() => []);
 }
 
@@ -114,7 +116,9 @@ export function resolveDmGroupAccessDecision(params: {
 } {
   const dmPolicy = params.dmPolicy ?? "pairing";
   const groupPolicy: GroupPolicy =
-    params.groupPolicy === "open" || params.groupPolicy === "disabled" ? params.groupPolicy : "allowlist";
+    params.groupPolicy === "open" || params.groupPolicy === "disabled"
+      ? params.groupPolicy
+      : "allowlist";
   const effectiveAllowFrom = normalizeStringEntries(params.effectiveAllowFrom);
   const effectiveGroupAllowFrom = normalizeStringEntries(params.effectiveGroupAllowFrom);
 
@@ -257,7 +261,9 @@ export function resolveDmGroupAccessWithCommandGate(
   );
   // Group command authorization must not inherit DM pairing-store approvals.
   const commandDmAllowFrom = params.isGroup ? configuredAllowFrom : access.effectiveAllowFrom;
-  const commandGroupAllowFrom = params.isGroup ? configuredGroupAllowFrom : access.effectiveGroupAllowFrom;
+  const commandGroupAllowFrom = params.isGroup
+    ? configuredGroupAllowFrom
+    : access.effectiveGroupAllowFrom;
   const ownerAllowedForCommands = params.isSenderAllowed(commandDmAllowFrom);
   const groupAllowedForCommands = params.isSenderAllowed(commandGroupAllowFrom);
   const commandGate = params.command
@@ -297,7 +303,9 @@ export async function resolveDmAllowState(params: {
   allowCount: number;
   isMultiUserDm: boolean;
 }> {
-  const configAllowFrom = normalizeStringEntries(Array.isArray(params.allowFrom) ? params.allowFrom : undefined);
+  const configAllowFrom = normalizeStringEntries(
+    Array.isArray(params.allowFrom) ? params.allowFrom : undefined,
+  );
   const hasWildcard = configAllowFrom.includes("*");
   const storeAllowFrom = await readStoreAllowFromForDmPolicy({
     provider: params.provider,

@@ -82,14 +82,16 @@ export const es: TranslationMap = {
       title: "Notas",
       subtitle: "Recordatorios rápidos para configuraciones de control remoto.",
       tailscaleTitle: "Tailscale serve",
-      tailscaleText: "Prefiere el modo serve para mantener la puerta de enlace en loopback con autenticación tailnet.",
+      tailscaleText:
+        "Prefiere el modo serve para mantener la puerta de enlace en loopback con autenticación tailnet.",
       sessionTitle: "Higiene de sesión",
       sessionText: "Usa /new o sessions.patch para reiniciar el contexto.",
       cronTitle: "Recordatorios de Cron",
       cronText: "Usa sesiones aisladas para ejecuciones recurrentes.",
     },
     auth: {
-      required: "Esta puerta de enlace requiere autenticación. Añade un token o contraseña y haz clic en Conectar.",
+      required:
+        "Esta puerta de enlace requiere autenticación. Añade un token o contraseña y haz clic en Conectar.",
       failed:
         "Autenticación fallida. Vuelve a copiar una URL con token mediante {command}, o actualiza el token y haz clic en Conectar.",
     },
@@ -196,7 +198,8 @@ export const es: TranslationMap = {
       namePlaceholder: "Resumen matutino",
       descriptionPlaceholder: "Contexto opcional para esta tarea",
       agentPlaceholder: "main u ops",
-      agentHelp: "Comienza a escribir para seleccionar un agente conocido o ingresa uno personalizado.",
+      agentHelp:
+        "Comienza a escribir para seleccionar un agente conocido o ingresa uno personalizado.",
       schedule: "Programación",
       scheduleSub: "Controla cuándo se ejecuta esta tarea.",
       every: "Cada",
@@ -213,13 +216,15 @@ export const es: TranslationMap = {
       timezoneOptional: "Zona horaria (opcional)",
       timezonePlaceholder: "America/Los_Angeles",
       timezoneHelp: "Selecciona una zona horaria común o ingresa cualquier zona IANA válida.",
-      jitterHelp: "¿Necesitas variación? Usa Avanzado → Ventana de escalonamiento / Unidad de escalonamiento.",
+      jitterHelp:
+        "¿Necesitas variación? Usa Avanzado → Ventana de escalonamiento / Unidad de escalonamiento.",
       execution: "Ejecución",
       executionSub: "Elige cuándo activar y qué debe hacer esta tarea.",
       session: "Sesión",
       main: "Principal",
       isolated: "Aislada",
-      sessionHelp: "Principal publica un evento del sistema. Aislada ejecuta un turno dedicado del agente.",
+      sessionHelp:
+        "Principal publica un evento del sistema. Aislada ejecuta un turno dedicado del agente.",
       wakeMode: "Modo de activación",
       now: "Ahora",
       nextHeartbeat: "Próximo latido",
@@ -242,7 +247,8 @@ export const es: TranslationMap = {
       announceDefault: "Anunciar resumen (predeterminado)",
       webhookPost: "Webhook POST",
       noneInternal: "Ninguna (interno)",
-      deliveryHelp: "Anunciar publica un resumen en el chat. Ninguna mantiene la ejecución interna.",
+      deliveryHelp:
+        "Anunciar publica un resumen en el chat. Ninguna mantiene la ejecución interna.",
       webhookUrl: "URL del webhook",
       channel: "Canal",
       webhookPlaceholder: "https://example.com/cron",
@@ -255,9 +261,11 @@ export const es: TranslationMap = {
       advancedHelp:
         "Anulaciones opcionales para garantías de entrega, variación de programación y controles del modelo.",
       deleteAfterRun: "Eliminar después de ejecutar",
-      deleteAfterRunHelp: "Ideal para recordatorios de un solo uso que deben limpiarse automáticamente.",
+      deleteAfterRunHelp:
+        "Ideal para recordatorios de un solo uso que deben limpiarse automáticamente.",
       clearAgentOverride: "Limpiar anulación de agente",
-      clearAgentHelp: "Forza a esta tarea a usar el asistente predeterminado de la puerta de enlace.",
+      clearAgentHelp:
+        "Forza a esta tarea a usar el asistente predeterminado de la puerta de enlace.",
       exactTiming: "Tiempo exacto (sin escalonamiento)",
       exactTimingHelp: "Ejecutar en límites exactos de cron sin dispersión.",
       staggerWindow: "Ventana de escalonamiento",
@@ -266,7 +274,8 @@ export const es: TranslationMap = {
       seconds: "Segundos",
       model: "Modelo",
       modelPlaceholder: "openai/gpt-5.2",
-      modelHelp: "Comienza a escribir para seleccionar un modelo conocido o ingresa uno personalizado.",
+      modelHelp:
+        "Comienza a escribir para seleccionar un modelo conocido o ingresa uno personalizado.",
       thinking: "Pensamiento",
       thinkingPlaceholder: "bajo",
       thinkingHelp: "Usa un nivel sugerido o ingresa un valor específico del proveedor.",

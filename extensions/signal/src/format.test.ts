@@ -22,10 +22,12 @@ describe("markdownToSignalText", () => {
   });
 
   it("keeps style offsets correct with multiple expanded links", () => {
-    const markdown = "[first](https://example.com/first) **bold** [second](https://example.com/second)";
+    const markdown =
+      "[first](https://example.com/first) **bold** [second](https://example.com/second)";
     const res = markdownToSignalText(markdown);
 
-    const expectedText = "first (https://example.com/first) bold second (https://example.com/second)";
+    const expectedText =
+      "first (https://example.com/first) bold second (https://example.com/second)";
 
     expect(res.text).toBe(expectedText);
     expect(res.styles).toEqual([{ start: expectedText.indexOf("bold"), length: 4, style: "BOLD" }]);

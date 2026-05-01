@@ -64,7 +64,9 @@ function usageAndExit(code: number): never {
 
 async function listJsonlFiles(dir: string): Promise<string[]> {
   const entries = await fs.readdir(dir, { withFileTypes: true }).catch(() => []);
-  return entries.filter((e) => e.isFile() && e.name.endsWith(".jsonl")).map((e) => path.join(dir, e.name));
+  return entries
+    .filter((e) => e.isFile() && e.name.endsWith(".jsonl"))
+    .map((e) => path.join(dir, e.name));
 }
 
 function safeParseLine(line: string): CronRunLogEntry | null {
@@ -96,7 +98,8 @@ export async function main() {
   const args = parseArgs(process.argv);
   const store = typeof args.store === "string" ? args.store : undefined;
   const runsDirArg = typeof args.runsDir === "string" ? args.runsDir : undefined;
-  const runsDir = runsDirArg ?? (store ? path.join(path.dirname(path.resolve(store)), "runs") : null);
+  const runsDir =
+    runsDirArg ?? (store ? path.join(path.dirname(path.resolve(store)), "runs") : null);
   if (!runsDir) {
     usageAndExit(2);
   }

@@ -54,9 +54,16 @@ export function resolveHeartbeatVisibility(params: {
 
   // Precedence: per-account > per-channel > channel-defaults > global defaults
   return {
-    showOk: perAccount?.showOk ?? perChannel?.showOk ?? channelDefaults?.showOk ?? DEFAULT_VISIBILITY.showOk,
+    showOk:
+      perAccount?.showOk ??
+      perChannel?.showOk ??
+      channelDefaults?.showOk ??
+      DEFAULT_VISIBILITY.showOk,
     showAlerts:
-      perAccount?.showAlerts ?? perChannel?.showAlerts ?? channelDefaults?.showAlerts ?? DEFAULT_VISIBILITY.showAlerts,
+      perAccount?.showAlerts ??
+      perChannel?.showAlerts ??
+      channelDefaults?.showAlerts ??
+      DEFAULT_VISIBILITY.showAlerts,
     useIndicator:
       perAccount?.useIndicator ??
       perChannel?.useIndicator ??

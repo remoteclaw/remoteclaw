@@ -6,7 +6,8 @@ vi.mock("../media/input-files.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../media/input-files.js")>();
   return {
     ...actual,
-    extractImageContentFromSource: (...args: unknown[]) => extractImageContentFromSourceMock(...args),
+    extractImageContentFromSource: (...args: unknown[]) =>
+      extractImageContentFromSourceMock(...args),
   };
 });
 

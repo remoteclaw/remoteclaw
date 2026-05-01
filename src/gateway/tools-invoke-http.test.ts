@@ -240,8 +240,15 @@ const withOptionalSessionKey = (body: Record<string, unknown>, sessionKey?: stri
   ...(sessionKey ? { sessionKey } : {}),
 });
 
-const invokeAgentsList = async (params: { port: number; headers?: Record<string, string>; sessionKey?: string }) => {
-  const body = withOptionalSessionKey({ tool: "agents_list", action: "json", args: {} }, params.sessionKey);
+const invokeAgentsList = async (params: {
+  port: number;
+  headers?: Record<string, string>;
+  sessionKey?: string;
+}) => {
+  const body = withOptionalSessionKey(
+    { tool: "agents_list", action: "json", args: {} },
+    params.sessionKey,
+  );
   return await postToolsInvoke({ port: params.port, headers: params.headers, body });
 };
 
@@ -292,7 +299,11 @@ const expectOkInvokeResponse = async (res: Response) => {
   return body as { ok: boolean; result?: Record<string, unknown> };
 };
 
-const setMainAllowedTools = (params: { allow: string[]; gatewayAllow?: string[]; gatewayDeny?: string[] }) => {
+const setMainAllowedTools = (params: {
+  allow: string[];
+  gatewayAllow?: string[];
+  gatewayDeny?: string[];
+}) => {
   cfg = {
     ...cfg,
     agents: {

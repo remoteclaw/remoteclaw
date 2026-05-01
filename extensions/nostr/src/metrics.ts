@@ -43,7 +43,12 @@ export type DecryptMetricName = "decrypt.success" | "decrypt.failure";
 
 export type MemoryMetricName = "memory.seen_tracker_size" | "memory.rate_limiter_entries";
 
-export type MetricName = EventMetricName | RelayMetricName | RateLimitMetricName | DecryptMetricName | MemoryMetricName;
+export type MetricName =
+  | EventMetricName
+  | RelayMetricName
+  | RateLimitMetricName
+  | DecryptMetricName
+  | MemoryMetricName;
 
 type RelayMetrics = {
   connects: number;
@@ -213,7 +218,11 @@ export function createMetrics(onMetric?: OnMetricCallback): NostrMetrics {
     return relay;
   }
 
-  function emit(name: MetricName, value: number = 1, labels?: Record<string, string | number>): void {
+  function emit(
+    name: MetricName,
+    value: number = 1,
+    labels?: Record<string, string | number>,
+  ): void {
     // Fire callback if provided
     if (onMetric) {
       onMetric({

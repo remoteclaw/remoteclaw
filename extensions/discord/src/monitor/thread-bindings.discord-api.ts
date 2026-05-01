@@ -10,7 +10,10 @@ import {
   rememberReusableWebhook,
   toReusableWebhookKey,
 } from "./thread-bindings.state.js";
-import { DISCORD_UNKNOWN_CHANNEL_ERROR_CODE, type ThreadBindingRecord } from "./thread-bindings.types.js";
+import {
+  DISCORD_UNKNOWN_CHANNEL_ERROR_CODE,
+  type ThreadBindingRecord,
+} from "./thread-bindings.types.js";
 
 function buildThreadTarget(threadId: string): string {
   return `channel:${threadId}`;
@@ -39,7 +42,9 @@ export function isThreadArchived(raw: unknown): boolean {
 
 function isThreadChannelType(type: unknown): boolean {
   return (
-    type === ChannelType.PublicThread || type === ChannelType.PrivateThread || type === ChannelType.AnnouncementThread
+    type === ChannelType.PublicThread ||
+    type === ChannelType.PrivateThread ||
+    type === ChannelType.AnnouncementThread
   );
 }
 
@@ -50,7 +55,12 @@ export function summarizeDiscordError(err: unknown): string {
   if (typeof err === "string") {
     return err;
   }
-  if (typeof err === "number" || typeof err === "boolean" || typeof err === "bigint" || typeof err === "symbol") {
+  if (
+    typeof err === "number" ||
+    typeof err === "boolean" ||
+    typeof err === "bigint" ||
+    typeof err === "symbol"
+  ) {
     return String(err);
   }
   return "error";
@@ -173,7 +183,9 @@ export async function createWebhookForChannel(params: {
     }
     return { webhookId, webhookToken };
   } catch (err) {
-    logVerbose(`discord thread binding webhook create failed for ${params.channelId}: ${summarizeDiscordError(err)}`);
+    logVerbose(
+      `discord thread binding webhook create failed for ${params.channelId}: ${summarizeDiscordError(err)}`,
+    );
     return {};
   }
 }
@@ -252,7 +264,9 @@ export async function resolveChannelIdForBinding(params: {
     }
     return channelId || null;
   } catch (err) {
-    logVerbose(`discord thread binding channel resolve failed for ${params.threadId}: ${summarizeDiscordError(err)}`);
+    logVerbose(
+      `discord thread binding channel resolve failed for ${params.threadId}: ${summarizeDiscordError(err)}`,
+    );
     return null;
   }
 }

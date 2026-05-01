@@ -19,11 +19,14 @@ const inboundDedupeCache: DedupeCache = resolveGlobalDedupeCache(INBOUND_DEDUPE_
 
 const normalizeProvider = (value?: string | null) => value?.trim().toLowerCase() || "";
 
-const resolveInboundPeerId = (ctx: MsgContext) => ctx.OriginatingTo ?? ctx.To ?? ctx.From ?? ctx.SessionKey;
+const resolveInboundPeerId = (ctx: MsgContext) =>
+  ctx.OriginatingTo ?? ctx.To ?? ctx.From ?? ctx.SessionKey;
 
 function resolveInboundDedupeSessionScope(ctx: MsgContext): string {
   const sessionKey =
-    (ctx.CommandSource === "native" ? ctx.CommandTargetSessionKey : undefined)?.trim() || ctx.SessionKey?.trim() || "";
+    (ctx.CommandSource === "native" ? ctx.CommandTargetSessionKey : undefined)?.trim() ||
+    ctx.SessionKey?.trim() ||
+    "";
   if (!sessionKey) {
     return "";
   }
@@ -48,11 +51,17 @@ export function buildInboundDedupeKey(ctx: MsgContext): string | null {
   }
   const sessionScope = resolveInboundDedupeSessionScope(ctx);
   const accountId = ctx.AccountId?.trim() ?? "";
-  const threadId = ctx.MessageThreadId !== undefined && ctx.MessageThreadId !== null ? String(ctx.MessageThreadId) : "";
+  const threadId =
+    ctx.MessageThreadId !== undefined && ctx.MessageThreadId !== null
+      ? String(ctx.MessageThreadId)
+      : "";
   return [provider, accountId, sessionScope, peerId, threadId, messageId].filter(Boolean).join("|");
 }
 
-export function shouldSkipDuplicateInbound(ctx: MsgContext, opts?: { cache?: DedupeCache; now?: number }): boolean {
+export function shouldSkipDuplicateInbound(
+  ctx: MsgContext,
+  opts?: { cache?: DedupeCache; now?: number },
+): boolean {
   const key = buildInboundDedupeKey(ctx);
   if (!key) {
     return false;

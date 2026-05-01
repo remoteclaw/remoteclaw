@@ -19,13 +19,16 @@ export function registerTuiCli(program: Command) {
     .option("--history-limit <n>", "History entries to load", "200")
     .addHelpText(
       "after",
-      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/tui", "docs.remoteclaw.org/cli/tui")}\n`,
+      () =>
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/tui", "docs.remoteclaw.org/cli/tui")}\n`,
     )
     .action(async (opts) => {
       try {
         const timeoutMs = parseTimeoutMs(opts.timeoutMs);
         if (opts.timeoutMs !== undefined && timeoutMs === undefined) {
-          defaultRuntime.error(`warning: invalid --timeout-ms "${String(opts.timeoutMs)}"; ignoring`);
+          defaultRuntime.error(
+            `warning: invalid --timeout-ms "${String(opts.timeoutMs)}"; ignoring`,
+          );
         }
         const historyLimit = Number.parseInt(String(opts.historyLimit ?? "200"), 10);
         await runTui({

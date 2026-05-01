@@ -10,7 +10,11 @@ import {
   resolveStorePath,
   type SessionEntry,
 } from "../config/sessions.js";
-import { classifySessionKey, listAgentsForGateway, resolveSessionModelRef } from "../gateway/session-utils.js";
+import {
+  classifySessionKey,
+  listAgentsForGateway,
+  resolveSessionModelRef,
+} from "../gateway/session-utils.js";
 import { buildChannelSummary } from "../infra/channel-summary.js";
 import { resolveHeartbeatSummaryForAgent } from "../infra/heartbeat-runner.js";
 import { peekSystemEvents } from "../infra/system-events.js";
@@ -124,7 +128,10 @@ export async function getStatusSummary(
     storeCache.set(storePath, store);
     return store;
   };
-  const buildSessionRows = (store: Record<string, SessionEntry | undefined>, opts: { agentIdOverride?: string } = {}) =>
+  const buildSessionRows = (
+    store: Record<string, SessionEntry | undefined>,
+    opts: { agentIdOverride?: string } = {},
+  ) =>
     Object.entries(store)
       .filter(([key]) => key !== "global" && key !== "unknown")
       .map(([key, entry]) => {
@@ -141,8 +148,10 @@ export async function getStatusSummary(
             fallbackContextTokens: configContextTokens ?? undefined,
           }) ?? null;
         const total = resolveFreshSessionTotalTokens(entry);
-        const totalTokensFresh = typeof entry?.totalTokens === "number" ? entry?.totalTokensFresh !== false : false;
-        const remaining = contextTokens != null && total !== undefined ? Math.max(0, contextTokens - total) : null;
+        const totalTokensFresh =
+          typeof entry?.totalTokens === "number" ? entry?.totalTokensFresh !== false : false;
+        const remaining =
+          contextTokens != null && total !== undefined ? Math.max(0, contextTokens - total) : null;
         const _pct =
           contextTokens && contextTokens > 0 && total !== undefined
             ? Math.min(999, Math.round((total / contextTokens) * 100))

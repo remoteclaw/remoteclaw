@@ -19,7 +19,9 @@ export type TelegramGroupMembershipAudit = {
   elapsedMs: number;
 };
 
-export function collectTelegramUnmentionedGroupIds(groups: Record<string, TelegramGroupConfig> | undefined) {
+export function collectTelegramUnmentionedGroupIds(
+  groups: Record<string, TelegramGroupConfig> | undefined,
+) {
   if (!groups || typeof groups !== "object") {
     return {
       groupIds: [] as string[],
@@ -27,7 +29,8 @@ export function collectTelegramUnmentionedGroupIds(groups: Record<string, Telegr
       hasWildcardUnmentionedGroups: false,
     };
   }
-  const hasWildcardUnmentionedGroups = Boolean(groups["*"]?.requireMention === false) && groups["*"]?.enabled !== false;
+  const hasWildcardUnmentionedGroups =
+    Boolean(groups["*"]?.requireMention === false) && groups["*"]?.enabled !== false;
   const groupIds: string[] = [];
   let unresolvedGroups = 0;
   for (const [key, value] of Object.entries(groups)) {
@@ -66,7 +69,8 @@ export type AuditTelegramGroupMembershipParams = {
   timeoutMs: number;
 };
 
-let auditMembershipRuntimePromise: Promise<typeof import("./audit-membership-runtime.js")> | null = null;
+let auditMembershipRuntimePromise: Promise<typeof import("./audit-membership-runtime.js")> | null =
+  null;
 
 function loadAuditMembershipRuntime() {
   auditMembershipRuntimePromise ??= import("./audit-membership-runtime.js");

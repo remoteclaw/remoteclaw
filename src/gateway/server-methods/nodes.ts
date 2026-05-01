@@ -15,7 +15,11 @@ import {
   sendApnsAlert,
   sendApnsBackgroundWake,
 } from "../../infra/push-apns.js";
-import { buildCanvasScopedHostUrl, CANVAS_CAPABILITY_TTL_MS, mintCanvasCapabilityToken } from "../canvas-capability.js";
+import {
+  buildCanvasScopedHostUrl,
+  CANVAS_CAPABILITY_TTL_MS,
+  mintCanvasCapabilityToken,
+} from "../canvas-capability.js";
 import { isNodeCommandAllowed, resolveNodeCommandAllowlist } from "../node-command-policy.js";
 import { sanitizeNodeInvokeParamsForForwarding } from "../node-invoke-sanitize.js";
 import {
@@ -113,7 +117,11 @@ function isForegroundRestrictedIosCommand(command: string): boolean {
   );
 }
 
-function shouldQueueAsPendingForegroundAction(params: { platform?: string; command: string; error: unknown }): boolean {
+function shouldQueueAsPendingForegroundAction(params: {
+  platform?: string;
+  command: string;
+  error: unknown;
+}): boolean {
   const platform = (params.platform ?? "").trim().toLowerCase();
   if (!platform.startsWith("ios") && !platform.startsWith("ipados")) {
     return false;
@@ -122,7 +130,9 @@ function shouldQueueAsPendingForegroundAction(params: { platform?: string; comma
     return false;
   }
   const error =
-    params.error && typeof params.error === "object" ? (params.error as { code?: unknown; message?: unknown }) : null;
+    params.error && typeof params.error === "object"
+      ? (params.error as { code?: unknown; message?: unknown })
+      : null;
   const code = typeof error?.code === "string" ? error.code.trim().toUpperCase() : "";
   const message = typeof error?.message === "string" ? error.message.trim().toUpperCase() : "";
   return code === "NODE_BACKGROUND_UNAVAILABLE" || message.includes("BACKGROUND_UNAVAILABLE");
@@ -290,7 +300,9 @@ export async function maybeWakeNodeWithApns(
 
 export async function maybeSendNodeWakeNudge(nodeId: string): Promise<NodeWakeNudgeAttempt> {
   const startedAtMs = Date.now();
-  const withDuration = (attempt: Omit<NodeWakeNudgeAttempt, "durationMs">): NodeWakeNudgeAttempt => ({
+  const withDuration = (
+    attempt: Omit<NodeWakeNudgeAttempt, "durationMs">,
+  ): NodeWakeNudgeAttempt => ({
     ...attempt,
     durationMs: Math.max(0, Date.now() - startedAtMs),
   });
@@ -667,7 +679,11 @@ export const nodeHandlers: GatewayRequestHandlers = {
     }
     const baseCanvasHostUrl = client?.canvasHostUrl?.trim() ?? "";
     if (!baseCanvasHostUrl) {
-      respond(false, undefined, errorShape(ErrorCodes.UNAVAILABLE, "canvas host unavailable for this node session"));
+      respond(
+        false,
+        undefined,
+        errorShape(ErrorCodes.UNAVAILABLE, "canvas host unavailable for this node session"),
+      );
       return;
     }
 
@@ -675,7 +691,11 @@ export const nodeHandlers: GatewayRequestHandlers = {
     const canvasCapabilityExpiresAtMs = Date.now() + CANVAS_CAPABILITY_TTL_MS;
     const scopedCanvasHostUrl = buildCanvasScopedHostUrl(baseCanvasHostUrl, canvasCapability);
     if (!scopedCanvasHostUrl) {
-      respond(false, undefined, errorShape(ErrorCodes.UNAVAILABLE, "failed to mint scoped canvas host URL"));
+      respond(
+        false,
+        undefined,
+        errorShape(ErrorCodes.UNAVAILABLE, "failed to mint scoped canvas host URL"),
+      );
       return;
     }
 
@@ -739,7 +759,9 @@ export const nodeHandlers: GatewayRequestHandlers = {
       respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "nodeId required"));
       return;
     }
-    const ackIds = Array.from(new Set((params.ids ?? []).map((value) => String(value ?? "").trim()).filter(Boolean)));
+    const ackIds = Array.from(
+      new Set((params.ids ?? []).map((value) => String(value ?? "").trim()).filter(Boolean)),
+    );
     const remaining = ackPendingNodeActions(trimmedNodeId, ackIds);
     respond(
       true,
@@ -770,7 +792,11 @@ export const nodeHandlers: GatewayRequestHandlers = {
     const nodeId = String(p.nodeId ?? "").trim();
     const command = String(p.command ?? "").trim();
     if (!nodeId || !command) {
-      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "nodeId and command required"));
+      respond(
+        false,
+        undefined,
+        errorShape(ErrorCodes.INVALID_REQUEST, "nodeId and command required"),
+      );
       return;
     }
     if (command === "system.execApprovals.get" || command === "system.execApprovals.set") {
@@ -791,7 +817,9 @@ export const nodeHandlers: GatewayRequestHandlers = {
       if (!nodeSession) {
         const wakeReqId = req.id;
         const wakeFlowStartedAtMs = Date.now();
-        context.logGateway.info(`node wake start node=${nodeId} req=${wakeReqId} command=${command}`);
+        context.logGateway.info(
+          `node wake start node=${nodeId} req=${wakeReqId} command=${command}`,
+        );
 
         const wake = await maybeWakeNodeWithApns(nodeId);
         context.logGateway.info(
@@ -930,23 +958,27 @@ export const nodeHandlers: GatewayRequestHandlers = {
           respond(
             false,
             undefined,
-            errorShape(ErrorCodes.UNAVAILABLE, "node command queued until iOS returns to foreground", {
-              retryable: true,
-              details: {
-                code: "QUEUED_UNTIL_FOREGROUND",
-                queuedActionId: queued.id,
-                nodeId,
-                command,
-                wake: {
-                  path: wake.path,
-                  available: wake.available,
-                  throttled: wake.throttled,
-                  apnsStatus: wake.apnsStatus,
-                  apnsReason: wake.apnsReason,
+            errorShape(
+              ErrorCodes.UNAVAILABLE,
+              "node command queued until iOS returns to foreground",
+              {
+                retryable: true,
+                details: {
+                  code: "QUEUED_UNTIL_FOREGROUND",
+                  queuedActionId: queued.id,
+                  nodeId,
+                  command,
+                  wake: {
+                    path: wake.path,
+                    available: wake.available,
+                    throttled: wake.throttled,
+                    apnsStatus: wake.apnsStatus,
+                    apnsReason: wake.apnsReason,
+                  },
+                  nodeError: res.error ?? null,
                 },
-                nodeError: res.error ?? null,
               },
-            }),
+            ),
           );
           return;
         }
@@ -981,7 +1013,11 @@ export const nodeHandlers: GatewayRequestHandlers = {
     }
     const p = params as { event: string; payload?: unknown; payloadJSON?: string | null };
     const payloadJSON =
-      typeof p.payloadJSON === "string" ? p.payloadJSON : p.payload !== undefined ? JSON.stringify(p.payload) : null;
+      typeof p.payloadJSON === "string"
+        ? p.payloadJSON
+        : p.payload !== undefined
+          ? JSON.stringify(p.payload)
+          : null;
     await respondUnavailableOnThrow(respond, async () => {
       const { handleNodeEvent } = await import("../server-node-events.js");
       const nodeId = client?.connect?.device?.id ?? client?.connect?.client?.id ?? "node";

@@ -18,7 +18,10 @@ type QuickReply = messagingApi.QuickReply;
 type QuickReplyItem = messagingApi.QuickReplyItem;
 
 // Cache for user profiles
-const userProfileCache = new Map<string, { displayName: string; pictureUrl?: string; fetchedAt: number }>();
+const userProfileCache = new Map<
+  string,
+  { displayName: string; pictureUrl?: string; fetchedAt: number }
+>();
 const PROFILE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 interface LineSendOpts {
@@ -95,7 +98,10 @@ function createTextMessage(text: string): TextMessage {
   return { type: "text", text };
 }
 
-export function createImageMessage(originalContentUrl: string, previewImageUrl?: string): ImageMessage {
+export function createImageMessage(
+  originalContentUrl: string,
+  previewImageUrl?: string,
+): ImageMessage {
   return {
     type: "image",
     originalContentUrl,
@@ -171,7 +177,8 @@ async function pushLineMessages(
 
   if (opts.verbose) {
     const logMessage =
-      behavior.verboseMessage?.(chatId, messages.length) ?? `line: pushed ${messages.length} messages to ${chatId}`;
+      behavior.verboseMessage?.(chatId, messages.length) ??
+      `line: pushed ${messages.length} messages to ${chatId}`;
     logVerbose(logMessage);
   }
 
@@ -197,11 +204,18 @@ async function replyLineMessages(
   recordLineOutboundActivity(account.accountId);
 
   if (opts.verbose) {
-    logVerbose(behavior.verboseMessage?.(messages.length) ?? `line: replied with ${messages.length} messages`);
+    logVerbose(
+      behavior.verboseMessage?.(messages.length) ??
+        `line: replied with ${messages.length} messages`,
+    );
   }
 }
 
-export async function sendMessageLine(to: string, text: string, opts: LineSendOpts = {}): Promise<LineSendResult> {
+export async function sendMessageLine(
+  to: string,
+  text: string,
+  opts: LineSendOpts = {},
+): Promise<LineSendResult> {
   const chatId = normalizeTarget(to);
 
   const messages: Message[] = [];
@@ -238,7 +252,11 @@ export async function sendMessageLine(to: string, text: string, opts: LineSendOp
   });
 }
 
-export async function pushMessageLine(to: string, text: string, opts: LineSendOpts = {}): Promise<LineSendResult> {
+export async function pushMessageLine(
+  to: string,
+  text: string,
+  opts: LineSendOpts = {},
+): Promise<LineSendResult> {
   // Force push (no reply token)
   return sendMessageLine(to, text, { ...opts, replyToken: undefined });
 }
@@ -261,7 +279,10 @@ export async function pushMessagesLine(
   });
 }
 
-export function createFlexMessage(altText: string, contents: messagingApi.FlexContainer): messagingApi.FlexMessage {
+export function createFlexMessage(
+  altText: string,
+  contents: messagingApi.FlexContainer,
+): messagingApi.FlexMessage {
   return {
     type: "flex",
     altText,

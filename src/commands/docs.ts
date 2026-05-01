@@ -144,7 +144,9 @@ function renderRichResults(query: string, results: DocResult[], runtime: Runtime
   for (const item of results) {
     const linkLabel = formatLinkLabel(item.link);
     const link = formatDocsLink(item.link, linkLabel);
-    runtime.log(`${theme.muted("-")} ${theme.command(item.title)} ${theme.muted("(")}${link}${theme.muted(")")}`);
+    runtime.log(
+      `${theme.muted("-")} ${theme.command(item.title)} ${theme.muted("(")}${link}${theme.muted(")")}`,
+    );
     if (item.snippet) {
       runtime.log(`  ${theme.muted(item.snippet)}`);
     }
@@ -170,9 +172,13 @@ export async function docsSearchCommand(queryParts: string[], runtime: RuntimeEn
   }
 
   const payload = JSON.stringify({ query });
-  const res = await runTool("mcporter", ["call", SEARCH_TOOL, "--args", payload, "--output", "text"], {
-    timeoutMs: SEARCH_TIMEOUT_MS,
-  });
+  const res = await runTool(
+    "mcporter",
+    ["call", SEARCH_TOOL, "--args", payload, "--output", "text"],
+    {
+      timeoutMs: SEARCH_TIMEOUT_MS,
+    },
+  );
 
   if (res.code !== 0) {
     const err = res.stderr.trim() || res.stdout.trim() || `exit ${res.code}`;

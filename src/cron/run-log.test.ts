@@ -55,9 +55,15 @@ describe("cron run log", () => {
 
   it("rejects unsafe job ids when resolving run log path", () => {
     const storePath = path.join(os.tmpdir(), "cron", "jobs.json");
-    expect(() => resolveCronRunLogPath({ storePath, jobId: "../job-1" })).toThrow(/invalid cron run log job id/i);
-    expect(() => resolveCronRunLogPath({ storePath, jobId: "nested/job-1" })).toThrow(/invalid cron run log job id/i);
-    expect(() => resolveCronRunLogPath({ storePath, jobId: "..\\job-1" })).toThrow(/invalid cron run log job id/i);
+    expect(() => resolveCronRunLogPath({ storePath, jobId: "../job-1" })).toThrow(
+      /invalid cron run log job id/i,
+    );
+    expect(() => resolveCronRunLogPath({ storePath, jobId: "nested/job-1" })).toThrow(
+      /invalid cron run log job id/i,
+    );
+    expect(() => resolveCronRunLogPath({ storePath, jobId: "..\\job-1" })).toThrow(
+      /invalid cron run log job id/i,
+    );
   });
 
   it("appends JSONL and prunes by line count", async () => {
@@ -89,21 +95,24 @@ describe("cron run log", () => {
     });
   });
 
-  it.skipIf(process.platform === "win32")("writes run log files with secure permissions", async () => {
-    await withRunLogDir("remoteclaw-cron-log-perms-", async (dir) => {
-      const logPath = path.join(dir, "runs", "job-1.jsonl");
+  it.skipIf(process.platform === "win32")(
+    "writes run log files with secure permissions",
+    async () => {
+      await withRunLogDir("remoteclaw-cron-log-perms-", async (dir) => {
+        const logPath = path.join(dir, "runs", "job-1.jsonl");
 
-      await appendCronRunLog(logPath, {
-        ts: 1,
-        jobId: "job-1",
-        action: "finished",
-        status: "ok",
+        await appendCronRunLog(logPath, {
+          ts: 1,
+          jobId: "job-1",
+          action: "finished",
+          status: "ok",
+        });
+
+        const mode = (await fs.stat(logPath)).mode & 0o777;
+        expect(mode).toBe(0o600);
       });
-
-      const mode = (await fs.stat(logPath)).mode & 0o777;
-      expect(mode).toBe(0o600);
-    });
-  });
+    },
+  );
 
   it.skipIf(process.platform === "win32")(
     "hardens an existing run-log directory to owner-only permissions",

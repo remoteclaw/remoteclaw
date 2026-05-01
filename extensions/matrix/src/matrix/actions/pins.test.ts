@@ -5,9 +5,11 @@ import { listMatrixPins, pinMatrixMessage, unpinMatrixMessage } from "./pins.js"
 function createPinsClient(seedPinned: string[], knownBodies: Record<string, string> = {}) {
   let pinned = [...seedPinned];
   const getRoomStateEvent = vi.fn(async () => ({ pinned: [...pinned] }));
-  const sendStateEvent = vi.fn(async (_roomId: string, _type: string, _key: string, payload: any) => {
-    pinned = [...payload.pinned];
-  });
+  const sendStateEvent = vi.fn(
+    async (_roomId: string, _type: string, _key: string, payload: any) => {
+      pinned = [...payload.pinned];
+    },
+  );
   const getEvent = vi.fn(async (_roomId: string, eventId: string) => {
     const body = knownBodies[eventId];
     if (!body) {

@@ -50,7 +50,10 @@ describe("runBootOnce", () => {
     sendMessageIMessage: vi.fn(),
   });
 
-  const withBootWorkspace = async (options: BootWorkspaceOptions, run: (workspaceDir: string) => Promise<void>) => {
+  const withBootWorkspace = async (
+    options: BootWorkspaceOptions,
+    run: (workspaceDir: string) => Promise<void>,
+  ) => {
     const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-boot-"));
     try {
       const bootPath = path.join(workspaceDir, "BOOT.md");
@@ -76,7 +79,11 @@ describe("runBootOnce", () => {
     });
   };
 
-  const expectMainSessionRestored = (params: { storePath: string; sessionKey: string; expectedSessionId?: string }) => {
+  const expectMainSessionRestored = (params: {
+    storePath: string;
+    sessionKey: string;
+    expectedSessionId?: string;
+  }) => {
     const restored = loadSessionStore(params.storePath, { skipCache: true });
     if (params.expectedSessionId === undefined) {
       expect(restored[params.sessionKey]).toBeUndefined();
@@ -180,7 +187,9 @@ describe("runBootOnce", () => {
       const call = agentCommand.mock.calls[0]?.[0];
 
       // Verify a boot-style session ID was generated (format: boot-YYYY-MM-DD_HH-MM-SS-xxx-xxxxxxxx)
-      expect(call?.sessionId).toMatch(/^boot-\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d{3}-[0-9a-f]{8}$/);
+      expect(call?.sessionId).toMatch(
+        /^boot-\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d{3}-[0-9a-f]{8}$/,
+      );
     });
   });
 
@@ -207,7 +216,9 @@ describe("runBootOnce", () => {
       const call = agentCommand.mock.calls[0]?.[0];
 
       expect(call?.sessionId).not.toBe(existingSessionId);
-      expect(call?.sessionId).toMatch(/^boot-\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d{3}-[0-9a-f]{8}$/);
+      expect(call?.sessionId).toMatch(
+        /^boot-\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d{3}-[0-9a-f]{8}$/,
+      );
       expect(call?.sessionKey).toBe(sessionKey);
     });
   });

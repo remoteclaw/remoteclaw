@@ -17,14 +17,22 @@ import {
 import { resolveChannelMessageToolHints } from "../../agents/channel-tools.js";
 import { resolveUserTimezone } from "../../agents/date-time.js";
 import { resolveGatewayPort } from "../../config/paths.js";
-import { resolveSessionTranscriptPath, type SessionEntry, updateSessionStore } from "../../config/sessions.js";
+import {
+  resolveSessionTranscriptPath,
+  type SessionEntry,
+  updateSessionStore,
+} from "../../config/sessions.js";
 import { resolveGatewayCredentialsFromConfig } from "../../gateway/credentials.js";
 import { logVerbose } from "../../globals.js";
 import { emitAgentEvent, registerAgentRunContext } from "../../infra/agent-events.js";
 import { withAuthKeyRetry } from "../../middleware/auth-key-retry.js";
 import { ChannelBridge } from "../../middleware/channel-bridge.js";
 import type { SessionMap } from "../../middleware/session-map.js";
-import type { AgentDeliveryResult, BridgeCallbacks, ChannelMessage } from "../../middleware/types.js";
+import type {
+  AgentDeliveryResult,
+  BridgeCallbacks,
+  ChannelMessage,
+} from "../../middleware/types.js";
 import { resolveAgentIdFromSessionKeyOrNull } from "../../routing/session-key.js";
 import { defaultRuntime } from "../../runtime.js";
 import type { TemplateContext } from "../templating.js";
@@ -472,7 +480,12 @@ export async function runAgentTurnWithFallback(params: {
       }
 
       // Auto-recover from Gemini session corruption by resetting the session
-      if (isSessionCorruption && params.sessionKey && params.activeSessionStore && params.storePath) {
+      if (
+        isSessionCorruption &&
+        params.sessionKey &&
+        params.activeSessionStore &&
+        params.storePath
+      ) {
         const sessionKey = params.sessionKey;
         const corruptedSessionId = params.getActiveSessionEntry()?.sessionId;
         defaultRuntime.error(
@@ -501,7 +514,9 @@ export async function runAgentTurnWithFallback(params: {
             delete store[sessionKey];
           });
         } catch (cleanupErr) {
-          defaultRuntime.error(`Failed to reset corrupted session ${params.sessionKey}: ${String(cleanupErr)}`);
+          defaultRuntime.error(
+            `Failed to reset corrupted session ${params.sessionKey}: ${String(cleanupErr)}`,
+          );
         }
 
         return {
@@ -528,7 +543,9 @@ export async function runAgentTurnWithFallback(params: {
       }
 
       defaultRuntime.error(`Agent failed before reply: ${message}`);
-      const safeMessage = isTransientHttp ? sanitizeUserFacingText(message, { errorContext: true }) : message;
+      const safeMessage = isTransientHttp
+        ? sanitizeUserFacingText(message, { errorContext: true })
+        : message;
       const trimmedMessage = safeMessage.replace(/\.\s*$/, "");
       const fallbackText = isBilling
         ? BILLING_ERROR_USER_MESSAGE

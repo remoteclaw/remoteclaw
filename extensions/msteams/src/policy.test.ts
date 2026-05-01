@@ -1,6 +1,10 @@
 import type { MSTeamsConfig } from "remoteclaw/plugin-sdk/msteams";
 import { describe, expect, it } from "vitest";
-import { isMSTeamsGroupAllowed, resolveMSTeamsReplyPolicy, resolveMSTeamsRouteConfig } from "./policy.js";
+import {
+  isMSTeamsGroupAllowed,
+  resolveMSTeamsReplyPolicy,
+  resolveMSTeamsRouteConfig,
+} from "./policy.js";
 
 function resolveNamedTeamRouteConfig(allowNameMatching = false) {
   const cfg: MSTeamsConfig = {

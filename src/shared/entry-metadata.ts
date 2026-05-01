@@ -9,7 +9,10 @@ export function resolveEmojiAndHomepage(params: {
 }): { emoji?: string; homepage?: string } {
   const emoji = params.metadata?.emoji ?? params.frontmatter?.emoji;
   const homepageRaw =
-    params.metadata?.homepage ?? params.frontmatter?.homepage ?? params.frontmatter?.website ?? params.frontmatter?.url;
+    params.metadata?.homepage ??
+    params.frontmatter?.homepage ??
+    params.frontmatter?.website ??
+    params.frontmatter?.url;
   const homepage = homepageRaw?.trim() ? homepageRaw.trim() : undefined;
   return { ...(emoji ? { emoji } : {}), ...(homepage ? { homepage } : {}) };
 }

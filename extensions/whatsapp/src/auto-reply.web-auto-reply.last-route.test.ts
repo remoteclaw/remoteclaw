@@ -45,7 +45,9 @@ function createHandlerForTest(opts: { cfg: RemoteClawConfig; replyResolver: unkn
     groupMemberNames: new Map(),
     echoTracker: createEchoTracker({ maxItems: 10 }),
     backgroundTasks,
-    replyResolver: opts.replyResolver as Parameters<typeof createWebOnMessageHandler>[0]["replyResolver"],
+    replyResolver: opts.replyResolver as Parameters<
+      typeof createWebOnMessageHandler
+    >[0]["replyResolver"],
     replyLogger: makeReplyLogger(),
     baseMentionConfig: buildMentionConfig(opts.cfg),
     account: {},

@@ -52,7 +52,11 @@ export function createBlockReplyContentKey(payload: ReplyPayload): string {
   return JSON.stringify({ text: reply.trimmedText, mediaList: reply.mediaUrls });
 }
 
-const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, timeoutError: Error): Promise<T> => {
+const withTimeout = async <T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  timeoutError: Error,
+): Promise<T> => {
   if (!timeoutMs || timeoutMs <= 0) {
     return promise;
   }

@@ -73,7 +73,9 @@ afterEach(() => {
 
 describe("registerPreActionHooks", () => {
   let program: Command;
-  let preActionHook: ((thisCommand: Command, actionCommand: Command) => Promise<void> | void) | null = null;
+  let preActionHook:
+    | ((thisCommand: Command, actionCommand: Command) => Promise<void> | void)
+    | null = null;
 
   function buildProgram() {
     const program = new Command().name("remoteclaw");

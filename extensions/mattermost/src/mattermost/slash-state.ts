@@ -113,7 +113,9 @@ export function activateSlashCommands(params: {
     triggerMap: triggerMap ?? new Map(),
   });
 
-  log?.(`mattermost: slash commands activated for account ${accountId} (${registeredCommands.length} commands)`);
+  log?.(
+    `mattermost: slash commands activated for account ${accountId} (${registeredCommands.length} commands)`,
+  );
 }
 
 /**
@@ -156,7 +158,9 @@ export function registerSlashCommandRoute(api: RemoteClawPluginApi) {
   // from callbackPath, so that Mattermost callbacks hit a registered route.
   const callbackPaths = new Set<string>();
 
-  const addCallbackPaths = (raw: Partial<import("./slash-commands.js").MattermostSlashCommandConfig> | undefined) => {
+  const addCallbackPaths = (
+    raw: Partial<import("./slash-commands.js").MattermostSlashCommandConfig> | undefined,
+  ) => {
     const resolved = resolveSlashCommandConfig(raw);
     callbackPaths.add(resolved.callbackPath);
     if (resolved.callbackUrl) {
@@ -265,7 +269,9 @@ export function registerSlashCommandRoute(api: RemoteClawPluginApi) {
     }
 
     if (match.kind === "ambiguous") {
-      api.logger.warn?.(`mattermost: slash callback token matched multiple accounts (${match.accountIds?.join(", ")})`);
+      api.logger.warn?.(
+        `mattermost: slash callback token matched multiple accounts (${match.accountIds?.join(", ")})`,
+      );
       res.statusCode = 409;
       res.setHeader("Content-Type", "application/json; charset=utf-8");
       res.end(

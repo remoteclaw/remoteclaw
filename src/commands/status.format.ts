@@ -3,7 +3,8 @@ import { formatRuntimeStatusWithDetails } from "../infra/runtime-status.ts";
 import type { SessionStatus } from "./status.types.js";
 export { shortenText } from "./text-format.js";
 
-export const formatKTokens = (value: number) => `${(value / 1000).toFixed(value >= 10_000 ? 0 : 1)}k`;
+export const formatKTokens = (value: number) =>
+  `${(value / 1000).toFixed(value >= 10_000 ? 0 : 1)}k`;
 
 export const formatDuration = (ms: number | null | undefined) => {
   if (ms == null || !Number.isFinite(ms)) {
@@ -12,7 +13,9 @@ export const formatDuration = (ms: number | null | undefined) => {
   return formatDurationPrecise(ms, { decimals: 1 });
 };
 
-export const formatTokensCompact = (sess: Pick<SessionStatus, "totalTokens" | "cacheRead" | "cacheWrite">) => {
+export const formatTokensCompact = (
+  sess: Pick<SessionStatus, "totalTokens" | "cacheRead" | "cacheWrite">,
+) => {
   const used = sess.totalTokens;
   const cacheRead = sess.cacheRead;
   const cacheWrite = sess.cacheWrite;
@@ -21,7 +24,10 @@ export const formatTokensCompact = (sess: Pick<SessionStatus, "totalTokens" | "c
 
   // Add cache hit rate if there are cached reads
   if (typeof cacheRead === "number" && cacheRead > 0) {
-    const total = typeof used === "number" ? used : cacheRead + (typeof cacheWrite === "number" ? cacheWrite : 0);
+    const total =
+      typeof used === "number"
+        ? used
+        : cacheRead + (typeof cacheWrite === "number" ? cacheWrite : 0);
     const hitRate = Math.round((cacheRead / total) * 100);
     result += ` · 🗄️ ${hitRate}% cached`;
   }
@@ -41,7 +47,8 @@ export const formatDaemonRuntimeShort = (runtime?: {
   }
   const details: string[] = [];
   const detail = runtime.detail?.replace(/\s+/g, " ").trim() || "";
-  const noisyLaunchctlDetail = runtime.missingUnit === true && detail.toLowerCase().includes("could not find service");
+  const noisyLaunchctlDetail =
+    runtime.missingUnit === true && detail.toLowerCase().includes("could not find service");
   if (detail && !noisyLaunchctlDetail) {
     details.push(detail);
   }

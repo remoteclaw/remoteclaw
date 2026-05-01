@@ -36,7 +36,14 @@ describe("cdp-proxy-bypass", () => {
   });
 
   describe("hasProxyEnv", () => {
-    const proxyVars = ["HTTP_PROXY", "http_proxy", "HTTPS_PROXY", "https_proxy", "ALL_PROXY", "all_proxy"];
+    const proxyVars = [
+      "HTTP_PROXY",
+      "http_proxy",
+      "HTTPS_PROXY",
+      "https_proxy",
+      "ALL_PROXY",
+      "all_proxy",
+    ];
     const saved: Record<string, string | undefined> = {};
 
     beforeEach(() => {

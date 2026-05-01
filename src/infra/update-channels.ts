@@ -28,7 +28,10 @@ export function channelToNpmTag(channel: UpdateChannel): string {
   return "latest";
 }
 
-export function resolveEffectiveUpdateChannel(params: { configChannel?: UpdateChannel | null; installKind?: string }): {
+export function resolveEffectiveUpdateChannel(params: {
+  configChannel?: UpdateChannel | null;
+  installKind?: string;
+}): {
   channel: UpdateChannel;
   source: UpdateChannelSource;
 } {
@@ -39,14 +42,20 @@ export function resolveEffectiveUpdateChannel(params: { configChannel?: UpdateCh
   return { channel: DEFAULT_PACKAGE_CHANNEL, source: "default" };
 }
 
-export function formatUpdateChannelLabel(params: { channel: UpdateChannel; source: UpdateChannelSource }): string {
+export function formatUpdateChannelLabel(params: {
+  channel: UpdateChannel;
+  source: UpdateChannelSource;
+}): string {
   if (params.source === "config") {
     return `${params.channel} (config)`;
   }
   return `${params.channel} (default)`;
 }
 
-export function resolveUpdateChannelDisplay(params: { configChannel?: UpdateChannel | null; [key: string]: unknown }): {
+export function resolveUpdateChannelDisplay(params: {
+  configChannel?: UpdateChannel | null;
+  [key: string]: unknown;
+}): {
   channel: UpdateChannel;
   source: UpdateChannelSource;
   label: string;

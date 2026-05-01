@@ -6,7 +6,10 @@ type HighlightTheme = Record<string, (text: string) => string>;
  * Syntax highlighting theme for code blocks.
  * Uses chalk functions to style different token types.
  */
-export function createSyntaxTheme(fallback: (text: string) => string, light = false): HighlightTheme {
+export function createSyntaxTheme(
+  fallback: (text: string) => string,
+  light = false,
+): HighlightTheme {
   if (light) {
     return {
       keyword: chalk.hex("#AF00DB"),

@@ -150,14 +150,18 @@ function renderZone(opts: WideAreaGatewayZoneOpts & { serial: number }): string 
 
   const contentBody = `${records.join("\n")}\n`;
   const hashBody = `${records
-    .map((line) => (line === soaLine ? `@ IN SOA ns1 hostmaster SERIAL 7200 3600 1209600 60` : line))
+    .map((line) =>
+      line === soaLine ? `@ IN SOA ns1 hostmaster SERIAL 7200 3600 1209600 60` : line,
+    )
     .join("\n")}\n`;
   const contentHash = computeContentHash(hashBody);
 
   return `; remoteclaw-content-hash: ${contentHash}\n${contentBody}`;
 }
 
-export function renderWideAreaGatewayZoneText(opts: WideAreaGatewayZoneOpts & { serial: number }): string {
+export function renderWideAreaGatewayZoneText(
+  opts: WideAreaGatewayZoneOpts & { serial: number },
+): string {
   return renderZone(opts);
 }
 

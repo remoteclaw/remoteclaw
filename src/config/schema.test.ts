@@ -108,7 +108,9 @@ describe("config schema", () => {
 
     expect(res.uiHints["plugins.entries.voice-call"]?.label).toBe("Voice Call");
     expect(res.uiHints["plugins.entries.voice-call.config"]?.label).toBe("Voice Call Config");
-    expect(res.uiHints["plugins.entries.voice-call.config.twilio.authToken"]?.label).toBe("Auth Token");
+    expect(res.uiHints["plugins.entries.voice-call.config.twilio.authToken"]?.label).toBe(
+      "Auth Token",
+    );
     expect(res.uiHints["plugins.entries.voice-call.config.twilio.authToken"]?.sensitive).toBe(true);
   });
 
@@ -296,7 +298,9 @@ describe("config schema", () => {
   });
 
   it("rejects overly deep lookup paths", () => {
-    const buildNestedObjectSchema = (segments: string[]): { type: string; properties?: Record<string, unknown> } => {
+    const buildNestedObjectSchema = (
+      segments: string[],
+    ): { type: string; properties?: Record<string, unknown> } => {
       const [head, ...rest] = segments;
       if (!head) {
         return { type: "string" };

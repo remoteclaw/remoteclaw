@@ -194,7 +194,9 @@ describe("cli program (nodes basics)", () => {
     });
     await runProgram(["nodes", "status"]);
 
-    expect(callGateway).toHaveBeenCalledWith(expect.objectContaining({ method: "node.list", params: {} }));
+    expect(callGateway).toHaveBeenCalledWith(
+      expect.objectContaining({ method: "node.list", params: {} }),
+    );
 
     const output = getRuntimeOutput();
     for (const expected of expectedOutput) {
@@ -214,7 +216,9 @@ describe("cli program (nodes basics)", () => {
 
     await runProgram(["nodes", "describe", "--node", "ios-node"]);
 
-    expect(callGateway).toHaveBeenCalledWith(expect.objectContaining({ method: "node.list", params: {} }));
+    expect(callGateway).toHaveBeenCalledWith(
+      expect.objectContaining({ method: "node.list", params: {} }),
+    );
     expect(callGateway).toHaveBeenCalledWith(
       expect.objectContaining({
         method: "node.describe",
@@ -262,7 +266,9 @@ describe("cli program (nodes basics)", () => {
       ]),
     ).rejects.toThrow("exit");
 
-    expect(callGateway).toHaveBeenCalledWith(expect.objectContaining({ method: "node.list", params: {} }));
+    expect(callGateway).toHaveBeenCalledWith(
+      expect.objectContaining({ method: "node.list", params: {} }),
+    );
     expect(callGateway).toHaveBeenCalledWith(
       expect.objectContaining({
         method: "node.invoke",

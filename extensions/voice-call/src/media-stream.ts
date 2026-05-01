@@ -10,7 +10,10 @@
 import type { IncomingMessage } from "node:http";
 import type { Duplex } from "node:stream";
 import { type RawData, WebSocket, WebSocketServer } from "ws";
-import type { OpenAIRealtimeSTTProvider, RealtimeSTTSession } from "./providers/stt-openai-realtime.js";
+import type {
+  OpenAIRealtimeSTTProvider,
+  RealtimeSTTSession,
+} from "./providers/stt-openai-realtime.js";
 
 /**
  * Configuration for the media stream handler.
@@ -124,7 +127,8 @@ export class MediaStreamHandler {
     this.config = config;
     this.preStartTimeoutMs = config.preStartTimeoutMs ?? DEFAULT_PRE_START_TIMEOUT_MS;
     this.maxPendingConnections = config.maxPendingConnections ?? DEFAULT_MAX_PENDING_CONNECTIONS;
-    this.maxPendingConnectionsPerIp = config.maxPendingConnectionsPerIp ?? DEFAULT_MAX_PENDING_CONNECTIONS_PER_IP;
+    this.maxPendingConnectionsPerIp =
+      config.maxPendingConnectionsPerIp ?? DEFAULT_MAX_PENDING_CONNECTIONS_PER_IP;
     this.maxConnections = config.maxConnections ?? DEFAULT_MAX_CONNECTIONS;
   }
 
@@ -205,7 +209,9 @@ export class MediaStreamHandler {
     ws.on("close", (code, reason) => {
       const rawReason = Buffer.isBuffer(reason) ? reason.toString("utf8") : String(reason || "");
       const reasonText = sanitizeLogText(rawReason, CLOSE_REASON_LOG_MAX_CHARS);
-      console.log(`[MediaStream] WebSocket closed (code: ${code}, reason: ${reasonText || "none"})`);
+      console.log(
+        `[MediaStream] WebSocket closed (code: ${code}, reason: ${reasonText || "none"})`,
+      );
       this.clearPendingConnection(ws);
       if (session) {
         this.handleStop(session);
@@ -328,7 +334,9 @@ export class MediaStreamHandler {
       if (!this.pendingConnections.has(ws)) {
         return;
       }
-      console.warn(`[MediaStream] Closing pre-start idle connection after ${this.preStartTimeoutMs}ms (${ip})`);
+      console.warn(
+        `[MediaStream] Closing pre-start idle connection after ${this.preStartTimeoutMs}ms (${ip})`,
+      );
       ws.close(1008, "Start timeout");
     }, this.preStartTimeoutMs);
 

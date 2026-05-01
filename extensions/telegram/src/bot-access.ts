@@ -1,4 +1,8 @@
-import { firstDefined, isSenderIdAllowed, mergeDmAllowFromSources } from "../../../src/channels/allow-from.js";
+import {
+  firstDefined,
+  isSenderIdAllowed,
+  mergeDmAllowFromSources,
+} from "../../../src/channels/allow-from.js";
 import type { AllowlistMatch } from "../../../src/channels/allowlist-match.js";
 import { createSubsystemLogger } from "../../../src/logging/subsystem.js";
 
@@ -38,7 +42,9 @@ function warnInvalidAllowFromEntries(entries: string[]) {
 export const normalizeAllowFrom = (list?: Array<string | number>): NormalizedAllowFrom => {
   const entries = (list ?? []).map((value) => String(value).trim()).filter(Boolean);
   const hasWildcard = entries.includes("*");
-  const normalized = entries.filter((value) => value !== "*").map((value) => value.replace(/^(telegram|tg):/i, ""));
+  const normalized = entries
+    .filter((value) => value !== "*")
+    .map((value) => value.replace(/^(telegram|tg):/i, ""));
   const invalidEntries = normalized.filter((value) => !/^\d+$/.test(value));
   if (invalidEntries.length > 0) {
     warnInvalidAllowFromEntries([...new Set(invalidEntries)]);
@@ -58,7 +64,11 @@ export const normalizeDmAllowFromWithStore = (params: {
   dmPolicy?: string;
 }): NormalizedAllowFrom => normalizeAllowFrom(mergeDmAllowFromSources(params));
 
-export const isSenderAllowed = (params: { allow: NormalizedAllowFrom; senderId?: string; senderUsername?: string }) => {
+export const isSenderAllowed = (params: {
+  allow: NormalizedAllowFrom;
+  senderId?: string;
+  senderUsername?: string;
+}) => {
   const { allow, senderId } = params;
   return isSenderIdAllowed(allow, senderId, true);
 };

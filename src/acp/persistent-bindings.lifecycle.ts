@@ -25,7 +25,8 @@ function sessionMatchesConfiguredBinding(params: {
     return false;
   }
 
-  const desiredBackend = (params.spec as any).backend?.trim() || (params.cfg.acp as any)?.backend?.trim() || "";
+  const desiredBackend =
+    (params.spec as any).backend?.trim() || (params.cfg.acp as any)?.backend?.trim() || "";
   if (desiredBackend) {
     const currentBackend = ((params.meta as any).backend ?? "").trim();
     if (!currentBackend || currentBackend !== desiredBackend) {
@@ -142,7 +143,11 @@ export async function resetAcpSessionInPlace(params: {
     };
   }
 
-  const agent = normalizeText(meta.agent) ?? configuredBinding?.acpAgentId ?? configuredBinding?.agentId ?? undefined;
+  const agent =
+    normalizeText(meta.agent) ??
+    configuredBinding?.acpAgentId ??
+    configuredBinding?.agentId ??
+    undefined;
   const mode = meta.mode === "oneshot" ? "oneshot" : "persistent";
   const runtimeOptions = { ...meta.runtimeOptions };
   const cwd = normalizeText(runtimeOptions.cwd ?? meta.cwd);

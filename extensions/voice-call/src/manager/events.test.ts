@@ -56,7 +56,11 @@ function createInboundDisabledConfig() {
   });
 }
 
-function createInboundInitiatedEvent(params: { id: string; providerCallId: string; from: string }): NormalizedEvent {
+function createInboundInitiatedEvent(params: {
+  id: string;
+  providerCallId: string;
+  from: string;
+}): NormalizedEvent {
   return {
     id: params.id,
     type: "call.initiated",

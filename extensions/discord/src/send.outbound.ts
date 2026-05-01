@@ -37,7 +37,11 @@ import {
   type DiscordSendEmbeds,
 } from "./send.shared.js";
 import type { DiscordSendResult } from "./send.types.js";
-import { ensureOggOpus, getVoiceMessageMetadata, sendDiscordVoiceMessage } from "./voice-message.js";
+import {
+  ensureOggOpus,
+  getVoiceMessageMetadata,
+  sendDiscordVoiceMessage,
+} from "./voice-message.js";
 
 type DiscordSendOpts = {
   cfg?: RemoteClawConfig;
@@ -104,7 +108,10 @@ function isForumLikeType(channelType?: number): boolean {
   return channelType === ChannelType.GuildForum || channelType === ChannelType.GuildMedia;
 }
 
-function toDiscordSendResult(result: DiscordChannelMessageResult, fallbackChannelId: string): DiscordSendResult {
+function toDiscordSendResult(
+  result: DiscordChannelMessageResult,
+  fallbackChannelId: string,
+): DiscordSendResult {
   return {
     messageId: result.id ? String(result.id) : "unknown",
     channelId: String(result.channel_id ?? fallbackChannelId),
@@ -139,7 +146,9 @@ export async function sendMessageDiscord(
   });
   const chunkMode = resolveChunkMode(cfg, "discord", accountInfo.accountId);
   const mediaMaxBytes =
-    typeof accountInfo.config.mediaMaxMb === "number" ? accountInfo.config.mediaMaxMb * 1024 * 1024 : 8 * 1024 * 1024;
+    typeof accountInfo.config.mediaMaxMb === "number"
+      ? accountInfo.config.mediaMaxMb * 1024 * 1024
+      : 8 * 1024 * 1024;
   const textWithTables = convertMarkdownTables(text ?? "", tableMode);
   const textWithMentions = rewriteDiscordKnownMentions(textWithTables, {
     accountId: accountInfo.accountId,
@@ -373,7 +382,9 @@ export async function sendWebhookMessageDiscord(
   );
   if (!response.ok) {
     const raw = await response.text().catch(() => "");
-    throw new Error(`Discord webhook send failed (${response.status}${raw ? `: ${raw.slice(0, 200)}` : ""})`);
+    throw new Error(
+      `Discord webhook send failed (${response.status}${raw ? `: ${raw.slice(0, 200)}` : ""})`,
+    );
   }
 
   const payload = (await response.json().catch(() => ({}))) as {
@@ -395,7 +406,11 @@ export async function sendWebhookMessageDiscord(
   }
   return {
     messageId: payload.id ? String(payload.id) : "unknown",
-    channelId: payload.channel_id ? String(payload.channel_id) : opts.threadId ? String(opts.threadId) : "",
+    channelId: payload.channel_id
+      ? String(payload.channel_id)
+      : opts.threadId
+        ? String(opts.threadId)
+        : "",
   };
 }
 

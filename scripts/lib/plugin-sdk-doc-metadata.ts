@@ -1,4 +1,10 @@
-export type PluginSdkDocCategory = "channel" | "core" | "legacy" | "provider" | "runtime" | "utilities";
+export type PluginSdkDocCategory =
+  | "channel"
+  | "core"
+  | "legacy"
+  | "provider"
+  | "runtime"
+  | "utilities";
 
 export type PluginSdkDocMetadata = {
   category: PluginSdkDocCategory;
@@ -72,7 +78,9 @@ export const pluginSdkDocCategories = [
   "legacy",
 ] as const satisfies readonly PluginSdkDocCategory[];
 
-export const pluginSdkDocEntrypoints = Object.keys(pluginSdkDocMetadata) as PluginSdkDocEntrypoint[];
+export const pluginSdkDocEntrypoints = Object.keys(
+  pluginSdkDocMetadata,
+) as PluginSdkDocEntrypoint[];
 
 export function resolvePluginSdkDocImportSpecifier(entrypoint: PluginSdkDocEntrypoint): string {
   return entrypoint === "index" ? "remoteclaw/plugin-sdk" : `remoteclaw/plugin-sdk/${entrypoint}`;

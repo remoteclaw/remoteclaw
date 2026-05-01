@@ -19,7 +19,11 @@ export type NormalizedPluginsConfig = {
   >;
 };
 
-export const BUNDLED_ENABLED_BY_DEFAULT = new Set<string>(["device-pair", "phone-control", "talk-voice"]);
+export const BUNDLED_ENABLED_BY_DEFAULT = new Set<string>([
+  "device-pair",
+  "phone-control",
+  "talk-voice",
+]);
 
 const normalizeList = (value: unknown): string[] => {
   if (!Array.isArray(value)) {
@@ -46,7 +50,8 @@ const normalizePluginEntries = (entries: unknown): NormalizedPluginsConfig["entr
     const hooks =
       hooksRaw && typeof hooksRaw === "object" && !Array.isArray(hooksRaw)
         ? {
-            allowPromptInjection: (hooksRaw as { allowPromptInjection?: unknown }).allowPromptInjection,
+            allowPromptInjection: (hooksRaw as { allowPromptInjection?: unknown })
+              .allowPromptInjection,
           }
         : undefined;
     const normalizedHooks =
@@ -64,7 +69,9 @@ const normalizePluginEntries = (entries: unknown): NormalizedPluginsConfig["entr
   return normalized;
 };
 
-export const normalizePluginsConfig = (config?: RemoteClawConfig["plugins"]): NormalizedPluginsConfig => {
+export const normalizePluginsConfig = (
+  config?: RemoteClawConfig["plugins"],
+): NormalizedPluginsConfig => {
   return {
     enabled: config?.enabled !== false,
     allow: normalizeList(config?.allow),
@@ -99,7 +106,10 @@ const hasExplicitPluginConfig = (plugins?: RemoteClawConfig["plugins"]) => {
   return false;
 };
 
-export function applyTestPluginDefaults(cfg: RemoteClawConfig, env: NodeJS.ProcessEnv = process.env): RemoteClawConfig {
+export function applyTestPluginDefaults(
+  cfg: RemoteClawConfig,
+  env: NodeJS.ProcessEnv = process.env,
+): RemoteClawConfig {
   if (!env.VITEST) {
     return cfg;
   }
@@ -145,7 +155,10 @@ export function resolveEnableState(
   return { enabled: true };
 }
 
-export function isBundledChannelEnabledByChannelConfig(cfg: RemoteClawConfig | undefined, pluginId: string): boolean {
+export function isBundledChannelEnabledByChannelConfig(
+  cfg: RemoteClawConfig | undefined,
+  pluginId: string,
+): boolean {
   if (!cfg) {
     return false;
   }

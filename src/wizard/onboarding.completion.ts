@@ -3,7 +3,10 @@ import path from "node:path";
 import { resolveCliName } from "../cli/cli-name.js";
 import { installCompletion } from "../cli/completion-cli.js";
 import type { ShellCompletionStatus } from "../commands/doctor-completion.js";
-import { checkShellCompletionStatus, ensureCompletionCacheExists } from "../commands/doctor-completion.js";
+import {
+  checkShellCompletionStatus,
+  ensureCompletionCacheExists,
+} from "../commands/doctor-completion.js";
 import { pathExists } from "../utils.js";
 import type { WizardFlow } from "./onboarding.types.js";
 import type { WizardPrompter } from "./prompts.js";

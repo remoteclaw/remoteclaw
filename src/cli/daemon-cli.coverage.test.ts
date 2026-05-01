@@ -23,14 +23,16 @@ const inspectPortUsage = vi.fn(async (port: number) => ({
   listeners: [],
   hints: [],
 }));
-const buildGatewayInstallPlan = vi.fn(async (params: { port: number; token?: string; env?: NodeJS.ProcessEnv }) => ({
-  programArguments: ["/bin/node", "cli", "gateway", "--port", String(params.port)],
-  workingDirectory: process.cwd(),
-  environment: {
-    REMOTECLAW_GATEWAY_PORT: String(params.port),
-    ...(params.token ? { REMOTECLAW_GATEWAY_TOKEN: params.token } : {}),
-  },
-}));
+const buildGatewayInstallPlan = vi.fn(
+  async (params: { port: number; token?: string; env?: NodeJS.ProcessEnv }) => ({
+    programArguments: ["/bin/node", "cli", "gateway", "--port", String(params.port)],
+    workingDirectory: process.cwd(),
+    environment: {
+      REMOTECLAW_GATEWAY_PORT: String(params.port),
+      ...(params.token ? { REMOTECLAW_GATEWAY_TOKEN: params.token } : {}),
+    },
+  }),
+);
 
 const mocks = vi.hoisted(() => {
   const runtimeLogs: string[] = [];
@@ -60,7 +62,8 @@ vi.mock("./daemon-cli/probe.js", () => ({
 }));
 
 vi.mock("../gateway/probe-auth.js", () => ({
-  resolveGatewayProbeAuthWithSecretInputs: (opts: unknown) => resolveGatewayProbeAuthWithSecretInputs(opts),
+  resolveGatewayProbeAuthWithSecretInputs: (opts: unknown) =>
+    resolveGatewayProbeAuthWithSecretInputs(opts),
 }));
 
 vi.mock("../daemon/program-args.js", () => ({
@@ -168,7 +171,9 @@ describe("daemon-cli coverage", () => {
     await runDaemonCommand(["daemon", "status"]);
 
     expect(probeGatewayStatus).toHaveBeenCalledTimes(1);
-    expect(probeGatewayStatus).toHaveBeenCalledWith(expect.objectContaining({ url: "ws://127.0.0.1:18789" }));
+    expect(probeGatewayStatus).toHaveBeenCalledWith(
+      expect.objectContaining({ url: "ws://127.0.0.1:18789" }),
+    );
     expect(findExtraGatewayServices).toHaveBeenCalled();
     expect(inspectPortUsage).toHaveBeenCalled();
   });
@@ -216,7 +221,10 @@ describe("daemon-cli coverage", () => {
 
     await runDaemonCommand(["daemon", "status", "--deep"]);
 
-    expect(findExtraGatewayServices).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ deep: true }));
+    expect(findExtraGatewayServices).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ deep: true }),
+    );
   });
 
   it("installs the daemon (json output)", async () => {
@@ -224,7 +232,15 @@ describe("daemon-cli coverage", () => {
     serviceIsLoaded.mockResolvedValueOnce(false);
     serviceInstall.mockClear();
 
-    await runDaemonCommand(["daemon", "install", "--port", "18789", "--token", "test-token", "--json"]);
+    await runDaemonCommand([
+      "daemon",
+      "install",
+      "--port",
+      "18789",
+      "--token",
+      "test-token",
+      "--json",
+    ]);
 
     expect(serviceInstall).toHaveBeenCalledTimes(1);
     const parsed = parseFirstJsonRuntimeLine<{

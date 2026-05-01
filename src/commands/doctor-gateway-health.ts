@@ -6,9 +6,14 @@ import { note } from "../terminal/note.js";
 import { formatHealthCheckFailure } from "./health-format.js";
 import { healthCommand } from "./health.js";
 
-export async function checkGatewayHealth(params: { runtime: RuntimeEnv; cfg: RemoteClawConfig; timeoutMs?: number }) {
+export async function checkGatewayHealth(params: {
+  runtime: RuntimeEnv;
+  cfg: RemoteClawConfig;
+  timeoutMs?: number;
+}) {
   const gatewayDetails = buildGatewayConnectionDetails({ config: params.cfg });
-  const timeoutMs = typeof params.timeoutMs === "number" && params.timeoutMs > 0 ? params.timeoutMs : 10_000;
+  const timeoutMs =
+    typeof params.timeoutMs === "number" && params.timeoutMs > 0 ? params.timeoutMs : 10_000;
   let healthOk = false;
   try {
     await healthCommand({ json: false, timeoutMs, config: params.cfg }, params.runtime);
@@ -35,7 +40,8 @@ export async function checkGatewayHealth(params: { runtime: RuntimeEnv; cfg: Rem
         note(
           issues
             .map(
-              (issue) => `- ${issue.channel} ${issue.accountId}: ${issue.message}${issue.fix ? ` (${issue.fix})` : ""}`,
+              (issue) =>
+                `- ${issue.channel} ${issue.accountId}: ${issue.message}${issue.fix ? ` (${issue.fix})` : ""}`,
             )
             .join("\n"),
           "Channel warnings",

@@ -97,7 +97,9 @@ function renderLinkElement(element: Record<string, unknown>): string {
 
 function renderMentionElement(element: Record<string, unknown>): string {
   const mention =
-    toStringOrEmpty(element.user_name) || toStringOrEmpty(element.user_id) || toStringOrEmpty(element.open_id);
+    toStringOrEmpty(element.user_name) ||
+    toStringOrEmpty(element.user_id) ||
+    toStringOrEmpty(element.open_id);
   if (!mention) {
     return "";
   }
@@ -105,13 +107,21 @@ function renderMentionElement(element: Record<string, unknown>): string {
 }
 
 function renderEmotionElement(element: Record<string, unknown>): string {
-  const text = toStringOrEmpty(element.emoji) || toStringOrEmpty(element.text) || toStringOrEmpty(element.emoji_type);
+  const text =
+    toStringOrEmpty(element.emoji) ||
+    toStringOrEmpty(element.text) ||
+    toStringOrEmpty(element.emoji_type);
   return escapeMarkdownText(text);
 }
 
 function renderCodeBlockElement(element: Record<string, unknown>): string {
-  const language = sanitizeFenceLanguage(toStringOrEmpty(element.language) || toStringOrEmpty(element.lang));
-  const code = (toStringOrEmpty(element.text) || toStringOrEmpty(element.content)).replace(/\r\n/g, "\n");
+  const language = sanitizeFenceLanguage(
+    toStringOrEmpty(element.language) || toStringOrEmpty(element.lang),
+  );
+  const code = (toStringOrEmpty(element.text) || toStringOrEmpty(element.content)).replace(
+    /\r\n/g,
+    "\n",
+  );
   const trailingNewline = code.endsWith("\n") ? "" : "\n";
   return `\`\`\`${language}\n${code}${trailingNewline}\`\`\``;
 }

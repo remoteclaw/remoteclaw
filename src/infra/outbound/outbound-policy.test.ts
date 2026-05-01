@@ -16,7 +16,13 @@ const mocks = vi.hoisted(() => ({
     channel === "discord"
       ? {
           supportsComponentsV2: true,
-          buildCrossContextComponents: ({ originLabel, message }: { originLabel: string; message: string }) => {
+          buildCrossContextComponents: ({
+            originLabel,
+            message,
+          }: {
+            originLabel: string;
+            message: string;
+          }) => {
             const trimmed = message.trim();
             const components: Array<TextDisplay | Separator> = [];
             if (trimmed) {
@@ -39,8 +45,12 @@ const mocks = vi.hoisted(() => ({
     }
     return trimmed;
   }),
-  lookupDirectoryDisplay: vi.fn(async ({ targetId }: { targetId: string }) => targetId.replace(/^#/, "")),
-  formatTargetDisplay: vi.fn(({ target, display }: { target: string; display?: string }) => display ?? target),
+  lookupDirectoryDisplay: vi.fn(async ({ targetId }: { targetId: string }) =>
+    targetId.replace(/^#/, ""),
+  ),
+  formatTargetDisplay: vi.fn(
+    ({ target, display }: { target: string; display?: string }) => display ?? target,
+  ),
 }));
 
 vi.mock("./channel-adapters.js", () => ({

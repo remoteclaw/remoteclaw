@@ -3,7 +3,9 @@ import { __test__ } from "./logger.js";
 
 describe("shouldSkipLoadConfigFallback", () => {
   it("matches config validate invocations", () => {
-    expect(__test__.shouldSkipLoadConfigFallback(["node", "remoteclaw", "config", "validate"])).toBe(true);
+    expect(
+      __test__.shouldSkipLoadConfigFallback(["node", "remoteclaw", "config", "validate"]),
+    ).toBe(true);
   });
 
   it("handles root flags before config validate", () => {
@@ -22,7 +24,9 @@ describe("shouldSkipLoadConfigFallback", () => {
   });
 
   it("does not match other commands", () => {
-    expect(__test__.shouldSkipLoadConfigFallback(["node", "remoteclaw", "config", "get", "foo"])).toBe(false);
+    expect(
+      __test__.shouldSkipLoadConfigFallback(["node", "remoteclaw", "config", "get", "foo"]),
+    ).toBe(false);
     expect(__test__.shouldSkipLoadConfigFallback(["node", "remoteclaw", "status"])).toBe(false);
   });
 });

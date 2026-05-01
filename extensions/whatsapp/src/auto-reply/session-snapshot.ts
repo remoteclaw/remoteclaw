@@ -28,7 +28,11 @@ export function getSessionSnapshot(
   const scope = sessionCfg?.scope ?? "per-sender";
   const key =
     ctx?.sessionKey?.trim() ??
-    resolveSessionKey(scope, { From: from, To: "", Body: "" }, normalizeMainKey(sessionCfg?.mainKey));
+    resolveSessionKey(
+      scope,
+      { From: from, To: "", Body: "" },
+      normalizeMainKey(sessionCfg?.mainKey),
+    );
   const store = loadSessionStore(resolveStorePath(sessionCfg?.store));
   const entry = store[key];
 

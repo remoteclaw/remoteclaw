@@ -41,7 +41,10 @@ export class DeliveryAdapter {
    * @param callbacks - Optional streaming callbacks for real-time delivery
    * @returns Final ReplyPayload array for post-execution delivery
    */
-  async process(events: AsyncIterable<AgentEvent>, callbacks?: BridgeCallbacks): Promise<ReplyPayload[]> {
+  async process(
+    events: AsyncIterable<AgentEvent>,
+    callbacks?: BridgeCallbacks,
+  ): Promise<ReplyPayload[]> {
     let textBuffer = "";
     const payloads: ReplyPayload[] = [];
     /** Track media delivered via streaming events to avoid duplicates from result.media. */
@@ -219,7 +222,10 @@ function findSplitPoint(text: string, limit: number): number {
  * Detect if the text has an unclosed code fence at or before the limit position.
  * Returns info about the open fence, or undefined if no open fence.
  */
-function findOpenCodeFence(text: string, limit: number): { fenceStart: number; fence: string } | undefined {
+function findOpenCodeFence(
+  text: string,
+  limit: number,
+): { fenceStart: number; fence: string } | undefined {
   const fenceRegex = /^(`{3,}|~{3,})/gm;
   let openFence: { fenceStart: number; fence: string } | undefined;
 
@@ -232,7 +238,10 @@ function findOpenCodeFence(text: string, limit: number): { fenceStart: number; f
       openFence = { fenceStart: match.index, fence: match[1] };
     } else {
       // Closing fence found — only if fence marker matches
-      if (match[1].charAt(0) === openFence.fence.charAt(0) && match[1].length >= openFence.fence.length) {
+      if (
+        match[1].charAt(0) === openFence.fence.charAt(0) &&
+        match[1].length >= openFence.fence.length
+      ) {
         openFence = undefined;
       }
     }

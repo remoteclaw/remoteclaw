@@ -46,7 +46,12 @@ const { buildLineMessageContextMock, buildLinePostbackContextMock } = vi.hoisted
 vi.mock("./bot-message-context.js", () => ({
   buildLineMessageContext: buildLineMessageContextMock,
   buildLinePostbackContext: buildLinePostbackContextMock,
-  getLineSourceInfo: (source: { type?: string; userId?: string; groupId?: string; roomId?: string }) => ({
+  getLineSourceInfo: (source: {
+    type?: string;
+    userId?: string;
+    groupId?: string;
+    roomId?: string;
+  }) => ({
     userId: source.userId,
     groupId: source.type === "group" ? source.groupId : undefined,
     roomId: source.type === "room" ? source.roomId : undefined,

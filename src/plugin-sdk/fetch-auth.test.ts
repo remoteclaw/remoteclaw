@@ -30,7 +30,10 @@ describe("fetchWithBearerAuthScopeFallback", () => {
       name: "retries with auth scopes after a 401 response",
       url: "https://graph.microsoft.com/v1.0/me",
       scopes: ["https://graph.microsoft.com", "https://api.botframework.com"],
-      responses: [new Response("unauthorized", { status: 401 }), new Response("ok", { status: 200 })],
+      responses: [
+        new Response("unauthorized", { status: 401 }),
+        new Response("ok", { status: 200 }),
+      ],
       shouldAttachAuth: undefined,
       expectedStatus: 200,
       expectedFetchCalls: 2,
@@ -93,7 +96,10 @@ describe("fetchWithBearerAuthScopeFallback", () => {
       .mockResolvedValueOnce(new Response("unauthorized", { status: 401 }))
       .mockResolvedValueOnce(new Response("ok", { status: 200 }));
     const tokenProvider = {
-      getAccessToken: vi.fn().mockRejectedValueOnce(new Error("first scope failed")).mockResolvedValueOnce("token-2"),
+      getAccessToken: vi
+        .fn()
+        .mockRejectedValueOnce(new Error("first scope failed"))
+        .mockResolvedValueOnce("token-2"),
     };
 
     const response = await fetchWithBearerAuthScopeFallback({

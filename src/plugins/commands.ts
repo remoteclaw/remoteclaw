@@ -7,7 +7,11 @@
 
 import type { RemoteClawConfig } from "../config/config.js";
 import { logVerbose } from "../globals.js";
-import type { RemoteClawPluginCommandDefinition, PluginCommandContext, PluginCommandResult } from "./types.js";
+import type {
+  RemoteClawPluginCommandDefinition,
+  PluginCommandContext,
+  PluginCommandResult,
+} from "./types.js";
 
 type RegisteredPluginCommand = RemoteClawPluginCommandDefinition & {
   pluginId: string;
@@ -176,7 +180,9 @@ export function clearPluginCommandsForPlugin(pluginId: string): void {
  * the command will not match. This allows the message to fall through to
  * built-in handlers or the agent. Document this behavior to plugin authors.
  */
-export function matchPluginCommand(commandBody: string): { command: RegisteredPluginCommand; args?: string } | null {
+export function matchPluginCommand(
+  commandBody: string,
+): { command: RegisteredPluginCommand; args?: string } | null {
   const trimmed = commandBody.trim();
   if (!trimmed.startsWith("/")) {
     return null;
@@ -253,7 +259,9 @@ export async function executePluginCommand(params: {
   // Check authorization
   const requireAuth = command.requireAuth !== false; // Default to true
   if (requireAuth && !isAuthorizedSender) {
-    logVerbose(`Plugin command /${command.name} blocked: unauthorized sender ${senderId || "<unknown>"}`);
+    logVerbose(
+      `Plugin command /${command.name} blocked: unauthorized sender ${senderId || "<unknown>"}`,
+    );
     return { text: "⚠️ This command requires authorization." };
   }
 
@@ -278,7 +286,9 @@ export async function executePluginCommand(params: {
   registryLocked = true;
   try {
     const result = await command.handler(ctx);
-    logVerbose(`Plugin command /${command.name} executed successfully for ${senderId || "unknown"}`);
+    logVerbose(
+      `Plugin command /${command.name} executed successfully for ${senderId || "unknown"}`,
+    );
     return result;
   } catch (err) {
     const error = err as Error;
@@ -306,7 +316,10 @@ export function listPluginCommands(): Array<{
   }));
 }
 
-function resolvePluginNativeName(command: RemoteClawPluginCommandDefinition, provider?: string): string {
+function resolvePluginNativeName(
+  command: RemoteClawPluginCommandDefinition,
+  provider?: string,
+): string {
   const providerName = provider?.trim().toLowerCase();
   const providerOverride = providerName ? command.nativeNames?.[providerName] : undefined;
   if (typeof providerOverride === "string" && providerOverride.trim()) {

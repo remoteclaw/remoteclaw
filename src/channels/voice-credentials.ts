@@ -52,7 +52,9 @@ export async function checkTtsCredentials(cfg: RemoteClawConfig): Promise<VoiceC
 /**
  * Validate that both STT and TTS credentials are available for voice channels.
  */
-export async function validateVoiceCredentials(cfg: RemoteClawConfig): Promise<VoiceCredentialReport> {
+export async function validateVoiceCredentials(
+  cfg: RemoteClawConfig,
+): Promise<VoiceCredentialReport> {
   const [tts, stt] = await Promise.all([checkTtsCredentials(cfg), checkSttCredentials()]);
   return { tts, stt };
 }

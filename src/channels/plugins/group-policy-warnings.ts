@@ -11,7 +11,9 @@ type AccountGroupPolicyWarningCollector<ResolvedAccount> = (params: {
   account: ResolvedAccount;
   cfg: RemoteClawConfig;
 }) => string[];
-type ConfigGroupPolicyWarningCollector<Params extends { cfg: RemoteClawConfig }> = (params: Params) => string[];
+type ConfigGroupPolicyWarningCollector<Params extends { cfg: RemoteClawConfig }> = (
+  params: Params,
+) => string[];
 type WarningCollector<Params> = (params: Params) => string[];
 
 export function composeWarningCollectors<Params>(
@@ -35,13 +37,19 @@ export function projectConfigWarningCollector<Params extends { cfg: RemoteClawCo
 
 export function projectConfigAccountIdWarningCollector<
   Params extends { cfg: RemoteClawConfig; accountId?: string | null },
->(collector: WarningCollector<{ cfg: RemoteClawConfig; accountId?: string | null }>): WarningCollector<Params> {
-  return projectWarningCollector((params) => ({ cfg: params.cfg, accountId: params.accountId }), collector);
+>(
+  collector: WarningCollector<{ cfg: RemoteClawConfig; accountId?: string | null }>,
+): WarningCollector<Params> {
+  return projectWarningCollector(
+    (params) => ({ cfg: params.cfg, accountId: params.accountId }),
+    collector,
+  );
 }
 
-export function projectAccountWarningCollector<ResolvedAccount, Params extends { account: ResolvedAccount }>(
-  collector: WarningCollector<ResolvedAccount>,
-): WarningCollector<Params> {
+export function projectAccountWarningCollector<
+  ResolvedAccount,
+  Params extends { account: ResolvedAccount },
+>(collector: WarningCollector<ResolvedAccount>): WarningCollector<Params> {
   return projectWarningCollector((params) => params.account, collector);
 }
 
@@ -53,7 +61,10 @@ export function projectAccountConfigWarningCollector<
   projectCfg: (cfg: RemoteClawConfig) => ProjectedCfg,
   collector: WarningCollector<{ account: ResolvedAccount; cfg: ProjectedCfg }>,
 ): WarningCollector<Params> {
-  return projectWarningCollector((params) => ({ account: params.account, cfg: projectCfg(params.cfg) }), collector);
+  return projectWarningCollector(
+    (params) => ({ account: params.account, cfg: projectCfg(params.cfg) }),
+    collector,
+  );
 }
 
 export function createConditionalWarningCollector<Params>(
@@ -69,7 +80,10 @@ export function createConditionalWarningCollector<Params>(
     });
 }
 
-export function composeAccountWarningCollectors<ResolvedAccount, Params extends { account: ResolvedAccount }>(
+export function composeAccountWarningCollectors<
+  ResolvedAccount,
+  Params extends { account: ResolvedAccount },
+>(
   baseCollector: WarningCollector<Params>,
   ...collectors: Array<(account: ResolvedAccount) => string | string[] | null | undefined | false>
 ): WarningCollector<Params> {
@@ -233,7 +247,9 @@ export function collectAllowlistProviderGroupPolicyWarnings(params: {
 }
 
 /** Build a config-aware allowlist-provider warning collector from an arbitrary policy resolver. */
-export function createAllowlistProviderGroupPolicyWarningCollector<Params extends { cfg: RemoteClawConfig }>(params: {
+export function createAllowlistProviderGroupPolicyWarningCollector<
+  Params extends { cfg: RemoteClawConfig },
+>(params: {
   providerConfigPresent: (cfg: RemoteClawConfig) => boolean;
   resolveGroupPolicy: (params: Params) => GroupPolicy | null | undefined;
   collect: (params: Params & { groupPolicy: GroupPolicy }) => string[];
@@ -263,7 +279,9 @@ export function collectOpenProviderGroupPolicyWarnings(params: {
 }
 
 /** Build a config-aware open-provider warning collector from an arbitrary policy resolver. */
-export function createOpenProviderGroupPolicyWarningCollector<Params extends { cfg: RemoteClawConfig }>(params: {
+export function createOpenProviderGroupPolicyWarningCollector<
+  Params extends { cfg: RemoteClawConfig },
+>(params: {
   providerConfigPresent: (cfg: RemoteClawConfig) => boolean;
   resolveGroupPolicy: (params: Params) => GroupPolicy | null | undefined;
   collect: (params: Params & { groupPolicy: GroupPolicy }) => string[];

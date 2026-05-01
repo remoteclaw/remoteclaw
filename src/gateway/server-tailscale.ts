@@ -26,12 +26,16 @@ export async function startGatewayTailscaleExposure(params: {
     const host = await getTailnetHostname().catch(() => null);
     if (host) {
       const uiPath = params.controlUiBasePath ? `${params.controlUiBasePath}/` : "/";
-      params.logTailscale.info(`${params.tailscaleMode} enabled: https://${host}${uiPath} (WS via wss://${host})`);
+      params.logTailscale.info(
+        `${params.tailscaleMode} enabled: https://${host}${uiPath} (WS via wss://${host})`,
+      );
     } else {
       params.logTailscale.info(`${params.tailscaleMode} enabled`);
     }
   } catch (err) {
-    params.logTailscale.warn(`${params.tailscaleMode} failed: ${err instanceof Error ? err.message : String(err)}`);
+    params.logTailscale.warn(
+      `${params.tailscaleMode} failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
   }
 
   if (!params.resetOnExit) {

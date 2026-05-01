@@ -18,7 +18,12 @@ import {
 installGatewayTestHooks({ scope: "suite" });
 const FAST_WAIT_OPTS = { timeout: 250, interval: 2 } as const;
 
-const sendReq = (ws: { send: (payload: string) => void }, id: string, method: string, params: unknown) => {
+const sendReq = (
+  ws: { send: (payload: string) => void },
+  id: string,
+  method: string,
+  params: unknown,
+) => {
   ws.send(
     JSON.stringify({
       type: "req",
@@ -67,7 +72,9 @@ async function writeMainSessionTranscript(sessionDir: string, lines: string[]) {
   await fs.writeFile(path.join(sessionDir, "sess-main.jsonl"), `${lines.join("\n")}\n`, "utf-8");
 }
 
-async function fetchHistoryMessages(ws: Awaited<ReturnType<typeof startServerWithClient>>["ws"]): Promise<unknown[]> {
+async function fetchHistoryMessages(
+  ws: Awaited<ReturnType<typeof startServerWithClient>>["ws"],
+): Promise<unknown[]> {
   const historyRes = await rpcReq<{ messages?: unknown[] }>(ws, "chat.history", {
     sessionKey: "main",
     limit: 1000,
@@ -322,7 +329,9 @@ describe("gateway server chat", () => {
         JSON.stringify({
           message: {
             role: "assistant",
-            content: [{ type: "text", text: "Hello [[reply_to_current]] world [[audio_as_voice]]" }],
+            content: [
+              { type: "text", text: "Hello [[reply_to_current]] world [[audio_as_voice]]" },
+            ],
             timestamp: Date.now(),
           },
         }),

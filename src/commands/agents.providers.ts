@@ -1,5 +1,9 @@
 import { resolveChannelDefaultAccountId } from "../channels/plugins/helpers.js";
-import { getChannelPlugin, listChannelPlugins, normalizeChannelId } from "../channels/plugins/index.js";
+import {
+  getChannelPlugin,
+  listChannelPlugins,
+  normalizeChannelId,
+} from "../channels/plugins/index.js";
 import type { ChannelId } from "../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import type { AgentBinding } from "../config/types.js";
@@ -18,9 +22,15 @@ function providerAccountKey(provider: ChannelId, accountId?: string) {
   return `${provider}:${accountId ?? DEFAULT_ACCOUNT_ID}`;
 }
 
-function formatChannelAccountLabel(params: { provider: ChannelId; accountId: string; name?: string }): string {
+function formatChannelAccountLabel(params: {
+  provider: ChannelId;
+  accountId: string;
+  name?: string;
+}): string {
   const label = getChannelPlugin(params.provider)?.meta.label ?? params.provider;
-  const account = params.name?.trim() ? `${params.accountId} (${params.name.trim()})` : params.accountId;
+  const account = params.name?.trim()
+    ? `${params.accountId} (${params.name.trim()})`
+    : params.accountId;
   return `${label} ${account}`;
 }
 
@@ -32,7 +42,9 @@ function formatProviderState(entry: ProviderAccountStatus): string {
   return parts.join(", ");
 }
 
-export async function buildProviderStatusIndex(cfg: RemoteClawConfig): Promise<Map<string, ProviderAccountStatus>> {
+export async function buildProviderStatusIndex(
+  cfg: RemoteClawConfig,
+): Promise<Map<string, ProviderAccountStatus>> {
   const map = new Map<string, ProviderAccountStatus>();
 
   for (const plugin of listChannelPlugins()) {
@@ -156,7 +168,9 @@ export function listProvidersForAgent(params: {
       if (status) {
         providerLines.push(formatProviderEntry(status));
       } else {
-        providerLines.push(`${formatChannelAccountLabel({ provider: channel, accountId })}: unknown`);
+        providerLines.push(
+          `${formatChannelAccountLabel({ provider: channel, accountId })}: unknown`,
+        );
       }
     }
     return providerLines;

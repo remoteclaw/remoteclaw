@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
 import { createTestRegistry } from "../../test-utils/channel-plugins.js";
-import { filterMessagingToolMediaDuplicates, shouldSuppressMessagingToolReplies } from "./reply-payloads.js";
+import {
+  filterMessagingToolMediaDuplicates,
+  shouldSuppressMessagingToolReplies,
+} from "./reply-payloads.js";
 
 describe("filterMessagingToolMediaDuplicates", () => {
   it("strips mediaUrl when it matches sentMediaUrls", () => {
@@ -30,7 +33,9 @@ describe("filterMessagingToolMediaDuplicates", () => {
       ],
       sentMediaUrls: ["file:///tmp/b.jpg"],
     });
-    expect(result).toEqual([{ text: "gallery", mediaUrls: ["file:///tmp/a.jpg", "file:///tmp/c.jpg"] }]);
+    expect(result).toEqual([
+      { text: "gallery", mediaUrls: ["file:///tmp/a.jpg", "file:///tmp/c.jpg"] },
+    ]);
   });
 
   it("clears mediaUrls when all entries match", () => {
@@ -112,7 +117,9 @@ describe("shouldSuppressMessagingToolReplies", () => {
       shouldSuppressMessagingToolReplies({
         messageProvider: "telegram",
         originatingTo: "telegram:group:-100123:topic:77",
-        messagingToolSentTargets: [{ tool: "message", provider: "telegram", to: "-100123", threadId: "77" }],
+        messagingToolSentTargets: [
+          { tool: "message", provider: "telegram", to: "-100123", threadId: "77" },
+        ],
       }),
     ).toBe(true);
   });
@@ -122,7 +129,9 @@ describe("shouldSuppressMessagingToolReplies", () => {
       shouldSuppressMessagingToolReplies({
         messageProvider: "telegram",
         originatingTo: "telegram:group:-100123:topic:77",
-        messagingToolSentTargets: [{ tool: "message", provider: "telegram", to: "-100123", threadId: "88" }],
+        messagingToolSentTargets: [
+          { tool: "message", provider: "telegram", to: "-100123", threadId: "88" },
+        ],
       }),
     ).toBe(false);
   });
@@ -154,7 +163,9 @@ describe("shouldSuppressMessagingToolReplies", () => {
       shouldSuppressMessagingToolReplies({
         messageProvider: "telegram",
         originatingTo: "telegram:group:-100123:topic:77",
-        messagingToolSentTargets: [{ tool: "message", provider: "telegram", to: "-100123", threadId: "77" }],
+        messagingToolSentTargets: [
+          { tool: "message", provider: "telegram", to: "-100123", threadId: "77" },
+        ],
       }),
     ).toBe(true);
   });

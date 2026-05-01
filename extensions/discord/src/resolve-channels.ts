@@ -80,7 +80,11 @@ async function listGuildChannels(
   fetcher: typeof fetch,
   guildId: string,
 ): Promise<DiscordChannelSummary[]> {
-  const raw = await fetchDiscord<DiscordChannelPayload[]>(`/guilds/${guildId}/channels`, token, fetcher);
+  const raw = await fetchDiscord<DiscordChannelPayload[]>(
+    `/guilds/${guildId}/channels`,
+    token,
+    fetcher,
+  );
   return raw
     .map((channel) => {
       const archived = channel.thread_metadata?.archived;
@@ -101,7 +105,11 @@ type FetchChannelResult =
   | { status: "forbidden" }
   | { status: "invalid" };
 
-async function fetchChannel(token: string, fetcher: typeof fetch, channelId: string): Promise<FetchChannelResult> {
+async function fetchChannel(
+  token: string,
+  fetcher: typeof fetch,
+  channelId: string,
+): Promise<FetchChannelResult> {
   let raw: DiscordChannelPayload;
   try {
     raw = await fetchDiscord<DiscordChannelPayload>(`/channels/${channelId}`, token, fetcher);
@@ -280,10 +288,14 @@ export async function resolveDiscordChannelAllowlist(params: {
       const normalizedChannelQuery = normalizeDiscordSlug(channelQuery);
       const isNumericId = /^\d+$/.test(channelQuery);
       let matches = channels.filter((channel) =>
-        isNumericId ? channel.id === channelQuery : normalizeDiscordSlug(channel.name) === normalizedChannelQuery,
+        isNumericId
+          ? channel.id === channelQuery
+          : normalizeDiscordSlug(channel.name) === normalizedChannelQuery,
       );
       if (isNumericId && matches.length === 0) {
-        matches = channels.filter((channel) => normalizeDiscordSlug(channel.name) === normalizedChannelQuery);
+        matches = channels.filter(
+          (channel) => normalizeDiscordSlug(channel.name) === normalizedChannelQuery,
+        );
       }
       const match = preferActiveMatch(matches);
       if (match) {
@@ -338,7 +350,10 @@ export async function resolveDiscordChannelAllowlist(params: {
         channelId: match.id,
         channelName: match.name,
         archived: match.archived,
-        note: candidates.length > 1 && guild?.name ? `matched multiple; chose ${guild.name}` : undefined,
+        note:
+          candidates.length > 1 && guild?.name
+            ? `matched multiple; chose ${guild.name}`
+            : undefined,
       });
       continue;
     }

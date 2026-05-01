@@ -91,41 +91,50 @@ describe("findExtraGatewayServices (linux / scanSystemdDir) — real filesystem"
     }
   });
 
-  it.skipIf(!isLinux)("does not report the canonical remoteclaw-gateway.service as an extra service", async () => {
-    const tmpHome = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-test-"));
-    const systemdDir = path.join(tmpHome, ".config", "systemd", "user");
-    try {
-      await fs.mkdir(systemdDir, { recursive: true });
-      await fs.writeFile(path.join(systemdDir, "remoteclaw-gateway.service"), GATEWAY_SERVICE_CONTENTS);
-      const result = await findExtraGatewayServices({ HOME: tmpHome });
-      expect(result).toEqual([]);
-    } finally {
-      await fs.rm(tmpHome, { recursive: true, force: true });
-    }
-  });
+  it.skipIf(!isLinux)(
+    "does not report the canonical remoteclaw-gateway.service as an extra service",
+    async () => {
+      const tmpHome = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-test-"));
+      const systemdDir = path.join(tmpHome, ".config", "systemd", "user");
+      try {
+        await fs.mkdir(systemdDir, { recursive: true });
+        await fs.writeFile(
+          path.join(systemdDir, "remoteclaw-gateway.service"),
+          GATEWAY_SERVICE_CONTENTS,
+        );
+        const result = await findExtraGatewayServices({ HOME: tmpHome });
+        expect(result).toEqual([]);
+      } finally {
+        await fs.rm(tmpHome, { recursive: true, force: true });
+      }
+    },
+  );
 
-  it.skipIf(!isLinux)("reports a legacy clawdbot-gateway service as an extra gateway service", async () => {
-    const tmpHome = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-test-"));
-    const systemdDir = path.join(tmpHome, ".config", "systemd", "user");
-    const unitPath = path.join(systemdDir, "clawdbot-gateway.service");
-    try {
-      await fs.mkdir(systemdDir, { recursive: true });
-      await fs.writeFile(unitPath, CLAWDBOT_GATEWAY_CONTENTS);
-      const result = await findExtraGatewayServices({ HOME: tmpHome });
-      expect(result).toEqual([
-        {
-          platform: "linux",
-          label: "clawdbot-gateway.service",
-          detail: `unit: ${unitPath}`,
-          scope: "user",
-          marker: "clawdbot",
-          legacy: true,
-        },
-      ]);
-    } finally {
-      await fs.rm(tmpHome, { recursive: true, force: true });
-    }
-  });
+  it.skipIf(!isLinux)(
+    "reports a legacy clawdbot-gateway service as an extra gateway service",
+    async () => {
+      const tmpHome = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-test-"));
+      const systemdDir = path.join(tmpHome, ".config", "systemd", "user");
+      const unitPath = path.join(systemdDir, "clawdbot-gateway.service");
+      try {
+        await fs.mkdir(systemdDir, { recursive: true });
+        await fs.writeFile(unitPath, CLAWDBOT_GATEWAY_CONTENTS);
+        const result = await findExtraGatewayServices({ HOME: tmpHome });
+        expect(result).toEqual([
+          {
+            platform: "linux",
+            label: "clawdbot-gateway.service",
+            detail: `unit: ${unitPath}`,
+            scope: "user",
+            marker: "clawdbot",
+            legacy: true,
+          },
+        ]);
+      } finally {
+        await fs.rm(tmpHome, { recursive: true, force: true });
+      }
+    },
+  );
 });
 
 describe("findExtraGatewayServices (win32)", () => {

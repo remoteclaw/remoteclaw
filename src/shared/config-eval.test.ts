@@ -71,8 +71,12 @@ describe("config-eval helpers", () => {
       },
     };
 
-    expect(isConfigPathTruthyWithDefaults(config, "browser.enabled", { "browser.enabled": true })).toBe(false);
-    expect(isConfigPathTruthyWithDefaults(config, "browser.missing", { "browser.missing": true })).toBe(true);
+    expect(
+      isConfigPathTruthyWithDefaults(config, "browser.enabled", { "browser.enabled": true }),
+    ).toBe(false);
+    expect(
+      isConfigPathTruthyWithDefaults(config, "browser.missing", { "browser.missing": true }),
+    ).toBe(true);
     expect(isConfigPathTruthyWithDefaults(config, "browser.other", {})).toBe(false);
   });
 

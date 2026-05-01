@@ -93,7 +93,9 @@ export function resolveMSTeamsRouteConfig(params: {
   };
 }
 
-export function resolveMSTeamsGroupToolPolicy(params: ChannelGroupContext): GroupToolPolicyConfig | undefined {
+export function resolveMSTeamsGroupToolPolicy(
+  params: ChannelGroupContext,
+): GroupToolPolicyConfig | undefined {
   const cfg = params.cfg.channels?.msteams;
   if (!cfg) {
     return undefined;
@@ -234,9 +236,12 @@ export function resolveMSTeamsReplyPolicy(params: {
     true;
 
   const explicitReplyStyle =
-    params.channelConfig?.replyStyle ?? params.teamConfig?.replyStyle ?? params.globalConfig?.replyStyle;
+    params.channelConfig?.replyStyle ??
+    params.teamConfig?.replyStyle ??
+    params.globalConfig?.replyStyle;
 
-  const replyStyle: MSTeamsReplyStyle = explicitReplyStyle ?? (requireMention ? "thread" : "top-level");
+  const replyStyle: MSTeamsReplyStyle =
+    explicitReplyStyle ?? (requireMention ? "thread" : "top-level");
 
   return { requireMention, replyStyle };
 }

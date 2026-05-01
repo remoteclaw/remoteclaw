@@ -3,7 +3,11 @@ import os from "node:os";
 import path from "node:path";
 import { CURRENT_SESSION_VERSION } from "../../config/sessions/constants.js";
 
-export function createTranscriptFixtureSync(params: { prefix: string; sessionId: string; fileName?: string }) {
+export function createTranscriptFixtureSync(params: {
+  prefix: string;
+  sessionId: string;
+  fileName?: string;
+}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), params.prefix));
   const transcriptPath = path.join(dir, params.fileName ?? "sess.jsonl");
   fs.writeFileSync(

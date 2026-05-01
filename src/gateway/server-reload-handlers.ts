@@ -7,7 +7,11 @@ import type { loadConfig } from "../config/config.js";
 import { isTruthyEnvValue } from "../infra/env.js";
 import type { HeartbeatRunner } from "../infra/heartbeat-runner.js";
 import { resetDirectoryCache } from "../infra/outbound/target-resolver.js";
-import { deferGatewayRestartUntilIdle, emitGatewayRestart, setGatewaySigusr1RestartPolicy } from "../infra/restart.js";
+import {
+  deferGatewayRestartUntilIdle,
+  emitGatewayRestart,
+  setGatewaySigusr1RestartPolicy,
+} from "../infra/restart.js";
 import { setCommandLaneConcurrency, getTotalQueueSize } from "../process/command-queue.js";
 import { CommandLane } from "../process/lanes.js";
 import type { ChannelHealthMonitor } from "./channel-health-monitor.js";
@@ -43,7 +47,10 @@ export function createGatewayReloadHandlers(params: {
   logReload: { info: (msg: string) => void; warn: (msg: string) => void };
   createHealthMonitor: (checkIntervalMs: number) => ChannelHealthMonitor;
 }) {
-  const applyHotReload = async (plan: GatewayReloadPlan, nextConfig: ReturnType<typeof loadConfig>) => {
+  const applyHotReload = async (
+    plan: GatewayReloadPlan,
+    nextConfig: ReturnType<typeof loadConfig>,
+  ) => {
     setGatewaySigusr1RestartPolicy({ allowExternal: isRestartEnabled(nextConfig) });
     const state = params.getState();
     const nextState = { ...state };
@@ -69,7 +76,9 @@ export function createGatewayReloadHandlers(params: {
         deps: params.deps,
         broadcast: params.broadcast,
       });
-      void nextState.cronState.cron.start().catch((err) => params.logCron.error(`failed to start: ${String(err)}`));
+      void nextState.cronState.cron
+        .start()
+        .catch((err) => params.logCron.error(`failed to start: ${String(err)}`));
     }
 
     if (plan.restartBrowserControl) {
@@ -86,7 +95,8 @@ export function createGatewayReloadHandlers(params: {
     if (plan.restartHealthMonitor) {
       state.channelHealthMonitor?.stop();
       const minutes = nextConfig.gateway?.channelHealthCheckMinutes;
-      nextState.channelHealthMonitor = minutes === 0 ? null : params.createHealthMonitor((minutes ?? 5) * 60_000);
+      nextState.channelHealthMonitor =
+        minutes === 0 ? null : params.createHealthMonitor((minutes ?? 5) * 60_000);
     }
 
     if (plan.restartChannels.size > 0) {
@@ -94,7 +104,9 @@ export function createGatewayReloadHandlers(params: {
         isTruthyEnvValue(process.env.REMOTECLAW_SKIP_CHANNELS) ||
         isTruthyEnvValue(process.env.REMOTECLAW_SKIP_PROVIDERS)
       ) {
-        params.logChannels.info("skipping channel reload (REMOTECLAW_SKIP_CHANNELS=1 or REMOTECLAW_SKIP_PROVIDERS=1)");
+        params.logChannels.info(
+          "skipping channel reload (REMOTECLAW_SKIP_CHANNELS=1 or REMOTECLAW_SKIP_PROVIDERS=1)",
+        );
       } else {
         const restartChannel = async (name: ChannelKind) => {
           params.logChannels.info(`restarting ${name} channel`);
@@ -122,9 +134,14 @@ export function createGatewayReloadHandlers(params: {
 
   let restartPending = false;
 
-  const requestGatewayRestart = (plan: GatewayReloadPlan, nextConfig: ReturnType<typeof loadConfig>) => {
+  const requestGatewayRestart = (
+    plan: GatewayReloadPlan,
+    nextConfig: ReturnType<typeof loadConfig>,
+  ) => {
     setGatewaySigusr1RestartPolicy({ allowExternal: isRestartEnabled(nextConfig) });
-    const reasons = plan.restartReasons.length ? plan.restartReasons.join(", ") : plan.changedPaths.join(", ");
+    const reasons = plan.restartReasons.length
+      ? plan.restartReasons.join(", ")
+      : plan.changedPaths.join(", ");
 
     if (process.listenerCount("SIGUSR1") === 0) {
       params.logReload.warn("no SIGUSR1 listener found; restart skipped");
@@ -188,7 +205,9 @@ export function createGatewayReloadHandlers(params: {
           },
           onCheckError: (err) => {
             restartPending = false;
-            params.logReload.warn(`restart deferral check failed (${String(err)}); restarting gateway now`);
+            params.logReload.warn(
+              `restart deferral check failed (${String(err)}); restarting gateway now`,
+            );
           },
         },
       });

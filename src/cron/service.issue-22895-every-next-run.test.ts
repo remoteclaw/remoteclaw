@@ -29,7 +29,10 @@ describe("Cron issue #22895 interval scheduling", () => {
     });
 
     const nextFromLast = computeJobNextRunAtMs(job, nowMs);
-    const nextFromAnchor = computeJobNextRunAtMs({ ...job, state: { ...job.state, lastRunAtMs: undefined } }, nowMs);
+    const nextFromAnchor = computeJobNextRunAtMs(
+      { ...job, state: { ...job.state, lastRunAtMs: undefined } },
+      nowMs,
+    );
 
     expect(nextFromLast).toBe(job.state.lastRunAtMs! + EVERY_30_MIN_MS);
     expect(nextFromAnchor).toBe(Date.parse("2026-02-22T10:14:00.000Z"));

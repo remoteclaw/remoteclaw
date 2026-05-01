@@ -3,10 +3,17 @@ import type { PluginRuntime } from "../plugins/runtime/types.js";
 import { normalizeAccountId } from "../routing/session-key.js";
 
 type PairingApi = PluginRuntime["channel"]["pairing"];
-type ScopedUpsertInput = Omit<Parameters<PairingApi["upsertPairingRequest"]>[0], "channel" | "accountId">;
+type ScopedUpsertInput = Omit<
+  Parameters<PairingApi["upsertPairingRequest"]>[0],
+  "channel" | "accountId"
+>;
 
 /** Scope pairing store operations to one channel/account pair for plugin-facing helpers. */
-export function createScopedPairingAccess(params: { core: PluginRuntime; channel: ChannelId; accountId: string }) {
+export function createScopedPairingAccess(params: {
+  core: PluginRuntime;
+  channel: ChannelId;
+  accountId: string;
+}) {
   const resolvedAccountId = normalizeAccountId(params.accountId);
   return {
     accountId: resolvedAccountId,

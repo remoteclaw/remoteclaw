@@ -127,7 +127,9 @@ const sidebarIcons = {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <circle cx="12" cy="12" r="10"></circle>
       <line x1="2" y1="12" x2="22" y2="12"></line>
-      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+      <path
+        d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
+      ></path>
     </svg>
   `,
   // Additional sections
@@ -213,7 +215,9 @@ const sidebarIcons = {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <circle cx="12" cy="12" r="10"></circle>
       <line x1="2" y1="12" x2="22" y2="12"></line>
-      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+      <path
+        d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
+      ></path>
     </svg>
   `,
   discovery: html`
@@ -390,7 +394,9 @@ export function renderConfig(props: ConfigProps) {
     props.activeSection && analysis.schema && schemaType(analysis.schema) === "object"
       ? analysis.schema.properties?.[props.activeSection]
       : undefined;
-  const activeSectionMeta = props.activeSection ? resolveSectionMeta(props.activeSection, activeSectionSchema) : null;
+  const activeSectionMeta = props.activeSection
+    ? resolveSectionMeta(props.activeSection, activeSectionSchema)
+    : null;
   const subsections = props.activeSection
     ? resolveSubsections({
         key: props.activeSection,
@@ -398,7 +404,8 @@ export function renderConfig(props: ConfigProps) {
         uiHints: props.uiHints,
       })
     : [];
-  const allowSubnav = props.formMode === "form" && Boolean(props.activeSection) && subsections.length > 0;
+  const allowSubnav =
+    props.formMode === "form" && Boolean(props.activeSection) && subsections.length > 0;
   const isAllSubsection = props.activeSubsection === ALL_SUBSECTION;
   const effectiveSubsection = props.searchQuery
     ? null
@@ -414,7 +421,11 @@ export function renderConfig(props: ConfigProps) {
   // Save/apply buttons require actual changes to be enabled.
   // Note: formUnsafe warns about unsupported schema paths but shouldn't block saving.
   const canSaveForm = Boolean(props.formValue) && !props.loading && Boolean(analysis.schema);
-  const canSave = props.connected && !props.saving && hasChanges && (props.formMode === "raw" ? true : canSaveForm);
+  const canSave =
+    props.connected &&
+    !props.saving &&
+    hasChanges &&
+    (props.formMode === "raw" ? true : canSaveForm);
   const canApply =
     props.connected &&
     !props.applying &&
@@ -482,7 +493,10 @@ export function renderConfig(props: ConfigProps) {
                         <div class="config-search__tag-chips">
                           ${Array.from(selectedTags)
                             .slice(0, 2)
-                            .map((tag) => html`<span class="config-search__tag-chip">tag:${tag}</span>`)}
+                            .map(
+                              (tag) =>
+                                html`<span class="config-search__tag-chip">tag:${tag}</span>`,
+                            )}
                           ${
                             selectedTags.size > 2
                               ? html`

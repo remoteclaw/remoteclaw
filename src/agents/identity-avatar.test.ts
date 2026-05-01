@@ -11,7 +11,11 @@ async function writeFile(filePath: string, contents = "avatar") {
   await fs.writeFile(filePath, contents, "utf-8");
 }
 
-async function expectLocalAvatarPath(cfg: RemoteClawConfig, workspace: string, expectedRelativePath: string) {
+async function expectLocalAvatarPath(
+  cfg: RemoteClawConfig,
+  workspace: string,
+  expectedRelativePath: string,
+) {
   const workspaceReal = await fs.realpath(workspace);
   const resolved = resolveAgentAvatar(cfg, "main");
   expect(resolved.kind).toBe("local");
@@ -30,7 +34,11 @@ async function createTempAvatarRoot() {
 }
 
 afterEach(async () => {
-  await Promise.all(tempRoots.splice(0, tempRoots.length).map((root) => fs.rm(root, { recursive: true, force: true })));
+  await Promise.all(
+    tempRoots
+      .splice(0, tempRoots.length)
+      .map((root) => fs.rm(root, { recursive: true, force: true })),
+  );
 });
 
 describe("resolveAgentAvatar", () => {

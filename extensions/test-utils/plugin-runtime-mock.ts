@@ -106,7 +106,10 @@ export function createPluginRuntimeMock(overrides: DeepPartial<PluginRuntime> = 
       },
       debounce: {
         createInboundDebouncer: vi.fn(
-          (params: { onFlush: (items: unknown[]) => Promise<void>; onError?: (err: unknown) => void }) => ({
+          (params: {
+            onFlush: (items: unknown[]) => Promise<void>;
+            onError?: (err: unknown) => void;
+          }) => ({
             enqueue: vi.fn(async (item: unknown) => {
               try {
                 await params.onFlush([item]);

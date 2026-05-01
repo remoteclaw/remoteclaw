@@ -3,7 +3,12 @@ import { parseByteSize } from "../cli/parse-bytes.js";
 import { parseDurationMs } from "../cli/parse-duration.js";
 import { ToolsSchema } from "./zod-schema.agent-runtime.js";
 import { AgentsSchema, AudioSchema, BindingsSchema, BroadcastSchema } from "./zod-schema.agents.js";
-import { HexColorSchema, ModelsConfigSchema, SecretInputSchema, SecretsConfigSchema } from "./zod-schema.core.js";
+import {
+  HexColorSchema,
+  ModelsConfigSchema,
+  SecretInputSchema,
+  SecretsConfigSchema,
+} from "./zod-schema.core.js";
 import { HookMappingSchema, InternalHooksSchema } from "./zod-schema.hooks.js";
 import { InstallRecordShape } from "./zod-schema.installs.js";
 import { ChannelsSchema } from "./zod-schema.providers.js";
@@ -156,7 +161,9 @@ export const RemoteClawSchema = z
         file: z.string().optional(),
         maxFileBytes: z.number().int().positive().optional(),
         consoleLevel: LoggingLevelSchema.optional(),
-        consoleStyle: z.union([z.literal("pretty"), z.literal("compact"), z.literal("json")]).optional(),
+        consoleStyle: z
+          .union([z.literal("pretty"), z.literal("compact"), z.literal("json")])
+          .optional(),
         redactSensitive: z.union([z.literal("off"), z.literal("tools")]).optional(),
         redactPatterns: z.array(z.string()).optional(),
       })
@@ -166,7 +173,9 @@ export const RemoteClawSchema = z
       .object({
         banner: z
           .object({
-            taglineMode: z.union([z.literal("random"), z.literal("default"), z.literal("off")]).optional(),
+            taglineMode: z
+              .union([z.literal("random"), z.literal("default"), z.literal("off")])
+              .optional(),
           })
           .strict()
           .optional(),
@@ -175,7 +184,9 @@ export const RemoteClawSchema = z
       .optional(),
     update: z
       .object({
-        channel: z.union([z.literal("stable"), z.literal("beta"), z.literal("next"), z.literal("dev")]).optional(),
+        channel: z
+          .union([z.literal("stable"), z.literal("beta"), z.literal("next"), z.literal("dev")])
+          .optional(),
         checkOnStart: z.boolean().optional(),
         auto: z
           .object({
@@ -215,7 +226,9 @@ export const RemoteClawSchema = z
           .optional(),
         profiles: z
           .record(
-            z.string().regex(/^[a-z0-9-]+$/, "Profile names must be alphanumeric with hyphens only"),
+            z
+              .string()
+              .regex(/^[a-z0-9-]+$/, "Profile names must be alphanumeric with hyphens only"),
             z
               .object({
                 cdpPort: z.number().int().min(1).max(65535).optional(),
@@ -296,7 +309,12 @@ export const RemoteClawSchema = z
             repeatSuppression: z.boolean().optional(),
             deliveryMode: z.union([z.literal("live"), z.literal("final_only")]).optional(),
             hiddenBoundarySeparator: z
-              .union([z.literal("none"), z.literal("space"), z.literal("newline"), z.literal("paragraph")])
+              .union([
+                z.literal("none"),
+                z.literal("space"),
+                z.literal("newline"),
+                z.literal("paragraph"),
+              ])
               .optional(),
             maxOutputChars: z.number().int().positive().optional(),
             maxSessionUpdateChars: z.number().int().positive().optional(),
@@ -321,7 +339,9 @@ export const RemoteClawSchema = z
     bindings: BindingsSchema,
     routing: z
       .object({
-        unmatched: z.union([z.literal("reject"), z.object({ agent: z.string() }).strict()]).optional(),
+        unmatched: z
+          .union([z.literal("reject"), z.object({ agent: z.string() }).strict()])
+          .optional(),
       })
       .strict()
       .optional(),
@@ -551,7 +571,12 @@ export const RemoteClawSchema = z
         auth: z
           .object({
             mode: z
-              .union([z.literal("none"), z.literal("token"), z.literal("password"), z.literal("trusted-proxy")])
+              .union([
+                z.literal("none"),
+                z.literal("token"),
+                z.literal("password"),
+                z.literal("trusted-proxy"),
+              ])
               .optional(),
             token: SecretInputSchema.optional().register(sensitive),
             password: SecretInputSchema.optional().register(sensitive),
@@ -608,7 +633,14 @@ export const RemoteClawSchema = z
           .optional(),
         reload: z
           .object({
-            mode: z.union([z.literal("off"), z.literal("restart"), z.literal("hot"), z.literal("hybrid")]).optional(),
+            mode: z
+              .union([
+                z.literal("off"),
+                z.literal("restart"),
+                z.literal("hot"),
+                z.literal("hybrid"),
+              ])
+              .optional(),
             debounceMs: z.number().int().min(0).optional(),
             deferralTimeoutMs: z.number().int().min(0).optional(),
           })
@@ -638,7 +670,9 @@ export const RemoteClawSchema = z
           .object({
             browser: z
               .object({
-                mode: z.union([z.literal("auto"), z.literal("manual"), z.literal("off")]).optional(),
+                mode: z
+                  .union([z.literal("auto"), z.literal("manual"), z.literal("off")])
+                  .optional(),
                 node: z.string().optional(),
               })
               .strict()
@@ -665,7 +699,9 @@ export const RemoteClawSchema = z
         install: z
           .object({
             preferBrew: z.boolean().optional(),
-            nodeManager: z.union([z.literal("npm"), z.literal("pnpm"), z.literal("yarn"), z.literal("bun")]).optional(),
+            nodeManager: z
+              .union([z.literal("npm"), z.literal("pnpm"), z.literal("yarn"), z.literal("bun")])
+              .optional(),
           })
           .strict()
           .optional(),

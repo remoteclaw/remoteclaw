@@ -63,9 +63,14 @@ type CompiledSenderPolicy = {
 };
 
 const warnedLegacyToolsBySenderKeys = new Set<string>();
-const compiledToolsBySenderCache = new WeakMap<GroupToolPolicyBySenderConfig, CompiledSenderPolicy>();
+const compiledToolsBySenderCache = new WeakMap<
+  GroupToolPolicyBySenderConfig,
+  CompiledSenderPolicy
+>();
 
-type ParsedSenderPolicyKey = { kind: "wildcard" } | { kind: "typed"; type: SenderKeyType; key: string };
+type ParsedSenderPolicyKey =
+  | { kind: "wildcard" }
+  | { kind: "typed"; type: SenderKeyType; key: string };
 
 type SenderPolicyBuckets = Record<ToolsBySenderKeyType, Map<string, GroupToolPolicyConfig>>;
 
@@ -153,7 +158,9 @@ function createSenderPolicyBuckets(): SenderPolicyBuckets {
   };
 }
 
-function compileToolsBySenderPolicy(toolsBySender: GroupToolPolicyBySenderConfig): CompiledSenderPolicy | undefined {
+function compileToolsBySenderPolicy(
+  toolsBySender: GroupToolPolicyBySenderConfig,
+): CompiledSenderPolicy | undefined {
   const entries = Object.entries(toolsBySender);
   if (entries.length === 0) {
     return undefined;
@@ -308,7 +315,10 @@ function resolveChannelGroupPolicyMode(
   if (!channelConfig) {
     return undefined;
   }
-  const accountPolicy = resolveAccountEntry(channelConfig.accounts, normalizedAccountId)?.groupPolicy;
+  const accountPolicy = resolveAccountEntry(
+    channelConfig.accounts,
+    normalizedAccountId,
+  )?.groupPolicy;
   return accountPolicy ?? channelConfig.groupPolicy;
 }
 
@@ -334,9 +344,12 @@ export function resolveChannelGroupPolicy(params: {
   const allowAll = allowlistEnabled && Boolean(groups && Object.hasOwn(groups, "*"));
   // When groupPolicy is "allowlist" with groupAllowFrom but no explicit groups,
   // allow the group through — sender-level filtering handles access control.
-  const senderFilterBypass = groupPolicy === "allowlist" && !hasGroups && Boolean(params.hasGroupAllowFrom);
+  const senderFilterBypass =
+    groupPolicy === "allowlist" && !hasGroups && Boolean(params.hasGroupAllowFrom);
   const allowed =
-    groupPolicy === "disabled" ? false : !allowlistEnabled || allowAll || Boolean(groupConfig) || senderFilterBypass;
+    groupPolicy === "disabled"
+      ? false
+      : !allowlistEnabled || allowAll || Boolean(groupConfig) || senderFilterBypass;
   return {
     allowlistEnabled,
     allowed,

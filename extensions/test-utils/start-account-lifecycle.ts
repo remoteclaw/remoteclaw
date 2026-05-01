@@ -1,4 +1,7 @@
-import type { ChannelAccountSnapshot, ChannelGatewayContext } from "remoteclaw/plugin-sdk/test-utils";
+import type {
+  ChannelAccountSnapshot,
+  ChannelGatewayContext,
+} from "remoteclaw/plugin-sdk/test-utils";
 import { expect, vi } from "vitest";
 import { createStartAccountContext } from "./start-account-context.js";
 
@@ -27,7 +30,10 @@ export function startAccountAndTrackLifecycle<TAccount extends { accountId: stri
   };
 }
 
-export async function abortStartedAccount(params: { abort: AbortController; task: Promise<unknown> }) {
+export async function abortStartedAccount(params: {
+  abort: AbortController;
+  task: Promise<unknown>;
+}) {
   params.abort.abort();
   await params.task;
 }

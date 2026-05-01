@@ -29,15 +29,21 @@ describe("media store", () => {
     vi.restoreAllMocks();
   });
 
-  async function withTempStore<T>(fn: (store: typeof import("./store.js"), home: string) => Promise<T>): Promise<T> {
+  async function withTempStore<T>(
+    fn: (store: typeof import("./store.js"), home: string) => Promise<T>,
+  ): Promise<T> {
     return await fn(store, home);
   }
 
-  async function expectOriginalFilenameCase(params: { filename: string; expected: string; basePath?: string }) {
+  async function expectOriginalFilenameCase(params: {
+    filename: string;
+    expected: string;
+    basePath?: string;
+  }) {
     await withTempStore(async (store) => {
-      expect(store.extractOriginalFilename(`${params.basePath ?? "/path/to"}/${params.filename}`)).toBe(
-        params.expected,
-      );
+      expect(
+        store.extractOriginalFilename(`${params.basePath ?? "/path/to"}/${params.filename}`),
+      ).toBe(params.expected);
     });
   }
 
@@ -152,7 +158,10 @@ describe("media store", () => {
     contentType?: string;
     expectedContentType: string;
     expectedExtension: string;
-    assertSaved?: (saved: Awaited<ReturnType<typeof store.saveMediaBuffer>>, buffer: Buffer) => Promise<void> | void;
+    assertSaved?: (
+      saved: Awaited<ReturnType<typeof store.saveMediaBuffer>>,
+      buffer: Buffer,
+    ) => Promise<void> | void;
   }) {
     await withTempStore(async (store) => {
       const saved = await store.saveMediaBuffer(params.buffer, params.contentType);
@@ -183,7 +192,10 @@ describe("media store", () => {
 
   async function createSymlinkSource(home: string) {
     const target = path.join(home, "sensitive.txt");
-    const source = path.join(home, `source-${Date.now()}-${Math.random().toString(16).slice(2)}.txt`);
+    const source = path.join(
+      home,
+      `source-${Date.now()}-${Math.random().toString(16).slice(2)}.txt`,
+    );
     await fs.writeFile(target, "sensitive");
     await fs.rm(source, { force: true });
     await fs.symlink(target, source);
@@ -306,7 +318,10 @@ describe("media store", () => {
       contentType: "text/plain",
       expectedContentType: "text/plain",
       expectedExtension: ".txt",
-      assertSaved: async (saved: Awaited<ReturnType<typeof store.saveMediaBuffer>>, buffer: Buffer) => {
+      assertSaved: async (
+        saved: Awaited<ReturnType<typeof store.saveMediaBuffer>>,
+        buffer: Buffer,
+      ) => {
         const savedStat = await fs.stat(saved.path);
         expect(savedStat.size).toBe(buffer.length);
       },
@@ -326,7 +341,9 @@ describe("media store", () => {
     },
   ] as const)("$name", async (testCase) => {
     const buffer =
-      "bufferFactory" in testCase && testCase.bufferFactory ? await testCase.bufferFactory() : testCase.buffer;
+      "bufferFactory" in testCase && testCase.bufferFactory
+        ? await testCase.bufferFactory()
+        : testCase.buffer;
     await expectSavedBufferCase({
       buffer,
       contentType: testCase.contentType,
@@ -370,7 +387,11 @@ describe("media store", () => {
           "text/plain",
           path.join("remote-cache", "session-1", "docs"),
         );
-        const oldFlat = await store.saveMediaBuffer(Buffer.from("old flat"), "text/plain", "inbound");
+        const oldFlat = await store.saveMediaBuffer(
+          Buffer.from("old flat"),
+          "text/plain",
+          "inbound",
+        );
         const past = Date.now() - 10_000;
         await fs.utimes(oldNested.path, past / 1000, past / 1000);
         await fs.utimes(oldFlat.path, past / 1000, past / 1000);
@@ -472,7 +493,10 @@ describe("media store", () => {
       },
       expectedContentType: "image/png",
       expectedExtension: ".png",
-      assertSaved: async (saved: Awaited<ReturnType<typeof store.saveMediaSource>>, contents: Buffer) => {
+      assertSaved: async (
+        saved: Awaited<ReturnType<typeof store.saveMediaSource>>,
+        contents: Buffer,
+      ) => {
         const buf = await fs.readFile(saved.path);
         expect(buf.equals(contents)).toBe(true);
       },
@@ -495,7 +519,9 @@ describe("media store", () => {
     },
   ] as const)("$name", async (testCase) => {
     const contents =
-      "contentsFactory" in testCase && testCase.contentsFactory ? await testCase.contentsFactory() : testCase.contents;
+      "contentsFactory" in testCase && testCase.contentsFactory
+        ? await testCase.contentsFactory()
+        : testCase.contents;
     await expectSavedSourceCase({
       relativeSourcePath: testCase.relativeSourcePath,
       contents,
@@ -522,7 +548,10 @@ describe("media store", () => {
 
       try {
         const storeWithMock = await import("./store.js");
-        const saved = await storeWithMock.saveMediaBuffer(Buffer.from("fake-audio"), "audio/ogg; codecs=opus");
+        const saved = await storeWithMock.saveMediaBuffer(
+          Buffer.from("fake-audio"),
+          "audio/ogg; codecs=opus",
+        );
         expect(path.extname(saved.path)).toBe(".ogg");
         expect(saved.path.startsWith(home)).toBe(true);
       } finally {

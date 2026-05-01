@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { __resetDiscordDirectoryCacheForTest, rememberDiscordDirectoryUser } from "./directory-cache.js";
+import {
+  __resetDiscordDirectoryCacheForTest,
+  rememberDiscordDirectoryUser,
+} from "./directory-cache.js";
 import { formatMention, rewriteDiscordKnownMentions } from "./mentions.js";
 
 describe("formatMention", () => {
@@ -59,9 +62,12 @@ describe("rewriteDiscordKnownMentions", () => {
       userId: "123456789",
       handles: ["alice"],
     });
-    const rewritten = rewriteDiscordKnownMentions("inline `@alice` fence ```\n@alice\n``` text @alice", {
-      accountId: "default",
-    });
+    const rewritten = rewriteDiscordKnownMentions(
+      "inline `@alice` fence ```\n@alice\n``` text @alice",
+      {
+        accountId: "default",
+      },
+    );
     expect(rewritten).toBe("inline `@alice` fence ```\n@alice\n``` text <@123456789>");
   });
 

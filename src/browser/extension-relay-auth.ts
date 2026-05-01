@@ -21,7 +21,8 @@ function trimToUndefined(value: unknown): string | undefined {
 }
 
 async function resolveGatewayAuthToken(): Promise<string | null> {
-  const envToken = process.env.REMOTECLAW_GATEWAY_TOKEN?.trim() || process.env.CLAWDBOT_GATEWAY_TOKEN?.trim();
+  const envToken =
+    process.env.REMOTECLAW_GATEWAY_TOKEN?.trim() || process.env.CLAWDBOT_GATEWAY_TOKEN?.trim();
   if (envToken) {
     return envToken;
   }
@@ -69,7 +70,9 @@ function deriveRelayAuthToken(gatewayToken: string, port: number): string {
 export async function resolveRelayAcceptedTokensForPort(port: number): Promise<string[]> {
   const gatewayToken = await resolveGatewayAuthToken();
   if (!gatewayToken) {
-    throw new Error("extension relay requires gateway auth token (set gateway.auth.token or REMOTECLAW_GATEWAY_TOKEN)");
+    throw new Error(
+      "extension relay requires gateway auth token (set gateway.auth.token or REMOTECLAW_GATEWAY_TOKEN)",
+    );
   }
   const relayToken = deriveRelayAuthToken(gatewayToken, port);
   if (relayToken === gatewayToken) {

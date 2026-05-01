@@ -150,13 +150,17 @@ export async function deliverSlackSlashReplies(params: {
     const textRaw = payload.text?.trim() ?? "";
     const text = textRaw && !isSilentReplyText(textRaw, SILENT_REPLY_TOKEN) ? textRaw : undefined;
     const mediaList = payload.mediaUrls ?? (payload.mediaUrl ? [payload.mediaUrl] : []);
-    const combined = [text ?? "", ...mediaList.map((url) => url.trim()).filter(Boolean)].filter(Boolean).join("\n");
+    const combined = [text ?? "", ...mediaList.map((url) => url.trim()).filter(Boolean)]
+      .filter(Boolean)
+      .join("\n");
     if (!combined) {
       continue;
     }
     const chunkMode = params.chunkMode ?? "length";
     const markdownChunks =
-      chunkMode === "newline" ? chunkMarkdownTextWithMode(combined, chunkLimit, chunkMode) : [combined];
+      chunkMode === "newline"
+        ? chunkMarkdownTextWithMode(combined, chunkLimit, chunkMode)
+        : [combined];
     const chunks = markdownChunks.flatMap((markdown) =>
       markdownToSlackMrkdwnChunks(markdown, chunkLimit, { tableMode: params.tableMode }),
     );

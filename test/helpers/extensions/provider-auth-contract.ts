@@ -10,13 +10,16 @@ import type {
   WizardSelectParams,
 } from "../../../src/wizard/prompts.js";
 
-type LoginOpenAICodexOAuth = (typeof import("remoteclaw/plugin-sdk/provider-auth-login"))["loginOpenAICodexOAuth"];
+type LoginOpenAICodexOAuth =
+  (typeof import("remoteclaw/plugin-sdk/provider-auth-login"))["loginOpenAICodexOAuth"];
 type GithubCopilotLoginCommand =
   (typeof import("remoteclaw/plugin-sdk/provider-auth-login"))["githubCopilotLoginCommand"];
 type CreateVpsAwareHandlers =
   (typeof import("../../../src/plugins/provider-oauth-flow.js"))["createVpsAwareOAuthHandlers"];
-type EnsureAuthProfileStore = typeof import("remoteclaw/plugin-sdk/provider-auth").ensureAuthProfileStore;
-type ListProfilesForProvider = typeof import("remoteclaw/plugin-sdk/provider-auth").listProfilesForProvider;
+type EnsureAuthProfileStore =
+  typeof import("remoteclaw/plugin-sdk/provider-auth").ensureAuthProfileStore;
+type ListProfilesForProvider =
+  typeof import("remoteclaw/plugin-sdk/provider-auth").listProfilesForProvider;
 
 const loginOpenAICodexOAuthMock = vi.hoisted(() => vi.fn<LoginOpenAICodexOAuth>());
 const githubCopilotLoginCommandMock = vi.hoisted(() => vi.fn<GithubCopilotLoginCommand>());
@@ -239,7 +242,9 @@ export function describeOpenAICodexProviderAuthContract() {
         iss: "https://accounts.openai.com",
         sub: "user-abc",
       });
-      const expectedStableId = Buffer.from("https://accounts.openai.com|user-abc").toString("base64url");
+      const expectedStableId = Buffer.from("https://accounts.openai.com|user-abc").toString(
+        "base64url",
+      );
       await expectStableFallbackProfile({
         access,
         profileId: `openai-codex:id-${expectedStableId}`,

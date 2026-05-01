@@ -1,7 +1,11 @@
 import { readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
-export type WindowsSpawnResolution = "direct" | "node-entrypoint" | "exe-entrypoint" | "shell-fallback";
+export type WindowsSpawnResolution =
+  | "direct"
+  | "node-entrypoint"
+  | "exe-entrypoint"
+  | "shell-fallback";
 
 export type WindowsSpawnCandidateResolution = Exclude<WindowsSpawnResolution, "shell-fallback">;
 export type WindowsSpawnProgramCandidate = {
@@ -35,7 +39,10 @@ export type ResolveWindowsSpawnProgramParams = {
   packageName?: string;
   allowShellFallback?: boolean;
 };
-export type ResolveWindowsSpawnProgramCandidateParams = Omit<ResolveWindowsSpawnProgramParams, "allowShellFallback">;
+export type ResolveWindowsSpawnProgramCandidateParams = Omit<
+  ResolveWindowsSpawnProgramParams,
+  "allowShellFallback"
+>;
 
 function isFilePath(candidate: string): boolean {
   try {
@@ -57,7 +64,12 @@ export function resolveWindowsExecutablePath(command: string, env: NodeJS.Proces
     .map((entry) => entry.trim())
     .filter(Boolean);
   const hasExtension = path.extname(command).length > 0;
-  const pathExtRaw = env.PATHEXT ?? env.Pathext ?? process.env.PATHEXT ?? process.env.Pathext ?? ".EXE;.CMD;.BAT;.COM";
+  const pathExtRaw =
+    env.PATHEXT ??
+    env.Pathext ??
+    process.env.PATHEXT ??
+    process.env.Pathext ??
+    ".EXE;.CMD;.BAT;.COM";
   const pathExt = hasExtension
     ? [""]
     : pathExtRaw
@@ -138,7 +150,10 @@ function resolveBinEntry(
   return null;
 }
 
-function resolveEntrypointFromPackageJson(wrapperPath: string, packageName?: string): string | null {
+function resolveEntrypointFromPackageJson(
+  wrapperPath: string,
+  packageName?: string,
+): string | null {
   if (!packageName) {
     return null;
   }
@@ -264,7 +279,9 @@ export function applyWindowsSpawnProgramPolicy(params: {
 }
 
 /** Resolve the final Windows spawn program after candidate discovery and fallback policy. */
-export function resolveWindowsSpawnProgram(params: ResolveWindowsSpawnProgramParams): WindowsSpawnProgram {
+export function resolveWindowsSpawnProgram(
+  params: ResolveWindowsSpawnProgramParams,
+): WindowsSpawnProgram {
   const candidate = resolveWindowsSpawnProgramCandidate(params);
   return applyWindowsSpawnProgramPolicy({
     candidate,
@@ -273,7 +290,10 @@ export function resolveWindowsSpawnProgram(params: ResolveWindowsSpawnProgramPar
 }
 
 /** Combine a resolved Windows spawn program with call-site argv for actual process launch. */
-export function materializeWindowsSpawnProgram(program: WindowsSpawnProgram, argv: string[]): WindowsSpawnInvocation {
+export function materializeWindowsSpawnProgram(
+  program: WindowsSpawnProgram,
+  argv: string[],
+): WindowsSpawnInvocation {
   return {
     command: program.command,
     argv: [...program.leadingArgv, ...argv],

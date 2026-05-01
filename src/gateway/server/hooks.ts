@@ -7,7 +7,11 @@ import type { CronJob } from "../../cron/types.js";
 import { requestHeartbeatNow } from "../../infra/heartbeat-wake.js";
 import { enqueueSystemEvent } from "../../infra/system-events.js";
 import type { createSubsystemLogger } from "../../logging/subsystem.js";
-import { normalizeHookDispatchSessionKey, type HookAgentDispatchPayload, type HooksConfigResolved } from "../hooks.js";
+import {
+  normalizeHookDispatchSessionKey,
+  type HookAgentDispatchPayload,
+  type HooksConfigResolved,
+} from "../hooks.js";
 import { createHooksRequestHandler } from "../server-http.js";
 
 type SubsystemLogger = ReturnType<typeof createSubsystemLogger>;
@@ -73,7 +77,8 @@ export function createGatewayHooksRequestHandler(params: {
           lane: "cron",
         });
         const summary = result.summary?.trim() || result.error?.trim() || result.status;
-        const prefix = result.status === "ok" ? `Hook ${value.name}` : `Hook ${value.name} (${result.status})`;
+        const prefix =
+          result.status === "ok" ? `Hook ${value.name}` : `Hook ${value.name} (${result.status})`;
         if (!result.delivered) {
           enqueueSystemEvent(`${prefix}: ${summary}`.trim(), {
             sessionKey: mainSessionKey,

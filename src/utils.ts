@@ -3,7 +3,11 @@ import os from "node:os";
 import path from "node:path";
 import { resolveOAuthDir } from "./config/paths.js";
 import { logVerbose, shouldLogVerbose } from "./globals.js";
-import { resolveEffectiveHomeDir, resolveHomeRelativePath, resolveRequiredHomeDir } from "./infra/home-dir.js";
+import {
+  resolveEffectiveHomeDir,
+  resolveHomeRelativePath,
+  resolveRequiredHomeDir,
+} from "./infra/home-dir.js";
 import { isPlainObject } from "./infra/plain-object.js";
 
 export async function ensureDir(dir: string) {
@@ -278,7 +282,10 @@ export function resolveUserPath(
   return resolveHomeRelativePath(input, { env, homedir });
 }
 
-export function resolveConfigDir(env: NodeJS.ProcessEnv = process.env, homedir: () => string = os.homedir): string {
+export function resolveConfigDir(
+  env: NodeJS.ProcessEnv = process.env,
+  homedir: () => string = os.homedir,
+): string {
   const override = env.REMOTECLAW_STATE_DIR?.trim();
   if (override) {
     return resolveUserPath(override, env, homedir);
@@ -348,11 +355,16 @@ export function displayString(input: string): string {
   return shortenHomeInString(input);
 }
 
-export function formatTerminalLink(label: string, url: string, opts?: { fallback?: string; force?: boolean }): string {
+export function formatTerminalLink(
+  label: string,
+  url: string,
+  opts?: { fallback?: string; force?: boolean },
+): string {
   const esc = "\u001b";
   const safeLabel = label.replaceAll(esc, "");
   const safeUrl = url.replaceAll(esc, "");
-  const allow = opts?.force === true ? true : opts?.force === false ? false : Boolean(process.stdout.isTTY);
+  const allow =
+    opts?.force === true ? true : opts?.force === false ? false : Boolean(process.stdout.isTTY);
   if (!allow) {
     return opts?.fallback ?? `${safeLabel} (${safeUrl})`;
   }

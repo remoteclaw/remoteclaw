@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { evaluateChannelHealth, resolveChannelRestartReason } from "./channel-health-policy.js";
 
-function evaluateDiscordHealth(account: Record<string, unknown>, now = 100_000, channelId = "discord") {
+function evaluateDiscordHealth(
+  account: Record<string, unknown>,
+  now = 100_000,
+  channelId = "discord",
+) {
   return evaluateChannelHealth(account, {
     channelId,
     now,

@@ -34,14 +34,20 @@ export const talkHandlers: GatewayRequestHandlers = {
 
     const includeSecrets = Boolean((params as { includeSecrets?: boolean }).includeSecrets);
     if (includeSecrets && !canReadTalkSecrets(client)) {
-      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, `missing scope: ${TALK_SECRETS_SCOPE}`));
+      respond(
+        false,
+        undefined,
+        errorShape(ErrorCodes.INVALID_REQUEST, `missing scope: ${TALK_SECRETS_SCOPE}`),
+      );
       return;
     }
 
     const snapshot = await readConfigFileSnapshot();
     const configPayload: Record<string, unknown> = {};
 
-    const talkSource = includeSecrets ? snapshot.config.talk : redactConfigObject(snapshot.config.talk);
+    const talkSource = includeSecrets
+      ? snapshot.config.talk
+      : redactConfigObject(snapshot.config.talk);
     const talk = buildTalkConfigResponse(talkSource);
     if (talk) {
       configPayload.talk = talk;
@@ -61,7 +67,11 @@ export const talkHandlers: GatewayRequestHandlers = {
   },
   "talk.mode": ({ params, respond, context, client, isWebchatConnect }) => {
     if (client && isWebchatConnect(client.connect) && !context.hasConnectedMobileNode()) {
-      respond(false, undefined, errorShape(ErrorCodes.UNAVAILABLE, "talk disabled: no connected iOS/Android nodes"));
+      respond(
+        false,
+        undefined,
+        errorShape(ErrorCodes.UNAVAILABLE, "talk disabled: no connected iOS/Android nodes"),
+      );
       return;
     }
     if (!validateTalkModeParams(params)) {

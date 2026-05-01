@@ -66,7 +66,9 @@ function hasPort(value: unknown): value is { port: number | string } {
 }
 
 function requireBoundRequestUrl(server: VoiceCallWebhookServer, baseUrl: string) {
-  const address = (server as unknown as { server?: { address?: () => unknown } }).server?.address?.();
+  const address = (
+    server as unknown as { server?: { address?: () => unknown } }
+  ).server?.address?.();
   if (!hasPort(address) || !address.port) {
     throw new Error("voice webhook server did not expose a bound port");
   }
@@ -135,7 +137,10 @@ async function postWebhookFormWithHeadersResult(
   baseUrl: string,
   body: string,
   headers: Record<string, string>,
-): Promise<{ kind: "response"; statusCode: number; body: string } | { kind: "error"; code: string | undefined }> {
+): Promise<
+  | { kind: "response"; statusCode: number; body: string }
+  | { kind: "error"; code: string | undefined }
+> {
   const requestUrl = requireBoundRequestUrl(server, baseUrl);
   return await new Promise((resolve) => {
     const req = request(
@@ -615,7 +620,11 @@ describe("VoiceCallWebhookServer stream disconnect grace", () => {
         openaiApiKey: "test-key",
       },
     });
-    const server = new VoiceCallWebhookServer(config, manager, twilioProvider as unknown as VoiceCallProvider);
+    const server = new VoiceCallWebhookServer(
+      config,
+      manager,
+      twilioProvider as unknown as VoiceCallProvider,
+    );
 
     const mediaHandler = server.getMediaStreamHandler() as unknown as {
       config: {
@@ -687,7 +696,8 @@ describe("VoiceCallWebhookServer barge-in suppression during initial message", (
     });
     const manager = {
       getActiveCalls: () => [call],
-      getCallByProviderCallId: (providerCallId: string) => (providerCallId === call.providerCallId ? call : undefined),
+      getCallByProviderCallId: (providerCallId: string) =>
+        providerCallId === call.providerCallId ? call : undefined,
       getCall: (callId: string) => (callId === call.callId ? call : undefined),
       endCall: vi.fn(async () => ({ success: true })),
       speakInitialMessage: vi.fn(async () => {}),
@@ -710,7 +720,11 @@ describe("VoiceCallWebhookServer barge-in suppression during initial message", (
     const handleInboundResponse = vi.fn(async () => {});
     (
       server as unknown as {
-        handleInboundResponse: (callId: string, transcript: string, timing?: unknown) => Promise<void>;
+        handleInboundResponse: (
+          callId: string,
+          transcript: string,
+          timing?: unknown,
+        ) => Promise<void>;
       }
     ).handleInboundResponse = handleInboundResponse;
 
@@ -734,10 +748,8 @@ describe("VoiceCallWebhookServer barge-in suppression during initial message", (
       expect(clearTtsQueue).toHaveBeenCalledTimes(2);
       expect(handleInboundResponse).toHaveBeenCalledTimes(1);
       expect(processEvent).toHaveBeenCalledTimes(1);
-      const [calledCallId, calledTranscript] = (handleInboundResponse.mock.calls[0] ?? []) as unknown as [
-        string | undefined,
-        string | undefined,
-      ];
+      const [calledCallId, calledTranscript] = (handleInboundResponse.mock.calls[0] ??
+        []) as unknown as [string | undefined, string | undefined];
       expect(calledCallId).toBe(call.callId);
       expect(calledTranscript).toBe("hello after greeting");
     } finally {
@@ -757,7 +769,8 @@ describe("VoiceCallWebhookServer barge-in suppression during initial message", (
     const clearTtsQueue = vi.fn();
     const manager = {
       getActiveCalls: () => [call],
-      getCallByProviderCallId: (providerCallId: string) => (providerCallId === call.providerCallId ? call : undefined),
+      getCallByProviderCallId: (providerCallId: string) =>
+        providerCallId === call.providerCallId ? call : undefined,
       getCall: (callId: string) => (callId === call.callId ? call : undefined),
       endCall: vi.fn(async () => ({ success: true })),
       speakInitialMessage: vi.fn(async () => {}),

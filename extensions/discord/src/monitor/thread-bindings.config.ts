@@ -6,7 +6,11 @@ import {
 import type { RemoteClawConfig } from "../../../../src/config/config.js";
 import { normalizeAccountId } from "../../../../src/routing/session-key.js";
 
-export { resolveThreadBindingIdleTimeoutMs, resolveThreadBindingMaxAgeMs, resolveThreadBindingsEnabled };
+export {
+  resolveThreadBindingIdleTimeoutMs,
+  resolveThreadBindingMaxAgeMs,
+  resolveThreadBindingsEnabled,
+};
 
 export function resolveDiscordThreadBindingIdleTimeoutMs(params: {
   cfg: RemoteClawConfig;
@@ -21,7 +25,10 @@ export function resolveDiscordThreadBindingIdleTimeoutMs(params: {
   });
 }
 
-export function resolveDiscordThreadBindingMaxAgeMs(params: { cfg: RemoteClawConfig; accountId?: string }): number {
+export function resolveDiscordThreadBindingMaxAgeMs(params: {
+  cfg: RemoteClawConfig;
+  accountId?: string;
+}): number {
   const accountId = normalizeAccountId(params.accountId);
   const root = params.cfg.channels?.discord?.threadBindings;
   const account = params.cfg.channels?.discord?.accounts?.[accountId]?.threadBindings;

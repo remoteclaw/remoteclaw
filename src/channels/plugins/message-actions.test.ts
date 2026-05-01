@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
-import { createChannelTestPluginBase, createTestRegistry } from "../../test-utils/channel-plugins.js";
+import {
+  createChannelTestPluginBase,
+  createTestRegistry,
+} from "../../test-utils/channel-plugins.js";
 import {
   supportsChannelMessageButtons,
   supportsChannelMessageButtonsForChannel,
@@ -70,9 +73,15 @@ describe("message action capability checks", () => {
   it("checks per-channel capabilities", () => {
     activateMessageActionTestRegistry();
 
-    expect(supportsChannelMessageButtonsForChannel({ cfg: {} as RemoteClawConfig, channel: "discord" })).toBe(true);
-    expect(supportsChannelMessageButtonsForChannel({ cfg: {} as RemoteClawConfig, channel: "telegram" })).toBe(false);
-    expect(supportsChannelMessageCardsForChannel({ cfg: {} as RemoteClawConfig, channel: "telegram" })).toBe(true);
+    expect(
+      supportsChannelMessageButtonsForChannel({ cfg: {} as RemoteClawConfig, channel: "discord" }),
+    ).toBe(true);
+    expect(
+      supportsChannelMessageButtonsForChannel({ cfg: {} as RemoteClawConfig, channel: "telegram" }),
+    ).toBe(false);
+    expect(
+      supportsChannelMessageCardsForChannel({ cfg: {} as RemoteClawConfig, channel: "telegram" }),
+    ).toBe(true);
     expect(supportsChannelMessageCardsForChannel({ cfg: {} as RemoteClawConfig })).toBe(false);
   });
 });

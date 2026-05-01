@@ -20,5 +20,7 @@ export function unescapeCmdScriptArg(value: string): string {
 export function parseCmdScriptCommandLine(value: string): string[] {
   // Script renderer escapes quotes (`\"`) and cmd expansions (`%%`, `^!`).
   // Keep all other backslashes literal so Windows drive/UNC paths survive.
-  return splitArgsPreservingQuotes(value, { escapeMode: "backslash-quote-only" }).map(unescapeCmdScriptArg);
+  return splitArgsPreservingQuotes(value, { escapeMode: "backslash-quote-only" }).map(
+    unescapeCmdScriptArg,
+  );
 }

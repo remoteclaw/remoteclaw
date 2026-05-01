@@ -22,7 +22,11 @@ function isObjectWithStringId(value: unknown): value is Record<string, unknown> 
  * - Patch entries with valid id merge by id (or append when the id is new).
  * - Patch entries without valid id append as-is, avoiding destructive full-array replacement.
  */
-function mergeObjectArraysById(base: unknown[], patch: unknown[], options: MergePatchOptions): unknown[] | undefined {
+function mergeObjectArraysById(
+  base: unknown[],
+  patch: unknown[],
+  options: MergePatchOptions,
+): unknown[] | undefined {
   if (!base.every(isObjectWithStringId)) {
     return undefined;
   }
@@ -55,7 +59,11 @@ function mergeObjectArraysById(base: unknown[], patch: unknown[], options: Merge
   return merged;
 }
 
-export function applyMergePatch(base: unknown, patch: unknown, options: MergePatchOptions = {}): unknown {
+export function applyMergePatch(
+  base: unknown,
+  patch: unknown,
+  options: MergePatchOptions = {},
+): unknown {
   if (!isPlainObject(patch)) {
     return patch;
   }

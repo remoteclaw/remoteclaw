@@ -6,7 +6,11 @@ export async function makeTempWorkspace(prefix = "remoteclaw-workspace-"): Promi
   return fs.mkdtemp(path.join(os.tmpdir(), prefix));
 }
 
-export async function writeWorkspaceFile(params: { dir: string; name: string; content: string }): Promise<string> {
+export async function writeWorkspaceFile(params: {
+  dir: string;
+  name: string;
+  content: string;
+}): Promise<string> {
   const filePath = path.join(params.dir, params.name);
   await fs.writeFile(filePath, params.content, "utf-8");
   return filePath;

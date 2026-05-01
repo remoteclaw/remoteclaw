@@ -17,7 +17,10 @@ describe("checkTwitchAccessControl", () => {
     channel: "testchannel",
   };
 
-  function runAccessCheck(params: { account?: Partial<TwitchAccountConfig>; message?: Partial<TwitchChatMessage> }) {
+  function runAccessCheck(params: {
+    account?: Partial<TwitchAccountConfig>;
+    message?: Partial<TwitchChatMessage>;
+  }) {
     return checkTwitchAccessControl({
       message: {
         ...mockMessage,

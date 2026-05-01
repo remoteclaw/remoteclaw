@@ -124,11 +124,16 @@ function createMainSessionsSendTool() {
 }
 
 function getFirstListedSession(result: SessionsListResult) {
-  const details = result.details as { sessions?: Array<{ key?: string; transcriptPath?: string }> } | undefined;
+  const details = result.details as
+    | { sessions?: Array<{ key?: string; transcriptPath?: string }> }
+    | undefined;
   return details?.sessions?.[0];
 }
 
-function expectWorkerTranscriptPath(result: SessionsListResult, params: { containsPath: string; sessionId: string }) {
+function expectWorkerTranscriptPath(
+  result: SessionsListResult,
+  params: { containsPath: string; sessionId: string },
+) {
   const session = getFirstListedSession(result);
   expect(session).toMatchObject({ key: "agent:worker:main" });
   const transcriptPath = String(session?.transcriptPath ?? "");
@@ -136,7 +141,10 @@ function expectWorkerTranscriptPath(result: SessionsListResult, params: { contai
   expect(transcriptPath).toMatch(new RegExp(`${params.sessionId}\\.jsonl$`));
 }
 
-async function withStubbedStateDir<T>(name: string, run: (stateDir: string) => Promise<T>): Promise<T> {
+async function withStubbedStateDir<T>(
+  name: string,
+  run: (stateDir: string) => Promise<T>,
+): Promise<T> {
   const stateDir = path.join(os.tmpdir(), name);
   vi.stubEnv("REMOTECLAW_STATE_DIR", stateDir);
   try {
@@ -148,7 +156,8 @@ async function withStubbedStateDir<T>(name: string, run: (stateDir: string) => P
 
 describe("sanitizeTextContent", () => {
   it("strips minimax tool call XML and downgraded markers", () => {
-    const input = 'Hello <invoke name="tool">payload</invoke></minimax:tool_call> [Tool Call: foo (ID: 1)] world';
+    const input =
+      'Hello <invoke name="tool">payload</invoke></minimax:tool_call> [Tool Call: foo (ID: 1)] world';
     const result = sanitizeTextContent(input).trim();
     expect(result).toBe("Hello  world");
     expect(result).not.toContain("invoke");
@@ -512,7 +521,9 @@ describe("sessions_send gating", () => {
     expect(result.details).toMatchObject({
       status: "error",
     });
-    expect((result.details as { error?: string } | undefined)?.error ?? "").toContain("No session found with label");
+    expect((result.details as { error?: string } | undefined)?.error ?? "").toContain(
+      "No session found with label",
+    );
     expect(callGatewayMock).toHaveBeenCalledTimes(1);
     expect(callGatewayMock.mock.calls[0]?.[0]).toMatchObject({ method: "sessions.resolve" });
   });

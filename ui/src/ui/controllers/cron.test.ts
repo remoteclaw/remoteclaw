@@ -275,7 +275,9 @@ describe("cron controller", () => {
 
     const updateCall = request.mock.calls.find(([method]) => method === "cron.update");
     expect(updateCall).toBeDefined();
-    expect((updateCall?.[1] as { patch?: { delivery?: unknown } } | undefined)?.patch?.delivery).toEqual({
+    expect(
+      (updateCall?.[1] as { patch?: { delivery?: unknown } } | undefined)?.patch?.delivery,
+    ).toEqual({
       mode: "none",
     });
   });
@@ -723,7 +725,8 @@ describe("cron controller", () => {
       },
     });
     expect(
-      (updateCall?.[1] as { patch?: { failureAlert?: { cooldownMs?: number } } })?.patch?.failureAlert,
+      (updateCall?.[1] as { patch?: { failureAlert?: { cooldownMs?: number } } })?.patch
+        ?.failureAlert,
     ).not.toHaveProperty("cooldownMs");
   });
 

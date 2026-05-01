@@ -30,7 +30,9 @@ function tryRelative(root: string, filePath: string): string | null {
 export function resolvePluginSourceRoots(params: { workspaceDir?: string }): PluginSourceRoots {
   const stock = resolveBundledPluginsDir();
   const global = path.join(resolveConfigDir(), "extensions");
-  const workspace = params.workspaceDir ? path.join(params.workspaceDir, ".remoteclaw", "extensions") : undefined;
+  const workspace = params.workspaceDir
+    ? path.join(params.workspaceDir, ".remoteclaw", "extensions")
+    : undefined;
   return { stock, global, workspace };
 }
 

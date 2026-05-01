@@ -2,8 +2,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 type LoggerModule = typeof import("./logger.js");
 
-const originalGetBuiltinModule = (process as NodeJS.Process & { getBuiltinModule?: (id: string) => unknown })
-  .getBuiltinModule;
+const originalGetBuiltinModule = (
+  process as NodeJS.Process & { getBuiltinModule?: (id: string) => unknown }
+).getBuiltinModule;
 
 async function importBrowserSafeLogger(params?: {
   resolvePreferredRemoteClawTmpDir?: ReturnType<typeof vi.fn>;

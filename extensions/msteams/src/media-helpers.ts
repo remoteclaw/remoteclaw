@@ -3,7 +3,12 @@
  */
 
 import path from "node:path";
-import { detectMime, extensionForMime, extractOriginalFilename, getFileExtension } from "remoteclaw/plugin-sdk/msteams";
+import {
+  detectMime,
+  extensionForMime,
+  extractOriginalFilename,
+  getFileExtension,
+} from "remoteclaw/plugin-sdk/msteams";
 
 /**
  * Detect MIME type from URL extension or data URL.

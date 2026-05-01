@@ -89,7 +89,9 @@ export const channelsHandlers: GatewayRequestHandlers = {
     }).config;
     const runtime = context.getRuntimeSnapshot();
     const plugins = listChannelPlugins();
-    const pluginMap = new Map<ChannelId, ChannelPlugin>(plugins.map((plugin) => [plugin.id, plugin]));
+    const pluginMap = new Map<ChannelId, ChannelPlugin>(
+      plugins.map((plugin) => [plugin.id, plugin]),
+    );
 
     const resolveRuntimeSnapshot = (
       channelId: ChannelId,
@@ -98,7 +100,8 @@ export const channelsHandlers: GatewayRequestHandlers = {
     ): ChannelAccountSnapshot | undefined => {
       const accounts = runtime.channelAccounts[channelId];
       const defaultRuntime = runtime.channels[channelId];
-      const raw = accounts?.[accountId] ?? (accountId === defaultAccountId ? defaultRuntime : undefined);
+      const raw =
+        accounts?.[accountId] ?? (accountId === defaultAccountId ? defaultRuntime : undefined);
       if (!raw) {
         return undefined;
       }
@@ -108,7 +111,9 @@ export const channelsHandlers: GatewayRequestHandlers = {
     const isAccountEnabled = (plugin: ChannelPlugin, account: unknown) =>
       plugin.config.isEnabled
         ? plugin.config.isEnabled(account, cfg)
-        : !account || typeof account !== "object" || (account as { enabled?: boolean }).enabled !== false;
+        : !account ||
+          typeof account !== "object" ||
+          (account as { enabled?: boolean }).enabled !== false;
 
     const buildChannelAccounts = async (channelId: ChannelId) => {
       const plugin = pluginMap.get(channelId);
@@ -187,7 +192,8 @@ export const channelsHandlers: GatewayRequestHandlers = {
         }
         accounts.push(snapshot);
       }
-      const defaultAccount = accounts.find((entry) => entry.accountId === defaultAccountId) ?? accounts[0];
+      const defaultAccount =
+        accounts.find((entry) => entry.accountId === defaultAccountId) ?? accounts[0];
       return { accounts, defaultAccountId, defaultAccount, resolvedAccounts };
     };
 
@@ -207,8 +213,10 @@ export const channelsHandlers: GatewayRequestHandlers = {
     const accountsMap = payload.channelAccounts as Record<string, unknown>;
     const defaultAccountIdMap = payload.channelDefaultAccountId as Record<string, unknown>;
     for (const plugin of plugins) {
-      const { accounts, defaultAccountId, defaultAccount, resolvedAccounts } = await buildChannelAccounts(plugin.id);
-      const fallbackAccount = resolvedAccounts[defaultAccountId] ?? plugin.config.resolveAccount(cfg, defaultAccountId);
+      const { accounts, defaultAccountId, defaultAccount, resolvedAccounts } =
+        await buildChannelAccounts(plugin.id);
+      const fallbackAccount =
+        resolvedAccounts[defaultAccountId] ?? plugin.config.resolveAccount(cfg, defaultAccountId);
       const summary = plugin.status?.buildChannelSummary
         ? await plugin.status.buildChannelSummary({
             account: fallbackAccount,
@@ -245,19 +253,31 @@ export const channelsHandlers: GatewayRequestHandlers = {
     const rawChannel = (params as { channel?: unknown }).channel;
     const channelId = typeof rawChannel === "string" ? normalizeChannelId(rawChannel) : null;
     if (!channelId) {
-      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "invalid channels.logout channel"));
+      respond(
+        false,
+        undefined,
+        errorShape(ErrorCodes.INVALID_REQUEST, "invalid channels.logout channel"),
+      );
       return;
     }
     const plugin = getChannelPlugin(channelId);
     if (!plugin?.gateway?.logoutAccount) {
-      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, `channel ${channelId} does not support logout`));
+      respond(
+        false,
+        undefined,
+        errorShape(ErrorCodes.INVALID_REQUEST, `channel ${channelId} does not support logout`),
+      );
       return;
     }
     const accountIdRaw = (params as { accountId?: unknown }).accountId;
     const accountId = typeof accountIdRaw === "string" ? accountIdRaw.trim() : undefined;
     const snapshot = await readConfigFileSnapshot();
     if (!snapshot.valid) {
-      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "config invalid; fix it before logging out"));
+      respond(
+        false,
+        undefined,
+        errorShape(ErrorCodes.INVALID_REQUEST, "config invalid; fix it before logging out"),
+      );
       return;
     }
     try {

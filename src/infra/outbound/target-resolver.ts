@@ -1,5 +1,9 @@
 import { getChannelPlugin } from "../../channels/plugins/index.js";
-import type { ChannelDirectoryEntry, ChannelDirectoryEntryKind, ChannelId } from "../../channels/plugins/types.js";
+import type {
+  ChannelDirectoryEntry,
+  ChannelDirectoryEntryKind,
+  ChannelId,
+} from "../../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { defaultRuntime, type RuntimeEnv } from "../../runtime.js";
 import { buildDirectoryCacheKey, DirectoryCache } from "./directory-cache.js";
@@ -125,7 +129,8 @@ export function formatTargetDisplay(params: {
   const lowered = trimmedTarget.toLowerCase();
   const display = params.display?.trim();
   const kind =
-    params.kind ?? (lowered.startsWith("user:") ? "user" : lowered.startsWith("channel:") ? "group" : undefined);
+    params.kind ??
+    (lowered.startsWith("user:") ? "user" : lowered.startsWith("channel:") ? "group" : undefined);
 
   if (display) {
     if (display.startsWith("#") || display.startsWith("@")) {
@@ -179,7 +184,11 @@ function preserveTargetCase(channel: ChannelId, raw: string, normalized: string)
   return trimmed;
 }
 
-function detectTargetKind(channel: ChannelId, raw: string, preferred?: TargetResolveKind): TargetResolveKind {
+function detectTargetKind(
+  channel: ChannelId,
+  raw: string,
+  preferred?: TargetResolveKind,
+): TargetResolveKind {
   if (preferred) {
     return preferred;
   }
@@ -208,7 +217,11 @@ function normalizeDirectoryEntryId(channel: ChannelId, entry: ChannelDirectoryEn
   return normalized ?? entry.id.trim();
 }
 
-function matchesDirectoryEntry(params: { channel: ChannelId; entry: ChannelDirectoryEntry; query: string }): boolean {
+function matchesDirectoryEntry(params: {
+  channel: ChannelId;
+  entry: ChannelDirectoryEntry;
+  query: string;
+}): boolean {
   const query = normalizeQuery(params.query);
   if (!query) {
     return false;
@@ -220,7 +233,11 @@ function matchesDirectoryEntry(params: { channel: ChannelId; entry: ChannelDirec
   return candidates.some((value) => value === query || value.includes(query));
 }
 
-function resolveMatch(params: { channel: ChannelId; entries: ChannelDirectoryEntry[]; query: string }) {
+function resolveMatch(params: {
+  channel: ChannelId;
+  entries: ChannelDirectoryEntry[];
+  query: string;
+}) {
   const matches = params.entries.filter((entry) =>
     matchesDirectoryEntry({ channel: params.channel, entry, query: params.query }),
   );
@@ -476,7 +493,10 @@ export async function resolveMessagingTarget(params: {
   }
   // For iMessage-style channels, allow sending directly to the normalized handle
   // even if the directory doesn't contain an entry yet.
-  if ((params.channel === "bluebubbles" || params.channel === "imessage") && /^\+?\d{6,}$/.test(query)) {
+  if (
+    (params.channel === "bluebubbles" || params.channel === "imessage") &&
+    /^\+?\d{6,}$/.test(query)
+  ) {
     return buildNormalizedResolveResult({
       channel: params.channel,
       raw,
@@ -521,7 +541,9 @@ export async function lookupDirectoryDisplay(params: {
   ]);
 
   const findMatch = (candidates: ChannelDirectoryEntry[]) =>
-    candidates.find((candidate) => normalizeDirectoryEntryId(params.channel, candidate) === normalized);
+    candidates.find(
+      (candidate) => normalizeDirectoryEntryId(params.channel, candidate) === normalized,
+    );
 
   const entry = findMatch(groups) ?? findMatch(users);
   return entry?.name ?? entry?.handle ?? undefined;

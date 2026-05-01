@@ -47,7 +47,9 @@ const SERVICE_PROXY_ENV_KEYS = [
   "all_proxy",
 ] as const;
 
-function readServiceProxyEnvironment(env: Record<string, string | undefined>): Record<string, string | undefined> {
+function readServiceProxyEnvironment(
+  env: Record<string, string | undefined>,
+): Record<string, string | undefined> {
   const out: Record<string, string | undefined> = {};
   for (const key of SERVICE_PROXY_ENV_KEYS) {
     const value = env[key];
@@ -85,7 +87,10 @@ function addCommonUserBinDirs(dirs: string[], home: string): void {
   dirs.push(`${home}/.bun/bin`);
 }
 
-function addCommonEnvConfiguredBinDirs(dirs: string[], env: Record<string, string | undefined> | undefined): void {
+function addCommonEnvConfiguredBinDirs(
+  dirs: string[],
+  env: Record<string, string | undefined> | undefined,
+): void {
   addNonEmptyDir(dirs, env?.PNPM_HOME);
   addNonEmptyDir(dirs, appendSubdir(env?.NPM_CONFIG_PREFIX, "bin"));
   addNonEmptyDir(dirs, appendSubdir(env?.BUN_INSTALL, "bin"));
@@ -111,7 +116,10 @@ function resolveSystemPathDirs(platform: NodeJS.Platform): string[] {
  * - fnm: macOS uses ~/Library/Application Support/fnm (not ~/.local/share/fnm)
  * - pnpm: macOS uses ~/Library/pnpm (not ~/.local/share/pnpm)
  */
-export function resolveDarwinUserBinDirs(home: string | undefined, env?: Record<string, string | undefined>): string[] {
+export function resolveDarwinUserBinDirs(
+  home: string | undefined,
+  env?: Record<string, string | undefined>,
+): string[] {
   if (!home) {
     return [];
   }
@@ -148,7 +156,10 @@ export function resolveDarwinUserBinDirs(home: string | undefined, env?: Record<
  * Resolve common user bin directories for Linux.
  * These are paths where npm global installs and node version managers typically place binaries.
  */
-export function resolveLinuxUserBinDirs(home: string | undefined, env?: Record<string, string | undefined>): string[] {
+export function resolveLinuxUserBinDirs(
+  home: string | undefined,
+  env?: Record<string, string | undefined>,
+): string[] {
   if (!home) {
     return [];
   }
@@ -264,7 +275,8 @@ export function buildNodeServiceEnvironment(params: {
   const { env } = params;
   const platform = params.platform ?? process.platform;
   const sharedEnv = resolveSharedServiceEnvironmentFields(env, platform);
-  const gatewayToken = env.REMOTECLAW_GATEWAY_TOKEN?.trim() || env.CLAWDBOT_GATEWAY_TOKEN?.trim() || undefined;
+  const gatewayToken =
+    env.REMOTECLAW_GATEWAY_TOKEN?.trim() || env.CLAWDBOT_GATEWAY_TOKEN?.trim() || undefined;
   return {
     ...buildCommonServiceEnvironment(env, sharedEnv),
     REMOTECLAW_GATEWAY_TOKEN: gatewayToken,
@@ -310,7 +322,8 @@ function resolveSharedServiceEnvironmentFields(
   // On macOS, launchd services don't inherit the shell environment, so Node's undici/fetch
   // cannot locate the system CA bundle. Default to /etc/ssl/cert.pem so TLS verification
   // works correctly when running as a LaunchAgent without extra user configuration.
-  const nodeCaCerts = env.NODE_EXTRA_CA_CERTS ?? (platform === "darwin" ? "/etc/ssl/cert.pem" : undefined);
+  const nodeCaCerts =
+    env.NODE_EXTRA_CA_CERTS ?? (platform === "darwin" ? "/etc/ssl/cert.pem" : undefined);
   const nodeUseSystemCa = env.NODE_USE_SYSTEM_CA ?? (platform === "darwin" ? "1" : undefined);
   return {
     stateDir,

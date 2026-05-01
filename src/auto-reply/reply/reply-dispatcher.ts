@@ -17,7 +17,10 @@ type ReplyDispatchSkipHandler = (
   info: { kind: ReplyDispatchKind; reason: NormalizeReplySkipReason },
 ) => void;
 
-type ReplyDispatchDeliverer = (payload: ReplyPayload, info: { kind: ReplyDispatchKind }) => Promise<void>;
+type ReplyDispatchDeliverer = (
+  payload: ReplyPayload,
+  info: { kind: ReplyDispatchKind },
+) => Promise<void>;
 
 const DEFAULT_HUMAN_DELAY_MIN_MS = 800;
 const DEFAULT_HUMAN_DELAY_MAX_MS = 2500;
@@ -28,8 +31,10 @@ function getHumanDelay(config: HumanDelayConfig | undefined): number {
   if (mode === "off") {
     return 0;
   }
-  const min = mode === "custom" ? (config?.minMs ?? DEFAULT_HUMAN_DELAY_MIN_MS) : DEFAULT_HUMAN_DELAY_MIN_MS;
-  const max = mode === "custom" ? (config?.maxMs ?? DEFAULT_HUMAN_DELAY_MAX_MS) : DEFAULT_HUMAN_DELAY_MAX_MS;
+  const min =
+    mode === "custom" ? (config?.minMs ?? DEFAULT_HUMAN_DELAY_MIN_MS) : DEFAULT_HUMAN_DELAY_MIN_MS;
+  const max =
+    mode === "custom" ? (config?.maxMs ?? DEFAULT_HUMAN_DELAY_MAX_MS) : DEFAULT_HUMAN_DELAY_MAX_MS;
   if (max <= min) {
     return min;
   }

@@ -30,7 +30,9 @@ export function setPluginEnabledInConfig(
   const channels = config.channels as Record<string, unknown> | undefined;
   const existing = channels?.[builtInChannelId];
   const existingRecord =
-    existing && typeof existing === "object" && !Array.isArray(existing) ? (existing as Record<string, unknown>) : {};
+    existing && typeof existing === "object" && !Array.isArray(existing)
+      ? (existing as Record<string, unknown>)
+      : {};
 
   return {
     ...next,

@@ -17,10 +17,19 @@ import {
 } from "remoteclaw/plugin-sdk/matrix";
 import type { CoreConfig, MatrixRoomConfig, ReplyToMode } from "../../types.js";
 import { fetchEventSummary } from "../actions/summary.js";
-import { formatPollAsText, isPollStartType, parsePollStartContent, type PollStartContent } from "../poll-types.js";
+import {
+  formatPollAsText,
+  isPollStartType,
+  parsePollStartContent,
+  type PollStartContent,
+} from "../poll-types.js";
 import { reactMatrixMessage, sendMessageMatrix, sendTypingMatrix } from "../send.js";
 import { enforceMatrixDirectMessageAccess, resolveMatrixAccessState } from "./access-policy.js";
-import { normalizeMatrixAllowList, resolveMatrixAllowListMatch, resolveMatrixAllowListMatches } from "./allowlist.js";
+import {
+  normalizeMatrixAllowList,
+  resolveMatrixAllowListMatch,
+  resolveMatrixAllowListMatches,
+} from "./allowlist.js";
 import {
   resolveMatrixBodyForAgent,
   resolveMatrixInboundSenderLabel,
@@ -55,9 +64,15 @@ export type MatrixMonitorHandlerParams = {
   startupMs: number;
   startupGraceMs: number;
   directTracker: {
-    isDirectMessage: (params: { roomId: string; senderId: string; selfUserId: string }) => Promise<boolean>;
+    isDirectMessage: (params: {
+      roomId: string;
+      senderId: string;
+      selfUserId: string;
+    }) => Promise<boolean>;
   };
-  getRoomInfo: (roomId: string) => Promise<{ name?: string; canonicalAlias?: string; altAliases: string[] }>;
+  getRoomInfo: (
+    roomId: string,
+  ) => Promise<{ name?: string; canonicalAlias?: string; altAliases: string[] }>;
   getMemberDisplayName: (roomId: string, userId: string) => Promise<string>;
   accountId?: string | null;
 };
@@ -160,7 +175,9 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
       if (eventType !== EventType.RoomMessage && !isPollEvent && !isLocationEvent) {
         return;
       }
-      logVerboseMessage(`matrix: room.message recv room=${roomId} type=${eventType} id=${event.event_id ?? "unknown"}`);
+      logVerboseMessage(
+        `matrix: room.message recv room=${roomId} type=${eventType} id=${event.event_id ?? "unknown"}`,
+      );
       if (event.unsigned?.redacted_because) {
         return;
       }
@@ -177,7 +194,11 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
       if (typeof eventTs === "number" && eventTs < startupMs - startupGraceMs) {
         return;
       }
-      if (typeof eventTs !== "number" && typeof eventAge === "number" && eventAge > startupGraceMs) {
+      if (
+        typeof eventTs !== "number" &&
+        typeof eventAge === "number" &&
+        eventAge > startupGraceMs
+      ) {
         return;
       }
 
@@ -234,7 +255,9 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
         name: roomName,
       });
       if (shouldOverrideMatrixDmToGroup({ isDirectMessage, roomConfigInfo })) {
-        logVerboseMessage(`matrix: overriding DM to group for configured room=${roomId} (${roomConfigInfo.matchKey})`);
+        logVerboseMessage(
+          `matrix: overriding DM to group for configured room=${roomId} (${roomConfigInfo.matchKey})`,
+        );
         isDirectMessage = false;
       }
 
@@ -341,15 +364,19 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
         logVerboseMessage(`matrix: allow room ${roomId} (${roomMatchMeta})`);
       }
 
-      const rawBody = locationPayload?.text ?? (typeof content.body === "string" ? content.body.trim() : "");
+      const rawBody =
+        locationPayload?.text ?? (typeof content.body === "string" ? content.body.trim() : "");
       let media: {
         path: string;
         contentType?: string;
         placeholder: string;
       } | null = null;
-      const contentUrl = "url" in content && typeof content.url === "string" ? content.url : undefined;
+      const contentUrl =
+        "url" in content && typeof content.url === "string" ? content.url : undefined;
       const contentFile =
-        "file" in content && content.file && typeof content.file === "object" ? content.file : undefined;
+        "file" in content && content.file && typeof content.file === "object"
+          ? content.file
+          : undefined;
       const mediaUrl = contentUrl ?? contentFile?.url;
       if (!rawBody && !mediaUrl) {
         return;
@@ -523,7 +550,9 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
               parentSessionKey = baseRoute.sessionKey;
             }
           } catch (err) {
-            logVerboseMessage(`matrix: failed to fetch thread root ${threadRootId}: ${String(err)}`);
+            logVerboseMessage(
+              `matrix: failed to fetch thread root ${threadRootId}: ${String(err)}`,
+            );
           }
         }
       }
@@ -532,11 +561,12 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
       const textWithId = threadRootId
         ? `${bodyText}\n[matrix event id: ${messageId} room: ${roomId} thread: ${threadRootId}]`
         : `${bodyText}\n[matrix event id: ${messageId} room: ${roomId}]`;
-      const { storePath, envelopeOptions, previousTimestamp } = resolveInboundSessionEnvelopeContext({
-        cfg,
-        agentId: route.agentId,
-        sessionKey: route.sessionKey,
-      });
+      const { storePath, envelopeOptions, previousTimestamp } =
+        resolveInboundSessionEnvelopeContext({
+          cfg,
+          agentId: route.agentId,
+          sessionKey: route.sessionKey,
+        });
       const body = core.channel.reply.formatInboundEnvelope({
         channel: "Matrix",
         from: envelopeFrom,
@@ -677,28 +707,29 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
           });
         },
       });
-      const { dispatcher, replyOptions, markDispatchIdle } = core.channel.reply.createReplyDispatcherWithTyping({
-        ...prefixOptions,
-        humanDelay,
-        typingCallbacks,
-        deliver: async (payload) => {
-          await deliverMatrixReplies({
-            replies: [payload],
-            roomId,
-            client,
-            runtime,
-            textLimit,
-            replyToMode,
-            threadId: threadTarget,
-            accountId: route.accountId,
-            tableMode,
-          });
-          didSendReply = true;
-        },
-        onError: (err, info) => {
-          runtime.error?.(`matrix ${info.kind} reply failed: ${String(err)}`);
-        },
-      });
+      const { dispatcher, replyOptions, markDispatchIdle } =
+        core.channel.reply.createReplyDispatcherWithTyping({
+          ...prefixOptions,
+          humanDelay,
+          typingCallbacks,
+          deliver: async (payload) => {
+            await deliverMatrixReplies({
+              replies: [payload],
+              roomId,
+              client,
+              runtime,
+              textLimit,
+              replyToMode,
+              threadId: threadTarget,
+              accountId: route.accountId,
+              tableMode,
+            });
+            didSendReply = true;
+          },
+          onError: (err, info) => {
+            runtime.error?.(`matrix ${info.kind} reply failed: ${String(err)}`);
+          },
+        });
 
       const { queuedFinal, counts } = await dispatchReplyFromConfigWithSettledDispatcher({
         cfg,
@@ -717,7 +748,9 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
       }
       didSendReply = true;
       const finalCount = counts.final;
-      logVerboseMessage(`matrix: delivered ${finalCount} reply${finalCount === 1 ? "" : "ies"} to ${replyTarget}`);
+      logVerboseMessage(
+        `matrix: delivered ${finalCount} reply${finalCount === 1 ? "" : "ies"} to ${replyTarget}`,
+      );
       if (didSendReply) {
         const previewText = bodyText.replace(/\s+/g, " ").slice(0, 160);
         core.system.enqueueSystemEvent(`Matrix message from ${senderName}: ${previewText}`, {

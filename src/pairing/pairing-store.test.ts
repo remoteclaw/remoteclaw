@@ -63,10 +63,13 @@ async function writeAllowFromFixture(params: {
   allowFrom: string[];
   accountId?: string;
 }) {
-  await writeJsonFixture(resolveAllowFromFilePath(params.stateDir, params.channel, params.accountId), {
-    version: 1,
-    allowFrom: params.allowFrom,
-  });
+  await writeJsonFixture(
+    resolveAllowFromFilePath(params.stateDir, params.channel, params.accountId),
+    {
+      version: 1,
+      allowFrom: params.allowFrom,
+    },
+  );
 }
 
 async function createTelegramPairingRequest(accountId: string, id = "12345") {
@@ -191,7 +194,10 @@ async function withMockRandomInt(params: {
   }
 }
 
-async function expectAllowFromReadConsistencyCase(params: { accountId?: string; expected: readonly string[] }) {
+async function expectAllowFromReadConsistencyCase(params: {
+  accountId?: string;
+  expected: readonly string[];
+}) {
   const asyncScoped = await readChannelAllowFromStore("telegram", process.env, params.accountId);
   const syncScoped = readChannelAllowFromStoreSync("telegram", process.env, params.accountId);
   expect(asyncScoped).toEqual(params.expected);
@@ -218,8 +224,16 @@ async function expectPendingPairingRequestsIsolatedByAccount(params: {
   expect(second.created).toBe(true);
   expect(second.code).not.toBe(first.code);
 
-  const firstList = await listChannelPairingRequests("telegram", process.env, params.firstAccountId);
-  const secondList = await listChannelPairingRequests("telegram", process.env, params.secondAccountId);
+  const firstList = await listChannelPairingRequests(
+    "telegram",
+    process.env,
+    params.firstAccountId,
+  );
+  const secondList = await listChannelPairingRequests(
+    "telegram",
+    process.env,
+    params.secondAccountId,
+  );
   expect(firstList).toHaveLength(1);
   expect(secondList).toHaveLength(1);
   expect(firstList[0]?.code).toBe(first.code);
@@ -382,7 +396,11 @@ describe("pairing store", () => {
           expect(blocked.created).toBe(false);
 
           const list = await listChannelPairingRequests("demo-pairing-c");
-          expect(list.map((entry) => entry.id)).toEqual(["+15550000001", "+15550000002", "+15550000003"]);
+          expect(list.map((entry) => entry.id)).toEqual([
+            "+15550000001",
+            "+15550000002",
+            "+15550000003",
+          ]);
         });
       },
     },

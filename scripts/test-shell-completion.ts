@@ -27,7 +27,10 @@ import os from "node:os";
 import path from "node:path";
 import { confirm, isCancel } from "@clack/prompts";
 import { installCompletion } from "../src/cli/completion-cli.js";
-import { checkShellCompletionStatus, ensureCompletionCacheExists } from "../src/commands/doctor-completion.js";
+import {
+  checkShellCompletionStatus,
+  ensureCompletionCacheExists,
+} from "../src/commands/doctor-completion.js";
 import { stylePromptMessage } from "../src/terminal/prompt-style.js";
 import { theme } from "../src/terminal/theme.js";
 
@@ -95,7 +98,9 @@ function getShellProfilePath(shell: string): string {
     case "zsh":
       return path.join(home, ".zshrc");
     case "bash":
-      return process.platform === "darwin" ? path.join(home, ".bash_profile") : path.join(home, ".bashrc");
+      return process.platform === "darwin"
+        ? path.join(home, ".bash_profile")
+        : path.join(home, ".bashrc");
     case "fish":
       return path.join(home, ".config", "fish", "config.fish");
     case "powershell":
@@ -133,7 +138,9 @@ async function main() {
   console.log(`  Profile: ${theme.muted(getShellProfilePath(status.shell))}`);
   console.log(`  Cache path: ${theme.muted(status.cachePath)}`);
   console.log("");
-  console.log(`  Profile configured: ${status.profileInstalled ? theme.success("yes") : theme.warn("no")}`);
+  console.log(
+    `  Profile configured: ${status.profileInstalled ? theme.success("yes") : theme.warn("no")}`,
+  );
   console.log(`  Cache exists: ${status.cacheExists ? theme.success("yes") : theme.warn("no")}`);
   console.log(
     `  Uses slow pattern: ${status.usesSlowPattern ? theme.error("yes (needs upgrade)") : theme.success("no")}`,
@@ -173,7 +180,9 @@ async function main() {
   // Both profile and cache exist - nothing to do
   if (status.profileInstalled && status.cacheExists && !options.force) {
     console.log(theme.muted("Shell completion is fully configured. To test the prompt:"));
-    console.log(theme.muted("  1. Remove the '# RemoteClaw Completion' block from your shell profile"));
+    console.log(
+      theme.muted("  1. Remove the '# RemoteClaw Completion' block from your shell profile"),
+    );
     console.log(theme.muted("  2. Re-run this script"));
     console.log(theme.muted("  Or use --force to prompt anyway"));
     console.log("");

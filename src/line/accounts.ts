@@ -1,8 +1,16 @@
 import type { RemoteClawConfig } from "../config/config.js";
 import { tryReadSecretFileSync } from "../infra/secret-file.js";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId as normalizeSharedAccountId } from "../routing/account-id.js";
+import {
+  DEFAULT_ACCOUNT_ID,
+  normalizeAccountId as normalizeSharedAccountId,
+} from "../routing/account-id.js";
 import { resolveAccountEntry } from "../routing/account-lookup.js";
-import type { LineConfig, LineAccountConfig, ResolvedLineAccount, LineTokenSource } from "./types.js";
+import type {
+  LineConfig,
+  LineAccountConfig,
+  ResolvedLineAccount,
+  LineTokenSource,
+} from "./types.js";
 
 export { DEFAULT_ACCOUNT_ID } from "../routing/account-id.js";
 
@@ -10,7 +18,11 @@ function readFileIfExists(filePath: string | undefined): string | undefined {
   return tryReadSecretFileSync(filePath, "LINE credential file", { rejectSymlink: true });
 }
 
-function resolveToken(params: { accountId: string; baseConfig?: LineConfig; accountConfig?: LineAccountConfig }): {
+function resolveToken(params: {
+  accountId: string;
+  baseConfig?: LineConfig;
+  accountConfig?: LineAccountConfig;
+}): {
   token: string;
   tokenSource: LineTokenSource;
 } {
@@ -85,12 +97,16 @@ function resolveSecret(params: {
   return "";
 }
 
-export function resolveLineAccount(params: { cfg: RemoteClawConfig; accountId?: string }): ResolvedLineAccount {
+export function resolveLineAccount(params: {
+  cfg: RemoteClawConfig;
+  accountId?: string;
+}): ResolvedLineAccount {
   const cfg = params.cfg;
   const accountId = normalizeSharedAccountId(params.accountId);
   const lineConfig = cfg.channels?.line as LineConfig | undefined;
   const accounts = lineConfig?.accounts;
-  const accountConfig = accountId !== DEFAULT_ACCOUNT_ID ? resolveAccountEntry(accounts, accountId) : undefined;
+  const accountConfig =
+    accountId !== DEFAULT_ACCOUNT_ID ? resolveAccountEntry(accounts, accountId) : undefined;
 
   const { token, tokenSource } = resolveToken({
     accountId,
@@ -109,9 +125,12 @@ export function resolveLineAccount(params: { cfg: RemoteClawConfig; accountId?: 
     ...accountConfig,
   };
 
-  const enabled = accountConfig?.enabled ?? (accountId === DEFAULT_ACCOUNT_ID ? (lineConfig?.enabled ?? true) : false);
+  const enabled =
+    accountConfig?.enabled ??
+    (accountId === DEFAULT_ACCOUNT_ID ? (lineConfig?.enabled ?? true) : false);
 
-  const name = accountConfig?.name ?? (accountId === DEFAULT_ACCOUNT_ID ? lineConfig?.name : undefined);
+  const name =
+    accountConfig?.name ?? (accountId === DEFAULT_ACCOUNT_ID ? lineConfig?.name : undefined);
 
   return {
     accountId,

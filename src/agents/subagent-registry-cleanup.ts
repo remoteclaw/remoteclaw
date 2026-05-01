@@ -1,4 +1,7 @@
-import { SUBAGENT_ENDED_REASON_COMPLETE, type SubagentLifecycleEndedReason } from "./subagent-lifecycle-events.js";
+import {
+  SUBAGENT_ENDED_REASON_COMPLETE,
+  type SubagentLifecycleEndedReason,
+} from "./subagent-lifecycle-events.js";
 import type { SubagentRunRecord } from "./subagent-registry.types.js";
 
 /**
@@ -28,7 +31,9 @@ export type DeferredCleanupDecision =
       resumeDelayMs?: number;
     };
 
-export function resolveCleanupCompletionReason(entry: SubagentRunRecord): SubagentLifecycleEndedReason {
+export function resolveCleanupCompletionReason(
+  entry: SubagentRunRecord,
+): SubagentLifecycleEndedReason {
   return entry.endedReason ?? SUBAGENT_ENDED_REASON_COMPLETE;
 }
 
@@ -48,7 +53,8 @@ export function resolveDeferredCleanupDecision(params: {
 }): DeferredCleanupDecision {
   const endedAgo = resolveEndedAgoMs(params.entry, params.now);
   const isCompletionMessageFlow = params.entry.expectsCompletionMessage === true;
-  const completionHardExpiryExceeded = isCompletionMessageFlow && endedAgo > params.announceCompletionHardExpiryMs;
+  const completionHardExpiryExceeded =
+    isCompletionMessageFlow && endedAgo > params.announceCompletionHardExpiryMs;
   if (isCompletionMessageFlow && params.activeDescendantRuns > 0) {
     if (completionHardExpiryExceeded) {
       return { kind: "give-up", reason: "expiry" };
@@ -57,7 +63,9 @@ export function resolveDeferredCleanupDecision(params: {
   }
 
   const retryCount = (params.entry.announceRetryCount ?? 0) + 1;
-  const expiryExceeded = isCompletionMessageFlow ? completionHardExpiryExceeded : endedAgo > params.announceExpiryMs;
+  const expiryExceeded = isCompletionMessageFlow
+    ? completionHardExpiryExceeded
+    : endedAgo > params.announceExpiryMs;
   if (retryCount >= params.maxAnnounceRetryCount || expiryExceeded) {
     return {
       kind: "give-up",
@@ -70,6 +78,8 @@ export function resolveDeferredCleanupDecision(params: {
     kind: "retry",
     retryCount,
     resumeDelayMs:
-      params.entry.expectsCompletionMessage === true ? params.resolveAnnounceRetryDelayMs(retryCount) : undefined,
+      params.entry.expectsCompletionMessage === true
+        ? params.resolveAnnounceRetryDelayMs(retryCount)
+        : undefined,
   };
 }

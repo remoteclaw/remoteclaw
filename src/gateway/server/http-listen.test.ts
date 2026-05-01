@@ -44,7 +44,10 @@ function createFakeHttpServer(outcomes: ListenOutcome[]) {
 describe("listenGatewayHttpServer", () => {
   it("retries EADDRINUSE and closes server handle before retry", async () => {
     sleepMock.mockClear();
-    const fake = createFakeHttpServer([{ kind: "error", code: "EADDRINUSE" }, { kind: "listening" }]);
+    const fake = createFakeHttpServer([
+      { kind: "error", code: "EADDRINUSE" },
+      { kind: "listening" },
+    ]);
 
     await expect(
       listenGatewayHttpServer({

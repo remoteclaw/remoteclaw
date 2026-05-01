@@ -6,7 +6,12 @@ import type { AgentRouteBinding } from "../config/types.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import { type RuntimeEnv, writeRuntimeJson } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
-import { applyAgentBindings, describeBinding, parseBindingSpecs, removeAgentBindings } from "./agents.bindings.js";
+import {
+  applyAgentBindings,
+  describeBinding,
+  parseBindingSpecs,
+  removeAgentBindings,
+} from "./agents.bindings.js";
 import { requireValidConfig } from "./agents.command-shared.js";
 import { buildAgentSummaries } from "./agents.config.js";
 
@@ -77,8 +82,12 @@ function resolveTargetAgentIdOrExit(params: {
   return agentId;
 }
 
-function formatBindingConflicts(conflicts: Array<{ binding: AgentRouteBinding; existingAgentId: string }>): string[] {
-  return conflicts.map((conflict) => `${describeBinding(conflict.binding)} (agent=${conflict.existingAgentId})`);
+function formatBindingConflicts(
+  conflicts: Array<{ binding: AgentRouteBinding; existingAgentId: string }>,
+): string[] {
+  return conflicts.map(
+    (conflict) => `${describeBinding(conflict.binding)} (agent=${conflict.existingAgentId})`,
+  );
 }
 
 function resolveParsedBindingsOrExit(params: {
@@ -142,7 +151,10 @@ async function resolveConfigAndTargetAgentIdOrExit(params: {
   return { cfg, agentId };
 }
 
-export async function agentsBindingsCommand(opts: AgentsBindingsListOptions, runtime: RuntimeEnv = defaultRuntime) {
+export async function agentsBindingsCommand(
+  opts: AgentsBindingsListOptions,
+  runtime: RuntimeEnv = defaultRuntime,
+) {
   const cfg = await requireValidConfig(runtime);
   if (!cfg) {
     return;
@@ -176,14 +188,24 @@ export async function agentsBindingsCommand(opts: AgentsBindingsListOptions, run
   }
 
   if (filtered.length === 0) {
-    runtime.log(filterAgentId ? `No routing bindings for agent "${filterAgentId}".` : "No routing bindings.");
+    runtime.log(
+      filterAgentId ? `No routing bindings for agent "${filterAgentId}".` : "No routing bindings.",
+    );
     return;
   }
 
-  runtime.log(["Routing bindings:", ...filtered.map((binding) => `- ${formatBindingOwnerLine(binding)}`)].join("\n"));
+  runtime.log(
+    [
+      "Routing bindings:",
+      ...filtered.map((binding) => `- ${formatBindingOwnerLine(binding)}`),
+    ].join("\n"),
+  );
 }
 
-export async function agentsBindCommand(opts: AgentsBindOptions, runtime: RuntimeEnv = defaultRuntime) {
+export async function agentsBindCommand(
+  opts: AgentsBindOptions,
+  runtime: RuntimeEnv = defaultRuntime,
+) {
   const resolved = await resolveConfigAndTargetAgentIdOrExit({
     runtime,
     agentInput: opts.agent,
@@ -219,7 +241,9 @@ export async function agentsBindCommand(opts: AgentsBindOptions, runtime: Runtim
     skipped: result.skipped.map(describeBinding),
     conflicts: formatBindingConflicts(result.conflicts),
   };
-  if (emitJsonPayload({ runtime, json: opts.json, payload, conflictCount: result.conflicts.length })) {
+  if (
+    emitJsonPayload({ runtime, json: opts.json, payload, conflictCount: result.conflicts.length })
+  ) {
     return;
   }
 
@@ -255,7 +279,10 @@ export async function agentsBindCommand(opts: AgentsBindOptions, runtime: Runtim
   }
 }
 
-export async function agentsUnbindCommand(opts: AgentsUnbindOptions, runtime: RuntimeEnv = defaultRuntime) {
+export async function agentsUnbindCommand(
+  opts: AgentsUnbindOptions,
+  runtime: RuntimeEnv = defaultRuntime,
+) {
   const resolved = await resolveConfigAndTargetAgentIdOrExit({
     runtime,
     agentInput: opts.agent,
@@ -281,7 +308,8 @@ export async function agentsUnbindCommand(opts: AgentsUnbindOptions, runtime: Ru
     }
     const next = {
       ...cfg,
-      bindings: [...keptRoutes, ...nonRoutes].length > 0 ? [...keptRoutes, ...nonRoutes] : undefined,
+      bindings:
+        [...keptRoutes, ...nonRoutes].length > 0 ? [...keptRoutes, ...nonRoutes] : undefined,
     };
     await writeConfigFile(next);
     if (!opts.json) {
@@ -325,7 +353,9 @@ export async function agentsUnbindCommand(opts: AgentsUnbindOptions, runtime: Ru
     missing: result.missing.map(describeBinding),
     conflicts: formatBindingConflicts(result.conflicts),
   };
-  if (emitJsonPayload({ runtime, json: opts.json, payload, conflictCount: result.conflicts.length })) {
+  if (
+    emitJsonPayload({ runtime, json: opts.json, payload, conflictCount: result.conflicts.length })
+  ) {
     return;
   }
 

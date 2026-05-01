@@ -103,7 +103,9 @@ function drainLane(lane: string) {
   const state = getLaneState(lane);
   if (state.draining) {
     if (state.activeTaskIds.size === 0 && state.queue.length > 0) {
-      diag.warn(`drainLane blocked: lane=${lane} draining=true active=0 queue=${state.queue.length}`);
+      diag.warn(
+        `drainLane blocked: lane=${lane} draining=true active=0 queue=${state.queue.length}`,
+      );
     }
     return;
   }
@@ -120,7 +122,9 @@ function drainLane(lane: string) {
           } catch (err) {
             diag.error(`lane onWait callback failed: lane=${lane} error="${String(err)}"`);
           }
-          diag.warn(`lane wait exceeded: lane=${lane} waitedMs=${waitedMs} queueAhead=${state.queue.length}`);
+          diag.warn(
+            `lane wait exceeded: lane=${lane} waitedMs=${waitedMs} queueAhead=${state.queue.length}`,
+          );
         }
         logLaneDequeue(lane, waitedMs, state.queue.length);
         const taskId = getQueueState().nextTaskId++;
@@ -142,7 +146,9 @@ function drainLane(lane: string) {
             const completedCurrentGeneration = completeTask(state, taskId, taskGeneration);
             const isProbeLane = lane.startsWith("auth-probe:") || lane.startsWith("session:probe-");
             if (!isProbeLane && !isExpectedNonErrorLaneFailure(err)) {
-              diag.error(`lane task error: lane=${lane} durationMs=${Date.now() - startTime} error="${String(err)}"`);
+              diag.error(
+                `lane task error: lane=${lane} durationMs=${Date.now() - startTime} error="${String(err)}"`,
+              );
             } else if (!isProbeLane) {
               diag.debug(
                 `lane task interrupted: lane=${lane} durationMs=${Date.now() - startTime} reason="${String(err)}"`,

@@ -41,7 +41,8 @@ describe("validatePrivateKey fuzz", () => {
   describe("unicode attacks", () => {
     it("rejects unicode lookalike characters", () => {
       // Using zero-width characters
-      const withZeroWidth = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde\u200Bf";
+      const withZeroWidth =
+        "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde\u200Bf";
       expect(() => validatePrivateKey(withZeroWidth)).toThrow();
     });
 
@@ -470,7 +471,11 @@ describe("Event shape validation", () => {
     for (const { value, desc } of testTimestamps) {
       it(`handles ${desc} timestamp`, () => {
         const isValidTimestamp =
-          typeof value === "number" && !isNaN(value) && isFinite(value) && value >= 0 && Number.isInteger(value);
+          typeof value === "number" &&
+          !isNaN(value) &&
+          isFinite(value) &&
+          value >= 0 &&
+          Number.isInteger(value);
 
         // Timestamps should be validated as positive integers
         if (["NaN", "Infinity", "-Infinity", "negative", "float"].includes(desc)) {
@@ -515,7 +520,8 @@ describe("JSON parsing edge cases", () => {
       // Either it throws or produces something that needs validation
       if (!parseError) {
         // If it parsed, we need to validate the structure
-        const isValidRelayMessage = Array.isArray(parsed) && parsed.length >= 2 && typeof parsed[0] === "string";
+        const isValidRelayMessage =
+          Array.isArray(parsed) && parsed.length >= 2 && typeof parsed[0] === "string";
 
         // Most malformed cases won't produce valid relay messages
         if (["null literal", "plain number", "plain string"].includes(desc)) {

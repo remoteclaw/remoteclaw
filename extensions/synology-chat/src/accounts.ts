@@ -88,7 +88,8 @@ export function resolveAccount(cfg: any, accountId?: string | null): ResolvedSyn
     allowedUserIds: parseAllowedUserIds(
       accountOverride.allowedUserIds ?? channelCfg.allowedUserIds ?? envAllowedUserIds,
     ),
-    rateLimitPerMinute: accountOverride.rateLimitPerMinute ?? channelCfg.rateLimitPerMinute ?? envRateLimitValue,
+    rateLimitPerMinute:
+      accountOverride.rateLimitPerMinute ?? channelCfg.rateLimitPerMinute ?? envRateLimitValue,
     botName: accountOverride.botName ?? channelCfg.botName ?? envBotName,
     allowInsecureSsl: accountOverride.allowInsecureSsl ?? channelCfg.allowInsecureSsl ?? false,
   };

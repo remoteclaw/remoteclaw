@@ -1,5 +1,8 @@
 import type { Command } from "commander";
-import { CONFIGURE_WIZARD_SECTIONS, configureCommandFromSectionsArg } from "../../commands/configure.js";
+import {
+  CONFIGURE_WIZARD_SECTIONS,
+  configureCommandFromSectionsArg,
+} from "../../commands/configure.js";
 import { defaultRuntime } from "../../runtime.js";
 import { formatDocsLink } from "../../terminal/links.js";
 import { theme } from "../../terminal/theme.js";
@@ -11,7 +14,8 @@ export function registerConfigureCommand(program: Command) {
     .description("Interactive configuration for credentials, channels, gateway, and agent defaults")
     .addHelpText(
       "after",
-      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/configure", "docs.remoteclaw.org/cli/configure")}\n`,
+      () =>
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/configure", "docs.remoteclaw.org/cli/configure")}\n`,
     )
     .option(
       "--section <section>",

@@ -58,7 +58,11 @@ const secretInputJsonSchema = {
   ],
 } as const;
 
-function setFeishuNamedAccountEnabled(cfg: ClawdbotConfig, accountId: string, enabled: boolean): ClawdbotConfig {
+function setFeishuNamedAccountEnabled(
+  cfg: ClawdbotConfig,
+  accountId: string,
+  enabled: boolean,
+): ClawdbotConfig {
   const feishuCfg = cfg.channels?.feishu as FeishuConfig | undefined;
   return {
     ...cfg,
@@ -351,7 +355,9 @@ export const feishuPlugin: ChannelPlugin<ResolvedFeishuAccount> = {
       const account = resolveFeishuAccount({ cfg: ctx.cfg, accountId: ctx.accountId });
       const port = account.config?.webhookPort ?? null;
       ctx.setStatus({ accountId: ctx.accountId, port });
-      ctx.log?.info(`starting feishu[${ctx.accountId}] (mode: ${account.config?.connectionMode ?? "websocket"})`);
+      ctx.log?.info(
+        `starting feishu[${ctx.accountId}] (mode: ${account.config?.connectionMode ?? "websocket"})`,
+      );
       return monitorFeishuProvider({
         config: ctx.cfg,
         runtime: ctx.runtime,

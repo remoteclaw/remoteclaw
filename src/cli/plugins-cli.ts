@@ -24,7 +24,10 @@ import { theme } from "../terminal/theme.js";
 import { resolveUserPath, shortenHomeInString, shortenHomePath } from "../utils.js";
 import { looksLikeLocalInstallSpec } from "./install-spec.js";
 import { resolvePinnedNpmInstallRecordForCli } from "./npm-resolution.js";
-import { resolveBundledInstallPlanBeforeNpm, resolveBundledInstallPlanForNpmFailure } from "./plugin-install-plan.js";
+import {
+  resolveBundledInstallPlanBeforeNpm,
+  resolveBundledInstallPlanForNpmFailure,
+} from "./plugin-install-plan.js";
 import { setPluginEnabledInConfig } from "./plugins-config.js";
 import { promptYesNo } from "./prompt.js";
 
@@ -50,7 +53,9 @@ export type PluginUninstallOptions = {
   dryRun?: boolean;
 };
 
-function resolveFileNpmSpecToLocalPath(raw: string): { ok: true; path: string } | { ok: false; error: string } | null {
+function resolveFileNpmSpecToLocalPath(
+  raw: string,
+): { ok: true; path: string } | { ok: false; error: string } | null {
   const trimmed = raw.trim();
   if (!trimmed.toLowerCase().startsWith("file:")) {
     return null;
@@ -86,7 +91,11 @@ function formatPluginLine(plugin: PluginRecord, verbose = false): string {
   const name = theme.command(plugin.name || plugin.id);
   const idSuffix = plugin.name && plugin.name !== plugin.id ? theme.muted(` (${plugin.id})`) : "";
   const desc = plugin.description
-    ? theme.muted(plugin.description.length > 60 ? `${plugin.description.slice(0, 57)}...` : plugin.description)
+    ? theme.muted(
+        plugin.description.length > 60
+          ? `${plugin.description.slice(0, 57)}...`
+          : plugin.description,
+      )
     : theme.muted("(no description)");
 
   if (!verbose) {
@@ -163,7 +172,9 @@ async function installBundledPluginSource(params: {
       entries: {
         ...params.config.plugins?.entries,
         [params.bundledSource.pluginId]: {
-          ...(params.config.plugins?.entries?.[params.bundledSource.pluginId] as object | undefined),
+          ...(params.config.plugins?.entries?.[params.bundledSource.pluginId] as
+            | object
+            | undefined),
           enabled: true,
         },
       },
@@ -185,7 +196,10 @@ async function installBundledPluginSource(params: {
   defaultRuntime.log(`Restart the gateway to load plugins.`);
 }
 
-async function runPluginInstallCommand(params: { raw: string; opts: { link?: boolean; pin?: boolean } }) {
+async function runPluginInstallCommand(params: {
+  raw: string;
+  opts: { link?: boolean; pin?: boolean };
+}) {
   const { raw, opts } = params;
   const fileSpec = resolveFileNpmSpecToLocalPath(raw);
   if (fileSpec && !fileSpec.ok) {
@@ -270,7 +284,18 @@ async function runPluginInstallCommand(params: { raw: string; opts: { link?: boo
     process.exit(1);
   }
 
-  if (looksLikeLocalInstallSpec(raw, [".ts", ".js", ".mjs", ".cjs", ".tgz", ".tar.gz", ".tar", ".zip"])) {
+  if (
+    looksLikeLocalInstallSpec(raw, [
+      ".ts",
+      ".js",
+      ".mjs",
+      ".cjs",
+      ".tgz",
+      ".tar.gz",
+      ".tar",
+      ".zip",
+    ])
+  ) {
     defaultRuntime.error(`Path not found: ${resolved}`);
     process.exit(1);
   }
@@ -342,7 +367,8 @@ export function registerPluginsCli(program: Command) {
     .description("Manage RemoteClaw plugins and extensions")
     .addHelpText(
       "after",
-      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/plugins", "docs.remoteclaw.org/cli/plugins")}\n`,
+      () =>
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/plugins", "docs.remoteclaw.org/cli/plugins")}\n`,
     );
 
   plugins
@@ -353,7 +379,9 @@ export function registerPluginsCli(program: Command) {
     .option("--verbose", "Show detailed entries", false)
     .action((opts: PluginsListOptions) => {
       const report = buildPluginStatusReport();
-      const list = opts.enabled ? report.plugins.filter((p) => p.status === "loaded") : report.plugins;
+      const list = opts.enabled
+        ? report.plugins.filter((p) => p.status === "loaded")
+        : report.plugins;
 
       if (opts.json) {
         const payload = {
@@ -371,7 +399,9 @@ export function registerPluginsCli(program: Command) {
       }
 
       const loaded = list.filter((p) => p.status === "loaded").length;
-      defaultRuntime.log(`${theme.heading("Plugins")} ${theme.muted(`(${loaded}/${list.length} loaded)`)}`);
+      defaultRuntime.log(
+        `${theme.heading("Plugins")} ${theme.muted(`(${loaded}/${list.length} loaded)`)}`,
+      );
 
       if (!opts.verbose) {
         const tableWidth = getTerminalTableWidth();
@@ -534,7 +564,9 @@ export function registerPluginsCli(program: Command) {
         return;
       }
       defaultRuntime.log(
-        theme.warn(`Plugin "${id}" could not be enabled (${enableResult.reason ?? "unknown reason"}).`),
+        theme.warn(
+          `Plugin "${id}" could not be enabled (${enableResult.reason ?? "unknown reason"}).`,
+        ),
       );
     });
 
@@ -600,7 +632,11 @@ export function registerPluginsCli(program: Command) {
       if (cfg.plugins?.allow?.includes(pluginId)) {
         preview.push("allowlist entry");
       }
-      if (isLinked && install?.sourcePath && cfg.plugins?.load?.paths?.includes(install.sourcePath)) {
+      if (
+        isLinked &&
+        install?.sourcePath &&
+        cfg.plugins?.load?.paths?.includes(install.sourcePath)
+      ) {
         preview.push("load path");
       }
       const deleteTarget = !keepFiles

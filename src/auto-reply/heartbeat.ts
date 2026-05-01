@@ -30,7 +30,9 @@ export async function resolveHeartbeatPrompt(opts: {
   const trimmedFile = opts.file?.trim();
   if (trimmedFile) {
     const filePath =
-      opts.workspaceDir && !path.isAbsolute(trimmedFile) ? path.join(opts.workspaceDir, trimmedFile) : trimmedFile;
+      opts.workspaceDir && !path.isAbsolute(trimmedFile)
+        ? path.join(opts.workspaceDir, trimmedFile)
+        : trimmedFile;
     try {
       const content = await fs.readFile(filePath, "utf-8");
       const trimmedContent = content.trim();
@@ -54,7 +56,9 @@ function stripTokenAtEdges(raw: string): { text: string; didStrip: boolean } {
   }
 
   const token = HEARTBEAT_TOKEN;
-  const tokenAtEndWithOptionalTrailingPunctuation = new RegExp(`${escapeRegExp(token)}[^\\w]{0,4}$`);
+  const tokenAtEndWithOptionalTrailingPunctuation = new RegExp(
+    `${escapeRegExp(token)}[^\\w]{0,4}$`,
+  );
   if (!text.includes(token)) {
     return { text, didStrip: false };
   }
@@ -93,7 +97,10 @@ function stripTokenAtEdges(raw: string): { text: string; didStrip: boolean } {
   return { text: collapsed, didStrip };
 }
 
-export function stripHeartbeatToken(raw?: string, opts: { mode?: StripHeartbeatMode; maxAckChars?: number } = {}) {
+export function stripHeartbeatToken(
+  raw?: string,
+  opts: { mode?: StripHeartbeatMode; maxAckChars?: number } = {},
+) {
   if (!raw) {
     return { shouldSkip: true, text: "", didStrip: false };
   }
@@ -104,7 +111,8 @@ export function stripHeartbeatToken(raw?: string, opts: { mode?: StripHeartbeatM
 
   const mode: StripHeartbeatMode = opts.mode ?? "message";
   const maxAckCharsRaw = opts.maxAckChars;
-  const parsedAckChars = typeof maxAckCharsRaw === "string" ? Number(maxAckCharsRaw) : maxAckCharsRaw;
+  const parsedAckChars =
+    typeof maxAckCharsRaw === "string" ? Number(maxAckCharsRaw) : maxAckCharsRaw;
   const maxAckChars = Math.max(
     0,
     typeof parsedAckChars === "number" && Number.isFinite(parsedAckChars)
@@ -132,7 +140,8 @@ export function stripHeartbeatToken(raw?: string, opts: { mode?: StripHeartbeatM
 
   const strippedOriginal = stripTokenAtEdges(trimmed);
   const strippedNormalized = stripTokenAtEdges(trimmedNormalized);
-  const picked = strippedOriginal.didStrip && strippedOriginal.text ? strippedOriginal : strippedNormalized;
+  const picked =
+    strippedOriginal.didStrip && strippedOriginal.text ? strippedOriginal : strippedNormalized;
   if (!picked.didStrip) {
     return { shouldSkip: false, text: trimmed, didStrip: false };
   }

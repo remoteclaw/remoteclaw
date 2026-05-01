@@ -124,14 +124,18 @@ export function createLocalShellRunner(deps: LocalShellDeps) {
       });
 
       child.on("close", (code, signal) => {
-        const combined = (stdout + (stderr ? (stdout ? "\n" : "") + stderr : "")).slice(0, maxChars).trimEnd();
+        const combined = (stdout + (stderr ? (stdout ? "\n" : "") + stderr : ""))
+          .slice(0, maxChars)
+          .trimEnd();
 
         if (combined) {
           for (const line of combined.split("\n")) {
             deps.chatLog.addSystem(`[local] ${line}`);
           }
         }
-        deps.chatLog.addSystem(`[local] exit ${code ?? "?"}${signal ? ` (signal ${String(signal)})` : ""}`);
+        deps.chatLog.addSystem(
+          `[local] exit ${code ?? "?"}${signal ? ` (signal ${String(signal)})` : ""}`,
+        );
         deps.tui.requestRender();
         resolve();
       });

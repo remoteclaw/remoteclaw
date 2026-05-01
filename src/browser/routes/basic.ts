@@ -59,7 +59,10 @@ export function registerBrowserBasicRoutes(app: BrowserRouteRegistrar, ctx: Brow
       return jsonError(res, profileCtx.status, profileCtx.error);
     }
 
-    const [cdpHttp, cdpReady] = await Promise.all([profileCtx.isHttpReachable(300), profileCtx.isReachable(600)]);
+    const [cdpHttp, cdpReady] = await Promise.all([
+      profileCtx.isHttpReachable(300),
+      profileCtx.isReachable(600),
+    ]);
 
     res.json({
       enabled: current.resolved.enabled,
@@ -124,7 +127,10 @@ export function registerBrowserBasicRoutes(app: BrowserRouteRegistrar, ctx: Brow
     const name = toStringOrEmpty((req.body as { name?: unknown })?.name);
     const color = toStringOrEmpty((req.body as { color?: unknown })?.color);
     const cdpUrl = toStringOrEmpty((req.body as { cdpUrl?: unknown })?.cdpUrl);
-    const driver = toStringOrEmpty((req.body as { driver?: unknown })?.driver) as "remoteclaw" | "extension" | "";
+    const driver = toStringOrEmpty((req.body as { driver?: unknown })?.driver) as
+      | "remoteclaw"
+      | "extension"
+      | "";
 
     if (!name) {
       return jsonError(res, 400, "name is required");

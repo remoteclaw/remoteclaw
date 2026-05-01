@@ -74,7 +74,10 @@ function readError(payload: unknown): string | undefined {
   return typeof error === "string" && error.trim() ? error.trim() : undefined;
 }
 
-async function callSlack(client: WebClient, method: SlackScopesSource): Promise<Record<string, unknown> | null> {
+async function callSlack(
+  client: WebClient,
+  method: SlackScopesSource,
+): Promise<Record<string, unknown> | null> {
   try {
     const result = await client.apiCall(method);
     return isRecord(result) ? result : null;
@@ -86,7 +89,10 @@ async function callSlack(client: WebClient, method: SlackScopesSource): Promise<
   }
 }
 
-export async function fetchSlackScopes(token: string, timeoutMs: number): Promise<SlackScopesResult> {
+export async function fetchSlackScopes(
+  token: string,
+  timeoutMs: number,
+): Promise<SlackScopesResult> {
   const client = createSlackWebClient(token, { timeout: timeoutMs });
   const attempts: SlackScopesSource[] = ["auth.scopes", "apps.permissions.info"];
   const errors: string[] = [];

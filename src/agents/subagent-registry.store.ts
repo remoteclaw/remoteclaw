@@ -64,7 +64,8 @@ export function loadSubagentRegistryFromDisk(): Map<string, SubagentRunRecord> {
     out.set(runId, {
       ...entry,
       requesterOrigin: normalizeDeliveryContext(entry.requesterOrigin),
-      cleanupCompletedAt: typeof entry.cleanupCompletedAt === "number" ? entry.cleanupCompletedAt : undefined,
+      cleanupCompletedAt:
+        typeof entry.cleanupCompletedAt === "number" ? entry.cleanupCompletedAt : undefined,
       cleanupHandled: typeof entry.cleanupHandled === "boolean" ? entry.cleanupHandled : undefined,
       spawnMode: entry.spawnMode === "session" ? "session" : "run",
     });

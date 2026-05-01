@@ -43,7 +43,10 @@ export const nodePendingHandlers: GatewayRequestHandlers = {
       respond(
         false,
         undefined,
-        errorShape(ErrorCodes.INVALID_REQUEST, "node.pending.drain requires a connected device identity"),
+        errorShape(
+          ErrorCodes.INVALID_REQUEST,
+          "node.pending.drain requires a connected device identity",
+        ),
       );
       return;
     }
@@ -80,7 +83,9 @@ export const nodePendingHandlers: GatewayRequestHandlers = {
       let wakeTriggered = false;
       if (p.wake !== false && !queued.deduped && !context.nodeRegistry.get(p.nodeId)) {
         const wakeReqId = queued.item.id;
-        context.logGateway.info(`node pending wake start node=${p.nodeId} req=${wakeReqId} type=${queued.item.type}`);
+        context.logGateway.info(
+          `node pending wake start node=${p.nodeId} req=${wakeReqId} type=${queued.item.type}`,
+        );
         const wake = await maybeWakeNodeWithApns(p.nodeId, { wakeReason: "node.pending" });
         context.logGateway.info(
           `node pending wake stage=wake1 node=${p.nodeId} req=${wakeReqId} ` +
@@ -134,7 +139,9 @@ export const nodePendingHandlers: GatewayRequestHandlers = {
             `node pending wake done node=${p.nodeId} req=${wakeReqId} connected=false reason=not_connected`,
           );
         } else {
-          context.logGateway.info(`node pending wake done node=${p.nodeId} req=${wakeReqId} connected=true`);
+          context.logGateway.info(
+            `node pending wake done node=${p.nodeId} req=${wakeReqId} connected=true`,
+          );
         }
       }
       respond(

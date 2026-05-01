@@ -13,7 +13,11 @@ import { resolveDefaultChannelAccountContext } from "./channel-account-context.j
 function collectImplicitHeartbeatDirectPolicyWarnings(cfg: RemoteClawConfig): string[] {
   const warnings: string[] = [];
 
-  const maybeWarn = (params: { label: string; heartbeat: AgentConfig["heartbeat"] | undefined; pathHint: string }) => {
+  const maybeWarn = (params: {
+    label: string;
+    heartbeat: AgentConfig["heartbeat"] | undefined;
+    pathHint: string;
+  }) => {
     const heartbeat = params.heartbeat;
     if (!heartbeat || heartbeat.target === undefined || heartbeat.target === "none") {
       return;
@@ -59,8 +63,12 @@ export async function noteSecurityWarnings(cfg: RemoteClawConfig) {
   const gatewayBind = (cfg.gateway?.bind ?? "loopback") as string;
   const customBindHost = cfg.gateway?.customBindHost?.trim();
   const bindModes: GatewayBindMode[] = ["auto", "lan", "loopback", "custom", "tailnet"];
-  const bindMode = bindModes.includes(gatewayBind as GatewayBindMode) ? (gatewayBind as GatewayBindMode) : undefined;
-  const resolvedBindHost = bindMode ? await resolveGatewayBindHost(bindMode, customBindHost) : "0.0.0.0";
+  const bindMode = bindModes.includes(gatewayBind as GatewayBindMode)
+    ? (gatewayBind as GatewayBindMode)
+    : undefined;
+  const resolvedBindHost = bindMode
+    ? await resolveGatewayBindHost(bindMode, customBindHost)
+    : "0.0.0.0";
   const isExposed = !isLoopbackHost(resolvedBindHost);
 
   const resolvedAuth = resolveGatewayAuth({
@@ -70,11 +78,15 @@ export async function noteSecurityWarnings(cfg: RemoteClawConfig) {
   });
   const authToken = resolvedAuth.token?.trim() ?? "";
   const authPassword = resolvedAuth.password?.trim() ?? "";
-  const hasToken = authToken.length > 0 || hasConfiguredSecretInput(cfg.gateway?.auth?.token, cfg.secrets?.defaults);
+  const hasToken =
+    authToken.length > 0 ||
+    hasConfiguredSecretInput(cfg.gateway?.auth?.token, cfg.secrets?.defaults);
   const hasPassword =
-    authPassword.length > 0 || hasConfiguredSecretInput(cfg.gateway?.auth?.password, cfg.secrets?.defaults);
+    authPassword.length > 0 ||
+    hasConfiguredSecretInput(cfg.gateway?.auth?.password, cfg.secrets?.defaults);
   const hasSharedSecret =
-    (resolvedAuth.mode === "token" && hasToken) || (resolvedAuth.mode === "password" && hasPassword);
+    (resolvedAuth.mode === "token" && hasToken) ||
+    (resolvedAuth.mode === "password" && hasPassword);
   const bindDescriptor = `"${gatewayBind}" (${resolvedBindHost})`;
   const saferRemoteAccessLines = [
     "  Safer remote access: keep bind loopback and use Tailscale Serve/Funnel or an SSH tunnel.",
@@ -136,7 +148,9 @@ export async function noteSecurityWarnings(cfg: RemoteClawConfig) {
       const allowFromPath = `${params.allowFromPath}allowFrom`;
       warnings.push(`- ${params.label} DMs: OPEN (${policyPath}="open"). Anyone can DM it.`);
       if (!hasWildcard) {
-        warnings.push(`- ${params.label} DMs: config invalid — "open" requires ${allowFromPath} to include "*".`);
+        warnings.push(
+          `- ${params.label} DMs: config invalid — "open" requires ${allowFromPath} to include "*".`,
+        );
       }
     }
 
@@ -165,7 +179,8 @@ export async function noteSecurityWarnings(cfg: RemoteClawConfig) {
     if (!plugin.security) {
       continue;
     }
-    const { defaultAccountId, account, enabled, configured } = await resolveDefaultChannelAccountContext(plugin, cfg);
+    const { defaultAccountId, account, enabled, configured } =
+      await resolveDefaultChannelAccountContext(plugin, cfg);
     if (!enabled) {
       continue;
     }

@@ -66,7 +66,8 @@ describe("browser control auth bootstrap failures", () => {
     mocks.resolveBrowserControlAuth.mockClear();
     mocks.ensureExtensionRelayForProfiles.mockClear();
     vi.resetModules();
-    ({ startBrowserControlServerFromConfig, stopBrowserControlServer } = await import("./server.js"));
+    ({ startBrowserControlServerFromConfig, stopBrowserControlServer } =
+      await import("./server.js"));
   });
 
   afterEach(async () => {

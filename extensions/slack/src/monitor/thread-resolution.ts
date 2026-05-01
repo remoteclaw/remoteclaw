@@ -16,7 +16,11 @@ const normalizeThreadTs = (threadTs?: string | null) => {
   return trimmed ? trimmed : undefined;
 };
 
-async function resolveThreadTsFromHistory(params: { client: SlackWebClient; channelId: string; messageTs: string }) {
+async function resolveThreadTsFromHistory(params: {
+  client: SlackWebClient;
+  channelId: string;
+  messageTs: string;
+}) {
   try {
     const response = (await params.client.conversations.history({
       channel: params.channelId,
@@ -25,7 +29,8 @@ async function resolveThreadTsFromHistory(params: { client: SlackWebClient; chan
       inclusive: true,
       limit: 1,
     })) as { messages?: Array<{ ts?: string; thread_ts?: string }> };
-    const message = response.messages?.find((entry) => entry.ts === params.messageTs) ?? response.messages?.[0];
+    const message =
+      response.messages?.find((entry) => entry.ts === params.messageTs) ?? response.messages?.[0];
     return normalizeThreadTs(message?.thread_ts);
   } catch (err) {
     if (shouldLogVerbose()) {
@@ -37,7 +42,11 @@ async function resolveThreadTsFromHistory(params: { client: SlackWebClient; chan
   }
 }
 
-export function createSlackThreadTsResolver(params: { client: SlackWebClient; cacheTtlMs?: number; maxSize?: number }) {
+export function createSlackThreadTsResolver(params: {
+  client: SlackWebClient;
+  cacheTtlMs?: number;
+  maxSize?: number;
+}) {
   const ttlMs = Math.max(0, params.cacheTtlMs ?? DEFAULT_THREAD_TS_CACHE_TTL_MS);
   const maxSize = Math.max(0, params.maxSize ?? DEFAULT_THREAD_TS_CACHE_MAX);
   const cache = new Map<string, ThreadTsCacheEntry>();
@@ -115,7 +124,9 @@ export function createSlackThreadTsResolver(params: { client: SlackWebClient; ca
       }
 
       if (shouldLogVerbose()) {
-        logVerbose(`slack inbound: could not resolve missing thread_ts channel=${message.channel} ts=${message.ts}`);
+        logVerbose(
+          `slack inbound: could not resolve missing thread_ts channel=${message.channel} ts=${message.ts}`,
+        );
       }
       return message;
     },

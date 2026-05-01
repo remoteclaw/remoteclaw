@@ -3,7 +3,10 @@ import { getChannelPlugin, normalizeChannelId } from "../../channels/plugins/ind
 import { createOutboundSendDeps, type CliDeps } from "../../cli/outbound-send-deps.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
-import { resolveAgentDeliveryPlan, resolveAgentOutboundTarget } from "../../infra/outbound/agent-delivery.js";
+import {
+  resolveAgentDeliveryPlan,
+  resolveAgentOutboundTarget,
+} from "../../infra/outbound/agent-delivery.js";
 import { resolveMessageChannelSelection } from "../../infra/outbound/channel-selection.js";
 import { deliverOutboundPayloads } from "../../infra/outbound/deliver.js";
 import { buildOutboundResultEnvelope } from "../../infra/outbound/envelope.js";
@@ -43,7 +46,12 @@ function formatNestedLogPrefix(opts: AgentCommandOpts, sessionKey?: string): str
   return parts.join(" ");
 }
 
-function logNestedOutput(runtime: RuntimeEnv, opts: AgentCommandOpts, output: string, sessionKey?: string) {
+function logNestedOutput(
+  runtime: RuntimeEnv,
+  opts: AgentCommandOpts,
+  output: string,
+  sessionKey?: string,
+) {
   const prefix = formatNestedLogPrefix(opts, sessionKey);
   for (const line of output.split(/\r?\n/)) {
     if (!line) {
@@ -114,10 +122,13 @@ export async function deliverAgentCommandResult(params: {
     ? getChannelPlugin(normalizeChannelId(deliveryChannel) ?? deliveryChannel)
     : undefined;
 
-  const isDeliveryChannelKnown = isInternalMessageChannel(deliveryChannel) || Boolean(deliveryPlugin);
+  const isDeliveryChannelKnown =
+    isInternalMessageChannel(deliveryChannel) || Boolean(deliveryPlugin);
 
   const targetMode =
-    opts.deliveryTargetMode ?? effectiveDeliveryPlan.deliveryTargetMode ?? (opts.to ? "explicit" : "implicit");
+    opts.deliveryTargetMode ??
+    effectiveDeliveryPlan.deliveryTargetMode ??
+    (opts.to ? "explicit" : "implicit");
   const resolvedAccountId = effectiveDeliveryPlan.resolvedAccountId;
   const resolved =
     deliver && isDeliveryChannelKnown && deliveryChannel

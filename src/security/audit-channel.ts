@@ -5,7 +5,10 @@ import {
 import { resolveChannelDefaultAccountId } from "../channels/plugins/helpers.js";
 import type { listChannelPlugins } from "../channels/plugins/index.js";
 import type { ChannelId } from "../channels/plugins/types.js";
-import { isNumericTelegramUserId, normalizeTelegramAllowFromEntry } from "../channels/telegram/allow-from.js";
+import {
+  isNumericTelegramUserId,
+  normalizeTelegramAllowFromEntry,
+} from "../channels/telegram/allow-from.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { resolveNativeCommandsEnabled, resolveNativeSkillsEnabled } from "../config/commands.js";
 import type { RemoteClawConfig } from "../config/config.js";
@@ -20,7 +23,11 @@ function normalizeAllowFromList(list: Array<string | number> | undefined | null)
   return normalizeStringEntries(Array.isArray(list) ? list : undefined);
 }
 
-function addDiscordNameBasedEntries(params: { target: Set<string>; values: unknown; source: string }): void {
+function addDiscordNameBasedEntries(params: {
+  target: Set<string>;
+  values: unknown;
+  source: string;
+}): void {
   if (!Array.isArray(params.values)) {
     return;
   }
@@ -36,7 +43,10 @@ function addDiscordNameBasedEntries(params: { target: Set<string>; values: unkno
   }
 }
 
-function collectInvalidTelegramAllowFromEntries(params: { entries: unknown; target: Set<string> }): void {
+function collectInvalidTelegramAllowFromEntries(params: {
+  entries: unknown;
+  target: Set<string>;
+}): void {
   if (!Array.isArray(params.entries)) {
     return;
   }
@@ -53,7 +63,11 @@ function collectInvalidTelegramAllowFromEntries(params: { entries: unknown; targ
 
 function classifyChannelWarningSeverity(message: string): SecurityAuditSeverity {
   const s = message.toLowerCase();
-  if (s.includes("dms: open") || s.includes('grouppolicy="open"') || s.includes('dmpolicy="open"')) {
+  if (
+    s.includes("dms: open") ||
+    s.includes('grouppolicy="open"') ||
+    s.includes('dmpolicy="open"')
+  ) {
     return "critical";
   }
   if (s.includes("allows any") || s.includes("anyone can dm") || s.includes("public")) {
@@ -85,7 +99,11 @@ function dedupeFindings(findings: SecurityAuditFinding[]): SecurityAuditFinding[
   return out;
 }
 
-function hasExplicitProviderAccountConfig(cfg: RemoteClawConfig, provider: string, accountId: string): boolean {
+function hasExplicitProviderAccountConfig(
+  cfg: RemoteClawConfig,
+  provider: string,
+  accountId: string,
+): boolean {
   const channel = cfg.channels?.[provider];
   if (!channel || typeof channel !== "object") {
     return false;
@@ -105,13 +123,21 @@ export async function collectChannelSecurityFindings(params: {
   const findings: SecurityAuditFinding[] = [];
   const sourceConfig = params.sourceConfig ?? params.cfg;
 
-  const inspectChannelAccount = (plugin: (typeof params.plugins)[number], cfg: RemoteClawConfig, accountId: string) =>
-    plugin.config.inspectAccount?.(cfg, accountId) ?? undefined;
+  const inspectChannelAccount = (
+    plugin: (typeof params.plugins)[number],
+    cfg: RemoteClawConfig,
+    accountId: string,
+  ) => plugin.config.inspectAccount?.(cfg, accountId) ?? undefined;
 
   const asAccountRecord = (value: unknown): Record<string, unknown> | null =>
-    value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : null;
 
-  const resolveChannelAuditAccount = async (plugin: (typeof params.plugins)[number], accountId: string) => {
+  const resolveChannelAuditAccount = async (
+    plugin: (typeof params.plugins)[number],
+    accountId: string,
+  ) => {
     const sourceInspectedAccount = inspectChannelAccount(plugin, sourceConfig, accountId);
     const resolvedInspectedAccount = inspectChannelAccount(plugin, params.cfg, accountId);
     const sourceInspection = sourceInspectedAccount as {
@@ -122,7 +148,8 @@ export async function collectChannelSecurityFindings(params: {
       enabled?: boolean;
       configured?: boolean;
     } | null;
-    const resolvedAccount = resolvedInspectedAccount ?? plugin.config.resolveAccount(params.cfg, accountId);
+    const resolvedAccount =
+      resolvedInspectedAccount ?? plugin.config.resolveAccount(params.cfg, accountId);
     const useSourceUnavailableAccount = Boolean(
       sourceInspectedAccount &&
       hasConfiguredUnavailableCredentialStatus(sourceInspectedAccount) &&
@@ -217,7 +244,8 @@ export async function collectChannelSecurityFindings(params: {
         checkId: `channels.${input.provider}.dm.scope_main_multiuser`,
         severity: "warn",
         title: `${input.label} DMs share the main session`,
-        detail: "Multiple DM senders currently share the main session, which can leak context across users.",
+        detail:
+          "Multiple DM senders currently share the main session, which can leak context across users.",
         remediation:
           "Run: " +
           formatCliCommand('remoteclaw config set session.dmScope "per-channel-peer"') +
@@ -239,7 +267,11 @@ export async function collectChannelSecurityFindings(params: {
     const orderedAccountIds = Array.from(new Set([defaultAccountId, ...accountIds]));
 
     for (const accountId of orderedAccountIds) {
-      const hasExplicitAccountPath = hasExplicitProviderAccountConfig(sourceConfig, plugin.id, accountId);
+      const hasExplicitAccountPath = hasExplicitProviderAccountConfig(
+        sourceConfig,
+        plugin.id,
+        accountId,
+      );
       const { account, enabled, configured } = await resolveChannelAuditAccount(plugin, accountId);
       if (!enabled) {
         continue;
@@ -248,24 +280,32 @@ export async function collectChannelSecurityFindings(params: {
         continue;
       }
 
-      const accountConfig = (account as { config?: Record<string, unknown> } | null | undefined)?.config;
+      const accountConfig = (account as { config?: Record<string, unknown> } | null | undefined)
+        ?.config;
       if (isDangerousNameMatchingEnabled(accountConfig)) {
-        const accountNote = orderedAccountIds.length > 1 || hasExplicitAccountPath ? ` (account: ${accountId})` : "";
+        const accountNote =
+          orderedAccountIds.length > 1 || hasExplicitAccountPath ? ` (account: ${accountId})` : "";
         findings.push({
           checkId: `channels.${plugin.id}.allowFrom.dangerous_name_matching_enabled`,
           severity: "info",
           title: `${plugin.meta.label ?? plugin.id} dangerous name matching is enabled${accountNote}`,
           detail:
             "dangerouslyAllowNameMatching=true re-enables mutable name/email/tag matching for sender authorization. This is a break-glass compatibility mode, not a hardened default.",
-          remediation: "Prefer stable sender IDs in allowlists, then disable dangerouslyAllowNameMatching.",
+          remediation:
+            "Prefer stable sender IDs in allowlists, then disable dangerouslyAllowNameMatching.",
         });
       }
 
       if (plugin.id === "discord") {
         const discordCfg =
-          (account as { config?: Record<string, unknown> } | null)?.config ?? ({} as Record<string, unknown>);
+          (account as { config?: Record<string, unknown> } | null)?.config ??
+          ({} as Record<string, unknown>);
         const dangerousNameMatchingEnabled = isDangerousNameMatchingEnabled(discordCfg);
-        const storeAllowFrom = await readChannelAllowFromStore("discord", process.env, accountId).catch(() => []);
+        const storeAllowFrom = await readChannelAllowFromStore(
+          "discord",
+          process.env,
+          accountId,
+        ).catch(() => []);
         const discordNameBasedAllowEntries = new Set<string>();
         const discordPathPrefix =
           orderedAccountIds.length > 1 || hasExplicitAccountPath
@@ -286,7 +326,8 @@ export async function collectChannelSecurityFindings(params: {
           values: storeAllowFrom,
           source: "~/.remoteclaw/credentials/discord-allowFrom.json",
         });
-        const discordGuildEntries = (discordCfg.guilds as Record<string, unknown> | undefined) ?? {};
+        const discordGuildEntries =
+          (discordCfg.guilds as Record<string, unknown> | undefined) ?? {};
         for (const [guildKey, guildValue] of Object.entries(discordGuildEntries)) {
           if (!guildValue || typeof guildValue !== "object") {
             continue;
@@ -301,7 +342,9 @@ export async function collectChannelSecurityFindings(params: {
           if (!channels || typeof channels !== "object") {
             continue;
           }
-          for (const [channelKey, channelValue] of Object.entries(channels as Record<string, unknown>)) {
+          for (const [channelKey, channelValue] of Object.entries(
+            channels as Record<string, unknown>,
+          )) {
             if (!channelValue || typeof channelValue !== "object") {
               continue;
             }
@@ -337,7 +380,9 @@ export async function collectChannelSecurityFindings(params: {
         }
         const nativeEnabled = resolveNativeCommandsEnabled({
           providerId: "discord",
-          providerSetting: coerceNativeSetting((discordCfg.commands as { native?: unknown } | undefined)?.native),
+          providerSetting: coerceNativeSetting(
+            (discordCfg.commands as { native?: unknown } | undefined)?.native,
+          ),
           globalSetting: params.cfg.commands?.native,
         });
         const nativeSkillsEnabled = resolveNativeSkillsEnabled({
@@ -350,7 +395,8 @@ export async function collectChannelSecurityFindings(params: {
         const slashEnabled = nativeEnabled || nativeSkillsEnabled;
         if (slashEnabled) {
           const defaultGroupPolicy = params.cfg.channels?.defaults?.groupPolicy;
-          const groupPolicy = (discordCfg.groupPolicy as string | undefined) ?? defaultGroupPolicy ?? "allowlist";
+          const groupPolicy =
+            (discordCfg.groupPolicy as string | undefined) ?? defaultGroupPolicy ?? "allowlist";
           const guildEntries = discordGuildEntries;
           const guildsConfigured = Object.keys(guildEntries).length > 0;
           const hasAnyUserAllowlist = Object.values(guildEntries).some((guild) => {
@@ -375,10 +421,16 @@ export async function collectChannelSecurityFindings(params: {
           });
           const dmAllowFromRaw = (discordCfg.dm as { allowFrom?: unknown } | undefined)?.allowFrom;
           const dmAllowFrom = Array.isArray(dmAllowFromRaw) ? dmAllowFromRaw : [];
-          const ownerAllowFromConfigured = normalizeAllowFromList([...dmAllowFrom, ...storeAllowFrom]).length > 0;
+          const ownerAllowFromConfigured =
+            normalizeAllowFromList([...dmAllowFrom, ...storeAllowFrom]).length > 0;
 
           const useAccessGroups = params.cfg.commands?.useAccessGroups !== false;
-          if (!useAccessGroups && groupPolicy !== "disabled" && guildsConfigured && !hasAnyUserAllowlist) {
+          if (
+            !useAccessGroups &&
+            groupPolicy !== "disabled" &&
+            guildsConfigured &&
+            !hasAnyUserAllowlist
+          ) {
             findings.push({
               checkId: "channels.discord.commands.native.unrestricted",
               severity: "critical",
@@ -410,11 +462,13 @@ export async function collectChannelSecurityFindings(params: {
 
       if (plugin.id === "slack") {
         const slackCfg =
-          (account as { config?: Record<string, unknown>; dm?: Record<string, unknown> } | null)?.config ??
-          ({} as Record<string, unknown>);
+          (account as { config?: Record<string, unknown>; dm?: Record<string, unknown> } | null)
+            ?.config ?? ({} as Record<string, unknown>);
         const nativeEnabled = resolveNativeCommandsEnabled({
           providerId: "slack",
-          providerSetting: coerceNativeSetting((slackCfg.commands as { native?: unknown } | undefined)?.native),
+          providerSetting: coerceNativeSetting(
+            (slackCfg.commands as { native?: unknown } | undefined)?.native,
+          ),
           globalSetting: params.cfg.commands?.native,
         });
         const nativeSkillsEnabled = resolveNativeSkillsEnabled({
@@ -441,16 +495,26 @@ export async function collectChannelSecurityFindings(params: {
             });
           } else {
             const allowFromRaw = (
-              account as { config?: { allowFrom?: unknown }; dm?: { allowFrom?: unknown } } | null | undefined
+              account as
+                | { config?: { allowFrom?: unknown }; dm?: { allowFrom?: unknown } }
+                | null
+                | undefined
             )?.config?.allowFrom;
-            const legacyAllowFromRaw = (account as { dm?: { allowFrom?: unknown } } | null | undefined)?.dm?.allowFrom;
+            const legacyAllowFromRaw = (
+              account as { dm?: { allowFrom?: unknown } } | null | undefined
+            )?.dm?.allowFrom;
             const allowFrom = Array.isArray(allowFromRaw)
               ? allowFromRaw
               : Array.isArray(legacyAllowFromRaw)
                 ? legacyAllowFromRaw
                 : [];
-            const storeAllowFrom = await readChannelAllowFromStore("slack", process.env, accountId).catch(() => []);
-            const ownerAllowFromConfigured = normalizeAllowFromList([...allowFrom, ...storeAllowFrom]).length > 0;
+            const storeAllowFrom = await readChannelAllowFromStore(
+              "slack",
+              process.env,
+              accountId,
+            ).catch(() => []);
+            const ownerAllowFromConfigured =
+              normalizeAllowFromList([...allowFrom, ...storeAllowFrom]).length > 0;
             const channels = (slackCfg.channels as Record<string, unknown> | undefined) ?? {};
             const hasAnyChannelUsersAllowlist = Object.values(channels).some((value) => {
               if (!value || typeof value !== "object") {
@@ -522,24 +586,33 @@ export async function collectChannelSecurityFindings(params: {
       }
 
       const telegramCfg =
-        (account as { config?: Record<string, unknown> } | null)?.config ?? ({} as Record<string, unknown>);
+        (account as { config?: Record<string, unknown> } | null)?.config ??
+        ({} as Record<string, unknown>);
       const defaultGroupPolicy = params.cfg.channels?.defaults?.groupPolicy;
-      const groupPolicy = (telegramCfg.groupPolicy as string | undefined) ?? defaultGroupPolicy ?? "allowlist";
+      const groupPolicy =
+        (telegramCfg.groupPolicy as string | undefined) ?? defaultGroupPolicy ?? "allowlist";
       const groups = telegramCfg.groups as Record<string, unknown> | undefined;
       const groupsConfigured = Boolean(groups) && Object.keys(groups ?? {}).length > 0;
-      const groupAccessPossible = groupPolicy === "open" || (groupPolicy === "allowlist" && groupsConfigured);
+      const groupAccessPossible =
+        groupPolicy === "open" || (groupPolicy === "allowlist" && groupsConfigured);
       if (!groupAccessPossible) {
         continue;
       }
 
-      const storeAllowFrom = await readChannelAllowFromStore("telegram", process.env, accountId).catch(() => []);
+      const storeAllowFrom = await readChannelAllowFromStore(
+        "telegram",
+        process.env,
+        accountId,
+      ).catch(() => []);
       const storeHasWildcard = storeAllowFrom.some((v) => String(v).trim() === "*");
       const invalidTelegramAllowFromEntries = new Set<string>();
       collectInvalidTelegramAllowFromEntries({
         entries: storeAllowFrom,
         target: invalidTelegramAllowFromEntries,
       });
-      const groupAllowFrom = Array.isArray(telegramCfg.groupAllowFrom) ? telegramCfg.groupAllowFrom : [];
+      const groupAllowFrom = Array.isArray(telegramCfg.groupAllowFrom)
+        ? telegramCfg.groupAllowFrom
+        : [];
       const groupAllowFromHasWildcard = groupAllowFrom.some((v) => String(v).trim() === "*");
       collectInvalidTelegramAllowFromEntries({
         entries: groupAllowFrom,
@@ -584,7 +657,8 @@ export async function collectChannelSecurityFindings(params: {
         }),
       );
 
-      const hasAnySenderAllowlist = storeAllowFrom.length > 0 || groupAllowFrom.length > 0 || anyGroupOverride;
+      const hasAnySenderAllowlist =
+        storeAllowFrom.length > 0 || groupAllowFrom.length > 0 || anyGroupOverride;
 
       if (invalidTelegramAllowFromEntries.size > 0) {
         const examples = Array.from(invalidTelegramAllowFromEntries).slice(0, 5);

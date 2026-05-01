@@ -13,7 +13,9 @@ describe("parseSlackBlocksInput", () => {
   });
 
   it("accepts JSON blocks strings", () => {
-    const parsed = parseSlackBlocksInput('[{"type":"section","text":{"type":"mrkdwn","text":"hi"}}]');
+    const parsed = parseSlackBlocksInput(
+      '[{"type":"section","text":{"type":"mrkdwn","text":"hi"}}]',
+    );
     expect(parsed).toEqual([{ type: "section", text: { type: "mrkdwn", text: "hi" } }]);
   });
 
@@ -47,7 +49,9 @@ describe("parseSlackBlocksInput", () => {
     ] as const;
 
     for (const testCase of cases) {
-      expect(() => parseSlackBlocksInput(testCase.input), testCase.name).toThrow(testCase.expectedMessage);
+      expect(() => parseSlackBlocksInput(testCase.input), testCase.name).toThrow(
+        testCase.expectedMessage,
+      );
     }
   });
 });

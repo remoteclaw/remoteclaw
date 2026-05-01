@@ -1,5 +1,10 @@
 import fs from "node:fs/promises";
-import { formatIcaclsResetCommand, formatWindowsAclSummary, inspectWindowsAcl, type ExecFn } from "./windows-acl.js";
+import {
+  formatIcaclsResetCommand,
+  formatWindowsAclSummary,
+  inspectWindowsAcl,
+  type ExecFn,
+} from "./windows-acl.js";
 
 export type PermissionCheck = {
   ok: boolean;

@@ -251,8 +251,14 @@ export function emitDiagnosticEvent(event: DiagnosticEventInput) {
       listener(enriched);
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? (err.stack ?? err.message) : typeof err === "string" ? err : String(err);
-      console.error(`[diagnostic-events] listener error type=${enriched.type} seq=${enriched.seq}: ${errorMessage}`);
+        err instanceof Error
+          ? (err.stack ?? err.message)
+          : typeof err === "string"
+            ? err
+            : String(err);
+      console.error(
+        `[diagnostic-events] listener error type=${enriched.type} seq=${enriched.seq}: ${errorMessage}`,
+      );
       // Ignore listener failures.
     }
   }

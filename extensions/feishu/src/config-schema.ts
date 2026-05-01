@@ -15,7 +15,10 @@ const GroupPolicySchema = z.union([
   z.enum(["open", "allowlist", "disabled"]),
   z.literal("allowall").transform(() => "open" as const),
 ]);
-const FeishuDomainSchema = z.union([z.enum(["feishu", "lark"]), z.string().url().startsWith("https://")]);
+const FeishuDomainSchema = z.union([
+  z.enum(["feishu", "lark"]),
+  z.string().url().startsWith("https://"),
+]);
 const FeishuConnectionModeSchema = z.enum(["websocket", "webhook"]);
 
 const ToolPolicySchema = z
@@ -108,7 +111,9 @@ const FeishuToolsConfigSchema = z
  * - "group_topic_sender": one session per (group + topic thread + sender),
  *   falls back to (group + sender) if no topic
  */
-const GroupSessionScopeSchema = z.enum(["group", "group_sender", "group_topic", "group_topic_sender"]).optional();
+const GroupSessionScopeSchema = z
+  .enum(["group", "group_sender", "group_topic", "group_topic_sender"])
+  .optional();
 
 /**
  * @deprecated Use groupSessionScope instead.
@@ -249,7 +254,8 @@ export const FeishuConfigSchema = z
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["verificationToken"],
-          message: 'channels.feishu.connectionMode="webhook" requires channels.feishu.verificationToken',
+          message:
+            'channels.feishu.connectionMode="webhook" requires channels.feishu.verificationToken',
         });
       }
       if (!defaultEncryptKeyConfigured) {
@@ -271,7 +277,8 @@ export const FeishuConfigSchema = z
       }
       const accountVerificationTokenConfigured =
         hasConfiguredSecretInput(account.verificationToken) || defaultVerificationTokenConfigured;
-      const accountEncryptKeyConfigured = hasConfiguredSecretInput(account.encryptKey) || defaultEncryptKeyConfigured;
+      const accountEncryptKeyConfigured =
+        hasConfiguredSecretInput(account.encryptKey) || defaultEncryptKeyConfigured;
       if (!accountVerificationTokenConfigured) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -299,7 +306,8 @@ export const FeishuConfigSchema = z
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["allowFrom"],
-          message: 'channels.feishu.dmPolicy="open" requires channels.feishu.allowFrom to include "*"',
+          message:
+            'channels.feishu.dmPolicy="open" requires channels.feishu.allowFrom to include "*"',
         });
       }
     }

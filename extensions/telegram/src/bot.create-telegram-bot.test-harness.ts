@@ -245,7 +245,9 @@ export function makeTelegramMessageCtx(params: {
       text: params.text,
       date: params.date ?? 1736380800,
       message_id: params.messageId ?? 42,
-      ...(params.messageThreadId === undefined ? {} : { message_thread_id: params.messageThreadId }),
+      ...(params.messageThreadId === undefined
+        ? {}
+        : { message_thread_id: params.messageThreadId }),
     },
     me: { username: "remoteclaw_bot" },
     getFile: async () => ({ download: async () => new Uint8Array() }),

@@ -2,9 +2,19 @@
 
 import ts from "typescript";
 import { runCallsiteGuard } from "./lib/callsite-guard.mjs";
-import { collectCallExpressionLines, runAsScript, unwrapExpression } from "./lib/ts-guard-utils.mjs";
+import {
+  collectCallExpressionLines,
+  runAsScript,
+  unwrapExpression,
+} from "./lib/ts-guard-utils.mjs";
 
-const sourceRoots = ["src/channels", "src/infra/outbound", "src/line", "src/media-understanding", "extensions"];
+const sourceRoots = [
+  "src/channels",
+  "src/infra/outbound",
+  "src/line",
+  "src/media-understanding",
+  "extensions",
+];
 const allowedRelativePaths = new Set(["extensions/feishu/src/dedup.ts"]);
 
 function collectOsTmpdirImports(sourceFile) {
@@ -65,7 +75,8 @@ export async function main() {
     findCallLines: findMessagingTmpdirCallLines,
     skipRelativePath: (relativePath) => allowedRelativePaths.has(relativePath),
     header: "Found os.tmpdir()/tmpdir() usage in messaging/channel runtime sources:",
-    footer: "Use resolvePreferredRemoteClawTmpDir() or plugin-sdk temp helpers instead of host tmp defaults.",
+    footer:
+      "Use resolvePreferredRemoteClawTmpDir() or plugin-sdk temp helpers instead of host tmp defaults.",
     sortViolations: false,
   });
 }

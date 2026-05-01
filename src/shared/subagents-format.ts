@@ -47,8 +47,14 @@ export function resolveIoTokens(entry?: TokenUsageLike) {
   if (!entry || typeof entry !== "object") {
     return undefined;
   }
-  const input = typeof entry.inputTokens === "number" && Number.isFinite(entry.inputTokens) ? entry.inputTokens : 0;
-  const output = typeof entry.outputTokens === "number" && Number.isFinite(entry.outputTokens) ? entry.outputTokens : 0;
+  const input =
+    typeof entry.inputTokens === "number" && Number.isFinite(entry.inputTokens)
+      ? entry.inputTokens
+      : 0;
+  const output =
+    typeof entry.outputTokens === "number" && Number.isFinite(entry.outputTokens)
+      ? entry.outputTokens
+      : 0;
   const total = input + output;
   if (total <= 0) {
     return undefined;

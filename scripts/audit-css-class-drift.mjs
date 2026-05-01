@@ -514,10 +514,14 @@ function clusterByRemovingCommit(orphans) {
     // outweighs addition for that token.
     let log;
     try {
-      log = execFileSync("git", ["log", "--all", "--oneline", "-S", `.${className}`, "--", "ui/src/styles/"], {
-        encoding: "utf8",
-        cwd: repoRoot,
-      }).trim();
+      log = execFileSync(
+        "git",
+        ["log", "--all", "--oneline", "-S", `.${className}`, "--", "ui/src/styles/"],
+        {
+          encoding: "utf8",
+          cwd: repoRoot,
+        },
+      ).trim();
     } catch {
       log = "";
     }

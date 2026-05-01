@@ -21,9 +21,13 @@ function loadProfileEnv(): void {
     return;
   }
   try {
-    const output = execFileSync("/bin/bash", ["-lc", `set -a; source "${profilePath}" >/dev/null 2>&1; env -0`], {
-      encoding: "utf8",
-    });
+    const output = execFileSync(
+      "/bin/bash",
+      ["-lc", `set -a; source "${profilePath}" >/dev/null 2>&1; env -0`],
+      {
+        encoding: "utf8",
+      },
+    );
     const entries = output.split("\0");
     let applied = 0;
     for (const entry of entries) {
@@ -51,7 +55,9 @@ function loadProfileEnv(): void {
 
 export function installTestEnv(): { cleanup: () => void; tempHome: string } {
   const live =
-    process.env.LIVE === "1" || process.env.REMOTECLAW_LIVE_TEST === "1" || process.env.REMOTECLAW_LIVE_GATEWAY === "1";
+    process.env.LIVE === "1" ||
+    process.env.REMOTECLAW_LIVE_TEST === "1" ||
+    process.env.REMOTECLAW_LIVE_GATEWAY === "1";
 
   // Live tests must use the real user environment (keys, profiles, config).
   // The default test env isolates HOME to avoid touching real state.

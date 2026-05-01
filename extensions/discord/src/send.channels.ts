@@ -103,7 +103,10 @@ export async function moveChannelDiscord(payload: DiscordChannelMove, opts: Disc
   return { ok: true };
 }
 
-export async function setChannelPermissionDiscord(payload: DiscordChannelPermissionSet, opts: DiscordReactOpts = {}) {
+export async function setChannelPermissionDiscord(
+  payload: DiscordChannelPermissionSet,
+  opts: DiscordReactOpts = {},
+) {
   const rest = resolveDiscordRest(opts);
   const body: Record<string, unknown> = {
     type: payload.targetType,
@@ -118,7 +121,11 @@ export async function setChannelPermissionDiscord(payload: DiscordChannelPermiss
   return { ok: true };
 }
 
-export async function removeChannelPermissionDiscord(channelId: string, targetId: string, opts: DiscordReactOpts = {}) {
+export async function removeChannelPermissionDiscord(
+  channelId: string,
+  targetId: string,
+  opts: DiscordReactOpts = {},
+) {
   const rest = resolveDiscordRest(opts);
   await rest.delete(`/channels/${channelId}/permissions/${targetId}`);
   return { ok: true };

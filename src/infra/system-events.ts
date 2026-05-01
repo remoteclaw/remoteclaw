@@ -3,7 +3,11 @@
 // events ephemeral. Events are session-scoped and require an explicit key.
 
 import { resolveGlobalMap } from "../shared/global-singleton.js";
-import { mergeDeliveryContext, normalizeDeliveryContext, type DeliveryContext } from "../utils/delivery-context.js";
+import {
+  mergeDeliveryContext,
+  normalizeDeliveryContext,
+  type DeliveryContext,
+} from "../utils/delivery-context.js";
 
 export type SystemEvent = {
   text: string;
@@ -77,7 +81,10 @@ function cloneSystemEvent(event: SystemEvent): SystemEvent {
   };
 }
 
-export function isSystemEventContextChanged(sessionKey: string, contextKey?: string | null): boolean {
+export function isSystemEventContextChanged(
+  sessionKey: string,
+  contextKey?: string | null,
+): boolean {
   const existing = getSessionQueue(sessionKey);
   const normalized = normalizeContextKey(contextKey);
   return normalized !== (existing?.lastContextKey ?? null);
@@ -140,7 +147,9 @@ export function hasSystemEvents(sessionKey: string) {
   return (getSessionQueue(sessionKey)?.queue.length ?? 0) > 0;
 }
 
-export function resolveSystemEventDeliveryContext(events: readonly SystemEvent[]): DeliveryContext | undefined {
+export function resolveSystemEventDeliveryContext(
+  events: readonly SystemEvent[],
+): DeliveryContext | undefined {
   let resolved: DeliveryContext | undefined;
   for (const event of events) {
     resolved = mergeDeliveryContext(event.deliveryContext, resolved);

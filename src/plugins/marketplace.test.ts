@@ -31,15 +31,26 @@ async function writeMarketplaceManifest(rootDir: string, manifest: unknown): Pro
   return manifestPath;
 }
 
-async function writeRemoteMarketplaceFixture(params: { repoDir: string; manifest: unknown; pluginDir?: string }) {
+async function writeRemoteMarketplaceFixture(params: {
+  repoDir: string;
+  manifest: unknown;
+  pluginDir?: string;
+}) {
   await fs.mkdir(path.join(params.repoDir, ".claude-plugin"), { recursive: true });
   if (params.pluginDir) {
     await fs.mkdir(path.join(params.repoDir, params.pluginDir), { recursive: true });
   }
-  await fs.writeFile(path.join(params.repoDir, ".claude-plugin", "marketplace.json"), JSON.stringify(params.manifest));
+  await fs.writeFile(
+    path.join(params.repoDir, ".claude-plugin", "marketplace.json"),
+    JSON.stringify(params.manifest),
+  );
 }
 
-async function writeLocalMarketplaceFixture(params: { rootDir: string; manifest: unknown; pluginDir?: string }) {
+async function writeLocalMarketplaceFixture(params: {
+  rootDir: string;
+  manifest: unknown;
+  pluginDir?: string;
+}) {
   if (params.pluginDir) {
     await fs.mkdir(params.pluginDir, { recursive: true });
   }

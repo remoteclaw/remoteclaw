@@ -5,7 +5,13 @@ import { applyCliProfileEnv, parseCliProfileArgs } from "./profile.js";
 
 describe("parseCliProfileArgs", () => {
   it("leaves gateway --dev for subcommands", () => {
-    const res = parseCliProfileArgs(["node", "remoteclaw", "gateway", "--dev", "--allow-unconfigured"]);
+    const res = parseCliProfileArgs([
+      "node",
+      "remoteclaw",
+      "gateway",
+      "--dev",
+      "--allow-unconfigured",
+    ]);
     if (!res.ok) {
       throw new Error(res.error);
     }
@@ -14,12 +20,26 @@ describe("parseCliProfileArgs", () => {
   });
 
   it("leaves gateway --dev for subcommands after leading root options", () => {
-    const res = parseCliProfileArgs(["node", "remoteclaw", "--no-color", "gateway", "--dev", "--allow-unconfigured"]);
+    const res = parseCliProfileArgs([
+      "node",
+      "remoteclaw",
+      "--no-color",
+      "gateway",
+      "--dev",
+      "--allow-unconfigured",
+    ]);
     if (!res.ok) {
       throw new Error(res.error);
     }
     expect(res.profile).toBeNull();
-    expect(res.argv).toEqual(["node", "remoteclaw", "--no-color", "gateway", "--dev", "--allow-unconfigured"]);
+    expect(res.argv).toEqual([
+      "node",
+      "remoteclaw",
+      "--no-color",
+      "gateway",
+      "--dev",
+      "--allow-unconfigured",
+    ]);
   });
 
   it("still accepts global --dev before subcommand", () => {
@@ -97,7 +117,9 @@ describe("applyCliProfileEnv", () => {
 
     const resolvedHome = path.resolve("/srv/remoteclaw-home");
     expect(env.REMOTECLAW_STATE_DIR).toBe(path.join(resolvedHome, ".remoteclaw-work"));
-    expect(env.REMOTECLAW_CONFIG_PATH).toBe(path.join(resolvedHome, ".remoteclaw-work", "remoteclaw.json"));
+    expect(env.REMOTECLAW_CONFIG_PATH).toBe(
+      path.join(resolvedHome, ".remoteclaw-work", "remoteclaw.json"),
+    );
   });
 });
 
@@ -150,13 +172,15 @@ describe("formatCliCommand", () => {
   });
 
   it("trims whitespace from profile", () => {
-    expect(formatCliCommand("remoteclaw doctor --fix", { REMOTECLAW_PROFILE: "  jbremoteclaw  " })).toBe(
-      "remoteclaw --profile jbremoteclaw doctor --fix",
-    );
+    expect(
+      formatCliCommand("remoteclaw doctor --fix", { REMOTECLAW_PROFILE: "  jbremoteclaw  " }),
+    ).toBe("remoteclaw --profile jbremoteclaw doctor --fix");
   });
 
   it("handles command with no args after remoteclaw", () => {
-    expect(formatCliCommand("remoteclaw", { REMOTECLAW_PROFILE: "test" })).toBe("remoteclaw --profile test");
+    expect(formatCliCommand("remoteclaw", { REMOTECLAW_PROFILE: "test" })).toBe(
+      "remoteclaw --profile test",
+    );
   });
 
   it("handles pnpm wrapper", () => {
@@ -166,9 +190,9 @@ describe("formatCliCommand", () => {
   });
 
   it("inserts --container when a container hint is set", () => {
-    expect(formatCliCommand("remoteclaw gateway status --deep", { REMOTECLAW_CONTAINER_HINT: "demo" })).toBe(
-      "remoteclaw --container demo gateway status --deep",
-    );
+    expect(
+      formatCliCommand("remoteclaw gateway status --deep", { REMOTECLAW_CONTAINER_HINT: "demo" }),
+    ).toBe("remoteclaw --container demo gateway status --deep");
   });
 
   it("preserves both --container and --profile hints", () => {
@@ -181,7 +205,9 @@ describe("formatCliCommand", () => {
   });
 
   it("does not prepend --container for update commands", () => {
-    expect(formatCliCommand("remoteclaw update", { REMOTECLAW_CONTAINER_HINT: "demo" })).toBe("remoteclaw update");
+    expect(formatCliCommand("remoteclaw update", { REMOTECLAW_CONTAINER_HINT: "demo" })).toBe(
+      "remoteclaw update",
+    );
     expect(
       formatCliCommand("pnpm remoteclaw update --channel beta", {
         REMOTECLAW_CONTAINER_HINT: "demo",

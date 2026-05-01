@@ -1,6 +1,11 @@
 import os from "node:os";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { isTailnetIPv4, listTailnetAddresses, pickPrimaryTailnetIPv4, pickPrimaryTailnetIPv6 } from "./tailnet.js";
+import {
+  isTailnetIPv4,
+  listTailnetAddresses,
+  pickPrimaryTailnetIPv4,
+  pickPrimaryTailnetIPv6,
+} from "./tailnet.js";
 
 describe("tailnet helpers", () => {
   afterEach(() => {

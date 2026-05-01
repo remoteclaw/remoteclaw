@@ -13,7 +13,11 @@ export async function runDoctorConfigWithInput<T>(params: {
   return withTempHome(async (home) => {
     const configDir = path.join(home, ".remoteclaw");
     await fs.mkdir(configDir, { recursive: true });
-    await fs.writeFile(path.join(configDir, "remoteclaw.json"), JSON.stringify(params.config, null, 2), "utf-8");
+    await fs.writeFile(
+      path.join(configDir, "remoteclaw.json"),
+      JSON.stringify(params.config, null, 2),
+      "utf-8",
+    );
     return params.run({
       options: { nonInteractive: true, repair: params.repair },
       confirm: async () => false,

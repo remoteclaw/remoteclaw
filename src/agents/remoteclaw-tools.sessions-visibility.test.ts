@@ -49,7 +49,9 @@ function getSessionsHistoryTool(options?: { sandboxed?: boolean }) {
   return tool;
 }
 
-function mockGatewayWithHistory(extra?: (req: { method?: string; params?: Record<string, unknown> }) => unknown) {
+function mockGatewayWithHistory(
+  extra?: (req: { method?: string; params?: Record<string, unknown> }) => unknown,
+) {
   callGatewayMock.mockClear();
   callGatewayMock.mockImplementation(async (opts: unknown) => {
     const req = opts as { method?: string; params?: Record<string, unknown> };

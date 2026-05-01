@@ -24,9 +24,10 @@ export type DiscordInboundWorker = {
 function formatDiscordRunContextSuffix(job: DiscordInboundJob): string {
   const channelId = job.payload.messageChannelId?.trim();
   const messageId = job.payload.data?.message?.id?.trim();
-  const details = [channelId ? `channelId=${channelId}` : null, messageId ? `messageId=${messageId}` : null].filter(
-    (entry): entry is string => Boolean(entry),
-  );
+  const details = [
+    channelId ? `channelId=${channelId}` : null,
+    messageId ? `messageId=${messageId}` : null,
+  ].filter((entry): entry is string => Boolean(entry));
   if (details.length === 0) {
     return "";
   }
@@ -58,12 +59,16 @@ async function processDiscordInboundJob(params: {
       );
     },
     onErrorAfterTimeout: (error) => {
-      params.runtime.error?.(danger(`discord inbound worker failed after timeout: ${String(error)}${contextSuffix}`));
+      params.runtime.error?.(
+        danger(`discord inbound worker failed after timeout: ${String(error)}${contextSuffix}`),
+      );
     },
   });
 }
 
-export function createDiscordInboundWorker(params: DiscordInboundWorkerParams): DiscordInboundWorker {
+export function createDiscordInboundWorker(
+  params: DiscordInboundWorkerParams,
+): DiscordInboundWorker {
   const runQueue = new KeyedAsyncQueue();
   const runState = createRunStateMachine({
     setStatus: params.setStatus,

@@ -105,6 +105,11 @@ describe("parseOptionalDelimitedEntries", () => {
   });
 
   it("splits comma, newline, and semicolon separated entries", () => {
-    expect(parseOptionalDelimitedEntries("alpha, beta\ngamma; delta")).toEqual(["alpha", "beta", "gamma", "delta"]);
+    expect(parseOptionalDelimitedEntries("alpha, beta\ngamma; delta")).toEqual([
+      "alpha",
+      "beta",
+      "gamma",
+      "delta",
+    ]);
   });
 });

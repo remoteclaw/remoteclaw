@@ -25,7 +25,8 @@ export async function assertHttpUrlTargetsPrivateNetwork(
     return;
   }
 
-  const errorMessage = params.errorMessage ?? "HTTP URL must target a trusted private/internal host";
+  const errorMessage =
+    params.errorMessage ?? "HTTP URL must target a trusted private/internal host";
   const { hostname } = parsed;
   if (!hostname) {
     throw new Error(errorMessage);
@@ -64,7 +65,10 @@ function normalizeHostnameSuffix(value: string): string {
   return withoutLeadingDot.replace(/\.+$/, "");
 }
 
-function isHostnameAllowedBySuffixAllowlist(hostname: string, allowlist: readonly string[]): boolean {
+function isHostnameAllowedBySuffixAllowlist(
+  hostname: string,
+  allowlist: readonly string[],
+): boolean {
   if (allowlist.includes("*")) {
     return true;
   }
@@ -73,7 +77,10 @@ function isHostnameAllowedBySuffixAllowlist(hostname: string, allowlist: readonl
 }
 
 /** Normalize suffix-style host allowlists into lowercase canonical entries with wildcard collapse. */
-export function normalizeHostnameSuffixAllowlist(input?: readonly string[], defaults?: readonly string[]): string[] {
+export function normalizeHostnameSuffixAllowlist(
+  input?: readonly string[],
+  defaults?: readonly string[],
+): string[] {
   const source = input && input.length > 0 ? input : defaults;
   if (!source || source.length === 0) {
     return [];
@@ -86,7 +93,10 @@ export function normalizeHostnameSuffixAllowlist(input?: readonly string[], defa
 }
 
 /** Check whether a URL is HTTPS and its hostname matches the normalized suffix allowlist. */
-export function isHttpsUrlAllowedByHostnameSuffixAllowlist(url: string, allowlist: readonly string[]): boolean {
+export function isHttpsUrlAllowedByHostnameSuffixAllowlist(
+  url: string,
+  allowlist: readonly string[],
+): boolean {
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== "https:") {

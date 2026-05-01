@@ -44,7 +44,10 @@ import { getTelegramRuntime } from "./runtime.js";
 
 const meta = getChatChannelMeta("telegram");
 
-function findTelegramTokenOwnerAccountId(params: { cfg: RemoteClawConfig; accountId: string }): string | null {
+function findTelegramTokenOwnerAccountId(params: {
+  cfg: RemoteClawConfig;
+  accountId: string;
+}): string | null {
   const normalizedAccountId = normalizeAccountId(params.accountId);
   const tokenOwners = new Map<string, string>();
   for (const id of listTelegramAccountIds(params.cfg)) {
@@ -65,14 +68,19 @@ function findTelegramTokenOwnerAccountId(params: { cfg: RemoteClawConfig; accoun
   return null;
 }
 
-function formatDuplicateTelegramTokenReason(params: { accountId: string; ownerAccountId: string }): string {
+function formatDuplicateTelegramTokenReason(params: {
+  accountId: string;
+  ownerAccountId: string;
+}): string {
   return (
     `Duplicate Telegram bot token: account "${params.accountId}" shares a token with ` +
     `account "${params.ownerAccountId}". Keep one owner account per bot token.`
   );
 }
 
-type TelegramSendFn = ReturnType<typeof getTelegramRuntime>["channel"]["telegram"]["sendMessageTelegram"];
+type TelegramSendFn = ReturnType<
+  typeof getTelegramRuntime
+>["channel"]["telegram"]["sendMessageTelegram"];
 type TelegramSendOptions = NonNullable<Parameters<TelegramSendFn>[2]>;
 
 function buildTelegramSendOptions(params: {
@@ -108,7 +116,8 @@ async function sendTelegramOutbound(params: {
   threadId?: string | number | null;
   silent?: boolean | null;
 }) {
-  const send = params.deps?.sendTelegram ?? getTelegramRuntime().channel.telegram.sendMessageTelegram;
+  const send =
+    params.deps?.sendTelegram ?? getTelegramRuntime().channel.telegram.sendMessageTelegram;
   return await send(
     params.to,
     params.text,
@@ -125,8 +134,10 @@ async function sendTelegramOutbound(params: {
 }
 
 const telegramMessageActions: ChannelMessageActionAdapter = {
-  listActions: (ctx) => getTelegramRuntime().channel.telegram.messageActions?.listActions?.(ctx) ?? [],
-  extractToolSend: (ctx) => getTelegramRuntime().channel.telegram.messageActions?.extractToolSend?.(ctx) ?? null,
+  listActions: (ctx) =>
+    getTelegramRuntime().channel.telegram.messageActions?.listActions?.(ctx) ?? [],
+  extractToolSend: (ctx) =>
+    getTelegramRuntime().channel.telegram.messageActions?.extractToolSend?.(ctx) ?? null,
   handleAction: async (ctx) => {
     const ma = getTelegramRuntime().channel.telegram.messageActions;
     if (!ma?.handleAction) {
@@ -139,7 +150,8 @@ const telegramMessageActions: ChannelMessageActionAdapter = {
 const telegramConfigAccessors = createScopedAccountConfigAccessors({
   resolveAccount: ({ cfg, accountId }) => resolveTelegramAccount({ cfg, accountId }),
   resolveAllowFrom: (account: ResolvedTelegramAccount) => account.config.allowFrom,
-  formatAllowFrom: (allowFrom) => formatAllowFromLowercase({ allowFrom, stripPrefixRe: /^(telegram|tg):/i }),
+  formatAllowFrom: (allowFrom) =>
+    formatAllowFromLowercase({ allowFrom, stripPrefixRe: /^(telegram|tg):/i }),
   resolveDefaultTo: (account: ResolvedTelegramAccount) => account.config.defaultTo,
 });
 
@@ -175,9 +187,13 @@ export const telegramPlugin: ChannelPlugin<ResolvedTelegramAccount, TelegramProb
       if (!token) {
         throw new Error("telegram token not configured");
       }
-      await getTelegramRuntime().channel.telegram.sendMessageTelegram(id, PAIRING_APPROVED_MESSAGE, {
-        token,
-      });
+      await getTelegramRuntime().channel.telegram.sendMessageTelegram(
+        id,
+        PAIRING_APPROVED_MESSAGE,
+        {
+          token,
+        },
+      );
     },
   },
   capabilities: {
@@ -217,7 +233,8 @@ export const telegramPlugin: ChannelPlugin<ResolvedTelegramAccount, TelegramProb
       name: account.name,
       enabled: account.enabled,
       configured:
-        Boolean(account.token?.trim()) && !findTelegramTokenOwnerAccountId({ cfg, accountId: account.accountId }),
+        Boolean(account.token?.trim()) &&
+        !findTelegramTokenOwnerAccountId({ cfg, accountId: account.accountId }),
       tokenSource: account.tokenSource,
     }),
     ...telegramConfigAccessors,
@@ -225,7 +242,8 @@ export const telegramPlugin: ChannelPlugin<ResolvedTelegramAccount, TelegramProb
   security: {
     resolveDmPolicy: resolveTelegramDmPolicy,
     collectWarnings: ({ account, cfg }) => {
-      const groupAllowlistConfigured = account.config.groups && Object.keys(account.config.groups).length > 0;
+      const groupAllowlistConfigured =
+        account.config.groups && Object.keys(account.config.groups).length > 0;
       return collectAllowlistProviderGroupPolicyWarnings({
         cfg,
         providerConfigPresent: cfg.channels?.telegram !== undefined,
@@ -334,7 +352,11 @@ export const telegramPlugin: ChannelPlugin<ResolvedTelegramAccount, TelegramProb
               [accountId]: {
                 ...next.channels?.telegram?.accounts?.[accountId],
                 enabled: true,
-                ...(input.tokenFile ? { tokenFile: input.tokenFile } : input.token ? { botToken: input.token } : {}),
+                ...(input.tokenFile
+                  ? { tokenFile: input.tokenFile }
+                  : input.token
+                    ? { botToken: input.token }
+                    : {}),
               },
             },
           },
@@ -348,7 +370,17 @@ export const telegramPlugin: ChannelPlugin<ResolvedTelegramAccount, TelegramProb
     chunkerMode: "markdown",
     textChunkLimit: 4000,
     pollMaxOptions: 10,
-    sendPayload: async ({ cfg, to, payload, mediaLocalRoots, accountId, deps, replyToId, threadId, silent }) => {
+    sendPayload: async ({
+      cfg,
+      to,
+      payload,
+      mediaLocalRoots,
+      accountId,
+      deps,
+      replyToId,
+      threadId,
+      silent,
+    }) => {
       const send = deps?.sendTelegram ?? getTelegramRuntime().channel.telegram.sendMessageTelegram;
       const result = await sendTelegramPayloadMessages({
         send,
@@ -378,7 +410,18 @@ export const telegramPlugin: ChannelPlugin<ResolvedTelegramAccount, TelegramProb
       });
       return { channel: "telegram", ...result };
     },
-    sendMedia: async ({ cfg, to, text, mediaUrl, mediaLocalRoots, accountId, deps, replyToId, threadId, silent }) => {
+    sendMedia: async ({
+      cfg,
+      to,
+      text,
+      mediaUrl,
+      mediaLocalRoots,
+      accountId,
+      deps,
+      replyToId,
+      threadId,
+      silent,
+    }) => {
       const result = await sendTelegramOutbound({
         cfg,
         to,
@@ -419,7 +462,9 @@ export const telegramPlugin: ChannelPlugin<ResolvedTelegramAccount, TelegramProb
         network: account.config.network,
       }),
     auditAccount: async ({ account, timeoutMs, probe, cfg }) => {
-      const groups = cfg.channels?.telegram?.accounts?.[account.accountId]?.groups ?? cfg.channels?.telegram?.groups;
+      const groups =
+        cfg.channels?.telegram?.accounts?.[account.accountId]?.groups ??
+        cfg.channels?.telegram?.groups;
       const { groupIds, unresolvedGroups, hasWildcardUnmentionedGroups } =
         getTelegramRuntime().channel.telegram.collectUnmentionedGroupIds(groups);
       if (!groupIds.length && unresolvedGroups === 0 && !hasWildcardUnmentionedGroups) {
@@ -458,11 +503,16 @@ export const telegramPlugin: ChannelPlugin<ResolvedTelegramAccount, TelegramProb
             ownerAccountId,
           })
         : null;
-      const configured = (configuredFromStatus ?? Boolean(account.token?.trim())) && !ownerAccountId;
-      const groups = cfg.channels?.telegram?.accounts?.[account.accountId]?.groups ?? cfg.channels?.telegram?.groups;
+      const configured =
+        (configuredFromStatus ?? Boolean(account.token?.trim())) && !ownerAccountId;
+      const groups =
+        cfg.channels?.telegram?.accounts?.[account.accountId]?.groups ??
+        cfg.channels?.telegram?.groups;
       const allowUnmentionedGroups =
         groups?.["*"]?.requireMention === false ||
-        Object.entries(groups ?? {}).some(([key, value]) => key !== "*" && value?.requireMention === false);
+        Object.entries(groups ?? {}).some(
+          ([key, value]) => key !== "*" && value?.requireMention === false,
+        );
       return {
         accountId: account.accountId,
         name: account.name,

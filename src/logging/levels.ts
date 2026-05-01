@@ -1,4 +1,12 @@
-export const ALLOWED_LOG_LEVELS = ["silent", "fatal", "error", "warn", "info", "debug", "trace"] as const;
+export const ALLOWED_LOG_LEVELS = [
+  "silent",
+  "fatal",
+  "error",
+  "warn",
+  "info",
+  "debug",
+  "trace",
+] as const;
 
 export type LogLevel = (typeof ALLOWED_LOG_LEVELS)[number];
 

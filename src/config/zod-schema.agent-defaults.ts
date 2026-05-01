@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { isValidNonNegativeByteSizeString } from "./byte-size.js";
-import { HeartbeatSchema, AgentSandboxSchema, AgentModelSchema } from "./zod-schema.agent-runtime.js";
+import {
+  HeartbeatSchema,
+  AgentSandboxSchema,
+  AgentModelSchema,
+} from "./zod-schema.agent-runtime.js";
 import {
   BlockStreamingChunkSchema,
   BlockStreamingCoalesceSchema,
@@ -30,7 +34,9 @@ export const AgentDefaultsSchema = z
     skipBootstrap: z.boolean().optional(),
     bootstrapMaxChars: z.number().int().positive().optional(),
     bootstrapTotalMaxChars: z.number().int().positive().optional(),
-    bootstrapPromptTruncationWarning: z.union([z.literal("off"), z.literal("once"), z.literal("always")]).optional(),
+    bootstrapPromptTruncationWarning: z
+      .union([z.literal("off"), z.literal("once"), z.literal("always")])
+      .optional(),
     userTimezone: z.string().optional(),
     timeFormat: z.union([z.literal("auto"), z.literal("12"), z.literal("24")]).optional(),
     envelopeTimezone: z.string().optional(),
@@ -78,7 +84,9 @@ export const AgentDefaultsSchema = z
         keepRecentTokens: z.number().int().positive().optional(),
         reserveTokensFloor: z.number().int().nonnegative().optional(),
         maxHistoryShare: z.number().min(0.1).max(0.9).optional(),
-        identifierPolicy: z.union([z.literal("strict"), z.literal("off"), z.literal("custom")]).optional(),
+        identifierPolicy: z
+          .union([z.literal("strict"), z.literal("off"), z.literal("custom")])
+          .optional(),
         identifierInstructions: z.string().optional(),
         recentTurnsPreserve: z.number().int().min(0).max(12).optional(),
         qualityGuard: z
@@ -97,7 +105,9 @@ export const AgentDefaultsSchema = z
             forceFlushTranscriptBytes: z
               .union([
                 z.number().int().nonnegative(),
-                z.string().refine(isValidNonNegativeByteSizeString, "Expected byte size string like 2mb"),
+                z
+                  .string()
+                  .refine(isValidNonNegativeByteSizeString, "Expected byte size string like 2mb"),
               ])
               .optional(),
             prompt: z.string().optional(),
@@ -109,7 +119,9 @@ export const AgentDefaultsSchema = z
       .strict()
       .optional(),
     verboseDefault: z.union([z.literal("off"), z.literal("on"), z.literal("full")]).optional(),
-    elevatedDefault: z.union([z.literal("off"), z.literal("on"), z.literal("ask"), z.literal("full")]).optional(),
+    elevatedDefault: z
+      .union([z.literal("off"), z.literal("on"), z.literal("ask"), z.literal("full")])
+      .optional(),
     blockStreamingDefault: z.union([z.literal("off"), z.literal("on")]).optional(),
     blockStreamingBreak: z.union([z.literal("text_end"), z.literal("message_end")]).optional(),
     blockStreamingChunk: BlockStreamingChunkSchema.optional(),
@@ -140,7 +152,9 @@ export const AgentDefaultsSchema = z
           .min(1)
           .max(20)
           .optional()
-          .describe("Maximum number of active children a single agent session can spawn (default: 5)."),
+          .describe(
+            "Maximum number of active children a single agent session can spawn (default: 5).",
+          ),
         archiveAfterMinutes: z.number().int().positive().optional(),
         model: AgentModelSchema.optional(),
         runTimeoutSeconds: z.number().int().min(0).optional(),
@@ -151,7 +165,9 @@ export const AgentDefaultsSchema = z
     sandbox: AgentSandboxSchema,
     // Fork-specific CLI runtime fields (RemoteClaw middleware bridge)
     auth: z.union([z.string(), z.array(z.string()), z.literal(false)]).optional(),
-    runtime: z.union([z.literal("claude"), z.literal("gemini"), z.literal("codex"), z.literal("opencode")]).optional(),
+    runtime: z
+      .union([z.literal("claude"), z.literal("gemini"), z.literal("codex"), z.literal("opencode")])
+      .optional(),
     runtimeArgs: z.array(z.string()).optional(),
     runtimeEnv: z.record(z.string(), z.string()).optional(),
   })

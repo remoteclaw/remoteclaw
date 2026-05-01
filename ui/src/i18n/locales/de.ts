@@ -68,7 +68,8 @@ export const de: TranslationMap = {
       uptime: "Betriebszeit",
       tickInterval: "Tick-Intervall",
       lastChannelsRefresh: "Letzte Kanalaktualisierung",
-      channelsHint: "Verwenden Sie Kanäle, um WhatsApp, Telegram, Discord, Signal oder iMessage zu verknüpfen.",
+      channelsHint:
+        "Verwenden Sie Kanäle, um WhatsApp, Telegram, Discord, Signal oder iMessage zu verknüpfen.",
     },
     stats: {
       instances: "Instanzen",
@@ -82,7 +83,8 @@ export const de: TranslationMap = {
       title: "Notizen",
       subtitle: "Kurze Hinweise für Remote-Steuerung.",
       tailscaleTitle: "Tailscale Serve",
-      tailscaleText: "Bevorzugen Sie den Serve-Modus, um das Gateway auf Loopback mit Tailnet-Auth zu halten.",
+      tailscaleText:
+        "Bevorzugen Sie den Serve-Modus, um das Gateway auf Loopback mit Tailnet-Auth zu halten.",
       sessionTitle: "Sitzungshygiene",
       sessionText: "Verwenden Sie /new oder sessions.patch, um den Kontext zurückzusetzen.",
       cronTitle: "Cron-Erinnerungen",

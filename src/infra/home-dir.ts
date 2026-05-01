@@ -89,7 +89,9 @@ export function expandHomePrefix(
   if (!input.startsWith("~")) {
     return input;
   }
-  const home = normalize(opts?.home) ?? resolveEffectiveHomeDir(opts?.env ?? process.env, opts?.homedir ?? os.homedir);
+  const home =
+    normalize(opts?.home) ??
+    resolveEffectiveHomeDir(opts?.env ?? process.env, opts?.homedir ?? os.homedir);
   if (!home) {
     return input;
   }

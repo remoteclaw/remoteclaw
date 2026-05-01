@@ -7,7 +7,10 @@ import {
   setActivePluginRegistry,
 } from "./runtime.js";
 
-function expectRouteRegistrationDenied(params: { replaceExisting: boolean; expectedLogFragment: string }) {
+function expectRouteRegistrationDenied(params: {
+  replaceExisting: boolean;
+  expectedLogFragment: string;
+}) {
   const registry = createEmptyPluginRegistry();
   const logs: string[] = [];
 

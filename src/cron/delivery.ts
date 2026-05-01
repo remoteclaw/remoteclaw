@@ -66,11 +66,15 @@ export function resolveCronDeliveryPlan(job: CronJob): CronDeliveryPlan {
 
   const payloadChannel = normalizeChannel(payload?.channel);
   const payloadTo = normalizeTo(payload?.to);
-  const deliveryChannel = normalizeChannel((delivery as { channel?: unknown } | undefined)?.channel);
+  const deliveryChannel = normalizeChannel(
+    (delivery as { channel?: unknown } | undefined)?.channel,
+  );
   const deliveryTo = normalizeTo((delivery as { to?: unknown } | undefined)?.to);
   const channel = deliveryChannel ?? payloadChannel ?? "last";
   const to = deliveryTo ?? payloadTo;
-  const deliveryAccountId = normalizeAccountId((delivery as { accountId?: unknown } | undefined)?.accountId);
+  const deliveryAccountId = normalizeAccountId(
+    (delivery as { accountId?: unknown } | undefined)?.accountId,
+  );
   if (hasDelivery) {
     const resolvedMode = mode ?? "announce";
     return {
@@ -83,7 +87,8 @@ export function resolveCronDeliveryPlan(job: CronJob): CronDeliveryPlan {
     };
   }
 
-  const legacyMode = payload?.deliver === true ? "explicit" : payload?.deliver === false ? "off" : "auto";
+  const legacyMode =
+    payload?.deliver === true ? "explicit" : payload?.deliver === false ? "off" : "auto";
   const hasExplicitTarget = Boolean(to);
   const requested = legacyMode === "explicit" || (legacyMode === "auto" && hasExplicitTarget);
 
@@ -203,7 +208,10 @@ export function resolveFailureDestination(
   return result;
 }
 
-function isSameDeliveryTarget(delivery: CronDelivery, failurePlan: CronFailureDeliveryPlan): boolean {
+function isSameDeliveryTarget(
+  delivery: CronDelivery,
+  failurePlan: CronFailureDeliveryPlan,
+): boolean {
   const primaryMode = delivery.mode ?? "announce";
   if (primaryMode === "none") {
     return false;

@@ -11,7 +11,9 @@ type GuardedJsonApiRequestParams = {
   errorPrefix: string;
 };
 
-export async function guardedJsonApiRequest<T = unknown>(params: GuardedJsonApiRequestParams): Promise<T> {
+export async function guardedJsonApiRequest<T = unknown>(
+  params: GuardedJsonApiRequestParams,
+): Promise<T> {
   const { response, release } = await fetchWithSsrFGuard({
     url: params.url,
     init: {

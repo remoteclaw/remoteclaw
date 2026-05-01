@@ -6,7 +6,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SessionEntry } from "../../config/sessions.js";
 import { loadSessionStore, saveSessionStore } from "../../config/sessions.js";
 import { onAgentEvent } from "../../infra/agent-events.js";
-import type { AgentDeliveryResult, BridgeCallbacks, ChannelMessage, McpSideEffects } from "../../middleware/types.js";
+import type {
+  AgentDeliveryResult,
+  BridgeCallbacks,
+  ChannelMessage,
+  McpSideEffects,
+} from "../../middleware/types.js";
 import type { TemplateContext } from "../templating.js";
 import type { ReplyPayload } from "../types.js";
 import type { FollowupRun, QueueSettings } from "./queue.js";
@@ -131,7 +136,8 @@ function makeDeliveryResult(overrides?: {
     messagingToolSentTargets: mcp.sentTargets.length > 0 ? mcp.sentTargets : undefined,
     messagingToolSentTexts: mcp.sentTexts.length > 0 ? mcp.sentTexts : undefined,
     messagingToolSentMediaUrls: mcp.sentMediaUrls.length > 0 ? mcp.sentMediaUrls : undefined,
-    successfulCronAdds: mcp.cronAdds > 0 ? Array.from({ length: mcp.cronAdds }, () => ({})) : undefined,
+    successfulCronAdds:
+      mcp.cronAdds > 0 ? Array.from({ length: mcp.cronAdds }, () => ({})) : undefined,
   };
 }
 
@@ -205,7 +211,9 @@ describe("runReplyAgent onAgentRunStart", () => {
   }
 
   it("always emits start callback before agent run attempt", async () => {
-    channelBridgeHandleMock.mockRejectedValueOnce(new Error('No API key found for provider "anthropic".'));
+    channelBridgeHandleMock.mockRejectedValueOnce(
+      new Error('No API key found for provider "anthropic".'),
+    );
     const onAgentRunStart = vi.fn();
 
     const result = await createRun({
@@ -222,7 +230,9 @@ describe("runReplyAgent onAgentRunStart", () => {
   });
 
   it("emits start callback when cli runner starts", async () => {
-    channelBridgeHandleMock.mockResolvedValueOnce(makeDeliveryResult({ payloads: [{ text: "ok" }] }));
+    channelBridgeHandleMock.mockResolvedValueOnce(
+      makeDeliveryResult({ payloads: [{ text: "ok" }] }),
+    );
     const onAgentRunStart = vi.fn();
 
     const result = await createRun({
@@ -238,9 +248,17 @@ describe("runReplyAgent onAgentRunStart", () => {
 });
 
 describe("runReplyAgent token update", () => {
-  async function seedSessionStore(params: { storePath: string; sessionKey: string; entry: Record<string, unknown> }) {
+  async function seedSessionStore(params: {
+    storePath: string;
+    sessionKey: string;
+    entry: Record<string, unknown>;
+  }) {
     await fs.mkdir(path.dirname(params.storePath), { recursive: true });
-    await fs.writeFile(params.storePath, JSON.stringify({ [params.sessionKey]: params.entry }, null, 2), "utf-8");
+    await fs.writeFile(
+      params.storePath,
+      JSON.stringify({ [params.sessionKey]: params.entry }, null, 2),
+      "utf-8",
+    );
   }
 
   function createBaseRun(params: {
@@ -390,11 +408,13 @@ describe("runReplyAgent token update", () => {
 describe("runReplyAgent block streaming", () => {
   it("coalesces duplicate text_end block replies", async () => {
     const onBlockReply = vi.fn();
-    channelBridgeHandleMock.mockImplementationOnce(async (_message: ChannelMessage, callbacks?: BridgeCallbacks) => {
-      void callbacks?.onBlockReply?.({ text: "Hello" });
-      void callbacks?.onBlockReply?.({ text: "Hello" });
-      return makeDeliveryResult({ payloads: [{ text: "Final message" }] });
-    });
+    channelBridgeHandleMock.mockImplementationOnce(
+      async (_message: ChannelMessage, callbacks?: BridgeCallbacks) => {
+        void callbacks?.onBlockReply?.({ text: "Hello" });
+        void callbacks?.onBlockReply?.({ text: "Hello" });
+        return makeDeliveryResult({ payloads: [{ text: "Final message" }] });
+      },
+    );
 
     const typing = createMockTypingController();
     const sessionCtx = {
@@ -481,10 +501,12 @@ describe("runReplyAgent block streaming", () => {
       });
     });
 
-    channelBridgeHandleMock.mockImplementationOnce(async (_message: ChannelMessage, callbacks?: BridgeCallbacks) => {
-      void callbacks?.onBlockReply?.({ text: "Chunk" });
-      return makeDeliveryResult({ payloads: [{ text: "Final message" }] });
-    });
+    channelBridgeHandleMock.mockImplementationOnce(
+      async (_message: ChannelMessage, callbacks?: BridgeCallbacks) => {
+        void callbacks?.onBlockReply?.({ text: "Chunk" });
+        return makeDeliveryResult({ payloads: [{ text: "Final message" }] });
+      },
+    );
 
     const typing = createMockTypingController();
     const sessionCtx = {
@@ -622,7 +644,9 @@ describe("runReplyAgent claude-cli routing", () => {
         lifecyclePhases.push(phase);
       }
     });
-    channelBridgeHandleMock.mockResolvedValueOnce(makeDeliveryResult({ payloads: [{ text: "ok" }] }));
+    channelBridgeHandleMock.mockResolvedValueOnce(
+      makeDeliveryResult({ payloads: [{ text: "ok" }] }),
+    );
 
     const result = await createRun();
     unsubscribe();
@@ -635,7 +659,10 @@ describe("runReplyAgent claude-cli routing", () => {
 });
 
 describe("runReplyAgent messaging tool suppression", () => {
-  function createRun(messageProvider = "slack", opts: { storePath?: string; sessionKey?: string } = {}) {
+  function createRun(
+    messageProvider = "slack",
+    opts: { storePath?: string; sessionKey?: string } = {},
+  ) {
     const typing = createMockTypingController();
     const sessionKey = opts.sessionKey ?? "test-agent";
     const sessionCtx = {
@@ -758,7 +785,10 @@ describe("runReplyAgent messaging tool suppression", () => {
   });
 
   it("persists usage fields even when replies are suppressed", async () => {
-    const storePath = path.join(await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-session-store-")), "sessions.json");
+    const storePath = path.join(
+      await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-session-store-")),
+      "sessions.json",
+    );
     const sessionKey = "test-agent";
     const entry: SessionEntry = { sessionId: "session", updatedAt: Date.now() };
     await saveSessionStore(storePath, { [sessionKey]: entry });
@@ -787,7 +817,10 @@ describe("runReplyAgent messaging tool suppression", () => {
   });
 
   it("persists usage when bridge provides token data", async () => {
-    const storePath = path.join(await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-session-store-")), "sessions.json");
+    const storePath = path.join(
+      await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-session-store-")),
+      "sessions.json",
+    );
     const sessionKey = "test-agent";
     const entry: SessionEntry = { sessionId: "session", updatedAt: Date.now() };
     await saveSessionStore(storePath, { [sessionKey]: entry });
@@ -814,7 +847,10 @@ describe("runReplyAgent messaging tool suppression", () => {
   });
 
   it("preserves existing token data when bridge omits usage", async () => {
-    const storePath = path.join(await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-session-store-")), "sessions.json");
+    const storePath = path.join(
+      await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-session-store-")),
+      "sessions.json",
+    );
     const sessionKey = "test-agent";
     const entry: SessionEntry = {
       sessionId: "session",
@@ -908,7 +944,9 @@ describe("runReplyAgent ChannelBridge constructor args", () => {
   }
 
   it("passes provider from resolveAgentRuntimeOrThrow", async () => {
-    channelBridgeHandleMock.mockResolvedValueOnce(makeDeliveryResult({ payloads: [{ text: "ok" }] }));
+    channelBridgeHandleMock.mockResolvedValueOnce(
+      makeDeliveryResult({ payloads: [{ text: "ok" }] }),
+    );
 
     await createRun({ runtime: "claude" });
 
@@ -917,7 +955,9 @@ describe("runReplyAgent ChannelBridge constructor args", () => {
   });
 
   it("passes workspaceDir from followupRun", async () => {
-    channelBridgeHandleMock.mockResolvedValueOnce(makeDeliveryResult({ payloads: [{ text: "ok" }] }));
+    channelBridgeHandleMock.mockResolvedValueOnce(
+      makeDeliveryResult({ payloads: [{ text: "ok" }] }),
+    );
 
     await createRun({ workspaceDir: "/custom/workspace" });
 
@@ -926,7 +966,9 @@ describe("runReplyAgent ChannelBridge constructor args", () => {
   });
 
   it("passes runtimeArgs from resolveAgentRuntimeArgs", async () => {
-    channelBridgeHandleMock.mockResolvedValueOnce(makeDeliveryResult({ payloads: [{ text: "ok" }] }));
+    channelBridgeHandleMock.mockResolvedValueOnce(
+      makeDeliveryResult({ payloads: [{ text: "ok" }] }),
+    );
 
     await createRun({ runtimeArgs: ["--verbose", "--max-tokens=1000"] });
 
@@ -935,7 +977,9 @@ describe("runReplyAgent ChannelBridge constructor args", () => {
   });
 
   it("passes undefined runtimeArgs when config omits them", async () => {
-    channelBridgeHandleMock.mockResolvedValueOnce(makeDeliveryResult({ payloads: [{ text: "ok" }] }));
+    channelBridgeHandleMock.mockResolvedValueOnce(
+      makeDeliveryResult({ payloads: [{ text: "ok" }] }),
+    );
 
     await createRun();
 
@@ -944,7 +988,9 @@ describe("runReplyAgent ChannelBridge constructor args", () => {
   });
 
   it("passes runtimeEnv from auth-key-retry callback", async () => {
-    channelBridgeHandleMock.mockResolvedValueOnce(makeDeliveryResult({ payloads: [{ text: "ok" }] }));
+    channelBridgeHandleMock.mockResolvedValueOnce(
+      makeDeliveryResult({ payloads: [{ text: "ok" }] }),
+    );
 
     await createRun();
 
@@ -956,7 +1002,9 @@ describe("runReplyAgent ChannelBridge constructor args", () => {
   });
 
   it("passes a functional sessionMap", async () => {
-    channelBridgeHandleMock.mockResolvedValueOnce(makeDeliveryResult({ payloads: [{ text: "ok" }] }));
+    channelBridgeHandleMock.mockResolvedValueOnce(
+      makeDeliveryResult({ payloads: [{ text: "ok" }] }),
+    );
 
     await createRun();
 
@@ -972,7 +1020,9 @@ describe("runReplyAgent ChannelBridge constructor args", () => {
   });
 
   it("passes gatewayUrl derived from config port", async () => {
-    channelBridgeHandleMock.mockResolvedValueOnce(makeDeliveryResult({ payloads: [{ text: "ok" }] }));
+    channelBridgeHandleMock.mockResolvedValueOnce(
+      makeDeliveryResult({ payloads: [{ text: "ok" }] }),
+    );
 
     await createRun();
 
@@ -982,7 +1032,9 @@ describe("runReplyAgent ChannelBridge constructor args", () => {
   });
 
   it("passes gatewayToken from credentials config", async () => {
-    channelBridgeHandleMock.mockResolvedValueOnce(makeDeliveryResult({ payloads: [{ text: "ok" }] }));
+    channelBridgeHandleMock.mockResolvedValueOnce(
+      makeDeliveryResult({ payloads: [{ text: "ok" }] }),
+    );
 
     await createRun();
 

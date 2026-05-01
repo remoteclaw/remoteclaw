@@ -48,8 +48,11 @@ vi.mock("../infra/device-pairing.js", () => ({
 
 vi.mock("../runtime.js", () => ({
   defaultRuntime: mocks.runtime,
-  writeRuntimeJson: (targetRuntime: { log: (...args: unknown[]) => void }, value: unknown, space = 2) =>
-    targetRuntime.log(JSON.stringify(value, null, space > 0 ? space : undefined)),
+  writeRuntimeJson: (
+    targetRuntime: { log: (...args: unknown[]) => void },
+    value: unknown,
+    space = 2,
+  ) => targetRuntime.log(JSON.stringify(value, null, space > 0 ? space : undefined)),
 }));
 
 async function runDevicesApprove(argv: string[]) {
@@ -110,7 +113,10 @@ describe("devices cli approve", () => {
 
     await runDevicesApprove(args);
 
-    expect(callGateway).toHaveBeenNthCalledWith(1, expect.objectContaining({ method: "device.pair.list" }));
+    expect(callGateway).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ method: "device.pair.list" }),
+    );
     expect(callGateway).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
@@ -126,10 +132,14 @@ describe("devices cli approve", () => {
     await runDevicesApprove([]);
 
     expect(callGateway).toHaveBeenCalledTimes(1);
-    expect(callGateway).toHaveBeenCalledWith(expect.objectContaining({ method: "device.pair.list" }));
+    expect(callGateway).toHaveBeenCalledWith(
+      expect.objectContaining({ method: "device.pair.list" }),
+    );
     expect(runtime.error).toHaveBeenCalledWith("No pending device pairing requests to approve");
     expect(runtime.exit).toHaveBeenCalledWith(1);
-    expect(callGateway).not.toHaveBeenCalledWith(expect.objectContaining({ method: "device.pair.approve" }));
+    expect(callGateway).not.toHaveBeenCalledWith(
+      expect.objectContaining({ method: "device.pair.approve" }),
+    );
   });
 });
 
@@ -170,7 +180,10 @@ describe("devices cli clear", () => {
 
     await runDevicesCommand(["clear", "--yes", "--pending"]);
 
-    expect(callGateway).toHaveBeenNthCalledWith(1, expect.objectContaining({ method: "device.pair.list" }));
+    expect(callGateway).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ method: "device.pair.list" }),
+    );
     expect(callGateway).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({ method: "device.pair.remove", params: { deviceId: "device-1" } }),
@@ -249,7 +262,9 @@ describe("devices cli local fallback", () => {
 
     await runDevicesCommand(["list"]);
 
-    expect(callGateway).toHaveBeenCalledWith(expect.objectContaining({ method: "device.pair.list" }));
+    expect(callGateway).toHaveBeenCalledWith(
+      expect.objectContaining({ method: "device.pair.list" }),
+    );
     expect(listDevicePairing).toHaveBeenCalledTimes(1);
     expect(runtime.log).toHaveBeenCalledWith(expect.stringContaining(fallbackNotice));
   });
@@ -283,9 +298,9 @@ describe("devices cli local fallback", () => {
   it("does not use local fallback when an explicit --url is provided", async () => {
     callGateway.mockRejectedValueOnce(new Error("gateway closed (1008): pairing required"));
 
-    await expect(runDevicesCommand(["list", "--json", "--url", "ws://127.0.0.1:18789"])).rejects.toThrow(
-      "pairing required",
-    );
+    await expect(
+      runDevicesCommand(["list", "--json", "--url", "ws://127.0.0.1:18789"]),
+    ).rejects.toThrow("pairing required");
     expect(listDevicePairing).not.toHaveBeenCalled();
   });
 });

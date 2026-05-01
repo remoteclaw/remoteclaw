@@ -54,7 +54,8 @@ command-logger/
 name: my-hook
 description: "Short description"
 homepage: https://docs.remoteclaw.org/automation/hooks#my-hook
-metadata: { "remoteclaw": { "emoji": "🔗", "events": ["command:new"], "requires": { "bins": ["node"] } } }
+metadata:
+  { "remoteclaw": { "emoji": "🔗", "events": ["command:new"], "requires": { "bins": ["node"] } } }
 ---
 # Hook Title
 

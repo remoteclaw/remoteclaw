@@ -3,7 +3,10 @@ import type { loadConfig } from "../../../../../src/config/config.js";
 import { resolveStorePath, updateLastRoute } from "../../../../../src/config/sessions.js";
 import { formatError } from "../../session.js";
 
-export function trackBackgroundTask(backgroundTasks: Set<Promise<unknown>>, task: Promise<unknown>) {
+export function trackBackgroundTask(
+  backgroundTasks: Set<Promise<unknown>>,
+  task: Promise<unknown>,
+) {
   backgroundTasks.add(task);
   void task.finally(() => {
     backgroundTasks.delete(task);

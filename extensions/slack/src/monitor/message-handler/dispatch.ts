@@ -56,7 +56,10 @@ export function resolveSlackStreamingThreadHint(params: {
   });
 }
 
-function shouldUseStreaming(params: { streamingEnabled: boolean; threadTs: string | undefined }): boolean {
+function shouldUseStreaming(params: {
+  streamingEnabled: boolean;
+  threadTs: string | undefined;
+}): boolean {
   if (!params.streamingEnabled) {
     return false;
   }
@@ -94,9 +97,13 @@ export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessag
     });
     const senderRecipient = message.user?.trim().toLowerCase();
     const skipMainUpdate =
-      pinnedMainDmOwner && senderRecipient && pinnedMainDmOwner.trim().toLowerCase() !== senderRecipient;
+      pinnedMainDmOwner &&
+      senderRecipient &&
+      pinnedMainDmOwner.trim().toLowerCase() !== senderRecipient;
     if (skipMainUpdate) {
-      logVerbose(`slack: skip main-session last route for ${senderRecipient} (pinned owner ${pinnedMainDmOwner})`);
+      logVerbose(
+        `slack: skip main-session last route for ${senderRecipient} (pinned owner ${pinnedMainDmOwner})`,
+      );
     } else {
       await updateLastRoute({
         storePath,
@@ -250,7 +257,9 @@ export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessag
         const streamThreadTs = replyPlan.nextThreadTs();
         plannedThreadTs = streamThreadTs;
         if (!streamThreadTs) {
-          logVerbose("slack-stream: no reply thread target for stream start, falling back to normal delivery");
+          logVerbose(
+            "slack-stream: no reply thread target for stream start, falling back to normal delivery",
+          );
           streamFailed = true;
           await deliverNormally(payload);
           return;
@@ -274,7 +283,9 @@ export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessag
         text: "\n" + text,
       });
     } catch (err) {
-      runtime.error?.(danger(`slack-stream: streaming API call failed: ${String(err)}, falling back`));
+      runtime.error?.(
+        danger(`slack-stream: streaming API call failed: ${String(err)}, falling back`),
+      );
       streamFailed = true;
       await deliverNormally(payload, streamSession?.threadTs ?? plannedThreadTs);
     }
@@ -315,7 +326,9 @@ export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessag
           });
           return;
         } catch (err) {
-          logVerbose(`slack: preview final edit failed; falling back to standard send (${String(err)})`);
+          logVerbose(
+            `slack: preview final edit failed; falling back to standard send (${String(err)})`,
+          );
         }
       } else if (previewStreamingEnabled && streamMode === "status_final" && hasStreamedMessage) {
         try {
@@ -479,7 +492,9 @@ export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessag
 
   if (shouldLogVerbose()) {
     const finalCount = counts.final;
-    logVerbose(`slack: delivered ${finalCount} reply${finalCount === 1 ? "" : "ies"} to ${prepared.replyTarget}`);
+    logVerbose(
+      `slack: delivered ${finalCount} reply${finalCount === 1 ? "" : "ies"} to ${prepared.replyTarget}`,
+    );
   }
 
   removeAckReactionAfterReply({
@@ -487,10 +502,15 @@ export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessag
     ackReactionPromise: prepared.ackReactionPromise,
     ackReactionValue: prepared.ackReactionValue,
     remove: () =>
-      removeSlackReaction(message.channel, prepared.ackReactionMessageTs ?? "", prepared.ackReactionValue, {
-        token: ctx.botToken,
-        client: ctx.app.client,
-      }),
+      removeSlackReaction(
+        message.channel,
+        prepared.ackReactionMessageTs ?? "",
+        prepared.ackReactionValue,
+        {
+          token: ctx.botToken,
+          client: ctx.app.client,
+        },
+      ),
     onError: (err) => {
       logAckFailure({
         log: logVerbose,

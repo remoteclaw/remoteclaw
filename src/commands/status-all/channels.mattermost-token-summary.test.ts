@@ -242,7 +242,11 @@ function expectTableRow(
   return row;
 }
 
-function expectTableDetailRows(table: TestTable, title: string, rows: Array<Record<string, string>>) {
+function expectTableDetailRows(
+  table: TestTable,
+  title: string,
+  rows: Array<Record<string, string>>,
+) {
   const detail = table.details.find((entry) => entry.title === title);
   expect(detail).toBeDefined();
   expect(detail?.rows).toEqual(rows);

@@ -13,7 +13,10 @@ import { normalizeDiscordOutboundTarget } from "../normalize/discord.js";
 import type { ChannelOutboundAdapter } from "../types.js";
 import { sendTextMediaPayload } from "./direct-text-media.js";
 
-function resolveDiscordOutboundTarget(params: { to: string; threadId?: string | number | null }): string {
+function resolveDiscordOutboundTarget(params: {
+  to: string;
+  threadId?: string | number | null;
+}): string {
   if (params.threadId == null) {
     return params.to;
   }
@@ -24,7 +27,10 @@ function resolveDiscordOutboundTarget(params: { to: string; threadId?: string | 
   return `channel:${threadId}`;
 }
 
-function resolveDiscordWebhookIdentity(params: { identity?: OutboundIdentity; binding: ThreadBindingRecord }): {
+function resolveDiscordWebhookIdentity(params: {
+  identity?: OutboundIdentity;
+  binding: ThreadBindingRecord;
+}): {
   username?: string;
   avatarUrl?: string;
 } {
@@ -81,7 +87,8 @@ export const discordOutbound: ChannelOutboundAdapter = {
   textChunkLimit: 2000,
   pollMaxOptions: 10,
   resolveTarget: ({ to }) => normalizeDiscordOutboundTarget(to),
-  sendPayload: async (ctx) => await sendTextMediaPayload({ channel: "discord", ctx, adapter: discordOutbound }),
+  sendPayload: async (ctx) =>
+    await sendTextMediaPayload({ channel: "discord", ctx, adapter: discordOutbound }),
   sendText: async ({ cfg, to, text, accountId, deps, replyToId, threadId, identity, silent }) => {
     if (!silent) {
       const webhookResult = await maybeSendDiscordWebhookText({
@@ -107,7 +114,18 @@ export const discordOutbound: ChannelOutboundAdapter = {
     });
     return { channel: "discord", ...result };
   },
-  sendMedia: async ({ cfg, to, text, mediaUrl, mediaLocalRoots, accountId, deps, replyToId, threadId, silent }) => {
+  sendMedia: async ({
+    cfg,
+    to,
+    text,
+    mediaUrl,
+    mediaLocalRoots,
+    accountId,
+    deps,
+    replyToId,
+    threadId,
+    silent,
+  }) => {
     const send = deps?.sendDiscord ?? sendMessageDiscord;
     const target = resolveDiscordOutboundTarget({ to, threadId });
     const result = await send(target, text, {

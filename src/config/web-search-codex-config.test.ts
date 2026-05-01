@@ -43,7 +43,9 @@ describe("web search Codex native config validation", () => {
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      const issue = result.issues.find((entry) => entry.path === "tools.web.search.openaiCodex.mode");
+      const issue = result.issues.find(
+        (entry) => entry.path === "tools.web.search.openaiCodex.mode",
+      );
       expect(issue?.allowedValues).toEqual(["cached", "live"]);
     }
   });
@@ -64,7 +66,9 @@ describe("web search Codex native config validation", () => {
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      const issue = result.issues.find((entry) => entry.path === "tools.web.search.openaiCodex.contextSize");
+      const issue = result.issues.find(
+        (entry) => entry.path === "tools.web.search.openaiCodex.contextSize",
+      );
       expect(issue?.allowedValues).toEqual(["low", "medium", "high"]);
     }
   });

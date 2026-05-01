@@ -3,7 +3,11 @@ import type { Logger as TsLogger } from "tslog";
 import { isVerbose } from "../globals.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
 import { clearActiveProgressLine } from "../terminal/progress-line.js";
-import { formatConsoleTimestamp, getConsoleSettings, shouldLogSubsystemToConsole } from "./console.js";
+import {
+  formatConsoleTimestamp,
+  getConsoleSettings,
+  shouldLogSubsystemToConsole,
+} from "./console.js";
 import { type LogLevel, levelToMinLevel } from "./levels.js";
 import { getChildLogger, isFileLogLevelEnabled } from "./logger.js";
 import { loggingState } from "./state.js";
@@ -140,7 +144,10 @@ function formatSubsystemForConsole(subsystem: string): string {
   return parts.join("/");
 }
 
-export function stripRedundantSubsystemPrefixForConsole(message: string, displaySubsystem: string): string {
+export function stripRedundantSubsystemPrefixForConsole(
+  message: string,
+  displaySubsystem: string,
+): string {
   if (!displaySubsystem) {
     return message;
   }
@@ -190,7 +197,8 @@ function formatConsoleLine(opts: {
   style: "pretty" | "compact" | "json";
   meta?: Record<string, unknown>;
 }): string {
-  const displaySubsystem = opts.style === "json" ? opts.subsystem : formatSubsystemForConsole(opts.subsystem);
+  const displaySubsystem =
+    opts.style === "json" ? opts.subsystem : formatSubsystemForConsole(opts.subsystem);
   if (opts.style === "json") {
     return JSON.stringify({
       time: formatConsoleTimestamp("json"),
@@ -274,7 +282,12 @@ function shouldSuppressProbeConsoleLine(params: {
   return /(sessionId|runId)=probe-/.test(params.message);
 }
 
-function logToFile(fileLogger: TsLogger<LogObj>, level: LogLevel, message: string, meta?: Record<string, unknown>) {
+function logToFile(
+  fileLogger: TsLogger<LogObj>,
+  level: LogLevel,
+  message: string,
+  meta?: Record<string, unknown>,
+) {
   if (level === "silent") {
     return;
   }
@@ -303,7 +316,8 @@ export function createSubsystemLogger(subsystem: string): SubsystemLogger {
   const emit = (level: LogLevel, message: string, meta?: Record<string, unknown>) => {
     const consoleSettings = getConsoleSettings();
     const consoleEnabled =
-      shouldLogToConsole(level, { level: consoleSettings.level }) && shouldLogSubsystemToConsole(subsystem);
+      shouldLogToConsole(level, { level: consoleSettings.level }) &&
+      shouldLogSubsystemToConsole(subsystem);
     const fileEnabled = isFileLogLevelEnabled(level);
     if (!consoleEnabled && !fileEnabled) {
       return;
@@ -347,7 +361,10 @@ export function createSubsystemLogger(subsystem: string): SubsystemLogger {
   };
   const isConsoleEnabled = (level: LogLevel): boolean => {
     const consoleSettings = getConsoleSettings();
-    return shouldLogToConsole(level, { level: consoleSettings.level }) && shouldLogSubsystemToConsole(subsystem);
+    return (
+      shouldLogToConsole(level, { level: consoleSettings.level }) &&
+      shouldLogSubsystemToConsole(subsystem)
+    );
   };
   const isFileEnabled = (level: LogLevel): boolean => isFileLogLevelEnabled(level);
 
@@ -384,7 +401,10 @@ export function createSubsystemLogger(subsystem: string): SubsystemLogger {
   return logger;
 }
 
-export function runtimeForLogger(logger: SubsystemLogger, exit: RuntimeEnv["exit"] = defaultRuntime.exit): RuntimeEnv {
+export function runtimeForLogger(
+  logger: SubsystemLogger,
+  exit: RuntimeEnv["exit"] = defaultRuntime.exit,
+): RuntimeEnv {
   const formatArgs = (...args: unknown[]) =>
     args
       .map((arg) => formatRuntimeArg(arg))
@@ -397,6 +417,9 @@ export function runtimeForLogger(logger: SubsystemLogger, exit: RuntimeEnv["exit
   };
 }
 
-export function createSubsystemRuntime(subsystem: string, exit: RuntimeEnv["exit"] = defaultRuntime.exit): RuntimeEnv {
+export function createSubsystemRuntime(
+  subsystem: string,
+  exit: RuntimeEnv["exit"] = defaultRuntime.exit,
+): RuntimeEnv {
   return runtimeForLogger(createSubsystemLogger(subsystem), exit);
 }

@@ -8,7 +8,10 @@ vi.mock("../../../../../src/infra/system-events.js", () => ({
   enqueueSystemEvent: (...args: unknown[]) => enqueueSystemEventMock(...args),
 }));
 
-type SlackChannelHandler = (args: { event: Record<string, unknown>; body: unknown }) => Promise<void>;
+type SlackChannelHandler = (args: {
+  event: Record<string, unknown>;
+  body: unknown;
+}) => Promise<void>;
 
 function createChannelContext(params?: {
   trackEvent?: () => void;

@@ -12,7 +12,12 @@ import {
   warnIfCronSchedulerDisabled,
 } from "./shared.js";
 
-const assignIf = (target: Record<string, unknown>, key: string, value: unknown, shouldAssign: boolean) => {
+const assignIf = (
+  target: Record<string, unknown>,
+  key: string,
+  value: unknown,
+  shouldAssign: boolean,
+) => {
   if (shouldAssign) {
     target[key] = value;
   }
@@ -52,25 +57,38 @@ export function registerCronEditCommand(cron: Command) {
       .option("--deliver", "Deprecated (use --announce). Announces a summary to a chat.")
       .option("--no-deliver", "Disable announce delivery")
       .option("--channel <channel>", `Delivery channel (${getCronChannelOptions()})`)
-      .option("--to <dest>", "Delivery destination (E.164, Telegram chatId, or Discord channel/user)")
+      .option(
+        "--to <dest>",
+        "Delivery destination (E.164, Telegram chatId, or Discord channel/user)",
+      )
       .option("--account <id>", "Channel account id for delivery (multi-account setups)")
       .option("--best-effort-deliver", "Do not fail job if delivery fails")
       .option("--no-best-effort-deliver", "Fail job when delivery fails")
       .option("--failure-alert", "Enable failure alerts for this job")
       .option("--no-failure-alert", "Disable failure alerts for this job")
       .option("--failure-alert-after <n>", "Alert after N consecutive job errors")
-      .option("--failure-alert-channel <channel>", `Failure alert channel (${getCronChannelOptions()})`)
+      .option(
+        "--failure-alert-channel <channel>",
+        `Failure alert channel (${getCronChannelOptions()})`,
+      )
       .option("--failure-alert-to <dest>", "Failure alert destination")
       .option("--failure-alert-cooldown <duration>", "Minimum time between alerts (e.g. 1h, 30m)")
       .option("--failure-alert-mode <mode>", "Failure alert delivery mode (announce or webhook)")
-      .option("--failure-alert-account-id <id>", "Account ID for failure alert channel (multi-account setups)")
+      .option(
+        "--failure-alert-account-id <id>",
+        "Account ID for failure alert channel (multi-account setups)",
+      )
       .action(async (id, opts) => {
         try {
           if (opts.session === "main" && opts.message) {
-            throw new Error("Main jobs cannot use --message; use --system-event or --session isolated.");
+            throw new Error(
+              "Main jobs cannot use --message; use --system-event or --session isolated.",
+            );
           }
           if (opts.session === "isolated" && opts.systemEvent) {
-            throw new Error("Isolated jobs cannot use --system-event; use --message or --session main.");
+            throw new Error(
+              "Isolated jobs cannot use --system-event; use --message or --session main.",
+            );
           }
           if (opts.announce && typeof opts.deliver === "boolean") {
             throw new Error("Choose --announce or --no-deliver (not multiple).");
@@ -136,7 +154,10 @@ export function registerCronEditCommand(cron: Command) {
           if (scheduleChosen > 1) {
             throw new Error("Choose at most one schedule change");
           }
-          if ((requestedStaggerMs !== undefined || typeof opts.tz === "string") && (opts.at || opts.every)) {
+          if (
+            (requestedStaggerMs !== undefined || typeof opts.tz === "string") &&
+            (opts.at || opts.every)
+          ) {
             throw new Error("--stagger/--exact/--tz are only valid for cron schedules");
           }
           if (opts.at) {
@@ -169,18 +190,23 @@ export function registerCronEditCommand(cron: Command) {
             if (existing.schedule.kind !== "cron") {
               throw new Error("Current job is not a cron schedule; use --cron to convert first");
             }
-            const tz = typeof opts.tz === "string" ? opts.tz.trim() || undefined : existing.schedule.tz;
+            const tz =
+              typeof opts.tz === "string" ? opts.tz.trim() || undefined : existing.schedule.tz;
             patch.schedule = {
               kind: "cron",
               expr: existing.schedule.expr,
               tz,
-              staggerMs: requestedStaggerMs !== undefined ? requestedStaggerMs : existing.schedule.staggerMs,
+              staggerMs:
+                requestedStaggerMs !== undefined ? requestedStaggerMs : existing.schedule.staggerMs,
             };
           }
 
           const hasSystemEventPatch = typeof opts.systemEvent === "string";
-          const model = typeof opts.model === "string" && opts.model.trim() ? opts.model.trim() : undefined;
-          const timeoutSeconds = opts.timeoutSeconds ? Number.parseInt(String(opts.timeoutSeconds), 10) : undefined;
+          const model =
+            typeof opts.model === "string" && opts.model.trim() ? opts.model.trim() : undefined;
+          const timeoutSeconds = opts.timeoutSeconds
+            ? Number.parseInt(String(opts.timeoutSeconds), 10)
+            : undefined;
           const hasTimeoutSeconds = Boolean(timeoutSeconds && Number.isFinite(timeoutSeconds));
           const hasDeliveryModeFlag = opts.announce || typeof opts.deliver === "boolean";
           const hasDeliveryTarget = typeof opts.channel === "string" || typeof opts.to === "string";
@@ -208,7 +234,12 @@ export function registerCronEditCommand(cron: Command) {
             assignIf(payload, "message", String(opts.message), typeof opts.message === "string");
             assignIf(payload, "model", model, Boolean(model));
             assignIf(payload, "timeoutSeconds", timeoutSeconds, hasTimeoutSeconds);
-            assignIf(payload, "lightContext", opts.lightContext, typeof opts.lightContext === "boolean");
+            assignIf(
+              payload,
+              "lightContext",
+              opts.lightContext,
+              typeof opts.lightContext === "boolean",
+            );
             patch.payload = payload;
           }
 
@@ -251,7 +282,8 @@ export function registerCronEditCommand(cron: Command) {
             hasFailureAlertCooldown ||
             hasFailureAlertMode ||
             hasFailureAlertAccountId;
-          const failureAlertFlag = typeof opts.failureAlert === "boolean" ? opts.failureAlert : undefined;
+          const failureAlertFlag =
+            typeof opts.failureAlert === "boolean" ? opts.failureAlert : undefined;
           if (failureAlertFlag === false && hasFailureAlertFields) {
             throw new Error("Use --no-failure-alert alone (without failure-alert-* options).");
           }

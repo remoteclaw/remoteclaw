@@ -19,7 +19,10 @@ import {
 } from "../media/input-files.js";
 import { defaultRuntime } from "../runtime.js";
 import { resolveAssistantStreamDeltaText } from "./agent-event-assistant-text.js";
-import { buildAgentMessageFromConversationEntries, type ConversationEntry } from "./agent-prompt.js";
+import {
+  buildAgentMessageFromConversationEntries,
+  type ConversationEntry,
+} from "./agent-prompt.js";
 import type { AuthRateLimiter } from "./auth-rate-limit.js";
 import type { ResolvedGatewayAuth } from "./auth.js";
 import { sendJson, setSseHeaders, writeDone } from "./http-common.js";
@@ -301,7 +304,9 @@ async function resolveImagesForRequest(
     const image = await extractImageContentFromSource(source, limits.images);
     totalBytes += estimateBase64DecodedBytes(image.data);
     if (totalBytes > limits.maxTotalImageBytes) {
-      throw new Error(`Total image payload too large (${totalBytes}; limit ${limits.maxTotalImageBytes})`);
+      throw new Error(
+        `Total image payload too large (${totalBytes}; limit ${limits.maxTotalImageBytes})`,
+      );
     }
     images.push(image);
   }

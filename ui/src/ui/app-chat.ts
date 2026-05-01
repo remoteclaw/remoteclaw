@@ -68,7 +68,12 @@ export async function handleAbortChat(host: ChatHost) {
   await abortChatRun(host as unknown as RemoteClawApp);
 }
 
-function enqueueChatMessage(host: ChatHost, text: string, attachments?: ChatAttachment[], refreshSessions?: boolean) {
+function enqueueChatMessage(
+  host: ChatHost,
+  text: string,
+  attachments?: ChatAttachment[],
+  refreshSessions?: boolean,
+) {
   const trimmed = text.trim();
   const hasAttachments = Boolean(attachments && attachments.length > 0);
   if (!trimmed && !hasAttachments) {
@@ -194,7 +199,10 @@ export async function handleSendChat(
   });
 }
 
-export async function refreshChat(host: ChatHost & ScrollHost, opts?: { scheduleScroll?: boolean }) {
+export async function refreshChat(
+  host: ChatHost & ScrollHost,
+  opts?: { scheduleScroll?: boolean },
+) {
   await Promise.all([
     loadChatHistory(host as unknown as RemoteClawApp),
     loadSessions(host as unknown as RemoteClawApp, {
@@ -218,7 +226,9 @@ function resolveAgentIdForSession(host: ChatHost): string | null {
   if (parsed?.agentId) {
     return parsed.agentId;
   }
-  const snapshot = host.hello?.snapshot as { sessionDefaults?: SessionDefaultsSnapshot } | undefined;
+  const snapshot = host.hello?.snapshot as
+    | { sessionDefaults?: SessionDefaultsSnapshot }
+    | undefined;
   const fallback = snapshot?.sessionDefaults?.defaultAgentId?.trim();
   return fallback || "main";
 }

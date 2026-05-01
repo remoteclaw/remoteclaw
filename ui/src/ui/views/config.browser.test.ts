@@ -145,7 +145,9 @@ describe("config view", () => {
       container,
     );
 
-    const btn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent?.trim() === "Raw");
+    const btn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.trim() === "Raw",
+    );
     expect(btn).toBeTruthy();
     btn?.click();
     expect(onFormModeChange).toHaveBeenCalledWith("raw");
@@ -169,7 +171,9 @@ describe("config view", () => {
       container,
     );
 
-    const btn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent?.trim() === "Gateway");
+    const btn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.trim() === "Gateway",
+    );
     expect(btn).toBeTruthy();
     btn?.click();
     expect(onSectionChange).toHaveBeenCalledWith("gateway");
@@ -200,8 +204,8 @@ describe("config view", () => {
     const container = document.createElement("div");
     render(renderConfig(baseProps()), container);
 
-    const options = Array.from(container.querySelectorAll(".config-search__tag-option")).map((option) =>
-      option.textContent?.trim(),
+    const options = Array.from(container.querySelectorAll(".config-search__tag-option")).map(
+      (option) => option.textContent?.trim(),
     );
     expect(options).toContain("tag:security");
     expect(options).toContain("tag:advanced");
@@ -219,7 +223,9 @@ describe("config view", () => {
       container,
     );
 
-    const option = container.querySelector<HTMLButtonElement>('.config-search__tag-option[data-tag="security"]');
+    const option = container.querySelector<HTMLButtonElement>(
+      '.config-search__tag-option[data-tag="security"]',
+    );
     expect(option).toBeTruthy();
     option?.click();
     expect(onSearchChange).toHaveBeenCalledWith("tag:security");

@@ -1,5 +1,10 @@
 import type { BaseProbeResult } from "remoteclaw/plugin-sdk/feishu";
-import type { FeishuConfigSchema, FeishuGroupSchema, FeishuAccountConfigSchema, z } from "./config-schema.js";
+import type {
+  FeishuConfigSchema,
+  FeishuGroupSchema,
+  FeishuAccountConfigSchema,
+  z,
+} from "./config-schema.js";
 import type { MentionTarget } from "./mention.js";
 
 export type FeishuConfig = z.infer<typeof FeishuConfigSchema>;
@@ -9,7 +14,10 @@ export type FeishuAccountConfig = z.infer<typeof FeishuAccountConfigSchema>;
 export type FeishuDomain = "feishu" | "lark" | (string & {});
 export type FeishuConnectionMode = "websocket" | "webhook";
 
-export type FeishuDefaultAccountSelectionSource = "explicit-default" | "mapped-default" | "fallback";
+export type FeishuDefaultAccountSelectionSource =
+  | "explicit-default"
+  | "mapped-default"
+  | "fallback";
 export type FeishuAccountSelectionSource = "explicit" | FeishuDefaultAccountSelectionSource;
 
 export type ResolvedFeishuAccount = {

@@ -17,7 +17,11 @@ type DiscordAccountParams = {
 };
 
 export function isDiscordSurface(params: DiscordSurfaceParams): boolean {
-  const channel = params.ctx.OriginatingChannel ?? params.command.channel ?? params.ctx.Surface ?? params.ctx.Provider;
+  const channel =
+    params.ctx.OriginatingChannel ??
+    params.command.channel ??
+    params.ctx.Surface ??
+    params.ctx.Provider;
   return (
     String(channel ?? "")
       .trim()

@@ -25,7 +25,8 @@ const validateConfigObjectWithPluginsMock = vi.hoisted(() => vi.fn());
 const writeConfigFileMock = vi.hoisted(() => vi.fn());
 
 vi.mock("../../config/config.js", async () => {
-  const actual = await vi.importActual<typeof import("../../config/config.js")>("../../config/config.js");
+  const actual =
+    await vi.importActual<typeof import("../../config/config.js")>("../../config/config.js");
   return {
     ...actual,
     readConfigFileSnapshot: readConfigFileSnapshotMock,
@@ -83,7 +84,11 @@ afterAll(async () => {
   await fs.rm(testWorkspaceDir, { recursive: true, force: true });
 });
 
-function buildParams(commandBody: string, cfg: RemoteClawConfig, ctxOverrides?: Partial<MsgContext>) {
+function buildParams(
+  commandBody: string,
+  cfg: RemoteClawConfig,
+  ctxOverrides?: Partial<MsgContext>,
+) {
   return buildCommandTestParams(commandBody, cfg, ctxOverrides, { workspaceDir: testWorkspaceDir });
 }
 
@@ -857,7 +862,9 @@ describe("handleCommands subagents", () => {
     expect(result.shouldContinue).toBe(false);
     expect(result.reply?.text).toContain("✅ Sent to");
 
-    const agentCall = callGatewayMock.mock.calls.find((call) => (call[0] as { method?: string }).method === "agent");
+    const agentCall = callGatewayMock.mock.calls.find(
+      (call) => (call[0] as { method?: string }).method === "agent",
+    );
     expect(agentCall?.[0]).toMatchObject({
       method: "agent",
       params: {
@@ -870,7 +877,8 @@ describe("handleCommands subagents", () => {
     const waitCall = callGatewayMock.mock.calls.find(
       (call) =>
         (call[0] as { method?: string; params?: { runId?: string } }).method === "agent.wait" &&
-        (call[0] as { method?: string; params?: { runId?: string } }).params?.runId === "run-followup-1",
+        (call[0] as { method?: string; params?: { runId?: string } }).params?.runId ===
+          "run-followup-1",
     );
     expect(waitCall).toBeDefined();
   });

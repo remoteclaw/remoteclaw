@@ -40,7 +40,11 @@ export const GENERATED_BASE_CONFIG_SCHEMA = ${JSON.stringify(payload, null, 2)} 
   );
 }
 
-export function writeBaseConfigSchemaModule(params?: { repoRoot?: string; outputPath?: string; check?: boolean }): {
+export function writeBaseConfigSchemaModule(params?: {
+  repoRoot?: string;
+  outputPath?: string;
+  check?: boolean;
+}): {
   changed: boolean;
   wrote: boolean;
   outputPath: string;

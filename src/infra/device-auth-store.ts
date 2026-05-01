@@ -77,7 +77,11 @@ export function storeDeviceAuthToken(params: {
   });
 }
 
-export function clearDeviceAuthToken(params: { deviceId: string; role: string; env?: NodeJS.ProcessEnv }): void {
+export function clearDeviceAuthToken(params: {
+  deviceId: string;
+  role: string;
+  env?: NodeJS.ProcessEnv;
+}): void {
   const filePath = resolveDeviceAuthPath(params.env);
   clearDeviceAuthTokenFromStore({
     adapter: {

@@ -10,7 +10,10 @@ import {
 } from "./runners.js";
 import type { DaemonInstallOptions, GatewayRpcOpts } from "./types.js";
 
-function resolveInstallOptions(cmdOpts: DaemonInstallOptions, command?: Command): DaemonInstallOptions {
+function resolveInstallOptions(
+  cmdOpts: DaemonInstallOptions,
+  command?: Command,
+): DaemonInstallOptions {
   const parentForce = inheritOptionFromParent<boolean>(command, "force");
   const parentPort = inheritOptionFromParent<string>(command, "port");
   const parentToken = inheritOptionFromParent<string>(command, "token");

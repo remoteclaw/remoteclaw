@@ -29,7 +29,11 @@ export function isMatrixSurface(params: DiscordSurfaceParams): boolean {
 }
 
 export function resolveCommandSurfaceChannel(params: DiscordSurfaceParams): string {
-  const channel = params.ctx.OriginatingChannel ?? params.command.channel ?? params.ctx.Surface ?? params.ctx.Provider;
+  const channel =
+    params.ctx.OriginatingChannel ??
+    params.command.channel ??
+    params.ctx.Surface ??
+    params.ctx.Provider;
   return String(channel ?? "")
     .trim()
     .toLowerCase();

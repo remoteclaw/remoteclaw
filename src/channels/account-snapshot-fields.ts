@@ -53,7 +53,9 @@ function readStringArray(record: Record<string, unknown>, key: string): string[]
 
 function readCredentialStatus(record: Record<string, unknown>, key: CredentialStatusKey) {
   const value = record[key];
-  return value === "available" || value === "configured_unavailable" || value === "missing" ? value : undefined;
+  return value === "available" || value === "configured_unavailable" || value === "missing"
+    ? value
+    : undefined;
 }
 
 export function resolveConfiguredFromCredentialStatuses(account: unknown): boolean | undefined {
@@ -102,7 +104,9 @@ export function hasConfiguredUnavailableCredentialStatus(account: unknown): bool
   if (!record) {
     return false;
   }
-  return CREDENTIAL_STATUS_KEYS.some((key) => readCredentialStatus(record, key) === "configured_unavailable");
+  return CREDENTIAL_STATUS_KEYS.some(
+    (key) => readCredentialStatus(record, key) === "configured_unavailable",
+  );
 }
 
 export function hasResolvedCredentialValue(account: unknown): boolean {
@@ -138,7 +142,9 @@ export function projectCredentialSnapshotFields(
   }
 
   return {
-    ...(readTrimmedString(record, "tokenSource") ? { tokenSource: readTrimmedString(record, "tokenSource") } : {}),
+    ...(readTrimmedString(record, "tokenSource")
+      ? { tokenSource: readTrimmedString(record, "tokenSource") }
+      : {}),
     ...(readTrimmedString(record, "botTokenSource")
       ? { botTokenSource: readTrimmedString(record, "botTokenSource") }
       : {}),
@@ -166,7 +172,9 @@ export function projectCredentialSnapshotFields(
   };
 }
 
-export function projectSafeChannelAccountSnapshotFields(account: unknown): Partial<ChannelAccountSnapshot> {
+export function projectSafeChannelAccountSnapshotFields(
+  account: unknown,
+): Partial<ChannelAccountSnapshot> {
   const record = asRecord(account);
   if (!record) {
     return {};
@@ -174,21 +182,35 @@ export function projectSafeChannelAccountSnapshotFields(account: unknown): Parti
 
   return {
     ...(readTrimmedString(record, "name") ? { name: readTrimmedString(record, "name") } : {}),
-    ...(readBoolean(record, "linked") !== undefined ? { linked: readBoolean(record, "linked") } : {}),
-    ...(readBoolean(record, "running") !== undefined ? { running: readBoolean(record, "running") } : {}),
-    ...(readBoolean(record, "connected") !== undefined ? { connected: readBoolean(record, "connected") } : {}),
+    ...(readBoolean(record, "linked") !== undefined
+      ? { linked: readBoolean(record, "linked") }
+      : {}),
+    ...(readBoolean(record, "running") !== undefined
+      ? { running: readBoolean(record, "running") }
+      : {}),
+    ...(readBoolean(record, "connected") !== undefined
+      ? { connected: readBoolean(record, "connected") }
+      : {}),
     ...(readNumber(record, "reconnectAttempts") !== undefined
       ? { reconnectAttempts: readNumber(record, "reconnectAttempts") }
       : {}),
     ...(readTrimmedString(record, "mode") ? { mode: readTrimmedString(record, "mode") } : {}),
-    ...(readTrimmedString(record, "dmPolicy") ? { dmPolicy: readTrimmedString(record, "dmPolicy") } : {}),
-    ...(readStringArray(record, "allowFrom") ? { allowFrom: readStringArray(record, "allowFrom") } : {}),
+    ...(readTrimmedString(record, "dmPolicy")
+      ? { dmPolicy: readTrimmedString(record, "dmPolicy") }
+      : {}),
+    ...(readStringArray(record, "allowFrom")
+      ? { allowFrom: readStringArray(record, "allowFrom") }
+      : {}),
     ...projectCredentialSnapshotFields(account),
-    ...(readTrimmedString(record, "baseUrl") ? { baseUrl: readTrimmedString(record, "baseUrl") } : {}),
+    ...(readTrimmedString(record, "baseUrl")
+      ? { baseUrl: readTrimmedString(record, "baseUrl") }
+      : {}),
     ...(readBoolean(record, "allowUnmentionedGroups") !== undefined
       ? { allowUnmentionedGroups: readBoolean(record, "allowUnmentionedGroups") }
       : {}),
-    ...(readTrimmedString(record, "cliPath") ? { cliPath: readTrimmedString(record, "cliPath") } : {}),
+    ...(readTrimmedString(record, "cliPath")
+      ? { cliPath: readTrimmedString(record, "cliPath") }
+      : {}),
     ...(readTrimmedString(record, "dbPath") ? { dbPath: readTrimmedString(record, "dbPath") } : {}),
     ...(readNumber(record, "port") !== undefined ? { port: readNumber(record, "port") } : {}),
   };

@@ -14,7 +14,9 @@ export type ResolvedRunTypingPolicy = {
   suppressTyping: boolean;
 };
 
-export function resolveRunTypingPolicy(params: ResolveRunTypingPolicyParams): ResolvedRunTypingPolicy {
+export function resolveRunTypingPolicy(
+  params: ResolveRunTypingPolicyParams,
+): ResolvedRunTypingPolicy {
   const typingPolicy = params.isHeartbeat
     ? "heartbeat"
     : params.originatingChannel === INTERNAL_MESSAGE_CHANNEL

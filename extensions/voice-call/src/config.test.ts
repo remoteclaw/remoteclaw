@@ -91,7 +91,9 @@ describe("validateProviderConfig", () => {
 
       delete process.env.TWILIO_AUTH_TOKEN;
       process.env.TWILIO_ACCOUNT_SID = "AC123";
-      const missingToken = validateProviderConfig(resolveVoiceCallConfig(createBaseConfig("twilio")));
+      const missingToken = validateProviderConfig(
+        resolveVoiceCallConfig(createBaseConfig("twilio")),
+      );
       expect(missingToken.valid).toBe(false);
       expect(missingToken.errors).toContain(
         "plugins.entries.voice-call.config.twilio.authToken is required (or set TWILIO_AUTH_TOKEN env)",

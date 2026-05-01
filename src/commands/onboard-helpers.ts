@@ -17,7 +17,13 @@ import { isWSL } from "../infra/wsl.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { stylePromptTitle } from "../terminal/prompt-style.js";
-import { CONFIG_DIR, resolveUserPath, shortenHomeInString, shortenHomePath, sleep } from "../utils.js";
+import {
+  CONFIG_DIR,
+  resolveUserPath,
+  shortenHomeInString,
+  shortenHomePath,
+  sleep,
+} from "../utils.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../utils/message-channel.js";
 import { VERSION } from "../version.js";
 import type { OnboardMode, ResetScope } from "./onboard-types.js";
@@ -130,7 +136,10 @@ type BrowserOpenCommand = {
 export async function resolveBrowserOpenCommand(): Promise<BrowserOpenCommand> {
   const platform = process.platform;
   const hasDisplay = Boolean(process.env.DISPLAY || process.env.WAYLAND_DISPLAY);
-  const isSsh = Boolean(process.env.SSH_CLIENT) || Boolean(process.env.SSH_TTY) || Boolean(process.env.SSH_CONNECTION);
+  const isSsh =
+    Boolean(process.env.SSH_CLIENT) ||
+    Boolean(process.env.SSH_TTY) ||
+    Boolean(process.env.SSH_CONNECTION);
 
   if (isSsh && !hasDisplay && platform !== "win32") {
     return { argv: null, reason: "ssh-no-display" };
@@ -164,7 +173,9 @@ export async function resolveBrowserOpenCommand(): Promise<BrowserOpenCommand> {
       }
     }
     const hasXdgOpen = await detectBinary("xdg-open");
-    return hasXdgOpen ? { argv: ["xdg-open"], command: "xdg-open" } : { argv: null, reason: "missing-xdg-open" };
+    return hasXdgOpen
+      ? { argv: ["xdg-open"], command: "xdg-open" }
+      : { argv: null, reason: "missing-xdg-open" };
   }
 
   return { argv: null, reason: "unsupported-platform" };
@@ -178,11 +189,17 @@ export async function detectBrowserOpenSupport(): Promise<BrowserOpenSupport> {
   return { ok: true, command: resolved.command };
 }
 
-export function formatControlUiSshHint(params: { port: number; basePath?: string; token?: string }): string {
+export function formatControlUiSshHint(params: {
+  port: number;
+  basePath?: string;
+  token?: string;
+}): string {
   const basePath = normalizeControlUiBasePath(params.basePath);
   const uiPath = basePath ? `${basePath}/` : "/";
   const localUrl = `http://localhost:${params.port}${uiPath}`;
-  const authedUrl = params.token ? `${localUrl}#token=${encodeURIComponent(params.token)}` : undefined;
+  const authedUrl = params.token
+    ? `${localUrl}#token=${encodeURIComponent(params.token)}`
+    : undefined;
   const sshTarget = resolveSshTargetHint();
   return [
     "No GUI detected. Open from your computer:",
@@ -307,7 +324,12 @@ export async function detectBinary(name: string): Promise<boolean> {
     return false;
   }
   const resolved = name.startsWith("~") ? resolveUserPath(name) : name;
-  if (path.isAbsolute(resolved) || resolved.startsWith(".") || resolved.includes("/") || resolved.includes("\\")) {
+  if (
+    path.isAbsolute(resolved) ||
+    resolved.startsWith(".") ||
+    resolved.includes("/") ||
+    resolved.includes("\\")
+  ) {
     try {
       await fs.access(resolved);
       return true;

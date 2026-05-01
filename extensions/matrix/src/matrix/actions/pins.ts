@@ -57,7 +57,9 @@ export async function unpinMatrixMessage(
   messageId: string,
   opts: MatrixActionClientOpts = {},
 ): Promise<{ pinned: string[] }> {
-  return await updateMatrixPins(roomId, messageId, opts, (current) => current.filter((id) => id !== messageId));
+  return await updateMatrixPins(roomId, messageId, opts, (current) =>
+    current.filter((id) => id !== messageId),
+  );
 }
 
 export async function listMatrixPins(

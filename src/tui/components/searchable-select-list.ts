@@ -231,7 +231,10 @@ export class SearchableSelectList implements Component {
     // Calculate visible range with scrolling
     const startIndex = Math.max(
       0,
-      Math.min(this.selectedIndex - Math.floor(this.maxVisible / 2), this.filteredItems.length - this.maxVisible),
+      Math.min(
+        this.selectedIndex - Math.floor(this.maxVisible / 2),
+        this.filteredItems.length - this.maxVisible,
+      ),
     );
     const endIndex = Math.min(startIndex + this.maxVisible, this.filteredItems.length);
 
@@ -254,7 +257,12 @@ export class SearchableSelectList implements Component {
     return lines;
   }
 
-  private renderItemLine(item: SelectItem, isSelected: boolean, width: number, query: string): string {
+  private renderItemLine(
+    item: SelectItem,
+    isSelected: boolean,
+    width: number,
+    query: string,
+  ): string {
     const prefix = isSelected ? "→ " : "  ";
     const prefixWidth = prefix.length;
     const displayValue = this.getItemLabel(item);
@@ -297,9 +305,14 @@ export class SearchableSelectList implements Component {
       return null;
     }
 
-    const availableWidth = Math.max(1, width - prefixWidth - SearchableSelectList.RIGHT_MARGIN_WIDTH);
+    const availableWidth = Math.max(
+      1,
+      width - prefixWidth - SearchableSelectList.RIGHT_MARGIN_WIDTH,
+    );
     const maxValueWidth =
-      availableWidth - SearchableSelectList.DESCRIPTION_MIN_WIDTH - SearchableSelectList.DESCRIPTION_SPACING_WIDTH;
+      availableWidth -
+      SearchableSelectList.DESCRIPTION_MIN_WIDTH -
+      SearchableSelectList.DESCRIPTION_SPACING_WIDTH;
 
     if (maxValueWidth < 1) {
       return null;

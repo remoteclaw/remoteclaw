@@ -4,7 +4,10 @@ import {
   removeMattermostReaction,
   resetMattermostReactionBotUserCacheForTests,
 } from "./reactions.js";
-import { createMattermostReactionFetchMock, createMattermostTestConfig } from "./reactions.test-helpers.js";
+import {
+  createMattermostReactionFetchMock,
+  createMattermostTestConfig,
+} from "./reactions.test-helpers.js";
 
 describe("mattermost reactions", () => {
   beforeEach(() => {
@@ -93,7 +96,9 @@ describe("mattermost reactions", () => {
       fetchImpl: fetchMock,
     });
 
-    const usersMeCalls = fetchMock.mock.calls.filter((call) => String(call[0]).endsWith("/api/v4/users/me"));
+    const usersMeCalls = fetchMock.mock.calls.filter((call) =>
+      String(call[0]).endsWith("/api/v4/users/me"),
+    );
     expect(addResult).toEqual({ ok: true });
     expect(removeResult).toEqual({ ok: true });
     expect(usersMeCalls).toHaveLength(1);

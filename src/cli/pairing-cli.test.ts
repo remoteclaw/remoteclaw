@@ -210,7 +210,15 @@ describe("pairing cli", () => {
   it("forwards --account for approve", async () => {
     mockApprovedPairing();
 
-    await runPairing(["pairing", "approve", "--channel", "telegram", "--account", "yy", "ABCDEFGH"]);
+    await runPairing([
+      "pairing",
+      "approve",
+      "--channel",
+      "telegram",
+      "--account",
+      "yy",
+      "ABCDEFGH",
+    ]);
 
     expect(approveChannelPairingCode).toHaveBeenCalledWith({
       channel: "telegram",

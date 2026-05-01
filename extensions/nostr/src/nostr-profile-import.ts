@@ -82,7 +82,9 @@ function sanitizeProfileUrls(profile: NostrProfile): NostrProfile {
  * - Verifies the event signature
  * - Parses and returns the profile
  */
-export async function importProfileFromRelays(opts: ProfileImportOptions): Promise<ProfileImportResult> {
+export async function importProfileFromRelays(
+  opts: ProfileImportOptions,
+): Promise<ProfileImportResult> {
   const { pubkey, relays, timeoutMs = DEFAULT_TIMEOUT_MS } = opts;
 
   if (!pubkey || !/^[0-9a-fA-F]{64}$/.test(pubkey)) {
@@ -236,7 +238,10 @@ export async function importProfileFromRelays(opts: ProfileImportOptions): Promi
  * - For each field, prefer local if set, otherwise use imported
  * - This preserves user customizations while filling in missing data
  */
-export function mergeProfiles(local: NostrProfile | undefined, imported: NostrProfile | undefined): NostrProfile {
+export function mergeProfiles(
+  local: NostrProfile | undefined,
+  imported: NostrProfile | undefined,
+): NostrProfile {
   if (!imported) {
     return local ?? {};
   }

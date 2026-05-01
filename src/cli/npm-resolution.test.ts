@@ -163,6 +163,8 @@ describe("npm-resolution helpers", () => {
       shasum: undefined,
       resolvedAt: undefined,
     });
-    expect(logs).toEqual(["[warn] Could not resolve exact npm version for --pin; storing original npm spec."]);
+    expect(logs).toEqual([
+      "[warn] Could not resolve exact npm version for --pin; storing original npm spec.",
+    ]);
   });
 });

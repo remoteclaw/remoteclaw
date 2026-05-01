@@ -368,7 +368,10 @@ describe("Security: Cite Resolution Authorization Ordering", () => {
     return resolved.length > 0 ? resolved.join("\n") + "\n\n" : "";
   }
 
-  function buildCitedMessage(secretNest = "chat/~private-ship/ops", postId = "1701411845077995094") {
+  function buildCitedMessage(
+    secretNest = "chat/~private-ship/ops",
+    postId = "1701411845077995094",
+  ) {
     return [
       {
         block: {
@@ -441,7 +444,9 @@ describe("Security: Cite Resolution Authorization Ordering", () => {
       })),
     };
 
-    const senderAllowed = allowlist.map((ship) => normalizeShip(ship)).includes(normalizeShip(senderShip));
+    const senderAllowed = allowlist
+      .map((ship) => normalizeShip(ship))
+      .includes(normalizeShip(senderShip));
     expect(senderAllowed).toBe(false);
 
     const messageText = await resolveAuthorizedMessageText({
@@ -563,7 +568,9 @@ describe("Security: Sender Role Identification", () => {
       channelNest?: string,
     ): string {
       const senderRole = getSenderRole(senderShip, ownerShip);
-      return isGroup ? `${senderShip} [${senderRole}] in ${channelNest}` : `${senderShip} [${senderRole}]`;
+      return isGroup
+        ? `${senderShip} [${senderRole}] in ${channelNest}`
+        : `${senderShip} [${senderRole}]`;
     }
 
     it("DM from owner includes [owner] in label", () => {

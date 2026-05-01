@@ -1,5 +1,11 @@
 import type { Component } from "@mariozechner/pi-tui";
-import { Input, matchesKey, type SelectItem, SelectList, type SelectListTheme } from "@mariozechner/pi-tui";
+import {
+  Input,
+  matchesKey,
+  type SelectItem,
+  SelectList,
+  type SelectListTheme,
+} from "@mariozechner/pi-tui";
 import chalk from "chalk";
 import { fuzzyFilterLower, prepareSearchItems } from "./fuzzy-filter.js";
 
@@ -75,12 +81,20 @@ export class FilterableSelectList implements Component {
     const allowVimNav = !this.filterText.trim();
 
     // Navigation: arrows, vim j/k, or ctrl+p/ctrl+n
-    if (matchesKey(keyData, "up") || matchesKey(keyData, "ctrl+p") || (allowVimNav && keyData === "k")) {
+    if (
+      matchesKey(keyData, "up") ||
+      matchesKey(keyData, "ctrl+p") ||
+      (allowVimNav && keyData === "k")
+    ) {
       this.selectList.handleInput("\x1b[A");
       return;
     }
 
-    if (matchesKey(keyData, "down") || matchesKey(keyData, "ctrl+n") || (allowVimNav && keyData === "j")) {
+    if (
+      matchesKey(keyData, "down") ||
+      matchesKey(keyData, "ctrl+n") ||
+      (allowVimNav && keyData === "j")
+    ) {
       this.selectList.handleInput("\x1b[B");
       return;
     }

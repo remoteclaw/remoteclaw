@@ -7,7 +7,8 @@ import { installWebSearchProviderContractSuite } from "../../../src/plugins/cont
 
 export function describeWebSearchProviderContracts(pluginId: string) {
   const providerIds =
-    pluginRegistrationContractRegistry.find((entry) => entry.pluginId === pluginId)?.webSearchProviderIds ?? [];
+    pluginRegistrationContractRegistry.find((entry) => entry.pluginId === pluginId)
+      ?.webSearchProviderIds ?? [];
 
   const resolveProviders = () => resolveWebSearchProviderContractEntriesForPluginId(pluginId);
 
@@ -23,14 +24,18 @@ export function describeWebSearchProviderContracts(pluginId: string) {
         provider: () => {
           const entry = resolveProviders().find((provider) => provider.provider.id === providerId);
           if (!entry) {
-            throw new Error(`web search provider contract entry missing for ${pluginId}:${providerId}`);
+            throw new Error(
+              `web search provider contract entry missing for ${pluginId}:${providerId}`,
+            );
           }
           return entry.provider;
         },
         credentialValue: () => {
           const entry = resolveProviders().find((provider) => provider.provider.id === providerId);
           if (!entry) {
-            throw new Error(`web search provider contract entry missing for ${pluginId}:${providerId}`);
+            throw new Error(
+              `web search provider contract entry missing for ${pluginId}:${providerId}`,
+            );
           }
           return entry.credentialValue;
         },

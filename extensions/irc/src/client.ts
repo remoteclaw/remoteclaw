@@ -1,6 +1,11 @@
 import net from "node:net";
 import tls from "node:tls";
-import { parseIrcLine, parseIrcPrefix, sanitizeIrcOutboundText, sanitizeIrcTarget } from "./protocol.js";
+import {
+  parseIrcLine,
+  parseIrcPrefix,
+  sanitizeIrcOutboundText,
+  sanitizeIrcTarget,
+} from "./protocol.js";
 
 const IRC_ERROR_CODES = new Set(["432", "464", "465"]);
 const IRC_NICK_COLLISION_CODES = new Set(["433", "436"]);
@@ -60,7 +65,10 @@ function toError(err: unknown): Error {
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs);
+    const timer = setTimeout(
+      () => reject(new Error(`${label} timed out after ${timeoutMs}ms`)),
+      timeoutMs,
+    );
     promise
       .then((result) => {
         clearTimeout(timer);
@@ -107,7 +115,8 @@ export function buildIrcNickServCommands(options?: IrcNickServOptions): string[]
 
 export async function connectIrcClient(options: IrcClientOptions): Promise<IrcClient> {
   const timeoutMs = options.connectTimeoutMs != null ? options.connectTimeoutMs : 15000;
-  const messageChunkMaxChars = options.messageChunkMaxChars != null ? options.messageChunkMaxChars : 350;
+  const messageChunkMaxChars =
+    options.messageChunkMaxChars != null ? options.messageChunkMaxChars : 350;
 
   if (!options.host.trim()) {
     throw new Error("IRC host is required");
@@ -271,7 +280,8 @@ export async function connectIrcClient(options: IrcClientOptions): Promise<IrcCl
       }
 
       if (line.command === "PING") {
-        const payload = line.trailing != null ? line.trailing : line.params[0] != null ? line.params[0] : "";
+        const payload =
+          line.trailing != null ? line.trailing : line.params[0] != null ? line.params[0] : "";
         sendRaw(`PONG :${payload}`);
         continue;
       }
@@ -279,7 +289,12 @@ export async function connectIrcClient(options: IrcClientOptions): Promise<IrcCl
       if (line.command === "NICK") {
         const prefix = parseIrcPrefix(line.prefix);
         if (prefix.nick && prefix.nick.toLowerCase() === currentNick.toLowerCase()) {
-          const next = line.trailing != null ? line.trailing : line.params[0] != null ? line.params[0] : currentNick;
+          const next =
+            line.trailing != null
+              ? line.trailing
+              : line.params[0] != null
+                ? line.params[0]
+                : currentNick;
           currentNick = String(next).trim();
         }
         continue;
@@ -289,14 +304,16 @@ export async function connectIrcClient(options: IrcClientOptions): Promise<IrcCl
         if (tryRecoverNickCollision()) {
           continue;
         }
-        const detail = line.trailing != null ? line.trailing : line.params.join(" ") || "nickname in use";
+        const detail =
+          line.trailing != null ? line.trailing : line.params.join(" ") || "nickname in use";
         fail(new Error(`IRC login failed (${line.command}): ${detail}`));
         close();
         return;
       }
 
       if (!ready && IRC_ERROR_CODES.has(line.command)) {
-        const detail = line.trailing != null ? line.trailing : line.params.join(" ") || "login rejected";
+        const detail =
+          line.trailing != null ? line.trailing : line.params.join(" ") || "login rejected";
         fail(new Error(`IRC login failed (${line.command}): ${detail}`));
         close();
         return;

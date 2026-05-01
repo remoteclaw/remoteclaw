@@ -7,7 +7,11 @@ import { loadConfig } from "../config/config.js";
 import { callGateway, randomIdempotencyKey } from "../gateway/call.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import { type RuntimeEnv, writeRuntimeJson } from "../runtime.js";
-import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES, normalizeMessageChannel } from "../utils/message-channel.js";
+import {
+  GATEWAY_CLIENT_MODES,
+  GATEWAY_CLIENT_NAMES,
+  normalizeMessageChannel,
+} from "../utils/message-channel.js";
 import { agentCommand } from "./agent.js";
 import { resolveSessionKeyForRequest } from "./agent/session.js";
 
@@ -60,7 +64,11 @@ function parseTimeoutSeconds(opts: { cfg: ReturnType<typeof loadConfig>; timeout
   return raw;
 }
 
-function formatPayloadForLog(payload: { text?: string; mediaUrls?: string[]; mediaUrl?: string | null }) {
+function formatPayloadForLog(payload: {
+  text?: string;
+  mediaUrls?: string[];
+  mediaUrl?: string | null;
+}) {
   const parts = resolveSendableOutboundReplyParts({
     text: payload.text,
     mediaUrls: payload.mediaUrls,

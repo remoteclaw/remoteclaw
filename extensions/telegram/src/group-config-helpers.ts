@@ -1,4 +1,8 @@
-import type { TelegramDirectConfig, TelegramGroupConfig, TelegramTopicConfig } from "../../../src/config/types.js";
+import type {
+  TelegramDirectConfig,
+  TelegramGroupConfig,
+  TelegramTopicConfig,
+} from "../../../src/config/types.js";
 import { firstDefined } from "./bot-access.js";
 
 export function resolveTelegramGroupPromptSettings(params: {
@@ -13,6 +17,7 @@ export function resolveTelegramGroupPromptSettings(params: {
     params.groupConfig?.systemPrompt?.trim() || null,
     params.topicConfig?.systemPrompt?.trim() || null,
   ].filter((entry): entry is string => Boolean(entry));
-  const groupSystemPrompt = systemPromptParts.length > 0 ? systemPromptParts.join("\n\n") : undefined;
+  const groupSystemPrompt =
+    systemPromptParts.length > 0 ? systemPromptParts.join("\n\n") : undefined;
   return { skillFilter, groupSystemPrompt };
 }

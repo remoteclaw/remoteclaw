@@ -8,7 +8,9 @@ function expectChannelAllowlistIssue(
   expect(result.ok).toBe(false);
   if (!result.ok) {
     const pathParts = Array.isArray(path) ? path : [path];
-    expect(result.issues.some((issue) => pathParts.every((part) => issue.path.includes(part)))).toBe(true);
+    expect(
+      result.issues.some((issue) => pathParts.every((part) => issue.path.includes(part))),
+    ).toBe(true);
   }
 }
 

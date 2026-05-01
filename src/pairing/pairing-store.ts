@@ -98,7 +98,10 @@ function resolveAllowFromPath(
   if (!normalizedAccountId) {
     return path.join(resolveCredentialsDir(env), `${base}-allowFrom.json`);
   }
-  return path.join(resolveCredentialsDir(env), `${base}-${safeAccountKey(normalizedAccountId)}-allowFrom.json`);
+  return path.join(
+    resolveCredentialsDir(env),
+    `${base}-${safeAccountKey(normalizedAccountId)}-allowFrom.json`,
+  );
 }
 
 export function resolveChannelAllowFromPath(
@@ -109,7 +112,10 @@ export function resolveChannelAllowFromPath(
   return resolveAllowFromPath(channel, env, accountId);
 }
 
-async function readJsonFile<T>(filePath: string, fallback: T): Promise<{ value: T; exists: boolean }> {
+async function readJsonFile<T>(
+  filePath: string,
+  fallback: T,
+): Promise<{ value: T; exists: boolean }> {
   return await readJsonFileWithFallback(filePath, fallback);
 }
 
@@ -140,7 +146,11 @@ async function ensureJsonFile(filePath: string, fallback: unknown) {
   }
 }
 
-async function withFileLock<T>(filePath: string, fallback: unknown, fn: () => Promise<T>): Promise<T> {
+async function withFileLock<T>(
+  filePath: string,
+  fallback: unknown,
+  fn: () => Promise<T>,
+): Promise<T> {
   await ensureJsonFile(filePath, fallback);
   return await withPathLock(filePath, PAIRING_STORE_LOCK_OPTIONS, async () => {
     return await fn();
@@ -283,7 +293,9 @@ function normalizeAllowEntry(channel: PairingChannel, entry: string): string {
 
 function normalizeAllowFromList(channel: PairingChannel, store: AllowFromStore): string[] {
   const list = Array.isArray(store.allowFrom) ? store.allowFrom : [];
-  return dedupePreserveOrder(list.map((v) => normalizeAllowEntry(channel, String(v))).filter(Boolean));
+  return dedupePreserveOrder(
+    list.map((v) => normalizeAllowEntry(channel, String(v))).filter(Boolean),
+  );
 }
 
 function normalizeAllowFromInput(channel: PairingChannel, entry: string | number): string {
@@ -304,7 +316,10 @@ function dedupePreserveOrder(entries: string[]): string[] {
   return out;
 }
 
-async function readAllowFromStateForPath(channel: PairingChannel, filePath: string): Promise<string[]> {
+async function readAllowFromStateForPath(
+  channel: PairingChannel,
+  filePath: string,
+): Promise<string[]> {
   return (await readAllowFromStateForPathWithExists(channel, filePath)).entries;
 }
 
@@ -522,22 +537,26 @@ async function updateAllowFromStoreEntry(params: {
 }): Promise<{ changed: boolean; allowFrom: string[] }> {
   const env = params.env ?? process.env;
   const filePath = resolveAllowFromPath(params.channel, env, params.accountId);
-  return await withFileLock(filePath, { version: 1, allowFrom: [] } satisfies AllowFromStore, async () => {
-    const { current, normalized } = await readAllowFromState({
-      channel: params.channel,
-      entry: params.entry,
-      filePath,
-    });
-    if (!normalized) {
-      return { changed: false, allowFrom: current };
-    }
-    const next = params.apply(current, normalized);
-    if (!next) {
-      return { changed: false, allowFrom: current };
-    }
-    await writeAllowFromState(filePath, next);
-    return { changed: true, allowFrom: next };
-  });
+  return await withFileLock(
+    filePath,
+    { version: 1, allowFrom: [] } satisfies AllowFromStore,
+    async () => {
+      const { current, normalized } = await readAllowFromState({
+        channel: params.channel,
+        entry: params.entry,
+        filePath,
+      });
+      if (!normalized) {
+        return { changed: false, allowFrom: current };
+      }
+      const next = params.apply(current, normalized);
+      if (!next) {
+        return { changed: false, allowFrom: current };
+      }
+      await writeAllowFromState(filePath, next);
+      return { changed: true, allowFrom: next };
+    },
+  );
 }
 
 export async function readLegacyChannelAllowFromStore(
@@ -611,7 +630,10 @@ type AllowFromStoreEntryUpdateParams = {
   env?: NodeJS.ProcessEnv;
 };
 
-type ChannelAllowFromStoreEntryMutation = (current: string[], normalized: string) => string[] | null;
+type ChannelAllowFromStoreEntryMutation = (
+  current: string[],
+  normalized: string,
+) => string[] | null;
 
 async function updateChannelAllowFromStore(
   params: {
@@ -666,27 +688,38 @@ export async function listChannelPairingRequests(
   accountId?: string,
 ): Promise<PairingRequest[]> {
   const filePath = resolvePairingPath(channel, env);
-  return await withFileLock(filePath, { version: 1, requests: [] } satisfies PairingStore, async () => {
-    const { requests: prunedExpired, removed: expiredRemoved } = await readPrunedPairingRequests(filePath);
-    const { requests: pruned, removed: cappedRemoved } = pruneExcessRequestsByAccount(
-      prunedExpired,
-      PAIRING_PENDING_MAX,
-    );
-    if (expiredRemoved || cappedRemoved) {
-      await writeJsonFile(filePath, {
-        version: 1,
-        requests: pruned,
-      } satisfies PairingStore);
-    }
-    const normalizedAccountId = normalizePairingAccountId(accountId);
-    const filtered = normalizedAccountId
-      ? pruned.filter((entry) => requestMatchesAccountId(entry, normalizedAccountId))
-      : pruned;
-    return filtered
-      .filter((r) => r && typeof r.id === "string" && typeof r.code === "string" && typeof r.createdAt === "string")
-      .slice()
-      .toSorted((a, b) => a.createdAt.localeCompare(b.createdAt));
-  });
+  return await withFileLock(
+    filePath,
+    { version: 1, requests: [] } satisfies PairingStore,
+    async () => {
+      const { requests: prunedExpired, removed: expiredRemoved } =
+        await readPrunedPairingRequests(filePath);
+      const { requests: pruned, removed: cappedRemoved } = pruneExcessRequestsByAccount(
+        prunedExpired,
+        PAIRING_PENDING_MAX,
+      );
+      if (expiredRemoved || cappedRemoved) {
+        await writeJsonFile(filePath, {
+          version: 1,
+          requests: pruned,
+        } satisfies PairingStore);
+      }
+      const normalizedAccountId = normalizePairingAccountId(accountId);
+      const filtered = normalizedAccountId
+        ? pruned.filter((entry) => requestMatchesAccountId(entry, normalizedAccountId))
+        : pruned;
+      return filtered
+        .filter(
+          (r) =>
+            r &&
+            typeof r.id === "string" &&
+            typeof r.code === "string" &&
+            typeof r.createdAt === "string",
+        )
+        .slice()
+        .toSorted((a, b) => a.createdAt.localeCompare(b.createdAt));
+    },
+  );
 }
 
 export async function upsertChannelPairingRequest(params: {
@@ -700,85 +733,98 @@ export async function upsertChannelPairingRequest(params: {
 }): Promise<{ code: string; created: boolean }> {
   const env = params.env ?? process.env;
   const filePath = resolvePairingPath(params.channel, env);
-  return await withFileLock(filePath, { version: 1, requests: [] } satisfies PairingStore, async () => {
-    const now = new Date().toISOString();
-    const nowMs = Date.now();
-    const id = normalizeId(params.id);
-    const normalizedAccountId = normalizePairingAccountId(params.accountId) || DEFAULT_ACCOUNT_ID;
-    const baseMeta =
-      params.meta && typeof params.meta === "object"
-        ? Object.fromEntries(
-            Object.entries(params.meta)
-              .map(([k, v]) => [k, String(v ?? "").trim()] as const)
-              .filter(([_, v]) => Boolean(v)),
-          )
-        : undefined;
-    const meta = { ...baseMeta, accountId: normalizedAccountId };
+  return await withFileLock(
+    filePath,
+    { version: 1, requests: [] } satisfies PairingStore,
+    async () => {
+      const now = new Date().toISOString();
+      const nowMs = Date.now();
+      const id = normalizeId(params.id);
+      const normalizedAccountId = normalizePairingAccountId(params.accountId) || DEFAULT_ACCOUNT_ID;
+      const baseMeta =
+        params.meta && typeof params.meta === "object"
+          ? Object.fromEntries(
+              Object.entries(params.meta)
+                .map(([k, v]) => [k, String(v ?? "").trim()] as const)
+                .filter(([_, v]) => Boolean(v)),
+            )
+          : undefined;
+      const meta = { ...baseMeta, accountId: normalizedAccountId };
 
-    let reqs = await readPairingRequests(filePath);
-    const { requests: prunedExpired, removed: expiredRemoved } = pruneExpiredRequests(reqs, nowMs);
-    reqs = prunedExpired;
-    const normalizedMatchingAccountId = normalizedAccountId;
-    const existingIdx = reqs.findIndex((r) => {
-      if (r.id !== id) {
-        return false;
+      let reqs = await readPairingRequests(filePath);
+      const { requests: prunedExpired, removed: expiredRemoved } = pruneExpiredRequests(
+        reqs,
+        nowMs,
+      );
+      reqs = prunedExpired;
+      const normalizedMatchingAccountId = normalizedAccountId;
+      const existingIdx = reqs.findIndex((r) => {
+        if (r.id !== id) {
+          return false;
+        }
+        return requestMatchesAccountId(r, normalizedMatchingAccountId);
+      });
+      const existingCodes = new Set(
+        reqs.map((req) =>
+          String(req.code ?? "")
+            .trim()
+            .toUpperCase(),
+        ),
+      );
+
+      if (existingIdx >= 0) {
+        const existing = reqs[existingIdx];
+        const existingCode =
+          existing && typeof existing.code === "string" ? existing.code.trim() : "";
+        const code = existingCode || generateUniqueCode(existingCodes);
+        const next: PairingRequest = {
+          id,
+          code,
+          createdAt: existing?.createdAt ?? now,
+          lastSeenAt: now,
+          meta: meta ?? existing?.meta,
+        };
+        reqs[existingIdx] = next;
+        const { requests: capped } = pruneExcessRequestsByAccount(reqs, PAIRING_PENDING_MAX);
+        await writeJsonFile(filePath, {
+          version: 1,
+          requests: capped,
+        } satisfies PairingStore);
+        return { code, created: false };
       }
-      return requestMatchesAccountId(r, normalizedMatchingAccountId);
-    });
-    const existingCodes = new Set(
-      reqs.map((req) =>
-        String(req.code ?? "")
-          .trim()
-          .toUpperCase(),
-      ),
-    );
 
-    if (existingIdx >= 0) {
-      const existing = reqs[existingIdx];
-      const existingCode = existing && typeof existing.code === "string" ? existing.code.trim() : "";
-      const code = existingCode || generateUniqueCode(existingCodes);
+      const { requests: capped, removed: cappedRemoved } = pruneExcessRequestsByAccount(
+        reqs,
+        PAIRING_PENDING_MAX,
+      );
+      reqs = capped;
+      const accountRequestCount = reqs.filter((r) =>
+        requestMatchesAccountId(r, normalizedMatchingAccountId),
+      ).length;
+      if (PAIRING_PENDING_MAX > 0 && accountRequestCount >= PAIRING_PENDING_MAX) {
+        if (expiredRemoved || cappedRemoved) {
+          await writeJsonFile(filePath, {
+            version: 1,
+            requests: reqs,
+          } satisfies PairingStore);
+        }
+        return { code: "", created: false };
+      }
+      const code = generateUniqueCode(existingCodes);
       const next: PairingRequest = {
         id,
         code,
-        createdAt: existing?.createdAt ?? now,
+        createdAt: now,
         lastSeenAt: now,
-        meta: meta ?? existing?.meta,
+        ...(meta ? { meta } : {}),
       };
-      reqs[existingIdx] = next;
-      const { requests: capped } = pruneExcessRequestsByAccount(reqs, PAIRING_PENDING_MAX);
       await writeJsonFile(filePath, {
         version: 1,
-        requests: capped,
+        requests: [...reqs, next],
       } satisfies PairingStore);
-      return { code, created: false };
-    }
-
-    const { requests: capped, removed: cappedRemoved } = pruneExcessRequestsByAccount(reqs, PAIRING_PENDING_MAX);
-    reqs = capped;
-    const accountRequestCount = reqs.filter((r) => requestMatchesAccountId(r, normalizedMatchingAccountId)).length;
-    if (PAIRING_PENDING_MAX > 0 && accountRequestCount >= PAIRING_PENDING_MAX) {
-      if (expiredRemoved || cappedRemoved) {
-        await writeJsonFile(filePath, {
-          version: 1,
-          requests: reqs,
-        } satisfies PairingStore);
-      }
-      return { code: "", created: false };
-    }
-    const code = generateUniqueCode(existingCodes);
-    const next: PairingRequest = {
-      id,
-      code,
-      createdAt: now,
-      lastSeenAt: now,
-      ...(meta ? { meta } : {}),
-    };
-    await writeJsonFile(filePath, {
-      version: 1,
-      requests: [...reqs, next],
-    } satisfies PairingStore);
-    return { code, created: true };
-  });
+      return { code, created: true };
+    },
+  );
 }
 
 export async function approveChannelPairingCode(params: {
@@ -794,40 +840,44 @@ export async function approveChannelPairingCode(params: {
   }
 
   const filePath = resolvePairingPath(params.channel, env);
-  return await withFileLock(filePath, { version: 1, requests: [] } satisfies PairingStore, async () => {
-    const { requests: pruned, removed } = await readPrunedPairingRequests(filePath);
-    const normalizedAccountId = normalizePairingAccountId(params.accountId);
-    const idx = pruned.findIndex((r) => {
-      if (String(r.code ?? "").toUpperCase() !== code) {
-        return false;
+  return await withFileLock(
+    filePath,
+    { version: 1, requests: [] } satisfies PairingStore,
+    async () => {
+      const { requests: pruned, removed } = await readPrunedPairingRequests(filePath);
+      const normalizedAccountId = normalizePairingAccountId(params.accountId);
+      const idx = pruned.findIndex((r) => {
+        if (String(r.code ?? "").toUpperCase() !== code) {
+          return false;
+        }
+        return requestMatchesAccountId(r, normalizedAccountId);
+      });
+      if (idx < 0) {
+        if (removed) {
+          await writeJsonFile(filePath, {
+            version: 1,
+            requests: pruned,
+          } satisfies PairingStore);
+        }
+        return null;
       }
-      return requestMatchesAccountId(r, normalizedAccountId);
-    });
-    if (idx < 0) {
-      if (removed) {
-        await writeJsonFile(filePath, {
-          version: 1,
-          requests: pruned,
-        } satisfies PairingStore);
+      const entry = pruned[idx];
+      if (!entry) {
+        return null;
       }
-      return null;
-    }
-    const entry = pruned[idx];
-    if (!entry) {
-      return null;
-    }
-    pruned.splice(idx, 1);
-    await writeJsonFile(filePath, {
-      version: 1,
-      requests: pruned,
-    } satisfies PairingStore);
-    const entryAccountId = String(entry.meta?.accountId ?? "").trim() || undefined;
-    await addChannelAllowFromStoreEntry({
-      channel: params.channel,
-      entry: entry.id,
-      accountId: params.accountId?.trim() || entryAccountId,
-      env,
-    });
-    return { id: entry.id, entry };
-  });
+      pruned.splice(idx, 1);
+      await writeJsonFile(filePath, {
+        version: 1,
+        requests: pruned,
+      } satisfies PairingStore);
+      const entryAccountId = String(entry.meta?.accountId ?? "").trim() || undefined;
+      await addChannelAllowFromStoreEntry({
+        channel: params.channel,
+        entry: entry.id,
+        accountId: params.accountId?.trim() || entryAccountId,
+        env,
+      });
+      return { id: entry.id, entry };
+    },
+  );
 }

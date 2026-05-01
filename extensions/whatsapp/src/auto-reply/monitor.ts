@@ -115,7 +115,9 @@ export async function monitorWebChannel(
   const groupMemberNames = new Map<string, Map<string, string>>();
   const echoTracker = createEchoTracker({ maxItems: 100, logVerbose });
 
-  const sleep = tuning.sleep ?? ((ms: number, signal?: AbortSignal) => sleepWithAbort(ms, signal ?? abortSignal));
+  const sleep =
+    tuning.sleep ??
+    ((ms: number, signal?: AbortSignal) => sleepWithAbort(ms, signal ?? abortSignal));
   const stopRequested = () => abortSignal?.aborted === true;
   const abortPromise =
     abortSignal &&
@@ -270,7 +272,9 @@ export async function monitorWebChannel(
     if (keepAlive) {
       heartbeat = setInterval(() => {
         const authAgeMs = getWebAuthAgeMs(account.authDir);
-        const minutesSinceLastMessage = lastMessageAt ? Math.floor((Date.now() - lastMessageAt) / 60000) : null;
+        const minutesSinceLastMessage = lastMessageAt
+          ? Math.floor((Date.now() - lastMessageAt) / 60000)
+          : null;
 
         const logData = {
           connectionId,
@@ -279,7 +283,9 @@ export async function monitorWebChannel(
           lastMessageAt,
           authAgeMs,
           uptimeMs: Date.now() - startedAt,
-          ...(minutesSinceLastMessage !== null && minutesSinceLastMessage > 30 ? { minutesSinceLastMessage } : {}),
+          ...(minutesSinceLastMessage !== null && minutesSinceLastMessage > 30
+            ? { minutesSinceLastMessage }
+            : {}),
         };
 
         if (minutesSinceLastMessage && minutesSinceLastMessage > 30) {
@@ -307,7 +313,9 @@ export async function monitorWebChannel(
           },
           "Message timeout detected - forcing reconnect",
         );
-        whatsappHeartbeatLog.warn(`No messages received in ${minutesSinceLastMessage}m - restarting connection`);
+        whatsappHeartbeatLog.warn(
+          `No messages received in ${minutesSinceLastMessage}m - restarting connection`,
+        );
         void closeListener().catch((err) => {
           logVerbose(`Close listener failed: ${formatError(err)}`);
         });

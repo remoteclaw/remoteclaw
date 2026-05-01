@@ -194,7 +194,9 @@ describe("CLIRuntimeBase", () => {
       const runtime = new TestRuntime("test-cli");
       const controller = new AbortController();
 
-      const promise = collectEvents(runtime.execute({ ...defaultParams, abortSignal: controller.signal }));
+      const promise = collectEvents(
+        runtime.execute({ ...defaultParams, abortSignal: controller.signal }),
+      );
 
       // Abort after some output.
       mockChild.stdout.write('{"type":"text","text":"before"}\n');
@@ -217,7 +219,9 @@ describe("CLIRuntimeBase", () => {
       const controller = new AbortController();
       controller.abort();
 
-      const promise = collectEvents(runtime.execute({ ...defaultParams, abortSignal: controller.signal }));
+      const promise = collectEvents(
+        runtime.execute({ ...defaultParams, abortSignal: controller.signal }),
+      );
 
       const events = await promise;
 
@@ -238,7 +242,9 @@ describe("CLIRuntimeBase", () => {
       const events = await promise;
 
       expect(mockChild.kill).toHaveBeenCalledWith("SIGTERM");
-      expect(events).toContainEqual(expect.objectContaining({ type: "error", code: "STARTUP_TIMEOUT" }));
+      expect(events).toContainEqual(
+        expect.objectContaining({ type: "error", code: "STARTUP_TIMEOUT" }),
+      );
     });
 
     it("does not fire after the first NDJSON line is received", async () => {
@@ -261,7 +267,9 @@ describe("CLIRuntimeBase", () => {
       const events = await promise;
 
       expect(events[0]).toEqual({ type: "text", text: "alive" });
-      expect(events).not.toContainEqual(expect.objectContaining({ type: "error", code: "STARTUP_TIMEOUT" }));
+      expect(events).not.toContainEqual(
+        expect.objectContaining({ type: "error", code: "STARTUP_TIMEOUT" }),
+      );
     });
   });
 
@@ -287,7 +295,9 @@ describe("CLIRuntimeBase", () => {
       stubbornChild.emit("exit", null, "SIGKILL");
 
       const events = await promise;
-      expect(events).toContainEqual(expect.objectContaining({ type: "error", code: "STARTUP_TIMEOUT" }));
+      expect(events).toContainEqual(
+        expect.objectContaining({ type: "error", code: "STARTUP_TIMEOUT" }),
+      );
     });
 
     it("cancels SIGKILL timer if process exits after SIGTERM (startup timeout)", async () => {
@@ -310,7 +320,9 @@ describe("CLIRuntimeBase", () => {
 
       const events = await promise;
       expect(stubbornChild.kill).not.toHaveBeenCalledWith("SIGKILL");
-      expect(events).toContainEqual(expect.objectContaining({ type: "error", code: "STARTUP_TIMEOUT" }));
+      expect(events).toContainEqual(
+        expect.objectContaining({ type: "error", code: "STARTUP_TIMEOUT" }),
+      );
     });
 
     it("sends SIGKILL after SIGTERM if process does not exit (abort)", async () => {
@@ -320,7 +332,9 @@ describe("CLIRuntimeBase", () => {
       const runtime = new TestRuntime("test-cli");
       const controller = new AbortController();
 
-      const promise = collectEvents(runtime.execute({ ...defaultParams, abortSignal: controller.signal }));
+      const promise = collectEvents(
+        runtime.execute({ ...defaultParams, abortSignal: controller.signal }),
+      );
 
       // Abort → SIGTERM sent.
       controller.abort();
@@ -346,7 +360,9 @@ describe("CLIRuntimeBase", () => {
       const runtime = new TestRuntime("test-cli");
       const controller = new AbortController();
 
-      const promise = collectEvents(runtime.execute({ ...defaultParams, abortSignal: controller.signal }));
+      const promise = collectEvents(
+        runtime.execute({ ...defaultParams, abortSignal: controller.signal }),
+      );
 
       // Abort → SIGTERM.
       controller.abort();
@@ -431,7 +447,9 @@ describe("CLIRuntimeBase", () => {
     it("sets working directory from params", async () => {
       const runtime = new TestRuntime("my-cli");
 
-      const promise = collectEvents(runtime.execute({ ...defaultParams, workingDirectory: "/some/dir" }));
+      const promise = collectEvents(
+        runtime.execute({ ...defaultParams, workingDirectory: "/some/dir" }),
+      );
 
       mockChild.stdout.end();
       mockChild.emit("exit", 0, null);
@@ -448,14 +466,20 @@ describe("CLIRuntimeBase", () => {
     it("appends extraArgs after buildArgs output", async () => {
       const runtime = new TestRuntime("my-cli");
 
-      const promise = collectEvents(runtime.execute({ ...defaultParams, extraArgs: ["--extra-flag", "--another"] }));
+      const promise = collectEvents(
+        runtime.execute({ ...defaultParams, extraArgs: ["--extra-flag", "--another"] }),
+      );
 
       mockChild.stdout.end();
       mockChild.emit("exit", 0, null);
 
       await promise;
 
-      expect(spawnMock).toHaveBeenCalledWith("my-cli", ["--test", "--extra-flag", "--another"], expect.any(Object));
+      expect(spawnMock).toHaveBeenCalledWith(
+        "my-cli",
+        ["--test", "--extra-flag", "--another"],
+        expect.any(Object),
+      );
     });
 
     it("does not modify args when extraArgs is undefined", async () => {
@@ -555,7 +579,9 @@ describe("CLIRuntimeBase", () => {
       });
 
       const done = events.find((e) => e.type === "done");
-      expect(done!.type === "done" && done!.result.stderr).toBe("Not logged in · Please run /login\n");
+      expect(done!.type === "done" && done!.result.stderr).toBe(
+        "Not logged in · Please run /login\n",
+      );
     });
 
     it("emits error event when CLI exits zero with stderr but no NDJSON output", async () => {
@@ -587,7 +613,9 @@ describe("CLIRuntimeBase", () => {
 
       const events = await promise;
 
-      const stderrErrors = events.filter((e) => e.type === "error" && "code" in e && e.code === "CLI_STDERR");
+      const stderrErrors = events.filter(
+        (e) => e.type === "error" && "code" in e && e.code === "CLI_STDERR",
+      );
       expect(stderrErrors).toHaveLength(0);
     });
 
@@ -619,7 +647,9 @@ describe("CLIRuntimeBase", () => {
 
       const events = await promise;
 
-      const exitErrors = events.filter((e) => e.type === "error" && "code" in e && e.code === "CLI_EXIT_ERROR");
+      const exitErrors = events.filter(
+        (e) => e.type === "error" && "code" in e && e.code === "CLI_EXIT_ERROR",
+      );
       expect(exitErrors).toHaveLength(0);
     });
 
@@ -633,7 +663,9 @@ describe("CLIRuntimeBase", () => {
 
       const events = await promise;
 
-      const exitErrors = events.filter((e) => e.type === "error" && "code" in e && e.code === "CLI_EXIT_ERROR");
+      const exitErrors = events.filter(
+        (e) => e.type === "error" && "code" in e && e.code === "CLI_EXIT_ERROR",
+      );
       expect(exitErrors).toHaveLength(0);
     });
   });
@@ -803,7 +835,9 @@ describe("CLIRuntimeBase", () => {
 
       await promise;
 
-      const inflight = metricLines(logSpy).filter((l) => l.includes("metric=inflight_subprocesses"));
+      const inflight = metricLines(logSpy).filter((l) =>
+        l.includes("metric=inflight_subprocesses"),
+      );
       expect(inflight.length).toBe(2);
       // First emission: increment (>=1). Second: decrement (one less).
       const firstValue = Number(inflight[0].match(/value=(\d+)/)?.[1]);
@@ -816,13 +850,17 @@ describe("CLIRuntimeBase", () => {
       const runtime = new TestRuntime("test-cli");
       const controller = new AbortController();
 
-      const promise = collectEvents(runtime.execute({ ...defaultParams, abortSignal: controller.signal }));
+      const promise = collectEvents(
+        runtime.execute({ ...defaultParams, abortSignal: controller.signal }),
+      );
 
       controller.abort();
       // Mock kill ends stdout and emits exit, so promise resolves.
       await promise;
 
-      const inflight = metricLines(logSpy).filter((l) => l.includes("metric=inflight_subprocesses"));
+      const inflight = metricLines(logSpy).filter((l) =>
+        l.includes("metric=inflight_subprocesses"),
+      );
       expect(inflight.length).toBe(2);
       const firstValue = Number(inflight[0].match(/value=(\d+)/)?.[1]);
       const secondValue = Number(inflight[1].match(/value=(\d+)/)?.[1]);
@@ -836,7 +874,9 @@ describe("CLIRuntimeBase", () => {
       await runtime.testTimedMcpSetup({ setup });
 
       expect(setup).toHaveBeenCalledOnce();
-      const setupMetrics = metricLines(logSpy).filter((l) => l.includes("metric=mcp_config_setup_ms"));
+      const setupMetrics = metricLines(logSpy).filter((l) =>
+        l.includes("metric=mcp_config_setup_ms"),
+      );
       expect(setupMetrics.length).toBe(1);
       expect(setupMetrics[0]).toMatch(/backend=mcp-cli value=\d+/);
     });
@@ -847,7 +887,9 @@ describe("CLIRuntimeBase", () => {
 
       await expect(runtime.testTimedMcpSetup({ setup })).rejects.toThrow("boom");
 
-      const setupMetrics = metricLines(logSpy).filter((l) => l.includes("metric=mcp_config_setup_ms"));
+      const setupMetrics = metricLines(logSpy).filter((l) =>
+        l.includes("metric=mcp_config_setup_ms"),
+      );
       expect(setupMetrics.length).toBe(1);
     });
 
@@ -858,7 +900,9 @@ describe("CLIRuntimeBase", () => {
       await runtime.testTimedMcpTeardown({ teardown });
 
       expect(teardown).toHaveBeenCalledOnce();
-      const teardownMetrics = metricLines(logSpy).filter((l) => l.includes("metric=mcp_config_teardown_ms"));
+      const teardownMetrics = metricLines(logSpy).filter((l) =>
+        l.includes("metric=mcp_config_teardown_ms"),
+      );
       expect(teardownMetrics.length).toBe(1);
       expect(teardownMetrics[0]).toMatch(/backend=mcp-cli value=\d+/);
     });
@@ -869,7 +913,9 @@ describe("CLIRuntimeBase", () => {
 
       await expect(runtime.testTimedMcpTeardown({ teardown })).rejects.toThrow("teardown boom");
 
-      const teardownMetrics = metricLines(logSpy).filter((l) => l.includes("metric=mcp_config_teardown_ms"));
+      const teardownMetrics = metricLines(logSpy).filter((l) =>
+        l.includes("metric=mcp_config_teardown_ms"),
+      );
       expect(teardownMetrics.length).toBe(1);
     });
 
@@ -878,7 +924,9 @@ describe("CLIRuntimeBase", () => {
 
       await runtime.testTimedMcpSetup(null);
 
-      const setupMetrics = metricLines(logSpy).filter((l) => l.includes("metric=mcp_config_setup_ms"));
+      const setupMetrics = metricLines(logSpy).filter((l) =>
+        l.includes("metric=mcp_config_setup_ms"),
+      );
       expect(setupMetrics.length).toBe(0);
     });
 
@@ -887,7 +935,9 @@ describe("CLIRuntimeBase", () => {
 
       await runtime.testTimedMcpTeardown(null);
 
-      const teardownMetrics = metricLines(logSpy).filter((l) => l.includes("metric=mcp_config_teardown_ms"));
+      const teardownMetrics = metricLines(logSpy).filter((l) =>
+        l.includes("metric=mcp_config_teardown_ms"),
+      );
       expect(teardownMetrics.length).toBe(0);
     });
   });

@@ -1,10 +1,17 @@
 import { type Block, type KnownBlock, type WebClient } from "@slack/web-api";
-import { chunkMarkdownTextWithMode, resolveChunkMode, resolveTextChunkLimit } from "../../../src/auto-reply/chunk.js";
+import {
+  chunkMarkdownTextWithMode,
+  resolveChunkMode,
+  resolveTextChunkLimit,
+} from "../../../src/auto-reply/chunk.js";
 import { isSilentReplyText } from "../../../src/auto-reply/tokens.js";
 import { loadConfig, type RemoteClawConfig } from "../../../src/config/config.js";
 import { resolveMarkdownTableMode } from "../../../src/config/markdown-tables.js";
 import { logVerbose } from "../../../src/globals.js";
-import { fetchWithSsrFGuard, withTrustedEnvProxyGuardedFetchMode } from "../../../src/infra/net/fetch-guard.js";
+import {
+  fetchWithSsrFGuard,
+  withTrustedEnvProxyGuardedFetchMode,
+} from "../../../src/infra/net/fetch-guard.js";
 import { loadWebMedia } from "../../whatsapp/src/media.js";
 import type { SlackTokenSource } from "./accounts.js";
 import { resolveSlackAccount } from "./accounts.js";
@@ -162,7 +169,11 @@ function parseRecipient(raw: string): SlackRecipient {
   return { kind: target.kind, id: target.id };
 }
 
-function createSlackDmCacheKey(params: { accountId?: string; token: string; recipientId: string }): string {
+function createSlackDmCacheKey(params: {
+  accountId?: string;
+  token: string;
+  recipientId: string;
+}): string {
   return `${params.accountId ?? "default"}:${params.token}:${params.recipientId}`;
 }
 
@@ -333,13 +344,19 @@ export async function sendMessageSlack(
   });
   const chunkMode = resolveChunkMode(cfg, "slack", account.accountId);
   const markdownChunks =
-    chunkMode === "newline" ? chunkMarkdownTextWithMode(trimmedMessage, chunkLimit, chunkMode) : [trimmedMessage];
-  const chunks = markdownChunks.flatMap((markdown) => markdownToSlackMrkdwnChunks(markdown, chunkLimit, { tableMode }));
+    chunkMode === "newline"
+      ? chunkMarkdownTextWithMode(trimmedMessage, chunkLimit, chunkMode)
+      : [trimmedMessage];
+  const chunks = markdownChunks.flatMap((markdown) =>
+    markdownToSlackMrkdwnChunks(markdown, chunkLimit, { tableMode }),
+  );
   if (!chunks.length && trimmedMessage) {
     chunks.push(trimmedMessage);
   }
   const mediaMaxBytes =
-    typeof account.config.mediaMaxMb === "number" ? account.config.mediaMaxMb * 1024 * 1024 : undefined;
+    typeof account.config.mediaMaxMb === "number"
+      ? account.config.mediaMaxMb * 1024 * 1024
+      : undefined;
 
   let lastMessageId = "";
   if (opts.mediaUrl) {

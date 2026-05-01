@@ -77,10 +77,17 @@ describe("phone-control plugin", () => {
 
       const res = await command?.handler(createCommandContext("arm writes 30s"));
       const text = String(res?.text ?? "");
-      const nodes = (config.gateway as { nodes?: { allowCommands?: string[]; denyCommands?: string[] } }).nodes;
+      const nodes = (
+        config.gateway as { nodes?: { allowCommands?: string[]; denyCommands?: string[] } }
+      ).nodes;
 
       expect(writeConfigFile).toHaveBeenCalledTimes(1);
-      expect(nodes?.allowCommands).toEqual(["calendar.add", "contacts.add", "reminders.add", "sms.send"]);
+      expect(nodes?.allowCommands).toEqual([
+        "calendar.add",
+        "contacts.add",
+        "reminders.add",
+        "sms.send",
+      ]);
       expect(nodes?.denyCommands).toEqual([]);
       expect(text).toContain("sms.send");
     } finally {

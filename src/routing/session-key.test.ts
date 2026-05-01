@@ -89,13 +89,18 @@ describe("deriveSessionChatType", () => {
 describe("thread session suffix parsing", () => {
   it("preserves feishu conversation ids that embed :topic: in the base id", () => {
     expect(
-      parseThreadSessionSuffix("agent:main:feishu:group:oc_group_chat:topic:om_topic_root:sender:ou_topic_user"),
+      parseThreadSessionSuffix(
+        "agent:main:feishu:group:oc_group_chat:topic:om_topic_root:sender:ou_topic_user",
+      ),
     ).toEqual({
-      baseSessionKey: "agent:main:feishu:group:oc_group_chat:topic:om_topic_root:sender:ou_topic_user",
+      baseSessionKey:
+        "agent:main:feishu:group:oc_group_chat:topic:om_topic_root:sender:ou_topic_user",
       threadId: undefined,
     });
     expect(
-      resolveThreadParentSessionKey("agent:main:feishu:group:oc_group_chat:topic:om_topic_root:sender:ou_topic_user"),
+      resolveThreadParentSessionKey(
+        "agent:main:feishu:group:oc_group_chat:topic:om_topic_root:sender:ou_topic_user",
+      ),
     ).toBeNull();
   });
 
@@ -110,7 +115,9 @@ describe("thread session suffix parsing", () => {
   });
 
   it("parses mixed-case suffix markers without lowercasing the stored key", () => {
-    expect(parseThreadSessionSuffix("agent:main:slack:channel:General:Thread:1699999999.0001")).toEqual({
+    expect(
+      parseThreadSessionSuffix("agent:main:slack:channel:General:Thread:1699999999.0001"),
+    ).toEqual({
       baseSessionKey: "agent:main:slack:channel:General",
       threadId: "1699999999.0001",
     });

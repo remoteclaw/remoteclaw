@@ -17,7 +17,9 @@ export function getDiscordGatewayEmitter(gateway?: unknown): EventEmitter | unde
   return (gateway as { emitter?: EventEmitter } | undefined)?.emitter;
 }
 
-export async function waitForDiscordGatewayStop(params: WaitForDiscordGatewayStopParams): Promise<void> {
+export async function waitForDiscordGatewayStop(
+  params: WaitForDiscordGatewayStopParams,
+): Promise<void> {
   const { gateway, abortSignal, onGatewayError, shouldStopOnError } = params;
   const emitter = gateway?.emitter;
   return await new Promise<void>((resolve, reject) => {

@@ -36,7 +36,10 @@ export function renderGatewayServiceCleanupHints(
     }
     case "linux": {
       const unit = resolveGatewaySystemdServiceName(profile);
-      return [`systemctl --user disable --now ${unit}.service`, `rm ~/.config/systemd/user/${unit}.service`];
+      return [
+        `systemctl --user disable --now ${unit}.service`,
+        `rm ~/.config/systemd/user/${unit}.service`,
+      ];
     }
     case "win32": {
       const task = resolveGatewayWindowsTaskName(profile);
@@ -83,7 +86,12 @@ function hasGatewayServiceMarker(content: string): boolean {
   const hasMarkerKey = markerKeys.some((key) => lower.includes(key));
   const hasKindKey = kindKeys.some((key) => lower.includes(key));
   const hasMarkerValue = markerValues.some((value) => lower.includes(value));
-  return hasMarkerKey && hasKindKey && hasMarkerValue && lower.includes(GATEWAY_SERVICE_KIND.toLowerCase());
+  return (
+    hasMarkerKey &&
+    hasKindKey &&
+    hasMarkerValue &&
+    lower.includes(GATEWAY_SERVICE_KIND.toLowerCase())
+  );
 }
 
 function isOpenClawGatewayLaunchdService(label: string, contents: string): boolean {
@@ -185,7 +193,10 @@ async function collectServiceFiles(params: {
   return out;
 }
 
-async function scanLaunchdDir(params: { dir: string; scope: "user" | "system" }): Promise<ExtraGatewayService[]> {
+async function scanLaunchdDir(params: {
+  dir: string;
+  scope: "user" | "system";
+}): Promise<ExtraGatewayService[]> {
   const results: ExtraGatewayService[] = [];
   const candidates = await collectServiceFiles({
     dir: params.dir,
@@ -230,7 +241,10 @@ async function scanLaunchdDir(params: { dir: string; scope: "user" | "system" })
   return results;
 }
 
-async function scanSystemdDir(params: { dir: string; scope: "user" | "system" }): Promise<ExtraGatewayService[]> {
+async function scanSystemdDir(params: {
+  dir: string;
+  scope: "user" | "system";
+}): Promise<ExtraGatewayService[]> {
   const results: ExtraGatewayService[] = [];
   const candidates = await collectServiceFiles({
     dir: params.dir,
@@ -363,7 +377,11 @@ export async function findExtraGatewayServices(
         push(svc);
       }
       if (opts.deep) {
-        for (const dir of ["/etc/systemd/system", "/usr/lib/systemd/system", "/lib/systemd/system"]) {
+        for (const dir of [
+          "/etc/systemd/system",
+          "/usr/lib/systemd/system",
+          "/lib/systemd/system",
+        ]) {
           for (const svc of await scanSystemdDir({
             dir,
             scope: "system",

@@ -61,7 +61,10 @@ async function deliverIrcReply(params: {
   sendReply?: (target: string, text: string, replyToId?: string) => Promise<void>;
   statusSink?: (patch: { lastOutboundAt?: number }) => void;
 }) {
-  const combined = formatTextWithAttachmentLinks(params.payload.text, resolveOutboundMediaUrls(params.payload));
+  const combined = formatTextWithAttachmentLinks(
+    params.payload.text,
+    resolveOutboundMediaUrls(params.payload),
+  );
   if (!combined) {
     return;
   }
@@ -108,11 +111,12 @@ export async function handleIrcInbound(params: {
 
   const dmPolicy = account.config.dmPolicy ?? "pairing";
   const defaultGroupPolicy = resolveDefaultGroupPolicy(config);
-  const { groupPolicy, providerMissingFallbackApplied } = resolveAllowlistProviderRuntimeGroupPolicy({
-    providerConfigPresent: config.channels?.irc !== undefined,
-    groupPolicy: account.config.groupPolicy,
-    defaultGroupPolicy,
-  });
+  const { groupPolicy, providerMissingFallbackApplied } =
+    resolveAllowlistProviderRuntimeGroupPolicy({
+      providerConfigPresent: config.channels?.irc !== undefined,
+      groupPolicy: account.config.groupPolicy,
+      defaultGroupPolicy,
+    });
   warnMissingProviderGroupPolicyFallbackOnce({
     providerMissingFallbackApplied,
     providerKey: "irc",
@@ -146,7 +150,8 @@ export async function handleIrcInbound(params: {
 
   const directGroupAllowFrom = normalizeIrcAllowlist(groupMatch.groupConfig?.allowFrom);
   const wildcardGroupAllowFrom = normalizeIrcAllowlist(groupMatch.wildcardConfig?.allowFrom);
-  const groupAllowFrom = directGroupAllowFrom.length > 0 ? directGroupAllowFrom : wildcardGroupAllowFrom;
+  const groupAllowFrom =
+    directGroupAllowFrom.length > 0 ? directGroupAllowFrom : wildcardGroupAllowFrom;
 
   const { effectiveAllowFrom, effectiveGroupAllowFrom } = resolveIrcEffectiveAllowlists({
     configAllowFrom,
@@ -165,7 +170,10 @@ export async function handleIrcInbound(params: {
     message,
     allowNameMatching,
   }).allowed;
-  const hasControlCommand = core.channel.text.hasControlCommand(rawBody, config as RemoteClawConfig);
+  const hasControlCommand = core.channel.text.hasControlCommand(
+    rawBody,
+    config as RemoteClawConfig,
+  );
   const commandGate = resolveControlCommandGate({
     useAccessGroups,
     authorizers: [
@@ -242,7 +250,9 @@ export async function handleIrcInbound(params: {
 
   const mentionRegexes = core.channel.mentions.buildMentionRegexes(config as RemoteClawConfig);
   const mentionNick = connectedNick?.trim() || account.nick;
-  const explicitMentionRegex = mentionNick ? new RegExp(`\\b${escapeIrcRegexLiteral(mentionNick)}\\b[:,]?`, "i") : null;
+  const explicitMentionRegex = mentionNick
+    ? new RegExp(`\\b${escapeIrcRegexLiteral(mentionNick)}\\b[:,]?`, "i")
+    : null;
   const wasMentioned =
     core.channel.mentions.matchesMentionPatterns(rawBody, mentionRegexes) ||
     (explicitMentionRegex ? explicitMentionRegex.test(rawBody) : false);
@@ -282,7 +292,9 @@ export async function handleIrcInbound(params: {
   const storePath = core.channel.session.resolveStorePath(config.session?.store, {
     agentId: route.agentId,
   });
-  const envelopeOptions = core.channel.reply.resolveEnvelopeFormatOptions(config as RemoteClawConfig);
+  const envelopeOptions = core.channel.reply.resolveEnvelopeFormatOptions(
+    config as RemoteClawConfig,
+  );
   const previousTimestamp = core.channel.session.readSessionUpdatedAt({
     storePath,
     sessionKey: route.sessionKey,
@@ -348,7 +360,9 @@ export async function handleIrcInbound(params: {
     replyOptions: {
       skillFilter: groupMatch.groupConfig?.skills,
       disableBlockStreaming:
-        typeof account.config.blockStreaming === "boolean" ? !account.config.blockStreaming : undefined,
+        typeof account.config.blockStreaming === "boolean"
+          ? !account.config.blockStreaming
+          : undefined,
     },
   });
 }

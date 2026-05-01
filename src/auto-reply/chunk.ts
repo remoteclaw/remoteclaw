@@ -55,15 +55,16 @@ export function resolveTextChunkLimit(
   opts?: { fallbackLimit?: number },
 ): number {
   const fallback =
-    typeof opts?.fallbackLimit === "number" && opts.fallbackLimit > 0 ? opts.fallbackLimit : DEFAULT_CHUNK_LIMIT;
+    typeof opts?.fallbackLimit === "number" && opts.fallbackLimit > 0
+      ? opts.fallbackLimit
+      : DEFAULT_CHUNK_LIMIT;
   const providerOverride = (() => {
     if (!provider || provider === INTERNAL_MESSAGE_CHANNEL) {
       return undefined;
     }
     const channelsConfig = cfg?.channels as Record<string, unknown> | undefined;
-    const providerConfig = (channelsConfig?.[provider] ?? (cfg as Record<string, unknown> | undefined)?.[provider]) as
-      | ProviderChunkConfig
-      | undefined;
+    const providerConfig = (channelsConfig?.[provider] ??
+      (cfg as Record<string, unknown> | undefined)?.[provider]) as ProviderChunkConfig | undefined;
     return resolveChunkLimitForProvider(providerConfig, accountId);
   })();
   if (typeof providerOverride === "number" && providerOverride > 0) {
@@ -99,9 +100,8 @@ export function resolveChunkMode(
     return DEFAULT_CHUNK_MODE;
   }
   const channelsConfig = cfg?.channels as Record<string, unknown> | undefined;
-  const providerConfig = (channelsConfig?.[provider] ?? (cfg as Record<string, unknown> | undefined)?.[provider]) as
-    | ProviderChunkConfig
-    | undefined;
+  const providerConfig = (channelsConfig?.[provider] ??
+    (cfg as Record<string, unknown> | undefined)?.[provider]) as ProviderChunkConfig | undefined;
   const mode = resolveChunkModeForProvider(providerConfig, accountId);
   return mode ?? DEFAULT_CHUNK_MODE;
 }
@@ -175,7 +175,11 @@ export function chunkByNewline(
  * - Falls back to length-based splitting when a single paragraph exceeds `limit`
  *   (unless `splitLongParagraphs` is disabled)
  */
-export function chunkByParagraph(text: string, limit: number, opts?: { splitLongParagraphs?: boolean }): string[] {
+export function chunkByParagraph(
+  text: string,
+  limit: number,
+  opts?: { splitLongParagraphs?: boolean },
+): string[] {
   if (!text) {
     return [];
   }
@@ -266,7 +270,10 @@ export function chunkMarkdownTextWithMode(text: string, limit: number, mode: Chu
   return chunkMarkdownText(text, limit);
 }
 
-function splitByNewline(text: string, isSafeBreak: (index: number) => boolean = () => true): string[] {
+function splitByNewline(
+  text: string,
+  isSafeBreak: (index: number) => boolean = () => true,
+): string[] {
   const lines: string[] = [];
   let start = 0;
   for (let i = 0; i < text.length; i++) {
@@ -331,7 +338,9 @@ export function chunkMarkdownText(text: string, limit: number): string[] {
     const softBreak = pickSafeBreakIndex(text, start, windowEnd, spans);
     let breakIdx = softBreak > start ? softBreak : windowEnd;
 
-    const initialFence = isSafeFenceBreak(spans, breakIdx) ? undefined : findFenceSpanAt(spans, breakIdx);
+    const initialFence = isSafeFenceBreak(spans, breakIdx)
+      ? undefined
+      : findFenceSpanAt(spans, breakIdx);
 
     let fenceToSplit = initialFence;
     if (initialFence) {
@@ -375,7 +384,8 @@ export function chunkMarkdownText(text: string, limit: number): string[] {
       }
 
       const fenceAtBreak = findFenceSpanAt(spans, breakIdx);
-      fenceToSplit = fenceAtBreak && fenceAtBreak.start === initialFence.start ? fenceAtBreak : undefined;
+      fenceToSplit =
+        fenceAtBreak && fenceAtBreak.start === initialFence.start ? fenceAtBreak : undefined;
     }
 
     const rawContent = text.slice(start, breakIdx);

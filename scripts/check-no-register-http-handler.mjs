@@ -2,7 +2,11 @@
 
 import ts from "typescript";
 import { runCallsiteGuard } from "./lib/callsite-guard.mjs";
-import { collectCallExpressionLines, runAsScript, unwrapExpression } from "./lib/ts-guard-utils.mjs";
+import {
+  collectCallExpressionLines,
+  runAsScript,
+  unwrapExpression,
+} from "./lib/ts-guard-utils.mjs";
 
 const sourceRoots = ["src", "extensions"];
 

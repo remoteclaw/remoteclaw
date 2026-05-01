@@ -60,7 +60,9 @@ export async function resolveSenderCommandAuthorizationWithRuntime(
   });
 }
 
-export async function resolveSenderCommandAuthorization(params: ResolveSenderCommandAuthorizationParams): Promise<{
+export async function resolveSenderCommandAuthorization(
+  params: ResolveSenderCommandAuthorizationParams,
+): Promise<{
   shouldComputeAuth: boolean;
   effectiveAllowFrom: string[];
   effectiveGroupAllowFrom: string[];
@@ -69,7 +71,9 @@ export async function resolveSenderCommandAuthorization(params: ResolveSenderCom
 }> {
   const shouldComputeAuth = params.shouldComputeCommandAuthorized(params.rawBody, params.cfg);
   const storeAllowFrom =
-    !params.isGroup && params.dmPolicy !== "allowlist" && (params.dmPolicy !== "open" || shouldComputeAuth)
+    !params.isGroup &&
+    params.dmPolicy !== "allowlist" &&
+    (params.dmPolicy !== "open" || shouldComputeAuth)
       ? await params.readAllowFromStore().catch(() => [])
       : [];
   const access = resolveDmGroupAccessWithLists({

@@ -20,18 +20,25 @@ export function rejectUnauthorizedCommand(
   if (params.command.isAuthorizedSender) {
     return null;
   }
-  logVerbose(`Ignoring ${commandLabel} from unauthorized sender: ${redactIdentifier(params.command.senderId)}`);
+  logVerbose(
+    `Ignoring ${commandLabel} from unauthorized sender: ${redactIdentifier(params.command.senderId)}`,
+  );
   if (params.ctx.CommandSource === "native") {
     return buildNativeCommandGateReply("You are not authorized to use this command.");
   }
   return { shouldContinue: false };
 }
 
-export function rejectNonOwnerCommand(params: HandleCommandsParams, commandLabel: string): CommandHandlerResult | null {
+export function rejectNonOwnerCommand(
+  params: HandleCommandsParams,
+  commandLabel: string,
+): CommandHandlerResult | null {
   if (params.command.senderIsOwner) {
     return null;
   }
-  logVerbose(`Ignoring ${commandLabel} from non-owner sender: ${redactIdentifier(params.command.senderId)}`);
+  logVerbose(
+    `Ignoring ${commandLabel} from non-owner sender: ${redactIdentifier(params.command.senderId)}`,
+  );
   if (params.ctx.CommandSource === "native") {
     return buildNativeCommandGateReply("You are not authorized to use this command.");
   }
@@ -53,7 +60,9 @@ export function requireGatewayClientScopeForInternalChannel(
   if (config.allowedScopes.some((scope) => scopes.includes(scope))) {
     return null;
   }
-  logVerbose(`Ignoring ${config.label} from gateway client missing scope: ${config.allowedScopes.join(" or ")}`);
+  logVerbose(
+    `Ignoring ${config.label} from gateway client missing scope: ${config.allowedScopes.join(" or ")}`,
+  );
   return {
     shouldContinue: false,
     reply: { text: config.missingText },

@@ -240,7 +240,10 @@ describe("fetchWithSsrFGuard hardening", () => {
 
   it("keeps headers when redirect stays on same origin", async () => {
     const lookupFn = createPublicLookup();
-    const fetchImpl = vi.fn().mockResolvedValueOnce(redirectResponse("/next")).mockResolvedValueOnce(okResponse());
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(redirectResponse("/next"))
+      .mockResolvedValueOnce(okResponse());
 
     const result = await fetchWithSsrFGuard({
       url: "https://api.example.com/start",
@@ -267,13 +270,19 @@ describe("fetchWithSsrFGuard hardening", () => {
     },
     {
       name: "rejects redirect loops",
-      responses: [redirectResponse("https://public.example/next"), redirectResponse("https://public.example/next")],
+      responses: [
+        redirectResponse("https://public.example/next"),
+        redirectResponse("https://public.example/next"),
+      ],
       expectedError: /redirect loop/i,
       maxRedirects: undefined,
     },
     {
       name: "rejects too many redirects",
-      responses: [redirectResponse("https://public.example/one"), redirectResponse("https://public.example/two")],
+      responses: [
+        redirectResponse("https://public.example/one"),
+        redirectResponse("https://public.example/two"),
+      ],
       expectedError: /too many redirects/i,
       maxRedirects: 1,
     },

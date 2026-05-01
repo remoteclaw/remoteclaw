@@ -8,15 +8,25 @@ import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vi
 import { resolveFirstAgentWorkspace } from "../src/agents/agent-scope.js";
 import type { RemoteClawConfig } from "../src/config/config.js";
 import { validateConfigObject } from "../src/config/validation.js";
-import type { DiagnosticEventPayload, DiagnosticRoutingDropEvent } from "../src/infra/diagnostic-events.js";
+import type {
+  DiagnosticEventPayload,
+  DiagnosticRoutingDropEvent,
+} from "../src/infra/diagnostic-events.js";
 import { onDiagnosticEvent, resetDiagnosticEventsForTest } from "../src/infra/diagnostic-events.js";
-import { resolveAgentRouteExplicit, resolveAgentRouteWithPolicy } from "../src/routing/resolve-route.js";
+import {
+  resolveAgentRouteExplicit,
+  resolveAgentRouteWithPolicy,
+} from "../src/routing/resolve-route.js";
 import {
   getRoutingDropCounts,
   installRoutingDropsAccumulator,
   resetRoutingDropsAccumulatorForTest,
 } from "../src/routing/routing-drops-accumulator.js";
-import { DEFAULT_MAIN_KEY, normalizeAgentId, normalizeAgentIdOrNull } from "../src/routing/session-key.js";
+import {
+  DEFAULT_MAIN_KEY,
+  normalizeAgentId,
+  normalizeAgentIdOrNull,
+} from "../src/routing/session-key.js";
 import { handleUnmatched } from "../src/routing/unmatched.js";
 import {
   loadRuntimeSourceFilesForGuardrails,
@@ -28,7 +38,9 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../src/channels/logging.js", async () => {
-  const actual = await vi.importActual<typeof import("../src/channels/logging.js")>("../src/channels/logging.js");
+  const actual = await vi.importActual<typeof import("../src/channels/logging.js")>(
+    "../src/channels/logging.js",
+  );
   return {
     ...actual,
     logInboundDrop: mocks.logInboundDrop,
@@ -122,7 +134,9 @@ afterEach(() => {
 function parseOrThrow(raw: unknown): RemoteClawConfig {
   const result = validateConfigObject(raw);
   if (!result.ok) {
-    throw new Error(`config parse failed: ${result.issues.map((i) => `${i.path}: ${i.message}`).join("; ")}`);
+    throw new Error(
+      `config parse failed: ${result.issues.map((i) => `${i.path}: ${i.message}`).join("; ")}`,
+    );
   }
   return result.config;
 }
@@ -346,7 +360,9 @@ describe("full startup scenarios — negative path", () => {
     if (result.ok) {
       return;
     }
-    expect(result.issues.some((i) => i.message.includes("agents.list must contain at least one entry"))).toBe(true);
+    expect(
+      result.issues.some((i) => i.message.includes("agents.list must contain at least one entry")),
+    ).toBe(true);
   });
 
   test("missing workspace fails at parse time naming the offending agent slot", () => {
@@ -372,9 +388,11 @@ describe("full startup scenarios — negative path", () => {
     if (result.ok) {
       return;
     }
-    expect(result.issues.some((i) => i.message.includes("agents.list[].workspace must be a non-empty string"))).toBe(
-      true,
-    );
+    expect(
+      result.issues.some((i) =>
+        i.message.includes("agents.list[].workspace must be a non-empty string"),
+      ),
+    ).toBe(true);
   });
 
   test("unknown routing.unmatched.agent fails at parse time with message identifying the unknown id", () => {
@@ -528,15 +546,20 @@ describe("phantom-agent reintroduction guards", () => {
 
   test("no file in src/ exports a constant named DEFAULT_AGENT_ID", () => {
     const exportRe = /\bexport\s+(?:const|let|var)\s+DEFAULT_AGENT_ID\b/;
-    const offenders = runtimeSources.filter((file) => exportRe.test(file.source)).map((file) => file.relativePath);
+    const offenders = runtimeSources
+      .filter((file) => exportRe.test(file.source))
+      .map((file) => file.relativePath);
     expect(offenders).toEqual([]);
   });
 
   test("no file in src/ imports DEFAULT_AGENT_ID from session-key.ts (symbol was deleted)", () => {
     // Whole-word DEFAULT_AGENT_ID so substrings like LEGACY_OPENCLAW_DEFAULT_AGENT_ID
     // in src/commands/import.ts don't trigger.
-    const importRe = /^\s*import\b[^;]*\bDEFAULT_AGENT_ID\b[^;]*from\s+["'][^"']*session-key[^"']*["']/m;
-    const offenders = runtimeSources.filter((file) => importRe.test(file.source)).map((file) => file.relativePath);
+    const importRe =
+      /^\s*import\b[^;]*\bDEFAULT_AGENT_ID\b[^;]*from\s+["'][^"']*session-key[^"']*["']/m;
+    const offenders = runtimeSources
+      .filter((file) => importRe.test(file.source))
+      .map((file) => file.relativePath);
     expect(offenders).toEqual([]);
   });
 
@@ -546,7 +569,9 @@ describe("phantom-agent reintroduction guards", () => {
     // ensures no file EXPORTS a constant named DEFAULT_AGENT_ID (test above).
     // This test verifies the function definition lives only in agent-scope.ts.
     const defRe = /\bexport\s+function\s+resolveDefaultAgentId\s*\(/;
-    const definitionFiles = runtimeSources.filter((file) => defRe.test(file.source)).map((file) => file.relativePath);
+    const definitionFiles = runtimeSources
+      .filter((file) => defRe.test(file.source))
+      .map((file) => file.relativePath);
     expect(definitionFiles).toEqual([`src${path.sep}agents${path.sep}agent-scope.ts`]);
   });
 

@@ -20,7 +20,9 @@ describe("getSlashCommands", () => {
       { value: "on", label: "on" },
       { value: "off", label: "off" },
     ]);
-    expect(activation?.getArgumentCompletions?.("a")).toEqual([{ value: "always", label: "always" }]);
+    expect(activation?.getArgumentCompletions?.("a")).toEqual([
+      { value: "always", label: "always" },
+    ]);
   });
 });
 

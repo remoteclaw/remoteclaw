@@ -151,7 +151,9 @@ export async function runCronIsolatedAgentTurn(params: {
   const isAborted = () => abortSignal?.aborted === true;
   const abortReason = () => {
     const reason = abortSignal?.reason;
-    return typeof reason === "string" && reason.trim() ? reason.trim() : "cron: job execution timed out";
+    return typeof reason === "string" && reason.trim()
+      ? reason.trim()
+      : "cron: job execution timed out";
   };
   const isFastTestEnv = process.env.REMOTECLAW_TEST_FAST === "1";
   const soleAgentId = resolveSoleAgentId(params.cfg);
@@ -162,7 +164,9 @@ export async function runCronIsolatedAgentTurn(params: {
         ? params.job.agentId
         : undefined;
   const normalizedRequested = requestedAgentId ? normalizeAgentId(requestedAgentId) : undefined;
-  const agentConfigOverride = normalizedRequested ? resolveAgentConfig(params.cfg, normalizedRequested) : undefined;
+  const agentConfigOverride = normalizedRequested
+    ? resolveAgentConfig(params.cfg, normalizedRequested)
+    : undefined;
   // Use the requested agentId, falling back to the sole configured agent.
   // This ensures auth-profiles, workspace, and agentDir all resolve to the
   // correct per-agent paths (e.g. ~/.remoteclaw/agents/<agentId>/agent/).
@@ -170,7 +174,8 @@ export async function runCronIsolatedAgentTurn(params: {
   if (!agentId) {
     return {
       status: "error",
-      error: "cron isolated run: cannot resolve agent id — no agent specified and no sole agent configured",
+      error:
+        "cron isolated run: cannot resolve agent id — no agent specified and no sole agent configured",
     };
   }
   const agentCfg: AgentDefaultsConfig = Object.assign(
@@ -197,7 +202,8 @@ export async function runCronIsolatedAgentTurn(params: {
   const runtimeProvider = resolveAgentRuntime(cfgWithAgentDefaults, agentId) ?? "unknown";
   let provider = runtimeProvider;
   let model = "default";
-  const modelOverrideRaw = params.job.payload.kind === "agentTurn" ? params.job.payload.model : undefined;
+  const modelOverrideRaw =
+    params.job.payload.kind === "agentTurn" ? params.job.payload.model : undefined;
   const modelOverride = typeof modelOverrideRaw === "string" ? modelOverrideRaw.trim() : undefined;
   if (modelOverride !== undefined && modelOverride.length > 0) {
     const parsed = parseModelRef(modelOverride, runtimeProvider);
@@ -217,7 +223,9 @@ export async function runCronIsolatedAgentTurn(params: {
     forceNew: params.job.sessionTarget === "isolated",
   });
   const runSessionId = cronSession.sessionEntry.sessionId;
-  const runSessionKey = baseSessionKey.startsWith("cron:") ? `${agentSessionKey}:run:${runSessionId}` : agentSessionKey;
+  const runSessionKey = baseSessionKey.startsWith("cron:")
+    ? `${agentSessionKey}:run:${runSessionId}`
+    : agentSessionKey;
   const persistSessionEntry = async () => {
     if (isFastTestEnv) {
       return;
@@ -242,7 +250,9 @@ export async function runCronIsolatedAgentTurn(params: {
   });
   if (!cronSession.sessionEntry.label?.trim() && baseSessionKey.startsWith("cron:")) {
     const labelSuffix =
-      typeof params.job.name === "string" && params.job.name.trim() ? params.job.name.trim() : params.job.id;
+      typeof params.job.name === "string" && params.job.name.trim()
+        ? params.job.name.trim()
+        : params.job.id;
     cronSession.sessionEntry.label = `Cron: ${labelSuffix}`;
   }
 
@@ -252,8 +262,12 @@ export async function runCronIsolatedAgentTurn(params: {
   if (!modelOverride) {
     const sessionModelOverride = cronSession.sessionEntry.modelOverride?.trim();
     if (sessionModelOverride) {
-      const sessionProviderOverride = cronSession.sessionEntry.providerOverride?.trim() || runtimeProvider;
-      const parsed = parseModelRef(`${sessionProviderOverride}/${sessionModelOverride}`, runtimeProvider);
+      const sessionProviderOverride =
+        cronSession.sessionEntry.providerOverride?.trim() || runtimeProvider;
+      const parsed = parseModelRef(
+        `${sessionProviderOverride}/${sessionModelOverride}`,
+        runtimeProvider,
+      );
       if (parsed) {
         provider = parsed.provider;
         model = parsed.model;
@@ -263,7 +277,8 @@ export async function runCronIsolatedAgentTurn(params: {
 
   const timeoutMs = resolveAgentTimeoutMs({
     cfg: cfgWithAgentDefaults,
-    overrideSeconds: params.job.payload.kind === "agentTurn" ? params.job.payload.timeoutSeconds : undefined,
+    overrideSeconds:
+      params.job.payload.kind === "agentTurn" ? params.job.payload.timeoutSeconds : undefined,
   });
 
   const agentPayload = params.job.payload.kind === "agentTurn" ? params.job.payload : null;
@@ -342,7 +357,8 @@ export async function runCronIsolatedAgentTurn(params: {
     }
 
     const sessionMap = createSessionMapAdapter({
-      getSessionId: () => (cronSession.isNewSession ? undefined : getCliSessionId(cronSession.sessionEntry, provider)),
+      getSessionId: () =>
+        cronSession.isNewSession ? undefined : getCliSessionId(cronSession.sessionEntry, provider),
     });
 
     const messageToolHints = resolveChannelMessageToolHints({
@@ -457,7 +473,11 @@ export async function runCronIsolatedAgentTurn(params: {
   let synthesizedText = outputText?.trim() || summary?.trim() || undefined;
   const deliveryPayload = pickLastDeliverablePayload(payloads);
   let deliveryPayloads =
-    deliveryPayload !== undefined ? [deliveryPayload] : synthesizedText ? [{ text: synthesizedText }] : [];
+    deliveryPayload !== undefined
+      ? [deliveryPayload]
+      : synthesizedText
+        ? [{ text: synthesizedText }]
+        : [];
   const deliveryPayloadHasStructuredContent =
     Boolean(deliveryPayload?.mediaUrl) ||
     (deliveryPayload?.mediaUrls?.length ?? 0) > 0 ||
@@ -474,7 +494,9 @@ export async function runCronIsolatedAgentTurn(params: {
   const resolveRunOutcome = (params?: { delivered?: boolean; deliveryAttempted?: boolean }) =>
     withRunSession({
       status: hasErrorPayload ? "error" : "ok",
-      ...(hasErrorPayload ? { error: runError ?? "cron isolated run returned an error payload" } : {}),
+      ...(hasErrorPayload
+        ? { error: runError ?? "cron isolated run returned an error payload" }
+        : {}),
       summary,
       outputText,
       delivered: params?.delivered,
@@ -484,8 +506,11 @@ export async function runCronIsolatedAgentTurn(params: {
 
   // Skip delivery when heartbeat_report says nothing was done.
   const skipHeartbeatDelivery =
-    deliveryRequested && runResult.mcp.heartbeatReport != null && !runResult.mcp.heartbeatReport.anythingDone;
-  const didSendViaMessagingTool = runResult.mcp.sentTexts.length > 0 || runResult.mcp.sentMediaUrls.length > 0;
+    deliveryRequested &&
+    runResult.mcp.heartbeatReport != null &&
+    !runResult.mcp.heartbeatReport.anythingDone;
+  const didSendViaMessagingTool =
+    runResult.mcp.sentTexts.length > 0 || runResult.mcp.sentMediaUrls.length > 0;
   const skipMessagingToolDelivery =
     deliveryRequested &&
     didSendViaMessagingTool &&
@@ -527,7 +552,8 @@ export async function runCronIsolatedAgentTurn(params: {
   if (deliveryResult.result) {
     const resultWithDeliveryMeta: RunCronAgentTurnResult = {
       ...deliveryResult.result,
-      deliveryAttempted: deliveryResult.result.deliveryAttempted ?? deliveryResult.deliveryAttempted,
+      deliveryAttempted:
+        deliveryResult.result.deliveryAttempted ?? deliveryResult.deliveryAttempted,
     };
     if (!hasErrorPayload || deliveryResult.result.status !== "ok") {
       return resultWithDeliveryMeta;

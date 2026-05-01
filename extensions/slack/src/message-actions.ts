@@ -1,10 +1,15 @@
 import { createActionGate } from "../../../src/agents/tools/common.js";
-import type { ChannelMessageActionName, ChannelToolSend } from "../../../src/channels/plugins/types.js";
+import type {
+  ChannelMessageActionName,
+  ChannelToolSend,
+} from "../../../src/channels/plugins/types.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import { listEnabledSlackAccounts } from "./accounts.js";
 
 export function listSlackMessageActions(cfg: RemoteClawConfig): ChannelMessageActionName[] {
-  const accounts = listEnabledSlackAccounts(cfg).filter((account) => account.botTokenSource !== "none");
+  const accounts = listEnabledSlackAccounts(cfg).filter(
+    (account) => account.botTokenSource !== "none",
+  );
   if (accounts.length === 0) {
     return [];
   }

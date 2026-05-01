@@ -1,13 +1,19 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { resolveControlUiDistIndexHealth, resolveControlUiDistIndexPathForRoot } from "../infra/control-ui-assets.js";
+import {
+  resolveControlUiDistIndexHealth,
+  resolveControlUiDistIndexPathForRoot,
+} from "../infra/control-ui-assets.js";
 import { resolveRemoteClawPackageRoot } from "../infra/remoteclaw-root.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { note } from "../terminal/note.js";
 import type { DoctorPrompter } from "./doctor-prompter.js";
 
-export async function maybeRepairUiProtocolFreshness(_runtime: RuntimeEnv, prompter: DoctorPrompter) {
+export async function maybeRepairUiProtocolFreshness(
+  _runtime: RuntimeEnv,
+  prompter: DoctorPrompter,
+) {
   const root = await resolveRemoteClawPackageRoot({
     moduleUrl: import.meta.url,
     argv1: process.argv[1],
@@ -79,7 +85,15 @@ export async function maybeRepairUiProtocolFreshness(_runtime: RuntimeEnv, promp
       const uiMtimeIso = uiStats.mtime.toISOString();
       // Find changes since the UI build
       const gitLog = await runCommandWithTimeout(
-        ["git", "-C", root, "log", `--since=${uiMtimeIso}`, "--format=%h %s", "src/gateway/protocol/schema.ts"],
+        [
+          "git",
+          "-C",
+          root,
+          "log",
+          `--since=${uiMtimeIso}`,
+          "--format=%h %s",
+          "src/gateway/protocol/schema.ts",
+        ],
         { timeoutMs: 5000 },
       ).catch(() => null);
 
@@ -110,11 +124,14 @@ export async function maybeRepairUiProtocolFreshness(_runtime: RuntimeEnv, promp
           // Use scripts/ui.js to build, assuming node is available as we are running in it.
           // We use the same node executable to run the script.
           const uiScriptPath = path.join(root, "scripts/ui.js");
-          const buildResult = await runCommandWithTimeout([process.execPath, uiScriptPath, "build"], {
-            cwd: root,
-            timeoutMs: 120_000,
-            env: { ...process.env, FORCE_COLOR: "1" },
-          });
+          const buildResult = await runCommandWithTimeout(
+            [process.execPath, uiScriptPath, "build"],
+            {
+              cwd: root,
+              timeoutMs: 120_000,
+              env: { ...process.env, FORCE_COLOR: "1" },
+            },
+          );
           if (buildResult.code === 0) {
             note("UI rebuild complete.", "UI");
           } else {

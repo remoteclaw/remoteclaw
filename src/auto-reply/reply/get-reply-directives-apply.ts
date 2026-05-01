@@ -48,7 +48,9 @@ export async function applyInlineDirectiveOverrides(params: {
   runtimeId: string;
   provider: string;
   model: string;
-  defaultActivation: () => ReturnType<Parameters<typeof buildStatusReply>[0]["defaultGroupActivation"]>;
+  defaultActivation: () => ReturnType<
+    Parameters<typeof buildStatusReply>[0]["defaultGroupActivation"]
+  >;
   /** Upstream feature: whether elevated security is enabled. */
   elevatedEnabled?: boolean;
   /** Upstream feature: elevated security allowed for this context. */
@@ -165,7 +167,8 @@ export async function applyInlineDirectiveOverrides(params: {
     sessionKey,
     storePath,
   });
-  const perMessageQueueMode = directives.hasQueueDirective && !directives.queueReset ? directives.queueMode : undefined;
+  const perMessageQueueMode =
+    directives.hasQueueDirective && !directives.queueReset ? directives.queueMode : undefined;
   const perMessageQueueOptions =
     directives.hasQueueDirective && !directives.queueReset
       ? {

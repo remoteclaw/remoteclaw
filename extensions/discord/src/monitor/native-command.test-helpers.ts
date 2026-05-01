@@ -28,9 +28,12 @@ type CreateMockCommandInteractionParams = {
   interactionId?: string;
 };
 
-export function createMockCommandInteraction(params: CreateMockCommandInteractionParams = {}): MockCommandInteraction {
+export function createMockCommandInteraction(
+  params: CreateMockCommandInteractionParams = {},
+): MockCommandInteraction {
   const guildId = params.guildId;
-  const guild = guildId === null || guildId === undefined ? null : { id: guildId, name: params.guildName };
+  const guild =
+    guildId === null || guildId === undefined ? null : { id: guildId, name: params.guildName };
   return {
     user: {
       id: params.userId ?? "owner",

@@ -55,7 +55,9 @@ describe("tool-images log context", () => {
 
   it("includes filename from read label", async () => {
     const png = await createLargePng();
-    const blocks = [{ type: "image" as const, data: png.toString("base64"), mimeType: "image/png" }];
+    const blocks = [
+      { type: "image" as const, data: png.toString("base64"), mimeType: "image/png" },
+    ];
     await sanitizeContentBlocksImages(blocks, "read:/tmp/images/sample-diagram.png");
     const message = infoMock.mock.calls[0]?.[0];
     expect(typeof message).toBe("string");

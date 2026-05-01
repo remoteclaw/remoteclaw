@@ -3,7 +3,10 @@ import http from "node:http";
 import { describe, expect, it, vi } from "vitest";
 import { WebSocket } from "ws";
 import { MediaStreamHandler, sanitizeLogText } from "./media-stream.js";
-import type { OpenAIRealtimeSTTProvider, RealtimeSTTSession } from "./providers/stt-openai-realtime.js";
+import type {
+  OpenAIRealtimeSTTProvider,
+  RealtimeSTTSession,
+} from "./providers/stt-openai-realtime.js";
 
 const createStubSession = (): RealtimeSTTSession => ({
   connect: async () => {},
@@ -172,7 +175,10 @@ describe("MediaStreamHandler security hardening", () => {
     } as unknown as WebSocket;
     (
       handler as unknown as {
-        sessions: Map<string, { callId: string; streamSid: string; ws: WebSocket; sttSession: RealtimeSTTSession }>;
+        sessions: Map<
+          string,
+          { callId: string; streamSid: string; ws: WebSocket; sttSession: RealtimeSTTSession }
+        >;
       }
     ).sessions.set("MZ-backpressure", {
       callId: "CA-backpressure",
@@ -206,7 +212,10 @@ describe("MediaStreamHandler security hardening", () => {
     } as unknown as WebSocket;
     (
       handler as unknown as {
-        sessions: Map<string, { callId: string; streamSid: string; ws: WebSocket; sttSession: RealtimeSTTSession }>;
+        sessions: Map<
+          string,
+          { callId: string; streamSid: string; ws: WebSocket; sttSession: RealtimeSTTSession }
+        >;
       }
     ).sessions.set("MZ-overflow", {
       callId: "CA-overflow",
@@ -231,7 +240,8 @@ describe("MediaStreamHandler security hardening", () => {
   });
 
   it("closes idle pre-start connections after timeout", async () => {
-    const shouldAcceptStreamCalls: Array<{ callId: string; streamSid: string; token?: string }> = [];
+    const shouldAcceptStreamCalls: Array<{ callId: string; streamSid: string; token?: string }> =
+      [];
     const handler = new MediaStreamHandler({
       sttProvider: createStubSttProvider(),
       preStartTimeoutMs: 40,
@@ -336,7 +346,8 @@ describe("MediaStreamHandler security hardening", () => {
   });
 
   it("rejects oversized pre-start frames at the websocket maxPayload guard before validation runs", async () => {
-    const shouldAcceptStreamCalls: Array<{ callId: string; streamSid: string; token?: string }> = [];
+    const shouldAcceptStreamCalls: Array<{ callId: string; streamSid: string; token?: string }> =
+      [];
     const handler = new MediaStreamHandler({
       sttProvider: createStubSttProvider(),
       preStartTimeoutMs: 1_000,

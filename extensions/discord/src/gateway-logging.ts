@@ -10,7 +10,8 @@ const INFO_DEBUG_MARKERS = [
   "Attempting resume with backoff",
 ];
 
-const shouldPromoteGatewayDebug = (message: string) => INFO_DEBUG_MARKERS.some((marker) => message.includes(marker));
+const shouldPromoteGatewayDebug = (message: string) =>
+  INFO_DEBUG_MARKERS.some((marker) => message.includes(marker));
 
 const formatGatewayMetrics = (metrics: unknown) => {
   if (metrics === null || metrics === undefined) {
@@ -29,7 +30,10 @@ const formatGatewayMetrics = (metrics: unknown) => {
   }
 };
 
-export function attachDiscordGatewayLogging(params: { emitter?: GatewayEmitter; runtime: RuntimeEnv }) {
+export function attachDiscordGatewayLogging(params: {
+  emitter?: GatewayEmitter;
+  runtime: RuntimeEnv;
+}) {
   const { emitter, runtime } = params;
   if (!emitter) {
     return () => {};

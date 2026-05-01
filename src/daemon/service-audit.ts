@@ -2,7 +2,11 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { resolveLaunchAgentPlistPath } from "./launchd.js";
 import { isBunRuntime, isNodeRuntime } from "./runtime-binary.js";
-import { isSystemNodePath, isVersionManagedNodePath, resolveSystemNodePath } from "./runtime-paths.js";
+import {
+  isSystemNodePath,
+  isVersionManagedNodePath,
+  resolveSystemNodePath,
+} from "./runtime-paths.js";
 import { getMinimalServicePathPartsFromEnv } from "./service-env.js";
 import { resolveSystemdUserUnitPath } from "./systemd.js";
 
@@ -117,7 +121,10 @@ function isRestartSecPreferred(value: string | undefined): boolean {
   return Math.abs(parsed - 5) < 0.01;
 }
 
-async function auditSystemdUnit(env: Record<string, string | undefined>, issues: ServiceConfigIssue[]) {
+async function auditSystemdUnit(
+  env: Record<string, string | undefined>,
+  issues: ServiceConfigIssue[],
+) {
   const unitPath = resolveSystemdUserUnitPath(env);
   let content = "";
   try {
@@ -153,7 +160,10 @@ async function auditSystemdUnit(env: Record<string, string | undefined>, issues:
   }
 }
 
-async function auditLaunchdPlist(env: Record<string, string | undefined>, issues: ServiceConfigIssue[]) {
+async function auditLaunchdPlist(
+  env: Record<string, string | undefined>,
+  issues: ServiceConfigIssue[],
+) {
   const plistPath = resolveLaunchAgentPlistPath(env);
   let content = "";
   try {
@@ -216,7 +226,8 @@ function auditGatewayToken(
   }
   issues.push({
     code: SERVICE_AUDIT_CODES.gatewayTokenMismatch,
-    message: "Gateway service REMOTECLAW_GATEWAY_TOKEN does not match gateway.auth.token in remoteclaw.json",
+    message:
+      "Gateway service REMOTECLAW_GATEWAY_TOKEN does not match gateway.auth.token in remoteclaw.json",
     detail: "service token is stale",
     level: "recommended",
   });
@@ -305,7 +316,8 @@ function auditGatewayServicePath(
   if (nonMinimal.length > 0) {
     issues.push({
       code: SERVICE_AUDIT_CODES.gatewayPathNonMinimal,
-      message: "Gateway service PATH includes version managers or package managers; recommend a minimal PATH.",
+      message:
+        "Gateway service PATH includes version managers or package managers; recommend a minimal PATH.",
       detail: nonMinimal.join(", "),
       level: "recommended",
     });
@@ -377,7 +389,8 @@ export function checkTokenDrift(params: {
   if (configToken && serviceToken !== configToken) {
     return {
       code: SERVICE_AUDIT_CODES.gatewayTokenDrift,
-      message: "Config token differs from service token. The daemon will use the old token after restart.",
+      message:
+        "Config token differs from service token. The daemon will use the old token after restart.",
       detail: "Run `remoteclaw gateway install --force` to sync the token.",
       level: "recommended",
     };

@@ -68,7 +68,10 @@ const buildAccountDetails = (params: {
   if (snapshot.appTokenSource && snapshot.appTokenSource !== "none") {
     details.push(`app:${snapshot.appTokenSource}`);
   }
-  if (snapshot.signingSecretSource && snapshot.signingSecretSource !== "none" /* pragma: allowlist secret */) {
+  if (
+    snapshot.signingSecretSource &&
+    snapshot.signingSecretSource !== "none" /* pragma: allowlist secret */
+  ) {
     details.push(`signing:${snapshot.signingSecretSource}`);
   }
   if (hasConfiguredUnavailableCredentialStatus(params.entry.account)) {
@@ -105,7 +108,10 @@ function inspectChannelAccount(plugin: ChannelPlugin, cfg: RemoteClawConfig, acc
   return plugin.config.inspectAccount?.(cfg, accountId) ?? undefined;
 }
 
-export async function buildChannelSummary(cfg?: RemoteClawConfig, options?: ChannelSummaryOptions): Promise<string[]> {
+export async function buildChannelSummary(
+  cfg?: RemoteClawConfig,
+  options?: ChannelSummaryOptions,
+): Promise<string[]> {
   const effective = cfg ?? loadConfig();
   const lines: string[] = [];
   const resolved = { ...DEFAULT_OPTIONS, ...options };
@@ -115,7 +121,8 @@ export async function buildChannelSummary(cfg?: RemoteClawConfig, options?: Chan
 
   for (const plugin of listChannelPlugins()) {
     const accountIds = plugin.config.listAccountIds(effective);
-    const defaultAccountId = plugin.config.defaultAccountId?.(effective) ?? accountIds[0] ?? DEFAULT_ACCOUNT_ID;
+    const defaultAccountId =
+      plugin.config.defaultAccountId?.(effective) ?? accountIds[0] ?? DEFAULT_ACCOUNT_ID;
     const resolvedAccountIds = accountIds.length > 0 ? accountIds : [defaultAccountId];
     const entries: ChannelAccountEntry[] = [];
 
@@ -130,7 +137,8 @@ export async function buildChannelSummary(cfg?: RemoteClawConfig, options?: Chan
         enabled?: boolean;
         configured?: boolean;
       } | null;
-      const resolvedAccount = resolvedInspectedAccount ?? plugin.config.resolveAccount(effective, accountId);
+      const resolvedAccount =
+        resolvedInspectedAccount ?? plugin.config.resolveAccount(effective, accountId);
       const useSourceUnavailableAccount = Boolean(
         sourceInspectedAccount &&
         hasConfiguredUnavailableCredentialStatus(sourceInspectedAccount) &&
@@ -138,8 +146,12 @@ export async function buildChannelSummary(cfg?: RemoteClawConfig, options?: Chan
           (sourceInspection?.configured === true && resolvedInspection?.configured === false)),
       );
       const account = useSourceUnavailableAccount ? sourceInspectedAccount : resolvedAccount;
-      const selectedInspection = useSourceUnavailableAccount ? sourceInspection : resolvedInspection;
-      const enabled = selectedInspection?.enabled ?? resolveChannelAccountEnabled({ plugin, account, cfg: effective });
+      const selectedInspection = useSourceUnavailableAccount
+        ? sourceInspection
+        : resolvedInspection;
+      const enabled =
+        selectedInspection?.enabled ??
+        resolveChannelAccountEnabled({ plugin, account, cfg: effective });
       const configured =
         selectedInspection?.configured ??
         (await resolveChannelAccountConfigured({
@@ -161,18 +173,21 @@ export async function buildChannelSummary(cfg?: RemoteClawConfig, options?: Chan
 
     const configuredEntries = entries.filter((entry) => entry.configured);
     const anyEnabled = entries.some((entry) => entry.enabled);
-    const fallbackEntry = entries.find((entry) => entry.accountId === defaultAccountId) ?? entries[0];
+    const fallbackEntry =
+      entries.find((entry) => entry.accountId === defaultAccountId) ?? entries[0];
     const summary = plugin.status?.buildChannelSummary
       ? await plugin.status.buildChannelSummary({
           account: fallbackEntry?.account ?? {},
           cfg: effective,
           defaultAccountId,
-          snapshot: fallbackEntry?.snapshot ?? ({ accountId: defaultAccountId } as ChannelAccountSnapshot),
+          snapshot:
+            fallbackEntry?.snapshot ?? ({ accountId: defaultAccountId } as ChannelAccountSnapshot),
         })
       : undefined;
 
     const summaryRecord = summary;
-    const linked = summaryRecord && typeof summaryRecord.linked === "boolean" ? summaryRecord.linked : null;
+    const linked =
+      summaryRecord && typeof summaryRecord.linked === "boolean" ? summaryRecord.linked : null;
     const configured =
       summaryRecord && typeof summaryRecord.configured === "boolean"
         ? summaryRecord.configured
@@ -197,7 +212,8 @@ export async function buildChannelSummary(cfg?: RemoteClawConfig, options?: Chan
     const baseLabel = plugin.meta.label ?? plugin.id;
     let line = `${baseLabel}: ${status}`;
 
-    const authAgeMs = summaryRecord && typeof summaryRecord.authAgeMs === "number" ? summaryRecord.authAgeMs : null;
+    const authAgeMs =
+      summaryRecord && typeof summaryRecord.authAgeMs === "number" ? summaryRecord.authAgeMs : null;
     const self = summaryRecord?.self as { e164?: string | null } | undefined;
     if (self?.e164) {
       line += ` ${self.e164}`;

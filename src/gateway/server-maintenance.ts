@@ -2,7 +2,12 @@ import type { HealthSummary } from "../commands/health.js";
 import { cleanOldMedia } from "../media/store.js";
 import { abortChatRunById, type ChatAbortControllerEntry } from "./chat-abort.js";
 import type { ChatRunEntry } from "./server-chat.js";
-import { DEDUPE_MAX, DEDUPE_TTL_MS, HEALTH_REFRESH_INTERVAL_MS, TICK_INTERVAL_MS } from "./server-constants.js";
+import {
+  DEDUPE_MAX,
+  DEDUPE_TTL_MS,
+  HEALTH_REFRESH_INTERVAL_MS,
+  TICK_INTERVAL_MS,
+} from "./server-constants.js";
 import type { DedupeEntry } from "./server-shared.js";
 import { formatError } from "./server-utils.js";
 import { setBroadcastHealthUpdate } from "./server/health-state.js";
@@ -26,7 +31,11 @@ export function startGatewayMaintenanceTimers(params: {
   chatRunState: { abortedRuns: Map<string, number> };
   chatRunBuffers: Map<string, string>;
   chatDeltaSentAt: Map<string, number>;
-  removeChatRun: (sessionId: string, clientRunId: string, sessionKey?: string) => ChatRunEntry | undefined;
+  removeChatRun: (
+    sessionId: string,
+    clientRunId: string,
+    sessionKey?: string,
+  ) => ChatRunEntry | undefined;
   agentRunSeq: Map<string, number>;
   nodeSendToSession: (sessionKey: string, event: string, payload: unknown) => void;
   mediaCleanupTtlMs?: number;

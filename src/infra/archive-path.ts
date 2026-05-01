@@ -9,7 +9,10 @@ export function normalizeArchiveEntryPath(raw: string): string {
   return raw.replaceAll("\\", "/");
 }
 
-export function validateArchiveEntryPath(entryPath: string, params?: { escapeLabel?: string }): void {
+export function validateArchiveEntryPath(
+  entryPath: string,
+  params?: { escapeLabel?: string },
+): void {
   if (!entryPath || entryPath === "." || entryPath === "./") {
     return;
   }

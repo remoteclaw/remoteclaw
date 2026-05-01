@@ -24,7 +24,10 @@ export function getBearerToken(req: IncomingMessage): string | undefined {
 }
 
 export function resolveAgentIdFromHeader(req: IncomingMessage): string | undefined {
-  const raw = getHeader(req, "x-remoteclaw-agent-id")?.trim() || getHeader(req, "x-remoteclaw-agent")?.trim() || "";
+  const raw =
+    getHeader(req, "x-remoteclaw-agent-id")?.trim() ||
+    getHeader(req, "x-remoteclaw-agent")?.trim() ||
+    "";
   if (!raw) {
     return undefined;
   }
@@ -47,7 +50,10 @@ export function resolveAgentIdFromModel(model: string | undefined): string | und
   return normalizeAgentId(agentId);
 }
 
-export function resolveAgentIdForRequest(params: { req: IncomingMessage; model: string | undefined }): string {
+export function resolveAgentIdForRequest(params: {
+  req: IncomingMessage;
+  model: string | undefined;
+}): string {
   const fromHeader = resolveAgentIdFromHeader(params.req);
   if (fromHeader) {
     return fromHeader;
@@ -90,7 +96,8 @@ export function resolveGatewayRequestContext(params: {
   });
 
   const messageChannel = params.useMessageChannelHeader
-    ? (normalizeMessageChannel(getHeader(params.req, "x-remoteclaw-message-channel")) ?? params.defaultMessageChannel)
+    ? (normalizeMessageChannel(getHeader(params.req, "x-remoteclaw-message-channel")) ??
+      params.defaultMessageChannel)
     : params.defaultMessageChannel;
 
   return { agentId, sessionKey, messageChannel };

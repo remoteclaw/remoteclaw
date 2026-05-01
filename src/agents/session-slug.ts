@@ -121,7 +121,10 @@ function createSlugBase(words = 2) {
   return parts.join("-");
 }
 
-function createAvailableSlug(words: number, isIdTaken: (id: string) => boolean): string | undefined {
+function createAvailableSlug(
+  words: number,
+  isIdTaken: (id: string) => boolean,
+): string | undefined {
   for (let attempt = 0; attempt < 12; attempt += 1) {
     const base = createSlugBase(words);
     if (!isIdTaken(base)) {

@@ -41,7 +41,9 @@ type GatewayCall = { method: string; params?: Record<string, unknown> };
 
 async function getGatewayCalls(): Promise<GatewayCall[]> {
   const { callGateway } = await import("../gateway/call.js");
-  return (callGateway as unknown as ReturnType<typeof vi.fn>).mock.calls.map((call) => call[0] as GatewayCall);
+  return (callGateway as unknown as ReturnType<typeof vi.fn>).mock.calls.map(
+    (call) => call[0] as GatewayCall,
+  );
 }
 
 function findLastCall(calls: GatewayCall[], predicate: (call: GatewayCall) => boolean) {

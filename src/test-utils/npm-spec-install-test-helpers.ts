@@ -44,7 +44,10 @@ export async function expectUnsupportedNpmSpec(
 export function mockNpmPackMetadataResult(
   run: {
     mockImplementation: (
-      implementation: (argv: string[], optionsOrTimeout: number | CommandOptions) => Promise<SpawnResult>,
+      implementation: (
+        argv: string[],
+        optionsOrTimeout: number | CommandOptions,
+      ) => Promise<SpawnResult>,
     ) => unknown;
   },
   metadata: NpmPackMetadata,
@@ -54,7 +57,10 @@ export function mockNpmPackMetadataResult(
       throw new Error(`unexpected command: ${argv.join(" ")}`);
     }
 
-    const cwd = typeof optionsOrTimeout === "object" && optionsOrTimeout !== null ? optionsOrTimeout.cwd : undefined;
+    const cwd =
+      typeof optionsOrTimeout === "object" && optionsOrTimeout !== null
+        ? optionsOrTimeout.cwd
+        : undefined;
     if (cwd) {
       fs.writeFileSync(path.join(cwd, metadata.filename), "");
     }

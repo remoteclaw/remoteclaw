@@ -119,7 +119,9 @@ describe("gateway pre-auth hardening", () => {
       });
     } finally {
       wss.close();
-      await new Promise<void>((resolve, reject) => httpServer.close((err) => (err ? reject(err) : resolve())));
+      await new Promise<void>((resolve, reject) =>
+        httpServer.close((err) => (err ? reject(err) : resolve())),
+      );
     }
   });
 

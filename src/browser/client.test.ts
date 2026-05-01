@@ -85,7 +85,9 @@ describe("browser client", () => {
     });
 
     await expect(browserTabs("http://127.0.0.1:18791")).resolves.toHaveLength(1);
-    await expect(browserOpenTab("http://127.0.0.1:18791", "https://example.com")).resolves.toMatchObject({
+    await expect(
+      browserOpenTab("http://127.0.0.1:18791", "https://example.com"),
+    ).resolves.toMatchObject({
       targetId: "t2",
     });
 

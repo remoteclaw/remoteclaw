@@ -14,7 +14,10 @@ export type SlackTarget = MessagingTarget;
 
 type SlackTargetParseOptions = MessagingTargetParseOptions;
 
-export function parseSlackTarget(raw: string, options: SlackTargetParseOptions = {}): SlackTarget | undefined {
+export function parseSlackTarget(
+  raw: string,
+  options: SlackTargetParseOptions = {},
+): SlackTarget | undefined {
   const trimmed = raw.trim();
   if (!trimmed) {
     return undefined;

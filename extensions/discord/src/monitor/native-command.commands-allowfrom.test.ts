@@ -6,7 +6,10 @@ import type { RemoteClawConfig } from "../../../../src/config/config.js";
 import type { DiscordAccountConfig } from "../../../../src/config/types.discord.js";
 import * as pluginCommandsModule from "../../../../src/plugins/commands.js";
 import { createDiscordNativeCommand } from "./native-command.js";
-import { createMockCommandInteraction, type MockCommandInteraction } from "./native-command.test-helpers.js";
+import {
+  createMockCommandInteraction,
+  type MockCommandInteraction,
+} from "./native-command.test-helpers.js";
 import { createNoopThreadBindingManager } from "./thread-bindings.js";
 
 function createInteraction(params?: { userId?: string }): MockCommandInteraction {
@@ -191,7 +194,8 @@ describe("Discord native slash commands with commands.allowFrom", () => {
       },
     });
 
-    const dispatchCall = vi.mocked(dispatcherModule.dispatchReplyWithDispatcher).mock.calls[0]?.[0] as
+    const dispatchCall = vi.mocked(dispatcherModule.dispatchReplyWithDispatcher).mock
+      .calls[0]?.[0] as
       | Parameters<typeof dispatcherModule.dispatchReplyWithDispatcher>[0]
       | undefined;
     await dispatchCall?.dispatcherOptions.deliver({ text: longReply }, { kind: "final" });

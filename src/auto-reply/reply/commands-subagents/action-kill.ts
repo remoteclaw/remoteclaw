@@ -1,6 +1,10 @@
 import { killSessionRun } from "../../../agents/session-run-registry.js";
 import { markSubagentRunTerminated } from "../../../agents/subagent-registry.js";
-import { loadSessionStore, resolveStorePath, updateSessionStore } from "../../../config/sessions.js";
+import {
+  loadSessionStore,
+  resolveStorePath,
+  updateSessionStore,
+} from "../../../config/sessions.js";
 import { logVerbose } from "../../../globals.js";
 import { stopSubagentsForRequester } from "../abort.js";
 import type { CommandHandlerResult } from "../commands-types.js";
@@ -14,11 +18,15 @@ import {
   stopWithText,
 } from "./shared.js";
 
-export async function handleSubagentsKillAction(ctx: SubagentsCommandContext): Promise<CommandHandlerResult> {
+export async function handleSubagentsKillAction(
+  ctx: SubagentsCommandContext,
+): Promise<CommandHandlerResult> {
   const { params, handledPrefix, requesterKey, runs, restTokens } = ctx;
   const target = restTokens[0];
   if (!target) {
-    return stopWithText(handledPrefix === COMMAND ? "Usage: /subagents kill <id|#|all>" : "Usage: /kill <id|#|all>");
+    return stopWithText(
+      handledPrefix === COMMAND ? "Usage: /subagents kill <id|#|all>" : "Usage: /kill <id|#|all>",
+    );
   }
 
   if (target === "all" || target === "*") {

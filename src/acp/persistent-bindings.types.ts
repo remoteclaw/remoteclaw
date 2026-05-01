@@ -142,7 +142,9 @@ export function resolveConfiguredAcpBindingSpecFromRecord(
   if (!conversationId) {
     return null;
   }
-  const agentId = normalizeText(record.metadata?.agentId) ?? resolveAgentIdFromSessionKey(record.targetSessionKey);
+  const agentId =
+    normalizeText(record.metadata?.agentId) ??
+    resolveAgentIdFromSessionKey(record.targetSessionKey);
   if (!agentId) {
     return null;
   }
@@ -160,7 +162,9 @@ export function resolveConfiguredAcpBindingSpecFromRecord(
   };
 }
 
-export function toResolvedConfiguredAcpBinding(record: SessionBindingRecord): ResolvedConfiguredAcpBinding | null {
+export function toResolvedConfiguredAcpBinding(
+  record: SessionBindingRecord,
+): ResolvedConfiguredAcpBinding | null {
   const spec = resolveConfiguredAcpBindingSpecFromRecord(record);
   if (!spec) {
     return null;

@@ -1,4 +1,7 @@
-import { PROTECTED_PLUGIN_ROUTE_PREFIXES, canonicalizePathForSecurity } from "../../security-path.js";
+import {
+  PROTECTED_PLUGIN_ROUTE_PREFIXES,
+  canonicalizePathForSecurity,
+} from "../../security-path.js";
 
 export type PluginRoutePathContext = {
   pathname: string;
@@ -18,15 +21,20 @@ function normalizeProtectedPrefix(prefix: string): string {
 }
 
 export function prefixMatchPath(pathname: string, prefix: string): boolean {
-  return pathname === prefix || pathname.startsWith(`${prefix}/`) || pathname.startsWith(`${prefix}%`);
+  return (
+    pathname === prefix || pathname.startsWith(`${prefix}/`) || pathname.startsWith(`${prefix}%`)
+  );
 }
 
-const NORMALIZED_PROTECTED_PLUGIN_ROUTE_PREFIXES = PROTECTED_PLUGIN_ROUTE_PREFIXES.map(normalizeProtectedPrefix);
+const NORMALIZED_PROTECTED_PLUGIN_ROUTE_PREFIXES =
+  PROTECTED_PLUGIN_ROUTE_PREFIXES.map(normalizeProtectedPrefix);
 
 export function isProtectedPluginRoutePathFromContext(context: PluginRoutePathContext): boolean {
   if (
     context.candidates.some((candidate) =>
-      NORMALIZED_PROTECTED_PLUGIN_ROUTE_PREFIXES.some((prefix) => prefixMatchPath(candidate, prefix)),
+      NORMALIZED_PROTECTED_PLUGIN_ROUTE_PREFIXES.some((prefix) =>
+        prefixMatchPath(candidate, prefix),
+      ),
     )
   ) {
     return true;

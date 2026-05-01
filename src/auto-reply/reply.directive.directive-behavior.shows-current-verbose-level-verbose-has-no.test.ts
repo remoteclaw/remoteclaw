@@ -65,7 +65,10 @@ describe("directive behavior", () => {
       let entry = Object.values(store)[0];
       expect(entry?.queueMode).toBe("interrupt");
 
-      const collectText = await runQueueDirective(home, "/queue collect debounce:2s cap:5 drop:old");
+      const collectText = await runQueueDirective(
+        home,
+        "/queue collect debounce:2s cap:5 drop:old",
+      );
 
       expect(collectText).toMatch(/^⚙️ Queue mode set to collect\./);
       expect(collectText).toMatch(/Queue debounce set to 2000ms/);

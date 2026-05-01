@@ -372,7 +372,10 @@ export function isValidOpenAIModel(model: string, baseUrl?: string): boolean {
   return OPENAI_TTS_MODELS.includes(model as (typeof OPENAI_TTS_MODELS)[number]);
 }
 
-export function resolveOpenAITtsInstructions(model: string, instructions?: string): string | undefined {
+export function resolveOpenAITtsInstructions(
+  model: string,
+  instructions?: string,
+): string | undefined {
   const next = instructions?.trim() || undefined;
   return next && model.includes("gpt-4o-mini-tts") ? next : undefined;
 }
@@ -411,7 +414,10 @@ export async function summarizeText(params: {
   );
 }
 
-export function scheduleCleanup(tempDir: string, delayMs: number = TEMP_FILE_CLEANUP_DELAY_MS): void {
+export function scheduleCleanup(
+  tempDir: string,
+  delayMs: number = TEMP_FILE_CLEANUP_DELAY_MS,
+): void {
   const timer = setTimeout(() => {
     try {
       rmSync(tempDir, { recursive: true, force: true });
@@ -510,7 +516,8 @@ export async function openaiTTS(params: {
   responseFormat: "mp3" | "opus" | "pcm";
   timeoutMs: number;
 }): Promise<Buffer> {
-  const { text, apiKey, baseUrl, model, voice, speed, instructions, responseFormat, timeoutMs } = params;
+  const { text, apiKey, baseUrl, model, voice, speed, instructions, responseFormat, timeoutMs } =
+    params;
   const effectiveInstructions = resolveOpenAITtsInstructions(model, instructions);
 
   if (!isValidOpenAIModel(model, baseUrl)) {

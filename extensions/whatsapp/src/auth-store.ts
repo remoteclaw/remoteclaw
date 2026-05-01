@@ -128,7 +128,11 @@ async function clearLegacyBaileysAuthState(authDir: string) {
   );
 }
 
-export async function logoutWeb(params: { authDir?: string; isLegacyAuthDir?: boolean; runtime?: RuntimeEnv }) {
+export async function logoutWeb(params: {
+  authDir?: string;
+  isLegacyAuthDir?: boolean;
+  runtime?: RuntimeEnv;
+}) {
   const runtime = params.runtime ?? defaultRuntime;
   const resolvedAuthDir = resolveUserPath(params.authDir ?? resolveDefaultWebAuthDir());
   const exists = await webAuthExists(resolvedAuthDir);

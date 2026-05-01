@@ -1,5 +1,8 @@
 import { resolveMessagePrefix } from "../../../../../src/agents/identity.js";
-import { formatInboundEnvelope, type EnvelopeFormatOptions } from "../../../../../src/auto-reply/envelope.js";
+import {
+  formatInboundEnvelope,
+  type EnvelopeFormatOptions,
+} from "../../../../../src/auto-reply/envelope.js";
 import type { loadConfig } from "../../../../../src/config/config.js";
 import type { WebInboundMsg } from "../types.js";
 

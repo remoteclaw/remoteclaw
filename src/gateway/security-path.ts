@@ -137,7 +137,11 @@ function getNormalizedPrefixes(prefixes: readonly string[]): readonly string[] {
 export function isPathProtectedByPrefixes(pathname: string, prefixes: readonly string[]): boolean {
   const canonical = canonicalizePathForSecurity(pathname);
   const normalizedPrefixes = getNormalizedPrefixes(prefixes);
-  if (canonical.candidates.some((candidate) => normalizedPrefixes.some((prefix) => prefixMatch(candidate, prefix)))) {
+  if (
+    canonical.candidates.some((candidate) =>
+      normalizedPrefixes.some((prefix) => prefixMatch(candidate, prefix)),
+    )
+  ) {
     return true;
   }
   // Fail closed when canonicalization depth cannot be fully resolved.

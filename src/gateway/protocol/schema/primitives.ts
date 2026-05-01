@@ -30,13 +30,19 @@ export const InputProvenanceSchema = Type.Object(
   { additionalProperties: false },
 );
 
-export const GatewayClientIdSchema = Type.Union(Object.values(GATEWAY_CLIENT_IDS).map((value) => Type.Literal(value)));
+export const GatewayClientIdSchema = Type.Union(
+  Object.values(GATEWAY_CLIENT_IDS).map((value) => Type.Literal(value)),
+);
 
 export const GatewayClientModeSchema = Type.Union(
   Object.values(GATEWAY_CLIENT_MODES).map((value) => Type.Literal(value)),
 );
 
-export const SecretRefSourceSchema = Type.Union([Type.Literal("env"), Type.Literal("file"), Type.Literal("exec")]);
+export const SecretRefSourceSchema = Type.Union([
+  Type.Literal("env"),
+  Type.Literal("file"),
+  Type.Literal("exec"),
+]);
 
 const SecretProviderAliasString = Type.String({
   pattern: SECRET_PROVIDER_ALIAS_PATTERN.source,
@@ -69,6 +75,10 @@ const ExecSecretRefSchema = Type.Object(
   { additionalProperties: false },
 );
 
-export const SecretRefSchema = Type.Union([EnvSecretRefSchema, FileSecretRefSchema, ExecSecretRefSchema]);
+export const SecretRefSchema = Type.Union([
+  EnvSecretRefSchema,
+  FileSecretRefSchema,
+  ExecSecretRefSchema,
+]);
 
 export const SecretInputSchema = Type.Union([Type.String(), SecretRefSchema]);

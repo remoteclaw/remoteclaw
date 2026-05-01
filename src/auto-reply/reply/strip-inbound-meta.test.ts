@@ -136,7 +136,9 @@ describe("timestamp prefix stripping", () => {
   });
 
   it("strips timestamp prefix with UTC timezone", () => {
-    expect(stripInboundMetadata("[Thu 2026-03-12 07:00 UTC] what time is it?")).toBe("what time is it?");
+    expect(stripInboundMetadata("[Thu 2026-03-12 07:00 UTC] what time is it?")).toBe(
+      "what time is it?",
+    );
   });
 
   it("leaves non timestamp brackets alone", () => {

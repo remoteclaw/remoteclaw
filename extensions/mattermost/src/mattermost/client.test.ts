@@ -57,7 +57,9 @@ describe("normalizeMattermostBaseUrl", () => {
   });
 
   it("strips /api/v4 suffix", () => {
-    expect(normalizeMattermostBaseUrl("http://localhost:8065/api/v4")).toBe("http://localhost:8065");
+    expect(normalizeMattermostBaseUrl("http://localhost:8065/api/v4")).toBe(
+      "http://localhost:8065",
+    );
   });
 
   it("returns undefined for empty input", () => {
@@ -86,7 +88,9 @@ describe("createMattermostClient", () => {
   });
 
   it("throws on empty baseUrl", () => {
-    expect(() => createMattermostClient({ baseUrl: "", botToken: "tok" })).toThrow("baseUrl is required");
+    expect(() => createMattermostClient({ baseUrl: "", botToken: "tok" })).toThrow(
+      "baseUrl is required",
+    );
   });
 
   it("sends Authorization header with Bearer token", async () => {

@@ -6,7 +6,10 @@ import { fetchJson, fetchOk } from "./cdp.helpers.js";
 import { appendCdpPath, createTargetViaCdp, normalizeCdpWsUrl } from "./cdp.js";
 import type { ResolvedBrowserProfile } from "./config.js";
 import { resolveProfile } from "./config.js";
-import { ensureChromeExtensionRelayServer, stopChromeExtensionRelayServer } from "./extension-relay.js";
+import {
+  ensureChromeExtensionRelayServer,
+  stopChromeExtensionRelayServer,
+} from "./extension-relay.js";
 import {
   assertBrowserNavigationAllowed,
   assertBrowserNavigationResultAllowed,
@@ -14,7 +17,10 @@ import {
   withBrowserNavigationPolicy,
 } from "./navigation-guard.js";
 import { resolveRemoteClawUserDataDir } from "./profile-paths.js";
-import { refreshResolvedBrowserConfigFromDisk, resolveBrowserProfileWithHotReload } from "./resolved-config-refresh.js";
+import {
+  refreshResolvedBrowserConfigFromDisk,
+  resolveBrowserProfileWithHotReload,
+} from "./resolved-config-refresh.js";
 import type {
   BrowserServerState,
   BrowserRouteContext,
@@ -60,7 +66,10 @@ function normalizeWsUrl(raw: string | undefined, cdpBaseUrl: string): string | u
 /**
  * Create a profile-scoped context for browser operations.
  */
-function createProfileContext(opts: ContextOptions, profile: ResolvedBrowserProfile): ProfileContext {
+function createProfileContext(
+  opts: ContextOptions,
+  profile: ResolvedBrowserProfile,
+): ProfileContext {
   const state = () => {
     const current = opts.getState();
     if (!current) {
@@ -283,7 +292,9 @@ function createProfileContext(opts: ContextOptions, profile: ResolvedBrowserProf
 
     const tabs = await listTabs();
     const candidates =
-      profile.driver === "extension" || !profile.cdpIsLoopback ? tabs : tabs.filter((t) => Boolean(t.wsUrl));
+      profile.driver === "extension" || !profile.cdpIsLoopback
+        ? tabs
+        : tabs.filter((t) => Boolean(t.wsUrl));
 
     const resolveById = (raw: string) => {
       const resolved = resolveTargetIdFromTabs(raw, candidates);
@@ -308,7 +319,11 @@ function createProfileContext(opts: ContextOptions, profile: ResolvedBrowserProf
     };
 
     let chosen = targetId ? resolveById(targetId) : pickDefault();
-    if (!chosen && (profile.driver === "extension" || !profile.cdpIsLoopback) && candidates.length === 1) {
+    if (
+      !chosen &&
+      (profile.driver === "extension" || !profile.cdpIsLoopback) &&
+      candidates.length === 1
+    ) {
       // If an agent passes a stale/foreign targetId but only one candidate remains,
       // recover by using that tab instead of failing hard.
       chosen = candidates[0] ?? null;
@@ -364,7 +379,9 @@ function createProfileContext(opts: ContextOptions, profile: ResolvedBrowserProf
       return { moved: false, from: profile.cdpUrl };
     }
     if (!profile.cdpIsLoopback) {
-      throw new Error(`reset-profile is only supported for local profiles (profile "${profile.name}" is remote).`);
+      throw new Error(
+        `reset-profile is only supported for local profiles (profile "${profile.name}" is remote).`,
+      );
     }
     const userDataDir = resolveRemoteClawUserDataDir(profile.name);
     if (!fs.existsSync(userDataDir)) {

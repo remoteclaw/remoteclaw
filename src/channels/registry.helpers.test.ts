@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { formatChannelSelectionLine, listChatChannels, normalizeChatChannelId } from "./registry.js";
+import {
+  formatChannelSelectionLine,
+  listChatChannels,
+  normalizeChatChannelId,
+} from "./registry.js";
 
 describe("channel registry helpers", () => {
   it("normalizes aliases + trims whitespace", () => {
@@ -28,7 +32,9 @@ describe("channel registry helpers", () => {
     if (!first) {
       throw new Error("Missing channel metadata.");
     }
-    const line = formatChannelSelectionLine(first, (path, label) => [label, path].filter(Boolean).join(":"));
+    const line = formatChannelSelectionLine(first, (path, label) =>
+      [label, path].filter(Boolean).join(":"),
+    );
     expect(line).not.toContain("Docs:");
     expect(line).toContain("/channels/telegram");
     expect(line).toContain("https://remoteclaw.org");

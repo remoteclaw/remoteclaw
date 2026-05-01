@@ -15,7 +15,9 @@ const signalPlugin = {
 
 describe("channels command", () => {
   beforeEach(() => {
-    setActivePluginRegistry(createTestRegistry([{ pluginId: "signal", source: "test", plugin: signalPlugin }]));
+    setActivePluginRegistry(
+      createTestRegistry([{ pluginId: "signal", source: "test", plugin: signalPlugin }]),
+    );
   });
 
   afterEach(() => {

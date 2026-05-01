@@ -11,13 +11,18 @@ import { callMcpGateway } from "./mcp-handlers/session.js";
 const mockCallMcpGateway = vi.mocked(callMcpGateway);
 
 function createMockServer() {
-  const registeredTools = new Map<string, { description?: string; inputSchema?: unknown; handler?: unknown }>();
+  const registeredTools = new Map<
+    string,
+    { description?: string; inputSchema?: unknown; handler?: unknown }
+  >();
   return {
     registeredTools,
-    registerTool: vi.fn((name: string, config: { description?: string; inputSchema?: unknown }, handler: unknown) => {
-      registeredTools.set(name, { ...config, handler });
-      return { update: vi.fn(), remove: vi.fn(), disable: vi.fn(), enable: vi.fn() };
-    }),
+    registerTool: vi.fn(
+      (name: string, config: { description?: string; inputSchema?: unknown }, handler: unknown) => {
+        registeredTools.set(name, { ...config, handler });
+        return { update: vi.fn(), remove: vi.fn(), disable: vi.fn(), enable: vi.fn() };
+      },
+    ),
   };
 }
 
@@ -127,7 +132,9 @@ describe("registerPluginTools", () => {
       if (method === "plugin:tools:invoke") {
         const p = params as { toolName: string; params: Record<string, unknown> };
         return {
-          content: [{ type: "text", text: `invoked ${p.toolName} with ${JSON.stringify(p.params)}` }],
+          content: [
+            { type: "text", text: `invoked ${p.toolName} with ${JSON.stringify(p.params)}` },
+          ],
         };
       }
       return {};

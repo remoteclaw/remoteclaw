@@ -19,7 +19,11 @@ import { emitDiagnosticEvent, isDiagnosticsEnabled } from "../../infra/diagnosti
 import { generateSecureUuid } from "../../infra/secure-random.js";
 import { defaultRuntime } from "../../runtime.js";
 import { estimateUsageCost, resolveModelCostConfig } from "../../utils/usage-format.js";
-import { buildFallbackClearedNotice, buildFallbackNotice, resolveFallbackTransition } from "../fallback-state.js";
+import {
+  buildFallbackClearedNotice,
+  buildFallbackNotice,
+  resolveFallbackTransition,
+} from "../fallback-state.js";
 import type { OriginatingChannelType, TemplateContext } from "../templating.js";
 import { resolveResponseUsageMode, type VerboseLevel } from "../thinking.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
@@ -250,7 +254,11 @@ export async function runReplyAgent(params: {
       fallbackNoticeReason: undefined,
     };
     const agentId = resolveAgentIdFromSessionKey(sessionKey);
-    const nextSessionFile = resolveSessionTranscriptPath(nextSessionId, agentId, sessionCtx.MessageThreadId);
+    const nextSessionFile = resolveSessionTranscriptPath(
+      nextSessionId,
+      agentId,
+      sessionCtx.MessageThreadId,
+    );
     nextEntry.sessionFile = nextSessionFile;
     activeSessionStore[sessionKey] = nextEntry;
     try {
@@ -258,7 +266,9 @@ export async function runReplyAgent(params: {
         store[sessionKey] = nextEntry;
       });
     } catch (err) {
-      defaultRuntime.error(`Failed to persist session reset after ${failureLabel} (${sessionKey}): ${String(err)}`);
+      defaultRuntime.error(
+        `Failed to persist session reset after ${failureLabel} (${sessionKey}): ${String(err)}`,
+      );
     }
     followupRun.run.sessionId = nextSessionId;
     followupRun.run.sessionFile = nextSessionFile;
@@ -329,7 +339,14 @@ export async function runReplyAgent(params: {
       return finalizeWithFollowup(runOutcome.payload, queueKey, runFollowupTurn);
     }
 
-    const { runId, runResult, fallbackProvider, fallbackModel, fallbackAttempts, directlySentBlockKeys } = runOutcome;
+    const {
+      runId,
+      runResult,
+      fallbackProvider,
+      fallbackModel,
+      fallbackAttempts,
+      directlySentBlockKeys,
+    } = runOutcome;
     let { didLogHeartbeatStrip, autoCompactionCompleted } = runOutcome;
 
     if (
@@ -367,13 +384,17 @@ export async function runReplyAgent(params: {
 
     const usage = runResult.meta?.agentMeta?.usage as NormalizedUsage | undefined;
     const promptTokens = runResult.meta?.agentMeta?.promptTokens as number | undefined;
-    const modelUsed = (runResult.meta?.agentMeta?.model as string | undefined) ?? fallbackModel ?? defaultModel;
+    const modelUsed =
+      (runResult.meta?.agentMeta?.model as string | undefined) ?? fallbackModel ?? defaultModel;
     const providerUsed =
-      (runResult.meta?.agentMeta?.provider as string | undefined) ?? fallbackProvider ?? followupRun.run.provider;
+      (runResult.meta?.agentMeta?.provider as string | undefined) ??
+      fallbackProvider ??
+      followupRun.run.provider;
     const verboseEnabled = resolvedVerboseLevel !== "off";
     const selectedProvider = followupRun.run.provider;
     const selectedModel = followupRun.run.model;
-    const fallbackStateEntry = activeSessionEntry ?? (sessionKey ? activeSessionStore?.[sessionKey] : undefined);
+    const fallbackStateEntry =
+      activeSessionEntry ?? (sessionKey ? activeSessionStore?.[sessionKey] : undefined);
     const fallbackTransition = resolveFallbackTransition({
       selectedProvider,
       selectedModel,
@@ -422,7 +443,8 @@ export async function runReplyAgent(params: {
       promptTokens,
       modelUsed,
       providerUsed,
-      systemPromptReport: (runResult.meta as Record<string, unknown> | undefined)?.systemPromptReport as
+      systemPromptReport: (runResult.meta as Record<string, unknown> | undefined)
+        ?.systemPromptReport as
         | import("../../config/sessions.js").SessionSystemPromptReport
         | undefined,
       cliSessionId,
@@ -468,7 +490,10 @@ export async function runReplyAgent(params: {
 
     const successfulCronAdds = runResult.successfulCronAdds ?? 0;
     const hasReminderCommitment = replyPayloads.some(
-      (payload) => !payload.isError && typeof payload.text === "string" && hasUnbackedReminderCommitment(payload.text),
+      (payload) =>
+        !payload.isError &&
+        typeof payload.text === "string" &&
+        hasUnbackedReminderCommitment(payload.text),
     );
     // Suppress the guard note when an existing cron job (created in a prior
     // turn) already covers the commitment — avoids false positives (#32228).
@@ -525,7 +550,8 @@ export async function runReplyAgent(params: {
     }
 
     const responseUsageRaw =
-      activeSessionEntry?.responseUsage ?? (sessionKey ? activeSessionStore?.[sessionKey]?.responseUsage : undefined);
+      activeSessionEntry?.responseUsage ??
+      (sessionKey ? activeSessionStore?.[sessionKey]?.responseUsage : undefined);
     const responseUsageMode = resolveResponseUsageMode(responseUsageRaw);
     if (responseUsageMode !== "off" && hasNonzeroUsage(usage)) {
       const authMode = resolveModelAuthMode(providerUsed, cfg);

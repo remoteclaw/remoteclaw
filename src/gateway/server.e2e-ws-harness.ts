@@ -1,6 +1,11 @@
 import { WebSocket } from "ws";
 import { captureEnv } from "../test-utils/env.js";
-import { connectOk, getFreePort, startGatewayServer, trackConnectChallengeNonce } from "./test-helpers.js";
+import {
+  connectOk,
+  getFreePort,
+  startGatewayServer,
+  trackConnectChallengeNonce,
+} from "./test-helpers.js";
 
 export type GatewayWsClient = {
   ws: WebSocket;

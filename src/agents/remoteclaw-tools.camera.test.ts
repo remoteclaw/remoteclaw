@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { readFileUtf8AndCleanup, stubFetchTextResponse } from "../test-utils/camera-url-test-helpers.js";
+import {
+  readFileUtf8AndCleanup,
+  stubFetchTextResponse,
+} from "../test-utils/camera-url-test-helpers.js";
 
 const { callGateway } = vi.hoisted(() => ({
   callGateway: vi.fn(),
@@ -417,7 +420,8 @@ describe("nodes photos_latest", () => {
 
     expectNoImages(result);
     expect(result.content ?? []).toEqual([]);
-    const details = (result.details as { photos?: Array<Record<string, unknown>> } | undefined)?.photos ?? [];
+    const details =
+      (result.details as { photos?: Array<Record<string, unknown>> } | undefined)?.photos ?? [];
     expect(details[0]).toMatchObject({
       width: 1,
       height: 1,
@@ -707,7 +711,9 @@ describe("nodes run", () => {
         return { decision: "allow-never" };
       },
     });
-    await expect(executeNodes(BASE_RUN_INPUT)).rejects.toThrow("exec denied: invalid approval decision");
+    await expect(executeNodes(BASE_RUN_INPUT)).rejects.toThrow(
+      "exec denied: invalid approval decision",
+    );
   });
 });
 

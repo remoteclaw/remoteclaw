@@ -16,7 +16,10 @@ describe("resolveCommandAuthorization", () => {
   const formatAllowFrom = ({ allowFrom }: { allowFrom: Array<string | number> }) =>
     allowFrom.map((entry) => String(entry).trim()).filter(Boolean);
 
-  function createAllowFromPlugin(id: string, resolveAllowFrom: () => Array<string | number> | undefined) {
+  function createAllowFromPlugin(
+    id: string,
+    resolveAllowFrom: () => Array<string | number> | undefined,
+  ) {
     return {
       pluginId: id,
       plugin: {
@@ -544,7 +547,10 @@ describe("resolveCommandAuthorization", () => {
     });
     it("fails closed when provider inference hits unresolved SecretRef allowlists", () => {
       registerAllowFromPlugins(
-        createThrowingAllowFromPlugin("telegram", "channels.telegram.botToken: unresolved SecretRef"),
+        createThrowingAllowFromPlugin(
+          "telegram",
+          "channels.telegram.botToken: unresolved SecretRef",
+        ),
       );
 
       const cfg = {
@@ -574,7 +580,10 @@ describe("resolveCommandAuthorization", () => {
 
     it("preserves provider resolution errors when inferred fallback allowFrom is empty", () => {
       registerAllowFromPlugins(
-        createThrowingAllowFromPlugin("telegram", "channels.telegram.botToken: unresolved SecretRef"),
+        createThrowingAllowFromPlugin(
+          "telegram",
+          "channels.telegram.botToken: unresolved SecretRef",
+        ),
       );
 
       const auth = resolveCommandAuthorization({
@@ -599,7 +608,9 @@ describe("resolveCommandAuthorization", () => {
     });
 
     it("fails closed for global commands.allowFrom when inference errors drop every provider", () => {
-      registerAllowFromPlugins(createThrowingAllowFromPlugin("slack", "channels.slack.token: unresolved SecretRef"));
+      registerAllowFromPlugins(
+        createThrowingAllowFromPlugin("slack", "channels.slack.token: unresolved SecretRef"),
+      );
 
       const auth = resolveCommandAuthorization({
         ctx: {
@@ -652,7 +663,10 @@ describe("resolveCommandAuthorization", () => {
 
     it("preserves default-account allowFrom on SecretRef fallback", () => {
       registerAllowFromPlugins(
-        createThrowingAllowFromPlugin("telegram", "channels.telegram.botToken: unresolved SecretRef"),
+        createThrowingAllowFromPlugin(
+          "telegram",
+          "channels.telegram.botToken: unresolved SecretRef",
+        ),
       );
 
       const auth = resolveCommandAuthorization({

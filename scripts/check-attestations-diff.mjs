@@ -36,7 +36,13 @@ import { isTestLikeTypeScriptFile, runAsScript, unwrapExpression } from "./lib/t
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 // Keep in sync with check-attestations.mjs — same scope (src/agents depth-1).
-const extraTestSuffixes = [".test-helpers.ts", ".test-mocks.ts", ".mocks.ts", ".mocks.shared.ts", ".e2e-mocks.ts"];
+const extraTestSuffixes = [
+  ".test-helpers.ts",
+  ".test-mocks.ts",
+  ".mocks.ts",
+  ".mocks.shared.ts",
+  ".e2e-mocks.ts",
+];
 
 function gitShow(sha, relPath) {
   try {
@@ -52,10 +58,14 @@ function gitShow(sha, relPath) {
 }
 
 function listChangedAgentFiles(baseSha, headSha) {
-  const out = execFileSync("git", ["diff", "--name-only", `${baseSha}..${headSha}`, "--", "src/agents/*.ts"], {
-    cwd: repoRoot,
-    encoding: "utf8",
-  });
+  const out = execFileSync(
+    "git",
+    ["diff", "--name-only", `${baseSha}..${headSha}`, "--", "src/agents/*.ts"],
+    {
+      cwd: repoRoot,
+      encoding: "utf8",
+    },
+  );
   return out
     .split("\n")
     .map((line) => line.trim())
@@ -85,7 +95,13 @@ function parseAttestations(sourceText) {
   if (sourceText === null) {
     return null;
   }
-  const sourceFile = ts.createSourceFile("diff-input.ts", sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const sourceFile = ts.createSourceFile(
+    "diff-input.ts",
+    sourceText,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
   for (const statement of sourceFile.statements) {
     if (!ts.isVariableStatement(statement)) {
       continue;

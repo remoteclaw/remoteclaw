@@ -1,5 +1,8 @@
 import { Type } from "@sinclair/typebox";
-import { CHANNEL_TARGET_DESCRIPTION, CHANNEL_TARGETS_DESCRIPTION } from "../../infra/outbound/channel-target.js";
+import {
+  CHANNEL_TARGET_DESCRIPTION,
+  CHANNEL_TARGETS_DESCRIPTION,
+} from "../../infra/outbound/channel-target.js";
 
 type StringEnumOptions<T extends readonly string[]> = {
   description?: string;
@@ -9,7 +12,10 @@ type StringEnumOptions<T extends readonly string[]> = {
 
 // NOTE: Avoid Type.Union([Type.Literal(...)]) which compiles to anyOf.
 // Some providers reject anyOf in tool schemas; a flat string enum is safer.
-export function stringEnum<T extends readonly string[]>(values: T, options: StringEnumOptions<T> = {}) {
+export function stringEnum<T extends readonly string[]>(
+  values: T,
+  options: StringEnumOptions<T> = {},
+) {
   const enumValues = Array.isArray(values)
     ? values
     : values && typeof values === "object"
@@ -22,7 +28,10 @@ export function stringEnum<T extends readonly string[]>(values: T, options: Stri
   });
 }
 
-export function optionalStringEnum<T extends readonly string[]>(values: T, options: StringEnumOptions<T> = {}) {
+export function optionalStringEnum<T extends readonly string[]>(
+  values: T,
+  options: StringEnumOptions<T> = {},
+) {
   return Type.Optional(stringEnum(values, options));
 }
 
@@ -33,5 +42,7 @@ export function channelTargetSchema(options?: { description?: string }) {
 }
 
 export function channelTargetsSchema(options?: { description?: string }) {
-  return Type.Array(channelTargetSchema({ description: options?.description ?? CHANNEL_TARGETS_DESCRIPTION }));
+  return Type.Array(
+    channelTargetSchema({ description: options?.description ?? CHANNEL_TARGETS_DESCRIPTION }),
+  );
 }

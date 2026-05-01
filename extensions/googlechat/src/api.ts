@@ -22,7 +22,14 @@ async function withGoogleChatResponse<T>(params: {
   errorPrefix?: string;
   handleResponse: (response: Response) => Promise<T>;
 }): Promise<T> {
-  const { account, url, init, auditContext, errorPrefix = "Google Chat API", handleResponse } = params;
+  const {
+    account,
+    url,
+    init,
+    auditContext,
+    errorPrefix = "Google Chat API",
+    handleResponse,
+  } = params;
   const token = await getGoogleChatAccessToken(account);
   const { response, release } = await fetchWithSsrFGuard({
     url,
@@ -46,7 +53,11 @@ async function withGoogleChatResponse<T>(params: {
   }
 }
 
-async function fetchJson<T>(account: ResolvedGoogleChatAccount, url: string, init: RequestInit): Promise<T> {
+async function fetchJson<T>(
+  account: ResolvedGoogleChatAccount,
+  url: string,
+  init: RequestInit,
+): Promise<T> {
   return await withGoogleChatResponse({
     account,
     url,
@@ -62,7 +73,11 @@ async function fetchJson<T>(account: ResolvedGoogleChatAccount, url: string, ini
   });
 }
 
-async function fetchOk(account: ResolvedGoogleChatAccount, url: string, init: RequestInit): Promise<void> {
+async function fetchOk(
+  account: ResolvedGoogleChatAccount,
+  url: string,
+  init: RequestInit,
+): Promise<void> {
   await withGoogleChatResponse({
     account,
     url,

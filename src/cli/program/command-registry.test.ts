@@ -20,8 +20,12 @@ vi.mock("./register.maintenance.js", () => ({
   },
 }));
 
-const { getCoreCliCommandNames, getCoreCliCommandsWithSubcommands, registerCoreCliByName, registerCoreCliCommands } =
-  await import("./command-registry.js");
+const {
+  getCoreCliCommandNames,
+  getCoreCliCommandsWithSubcommands,
+  registerCoreCliByName,
+  registerCoreCliCommands,
+} = await import("./command-registry.js");
 
 vi.mock("./register.status-health-sessions.js", () => ({
   registerStatusHealthSessionsCommands: (program: Command) => {
@@ -95,7 +99,12 @@ describe("command-registry", () => {
 
   it("does not narrow to the primary command when help is requested", () => {
     const program = createProgram();
-    registerCoreCliCommands(program, testProgramContext, ["node", "remoteclaw", "doctor", "--help"]);
+    registerCoreCliCommands(program, testProgramContext, [
+      "node",
+      "remoteclaw",
+      "doctor",
+      "--help",
+    ]);
 
     const names = namesOf(program);
     expect(names).toContain("doctor");

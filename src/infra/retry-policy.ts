@@ -22,14 +22,18 @@ export const TELEGRAM_RETRY_DEFAULTS = {
 const TELEGRAM_RETRY_RE = /429|timeout|connect|reset|closed|unavailable|temporarily/i;
 const log = createSubsystemLogger("retry-policy");
 
-function resolveTelegramShouldRetry(params: { shouldRetry?: (err: unknown) => boolean; strictShouldRetry?: boolean }) {
+function resolveTelegramShouldRetry(params: {
+  shouldRetry?: (err: unknown) => boolean;
+  strictShouldRetry?: boolean;
+}) {
   if (!params.shouldRetry) {
     return (err: unknown) => TELEGRAM_RETRY_RE.test(formatErrorMessage(err));
   }
   if (params.strictShouldRetry) {
     return params.shouldRetry;
   }
-  return (err: unknown) => params.shouldRetry?.(err) || TELEGRAM_RETRY_RE.test(formatErrorMessage(err));
+  return (err: unknown) =>
+    params.shouldRetry?.(err) || TELEGRAM_RETRY_RE.test(formatErrorMessage(err));
 }
 
 function getTelegramRetryAfterMs(err: unknown): number | undefined {
@@ -39,7 +43,10 @@ function getTelegramRetryAfterMs(err: unknown): number | undefined {
   const candidate =
     "parameters" in err && err.parameters && typeof err.parameters === "object"
       ? (err.parameters as { retry_after?: unknown }).retry_after
-      : "response" in err && err.response && typeof err.response === "object" && "parameters" in err.response
+      : "response" in err &&
+          err.response &&
+          typeof err.response === "object" &&
+          "parameters" in err.response
         ? (
             err.response as {
               parameters?: { retry_after?: unknown };
@@ -70,7 +77,9 @@ export function createDiscordRetryRunner(params: {
         ? (info) => {
             const labelText = info.label ?? "request";
             const maxRetries = Math.max(1, info.maxAttempts - 1);
-            log.warn(`discord ${labelText} rate limited, retry ${info.attempt}/${maxRetries} in ${info.delayMs}ms`);
+            log.warn(
+              `discord ${labelText} rate limited, retry ${info.attempt}/${maxRetries} in ${info.delayMs}ms`,
+            );
           }
         : undefined,
     });

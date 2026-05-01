@@ -231,7 +231,16 @@ describe("nodes-cli coverage", () => {
       agents: {},
     };
 
-    const invoke = await runNodesCommand(["nodes", "run", "--node", "mac-1", "--ask", "off", "echo", "hi"]);
+    const invoke = await runNodesCommand([
+      "nodes",
+      "run",
+      "--node",
+      "mac-1",
+      "--ask",
+      "off",
+      "echo",
+      "hi",
+    ]);
 
     expect(invoke).toBeTruthy();
     expect(invoke?.params?.command).toBe("system.run");

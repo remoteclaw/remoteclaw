@@ -26,7 +26,10 @@ export async function maybeCreateDynamicAgent(params: {
   // Check if there's already a binding for this user
   const existingBindings = cfg.bindings ?? [];
   const hasBinding = existingBindings.some(
-    (b) => b.match?.channel === "feishu" && b.match?.peer?.kind === "direct" && b.match?.peer?.id === senderOpenId,
+    (b) =>
+      b.match?.channel === "feishu" &&
+      b.match?.peer?.kind === "direct" &&
+      b.match?.peer?.id === senderOpenId,
   );
 
   if (hasBinding) {
@@ -35,9 +38,13 @@ export async function maybeCreateDynamicAgent(params: {
 
   // Check maxAgents limit if configured
   if (dynamicCfg.maxAgents !== undefined) {
-    const feishuAgentCount = (cfg.agents?.list ?? []).filter((a) => a.id.startsWith("feishu-")).length;
+    const feishuAgentCount = (cfg.agents?.list ?? []).filter((a) =>
+      a.id.startsWith("feishu-"),
+    ).length;
     if (feishuAgentCount >= dynamicCfg.maxAgents) {
-      log(`feishu: maxAgents limit (${dynamicCfg.maxAgents}) reached, not creating agent for ${senderOpenId}`);
+      log(
+        `feishu: maxAgents limit (${dynamicCfg.maxAgents}) reached, not creating agent for ${senderOpenId}`,
+      );
       return { created: false, updatedCfg: cfg };
     }
   }
@@ -73,8 +80,12 @@ export async function maybeCreateDynamicAgent(params: {
   const workspaceTemplate = dynamicCfg.workspaceTemplate ?? "~/.remoteclaw/workspace-{agentId}";
   const agentDirTemplate = dynamicCfg.agentDirTemplate ?? "~/.remoteclaw/agents/{agentId}/agent";
 
-  const workspace = resolveUserPath(workspaceTemplate.replace("{userId}", senderOpenId).replace("{agentId}", agentId));
-  const agentDir = resolveUserPath(agentDirTemplate.replace("{userId}", senderOpenId).replace("{agentId}", agentId));
+  const workspace = resolveUserPath(
+    workspaceTemplate.replace("{userId}", senderOpenId).replace("{agentId}", agentId),
+  );
+  const agentDir = resolveUserPath(
+    agentDirTemplate.replace("{userId}", senderOpenId).replace("{agentId}", agentId),
+  );
 
   log(`feishu: creating dynamic agent "${agentId}" for user ${senderOpenId}`);
   log(`  workspace: ${workspace}`);

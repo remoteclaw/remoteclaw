@@ -17,7 +17,9 @@ type BlueBubblesProbeResult = {
   error?: string | null;
 };
 
-function readBlueBubblesAccountStatus(value: ChannelAccountSnapshot): BlueBubblesAccountStatus | null {
+function readBlueBubblesAccountStatus(
+  value: ChannelAccountSnapshot,
+): BlueBubblesAccountStatus | null {
   if (!isRecord(value)) {
     return null;
   }
@@ -43,7 +45,9 @@ function readBlueBubblesProbeResult(value: unknown): BlueBubblesProbeResult | nu
   };
 }
 
-export function collectBlueBubblesStatusIssues(accounts: ChannelAccountSnapshot[]): ChannelStatusIssue[] {
+export function collectBlueBubblesStatusIssues(
+  accounts: ChannelAccountSnapshot[],
+): ChannelStatusIssue[] {
   return collectIssuesForEnabledAccounts({
     accounts,
     readAccount: readBlueBubblesAccountStatus,
@@ -67,7 +71,11 @@ export function collectBlueBubblesStatusIssues(accounts: ChannelAccountSnapshot[
 
       // Check for probe failures
       if (probe && probe.ok === false) {
-        const errorDetail = probe.error ? `: ${probe.error}` : probe.status ? ` (HTTP ${probe.status})` : "";
+        const errorDetail = probe.error
+          ? `: ${probe.error}`
+          : probe.status
+            ? ` (HTTP ${probe.status})`
+            : "";
         issues.push({
           channel: "bluebubbles",
           accountId,

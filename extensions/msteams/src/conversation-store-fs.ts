@@ -26,7 +26,9 @@ function parseTimestamp(value: string | undefined): number | null {
   return parsed;
 }
 
-function pruneToLimit(conversations: Record<string, StoredConversationReference & { lastSeenAt?: string }>) {
+function pruneToLimit(
+  conversations: Record<string, StoredConversationReference & { lastSeenAt?: string }>,
+) {
   const entries = Object.entries(conversations);
   if (entries.length <= MAX_CONVERSATIONS) {
     return conversations;
@@ -128,7 +130,10 @@ export function createMSTeamsConversationStoreFs(params?: {
     return null;
   };
 
-  const upsert = async (conversationId: string, reference: StoredConversationReference): Promise<void> => {
+  const upsert = async (
+    conversationId: string,
+    reference: StoredConversationReference,
+  ): Promise<void> => {
     const normalizedId = normalizeConversationId(conversationId);
     await withFileLock(filePath, empty, async () => {
       const store = await readStore();

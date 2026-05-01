@@ -1,5 +1,10 @@
 import process from "node:process";
-import { collectErrorGraphCandidates, extractErrorCode, formatUncaughtError, readErrorName } from "./errors.js";
+import {
+  collectErrorGraphCandidates,
+  extractErrorCode,
+  formatUncaughtError,
+  readErrorName,
+} from "./errors.js";
 
 type UnhandledRejectionHandler = (reason: unknown) => boolean;
 
@@ -46,14 +51,20 @@ const TRANSIENT_NETWORK_ERROR_NAMES = new Set([
   "TimeoutError",
 ]);
 
-const TRANSIENT_SQLITE_CODES = new Set(["SQLITE_BUSY", "SQLITE_CANTOPEN", "SQLITE_IOERR", "SQLITE_LOCKED"]);
+const TRANSIENT_SQLITE_CODES = new Set([
+  "SQLITE_BUSY",
+  "SQLITE_CANTOPEN",
+  "SQLITE_IOERR",
+  "SQLITE_LOCKED",
+]);
 
 const TRANSIENT_SQLITE_ERRCODES = new Set([5, 6, 10, 14]);
 
 const TRANSIENT_NETWORK_MESSAGE_CODE_RE =
   /\b(ECONNRESET|ECONNREFUSED|ENOTFOUND|ETIMEDOUT|ESOCKETTIMEDOUT|ECONNABORTED|EPIPE|EHOSTUNREACH|ENETUNREACH|EAI_AGAIN|EPROTO|UND_ERR_CONNECT_TIMEOUT|UND_ERR_DNS_RESOLVE_FAILED|UND_ERR_CONNECT|UND_ERR_SOCKET|UND_ERR_HEADERS_TIMEOUT|UND_ERR_BODY_TIMEOUT)\b/i;
 
-const TRANSIENT_SQLITE_MESSAGE_CODE_RE = /\b(SQLITE_BUSY|SQLITE_CANTOPEN|SQLITE_IOERR|SQLITE_LOCKED)\b/i;
+const TRANSIENT_SQLITE_MESSAGE_CODE_RE =
+  /\b(SQLITE_BUSY|SQLITE_CANTOPEN|SQLITE_IOERR|SQLITE_LOCKED)\b/i;
 
 const TRANSIENT_NETWORK_MESSAGE_SNIPPETS = [
   "getaddrinfo",
@@ -200,7 +211,13 @@ export function isTransientNetworkError(err: unknown): boolean {
     return false;
   }
   for (const candidate of collectErrorGraphCandidates(err, (current) => {
-    const nested: Array<unknown> = [current.cause, current.reason, current.original, current.error, current.data];
+    const nested: Array<unknown> = [
+      current.cause,
+      current.reason,
+      current.original,
+      current.error,
+      current.data,
+    ];
     if (Array.isArray(current.errors)) {
       nested.push(...current.errors);
     }
@@ -244,7 +261,13 @@ export function isTransientSqliteError(err: unknown): boolean {
   }
 
   for (const candidate of collectErrorGraphCandidates(err, (current) => {
-    const nested: Array<unknown> = [current.cause, current.reason, current.original, current.error, current.data];
+    const nested: Array<unknown> = [
+      current.cause,
+      current.reason,
+      current.original,
+      current.error,
+      current.data,
+    ];
     if (Array.isArray(current.errors)) {
       nested.push(...current.errors);
     }
@@ -268,7 +291,10 @@ export function isTransientSqliteError(err: unknown): boolean {
       continue;
     }
 
-    const messageParts = [(candidate as { message?: unknown }).message, (candidate as { errstr?: unknown }).errstr];
+    const messageParts = [
+      (candidate as { message?: unknown }).message,
+      (candidate as { errstr?: unknown }).errstr,
+    ];
     for (const rawMessage of messageParts) {
       const message = typeof rawMessage === "string" ? rawMessage.toLowerCase().trim() : "";
       if (!message) {
@@ -333,13 +359,19 @@ export function installUnhandledRejectionHandler(): void {
     }
 
     if (isConfigError(reason)) {
-      console.error("[remoteclaw] CONFIGURATION ERROR - requires fix:", formatUncaughtError(reason));
+      console.error(
+        "[remoteclaw] CONFIGURATION ERROR - requires fix:",
+        formatUncaughtError(reason),
+      );
       process.exit(1);
       return;
     }
 
     if (isTransientUnhandledRejectionError(reason)) {
-      console.warn("[remoteclaw] Non-fatal unhandled rejection (continuing):", formatUncaughtError(reason));
+      console.warn(
+        "[remoteclaw] Non-fatal unhandled rejection (continuing):",
+        formatUncaughtError(reason),
+      );
       return;
     }
 

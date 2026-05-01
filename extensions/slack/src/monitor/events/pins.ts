@@ -37,16 +37,22 @@ async function handleSlackPinEvent(params: {
     const userLabel = userInfo?.name ?? payload.user ?? "someone";
     const itemType = payload.item?.type ?? "item";
     const messageId = payload.item?.message?.ts ?? payload.event_ts;
-    enqueueSystemEvent(`Slack: ${userLabel} ${action} a ${itemType} in ${ingressContext.channelLabel}.`, {
-      sessionKey: ingressContext.sessionKey,
-      contextKey: `slack:pin:${contextKeySuffix}:${channelId ?? "unknown"}:${messageId ?? "unknown"}`,
-    });
+    enqueueSystemEvent(
+      `Slack: ${userLabel} ${action} a ${itemType} in ${ingressContext.channelLabel}.`,
+      {
+        sessionKey: ingressContext.sessionKey,
+        contextKey: `slack:pin:${contextKeySuffix}:${channelId ?? "unknown"}:${messageId ?? "unknown"}`,
+      },
+    );
   } catch (err) {
     ctx.runtime.error?.(danger(`slack ${errorLabel} handler failed: ${String(err)}`));
   }
 }
 
-export function registerSlackPinEvents(params: { ctx: SlackMonitorContext; trackEvent?: () => void }) {
+export function registerSlackPinEvents(params: {
+  ctx: SlackMonitorContext;
+  trackEvent?: () => void;
+}) {
   const { ctx, trackEvent } = params;
 
   ctx.app.event("pin_added", async ({ event, body }: SlackEventMiddlewareArgs<"pin_added">) => {

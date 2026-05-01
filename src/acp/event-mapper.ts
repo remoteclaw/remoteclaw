@@ -1,4 +1,10 @@
-import type { ContentBlock, ImageContent, ToolCallContent, ToolCallLocation, ToolKind } from "@agentclientprotocol/sdk";
+import type {
+  ContentBlock,
+  ImageContent,
+  ToolCallContent,
+  ToolCallLocation,
+  ToolKind,
+} from "@agentclientprotocol/sdk";
 
 export type GatewayAttachment = {
   type: string;
@@ -28,7 +34,13 @@ const TOOL_LOCATION_PATH_KEYS = [
   "input_path",
 ] as const;
 
-const TOOL_LOCATION_LINE_KEYS = ["line", "lineNumber", "line_number", "startLine", "start_line"] as const;
+const TOOL_LOCATION_LINE_KEYS = [
+  "line",
+  "lineNumber",
+  "line_number",
+  "startLine",
+  "start_line",
+] as const;
 const TOOL_RESULT_PATH_MARKER_RE = /^(?:FILE|MEDIA):(.+)$/gm;
 const TOOL_LOCATION_MAX_DEPTH = 4;
 const TOOL_LOCATION_MAX_NODES = 100;
@@ -54,7 +66,10 @@ function escapeInlineControlChars(value: string): string {
     }
 
     const isInlineControl =
-      codePoint <= 0x1f || (codePoint >= 0x7f && codePoint <= 0x9f) || codePoint === 0x2028 || codePoint === 0x2029;
+      codePoint <= 0x1f ||
+      (codePoint >= 0x7f && codePoint <= 0x9f) ||
+      codePoint === 0x2028 ||
+      codePoint === 0x2029;
     if (!isInlineControl) {
       escaped += char;
       continue;
@@ -81,7 +96,9 @@ function escapeResourceTitle(value: string): string {
 }
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
-  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined;
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined;
 }
 
 function normalizeToolLocationPath(value: string): string | undefined {
@@ -127,7 +144,11 @@ function extractToolLocationLine(record: Record<string, unknown>): number | unde
   return undefined;
 }
 
-function addToolLocation(locations: Map<string, ToolCallLocation>, rawPath: string, line?: number): void {
+function addToolLocation(
+  locations: Map<string, ToolCallLocation>,
+  rawPath: string,
+  line?: number,
+): void {
   const path = normalizeToolLocationPath(rawPath);
   if (!path) {
     return;
@@ -150,7 +171,10 @@ function addToolLocation(locations: Map<string, ToolCallLocation>, rawPath: stri
   locations.set(locationKey, line ? { path, line } : { path });
 }
 
-function collectLocationsFromTextMarkers(text: string, locations: Map<string, ToolCallLocation>): void {
+function collectLocationsFromTextMarkers(
+  text: string,
+  locations: Map<string, ToolCallLocation>,
+): void {
   for (const match of text.matchAll(TOOL_RESULT_PATH_MARKER_RE)) {
     const candidate = match[1]?.trim();
     if (candidate) {
@@ -269,7 +293,10 @@ export function extractAttachmentsFromPrompt(prompt: ContentBlock[]): GatewayAtt
   return attachments;
 }
 
-export function formatToolTitle(name: string | undefined, args: Record<string, unknown> | undefined): string {
+export function formatToolTitle(
+  name: string | undefined,
+  args: Record<string, unknown> | undefined,
+): string {
   const base = name ?? "tool";
   if (!args || Object.keys(args).length === 0) {
     return base;

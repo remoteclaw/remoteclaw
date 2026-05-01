@@ -32,7 +32,9 @@ function extractDeliveryModes(schema: SchemaLike): string[] {
 function extractConstUnionValues(schema: SchemaLike): string[] {
   return Array.from(
     new Set(
-      (schema.anyOf ?? []).map((entry) => entry?.const).filter((value): value is string => typeof value === "string"),
+      (schema.anyOf ?? [])
+        .map((entry) => entry?.const)
+        .filter((value): value is string => typeof value === "string"),
     ),
   );
 }
@@ -67,7 +69,9 @@ describe("cron protocol conformance", () => {
     for (const relPath of UI_FILES) {
       const content = await fs.readFile(path.join(cwd, relPath), "utf-8");
       for (const mode of modes) {
-        expect(content.includes(`"${mode}"`), `${relPath} missing delivery mode ${mode}`).toBe(true);
+        expect(content.includes(`"${mode}"`), `${relPath} missing delivery mode ${mode}`).toBe(
+          true,
+        );
       }
     }
 

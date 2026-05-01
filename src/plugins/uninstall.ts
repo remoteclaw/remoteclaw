@@ -165,7 +165,9 @@ export type UninstallPluginParams = {
  * Uninstall a plugin by removing it from config and optionally deleting installed files.
  * Linked plugins (source === "path") never have their source directory deleted.
  */
-export async function uninstallPlugin(params: UninstallPluginParams): Promise<UninstallPluginResult> {
+export async function uninstallPlugin(
+  params: UninstallPluginParams,
+): Promise<UninstallPluginResult> {
   const { config, pluginId, deleteFiles = true, extensionsDir } = params;
 
   // Validate plugin exists

@@ -94,7 +94,10 @@ describe("min-host-version", () => {
     });
   });
 
-  it.each(["2026.3.22", "2026.4.0"] as const)("accepts equal or newer hosts: %s", (currentVersion) => {
-    expectValidHostCheck(currentVersion, ">=2026.3.22");
-  });
+  it.each(["2026.3.22", "2026.4.0"] as const)(
+    "accepts equal or newer hosts: %s",
+    (currentVersion) => {
+      expectValidHostCheck(currentVersion, ">=2026.3.22");
+    },
+  );
 });

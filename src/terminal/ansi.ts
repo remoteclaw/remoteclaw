@@ -108,5 +108,8 @@ function graphemeWidth(grapheme: string): number {
 }
 
 export function visibleWidth(input: string): number {
-  return splitGraphemes(stripAnsi(input)).reduce((sum, grapheme) => sum + graphemeWidth(grapheme), 0);
+  return splitGraphemes(stripAnsi(input)).reduce(
+    (sum, grapheme) => sum + graphemeWidth(grapheme),
+    0,
+  );
 }

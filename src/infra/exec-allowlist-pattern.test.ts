@@ -54,6 +54,8 @@ describe("matchesExecAllowlistPattern", () => {
   });
 
   it.runIf(process.platform === "win32")("preserves case-insensitive matching on Windows", () => {
-    expect(matchesExecAllowlistPattern("C:/Tools/Allowed-Tool", "c:/tools/allowed-tool")).toBe(true);
+    expect(matchesExecAllowlistPattern("C:/Tools/Allowed-Tool", "c:/tools/allowed-tool")).toBe(
+      true,
+    );
   });
 });

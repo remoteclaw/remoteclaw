@@ -35,7 +35,14 @@ export const InputImageSourceSchema = z.discriminatedUnion("type", [
   }),
   z.object({
     type: z.literal("base64"),
-    media_type: z.enum(["image/jpeg", "image/png", "image/gif", "image/webp", "image/heic", "image/heif"]),
+    media_type: z.enum([
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+      "image/heic",
+      "image/heif",
+    ]),
     data: z.string().min(1), // base64-encoded
   }),
 ]);
@@ -204,7 +211,13 @@ export type CreateResponseBody = z.infer<typeof CreateResponseBodySchema>;
 // Response Resource
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const ResponseStatusSchema = z.enum(["in_progress", "completed", "failed", "cancelled", "incomplete"]);
+export const ResponseStatusSchema = z.enum([
+  "in_progress",
+  "completed",
+  "failed",
+  "cancelled",
+  "incomplete",
+]);
 
 export type ResponseStatus = z.infer<typeof ResponseStatusSchema>;
 

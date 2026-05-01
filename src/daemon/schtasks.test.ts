@@ -158,7 +158,9 @@ describe("readScheduledTaskCommand", () => {
   async function withScheduledTaskScript(
     options: {
       scriptLines?: string[];
-      env?: Record<string, string | undefined> | ((tmpDir: string) => Record<string, string | undefined>);
+      env?:
+        | Record<string, string | undefined>
+        | ((tmpDir: string) => Record<string, string | undefined>);
     },
     run: (env: Record<string, string | undefined>) => Promise<void>,
   ) {
@@ -205,10 +207,13 @@ describe("readScheduledTaskCommand", () => {
   });
 
   it("returns null when script has no command", async () => {
-    await withScheduledTaskScript({ scriptLines: ["@echo off", "rem This is just a comment"] }, async (env) => {
-      const result = await readScheduledTaskCommand(env);
-      expect(result).toBeNull();
-    });
+    await withScheduledTaskScript(
+      { scriptLines: ["@echo off", "rem This is just a comment"] },
+      async (env) => {
+        const result = await readScheduledTaskCommand(env);
+        expect(result).toBeNull();
+      },
+    );
   });
 
   it("parses full script with all components", async () => {

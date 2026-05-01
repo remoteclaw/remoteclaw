@@ -1,6 +1,10 @@
 import { deleteTelegramUpdateOffset } from "../../../extensions/telegram/src/update-offset-store.js";
 import { resolveChannelDefaultAccountId } from "../../channels/plugins/helpers.js";
-import { getChannelPlugin, listChannelPlugins, normalizeChannelId } from "../../channels/plugins/index.js";
+import {
+  getChannelPlugin,
+  listChannelPlugins,
+  normalizeChannelId,
+} from "../../channels/plugins/index.js";
 import { type RemoteClawConfig, writeConfigFile } from "../../config/config.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../routing/session-key.js";
 import { defaultRuntime, type RuntimeEnv } from "../../runtime.js";
@@ -94,7 +98,8 @@ export async function channelsRemoveCommand(
     return;
   }
 
-  const resolvedAccountId = normalizeAccountId(accountId) ?? resolveChannelDefaultAccountId({ plugin, cfg });
+  const resolvedAccountId =
+    normalizeAccountId(accountId) ?? resolveChannelDefaultAccountId({ plugin, cfg });
   const accountKey = resolvedAccountId || DEFAULT_ACCOUNT_ID;
 
   let next = { ...cfg };

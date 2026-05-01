@@ -1,4 +1,7 @@
-import { getChannelPlugin, normalizeChannelId as normalizePluginChannelId } from "../../channels/plugins/index.js";
+import {
+  getChannelPlugin,
+  normalizeChannelId as normalizePluginChannelId,
+} from "../../channels/plugins/index.js";
 import type { ChannelId } from "../../channels/plugins/types.js";
 import { resolveWhatsAppGroupIntroHint } from "../../channels/plugins/whatsapp-shared.js";
 import type { RemoteClawConfig } from "../../config/config.js";
@@ -17,7 +20,11 @@ function extractGroupId(raw: string | undefined | null): string | undefined {
   if (parts.length >= 3 && (parts[1] === "group" || parts[1] === "channel")) {
     return parts.slice(2).join(":") || undefined;
   }
-  if (parts.length >= 2 && parts[0]?.toLowerCase() === "whatsapp" && trimmed.toLowerCase().includes("@g.us")) {
+  if (
+    parts.length >= 2 &&
+    parts[0]?.toLowerCase() === "whatsapp" &&
+    trimmed.toLowerCase().includes("@g.us")
+  ) {
     return parts.slice(1).join(":") || undefined;
   }
   if (parts.length >= 2 && (parts[0] === "group" || parts[0] === "channel")) {
@@ -138,7 +145,8 @@ export function buildGroupIntro(params: {
   defaultActivation: "always" | "mention";
   silentToken: string;
 }): string {
-  const activation = normalizeGroupActivation(params.sessionEntry?.groupActivation) ?? params.defaultActivation;
+  const activation =
+    normalizeGroupActivation(params.sessionEntry?.groupActivation) ?? params.defaultActivation;
   const rawProvider = params.sessionCtx.Provider?.trim();
   const providerId = resolveDockChannelId(rawProvider);
   const activationLine =
@@ -146,7 +154,8 @@ export function buildGroupIntro(params: {
       ? "Activation: always-on (you receive every group message)."
       : "Activation: trigger-only (you are invoked only when explicitly mentioned; recent context may be included).";
   const groupId = params.sessionEntry?.groupId ?? extractGroupId(params.sessionCtx.From);
-  const groupChannel = params.sessionCtx.GroupChannel?.trim() ?? params.sessionCtx.GroupSubject?.trim();
+  const groupChannel =
+    params.sessionCtx.GroupChannel?.trim() ?? params.sessionCtx.GroupSubject?.trim();
   const groupSpace = params.sessionCtx.GroupSpace?.trim();
   const providerIdsLine = providerId
     ? (getChannelPlugin(providerId)?.groups?.resolveGroupIntroHint?.({

@@ -3,7 +3,8 @@ import type { WebhookRequestBody } from "@line/bot-sdk";
 import { describe, expect, it, vi } from "vitest";
 import { createLineWebhookMiddleware, startLineWebhook } from "./webhook.js";
 
-const sign = (body: string, secret: string) => crypto.createHmac("SHA256", secret).update(body).digest("base64");
+const sign = (body: string, secret: string) =>
+  crypto.createHmac("SHA256", secret).update(body).digest("base64");
 
 const createRes = () => {
   const res = {

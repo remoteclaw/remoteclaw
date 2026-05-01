@@ -166,7 +166,9 @@ describe("DiscordVoiceManager", () => {
   });
 
   const createManager = (
-    discordConfig: ConstructorParameters<typeof managerModule.DiscordVoiceManager>[0]["discordConfig"] = {},
+    discordConfig: ConstructorParameters<
+      typeof managerModule.DiscordVoiceManager
+    >[0]["discordConfig"] = {},
     clientOverride?: ReturnType<typeof createClient>,
     cfgOverride: ConstructorParameters<typeof managerModule.DiscordVoiceManager>[0]["cfg"] = {},
   ) =>
@@ -195,7 +197,9 @@ describe("DiscordVoiceManager", () => {
   const emitDecryptFailure = (manager: InstanceType<typeof managerModule.DiscordVoiceManager>) => {
     const entry = (manager as unknown as { sessions: Map<string, unknown> }).sessions.get("g1");
     expect(entry).toBeDefined();
-    (manager as unknown as { handleReceiveError: (e: unknown, err: unknown) => void }).handleReceiveError(
+    (
+      manager as unknown as { handleReceiveError: (e: unknown, err: unknown) => void }
+    ).handleReceiveError(
       entry,
       new Error("Failed to decrypt: DecryptionFailed(UnencryptedWhenPassthroughDisabled)"),
     );
@@ -210,7 +214,10 @@ describe("DiscordVoiceManager", () => {
     }) => Promise<void>;
   };
 
-  const processVoiceSegment = async (manager: InstanceType<typeof managerModule.DiscordVoiceManager>, userId: string) =>
+  const processVoiceSegment = async (
+    manager: InstanceType<typeof managerModule.DiscordVoiceManager>,
+    userId: string,
+  ) =>
     await (manager as unknown as ProcessSegmentInvoker).processSegment({
       entry: {
         guildId: "g1",
@@ -334,7 +341,9 @@ describe("DiscordVoiceManager", () => {
     const manager = createManager({ groupPolicy: "open", allowFrom: ["discord:u-owner"] }, client);
     await processVoiceSegment(manager, "u-owner");
 
-    const commandArgs = agentCommandMock.mock.calls.at(-1)?.[0] as { senderIsOwner?: boolean } | undefined;
+    const commandArgs = agentCommandMock.mock.calls.at(-1)?.[0] as
+      | { senderIsOwner?: boolean }
+      | undefined;
     expect(commandArgs?.senderIsOwner).toBe(true);
   });
 
@@ -354,7 +363,9 @@ describe("DiscordVoiceManager", () => {
     });
     await processVoiceSegment(manager, "u-guest");
 
-    const commandArgs = agentCommandMock.mock.calls.at(-1)?.[0] as { senderIsOwner?: boolean } | undefined;
+    const commandArgs = agentCommandMock.mock.calls.at(-1)?.[0] as
+      | { senderIsOwner?: boolean }
+      | undefined;
     expect(commandArgs?.senderIsOwner).toBe(false);
   });
 

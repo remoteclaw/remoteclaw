@@ -6,11 +6,20 @@ import { formatRelativeTimestamp } from "../infra/format-time/format-relative.ts
 import { normalizeAgentId } from "../routing/session-key.js";
 import { helpText, parseCommand } from "./commands.js";
 import type { ChatLog } from "./components/chat-log.js";
-import { createFilterableSelectList, createSearchableSelectList, createSettingsList } from "./components/selectors.js";
+import {
+  createFilterableSelectList,
+  createSearchableSelectList,
+  createSettingsList,
+} from "./components/selectors.js";
 import type { GatewayChatClient } from "./gateway-chat.js";
 import { sanitizeRenderableText } from "./tui-formatters.js";
 import { formatStatusSummary } from "./tui-status-summary.js";
-import type { AgentSummary, GatewayStatusSummary, TuiOptions, TuiStateAccess } from "./tui-types.js";
+import type {
+  AgentSummary,
+  GatewayStatusSummary,
+  TuiOptions,
+  TuiStateAccess,
+} from "./tui-types.js";
 
 type CommandHandlerContext = {
   client: GatewayChatClient;
@@ -122,7 +131,8 @@ export function createCommandHandlers(context: CommandHandlerContext) {
           ? formatRelativeTimestamp(session.updatedAt, { dateFallback: true, fallback: "" })
           : "";
         const preview = session.lastMessagePreview?.replace(/\s+/g, " ").trim();
-        const description = timePart && preview ? `${timePart} · ${preview}` : (preview ?? timePart);
+        const description =
+          timePart && preview ? `${timePart} · ${preview}` : (preview ?? timePart);
         return {
           value: session.key,
           label,
@@ -298,7 +308,8 @@ export function createCommandHandlers(context: CommandHandlerContext) {
         }
         const currentRaw = state.sessionInfo.responseUsage;
         const current = resolveResponseUsageMode(currentRaw);
-        const next = normalized ?? (current === "off" ? "tokens" : current === "tokens" ? "full" : "off");
+        const next =
+          normalized ?? (current === "off" ? "tokens" : current === "tokens" ? "full" : "off");
         try {
           const result = await client.patchSession({
             key: state.currentSessionKey,

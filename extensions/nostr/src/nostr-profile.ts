@@ -124,7 +124,11 @@ export function contentToProfile(content: ProfileContent): NostrProfile {
  * @param lastPublishedAt - Previous profile timestamp (for monotonic guarantee)
  * @returns Signed Nostr event
  */
-export function createProfileEvent(sk: Uint8Array, profile: NostrProfile, lastPublishedAt?: number): Event {
+export function createProfileEvent(
+  sk: Uint8Array,
+  profile: NostrProfile,
+  lastPublishedAt?: number,
+): Event {
   const content = profileToContent(profile);
   const contentJson = JSON.stringify(content);
 

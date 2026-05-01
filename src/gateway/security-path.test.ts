@@ -36,12 +36,13 @@ describe("security-path canonicalization", () => {
   });
 
   it("resolves traversal after repeated decoding", () => {
-    expect(canonicalizePathForSecurity("/api/foo/..%2fchannels/nostr/default/profile").canonicalPath).toBe(
-      "/api/channels/nostr/default/profile",
-    );
-    expect(canonicalizePathForSecurity("/api/foo/%252e%252e%252fchannels/nostr/default/profile").canonicalPath).toBe(
-      "/api/channels/nostr/default/profile",
-    );
+    expect(
+      canonicalizePathForSecurity("/api/foo/..%2fchannels/nostr/default/profile").canonicalPath,
+    ).toBe("/api/channels/nostr/default/profile");
+    expect(
+      canonicalizePathForSecurity("/api/foo/%252e%252e%252fchannels/nostr/default/profile")
+        .canonicalPath,
+    ).toBe("/api/channels/nostr/default/profile");
   });
 
   it("marks malformed encoding", () => {

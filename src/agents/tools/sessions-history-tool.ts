@@ -142,7 +142,11 @@ function sanitizeHistoryMessage(message: unknown): {
   return { message: entry, truncated, redacted };
 }
 
-function enforceSessionsHistoryHardCap(params: { items: unknown[]; bytes: number; maxBytes: number }): {
+function enforceSessionsHistoryHardCap(params: {
+  items: unknown[];
+  bytes: number;
+  maxBytes: number;
+}): {
   items: unknown[];
   bytes: number;
   hardCapped: boolean;
@@ -185,11 +189,12 @@ export function createSessionsHistoryTool(opts?: {
         required: true,
       });
       const cfg = opts?.config ?? loadConfig();
-      const { mainKey, alias, effectiveRequesterKey, restrictToSpawned } = resolveSandboxedSessionToolContext({
-        cfg,
-        agentSessionKey: opts?.agentSessionKey,
-        sandboxed: opts?.sandboxed,
-      });
+      const { mainKey, alias, effectiveRequesterKey, restrictToSpawned } =
+        resolveSandboxedSessionToolContext({
+          cfg,
+          agentSessionKey: opts?.agentSessionKey,
+          sandboxed: opts?.sandboxed,
+        });
       const resolvedSession = await resolveSessionReference({
         sessionKey: sessionKeyParam,
         alias,

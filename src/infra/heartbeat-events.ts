@@ -17,7 +17,9 @@ export type HeartbeatEventPayload = {
   indicatorType?: HeartbeatIndicatorType;
 };
 
-export function resolveIndicatorType(status: HeartbeatEventPayload["status"]): HeartbeatIndicatorType | undefined {
+export function resolveIndicatorType(
+  status: HeartbeatEventPayload["status"],
+): HeartbeatIndicatorType | undefined {
   switch (status) {
     case "ok-empty":
     case "ok-token":

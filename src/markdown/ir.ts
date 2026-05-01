@@ -24,7 +24,14 @@ type MarkdownToken = {
   attrGet?: (name: string) => string | null;
 };
 
-export type MarkdownStyle = "bold" | "italic" | "strikethrough" | "code" | "code_block" | "spoiler" | "blockquote";
+export type MarkdownStyle =
+  | "bold"
+  | "italic"
+  | "strikethrough"
+  | "code"
+  | "code_block"
+  | "spoiler"
+  | "blockquote";
 
 export type MarkdownStyleSpan = {
   start: number;
@@ -829,7 +836,11 @@ function resolveSliceBounds(
   return { start: sliceStart, end: sliceEnd };
 }
 
-function sliceStyleSpans(spans: MarkdownStyleSpan[], start: number, end: number): MarkdownStyleSpan[] {
+function sliceStyleSpans(
+  spans: MarkdownStyleSpan[],
+  start: number,
+  end: number,
+): MarkdownStyleSpan[] {
   if (spans.length === 0) {
     return [];
   }
@@ -914,7 +925,8 @@ export function markdownToIRWithMeta(
     }
   }
   const finalLength = Math.max(trimmedLength, codeBlockEnd);
-  const finalText = finalLength === state.text.length ? state.text : state.text.slice(0, finalLength);
+  const finalText =
+    finalLength === state.text.length ? state.text : state.text.slice(0, finalLength);
 
   return {
     ir: {

@@ -1,7 +1,9 @@
 import type { OutputRuntimeEnv } from "remoteclaw/plugin-sdk/runtime";
 import { vi } from "vitest";
 
-export function createRuntimeEnv<TRuntime = OutputRuntimeEnv>(options?: { throwOnExit?: boolean }): OutputRuntimeEnv {
+export function createRuntimeEnv<TRuntime = OutputRuntimeEnv>(options?: {
+  throwOnExit?: boolean;
+}): OutputRuntimeEnv {
   const throwOnExit = options?.throwOnExit ?? true;
   return {
     log: vi.fn(),

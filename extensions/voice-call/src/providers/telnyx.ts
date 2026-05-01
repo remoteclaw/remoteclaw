@@ -97,7 +97,10 @@ export class TelnyxProvider implements VoiceCallProvider {
   /**
    * Parse Telnyx webhook event into normalized format.
    */
-  parseWebhookEvent(ctx: WebhookContext, options?: WebhookParseOptions): ProviderWebhookParseResult {
+  parseWebhookEvent(
+    ctx: WebhookContext,
+    options?: WebhookParseOptions,
+  ): ProviderWebhookParseResult {
     try {
       const payload = JSON.parse(ctx.rawBody);
       const data = payload.data;

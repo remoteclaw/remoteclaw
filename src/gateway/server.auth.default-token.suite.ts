@@ -206,14 +206,18 @@ export function registerDefaultAuthTokenSuite(): void {
           const res = await connectReq(ws, scenario.opts);
           expect(res.ok, scenario.name).toBe(scenario.expectConnectOk);
           if (!scenario.expectConnectOk) {
-            expect(res.error?.message ?? "", scenario.name).toContain(String(scenario.expectConnectError ?? ""));
+            expect(res.error?.message ?? "", scenario.name).toContain(
+              String(scenario.expectConnectError ?? ""),
+            );
             continue;
           }
           if (scenario.expectStatusOk !== undefined) {
             const status = await rpcReq(ws, "status");
             expect(status.ok, scenario.name).toBe(scenario.expectStatusOk);
             if (!scenario.expectStatusOk && scenario.expectStatusError) {
-              expect(status.error?.message ?? "", scenario.name).toContain(scenario.expectStatusError);
+              expect(status.error?.message ?? "", scenario.name).toContain(
+                scenario.expectStatusError,
+              );
             }
           }
         } finally {
@@ -297,7 +301,9 @@ export function registerDefaultAuthTokenSuite(): void {
       });
       expect(connectRes.ok).toBe(false);
       expect(connectRes.error?.message ?? "").toContain("device signature invalid");
-      expect(connectRes.error?.details?.code).toBe(ConnectErrorDetailCodes.DEVICE_AUTH_SIGNATURE_INVALID);
+      expect(connectRes.error?.details?.code).toBe(
+        ConnectErrorDetailCodes.DEVICE_AUTH_SIGNATURE_INVALID,
+      );
       expect(connectRes.error?.details?.reason).toBe("device-signature");
       await new Promise<void>((resolve) => ws.once("close", () => resolve()));
     });
@@ -417,7 +423,10 @@ export function registerDefaultAuthTokenSuite(): void {
       const res = await onceMessage<{
         ok: boolean;
         error?: { message?: string };
-      }>(ws, (o) => (o as { type?: string }).type === "res" && (o as { id?: string }).id === "h-bad");
+      }>(
+        ws,
+        (o) => (o as { type?: string }).type === "res" && (o as { id?: string }).id === "h-bad",
+      );
       expect(res.ok).toBe(false);
       expect(String(res.error?.message ?? "")).toContain("invalid connect params");
 

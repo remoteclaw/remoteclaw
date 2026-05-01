@@ -6,14 +6,23 @@ import type { SendLineReplyChunksParams } from "./reply-chunks.js";
 import type { LineChannelData, LineTemplateMessagePayload } from "./types.js";
 
 export type LineAutoReplyDeps = {
-  buildTemplateMessageFromPayload: (payload: LineTemplateMessagePayload) => messagingApi.TemplateMessage | null;
+  buildTemplateMessageFromPayload: (
+    payload: LineTemplateMessagePayload,
+  ) => messagingApi.TemplateMessage | null;
   processLineMessage: (text: string) => ProcessedLineMessage;
   chunkMarkdownText: (text: string, limit: number) => string[];
   sendLineReplyChunks: (params: SendLineReplyChunksParams) => Promise<{ replyTokenUsed: boolean }>;
   createQuickReplyItems: (labels: string[]) => messagingApi.QuickReply;
-  pushMessagesLine: (to: string, messages: messagingApi.Message[], opts?: { accountId?: string }) => Promise<unknown>;
+  pushMessagesLine: (
+    to: string,
+    messages: messagingApi.Message[],
+    opts?: { accountId?: string },
+  ) => Promise<unknown>;
   createFlexMessage: (altText: string, contents: FlexContainer) => messagingApi.FlexMessage;
-  createImageMessage: (originalContentUrl: string, previewImageUrl?: string) => messagingApi.ImageMessage;
+  createImageMessage: (
+    originalContentUrl: string,
+    previewImageUrl?: string,
+  ) => messagingApi.ImageMessage;
   createLocationMessage: (location: {
     title: string;
     address: string;
@@ -53,7 +62,10 @@ export async function deliverLineAutoReply(params: {
     }
   };
 
-  const sendLineMessages = async (messages: messagingApi.Message[], allowReplyToken: boolean): Promise<void> => {
+  const sendLineMessages = async (
+    messages: messagingApi.Message[],
+    allowReplyToken: boolean,
+  ): Promise<void> => {
     if (messages.length === 0) {
       return;
     }
@@ -101,7 +113,9 @@ export async function deliverLineAutoReply(params: {
     richMessages.push(deps.createLocationMessage(lineData.location));
   }
 
-  const processed = payload.text ? deps.processLineMessage(payload.text) : { text: "", flexMessages: [] };
+  const processed = payload.text
+    ? deps.processLineMessage(payload.text)
+    : { text: "", flexMessages: [] };
 
   for (const flexMsg of processed.flexMessages) {
     richMessages.push(deps.createFlexMessage(flexMsg.altText.slice(0, 400), flexMsg.contents));
@@ -147,7 +161,8 @@ export async function deliverLineAutoReply(params: {
     const combined = [...richMessages, ...mediaMessages];
     if (hasQuickReplies && combined.length > 0) {
       const quickReply = deps.createQuickReplyItems(lineData.quickReplies!);
-      const targetIndex = replyToken && !replyTokenUsed ? Math.min(4, combined.length - 1) : combined.length - 1;
+      const targetIndex =
+        replyToken && !replyTokenUsed ? Math.min(4, combined.length - 1) : combined.length - 1;
       const target = combined[targetIndex] as messagingApi.Message & {
         quickReply?: messagingApi.QuickReply;
       };

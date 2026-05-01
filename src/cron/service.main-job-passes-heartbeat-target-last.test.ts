@@ -7,10 +7,16 @@ const { logger, makeStorePath } = setupCronServiceSuite({
   prefix: "cron-main-heartbeat-target",
 });
 
-type RunHeartbeatOnce = NonNullable<ConstructorParameters<typeof CronService>[0]["runHeartbeatOnce"]>;
+type RunHeartbeatOnce = NonNullable<
+  ConstructorParameters<typeof CronService>[0]["runHeartbeatOnce"]
+>;
 
 describe("cron main job passes heartbeat target=last", () => {
-  function createMainCronJob(params: { now: number; id: string; wakeMode: CronJob["wakeMode"] }): CronJob {
+  function createMainCronJob(params: {
+    now: number;
+    id: string;
+    wakeMode: CronJob["wakeMode"];
+  }): CronJob {
     return {
       id: params.id,
       name: params.id,

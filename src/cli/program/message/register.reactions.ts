@@ -4,7 +4,9 @@ import type { MessageCliHelpers } from "./helpers.js";
 export function registerMessageReactionsCommands(message: Command, helpers: MessageCliHelpers) {
   helpers
     .withMessageBase(
-      helpers.withRequiredMessageTarget(message.command("react").description("Add or remove a reaction")),
+      helpers.withRequiredMessageTarget(
+        message.command("react").description("Add or remove a reaction"),
+      ),
     )
     .requiredOption("--message-id <id>", "Message id")
     .option("--emoji <emoji>", "Emoji for reactions")
@@ -19,7 +21,9 @@ export function registerMessageReactionsCommands(message: Command, helpers: Mess
 
   helpers
     .withMessageBase(
-      helpers.withRequiredMessageTarget(message.command("reactions").description("List reactions on a message")),
+      helpers.withRequiredMessageTarget(
+        message.command("reactions").description("List reactions on a message"),
+      ),
     )
     .requiredOption("--message-id <id>", "Message id")
     .option("--limit <n>", "Result limit")

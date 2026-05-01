@@ -13,10 +13,12 @@ export async function startBrowserControlServerIfEnabled(): Promise<BrowserContr
   const override = process.env.REMOTECLAW_BROWSER_CONTROL_MODULE?.trim();
   const mod = override ? await import(override) : await import("../browser/server.js");
   const start =
-    typeof (mod as { startBrowserControlServiceFromConfig?: unknown }).startBrowserControlServiceFromConfig ===
-    "function"
-      ? (mod as { startBrowserControlServiceFromConfig: () => Promise<unknown> }).startBrowserControlServiceFromConfig
-      : (mod as { startBrowserControlServerFromConfig?: () => Promise<unknown> }).startBrowserControlServerFromConfig;
+    typeof (mod as { startBrowserControlServiceFromConfig?: unknown })
+      .startBrowserControlServiceFromConfig === "function"
+      ? (mod as { startBrowserControlServiceFromConfig: () => Promise<unknown> })
+          .startBrowserControlServiceFromConfig
+      : (mod as { startBrowserControlServerFromConfig?: () => Promise<unknown> })
+          .startBrowserControlServerFromConfig;
   const stop =
     typeof (mod as { stopBrowserControlService?: unknown }).stopBrowserControlService === "function"
       ? (mod as { stopBrowserControlService: () => Promise<void> }).stopBrowserControlService

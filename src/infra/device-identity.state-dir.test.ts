@@ -36,7 +36,11 @@ describe("device identity state dir defaults", () => {
       const identityPath = path.join(stateDir, "identity", "device.json");
       const raw = JSON.parse(await fs.readFile(identityPath, "utf8")) as Record<string, unknown>;
 
-      await fs.writeFile(identityPath, `${JSON.stringify({ ...raw, deviceId: "stale-device-id" }, null, 2)}\n`, "utf8");
+      await fs.writeFile(
+        identityPath,
+        `${JSON.stringify({ ...raw, deviceId: "stale-device-id" }, null, 2)}\n`,
+        "utf8",
+      );
 
       const repaired = loadOrCreateDeviceIdentity();
       const stored = JSON.parse(await fs.readFile(identityPath, "utf8")) as { deviceId?: string };

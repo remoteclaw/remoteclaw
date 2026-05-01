@@ -53,7 +53,9 @@ describe("tool image sanitizing", () => {
   it("sanitizes image arrays and reports drops", async () => {
     const png = await createWidePng();
 
-    const images = [{ type: "image" as const, data: png.toString("base64"), mimeType: "image/png" }];
+    const images = [
+      { type: "image" as const, data: png.toString("base64"), mimeType: "image/png" },
+    ];
     const { images: out, dropped } = await sanitizeImageBlocks(images, "test");
     expect(dropped).toBe(0);
     expect(out.length).toBe(1);

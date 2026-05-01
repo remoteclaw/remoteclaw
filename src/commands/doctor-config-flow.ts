@@ -2,9 +2,15 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { ZodIssue } from "zod";
 import { inspectTelegramAccount } from "../../extensions/telegram/src/account-inspect.js";
-import { listTelegramAccountIds, resolveTelegramAccount } from "../../extensions/telegram/src/accounts.js";
+import {
+  listTelegramAccountIds,
+  resolveTelegramAccount,
+} from "../../extensions/telegram/src/accounts.js";
 import { normalizeChatChannelId } from "../channels/registry.js";
-import { isNumericTelegramUserId, normalizeTelegramAllowFromEntry } from "../channels/telegram/allow-from.js";
+import {
+  isNumericTelegramUserId,
+  normalizeTelegramAllowFromEntry,
+} from "../channels/telegram/allow-from.js";
 import { fetchTelegramChatId } from "../channels/telegram/api.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { listRouteBindings } from "../config/bindings.js";
@@ -31,7 +37,11 @@ import {
   formatSetExplicitDefaultInstruction,
   formatSetExplicitDefaultToConfiguredInstruction,
 } from "../routing/default-account-warnings.js";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId, normalizeOptionalAccountId } from "../routing/session-key.js";
+import {
+  DEFAULT_ACCOUNT_ID,
+  normalizeAccountId,
+  normalizeOptionalAccountId,
+} from "../routing/session-key.js";
 import {
   isDiscordMutableAllowEntry,
   isGoogleChatMutableAllowEntry,
@@ -157,12 +167,17 @@ function noteOpencodeProviderOverrides(cfg: RemoteClawConfig) {
     (id) => `- models.providers.${id} is set; this overrides the built-in OpenCode Zen catalog.`,
   );
 
-  lines.push("- Remove these entries to restore per-model API routing + costs (then re-run onboarding if needed).");
+  lines.push(
+    "- Remove these entries to restore per-model API routing + costs (then re-run onboarding if needed).",
+  );
 
   note(lines.join("\n"), "OpenCode Zen");
 }
 
-function noteIncludeConfinementWarning(snapshot: { path?: string | null; issues?: Array<{ message: string }> }): void {
+function noteIncludeConfinementWarning(snapshot: {
+  path?: string | null;
+  issues?: Array<{ message: string }>;
+}): void {
   const issues = snapshot.issues ?? [];
   const includeIssue = issues.find(
     (issue) =>
@@ -212,7 +227,9 @@ type ChannelMissingDefaultAccountContext = {
   normalizedAccountIds: string[];
 };
 
-function collectChannelsMissingDefaultAccount(cfg: RemoteClawConfig): ChannelMissingDefaultAccountContext[] {
+function collectChannelsMissingDefaultAccount(
+  cfg: RemoteClawConfig,
+): ChannelMissingDefaultAccountContext[] {
   const channels = asObjectRecord(cfg.channels);
   if (!channels) {
     return [];
@@ -264,7 +281,8 @@ export function collectMissingDefaultAccountBindingWarnings(cfg: RemoteClawConfi
         continue;
       }
 
-      const matchChannel = typeof match.channel === "string" ? normalizeBindingChannelKey(match.channel) : "";
+      const matchChannel =
+        typeof match.channel === "string" ? normalizeBindingChannelKey(match.channel) : "";
       if (!matchChannel || matchChannel !== channelPattern) {
         continue;
       }
@@ -287,7 +305,9 @@ export function collectMissingDefaultAccountBindingWarnings(cfg: RemoteClawConfi
       continue;
     }
 
-    const uncoveredAccountIds = normalizedAccountIds.filter((accountId) => !coveredAccountIds.has(accountId));
+    const uncoveredAccountIds = normalizedAccountIds.filter(
+      (accountId) => !coveredAccountIds.has(accountId),
+    );
     if (uncoveredAccountIds.length === 0) {
       continue;
     }
@@ -308,7 +328,9 @@ export function collectMissingDefaultAccountBindingWarnings(cfg: RemoteClawConfi
 
 export function collectMissingExplicitDefaultAccountWarnings(cfg: RemoteClawConfig): string[] {
   const warnings: string[] = [];
-  for (const { channelKey, channel, normalizedAccountIds } of collectChannelsMissingDefaultAccount(cfg)) {
+  for (const { channelKey, channel, normalizedAccountIds } of collectChannelsMissingDefaultAccount(
+    cfg,
+  )) {
     if (normalizedAccountIds.length < 2) {
       continue;
     }
@@ -359,7 +381,10 @@ function collectTelegramAccountScopes(
   return scopes;
 }
 
-function collectTelegramAllowFromLists(prefix: string, account: Record<string, unknown>): TelegramAllowFromListRef[] {
+function collectTelegramAllowFromLists(
+  prefix: string,
+  account: Record<string, unknown>,
+): TelegramAllowFromListRef[] {
   const refs: TelegramAllowFromListRef[] = [
     { pathLabel: `${prefix}.allowFrom`, holder: account, key: "allowFrom" },
     { pathLabel: `${prefix}.groupAllowFrom`, holder: account, key: "groupAllowFrom" },
@@ -398,7 +423,9 @@ function collectTelegramAllowFromLists(prefix: string, account: Record<string, u
   return refs;
 }
 
-function scanTelegramAllowFromUsernameEntries(cfg: RemoteClawConfig): TelegramAllowFromUsernameHit[] {
+function scanTelegramAllowFromUsernameEntries(
+  cfg: RemoteClawConfig,
+): TelegramAllowFromUsernameHit[] {
   const hits: TelegramAllowFromUsernameHit[] = [];
 
   const scanList = (pathLabel: string, list: unknown) => {
@@ -599,8 +626,13 @@ function collectDiscordAccountScopes(
   return scopes;
 }
 
-function collectDiscordIdLists(prefix: string, account: Record<string, unknown>): DiscordIdListRef[] {
-  const refs: DiscordIdListRef[] = [{ pathLabel: `${prefix}.allowFrom`, holder: account, key: "allowFrom" }];
+function collectDiscordIdLists(
+  prefix: string,
+  account: Record<string, unknown>,
+): DiscordIdListRef[] {
+  const refs: DiscordIdListRef[] = [
+    { pathLabel: `${prefix}.allowFrom`, holder: account, key: "allowFrom" },
+  ];
   const dm = asObjectRecord(account.dm);
   if (dm) {
     refs.push({ pathLabel: `${prefix}.dm.allowFrom`, holder: dm, key: "allowFrom" });
@@ -694,7 +726,9 @@ function maybeRepairDiscordNumericIds(cfg: RemoteClawConfig): {
       return;
     }
     holder[key] = updated;
-    changes.push(`- ${pathLabel}: converted ${converted} numeric ${converted === 1 ? "entry" : "entries"} to strings`);
+    changes.push(
+      `- ${pathLabel}: converted ${converted} numeric ${converted === 1 ? "entry" : "entries"} to strings`,
+    );
   };
 
   for (const scope of collectDiscordAccountScopes(next)) {
@@ -1011,15 +1045,21 @@ function maybeRepairOpenPolicyAllowFrom(cfg: RemoteClawConfig): {
     return "topOnly";
   };
 
-  const hasWildcard = (list?: Array<string | number>) => list?.some((v) => String(v).trim() === "*") ?? false;
+  const hasWildcard = (list?: Array<string | number>) =>
+    list?.some((v) => String(v).trim() === "*") ?? false;
 
-  const ensureWildcard = (account: Record<string, unknown>, prefix: string, mode: OpenPolicyAllowFromMode) => {
+  const ensureWildcard = (
+    account: Record<string, unknown>,
+    prefix: string,
+    mode: OpenPolicyAllowFromMode,
+  ) => {
     const dmEntry = account.dm;
     const dm =
       dmEntry && typeof dmEntry === "object" && !Array.isArray(dmEntry)
         ? (dmEntry as Record<string, unknown>)
         : undefined;
-    const dmPolicy = (account.dmPolicy as string | undefined) ?? (dm?.policy as string | undefined) ?? undefined;
+    const dmPolicy =
+      (account.dmPolicy as string | undefined) ?? (dm?.policy as string | undefined) ?? undefined;
 
     if (dmPolicy !== "open") {
       return;
@@ -1090,7 +1130,11 @@ function maybeRepairOpenPolicyAllowFrom(cfg: RemoteClawConfig): {
     if (accounts && typeof accounts === "object") {
       for (const [accountName, accountConfig] of Object.entries(accounts)) {
         if (accountConfig && typeof accountConfig === "object") {
-          ensureWildcard(accountConfig, `channels.${channelName}.accounts.${accountName}`, allowFromMode);
+          ensureWildcard(
+            accountConfig,
+            `channels.${channelName}.accounts.${accountName}`,
+            allowFromMode,
+          );
         }
       }
     }
@@ -1142,7 +1186,9 @@ async function maybeRepairAllowlistPolicyAllowFrom(cfg: RemoteClawConfig): Promi
     if (params.mode === "nestedOnly") {
       const dmEntry = params.account.dm;
       const dm =
-        dmEntry && typeof dmEntry === "object" && !Array.isArray(dmEntry) ? (dmEntry as Record<string, unknown>) : {};
+        dmEntry && typeof dmEntry === "object" && !Array.isArray(dmEntry)
+          ? (dmEntry as Record<string, unknown>)
+          : {};
       dm.allowFrom = params.allowFrom;
       params.account.dm = dm;
       changes.push(
@@ -1184,7 +1230,8 @@ async function maybeRepairAllowlistPolicyAllowFrom(cfg: RemoteClawConfig): Promi
       dmEntry && typeof dmEntry === "object" && !Array.isArray(dmEntry)
         ? (dmEntry as Record<string, unknown>)
         : undefined;
-    const dmPolicy = (params.account.dmPolicy as string | undefined) ?? (dm?.policy as string | undefined);
+    const dmPolicy =
+      (params.account.dmPolicy as string | undefined) ?? (dm?.policy as string | undefined);
     if (dmPolicy !== "allowlist") {
       return;
     }
@@ -1195,15 +1242,21 @@ async function maybeRepairAllowlistPolicyAllowFrom(cfg: RemoteClawConfig): Promi
       return;
     }
 
-    const normalizedChannelId = (normalizeChatChannelId(params.channelName) ?? params.channelName).trim().toLowerCase();
+    const normalizedChannelId = (normalizeChatChannelId(params.channelName) ?? params.channelName)
+      .trim()
+      .toLowerCase();
     if (!normalizedChannelId) {
       return;
     }
     const normalizedAccountId = normalizeAccountId(params.accountId) || DEFAULT_ACCOUNT_ID;
-    const fromStore = await readChannelAllowFromStore(normalizedChannelId, process.env, normalizedAccountId).catch(
-      () => [],
+    const fromStore = await readChannelAllowFromStore(
+      normalizedChannelId,
+      process.env,
+      normalizedAccountId,
+    ).catch(() => []);
+    const recovered = Array.from(new Set(fromStore.map((entry) => String(entry).trim()))).filter(
+      Boolean,
     );
-    const recovered = Array.from(new Set(fromStore.map((entry) => String(entry).trim()))).filter(Boolean);
     if (recovered.length === 0) {
       return;
     }
@@ -1324,7 +1377,9 @@ function detectEmptyAllowlistPolicy(cfg: RemoteClawConfig): string[] {
     }
 
     const groupPolicy =
-      (account.groupPolicy as string | undefined) ?? (parent?.groupPolicy as string | undefined) ?? undefined;
+      (account.groupPolicy as string | undefined) ??
+      (parent?.groupPolicy as string | undefined) ??
+      undefined;
 
     if (groupPolicy === "allowlist" && usesSenderBasedGroupAllowlist(channelName)) {
       const rawGroupAllowFrom =
@@ -1334,7 +1389,8 @@ function detectEmptyAllowlistPolicy(cfg: RemoteClawConfig): string[] {
       // empty arrays as unset and falls back to allowFrom.
       const groupAllowFrom = hasAllowFromEntries(rawGroupAllowFrom) ? rawGroupAllowFrom : undefined;
       const fallbackToAllowFrom = allowsGroupAllowFromFallback(channelName);
-      const effectiveGroupAllowFrom = groupAllowFrom ?? (fallbackToAllowFrom ? effectiveAllowFrom : undefined);
+      const effectiveGroupAllowFrom =
+        groupAllowFrom ?? (fallbackToAllowFrom ? effectiveAllowFrom : undefined);
 
       if (!hasAllowFromEntries(effectiveGroupAllowFrom)) {
         if (fallbackToAllowFrom) {
@@ -1350,7 +1406,9 @@ function detectEmptyAllowlistPolicy(cfg: RemoteClawConfig): string[] {
     }
   };
 
-  for (const [channelName, channelConfig] of Object.entries(channels as Record<string, Record<string, unknown>>)) {
+  for (const [channelName, channelConfig] of Object.entries(
+    channels as Record<string, Record<string, unknown>>,
+  )) {
     if (!channelConfig || typeof channelConfig !== "object") {
       continue;
     }
@@ -1358,11 +1416,18 @@ function detectEmptyAllowlistPolicy(cfg: RemoteClawConfig): string[] {
 
     const accounts = channelConfig.accounts;
     if (accounts && typeof accounts === "object") {
-      for (const [accountId, account] of Object.entries(accounts as Record<string, Record<string, unknown>>)) {
+      for (const [accountId, account] of Object.entries(
+        accounts as Record<string, Record<string, unknown>>,
+      )) {
         if (!account || typeof account !== "object") {
           continue;
         }
-        checkAccount(account, `channels.${channelName}.accounts.${accountId}`, channelConfig, channelName);
+        checkAccount(
+          account,
+          `channels.${channelName}.accounts.${accountId}`,
+          channelConfig,
+          channelName,
+        );
       }
     }
   }
@@ -1407,7 +1472,9 @@ function normalizeConfiguredTrustedSafeBinDirs(entries: unknown): string[] {
   if (!Array.isArray(entries)) {
     return [];
   }
-  return normalizeTrustedSafeBinDirs(entries.filter((entry): entry is string => typeof entry === "string"));
+  return normalizeTrustedSafeBinDirs(
+    entries.filter((entry): entry is string => typeof entry === "string"),
+  );
 }
 
 function collectExecSafeBinScopes(cfg: RemoteClawConfig): ExecSafeBinScopeRef[] {
@@ -1457,7 +1524,10 @@ function collectExecSafeBinScopes(cfg: RemoteClawConfig): ExecSafeBinScopeRef[] 
         }) ?? {},
       trustedSafeBinDirs: new Set(
         getTrustedSafeBinDirs({
-          extraDirs: [...globalTrustedDirs, ...normalizeConfiguredTrustedSafeBinDirs(agentExec.safeBinTrustedDirs)],
+          extraDirs: [
+            ...globalTrustedDirs,
+            ...normalizeConfiguredTrustedSafeBinDirs(agentExec.safeBinTrustedDirs),
+          ],
         }),
       ),
     });
@@ -1524,7 +1594,8 @@ function maybeRepairExecSafeBinProfiles(cfg: RemoteClawConfig): {
     if (missingBins.length === 0) {
       continue;
     }
-    const profileHolder = asObjectRecord(scope.exec.safeBinProfiles) ?? (scope.exec.safeBinProfiles = {});
+    const profileHolder =
+      asObjectRecord(scope.exec.safeBinProfiles) ?? (scope.exec.safeBinProfiles = {});
     for (const bin of missingBins) {
       if (interpreterBins.has(bin)) {
         warnings.push(
@@ -1745,7 +1816,10 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
   }
 
   if (snapshot.legacyIssues.length > 0) {
-    note(formatConfigIssueLines(snapshot.legacyIssues, "-").join("\n"), "Compatibility config keys detected");
+    note(
+      formatConfigIssueLines(snapshot.legacyIssues, "-").join("\n"),
+      "Compatibility config keys detected",
+    );
     const { config: migrated, changes } = migrateLegacyConfig(snapshot.parsed);
     if (changes.length > 0) {
       note(changes.join("\n"), "Doctor changes");
@@ -1760,7 +1834,9 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
         cfg = migrated;
       }
     } else {
-      fixHints.push(`Run "${formatCliCommand("remoteclaw doctor --fix")}" to apply compatibility migrations.`);
+      fixHints.push(
+        `Run "${formatCliCommand("remoteclaw doctor --fix")}" to apply compatibility migrations.`,
+      );
     }
   }
 
@@ -1788,7 +1864,8 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
     }
   }
 
-  const missingDefaultAccountBindingWarnings = collectMissingDefaultAccountBindingWarnings(candidate);
+  const missingDefaultAccountBindingWarnings =
+    collectMissingDefaultAccountBindingWarnings(candidate);
   if (missingDefaultAccountBindingWarnings.length > 0) {
     note(missingDefaultAccountBindingWarnings.join("\n"), "Doctor warnings");
   }
@@ -1913,18 +1990,26 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
       const lines: string[] = [];
       if (interpreterHits.length > 0) {
         for (const hit of interpreterHits.slice(0, 5)) {
-          lines.push(`- ${hit.scopePath}.safeBins includes interpreter/runtime '${hit.bin}' without profile.`);
+          lines.push(
+            `- ${hit.scopePath}.safeBins includes interpreter/runtime '${hit.bin}' without profile.`,
+          );
         }
         if (interpreterHits.length > 5) {
-          lines.push(`- ${interpreterHits.length - 5} more interpreter/runtime safeBins entries are missing profiles.`);
+          lines.push(
+            `- ${interpreterHits.length - 5} more interpreter/runtime safeBins entries are missing profiles.`,
+          );
         }
       }
       if (customHits.length > 0) {
         for (const hit of customHits.slice(0, 5)) {
-          lines.push(`- ${hit.scopePath}.safeBins entry '${hit.bin}' is missing safeBinProfiles.${hit.bin}.`);
+          lines.push(
+            `- ${hit.scopePath}.safeBins entry '${hit.bin}' is missing safeBinProfiles.${hit.bin}.`,
+          );
         }
         if (customHits.length > 5) {
-          lines.push(`- ${customHits.length - 5} more custom safeBins entries are missing profiles.`);
+          lines.push(
+            `- ${customHits.length - 5} more custom safeBins entries are missing profiles.`,
+          );
         }
       }
       lines.push(
@@ -1961,10 +2046,14 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
       .map((hit) => `- ${hit.path}: ${hit.entry}`)
       .join("\n");
     const remaining =
-      mutableAllowlistHits.length > 8 ? `- +${mutableAllowlistHits.length - 8} more mutable allowlist entries.` : null;
+      mutableAllowlistHits.length > 8
+        ? `- +${mutableAllowlistHits.length - 8} more mutable allowlist entries.`
+        : null;
     const flagPaths = Array.from(new Set(mutableAllowlistHits.map((hit) => hit.dangerousFlagPath)));
     const flagHint =
-      flagPaths.length === 1 ? flagPaths[0] : `${flagPaths[0]} (and ${flagPaths.length - 1} other scope flags)`;
+      flagPaths.length === 1
+        ? flagPaths[0]
+        : `${flagPaths[0]} (and ${flagPaths.length - 1} other scope flags)`;
     note(
       [
         `- Found ${mutableAllowlistHits.length} mutable allowlist ${mutableAllowlistHits.length === 1 ? "entry" : "entries"} across ${channels.join(", ")} while name matching is disabled by default.`,

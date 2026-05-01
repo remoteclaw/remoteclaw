@@ -15,7 +15,10 @@ import { formatError } from "../server-utils.js";
 import { logWs } from "../ws-log.js";
 import { getHealthVersion, incrementPresenceVersion } from "./health-state.js";
 import { broadcastPresenceSnapshot } from "./presence-events.js";
-import { attachGatewayWsMessageHandler, type WsOriginCheckMetrics } from "./ws-connection/message-handler.js";
+import {
+  attachGatewayWsMessageHandler,
+  type WsOriginCheckMetrics,
+} from "./ws-connection/message-handler.js";
 import type { GatewayWsClient } from "./ws-types.js";
 
 type SubsystemLogger = ReturnType<typeof createSubsystemLogger>;
@@ -27,7 +30,10 @@ function replaceControlChars(value: string): string {
   let cleaned = "";
   for (const char of value) {
     const codePoint = char.codePointAt(0);
-    if (codePoint !== undefined && (codePoint <= 0x1f || (codePoint >= 0x7f && codePoint <= 0x9f))) {
+    if (
+      codePoint !== undefined &&
+      (codePoint <= 0x1f || (codePoint >= 0x7f && codePoint <= 0x9f))
+    ) {
       cleaned += " ";
       continue;
     }
@@ -39,7 +45,10 @@ const sanitizeLogValue = (value: string | undefined): string | undefined => {
   if (!value) {
     return undefined;
   }
-  const cleaned = replaceControlChars(value).replace(LOG_HEADER_FORMAT_REGEX, " ").replace(/\s+/g, " ").trim();
+  const cleaned = replaceControlChars(value)
+    .replace(LOG_HEADER_FORMAT_REGEX, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   if (!cleaned) {
     return undefined;
   }
@@ -108,8 +117,10 @@ export function attachGatewayWsConnectionHandler(params: AttachGatewayWsConnecti
     let closed = false;
     const openedAt = Date.now();
     const connId = randomUUID();
-    const remoteAddr = (socket as WebSocket & { _socket?: { remoteAddress?: string } })._socket?.remoteAddress;
-    const headerValue = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
+    const remoteAddr = (socket as WebSocket & { _socket?: { remoteAddress?: string } })._socket
+      ?.remoteAddress;
+    const headerValue = (value: string | string[] | undefined) =>
+      Array.isArray(value) ? value[0] : value;
     const requestHost = headerValue(upgradeReq.headers.host);
     const requestOrigin = headerValue(upgradeReq.headers.origin);
     const requestUserAgent = headerValue(upgradeReq.headers["user-agent"]);
@@ -189,7 +200,9 @@ export function attachGatewayWsConnectionHandler(params: AttachGatewayWsConnecti
     });
 
     const isNoisySwiftPmHelperClose = (userAgent: string | undefined, remote: string | undefined) =>
-      Boolean(userAgent?.toLowerCase().includes("swiftpm-testing-helper") && isLoopbackAddress(remote));
+      Boolean(
+        userAgent?.toLowerCase().includes("swiftpm-testing-helper") && isLoopbackAddress(remote),
+      );
 
     socket.once("close", (code, reason) => {
       const durationMs = Date.now() - openedAt;
@@ -212,14 +225,18 @@ export function attachGatewayWsConnectionHandler(params: AttachGatewayWsConnecti
         ...closeMeta,
       };
       if (!client) {
-        const logFn = isNoisySwiftPmHelperClose(requestUserAgent, remoteAddr) ? logWsControl.debug : logWsControl.warn;
+        const logFn = isNoisySwiftPmHelperClose(requestUserAgent, remoteAddr)
+          ? logWsControl.debug
+          : logWsControl.warn;
         logFn(
           `closed before connect conn=${connId} remote=${remoteAddr ?? "?"} fwd=${logForwardedFor || "n/a"} origin=${logOrigin || "n/a"} host=${logHost || "n/a"} ua=${logUserAgent || "n/a"} code=${code ?? "n/a"} reason=${logReason || "n/a"}`,
           closeContext,
         );
       }
       if (client && isWebchatClient(client.connect.client)) {
-        logWsControl.info(`webchat disconnected code=${code} reason=${logReason || "n/a"} conn=${connId}`);
+        logWsControl.info(
+          `webchat disconnected code=${code} reason=${logReason || "n/a"} conn=${connId}`,
+        );
       }
       if (client?.presenceKey) {
         upsertPresence(client.presenceKey, { reason: "disconnect" });

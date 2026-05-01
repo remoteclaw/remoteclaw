@@ -25,7 +25,9 @@ export function registerNodesNotifyCommand(nodes: Command) {
           if (!title && !body) {
             throw new Error("missing --title or --body");
           }
-          const invokeTimeout = opts.invokeTimeout ? Number.parseInt(String(opts.invokeTimeout), 10) : undefined;
+          const invokeTimeout = opts.invokeTimeout
+            ? Number.parseInt(String(opts.invokeTimeout), 10)
+            : undefined;
           const invokeParams: Record<string, unknown> = {
             nodeId,
             command: "system.notify",

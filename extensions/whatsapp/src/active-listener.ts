@@ -51,7 +51,10 @@ export function requireActiveWebListener(accountId?: string | null): {
 }
 
 export function setActiveWebListener(listener: ActiveWebListener | null): void;
-export function setActiveWebListener(accountId: string | null | undefined, listener: ActiveWebListener | null): void;
+export function setActiveWebListener(
+  accountId: string | null | undefined,
+  listener: ActiveWebListener | null,
+): void;
 export function setActiveWebListener(
   accountIdOrListener: string | ActiveWebListener | null | undefined,
   maybeListener?: ActiveWebListener | null,

@@ -4,7 +4,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const editSlackMessageMock = vi.fn();
 
 vi.mock("../../actions.js", () => ({
-  editSlackMessage: (...args: unknown[]) => editSlackMessageMock(...(args as Parameters<typeof editSlackMessageMock>)),
+  editSlackMessage: (...args: unknown[]) =>
+    editSlackMessageMock(...(args as Parameters<typeof editSlackMessageMock>)),
 }));
 
 let finalizeSlackPreviewEdit: typeof import("./preview-finalize.js").finalizeSlackPreviewEdit;
@@ -65,7 +66,9 @@ describe("finalizeSlackPreviewEdit", () => {
       }),
     ).resolves.toBeUndefined();
 
-    expect(client.conversations.replies as unknown as ReturnType<typeof vi.fn>).toHaveBeenCalledWith(
+    expect(
+      client.conversations.replies as unknown as ReturnType<typeof vi.fn>,
+    ).toHaveBeenCalledWith(
       expect.objectContaining({
         channel: "C123",
         ts: "170000.111",
@@ -97,7 +100,9 @@ describe("finalizeSlackPreviewEdit", () => {
     expect(
       __testing.buildExpectedSlackEditText({
         text: "",
-        blocks: blocks as unknown as Parameters<typeof __testing.buildExpectedSlackEditText>[0]["blocks"],
+        blocks: blocks as unknown as Parameters<
+          typeof __testing.buildExpectedSlackEditText
+        >[0]["blocks"],
       }),
     ).toBe("*Done*");
   });

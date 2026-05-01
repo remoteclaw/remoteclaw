@@ -3,7 +3,9 @@ import { runCommandWithTimeout } from "../process/exec.js";
 const SCHTASKS_TIMEOUT_MS = 15_000;
 const SCHTASKS_NO_OUTPUT_TIMEOUT_MS = 5_000;
 
-export async function execSchtasks(args: string[]): Promise<{ stdout: string; stderr: string; code: number }> {
+export async function execSchtasks(
+  args: string[],
+): Promise<{ stdout: string; stderr: string; code: number }> {
   const result = await runCommandWithTimeout(["schtasks", ...args], {
     timeoutMs: SCHTASKS_TIMEOUT_MS,
     noOutputTimeoutMs: SCHTASKS_NO_OUTPUT_TIMEOUT_MS,

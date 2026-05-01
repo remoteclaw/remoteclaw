@@ -15,7 +15,12 @@ const createImageMessage = (url: string) => ({
   previewImageUrl: url,
 });
 
-const createLocationMessage = (location: { title: string; address: string; latitude: number; longitude: number }) => ({
+const createLocationMessage = (location: {
+  title: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+}) => ({
   type: "location" as const,
   ...location,
 });
@@ -87,9 +92,13 @@ describe("deliverLineAutoReply", () => {
       accountId: "acc",
     });
     expect(pushMessagesLine).toHaveBeenCalledTimes(1);
-    expect(pushMessagesLine).toHaveBeenCalledWith("line:user:1", [createFlexMessage("Card", { type: "bubble" })], {
-      accountId: "acc",
-    });
+    expect(pushMessagesLine).toHaveBeenCalledWith(
+      "line:user:1",
+      [createFlexMessage("Card", { type: "bubble" })],
+      {
+        accountId: "acc",
+      },
+    );
     expect(createQuickReplyItems).not.toHaveBeenCalled();
   });
 
@@ -150,9 +159,13 @@ describe("deliverLineAutoReply", () => {
       deps,
     });
 
-    expect(pushMessagesLine).toHaveBeenCalledWith("line:user:1", [createFlexMessage("Card", { type: "bubble" })], {
-      accountId: "acc",
-    });
+    expect(pushMessagesLine).toHaveBeenCalledWith(
+      "line:user:1",
+      [createFlexMessage("Card", { type: "bubble" })],
+      {
+        accountId: "acc",
+      },
+    );
     expect(replyMessageLine).toHaveBeenCalledWith(
       "token",
       [
@@ -191,8 +204,12 @@ describe("deliverLineAutoReply", () => {
 
     expect(result.replyTokenUsed).toBe(true);
     expect(failingReplyMessageLine).toHaveBeenCalledTimes(1);
-    expect(pushMessagesLine).toHaveBeenCalledWith("line:user:1", [createFlexMessage("Card", { type: "bubble" })], {
-      accountId: "acc",
-    });
+    expect(pushMessagesLine).toHaveBeenCalledWith(
+      "line:user:1",
+      [createFlexMessage("Card", { type: "bubble" })],
+      {
+        accountId: "acc",
+      },
+    );
   });
 });

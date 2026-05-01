@@ -9,14 +9,16 @@ describe("shared/device-auth", () => {
   });
 
   it("dedupes, trims, sorts, and filters auth scopes", () => {
-    expect(normalizeDeviceAuthScopes([" node.invoke ", "operator.read", "", "node.invoke", "a.scope"])).toEqual([
-      "a.scope",
-      "node.invoke",
-      "operator.read",
-    ]);
+    expect(
+      normalizeDeviceAuthScopes([" node.invoke ", "operator.read", "", "node.invoke", "a.scope"]),
+    ).toEqual(["a.scope", "node.invoke", "operator.read"]);
     expect(normalizeDeviceAuthScopes(undefined)).toEqual([]);
     expect(normalizeDeviceAuthScopes(null as unknown as string[])).toEqual([]);
     expect(normalizeDeviceAuthScopes(["   ", "\t", "\n"])).toEqual([]);
-    expect(normalizeDeviceAuthScopes(["z.scope", "A.scope", "m.scope"])).toEqual(["A.scope", "m.scope", "z.scope"]);
+    expect(normalizeDeviceAuthScopes(["z.scope", "A.scope", "m.scope"])).toEqual([
+      "A.scope",
+      "m.scope",
+      "z.scope",
+    ]);
   });
 });

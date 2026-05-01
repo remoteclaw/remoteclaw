@@ -68,7 +68,9 @@ export function registerNodesPushCommand(nodes: Command) {
           const ok = parsed.ok === true;
           const status = typeof parsed.status === "number" ? parsed.status : 0;
           const reason =
-            typeof parsed.reason === "string" && parsed.reason.trim().length > 0 ? parsed.reason.trim() : undefined;
+            typeof parsed.reason === "string" && parsed.reason.trim().length > 0
+              ? parsed.reason.trim()
+              : undefined;
           const env =
             typeof parsed.environment === "string" && parsed.environment.trim().length > 0
               ? parsed.environment.trim()

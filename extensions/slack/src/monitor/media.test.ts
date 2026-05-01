@@ -4,7 +4,10 @@ import * as mediaFetch from "../../../../src/media/fetch.js";
 import type { SavedMedia } from "../../../../src/media/store.js";
 import * as mediaStore from "../../../../src/media/store.js";
 import { mockPinnedHostnameResolution } from "../../../../src/test-helpers/ssrf.js";
-import { type FetchMock, withFetchPreconnect } from "../../../../test/helpers/extensions/fetch-mock.js";
+import {
+  type FetchMock,
+  withFetchPreconnect,
+} from "../../../../test/helpers/extensions/fetch-mock.js";
 import {
   fetchWithSlackAuth,
   resolveSlackAttachmentContent,
@@ -25,7 +28,9 @@ const createSavedMedia = (filePath: string, contentType: string): SavedMedia => 
 describe("fetchWithSlackAuth", () => {
   beforeEach(() => {
     // Create a new mock for each test
-    mockFetch = vi.fn<FetchMock>(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response());
+    mockFetch = vi.fn<FetchMock>(
+      async (_input: RequestInfo | URL, _init?: RequestInit) => new Response(),
+    );
     globalThis.fetch = withFetchPreconnect(mockFetch);
   });
 
@@ -55,9 +60,9 @@ describe("fetchWithSlackAuth", () => {
   });
 
   it("rejects non-Slack hosts to avoid leaking tokens", async () => {
-    await expect(fetchWithSlackAuth("https://example.com/test.jpg", "xoxb-test-token")).rejects.toThrow(
-      /non-Slack host|non-Slack/i,
-    );
+    await expect(
+      fetchWithSlackAuth("https://example.com/test.jpg", "xoxb-test-token"),
+    ).rejects.toThrow(/non-Slack host|non-Slack/i);
 
     // Should fail fast without attempting a fetch.
     expect(mockFetch).not.toHaveBeenCalled();
@@ -90,9 +95,13 @@ describe("fetchWithSlackAuth", () => {
     });
 
     // Second call should follow the redirect without Authorization
-    expect(mockFetch).toHaveBeenNthCalledWith(2, "https://cdn.slack-edge.com/presigned-url?sig=abc123", {
-      redirect: "follow",
-    });
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      2,
+      "https://cdn.slack-edge.com/presigned-url?sig=abc123",
+      {
+        redirect: "follow",
+      },
+    );
   });
 
   it("handles relative redirect URLs", async () => {
@@ -180,7 +189,9 @@ describe("resolveSlackMedia", () => {
   });
 
   it("prefers url_private_download over url_private", async () => {
-    vi.spyOn(mediaStore, "saveMediaBuffer").mockResolvedValue(createSavedMedia("/tmp/test.jpg", "image/jpeg"));
+    vi.spyOn(mediaStore, "saveMediaBuffer").mockResolvedValue(
+      createSavedMedia("/tmp/test.jpg", "image/jpeg"),
+    );
 
     const mockResponse = new Response(Buffer.from("image data"), {
       status: 200,
@@ -200,7 +211,10 @@ describe("resolveSlackMedia", () => {
       maxBytes: 1024 * 1024,
     });
 
-    expect(mockFetch).toHaveBeenCalledWith("https://files.slack.com/download.jpg", expect.anything());
+    expect(mockFetch).toHaveBeenCalledWith(
+      "https://files.slack.com/download.jpg",
+      expect.anything(),
+    );
   });
 
   it("returns null when download fails", async () => {
@@ -257,7 +271,9 @@ describe("resolveSlackMedia", () => {
   });
 
   it("allows expected HTML uploads", async () => {
-    vi.spyOn(mediaStore, "saveMediaBuffer").mockResolvedValue(createSavedMedia("/tmp/page.html", "text/html"));
+    vi.spyOn(mediaStore, "saveMediaBuffer").mockResolvedValue(
+      createSavedMedia("/tmp/page.html", "text/html"),
+    );
     mockFetch.mockResolvedValueOnce(
       new Response("<!doctype html><html><body>ok</body></html>", {
         status: 200,
@@ -311,7 +327,12 @@ describe("resolveSlackMedia", () => {
     expect(result).not.toBeNull();
     expect(result).toHaveLength(1);
     // saveMediaBuffer should receive the overridden audio/mp4
-    expect(saveMediaBufferMock).toHaveBeenCalledWith(expect.any(Buffer), "audio/mp4", "inbound", 16 * 1024 * 1024);
+    expect(saveMediaBufferMock).toHaveBeenCalledWith(
+      expect.any(Buffer),
+      "audio/mp4",
+      "inbound",
+      16 * 1024 * 1024,
+    );
     // Returned contentType must be the overridden value, not the
     // re-detected video/mp4 from saveMediaBuffer
     expect(result![0]?.contentType).toBe("audio/mp4");
@@ -342,12 +363,19 @@ describe("resolveSlackMedia", () => {
 
     expect(result).not.toBeNull();
     expect(result).toHaveLength(1);
-    expect(saveMediaBufferMock).toHaveBeenCalledWith(expect.any(Buffer), "video/mp4", "inbound", 16 * 1024 * 1024);
+    expect(saveMediaBufferMock).toHaveBeenCalledWith(
+      expect.any(Buffer),
+      "video/mp4",
+      "inbound",
+      16 * 1024 * 1024,
+    );
     expect(result![0]?.contentType).toBe("video/mp4");
   });
 
   it("falls through to next file when first file returns error", async () => {
-    vi.spyOn(mediaStore, "saveMediaBuffer").mockResolvedValue(createSavedMedia("/tmp/test.jpg", "image/jpeg"));
+    vi.spyOn(mediaStore, "saveMediaBuffer").mockResolvedValue(
+      createSavedMedia("/tmp/test.jpg", "image/jpeg"),
+    );
 
     // First file: 404
     const errorResponse = new Response("Not Found", { status: 404 });
@@ -386,7 +414,8 @@ describe("resolveSlackMedia", () => {
     });
 
     mockFetch.mockImplementation(async (input: RequestInfo | URL) => {
-      const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+      const url =
+        typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
       if (url.includes("/a.jpg")) {
         return new Response(Buffer.from("image a"), {
           status: 200,
@@ -464,7 +493,9 @@ describe("Slack media SSRF policy", () => {
   });
 
   it("passes ssrfPolicy with Slack CDN allowedHostnames and allowRfc2544BenchmarkRange to file downloads", async () => {
-    vi.spyOn(mediaStore, "saveMediaBuffer").mockResolvedValue(createSavedMedia("/tmp/test.jpg", "image/jpeg"));
+    vi.spyOn(mediaStore, "saveMediaBuffer").mockResolvedValue(
+      createSavedMedia("/tmp/test.jpg", "image/jpeg"),
+    );
     mockFetch.mockResolvedValueOnce(
       new Response(Buffer.from("img"), { status: 200, headers: { "content-type": "image/jpeg" } }),
     );
@@ -490,7 +521,9 @@ describe("Slack media SSRF policy", () => {
   });
 
   it("passes ssrfPolicy to forwarded attachment image downloads", async () => {
-    vi.spyOn(mediaStore, "saveMediaBuffer").mockResolvedValue(createSavedMedia("/tmp/fwd.jpg", "image/jpeg"));
+    vi.spyOn(mediaStore, "saveMediaBuffer").mockResolvedValue(
+      createSavedMedia("/tmp/fwd.jpg", "image/jpeg"),
+    );
     vi.spyOn(ssrf, "resolvePinnedHostnameWithPolicy").mockImplementation(async (hostname) => {
       const normalized = hostname.trim().toLowerCase().replace(/\.$/, "");
       return {
@@ -591,7 +624,9 @@ describe("resolveSlackAttachmentContent", () => {
   });
 
   it("downloads Slack-hosted images from forwarded shared attachments", async () => {
-    vi.spyOn(mediaStore, "saveMediaBuffer").mockResolvedValue(createSavedMedia("/tmp/forwarded.jpg", "image/jpeg"));
+    vi.spyOn(mediaStore, "saveMediaBuffer").mockResolvedValue(
+      createSavedMedia("/tmp/forwarded.jpg", "image/jpeg"),
+    );
 
     mockFetch.mockResolvedValueOnce(
       new Response(Buffer.from("forwarded image"), {
@@ -680,7 +715,13 @@ describe("resolveSlackThreadHistory", () => {
         cursor: "cursor-2",
       }),
     );
-    expect(result.map((entry) => entry.ts)).toEqual(["255.000", "256.000", "257.000", "258.000", "259.000"]);
+    expect(result.map((entry) => entry.ts)).toEqual([
+      "255.000",
+      "256.000",
+      "257.000",
+      "258.000",
+      "259.000",
+    ]);
   });
 
   it("includes file-only messages and drops empty-only entries", async () => {

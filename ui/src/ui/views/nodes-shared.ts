@@ -51,7 +51,9 @@ export function resolveNodeTargets(
     }
 
     const displayName =
-      typeof node.displayName === "string" && node.displayName.trim() ? node.displayName.trim() : nodeId;
+      typeof node.displayName === "string" && node.displayName.trim()
+        ? node.displayName.trim()
+        : nodeId;
     list.push({
       id: nodeId,
       label: displayName === nodeId ? nodeId : `${displayName} · ${nodeId}`,

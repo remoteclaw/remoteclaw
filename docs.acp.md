@@ -127,7 +127,15 @@ To target a specific Gateway or agent:
     "RemoteClaw ACP": {
       "type": "custom",
       "command": "remoteclaw",
-      "args": ["acp", "--url", "wss://gateway-host:18789", "--token", "<token>", "--session", "agent:design:main"],
+      "args": [
+        "acp",
+        "--url",
+        "wss://gateway-host:18789",
+        "--token",
+        "<token>",
+        "--session",
+        "agent:design:main"
+      ],
       "env": {}
     }
   }

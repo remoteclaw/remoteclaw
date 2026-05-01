@@ -32,7 +32,9 @@ export function expectSingleNpmInstallIgnoreScriptsCall(params: {
   expect(opts?.cwd).toBeTruthy();
   const cwd = String(opts?.cwd);
   const expectedTargetDir = params.expectedTargetDir;
-  expect(canonicalizeComparableDir(path.dirname(cwd))).toBe(canonicalizeComparableDir(path.dirname(expectedTargetDir)));
+  expect(canonicalizeComparableDir(path.dirname(cwd))).toBe(
+    canonicalizeComparableDir(path.dirname(expectedTargetDir)),
+  );
   expect(path.basename(cwd)).toMatch(/^\.remoteclaw-install-stage-/);
 }
 

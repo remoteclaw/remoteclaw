@@ -61,8 +61,10 @@ export const FIELD_HELP: Record<string, string> = {
   "update.channel": 'Update channel for git + npm installs ("stable", "beta", or "dev").',
   "update.checkOnStart": "Check for npm updates when the gateway starts (default: true).",
   "update.auto.enabled": "Enable background auto-update for package installs (default: false).",
-  "update.auto.stableDelayHours": "Minimum delay before stable-channel auto-apply starts (default: 6).",
-  "update.auto.stableJitterHours": "Extra stable-channel rollout spread window in hours (default: 12).",
+  "update.auto.stableDelayHours":
+    "Minimum delay before stable-channel auto-apply starts (default: 6).",
+  "update.auto.stableJitterHours":
+    "Extra stable-channel rollout spread window in hours (default: 12).",
   "update.auto.betaCheckIntervalHours": "How often beta-channel checks run in hours (default: 1).",
   gateway:
     "Gateway runtime surface for bind mode, auth, control UI, remote transport, and operational safety controls. Keep conservative defaults unless you intentionally expose the gateway beyond trusted local interfaces.",
@@ -137,7 +139,8 @@ export const FIELD_HELP: Record<string, string> = {
     "Bearer token used to authenticate this client to a remote gateway in token-auth deployments. Store via secret/env substitution and rotate alongside remote gateway auth changes.",
   "gateway.remote.password":
     "Password credential used for remote gateway authentication when password mode is enabled. Keep this secret managed externally and avoid plaintext values in committed config.",
-  "gateway.remote.tlsFingerprint": "Expected sha256 TLS fingerprint for the remote gateway (pin to avoid MITM).",
+  "gateway.remote.tlsFingerprint":
+    "Expected sha256 TLS fingerprint for the remote gateway (pin to avoid MITM).",
   "gateway.remote.sshTarget":
     "Remote gateway over SSH (tunnels the gateway port to localhost). Format: user@host or user@host:port.",
   "gateway.remote.sshIdentity": "Optional SSH identity file path (passed to ssh -i).",
@@ -149,7 +152,8 @@ export const FIELD_HELP: Record<string, string> = {
   "talk.providers.*.modelId": "Provider default model ID for Talk mode.",
   "talk.providers.*.outputFormat": "Provider default output format for Talk mode.",
   "talk.providers.*.apiKey": "Provider API key for Talk mode.", // pragma: allowlist secret
-  "talk.voiceId": "Legacy ElevenLabs default voice ID for Talk mode. Prefer talk.providers.elevenlabs.voiceId.",
+  "talk.voiceId":
+    "Legacy ElevenLabs default voice ID for Talk mode. Prefer talk.providers.elevenlabs.voiceId.",
   "talk.voiceAliases":
     'Use this legacy ElevenLabs voice alias map (for example {"Clawd":"EXAVITQu4vr4xnSDxMaL"}) only during migration. Prefer talk.providers.elevenlabs.voiceAliases.',
   "talk.modelId":
@@ -162,15 +166,18 @@ export const FIELD_HELP: Record<string, string> = {
     "If true (default), stop assistant speech when the user starts speaking in Talk mode. Keep enabled for conversational turn-taking.",
   "talk.silenceTimeoutMs": `Milliseconds of user silence before Talk mode finalizes and sends the current transcript. Leave unset to keep the platform default pause window (${describeTalkSilenceTimeoutDefaults()}).`,
   acp: "ACP runtime controls for enabling dispatch, selecting backends, constraining allowed agent targets, and tuning streamed turn projection behavior.",
-  "acp.enabled": "Global ACP feature gate. Keep disabled unless ACP runtime + policy are configured.",
+  "acp.enabled":
+    "Global ACP feature gate. Keep disabled unless ACP runtime + policy are configured.",
   "acp.dispatch.enabled":
     "Independent dispatch gate for ACP session turns (default: true). Set false to keep ACP commands available while blocking ACP turn execution.",
   "acp.backend":
     "Default ACP runtime backend id (for example: acpx). Must match a registered ACP runtime plugin backend.",
-  "acp.defaultAgent": "Fallback ACP target agent id used when ACP spawns do not specify an explicit target.",
+  "acp.defaultAgent":
+    "Fallback ACP target agent id used when ACP spawns do not specify an explicit target.",
   "acp.allowedAgents":
     "Allowlist of ACP target agent ids permitted for ACP runtime sessions. Empty means no additional allowlist restriction.",
-  "acp.maxConcurrentSessions": "Maximum concurrently active ACP sessions across this gateway process.",
+  "acp.maxConcurrentSessions":
+    "Maximum concurrently active ACP sessions across this gateway process.",
   "acp.stream":
     "ACP streaming projection controls for chunk sizing, metadata visibility, and deduped delivery behavior.",
   "acp.stream.coalesceIdleMs":
@@ -189,11 +196,14 @@ export const FIELD_HELP: Record<string, string> = {
     "Maximum characters for projected ACP session/update lines (tool/status updates).",
   "acp.stream.tagVisibility":
     "Per-sessionUpdate visibility overrides for ACP projection (for example usage_update, available_commands_update).",
-  "acp.runtime.ttlMinutes": "Idle runtime TTL in minutes for ACP session workers before eligible cleanup.",
+  "acp.runtime.ttlMinutes":
+    "Idle runtime TTL in minutes for ACP session workers before eligible cleanup.",
   "acp.runtime.installCommand":
     "Optional operator install/setup command shown by `/acp install` and `/acp doctor` when ACP backend wiring is missing.",
-  "agents.list.*.skills": "Optional allowlist of skills for this agent (omit = all skills; empty = no skills).",
-  "agents.list[].skills": "Optional allowlist of skills for this agent (omit = all skills; empty = no skills).",
+  "agents.list.*.skills":
+    "Optional allowlist of skills for this agent (omit = all skills; empty = no skills).",
+  "agents.list[].skills":
+    "Optional allowlist of skills for this agent (omit = all skills; empty = no skills).",
   agents:
     "Agent runtime configuration root covering defaults and explicit agent entries used for routing and execution context. Keep this section explicit so model/tool behavior stays predictable across multi-agent workflows.",
   "agents.defaults":
@@ -210,11 +220,16 @@ export const FIELD_HELP: Record<string, string> = {
     "Optional ACP harness agent id to use for this RemoteClaw agent (for example codex, claude).",
   "agents.list[].runtime.acp.backend":
     "Optional ACP backend override for this agent's ACP sessions (falls back to global acp.backend).",
-  "agents.list[].runtime.acp.mode": "Optional ACP session mode default for this agent (persistent or oneshot).",
-  "agents.list[].runtime.acp.cwd": "Optional default working directory for this agent's ACP sessions.",
-  "agents.list[].identity.avatar": "Avatar image path (relative to the agent workspace only) or a remote URL/data URL.",
-  "agents.defaults.heartbeat.suppressToolErrorWarnings": "Suppress tool error warning payloads during heartbeat runs.",
-  "agents.list[].heartbeat.suppressToolErrorWarnings": "Suppress tool error warning payloads during heartbeat runs.",
+  "agents.list[].runtime.acp.mode":
+    "Optional ACP session mode default for this agent (persistent or oneshot).",
+  "agents.list[].runtime.acp.cwd":
+    "Optional default working directory for this agent's ACP sessions.",
+  "agents.list[].identity.avatar":
+    "Avatar image path (relative to the agent workspace only) or a remote URL/data URL.",
+  "agents.defaults.heartbeat.suppressToolErrorWarnings":
+    "Suppress tool error warning payloads during heartbeat runs.",
+  "agents.list[].heartbeat.suppressToolErrorWarnings":
+    "Suppress tool error warning payloads during heartbeat runs.",
   browser:
     "Browser runtime controls for local or remote CDP attachment, profile routing, and screenshot/snapshot behavior. Keep defaults unless your automation workflow requires custom browser transport settings.",
   "browser.enabled":
@@ -359,9 +374,12 @@ export const FIELD_HELP: Record<string, string> = {
     "Per-agent DANGEROUS override for container namespace joins in sandbox Docker network mode.",
   "agents.defaults.sandbox.browser.cdpSourceRange":
     "Optional CIDR allowlist for container-edge CDP ingress (for example 172.21.0.1/32).",
-  "agents.list[].sandbox.browser.cdpSourceRange": "Per-agent override for CDP source CIDR allowlist.",
-  "gateway.controlUi.basePath": "Optional URL prefix where the Control UI is served (e.g. /remoteclaw).",
-  "gateway.controlUi.root": "Optional filesystem root for Control UI assets (defaults to dist/control-ui).",
+  "agents.list[].sandbox.browser.cdpSourceRange":
+    "Per-agent override for CDP source CIDR allowlist.",
+  "gateway.controlUi.basePath":
+    "Optional URL prefix where the Control UI is served (e.g. /remoteclaw).",
+  "gateway.controlUi.root":
+    "Optional filesystem root for Control UI assets (defaults to dist/control-ui).",
   "gateway.controlUi.allowedOrigins":
     "Allowed browser origins for Control UI/WebChat websocket connections (full origins only, e.g. https://control.example.com). Required for non-loopback Control UI deployments unless dangerous Host-header fallback is explicitly enabled.",
   "gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback":
@@ -463,7 +481,8 @@ export const FIELD_HELP: Record<string, string> = {
   "bindings[].acp":
     "Optional per-binding ACP overrides for bindings[].type=acp. This layer overrides agents.list[].runtime.acp defaults for the matched conversation.",
   "bindings[].acp.mode": "ACP session mode override for this binding (persistent or oneshot).",
-  "bindings[].acp.label": "Human-friendly label for ACP status/diagnostics in this bound conversation.",
+  "bindings[].acp.label":
+    "Human-friendly label for ACP status/diagnostics in this bound conversation.",
   "bindings[].acp.cwd": "Working directory override for ACP sessions created from this binding.",
   "bindings[].acp.backend":
     "ACP backend override for this binding (falls back to agent runtime ACP backend, then global acp.backend).",
@@ -499,16 +518,20 @@ export const FIELD_HELP: Record<string, string> = {
     "Trace sampling rate (0-1) controlling how much trace traffic is exported to observability backends. Lower rates reduce overhead/cost, while higher rates improve debugging fidelity.",
   "diagnostics.otel.flushIntervalMs":
     "Interval in milliseconds for periodic telemetry flush from buffers to the collector. Increase to reduce export chatter, or lower for faster visibility during active incident response.",
-  "diagnostics.cacheTrace.enabled": "Log cache trace snapshots for embedded agent runs (default: false).",
+  "diagnostics.cacheTrace.enabled":
+    "Log cache trace snapshots for embedded agent runs (default: false).",
   "diagnostics.cacheTrace.filePath":
     "JSONL output path for cache trace logs (default: $REMOTECLAW_STATE_DIR/logs/cache-trace.jsonl).",
-  "diagnostics.cacheTrace.includeMessages": "Include full message payloads in trace output (default: true).",
+  "diagnostics.cacheTrace.includeMessages":
+    "Include full message payloads in trace output (default: true).",
   "diagnostics.cacheTrace.includePrompt": "Include prompt text in trace output (default: true).",
   "diagnostics.cacheTrace.includeSystem": "Include system prompt in trace output (default: true).",
-  "tools.exec.applyPatch.enabled": "Experimental. Enables apply_patch for OpenAI models when allowed by tool policy.",
+  "tools.exec.applyPatch.enabled":
+    "Experimental. Enables apply_patch for OpenAI models when allowed by tool policy.",
   "tools.exec.applyPatch.workspaceOnly":
     "Restrict apply_patch paths to the workspace directory (default: true). Set false to allow writing outside the workspace (dangerous).",
-  "tools.exec.applyPatch.allowModels": 'Optional allowlist of model ids (e.g. "gpt-5.2" or "openai/gpt-5.2").',
+  "tools.exec.applyPatch.allowModels":
+    'Optional allowlist of model ids (e.g. "gpt-5.2" or "openai/gpt-5.2").',
   "tools.loopDetection.enabled":
     "Enable repetitive tool-call loop detection and backoff safety checks (default: false).",
   "tools.loopDetection.historySize": "Tool history window size for loop detection (default: 30).",
@@ -516,7 +539,8 @@ export const FIELD_HELP: Record<string, string> = {
     "Warning threshold for repetitive patterns when detector is enabled (default: 10).",
   "tools.loopDetection.criticalThreshold":
     "Critical threshold for repetitive patterns when detector is enabled (default: 20).",
-  "tools.loopDetection.globalCircuitBreakerThreshold": "Global no-progress breaker threshold (default: 30).",
+  "tools.loopDetection.globalCircuitBreakerThreshold":
+    "Global no-progress breaker threshold (default: 30).",
   "tools.loopDetection.detectors.genericRepeat":
     "Enable generic repeated same-tool/same-params loop detection (default: true).",
   "tools.loopDetection.detectors.knownPollNoProgress":
@@ -527,10 +551,12 @@ export const FIELD_HELP: Record<string, string> = {
   "tools.exec.notifyOnExitEmptySuccess":
     "When true, successful backgrounded exec exits with empty output still enqueue a completion system event (default: false).",
   "tools.exec.pathPrepend": "Directories to prepend to PATH for exec runs (gateway/sandbox).",
-  "tools.exec.safeBins": "Allow stdin-only safe binaries to run without explicit allowlist entries.",
+  "tools.exec.safeBins":
+    "Allow stdin-only safe binaries to run without explicit allowlist entries.",
   "tools.exec.safeBinTrustedDirs":
     "Additional explicit directories trusted for safe-bin path checks (PATH entries are never auto-trusted).",
-  "tools.exec.safeBinProfiles": "Optional per-binary safe-bin profiles (positional limits + allowed/denied flags).",
+  "tools.exec.safeBinProfiles":
+    "Optional per-binary safe-bin profiles (positional limits + allowed/denied flags).",
   "tools.profile":
     "Global tool profile name used to select a predefined tool policy baseline before applying allow/deny overrides. Use this for consistent environment posture across agents and keep profile names stable.",
   "tools.alsoAllow":
@@ -600,14 +626,18 @@ export const FIELD_HELP: Record<string, string> = {
     "Restrict filesystem tools (read/write/edit/apply_patch) to the workspace directory (default: false).",
   "tools.sessions.visibility":
     'Controls which sessions can be targeted by sessions_list/sessions_history/sessions_send. ("tree" default = current session + spawned subagent sessions; "self" = only current; "agent" = any session in the current agent id; "all" = any session; cross-agent still requires tools.agentToAgent).',
-  "tools.message.allowCrossContextSend": "Legacy override: allow cross-context sends across all providers.",
+  "tools.message.allowCrossContextSend":
+    "Legacy override: allow cross-context sends across all providers.",
   "tools.message.crossContext.allowWithinProvider":
     "Allow sends to other channels within the same provider (default: true).",
-  "tools.message.crossContext.allowAcrossProviders": "Allow sends across different providers (default: false).",
+  "tools.message.crossContext.allowAcrossProviders":
+    "Allow sends across different providers (default: false).",
   "tools.message.crossContext.marker.enabled":
     "Add a visible origin marker when sending cross-context (default: true).",
-  "tools.message.crossContext.marker.prefix": 'Text prefix for cross-context markers (supports "{channel}").',
-  "tools.message.crossContext.marker.suffix": 'Text suffix for cross-context markers (supports "{channel}").',
+  "tools.message.crossContext.marker.prefix":
+    'Text prefix for cross-context markers (supports "{channel}").',
+  "tools.message.crossContext.marker.suffix":
+    'Text suffix for cross-context markers (supports "{channel}").',
   "tools.message.broadcast.enabled": "Enable broadcast action (default: true).",
   "tools.web.search.enabled": "Enable the web_search tool (requires a provider API key).",
   "tools.web.search.provider":
@@ -618,12 +648,15 @@ export const FIELD_HELP: Record<string, string> = {
   "tools.web.search.cacheTtlMinutes": "Cache TTL in minutes for web_search results.",
   "tools.web.search.brave.mode":
     'Brave Search mode: "web" (URL results) or "llm-context" (pre-extracted page content for LLM grounding).',
-  "tools.web.search.gemini.apiKey": "Gemini API key for Google Search grounding (fallback: GEMINI_API_KEY env var).",
+  "tools.web.search.gemini.apiKey":
+    "Gemini API key for Google Search grounding (fallback: GEMINI_API_KEY env var).",
   "tools.web.search.gemini.model": 'Gemini model override (default: "gemini-2.5-flash").',
   "tools.web.search.grok.apiKey": "Grok (xAI) API key (fallback: XAI_API_KEY env var).", // pragma: allowlist secret
   "tools.web.search.grok.model": 'Grok model override (default: "grok-4-1-fast").',
-  "tools.web.search.kimi.apiKey": "Moonshot/Kimi API key (fallback: KIMI_API_KEY or MOONSHOT_API_KEY env var).",
-  "tools.web.search.kimi.baseUrl": 'Kimi base URL override (default: "https://api.moonshot.ai/v1").',
+  "tools.web.search.kimi.apiKey":
+    "Moonshot/Kimi API key (fallback: KIMI_API_KEY or MOONSHOT_API_KEY env var).",
+  "tools.web.search.kimi.baseUrl":
+    'Kimi base URL override (default: "https://api.moonshot.ai/v1").',
   "tools.web.search.kimi.model": 'Kimi model override (default: "moonshot-v1-128k").',
   "tools.web.search.perplexity.apiKey":
     "Perplexity or OpenRouter API key (fallback: PERPLEXITY_API_KEY or OPENROUTER_API_KEY env var). Direct Perplexity keys default to the Search API; OpenRouter keys use Sonar chat completions.",
@@ -633,17 +666,22 @@ export const FIELD_HELP: Record<string, string> = {
     'Optional Sonar/OpenRouter model override (default: "perplexity/sonar-pro"). Setting this opts Perplexity into the legacy chat-completions compatibility path.',
   "tools.web.fetch.enabled": "Enable the web_fetch tool (lightweight HTTP fetch).",
   "tools.web.fetch.maxChars": "Max characters returned by web_fetch (truncated).",
-  "tools.web.fetch.maxCharsCap": "Hard cap for web_fetch maxChars (applies to config and tool calls).",
+  "tools.web.fetch.maxCharsCap":
+    "Hard cap for web_fetch maxChars (applies to config and tool calls).",
   "tools.web.fetch.timeoutSeconds": "Timeout in seconds for web_fetch requests.",
   "tools.web.fetch.cacheTtlMinutes": "Cache TTL in minutes for web_fetch results.",
   "tools.web.fetch.maxRedirects": "Maximum redirects allowed for web_fetch (default: 3).",
   "tools.web.fetch.userAgent": "Override User-Agent header for web_fetch requests.",
-  "tools.web.fetch.readability": "Use Readability to extract main content from HTML (fallbacks to basic HTML cleanup).",
+  "tools.web.fetch.readability":
+    "Use Readability to extract main content from HTML (fallbacks to basic HTML cleanup).",
   "tools.web.fetch.firecrawl.enabled": "Enable Firecrawl fallback for web_fetch (if configured).",
   "tools.web.fetch.firecrawl.apiKey": "Firecrawl API key (fallback: FIRECRAWL_API_KEY env var).",
-  "tools.web.fetch.firecrawl.baseUrl": "Firecrawl base URL (e.g. https://api.firecrawl.dev or custom endpoint).",
-  "tools.web.fetch.firecrawl.onlyMainContent": "When true, Firecrawl returns only the main content (default: true).",
-  "tools.web.fetch.firecrawl.maxAgeMs": "Firecrawl maxAge (ms) for cached results when supported by the API.",
+  "tools.web.fetch.firecrawl.baseUrl":
+    "Firecrawl base URL (e.g. https://api.firecrawl.dev or custom endpoint).",
+  "tools.web.fetch.firecrawl.onlyMainContent":
+    "When true, Firecrawl returns only the main content (default: true).",
+  "tools.web.fetch.firecrawl.maxAgeMs":
+    "Firecrawl maxAge (ms) for cached results when supported by the API.",
   "tools.web.fetch.firecrawl.timeoutSeconds": "Timeout in seconds for Firecrawl requests.",
   models:
     "Model catalog root for provider definitions, merge/replace behavior, and optional Bedrock discovery integration. Keep provider definitions explicit and validated before relying on production failover paths.",
@@ -680,26 +718,31 @@ export const FIELD_HELP: Record<string, string> = {
   "models.bedrockDiscovery.defaultMaxTokens":
     "Fallback max-token value applied to discovered models without explicit output token limits. Use conservative defaults to reduce truncation surprises and unexpected token spend.",
   auth: "Authentication profile root used for multi-profile provider credentials and cooldown-based failover ordering. Keep profiles minimal and explicit so automatic failover behavior stays auditable.",
-  "channels.slack.allowBots": "Allow bot-authored messages to trigger Slack replies (default: false).",
+  "channels.slack.allowBots":
+    "Allow bot-authored messages to trigger Slack replies (default: false).",
   "channels.slack.thread.historyScope":
     'Scope for Slack thread history context ("thread" isolates per thread; "channel" reuses channel history).',
   "channels.slack.thread.inheritParent":
     "If true, Slack thread sessions inherit the parent channel transcript (default: false).",
   "channels.slack.thread.initialHistoryLimit":
     "Maximum number of existing Slack thread messages to fetch when starting a new thread session (default: 20, set to 0 to disable).",
-  "channels.mattermost.botToken": "Bot token from Mattermost System Console -> Integrations -> Bot Accounts.",
-  "channels.mattermost.baseUrl": "Base URL for your Mattermost server (e.g., https://chat.example.com).",
+  "channels.mattermost.botToken":
+    "Bot token from Mattermost System Console -> Integrations -> Bot Accounts.",
+  "channels.mattermost.baseUrl":
+    "Base URL for your Mattermost server (e.g., https://chat.example.com).",
   "channels.mattermost.chatmode":
     'Reply to channel messages on mention ("oncall"), on trigger chars (">" or "!") ("onchar"), or on every message ("onmessage").',
   "channels.mattermost.oncharPrefixes": 'Trigger prefixes for onchar mode (default: [">", "!"]).',
-  "channels.mattermost.requireMention": "Require @mention in channels before responding (default: true).",
+  "channels.mattermost.requireMention":
+    "Require @mention in channels before responding (default: true).",
   "auth.profiles": "Named auth profiles (provider + mode + optional email).",
   "auth.order": "Ordered auth profile IDs per provider (used for automatic failover).",
   "auth.cooldowns":
     "Cooldown/backoff controls for temporary profile suppression after billing-related failures and retry windows. Use these to prevent rapid re-selection of profiles that are still blocked.",
   "auth.cooldowns.billingBackoffHours":
     "Base backoff (hours) when a profile fails due to billing/insufficient credits (default: 5).",
-  "auth.cooldowns.billingBackoffHoursByProvider": "Optional per-provider overrides for billing backoff (hours).",
+  "auth.cooldowns.billingBackoffHoursByProvider":
+    "Optional per-provider overrides for billing backoff (hours).",
   "auth.cooldowns.billingMaxHours": "Cap (hours) for billing backoff (default: 24).",
   "auth.cooldowns.failureWindowHours": "Failure window (hours) for backoff counters (default: 24).",
   "agents.defaults.workspace":
@@ -714,7 +757,8 @@ export const FIELD_HELP: Record<string, string> = {
     "Optional repository root shown in the system prompt runtime line (overrides auto-detect).",
   "agents.defaults.envelopeTimezone":
     'Timezone for message envelopes ("utc", "local", "user", or an IANA timezone string).',
-  "agents.defaults.envelopeTimestamp": 'Include absolute timestamps in message envelopes ("on" or "off").',
+  "agents.defaults.envelopeTimestamp":
+    'Include absolute timestamps in message envelopes ("on" or "off").',
   "agents.defaults.envelopeElapsed": 'Include elapsed time in message envelopes ("on" or "off").',
   "agents.defaults.models": "Configured model catalog (keys are full provider/model IDs).",
   "memory.backend":
@@ -814,23 +858,31 @@ export const FIELD_HELP: Record<string, string> = {
     "Per-plugin environment variable map injected for that plugin runtime context only. Use this to scope provider credentials to one plugin instead of sharing global process environment.",
   "plugins.entries.*.config":
     "Plugin-defined configuration payload interpreted by that plugin's own schema and validation rules. Use only documented fields from the plugin to prevent ignored or invalid settings.",
-  "plugins.installs": "CLI-managed install metadata (used by `remoteclaw plugins update` to locate install sources).",
+  "plugins.installs":
+    "CLI-managed install metadata (used by `remoteclaw plugins update` to locate install sources).",
   "plugins.installs.*.source": 'Install source ("npm", "archive", or "path").',
   "plugins.installs.*.spec": "Original npm spec used for install (if source is npm).",
   "plugins.installs.*.sourcePath": "Original archive/path used for install (if any).",
-  "plugins.installs.*.installPath": "Resolved install directory (usually ~/.remoteclaw/extensions/<id>).",
+  "plugins.installs.*.installPath":
+    "Resolved install directory (usually ~/.remoteclaw/extensions/<id>).",
   "plugins.installs.*.version": "Version recorded at install time (if available).",
   "plugins.installs.*.resolvedName": "Resolved npm package name from the fetched artifact.",
   "plugins.installs.*.resolvedVersion":
     "Resolved npm package version from the fetched artifact (useful for non-pinned specs).",
-  "plugins.installs.*.resolvedSpec": "Resolved exact npm spec (<name>@<version>) from the fetched artifact.",
-  "plugins.installs.*.integrity": "Resolved npm dist integrity hash for the fetched artifact (if reported by npm).",
-  "plugins.installs.*.shasum": "Resolved npm dist shasum for the fetched artifact (if reported by npm).",
-  "plugins.installs.*.resolvedAt": "ISO timestamp when npm package metadata was last resolved for this install record.",
+  "plugins.installs.*.resolvedSpec":
+    "Resolved exact npm spec (<name>@<version>) from the fetched artifact.",
+  "plugins.installs.*.integrity":
+    "Resolved npm dist integrity hash for the fetched artifact (if reported by npm).",
+  "plugins.installs.*.shasum":
+    "Resolved npm dist shasum for the fetched artifact (if reported by npm).",
+  "plugins.installs.*.resolvedAt":
+    "ISO timestamp when npm package metadata was last resolved for this install record.",
   "plugins.installs.*.installedAt": "ISO timestamp of last install/update.",
-  "agents.list.*.identity.avatar": "Agent avatar (workspace-relative path, http(s) URL, or data URI).",
+  "agents.list.*.identity.avatar":
+    "Agent avatar (workspace-relative path, http(s) URL, or data URI).",
   "agents.defaults.model.primary": "Primary model (provider/model).",
-  "agents.defaults.model.fallbacks": "Ordered fallback models (provider/model). Used when the primary model fails.",
+  "agents.defaults.model.fallbacks":
+    "Ordered fallback models (provider/model). Used when the primary model fails.",
   "agents.defaults.imageModel.primary":
     "Optional image model (provider/model) used when the primary model lacks image input.",
   "agents.defaults.imageModel.fallbacks": "Ordered fallback image models (provider/model).",
@@ -892,7 +944,8 @@ export const FIELD_HELP: Record<string, string> = {
     "Enables text-command parsing in chat input in addition to native command surfaces where available. Keep this enabled for compatibility across channels that do not support native command registration.",
   "commands.bash":
     "Allow bash chat command (`!`; `/bash` alias) to run host shell commands (default: false; requires tools.elevated).",
-  "commands.bashForegroundMs": "How long bash waits before backgrounding (default: 2000; 0 backgrounds immediately).",
+  "commands.bashForegroundMs":
+    "How long bash waits before backgrounding (default: 2000; 0 backgrounds immediately).",
   "commands.config": "Allow /config chat command to read/write config on disk (default: false).",
   "commands.debug": "Allow /debug chat command for runtime-only overrides (default: false).",
   "commands.restart": "Allow /restart and gateway restart tool actions (default: true).",
@@ -1004,7 +1057,8 @@ export const FIELD_HELP: Record<string, string> = {
     "Limits how many cron jobs can execute at the same time when multiple schedules fire together. Use lower values to protect CPU/memory under heavy automation load, or raise carefully for higher throughput.",
   "cron.retry":
     "Overrides the default retry policy for one-shot jobs when they fail with transient errors (rate limit, overloaded, network, server_error). Omit to use defaults: maxAttempts 3, backoffMs [30000, 60000, 300000], retry all transient types.",
-  "cron.retry.maxAttempts": "Max retries for one-shot jobs on transient errors before permanent disable (default: 3).",
+  "cron.retry.maxAttempts":
+    "Max retries for one-shot jobs on transient errors before permanent disable (default: 3).",
   "cron.retry.backoffMs":
     "Backoff delays in ms for each retry attempt (default: [30000, 60000, 300000]). Use shorter values for faster retries.",
   "cron.retry.retryOn":
@@ -1223,7 +1277,8 @@ export const FIELD_HELP: Record<string, string> = {
     "Telegram bot token used to authenticate Bot API requests for this account/provider config. Use secret/env substitution and rotate tokens if exposure is suspected.",
   "channels.telegram.capabilities.inlineButtons":
     "Enable Telegram inline button components for supported command and interaction surfaces. Disable if your deployment needs plain-text-only compatibility behavior.",
-  "channels.slack.configWrites": "Allow Slack to write config in response to channel events/commands (default: true).",
+  "channels.slack.configWrites":
+    "Allow Slack to write config in response to channel events/commands (default: true).",
   "channels.slack.botToken":
     "Slack bot token used for standard chat actions in the configured workspace. Keep this credential scoped and rotate if workspace app permissions change.",
   "channels.slack.appToken":
@@ -1256,21 +1311,26 @@ export const FIELD_HELP: Record<string, string> = {
     "Filesystem path to the iMessage bridge CLI binary used for send/receive operations. Set explicitly when the binary is not on PATH in service runtime environments.",
   "channels.msteams.configWrites":
     "Allow Microsoft Teams to write config in response to channel events/commands (default: true).",
-  "channels.modelByChannel": "Map provider -> channel id -> model override (values are provider/model or aliases).",
+  "channels.modelByChannel":
+    "Map provider -> channel id -> model override (values are provider/model or aliases).",
   ...IRC_FIELD_HELP,
   "channels.discord.commands.native": 'Override native commands for Discord (bool or "auto").',
-  "channels.discord.commands.nativeSkills": 'Override native skill commands for Discord (bool or "auto").',
+  "channels.discord.commands.nativeSkills":
+    'Override native skill commands for Discord (bool or "auto").',
   "channels.telegram.commands.native": 'Override native commands for Telegram (bool or "auto").',
-  "channels.telegram.commands.nativeSkills": 'Override native skill commands for Telegram (bool or "auto").',
+  "channels.telegram.commands.nativeSkills":
+    'Override native skill commands for Telegram (bool or "auto").',
   "channels.slack.commands.native": 'Override native commands for Slack (bool or "auto").',
-  "channels.slack.commands.nativeSkills": 'Override native skill commands for Slack (bool or "auto").',
+  "channels.slack.commands.nativeSkills":
+    'Override native skill commands for Slack (bool or "auto").',
   "channels.slack.streaming":
     'Unified Slack stream preview mode: "off" | "partial" | "block" | "progress". Legacy boolean/streamMode keys are auto-mapped.',
   "channels.slack.nativeStreaming":
     "Enable native Slack text streaming (chat.startStream/chat.appendStream/chat.stopStream) when channels.slack.streaming is partial (default: true).",
   "channels.slack.streamMode":
     "Legacy Slack preview mode alias (replace | status_final | append); auto-migrated to channels.slack.streaming.",
-  "channels.telegram.customCommands": "Additional Telegram bot menu commands (merged with native; conflicts ignored).",
+  "channels.telegram.customCommands":
+    "Additional Telegram bot menu commands (merged with native; conflicts ignored).",
   "messages.suppressToolErrors":
     "When true, suppress ⚠️ tool-error warnings from being shown to the user. The agent already sees errors in context and can retry. Default: false.",
   "messages.ackReaction": "Emoji reaction used to acknowledge inbound messages (empty disables).",
@@ -1300,13 +1360,16 @@ export const FIELD_HELP: Record<string, string> = {
     'Target max size for a Discord stream preview chunk when channels.discord.streaming="block" (default: 800; clamped to channels.discord.textChunkLimit).',
   "channels.discord.draftChunk.breakPreference":
     "Preferred breakpoints for Discord draft chunks (paragraph | newline | sentence). Default: paragraph.",
-  "channels.telegram.retry.attempts": "Max retry attempts for outbound Telegram API calls (default: 3).",
+  "channels.telegram.retry.attempts":
+    "Max retry attempts for outbound Telegram API calls (default: 3).",
   "channels.telegram.retry.minDelayMs": "Minimum retry delay in ms for Telegram outbound calls.",
-  "channels.telegram.retry.maxDelayMs": "Maximum retry delay cap in ms for Telegram outbound calls.",
+  "channels.telegram.retry.maxDelayMs":
+    "Maximum retry delay cap in ms for Telegram outbound calls.",
   "channels.telegram.retry.jitter": "Jitter factor (0-1) applied to Telegram retry delays.",
   "channels.telegram.network.autoSelectFamily":
     "Override Node autoSelectFamily for Telegram (true=enable, false=disable).",
-  "channels.telegram.timeoutSeconds": "Max seconds before Telegram API requests are aborted (default: 500 per grammY).",
+  "channels.telegram.timeoutSeconds":
+    "Max seconds before Telegram API requests are aborted (default: 500 per grammY).",
   "channels.telegram.threadBindings.enabled":
     "Enable Telegram conversation binding features (/focus, /unfocus, /agents, and /session idle|max-age). Overrides session.threadBindings.enabled when set.",
   "channels.telegram.threadBindings.idleHours":
@@ -1332,7 +1395,8 @@ export const FIELD_HELP: Record<string, string> = {
     'Direct message access control ("pairing" recommended). "open" requires channels.discord.allowFrom=["*"].',
   "channels.discord.dm.policy":
     'Direct message access control ("pairing" recommended). "open" requires channels.discord.allowFrom=["*"] (legacy: channels.discord.dm.allowFrom).',
-  "channels.discord.retry.attempts": "Max retry attempts for outbound Discord API calls (default: 3).",
+  "channels.discord.retry.attempts":
+    "Max retry attempts for outbound Discord API calls (default: 3).",
   "channels.discord.retry.minDelayMs": "Minimum retry delay in ms for Discord outbound calls.",
   "channels.discord.retry.maxDelayMs": "Maximum retry delay cap in ms for Discord outbound calls.",
   "channels.discord.retry.jitter": "Jitter factor (0-1) applied to Discord retry delays.",
@@ -1357,19 +1421,22 @@ export const FIELD_HELP: Record<string, string> = {
     "Accent color for Discord component containers (hex). Set per account via channels.discord.accounts.<id>.ui.components.accentColor.",
   "channels.discord.voice.enabled":
     "Enable Discord voice channel conversations (default: true). Omit channels.discord.voice to keep voice support disabled for the account.",
-  "channels.discord.voice.autoJoin": "Voice channels to auto-join on startup (list of guildId/channelId entries).",
+  "channels.discord.voice.autoJoin":
+    "Voice channels to auto-join on startup (list of guildId/channelId entries).",
   "channels.discord.voice.daveEncryption":
     "Toggle DAVE end-to-end encryption for Discord voice joins (default: true in @discordjs/voice; Discord may require this).",
   "channels.discord.voice.decryptionFailureTolerance":
     "Consecutive decrypt failures before DAVE attempts session recovery (passed to @discordjs/voice; default: 24).",
-  "channels.discord.voice.tts": "Optional TTS overrides for Discord voice playback (merged with messages.tts).",
+  "channels.discord.voice.tts":
+    "Optional TTS overrides for Discord voice playback (merged with messages.tts).",
   "channels.discord.intents.presence":
     "Enable the Guild Presences privileged intent. Must also be enabled in the Discord Developer Portal. Allows tracking user activities (e.g. Spotify). Default: false.",
   "channels.discord.intents.guildMembers":
     "Enable the Guild Members privileged intent. Must also be enabled in the Discord Developer Portal. Default: false.",
   "channels.discord.pluralkit.enabled":
     "Resolve PluralKit proxied messages and treat system members as distinct senders.",
-  "channels.discord.pluralkit.token": "Optional PluralKit token for resolving private systems or members.",
+  "channels.discord.pluralkit.token":
+    "Optional PluralKit token for resolving private systems or members.",
   "channels.discord.activity": "Discord presence activity text (defaults to custom status).",
   "channels.discord.status": "Discord presence status (online, dnd, idle, invisible).",
   "channels.discord.autoPresence.enabled":

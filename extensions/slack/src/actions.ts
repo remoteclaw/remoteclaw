@@ -192,7 +192,11 @@ export async function editSlackMessage(
   });
 }
 
-export async function deleteSlackMessage(channelId: string, messageId: string, opts: SlackActionClientOpts = {}) {
+export async function deleteSlackMessage(
+  channelId: string,
+  messageId: string,
+  opts: SlackActionClientOpts = {},
+) {
   const client = await getClient(opts);
   await client.chat.delete({
     channel: channelId,
@@ -251,17 +255,28 @@ export async function listSlackEmojis(opts: SlackActionClientOpts = {}) {
   return await client.emoji.list();
 }
 
-export async function pinSlackMessage(channelId: string, messageId: string, opts: SlackActionClientOpts = {}) {
+export async function pinSlackMessage(
+  channelId: string,
+  messageId: string,
+  opts: SlackActionClientOpts = {},
+) {
   const client = await getClient(opts);
   await client.pins.add({ channel: channelId, timestamp: messageId });
 }
 
-export async function unpinSlackMessage(channelId: string, messageId: string, opts: SlackActionClientOpts = {}) {
+export async function unpinSlackMessage(
+  channelId: string,
+  messageId: string,
+  opts: SlackActionClientOpts = {},
+) {
   const client = await getClient(opts);
   await client.pins.remove({ channel: channelId, timestamp: messageId });
 }
 
-export async function listSlackPins(channelId: string, opts: SlackActionClientOpts = {}): Promise<SlackPin[]> {
+export async function listSlackPins(
+  channelId: string,
+  opts: SlackActionClientOpts = {},
+): Promise<SlackPin[]> {
   const client = await getClient(opts);
   const result = await client.pins.list({ channel: channelId });
   return (result.items ?? []) as SlackPin[];
@@ -315,7 +330,8 @@ function collectSlackShareMaps(file: SlackFileInfoSummary): Array<Record<string,
   }
   const shares = file.shares as Record<string, unknown>;
   return [shares.public, shares.private].filter(
-    (value): value is Record<string, unknown> => Boolean(value) && typeof value === "object" && !Array.isArray(value),
+    (value): value is Record<string, unknown> =>
+      Boolean(value) && typeof value === "object" && !Array.isArray(value),
   );
 }
 
@@ -332,7 +348,10 @@ function collectSlackSharedChannelIds(file: SlackFileInfoSummary): Set<string> {
   return ids;
 }
 
-function collectSlackThreadShares(file: SlackFileInfoSummary, channelId: string): SlackFileThreadShare[] {
+function collectSlackThreadShares(
+  file: SlackFileInfoSummary,
+  channelId: string,
+): SlackFileThreadShare[] {
   const matches: SlackFileThreadShare[] = [];
   for (const shareMap of collectSlackShareMaps(file)) {
     const rawEntries = shareMap[channelId];
@@ -345,14 +364,19 @@ function collectSlackThreadShares(file: SlackFileInfoSummary, channelId: string)
       }
       const entry = rawEntry as Record<string, unknown>;
       const ts = typeof entry.ts === "string" ? normalizeSlackScopeValue(entry.ts) : undefined;
-      const threadTs = typeof entry.thread_ts === "string" ? normalizeSlackScopeValue(entry.thread_ts) : undefined;
+      const threadTs =
+        typeof entry.thread_ts === "string" ? normalizeSlackScopeValue(entry.thread_ts) : undefined;
       matches.push({ channelId, ts, threadTs });
     }
   }
   return matches;
 }
 
-function hasSlackScopeMismatch(params: { file: SlackFileInfoSummary; channelId?: string; threadId?: string }): boolean {
+function hasSlackScopeMismatch(params: {
+  file: SlackFileInfoSummary;
+  channelId?: string;
+  threadId?: string;
+}): boolean {
   const channelId = normalizeSlackScopeValue(params.channelId);
   if (!channelId) {
     return false;

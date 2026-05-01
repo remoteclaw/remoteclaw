@@ -83,7 +83,9 @@ export function registerMatrixMonitorEvents(params: {
           return;
         }
         await sendReadReceiptMatrix(roomId, eventId, client).catch((err) => {
-          logVerboseMessage(`matrix: early read receipt failed room=${roomId} id=${eventId}: ${String(err)}`);
+          logVerboseMessage(
+            `matrix: early read receipt failed room=${roomId} id=${eventId}: ${String(err)}`,
+          );
         });
       })();
     }
@@ -103,20 +105,27 @@ export function registerMatrixMonitorEvents(params: {
     logVerboseMessage(`matrix: decrypted event room=${roomId} type=${eventType} id=${eventId}`);
   });
 
-  client.on("room.failed_decryption", async (roomId: string, event: MatrixRawEvent, error: Error) => {
-    logger.warn("Failed to decrypt message", {
-      roomId,
-      eventId: event.event_id,
-      error: error.message,
-    });
-    logVerboseMessage(`matrix: failed decrypt room=${roomId} id=${event.event_id ?? "unknown"} error=${error.message}`);
-  });
+  client.on(
+    "room.failed_decryption",
+    async (roomId: string, event: MatrixRawEvent, error: Error) => {
+      logger.warn("Failed to decrypt message", {
+        roomId,
+        eventId: event.event_id,
+        error: error.message,
+      });
+      logVerboseMessage(
+        `matrix: failed decrypt room=${roomId} id=${event.event_id ?? "unknown"} error=${error.message}`,
+      );
+    },
+  );
 
   client.on("room.invite", (roomId: string, event: MatrixRawEvent) => {
     const eventId = event?.event_id ?? "unknown";
     const sender = event?.sender ?? "unknown";
     const isDirect = (event?.content as { is_direct?: boolean } | undefined)?.is_direct === true;
-    logVerboseMessage(`matrix: invite room=${roomId} sender=${sender} direct=${String(isDirect)} id=${eventId}`);
+    logVerboseMessage(
+      `matrix: invite room=${roomId} sender=${sender} direct=${String(isDirect)} id=${eventId}`,
+    );
   });
 
   client.on("room.join", (roomId: string, event: MatrixRawEvent) => {
@@ -127,7 +136,9 @@ export function registerMatrixMonitorEvents(params: {
   client.on("room.event", (roomId: string, event: MatrixRawEvent) => {
     const eventType = event?.type ?? "unknown";
     if (eventType === EventType.RoomMessageEncrypted) {
-      logVerboseMessage(`matrix: encrypted raw event room=${roomId} id=${event?.event_id ?? "unknown"}`);
+      logVerboseMessage(
+        `matrix: encrypted raw event room=${roomId} id=${event?.event_id ?? "unknown"}`,
+      );
       if (auth.encryption !== true && !warnedEncryptedRooms.has(roomId)) {
         warnedEncryptedRooms.add(roomId);
         const warning =

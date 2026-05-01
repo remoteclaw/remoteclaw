@@ -153,13 +153,17 @@ function toChannelMeta(params: {
     ...(params.channel.aliases ? { aliases: params.channel.aliases } : {}),
     ...(params.channel.preferOver ? { preferOver: params.channel.preferOver } : {}),
     ...(params.channel.order !== undefined ? { order: params.channel.order } : {}),
-    ...(params.channel.selectionDocsPrefix ? { selectionDocsPrefix: params.channel.selectionDocsPrefix } : {}),
+    ...(params.channel.selectionDocsPrefix
+      ? { selectionDocsPrefix: params.channel.selectionDocsPrefix }
+      : {}),
     ...(params.channel.selectionDocsOmitLabel !== undefined
       ? { selectionDocsOmitLabel: params.channel.selectionDocsOmitLabel }
       : {}),
     ...(params.channel.selectionExtras ? { selectionExtras: params.channel.selectionExtras } : {}),
     ...(systemImage ? { systemImage } : {}),
-    ...(params.channel.showConfigured !== undefined ? { showConfigured: params.channel.showConfigured } : {}),
+    ...(params.channel.showConfigured !== undefined
+      ? { showConfigured: params.channel.showConfigured }
+      : {}),
     ...(params.channel.quickstartAllowFrom !== undefined
       ? { quickstartAllowFrom: params.channel.quickstartAllowFrom }
       : {}),
@@ -301,7 +305,9 @@ function loadBundledMetadataCatalogEntries(options: CatalogOptions): ChannelPlug
   return entries;
 }
 
-export function buildChannelUiCatalog(plugins: Array<{ id: string; meta: ChannelMeta }>): ChannelUiCatalog {
+export function buildChannelUiCatalog(
+  plugins: Array<{ id: string; meta: ChannelMeta }>,
+): ChannelUiCatalog {
   const entries: ChannelUiMetaEntry[] = plugins.map((plugin) => {
     const detailLabel = plugin.meta.detailLabel ?? plugin.meta.selectionLabel ?? plugin.meta.label;
     return {
@@ -327,7 +333,9 @@ export function buildChannelUiCatalog(plugins: Array<{ id: string; meta: Channel
   return { entries, order, labels, detailLabels, systemImages, byId };
 }
 
-export function listChannelPluginCatalogEntries(options: CatalogOptions = {}): ChannelPluginCatalogEntry[] {
+export function listChannelPluginCatalogEntries(
+  options: CatalogOptions = {},
+): ChannelPluginCatalogEntry[] {
   const discovery = discoverRemoteClawPlugins({
     workspaceDir: options.workspaceDir,
     env: options.env,

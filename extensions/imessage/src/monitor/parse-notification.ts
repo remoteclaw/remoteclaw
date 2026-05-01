@@ -9,7 +9,9 @@ function isOptionalString(value: unknown): value is string | null | undefined {
 }
 
 function isOptionalStringOrNumber(value: unknown): value is string | number | null | undefined {
-  return value === undefined || value === null || typeof value === "string" || typeof value === "number";
+  return (
+    value === undefined || value === null || typeof value === "string" || typeof value === "number"
+  );
 }
 
 function isOptionalNumber(value: unknown): value is number | null | undefined {
@@ -22,7 +24,9 @@ function isOptionalBoolean(value: unknown): value is boolean | null | undefined 
 
 function isOptionalStringArray(value: unknown): value is string[] | null | undefined {
   return (
-    value === undefined || value === null || (Array.isArray(value) && value.every((entry) => typeof entry === "string"))
+    value === undefined ||
+    value === null ||
+    (Array.isArray(value) && value.every((entry) => typeof entry === "string"))
   );
 }
 

@@ -38,7 +38,8 @@ export function normalizeDeliveryContext(context?: DeliveryContext): DeliveryCon
       : typeof context.threadId === "string"
         ? context.threadId.trim()
         : undefined;
-  const normalizedThreadId = typeof threadId === "string" ? (threadId ? threadId : undefined) : threadId;
+  const normalizedThreadId =
+    typeof threadId === "string" ? (threadId ? threadId : undefined) : threadId;
   if (!channel && !to && !accountId && normalizedThreadId == null) {
     return undefined;
   }
@@ -59,7 +60,9 @@ export function formatConversationTarget(params: {
   parentConversationId?: string | number;
 }): string | undefined {
   const channel =
-    typeof params.channel === "string" ? (normalizeMessageChannel(params.channel) ?? params.channel.trim()) : undefined;
+    typeof params.channel === "string"
+      ? (normalizeMessageChannel(params.channel) ?? params.channel.trim())
+      : undefined;
   const conversationId =
     typeof params.conversationId === "number" && Number.isFinite(params.conversationId)
       ? String(Math.trunc(params.conversationId))
@@ -71,13 +74,16 @@ export function formatConversationTarget(params: {
   }
   if (channel === "matrix") {
     const parentConversationId =
-      typeof params.parentConversationId === "number" && Number.isFinite(params.parentConversationId)
+      typeof params.parentConversationId === "number" &&
+      Number.isFinite(params.parentConversationId)
         ? String(Math.trunc(params.parentConversationId))
         : typeof params.parentConversationId === "string"
           ? params.parentConversationId.trim()
           : undefined;
     const roomId =
-      parentConversationId && parentConversationId !== conversationId ? parentConversationId : conversationId;
+      parentConversationId && parentConversationId !== conversationId
+        ? parentConversationId
+        : conversationId;
     return `room:${roomId}`;
   }
   return `channel:${conversationId}`;
@@ -90,7 +96,9 @@ export function resolveConversationDeliveryTarget(params: {
 }): { to?: string; threadId?: string } {
   const to = formatConversationTarget(params);
   const channel =
-    typeof params.channel === "string" ? (normalizeMessageChannel(params.channel) ?? params.channel.trim()) : undefined;
+    typeof params.channel === "string"
+      ? (normalizeMessageChannel(params.channel) ?? params.channel.trim())
+      : undefined;
   const conversationId =
     typeof params.conversationId === "number" && Number.isFinite(params.conversationId)
       ? String(Math.trunc(params.conversationId))
@@ -103,7 +111,13 @@ export function resolveConversationDeliveryTarget(params: {
       : typeof params.parentConversationId === "string"
         ? params.parentConversationId.trim()
         : undefined;
-  if (channel === "matrix" && to && conversationId && parentConversationId && parentConversationId !== conversationId) {
+  if (
+    channel === "matrix" &&
+    to &&
+    conversationId &&
+    parentConversationId &&
+    parentConversationId !== conversationId
+  ) {
     return { to, threadId: conversationId };
   }
   return { to };
@@ -155,7 +169,9 @@ export function normalizeSessionDeliveryFields(source?: DeliveryContextSessionSo
   };
 }
 
-export function deliveryContextFromSession(entry?: DeliveryContextSessionSource): DeliveryContext | undefined {
+export function deliveryContextFromSession(
+  entry?: DeliveryContextSessionSource,
+): DeliveryContext | undefined {
   if (!entry) {
     return undefined;
   }
@@ -188,7 +204,9 @@ export function mergeDeliveryContext(
     channel: normalizedPrimary?.channel ?? normalizedFallback?.channel,
     // Keep route fields paired to their channel; avoid crossing fields between
     // unrelated channels during session context merges.
-    to: channelsConflict ? normalizedPrimary?.to : (normalizedPrimary?.to ?? normalizedFallback?.to),
+    to: channelsConflict
+      ? normalizedPrimary?.to
+      : (normalizedPrimary?.to ?? normalizedFallback?.to),
     accountId: channelsConflict
       ? normalizedPrimary?.accountId
       : (normalizedPrimary?.accountId ?? normalizedFallback?.accountId),
@@ -203,6 +221,7 @@ export function deliveryContextKey(context?: DeliveryContext): string | undefine
   if (!normalized?.channel || !normalized?.to) {
     return undefined;
   }
-  const threadId = normalized.threadId != null && normalized.threadId !== "" ? String(normalized.threadId) : "";
+  const threadId =
+    normalized.threadId != null && normalized.threadId !== "" ? String(normalized.threadId) : "";
   return `${normalized.channel}|${normalized.to}|${normalized.accountId ?? ""}|${threadId}`;
 }

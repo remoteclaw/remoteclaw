@@ -1,4 +1,7 @@
-import { hasOutboundReplyContent, resolveSendableOutboundReplyParts } from "remoteclaw/plugin-sdk/reply-payload";
+import {
+  hasOutboundReplyContent,
+  resolveSendableOutboundReplyParts,
+} from "remoteclaw/plugin-sdk/reply-payload";
 import { loadSessionStore } from "../../config/sessions.js";
 import { isAudioFileName } from "../../media/mime.js";
 import { normalizeVerboseLevel, type VerboseLevel } from "../thinking.js";
@@ -6,7 +9,8 @@ import type { ReplyPayload } from "../types.js";
 import { scheduleFollowupDrain } from "./queue.js";
 import type { TypingSignaler } from "./typing-mode.js";
 
-const hasAudioMedia = (urls?: string[]): boolean => Boolean(urls?.some((url) => isAudioFileName(url)));
+const hasAudioMedia = (urls?: string[]): boolean =>
+  Boolean(urls?.some((url) => isAudioFileName(url)));
 
 export const isAudioPayload = (payload: ReplyPayload): boolean =>
   hasAudioMedia(resolveSendableOutboundReplyParts(payload).mediaUrls);
@@ -31,7 +35,10 @@ function resolveCurrentVerboseLevel(params: VerboseGateParams): VerboseLevel | u
   }
 }
 
-function createVerboseGate(params: VerboseGateParams, shouldEmit: (level: VerboseLevel) => boolean): () => boolean {
+function createVerboseGate(
+  params: VerboseGateParams,
+  shouldEmit: (level: VerboseLevel) => boolean,
+): () => boolean {
   // Normalize verbose values from session store/config so false/"false" still means off.
   const fallbackVerbose = normalizeVerboseLevel(String(params.resolvedVerboseLevel ?? "")) ?? "off";
   return () => {
@@ -56,8 +63,13 @@ export const finalizeWithFollowup = <T>(
   return value;
 };
 
-export const signalTypingIfNeeded = async (payloads: ReplyPayload[], typingSignals: TypingSignaler): Promise<void> => {
-  const shouldSignalTyping = payloads.some((payload) => hasOutboundReplyContent(payload, { trimText: true }));
+export const signalTypingIfNeeded = async (
+  payloads: ReplyPayload[],
+  typingSignals: TypingSignaler,
+): Promise<void> => {
+  const shouldSignalTyping = payloads.some((payload) =>
+    hasOutboundReplyContent(payload, { trimText: true }),
+  );
   if (shouldSignalTyping) {
     await typingSignals.signalRunStart();
   }

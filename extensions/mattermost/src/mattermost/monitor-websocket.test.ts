@@ -322,7 +322,9 @@ describe("mattermost websocket monitor", () => {
     shouldThrow = true;
     await vi.advanceTimersByTimeAsync(100);
     expect(socket.terminateCalls).toBe(0);
-    expect(runtime.error).toHaveBeenCalledWith("mattermost: health check error: Error: network error");
+    expect(runtime.error).toHaveBeenCalledWith(
+      "mattermost: health check error: Error: network error",
+    );
 
     socket.emitClose(1000);
     await connected;
@@ -355,7 +357,9 @@ describe("mattermost websocket monitor", () => {
     socket.emitOpen();
 
     await vi.advanceTimersByTimeAsync(0);
-    expect(runtime.error).toHaveBeenCalledWith("mattermost: failed to get initial update_at: Error: network error");
+    expect(runtime.error).toHaveBeenCalledWith(
+      "mattermost: failed to get initial update_at: Error: network error",
+    );
 
     await vi.advanceTimersByTimeAsync(100);
     expect(socket.terminateCalls).toBe(0);

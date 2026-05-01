@@ -1,8 +1,16 @@
 import crypto from "node:crypto";
 import { normalizeAgentId } from "../../routing/session-key.js";
 import { parseAbsoluteTimeMs } from "../parse.js";
-import { coerceFiniteScheduleNumber, computeNextRunAtMs, computePreviousRunAtMs } from "../schedule.js";
-import { normalizeCronStaggerMs, resolveCronStaggerMs, resolveDefaultCronStaggerMs } from "../stagger.js";
+import {
+  coerceFiniteScheduleNumber,
+  computeNextRunAtMs,
+  computePreviousRunAtMs,
+} from "../schedule.js";
+import {
+  normalizeCronStaggerMs,
+  resolveCronStaggerMs,
+  resolveDefaultCronStaggerMs,
+} from "../stagger.js";
 import type {
   CronDelivery,
   CronDeliveryPatch,
@@ -109,7 +117,10 @@ function computeStaggeredCronPreviousRunAtMs(job: CronJob, nowMs: number) {
   return undefined;
 }
 
-function resolveEveryAnchorMs(params: { schedule: { everyMs: number; anchorMs?: number }; fallbackAnchorMs: number }) {
+function resolveEveryAnchorMs(params: {
+  schedule: { everyMs: number; anchorMs?: number };
+  fallbackAnchorMs: number;
+}) {
   const coerced = coerceFiniteScheduleNumber(params.schedule.anchorMs);
   if (coerced !== undefined) {
     return Math.max(0, Math.floor(coerced));
@@ -129,7 +140,10 @@ export function assertSupportedJobSpec(job: Pick<CronJob, "sessionTarget" | "pay
   }
 }
 
-function assertMainSessionAgentId(job: Pick<CronJob, "sessionTarget" | "agentId">, defaultAgentId: string | undefined) {
+function assertMainSessionAgentId(
+  job: Pick<CronJob, "sessionTarget" | "agentId">,
+  defaultAgentId: string | undefined,
+) {
   if (job.sessionTarget !== "main") {
     return;
   }
@@ -287,7 +301,11 @@ export function computeJobPreviousRunAtMs(job: CronJob, nowMs: number): number |
 /** Maximum consecutive schedule errors before auto-disabling a job. */
 const MAX_SCHEDULE_ERRORS = 3;
 
-export function recordScheduleComputeError(params: { state: CronServiceState; job: CronJob; err: unknown }): boolean {
+export function recordScheduleComputeError(params: {
+  state: CronServiceState;
+  job: CronJob;
+  err: unknown;
+}): boolean {
   const { state, job, err } = params;
   const errorCount = (job.state.scheduleErrorCount ?? 0) + 1;
   const errText = String(err);
@@ -356,7 +374,10 @@ function normalizeJobTickState(params: { state: CronServiceState; job: CronJob; 
 
   const runningAt = job.state.runningAtMs;
   if (typeof runningAt === "number" && nowMs - runningAt > STUCK_RUN_MS) {
-    state.deps.log.warn({ jobId: job.id, runningAtMs: runningAt }, "cron: clearing stuck running marker");
+    state.deps.log.warn(
+      { jobId: job.id, runningAtMs: runningAt },
+      "cron: clearing stuck running marker",
+    );
     job.state.runningAtMs = undefined;
     changed = true;
   }
@@ -447,7 +468,11 @@ export function recomputeNextRunsForMaintenance(
         if (recomputeJobNextRunAtMs({ state, job, nowMs: now })) {
           changed = true;
         }
-      } else if (recomputeExpired && now >= job.state.nextRunAtMs && typeof job.state.runningAtMs !== "number") {
+      } else if (
+        recomputeExpired &&
+        now >= job.state.nextRunAtMs &&
+        typeof job.state.runningAtMs !== "number"
+      ) {
         // Only advance when the expired slot was already executed.
         // If not, preserve the past-due value so the job can still run.
         const lastRun = job.state.lastRunAtMs;
@@ -499,11 +524,17 @@ export function createJob(state: CronServiceState, input: CronJobCreate): CronJo
               return { ...input.schedule, staggerMs: explicitStaggerMs };
             }
             const defaultStaggerMs = resolveDefaultCronStaggerMs(input.schedule.expr);
-            return defaultStaggerMs !== undefined ? { ...input.schedule, staggerMs: defaultStaggerMs } : input.schedule;
+            return defaultStaggerMs !== undefined
+              ? { ...input.schedule, staggerMs: defaultStaggerMs }
+              : input.schedule;
           })()
         : input.schedule;
   const deleteAfterRun =
-    typeof input.deleteAfterRun === "boolean" ? input.deleteAfterRun : schedule.kind === "at" ? true : undefined;
+    typeof input.deleteAfterRun === "boolean"
+      ? input.deleteAfterRun
+      : schedule.kind === "at"
+        ? true
+        : undefined;
   const enabled = typeof input.enabled === "boolean" ? input.enabled : true;
   const job: CronJob = {
     id,
@@ -533,7 +564,11 @@ export function createJob(state: CronServiceState, input: CronJobCreate): CronJo
   return job;
 }
 
-export function applyJobPatch(job: CronJob, patch: CronJobPatch, opts?: { defaultAgentId?: string }) {
+export function applyJobPatch(
+  job: CronJob,
+  patch: CronJobPatch,
+  opts?: { defaultAgentId?: string },
+) {
   if ("name" in patch) {
     job.name = normalizeRequiredName(patch.name);
   }
@@ -556,7 +591,9 @@ export function applyJobPatch(job: CronJob, patch: CronJobPatch, opts?: { defaul
       } else {
         const defaultStaggerMs = resolveDefaultCronStaggerMs(patch.schedule.expr);
         job.schedule =
-          defaultStaggerMs !== undefined ? { ...patch.schedule, staggerMs: defaultStaggerMs } : patch.schedule;
+          defaultStaggerMs !== undefined
+            ? { ...patch.schedule, staggerMs: defaultStaggerMs }
+            : patch.schedule;
       }
     } else {
       job.schedule = patch.schedule;
@@ -574,7 +611,11 @@ export function applyJobPatch(job: CronJob, patch: CronJobPatch, opts?: { defaul
   if (!patch.delivery && patch.payload?.kind === "agentTurn") {
     // Back-compat: legacy clients still update delivery via payload fields.
     const legacyDeliveryPatch = buildLegacyDeliveryPatch(patch.payload);
-    if (legacyDeliveryPatch && job.sessionTarget === "isolated" && job.payload.kind === "agentTurn") {
+    if (
+      legacyDeliveryPatch &&
+      job.sessionTarget === "isolated" &&
+      job.payload.kind === "agentTurn"
+    ) {
       job.delivery = mergeCronDelivery(job.delivery, legacyDeliveryPatch);
     }
   }
@@ -584,7 +625,11 @@ export function applyJobPatch(job: CronJob, patch: CronJobPatch, opts?: { defaul
   if ("failureAlert" in patch) {
     job.failureAlert = mergeCronFailureAlert(job.failureAlert, patch.failureAlert);
   }
-  if (job.sessionTarget === "main" && job.delivery?.mode !== "webhook" && job.delivery?.failureDestination) {
+  if (
+    job.sessionTarget === "main" &&
+    job.delivery?.mode !== "webhook" &&
+    job.delivery?.failureDestination
+  ) {
     throw new Error(
       'cron delivery.failureDestination is only supported for sessionTarget="isolated" unless delivery.mode="webhook"',
     );
@@ -655,11 +700,15 @@ function mergeCronPayload(existing: CronPayload, patch: CronPayloadPatch): CronP
   return next;
 }
 
-function buildLegacyDeliveryPatch(payload: Extract<CronPayloadPatch, { kind: "agentTurn" }>): CronDeliveryPatch | null {
+function buildLegacyDeliveryPatch(
+  payload: Extract<CronPayloadPatch, { kind: "agentTurn" }>,
+): CronDeliveryPatch | null {
   const deliver = payload.deliver;
   const toRaw = typeof payload.to === "string" ? payload.to.trim() : "";
   const hasLegacyHints =
-    typeof deliver === "boolean" || typeof payload.bestEffortDeliver === "boolean" || Boolean(toRaw);
+    typeof deliver === "boolean" ||
+    typeof payload.bestEffortDeliver === "boolean" ||
+    Boolean(toRaw);
   if (!hasLegacyHints) {
     return null;
   }
@@ -723,7 +772,10 @@ function normalizeOptionalTrimmedString(value: unknown): string | undefined {
   return trimmed ? trimmed : undefined;
 }
 
-function mergeCronDelivery(existing: CronDelivery | undefined, patch: CronDeliveryPatch): CronDelivery {
+function mergeCronDelivery(
+  existing: CronDelivery | undefined,
+  patch: CronDeliveryPatch,
+): CronDelivery {
   const next: CronDelivery = {
     mode: existing?.mode ?? "none",
     channel: existing?.channel,
@@ -810,7 +862,9 @@ function mergeCronFailureAlert(
   }
   if ("cooldownMs" in patch) {
     const cooldownMs =
-      typeof patch.cooldownMs === "number" && Number.isFinite(patch.cooldownMs) ? patch.cooldownMs : -1;
+      typeof patch.cooldownMs === "number" && Number.isFinite(patch.cooldownMs)
+        ? patch.cooldownMs
+        : -1;
     next.cooldownMs = cooldownMs >= 0 ? Math.floor(cooldownMs) : undefined;
   }
   if ("mode" in patch) {

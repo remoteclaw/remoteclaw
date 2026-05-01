@@ -79,8 +79,12 @@ describe("resolveDiscordAllowlistConfig", () => {
       runtime,
     });
 
-    const logs = (runtime.log as ReturnType<typeof vi.fn>).mock.calls.map(([line]) => String(line)).join("\n");
-    expect(logs).toContain("discord channels unresolved: 145/c404 (guild:Ops; channel:missing-room)");
+    const logs = (runtime.log as ReturnType<typeof vi.fn>).mock.calls
+      .map(([line]) => String(line))
+      .join("\n");
+    expect(logs).toContain(
+      "discord channels unresolved: 145/c404 (guild:Ops; channel:missing-room)",
+    );
     expect(logs).toContain("discord users resolved: 387→Peter (id:387)");
   });
 });

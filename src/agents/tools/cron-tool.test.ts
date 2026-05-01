@@ -12,15 +12,20 @@ vi.mock("../agent-scope.js", () => ({
 import { createCronTool } from "./cron-tool.js";
 
 describe("cron tool", () => {
-  function createTestCronTool(opts?: Parameters<typeof createCronTool>[0]): ReturnType<typeof createCronTool> {
+  function createTestCronTool(
+    opts?: Parameters<typeof createCronTool>[0],
+  ): ReturnType<typeof createCronTool> {
     return createCronTool(opts, {
-      callGatewayTool: async (method, _gatewayOpts, params) => await callGatewayMock({ method, params }),
+      callGatewayTool: async (method, _gatewayOpts, params) =>
+        await callGatewayMock({ method, params }),
     });
   }
 
   function readGatewayCall(index = 0): { method?: string; params?: Record<string, unknown> } {
     return (
-      (callGatewayMock.mock.calls[index]?.[0] as { method?: string; params?: Record<string, unknown> } | undefined) ?? {
+      (callGatewayMock.mock.calls[index]?.[0] as
+        | { method?: string; params?: Record<string, unknown> }
+        | undefined) ?? {
         method: undefined,
         params: undefined,
       }
@@ -117,8 +122,16 @@ describe("cron tool", () => {
   });
 
   it.each([
-    ["update", { action: "update", jobId: "job-1", patch: { foo: "bar" } }, { id: "job-1", patch: { foo: "bar" } }],
-    ["update", { action: "update", id: "job-2", patch: { foo: "bar" } }, { id: "job-2", patch: { foo: "bar" } }],
+    [
+      "update",
+      { action: "update", jobId: "job-1", patch: { foo: "bar" } },
+      { id: "job-1", patch: { foo: "bar" } },
+    ],
+    [
+      "update",
+      { action: "update", id: "job-2", patch: { foo: "bar" } },
+      { id: "job-2", patch: { foo: "bar" } },
+    ],
     ["remove", { action: "remove", jobId: "job-1" }, { id: "job-1" }],
     ["remove", { action: "remove", id: "job-2" }, { id: "job-2" }],
     ["run", { action: "run", jobId: "job-1" }, { id: "job-1", mode: "force" }],

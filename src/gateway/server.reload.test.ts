@@ -115,11 +115,13 @@ const hoisted = vi.hoisted(() => {
   let onHotReload: ((plan: unknown, nextConfig: unknown) => Promise<void>) | null = null;
   let onRestart: ((plan: unknown, nextConfig: unknown) => void) | null = null;
 
-  const startGatewayConfigReloader = vi.fn((opts: { onHotReload: typeof onHotReload; onRestart: typeof onRestart }) => {
-    onHotReload = opts.onHotReload;
-    onRestart = opts.onRestart;
-    return { stop: reloaderStop };
-  });
+  const startGatewayConfigReloader = vi.fn(
+    (opts: { onHotReload: typeof onHotReload; onRestart: typeof onRestart }) => {
+      onHotReload = opts.onHotReload;
+      onRestart = opts.onRestart;
+      return { stop: reloaderStop };
+    },
+  );
 
   return {
     CronService: CronServiceMock,
@@ -427,7 +429,9 @@ describe("gateway hot reload", () => {
   }) {
     await expect(params.applyReload()).rejects.toThrow(params.expectedError);
     const degradedEvents = drainSystemEvents(params.sessionKey);
-    expect(degradedEvents.some((event) => event.includes("[SECRETS_RELOADER_DEGRADED]"))).toBe(true);
+    expect(degradedEvents.some((event) => event.includes("[SECRETS_RELOADER_DEGRADED]"))).toBe(
+      true,
+    );
 
     await expect(params.applyReload()).rejects.toThrow(params.expectedError);
     expect(drainSystemEvents(params.sessionKey)).toEqual([]);
@@ -439,7 +443,9 @@ describe("gateway hot reload", () => {
   }) {
     await expect(params.applyReload()).resolves.toBeUndefined();
     const recoveredEvents = drainSystemEvents(params.sessionKey);
-    expect(recoveredEvents.some((event) => event.includes("[SECRETS_RELOADER_RECOVERED]"))).toBe(true);
+    expect(recoveredEvents.some((event) => event.includes("[SECRETS_RELOADER_RECOVERED]"))).toBe(
+      true,
+    );
   }
 
   it("applies hot reload actions and emits restart signal", async () => {
@@ -494,7 +500,9 @@ describe("gateway hot reload", () => {
 
       expect(hoisted.startHeartbeatRunner).toHaveBeenCalledTimes(1);
       expect(hoisted.heartbeatUpdateConfig).toHaveBeenCalledTimes(1);
-      expect(hoisted.heartbeatUpdateConfig).toHaveBeenCalledWith(expect.objectContaining(nextConfig));
+      expect(hoisted.heartbeatUpdateConfig).toHaveBeenCalledWith(
+        expect.objectContaining(nextConfig),
+      );
 
       expect(hoisted.cronInstances.length).toBe(2);
       expect(hoisted.cronInstances[0].stop).toHaveBeenCalledTimes(1);
@@ -543,7 +551,9 @@ describe("gateway hot reload", () => {
   it("fails startup when required secret refs are unresolved", async () => {
     await writeEnvRefConfig();
     delete process.env.OPENAI_API_KEY;
-    await expect(withGatewayServer(async () => {})).rejects.toThrow("Startup failed: required secrets are unavailable");
+    await expect(withGatewayServer(async () => {})).rejects.toThrow(
+      "Startup failed: required secrets are unavailable",
+    );
   });
 
   it("fails startup when an active exec ref id contains traversal segments", async () => {
@@ -553,7 +563,9 @@ describe("gateway hot reload", () => {
     testState.gatewayAuth = undefined;
     delete process.env.REMOTECLAW_GATEWAY_TOKEN;
     try {
-      await expect(withGatewayServer(async () => {})).rejects.toThrow(/must not include "\." or "\.\." path segments/i);
+      await expect(withGatewayServer(async () => {})).rejects.toThrow(
+        /must not include "\." or "\.\." path segments/i,
+      );
     } finally {
       testState.gatewayAuth = previousGatewayAuth;
       if (previousGatewayTokenEnv === undefined) {

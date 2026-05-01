@@ -27,13 +27,19 @@ let threadBindingTesting: typeof import("./thread-bindings.js").__testing;
 let createThreadBindingManager: typeof import("./thread-bindings.js").createThreadBindingManager;
 
 beforeAll(async () => {
-  ({ preflightDiscordMessage, resolvePreflightMentionRequirement, shouldIgnoreBoundThreadWebhookMessage } =
-    await import("./message-handler.preflight.js"));
-  ({ __testing: threadBindingTesting, createThreadBindingManager } = await import("./thread-bindings.js"));
+  ({
+    preflightDiscordMessage,
+    resolvePreflightMentionRequirement,
+    shouldIgnoreBoundThreadWebhookMessage,
+  } = await import("./message-handler.preflight.js"));
+  ({ __testing: threadBindingTesting, createThreadBindingManager } =
+    await import("./thread-bindings.js"));
 });
 
 function createThreadBinding(
-  overrides?: Partial<import("../../../../src/infra/outbound/session-binding-service.js").SessionBindingRecord>,
+  overrides?: Partial<
+    import("../../../../src/infra/outbound/session-binding-service.js").SessionBindingRecord
+  >,
 ) {
   return {
     bindingId: "default:thread-1",
@@ -103,7 +109,8 @@ async function runThreadBoundPreflight(params: {
       channel: "discord",
       accountId: "default",
       listBySession: () => [],
-      resolveByConversation: (ref) => (ref.conversationId === params.threadId ? params.threadBinding : null),
+      resolveByConversation: (ref) =>
+        ref.conversationId === params.threadId ? params.threadBinding : null,
     });
   }
 
@@ -235,7 +242,8 @@ describe("preflightDiscordMessage", () => {
     const message = createDiscordMessage({
       id: "m-system-1",
       channelId: threadId,
-      content: "⚙️ codex-acp session active (auto-unfocus in 24h). Messages here go directly to this session.",
+      content:
+        "⚙️ codex-acp session active (auto-unfocus in 24h). Messages here go directly to this session.",
       author: {
         id: "relay-bot-1",
         bot: true,

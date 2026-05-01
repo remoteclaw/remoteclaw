@@ -75,7 +75,10 @@ function resolveExecApprovalsSaveRpc(
   return { method: "exec.approvals.node.set", params: { ...params, nodeId } };
 }
 
-export async function loadExecApprovals(state: ExecApprovalsState, target?: ExecApprovalsTarget | null) {
+export async function loadExecApprovals(
+  state: ExecApprovalsState,
+  target?: ExecApprovalsTarget | null,
+) {
   if (!state.client || !state.connected) {
     return;
   }
@@ -99,14 +102,20 @@ export async function loadExecApprovals(state: ExecApprovalsState, target?: Exec
   }
 }
 
-export function applyExecApprovalsSnapshot(state: ExecApprovalsState, snapshot: ExecApprovalsSnapshot) {
+export function applyExecApprovalsSnapshot(
+  state: ExecApprovalsState,
+  snapshot: ExecApprovalsSnapshot,
+) {
   state.execApprovalsSnapshot = snapshot;
   if (!state.execApprovalsDirty) {
     state.execApprovalsForm = cloneConfigObject(snapshot.file ?? {});
   }
 }
 
-export async function saveExecApprovals(state: ExecApprovalsState, target?: ExecApprovalsTarget | null) {
+export async function saveExecApprovals(
+  state: ExecApprovalsState,
+  target?: ExecApprovalsTarget | null,
+) {
   if (!state.client || !state.connected) {
     return;
   }
@@ -134,15 +143,26 @@ export async function saveExecApprovals(state: ExecApprovalsState, target?: Exec
   }
 }
 
-export function updateExecApprovalsFormValue(state: ExecApprovalsState, path: Array<string | number>, value: unknown) {
-  const base = cloneConfigObject(state.execApprovalsForm ?? state.execApprovalsSnapshot?.file ?? {});
+export function updateExecApprovalsFormValue(
+  state: ExecApprovalsState,
+  path: Array<string | number>,
+  value: unknown,
+) {
+  const base = cloneConfigObject(
+    state.execApprovalsForm ?? state.execApprovalsSnapshot?.file ?? {},
+  );
   setPathValue(base, path, value);
   state.execApprovalsForm = base;
   state.execApprovalsDirty = true;
 }
 
-export function removeExecApprovalsFormValue(state: ExecApprovalsState, path: Array<string | number>) {
-  const base = cloneConfigObject(state.execApprovalsForm ?? state.execApprovalsSnapshot?.file ?? {});
+export function removeExecApprovalsFormValue(
+  state: ExecApprovalsState,
+  path: Array<string | number>,
+) {
+  const base = cloneConfigObject(
+    state.execApprovalsForm ?? state.execApprovalsSnapshot?.file ?? {},
+  );
   removePathValue(base, path);
   state.execApprovalsForm = base;
   state.execApprovalsDirty = true;

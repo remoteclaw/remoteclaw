@@ -7,9 +7,11 @@ import type { MockFn } from "../../../src/test-utils/vitest-mock-fn.js";
 import { registerTelegramNativeCommands } from "./bot-native-commands.js";
 
 type RegisterTelegramNativeCommandsParams = Parameters<typeof registerTelegramNativeCommands>[0];
-type GetPluginCommandSpecsFn = typeof import("../../../src/plugins/commands.js").getPluginCommandSpecs;
+type GetPluginCommandSpecsFn =
+  typeof import("../../../src/plugins/commands.js").getPluginCommandSpecs;
 type MatchPluginCommandFn = typeof import("../../../src/plugins/commands.js").matchPluginCommand;
-type ExecutePluginCommandFn = typeof import("../../../src/plugins/commands.js").executePluginCommand;
+type ExecutePluginCommandFn =
+  typeof import("../../../src/plugins/commands.js").executePluginCommand;
 type AnyMock = MockFn<(...args: unknown[]) => unknown>;
 type AnyAsyncMock = MockFn<(...args: unknown[]) => Promise<unknown>>;
 type NativeCommandHarness = {
@@ -65,7 +67,8 @@ export function createNativeCommandTestParams(
         command: vi.fn(),
       } as unknown as RegisterTelegramNativeCommandsParams["bot"]),
     cfg: params.cfg ?? ({} as RemoteClawConfig),
-    runtime: params.runtime ?? ({ log } as unknown as RegisterTelegramNativeCommandsParams["runtime"]),
+    runtime:
+      params.runtime ?? ({ log } as unknown as RegisterTelegramNativeCommandsParams["runtime"]),
     accountId: params.accountId ?? "default",
     telegramCfg: params.telegramCfg ?? ({} as RegisterTelegramNativeCommandsParams["telegramCfg"]),
     allowFrom: params.allowFrom ?? [],
@@ -84,7 +87,8 @@ export function createNativeCommandTestParams(
           allowed: true,
         }) as ReturnType<RegisterTelegramNativeCommandsParams["resolveGroupPolicy"]>),
     resolveTelegramGroupConfig:
-      params.resolveTelegramGroupConfig ?? (() => ({ groupConfig: undefined, topicConfig: undefined })),
+      params.resolveTelegramGroupConfig ??
+      (() => ({ groupConfig: undefined, topicConfig: undefined })),
     shouldSkipUpdate: params.shouldSkipUpdate ?? (() => false),
     opts: params.opts ?? { token: "token" },
   };
@@ -168,5 +172,7 @@ export function createTelegramGroupCommandContext(params?: {
 }
 
 export function findNotAuthorizedCalls(sendMessage: AnyAsyncMock) {
-  return sendMessage.mock.calls.filter((call) => typeof call[1] === "string" && call[1].includes("not authorized"));
+  return sendMessage.mock.calls.filter(
+    (call) => typeof call[1] === "string" && call[1].includes("not authorized"),
+  );
 }

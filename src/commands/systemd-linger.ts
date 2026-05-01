@@ -35,14 +35,19 @@ export async function ensureSystemdUserLingerInteractive(params: {
   }
   const status = await readSystemdUserLingerStatus(env);
   if (!status) {
-    await prompter.note("Unable to read loginctl linger status. Ensure systemd + loginctl are available.", title);
+    await prompter.note(
+      "Unable to read loginctl linger status. Ensure systemd + loginctl are available.",
+      title,
+    );
     return;
   }
   if (status.linger === "yes") {
     return;
   }
 
-  const reason = params.reason ?? "Systemd user services stop when you log out or go idle, which kills the Gateway.";
+  const reason =
+    params.reason ??
+    "Systemd user services stop when you log out or go idle, which kills the Gateway.";
   const actionNote = params.requireConfirm
     ? "We can enable lingering now (may require sudo; writes /var/lib/systemd/linger)."
     : "Enabling lingering now (may require sudo; writes /var/lib/systemd/linger).";
@@ -78,7 +83,9 @@ export async function ensureSystemdUserLingerInteractive(params: {
     return;
   }
 
-  params.runtime.error(`Failed to enable lingering: ${result.stderr || result.stdout || "unknown error"}`);
+  params.runtime.error(
+    `Failed to enable lingering: ${result.stderr || result.stdout || "unknown error"}`,
+  );
   await prompter.note(`Run manually: sudo loginctl enable-linger ${status.user}`, title);
 }
 

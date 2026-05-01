@@ -4,7 +4,11 @@ import { getMatrixRuntime } from "../../runtime.js";
 import type { CoreConfig } from "../../types.js";
 import { loadMatrixSdk } from "../sdk-runtime.js";
 
-export function registerMatrixAutoJoin(params: { client: MatrixClient; cfg: CoreConfig; runtime: RuntimeEnv }) {
+export function registerMatrixAutoJoin(params: {
+  client: MatrixClient;
+  cfg: CoreConfig;
+  runtime: RuntimeEnv;
+}) {
   const { client, cfg, runtime } = params;
   const core = getMatrixRuntime();
   const logVerbose = (message: string) => {
@@ -38,7 +42,9 @@ export function registerMatrixAutoJoin(params: { client: MatrixClient; cfg: Core
     let alias: string | undefined;
     let altAliases: string[] = [];
     try {
-      const aliasState = await client.getRoomStateEvent(roomId, "m.room.canonical_alias", "").catch(() => null);
+      const aliasState = await client
+        .getRoomStateEvent(roomId, "m.room.canonical_alias", "")
+        .catch(() => null);
       alias = aliasState?.alias;
       altAliases = Array.isArray(aliasState?.alt_aliases) ? aliasState.alt_aliases : [];
     } catch {

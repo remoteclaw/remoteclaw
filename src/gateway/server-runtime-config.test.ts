@@ -73,7 +73,8 @@ describe("resolveGatewayRuntimeConfig", () => {
         cfg: {
           gateway: { bind: "loopback" as const, auth: TRUSTED_PROXY_AUTH, trustedProxies: [] },
         },
-        expectedMessage: "gateway auth mode=trusted-proxy requires gateway.trustedProxies to be configured",
+        expectedMessage:
+          "gateway auth mode=trusted-proxy requires gateway.trustedProxies to be configured",
       },
       {
         name: "lan binding without trusted proxies",
@@ -85,10 +86,13 @@ describe("resolveGatewayRuntimeConfig", () => {
             controlUi: { allowedOrigins: ["https://control.example.com"] },
           },
         },
-        expectedMessage: "gateway auth mode=trusted-proxy requires gateway.trustedProxies to be configured",
+        expectedMessage:
+          "gateway auth mode=trusted-proxy requires gateway.trustedProxies to be configured",
       },
     ])("rejects $name", async ({ cfg, expectedMessage }) => {
-      await expect(resolveGatewayRuntimeConfig({ cfg, port: 18789 })).rejects.toThrow(expectedMessage);
+      await expect(resolveGatewayRuntimeConfig({ cfg, port: 18789 })).rejects.toThrow(
+        expectedMessage,
+      );
     });
 
     it("allows loopback binding with non-loopback trusted proxies", async () => {
@@ -196,7 +200,9 @@ describe("resolveGatewayRuntimeConfig", () => {
         expectedMessage: "gateway bind=custom requested 192.168.1.100 but resolved 0.0.0.0",
       },
     ])("rejects $name", async ({ cfg, host, expectedMessage }) => {
-      await expect(resolveGatewayRuntimeConfig({ cfg, port: 18789, host })).rejects.toThrow(expectedMessage);
+      await expect(resolveGatewayRuntimeConfig({ cfg, port: 18789, host })).rejects.toThrow(
+        expectedMessage,
+      );
     });
 
     it.each([
@@ -238,7 +244,9 @@ describe("resolveGatewayRuntimeConfig", () => {
       },
     ])("$name", async ({ cfg, expectedError, expectedBindHost }) => {
       if (expectedError) {
-        await expect(resolveGatewayRuntimeConfig({ cfg, port: 18789 })).rejects.toThrow(expectedError);
+        await expect(resolveGatewayRuntimeConfig({ cfg, port: 18789 })).rejects.toThrow(
+          expectedError,
+        );
         return;
       }
       const result = await resolveGatewayRuntimeConfig({ cfg, port: 18789 });

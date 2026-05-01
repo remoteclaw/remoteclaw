@@ -80,7 +80,10 @@ type InstallIntegrityDrift = {
   };
 };
 
-function expectedIntegrityForUpdate(spec: string | undefined, integrity: string | undefined): string | undefined {
+function expectedIntegrityForUpdate(
+  spec: string | undefined,
+  integrity: string | undefined,
+): string | undefined {
   if (!integrity || !spec) {
     return undefined;
   }
@@ -421,7 +424,8 @@ export async function syncPluginsForUpdateChannel(params: {
 
       loadHelpers.addPath(bundledInfo.localPath);
 
-      const alreadyBundled = record.source === "path" && pathsEqual(record.sourcePath, bundledInfo.localPath);
+      const alreadyBundled =
+        record.source === "path" && pathsEqual(record.sourcePath, bundledInfo.localPath);
       if (alreadyBundled) {
         continue;
       }

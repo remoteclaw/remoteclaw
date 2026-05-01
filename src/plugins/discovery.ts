@@ -115,7 +115,10 @@ type CandidateBlockIssue = {
   expectedUid?: number;
 };
 
-function checkSourceEscapesRoot(params: { source: string; rootDir: string }): CandidateBlockIssue | null {
+function checkSourceEscapesRoot(params: {
+  source: string;
+  rootDir: string;
+}): CandidateBlockIssue | null {
   const sourceRealPath = safeRealpathSync(params.source);
   const rootRealPath = safeRealpathSync(params.rootDir);
   if (!sourceRealPath || !rootRealPath) {
@@ -315,7 +318,11 @@ function readPackageManifest(dir: string, rejectHardlinks = true): PackageManife
   }
 }
 
-function deriveIdHint(params: { filePath: string; packageName?: string; hasMultipleExtensions: boolean }): string {
+function deriveIdHint(params: {
+  filePath: string;
+  packageName?: string;
+  hasMultipleExtensions: boolean;
+}): string {
   const base = path.basename(params.filePath, path.extname(params.filePath));
   const rawPackageName = params.packageName?.trim();
   if (!rawPackageName) {
@@ -324,7 +331,9 @@ function deriveIdHint(params: { filePath: string; packageName?: string; hasMulti
 
   // Prefer the unscoped name so config keys stay stable even when the npm
   // package is scoped (example: @remoteclaw/voice-call -> voice-call).
-  const unscoped = rawPackageName.includes("/") ? (rawPackageName.split("/").pop() ?? rawPackageName) : rawPackageName;
+  const unscoped = rawPackageName.includes("/")
+    ? (rawPackageName.split("/").pop() ?? rawPackageName)
+    : rawPackageName;
 
   if (!params.hasMultipleExtensions) {
     return unscoped;

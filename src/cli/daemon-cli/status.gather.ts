@@ -1,5 +1,14 @@
-import { createConfigIO, resolveConfigPath, resolveGatewayPort, resolveStateDir } from "../../config/config.js";
-import type { RemoteClawConfig, GatewayBindMode, GatewayControlUiConfig } from "../../config/types.js";
+import {
+  createConfigIO,
+  resolveConfigPath,
+  resolveGatewayPort,
+  resolveStateDir,
+} from "../../config/config.js";
+import type {
+  RemoteClawConfig,
+  GatewayBindMode,
+  GatewayControlUiConfig,
+} from "../../config/types.js";
 import { readLastGatewayErrorLine } from "../../daemon/diagnostics.js";
 import type { FindExtraGatewayServicesOptions } from "../../daemon/inspect.js";
 import { findExtraGatewayServices } from "../../daemon/inspect.js";
@@ -14,7 +23,12 @@ import {
   resolveBestEffortGatewayBindHostForDisplay,
 } from "../../infra/network-discovery-display.js";
 import { parseStrictPositiveInteger } from "../../infra/parse-finite-number.js";
-import { formatPortDiagnostics, inspectPortUsage, type PortListener, type PortUsageStatus } from "../../infra/ports.js";
+import {
+  formatPortDiagnostics,
+  inspectPortUsage,
+  type PortListener,
+  type PortUsageStatus,
+} from "../../infra/ports.js";
 import { loadGatewayTlsRuntime } from "../../infra/tls/gateway.js";
 import { probeGatewayStatus } from "./probe.js";
 import { inspectGatewayRestart } from "./restart-health.js";
@@ -62,7 +76,10 @@ type ResolvedGatewayStatus = {
   probeUrlOverride: string | null;
 };
 
-function appendProbeNote(existing: string | undefined, extra: string | undefined): string | undefined {
+function appendProbeNote(
+  existing: string | undefined,
+  extra: string | undefined,
+): string | undefined {
   const values = [existing, extra].filter((value): value is string => Boolean(value?.trim()));
   if (values.length === 0) {
     return undefined;
@@ -130,7 +147,9 @@ function parseGatewaySecretRefPathFromError(error: unknown): string | null {
   return isGatewaySecretRefUnavailableError(error) ? error.path : null;
 }
 
-async function loadDaemonConfigContext(serviceEnv?: Record<string, string>): Promise<DaemonConfigContext> {
+async function loadDaemonConfigContext(
+  serviceEnv?: Record<string, string>,
+): Promise<DaemonConfigContext> {
   const mergedDaemonEnv = {
     ...(process.env as Record<string, string | undefined>),
     ...(serviceEnv ?? undefined),
@@ -189,7 +208,9 @@ async function resolveGatewayStatusSummary(params: {
 }): Promise<ResolvedGatewayStatus> {
   const portFromArgs = parsePortFromArgs(params.commandProgramArguments);
   const daemonPort = portFromArgs ?? resolveGatewayPort(params.daemonCfg, params.mergedDaemonEnv);
-  const portSource: GatewayStatusSummary["portSource"] = portFromArgs ? "service args" : "env/config";
+  const portSource: GatewayStatusSummary["portSource"] = portFromArgs
+    ? "service args"
+    : "env/config";
   const bindMode: GatewayBindMode = params.daemonCfg.gateway?.bind ?? "loopback";
   const customBindHost = params.daemonCfg.gateway?.customBindHost;
   const { bindHost, warning: bindHostWarning } = await resolveBestEffortGatewayBindHostForDisplay({
@@ -249,7 +270,9 @@ async function inspectDaemonPortStatuses(params: {
 }): Promise<{ portStatus?: PortStatusSummary; portCliStatus?: PortStatusSummary }> {
   const [portDiagnostics, portCliDiagnostics] = await Promise.all([
     inspectPortUsage(params.daemonPort).catch(() => null),
-    params.cliPort !== params.daemonPort ? inspectPortUsage(params.cliPort).catch(() => null) : null,
+    params.cliPort !== params.daemonPort
+      ? inspectPortUsage(params.cliPort).catch(() => null)
+      : null,
   ]);
   return {
     portStatus: toPortStatusSummary(portDiagnostics),
@@ -281,8 +304,14 @@ export async function gatherDaemonStatus(
     env: process.env,
     command,
   });
-  const { mergedDaemonEnv, cliCfg, daemonCfg, cliConfigSummary, daemonConfigSummary, configMismatch } =
-    await loadDaemonConfigContext(command?.environment);
+  const {
+    mergedDaemonEnv,
+    cliCfg,
+    daemonCfg,
+    cliConfigSummary,
+    daemonConfigSummary,
+    configMismatch,
+  } = await loadDaemonConfigContext(command?.environment);
   const { gateway, daemonPort, cliPort, probeUrlOverride } = await resolveGatewayStatusSummary({
     cliCfg,
     daemonCfg,
@@ -295,15 +324,20 @@ export async function gatherDaemonStatus(
     cliPort,
   });
 
-  const extraServices = await findExtraGatewayServices(process.env as Record<string, string | undefined>, {
-    deep: Boolean(opts.deep),
-  }).catch(() => []);
+  const extraServices = await findExtraGatewayServices(
+    process.env as Record<string, string | undefined>,
+    {
+      deep: Boolean(opts.deep),
+    },
+  ).catch(() => []);
 
   const timeoutMs = parseStrictPositiveInteger(opts.rpc.timeout ?? "10000") ?? 10_000;
 
   const tlsEnabled = daemonCfg.gateway?.tls?.enabled === true;
   const shouldUseLocalTlsRuntime = opts.probe && !probeUrlOverride && tlsEnabled;
-  const tlsRuntime = shouldUseLocalTlsRuntime ? await loadGatewayTlsRuntime(daemonCfg.gateway?.tls) : undefined;
+  const tlsRuntime = shouldUseLocalTlsRuntime
+    ? await loadGatewayTlsRuntime(daemonCfg.gateway?.tls)
+    : undefined;
   let daemonProbeAuth: { token?: string; password?: string } | undefined;
   let rpcAuthWarning: string | undefined;
   if (opts.probe) {
@@ -332,7 +366,10 @@ export async function gatherDaemonStatus(
         url: gateway.probeUrl,
         token: daemonProbeAuth?.token,
         password: daemonProbeAuth?.password,
-        tlsFingerprint: shouldUseLocalTlsRuntime && tlsRuntime?.enabled ? tlsRuntime.fingerprintSha256 : undefined,
+        tlsFingerprint:
+          shouldUseLocalTlsRuntime && tlsRuntime?.enabled
+            ? tlsRuntime.fingerprintSha256
+            : undefined,
         timeoutMs,
         json: opts.rpc.json,
         requireRpc: opts.requireRpc,

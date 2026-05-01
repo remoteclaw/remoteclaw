@@ -8,4 +8,8 @@ export {
   runDaemonStop,
   runDaemonUninstall,
 } from "./daemon-cli/runners.js";
-export type { DaemonInstallOptions, DaemonStatusOptions, GatewayRpcOpts } from "./daemon-cli/types.js";
+export type {
+  DaemonInstallOptions,
+  DaemonStatusOptions,
+  GatewayRpcOpts,
+} from "./daemon-cli/types.js";

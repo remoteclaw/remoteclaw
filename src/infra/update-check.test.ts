@@ -40,7 +40,8 @@ describe("resolveNpmChannelTag", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: RequestInfo | URL) => {
-        const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+        const url =
+          typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
         const tag = decodeURIComponent(url.split("/").pop() ?? "");
         const version = versionByTag[tag] ?? null;
         return {
@@ -205,7 +206,9 @@ describe("checkDepsStatus", () => {
 
 describe("checkUpdateStatus", () => {
   it("returns unknown install status when root is missing", async () => {
-    await expect(checkUpdateStatus({ root: null, includeRegistry: false, timeoutMs: 1000 })).resolves.toEqual({
+    await expect(
+      checkUpdateStatus({ root: null, includeRegistry: false, timeoutMs: 1000 }),
+    ).resolves.toEqual({
       root: null,
       installKind: "unknown",
       packageManager: "unknown",
@@ -215,7 +218,11 @@ describe("checkUpdateStatus", () => {
 
   it("detects package installs for non-git roots", async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-update-check-"));
-    await fs.writeFile(path.join(root, "package.json"), JSON.stringify({ packageManager: "npm@10.0.0" }), "utf8");
+    await fs.writeFile(
+      path.join(root, "package.json"),
+      JSON.stringify({ packageManager: "npm@10.0.0" }),
+      "utf8",
+    );
     await fs.writeFile(path.join(root, "package-lock.json"), "lock", "utf8");
     await fs.mkdir(path.join(root, "node_modules"), { recursive: true });
 

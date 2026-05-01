@@ -15,7 +15,12 @@ async function withTempHome(run: (home: string) => Promise<void>): Promise<void>
   }
 }
 
-async function writeConfig(home: string, dirname: ".remoteclaw", port: number, filename: string = "remoteclaw.json") {
+async function writeConfig(
+  home: string,
+  dirname: ".remoteclaw",
+  port: number,
+  filename: string = "remoteclaw.json",
+) {
   const dir = path.join(home, dirname);
   await fs.mkdir(dir, { recursive: true });
   const configPath = path.join(dir, filename);
@@ -141,7 +146,10 @@ describe("config io paths", () => {
       const configDir = path.join(home, ".remoteclaw");
       await fs.mkdir(configDir, { recursive: true });
       const configPath = path.join(configDir, "remoteclaw.json");
-      await fs.writeFile(configPath, JSON.stringify({ gateway: { port: "not-a-number" } }, null, 2));
+      await fs.writeFile(
+        configPath,
+        JSON.stringify({ gateway: { port: "not-a-number" } }, null, 2),
+      );
 
       const logger = {
         warn: vi.fn(),
@@ -155,7 +163,9 @@ describe("config io paths", () => {
       });
 
       expect(() => io.loadConfig()).toThrow(/Invalid config/);
-      expect(logger.error).toHaveBeenCalledWith(expect.stringContaining(`Invalid config at ${configPath}:\\n`));
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.stringContaining(`Invalid config at ${configPath}:\\n`),
+      );
       expect(logger.error).toHaveBeenCalledWith(expect.stringContaining("- gateway.port:"));
     });
   });
@@ -171,7 +181,10 @@ describe("config io paths", () => {
       const configDir = path.join(home, ".remoteclaw");
       await fs.mkdir(configDir, { recursive: true });
       const configPath = path.join(configDir, "remoteclaw.json");
-      await fs.writeFile(configPath, JSON.stringify({ meta: { lastTouchedVersion: touchedVersion } }, null, 2));
+      await fs.writeFile(
+        configPath,
+        JSON.stringify({ meta: { lastTouchedVersion: touchedVersion } }, null, 2),
+      );
 
       const logger = {
         warn: vi.fn(),
@@ -204,7 +217,10 @@ describe("config io paths", () => {
       const configDir = path.join(home, ".remoteclaw");
       await fs.mkdir(configDir, { recursive: true });
       const configPath = path.join(configDir, "remoteclaw.json");
-      await fs.writeFile(configPath, JSON.stringify({ meta: { lastTouchedVersion: touchedVersion } }, null, 2));
+      await fs.writeFile(
+        configPath,
+        JSON.stringify({ meta: { lastTouchedVersion: touchedVersion } }, null, 2),
+      );
 
       const logger = {
         warn: vi.fn(),

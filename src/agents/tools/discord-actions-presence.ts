@@ -36,12 +36,16 @@ export async function handleDiscordPresenceAction(
     );
   }
   if (!gateway.isConnected) {
-    throw new Error(`Discord gateway is not connected${accountId ? ` for account "${accountId}"` : ""}.`);
+    throw new Error(
+      `Discord gateway is not connected${accountId ? ` for account "${accountId}"` : ""}.`,
+    );
   }
 
   const statusRaw = readStringParam(params, "status") ?? "online";
   if (!VALID_STATUSES.has(statusRaw)) {
-    throw new Error(`Invalid status "${statusRaw}". Must be one of: ${[...VALID_STATUSES].join(", ")}`);
+    throw new Error(
+      `Invalid status "${statusRaw}". Must be one of: ${[...VALID_STATUSES].join(", ")}`,
+    );
   }
   const status = statusRaw as UpdatePresenceData["status"];
 

@@ -140,7 +140,9 @@ describe("matrix directory", () => {
       },
     } as unknown as CoreConfig;
 
-    expect(matrixPlugin.groups!.resolveRequireMention!({ cfg, groupId: "!room:example.org" })).toBe(true);
+    expect(matrixPlugin.groups!.resolveRequireMention!({ cfg, groupId: "!room:example.org" })).toBe(
+      true,
+    );
     expect(
       matrixPlugin.groups!.resolveRequireMention!({
         cfg,

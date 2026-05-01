@@ -38,7 +38,9 @@ import { closeDiscordThreadSessions } from "./thread-session-close.js";
 
 type LoadedConfig = ReturnType<typeof import("../../../../src/config/config.js").loadConfig>;
 type RuntimeEnv = import("../../../../src/runtime.js").RuntimeEnv;
-type Logger = ReturnType<typeof import("../../../../src/logging/subsystem.js").createSubsystemLogger>;
+type Logger = ReturnType<
+  typeof import("../../../../src/logging/subsystem.js").createSubsystemLogger
+>;
 
 export type DiscordMessageEvent = Parameters<MessageCreateListener["handle"]>[0];
 
@@ -459,7 +461,9 @@ async function handleDiscordReactionEvent(
       const actorLabel = formatDiscordUserTag(user);
       const guildSlug =
         guildInfo?.slug ||
-        (data.guild?.name ? normalizeDiscordSlug(data.guild.name) : (data.guild_id ?? (isGroupDm ? "group-dm" : "dm")));
+        (data.guild?.name
+          ? normalizeDiscordSlug(data.guild.name)
+          : (data.guild_id ?? (isGroupDm ? "group-dm" : "dm")));
       const channelLabel = channelSlug
         ? `#${channelSlug}`
         : channelName
@@ -489,7 +493,10 @@ async function handleDiscordReactionEvent(
         contextKey,
       });
     };
-    const shouldNotifyReaction = (options: { mode: "off" | "own" | "all" | "allowlist"; messageAuthorId?: string }) =>
+    const shouldNotifyReaction = (options: {
+      mode: "off" | "own" | "all" | "allowlist";
+      messageAuthorId?: string;
+    }) =>
       shouldEmitDiscordReactionNotification({
         mode: options.mode,
         botId: botUserId,
@@ -662,7 +669,11 @@ export class DiscordPresenceListener extends PresenceUpdateListener {
       if (!userId) {
         return;
       }
-      setPresence(this.accountId, userId, data as import("discord-api-types/v10").GatewayPresenceUpdate);
+      setPresence(
+        this.accountId,
+        userId,
+        data as import("discord-api-types/v10").GatewayPresenceUpdate,
+      );
     } catch (err) {
       const logger = this.logger ?? discordEventQueueLog;
       logger.error(danger(`discord presence handler failed: ${String(err)}`));

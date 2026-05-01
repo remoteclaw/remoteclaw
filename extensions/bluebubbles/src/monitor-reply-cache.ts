@@ -88,7 +88,10 @@ export function rememberBlueBubblesReplyCache(
  * Resolves a short message ID (e.g., "1", "2") to a full BlueBubbles GUID.
  * Returns the input unchanged if it's already a GUID or not found in the mapping.
  */
-export function resolveBlueBubblesMessageId(shortOrUuid: string, opts?: { requireKnownShortId?: boolean }): string {
+export function resolveBlueBubblesMessageId(
+  shortOrUuid: string,
+  opts?: { requireKnownShortId?: boolean },
+): string {
   const trimmed = shortOrUuid.trim();
   if (!trimmed) {
     return trimmed;
@@ -101,7 +104,9 @@ export function resolveBlueBubblesMessageId(shortOrUuid: string, opts?: { requir
       return uuid;
     }
     if (opts?.requireKnownShortId) {
-      throw new Error(`BlueBubbles short message id "${trimmed}" is no longer available. Use MessageSidFull.`);
+      throw new Error(
+        `BlueBubbles short message id "${trimmed}" is no longer available. Use MessageSidFull.`,
+      );
     }
   }
 
@@ -164,7 +169,12 @@ export function resolveReplyContextFromCache(params: {
   if (chatGuid && cachedChatGuid && chatGuid !== cachedChatGuid) {
     return null;
   }
-  if (!chatGuid && chatIdentifier && cachedChatIdentifier && chatIdentifier !== cachedChatIdentifier) {
+  if (
+    !chatGuid &&
+    chatIdentifier &&
+    cachedChatIdentifier &&
+    chatIdentifier !== cachedChatIdentifier
+  ) {
     return null;
   }
   if (!chatGuid && !chatIdentifier && chatId && cachedChatId && chatId !== cachedChatId) {

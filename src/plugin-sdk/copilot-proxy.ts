@@ -2,4 +2,8 @@
 // Keep this list additive and scoped to the bundled Copilot proxy surface.
 
 export { emptyPluginConfigSchema } from "../plugins/config-schema.js";
-export type { RemoteClawPluginApi, ProviderAuthContext, ProviderAuthResult } from "../plugins/types.js";
+export type {
+  RemoteClawPluginApi,
+  ProviderAuthContext,
+  ProviderAuthResult,
+} from "../plugins/types.js";

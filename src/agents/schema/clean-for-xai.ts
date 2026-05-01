@@ -25,10 +25,15 @@ export function stripXaiUnsupportedKeywords(schema: unknown): unknown {
     }
     if (key === "properties" && value && typeof value === "object" && !Array.isArray(value)) {
       cleaned[key] = Object.fromEntries(
-        Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, stripXaiUnsupportedKeywords(v)]),
+        Object.entries(value as Record<string, unknown>).map(([k, v]) => [
+          k,
+          stripXaiUnsupportedKeywords(v),
+        ]),
       );
     } else if (key === "items" && value && typeof value === "object") {
-      cleaned[key] = Array.isArray(value) ? value.map(stripXaiUnsupportedKeywords) : stripXaiUnsupportedKeywords(value);
+      cleaned[key] = Array.isArray(value)
+        ? value.map(stripXaiUnsupportedKeywords)
+        : stripXaiUnsupportedKeywords(value);
     } else if ((key === "anyOf" || key === "oneOf" || key === "allOf") && Array.isArray(value)) {
       cleaned[key] = value.map(stripXaiUnsupportedKeywords);
     } else {

@@ -8,7 +8,10 @@ import type {
   ReplyToMode,
   SessionThreadBindingsConfig,
 } from "./types.base.js";
-import type { ChannelHealthMonitorConfig, ChannelHeartbeatVisibilityConfig } from "./types.channels.js";
+import type {
+  ChannelHealthMonitorConfig,
+  ChannelHeartbeatVisibilityConfig,
+} from "./types.channels.js";
 import type { DmConfig, ProviderCommandsConfig } from "./types.messages.js";
 import type { GroupToolPolicyBySenderConfig, GroupToolPolicyConfig } from "./types.tools.js";
 

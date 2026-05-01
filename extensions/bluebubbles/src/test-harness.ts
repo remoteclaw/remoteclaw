@@ -52,7 +52,9 @@ type BlueBubblesProbeMockModule = {
 
 export function createBlueBubblesProbeMockModule(): BlueBubblesProbeMockModule {
   return {
-    getCachedBlueBubblesPrivateApiStatus: vi.fn().mockReturnValue(BLUE_BUBBLES_PRIVATE_API_STATUS.unknown),
+    getCachedBlueBubblesPrivateApiStatus: vi
+      .fn()
+      .mockReturnValue(BLUE_BUBBLES_PRIVATE_API_STATUS.unknown),
     isBlueBubblesPrivateApiStatusEnabled: vi.fn((status: boolean | null) => status === true),
   };
 }

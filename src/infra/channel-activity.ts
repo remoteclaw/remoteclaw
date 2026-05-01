@@ -40,7 +40,10 @@ export function recordChannelActivity(params: {
   }
 }
 
-export function getChannelActivity(params: { channel: ChannelId; accountId?: string | null }): ActivityEntry {
+export function getChannelActivity(params: {
+  channel: ChannelId;
+  accountId?: string | null;
+}): ActivityEntry {
   const accountId = params.accountId?.trim() || "default";
   return (
     activity.get(keyFor(params.channel, accountId)) ?? {

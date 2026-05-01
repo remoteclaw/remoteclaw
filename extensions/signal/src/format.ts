@@ -1,5 +1,10 @@
 import type { MarkdownTableMode } from "../../../src/config/types.base.js";
-import { chunkMarkdownIR, markdownToIR, type MarkdownIR, type MarkdownStyle } from "../../../src/markdown/ir.js";
+import {
+  chunkMarkdownIR,
+  markdownToIR,
+  type MarkdownIR,
+  type MarkdownStyle,
+} from "../../../src/markdown/ir.js";
 
 type SignalTextStyle = "BOLD" | "ITALIC" | "STRIKETHROUGH" | "MONOSPACE" | "SPOILER";
 
@@ -97,7 +102,10 @@ function clampStyles(styles: SignalTextStyleRange[], maxLength: number): SignalT
   return clamped;
 }
 
-function applyInsertionsToStyles(spans: SignalStyleSpan[], insertions: Insertion[]): SignalStyleSpan[] {
+function applyInsertionsToStyles(
+  spans: SignalStyleSpan[],
+  insertions: Insertion[],
+): SignalStyleSpan[] {
   if (insertions.length === 0) {
     return spans;
   }
@@ -223,7 +231,10 @@ function renderSignalText(ir: MarkdownIR): SignalFormattedText {
   };
 }
 
-export function markdownToSignalText(markdown: string, options: SignalMarkdownOptions = {}): SignalFormattedText {
+export function markdownToSignalText(
+  markdown: string,
+  options: SignalMarkdownOptions = {},
+): SignalFormattedText {
   const ir = markdownToIR(markdown ?? "", {
     linkify: true,
     enableSpoilers: true,
@@ -234,7 +245,11 @@ export function markdownToSignalText(markdown: string, options: SignalMarkdownOp
   return renderSignalText(ir);
 }
 
-function sliceSignalStyles(styles: SignalTextStyleRange[], start: number, end: number): SignalTextStyleRange[] {
+function sliceSignalStyles(
+  styles: SignalTextStyleRange[],
+  start: number,
+  end: number,
+): SignalTextStyleRange[] {
   const sliced: SignalTextStyleRange[] = [];
   for (const style of styles) {
     const styleEnd = style.start + style.length;
@@ -258,7 +273,10 @@ function sliceSignalStyles(styles: SignalTextStyleRange[], start: number, end: n
  * which is fragile when chunks are trimmed or when duplicate substrings exist.
  * Styles spanning chunk boundaries are split into separate ranges for each chunk.
  */
-function splitSignalFormattedText(formatted: SignalFormattedText, limit: number): SignalFormattedText[] {
+function splitSignalFormattedText(
+  formatted: SignalFormattedText,
+  limit: number,
+): SignalFormattedText[] {
   const { text, styles } = formatted;
 
   if (text.length <= limit) {

@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ChannelId } from "../channels/plugins/types.js";
 import { CronService, type CronServiceDeps } from "./service.js";
-import { createCronStoreHarness, createNoopLogger, withCronServiceForTest } from "./service.test-harness.js";
+import {
+  createCronStoreHarness,
+  createNoopLogger,
+  withCronServiceForTest,
+} from "./service.test-harness.js";
 
 const noopLogger = createNoopLogger();
 const { makeStorePath } = createCronStoreHarness({ prefix: "remoteclaw-cron-delivery-" });
@@ -92,7 +96,10 @@ describe("CronService delivery plan consistency", () => {
 
       const result = await cron.run(job.id, "force");
       expect(result).toEqual({ ok: true, ran: true });
-      expect(enqueueSystemEvent).toHaveBeenCalledWith("Cron: done", expect.objectContaining({ agentId: undefined }));
+      expect(enqueueSystemEvent).toHaveBeenCalledWith(
+        "Cron: done",
+        expect.objectContaining({ agentId: undefined }),
+      );
     });
   });
 

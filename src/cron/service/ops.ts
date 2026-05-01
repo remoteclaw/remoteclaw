@@ -15,7 +15,15 @@ import {
 import { locked } from "./locked.js";
 import type { CronServiceState } from "./state.js";
 import { ensureLoaded, persist, warnIfDisabled } from "./store.js";
-import { applyJobResult, armTimer, emit, executeJobCoreWithTimeout, runMissedJobs, stopTimer, wake } from "./timer.js";
+import {
+  applyJobResult,
+  armTimer,
+  emit,
+  executeJobCoreWithTimeout,
+  runMissedJobs,
+  stopTimer,
+  wake,
+} from "./timer.js";
 
 type CronJobsEnabledFilter = "all" | "enabled" | "disabled";
 type CronJobsSortBy = "nextRunAtMs" | "updatedAtMs" | "name";
@@ -355,7 +363,9 @@ type PreparedManualRun =
     }
   | { ok: false };
 
-type ManualRunDisposition = Extract<PreparedManualRun, { ran: false }> | { ok: true; runnable: true };
+type ManualRunDisposition =
+  | Extract<PreparedManualRun, { ran: false }>
+  | { ok: true; runnable: true };
 
 type ManualRunPreflightResult =
   | { ok: false }
@@ -574,11 +584,17 @@ export async function enqueueRun(state: CronServiceState, id: string, mode?: "du
       },
     },
   ).catch((err) => {
-    state.deps.log.error({ jobId: id, runId, err: String(err) }, "cron: queued manual run background execution failed");
+    state.deps.log.error(
+      { jobId: id, runId, err: String(err) },
+      "cron: queued manual run background execution failed",
+    );
   });
   return { ok: true, enqueued: true, runId } as const;
 }
 
-export function wakeNow(state: CronServiceState, opts: { mode: "now" | "next-heartbeat"; text: string }) {
+export function wakeNow(
+  state: CronServiceState,
+  opts: { mode: "now" | "next-heartbeat"; text: string },
+) {
   return wake(state, opts);
 }

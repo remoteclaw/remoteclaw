@@ -80,8 +80,12 @@ describe("telegram proxy client", () => {
 
   beforeAll(async () => {
     vi.resetModules();
-    ({ deleteMessageTelegram, reactMessageTelegram, resetTelegramClientOptionsCacheForTests, sendMessageTelegram } =
-      await import("./send.js"));
+    ({
+      deleteMessageTelegram,
+      reactMessageTelegram,
+      resetTelegramClientOptionsCacheForTests,
+      sendMessageTelegram,
+    } = await import("./send.js"));
   });
 
   beforeEach(() => {

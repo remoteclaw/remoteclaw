@@ -49,7 +49,8 @@ const opts = parseFlagArgs(
     runs: 1,
     warmup: 0,
     timeoutMs: 30_000,
-    maxDurationRegressionPct: readEnvNumber("REMOTECLAW_STARTUP_BENCH_MAX_DURATION_REGRESSION_PCT") ?? 20,
+    maxDurationRegressionPct:
+      readEnvNumber("REMOTECLAW_STARTUP_BENCH_MAX_DURATION_REGRESSION_PCT") ?? 20,
     maxRssRegressionPct: readEnvNumber("REMOTECLAW_STARTUP_BENCH_MAX_RSS_REGRESSION_PCT") ?? 20,
   },
   [
@@ -120,7 +121,11 @@ for (const [id, baselineCase] of baselineCases) {
 
   const baselineDuration = baselineCase.summary?.durationMs?.avg;
   const currentDuration = currentCase.summary?.durationMs?.avg;
-  if (Number.isFinite(baselineDuration) && Number.isFinite(currentDuration) && baselineDuration > 0) {
+  if (
+    Number.isFinite(baselineDuration) &&
+    Number.isFinite(currentDuration) &&
+    baselineDuration > 0
+  ) {
     const allowedDuration = baselineDuration * (1 + opts.maxDurationRegressionPct / 100);
     if (currentDuration > allowedDuration) {
       console.error(

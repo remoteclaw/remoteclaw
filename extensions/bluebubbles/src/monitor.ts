@@ -13,7 +13,10 @@ import {
 import { createBlueBubblesDebounceRegistry } from "./monitor-debounce.js";
 import { normalizeWebhookMessage, normalizeWebhookReaction } from "./monitor-normalize.js";
 import { logVerbose, processMessage, processReaction } from "./monitor-processing.js";
-import { _resetBlueBubblesShortIdState, resolveBlueBubblesMessageId } from "./monitor-reply-cache.js";
+import {
+  _resetBlueBubblesShortIdState,
+  resolveBlueBubblesMessageId,
+} from "./monitor-reply-cache.js";
 import {
   DEFAULT_WEBHOOK_PATH,
   normalizeWebhookPath,
@@ -66,7 +69,9 @@ export function registerBlueBubblesWebhookTarget(target: WebhookTarget): () => v
   };
 }
 
-function parseBlueBubblesWebhookPayload(rawBody: string): { ok: true; value: unknown } | { ok: false; error: string } {
+function parseBlueBubblesWebhookPayload(
+  rawBody: string,
+): { ok: true; value: unknown } | { ok: false; error: string } {
   const trimmed = rawBody.trim();
   if (!trimmed) {
     return { ok: false, error: "empty payload" };
@@ -88,7 +93,9 @@ function parseBlueBubblesWebhookPayload(rawBody: string): { ok: true; value: unk
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
 }
 
 function maskSecret(value: string): string {
@@ -150,10 +157,17 @@ function resolveWebhookClientIp(
   }
 
   // Mirror gateway client-IP trust rules so limiter buckets follow configured proxy hops.
-  return resolveRequestClientIp(req, [...trustedProxies], allowRealIpFallback) ?? req.socket.remoteAddress ?? "unknown";
+  return (
+    resolveRequestClientIp(req, [...trustedProxies], allowRealIpFallback) ??
+    req.socket.remoteAddress ??
+    "unknown"
+  );
 }
 
-export async function handleBlueBubblesWebhookRequest(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
+export async function handleBlueBubblesWebhookRequest(
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<boolean> {
   const requestUrl = new URL(req.url ?? "/", "http://localhost");
   const normalizedPath = normalizeWebhookPath(requestUrl.pathname);
   const pathTargets = webhookTargets.get(normalizedPath) ?? [];
@@ -224,7 +238,12 @@ export async function handleBlueBubblesWebhookRequest(req: IncomingMessage, res:
       }
       const eventTypeRaw = payload.type;
       const eventType = typeof eventTypeRaw === "string" ? eventTypeRaw.trim() : "";
-      const allowedEventTypes = new Set(["new-message", "updated-message", "message-reaction", "reaction"]);
+      const allowedEventTypes = new Set([
+        "new-message",
+        "updated-message",
+        "message-reaction",
+        "reaction",
+      ]);
       if (eventType && !allowedEventTypes.has(eventType)) {
         res.statusCode = 200;
         res.end("ok");
@@ -235,13 +254,19 @@ export async function handleBlueBubblesWebhookRequest(req: IncomingMessage, res:
       }
       const reaction = normalizeWebhookReaction(payload);
       if (
-        (eventType === "updated-message" || eventType === "message-reaction" || eventType === "reaction") &&
+        (eventType === "updated-message" ||
+          eventType === "message-reaction" ||
+          eventType === "reaction") &&
         !reaction
       ) {
         res.statusCode = 200;
         res.end("ok");
         if (firstTarget) {
-          logVerbose(firstTarget.core, firstTarget.runtime, `webhook ignored ${eventType || "event"} without reaction`);
+          logVerbose(
+            firstTarget.core,
+            firstTarget.runtime,
+            `webhook ignored ${eventType || "event"} without reaction`,
+          );
         }
         return true;
       }
@@ -256,14 +281,18 @@ export async function handleBlueBubblesWebhookRequest(req: IncomingMessage, res:
       target.statusSink?.({ lastInboundAt: Date.now() });
       if (reaction) {
         processReaction(reaction, target).catch((err) => {
-          target.runtime.error?.(`[${target.account.accountId}] BlueBubbles reaction failed: ${String(err)}`);
+          target.runtime.error?.(
+            `[${target.account.accountId}] BlueBubbles reaction failed: ${String(err)}`,
+          );
         });
       } else if (message) {
         // Route messages through debouncer to coalesce rapid-fire events
         // (e.g., text message + URL balloon arriving as separate webhooks)
         const debouncer = debounceRegistry.getOrCreateDebouncer(target);
         debouncer.enqueue({ message, target }).catch((err) => {
-          target.runtime.error?.(`[${target.account.accountId}] BlueBubbles webhook failed: ${String(err)}`);
+          target.runtime.error?.(
+            `[${target.account.accountId}] BlueBubbles webhook failed: ${String(err)}`,
+          );
         });
       }
 
@@ -291,7 +320,9 @@ export async function handleBlueBubblesWebhookRequest(req: IncomingMessage, res:
   });
 }
 
-export async function monitorBlueBubblesProvider(options: BlueBubblesMonitorOptions): Promise<void> {
+export async function monitorBlueBubblesProvider(
+  options: BlueBubblesMonitorOptions,
+): Promise<void> {
   const { account, config, runtime, abortSignal, statusSink } = options;
   const core = getBlueBubblesRuntime();
   const path = options.webhookPath?.trim() || DEFAULT_WEBHOOK_PATH;
@@ -307,7 +338,9 @@ export async function monitorBlueBubblesProvider(options: BlueBubblesMonitorOpti
     runtime.log?.(`[${account.accountId}] BlueBubbles server macOS ${serverInfo.os_version}`);
   }
   if (typeof serverInfo?.private_api === "boolean") {
-    runtime.log?.(`[${account.accountId}] BlueBubbles Private API ${serverInfo.private_api ? "enabled" : "disabled"}`);
+    runtime.log?.(
+      `[${account.accountId}] BlueBubbles Private API ${serverInfo.private_api ? "enabled" : "disabled"}`,
+    );
   }
 
   const unregister = registerBlueBubblesWebhookTarget({
@@ -331,7 +364,9 @@ export async function monitorBlueBubblesProvider(options: BlueBubblesMonitorOpti
     }
 
     abortSignal?.addEventListener("abort", stop, { once: true });
-    runtime.log?.(`[${account.accountId}] BlueBubbles webhook listening on ${normalizeWebhookPath(path)}`);
+    runtime.log?.(
+      `[${account.accountId}] BlueBubbles webhook listening on ${normalizeWebhookPath(path)}`,
+    );
   });
 }
 

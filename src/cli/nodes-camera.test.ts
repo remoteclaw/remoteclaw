@@ -1,7 +1,10 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { readFileUtf8AndCleanup, stubFetchResponse } from "../test-utils/camera-url-test-helpers.js";
+import {
+  readFileUtf8AndCleanup,
+  stubFetchResponse,
+} from "../test-utils/camera-url-test-helpers.js";
 import { withTempDir } from "../test-utils/temp-dir.js";
 
 const fetchGuardMocks = vi.hoisted(() => ({
@@ -60,7 +63,9 @@ describe("nodes camera helpers", () => {
   });
 
   it("rejects invalid camera.snap payload", () => {
-    expect(() => parseCameraSnapPayload({ format: "jpg" })).toThrow(/invalid camera\.snap payload/i);
+    expect(() => parseCameraSnapPayload({ format: "jpg" })).toThrow(
+      /invalid camera\.snap payload/i,
+    );
   });
 
   it("parses camera.clip payload", () => {
@@ -80,9 +85,9 @@ describe("nodes camera helpers", () => {
   });
 
   it("rejects invalid camera.clip payload", () => {
-    expect(() => parseCameraClipPayload({ format: "mp4", base64: "AAEC", durationMs: 1234 })).toThrow(
-      /invalid camera\.clip payload/i,
-    );
+    expect(() =>
+      parseCameraClipPayload({ format: "mp4", base64: "AAEC", durationMs: 1234 }),
+    ).toThrow(/invalid camera\.clip payload/i);
   });
 
   it("builds stable temp paths when id provided", () => {
@@ -209,14 +214,17 @@ describe("nodes camera helpers", () => {
       response: new Response(null, { status: 200 }),
       expectedMessage: /empty response body/i,
     },
-  ] as const)("rejects invalid url payload response: $name", async ({ url, response, expectedMessage }) => {
-    if (response) {
-      stubFetchResponse(response);
-    }
-    await expect(writeUrlToFile("/tmp/ignored", url, { expectedHost: "198.51.100.42" })).rejects.toThrow(
-      expectedMessage,
-    );
-  });
+  ] as const)(
+    "rejects invalid url payload response: $name",
+    async ({ url, response, expectedMessage }) => {
+      if (response) {
+        stubFetchResponse(response);
+      }
+      await expect(
+        writeUrlToFile("/tmp/ignored", url, { expectedHost: "198.51.100.42" }),
+      ).rejects.toThrow(expectedMessage);
+    },
+  );
 
   it("removes partially written file when url stream fails", async () => {
     const stream = new ReadableStream<Uint8Array>({
@@ -271,7 +279,9 @@ describe("nodes screen helpers", () => {
   });
 
   it("rejects invalid screen.record payload", () => {
-    expect(() => parseScreenRecordPayload({ format: "mp4" })).toThrow(/invalid screen\.record payload/i);
+    expect(() => parseScreenRecordPayload({ format: "mp4" })).toThrow(
+      /invalid screen\.record payload/i,
+    );
   });
 
   it("builds screen record temp path", () => {

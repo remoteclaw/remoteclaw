@@ -27,6 +27,8 @@ export function applyDoctorConfigMutation(params: {
     candidate: params.mutation.config,
     pendingChanges: true,
     fixHints:
-      !params.shouldRepair && params.fixHint ? [...params.state.fixHints, params.fixHint] : params.state.fixHints,
+      !params.shouldRepair && params.fixHint
+        ? [...params.state.fixHints, params.fixHint]
+        : params.state.fixHints,
   };
 }

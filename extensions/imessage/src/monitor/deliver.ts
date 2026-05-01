@@ -19,7 +19,8 @@ export async function deliverReplies(params: {
   textLimit: number;
   sentMessageCache?: Pick<SentMessageCache, "remember">;
 }) {
-  const { replies, target, client, runtime, maxBytes, textLimit, accountId, sentMessageCache } = params;
+  const { replies, target, client, runtime, maxBytes, textLimit, accountId, sentMessageCache } =
+    params;
   const scope = `${accountId ?? ""}:${target}`;
   const cfg = loadConfig();
   const tableMode = resolveMarkdownTableMode({

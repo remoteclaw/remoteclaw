@@ -30,7 +30,10 @@ vi.mock("../middleware/channel-bridge.js", () => ({
     constructor(opts: { provider: string }) {
       this.#provider = opts.provider;
     }
-    async handle(message: ChannelMessage, callbacks?: BridgeCallbacks): Promise<AgentDeliveryResult> {
+    async handle(
+      message: ChannelMessage,
+      callbacks?: BridgeCallbacks,
+    ): Promise<AgentDeliveryResult> {
       const embeddedParams = {
         prompt: message.text,
         extraSystemPrompt: message.extraContext,
@@ -208,7 +211,9 @@ export async function loadGetReplyFromConfig() {
 }
 
 export function installTriggerHandlingReplyHarness(
-  setGetReplyFromConfig: (getReplyFromConfig: typeof import("./reply.js").getReplyFromConfig) => void,
+  setGetReplyFromConfig: (
+    getReplyFromConfig: typeof import("./reply.js").getReplyFromConfig,
+  ) => void,
 ): void {
   beforeAll(async () => {
     setGetReplyFromConfig(await loadGetReplyFromConfig());

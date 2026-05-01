@@ -16,22 +16,33 @@ type ChannelStatusRow = {
   value: unknown;
 };
 
-function resolveChannelStatus(key: ChannelKey, props: ChannelsProps): Record<string, unknown> | undefined {
+function resolveChannelStatus(
+  key: ChannelKey,
+  props: ChannelsProps,
+): Record<string, unknown> | undefined {
   const channels = props.snapshot?.channels as Record<string, unknown> | null;
   return channels?.[key] as Record<string, unknown> | undefined;
 }
 
-export function resolveDefaultChannelAccount(key: ChannelKey, props: ChannelsProps): ChannelAccountSnapshot | null {
+export function resolveDefaultChannelAccount(
+  key: ChannelKey,
+  props: ChannelsProps,
+): ChannelAccountSnapshot | null {
   const accounts = props.snapshot?.channelAccounts?.[key] ?? [];
   const defaultAccountId = props.snapshot?.channelDefaultAccountId?.[key];
   return (
-    (defaultAccountId ? accounts.find((account) => account.accountId === defaultAccountId) : undefined) ??
+    (defaultAccountId
+      ? accounts.find((account) => account.accountId === defaultAccountId)
+      : undefined) ??
     accounts[0] ??
     null
   );
 }
 
-export function resolveChannelDisplayState(key: ChannelKey, props: ChannelsProps): ChannelDisplayState {
+export function resolveChannelDisplayState(
+  key: ChannelKey,
+  props: ChannelsProps,
+): ChannelDisplayState {
   const status = resolveChannelStatus(key, props);
   const accounts = props.snapshot?.channelAccounts?.[key] ?? [];
   const defaultAccount = resolveDefaultChannelAccount(key, props);
@@ -43,7 +54,9 @@ export function resolveChannelDisplayState(key: ChannelKey, props: ChannelsProps
         : null;
   const running = typeof status?.running === "boolean" ? status.running : null;
   const connected = typeof status?.connected === "boolean" ? status.connected : null;
-  const hasAnyActiveAccount = accounts.some((account) => account.configured || account.running || account.connected);
+  const hasAnyActiveAccount = accounts.some(
+    (account) => account.configured || account.running || account.connected,
+  );
 
   return {
     configured,

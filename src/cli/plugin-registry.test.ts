@@ -46,7 +46,9 @@ describe("ensurePluginRegistryLoaded", () => {
     resolveFirstAgentWorkspaceMock.mockReturnValue(null);
 
     expect(() => ensurePluginRegistryLoaded()).not.toThrow();
-    expect(loadRemoteClawPluginsMock).toHaveBeenCalledWith(expect.objectContaining({ workspaceDir: undefined }));
+    expect(loadRemoteClawPluginsMock).toHaveBeenCalledWith(
+      expect.objectContaining({ workspaceDir: undefined }),
+    );
   });
 
   it("passes resolved workspace to plugin loader", () => {

@@ -69,7 +69,11 @@ describe("account-scoped LINE groups", () => {
     expect(resolveLineGroupsConfig(cfg, "work")).toEqual({
       "group:g1": { requireMention: false },
     });
-    expect(resolveExactLineGroupConfigKey({ cfg, accountId: "work", groupId: "g1" })).toBe("group:g1");
-    expect(resolveExactLineGroupConfigKey({ cfg, accountId: "default", groupId: "g1" })).toBe(undefined);
+    expect(resolveExactLineGroupConfigKey({ cfg, accountId: "work", groupId: "g1" })).toBe(
+      "group:g1",
+    );
+    expect(resolveExactLineGroupConfigKey({ cfg, accountId: "default", groupId: "g1" })).toBe(
+      undefined,
+    );
   });
 });

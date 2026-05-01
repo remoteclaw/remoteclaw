@@ -13,7 +13,9 @@ export const whatsappOutbound: ChannelOutboundAdapter = {
   ...createWhatsAppOutboundBase({
     chunker: chunkText,
     sendMessageWhatsApp: async (...args) =>
-      (await import("../../../../extensions/whatsapp/src/outbound.js")).sendMessageWhatsApp(...args),
+      (await import("../../../../extensions/whatsapp/src/outbound.js")).sendMessageWhatsApp(
+        ...args,
+      ),
     sendPollWhatsApp,
     shouldLogVerbose,
     normalizeText: trimLeadingWhitespace,

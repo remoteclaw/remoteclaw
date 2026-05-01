@@ -19,7 +19,11 @@ export function normalizeTargetId(kind: MessagingTargetKind, id: string): string
   return `${kind}:${id}`.toLowerCase();
 }
 
-export function buildMessagingTarget(kind: MessagingTargetKind, id: string, raw: string): MessagingTarget {
+export function buildMessagingTarget(
+  kind: MessagingTargetKind,
+  id: string,
+  raw: string,
+): MessagingTarget {
   return {
     kind,
     id,
@@ -28,7 +32,11 @@ export function buildMessagingTarget(kind: MessagingTargetKind, id: string, raw:
   };
 }
 
-export function ensureTargetId(params: { candidate: string; pattern: RegExp; errorMessage: string }): string {
+export function ensureTargetId(params: {
+  candidate: string;
+  pattern: RegExp;
+  errorMessage: string;
+}): string {
   if (!params.pattern.test(params.candidate)) {
     throw new Error(params.errorMessage);
   }

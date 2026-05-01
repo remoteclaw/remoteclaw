@@ -12,7 +12,13 @@ import {
 } from "../nodes-camera.js";
 import { parseDurationMs } from "../parse-duration.js";
 import { getNodesTheme, runNodesCommand } from "./cli-utils.js";
-import { buildNodeInvokeParams, callGatewayCli, nodesCallOpts, resolveNode, resolveNodeId } from "./rpc.js";
+import {
+  buildNodeInvokeParams,
+  callGatewayCli,
+  nodesCallOpts,
+  resolveNode,
+  resolveNodeId,
+} from "./rpc.js";
 import type { NodesRpcOpts } from "./types.js";
 
 const parseFacing = (value: string): CameraFacing => {
@@ -26,7 +32,9 @@ const parseFacing = (value: string): CameraFacing => {
 };
 
 function getGatewayInvokePayload(raw: unknown): unknown {
-  return typeof raw === "object" && raw !== null ? (raw as { payload?: unknown }).payload : undefined;
+  return typeof raw === "object" && raw !== null
+    ? (raw as { payload?: unknown }).payload
+    : undefined;
 }
 
 export function registerNodesCameraCommands(nodes: Command) {
@@ -52,7 +60,9 @@ export function registerNodesCameraCommands(nodes: Command) {
 
           const res = typeof raw === "object" && raw !== null ? (raw as { payload?: unknown }) : {};
           const payload =
-            typeof res.payload === "object" && res.payload !== null ? (res.payload as { devices?: unknown }) : {};
+            typeof res.payload === "object" && res.payload !== null
+              ? (res.payload as { devices?: unknown })
+              : {};
           const devices = Array.isArray(payload.devices) ? payload.devices : [];
 
           if (opts.json) {
@@ -114,7 +124,9 @@ export function registerNodesCameraCommands(nodes: Command) {
               : facingOpt === "front" || facingOpt === "back"
                 ? [facingOpt]
                 : (() => {
-                    throw new Error(`invalid facing: ${String(opts.facing)} (expected front|back|both)`);
+                    throw new Error(
+                      `invalid facing: ${String(opts.facing)} (expected front|back|both)`,
+                    );
                   })();
 
           const maxWidth = opts.maxWidth ? Number.parseInt(String(opts.maxWidth), 10) : undefined;
@@ -124,7 +136,9 @@ export function registerNodesCameraCommands(nodes: Command) {
           if (deviceId && facings.length > 1) {
             throw new Error("facing=both is not allowed when --device-id is set");
           }
-          const timeoutMs = opts.invokeTimeout ? Number.parseInt(String(opts.invokeTimeout), 10) : undefined;
+          const timeoutMs = opts.invokeTimeout
+            ? Number.parseInt(String(opts.invokeTimeout), 10)
+            : undefined;
 
           const results: Array<{
             facing: CameraFacing;
@@ -186,7 +200,11 @@ export function registerNodesCameraCommands(nodes: Command) {
       .requiredOption("--node <idOrNameOrIp>", "Node id, name, or IP")
       .option("--facing <front|back>", "Camera facing", "front")
       .option("--device-id <id>", "Camera device id (from nodes camera list)")
-      .option("--duration <ms|10s|1m>", "Duration (default 3000ms; supports ms/s/m, e.g. 10s)", "3000")
+      .option(
+        "--duration <ms|10s|1m>",
+        "Duration (default 3000ms; supports ms/s/m, e.g. 10s)",
+        "3000",
+      )
       .option("--no-audio", "Disable audio capture")
       .option("--invoke-timeout <ms>", "Node invoke timeout in ms (default 90000)", "90000")
       .action(async (opts: NodesRpcOpts & { audio?: boolean }) => {
@@ -196,7 +214,9 @@ export function registerNodesCameraCommands(nodes: Command) {
           const facing = parseFacing(String(opts.facing ?? "front"));
           const durationMs = parseDurationMs(String(opts.duration ?? "3000"));
           const includeAudio = opts.audio !== false;
-          const timeoutMs = opts.invokeTimeout ? Number.parseInt(String(opts.invokeTimeout), 10) : undefined;
+          const timeoutMs = opts.invokeTimeout
+            ? Number.parseInt(String(opts.invokeTimeout), 10)
+            : undefined;
           const deviceId = opts.deviceId ? String(opts.deviceId).trim() : undefined;
 
           const invokeParams = buildNodeInvokeParams({

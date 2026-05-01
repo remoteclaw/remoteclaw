@@ -10,7 +10,10 @@ import {
   stopWithText,
 } from "./shared.js";
 
-function formatConversationBindingText(params: { channel: string; conversationId: string }): string {
+function formatConversationBindingText(params: {
+  channel: string;
+  conversationId: string;
+}): string {
   if (params.channel === "discord" || params.channel === "matrix") {
     return `thread:${params.conversationId}`;
   }
@@ -56,13 +59,19 @@ export function handleSubagentsAgentsAction(ctx: SubagentsCommandContext): Comma
 
   const recentCutoff = Date.now() - RECENT_WINDOW_MINUTES * 60_000;
   const numericOrder = [
-    ...dedupedRuns.filter((entry) => !entry.endedAt || countPendingDescendantRuns(entry.childSessionKey) > 0),
+    ...dedupedRuns.filter(
+      (entry) => !entry.endedAt || countPendingDescendantRuns(entry.childSessionKey) > 0,
+    ),
     ...dedupedRuns.filter(
       (entry) =>
-        entry.endedAt && countPendingDescendantRuns(entry.childSessionKey) === 0 && entry.endedAt >= recentCutoff,
+        entry.endedAt &&
+        countPendingDescendantRuns(entry.childSessionKey) === 0 &&
+        entry.endedAt >= recentCutoff,
     ),
   ];
-  const indexByChildSessionKey = new Map(numericOrder.map((entry, idx) => [entry.childSessionKey, idx + 1] as const));
+  const indexByChildSessionKey = new Map(
+    numericOrder.map((entry, idx) => [entry.childSessionKey, idx + 1] as const),
+  );
 
   const visibleRuns: typeof dedupedRuns = [];
   for (const entry of dedupedRuns) {
@@ -96,7 +105,9 @@ export function handleSubagentsAgentsAction(ctx: SubagentsCommandContext): Comma
     }
   }
 
-  const requesterBindings = resolveSessionBindings(requesterKey).filter((entry) => entry.targetKind === "session");
+  const requesterBindings = resolveSessionBindings(requesterKey).filter(
+    (entry) => entry.targetKind === "session",
+  );
   if (requesterBindings.length > 0) {
     lines.push("", "acp/session bindings:", "-----");
     for (const binding of requesterBindings) {

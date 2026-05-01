@@ -14,14 +14,17 @@ export function resolveAbortCutoffFromContext(ctx: MsgContext): AbortCutoff | un
     (typeof ctx.MessageSidFull === "string" && ctx.MessageSidFull.trim()) ||
     (typeof ctx.MessageSid === "string" && ctx.MessageSid.trim()) ||
     undefined;
-  const timestamp = typeof ctx.Timestamp === "number" && Number.isFinite(ctx.Timestamp) ? ctx.Timestamp : undefined;
+  const timestamp =
+    typeof ctx.Timestamp === "number" && Number.isFinite(ctx.Timestamp) ? ctx.Timestamp : undefined;
   if (!messageSid && timestamp === undefined) {
     return undefined;
   }
   return { messageSid, timestamp };
 }
 
-export function readAbortCutoffFromSessionEntry(entry: SessionAbortCutoffEntry | undefined): AbortCutoff | undefined {
+export function readAbortCutoffFromSessionEntry(
+  entry: SessionAbortCutoffEntry | undefined,
+): AbortCutoff | undefined {
   if (!entry) {
     return undefined;
   }
@@ -40,7 +43,10 @@ export function hasAbortCutoff(entry: SessionAbortCutoffEntry | undefined): bool
   return readAbortCutoffFromSessionEntry(entry) !== undefined;
 }
 
-export function applyAbortCutoffToSessionEntry(entry: SessionAbortCutoffEntry, cutoff: AbortCutoff | undefined): void {
+export function applyAbortCutoffToSessionEntry(
+  entry: SessionAbortCutoffEntry,
+  cutoff: AbortCutoff | undefined,
+): void {
   entry.abortCutoffMessageSid = cutoff?.messageSid;
   entry.abortCutoffTimestamp = cutoff?.timestamp;
 }
@@ -116,7 +122,10 @@ export function shouldSkipMessageByAbortCutoff(params: {
   return false;
 }
 
-export function shouldPersistAbortCutoff(params: { commandSessionKey?: string; targetSessionKey?: string }): boolean {
+export function shouldPersistAbortCutoff(params: {
+  commandSessionKey?: string;
+  targetSessionKey?: string;
+}): boolean {
   const commandSessionKey = params.commandSessionKey?.trim();
   const targetSessionKey = params.targetSessionKey?.trim();
   if (!commandSessionKey || !targetSessionKey) {

@@ -47,7 +47,11 @@ describe("SearchableSelectList", () => {
     }
   }
 
-  function expectSelectedValueForQuery(list: SearchableSelectList, query: string, expectedValue: string) {
+  function expectSelectedValueForQuery(
+    list: SearchableSelectList,
+    query: string,
+    expectedValue: string,
+  ) {
     typeInput(list, query);
     const selected = list.getSelectedItem();
     expect(selected?.value).toBe(expectedValue);

@@ -15,7 +15,11 @@ import { defaultRuntime } from "../runtime.js";
 import { parseMessageWithAttachments } from "./chat-attachments.js";
 import { normalizeRpcAttachmentsToChatAttachments } from "./server-methods/attachment-normalize.js";
 import type { NodeEvent, NodeEventContext } from "./server-node-events-types.js";
-import { loadSessionEntry, pruneLegacyStoreKeys, resolveGatewaySessionStoreTarget } from "./session-utils.js";
+import {
+  loadSessionEntry,
+  pruneLegacyStoreKeys,
+  resolveGatewaySessionStoreTarget,
+} from "./session-utils.js";
 import { formatForLog } from "./ws-log.js";
 
 const MAX_EXEC_EVENT_OUTPUT_CHARS = 180;
@@ -67,7 +71,11 @@ function resolveVoiceTranscriptFingerprint(obj: Record<string, unknown>, text: s
   return `text:${text}`;
 }
 
-function shouldDropDuplicateVoiceTranscript(params: { sessionKey: string; fingerprint: string; now: number }): boolean {
+function shouldDropDuplicateVoiceTranscript(params: {
+  sessionKey: string;
+  fingerprint: string;
+  now: number;
+}): boolean {
   const previous = recentVoiceTranscripts.get(params.sessionKey);
   if (
     previous &&
@@ -214,7 +222,9 @@ function parsePayloadObject(payloadJSON?: string | null): Record<string, unknown
   } catch {
     return null;
   }
-  return typeof payload === "object" && payload !== null ? (payload as Record<string, unknown>) : null;
+  return typeof payload === "object" && payload !== null
+    ? (payload as Record<string, unknown>)
+    : null;
 }
 
 async function sendReceiptAck(params: {
@@ -341,7 +351,9 @@ export const handleNodeEvent = async (ctx: NodeEventContext, nodeId: string, evt
         return;
       }
       let message = (link?.message ?? "").trim();
-      const normalizedAttachments = normalizeRpcAttachmentsToChatAttachments(link?.attachments ?? undefined);
+      const normalizedAttachments = normalizeRpcAttachmentsToChatAttachments(
+        link?.attachments ?? undefined,
+      );
       let images: Array<{ type: "image"; data: string; mimeType: string }> = [];
       if (normalizedAttachments.length > 0) {
         try {
@@ -368,7 +380,8 @@ export const handleNodeEvent = async (ctx: NodeEventContext, nodeId: string, evt
       const deliverRequested = Boolean(link?.deliver);
       const wantsReceipt = Boolean(link?.receipt);
       const receiptTextRaw = typeof link?.receiptText === "string" ? link.receiptText.trim() : "";
-      const receiptText = receiptTextRaw || "Just received your iOS share + request, working on it.";
+      const receiptText =
+        receiptTextRaw || "Just received your iOS share + request, working on it.";
 
       const sessionKeyRaw = (link?.sessionKey ?? "").trim();
       const sessionKey = sessionKeyRaw.length > 0 ? sessionKeyRaw : `node-${nodeId}`;
@@ -379,7 +392,10 @@ export const handleNodeEvent = async (ctx: NodeEventContext, nodeId: string, evt
       await touchSessionStore({ cfg, sessionKey, storePath, canonicalKey, entry, sessionId, now });
 
       if (deliverRequested && (!channel || !to)) {
-        const entryChannel = typeof entry?.lastChannel === "string" ? normalizeChannelId(entry.lastChannel) : undefined;
+        const entryChannel =
+          typeof entry?.lastChannel === "string"
+            ? normalizeChannelId(entry.lastChannel)
+            : undefined;
         const entryTo = typeof entry?.lastTo === "string" ? entry.lastTo.trim() : "";
         if (!channel && entryChannel) {
           channel = entryChannel;
@@ -424,7 +440,8 @@ export const handleNodeEvent = async (ctx: NodeEventContext, nodeId: string, evt
           deliver,
           to: deliveryTo,
           channel: deliveryChannel,
-          timeout: typeof link?.timeoutSeconds === "number" ? link.timeoutSeconds.toString() : undefined,
+          timeout:
+            typeof link?.timeoutSeconds === "number" ? link.timeoutSeconds.toString() : undefined,
           messageChannel: "node",
           senderIsOwner: false,
         },
@@ -504,7 +521,8 @@ export const handleNodeEvent = async (ctx: NodeEventContext, nodeId: string, evt
       if (!obj) {
         return;
       }
-      const sessionKey = typeof obj.sessionKey === "string" ? obj.sessionKey.trim() : `node-${nodeId}`;
+      const sessionKey =
+        typeof obj.sessionKey === "string" ? obj.sessionKey.trim() : `node-${nodeId}`;
       if (!sessionKey) {
         return;
       }
@@ -522,7 +540,10 @@ export const handleNodeEvent = async (ctx: NodeEventContext, nodeId: string, evt
 
       const runId = typeof obj.runId === "string" ? obj.runId.trim() : "";
       const command = typeof obj.command === "string" ? obj.command.trim() : "";
-      const exitCode = typeof obj.exitCode === "number" && Number.isFinite(obj.exitCode) ? obj.exitCode : undefined;
+      const exitCode =
+        typeof obj.exitCode === "number" && Number.isFinite(obj.exitCode)
+          ? obj.exitCode
+          : undefined;
       const timedOut = obj.timedOut === true;
       const output = typeof obj.output === "string" ? obj.output.trim() : "";
       const reason = typeof obj.reason === "string" ? obj.reason.trim() : "";

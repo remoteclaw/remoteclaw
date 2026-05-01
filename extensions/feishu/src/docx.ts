@@ -131,7 +131,8 @@ function normalizeConvertedBlockTree(
   firstLevelIds: string[],
 ): { orderedBlocks: any[]; rootIds: string[] } {
   if (blocks.length <= 1) {
-    const rootIds = blocks.length === 1 && typeof blocks[0]?.block_id === "string" ? [blocks[0].block_id] : [];
+    const rootIds =
+      blocks.length === 1 && typeof blocks[0]?.block_id === "string" ? [blocks[0].block_id] : [];
     return { orderedBlocks: blocks, rootIds };
   }
 
@@ -163,9 +164,9 @@ function normalizeConvertedBlockTree(
     .sort((a, b) => (originalOrder.get(a.block_id) ?? 0) - (originalOrder.get(b.block_id) ?? 0))
     .map((block) => block.block_id);
 
-  const rootIds = (firstLevelIds && firstLevelIds.length > 0 ? firstLevelIds : inferredTopLevelIds).filter(
-    (id, index, arr) => typeof id === "string" && byId.has(id) && arr.indexOf(id) === index,
-  );
+  const rootIds = (
+    firstLevelIds && firstLevelIds.length > 0 ? firstLevelIds : inferredTopLevelIds
+  ).filter((id, index, arr) => typeof id === "string" && byId.has(id) && arr.indexOf(id) === index);
 
   const orderedBlocks: any[] = [];
   const visited = new Set<string>();
@@ -413,7 +414,9 @@ async function clearDocumentContent(client: Lark.Client, docToken: string) {
   }
 
   const childIds =
-    existing.data?.items?.filter((b) => b.parent_id === docToken && b.block_type !== 1).map((b) => b.block_id) ?? [];
+    existing.data?.items
+      ?.filter((b) => b.parent_id === docToken && b.block_type !== 1)
+      .map((b) => b.block_id) ?? [];
 
   if (childIds.length > 0) {
     const res = await client.docx.documentBlockChildren.batchDelete({
@@ -474,7 +477,10 @@ async function resolveUploadInput(
 ): Promise<{ buffer: Buffer; fileName: string }> {
   // Enforce mutual exclusivity: exactly one input source must be provided.
   const inputSources = (
-    [url ? "url" : null, filePath ? "file_path" : null, imageInput ? "image" : null] as (string | null)[]
+    [url ? "url" : null, filePath ? "file_path" : null, imageInput ? "image" : null] as (
+      | string
+      | null
+    )[]
   ).filter(Boolean);
   if (inputSources.length > 1) {
     throw new Error(`Provide only one image source; got: ${inputSources.join(", ")}`);
@@ -491,14 +497,17 @@ async function resolveUploadInput(
     // Only base64-encoded data URIs are supported; reject plain/URL-encoded ones.
     if (!header.includes(";base64")) {
       throw new Error(
-        `Invalid data URI: missing ';base64' marker. ` + `Expected format: data:image/png;base64,<base64data>`,
+        `Invalid data URI: missing ';base64' marker. ` +
+          `Expected format: data:image/png;base64,<base64data>`,
       );
     }
     // Validate the payload is actually base64 before decoding; Node's decoder
     // is permissive and would silently accept garbage bytes otherwise.
     const trimmedData = data.trim();
     if (trimmedData.length === 0 || !/^[A-Za-z0-9+/]+=*$/.test(trimmedData)) {
-      throw new Error(`Invalid data URI: base64 payload contains characters outside the standard alphabet.`);
+      throw new Error(
+        `Invalid data URI: base64 payload contains characters outside the standard alphabet.`,
+      );
     }
     const mimeMatch = header.match(/data:([^;]+)/);
     const ext = mimeMatch?.[1]?.split("/")[1] ?? "png";
@@ -506,7 +515,9 @@ async function resolveUploadInput(
     // full buffer to avoid spiking memory on oversized payloads.
     const estimatedBytes = Math.ceil((trimmedData.length * 3) / 4);
     if (estimatedBytes > maxBytes) {
-      throw new Error(`Image data URI exceeds limit: estimated ${estimatedBytes} bytes > ${maxBytes} bytes`);
+      throw new Error(
+        `Image data URI exceeds limit: estimated ${estimatedBytes} bytes > ${maxBytes} bytes`,
+      );
     }
     const buffer = Buffer.from(trimmedData, "base64");
     return { buffer, fileName: explicitFileName ?? `image.${ext}` };
@@ -520,7 +531,8 @@ async function resolveUploadInput(
   // to avoid ambiguity with absolute paths.
   if (imageInput) {
     const candidate = imageInput.startsWith("~") ? imageInput.replace(/^~/, homedir()) : imageInput;
-    const unambiguousPath = imageInput.startsWith("~") || imageInput.startsWith("./") || imageInput.startsWith("../");
+    const unambiguousPath =
+      imageInput.startsWith("~") || imageInput.startsWith("./") || imageInput.startsWith("../");
     const absolutePath = isAbsolute(imageInput);
 
     if (unambiguousPath || (absolutePath && existsSync(candidate))) {
@@ -554,7 +566,9 @@ async function resolveUploadInput(
     // full buffer to avoid spiking memory on oversized payloads.
     const estimatedBytes = Math.ceil((trimmed.length * 3) / 4);
     if (estimatedBytes > maxBytes) {
-      throw new Error(`Base64 image exceeds limit: estimated ${estimatedBytes} bytes > ${maxBytes} bytes`);
+      throw new Error(
+        `Base64 image exceeds limit: estimated ${estimatedBytes} bytes > ${maxBytes} bytes`,
+      );
     }
     const buffer = Buffer.from(trimmed, "base64");
     if (buffer.length === 0) {
@@ -708,7 +722,10 @@ async function uploadFileBlock(
   // Create a placeholder text block first
   const placeholderMd = `[${upload.fileName}](https://example.com/placeholder)`;
   const converted = await convertMarkdown(client, placeholderMd);
-  const { orderedBlocks } = normalizeConvertedBlockTree(converted.blocks, converted.firstLevelBlockIds);
+  const { orderedBlocks } = normalizeConvertedBlockTree(
+    converted.blocks,
+    converted.firstLevelBlockIds,
+  );
   const { children: inserted } = await insertBlocks(client, docToken, orderedBlocks, blockId);
 
   // Get the first inserted block - we'll delete it and create the file in its place
@@ -728,7 +745,9 @@ async function uploadFileBlock(
   }
   const items = childrenRes.data?.items ?? [];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK block type
-  const placeholderIdx = items.findIndex((item: any) => item.block_id === placeholderBlock.block_id);
+  const placeholderIdx = items.findIndex(
+    (item: any) => item.block_id === placeholderBlock.block_id,
+  );
   if (placeholderIdx >= 0) {
     const deleteRes = await client.docx.documentBlockChildren.batchDelete({
       path: { document_id: docToken, block_id: parentId },
@@ -871,7 +890,13 @@ async function createDoc(
   };
 }
 
-async function writeDoc(client: Lark.Client, docToken: string, markdown: string, maxBytes: number, logger?: Logger) {
+async function writeDoc(
+  client: Lark.Client,
+  docToken: string,
+  markdown: string,
+  maxBytes: number,
+  logger?: Logger,
+) {
   const deleted = await clearDocumentContent(client, docToken);
   logger?.info?.("feishu_doc: Converting markdown...");
   const { blocks, firstLevelBlockIds } = await chunkedConvertMarkdown(client, markdown);
@@ -896,7 +921,13 @@ async function writeDoc(client: Lark.Client, docToken: string, markdown: string,
   };
 }
 
-async function appendDoc(client: Lark.Client, docToken: string, markdown: string, maxBytes: number, logger?: Logger) {
+async function appendDoc(
+  client: Lark.Client,
+  docToken: string,
+  markdown: string,
+  maxBytes: number,
+  logger?: Logger,
+) {
   logger?.info?.("feishu_doc: Converting markdown...");
   const { blocks, firstLevelBlockIds } = await chunkedConvertMarkdown(client, markdown);
   if (blocks.length === 0) {
@@ -966,10 +997,20 @@ async function insertDoc(
   if (blocks.length === 0) throw new Error("Content is empty");
   const { orderedBlocks, rootIds } = normalizeConvertedBlockTree(blocks, firstLevelBlockIds);
 
-  logger?.info?.(`feishu_doc: Converted to ${blocks.length} blocks, inserting at index ${insertIndex}...`);
+  logger?.info?.(
+    `feishu_doc: Converted to ${blocks.length} blocks, inserting at index ${insertIndex}...`,
+  );
   const { children: inserted } =
     blocks.length > BATCH_SIZE
-      ? await insertBlocksInBatches(client, docToken, orderedBlocks, rootIds, logger, parentId, insertIndex)
+      ? await insertBlocksInBatches(
+          client,
+          docToken,
+          orderedBlocks,
+          rootIds,
+          logger,
+          parentId,
+          insertIndex,
+        )
       : await insertBlocksWithDescendant(client, docToken, orderedBlocks, rootIds, {
           parentBlockId: parentId,
           index: insertIndex,
@@ -1039,7 +1080,12 @@ async function createTable(
   };
 }
 
-async function writeTableCells(client: Lark.Client, docToken: string, tableBlockId: string, values: string[][]) {
+async function writeTableCells(
+  client: Lark.Client,
+  docToken: string,
+  tableBlockId: string,
+  values: string[][],
+) {
   if (!values.length || !values[0]?.length) {
     throw new Error("values must be a non-empty 2D array");
   }
@@ -1102,7 +1148,10 @@ async function writeTableCells(client: Lark.Client, docToken: string, tableBlock
 
       const text = rowValues[c] ?? "";
       const converted = await convertMarkdown(client, text);
-      const { orderedBlocks } = normalizeConvertedBlockTree(converted.blocks, converted.firstLevelBlockIds);
+      const { orderedBlocks } = normalizeConvertedBlockTree(
+        converted.blocks,
+        converted.firstLevelBlockIds,
+      );
 
       if (orderedBlocks.length > 0) {
         await insertBlocks(client, docToken, orderedBlocks, cellId);
@@ -1129,7 +1178,14 @@ async function createTableWithValues(
   parentBlockId?: string,
   columnWidth?: number[],
 ) {
-  const created = await createTable(client, docToken, rowSize, columnSize, parentBlockId, columnWidth);
+  const created = await createTable(
+    client,
+    docToken,
+    rowSize,
+    columnSize,
+    parentBlockId,
+    columnWidth,
+  );
 
   const tableBlockId = created.table_block_id;
   if (!tableBlockId) {
@@ -1146,7 +1202,12 @@ async function createTableWithValues(
   };
 }
 
-async function updateBlock(client: Lark.Client, docToken: string, blockId: string, content: string) {
+async function updateBlock(
+  client: Lark.Client,
+  docToken: string,
+  blockId: string,
+  content: string,
+) {
   const blockInfo = await client.docx.documentBlock.get({
     path: { document_id: docToken, block_id: blockId },
   });
@@ -1271,8 +1332,14 @@ export function registerFeishuDocTools(api: RemoteClawPluginApi) {
   const getClient = (params: { accountId?: string } | undefined, defaultAccountId?: string) =>
     createFeishuToolClient({ api, executeParams: params, defaultAccountId });
 
-  const getMediaMaxBytes = (params: { accountId?: string } | undefined, defaultAccountId?: string) =>
-    (resolveFeishuToolAccount({ api, executeParams: params, defaultAccountId }).config?.mediaMaxMb ?? 30) * 1024 * 1024;
+  const getMediaMaxBytes = (
+    params: { accountId?: string } | undefined,
+    defaultAccountId?: string,
+  ) =>
+    (resolveFeishuToolAccount({ api, executeParams: params, defaultAccountId }).config
+      ?.mediaMaxMb ?? 30) *
+    1024 *
+    1024;
 
   // Main document tool with action-based dispatch
   if (toolsCfg.doc) {
@@ -1296,11 +1363,23 @@ export function registerFeishuDocTools(api: RemoteClawPluginApi) {
                   return json(await readDoc(client, p.doc_token));
                 case "write":
                   return json(
-                    await writeDoc(client, p.doc_token, p.content, getMediaMaxBytes(p, defaultAccountId), api.logger),
+                    await writeDoc(
+                      client,
+                      p.doc_token,
+                      p.content,
+                      getMediaMaxBytes(p, defaultAccountId),
+                      api.logger,
+                    ),
                   );
                 case "append":
                   return json(
-                    await appendDoc(client, p.doc_token, p.content, getMediaMaxBytes(p, defaultAccountId), api.logger),
+                    await appendDoc(
+                      client,
+                      p.doc_token,
+                      p.content,
+                      getMediaMaxBytes(p, defaultAccountId),
+                      api.logger,
+                    ),
                   );
                 case "insert":
                   return json(
@@ -1340,7 +1419,9 @@ export function registerFeishuDocTools(api: RemoteClawPluginApi) {
                     ),
                   );
                 case "write_table_cells":
-                  return json(await writeTableCells(client, p.doc_token, p.table_block_id, p.values));
+                  return json(
+                    await writeTableCells(client, p.doc_token, p.table_block_id, p.values),
+                  );
                 case "create_table_with_values":
                   return json(
                     await createTableWithValues(
@@ -1384,12 +1465,28 @@ export function registerFeishuDocTools(api: RemoteClawPluginApi) {
                 case "insert_table_row":
                   return json(await insertTableRow(client, p.doc_token, p.block_id, p.row_index));
                 case "insert_table_column":
-                  return json(await insertTableColumn(client, p.doc_token, p.block_id, p.column_index));
+                  return json(
+                    await insertTableColumn(client, p.doc_token, p.block_id, p.column_index),
+                  );
                 case "delete_table_rows":
-                  return json(await deleteTableRows(client, p.doc_token, p.block_id, p.row_start, p.row_count));
+                  return json(
+                    await deleteTableRows(
+                      client,
+                      p.doc_token,
+                      p.block_id,
+                      p.row_start,
+                      p.row_count,
+                    ),
+                  );
                 case "delete_table_columns":
                   return json(
-                    await deleteTableColumns(client, p.doc_token, p.block_id, p.column_start, p.column_count),
+                    await deleteTableColumns(
+                      client,
+                      p.doc_token,
+                      p.block_id,
+                      p.column_start,
+                      p.column_count,
+                    ),
                   );
                 case "merge_table_cells":
                   return json(

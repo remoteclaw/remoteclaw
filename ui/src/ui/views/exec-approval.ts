@@ -1,6 +1,9 @@
 import { html, nothing } from "lit";
 import type { AppViewState } from "../app-view-state.ts";
-import type { ExecApprovalRequest, ExecApprovalRequestPayload } from "../controllers/exec-approval.ts";
+import type {
+  ExecApprovalRequest,
+  ExecApprovalRequestPayload,
+} from "../controllers/exec-approval.ts";
 
 function formatRemaining(ms: number): string {
   const remaining = Math.max(0, ms);
@@ -62,7 +65,9 @@ export function renderExecApprovalPrompt(state: AppViewState) {
   const remaining = remainingMs > 0 ? `expires in ${formatRemaining(remainingMs)}` : "expired";
   const queueCount = state.execApprovalQueue.length;
   const isPlugin = active.kind === "plugin";
-  const title = isPlugin ? (active.pluginTitle ?? "Plugin approval needed") : "Exec approval needed";
+  const title = isPlugin
+    ? (active.pluginTitle ?? "Plugin approval needed")
+    : "Exec approval needed";
   return html`
     <div class="exec-approval-overlay" role="dialog" aria-live="polite">
       <div class="exec-approval-card">

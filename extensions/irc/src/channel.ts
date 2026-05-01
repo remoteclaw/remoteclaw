@@ -153,13 +153,16 @@ export const ircPlugin: ChannelPlugin<ResolvedIrcAccount, IrcProbe> = {
                 buildOpenGroupPolicyWarning({
                   surface: "IRC channels",
                   openBehavior: "allows all channels and senders (mention-gated)",
-                  remediation: 'Prefer channels.irc.groupPolicy="allowlist" with channels.irc.groups',
+                  remediation:
+                    'Prefer channels.irc.groupPolicy="allowlist" with channels.irc.groups',
                 }),
               ]
             : [],
       });
       if (!account.config.tls) {
-        warnings.push("- IRC TLS is disabled (channels.irc.tls=false); traffic and credentials are plaintext.");
+        warnings.push(
+          "- IRC TLS is disabled (channels.irc.tls=false); traffic and credentials are plaintext.",
+        );
       }
       if (account.config.nickserv?.register) {
         warnings.push(

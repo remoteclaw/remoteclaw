@@ -4,9 +4,16 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import { resolvePluginInstallDir } from "./install.js";
-import { removePluginFromConfig, resolveUninstallDirectoryTarget, uninstallPlugin } from "./uninstall.js";
+import {
+  removePluginFromConfig,
+  resolveUninstallDirectoryTarget,
+  uninstallPlugin,
+} from "./uninstall.js";
 
-async function createInstalledNpmPluginFixture(params: { baseDir: string; pluginId?: string }): Promise<{
+async function createInstalledNpmPluginFixture(params: {
+  baseDir: string;
+  pluginId?: string;
+}): Promise<{
   pluginId: string;
   extensionsDir: string;
   pluginDir: string;

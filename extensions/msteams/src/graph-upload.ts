@@ -62,7 +62,10 @@ async function uploadDriveItem(params: {
     throw new Error(`${params.label} upload failed: ${res.status} ${res.statusText} - ${body}`);
   }
 
-  return parseUploadedDriveItem((await res.json()) as { id?: string; webUrl?: string; name?: string }, params.label);
+  return parseUploadedDriveItem(
+    (await res.json()) as { id?: string; webUrl?: string; name?: string },
+    params.label,
+  );
 }
 
 /**
@@ -405,18 +408,23 @@ export async function createSharePointSharingLink(params: {
     body.recipients = params.recipientObjectIds.map((id) => ({ objectId: id }));
   }
 
-  const res = await fetchFn(`${apiRoot}/sites/${params.siteId}/drive/items/${params.itemId}/createLink`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
+  const res = await fetchFn(
+    `${apiRoot}/sites/${params.siteId}/drive/items/${params.itemId}/createLink`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
     },
-    body: JSON.stringify(body),
-  });
+  );
 
   if (!res.ok) {
     const respBody = await res.text().catch(() => "");
-    throw new Error(`Create SharePoint sharing link failed: ${res.status} ${res.statusText} - ${respBody}`);
+    throw new Error(
+      `Create SharePoint sharing link failed: ${res.status} ${res.statusText} - ${respBody}`,
+    );
   }
 
   const data = (await res.json()) as {

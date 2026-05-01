@@ -97,7 +97,9 @@ export function parsePollStartContent(content: PollStartContent): PollSummary | 
     return null;
   }
 
-  const answers = poll.answers.map((answer) => getTextContent(answer)).filter((a) => a.trim().length > 0);
+  const answers = poll.answers
+    .map((answer) => getTextContent(answer))
+    .filter((a) => a.trim().length > 0);
 
   return {
     eventId: "",
@@ -112,7 +114,12 @@ export function parsePollStartContent(content: PollStartContent): PollSummary | 
 }
 
 export function formatPollAsText(summary: PollSummary): string {
-  const lines = ["[Poll]", summary.question, "", ...summary.answers.map((answer, idx) => `${idx + 1}. ${answer}`)];
+  const lines = [
+    "[Poll]",
+    summary.question,
+    "",
+    ...summary.answers.map((answer, idx) => `${idx + 1}. ${answer}`),
+  ];
   return lines.join("\n");
 }
 

@@ -7,7 +7,9 @@ type PluginHttpRouteLike = {
 };
 
 function prefixMatchPath(pathname: string, prefix: string): boolean {
-  return pathname === prefix || pathname.startsWith(`${prefix}/`) || pathname.startsWith(`${prefix}%`);
+  return (
+    pathname === prefix || pathname.startsWith(`${prefix}/`) || pathname.startsWith(`${prefix}%`)
+  );
 }
 
 export function doPluginHttpRoutesOverlap(
@@ -26,7 +28,10 @@ export function doPluginHttpRoutesOverlap(
 
   const prefixRoute = a.match === "prefix" ? a : b;
   const exactRoute = a.match === "exact" ? a : b;
-  return prefixMatchPath(canonicalizePathVariant(exactRoute.path), canonicalizePathVariant(prefixRoute.path));
+  return prefixMatchPath(
+    canonicalizePathVariant(exactRoute.path),
+    canonicalizePathVariant(prefixRoute.path),
+  );
 }
 
 export function findOverlappingPluginHttpRoute<

@@ -31,7 +31,10 @@ export function analyzeConfigSchema(raw: unknown): ConfigSchemaAnalysis {
   return normalizeSchemaNode(raw as JsonSchema, []);
 }
 
-function normalizeSchemaNode(schema: JsonSchema, path: Array<string | number>): ConfigSchemaAnalysis {
+function normalizeSchemaNode(
+  schema: JsonSchema,
+  path: Array<string | number>,
+): ConfigSchemaAnalysis {
   const unsupported = new Set<string>();
   const normalized: JsonSchema = { ...schema };
   const pathLabel = pathKey(path) || "<root>";
@@ -45,7 +48,8 @@ function normalizeSchemaNode(schema: JsonSchema, path: Array<string | number>): 
   }
 
   const nullable = Array.isArray(schema.type) && schema.type.includes("null");
-  const type = schemaType(schema) ?? (schema.properties || schema.additionalProperties ? "object" : undefined);
+  const type =
+    schemaType(schema) ?? (schema.properties || schema.additionalProperties ? "object" : undefined);
   normalized.type = type ?? schema.type;
   normalized.nullable = nullable || schema.nullable;
 
@@ -99,7 +103,13 @@ function normalizeSchemaNode(schema: JsonSchema, path: Array<string | number>): 
         unsupported.add(pathLabel);
       }
     }
-  } else if (type !== "string" && type !== "number" && type !== "integer" && type !== "boolean" && !normalized.enum) {
+  } else if (
+    type !== "string" &&
+    type !== "number" &&
+    type !== "integer" &&
+    type !== "boolean" &&
+    !normalized.enum
+  ) {
     unsupported.add(pathLabel);
   }
 
@@ -119,7 +129,11 @@ function isSecretRefVariant(entry: JsonSchema): boolean {
   if (!source || !provider || !id) {
     return false;
   }
-  return typeof source.const === "string" && schemaType(provider) === "string" && schemaType(id) === "string";
+  return (
+    typeof source.const === "string" &&
+    schemaType(provider) === "string" &&
+    schemaType(id) === "string"
+  );
 }
 
 function isSecretRefUnion(entry: JsonSchema): boolean {
@@ -157,7 +171,10 @@ function normalizeSecretInputUnion(
   );
 }
 
-function normalizeUnion(schema: JsonSchema, path: Array<string | number>): ConfigSchemaAnalysis | null {
+function normalizeUnion(
+  schema: JsonSchema,
+  path: Array<string | number>,
+): ConfigSchemaAnalysis | null {
   if (schema.allOf) {
     return null;
   }

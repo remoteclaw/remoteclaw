@@ -3,7 +3,11 @@ import { loadSessionStore } from "../../config/sessions/store.js";
 import { logVerbose } from "../../globals.js";
 import { resolveCommitHash } from "../../infra/git-commit.js";
 import { VERSION } from "../../version.js";
-import { buildCommandsMessage, buildCommandsMessagePaginated, buildHelpMessage } from "../status.js";
+import {
+  buildCommandsMessage,
+  buildCommandsMessagePaginated,
+  buildHelpMessage,
+} from "../status.js";
 import { buildExportSessionReply } from "./commands-export-session.js";
 import { buildStatusReply } from "./commands-status.js";
 import type { CommandHandler } from "./commands-types.js";
@@ -16,7 +20,9 @@ export const handleHelpCommand: CommandHandler = async (params, allowTextCommand
     return null;
   }
   if (!params.command.isAuthorizedSender) {
-    logVerbose(`Ignoring /help from unauthorized sender: ${params.command.senderId || "<unknown>"}`);
+    logVerbose(
+      `Ignoring /help from unauthorized sender: ${params.command.senderId || "<unknown>"}`,
+    );
     return { shouldContinue: false };
   }
   return {
@@ -33,7 +39,9 @@ export const handleCommandsListCommand: CommandHandler = async (params, allowTex
     return null;
   }
   if (!params.command.isAuthorizedSender) {
-    logVerbose(`Ignoring /commands from unauthorized sender: ${params.command.senderId || "<unknown>"}`);
+    logVerbose(
+      `Ignoring /commands from unauthorized sender: ${params.command.senderId || "<unknown>"}`,
+    );
     return { shouldContinue: false };
   }
   const surface = params.ctx.Surface;
@@ -51,7 +59,11 @@ export const handleCommandsListCommand: CommandHandler = async (params, allowTex
           text: result.text,
           channelData: {
             telegram: {
-              buttons: buildCommandsPaginationKeyboard(result.currentPage, result.totalPages, params.agentId),
+              buttons: buildCommandsPaginationKeyboard(
+                result.currentPage,
+                result.totalPages,
+                params.agentId,
+              ),
             },
           },
         },
@@ -104,12 +116,15 @@ export const handleStatusCommand: CommandHandler = async (params, allowTextComma
   if (!allowTextCommands) {
     return null;
   }
-  const statusRequested = params.directives.hasStatusDirective || params.command.commandBodyNormalized === "/status";
+  const statusRequested =
+    params.directives.hasStatusDirective || params.command.commandBodyNormalized === "/status";
   if (!statusRequested) {
     return null;
   }
   if (!params.command.isAuthorizedSender) {
-    logVerbose(`Ignoring /status from unauthorized sender: ${params.command.senderId || "<unknown>"}`);
+    logVerbose(
+      `Ignoring /status from unauthorized sender: ${params.command.senderId || "<unknown>"}`,
+    );
     return { shouldContinue: false };
   }
   const reply = await buildStatusReply({
@@ -136,7 +151,9 @@ export const handleRemoteClawCommand: CommandHandler = async (params, allowTextC
     return null;
   }
   if (!params.command.isAuthorizedSender) {
-    logVerbose(`Ignoring /remoteclaw from unauthorized sender: ${params.command.senderId || "<unknown>"}`);
+    logVerbose(
+      `Ignoring /remoteclaw from unauthorized sender: ${params.command.senderId || "<unknown>"}`,
+    );
     return { shouldContinue: false };
   }
 
@@ -186,7 +203,9 @@ export const handleExportSessionCommand: CommandHandler = async (params, allowTe
     return null;
   }
   if (!params.command.isAuthorizedSender) {
-    logVerbose(`Ignoring /export-session from unauthorized sender: ${params.command.senderId || "<unknown>"}`);
+    logVerbose(
+      `Ignoring /export-session from unauthorized sender: ${params.command.senderId || "<unknown>"}`,
+    );
     return { shouldContinue: false };
   }
   return { shouldContinue: false, reply: await buildExportSessionReply(params) };
@@ -200,7 +219,9 @@ export const handleWhoamiCommand: CommandHandler = async (params, allowTextComma
     return null;
   }
   if (!params.command.isAuthorizedSender) {
-    logVerbose(`Ignoring /whoami from unauthorized sender: ${params.command.senderId || "<unknown>"}`);
+    logVerbose(
+      `Ignoring /whoami from unauthorized sender: ${params.command.senderId || "<unknown>"}`,
+    );
     return { shouldContinue: false };
   }
   const senderId = params.ctx.SenderId ?? "";

@@ -82,7 +82,10 @@ function parsePidsFromLsofOutput(stdout: string): number[] {
  * Find PIDs of gateway processes listening on the given port using synchronous lsof.
  * Returns only PIDs that belong to remoteclaw gateway processes (not the current process).
  */
-export function findGatewayPidsOnPortSync(port: number, spawnTimeoutMs = SPAWN_TIMEOUT_MS): number[] {
+export function findGatewayPidsOnPortSync(
+  port: number,
+  spawnTimeoutMs = SPAWN_TIMEOUT_MS,
+): number[] {
   if (process.platform === "win32") {
     return [];
   }
@@ -94,7 +97,11 @@ export function findGatewayPidsOnPortSync(port: number, spawnTimeoutMs = SPAWN_T
   if (res.error) {
     const code = (res.error as NodeJS.ErrnoException).code;
     const detail =
-      code && code.trim().length > 0 ? code : res.error instanceof Error ? res.error.message : "unknown error";
+      code && code.trim().length > 0
+        ? code
+        : res.error instanceof Error
+          ? res.error.message
+          : "unknown error";
     restartLog.warn(`lsof failed during initial stale-pid scan for port ${port}: ${detail}`);
     return [];
   }
@@ -256,7 +263,9 @@ export function cleanStaleGatewayProcessesSync(portOverride?: number): number[] 
     if (stalePids.length === 0) {
       return [];
     }
-    restartLog.warn(`killing ${stalePids.length} stale gateway process(es) before restart: ${stalePids.join(", ")}`);
+    restartLog.warn(
+      `killing ${stalePids.length} stale gateway process(es) before restart: ${stalePids.join(", ")}`,
+    );
     const killed = terminateStaleProcessesSync(stalePids);
     // Wait for the port to be released before returning — called unconditionally
     // even when `killed` is empty (all pids were already dead before SIGTERM).

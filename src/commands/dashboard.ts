@@ -5,7 +5,12 @@ import { resolveConfiguredSecretInputWithFallback } from "../gateway/resolve-con
 import { copyToClipboard } from "../infra/clipboard.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
-import { detectBrowserOpenSupport, formatControlUiSshHint, openUrl, resolveControlUiLinks } from "./onboard-helpers.js";
+import {
+  detectBrowserOpenSupport,
+  formatControlUiSshHint,
+  openUrl,
+  resolveControlUiLinks,
+} from "./onboard-helpers.js";
 
 type DashboardOptions = {
   noOpen?: boolean;
@@ -42,7 +47,10 @@ async function resolveDashboardToken(
   };
 }
 
-export async function dashboardCommand(runtime: RuntimeEnv = defaultRuntime, options: DashboardOptions = {}) {
+export async function dashboardCommand(
+  runtime: RuntimeEnv = defaultRuntime,
+  options: DashboardOptions = {},
+) {
   const snapshot = await readConfigFileSnapshot();
   const cfg = snapshot.valid ? snapshot.config : {};
   const port = resolveGatewayPort(cfg);
@@ -63,7 +71,9 @@ export async function dashboardCommand(runtime: RuntimeEnv = defaultRuntime, opt
   // Avoid embedding externally managed SecretRef tokens in terminal/clipboard/browser args.
   const includeTokenInUrl = token.length > 0 && !resolvedToken.tokenSecretRefConfigured;
   // Prefer URL fragment to avoid leaking auth tokens via query params.
-  const dashboardUrl = includeTokenInUrl ? `${links.httpUrl}#token=${encodeURIComponent(token)}` : links.httpUrl;
+  const dashboardUrl = includeTokenInUrl
+    ? `${links.httpUrl}#token=${encodeURIComponent(token)}`
+    : links.httpUrl;
 
   runtime.log(`Dashboard URL: ${dashboardUrl}`);
   if (resolvedToken.tokenSecretRefConfigured && token) {

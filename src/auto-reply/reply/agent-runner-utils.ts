@@ -4,7 +4,8 @@ import type { ReplyPayload } from "../types.js";
 
 const BUN_FETCH_SOCKET_ERROR_RE = /socket connection was closed unexpectedly/i;
 
-export const isBunFetchSocketError = (message?: string) => Boolean(message && BUN_FETCH_SOCKET_ERROR_RE.test(message));
+export const isBunFetchSocketError = (message?: string) =>
+  Boolean(message && BUN_FETCH_SOCKET_ERROR_RE.test(message));
 
 export const formatBunFetchSocketError = (message: string) => {
   const trimmed = message.trim();

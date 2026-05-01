@@ -79,7 +79,9 @@ export async function resolveTailnetDnsHint(opts?: {
     return undefined;
   }
 
-  const exec = opts?.exec ?? ((command, args) => runExec(command, args, { timeoutMs: 1500, maxBuffer: 200_000 }));
+  const exec =
+    opts?.exec ??
+    ((command, args) => runExec(command, args, { timeoutMs: 1500, maxBuffer: 200_000 }));
   try {
     return await getTailnetHostname(exec);
   } catch {

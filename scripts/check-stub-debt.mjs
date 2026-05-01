@@ -143,7 +143,15 @@ async function readBaseline(baselinePath, counterName, currentCount) {
   }
 }
 
-function reportCounter({ name, baselineFilename, count, baseline, inventoryHeader, inventoryLines, failHint }) {
+function reportCounter({
+  name,
+  baselineFilename,
+  count,
+  baseline,
+  inventoryHeader,
+  inventoryLines,
+  failHint,
+}) {
   if (count > 0) {
     console.log(`${inventoryHeader} (${count} total, baseline ${baseline}):\n`);
     for (const line of inventoryLines) {
@@ -200,7 +208,9 @@ export async function main() {
 
   // Counter 1: @ts-expect-error — zero tolerance (ADR 0005 H5).
   if (tsExpectErrors.length > 0) {
-    const sorted = tsExpectErrors.toSorted((a, b) => a.path.localeCompare(b.path) || a.line - b.line);
+    const sorted = tsExpectErrors.toSorted(
+      (a, b) => a.path.localeCompare(b.path) || a.line - b.line,
+    );
     console.log(`@ts-expect-error inventory (${sorted.length} total):\n`);
     for (const hit of sorted) {
       console.log(`  ${hit.path}:${hit.line}  ${hit.text}`);

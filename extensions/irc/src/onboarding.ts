@@ -12,7 +12,11 @@ import {
   type WizardPrompter,
 } from "remoteclaw/plugin-sdk/irc";
 import { listIrcAccountIds, resolveDefaultIrcAccountId, resolveIrcAccount } from "./accounts.js";
-import { isChannelTarget, normalizeIrcAllowEntry, normalizeIrcMessagingTarget } from "./normalize.js";
+import {
+  isChannelTarget,
+  normalizeIrcAllowEntry,
+  normalizeIrcMessagingTarget,
+} from "./normalize.js";
 import type { CoreConfig, IrcAccountConfig, IrcNickServConfig } from "./types.js";
 
 const channel = "irc" as const;
@@ -51,7 +55,11 @@ function normalizeGroupEntry(raw: string): string | null {
   return `#${normalized.replace(/^#+/, "")}`;
 }
 
-function updateIrcAccountConfig(cfg: CoreConfig, accountId: string, patch: Partial<IrcAccountConfig>): CoreConfig {
+function updateIrcAccountConfig(
+  cfg: CoreConfig,
+  accountId: string,
+  patch: Partial<IrcAccountConfig>,
+): CoreConfig {
   return patchScopedAccountConfig({
     cfg,
     channelKey: channel,
@@ -78,7 +86,11 @@ function setIrcAllowFrom(cfg: CoreConfig, allowFrom: string[]): CoreConfig {
   }) as CoreConfig;
 }
 
-function setIrcNickServ(cfg: CoreConfig, accountId: string, nickserv?: IrcNickServConfig): CoreConfig {
+function setIrcNickServ(
+  cfg: CoreConfig,
+  accountId: string,
+  nickserv?: IrcNickServConfig,
+): CoreConfig {
   return updateIrcAccountConfig(cfg, accountId, { nickserv });
 }
 
@@ -91,7 +103,9 @@ function setIrcGroupAccess(
   if (policy !== "allowlist") {
     return updateIrcAccountConfig(cfg, accountId, { enabled: true, groupPolicy: policy });
   }
-  const normalizedEntries = [...new Set(entries.map((entry) => normalizeGroupEntry(entry)).filter(Boolean))];
+  const normalizedEntries = [
+    ...new Set(entries.map((entry) => normalizeGroupEntry(entry)).filter(Boolean)),
+  ];
   const groups = Object.fromEntries(normalizedEntries.map((entry) => [entry, {}]));
   return updateIrcAccountConfig(cfg, accountId, {
     enabled: true,
@@ -212,7 +226,9 @@ async function promptIrcNickServConfig(params: {
           message: "NickServ register email",
           initialValue:
             existing?.registerEmail ||
-            (params.accountId === DEFAULT_ACCOUNT_ID ? process.env.IRC_NICKSERV_REGISTER_EMAIL : undefined),
+            (params.accountId === DEFAULT_ACCOUNT_ID
+              ? process.env.IRC_NICKSERV_REGISTER_EMAIL
+              : undefined),
           validate: (value) => (String(value ?? "").trim() ? undefined : "Required"),
         }),
       ).trim()
@@ -252,7 +268,13 @@ export const ircOnboardingAdapter: ChannelOnboardingAdapter = {
       quickstartScore: configured ? 1 : 0,
     };
   },
-  configure: async ({ cfg, prompter, accountOverrides, shouldPromptAccountIds, forceAllowFrom }) => {
+  configure: async ({
+    cfg,
+    prompter,
+    accountOverrides,
+    shouldPromptAccountIds,
+    forceAllowFrom,
+  }) => {
     let next = cfg as CoreConfig;
     const defaultAccountId = resolveDefaultIrcAccountId(next);
     const accountId = await resolveAccountIdForConfigure({

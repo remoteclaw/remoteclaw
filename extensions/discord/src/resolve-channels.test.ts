@@ -28,7 +28,10 @@ describe("resolveDiscordChannelAllowlist", () => {
     });
   }
 
-  async function resolveGuild111Entry2024(params: { channelLookup: () => Response; guildChannels?: DiscordChannel[] }) {
+  async function resolveGuild111Entry2024(params: {
+    channelLookup: () => Response;
+    guildChannels?: DiscordChannel[];
+  }) {
     const fetcher = withFetchPreconnect(async (input: RequestInfo | URL) => {
       const url = urlToString(input);
       if (url.endsWith("/users/@me/guilds")) {
@@ -55,7 +58,9 @@ describe("resolveDiscordChannelAllowlist", () => {
     });
   }
 
-  function expectUnresolved1112024(res: Awaited<ReturnType<typeof resolveDiscordChannelAllowlist>>) {
+  function expectUnresolved1112024(
+    res: Awaited<ReturnType<typeof resolveDiscordChannelAllowlist>>,
+  ) {
     expect(res[0]?.resolved).toBe(false);
     expect(res[0]?.channelId).toBe("2024");
     expect(res[0]?.guildId).toBe("111");

@@ -14,7 +14,8 @@ export function registerMaintenanceCommands(program: Command) {
     .description("Health checks + quick fixes for the gateway and channels")
     .addHelpText(
       "after",
-      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/doctor", "docs.remoteclaw.org/cli/doctor")}\n`,
+      () =>
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/doctor", "docs.remoteclaw.org/cli/doctor")}\n`,
     )
     .option("--no-workspace-suggestions", "Disable workspace memory system suggestions", false)
     .option("--yes", "Accept defaults without prompting", false)
@@ -44,7 +45,8 @@ export function registerMaintenanceCommands(program: Command) {
     .description("Open the Control UI with your current token")
     .addHelpText(
       "after",
-      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/dashboard", "docs.remoteclaw.org/cli/dashboard")}\n`,
+      () =>
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/dashboard", "docs.remoteclaw.org/cli/dashboard")}\n`,
     )
     .option("--no-open", "Print URL but do not launch a browser")
     .action(async (opts) => {
@@ -60,7 +62,8 @@ export function registerMaintenanceCommands(program: Command) {
     .description("Reset local config/state (keeps the CLI installed)")
     .addHelpText(
       "after",
-      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/reset", "docs.remoteclaw.org/cli/reset")}\n`,
+      () =>
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/reset", "docs.remoteclaw.org/cli/reset")}\n`,
     )
     .option("--scope <scope>", "config|config+creds+sessions|full (default: interactive prompt)")
     .option("--yes", "Skip confirmation prompts", false)
@@ -82,7 +85,8 @@ export function registerMaintenanceCommands(program: Command) {
     .description("Uninstall the gateway service + local data (CLI remains)")
     .addHelpText(
       "after",
-      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/uninstall", "docs.remoteclaw.org/cli/uninstall")}\n`,
+      () =>
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/uninstall", "docs.remoteclaw.org/cli/uninstall")}\n`,
     )
     .option("--service", "Remove the gateway service", false)
     .option("--state", "Remove state + config", false)

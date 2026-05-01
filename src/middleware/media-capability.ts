@@ -42,7 +42,10 @@ export function partitionMedia(runtime: AgentRuntime, media: MediaAttachment[]):
  *
  * Returns `undefined` when there are no unsupported attachments.
  */
-export function formatUnsupportedMediaWarning(unsupported: MediaAttachment[], runtimeName: string): string | undefined {
+export function formatUnsupportedMediaWarning(
+  unsupported: MediaAttachment[],
+  runtimeName: string,
+): string | undefined {
   if (unsupported.length === 0) {
     return undefined;
   }

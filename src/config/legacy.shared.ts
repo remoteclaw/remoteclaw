@@ -22,9 +22,13 @@ import { isRecord } from "../utils.js";
 import { isBlockedObjectKey } from "./prototype-keys.js";
 export { isRecord };
 
-export const getRecord = (value: unknown): Record<string, unknown> | null => (isRecord(value) ? value : null);
+export const getRecord = (value: unknown): Record<string, unknown> | null =>
+  isRecord(value) ? value : null;
 
-export const ensureRecord = (root: Record<string, unknown>, key: string): Record<string, unknown> => {
+export const ensureRecord = (
+  root: Record<string, unknown>,
+  key: string,
+): Record<string, unknown> => {
   const existing = root[key];
   if (isRecord(existing)) {
     return existing;
@@ -71,7 +75,8 @@ export const mapLegacyAudioTranscription = (value: unknown): Record<string, unkn
   }
 
   const args = command.slice(1);
-  const timeoutSeconds = typeof transcriber?.timeoutSeconds === "number" ? transcriber?.timeoutSeconds : undefined;
+  const timeoutSeconds =
+    typeof transcriber?.timeoutSeconds === "number" ? transcriber?.timeoutSeconds : undefined;
 
   const result: Record<string, unknown> = { command: rawExecutable, type: "cli" };
   if (args.length > 0) {
@@ -93,18 +98,23 @@ export const resolveDefaultAgentIdFromRaw = (raw: Record<string, unknown>) => {
   const list = getAgentsList(agents);
   const defaultEntry = list.find(
     (entry): entry is { id: string } =>
-      isRecord(entry) && entry.default === true && typeof entry.id === "string" && entry.id.trim() !== "",
+      isRecord(entry) &&
+      entry.default === true &&
+      typeof entry.id === "string" &&
+      entry.id.trim() !== "",
   );
   if (defaultEntry) {
     return defaultEntry.id.trim();
   }
   const routing = getRecord(raw.routing);
-  const routingDefault = typeof routing?.defaultAgentId === "string" ? routing.defaultAgentId.trim() : "";
+  const routingDefault =
+    typeof routing?.defaultAgentId === "string" ? routing.defaultAgentId.trim() : "";
   if (routingDefault) {
     return routingDefault;
   }
   const firstEntry = list.find(
-    (entry): entry is { id: string } => isRecord(entry) && typeof entry.id === "string" && entry.id.trim() !== "",
+    (entry): entry is { id: string } =>
+      isRecord(entry) && typeof entry.id === "string" && entry.id.trim() !== "",
   );
   if (firstEntry) {
     return firstEntry.id.trim();
@@ -126,5 +136,6 @@ export const ensureAgentEntry = (list: unknown[], id: string): Record<string, un
   return created;
 };
 
-export const defineLegacyConfigMigration = (migration: LegacyConfigMigrationSpec): LegacyConfigMigrationSpec =>
-  migration;
+export const defineLegacyConfigMigration = (
+  migration: LegacyConfigMigrationSpec,
+): LegacyConfigMigrationSpec => migration;

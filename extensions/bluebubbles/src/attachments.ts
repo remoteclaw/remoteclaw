@@ -3,7 +3,10 @@ import path from "node:path";
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/bluebubbles";
 import { resolveBlueBubblesServerAccount } from "./account-resolve.js";
 import { assertMultipartActionOk, postMultipartFormData } from "./multipart.js";
-import { getCachedBlueBubblesPrivateApiStatus, isBlueBubblesPrivateApiStatusEnabled } from "./probe.js";
+import {
+  getCachedBlueBubblesPrivateApiStatus,
+  isBlueBubblesPrivateApiStatusEnabled,
+} from "./probe.js";
 import { resolveRequestUrl } from "./request-url.js";
 import { getBlueBubblesRuntime, warnBlueBubbles } from "./runtime.js";
 import { extractBlueBubblesMessageId, resolveBlueBubblesSendTarget } from "./send-helpers.js";
@@ -47,8 +50,10 @@ function ensureExtension(filename: string, extension: string, fallbackBase: stri
 function resolveVoiceInfo(filename: string, contentType?: string) {
   const normalizedType = contentType?.trim().toLowerCase();
   const extension = path.extname(filename).toLowerCase();
-  const isMp3 = extension === ".mp3" || (normalizedType ? AUDIO_MIME_MP3.has(normalizedType) : false);
-  const isCaf = extension === ".caf" || (normalizedType ? AUDIO_MIME_CAF.has(normalizedType) : false);
+  const isMp3 =
+    extension === ".mp3" || (normalizedType ? AUDIO_MIME_MP3.has(normalizedType) : false);
+  const isCaf =
+    extension === ".caf" || (normalizedType ? AUDIO_MIME_CAF.has(normalizedType) : false);
   const isAudio = isMp3 || isCaf || Boolean(normalizedType?.startsWith("audio/"));
   return { isAudio, isMp3, isCaf };
 }
@@ -73,7 +78,9 @@ function readMediaFetchErrorCode(error: unknown): MediaFetchErrorCode | undefine
     return undefined;
   }
   const code = (error as { code?: unknown }).code;
-  return code === "max_bytes" || code === "http_error" || code === "fetch_failed" ? code : undefined;
+  return code === "max_bytes" || code === "http_error" || code === "fetch_failed"
+    ? code
+    : undefined;
 }
 
 export async function downloadBlueBubblesAttachment(
@@ -166,7 +173,9 @@ export async function sendBlueBubblesAttachment(params: {
       filename = ensureExtension(filename, ".caf", fallbackName);
       contentType = contentType ?? "audio/x-caf";
     } else {
-      throw new Error("BlueBubbles voice messages require mp3 or caf audio (convert before sending).");
+      throw new Error(
+        "BlueBubbles voice messages require mp3 or caf audio (convert before sending).",
+      );
     }
   }
 
@@ -204,7 +213,9 @@ export async function sendBlueBubblesAttachment(params: {
   // Helper to add a file field
   const addFile = (name: string, fileBuffer: Uint8Array, fileName: string, mimeType?: string) => {
     parts.push(encoder.encode(`--${boundary}\r\n`));
-    parts.push(encoder.encode(`Content-Disposition: form-data; name="${name}"; filename="${fileName}"\r\n`));
+    parts.push(
+      encoder.encode(`Content-Disposition: form-data; name="${name}"; filename="${fileName}"\r\n`),
+    );
     parts.push(encoder.encode(`Content-Type: ${mimeType ?? "application/octet-stream"}\r\n\r\n`));
     parts.push(fileBuffer);
     parts.push(encoder.encode("\r\n"));

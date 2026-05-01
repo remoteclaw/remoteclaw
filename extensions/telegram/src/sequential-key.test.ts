@@ -2,7 +2,8 @@ import type { Chat, Message } from "@grammyjs/types";
 import { describe, expect, it } from "vitest";
 import { getTelegramSequentialKey } from "./sequential-key.js";
 
-const mockChat = (chat: Pick<Chat, "id"> & Partial<Pick<Chat, "type" | "is_forum">>): Chat => chat as Chat;
+const mockChat = (chat: Pick<Chat, "id"> & Partial<Pick<Chat, "type" | "is_forum">>): Chat =>
+  chat as Chat;
 const mockMessage = (message: Pick<Message, "chat"> & Partial<Message>): Message =>
   ({
     message_id: 1,
@@ -54,16 +55,37 @@ describe("getTelegramSequentialKey", () => {
       },
       "telegram:-100777111223",
     ],
-    [{ message: mockMessage({ chat: mockChat({ id: 123 }), text: "/stop" }) }, "telegram:123:control"],
+    [
+      { message: mockMessage({ chat: mockChat({ id: 123 }), text: "/stop" }) },
+      "telegram:123:control",
+    ],
     [{ message: mockMessage({ chat: mockChat({ id: 123 }), text: "/status" }) }, "telegram:123"],
-    [{ message: mockMessage({ chat: mockChat({ id: 123 }), text: "stop" }) }, "telegram:123:control"],
-    [{ message: mockMessage({ chat: mockChat({ id: 123 }), text: "stop please" }) }, "telegram:123:control"],
-    [{ message: mockMessage({ chat: mockChat({ id: 123 }), text: "do not do that" }) }, "telegram:123:control"],
-    [{ message: mockMessage({ chat: mockChat({ id: 123 }), text: "остановись" }) }, "telegram:123:control"],
-    [{ message: mockMessage({ chat: mockChat({ id: 123 }), text: "halt" }) }, "telegram:123:control"],
+    [
+      { message: mockMessage({ chat: mockChat({ id: 123 }), text: "stop" }) },
+      "telegram:123:control",
+    ],
+    [
+      { message: mockMessage({ chat: mockChat({ id: 123 }), text: "stop please" }) },
+      "telegram:123:control",
+    ],
+    [
+      { message: mockMessage({ chat: mockChat({ id: 123 }), text: "do not do that" }) },
+      "telegram:123:control",
+    ],
+    [
+      { message: mockMessage({ chat: mockChat({ id: 123 }), text: "остановись" }) },
+      "telegram:123:control",
+    ],
+    [
+      { message: mockMessage({ chat: mockChat({ id: 123 }), text: "halt" }) },
+      "telegram:123:control",
+    ],
     [{ message: mockMessage({ chat: mockChat({ id: 123 }), text: "/abort" }) }, "telegram:123"],
     [{ message: mockMessage({ chat: mockChat({ id: 123 }), text: "/abort now" }) }, "telegram:123"],
-    [{ message: mockMessage({ chat: mockChat({ id: 123 }), text: "please do not do that" }) }, "telegram:123"],
+    [
+      { message: mockMessage({ chat: mockChat({ id: 123 }), text: "please do not do that" }) },
+      "telegram:123",
+    ],
   ])("resolves key %#", (input, expected) => {
     expect(getTelegramSequentialKey(input)).toBe(expected);
   });

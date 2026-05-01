@@ -80,7 +80,9 @@ function resolveChangedPathsBase(params = {}) {
   }
 
   if (fallbackBaseRef) {
-    const remoteBaseRef = fallbackBaseRef.startsWith("origin/") ? fallbackBaseRef : `origin/${fallbackBaseRef}`;
+    const remoteBaseRef = fallbackBaseRef.startsWith("origin/")
+      ? fallbackBaseRef
+      : `origin/${fallbackBaseRef}`;
     if (hasGitCommit(remoteBaseRef)) {
       const mergeBase = runGit(["merge-base", remoteBaseRef, head]).trim();
       if (hasGitCommit(mergeBase)) {
@@ -202,7 +204,9 @@ function resolveExtensionDirectory(targetArg, cwd = process.cwd()) {
     current = parent;
   }
 
-  throw new Error("No extension target provided, and current working directory is not inside extensions/.");
+  throw new Error(
+    "No extension target provided, and current working directory is not inside extensions/.",
+  );
 }
 
 export function resolveExtensionTestPlan(params = {}) {
@@ -253,7 +257,8 @@ export function partitionExtensionTestFiles(params) {
 
   const isolatedEntrySet = new Set(isolatedEntries.map((entry) => entry.file));
   const isolatedTestFiles = testFiles.filter(
-    (file) => isolatedEntrySet.has(file) || isolatedPrefixes.some((prefix) => file.startsWith(prefix)),
+    (file) =>
+      isolatedEntrySet.has(file) || isolatedPrefixes.some((prefix) => file.startsWith(prefix)),
   );
   const isolatedTestFileSet = new Set(isolatedTestFiles);
   const sharedTestFiles = testFiles.filter((file) => !isolatedTestFileSet.has(file));
@@ -263,12 +268,16 @@ export function partitionExtensionTestFiles(params) {
 
 async function runVitestBatch(params) {
   return await new Promise((resolve, reject) => {
-    const child = spawn(pnpm, ["exec", "vitest", "run", "--config", params.config, ...params.files, ...params.args], {
-      cwd: repoRoot,
-      stdio: "inherit",
-      shell: process.platform === "win32",
-      env: params.env,
-    });
+    const child = spawn(
+      pnpm,
+      ["exec", "vitest", "run", "--config", params.config, ...params.files, ...params.args],
+      {
+        cwd: repoRoot,
+        stdio: "inherit",
+        shell: process.platform === "win32",
+        env: params.env,
+      },
+    );
 
     child.on("error", reject);
     child.on("exit", (code, signal) => {
@@ -285,7 +294,9 @@ function printUsage() {
   console.error("Usage: pnpm test:extension <extension-name|path> [vitest args...]");
   console.error("       node scripts/test-extension.mjs [extension-name|path] [vitest args...]");
   console.error("       node scripts/test-extension.mjs --list");
-  console.error("       node scripts/test-extension.mjs --list-changed --base <git-ref> [--head <git-ref>]");
+  console.error(
+    "       node scripts/test-extension.mjs --list-changed --base <git-ref> [--head <git-ref>]",
+  );
   console.error("       node scripts/test-extension.mjs <extension> --require-tests");
 }
 
@@ -303,7 +314,8 @@ async function run() {
   const rawArgs = process.argv.slice(2);
   const dryRun = rawArgs.includes("--dry-run");
   const requireTests =
-    rawArgs.includes("--require-tests") || process.env.REMOTECLAW_TEST_EXTENSION_REQUIRE_TESTS === "1";
+    rawArgs.includes("--require-tests") ||
+    process.env.REMOTECLAW_TEST_EXTENSION_REQUIRE_TESTS === "1";
   const json = rawArgs.includes("--json");
   const list = rawArgs.includes("--list");
   const listChanged = rawArgs.includes("--list-changed");

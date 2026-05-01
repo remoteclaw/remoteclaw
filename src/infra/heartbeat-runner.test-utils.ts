@@ -47,7 +47,11 @@ export async function seedMainSessionStore(
 }
 
 export async function withTempHeartbeatSandbox<T>(
-  fn: (ctx: { tmpDir: string; storePath: string; replySpy: ReturnType<typeof vi.spyOn> }) => Promise<T>,
+  fn: (ctx: {
+    tmpDir: string;
+    storePath: string;
+    replySpy: ReturnType<typeof vi.spyOn>;
+  }) => Promise<T>,
   options?: {
     prefix?: string;
     unsetEnvVars?: string[];
@@ -77,7 +81,11 @@ export async function withTempHeartbeatSandbox<T>(
 }
 
 export async function withTempTelegramHeartbeatSandbox<T>(
-  fn: (ctx: { tmpDir: string; storePath: string; replySpy: ReturnType<typeof vi.spyOn> }) => Promise<T>,
+  fn: (ctx: {
+    tmpDir: string;
+    storePath: string;
+    replySpy: ReturnType<typeof vi.spyOn>;
+  }) => Promise<T>,
   options?: {
     prefix?: string;
   },
@@ -91,5 +99,7 @@ export async function withTempTelegramHeartbeatSandbox<T>(
 export function setupTelegramHeartbeatPluginRuntimeForTests() {
   const runtime = createPluginRuntime();
   setTelegramRuntime(runtime);
-  setActivePluginRegistry(createTestRegistry([{ pluginId: "telegram", plugin: telegramPlugin, source: "test" }]));
+  setActivePluginRegistry(
+    createTestRegistry([{ pluginId: "telegram", plugin: telegramPlugin, source: "test" }]),
+  );
 }

@@ -30,7 +30,9 @@ type PluginRegistrationContractParams = {
 };
 
 function findRegistration(pluginId: string) {
-  const entry = pluginRegistrationContractRegistry.find((candidate) => candidate.pluginId === pluginId);
+  const entry = pluginRegistrationContractRegistry.find(
+    (candidate) => candidate.pluginId === pluginId,
+  );
   if (!entry) {
     throw new Error(`plugin registration contract missing for ${pluginId}`);
   }
@@ -60,7 +62,9 @@ function findMediaUnderstandingProviderIds(pluginId: string) {
 }
 
 function findMediaUnderstandingProvider(pluginId: string) {
-  const entry = mediaUnderstandingProviderContractRegistry.find((candidate) => candidate.pluginId === pluginId);
+  const entry = mediaUnderstandingProviderContractRegistry.find(
+    (candidate) => candidate.pluginId === pluginId,
+  );
   if (!entry) {
     throw new Error(`media-understanding provider contract missing for ${pluginId}`);
   }
@@ -75,7 +79,9 @@ function findImageGenerationProviderIds(pluginId: string) {
 }
 
 function findImageGenerationProvider(pluginId: string) {
-  const entry = imageGenerationProviderContractRegistry.find((candidate) => candidate.pluginId === pluginId);
+  const entry = imageGenerationProviderContractRegistry.find(
+    (candidate) => candidate.pluginId === pluginId,
+  );
   if (!entry) {
     throw new Error(`image-generation provider contract missing for ${pluginId}`);
   }
@@ -92,13 +98,17 @@ export function describePluginRegistrationContract(params: PluginRegistrationCon
 
     if (params.webSearchProviderIds) {
       it("keeps bundled web search ownership explicit", () => {
-        expect(findRegistration(params.pluginId).webSearchProviderIds).toEqual(params.webSearchProviderIds);
+        expect(findRegistration(params.pluginId).webSearchProviderIds).toEqual(
+          params.webSearchProviderIds,
+        );
       });
     }
 
     if (params.speechProviderIds) {
       it("keeps bundled speech ownership explicit", () => {
-        expect(findRegistration(params.pluginId).speechProviderIds).toEqual(params.speechProviderIds);
+        expect(findRegistration(params.pluginId).speechProviderIds).toEqual(
+          params.speechProviderIds,
+        );
         expect(findSpeechProviderIds(params.pluginId)).toEqual(params.speechProviderIds);
       });
     }
@@ -108,14 +118,20 @@ export function describePluginRegistrationContract(params: PluginRegistrationCon
         expect(findRegistration(params.pluginId).mediaUnderstandingProviderIds).toEqual(
           params.mediaUnderstandingProviderIds,
         );
-        expect(findMediaUnderstandingProviderIds(params.pluginId)).toEqual(params.mediaUnderstandingProviderIds);
+        expect(findMediaUnderstandingProviderIds(params.pluginId)).toEqual(
+          params.mediaUnderstandingProviderIds,
+        );
       });
     }
 
     if (params.imageGenerationProviderIds) {
       it("keeps bundled image-generation ownership explicit", () => {
-        expect(findRegistration(params.pluginId).imageGenerationProviderIds).toEqual(params.imageGenerationProviderIds);
-        expect(findImageGenerationProviderIds(params.pluginId)).toEqual(params.imageGenerationProviderIds);
+        expect(findRegistration(params.pluginId).imageGenerationProviderIds).toEqual(
+          params.imageGenerationProviderIds,
+        );
+        expect(findImageGenerationProviderIds(params.pluginId)).toEqual(
+          params.imageGenerationProviderIds,
+        );
       });
     }
 
@@ -139,13 +155,17 @@ export function describePluginRegistrationContract(params: PluginRegistrationCon
 
     if (params.requireDescribeImages) {
       it("keeps bundled multi-image support explicit", () => {
-        expect(findMediaUnderstandingProvider(params.pluginId).describeImages).toEqual(expect.any(Function));
+        expect(findMediaUnderstandingProvider(params.pluginId).describeImages).toEqual(
+          expect.any(Function),
+        );
       });
     }
 
     if (params.requireGenerateImage) {
       it("keeps bundled image-generation support explicit", () => {
-        expect(findImageGenerationProvider(params.pluginId).generateImage).toEqual(expect.any(Function));
+        expect(findImageGenerationProvider(params.pluginId).generateImage).toEqual(
+          expect.any(Function),
+        );
       });
     }
 

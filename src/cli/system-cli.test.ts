@@ -5,7 +5,8 @@ import { createCliRuntimeCapture } from "./test-runtime-capture.js";
 const callGatewayFromCli = vi.fn();
 const addGatewayClientOptions = vi.fn((command: Command) => command);
 
-const { runtimeLogs, runtimeErrors, defaultRuntime, resetRuntimeCapture } = createCliRuntimeCapture();
+const { runtimeLogs, runtimeErrors, defaultRuntime, resetRuntimeCapture } =
+  createCliRuntimeCapture();
 
 vi.mock("./gateway-rpc.js", () => ({
   addGatewayClientOptions,

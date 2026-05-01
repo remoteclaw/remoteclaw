@@ -58,7 +58,10 @@ function getRuntimeScanCacheKey(repoRoot: string, roots: readonly string[]): str
   return `${repoRoot}::${toSortedUnique(roots).join(",")}`;
 }
 
-export async function listRepoFiles(repoRoot: string, options: RepoFileScanOptions): Promise<Array<string>> {
+export async function listRepoFiles(
+  repoRoot: string,
+  options: RepoFileScanOptions,
+): Promise<Array<string>> {
   const files: Array<string> = [];
   const pending: Array<PendingDir> = [];
 
@@ -113,7 +116,9 @@ export async function listRuntimeSourceFiles(
   options: RuntimeSourceScanOptions = {},
 ): Promise<Array<string>> {
   const roots = options.roots ?? DEFAULT_RUNTIME_SOURCE_ROOTS;
-  const requestedExtensions = toSortedUnique(options.extensions ?? DEFAULT_RUNTIME_SOURCE_EXTENSIONS);
+  const requestedExtensions = toSortedUnique(
+    options.extensions ?? DEFAULT_RUNTIME_SOURCE_EXTENSIONS,
+  );
   const cacheKey = getRuntimeScanCacheKey(repoRoot, roots);
 
   let pending = runtimeSourceScanCache.get(cacheKey);
@@ -127,5 +132,7 @@ export async function listRuntimeSourceFiles(
     runtimeSourceScanCache.set(cacheKey, pending);
   }
   const files = await pending;
-  return files.filter((filePath) => requestedExtensions.some((extension) => filePath.endsWith(extension)));
+  return files.filter((filePath) =>
+    requestedExtensions.some((extension) => filePath.endsWith(extension)),
+  );
 }

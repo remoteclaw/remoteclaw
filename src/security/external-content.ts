@@ -106,7 +106,9 @@ const EXTERNAL_SOURCE_LABELS: Record<ExternalContentSource, string> = {
   unknown: "External",
 };
 
-export function resolveHookExternalContentSource(sessionKey: string): HookExternalContentSource | undefined {
+export function resolveHookExternalContentSource(
+  sessionKey: string,
+): HookExternalContentSource | undefined {
   const normalized = sessionKey.trim().toLowerCase();
   if (normalized.startsWith("hook:gmail:")) {
     return "gmail";
@@ -351,7 +353,10 @@ export function getHookType(sessionKey: string): ExternalContentSource {
  * Wraps web search/fetch content with security markers.
  * This is a simpler wrapper for web tools that just need content wrapped.
  */
-export function wrapWebContent(content: string, source: "web_search" | "web_fetch" = "web_search"): string {
+export function wrapWebContent(
+  content: string,
+  source: "web_search" | "web_fetch" = "web_search",
+): string {
   const includeWarning = source === "web_fetch";
   // Marker sanitization happens in wrapExternalContent
   return wrapExternalContent(content, { source, includeWarning });

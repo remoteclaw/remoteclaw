@@ -445,7 +445,12 @@ export function createWebhookHandler(deps: WebhookHandlerDeps) {
       // Synology Chat outgoing webhooks use a per-integration user_id that may
       // differ from the global Chat API user_id required by method=chatbot.
       // We resolve via the user_list API, matching by nickname/username.
-      const chatUserId = await resolveChatUserId(account.incomingUrl, payload.username, account.allowInsecureSsl, log);
+      const chatUserId = await resolveChatUserId(
+        account.incomingUrl,
+        payload.username,
+        account.allowInsecureSsl,
+        log,
+      );
       if (chatUserId !== undefined) {
         replyUserId = String(chatUserId);
       } else {

@@ -450,7 +450,8 @@ export function createWebhookHandler(deps: WebhookHandlerDeps) {
         replyUserId = String(chatUserId);
       } else {
         log?.warn(
-          `Could not resolve Chat API user_id for "${payload.username}" — falling back to webhook user_id ${payload.user_id}. Reply delivery may fail.`,
+          `Could not resolve Chat API user_id for "${payload.username}" — ` +
+            `falling back to webhook user_id ${payload.user_id}. Reply delivery may fail.`,
         );
       }
 

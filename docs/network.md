@@ -1,5 +1,5 @@
 ---
-description: "Network hub: gateway surfaces, pairing, discovery, and security"
+summary: "Network hub: gateway surfaces, pairing, discovery, and security"
 read_when:
   - You need the network architecture + security overview
   - You are debugging local vs tailnet access or pairing
@@ -9,12 +9,12 @@ title: "Network"
 
 # Network hub
 
-This hub links the core docs for how RemoteClaw connects, pairs, and secures
+This hub links the core docs for how OpenClaw connects, pairs, and secures
 devices across localhost, LAN, and tailnet.
 
 ## Core model
 
-Most operations flow through the Gateway (`remoteclaw gateway`), a single long-running process that owns channel connections and the WebSocket control plane.
+Most operations flow through the Gateway (`openclaw gateway`), a single long-running process that owns channel connections and the WebSocket control plane.
 
 - **Loopback first**: the Gateway WS defaults to `ws://127.0.0.1:18789`. Tokens are required for non-loopback binds.
 - **One Gateway per host** is recommended. For isolation, run multiple gateways with isolated profiles and ports ([Multiple Gateways](/gateway/multiple-gateways)).

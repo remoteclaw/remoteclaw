@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 
 const isLocalCheckEnabled = (env) => {
-  const raw = env.REMOTECLAW_LOCAL_CHECK?.trim().toLowerCase();
+  const raw = env.OPENCLAW_LOCAL_CHECK?.trim().toLowerCase();
   return raw !== "0" && raw !== "false";
 };
 

@@ -6,7 +6,7 @@
   "cpuProfDir": null,
   "heapProfDir": null,
   "primary": {
-    "entry": "remoteclaw.mjs",
+    "entry": "openclaw.mjs",
     "cases": [
       {
         "id": "version",

@@ -9,11 +9,11 @@ export type ParsedThreadSessionSuffix = {
   threadId: string | undefined;
 };
 
-export type RawSessionConversationRef = {
+export type ParsedSessionConversationRef = {
   channel: string;
   kind: "group" | "channel";
-  rawId: string;
-  prefix: string;
+  id: string;
+  threadId: string | undefined;
 };
 
 /**
@@ -118,24 +118,40 @@ export function isAcpSessionKey(sessionKey: string | undefined | null): boolean 
   return Boolean((parsed?.rest ?? "").toLowerCase().startsWith("acp:"));
 }
 
-function normalizeSessionConversationChannel(value: string | undefined | null): string | undefined {
+function normalizeThreadSuffixChannelHint(value: string | undefined | null): string | undefined {
   const trimmed = (value ?? "").trim().toLowerCase();
   return trimmed || undefined;
 }
 
+function inferThreadSuffixChannelHint(sessionKey: string): string | undefined {
+  const parts = sessionKey.split(":").filter(Boolean);
+  if (parts.length === 0) {
+    return undefined;
+  }
+  if ((parts[0] ?? "").trim().toLowerCase() === "agent") {
+    return normalizeThreadSuffixChannelHint(parts[2]);
+  }
+  return normalizeThreadSuffixChannelHint(parts[0]);
+}
+
 export function parseThreadSessionSuffix(
   sessionKey: string | undefined | null,
+  options?: { channelHint?: string | null },
 ): ParsedThreadSessionSuffix {
   const raw = (sessionKey ?? "").trim();
   if (!raw) {
     return { baseSessionKey: undefined, threadId: undefined };
   }
 
+  const channelHint =
+    normalizeThreadSuffixChannelHint(options?.channelHint) ?? inferThreadSuffixChannelHint(raw);
   const lowerRaw = raw.toLowerCase();
+  const topicMarker = ":topic:";
   const threadMarker = ":thread:";
+  const topicIndex = channelHint === "telegram" ? lowerRaw.lastIndexOf(topicMarker) : -1;
   const threadIndex = lowerRaw.lastIndexOf(threadMarker);
-  const markerIndex = threadIndex;
-  const marker = threadMarker;
+  const markerIndex = Math.max(topicIndex, threadIndex);
+  const marker = topicIndex > threadIndex ? topicMarker : threadMarker;
 
   const baseSessionKey = markerIndex === -1 ? raw : raw.slice(0, markerIndex);
   const threadIdRaw = markerIndex === -1 ? undefined : raw.slice(markerIndex + marker.length);
@@ -144,38 +160,39 @@ export function parseThreadSessionSuffix(
   return { baseSessionKey, threadId };
 }
 
-export function parseRawSessionConversationRef(
+export function parseSessionConversationRef(
   sessionKey: string | undefined | null,
-): RawSessionConversationRef | null {
+): ParsedSessionConversationRef | null {
   const raw = (sessionKey ?? "").trim();
   if (!raw) {
     return null;
   }
 
   const rawParts = raw.split(":").filter(Boolean);
-  const bodyStartIndex =
-    rawParts.length >= 3 && rawParts[0]?.trim().toLowerCase() === "agent" ? 2 : 0;
-  const parts = rawParts.slice(bodyStartIndex);
+  const parts =
+    rawParts.length >= 3 && rawParts[0]?.trim().toLowerCase() === "agent"
+      ? rawParts.slice(2)
+      : rawParts;
   if (parts.length < 3) {
     return null;
   }
 
-  const channel = normalizeSessionConversationChannel(parts[0]);
+  const channel = normalizeThreadSuffixChannelHint(parts[0]);
   const kind = parts[1]?.trim().toLowerCase();
   if (!channel || (kind !== "group" && kind !== "channel")) {
     return null;
   }
 
-  const rawId = parts.slice(2).join(":").trim();
-  const prefix = rawParts
-    .slice(0, bodyStartIndex + 2)
-    .join(":")
-    .trim();
-  if (!rawId || !prefix) {
+  const joined = parts.slice(2).join(":");
+  const { baseSessionKey, threadId } = parseThreadSessionSuffix(joined, {
+    channelHint: channel,
+  });
+  const id = (baseSessionKey ?? joined).trim();
+  if (!id) {
     return null;
   }
 
-  return { channel, kind, rawId, prefix };
+  return { channel, kind, id, threadId };
 }
 
 export function resolveThreadParentSessionKey(

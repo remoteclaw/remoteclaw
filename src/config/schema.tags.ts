@@ -16,6 +16,7 @@ export const CONFIG_TAGS = [
   "channels",
   "tools",
   "advanced",
+  "url-secret",
 ] as const;
 
 export type ConfigTag = (typeof CONFIG_TAGS)[number];
@@ -36,6 +37,7 @@ const TAG_PRIORITY: Record<ConfigTag, number> = {
   channels: 12,
   tools: 13,
   advanced: 14,
+  "url-secret": 15,
 };
 
 const TAG_OVERRIDES: Record<string, ConfigTag[]> = {

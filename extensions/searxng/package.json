@@ -1,6 +1,6 @@
 {
   "name": "@remoteclaw/searxng-plugin",
-  "version": "2026.4.1-beta.1",
+  "version": "0.8.0",
   "private": true,
   "description": "RemoteClaw SearXNG plugin",
   "type": "module",

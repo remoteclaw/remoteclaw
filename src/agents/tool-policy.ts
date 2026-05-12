@@ -14,6 +14,7 @@ import type { AnyAgentTool } from "./tools/common.js";
  * updating these when sync or rebrand changes the surface.
  */
 export const MODULE_ATTESTATIONS = {
+  resolveOwnerOnlyToolApprovalClass: "live",
   isOwnerOnlyToolName: "live",
   applyOwnerOnlyToolPolicy: "live",
   collectExplicitAllowlist: "live",

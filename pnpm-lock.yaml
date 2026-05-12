@@ -382,6 +382,8 @@ importers:
         specifier: ^4.3.6
         version: 4.3.6
 
+  extensions/searxng: {}
+
   extensions/signal: {}
 
   extensions/slack: {}

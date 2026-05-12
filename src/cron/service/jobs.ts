@@ -234,8 +234,12 @@ export function findJobOrThrow(state: CronServiceState, id: string) {
   return job;
 }
 
+export function isJobEnabled(job: Pick<CronJob, "enabled">): boolean {
+  return job.enabled ?? true;
+}
+
 export function computeJobNextRunAtMs(job: CronJob, nowMs: number): number | undefined {
-  if (!job.enabled) {
+  if (!isJobEnabled(job)) {
     return undefined;
   }
   if (job.schedule.kind === "every") {

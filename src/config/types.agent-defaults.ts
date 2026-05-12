@@ -117,6 +117,8 @@ export type CliBackendConfig = {
 };
 
 export type AgentDefaultsConfig = {
+  /** Global default provider params applied to all models before per-model and per-agent overrides. */
+  params?: Record<string, unknown>;
   /** Primary model and fallbacks (provider/model). Accepts string or {primary,fallbacks}. */
   model?: AgentModelConfig;
   /** Optional image-capable model and fallbacks (provider/model). Accepts string or {primary,fallbacks}. */
@@ -311,6 +313,11 @@ export type AgentCompactionConfig = {
    * When set, compaction uses this model instead of the agent's primary model.
    * Falls back to the primary model when unset. */
   model?: string;
+  /**
+   * Send a "🧹 Compacting context..." notice to the user when compaction starts.
+   * Default: false (silent by default).
+   */
+  notifyUser?: boolean;
 };
 
 export type AgentCompactionMemoryFlushConfig = {

@@ -562,6 +562,28 @@ describe("resolveSessionModelIdentityRef", () => {
     expect(resolved).toEqual({ provider: "anthropic", model: "claude-sonnet-4-6" });
   });
 
+  test("infers provider from configured provider catalogs when allowlist is absent", () => {
+    const cfg = createModelDefaultsConfig({
+      primary: "google-gemini-cli/gemini-3-pro-preview",
+    });
+    cfg.models = {
+      providers: {
+        "qwen-dashscope": {
+          models: [{ id: "qwen-max" }],
+        },
+      },
+    } as unknown as RemoteClawConfig["models"];
+
+    const resolved = resolveSessionModelIdentityRef(cfg, {
+      sessionId: "custom-provider-runtime-model",
+      updatedAt: Date.now(),
+      model: "qwen-max",
+      modelProvider: undefined,
+    });
+
+    expect(resolved).toEqual({ provider: "qwen-dashscope", model: "qwen-max" });
+  });
+
   test("keeps provider unknown when configured models are ambiguous", () => {
     const cfg = createModelDefaultsConfig({
       primary: "google-gemini-cli/gemini-3-pro-preview",
@@ -574,6 +596,31 @@ describe("resolveSessionModelIdentityRef", () => {
     const resolved = resolveLegacyIdentityRef(cfg);
 
     expect(resolved).toEqual({ model: "claude-sonnet-4-6" });
+  });
+
+  test("keeps provider unknown when configured provider catalog matches are ambiguous", () => {
+    const cfg = createModelDefaultsConfig({
+      primary: "google-gemini-cli/gemini-3-pro-preview",
+    });
+    cfg.models = {
+      providers: {
+        "qwen-dashscope": {
+          models: [{ id: "qwen-max" }],
+        },
+        modelstudio: {
+          models: [{ id: "qwen-max" }],
+        },
+      },
+    } as unknown as RemoteClawConfig["models"];
+
+    const resolved = resolveSessionModelIdentityRef(cfg, {
+      sessionId: "ambiguous-custom-provider-runtime-model",
+      updatedAt: Date.now(),
+      model: "qwen-max",
+      modelProvider: undefined,
+    });
+
+    expect(resolved).toEqual({ model: "qwen-max" });
   });
 
   test("preserves provider from slash-prefixed runtime model", () => {

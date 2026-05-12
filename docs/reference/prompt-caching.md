@@ -1,6 +1,6 @@
 ---
 title: "Prompt Caching"
-description: "Prompt caching knobs, merge order, provider behavior, and tuning patterns"
+summary: "Prompt caching knobs, merge order, provider behavior, and tuning patterns"
 read_when:
   - You want to reduce prompt token costs with cache retention
   - You need per-agent cache behavior in multi-agent setups
@@ -20,20 +20,43 @@ For Anthropic pricing details, see:
 
 ## Primary knobs
 
-### `cacheRetention` (per-agent)
+### `cacheRetention` (global default, model, and per-agent)
 
-Set cache retention in per-agent params:
+Set cache retention as a global default for all models:
+
+```yaml
+agents:
+  defaults:
+    params:
+      cacheRetention: "long" # none | short | long
+```
+
+Override per-model:
+
+```yaml
+agents:
+  defaults:
+    models:
+      "anthropic/claude-opus-4-6":
+        params:
+          cacheRetention: "short" # none | short | long
+```
+
+Per-agent override:
 
 ```yaml
 agents:
   list:
-    - id: "research"
-      params:
-        cacheRetention: "short" # none | short | long
     - id: "alerts"
       params:
         cacheRetention: "none"
 ```
+
+Config merge order:
+
+1. `agents.defaults.params` (global default — applies to all models)
+2. `agents.defaults.models["provider/model"].params` (per-model override)
+3. `agents.list[].params` (matching agent id; overrides by key)
 
 ### Legacy `cacheControlTtl`
 
@@ -76,20 +99,20 @@ Per-agent heartbeat is supported at `agents.list[].heartbeat`.
 ### Anthropic (direct API)
 
 - `cacheRetention` is supported.
-- When no explicit `cacheRetention` is set for an Anthropic model ref, RemoteClaw defaults to `"short"`.
+- With Anthropic API-key auth profiles, RemoteClaw seeds `cacheRetention: "short"` for Anthropic model refs when unset.
 
 ### Amazon Bedrock
 
-- Anthropic Claude model refs on Bedrock support `cacheRetention` — the CLI agent passes the value through to the Bedrock API.
-- Non-Anthropic Bedrock models do not support prompt caching; `cacheRetention` has no effect on them.
+- Anthropic Claude model refs (`amazon-bedrock/*anthropic.claude*`) support explicit `cacheRetention` pass-through.
+- Non-Anthropic Bedrock models are forced to `cacheRetention: "none"` at runtime.
 
 ### OpenRouter Anthropic models
 
-For `openrouter/anthropic/*` model refs, the CLI agent handles Anthropic `cache_control` headers on system/developer prompt blocks to improve prompt-cache reuse.
+For `openrouter/anthropic/*` model refs, RemoteClaw injects Anthropic `cache_control` on system/developer prompt blocks to improve prompt-cache reuse.
 
 ### Other providers
 
-Whether `cacheRetention` has any effect depends on the CLI agent and the underlying model API. For providers without prompt-caching support, the setting is silently ignored.
+If the provider does not support this cache mode, `cacheRetention` has no effect.
 
 ## Tuning patterns
 
@@ -99,11 +122,16 @@ Keep a long-lived baseline on your main agent, disable caching on bursty notifie
 
 ```yaml
 agents:
+  defaults:
+    model:
+      primary: "anthropic/claude-opus-4-6"
+    models:
+      "anthropic/claude-opus-4-6":
+        params:
+          cacheRetention: "long"
   list:
     - id: "research"
       default: true
-      params:
-        cacheRetention: "long"
       heartbeat:
         every: "55m"
     - id: "alerts"
@@ -119,7 +147,7 @@ agents:
 
 ## Cache diagnostics
 
-RemoteClaw exposes dedicated cache-trace diagnostics for agent runs.
+RemoteClaw exposes dedicated cache-trace diagnostics for embedded agent runs.
 
 ### `diagnostics.cacheTrace` config
 
@@ -155,12 +183,13 @@ Defaults:
 
 ## Quick troubleshooting
 
-- High `cacheWrite` on most turns: check for volatile system-prompt inputs and verify that your model/provider supports prompt caching.
-- No effect from `cacheRetention`: confirm the setting is present in the agent's `params` block and that the CLI agent and provider support it.
-- Non-Anthropic Bedrock models ignore `cacheRetention` — this is expected.
+- High `cacheWrite` on most turns: check for volatile system-prompt inputs and verify model/provider supports your cache settings.
+- No effect from `cacheRetention`: confirm model key matches `agents.defaults.models["provider/model"]`.
+- Bedrock Nova/Mistral requests with cache settings: expected runtime force to `none`.
 
 Related docs:
 
+- [Anthropic](/providers/anthropic)
 - [Token Use and Costs](/reference/token-use)
 - [Session Pruning](/concepts/session-pruning)
 - [Gateway Configuration Reference](/gateway/configuration-reference)

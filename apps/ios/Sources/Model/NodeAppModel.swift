@@ -851,7 +851,8 @@ final class NodeAppModel {
             if url.isEmpty {
                 self.screen.showDefaultCanvas()
             } else {
-                self.screen.navigate(to: url)
+                let trustedA2UIURL = await self.resolveA2UIHostURL()
+                self.screen.navigate(to: url, trustA2UIActions: trustedA2UIURL == Self.normalizeURLForTrustComparison(url))
             }
             return BridgeInvokeResponse(id: req.id, ok: true)
         case RemoteClawCanvasCommand.hide.rawValue:
@@ -859,7 +860,9 @@ final class NodeAppModel {
             return BridgeInvokeResponse(id: req.id, ok: true)
         case RemoteClawCanvasCommand.navigate.rawValue:
             let params = try Self.decodeParams(RemoteClawCanvasNavigateParams.self, from: req.paramsJSON)
-            self.screen.navigate(to: params.url)
+            let trimmedURL = params.url.trimmingCharacters(in: .whitespacesAndNewlines)
+            let trustedA2UIURL = await self.resolveA2UIHostURL()
+            self.screen.navigate(to: trimmedURL, trustA2UIActions: trustedA2UIURL == Self.normalizeURLForTrustComparison(trimmedURL))
             return BridgeInvokeResponse(id: req.id, ok: true)
         case RemoteClawCanvasCommand.evalJS.rawValue:
             let params = try Self.decodeParams(RemoteClawCanvasEvalParams.self, from: req.paramsJSON)

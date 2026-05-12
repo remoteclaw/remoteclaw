@@ -29,6 +29,7 @@ import { resolveTelegramFetch } from "./fetch.js";
 import { renderTelegramHtmlText, splitTelegramHtmlChunks } from "./format.js";
 import {
   isRecoverableTelegramNetworkError,
+  isTelegramRateLimitError,
   isSafeToRetrySendError,
   isTelegramServerError,
 } from "./network-errors.js";
@@ -555,7 +556,7 @@ function createTelegramNonIdempotentRequestWithDiag(params: {
     retry: params.retry,
     verbose: params.verbose,
     useApiErrorLogging: params.useApiErrorLogging,
-    shouldRetry: (err) => isSafeToRetrySendError(err),
+    shouldRetry: (err) => isSafeToRetrySendError(err) || isTelegramRateLimitError(err),
     strictShouldRetry: true,
   });
 }
@@ -1286,7 +1287,7 @@ export async function sendStickerTelegram(
   });
   const hasThreadParams = Object.keys(threadParams).length > 0;
 
-  const requestWithDiag = createTelegramRequestWithDiag({
+  const requestWithDiag = createTelegramNonIdempotentRequestWithDiag({
     cfg,
     account,
     retry: opts.retry,

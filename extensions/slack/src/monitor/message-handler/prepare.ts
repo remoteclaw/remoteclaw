@@ -37,6 +37,7 @@ import { hasSlackThreadParticipation } from "../../sent-thread-cache.js";
 import { resolveSlackThreadContext } from "../../threading.js";
 import type { SlackMessageEvent } from "../../types.js";
 import {
+  normalizeAllowListLower,
   normalizeSlackAllowOwnerEntry,
   resolveSlackAllowListMatch,
   resolveSlackUserAllowed,
@@ -436,6 +437,15 @@ export async function prepareSlackMessage(params: {
   }).allowed;
   const channelUsersAllowlistConfigured =
     isRoom && Array.isArray(channelConfig?.users) && channelConfig.users.length > 0;
+  const threadContextAllowFromLower = isRoom
+    ? channelUsersAllowlistConfigured
+      ? normalizeAllowListLower(channelConfig?.users)
+      : []
+    : isDirectMessage
+      ? ctx.dmPolicy === "open"
+        ? []
+        : allowFromLower
+      : [];
   const channelCommandAuthorized =
     isRoom && channelUsersAllowlistConfigured
       ? resolveSlackUserAllowed({
@@ -667,6 +677,8 @@ export async function prepareSlackMessage(params: {
     roomLabel,
     storePath,
     sessionKey,
+    allowFromLower: threadContextAllowFromLower,
+    allowNameMatching: ctx.allowNameMatching,
     envelopeOptions,
     effectiveDirectMedia,
   });
@@ -699,7 +711,7 @@ export async function prepareSlackMessage(params: {
     ChatType: isDirectMessage ? "direct" : "channel",
     ConversationLabel: envelopeFrom,
     GroupSubject: isRoomish ? roomLabel : undefined,
-    GroupSystemPrompt: isRoomish ? groupSystemPrompt : undefined,
+    GroupSystemPrompt: groupSystemPrompt,
     UntrustedContext: untrustedChannelMetadata ? [untrustedChannelMetadata] : undefined,
     SenderName: senderName,
     SenderId: senderId,

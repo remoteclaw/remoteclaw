@@ -54,6 +54,23 @@ describe("config schema regressions", () => {
     expect(res.ok).toBe(true);
   });
 
+  it("accepts BlueBubbles enrichGroupParticipantsFromContacts at channel and account scope", () => {
+    const res = validateConfigObject({
+      channels: {
+        bluebubbles: {
+          enrichGroupParticipantsFromContacts: true,
+          accounts: {
+            work: {
+              enrichGroupParticipantsFromContacts: false,
+            },
+          },
+        },
+      },
+    });
+
+    expect(res.ok).toBe(true);
+  });
+
   it("rejects unsafe iMessage remoteHost", () => {
     const res = validateConfigObject({
       channels: {

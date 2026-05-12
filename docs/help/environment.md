@@ -127,7 +127,7 @@ When set, `REMOTECLAW_HOME` replaces the system home directory (`$HOME` / `os.ho
 <key>EnvironmentVariables</key>
 <dict>
   <key>REMOTECLAW_HOME</key>
-  <string>/Users/kira</string>
+  <string>/Users/user</string>
 </dict>
 ```
 

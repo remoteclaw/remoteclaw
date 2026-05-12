@@ -77,18 +77,19 @@ Connect RemoteClaw to QQ via the QQ Bot API. Supports private chats, group
 mentions, channel messages, and rich media including voice, images, videos,
 and files.
 
-- **npm:** `@sliverp/qqbot`
-- **repo:** [github.com/sliverp/qqbot](https://github.com/sliverp/qqbot)
+- **npm:** `@tencent-connect/remoteclaw-qqbot`
+- **repo:** [github.com/tencent-connect/remoteclaw-qqbot](https://github.com/tencent-connect/remoteclaw-qqbot)
 
 ```bash
-remoteclaw plugins install @sliverp/qqbot
+remoteclaw plugins install @tencent-connect/remoteclaw-qqbot
 ```
 
 ### wecom
 
-RemoteClaw Enterprise WeCom Channel Plugin.
-A bot plugin powered by WeCom AI Bot WebSocket persistent connections,
-supports direct messages & group chats, streaming replies, and proactive messaging.
+WeCom channel plugin for RemoteClaw by the Tencent WeCom team. Powered by
+WeCom Bot WebSocket persistent connections, it supports direct messages & group
+chats, streaming replies, proactive messaging, image/file processing, Markdown
+formatting, built-in access control, and document/meeting/messaging skills.
 
 - **npm:** `@wecom/wecom-remoteclaw-plugin`
 - **repo:** [github.com/WecomTeam/wecom-remoteclaw-plugin](https://github.com/WecomTeam/wecom-remoteclaw-plugin)

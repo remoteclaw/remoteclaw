@@ -14,6 +14,7 @@ import type {
 } from "../types.js";
 import {
   computeJobNextRunAtMs,
+  isJobEnabled,
   nextWakeAtMs,
   recomputeNextRunsForMaintenance,
   recordScheduleComputeError,
@@ -382,7 +383,7 @@ export function applyJobResult(
           );
         }
       }
-    } else if (result.status === "error" && job.enabled) {
+    } else if (result.status === "error" && isJobEnabled(job)) {
       // Apply exponential backoff for errored jobs to prevent retry storms.
       const backoff = errorBackoffMs(job.state.consecutiveErrors ?? 1);
       let normalNext: number | undefined;
@@ -410,7 +411,7 @@ export function applyJobResult(
         },
         "cron: applying error backoff",
       );
-    } else if (job.enabled) {
+    } else if (isJobEnabled(job)) {
       let naturalNext: number | undefined;
       try {
         naturalNext =
@@ -707,7 +708,7 @@ function isRunnableJob(params: {
   if (!job.state) {
     job.state = {};
   }
-  if (!job.enabled) {
+  if (!isJobEnabled(job)) {
     return false;
   }
   if (params.skipJobIds?.has(job.id)) {
@@ -907,6 +908,7 @@ export async function executeJobCore(
     });
     if (job.wakeMode === "now" && state.deps.runHeartbeatOnce) {
       const reason = `cron:${job.id}`;
+      const isRecurringJob = job.schedule.kind !== "at";
       const maxWaitMs = state.deps.wakeNowHeartbeatBusyMaxWaitMs ?? 2 * 60_000;
       const retryDelayMs = state.deps.wakeNowHeartbeatBusyRetryDelayMs ?? 250;
       const waitStartedAt = state.deps.nowMs();
@@ -926,6 +928,17 @@ export async function executeJobCore(
           heartbeatResult.reason !== "requests-in-flight"
         ) {
           break;
+        }
+        if (isRecurringJob) {
+          // Recurring main-session cron jobs should not hold the cron lane open
+          // while the main lane is busy, or their measured duration starts to
+          // reflect queue wait instead of cron bookkeeping (#58833).
+          state.deps.requestHeartbeatNow({
+            reason,
+            agentId: job.agentId,
+            sessionKey: job.sessionKey,
+          });
+          return { status: "ok", summary: text };
         }
         if (abortSignal?.aborted) {
           return resolveAbortError();

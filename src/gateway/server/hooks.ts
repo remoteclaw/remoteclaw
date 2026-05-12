@@ -41,6 +41,13 @@ export function createGatewayHooksRequestHandler(params: {
     const mainSessionKey = resolveMainSessionKeyFromConfig();
     const jobId = randomUUID();
     const now = Date.now();
+    const delivery = value.deliver
+      ? {
+          mode: "announce" as const,
+          channel: value.channel,
+          to: value.to,
+        }
+      : { mode: "none" as const };
     const job: CronJob = {
       id: jobId,
       agentId: value.agentId,
@@ -56,11 +63,9 @@ export function createGatewayHooksRequestHandler(params: {
         message: value.message,
         model: value.model,
         timeoutSeconds: value.timeoutSeconds,
-        deliver: value.deliver,
-        channel: value.channel,
-        to: value.to,
         allowUnsafeExternalContent: value.allowUnsafeExternalContent,
       },
+      delivery,
       state: { nextRunAtMs: now },
     };
 

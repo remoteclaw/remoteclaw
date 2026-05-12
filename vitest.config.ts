@@ -20,6 +20,7 @@ const pluginSdkSubpaths = [
   "runtime",
   "runtime-env",
   "runtime-store",
+  "string-normalization-runtime",
   "compat",
   "telegram",
   "discord",

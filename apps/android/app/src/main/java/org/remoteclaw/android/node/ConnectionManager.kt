@@ -1,14 +1,15 @@
-package org.remoteclaw.android.node
+package org.remoteclaw.app.node
 
 import android.os.Build
-import org.remoteclaw.android.BuildConfig
-import org.remoteclaw.android.SecurePrefs
-import org.remoteclaw.android.gateway.GatewayClientInfo
-import org.remoteclaw.android.gateway.GatewayConnectOptions
-import org.remoteclaw.android.gateway.GatewayEndpoint
-import org.remoteclaw.android.gateway.GatewayTlsParams
-import org.remoteclaw.android.LocationMode
-import org.remoteclaw.android.VoiceWakeMode
+import org.remoteclaw.app.BuildConfig
+import org.remoteclaw.app.SecurePrefs
+import org.remoteclaw.app.gateway.GatewayClientInfo
+import org.remoteclaw.app.gateway.GatewayConnectOptions
+import org.remoteclaw.app.gateway.GatewayEndpoint
+import org.remoteclaw.app.gateway.GatewayTlsParams
+import org.remoteclaw.app.gateway.isLoopbackGatewayHost
+import org.remoteclaw.app.LocationMode
+import org.remoteclaw.app.VoiceWakeMode
 
 class ConnectionManager(
   private val prefs: SecurePrefs,
@@ -19,6 +20,7 @@ class ConnectionManager(
   private val motionPedometerAvailable: () -> Boolean,
   private val sendSmsAvailable: () -> Boolean,
   private val readSmsAvailable: () -> Boolean,
+  private val smsSearchPossible: () -> Boolean,
   private val callLogAvailable: () -> Boolean,
   private val hasRecordAudioPermission: () -> Boolean,
   private val manualTls: () -> Boolean,
@@ -32,9 +34,10 @@ class ConnectionManager(
       val stableId = endpoint.stableId
       val stored = storedFingerprint?.trim().takeIf { !it.isNullOrEmpty() }
       val isManual = stableId.startsWith("manual|")
+      val isLoopback = isLoopbackGatewayHost(endpoint.host)
 
       if (isManual) {
-        if (!manualTlsEnabled) return null
+        if (!manualTlsEnabled && isLoopback) return null
         if (!stored.isNullOrBlank()) {
           return GatewayTlsParams(
             required = true,
@@ -72,6 +75,15 @@ class ConnectionManager(
         )
       }
 
+      if (!isLoopback) {
+        return GatewayTlsParams(
+          required = true,
+          expectedFingerprint = null,
+          allowTOFU = false,
+          stableId = stableId,
+        )
+      }
+
       return null
     }
   }
@@ -82,6 +94,7 @@ class ConnectionManager(
       locationEnabled = locationMode() != LocationMode.Off,
       sendSmsAvailable = sendSmsAvailable(),
       readSmsAvailable = readSmsAvailable(),
+      smsSearchPossible = smsSearchPossible(),
       callLogAvailable = callLogAvailable(),
       voiceWakeEnabled = voiceWakeMode() != VoiceWakeMode.Off && hasRecordAudioPermission(),
       motionActivityAvailable = motionActivityAvailable(),

@@ -114,7 +114,7 @@ remoteclaw models status --check
 ```
 
 Optional ops scripts (systemd/Termux) are documented here:
-[/automation/auth-monitoring](/automation/auth-monitoring)
+[Auth monitoring scripts](/help/scripts#auth-monitoring-scripts)
 
 > `claude setup-token` requires an interactive TTY.
 

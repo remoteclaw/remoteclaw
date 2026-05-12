@@ -1,0 +1,17 @@
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <capability
+        android:name="custom.actions.intent.ASK_OPENCLAW"
+        app:queryPatterns="@array/ask_remoteclaw_query_patterns">
+        <intent
+            android:action="org.remoteclaw.app.action.ASK_OPENCLAW"
+            android:targetPackage="org.remoteclaw.app"
+            android:targetClass="org.remoteclaw.app.MainActivity">
+            <parameter
+                android:name="prompt"
+                android:key="prompt"
+                android:mimeType="text/*"
+                android:required="true" />
+        </intent>
+    </capability>
+</shortcuts>

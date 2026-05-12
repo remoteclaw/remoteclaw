@@ -4,6 +4,7 @@ import path from "node:path";
 import { DEFAULT_SUBAGENT_MAX_SPAWN_DEPTH } from "../config/agent-limits.js";
 import { loadConfig } from "../config/config.js";
 import { callGateway } from "../gateway/call.js";
+import { ADMIN_SCOPE, isAdminOnlyMethod } from "../gateway/method-scopes.js";
 import { getGlobalHookRunner } from "../plugins/hook-runner-global.js";
 import {
   isValidAgentId,
@@ -152,6 +153,26 @@ function sanitizeMountPathHint(value?: string): string | undefined {
   return trimmed;
 }
 
+async function callSubagentGateway<T = Record<string, unknown>>(
+  params: Parameters<typeof callGateway<T>>[0],
+): Promise<T> {
+  // Subagent lifecycle requires methods spanning multiple scope tiers
+  // (sessions.patch / sessions.delete → admin, agent → write).  When each call
+  // independently negotiates least-privilege scopes the first connection pairs
+  // at a lower tier and every subsequent higher-tier call triggers a
+  // scope-upgrade handshake that headless gateway-client connections cannot
+  // complete interactively, causing close(1008) "pairing required" (#59428).
+  //
+  // Only admin-only methods are pinned to ADMIN_SCOPE; other methods (e.g.
+  // "agent" → write) keep their least-privilege scope so that the gateway does
+  // not treat the caller as owner (senderIsOwner) and expose owner-only tools.
+  const scopes = params.scopes ?? (isAdminOnlyMethod(params.method) ? [ADMIN_SCOPE] : undefined);
+  return await callGateway<T>({
+    ...params,
+    ...(scopes != null ? { scopes } : {}),
+  });
+}
+
 async function cleanupProvisionalSession(
   childSessionKey: string,
   options?: {
@@ -160,7 +181,7 @@ async function cleanupProvisionalSession(
   },
 ): Promise<void> {
   try {
-    await callGateway({
+    await callSubagentGateway({
       method: "sessions.delete",
       params: {
         key: childSessionKey,
@@ -413,7 +434,7 @@ export async function spawnSubagentDirect(
 
   const patchChildSession = async (patch: Record<string, unknown>): Promise<string | undefined> => {
     try {
-      await callGateway({
+      await callSubagentGateway({
         method: "sessions.patch",
         params: { key: childSessionKey, ...patch },
         timeoutMs: 10_000,
@@ -465,7 +486,7 @@ export async function spawnSubagentDirect(
     });
     if (bindResult.status === "error") {
       try {
-        await callGateway({
+        await callSubagentGateway({
           method: "sessions.delete",
           params: { key: childSessionKey, emitLifecycleHooks: false },
           timeoutMs: 10_000,
@@ -694,7 +715,7 @@ export async function spawnSubagentDirect(
   const childIdem = crypto.randomUUID();
   let childRunId: string = childIdem;
   try {
-    const response = await callGateway<{ runId: string }>({
+    const response = await callSubagentGateway<{ runId: string }>({
       method: "agent",
       params: {
         message: childTaskMessage,
@@ -757,7 +778,7 @@ export async function spawnSubagentDirect(
       // Always delete the provisional child session after a failed spawn attempt.
       // If we already emitted subagent_ended above, suppress a duplicate lifecycle hook.
       try {
-        await callGateway({
+        await callSubagentGateway({
           method: "sessions.delete",
           params: {
             key: childSessionKey,
@@ -807,7 +828,7 @@ export async function spawnSubagentDirect(
       }
     }
     try {
-      await callGateway({
+      await callSubagentGateway({
         method: "sessions.delete",
         params: { key: childSessionKey, deleteTranscript: true, emitLifecycleHooks: false },
         timeoutMs: 10_000,

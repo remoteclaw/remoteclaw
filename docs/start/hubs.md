@@ -27,6 +27,7 @@ Use these hubs to discover every page, including deep dives and reference docs t
 - [Configuration examples](/gateway/configuration-examples)
 - [RemoteClaw assistant](/start/remoteclaw)
 - [Showcase](/start/showcase)
+- [Lore](/start/lore)
 
 ## Installation + updates
 
@@ -43,6 +44,7 @@ Use these hubs to discover every page, including deep dives and reference docs t
 - [Agent runtime](/concepts/agent)
 - [Agent workspace](/concepts/agent-workspace)
 - [Memory](/concepts/memory)
+- [Agent loop](/concepts/agent-loop)
 - [Streaming + chunking](/concepts/streaming)
 - [Multi-agent routing](/concepts/multi-agent)
 - [Compaction](/concepts/compaction)
@@ -77,8 +79,8 @@ Use these hubs to discover every page, including deep dives and reference docs t
 - [iMessage (legacy)](/channels/imessage)
 - [Location parsing](/channels/location)
 - [WebChat](/web/webchat)
-- [Webhooks](/automation/webhook)
-- [Gmail Pub/Sub](/automation/gmail-pubsub)
+- [Webhooks](/automation/cron-jobs#webhooks)
+- [Gmail Pub/Sub](/automation/cron-jobs#gmail-pubsub-integration)
 
 ## Gateway + operations
 
@@ -109,14 +111,15 @@ Use these hubs to discover every page, including deep dives and reference docs t
 - [PDF tool](/tools/pdf)
 - [Elevated mode](/tools/elevated)
 - [Cron jobs](/automation/cron-jobs)
-- [Cron vs Heartbeat](/automation/cron-vs-heartbeat)
+- [Automation & Tasks](/automation)
+- [Thinking + verbose](/tools/thinking)
 - [Models](/concepts/models)
 - [Sub-agents](/tools/subagents)
 - [Agent send CLI](/tools/agent-send)
 - [Terminal UI](/web/tui)
 - [Browser control](/tools/browser)
 - [Browser (Linux troubleshooting)](/tools/browser-linux-troubleshooting)
-- [Polls](/automation/poll)
+- [Polls](/cli/message)
 
 ## Nodes, media, voice
 

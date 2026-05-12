@@ -2,6 +2,7 @@ import os from "node:os";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   isLocalishHost,
+  isLoopbackHost,
   isPrivateOrLoopbackAddress,
   isPrivateOrLoopbackHost,
   isSecureWebSocketUrl,
@@ -30,6 +31,7 @@ describe("isLocalishHost", () => {
   it("accepts loopback and tailscale serve/funnel host headers", () => {
     const accepted = [
       "localhost",
+      "localhost.:18789",
       "127.0.0.1:18789",
       "[::1]:18789",
       "[::ffff:127.0.0.1]:18789",
@@ -45,6 +47,13 @@ describe("isLocalishHost", () => {
     for (const host of rejected) {
       expect(isLocalishHost(host), host).toBe(false);
     }
+  });
+});
+
+describe("isLoopbackHost", () => {
+  it("accepts localhost absolute-form hostnames", () => {
+    expect(isLoopbackHost("localhost.")).toBe(true);
+    expect(isLoopbackHost("LOCALHOST...")).toBe(true);
   });
 });
 
@@ -383,6 +392,7 @@ describe("isPrivateOrLoopbackAddress", () => {
 describe("isPrivateOrLoopbackHost", () => {
   it("accepts localhost", () => {
     expect(isPrivateOrLoopbackHost("localhost")).toBe(true);
+    expect(isPrivateOrLoopbackHost("localhost.")).toBe(true);
   });
 
   it("accepts loopback addresses", () => {

@@ -176,7 +176,7 @@ export const FIELD_LABELS: Record<string, string> = {
   "tools.exec.notifyOnExit": "Exec Notify On Exit",
   "tools.exec.notifyOnExitEmptySuccess": "Exec Notify On Empty Success",
   "tools.exec.approvalRunningNoticeMs": "Exec Approval Running Notice (ms)",
-  "tools.exec.host": "Exec Host",
+  "tools.exec.host": "Exec Target",
   "tools.exec.security": "Exec Security",
   "tools.exec.ask": "Exec Ask",
   "tools.exec.node": "Exec Node Binding",
@@ -207,6 +207,14 @@ export const FIELD_LABELS: Record<string, string> = {
   "tools.web.search.maxResults": "Web Search Max Results",
   "tools.web.search.timeoutSeconds": "Web Search Timeout (sec)",
   "tools.web.search.cacheTtlMinutes": "Web Search Cache TTL (min)",
+  "tools.web.search.openaiCodex.enabled": "Enable Native Codex Web Search",
+  "tools.web.search.openaiCodex.mode": "Codex Web Search Mode",
+  "tools.web.search.openaiCodex.allowedDomains": "Codex Allowed Domains",
+  "tools.web.search.openaiCodex.contextSize": "Codex Search Context Size",
+  "tools.web.search.openaiCodex.userLocation.country": "Codex User Country",
+  "tools.web.search.openaiCodex.userLocation.region": "Codex User Region",
+  "tools.web.search.openaiCodex.userLocation.city": "Codex User City",
+  "tools.web.search.openaiCodex.userLocation.timezone": "Codex User Timezone",
   "tools.web.search.brave.mode": "Brave Search Mode",
   "tools.web.search.gemini.apiKey": "Gemini Search API Key", // pragma: allowlist secret
   "tools.web.search.gemini.model": "Gemini Search Model",
@@ -221,6 +229,7 @@ export const FIELD_LABELS: Record<string, string> = {
   "tools.web.fetch.enabled": "Enable Web Fetch Tool",
   "tools.web.fetch.maxChars": "Web Fetch Max Chars",
   "tools.web.fetch.maxCharsCap": "Web Fetch Hard Max Chars",
+  "tools.web.fetch.provider": "Web Fetch Provider",
   "tools.web.fetch.timeoutSeconds": "Web Fetch Timeout (sec)",
   "tools.web.fetch.cacheTtlMinutes": "Web Fetch Cache TTL (min)",
   "tools.web.fetch.maxRedirects": "Web Fetch Max Redirects",
@@ -269,6 +278,7 @@ export const FIELD_LABELS: Record<string, string> = {
   "gateway.nodes.browser.node": "Gateway Node Browser Pin",
   "gateway.nodes.allowCommands": "Gateway Node Allowlist (Extra Commands)",
   "gateway.nodes.denyCommands": "Gateway Node Denylist",
+  "gateway.webchat.chatHistoryMaxChars": "WebChat History Max Chars",
   nodeHost: "Node Host",
   "nodeHost.browserProxy": "Node Browser Proxy",
   "nodeHost.browserProxy.enabled": "Node Browser Proxy Enabled",
@@ -318,6 +328,7 @@ export const FIELD_LABELS: Record<string, string> = {
   "memory.qmd.mcporter.serverName": "QMD MCPorter Server Name",
   "memory.qmd.mcporter.startDaemon": "QMD MCPorter Start Daemon",
   "memory.qmd.searchMode": "QMD Search Mode",
+  "memory.qmd.searchTool": "QMD Search Tool Override",
   "memory.qmd.includeDefaultMemory": "QMD Include Default Memory",
   "memory.qmd.paths": "QMD Extra Paths",
   "memory.qmd.paths.path": "QMD Path",
@@ -382,6 +393,9 @@ export const FIELD_LABELS: Record<string, string> = {
   "auth.cooldowns.billingBackoffHoursByProvider": "Billing Backoff Overrides",
   "auth.cooldowns.billingMaxHours": "Billing Backoff Cap (hours)",
   "auth.cooldowns.failureWindowHours": "Failover Window (hours)",
+  "auth.cooldowns.overloadedProfileRotations": "Overloaded Profile Rotations",
+  "auth.cooldowns.overloadedBackoffMs": "Overloaded Backoff (ms)",
+  "auth.cooldowns.rateLimitedProfileRotations": "Rate-Limited Profile Rotations",
   "agents.defaults.models": "Models",
   "agents.defaults.model.primary": "Primary Model",
   "agents.defaults.model.fallbacks": "Model Fallbacks",
@@ -407,6 +421,7 @@ export const FIELD_LABELS: Record<string, string> = {
   "agents.defaults.compaction.postIndexSync": "Compaction Post-Index Sync",
   "agents.defaults.compaction.postCompactionSections": "Post-Compaction Context Sections",
   "agents.defaults.compaction.model": "Compaction Model Override",
+  "agents.defaults.compaction.notifyUser": "Compaction Notify User",
   "agents.defaults.compaction.memoryFlush": "Compaction Memory Flush",
   "agents.defaults.compaction.memoryFlush.enabled": "Compaction Memory Flush Enabled",
   "agents.defaults.compaction.memoryFlush.softThresholdTokens":
@@ -638,17 +653,31 @@ export const FIELD_LABELS: Record<string, string> = {
   "channels.defaults.heartbeat.showOk": "Heartbeat Show OK",
   "channels.defaults.heartbeat.showAlerts": "Heartbeat Show Alerts",
   "channels.defaults.heartbeat.useIndicator": "Heartbeat Use Indicator",
+  // fork-keep block — the per-channel anchor labels below
+  // (whatsapp, telegram, discord, slack, signal, imessage, bluebubbles, msteams, plus
+  // IRC via ...IRC_FIELD_LABELS) are fork-retained KEEP-layer rows. Upstream has
+  // removed these or may remove them in future syncs; the fork restores/maintains them.
+  // See #2665. Any upstream sync MUST preserve these rows (and per-row `// fork-keep` markers).
+  // fork-keep #2665
   "channels.whatsapp": "WhatsApp",
+  // fork-keep #2665
   "channels.telegram": "Telegram",
   "channels.telegram.customCommands": "Telegram Custom Commands",
+  // fork-keep #2665
   "channels.discord": "Discord",
+  // fork-keep #2665
   "channels.slack": "Slack",
   "channels.mattermost": "Mattermost",
+  // fork-keep #2665
   "channels.signal": "Signal",
+  // fork-keep #2665
   "channels.imessage": "iMessage",
+  // fork-keep #2665
   "channels.bluebubbles": "BlueBubbles",
+  // fork-keep #2665
   "channels.msteams": "MS Teams",
   "channels.modelByChannel": "Channel Model Overrides",
+  // fork-keep #2665 — IRC anchor + retained IRC.* labels live in schema.irc.ts
   ...IRC_FIELD_LABELS,
   "channels.telegram.botToken": "Telegram Bot Token",
   "channels.telegram.dmPolicy": "Telegram DM Policy",

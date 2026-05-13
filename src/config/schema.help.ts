@@ -307,7 +307,7 @@ export const FIELD_HELP: Record<string, string> = {
   "tools.exec":
     "Exec-tool policy grouping for shell execution host, security mode, approval behavior, and runtime bindings. Keep conservative defaults in production and tighten elevated execution paths.",
   "tools.exec.host":
-    "Selects execution host strategy for shell commands, typically controlling local vs delegated execution environment. Use the safest host mode that still satisfies your automation requirements.",
+    'Selects execution target strategy for shell commands. Use "auto" for runtime-aware behavior (sandbox when available, otherwise gateway), or pin sandbox/gateway/node explicitly when you need a fixed surface.',
   "tools.exec.security":
     "Execution security posture selector controlling sandbox/approval expectations for command execution. Keep strict security mode for untrusted prompts and relax only for trusted operator workflows.",
   "tools.exec.ask":
@@ -432,6 +432,8 @@ export const FIELD_HELP: Record<string, string> = {
     "Extra node.invoke commands to allow beyond the gateway defaults (array of command strings). Enabling dangerous commands here is a security-sensitive override and is flagged by `remoteclaw security audit`.",
   "gateway.nodes.denyCommands":
     "Node command names to block even if present in node claims or default allowlist (exact command-name matching only, e.g. `system.run`; does not inspect shell text inside that command).",
+  "gateway.webchat.chatHistoryMaxChars":
+    "Max characters per text field in chat.history responses before truncation (default: 12000).",
   nodeHost:
     "Node host controls for features exposed from this gateway node to other nodes or clients. Keep defaults unless you intentionally proxy local capabilities across your node network.",
   "nodeHost.browserProxy":
@@ -639,13 +641,30 @@ export const FIELD_HELP: Record<string, string> = {
   "tools.message.crossContext.marker.suffix":
     'Text suffix for cross-context markers (supports "{channel}").',
   "tools.message.broadcast.enabled": "Enable broadcast action (default: true).",
-  "tools.web.search.enabled": "Enable the web_search tool (requires a provider API key).",
+  "tools.web.search.enabled":
+    "Enable managed web_search and optional Codex-native search for eligible models.",
   "tools.web.search.provider":
     'Search provider ("brave", "gemini", "grok", "kimi", or "perplexity"). Auto-detected from available API keys if omitted.',
   "tools.web.search.apiKey": "Brave Search API key (fallback: BRAVE_API_KEY env var).",
   "tools.web.search.maxResults": "Number of results to return (1-10).",
   "tools.web.search.timeoutSeconds": "Timeout in seconds for web_search requests.",
   "tools.web.search.cacheTtlMinutes": "Cache TTL in minutes for web_search results.",
+  "tools.web.search.openaiCodex.enabled":
+    "Enable native Codex web search for Codex-capable models.",
+  "tools.web.search.openaiCodex.mode":
+    'Native Codex web search mode: "cached" (default) or "live".',
+  "tools.web.search.openaiCodex.allowedDomains":
+    "Optional domain allowlist passed to the native Codex web_search tool.",
+  "tools.web.search.openaiCodex.contextSize":
+    'Native Codex search context size hint: "low", "medium", or "high".',
+  "tools.web.search.openaiCodex.userLocation.country":
+    "Approximate country sent to native Codex web search.",
+  "tools.web.search.openaiCodex.userLocation.region":
+    "Approximate region/state sent to native Codex web search.",
+  "tools.web.search.openaiCodex.userLocation.city":
+    "Approximate city sent to native Codex web search.",
+  "tools.web.search.openaiCodex.userLocation.timezone":
+    "Approximate timezone sent to native Codex web search.",
   "tools.web.search.brave.mode":
     'Brave Search mode: "web" (URL results) or "llm-context" (pre-extracted page content for LLM grounding).',
   "tools.web.search.gemini.apiKey":
@@ -668,6 +687,7 @@ export const FIELD_HELP: Record<string, string> = {
   "tools.web.fetch.maxChars": "Max characters returned by web_fetch (truncated).",
   "tools.web.fetch.maxCharsCap":
     "Hard cap for web_fetch maxChars (applies to config and tool calls).",
+  "tools.web.fetch.provider": "Web fetch fallback provider id.",
   "tools.web.fetch.timeoutSeconds": "Timeout in seconds for web_fetch requests.",
   "tools.web.fetch.cacheTtlMinutes": "Cache TTL in minutes for web_fetch results.",
   "tools.web.fetch.maxRedirects": "Maximum redirects allowed for web_fetch (default: 3).",
@@ -745,6 +765,12 @@ export const FIELD_HELP: Record<string, string> = {
     "Optional per-provider overrides for billing backoff (hours).",
   "auth.cooldowns.billingMaxHours": "Cap (hours) for billing backoff (default: 24).",
   "auth.cooldowns.failureWindowHours": "Failure window (hours) for backoff counters (default: 24).",
+  "auth.cooldowns.overloadedProfileRotations":
+    "Maximum same-provider auth-profile rotations allowed for overloaded errors before switching to model fallback (default: 1).",
+  "auth.cooldowns.overloadedBackoffMs":
+    "Fixed delay in milliseconds before retrying an overloaded provider/profile rotation (default: 0).",
+  "auth.cooldowns.rateLimitedProfileRotations":
+    "Maximum same-provider auth-profile rotations allowed for rate-limit errors before switching to model fallback (default: 1).",
   "agents.defaults.workspace":
     "Default workspace path exposed to agent runtime tools for filesystem context and repo-aware behavior. Set this explicitly when running from wrappers so path resolution stays deterministic.",
   "agents.defaults.bootstrapMaxChars":
@@ -777,6 +803,8 @@ export const FIELD_HELP: Record<string, string> = {
     "Automatically starts the mcporter daemon when mcporter-backed QMD mode is enabled (default: true). Keep enabled unless process lifecycle is managed externally by your service supervisor.",
   "memory.qmd.searchMode":
     'Selects the QMD retrieval path: "query" uses standard query flow, "search" uses search-oriented retrieval, and "vsearch" emphasizes vector retrieval. Keep default unless tuning relevance quality.',
+  "memory.qmd.searchTool":
+    "Overrides the exact mcporter tool name used for QMD searches while preserving `searchMode` as the semantic retrieval mode. Use this only when your QMD MCP server exposes a custom tool such as `hybrid_search` and keep it unset for the normal built-in tool mapping.",
   "memory.qmd.includeDefaultMemory":
     "Automatically indexes default memory files (MEMORY.md and memory/**/*.md) into QMD collections. Keep enabled unless you want indexing controlled only through explicit custom paths.",
   "memory.qmd.paths":
@@ -919,6 +947,8 @@ export const FIELD_HELP: Record<string, string> = {
     'AGENTS.md H2/H3 section names re-injected after compaction so the agent reruns critical startup guidance. Leave unset to use "Session Startup"/"Red Lines" with legacy fallback to "Every Session"/"Safety"; set to [] to disable reinjection entirely.',
   "agents.defaults.compaction.model":
     "Optional provider/model override used only for compaction summarization. Set this when you want compaction to run on a different model than the session default, and leave it unset to keep using the primary agent model.",
+  "agents.defaults.compaction.notifyUser":
+    "When enabled, sends a brief compaction notice to the user (e.g. '🧹 Compacting context...') when compaction starts. Disabled by default to keep compaction silent and non-intrusive.",
   "agents.defaults.compaction.memoryFlush":
     "Pre-compaction memory flush settings that run an agentic memory write before heavy compaction. Keep enabled for long sessions so salient context is persisted before aggressive trimming.",
   "agents.defaults.compaction.memoryFlush.enabled":
@@ -1235,24 +1265,38 @@ export const FIELD_HELP: Record<string, string> = {
     "Text-to-speech policy for reading agent replies aloud on supported voice or audio surfaces. Keep disabled unless voice playback is part of your operator/user workflow.",
   channels:
     "Channel provider configurations plus shared defaults that control access policies, heartbeat visibility, and per-surface behavior. Keep defaults centralized and override per provider only where required.",
+  // fork-keep block — the per-channel anchor entries below
+  // (telegram, slack, discord, whatsapp, signal, imessage, bluebubbles, msteams, irc)
+  // are fork-retained KEEP-layer rows. Upstream has removed these or may remove
+  // them in future syncs; the fork restores/maintains them. See #2665.
+  // Any upstream sync MUST preserve these rows (and their per-row `// fork-keep` markers).
+  // fork-keep #2665
   "channels.telegram":
     "Telegram channel provider configuration including auth tokens, retry behavior, and message rendering controls. Use this section to tune bot behavior for Telegram-specific API semantics.",
+  // fork-keep #2665
   "channels.slack":
     "Slack channel provider configuration for bot/app tokens, streaming behavior, and DM policy controls. Keep token handling and thread behavior explicit to avoid noisy workspace interactions.",
+  // fork-keep #2665
   "channels.discord":
     "Discord channel provider configuration for bot auth, retry policy, streaming, thread bindings, and optional voice capabilities. Keep privileged intents and advanced features disabled unless needed.",
+  // fork-keep #2665
   "channels.whatsapp":
     "WhatsApp channel provider configuration for access policy and message batching behavior. Use this section to tune responsiveness and direct-message routing safety for WhatsApp chats.",
+  // fork-keep #2665
   "channels.signal":
     "Signal channel provider configuration including account identity and DM policy behavior. Keep account mapping explicit so routing remains stable across multi-device setups.",
+  // fork-keep #2665
   "channels.imessage":
     "iMessage channel provider configuration for CLI integration and DM access policy handling. Use explicit CLI paths when runtime environments have non-standard binary locations.",
+  // fork-keep #2665
   "channels.bluebubbles":
     "BlueBubbles channel provider configuration used for Apple messaging bridge integrations. Keep DM policy aligned with your trusted sender model in shared deployments.",
+  // fork-keep #2665
   "channels.msteams":
     "Microsoft Teams channel provider configuration and provider-specific policy toggles. Use this section to isolate Teams behavior from other enterprise chat providers.",
   "channels.mattermost":
     "Mattermost channel provider configuration for bot credentials, base URL, and message trigger modes. Keep mention/trigger rules strict in high-volume team channels.",
+  // fork-keep #2665
   "channels.irc":
     "IRC channel provider configuration and compatibility settings for classic IRC transport workflows. Use this section when bridging legacy chat infrastructure into RemoteClaw.",
   "channels.defaults":

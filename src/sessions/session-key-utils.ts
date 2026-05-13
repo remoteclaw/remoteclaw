@@ -1,3 +1,42 @@
+// PROTECTED fork divergence — do not port upstream `bea53d7a3f` (#58400).
+//
+// Upstream moved bootstrap session-grammar parsing out of this module and into
+// plugin-owned `session-key-api.ts` / `session-conversation.ts` surfaces, with
+// dispatch through `src/channels/plugins/session-conversation.ts` and the
+// `loadBundledPluginPublicSurfaceModuleSync` plugin-SDK facade-runtime loader.
+// RemoteClaw cannot adopt that pattern as-is:
+//
+//   1. `src/plugin-sdk/facade-runtime.ts` and
+//      `src/plugins/bundled-plugin-metadata.ts` (the loader + path resolver
+//      the upstream dispatch relies on) are gutted in this fork as part of
+//      the Pi-era plugin-marketplace removal. The fork retains only
+//      `bundled-plugin-metadata.generated.ts`, which exposes a different
+//      surface that does not back the plugin-public-surface loader.
+//
+//   2. `ChannelMessagingAdapter` (`src/channels/plugins/types.core.ts`) is
+//      deliberately minimal in this fork (`normalizeTarget`, `targetResolver`,
+//      `formatTargetDisplay`). Upstream's port adds
+//      `resolveSessionConversation` and `resolveParentConversationCandidates`
+//      hooks plus a per-plugin `session-key-api.ts` artifact, neither of
+//      which has an analogue here.
+//
+//   3. `parseSessionConversationRef` (the function upstream renames to
+//      `parseRawSessionConversationRef`) has no fork callers. Only
+//      `parseThreadSessionSuffix` is used (by `config/sessions/reset.ts` and
+//      `config/sessions/delivery-info.ts`), and the channelHint-based
+//      implementation correctly handles Telegram's `:topic:` marker (see
+//      `src/routing/session-key.test.ts`).
+//
+// Net: porting `bea53d7a3f` would require resurrecting gutted plugin-SDK
+// infrastructure, expanding the channel-plugin adapter surface, and adding
+// a per-adapter session-grammar artifact — all for zero functional gain
+// over the existing channelHint approach. The disposition is PROTECTED in
+// `hq/upstream/disposition.tsv`; future syncs MUST NOT re-port this file
+// from upstream without first either (a) reversing the plugin-SDK gut, or
+// (b) re-evaluating this rationale.
+//
+// Tracked-by: remoteclaw#2666. Paired sync revert: 477212d342 (sync v2026.4.2).
+
 export type ParsedAgentSessionKey = {
   agentId: string;
   rest: string;

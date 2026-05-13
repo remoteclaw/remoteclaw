@@ -33,7 +33,7 @@ remoteclaw onboard --non-interactive \
 Add `--json` for a machine-readable summary.
 
 Use `--secret-input-mode ref` to store env-backed refs in auth profiles instead of plaintext values.
-Interactive selection between env refs and configured provider refs (`file` or `exec`) is available in the onboarding wizard flow.
+Interactive selection between env refs and configured provider refs (`file` or `exec`) is available in the onboarding flow.
 
 In non-interactive `ref` mode, provider env vars must be set in the process environment.
 Passing inline key flags without the matching env var now fails fast.
@@ -51,6 +51,16 @@ remoteclaw onboard --non-interactive \
 ## Provider-specific examples
 
 <AccordionGroup>
+  <Accordion title="Anthropic API key example">
+    ```bash
+    remoteclaw onboard --non-interactive \
+      --mode local \
+      --auth-choice apiKey \
+      --anthropic-api-key "$ANTHROPIC_API_KEY" \
+      --gateway-port 18789 \
+      --gateway-bind loopback
+    ```
+  </Accordion>
   <Accordion title="Gemini example">
     ```bash
     remoteclaw onboard --non-interactive \
@@ -134,6 +144,17 @@ remoteclaw onboard --non-interactive \
     ```
     Swap to `--auth-choice opencode-go --opencode-go-api-key "$OPENCODE_API_KEY"` for the Go catalog.
   </Accordion>
+  <Accordion title="Ollama example">
+    ```bash
+    remoteclaw onboard --non-interactive \
+      --mode local \
+      --auth-choice ollama \
+      --custom-model-id "qwen3.5:27b" \
+      --accept-risk \
+      --gateway-port 18789 \
+      --gateway-bind loopback
+    ```
+  </Accordion>
   <Accordion title="Custom provider example">
     ```bash
     remoteclaw onboard --non-interactive \
@@ -171,6 +192,11 @@ remoteclaw onboard --non-interactive \
   </Accordion>
 </AccordionGroup>
 
+Anthropic setup-token is available again as a legacy/manual onboarding path.
+Use it with the expectation that Anthropic told RemoteClaw users the RemoteClaw
+Claude-login path requires **Extra Usage**. For production, prefer an
+Anthropic API key.
+
 ## Add another agent
 
 Use `remoteclaw agents add <name>` to create a separate agent with its own workspace,
@@ -179,7 +205,7 @@ sessions, and auth profiles. Running without `--workspace` launches the wizard.
 ```bash
 remoteclaw agents add work \
   --workspace ~/.remoteclaw/workspace-work \
-  --model openai/gpt-5.2 \
+  --model openai/gpt-5.4 \
   --bind whatsapp:biz \
   --non-interactive \
   --json
@@ -199,6 +225,6 @@ Notes:
 
 ## Related docs
 
-- Onboarding hub: [Onboarding Wizard (CLI)](/start/wizard)
-- Full reference: [CLI Onboarding Reference](/start/wizard-cli-reference)
+- Onboarding hub: [Onboarding (CLI)](/start/wizard)
+- Full reference: [CLI Setup Reference](/start/wizard-cli-reference)
 - Command reference: [`remoteclaw onboard`](/cli/onboard)

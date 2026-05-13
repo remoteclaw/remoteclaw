@@ -1,4 +1,3 @@
-import SHARED_TOOL_DISPLAY_JSON from "../../apps/shared/RemoteClawKit/Sources/RemoteClawKit/Resources/tool-display.json" with { type: "json" };
 import { redactToolDetail } from "../logging/redact.js";
 import { shortenHomeInString } from "../utils.js";
 import {
@@ -7,31 +6,8 @@ import {
   formatDetailKey,
   normalizeToolName,
   resolveToolVerbAndDetailForArgs,
-  type ToolDisplaySpec as ToolDisplaySpecBase,
 } from "./tool-display-common.js";
-import TOOL_DISPLAY_OVERRIDES_JSON from "./tool-display-overrides.json" with { type: "json" };
-
-/**
- * Runtime attestation (ADR 0005 H9). Declares the implementation status
- * of each runtime export in this module. See CONTRIBUTING.md § Module
- * attestations for the category definitions and the convention for
- * updating these when sync or rebrand changes the surface.
- */
-export const MODULE_ATTESTATIONS = {
-  resolveToolDisplay: "live",
-  formatToolDetail: "live",
-  formatToolSummary: "live",
-} as const;
-
-type ToolDisplaySpec = ToolDisplaySpecBase & {
-  emoji?: string;
-};
-
-type ToolDisplayConfig = {
-  version?: number;
-  fallback?: ToolDisplaySpec;
-  tools?: Record<string, ToolDisplaySpec>;
-};
+import { TOOL_DISPLAY_CONFIG } from "./tool-display-config.js";
 
 export type ToolDisplay = {
   name: string;
@@ -42,11 +18,8 @@ export type ToolDisplay = {
   detail?: string;
 };
 
-const SHARED_TOOL_DISPLAY_CONFIG = SHARED_TOOL_DISPLAY_JSON as ToolDisplayConfig;
-const TOOL_DISPLAY_OVERRIDES = TOOL_DISPLAY_OVERRIDES_JSON as ToolDisplayConfig;
-const FALLBACK = TOOL_DISPLAY_OVERRIDES.fallback ??
-  SHARED_TOOL_DISPLAY_CONFIG.fallback ?? { emoji: "🧩" };
-const TOOL_MAP = Object.assign({}, SHARED_TOOL_DISPLAY_CONFIG.tools, TOOL_DISPLAY_OVERRIDES.tools);
+const FALLBACK = TOOL_DISPLAY_CONFIG.fallback ?? { emoji: "🧩" };
+const TOOL_MAP = TOOL_DISPLAY_CONFIG.tools ?? {};
 const DETAIL_LABEL_OVERRIDES: Record<string, string> = {
   agentId: "agent",
   sessionKey: "session",

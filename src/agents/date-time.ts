@@ -1,19 +1,5 @@
 import { execFileSync } from "node:child_process";
 
-/**
- * Runtime attestation (ADR 0005 H9). Declares the implementation status
- * of each runtime export in this module. See CONTRIBUTING.md § Module
- * attestations for the category definitions and the convention for
- * updating these when sync or rebrand changes the surface.
- */
-export const MODULE_ATTESTATIONS = {
-  resolveUserTimezone: "live",
-  resolveUserTimeFormat: "live",
-  normalizeTimestamp: "live",
-  withNormalizedTimestamp: "live",
-  formatUserTime: "live",
-} as const;
-
 export type TimeFormatPreference = "auto" | "12" | "24";
 export type ResolvedTimeFormat = "12" | "24";
 
@@ -131,10 +117,7 @@ function detectSystemTimeFormat(): boolean {
       const result = execFileSync(
         "powershell",
         ["-Command", "(Get-Culture).DateTimeFormat.ShortTimePattern"],
-        {
-          encoding: "utf8",
-          timeout: 1000,
-        },
+        { encoding: "utf8", timeout: 1000 },
       ).trim();
       if (result.startsWith("H")) {
         return true;
@@ -203,7 +186,7 @@ export function formatUserTime(
     const timePart = use24Hour
       ? `${map.hour}:${map.minute}`
       : `${map.hour}:${map.minute} ${map.dayPeriod ?? ""}`.trim();
-    return `${map.weekday}, ${map.month} ${dayNum}${suffix}, ${map.year} — ${timePart}`;
+    return `${map.weekday}, ${map.month} ${dayNum}${suffix}, ${map.year} - ${timePart}`;
   } catch {
     return undefined;
   }

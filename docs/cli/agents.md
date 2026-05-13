@@ -13,12 +13,15 @@ Related:
 
 - Multi-agent routing: [Multi-Agent Routing](/concepts/multi-agent)
 - Agent workspace: [Agent workspace](/concepts/agent-workspace)
+- Skill visibility config: [Skills config](/tools/skills-config)
 
 ## Examples
 
 ```bash
 remoteclaw agents list
+remoteclaw agents list --bindings
 remoteclaw agents add work --workspace ~/.remoteclaw/workspace-work
+remoteclaw agents add ops --workspace ~/.remoteclaw/workspace-ops --bind telegram:ops --non-interactive
 remoteclaw agents bindings
 remoteclaw agents bind --agent work --bind telegram:ops
 remoteclaw agents unbind --agent work --bind telegram:ops
@@ -30,6 +33,11 @@ remoteclaw agents delete work
 ## Routing bindings
 
 Use routing bindings to pin inbound channel traffic to a specific agent.
+
+If you also want different visible skills per agent, configure
+`agents.defaults.skills` and `agents.list[].skills` in `remoteclaw.json`. See
+[Skills config](/tools/skills-config) and
+[Configuration Reference](/gateway/configuration-reference#agentsdefaultsskills).
 
 List bindings:
 
@@ -46,6 +54,8 @@ remoteclaw agents bind --agent work --bind telegram:ops --bind discord:guild-a
 ```
 
 If you omit `accountId` (`--bind <channel>`), RemoteClaw resolves it from channel defaults and plugin setup hooks when available.
+
+If you omit `--agent` for `bind` or `unbind`, RemoteClaw targets the current default agent.
 
 ### Binding scope behavior
 
@@ -72,6 +82,75 @@ remoteclaw agents unbind --agent work --bind telegram:ops
 remoteclaw agents unbind --agent work --all
 ```
 
+`unbind` accepts either `--all` or one or more `--bind` values, not both.
+
+## Command surface
+
+### `agents`
+
+Running `remoteclaw agents` with no subcommand is equivalent to `remoteclaw agents list`.
+
+### `agents list`
+
+Options:
+
+- `--json`
+- `--bindings`: include full routing rules, not only per-agent counts/summaries
+
+### `agents add [name]`
+
+Options:
+
+- `--workspace <dir>`
+- `--model <id>`
+- `--agent-dir <dir>`
+- `--bind <channel[:accountId]>` (repeatable)
+- `--non-interactive`
+- `--json`
+
+Notes:
+
+- Passing any explicit add flags switches the command into the non-interactive path.
+- Non-interactive mode requires both an agent name and `--workspace`.
+- `main` is reserved and cannot be used as the new agent id.
+
+### `agents bindings`
+
+Options:
+
+- `--agent <id>`
+- `--json`
+
+### `agents bind`
+
+Options:
+
+- `--agent <id>` (defaults to the current default agent)
+- `--bind <channel[:accountId]>` (repeatable)
+- `--json`
+
+### `agents unbind`
+
+Options:
+
+- `--agent <id>` (defaults to the current default agent)
+- `--bind <channel[:accountId]>` (repeatable)
+- `--all`
+- `--json`
+
+### `agents delete <id>`
+
+Options:
+
+- `--force`
+- `--json`
+
+Notes:
+
+- `main` cannot be deleted.
+- Without `--force`, interactive confirmation is required.
+- Workspace, agent state, and session transcript directories are moved to Trash, not hard-deleted.
+
 ## Identity files
 
 Each agent workspace can include an `IDENTITY.md` at the workspace root:
@@ -90,6 +169,24 @@ Avatar paths resolve relative to the workspace root.
 - `emoji`
 - `avatar` (workspace-relative path, http(s) URL, or data URI)
 
+Options:
+
+- `--agent <id>`
+- `--workspace <dir>`
+- `--identity-file <path>`
+- `--from-identity`
+- `--name <name>`
+- `--theme <theme>`
+- `--emoji <emoji>`
+- `--avatar <value>`
+- `--json`
+
+Notes:
+
+- `--agent` or `--workspace` can be used to select the target agent.
+- If you rely on `--workspace` and multiple agents share that workspace, the command fails and asks you to pass `--agent`.
+- When no explicit identity fields are provided, the command reads identity data from `IDENTITY.md`.
+
 Load from `IDENTITY.md`:
 
 ```bash
@@ -99,7 +196,7 @@ remoteclaw agents set-identity --workspace ~/.remoteclaw/workspace --from-identi
 Override fields explicitly:
 
 ```bash
-remoteclaw agents set-identity --agent main --name "RemoteClaw" --emoji "🦀" --avatar avatars/remoteclaw.png
+remoteclaw agents set-identity --agent main --name "RemoteClaw" --emoji "🦞" --avatar avatars/remoteclaw.png
 ```
 
 Config sample:
@@ -113,7 +210,7 @@ Config sample:
         identity: {
           name: "RemoteClaw",
           theme: "space lobster",
-          emoji: "🦀",
+          emoji: "🦞",
           avatar: "avatars/remoteclaw.png",
         },
       },

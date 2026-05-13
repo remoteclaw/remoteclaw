@@ -26,7 +26,7 @@ Healthy baseline:
 
 - `Runtime: running`
 - `RPC probe: ok`
-- Channel probe shows connected/ready
+- Channel probe shows transport connected and, where supported, `works` or `audit ok`
 
 ## WhatsApp
 
@@ -70,11 +70,11 @@ Full troubleshooting: [/channels/discord#troubleshooting](/channels/discord#trou
 
 ### Slack failure signatures
 
-| Symptom                                | Fastest check                             | Fix                                               |
-| -------------------------------------- | ----------------------------------------- | ------------------------------------------------- |
-| Socket mode connected but no responses | `remoteclaw channels status --probe`      | Verify app token + bot token and required scopes. |
-| DMs blocked                            | `remoteclaw pairing list slack`           | Approve pairing or relax DM policy.               |
-| Channel message ignored                | Check `groupPolicy` and channel allowlist | Allow the channel or switch policy to `open`.     |
+| Symptom                                | Fastest check                             | Fix                                                                                                                                                  |
+| -------------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Socket mode connected but no responses | `remoteclaw channels status --probe`      | Verify app token + bot token and required scopes; watch for `botTokenStatus` / `appTokenStatus = configured_unavailable` on SecretRef-backed setups. |
+| DMs blocked                            | `remoteclaw pairing list slack`           | Approve pairing or relax DM policy.                                                                                                                  |
+| Channel message ignored                | Check `groupPolicy` and channel allowlist | Allow the channel or switch policy to `open`.                                                                                                        |
 
 Full troubleshooting: [/channels/slack#troubleshooting](/channels/slack#troubleshooting)
 
@@ -122,10 +122,12 @@ Full troubleshooting: [/channels/qqbot#troubleshooting](/channels/qqbot#troubles
 
 ### Matrix failure signatures
 
-| Symptom                             | Fastest check                                | Fix                                             |
-| ----------------------------------- | -------------------------------------------- | ----------------------------------------------- |
-| Logged in but ignores room messages | `remoteclaw channels status --probe`         | Check `groupPolicy` and room allowlist.         |
-| DMs do not process                  | `remoteclaw pairing list matrix`             | Approve sender or adjust DM policy.             |
-| Encrypted rooms fail                | Verify crypto module and encryption settings | Enable encryption support and rejoin/sync room. |
+| Symptom                             | Fastest check                            | Fix                                                                         |
+| ----------------------------------- | ---------------------------------------- | --------------------------------------------------------------------------- |
+| Logged in but ignores room messages | `remoteclaw channels status --probe`     | Check `groupPolicy`, room allowlist, and mention gating.                    |
+| DMs do not process                  | `remoteclaw pairing list matrix`         | Approve sender or adjust DM policy.                                         |
+| Encrypted rooms fail                | `remoteclaw matrix verify status`        | Re-verify the device, then check `remoteclaw matrix verify backup status`.  |
+| Backup restore is pending/broken    | `remoteclaw matrix verify backup status` | Run `remoteclaw matrix verify backup restore` or rerun with a recovery key. |
+| Cross-signing/bootstrap looks wrong | `remoteclaw matrix verify bootstrap`     | Repair secret storage, cross-signing, and backup state in one pass.         |
 
 Full setup and config: [Matrix](/channels/matrix)

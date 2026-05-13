@@ -24,17 +24,12 @@
   gap: 2px;
   flex: 1 1 auto;
   max-width: min(900px, 68%);
+  align-items: flex-start;
 }
 
 /* User messages align content right */
 .chat-group.user .chat-group-messages {
-  align-items: stretch;
-}
-
-@media (max-width: 600px) {
-  .chat-group-messages {
-    max-width: 82%;
-  }
+  align-items: flex-end;
 }
 
 .chat-group.user .chat-group-footer {
@@ -195,7 +190,7 @@ img.chat-avatar {
   transition:
     background var(--duration-fast) ease-out,
     border-color var(--duration-fast) ease-out;
-  width: 100%;
+  width: auto;
   max-width: 100%;
   box-sizing: border-box;
   word-wrap: break-word;
@@ -354,6 +349,48 @@ img.chat-avatar {
   }
 }
 
+/* ── Message metadata (tokens, cost, model, context %) ── */
+.msg-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--muted);
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.msg-meta__tokens,
+.msg-meta__cache,
+.msg-meta__cost,
+.msg-meta__ctx,
+.msg-meta__model {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.msg-meta__model {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.06));
+  padding: 1px 6px;
+  border-radius: var(--radius-sm, 4px);
+  font-family: var(--font-mono, monospace);
+}
+
+.msg-meta__cost {
+  color: var(--ok);
+}
+
+.msg-meta__ctx--warn {
+  color: var(--warn);
+}
+
+.msg-meta__ctx--danger {
+  color: var(--danger);
+}
+
 /* ── Delete confirmation popover ── */
 .chat-delete-wrap {
   position: relative;
@@ -440,4 +477,26 @@ img.chat-avatar {
 
 .chat-delete-confirm__yes:hover {
   background: #dc2626;
+}
+
+@media (max-width: 768px) {
+  .chat-group {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .chat-group-messages {
+    max-width: 82%;
+  }
+}
+
+@media (max-width: 400px) {
+  .chat-group-messages {
+    max-width: 100%;
+  }
+
+  .chat-avatar,
+  img.chat-avatar {
+    display: none;
+  }
 }

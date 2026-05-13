@@ -4,7 +4,7 @@ import {
   resolveSlackStreamingMode,
   type SlackLegacyDraftStreamMode,
   type StreamingMode,
-} from "../../../src/config/discord-preview-streaming.js";
+} from "./streaming-compat.js";
 
 export type SlackStreamMode = SlackLegacyDraftStreamMode;
 export type SlackStreamingMode = StreamingMode;
@@ -39,11 +39,7 @@ export function applyAppendOnlyStreamUpdate(params: {
   incoming: string;
   rendered: string;
   source: string;
-}): {
-  rendered: string;
-  source: string;
-  changed: boolean;
-} {
+}): { rendered: string; source: string; changed: boolean } {
   const incoming = params.incoming.trimEnd();
   if (!incoming) {
     return { rendered: params.rendered, source: params.source, changed: false };

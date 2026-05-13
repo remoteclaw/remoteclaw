@@ -9,6 +9,7 @@ type FetchPreconnectOptions = {
 
 type FetchWithPreconnect = {
   preconnect: (url: string | URL, options?: FetchPreconnectOptions) => void;
+  __remoteclawAcceptsDispatcher: true;
 };
 
 export function withFetchPreconnect<T extends typeof fetch>(fn: T): T & FetchWithPreconnect;
@@ -18,5 +19,6 @@ export function withFetchPreconnect<T extends object>(
 export function withFetchPreconnect(fn: object) {
   return Object.assign(fn, {
     preconnect: (_url: string | URL, _options?: FetchPreconnectOptions) => {},
+    __remoteclawAcceptsDispatcher: true as const,
   });
 }

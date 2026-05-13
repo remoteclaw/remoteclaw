@@ -1,5 +1,5 @@
 ---
-description: "Troubleshoot node pairing, foreground requirements, permissions, and tool failures"
+summary: "Troubleshoot node pairing, foreground requirements, permissions, and tool failures"
 read_when:
   - Node is connected but camera/canvas/screen/exec tools fail
   - You need the node pairing versus approvals mental model
@@ -80,6 +80,11 @@ If pairing is fine but `system.run` fails, fix exec approvals/allowlist on that 
 
 Node pairing is an identity/trust gate, not a per-command approval surface. For `system.run`, the per-node policy lives in that node's exec approvals file (`remoteclaw approvals get --node ...`), not in the gateway pairing record.
 
+For approval-backed `host=node` runs, the gateway also binds execution to the
+prepared canonical `systemRunPlan`. If a later caller mutates command/cwd or
+session metadata before the approved run is forwarded, the gateway rejects the
+run as an approval mismatch instead of trusting the edited payload.
+
 ## Common node error codes
 
 - `NODE_BACKGROUND_UNAVAILABLE` → app is backgrounded; bring it foreground.
@@ -114,4 +119,5 @@ Related:
 - [/nodes/index](/nodes/index)
 - [/nodes/camera](/nodes/camera)
 - [/nodes/location-command](/nodes/location-command)
+- [/tools/exec-approvals](/tools/exec-approvals)
 - [/gateway/pairing](/gateway/pairing)

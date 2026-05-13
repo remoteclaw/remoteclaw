@@ -1,0 +1,45 @@
+{
+  "name": "@remoteclaw/qa-channel",
+  "version": "2026.4.4",
+  "private": true,
+  "description": "RemoteClaw QA synthetic channel plugin",
+  "type": "module",
+  "devDependencies": {
+    "remoteclaw": "workspace:*"
+  },
+  "peerDependencies": {
+    "remoteclaw": ">=2026.4.4"
+  },
+  "peerDependenciesMeta": {
+    "remoteclaw": {
+      "optional": true
+    }
+  },
+  "remoteclaw": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "setupEntry": "./setup-entry.ts",
+    "channel": {
+      "id": "qa-channel",
+      "label": "QA Channel",
+      "selectionLabel": "QA Channel (Synthetic)",
+      "detailLabel": "QA Channel",
+      "docsPath": "/channels/qa-channel",
+      "docsLabel": "qa-channel",
+      "blurb": "Synthetic Slack-class transport for automated RemoteClaw QA scenarios.",
+      "systemImage": "checklist",
+      "order": 999,
+      "exposure": {
+        "configured": false,
+        "setup": false,
+        "docs": false
+      }
+    },
+    "install": {
+      "npmSpec": "@remoteclaw/qa-channel",
+      "defaultChoice": "npm",
+      "minHostVersion": ">=2026.4.4"
+    }
+  }
+}

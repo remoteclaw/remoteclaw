@@ -56,12 +56,12 @@ run_linux_ci_mirror() {
   run_step pnpm lint:ui:no-raw-window-open
   run_protocol_ci_mirror
   run_step pnpm canvas:a2ui:bundle
-  run_step pnpm vitest run --config vitest.extensions.config.ts --maxWorkers=1
+  run_step pnpm exec vitest run --config vitest.extensions.config.ts --maxWorkers=1
   run_step env CI=true pnpm exec vitest run --config vitest.unit.config.ts --maxWorkers=1
 
-  log_step "REMOTECLAW_TEST_WORKERS=${REMOTECLAW_TEST_WORKERS:-1} REMOTECLAW_TEST_MAX_OLD_SPACE_SIZE_MB=${REMOTECLAW_TEST_MAX_OLD_SPACE_SIZE_MB:-6144} pnpm test"
-  REMOTECLAW_TEST_WORKERS="${REMOTECLAW_TEST_WORKERS:-1}" \
-  REMOTECLAW_TEST_MAX_OLD_SPACE_SIZE_MB="${REMOTECLAW_TEST_MAX_OLD_SPACE_SIZE_MB:-6144}" \
+  log_step "REMOTECLAW_VITEST_MAX_WORKERS=${REMOTECLAW_VITEST_MAX_WORKERS:-1} NODE_OPTIONS=${NODE_OPTIONS:---max-old-space-size=6144} pnpm test"
+  REMOTECLAW_VITEST_MAX_WORKERS="${REMOTECLAW_VITEST_MAX_WORKERS:-1}" \
+  NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=6144}" \
     pnpm test
 }
 

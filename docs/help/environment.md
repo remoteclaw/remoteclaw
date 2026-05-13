@@ -19,6 +19,8 @@ RemoteClaw pulls environment variables from multiple sources. The rule is **neve
 4. **Config `env` block** in `~/.remoteclaw/remoteclaw.json` (applied only if missing).
 5. **Optional login-shell import** (`env.shellEnv.enabled` or `REMOTECLAW_LOAD_SHELL_ENV=1`), applied only for missing expected keys.
 
+On Ubuntu fresh installs that use the default state dir, RemoteClaw also treats `~/.config/remoteclaw/gateway.env` as a compatibility fallback after the global `.env`. If both files exist and disagree, RemoteClaw keeps `~/.remoteclaw/.env` and prints a warning.
+
 If the config file is missing entirely, step 4 is skipped; shell import still runs if enabled.
 
 ## Config `env` block

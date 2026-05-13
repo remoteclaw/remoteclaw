@@ -1,0 +1,12 @@
+{
+  "name": "@remoteclaw/vydra-provider",
+  "version": "2026.4.6",
+  "private": true,
+  "description": "RemoteClaw Vydra media provider plugin",
+  "type": "module",
+  "remoteclaw": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}

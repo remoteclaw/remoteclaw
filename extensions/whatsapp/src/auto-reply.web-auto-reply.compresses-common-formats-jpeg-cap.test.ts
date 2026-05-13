@@ -12,7 +12,7 @@ import type { WebInboundMessage } from "./inbound.js";
 
 installWebAutoReplyTestHomeHooks();
 
-let monitorWebChannel: typeof import("./auto-reply.js").monitorWebChannel;
+let monitorWebChannel: typeof import("./auto-reply/monitor.js").monitorWebChannel;
 
 describe("web auto-reply", () => {
   installWebAutoReplyUnitTestHooks({ pinDns: true });
@@ -21,7 +21,7 @@ describe("web auto-reply", () => {
   const SMALL_MEDIA_CAP_BYTES = Math.floor(SMALL_MEDIA_CAP_MB * 1024 * 1024);
 
   beforeAll(async () => {
-    ({ monitorWebChannel } = await import("./auto-reply.js"));
+    ({ monitorWebChannel } = await import("./auto-reply/monitor.js"));
   });
 
   async function setupSingleInboundMessage(params: {
@@ -79,7 +79,6 @@ describe("web auto-reply", () => {
 
   async function withMediaCap<T>(mediaMaxMb: number, run: () => Promise<T>): Promise<T> {
     setLoadConfigMock(() => ({
-      agents: { list: [{ id: "main" }] },
       channels: {
         whatsapp: {
           allowFrom: ["*"],
@@ -263,7 +262,6 @@ describe("web auto-reply", () => {
     expect(bigPng.length).toBeGreaterThan(SMALL_MEDIA_CAP_BYTES);
 
     setLoadConfigMock(() => ({
-      agents: { list: [{ id: "main" }] },
       channels: {
         whatsapp: {
           allowFrom: ["*"],

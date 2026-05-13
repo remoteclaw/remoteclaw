@@ -91,6 +91,7 @@ Core:
 
 Session controls:
 
+- `/think <off|minimal|low|medium|high>`
 - `/fast <status|on|off>`
 - `/verbose <on|full|off>`
 - `/reasoning <on|off|stream>`
@@ -146,7 +147,10 @@ Other Gateway slash commands (for example, `/context`) are forwarded to the Gate
 - `--password <password>`: Gateway password (if required)
 - `--session <key>`: Session key (default: `main`, or `global` when scope is global)
 - `--deliver`: Deliver assistant replies to the provider (default off)
+- `--thinking <level>`: Override thinking level for sends
+- `--message <text>`: Send an initial message after connecting
 - `--timeout-ms <ms>`: Agent timeout in ms (defaults to `agents.defaults.timeoutSeconds`)
+- `--history-limit <n>`: History entries to load (default `200`)
 
 Note: when you set `--url`, the TUI does not fall back to config or environment credentials.
 Pass `--token` or `--password` explicitly. Missing explicit credentials is an error.
@@ -159,7 +163,6 @@ No output after sending a message:
 - Check the Gateway logs: `remoteclaw logs --follow`.
 - Confirm the agent can run: `remoteclaw status` and `remoteclaw models status`.
 - If you expect messages in a chat channel, enable delivery (`/deliver on` or `--deliver`).
-- `--history-limit <n>`: History entries to load (default 200)
 
 ## Connection troubleshooting
 

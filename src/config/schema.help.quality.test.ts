@@ -24,6 +24,7 @@ const ROOT_SECTIONS = [
   "media",
   "messages",
   "commands",
+  "approvals",
   "session",
   "cron",
   "hooks",
@@ -33,6 +34,7 @@ const ROOT_SECTIONS = [
   "canvasHost",
   "talk",
   "gateway",
+  "memory",
   "plugins",
 ] as const;
 
@@ -40,6 +42,7 @@ const TARGET_KEYS = [
   "memory.citations",
   "memory.backend",
   "memory.qmd.searchMode",
+  "memory.qmd.searchTool",
   "memory.qmd.scope",
   "memory.qmd.includeDefaultMemory",
   "memory.qmd.mcporter.enabled",
@@ -66,9 +69,51 @@ const TARGET_KEYS = [
   "memory.qmd.limits.maxSnippetChars",
   "memory.qmd.limits.maxInjectedChars",
   "memory.qmd.limits.timeoutMs",
+  "agents.defaults.memorySearch.provider",
+  "agents.defaults.memorySearch.fallback",
+  "agents.defaults.memorySearch.sources",
+  "agents.defaults.memorySearch.extraPaths",
+  "agents.defaults.memorySearch.qmd",
+  "agents.defaults.memorySearch.qmd.extraCollections",
+  "agents.defaults.memorySearch.qmd.extraCollections.path",
+  "agents.defaults.memorySearch.qmd.extraCollections.name",
+  "agents.defaults.memorySearch.qmd.extraCollections.pattern",
+  "agents.defaults.memorySearch.multimodal",
+  "agents.defaults.memorySearch.multimodal.enabled",
+  "agents.defaults.memorySearch.multimodal.modalities",
+  "agents.defaults.memorySearch.multimodal.maxFileBytes",
+  "agents.defaults.memorySearch.experimental.sessionMemory",
+  "agents.defaults.memorySearch.remote.baseUrl",
+  "agents.defaults.memorySearch.remote.apiKey",
+  "agents.defaults.memorySearch.remote.headers",
+  "agents.defaults.memorySearch.remote.batch.enabled",
+  "agents.defaults.memorySearch.remote.batch.wait",
+  "agents.defaults.memorySearch.remote.batch.concurrency",
+  "agents.defaults.memorySearch.remote.batch.pollIntervalMs",
+  "agents.defaults.memorySearch.remote.batch.timeoutMinutes",
+  "agents.defaults.memorySearch.local.modelPath",
+  "agents.defaults.memorySearch.store.path",
+  "agents.defaults.memorySearch.outputDimensionality",
+  "agents.defaults.memorySearch.store.vector.enabled",
+  "agents.defaults.memorySearch.store.vector.extensionPath",
+  "agents.defaults.memorySearch.query.hybrid.enabled",
+  "agents.defaults.memorySearch.query.hybrid.vectorWeight",
+  "agents.defaults.memorySearch.query.hybrid.textWeight",
+  "agents.defaults.memorySearch.query.hybrid.candidateMultiplier",
+  "agents.defaults.memorySearch.query.hybrid.mmr.enabled",
+  "agents.defaults.memorySearch.query.hybrid.mmr.lambda",
+  "agents.defaults.memorySearch.query.hybrid.temporalDecay.enabled",
+  "agents.defaults.memorySearch.query.hybrid.temporalDecay.halfLifeDays",
+  "agents.defaults.memorySearch.cache.enabled",
+  "agents.defaults.memorySearch.cache.maxEntries",
+  "agents.defaults.memorySearch.sync.onSearch",
+  "agents.defaults.memorySearch.sync.watch",
+  "agents.defaults.memorySearch.sync.sessions.deltaBytes",
+  "agents.defaults.memorySearch.sync.sessions.deltaMessages",
   "models.mode",
   "models.providers.*.auth",
   "models.providers.*.authHeader",
+  "models.providers.*.request",
   "gateway.reload.mode",
   "gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback",
   "gateway.controlUi.allowInsecureAuth",
@@ -131,6 +176,17 @@ const TARGET_KEYS = [
   "session.maintenance.resetArchiveRetention",
   "session.maintenance.maxDiskBytes",
   "session.maintenance.highWaterBytes",
+  "approvals",
+  "approvals.exec",
+  "approvals.exec.enabled",
+  "approvals.exec.mode",
+  "approvals.exec.agentFilter",
+  "approvals.exec.sessionFilter",
+  "approvals.exec.targets",
+  "approvals.exec.targets[].channel",
+  "approvals.exec.targets[].to",
+  "approvals.exec.targets[].accountId",
+  "approvals.exec.targets[].threadId",
   "nodeHost",
   "nodeHost.browserProxy",
   "nodeHost.browserProxy.enabled",
@@ -175,10 +231,8 @@ const TARGET_KEYS = [
   "hooks.gmail",
   "hooks.gmail.pushToken",
   "hooks.gmail.tailscale.mode",
+  "hooks.gmail.thinking",
   "hooks.internal",
-  "hooks.internal.handlers",
-  "hooks.internal.handlers[].event",
-  "hooks.internal.handlers[].module",
   "hooks.internal.load.extraDirs",
   "messages",
   "messages.messagePrefix",
@@ -200,6 +254,7 @@ const TARGET_KEYS = [
   "channels",
   "channels.defaults",
   "channels.defaults.groupPolicy",
+  "channels.defaults.contextVisibility",
   "channels.defaults.heartbeat",
   "channels.defaults.heartbeat.showOk",
   "channels.defaults.heartbeat.showAlerts",
@@ -221,6 +276,7 @@ const TARGET_KEYS = [
   "browser.headless",
   "browser.noSandbox",
   "browser.profiles",
+  "browser.profiles.*.userDataDir",
   "browser.profiles.*.driver",
   "browser.profiles.*.attachOnly",
   "tools",
@@ -256,10 +312,6 @@ const TARGET_KEYS = [
   "canvasHost.port",
   "canvasHost.liveReload",
   "talk",
-  "talk.voiceId",
-  "talk.voiceAliases",
-  "talk.modelId",
-  "talk.outputFormat",
   "talk.interruptOnSpeech",
   "talk.silenceTimeoutMs",
   "meta",
@@ -298,6 +350,9 @@ const TARGET_KEYS = [
   "plugins.entries.*.enabled",
   "plugins.entries.*.hooks",
   "plugins.entries.*.hooks.allowPromptInjection",
+  "plugins.entries.*.subagent",
+  "plugins.entries.*.subagent.allowModelOverride",
+  "plugins.entries.*.subagent.allowedModels",
   "plugins.entries.*.apiKey",
   "plugins.entries.*.env",
   "plugins.entries.*.config",
@@ -308,15 +363,9 @@ const TARGET_KEYS = [
   "models.providers",
   "models.providers.*.baseUrl",
   "models.providers.*.apiKey",
+  "models.providers.*.api",
   "models.providers.*.headers",
   "models.providers.*.models",
-  "models.bedrockDiscovery",
-  "models.bedrockDiscovery.enabled",
-  "models.bedrockDiscovery.region",
-  "models.bedrockDiscovery.providerFilter",
-  "models.bedrockDiscovery.refreshInterval",
-  "models.bedrockDiscovery.defaultContextWindow",
-  "models.bedrockDiscovery.defaultMaxTokens",
   "agents",
   "agents.defaults",
   "agents.list",
@@ -333,7 +382,9 @@ const TARGET_KEYS = [
   "agents.defaults.compaction.qualityGuard.enabled",
   "agents.defaults.compaction.qualityGuard.maxRetries",
   "agents.defaults.compaction.postCompactionSections",
+  "agents.defaults.compaction.timeoutSeconds",
   "agents.defaults.compaction.model",
+  "agents.defaults.compaction.truncateAfterCompaction",
   "agents.defaults.compaction.memoryFlush",
   "agents.defaults.compaction.memoryFlush.enabled",
   "agents.defaults.compaction.memoryFlush.softThresholdTokens",
@@ -348,11 +399,13 @@ const ENUM_EXPECTATIONS: Record<string, string[]> = {
   "models.mode": ['"merge"', '"replace"'],
   "models.providers.*.auth": ['"api-key"', '"token"', '"oauth"', '"aws-sdk"'],
   "gateway.reload.mode": ['"off"', '"restart"', '"hot"', '"hybrid"'],
+  "approvals.exec.mode": ['"session"', '"targets"', '"both"'],
   "bindings[].match.peer.kind": ['"direct"', '"group"', '"channel"', '"dm"'],
   "broadcast.strategy": ['"parallel"', '"sequential"'],
   "hooks.mappings[].action": ['"wake"', '"agent"'],
   "hooks.mappings[].wakeMode": ['"now"', '"next-heartbeat"'],
   "hooks.gmail.tailscale.mode": ['"off"', '"serve"', '"funnel"'],
+  "hooks.gmail.thinking": ['"off"', '"minimal"', '"low"', '"medium"', '"high"'],
   "messages.queue.mode": [
     '"steer"',
     '"followup"',
@@ -364,11 +417,12 @@ const ENUM_EXPECTATIONS: Record<string, string[]> = {
   ],
   "messages.queue.drop": ['"old"', '"new"', '"summarize"'],
   "channels.defaults.groupPolicy": ['"open"', '"disabled"', '"allowlist"'],
+  "channels.defaults.contextVisibility": ['"all"', '"allowlist"', '"allowlist_quote"'],
   "gateway.mode": ['"local"', '"remote"'],
   "gateway.bind": ['"auto"', '"lan"', '"loopback"', '"custom"', '"tailnet"'],
   "gateway.auth.mode": ['"none"', '"token"', '"password"', '"trusted-proxy"'],
   "gateway.tailscale.mode": ['"off"', '"serve"', '"funnel"'],
-  "browser.profiles.*.driver": ['"remoteclaw"', '"clawd"', '"extension"'],
+  "browser.profiles.*.driver": ['"remoteclaw"', '"clawd"', '"existing-session"'],
   "discovery.mdns.mode": ['"off"', '"minimal"', '"full"'],
   "wizard.lastRunMode": ['"local"', '"remote"'],
   "diagnostics.otel.protocol": ['"http/protobuf"', '"grpc"'],
@@ -412,10 +466,12 @@ const TOOLS_HOOKS_TARGET_KEYS = [
   "hooks.mappings[].model",
   "hooks.mappings[].name",
   "hooks.mappings[].textTemplate",
+  "hooks.mappings[].thinking",
   "hooks.mappings[].transform",
   "tools.alsoAllow",
   "tools.byProvider",
   "tools.exec.approvalRunningNoticeMs",
+  "tools.exec.strictInlineEval",
   "tools.links.enabled",
   "tools.links.maxLinks",
   "tools.links.models",
@@ -444,29 +500,19 @@ const TOOLS_HOOKS_TARGET_KEYS = [
 ] as const;
 
 const CHANNELS_AGENTS_TARGET_KEYS = [
+  "agents.defaults.memorySearch.chunking.overlap",
+  "agents.defaults.memorySearch.chunking.tokens",
+  "agents.defaults.memorySearch.enabled",
+  "agents.defaults.memorySearch.model",
+  "agents.defaults.memorySearch.query.maxResults",
+  "agents.defaults.memorySearch.query.minScore",
+  "agents.defaults.memorySearch.sync.onSessionStart",
+  "agents.defaults.memorySearch.sync.watchDebounceMs",
   "agents.defaults.workspace",
   "agents.list[].tools.alsoAllow",
   "agents.list[].tools.byProvider",
   "agents.list[].tools.profile",
-  "channels.bluebubbles",
-  "channels.discord",
-  "channels.discord.token",
-  "channels.imessage",
-  "channels.imessage.cliPath",
-  "channels.irc",
   "channels.mattermost",
-  "channels.msteams",
-  "channels.signal",
-  "channels.signal.account",
-  "channels.slack",
-  "channels.slack.appToken",
-  "channels.slack.botToken",
-  "channels.slack.userToken",
-  "channels.slack.userTokenReadOnly",
-  "channels.telegram",
-  "channels.telegram.botToken",
-  "channels.telegram.capabilities.inlineButtons",
-  "channels.whatsapp",
 ] as const;
 
 const FINAL_BACKLOG_TARGET_KEYS = [
@@ -476,7 +522,6 @@ const FINAL_BACKLOG_TARGET_KEYS = [
   "browser.snapshotDefaults",
   "browser.snapshotDefaults.mode",
   "browser.ssrfPolicy",
-  "browser.ssrfPolicy.allowPrivateNetwork",
   "browser.ssrfPolicy.dangerouslyAllowPrivateNetwork",
   "browser.ssrfPolicy.allowedHostnames",
   "browser.ssrfPolicy.hostnameAllowlist",
@@ -494,7 +539,6 @@ const FINAL_BACKLOG_TARGET_KEYS = [
   "gateway.remote.token",
   "skills.load.watch",
   "skills.load.watchDebounceMs",
-  "talk.apiKey",
   "ui.assistant.avatar",
   "ui.assistant.name",
   "ui.seamColor",
@@ -581,6 +625,9 @@ describe("config help copy quality", () => {
     expect(FIELD_HELP["memory.qmd.paths.pattern"].includes("**/*.md")).toBe(true);
     expect(FIELD_HELP["memory.qmd.update.interval"].includes("5m")).toBe(true);
     expect(FIELD_HELP["memory.qmd.update.embedInterval"].includes("60m")).toBe(true);
+    expect(FIELD_HELP["agents.defaults.memorySearch.store.path"]).toContain(
+      "~/.remoteclaw/memory/{agentId}.sqlite",
+    );
   });
 
   it("documents cron deprecation, migration, and retention formats", () => {
@@ -648,6 +695,21 @@ describe("config help copy quality", () => {
     expect(keepLines.includes("2000")).toBe(true);
   });
 
+  it("documents approvals filters and target semantics", () => {
+    const sessionFilter = FIELD_HELP["approvals.exec.sessionFilter"];
+    expect(/substring|regex/i.test(sessionFilter)).toBe(true);
+    expect(sessionFilter.includes("discord:")).toBe(true);
+    expect(sessionFilter.includes("^agent:ops:")).toBe(true);
+
+    const agentFilter = FIELD_HELP["approvals.exec.agentFilter"];
+    expect(agentFilter.includes("primary")).toBe(true);
+    expect(agentFilter.includes("ops-agent")).toBe(true);
+
+    const targetTo = FIELD_HELP["approvals.exec.targets[].to"];
+    expect(/channel ID|user ID|thread root/i.test(targetTo)).toBe(true);
+    expect(/differs|per provider/i.test(targetTo)).toBe(true);
+  });
+
   it("documents broadcast and audio command examples", () => {
     const audioCmd = FIELD_HELP["audio.transcription.command"];
     expect(audioCmd.includes("whisper-cli")).toBe(true);
@@ -706,10 +768,6 @@ describe("config help copy quality", () => {
     const modelsMode = FIELD_HELP["models.mode"];
     expect(modelsMode.includes("SecretRef-managed")).toBe(true);
     expect(modelsMode.includes("preserve")).toBe(true);
-
-    const bedrockRefresh = FIELD_HELP["models.bedrockDiscovery.refreshInterval"];
-    expect(/refresh|seconds|interval/i.test(bedrockRefresh)).toBe(true);
-    expect(/cost|noise|api/i.test(bedrockRefresh)).toBe(true);
 
     const authCooldowns = FIELD_HELP["auth.cooldowns"];
     expect(/cooldown|backoff|retry/i.test(authCooldowns)).toBe(true);

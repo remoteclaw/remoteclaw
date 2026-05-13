@@ -142,7 +142,7 @@ signal-cli -a +<BOT_PHONE_NUMBER> verify <VERIFICATION_CODE>
 
 ```bash
 # If you run the gateway as a user systemd service:
-systemctl --user restart remoteclaw-gateway
+systemctl --user restart remoteclaw-gateway.service
 
 # Then verify:
 remoteclaw doctor

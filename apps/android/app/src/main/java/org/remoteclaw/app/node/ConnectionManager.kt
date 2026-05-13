@@ -7,6 +7,7 @@ import org.remoteclaw.app.gateway.GatewayClientInfo
 import org.remoteclaw.app.gateway.GatewayConnectOptions
 import org.remoteclaw.app.gateway.GatewayEndpoint
 import org.remoteclaw.app.gateway.GatewayTlsParams
+import org.remoteclaw.app.gateway.isPrivateLanGatewayHost
 import org.remoteclaw.app.LocationMode
 import org.remoteclaw.app.VoiceWakeMode
 
@@ -33,9 +34,10 @@ class ConnectionManager(
       val stableId = endpoint.stableId
       val stored = storedFingerprint?.trim().takeIf { !it.isNullOrEmpty() }
       val isManual = stableId.startsWith("manual|")
+      val cleartextAllowedHost = isPrivateLanGatewayHost(endpoint.host)
 
       if (isManual) {
-        if (!manualTlsEnabled) return null
+        if (!manualTlsEnabled && cleartextAllowedHost) return null
         if (!stored.isNullOrBlank()) {
           return GatewayTlsParams(
             required = true,
@@ -65,6 +67,15 @@ class ConnectionManager(
       val hinted = endpoint.tlsEnabled || !endpoint.tlsFingerprintSha256.isNullOrBlank()
       if (hinted) {
         // TXT is unauthenticated. Do not treat the advertised fingerprint as authoritative.
+        return GatewayTlsParams(
+          required = true,
+          expectedFingerprint = null,
+          allowTOFU = false,
+          stableId = stableId,
+        )
+      }
+
+      if (!cleartextAllowedHost) {
         return GatewayTlsParams(
           required = true,
           expectedFingerprint = null,

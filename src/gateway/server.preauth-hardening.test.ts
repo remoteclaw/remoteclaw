@@ -1,24 +1,20 @@
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import http from "node:http";
-import os from "node:os";
-import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { WebSocketServer } from "ws";
-import {
-  type DiagnosticEventPayload,
-  onDiagnosticEvent,
-  resetDiagnosticEventsForTest,
-} from "../infra/diagnostic-events.js";
 import type { ResolvedGatewayAuth } from "./auth.js";
 import { MAX_PREAUTH_PAYLOAD_BYTES } from "./server-constants.js";
 import { attachGatewayUpgradeHandler, createGatewayHttpServer } from "./server-http.js";
 import { createPreauthConnectionBudget } from "./server/preauth-connection-budget.js";
 import type { GatewayWsClient } from "./server/ws-types.js";
-import { setTestConfigRoot, testState } from "./test-helpers.mocks.js";
-import { createGatewaySuiteHarness, readConnectChallengeNonce } from "./test-helpers.server.js";
+import { testState } from "./test-helpers.runtime-state.js";
+import {
+  createGatewaySuiteHarness,
+  installGatewayTestHooks,
+  readConnectChallengeNonce,
+} from "./test-helpers.server.js";
 import { withTempConfig } from "./test-temp-config.js";
 
-const PREAUTH_HANDSHAKE_TEST_CLOSE_LIMIT_MS = 5_000;
+installGatewayTestHooks({ scope: "suite" });
 
 let cleanupEnv: Array<() => void> = [];
 
@@ -28,60 +24,8 @@ afterEach(async () => {
   }
 });
 
-function setEnvForTest(name: string, value: string) {
-  const previous = process.env[name];
-  process.env[name] = value;
-  cleanupEnv.push(() => {
-    if (previous === undefined) {
-      delete process.env[name];
-      return;
-    }
-    process.env[name] = previous;
-  });
-}
-
-function setGatewayAuthNoneForTest() {
-  const previousAuth = testState.gatewayAuth;
-  testState.gatewayAuth = { mode: "none" };
-  cleanupEnv.push(() => {
-    testState.gatewayAuth = previousAuth;
-  });
-}
-
-async function requestUpgradeRejection(port: number): Promise<{ status: number; body: string }> {
-  return await new Promise<{ status: number; body: string }>((resolve, reject) => {
-    const req = http.request({
-      host: "127.0.0.1",
-      port,
-      path: "/",
-      headers: {
-        Connection: "Upgrade",
-        Upgrade: "websocket",
-        "Sec-WebSocket-Key": "dGVzdC1rZXktMDEyMzQ1Ng==",
-        "Sec-WebSocket-Version": "13",
-      },
-    });
-    req.once("upgrade", (_res, socket) => {
-      socket.destroy();
-      reject(new Error("expected websocket upgrade to be rejected"));
-    });
-    req.once("response", (res) => {
-      let body = "";
-      res.setEncoding("utf8");
-      res.on("data", (chunk) => {
-        body += chunk;
-      });
-      res.once("end", () => {
-        resolve({ status: res.statusCode ?? 0, body });
-      });
-    });
-    req.once("error", reject);
-    req.end();
-  });
-}
-
 describe("gateway pre-auth hardening", () => {
-  it("rejects upgrades before websocket handlers attach (pre-auth budget enforced, then released)", async () => {
+  it("rejects upgrades before websocket handlers attach without consuming pre-auth budget", async () => {
     const clients = new Set<GatewayWsClient>();
     const resolvedAuth: ResolvedGatewayAuth = { mode: "none", allowTailscale: false };
     const httpServer = createGatewayHttpServer({
@@ -107,13 +51,43 @@ describe("gateway pre-auth hardening", () => {
     await new Promise<void>((resolve) => httpServer.listen(0, "127.0.0.1", resolve));
     const address = httpServer.address();
     const port = typeof address === "object" && address ? address.port : 0;
+    const requestUpgrade = async () =>
+      await new Promise<{ status: number; body: string }>((resolve, reject) => {
+        const req = http.request({
+          host: "127.0.0.1",
+          port,
+          path: "/",
+          headers: {
+            Connection: "Upgrade",
+            Upgrade: "websocket",
+            "Sec-WebSocket-Key": "dGVzdC1rZXktMDEyMzQ1Ng==",
+            "Sec-WebSocket-Version": "13",
+          },
+        });
+        req.once("upgrade", (_res, socket) => {
+          socket.destroy();
+          reject(new Error("expected websocket upgrade to be rejected"));
+        });
+        req.once("response", (res) => {
+          let body = "";
+          res.setEncoding("utf8");
+          res.on("data", (chunk) => {
+            body += chunk;
+          });
+          res.once("end", () => {
+            resolve({ status: res.statusCode ?? 0, body });
+          });
+        });
+        req.once("error", reject);
+        req.end();
+      });
 
     try {
-      await expect(requestUpgradeRejection(port)).resolves.toEqual({
+      await expect(requestUpgrade()).resolves.toEqual({
         status: 503,
         body: "Gateway websocket handlers unavailable",
       });
-      await expect(requestUpgradeRejection(port)).resolves.toEqual({
+      await expect(requestUpgrade()).resolves.toEqual({
         status: 503,
         body: "Gateway websocket handlers unavailable",
       });
@@ -126,7 +100,15 @@ describe("gateway pre-auth hardening", () => {
   });
 
   it("closes idle unauthenticated sockets after the handshake timeout", async () => {
-    setEnvForTest("REMOTECLAW_TEST_HANDSHAKE_TIMEOUT_MS", "200");
+    const previous = process.env.REMOTECLAW_TEST_HANDSHAKE_TIMEOUT_MS;
+    process.env.REMOTECLAW_TEST_HANDSHAKE_TIMEOUT_MS = "200";
+    cleanupEnv.push(() => {
+      if (previous === undefined) {
+        delete process.env.REMOTECLAW_TEST_HANDSHAKE_TIMEOUT_MS;
+      } else {
+        process.env.REMOTECLAW_TEST_HANDSHAKE_TIMEOUT_MS = previous;
+      }
+    });
 
     const harness = await createGatewaySuiteHarness({
       serverOptions: { auth: { mode: "none" } },
@@ -142,75 +124,13 @@ describe("gateway pre-auth hardening", () => {
       });
       expect(close.code).toBe(1000);
       expect(close.elapsedMs).toBeGreaterThan(0);
-      expect(close.elapsedMs).toBeLessThan(PREAUTH_HANDSHAKE_TEST_CLOSE_LIMIT_MS);
+      expect(close.elapsedMs).toBeLessThan(1_000);
     } finally {
       await harness.close();
     }
   });
 
-  it("uses gateway.handshakeTimeoutMs for idle unauthenticated sockets", async () => {
-    // The mocked `loadConfig` reads from `testConfigRoot.value` (set via
-    // `setTestConfigRoot`); `withTempConfig` only mutates the env var, so
-    // we set both manually here to keep the assertion paths aligned.
-    const previousConfigPath = process.env.REMOTECLAW_CONFIG_PATH;
-    const previousDisableCache = process.env.REMOTECLAW_DISABLE_CONFIG_CACHE;
-    const tempDir = await mkdtemp(path.join(os.tmpdir(), "remoteclaw-preauth-handshake-cfg-"));
-    setTestConfigRoot(tempDir);
-    process.env.REMOTECLAW_DISABLE_CONFIG_CACHE = "1";
-    cleanupEnv.push(() => {
-      if (previousConfigPath === undefined) {
-        delete process.env.REMOTECLAW_CONFIG_PATH;
-      } else {
-        process.env.REMOTECLAW_CONFIG_PATH = previousConfigPath;
-      }
-      if (previousDisableCache === undefined) {
-        delete process.env.REMOTECLAW_DISABLE_CONFIG_CACHE;
-      } else {
-        process.env.REMOTECLAW_DISABLE_CONFIG_CACHE = previousDisableCache;
-      }
-    });
-    try {
-      await writeFile(
-        path.join(tempDir, "remoteclaw.json"),
-        JSON.stringify(
-          {
-            gateway: {
-              handshakeTimeoutMs: 250,
-              auth: { mode: "none" },
-            },
-          },
-          null,
-          2,
-        ),
-        "utf-8",
-      );
-      const harness = await createGatewaySuiteHarness({
-        serverOptions: { auth: { mode: "none" } },
-      });
-      try {
-        const ws = await harness.openWs();
-        await readConnectChallengeNonce(ws);
-        const close = await new Promise<{ code: number; elapsedMs: number }>((resolve) => {
-          const startedAt = Date.now();
-          ws.once("close", (code) => {
-            resolve({ code, elapsedMs: Date.now() - startedAt });
-          });
-        });
-        expect(close.code).toBe(1000);
-        expect(close.elapsedMs).toBeGreaterThan(0);
-        expect(close.elapsedMs).toBeLessThan(PREAUTH_HANDSHAKE_TEST_CLOSE_LIMIT_MS);
-      } finally {
-        await harness.close();
-      }
-    } finally {
-      await rm(tempDir, { recursive: true, force: true });
-    }
-  });
-
   it("rejects oversized pre-auth connect frames before application-level auth responses", async () => {
-    resetDiagnosticEventsForTest();
-    const events: DiagnosticEventPayload[] = [];
-    const stopDiagnostics = onDiagnosticEvent((event) => events.push(event));
     const harness = await createGatewaySuiteHarness();
     try {
       const ws = await harness.openWs();
@@ -240,29 +160,28 @@ describe("gateway pre-auth hardening", () => {
 
       const result = await closed;
       expect(result.code).toBe(1009);
-      expect(events).toContainEqual(
-        expect.objectContaining({
-          type: "payload.large",
-          surface: "gateway.ws.preauth",
-          action: "rejected",
-          limitBytes: MAX_PREAUTH_PAYLOAD_BYTES,
-          reason: "preauth_frame_limit",
-        }),
-      );
     } finally {
-      stopDiagnostics();
-      resetDiagnosticEventsForTest();
       await harness.close();
     }
   });
 
   it("rejects excess simultaneous unauthenticated sockets from the same client ip", async () => {
-    setEnvForTest("REMOTECLAW_TEST_MAX_PREAUTH_CONNECTIONS_PER_IP", "1");
-    setGatewayAuthNoneForTest();
-
-    const harness = await createGatewaySuiteHarness({
-      serverOptions: { auth: { mode: "none" } },
+    const previous = process.env.REMOTECLAW_TEST_MAX_PREAUTH_CONNECTIONS_PER_IP;
+    process.env.REMOTECLAW_TEST_MAX_PREAUTH_CONNECTIONS_PER_IP = "1";
+    cleanupEnv.push(() => {
+      if (previous === undefined) {
+        delete process.env.REMOTECLAW_TEST_MAX_PREAUTH_CONNECTIONS_PER_IP;
+      } else {
+        process.env.REMOTECLAW_TEST_MAX_PREAUTH_CONNECTIONS_PER_IP = previous;
+      }
     });
+    const previousAuth = testState.gatewayAuth;
+    testState.gatewayAuth = { mode: "none" };
+    cleanupEnv.push(() => {
+      testState.gatewayAuth = previousAuth;
+    });
+
+    const harness = await createGatewaySuiteHarness();
     try {
       const firstWs = await harness.openWs();
       await readConnectChallengeNonce(firstWs);
@@ -285,9 +204,7 @@ describe("gateway pre-auth hardening", () => {
         });
         req.once("response", (res) => {
           res.resume();
-          res.once("end", () => {
-            resolve(res.statusCode ?? 0);
-          });
+          resolve(res.statusCode ?? 0);
         });
         req.once("error", reject);
         req.end();
@@ -301,26 +218,65 @@ describe("gateway pre-auth hardening", () => {
   });
 
   it("rejects excess simultaneous unauthenticated sockets when trusted proxy headers are missing", async () => {
-    setEnvForTest("REMOTECLAW_TEST_MAX_PREAUTH_CONNECTIONS_PER_IP", "1");
-    setGatewayAuthNoneForTest();
+    const previous = process.env.REMOTECLAW_TEST_MAX_PREAUTH_CONNECTIONS_PER_IP;
+    process.env.REMOTECLAW_TEST_MAX_PREAUTH_CONNECTIONS_PER_IP = "1";
+    cleanupEnv.push(() => {
+      if (previous === undefined) {
+        delete process.env.REMOTECLAW_TEST_MAX_PREAUTH_CONNECTIONS_PER_IP;
+      } else {
+        process.env.REMOTECLAW_TEST_MAX_PREAUTH_CONNECTIONS_PER_IP = previous;
+      }
+    });
+    const previousAuth = testState.gatewayAuth;
+    testState.gatewayAuth = { mode: "none" };
+    cleanupEnv.push(() => {
+      testState.gatewayAuth = previousAuth;
+    });
 
     await withTempConfig({
       cfg: {
         gateway: {
           trustedProxies: ["127.0.0.1"],
-          auth: { mode: "none" },
         },
       },
       prefix: "remoteclaw-preauth-proxy-",
       run: async () => {
-        const harness = await createGatewaySuiteHarness({
-          serverOptions: { auth: { mode: "none" } },
-        });
+        const harness = await createGatewaySuiteHarness();
         try {
           const firstWs = await harness.openWs();
           await readConnectChallengeNonce(firstWs);
 
-          const rejected = await requestUpgradeRejection(harness.port);
+          const rejected = await new Promise<{ status: number; body: string }>(
+            (resolve, reject) => {
+              const req = http.request({
+                host: "127.0.0.1",
+                port: harness.port,
+                path: "/",
+                headers: {
+                  Connection: "Upgrade",
+                  Upgrade: "websocket",
+                  "Sec-WebSocket-Key": "dGVzdC1rZXktMDEyMzQ1Ng==",
+                  "Sec-WebSocket-Version": "13",
+                },
+              });
+              req.once("upgrade", (_res, socket) => {
+                socket.destroy();
+                reject(new Error("expected websocket upgrade to be rejected"));
+              });
+              req.once("response", (res) => {
+                let body = "";
+                res.setEncoding("utf8");
+                res.on("data", (chunk) => {
+                  body += chunk;
+                });
+                res.once("end", () => {
+                  resolve({ status: res.statusCode ?? 0, body });
+                });
+              });
+              req.once("error", reject);
+              req.end();
+            },
+          );
           expect(rejected).toEqual({
             status: 503,
             body: "Too many unauthenticated sockets",

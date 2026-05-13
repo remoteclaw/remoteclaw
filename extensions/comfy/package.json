@@ -1,0 +1,12 @@
+{
+  "name": "@remoteclaw/comfy-provider",
+  "version": "2026.4.5",
+  "private": true,
+  "description": "RemoteClaw ComfyUI provider plugin",
+  "type": "module",
+  "remoteclaw": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}

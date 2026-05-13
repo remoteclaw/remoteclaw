@@ -6,7 +6,7 @@ import { TranscribeAudioSchema } from "./zod-schema.core.js";
 export const AgentsSchema = z
   .object({
     defaults: z.lazy(() => AgentDefaultsSchema).optional(),
-    list: z.array(AgentEntrySchema).min(1, "agents.list must contain at least one entry"),
+    list: z.array(AgentEntrySchema).optional(),
   })
   .strict()
   .optional();
@@ -69,23 +69,6 @@ const AcpBindingSchema = z
         message: "ACP bindings require match.peer.id to target a concrete conversation.",
       });
       return;
-    }
-    const channel = value.match.channel.trim().toLowerCase();
-    if (channel !== "discord" && channel !== "telegram") {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["match", "channel"],
-        message: 'ACP bindings currently support only "discord" and "telegram" channels.',
-      });
-      return;
-    }
-    if (channel === "telegram" && !/^-\d+:topic:\d+$/.test(peerId)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["match", "peer", "id"],
-        message:
-          "Telegram ACP bindings require canonical topic IDs in the form -1001234567890:topic:42.",
-      });
     }
   });
 

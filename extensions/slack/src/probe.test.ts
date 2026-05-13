@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const authTestMock = vi.hoisted(() => vi.fn());
 const createSlackWebClientMock = vi.hoisted(() => vi.fn());
@@ -8,13 +8,17 @@ vi.mock("./client.js", () => ({
   createSlackWebClient: createSlackWebClientMock,
 }));
 
-vi.mock("../../../src/utils/with-timeout.js", () => ({
+vi.mock("remoteclaw/plugin-sdk/text-runtime", () => ({
   withTimeout: withTimeoutMock,
 }));
 
-const { probeSlack } = await import("./probe.js");
+let probeSlack: typeof import("./probe.js").probeSlack;
 
 describe("probeSlack", () => {
+  beforeAll(async () => {
+    ({ probeSlack } = await import("./probe.js"));
+  });
+
   beforeEach(() => {
     authTestMock.mockReset();
     createSlackWebClientMock.mockReset();
@@ -33,17 +37,17 @@ describe("probeSlack", () => {
     authTestMock.mockResolvedValue({
       ok: true,
       user_id: "U123",
-      user: "openclaw-bot",
+      user: "remoteclaw-bot",
       team_id: "T123",
-      team: "OpenClaw",
+      team: "RemoteClaw",
     });
 
     await expect(probeSlack("xoxb-test", 2500)).resolves.toEqual({
       ok: true,
       status: 200,
       elapsedMs: 45,
-      bot: { id: "U123", name: "openclaw-bot" },
-      team: { id: "T123", name: "OpenClaw" },
+      bot: { id: "U123", name: "remoteclaw-bot" },
+      team: { id: "T123", name: "RemoteClaw" },
     });
     expect(createSlackWebClientMock).toHaveBeenCalledWith("xoxb-test");
     expect(withTimeoutMock).toHaveBeenCalledWith(expect.any(Promise), 2500);

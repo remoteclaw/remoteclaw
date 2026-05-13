@@ -9,7 +9,20 @@ title: "docs"
 
 Search the live docs index.
 
+Arguments:
+
+- `[query...]`: search terms to send to the live docs index
+
+Examples:
+
 ```bash
+remoteclaw docs
 remoteclaw docs browser existing-session
 remoteclaw docs sandbox allowHostControl
+remoteclaw docs gateway token secretref
 ```
+
+Notes:
+
+- With no query, `remoteclaw docs` opens the live docs search entrypoint.
+- Multi-word queries are passed through as one search request.

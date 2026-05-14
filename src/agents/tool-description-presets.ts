@@ -1,3 +1,18 @@
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
+export const MODULE_ATTESTATIONS = {
+  describeSessionsListTool: "live",
+  describeSessionsHistoryTool: "live",
+  describeSessionsSendTool: "live",
+  describeSessionsSpawnTool: "live",
+  describeSessionStatusTool: "live",
+  describeUpdatePlanTool: "live",
+} as const;
+
 export const EXEC_TOOL_DISPLAY_SUMMARY = "Run shell commands that start now.";
 export const PROCESS_TOOL_DISPLAY_SUMMARY = "Inspect and control running exec sessions.";
 export const CRON_TOOL_DISPLAY_SUMMARY = "Schedule cron jobs, reminders, and wake events.";

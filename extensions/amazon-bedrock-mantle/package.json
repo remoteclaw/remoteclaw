@@ -2,17 +2,9 @@
   "name": "@remoteclaw/amazon-bedrock-mantle-provider",
   "version": "0.8.0",
   "private": true,
-  "description": "RemoteClaw Amazon Bedrock Mantle (OpenAI-compatible) provider plugin",
+  "description": "RemoteClaw Amazon Bedrock Mantle (OpenAI-compatible) provider plugin (gutted in fork — Pi-era model-provider runtime removed; see CLAUDE.md § Fork Context)",
   "type": "module",
   "dependencies": {
     "@aws/bedrock-token-generator": "^1.1.0"
-  },
-  "remoteclaw": {
-    "bundle": {
-      "stageRuntimeDependencies": true
-    },
-    "extensions": [
-      "./index.ts"
-    ]
   }
 }

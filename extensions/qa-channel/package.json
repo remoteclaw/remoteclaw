@@ -2,7 +2,7 @@
   "name": "@remoteclaw/qa-channel",
   "version": "0.8.0",
   "private": true,
-  "description": "RemoteClaw QA synthetic channel plugin",
+  "description": "RemoteClaw QA synthetic channel plugin (runtime gutted in fork — pi-era synthetic transport removed; see CLAUDE.md § Fork Context)",
   "type": "module",
   "devDependencies": {
     "remoteclaw": "workspace:*"
@@ -16,10 +16,6 @@
     }
   },
   "remoteclaw": {
-    "extensions": [
-      "./index.ts"
-    ],
-    "setupEntry": "./setup-entry.ts",
     "channel": {
       "id": "qa-channel",
       "label": "QA Channel",

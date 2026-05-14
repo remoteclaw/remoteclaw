@@ -2,11 +2,6 @@
   "name": "@remoteclaw/comfy-provider",
   "version": "0.8.0",
   "private": true,
-  "description": "RemoteClaw ComfyUI provider plugin",
-  "type": "module",
-  "remoteclaw": {
-    "extensions": [
-      "./index.ts"
-    ]
-  }
+  "description": "RemoteClaw ComfyUI provider plugin (gutted in fork — Pi-era model-provider runtime removed; see CLAUDE.md § Fork Context)",
+  "type": "module"
 }

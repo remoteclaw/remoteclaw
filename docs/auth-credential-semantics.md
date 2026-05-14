@@ -17,31 +17,52 @@ This document defines the canonical credential eligibility and resolution semant
 
 The goal is to keep selection-time and runtime behavior aligned.
 
-## Stable Reason Codes
+## Stable Probe Reason Codes
 
 - `ok`
+- `excluded_by_auth_order`
 - `missing_credential`
 - `invalid_expires`
 - `expired`
+- `unresolved_ref`
+- `no_model`
 
 ## Token Credentials
 
-Token credentials (`type: "token"`) carry an inline `token` string.
+Token credentials (`type: "token"`) support inline `token` and/or `tokenRef`.
 
 ### Eligibility rules
 
-1. A token profile is ineligible when `token` is absent or empty.
+1. A token profile is ineligible when both `token` and `tokenRef` are absent.
 2. `expires` is optional.
 3. If `expires` is present, it must be a finite number greater than `0`.
 4. If `expires` is invalid (`NaN`, `0`, negative, non-finite, or wrong type), the profile is ineligible with `invalid_expires`.
 5. If `expires` is in the past, the profile is ineligible with `expired`.
+6. `tokenRef` does not bypass `expires` validation.
 
 ### Resolution rules
 
 1. Resolver semantics match eligibility semantics for `expires`.
-2. Token material is read inline from `cred.token`. SecretRef indirection is not part of the
-   AgentRuntime credential injection path — see
-   [`docs/refactor/agentruntime-credential-injection.md`](/refactor/agentruntime-credential-injection) (#2574).
+2. For eligible profiles, token material may be resolved from inline value or `tokenRef`.
+3. Unresolvable refs produce `unresolved_ref` in `models status --probe` output.
+
+## Explicit Auth Order Filtering
+
+- When `auth.order.<provider>` or the auth-store order override is set for a
+  provider, `models status --probe` only probes profile ids that remain in the
+  resolved auth order for that provider.
+- A stored profile for that provider that is omitted from the explicit order is
+  not silently tried later. Probe output reports it with
+  `reasonCode: excluded_by_auth_order` and the detail
+  `Excluded by auth.order for this provider.`
+
+## Probe Target Resolution
+
+- Probe targets can come from auth profiles, environment credentials, or
+  `models.json`.
+- If a provider has credentials but RemoteClaw cannot resolve a probeable model
+  candidate for it, `models status --probe` reports `status: no_model` with
+  `reasonCode: no_model`.
 
 ## OAuth SecretRef Policy Guard
 

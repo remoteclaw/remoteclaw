@@ -17,6 +17,7 @@ const ExecApprovalsPolicyFields = {
   security: Type.Optional(Type.String()),
   ask: Type.Optional(Type.String()),
   askFallback: Type.Optional(Type.String()),
+  autoAllowSkills: Type.Optional(Type.Boolean()),
 };
 
 export const ExecApprovalsDefaultsSchema = Type.Object(ExecApprovalsPolicyFields, {
@@ -81,6 +82,13 @@ export const ExecApprovalsNodeSetParamsSchema = Type.Object(
     nodeId: NonEmptyString,
     file: ExecApprovalsFileSchema,
     baseHash: Type.Optional(NonEmptyString),
+  },
+  { additionalProperties: false },
+);
+
+export const ExecApprovalGetParamsSchema = Type.Object(
+  {
+    id: NonEmptyString,
   },
   { additionalProperties: false },
 );

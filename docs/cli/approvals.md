@@ -1,5 +1,5 @@
 ---
-description: "CLI reference for `remoteclaw approvals` (exec approvals for gateway or node hosts)"
+summary: "CLI reference for `remoteclaw approvals` (exec approvals for gateway or node hosts)"
 read_when:
   - You want to edit exec approvals from the CLI
   - You need to manage allowlists on gateway or node hosts
@@ -11,8 +11,11 @@ title: "approvals"
 Manage exec approvals for the **local host**, **gateway host**, or a **node host**.
 By default, commands target the local approvals file on disk. Use `--gateway` to target the gateway, or `--node` to target a specific node.
 
+Alias: `remoteclaw exec-approvals`
+
 Related:
 
+- Exec approvals: [Exec approvals](/tools/exec-approvals)
 - Nodes: [Nodes](/nodes)
 
 ## Common commands
@@ -40,9 +43,14 @@ Precedence is intentional:
 
 ```bash
 remoteclaw approvals set --file ./exec-approvals.json
+remoteclaw approvals set --stdin <<'EOF'
+{ version: 1, defaults: { security: "full", ask: "off" } }
+EOF
 remoteclaw approvals set --node <id|name|ip> --file ./exec-approvals.json
 remoteclaw approvals set --gateway --file ./exec-approvals.json
 ```
+
+`set` accepts JSON5, not only strict JSON. Use either `--file` or `--stdin`, not both.
 
 ## "Never prompt" / YOLO example
 
@@ -101,6 +109,24 @@ remoteclaw approvals allowlist add --agent "*" "/usr/bin/uname"
 
 remoteclaw approvals allowlist remove "~/Projects/**/bin/rg"
 ```
+
+## Common options
+
+`get`, `set`, and `allowlist add|remove` all support:
+
+- `--node <id|name|ip>`
+- `--gateway`
+- shared node RPC options: `--url`, `--token`, `--timeout`, `--json`
+
+Targeting notes:
+
+- no target flags means the local approvals file on disk
+- `--gateway` targets the gateway host approvals file
+- `--node` targets one node host after resolving id, name, IP, or id prefix
+
+`allowlist add|remove` also supports:
+
+- `--agent <id>` (defaults to `*`)
 
 ## Notes
 

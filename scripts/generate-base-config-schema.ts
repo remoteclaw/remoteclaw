@@ -34,7 +34,7 @@ export function renderBaseConfigSchemaModule(params?: { generatedAt?: string }):
 
 import type { BaseConfigSchemaResponse } from "./schema-base.js";
 
-export const GENERATED_BASE_CONFIG_SCHEMA = ${JSON.stringify(payload, null, 2)} as const satisfies BaseConfigSchemaResponse;
+export const GENERATED_BASE_CONFIG_SCHEMA: BaseConfigSchemaResponse = ${JSON.stringify(payload, null, 2)};
 `,
     DEFAULT_OUTPUT_PATH,
   );
@@ -44,11 +44,7 @@ export function writeBaseConfigSchemaModule(params?: {
   repoRoot?: string;
   outputPath?: string;
   check?: boolean;
-}): {
-  changed: boolean;
-  wrote: boolean;
-  outputPath: string;
-} {
+}): { changed: boolean; wrote: boolean; outputPath: string } {
   const repoRoot = path.resolve(params?.repoRoot ?? REPO_ROOT);
   const outputPath = path.resolve(repoRoot, params?.outputPath ?? DEFAULT_OUTPUT_PATH);
   const current = readIfExists(outputPath);

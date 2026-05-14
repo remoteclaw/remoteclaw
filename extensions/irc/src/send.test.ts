@@ -40,16 +40,22 @@ vi.mock("./protocol.js", async () => {
   };
 });
 
-vi.mock("remoteclaw/plugin-sdk/config-runtime", async (importOriginal) => {
-  const original = (await importOriginal()) as Record<string, unknown>;
+vi.mock("remoteclaw/plugin-sdk/config-runtime", async () => {
+  const original = (await vi.importActual("remoteclaw/plugin-sdk/config-runtime")) as Record<
+    string,
+    unknown
+  >;
   return {
     ...original,
     resolveMarkdownTableMode: hoisted.resolveMarkdownTableMode,
   };
 });
 
-vi.mock("remoteclaw/plugin-sdk/text-runtime", async (importOriginal) => {
-  const original = (await importOriginal()) as Record<string, unknown>;
+vi.mock("remoteclaw/plugin-sdk/text-runtime", async () => {
+  const original = (await vi.importActual("remoteclaw/plugin-sdk/text-runtime")) as Record<
+    string,
+    unknown
+  >;
   return {
     ...original,
     convertMarkdownTables: hoisted.convertMarkdownTables,

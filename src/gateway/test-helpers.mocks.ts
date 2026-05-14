@@ -9,7 +9,7 @@ import type { GetReplyOptions, ReplyPayload } from "../auto-reply/types.js";
 import type { ChannelPlugin, ChannelOutboundAdapter } from "../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { applyPluginAutoEnable } from "../config/plugin-auto-enable.js";
-import type { AgentBinding } from "../config/types.agents.js";
+import type { AgentBinding, AgentConfig } from "../config/types.agents.js";
 import type { HooksConfig } from "../config/types.hooks.js";
 import type { TailscaleWhoisIdentity } from "../infra/tailscale.js";
 import type { PluginRegistry } from "../plugins/registry.js";
@@ -383,9 +383,21 @@ vi.mock("../config/config.js", async () => {
         ...fileDefaults,
         ...testState.agentConfig,
       };
+      const overrideList =
+        testState.agentsConfig && Array.isArray(testState.agentsConfig.list)
+          ? (testState.agentsConfig.list as AgentConfig[])
+          : undefined;
+      const fileList = Array.isArray(fileAgents.list)
+        ? (fileAgents.list as AgentConfig[])
+        : undefined;
+      // Fork requires agents.list to be non-empty for session-key resolution;
+      // provide a sensible default `main` agent for tests that don't
+      // configure one explicitly (#2672).
+      const list: AgentConfig[] = overrideList ??
+        fileList ?? [{ id: "main", workspace: path.join(os.tmpdir(), "remoteclaw-gateway-test") }];
       const agents = testState.agentsConfig
-        ? { ...fileAgents, ...testState.agentsConfig, defaults }
-        : { ...fileAgents, defaults };
+        ? { ...fileAgents, ...testState.agentsConfig, list, defaults }
+        : { ...fileAgents, list, defaults };
 
       const fileBindings = Array.isArray(fileConfig.bindings)
         ? (fileConfig.bindings as AgentBinding[])

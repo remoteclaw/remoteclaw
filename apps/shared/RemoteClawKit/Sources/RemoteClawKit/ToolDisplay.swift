@@ -130,32 +130,7 @@ public enum ToolDisplayRegistry {
                     "messageId",
                 ],
                 actions: nil),
-            tools: [
-                "read": ToolDisplaySpec(
-                    emoji: "📖",
-                    title: "Read",
-                    label: nil,
-                    detailKeys: ["path"],
-                    actions: nil),
-                "write": ToolDisplaySpec(
-                    emoji: "✍️",
-                    title: "Write",
-                    label: nil,
-                    detailKeys: ["path"],
-                    actions: nil),
-                "edit": ToolDisplaySpec(
-                    emoji: "📝",
-                    title: "Edit",
-                    label: nil,
-                    detailKeys: ["path"],
-                    actions: nil),
-                "attach": ToolDisplaySpec(
-                    emoji: "📎",
-                    title: "Attach",
-                    label: nil,
-                    detailKeys: ["path", "url", "fileName"],
-                    actions: nil),
-            ])
+            tools: nil)
     }
 
     private static func titleFromName(_ name: String) -> String {

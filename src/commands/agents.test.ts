@@ -13,16 +13,19 @@ describe("agents helpers", () => {
   it("buildAgentSummaries includes default + configured agents", () => {
     const cfg: RemoteClawConfig = {
       agents: {
-        defaults: {},
+        defaults: {
+          workspace: "/main-ws",
+          model: { primary: "anthropic/claude" },
+        },
         list: [
-          { id: "primary", workspace: "/primary-ws" },
+          { id: "main" },
           {
             id: "work",
-
+            default: true,
             name: "Work",
             workspace: "/work-ws",
             agentDir: "/state/agents/work/agent",
-            runtime: "claude",
+            model: "openai/gpt-4.1",
           },
         ],
       },
@@ -31,31 +34,32 @@ describe("agents helpers", () => {
           agentId: "work",
           match: { channel: "whatsapp", accountId: "biz" },
         },
-        { agentId: "primary", match: { channel: "telegram" } },
+        { agentId: "main", match: { channel: "telegram" } },
       ],
     };
 
     const summaries = buildAgentSummaries(cfg);
-    const primary = summaries.find((summary) => summary.id === "primary");
+    const main = summaries.find((summary) => summary.id === "main");
     const work = summaries.find((summary) => summary.id === "work");
 
-    expect(primary).toBeTruthy();
-    expect(primary?.workspace).toBe(path.resolve("/primary-ws"));
-    expect(primary?.bindings).toBe(1);
-    expect((primary as Record<string, unknown> | undefined)?.runtime).toBeUndefined();
-    expect(primary?.agentDir.endsWith(path.join("agents", "primary", "agent"))).toBe(true);
+    expect(main).toBeTruthy();
+    expect(main?.workspace).toBe(path.resolve("/main-ws/main"));
+    expect(main?.bindings).toBe(1);
+    expect(main?.model).toBe("anthropic/claude");
+    expect(main?.agentDir.endsWith(path.join("agents", "main", "agent"))).toBe(true);
 
     expect(work).toBeTruthy();
     expect(work?.name).toBe("Work");
     expect(work?.workspace).toBe(path.resolve("/work-ws"));
     expect(work?.agentDir).toBe(path.resolve("/state/agents/work/agent"));
     expect(work?.bindings).toBe(1);
+    expect(work?.isDefault).toBe(true);
   });
 
   it("applyAgentConfig merges updates", () => {
     const cfg: RemoteClawConfig = {
       agents: {
-        list: [{ id: "work", workspace: "/old-ws" }],
+        list: [{ id: "work", workspace: "/old-ws", model: "anthropic/claude" }],
       },
     };
 
@@ -70,14 +74,14 @@ describe("agents helpers", () => {
     expect(work?.name).toBe("Work");
     expect(work?.workspace).toBe("/new-ws");
     expect(work?.agentDir).toBe("/state/work/agent");
+    expect(work?.model).toBe("anthropic/claude");
   });
 
   it("applyAgentBindings skips duplicates and reports conflicts", () => {
     const cfg: RemoteClawConfig = {
-      agents: { list: [{ id: "primary", workspace: "/tmp/test-workspace" }] },
       bindings: [
         {
-          agentId: "primary",
+          agentId: "main",
           match: { channel: "whatsapp", accountId: "default" },
         },
       ],
@@ -85,7 +89,7 @@ describe("agents helpers", () => {
 
     const result = applyAgentBindings(cfg, [
       {
-        agentId: "primary",
+        agentId: "main",
         match: { channel: "whatsapp", accountId: "default" },
       },
       {
@@ -108,7 +112,7 @@ describe("agents helpers", () => {
     const cfg: RemoteClawConfig = {
       bindings: [
         {
-          agentId: "primary",
+          agentId: "main",
           match: { channel: "telegram" },
         },
       ],
@@ -116,7 +120,7 @@ describe("agents helpers", () => {
 
     const result = applyAgentBindings(cfg, [
       {
-        agentId: "primary",
+        agentId: "main",
         match: { channel: "telegram", accountId: "work" },
       },
     ]);
@@ -126,7 +130,7 @@ describe("agents helpers", () => {
     expect(result.conflicts).toHaveLength(0);
     expect(result.config.bindings).toEqual([
       {
-        agentId: "primary",
+        agentId: "main",
         match: { channel: "telegram", accountId: "work" },
       },
     ]);
@@ -136,7 +140,7 @@ describe("agents helpers", () => {
     const cfg: RemoteClawConfig = {
       bindings: [
         {
-          agentId: "primary",
+          agentId: "main",
           match: {
             channel: "discord",
             accountId: "guild-a",
@@ -167,7 +171,7 @@ describe("agents helpers", () => {
     const cfg: RemoteClawConfig = {
       bindings: [
         {
-          agentId: "primary",
+          agentId: "main",
           match: {
             channel: "discord",
             accountId: "guild-a",
@@ -176,7 +180,7 @@ describe("agents helpers", () => {
           },
         },
         {
-          agentId: "primary",
+          agentId: "main",
           match: {
             channel: "discord",
             accountId: "guild-a",
@@ -188,7 +192,7 @@ describe("agents helpers", () => {
 
     const result = removeAgentBindings(cfg, [
       {
-        agentId: "primary",
+        agentId: "main",
         match: {
           channel: "discord",
           accountId: "guild-a",
@@ -201,7 +205,7 @@ describe("agents helpers", () => {
     expect(result.conflicts).toHaveLength(0);
     expect(result.config.bindings).toEqual([
       {
-        agentId: "primary",
+        agentId: "main",
         match: {
           channel: "discord",
           accountId: "guild-a",
@@ -216,7 +220,7 @@ describe("agents helpers", () => {
     const cfg: RemoteClawConfig = {
       agents: {
         list: [
-          { id: "work", workspace: "/work-ws" },
+          { id: "work", default: true, workspace: "/work-ws" },
           { id: "home", workspace: "/home-ws" },
         ],
       },

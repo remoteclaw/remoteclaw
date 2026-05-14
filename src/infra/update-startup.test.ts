@@ -5,9 +5,14 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { captureEnv } from "../test-utils/env.js";
 import type { UpdateCheckResult } from "./update-check.js";
 
-vi.mock("./remoteclaw-root.js", () => ({
-  resolveRemoteClawPackageRoot: vi.fn(),
-}));
+vi.mock("./remoteclaw-root.js", async () => {
+  const actual =
+    await vi.importActual<typeof import("./remoteclaw-root.js")>("./remoteclaw-root.js");
+  return {
+    ...actual,
+    resolveRemoteClawPackageRoot: vi.fn(),
+  };
+});
 
 vi.mock("./update-check.js", async () => {
   const parse = (value: string) => value.split(".").map((part) => Number.parseInt(part, 10));

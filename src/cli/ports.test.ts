@@ -5,8 +5,8 @@ import { describe, expect, it, vi } from "vitest";
 // Hoist the factory so vi.mock can access it.
 const mockCreateServer = vi.hoisted(() => vi.fn());
 
-vi.mock("node:net", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("node:net")>();
+vi.mock("node:net", async () => {
+  const actual = await vi.importActual<typeof import("node:net")>("node:net");
   return { ...actual, createServer: mockCreateServer };
 });
 
@@ -117,9 +117,7 @@ describe("waitForPortBindable", () => {
     mockCreateServer.mockReturnValue(makeErrServer("EACCES"));
     await expect(
       waitForPortBindable(80, { timeoutMs: 5000, intervalMs: 50 }),
-    ).rejects.toMatchObject({
-      code: "EACCES",
-    });
+    ).rejects.toMatchObject({ code: "EACCES" });
     // Only one probe should have been attempted — no spinning through the retry loop.
     expect(mockCreateServer).toHaveBeenCalledTimes(1);
   });

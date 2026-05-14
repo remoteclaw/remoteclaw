@@ -1,6 +1,6 @@
 import fsp from "node:fs/promises";
 import path from "node:path";
-import { resolvePreferredRemoteClawTmpDir } from "remoteclaw/plugin-sdk/zalouser";
+import { resolvePreferredRemoteClawTmpDir } from "remoteclaw/plugin-sdk/browser-security-runtime";
 
 export async function writeQrDataUrlToTempFile(
   qrDataUrl: string,

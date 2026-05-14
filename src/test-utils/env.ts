@@ -37,6 +37,7 @@ const PATH_RESOLUTION_ENV_KEYS = [
   "REMOTECLAW_HOME",
   "REMOTECLAW_STATE_DIR",
   "REMOTECLAW_BUNDLED_PLUGINS_DIR",
+  "REMOTECLAW_DISABLE_BUNDLED_PLUGINS",
 ] as const;
 
 function resolveWindowsHomeParts(homeDir: string): { homeDrive?: string; homePath?: string } {
@@ -65,6 +66,7 @@ export function createPathResolutionEnv(
     REMOTECLAW_HOME: undefined,
     REMOTECLAW_STATE_DIR: undefined,
     REMOTECLAW_BUNDLED_PLUGINS_DIR: undefined,
+    REMOTECLAW_DISABLE_BUNDLED_PLUGINS: undefined,
   };
 
   const windowsHome = resolveWindowsHomeParts(resolvedHome);

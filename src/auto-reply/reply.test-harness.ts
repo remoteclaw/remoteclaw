@@ -85,10 +85,9 @@ export function makeReplyConfig(home: string) {
   return {
     agents: {
       defaults: {
-        runtime: "claude",
-        model: "anthropic/claude-opus-4-5",
+        model: "anthropic/claude-opus-4-6",
+        workspace: path.join(home, "remoteclaw"),
       },
-      list: [{ id: "main", workspace: path.join(home, "remoteclaw") }],
     },
     channels: {
       whatsapp: {
@@ -144,7 +143,7 @@ export function installReplyRuntimeMocks(mocks: ReplyRuntimeMocks) {
     listSkillCommandsForWorkspace: () => [],
   }));
 
-  vi.mock("../plugins/runtime/runtime-whatsapp-boundary.js", () => ({
+  vi.mock("../plugins/runtime/runtime-web-channel-plugin.js", () => ({
     webAuthExists: mocks.webAuthExists,
     getWebAuthAgeMs: mocks.getWebAuthAgeMs,
     readWebSelfId: mocks.readWebSelfId,
@@ -155,7 +154,7 @@ export function resetReplyRuntimeMocks(mocks: ReplyRuntimeMocks) {
   mocks.runEmbeddedPiAgent.mockClear();
   mocks.loadModelCatalog.mockClear();
   mocks.loadModelCatalog.mockResolvedValue([
-    { id: "claude-opus-4-5", name: "Opus 4.5", provider: "anthropic" },
+    { id: "claude-opus-4-6", name: "Opus 4.5", provider: "anthropic" },
   ]);
 }
 

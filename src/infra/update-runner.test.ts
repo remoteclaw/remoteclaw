@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { BUNDLED_RUNTIME_SIDECAR_PATHS } from "../plugins/runtime-sidecar-paths.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import { pathExists } from "../utils.js";
 import { runGatewayUpdate } from "./update-runner.js";
@@ -69,15 +70,6 @@ describe("runGatewayUpdate", () => {
     return runWithCommand(runner, options);
   }
 
-  const SIDECAR_PATHS = [
-    "dist/extensions/whatsapp/light-runtime-api.js",
-    "dist/extensions/whatsapp/runtime-api.js",
-    "dist/extensions/matrix/helper-api.js",
-    "dist/extensions/matrix/runtime-api.js",
-    "dist/extensions/matrix/thread-bindings-runtime.js",
-    "dist/extensions/msteams/runtime-api.js",
-  ];
-
   async function seedGlobalPackageRoot(pkgRoot: string, version = "1.0.0") {
     await fs.mkdir(pkgRoot, { recursive: true });
     await fs.writeFile(
@@ -85,7 +77,10 @@ describe("runGatewayUpdate", () => {
       JSON.stringify({ name: "remoteclaw", version }),
       "utf-8",
     );
-    for (const sidecar of SIDECAR_PATHS) {
+    // Seed all bundled runtime sidecars so `collectInstalledGlobalPackageErrors`
+    // verification passes; keep the test in sync with production by importing
+    // the canonical list rather than maintaining a separate stub set (#2672).
+    for (const sidecar of BUNDLED_RUNTIME_SIDECAR_PATHS) {
       const sidecarPath = path.join(pkgRoot, sidecar);
       await fs.mkdir(path.dirname(sidecarPath), { recursive: true });
       await fs.writeFile(sidecarPath, "// stub", "utf-8");

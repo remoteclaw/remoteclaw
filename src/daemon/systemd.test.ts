@@ -4,9 +4,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const execFileMock = vi.hoisted(() => vi.fn());
 
-vi.mock("node:child_process", () => ({
-  execFile: execFileMock,
-}));
+vi.mock("node:child_process", async () => {
+  const { mockNodeBuiltinModule } = await import("../../test/helpers/node-builtin-mocks.js");
+  return mockNodeBuiltinModule(
+    () => vi.importActual<typeof import("node:child_process")>("node:child_process"),
+    {
+      execFile: Object.assign(execFileMock, {
+        __promisify__: vi.fn(),
+      }) as typeof import("node:child_process").execFile,
+    },
+  );
+});
 
 import { splitArgsPreservingQuotes } from "./arg-split.js";
 import { parseSystemdExecStart } from "./systemd-unit.js";
@@ -218,9 +226,7 @@ describe("isSystemdServiceEnabled", () => {
       assertUserSystemctlArgs(args, "is-enabled", GATEWAY_SERVICE);
       const err = new Error(
         `Command failed: systemctl --user is-enabled ${GATEWAY_SERVICE}`,
-      ) as Error & {
-        code?: number;
-      };
+      ) as Error & { code?: number };
       err.code = 1;
       cb(err, "", "");
     });
@@ -280,9 +286,7 @@ describe("isSystemdServiceEnabled", () => {
       assertUserSystemctlArgs(args, "is-enabled", GATEWAY_SERVICE);
       const err = new Error(
         `Command failed: systemctl --user is-enabled ${GATEWAY_SERVICE}`,
-      ) as Error & {
-        code?: number;
-      };
+      ) as Error & { code?: number };
       err.code = 1;
       cb(err, "", "read-only file system");
     });
@@ -321,9 +325,7 @@ describe("isSystemdServiceEnabled", () => {
       // code 4 and prints "not-found" to stdout when the unit doesn't exist.
       const err = new Error(
         "Command failed: systemctl --user is-enabled remoteclaw-gateway.service",
-      ) as Error & {
-        code?: number;
-      };
+      ) as Error & { code?: number };
       err.code = 4;
       cb(err, "not-found\n", "");
     });

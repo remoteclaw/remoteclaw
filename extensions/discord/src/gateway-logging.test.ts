@@ -1,12 +1,11 @@
 import { EventEmitter } from "node:events";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("../../../src/globals.js", () => ({
+vi.mock("remoteclaw/plugin-sdk/runtime-env", () => ({
   logVerbose: vi.fn(),
-  shouldLogVerbose: vi.fn(() => false),
 }));
 
-let logVerbose: typeof import("../../../src/globals.js").logVerbose;
+let logVerbose: typeof import("remoteclaw/plugin-sdk/runtime-env").logVerbose;
 let attachDiscordGatewayLogging: typeof import("./gateway-logging.js").attachDiscordGatewayLogging;
 
 const makeRuntime = () => ({
@@ -16,16 +15,14 @@ const makeRuntime = () => ({
 });
 
 describe("attachDiscordGatewayLogging", () => {
-  beforeEach(async () => {
-    vi.resetModules();
-    ({ logVerbose } = await import("../../../src/globals.js"));
+  beforeAll(async () => {
+    ({ logVerbose } = await import("remoteclaw/plugin-sdk/runtime-env"));
     ({ attachDiscordGatewayLogging } = await import("./gateway-logging.js"));
   });
 
-  afterEach(() => {
+  beforeEach(() => {
     vi.clearAllMocks();
   });
-
   it("logs debug events and promotes reconnect/close to info", () => {
     const emitter = new EventEmitter();
     const runtime = makeRuntime();

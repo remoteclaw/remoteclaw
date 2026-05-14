@@ -9,16 +9,19 @@ title: "Network"
 
 # Network hub
 
-This hub links the core docs for how OpenClaw connects, pairs, and secures
+This hub links the core docs for how RemoteClaw connects, pairs, and secures
 devices across localhost, LAN, and tailnet.
 
 ## Core model
 
-Most operations flow through the Gateway (`openclaw gateway`), a single long-running process that owns channel connections and the WebSocket control plane.
+Most operations flow through the Gateway (`remoteclaw gateway`), a single long-running process that owns channel connections and the WebSocket control plane.
 
-- **Loopback first**: the Gateway WS defaults to `ws://127.0.0.1:18789`. Tokens are required for non-loopback binds.
+- **Loopback first**: the Gateway WS defaults to `ws://127.0.0.1:18789`.
+  Non-loopback binds require a valid gateway auth path: shared-secret
+  token/password auth, or a correctly configured non-loopback
+  `trusted-proxy` deployment.
 - **One Gateway per host** is recommended. For isolation, run multiple gateways with isolated profiles and ports ([Multiple Gateways](/gateway/multiple-gateways)).
-- **Canvas host** is served on the same port as the Gateway (`/__openclaw__/canvas/`, `/__openclaw__/a2ui/`), protected by Gateway auth when bound beyond loopback.
+- **Canvas host** is served on the same port as the Gateway (`/__remoteclaw__/canvas/`, `/__remoteclaw__/a2ui/`), protected by Gateway auth when bound beyond loopback.
 - **Remote access** is typically SSH tunnel or Tailscale VPN ([Remote Access](/gateway/remote)).
 
 Key references:
@@ -37,9 +40,12 @@ Key references:
 
 Local trust:
 
-- Local connections (loopback or the gateway host’s own tailnet address) can be
-  auto‑approved for pairing to keep same‑host UX smooth.
-- Non‑local tailnet/LAN clients still require explicit pairing approval.
+- Direct local loopback connects can be auto-approved for pairing to keep
+  same-host UX smooth.
+- RemoteClaw also has a narrow backend/container-local self-connect path for
+  trusted shared-secret helper flows.
+- Tailnet and LAN clients, including same-host tailnet binds, still require
+  explicit pairing approval.
 
 ## Discovery + transports
 
@@ -51,7 +57,7 @@ Local trust:
 ## Nodes + transports
 
 - [Nodes overview](/nodes)
-- [Bridge protocol (legacy nodes)](/gateway/bridge-protocol)
+- [Bridge protocol (legacy nodes, historical)](/gateway/bridge-protocol)
 - [Node runbook: iOS](/platforms/ios)
 - [Node runbook: Android](/platforms/android)
 

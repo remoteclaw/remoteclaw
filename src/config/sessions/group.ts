@@ -1,9 +1,26 @@
 import type { MsgContext } from "../../auto-reply/templating.js";
+import { listChannelPlugins } from "../../channels/plugins/registry.js";
 import { normalizeHyphenSlug } from "../../shared/string-normalization.js";
 import { listDeliverableMessageChannels } from "../../utils/message-channel.js";
 import type { GroupKeyResolution } from "./types.js";
 
 const getGroupSurfaces = () => new Set<string>([...listDeliverableMessageChannels(), "webchat"]);
+
+type LegacyGroupSessionSurface = {
+  resolveLegacyGroupSessionKey?: (ctx: MsgContext) => GroupKeyResolution | null;
+};
+
+function resolveLegacyGroupSessionKey(ctx: MsgContext): GroupKeyResolution | null {
+  for (const plugin of listChannelPlugins()) {
+    const resolved = (
+      plugin.messaging as LegacyGroupSessionSurface | undefined
+    )?.resolveLegacyGroupSessionKey?.(ctx);
+    if (resolved) {
+      return resolved;
+    }
+  }
+  return null;
+}
 
 function normalizeGroupLabel(raw?: string) {
   return normalizeHyphenSlug(raw);
@@ -57,12 +74,24 @@ export function resolveGroupSessionKey(ctx: MsgContext): GroupKeyResolution | nu
   const normalizedChatType =
     chatType === "channel" ? "channel" : chatType === "group" ? "group" : undefined;
 
-  const isWhatsAppGroupId = from.toLowerCase().endsWith("@g.us");
+  // PROTECTED (fork): hardcoded @g.us → WhatsApp group detection. The
+  // upstream v2026.4.5 refactor moved this into a plugin-provided
+  // `resolveLegacyGroupSessionKey` callback, but the WhatsApp plugin's
+  // messaging config does not actually register that callback in the fork
+  // and unit tests in `src/config/sessions.test.ts` exercise this path with
+  // no plugins loaded. Keeping the inline @g.us fallback preserves the
+  // fork's pre-sync test contract while leaving the plugin-provided hook
+  // (`resolveLegacyGroupSessionKey` above) intact for future plugin
+  // surfaces. See #2672 for the v2026.4.5 sync regression context.
+  const isWhatsAppGroupId = from.toLowerCase().endsWith("@g.us") && !from.includes(":");
+
+  const legacyResolution = resolveLegacyGroupSessionKey(ctx);
   const looksLikeGroup =
     normalizedChatType === "group" ||
     normalizedChatType === "channel" ||
     from.includes(":group:") ||
     from.includes(":channel:") ||
+    legacyResolution !== null ||
     isWhatsAppGroupId;
   if (!looksLikeGroup) {
     return null;
@@ -74,9 +103,13 @@ export function resolveGroupSessionKey(ctx: MsgContext): GroupKeyResolution | nu
   const head = parts[0]?.trim().toLowerCase() ?? "";
   const headIsSurface = head ? getGroupSurfaces().has(head) : false;
 
+  if (!headIsSurface && !providerHint && legacyResolution) {
+    return legacyResolution;
+  }
+
   const provider = headIsSurface
     ? head
-    : (providerHint ?? (isWhatsAppGroupId ? "whatsapp" : undefined));
+    : (providerHint ?? legacyResolution?.channel ?? (isWhatsAppGroupId ? "whatsapp" : undefined));
   if (!provider) {
     return null;
   }

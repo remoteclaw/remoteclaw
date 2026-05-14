@@ -131,10 +131,7 @@ function detectSystemTimeFormat(): boolean {
       const result = execFileSync(
         "powershell",
         ["-Command", "(Get-Culture).DateTimeFormat.ShortTimePattern"],
-        {
-          encoding: "utf8",
-          timeout: 1000,
-        },
+        { encoding: "utf8", timeout: 1000 },
       ).trim();
       if (result.startsWith("H")) {
         return true;
@@ -203,7 +200,7 @@ export function formatUserTime(
     const timePart = use24Hour
       ? `${map.hour}:${map.minute}`
       : `${map.hour}:${map.minute} ${map.dayPeriod ?? ""}`.trim();
-    return `${map.weekday}, ${map.month} ${dayNum}${suffix}, ${map.year} — ${timePart}`;
+    return `${map.weekday}, ${map.month} ${dayNum}${suffix}, ${map.year} - ${timePart}`;
   } catch {
     return undefined;
   }

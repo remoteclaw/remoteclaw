@@ -132,6 +132,8 @@ vi.mock("../runtime.js", () => ({
     log: vi.fn(),
     error: vi.fn(),
     exit: vi.fn(),
+    writeStdout: vi.fn(),
+    writeJson: vi.fn(),
   },
 }));
 
@@ -466,20 +468,11 @@ describe("update-cli", () => {
 
   it("updateCommand outputs JSON when --json is set", async () => {
     vi.mocked(runGatewayUpdate).mockResolvedValue(makeOkUpdateResult());
-    vi.mocked(defaultRuntime.log).mockClear();
+    vi.mocked(defaultRuntime.writeJson).mockClear();
 
     await updateCommand({ json: true });
 
-    const logCalls = vi.mocked(defaultRuntime.log).mock.calls;
-    const jsonOutput = logCalls.find((call) => {
-      try {
-        JSON.parse(call[0] as string);
-        return true;
-      } catch {
-        return false;
-      }
-    });
-    expect(jsonOutput).toBeDefined();
+    expect(defaultRuntime.writeJson).toHaveBeenCalledWith(expect.any(Object));
   });
 
   it("updateCommand exits with error on failure", async () => {

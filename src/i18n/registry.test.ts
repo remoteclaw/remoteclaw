@@ -20,7 +20,21 @@ function getNestedTranslation(map: TranslationMap | null, ...path: string[]): st
 
 describe("ui i18n locale registry", () => {
   it("lists supported locales", () => {
-    expect(SUPPORTED_LOCALES).toEqual(["en", "zh-CN", "zh-TW", "pt-BR", "de", "es"]);
+    expect(SUPPORTED_LOCALES).toEqual([
+      "en",
+      "zh-CN",
+      "zh-TW",
+      "pt-BR",
+      "de",
+      "es",
+      "ja-JP",
+      "ko",
+      "fr",
+      "tr",
+      "uk",
+      "id",
+      "pl",
+    ]);
     expect(DEFAULT_LOCALE).toBe("en");
   });
 

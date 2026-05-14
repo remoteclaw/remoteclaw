@@ -7,8 +7,10 @@ vi.mock("remoteclaw/plugin-sdk/fetch-runtime", () => ({
   resolveFetch: (...args: unknown[]) => resolveFetchMock(...args),
 }));
 
-vi.mock("remoteclaw/plugin-sdk/core", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/core")>();
+vi.mock("remoteclaw/plugin-sdk/core", async () => {
+  const actual = await vi.importActual<typeof import("remoteclaw/plugin-sdk/core")>(
+    "remoteclaw/plugin-sdk/core",
+  );
   return {
     ...actual,
     generateSecureUuid: () => "test-id",

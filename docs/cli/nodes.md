@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `remoteclaw nodes` (list/status/approve/invoke, camera/canvas/screen)"
+summary: "CLI reference for `remoteclaw nodes` (status, pairing, invoke, camera/canvas/screen)"
 read_when:
   - You’re managing paired nodes (cameras, screen, canvas)
   - You need to approve requests or invoke node commands
@@ -28,6 +28,8 @@ remoteclaw nodes list --connected
 remoteclaw nodes list --last-connected 24h
 remoteclaw nodes pending
 remoteclaw nodes approve <requestId>
+remoteclaw nodes reject <requestId>
+remoteclaw nodes rename --node <id|name|ip> --name <displayName>
 remoteclaw nodes status
 remoteclaw nodes status --connected
 remoteclaw nodes status --last-connected 24h
@@ -36,6 +38,15 @@ remoteclaw nodes status --last-connected 24h
 `nodes list` prints pending/paired tables. Paired rows include the most recent connect age (Last Connect).
 Use `--connected` to only show currently-connected nodes. Use `--last-connected <duration>` to
 filter to nodes that connected within a duration (e.g. `24h`, `7d`).
+
+Approval note:
+
+- `remoteclaw nodes pending` only needs pairing scope.
+- `remoteclaw nodes approve <requestId>` inherits extra scope requirements from the
+  pending request:
+  - commandless request: pairing only
+  - non-exec node commands: pairing + write
+  - `system.run` / `system.run.prepare` / `system.which`: pairing + admin
 
 ## Invoke
 

@@ -21,6 +21,24 @@ If you want an external MCP client to talk directly to RemoteClaw channel
 conversations instead of hosting an ACP harness session, use
 [`remoteclaw mcp serve`](/cli/mcp) instead.
 
+## What this is not
+
+This page is often confused with ACP harness sessions.
+
+`remoteclaw acp` means:
+
+- RemoteClaw acts as an ACP server
+- an IDE or ACP client connects to RemoteClaw
+- RemoteClaw forwards that work into a Gateway session
+
+This is different from [ACP Agents](/tools/acp-agents), where RemoteClaw runs an
+external harness such as Codex or Claude Code through `acpx`.
+
+Quick rule:
+
+- editor/client wants to talk ACP to RemoteClaw: use `remoteclaw acp`
+- RemoteClaw should launch Codex/Claude/Gemini as an ACP harness: use `/acp spawn` and [ACP Agents](/tools/acp-agents)
+
 ## Compatibility Matrix
 
 | ACP area                                                              | Status      | Notes                                                                                                                                                                                                                                            |
@@ -275,6 +293,7 @@ Learn more about session keys at [/concepts/session](/concepts/session).
 - `--require-existing`: fail if the session key/label does not exist.
 - `--reset-session`: reset the session key before first use.
 - `--no-prefix-cwd`: do not prefix prompts with the working directory.
+- `--provenance <off|meta|meta+receipt>`: include ACP provenance metadata or receipts.
 - `--verbose, -v`: verbose logging to stderr.
 
 Security note:

@@ -32,12 +32,18 @@ vi.mock("../../config/sessions.js", () => ({
   },
 }));
 
-vi.mock("../../infra/remoteclaw-root.js", () => ({
-  resolveRemoteClawPackageRoot: async () => "/tmp/remoteclaw",
-}));
+vi.mock("../../infra/remoteclaw-root.js", async () => {
+  const actual = await vi.importActual<typeof import("../../infra/remoteclaw-root.js")>(
+    "../../infra/remoteclaw-root.js",
+  );
+  return {
+    ...actual,
+    resolveRemoteClawPackageRoot: async () => "/tmp/remoteclaw",
+  };
+});
 
-vi.mock("../../infra/restart-sentinel.js", async (importOriginal) => {
-  const actual = await importOriginal();
+vi.mock("../../infra/restart-sentinel.js", async () => {
+  const actual = await vi.importActual("../../infra/restart-sentinel.js");
   return {
     ...(actual as Record<string, unknown>),
     writeRestartSentinel: async (payload: RestartSentinelPayload) => {
@@ -172,7 +178,7 @@ describe("update.run restart scheduling", () => {
   it("skips restart when update fails", async () => {
     runGatewayUpdateMock.mockResolvedValueOnce({
       status: "error",
-      mode: "npm",
+      mode: "git",
       reason: "build-failed",
       steps: [],
       durationMs: 100,

@@ -1,4 +1,5 @@
 import { html, nothing } from "lit";
+import { t } from "../../i18n/index.ts";
 import type { LogEntry, LogLevel } from "../types.ts";
 
 const LEVELS: LogLevel[] = ["trace", "debug", "info", "warn", "error", "fatal"];
@@ -62,7 +63,7 @@ export function renderLogs(props: LogsProps) {
         </div>
         <div class="row" style="gap: 8px;">
           <button class="btn" ?disabled=${props.loading} @click=${props.onRefresh}>
-            ${props.loading ? "Loading…" : "Refresh"}
+            ${props.loading ? t("common.loading") : t("common.refresh")}
           </button>
           <button
             class="btn"
@@ -92,7 +93,8 @@ export function renderLogs(props: LogsProps) {
           <input
             type="checkbox"
             .checked=${props.autoFollow}
-            @change=${(e: Event) => props.onToggleAutoFollow((e.target as HTMLInputElement).checked)}
+            @change=${(e: Event) =>
+              props.onToggleAutoFollow((e.target as HTMLInputElement).checked)}
           />
         </label>
       </div>
@@ -104,7 +106,8 @@ export function renderLogs(props: LogsProps) {
               <input
                 type="checkbox"
                 .checked=${props.levelFilters[level]}
-                @change=${(e: Event) => props.onLevelToggle(level, (e.target as HTMLInputElement).checked)}
+                @change=${(e: Event) =>
+                  props.onLevelToggle(level, (e.target as HTMLInputElement).checked)}
               />
               <span>${level}</span>
             </label>
@@ -112,7 +115,11 @@ export function renderLogs(props: LogsProps) {
         )}
       </div>
 
-      ${props.file ? html`<div class="muted" style="margin-top: 10px;">File: ${props.file}</div>` : nothing}
+      ${
+        props.file
+          ? html`<div class="muted" style="margin-top: 10px;">File: ${props.file}</div>`
+          : nothing
+      }
       ${
         props.truncated
           ? html`
@@ -120,7 +127,11 @@ export function renderLogs(props: LogsProps) {
             `
           : nothing
       }
-      ${props.error ? html`<div class="callout danger" style="margin-top: 10px;">${props.error}</div>` : nothing}
+      ${
+        props.error
+          ? html`<div class="callout danger" style="margin-top: 10px;">${props.error}</div>`
+          : nothing
+      }
 
       <div class="log-stream" style="margin-top: 12px;" @scroll=${props.onScroll}>
         ${

@@ -96,6 +96,19 @@ export const HelloOkSchema = Type.Object(
           role: NonEmptyString,
           scopes: Type.Array(NonEmptyString),
           issuedAtMs: Type.Optional(Type.Integer({ minimum: 0 })),
+          deviceTokens: Type.Optional(
+            Type.Array(
+              Type.Object(
+                {
+                  deviceToken: NonEmptyString,
+                  role: NonEmptyString,
+                  scopes: Type.Array(NonEmptyString),
+                  issuedAtMs: Type.Integer({ minimum: 0 }),
+                },
+                { additionalProperties: false },
+              ),
+            ),
+          ),
         },
         { additionalProperties: false },
       ),
@@ -160,7 +173,5 @@ export const EventFrameSchema = Type.Object(
 // blobs.
 export const GatewayFrameSchema = Type.Union(
   [RequestFrameSchema, ResponseFrameSchema, EventFrameSchema],
-  {
-    discriminator: "type",
-  },
+  { discriminator: "type" },
 );

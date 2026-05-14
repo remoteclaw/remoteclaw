@@ -148,7 +148,7 @@ Key fields (not exhaustive):
 - `chatType`: `direct | group | room` (helps UIs and send policy)
 - `provider`, `subject`, `room`, `space`, `displayName`: metadata for group/channel labeling
 - Toggles:
-  - `verboseLevel`, `reasoningLevel`, `elevatedLevel`
+  - `thinkingLevel`, `verboseLevel`, `reasoningLevel`, `elevatedLevel`
   - `sendPolicy` (per-session override)
 - Model selection:
   - `providerOverride`, `modelOverride`, `authProfileOverride`
@@ -210,13 +210,30 @@ After compaction, future turns see:
 
 Compaction is **persistent** (unlike session pruning). See [/concepts/session-pruning](/concepts/session-pruning).
 
+## Compaction chunk boundaries and tool pairing
+
+When RemoteClaw splits a long transcript into compaction chunks, it keeps
+assistant tool calls paired with their matching `toolResult` entries.
+
+- If the token-share split lands between a tool call and its result, RemoteClaw
+  shifts the boundary to the assistant tool-call message instead of separating
+  the pair.
+- If a trailing tool-result block would otherwise push the chunk over target,
+  RemoteClaw preserves that pending tool block and keeps the unsummarized tail
+  intact.
+- Aborted/error tool-call blocks do not hold a pending split open.
+
 ---
 
 ## When auto-compaction happens (Pi runtime)
 
 In the embedded Pi agent, auto-compaction triggers in two cases:
 
-1. **Overflow recovery**: the model returns a context overflow error → compact → retry.
+1. **Overflow recovery**: the model returns a context overflow error
+   (`request_too_large`, `context length exceeded`, `input exceeds the maximum
+number of tokens`, `input token count exceeds the maximum number of input
+tokens`, `input is too long for the model`, `ollama error: context length
+exceeded`, and similar provider-shaped variants) → compact → retry.
 2. **Threshold maintenance**: after a successful turn, when:
 
 `contextTokens > contextWindow - reserveTokens`
@@ -244,10 +261,17 @@ Pi’s compaction settings live in Pi settings:
 }
 ```
 
-RemoteClaw forwards compaction config to the CLI subprocess; the CLI agent
-(Claude Code, Gemini CLI, Codex CLI, OpenCode) enforces its own compaction
-policy. The `compaction.reserveTokensFloor` setting is carried through the
-session config for agents that respect it.
+RemoteClaw also enforces a safety floor for embedded runs:
+
+- If `compaction.reserveTokens < reserveTokensFloor`, RemoteClaw bumps it.
+- Default floor is `20000` tokens.
+- Set `agents.defaults.compaction.reserveTokensFloor: 0` to disable the floor.
+- If it’s already higher, RemoteClaw leaves it alone.
+
+Why: leave enough headroom for multi-turn “housekeeping” (like memory writes) before compaction becomes unavoidable.
+
+Implementation: `ensurePiCompactionReserveTokens()` in `src/agents/pi-settings.ts`
+(called from `src/agents/pi-embedded-runner.ts`).
 
 ---
 
@@ -268,10 +292,17 @@ RemoteClaw supports “silent” turns for background tasks where the user shoul
 
 Convention:
 
-- The assistant starts its output with `NO_REPLY` to indicate “do not deliver a reply to the user”.
+- The assistant starts its output with the exact silent token `NO_REPLY` /
+  `no_reply` to indicate “do not deliver a reply to the user”.
 - RemoteClaw strips/suppresses this in the delivery layer.
+- Exact silent-token suppression is case-insensitive, so `NO_REPLY` and
+  `no_reply` both count when the whole payload is just the silent token.
+- This is for true background/no-delivery turns only; it is not a shortcut for
+  ordinary actionable user requests.
 
-As of `2026.1.10`, RemoteClaw also suppresses **draft/typing streaming** when a partial chunk begins with `NO_REPLY`, so silent operations don’t leak partial output mid-turn.
+As of `2026.1.10`, RemoteClaw also suppresses **draft/typing streaming** when a
+partial chunk begins with `NO_REPLY`, so silent operations don’t leak partial
+output mid-turn.
 
 ---
 
@@ -286,7 +317,8 @@ RemoteClaw uses the **pre-threshold flush** approach:
 1. Monitor session context usage.
 2. When it crosses a “soft threshold” (below Pi’s compaction threshold), run a silent
    “write memory now” directive to the agent.
-3. Use `NO_REPLY` so the user sees nothing.
+3. Use the exact silent token `NO_REPLY` / `no_reply` so the user sees
+   nothing.
 
 Config (`agents.defaults.compaction.memoryFlush`):
 
@@ -297,9 +329,10 @@ Config (`agents.defaults.compaction.memoryFlush`):
 
 Notes:
 
-- The default prompt/system prompt include a `NO_REPLY` hint to suppress delivery.
+- The default prompt/system prompt include a `NO_REPLY` hint to suppress
+  delivery.
 - The flush runs once per compaction cycle (tracked in `sessions.json`).
-- The flush runs only for embedded Pi sessions (CLI backends skip it).
+- The flush runs only for embedded Pi sessions.
 - The flush is skipped when the session workspace is read-only (`workspaceAccess: "ro"` or `"none"`).
 - See [Memory](/concepts/memory) for the workspace file layout and write patterns.
 
@@ -316,4 +349,4 @@ flush logic lives on the Gateway side today.
   - model context window (too small)
   - compaction settings (`reserveTokens` too high for the model window can cause earlier compaction)
   - tool-result bloat: enable/tune session pruning
-- Silent turns leaking? Confirm the reply starts with `NO_REPLY` (exact token) and you’re on a build that includes the streaming suppression fix.
+- Silent turns leaking? Confirm the reply starts with `NO_REPLY` (case-insensitive exact token) and you’re on a build that includes the streaming suppression fix.

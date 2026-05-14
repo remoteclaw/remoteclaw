@@ -4,10 +4,13 @@ const { callGatewayMock } = vi.hoisted(() => ({
   callGatewayMock: vi.fn(),
 }));
 
-vi.mock("../agent-scope.js", () => ({
-  resolveSessionAgentId: () => "agent-123",
-  resolveAgentRuntime: () => "claude",
-}));
+vi.mock("../agent-scope.js", async () => {
+  const actual = await vi.importActual<typeof import("../agent-scope.js")>("../agent-scope.js");
+  return {
+    ...actual,
+    resolveSessionAgentId: () => "agent-123",
+  };
+});
 
 import { createCronTool } from "./cron-tool.js";
 
@@ -25,10 +28,7 @@ describe("cron tool", () => {
     return (
       (callGatewayMock.mock.calls[index]?.[0] as
         | { method?: string; params?: Record<string, unknown> }
-        | undefined) ?? {
-        method: undefined,
-        params: undefined,
-      }
+        | undefined) ?? { method: undefined, params: undefined }
     );
   }
 
@@ -119,6 +119,16 @@ describe("cron tool", () => {
   it("marks cron as owner-only", async () => {
     const tool = createTestCronTool();
     expect(tool.ownerOnly).toBe(true);
+  });
+
+  it("documents deferred follow-up guidance in the tool description", () => {
+    const tool = createTestCronTool();
+    expect(tool.description).toContain(
+      'Use this for reminders, "check back later" requests, delayed follow-ups, and recurring tasks.',
+    );
+    expect(tool.description).toContain(
+      "Do not emulate scheduling with exec sleep or process polling.",
+    );
   });
 
   it.each([

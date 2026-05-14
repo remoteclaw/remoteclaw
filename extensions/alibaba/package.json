@@ -1,6 +1,6 @@
 {
   "name": "@remoteclaw/alibaba-provider",
-  "version": "2026.4.5",
+  "version": "0.8.0",
   "private": true,
   "description": "RemoteClaw Alibaba Model Studio video provider plugin",
   "type": "module",

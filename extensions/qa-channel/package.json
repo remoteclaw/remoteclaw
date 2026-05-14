@@ -1,6 +1,6 @@
 {
   "name": "@remoteclaw/qa-channel",
-  "version": "2026.4.4",
+  "version": "0.8.0",
   "private": true,
   "description": "RemoteClaw QA synthetic channel plugin",
   "type": "module",

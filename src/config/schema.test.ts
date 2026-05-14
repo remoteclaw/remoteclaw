@@ -245,7 +245,16 @@ describe("config schema", () => {
     const lookup = lookupConfigSchema(baseSchema, "agents.list.0.runtime");
     expect(lookup?.path).toBe("agents.list.0.runtime");
     expect(lookup?.hintPath).toBe("agents.list[].runtime");
-    expect(lookup?.schema).toEqual({});
+    // Schema metadata (title/description) is intentionally preserved by
+    // stripSchemaForLookup; only composition keywords (anyOf/oneOf/allOf,
+    // properties, items) must be stripped from the shallow lookup result.
+    const schema = lookup?.schema as Record<string, unknown> | undefined;
+    expect(schema).toBeDefined();
+    expect(schema?.anyOf).toBeUndefined();
+    expect(schema?.oneOf).toBeUndefined();
+    expect(schema?.allOf).toBeUndefined();
+    expect(schema?.properties).toBeUndefined();
+    expect(schema?.items).toBeUndefined();
   });
 
   it("matches wildcard ui hints for concrete lookup paths", () => {

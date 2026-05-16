@@ -1,11 +1,12 @@
 import { isSlackInteractiveRepliesEnabled } from "../../extensions/slack/src/interactive-replies.js";
 import { resolveAgentEffectiveModelPrimary } from "../agents/agent-scope.js";
-import { resolveEffectiveMessagesConfig, resolveIdentityName } from "../agents/identity.js";
+import { resolveAgentIdentity, resolveEffectiveMessagesConfig } from "../agents/identity.js";
 import {
   extractShortModelName,
   type ResponsePrefixContext,
 } from "../auto-reply/reply/response-prefix-template.js";
 import type { RemoteClawConfig } from "../config/config.js";
+import { normalizeOptionalString } from "../shared/string-coerce.js";
 
 export type ReplyPrefixContextBundle = {
   prefixContext: ResponsePrefixContext;
@@ -31,7 +32,7 @@ export function createReplyPrefixContext(params: {
   const provider = slash > 0 ? effectiveModel?.slice(0, slash) : undefined;
   const modelId = slash > 0 ? effectiveModel?.slice(slash + 1) : effectiveModel;
   const prefixContext: ResponsePrefixContext = {
-    identityName: resolveIdentityName(cfg, agentId),
+    identityName: normalizeOptionalString(resolveAgentIdentity(cfg, agentId)?.name),
     provider,
     model: modelId ? extractShortModelName(modelId) : undefined,
     modelFull: effectiveModel,

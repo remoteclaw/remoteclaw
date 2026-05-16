@@ -6,6 +6,7 @@ import type { IdentityConfig } from "../config/types.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
+import { normalizeOptionalString } from "../shared/string-coerce.js";
 import { resolveUserPath, shortenHomePath } from "../utils.js";
 import { requireValidConfig } from "./agents.command-shared.js";
 import { findAgentEntryIndex, listAgentEntries } from "./agents.config.js";
@@ -21,11 +22,6 @@ type AgentsSetIdentityOptions = {
 };
 
 const normalizeWorkspacePath = (input: string) => path.resolve(resolveUserPath(input));
-
-const coerceTrimmed = (value?: string) => {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : undefined;
-};
 
 function resolveAgentIdByWorkspace(
   cfg: Parameters<typeof resolveAgentWorkspaceDir>[0],
@@ -48,13 +44,13 @@ export async function agentsSetIdentityCommand(
     return;
   }
 
-  const agentRaw = coerceTrimmed(opts.agent);
-  const nameRaw = coerceTrimmed(opts.name);
-  const emojiRaw = coerceTrimmed(opts.emoji);
-  const themeRaw = coerceTrimmed(opts.theme);
-  const avatarRaw = coerceTrimmed(opts.avatar);
+  const agentRaw = normalizeOptionalString(opts.agent);
+  const nameRaw = normalizeOptionalString(opts.name);
+  const emojiRaw = normalizeOptionalString(opts.emoji);
+  const themeRaw = normalizeOptionalString(opts.theme);
+  const avatarRaw = normalizeOptionalString(opts.avatar);
 
-  const workspaceRaw = coerceTrimmed(opts.workspace);
+  const workspaceRaw = normalizeOptionalString(opts.workspace);
 
   let workspaceDir: string | undefined;
 

@@ -14,6 +14,8 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { RateLimitError, type RequestClient } from "@buape/carbon";
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
+import { formatErrorMessage } from "../../../src/infra/errors.js";
 import type { RetryRunner } from "../../../src/infra/retry-policy.js";
 import { resolvePreferredRemoteClawTmpDir } from "../../../src/infra/tmp-remoteclaw-dir.js";
 import {
@@ -54,7 +56,7 @@ export async function getAudioDuration(filePath: string): Promise<number> {
     }
     return Math.round(duration * 100) / 100; // Round to 2 decimal places
   } catch (err) {
-    const errMessage = err instanceof Error ? err.message : String(err);
+    const errMessage = formatErrorMessage(err);
     throw new Error(`Failed to get audio duration: ${errMessage}`, { cause: err });
   }
 }
@@ -160,7 +162,7 @@ export async function ensureOggOpus(filePath: string): Promise<{ path: string; c
     );
   }
 
-  const ext = path.extname(filePath).toLowerCase();
+  const ext = normalizeLowercaseStringOrEmpty(path.extname(filePath));
 
   // Check if already OGG
   if (ext === ".ogg") {

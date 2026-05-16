@@ -1,5 +1,6 @@
 import type { BaseProbeResult } from "../../../src/channels/plugins/types.js";
 import type { TelegramNetworkConfig } from "../../../src/config/types.telegram.js";
+import { formatErrorMessage } from "../../../src/infra/errors.js";
 import { fetchWithTimeout } from "../../../src/utils/fetch-timeout.js";
 import { resolveTelegramFetch } from "./fetch.js";
 import { makeProxyFetch } from "./proxy.js";
@@ -214,7 +215,7 @@ export async function probeTelegram(
     return {
       ...result,
       status: err instanceof Response ? err.status : result.status,
-      error: err instanceof Error ? err.message : String(err),
+      error: formatErrorMessage(err),
       elapsedMs: Date.now() - started,
     };
   }

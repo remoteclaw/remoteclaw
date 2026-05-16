@@ -12,6 +12,7 @@ import {
   type CardAction,
   type ListItem,
 } from "remoteclaw/plugin-sdk/line";
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 
 const CARD_USAGE = `Usage: /card <type> "title" "body" [options]
 
@@ -138,7 +139,7 @@ function parseCardArgs(argsStr: string): {
   // Extract type (first word)
   const typeMatch = argsStr.match(/^(\w+)/);
   if (typeMatch) {
-    result.type = typeMatch[1].toLowerCase();
+    result.type = normalizeLowercaseStringOrEmpty(typeMatch[1]);
     argsStr = argsStr.slice(typeMatch[0].length).trim();
   }
 

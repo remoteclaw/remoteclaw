@@ -1,4 +1,5 @@
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
+import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 import { createAccountListHelpers, type RemoteClawConfig } from "remoteclaw/plugin-sdk/zalouser";
 import type { ResolvedZalouserAccount, ZalouserAccountConfig, ZalouserConfig } from "./types.js";
 import { checkZaloAuthenticated, getZaloUserInfo } from "./zalo-js.js";
@@ -68,7 +69,7 @@ export async function resolveZalouserAccount(params: {
 
   return {
     accountId,
-    name: merged.name?.trim() || undefined,
+    name: normalizeOptionalString(merged.name),
     enabled,
     profile,
     authenticated,
@@ -84,7 +85,7 @@ export function resolveZalouserAccountSync(params: {
 
   return {
     accountId,
-    name: merged.name?.trim() || undefined,
+    name: normalizeOptionalString(merged.name),
     enabled,
     profile,
     authenticated: false,

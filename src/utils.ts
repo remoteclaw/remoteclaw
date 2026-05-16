@@ -290,6 +290,10 @@ export function resolveConfigDir(
   if (override) {
     return resolveUserPath(override, env, homedir);
   }
+  const configPath = env.REMOTECLAW_CONFIG_PATH?.trim();
+  if (configPath) {
+    return path.dirname(resolveUserPath(configPath, env, homedir));
+  }
   const newDir = path.join(resolveRequiredHomeDir(env, homedir), ".remoteclaw");
   try {
     const hasNew = fs.existsSync(newDir);

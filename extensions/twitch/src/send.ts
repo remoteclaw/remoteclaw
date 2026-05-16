@@ -6,6 +6,7 @@
  */
 
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/twitch";
+import { formatErrorMessage } from "../../../src/infra/errors.js";
 import { getClientManager as getRegistryClientManager } from "./client-manager-registry.js";
 import { DEFAULT_ACCOUNT_ID, getAccountConfig } from "./config.js";
 import { resolveTwitchToken } from "./token.js";
@@ -125,7 +126,7 @@ export async function sendMessageTwitchInternal(
       messageId: result.messageId ?? generateMessageId(),
     };
   } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : String(error);
+    const errorMsg = formatErrorMessage(error);
     logger.error(`Failed to send message: ${errorMsg}`);
     return {
       ok: false,

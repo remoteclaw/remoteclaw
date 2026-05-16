@@ -1,3 +1,4 @@
+import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 import type { TelegramGroupConfig } from "../../../src/config/types.js";
 import type { TelegramNetworkConfig } from "../../../src/config/types.telegram.js";
 
@@ -46,7 +47,7 @@ export function collectTelegramUnmentionedGroupIds(
     if (value.requireMention !== false) {
       continue;
     }
-    const id = String(key).trim();
+    const id = normalizeOptionalString(String(key)) ?? "";
     if (!id) {
       continue;
     }
@@ -81,7 +82,7 @@ export async function auditTelegramGroupMembership(
   params: AuditTelegramGroupMembershipParams,
 ): Promise<TelegramGroupMembershipAudit> {
   const started = Date.now();
-  const token = params.token?.trim() ?? "";
+  const token = normalizeOptionalString(params.token) ?? "";
   if (!token || params.groupIds.length === 0) {
     return {
       ok: true,

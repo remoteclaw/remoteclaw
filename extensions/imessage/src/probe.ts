@@ -1,3 +1,4 @@
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import type { BaseProbeResult } from "../../../src/channels/plugins/types.js";
 import { detectBinary } from "../../../src/commands/onboard-helpers.js";
 import { loadConfig } from "../../../src/config/config.js";
@@ -35,7 +36,7 @@ async function probeRpcSupport(cliPath: string, timeoutMs: number): Promise<RpcS
   try {
     const result = await runCommandWithTimeout([cliPath, "rpc", "--help"], { timeoutMs });
     const combined = `${result.stdout}\n${result.stderr}`.trim();
-    const normalized = combined.toLowerCase();
+    const normalized = normalizeLowercaseStringOrEmpty(combined);
     if (normalized.includes("unknown command") && normalized.includes("rpc")) {
       const fatal = {
         supported: false,

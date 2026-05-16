@@ -1,4 +1,5 @@
 import type { Activity, UpdatePresenceData } from "@buape/carbon/gateway";
+import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 import type { DiscordAccountConfig } from "../../../../src/config/config.js";
 
 const DEFAULT_CUSTOM_ACTIVITY_TYPE = 4;
@@ -12,10 +13,10 @@ type DiscordPresenceConfig = Pick<
 export function resolveDiscordPresenceUpdate(
   config: DiscordPresenceConfig,
 ): UpdatePresenceData | null {
-  const activityText = typeof config.activity === "string" ? config.activity.trim() : "";
-  const status = typeof config.status === "string" ? config.status.trim() : "";
+  const activityText = normalizeOptionalString(config.activity) ?? "";
+  const status = normalizeOptionalString(config.status) ?? "";
   const activityType = config.activityType;
-  const activityUrl = typeof config.activityUrl === "string" ? config.activityUrl.trim() : "";
+  const activityUrl = normalizeOptionalString(config.activityUrl) ?? "";
 
   const hasActivity = Boolean(activityText);
   const hasStatus = Boolean(status);

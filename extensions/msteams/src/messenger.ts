@@ -8,6 +8,7 @@ import {
   SILENT_REPLY_TOKEN,
   sleep,
 } from "remoteclaw/plugin-sdk/msteams";
+import { normalizeOptionalLowercaseString } from "remoteclaw/plugin-sdk/text-runtime";
 import type { MSTeamsAccessTokenProvider } from "./attachments/types.js";
 import type { StoredConversationReference } from "./conversation-store.js";
 import { classifyMSTeamsSendError } from "./errors.js";
@@ -294,7 +295,9 @@ async function buildActivity(
 
       // Determine conversation type and file type
       // Teams only accepts base64 data URLs for images
-      const conversationType = conversationRef.conversation?.conversationType?.toLowerCase();
+      const conversationType = normalizeOptionalLowercaseString(
+        conversationRef.conversation?.conversationType,
+      );
       const isPersonal = conversationType === "personal";
       const isImage = media.kind === "image";
 

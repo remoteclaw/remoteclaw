@@ -1,4 +1,5 @@
 import process from "node:process";
+import { normalizeOptionalLowercaseString } from "remoteclaw/plugin-sdk/text-runtime";
 import type { TelegramNetworkConfig } from "../../../src/config/types.telegram.js";
 import { isTruthyEnvValue } from "../../../src/infra/env.js";
 import { isWSL2Sync } from "../../../src/infra/wsl.js";
@@ -81,15 +82,15 @@ export function resolveTelegramDnsResultOrderDecision(params?: {
       : Number(process.versions.node.split(".")[0]);
 
   // Check environment variable
-  const envValue = env[TELEGRAM_DNS_RESULT_ORDER_ENV]?.trim().toLowerCase();
+  const envValue = normalizeOptionalLowercaseString(env[TELEGRAM_DNS_RESULT_ORDER_ENV]);
   if (envValue === "ipv4first" || envValue === "verbatim") {
     return { value: envValue, source: `env:${TELEGRAM_DNS_RESULT_ORDER_ENV}` };
   }
 
   // Check config
-  const configValue = (params?.network as { dnsResultOrder?: string } | undefined)?.dnsResultOrder
-    ?.trim()
-    .toLowerCase();
+  const configValue = normalizeOptionalLowercaseString(
+    (params?.network as { dnsResultOrder?: string } | undefined)?.dnsResultOrder,
+  );
   if (configValue === "ipv4first" || configValue === "verbatim") {
     return { value: configValue, source: "config" };
   }

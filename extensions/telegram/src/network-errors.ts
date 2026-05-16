@@ -1,3 +1,4 @@
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import {
   collectErrorGraphCandidates,
   extractErrorCode,
@@ -113,7 +114,7 @@ function normalizeTelegramNetworkMethod(method?: string | null): string | null {
   if (!trimmed) {
     return null;
   }
-  return trimmed.toLowerCase();
+  return normalizeLowercaseStringOrEmpty(trimmed);
 }
 
 export function tagTelegramNetworkError(err: unknown, origin: TelegramNetworkErrorOrigin): void {
@@ -254,7 +255,7 @@ export function isRecoverableTelegramNetworkError(
       return true;
     }
 
-    const message = formatErrorMessage(candidate).trim().toLowerCase();
+    const message = normalizeLowercaseStringOrEmpty(formatErrorMessage(candidate));
     if (message && ALWAYS_RECOVERABLE_MESSAGES.has(message)) {
       return true;
     }

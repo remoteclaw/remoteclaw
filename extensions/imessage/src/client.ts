@@ -1,5 +1,7 @@
 import { type ChildProcessWithoutNullStreams, spawn } from "node:child_process";
 import { createInterface, type Interface } from "node:readline";
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
+import { formatErrorMessage } from "../../../src/infra/errors.js";
 import type { RuntimeEnv } from "../../../src/runtime.js";
 import { resolveUserPath } from "../../../src/utils.js";
 import { DEFAULT_IMESSAGE_PROBE_TIMEOUT_MS } from "./constants.js";
@@ -41,7 +43,7 @@ function isTestEnv(): boolean {
   if (process.env.NODE_ENV === "test") {
     return true;
   }
-  const vitest = process.env.VITEST?.trim().toLowerCase();
+  const vitest = normalizeLowercaseStringOrEmpty(process.env.VITEST);
   return Boolean(vitest);
 }
 
@@ -188,7 +190,7 @@ export class IMessageRpcClient {
     try {
       parsed = JSON.parse(line) as IMessageRpcResponse<unknown>;
     } catch (err) {
-      const detail = err instanceof Error ? err.message : String(err);
+      const detail = formatErrorMessage(err);
       this.runtime?.error?.(`imsg rpc: failed to parse ${line}: ${detail}`);
       return;
     }

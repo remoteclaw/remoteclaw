@@ -1,3 +1,5 @@
+import { normalizeOptionalLowercaseString } from "../shared/string-coerce.js";
+
 /**
  * Runtime attestation (ADR 0005 H9). Declares the implementation status
  * of each runtime export in this module. See CONTRIBUTING.md § Module
@@ -20,5 +22,5 @@ export type ToolErrorSummary = {
 const EXEC_LIKE_TOOL_NAMES = new Set(["exec", "bash"]);
 
 export function isExecLikeToolName(toolName: string): boolean {
-  return EXEC_LIKE_TOOL_NAMES.has(toolName.trim().toLowerCase());
+  return EXEC_LIKE_TOOL_NAMES.has(normalizeOptionalLowercaseString(toolName) ?? "");
 }

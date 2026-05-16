@@ -7,6 +7,7 @@ import {
   readRequestBodyWithLimit,
   requestBodyErrorToText,
 } from "remoteclaw/plugin-sdk/nextcloud-talk";
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import { resolveLoggerBackedRuntime } from "../../shared/runtime.js";
 import { resolveNextcloudTalkAccount } from "./accounts.js";
 import { handleNextcloudTalkInbound } from "./inbound.js";
@@ -48,7 +49,7 @@ function formatError(err: unknown): string {
 
 function normalizeOrigin(value: string): string | null {
   try {
-    return new URL(value).origin.toLowerCase();
+    return normalizeLowercaseStringOrEmpty(new URL(value).origin);
   } catch {
     return null;
   }

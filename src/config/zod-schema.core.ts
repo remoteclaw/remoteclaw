@@ -6,6 +6,7 @@ import {
   isValidExecSecretRefId,
   isValidFileSecretRefId,
 } from "../secrets/ref-contract.js";
+import { normalizeStringEntries } from "../shared/string-normalization.js";
 import { createAllowDenyChannelRulesSchema } from "./zod-schema.allowdeny.js";
 import { sensitive } from "./zod-schema.sensitive.js";
 
@@ -448,6 +449,7 @@ export const CliBackendSchema = z
       .optional(),
     imageArg: z.string().optional(),
     imageMode: z.union([z.literal("repeat"), z.literal("list")]).optional(),
+    imagePathScope: z.union([z.literal("temp"), z.literal("workspace")]).optional(),
     serialize: z.boolean().optional(),
     reliability: z
       .object({
@@ -465,7 +467,7 @@ export const CliBackendSchema = z
   .strict();
 
 export const normalizeAllowFrom = (values?: Array<string | number>): string[] =>
-  (values ?? []).map((v) => String(v).trim()).filter(Boolean);
+  normalizeStringEntries(values);
 
 export const requireOpenAllowFrom = (params: {
   policy?: string;

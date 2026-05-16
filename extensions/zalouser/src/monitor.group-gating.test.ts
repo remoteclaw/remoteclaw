@@ -1,4 +1,4 @@
-import type { RemoteClawConfig, PluginRuntime, RuntimeEnv } from "remoteclaw/plugin-sdk/zalouser";
+import type { RemoteClawConfig, PluginRuntime } from "remoteclaw/plugin-sdk/zalouser";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "./monitor.send-mocks.js";
 import { __testing } from "./monitor.js";
@@ -134,8 +134,9 @@ function installRuntime(params: {
         resolveRequireMention: vi.fn((input) => {
           const cfg = input.cfg as RemoteClawConfig;
           const groupCfg = cfg.channels?.zalouser?.groups ?? {};
-          const groupEntry = input.groupId ? groupCfg[input.groupId] : undefined;
-          const defaultEntry = groupCfg["*"];
+          const typedGroupCfg = groupCfg as Record<string, { requireMention?: boolean }>;
+          const groupEntry = input.groupId ? typedGroupCfg[input.groupId] : undefined;
+          const defaultEntry = typedGroupCfg["*"];
           if (typeof groupEntry?.requireMention === "boolean") {
             return groupEntry.requireMention;
           }

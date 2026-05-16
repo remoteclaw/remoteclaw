@@ -1,4 +1,5 @@
 import type { RuntimeEnv } from "remoteclaw/plugin-sdk/irc";
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import { resolveLoggerBackedRuntime } from "../../shared/runtime.js";
 import { resolveIrcAccount } from "./accounts.js";
 import { connectIrcClient, type IrcClient } from "./client.js";
@@ -79,7 +80,10 @@ export async function monitorIrcProvider(opts: IrcMonitorOptions): Promise<{ sto
         if (!client) {
           return;
         }
-        if (event.senderNick.toLowerCase() === client.nick.toLowerCase()) {
+        if (
+          normalizeLowercaseStringOrEmpty(event.senderNick) ===
+          normalizeLowercaseStringOrEmpty(client.nick)
+        ) {
           return;
         }
 

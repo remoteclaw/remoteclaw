@@ -34,6 +34,7 @@ import {
   type Tab,
 } from "./navigation.ts";
 import { saveSettings, type UiSettings } from "./storage.ts";
+import { normalizeOptionalString } from "./string-coerce.ts";
 import { startThemeTransition, type ThemeTransitionContext } from "./theme-transition.ts";
 import { resolveTheme, type ResolvedTheme, type ThemeMode } from "./theme.ts";
 import type { AgentsListResult } from "./types.ts";
@@ -60,7 +61,10 @@ export type SettingsHost = PollingHost &
 export function applySettings(host: SettingsHost, next: UiSettings) {
   const normalized = {
     ...next,
-    lastActiveSessionKey: next.lastActiveSessionKey?.trim() || next.sessionKey.trim() || "main",
+    lastActiveSessionKey:
+      normalizeOptionalString(next.lastActiveSessionKey) ??
+      normalizeOptionalString(next.sessionKey) ??
+      "main",
   };
   host.settings = normalized;
   saveSettings(normalized);
@@ -91,7 +95,7 @@ export function applySettingsFromUrl(host: SettingsHost) {
   const hashParams = new URLSearchParams(url.hash.startsWith("#") ? url.hash.slice(1) : url.hash);
 
   const gatewayUrlRaw = params.get("gatewayUrl") ?? hashParams.get("gatewayUrl");
-  const nextGatewayUrl = gatewayUrlRaw?.trim() ?? "";
+  const nextGatewayUrl = normalizeOptionalString(gatewayUrlRaw) ?? "";
   const gatewayUrlChanged = Boolean(nextGatewayUrl && nextGatewayUrl !== host.settings.gatewayUrl);
   const tokenRaw = hashParams.get("token");
   const passwordRaw = params.get("password") ?? hashParams.get("password");
@@ -258,8 +262,9 @@ export function inferBasePath() {
     return "";
   }
   const configured = window.__REMOTECLAW_CONTROL_UI_BASE_PATH__;
-  if (typeof configured === "string" && configured.trim()) {
-    return normalizeBasePath(configured);
+  const normalizedConfigured = normalizeOptionalString(configured);
+  if (normalizedConfigured) {
+    return normalizeBasePath(normalizedConfigured);
   }
   return inferBasePathFromPathname(window.location.pathname);
 }
@@ -335,7 +340,7 @@ export function onPopState(host: SettingsHost) {
   }
 
   const url = new URL(window.location.href);
-  const session = url.searchParams.get("session")?.trim();
+  const session = normalizeOptionalString(url.searchParams.get("session"));
   if (session) {
     host.sessionKey = session;
     applySettings(host, {

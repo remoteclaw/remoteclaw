@@ -2,6 +2,7 @@
  * Signal reactions via signal-cli JSON-RPC API
  */
 
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import { loadConfig } from "../../../src/config/config.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import { resolveSignalAccount } from "./accounts.js";
@@ -44,7 +45,7 @@ function normalizeSignalUuid(raw: string): string {
   if (!trimmed) {
     return "";
   }
-  if (trimmed.toLowerCase().startsWith("uuid:")) {
+  if (normalizeLowercaseStringOrEmpty(trimmed).startsWith("uuid:")) {
     return trimmed.slice("uuid:".length).trim();
   }
   return trimmed;

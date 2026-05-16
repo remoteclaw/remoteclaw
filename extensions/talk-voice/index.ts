@@ -1,4 +1,8 @@
 import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk/talk-voice";
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalLowercaseString,
+} from "remoteclaw/plugin-sdk/text-runtime";
 
 type ElevenLabsVoice = {
   voice_id: string;
@@ -60,16 +64,16 @@ function findVoice(voices: ElevenLabsVoice[], query: string): ElevenLabsVoice | 
   if (!q) {
     return null;
   }
-  const lower = q.toLowerCase();
+  const lower = normalizeLowercaseStringOrEmpty(q);
   const byId = voices.find((v) => v.voice_id === q);
   if (byId) {
     return byId;
   }
-  const exactName = voices.find((v) => (v.name ?? "").trim().toLowerCase() === lower);
+  const exactName = voices.find((v) => normalizeOptionalLowercaseString(v.name) === lower);
   if (exactName) {
     return exactName;
   }
-  const partial = voices.find((v) => (v.name ?? "").trim().toLowerCase().includes(lower));
+  const partial = voices.find((v) => normalizeLowercaseStringOrEmpty(v.name).includes(lower));
   return partial ?? null;
 }
 
@@ -93,7 +97,7 @@ export default function register(api: RemoteClawPluginApi) {
       const commandLabel = resolveCommandLabel(ctx.channel);
       const args = ctx.args?.trim() ?? "";
       const tokens = args.split(/\s+/).filter(Boolean);
-      const action = (tokens[0] ?? "status").toLowerCase();
+      const action = normalizeLowercaseStringOrEmpty(tokens[0] ?? "status");
 
       const cfg = api.runtime.config.loadConfig();
       const apiKey = asTrimmedString(cfg.talk?.apiKey);

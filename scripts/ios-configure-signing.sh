@@ -70,6 +70,8 @@ watch_extension_bundle_id="${REMOTECLAW_IOS_WATCH_EXTENSION_BUNDLE_ID:-${watch_a
 code_sign_style="${REMOTECLAW_IOS_CODE_SIGN_STYLE:-Automatic}"
 app_profile="${REMOTECLAW_IOS_APP_PROFILE:-}"
 share_profile="${REMOTECLAW_IOS_SHARE_PROFILE:-}"
+watch_app_profile="${REMOTECLAW_IOS_WATCH_APP_PROFILE:-}"
+watch_extension_profile="${REMOTECLAW_IOS_WATCH_EXTENSION_PROFILE:-}"
 
 tmp_file="$(mktemp "${TMPDIR:-/tmp}/remoteclaw-ios-signing.XXXXXX")"
 cat >"${tmp_file}" <<EOF
@@ -80,6 +82,7 @@ cat >"${tmp_file}" <<EOF
 // REMOTECLAW_IOS_SHARE_BUNDLE_ID / REMOTECLAW_IOS_ACTIVITY_WIDGET_BUNDLE_ID
 // REMOTECLAW_IOS_WATCH_APP_BUNDLE_ID / REMOTECLAW_IOS_WATCH_EXTENSION_BUNDLE_ID
 // REMOTECLAW_IOS_CODE_SIGN_STYLE / REMOTECLAW_IOS_APP_PROFILE / REMOTECLAW_IOS_SHARE_PROFILE
+// REMOTECLAW_IOS_WATCH_APP_PROFILE / REMOTECLAW_IOS_WATCH_EXTENSION_PROFILE
 REMOTECLAW_CODE_SIGN_STYLE = ${code_sign_style}
 REMOTECLAW_DEVELOPMENT_TEAM = ${team_id}
 // Keep legacy key for compatibility with older signing config paths.
@@ -91,6 +94,8 @@ REMOTECLAW_WATCH_APP_BUNDLE_ID = ${watch_app_bundle_id}
 REMOTECLAW_WATCH_EXTENSION_BUNDLE_ID = ${watch_extension_bundle_id}
 REMOTECLAW_APP_PROFILE = ${app_profile}
 REMOTECLAW_SHARE_PROFILE = ${share_profile}
+REMOTECLAW_WATCH_APP_PROFILE = ${watch_app_profile}
+REMOTECLAW_WATCH_EXTENSION_PROFILE = ${watch_extension_profile}
 EOF
 
 if [[ -f "${LOCAL_SIGNING_FILE}" ]] && cmp -s "${tmp_file}" "${LOCAL_SIGNING_FILE}"; then

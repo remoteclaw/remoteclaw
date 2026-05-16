@@ -1,3 +1,4 @@
+import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 import { createAccountListHelpers } from "../../../src/channels/plugins/account-helpers.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import type { IMessageAccountConfig } from "../../../src/config/types.js";
@@ -62,7 +63,7 @@ export function resolveIMessageAccount(params: {
   return {
     accountId,
     enabled: baseEnabled && accountEnabled,
-    name: merged.name?.trim() || undefined,
+    name: normalizeOptionalString(merged.name),
     config: merged,
     configured,
   };

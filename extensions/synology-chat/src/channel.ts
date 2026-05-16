@@ -10,6 +10,7 @@ import {
   registerPluginHttpRoute,
   buildChannelConfigSchema,
 } from "remoteclaw/plugin-sdk/synology-chat";
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import { z } from "zod";
 import { listAccountIds, resolveAccount } from "./accounts.js";
 import { sendMessage, sendFileUrl } from "./client.js";
@@ -98,7 +99,7 @@ export function createSynologyChatPlugin() {
 
     pairing: {
       idLabel: "synologyChatUserId",
-      normalizeAllowEntry: (entry: string) => entry.toLowerCase().trim(),
+      normalizeAllowEntry: (entry: string) => normalizeLowercaseStringOrEmpty(entry),
       notifyApproval: async ({ cfg, id }: { cfg: any; id: string }) => {
         const account = resolveAccount(cfg);
         if (!account.incomingUrl) return;
@@ -133,7 +134,7 @@ export function createSynologyChatPlugin() {
           policyPath: `${basePath}dmPolicy`,
           allowFromPath: basePath,
           approveHint: "remoteclaw pairing approve synology-chat <code>",
-          normalizeEntry: (raw: string) => raw.toLowerCase().trim(),
+          normalizeEntry: (raw: string) => normalizeLowercaseStringOrEmpty(raw),
         };
       },
       collectWarnings: ({ account }: { account: ResolvedSynologyChatAccount }) => {

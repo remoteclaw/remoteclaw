@@ -1,4 +1,5 @@
 import type { RemoteClawConfig } from "../config/config.js";
+import { normalizeOptionalString } from "../shared/string-coerce.js";
 import { resolveGatewayCredentialsWithSecretInputs } from "./call.js";
 import {
   type ExplicitGatewayAuth,
@@ -57,8 +58,8 @@ export async function resolveGatewayProbeAuthSafeWithSecretInputs(params: {
   auth: { token?: string; password?: string };
   warning?: string;
 }> {
-  const explicitToken = params.explicitAuth?.token?.trim();
-  const explicitPassword = params.explicitAuth?.password?.trim();
+  const explicitToken = normalizeOptionalString(params.explicitAuth?.token);
+  const explicitPassword = normalizeOptionalString(params.explicitAuth?.password);
   if (explicitToken || explicitPassword) {
     return {
       auth: {
@@ -91,8 +92,8 @@ export function resolveGatewayProbeAuthSafe(params: {
   auth: { token?: string; password?: string };
   warning?: string;
 } {
-  const explicitToken = params.explicitAuth?.token?.trim();
-  const explicitPassword = params.explicitAuth?.password?.trim();
+  const explicitToken = normalizeOptionalString(params.explicitAuth?.token);
+  const explicitPassword = normalizeOptionalString(params.explicitAuth?.password);
   if (explicitToken || explicitPassword) {
     return {
       auth: {

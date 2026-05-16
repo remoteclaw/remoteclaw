@@ -1,5 +1,9 @@
 import { type Block, type KnownBlock, type WebClient } from "@slack/web-api";
 import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalString,
+} from "remoteclaw/plugin-sdk/text-runtime";
+import {
   chunkMarkdownTextWithMode,
   resolveChunkMode,
   resolveTextChunkLimit,
@@ -73,18 +77,18 @@ function isSlackCustomizeScopeError(err: unknown): boolean {
       response_metadata?: { scopes?: string[]; acceptedScopes?: string[] };
     };
   };
-  const code = maybeData.data?.error?.toLowerCase();
+  const code = normalizeLowercaseStringOrEmpty(maybeData.data?.error);
   if (code !== "missing_scope") {
     return false;
   }
-  const needed = maybeData.data?.needed?.toLowerCase();
+  const needed = normalizeLowercaseStringOrEmpty(maybeData.data?.needed);
   if (needed?.includes("chat:write.customize")) {
     return true;
   }
   const scopes = [
     ...(maybeData.data?.response_metadata?.scopes ?? []),
     ...(maybeData.data?.response_metadata?.acceptedScopes ?? []),
-  ].map((scope) => scope.toLowerCase());
+  ].map((scope) => normalizeLowercaseStringOrEmpty(scope));
   return scopes.includes("chat:write.customize");
 }
 
@@ -291,7 +295,7 @@ export async function sendMessageSlack(
   message: string,
   opts: SlackSendOpts = {},
 ): Promise<SlackSendResult> {
-  const trimmedMessage = message?.trim() ?? "";
+  const trimmedMessage = normalizeOptionalString(message) ?? "";
   if (isSilentReplyText(trimmedMessage) && !opts.mediaUrl && !opts.blocks) {
     logVerbose("slack send: suppressed NO_REPLY token before API call");
     return { messageId: "suppressed", channelId: "" };

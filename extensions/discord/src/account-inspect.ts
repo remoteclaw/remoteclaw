@@ -1,3 +1,4 @@
+import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import type { DiscordAccountConfig } from "../../../src/config/types.discord.js";
 import {
@@ -67,7 +68,7 @@ export function inspectDiscordAccount(params: {
     return {
       accountId,
       enabled,
-      name: merged.name?.trim() || undefined,
+      name: normalizeOptionalString(merged.name),
       token: accountToken.token,
       tokenSource: accountToken.tokenSource,
       tokenStatus: accountToken.tokenStatus,
@@ -79,7 +80,7 @@ export function inspectDiscordAccount(params: {
     return {
       accountId,
       enabled,
-      name: merged.name?.trim() || undefined,
+      name: normalizeOptionalString(merged.name),
       token: "",
       tokenSource: "none",
       tokenStatus: "missing",
@@ -93,7 +94,7 @@ export function inspectDiscordAccount(params: {
     return {
       accountId,
       enabled,
-      name: merged.name?.trim() || undefined,
+      name: normalizeOptionalString(merged.name),
       token: channelToken.token,
       tokenSource: channelToken.tokenSource,
       tokenStatus: channelToken.tokenStatus,
@@ -110,7 +111,7 @@ export function inspectDiscordAccount(params: {
     return {
       accountId,
       enabled,
-      name: merged.name?.trim() || undefined,
+      name: normalizeOptionalString(merged.name),
       token: envToken.replace(/^Bot\s+/i, ""),
       tokenSource: "env",
       tokenStatus: "available",

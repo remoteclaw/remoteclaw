@@ -1,3 +1,4 @@
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import { chunkMarkdownTextWithMode, type ChunkMode } from "../../../../src/auto-reply/chunk.js";
 import type { ReplyPayload } from "../../../../src/auto-reply/types.js";
 import type { MarkdownTableMode } from "../../../../src/config/types.base.js";
@@ -22,7 +23,7 @@ function shouldSuppressReasoningReply(payload: ReplyPayload): boolean {
   if (typeof text !== "string") {
     return false;
   }
-  return text.trimStart().toLowerCase().startsWith(REASONING_PREFIX);
+  return normalizeLowercaseStringOrEmpty(text.trimStart()).startsWith(REASONING_PREFIX);
 }
 
 export async function deliverWebReply(params: {

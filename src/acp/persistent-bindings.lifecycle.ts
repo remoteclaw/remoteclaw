@@ -2,6 +2,8 @@
 import type { RemoteClawConfig } from "../config/config.js";
 import type { SessionAcpMeta } from "../config/sessions/types.js";
 import { logVerbose } from "../globals.js";
+import { formatErrorMessage } from "../infra/errors.js";
+import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
 import { resolveConfiguredAcpBindingSpecBySessionKey } from "./persistent-bindings.resolve.js";
 import {
   buildConfiguredAcpSessionKey,
@@ -15,8 +17,10 @@ function sessionMatchesConfiguredBinding(params: {
   spec: ConfiguredAcpBindingSpec;
   meta: SessionAcpMeta;
 }): boolean {
-  const desiredAgent = (params.spec.acpAgentId ?? params.spec.agentId).trim().toLowerCase();
-  const currentAgent = (params.meta.agent ?? "").trim().toLowerCase();
+  const desiredAgent = normalizeLowercaseStringOrEmpty(
+    params.spec.acpAgentId ?? params.spec.agentId,
+  );
+  const currentAgent = normalizeLowercaseStringOrEmpty(params.meta.agent);
   if (!currentAgent || currentAgent !== desiredAgent) {
     return false;
   }
@@ -90,7 +94,7 @@ export async function ensureConfiguredAcpBindingSession(params: {
       sessionKey,
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = formatErrorMessage(error);
     logVerbose(
       `acp-persistent-binding: failed ensuring ${params.spec.channel}:${params.spec.accountId}:${params.spec.conversationId} -> ${sessionKey}: ${message}`,
     );
@@ -183,7 +187,7 @@ export async function resetAcpSessionInPlace(params: {
     }
     return { ok: true };
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = formatErrorMessage(error);
     logVerbose(`acp-persistent-binding: failed reset for ${sessionKey}: ${message}`);
     return {
       ok: false,

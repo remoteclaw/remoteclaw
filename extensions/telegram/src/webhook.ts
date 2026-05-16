@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { createServer } from "node:http";
 import type { IncomingMessage } from "node:http";
 import { InputFile, webhookCallback } from "grammy";
+import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import { resolveRequestClientIp } from "../../../src/gateway/net.js";
 import { isDiagnosticsEnabled } from "../../../src/infra/diagnostic-events.js";
@@ -137,7 +138,7 @@ export async function startTelegramWebhook(opts: {
   const healthPath = opts.healthPath ?? "/healthz";
   const port = opts.port ?? 8787;
   const host = opts.host ?? "127.0.0.1";
-  const secret = typeof opts.secret === "string" ? opts.secret.trim() : "";
+  const secret = normalizeOptionalString(opts.secret) ?? "";
   if (!secret) {
     throw new Error(
       "Telegram webhook mode requires a non-empty secret token. " +

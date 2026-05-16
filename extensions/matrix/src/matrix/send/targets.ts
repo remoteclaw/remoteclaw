@@ -1,4 +1,8 @@
 import type { MatrixClient } from "@vector-im/matrix-bot-sdk";
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeStringifiedOptionalString,
+} from "remoteclaw/plugin-sdk/text-runtime";
 import { EventType, type MatrixDirectAccountData } from "./types.js";
 
 function normalizeTarget(raw: string): string {
@@ -10,11 +14,7 @@ function normalizeTarget(raw: string): string {
 }
 
 export function normalizeThreadId(raw?: string | number | null): string | null {
-  if (raw === undefined || raw === null) {
-    return null;
-  }
-  const trimmed = String(raw).trim();
-  return trimmed ? trimmed : null;
+  return normalizeStringifiedOptionalString(raw) ?? null;
 }
 
 // Size-capped to prevent unbounded growth (#4948)
@@ -123,7 +123,7 @@ async function resolveDirectRoomId(client: MatrixClient, userId: string): Promis
 
 export async function resolveMatrixRoomId(client: MatrixClient, raw: string): Promise<string> {
   const target = normalizeTarget(raw);
-  const lowered = target.toLowerCase();
+  const lowered = normalizeLowercaseStringOrEmpty(target);
   if (lowered.startsWith("matrix:")) {
     return await resolveMatrixRoomId(client, target.slice("matrix:".length));
   }

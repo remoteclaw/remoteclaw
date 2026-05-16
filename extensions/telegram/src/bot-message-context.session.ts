@@ -1,3 +1,4 @@
+import { normalizeOptionalLowercaseString } from "remoteclaw/plugin-sdk/text-runtime";
 import { normalizeCommandBody } from "../../../src/auto-reply/commands-registry.js";
 import {
   formatInboundEnvelope,
@@ -174,7 +175,7 @@ export async function buildTelegramInboundContextPayload(params: {
     topicConfig,
   });
   const commandBody = normalizeCommandBody(rawBody, {
-    botUsername: primaryCtx.me?.username?.toLowerCase(),
+    botUsername: normalizeOptionalLowercaseString(primaryCtx.me?.username),
   });
   const inboundHistory =
     isGroup && historyKey && historyLimit > 0

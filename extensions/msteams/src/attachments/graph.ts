@@ -1,13 +1,19 @@
 import { fetchWithSsrFGuard, type SsrFPolicy } from "remoteclaw/plugin-sdk/msteams";
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalLowercaseString,
+  normalizeOptionalString,
+} from "remoteclaw/plugin-sdk/text-runtime";
 import { getMSTeamsRuntime } from "../runtime.js";
 import { downloadMSTeamsAttachments } from "./download.js";
 import { downloadAndStoreMSTeamsRemoteMedia } from "./remote-media.js";
 import {
   applyAuthorizationHeaderForUrl,
   GRAPH_ROOT,
+  estimateBase64DecodedBytes,
   inferPlaceholder,
-  isRecord,
   isUrlAllowed,
+  readNestedString,
   type MSTeamsAttachmentFetchPolicy,
   normalizeContentType,
   resolveMediaSsrfPolicy,
@@ -37,17 +43,6 @@ type GraphAttachment = {
   content?: unknown;
 };
 
-function readNestedString(value: unknown, keys: Array<string | number>): string | undefined {
-  let current: unknown = value;
-  for (const key of keys) {
-    if (!isRecord(current)) {
-      return undefined;
-    }
-    current = current[key as keyof typeof current];
-  }
-  return typeof current === "string" && current.trim() ? current.trim() : undefined;
-}
-
 export function buildMSTeamsGraphMessageUrls(params: {
   conversationType?: string | null;
   conversationId?: string | null;
@@ -56,10 +51,10 @@ export function buildMSTeamsGraphMessageUrls(params: {
   conversationMessageId?: string | null;
   channelData?: unknown;
 }): string[] {
-  const conversationType = params.conversationType?.trim().toLowerCase() ?? "";
+  const conversationType = normalizeLowercaseStringOrEmpty(params.conversationType ?? "");
   const messageIdCandidates = new Set<string>();
   const pushCandidate = (value: string | null | undefined) => {
-    const trimmed = typeof value === "string" ? value.trim() : "";
+    const trimmed = normalizeOptionalString(value) ?? "";
     if (trimmed) {
       messageIdCandidates.add(trimmed);
     }
@@ -70,7 +65,7 @@ export function buildMSTeamsGraphMessageUrls(params: {
   pushCandidate(readNestedString(params.channelData, ["messageId"]));
   pushCandidate(readNestedString(params.channelData, ["teamsMessageId"]));
 
-  const replyToId = typeof params.replyToId === "string" ? params.replyToId.trim() : "";
+  const replyToId = normalizeOptionalString(params.replyToId) ?? "";
 
   if (conversationType === "channel") {
     const teamId =
@@ -195,6 +190,9 @@ async function downloadGraphHostedContent(params: {
   for (const item of hosted.items) {
     const contentBytes = typeof item.contentBytes === "string" ? item.contentBytes : "";
     if (!contentBytes) {
+      continue;
+    }
+    if (estimateBase64DecodedBytes(contentBytes) > params.maxBytes) {
       continue;
     }
     let buffer: Buffer;
@@ -361,7 +359,7 @@ export async function downloadMSTeamsGraphMedia(params: {
   const filteredAttachments =
     sharePointMedia.length > 0
       ? normalizedAttachments.filter((att) => {
-          const contentType = att.contentType?.toLowerCase();
+          const contentType = normalizeOptionalLowercaseString(att.contentType);
           if (contentType !== "reference") {
             return true;
           }

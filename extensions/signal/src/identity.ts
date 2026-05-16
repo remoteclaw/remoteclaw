@@ -1,3 +1,4 @@
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import { evaluateSenderGroupAccessForPolicy } from "../../../src/plugin-sdk/group-access.js";
 import { normalizeE164 } from "../../../src/utils.js";
 
@@ -80,7 +81,7 @@ function parseSignalAllowEntry(entry: string): SignalAllowEntry | null {
   }
 
   const stripped = stripSignalPrefix(trimmed);
-  const lower = stripped.toLowerCase();
+  const lower = normalizeLowercaseStringOrEmpty(stripped);
   if (lower.startsWith("uuid:")) {
     const raw = stripped.slice("uuid:".length).trim();
     if (!raw) {

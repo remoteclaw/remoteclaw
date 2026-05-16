@@ -1,4 +1,5 @@
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
+import { normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
+import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 import { createAccountListHelpers, type RemoteClawConfig } from "remoteclaw/plugin-sdk/zalo";
 import { resolveZaloToken } from "./token.js";
 import type { ResolvedZaloAccount, ZaloAccountConfig, ZaloConfig } from "./types.js";
@@ -47,7 +48,7 @@ export function resolveZaloAccount(params: {
 
   return {
     accountId,
-    name: merged.name?.trim() || undefined,
+    name: normalizeOptionalString(merged.name),
     enabled,
     token: tokenResolution.token,
     tokenSource: tokenResolution.source,

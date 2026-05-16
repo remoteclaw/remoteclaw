@@ -4,6 +4,7 @@ import {
   normalizeOptionalAccountId,
 } from "remoteclaw/plugin-sdk/account-id";
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/nostr";
+import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 import type { NostrProfile } from "./config-schema.js";
 import { getPublicKeyFromPrivate } from "./nostr-bus.js";
 import { DEFAULT_RELAYS } from "./nostr-bus.js";
@@ -96,7 +97,7 @@ export function resolveNostrAccount(opts: {
 
   return {
     accountId,
-    name: nostrCfg?.name?.trim() || undefined,
+    name: normalizeOptionalString(nostrCfg?.name),
     enabled: baseEnabled,
     configured,
     privateKey,

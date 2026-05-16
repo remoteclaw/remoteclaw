@@ -5,6 +5,10 @@ import {
   resolveClientIp,
   type RemoteClawConfig,
 } from "remoteclaw/plugin-sdk/mattermost";
+import {
+  normalizeOptionalString,
+  normalizeStringifiedOptionalString,
+} from "remoteclaw/plugin-sdk/text-runtime";
 import { getMattermostRuntime } from "../runtime.js";
 import { updateMattermostPost, type MattermostClient } from "./client.js";
 
@@ -71,7 +75,9 @@ export function resolveInteractionCallbackPath(accountId: string): string {
 
 function isWildcardBindHost(rawHost: string): boolean {
   const trimmed = rawHost.trim();
-  if (!trimmed) return false;
+  if (!trimmed) {
+    return false;
+  }
   const host = trimmed.startsWith("[") && trimmed.endsWith("]") ? trimmed.slice(1, -1) : trimmed;
   return host === "0.0.0.0" || host === "::" || host === "0:0:0:0:0:0:0:0" || host === "::0";
 }
@@ -82,9 +88,9 @@ function normalizeCallbackBaseUrl(baseUrl: string): string {
 
 function headerValue(value: string | string[] | undefined): string | undefined {
   if (Array.isArray(value)) {
-    return value[0]?.trim() || undefined;
+    return normalizeOptionalString(value[0]);
   }
-  return value?.trim() || undefined;
+  return normalizeOptionalString(value);
 }
 
 function isAllowedInteractionSource(params: {
@@ -120,8 +126,8 @@ export function computeInteractionCallbackUrl(
   // Prefer merged per-account config when available, but keep the top-level path for
   // callers/tests that still pass the root Mattermost config shape directly.
   const callbackBaseUrl =
-    cfg?.interactions?.callbackBaseUrl?.trim() ??
-    cfg?.channels?.mattermost?.interactions?.callbackBaseUrl?.trim();
+    normalizeOptionalString(cfg?.interactions?.callbackBaseUrl) ??
+    normalizeOptionalString(cfg?.channels?.mattermost?.interactions?.callbackBaseUrl);
   if (callbackBaseUrl) {
     return `${normalizeCallbackBaseUrl(callbackBaseUrl)}${path}`;
   }
@@ -201,7 +207,7 @@ function canonicalizeInteractionContext(value: unknown): unknown {
   if (value && typeof value === "object") {
     const entries = Object.entries(value as Record<string, unknown>)
       .filter(([, entryValue]) => entryValue !== undefined)
-      .sort(([left], [right]) => left.localeCompare(right))
+      .toSorted(([left], [right]) => left.localeCompare(right))
       .map(([key, entryValue]) => [key, canonicalizeInteractionContext(entryValue)]);
     return Object.fromEntries(entries);
   }
@@ -319,8 +325,8 @@ export function buildButtonProps(params: {
 
   const buttons = rawButtons
     .map((btn) => ({
-      id: String(btn.id ?? btn.callback_data ?? "").trim(),
-      name: String(btn.text ?? btn.name ?? btn.label ?? "").trim(),
+      id: normalizeStringifiedOptionalString(btn.id ?? btn.callback_data) ?? "",
+      name: normalizeStringifiedOptionalString(btn.text ?? btn.name ?? btn.label) ?? "",
       style: btn.style ?? "default",
       context:
         typeof btn.context === "object" && btn.context !== null

@@ -12,6 +12,7 @@ const { detectChangedScope, listChangedPaths } =
       runWindows: boolean;
       runSkillsPython: boolean;
       runChangedSmoke: boolean;
+      runControlUiI18n: boolean;
     };
     listChangedPaths: (base: string, head?: string) => string[];
   };
@@ -36,6 +37,7 @@ describe("detectChangedScope", () => {
       runWindows: true,
       runSkillsPython: true,
       runChangedSmoke: true,
+      runControlUiI18n: true,
     });
   });
 
@@ -47,6 +49,7 @@ describe("detectChangedScope", () => {
       runWindows: false,
       runSkillsPython: false,
       runChangedSmoke: false,
+      runControlUiI18n: false,
     });
   });
 
@@ -58,6 +61,7 @@ describe("detectChangedScope", () => {
       runWindows: true,
       runSkillsPython: false,
       runChangedSmoke: false,
+      runControlUiI18n: false,
     });
   });
 
@@ -69,6 +73,7 @@ describe("detectChangedScope", () => {
       runWindows: false,
       runSkillsPython: false,
       runChangedSmoke: false,
+      runControlUiI18n: false,
     });
     expect(detectChangedScope(["apps/shared/RemoteClawKit/Sources/Foo.swift"])).toEqual({
       runNode: false,
@@ -77,6 +82,7 @@ describe("detectChangedScope", () => {
       runWindows: false,
       runSkillsPython: false,
       runChangedSmoke: false,
+      runControlUiI18n: false,
     });
   });
 
@@ -90,6 +96,7 @@ describe("detectChangedScope", () => {
       runWindows: false,
       runSkillsPython: false,
       runChangedSmoke: false,
+      runControlUiI18n: false,
     });
   });
 
@@ -101,6 +108,7 @@ describe("detectChangedScope", () => {
       runWindows: false,
       runSkillsPython: false,
       runChangedSmoke: false,
+      runControlUiI18n: false,
     });
 
     expect(detectChangedScope(["assets/icon.png"])).toEqual({
@@ -110,6 +118,7 @@ describe("detectChangedScope", () => {
       runWindows: false,
       runSkillsPython: false,
       runChangedSmoke: false,
+      runControlUiI18n: false,
     });
   });
 
@@ -121,6 +130,7 @@ describe("detectChangedScope", () => {
       runWindows: false,
       runSkillsPython: false,
       runChangedSmoke: false,
+      runControlUiI18n: false,
     });
   });
 
@@ -132,6 +142,7 @@ describe("detectChangedScope", () => {
       runWindows: false,
       runSkillsPython: true,
       runChangedSmoke: false,
+      runControlUiI18n: false,
     });
   });
 
@@ -143,6 +154,7 @@ describe("detectChangedScope", () => {
       runWindows: false,
       runSkillsPython: true,
       runChangedSmoke: false,
+      runControlUiI18n: false,
     });
   });
 
@@ -154,6 +166,7 @@ describe("detectChangedScope", () => {
       runWindows: true,
       runSkillsPython: true,
       runChangedSmoke: false,
+      runControlUiI18n: false,
     });
   });
 
@@ -165,6 +178,7 @@ describe("detectChangedScope", () => {
       runWindows: true,
       runSkillsPython: false,
       runChangedSmoke: true,
+      runControlUiI18n: false,
     });
     expect(detectChangedScope(["extensions/matrix/package.json"])).toEqual({
       runNode: true,
@@ -173,6 +187,7 @@ describe("detectChangedScope", () => {
       runWindows: true,
       runSkillsPython: false,
       runChangedSmoke: true,
+      runControlUiI18n: false,
     });
     expect(detectChangedScope([".github/workflows/install-smoke.yml"])).toEqual({
       runNode: true,
@@ -181,6 +196,29 @@ describe("detectChangedScope", () => {
       runWindows: false,
       runSkillsPython: false,
       runChangedSmoke: true,
+      runControlUiI18n: false,
+    });
+  });
+
+  it("runs control-ui locale check only for control-ui i18n surfaces", () => {
+    expect(detectChangedScope(["ui/src/i18n/locales/en.ts"])).toEqual({
+      runNode: true,
+      runMacos: false,
+      runAndroid: false,
+      runWindows: true,
+      runSkillsPython: false,
+      runChangedSmoke: false,
+      runControlUiI18n: true,
+    });
+
+    expect(detectChangedScope(["scripts/control-ui-i18n.ts"])).toEqual({
+      runNode: true,
+      runMacos: false,
+      runAndroid: false,
+      runWindows: true,
+      runSkillsPython: false,
+      runChangedSmoke: false,
+      runControlUiI18n: true,
     });
   });
 

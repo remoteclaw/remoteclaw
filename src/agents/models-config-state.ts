@@ -35,5 +35,6 @@ export const MODELS_JSON_STATE = (() => {
 })();
 
 export function resetModelsJsonReadyCacheForTest(): void {
+  MODELS_JSON_STATE.writeLocks.clear();
   MODELS_JSON_STATE.readyCache.clear();
 }

@@ -17,6 +17,7 @@ import { formatTimeAgo } from "../infra/format-time/format-relative.ts";
 import { resolveCommitHash } from "../infra/git-commit.js";
 import { listPluginCommands } from "../plugins/commands.js";
 import { resolveAgentIdFromSessionKey } from "../routing/session-key.js";
+import { normalizeOptionalLowercaseString } from "../shared/string-coerce.js";
 import {
   getTtsMaxLength,
   getTtsProvider,
@@ -81,7 +82,7 @@ type StatusArgs = {
 type NormalizedAuthMode = "api-key" | "oauth" | "token" | "aws-sdk" | "mixed" | "unknown";
 
 function normalizeAuthMode(value?: string): NormalizedAuthMode | undefined {
-  const normalized = value?.trim().toLowerCase();
+  const normalized = normalizeOptionalLowercaseString(value);
   if (!normalized) {
     return undefined;
   }
@@ -612,7 +613,7 @@ export function buildCommandsMessagePaginated(
   options?: CommandsMessageOptions,
 ): CommandsMessageResult {
   const page = Math.max(1, options?.page ?? 1);
-  const surface = options?.surface?.toLowerCase();
+  const surface = normalizeOptionalLowercaseString(options?.surface);
   const isTelegram = surface === "telegram";
 
   const commands = cfg ? listChatCommandsForConfig(cfg) : listChatCommands();

@@ -17,6 +17,10 @@ import {
   type RemoteClawConfig,
   type RuntimeEnv,
 } from "remoteclaw/plugin-sdk/irc";
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalString,
+} from "remoteclaw/plugin-sdk/text-runtime";
 import type { ResolvedIrcAccount } from "./accounts.js";
 import { normalizeIrcAllowlist, resolveIrcAllowlistMatch } from "./normalize.js";
 import {
@@ -214,7 +218,7 @@ export async function handleIrcInbound(params: {
         if (dmPolicy === "pairing") {
           await issuePairingChallenge({
             channel: CHANNEL_ID,
-            senderId: senderDisplay.toLowerCase(),
+            senderId: normalizeLowercaseStringOrEmpty(senderDisplay),
             senderIdLine: `Your IRC id: ${senderDisplay}`,
             meta: { name: message.senderNick || undefined },
             upsertPairingRequest: pairing.upsertPairingRequest,
@@ -308,7 +312,7 @@ export async function handleIrcInbound(params: {
     body: rawBody,
   });
 
-  const groupSystemPrompt = groupMatch.groupConfig?.systemPrompt?.trim() || undefined;
+  const groupSystemPrompt = normalizeOptionalString(groupMatch.groupConfig?.systemPrompt);
 
   const ctxPayload = core.channel.reply.finalizeInboundContext({
     Body: body,

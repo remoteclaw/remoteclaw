@@ -5,6 +5,10 @@ import {
   normalizeResolvedSecretInputString,
   parseOptionalDelimitedEntries,
 } from "remoteclaw/plugin-sdk/irc";
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalString,
+} from "remoteclaw/plugin-sdk/text-runtime";
 import type { CoreConfig, IrcAccountConfig, IrcNickServConfig } from "./types.js";
 
 const TRUTHY_ENV = new Set(["true", "1", "yes", "on"]);
@@ -29,7 +33,7 @@ function parseTruthy(value?: string): boolean {
   if (!value) {
     return false;
   }
-  return TRUTHY_ENV.has(value.trim().toLowerCase());
+  return TRUTHY_ENV.has(normalizeLowercaseStringOrEmpty(value));
 }
 
 function parseIntEnv(value?: string): number | undefined {
@@ -133,7 +137,7 @@ function resolveNickServConfig(accountId: string, nickserv?: IrcNickServConfig):
 
   const merged: IrcNickServConfig = {
     ...base,
-    service: base.service?.trim() || undefined,
+    service: normalizeOptionalString(base.service),
     passwordFile: passwordFile || undefined,
     password: resolvedPassword || undefined,
     registerEmail: base.registerEmail?.trim() || envRegisterEmail || undefined,
@@ -208,7 +212,7 @@ export function resolveIrcAccount(params: {
     return {
       accountId,
       enabled,
-      name: merged.name?.trim() || undefined,
+      name: normalizeOptionalString(merged.name),
       configured: Boolean(host && nick),
       host,
       port,

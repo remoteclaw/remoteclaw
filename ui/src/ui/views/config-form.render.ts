@@ -1,5 +1,6 @@
 import { html, nothing } from "lit";
 import { icons } from "../icons.ts";
+import { normalizeLowercaseStringOrEmpty } from "../string-coerce.ts";
 import type { ConfigUiHints } from "../types.ts";
 import { matchesNodeSearch, parseConfigSearchQuery, renderNode } from "./config-form.node.ts";
 import { hintForPath, humanize, schemaType, type JsonSchema } from "./config-form.shared.ts";
@@ -322,16 +323,16 @@ function matchesSearch(params: {
   const meta = SECTION_META[params.key];
 
   // Check key name
-  if (q && params.key.toLowerCase().includes(q)) {
+  if (q && normalizeLowercaseStringOrEmpty(params.key).includes(q)) {
     return true;
   }
 
   // Check label and description
   if (q && meta) {
-    if (meta.label.toLowerCase().includes(q)) {
+    if (normalizeLowercaseStringOrEmpty(meta.label).includes(q)) {
       return true;
     }
-    if (meta.description.toLowerCase().includes(q)) {
+    if (normalizeLowercaseStringOrEmpty(meta.description).includes(q)) {
       return true;
     }
   }

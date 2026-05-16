@@ -1,3 +1,4 @@
+import { formatErrorMessage } from "../../../src/infra/errors.js";
 import { isRecord } from "../../../src/utils.js";
 import { fetchWithTimeout } from "../../../src/utils/fetch-timeout.js";
 import type {
@@ -59,7 +60,7 @@ export async function auditTelegramGroupMembershipImpl(
         chatId,
         ok: false,
         status: null,
-        error: err instanceof Error ? err.message : String(err),
+        error: formatErrorMessage(err),
         matchKey: chatId,
         matchSource: "id",
       });

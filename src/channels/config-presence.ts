@@ -2,7 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 import type { RemoteClawConfig } from "../config/config.js";
 import { resolveOAuthDir } from "../config/paths.js";
+import { hasNonEmptyString } from "../infra/outbound/channel-target.js";
 import { DEFAULT_ACCOUNT_ID } from "../routing/session-key.js";
+import { isRecord } from "../utils.js";
 
 const IGNORED_CHANNEL_CONFIG_KEYS = new Set(["defaults", "modelByChannel"]);
 
@@ -21,14 +23,6 @@ const CHANNEL_ENV_PREFIXES = [
   ["ZALOUSER_", "zalouser"],
   ["ZALO_", "zalo"],
 ] as const;
-
-function hasNonEmptyString(value: unknown): boolean {
-  return typeof value === "string" && value.trim().length > 0;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
 
 export function hasMeaningfulChannelConfig(value: unknown): boolean {
   if (!isRecord(value)) {

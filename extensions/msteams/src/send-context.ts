@@ -3,6 +3,7 @@ import {
   type RemoteClawConfig,
   type PluginRuntime,
 } from "remoteclaw/plugin-sdk/msteams";
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import type { MSTeamsAccessTokenProvider } from "./attachments/types.js";
 import { createMSTeamsConversationStoreFs } from "./conversation-store-fs.js";
 import type {
@@ -130,7 +131,9 @@ export async function resolveMSTeamsSendContext(params: {
   const tokenProvider = new sdk.MsalTokenProvider(authConfig) as MSTeamsAccessTokenProvider;
 
   // Determine conversation type from stored reference
-  const storedConversationType = ref.conversation?.conversationType?.toLowerCase() ?? "";
+  const storedConversationType = normalizeLowercaseStringOrEmpty(
+    ref.conversation?.conversationType ?? "",
+  );
   let conversationType: MSTeamsConversationType;
   if (storedConversationType === "personal") {
     conversationType = "personal";

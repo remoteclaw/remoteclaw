@@ -1,4 +1,5 @@
 import { RequestClient } from "@buape/carbon";
+import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 import { loadConfig } from "../../../src/config/config.js";
 import { createDiscordRetryRunner, type RetryRunner } from "../../../src/infra/retry-policy.js";
 import type { RetryConfig } from "../../../src/infra/retry.js";
@@ -44,7 +45,7 @@ function resolveAccountWithoutToken(params: {
   return {
     accountId,
     enabled: baseEnabled && accountEnabled,
-    name: merged.name?.trim() || undefined,
+    name: normalizeOptionalString(merged.name),
     token: "",
     tokenSource: "none",
     config: merged,

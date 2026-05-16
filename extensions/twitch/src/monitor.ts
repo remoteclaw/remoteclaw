@@ -5,8 +5,10 @@
  * resolves agent routes, and handles replies.
  */
 
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import type { ReplyPayload, RemoteClawConfig } from "remoteclaw/plugin-sdk/twitch";
 import { createReplyPrefixOptions } from "remoteclaw/plugin-sdk/twitch";
+import { formatErrorMessage } from "../../../src/infra/errors.js";
 import { checkTwitchAccessControl } from "./access-control.js";
 import { getOrCreateClientManager } from "./client-manager-registry.js";
 import { getTwitchRuntime } from "./runtime.js";
@@ -218,7 +220,7 @@ export async function monitorTwitchProvider(
       accountId,
     );
   } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : String(error);
+    const errorMsg = formatErrorMessage(error);
     runtime.error?.(`Failed to connect: ${errorMsg}`);
     throw error;
   }
@@ -229,8 +231,8 @@ export async function monitorTwitchProvider(
     }
 
     // Access control check
-    const botUsername = account.username.toLowerCase();
-    if (message.username.toLowerCase() === botUsername) {
+    const botUsername = normalizeLowercaseStringOrEmpty(account.username);
+    if (normalizeLowercaseStringOrEmpty(message.username) === botUsername) {
       return; // Ignore own messages
     }
 

@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import type { Bot } from "grammy";
+import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 import { resolveStateDir } from "../../../src/config/paths.js";
 import {
   normalizeTelegramCommandName,
@@ -81,7 +82,7 @@ export function buildPluginTelegramMenuCommands(params: {
       );
       continue;
     }
-    const description = typeof spec.description === "string" ? spec.description.trim() : "";
+    const description = normalizeOptionalString(spec.description) ?? "";
     if (!description) {
       issues.push(`Plugin command "/${normalized}" is missing a description.`);
       continue;

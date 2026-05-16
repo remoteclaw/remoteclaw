@@ -1,4 +1,5 @@
 import { type RunOptions, run } from "@grammyjs/runner";
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import { computeBackoff, sleepWithAbort } from "../../../src/infra/backoff.js";
 import { formatErrorMessage } from "../../../src/infra/errors.js";
 import { formatDurationPrecise } from "../../../src/infra/format-time/format-duration.ts";
@@ -315,7 +316,7 @@ const isGetUpdatesConflict = (err: unknown) => {
   }
   const haystack = [typed.method, typed.description, typed.message]
     .filter((value): value is string => typeof value === "string")
-    .join(" ")
-    .toLowerCase();
-  return haystack.includes("getupdates");
+    .join(" ");
+  const normalizedHaystack = normalizeLowercaseStringOrEmpty(haystack);
+  return normalizedHaystack.includes("getupdates");
 };

@@ -5,7 +5,9 @@ import { homedir } from "node:os";
 import * as path from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import { fetchWithSsrFGuard } from "remoteclaw/plugin-sdk/tlon";
+import { formatErrorMessage } from "../../../../src/infra/errors.js";
 import { getDefaultSsrFPolicy } from "../urbit/context.js";
 
 // Default to RemoteClaw workspace media directory
@@ -105,8 +107,8 @@ export async function downloadMedia(
     } finally {
       await release();
     }
-  } catch (error: any) {
-    console.error(`[tlon-media] Error downloading ${url}: ${error?.message ?? String(error)}`);
+  } catch (error: unknown) {
+    console.error(`[tlon-media] Error downloading ${url}: ${formatErrorMessage(error)}`);
     return null;
   }
 }
@@ -131,7 +133,7 @@ function getExtensionFromUrl(url: string): string | null {
   try {
     const pathname = new URL(url).pathname;
     const match = pathname.match(/\.([a-z0-9]+)$/i);
-    return match ? match[1].toLowerCase() : null;
+    return match ? normalizeLowercaseStringOrEmpty(match[1]) : null;
   } catch {
     return null;
   }

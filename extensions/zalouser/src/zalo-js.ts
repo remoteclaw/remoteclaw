@@ -3,6 +3,11 @@ import fs from "node:fs";
 import fsp from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalLowercaseString,
+  normalizeOptionalString,
+} from "remoteclaw/plugin-sdk/text-runtime";
 import { loadOutboundMediaFromUrl } from "remoteclaw/plugin-sdk/zalouser";
 import { normalizeZaloReactionIcon } from "./reaction.js";
 import { getZalouserRuntime } from "./runtime.js";
@@ -93,7 +98,7 @@ function resolveCredentialsDir(env: NodeJS.ProcessEnv = process.env): string {
 }
 
 function credentialsFilename(profile: string): string {
-  const trimmed = profile.trim().toLowerCase();
+  const trimmed = normalizeLowercaseStringOrEmpty(profile);
   if (!trimmed || trimmed === "default") {
     return "credentials.json";
   }
@@ -204,14 +209,17 @@ function normalizeAccountInfoUser(info: AccountInfoResponse): User | null {
     }
     return null;
   }
-  return info as User;
+  return info;
 }
 
 function toInteger(value: unknown, fallback = 0): number {
   if (typeof value === "number" && Number.isFinite(value)) {
     return Math.trunc(value);
   }
-  const parsed = Number.parseInt(String(value ?? ""), 10);
+  const parsed = Number.parseInt(
+    typeof value === "string" ? value : typeof value === "number" ? String(value) : "",
+    10,
+  );
   if (!Number.isFinite(parsed)) {
     return fallback;
   }
@@ -244,7 +252,10 @@ function resolveInboundTimestamp(rawTs: unknown): number {
   if (typeof rawTs === "number" && Number.isFinite(rawTs)) {
     return rawTs > 1_000_000_000_000 ? rawTs : rawTs * 1000;
   }
-  const parsed = Number.parseInt(String(rawTs ?? ""), 10);
+  const parsed = Number.parseInt(
+    typeof rawTs === "string" ? rawTs : typeof rawTs === "number" ? String(rawTs) : "",
+    10,
+  );
   if (!Number.isFinite(parsed) || parsed <= 0) {
     return Date.now();
   }
@@ -489,13 +500,13 @@ function resolveUploadedVoiceAsset(
     if (!item || typeof item !== "object") {
       continue;
     }
-    const fileType = item.fileType?.toLowerCase();
+    const fileType = normalizeOptionalLowercaseString(item.fileType);
     const fileUrl = item.fileUrl?.trim();
     if (!fileUrl) {
       continue;
     }
     if (fileType === "others" || fileType === "video") {
-      return { fileUrl, fileName: item.fileName?.trim() || undefined };
+      return { fileUrl, fileName: normalizeOptionalString(item.fileName) };
     }
   }
   return undefined;
@@ -618,7 +629,7 @@ async function ensureApi(
   const initPromise = (async () => {
     const stored = readCredentials(profile);
     if (!stored) {
-      throw new Error(`No saved Zalo session for profile \"${profile}\"`);
+      throw new Error(`No saved Zalo session for profile "${profile}"`);
     }
     const zalo = new Zalo({
       logging: false,
@@ -632,7 +643,7 @@ async function ensureApi(
         language: stored.language,
       }),
       timeoutMs,
-      `Timed out restoring Zalo session for profile \"${profile}\"`,
+      `Timed out restoring Zalo session for profile "${profile}"`,
     );
     apiByProfile.set(profile, api);
     touchCredentials(profile);
@@ -777,7 +788,7 @@ function extractGroupMembersFromInfo(
 }
 
 function toInboundMessage(message: Message, ownUserId?: string): ZaloInboundMessage | null {
-  const data = message.data as Record<string, unknown>;
+  const data = message.data;
   const isGroup = message.type === ThreadType.Group;
   const senderId = toNumberId(data.uidFrom);
   const threadId = isGroup
@@ -874,20 +885,20 @@ export async function listZaloFriendsMatching(
   query?: string | null,
 ): Promise<ZcaFriend[]> {
   const friends = await listZaloFriends(profileInput);
-  const q = query?.trim().toLowerCase();
+  const q = normalizeOptionalLowercaseString(query);
   if (!q) {
     return friends;
   }
   const scored = friends
     .map((friend) => {
-      const id = friend.userId.toLowerCase();
-      const name = friend.displayName.toLowerCase();
+      const id = normalizeLowercaseStringOrEmpty(friend.userId);
+      const name = normalizeLowercaseStringOrEmpty(friend.displayName);
       const exact = id === q || name === q;
       const includes = id.includes(q) || name.includes(q);
       return { friend, exact, includes };
     })
     .filter((entry) => entry.includes)
-    .sort((a, b) => Number(b.exact) - Number(a.exact));
+    .toSorted((a, b) => Number(b.exact) - Number(a.exact));
   return scored.map((entry) => entry.friend);
 }
 
@@ -917,13 +928,13 @@ export async function listZaloGroupsMatching(
   query?: string | null,
 ): Promise<ZaloGroup[]> {
   const groups = await listZaloGroups(profileInput);
-  const q = query?.trim().toLowerCase();
+  const q = normalizeOptionalLowercaseString(query);
   if (!q) {
     return groups;
   }
   return groups.filter((group) => {
-    const id = group.groupId.toLowerCase();
-    const name = group.name.toLowerCase();
+    const id = normalizeLowercaseStringOrEmpty(group.groupId);
+    const name = normalizeLowercaseStringOrEmpty(group.name);
     return id.includes(q) || name.includes(q);
   });
 }
@@ -958,7 +969,8 @@ export async function listZaloGroupMembers(
       continue;
     }
     currentById.set(id, {
-      displayName: member.dName?.trim() || member.zaloName?.trim() || undefined,
+      displayName:
+        normalizeOptionalString(member.dName) ?? normalizeOptionalString(member.zaloName),
       avatar: member.avatar || undefined,
     });
   }
@@ -985,7 +997,9 @@ export async function listZaloGroupMembers(
         continue;
       }
       profileMap.set(id, {
-        displayName: profileValue.displayName?.trim() || profileValue.zaloName?.trim() || undefined,
+        displayName:
+          normalizeOptionalString(profileValue.displayName) ??
+          normalizeOptionalString(profileValue.zaloName),
         avatar: profileValue.avatar || undefined,
       });
     }
@@ -1019,7 +1033,7 @@ export async function resolveZaloGroupContext(
     | undefined;
   const context: ZaloGroupContext = {
     groupId: normalizedGroupId,
-    name: groupInfo?.name?.trim() || undefined,
+    name: normalizeOptionalString(groupInfo?.name),
     members: extractGroupMembersFromInfo(groupInfo),
   };
   writeCachedGroupContext(profile, context);

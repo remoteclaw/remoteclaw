@@ -135,7 +135,7 @@ const baseParams = () => ({
   replyToMode: "off" as const,
   slashCommand: {
     enabled: false,
-    name: "openclaw",
+    name: "remoteclaw",
     sessionPrefix: "slack:slash",
     ephemeral: true,
   },
@@ -145,6 +145,7 @@ const baseParams = () => ({
   mediaMaxBytes: 1,
   threadHistoryScope: "thread" as const,
   threadInheritParent: false,
+  threadRequireExplicitMention: false,
   removeAckAfterReply: false,
 });
 

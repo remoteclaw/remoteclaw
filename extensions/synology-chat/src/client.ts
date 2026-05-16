@@ -5,6 +5,7 @@
 
 import * as http from "node:http";
 import * as https from "node:https";
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 
 const MIN_SEND_INTERVAL_MS = 500;
 let lastSendTime = 0;
@@ -191,14 +192,14 @@ export async function resolveChatUserId(
   log?: { warn: (...args: unknown[]) => void },
 ): Promise<number | undefined> {
   const users = await fetchChatUsers(incomingUrl, allowInsecureSsl, log);
-  const lower = webhookUsername.toLowerCase();
+  const lower = normalizeLowercaseStringOrEmpty(webhookUsername);
 
   // Match by nickname first (webhook "username" field = Chat "nickname")
-  const byNickname = users.find((u) => u.nickname.toLowerCase() === lower);
+  const byNickname = users.find((u) => normalizeLowercaseStringOrEmpty(u.nickname) === lower);
   if (byNickname) return byNickname.user_id;
 
   // Then by username
-  const byUsername = users.find((u) => u.username.toLowerCase() === lower);
+  const byUsername = users.find((u) => normalizeLowercaseStringOrEmpty(u.username) === lower);
   if (byUsername) return byUsername.user_id;
 
   return undefined;

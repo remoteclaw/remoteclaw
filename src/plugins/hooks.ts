@@ -107,6 +107,28 @@ export type HookRunnerOptions = {
   catchErrors?: boolean;
 };
 
+type SyncHookName = "tool_result_persist" | "before_message_write";
+type SyncHookHandler<K extends SyncHookName> = NonNullable<PluginHookRegistration<K>["handler"]>;
+type SyncHookEvent<K extends SyncHookName> = Parameters<SyncHookHandler<K>>[0];
+type SyncHookContext<K extends SyncHookName> = Parameters<SyncHookHandler<K>>[1];
+type SyncHookResult<K extends SyncHookName> = ReturnType<SyncHookHandler<K>>;
+
+function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
+  if ((typeof value !== "object" && typeof value !== "function") || value === null) {
+    return false;
+  }
+  return typeof (value as { then?: unknown }).then === "function";
+}
+
+function runSyncHookHandler<K extends SyncHookName>(
+  hook: PluginHookRegistration<K>,
+  event: SyncHookEvent<K>,
+  ctx: SyncHookContext<K>,
+): SyncHookResult<K> | PromiseLike<unknown> {
+  const handler = hook.handler as SyncHookHandler<K>;
+  return handler(event, ctx) as SyncHookResult<K> | PromiseLike<unknown>;
+}
+
 /**
  * Get hooks for a specific hook name, sorted by priority (higher first).
  */
@@ -477,15 +499,10 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
 
     for (const hook of hooks) {
       try {
-        // oxlint-disable-next-line typescript/no-explicit-any
-        const out = (hook.handler as any)({ ...event, message: current }, ctx) as
-          | PluginHookToolResultPersistResult
-          | void
-          | Promise<unknown>;
+        const out = runSyncHookHandler(hook, { ...event, message: current }, ctx);
 
         // Guard against accidental async handlers (this hook is sync-only).
-        // oxlint-disable-next-line typescript/no-explicit-any
-        if (out && typeof (out as any).then === "function") {
+        if (isPromiseLike(out)) {
           const msg =
             `[hooks] tool_result_persist handler from ${hook.pluginId} returned a Promise; ` +
             `this hook is synchronous and the result was ignored.`;
@@ -542,15 +559,10 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
 
     for (const hook of hooks) {
       try {
-        // oxlint-disable-next-line typescript/no-explicit-any
-        const out = (hook.handler as any)({ ...event, message: current }, ctx) as
-          | PluginHookBeforeMessageWriteResult
-          | void
-          | Promise<unknown>;
+        const out = runSyncHookHandler(hook, { ...event, message: current }, ctx);
 
         // Guard against accidental async handlers (this hook is sync-only).
-        // oxlint-disable-next-line typescript/no-explicit-any
-        if (out && typeof (out as any).then === "function") {
+        if (isPromiseLike(out)) {
           const msg =
             `[hooks] before_message_write handler from ${hook.pluginId} returned a Promise; ` +
             `this hook is synchronous and the result was ignored.`;

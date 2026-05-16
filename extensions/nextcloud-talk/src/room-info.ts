@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fetchWithSsrFGuard } from "remoteclaw/plugin-sdk/nextcloud-talk";
 import type { RuntimeEnv } from "remoteclaw/plugin-sdk/nextcloud-talk";
+import { formatErrorMessage } from "../../../src/infra/errors.js";
 import type { ResolvedNextcloudTalkAccount } from "./accounts.js";
 import { normalizeResolvedSecretInputString } from "./secret-input.js";
 
@@ -132,7 +133,7 @@ export async function resolveNextcloudTalkRoomKind(params: {
   } catch (err) {
     roomCache.set(key, {
       fetchedAt: Date.now(),
-      error: err instanceof Error ? err.message : String(err),
+      error: formatErrorMessage(err),
     });
     runtime?.error?.(`nextcloud-talk: room lookup error: ${String(err)}`);
     return undefined;

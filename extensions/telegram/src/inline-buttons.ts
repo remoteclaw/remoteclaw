@@ -1,3 +1,7 @@
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalLowercaseString,
+} from "remoteclaw/plugin-sdk/text-runtime";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import type { TelegramInlineButtonsScope } from "../../../src/config/types.telegram.js";
 import { listTelegramAccountIds, resolveTelegramAccount } from "./accounts.js";
@@ -5,10 +9,10 @@ import { listTelegramAccountIds, resolveTelegramAccount } from "./accounts.js";
 const DEFAULT_INLINE_BUTTONS_SCOPE: TelegramInlineButtonsScope = "allowlist";
 
 function normalizeInlineButtonsScope(value: unknown): TelegramInlineButtonsScope | undefined {
-  if (typeof value !== "string") {
+  const trimmed = normalizeOptionalLowercaseString(value);
+  if (!trimmed) {
     return undefined;
   }
-  const trimmed = value.trim().toLowerCase();
   if (
     trimmed === "off" ||
     trimmed === "dm" ||
@@ -29,7 +33,7 @@ function resolveInlineButtonsScopeFromCapabilities(
   }
   if (Array.isArray(capabilities)) {
     const enabled = capabilities.some(
-      (entry) => String(entry).trim().toLowerCase() === "inlinebuttons",
+      (entry) => normalizeLowercaseStringOrEmpty(String(entry)) === "inlinebuttons",
     );
     return enabled ? "all" : "off";
   }

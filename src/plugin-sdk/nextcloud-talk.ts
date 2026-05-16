@@ -2,7 +2,11 @@
 // Keep this list additive and scoped to symbols used under extensions/nextcloud-talk.
 
 export { logInboundDrop } from "../channels/logging.js";
-export { resolveMentionGatingWithBypass } from "../channels/mention-gating.js";
+export {
+  resolveInboundMentionDecision,
+  resolveMentionGating,
+  resolveMentionGatingWithBypass,
+} from "../channels/mention-gating.js";
 export type { AllowlistMatch } from "../channels/plugins/allowlist-match.js";
 export {
   buildChannelKeyCandidates,

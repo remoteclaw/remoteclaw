@@ -1,3 +1,4 @@
+import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 import { createAccountActionGate } from "../../../src/channels/plugins/account-action-gate.js";
 import { createAccountListHelpers } from "../../../src/channels/plugins/account-helpers.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
@@ -61,7 +62,7 @@ export function resolveDiscordAccount(params: {
   return {
     accountId,
     enabled,
-    name: merged.name?.trim() || undefined,
+    name: normalizeOptionalString(merged.name),
     token: tokenResolution.token,
     tokenSource: tokenResolution.source,
     config: merged,

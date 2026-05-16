@@ -565,7 +565,7 @@ Quick answers plus deeper troubleshooting for real-world setups (local dev, VPS,
   <Accordion title="What does onboarding actually do?">
     `remoteclaw onboard` is the recommended setup path. In **local mode** it walks you through:
 
-    - **Model/auth setup** (provider OAuth, API keys, Anthropic legacy setup-token, plus local model options such as LM Studio)
+    - **Model/auth setup** (provider OAuth, API keys, Anthropic setup-token, plus local model options such as LM Studio)
     - **Workspace** location + bootstrap files
     - **Gateway settings** (bind/port/auth/tailscale)
     - **Channels** (WhatsApp, Telegram, Discord, Mattermost, Signal, iMessage, plus bundled channel plugins like QQ Bot)
@@ -584,15 +584,14 @@ Quick answers plus deeper troubleshooting for real-world setups (local dev, VPS,
     For Anthropic in RemoteClaw, the practical split is:
 
     - **Anthropic API key**: normal Anthropic API billing
-    - **Claude subscription auth in RemoteClaw**: Anthropic told RemoteClaw users on
-      **April 4, 2026 at 12:00 PM PT / 8:00 PM BST** that this requires
-      **Extra Usage** billed separately from the subscription
+    - **Claude CLI / Claude subscription auth in RemoteClaw**: Anthropic staff
+      told us this usage is allowed again, and RemoteClaw is treating `claude -p`
+      usage as sanctioned for this integration unless Anthropic publishes a new
+      policy
 
-    Our local repros also show that `claude -p --append-system-prompt ...` can
-    hit the same Extra Usage guard when the appended prompt identifies
-    RemoteClaw, while the same prompt string does **not** reproduce that block on
-    the Anthropic SDK + API-key path. OpenAI Codex OAuth is explicitly
-    supported for external tools like RemoteClaw.
+    For long-lived gateway hosts, Anthropic API keys are still the more
+    predictable setup. OpenAI Codex OAuth is explicitly supported for external
+    tools like RemoteClaw.
 
     RemoteClaw also supports other hosted subscription-style options including
     **Qwen Cloud Coding Plan**, **MiniMax Coding Plan**, and
@@ -606,30 +605,25 @@ Quick answers plus deeper troubleshooting for real-world setups (local dev, VPS,
   </Accordion>
 
   <Accordion title="Can I use Claude Max subscription without an API key?">
-    Yes, but treat it as **Claude subscription auth with Extra Usage**.
+    Yes.
 
-    Claude Pro/Max subscriptions do not include an API key. In RemoteClaw, that
-    means Anthropic's RemoteClaw-specific billing notice applies: subscription
-    traffic requires **Extra Usage**. If you want Anthropic traffic without
-    that Extra Usage path, use an Anthropic API key instead.
+    Anthropic staff told us RemoteClaw-style Claude CLI usage is allowed again, so
+    RemoteClaw treats Claude subscription auth and `claude -p` usage as sanctioned
+    for this integration unless Anthropic publishes a new policy. If you want
+    the most predictable server-side setup, use an Anthropic API key instead.
 
   </Accordion>
 
   <Accordion title="Do you support Claude subscription auth (Claude Pro or Max)?">
-    Yes, but the supported interpretation is now:
+    Yes.
 
-    - Anthropic in RemoteClaw with a subscription means **Extra Usage**
-    - Anthropic in RemoteClaw without that path means **API key**
+    Anthropic staff told us this usage is allowed again, so RemoteClaw treats
+    Claude CLI reuse and `claude -p` usage as sanctioned for this integration
+    unless Anthropic publishes a new policy.
 
-    Anthropic setup-token is still available as a legacy/manual RemoteClaw path,
-    and Anthropic's RemoteClaw-specific billing notice still applies there. We
-    also reproduced the same billing guard locally with direct
-    `claude -p --append-system-prompt ...` usage when the appended prompt
-    identifies RemoteClaw, while the same prompt string did **not** reproduce on
-    the Anthropic SDK + API-key path.
-
-    For production or multi-user workloads, Anthropic API key auth is the
-    safer, recommended choice. If you want other subscription-style hosted
+    Anthropic setup-token is still available as a supported RemoteClaw token path, but RemoteClaw now prefers Claude CLI reuse and `claude -p` when available.
+    For production or multi-user workloads, Anthropic API key auth is still the
+    safer, more predictable choice. If you want other subscription-style hosted
     options in RemoteClaw, see [OpenAI](/providers/openai), [Qwen / Model
     Cloud](/providers/qwen), [MiniMax](/providers/minimax), and
     [GLM Models](/providers/glm).

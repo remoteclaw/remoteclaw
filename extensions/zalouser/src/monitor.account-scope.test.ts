@@ -1,4 +1,4 @@
-import type { RemoteClawConfig, PluginRuntime, RuntimeEnv } from "remoteclaw/plugin-sdk/zalouser";
+import type { RemoteClawConfig, PluginRuntime } from "remoteclaw/plugin-sdk/zalouser";
 import { describe, expect, it, vi } from "vitest";
 import "./monitor.send-mocks.js";
 import { __testing } from "./monitor.js";

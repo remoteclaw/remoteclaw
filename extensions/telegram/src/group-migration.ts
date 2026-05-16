@@ -1,3 +1,4 @@
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import type { TelegramGroupConfig } from "../../../src/config/types.telegram.js";
 import { normalizeAccountId } from "../../../src/routing/session-key.js";
@@ -29,7 +30,7 @@ function resolveAccountGroups(
     return { groups: exact.groups };
   }
   const matchKey = Object.keys(accounts).find(
-    (key) => key.toLowerCase() === normalized.toLowerCase(),
+    (key) => normalizeLowercaseStringOrEmpty(key) === normalizeLowercaseStringOrEmpty(normalized),
   );
   return { groups: matchKey ? accounts[matchKey]?.groups : undefined };
 }

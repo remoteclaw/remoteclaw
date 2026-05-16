@@ -3,6 +3,10 @@ import {
   resolveThreadSessionKeys as resolveThreadSessionKeysShared,
   type RemoteClawConfig,
 } from "remoteclaw/plugin-sdk/mattermost";
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalString,
+} from "remoteclaw/plugin-sdk/text-runtime";
 export { createDedupeCache, rawDataToString } from "remoteclaw/plugin-sdk/mattermost";
 
 export type ResponsePrefixContext = {
@@ -29,8 +33,7 @@ function normalizeAgentId(value: string | undefined | null): string {
     return trimmed;
   }
   return (
-    trimmed
-      .toLowerCase()
+    normalizeLowercaseStringOrEmpty(trimmed)
       .replace(/[^a-z0-9_-]+/g, "-")
       .replace(/^-+/, "")
       .replace(/-+$/, "")
@@ -55,7 +58,7 @@ function resolveAgentEntry(cfg: RemoteClawConfig, agentId: string): AgentEntry |
 
 export function resolveIdentityName(cfg: RemoteClawConfig, agentId: string): string | undefined {
   const entry = resolveAgentEntry(cfg, agentId);
-  return entry?.identity?.name?.trim() || undefined;
+  return normalizeOptionalString(entry?.identity?.name);
 }
 
 export function resolveThreadSessionKeys(params: {

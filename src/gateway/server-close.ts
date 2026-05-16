@@ -4,6 +4,7 @@ import type { CanvasHostHandler, CanvasHostServer } from "../canvas-host/server.
 import { type ChannelId, listChannelPlugins } from "../channels/plugins/index.js";
 import type { HeartbeatRunner } from "../infra/heartbeat-runner.js";
 import type { PluginServicesHandle } from "../plugins/services.js";
+import { normalizeOptionalString } from "../shared/string-coerce.js";
 
 export function createGatewayCloseHandler(params: {
   bonjourStop: (() => Promise<void>) | null;
@@ -33,7 +34,7 @@ export function createGatewayCloseHandler(params: {
   httpServers?: HttpServer[];
 }) {
   return async (opts?: { reason?: string; restartExpectedMs?: number | null }) => {
-    const reasonRaw = typeof opts?.reason === "string" ? opts.reason.trim() : "";
+    const reasonRaw = normalizeOptionalString(opts?.reason) ?? "";
     const reason = reasonRaw || "gateway stopping";
     const restartExpectedMs =
       typeof opts?.restartExpectedMs === "number" && Number.isFinite(opts.restartExpectedMs)

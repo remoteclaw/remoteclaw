@@ -1,4 +1,8 @@
 import type { Guild, User } from "@buape/carbon";
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalString,
+} from "remoteclaw/plugin-sdk/text-runtime";
 import type { AllowlistMatch } from "../../../../src/channels/allowlist-match.js";
 import {
   buildChannelKeyCandidates,
@@ -56,9 +60,9 @@ export function normalizeDiscordAllowList(raw: string[] | undefined, prefixes: s
   }
   const ids = new Set<string>();
   const names = new Set<string>();
-  const allowAll = raw.some((entry) => String(entry).trim() === "*");
+  const allowAll = raw.some((entry) => (normalizeOptionalString(String(entry)) ?? "") === "*");
   for (const entry of raw) {
-    const text = String(entry).trim();
+    const text = normalizeOptionalString(String(entry)) ?? "";
     if (!text || text === "*") {
       continue;
     }
@@ -84,9 +88,7 @@ export function normalizeDiscordAllowList(raw: string[] | undefined, prefixes: s
 }
 
 export function normalizeDiscordSlug(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
+  return normalizeLowercaseStringOrEmpty(value)
     .replace(/^#/, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");

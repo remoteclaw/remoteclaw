@@ -4,13 +4,13 @@ import type { RemoteClawConfig, PluginRuntime } from "remoteclaw/plugin-sdk/zalo
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createEmptyPluginRegistry } from "../../../src/plugins/registry.js";
 import { setActivePluginRegistry } from "../../../src/plugins/runtime.js";
+import { handleZaloWebhookRequest } from "./monitor.js";
 import {
   clearZaloWebhookSecurityStateForTest,
   getZaloWebhookRateLimitStateSizeForTest,
   getZaloWebhookStatusCounterSizeForTest,
-  handleZaloWebhookRequest,
   registerZaloWebhookTarget,
-} from "./monitor.js";
+} from "./monitor.webhook.js";
 import type { ResolvedZaloAccount } from "./types.js";
 
 async function withServer(handler: RequestListener, fn: (baseUrl: string) => Promise<void>) {

@@ -1,3 +1,4 @@
+import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 import { resolveMatrixRoomId, sendMessageMatrix } from "../send.js";
 import { resolveActionClient } from "./client.js";
 import { resolveMatrixActionLimit } from "./limits.js";
@@ -97,7 +98,7 @@ export async function readMatrixMessages(
   try {
     const resolvedRoom = await resolveMatrixRoomId(client, roomId);
     const limit = resolveMatrixActionLimit(opts.limit, 20);
-    const token = opts.before?.trim() || opts.after?.trim() || undefined;
+    const token = normalizeOptionalString(opts.before) ?? normalizeOptionalString(opts.after);
     const dir = opts.after ? "f" : "b";
     // @vector-im/matrix-bot-sdk uses doRequest for room messages
     const res = (await client.doRequest(

@@ -46,7 +46,7 @@ function createMockRequest(
   const req = new IncomingMessage(socket);
   req.method = method;
   req.url = url;
-  req.headers = { host: "localhost:3000", ...(opts?.headers ?? {}) };
+  req.headers = { host: "localhost:3000", ...opts?.headers };
 
   if (body) {
     const bodyStr = JSON.stringify(body);
@@ -79,7 +79,6 @@ function createMockResponse(): ServerResponse & {
 
   res.end = function (chunk?: unknown) {
     if (chunk) {
-      // eslint-disable-next-line @typescript-eslint/no-base-to-string
       data += String(chunk);
     }
     return this;

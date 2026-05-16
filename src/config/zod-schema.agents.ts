@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizeOptionalString } from "../shared/string-coerce.js";
 import { AgentDefaultsSchema } from "./zod-schema.agent-defaults.js";
 import { AgentEntrySchema } from "./zod-schema.agent-runtime.js";
 import { TranscribeAudioSchema } from "./zod-schema.core.js";
@@ -69,7 +70,7 @@ const AcpBindingSchema = z
     // dropped the channel-allowlist + Telegram canonical-topic checks
     // below; restored to keep the fork's #2308/#2317 contract that
     // `config.acp-binding-cutover.test.ts` exercises.
-    const peerId = value.match.peer?.id?.trim() ?? "";
+    const peerId = normalizeOptionalString(value.match.peer?.id) ?? "";
     if (!peerId) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

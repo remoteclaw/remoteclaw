@@ -1,5 +1,7 @@
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
+
 export function isStatusCommand(body: string) {
-  const trimmed = body.trim().toLowerCase();
+  const trimmed = normalizeLowercaseStringOrEmpty(body);
   if (!trimmed) {
     return false;
   }

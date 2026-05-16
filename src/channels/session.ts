@@ -5,10 +5,7 @@ import {
   type SessionEntry,
   updateLastRoute,
 } from "../config/sessions.js";
-
-function normalizeSessionStoreKey(sessionKey: string): string {
-  return sessionKey.trim().toLowerCase();
-}
+import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
 
 export type InboundLastRouteUpdate = {
   sessionKey: string;
@@ -29,8 +26,8 @@ function shouldSkipPinnedMainDmRouteUpdate(
   if (!pin) {
     return false;
   }
-  const owner = pin.ownerRecipient.trim().toLowerCase();
-  const sender = pin.senderRecipient.trim().toLowerCase();
+  const owner = normalizeLowercaseStringOrEmpty(pin.ownerRecipient);
+  const sender = normalizeLowercaseStringOrEmpty(pin.senderRecipient);
   if (!owner || !sender || owner === sender) {
     return false;
   }
@@ -48,7 +45,7 @@ export async function recordInboundSession(params: {
   onRecordError: (err: unknown) => void;
 }): Promise<void> {
   const { storePath, sessionKey, ctx, groupResolution, createIfMissing } = params;
-  const canonicalSessionKey = normalizeSessionStoreKey(sessionKey);
+  const canonicalSessionKey = normalizeLowercaseStringOrEmpty(sessionKey);
   void recordSessionMetaFromInbound({
     storePath,
     sessionKey: canonicalSessionKey,
@@ -64,7 +61,7 @@ export async function recordInboundSession(params: {
   if (shouldSkipPinnedMainDmRouteUpdate(update.mainDmOwnerPin)) {
     return;
   }
-  const targetSessionKey = normalizeSessionStoreKey(update.sessionKey);
+  const targetSessionKey = normalizeLowercaseStringOrEmpty(update.sessionKey);
   await updateLastRoute({
     storePath,
     sessionKey: targetSessionKey,

@@ -6,6 +6,10 @@ import {
   resolveServicePrefixedAllowTarget,
   resolveServicePrefixedTarget,
 } from "remoteclaw/plugin-sdk/bluebubbles";
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalString,
+} from "remoteclaw/plugin-sdk/text-runtime";
 
 export type BlueBubblesService = "imessage" | "sms" | "auto";
 
@@ -29,7 +33,7 @@ const CHAT_IDENTIFIER_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4
 const CHAT_IDENTIFIER_HEX_RE = /^[0-9a-f]{24,64}$/i;
 
 function parseRawChatGuid(value: string): string | null {
-  const trimmed = value.trim();
+  const trimmed = normalizeOptionalString(value);
   if (!trimmed) {
     return null;
   }
@@ -37,9 +41,9 @@ function parseRawChatGuid(value: string): string | null {
   if (parts.length !== 3) {
     return null;
   }
-  const service = parts[0]?.trim();
-  const separator = parts[1]?.trim();
-  const identifier = parts[2]?.trim();
+  const service = normalizeOptionalString(parts[0]);
+  const separator = normalizeOptionalString(parts[1]);
+  const identifier = normalizeOptionalString(parts[2]);
   if (!service || !identifier) {
     return null;
   }
@@ -54,18 +58,18 @@ function stripPrefix(value: string, prefix: string): string {
 }
 
 function stripBlueBubblesPrefix(value: string): string {
-  const trimmed = value.trim();
+  const trimmed = normalizeOptionalString(value) ?? "";
   if (!trimmed) {
     return "";
   }
-  if (!trimmed.toLowerCase().startsWith("bluebubbles:")) {
+  if (!normalizeLowercaseStringOrEmpty(trimmed).startsWith("bluebubbles:")) {
     return trimmed;
   }
   return trimmed.slice("bluebubbles:".length).trim();
 }
 
 function looksLikeRawChatIdentifier(value: string): boolean {
-  const trimmed = value.trim();
+  const trimmed = normalizeOptionalString(value);
   if (!trimmed) {
     return false;
   }
@@ -114,7 +118,7 @@ export function normalizeBlueBubblesHandle(raw: string): string {
   if (!trimmed) {
     return "";
   }
-  const lowered = trimmed.toLowerCase();
+  const lowered = normalizeLowercaseStringOrEmpty(trimmed);
   if (lowered.startsWith("imessage:")) {
     return normalizeBlueBubblesHandle(trimmed.slice(9));
   }
@@ -125,7 +129,7 @@ export function normalizeBlueBubblesHandle(raw: string): string {
     return normalizeBlueBubblesHandle(trimmed.slice(5));
   }
   if (trimmed.includes("@")) {
-    return trimmed.toLowerCase();
+    return normalizeLowercaseStringOrEmpty(trimmed);
   }
   return trimmed.replace(/\s+/g, "");
 }
@@ -139,7 +143,7 @@ export function extractHandleFromChatGuid(chatGuid: string): string | null {
   const parts = chatGuid.split(";");
   // DM format: service;-;handle (3 parts, middle is "-")
   if (parts.length === 3 && parts[1] === "-") {
-    const handle = parts[2]?.trim();
+    const handle = normalizeOptionalString(parts[2]);
     if (handle) {
       return normalizeBlueBubblesHandle(handle);
     }
@@ -196,7 +200,7 @@ export function looksLikeBlueBubblesTargetId(raw: string, normalized?: string): 
   if (parseRawChatGuid(candidate)) {
     return true;
   }
-  const lowered = candidate.toLowerCase();
+  const lowered = normalizeLowercaseStringOrEmpty(candidate);
   if (/^(imessage|sms|auto):/.test(lowered)) {
     return true;
   }
@@ -226,7 +230,7 @@ export function looksLikeBlueBubblesTargetId(raw: string, normalized?: string): 
     if (!normalizedTrimmed) {
       return false;
     }
-    const normalizedLower = normalizedTrimmed.toLowerCase();
+    const normalizedLower = normalizeLowercaseStringOrEmpty(normalizedTrimmed);
     if (
       /^(imessage|sms|auto):/.test(normalizedLower) ||
       /^(chat_id|chat_guid|chat_identifier):/.test(normalizedLower)
@@ -242,7 +246,7 @@ export function parseBlueBubblesTarget(raw: string): BlueBubblesTarget {
   if (!trimmed) {
     throw new Error("BlueBubbles target is required");
   }
-  const lower = trimmed.toLowerCase();
+  const lower = normalizeLowercaseStringOrEmpty(trimmed);
 
   const servicePrefixed = resolveServicePrefixedTarget({
     trimmed,
@@ -289,11 +293,11 @@ export function parseBlueBubblesTarget(raw: string): BlueBubblesTarget {
 }
 
 export function parseBlueBubblesAllowTarget(raw: string): BlueBubblesAllowTarget {
-  const trimmed = raw.trim();
+  const trimmed = normalizeOptionalString(raw) ?? "";
   if (!trimmed) {
     return { kind: "handle", handle: "" };
   }
-  const lower = trimmed.toLowerCase();
+  const lower = normalizeLowercaseStringOrEmpty(trimmed);
 
   const servicePrefixed = resolveServicePrefixedAllowTarget({
     trimmed,
@@ -355,11 +359,11 @@ export function formatBlueBubblesChatTarget(params: {
   if (params.chatId && Number.isFinite(params.chatId)) {
     return `chat_id:${params.chatId}`;
   }
-  const guid = params.chatGuid?.trim();
+  const guid = normalizeOptionalString(params.chatGuid);
   if (guid) {
     return `chat_guid:${guid}`;
   }
-  const identifier = params.chatIdentifier?.trim();
+  const identifier = normalizeOptionalString(params.chatIdentifier);
   if (identifier) {
     return `chat_identifier:${identifier}`;
   }

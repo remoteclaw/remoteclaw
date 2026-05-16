@@ -1,20 +1,15 @@
 import { parseFiniteNumber } from "remoteclaw/plugin-sdk/bluebubbles";
+import {
+  asNullableRecord,
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalString,
+  readStringField,
+} from "remoteclaw/plugin-sdk/text-runtime";
 import { extractHandleFromChatGuid, normalizeBlueBubblesHandle } from "./targets.js";
 import type { BlueBubblesAttachment } from "./types.js";
 
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
-}
-
-function readString(record: Record<string, unknown> | null, key: string): string | undefined {
-  if (!record) {
-    return undefined;
-  }
-  const value = record[key];
-  return typeof value === "string" ? value : undefined;
-}
+export const asRecord = asNullableRecord;
+const readString = readStringField;
 
 function readNumber(record: Record<string, unknown> | null, key: string): number | undefined {
   if (!record) {
@@ -174,8 +169,8 @@ function extractReplyMetadata(message: Record<string, unknown>): {
       : undefined;
 
   return {
-    replyToId: (replyToId ?? fallbackReplyId)?.trim() || undefined,
-    replyToBody: replyToBody?.trim() || undefined,
+    replyToId: normalizeOptionalString(replyToId ?? fallbackReplyId),
+    replyToBody: normalizeOptionalString(replyToBody),
     replyToSender: normalizedSender || undefined,
   };
 }
@@ -332,7 +327,7 @@ function normalizeParticipantEntry(entry: unknown): BlueBubblesParticipant | nul
   if (!normalizedId) {
     return null;
   }
-  const name = nameRaw?.trim() || undefined;
+  const name = normalizeOptionalString(nameRaw);
   return { id: normalizedId, name };
 }
 
@@ -347,7 +342,7 @@ function normalizeParticipantList(raw: unknown): BlueBubblesParticipant[] {
     if (!normalized?.id) {
       continue;
     }
-    const key = normalized.id.toLowerCase();
+    const key = normalizeLowercaseStringOrEmpty(normalized.id);
     if (seen.has(key)) {
       continue;
     }
@@ -367,7 +362,7 @@ export function formatGroupMembers(params: {
     if (!entry?.id) {
       continue;
     }
-    const key = entry.id.toLowerCase();
+    const key = normalizeLowercaseStringOrEmpty(entry.id);
     if (seen.has(key)) {
       continue;
     }
@@ -558,7 +553,9 @@ export function resolveTapbackContext(message: NormalizedWebhookMessage): {
   if (!hasTapbackType && !hasTapbackMarker) {
     return null;
   }
-  const replyToId = message.associatedMessageGuid?.trim() || message.replyToId?.trim() || undefined;
+  const replyToId =
+    normalizeOptionalString(message.associatedMessageGuid) ??
+    normalizeOptionalString(message.replyToId);
   const actionHint = resolveTapbackActionHint(associatedType);
   const emojiHint =
     message.associatedMessageEmoji?.trim() || REACTION_TYPE_MAP.get(associatedType ?? -1)?.emoji;
@@ -577,7 +574,7 @@ export function parseTapbackText(params: {
   quotedText: string;
 } | null {
   const trimmed = params.text.trim();
-  const lower = trimmed.toLowerCase();
+  const lower = normalizeLowercaseStringOrEmpty(trimmed);
   if (!trimmed) {
     return null;
   }

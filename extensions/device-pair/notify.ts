@@ -2,6 +2,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk/device-pair";
 import { listDevicePairing } from "remoteclaw/plugin-sdk/device-pair";
+import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 
 const NOTIFY_STATE_FILE = "device-pair-notify.json";
 const NOTIFY_POLL_INTERVAL_MS = 10_000;
@@ -35,9 +36,9 @@ export function formatPendingRequests(pending: PendingPairingRequest[]): string 
   }
   const lines: string[] = ["Pending device pairing requests:"];
   for (const req of pending) {
-    const label = req.displayName?.trim() || req.deviceId;
-    const platform = req.platform?.trim();
-    const ip = req.remoteIp?.trim();
+    const label = normalizeOptionalString(req.displayName) || req.deviceId;
+    const platform = normalizeOptionalString(req.platform);
+    const ip = normalizeOptionalString(req.remoteIp);
     const parts = [
       `- ${req.requestId}`,
       label ? `name=${label}` : null,
@@ -67,14 +68,11 @@ function normalizeNotifyState(raw: unknown): NotifyStateFile {
       continue;
     }
     const record = item as Record<string, unknown>;
-    const to = typeof record.to === "string" ? record.to.trim() : "";
+    const to = normalizeOptionalString(record.to) ?? "";
     if (!to) {
       continue;
     }
-    const accountId =
-      typeof record.accountId === "string" && record.accountId.trim()
-        ? record.accountId.trim()
-        : undefined;
+    const accountId = normalizeOptionalString(record.accountId) ?? undefined;
     const messageThreadId =
       typeof record.messageThreadId === "number" && Number.isFinite(record.messageThreadId)
         ? Math.trunc(record.messageThreadId)
@@ -95,13 +93,14 @@ function normalizeNotifyState(raw: unknown): NotifyStateFile {
 
   const notifiedRequestIds: Record<string, number> = {};
   for (const [requestId, ts] of Object.entries(notifiedRaw)) {
-    if (!requestId.trim()) {
+    const normalizedRequestId = normalizeOptionalString(requestId);
+    if (!normalizedRequestId) {
       continue;
     }
     if (typeof ts !== "number" || !Number.isFinite(ts) || ts <= 0) {
       continue;
     }
-    notifiedRequestIds[requestId] = Math.trunc(ts);
+    notifiedRequestIds[normalizedRequestId] = Math.trunc(ts);
   }
 
   return { subscribers, notifiedRequestIds };
@@ -143,7 +142,11 @@ function resolveNotifyTarget(ctx: {
   accountId?: string;
   messageThreadId?: number;
 }): NotifyTarget | null {
-  const to = ctx.senderId?.trim() || ctx.from?.trim() || ctx.to?.trim() || "";
+  const to =
+    normalizeOptionalString(ctx.senderId) ||
+    normalizeOptionalString(ctx.from) ||
+    normalizeOptionalString(ctx.to) ||
+    "";
   if (!to) {
     return null;
   }
@@ -179,9 +182,9 @@ function upsertNotifySubscriber(
 }
 
 function buildPairingRequestNotificationText(request: PendingPairingRequest): string {
-  const label = request.displayName?.trim() || request.deviceId;
-  const platform = request.platform?.trim();
-  const ip = request.remoteIp?.trim();
+  const label = normalizeOptionalString(request.displayName) || request.deviceId;
+  const platform = normalizeOptionalString(request.platform);
+  const ip = normalizeOptionalString(request.remoteIp);
   const lines = [
     "📲 New device pairing request",
     `ID: ${request.requestId}`,

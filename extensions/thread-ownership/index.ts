@@ -1,3 +1,4 @@
+import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 import {
   fetchWithSsrFGuard,
   ssrfPolicyFromAllowPrivateNetwork,
@@ -34,11 +35,9 @@ function resolveOwnershipAgent(config: RemoteClawConfig): { id: string; name: st
     : [];
   const selected = list.find((entry) => entry.default === true) ?? list[0];
 
-  const id =
-    typeof selected?.id === "string" && selected.id.trim() ? selected.id.trim() : "unknown";
-  const identityName =
-    typeof selected?.identity?.name === "string" ? selected.identity.name.trim() : "";
-  const fallbackName = typeof selected?.name === "string" ? selected.name.trim() : "";
+  const id = normalizeOptionalString(selected?.id) ?? "unknown";
+  const identityName = normalizeOptionalString(selected?.identity?.name) ?? "";
+  const fallbackName = normalizeOptionalString(selected?.name) ?? "";
   const name = identityName || fallbackName;
 
   return { id, name };

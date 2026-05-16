@@ -2,6 +2,11 @@ import { getChannelPlugin, listChannelPlugins } from "../channels/plugins/index.
 import type { ChannelId, ChannelPlugin } from "../channels/plugins/types.js";
 import { normalizeAnyChannelId } from "../channels/registry.js";
 import type { RemoteClawConfig } from "../config/config.js";
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalLowercaseString,
+  normalizeOptionalString,
+} from "../shared/string-coerce.js";
 import { normalizeStringEntries } from "../shared/string-normalization.js";
 import {
   INTERNAL_MESSAGE_CHANNEL,
@@ -199,7 +204,7 @@ function resolveProviderAllowFrom(params: {
 
 function describeAllowFromResolutionError(err: unknown): string {
   if (err instanceof Error) {
-    const name = err.name.trim();
+    const name = normalizeOptionalString(err.name) ?? "";
     return name || "Error";
   }
   return "unknown_error";
@@ -218,7 +223,7 @@ function resolveOwnerAllowFromList(params: {
   }
   const filtered: string[] = [];
   for (const entry of raw) {
-    const trimmed = String(entry ?? "").trim();
+    const trimmed = normalizeOptionalString(String(entry ?? "")) ?? "";
     if (!trimmed) {
       continue;
     }
@@ -283,7 +288,7 @@ function resolveCommandsAllowFromList(params: {
 }
 
 function isConversationLikeIdentity(value: string): boolean {
-  const normalized = value.trim().toLowerCase();
+  const normalized = normalizeLowercaseStringOrEmpty(value);
   if (!normalized) {
     return false;
   }
@@ -304,7 +309,7 @@ function shouldUseFromAsSenderFallback(params: {
   if (!from) {
     return false;
   }
-  const chatType = (params.chatType ?? "").trim().toLowerCase();
+  const chatType = normalizeLowercaseStringOrEmpty(params.chatType);
   if (chatType && chatType !== "direct") {
     return false;
   }
@@ -407,7 +412,7 @@ function resolveFallbackAccountConfig(
     | undefined,
   accountId?: string | null,
 ) {
-  const normalizedAccountId = accountId?.trim().toLowerCase();
+  const normalizedAccountId = normalizeOptionalLowercaseString(accountId);
   if (!accounts || !normalizedAccountId) {
     return undefined;
   }
@@ -416,7 +421,7 @@ function resolveFallbackAccountConfig(
     return direct;
   }
   const matchKey = Object.keys(accounts).find(
-    (key) => key.trim().toLowerCase() === normalizedAccountId,
+    (key) => normalizeOptionalLowercaseString(key) === normalizedAccountId,
   );
   return matchKey ? accounts[matchKey] : undefined;
 }

@@ -17,6 +17,7 @@ import {
   resolveMergedSafeBinProfileFixtures,
 } from "../infra/exec-safe-bin-runtime-policy.js";
 import { normalizeTrustedSafeBinDirs } from "../infra/exec-safe-bin-trust.js";
+import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
 import { collectChannelSecurityFindings } from "./audit-channel.js";
 import {
   collectAttackSurfaceSummaryFindings,
@@ -405,7 +406,7 @@ function collectGatewayConfigFindings(
     : [];
   const gatewayToolsAllow = new Set(
     gatewayToolsAllowRaw
-      .map((v) => (typeof v === "string" ? v.trim().toLowerCase() : ""))
+      .map((v) => (typeof v === "string" ? normalizeLowercaseStringOrEmpty(v) : ""))
       .filter(Boolean),
   );
   const reenabledOverHttp = DEFAULT_GATEWAY_HTTP_TOOL_DENY.filter((name) =>
@@ -709,7 +710,7 @@ function isStrictLoopbackTrustedProxyEntry(entry: string): boolean {
     return rawIp.trim() === "127.0.0.1" && prefix === 32;
   }
   if (ipVersion === 6) {
-    return prefix === 128 && rawIp.trim().toLowerCase() === "::1";
+    return prefix === 128 && normalizeLowercaseStringOrEmpty(rawIp) === "::1";
   }
   return false;
 }
@@ -898,7 +899,7 @@ function collectExecRuntimeFindings(cfg: RemoteClawConfig): SecurityAuditFinding
     return Array.from(
       new Set(
         entries
-          .map((entry) => (typeof entry === "string" ? entry.trim().toLowerCase() : ""))
+          .map((entry) => (typeof entry === "string" ? normalizeLowercaseStringOrEmpty(entry) : ""))
           .filter((entry) => entry.length > 0),
       ),
     ).toSorted();

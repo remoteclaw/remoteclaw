@@ -1,3 +1,4 @@
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import type { MarkdownTableMode } from "../../../src/config/types.base.js";
 import {
   chunkMarkdownIR,
@@ -35,7 +36,7 @@ type Insertion = {
 };
 
 function normalizeUrlForComparison(url: string): string {
-  let normalized = url.toLowerCase();
+  let normalized = normalizeLowercaseStringOrEmpty(url);
   // Strip protocol
   normalized = normalized.replace(/^https?:\/\//, "");
   // Strip www. prefix

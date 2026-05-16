@@ -7,6 +7,7 @@ import { hasConfiguredSecretInput } from "../config/types.secrets.js";
 import { resolveGatewayAuth } from "../gateway/auth.js";
 import { isLoopbackHost, resolveGatewayBindHost } from "../gateway/net.js";
 import { resolveDmAllowState } from "../security/dm-policy-shared.js";
+import { normalizeOptionalString } from "../shared/string-coerce.js";
 import { note } from "../terminal/note.js";
 import { resolveDefaultChannelAccountContext } from "./channel-account-context.js";
 
@@ -76,8 +77,8 @@ export async function noteSecurityWarnings(cfg: RemoteClawConfig) {
     env: process.env,
     tailscaleMode: cfg.gateway?.tailscale?.mode ?? "off",
   });
-  const authToken = resolvedAuth.token?.trim() ?? "";
-  const authPassword = resolvedAuth.password?.trim() ?? "";
+  const authToken = normalizeOptionalString(resolvedAuth.token) ?? "";
+  const authPassword = normalizeOptionalString(resolvedAuth.password) ?? "";
   const hasToken =
     authToken.length > 0 ||
     hasConfiguredSecretInput(cfg.gateway?.auth?.token, cfg.secrets?.defaults);

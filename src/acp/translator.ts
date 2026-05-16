@@ -34,6 +34,7 @@ import {
   createFixedWindowRateLimiter,
   type FixedWindowRateLimiter,
 } from "../infra/fixed-window-rate-limit.js";
+import { normalizeOptionalString } from "../shared/string-coerce.js";
 import { shortenHomePath } from "../utils.js";
 import { getAvailableCommands } from "./commands.js";
 import {
@@ -194,14 +195,14 @@ function buildSessionPresentation(params: {
       name: "Tool verbosity",
       description:
         "Controls how much tool progress and output detail RemoteClaw keeps enabled for the session.",
-      currentValue: row.verboseLevel?.trim() || "off",
+      currentValue: normalizeOptionalString(row.verboseLevel) || "off",
       values: ["off", "on", "full"],
     }),
     buildSelectConfigOption({
       id: ACP_REASONING_LEVEL_CONFIG_ID,
       name: "Reasoning stream",
       description: "Controls whether reasoning-capable models emit reasoning text for the session.",
-      currentValue: row.reasoningLevel?.trim() || "off",
+      currentValue: normalizeOptionalString(row.reasoningLevel) || "off",
       values: ["off", "on", "stream"],
     }),
     buildSelectConfigOption({
@@ -209,7 +210,7 @@ function buildSessionPresentation(params: {
       name: "Usage detail",
       description:
         "Controls how much usage information RemoteClaw attaches to responses for the session.",
-      currentValue: row.responseUsage?.trim() || "off",
+      currentValue: normalizeOptionalString(row.responseUsage) || "off",
       values: ["off", "tokens", "full"],
     }),
     buildSelectConfigOption({
@@ -276,9 +277,9 @@ function buildSessionMetadata(params: {
   sessionKey: string;
 }): SessionMetadata {
   const title =
-    params.row?.derivedTitle?.trim() ||
-    params.row?.displayName?.trim() ||
-    params.row?.label?.trim() ||
+    normalizeOptionalString(params.row?.derivedTitle) ||
+    normalizeOptionalString(params.row?.displayName) ||
+    normalizeOptionalString(params.row?.label) ||
     params.sessionKey;
   const updatedAt =
     typeof params.row?.updatedAt === "number" && Number.isFinite(params.row.updatedAt)

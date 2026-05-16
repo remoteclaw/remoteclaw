@@ -5,11 +5,15 @@ import {
   normalizeAccountId,
   resolveAccountWithDefaultFallback,
 } from "remoteclaw/plugin-sdk/nextcloud-talk";
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalString,
+} from "remoteclaw/plugin-sdk/text-runtime";
 import { normalizeResolvedSecretInputString } from "./secret-input.js";
 import type { CoreConfig, NextcloudTalkAccountConfig } from "./types.js";
 
 function isTruthyEnvValue(value?: string): boolean {
-  const normalized = (value ?? "").trim().toLowerCase();
+  const normalized = normalizeLowercaseStringOrEmpty(value);
   return normalized === "true" || normalized === "1" || normalized === "yes" || normalized === "on";
 }
 
@@ -82,7 +86,7 @@ function resolveNextcloudTalkSecret(
 ): { secret: string; source: ResolvedNextcloudTalkAccount["secretSource"] } {
   const merged = mergeNextcloudTalkAccountConfig(cfg, opts.accountId ?? DEFAULT_ACCOUNT_ID);
 
-  const envSecret = process.env.NEXTCLOUD_TALK_BOT_SECRET?.trim();
+  const envSecret = normalizeOptionalString(process.env.NEXTCLOUD_TALK_BOT_SECRET);
   if (envSecret && (!opts.accountId || opts.accountId === DEFAULT_ACCOUNT_ID)) {
     return { secret: envSecret, source: "env" };
   }
@@ -134,7 +138,7 @@ export function resolveNextcloudTalkAccount(params: {
     return {
       accountId,
       enabled,
-      name: merged.name?.trim() || undefined,
+      name: normalizeOptionalString(merged.name),
       baseUrl,
       secret: secretResolution.secret,
       secretSource: secretResolution.source,

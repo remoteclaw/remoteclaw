@@ -1,4 +1,5 @@
 import util from "node:util";
+import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 import { createAccountActionGate } from "../../../src/channels/plugins/account-action-gate.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import type { TelegramAccountConfig, TelegramActionConfig } from "../../../src/config/types.js";
@@ -185,7 +186,7 @@ export function resolveTelegramAccount(params: {
     return {
       accountId,
       enabled,
-      name: merged.name?.trim() || undefined,
+      name: normalizeOptionalString(merged.name),
       token: tokenResolution.token,
       tokenSource: tokenResolution.source,
       config: merged,

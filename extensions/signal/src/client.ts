@@ -1,3 +1,4 @@
+import { formatErrorMessage } from "../../../src/infra/errors.js";
 import { resolveFetch } from "../../../src/infra/fetch.js";
 import { generateSecureUuid } from "../../../src/infra/secure-random.js";
 import { fetchWithTimeout } from "../../../src/utils/fetch-timeout.js";
@@ -126,7 +127,7 @@ export async function signalCheck(
     return {
       ok: false,
       status: null,
-      error: err instanceof Error ? err.message : String(err),
+      error: formatErrorMessage(err),
     };
   }
 }

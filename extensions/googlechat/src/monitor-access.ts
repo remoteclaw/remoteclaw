@@ -5,21 +5,25 @@ import {
   resolveAllowlistProviderRuntimeGroupPolicy,
   resolveDefaultGroupPolicy,
   resolveDmGroupAccessWithLists,
-  resolveMentionGatingWithBypass,
+  resolveInboundMentionDecision,
   warnMissingProviderGroupPolicyFallbackOnce,
 } from "remoteclaw/plugin-sdk";
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk";
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalString,
+} from "remoteclaw/plugin-sdk/text-runtime";
 import type { ResolvedGoogleChatAccount } from "./accounts.js";
 import { sendGoogleChatMessage } from "./api.js";
 import type { GoogleChatCoreRuntime } from "./monitor-types.js";
 import type { GoogleChatAnnotation, GoogleChatMessage, GoogleChatSpace } from "./types.js";
 
 function normalizeUserId(raw?: string | null): string {
-  const trimmed = raw?.trim() ?? "";
+  const trimmed = normalizeOptionalString(raw) ?? "";
   if (!trimmed) {
     return "";
   }
-  return trimmed.replace(/^users\//i, "").toLowerCase();
+  return normalizeLowercaseStringOrEmpty(trimmed.replace(/^users\//i, ""));
 }
 
 function isEmailLike(value: string): boolean {
@@ -37,9 +41,9 @@ export function isSenderAllowed(
     return true;
   }
   const normalizedSenderId = normalizeUserId(senderId);
-  const normalizedEmail = senderEmail?.trim().toLowerCase() ?? "";
+  const normalizedEmail = normalizeLowercaseStringOrEmpty(senderEmail ?? "");
   return allowFrom.some((entry) => {
-    const normalized = String(entry).trim().toLowerCase();
+    const normalized = normalizeLowercaseStringOrEmpty(String(entry));
     if (!normalized) {
       return false;
     }
@@ -78,7 +82,7 @@ function resolveGroupConfig(params: {
   if (keys.length === 0) {
     return { entry: undefined, allowlistConfigured: false };
   }
-  const normalizedName = groupName?.trim().toLowerCase();
+  const normalizedName = groupName ? normalizeLowercaseStringOrEmpty(groupName) : undefined;
   const candidates = [groupId, groupName ?? "", normalizedName ?? ""].filter(Boolean);
   let entry = candidates.map((candidate) => entries[candidate]).find(Boolean);
   if (!entry && normalizedName) {
@@ -108,13 +112,16 @@ function extractMentionInfo(annotations: GoogleChatAnnotation[], botUser?: strin
 const warnedDeprecatedUsersEmailAllowFrom = new Set<string>();
 
 function warnDeprecatedUsersEmailEntries(logVerbose: (message: string) => void, entries: string[]) {
-  const deprecated = entries.map((v) => String(v).trim()).filter((v) => /^users\/.+@.+/i.test(v));
+  const deprecated = entries
+    .map((v) => normalizeOptionalString(v))
+    .filter((v): v is string => Boolean(v))
+    .filter((v) => /^users\/.+@.+/i.test(v));
   if (deprecated.length === 0) {
     return;
   }
   const key = deprecated
-    .map((v) => v.toLowerCase())
-    .sort()
+    .map((v) => normalizeLowercaseStringOrEmpty(v))
+    .toSorted()
     .join(",");
   if (warnedDeprecatedUsersEmailAllowFrom.has(key)) {
     return;
@@ -278,19 +285,23 @@ export async function applyGoogleChatInboundAccessPolicy(params: {
       cfg: config,
       surface: "googlechat",
     });
-    const mentionGate = resolveMentionGatingWithBypass({
-      isGroup: true,
-      requireMention,
-      canDetectMention: true,
-      wasMentioned: mentionInfo.wasMentioned,
-      implicitMention: false,
-      hasAnyMention: mentionInfo.hasAnyMention,
-      allowTextCommands,
-      hasControlCommand: core.channel.text.hasControlCommand(rawBody, config),
-      commandAuthorized: commandAuthorized === true,
+    const mentionDecision = resolveInboundMentionDecision({
+      facts: {
+        canDetectMention: true,
+        wasMentioned: mentionInfo.wasMentioned,
+        hasAnyMention: mentionInfo.hasAnyMention,
+        implicitMentionKinds: [],
+      },
+      policy: {
+        isGroup: true,
+        requireMention,
+        allowTextCommands,
+        hasControlCommand: core.channel.text.hasControlCommand(rawBody, config),
+        commandAuthorized: commandAuthorized === true,
+      },
     });
-    effectiveWasMentioned = mentionGate.effectiveWasMentioned;
-    if (mentionGate.shouldSkip) {
+    effectiveWasMentioned = mentionDecision.effectiveWasMentioned;
+    if (mentionDecision.shouldSkip) {
       logVerbose(`drop group message (mention required, space=${spaceId})`);
       return { ok: false };
     }
@@ -352,6 +363,6 @@ export async function applyGoogleChatInboundAccessPolicy(params: {
     ok: true,
     commandAuthorized,
     effectiveWasMentioned,
-    groupSystemPrompt: groupEntry?.systemPrompt?.trim() || undefined,
+    groupSystemPrompt: normalizeOptionalString(groupEntry?.systemPrompt),
   };
 }

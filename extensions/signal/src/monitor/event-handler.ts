@@ -23,7 +23,7 @@ import {
   shouldDebounceTextInbound,
 } from "../../../../src/channels/inbound-debounce-policy.js";
 import { logInboundDrop, logTypingFailure } from "../../../../src/channels/logging.js";
-import { resolveMentionGatingWithBypass } from "../../../../src/channels/mention-gating.js";
+import { resolveInboundMentionDecision } from "../../../../src/channels/mention-gating.js";
 import { normalizeSignalMessagingTarget } from "../../../../src/channels/plugins/normalize/signal.js";
 import { createReplyPrefixOptions } from "../../../../src/channels/reply-prefix.js";
 import { recordInboundSession } from "../../../../src/channels/session.js";
@@ -38,6 +38,7 @@ import {
   DM_GROUP_ACCESS_REASON,
   resolvePinnedMainDmOwnerFromAllowlist,
 } from "../../../../src/security/dm-policy-shared.js";
+import { normalizeOptionalString } from "../../../../src/shared/string-coerce.js";
 import { normalizeE164 } from "../../../../src/utils.js";
 import {
   formatSignalPairingIdLine,
@@ -402,7 +403,7 @@ export function createSignalEventHandler(deps: SignalEventHandlerDeps) {
     if (params.reaction.isRemove) {
       return true; // Ignore reaction removals
     }
-    const emojiLabel = params.reaction.emoji?.trim() || "emoji";
+    const emojiLabel = normalizeOptionalString(params.reaction.emoji) ?? "emoji";
     const senderName = params.envelope.sourceName ?? params.senderDisplay;
     logVerbose(`signal reaction: ${emojiLabel} from ${senderName}`);
     const groupId = params.reaction.groupInfo?.groupId ?? undefined;
@@ -520,7 +521,7 @@ export function createSignalEventHandler(deps: SignalEventHandlerDeps) {
     const normalizedMessage = renderSignalMentions(rawMessage, dataMessage?.mentions);
     const messageText = normalizedMessage.trim();
 
-    const quoteText = dataMessage?.quote?.text?.trim() ?? "";
+    const quoteText = normalizeOptionalString(dataMessage?.quote?.text) ?? "";
     const hasBodyContent =
       Boolean(messageText || quoteText) || Boolean(!reaction && dataMessage?.attachments?.length);
     const senderDisplay = formatSignalSenderDisplay(sender);
@@ -642,26 +643,30 @@ export function createSignalEventHandler(deps: SignalEventHandlerDeps) {
         accountId: deps.accountId,
       });
     const canDetectMention = mentionRegexes.length > 0;
-    const mentionGate = resolveMentionGatingWithBypass({
-      isGroup,
-      requireMention: Boolean(requireMention),
-      canDetectMention,
-      wasMentioned,
-      implicitMention: false,
-      hasAnyMention: false,
-      allowTextCommands: true,
-      hasControlCommand: hasControlCommandInMessage,
-      commandAuthorized,
+    const mentionDecision = resolveInboundMentionDecision({
+      facts: {
+        canDetectMention,
+        wasMentioned,
+        hasAnyMention: false,
+        implicitMentionKinds: [],
+      },
+      policy: {
+        isGroup,
+        requireMention: Boolean(requireMention),
+        allowTextCommands: true,
+        hasControlCommand: hasControlCommandInMessage,
+        commandAuthorized,
+      },
     });
-    const effectiveWasMentioned = mentionGate.effectiveWasMentioned;
-    if (isGroup && requireMention && canDetectMention && mentionGate.shouldSkip) {
+    const effectiveWasMentioned = mentionDecision.effectiveWasMentioned;
+    if (isGroup && requireMention && canDetectMention && mentionDecision.shouldSkip) {
       logInboundDrop({
         log: logVerbose,
         channel: "signal",
         reason: "no mention",
         target: senderDisplay,
       });
-      const quoteText = dataMessage.quote?.text?.trim() || "";
+      const quoteText = normalizeOptionalString(dataMessage.quote?.text) ?? "";
       const pendingPlaceholder = (() => {
         if (!dataMessage.attachments?.length) {
           return "";

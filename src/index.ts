@@ -77,17 +77,21 @@ const isMain = isMainModule({
 });
 
 if (isMain) {
+  const { restoreTerminalState } = await import("./terminal/restore.js");
+
   // Global error handlers to prevent silent crashes from unhandled rejections/exceptions.
   // These log the error and exit gracefully instead of crashing without trace.
   installUnhandledRejectionHandler();
 
   process.on("uncaughtException", (error) => {
     console.error("[remoteclaw] Uncaught exception:", formatUncaughtError(error));
+    restoreTerminalState("uncaught exception", { resumeStdinIfPaused: false });
     process.exit(1);
   });
 
   void program.parseAsync(process.argv).catch((err) => {
     console.error("[remoteclaw] CLI failed:", formatUncaughtError(err));
+    restoreTerminalState("legacy cli failure", { resumeStdinIfPaused: false });
     process.exit(1);
   });
 }

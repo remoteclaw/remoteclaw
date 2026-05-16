@@ -1,3 +1,7 @@
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalString,
+} from "remoteclaw/plugin-sdk/text-runtime";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import { readConfigFileSnapshotForWrite, writeConfigFile } from "../../../src/config/config.js";
 import { loadCronStore, resolveCronStorePath, saveCronStore } from "../../../src/cron/store.js";
@@ -22,7 +26,7 @@ function normalizeTelegramLookupTargetForMatch(raw: string): string | undefined 
   if (!normalized) {
     return undefined;
   }
-  return normalized.startsWith("@") ? normalized.toLowerCase() : normalized;
+  return normalized.startsWith("@") ? normalizeLowercaseStringOrEmpty(normalized) : normalized;
 }
 
 function normalizeTelegramTargetForMatch(raw: string): string | undefined {
@@ -80,7 +84,7 @@ function rewriteTargetIfMatch(params: {
   if (typeof params.rawValue !== "string" && typeof params.rawValue !== "number") {
     return null;
   }
-  const value = String(params.rawValue).trim();
+  const value = normalizeOptionalString(String(params.rawValue)) ?? "";
   if (!value) {
     return null;
   }

@@ -9,16 +9,14 @@ import {
   evaluateMatchedGroupAccessForPolicy,
   normalizeChannelSlug,
   resolveChannelEntryMatchWithFallback,
-  resolveMentionGatingWithBypass,
+  resolveInboundMentionDecision,
   resolveNestedAllowlistDecision,
 } from "remoteclaw/plugin-sdk/nextcloud-talk";
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import type { NextcloudTalkRoomConfig } from "./types.js";
 
 function normalizeAllowEntry(raw: string): string {
-  return raw
-    .trim()
-    .toLowerCase()
-    .replace(/^(nextcloud-talk|nc-talk|nc):/i, "");
+  return normalizeLowercaseStringOrEmpty(raw.trim().replace(/^(nextcloud-talk|nc-talk|nc):/i, ""));
 }
 
 export function normalizeNextcloudTalkAllowlist(
@@ -175,14 +173,19 @@ export function resolveNextcloudTalkMentionGate(params: {
   hasControlCommand: boolean;
   commandAuthorized: boolean;
 }): { shouldSkip: boolean; shouldBypassMention: boolean } {
-  const result = resolveMentionGatingWithBypass({
-    isGroup: params.isGroup,
-    requireMention: params.requireMention,
-    canDetectMention: true,
-    wasMentioned: params.wasMentioned,
-    allowTextCommands: params.allowTextCommands,
-    hasControlCommand: params.hasControlCommand,
-    commandAuthorized: params.commandAuthorized,
+  const result = resolveInboundMentionDecision({
+    facts: {
+      canDetectMention: true,
+      wasMentioned: params.wasMentioned,
+      implicitMentionKinds: [],
+    },
+    policy: {
+      isGroup: params.isGroup,
+      requireMention: params.requireMention,
+      allowTextCommands: params.allowTextCommands,
+      hasControlCommand: params.hasControlCommand,
+      commandAuthorized: params.commandAuthorized,
+    },
   });
   return { shouldSkip: result.shouldSkip, shouldBypassMention: result.shouldBypassMention };
 }

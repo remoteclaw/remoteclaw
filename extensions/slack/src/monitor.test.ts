@@ -70,6 +70,7 @@ describe("resolveSlackThreadTs", () => {
             incomingThreadTs: threadTs,
             messageTs,
             hasReplied,
+            isThreadReply: true,
           }),
         ).toBe(threadTs);
       }

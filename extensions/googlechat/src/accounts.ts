@@ -1,6 +1,7 @@
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
 import { isSecretRef } from "remoteclaw/plugin-sdk/googlechat";
 import { createAccountListHelpers, type RemoteClawConfig } from "remoteclaw/plugin-sdk/googlechat";
+import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 import type { GoogleChatAccountConfig } from "./types.config.js";
 
 export type GoogleChatCredentialSource = "file" | "inline" | "env" | "none";
@@ -106,7 +107,7 @@ function resolveCredentialsFromConfig(params: {
     );
   }
 
-  const file = account.serviceAccountFile?.trim();
+  const file = normalizeOptionalString(account.serviceAccountFile);
   if (file) {
     return { credentialsFile: file, source: "file" };
   }
@@ -117,7 +118,7 @@ function resolveCredentialsFromConfig(params: {
     if (envInline) {
       return { credentials: envInline, source: "env" };
     }
-    const envFile = process.env[ENV_SERVICE_ACCOUNT_FILE]?.trim();
+    const envFile = normalizeOptionalString(process.env[ENV_SERVICE_ACCOUNT_FILE]);
     if (envFile) {
       return { credentialsFile: envFile, source: "env" };
     }
@@ -139,7 +140,7 @@ export function resolveGoogleChatAccount(params: {
 
   return {
     accountId,
-    name: merged.name?.trim() || undefined,
+    name: normalizeOptionalString(merged.name),
     enabled,
     config: merged,
     credentialSource: credentials.source,

@@ -1,5 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalString,
+  normalizeOptionalStringifiedId,
+} from "remoteclaw/plugin-sdk/text-runtime";
 import { resolveStateDir } from "../../../../src/config/paths.js";
 import { loadJsonFile, saveJsonFile } from "../../../../src/infra/json-file.js";
 import {
@@ -113,14 +118,7 @@ export function normalizeTargetKind(
 }
 
 export function normalizeThreadId(raw: unknown): string | undefined {
-  if (typeof raw === "number" && Number.isFinite(raw)) {
-    return String(Math.floor(raw));
-  }
-  if (typeof raw !== "string") {
-    return undefined;
-  }
-  const trimmed = raw.trim();
-  return trimmed ? trimmed : undefined;
+  return normalizeOptionalStringifiedId(raw);
 }
 
 export function toBindingRecordKey(params: { accountId: string; threadId: string }): string {
@@ -147,26 +145,22 @@ function normalizePersistedBinding(threadIdKey: string, raw: unknown): ThreadBin
   }
   const value = raw as Partial<PersistedThreadBindingRecord>;
   const threadId = normalizeThreadId(value.threadId ?? threadIdKey);
-  const channelId = typeof value.channelId === "string" ? value.channelId.trim() : "";
+  const channelId = normalizeOptionalString(value.channelId) ?? "";
   const targetSessionKey =
-    typeof value.targetSessionKey === "string"
-      ? value.targetSessionKey.trim()
-      : typeof value.sessionKey === "string"
-        ? value.sessionKey.trim()
-        : "";
+    normalizeOptionalString(value.targetSessionKey) ??
+    normalizeOptionalString(value.sessionKey) ??
+    "";
   if (!threadId || !channelId || !targetSessionKey) {
     return null;
   }
   const accountId = normalizeAccountId(value.accountId);
   const targetKind = normalizeTargetKind(value.targetKind, targetSessionKey);
-  const agentIdRaw = typeof value.agentId === "string" ? value.agentId.trim() : "";
+  const agentIdRaw = normalizeOptionalString(value.agentId) ?? "";
   const agentId = agentIdRaw || resolveAgentIdFromSessionKey(targetSessionKey);
-  const label = typeof value.label === "string" ? value.label.trim() || undefined : undefined;
-  const webhookId =
-    typeof value.webhookId === "string" ? value.webhookId.trim() || undefined : undefined;
-  const webhookToken =
-    typeof value.webhookToken === "string" ? value.webhookToken.trim() || undefined : undefined;
-  const boundBy = typeof value.boundBy === "string" ? value.boundBy.trim() || "system" : "system";
+  const label = normalizeOptionalString(value.label);
+  const webhookId = normalizeOptionalString(value.webhookId);
+  const webhookToken = normalizeOptionalString(value.webhookToken);
+  const boundBy = normalizeOptionalString(value.boundBy) ?? "system";
   const boundAt =
     typeof value.boundAt === "number" && Number.isFinite(value.boundAt)
       ? Math.floor(value.boundAt)
@@ -320,7 +314,7 @@ function unlinkSessionBinding(targetSessionKey: string, bindingKey: string) {
 }
 
 export function toReusableWebhookKey(params: { accountId: string; channelId: string }): string {
-  return `${params.accountId.trim().toLowerCase()}:${params.channelId.trim()}`;
+  return `${normalizeLowercaseStringOrEmpty(params.accountId)}:${params.channelId.trim()}`;
 }
 
 export function rememberReusableWebhook(record: ThreadBindingRecord) {
@@ -396,7 +390,7 @@ export function isRecentlyUnboundThreadWebhookMessage(params: {
   threadId: string;
   webhookId?: string | null;
 }): boolean {
-  const webhookId = params.webhookId?.trim() || "";
+  const webhookId = normalizeOptionalString(params.webhookId) ?? "";
   if (!webhookId) {
     return false;
   }

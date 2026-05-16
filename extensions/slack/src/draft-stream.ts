@@ -1,4 +1,5 @@
 import { createDraftStreamLoop } from "../../../src/channels/draft-stream-loop.js";
+import { formatErrorMessage } from "../../../src/infra/errors.js";
 import { deleteSlackMessage, editSlackMessage } from "./actions.js";
 import { sendMessageSlack } from "./send.js";
 
@@ -80,9 +81,7 @@ export function createSlackDraftStream(params: {
       params.onMessageSent?.();
     } catch (err) {
       stopped = true;
-      params.warn?.(
-        `slack stream preview failed: ${err instanceof Error ? err.message : String(err)}`,
-      );
+      params.warn?.(`slack stream preview failed: ${formatErrorMessage(err)}`);
     }
   };
   const loop = createDraftStreamLoop({
@@ -113,9 +112,7 @@ export function createSlackDraftStream(params: {
         accountId: params.accountId,
       });
     } catch (err) {
-      params.warn?.(
-        `slack stream preview cleanup failed: ${err instanceof Error ? err.message : String(err)}`,
-      );
+      params.warn?.(`slack stream preview cleanup failed: ${formatErrorMessage(err)}`);
     }
   };
 

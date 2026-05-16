@@ -13,6 +13,7 @@ import {
 import { resolveRequiredHomeDir } from "../infra/home-dir.js";
 import { jsonUtf8Bytes } from "../infra/json-utf8-bytes.js";
 import { hasInterSessionUserProvenance } from "../sessions/input-provenance.js";
+import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
 import { stripInlineDirectiveTagsForDisplay } from "../utils/directive-tags.js";
 import { extractToolCallNames, hasToolCall } from "../utils/transcript-tools.js";
 import { stripEnvelope } from "./chat-sanitize.js";
@@ -806,7 +807,7 @@ function normalizeRole(role: string | undefined, isTool: boolean): SessionPrevie
   if (isTool) {
     return "tool";
   }
-  switch ((role ?? "").toLowerCase()) {
+  switch (normalizeLowercaseStringOrEmpty(role)) {
     case "user":
       return "user";
     case "assistant":
@@ -865,7 +866,7 @@ function extractMediaSummary(message: TranscriptPreviewMessage): string | null {
     return null;
   }
   for (const entry of message.content) {
-    const raw = typeof entry?.type === "string" ? entry.type.trim().toLowerCase() : "";
+    const raw = normalizeLowercaseStringOrEmpty(entry?.type);
     if (!raw || raw === "text" || raw === "toolcall" || raw === "tool_call") {
       continue;
     }

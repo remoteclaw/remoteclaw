@@ -1,5 +1,6 @@
 import { normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
 import { createAccountListHelpers } from "remoteclaw/plugin-sdk/matrix";
+import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 import { hasConfiguredSecretInput } from "../secret-input.js";
 import type { CoreConfig, MatrixConfig } from "../types.js";
 import { resolveMatrixConfigForAccount } from "./client.js";
@@ -84,7 +85,7 @@ export function resolveMatrixAccount(params: {
   return {
     accountId,
     enabled,
-    name: base.name?.trim() || undefined,
+    name: normalizeOptionalString(base.name),
     configured,
     homeserver: resolved.homeserver || undefined,
     userId: resolved.userId || undefined,

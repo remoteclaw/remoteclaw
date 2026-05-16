@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { RemoteClawConfig } from "../config/config.js";
+import { normalizeOptionalString } from "../shared/string-coerce.js";
 import { resolveConfigDir, resolveUserPath } from "../utils.js";
 import { resolveBundledPluginsDir } from "./bundled-dir.js";
 import { normalizePluginsConfig, type NormalizedPluginsConfig } from "./config-state.js";
@@ -104,11 +105,6 @@ function safeStatMtimeMs(filePath: string): number | null {
   }
 }
 
-function normalizeManifestLabel(raw: string | undefined): string | undefined {
-  const trimmed = raw?.trim();
-  return trimmed ? trimmed : undefined;
-}
-
 function buildRecord(params: {
   manifest: PluginManifest;
   candidate: PluginCandidate;
@@ -118,10 +114,10 @@ function buildRecord(params: {
 }): PluginManifestRecord {
   return {
     id: params.manifest.id,
-    name: normalizeManifestLabel(params.manifest.name) ?? params.candidate.packageName,
+    name: normalizeOptionalString(params.manifest.name) ?? params.candidate.packageName,
     description:
-      normalizeManifestLabel(params.manifest.description) ?? params.candidate.packageDescription,
-    version: normalizeManifestLabel(params.manifest.version) ?? params.candidate.packageVersion,
+      normalizeOptionalString(params.manifest.description) ?? params.candidate.packageDescription,
+    version: normalizeOptionalString(params.manifest.version) ?? params.candidate.packageVersion,
     kind: params.manifest.kind,
     channels: params.manifest.channels ?? [],
     providers: params.manifest.providers ?? [],

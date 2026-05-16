@@ -1,6 +1,7 @@
 import { listAgentIds, resolveSoleAgentId } from "../agents/agent-scope.js";
 import { resolveStorePath } from "../config/sessions.js";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
+import { formatErrorMessage } from "../infra/errors.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import type { RuntimeEnv } from "../runtime.js";
 
@@ -88,7 +89,7 @@ export function resolveSessionStoreTargetsOrExit(params: {
   try {
     return resolveSessionStoreTargets(params.cfg, params.opts);
   } catch (error) {
-    params.runtime.error(error instanceof Error ? error.message : String(error));
+    params.runtime.error(formatErrorMessage(error));
     params.runtime.exit(1);
     return null;
   }

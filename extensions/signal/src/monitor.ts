@@ -18,8 +18,10 @@ import {
 import type { SignalReactionNotificationMode } from "../../../src/config/types.js";
 import type { BackoffPolicy } from "../../../src/infra/backoff.js";
 import { waitForTransportReady } from "../../../src/infra/transport-ready.js";
+import { estimateBase64DecodedBytes } from "../../../src/media/base64.js";
 import { saveMediaBuffer } from "../../../src/media/store.js";
 import { createNonExitingRuntime, type RuntimeEnv } from "../../../src/runtime.js";
+import { normalizeOptionalString } from "../../../src/shared/string-coerce.js";
 import { normalizeStringEntries } from "../../../src/shared/string-normalization.js";
 import { normalizeE164 } from "../../../src/utils.js";
 import { resolveSignalAccount } from "./accounts.js";
@@ -159,7 +161,10 @@ function isSignalReactionMessage(
   }
   const emoji = reaction.emoji?.trim();
   const timestamp = reaction.targetSentTimestamp;
-  const hasTarget = Boolean(reaction.targetAuthor?.trim() || reaction.targetAuthorUuid?.trim());
+  const hasTarget = Boolean(
+    normalizeOptionalString(reaction.targetAuthor) ||
+    normalizeOptionalString(reaction.targetAuthorUuid),
+  );
   return Boolean(emoji && typeof timestamp === "number" && timestamp > 0 && hasTarget);
 }
 
@@ -250,7 +255,7 @@ async function fetchAttachment(params: {
   if (!attachment?.id) {
     return null;
   }
-  if (attachment.size && attachment.size > params.maxBytes) {
+  if (typeof attachment.size === "number" && attachment.size > params.maxBytes) {
     throw new Error(
       `Signal attachment ${attachment.id} exceeds ${(params.maxBytes / (1024 * 1024)).toFixed(0)}MB limit`,
     );
@@ -274,6 +279,11 @@ async function fetchAttachment(params: {
   });
   if (!result?.data) {
     return null;
+  }
+  if (estimateBase64DecodedBytes(result.data) > params.maxBytes) {
+    throw new Error(
+      `Signal attachment ${attachment.id} exceeds ${(params.maxBytes / (1024 * 1024)).toFixed(0)}MB limit`,
+    );
   }
   const buffer = Buffer.from(result.data, "base64");
   const saved = await saveMediaBuffer(
@@ -347,8 +357,9 @@ export async function monitorSignalProvider(opts: MonitorSignalOpts = {}): Promi
   const groupHistories = new Map<string, HistoryEntry[]>();
   const textLimit = resolveTextChunkLimit(cfg, "signal", accountInfo.accountId);
   const chunkMode = resolveChunkMode(cfg, "signal", accountInfo.accountId);
-  const baseUrl = opts.baseUrl?.trim() || accountInfo.baseUrl;
-  const account = opts.account?.trim() || accountInfo.config.account?.trim();
+  const baseUrl = normalizeOptionalString(opts.baseUrl) ?? accountInfo.baseUrl;
+  const account =
+    normalizeOptionalString(opts.account) ?? normalizeOptionalString(accountInfo.config.account);
   const dmPolicy = accountInfo.config.dmPolicy ?? "pairing";
   const allowFrom = normalizeAllowList(opts.allowFrom ?? accountInfo.config.allowFrom);
   const groupAllowFrom = normalizeAllowList(

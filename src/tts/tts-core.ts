@@ -1,6 +1,7 @@
 import { rmSync, statSync } from "node:fs";
 import { EdgeTTS } from "node-edge-tts";
 import type { RemoteClawConfig } from "../config/config.js";
+import { normalizeOptionalLowercaseString } from "../shared/string-coerce.js";
 import type {
   ResolvedTtsConfig,
   ResolvedTtsModelOverrides,
@@ -46,11 +47,10 @@ function assertElevenLabsVoiceSettings(settings: ResolvedTtsConfig["elevenlabs"]
 }
 
 function normalizeLanguageCode(code?: string): string | undefined {
-  const trimmed = code?.trim();
-  if (!trimmed) {
+  const normalized = normalizeOptionalLowercaseString(code);
+  if (!normalized) {
     return undefined;
   }
-  const normalized = trimmed.toLowerCase();
   if (!/^[a-z]{2}$/.test(normalized)) {
     throw new Error("languageCode must be a 2-letter ISO 639-1 code (e.g. en, de, fr)");
   }
@@ -58,11 +58,10 @@ function normalizeLanguageCode(code?: string): string | undefined {
 }
 
 function normalizeApplyTextNormalization(mode?: string): "auto" | "on" | "off" | undefined {
-  const trimmed = mode?.trim();
-  if (!trimmed) {
+  const normalized = normalizeOptionalLowercaseString(mode);
+  if (!normalized) {
     return undefined;
   }
-  const normalized = trimmed.toLowerCase();
   if (normalized === "auto" || normalized === "on" || normalized === "off") {
     return normalized;
   }

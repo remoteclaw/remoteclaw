@@ -1,5 +1,5 @@
 import type { SsrFPolicy } from "remoteclaw/plugin-sdk/tlon";
-import { validateUrbitBaseUrl } from "./base-url.js";
+import { normalizeUrbitHostname, validateUrbitBaseUrl } from "./base-url.js";
 import { UrbitUrlError } from "./errors.js";
 
 export type UrbitContext = {
@@ -9,7 +9,7 @@ export type UrbitContext = {
 };
 
 export function resolveShipFromHostname(hostname: string): string {
-  const trimmed = hostname.trim().toLowerCase().replace(/\.$/, "");
+  const trimmed = normalizeUrbitHostname(hostname);
   if (!trimmed) {
     return "";
   }

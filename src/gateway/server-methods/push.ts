@@ -4,17 +4,13 @@ import {
   resolveApnsAuthConfigFromEnv,
   sendApnsAlert,
 } from "../../infra/push-apns.js";
+import {
+  normalizeOptionalString,
+  normalizeStringifiedOptionalString,
+} from "../../shared/string-coerce.js";
 import { ErrorCodes, errorShape, validatePushTestParams } from "../protocol/index.js";
 import { respondInvalidParams, respondUnavailableOnThrow } from "./nodes.helpers.js";
 import type { GatewayRequestHandlers } from "./types.js";
-
-function normalizeOptionalString(value: unknown): string | undefined {
-  if (typeof value !== "string") {
-    return undefined;
-  }
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : undefined;
-}
 
 export const pushHandlers: GatewayRequestHandlers = {
   "push.test": async ({ params, respond }) => {
@@ -27,7 +23,7 @@ export const pushHandlers: GatewayRequestHandlers = {
       return;
     }
 
-    const nodeId = String(params.nodeId ?? "").trim();
+    const nodeId = normalizeStringifiedOptionalString(params.nodeId) ?? "";
     if (!nodeId) {
       respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "nodeId required"));
       return;

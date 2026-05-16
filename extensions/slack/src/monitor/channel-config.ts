@@ -1,3 +1,4 @@
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import {
   applyChannelMatchMeta,
   buildChannelKeyCandidates,
@@ -109,7 +110,7 @@ export function resolveSlackChannelConfig(params: {
   // operators commonly write them in lowercase in their config. Add both
   // case variants so the lookup is case-insensitive without requiring a full
   // entry-scan. buildChannelKeyCandidates deduplicates identical keys.
-  const channelIdLower = channelId.toLowerCase();
+  const channelIdLower = normalizeLowercaseStringOrEmpty(channelId);
   const channelIdUpper = channelId.toUpperCase();
   const candidates = buildChannelKeyCandidates(
     channelId,

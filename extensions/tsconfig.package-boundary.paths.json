@@ -1,0 +1,57 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "remoteclaw/extension-api": ["../src/extensionAPI.ts"],
+      "remoteclaw/plugin-sdk": ["../dist/plugin-sdk/src/plugin-sdk/index.d.ts"],
+      "remoteclaw/plugin-sdk/*": ["../dist/plugin-sdk/src/plugin-sdk/*.d.ts"],
+      "remoteclaw/plugin-sdk/account-id": ["../dist/plugin-sdk/src/plugin-sdk/account-id.d.ts"],
+      "remoteclaw/plugin-sdk/channel-entry-contract": [
+        "../packages/plugin-sdk/dist/src/plugin-sdk/channel-entry-contract.d.ts"
+      ],
+      "remoteclaw/plugin-sdk/browser-maintenance": [
+        "../packages/plugin-sdk/dist/extensions/browser/browser-maintenance.d.ts"
+      ],
+      "remoteclaw/plugin-sdk/browser-config-runtime": [
+        "../dist/plugin-sdk/src/plugin-sdk/browser-config-runtime.d.ts"
+      ],
+      "remoteclaw/plugin-sdk/browser-node-runtime": [
+        "../dist/plugin-sdk/src/plugin-sdk/browser-node-runtime.d.ts"
+      ],
+      "remoteclaw/plugin-sdk/browser-setup-tools": [
+        "../dist/plugin-sdk/src/plugin-sdk/browser-setup-tools.d.ts"
+      ],
+      "remoteclaw/plugin-sdk/browser-security-runtime": [
+        "../dist/plugin-sdk/src/plugin-sdk/browser-security-runtime.d.ts"
+      ],
+      "remoteclaw/plugin-sdk/channel-secret-basic-runtime": [
+        "../packages/plugin-sdk/dist/src/plugin-sdk/channel-secret-basic-runtime.d.ts"
+      ],
+      "remoteclaw/plugin-sdk/channel-secret-runtime": [
+        "../dist/plugin-sdk/src/plugin-sdk/channel-secret-runtime.d.ts"
+      ],
+      "remoteclaw/plugin-sdk/channel-secret-tts-runtime": [
+        "../packages/plugin-sdk/dist/src/plugin-sdk/channel-secret-tts-runtime.d.ts"
+      ],
+      "remoteclaw/plugin-sdk/channel-streaming": [
+        "../dist/plugin-sdk/src/plugin-sdk/channel-streaming.d.ts"
+      ],
+      "remoteclaw/plugin-sdk/error-runtime": [
+        "../dist/plugin-sdk/src/plugin-sdk/error-runtime.d.ts"
+      ],
+      "remoteclaw/plugin-sdk/provider-catalog-shared": [
+        "../packages/plugin-sdk/dist/src/plugin-sdk/provider-catalog-shared.d.ts"
+      ],
+      "remoteclaw/plugin-sdk/provider-entry": [
+        "../packages/plugin-sdk/dist/src/plugin-sdk/provider-entry.d.ts"
+      ],
+      "remoteclaw/plugin-sdk/secret-ref-runtime": [
+        "../dist/plugin-sdk/src/plugin-sdk/secret-ref-runtime.d.ts"
+      ],
+      "remoteclaw/plugin-sdk/ssrf-runtime": ["../dist/plugin-sdk/src/plugin-sdk/ssrf-runtime.d.ts"],
+      "@remoteclaw/*.js": ["../packages/plugin-sdk/dist/extensions/*.d.ts", "../extensions/*"],
+      "@remoteclaw/*": ["../packages/plugin-sdk/dist/extensions/*", "../extensions/*"],
+      "@remoteclaw/plugin-sdk/*": ["../dist/plugin-sdk/src/plugin-sdk/*.d.ts"]
+    }
+  }
+}

@@ -1,4 +1,5 @@
 import { ChannelType, Routes } from "discord-api-types/v10";
+import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 import type { RemoteClawConfig } from "../../../../src/config/config.js";
 import { logVerbose } from "../../../../src/globals.js";
 import { createDiscordRestClient } from "../client.js";
@@ -176,8 +177,8 @@ export async function createWebhookForChannel(params: {
         name: "RemoteClaw Agents",
       },
     })) as { id?: string; token?: string };
-    const webhookId = typeof created?.id === "string" ? created.id.trim() : "";
-    const webhookToken = typeof created?.token === "string" ? created.token.trim() : "";
+    const webhookId = normalizeOptionalString(created?.id) ?? "";
+    const webhookToken = normalizeOptionalString(created?.token) ?? "";
     if (!webhookId || !webhookToken) {
       return {};
     }
@@ -249,7 +250,7 @@ export async function resolveChannelIdForBinding(params: {
       parent_id?: string;
       parentId?: string;
     };
-    const channelId = typeof channel?.id === "string" ? channel.id.trim() : "";
+    const channelId = normalizeOptionalString(channel?.id) ?? "";
     const type = channel?.type;
     const parentId =
       typeof channel?.parent_id === "string"
@@ -291,7 +292,7 @@ export async function createThreadForBinding(params: {
         token: params.token,
       },
     );
-    const createdId = typeof created?.id === "string" ? created.id.trim() : "";
+    const createdId = normalizeOptionalString(created?.id) ?? "";
     return createdId || null;
   } catch (err) {
     logVerbose(

@@ -6,6 +6,7 @@ import {
   resolveWebhookTargets,
   type WebhookInFlightLimiter,
 } from "remoteclaw/plugin-sdk";
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import { verifyGoogleChatRequest } from "./auth.js";
 import type { WebhookTarget } from "./monitor-types.js";
 import type {
@@ -16,8 +17,14 @@ import type {
 } from "./types.js";
 
 function extractBearerToken(header: unknown): string {
-  const authHeader = Array.isArray(header) ? String(header[0] ?? "") : String(header ?? "");
-  return authHeader.toLowerCase().startsWith("bearer ")
+  const authHeader = Array.isArray(header)
+    ? typeof header[0] === "string"
+      ? header[0]
+      : ""
+    : typeof header === "string"
+      ? header
+      : "";
+  return normalizeLowercaseStringOrEmpty(authHeader).startsWith("bearer ")
     ? authHeader.slice("bearer ".length).trim()
     : "";
 }
@@ -60,7 +67,10 @@ function parseGoogleChatInboundPayload(
       user: chat.user,
       eventTime: chat.eventTime,
     };
-    addOnBearerToken = String(rawObj.authorizationEventObject?.systemIdToken ?? "").trim();
+    addOnBearerToken =
+      typeof rawObj.authorizationEventObject?.systemIdToken === "string"
+        ? rawObj.authorizationEventObject.systemIdToken.trim()
+        : "";
   }
 
   const event = eventPayload as GoogleChatEvent;

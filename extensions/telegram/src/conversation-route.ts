@@ -1,3 +1,4 @@
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import { resolveConfiguredAcpRoute } from "../../../src/acp/persistent-bindings.route.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import { logVerbose } from "../../../src/globals.js";
@@ -64,32 +65,29 @@ export function resolveTelegramConversationRoute(params: {
   const rawTopicAgentId = params.topicAgentId?.trim();
   if (rawTopicAgentId) {
     const topicAgentId = pickFirstExistingAgentId(params.cfg, rawTopicAgentId);
-    route = {
-      ...route,
-      agentId: topicAgentId,
-      sessionKey: buildAgentSessionKey({
+    const sessionKey = normalizeLowercaseStringOrEmpty(
+      buildAgentSessionKey({
         agentId: topicAgentId,
         channel: "telegram",
         accountId: params.accountId,
         peer: { kind: params.isGroup ? "group" : "direct", id: peerId },
         dmScope: params.cfg.session?.dmScope,
         identityLinks: params.cfg.session?.identityLinks,
-      }).toLowerCase(),
-      mainSessionKey: buildAgentMainSessionKey({
+      }),
+    );
+    const mainSessionKey = normalizeLowercaseStringOrEmpty(
+      buildAgentMainSessionKey({
         agentId: topicAgentId,
-      }).toLowerCase(),
+      }),
+    );
+    route = {
+      ...route,
+      agentId: topicAgentId,
+      sessionKey,
+      mainSessionKey,
       lastRoutePolicy: deriveLastRoutePolicy({
-        sessionKey: buildAgentSessionKey({
-          agentId: topicAgentId,
-          channel: "telegram",
-          accountId: params.accountId,
-          peer: { kind: params.isGroup ? "group" : "direct", id: peerId },
-          dmScope: params.cfg.session?.dmScope,
-          identityLinks: params.cfg.session?.identityLinks,
-        }).toLowerCase(),
-        mainSessionKey: buildAgentMainSessionKey({
-          agentId: topicAgentId,
-        }).toLowerCase(),
+        sessionKey,
+        mainSessionKey,
       }),
     };
     logVerbose(

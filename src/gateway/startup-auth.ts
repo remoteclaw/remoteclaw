@@ -6,6 +6,7 @@ import type {
 } from "../config/config.js";
 import { writeConfigFile } from "../config/config.js";
 import { hasConfiguredSecretInput } from "../config/types.secrets.js";
+import { normalizeOptionalString } from "../shared/string-coerce.js";
 import { assertExplicitGatewayAuthModeWhenBothConfigured } from "./auth-mode-policy.js";
 import { resolveGatewayAuth, type ResolvedGatewayAuth } from "./auth.js";
 import {
@@ -295,15 +296,12 @@ export function assertHooksTokenSeparateFromGatewayAuth(params: {
   if (params.cfg.hooks?.enabled !== true) {
     return;
   }
-  const hooksToken =
-    typeof params.cfg.hooks.token === "string" ? params.cfg.hooks.token.trim() : "";
+  const hooksToken = normalizeOptionalString(params.cfg.hooks.token) ?? "";
   if (!hooksToken) {
     return;
   }
   const gatewayToken =
-    params.auth.mode === "token" && typeof params.auth.token === "string"
-      ? params.auth.token.trim()
-      : "";
+    params.auth.mode === "token" ? (normalizeOptionalString(params.auth.token) ?? "") : "";
   if (!gatewayToken) {
     return;
   }

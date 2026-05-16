@@ -1,5 +1,9 @@
 import { normalizeExplicitDiscordSessionKey } from "../../../extensions/discord/src/session-key-normalization.js";
 import type { MsgContext } from "../../auto-reply/templating.js";
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalLowercaseString,
+} from "../../shared/string-coerce.js";
 
 type ExplicitSessionKeyNormalizer = (sessionKey: string, ctx: MsgContext) => string;
 type ExplicitSessionKeyNormalizerEntry = {
@@ -30,9 +34,9 @@ function resolveExplicitSessionKeyNormalizer(
   sessionKey: string,
   ctx: Pick<MsgContext, "From" | "Provider" | "Surface">,
 ): ExplicitSessionKeyNormalizer | undefined {
-  const normalizedProvider = ctx.Provider?.trim().toLowerCase();
-  const normalizedSurface = ctx.Surface?.trim().toLowerCase();
-  const normalizedFrom = (ctx.From ?? "").trim().toLowerCase();
+  const normalizedProvider = normalizeOptionalLowercaseString(ctx.Provider);
+  const normalizedSurface = normalizeOptionalLowercaseString(ctx.Surface);
+  const normalizedFrom = normalizeLowercaseStringOrEmpty(ctx.From);
   return EXPLICIT_SESSION_KEY_NORMALIZERS.find((entry) =>
     entry.matches({
       sessionKey,
@@ -44,7 +48,7 @@ function resolveExplicitSessionKeyNormalizer(
 }
 
 export function normalizeExplicitSessionKey(sessionKey: string, ctx: MsgContext): string {
-  const normalized = sessionKey.trim().toLowerCase();
+  const normalized = normalizeLowercaseStringOrEmpty(sessionKey);
   const normalize = resolveExplicitSessionKeyNormalizer(normalized, ctx);
   return normalize ? normalize(normalized, ctx) : normalized;
 }

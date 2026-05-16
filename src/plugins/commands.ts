@@ -7,6 +7,7 @@
 
 import type { RemoteClawConfig } from "../config/config.js";
 import { logVerbose } from "../globals.js";
+import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
 import type {
   RemoteClawPluginCommandDefinition,
   PluginCommandContext,
@@ -193,7 +194,7 @@ export function matchPluginCommand(
   const commandName = spaceIndex === -1 ? trimmed : trimmed.slice(0, spaceIndex);
   const args = spaceIndex === -1 ? undefined : trimmed.slice(spaceIndex + 1).trim();
 
-  const key = commandName.toLowerCase();
+  const key = normalizeLowercaseStringOrEmpty(commandName);
   const command = pluginCommands.get(key);
 
   if (!command) {

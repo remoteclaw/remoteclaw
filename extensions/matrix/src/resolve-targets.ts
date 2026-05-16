@@ -5,20 +5,25 @@ import type {
   ChannelResolveResult,
   RuntimeEnv,
 } from "remoteclaw/plugin-sdk/matrix";
+import { normalizeOptionalLowercaseString } from "remoteclaw/plugin-sdk/text-runtime";
 import { listMatrixDirectoryGroupsLive, listMatrixDirectoryPeersLive } from "./directory-live.js";
+
+function normalizeLookupQuery(query: string): string {
+  return normalizeOptionalLowercaseString(query) ?? "";
+}
 
 function findExactDirectoryMatches(
   matches: ChannelDirectoryEntry[],
   query: string,
 ): ChannelDirectoryEntry[] {
-  const normalized = query.trim().toLowerCase();
+  const normalized = normalizeLookupQuery(query);
   if (!normalized) {
     return [];
   }
   return matches.filter((match) => {
-    const id = match.id.trim().toLowerCase();
-    const name = match.name?.trim().toLowerCase();
-    const handle = match.handle?.trim().toLowerCase();
+    const id = normalizeOptionalLowercaseString(match.id);
+    const name = normalizeOptionalLowercaseString(match.name);
+    const handle = normalizeOptionalLowercaseString(match.handle);
     return normalized === id || normalized === name || normalized === handle;
   });
 }
@@ -52,7 +57,7 @@ function describeUserMatchFailure(matches: ChannelDirectoryEntry[], query: strin
   if (matches.length === 0) {
     return "no matches";
   }
-  const normalized = query.trim().toLowerCase();
+  const normalized = normalizeLookupQuery(query);
   if (!normalized) {
     return "empty input";
   }

@@ -1,5 +1,7 @@
 import crypto from "node:crypto";
 import { safeEqualSecret } from "remoteclaw/plugin-sdk/browser-security-runtime";
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
+import { formatErrorMessage } from "../../../src/infra/errors.js";
 import { getHeader } from "./http-headers.js";
 import type { WebhookContext } from "./types.js";
 
@@ -189,7 +191,7 @@ function extractHostname(hostHeader: string): string | null {
       return null; // Malformed IPv6
     }
     hostname = hostHeader.substring(1, endBracket);
-    return hostname.toLowerCase();
+    return normalizeLowercaseStringOrEmpty(hostname);
   }
 
   // Handle IPv4/domain with optional port
@@ -205,7 +207,7 @@ function extractHostname(hostHeader: string): string | null {
     return null;
   }
 
-  return hostname.toLowerCase();
+  return normalizeLowercaseStringOrEmpty(hostname);
 }
 
 function extractHostnameFromHeader(headerValue: string): string | null {
@@ -548,7 +550,7 @@ export function verifyTelnyxWebhook(
   } catch (err) {
     return {
       ok: false,
-      reason: `Verification error: ${err instanceof Error ? err.message : String(err)}`,
+      reason: `Verification error: ${formatErrorMessage(err)}`,
     };
   }
 }

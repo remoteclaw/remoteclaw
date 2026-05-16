@@ -1,4 +1,5 @@
 import type { BaseProbeResult } from "../../../src/channels/plugins/types.js";
+import { formatErrorMessage } from "../../../src/infra/errors.js";
 import { resolveFetch } from "../../../src/infra/fetch.js";
 import { fetchWithTimeout } from "../../../src/utils/fetch-timeout.js";
 import { normalizeDiscordToken } from "./token.js";
@@ -167,7 +168,7 @@ export async function probeDiscord(
     return {
       ...result,
       status: err instanceof Response ? err.status : result.status,
-      error: err instanceof Error ? err.message : String(err),
+      error: formatErrorMessage(err),
       elapsedMs: Date.now() - started,
     };
   }

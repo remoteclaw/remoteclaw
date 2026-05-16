@@ -6,6 +6,7 @@ type PersistedUiSettings = Omit<UiSettings, "token"> & { token?: never };
 
 import { isSupportedLocale } from "../i18n/index.ts";
 import { inferBasePathFromPathname, normalizeBasePath } from "./navigation.ts";
+import { normalizeOptionalString } from "./string-coerce.ts";
 import type { ThemeMode } from "./theme.ts";
 
 export type UiSettings = {
@@ -33,7 +34,7 @@ function getSessionStorage(): Storage | null {
 }
 
 function normalizeGatewayTokenScope(gatewayUrl: string): string {
-  const trimmed = gatewayUrl.trim();
+  const trimmed = normalizeOptionalString(gatewayUrl) ?? "";
   if (!trimmed) {
     return "default";
   }
@@ -93,8 +94,7 @@ export function loadSettings(): UiSettings {
     const proto = location.protocol === "https:" ? "wss" : "ws";
     const configured =
       typeof window !== "undefined" &&
-      typeof window.__REMOTECLAW_CONTROL_UI_BASE_PATH__ === "string" &&
-      window.__REMOTECLAW_CONTROL_UI_BASE_PATH__.trim();
+      normalizeOptionalString(window.__REMOTECLAW_CONTROL_UI_BASE_PATH__);
     const basePath = configured
       ? normalizeBasePath(configured)
       : inferBasePathFromPathname(location.pathname);

@@ -1,4 +1,5 @@
 import type { BaseProbeResult } from "remoteclaw/plugin-sdk/matrix";
+import { formatErrorMessage } from "../../../../src/infra/errors.js";
 import { createMatrixClient, isBunRuntime } from "./client.js";
 
 export type MatrixProbe = BaseProbeResult & {
@@ -62,7 +63,7 @@ export async function probeMatrix(params: {
         typeof err === "object" && err && "statusCode" in err
           ? Number((err as { statusCode?: number }).statusCode)
           : result.status,
-      error: err instanceof Error ? err.message : String(err),
+      error: formatErrorMessage(err),
       elapsedMs: Date.now() - started,
     };
   }

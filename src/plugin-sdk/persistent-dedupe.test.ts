@@ -1,15 +1,12 @@
-import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { createPersistentDedupe } from "./persistent-dedupe.js";
+import { createPluginSdkTestHarness } from "./test-helpers.js";
 
-const tmpRoots: string[] = [];
+const { createTempDir } = createPluginSdkTestHarness();
 
 async function makeTmpRoot(): Promise<string> {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-dedupe-"));
-  tmpRoots.push(root);
-  return root;
+  return await createTempDir("remoteclaw-dedupe-");
 }
 
 function createDedupe(root: string, overrides?: { ttlMs?: number }) {
@@ -20,12 +17,6 @@ function createDedupe(root: string, overrides?: { ttlMs?: number }) {
     resolveFilePath: (namespace) => path.join(root, `${namespace}.json`),
   });
 }
-
-afterEach(async () => {
-  await Promise.all(
-    tmpRoots.splice(0).map((root) => fs.rm(root, { recursive: true, force: true })),
-  );
-});
 
 describe("createPersistentDedupe", () => {
   it("deduplicates keys and persists across instances", async () => {

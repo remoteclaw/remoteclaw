@@ -15,6 +15,10 @@ import { normalizeFingerprint } from "../infra/tls/fingerprint.js";
 import { rawDataToString } from "../infra/ws.js";
 import { logDebug, logError } from "../logger.js";
 import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalString,
+} from "../shared/string-coerce.js";
+import {
   GATEWAY_CLIENT_MODES,
   GATEWAY_CLIENT_NAMES,
   type GatewayClientMode,
@@ -253,7 +257,7 @@ export class GatewayClient {
       // not erase a valid cached device token.
       if (
         code === 1008 &&
-        reasonText.toLowerCase().includes("device token mismatch") &&
+        normalizeLowercaseStringOrEmpty(reasonText).includes("device token mismatch") &&
         !this.opts.token &&
         !this.opts.password &&
         this.opts.deviceIdentity
@@ -379,7 +383,7 @@ export class GatewayClient {
     if (this.connectSent) {
       return;
     }
-    const nonce = this.connectNonce?.trim() ?? "";
+    const nonce = normalizeOptionalString(this.connectNonce) ?? "";
     if (!nonce) {
       this.opts.onConnectError?.(new Error("gateway connect challenge missing nonce"));
       this.ws?.close(1008, "connect challenge missing nonce");
@@ -493,7 +497,7 @@ export class GatewayClient {
           err instanceof GatewayClientRequestError ? readConnectErrorDetailCode(err.details) : null;
         const shouldRetryWithDeviceToken = this.shouldRetryWithStoredDeviceToken({
           error: err,
-          explicitGatewayToken: this.opts.token?.trim() || undefined,
+          explicitGatewayToken: normalizeOptionalString(this.opts.token),
           resolvedDeviceToken,
           storedToken: storedToken ?? undefined,
         });
@@ -595,10 +599,10 @@ export class GatewayClient {
   }
 
   private selectConnectAuth(role: string): SelectedConnectAuth {
-    const explicitGatewayToken = this.opts.token?.trim() || undefined;
-    const explicitBootstrapToken = this.opts.bootstrapToken?.trim() || undefined;
-    const explicitDeviceToken = this.opts.deviceToken?.trim() || undefined;
-    const authPassword = this.opts.password?.trim() || undefined;
+    const explicitGatewayToken = normalizeOptionalString(this.opts.token);
+    const explicitBootstrapToken = normalizeOptionalString(this.opts.bootstrapToken);
+    const explicitDeviceToken = normalizeOptionalString(this.opts.deviceToken);
+    const authPassword = normalizeOptionalString(this.opts.password);
     const storedToken = this.opts.deviceIdentity
       ? loadDeviceAuthToken({ deviceId: this.opts.deviceIdentity.deviceId, role })?.token
       : null;

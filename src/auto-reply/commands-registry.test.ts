@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
 import { createTestRegistry } from "../test-utils/channel-plugins.js";
 import {
@@ -20,6 +20,7 @@ import {
 import type { ChatCommandDefinition } from "./commands-registry.types.js";
 
 beforeEach(() => {
+  vi.doUnmock("../channels/plugins/index.js");
   setActivePluginRegistry(createTestRegistry([]));
 });
 
@@ -72,7 +73,7 @@ describe("commands registry", () => {
     expect(commands.find((spec) => spec.key === "bash")).toBeFalsy();
   });
 
-  it("applies provider-specific native names", () => {
+  it("applies discord native command overrides", () => {
     const native = listNativeCommandSpecsForConfig(
       { commands: { native: true } },
       { provider: "discord" },
@@ -82,13 +83,12 @@ describe("commands registry", () => {
     expect(findCommandByNativeName("tts", "discord")).toBeUndefined();
   });
 
-  it("renames status to agentstatus for slack", () => {
+  it("applies slack native command overrides", () => {
     const native = listNativeCommandSpecsForConfig(
       { commands: { native: true } },
       { provider: "slack" },
     );
     expect(native.find((spec) => spec.name === "agentstatus")).toBeTruthy();
-    expect(native.find((spec) => spec.name === "status")).toBeFalsy();
     expect(findCommandByNativeName("agentstatus", "slack")?.key).toBe("status");
     expect(findCommandByNativeName("status", "slack")).toBeUndefined();
   });

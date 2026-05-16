@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import { resolveApiKeyForProvider } from "../../../src/agents/model-auth.js";
 import { resolveDefaultModelForAgent } from "../../../src/agents/provider-utils.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
@@ -66,12 +67,12 @@ export function cacheSticker(sticker: CachedSticker): void {
  */
 export function searchStickers(query: string, limit = 10): CachedSticker[] {
   const cache = loadCache();
-  const queryLower = query.toLowerCase();
+  const queryLower = normalizeLowercaseStringOrEmpty(query);
   const results: Array<{ sticker: CachedSticker; score: number }> = [];
 
   for (const sticker of Object.values(cache.stickers)) {
     let score = 0;
-    const descLower = sticker.description.toLowerCase();
+    const descLower = normalizeLowercaseStringOrEmpty(sticker.description);
 
     // Exact substring match in description
     if (descLower.includes(queryLower)) {
@@ -93,7 +94,7 @@ export function searchStickers(query: string, limit = 10): CachedSticker[] {
     }
 
     // Set name match
-    if (sticker.setName?.toLowerCase().includes(queryLower)) {
+    if (normalizeLowercaseStringOrEmpty(sticker.setName).includes(queryLower)) {
       score += 3;
     }
 

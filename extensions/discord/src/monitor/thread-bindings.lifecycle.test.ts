@@ -1298,18 +1298,20 @@ describe("thread binding lifecycle", () => {
       ).toBeUndefined();
 
       const disabled = manager.getByThreadId("thread-legacy-disabled");
-      expect(disabled).toBeDefined();
-      expect(disabled?.idleTimeoutMs).toBe(0);
-      expect(disabled?.maxAgeMs).toBe(0);
+      if (!disabled) {
+        throw new Error("missing migrated legacy disabled thread binding");
+      }
+      expect(disabled.idleTimeoutMs).toBe(0);
+      expect(disabled.maxAgeMs).toBe(0);
       expect(
         resolveThreadBindingMaxAgeExpiresAt({
-          record: disabled!,
+          record: disabled,
           defaultMaxAgeMs: manager.getMaxAgeMs(),
         }),
       ).toBeUndefined();
       expect(
         resolveThreadBindingInactivityExpiresAt({
-          record: disabled!,
+          record: disabled,
           defaultIdleTimeoutMs: manager.getIdleTimeoutMs(),
         }),
       ).toBeUndefined();

@@ -1,3 +1,4 @@
+import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 import { normalizeChatType } from "../../../src/channels/chat-type.js";
 import { createAccountListHelpers } from "../../../src/channels/plugins/account-helpers.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
@@ -79,7 +80,7 @@ export function resolveSlackAccount(params: {
   return {
     accountId,
     enabled,
-    name: merged.name?.trim() || undefined,
+    name: normalizeOptionalString(merged.name),
     botToken,
     appToken,
     userToken,

@@ -5,6 +5,7 @@ import { logConfigUpdated } from "../config/logging.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
+import { normalizeOptionalString } from "../shared/string-coerce.js";
 import { resolveUserPath, shortenHomePath } from "../utils.js";
 import { createClackPrompter } from "../wizard/clack-prompter.js";
 import { WizardCancelledError } from "../wizard/prompts.js";
@@ -166,7 +167,7 @@ export async function agentsAddCommand(
         },
       }));
 
-    const agentName = String(name ?? "").trim();
+    const agentName = normalizeOptionalString(String(name ?? "")) ?? "";
     let agentId = normalizeAgentId(agentName);
     if (agentName !== agentId) {
       const existingIds = new Set(listAgentEntries(cfg).map((a) => normalizeAgentId(a.id)));
@@ -211,7 +212,9 @@ export async function agentsAddCommand(
       initialValue: workspaceDefault,
       validate: (value) => (value?.trim() ? undefined : "Required"),
     });
-    const workspaceDir = resolveUserPath(String(workspaceInput ?? "").trim() || workspaceDefault);
+    const workspaceDir = resolveUserPath(
+      normalizeOptionalString(String(workspaceInput ?? "")) || workspaceDefault,
+    );
     const agentDir = resolveAgentDir(cfg, agentId);
 
     let nextConfig = applyAgentConfig(cfg, {

@@ -1,3 +1,5 @@
+import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
+
 /**
  * Runtime attestation (ADR 0005 H9). Declares the implementation status
  * of each runtime export in this module. See CONTRIBUTING.md § Module
@@ -85,7 +87,7 @@ export function formatExecDeniedUserMessage(resultText: string): string | null {
     return null;
   }
 
-  const metadata = parsed.metadata.toLowerCase();
+  const metadata = normalizeLowercaseStringOrEmpty(parsed.metadata);
   if (metadata.includes("approval-timeout")) {
     return "Command did not run: approval timed out.";
   }

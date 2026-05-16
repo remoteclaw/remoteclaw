@@ -3,6 +3,7 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { runPluginCommandWithTimeout, type RuntimeEnv } from "remoteclaw/plugin-sdk/matrix";
+import { formatErrorMessage } from "../../../../src/infra/errors.js";
 
 const MATRIX_SDK_PACKAGE = "@vector-im/matrix-bot-sdk";
 const MATRIX_CRYPTO_DOWNLOAD_HELPER = "@matrix-org/matrix-sdk-crypto-nodejs/download-lib.js";
@@ -20,7 +21,7 @@ function formatCommandError(result: { stderr: string; stdout: string }): string 
 }
 
 function isMissingMatrixCryptoRuntimeError(err: unknown): boolean {
-  const message = err instanceof Error ? err.message : String(err ?? "");
+  const message = formatErrorMessage(err);
   return (
     message.includes("Cannot find module") &&
     message.includes("@matrix-org/matrix-sdk-crypto-nodejs-")

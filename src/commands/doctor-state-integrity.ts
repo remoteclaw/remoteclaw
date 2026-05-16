@@ -17,6 +17,8 @@ import {
 } from "../config/sessions.js";
 import { resolveRequiredHomeDir } from "../infra/home-dir.js";
 import { parseAgentSessionKey } from "../sessions/session-key-utils.js";
+import { asNullableObjectRecord } from "../shared/record-coerce.js";
+import { normalizeOptionalLowercaseString } from "../shared/string-coerce.js";
 import { note } from "../terminal/note.js";
 import { shortenHomePath } from "../utils.js";
 
@@ -418,28 +420,27 @@ export function detectMacCloudSyncedStateDir(
   return null;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
 function isPairingPolicy(value: unknown): boolean {
-  return typeof value === "string" && value.trim().toLowerCase() === "pairing";
+  return normalizeOptionalLowercaseString(value) === "pairing";
 }
 
 function hasPairingPolicy(value: unknown): boolean {
-  if (!isRecord(value)) {
+  const record = asNullableObjectRecord(value);
+  if (!record) {
     return false;
   }
-  if (isPairingPolicy(value.dmPolicy)) {
+  if (isPairingPolicy(record.dmPolicy)) {
     return true;
   }
-  if (isRecord(value.dm) && isPairingPolicy(value.dm.policy)) {
+  const dm = asNullableObjectRecord(record.dm);
+  if (dm && isPairingPolicy(dm.policy)) {
     return true;
   }
-  if (!isRecord(value.accounts)) {
+  const accounts = asNullableObjectRecord(record.accounts);
+  if (!accounts) {
     return false;
   }
-  for (const accountCfg of Object.values(value.accounts)) {
+  for (const accountCfg of Object.values(accounts)) {
     if (hasPairingPolicy(accountCfg)) {
       return true;
     }
@@ -460,12 +461,12 @@ function shouldRequireOAuthDir(cfg: RemoteClawConfig, env: NodeJS.ProcessEnv): b
   if (env.REMOTECLAW_OAUTH_DIR?.trim()) {
     return true;
   }
-  const channels = cfg.channels;
-  if (!isRecord(channels)) {
+  const channels = asNullableObjectRecord(cfg.channels);
+  if (!channels) {
     return false;
   }
   // WhatsApp auth always uses the credentials tree.
-  if (isRecord(channels.whatsapp)) {
+  if (asNullableObjectRecord(channels.whatsapp)) {
     return true;
   }
   // Pairing allowlists are persisted under credentials/<channel>-allowFrom.json.

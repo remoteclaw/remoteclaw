@@ -44,6 +44,7 @@ See [Plugins](/tools/plugin) for plugin behavior and install rules.
    - `homeserver` + `userId` + `password`.
 4. Restart the gateway.
 5. Start a DM with the bot or invite it to a room.
+   - Fresh Matrix invites only work when `channels.matrix.autoJoin` allows them.
 
 Interactive setup paths:
 
@@ -69,6 +70,16 @@ Wizard behavior that matters:
 - Room allowlist prompts accept room IDs and aliases directly. They can also resolve joined-room names live, but unresolved names are only kept as typed during setup and are ignored later by runtime allowlist resolution. Prefer `!room:server` or `#alias:server`.
 - Runtime room/session identity uses the stable Matrix room ID. Room-declared aliases are only used as lookup inputs, not as the long-term session key or stable group identity.
 - To resolve room names before saving them, use `remoteclaw channels resolve --channel matrix "Project Room"`.
+
+<Warning>
+`channels.matrix.autoJoin` defaults to `off`.
+
+If you leave it unset, the bot will not join invited rooms or fresh DM-style invites, so it will not appear in new groups or invited DMs unless you join manually first.
+
+Set `autoJoin: "allowlist"` together with `autoJoinAllowlist` to restrict which invites it accepts, or set `autoJoin: "always"` if you want it to join every invite.
+
+In `allowlist` mode, `autoJoinAllowlist` only accepts `!roomId:server`, `#alias:server`, or `*`.
+</Warning>
 
 Minimal token-based setup:
 

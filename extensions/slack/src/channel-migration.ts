@@ -1,3 +1,4 @@
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import type { SlackChannelConfig } from "../../../src/config/types.slack.js";
 import { normalizeAccountId } from "../../../src/routing/session-key.js";
@@ -29,7 +30,7 @@ function resolveAccountChannels(
     return { channels: exact.channels };
   }
   const matchKey = Object.keys(accounts).find(
-    (key) => key.toLowerCase() === normalized.toLowerCase(),
+    (key) => normalizeLowercaseStringOrEmpty(key) === normalizeLowercaseStringOrEmpty(normalized),
   );
   return { channels: matchKey ? accounts[matchKey]?.channels : undefined };
 }

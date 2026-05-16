@@ -1,3 +1,4 @@
+import { normalizeOptionalLowercaseString } from "remoteclaw/plugin-sdk/text-runtime";
 import type { DirectoryConfigParams } from "../../../src/channels/plugins/directory-config.js";
 import type { ChannelDirectoryEntry } from "../../../src/channels/plugins/types.js";
 import { resolveDiscordAccount } from "./accounts.js";
@@ -13,7 +14,7 @@ type DiscordChannel = { id: string; name?: string | null };
 type DiscordDirectoryAccess = { token: string; query: string };
 
 function normalizeQuery(value?: string | null): string {
-  return value?.trim().toLowerCase() ?? "";
+  return normalizeOptionalLowercaseString(value) ?? "";
 }
 
 function buildUserRank(user: DiscordUser): number {

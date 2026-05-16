@@ -32,7 +32,7 @@ function createApi(params: {
       },
     } as RemoteClawPluginApi["runtime"],
     registerCommand: params.registerCommand,
-  }) as RemoteClawPluginApi;
+  });
 }
 
 function createCommandContext(args: string): PluginCommandContext {

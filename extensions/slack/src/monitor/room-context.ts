@@ -1,3 +1,4 @@
+import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 import { buildUntrustedChannelMetadata } from "../../../../src/security/channel-metadata.js";
 
 export function resolveSlackRoomContextHints(params: {
@@ -17,7 +18,7 @@ export function resolveSlackRoomContextHints(params: {
     : undefined;
 
   const systemPromptParts = [
-    params.isRoomish ? params.channelConfig?.systemPrompt?.trim() || null : null,
+    params.isRoomish ? (normalizeOptionalString(params.channelConfig?.systemPrompt) ?? null) : null,
   ].filter((entry): entry is string => Boolean(entry));
   const groupSystemPrompt =
     systemPromptParts.length > 0 ? systemPromptParts.join("\n\n") : undefined;

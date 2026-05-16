@@ -1,5 +1,9 @@
 import { ChannelType, type Client } from "@buape/carbon";
 import { Routes } from "discord-api-types/v10";
+import {
+  normalizeOptionalString,
+  normalizeOptionalStringifiedId,
+} from "remoteclaw/plugin-sdk/text-runtime";
 import { createReplyReferencePlanner } from "../../../../src/auto-reply/reply/reply-reference.js";
 import type { ReplyToMode } from "../../../../src/config/config.js";
 import { logVerbose } from "../../../../src/globals.js";
@@ -200,7 +204,7 @@ export async function resolveDiscordThreadStarter(params: {
     if (!starter) {
       return null;
     }
-    const content = starter.content?.trim() ?? "";
+    const content = normalizeOptionalString(starter.content) ?? "";
     const embedText = resolveDiscordEmbedText(starter.embeds?.[0]);
     const text = content || embedText;
     if (!text) {
@@ -235,7 +239,7 @@ export function resolveDiscordReplyTarget(opts: {
   if (opts.replyToMode === "off") {
     return undefined;
   }
-  const replyToId = opts.replyToId?.trim();
+  const replyToId = normalizeOptionalString(opts.replyToId);
   if (!replyToId) {
     return undefined;
   }
@@ -278,11 +282,11 @@ export function resolveDiscordAutoThreadContext(params: {
   messageChannelId: string;
   createdThreadId?: string | null;
 }): DiscordAutoThreadContext | null {
-  const createdThreadId = String(params.createdThreadId ?? "").trim();
+  const createdThreadId = normalizeOptionalStringifiedId(params.createdThreadId) ?? "";
   if (!createdThreadId) {
     return null;
   }
-  const messageChannelId = params.messageChannelId.trim();
+  const messageChannelId = normalizeOptionalString(params.messageChannelId) ?? "";
   if (!messageChannelId) {
     return null;
   }

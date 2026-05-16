@@ -27,7 +27,7 @@ const createConfig = (overrides: Partial<VoiceCallConfig> = {}): VoiceCallConfig
     ...overrides,
     serve: {
       ...base.serve,
-      ...(overrides.serve ?? {}),
+      ...overrides.serve,
     },
   };
 };

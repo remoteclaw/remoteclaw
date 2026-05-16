@@ -3,6 +3,7 @@ import { normalizeChatType } from "../channels/chat-type.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { shouldLogVerbose } from "../globals.js";
 import { logDebug, logWarn } from "../logger.js";
+import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
 import { listBindings } from "./bindings.js";
 import {
   buildAgentMainSessionKey,
@@ -111,7 +112,7 @@ export function resolveInboundLastRouteSessionKey(params: {
 }
 
 function normalizeToken(value: string | undefined | null): string {
-  return (value ?? "").trim().toLowerCase();
+  return normalizeLowercaseStringOrEmpty(value);
 }
 
 function normalizeId(value: unknown): string {
@@ -578,18 +579,22 @@ export function buildMatchedRoute(params: {
   const resolvedAgentId = pickFirstExistingAgentId(cfg, params.agentId);
   const dmScope = cfg.session?.dmScope ?? "main";
   const identityLinks = cfg.session?.identityLinks;
-  const sessionKey = buildAgentSessionKey({
-    agentId: resolvedAgentId,
-    channel: scope.channel,
-    accountId: scope.accountId,
-    peer: scope.peer,
-    dmScope,
-    identityLinks,
-  }).toLowerCase();
-  const mainSessionKey = buildAgentMainSessionKey({
-    agentId: resolvedAgentId,
-    mainKey: DEFAULT_MAIN_KEY,
-  }).toLowerCase();
+  const sessionKey = normalizeLowercaseStringOrEmpty(
+    buildAgentSessionKey({
+      agentId: resolvedAgentId,
+      channel: scope.channel,
+      accountId: scope.accountId,
+      peer: scope.peer,
+      dmScope,
+      identityLinks,
+    }),
+  );
+  const mainSessionKey = normalizeLowercaseStringOrEmpty(
+    buildAgentMainSessionKey({
+      agentId: resolvedAgentId,
+      mainKey: DEFAULT_MAIN_KEY,
+    }),
+  );
   return {
     matched: true as const,
     agentId: resolvedAgentId,

@@ -7,7 +7,16 @@ import {
   normalizeHostnameSuffixAllowlist,
   type SsrFPolicy,
 } from "remoteclaw/plugin-sdk/ssrf-policy";
+import {
+  isRecord,
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalString,
+} from "remoteclaw/plugin-sdk/text-runtime";
+import { estimateBase64DecodedBytes } from "../../../../src/media/base64.js";
 import type { MSTeamsAttachmentLike } from "./types.js";
+
+export { estimateBase64DecodedBytes };
+export { isRecord };
 
 type InlineImageCandidate =
   | {
@@ -76,8 +85,15 @@ export const DEFAULT_MEDIA_AUTH_HOST_ALLOWLIST = [
 
 export const GRAPH_ROOT = "https://graph.microsoft.com/v1.0";
 
-export function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+export function readNestedString(value: unknown, keys: Array<string | number>): string | undefined {
+  let current: unknown = value;
+  for (const key of keys) {
+    if (!isRecord(current)) {
+      return undefined;
+    }
+    current = current[key as keyof typeof current];
+  }
+  return normalizeOptionalString(current);
 }
 
 export function resolveRequestUrl(input: RequestInfo | URL): string {
@@ -90,7 +106,11 @@ export function resolveRequestUrl(input: RequestInfo | URL): string {
   if (typeof input === "object" && input && "url" in input && typeof input.url === "string") {
     return input.url;
   }
-  return String(input);
+  try {
+    return JSON.stringify(input);
+  } catch {
+    return "";
+  }
 }
 
 export function normalizeContentType(value: unknown): string | undefined {
@@ -106,9 +126,9 @@ export function inferPlaceholder(params: {
   fileName?: string;
   fileType?: string;
 }): string {
-  const mime = params.contentType?.toLowerCase() ?? "";
-  const name = params.fileName?.toLowerCase() ?? "";
-  const fileType = params.fileType?.toLowerCase() ?? "";
+  const mime = normalizeLowercaseStringOrEmpty(params.contentType ?? "");
+  const name = normalizeLowercaseStringOrEmpty(params.fileName ?? "");
+  const fileType = normalizeLowercaseStringOrEmpty(params.fileType ?? "");
 
   const looksLikeImage =
     mime.startsWith("image/") || IMAGE_EXT_RE.test(name) || IMAGE_EXT_RE.test(`x.${fileType}`);
@@ -193,20 +213,6 @@ export function extractHtmlFromAttachment(att: MSTeamsAttachmentLike): string | 
   return text;
 }
 
-function estimateBase64DecodedBytes(value: string): number {
-  const normalized = value.replace(/\s+/g, "");
-  if (!normalized) {
-    return 0;
-  }
-  let padding = 0;
-  if (normalized.endsWith("==")) {
-    padding = 2;
-  } else if (normalized.endsWith("=")) {
-    padding = 1;
-  }
-  return Math.max(0, Math.floor((normalized.length * 3) / 4) - padding);
-}
-
 function isLikelyBase64Payload(value: string): boolean {
   return /^[A-Za-z0-9+/=\r\n]+$/.test(value);
 }
@@ -219,7 +225,7 @@ function decodeDataImageWithLimits(
   if (!match) {
     return { candidate: null, estimatedBytes: 0 };
   }
-  const contentType = match[1]?.toLowerCase();
+  const contentType = normalizeLowercaseStringOrEmpty(match[1] ?? "");
   const isBase64 = Boolean(match[2]);
   if (!isBase64) {
     return { candidate: null, estimatedBytes: 0 };
@@ -306,7 +312,7 @@ export function extractInlineImageCandidates(
 
 export function safeHostForUrl(url: string): string {
   try {
-    return new URL(url).hostname.toLowerCase();
+    return normalizeLowercaseStringOrEmpty(new URL(url).hostname);
   } catch {
     return "invalid-url";
   }

@@ -1,5 +1,6 @@
 import { execFile, type ExecFileOptions } from "node:child_process";
 import { promisify } from "node:util";
+import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
 import {
   MEDIA_FFMPEG_MAX_BUFFER_BYTES,
   MEDIA_FFMPEG_TIMEOUT_MS,
@@ -44,9 +45,8 @@ export async function runFfmpeg(args: string[], options?: MediaExecOptions): Pro
 export function parseFfprobeCsvFields(stdout: string, maxFields: number): string[] {
   return stdout
     .trim()
-    .toLowerCase()
     .split(/[,\r\n]+/, maxFields)
-    .map((field) => field.trim());
+    .map((field) => normalizeLowercaseStringOrEmpty(field));
 }
 
 export function parseFfprobeCodecAndSampleRate(stdout: string): {

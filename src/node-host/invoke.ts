@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { GatewayClient } from "../gateway/client.js";
 import { sanitizeHostExecEnv } from "../infra/host-env-security.js";
+import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
 import { runBrowserProxyCommand } from "./invoke-browser.js";
 import { handleSystemRunInvoke } from "./invoke-system-run.js";
 import type {
@@ -99,7 +100,7 @@ export function decodeCapturedOutputBuffer(params: {
     return utf8;
   }
   const encoding = params.windowsEncoding ?? resolveWindowsConsoleEncoding();
-  if (!encoding || encoding.toLowerCase() === "utf-8") {
+  if (!encoding || normalizeLowercaseStringOrEmpty(encoding) === "utf-8") {
     return utf8;
   }
   try {
@@ -218,7 +219,7 @@ function resolveExecutable(bin: string, env?: Record<string, string>) {
     process.platform === "win32"
       ? (process.env.PATHEXT ?? process.env.PathExt ?? ".EXE;.CMD;.BAT;.COM")
           .split(";")
-          .map((ext) => ext.toLowerCase())
+          .map((ext) => normalizeLowercaseStringOrEmpty(ext))
       : [""];
   for (const dir of resolveEnvPath(env)) {
     for (const ext of extensions) {

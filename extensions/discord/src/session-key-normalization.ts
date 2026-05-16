@@ -1,3 +1,4 @@
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import type { MsgContext } from "../../../src/auto-reply/templating.js";
 import { normalizeChatType } from "../../../src/channels/chat-type.js";
 
@@ -5,7 +6,7 @@ export function normalizeExplicitDiscordSessionKey(
   sessionKey: string,
   ctx: Pick<MsgContext, "ChatType" | "From" | "SenderId">,
 ): string {
-  let normalized = sessionKey.trim().toLowerCase();
+  let normalized = normalizeLowercaseStringOrEmpty(sessionKey);
   if (normalizeChatType(ctx.ChatType) !== "direct") {
     return normalized;
   }
@@ -17,8 +18,8 @@ export function normalizeExplicitDiscordSessionKey(
     return normalized;
   }
 
-  const from = (ctx.From ?? "").trim().toLowerCase();
-  const senderId = (ctx.SenderId ?? "").trim().toLowerCase();
+  const from = normalizeLowercaseStringOrEmpty(ctx.From);
+  const senderId = normalizeLowercaseStringOrEmpty(ctx.SenderId);
   const fromDiscordId =
     from.startsWith("discord:") && !from.includes(":channel:") && !from.includes(":group:")
       ? from.slice("discord:".length)

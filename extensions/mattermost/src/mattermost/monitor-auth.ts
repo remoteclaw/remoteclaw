@@ -6,6 +6,7 @@ import {
   resolveControlCommandGate,
   resolveEffectiveAllowFromLists,
 } from "remoteclaw/plugin-sdk/mattermost";
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import type { ResolvedMattermostAccount } from "./accounts.js";
 import type { MattermostChannel } from "./client.js";
 
@@ -17,10 +18,8 @@ export function normalizeMattermostAllowEntry(entry: string): string {
   if (trimmed === "*") {
     return "*";
   }
-  return trimmed
-    .replace(/^(mattermost|user):/i, "")
-    .replace(/^@/, "")
-    .toLowerCase();
+  const stripped = trimmed.replace(/^(mattermost|user):/i, "").replace(/^@/, "");
+  return stripped.trim() ? normalizeLowercaseStringOrEmpty(stripped) : "";
 }
 
 export function normalizeMattermostAllowList(entries: Array<string | number>): string[] {

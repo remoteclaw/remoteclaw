@@ -1,3 +1,4 @@
+import { formatErrorMessage } from "../../../src/infra/errors.js";
 import type { VoiceCallConfig } from "./config.js";
 import { resolveVoiceCallConfig, validateProviderConfig } from "./config.js";
 import type { CoreConfig } from "./core-bridge.js";
@@ -190,9 +191,7 @@ export async function createVoiceCallRuntime(params: {
         lifecycle.setTunnelResult(nextTunnelResult);
         publicUrl = nextTunnelResult?.publicUrl ?? null;
       } catch (err) {
-        log.error(
-          `[voice-call] Tunnel setup failed: ${err instanceof Error ? err.message : String(err)}`,
-        );
+        log.error(`[voice-call] Tunnel setup failed: ${formatErrorMessage(err)}`);
       }
     }
 
@@ -219,9 +218,7 @@ export async function createVoiceCallRuntime(params: {
           twilioProvider.setTTSProvider(ttsProvider);
           log.info("[voice-call] Telephony TTS provider configured");
         } catch (err) {
-          log.warn(
-            `[voice-call] Failed to initialize telephony TTS: ${err instanceof Error ? err.message : String(err)}`,
-          );
+          log.warn(`[voice-call] Failed to initialize telephony TTS: ${formatErrorMessage(err)}`);
         }
       } else {
         log.warn("[voice-call] Telephony TTS unavailable; streaming TTS disabled");

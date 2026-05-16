@@ -1,10 +1,12 @@
 import { GatewayIntents, GatewayPlugin } from "@buape/carbon/gateway";
 import type { APIGatewayBotInfo } from "discord-api-types/v10";
 import { HttpsProxyAgent } from "https-proxy-agent";
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import { ProxyAgent, fetch as undiciFetch } from "undici";
 import WebSocket from "ws";
 import type { DiscordAccountConfig } from "../../../../src/config/types.js";
 import { danger } from "../../../../src/globals.js";
+import { formatErrorMessage } from "../../../../src/infra/errors.js";
 import type { RuntimeEnv } from "../../../../src/runtime.js";
 
 const DISCORD_GATEWAY_BOT_URL = "https://discord.com/api/v10/gateway/bot";
@@ -51,7 +53,7 @@ function isTransientDiscordGatewayResponse(status: number, body: string): boolea
   if (status >= 500) {
     return true;
   }
-  const normalized = body.toLowerCase();
+  const normalized = normalizeLowercaseStringOrEmpty(body);
   return (
     normalized.includes("upstream connect error") ||
     normalized.includes("disconnect/reset before headers") ||
@@ -90,7 +92,7 @@ async function fetchDiscordGatewayInfo(params: {
     });
   } catch (error) {
     throw createGatewayMetadataError({
-      detail: error instanceof Error ? error.message : String(error),
+      detail: formatErrorMessage(error),
       transient: true,
       cause: error,
     });
@@ -101,7 +103,7 @@ async function fetchDiscordGatewayInfo(params: {
     body = await response.text();
   } catch (error) {
     throw createGatewayMetadataError({
-      detail: error instanceof Error ? error.message : String(error),
+      detail: formatErrorMessage(error),
       transient: true,
       cause: error,
     });

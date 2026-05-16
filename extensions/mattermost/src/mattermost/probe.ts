@@ -1,4 +1,5 @@
 import type { BaseProbeResult } from "remoteclaw/plugin-sdk/mattermost";
+import { formatErrorMessage } from "../../../../src/infra/errors.js";
 import { normalizeMattermostBaseUrl, readMattermostError, type MattermostUser } from "./client.js";
 
 export type MattermostProbe = BaseProbeResult & {
@@ -46,7 +47,7 @@ export async function probeMattermost(
       bot,
     };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message = formatErrorMessage(err);
     return {
       ok: false,
       status: null,

@@ -1,5 +1,6 @@
 import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk/matrix";
 import { emptyPluginConfigSchema } from "remoteclaw/plugin-sdk/matrix";
+import { formatErrorMessage } from "../../src/infra/errors.js";
 import { matrixPlugin } from "./src/channel.js";
 import { ensureMatrixCryptoRuntime } from "./src/matrix/deps.js";
 import { setMatrixRuntime } from "./src/runtime.js";
@@ -12,7 +13,7 @@ const plugin = {
   register(api: RemoteClawPluginApi) {
     setMatrixRuntime(api.runtime);
     void ensureMatrixCryptoRuntime({ log: api.logger.info }).catch((err) => {
-      const message = err instanceof Error ? err.message : String(err);
+      const message = formatErrorMessage(err);
       api.logger.warn?.(`matrix: crypto runtime bootstrap failed: ${message}`);
     });
     api.registerChannel({ plugin: matrixPlugin });

@@ -1,3 +1,4 @@
+import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import {
   hasConfiguredSecretInput,
@@ -125,7 +126,7 @@ export function inspectSlackAccount(params: {
   return {
     accountId,
     enabled,
-    name: merged.name?.trim() || undefined,
+    name: normalizeOptionalString(merged.name),
     mode,
     botToken,
     appToken,

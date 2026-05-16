@@ -1,3 +1,4 @@
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import type { MarkdownTableMode } from "../../../src/config/types.base.js";
 import {
   chunkMarkdownIR,
@@ -201,7 +202,7 @@ export function wrapFileReferencesInHtml(html: string): string {
     const tagStart = match.index;
     const tagEnd = HTML_TAG_PATTERN.lastIndex;
     const isClosing = match[1] === "</";
-    const tagName = match[2].toLowerCase();
+    const tagName = normalizeLowercaseStringOrEmpty(match[2]);
 
     // Process text before this tag
     const textBefore = deLinkified.slice(lastIndex, tagStart);
@@ -412,7 +413,7 @@ export function splitTelegramHtmlChunks(html: string, limit: number): string[] {
 
     const rawTag = match[0];
     const isClosing = match[1] === "</";
-    const tagName = match[2].toLowerCase();
+    const tagName = normalizeLowercaseStringOrEmpty(match[2]);
     const isSelfClosing =
       !isClosing &&
       (TELEGRAM_SELF_CLOSING_HTML_TAGS.has(tagName) || rawTag.trimEnd().endsWith("/>"));

@@ -2,6 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { MANIFEST_KEY } from "../compat/legacy-names.js";
 import { openBoundaryFileSync } from "../infra/boundary-file-read.js";
+import { normalizeOptionalString } from "../shared/string-coerce.js";
+import { normalizeTrimmedStringList } from "../shared/string-normalization.js";
 import { isRecord } from "../utils.js";
 import type { PluginConfigUiHint, PluginKind } from "./types.js";
 
@@ -24,13 +26,6 @@ export type PluginManifest = {
 export type PluginManifestLoadResult =
   | { ok: true; manifest: PluginManifest; manifestPath: string }
   | { ok: false; error: string; manifestPath: string };
-
-function normalizeStringList(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-  return value.map((entry) => (typeof entry === "string" ? entry.trim() : "")).filter(Boolean);
-}
 
 export function resolvePluginManifestPath(rootDir: string): string {
   for (const filename of PLUGIN_MANIFEST_FILENAMES) {
@@ -78,7 +73,7 @@ export function loadPluginManifest(
   if (!isRecord(raw)) {
     return { ok: false, error: "plugin manifest must be an object", manifestPath };
   }
-  const id = typeof raw.id === "string" ? raw.id.trim() : "";
+  const id = normalizeOptionalString(raw.id) ?? "";
   if (!id) {
     return { ok: false, error: "plugin manifest requires id", manifestPath };
   }
@@ -88,12 +83,12 @@ export function loadPluginManifest(
   }
 
   const kind = typeof raw.kind === "string" ? (raw.kind as PluginKind) : undefined;
-  const name = typeof raw.name === "string" ? raw.name.trim() : undefined;
-  const description = typeof raw.description === "string" ? raw.description.trim() : undefined;
-  const version = typeof raw.version === "string" ? raw.version.trim() : undefined;
-  const channels = normalizeStringList(raw.channels);
-  const providers = normalizeStringList(raw.providers);
-  const skills = normalizeStringList(raw.skills);
+  const name = normalizeOptionalString(raw.name);
+  const description = normalizeOptionalString(raw.description);
+  const version = normalizeOptionalString(raw.version);
+  const channels = normalizeTrimmedStringList(raw.channels);
+  const providers = normalizeTrimmedStringList(raw.providers);
+  const skills = normalizeTrimmedStringList(raw.skills);
 
   let uiHints: Record<string, PluginConfigUiHint> | undefined;
   if (isRecord(raw.uiHints)) {
@@ -188,9 +183,7 @@ export function resolvePackageExtensionEntries(
   if (!Array.isArray(raw)) {
     return { status: "missing", entries: [] };
   }
-  const entries = raw
-    .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
-    .filter(Boolean);
+  const entries = raw.map((entry) => normalizeOptionalString(entry) ?? "").filter(Boolean);
   if (entries.length === 0) {
     return { status: "empty", entries: [] };
   }

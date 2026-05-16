@@ -1,5 +1,6 @@
 import JSON5 from "json5";
 import { createSubsystemLogger } from "../logging/subsystem.js";
+import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
 import {
   replaceSensitiveValuesInRaw,
   shouldFallbackToStructuredRawRedaction,
@@ -24,7 +25,7 @@ function isEnvVarPlaceholder(value: string): boolean {
 }
 
 function isWholeObjectSensitivePath(path: string): boolean {
-  const lowered = path.toLowerCase();
+  const lowered = normalizeLowercaseStringOrEmpty(path);
   return lowered.endsWith("serviceaccount") || lowered.endsWith("serviceaccountref");
 }
 

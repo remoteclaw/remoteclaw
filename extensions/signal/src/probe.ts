@@ -1,4 +1,5 @@
 import type { BaseProbeResult } from "../../../src/channels/plugins/types.js";
+import { formatErrorMessage } from "../../../src/infra/errors.js";
 import { signalCheck, signalRpcRequest } from "./client.js";
 
 export type SignalProbe = BaseProbeResult & {
@@ -45,7 +46,7 @@ export async function probeSignal(baseUrl: string, timeoutMs: number): Promise<S
     });
     result.version = parseSignalVersion(version);
   } catch (err) {
-    result.error = err instanceof Error ? err.message : String(err);
+    result.error = formatErrorMessage(err);
   }
   return {
     ...result,

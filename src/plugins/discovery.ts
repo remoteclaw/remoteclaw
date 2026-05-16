@@ -1,6 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import { openBoundaryFileSync } from "../infra/boundary-file-read.js";
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalString,
+} from "../shared/string-coerce.js";
 import { resolveConfigDir, resolveUserPath } from "../utils.js";
 import { resolveBundledPluginsDir } from "./bundled-dir.js";
 import {
@@ -281,7 +285,7 @@ function isExtensionFile(filePath: string): boolean {
 }
 
 function shouldIgnoreScannedDirectory(dirName: string): boolean {
-  const normalized = dirName.trim().toLowerCase();
+  const normalized = normalizeLowercaseStringOrEmpty(dirName);
   if (!normalized) {
     return true;
   }
@@ -378,9 +382,9 @@ function addCandidate(params: {
     rootDir: resolvedRoot,
     origin: params.origin,
     workspaceDir: params.workspaceDir,
-    packageName: manifest?.name?.trim() || undefined,
-    packageVersion: manifest?.version?.trim() || undefined,
-    packageDescription: manifest?.description?.trim() || undefined,
+    packageName: normalizeOptionalString(manifest?.name),
+    packageVersion: normalizeOptionalString(manifest?.version),
+    packageDescription: normalizeOptionalString(manifest?.description),
     packageDir: params.packageDir,
     packageManifest: getPackageManifestMetadata(manifest ?? undefined),
   });

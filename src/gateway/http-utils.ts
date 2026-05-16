@@ -1,10 +1,14 @@
 import { randomUUID } from "node:crypto";
 import type { IncomingMessage } from "node:http";
 import { buildAgentMainSessionKey, normalizeAgentId } from "../routing/session-key.js";
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalString,
+} from "../shared/string-coerce.js";
 import { normalizeMessageChannel } from "../utils/message-channel.js";
 
 export function getHeader(req: IncomingMessage, name: string): string | undefined {
-  const raw = req.headers[name.toLowerCase()];
+  const raw = req.headers[normalizeLowercaseStringOrEmpty(name)];
   if (typeof raw === "string") {
     return raw;
   }
@@ -15,18 +19,17 @@ export function getHeader(req: IncomingMessage, name: string): string | undefine
 }
 
 export function getBearerToken(req: IncomingMessage): string | undefined {
-  const raw = getHeader(req, "authorization")?.trim() ?? "";
-  if (!raw.toLowerCase().startsWith("bearer ")) {
+  const raw = normalizeOptionalString(getHeader(req, "authorization")) ?? "";
+  if (!normalizeLowercaseStringOrEmpty(raw).startsWith("bearer ")) {
     return undefined;
   }
-  const token = raw.slice(7).trim();
-  return token || undefined;
+  return normalizeOptionalString(raw.slice(7));
 }
 
 export function resolveAgentIdFromHeader(req: IncomingMessage): string | undefined {
   const raw =
-    getHeader(req, "x-remoteclaw-agent-id")?.trim() ||
-    getHeader(req, "x-remoteclaw-agent")?.trim() ||
+    normalizeOptionalString(getHeader(req, "x-remoteclaw-agent-id")) ||
+    normalizeOptionalString(getHeader(req, "x-remoteclaw-agent")) ||
     "";
   if (!raw) {
     return undefined;

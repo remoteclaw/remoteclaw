@@ -2,6 +2,7 @@ import type { ChatType } from "../channels/chat-type.js";
 // Exec safe-bin policy subsystem was gutted — preserve the config shape.
 // oxlint-disable-next-line typescript/no-explicit-any
 type SafeBinProfileFixture = any;
+import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
 import type { AgentElevatedAllowFromConfig, SessionSendPolicyAction } from "./types.base.js";
 import type { SecretInput } from "./types.secrets.js";
 
@@ -199,7 +200,7 @@ export function parseToolsBySenderTypedKey(
   if (!trimmed) {
     return undefined;
   }
-  const lowered = trimmed.toLowerCase();
+  const lowered = normalizeLowercaseStringOrEmpty(trimmed);
   for (const type of TOOLS_BY_SENDER_KEY_TYPES) {
     const prefix = `${type}:`;
     if (!lowered.startsWith(prefix)) {

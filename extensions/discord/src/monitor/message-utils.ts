@@ -1,5 +1,10 @@
 import type { ChannelType, Client, Message } from "@buape/carbon";
 import { StickerFormatType, type APIAttachment, type APIStickerItem } from "discord-api-types/v10";
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalString,
+  normalizeOptionalStringifiedId,
+} from "remoteclaw/plugin-sdk/text-runtime";
 import { buildMediaPayload } from "../../../../src/channels/plugins/media-payload.js";
 import { logVerbose } from "../../../../src/globals.js";
 import type { SsrFPolicy } from "../../../../src/infra/net/ssrf.js";
@@ -106,13 +111,7 @@ export function __resetDiscordChannelInfoCacheForTest() {
 }
 
 function normalizeDiscordChannelId(value: unknown): string {
-  if (typeof value === "string") {
-    return value.trim();
-  }
-  if (typeof value === "number" || typeof value === "bigint") {
-    return String(value).trim();
-  }
-  return "";
+  return normalizeOptionalStringifiedId(value) ?? "";
 }
 
 export function resolveDiscordMessageChannelId(params: {
@@ -450,7 +449,7 @@ function isImageAttachment(attachment: APIAttachment): boolean {
   if (mime.startsWith("image/")) {
     return true;
   }
-  const name = attachment.filename?.toLowerCase() ?? "";
+  const name = normalizeLowercaseStringOrEmpty(attachment.filename);
   if (!name) {
     return false;
   }
@@ -493,8 +492,8 @@ function buildDiscordMediaPlaceholder(params: {
 export function resolveDiscordEmbedText(
   embed?: { title?: string | null; description?: string | null } | null,
 ): string {
-  const title = embed?.title?.trim() || "";
-  const description = embed?.description?.trim() || "";
+  const title = normalizeOptionalString(embed?.title) ?? "";
+  const description = normalizeOptionalString(embed?.description) ?? "";
   if (title && description) {
     return `${title}\n${description}`;
   }
@@ -510,13 +509,13 @@ export function resolveDiscordMessageText(
       null,
   );
   const rawText =
-    message.content?.trim() ||
+    normalizeOptionalString(message.content) ||
     buildDiscordMediaPlaceholder({
       attachments: message.attachments ?? undefined,
       stickers: resolveDiscordMessageStickers(message),
     }) ||
     embedText ||
-    options?.fallbackText?.trim() ||
+    normalizeOptionalString(options?.fallbackText) ||
     "";
   const baseText = resolveDiscordMentions(rawText, message);
   if (!options?.includeForwarded) {
@@ -591,7 +590,7 @@ function resolveDiscordMessageSnapshots(message: Message): DiscordMessageSnapsho
 }
 
 function resolveDiscordSnapshotMessageText(snapshot: DiscordSnapshotMessage): string {
-  const content = snapshot.content?.trim() ?? "";
+  const content = normalizeOptionalString(snapshot.content) ?? "";
   const attachmentText = buildDiscordMediaPlaceholder({
     attachments: snapshot.attachments ?? undefined,
     stickers: resolveDiscordSnapshotStickers(snapshot),

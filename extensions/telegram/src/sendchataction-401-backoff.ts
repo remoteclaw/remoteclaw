@@ -1,3 +1,4 @@
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import { computeBackoff, sleepWithAbort, type BackoffPolicy } from "../../../src/infra/backoff.js";
 
 export type TelegramSendChatActionLogger = (message: string) => void;
@@ -53,7 +54,9 @@ function is401Error(error: unknown): boolean {
     return false;
   }
   const message = error instanceof Error ? error.message : JSON.stringify(error);
-  return message.includes("401") || message.toLowerCase().includes("unauthorized");
+  return (
+    message.includes("401") || normalizeLowercaseStringOrEmpty(message).includes("unauthorized")
+  );
 }
 
 /**

@@ -1,4 +1,5 @@
 import type { BaseProbeResult } from "remoteclaw/plugin-sdk/zalouser";
+import { formatErrorMessage } from "../../../src/infra/errors.js";
 import type { ZcaUserInfo } from "./types.js";
 import { getZaloUserInfo } from "./zalo-js.js";
 
@@ -28,7 +29,7 @@ export async function probeZalouser(
   } catch (error) {
     return {
       ok: false,
-      error: error instanceof Error ? error.message : String(error),
+      error: formatErrorMessage(error),
     };
   }
 }

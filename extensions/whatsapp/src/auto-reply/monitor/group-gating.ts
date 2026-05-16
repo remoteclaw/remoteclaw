@@ -1,7 +1,10 @@
 import { hasControlCommand } from "../../../../../src/auto-reply/command-detection.js";
 import { parseActivationCommand } from "../../../../../src/auto-reply/group-activation.js";
 import { recordPendingHistoryEntryIfEnabled } from "../../../../../src/auto-reply/reply/history.js";
-import { resolveMentionGating } from "../../../../../src/channels/mention-gating.js";
+import {
+  implicitMentionKindWhen,
+  resolveInboundMentionDecision,
+} from "../../../../../src/channels/mention-gating.js";
 import type { loadConfig } from "../../../../../src/config/config.js";
 import { normalizeE164 } from "../../../../../src/utils.js";
 import type { MentionConfig } from "../mentions.js";
@@ -137,15 +140,25 @@ export function applyGroupGating(params: ApplyGroupGatingParams) {
     (selfJid && replySenderJid && selfJid === replySenderJid) ||
     (selfE164 && replySenderE164 && selfE164 === replySenderE164),
   );
-  const mentionGate = resolveMentionGating({
-    requireMention,
-    canDetectMention: true,
-    wasMentioned,
-    implicitMention,
-    shouldBypassMention,
+  const implicitMentionKinds = implicitMentionKindWhen("quoted_bot", implicitMention);
+  const mentionDecision = resolveInboundMentionDecision({
+    facts: {
+      canDetectMention: true,
+      wasMentioned,
+      implicitMentionKinds,
+    },
+    policy: {
+      isGroup: true,
+      requireMention,
+      allowTextCommands: false,
+      hasControlCommand: false,
+      commandAuthorized: false,
+    },
   });
-  params.msg.wasMentioned = mentionGate.effectiveWasMentioned;
-  if (!shouldBypassMention && requireMention && mentionGate.shouldSkip) {
+  const effectiveWasMentioned =
+    mentionDecision.effectiveWasMentioned || Boolean(shouldBypassMention);
+  params.msg.wasMentioned = effectiveWasMentioned;
+  if (!shouldBypassMention && requireMention && mentionDecision.shouldSkip) {
     return skipGroupMessageAndStoreHistory(
       params,
       `Group message stored for context (no mention detected) in ${params.conversationId}: ${params.msg.body}`,

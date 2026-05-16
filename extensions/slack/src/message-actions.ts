@@ -1,3 +1,4 @@
+import { extractToolSend } from "remoteclaw/plugin-sdk/tool-send";
 import { createActionGate } from "../../../src/agents/tools/common.js";
 import type {
   ChannelMessageActionName,
@@ -52,14 +53,5 @@ export function listSlackMessageActions(cfg: RemoteClawConfig): ChannelMessageAc
 }
 
 export function extractSlackToolSend(args: Record<string, unknown>): ChannelToolSend | null {
-  const action = typeof args.action === "string" ? args.action.trim() : "";
-  if (action !== "sendMessage") {
-    return null;
-  }
-  const to = typeof args.to === "string" ? args.to : undefined;
-  if (!to) {
-    return null;
-  }
-  const accountId = typeof args.accountId === "string" ? args.accountId.trim() : undefined;
-  return { to, accountId };
+  return extractToolSend(args, "sendMessage");
 }

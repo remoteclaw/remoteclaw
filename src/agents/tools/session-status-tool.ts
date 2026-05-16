@@ -16,6 +16,7 @@ import {
   buildAgentMainSessionKey,
   resolveAgentIdFromSessionKey,
 } from "../../routing/session-key.js";
+import { normalizeOptionalLowercaseString } from "../../shared/string-coerce.js";
 // Model override infrastructure gutted in RemoteClaw — inline override logic.
 import { formatUserTime, resolveUserTimeFormat, resolveUserTimezone } from "../date-time.js";
 // Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
@@ -115,7 +116,7 @@ async function resolveModelOverride(params: {
   if (!raw) {
     return { kind: "reset" };
   }
-  if (raw.toLowerCase() === "default") {
+  if (normalizeOptionalLowercaseString(raw) === "default") {
     return { kind: "reset" };
   }
 

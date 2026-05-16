@@ -10,6 +10,7 @@ import {
   readRequestBodyWithLimit,
   requestBodyErrorToText,
 } from "remoteclaw/plugin-sdk/synology-chat";
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import { sendMessage, resolveChatUserId } from "./client.js";
 import { validateToken, authorizeUserForDm, sanitizeInput, RateLimiter } from "./security.js";
 import type { SynologyWebhookPayload, ResolvedSynologyChatAccount } from "./types.js";
@@ -243,7 +244,7 @@ function extractTokenFromHeaders(req: IncomingMessage): string | undefined {
  * - text    <- text | message | content
  */
 function parsePayload(req: IncomingMessage, body: string): SynologyWebhookPayload | null {
-  const contentType = String(req.headers["content-type"] ?? "").toLowerCase();
+  const contentType = normalizeLowercaseStringOrEmpty(req.headers["content-type"]);
 
   let bodyFields: Record<string, unknown> = {};
   if (contentType.includes("application/json")) {

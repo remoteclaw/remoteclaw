@@ -1,5 +1,6 @@
 import { estimateBase64DecodedBytes } from "../media/base64.js";
 import { sniffMimeFromBase64 } from "../media/sniff-mime-from-base64.js";
+import { normalizeOptionalLowercaseString } from "../shared/string-coerce.js";
 
 export type ChatAttachment = {
   type?: string;
@@ -33,7 +34,7 @@ function normalizeMime(mime?: string): string | undefined {
   if (!mime) {
     return undefined;
   }
-  const cleaned = mime.split(";")[0]?.trim().toLowerCase();
+  const cleaned = normalizeOptionalLowercaseString(mime.split(";")[0]);
   return cleaned || undefined;
 }
 

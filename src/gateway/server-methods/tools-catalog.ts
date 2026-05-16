@@ -11,6 +11,7 @@ import {
 } from "../../agents/tool-catalog.js";
 import { loadConfig } from "../../config/config.js";
 import { getPluginToolMeta, resolvePluginTools } from "../../plugins/tools.js";
+import { normalizeOptionalString } from "../../shared/string-coerce.js";
 import {
   ErrorCodes,
   errorShape,
@@ -40,7 +41,7 @@ type ToolCatalogGroup = {
 function resolveAgentIdOrRespondError(rawAgentId: unknown, respond: RespondFn) {
   const cfg = loadConfig();
   const knownAgents = listAgentIds(cfg);
-  const requestedAgentId = typeof rawAgentId === "string" ? rawAgentId.trim() : "";
+  const requestedAgentId = normalizeOptionalString(rawAgentId) ?? "";
   const agentId = requestedAgentId || resolveSoleAgentId(cfg) || knownAgents[0];
   if (requestedAgentId && !knownAgents.includes(agentId)) {
     respond(
@@ -102,7 +103,7 @@ function buildPluginGroups(params: {
       } as ToolCatalogGroup);
     existing.tools.push({
       id: tool.name,
-      label: typeof tool.label === "string" && tool.label.trim() ? tool.label.trim() : tool.name,
+      label: normalizeOptionalString(tool.label) ?? tool.name,
       description:
         typeof tool.description === "string" && tool.description.trim()
           ? tool.description.trim()

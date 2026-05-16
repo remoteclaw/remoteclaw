@@ -15,6 +15,7 @@ import {
   type RuntimeEnv,
   type RuntimeLogger,
 } from "remoteclaw/plugin-sdk/matrix";
+import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 import type { CoreConfig, MatrixRoomConfig, ReplyToMode } from "../../types.js";
 import { fetchEventSummary } from "../actions/summary.js";
 import {
@@ -578,7 +579,7 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
         senderLabel,
       });
 
-      const groupSystemPrompt = roomConfig?.systemPrompt?.trim() || undefined;
+      const groupSystemPrompt = normalizeOptionalString(roomConfig?.systemPrompt);
       const ctxPayload = core.channel.reply.finalizeInboundContext({
         Body: body,
         BodyForAgent: resolveMatrixBodyForAgent({

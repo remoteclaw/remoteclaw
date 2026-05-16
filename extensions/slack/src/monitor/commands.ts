@@ -1,3 +1,4 @@
+import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 import type { SlackSlashCommandConfig } from "../../../../src/config/config.js";
 
 /**
@@ -18,12 +19,14 @@ export function normalizeSlackSlashCommandName(raw: string) {
 export function resolveSlackSlashCommandConfig(
   raw?: SlackSlashCommandConfig,
 ): Required<SlackSlashCommandConfig> {
-  const normalizedName = normalizeSlackSlashCommandName(raw?.name?.trim() || "remoteclaw");
+  const normalizedName = normalizeSlackSlashCommandName(
+    normalizeOptionalString(raw?.name) ?? "remoteclaw",
+  );
   const name = normalizedName || "remoteclaw";
   return {
     enabled: raw?.enabled === true,
     name,
-    sessionPrefix: raw?.sessionPrefix?.trim() || "slack:slash",
+    sessionPrefix: normalizeOptionalString(raw?.sessionPrefix) ?? "slack:slash",
     ephemeral: raw?.ephemeral !== false,
   };
 }

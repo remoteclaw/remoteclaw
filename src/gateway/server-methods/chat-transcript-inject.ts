@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
+import { formatErrorMessage } from "../../infra/errors.js";
 
 export type GatewayInjectedAbortMeta = {
   aborted: true;
@@ -64,6 +65,6 @@ export function appendInjectedAssistantMessageToTranscript(params: {
     fs.appendFileSync(params.transcriptPath, `${JSON.stringify(entry)}\n`, "utf-8");
     return { ok: true, messageId: crypto.randomUUID(), message };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+    return { ok: false, error: formatErrorMessage(err) };
   }
 }

@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 import { createAccountListHelpers } from "../../../src/channels/plugins/account-helpers.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import { resolveOAuthDir } from "../../../src/config/paths.js";
@@ -127,7 +128,7 @@ export function resolveWhatsAppAccount(params: {
   });
   return {
     accountId,
-    name: accountCfg?.name?.trim() || undefined,
+    name: normalizeOptionalString(accountCfg?.name),
     enabled,
     sendReadReceipts: accountCfg?.sendReadReceipts ?? rootCfg?.sendReadReceipts ?? true,
     messagePrefix:

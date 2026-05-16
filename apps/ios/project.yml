@@ -237,12 +237,19 @@ targets:
     configFiles:
       Debug: Config/Signing.xcconfig
       Release: Config/Signing.xcconfig
+    attributes:
+      DevelopmentTeam: "$(REMOTECLAW_DEVELOPMENT_TEAM)"
+      ProvisioningStyle: "$(REMOTECLAW_CODE_SIGN_STYLE)"
     settings:
       base:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_IDENTITY: "Apple Development"
+        CODE_SIGN_STYLE: "$(REMOTECLAW_CODE_SIGN_STYLE)"
+        DEVELOPMENT_TEAM: "$(REMOTECLAW_DEVELOPMENT_TEAM)"
         ENABLE_APPINTENTS_METADATA: NO
         ENABLE_APP_INTENTS_METADATA_GENERATION: NO
         PRODUCT_BUNDLE_IDENTIFIER: "$(REMOTECLAW_WATCH_APP_BUNDLE_ID)"
+        PROVISIONING_PROFILE_SPECIFIER: "$(REMOTECLAW_WATCH_APP_PROFILE)"
     info:
       path: WatchApp/Info.plist
       properties:
@@ -265,9 +272,16 @@ targets:
     configFiles:
       Debug: Config/Signing.xcconfig
       Release: Config/Signing.xcconfig
+    attributes:
+      DevelopmentTeam: "$(REMOTECLAW_DEVELOPMENT_TEAM)"
+      ProvisioningStyle: "$(REMOTECLAW_CODE_SIGN_STYLE)"
     settings:
       base:
+        CODE_SIGN_IDENTITY: "Apple Development"
+        CODE_SIGN_STYLE: "$(REMOTECLAW_CODE_SIGN_STYLE)"
+        DEVELOPMENT_TEAM: "$(REMOTECLAW_DEVELOPMENT_TEAM)"
         PRODUCT_BUNDLE_IDENTIFIER: "$(REMOTECLAW_WATCH_EXTENSION_BUNDLE_ID)"
+        PROVISIONING_PROFILE_SPECIFIER: "$(REMOTECLAW_WATCH_EXTENSION_PROFILE)"
     info:
       path: WatchExtension/Info.plist
       properties:

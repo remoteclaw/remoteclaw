@@ -1,3 +1,5 @@
+import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
+
 /**
  * Runtime attestation (ADR 0005 H9). Declares the implementation status
  * of each runtime export in this module. See CONTRIBUTING.md § Module
@@ -20,7 +22,7 @@ export function normalizePromptCapabilityIds(capabilities: ReadonlyArray<string>
   const seen = new Set<string>();
   const normalized: string[] = [];
   for (const capability of capabilities) {
-    const value = normalizeStructuredPromptSection(capability).toLowerCase();
+    const value = normalizeLowercaseStringOrEmpty(normalizeStructuredPromptSection(capability));
     if (!value || seen.has(value)) {
       continue;
     }

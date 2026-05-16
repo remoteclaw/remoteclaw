@@ -452,7 +452,7 @@ export async function processDiscordMessage(ctx: DiscordMessagePreflightContext)
   const chunkMode = resolveChunkMode(cfg, "discord", accountId);
 
   const typingCallbacks = createTypingCallbacks({
-    start: () => sendTyping({ client, channelId: typingChannelId }),
+    start: () => sendTyping({ rest: client.rest, channelId: typingChannelId }),
     onStartError: (err) => {
       logTypingFailure({
         log: logVerbose,

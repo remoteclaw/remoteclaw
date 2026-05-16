@@ -3,19 +3,23 @@
 
 REMOTECLAW_IOS_DEFAULT_TEAM = Y5PE65HELJ
 REMOTECLAW_IOS_SELECTED_TEAM = $(REMOTECLAW_IOS_DEFAULT_TEAM)
+REMOTECLAW_DEVELOPMENT_TEAM = $(REMOTECLAW_IOS_SELECTED_TEAM)
+REMOTECLAW_CODE_SIGN_STYLE = Automatic
 REMOTECLAW_APP_BUNDLE_ID = org.remoteclaw.client
 REMOTECLAW_WATCH_APP_BUNDLE_ID = org.remoteclaw.client.watchkitapp
 REMOTECLAW_WATCH_EXTENSION_BUNDLE_ID = org.remoteclaw.client.watchkitapp.extension
 REMOTECLAW_ACTIVITY_WIDGET_BUNDLE_ID = org.remoteclaw.client.activitywidget
+REMOTECLAW_WATCH_APP_PROFILE =
+REMOTECLAW_WATCH_EXTENSION_PROFILE =
 
 // Local contributors can override this by running scripts/ios-configure-signing.sh.
 // Keep include after defaults: xcconfig is evaluated top-to-bottom.
 #include? "../.local-signing.xcconfig"
 #include? "../LocalSigning.xcconfig"
 
-CODE_SIGN_STYLE = Automatic
+CODE_SIGN_STYLE = $(REMOTECLAW_CODE_SIGN_STYLE)
 CODE_SIGN_IDENTITY = Apple Development
-DEVELOPMENT_TEAM = $(REMOTECLAW_IOS_SELECTED_TEAM)
+DEVELOPMENT_TEAM = $(REMOTECLAW_DEVELOPMENT_TEAM)
 
-// Let Xcode manage provisioning for the selected local team.
+// Let Xcode manage provisioning for the selected local team unless a local override pins one.
 PROVISIONING_PROFILE_SPECIFIER =

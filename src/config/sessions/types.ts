@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 type Skill = { name: string; [key: string]: unknown };
 import type { ChatType } from "../../channels/chat-type.js";
 import type { ChannelId } from "../../channels/plugins/types.js";
+import { normalizeOptionalString } from "../../shared/string-coerce.js";
 import type { DeliveryContext } from "../../utils/delivery-context.js";
 import type { TtsAutoMode } from "../types.tts.js";
 
@@ -64,6 +65,41 @@ export type AcpSessionRuntimeOptions = {
   timeoutSeconds?: number;
   /** Backend-specific option bag mapped through session/set_config_option. */
   backendExtras?: Record<string, string>;
+};
+
+export type CliSessionBinding = {
+  sessionId: string;
+  authProfileId?: string;
+  authEpoch?: string;
+  extraSystemPromptHash?: string;
+  mcpConfigHash?: string;
+};
+
+export type SessionCompactionCheckpointReason =
+  | "manual"
+  | "auto-threshold"
+  | "overflow-retry"
+  | "timeout-retry";
+
+export type SessionCompactionTranscriptReference = {
+  sessionId: string;
+  sessionFile?: string;
+  leafId?: string;
+  entryId?: string;
+};
+
+export type SessionCompactionCheckpoint = {
+  checkpointId: string;
+  sessionKey: string;
+  sessionId: string;
+  createdAt: number;
+  reason: SessionCompactionCheckpointReason;
+  tokensBefore?: number;
+  tokensAfter?: number;
+  summary?: string;
+  firstKeptEntryId?: string;
+  preCompaction: SessionCompactionTranscriptReference;
+  postCompaction: SessionCompactionTranscriptReference;
 };
 
 export type SessionEntry = {
@@ -148,9 +184,11 @@ export type SessionEntry = {
   fallbackNoticeReason?: string;
   contextTokens?: number;
   compactionCount?: number;
+  compactionCheckpoints?: SessionCompactionCheckpoint[];
   memoryFlushAt?: number;
   memoryFlushCompactionCount?: number;
   cliSessionIds?: Record<string, string>;
+  cliSessionBindings?: Record<string, CliSessionBinding>;
   claudeCliSessionId?: string;
   label?: string;
   displayName?: string;
@@ -170,14 +208,9 @@ export type SessionEntry = {
   acp?: SessionAcpMeta;
 };
 
-function normalizeRuntimeField(value: string | undefined): string | undefined {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : undefined;
-}
-
 export function normalizeSessionRuntimeModelFields(entry: SessionEntry): SessionEntry {
-  const normalizedModel = normalizeRuntimeField(entry.model);
-  const normalizedProvider = normalizeRuntimeField(entry.modelProvider);
+  const normalizedModel = normalizeOptionalString(entry.model);
+  const normalizedProvider = normalizeOptionalString(entry.modelProvider);
   let next = entry;
 
   if (!normalizedModel) {
@@ -262,8 +295,8 @@ export function mergeSessionEntryWithPolicy(
   // Guard against stale provider carry-over when callers patch runtime model
   // without also patching runtime provider.
   if (Object.hasOwn(patch, "model") && !Object.hasOwn(patch, "modelProvider")) {
-    const patchedModel = normalizeRuntimeField(patch.model);
-    const existingModel = normalizeRuntimeField(existing.model);
+    const patchedModel = normalizeOptionalString(patch.model);
+    const existingModel = normalizeOptionalString(existing.model);
     if (patchedModel && patchedModel !== existingModel) {
       delete next.modelProvider;
     }

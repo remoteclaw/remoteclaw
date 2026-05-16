@@ -1,11 +1,18 @@
-import type { RemoteClawConfig } from "./config.js";
+import { isRecord } from "../utils.js";
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
+type PluginWebSearchConfigCarrier = {
+  plugins?: {
+    entries?: Record<
+      string,
+      {
+        config?: unknown;
+      }
+    >;
+  };
+};
 
 export function resolvePluginWebSearchConfig(
-  config: RemoteClawConfig | undefined,
+  config: PluginWebSearchConfigCarrier | undefined,
   pluginId: string,
 ): Record<string, unknown> | undefined {
   const pluginConfig = config?.plugins?.entries?.[pluginId]?.config;

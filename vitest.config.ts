@@ -50,6 +50,7 @@ const pluginSdkSubpaths = [
   "synology-chat",
   "talk-voice",
   "test-utils",
+  "text-runtime",
   "thread-ownership",
   "tlon",
   "twitch",

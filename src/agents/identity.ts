@@ -11,7 +11,6 @@ export const MODULE_ATTESTATIONS = {
   resolveAgentIdentity: "live",
   resolveAckReaction: "live",
   resolveIdentityNamePrefix: "live",
-  resolveIdentityName: "live",
   resolveMessagePrefix: "live",
   resolveResponsePrefix: "live",
   resolveEffectiveMessagesConfig: "live",
@@ -71,11 +70,6 @@ export function resolveIdentityNamePrefix(
     return undefined;
   }
   return `[${name}]`;
-}
-
-/** Returns just the identity name (without brackets) for template context. */
-export function resolveIdentityName(cfg: RemoteClawConfig, agentId: string): string | undefined {
-  return resolveAgentIdentity(cfg, agentId)?.name?.trim() || undefined;
 }
 
 export function resolveMessagePrefix(

@@ -1,3 +1,4 @@
+import { normalizeOptionalLowercaseString } from "remoteclaw/plugin-sdk/text-runtime";
 import type { RemoteClawConfig } from "../../../../src/config/config.js";
 import { resolveStorePath, updateSessionStore } from "../../../../src/config/sessions.js";
 
@@ -17,7 +18,7 @@ export async function closeDiscordThreadSessions(params: {
 }): Promise<number> {
   const { cfg, accountId, threadId } = params;
 
-  const normalizedThreadId = threadId.trim().toLowerCase();
+  const normalizedThreadId = normalizeOptionalLowercaseString(threadId) ?? "";
   if (!normalizedThreadId) {
     return 0;
   }

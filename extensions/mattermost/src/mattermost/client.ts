@@ -1,3 +1,7 @@
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalString,
+} from "remoteclaw/plugin-sdk/text-runtime";
 import { z } from "zod";
 import { fetchWithSsrFGuard } from "../../../../src/infra/net/fetch-guard.js";
 
@@ -107,11 +111,7 @@ export function createMattermostClient(params: {
 
   const guardedFetchImpl: MattermostFetch = async (input, init) => {
     const url =
-      typeof input === "string"
-        ? input
-        : input instanceof URL
-          ? input.toString()
-          : (input as Request).url;
+      typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
     const { response, release } = await fetchWithSsrFGuard({
       url,
       init,
@@ -345,7 +345,7 @@ export async function createMattermostDirectChannelWithRetry(
 function isRetryableError(error: Error): boolean {
   const candidates = collectErrorCandidates(error);
   const messages = candidates
-    .map((candidate) => readErrorMessage(candidate)?.toLowerCase())
+    .map((candidate) => normalizeLowercaseStringOrEmpty(readErrorMessage(candidate)))
     .filter((message): message is string => Boolean(message));
 
   // Retry on 5xx server errors FIRST (before checking 4xx)
@@ -552,7 +552,7 @@ export async function uploadMattermostFile(
   },
 ): Promise<MattermostFileInfo> {
   const form = new FormData();
-  const fileName = params.fileName?.trim() || "upload";
+  const fileName = normalizeOptionalString(params.fileName) ?? "upload";
   const bytes = Uint8Array.from(params.buffer);
   const blob = params.contentType
     ? new Blob([bytes], { type: params.contentType })

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 import { resolveThreadBindingConversationIdFromBindingId } from "../../../src/channels/thread-binding-id.js";
 import { resolveStateDir } from "../../../src/config/paths.js";
 import { logVerbose } from "../../../src/globals.js";
@@ -69,14 +70,6 @@ function normalizeDurationMs(raw: unknown, fallback: number): number {
     return fallback;
   }
   return Math.max(0, Math.floor(raw));
-}
-
-function normalizeConversationId(raw: unknown): string | undefined {
-  if (typeof raw !== "string") {
-    return undefined;
-  }
-  const trimmed = raw.trim();
-  return trimmed || undefined;
 }
 
 function resolveBindingKey(params: { accountId: string; conversationId: string }): string {
@@ -239,9 +232,8 @@ function loadBindingsFromDisk(accountId: string): TelegramThreadBindingRecord[] 
     }
     const bindings: TelegramThreadBindingRecord[] = [];
     for (const entry of parsed.bindings) {
-      const conversationId = normalizeConversationId(entry?.conversationId);
-      const targetSessionKey =
-        typeof entry?.targetSessionKey === "string" ? entry.targetSessionKey.trim() : "";
+      const conversationId = normalizeOptionalString(entry?.conversationId);
+      const targetSessionKey = normalizeOptionalString(entry?.targetSessionKey) ?? "";
       const targetKind = entry?.targetKind === "subagent" ? "subagent" : "acp";
       if (!conversationId || !targetSessionKey) {
         continue;
@@ -394,7 +386,7 @@ export function createTelegramThreadBindingManager(
     getIdleTimeoutMs: () => idleTimeoutMs,
     getMaxAgeMs: () => maxAgeMs,
     getByConversationId: (conversationIdRaw) => {
-      const conversationId = normalizeConversationId(conversationIdRaw);
+      const conversationId = normalizeOptionalString(conversationIdRaw);
       if (!conversationId) {
         return undefined;
       }
@@ -416,7 +408,7 @@ export function createTelegramThreadBindingManager(
     },
     listBindings: () => listBindingsForAccount(),
     touchConversation: (conversationIdRaw, at) => {
-      const conversationId = normalizeConversationId(conversationIdRaw);
+      const conversationId = normalizeOptionalString(conversationIdRaw);
       if (!conversationId) {
         return null;
       }
@@ -434,7 +426,7 @@ export function createTelegramThreadBindingManager(
       return nextRecord;
     },
     unbindConversation: (unbindParams) => {
-      const conversationId = normalizeConversationId(unbindParams.conversationId);
+      const conversationId = normalizeOptionalString(unbindParams.conversationId);
       if (!conversationId) {
         return null;
       }
@@ -495,7 +487,7 @@ export function createTelegramThreadBindingManager(
       if (input.placement === "child") {
         return null;
       }
-      const conversationId = normalizeConversationId(input.conversation.conversationId);
+      const conversationId = normalizeOptionalString(input.conversation.conversationId);
       const targetSessionKey = input.targetSessionKey.trim();
       if (!conversationId || !targetSessionKey) {
         return null;
@@ -544,7 +536,7 @@ export function createTelegramThreadBindingManager(
       if (ref.channel !== "telegram") {
         return null;
       }
-      const conversationId = normalizeConversationId(ref.conversationId);
+      const conversationId = normalizeOptionalString(ref.conversationId);
       if (!conversationId) {
         return null;
       }

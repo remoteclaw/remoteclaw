@@ -65,7 +65,7 @@ export function createMattermostReactionFetchMock(params: {
       );
     }
 
-    throw new Error(`unexpected url: ${url}`);
+    throw new Error(`unexpected url: ${String(url)}`);
   });
 }
 

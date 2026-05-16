@@ -7,6 +7,7 @@ import {
   type Event,
 } from "nostr-tools";
 import { decrypt, encrypt } from "nostr-tools/nip04";
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import type { NostrProfile } from "./config-schema.js";
 import {
   createMetrics,
@@ -632,8 +633,11 @@ async function sendEncryptedDm(
 
     const startTime = Date.now();
     try {
-      // oxlint-disable-next-line typescript/await-thenable typesciript/no-floating-promises
-      await pool.publish([relay], reply);
+      const [publishPromise] = pool.publish([relay], reply);
+      if (!publishPromise) {
+        throw new Error(`Failed to create publish promise for relay ${relay}`);
+      }
+      await publishPromise;
       const latency = Date.now() - startTime;
 
       // Record success
@@ -706,7 +710,7 @@ export function normalizePubkey(input: string): string {
   if (!/^[0-9a-fA-F]{64}$/.test(trimmed)) {
     throw new Error("Pubkey must be 64 hex characters or npub format");
   }
-  return trimmed.toLowerCase();
+  return normalizeLowercaseStringOrEmpty(trimmed);
 }
 
 /**

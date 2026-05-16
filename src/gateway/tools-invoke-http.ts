@@ -21,6 +21,7 @@ import { logWarn } from "../logger.js";
 import { getPluginToolMeta } from "../plugins/tools.js";
 import { isSubagentSessionKey } from "../routing/session-key.js";
 import { DEFAULT_GATEWAY_HTTP_TOOL_DENY } from "../security/dangerous-tools.js";
+import { normalizeOptionalString } from "../shared/string-coerce.js";
 import { normalizeMessageChannel } from "../utils/message-channel.js";
 import type { AuthRateLimiter } from "./auth-rate-limit.js";
 import type { ResolvedGatewayAuth } from "./auth.js";
@@ -145,13 +146,13 @@ export async function handleToolsInvokeHttpRequest(
   }
   const body = (bodyUnknown ?? {}) as ToolsInvokeBody;
 
-  const toolName = typeof body.tool === "string" ? body.tool.trim() : "";
+  const toolName = normalizeOptionalString(body.tool) ?? "";
   if (!toolName) {
     sendInvalidRequest(res, "tools.invoke requires body.tool");
     return true;
   }
 
-  const action = typeof body.action === "string" ? body.action.trim() : undefined;
+  const action = normalizeOptionalString(body.action);
 
   const argsRaw = body.args;
   const args =
@@ -167,9 +168,9 @@ export async function handleToolsInvokeHttpRequest(
   const messageChannel = normalizeMessageChannel(
     getHeader(req, "x-remoteclaw-message-channel") ?? "",
   );
-  const accountId = getHeader(req, "x-remoteclaw-account-id")?.trim() || undefined;
-  const agentTo = getHeader(req, "x-remoteclaw-message-to")?.trim() || undefined;
-  const agentThreadId = getHeader(req, "x-remoteclaw-thread-id")?.trim() || undefined;
+  const accountId = normalizeOptionalString(getHeader(req, "x-remoteclaw-account-id"));
+  const agentTo = normalizeOptionalString(getHeader(req, "x-remoteclaw-message-to"));
+  const agentThreadId = normalizeOptionalString(getHeader(req, "x-remoteclaw-thread-id"));
 
   const {
     agentId,

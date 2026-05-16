@@ -8,6 +8,7 @@ import {
   isPathWithinRoot,
   isSupportedLocalAvatarExtension,
 } from "../shared/avatar-policy.js";
+import { normalizeOptionalString } from "../shared/string-coerce.js";
 import { resolveUserPath } from "../utils.js";
 import { resolveAgentWorkspaceDir } from "./agent-scope.js";
 import { resolveAgentIdentity } from "./identity.js";
@@ -28,13 +29,8 @@ export type AgentAvatarResolution =
   | { kind: "remote"; url: string }
   | { kind: "data"; url: string };
 
-function normalizeAvatarValue(value: string | undefined | null): string | null {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : null;
-}
-
 function resolveAvatarSource(cfg: RemoteClawConfig, agentId: string): string | null {
-  return normalizeAvatarValue(resolveAgentIdentity(cfg, agentId)?.avatar);
+  return normalizeOptionalString(resolveAgentIdentity(cfg, agentId)?.avatar) ?? null;
 }
 
 function resolveExistingPath(value: string): string {

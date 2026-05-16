@@ -9,6 +9,10 @@ import { applyVerboseOverride, parseVerboseOverride } from "../sessions/level-ov
 import { normalizeSendPolicy } from "../sessions/send-policy.js";
 import { parseSessionLabel } from "../sessions/session-label.js";
 import {
+  normalizeOptionalLowercaseString,
+  normalizeOptionalString,
+} from "../shared/string-coerce.js";
+import {
   ErrorCodes,
   type ErrorShape,
   errorShape,
@@ -24,7 +28,7 @@ function supportsSpawnLineage(storeKey: string): boolean {
 }
 
 function normalizeSubagentRole(raw: string): "orchestrator" | "leaf" | undefined {
-  const normalized = raw.trim().toLowerCase();
+  const normalized = normalizeOptionalLowercaseString(raw);
   if (normalized === "orchestrator" || normalized === "leaf") {
     return normalized;
   }
@@ -32,7 +36,7 @@ function normalizeSubagentRole(raw: string): "orchestrator" | "leaf" | undefined
 }
 
 function normalizeSubagentControlScope(raw: string): "children" | "none" | undefined {
-  const normalized = raw.trim().toLowerCase();
+  const normalized = normalizeOptionalLowercaseString(raw);
   if (normalized === "children" || normalized === "none") {
     return normalized;
   }
@@ -64,7 +68,7 @@ export async function applySessionsPatchToStore(params: {
         return invalid("spawnedBy cannot be cleared once set");
       }
     } else if (raw !== undefined) {
-      const trimmed = String(raw).trim();
+      const trimmed = normalizeOptionalString(String(raw)) ?? "";
       if (!trimmed) {
         return invalid("invalid spawnedBy: empty");
       }
@@ -196,7 +200,7 @@ export async function applySessionsPatchToStore(params: {
       delete next.providerOverride;
       delete next.modelOverride;
     } else if (raw !== undefined) {
-      const trimmed = String(raw).trim();
+      const trimmed = normalizeOptionalString(String(raw)) ?? "";
       if (!trimmed) {
         return invalid("invalid model: empty");
       }

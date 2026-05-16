@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { formatErrorMessage } from "../../../../src/infra/errors.js";
 import type { CallMode } from "../config.js";
 import {
   TerminalStates,
@@ -191,7 +192,7 @@ export async function initiateCall(
     return {
       callId,
       success: false,
-      error: err instanceof Error ? err.message : String(err),
+      error: formatErrorMessage(err),
     };
   }
 }
@@ -227,7 +228,7 @@ export async function speak(
     // A failed playback should not leave the call stuck in speaking state.
     transitionState(call, "listening");
     persistCallRecord(ctx.storePath, call);
-    return { success: false, error: err instanceof Error ? err.message : String(err) };
+    return { success: false, error: formatErrorMessage(err) };
   }
 }
 
@@ -333,7 +334,7 @@ export async function continueCall(
         : 1;
 
     call.metadata = {
-      ...(call.metadata ?? {}),
+      ...call.metadata,
       turnCount,
       lastTurnLatencyMs,
       lastTurnListenWaitMs,
@@ -352,7 +353,7 @@ export async function continueCall(
 
     return { success: true, transcript };
   } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : String(err) };
+    return { success: false, error: formatErrorMessage(err) };
   } finally {
     ctx.activeTurnCalls.delete(callId);
     clearTranscriptWaiter(ctx, callId);
@@ -392,6 +393,6 @@ export async function endCall(
 
     return { success: true };
   } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : String(err) };
+    return { success: false, error: formatErrorMessage(err) };
   }
 }

@@ -31,6 +31,24 @@ vi.mock("./probe.js", async () => {
   };
 });
 
+vi.mock("./channel.runtime.js", () => ({
+  probeZaloAccount: hoisted.probeZalo,
+  startZaloGatewayAccount: async (ctx: {
+    account: ResolvedZaloAccount;
+    abortSignal: AbortSignal;
+    setStatus: (patch: Partial<ResolvedZaloAccount>) => void;
+  }) => {
+    await hoisted.probeZalo();
+    ctx.setStatus({ accountId: ctx.account.accountId });
+    return await hoisted.monitorZaloProvider({
+      token: ctx.account.token,
+      account: ctx.account,
+      abortSignal: ctx.abortSignal,
+      useWebhook: false,
+    });
+  },
+}));
+
 import { zaloPlugin } from "./channel.js";
 
 function buildAccount(): ResolvedZaloAccount {

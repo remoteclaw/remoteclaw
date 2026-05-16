@@ -1,4 +1,5 @@
 import { Type } from "@sinclair/typebox";
+import { formatErrorMessage } from "../../../src/infra/errors.js";
 import { sendImageZalouser, sendLinkZalouser, sendMessageZalouser } from "./send.js";
 import {
   checkZaloAuthenticated,
@@ -142,7 +143,7 @@ export async function executeZalouserTool(
     }
   } catch (err) {
     return json({
-      error: err instanceof Error ? err.message : String(err),
+      error: formatErrorMessage(err),
     });
   }
 }

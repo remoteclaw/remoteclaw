@@ -7,6 +7,7 @@ import {
   type ChannelMessageActionName,
   type ChannelToolSend,
 } from "remoteclaw/plugin-sdk/matrix";
+import { extractToolSend } from "remoteclaw/plugin-sdk/tool-send";
 import { resolveMatrixAccount } from "./matrix/accounts.js";
 import { handleMatrixAction } from "./tool-actions.js";
 import type { CoreConfig } from "./types.js";
@@ -43,15 +44,7 @@ export const matrixMessageActions: ChannelMessageActionAdapter = {
   },
   supportsAction: ({ action }) => action !== "poll",
   extractToolSend: ({ args }): ChannelToolSend | null => {
-    const action = typeof args.action === "string" ? args.action.trim() : "";
-    if (action !== "sendMessage") {
-      return null;
-    }
-    const to = typeof args.to === "string" ? args.to : undefined;
-    if (!to) {
-      return null;
-    }
-    return { to };
+    return extractToolSend(args, "sendMessage");
   },
   handleAction: (async (ctx: ChannelMessageActionContext) => {
     const { action, params, cfg } = ctx;

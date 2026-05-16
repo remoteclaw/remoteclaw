@@ -17,6 +17,7 @@ import {
 import { buildChannelAccountBindings, resolvePreferredAccountId } from "../routing/bindings.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import type { RuntimeEnv } from "../runtime.js";
+import { asNullableRecord } from "../shared/record-coerce.js";
 import { styleHealthChannelLine } from "../terminal/health-style.js";
 import { isRich } from "../terminal/theme.js";
 
@@ -165,11 +166,8 @@ const isAccountEnabled = (account: unknown): boolean => {
   return enabled !== false;
 };
 
-const asRecord = (value: unknown): Record<string, unknown> | null =>
-  value && typeof value === "object" ? (value as Record<string, unknown>) : null;
-
 const formatProbeLine = (probe: unknown, opts: { botUsernames?: string[] } = {}): string | null => {
-  const record = asRecord(probe);
+  const record = asNullableRecord(probe);
   if (!record) {
     return null;
   }
@@ -180,9 +178,9 @@ const formatProbeLine = (probe: unknown, opts: { botUsernames?: string[] } = {})
   const elapsedMs = typeof record.elapsedMs === "number" ? record.elapsedMs : null;
   const status = typeof record.status === "number" ? record.status : null;
   const error = typeof record.error === "string" ? record.error : null;
-  const bot = asRecord(record.bot);
+  const bot = asNullableRecord(record.bot);
   const botUsername = bot && typeof bot.username === "string" ? bot.username : null;
-  const webhook = asRecord(record.webhook);
+  const webhook = asNullableRecord(record.webhook);
   const webhookUrl = webhook && typeof webhook.url === "string" ? webhook.url : null;
 
   const usernames = new Set<string>();
@@ -216,7 +214,7 @@ const formatProbeLine = (probe: unknown, opts: { botUsernames?: string[] } = {})
 };
 
 const formatAccountProbeTiming = (summary: ChannelAccountHealthSummary): string | null => {
-  const probe = asRecord(summary.probe);
+  const probe = asNullableRecord(summary.probe);
   if (!probe) {
     return null;
   }
@@ -227,7 +225,7 @@ const formatAccountProbeTiming = (summary: ChannelAccountHealthSummary): string 
   }
 
   const accountId = summary.accountId || "default";
-  const botRecord = asRecord(probe.bot);
+  const botRecord = asNullableRecord(probe.bot);
   const botUsername =
     botRecord && typeof botRecord.username === "string" ? botRecord.username : null;
   const handle = botUsername ? `@${botUsername}` : accountId;
@@ -237,7 +235,7 @@ const formatAccountProbeTiming = (summary: ChannelAccountHealthSummary): string 
 };
 
 const isProbeFailure = (summary: ChannelAccountHealthSummary): boolean => {
-  const probe = asRecord(summary.probe);
+  const probe = asNullableRecord(summary.probe);
   if (!probe) {
     return false;
   }
@@ -282,8 +280,8 @@ export const formatHealthChannelLines = (
     const botUsernames = listSummaries
       ? listSummaries
           .map((account) => {
-            const probeRecord = asRecord(account.probe);
-            const bot = probeRecord ? asRecord(probeRecord.bot) : null;
+            const probeRecord = asNullableRecord(account.probe);
+            const bot = probeRecord ? asNullableRecord(probeRecord.bot) : null;
             return bot && typeof bot.username === "string" ? bot.username : null;
           })
           .filter((value): value is string => Boolean(value))
@@ -589,7 +587,7 @@ export async function healthCommand(
         );
         for (const accountId of accountIds) {
           const account = plugin.config.resolveAccount(cfg, accountId);
-          const record = asRecord(account);
+          const record = asNullableRecord(account);
           const tokenSource =
             record && typeof record.tokenSource === "string" ? record.tokenSource : undefined;
           const configured = plugin.config.isConfigured
@@ -611,8 +609,8 @@ export async function healthCommand(
       for (const [channelId, channelSummary] of Object.entries(summary.channels ?? {})) {
         const accounts = channelSummary.accounts ?? {};
         const probes = Object.entries(accounts).map(([accountId, accountSummary]) => {
-          const probe = asRecord(accountSummary.probe);
-          const bot = probe ? asRecord(probe.bot) : null;
+          const probe = asNullableRecord(accountSummary.probe);
+          const bot = probe ? asNullableRecord(probe.bot) : null;
           const username = bot && typeof bot.username === "string" ? bot.username : null;
           return `${accountId}=${username ?? "(no bot)"}`;
         });

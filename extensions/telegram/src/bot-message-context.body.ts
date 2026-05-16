@@ -1,3 +1,4 @@
+import { normalizeOptionalLowercaseString } from "remoteclaw/plugin-sdk/text-runtime";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { hasControlCommand } from "../../../src/auto-reply/command-detection.js";
 import {
@@ -12,7 +13,10 @@ import type { MsgContext } from "../../../src/auto-reply/templating.js";
 import { resolveControlCommandGate } from "../../../src/channels/command-gating.js";
 import { formatLocationText, type NormalizedLocation } from "../../../src/channels/location.js";
 import { logInboundDrop } from "../../../src/channels/logging.js";
-import { resolveMentionGatingWithBypass } from "../../../src/channels/mention-gating.js";
+import {
+  implicitMentionKindWhen,
+  resolveInboundMentionDecision,
+} from "../../../src/channels/mention-gating.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import type {
   TelegramDirectConfig,
@@ -93,7 +97,7 @@ export async function resolveTelegramInboundBody(params: {
     historyLimit,
     logger,
   } = params;
-  const botUsername = primaryCtx.me?.username?.toLowerCase();
+  const botUsername = normalizeOptionalLowercaseString(primaryCtx.me?.username);
   const mentionRegexes = buildMentionRegexes(cfg, routeAgentId);
   const messageTextParts = getTelegramTextParts(msg);
   const allowForCommands = isGroup ? effectiveGroupAllow : effectiveDmAllow;
@@ -214,21 +218,28 @@ export async function resolveTelegramInboundBody(params: {
   const replyToBotMessage = botId != null && replyFromId === botId;
   const isReplyToServiceMessage =
     replyToBotMessage && isTelegramForumServiceMessage(msg.reply_to_message);
-  const implicitMention = replyToBotMessage && !isReplyToServiceMessage;
+  const implicitMentionKinds = implicitMentionKindWhen(
+    "reply_to_bot",
+    replyToBotMessage && !isReplyToServiceMessage,
+  );
   const canDetectMention = Boolean(botUsername) || mentionRegexes.length > 0;
-  const mentionGate = resolveMentionGatingWithBypass({
-    isGroup,
-    requireMention: Boolean(requireMention),
-    canDetectMention,
-    wasMentioned,
-    implicitMention: isGroup && Boolean(requireMention) && implicitMention,
-    hasAnyMention,
-    allowTextCommands: true,
-    hasControlCommand: hasControlCommandInMessage,
-    commandAuthorized,
+  const mentionDecision = resolveInboundMentionDecision({
+    facts: {
+      canDetectMention,
+      wasMentioned,
+      hasAnyMention,
+      implicitMentionKinds: isGroup && Boolean(requireMention) ? implicitMentionKinds : [],
+    },
+    policy: {
+      isGroup,
+      requireMention: Boolean(requireMention),
+      allowTextCommands: true,
+      hasControlCommand: hasControlCommandInMessage,
+      commandAuthorized,
+    },
   });
-  const effectiveWasMentioned = mentionGate.effectiveWasMentioned;
-  if (isGroup && requireMention && canDetectMention && mentionGate.shouldSkip) {
+  const effectiveWasMentioned = mentionDecision.effectiveWasMentioned;
+  if (isGroup && requireMention && canDetectMention && mentionDecision.shouldSkip) {
     logger.info({ chatId, reason: "no-mention" }, "skipping group message");
     recordPendingHistoryEntryIfEnabled({
       historyMap: groupHistories,
@@ -253,7 +264,7 @@ export async function resolveTelegramInboundBody(params: {
     commandAuthorized,
     effectiveWasMentioned,
     canDetectMention,
-    shouldBypassMention: mentionGate.shouldBypassMention,
+    shouldBypassMention: mentionDecision.shouldBypassMention,
     stickerCacheHit,
     locationData: locationData ?? undefined,
   };

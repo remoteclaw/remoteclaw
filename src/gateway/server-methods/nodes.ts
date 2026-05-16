@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { loadConfig } from "../../config/config.js";
 import { listDevicePairing } from "../../infra/device-pairing.js";
+import { formatErrorMessage } from "../../infra/errors.js";
 import {
   approveNodePairing,
   listNodePairing,
@@ -15,6 +16,10 @@ import {
   sendApnsAlert,
   sendApnsBackgroundWake,
 } from "../../infra/push-apns.js";
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalString,
+} from "../../shared/string-coerce.js";
 import {
   buildCanvasScopedHostUrl,
   CANVAS_CAPABILITY_TTL_MS,
@@ -122,7 +127,7 @@ function shouldQueueAsPendingForegroundAction(params: {
   command: string;
   error: unknown;
 }): boolean {
-  const platform = (params.platform ?? "").trim().toLowerCase();
+  const platform = normalizeLowercaseStringOrEmpty(params.platform);
   if (!platform.startsWith("ios") && !platform.startsWith("ipados")) {
     return false;
   }
@@ -133,8 +138,8 @@ function shouldQueueAsPendingForegroundAction(params: {
     params.error && typeof params.error === "object"
       ? (params.error as { code?: unknown; message?: unknown })
       : null;
-  const code = typeof error?.code === "string" ? error.code.trim().toUpperCase() : "";
-  const message = typeof error?.message === "string" ? error.message.trim().toUpperCase() : "";
+  const code = normalizeOptionalString(error?.code)?.toUpperCase() ?? "";
+  const message = normalizeOptionalString(error?.message)?.toUpperCase() ?? "";
   return code === "NODE_BACKGROUND_UNAVAILABLE" || message.includes("BACKGROUND_UNAVAILABLE");
 }
 
@@ -273,7 +278,7 @@ export async function maybeWakeNodeWithApns(
       });
     } catch (err) {
       // Best-effort wake only.
-      const message = err instanceof Error ? err.message : String(err);
+      const message = formatErrorMessage(err);
       if (state.lastWakeAtMs === 0) {
         return withDuration({
           available: false,
@@ -352,7 +357,7 @@ export async function maybeSendNodeWakeNudge(nodeId: string): Promise<NodeWakeNu
       apnsReason: result.reason,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message = formatErrorMessage(err);
     return withDuration({
       sent: false,
       throttled: false,
@@ -430,7 +435,7 @@ export const nodeHandlers: GatewayRequestHandlers = {
       respond(true, list, undefined);
     });
   },
-  "node.pair.approve": async ({ params, respond, context }) => {
+  "node.pair.approve": async ({ params, respond, context, client }) => {
     if (!validateNodePairApproveParams(params)) {
       respondInvalidParams({
         respond,
@@ -440,10 +445,22 @@ export const nodeHandlers: GatewayRequestHandlers = {
       return;
     }
     const { requestId } = params as { requestId: string };
+    const callerScopes = Array.isArray(client?.connect?.scopes) ? client.connect.scopes : [];
     await respondUnavailableOnThrow(respond, async () => {
-      const approved = await approveNodePairing(requestId);
+      const approved = await approveNodePairing(requestId, { callerScopes });
       if (!approved) {
         respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "unknown requestId"));
+        return;
+      }
+      if ("status" in approved) {
+        respond(
+          false,
+          undefined,
+          errorShape(
+            ErrorCodes.INVALID_REQUEST,
+            `node.pair.approve denied: missing scope ${approved.missingScope}`,
+          ),
+        );
         return;
       }
       context.broadcast(

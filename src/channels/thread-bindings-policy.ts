@@ -1,5 +1,6 @@
 import type { RemoteClawConfig } from "../config/config.js";
 import { normalizeAccountId } from "../routing/session-key.js";
+import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
 
 export const DISCORD_THREAD_BINDING_CHANNEL = "discord";
 export const MATRIX_THREAD_BINDING_CHANNEL = "matrix";
@@ -29,9 +30,7 @@ export type ThreadBindingSpawnPolicy = {
 };
 
 function normalizeChannelId(value: string | undefined | null): string {
-  return String(value ?? "")
-    .trim()
-    .toLowerCase();
+  return normalizeLowercaseStringOrEmpty(value);
 }
 
 export function supportsAutomaticThreadBindingSpawn(channel: string): boolean {

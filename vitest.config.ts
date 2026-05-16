@@ -53,6 +53,7 @@ const pluginSdkSubpaths = [
   "text-runtime",
   "thread-ownership",
   "tlon",
+  "tool-send",
   "twitch",
   "voice-call",
   "zalo",

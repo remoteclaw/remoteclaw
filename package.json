@@ -198,6 +198,10 @@
       "types": "./dist/plugin-sdk/tlon.d.ts",
       "default": "./dist/plugin-sdk/tlon.js"
     },
+    "./plugin-sdk/tool-send": {
+      "types": "./dist/plugin-sdk/tool-send.d.ts",
+      "default": "./dist/plugin-sdk/tool-send.js"
+    },
     "./plugin-sdk/twitch": {
       "types": "./dist/plugin-sdk/twitch.d.ts",
       "default": "./dist/plugin-sdk/twitch.js"

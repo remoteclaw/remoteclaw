@@ -1,5 +1,5 @@
-import { createPluginRuntimeStore } from "remoteclaw/plugin-sdk/compat";
-import type { PluginRuntime } from "remoteclaw/plugin-sdk/msteams";
+import { createPluginRuntimeStore } from "remoteclaw/plugin-sdk/runtime-store";
+import type { PluginRuntime } from "remoteclaw/plugin-sdk/runtime-store";
 
 const { setRuntime: setMSTeamsRuntime, getRuntime: getMSTeamsRuntime } =
   createPluginRuntimeStore<PluginRuntime>("MSTeams runtime not initialized");

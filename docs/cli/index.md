@@ -35,7 +35,9 @@ This page describes the current CLI behavior. If commands change, update this do
 - [`logs`](/cli/logs)
 - [`system`](/cli/system)
 - [`models`](/cli/models)
+- [`infer`](/cli/infer)
 - [`memory`](/cli/memory)
+- [`wiki`](/cli/wiki)
 - [`directory`](/cli/directory)
 - [`nodes`](/cli/nodes)
 - [`devices`](/cli/devices)
@@ -161,6 +163,19 @@ remoteclaw [--dev] [--profile <name>] <command>
     status
     index
     search
+  wiki
+    status
+    doctor
+    init
+    ingest
+    compile
+    lint
+    search
+    get
+    apply
+    bridge import
+    unsafe-local import
+    obsidian status|search|open|command|daily
   message
     send
     broadcast
@@ -248,6 +263,16 @@ remoteclaw [--dev] [--profile <name>] <command>
     fallbacks list|add|remove|clear
     image-fallbacks list|add|remove|clear
     scan
+  infer (alias: capability)
+    list
+    inspect
+    model run|list|inspect|providers|auth login|logout|status
+    image generate|edit|describe|describe-many|providers
+    audio transcribe|providers
+    tts convert|voices|providers|status|enable|disable|set-provider
+    video generate|describe|providers
+    web search|fetch|providers
+    embedding create|providers
     auth add|login|login-github-copilot|setup-token|paste-token
     auth order get|set|clear
   sandbox
@@ -501,7 +526,7 @@ Options:
   `openrouter-api-key`, `kilocode-api-key`, `litellm-api-key`, `ai-gateway-api-key`,
   `cloudflare-ai-gateway-api-key`, `moonshot-api-key`, `moonshot-api-key-cn`,
   `kimi-code-api-key`, `synthetic-api-key`, `venice-api-key`, `together-api-key`,
-  `huggingface-api-key`, `apiKey`, `gemini-api-key`, `zai-api-key`,
+  `huggingface-api-key`, `apiKey`, `gemini-api-key`, `google-gemini-cli`, `zai-api-key`,
   `zai-coding-global`, `zai-coding-cn`, `zai-global`, `zai-cn`, `xiaomi-api-key`,
   `minimax-global-oauth`, `minimax-global-api`, `minimax-cn-oauth`, `minimax-cn-api`,
   `opencode-zen`, `opencode-go`, `github-copilot`, `copilot-proxy`, `xai-api-key`,
@@ -827,7 +852,7 @@ Subcommands:
 Notes:
 
 - `devices list` and `devices approve` can fall back to local pairing files on local loopback when direct pairing scope is unavailable.
-- `devices approve` auto-selects the newest pending request when no `requestId` is passed or `--latest` is set.
+- `devices approve` requires an explicit request ID before minting tokens; omitting `requestId` or passing `--latest` only previews the newest pending request.
 - Stored-token reconnects reuse the token's cached approved scopes; explicit
   `devices rotate --scope ...` updates that stored scope set for future
   cached-token reconnects.
@@ -1353,6 +1378,7 @@ Options:
 - `--reset` (reset dev config + credentials + sessions + workspace)
 - `--force` (kill existing listener on port)
 - `--verbose`
+- `--cli-backend-logs`
 - `--ws-log <auto|full|compact>`
 - `--compact` (alias for `--ws-log compact`)
 - `--raw-stream`
@@ -1594,7 +1620,7 @@ Notes:
 - `setup-token` and `paste-token` are generic token commands for providers that expose token auth methods.
 - `setup-token` requires an interactive TTY and runs the provider's token-auth method.
 - `paste-token` prompts for the token value and defaults to auth profile id `<provider>:manual` when `--profile-id` is omitted.
-- Anthropic `setup-token` / `paste-token` remain available as supported token-auth paths; RemoteClaw now prefers Claude CLI reuse and `claude -p` when available.
+- Anthropic `setup-token` / `paste-token` remain available as a supported RemoteClaw token path, but RemoteClaw now prefers Claude CLI reuse and `claude -p` when available.
 
 ### `models auth order get|set|clear`
 

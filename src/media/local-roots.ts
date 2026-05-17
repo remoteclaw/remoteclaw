@@ -1,7 +1,7 @@
 import path from "node:path";
 import { resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
-import type { RemoteClawConfig } from "../config/config.js";
 import { resolveStateDir } from "../config/paths.js";
+import type { RemoteClawConfig } from "../config/types.js";
 import { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-remoteclaw-dir.js";
 import { normalizeOptionalString } from "../shared/string-coerce.js";
 import { resolveConfigDir } from "../utils.js";

@@ -74,6 +74,7 @@ describe("createPinnedDispatcher", () => {
 
     expect(dispatcher).toBeDefined();
     expect(agentCtor).toHaveBeenCalledWith({
+      allowH2: false,
       connect: {
         lookup,
       },
@@ -103,6 +104,7 @@ describe("createPinnedDispatcher", () => {
     });
 
     expect(agentCtor).toHaveBeenCalledWith({
+      allowH2: false,
       connect: {
         autoSelectFamily: true,
         autoSelectFamilyAttemptTimeout: 300,
@@ -179,6 +181,7 @@ describe("createPinnedDispatcher", () => {
     });
 
     expect(envHttpProxyAgentCtor).toHaveBeenCalledWith({
+      allowH2: false,
       connect: {
         autoSelectFamily: true,
         lookup,
@@ -206,6 +209,7 @@ describe("createPinnedDispatcher", () => {
     });
 
     expect(proxyAgentCtor).toHaveBeenCalledWith({
+      allowH2: false,
       uri: "http://127.0.0.1:7890",
       requestTls: {
         autoSelectFamily: false,

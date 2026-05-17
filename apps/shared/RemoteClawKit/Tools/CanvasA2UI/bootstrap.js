@@ -101,7 +101,7 @@ const buttonShadow = isAndroid ? "0 2px 10px rgba(6, 182, 212, 0.14)" : "0 10px 
 const statusShadow = isAndroid ? "0 2px 10px rgba(0, 0, 0, 0.18)" : "0 10px 24px rgba(0, 0, 0, 0.25)";
 const statusBlur = isAndroid ? "10px" : "14px";
 
-const remoteClawTheme = {
+const remoteclawTheme = {
   components: {
     AudioPlayer: emptyClasses(),
     Button: emptyClasses(),
@@ -221,7 +221,7 @@ class RemoteClawA2UIHost extends LitElement {
   #processor = v0_8.Data.createSignalA2uiMessageProcessor();
   themeProvider = new ContextProvider(this, {
     context: themeContext,
-    initialValue: remoteClawTheme,
+    initialValue: remoteclawTheme,
   });
 
   surfaces = [];
@@ -466,8 +466,10 @@ class RemoteClawA2UIHost extends LitElement {
       try {
         // WebKit message handlers support structured objects; Android's JS interface expects strings.
         if (handler === globalThis.remoteclawCanvasA2UIAction) {
+          // oxlint-disable-next-line unicorn/require-post-message-target-origin -- Native app message handler, not Window.postMessage.
           handler.postMessage(JSON.stringify({ userAction }));
         } else {
+          // oxlint-disable-next-line unicorn/require-post-message-target-origin -- WebKit message handler, not Window.postMessage.
           handler.postMessage({ userAction });
         }
       } catch (e) {

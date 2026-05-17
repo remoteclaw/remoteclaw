@@ -1,5 +1,5 @@
-import type { RemoteClawConfig } from "../config/config.js";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
+import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import { buildNpmResolutionFields, type NpmSpecResolution } from "../infra/install-source-utils.js";
 
 export type PluginInstallUpdate = PluginInstallRecord & { pluginId: string };

@@ -3,8 +3,8 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 type HostEnvSecurityPolicy = {
-  blockedKeys: string[];
-  blockedOverrideKeys?: string[];
+  blockedEverywhereKeys: string[];
+  blockedOverrideOnlyKeys?: string[];
   blockedOverridePrefixes?: string[];
   blockedPrefixes: string[];
 };
@@ -36,24 +36,30 @@ describe("host env security policy parity", () => {
     const generatedSource = fs.readFileSync(generatedSwiftPath, "utf8");
     const sanitizerSource = fs.readFileSync(sanitizerSwiftPath, "utf8");
 
-    const swiftBlockedKeys = parseSwiftStringArray(generatedSource, "static let blockedKeys");
+    const swiftBlockedKeys = parseSwiftStringArray(generatedSource, "static let blockedKeys:");
     const swiftBlockedOverrideKeys = parseSwiftStringArray(
       generatedSource,
-      "static let blockedOverrideKeys",
+      "static let blockedOverrideKeys:",
     );
     const swiftBlockedOverridePrefixes = parseSwiftStringArray(
       generatedSource,
-      "static let blockedOverridePrefixes",
+      "static let blockedOverridePrefixes:",
     );
     const swiftBlockedPrefixes = parseSwiftStringArray(
       generatedSource,
-      "static let blockedPrefixes",
+      "static let blockedPrefixes:",
     );
 
-    expect(swiftBlockedKeys).toEqual(policy.blockedKeys);
-    expect(swiftBlockedOverrideKeys).toEqual(policy.blockedOverrideKeys ?? []);
-    expect(swiftBlockedOverridePrefixes).toEqual(policy.blockedOverridePrefixes ?? []);
-    expect(swiftBlockedPrefixes).toEqual(policy.blockedPrefixes);
+    // Swift generator emits sorted Sets; JSON preserves insertion order. Compare
+    // as sets for equivalence and confirm cardinality matches.
+    expect(new Set(swiftBlockedKeys)).toEqual(new Set(policy.blockedEverywhereKeys));
+    expect(new Set(swiftBlockedOverrideKeys)).toEqual(
+      new Set(policy.blockedOverrideOnlyKeys ?? []),
+    );
+    expect(new Set(swiftBlockedOverridePrefixes)).toEqual(
+      new Set(policy.blockedOverridePrefixes ?? []),
+    );
+    expect(new Set(swiftBlockedPrefixes)).toEqual(new Set(policy.blockedPrefixes));
 
     expect(sanitizerSource).toContain(
       "private static let blockedKeys = HostEnvSecurityPolicy.blockedKeys",

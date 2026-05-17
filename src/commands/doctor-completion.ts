@@ -8,7 +8,7 @@ import {
   resolveCompletionCachePath,
   resolveShellFromEnv,
   usesSlowDynamicCompletion,
-} from "../cli/completion-cli.js";
+} from "../cli/completion-runtime.js";
 import { resolveRemoteClawPackageRoot } from "../infra/remoteclaw-root.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { note } from "../terminal/note.js";

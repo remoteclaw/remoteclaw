@@ -60,6 +60,7 @@ export const EXTENSION_PACKAGE_BOUNDARY_BASE_PATHS = {
     "../dist/plugin-sdk/src/plugin-sdk/secret-ref-runtime.d.ts",
   ],
   "remoteclaw/plugin-sdk/ssrf-runtime": ["../dist/plugin-sdk/src/plugin-sdk/ssrf-runtime.d.ts"],
+  "@remoteclaw/qa-channel/api.js": ["../dist/plugin-sdk/extensions/qa-channel/api.d.ts"],
   "@remoteclaw/*.js": ["../packages/plugin-sdk/dist/extensions/*.d.ts", "../extensions/*"],
   "@remoteclaw/*": ["../packages/plugin-sdk/dist/extensions/*", "../extensions/*"],
   "@remoteclaw/plugin-sdk/*": ["../dist/plugin-sdk/src/plugin-sdk/*.d.ts"],
@@ -105,6 +106,7 @@ export const EXTENSION_PACKAGE_BOUNDARY_XAI_PATHS = {
   "remoteclaw/plugin-sdk/provider-web-search-contract": [
     "../../dist/plugin-sdk/src/plugin-sdk/provider-web-search-contract.d.ts",
   ],
+  "@remoteclaw/qa-channel/api.js": ["../../dist/plugin-sdk/extensions/qa-channel/api.d.ts"],
   "@remoteclaw/*.js": ["../../packages/plugin-sdk/dist/extensions/*.d.ts", "../*"],
   "@remoteclaw/*": ["../*"],
   "@remoteclaw/plugin-sdk/*": ["../../dist/plugin-sdk/src/plugin-sdk/*.d.ts"],

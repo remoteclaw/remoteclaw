@@ -1,5 +1,10 @@
 import type { SubagentRunRecord } from "./subagent-registry.types.js";
 
+export const MODULE_ATTESTATIONS = {
+  configureSubagentRegistrySteerRuntime: "live",
+  replaceSubagentRunAfterSteer: "live",
+} as const;
+
 export type ReplaceSubagentRunAfterSteerParams = {
   previousRunId: string;
   nextRunId: string;

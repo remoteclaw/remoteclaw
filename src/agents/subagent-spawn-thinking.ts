@@ -1,6 +1,10 @@
 import { normalizeThinkLevel } from "../auto-reply/thinking.shared.js";
 import type { RemoteClawConfig } from "../config/config.js";
 
+export const MODULE_ATTESTATIONS = {
+  resolveSubagentThinkingOverride: "live",
+} as const;
+
 function asRecord(value: unknown): Record<string, unknown> | undefined {
   return value && typeof value === "object" ? (value as Record<string, unknown>) : undefined;
 }

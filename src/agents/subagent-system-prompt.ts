@@ -1,6 +1,10 @@
 import { DEFAULT_SUBAGENT_MAX_SPAWN_DEPTH } from "../config/agent-limits.js";
 import type { DeliveryContext } from "../utils/delivery-context.js";
 
+export const MODULE_ATTESTATIONS = {
+  buildSubagentSystemPrompt: "live",
+} as const;
+
 export function buildSubagentSystemPrompt(params: {
   requesterSessionKey?: string;
   requesterOrigin?: DeliveryContext;

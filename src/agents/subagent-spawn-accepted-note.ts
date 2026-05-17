@@ -1,5 +1,9 @@
 import { isCronSessionKey } from "../routing/session-key.js";
 
+export const MODULE_ATTESTATIONS = {
+  resolveSubagentSpawnAcceptedNote: "live",
+} as const;
+
 export const SUBAGENT_SPAWN_ACCEPTED_NOTE =
   "Auto-announce is push-based. After spawning children, do NOT call sessions_list, sessions_history, exec sleep, or any polling tool. Wait for completion events to arrive as user messages, track expected child session keys, and only send your final answer after ALL expected completions arrive. If a child completion event arrives AFTER your final answer, reply ONLY with NO_REPLY.";
 export const SUBAGENT_SPAWN_SESSION_ACCEPTED_NOTE =

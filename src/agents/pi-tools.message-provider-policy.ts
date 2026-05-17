@@ -1,5 +1,10 @@
 import { normalizeOptionalLowercaseString } from "../shared/string-coerce.js";
 
+export const MODULE_ATTESTATIONS = {
+  filterToolNamesByMessageProvider: "live",
+  filterToolsByMessageProvider: "live",
+} as const;
+
 const TOOL_DENY_BY_MESSAGE_PROVIDER: Readonly<Record<string, readonly string[]>> = {
   voice: ["tts"],
 };

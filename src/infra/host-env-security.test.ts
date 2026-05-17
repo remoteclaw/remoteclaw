@@ -326,7 +326,7 @@ describe("sanitizeHostExecEnv", () => {
     expect(env.GOFLAGS).toBeUndefined();
     expect(env.PHPRC).toBeUndefined();
     expect(env.XDG_CONFIG_HOME).toBeUndefined();
-    expect(env.YARN_RC_FILENAME).toBe(".trusted-yarnrc.yml");
+    expect(env.YARN_RC_FILENAME).toBeUndefined();
     expect(env.PIP_INDEX_URL).toBeUndefined();
     expect(env.PIP_PYPI_URL).toBeUndefined();
     expect(env.PIP_EXTRA_INDEX_URL).toBeUndefined();

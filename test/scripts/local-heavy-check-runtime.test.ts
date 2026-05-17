@@ -34,7 +34,16 @@ describe("local-heavy-check-runtime", () => {
   it("tightens local tsgo runs to a single checker with a Go memory limit", () => {
     const { args, env } = applyLocalTsgoPolicy([], makeEnv());
 
-    expect(args).toEqual(["--singleThreaded", "--checkers", "1"]);
+    expect(args).toEqual([
+      "--declaration",
+      "false",
+      "--incremental",
+      "--tsBuildInfoFile",
+      ".artifacts/tsgo-cache/root.tsbuildinfo",
+      "--singleThreaded",
+      "--checkers",
+      "1",
+    ]);
     expect(env.GOGC).toBe("30");
     expect(env.GOMEMLIMIT).toBe("3GiB");
   });
@@ -49,7 +58,15 @@ describe("local-heavy-check-runtime", () => {
       }),
     );
 
-    expect(args).toEqual(["--checkers", "4", "--singleThreaded", "--pprofDir", "/tmp/existing"]);
+    expect(args).toEqual([
+      "--checkers",
+      "4",
+      "--singleThreaded",
+      "--pprofDir",
+      "/tmp/existing",
+      "--declaration",
+      "false",
+    ]);
     expect(env.GOGC).toBe("80");
     expect(env.GOMEMLIMIT).toBe("5GiB");
   });

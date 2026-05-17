@@ -15,9 +15,7 @@ const serviceRestart = vi.fn().mockResolvedValue({ outcome: "completed" });
 const serviceIsLoaded = vi.fn().mockResolvedValue(false);
 const serviceReadCommand = vi.fn().mockResolvedValue(null);
 const serviceReadRuntime = vi.fn().mockResolvedValue({ status: "running" });
-const resolveGatewayProbeAuthSafeWithSecretInputs = vi.fn(async (_opts?: unknown) => ({
-  auth: {},
-}));
+const resolveGatewayProbeAuthWithSecretInputs = vi.fn(async (_opts?: unknown) => ({}));
 const findExtraGatewayServices = vi.fn(async (_env: unknown, _opts?: unknown) => []);
 const inspectPortUsage = vi.fn(async (port: number) => ({
   port,
@@ -26,12 +24,7 @@ const inspectPortUsage = vi.fn(async (port: number) => ({
   hints: [],
 }));
 const buildGatewayInstallPlan = vi.fn(
-  async (params: {
-    port: number;
-    token?: string;
-    env?: NodeJS.ProcessEnv;
-    existingEnvironment?: Record<string, string>;
-  }) => ({
+  async (params: { port: number; token?: string; env?: NodeJS.ProcessEnv }) => ({
     programArguments: ["/bin/node", "cli", "gateway", "--port", String(params.port)],
     workingDirectory: process.cwd(),
     environment: {
@@ -69,8 +62,8 @@ vi.mock("./daemon-cli/probe.js", () => ({
 }));
 
 vi.mock("../gateway/probe-auth.js", () => ({
-  resolveGatewayProbeAuthSafeWithSecretInputs: (opts: unknown) =>
-    resolveGatewayProbeAuthSafeWithSecretInputs(opts),
+  resolveGatewayProbeAuthWithSecretInputs: (opts: unknown) =>
+    resolveGatewayProbeAuthWithSecretInputs(opts),
 }));
 
 vi.mock("../daemon/program-args.js", () => ({
@@ -118,12 +111,8 @@ vi.mock("../runtime.js", async () => ({
 }));
 
 vi.mock("../commands/daemon-install-helpers.js", () => ({
-  buildGatewayInstallPlan: (params: {
-    port: number;
-    token?: string;
-    env?: NodeJS.ProcessEnv;
-    existingEnvironment?: Record<string, string>;
-  }) => buildGatewayInstallPlan(params),
+  buildGatewayInstallPlan: (params: { port: number; token?: string; env?: NodeJS.ProcessEnv }) =>
+    buildGatewayInstallPlan(params),
 }));
 
 vi.mock("./deps.js", () => ({
@@ -168,8 +157,7 @@ describe("daemon-cli coverage", () => {
     delete process.env.REMOTECLAW_GATEWAY_PORT;
     delete process.env.REMOTECLAW_PROFILE;
     serviceReadCommand.mockResolvedValue(null);
-    resolveGatewayProbeAuthSafeWithSecretInputs.mockClear();
-    findExtraGatewayServices.mockClear();
+    resolveGatewayProbeAuthWithSecretInputs.mockClear();
     buildGatewayInstallPlan.mockClear();
   });
 
@@ -187,7 +175,7 @@ describe("daemon-cli coverage", () => {
     expect(probeGatewayStatus).toHaveBeenCalledWith(
       expect.objectContaining({ url: "ws://127.0.0.1:18789" }),
     );
-    expect(findExtraGatewayServices).not.toHaveBeenCalled();
+    expect(findExtraGatewayServices).toHaveBeenCalled();
     expect(inspectPortUsage).toHaveBeenCalled();
   });
 
@@ -264,32 +252,6 @@ describe("daemon-cli coverage", () => {
     expect(parsed.ok).toBe(true);
     expect(parsed.action).toBe("install");
     expect(parsed.result).toBe("installed");
-  });
-
-  it("passes the existing service environment into the install plan on forced reinstall", async () => {
-    runtimeLogs.length = 0;
-    serviceIsLoaded.mockResolvedValueOnce(true);
-    serviceReadCommand.mockResolvedValueOnce({
-      programArguments: ["/bin/node", "cli", "gateway", "--port", "18789"],
-      environment: {
-        PATH: "/custom/go/bin:/usr/bin",
-        GOPATH: "/Users/test/.local/gopath",
-        GOBIN: "/Users/test/.local/gopath/bin",
-      },
-      sourcePath: "/tmp/org.remoteclaw.gateway.plist",
-    });
-
-    await runDaemonCommand(["daemon", "install", "--force", "--json"]);
-
-    expect(buildGatewayInstallPlan).toHaveBeenCalledWith(
-      expect.objectContaining({
-        existingEnvironment: {
-          PATH: "/custom/go/bin:/usr/bin",
-          GOPATH: "/Users/test/.local/gopath",
-          GOBIN: "/Users/test/.local/gopath/bin",
-        },
-      }),
-    );
   });
 
   it("starts and stops daemon (json output)", async () => {

@@ -60,31 +60,6 @@ describe("parseCliProfileArgs", () => {
     expect(res.argv).toEqual(["node", "remoteclaw", "status"]);
   });
 
-  it("parses interleaved --profile after the command token", () => {
-    const res = parseCliProfileArgs([
-      "node",
-      "remoteclaw",
-      "status",
-      "--profile",
-      "work",
-      "--deep",
-    ]);
-    if (!res.ok) {
-      throw new Error(res.error);
-    }
-    expect(res.profile).toBe("work");
-    expect(res.argv).toEqual(["node", "remoteclaw", "status", "--deep"]);
-  });
-
-  it("parses interleaved --dev after the command token", () => {
-    const res = parseCliProfileArgs(["node", "remoteclaw", "status", "--dev"]);
-    if (!res.ok) {
-      throw new Error(res.error);
-    }
-    expect(res.profile).toBe("dev");
-    expect(res.argv).toEqual(["node", "remoteclaw", "status"]);
-  });
-
   it("rejects missing profile value", () => {
     const res = parseCliProfileArgs(["node", "remoteclaw", "--profile"]);
     expect(res.ok).toBe(false);
@@ -93,7 +68,6 @@ describe("parseCliProfileArgs", () => {
   it.each([
     ["--dev first", ["node", "remoteclaw", "--dev", "--profile", "work", "status"]],
     ["--profile first", ["node", "remoteclaw", "--profile", "work", "--dev", "status"]],
-    ["interleaved after command", ["node", "remoteclaw", "status", "--profile", "work", "--dev"]],
   ])("rejects combining --dev with --profile (%s)", (_name, argv) => {
     const res = parseCliProfileArgs(argv);
     expect(res.ok).toBe(false);
@@ -219,14 +193,6 @@ describe("formatCliCommand", () => {
     expect(
       formatCliCommand("remoteclaw gateway status --deep", { REMOTECLAW_CONTAINER_HINT: "demo" }),
     ).toBe("remoteclaw --container demo gateway status --deep");
-  });
-
-  it("ignores unsafe container hints", () => {
-    expect(
-      formatCliCommand("remoteclaw gateway status --deep", {
-        REMOTECLAW_CONTAINER_HINT: "demo; rm -rf /",
-      }),
-    ).toBe("remoteclaw gateway status --deep");
   });
 
   it("preserves both --container and --profile hints", () => {

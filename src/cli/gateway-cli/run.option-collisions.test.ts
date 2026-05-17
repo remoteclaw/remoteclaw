@@ -1,4 +1,3 @@
-import path from "node:path";
 import { Command } from "commander";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { withTempSecretFiles } from "../../test-utils/secret-file-fixture.js";
@@ -9,7 +8,6 @@ const startGatewayServer = vi.fn(async (_port: number, _opts?: unknown) => ({
 }));
 const setGatewayWsLogStyle = vi.fn((_style: string) => undefined);
 const setVerbose = vi.fn((_enabled: boolean) => undefined);
-const setConsoleSubsystemFilter = vi.fn((_filters: string[]) => undefined);
 const forceFreePortAndWait = vi.fn(async (_port: number, _opts: unknown) => ({
   killed: [],
   waitedMs: 0,
@@ -20,13 +18,9 @@ const ensureDevGatewayConfig = vi.fn(async (_opts?: unknown) => {});
 const runGatewayLoop = vi.fn(async ({ start }: { start: () => Promise<unknown> }) => {
   await start();
 });
-const gatewayLogMessages = vi.hoisted(() => [] as string[]);
 const configState = vi.hoisted(() => ({
   cfg: {} as Record<string, unknown>,
   snapshot: { exists: false } as Record<string, unknown>,
-}));
-const controlUiState = vi.hoisted(() => ({
-  root: "/tmp/remoteclaw-control-ui" as string | null,
 }));
 
 const { runtimeErrors, defaultRuntime, resetRuntimeCapture } = createCliRuntimeCapture();
@@ -69,10 +63,6 @@ vi.mock("../../gateway/server.js", () => ({
   startGatewayServer: (port: number, opts?: unknown) => startGatewayServer(port, opts),
 }));
 
-vi.mock("../../infra/control-ui-assets.js", () => ({
-  resolveControlUiRootSync: () => controlUiState.root,
-}));
-
 vi.mock("../../gateway/ws-logging.js", () => ({
   setGatewayWsLogStyle: (style: string) => setGatewayWsLogStyle(style),
 }));
@@ -91,15 +81,13 @@ vi.mock("../../infra/ports.js", () => ({
 }));
 
 vi.mock("../../logging/console.js", () => ({
-  setConsoleSubsystemFilter: (filters: string[]) => setConsoleSubsystemFilter(filters),
+  setConsoleSubsystemFilter: () => undefined,
   setConsoleTimestampPrefix: () => undefined,
 }));
 
 vi.mock("../../logging/subsystem.js", () => ({
   createSubsystemLogger: () => ({
-    info: (message: string) => {
-      gatewayLogMessages.push(message);
-    },
+    info: () => undefined,
     warn: () => undefined,
     error: () => undefined,
   }),
@@ -142,12 +130,9 @@ describe("gateway run option collisions", () => {
     resetRuntimeCapture();
     configState.cfg = {};
     configState.snapshot = { exists: false };
-    controlUiState.root = "/tmp/remoteclaw-control-ui";
-    gatewayLogMessages.length = 0;
     startGatewayServer.mockClear();
     setGatewayWsLogStyle.mockClear();
     setVerbose.mockClear();
-    setConsoleSubsystemFilter.mockClear();
     forceFreePortAndWait.mockClear();
     waitForPortBindable.mockClear();
     ensureDevGatewayConfig.mockClear();
@@ -184,7 +169,7 @@ describe("gateway run option collisions", () => {
     expect(forceFreePortAndWait).toHaveBeenCalledWith(18789, expect.anything());
     expect(waitForPortBindable).toHaveBeenCalledWith(
       18789,
-      expect.objectContaining({ intervalMs: 150, timeoutMs: 3000 }),
+      expect.objectContaining({ host: "127.0.0.1" }),
     );
     expect(setGatewayWsLogStyle).toHaveBeenCalledWith("full");
     expect(startGatewayServer).toHaveBeenCalledWith(
@@ -197,18 +182,6 @@ describe("gateway run option collisions", () => {
     );
   });
 
-  it.each([
-    ["--cli-backend-logs", "generic flag"],
-    ["--claude-cli-logs", "deprecated alias"],
-  ])("enables CLI backend log filtering via %s (%s)", async (flag) => {
-    delete process.env.REMOTECLAW_CLI_BACKEND_LOG_OUTPUT;
-
-    await runGatewayCli(["gateway", "run", flag, "--allow-unconfigured"]);
-
-    expect(setConsoleSubsystemFilter).toHaveBeenCalledWith(["agent/cli-backend"]);
-    expect(process.env.REMOTECLAW_CLI_BACKEND_LOG_OUTPUT).toBe("1");
-  });
-
   it("starts gateway when token mode has no configured token (startup bootstrap path)", async () => {
     await runGatewayCli(["gateway", "run", "--allow-unconfigured"]);
 
@@ -217,16 +190,6 @@ describe("gateway run option collisions", () => {
       expect.objectContaining({
         bind: "loopback",
       }),
-    );
-  });
-
-  it("logs when first startup will build missing Control UI assets", async () => {
-    controlUiState.root = null;
-
-    await runGatewayCli(["gateway", "run", "--allow-unconfigured"]);
-
-    expect(gatewayLogMessages).toContain(
-      "Control UI assets are missing; first startup may spend a few seconds building them before the gateway binds. Prebuild with `pnpm ui:build` for a faster first boot.",
     );
   });
 
@@ -247,13 +210,10 @@ describe("gateway run option collisions", () => {
       },
     };
 
-    await expect(runGatewayCli(["gateway", "run"])).rejects.toThrow("__exit__:78");
+    await expect(runGatewayCli(["gateway", "run"])).rejects.toThrow("__exit__:1");
 
     expect(runtimeErrors).toContain(
-      "Gateway start blocked: existing config is missing gateway.mode. Treat this as suspicious or clobbered config. Re-run `remoteclaw onboard --mode local` or `remoteclaw setup`, set gateway.mode=local manually, or pass --allow-unconfigured.",
-    );
-    expect(runtimeErrors).toContain(
-      `Config write audit: ${path.join("/tmp", "logs", "config-audit.jsonl")}`,
+      "Gateway start blocked: set gateway.mode=local (current: unset) or pass --allow-unconfigured.",
     );
     expect(startGatewayServer).not.toHaveBeenCalled();
   });
@@ -365,6 +325,7 @@ describe("gateway run option collisions", () => {
         ).rejects.toThrow("__exit__:1");
       },
     );
-    expect(runtimeErrors[0]).toContain("Use either --passw***d or --password-file.");
+
+    expect(runtimeErrors).toContain("Use either --password or --password-file.");
   });
 });

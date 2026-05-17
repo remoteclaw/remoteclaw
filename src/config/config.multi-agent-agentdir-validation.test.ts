@@ -1,8 +1,9 @@
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { loadConfig, validateConfigObject } from "./config.js";
+import { loadConfig } from "./config.js";
 import { withTempHomeConfig } from "./test-helpers.js";
+import { validateConfigObject } from "./validation.js";
 
 describe("multi-agent agentDir validation", () => {
   it("rejects shared agents.list agentDir", async () => {
@@ -10,8 +11,8 @@ describe("multi-agent agentDir validation", () => {
     const res = validateConfigObject({
       agents: {
         list: [
-          { id: "a", workspace: "/tmp/a", agentDir: shared },
-          { id: "b", workspace: "/tmp/b", agentDir: shared },
+          { id: "a", agentDir: shared },
+          { id: "b", agentDir: shared },
         ],
       },
     });
@@ -27,16 +28,8 @@ describe("multi-agent agentDir validation", () => {
       {
         agents: {
           list: [
-            {
-              id: "a",
-              workspace: "~/.remoteclaw/workspaces/a",
-              agentDir: "~/.remoteclaw/agents/shared/agent",
-            },
-            {
-              id: "b",
-              workspace: "~/.remoteclaw/workspaces/b",
-              agentDir: "~/.remoteclaw/agents/shared/agent",
-            },
+            { id: "a", agentDir: "~/.remoteclaw/agents/shared/agent" },
+            { id: "b", agentDir: "~/.remoteclaw/agents/shared/agent" },
           ],
         },
         bindings: [{ agentId: "a", match: { channel: "telegram" } }],

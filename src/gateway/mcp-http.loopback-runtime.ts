@@ -31,6 +31,7 @@ export function createMcpLoopbackServerConfig(port: number) {
           "x-remoteclaw-agent-id": "${REMOTECLAW_MCP_AGENT_ID}",
           "x-remoteclaw-account-id": "${REMOTECLAW_MCP_ACCOUNT_ID}",
           "x-remoteclaw-message-channel": "${REMOTECLAW_MCP_MESSAGE_CHANNEL}",
+          "x-remoteclaw-sender-is-owner": "${REMOTECLAW_MCP_SENDER_IS_OWNER}",
         },
       },
     },

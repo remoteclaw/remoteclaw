@@ -4,6 +4,8 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SMOKE_IMAGE="${REMOTECLAW_INSTALL_SMOKE_IMAGE:-remoteclaw-install-smoke:local}"
 NONROOT_IMAGE="${REMOTECLAW_INSTALL_NONROOT_IMAGE:-remoteclaw-install-nonroot:local}"
+SMOKE_PLATFORM="${REMOTECLAW_INSTALL_SMOKE_PLATFORM:-linux/amd64}"
+NONROOT_PLATFORM="${REMOTECLAW_INSTALL_NONROOT_PLATFORM:-$SMOKE_PLATFORM}"
 INSTALL_URL="${REMOTECLAW_INSTALL_URL:-https://remoteclaw.bot/install.sh}"
 CLI_INSTALL_URL="${REMOTECLAW_INSTALL_CLI_URL:-https://remoteclaw.bot/install-cli.sh}"
 SKIP_NONROOT="${REMOTECLAW_INSTALL_SMOKE_SKIP_NONROOT:-0}"
@@ -17,6 +19,7 @@ if [[ "$SKIP_SMOKE_IMAGE_BUILD" == "1" ]]; then
 else
   echo "==> Build smoke image (upgrade, root): $SMOKE_IMAGE"
   docker build \
+    --platform "$SMOKE_PLATFORM" \
     -t "$SMOKE_IMAGE" \
     -f "$ROOT_DIR/scripts/docker/install-sh-smoke/Dockerfile" \
     "$ROOT_DIR/scripts/docker"
@@ -24,6 +27,7 @@ fi
 
 echo "==> Run installer smoke test (root): $INSTALL_URL"
 docker run --rm -t \
+  --platform "$SMOKE_PLATFORM" \
   -v "${LATEST_DIR}:/out" \
   -e REMOTECLAW_INSTALL_URL="$INSTALL_URL" \
   -e REMOTECLAW_INSTALL_METHOD=npm \
@@ -31,6 +35,7 @@ docker run --rm -t \
   -e REMOTECLAW_INSTALL_SMOKE_PREVIOUS="${REMOTECLAW_INSTALL_SMOKE_PREVIOUS:-}" \
   -e REMOTECLAW_INSTALL_SMOKE_SKIP_PREVIOUS="${REMOTECLAW_INSTALL_SMOKE_SKIP_PREVIOUS:-0}" \
   -e REMOTECLAW_NO_ONBOARD=1 \
+  -e REMOTECLAW_NO_PROMPT=1 \
   -e DEBIAN_FRONTEND=noninteractive \
   "$SMOKE_IMAGE"
 
@@ -47,6 +52,7 @@ else
   else
     echo "==> Build non-root image: $NONROOT_IMAGE"
     docker build \
+      --platform "$NONROOT_PLATFORM" \
       -t "$NONROOT_IMAGE" \
       -f "$ROOT_DIR/scripts/docker/install-sh-nonroot/Dockerfile" \
       "$ROOT_DIR/scripts/docker"
@@ -54,10 +60,12 @@ else
 
   echo "==> Run installer non-root test: $INSTALL_URL"
   docker run --rm -t \
+    --platform "$NONROOT_PLATFORM" \
     -e REMOTECLAW_INSTALL_URL="$INSTALL_URL" \
     -e REMOTECLAW_INSTALL_METHOD=npm \
     -e REMOTECLAW_INSTALL_EXPECT_VERSION="$LATEST_VERSION" \
     -e REMOTECLAW_NO_ONBOARD=1 \
+    -e REMOTECLAW_NO_PROMPT=1 \
     -e DEBIAN_FRONTEND=noninteractive \
     "$NONROOT_IMAGE"
 fi
@@ -74,9 +82,11 @@ fi
 
 echo "==> Run CLI installer non-root test (same image)"
 docker run --rm -t \
+  --platform "$NONROOT_PLATFORM" \
   --entrypoint /bin/bash \
   -e REMOTECLAW_INSTALL_URL="$INSTALL_URL" \
   -e REMOTECLAW_INSTALL_CLI_URL="$CLI_INSTALL_URL" \
   -e REMOTECLAW_NO_ONBOARD=1 \
+  -e REMOTECLAW_NO_PROMPT=1 \
   -e DEBIAN_FRONTEND=noninteractive \
   "$NONROOT_IMAGE" -lc "curl -fsSL \"$CLI_INSTALL_URL\" | bash -s -- --set-npm-prefix --no-onboard"

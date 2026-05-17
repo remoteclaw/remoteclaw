@@ -2,27 +2,34 @@ import os from "node:os";
 import path from "node:path";
 import { resolveStateDir } from "../config/paths.js";
 import { loadJsonFile, saveJsonFile } from "../infra/json-file.js";
+import { readStringValue } from "../shared/string-coerce.js";
 import { normalizeDeliveryContext } from "../utils/delivery-context.js";
 import type { SubagentRunRecord } from "./subagent-registry.types.js";
 
-/**
- * Runtime attestation (ADR 0005 H9). Declares the implementation status
- * of each runtime export in this module. See CONTRIBUTING.md § Module
- * attestations for the category definitions and the convention for
- * updating these when sync or rebrand changes the surface.
- */
-export const MODULE_ATTESTATIONS = {
-  resolveSubagentRegistryPath: "live",
-  loadSubagentRegistryFromDisk: "live",
-  saveSubagentRegistryToDisk: "live",
-} as const;
+export type PersistedSubagentRegistryVersion = 1 | 2;
 
-type PersistedSubagentRegistry = {
-  version: 2;
-  runs: Record<string, SubagentRunRecord>;
+type PersistedSubagentRegistryV1 = {
+  version: 1;
+  runs: Record<string, LegacySubagentRunRecord>;
 };
 
+type PersistedSubagentRegistryV2 = {
+  version: 2;
+  runs: Record<string, PersistedSubagentRunRecord>;
+};
+
+type PersistedSubagentRegistry = PersistedSubagentRegistryV1 | PersistedSubagentRegistryV2;
+
 const REGISTRY_VERSION = 2 as const;
+
+type PersistedSubagentRunRecord = SubagentRunRecord;
+
+type LegacySubagentRunRecord = PersistedSubagentRunRecord & {
+  announceCompletedAt?: unknown;
+  announceHandled?: unknown;
+  requesterChannel?: unknown;
+  requesterAccountId?: unknown;
+};
 
 function resolveSubagentStateDir(env: NodeJS.ProcessEnv = process.env): string {
   const explicit = env.REMOTECLAW_STATE_DIR?.trim();
@@ -46,7 +53,7 @@ export function loadSubagentRegistryFromDisk(): Map<string, SubagentRunRecord> {
     return new Map();
   }
   const record = raw as Partial<PersistedSubagentRegistry>;
-  if (record.version !== 2) {
+  if (record.version !== 1 && record.version !== 2) {
     return new Map();
   }
   const runsRaw = record.runs;
@@ -54,28 +61,75 @@ export function loadSubagentRegistryFromDisk(): Map<string, SubagentRunRecord> {
     return new Map();
   }
   const out = new Map<string, SubagentRunRecord>();
+  const isLegacy = record.version === 1;
+  let migrated = false;
   for (const [runId, entry] of Object.entries(runsRaw)) {
     if (!entry || typeof entry !== "object") {
       continue;
     }
-    if (!entry.runId || typeof entry.runId !== "string") {
+    const typed = entry as LegacySubagentRunRecord;
+    if (!typed.runId || typeof typed.runId !== "string") {
       continue;
     }
+    const legacyCompletedAt =
+      isLegacy && typeof typed.announceCompletedAt === "number"
+        ? typed.announceCompletedAt
+        : undefined;
+    const cleanupCompletedAt =
+      typeof typed.cleanupCompletedAt === "number" ? typed.cleanupCompletedAt : legacyCompletedAt;
+    const cleanupHandled =
+      typeof typed.cleanupHandled === "boolean"
+        ? typed.cleanupHandled
+        : isLegacy
+          ? Boolean(typed.announceHandled ?? cleanupCompletedAt)
+          : undefined;
+    const requesterOrigin = normalizeDeliveryContext(
+      typed.requesterOrigin ?? {
+        channel: readStringValue(typed.requesterChannel),
+        accountId: readStringValue(typed.requesterAccountId),
+      },
+    );
+    const childSessionKey = readStringValue(typed.childSessionKey)?.trim() ?? "";
+    const requesterSessionKey = readStringValue(typed.requesterSessionKey)?.trim() ?? "";
+    const controllerSessionKey =
+      readStringValue(typed.controllerSessionKey)?.trim() || requesterSessionKey;
+    if (!childSessionKey || !requesterSessionKey) {
+      continue;
+    }
+    const {
+      announceCompletedAt: _announceCompletedAt,
+      announceHandled: _announceHandled,
+      requesterChannel: _channel,
+      requesterAccountId: _accountId,
+      ...rest
+    } = typed;
     out.set(runId, {
-      ...entry,
-      requesterOrigin: normalizeDeliveryContext(entry.requesterOrigin),
-      cleanupCompletedAt:
-        typeof entry.cleanupCompletedAt === "number" ? entry.cleanupCompletedAt : undefined,
-      cleanupHandled: typeof entry.cleanupHandled === "boolean" ? entry.cleanupHandled : undefined,
-      spawnMode: entry.spawnMode === "session" ? "session" : "run",
+      ...rest,
+      childSessionKey,
+      requesterSessionKey,
+      controllerSessionKey,
+      requesterOrigin,
+      cleanupCompletedAt,
+      cleanupHandled,
+      spawnMode: typed.spawnMode === "session" ? "session" : "run",
     });
+    if (isLegacy) {
+      migrated = true;
+    }
+  }
+  if (migrated) {
+    try {
+      saveSubagentRegistryToDisk(out);
+    } catch {
+      // ignore migration write failures
+    }
   }
   return out;
 }
 
 export function saveSubagentRegistryToDisk(runs: Map<string, SubagentRunRecord>) {
   const pathname = resolveSubagentRegistryPath();
-  const serialized: Record<string, SubagentRunRecord> = {};
+  const serialized: Record<string, PersistedSubagentRunRecord> = {};
   for (const [runId, entry] of runs.entries()) {
     serialized[runId] = entry;
   }

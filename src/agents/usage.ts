@@ -1,18 +1,5 @@
 import { asFiniteNumber } from "../shared/number-coercion.js";
 
-/**
- * Runtime attestation (ADR 0005 H9). Declares the implementation status
- * of each runtime export in this module. See CONTRIBUTING.md § Module
- * attestations for the category definitions and the convention for
- * updating these when sync or rebrand changes the surface.
- */
-export const MODULE_ATTESTATIONS = {
-  makeZeroUsageSnapshot: "live",
-  hasNonzeroUsage: "live",
-  normalizeUsage: "live",
-  derivePromptTokens: "live",
-  deriveSessionTotalTokens: "live",
-} as const;
 export type UsageLike = {
   input?: number;
   output?: number;
@@ -156,6 +143,41 @@ export function normalizeUsage(raw?: UsageLike | null): NormalizedUsage | undefi
   };
 }
 
+/**
+ * Maps normalized usage to OpenAI Chat Completions `usage` fields.
+ *
+ * `prompt_tokens` is input + cacheRead (cache write is excluded to match the
+ * OpenAI-style breakdown used by the compat endpoint).
+ *
+ * `total_tokens` is the greater of the component sum and aggregate `total` when
+ * present, so a partial breakdown cannot discard a valid upstream total.
+ */
+export function toOpenAiChatCompletionsUsage(usage: NormalizedUsage | undefined): {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+} {
+  const input = usage?.input ?? 0;
+  const output = usage?.output ?? 0;
+  const cacheRead = usage?.cacheRead ?? 0;
+  const promptTokens = Math.max(0, input + cacheRead);
+  const completionTokens = Math.max(0, output);
+  const componentTotal = promptTokens + completionTokens;
+  const aggregateRaw = usage?.total;
+  const aggregateTotal =
+    typeof aggregateRaw === "number" && Number.isFinite(aggregateRaw)
+      ? Math.max(0, aggregateRaw)
+      : undefined;
+  const totalTokens =
+    aggregateTotal !== undefined ? Math.max(componentTotal, aggregateTotal) : componentTotal;
+
+  return {
+    prompt_tokens: promptTokens,
+    completion_tokens: completionTokens,
+    total_tokens: totalTokens,
+  };
+}
+
 export function derivePromptTokens(usage?: {
   input?: number;
   cacheRead?: number;
@@ -179,6 +201,7 @@ export function deriveSessionTotalTokens(params: {
     cacheRead?: number;
     cacheWrite?: number;
   };
+  contextTokens?: number;
   promptTokens?: number;
 }): number | undefined {
   const promptOverride = params.promptTokens;

@@ -1,4 +1,4 @@
-import type { RemoteClawConfig } from "./config.js";
+import type { RemoteClawConfig } from "./types.remoteclaw.js";
 
 export type OwnerDisplaySecretPersistState = {
   pendingByPath: Map<string, string>;

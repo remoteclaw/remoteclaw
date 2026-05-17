@@ -1,5 +1,5 @@
-import { createPluginRuntimeStore } from "remoteclaw/plugin-sdk/compat";
-import type { PluginRuntime } from "remoteclaw/plugin-sdk/twitch";
+import type { PluginRuntime } from "remoteclaw/plugin-sdk/core";
+import { createPluginRuntimeStore } from "remoteclaw/plugin-sdk/runtime-store";
 
 const { setRuntime: setTwitchRuntime, getRuntime: getTwitchRuntime } =
   createPluginRuntimeStore<PluginRuntime>("Twitch runtime not initialized");

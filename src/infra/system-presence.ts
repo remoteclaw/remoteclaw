@@ -179,7 +179,7 @@ function mergeStringList(...values: Array<string[] | undefined>): string[] | und
       continue;
     }
     for (const item of list) {
-      const trimmed = normalizeOptionalString(String(item)) ?? "";
+      const trimmed = normalizeOptionalString(item) ?? "";
       if (trimmed) {
         out.add(trimmed);
       }
@@ -258,7 +258,9 @@ export function upsertPresence(key: string, presence: Partial<SystemPresence>) {
     text:
       presence.text ||
       existing.text ||
-      `Node: ${presence.host ?? existing.host ?? "unknown"} · mode ${presence.mode ?? existing.mode ?? "unknown"}`,
+      `Node: ${presence.host ?? existing.host ?? "unknown"} · mode ${
+        presence.mode ?? existing.mode ?? "unknown"
+      }`,
   };
   entries.set(normalizedKey, merged);
 }

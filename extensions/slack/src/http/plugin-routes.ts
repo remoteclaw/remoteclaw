@@ -1,5 +1,5 @@
 import { DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk/account-id";
-import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk/core";
+import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk/channel-plugin-common";
 import { listSlackAccountIds, resolveSlackAccount } from "../accounts.js";
 import { normalizeSlackWebhookPath } from "./paths.js";
 

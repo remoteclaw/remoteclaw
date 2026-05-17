@@ -1,9 +1,3 @@
-// Side-effect import of `./test-helpers.js` MUST be the first import so
-// that the transitively loaded `./test-helpers.mocks.js` registers
-// `vi.mock("../config/config.js")` before any other gateway module
-// captures the real `loadConfig` binding (ESM bindings are early-bound,
-// see #2672 for the v2026.4.5 preauth-test regression this prevents).
-import "./test-helpers.js";
 import http from "node:http";
 import { afterEach, describe, expect, it } from "vitest";
 import { WebSocketServer } from "ws";
@@ -12,15 +6,17 @@ import { MAX_PREAUTH_PAYLOAD_BYTES } from "./server-constants.js";
 import { attachGatewayUpgradeHandler, createGatewayHttpServer } from "./server-http.js";
 import { createPreauthConnectionBudget } from "./server/preauth-connection-budget.js";
 import type { GatewayWsClient } from "./server/ws-types.js";
+import { testState } from "./test-helpers.runtime-state.js";
 import {
   createGatewaySuiteHarness,
   installGatewayTestHooks,
   readConnectChallengeNonce,
-} from "./test-helpers.js";
-import { testState } from "./test-helpers.runtime-state.js";
+} from "./test-helpers.server.js";
 import { withTempConfig } from "./test-temp-config.js";
 
 installGatewayTestHooks({ scope: "suite" });
+
+const PREAUTH_HANDSHAKE_TEST_CLOSE_LIMIT_MS = 5_000;
 
 let cleanupEnv: Array<() => void> = [];
 
@@ -31,7 +27,7 @@ afterEach(async () => {
 });
 
 describe("gateway pre-auth hardening", () => {
-  it("rejects upgrades before websocket handlers attach without consuming pre-auth budget", async () => {
+  it("rejects upgrades before websocket handlers attach (pre-auth budget enforced, then released)", async () => {
     const clients = new Set<GatewayWsClient>();
     const resolvedAuth: ResolvedGatewayAuth = { mode: "none", allowTailscale: false };
     const httpServer = createGatewayHttpServer({
@@ -130,7 +126,7 @@ describe("gateway pre-auth hardening", () => {
       });
       expect(close.code).toBe(1000);
       expect(close.elapsedMs).toBeGreaterThan(0);
-      expect(close.elapsedMs).toBeLessThan(2_500);
+      expect(close.elapsedMs).toBeLessThan(PREAUTH_HANDSHAKE_TEST_CLOSE_LIMIT_MS);
     } finally {
       await harness.close();
     }

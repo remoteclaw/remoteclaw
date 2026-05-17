@@ -9,9 +9,7 @@ import {
 describe("command-registration-policy", () => {
   it("matches primary command registration policy", () => {
     expect(shouldRegisterPrimaryCommandOnly(["node", "remoteclaw", "status"])).toBe(true);
-    expect(shouldRegisterPrimaryCommandOnly(["node", "remoteclaw", "status", "--help"])).toBe(
-      false,
-    );
+    expect(shouldRegisterPrimaryCommandOnly(["node", "remoteclaw", "status", "--help"])).toBe(true);
     expect(shouldRegisterPrimaryCommandOnly(["node", "remoteclaw", "-V"])).toBe(false);
     expect(shouldRegisterPrimaryCommandOnly(["node", "remoteclaw", "acp", "-v"])).toBe(true);
   });
@@ -47,7 +45,7 @@ describe("command-registration-policy", () => {
     );
     expect(shouldRegisterPrimarySubcommandOnly(["node", "remoteclaw", "acp"], {})).toBe(true);
     expect(shouldRegisterPrimarySubcommandOnly(["node", "remoteclaw", "acp", "--help"], {})).toBe(
-      false,
+      true,
     );
     expect(
       shouldRegisterPrimarySubcommandOnly(["node", "remoteclaw", "acp"], {

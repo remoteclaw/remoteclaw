@@ -119,6 +119,7 @@ targets:
             CFBundleURLSchemes:
               - remoteclaw
         CFBundleShortVersionString: "$(REMOTECLAW_MARKETING_VERSION)"
+        RemoteClawCanonicalVersion: "$(REMOTECLAW_IOS_VERSION)"
         CFBundleVersion: "$(REMOTECLAW_BUILD_VERSION)"
         UILaunchScreen: {}
         UIApplicationSceneManifest:

@@ -1,39 +1,50 @@
-import type { RemoteClawApp } from "./app.ts";
 import {
   loadChannels,
   logoutWhatsApp,
   startWhatsAppLogin,
   waitWhatsAppLogin,
+  type ChannelsState,
 } from "./controllers/channels.ts";
-import { loadConfig, saveConfig } from "./controllers/config.ts";
+import { loadConfig, saveConfig, type ConfigState } from "./controllers/config.ts";
 import { normalizeOptionalString } from "./string-coerce.ts";
 import type { NostrProfile } from "./types.ts";
 import { createNostrProfileFormState } from "./views/channels.nostr-profile-form.ts";
 
-export async function handleWhatsAppStart(host: RemoteClawApp, force: boolean) {
-  await startWhatsAppLogin(host, force);
-  await loadChannels(host, true);
+type NostrProfileFormState = ReturnType<typeof createNostrProfileFormState> | null;
+
+type ChannelsActionHost = ChannelsState &
+  ConfigState & {
+    hello?: { auth?: { deviceToken?: string | null } | null } | null;
+    password?: string;
+    settings: { token?: string };
+    nostrProfileFormState: NostrProfileFormState;
+    nostrProfileAccountId: string | null;
+  };
+
+export async function handleWhatsAppStart(host: ChannelsActionHost, force: boolean) {
+  await startWhatsAppLogin(host as ChannelsState, force);
+  await loadChannels(host as ChannelsState, true);
 }
 
-export async function handleWhatsAppWait(host: RemoteClawApp) {
-  await waitWhatsAppLogin(host);
-  await loadChannels(host, true);
+export async function handleWhatsAppWait(host: ChannelsActionHost) {
+  await waitWhatsAppLogin(host as ChannelsState);
+  await loadChannels(host as ChannelsState, true);
 }
 
-export async function handleWhatsAppLogout(host: RemoteClawApp) {
-  await logoutWhatsApp(host);
-  await loadChannels(host, true);
+export async function handleWhatsAppLogout(host: ChannelsActionHost) {
+  await logoutWhatsApp(host as ChannelsState);
+  await loadChannels(host as ChannelsState, true);
 }
 
-export async function handleChannelConfigSave(host: RemoteClawApp) {
-  await saveConfig(host);
-  await loadConfig(host);
-  await loadChannels(host, true);
+export async function handleChannelConfigSave(host: ChannelsActionHost) {
+  await saveConfig(host as ConfigState);
+  await loadConfig(host as ConfigState);
+  await loadChannels(host as ChannelsState, true);
 }
 
-export async function handleChannelConfigReload(host: RemoteClawApp) {
-  await loadConfig(host);
-  await loadChannels(host, true);
+export async function handleChannelConfigReload(host: ChannelsActionHost) {
+  await loadConfig(host as ConfigState);
+  await loadChannels(host as ChannelsState, true);
 }
 
 function parseValidationErrors(details: unknown): Record<string, string> {
@@ -58,7 +69,7 @@ function parseValidationErrors(details: unknown): Record<string, string> {
   return errors;
 }
 
-function resolveNostrAccountId(host: RemoteClawApp): string {
+function resolveNostrAccountId(host: ChannelsActionHost): string {
   const accounts = host.channelsSnapshot?.channelAccounts?.nostr ?? [];
   return accounts[0]?.accountId ?? host.nostrProfileAccountId ?? "default";
 }
@@ -67,7 +78,7 @@ function buildNostrProfileUrl(accountId: string, suffix = ""): string {
   return `/api/channels/nostr/${encodeURIComponent(accountId)}/profile${suffix}`;
 }
 
-function resolveGatewayHttpAuthHeader(host: RemoteClawApp): string | null {
+function resolveGatewayHttpAuthHeader(host: ChannelsActionHost): string | null {
   const deviceToken = normalizeOptionalString(host.hello?.auth?.deviceToken);
   if (deviceToken) {
     return `Bearer ${deviceToken}`;
@@ -83,13 +94,13 @@ function resolveGatewayHttpAuthHeader(host: RemoteClawApp): string | null {
   return null;
 }
 
-function buildGatewayHttpHeaders(host: RemoteClawApp): Record<string, string> {
+function buildGatewayHttpHeaders(host: ChannelsActionHost): Record<string, string> {
   const authorization = resolveGatewayHttpAuthHeader(host);
   return authorization ? { Authorization: authorization } : {};
 }
 
 export function handleNostrProfileEdit(
-  host: RemoteClawApp,
+  host: ChannelsActionHost,
   accountId: string,
   profile: NostrProfile | null,
 ) {
@@ -97,13 +108,13 @@ export function handleNostrProfileEdit(
   host.nostrProfileFormState = createNostrProfileFormState(profile ?? undefined);
 }
 
-export function handleNostrProfileCancel(host: RemoteClawApp) {
+export function handleNostrProfileCancel(host: ChannelsActionHost) {
   host.nostrProfileFormState = null;
   host.nostrProfileAccountId = null;
 }
 
 export function handleNostrProfileFieldChange(
-  host: RemoteClawApp,
+  host: ChannelsActionHost,
   field: keyof NostrProfile,
   value: string,
 ) {
@@ -124,7 +135,7 @@ export function handleNostrProfileFieldChange(
   };
 }
 
-export function handleNostrProfileToggleAdvanced(host: RemoteClawApp) {
+export function handleNostrProfileToggleAdvanced(host: ChannelsActionHost) {
   const state = host.nostrProfileFormState;
   if (!state) {
     return;
@@ -135,7 +146,7 @@ export function handleNostrProfileToggleAdvanced(host: RemoteClawApp) {
   };
 }
 
-export async function handleNostrProfileSave(host: RemoteClawApp) {
+export async function handleNostrProfileSave(host: ChannelsActionHost) {
   const state = host.nostrProfileFormState;
   if (!state || state.saving) {
     return;
@@ -196,7 +207,7 @@ export async function handleNostrProfileSave(host: RemoteClawApp) {
       fieldErrors: {},
       original: { ...state.values },
     };
-    await loadChannels(host, true);
+    await loadChannels(host as ChannelsState, true);
   } catch (err) {
     host.nostrProfileFormState = {
       ...state,
@@ -207,7 +218,7 @@ export async function handleNostrProfileSave(host: RemoteClawApp) {
   }
 }
 
-export async function handleNostrProfileImport(host: RemoteClawApp) {
+export async function handleNostrProfileImport(host: ChannelsActionHost) {
   const state = host.nostrProfileFormState;
   if (!state || state.importing) {
     return;

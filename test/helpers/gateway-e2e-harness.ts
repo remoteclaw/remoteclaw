@@ -14,10 +14,6 @@ import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../../src/utils/mess
 
 export { extractFirstTextBlock };
 
-type NodeListPayload = {
-  nodes?: Array<{ nodeId?: string; connected?: boolean; paired?: boolean }>;
-};
-
 export type ChatEventPayload = {
   runId?: string;
   sessionKey?: string;
@@ -96,7 +92,8 @@ async function waitForPortOpen(
   const stdout = chunksOut.join("");
   const stderr = chunksErr.join("");
   throw new Error(
-    `timeout waiting for gateway to listen on port ${port}\n--- stdout ---\n${stdout}\n--- stderr ---\n${stderr}`,
+    `timeout waiting for gateway to listen on port ${port}\n` +
+      `--- stdout ---\n${stdout}\n--- stderr ---\n${stderr}`,
   );
 }
 
@@ -146,6 +143,7 @@ export async function spawnGatewayInstance(name: string): Promise<GatewayInstanc
           REMOTECLAW_GATEWAY_PASSWORD: "",
           REMOTECLAW_SKIP_CHANNELS: "1",
           REMOTECLAW_SKIP_PROVIDERS: "1",
+          REMOTECLAW_SKIP_GMAIL_WATCHER: "1",
           REMOTECLAW_SKIP_CRON: "1",
           REMOTECLAW_SKIP_BROWSER_CONTROL_SERVER: "1",
           REMOTECLAW_SKIP_CANVAS_HOST: "1",
@@ -346,7 +344,7 @@ export async function waitForNodeStatus(
   );
   try {
     while (Date.now() < deadline) {
-      const list = await client.request<NodeListPayload>("node.list", {});
+      const list = await client.request("node.list", {});
       const match = list.nodes?.find((n) => n.nodeId === nodeId);
       if (match?.connected && match?.paired) {
         return;

@@ -68,6 +68,7 @@ type ConsoleLogFn = (...args: unknown[]) => void;
 const WATCHDOG_INTERVAL_MS = 5_000;
 const REPAIR_DEBOUNCE_MS = 30_000;
 const STUCK_ANNOUNCING_MS = 8_000;
+const BONJOUR_ANNOUNCED_STATE = "announced" as BonjourServiceState;
 const CIAO_SELF_PROBE_RETRY_FRAGMENT =
   "failed probing with reason: Error: Can't probe for a service which is announced already.";
 
@@ -95,7 +96,7 @@ function serviceSummary(label: string, svc: BonjourService): string {
 }
 
 function isAnnouncedState(state: BonjourServiceState | "unknown") {
-  return String(state) === "announced";
+  return state === BONJOUR_ANNOUNCED_STATE;
 }
 
 function handleCiaoUnhandledRejection(reason: unknown): boolean {
@@ -365,7 +366,10 @@ export async function startGatewayBonjourAdvertiser(
           Date.now() - tracked.sinceMs >= STUCK_ANNOUNCING_MS
         ) {
           void recreateAdvertiser(
-            `service stuck in ${stateUnknown} for ${Date.now() - tracked.sinceMs}ms (${serviceSummary(label, svc)})`,
+            `service stuck in ${stateUnknown} for ${Date.now() - tracked.sinceMs}ms (${serviceSummary(
+              label,
+              svc,
+            )})`,
           );
           return;
         }
@@ -387,7 +391,10 @@ export async function startGatewayBonjourAdvertiser(
         lastRepairAttempt.set(key, now);
 
         logWarn(
-          `bonjour: watchdog detected non-announced service; attempting re-advertise (${serviceSummary(label, svc)})`,
+          `bonjour: watchdog detected non-announced service; attempting re-advertise (${serviceSummary(
+            label,
+            svc,
+          )})`,
         );
         try {
           void svc.advertise().catch((err) => {

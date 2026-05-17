@@ -1,6 +1,8 @@
 package org.remoteclaw.app
 
 import org.remoteclaw.app.gateway.GatewayEndpoint
+import org.remoteclaw.app.gateway.DeviceAuthStore
+import org.remoteclaw.app.gateway.DeviceIdentityStore
 import org.remoteclaw.app.gateway.GatewaySession
 import org.remoteclaw.app.gateway.GatewayTlsProbeFailure
 import org.remoteclaw.app.gateway.GatewayTlsProbeResult
@@ -21,14 +23,14 @@ import java.util.UUID
 @Config(sdk = [34])
 class GatewayBootstrapAuthTest {
   @Test
-  fun skipsOperatorSessionWhenOnlyBootstrapAuthExists() {
-    assertFalse(
+  fun connectsOperatorSessionWhenOnlyBootstrapAuthExists() {
+    assertTrue(
       shouldConnectOperatorSession(
         NodeRuntime.GatewayConnectAuth(token = "", bootstrapToken = "bootstrap-1", password = ""),
         storedOperatorToken = "",
       ),
     )
-    assertFalse(
+    assertTrue(
       shouldConnectOperatorSession(
         NodeRuntime.GatewayConnectAuth(token = null, bootstrapToken = "bootstrap-1", password = null),
         storedOperatorToken = null,
@@ -73,6 +75,20 @@ class GatewayBootstrapAuthTest {
       )
 
     assertEquals(NodeRuntime.GatewayConnectAuth(token = null, bootstrapToken = null, password = null), resolved)
+  }
+
+  @Test
+  fun resolveOperatorSessionConnectAuthUsesBootstrapWhenNoStoredOperatorTokenExists() {
+    val resolved =
+      resolveOperatorSessionConnectAuth(
+        auth = NodeRuntime.GatewayConnectAuth(token = null, bootstrapToken = "bootstrap-1", password = null),
+        storedOperatorToken = null,
+      )
+
+    assertEquals(
+      NodeRuntime.GatewayConnectAuth(token = null, bootstrapToken = "bootstrap-1", password = null),
+      resolved,
+    )
   }
 
   @Test
@@ -152,7 +168,7 @@ class GatewayBootstrapAuthTest {
 
       assertEquals("fp-1", prefs.loadGatewayTlsFingerprint(endpoint.stableId))
       assertEquals("setup-bootstrap-token", desiredBootstrapToken(runtime, "nodeSession"))
-      assertNull(desiredBootstrapToken(runtime, "operatorSession"))
+      assertEquals("setup-bootstrap-token", desiredBootstrapToken(runtime, "operatorSession"))
     }
 
   @Test
@@ -176,6 +192,33 @@ class GatewayBootstrapAuthTest {
       waitForStatusText(runtime),
     )
     assertNull(runtime.pendingGatewayTrust.value)
+  }
+
+  @Test
+  fun resetGatewaySetupAuth_clearsStoredGatewayAndDeviceTokens() {
+    val app = RuntimeEnvironment.getApplication()
+    val securePrefs =
+      app.getSharedPreferences(
+        "remoteclaw.node.secure.test.${UUID.randomUUID()}",
+        android.content.Context.MODE_PRIVATE,
+      )
+    val prefs = SecurePrefs(app, securePrefsOverride = securePrefs)
+    val runtime = NodeRuntime(app, prefs)
+    val deviceId = DeviceIdentityStore(app).loadOrCreate().deviceId
+    val authStore = DeviceAuthStore(prefs)
+    prefs.setGatewayToken("stale-shared-token")
+    prefs.setGatewayBootstrapToken("stale-bootstrap-token")
+    prefs.setGatewayPassword("stale-password")
+    authStore.saveToken(deviceId, "node", "stale-node-token")
+    authStore.saveToken(deviceId, "operator", "stale-operator-token")
+
+    runtime.resetGatewaySetupAuth()
+
+    assertNull(prefs.loadGatewayToken())
+    assertNull(prefs.loadGatewayBootstrapToken())
+    assertNull(prefs.loadGatewayPassword())
+    assertNull(authStore.loadToken(deviceId, "node"))
+    assertNull(authStore.loadToken(deviceId, "operator"))
   }
 
   private fun waitForGatewayTrustPrompt(runtime: NodeRuntime): NodeRuntime.GatewayTrustPrompt {

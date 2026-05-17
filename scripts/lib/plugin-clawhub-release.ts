@@ -2,16 +2,16 @@ import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 import { validateExternalCodePluginPackageJson } from "../../packages/plugin-package-contract/src/index.ts";
 import {
-  collectChangedExtensionIdsFromPaths,
-  collectChangedPathsFromGitRange,
   collectExtensionPackageJsonCandidates,
+  collectChangedPathsFromGitRange,
+  collectChangedExtensionIdsFromPaths,
   collectPublishablePluginPackageErrors,
   parsePluginReleaseArgs,
   parsePluginReleaseSelection,
   parsePluginReleaseSelectionMode,
-  resolveChangedPublishablePluginPackages,
-  resolveGitCommitSha,
   resolvePublishablePluginVersion,
+  resolveGitCommitSha,
+  resolveChangedPublishablePluginPackages,
   resolveSelectedPublishablePluginPackages,
   type GitRangeSelection,
   type ParsedPluginReleaseArgs,
@@ -105,7 +105,7 @@ export function collectClawHubPublishablePluginPackages(
   const publishable: PublishablePluginPackage[] = [];
   const validationErrors: string[] = [];
 
-  for (const candidate of collectExtensionPackageJsonCandidates<PluginPackageJson>(rootDir)) {
+  for (const candidate of collectExtensionPackageJsonCandidates(rootDir)) {
     const { extensionId, packageDir, packageJson } = candidate;
     if (packageJson.remoteclaw?.release?.publishToClawHub !== true) {
       continue;

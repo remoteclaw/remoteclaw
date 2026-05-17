@@ -24,6 +24,8 @@
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(REMOTECLAW_MARKETING_VERSION)</string>
+	<key>RemoteClawCanonicalVersion</key>
+	<string>$(REMOTECLAW_IOS_VERSION)</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

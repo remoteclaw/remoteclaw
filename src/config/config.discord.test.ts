@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { loadConfig, validateConfigObject } from "./config.js";
+import { loadConfig } from "./config.js";
 import { withTempHomeConfig } from "./test-helpers.js";
+import { validateConfigObject } from "./validation.js";
 
 describe("config discord", () => {
   let previousHome: string | undefined;
@@ -36,7 +37,7 @@ describe("config discord", () => {
                 requireMention: false,
                 users: ["steipete"],
                 channels: {
-                  general: { allow: true, autoThread: true },
+                  general: { enabled: true, autoThread: true },
                 },
               },
             },
@@ -53,7 +54,7 @@ describe("config discord", () => {
         expect(cfg.channels?.discord?.actions?.stickerUploads).toBe(false);
         expect(cfg.channels?.discord?.actions?.channels).toBe(true);
         expect(cfg.channels?.discord?.guilds?.["123"]?.slug).toBe("friends-of-remoteclaw");
-        expect(cfg.channels?.discord?.guilds?.["123"]?.channels?.general?.allow).toBe(true);
+        expect(cfg.channels?.discord?.guilds?.["123"]?.channels?.general?.enabled).toBe(true);
         expect(cfg.channels?.discord?.guilds?.["123"]?.channels?.general?.autoThread).toBe(true);
       },
     );
@@ -74,6 +75,7 @@ describe("config discord", () => {
               },
             },
           },
+          execApprovals: { approvers: [555] },
         },
       },
     });
@@ -91,6 +93,7 @@ describe("config discord", () => {
       expect(res.config.channels?.discord?.guilds?.["123"]?.channels?.general?.roles).toEqual([
         "444",
       ]);
+      expect(res.config.channels?.discord?.execApprovals?.approvers).toEqual(["555"]);
     }
   });
 

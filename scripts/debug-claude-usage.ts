@@ -29,7 +29,7 @@ const parseArgs = (): Args => {
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === "--agent" && args[i + 1]) {
-      agentId = String(args[++i]).trim() || "main";
+      agentId = args[++i].trim() || "main";
       continue;
     }
     if (arg === "--reveal") {
@@ -37,7 +37,7 @@ const parseArgs = (): Args => {
       continue;
     }
     if (arg === "--session-key" && args[i + 1]) {
-      sessionKey = normalizeOptionalString(String(args[++i]));
+      sessionKey = normalizeOptionalString(args[++i]);
       continue;
     }
   }
@@ -101,11 +101,7 @@ const readClaudeCliKeychain = (): {
     const raw = execFileSync(
       "security",
       ["find-generic-password", "-s", "Claude Code-credentials", "-w"],
-      {
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "ignore"],
-        timeout: 5000,
-      },
+      { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 5000 },
     );
     const parsed = JSON.parse(raw.trim()) as Record<string, unknown>;
     const oauth = parsed?.claudeAiOauth as Record<string, unknown> | undefined;
@@ -384,7 +380,7 @@ const main = async () => {
   const web = await fetchClaudeWebUsage(sessionKey);
   if (!web.ok) {
     console.log(`Claude web: ${web.step} HTTP ${web.status}`);
-    console.log(String(web.body).slice(0, 400).replace(/\s+/g, " ").trim());
+    console.log(web.body.slice(0, 400).replace(/\s+/g, " ").trim());
     return;
   }
   console.log(`Claude web: org=${web.orgId} OK`);

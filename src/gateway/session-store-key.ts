@@ -1,9 +1,9 @@
 import { resolveDefaultAgentId } from "../agents/agent-scope.js";
-import type { RemoteClawConfig } from "../config/config.js";
 import {
   canonicalizeMainSessionAlias,
   resolveMainSessionKey,
 } from "../config/sessions/main-session.js";
+import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import {
   normalizeAgentId,
   normalizeMainKey,

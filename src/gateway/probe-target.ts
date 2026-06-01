@@ -1,4 +1,4 @@
-import type { RemoteClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import { normalizeOptionalString } from "../shared/string-coerce.js";
 
 export type GatewayProbeTargetResolution = {

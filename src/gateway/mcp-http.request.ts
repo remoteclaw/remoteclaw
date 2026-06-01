@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { loadConfig } from "../config/config.js";
 import { resolveMainSessionKey } from "../config/sessions.js";
+import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
@@ -17,10 +17,7 @@ export type McpRequestContext = {
   senderIsOwner: boolean | undefined;
 };
 
-function resolveScopedSessionKey(
-  cfg: ReturnType<typeof loadConfig>,
-  rawSessionKey: string | undefined,
-): string {
+function resolveScopedSessionKey(cfg: RemoteClawConfig, rawSessionKey: string | undefined): string {
   const trimmed = normalizeOptionalString(rawSessionKey);
   return !trimmed || trimmed === "main" ? resolveMainSessionKey(cfg) : trimmed;
 }
@@ -94,7 +91,7 @@ export async function readMcpHttpBody(req: IncomingMessage): Promise<string> {
 
 export function resolveMcpRequestContext(
   req: IncomingMessage,
-  cfg: ReturnType<typeof loadConfig>,
+  cfg: RemoteClawConfig,
 ): McpRequestContext {
   const senderIsOwnerRaw = normalizeOptionalLowercaseString(
     getHeader(req, "x-remoteclaw-sender-is-owner"),

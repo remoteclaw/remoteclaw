@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import type { RemoteClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 
 export function expectGeneratedTokenPersistedToGatewayAuth(params: {
   generatedToken?: string;

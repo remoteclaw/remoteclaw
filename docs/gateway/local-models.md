@@ -1,5 +1,5 @@
 ---
-summary: "Run RemoteClaw on local LLMs (LM Studio, vLLM, LiteLLM, custom OpenAI endpoints)"
+summary: "Run OpenClaw on local LLMs (LM Studio, vLLM, LiteLLM, custom OpenAI endpoints)"
 read_when:
   - You want to serve models from your own GPU box
   - You are wiring LM Studio or an OpenAI-compatible proxy
@@ -9,9 +9,9 @@ title: "Local Models"
 
 # Local models
 
-Local is doable, but RemoteClaw expects large context + strong defenses against prompt injection. Small cards truncate context and leak safety. Aim high: **≥2 maxed-out Mac Studios or equivalent GPU rig (~$30k+)**. A single **24 GB** GPU works only for lighter prompts with higher latency. Use the **largest / full-size model variant you can run**; aggressively quantized or “small” checkpoints raise prompt-injection risk (see [Security](/gateway/security)).
+Local is doable, but OpenClaw expects large context + strong defenses against prompt injection. Small cards truncate context and leak safety. Aim high: **≥2 maxed-out Mac Studios or equivalent GPU rig (~$30k+)**. A single **24 GB** GPU works only for lighter prompts with higher latency. Use the **largest / full-size model variant you can run**; aggressively quantized or “small” checkpoints raise prompt-injection risk (see [Security](/gateway/security)).
 
-If you want the lowest-friction local setup, start with [Ollama](/providers/ollama) and `remoteclaw onboard`. This page is the opinionated guide for higher-end local stacks and custom OpenAI-compatible local servers.
+If you want the lowest-friction local setup, start with [LM Studio](/providers/lmstudio) or [Ollama](/providers/ollama) and `openclaw onboard`. This page is the opinionated guide for higher-end local stacks and custom OpenAI-compatible local servers.
 
 ## Recommended: LM Studio + large local model (Responses API)
 
@@ -147,12 +147,12 @@ Keep `models.mode: "merge"` so hosted models stay available as fallbacks.
 
 Behavior note for local/proxied `/v1` backends:
 
-- RemoteClaw treats these as proxy-style OpenAI-compatible routes, not native
+- OpenClaw treats these as proxy-style OpenAI-compatible routes, not native
   OpenAI endpoints
 - native OpenAI-only request shaping does not apply here: no
   `service_tier`, no Responses `store`, no OpenAI reasoning-compat payload
   shaping, and no prompt-cache hints
-- hidden RemoteClaw attribution headers (`originator`, `version`, `User-Agent`)
+- hidden OpenClaw attribution headers (`originator`, `version`, `User-Agent`)
   are not injected on these custom proxy URLs
 
 Compatibility notes for stricter OpenAI-compatible backends:
@@ -161,13 +161,13 @@ Compatibility notes for stricter OpenAI-compatible backends:
   structured content-part arrays. Set
   `models.providers.<provider>.models[].compat.requiresStringContent: true` for
   those endpoints.
-- Some smaller or stricter local backends are unstable with RemoteClaw's full
+- Some smaller or stricter local backends are unstable with OpenClaw's full
   agent-runtime prompt shape, especially when tool schemas are included. If the
   backend works for tiny direct `/v1/chat/completions` calls but fails on normal
-  RemoteClaw agent turns, try
+  OpenClaw agent turns, try
   `models.providers.<provider>.models[].compat.supportsTools: false` first.
-- If the backend still fails only on larger RemoteClaw runs, the remaining issue
-  is usually upstream model/server capacity or a backend bug, not RemoteClaw's
+- If the backend still fails only on larger OpenClaw runs, the remaining issue
+  is usually upstream model/server capacity or a backend bug, not OpenClaw's
   transport layer.
 
 ## Troubleshooting
@@ -177,8 +177,8 @@ Compatibility notes for stricter OpenAI-compatible backends:
 - Context errors? Lower `contextWindow` or raise your server limit.
 - OpenAI-compatible server returns `messages[].content ... expected a string`?
   Add `compat.requiresStringContent: true` on that model entry.
-- Direct tiny `/v1/chat/completions` calls work, but `remoteclaw infer model run`
+- Direct tiny `/v1/chat/completions` calls work, but `openclaw infer model run`
   fails on Gemma or another local model? Disable tool schemas first with
   `compat.supportsTools: false`, then retest. If the server still crashes only
-  on larger RemoteClaw prompts, treat it as an upstream server/model limitation.
+  on larger OpenClaw prompts, treat it as an upstream server/model limitation.
 - Safety: local models skip provider-side filters; keep agents narrow and compaction on to limit prompt injection blast radius.

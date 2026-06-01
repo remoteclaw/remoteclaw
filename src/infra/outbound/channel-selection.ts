@@ -1,6 +1,6 @@
 import { listChannelPlugins } from "../../channels/plugins/index.js";
-import type { ChannelPlugin } from "../../channels/plugins/types.js";
-import type { RemoteClawConfig } from "../../config/config.js";
+import type { ChannelPlugin } from "../../channels/plugins/types.plugin.js";
+import type { RemoteClawConfig } from "../../config/types.remoteclaw.js";
 import { defaultRuntime } from "../../runtime.js";
 import {
   listDeliverableMessageChannels,

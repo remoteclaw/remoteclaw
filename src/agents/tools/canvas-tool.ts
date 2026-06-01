@@ -4,7 +4,7 @@ import path from "node:path";
 import { Type } from "@sinclair/typebox";
 import { writeBase64ToFile } from "../../cli/nodes-camera.js";
 import { canvasSnapshotTempPath, parseCanvasSnapshotPayload } from "../../cli/nodes-canvas.js";
-import type { RemoteClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/types.remoteclaw.js";
 import { logVerbose, shouldLogVerbose } from "../../globals.js";
 import { isInboundPathAllowed } from "../../media/inbound-path-policy.js";
 import { getDefaultMediaLocalRoots } from "../../media/local-roots.js";
@@ -87,7 +87,7 @@ export function createCanvasTool(options?: { config?: RemoteClawConfig }): AnyAg
       "Control node canvases (present/hide/navigate/eval/snapshot/A2UI). Use snapshot to capture the rendered UI.",
     parameters: CanvasToolSchema,
     execute: async (_toolCallId, args) => {
-      const params = args;
+      const params = args as Record<string, unknown>;
       const action = readStringParam(params, "action", { required: true });
       const gatewayOpts = readGatewayCallOptions(params);
 

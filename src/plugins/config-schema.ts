@@ -1,5 +1,6 @@
 import { z, type ZodTypeAny } from "zod";
-import type { PluginConfigUiHint, RemoteClawPluginConfigSchema } from "./types.js";
+import type { PluginConfigUiHint } from "./manifest-types.js";
+import type { RemoteClawPluginConfigSchema } from "./types.js";
 
 type Issue = { path: Array<string | number>; message: string };
 

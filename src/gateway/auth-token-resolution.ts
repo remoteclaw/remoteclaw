@@ -1,4 +1,4 @@
-import type { RemoteClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import { resolveSecretInputRef } from "../config/types.secrets.js";
 import { trimToUndefined } from "./credentials.js";
 import {

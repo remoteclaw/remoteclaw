@@ -1,4 +1,4 @@
-import type { RemoteClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/types.remoteclaw.js";
 
 export function createPerSenderSessionConfig(
   overrides: Partial<NonNullable<RemoteClawConfig["session"]>> = {},

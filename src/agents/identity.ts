@@ -1,4 +1,5 @@
-import type { RemoteClawConfig, HumanDelayConfig, IdentityConfig } from "../config/config.js";
+import type { HumanDelayConfig, IdentityConfig } from "../config/types.base.js";
+import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import { resolveAgentConfig } from "./agent-scope.js";
 
 /**

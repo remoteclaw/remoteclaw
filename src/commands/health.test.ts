@@ -17,7 +17,7 @@ const defaultSessions: HealthSummary["sessions"] = {
 };
 
 const createMainAgentSummary = (sessions = defaultSessions) => ({
-  agentId: "test-agent",
+  agentId: "main",
   isDefault: true,
   heartbeat: {
     enabled: true,
@@ -25,7 +25,7 @@ const createMainAgentSummary = (sessions = defaultSessions) => ({
     everyMs: 60_000,
     prompt: "hi",
     target: "last",
-    ackMaxChars: 300,
+    ackMaxChars: 160,
   },
   sessions,
 });
@@ -45,7 +45,7 @@ const createHealthSummary = (params: {
     channelOrder: params.channelOrder,
     channelLabels: params.channelLabels,
     heartbeatSeconds: 60,
-    defaultAgentId: "test-agent",
+    defaultAgentId: "main",
     agents: [createMainAgentSummary(sessions)],
     sessions,
   };
@@ -87,7 +87,7 @@ describe("healthCommand", () => {
     });
     callGatewayMock.mockResolvedValueOnce(snapshot);
 
-    await healthCommand({ json: true, timeoutMs: 5000 }, runtime as never);
+    await healthCommand({ json: true, timeoutMs: 5000, config: {} }, runtime as never);
 
     expect(runtime.exit).not.toHaveBeenCalled();
     const logged = runtime.log.mock.calls[0]?.[0] as string;
@@ -114,7 +114,7 @@ describe("healthCommand", () => {
       }),
     );
 
-    await healthCommand({ json: false }, runtime as never);
+    await healthCommand({ json: false, config: {} }, runtime as never);
 
     expect(runtime.exit).not.toHaveBeenCalled();
     expect(runtime.log).toHaveBeenCalled();
@@ -124,12 +124,12 @@ describe("healthCommand", () => {
     const summary = createHealthSummary({
       channels: {
         telegram: {
-          accountId: "test-agent",
+          accountId: "main",
           configured: true,
           probe: { ok: true, elapsedMs: 196, bot: { username: "pinguini_ugi_bot" } },
           accounts: {
             main: {
-              accountId: "test-agent",
+              accountId: "main",
               configured: true,
               probe: { ok: true, elapsedMs: 196, bot: { username: "pinguini_ugi_bot" } },
             },

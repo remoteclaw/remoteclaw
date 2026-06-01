@@ -1,4 +1,4 @@
-import type { RemoteClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import { trimToUndefined, type ExplicitGatewayAuth } from "./credentials.js";
 
 export function hasExplicitGatewayConnectionAuth(auth?: ExplicitGatewayAuth): boolean {

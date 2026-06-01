@@ -1,4 +1,4 @@
-import type { loadConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import type { callGateway } from "../gateway/call.js";
 
 /**
@@ -13,7 +13,7 @@ export const MODULE_ATTESTATIONS = {
 
 type DeliveryRuntimeMockOptions = {
   callGateway: (request: unknown) => Promise<unknown>;
-  loadConfig: () => ReturnType<typeof loadConfig>;
+  loadConfig: () => RemoteClawConfig;
   loadSessionStore: (storePath: string) => unknown;
   resolveAgentIdFromSessionKey: (sessionKey: string) => string;
   resolveMainSessionKey: (cfg: unknown) => string;

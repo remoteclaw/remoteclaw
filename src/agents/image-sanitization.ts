@@ -1,4 +1,4 @@
-import type { RemoteClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 
 /**
  * Runtime attestation (ADR 0005 H9). Declares the implementation status

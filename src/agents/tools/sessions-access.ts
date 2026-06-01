@@ -1,4 +1,4 @@
-import type { RemoteClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/types.remoteclaw.js";
 import { isSubagentSessionKey, resolveAgentIdFromSessionKey } from "../../routing/session-key.js";
 import {
   normalizeLowercaseStringOrEmpty,

@@ -13,13 +13,13 @@ title: "TUI"
 1. Start the Gateway.
 
 ```bash
-remoteclaw gateway
+openclaw gateway
 ```
 
 2. Open the TUI.
 
 ```bash
-remoteclaw tui
+openclaw tui
 ```
 
 3. Type a message and press Enter.
@@ -27,7 +27,7 @@ remoteclaw tui
 Remote Gateway:
 
 ```bash
-remoteclaw tui --url ws://<host>:<port> --token <gateway-token>
+openclaw tui --url ws://<host>:<port> --token <gateway-token>
 ```
 
 Use `--password` if your Gateway uses password auth.
@@ -37,7 +37,7 @@ Use `--password` if your Gateway uses password auth.
 - Header: connection URL, current agent, current session.
 - Chat log: user messages, assistant replies, system notices, tool cards.
 - Status line: connection/run state (connecting, running, streaming, idle, error).
-- Footer: connection state + agent + session + model + think/fast/verbose/reasoning + token counts + deliver.
+- Footer: connection state + agent + session + model + think/fast/verbose/trace/reasoning + token counts + deliver.
 - Input: text editor with autocomplete.
 
 ## Mental model: agents + sessions
@@ -58,7 +58,7 @@ Use `--password` if your Gateway uses password auth.
 - Turn delivery on:
   - `/deliver on`
   - or the Settings panel
-  - or start with `remoteclaw tui --deliver`
+  - or start with `openclaw tui --deliver`
 
 ## Pickers + overlays
 
@@ -94,6 +94,7 @@ Session controls:
 - `/think <off|minimal|low|medium|high>`
 - `/fast <status|on|off>`
 - `/verbose <on|full|off>`
+- `/trace <on|off>`
 - `/reasoning <on|off|stream>`
 - `/usage <off|tokens|full>`
 - `/elevated <on|off|ask|full>` (alias: `/elev`)
@@ -114,7 +115,7 @@ Other Gateway slash commands (for example, `/context`) are forwarded to the Gate
 - Prefix a line with `!` to run a local shell command on the TUI host.
 - The TUI prompts once per session to allow local execution; declining keeps `!` disabled for the session.
 - Commands run in a fresh, non-interactive shell in the TUI working directory (no persistent `cd`/env).
-- Local shell commands receive `REMOTECLAW_SHELL=tui-local` in their environment.
+- Local shell commands receive `OPENCLAW_SHELL=tui-local` in their environment.
 - A lone `!` is sent as a normal message; leading spaces do not trigger local exec.
 
 ## Tool output
@@ -126,8 +127,8 @@ Other Gateway slash commands (for example, `/context`) are forwarded to the Gate
 ## Terminal colors
 
 - The TUI keeps assistant body text in your terminal's default foreground so dark and light terminals both stay readable.
-- If your terminal uses a light background and auto-detection is wrong, set `REMOTECLAW_THEME=light` before launching `remoteclaw tui`.
-- To force the original dark palette instead, set `REMOTECLAW_THEME=dark`.
+- If your terminal uses a light background and auto-detection is wrong, set `OPENCLAW_THEME=light` before launching `openclaw tui`.
+- To force the original dark palette instead, set `OPENCLAW_THEME=dark`.
 
 ## History + streaming
 
@@ -160,14 +161,14 @@ Pass `--token` or `--password` explicitly. Missing explicit credentials is an er
 No output after sending a message:
 
 - Run `/status` in the TUI to confirm the Gateway is connected and idle/busy.
-- Check the Gateway logs: `remoteclaw logs --follow`.
-- Confirm the agent can run: `remoteclaw status` and `remoteclaw models status`.
+- Check the Gateway logs: `openclaw logs --follow`.
+- Confirm the agent can run: `openclaw status` and `openclaw models status`.
 - If you expect messages in a chat channel, enable delivery (`/deliver on` or `--deliver`).
 
 ## Connection troubleshooting
 
 - `disconnected`: ensure the Gateway is running and your `--url/--token/--password` are correct.
-- No agents in picker: check `remoteclaw agents list` and your routing config.
+- No agents in picker: check `openclaw agents list` and your routing config.
 - Empty session picker: you might be in global scope or have no sessions yet.
 
 ## Related

@@ -1,6 +1,6 @@
 import { resolveEnvelopeFormatOptions } from "../auto-reply/envelope.js";
-import type { RemoteClawConfig } from "../config/config.js";
 import { readSessionUpdatedAt, resolveStorePath } from "../config/sessions.js";
+import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 
 export function resolveInboundSessionEnvelopeContext(params: {
   cfg: RemoteClawConfig;

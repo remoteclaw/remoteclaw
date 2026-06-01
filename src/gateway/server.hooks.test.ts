@@ -102,6 +102,30 @@ async function expectFirstHookDelivery(
   return firstBody;
 }
 
+async function expectHookAgentSessionRouting(params: {
+  port: number;
+  requestSessionKey: string;
+  expectedSessionKey: string;
+}) {
+  mockIsolatedRunOkOnce();
+
+  const resAgent = await postHook(params.port, "/hooks/agent", {
+    message: "Do it",
+    name: "Email",
+    agentId: "hooks",
+    sessionKey: params.requestSessionKey,
+  });
+  expect(resAgent.status).toBe(200);
+  await waitForSystemEvent();
+
+  const routedCall = (cronIsolatedRun.mock.calls[0] as unknown[] | undefined)?.[0] as
+    | { sessionKey?: string; job?: { agentId?: string } }
+    | undefined;
+  expect(routedCall?.job?.agentId).toBe("hooks");
+  expect(routedCall?.sessionKey).toBe(params.expectedSessionKey);
+  drainSystemEvents(resolveMainKey());
+}
+
 describe("gateway server hooks", () => {
   test("handles auth, wake, and agent flows", async () => {
     testState.hooksConfig = { enabled: true, token: HOOK_TOKEN };
@@ -123,8 +147,10 @@ describe("gateway server hooks", () => {
       expect(agentEvents.some((e) => e.includes("Hook Email: done"))).toBe(true);
       const firstCall = (cronIsolatedRun.mock.calls[0] as unknown[] | undefined)?.[0] as {
         deliveryContract?: string;
+        job?: { payload?: { externalContentSource?: string } };
       };
       expect(firstCall?.deliveryContract).toBe("shared");
+      expect(firstCall?.job?.payload?.externalContentSource).toBe("webhook");
       drainSystemEvents(resolveMainKey());
 
       mockIsolatedRunOkOnce();
@@ -209,6 +235,40 @@ describe("gateway server hooks", () => {
 
       const resBadJson = await postHook(port, "/hooks/wake", "{");
       expect(resBadJson.status).toBe(400);
+    });
+  });
+
+  test("preserves mapped hook provenance across async dispatch", async () => {
+    testState.hooksConfig = {
+      enabled: true,
+      token: HOOK_TOKEN,
+      mappings: [
+        {
+          match: { path: "gmail" },
+          action: "agent",
+          messageTemplate: "New email from {{messages[0].from}}",
+          sessionKey: "main",
+        },
+      ],
+    };
+    setMainAndHooksAgents();
+
+    await withGatewayServer(async ({ port }) => {
+      mockIsolatedRunOkOnce();
+      const response = await postHook(port, "/hooks/gmail", {
+        source: "gmail",
+        messages: [{ id: "msg-1", from: "Ada", subject: "Hello", snippet: "Hi", body: "Body" }],
+      });
+      expect(response.status).toBe(200);
+      await waitForSystemEvent();
+
+      const call = (cronIsolatedRun.mock.calls[0] as unknown[] | undefined)?.[0] as {
+        sessionKey?: string;
+        job?: { payload?: { externalContentSource?: string } };
+      };
+      expect(call?.sessionKey).toBe("main");
+      expect(call?.job?.payload?.externalContentSource).toBe("gmail");
+      drainSystemEvents(resolveMainKey());
     });
   });
 
@@ -343,23 +403,11 @@ describe("gateway server hooks", () => {
     };
     setMainAndHooksAgents();
     await withGatewayServer(async ({ port }) => {
-      mockIsolatedRunOkOnce();
-
-      const resAgent = await postHook(port, "/hooks/agent", {
-        message: "Do it",
-        name: "Email",
-        agentId: "hooks",
-        sessionKey: "agent:hooks:slack:channel:c123",
+      await expectHookAgentSessionRouting({
+        port,
+        requestSessionKey: "agent:hooks:slack:channel:c123",
+        expectedSessionKey: "agent:hooks:slack:channel:c123",
       });
-      expect(resAgent.status).toBe(200);
-      await waitForSystemEvent();
-
-      const routedCall = (cronIsolatedRun.mock.calls[0] as unknown[] | undefined)?.[0] as
-        | { sessionKey?: string; job?: { agentId?: string } }
-        | undefined;
-      expect(routedCall?.job?.agentId).toBe("hooks");
-      expect(routedCall?.sessionKey).toBe("agent:hooks:slack:channel:c123");
-      drainSystemEvents(resolveMainKey());
     });
   });
 
@@ -372,23 +420,11 @@ describe("gateway server hooks", () => {
     };
     setMainAndHooksAgents();
     await withGatewayServer(async ({ port }) => {
-      mockIsolatedRunOkOnce();
-
-      const resAgent = await postHook(port, "/hooks/agent", {
-        message: "Do it",
-        name: "Email",
-        agentId: "hooks",
-        sessionKey: "agent:main:slack:channel:c123",
+      await expectHookAgentSessionRouting({
+        port,
+        requestSessionKey: "agent:main:slack:channel:c123",
+        expectedSessionKey: "agent:hooks:slack:channel:c123",
       });
-      expect(resAgent.status).toBe(200);
-      await waitForSystemEvent();
-
-      const routedCall = (cronIsolatedRun.mock.calls[0] as unknown[] | undefined)?.[0] as
-        | { sessionKey?: string; job?: { agentId?: string } }
-        | undefined;
-      expect(routedCall?.job?.agentId).toBe("hooks");
-      expect(routedCall?.sessionKey).toBe("agent:hooks:slack:channel:c123");
-      drainSystemEvents(resolveMainKey());
     });
   });
 
@@ -407,6 +443,32 @@ describe("gateway server hooks", () => {
         agentId: "hooks",
         sessionKey: "agent:main:slack:channel:c123",
       });
+      expect(denied.status).toBe(400);
+      const body = (await denied.json()) as { error?: string };
+      expect(body.error).toContain("sessionKey must start with one of");
+      expect(cronIsolatedRun).not.toHaveBeenCalled();
+    });
+  });
+
+  test("rejects mapped hook session rebinding into a disallowed target-agent prefix", async () => {
+    testState.hooksConfig = {
+      enabled: true,
+      token: HOOK_TOKEN,
+      allowRequestSessionKey: true,
+      allowedSessionKeyPrefixes: ["hook:", "agent:main:"],
+      mappings: [
+        {
+          match: { path: "mapped-rebind-denied" },
+          action: "agent",
+          agentId: "hooks",
+          messageTemplate: "Mapped: {{payload.subject}}",
+          sessionKey: "agent:main:slack:channel:c123",
+        },
+      ],
+    };
+    setMainAndHooksAgents();
+    await withGatewayServer(async ({ port }) => {
+      const denied = await postHook(port, "/hooks/mapped-rebind-denied", { subject: "hello" });
       expect(denied.status).toBe(400);
       const body = (await denied.json()) as { error?: string };
       expect(body.error).toContain("sessionKey must start with one of");

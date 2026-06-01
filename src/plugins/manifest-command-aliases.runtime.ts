@@ -1,16 +1,17 @@
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import {
   resolveManifestCommandAliasOwnerInRegistry,
+  type PluginManifestCommandAliasRegistry,
   type PluginManifestCommandAliasRecord,
 } from "./manifest-command-aliases.js";
-import { loadPluginManifestRegistry, type PluginManifestRegistry } from "./manifest-registry.js";
+import { loadPluginManifestRegistry } from "./manifest-registry.js";
 
 export function resolveManifestCommandAliasOwner(params: {
   command: string | undefined;
   config?: RemoteClawConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
-  registry?: PluginManifestRegistry;
+  registry?: PluginManifestCommandAliasRegistry;
 }): PluginManifestCommandAliasRecord | undefined {
   const registry =
     params.registry ??

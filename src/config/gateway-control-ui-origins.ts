@@ -1,5 +1,5 @@
-import type { RemoteClawConfig } from "./config.js";
 import { DEFAULT_GATEWAY_PORT } from "./paths.js";
+import type { RemoteClawConfig } from "./types.remoteclaw.js";
 
 export type GatewayNonLoopbackBindMode = "lan" | "tailnet" | "custom" | "auto";
 
@@ -25,14 +25,6 @@ export function resolveGatewayPortWithDefault(
   fallback = DEFAULT_GATEWAY_PORT,
 ): number {
   return typeof port === "number" && port > 0 ? port : fallback;
-}
-
-export function resolveGatewayControlUiOrigins(cfg: RemoteClawConfig): string[] {
-  const origins = cfg.gateway?.controlUi?.allowedOrigins;
-  if (Array.isArray(origins)) {
-    return origins.filter((o): o is string => typeof o === "string" && o.trim().length > 0);
-  }
-  return [];
 }
 
 export function buildDefaultControlUiAllowedOrigins(params: {

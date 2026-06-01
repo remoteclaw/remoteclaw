@@ -9,26 +9,26 @@ title: "Microsoft Teams"
 
 > "Abandon all hope, ye who enter here."
 
-Updated: 2026-01-21
+Updated: 2026-03-25
 
 Status: text + DM attachments are supported; channel/group file sending requires `sharePointSiteId` + Graph permissions (see [Sending files in group chats](#sending-files-in-group-chats)). Polls are sent via Adaptive Cards. Message actions expose explicit `upload-file` for file-first sends.
 
 ## Bundled plugin
 
-Microsoft Teams ships as a bundled plugin in current RemoteClaw releases, so no
+Microsoft Teams ships as a bundled plugin in current OpenClaw releases, so no
 separate install is required in the normal packaged build.
 
 If you are on an older build or a custom install that excludes bundled Teams,
 install it manually:
 
 ```bash
-remoteclaw plugins install @remoteclaw/msteams
+openclaw plugins install @openclaw/msteams
 ```
 
 Local checkout (when running from a git repo):
 
 ```bash
-remoteclaw plugins install ./path/to/local/msteams-plugin
+openclaw plugins install ./path/to/local/msteams-plugin
 ```
 
 Details: [Plugins](/tools/plugin)
@@ -36,14 +36,14 @@ Details: [Plugins](/tools/plugin)
 ## Quick setup (beginner)
 
 1. Ensure the Microsoft Teams plugin is available.
-   - Current packaged RemoteClaw releases already bundle it.
+   - Current packaged OpenClaw releases already bundle it.
    - Older/custom installs can add it manually with the commands above.
 2. Create an **Azure Bot** (App ID + client secret + tenant ID).
-3. Configure RemoteClaw with those credentials.
+3. Configure OpenClaw with those credentials.
 4. Expose `/api/messages` (port 3978 by default) via a public URL or tunnel.
 5. Install the Teams app package and start the gateway.
 
-Minimal config:
+Minimal config (client secret):
 
 ```json5
 {
@@ -59,11 +59,13 @@ Minimal config:
 }
 ```
 
+For production deployments, consider using [federated authentication](#federated-authentication-certificate--managed-identity) (certificate or managed identity) instead of client secrets.
+
 Note: group chats are blocked by default (`channels.msteams.groupPolicy: "allowlist"`). To allow group replies, set `channels.msteams.groupAllowFrom` (or use `groupPolicy: "open"` to allow any member, mention-gated).
 
 ## Goals
 
-- Talk to RemoteClaw via Teams DMs, group chats, or channels.
+- Talk to OpenClaw via Teams DMs, group chats, or channels.
 - Keep routing deterministic: replies always go back to the channel they arrived on.
 - Default to safe channel behavior (mentions required unless configured otherwise).
 
@@ -114,7 +116,7 @@ Example:
 - Keys should use stable team IDs and channel conversation IDs.
 - When `groupPolicy="allowlist"` and a teams allowlist is present, only listed teams/channels are accepted (mention‑gated).
 - The configure wizard accepts `Team/Channel` entries and stores them for you.
-- On startup, RemoteClaw resolves team/channel and user allowlist names to IDs (when Graph permissions allow)
+- On startup, OpenClaw resolves team/channel and user allowlist names to IDs (when Graph permissions allow)
   and logs the mapping; unresolved team/channel names are kept as typed but ignored for routing by default unless `channels.msteams.dangerouslyAllowNameMatching: true` is enabled.
 
 Example:
@@ -139,31 +141,31 @@ Example:
 ## How it works
 
 1. Ensure the Microsoft Teams plugin is available.
-   - Current packaged RemoteClaw releases already bundle it.
+   - Current packaged OpenClaw releases already bundle it.
    - Older/custom installs can add it manually with the commands above.
 2. Create an **Azure Bot** (App ID + secret + tenant ID).
 3. Build a **Teams app package** that references the bot and includes the RSC permissions below.
 4. Upload/install the Teams app into a team (or personal scope for DMs).
-5. Configure `msteams` in `~/.remoteclaw/remoteclaw.json` (or env vars) and start the gateway.
+5. Configure `msteams` in `~/.openclaw/openclaw.json` (or env vars) and start the gateway.
 6. The gateway listens for Bot Framework webhook traffic on `/api/messages` by default.
 
 ## Azure Bot Setup (Prerequisites)
 
-Before configuring RemoteClaw, you need to create an Azure Bot resource.
+Before configuring OpenClaw, you need to create an Azure Bot resource.
 
 ### Step 1: Create Azure Bot
 
 1. Go to [Create Azure Bot](https://portal.azure.com/#create/Microsoft.AzureBot)
 2. Fill in the **Basics** tab:
 
-   | Field              | Value                                                      |
-   | ------------------ | ---------------------------------------------------------- |
-   | **Bot handle**     | Your bot name, e.g., `remoteclaw-msteams` (must be unique) |
-   | **Subscription**   | Select your Azure subscription                             |
-   | **Resource group** | Create new or use existing                                 |
-   | **Pricing tier**   | **Free** for dev/testing                                   |
-   | **Type of App**    | **Single Tenant** (recommended - see note below)           |
-   | **Creation type**  | **Create new Microsoft App ID**                            |
+   | Field              | Value                                                    |
+   | ------------------ | -------------------------------------------------------- |
+   | **Bot handle**     | Your bot name, e.g., `openclaw-msteams` (must be unique) |
+   | **Subscription**   | Select your Azure subscription                           |
+   | **Resource group** | Create new or use existing                               |
+   | **Pricing tier**   | **Free** for dev/testing                                 |
+   | **Type of App**    | **Single Tenant** (recommended - see note below)         |
+   | **Creation type**  | **Create new Microsoft App ID**                          |
 
 > **Deprecation notice:** Creation of new multi-tenant bots was deprecated after 2025-07-31. Use **Single Tenant** for new bots.
 
@@ -189,6 +191,148 @@ Before configuring RemoteClaw, you need to create an Azure Bot resource.
 1. In Azure Bot → **Channels**
 2. Click **Microsoft Teams** → Configure → Save
 3. Accept the Terms of Service
+
+## Federated Authentication (Certificate + Managed Identity)
+
+> Added in 2026.3.24
+
+For production deployments, OpenClaw supports **federated authentication** as a more secure alternative to client secrets. Two methods are available:
+
+### Option A: Certificate-based authentication
+
+Use a PEM certificate registered with your Entra ID app registration.
+
+**Setup:**
+
+1. Generate or obtain a certificate (PEM format with private key).
+2. In Entra ID → App Registration → **Certificates & secrets** → **Certificates** → Upload the public certificate.
+
+**Config:**
+
+```json5
+{
+  channels: {
+    msteams: {
+      enabled: true,
+      appId: "<APP_ID>",
+      tenantId: "<TENANT_ID>",
+      authType: "federated",
+      certificatePath: "/path/to/cert.pem",
+      webhook: { port: 3978, path: "/api/messages" },
+    },
+  },
+}
+```
+
+**Env vars:**
+
+- `MSTEAMS_AUTH_TYPE=federated`
+- `MSTEAMS_CERTIFICATE_PATH=/path/to/cert.pem`
+
+### Option B: Azure Managed Identity
+
+Use Azure Managed Identity for passwordless authentication. This is ideal for deployments on Azure infrastructure (AKS, App Service, Azure VMs) where a managed identity is available.
+
+**How it works:**
+
+1. The bot pod/VM has a managed identity (system-assigned or user-assigned).
+2. A **federated identity credential** links the managed identity to the Entra ID app registration.
+3. At runtime, OpenClaw uses `@azure/identity` to acquire tokens from the Azure IMDS endpoint (`169.254.169.254`).
+4. The token is passed to the Teams SDK for bot authentication.
+
+**Prerequisites:**
+
+- Azure infrastructure with managed identity enabled (AKS workload identity, App Service, VM)
+- Federated identity credential created on the Entra ID app registration
+- Network access to IMDS (`169.254.169.254:80`) from the pod/VM
+
+**Config (system-assigned managed identity):**
+
+```json5
+{
+  channels: {
+    msteams: {
+      enabled: true,
+      appId: "<APP_ID>",
+      tenantId: "<TENANT_ID>",
+      authType: "federated",
+      useManagedIdentity: true,
+      webhook: { port: 3978, path: "/api/messages" },
+    },
+  },
+}
+```
+
+**Config (user-assigned managed identity):**
+
+```json5
+{
+  channels: {
+    msteams: {
+      enabled: true,
+      appId: "<APP_ID>",
+      tenantId: "<TENANT_ID>",
+      authType: "federated",
+      useManagedIdentity: true,
+      managedIdentityClientId: "<MI_CLIENT_ID>",
+      webhook: { port: 3978, path: "/api/messages" },
+    },
+  },
+}
+```
+
+**Env vars:**
+
+- `MSTEAMS_AUTH_TYPE=federated`
+- `MSTEAMS_USE_MANAGED_IDENTITY=true`
+- `MSTEAMS_MANAGED_IDENTITY_CLIENT_ID=<client-id>` (only for user-assigned)
+
+### AKS Workload Identity Setup
+
+For AKS deployments using workload identity:
+
+1. **Enable workload identity** on your AKS cluster.
+2. **Create a federated identity credential** on the Entra ID app registration:
+
+   ```bash
+   az ad app federated-credential create --id <APP_OBJECT_ID> --parameters '{
+     "name": "my-bot-workload-identity",
+     "issuer": "<AKS_OIDC_ISSUER_URL>",
+     "subject": "system:serviceaccount:<NAMESPACE>:<SERVICE_ACCOUNT>",
+     "audiences": ["api://AzureADTokenExchange"]
+   }'
+   ```
+
+3. **Annotate the Kubernetes service account** with the app client ID:
+
+   ```yaml
+   apiVersion: v1
+   kind: ServiceAccount
+   metadata:
+     name: my-bot-sa
+     annotations:
+       azure.workload.identity/client-id: "<APP_CLIENT_ID>"
+   ```
+
+4. **Label the pod** for workload identity injection:
+
+   ```yaml
+   metadata:
+     labels:
+       azure.workload.identity/use: "true"
+   ```
+
+5. **Ensure network access** to IMDS (`169.254.169.254`) — if using NetworkPolicy, add an egress rule allowing traffic to `169.254.169.254/32` on port 80.
+
+### Auth type comparison
+
+| Method               | Config                                         | Pros                               | Cons                                  |
+| -------------------- | ---------------------------------------------- | ---------------------------------- | ------------------------------------- |
+| **Client secret**    | `appPassword`                                  | Simple setup                       | Secret rotation required, less secure |
+| **Certificate**      | `authType: "federated"` + `certificatePath`    | No shared secret over network      | Certificate management overhead       |
+| **Managed Identity** | `authType: "federated"` + `useManagedIdentity` | Passwordless, no secrets to manage | Azure infrastructure required         |
+
+**Default behavior:** When `authType` is not set, OpenClaw defaults to client secret authentication. Existing configurations continue to work without changes.
 
 ## Local Development (Tunneling)
 
@@ -240,10 +384,10 @@ This is often easier than hand-editing JSON manifests.
 ## Setup (minimal text-only)
 
 1. **Ensure the Microsoft Teams plugin is available**
-   - Current packaged RemoteClaw releases already bundle it.
+   - Current packaged OpenClaw releases already bundle it.
    - Older/custom installs can add it manually:
-     - From npm: `remoteclaw plugins install @remoteclaw/msteams`
-     - From a local checkout: `remoteclaw plugins install ./path/to/local/msteams-plugin`
+     - From npm: `openclaw plugins install @openclaw/msteams`
+     - From a local checkout: `openclaw plugins install ./path/to/local/msteams-plugin`
 
 2. **Bot registration**
    - Create an Azure Bot (see above) and note:
@@ -259,7 +403,7 @@ This is often easier than hand-editing JSON manifests.
    - Create icons: `outline.png` (32x32) and `color.png` (192x192).
    - Zip all three files together: `manifest.json`, `outline.png`, `color.png`.
 
-4. **Configure RemoteClaw**
+4. **Configure OpenClaw**
 
    ```json5
    {
@@ -279,6 +423,11 @@ This is often easier than hand-editing JSON manifests.
    - `MSTEAMS_APP_ID`
    - `MSTEAMS_APP_PASSWORD`
    - `MSTEAMS_TENANT_ID`
+   - `MSTEAMS_AUTH_TYPE` (optional: `"secret"` or `"federated"`)
+   - `MSTEAMS_CERTIFICATE_PATH` (federated + certificate)
+   - `MSTEAMS_CERTIFICATE_THUMBPRINT` (optional, not required for auth)
+   - `MSTEAMS_USE_MANAGED_IDENTITY` (federated + managed identity)
+   - `MSTEAMS_MANAGED_IDENTITY_CLIENT_ID` (user-assigned MI only)
 
 5. **Bot endpoint**
    - Set the Azure Bot Messaging Endpoint to:
@@ -289,7 +438,7 @@ This is often easier than hand-editing JSON manifests.
 
 ## Member info action
 
-RemoteClaw exposes a Graph-backed `member-info` action for Microsoft Teams so agents and automations can resolve channel member details (display name, email, role) directly from Microsoft Graph.
+OpenClaw exposes a Graph-backed `member-info` action for Microsoft Teams so agents and automations can resolve channel member details (display name, email, role) directly from Microsoft Graph.
 
 Requirements:
 
@@ -335,14 +484,14 @@ Minimal, valid example with the required fields. Replace IDs and URLs.
   manifestVersion: "1.23",
   version: "1.0.0",
   id: "00000000-0000-0000-0000-000000000000",
-  name: { short: "RemoteClaw" },
+  name: { short: "OpenClaw" },
   developer: {
     name: "Your Org",
     websiteUrl: "https://example.com",
     privacyUrl: "https://example.com/privacy",
     termsOfUseUrl: "https://example.com/terms",
   },
-  description: { short: "RemoteClaw in Teams", full: "RemoteClaw in Teams" },
+  description: { short: "OpenClaw in Teams", full: "OpenClaw in Teams" },
   icons: { outline: "outline.png", color: "color.png" },
   accentColor: "#5B6DEF",
   bots: [
@@ -454,7 +603,7 @@ Teams delivers messages via HTTP webhook. If processing takes too long (e.g., sl
 - Teams retrying the message (causing duplicates)
 - Dropped replies
 
-RemoteClaw handles this by returning quickly and sending replies proactively, but very slow responses may still cause issues.
+OpenClaw handles this by returning quickly and sending replies proactively, but very slow responses may still cause issues.
 
 ### Formatting
 
@@ -492,6 +641,11 @@ Key settings (see `/gateway/configuration` for shared channel patterns):
 - `toolsBySender` keys should use explicit prefixes:
   `id:`, `e164:`, `username:`, `name:` (legacy unprefixed keys still map to `id:` only).
 - `channels.msteams.actions.memberInfo`: enable or disable the Graph-backed member info action (default: enabled when Graph credentials are available).
+- `channels.msteams.authType`: authentication type — `"secret"` (default) or `"federated"`.
+- `channels.msteams.certificatePath`: path to PEM certificate file (federated + certificate auth).
+- `channels.msteams.certificateThumbprint`: certificate thumbprint (optional, not required for auth).
+- `channels.msteams.useManagedIdentity`: enable managed identity auth (federated mode).
+- `channels.msteams.managedIdentityClientId`: client ID for user-assigned managed identity.
 - `channels.msteams.sharePointSiteId`: SharePoint site ID for file uploads in group chats/channels (see [Sending files in group chats](#sending-files-in-group-chats)).
 
 ## Routing & Sessions
@@ -546,7 +700,7 @@ Teams recently introduced two channel UI styles over the same underlying data mo
 - For explicit file-first sends, use `action=upload-file` with `media` / `filePath` / `path`; optional `message` becomes the accompanying text/comment, and `filename` overrides the uploaded name.
 
 Without Graph permissions, channel messages with images will be received as text-only (the image content is not accessible to the bot).
-By default, RemoteClaw only downloads media from Microsoft/Teams hostnames. Override with `channels.msteams.mediaAllowHosts` (use `["*"]` to allow any host).
+By default, OpenClaw only downloads media from Microsoft/Teams hostnames. Override with `channels.msteams.mediaAllowHosts` (use `["*"]` to allow any host).
 Authorization headers are only attached for hosts in `channels.msteams.mediaAuthAllowHosts` (defaults to Graph + Bot Framework hosts). Keep this list strict (avoid multi-tenant suffixes).
 
 ## Sending files in group chats
@@ -585,7 +739,7 @@ Bots don't have a personal OneDrive drive (the `/me/drive` Graph API endpoint do
    # Response includes: "id": "contoso.sharepoint.com,guid1,guid2"
    ```
 
-4. **Configure RemoteClaw:**
+4. **Configure OpenClaw:**
 
    ```json5
    {
@@ -618,14 +772,14 @@ Per-user sharing is more secure as only the chat participants can access the fil
 
 ### Files stored location
 
-Uploaded files are stored in a `/RemoteClawShared/` folder in the configured SharePoint site's default document library.
+Uploaded files are stored in a `/OpenClawShared/` folder in the configured SharePoint site's default document library.
 
 ## Polls (Adaptive Cards)
 
-RemoteClaw sends Teams polls as Adaptive Cards (there is no native Teams poll API).
+OpenClaw sends Teams polls as Adaptive Cards (there is no native Teams poll API).
 
-- CLI: `remoteclaw message poll --channel msteams --target conversation:<id> ...`
-- Votes are recorded by the gateway in `~/.remoteclaw/msteams-polls.json`.
+- CLI: `openclaw message poll --channel msteams --target conversation:<id> ...`
+- Votes are recorded by the gateway in `~/.openclaw/msteams-polls.json`.
 - The gateway must stay online to record votes.
 - Polls do not auto-post result summaries yet (inspect the store file if needed).
 
@@ -653,7 +807,7 @@ The `card` parameter accepts an Adaptive Card JSON object. When `card` is provid
 **CLI:**
 
 ```bash
-remoteclaw message send --channel msteams \
+openclaw message send --channel msteams \
   --target "conversation:19:abc...@thread.tacv2" \
   --card '{"type":"AdaptiveCard","version":"1.5","body":[{"type":"TextBlock","text":"Hello!"}]}'
 ```
@@ -675,16 +829,16 @@ MSTeams targets use prefixes to distinguish between users and conversations:
 
 ```bash
 # Send to a user by ID
-remoteclaw message send --channel msteams --target "user:40a1a0ed-..." --message "Hello"
+openclaw message send --channel msteams --target "user:40a1a0ed-..." --message "Hello"
 
 # Send to a user by display name (triggers Graph API lookup)
-remoteclaw message send --channel msteams --target "user:John Smith" --message "Hello"
+openclaw message send --channel msteams --target "user:John Smith" --message "Hello"
 
 # Send to a group chat or channel
-remoteclaw message send --channel msteams --target "conversation:19:abc...@thread.tacv2" --message "Hello"
+openclaw message send --channel msteams --target "conversation:19:abc...@thread.tacv2" --message "Hello"
 
 # Send an Adaptive Card to a conversation
-remoteclaw message send --channel msteams --target "conversation:19:abc...@thread.tacv2" \
+openclaw message send --channel msteams --target "conversation:19:abc...@thread.tacv2" \
   --card '{"type":"AdaptiveCard","version":"1.5","body":[{"type":"TextBlock","text":"Hello"}]}'
 ```
 

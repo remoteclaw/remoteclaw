@@ -1,4 +1,4 @@
-import type { RemoteClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/types.remoteclaw.js";
 import { buildAgentSessionKey, type RoutePeer } from "../../routing/resolve-route.js";
 
 export function buildOutboundBaseSessionKey(params: {

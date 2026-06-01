@@ -10,7 +10,7 @@ read_when:
 
 # Agent Harness Plugins
 
-An **agent harness** is the low level executor for one prepared RemoteClaw agent
+An **agent harness** is the low level executor for one prepared OpenClaw agent
 turn. It is not a model provider, not a channel, and not a tool registry.
 
 Use this surface only for bundled or trusted native plugins. The contract is
@@ -20,13 +20,13 @@ embedded runner.
 ## When to use a harness
 
 Register an agent harness when a model family has its own native session
-runtime and the normal RemoteClaw provider transport is the wrong abstraction.
+runtime and the normal OpenClaw provider transport is the wrong abstraction.
 
 Examples:
 
 - a native coding-agent server that owns threads and compaction
 - a local CLI or daemon that must stream native plan/reasoning/tool events
-- a model runtime that needs its own resume id in addition to the RemoteClaw
+- a model runtime that needs its own resume id in addition to the OpenClaw
   session transcript
 
 Do **not** register a harness just to add a new LLM API. For normal HTTP or
@@ -34,12 +34,12 @@ WebSocket model APIs, build a [provider plugin](/plugins/sdk-provider-plugins).
 
 ## What core still owns
 
-Before a harness is selected, RemoteClaw has already resolved:
+Before a harness is selected, OpenClaw has already resolved:
 
 - provider and model
 - runtime auth state
 - thinking level and context budget
-- the RemoteClaw transcript/session file
+- the OpenClaw transcript/session file
 - workspace, sandbox, and tool policy
 - channel reply callbacks and streaming callbacks
 - model fallback and live model switching policy
@@ -49,11 +49,11 @@ providers, replace channel delivery, or silently switch models.
 
 ## Register a harness
 
-**Import:** `remoteclaw/plugin-sdk/agent-harness`
+**Import:** `openclaw/plugin-sdk/agent-harness`
 
 ```typescript
-import type { AgentHarness } from "remoteclaw/plugin-sdk/agent-harness";
-import { definePluginEntry } from "remoteclaw/plugin-sdk/plugin-entry";
+import type { AgentHarness } from "openclaw/plugin-sdk/agent-harness";
+import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
 
 const myHarness: AgentHarness = {
   id: "my-harness",
@@ -85,18 +85,18 @@ export default definePluginEntry({
 
 ## Selection policy
 
-RemoteClaw chooses a harness after provider/model resolution:
+OpenClaw chooses a harness after provider/model resolution:
 
-1. `REMOTECLAW_AGENT_RUNTIME=<id>` forces a registered harness with that id.
-2. `REMOTECLAW_AGENT_RUNTIME=pi` forces the built-in PI harness.
-3. `REMOTECLAW_AGENT_RUNTIME=auto` asks registered harnesses if they support the
+1. `OPENCLAW_AGENT_RUNTIME=<id>` forces a registered harness with that id.
+2. `OPENCLAW_AGENT_RUNTIME=pi` forces the built-in PI harness.
+3. `OPENCLAW_AGENT_RUNTIME=auto` asks registered harnesses if they support the
    resolved provider/model.
-4. If no registered harness matches, RemoteClaw uses PI unless PI fallback is
+4. If no registered harness matches, OpenClaw uses PI unless PI fallback is
    disabled.
 
 Forced plugin harness failures surface as run failures. In `auto` mode,
-RemoteClaw may fall back to PI when the selected plugin harness fails before a
-turn has produced side effects. Set `REMOTECLAW_AGENT_HARNESS_FALLBACK=none` or
+OpenClaw may fall back to PI when the selected plugin harness fails before a
+turn has produced side effects. Set `OPENCLAW_AGENT_HARNESS_FALLBACK=none` or
 `embeddedHarness.fallback: "none"` to make that fallback a hard failure instead.
 
 The bundled Codex plugin registers `codex` as its harness id. Core treats that
@@ -107,7 +107,7 @@ or operator config, not in the shared runtime selector.
 
 Most harnesses should also register a provider. The provider makes model refs,
 auth status, model metadata, and `/model` selection visible to the rest of
-RemoteClaw. The harness then claims that provider in `supports(...)`.
+OpenClaw. The harness then claims that provider in `supports(...)`.
 
 The bundled Codex plugin follows this pattern:
 
@@ -117,11 +117,11 @@ The bundled Codex plugin follows this pattern:
 - harness id: `codex`
 - auth: synthetic provider availability, because the Codex harness owns the
   native Codex login/session
-- app-server request: RemoteClaw sends the bare model id to Codex and lets the
+- app-server request: OpenClaw sends the bare model id to Codex and lets the
   harness talk to the native app-server protocol
 
 The Codex plugin is additive. Plain `openai/gpt-*` refs remain OpenAI provider
-refs and continue to use the normal RemoteClaw provider path. Select `codex/gpt-*`
+refs and continue to use the normal OpenClaw provider path. Select `codex/gpt-*`
 when you want Codex-managed auth, Codex model discovery, native threads, and
 Codex app-server execution. `/model` can switch among the Codex models returned
 by the Codex app server without requiring OpenAI provider credentials.
@@ -129,20 +129,39 @@ by the Codex app server without requiring OpenAI provider credentials.
 For operator setup, model prefix examples, and Codex-only configs, see
 [Codex Harness](/plugins/codex-harness).
 
-RemoteClaw requires Codex app-server `0.118.0` or newer. The Codex plugin checks
+OpenClaw requires Codex app-server `0.118.0` or newer. The Codex plugin checks
 the app-server initialize handshake and blocks older or unversioned servers so
-RemoteClaw only runs against the protocol surface it has been tested with.
+OpenClaw only runs against the protocol surface it has been tested with.
+
+### Native Codex harness mode
+
+The bundled `codex` harness is the native Codex mode for embedded OpenClaw
+agent turns. Enable the bundled `codex` plugin first, and include `codex` in
+`plugins.allow` if your config uses a restrictive allowlist. It is different
+from `openai-codex/*`:
+
+- `openai-codex/*` uses ChatGPT/Codex OAuth through the normal OpenClaw provider
+  path.
+- `codex/*` uses the bundled Codex provider and routes the turn through Codex
+  app-server.
+
+When this mode runs, Codex owns the native thread id, resume behavior,
+compaction, and app-server execution. OpenClaw still owns the chat channel,
+visible transcript mirror, tool policy, approvals, media delivery, and session
+selection. Use `embeddedHarness.runtime: "codex"` with
+`embeddedHarness.fallback: "none"` when you need to prove that the Codex
+app-server path is used and PI fallback is not hiding a broken native harness.
 
 ## Disable PI fallback
 
-By default, RemoteClaw runs embedded agents with `agents.defaults.embeddedHarness`
+By default, OpenClaw runs embedded agents with `agents.defaults.embeddedHarness`
 set to `{ runtime: "auto", fallback: "pi" }`. In `auto` mode, registered plugin
 harnesses can claim a provider/model pair. If none match, or if an auto-selected
-plugin harness fails before producing output, RemoteClaw falls back to PI.
+plugin harness fails before producing output, OpenClaw falls back to PI.
 
 Set `fallback: "none"` when you need to prove that a plugin harness is the only
 runtime being exercised. This disables automatic PI fallback; it does not block
-an explicit `runtime: "pi"` or `REMOTECLAW_AGENT_RUNTIME=pi`.
+an explicit `runtime: "pi"` or `OPENCLAW_AGENT_RUNTIME=pi`.
 
 For Codex-only embedded runs:
 
@@ -161,7 +180,7 @@ For Codex-only embedded runs:
 ```
 
 If you want any registered plugin harness to claim matching models but never
-want RemoteClaw to silently fall back to PI, keep `runtime: "auto"` and disable
+want OpenClaw to silently fall back to PI, keep `runtime: "auto"` and disable
 the fallback:
 
 ```json
@@ -202,14 +221,14 @@ Per-agent overrides use the same shape:
 }
 ```
 
-`REMOTECLAW_AGENT_RUNTIME` still overrides the configured runtime. Use
-`REMOTECLAW_AGENT_HARNESS_FALLBACK=none` to disable PI fallback from the
+`OPENCLAW_AGENT_RUNTIME` still overrides the configured runtime. Use
+`OPENCLAW_AGENT_HARNESS_FALLBACK=none` to disable PI fallback from the
 environment.
 
 ```bash
-REMOTECLAW_AGENT_RUNTIME=codex \
-REMOTECLAW_AGENT_HARNESS_FALLBACK=none \
-remoteclaw gateway run
+OPENCLAW_AGENT_RUNTIME=codex \
+OPENCLAW_AGENT_HARNESS_FALLBACK=none \
+openclaw gateway run
 ```
 
 With fallback disabled, a session fails early when the requested harness is not
@@ -223,22 +242,22 @@ image, video, music, TTS, PDF, or other provider-specific model routing.
 ## Native sessions and transcript mirror
 
 A harness may keep a native session id, thread id, or daemon-side resume token.
-Keep that binding explicitly associated with the RemoteClaw session, and keep
-mirroring user-visible assistant/tool output into the RemoteClaw transcript.
+Keep that binding explicitly associated with the OpenClaw session, and keep
+mirroring user-visible assistant/tool output into the OpenClaw transcript.
 
-The RemoteClaw transcript remains the compatibility layer for:
+The OpenClaw transcript remains the compatibility layer for:
 
 - channel-visible session history
 - transcript search and indexing
 - switching back to the built-in PI harness on a later turn
 - generic `/new`, `/reset`, and session deletion behavior
 
-If your harness stores a sidecar binding, implement `reset(...)` so RemoteClaw can
-clear it when the owning RemoteClaw session is reset.
+If your harness stores a sidecar binding, implement `reset(...)` so OpenClaw can
+clear it when the owning OpenClaw session is reset.
 
 ## Tool and media results
 
-Core constructs the RemoteClaw tool list and passes it into the prepared attempt.
+Core constructs the OpenClaw tool list and passes it into the prepared attempt.
 When a harness executes a dynamic tool call, return the tool result back through
 the harness result shape instead of sending channel media yourself.
 

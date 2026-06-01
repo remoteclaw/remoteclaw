@@ -3,7 +3,7 @@ import {
   resolveThreadBindingIdleTimeoutMsForChannel,
   resolveThreadBindingMaxAgeMsForChannel,
 } from "../../channels/thread-bindings-policy.js";
-import type { RemoteClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/types.remoteclaw.js";
 import { normalizeAccountId, resolveAgentIdFromSessionKey } from "../../routing/session-key.js";
 import {
   registerSessionBindingAdapter,

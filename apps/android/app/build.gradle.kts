@@ -2,10 +2,10 @@ import com.android.build.api.variant.impl.VariantOutputImpl
 
 val dnsjavaInetAddressResolverService = "META-INF/services/java.net.spi.InetAddressResolverProvider"
 
-val androidStoreFile = providers.gradleProperty("OPENCLAW_ANDROID_STORE_FILE").orNull?.takeIf { it.isNotBlank() }
-val androidStorePassword = providers.gradleProperty("OPENCLAW_ANDROID_STORE_PASSWORD").orNull?.takeIf { it.isNotBlank() }
-val androidKeyAlias = providers.gradleProperty("OPENCLAW_ANDROID_KEY_ALIAS").orNull?.takeIf { it.isNotBlank() }
-val androidKeyPassword = providers.gradleProperty("OPENCLAW_ANDROID_KEY_PASSWORD").orNull?.takeIf { it.isNotBlank() }
+val androidStoreFile = providers.gradleProperty("REMOTECLAW_ANDROID_STORE_FILE").orNull?.takeIf { it.isNotBlank() }
+val androidStorePassword = providers.gradleProperty("REMOTECLAW_ANDROID_STORE_PASSWORD").orNull?.takeIf { it.isNotBlank() }
+val androidKeyAlias = providers.gradleProperty("REMOTECLAW_ANDROID_KEY_ALIAS").orNull?.takeIf { it.isNotBlank() }
+val androidKeyPassword = providers.gradleProperty("REMOTECLAW_ANDROID_KEY_PASSWORD").orNull?.takeIf { it.isNotBlank() }
 val resolvedAndroidStoreFile =
     androidStoreFile?.let { storeFilePath ->
         if (storeFilePath.startsWith("~/")) {
@@ -26,9 +26,9 @@ val wantsAndroidReleaseBuild =
 
 if (wantsAndroidReleaseBuild && !hasAndroidReleaseSigning) {
     error(
-        "Missing Android release signing properties. Set OPENCLAW_ANDROID_STORE_FILE, " +
-            "OPENCLAW_ANDROID_STORE_PASSWORD, OPENCLAW_ANDROID_KEY_ALIAS, and " +
-            "OPENCLAW_ANDROID_KEY_PASSWORD in ~/.gradle/gradle.properties.",
+        "Missing Android release signing properties. Set REMOTECLAW_ANDROID_STORE_FILE, " +
+            "REMOTECLAW_ANDROID_STORE_PASSWORD, REMOTECLAW_ANDROID_KEY_ALIAS, and " +
+            "REMOTECLAW_ANDROID_KEY_PASSWORD in ~/.gradle/gradle.properties.",
     )
 }
 
@@ -40,7 +40,7 @@ plugins {
 }
 
 android {
-    namespace = "ai.openclaw.app"
+    namespace = "org.remoteclaw.app"
     compileSdk = 36
 
     // Release signing is local-only; keep the keystore path and passwords out of the repo.
@@ -57,12 +57,12 @@ android {
 
     sourceSets {
         getByName("main") {
-            assets.directories.add("../../shared/OpenClawKit/Sources/OpenClawKit/Resources")
+            assets.directories.add("../../shared/RemoteClawKit/Sources/RemoteClawKit/Resources")
         }
     }
 
     defaultConfig {
-        applicationId = "ai.openclaw.app"
+        applicationId = "org.remoteclaw.app"
         minSdk = 31
         targetSdk = 36
         versionCode = 2026041290
@@ -78,13 +78,13 @@ android {
     productFlavors {
         create("play") {
             dimension = "store"
-            buildConfigField("boolean", "OPENCLAW_ENABLE_SMS", "false")
-            buildConfigField("boolean", "OPENCLAW_ENABLE_CALL_LOG", "false")
+            buildConfigField("boolean", "REMOTECLAW_ENABLE_SMS", "false")
+            buildConfigField("boolean", "REMOTECLAW_ENABLE_CALL_LOG", "false")
         }
         create("thirdParty") {
             dimension = "store"
-            buildConfigField("boolean", "OPENCLAW_ENABLE_SMS", "true")
-            buildConfigField("boolean", "OPENCLAW_ENABLE_CALL_LOG", "true")
+            buildConfigField("boolean", "REMOTECLAW_ENABLE_SMS", "true")
+            buildConfigField("boolean", "REMOTECLAW_ENABLE_CALL_LOG", "true")
         }
     }
 
@@ -158,9 +158,9 @@ androidComponents {
                 val flavorName = variant.flavorName?.takeIf { it.isNotBlank() }
                 val outputFileName =
                     if (flavorName == null) {
-                        "openclaw-$versionName-$buildType.apk"
+                        "remoteclaw-$versionName-$buildType.apk"
                     } else {
-                        "openclaw-$versionName-$flavorName-$buildType.apk"
+                        "remoteclaw-$versionName-$flavorName-$buildType.apk"
                     }
                 output.outputFileName = outputFileName
             }

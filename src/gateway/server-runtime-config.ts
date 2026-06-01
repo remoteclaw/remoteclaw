@@ -2,8 +2,8 @@ import type {
   GatewayAuthConfig,
   GatewayBindMode,
   GatewayTailscaleConfig,
-  loadConfig,
 } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import {
   assertGatewayAuthConfigured,
   type ResolvedGatewayAuth,
@@ -38,7 +38,7 @@ export type GatewayRuntimeConfig = {
 };
 
 export async function resolveGatewayRuntimeConfig(params: {
-  cfg: ReturnType<typeof loadConfig>;
+  cfg: RemoteClawConfig;
   port: number;
   bind?: GatewayBindMode;
   host?: string;

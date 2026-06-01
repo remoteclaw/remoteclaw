@@ -32,6 +32,7 @@ import {
   isBoundaryTestFile,
   isBundledPluginDependentUnitTestFile,
 } from "../test/vitest/vitest.unit-paths.mjs";
+import { isCiLikeEnv, resolveLocalFullSuiteProfile } from "./lib/vitest-local-scheduling.mjs";
 import { resolveVitestCliEntry, resolveVitestNodeArgs } from "./run-vitest.mjs";
 
 const DEFAULT_VITEST_CONFIG = "test/vitest/vitest.unit.config.ts";
@@ -88,7 +89,6 @@ const UTILS_VITEST_CONFIG = "test/vitest/vitest.utils.config.ts";
 const WIZARD_VITEST_CONFIG = "test/vitest/vitest.wizard.config.ts";
 const INCLUDE_FILE_ENV_KEY = "REMOTECLAW_VITEST_INCLUDE_FILE";
 const FS_MODULE_CACHE_PATH_ENV_KEY = "REMOTECLAW_VITEST_FS_MODULE_CACHE_PATH";
-const DEFAULT_LOCAL_FULL_SUITE_PARALLELISM = 4;
 const CHANGED_ARGS_PATTERN = /^--changed(?:=(.+))?$/u;
 const VITEST_CONFIG_BY_KIND = {
   acp: ACP_VITEST_CONFIG,
@@ -675,7 +675,7 @@ function hasConservativeVitestWorkerBudget(env) {
   return workerBudget !== null && workerBudget <= 1;
 }
 
-export function resolveParallelFullSuiteConcurrency(specCount, env = process.env) {
+export function resolveParallelFullSuiteConcurrency(specCount, env = process.env, hostInfo) {
   const override = parsePositiveInt(env.REMOTECLAW_TEST_PROJECTS_PARALLEL);
   if (override !== null) {
     return Math.min(override, specCount);
@@ -683,7 +683,7 @@ export function resolveParallelFullSuiteConcurrency(specCount, env = process.env
   if (env.REMOTECLAW_TEST_PROJECTS_SERIAL === "1") {
     return 1;
   }
-  if (env.CI === "true" || env.GITHUB_ACTIONS === "true") {
+  if (isCiLikeEnv(env)) {
     return 1;
   }
   if (hasConservativeVitestWorkerBudget(env)) {
@@ -695,7 +695,7 @@ export function resolveParallelFullSuiteConcurrency(specCount, env = process.env
   ) {
     return 1;
   }
-  return Math.min(DEFAULT_LOCAL_FULL_SUITE_PARALLELISM, specCount);
+  return Math.min(resolveLocalFullSuiteProfile(env, hostInfo).shardParallelism, specCount);
 }
 
 function sanitizeVitestCachePathSegment(value) {
@@ -757,6 +757,20 @@ export function createVitestRunSpecs(args, params = {}) {
       watchMode: plan.watchMode,
     };
   });
+}
+
+export function shouldAcquireLocalHeavyCheckLock(runSpecs, env = process.env) {
+  if (env.REMOTECLAW_TEST_PROJECTS_FORCE_LOCK === "1") {
+    return true;
+  }
+
+  return !(
+    runSpecs.length === 1 &&
+    runSpecs[0]?.config === TOOLING_VITEST_CONFIG &&
+    runSpecs[0]?.watchMode === false &&
+    Array.isArray(runSpecs[0]?.includePatterns) &&
+    runSpecs[0].includePatterns.length > 0
+  );
 }
 
 export function writeVitestIncludeFile(filePath, includePatterns) {

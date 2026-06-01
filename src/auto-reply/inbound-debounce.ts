@@ -1,5 +1,5 @@
-import type { RemoteClawConfig } from "../config/config.js";
 import type { InboundDebounceByProvider } from "../config/types.messages.js";
+import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 
 const resolveMs = (value: unknown): number | undefined => {
   if (typeof value !== "number" || !Number.isFinite(value)) {

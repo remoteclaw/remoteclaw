@@ -1,5 +1,5 @@
 import { vi } from "vitest";
-import type { RemoteClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/types.remoteclaw.js";
 
 type AutoThreadResolver = (params: {
   cfg: RemoteClawConfig;

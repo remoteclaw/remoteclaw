@@ -1,5 +1,5 @@
 import { getCommandPathWithRootOptions } from "../cli/argv.js";
-import type { RemoteClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import { resolveNodeRequireFromMeta } from "./node-require.js";
 
 type LoggingConfig = RemoteClawConfig["logging"];

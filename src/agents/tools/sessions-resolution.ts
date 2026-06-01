@@ -1,4 +1,4 @@
-import type { RemoteClawConfig } from "../../config/config.js";
+import type { RemoteClawConfig } from "../../config/types.remoteclaw.js";
 import { callGateway } from "../../gateway/call.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { isAcpSessionKey, normalizeMainKey } from "../../routing/session-key.js";

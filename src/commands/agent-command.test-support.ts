@@ -1,6 +1,6 @@
 import path from "node:path";
 import { withTempHome as withTempHomeBase } from "../../test/helpers/temp-home.js";
-import type { RemoteClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 
 type AgentDefaultConfig = NonNullable<NonNullable<RemoteClawConfig["agents"]>["defaults"]>;
 type LoadConfigMock = {

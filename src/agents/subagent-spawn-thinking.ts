@@ -1,5 +1,5 @@
 import { normalizeThinkLevel } from "../auto-reply/thinking.shared.js";
-import type { RemoteClawConfig } from "../config/config.js";
+import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 
 export const MODULE_ATTESTATIONS = {
   resolveSubagentThinkingOverride: "live",

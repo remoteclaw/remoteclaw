@@ -1,5 +1,5 @@
-import type { RemoteClawConfig } from "../config/config.js";
 import type { HookInstallRecord } from "../config/types.hooks.js";
+import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 
 export type HookInstallUpdate = HookInstallRecord & { hookId: string };
 

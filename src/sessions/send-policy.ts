@@ -1,6 +1,6 @@
 import { normalizeChatType } from "../channels/chat-type.js";
-import type { RemoteClawConfig } from "../config/config.js";
 import type { SessionChatType, SessionEntry } from "../config/sessions.js";
+import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,

@@ -1,0 +1,23 @@
+# Reverse-domain identity allowlist — verified migration-compat exceptions to
+# the `ai.openclaw.*` manifest scan in scripts/ci/check-rebrand-leakage.sh.
+#
+# The fork's reverse-domain identity is org.remoteclaw.*. Any `ai.openclaw.*`
+# occurrence in a build / identity manifest (*.gradle.kts, Info.plist,
+# *.pbxproj, *.entitlements, AndroidManifest.xml) is treated as a regression
+# and fails CI — UNLESS it is a verified migration-compatibility case (e.g. a
+# keychain service or legacy UserDefaults suite name that must keep reading
+# data written by the upstream app under its old reverse-domain).
+#
+# Syntax (identical to scripts/ci/rebrand-allowlist.txt):
+#   FILE:path   — exempt a single file (exact match, relative to repo root)
+#   FILE:dir/   — exempt an entire directory (trailing slash = prefix match)
+#   pattern     — exempt any matched line containing this substring (case-sensitive)
+#
+# Add an entry ONLY with a verified, documented migration-compat rationale and
+# an inline comment citing it. An empty allowlist is the correct default.
+#
+# Validate: bash scripts/ci/check-rebrand-leakage.sh --all
+#
+# ---------------------------------------------------------------------------
+# (intentionally empty — no verified migration-compat exceptions at this time)
+# ---------------------------------------------------------------------------

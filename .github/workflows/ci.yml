@@ -216,7 +216,26 @@ jobs:
           install-bun: "false"
 
       - name: Install Playwright Chromium
-        run: pnpm --dir ui exec playwright install --with-deps chromium
+        # Bound + retry the Chromium / system-deps install so a transient
+        # Playwright-CDN or apt stall fails fast and self-heals instead of
+        # holding the runner for the 6h job default (#2684). Each attempt is
+        # capped by `timeout`; step-level timeout-minutes is the hard backstop.
+        timeout-minutes: 15
+        run: |
+          for attempt in 1 2 3; do
+            echo "::group::playwright install (attempt ${attempt}/3)"
+            if timeout --kill-after=30s 4m pnpm --dir ui exec playwright install --with-deps chromium; then
+              echo "::endgroup::"
+              exit 0
+            fi
+            echo "::endgroup::"
+            echo "::warning::playwright install attempt ${attempt}/3 did not succeed"
+            if [ "${attempt}" -lt 3 ]; then
+              sleep "$((attempt * 15))"
+            fi
+          done
+          echo "::error::playwright Chromium install failed after 3 attempts"
+          exit 1
 
       - name: UI smoke tests (browser-mode)
         run: pnpm test:ui:smoke

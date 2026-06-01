@@ -11,6 +11,7 @@
 # ---------------------------------------------------------------------------
 FILE:scripts/ci/check-rebrand-leakage.sh
 FILE:scripts/ci/rebrand-allowlist.txt
+FILE:scripts/ci/rebrand-reverse-domain-allowlist.txt
 
 # ---------------------------------------------------------------------------
 # Upstream release workflow and compat scripts

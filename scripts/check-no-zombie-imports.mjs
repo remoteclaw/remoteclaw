@@ -43,9 +43,10 @@ function resolveRepoRootFromScript(importMetaUrl) {
 //
 // NOTE: `acp/runtime` cannot be a broad pattern because `acp/runtime/errors`,
 // `acp/runtime/registry`, and `acp/runtime/types` are the LIVE public API
-// surface re-exported by `src/plugin-sdk`. Only the stub files
-// (`session-meta`, `session-identifiers`) are genuinely dead within that
-// namespace.
+// surface re-exported by `src/plugin-sdk`. Within that namespace `session-meta`
+// is a dead stub file and `session-identifiers` was deleted as orphaned dead
+// code (zero importers); both patterns remain as re-introduction guards so a
+// future upstream sync cannot silently re-add an import of either path.
 const fallbackDeadModulePatterns = [
   "agents/model-catalog",
   "agents/model-fallback",

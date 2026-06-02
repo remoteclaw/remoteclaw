@@ -215,11 +215,29 @@ jobs:
         with:
           install-bun: "false"
 
+      - name: Resolve Playwright version
+        id: pw-version
+        run: |
+          echo "version=$(pnpm --dir ui exec playwright --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        # Cache the downloaded browser bundle so the flaky cdn.playwright.dev
+        # download (#2684) is skipped on the common path (cache hit). Keyed on
+        # the resolved Playwright version so a version bump invalidates cleanly.
+        # First run on a new version is a miss (the install step below seeds it);
+        # every subsequent run restores from cache and skips the CDN entirely.
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.pw-version.outputs.version }}
+
       - name: Install Playwright Chromium
-        # Bound + retry the Chromium / system-deps install so a transient
-        # Playwright-CDN or apt stall fails fast and self-heals instead of
-        # holding the runner for the 6h job default (#2684). Each attempt is
-        # capped by `timeout`; step-level timeout-minutes is the hard backstop.
+        # Cache-miss populator + on-hit no-op (browser already present from the
+        # cache step above); always runs `--with-deps` to ensure OS deps. Bound +
+        # retry the install so a transient Playwright-CDN or apt stall fails fast
+        # and self-heals instead of holding the runner for the 6h job default
+        # (#2684). Each attempt is capped by `timeout`; step-level
+        # timeout-minutes is the hard backstop.
         timeout-minutes: 15
         run: |
           for attempt in 1 2 3; do

@@ -22,6 +22,7 @@ import { createConnectedChannelStatusPatch } from "../../../../src/gateway/chann
 import { warn } from "../../../../src/globals.js";
 import { computeBackoff, sleepWithAbort } from "../../../../src/infra/backoff.js";
 import { installRequestBodyLimitGuard } from "../../../../src/infra/http-body.js";
+import { registerUnhandledRejectionHandler } from "../../../../src/infra/unhandled-rejections.js";
 import { normalizeMainKey } from "../../../../src/routing/session-key.js";
 import { createNonExitingRuntime, type RuntimeEnv } from "../../../../src/runtime.js";
 import { normalizeStringEntries } from "../../../../src/shared/string-normalization.js";
@@ -92,6 +93,78 @@ function publishSlackDisconnectedStatus(
     lastDisconnect: message ? { at, error: message } : { at },
     lastError: message ?? null,
   });
+}
+
+// Suppress reasonless rejections only when they correlate with recent socket churn (in ms).
+const SLACK_SOCKET_REJECTION_WINDOW_MS = 10_000;
+// WebSocket upgrade failures surface as e.g. "Unexpected server response: 408".
+const SLACK_WS_UPGRADE_FAILURE_RE = /unexpected server response: \d{3}/i;
+
+/**
+ * Register a channel-scoped unhandled-rejection handler for Slack socket mode.
+ *
+ * The `@slack/socket-mode` SDK schedules reconnects as `delayReconnectAttempt(this.start).then(res)`
+ * with no `.catch` (SocketModeClient.js:210). When an internal reconnect attempt fails it emits
+ * `State.Disconnected` with no argument (SocketModeClient.js:120), whose `disconnectedCallback`
+ * rejects with `undefined` (SocketModeClient.js:161-163). That `Promise.reject(undefined)` carries
+ * no `code`/`name`/`message`, so it bypasses every classifier in the central handler and crashes
+ * the gateway via `process.exit(1)` (#2652).
+ *
+ * Mirrors the channel-scoped handlers used by Telegram (`telegram/src/monitor.ts`) and WhatsApp
+ * (`whatsapp/src/auto-reply/monitor.ts`): correlate reasonless (undefined/null) rejections with
+ * recent SocketModeClient lifecycle events, and treat WebSocket-upgrade HTTP errors as transient —
+ * while still letting genuine non-recoverable auth failures fall through to the fatal path. The
+ * monitor's own reconnect loop below recovers. Tighter blast radius than globally treating
+ * `undefined` as transient; safe to remove once an upstream fix lands and is synced.
+ *
+ * @returns an unregister function that removes the handler and detaches the socket listeners.
+ */
+function registerSlackSocketUnhandledRejectionHandler(opts: {
+  app: unknown;
+  log?: (message: string) => void;
+  now?: () => number;
+}): () => void {
+  const now = opts.now ?? Date.now;
+  const emitter = getSocketEmitter(opts.app);
+  const trackedEvents = ["disconnected", "unable_to_socket_mode_start", "error"];
+  let lastSocketEventAt: number | null = null;
+  const trackSocketEvent = () => {
+    lastSocketEventAt = now();
+  };
+  for (const event of trackedEvents) {
+    emitter?.on(event, trackSocketEvent);
+  }
+
+  const hadRecentSocketEvent = () =>
+    lastSocketEventAt !== null && now() - lastSocketEventAt <= SLACK_SOCKET_REJECTION_WINDOW_MS;
+
+  const unregister = registerUnhandledRejectionHandler((reason) => {
+    // Reasonless rejections (undefined/null) are the SDK's un-`.catch()`'d reconnect chain
+    // surfacing. Scope suppression to the window right after a SocketModeClient lifecycle event so
+    // unrelated reasonless rejections elsewhere still crash as before.
+    if ((reason === undefined || reason === null) && hadRecentSocketEvent()) {
+      opts.log?.("slack socket-mode reconnect produced a reasonless rejection; continuing");
+      return true;
+    }
+    // WebSocket upgrade failures (e.g. "Unexpected server response: 408") are transient, but a
+    // genuine non-recoverable auth failure must still reach the fatal path.
+    if (
+      reason instanceof Error &&
+      SLACK_WS_UPGRADE_FAILURE_RE.test(reason.message) &&
+      !isNonRecoverableSlackAuthError(reason)
+    ) {
+      opts.log?.(`slack socket-mode transient rejection suppressed: ${reason.message}`);
+      return true;
+    }
+    return false;
+  });
+
+  return () => {
+    unregister();
+    for (const event of trackedEvents) {
+      emitter?.off(event, trackSocketEvent);
+    }
+  };
 }
 
 export async function monitorSlackProvider(opts: MonitorSlackOpts = {}) {
@@ -230,6 +303,15 @@ export async function monitorSlackProvider(opts: MonitorSlackOpts = {}) {
         }
       : null;
   let unregisterHttpHandler: (() => void) | null = null;
+  // Socket mode only: the SDK's un-`.catch()`'d reconnect chain can surface a reasonless
+  // `Promise.reject(undefined)` that would otherwise crash the gateway (#2652).
+  const unregisterSlackSocketRejection =
+    slackMode === "socket"
+      ? registerSlackSocketUnhandledRejectionHandler({
+          app,
+          log: (message) => runtime.log?.(warn(message)),
+        })
+      : null;
 
   let botUserId = "";
   let teamId = "";
@@ -504,6 +586,7 @@ export async function monitorSlackProvider(opts: MonitorSlackOpts = {}) {
   } finally {
     opts.abortSignal?.removeEventListener("abort", stopOnAbort);
     unregisterHttpHandler?.();
+    unregisterSlackSocketRejection?.();
     await app.stop().catch(() => undefined);
   }
 }
@@ -517,4 +600,5 @@ export const __testing = {
   resolveDefaultGroupPolicy,
   getSocketEmitter,
   waitForSlackSocketDisconnect,
+  registerSlackSocketUnhandledRejectionHandler,
 };

@@ -1,19 +1,19 @@
 ---
 summary: "Matrix support status, setup, and configuration examples"
 read_when:
-  - Setting up Matrix in RemoteClaw
+  - Setting up Matrix in OpenClaw
   - Configuring Matrix E2EE and verification
 title: "Matrix"
 ---
 
 # Matrix
 
-Matrix is a bundled channel plugin for RemoteClaw.
+Matrix is a bundled channel plugin for OpenClaw.
 It uses the official `matrix-js-sdk` and supports DMs, rooms, threads, media, reactions, polls, location, and E2EE.
 
 ## Bundled plugin
 
-Matrix ships as a bundled plugin in current RemoteClaw releases, so normal
+Matrix ships as a bundled plugin in current OpenClaw releases, so normal
 packaged builds do not need a separate install.
 
 If you are on an older build or a custom install that excludes Matrix, install
@@ -22,13 +22,13 @@ it manually:
 Install from npm:
 
 ```bash
-remoteclaw plugins install @remoteclaw/matrix
+openclaw plugins install @openclaw/matrix
 ```
 
 Install from a local checkout:
 
 ```bash
-remoteclaw plugins install ./path/to/local/matrix-plugin
+openclaw plugins install ./path/to/local/matrix-plugin
 ```
 
 See [Plugins](/tools/plugin) for plugin behavior and install rules.
@@ -36,7 +36,7 @@ See [Plugins](/tools/plugin) for plugin behavior and install rules.
 ## Setup
 
 1. Ensure the Matrix plugin is available.
-   - Current packaged RemoteClaw releases already bundle it.
+   - Current packaged OpenClaw releases already bundle it.
    - Older/custom installs can add it manually with the commands above.
 2. Create a Matrix account on your homeserver.
 3. Configure `channels.matrix` with either:
@@ -49,8 +49,8 @@ See [Plugins](/tools/plugin) for plugin behavior and install rules.
 Interactive setup paths:
 
 ```bash
-remoteclaw channels add
-remoteclaw configure --section channels
+openclaw channels add
+openclaw configure --section channels
 ```
 
 The Matrix wizard asks for:
@@ -69,7 +69,7 @@ Key wizard behaviors:
 - DM allowlist entries accept `@user:server` directly; display names only work when live directory lookup finds one exact match.
 - Room allowlist entries accept room IDs and aliases directly. Prefer `!room:server` or `#alias:server`; unresolved names are ignored at runtime by allowlist resolution.
 - In invite auto-join allowlist mode, use only stable invite targets: `!roomId:server`, `#alias:server`, or `*`. Plain room names are rejected.
-- To resolve room names before saving, use `remoteclaw channels resolve --channel matrix "Project Room"`.
+- To resolve room names before saving, use `openclaw channels resolve --channel matrix "Project Room"`.
 
 <Warning>
 `channels.matrix.autoJoin` defaults to `off`.
@@ -136,15 +136,15 @@ Password-based setup (token is cached after login):
       homeserver: "https://matrix.example.org",
       userId: "@bot:example.org",
       password: "replace-me", // pragma: allowlist secret
-      deviceName: "RemoteClaw Gateway",
+      deviceName: "OpenClaw Gateway",
     },
   },
 }
 ```
 
-Matrix stores cached credentials in `~/.remoteclaw/credentials/matrix/`.
+Matrix stores cached credentials in `~/.openclaw/credentials/matrix/`.
 The default account uses `credentials.json`; named accounts use `credentials-<account>.json`.
-When cached credentials exist there, RemoteClaw treats Matrix as configured for setup, doctor, and channel-status discovery even if current auth is not set directly in config.
+When cached credentials exist there, OpenClaw treats Matrix as configured for setup, doctor, and channel-status discovery even if current auth is not set directly in config.
 
 Environment variable equivalents (used when the config key is not set):
 
@@ -216,7 +216,7 @@ This is a practical baseline config with DM pairing, room allowlist, and E2EE en
 }
 ```
 
-`autoJoin` applies to all Matrix invites, including DM-style invites. RemoteClaw cannot reliably
+`autoJoin` applies to all Matrix invites, including DM-style invites. OpenClaw cannot reliably
 classify an invited room as a DM or group at invite time, so all invites go through `autoJoin`
 first. `dm.policy` applies after the bot has joined and the room is classified as a DM.
 
@@ -224,7 +224,7 @@ first. `dm.policy` applies after the bot has joined and the room is classified a
 
 Matrix reply streaming is opt-in.
 
-Set `channels.matrix.streaming` to `"partial"` when you want RemoteClaw to send a single live preview
+Set `channels.matrix.streaming` to `"partial"` when you want OpenClaw to send a single live preview
 reply, edit that preview in place while the model is generating text, and then finalize it when the
 reply is done:
 
@@ -238,13 +238,13 @@ reply is done:
 }
 ```
 
-- `streaming: "off"` is the default. RemoteClaw waits for the final reply and sends it once.
+- `streaming: "off"` is the default. OpenClaw waits for the final reply and sends it once.
 - `streaming: "partial"` creates one editable preview message for the current assistant block using normal Matrix text messages. This preserves Matrix's legacy preview-first notification behavior, so stock clients may notify on the first streamed preview text instead of the finished block.
 - `streaming: "quiet"` creates one editable quiet preview notice for the current assistant block. Use this only when you also configure recipient push rules for finalized preview edits.
 - `blockStreaming: true` enables separate Matrix progress messages. With preview streaming enabled, Matrix keeps the live draft for the current block and preserves completed blocks as separate messages.
 - When preview streaming is on and `blockStreaming` is off, Matrix edits the live draft in place and finalizes that same event when the block or turn finishes.
-- If the preview no longer fits in one Matrix event, RemoteClaw stops preview streaming and falls back to normal final delivery.
-- Media replies still send attachments normally. If a stale preview can no longer be reused safely, RemoteClaw redacts it before sending the final media reply.
+- If the preview no longer fits in one Matrix event, OpenClaw stops preview streaming and falls back to normal final delivery.
+- Media replies still send attachments normally. If a stale preview can no longer be reused safely, OpenClaw redacts it before sending the final media reply.
 - Preview edits cost extra Matrix API calls. Leave streaming off if you want the most conservative rate-limit behavior.
 
 `blockStreaming` does not enable draft previews by itself.
@@ -265,11 +265,11 @@ This is usually a recipient-user setup, not a homeserver-global config change:
 Quick map before you start:
 
 - recipient user = the person who should receive the notification
-- bot user = the RemoteClaw Matrix account that sends the reply
+- bot user = the OpenClaw Matrix account that sends the reply
 - use the recipient user's access token for the API calls below
 - match `sender` in the push rule against the bot user's full MXID
 
-1. Configure RemoteClaw to use quiet previews:
+1. Configure OpenClaw to use quiet previews:
 
 ```json5
 {
@@ -312,13 +312,13 @@ curl -sS \
 ```
 
 If this returns no active pushers/devices, fix normal Matrix notifications first before adding the
-RemoteClaw rule below.
+OpenClaw rule below.
 
-RemoteClaw marks finalized text-only preview edits with:
+OpenClaw marks finalized text-only preview edits with:
 
 ```json
 {
-  "com.remoteclaw.finalized_preview": true
+  "com.openclaw.finalized_preview": true
 }
 ```
 
@@ -326,7 +326,7 @@ RemoteClaw marks finalized text-only preview edits with:
 
 ```bash
 curl -sS -X PUT \
-  "https://matrix.example.org/_matrix/client/v3/pushrules/global/override/remoteclaw-finalized-preview-botname" \
+  "https://matrix.example.org/_matrix/client/v3/pushrules/global/override/openclaw-finalized-preview-botname" \
   -H "Authorization: Bearer $USER_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   --data '{
@@ -339,7 +339,7 @@ curl -sS -X PUT \
       },
       {
         "kind": "event_property_is",
-        "key": "content.com\\.remoteclaw\\.finalized_preview",
+        "key": "content.com\\.openclaw\\.finalized_preview",
         "value": true
       },
       { "kind": "event_match", "key": "sender", "pattern": "@bot:example.org" }
@@ -356,26 +356,26 @@ Replace these values before you run the command:
 
 - `https://matrix.example.org`: your homeserver base URL
 - `$USER_ACCESS_TOKEN`: the receiving user's access token
-- `remoteclaw-finalized-preview-botname`: a rule ID unique to this bot for this receiving user
-- `@bot:example.org`: your RemoteClaw Matrix bot MXID, not the receiving user's MXID
+- `openclaw-finalized-preview-botname`: a rule ID unique to this bot for this receiving user
+- `@bot:example.org`: your OpenClaw Matrix bot MXID, not the receiving user's MXID
 
 Important for multi-bot setups:
 
 - Push rules are keyed by `ruleId`. Re-running `PUT` against the same rule ID updates that one rule.
-- If one receiving user should notify for multiple RemoteClaw Matrix bot accounts, create one rule per bot with a unique rule ID for each sender match.
-- A simple pattern is `remoteclaw-finalized-preview-<botname>`, such as `remoteclaw-finalized-preview-ops` or `remoteclaw-finalized-preview-support`.
+- If one receiving user should notify for multiple OpenClaw Matrix bot accounts, create one rule per bot with a unique rule ID for each sender match.
+- A simple pattern is `openclaw-finalized-preview-<botname>`, such as `openclaw-finalized-preview-ops` or `openclaw-finalized-preview-support`.
 
 The rule is evaluated against the event sender:
 
 - authenticate with the receiving user's token
-- match `sender` against the RemoteClaw bot MXID
+- match `sender` against the OpenClaw bot MXID
 
 6. Verify the rule exists:
 
 ```bash
 curl -sS \
   -H "Authorization: Bearer $USER_ACCESS_TOKEN" \
-  "https://matrix.example.org/_matrix/client/v3/pushrules/global/override/remoteclaw-finalized-preview-botname"
+  "https://matrix.example.org/_matrix/client/v3/pushrules/global/override/openclaw-finalized-preview-botname"
 ```
 
 7. Test a streamed reply. In quiet mode, the room should show a quiet draft preview and the final
@@ -386,21 +386,21 @@ If you need to remove the rule later, delete that same rule ID with the receivin
 ```bash
 curl -sS -X DELETE \
   -H "Authorization: Bearer $USER_ACCESS_TOKEN" \
-  "https://matrix.example.org/_matrix/client/v3/pushrules/global/override/remoteclaw-finalized-preview-botname"
+  "https://matrix.example.org/_matrix/client/v3/pushrules/global/override/openclaw-finalized-preview-botname"
 ```
 
 Notes:
 
 - Create the rule with the receiving user's access token, not the bot's.
 - New user-defined `override` rules are inserted ahead of default suppress rules, so no extra ordering parameter is needed.
-- This only affects text-only preview edits that RemoteClaw can safely finalize in place. Media fallbacks and stale-preview fallbacks still use normal Matrix delivery.
+- This only affects text-only preview edits that OpenClaw can safely finalize in place. Media fallbacks and stale-preview fallbacks still use normal Matrix delivery.
 - If `GET /_matrix/client/v3/pushers` shows no pushers, the user does not yet have working Matrix push delivery for this account/device.
 
 #### Synapse
 
 For Synapse, the setup above is usually enough by itself:
 
-- No special `homeserver.yaml` change is required for finalized RemoteClaw preview notifications.
+- No special `homeserver.yaml` change is required for finalized OpenClaw preview notifications.
 - If your Synapse deployment already sends normal Matrix push notifications, the user token + `pushrules` call above is the main setup step.
 - If you run Synapse behind a reverse proxy or workers, make sure `/_matrix/client/.../pushrules/` reaches Synapse correctly.
 - If you run Synapse workers, make sure pushers are healthy. Push delivery is handled by the main process or `synapse.app.pusher` / configured pusher workers.
@@ -415,7 +415,7 @@ For Tuwunel, use the same setup flow and push-rule API call shown above:
 
 ## Bot-to-bot rooms
 
-By default, Matrix messages from other configured RemoteClaw Matrix accounts are ignored.
+By default, Matrix messages from other configured OpenClaw Matrix accounts are ignored.
 
 Use `allowBots` when you intentionally want inter-agent Matrix traffic:
 
@@ -437,8 +437,8 @@ Use `allowBots` when you intentionally want inter-agent Matrix traffic:
 - `allowBots: true` accepts messages from other configured Matrix bot accounts in allowed rooms and DMs.
 - `allowBots: "mentions"` accepts those messages only when they visibly mention this bot in rooms. DMs are still allowed.
 - `groups.<room>.allowBots` overrides the account-level setting for one room.
-- RemoteClaw still ignores messages from the same Matrix user ID to avoid self-reply loops.
-- Matrix does not expose a native bot flag here; RemoteClaw treats "bot-authored" as "sent by another configured Matrix account on this RemoteClaw gateway".
+- OpenClaw still ignores messages from the same Matrix user ID to avoid self-reply loops.
+- Matrix does not expose a native bot flag here; OpenClaw treats "bot-authored" as "sent by another configured Matrix account on this OpenClaw gateway".
 
 Use strict room allowlists and mention requirements when enabling bot-to-bot traffic in shared rooms.
 
@@ -465,73 +465,73 @@ Enable encryption:
 Check verification status:
 
 ```bash
-remoteclaw matrix verify status
+openclaw matrix verify status
 ```
 
 Verbose status (full diagnostics):
 
 ```bash
-remoteclaw matrix verify status --verbose
+openclaw matrix verify status --verbose
 ```
 
 Include the stored recovery key in machine-readable output:
 
 ```bash
-remoteclaw matrix verify status --include-recovery-key --json
+openclaw matrix verify status --include-recovery-key --json
 ```
 
 Bootstrap cross-signing and verification state:
 
 ```bash
-remoteclaw matrix verify bootstrap
+openclaw matrix verify bootstrap
 ```
 
 Verbose bootstrap diagnostics:
 
 ```bash
-remoteclaw matrix verify bootstrap --verbose
+openclaw matrix verify bootstrap --verbose
 ```
 
 Force a fresh cross-signing identity reset before bootstrapping:
 
 ```bash
-remoteclaw matrix verify bootstrap --force-reset-cross-signing
+openclaw matrix verify bootstrap --force-reset-cross-signing
 ```
 
 Verify this device with a recovery key:
 
 ```bash
-remoteclaw matrix verify device "<your-recovery-key>"
+openclaw matrix verify device "<your-recovery-key>"
 ```
 
 Verbose device verification details:
 
 ```bash
-remoteclaw matrix verify device "<your-recovery-key>" --verbose
+openclaw matrix verify device "<your-recovery-key>" --verbose
 ```
 
 Check room-key backup health:
 
 ```bash
-remoteclaw matrix verify backup status
+openclaw matrix verify backup status
 ```
 
 Verbose backup health diagnostics:
 
 ```bash
-remoteclaw matrix verify backup status --verbose
+openclaw matrix verify backup status --verbose
 ```
 
 Restore room keys from server backup:
 
 ```bash
-remoteclaw matrix verify backup restore
+openclaw matrix verify backup restore
 ```
 
 Verbose restore diagnostics:
 
 ```bash
-remoteclaw matrix verify backup restore --verbose
+openclaw matrix verify backup restore --verbose
 ```
 
 Delete the current server backup and create a fresh backup baseline. If the stored
@@ -539,7 +539,7 @@ backup key cannot be loaded cleanly, this reset can also recreate secret storage
 future cold starts can load the new backup key:
 
 ```bash
-remoteclaw matrix verify backup reset --yes
+openclaw matrix verify backup reset --yes
 ```
 
 All `verify` commands are concise by default (including quiet internal SDK logging) and show detailed diagnostics only with `--verbose`.
@@ -550,28 +550,28 @@ If you configure multiple named accounts, set `channels.matrix.defaultAccount` f
 Use `--account` whenever you want verification or device operations to target a named account explicitly:
 
 ```bash
-remoteclaw matrix verify status --account assistant
-remoteclaw matrix verify backup restore --account assistant
-remoteclaw matrix devices list --account assistant
+openclaw matrix verify status --account assistant
+openclaw matrix verify backup restore --account assistant
+openclaw matrix devices list --account assistant
 ```
 
 When encryption is disabled or unavailable for a named account, Matrix warnings and verification errors point at that account's config key, for example `channels.matrix.accounts.assistant.encryption`.
 
 ### What "verified" means
 
-RemoteClaw treats this Matrix device as verified only when it is verified by your own cross-signing identity.
-In practice, `remoteclaw matrix verify status --verbose` exposes three trust signals:
+OpenClaw treats this Matrix device as verified only when it is verified by your own cross-signing identity.
+In practice, `openclaw matrix verify status --verbose` exposes three trust signals:
 
 - `Locally trusted`: this device is trusted by the current client only
 - `Cross-signing verified`: the SDK reports the device as verified through cross-signing
 - `Signed by owner`: the device is signed by your own self-signing key
 
 `Verified by owner` becomes `yes` only when cross-signing verification or owner-signing is present.
-Local trust by itself is not enough for RemoteClaw to treat the device as fully verified.
+Local trust by itself is not enough for OpenClaw to treat the device as fully verified.
 
 ### What bootstrap does
 
-`remoteclaw matrix verify bootstrap` is the repair and setup command for encrypted Matrix accounts.
+`openclaw matrix verify bootstrap` is the repair and setup command for encrypted Matrix accounts.
 It does all of the following in order:
 
 - bootstraps secret storage, reusing an existing recovery key when possible
@@ -579,14 +579,14 @@ It does all of the following in order:
 - attempts to mark and cross-sign the current device
 - creates a new server-side room-key backup if one does not already exist
 
-If the homeserver requires interactive auth to upload cross-signing keys, RemoteClaw tries the upload without auth first, then with `m.login.dummy`, then with `m.login.password` when `channels.matrix.password` is configured.
+If the homeserver requires interactive auth to upload cross-signing keys, OpenClaw tries the upload without auth first, then with `m.login.dummy`, then with `m.login.password` when `channels.matrix.password` is configured.
 
 Use `--force-reset-cross-signing` only when you intentionally want to discard the current cross-signing identity and create a new one.
 
 If you intentionally want to discard the current room-key backup and start a new
-backup baseline for future messages, use `remoteclaw matrix verify backup reset --yes`.
+backup baseline for future messages, use `openclaw matrix verify backup reset --yes`.
 Do this only when you accept that unrecoverable old encrypted history will stay
-unavailable and that RemoteClaw may recreate secret storage if the current backup
+unavailable and that OpenClaw may recreate secret storage if the current backup
 secret cannot be loaded safely.
 
 ### Fresh backup baseline
@@ -594,9 +594,9 @@ secret cannot be loaded safely.
 If you want to keep future encrypted messages working and accept losing unrecoverable old history, run these commands in order:
 
 ```bash
-remoteclaw matrix verify backup reset --yes
-remoteclaw matrix verify backup status --verbose
-remoteclaw matrix verify status
+openclaw matrix verify backup reset --yes
+openclaw matrix verify backup status --verbose
+openclaw matrix verify status
 ```
 
 Add `--account <id>` to each command when you want to target a named Matrix account explicitly.
@@ -613,8 +613,9 @@ if you want a shorter or longer retry window.
 Startup also performs a conservative crypto bootstrap pass automatically.
 That pass tries to reuse the current secret storage and cross-signing identity first, and avoids resetting cross-signing unless you run an explicit bootstrap repair flow.
 
-If startup finds broken bootstrap state and `channels.matrix.password` is configured, RemoteClaw can attempt a stricter repair path.
-If the current device is already owner-signed, RemoteClaw preserves that identity instead of resetting it automatically.
+If startup still finds broken bootstrap state, OpenClaw can attempt a guarded repair path even when `channels.matrix.password` is not configured.
+If the homeserver requires password-based UIA for that repair, OpenClaw logs a warning and keeps startup non-fatal instead of aborting the bot.
+If the current device is already owner-signed, OpenClaw preserves that identity instead of resetting it automatically.
 
 See [Matrix migration](/install/migrating-matrix) for the full upgrade flow, limits, recovery commands, and common migration messages.
 
@@ -628,28 +629,28 @@ That includes:
 - verification start and completion notices
 - SAS details (emoji and decimal) when available
 
-Incoming verification requests from another Matrix client are tracked and auto-accepted by RemoteClaw.
-For self-verification flows, RemoteClaw also starts the SAS flow automatically when emoji verification becomes available and confirms its own side.
-For verification requests from another Matrix user/device, RemoteClaw auto-accepts the request and then waits for the SAS flow to proceed normally.
+Incoming verification requests from another Matrix client are tracked and auto-accepted by OpenClaw.
+For self-verification flows, OpenClaw also starts the SAS flow automatically when emoji verification becomes available and confirms its own side.
+For verification requests from another Matrix user/device, OpenClaw auto-accepts the request and then waits for the SAS flow to proceed normally.
 You still need to compare the emoji or decimal SAS in your Matrix client and confirm "They match" there to complete the verification.
 
-RemoteClaw does not auto-accept self-initiated duplicate flows blindly. Startup skips creating a new request when a self-verification request is already pending.
+OpenClaw does not auto-accept self-initiated duplicate flows blindly. Startup skips creating a new request when a self-verification request is already pending.
 
 Verification protocol/system notices are not forwarded to the agent chat pipeline, so they do not produce `NO_REPLY`.
 
 ### Device hygiene
 
-Old RemoteClaw-managed Matrix devices can accumulate on the account and make encrypted-room trust harder to reason about.
+Old OpenClaw-managed Matrix devices can accumulate on the account and make encrypted-room trust harder to reason about.
 List them with:
 
 ```bash
-remoteclaw matrix devices list
+openclaw matrix devices list
 ```
 
-Remove stale RemoteClaw-managed devices with:
+Remove stale OpenClaw-managed devices with:
 
 ```bash
-remoteclaw matrix devices prune-stale
+openclaw matrix devices prune-stale
 ```
 
 ### Crypto store
@@ -657,11 +658,11 @@ remoteclaw matrix devices prune-stale
 Matrix E2EE uses the official `matrix-js-sdk` Rust crypto path in Node, with `fake-indexeddb` as the IndexedDB shim. Crypto state is persisted to a snapshot file (`crypto-idb-snapshot.json`) and restored on startup. The snapshot file is sensitive runtime state stored with restrictive file permissions.
 
 Encrypted runtime state lives under per-account, per-user token-hash roots in
-`~/.remoteclaw/matrix/accounts/<account>/<homeserver>__<user>/<token-hash>/`.
+`~/.openclaw/matrix/accounts/<account>/<homeserver>__<user>/<token-hash>/`.
 That directory contains the sync store (`bot-storage.json`), crypto store (`crypto/`),
 recovery key file (`recovery-key.json`), IndexedDB snapshot (`crypto-idb-snapshot.json`),
 thread bindings (`thread-bindings.json`), and startup verification state (`startup-verification.json`).
-When the token changes but the account identity stays the same, RemoteClaw reuses the best existing
+When the token changes but the account identity stays the same, OpenClaw reuses the best existing
 root for that account/homeserver/user tuple so prior sync state, crypto state, thread bindings,
 and startup verification state remain visible.
 
@@ -670,13 +671,13 @@ and startup verification state remain visible.
 Update the Matrix self-profile for the selected account with:
 
 ```bash
-remoteclaw matrix profile set --name "RemoteClaw Assistant"
-remoteclaw matrix profile set --avatar-url https://cdn.example.org/avatar.png
+openclaw matrix profile set --name "OpenClaw Assistant"
+openclaw matrix profile set --avatar-url https://cdn.example.org/avatar.png
 ```
 
 Add `--account <id>` when you want to target a named Matrix account explicitly.
 
-Matrix accepts `mxc://` avatar URLs directly. When you pass an `http://` or `https://` avatar URL, RemoteClaw uploads it to Matrix first and stores the resolved `mxc://` URL back into `channels.matrix.avatarUrl` (or the selected account override).
+Matrix accepts `mxc://` avatar URLs directly. When you pass an `http://` or `https://` avatar URL, OpenClaw uploads it to Matrix first and stores the resolved `mxc://` URL back into `channels.matrix.avatarUrl` (or the selected account override).
 
 ## Threads
 
@@ -691,8 +692,8 @@ Matrix supports native Matrix threads for both automatic replies and message-too
 - `dm.threadReplies` overrides the top-level setting for DMs only. For example, you can keep room threads isolated while keeping DMs flat.
 - Inbound threaded messages include the thread root message as extra agent context.
 - Message-tool sends auto-inherit the current Matrix thread when the target is the same room, or the same DM user target, unless an explicit `threadId` is provided.
-- Same-session DM user-target reuse only kicks in when the current session metadata proves the same DM peer on the same Matrix account; otherwise RemoteClaw falls back to normal user-scoped routing.
-- When RemoteClaw sees a Matrix DM room collide with another DM room on the same shared Matrix DM session, it posts a one-time `m.notice` in that room with the `/focus` escape hatch when thread bindings are enabled and the `dm.sessionScope` hint.
+- Same-session DM user-target reuse only kicks in when the current session metadata proves the same DM peer on the same Matrix account; otherwise OpenClaw falls back to normal user-scoped routing.
+- When OpenClaw sees a Matrix DM room collide with another DM room on the same shared Matrix DM session, it posts a one-time `m.notice` in that room with the `/focus` escape hatch when thread bindings are enabled and the `dm.sessionScope` hint.
 - Runtime thread bindings are supported for Matrix. `/focus`, `/unfocus`, `/agents`, `/session idle`, `/session max-age`, and thread-bound `/acp spawn` work in Matrix rooms and DMs.
 - Top-level Matrix room/DM `/focus` creates a new Matrix thread and binds it to the target session when `threadBindings.spawnSubagentSessions=true`.
 - Running `/focus` or `/acp spawn --thread here` inside an existing Matrix thread binds that current thread instead.
@@ -712,7 +713,7 @@ Fast operator flow:
 Notes:
 
 - `--bind here` does not create a child Matrix thread.
-- `threadBindings.spawnAcpSessions` is only required for `/acp spawn --thread auto|here`, where RemoteClaw needs to create or bind a child Matrix thread.
+- `threadBindings.spawnAcpSessions` is only required for `/acp spawn --thread auto|here`, where OpenClaw needs to create or bind a child Matrix thread.
 
 ### Thread binding config
 
@@ -739,7 +740,7 @@ Matrix supports outbound reaction actions, inbound reaction notifications, and i
 - `emoji=""` removes the bot account's own reactions on that event.
 - `remove: true` removes only the specified emoji reaction from the bot account.
 
-Ack reactions use the standard RemoteClaw resolution order:
+Ack reactions use the standard OpenClaw resolution order:
 
 - `channels["matrix"].accounts.<accountId>.ackReaction`
 - `channels["matrix"].ackReaction`
@@ -768,7 +769,7 @@ Behavior:
 
 - `channels.matrix.historyLimit` controls how many recent room messages are included as `InboundHistory` when a Matrix room message triggers the agent. Falls back to `messages.groupChat.historyLimit`; if both are unset, the effective default is `0`. Set `0` to disable.
 - Matrix room history is room-only. DMs keep using normal session history.
-- Matrix room history is pending-only: RemoteClaw buffers room messages that did not trigger a reply yet, then snapshots that window when a mention or other trigger arrives.
+- Matrix room history is pending-only: OpenClaw buffers room messages that did not trigger a reply yet, then snapshots that window when a mention or other trigger arrives.
 - The current trigger message is not included in `InboundHistory`; it stays in the main inbound body for that turn.
 - Retries of the same Matrix event reuse the original history snapshot instead of drifting forward to newer room messages.
 
@@ -811,26 +812,26 @@ See [Groups](/channels/groups) for mention-gating and allowlist behavior.
 Pairing example for Matrix DMs:
 
 ```bash
-remoteclaw pairing list matrix
-remoteclaw pairing approve matrix <CODE>
+openclaw pairing list matrix
+openclaw pairing approve matrix <CODE>
 ```
 
-If an unapproved Matrix user keeps messaging you before approval, RemoteClaw reuses the same pending pairing code and may send a reminder reply again after a short cooldown instead of minting a new code.
+If an unapproved Matrix user keeps messaging you before approval, OpenClaw reuses the same pending pairing code and may send a reminder reply again after a short cooldown instead of minting a new code.
 
 See [Pairing](/channels/pairing) for the shared DM pairing flow and storage layout.
 
 ## Direct room repair
 
-If direct-message state gets out of sync, RemoteClaw can end up with stale `m.direct` mappings that point at old solo rooms instead of the live DM. Inspect the current mapping for a peer with:
+If direct-message state gets out of sync, OpenClaw can end up with stale `m.direct` mappings that point at old solo rooms instead of the live DM. Inspect the current mapping for a peer with:
 
 ```bash
-remoteclaw matrix direct inspect --user-id @alice:example.org
+openclaw matrix direct inspect --user-id @alice:example.org
 ```
 
 Repair it with:
 
 ```bash
-remoteclaw matrix direct repair --user-id @alice:example.org
+openclaw matrix direct repair --user-id @alice:example.org
 ```
 
 The repair flow:
@@ -916,17 +917,18 @@ Related docs: [Exec approvals](/tools/exec-approvals)
 Top-level `channels.matrix` values act as defaults for named accounts unless an account overrides them.
 You can scope inherited room entries to one Matrix account with `groups.<room>.account`.
 Entries without `account` stay shared across all Matrix accounts, and entries with `account: "default"` still work when the default account is configured directly on top-level `channels.matrix.*`.
-Partial shared auth defaults do not create a separate implicit default account by themselves. RemoteClaw only synthesizes the top-level `default` account when that default has fresh auth (`homeserver` plus `accessToken`, or `homeserver` plus `userId` and `password`); named accounts can still stay discoverable from `homeserver` plus `userId` when cached credentials satisfy auth later.
+Partial shared auth defaults do not create a separate implicit default account by themselves. OpenClaw only synthesizes the top-level `default` account when that default has fresh auth (`homeserver` plus `accessToken`, or `homeserver` plus `userId` and `password`); named accounts can still stay discoverable from `homeserver` plus `userId` when cached credentials satisfy auth later.
 If Matrix already has exactly one named account, or `defaultAccount` points at an existing named account key, single-account-to-multi-account repair/setup promotion preserves that account instead of creating a fresh `accounts.default` entry. Only Matrix auth/bootstrap keys move into that promoted account; shared delivery-policy keys stay at the top level.
-Set `defaultAccount` when you want RemoteClaw to prefer one named Matrix account for implicit routing, probing, and CLI operations.
+Set `defaultAccount` when you want OpenClaw to prefer one named Matrix account for implicit routing, probing, and CLI operations.
+If multiple Matrix accounts are configured and one account id is `default`, OpenClaw uses that account implicitly even when `defaultAccount` is unset.
 If you configure multiple named accounts, set `defaultAccount` or pass `--account <id>` for CLI commands that rely on implicit account selection.
-Pass `--account <id>` to `remoteclaw matrix verify ...` and `remoteclaw matrix devices ...` when you want to override that implicit selection for one command.
+Pass `--account <id>` to `openclaw matrix verify ...` and `openclaw matrix devices ...` when you want to override that implicit selection for one command.
 
 See [Configuration reference](/gateway/configuration-reference#multi-account-all-channels) for the shared multi-account pattern.
 
 ## Private/LAN homeservers
 
-By default, RemoteClaw blocks private/internal Matrix homeservers for SSRF protection unless you
+By default, OpenClaw blocks private/internal Matrix homeservers for SSRF protection unless you
 explicitly opt in per account.
 
 If your homeserver runs on localhost, a LAN/Tailscale IP, or an internal hostname, enable
@@ -949,7 +951,7 @@ If your homeserver runs on localhost, a LAN/Tailscale IP, or an internal hostnam
 CLI setup example:
 
 ```bash
-remoteclaw matrix account add \
+openclaw matrix account add \
   --account ops \
   --homeserver http://matrix-synapse:8008 \
   --allow-private-network \
@@ -976,11 +978,11 @@ If your Matrix deployment needs an explicit outbound HTTP(S) proxy, set `channel
 ```
 
 Named accounts can override the top-level default with `channels.matrix.accounts.<id>.proxy`.
-RemoteClaw uses the same proxy setting for runtime Matrix traffic and account status probes.
+OpenClaw uses the same proxy setting for runtime Matrix traffic and account status probes.
 
 ## Target resolution
 
-Matrix accepts these target forms anywhere RemoteClaw asks you for a room or user target:
+Matrix accepts these target forms anywhere OpenClaw asks you for a room or user target:
 
 - Users: `@user:server`, `user:@user:server`, or `matrix:user:@user:server`
 - Rooms: `!room:server`, `room:!room:server`, or `matrix:room:!room:server`
@@ -1009,7 +1011,7 @@ Live directory lookup uses the logged-in Matrix account:
 - `initialSyncLimit`: maximum number of events fetched during startup sync.
 - `encryption`: enable E2EE.
 - `allowlistOnly`: when `true`, upgrades `open` room policy to `allowlist`, and forces all active DM policies except `disabled` (including `pairing` and `open`) to `allowlist`. Does not affect `disabled` policies.
-- `allowBots`: allow messages from other configured RemoteClaw Matrix accounts (`true` or `"mentions"`).
+- `allowBots`: allow messages from other configured OpenClaw Matrix accounts (`true` or `"mentions"`).
 - `groupPolicy`: `open`, `allowlist`, or `disabled`.
 - `contextVisibility`: supplemental room-context visibility mode (`all`, `allowlist`, `allowlist_quote`).
 - `groupAllowFrom`: allowlist of user IDs for room traffic. Entries should be full Matrix user IDs; unresolved names are ignored at runtime.
@@ -1030,9 +1032,9 @@ Live directory lookup uses the logged-in Matrix account:
 - `reactionNotifications`: inbound reaction notification mode (`own`, `off`).
 - `mediaMaxMb`: media size cap in MB for outbound sends and inbound media processing.
 - `autoJoin`: invite auto-join policy (`always`, `allowlist`, `off`). Default: `off`. Applies to all Matrix invites, including DM-style invites.
-- `autoJoinAllowlist`: rooms/aliases allowed when `autoJoin` is `allowlist`. Alias entries are resolved to room IDs during invite handling; RemoteClaw does not trust alias state claimed by the invited room.
+- `autoJoinAllowlist`: rooms/aliases allowed when `autoJoin` is `allowlist`. Alias entries are resolved to room IDs during invite handling; OpenClaw does not trust alias state claimed by the invited room.
 - `dm`: DM policy block (`enabled`, `policy`, `allowFrom`, `sessionScope`, `threadReplies`).
-- `dm.policy`: controls DM access after RemoteClaw has joined the room and classified it as a DM. It does not change whether an invite is auto-joined.
+- `dm.policy`: controls DM access after OpenClaw has joined the room and classified it as a DM. It does not change whether an invite is auto-joined.
 - `dm.allowFrom`: entries should be full Matrix user IDs unless you already resolved them through live directory lookup.
 - `dm.sessionScope`: `per-user` (default) or `per-room`. Use `per-room` when you want each Matrix DM room to keep separate context even if the peer is the same.
 - `dm.threadReplies`: DM-only thread policy override (`off`, `inbound`, `always`). It overrides the top-level `threadReplies` setting for both reply placement and session isolation in DMs.

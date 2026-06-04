@@ -2,5 +2,8 @@ import type { PluginRuntime } from "remoteclaw/plugin-sdk/core";
 import { createPluginRuntimeStore } from "remoteclaw/plugin-sdk/runtime-store";
 
 const { setRuntime: setNostrRuntime, getRuntime: getNostrRuntime } =
-  createPluginRuntimeStore<PluginRuntime>("Nostr runtime not initialized");
+  createPluginRuntimeStore<PluginRuntime>({
+    pluginId: "nostr",
+    errorMessage: "Nostr runtime not initialized",
+  });
 export { getNostrRuntime, setNostrRuntime };

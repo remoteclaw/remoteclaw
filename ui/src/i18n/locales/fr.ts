@@ -259,6 +259,18 @@ export const fr: TranslationMap = {
       cost: "Coût",
       skills: "Skills",
       recentSessions: "Sessions récentes",
+      modelAuth: "Authentification des modèles",
+      modelAuthOk: "{count} ok",
+      modelAuthExpired: "{count} expirés",
+      modelAuthExpiring: "{count} expirent bientôt",
+      modelAuthProviders: "{count} fournisseurs",
+      modelAuthUsageLeft: "Il reste {pct} %",
+      modelAuthExpiresIn: "expire {when}",
+      modelAuthAttentionExpiredTitle: "Authentification des modèles expirée",
+      modelAuthAttentionExpiringTitle: "L'authentification des modèles expire bientôt",
+      modelAuthAttentionExpiredDesc:
+        "{providers} — réauthentifiez-vous avec remoteclaw models auth",
+      modelAuthAttentionExpiringEntry: "{provider} ({when})",
     },
     attention: {
       title: "Attention",

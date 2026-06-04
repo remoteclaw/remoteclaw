@@ -34,9 +34,11 @@ import {
 import { danger, logVerbose, shouldLogVerbose, warn } from "../../../../src/globals.js";
 import { formatErrorMessage } from "../../../../src/infra/errors.js";
 import { createDiscordRetryRunner } from "../../../../src/infra/retry-policy.js";
+import { registerUnhandledRejectionHandler } from "../../../../src/infra/unhandled-rejections.js";
 import { createSubsystemLogger } from "../../../../src/logging/subsystem.js";
 import { createNonExitingRuntime, type RuntimeEnv } from "../../../../src/runtime.js";
 import { resolveDiscordAccount } from "../accounts.js";
+import { getDiscordGatewayEmitter } from "../monitor.gateway.js";
 import { fetchDiscordApplicationId } from "../probe.js";
 import { normalizeDiscordToken } from "../token.js";
 import { createDiscordVoiceCommand } from "../voice/command.js";
@@ -171,6 +173,94 @@ function isDiscordDisallowedIntentsError(err: unknown): boolean {
   return message.includes(String(DISCORD_DISALLOWED_INTENTS_CODE));
 }
 
+// Window during which a gateway-metadata rejection is correlated with Discord connect/startup.
+const DISCORD_GATEWAY_REJECTION_WINDOW_MS = 10_000;
+
+// The wrapper message `createGatewayMetadataError` stamps on every gateway-metadata failure
+// (gateway-plugin.ts) — both the transient "...: fetch failed" and the non-transient detail variants.
+const DISCORD_GATEWAY_METADATA_ERROR_RE = /Failed to get gateway information from Discord/i;
+
+// A 401/403 from `/gateway/bot` means a bad / revoked / under-scoped bot token — retrying never
+// succeeds, so let it reach the fatal path (fail-fast) instead of silently spinning. Analogous to
+// Slack's `isNonRecoverableSlackAuthError`.
+const DISCORD_GATEWAY_AUTH_FAILURE_RE = /\/gateway\/bot failed \((?:401|403)\)/i;
+
+function isNonRecoverableDiscordGatewayError(reason: unknown): boolean {
+  const message =
+    reason instanceof Error ? reason.message : typeof reason === "string" ? reason : "";
+  return DISCORD_GATEWAY_AUTH_FAILURE_RE.test(message);
+}
+
+/**
+ * Register a Discord channel-scoped unhandled-rejection handler for the gateway-metadata fetch.
+ *
+ * `@buape/carbon`'s `Client` constructor calls `plugin.registerClient?.(this)` FLOATING — no
+ * `await`, no `.catch` (Client.js:122). The fork overrides `registerClient` as `async` and awaits
+ * `fetchDiscordGatewayInfo`, which `throw`s `createGatewayMetadataError({ transient: false })` on a
+ * non-transient `/gateway/bot` response (a `429`, or invalid JSON from a proxy/Cloudflare
+ * interstitial on a `2xx`). Because the override is async and called floating from the synchronous
+ * constructor, the rejection is neither awaited nor caught: it escapes to Node's `unhandledRejection`
+ * and the central handler — unable to classify the generic `Error` — crashes the WHOLE gateway via
+ * `process.exit(1)` (#2692). The existing `attachEarlyGatewayErrorGuard` only covers the EventEmitter
+ * `'error'` path, not a rejected Promise.
+ *
+ * Mirrors the channel-scoped handlers used by Slack (`slack/src/monitor/provider.ts`), Telegram, and
+ * WhatsApp: suppress the recoverable gateway-metadata rejection (429 / 5xx / invalid-JSON) within a
+ * short window stamped at `new Client()` construction and refreshed on the Carbon gateway emitter's
+ * `error`/`debug` events, while letting a clearly non-recoverable auth failure fall through to the
+ * fatal path. Tighter blast radius than globally widening "transient"; safe to remove once an
+ * upstream Carbon fix lands and is synced.
+ *
+ * @returns an unregister function that removes the handler and detaches the emitter listeners.
+ */
+function registerDiscordGatewayUnhandledRejectionHandler(opts: {
+  client: Client;
+  log?: (message: string) => void;
+  now?: () => number;
+}): () => void {
+  const now = opts.now ?? Date.now;
+  const emitter = getDiscordGatewayEmitter(opts.client.getPlugin("gateway"));
+  // Stamp the window at construction: the reject can fire before any emitter event does.
+  let lastGatewayActivityAt = now();
+  const trackGatewayActivity = () => {
+    lastGatewayActivityAt = now();
+  };
+  const trackedEvents = ["error", "debug"];
+  for (const event of trackedEvents) {
+    emitter?.on(event, trackGatewayActivity);
+  }
+
+  const withinConnectWindow = () =>
+    now() - lastGatewayActivityAt <= DISCORD_GATEWAY_REJECTION_WINDOW_MS;
+
+  const unregister = registerUnhandledRejectionHandler((reason) => {
+    if (!(reason instanceof Error)) {
+      return false;
+    }
+    if (!DISCORD_GATEWAY_METADATA_ERROR_RE.test(reason.message)) {
+      return false;
+    }
+    // A bad / revoked / under-scoped token will never recover — let it reach the fatal path.
+    if (isNonRecoverableDiscordGatewayError(reason)) {
+      return false;
+    }
+    if (!withinConnectWindow()) {
+      return false;
+    }
+    opts.log?.(
+      `discord gateway metadata fetch failed during connect (recoverable); continuing: ${reason.message}`,
+    );
+    return true;
+  });
+
+  return () => {
+    unregister();
+    for (const event of trackedEvents) {
+      emitter?.removeListener(event, trackGatewayActivity);
+    }
+  };
+}
+
 export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
   const cfg = opts.config ?? loadConfig();
   const account = resolveDiscordAccount({
@@ -296,6 +386,7 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
     : createNoopThreadBindingManager(account.accountId);
   let lifecycleStarted = false;
   let releaseEarlyGatewayErrorGuard = () => {};
+  let unregisterGatewayRejectionHandler = () => {};
   try {
     const commands: BaseCommand[] = commandSpecs.map((spec) =>
       createDiscordNativeCommand({
@@ -397,6 +488,15 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
       },
       clientPlugins,
     );
+    // Carbon calls the fork's async `registerClient` floating from this synchronous `new Client()`
+    // (Client.js:122). A non-transient `/gateway/bot` failure (429 / invalid JSON on a 2xx) rejects
+    // with no `.catch` and would crash the whole gateway via the central handler's `process.exit(1)`
+    // (#2692). Register the scoped suppressor now — before the first `await` below — so it is in
+    // place when that floating promise rejects.
+    unregisterGatewayRejectionHandler = registerDiscordGatewayUnhandledRejectionHandler({
+      client,
+      log: (message) => runtime.log?.(warn(message)),
+    });
     const earlyGatewayErrorGuard = attachEarlyGatewayErrorGuard(client);
     releaseEarlyGatewayErrorGuard = earlyGatewayErrorGuard.release;
 
@@ -502,6 +602,7 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
       releaseEarlyGatewayErrorGuard,
     });
   } finally {
+    unregisterGatewayRejectionHandler();
     releaseEarlyGatewayErrorGuard();
     if (!lifecycleStarted) {
       threadBindings.stop();
@@ -530,4 +631,5 @@ export const __testing = {
   resolveDefaultGroupPolicy,
   resolveDiscordRestFetch,
   resolveThreadBindingsEnabled,
+  registerDiscordGatewayUnhandledRejectionHandler,
 };

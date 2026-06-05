@@ -398,7 +398,7 @@
     "@types/qrcode-terminal": "^0.12.2",
     "@types/ws": "^8.18.1",
     "@typescript/native-preview": "7.0.0-dev.20260311.1",
-    "@vitest/coverage-v8": "^4.0.18",
+    "@vitest/coverage-v8": "^4.1.4",
     "jscpd": "4.0.8",
     "lit": "^3.3.2",
     "oxfmt": "0.38.0",
@@ -409,7 +409,7 @@
     "tsdown": "0.21.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.4"
   },
   "peerDependencies": {
     "@napi-rs/canvas": "^0.1.89"
@@ -447,5 +447,5 @@
     ]
   },
   "upstreamRepo": "openclaw/openclaw",
-  "upstreamVersion": "2026.4.12"
+  "upstreamVersion": "2026.4.15"
 }

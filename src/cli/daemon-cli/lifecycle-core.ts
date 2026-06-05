@@ -32,9 +32,10 @@ type RestartPostCheckContext = {
 };
 
 type NotLoadedActionResult = {
-  result: "stopped" | "restarted";
+  result: "stopped" | "restarted" | "started";
   message?: string;
   warnings?: string[];
+  loaded?: boolean;
 };
 
 type NotLoadedActionContext = {
@@ -190,6 +191,7 @@ export async function runServiceStart(params: {
   service: GatewayService;
   renderStartHints: () => string[];
   opts?: DaemonLifecycleOptions;
+  onNotLoaded?: (ctx: NotLoadedActionContext) => Promise<NotLoadedActionResult | null>;
 }) {
   const json = Boolean(params.opts?.json);
   const { stdout, emit, fail } = createActionIO({ action: "start", json });
@@ -203,6 +205,26 @@ export async function runServiceStart(params: {
     return;
   }
   if (!loaded) {
+    try {
+      const handled = await params.onNotLoaded?.({ json, stdout, fail });
+      if (handled) {
+        emit({
+          ok: true,
+          result: handled.result,
+          message: handled.message,
+          warnings: handled.warnings,
+          service: buildDaemonServiceSnapshot(params.service, handled.loaded ?? true),
+        });
+        if (!json && handled.message) {
+          defaultRuntime.log(handled.message);
+        }
+        return;
+      }
+    } catch (err) {
+      const hints = params.renderStartHints();
+      fail(`${params.serviceNoun} start failed: ${String(err)}`, hints);
+      return;
+    }
     await handleServiceNotLoaded({
       serviceNoun: params.serviceNoun,
       service: params.service,

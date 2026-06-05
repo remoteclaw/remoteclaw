@@ -10,20 +10,20 @@ sidebarTitle: "Onboarding Reference"
 
 # Onboarding Reference
 
-This is the full reference for `remoteclaw onboard`.
+This is the full reference for `openclaw onboard`.
 For a high-level overview, see [Onboarding (CLI)](/start/wizard).
 
 ## Flow details (local mode)
 
 <Steps>
   <Step title="Existing config detection">
-    - If `~/.remoteclaw/remoteclaw.json` exists, choose **Keep / Modify / Reset**.
+    - If `~/.openclaw/openclaw.json` exists, choose **Keep / Modify / Reset**.
     - Re-running onboarding does **not** wipe anything unless you explicitly choose **Reset**
       (or pass `--reset`).
     - CLI `--reset` defaults to `config+creds+sessions`; use `--reset-scope full`
       to also remove workspace.
     - If the config is invalid or contains legacy keys, the wizard stops and asks
-      you to run `remoteclaw doctor` before continuing.
+      you to run `openclaw doctor` before continuing.
     - Reset uses `trash` (never `rm`) and offers scopes:
       - Config only
       - Config + credentials + sessions
@@ -32,15 +32,15 @@ For a high-level overview, see [Onboarding (CLI)](/start/wizard).
   <Step title="Model/Auth">
     - **Anthropic API key**: uses `ANTHROPIC_API_KEY` if present or prompts for a key, then saves it for daemon use.
     - **Anthropic API key**: preferred Anthropic assistant choice in onboarding/configure.
-    - **Anthropic setup-token**: still available in onboarding/configure, though RemoteClaw now prefers Claude CLI reuse when available.
-    - **OpenAI Code (Codex) subscription (Codex CLI)**: if `~/.codex/auth.json` exists, onboarding can reuse it. Reused Codex CLI credentials stay managed by Codex CLI; on expiry RemoteClaw re-reads that source first and, when the provider can refresh it, writes the refreshed credential back to Codex storage instead of taking ownership itself.
+    - **Anthropic setup-token**: still available in onboarding/configure, though OpenClaw now prefers Claude CLI reuse when available.
+    - **OpenAI Code (Codex) subscription (Codex CLI)**: if `~/.codex/auth.json` exists, onboarding can reuse it. Reused Codex CLI credentials stay managed by Codex CLI; on expiry OpenClaw re-reads that source first and, when the provider can refresh it, writes the refreshed credential back to Codex storage instead of taking ownership itself.
     - **OpenAI Code (Codex) subscription (OAuth)**: browser flow; paste the `code#state`.
       - Sets `agents.defaults.model` to `openai-codex/gpt-5.4` when model is unset or `openai/*`.
     - **OpenAI API key**: uses `OPENAI_API_KEY` if present or prompts for a key, then stores it in auth profiles.
       - Sets `agents.defaults.model` to `openai/gpt-5.4` when model is unset, `openai/*`, or `openai-codex/*`.
     - **xAI (Grok) API key**: prompts for `XAI_API_KEY` and configures xAI as a model provider.
     - **OpenCode**: prompts for `OPENCODE_API_KEY` (or `OPENCODE_ZEN_API_KEY`, get it at https://opencode.ai/auth) and lets you pick the Zen or Go catalog.
-    - **Ollama**: prompts for the Ollama base URL, offers **Cloud + Local** or **Local** mode, discovers available models, and auto-pulls the selected local model when needed.
+    - **Ollama**: offers **Cloud + Local**, **Cloud only**, or **Local only** first. `Cloud only` prompts for `OLLAMA_API_KEY` and uses `https://ollama.com`; the host-backed modes prompt for the Ollama base URL, discover available models, and auto-pull the selected local model when needed; `Cloud + Local` also checks whether that Ollama host is signed in for cloud access.
     - More detail: [Ollama](/providers/ollama)
     - **API key**: stores the key for you.
     - **Vercel AI Gateway (multi-model proxy)**: prompts for `AI_GATEWAY_API_KEY`.
@@ -63,18 +63,18 @@ For a high-level overview, see [Onboarding (CLI)](/start/wizard).
     - Pick a default model from detected options (or enter provider/model manually). For best quality and lower prompt-injection risk, choose the strongest latest-generation model available in your provider stack.
     - Onboarding runs a model check and warns if the configured model is unknown or missing auth.
     - API key storage mode defaults to plaintext auth-profile values. Use `--secret-input-mode ref` to store env-backed refs instead (for example `keyRef: { source: "env", provider: "default", id: "OPENAI_API_KEY" }`).
-    - Auth profiles live in `~/.remoteclaw/agents/<agentId>/agent/auth-profiles.json` (API keys + OAuth). `~/.remoteclaw/credentials/oauth.json` is legacy import-only.
+    - Auth profiles live in `~/.openclaw/agents/<agentId>/agent/auth-profiles.json` (API keys + OAuth). `~/.openclaw/credentials/oauth.json` is legacy import-only.
     - More detail: [/concepts/oauth](/concepts/oauth)
     <Note>
     Headless/server tip: complete OAuth on a machine with a browser, then copy
     that agent's `auth-profiles.json` (for example
-    `~/.remoteclaw/agents/<agentId>/agent/auth-profiles.json`, or the matching
-    `$REMOTECLAW_STATE_DIR/...` path) to the gateway host. `credentials/oauth.json`
+    `~/.openclaw/agents/<agentId>/agent/auth-profiles.json`, or the matching
+    `$OPENCLAW_STATE_DIR/...` path) to the gateway host. `credentials/oauth.json`
     is only a legacy import source.
     </Note>
   </Step>
   <Step title="Workspace">
-    - Default `~/.remoteclaw/workspace` (configurable).
+    - Default `~/.openclaw/workspace` (configurable).
     - Seeds the workspace files needed for the agent bootstrap ritual.
     - Full workspace layout + backup guide: [Agent workspace](/concepts/agent-workspace)
   </Step>
@@ -102,13 +102,13 @@ For a high-level overview, see [Onboarding (CLI)](/start/wizard).
     - [Signal](/channels/signal): optional `signal-cli` install + account config.
     - [BlueBubbles](/channels/bluebubbles): **recommended for iMessage**; server URL + password + webhook.
     - [iMessage](/channels/imessage): legacy `imsg` CLI path + DB access.
-    - DM security: default is pairing. First DM sends a code; approve via `remoteclaw pairing approve <channel> <code>` or use allowlists.
+    - DM security: default is pairing. First DM sends a code; approve via `openclaw pairing approve <channel> <code>` or use allowlists.
   </Step>
   <Step title="Web search">
     - Pick a supported provider such as Brave, DuckDuckGo, Exa, Firecrawl, Gemini, Grok, Kimi, MiniMax Search, Ollama Web Search, Perplexity, SearXNG, or Tavily (or skip).
     - API-backed providers can use env vars or existing config for quick setup; key-free providers use their provider-specific prerequisites instead.
     - Skip with `--skip-search`.
-    - Configure later: `remoteclaw configure --section web`.
+    - Configure later: `openclaw configure --section web`.
   </Step>
   <Step title="Daemon install">
     - macOS: LaunchAgent
@@ -122,8 +122,8 @@ For a high-level overview, see [Onboarding (CLI)](/start/wizard).
     - If both `gateway.auth.token` and `gateway.auth.password` are configured and `gateway.auth.mode` is unset, daemon install is blocked until mode is set explicitly.
   </Step>
   <Step title="Health check">
-    - Starts the Gateway (if needed) and runs `remoteclaw health`.
-    - Tip: `remoteclaw status --deep` adds the live gateway health probe to status output, including channel probes when supported (requires a reachable gateway).
+    - Starts the Gateway (if needed) and runs `openclaw health`.
+    - Tip: `openclaw status --deep` adds the live gateway health probe to status output, including channel probes when supported (requires a reachable gateway).
   </Step>
   <Step title="Skills (recommended)">
     - Reads the available skills and checks requirements.
@@ -145,7 +145,7 @@ If the Control UI assets are missing, onboarding attempts to build them; fallbac
 Use `--non-interactive` to automate or script onboarding:
 
 ```bash
-remoteclaw onboard --non-interactive \
+openclaw onboard --non-interactive \
   --mode local \
   --auth-choice apiKey \
   --anthropic-api-key "$ANTHROPIC_API_KEY" \
@@ -161,12 +161,12 @@ Add `--json` for a machine‑readable summary.
 Gateway token SecretRef in non-interactive mode:
 
 ```bash
-export REMOTECLAW_GATEWAY_TOKEN="your-token"
-remoteclaw onboard --non-interactive \
+export OPENCLAW_GATEWAY_TOKEN="your-token"
+openclaw onboard --non-interactive \
   --mode local \
   --auth-choice skip \
   --gateway-auth token \
-  --gateway-token-ref-env REMOTECLAW_GATEWAY_TOKEN
+  --gateway-token-ref-env OPENCLAW_GATEWAY_TOKEN
 ```
 
 `--gateway-token` and `--gateway-token-ref-env` are mutually exclusive.
@@ -181,8 +181,8 @@ Use this reference page for flag semantics and step ordering.
 ### Add agent (non-interactive)
 
 ```bash
-remoteclaw agents add work \
-  --workspace ~/.remoteclaw/workspace-work \
+openclaw agents add work \
+  --workspace ~/.openclaw/workspace-work \
   --model openai/gpt-5.4 \
   --bind whatsapp:biz \
   --non-interactive \
@@ -199,7 +199,7 @@ Clients (macOS app, Control UI) can render steps without re‑implementing onboa
 Onboarding can install `signal-cli` from GitHub releases:
 
 - Downloads the appropriate release asset.
-- Stores it under `~/.remoteclaw/tools/signal-cli/<version>/`.
+- Stores it under `~/.openclaw/tools/signal-cli/<version>/`.
 - Writes `channels.signal.cliPath` to your config.
 
 Notes:
@@ -210,7 +210,7 @@ Notes:
 
 ## What the wizard writes
 
-Typical fields in `~/.remoteclaw/remoteclaw.json`:
+Typical fields in `~/.openclaw/openclaw.json`:
 
 - `agents.defaults.workspace`
 - `agents.defaults.model` / `models.providers` (if Minimax chosen)
@@ -228,10 +228,10 @@ Typical fields in `~/.remoteclaw/remoteclaw.json`:
 - `wizard.lastRunCommand`
 - `wizard.lastRunMode`
 
-`remoteclaw agents add` writes `agents.list[]` and optional `bindings`.
+`openclaw agents add` writes `agents.list[]` and optional `bindings`.
 
-WhatsApp credentials go under `~/.remoteclaw/credentials/whatsapp/<accountId>/`.
-Sessions are stored under `~/.remoteclaw/agents/<agentId>/sessions/`.
+WhatsApp credentials go under `~/.openclaw/credentials/whatsapp/<accountId>/`.
+Sessions are stored under `~/.openclaw/agents/<agentId>/sessions/`.
 
 Some channels are delivered as plugins. When you pick one during setup, onboarding
 will prompt to install it (npm or a local path) before it can be configured.

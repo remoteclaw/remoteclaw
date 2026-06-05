@@ -38,4 +38,20 @@ describe("buildSystemdUnit", () => {
       }),
     ).toThrow(/CR or LF/);
   });
+
+  it("renders EnvironmentFile entries before inline Environment values", () => {
+    const unit = buildSystemdUnit({
+      description: "RemoteClaw Gateway",
+      programArguments: ["/usr/bin/remoteclaw", "gateway", "run"],
+      environmentFiles: ["/home/test/.remoteclaw/.env"],
+      environment: {
+        REMOTECLAW_GATEWAY_PORT: "18789",
+      },
+    });
+    expect(unit).toContain("EnvironmentFile=-/home/test/.remoteclaw/.env");
+    expect(unit).toContain("Environment=REMOTECLAW_GATEWAY_PORT=18789");
+    expect(unit.indexOf("EnvironmentFile=-/home/test/.remoteclaw/.env")).toBeLessThan(
+      unit.indexOf("Environment=REMOTECLAW_GATEWAY_PORT=18789"),
+    );
+  });
 });

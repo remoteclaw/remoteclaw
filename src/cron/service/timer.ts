@@ -490,6 +490,18 @@ export function armTimer(state: CronServiceState) {
     const withNextRun =
       state.store?.jobs.filter((j) => j.enabled && typeof j.state.nextRunAtMs === "number")
         .length ?? 0;
+    if (enabledCount > 0) {
+      // Enabled jobs exist but none has a scheduled nextRunAtMs (e.g. it was
+      // cleared while running, or a maintenance recompute is pending). Arm a
+      // periodic maintenance recheck so the scheduler recovers instead of
+      // going dormant indefinitely.
+      armRunningRecheckTimer(state);
+      state.deps.log.debug(
+        { jobCount, enabledCount, withNextRun, delayMs: MAX_TIMER_DELAY_MS },
+        "cron: timer armed for maintenance recheck",
+      );
+      return;
+    }
     state.deps.log.debug(
       { jobCount, enabledCount, withNextRun },
       "cron: armTimer skipped - no jobs with nextRunAtMs",
@@ -498,9 +510,16 @@ export function armTimer(state: CronServiceState) {
   }
   const now = state.deps.nowMs();
   const delay = Math.max(nextAt - now, 0);
+  // Floor: when the next wake time is in the past (delay === 0), enforce a
+  // minimum delay to prevent a tight setTimeout(0) loop. This happens when a
+  // job has a stuck runningAtMs marker and a past-due nextRunAtMs: findDueJobs
+  // skips the job (blocked by runningAtMs), while recomputeNextRunsForMaintenance
+  // intentionally does not advance the past-due nextRunAtMs, so onTimer's
+  // finally block would otherwise re-arm with delay === 0 in a hot-loop.
+  const flooredDelay = delay === 0 ? MIN_REFIRE_GAP_MS : delay;
   // Wake at least once a minute to avoid schedule drift and recover quickly
   // when the process was paused or wall-clock time jumps.
-  const clampedDelay = Math.min(delay, MAX_TIMER_DELAY_MS);
+  const clampedDelay = Math.min(flooredDelay, MAX_TIMER_DELAY_MS);
   // Intentionally avoid an `async` timer callback:
   // Vitest's fake-timer helpers can await async callbacks, which would block
   // tests that simulate long-running jobs. Runtime behavior is unchanged.

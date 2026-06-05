@@ -256,6 +256,18 @@ export const id: TranslationMap = {
       cost: "Biaya",
       skills: "Skills",
       recentSessions: "Sesi Terbaru",
+      modelAuth: "Autentikasi Model",
+      modelAuthOk: "{count} ok",
+      modelAuthExpired: "{count} kedaluwarsa",
+      modelAuthExpiring: "{count} akan kedaluwarsa",
+      modelAuthProviders: "{count} penyedia",
+      modelAuthUsageLeft: "{pct}% tersisa",
+      modelAuthExpiresIn: "kedaluwarsa {when}",
+      modelAuthAttentionExpiredTitle: "Autentikasi model kedaluwarsa",
+      modelAuthAttentionExpiringTitle: "Autentikasi model akan segera kedaluwarsa",
+      modelAuthAttentionExpiredDesc:
+        "{providers} — autentikasi ulang dengan remoteclaw models auth",
+      modelAuthAttentionExpiringEntry: "{provider} ({when})",
     },
     attention: {
       title: "Perhatian",

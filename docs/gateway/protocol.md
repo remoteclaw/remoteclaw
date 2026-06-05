@@ -10,7 +10,7 @@ title: "Gateway Protocol"
 # Gateway protocol (WebSocket)
 
 The Gateway WS protocol is the **single control plane + node transport** for
-RemoteClaw. All clients (CLI, web UI, macOS app, iOS/Android nodes, headless
+OpenClaw. All clients (CLI, web UI, macOS app, iOS/Android nodes, headless
 nodes) connect over WebSocket and declare their **role** + **scope** at
 handshake time.
 
@@ -54,7 +54,7 @@ Client → Gateway:
     "permissions": {},
     "auth": { "token": "…" },
     "locale": "en-US",
-    "userAgent": "remoteclaw-cli/1.2.3",
+    "userAgent": "openclaw-cli/1.2.3",
     "device": {
       "id": "device_fingerprint",
       "publicKey": "…",
@@ -73,9 +73,23 @@ Gateway → Client:
   "type": "res",
   "id": "…",
   "ok": true,
-  "payload": { "type": "hello-ok", "protocol": 3, "policy": { "tickIntervalMs": 15000 } }
+  "payload": {
+    "type": "hello-ok",
+    "protocol": 3,
+    "server": { "version": "…", "connId": "…" },
+    "features": { "methods": ["…"], "events": ["…"] },
+    "snapshot": { "…": "…" },
+    "policy": {
+      "maxPayload": 26214400,
+      "maxBufferedBytes": 52428800,
+      "tickIntervalMs": 15000
+    }
+  }
 }
 ```
+
+`server`, `features`, `snapshot`, and `policy` are all required by the schema
+(`src/gateway/protocol/schema/frames.ts`). `auth` and `canvasHostUrl` are optional.
 
 When a device token is issued, `hello-ok` also includes:
 
@@ -139,7 +153,7 @@ roles still need scopes under their own role prefix.
     "permissions": { "camera.capture": true, "screen.record": false },
     "auth": { "token": "…" },
     "locale": "en-US",
-    "userAgent": "remoteclaw-ios/1.2.3",
+    "userAgent": "openclaw-ios/1.2.3",
     "device": {
       "id": "device_fingerprint",
       "publicKey": "…",
@@ -466,7 +480,7 @@ implemented in `src/gateway/server-methods/*.ts`.
   - ClawHub mode: `{ source: "clawhub", slug, version?, force? }` installs a
     skill folder into the default agent workspace `skills/` directory.
   - Gateway installer mode: `{ name, installId, dangerouslyForceUnsafeInstall?, timeoutMs? }`
-    runs a declared `metadata.remoteclaw.install` action on the gateway host.
+    runs a declared `metadata.openclaw.install` action on the gateway host.
 - Operators may call `skills.update` (`operator.admin`) in two modes:
   - ClawHub mode updates one tracked slug or all tracked ClawHub installs in
     the default agent workspace.
@@ -492,12 +506,35 @@ implemented in `src/gateway/server-methods/*.ts`.
 
 ## Versioning
 
-- `PROTOCOL_VERSION` lives in `src/gateway/protocol/schema.ts`.
+- `PROTOCOL_VERSION` lives in `src/gateway/protocol/schema/protocol-schemas.ts`.
 - Clients send `minProtocol` + `maxProtocol`; the server rejects mismatches.
 - Schemas + models are generated from TypeBox definitions:
   - `pnpm protocol:gen`
   - `pnpm protocol:gen:swift`
   - `pnpm protocol:check`
+
+### Client constants
+
+The reference client in `src/gateway/client.ts` uses these defaults. Values are
+stable across protocol v3 and are the expected baseline for third-party clients.
+
+| Constant                                  | Default                                               | Source                                                     |
+| ----------------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------- |
+| `PROTOCOL_VERSION`                        | `3`                                                   | `src/gateway/protocol/schema/protocol-schemas.ts`          |
+| Request timeout (per RPC)                 | `30_000` ms                                           | `src/gateway/client.ts` (`requestTimeoutMs`)               |
+| Preauth / connect-challenge timeout       | `10_000` ms                                           | `src/gateway/handshake-timeouts.ts` (clamp `250`–`10_000`) |
+| Initial reconnect backoff                 | `1_000` ms                                            | `src/gateway/client.ts` (`backoffMs`)                      |
+| Max reconnect backoff                     | `30_000` ms                                           | `src/gateway/client.ts` (`scheduleReconnect`)              |
+| Fast-retry clamp after device-token close | `250` ms                                              | `src/gateway/client.ts`                                    |
+| Force-stop grace before `terminate()`     | `250` ms                                              | `FORCE_STOP_TERMINATE_GRACE_MS`                            |
+| `stopAndWait()` default timeout           | `1_000` ms                                            | `STOP_AND_WAIT_TIMEOUT_MS`                                 |
+| Default tick interval (pre `hello-ok`)    | `30_000` ms                                           | `src/gateway/client.ts`                                    |
+| Tick-timeout close                        | code `4000` when silence exceeds `tickIntervalMs * 2` | `src/gateway/client.ts`                                    |
+| `MAX_PAYLOAD_BYTES`                       | `25 * 1024 * 1024` (25 MB)                            | `src/gateway/server-constants.ts`                          |
+
+The server advertises the effective `policy.tickIntervalMs`, `policy.maxPayload`,
+and `policy.maxBufferedBytes` in `hello-ok`; clients should honor those values
+rather than the pre-handshake defaults.
 
 ## Auth
 
@@ -518,8 +555,18 @@ implemented in `src/gateway/server-methods/*.ts`.
   approved scope set for that token. This preserves read/probe/status access
   that was already granted and avoids silently collapsing reconnects to a
   narrower implicit admin-only scope.
-- Normal connect auth precedence is explicit shared token/password first, then
-  explicit `deviceToken`, then stored per-device token, then bootstrap token.
+- Client-side connect auth assembly (`selectConnectAuth` in
+  `src/gateway/client.ts`):
+  - `auth.password` is orthogonal and is always forwarded when set.
+  - `auth.token` is populated in priority order: explicit shared token first,
+    then an explicit `deviceToken`, then a stored per-device token (keyed by
+    `deviceId` + `role`).
+  - `auth.bootstrapToken` is sent only when none of the above resolved an
+    `auth.token`. A shared token or any resolved device token suppresses it.
+  - Auto-promotion of a stored device token on the one-shot
+    `AUTH_TOKEN_MISMATCH` retry is gated to **trusted endpoints only** —
+    loopback, or `wss://` with a pinned `tlsFingerprint`. Public `wss://`
+    without pinning does not qualify.
 - Additional `hello-ok.auth.deviceTokens` entries are bootstrap handoff tokens.
   Persist them only when the connect used bootstrap auth on a trusted transport
   such as `wss://` or loopback/local pairing.
@@ -552,7 +599,7 @@ implemented in `src/gateway/server-methods/*.ts`.
 - Pairing approvals are required for new device IDs unless local auto-approval
   is enabled.
 - Pairing auto-approval is centered on direct local loopback connects.
-- RemoteClaw also has a narrow backend/container-local self-connect path for
+- OpenClaw also has a narrow backend/container-local self-connect path for
   trusted shared-secret helper flows.
 - Same-host tailnet or LAN connects are still treated as remote for pairing and
   require approval.

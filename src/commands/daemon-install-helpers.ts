@@ -28,6 +28,13 @@ export async function buildGatewayInstallPlan(params: {
   warn?: DaemonInstallWarnFn;
   /** Full config to extract env vars from (env vars + inline env keys). */
   config?: RemoteClawConfig;
+  /**
+   * Environment captured from an existing service command on a forced
+   * reinstall. Merged as the lowest-precedence base so managed keys (PATH,
+   * GOPATH, GOBIN, …) survive the reinstall unless overridden by config or
+   * service-specific environment.
+   */
+  existingEnvironment?: Record<string, string>;
 }): Promise<GatewayInstallPlan> {
   const { devMode, nodePath } = await resolveDaemonInstallRuntimeInputs({
     env: params.env,
@@ -57,9 +64,12 @@ export async function buildGatewayInstallPlan(params: {
         : undefined,
   });
 
-  // Merge config env vars into the service environment (vars + inline env keys).
-  // Config env vars are added first so service-specific vars take precedence.
+  // Merge existing-service and config env vars into the service environment.
+  // Existing-service env is the lowest-precedence base (preserves managed keys
+  // across reinstall), then config env vars, then service-specific vars take
+  // final precedence.
   const environment: Record<string, string | undefined> = {
+    ...params.existingEnvironment,
     ...collectConfigServiceEnvVars(params.config),
   };
   Object.assign(environment, serviceEnvironment);

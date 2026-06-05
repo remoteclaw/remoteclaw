@@ -5,6 +5,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { BUNDLED_RUNTIME_SIDECAR_PATHS } from "../plugins/runtime-sidecar-paths.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import { pathExists } from "../utils.js";
+import { writePackageDistInventory } from "./package-dist-inventory.js";
 import { runGatewayUpdate } from "./update-runner.js";
 
 type CommandResponse = { stdout?: string; stderr?: string; code?: number | null };
@@ -85,6 +86,12 @@ describe("runGatewayUpdate", () => {
       await fs.mkdir(path.dirname(sidecarPath), { recursive: true });
       await fs.writeFile(sidecarPath, "// stub", "utf-8");
     }
+    // Write the packaged dist inventory so verification takes the inventory
+    // path (matching a real install) rather than the legacy compat-sidecar
+    // path, which would otherwise require the QA-channel compat stub. The
+    // inventory is generated from the files seeded above, so it matches what
+    // `collectPackageDistInventory` reads back during verification.
+    await writePackageDistInventory(pkgRoot);
   }
 
   function createGlobalNpmUpdateRunner(params: {

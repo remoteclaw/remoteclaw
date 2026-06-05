@@ -7,6 +7,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { listAgentEntries } from "../agents/agent-scope.js";
 import { isToolAllowedByPolicies } from "../agents/pi-tools.policy.js";
+import { listChannelPlugins } from "../channels/plugins/index.js";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle) — remaining sandbox/skills stubs
 const SANDBOX_BROWSER_SECURITY_HASH_EPOCH = "2026-02-28-no-sandbox-env";
 type ExecDockerRawResult = { code: number; stdout: Buffer; stderr: Buffer };
@@ -359,20 +360,58 @@ async function getCodeSafetySummary(params: {
   });
 }
 
-async function listWorkspaceSkillMarkdownFiles(workspaceDir: string): Promise<string[]> {
+/**
+ * Resolve `realpath` with a hard timeout so a hanging network FS (NFS/SMB)
+ * cannot stall a large audit run indefinitely. Returns `null` on failure or
+ * timeout; callers treat `null` as "unverifiable" rather than silently
+ * bypassing the check.
+ */
+function realpathWithTimeout(p: string, timeoutMs = 2000): Promise<string | null> {
+  let timerHandle: ReturnType<typeof setTimeout> | undefined;
+
+  const realpathPromise = fs
+    .realpath(p)
+    .catch(() => null)
+    .then((result) => {
+      clearTimeout(timerHandle);
+      return result;
+    });
+
+  const timeoutPromise = new Promise<null>((resolve) => {
+    timerHandle = setTimeout(() => resolve(null), timeoutMs);
+    // Prevent the timer from keeping the process alive while waiting on a
+    // potentially hanging NFS/SMB path during a large audit run.
+    timerHandle.unref?.();
+  });
+
+  return Promise.race([realpathPromise, timeoutPromise]);
+}
+
+async function listWorkspaceSkillMarkdownFiles(
+  workspaceDir: string,
+): Promise<{ skillFilePaths: string[]; truncated: boolean }> {
   const skillsRoot = path.join(workspaceDir, "skills");
   const rootStat = await safeStat(skillsRoot);
   if (!rootStat.ok || !rootStat.isDir) {
-    return [];
+    return { skillFilePaths: [], truncated: false };
   }
 
   const skillFiles: string[] = [];
   const queue: string[] = [skillsRoot];
   const visitedDirs = new Set<string>();
+  // Caps total BFS dequeues, not per-path depth. Named to reflect actual semantics.
+  const MAX_TOTAL_DIR_VISITS = MAX_WORKSPACE_SKILL_SCAN_FILES_PER_WORKSPACE * 20;
+  let totalDirVisits = 0;
 
-  while (queue.length > 0 && skillFiles.length < MAX_WORKSPACE_SKILL_SCAN_FILES_PER_WORKSPACE) {
+  while (
+    queue.length > 0 &&
+    skillFiles.length < MAX_WORKSPACE_SKILL_SCAN_FILES_PER_WORKSPACE &&
+    totalDirVisits++ < MAX_TOTAL_DIR_VISITS
+  ) {
     const dir = queue.shift()!;
-    const dirRealPath = await fs.realpath(dir).catch(() => path.resolve(dir));
+    // Use realpathWithTimeout so a hanging network FS doesn't block the BFS
+    // indefinitely (same 2 s guard as the outer escape-detection loop).
+    const dirRealPath = (await realpathWithTimeout(dir)) ?? path.resolve(dir);
     if (visitedDirs.has(dirRealPath)) {
       continue;
     }
@@ -408,7 +447,7 @@ async function listWorkspaceSkillMarkdownFiles(workspaceDir: string): Promise<st
     }
   }
 
-  return skillFiles;
+  return { skillFilePaths: skillFiles, truncated: queue.length > 0 };
 }
 
 // --------------------------------------------------------------------------
@@ -610,6 +649,37 @@ export async function collectPluginsTrustFindings(params: {
   if (pluginDirs.length > 0) {
     const allow = params.cfg.plugins?.allow;
     const allowConfigured = Array.isArray(allow) && allow.length > 0;
+
+    if (allowConfigured) {
+      // Warn about allowlist entries that don't match any installed plugin ID.
+      // An attacker could register a plugin with an allowlisted ID after the
+      // allowlist was created, exploiting the pre-approved entry. Exclude
+      // bundled channel plugin IDs (telegram, discord, …) from the phantom
+      // check — they are never in the extensions directory but are legitimate
+      // allowlist targets.
+      const installedPluginIds = new Set(pluginDirs.map((dir) => path.basename(dir).toLowerCase()));
+      const bundledPluginIds = new Set(listChannelPlugins().map((p) => p.id.toLowerCase()));
+      const phantomEntries = allow.filter((entry) => {
+        if (typeof entry !== "string" || entry === "group:plugins") {
+          return false;
+        }
+        const lower = entry.toLowerCase();
+        return !installedPluginIds.has(lower) && !bundledPluginIds.has(lower);
+      });
+      if (phantomEntries.length > 0) {
+        findings.push({
+          checkId: "plugins.allow_phantom_entries",
+          severity: "warn",
+          title: "plugins.allow contains entries with no matching installed plugin",
+          detail:
+            `The following plugins.allow entries do not correspond to any installed plugin: ${phantomEntries.join(", ")}.\n` +
+            "Phantom entries could be exploited by registering a new plugin with an allowlisted ID.",
+          remediation:
+            "Remove unused entries from plugins.allow, or verify the expected plugins are installed.",
+        });
+      }
+    }
+
     if (!allowConfigured) {
       const hasString = (value: unknown) => typeof value === "string" && value.trim().length > 0;
       const hasSecretInput = (value: unknown) =>
@@ -914,8 +984,26 @@ export async function collectWorkspaceSkillSymlinkEscapeFindings(params: {
 
   for (const workspaceDir of workspaceDirs) {
     const workspacePath = path.resolve(workspaceDir);
-    const workspaceRealPath = await fs.realpath(workspacePath).catch(() => workspacePath);
-    const skillFilePaths = await listWorkspaceSkillMarkdownFiles(workspacePath);
+    const workspaceRealPath = (await realpathWithTimeout(workspacePath)) ?? workspacePath;
+    const { skillFilePaths, truncated } = await listWorkspaceSkillMarkdownFiles(workspacePath);
+
+    if (truncated) {
+      // The BFS visit cap was hit before the full skills/ tree was scanned.
+      // Escaped SKILL.md symlinks in the unvisited portion will not be detected.
+      // Surface this as a warning so the user knows coverage was incomplete.
+      findings.push({
+        checkId: "skills.workspace.scan_truncated",
+        severity: "warn",
+        title: "Workspace skill scan reached the directory visit limit",
+        detail:
+          `The skills/ directory scan in ${workspacePath} stopped early after reaching the ` +
+          `BFS visit cap. Skill files in the unscanned portion of the tree were not checked ` +
+          "for symlink escapes.",
+        remediation:
+          "Flatten or simplify the skills/ directory hierarchy to stay within the scan budget, " +
+          "or move deeply-nested skill collections to a managed skill location.",
+      });
+    }
 
     for (const skillFilePath of skillFilePaths) {
       const canonicalSkillPath = path.resolve(skillFilePath);
@@ -924,8 +1012,17 @@ export async function collectWorkspaceSkillSymlinkEscapeFindings(params: {
       }
       seenSkillPaths.add(canonicalSkillPath);
 
-      const skillRealPath = await fs.realpath(canonicalSkillPath).catch(() => null);
+      const skillRealPath = await realpathWithTimeout(canonicalSkillPath);
       if (!skillRealPath) {
+        // realpath timed out or failed — cannot verify the symlink target.
+        // Treat as a potential escape rather than silently bypassing the check.
+        // An attacker on a slow/network FS could otherwise hang realpath to
+        // prevent escape detection.
+        escapedSkillFiles.push({
+          workspaceDir: workspacePath,
+          skillFilePath: canonicalSkillPath,
+          skillRealPath: "(realpath timed out — symlink target unverifiable)",
+        });
         continue;
       }
       if (isPathInside(workspaceRealPath, skillRealPath)) {

@@ -376,6 +376,8 @@ export type ChannelElevatedAdapter = {
 export type ChannelCommandAdapter = {
   enforceOwnerForCommands?: boolean;
   skipWhenConfigEmpty?: boolean;
+  nativeCommandsAutoEnabled?: boolean;
+  nativeSkillsAutoEnabled?: boolean;
 };
 
 export type ChannelSecurityAdapter<ResolvedAccount = unknown> = {

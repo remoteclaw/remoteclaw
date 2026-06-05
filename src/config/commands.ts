@@ -1,5 +1,5 @@
+import { getChannelPlugin, normalizeChannelId } from "../channels/plugins/index.js";
 import type { ChannelId } from "../channels/plugins/types.js";
-import { normalizeChannelId } from "../channels/registry.js";
 import { isPlainObject } from "../infra/plain-object.js";
 import type { CommandsConfig, NativeCommandsSetting } from "./types.js";
 
@@ -7,18 +7,29 @@ export type CommandFlagKey = {
   [K in keyof CommandsConfig]-?: Exclude<CommandsConfig[K], undefined> extends boolean ? K : never;
 }[keyof CommandsConfig];
 
-function resolveAutoDefault(providerId?: ChannelId): boolean {
+function resolveAutoDefault(
+  providerId: ChannelId | undefined,
+  kind: "native" | "nativeSkills",
+): boolean {
   const id = normalizeChannelId(providerId);
   if (!id) {
     return false;
   }
-  if (id === "discord" || id === "telegram") {
-    return true;
+  const plugin = getChannelPlugin(id);
+  const flagValue =
+    kind === "native"
+      ? plugin?.commands?.nativeCommandsAutoEnabled
+      : plugin?.commands?.nativeSkillsAutoEnabled;
+  if (typeof flagValue === "boolean") {
+    return flagValue;
   }
-  if (id === "slack") {
-    return false;
-  }
-  return false;
+  // Fork fallback: upstream relies on every chat-channel plugin declaring its
+  // auto-enable flags and on the plugin registry always being bootstrapped.
+  // RemoteClaw paths such as the security audit (audit-channel.ts) resolve
+  // native command/skill defaults without loading a registry, and the bundled
+  // discord/telegram plugins do not (yet) declare these flags — so preserve the
+  // historical built-in defaults when the registry is silent on this channel.
+  return id === "discord" || id === "telegram";
 }
 
 export function resolveNativeSkillsEnabled(params: {
@@ -26,7 +37,7 @@ export function resolveNativeSkillsEnabled(params: {
   providerSetting?: NativeCommandsSetting;
   globalSetting?: NativeCommandsSetting;
 }): boolean {
-  return resolveNativeCommandSetting(params);
+  return resolveNativeCommandSetting({ ...params, kind: "nativeSkills" });
 }
 
 export function resolveNativeCommandsEnabled(params: {
@@ -34,15 +45,16 @@ export function resolveNativeCommandsEnabled(params: {
   providerSetting?: NativeCommandsSetting;
   globalSetting?: NativeCommandsSetting;
 }): boolean {
-  return resolveNativeCommandSetting(params);
+  return resolveNativeCommandSetting({ ...params, kind: "native" });
 }
 
 function resolveNativeCommandSetting(params: {
   providerId: ChannelId;
   providerSetting?: NativeCommandsSetting;
   globalSetting?: NativeCommandsSetting;
+  kind: "native" | "nativeSkills";
 }): boolean {
-  const { providerId, providerSetting, globalSetting } = params;
+  const { providerId, providerSetting, globalSetting, kind } = params;
   const setting = providerSetting === undefined ? globalSetting : providerSetting;
   if (setting === true) {
     return true;
@@ -50,7 +62,7 @@ function resolveNativeCommandSetting(params: {
   if (setting === false) {
     return false;
   }
-  return resolveAutoDefault(providerId);
+  return resolveAutoDefault(providerId, kind);
 }
 
 export function isNativeCommandsExplicitlyDisabled(params: {

@@ -5,7 +5,16 @@ import {
   formatOutboundDeliverySummary,
 } from "./format.js";
 
-const getChannelPluginMock = vi.hoisted(() => vi.fn((_channel: unknown) => undefined));
+// Fork divergence: msteams is a plugin-only channel — unlike upstream, it is not in
+// the static chat-channel registry (see channels/registry.helpers.test.ts "does not
+// include MS Teams by default"). Its display label resolves via the loaded channel
+// plugin, so the mock supplies that label for msteams while other channels fall back
+// to the chat-channel registry.
+const getChannelPluginMock = vi.hoisted(() =>
+  vi.fn((channel: unknown) =>
+    channel === "msteams" ? { meta: { label: "Microsoft Teams" } } : undefined,
+  ),
+);
 
 vi.mock("../../channels/plugins/index.js", () => ({
   getLoadedChannelPlugin: getChannelPluginMock,

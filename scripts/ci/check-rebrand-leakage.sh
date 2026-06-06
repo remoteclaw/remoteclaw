@@ -23,6 +23,17 @@
 #                       v2026.4.12 sync reverted apps/android/app/build.gradle.kts
 #                       to `ai.openclaw.app` and scan 1 stayed GREEN.
 #
+#   3. Positive-presence — some fork identities are NAMES, not reverse-domains:
+#                       apps/macos/Package.swift declares the `remoteclaw-mac`
+#                       executable and the `RemoteClawMacCLI` target. A wholesale
+#                       revert to upstream's binary names is invisible to scan 1
+#                       (apps/ is broadly allowlisted) and scan 2 (Package.swift
+#                       is not a reverse-domain manifest), so assert PRESENCE of
+#                       the fork name directly. Unlike scans 1 & 2, this scan runs
+#                       UNCONDITIONALLY (independent of the changed-file set) so a
+#                       latent reversion already on the base branch is caught too;
+#                       a missing anchor file is tolerated. See issue #2697.
+#
 # Modes:
 #   --staged   Pre-commit: checks staged files only
 #   --all      Full scan: checks entire repo
@@ -137,8 +148,10 @@ FILE_LIST="$CLEANUP_DIR/file-list.bin"
 list_files > "$FILE_LIST"
 
 if [[ ! -s "$FILE_LIST" ]]; then
-  echo "No files to check."
-  exit 0
+  # No changed/listed files for the diff-scoped leakage scans (1 & 2) — but the
+  # positive-presence anchor scan (3) below runs UNCONDITIONALLY, so do not exit
+  # here. Scans 1 & 2 no-op safely on an empty file list.
+  echo "No changed files to scan for leakage."
 fi
 
 # --- Scan 1: generic openclaw leakage (broad allowlist) ----------------------
@@ -170,6 +183,32 @@ REV_PATTERNS="$CLEANUP_DIR/rev-patterns.txt"
 load_allowlist "$REVERSE_DOMAIN_ALLOWLIST" "$REV_FILES" "$REV_DIRS" "$REV_PATTERNS"
 reverse_domain_violations=$(scan 'ai.openclaw' "$MANIFEST_LIST" "$REV_FILES" "$REV_DIRS" "$REV_PATTERNS")
 
+# --- Scan 3: positive-presence fork-identity anchors -------------------------
+#
+# Assert that fork identities expressed as NAMES (not reverse-domains) are still
+# present in the manifest that must carry them. Each anchor is "<file>|<required>"
+# — the file is read on disk at HEAD, independent of the changed-file set, so a
+# latent reversion already on the base branch is caught too. A MISSING anchor
+# file is tolerated (the macOS app may be legitimately gutted — RemoteClaw is
+# CLI-only middleware); only a present-but-reverted file is a violation. To
+# extend coverage (e.g. an org.remoteclaw.* Info.plist identity), add a row.
+
+ANCHORS=(
+  "apps/macos/Package.swift|remoteclaw-mac"
+  "apps/macos/Package.swift|RemoteClawMacCLI"
+)
+
+anchor_violations=""
+for entry in "${ANCHORS[@]}"; do
+  anchor_file="${entry%%|*}"
+  anchor_required="${entry#*|}"
+  [[ -f "$anchor_file" ]] || continue
+  if ! grep -qF -- "$anchor_required" "$anchor_file"; then
+    anchor_violations+="$anchor_file: missing required fork identity '$anchor_required'"$'\n'
+  fi
+done
+anchor_violations="${anchor_violations%$'\n'}"
+
 # --- Report ------------------------------------------------------------------
 
 status=0
@@ -197,6 +236,24 @@ if [[ -n "$reverse_domain_violations" ]]; then
   echo "Fix: replace ai.openclaw* with org.remoteclaw.*, or — only for a verified"
   echo "     migration-compat case — add an exemption to"
   echo "     scripts/ci/rebrand-reverse-domain-allowlist.txt"
+  status=1
+fi
+
+if [[ -n "$anchor_violations" ]]; then
+  [[ $status -ne 0 ]] && echo ""
+  count=$(printf '%s\n' "$anchor_violations" | wc -l | tr -d ' ')
+  echo "Fork-identity anchor missing ($count violation(s)):"
+  echo ""
+  printf '%s\n' "$anchor_violations" | sed 's/^/  /'
+  echo ""
+  echo "A required fork-identity NAME is absent from a manifest that must carry it"
+  echo "(e.g. the remoteclaw-mac executable / RemoteClawMacCLI target in"
+  echo "apps/macos/Package.swift). This is the binary-name analogue of a reverse-domain"
+  echo "identity reversion — invisible to scan 1 (apps/ is allowlisted) and scan 2"
+  echo "(Package.swift is not a reverse-domain manifest). See #2697."
+  echo "Fix: restore the fork-identity name; or — only if the subsystem was"
+  echo "     intentionally removed — drop the stale anchor from"
+  echo "     scripts/ci/check-rebrand-leakage.sh."
   status=1
 fi
 

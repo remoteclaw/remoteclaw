@@ -12,6 +12,9 @@
 FILE:scripts/ci/check-rebrand-leakage.sh
 FILE:scripts/ci/rebrand-allowlist.txt
 FILE:scripts/ci/rebrand-reverse-domain-allowlist.txt
+# The gate's own test fixtures carry upstream-style names (`openclaw-mac`,
+# `OpenClawMacCLI`, bare `openclaw` in prose) by design — see issue #2697.
+FILE:test/scripts/check-rebrand-leakage.test.ts
 
 # ---------------------------------------------------------------------------
 # Upstream release workflow and compat scripts

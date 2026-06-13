@@ -262,8 +262,6 @@ importers:
         specifier: ^4.1.4
         version: 4.1.4(@opentelemetry/api@1.9.0)(@types/node@25.5.0)(@vitest/browser-playwright@4.1.4)(@vitest/coverage-v8@4.1.8)(jsdom@29.0.2(@noble/hashes@2.0.1))(vite@8.0.8(@types/node@25.5.0)(esbuild@0.27.3)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2))
 
-  extensions/alibaba: {}
-
   extensions/amazon-bedrock-mantle:
     dependencies:
       '@aws/bedrock-token-generator':
@@ -275,8 +273,6 @@ importers:
       zod:
         specifier: ^4.3.6
         version: 4.3.6
-
-  extensions/comfy: {}
 
   extensions/diagnostics-otel:
     dependencies:
@@ -403,8 +399,6 @@ importers:
         specifier: workspace:*
         version: link:../..
 
-  extensions/runway: {}
-
   extensions/signal: {}
 
   extensions/slack: {}
@@ -457,8 +451,6 @@ importers:
       zod:
         specifier: ^4.3.6
         version: 4.3.6
-
-  extensions/vydra: {}
 
   extensions/whatsapp: {}
 

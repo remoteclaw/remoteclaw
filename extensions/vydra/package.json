@@ -1,7 +1,0 @@
-{
-  "name": "@remoteclaw/vydra-provider",
-  "version": "0.8.0",
-  "private": true,
-  "description": "RemoteClaw Vydra media provider plugin (gutted in fork — Pi-era model-provider runtime removed; see CLAUDE.md § Fork Context)",
-  "type": "module"
-}

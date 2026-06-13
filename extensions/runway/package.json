@@ -1,7 +1,0 @@
-{
-  "name": "@remoteclaw/runway-provider",
-  "version": "0.8.0",
-  "private": true,
-  "description": "RemoteClaw Runway video provider plugin (gutted in fork — Pi-era model-provider runtime removed; see CLAUDE.md § Fork Context)",
-  "type": "module"
-}

@@ -7,9 +7,6 @@ const CHECK_EXTENSION_PACKAGE_BOUNDARY_BIN = resolve(
   REPO_ROOT,
   "scripts/check-extension-package-tsc-boundary.mjs",
 );
-const SHOULD_RUN_BOUNDARY_SCRIPT_WRAPPER =
-  process.env.GITHUB_ACTIONS !== "true" ||
-  process.env.REMOTECLAW_RUN_EXTENSION_PACKAGE_BOUNDARY_TEST === "1";
 
 function runNode(args: string[], timeout: number) {
   return spawnSync(process.execPath, args, {
@@ -20,32 +17,21 @@ function runNode(args: string[], timeout: number) {
   });
 }
 
-// The CI check-additional job runs this script directly. Avoid duplicating the cold
-// 97-extension compile inside the full node test shard.
-describe.skipIf(!SHOULD_RUN_BOUNDARY_SCRIPT_WRAPPER)(
-  "opt-in extension package TypeScript boundaries",
-  () => {
-    // fork: --mode=compile enforces upstream's isolated-extension-package model
-    // (every extension reaching the root only through `@remoteclaw/plugin-sdk/*`
-    // package specifiers). RemoteClaw's extensions instead import the root `src/`
-    // tree via deep relative paths (e.g. discord's
-    // `../../../src/channels/plugins/account-action-gate.js`), so 20/27 non-empty
-    // opt-in extensions trip TS6059 rootDir violations, and 4 gutted media/model
-    // providers (alibaba/comfy/runway/vydra) are now empty shells that trip
-    // TS18003. Both conditions pre-date the v2026.4.15 sync (broken at base
-    // 1b1d58e516, previously masked by an earlier prep-step failure) and this
-    // suite is already CI-skipped (see describe.skipIf). The canary case below
-    // still runs and verifies the rootDir-boundary enforcement mechanism. Re-enable
-    // once the fork either re-exports the reached-into symbols through the
-    // plugin-sdk surface or drops the gutted provider extension shells.
-    it.skip("typechecks each opt-in extension cleanly through @remoteclaw/plugin-sdk", () => {
-      const result = runNode([CHECK_EXTENSION_PACKAGE_BOUNDARY_BIN, "--mode=compile"], 420_000);
-      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
-    }, 300_000);
-
-    it("fails when opt-in extensions import src/cli through a relative path", () => {
-      const result = runNode([CHECK_EXTENSION_PACKAGE_BOUNDARY_BIN, "--mode=canary"], 180_000);
-      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
-    });
-  },
-);
+// Runs unconditionally, including in CI: the `test` job collects this file via
+// vitest.unit.config.ts (its include keeps `test/**/*.test.ts`), so the canary
+// case below executes on every PR.
+//
+// fork: the upstream `--mode=compile` isolated-extension-package gate was retired
+// in RemoteClaw (#2696). RemoteClaw is a hard fork that guts the execution engine
+// and KEEPS the channel-adapter layer; those adapters deliberately deep-import the
+// kept monolith (`../../src/...`), abandoning upstream's isolated-package model. So
+// `--mode=compile` enforced a non-invariant for this fork AND was itself dead (the
+// suite used to be CI-skipped). `--mode=canary` is the surviving live check: it
+// proves the rootDir wall is enforceable by asserting a deep `src/` import FAILS
+// with TS6059. Whole-program type soundness is covered separately by `pnpm tsgo`.
+describe("opt-in extension package TypeScript boundaries", () => {
+  it("fails when opt-in extensions import src/cli through a relative path", () => {
+    const result = runNode([CHECK_EXTENSION_PACKAGE_BOUNDARY_BIN, "--mode=canary"], 180_000);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+  });
+});

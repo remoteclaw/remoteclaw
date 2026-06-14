@@ -1,4 +1,5 @@
 export type ThemeMode = "system" | "light" | "dark";
+export type ThemeName = "claw" | "knot" | "dash";
 export type ResolvedTheme = "light" | "dark";
 
 export function getSystemTheme(): ResolvedTheme {

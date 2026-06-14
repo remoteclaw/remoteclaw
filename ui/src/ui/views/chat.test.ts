@@ -55,7 +55,8 @@ describe("chat view", () => {
       renderChat(
         createProps({
           compactionStatus: {
-            active: true,
+            phase: "active",
+            runId: null,
             startedAt: Date.now(),
             completedAt: null,
           },
@@ -76,7 +77,8 @@ describe("chat view", () => {
       renderChat(
         createProps({
           compactionStatus: {
-            active: false,
+            phase: "complete",
+            runId: null,
             startedAt: 900,
             completedAt: 900,
           },
@@ -98,7 +100,8 @@ describe("chat view", () => {
       renderChat(
         createProps({
           compactionStatus: {
-            active: false,
+            phase: "complete",
+            runId: null,
             startedAt: 0,
             completedAt: 0,
           },

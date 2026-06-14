@@ -16,7 +16,8 @@ import { renderMarkdownSidebar } from "./markdown-sidebar.ts";
 import "../components/resizable-divider.ts";
 
 export type CompactionIndicatorStatus = {
-  active: boolean;
+  phase: "active" | "retrying" | "complete";
+  runId: string | null;
   startedAt: number | null;
   completedAt: number | null;
 };
@@ -84,7 +85,7 @@ function renderCompactionIndicator(status: CompactionIndicatorStatus | null | un
   }
 
   // Show "compacting..." while active
-  if (status.active) {
+  if (status.phase === "active" || status.phase === "retrying") {
     return html`
       <div class="compaction-indicator compaction-indicator--active" role="status" aria-live="polite">
         ${icons.loader} Compacting context...

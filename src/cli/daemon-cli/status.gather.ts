@@ -122,6 +122,13 @@ export type DaemonStatus = {
   lastError?: string;
   rpc?: {
     ok: boolean;
+    kind?: "connect" | "read";
+    capability?: string;
+    auth?: {
+      role?: string | null;
+      scopes?: string[];
+      capability?: string;
+    };
     error?: string;
     url?: string;
     authWarning?: string;

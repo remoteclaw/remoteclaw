@@ -113,7 +113,11 @@ describe("relaunchGatewayScheduledTask", () => {
     expect(scriptPath).toBeTruthy();
     const script = fs.readFileSync(scriptPath, "utf8");
     expect(script).toContain("timeout /t 1 /nobreak >nul");
-    expect(script).toContain('schtasks /Run /TN "RemoteClaw Gateway (work)" >nul 2>&1');
+    expect(script).toContain("gateway-restart.log");
+    expect(script).toContain(
+      'remoteclaw restart attempt source=windows-task-handoff target="RemoteClaw Gateway (work)"',
+    );
+    expect(script).toContain('schtasks /Run /TN "RemoteClaw Gateway (work)" >>');
     expect(script).toContain('del "%~f0" >nul 2>&1');
   });
 
@@ -130,7 +134,7 @@ describe("relaunchGatewayScheduledTask", () => {
 
     const scriptPath = [...createdScriptPaths][0];
     const script = fs.readFileSync(scriptPath, "utf8");
-    expect(script).toContain('schtasks /Run /TN "RemoteClaw Gateway (custom)" >nul 2>&1');
+    expect(script).toContain('schtasks /Run /TN "RemoteClaw Gateway (custom)" >>');
   });
 
   it("returns failed when the helper cannot be spawned", () => {

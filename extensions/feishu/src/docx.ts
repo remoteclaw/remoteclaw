@@ -87,7 +87,7 @@ function cleanBlocksForInsert(blocks: any[]): { cleaned: any[]; skipped: string[
     .map((block) => {
       if (block.block_type === 31 && block.table?.merge_info) {
         const { merge_info: _merge_info, ...tableRest } = block.table;
-        return { ...block, table: tableRest };
+        return Object.assign({}, block, { table: tableRest });
       }
       return block;
     });

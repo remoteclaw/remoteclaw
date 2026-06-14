@@ -1,4 +1,4 @@
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
   GatewayIntents,
@@ -179,6 +179,9 @@ describe("createDiscordGatewayPlugin", () => {
   }
 
   beforeEach(() => {
+    vi.unstubAllEnvs();
+    vi.stubEnv("REMOTECLAW_DEBUG_PROXY_ENABLED", "");
+    vi.stubEnv("REMOTECLAW_DEBUG_PROXY_URL", "");
     vi.stubGlobal("fetch", globalFetchMock);
     vi.useRealTimers();
     baseRegisterClientSpy.mockClear();
@@ -189,6 +192,11 @@ describe("createDiscordGatewayPlugin", () => {
     wsProxyAgentSpy.mockClear();
     webSocketSpy.mockClear();
     resetLastAgent();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllEnvs();
   });
 
   it("uses safe gateway metadata lookup without proxy", async () => {

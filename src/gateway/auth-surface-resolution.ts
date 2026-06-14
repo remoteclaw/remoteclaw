@@ -145,6 +145,7 @@ export async function resolveGatewayInteractiveSurfaceAuth(params: {
   config: RemoteClawConfig;
   env?: NodeJS.ProcessEnv;
   explicitAuth?: ExplicitGatewayAuth;
+  suppressEnvAuthFallback?: boolean;
   surface: "local" | "remote";
 }): Promise<{
   token?: string;
@@ -155,8 +156,12 @@ export async function resolveGatewayInteractiveSurfaceAuth(params: {
   const diagnostics: string[] = [];
   const explicitToken = trimToUndefined(params.explicitAuth?.token);
   const explicitPassword = trimToUndefined(params.explicitAuth?.password);
-  const envToken = trimToUndefined(env.REMOTECLAW_GATEWAY_TOKEN);
-  const envPassword = trimToUndefined(env.REMOTECLAW_GATEWAY_PASSWORD);
+  const envToken = params.suppressEnvAuthFallback
+    ? undefined
+    : trimToUndefined(env.REMOTECLAW_GATEWAY_TOKEN);
+  const envPassword = params.suppressEnvAuthFallback
+    ? undefined
+    : trimToUndefined(env.REMOTECLAW_GATEWAY_PASSWORD);
 
   if (params.surface === "remote") {
     const remoteToken = explicitToken

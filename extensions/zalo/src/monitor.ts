@@ -68,6 +68,7 @@ const ZALO_TYPING_TIMEOUT_MS = 5_000;
 
 type ZaloCoreRuntime = ReturnType<typeof getZaloRuntime>;
 type ZaloStatusSink = (patch: { lastInboundAt?: number; lastOutboundAt?: number }) => void;
+type ZaloWebhookModule = typeof import("./monitor.webhook.js");
 type ZaloProcessingContext = {
   token: string;
   account: ResolvedZaloAccount;
@@ -86,6 +87,13 @@ type ZaloUpdateProcessingParams = ZaloProcessingContext & {
   update: ZaloUpdate;
   mediaMaxMb: number;
 };
+
+let zaloWebhookModulePromise: Promise<ZaloWebhookModule> | undefined;
+
+function loadZaloWebhookModule(): Promise<ZaloWebhookModule> {
+  zaloWebhookModulePromise ??= import("./monitor.webhook.js");
+  return zaloWebhookModulePromise;
+}
 type ZaloMessagePipelineParams = ZaloProcessingContext & {
   message: ZaloMessage;
   text?: string;
@@ -129,7 +137,7 @@ export async function handleZaloWebhookRequest(
   res: ServerResponse,
 ): Promise<boolean> {
   const { handleZaloWebhookRequest: handleZaloWebhookRequestInternal } =
-    await import("./monitor.webhook.js");
+    await loadZaloWebhookModule();
   return await handleZaloWebhookRequestInternal(req, res, async ({ update, target }) => {
     await processUpdate({
       update,
@@ -621,7 +629,7 @@ export async function monitorZaloProvider(options: ZaloMonitorOptions): Promise<
 
   try {
     if (useWebhook) {
-      const { registerZaloWebhookTarget } = await import("./monitor.webhook.js");
+      const { registerZaloWebhookTarget } = await loadZaloWebhookModule();
       if (!webhookUrl || !webhookSecret) {
         throw new Error("Zalo webhookUrl and webhookSecret are required for webhook mode");
       }

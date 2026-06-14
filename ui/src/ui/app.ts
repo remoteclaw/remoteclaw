@@ -191,6 +191,7 @@ export class RemoteClawApp extends LitElement {
   @state() configForm: Record<string, unknown> | null = null;
   @state() configFormOriginal: Record<string, unknown> | null = null;
   @state() configFormDirty = false;
+  @state() configSettingsMode: "quick" | "advanced" = "quick";
   @state() configFormMode: "form" | "raw" = "form";
   @state() configSearchQuery = "";
   @state() configActiveSection: string | null = null;
@@ -240,6 +241,11 @@ export class RemoteClawApp extends LitElement {
   @state() sessionsHideCron = true;
 
   @state() cronLoading = false;
+  @state() cronQuickCreateOpen = false;
+  @state() cronQuickCreateStep: import("./views/cron-quick-create.ts").CronQuickCreateStep = "what";
+  @state() cronQuickCreateDraft:
+    | import("./views/cron-quick-create.ts").CronQuickCreateDraft
+    | null = null;
   @state() cronJobsLoadingMore = false;
   @state() cronJobs: CronJob[] = [];
   @state() cronJobsTotal = 0;

@@ -2,8 +2,8 @@ import {
   resolveAllowlistMatchByCandidates,
   type AllowlistMatch,
 } from "remoteclaw/plugin-sdk/allow-from";
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/string-coerce-runtime";
 import { normalizeStringEntries } from "remoteclaw/plugin-sdk/string-normalization-runtime";
-import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 
 function normalizeAllowList(list?: Array<string | number>) {
   return normalizeStringEntries(list);

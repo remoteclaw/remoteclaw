@@ -21,6 +21,7 @@ const BLOCKED_WORKSPACE_DOTENV_KEYS = new Set([
   "CLAWHUB_URL",
   "HTTP_PROXY",
   "HTTPS_PROXY",
+  "MINIMAX_API_HOST",
   "NODE_TLS_REJECT_UNAUTHORIZED",
   "NO_PROXY",
   "OPENAI_API_KEY",
@@ -69,11 +70,14 @@ const BLOCKED_WORKSPACE_DOTENV_KEYS = new Set([
 ]);
 
 // Block endpoint redirection for any service without overfitting per-provider names.
-const BLOCKED_WORKSPACE_DOTENV_SUFFIXES = ["_BASE_URL"];
+const BLOCKED_WORKSPACE_DOTENV_SUFFIXES = ["_API_HOST", "_BASE_URL"];
 const BLOCKED_WORKSPACE_DOTENV_PREFIXES = [
   "ANTHROPIC_API_KEY_",
   "CLAWHUB_",
   "OPENAI_API_KEY_",
+  // Workspace .env is untrusted; reserve the full RemoteClaw runtime namespace
+  // for shell/global config so new REMOTECLAW_* controls are fail-closed by default.
+  "REMOTECLAW_",
   "REMOTECLAW_CLAWHUB_",
   "REMOTECLAW_DISABLE_",
   "REMOTECLAW_SKIP_",

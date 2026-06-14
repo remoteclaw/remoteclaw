@@ -99,6 +99,7 @@ export type AppViewState = {
   configForm: Record<string, unknown> | null;
   configFormOriginal: Record<string, unknown> | null;
   configFormMode: "form" | "raw";
+  configSettingsMode: "quick" | "advanced";
   configSearchQuery: string;
   configActiveSection: string | null;
   configActiveSubsection: string | null;
@@ -146,6 +147,9 @@ export type AppViewState = {
 } & Pick<
   CronState,
   | "cronLoading"
+  | "cronQuickCreateOpen"
+  | "cronQuickCreateStep"
+  | "cronQuickCreateDraft"
   | "cronJobsLoadingMore"
   | "cronJobs"
   | "cronJobsTotal"

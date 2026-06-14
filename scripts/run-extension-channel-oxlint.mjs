@@ -7,4 +7,5 @@ runExtensionOxlint({
   lockName: "oxlint-extension-channels",
   tempDirPrefix: "remoteclaw-extension-channel-oxlint-",
   emptyMessage: "No extension channel files found.",
+  allowEmpty: true,
 });

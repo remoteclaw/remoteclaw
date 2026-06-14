@@ -12,6 +12,22 @@ import {
 import type { FinalizedMsgContext, MsgContext } from "./templating.js";
 import type { GetReplyOptions } from "./types.js";
 
+function resolveDispatcherSilentReplyContext(
+  ctx: MsgContext | FinalizedMsgContext,
+  cfg: RemoteClawConfig,
+) {
+  const finalized = finalizeInboundContext(ctx);
+  const policySessionKey =
+    finalized.CommandSource === "native"
+      ? (finalized.CommandTargetSessionKey ?? finalized.SessionKey)
+      : finalized.SessionKey;
+  return {
+    cfg,
+    sessionKey: policySessionKey,
+    surface: finalized.Surface ?? finalized.Provider,
+  };
+}
+
 export type DispatchInboundResult = DispatchFromConfigResult;
 
 export async function withReplyDispatcher<T>(params: {
@@ -60,8 +76,12 @@ export async function dispatchInboundMessageWithBufferedDispatcher(params: {
   replyOptions?: Omit<GetReplyOptions, "onToolResult" | "onBlockReply">;
   replyResolver?: typeof import("./reply.js").getReplyFromConfig;
 }): Promise<DispatchInboundResult> {
+  const silentReplyContext = resolveDispatcherSilentReplyContext(params.ctx, params.cfg);
   const { dispatcher, replyOptions, markDispatchIdle, markRunComplete } =
-    createReplyDispatcherWithTyping(params.dispatcherOptions);
+    createReplyDispatcherWithTyping({
+      ...params.dispatcherOptions,
+      silentReplyContext: params.dispatcherOptions.silentReplyContext ?? silentReplyContext,
+    });
   try {
     return await dispatchInboundMessage({
       ctx: params.ctx,
@@ -86,7 +106,11 @@ export async function dispatchInboundMessageWithDispatcher(params: {
   replyOptions?: Omit<GetReplyOptions, "onToolResult" | "onBlockReply">;
   replyResolver?: typeof import("./reply.js").getReplyFromConfig;
 }): Promise<DispatchInboundResult> {
-  const dispatcher = createReplyDispatcher(params.dispatcherOptions);
+  const silentReplyContext = resolveDispatcherSilentReplyContext(params.ctx, params.cfg);
+  const dispatcher = createReplyDispatcher({
+    ...params.dispatcherOptions,
+    silentReplyContext: params.dispatcherOptions.silentReplyContext ?? silentReplyContext,
+  });
   return await dispatchInboundMessage({
     ctx: params.ctx,
     cfg: params.cfg,

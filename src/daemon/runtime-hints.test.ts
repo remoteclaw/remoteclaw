@@ -16,6 +16,7 @@ describe("buildPlatformRuntimeLogHints", () => {
     ).toEqual([
       "Launchd stdout (if installed): /tmp/remoteclaw-state/logs/gateway.log",
       "Launchd stderr (if installed): /tmp/remoteclaw-state/logs/gateway.err.log",
+      "Restart attempts: /tmp/remoteclaw-state/logs/gateway-restart.log",
     ]);
   });
 
@@ -23,17 +24,29 @@ describe("buildPlatformRuntimeLogHints", () => {
     expect(
       buildPlatformRuntimeLogHints({
         platform: "linux",
+        env: {
+          REMOTECLAW_STATE_DIR: "/tmp/remoteclaw-state",
+        },
         systemdServiceName: "remoteclaw-gateway",
         windowsTaskName: "RemoteClaw Gateway",
       }),
-    ).toEqual(["Logs: journalctl --user -u remoteclaw-gateway.service -n 200 --no-pager"]);
+    ).toEqual([
+      "Logs: journalctl --user -u remoteclaw-gateway.service -n 200 --no-pager",
+      "Restart attempts: /tmp/remoteclaw-state/logs/gateway-restart.log",
+    ]);
     expect(
       buildPlatformRuntimeLogHints({
         platform: "win32",
+        env: {
+          REMOTECLAW_STATE_DIR: "/tmp/remoteclaw-state",
+        },
         systemdServiceName: "remoteclaw-gateway",
         windowsTaskName: "RemoteClaw Gateway",
       }),
-    ).toEqual(['Logs: schtasks /Query /TN "RemoteClaw Gateway" /V /FO LIST']);
+    ).toEqual([
+      'Logs: schtasks /Query /TN "RemoteClaw Gateway" /V /FO LIST',
+      "Restart attempts: /tmp/remoteclaw-state/logs/gateway-restart.log",
+    ]);
   });
 });
 

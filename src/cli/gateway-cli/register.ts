@@ -55,7 +55,7 @@ export function registerGatewayCli(program: Command) {
         () =>
           `\n${theme.heading("Examples:")}\n${formatHelpExamples([
             ["remoteclaw gateway run", "Run the gateway in the foreground."],
-            ["remoteclaw gateway status", "Show service status and probe reachability."],
+            ["remoteclaw gateway status", "Show service status plus connectivity/capability."],
             ["remoteclaw gateway discover", "Find local and wide-area gateway beacons."],
             ["remoteclaw gateway call health", "Call a gateway RPC method directly."],
           ])}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/gateway", "docs.remoteclaw.org/cli/gateway")}\n`,
@@ -67,7 +67,7 @@ export function registerGatewayCli(program: Command) {
   );
 
   addGatewayServiceCommands(gateway, {
-    statusDescription: "Show gateway service status + probe the Gateway",
+    statusDescription: "Show gateway service status + probe connectivity/capability",
   });
 
   gatewayCallOpts(
@@ -126,7 +126,9 @@ export function registerGatewayCli(program: Command) {
 
   gateway
     .command("probe")
-    .description("Show gateway reachability + discovery + health + status summary (local + remote)")
+    .description(
+      "Show gateway reachability, auth capability, and read-probe summary (local + remote)",
+    )
     .option("--url <url>", "Explicit Gateway WebSocket URL (still probes localhost)")
     .option("--ssh <target>", "SSH target for remote gateway tunnel (user@host or user@host:port)")
     .option("--ssh-identity <path>", "SSH identity file path")

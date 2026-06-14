@@ -1,5 +1,5 @@
 import net from "node:net";
-import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/string-coerce-runtime";
 
 function normalizeHost(host: string): string {
   const normalized = normalizeLowercaseStringOrEmpty(host).replace(/\.+$/, "");

@@ -88,4 +88,37 @@ describe("withReplyDispatcher", () => {
 
     expect(order).toEqual(["sendFinalReply", "markComplete", "waitForIdle"]);
   });
+
+  it("uses CommandTargetSessionKey for silent-reply policy on native command turns", async () => {
+    hoisted.createReplyDispatcherWithTypingMock.mockReturnValueOnce({
+      dispatcher: createDispatcher([]),
+      replyOptions: {},
+      markDispatchIdle: vi.fn(),
+      markRunComplete: vi.fn(),
+    });
+    hoisted.dispatchReplyFromConfigMock.mockResolvedValueOnce({ text: "ok" });
+
+    await dispatchInboundMessageWithBufferedDispatcher({
+      ctx: buildTestCtx({
+        SessionKey: "agent:test:telegram:slash:8231046597",
+        CommandSource: "native",
+        CommandTargetSessionKey: "agent:test:telegram:direct:8231046597",
+        Surface: "telegram",
+      }),
+      cfg: {} as RemoteClawConfig,
+      dispatcherOptions: {
+        deliver: async () => undefined,
+      },
+      replyResolver: async () => ({ text: "ok" }),
+    });
+
+    expect(hoisted.createReplyDispatcherWithTypingMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        silentReplyContext: expect.objectContaining({
+          sessionKey: "agent:test:telegram:direct:8231046597",
+          surface: "telegram",
+        }),
+      }),
+    );
+  });
 });

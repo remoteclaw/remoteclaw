@@ -24,6 +24,7 @@ remoteclaw hooks list
 ```
 
 List all discovered hooks from workspace, managed, extra, and bundled directories.
+Gateway startup does not load internal hook handlers until at least one internal hook is configured.
 
 **Options:**
 

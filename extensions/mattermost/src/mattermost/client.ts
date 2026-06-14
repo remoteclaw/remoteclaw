@@ -542,6 +542,15 @@ export async function updateMattermostPost(
   });
 }
 
+export async function deleteMattermostPost(
+  client: MattermostClient,
+  postId: string,
+): Promise<void> {
+  await client.request<void>(`/posts/${postId}`, {
+    method: "DELETE",
+  });
+}
+
 export async function uploadMattermostFile(
   client: MattermostClient,
   params: {

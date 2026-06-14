@@ -56,7 +56,7 @@ export async function authorizeSlackDirectMessage(params: {
         );
       },
       onReplyError: (err) => {
-        params.log(`slack pairing reply failed for ${params.senderId}: ${String(err)}`);
+        params.log(`slack pairing reply failed for ${params.senderId}: ${formatErrorMessage(err)}`);
       },
     });
     return false;

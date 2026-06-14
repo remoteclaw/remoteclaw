@@ -325,6 +325,95 @@ describe("createTelegramBot", () => {
     expect(payload.ReplyToSender).toBe("Ada");
   });
 
+  it("keeps reply linkage while omitting filtered binary reply captions", async () => {
+    onSpy.mockClear();
+    sendMessageSpy.mockClear();
+    replySpy.mockClear();
+
+    createTelegramBot({ token: "tok" });
+    const handler = getOnHandler("message") as (ctx: Record<string, unknown>) => Promise<void>;
+
+    await handler({
+      message: {
+        chat: { id: 7, type: "private" },
+        text: "Sure, see below",
+        date: 1736380800,
+        reply_to_message: {
+          message_id: 9001,
+          caption: "PK\x00\x03\x04binary",
+          from: { first_name: "Ada" },
+        },
+      },
+      me: { username: "remoteclaw_bot" },
+      getFile: async () => ({ download: async () => new Uint8Array() }),
+    });
+
+    expect(replySpy).toHaveBeenCalledTimes(1);
+    const payload = replySpy.mock.calls[0][0];
+    expect(payload.Body).toContain("[Replying to Ada id:9001]");
+    expect(payload.Body).not.toContain("PK");
+    expect(payload.Body).not.toContain("unsafe reply text omitted");
+    expect(payload.ReplyToBody).toBeUndefined();
+    expect(payload.ReplyToId).toBe("9001");
+    expect(payload.ReplyToSender).toBe("Ada");
+  });
+
+  it("includes replied image media in inbound context for text replies", async () => {
+    onSpy.mockClear();
+    replySpy.mockClear();
+    getFileSpy.mockClear();
+    loadWebMedia.mockResolvedValueOnce({ path: "/tmp/reply-photo.png", contentType: "image/png" });
+
+    const mediaFetch = vi.fn(
+      async () =>
+        new Response(new Uint8Array([0x89, 0x50, 0x4e, 0x47]), {
+          status: 200,
+          headers: { "content-type": "image/png" },
+        }),
+    );
+    const ssrfMock = mockPinnedHostnameResolution();
+
+    try {
+      createTelegramBot({
+        token: "tok",
+        telegramTransport: {
+          fetch: mediaFetch as typeof fetch,
+          sourceFetch: mediaFetch as typeof fetch,
+          close: async () => {},
+        },
+      });
+      const handler = getOnHandler("message") as (ctx: Record<string, unknown>) => Promise<void>;
+
+      await handler({
+        message: {
+          chat: { id: 7, type: "private" },
+          text: "what is in this image?",
+          date: 1736380800,
+          reply_to_message: {
+            message_id: 9001,
+            photo: [{ file_id: "reply-photo-1" }],
+            from: { first_name: "Ada" },
+          },
+        },
+        me: { username: "remoteclaw_bot" },
+        getFile: async () => ({}),
+      });
+    } finally {
+      ssrfMock.mockRestore();
+    }
+
+    expect(replySpy).toHaveBeenCalledTimes(1);
+    const payload = replySpy.mock.calls[0][0] as {
+      MediaPath?: string;
+      MediaPaths?: string[];
+      ReplyToBody?: string;
+    };
+    expect(payload.ReplyToBody).toBe("<media:image>");
+    expect(getFileSpy).toHaveBeenCalledWith("reply-photo-1");
+    expect(loadWebMedia).not.toHaveBeenCalled();
+    expect(mediaFetch).toHaveBeenCalledTimes(1);
+  });
+
   it("does not fetch reply media for unauthorized DM replies", async () => {
     onSpy.mockClear();
     replySpy.mockClear();

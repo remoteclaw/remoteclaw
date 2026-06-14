@@ -23,6 +23,7 @@ export type ResolvedWhatsAppAccount = {
   groupAllowFrom?: string[];
   groupPolicy?: GroupPolicy;
   dmPolicy?: DmPolicy;
+  historyLimit?: number;
   textChunkLimit?: number;
   chunkMode?: "length" | "newline";
   mediaMaxMb?: number;

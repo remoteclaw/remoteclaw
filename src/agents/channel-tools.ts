@@ -28,6 +28,19 @@ type ChannelAgentToolMeta = {
   channelId: string;
 };
 
+type ChannelMessageActionDiscoveryParams = {
+  cfg?: RemoteClawConfig;
+  currentChannelId?: string | null;
+  currentThreadTs?: string | null;
+  currentMessageId?: string | number | null;
+  accountId?: string | null;
+  sessionKey?: string | null;
+  sessionId?: string | null;
+  agentId?: string | null;
+  requesterSenderId?: string | null;
+  senderIsOwner?: boolean;
+};
+
 const channelAgentToolMeta = new WeakMap<ChannelAgentTool, ChannelAgentToolMeta>();
 
 export function getChannelAgentToolMeta(tool: ChannelAgentTool): ChannelAgentToolMeta | undefined {

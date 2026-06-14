@@ -7,10 +7,12 @@ import { addGatewayClientOptions, callGatewayFromCli } from "../gateway-rpc.js";
 import { parsePositiveIntOrUndefined } from "../program/helpers.js";
 import {
   getCronChannelOptions,
+  coerceCronDeliveryPreviews,
   handleCronCliError,
   parseAt,
   parseCronStaggerMs,
   parseDurationMs,
+  parseCronToolsAllow,
   printCronJson,
   printCronList,
   warnIfCronSchedulerDisabled,
@@ -50,7 +52,8 @@ export function registerCronListCommand(cron: Command) {
             return;
           }
           const jobs = (res as { jobs?: CronJob[] } | null)?.jobs ?? [];
-          printCronList(jobs, defaultRuntime);
+          const deliveryPreviews = coerceCronDeliveryPreviews(res);
+          printCronList(jobs, defaultRuntime, { deliveryPreviews });
         } catch (err) {
           handleCronCliError(err);
         }
@@ -84,10 +87,10 @@ export function registerCronAddCommand(cron: Command) {
       .option("--model <model>", "Model override for agent jobs (provider/model or alias)")
       .option("--timeout-seconds <n>", "Timeout seconds for agent jobs")
       .option("--light-context", "Use lightweight bootstrap context for agent jobs", false)
-      .option("--tools <csv>", "Comma-separated tool allow-list (e.g. exec,read,write)")
-      .option("--announce", "Announce summary to a chat (subagent-style)", false)
-      .option("--deliver", "Deprecated (use --announce). Announces a summary to a chat.")
-      .option("--no-deliver", "Disable announce delivery and skip main-session summary")
+      .option("--tools <list>", "Tool allow-list (e.g. exec,read,write or exec read write)")
+      .option("--announce", "Fallback-deliver final text to a chat", false)
+      .option("--deliver", "Deprecated (use --announce). Fallback-delivers final text to a chat.")
+      .option("--no-deliver", "Disable runner fallback delivery")
       .option("--channel <channel>", `Delivery channel (${getCronChannelOptions()})`, "last")
       .option(
         "--to <dest>",

@@ -72,6 +72,41 @@ describe("channel-auth", () => {
         channelInput: "wa",
       }),
     );
+    expect(mocks.callGateway).toHaveBeenCalledWith({
+      config: { channels: { whatsapp: {} } },
+      method: "channels.start",
+      params: {
+        channel: "whatsapp",
+        accountId: "acct-1",
+      },
+      mode: "backend",
+      clientName: "gateway-client",
+      deviceIdentity: null,
+    });
+  });
+
+  it("skips gateway runtime reconcile in remote mode and warns without failing login", async () => {
+    mocks.loadConfig.mockReturnValue({
+      gateway: { mode: "remote" },
+      channels: { whatsapp: {} },
+    });
+
+    await runChannelLogin({ channel: "whatsapp", account: "acct-1" }, runtime);
+
+    expect(mocks.callGateway).not.toHaveBeenCalled();
+    expect(runtime.log).toHaveBeenCalledWith(expect.stringContaining("Gateway is in remote mode"));
+  });
+
+  it("keeps login successful when local gateway runtime reconcile fails", async () => {
+    mocks.callGateway.mockRejectedValue(new Error("gateway unreachable"));
+
+    await expect(
+      runChannelLogin({ channel: "whatsapp", account: "acct-1" }, runtime),
+    ).resolves.toBeUndefined();
+
+    expect(runtime.log).toHaveBeenCalledWith(
+      expect.stringContaining("running gateway did not restart it: gateway unreachable"),
+    );
   });
 
   it("auto-picks the single configured channel when opts are empty", async () => {

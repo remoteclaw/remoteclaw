@@ -52,6 +52,7 @@ function expectEscapesPackageDiagnostic(diagnostics: Array<{ message: string }>)
 }
 
 afterEach(() => {
+  vi.restoreAllMocks();
   clearPluginDiscoveryCache();
   for (const dir of tempDirs.splice(0)) {
     try {

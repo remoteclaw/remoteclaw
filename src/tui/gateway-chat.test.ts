@@ -110,6 +110,7 @@ describe("resolveGatewayConnection", () => {
       "REMOTECLAW_GATEWAY_URL",
       "REMOTECLAW_GATEWAY_TOKEN",
       "REMOTECLAW_GATEWAY_PASSWORD",
+      "REMOTECLAW_TUI_SETUP_AUTH_SOURCE",
     ]);
     loadConfig.mockClear();
     resolveGatewayPort.mockClear();
@@ -117,10 +118,12 @@ describe("resolveGatewayConnection", () => {
     delete process.env.REMOTECLAW_GATEWAY_URL;
     delete process.env.REMOTECLAW_GATEWAY_TOKEN;
     delete process.env.REMOTECLAW_GATEWAY_PASSWORD;
+    delete process.env.REMOTECLAW_TUI_SETUP_AUTH_SOURCE;
   });
 
   afterEach(() => {
     envSnapshot.restore();
+    vi.useRealTimers();
   });
 
   it("throws when url override is missing explicit credentials", async () => {
@@ -186,6 +189,74 @@ describe("resolveGatewayConnection", () => {
     const result = await resolveGatewayConnection({});
     expect(result.password).toBe("config-password");
     expect(result.token).toBeUndefined();
+  });
+
+  it("keeps normal TUI local password mode env precedence by default", async () => {
+    loadConfig.mockReturnValue({
+      gateway: {
+        mode: "local",
+        auth: {
+          mode: "password",
+          password: "config-password", // pragma: allowlist secret
+        },
+      },
+    });
+
+    await withEnvAsync({ REMOTECLAW_GATEWAY_PASSWORD: "env-password" }, async () => {
+      const result = await resolveGatewayConnection({});
+      expect(result.password).toBe("env-password");
+    });
+  });
+
+  it("uses configured local password for setup-launched TUI despite stale gateway password env", async () => {
+    loadConfig.mockReturnValue({
+      gateway: {
+        mode: "local",
+        auth: {
+          mode: "password",
+          password: "config-password", // pragma: allowlist secret
+        },
+      },
+    });
+
+    await withEnvAsync(
+      {
+        REMOTECLAW_GATEWAY_PASSWORD: "stale-env-password", // pragma: allowlist secret
+        REMOTECLAW_TUI_SETUP_AUTH_SOURCE: "config",
+      },
+      async () => {
+        const result = await resolveGatewayConnection({});
+        expect(result.password).toBe("config-password");
+      },
+    );
+  });
+
+  it("still resolves env SecretRefs for setup-launched TUI config auth", async () => {
+    loadConfig.mockReturnValue({
+      secrets: {
+        providers: {
+          default: { source: "env" },
+        },
+      },
+      gateway: {
+        mode: "local",
+        auth: {
+          mode: "password",
+          password: { source: "env", provider: "default", id: "REMOTECLAW_GATEWAY_PASSWORD" },
+        },
+      },
+    });
+
+    await withEnvAsync(
+      {
+        REMOTECLAW_GATEWAY_PASSWORD: "resolved-ref-password", // pragma: allowlist secret
+        REMOTECLAW_TUI_SETUP_AUTH_SOURCE: "config",
+      },
+      async () => {
+        const result = await resolveGatewayConnection({});
+        expect(result.password).toBe("resolved-ref-password");
+      },
+    );
   });
 
   it("fails when both local token and password are configured but gateway.auth.mode is unset", async () => {

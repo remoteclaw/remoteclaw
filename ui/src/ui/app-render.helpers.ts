@@ -12,6 +12,8 @@ import type { ThemeTransitionContext } from "./theme-transition.ts";
 import type { ThemeMode } from "./theme.ts";
 import type { SessionsListResult } from "./types.ts";
 
+export { isCronSessionKey, parseSessionKey, resolveSessionDisplayName, resolveSessionOptionGroups };
+
 type SessionDefaultsSnapshot = {
   mainSessionKey?: string;
   mainKey?: string;

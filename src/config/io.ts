@@ -1073,6 +1073,27 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
     return result.snapshot;
   }
 
+  async function promoteConfigSnapshotToLastKnownGood(
+    snapshot: ConfigFileSnapshot,
+  ): Promise<boolean> {
+    return await promoteConfigSnapshotToLastKnownGoodWithDeps({
+      deps,
+      snapshot,
+      logger: deps.logger,
+    });
+  }
+
+  async function recoverConfigFromLastKnownGood(params: {
+    snapshot: ConfigFileSnapshot;
+    reason: string;
+  }): Promise<boolean> {
+    return await recoverConfigFromLastKnownGoodWithDeps({
+      deps,
+      snapshot: params.snapshot,
+      reason: params.reason,
+    });
+  }
+
   async function readConfigFileSnapshotForWrite(): Promise<ReadConfigFileSnapshotForWriteResult> {
     const result = await readConfigFileSnapshotInternal();
     return {
@@ -1285,6 +1306,26 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
         errorMessage,
       });
     };
+    const blockingReasons = resolveConfigWriteBlockingReasons(suspiciousReasons);
+    if (blockingReasons.length > 0 && options.allowDestructiveWrite !== true) {
+      const rejectedPath = `${configPath}.rejected.${formatConfigArtifactTimestamp(new Date().toISOString())}`;
+      await deps.fs.promises
+        .writeFile(rejectedPath, json, {
+          encoding: "utf-8",
+          mode: 0o600,
+          flag: "wx",
+        })
+        .catch(() => {});
+      const message = `Config write rejected: ${configPath} (${blockingReasons.join(", ")}). Rejected payload saved to ${rejectedPath}.`;
+      const err = Object.assign(new Error(message), {
+        code: "CONFIG_WRITE_REJECTED",
+        rejectedPath,
+        reasons: blockingReasons,
+      });
+      deps.logger.warn(message);
+      await appendWriteAudit("rejected", err);
+      throw err;
+    }
 
     const tmp = path.join(
       dir,
@@ -1338,6 +1379,8 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
     loadConfig,
     readConfigFileSnapshot,
     readConfigFileSnapshotForWrite,
+    promoteConfigSnapshotToLastKnownGood,
+    recoverConfigFromLastKnownGood,
     writeConfigFile,
   };
 }

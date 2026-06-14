@@ -112,6 +112,45 @@ function createProtectedPluginAuthOverrides(handlePluginRequest: PluginRequestHa
   };
 }
 
+function createRuntimeScopeRecorderHandler(params: {
+  pluginId: string;
+  path: string;
+  method: string;
+  observedRuntimeScopes: string[][];
+  allowedResults: boolean[];
+  gatewayRuntimeScopeSurface?: "trusted-operator";
+}) {
+  return createGatewayPluginRequestHandler({
+    registry: createTestRegistry({
+      httpRoutes: [
+        {
+          pluginId: params.pluginId,
+          source: params.pluginId,
+          path: params.path,
+          auth: "gateway",
+          ...(params.gatewayRuntimeScopeSurface
+            ? { gatewayRuntimeScopeSurface: params.gatewayRuntimeScopeSurface }
+            : {}),
+          match: "exact",
+          handler: async (_req: IncomingMessage, res: ServerResponse) => {
+            const runtimeScopes =
+              getPluginRuntimeGatewayRequestScope()?.client?.connect?.scopes?.slice() ?? [];
+            params.observedRuntimeScopes.push(runtimeScopes);
+            const auth = authorizeOperatorScopesForMethod(params.method, runtimeScopes);
+            params.allowedResults.push(auth.allowed);
+            res.statusCode = 200;
+            res.end("ok");
+            return true;
+          },
+        },
+      ],
+    }),
+    log: { warn: vi.fn() } as unknown as Parameters<
+      typeof createGatewayPluginRequestHandler
+    >[0]["log"],
+  });
+}
+
 describe("gateway plugin HTTP auth boundary", () => {
   test("applies default security headers and optional strict transport security", async () => {
     await withGatewayTempConfig("remoteclaw-plugin-http-security-headers-test-", async () => {

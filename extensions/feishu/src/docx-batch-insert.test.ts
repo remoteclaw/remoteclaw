@@ -14,6 +14,20 @@ function createCountingIterable<T>(values: T[]) {
   };
 }
 
+function createSuccessfulDocxDescendantCreateMock() {
+  return vi.fn(
+    async (params?: DocxDescendantCreateParams): Promise<DocxDescendantCreateResponse> => ({
+      code: 0,
+      data: {
+        children: (params?.data?.children_id ?? []).map((id) => ({
+          block_id: id,
+          block_type: 2,
+        })),
+      },
+    }),
+  );
+}
+
 describe("insertBlocksInBatches", () => {
   it("builds the source block map once for large flat trees", async () => {
     const blockCount = BATCH_SIZE + 200;

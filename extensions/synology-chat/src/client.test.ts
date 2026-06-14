@@ -3,15 +3,16 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Mock http and https modules before importing the client
 vi.mock("node:https", () => {
-  const mockRequest = vi.fn();
-  const mockGet = vi.fn();
-  return { default: { request: mockRequest, get: mockGet }, request: mockRequest, get: mockGet };
+  const httpsRequest = vi.fn();
+  const httpsGet = vi.fn();
+  const httpsModule = { request: httpsRequest, get: httpsGet };
+  return { default: httpsModule, request: httpsRequest, get: httpsGet };
 });
 
 vi.mock("node:http", () => {
-  const mockRequest = vi.fn();
-  const mockGet = vi.fn();
-  return { default: { request: mockRequest, get: mockGet }, request: mockRequest, get: mockGet };
+  const httpRequest = vi.fn();
+  const httpGet = vi.fn();
+  return { default: { request: httpRequest, get: httpGet }, request: httpRequest, get: httpGet };
 });
 
 // Import after mocks are set up
@@ -116,9 +117,7 @@ function mockUserListResponse(
   mockUserListResponseImpl(users, false);
 }
 
-function mockUserListResponseOnce(
-  users: Array<{ user_id: number; username: string; nickname: string }>,
-) {
+function mockUserListResponseOnce(users: Array<Record<string, unknown>>) {
   mockUserListResponseImpl(users, true);
 }
 

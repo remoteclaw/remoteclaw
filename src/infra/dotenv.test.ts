@@ -4,9 +4,49 @@ import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { loadDotEnv } from "./dotenv.js";
 
+const CREDENTIAL_AND_GATEWAY_ENV_KEYS = [
+  "ANTHROPIC_API_KEY",
+  "ANTHROPIC_API_KEY_SECONDARY",
+  "ANTHROPIC_OAUTH_TOKEN",
+  "OPENAI_API_KEY",
+  "OPENAI_API_KEYS",
+  "OPENAI_API_KEY_SECONDARY",
+  "REMOTECLAW_LIVE_ANTHROPIC_KEY",
+  "REMOTECLAW_LIVE_ANTHROPIC_KEYS",
+  "REMOTECLAW_LIVE_GEMINI_KEY",
+  "REMOTECLAW_LIVE_OPENAI_KEY",
+  "REMOTECLAW_GATEWAY_TOKEN",
+  "REMOTECLAW_GATEWAY_PASSWORD",
+  "REMOTECLAW_GATEWAY_SECRET",
+] as const;
+
+const BUNDLED_TRUST_ROOT_ENV_LINES = [
+  "REMOTECLAW_BROWSER_CONTROL_MODULE=data:text/javascript,boom",
+  "REMOTECLAW_BUNDLED_HOOKS_DIR=./attacker-hooks",
+  "REMOTECLAW_BUNDLED_PLUGINS_DIR=./attacker-plugins",
+  "REMOTECLAW_BUNDLED_SKILLS_DIR=./attacker-skills",
+  "REMOTECLAW_SKIP_BROWSER_CONTROL_SERVER=1",
+] as const;
+
+const BUNDLED_TRUST_ROOT_ENV_KEYS = BUNDLED_TRUST_ROOT_ENV_LINES.map(
+  (line) => line.split("=")[0] ?? "",
+);
+
 async function writeEnvFile(filePath: string, contents: string) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
   await fs.writeFile(filePath, contents, "utf8");
+}
+
+function clearEnv(keys: readonly string[]) {
+  for (const key of keys) {
+    delete process.env[key];
+  }
+}
+
+function expectEnvUndefined(keys: readonly string[]) {
+  for (const key of keys) {
+    expect(process.env[key]).toBeUndefined();
+  }
 }
 
 async function withIsolatedEnvAndCwd(run: () => Promise<void>) {

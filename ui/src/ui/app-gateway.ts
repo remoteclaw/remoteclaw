@@ -361,23 +361,12 @@ function handleGatewayEventUnsafe(host: GatewayHost, evt: GatewayEventFrame) {
   }
 
   if (evt.event === "exec.approval.requested") {
-    const entry = parseExecApprovalRequested(evt.payload);
-    if (entry) {
-      host.execApprovalQueue = addExecApproval(host.execApprovalQueue, entry);
-      host.execApprovalError = null;
-      const delay = Math.max(0, entry.expiresAtMs - Date.now() + 500);
-      window.setTimeout(() => {
-        host.execApprovalQueue = removeExecApproval(host.execApprovalQueue, entry.id);
-      }, delay);
-    }
+    enqueueApprovalRequest(host, parseExecApprovalRequested(evt.payload));
     return;
   }
 
   if (evt.event === "exec.approval.resolved") {
-    const resolved = parseExecApprovalResolved(evt.payload);
-    if (resolved) {
-      host.execApprovalQueue = removeExecApproval(host.execApprovalQueue, resolved.id);
-    }
+    removeResolvedApprovalRequest(host, evt.payload);
     return;
   }
 

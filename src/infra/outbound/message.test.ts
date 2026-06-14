@@ -38,6 +38,21 @@ vi.mock("./deliver.js", () => ({
   deliverOutboundPayloads: mocks.deliverOutboundPayloads,
 }));
 
+vi.mock("../../utils/message-channel.js", async () => {
+  const actual = await vi.importActual<typeof import("../../utils/message-channel.js")>(
+    "../../utils/message-channel.js",
+  );
+  const deliverable = ["forum", "directchat"];
+  return {
+    ...actual,
+    listDeliverableMessageChannels: () => deliverable,
+    isDeliverableMessageChannel: (channel: string) => deliverable.includes(channel),
+    isGatewayMessageChannel: (channel: string) =>
+      [...deliverable, actual.INTERNAL_MESSAGE_CHANNEL].includes(channel),
+    normalizeMessageChannel: (value?: string | null) => value?.trim().toLowerCase() || undefined,
+  };
+});
+
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
 import { createTestRegistry } from "../../test-utils/channel-plugins.js";
 import { sendMessage } from "./message.js";
@@ -54,13 +69,13 @@ describe("sendMessage", () => {
       outbound: { deliveryMode: "direct" },
     });
     mocks.resolveOutboundTarget.mockImplementation(({ to }: { to: string }) => ({ ok: true, to }));
-    mocks.deliverOutboundPayloads.mockResolvedValue([{ channel: "mattermost", messageId: "m1" }]);
+    mocks.deliverOutboundPayloads.mockResolvedValue([{ channel: "forum", messageId: "m1" }]);
   });
 
   it("passes explicit agentId to outbound delivery for scoped media roots", async () => {
     await sendMessage({
       cfg: {},
-      channel: "telegram",
+      channel: "forum",
       to: "123456",
       content: "hi",
       agentId: "work",
@@ -69,7 +84,7 @@ describe("sendMessage", () => {
     expect(mocks.deliverOutboundPayloads).toHaveBeenCalledWith(
       expect.objectContaining({
         session: expect.objectContaining({ agentId: "work" }),
-        channel: "telegram",
+        channel: "forum",
         to: "123456",
       }),
     );
@@ -81,18 +96,18 @@ describe("sendMessage", () => {
     };
     mocks.getChannelPlugin
       .mockReturnValueOnce(undefined)
-      .mockReturnValueOnce(telegramPlugin)
-      .mockReturnValue(telegramPlugin);
+      .mockReturnValueOnce(forumPlugin)
+      .mockReturnValue(forumPlugin);
 
     await expect(
       sendMessage({
-        cfg: { channels: { telegram: { botToken: "test-token" } } },
-        channel: "telegram",
+        cfg: { channels: { forum: { token: "test-token" } } },
+        channel: "forum",
         to: "123456",
         content: "hi",
       }),
     ).resolves.toMatchObject({
-      channel: "telegram",
+      channel: "forum",
       to: "123456",
       via: "direct",
     });

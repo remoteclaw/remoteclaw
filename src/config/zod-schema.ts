@@ -756,6 +756,17 @@ export const RemoteClawSchema = z
       })
       .strict()
       .optional(),
+    surfaces: z
+      .record(
+        z.string(),
+        z
+          .object({
+            silentReply: SilentReplyPolicyConfigSchema.optional(),
+            silentReplyRewrite: SilentReplyRewriteConfigSchema.optional(),
+          })
+          .strict(),
+      )
+      .optional(),
   })
   .strict()
   .superRefine((cfg, ctx) => {

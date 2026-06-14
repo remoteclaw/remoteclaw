@@ -256,9 +256,12 @@ export function resetRunCronIsolatedAgentTurnHarness(): void {
   resolveCronDeliveryPlanMock.mockReturnValue({ requested: false, mode: "none" });
   resolveDeliveryTargetMock.mockReset();
   resolveDeliveryTargetMock.mockResolvedValue({
+    ok: true,
     channel: "discord",
-    to: undefined,
+    to: "test-target",
     accountId: undefined,
+    threadId: undefined,
+    mode: "explicit",
     error: undefined,
   });
 

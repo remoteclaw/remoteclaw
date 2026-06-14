@@ -1,5 +1,8 @@
-import type { LookupFn, SsrFPolicy } from "remoteclaw/plugin-sdk/tlon";
-import { fetchWithSsrFGuard } from "remoteclaw/plugin-sdk/tlon";
+import {
+  fetchWithSsrFGuard,
+  type LookupFn,
+  type SsrFPolicy,
+} from "remoteclaw/plugin-sdk/ssrf-runtime";
 import { validateUrbitBaseUrl } from "./base-url.js";
 import { UrbitUrlError } from "./errors.js";
 

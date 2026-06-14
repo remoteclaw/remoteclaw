@@ -5,6 +5,7 @@ import {
   formatTokenCount,
   formatUsd,
   resolveModelCostConfig,
+  type PricingTier,
 } from "./usage-format.js";
 
 describe("usage-format", () => {

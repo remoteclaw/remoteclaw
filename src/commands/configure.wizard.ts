@@ -32,7 +32,7 @@ import {
 } from "./configure.shared.js";
 import { formatHealthCheckFailure } from "./health-format.js";
 import { healthCommand } from "./health.js";
-import { noteChannelStatus, setupChannels } from "./onboard-channels.js";
+import { setupChannels } from "./onboard-channels.js";
 import {
   applyWizardMetadata,
   DEFAULT_WORKSPACE,
@@ -47,6 +47,14 @@ import {
 import { promptRemoteGatewayConfig } from "./onboard-remote.js";
 
 type ConfigureSectionChoice = WizardSection | "__continue";
+type SetupPluginConfigModule = typeof import("../wizard/setup.plugin-config.js");
+
+let setupPluginConfigModulePromise: Promise<SetupPluginConfigModule> | undefined;
+
+function loadSetupPluginConfigModule(): Promise<SetupPluginConfigModule> {
+  setupPluginConfigModulePromise ??= import("../wizard/setup.plugin-config.js");
+  return setupPluginConfigModulePromise;
+}
 
 async function resolveGatewaySecretInputForWizard(params: {
   cfg: RemoteClawConfig;
@@ -487,12 +495,12 @@ export async function runConfigureWizard(
     };
 
     const configureChannelsSection = async () => {
-      await noteChannelStatus({ cfg: nextConfig, prompter });
       const channelMode = await promptChannelMode(runtime);
       if (channelMode === "configure") {
         nextConfig = await setupChannels(nextConfig, runtime, prompter, {
           allowDisable: true,
           allowSignalInstall: true,
+          deferStatusUntilSelection: true,
           skipConfirm: true,
           skipStatusNote: true,
         });

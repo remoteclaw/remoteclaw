@@ -95,11 +95,15 @@ export async function maybeBroadcastMessage(params: {
       peerId: params.peerId,
       agentId: normalizedAgentId,
     });
-    const agentRoute = {
+    const baseAgentRoute = {
       ...params.route,
       agentId: normalizedAgentId,
       ...routeKeys,
     };
+    const agentRoute =
+      params.msg.chatType === "group"
+        ? resolveWhatsAppGroupSessionRoute(baseAgentRoute)
+        : baseAgentRoute;
 
     try {
       return await params.processMessage(params.msg, agentRoute, params.groupHistoryKey, {

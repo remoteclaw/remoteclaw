@@ -225,6 +225,13 @@ export function createEventHandlers(context: EventHandlerContext) {
       }
     }
     if (evt.state === "delta") {
+      // Arm watchdog and mark streaming on every delta, even when the visible
+      // text hasn't changed yet (e.g. first commentary-only or tool-call delta).
+      // Without this, the watchdog never fires and the status bar stays stale.
+      setActivityStatus("streaming");
+      if (state.activeChatRunId === evt.runId) {
+        armStreamingWatchdog(evt.runId);
+      }
       const displayText = streamAssembler.ingestDelta(evt.runId, evt.message, state.showThinking);
       if (!displayText) {
         return;

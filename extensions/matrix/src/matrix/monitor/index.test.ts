@@ -339,9 +339,7 @@ describe("monitorMatrixProvider", () => {
     });
 
     const monitorPromise = monitorMatrixProvider({ abortSignal: abortController.signal });
-    await vi.waitFor(() => {
-      expect(hoisted.callOrder).toContain("start-client");
-    });
+    await waitForCallOrderEntry("start-client");
     const onRoomMessage = hoisted.registeredOnRoomMessage;
     if (!onRoomMessage) {
       throw new Error("expected room message handler to be registered");
@@ -349,9 +347,7 @@ describe("monitorMatrixProvider", () => {
 
     const roomMessagePromise = onRoomMessage("!room:example.org", { event_id: "$event" });
     abortController.abort();
-    await vi.waitFor(() => {
-      expect(hoisted.callOrder).toContain("pause-client");
-    });
+    await waitForCallOrderEntry("pause-client");
     expect(hoisted.callOrder).not.toContain("stop-deduper");
 
     if (resolveHandler === null) {
@@ -376,5 +372,80 @@ describe("monitorMatrixProvider", () => {
     expect(hoisted.callOrder.indexOf("stop-deduper")).toBeLessThan(
       hoisted.callOrder.indexOf("release-client"),
     );
+  });
+
+  it("wires recent-invite promotion to fail closed when room metadata is unresolved", async () => {
+    await startMonitorAndAbortAfterStartup();
+
+    const trackerOpts = hoisted.createDirectRoomTracker.mock.calls[0]?.[1];
+    if (!trackerOpts?.canPromoteRecentInvite) {
+      throw new Error("recent invite promotion callback was not wired");
+    }
+
+    hoisted.getRoomInfo.mockResolvedValueOnce({
+      altAliases: [],
+      nameResolved: false,
+      aliasesResolved: false,
+    });
+
+    await expect(trackerOpts.canPromoteRecentInvite("!room:example.org")).resolves.toBe(false);
+  });
+
+  it("wires recent-invite promotion to reject named rooms", async () => {
+    await startMonitorAndAbortAfterStartup();
+
+    const trackerOpts = hoisted.createDirectRoomTracker.mock.calls[0]?.[1];
+    if (!trackerOpts?.canPromoteRecentInvite) {
+      throw new Error("recent invite promotion callback was not wired");
+    }
+
+    hoisted.getRoomInfo.mockResolvedValueOnce({
+      name: "Ops Room",
+      altAliases: [],
+      nameResolved: true,
+      aliasesResolved: true,
+    });
+
+    await expect(trackerOpts.canPromoteRecentInvite("!room:example.org")).resolves.toBe(false);
+  });
+
+  it("wires recent-invite promotion to reject wildcard-configured rooms", async () => {
+    (hoisted.accountConfig as { rooms?: Record<string, unknown> }).rooms = {
+      "*": { enabled: false },
+    };
+
+    await startMonitorAndAbortAfterStartup();
+
+    const trackerOpts = hoisted.createDirectRoomTracker.mock.calls[0]?.[1];
+    if (!trackerOpts?.canPromoteRecentInvite) {
+      throw new Error("recent invite promotion callback was not wired");
+    }
+
+    hoisted.getRoomInfo.mockResolvedValueOnce({
+      altAliases: [],
+      nameResolved: true,
+      aliasesResolved: true,
+    });
+
+    await expect(trackerOpts.canPromoteRecentInvite("!room:example.org")).resolves.toBe(false);
+  });
+
+  it("treats unresolved room metadata as indeterminate for local promotion revalidation", async () => {
+    await startMonitorAndAbortAfterStartup();
+
+    const trackerOpts = hoisted.createDirectRoomTracker.mock.calls[0]?.[1];
+    if (!trackerOpts?.shouldKeepLocallyPromotedDirectRoom) {
+      throw new Error("local promotion revalidation callback was not wired");
+    }
+
+    hoisted.getRoomInfo.mockResolvedValueOnce({
+      altAliases: [],
+      nameResolved: false,
+      aliasesResolved: false,
+    });
+
+    await expect(
+      trackerOpts.shouldKeepLocallyPromotedDirectRoom("!room:example.org"),
+    ).resolves.toBeUndefined();
   });
 });

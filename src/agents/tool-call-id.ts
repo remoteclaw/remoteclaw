@@ -187,7 +187,7 @@ function rewriteAssistantToolCallIds(params: {
       return block;
     }
     changed = true;
-    return { ...(block as unknown as Record<string, unknown>), id: nextId };
+    return Object.assign({}, block as unknown as Record<string, unknown>, { id: nextId });
   });
 
   if (!changed) {

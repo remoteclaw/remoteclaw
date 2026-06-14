@@ -24,6 +24,55 @@ async function emitCredsUpdateAndReadSaveCreds() {
   return saveCreds;
 }
 
+function mockFsOpenForCredsWrites(params?: {
+  onTempWrite?: (filePath: string) => Promise<void> | void;
+}) {
+  const open = fs.open.bind(fs);
+  const tempHandles: Array<{
+    filePath: string;
+    writeFile: ReturnType<typeof vi.fn>;
+    sync: ReturnType<typeof vi.fn>;
+    close: ReturnType<typeof vi.fn>;
+  }> = [];
+  const dirHandles: Array<{
+    filePath: string;
+    sync: ReturnType<typeof vi.fn>;
+    close: ReturnType<typeof vi.fn>;
+  }> = [];
+  const openSpy = vi.spyOn(fs, "open").mockImplementation(async (filePath, flags, mode) => {
+    if (typeof filePath === "string" && flags === "w" && filePath.includes(".creds.")) {
+      const handle = {
+        filePath,
+        writeFile: vi.fn(async () => {
+          await params?.onTempWrite?.(filePath);
+        }),
+        sync: vi.fn(async () => {}),
+        close: vi.fn(async () => {}),
+      };
+      tempHandles.push(handle);
+      return handle as never;
+    }
+    if (typeof filePath === "string" && flags === "r") {
+      const handle = {
+        filePath,
+        sync: vi.fn(async () => {}),
+        close: vi.fn(async () => {}),
+      };
+      dirHandles.push(handle);
+      return handle as never;
+    }
+    return open(filePath as never, flags as never, mode as never);
+  });
+  return {
+    openSpy,
+    tempHandles,
+    dirHandles,
+    restore() {
+      openSpy.mockRestore();
+    },
+  };
+}
+
 function mockCredsJsonSpies(readContents: string) {
   const credsSuffix = path.join(".remoteclaw", "credentials", "whatsapp", "default", "creds.json");
   const copySpy = vi.spyOn(fsSync, "copyFileSync").mockImplementation(() => {});

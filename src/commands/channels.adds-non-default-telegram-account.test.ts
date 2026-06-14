@@ -23,22 +23,28 @@ import {
 } from "./channels.js";
 
 const runtime = createTestRuntime();
-let clackPrompterModule: typeof import("../wizard/clack-prompter.js");
+let minimalChannelsCommandRegistry: ReturnType<typeof createTestRegistry>;
+const createClackPrompterMock = vi.hoisted(() => vi.fn());
+
+vi.mock("../wizard/clack-prompter.js", () => ({
+  createClackPrompter: createClackPrompterMock,
+}));
 
 function formatChannelStatusJoined(channelAccounts: Record<string, unknown>) {
   return formatGatewayChannelsStatusLines({ channelAccounts }).join("\n");
 }
 
 describe("channels command", () => {
-  beforeAll(async () => {
-    clackPrompterModule = await import("../wizard/clack-prompter.js");
+  beforeAll(() => {
+    minimalChannelsCommandRegistry = createMinimalChannelsCommandRegistryForTests();
   });
 
   beforeEach(() => {
     configMocks.readConfigFileSnapshot.mockClear();
     configMocks.writeConfigFile.mockClear();
-    authMocks.loadAuthProfileStore.mockClear();
+    secretMocks.resolveCommandConfigWithSecrets.mockClear();
     offsetMocks.deleteTelegramUpdateOffset.mockClear();
+    createClackPrompterMock.mockReset();
     runtime.log.mockClear();
     runtime.error.mockClear();
     runtime.exit.mockClear();
@@ -49,6 +55,7 @@ describe("channels command", () => {
     setDefaultChannelPluginRegistryForTests();
   });
 
+  // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- Test helper lets assertions ascribe written config shape.
   function getWrittenConfig<T>(): T {
     expect(configMocks.writeConfigFile).toHaveBeenCalledTimes(1);
     return configMocks.writeConfigFile.mock.calls[0]?.[0] as T;
@@ -58,14 +65,8 @@ describe("channels command", () => {
     args: Parameters<typeof channelsRemoveCommand>[0],
   ): Promise<void> {
     const prompt = { confirm: vi.fn().mockResolvedValue(true) };
-    const promptSpy = vi
-      .spyOn(clackPrompterModule, "createClackPrompter")
-      .mockReturnValue(prompt as never);
-    try {
-      await channelsRemoveCommand(args, runtime, { hasFlags: true });
-    } finally {
-      promptSpy.mockRestore();
-    }
+    createClackPrompterMock.mockReturnValue(prompt);
+    await channelsRemoveCommand(args, runtime, { hasFlags: true });
   }
 
   async function addTelegramAccount(account: string, token: string): Promise<void> {

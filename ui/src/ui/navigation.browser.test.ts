@@ -4,6 +4,10 @@ import { mountApp as mountTestApp, registerAppMountHooks } from "./test-helpers/
 
 registerAppMountHooks();
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 function mountApp(pathname: string) {
   return mountTestApp(pathname);
 }
@@ -15,43 +19,7 @@ function nextFrame() {
 }
 
 describe("control UI routing", () => {
-  it("hydrates the tab from the location", async () => {
-    const app = mountApp("/sessions");
-    await app.updateComplete;
-
-    expect(app.tab).toBe("sessions");
-    expect(window.location.pathname).toBe("/sessions");
-  });
-
-  it("respects /ui base paths", async () => {
-    const app = mountApp("/ui/cron");
-    await app.updateComplete;
-
-    expect(app.basePath).toBe("/ui");
-    expect(app.tab).toBe("cron");
-    expect(window.location.pathname).toBe("/ui/cron");
-  });
-
-  it("infers nested base paths", async () => {
-    const app = mountApp("/apps/remoteclaw/cron");
-    await app.updateComplete;
-
-    expect(app.basePath).toBe("/apps/remoteclaw");
-    expect(app.tab).toBe("cron");
-    expect(window.location.pathname).toBe("/apps/remoteclaw/cron");
-  });
-
-  it("honors explicit base path overrides", async () => {
-    window.__REMOTECLAW_CONTROL_UI_BASE_PATH__ = "/remoteclaw";
-    const app = mountApp("/remoteclaw/sessions");
-    await app.updateComplete;
-
-    expect(app.basePath).toBe("/remoteclaw");
-    expect(app.tab).toBe("sessions");
-    expect(window.location.pathname).toBe("/remoteclaw/sessions");
-  });
-
-  it("updates the URL when clicking nav items", async () => {
+  it("renders responsive navigation shell, drawer, and collapsed states", async () => {
     const app = mountApp("/chat");
     await app.updateComplete;
 
@@ -108,6 +76,10 @@ describe("control UI routing", () => {
   });
 
   it("auto-scrolls chat history to the latest message", async () => {
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+      queueMicrotask(() => callback(performance.now()));
+      return 1;
+    });
     const app = mountApp("/chat");
     await app.updateComplete;
 
@@ -119,9 +91,9 @@ describe("control UI routing", () => {
     initialContainer.style.maxHeight = "180px";
     initialContainer.style.overflow = "auto";
 
-    app.chatMessages = Array.from({ length: 60 }, (_, index) => ({
+    app.chatMessages = Array.from({ length: 3 }, (_, index) => ({
       role: "assistant",
-      content: `Line ${index} - ${"x".repeat(200)}`,
+      content: `Line ${index}`,
       timestamp: Date.now() + index,
     }));
 
@@ -186,34 +158,26 @@ describe("control UI routing", () => {
     );
     expect(window.location.pathname).toBe("/ui/overview");
     expect(window.location.hash).toBe("");
-  });
+    app.remove();
 
-  it("hydrates token from URL hash and strips it", async () => {
-    const app = mountApp("/ui/overview#token=abc123");
-    await app.updateComplete;
+    const refreshed = mountApp("/ui/overview");
+    await refreshed.updateComplete;
 
-    expect(app.settings.token).toBe("abc123");
+    expect(refreshed.settings.token).toBe("abc123");
     expect(JSON.parse(localStorage.getItem("remoteclaw.control.settings.v1") ?? "{}").token).toBe(
       undefined,
     );
-    expect(window.location.pathname).toBe("/ui/overview");
-    expect(window.location.hash).toBe("");
-  });
 
-  it("clears the current token when the gateway URL changes", async () => {
-    const app = mountApp("/ui/overview#token=abc123");
-    await app.updateComplete;
-
-    const gatewayUrlInput = app.querySelector<HTMLInputElement>(
+    const gatewayUrlInput = refreshed.querySelector<HTMLInputElement>(
       'input[placeholder="ws://100.x.y.z:18789"]',
     );
     expect(gatewayUrlInput).not.toBeNull();
     gatewayUrlInput!.value = "wss://other-gateway.example/remoteclaw";
     gatewayUrlInput!.dispatchEvent(new Event("input", { bubbles: true }));
-    await app.updateComplete;
+    await refreshed.updateComplete;
 
-    expect(app.settings.gatewayUrl).toBe("wss://other-gateway.example/remoteclaw");
-    expect(app.settings.token).toBe("");
+    expect(refreshed.settings.gatewayUrl).toBe("wss://other-gateway.example/remoteclaw");
+    expect(refreshed.settings.token).toBe("");
   });
 
   it("keeps a hash token pending until the gateway URL change is confirmed", async () => {

@@ -169,10 +169,8 @@ describe("setupSearch", () => {
     );
     expect(result.tools?.web?.search?.perplexity?.apiKey).toBe("existing-key");
     expect(result.tools?.web?.search?.enabled).toBe(true);
-  });
 
-  it("advanced preserves enabled:false when keeping existing key", async () => {
-    const result = await runBlankPerplexityKeyEntry(
+    const disabledResult = await runBlankPerplexityKeyEntry(
       "existing-key", // pragma: allowlist secret
       false,
     );
@@ -188,7 +186,6 @@ describe("setupSearch", () => {
     expect(result.tools?.web?.search?.perplexity?.apiKey).toBe("stored-pplx-key");
     expect(result.tools?.web?.search?.enabled).toBe(true);
     expect(prompter.text).not.toHaveBeenCalled();
-  });
 
   it("quickstart preserves enabled:false when search was intentionally disabled", async () => {
     const { result, prompter } = await runQuickstartPerplexitySetup(

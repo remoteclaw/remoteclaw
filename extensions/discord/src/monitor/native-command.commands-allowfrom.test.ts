@@ -81,11 +81,13 @@ async function runGuildSlashCommand(params?: {
   userId?: string;
   mutateConfig?: (cfg: RemoteClawConfig) => void;
   runtimeDiscordConfig?: DiscordAccountConfig;
+  mutateInteraction?: (interaction: MockCommandInteraction) => void;
 }) {
   const cfg = createConfig();
   params?.mutateConfig?.(cfg);
   const command = createCommand(cfg, params?.runtimeDiscordConfig);
   const interaction = createInteraction({ userId: params?.userId });
+  params?.mutateInteraction?.(interaction);
   vi.spyOn(pluginCommandsModule, "matchPluginCommand").mockReturnValue(null);
   const dispatchSpy = createDispatchSpy();
   await (command as { run: (interaction: unknown) => Promise<void> }).run(interaction as unknown);

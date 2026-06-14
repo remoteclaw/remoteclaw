@@ -14,8 +14,8 @@ import { getChildLogger, toPinoLikeLogger } from "../../../src/logging.js";
 import { ensureDir, resolveUserPath } from "../../../src/utils.js";
 import { VERSION } from "../../../src/version.js";
 import {
-  maybeRestoreCredsFromBackup,
   readCredsJsonRaw,
+  restoreCredsFromBackupIfNeeded,
   resolveDefaultWebAuthDir,
   resolveWebCredsBackupPath,
   resolveWebCredsPath,
@@ -26,10 +26,25 @@ export {
   logoutWeb,
   logWebSelfId,
   pickWebChannel,
+  readWebAuthSnapshot,
+  readWebAuthState,
+  readWebAuthExistsBestEffort,
+  readWebAuthExistsForDecision,
+  readWebAuthSnapshotBestEffort,
+  readWebSelfIdentityForDecision,
   readWebSelfId,
+  WHATSAPP_AUTH_UNSTABLE_CODE,
+  WhatsAppAuthUnstableError,
+  type WhatsAppWebAuthState,
   WA_WEB_AUTH_DIR,
   webAuthExists,
 } from "./auth-store.js";
+export {
+  waitForCredsSaveQueue,
+  waitForCredsSaveQueueWithTimeout,
+  writeCredsJsonAtomically,
+} from "./creds-persistence.js";
+export type { CredsQueueWaitResult } from "./creds-persistence.js";
 
 let credsSaveQueue: Promise<void> = Promise.resolve();
 function enqueueSaveCreds(

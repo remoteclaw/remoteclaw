@@ -81,6 +81,8 @@ export function createWebOnMessageHandler(params: {
         id: peerId,
       },
     });
+    const route =
+      msg.chatType === "group" ? resolveWhatsAppGroupSessionRoute(baseRoute) : baseRoute;
     const groupHistoryKey =
       msg.chatType === "group"
         ? buildGroupHistoryKey({
@@ -132,7 +134,7 @@ export function createWebOnMessageHandler(params: {
         warn: params.replyLogger.warn.bind(params.replyLogger),
       });
 
-      const gating = applyGroupGating({
+      const gating = await applyGroupGating({
         cfg: params.cfg,
         msg,
         conversationId,

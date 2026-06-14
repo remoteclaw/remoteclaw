@@ -10,14 +10,14 @@ describe("getChannelMessageAdapter", () => {
     });
   });
 
-  it("returns the discord adapter with a cross-context component builder", () => {
-    const adapter = getChannelMessageAdapter("discord");
+  it("returns an adapter with a cross-context component builder", () => {
+    const adapter = getChannelMessageAdapter("rich-chat");
 
     expect(adapter.supportsComponentsV2).toBe(true);
     expect(adapter.buildCrossContextComponents).toBeTypeOf("function");
 
     const components = adapter.buildCrossContextComponents?.({
-      originLabel: "Telegram",
+      originLabel: "Forum",
       message: "Hello from chat",
       cfg: {} as never,
       accountId: "primary",
@@ -27,9 +27,9 @@ describe("getChannelMessageAdapter", () => {
     expect(components).toHaveLength(1);
     expect(container).toBeInstanceOf(DiscordUiContainer);
     expect(container?.components).toEqual([
-      expect.any(TextDisplay),
-      expect.any(Separator),
-      expect.any(TextDisplay),
+      expect.any(TestTextDisplay),
+      expect.any(TestSeparator),
+      expect.any(TestTextDisplay),
     ]);
   });
 

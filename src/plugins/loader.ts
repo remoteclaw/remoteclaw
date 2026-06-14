@@ -729,6 +729,7 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
       hookPolicy: entry?.hooks,
     });
 
+    const registrySnapshot = snapshotPluginRegistry(registry);
     try {
       const result = register(api);
       if (result && typeof result.then === "function") {
@@ -742,6 +743,7 @@ export function loadRemoteClawPlugins(options: PluginLoadOptions = {}): PluginRe
       registry.plugins.push(record);
       seenIds.set(pluginId, candidate.origin);
     } catch (err) {
+      restorePluginRegistry(registry, registrySnapshot);
       recordPluginError({
         logger,
         registry,

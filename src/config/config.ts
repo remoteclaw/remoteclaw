@@ -9,6 +9,7 @@ export {
   loadConfig,
   readBestEffortConfig,
   parseConfigJson5,
+  promoteConfigSnapshotToLastKnownGood,
   readConfigFileSnapshot,
   readConfigFileSnapshotForWrite,
   resolveConfigSnapshotHash,

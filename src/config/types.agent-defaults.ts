@@ -314,7 +314,7 @@ export type AgentCompactionConfig = {
    * Falls back to the primary model when unset. */
   model?: string;
   /**
-   * Send a "🧹 Compacting context..." notice to the user when compaction starts.
+   * Send brief compaction notices to the user when compaction starts and completes.
    * Default: false (silent by default).
    */
   notifyUser?: boolean;

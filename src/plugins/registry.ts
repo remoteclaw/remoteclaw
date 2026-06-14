@@ -182,9 +182,13 @@ export function createEmptyPluginRegistry(): PluginRegistry {
   };
 }
 
+type HookRegistration = { event: string; handler: Parameters<typeof registerInternalHook>[1] };
+type HookRollbackEntry = { name: string; previousRegistrations: HookRegistration[] };
+
 export function createPluginRegistry(registryParams: PluginRegistryParams) {
   const registry = createEmptyPluginRegistry();
   const coreGatewayMethods = new Set(Object.keys(registryParams.coreGatewayHandlers ?? {}));
+  const pluginHookRollback = new Map<string, HookRollbackEntry[]>();
 
   const pushDiagnostic = (diag: PluginDiagnostic) => {
     registry.diagnostics.push(diag);
@@ -607,9 +611,39 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
     };
   };
 
+  const rollbackPluginGlobalSideEffects = (pluginId: string) => {
+    if (registryParams.activateGlobalSideEffects === false) {
+      return;
+    }
+
+    clearPluginCommandsForPlugin(pluginId);
+    clearPluginInteractiveHandlersForPlugin(pluginId);
+    clearContextEnginesForOwner(`plugin:${pluginId}`);
+
+    const hookRollbackEntries = pluginHookRollback.get(pluginId) ?? [];
+    for (const entry of hookRollbackEntries.toReversed()) {
+      const activeRegistrations = activePluginHookRegistrations.get(entry.name) ?? [];
+      for (const registration of activeRegistrations) {
+        unregisterInternalHook(registration.event, registration.handler);
+      }
+
+      if (entry.previousRegistrations.length === 0) {
+        activePluginHookRegistrations.delete(entry.name);
+        continue;
+      }
+
+      for (const registration of entry.previousRegistrations) {
+        registerInternalHook(registration.event, registration.handler);
+      }
+      activePluginHookRegistrations.set(entry.name, [...entry.previousRegistrations]);
+    }
+    pluginHookRollback.delete(pluginId);
+  };
+
   return {
     registry,
     createApi,
+    rollbackPluginGlobalSideEffects,
     pushDiagnostic,
     registerTool,
     registerChannel,

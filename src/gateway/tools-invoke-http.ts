@@ -132,13 +132,16 @@ export async function handleToolsInvokeHttpRequest(
     req,
     res,
     auth: opts.auth,
-    trustedProxies: opts.trustedProxies ?? cfg.gateway?.trustedProxies,
-    allowRealIpFallback: opts.allowRealIpFallback ?? cfg.gateway?.allowRealIpFallback,
+    trustedProxies: opts.trustedProxies,
+    allowRealIpFallback: opts.allowRealIpFallback,
     rateLimiter: opts.rateLimiter,
+    operatorMethod: "agent",
+    resolveOperatorScopes: resolveOpenAiCompatibleHttpOperatorScopes,
   });
   if (!ok) {
     return true;
   }
+  const { cfg, requestAuth } = authResult;
 
   const bodyUnknown = await readJsonBodyOrError(req, res, opts.maxBodyBytes ?? DEFAULT_BODY_BYTES);
   if (bodyUnknown === undefined) {

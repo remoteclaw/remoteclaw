@@ -42,6 +42,7 @@ import {
   resolveDiscordShouldRequireMention,
   resolveGroupDmAllow,
 } from "./allow-list.js";
+import { resolveDiscordChannelNameSafe } from "./channel-access.js";
 import { resolveDiscordDmCommandAccess } from "./dm-command-auth.js";
 import { handleDiscordDmCommandDecision } from "./dm-command-decision.js";
 import {
@@ -803,6 +804,7 @@ export async function preflightDiscordMessage(
     messageChannelId,
     author,
     sender,
+    memberRoleIds,
     channelInfo,
     channelName,
     isGuildMessage,

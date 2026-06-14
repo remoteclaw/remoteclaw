@@ -72,6 +72,7 @@ export async function createGatewayRuntimeState(params: {
   httpServer: HttpServer;
   httpServers: HttpServer[];
   httpBindHosts: string[];
+  startListening: () => Promise<void>;
   wss: WebSocketServer;
   clients: Set<GatewayWsClient>;
   broadcast: GatewayBroadcastFn;

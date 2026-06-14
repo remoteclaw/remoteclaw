@@ -258,9 +258,7 @@ export type RemoteClawPluginDefinition = {
   activate?: (api: RemoteClawPluginApi) => void | Promise<void>;
 };
 
-export type RemoteClawPluginModule =
-  | RemoteClawPluginDefinition
-  | ((api: RemoteClawPluginApi) => void | Promise<void>);
+export type RemoteClawPluginModule = RemoteClawPluginDefinition | ((api: RemoteClawPluginApi) => void);
 
 export type RemoteClawPluginApi = {
   id: string;

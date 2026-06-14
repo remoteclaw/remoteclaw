@@ -4,6 +4,9 @@
   "private": true,
   "description": "RemoteClaw QA synthetic channel plugin (runtime gutted in fork — pi-era synthetic transport removed; see CLAUDE.md § Fork Context)",
   "type": "module",
+  "dependencies": {
+    "@sinclair/typebox": "0.34.49"
+  },
   "devDependencies": {
     "remoteclaw": "workspace:*"
   },

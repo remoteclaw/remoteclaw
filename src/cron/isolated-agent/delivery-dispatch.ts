@@ -90,7 +90,6 @@ type DispatchCronDeliveryParams = {
   job: CronJob;
   agentId: string;
   agentSessionKey: string;
-  runSessionId: string;
   runStartedAt: number;
   runEndedAt: number;
   timeoutMs: number;
@@ -98,6 +97,7 @@ type DispatchCronDeliveryParams = {
   deliveryRequested: boolean;
   skipHeartbeatDelivery: boolean;
   skipMessagingToolDelivery?: boolean;
+  unverifiedMessagingToolDelivery?: boolean;
   deliveryBestEffort: boolean;
   deliveryPayloadHasStructuredContent: boolean;
   deliveryPayloads: ReplyPayload[];
@@ -137,10 +137,15 @@ export async function dispatchCronDelivery(
   // remains the only source of delivered state.
   let delivered = skipMessagingToolDelivery;
   let deliveryAttempted = skipMessagingToolDelivery;
+  let directCronSessionDeleted = false;
+  const formatDeliveryTargetError = (error: string) =>
+    params.unverifiedMessagingToolDelivery === true
+      ? `${error}; the agent used the message tool, but RemoteClaw could not verify that message matched the cron delivery target`
+      : error;
   const failDeliveryTarget = (error: string) =>
     params.withRunSession({
       status: "error",
-      error,
+      error: formatDeliveryTargetError(error),
       errorKind: "delivery-target",
       summary,
       outputText,
@@ -427,7 +432,7 @@ export async function dispatchCronDelivery(
     const useDirectDelivery =
       params.deliveryPayloadHasStructuredContent || params.resolvedDelivery.threadId != null;
     if (useDirectDelivery) {
-      const directResult = await deliverViaDirect(params.resolvedDelivery);
+      const directResult = await deliverViaDirectAndCleanup(params.resolvedDelivery);
       if (directResult) {
         return {
           result: directResult,

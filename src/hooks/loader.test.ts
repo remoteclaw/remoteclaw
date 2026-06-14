@@ -7,6 +7,7 @@ import { setLoggerOverride } from "../logging/logger.js";
 import { loggingState } from "../logging/state.js";
 import { stripAnsi } from "../terminal/ansi.js";
 import { captureEnv } from "../test-utils/env.js";
+import { hasConfiguredInternalHooks, resolveConfiguredInternalHookNames } from "./configured.js";
 import {
   clearInternalHooks,
   getRegisteredEventKeys,
@@ -77,6 +78,40 @@ describe("loader", () => {
   });
 
   describe("loadInternalHooks", () => {
+    it("detects configured internal hook surfaces", () => {
+      expect(hasConfiguredInternalHooks({} satisfies RemoteClawConfig)).toBe(false);
+      expect(
+        hasConfiguredInternalHooks({
+          hooks: { internal: { entries: { "session-memory": { enabled: true } } } },
+        } satisfies RemoteClawConfig),
+      ).toBe(true);
+      expect(
+        hasConfiguredInternalHooks({
+          hooks: { internal: { entries: { "session-memory": { enabled: false } } } },
+        } satisfies RemoteClawConfig),
+      ).toBe(false);
+      expect(
+        hasConfiguredInternalHooks({
+          hooks: { internal: { load: { extraDirs: ["/tmp/hooks"] } } },
+        } satisfies RemoteClawConfig),
+      ).toBe(true);
+      expect(
+        resolveConfiguredInternalHookNames({
+          hooks: { internal: { entries: { "session-memory": { enabled: true } } } },
+        } satisfies RemoteClawConfig),
+      ).toEqual(new Set(["session-memory"]));
+      expect(
+        resolveConfiguredInternalHookNames({
+          hooks: { internal: { enabled: true } },
+        } satisfies RemoteClawConfig),
+      ).toBeNull();
+      expect(
+        resolveConfiguredInternalHookNames({
+          hooks: { internal: { installs: { pack: { source: "path" } } } },
+        } satisfies RemoteClawConfig),
+      ).toBeNull();
+    });
+
     const createLegacyHandlerConfig = () =>
       createEnabledHooksConfig([
         {
@@ -108,6 +143,31 @@ describe("loader", () => {
       const cfg: RemoteClawConfig = {};
       const count = await loadInternalHooks(cfg, tmpDir);
       expect(count).toBe(0);
+    });
+
+    it("loads only explicitly configured discovered hooks", async () => {
+      const hooksDir = path.join(tmpDir, "managed-hooks");
+      await writeDiscoveredHook({ sourceDir: hooksDir, hookName: "keep-hook" });
+      await writeDiscoveredHook({ sourceDir: hooksDir, hookName: "skip-hook" });
+
+      const count = await loadInternalHooks(
+        {
+          hooks: {
+            internal: {
+              entries: {
+                "keep-hook": { enabled: true },
+              },
+            },
+          },
+        } satisfies RemoteClawConfig,
+        tmpDir,
+        { managedHooksDir: hooksDir, bundledHooksDir: "/nonexistent/bundled/hooks" },
+      );
+
+      expect(count).toBe(1);
+      const event = createInternalHookEvent("command", "new", "test-session");
+      await triggerInternalHook(event);
+      expect(event.messages).toEqual(["keep-hook"]);
     });
 
     it("should load a handler from a module", async () => {

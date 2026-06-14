@@ -14,6 +14,7 @@ import type { RemoteClawConfig } from "../../config/config.js";
 import { buildOutboundSessionContext } from "../../infra/outbound/session-context.js";
 import { INTERNAL_MESSAGE_CHANNEL, normalizeMessageChannel } from "../../utils/message-channel.js";
 import type { OriginatingChannelType } from "../templating.js";
+import { isSilentReplyPayloadText, SILENT_REPLY_TOKEN } from "../tokens.js";
 import type { ReplyPayload } from "../types.js";
 import { normalizeReplyPayload } from "./normalize-reply.js";
 import { shouldSuppressReasoningPayload } from "./reply-payloads.js";
@@ -36,6 +37,8 @@ export type RouteReplyParams = {
   to: string;
   /** Session key for deriving agent identity defaults (multi-agent). */
   sessionKey?: string;
+  /** Session key for policy resolution when native-command delivery targets a different session. */
+  policySessionKey?: string;
   /** Provider account id (multi-account). */
   accountId?: string;
   /** Thread id for replies (Telegram topic id or Matrix thread event id). */

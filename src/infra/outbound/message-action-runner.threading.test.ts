@@ -59,8 +59,8 @@ function mockHandledSendAction() {
   });
 }
 
-const defaultTelegramToolContext = {
-  currentChannelId: "telegram:123",
+const defaultForumToolContext = {
+  currentChannelId: "forum:123",
   currentThreadTs: "42",
 } as const;
 
@@ -80,13 +80,13 @@ describe("runMessageAction threading auto-injection", () => {
       name: "exact channel id",
       target: "channel:C123",
       threadTs: "111.222",
-      expectedSessionKey: "agent:main:slack:channel:c123:thread:111.222",
+      expectedSessionKey: "agent:main:workspace:channel:c123:thread:111.222",
     },
     {
       name: "case-insensitive channel id",
       target: "channel:c123",
       threadTs: "333.444",
-      expectedSessionKey: "agent:main:slack:channel:c123:thread:333.444",
+      expectedSessionKey: "agent:main:workspace:channel:c123:thread:333.444",
     },
   ] as const)("auto-threads slack using $name", async (testCase) => {
     mockHandledSendAction();
@@ -112,17 +112,17 @@ describe("runMessageAction threading auto-injection", () => {
   it.each([
     {
       name: "injects threadId for matching target",
-      target: "telegram:123",
+      target: "forum:123",
       expectedThreadId: "42",
     },
     {
       name: "injects threadId for prefixed group target",
-      target: "telegram:group:123",
+      target: "forum:group:123",
       expectedThreadId: "42",
     },
     {
       name: "skips threadId when target chat differs",
-      target: "telegram:999",
+      target: "forum:999",
       expectedThreadId: undefined,
     },
   ] as const)("telegram auto-threading: $name", async (testCase) => {

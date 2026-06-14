@@ -18,13 +18,20 @@ export async function postMultipartFormData(params: {
   timeoutMs: number;
 }): Promise<Response> {
   const body = Buffer.from(concatUint8Arrays(params.parts));
+  const headers: Record<string, string> = {};
+  if (params.extraHeaders) {
+    new Headers(params.extraHeaders).forEach((value, key) => {
+      headers[key] = value;
+    });
+  }
+  // Per-request Content-Type wins over callers so the multipart boundary is
+  // always authoritative.
+  headers["Content-Type"] = `multipart/form-data; boundary=${params.boundary}`;
   return await blueBubblesFetchWithTimeout(
     params.url,
     {
       method: "POST",
-      headers: {
-        "Content-Type": `multipart/form-data; boundary=${params.boundary}`,
-      },
+      headers,
       body,
     },
     params.timeoutMs,

@@ -7,11 +7,11 @@ import { setActivePluginRegistry } from "../../plugins/runtime.js";
 import { createPluginRuntime } from "../../plugins/runtime/index.js";
 import { createTestRegistry } from "../../test-utils/channel-plugins.js";
 
-export const slackConfig = {
+export const workspaceConfig = {
   channels: {
-    slack: {
-      botToken: "xoxb-test",
-      appToken: "xapp-test",
+    workspace: {
+      botToken: "workspace-test",
+      appToken: "workspace-app-test",
     },
   },
 } as RemoteClawConfig;

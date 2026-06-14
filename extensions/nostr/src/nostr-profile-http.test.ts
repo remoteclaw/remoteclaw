@@ -13,6 +13,19 @@ import {
   type NostrProfileHttpContext,
 } from "./nostr-profile-http.js";
 
+const runtimeScopeMock = vi.hoisted(() => vi.fn());
+
+vi.mock("./nostr-profile-http-runtime.js", async () => {
+  const webhookIngress = await import("remoteclaw/plugin-sdk/webhook-ingress");
+  const requestGuards = await import("remoteclaw/plugin-sdk/webhook-request-guards");
+  return {
+    createFixedWindowRateLimiter: webhookIngress.createFixedWindowRateLimiter,
+    readJsonBodyWithLimit: requestGuards.readJsonBodyWithLimit,
+    requestBodyErrorToText: requestGuards.requestBodyErrorToText,
+    getPluginRuntimeGatewayRequestScope: runtimeScopeMock,
+  };
+});
+
 // Mock the channel exports
 vi.mock("./channel.js", () => ({
   publishNostrProfile: vi.fn(),
@@ -63,7 +76,7 @@ function createMockRequest(
   return req;
 }
 
-function createMockResponse(): ServerResponse & {
+type MockResponse = {
   _getData: () => string;
   _getStatusCode: () => number;
 } {
@@ -136,6 +149,27 @@ function mockSuccessfulProfileImport() {
     relaysQueried: ["wss://relay.damus.io"],
     sourceRelay: "wss://relay.damus.io",
   });
+}
+
+async function expectAdminScopeRejected(params: {
+  scopes: readonly string[] | undefined;
+  method: string;
+  url: string;
+  body: unknown;
+  expectOperationNotCalled: () => void;
+}) {
+  setGatewayRuntimeScopes(params.scopes);
+  const { ctx, res, run } = createProfileHttpHarness(params.method, params.url, {
+    body: params.body,
+  });
+
+  await run();
+
+  expect(res._getStatusCode()).toBe(403);
+  const data = JSON.parse(res._getData());
+  expect(data.error).toBe("missing scope: operator.admin");
+  params.expectOperationNotCalled();
+  expect(ctx.updateConfigProfile).not.toHaveBeenCalled();
 }
 
 // ============================================================================

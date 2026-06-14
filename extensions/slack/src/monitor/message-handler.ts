@@ -169,7 +169,7 @@ export function createSlackMessageHandler(params: {
       await dispatchPreparedSlackMessage(prepared);
     },
     onError: (err) => {
-      ctx.runtime.error?.(`slack inbound debounce flush failed: ${String(err)}`);
+      ctx.runtime.error?.(`slack inbound debounce flush failed: ${formatErrorMessage(err)}`);
     },
   });
   const threadTsResolver = createSlackThreadTsResolver({ client: ctx.app.client });

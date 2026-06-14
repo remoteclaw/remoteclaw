@@ -27,6 +27,31 @@ export type OverviewProps = {
   onRefresh: () => void;
 };
 
+const PAIRING_HINT_COPY: Record<
+  PairingHint["kind"],
+  {
+    titleKey: string | null;
+    summaryKey: string | null;
+  }
+> = {
+  "pairing-required": {
+    titleKey: null,
+    summaryKey: null,
+  },
+  "scope-upgrade-pending": {
+    titleKey: "overview.pairing.scopeUpgradeTitle",
+    summaryKey: "overview.pairing.scopeUpgradeSummary",
+  },
+  "role-upgrade-pending": {
+    titleKey: "overview.pairing.roleUpgradeTitle",
+    summaryKey: "overview.pairing.roleUpgradeSummary",
+  },
+  "metadata-upgrade-pending": {
+    titleKey: "overview.pairing.metadataUpgradeTitle",
+    summaryKey: "overview.pairing.metadataUpgradeSummary",
+  },
+};
+
 export function renderOverview(props: OverviewProps) {
   const snapshot = props.hello?.snapshot as
     | {
@@ -43,15 +68,24 @@ export function renderOverview(props: OverviewProps) {
   const isTrustedProxy = authMode === "trusted-proxy";
 
   const pairingHint = (() => {
-    if (!shouldShowPairingHint(props.connected, props.lastError, props.lastErrorCode)) {
+    const pairingState = resolvePairingHint(props.connected, props.lastError, props.lastErrorCode);
+    if (!pairingState) {
       return null;
     }
+    const copy = PAIRING_HINT_COPY[pairingState.kind];
+    const title = copy.titleKey ? t(copy.titleKey) : t("overview.pairing.hint");
     return html`
       <div class="muted" style="margin-top: 8px">
-        ${t("overview.pairing.hint")}
+        ${title}
+        ${copy.summaryKey
+          ? html`<div style="margin-top: 6px">${t(copy.summaryKey)}</div>`
+          : nothing}
         <div style="margin-top: 6px">
-          <span class="mono">remoteclaw devices list</span><br />
-          <span class="mono">remoteclaw devices approve &lt;requestId&gt;</span>
+          ${pairingState.requestId
+            ? html`<span class="mono">remoteclaw devices approve ${pairingState.requestId}</span
+                ><br />`
+            : nothing}
+          <span class="mono">remoteclaw devices list</span>
         </div>
         <div style="margin-top: 6px; font-size: 12px;">
           ${t("overview.pairing.mobileHint")}
@@ -62,8 +96,8 @@ export function renderOverview(props: OverviewProps) {
             href="https://docs.remoteclaw.org/web/control-ui#device-pairing-first-connection"
             target=${EXTERNAL_LINK_TARGET}
             rel=${buildExternalLinkRel()}
-            title="Device pairing docs (opens in new tab)"
-            >Docs: Device pairing</a
+            title=${t("overview.pairing.docsTitle")}
+            >${t("overview.pairing.docsLink")}</a
           >
         </div>
       </div>
@@ -119,8 +153,8 @@ export function renderOverview(props: OverviewProps) {
               href="https://docs.remoteclaw.org/web/dashboard"
               target=${EXTERNAL_LINK_TARGET}
               rel=${buildExternalLinkRel()}
-              title="Control UI auth docs (opens in new tab)"
-              >Docs: Control UI auth</a
+              title=${t("overview.connection.authDocsTitle")}
+              >${t("overview.connection.authDocsLink")}</a
             >
           </div>
         </div>
@@ -135,8 +169,8 @@ export function renderOverview(props: OverviewProps) {
             href="https://docs.remoteclaw.org/web/dashboard"
             target=${EXTERNAL_LINK_TARGET}
             rel=${buildExternalLinkRel()}
-            title="Control UI auth docs (opens in new tab)"
-            >Docs: Control UI auth</a
+            title=${t("overview.connection.authDocsTitle")}
+            >${t("overview.connection.authDocsLink")}</a
           >
         </div>
       </div>
@@ -174,8 +208,8 @@ export function renderOverview(props: OverviewProps) {
             href="https://docs.remoteclaw.org/gateway/tailscale"
             target=${EXTERNAL_LINK_TARGET}
             rel=${buildExternalLinkRel()}
-            title="Tailscale Serve docs (opens in new tab)"
-            >Docs: Tailscale Serve</a
+            title=${t("overview.connection.tailscaleDocsTitle")}
+            >${t("overview.connection.tailscaleDocsLink")}</a
           >
           <span class="muted"> · </span>
           <a
@@ -183,8 +217,8 @@ export function renderOverview(props: OverviewProps) {
             href="https://docs.remoteclaw.org/web/control-ui#insecure-http"
             target=${EXTERNAL_LINK_TARGET}
             rel=${buildExternalLinkRel()}
-            title="Insecure HTTP docs (opens in new tab)"
-            >Docs: Insecure HTTP</a
+            title=${t("overview.connection.insecureHttpDocsTitle")}
+            >${t("overview.connection.insecureHttpDocsLink")}</a
           >
         </div>
       </div>
@@ -220,14 +254,32 @@ export function renderOverview(props: OverviewProps) {
               : html`
                 <label class="field">
                   <span>${t("overview.access.token")}</span>
-                  <input
-                    .value=${props.settings.token}
-                    @input=${(e: Event) => {
-                      const v = (e.target as HTMLInputElement).value;
-                      props.onSettingsChange({ ...props.settings, token: v });
-                    }}
-                    placeholder="REMOTECLAW_GATEWAY_TOKEN"
-                  />
+                  <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                    <input
+                      type=${props.showGatewayToken ? "text" : "password"}
+                      autocomplete="off"
+                      style="flex: 1 1 0%; min-width: 0; box-sizing: border-box;"
+                      .value=${props.settings.token}
+                      @input=${(e: Event) => {
+                        const v = (e.target as HTMLInputElement).value;
+                        props.onSettingsChange({ ...props.settings, token: v });
+                      }}
+                      placeholder="REMOTECLAW_GATEWAY_TOKEN"
+                    />
+                    <button
+                      type="button"
+                      class="btn btn--icon ${props.showGatewayToken ? "active" : ""}"
+                      style="flex-shrink: 0; width: 36px; height: 36px; box-sizing: border-box;"
+                      title=${props.showGatewayToken
+                        ? t("overview.access.hideToken")
+                        : t("overview.access.showToken")}
+                      aria-label=${t("overview.access.toggleTokenVisibility")}
+                      aria-pressed=${props.showGatewayToken}
+                      @click=${props.onToggleGatewayTokenVisibility}
+                    >
+                      ${props.showGatewayToken ? icons.eye : icons.eyeOff}
+                    </button>
+                  </div>
                 </label>
                 <label class="field">
                   <span>${t("overview.access.password")}</span>

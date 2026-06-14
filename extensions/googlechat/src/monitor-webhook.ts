@@ -98,6 +98,19 @@ function parseGoogleChatInboundPayload(
   return { ok: true, event, addOnBearerToken };
 }
 
+async function isAuthorizedGoogleChatTarget(
+  target: WebhookTarget,
+  bearer: string,
+): Promise<boolean> {
+  const verification = await verifyGoogleChatRequest({
+    bearer,
+    audienceType: target.audienceType,
+    audience: target.audience,
+    expectedAddOnPrincipal: target.account.config.appPrincipal,
+  });
+  return verification.ok;
+}
+
 export function createGoogleChatWebhookRequestHandler(params: {
   webhookTargets: Map<string, WebhookTarget[]>;
   webhookInFlightLimiter: WebhookInFlightLimiter;

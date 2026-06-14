@@ -10,10 +10,16 @@ import {
 import { formatTimeAgo } from "../infra/format-time/format-relative.ts";
 import { defaultRuntime } from "../runtime.js";
 import {
+  resolvePendingDeviceApprovalState,
+  type DevicePairingAccessSummary,
+  type PendingDeviceApprovalKind,
+} from "../shared/device-pairing-access.js";
+import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
   normalizeStringifiedOptionalString,
 } from "../shared/string-coerce.js";
+import { sanitizeForLog } from "../terminal/ansi.js";
 import { getTerminalTableWidth, renderTable } from "../terminal/table.js";
 import { theme } from "../terminal/theme.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../utils/message-channel.js";
@@ -42,6 +48,7 @@ type DeviceTokenSummary = {
 type PendingDevice = {
   requestId: string;
   deviceId: string;
+  publicKey?: string;
   displayName?: string;
   role?: string;
   roles?: string[];
@@ -53,6 +60,7 @@ type PendingDevice = {
 
 type PairedDevice = {
   deviceId: string;
+  publicKey?: string;
   displayName?: string;
   roles?: string[];
   scopes?: string[];
@@ -106,7 +114,7 @@ function normalizeErrorMessage(error: unknown): string {
 
 function shouldUseLocalPairingFallback(opts: DevicesRpcOpts, error: unknown): boolean {
   const message = normalizeLowercaseStringOrEmpty(normalizeErrorMessage(error));
-  if (!message.includes("pairing required")) {
+  if (!readConnectPairingRequiredMessage(message)) {
     return false;
   }
   if (typeof opts.url === "string" && opts.url.trim().length > 0) {
@@ -199,33 +207,46 @@ function formatTokenSummary(tokens: DeviceTokenSummary[] | undefined) {
     return "none";
   }
   const parts = tokens
-    .map((t) => `${t.role}${t.revokedAtMs ? " (revoked)" : ""}`)
+    .map((t) => `${sanitizeForLog(t.role)}${t.revokedAtMs ? " (revoked)" : ""}`)
     .toSorted((a, b) => a.localeCompare(b));
   return parts.join(", ");
 }
 
-function formatPendingRoles(request: PendingDevice): string {
-  const role = normalizeOptionalString(request.role) ?? "";
-  if (role) {
-    return role;
+function formatPendingDeviceIdentity(request: PendingDevice): string {
+  const displayName = normalizeOptionalString(request.displayName);
+  if (displayName) {
+    return sanitizeForLog(displayName);
   }
-  const roles = Array.isArray(request.roles)
-    ? request.roles.map((item) => item.trim()).filter((item) => item.length > 0)
-    : [];
-  if (roles.length === 0) {
-    return "";
-  }
-  return roles.join(", ");
+  return sanitizeForLog(normalizeOptionalString(request.deviceId) ?? "");
 }
 
-function formatPendingScopes(request: PendingDevice): string {
-  const scopes = Array.isArray(request.scopes)
-    ? request.scopes.map((item) => item.trim()).filter((item) => item.length > 0)
-    : [];
-  if (scopes.length === 0) {
-    return "";
+function formatAccessSummary(access: DevicePairingAccessSummary | null): string {
+  if (!access) {
+    return "none";
   }
-  return scopes.join(", ");
+  const roles =
+    access.roles.length > 0 ? access.roles.map((role) => sanitizeForLog(role)).join(", ") : "none";
+  const scopes =
+    access.scopes.length > 0
+      ? access.scopes.map((scope) => sanitizeForLog(scope)).join(", ")
+      : "none";
+  return `roles: ${roles}; scopes: ${scopes}`;
+}
+
+function formatPendingApprovalKind(kind: PendingDeviceApprovalKind): string {
+  switch (kind) {
+    case "new-pairing":
+      return "new pairing";
+    case "role-upgrade":
+      return "role upgrade";
+    case "scope-upgrade":
+      return "scope upgrade";
+    case "re-approval":
+      return "re-approval";
+  }
+  const exhaustiveKind: never = kind;
+  void exhaustiveKind;
+  throw new Error("unsupported pending approval kind");
 }
 
 function resolveRequiredDeviceRole(
@@ -250,6 +271,7 @@ export function registerDevicesCli(program: Command) {
       .description("List pending and paired devices")
       .action(async (opts: DevicesRpcOpts) => {
         const list = await listPairingWithFallback(opts);
+        const pairedByDeviceId = indexPairedDevices(list.paired);
         if (opts.json) {
           defaultRuntime.writeJson(list);
           return;
@@ -265,21 +287,29 @@ export function registerDevicesCli(program: Command) {
               columns: [
                 { key: "Request", header: "Request", minWidth: 10 },
                 { key: "Device", header: "Device", minWidth: 16, flex: true },
-                { key: "Role", header: "Role", minWidth: 8 },
-                { key: "Scopes", header: "Scopes", minWidth: 14, flex: true },
-                { key: "IP", header: "IP", minWidth: 12 },
+                { key: "Requested", header: "Requested", minWidth: 20, flex: true },
+                { key: "Approved", header: "Approved", minWidth: 20, flex: true },
                 { key: "Age", header: "Age", minWidth: 8 },
-                { key: "Flags", header: "Flags", minWidth: 8 },
+                { key: "Status", header: "Status", minWidth: 12 },
               ],
-              rows: list.pending.map((req) => ({
-                Request: req.requestId,
-                Device: req.displayName || req.deviceId,
-                Role: formatPendingRoles(req),
-                Scopes: formatPendingScopes(req),
-                IP: req.remoteIp ?? "",
-                Age: typeof req.ts === "number" ? formatTimeAgo(Date.now() - req.ts) : "",
-                Flags: req.isRepair ? "repair" : "",
-              })),
+              rows: list.pending.map((req) => {
+                const approval = resolvePendingDeviceApprovalState(
+                  req,
+                  lookupPairedDevice(pairedByDeviceId, req),
+                );
+                const statusParts = [formatPendingApprovalKind(approval.kind)];
+                if (req.isRepair) {
+                  statusParts.push("repair");
+                }
+                return {
+                  Request: req.requestId,
+                  Device: `${formatPendingDeviceIdentity(req)}${req.remoteIp ? ` · ${sanitizeForLog(req.remoteIp)}` : ""}`,
+                  Requested: formatAccessSummary(approval.requested),
+                  Approved: formatAccessSummary(approval.approved),
+                  Age: typeof req.ts === "number" ? formatTimeAgo(Date.now() - req.ts) : "",
+                  Status: statusParts.join(", "),
+                };
+              }),
             }).trimEnd(),
           );
         }
@@ -299,11 +329,15 @@ export function registerDevicesCli(program: Command) {
                 { key: "IP", header: "IP", minWidth: 12 },
               ],
               rows: list.paired.map((device) => ({
-                Device: device.displayName || device.deviceId,
-                Roles: device.roles?.length ? device.roles.join(", ") : "",
-                Scopes: device.scopes?.length ? device.scopes.join(", ") : "",
+                Device: sanitizeForLog(device.displayName || device.deviceId),
+                Roles: device.roles?.length
+                  ? device.roles.map((role) => sanitizeForLog(role)).join(", ")
+                  : "",
+                Scopes: device.scopes?.length
+                  ? device.scopes.map((scope) => sanitizeForLog(scope)).join(", ")
+                  : "",
                 Tokens: formatTokenSummary(device.tokens),
-                IP: device.remoteIp ?? "",
+                IP: device.remoteIp ? sanitizeForLog(device.remoteIp) : "",
               })),
             }).trimEnd(),
           );
@@ -395,6 +429,7 @@ export function registerDevicesCli(program: Command) {
       .argument("[requestId]", "Pending request id")
       .option("--latest", "Approve the most recent pending request", false)
       .action(async (requestId: string | undefined, opts: DevicesRpcOpts) => {
+        let pairingList: DevicePairingList | null = null;
         let resolvedRequestId = requestId?.trim();
         if (!resolvedRequestId || opts.latest) {
           const latest = selectLatestPendingRequest((await listPairingWithFallback(opts)).pending);

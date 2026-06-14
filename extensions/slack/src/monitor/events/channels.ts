@@ -61,7 +61,9 @@ export function registerSlackChannelEvents(params: {
         const channelName = payload.channel?.name;
         enqueueChannelSystemEvent({ kind: "created", channelId, channelName });
       } catch (err) {
-        ctx.runtime.error?.(danger(`slack channel created handler failed: ${String(err)}`));
+        ctx.runtime.error?.(
+          danger(`slack channel created handler failed: ${formatErrorMessage(err)}`),
+        );
       }
     },
   );
@@ -80,7 +82,9 @@ export function registerSlackChannelEvents(params: {
         const channelName = payload.channel?.name_normalized ?? payload.channel?.name;
         enqueueChannelSystemEvent({ kind: "renamed", channelId, channelName });
       } catch (err) {
-        ctx.runtime.error?.(danger(`slack channel rename handler failed: ${String(err)}`));
+        ctx.runtime.error?.(
+          danger(`slack channel rename handler failed: ${formatErrorMessage(err)}`),
+        );
       }
     },
   );
@@ -155,7 +159,9 @@ export function registerSlackChannelEvents(params: {
           );
         }
       } catch (err) {
-        ctx.runtime.error?.(danger(`slack channel_id_changed handler failed: ${String(err)}`));
+        ctx.runtime.error?.(
+          danger(`slack channel_id_changed handler failed: ${formatErrorMessage(err)}`),
+        );
       }
     },
   );

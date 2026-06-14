@@ -60,7 +60,7 @@ export async function runAgentStep(params: {
       idempotencyKey: stepIdem,
       deliver: false,
       channel: params.channel ?? INTERNAL_MESSAGE_CHANNEL,
-      lane: params.lane ?? AGENT_LANE_NESTED,
+      lane: params.lane ?? resolveNestedAgentLaneForSession(params.sessionKey),
       extraSystemPrompt: params.extraSystemPrompt,
       inputProvenance: {
         kind: "inter_session",

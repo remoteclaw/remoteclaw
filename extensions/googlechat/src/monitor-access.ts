@@ -16,6 +16,7 @@ import {
 import type { ResolvedGoogleChatAccount } from "./accounts.js";
 import { sendGoogleChatMessage } from "./api.js";
 import type { GoogleChatCoreRuntime } from "./monitor-types.js";
+import { isSenderAllowed } from "./sender-allow.js";
 import type { GoogleChatAnnotation, GoogleChatMessage, GoogleChatSpace } from "./types.js";
 
 function normalizeUserId(raw?: string | null): string {

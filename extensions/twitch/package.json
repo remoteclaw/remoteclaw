@@ -11,6 +11,20 @@
   "remoteclaw": {
     "extensions": [
       "./index.ts"
-    ]
+    ],
+    "setupEntry": "./setup-entry.ts",
+    "install": {
+      "minHostVersion": ">=2026.4.10"
+    },
+    "channel": {
+      "id": "twitch",
+      "label": "Twitch",
+      "selectionLabel": "Twitch (Chat)",
+      "docsPath": "/channels/twitch",
+      "blurb": "Twitch chat integration",
+      "aliases": [
+        "twitch-chat"
+      ]
+    }
   }
 }

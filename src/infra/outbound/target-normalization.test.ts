@@ -69,9 +69,9 @@ describe("normalizeTargetForProvider", () => {
         messaging: { normalizeTarget: secondNormalizer },
       });
 
-    expect(normalizeTargetForProvider("telegram", "  abc  ")).toBe("ABC");
-    expect(normalizeTargetForProvider("telegram", "  def  ")).toBe("DEF");
-    expect(normalizeTargetForProvider("telegram", "  ghi  ")).toBe("next:ghi");
+    expect(normalizeTargetForProvider("alpha", "  abc  ")).toBe("ABC");
+    expect(normalizeTargetForProvider("alpha", "  def  ")).toBe("DEF");
+    expect(normalizeTargetForProvider("alpha", "  ghi  ")).toBe("next:ghi");
 
     expect(getChannelPluginMock).toHaveBeenCalledTimes(2);
     expect(firstNormalizer).toHaveBeenCalledTimes(2);
@@ -87,7 +87,7 @@ describe("normalizeTargetForProvider", () => {
       },
     });
 
-    expect(normalizeTargetForProvider("telegram", "  raw-id  ")).toBeUndefined();
+    expect(normalizeTargetForProvider("alpha", "  raw-id  ")).toBeUndefined();
   });
 });
 
@@ -103,7 +103,7 @@ describe("buildTargetResolverSignature", () => {
       },
     });
 
-    const first = buildTargetResolverSignature("slack");
+    const first = buildTargetResolverSignature("workspace");
     getChannelPluginMock.mockReturnValueOnce({
       messaging: {
         targetResolver: {
@@ -112,7 +112,7 @@ describe("buildTargetResolverSignature", () => {
         },
       },
     });
-    const second = buildTargetResolverSignature("slack");
+    const second = buildTargetResolverSignature("workspace");
 
     expect(first).toBe(second);
   });
@@ -126,7 +126,7 @@ describe("buildTargetResolverSignature", () => {
         },
       },
     });
-    const first = buildTargetResolverSignature("slack");
+    const first = buildTargetResolverSignature("workspace");
 
     getChannelPluginMock.mockReturnValueOnce({
       messaging: {
@@ -136,7 +136,7 @@ describe("buildTargetResolverSignature", () => {
         },
       },
     });
-    const second = buildTargetResolverSignature("slack");
+    const second = buildTargetResolverSignature("workspace");
 
     expect(first).not.toBe(second);
   });

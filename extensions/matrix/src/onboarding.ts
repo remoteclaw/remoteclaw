@@ -97,6 +97,7 @@ async function promptMatrixAllowFrom(params: {
     }
 
     if (pending.length > 0) {
+      const { resolveMatrixTargets } = await import("./resolve-targets.js");
       const results = await resolveMatrixTargets({
         cfg,
         inputs: pending,
@@ -459,4 +460,8 @@ export const matrixOnboardingAdapter: ChannelOnboardingAdapter = {
       matrix: { ...(cfg as CoreConfig).channels?.matrix, enabled: false },
     },
   }),
+};
+
+export const __testing = {
+  promptMatrixAllowFrom,
 };

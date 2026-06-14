@@ -23,8 +23,22 @@ async function withTempDir<T>(run: (dir: string) => Promise<T>): Promise<T> {
   }
 }
 
+const versionFixtureRoot = createSuiteTempRootTracker({ prefix: "remoteclaw-version-" });
+
+beforeAll(async () => {
+  await versionFixtureRoot.setup();
+});
+
+afterAll(async () => {
+  await versionFixtureRoot.cleanup();
+});
+
 function moduleUrlFrom(root: string, relativePath: string): string {
   return pathToFileURL(path.join(root, relativePath)).href;
+}
+
+async function withVersionFixtureDir<T>(run: (root: string) => Promise<T>): Promise<T> {
+  return await run(await versionFixtureRoot.make("case"));
 }
 
 async function ensureModuleFixture(root: string, relativePath = "dist/plugin-sdk/index.js") {

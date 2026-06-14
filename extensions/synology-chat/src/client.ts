@@ -10,6 +10,10 @@ import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runt
 const MIN_SEND_INTERVAL_MS = 500;
 let lastSendTime = 0;
 
+function normalizeLowercaseStringOrEmpty(value: unknown): string {
+  return typeof value === "string" ? value.trim().toLowerCase() : "";
+}
+
 // --- Chat user_id resolution ---
 // Synology Chat uses two different user_id spaces:
 //   - Outgoing webhook user_id: per-integration sequential ID (e.g. 1)

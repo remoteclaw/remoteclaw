@@ -348,14 +348,8 @@ Use jobId as the canonical identifier; id is accepted for compatibility. Use con
             // Only use the synthetic job if at least one meaningful field is present
             // (schedule, payload, message, or text are the minimum signals that the
             // LLM intended to create a job).
-            if (
-              found &&
-              (synthetic.schedule !== undefined ||
-                synthetic.payload !== undefined ||
-                synthetic.message !== undefined ||
-                synthetic.text !== undefined)
-            ) {
-              params.job = synthetic;
+            if (synthetic.found && hasCronCreateSignal(synthetic.value)) {
+              params.job = synthetic.value;
             }
           }
 

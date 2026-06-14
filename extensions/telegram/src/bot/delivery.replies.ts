@@ -539,9 +539,11 @@ function emitMessageSentHooks(params: {
 
 export async function deliverReplies(params: {
   replies: ReplyPayload[];
+  cfg?: import("remoteclaw/plugin-sdk/config-runtime").RemoteClawConfig;
   chatId: string;
   accountId?: string;
   sessionKeyForInternalHooks?: string;
+  policySessionKey?: string;
   mirrorIsGroup?: boolean;
   mirrorGroupId?: string;
   token: string;
@@ -573,7 +575,34 @@ export async function deliverReplies(params: {
     chunkMode: params.chunkMode ?? "length",
     tableMode: params.tableMode,
   });
-  for (const originalReply of params.replies) {
+  const candidateReplies: ReplyPayload[] = [];
+  for (const reply of params.replies) {
+    if (!reply || typeof reply !== "object") {
+      params.runtime.error?.(danger("reply missing text/media"));
+      continue;
+    }
+    candidateReplies.push(reply);
+  }
+  const normalizedReplies = projectOutboundPayloadPlanForDelivery(
+    createOutboundPayloadPlan(candidateReplies, {
+      cfg: params.cfg,
+      sessionKey: params.policySessionKey ?? params.sessionKeyForInternalHooks,
+      surface: "telegram",
+    }),
+  );
+  const originalExactSilentCount = candidateReplies.filter(
+    (reply) => typeof reply.text === "string" && reply.text.trim().toUpperCase() === "NO_REPLY",
+  ).length;
+  if (originalExactSilentCount > 0) {
+    silentReplyLogger.debug("telegram delivery normalized NO_REPLY candidates", {
+      hasSessionKey: Boolean(params.sessionKeyForInternalHooks),
+      hasChatId: params.chatId.length > 0,
+      originalCount: candidateReplies.length,
+      normalizedCount: normalizedReplies.length,
+      originalExactSilentCount,
+    });
+  }
+  for (const originalReply of normalizedReplies) {
     let reply = originalReply;
     const mediaList = reply?.mediaUrls?.length
       ? reply.mediaUrls

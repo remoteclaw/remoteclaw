@@ -13,6 +13,7 @@ import { formatErrorMessage } from "../infra/errors.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { sanitizeForLog } from "../terminal/ansi.js";
 import { shouldIncludeHook } from "./config.js";
+import { hasConfiguredInternalHooks, resolveConfiguredInternalHookNames } from "./configured.js";
 import { buildImportUrl } from "./import-url.js";
 import type { InternalHookHandler } from "./internal-hooks.js";
 import { registerInternalHook } from "./internal-hooks.js";
@@ -72,6 +73,7 @@ export async function loadInternalHooks(
   }
 
   let loadedCount = 0;
+  const configuredNames = resolveConfiguredInternalHookNames(cfg);
 
   // 1. Load hooks from directories (new system)
   try {
@@ -82,7 +84,12 @@ export async function loadInternalHooks(
     });
 
     // Filter by eligibility
-    const eligible = hookEntries.filter((entry) => shouldIncludeHook({ entry, config: cfg }));
+    const eligible = hookEntries.filter((entry) => {
+      if (configuredNames && !configuredNames.has(entry.hook.name)) {
+        return false;
+      }
+      return shouldIncludeHook({ entry, config: cfg });
+    });
 
     for (const entry of eligible) {
       try {

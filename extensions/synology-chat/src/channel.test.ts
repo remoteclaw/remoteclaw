@@ -27,6 +27,10 @@ describe("createSynologyChatPlugin", () => {
     expect(plugin.gateway).toBeDefined();
   });
 
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   describe("meta", () => {
     it("has correct id and label", () => {
       const plugin = createSynologyChatPlugin();
@@ -100,6 +104,26 @@ describe("createSynologyChatPlugin", () => {
   });
 
   describe("security.collectWarnings", () => {
+    function makeSharedWebhookConfig(alertsOverrides: Record<string, unknown> = {}) {
+      return {
+        channels: {
+          "synology-chat": {
+            token: "base-token",
+            webhookPath: "/webhook/shared",
+            accounts: {
+              alerts: {
+                token: "alerts-token",
+                incomingUrl: "https://nas/alerts",
+                dmPolicy: "allowlist",
+                allowedUserIds: ["123"],
+                ...alertsOverrides,
+              },
+            },
+          },
+        },
+      };
+    }
+
     it("warns when token is missing", () => {
       const plugin = createSynologyChatPlugin();
       const account = makeSecurityAccount({ token: "" });
@@ -248,11 +272,17 @@ describe("createSynologyChatPlugin", () => {
       abortController: AbortController,
     ) {
       expect(result).toBeInstanceOf(Promise);
-      const resolved = await Promise.race([
-        result,
-        new Promise((r) => setTimeout(() => r("pending"), 50)),
-      ]);
-      expect(resolved).toBe("pending");
+      let settled = false;
+      void result.then(
+        () => {
+          settled = true;
+        },
+        () => {
+          settled = true;
+        },
+      );
+      await Promise.resolve();
+      expect(settled).toBe(false);
       abortController.abort();
       await result;
     }

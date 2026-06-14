@@ -58,7 +58,7 @@ const isRestartRelevantExtensionPath = (relativePath) => {
   return isBuildRelevantSourcePath(normalizedPath);
 };
 
-export const isRestartRelevantRunNodePath = (repoPath) => {
+const isRelevantRunNodePath = (repoPath, isRelevantBundledPluginPath) => {
   const normalizedPath = normalizePath(repoPath).replace(/^\.\/+/, "");
   if (runNodeConfigFiles.includes(normalizedPath)) {
     return true;
@@ -67,10 +67,16 @@ export const isRestartRelevantRunNodePath = (repoPath) => {
     return !isIgnoredSourcePath(normalizedPath.slice("src/".length));
   }
   if (normalizedPath.startsWith(BUNDLED_PLUGIN_PATH_PREFIX)) {
-    return isRestartRelevantExtensionPath(normalizedPath.slice(BUNDLED_PLUGIN_PATH_PREFIX.length));
+    return isRelevantBundledPluginPath(normalizedPath.slice(BUNDLED_PLUGIN_PATH_PREFIX.length));
   }
   return false;
 };
+
+export const isBuildRelevantRunNodePath = (repoPath) =>
+  isRelevantRunNodePath(repoPath, isBuildRelevantSourcePath);
+
+export const isRestartRelevantRunNodePath = (repoPath) =>
+  isRelevantRunNodePath(repoPath, isRestartRelevantExtensionPath);
 
 const statMtime = (filePath, fsImpl = fs) => {
   try {
@@ -329,9 +335,94 @@ const runRemoteClaw = async (deps) => {
   return res.exitCode ?? 1;
 };
 
-const syncRuntimeArtifacts = (deps) => {
+const removeStaleBuildLock = (deps, lockDir, staleMs) => {
   try {
-    deps.runRuntimePostBuild({ cwd: deps.cwd });
+    const stats = deps.fs.statSync(lockDir);
+    if (Date.now() - stats.mtimeMs < staleMs) {
+      return false;
+    }
+    deps.fs.rmSync(lockDir, { recursive: true, force: true });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const acquireRunNodeBuildLock = async (deps) => {
+  const lockRoot = path.join(deps.cwd, ".artifacts");
+  const lockDir = path.join(lockRoot, "run-node-build.lock");
+  const timeoutMs = parsePositiveIntegerEnv(
+    deps.env,
+    RUN_NODE_BUILD_LOCK_TIMEOUT_ENV,
+    DEFAULT_BUILD_LOCK_TIMEOUT_MS,
+  );
+  const pollMs = parsePositiveIntegerEnv(
+    deps.env,
+    RUN_NODE_BUILD_LOCK_POLL_ENV,
+    DEFAULT_BUILD_LOCK_POLL_MS,
+  );
+  const staleMs = parsePositiveIntegerEnv(
+    deps.env,
+    RUN_NODE_BUILD_LOCK_STALE_ENV,
+    DEFAULT_BUILD_LOCK_STALE_MS,
+  );
+  const startedAt = Date.now();
+  let loggedWait = false;
+
+  while (Date.now() - startedAt < timeoutMs) {
+    try {
+      deps.fs.mkdirSync(lockRoot, { recursive: true });
+      deps.fs.mkdirSync(lockDir);
+      try {
+        deps.fs.writeFileSync(
+          path.join(lockDir, "owner.json"),
+          `${JSON.stringify(
+            {
+              pid: deps.process.pid,
+              startedAt: new Date().toISOString(),
+              args: deps.args,
+            },
+            null,
+            2,
+          )}\n`,
+          "utf8",
+        );
+      } catch {
+        // Owner metadata is diagnostic only; the directory itself is the lock.
+      }
+      return () => {
+        deps.fs.rmSync(lockDir, { recursive: true, force: true });
+      };
+    } catch (error) {
+      if (error?.code !== "EEXIST") {
+        throw error;
+      }
+      if (removeStaleBuildLock(deps, lockDir, staleMs)) {
+        continue;
+      }
+      if (!loggedWait) {
+        logRunner("Waiting for TypeScript/runtime artifact lock.", deps);
+        loggedWait = true;
+      }
+      await sleep(pollMs);
+    }
+  }
+
+  throw new Error(`timed out waiting for ${path.relative(deps.cwd, lockDir)}`);
+};
+
+const withRunNodeBuildLock = async (deps, callback) => {
+  const release = await acquireRunNodeBuildLock(deps);
+  try {
+    return await callback();
+  } finally {
+    release();
+  }
+};
+
+const syncRuntimeArtifacts = async (deps) => {
+  try {
+    await deps.runRuntimePostBuild({ cwd: deps.cwd });
   } catch (error) {
     logRunner(
       `Failed to write runtime build artifacts: ${error?.message ?? "unknown error"}`,

@@ -25,7 +25,8 @@ remoteclaw channels status --probe
 Healthy baseline:
 
 - `Runtime: running`
-- `RPC probe: ok`
+- `Connectivity probe: ok`
+- `Capability: read-only`, `write-capable`, or `admin-capable`
 - Channel probe shows transport connected and, where supported, `works` or `audit ok`
 
 ## WhatsApp

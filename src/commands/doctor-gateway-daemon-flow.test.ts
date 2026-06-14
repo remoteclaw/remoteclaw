@@ -154,7 +154,7 @@ describe("maybeRepairGatewayDaemon", () => {
     await maybeRepairGatewayDaemon({
       cfg: { gateway: {} },
       runtime: { log: vi.fn(), error: vi.fn(), exit: vi.fn() },
-      prompter: createPrompter((message) => message === "Restart gateway service now?"),
+      prompter: createPrompter((message) => message === confirmMessage),
       options: { deep: false },
       gatewayDetailsMessage: "details",
       healthOk: false,
@@ -167,28 +167,14 @@ describe("maybeRepairGatewayDaemon", () => {
     );
     expect(sleep).not.toHaveBeenCalled();
     expect(healthCommand).not.toHaveBeenCalled();
+  }
+
+  it("skips restart verification when a running service restart is only scheduled", async () => {
+    await runScheduledGatewayRepair("Restart gateway service now?");
   });
 
   it("skips start verification when a stopped service start is only scheduled", async () => {
-    setPlatform("linux");
     service.readRuntime.mockResolvedValue({ status: "stopped" });
-    service.restart.mockResolvedValueOnce({ outcome: "scheduled" });
-
-    await maybeRepairGatewayDaemon({
-      cfg: { gateway: {} },
-      runtime: { log: vi.fn(), error: vi.fn(), exit: vi.fn() },
-      prompter: createPrompter((message) => message === "Start gateway service now?"),
-      options: { deep: false },
-      gatewayDetailsMessage: "details",
-      healthOk: false,
-    });
-
-    expect(service.restart).toHaveBeenCalledTimes(1);
-    expect(note).toHaveBeenCalledWith(
-      "restart scheduled, gateway will restart momentarily",
-      "Gateway",
-    );
-    expect(sleep).not.toHaveBeenCalled();
-    expect(healthCommand).not.toHaveBeenCalled();
+    await runScheduledGatewayRepair("Start gateway service now?");
   });
 });

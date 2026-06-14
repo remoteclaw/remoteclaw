@@ -1,15 +1,13 @@
-import {
-  hasConfiguredUnavailableCredentialStatus,
-  hasResolvedCredentialValue,
-} from "../channels/account-snapshot-fields.js";
+import { resolveInspectedChannelAccount } from "../channels/account-inspection.js";
+import { hasConfiguredUnavailableCredentialStatus } from "../channels/account-snapshot-fields.js";
 import {
   buildChannelAccountSnapshot,
   formatChannelAllowFrom,
-  resolveChannelAccountConfigured,
-  resolveChannelAccountEnabled,
 } from "../channels/account-summary.js";
 import { listChannelPlugins } from "../channels/plugins/index.js";
-import type { ChannelAccountSnapshot, ChannelPlugin } from "../channels/plugins/types.js";
+import { formatChannelStatusState } from "../channels/plugins/status-state.js";
+import type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
+import type { ChannelAccountSnapshot } from "../channels/plugins/types.public.js";
 import { type RemoteClawConfig, loadConfig } from "../config/config.js";
 import { DEFAULT_ACCOUNT_ID } from "../routing/session-key.js";
 import { theme } from "../terminal/theme.js";
@@ -127,39 +125,12 @@ export async function buildChannelSummary(
     const entries: ChannelAccountEntry[] = [];
 
     for (const accountId of resolvedAccountIds) {
-      const sourceInspectedAccount = inspectChannelAccount(plugin, sourceConfig, accountId);
-      const resolvedInspectedAccount = inspectChannelAccount(plugin, effective, accountId);
-      const resolvedInspection = resolvedInspectedAccount as {
-        enabled?: boolean;
-        configured?: boolean;
-      } | null;
-      const sourceInspection = sourceInspectedAccount as {
-        enabled?: boolean;
-        configured?: boolean;
-      } | null;
-      const resolvedAccount =
-        resolvedInspectedAccount ?? plugin.config.resolveAccount(effective, accountId);
-      const useSourceUnavailableAccount = Boolean(
-        sourceInspectedAccount &&
-        hasConfiguredUnavailableCredentialStatus(sourceInspectedAccount) &&
-        (!hasResolvedCredentialValue(resolvedAccount) ||
-          (sourceInspection?.configured === true && resolvedInspection?.configured === false)),
-      );
-      const account = useSourceUnavailableAccount ? sourceInspectedAccount : resolvedAccount;
-      const selectedInspection = useSourceUnavailableAccount
-        ? sourceInspection
-        : resolvedInspection;
-      const enabled =
-        selectedInspection?.enabled ??
-        resolveChannelAccountEnabled({ plugin, account, cfg: effective });
-      const configured =
-        selectedInspection?.configured ??
-        (await resolveChannelAccountConfigured({
-          plugin,
-          account,
-          cfg: effective,
-          readAccountConfiguredField: true,
-        }));
+      const { account, enabled, configured } = await resolveInspectedChannelAccount({
+        plugin,
+        cfg: effective,
+        sourceConfig,
+        accountId,
+      });
       const snapshot = buildChannelAccountSnapshot({
         plugin,
         account,
@@ -186,6 +157,10 @@ export async function buildChannelSummary(
       : undefined;
 
     const summaryRecord = summary;
+    const statusState =
+      summaryRecord && typeof summaryRecord.statusState === "string"
+        ? summaryRecord.statusState
+        : null;
     const linked =
       summaryRecord && typeof summaryRecord.linked === "boolean" ? summaryRecord.linked : null;
     const configured =
@@ -195,18 +170,20 @@ export async function buildChannelSummary(
 
     const status = !anyEnabled
       ? "disabled"
-      : linked !== null
-        ? linked
-          ? "linked"
-          : "not linked"
-        : configured
-          ? "configured"
-          : "not configured";
+      : statusState
+        ? formatChannelStatusState(statusState)
+        : linked !== null
+          ? linked
+            ? "linked"
+            : "not linked"
+          : configured
+            ? "configured"
+            : "not configured";
 
     const statusColor =
       status === "linked" || status === "configured"
         ? theme.success
-        : status === "not linked"
+        : status === "not linked" || status === "auth stabilizing"
           ? theme.error
           : theme.muted;
     const baseLabel = plugin.meta.label ?? plugin.id;

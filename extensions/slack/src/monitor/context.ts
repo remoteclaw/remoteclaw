@@ -286,7 +286,9 @@ export function createSlackMonitorContext(params: {
         await client.apiCall("assistant.threads.setStatus", payload);
       }
     } catch (err) {
-      logVerbose(`slack status update failed for channel ${p.channelId}: ${String(err)}`);
+      logVerbose(
+        `slack status update failed for channel ${p.channelId}: ${formatErrorMessage(err)}`,
+      );
     }
   };
 

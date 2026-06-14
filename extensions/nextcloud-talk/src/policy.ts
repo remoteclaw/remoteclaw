@@ -6,17 +6,25 @@ import type {
 } from "remoteclaw/plugin-sdk/nextcloud-talk";
 import {
   buildChannelKeyCandidates,
-  evaluateMatchedGroupAccessForPolicy,
   normalizeChannelSlug,
   resolveChannelEntryMatchWithFallback,
   resolveInboundMentionDecision,
   resolveNestedAllowlistDecision,
-} from "remoteclaw/plugin-sdk/nextcloud-talk";
-import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
+} from "remoteclaw/plugin-sdk/channel-targets";
+import { evaluateMatchedGroupAccessForPolicy } from "remoteclaw/plugin-sdk/group-access";
+import type {
+  AllowlistMatch,
+  ChannelGroupContext,
+  GroupPolicy,
+  GroupToolPolicyConfig,
+} from "../runtime-api.js";
 import type { NextcloudTalkRoomConfig } from "./types.js";
 
 function normalizeAllowEntry(raw: string): string {
-  return normalizeLowercaseStringOrEmpty(raw.trim().replace(/^(nextcloud-talk|nc-talk|nc):/i, ""));
+  return raw
+    .trim()
+    .replace(/^(nextcloud-talk|nc-talk|nc):/i, "")
+    .toLowerCase();
 }
 
 export function normalizeNextcloudTalkAllowlist(
@@ -173,19 +181,15 @@ export function resolveNextcloudTalkMentionGate(params: {
   hasControlCommand: boolean;
   commandAuthorized: boolean;
 }): { shouldSkip: boolean; shouldBypassMention: boolean } {
-  const result = resolveInboundMentionDecision({
-    facts: {
-      canDetectMention: true,
-      wasMentioned: params.wasMentioned,
-      implicitMentionKinds: [],
-    },
-    policy: {
-      isGroup: params.isGroup,
-      requireMention: params.requireMention,
-      allowTextCommands: params.allowTextCommands,
-      hasControlCommand: params.hasControlCommand,
-      commandAuthorized: params.commandAuthorized,
-    },
-  });
-  return { shouldSkip: result.shouldSkip, shouldBypassMention: result.shouldBypassMention };
+  const shouldBypassMention =
+    params.isGroup &&
+    params.requireMention &&
+    !params.wasMentioned &&
+    params.allowTextCommands &&
+    params.commandAuthorized &&
+    params.hasControlCommand;
+  return {
+    shouldBypassMention,
+    shouldSkip: params.requireMention && !params.wasMentioned && !shouldBypassMention,
+  };
 }

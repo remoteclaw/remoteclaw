@@ -26,7 +26,6 @@ export type BlueBubblesAttachmentOpts = {
   cfg?: RemoteClawConfig;
 };
 
-const DEFAULT_ATTACHMENT_MAX_BYTES = 8 * 1024 * 1024;
 const AUDIO_MIME_MP3 = new Set(["audio/mpeg", "audio/mp3"]);
 const AUDIO_MIME_CAF = new Set(["audio/x-caf", "audio/caf"]);
 
@@ -58,29 +57,12 @@ function resolveVoiceInfo(filename: string, contentType?: string) {
   return { isAudio, isMp3, isCaf };
 }
 
+function clientFromOpts(params: BlueBubblesAttachmentOpts): BlueBubblesClient {
+  return createBlueBubblesClient(params);
+}
+
 function resolveAccount(params: BlueBubblesAttachmentOpts) {
   return resolveBlueBubblesServerAccount(params);
-}
-
-function safeExtractHostname(url: string): string | undefined {
-  try {
-    const hostname = new URL(url).hostname.trim();
-    return hostname || undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-type MediaFetchErrorCode = "max_bytes" | "http_error" | "fetch_failed";
-
-function readMediaFetchErrorCode(error: unknown): MediaFetchErrorCode | undefined {
-  if (!error || typeof error !== "object") {
-    return undefined;
-  }
-  const code = (error as { code?: unknown }).code;
-  return code === "max_bytes" || code === "http_error" || code === "fetch_failed"
-    ? code
-    : undefined;
 }
 
 export async function downloadBlueBubblesAttachment(
@@ -192,12 +174,6 @@ export async function sendBlueBubblesAttachment(params: {
     );
   }
 
-  const url = buildBlueBubblesApiUrl({
-    baseUrl,
-    path: "/api/v1/message/attachment",
-    password,
-  });
-
   // Build FormData with the attachment
   const boundary = `----BlueBubblesFormBoundary${crypto.randomUUID().replace(/-/g, "")}`;
   const parts: Uint8Array[] = [];
@@ -255,8 +231,8 @@ export async function sendBlueBubblesAttachment(params: {
   // Close the multipart body
   parts.push(encoder.encode(`--${boundary}--\r\n`));
 
-  const res = await postMultipartFormData({
-    url,
+  const res = await client.requestMultipart({
+    path: "/api/v1/message/attachment",
     boundary,
     parts,
     timeoutMs: opts.timeoutMs ?? 60_000, // longer timeout for file uploads

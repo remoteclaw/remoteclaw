@@ -219,6 +219,15 @@ export async function applySessionsPatchToStore(params: {
       }
     }
   }
+  if (next.thinkingLevel === "max") {
+    const effectiveProvider = next.providerOverride ?? resolvedDefault.provider;
+    const effectiveModel = next.modelOverride ?? resolvedDefault.model;
+    next.thinkingLevel = resolveSupportedThinkingLevel({
+      provider: effectiveProvider,
+      model: effectiveModel,
+      level: next.thinkingLevel,
+    });
+  }
 
   if ("sendPolicy" in patch) {
     const raw = patch.sendPolicy;

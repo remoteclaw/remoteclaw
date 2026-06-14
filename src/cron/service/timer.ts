@@ -6,6 +6,7 @@ import { shouldEnqueueCronMainSummary } from "../heartbeat-policy.js";
 import { sweepCronRunSessions } from "../session-reaper.js";
 import type {
   CronDeliveryStatus,
+  CronDeliveryTrace,
   CronJob,
   CronMessageChannel,
   CronRunOutcome,
@@ -163,14 +164,20 @@ function resolveRetryConfig(cronConfig?: CronConfig) {
   };
 }
 
-function resolveDeliveryStatus(params: { job: CronJob; delivered?: boolean }): CronDeliveryStatus {
+function resolveDeliveryState(params: { job: CronJob; delivered?: boolean }): {
+  delivered?: boolean;
+  status: CronDeliveryStatus;
+} {
+  if (!resolveCronDeliveryPlan(params.job).requested) {
+    return { status: "not-requested" };
+  }
   if (params.delivered === true) {
-    return "delivered";
+    return { delivered: true, status: "delivered" };
   }
   if (params.delivered === false) {
-    return "not-delivered";
+    return { delivered: false, status: "not-delivered" };
   }
-  return resolveCronDeliveryPlan(params.job).requested ? "unknown" : "not-requested";
+  return { status: "unknown" };
 }
 
 function normalizeCronMessageChannel(input: unknown): CronMessageChannel | undefined {
@@ -329,7 +336,7 @@ export function applyJobResult(
   const deliveryStatus = resolveDeliveryStatus({ job, delivered: result.delivered });
   job.state.lastDeliveryStatus = deliveryStatus;
   job.state.lastDeliveryError =
-    deliveryStatus === "not-delivered" && result.error ? result.error : undefined;
+    deliveryState.status === "not-delivered" && result.error ? result.error : undefined;
   job.updatedAtMs = result.endedAt;
 
   // Track consecutive errors for backoff / auto-disable.
@@ -877,7 +884,12 @@ export async function executeJobCore(
   job: CronJob,
   abortSignal?: AbortSignal,
 ): Promise<
-  CronRunOutcome & CronRunTelemetry & { delivered?: boolean; deliveryAttempted?: boolean }
+  CronRunOutcome &
+    CronRunTelemetry & {
+      delivered?: boolean;
+      deliveryAttempted?: boolean;
+      delivery?: CronDeliveryTrace;
+    }
 > {
   const resolveAbortError = () => ({
     status: "error" as const,
@@ -1059,6 +1071,7 @@ export async function executeJobCore(
     summary: res.summary,
     delivered: res.delivered,
     deliveryAttempted: res.deliveryAttempted,
+    delivery: res.delivery,
     sessionId: res.sessionId,
     sessionKey: res.sessionKey,
     runtime: res.runtime,
@@ -1087,6 +1100,7 @@ export async function executeJob(
   let coreResult: {
     status: CronRunStatus;
     delivered?: boolean;
+    delivery?: CronDeliveryTrace;
   } & CronRunOutcome &
     CronRunTelemetry;
   try {
@@ -1118,6 +1132,7 @@ function emitJobFinished(
   result: {
     status: CronRunStatus;
     delivered?: boolean;
+    delivery?: CronDeliveryTrace;
   } & CronRunOutcome &
     CronRunTelemetry,
   runAtMs: number,
@@ -1131,6 +1146,7 @@ function emitJobFinished(
     delivered: result.delivered,
     deliveryStatus: job.state.lastDeliveryStatus,
     deliveryError: job.state.lastDeliveryError,
+    delivery: result.delivery,
     sessionId: result.sessionId,
     sessionKey: result.sessionKey,
     runAtMs,

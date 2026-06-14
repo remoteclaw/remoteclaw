@@ -44,6 +44,7 @@ type SlashHttpHandlerParams = {
   /** Map from trigger to original command name (for skill commands that start with oc_). */
   triggerMap?: ReadonlyMap<string, string>;
   log?: (msg: string) => void;
+  bodyTimeoutMs?: number;
 };
 
 /**
@@ -205,7 +206,7 @@ async function authorizeSlashInvocation(params: {
  * from the Mattermost server when a user invokes a registered slash command.
  */
 export function createSlashCommandHttpHandler(params: SlashHttpHandlerParams) {
-  const { account, cfg, runtime, commandTokens, triggerMap, log } = params;
+  const { account, cfg, runtime, commandTokens, triggerMap, log, bodyTimeoutMs } = params;
 
   const MAX_BODY_BYTES = 64 * 1024; // 64KB
 

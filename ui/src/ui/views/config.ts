@@ -413,6 +413,115 @@ export function renderConfig(props: ConfigProps) {
       ? null
       : (props.activeSubsection ?? subsections[0]?.key ?? null);
 
+  const settingsLayout = props.settingsLayout ?? "tabs";
+  const allCategories = [...visibleCategories, ...(otherCategory ? [otherCategory] : [])];
+
+  const resetContentScroll = (target: EventTarget | null) => {
+    queueMicrotask(() => {
+      const origin = target instanceof Element ? target : null;
+      const content = origin
+        ?.closest(".config-main")
+        ?.querySelector<HTMLElement>(".config-content");
+      if (!content) {
+        return;
+      }
+      if (typeof content.scrollTo === "function") {
+        content.scrollTo({ top: 0, left: 0, behavior: "auto" });
+        return;
+      }
+      content.scrollTop = 0;
+      content.scrollLeft = 0;
+    });
+  };
+
+  function renderAccordionNav() {
+    return html`
+      <div class="config-accordion-nav">
+        ${props.onBackToQuick
+          ? html`
+              <button class="config-accordion-nav__back" @click=${props.onBackToQuick}>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  width="14"
+                  height="14"
+                >
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                Quick Settings
+              </button>
+            `
+          : nothing}
+        ${allCategories.map(
+          (cat) => html`
+            <div class="config-accordion-group">
+              <button
+                class="config-accordion-group__header ${props.activeSection != null &&
+                cat.sections.some((s) => s.key === props.activeSection)
+                  ? "config-accordion-group__header--active"
+                  : ""}"
+                @click=${(e: Event) => {
+                  const firstKey = cat.sections[0]?.key ?? null;
+                  const isCurrentlyInGroup = cat.sections.some(
+                    (s) => s.key === props.activeSection,
+                  );
+                  props.onSectionChange(isCurrentlyInGroup ? null : firstKey);
+                  resetContentScroll(e.currentTarget);
+                }}
+              >
+                <span class="config-accordion-group__icon">
+                  ${getSectionIcon(cat.sections[0]?.key ?? "default")}
+                </span>
+                <span>${cat.label}</span>
+                <svg
+                  class="config-accordion-group__chevron ${cat.sections.some(
+                    (s) => s.key === props.activeSection,
+                  )
+                    ? "config-accordion-group__chevron--open"
+                    : ""}"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  width="14"
+                  height="14"
+                >
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              ${cat.sections.some((s) => s.key === props.activeSection)
+                ? html`
+                    <div class="config-accordion-group__items">
+                      ${cat.sections.map(
+                        (s) => html`
+                          <button
+                            class="config-accordion-group__item ${props.activeSection === s.key
+                              ? "config-accordion-group__item--active"
+                              : ""}"
+                            @click=${(e: Event) => {
+                              props.onSectionChange(s.key);
+                              resetContentScroll(e.currentTarget);
+                            }}
+                          >
+                            <span class="config-accordion-group__item-icon">
+                              ${getSectionIcon(s.key)}
+                            </span>
+                            ${s.label}
+                          </button>
+                        `,
+                      )}
+                    </div>
+                  `
+                : nothing}
+            </div>
+          `,
+        )}
+      </div>
+    `;
+  }
+
   // Compute diff for showing changes (works for both form and raw modes)
   const diff = props.formMode === "form" ? computeDiff(props.originalValue, props.formValue) : [];
   const hasRawChanges = props.formMode === "raw" && props.raw !== props.originalRaw;

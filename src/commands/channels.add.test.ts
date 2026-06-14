@@ -8,7 +8,7 @@ let channelsAddCommand: typeof import("./channels.js").channelsAddCommand;
 
 describe("channelsAddCommand", () => {
   beforeAll(async () => {
-    ({ channelsAddCommand } = await import("./channels.js"));
+    ({ channelsAddCommand } = await import("./channels/add.js"));
   });
 
   beforeEach(async () => {
@@ -21,40 +21,39 @@ describe("channelsAddCommand", () => {
     setDefaultChannelPluginRegistryForTests();
   });
 
-  it("clears telegram update offsets when the token changes", async () => {
+  it("runs channel lifecycle hooks only when account config changes", async () => {
     configMocks.readConfigFileSnapshot.mockResolvedValue({
       ...baseConfigSnapshot,
       config: {
         channels: {
-          telegram: { botToken: "old-token", enabled: true },
+          "lifecycle-chat": { token: "old-token", enabled: true },
         },
       },
     });
 
     await channelsAddCommand(
-      { channel: "telegram", account: "default", token: "new-token" },
+      { channel: "lifecycle-chat", account: "default", token: "new-token" },
       runtime,
       {
         hasFlags: true,
       },
     );
 
-    expect(offsetMocks.deleteTelegramUpdateOffset).toHaveBeenCalledTimes(1);
-    expect(offsetMocks.deleteTelegramUpdateOffset).toHaveBeenCalledWith({ accountId: "default" });
-  });
+    expect(lifecycleMocks.onAccountConfigChanged).toHaveBeenCalledTimes(1);
+    expect(lifecycleMocks.onAccountConfigChanged).toHaveBeenCalledWith({ accountId: "default" });
 
-  it("does not clear telegram update offsets when the token is unchanged", async () => {
+    lifecycleMocks.onAccountConfigChanged.mockClear();
     configMocks.readConfigFileSnapshot.mockResolvedValue({
       ...baseConfigSnapshot,
       config: {
         channels: {
-          telegram: { botToken: "same-token", enabled: true },
+          "lifecycle-chat": { token: "same-token", enabled: true },
         },
       },
     });
 
     await channelsAddCommand(
-      { channel: "telegram", account: "default", token: "same-token" },
+      { channel: "lifecycle-chat", account: "default", token: "same-token" },
       runtime,
       {
         hasFlags: true,

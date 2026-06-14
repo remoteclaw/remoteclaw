@@ -45,7 +45,7 @@ async function handleSlackPinEvent(params: {
       },
     );
   } catch (err) {
-    ctx.runtime.error?.(danger(`slack ${errorLabel} handler failed: ${String(err)}`));
+    ctx.runtime.error?.(danger(`slack ${errorLabel} handler failed: ${formatErrorMessage(err)}`));
   }
 }
 

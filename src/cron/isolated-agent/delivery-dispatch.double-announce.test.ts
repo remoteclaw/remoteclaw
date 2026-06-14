@@ -86,6 +86,7 @@ function makeWithRunSession() {
 
 function makeBaseParams(overrides: { synthesizedText?: string; deliveryRequested?: boolean }) {
   const resolvedDelivery = makeResolvedDelivery();
+  const runStartedAt = overrides.runStartedAt ?? Date.now();
   return {
     cfg: {} as never,
     cfgWithAgentDefaults: {} as never,
@@ -219,7 +220,10 @@ describe("dispatchCronDelivery — double-announce guard", () => {
     vi.mocked(countActiveDescendantRuns).mockReturnValue(0);
     vi.mocked(isLikelyInterimCronMessage).mockReturnValue(false);
 
-    const params = makeBaseParams({ synthesizedText: "Morning briefing complete." });
+    const params = makeBaseParams({
+      synthesizedText: "Morning briefing complete.",
+      runStartedAt: 1_000,
+    });
     const state = await dispatchCronDelivery(params);
 
     expect(state.deliveryAttempted).toBe(true);

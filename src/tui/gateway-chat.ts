@@ -19,6 +19,7 @@ import {
 import { resolveConfiguredSecretInputString } from "../gateway/resolve-configured-secret-input-string.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../utils/message-channel.js";
 import { VERSION } from "../version.js";
+import { TUI_SETUP_AUTH_SOURCE_CONFIG, TUI_SETUP_AUTH_SOURCE_ENV } from "./setup-launch-env.js";
 import type { ResponseUsageMode, SessionInfo, SessionScope } from "./tui-types.js";
 
 export type GatewayConnectionOptions = {
@@ -40,6 +41,10 @@ export type GatewayEvent = {
   payload?: unknown;
   seq?: number;
 };
+
+const STARTUP_CHAT_HISTORY_RETRY_TIMEOUT_MS = 60_000;
+const STARTUP_CHAT_HISTORY_DEFAULT_RETRY_MS = 500;
+const STARTUP_CHAT_HISTORY_MAX_RETRY_MS = 5_000;
 
 type ResolvedGatewayConnection = {
   url: string;
@@ -63,6 +68,34 @@ function throwGatewayAuthResolutionError(reason: string): never {
       "or resolve the configured secret provider for this credential.",
     ].join("\n"),
   );
+}
+
+function isRetryableStartupUnavailable(
+  err: unknown,
+  method: string,
+): err is GatewayClientRequestError {
+  if (!(err instanceof GatewayClientRequestError)) {
+    return false;
+  }
+  if (err.gatewayCode !== "UNAVAILABLE" || !err.retryable) {
+    return false;
+  }
+  const details = err.details;
+  if (!details || typeof details !== "object") {
+    return true;
+  }
+  const detailMethod = (details as { method?: unknown }).method;
+  return typeof detailMethod !== "string" || detailMethod === method;
+}
+
+function resolveStartupRetryDelayMs(err: GatewayClientRequestError): number {
+  const retryAfterMs =
+    typeof err.retryAfterMs === "number" ? err.retryAfterMs : STARTUP_CHAT_HISTORY_DEFAULT_RETRY_MS;
+  return Math.min(Math.max(retryAfterMs, 100), STARTUP_CHAT_HISTORY_MAX_RETRY_MS);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export type GatewaySessionList = {
@@ -211,10 +244,23 @@ export class GatewayChatClient {
   }
 
   async loadHistory(opts: { sessionKey: string; limit?: number }) {
-    return await this.client.request("chat.history", {
-      sessionKey: opts.sessionKey,
-      limit: opts.limit,
-    });
+    const startedAt = Date.now();
+    for (;;) {
+      try {
+        return await this.client.request("chat.history", {
+          sessionKey: opts.sessionKey,
+          limit: opts.limit,
+        });
+      } catch (err) {
+        const withinStartupRetryWindow =
+          Date.now() - startedAt < STARTUP_CHAT_HISTORY_RETRY_TIMEOUT_MS;
+        if (withinStartupRetryWindow && isRetryableStartupUnavailable(err, "chat.history")) {
+          await sleep(resolveStartupRetryDelayMs(err));
+          continue;
+        }
+        throw err;
+      }
+    }
   }
 
   async listSessions(opts?: SessionsListParams) {
@@ -259,6 +305,7 @@ export async function resolveGatewayConnection(
   const remote = config.gateway?.remote;
   const envToken = trimToUndefined(env.REMOTECLAW_GATEWAY_TOKEN);
   const envPassword = trimToUndefined(env.REMOTECLAW_GATEWAY_PASSWORD);
+  const preferConfiguredAuth = env[TUI_SETUP_AUTH_SOURCE_ENV] === TUI_SETUP_AUTH_SOURCE_CONFIG;
 
   const urlOverride =
     typeof opts.url === "string" && opts.url.trim().length > 0 ? opts.url.trim() : undefined;

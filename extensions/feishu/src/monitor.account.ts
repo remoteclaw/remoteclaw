@@ -245,11 +245,6 @@ function registerEventHandlers(
   context: RegisterEventHandlersContext,
 ): void {
   const { cfg, accountId, runtime, chatHistories, fireAndForget } = context;
-  const core = getFeishuRuntime();
-  const inboundDebounceMs = core.channel.debounce.resolveInboundDebounceMs({
-    cfg,
-    channel: "feishu",
-  });
   const log = runtime?.log ?? console.log;
   const error = runtime?.error ?? console.error;
   const enqueue = createChatQueue();

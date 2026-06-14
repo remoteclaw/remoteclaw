@@ -338,6 +338,19 @@ export function loadAuthProfileStoreForRuntime(agentDir?: string): AuthProfileSt
   return mergeAuthProfileStores(mainStore, store);
 }
 
+export function loadAuthProfileStoreWithoutExternalProfiles(agentDir?: string): AuthProfileStore {
+  const options: LoadAuthProfileStoreOptions = { readOnly: true, allowKeychainPrompt: false };
+  const store = loadAuthProfileStoreForAgent(agentDir, options);
+  const authPath = resolveAuthStorePath(agentDir);
+  const mainAuthPath = resolveAuthStorePath();
+  if (!agentDir || authPath === mainAuthPath) {
+    return store;
+  }
+
+  const mainStore = loadAuthProfileStoreForAgent(undefined, options);
+  return mergeAuthProfileStores(mainStore, store);
+}
+
 export function ensureAuthProfileStore(
   agentDir?: string,
   _options?: { allowKeychainPrompt?: boolean },

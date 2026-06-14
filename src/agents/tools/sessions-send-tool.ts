@@ -227,7 +227,7 @@ export function createSessionsSendTool(opts?: {
         idempotencyKey,
         deliver: false,
         channel: INTERNAL_MESSAGE_CHANNEL,
-        lane: AGENT_LANE_NESTED,
+        lane: resolveNestedAgentLaneForSession(resolvedKey),
         extraSystemPrompt: agentMessageContext,
         inputProvenance: {
           kind: "inter_session",

@@ -16,6 +16,7 @@ import { defaultRuntime, type RuntimeEnv } from "../../../../src/runtime.js";
 import { resolveWhatsAppAccount, resolveWhatsAppMediaMaxBytes } from "../accounts.js";
 import { setActiveWebListener } from "../active-listener.js";
 import { monitorWebInbox } from "../inbound.js";
+import { WHATSAPP_AUTH_UNSTABLE_CODE, WhatsAppAuthUnstableError } from "../auth-store.js";
 import {
   computeBackoff,
   newConnectionId,
@@ -69,6 +70,7 @@ export async function monitorWebChannel(
   emitStatus();
 
   const baseCfg = loadConfig();
+  const sourceCfg = getRuntimeConfigSourceSnapshot();
   const account = resolveWhatsAppAccount({
     cfg: baseCfg,
     accountId: tuning.accountId,
@@ -98,7 +100,7 @@ export async function monitorWebChannel(
   const reconnectPolicy = resolveReconnectPolicy(cfg, tuning.reconnect);
   const baseMentionConfig = buildMentionConfig(cfg);
   const groupHistoryLimit =
-    cfg.channels?.whatsapp?.accounts?.[tuning.accountId ?? ""]?.historyLimit ??
+    account.historyLimit ??
     cfg.channels?.whatsapp?.historyLimit ??
     cfg.messages?.groupChat?.historyLimit ??
     DEFAULT_GROUP_HISTORY_LIMIT;

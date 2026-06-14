@@ -70,6 +70,9 @@ export async function agentsDeleteCommand(
     logConfigUpdated(runtime);
   }
 
+  // Purge session store entries for this agent so orphaned sessions cannot be targeted (#65524).
+  await purgeAgentSessionStoreEntries(cfg, agentId);
+
   const quietRuntime = opts.json ? createQuietRuntime(runtime) : runtime;
   await moveToTrash(workspaceDir, quietRuntime);
   await moveToTrash(agentDir, quietRuntime);

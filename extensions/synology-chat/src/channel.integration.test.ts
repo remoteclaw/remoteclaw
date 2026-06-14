@@ -22,30 +22,27 @@ describe("Synology channel wiring integration", () => {
   it("registers real webhook handler with resolved account config and enforces allowlist", async () => {
     const plugin = createSynologyChatPlugin();
     const abortController = new AbortController();
-    const ctx = {
-      cfg: {
-        channels: {
-          "synology-chat": {
-            enabled: true,
-            accounts: {
-              alerts: {
-                enabled: true,
-                token: "valid-token",
-                incomingUrl: "https://nas.example.com/incoming",
-                webhookPath: "/webhook/synology-alerts",
-                dmPolicy: "allowlist",
-                allowedUserIds: ["456"],
-              },
+    const cfg = {
+      channels: {
+        "synology-chat": {
+          enabled: true,
+          accounts: {
+            alerts: {
+              enabled: true,
+              token: "valid-token",
+              incomingUrl: "https://nas.example.com/incoming",
+              webhookPath: "/webhook/synology-alerts",
+              dmPolicy: "allowlist",
+              allowedUserIds: ["456"],
             },
           },
         },
       },
-      accountId: "alerts",
-      log: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-      abortSignal: abortController.signal,
     };
 
-    const started = plugin.gateway.startAccount(ctx);
+    const started = plugin.gateway.startAccount(
+      makeStartContext(cfg, "alerts", abortController.signal),
+    );
     expect(registerPluginHttpRouteMock).toHaveBeenCalledTimes(1);
 
     const firstCall = registerPluginHttpRouteMock.mock.calls[0];

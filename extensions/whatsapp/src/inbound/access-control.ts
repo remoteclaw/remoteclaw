@@ -1,18 +1,13 @@
-import { loadConfig } from "../../../../src/config/config.js";
-import {
-  resolveOpenProviderRuntimeGroupPolicy,
-  resolveDefaultGroupPolicy,
-  warnMissingProviderGroupPolicyFallbackOnce,
-} from "../../../../src/config/runtime-group-policy.js";
-import { logVerbose } from "../../../../src/globals.js";
-import { issuePairingChallenge } from "../../../../src/pairing/pairing-challenge.js";
-import { upsertChannelPairingRequest } from "../../../../src/pairing/pairing-store.js";
+import { createChannelPairingChallengeIssuer } from "remoteclaw/plugin-sdk/channel-pairing";
+import { loadConfig } from "remoteclaw/plugin-sdk/config-runtime";
+import { warnMissingProviderGroupPolicyFallbackOnce } from "remoteclaw/plugin-sdk/config-runtime";
+import { upsertChannelPairingRequest } from "remoteclaw/plugin-sdk/conversation-runtime";
+import { defaultRuntime } from "remoteclaw/plugin-sdk/runtime-env";
 import {
   readStoreAllowFromForDmPolicy,
   resolveDmGroupAccessWithLists,
-} from "../../../../src/security/dm-policy-shared.js";
-import { isSelfChatMode, normalizeE164 } from "../../../../src/utils.js";
-import { resolveWhatsAppAccount } from "../accounts.js";
+} from "remoteclaw/plugin-sdk/security-runtime";
+import { resolveWhatsAppInboundPolicy } from "../inbound-policy.js";
 
 export type InboundAccessControlResult = {
   allowed: boolean;
@@ -38,6 +33,13 @@ function resolveWhatsAppRuntimeGroupPolicy(params: {
   });
 }
 
+function logWhatsAppVerbose(enabled: boolean | undefined, message: string) {
+  if (!enabled) {
+    return;
+  }
+  defaultRuntime.log(message);
+}
+
 export async function checkInboundAccessControl(params: {
   accountId: string;
   from: string;
@@ -49,31 +51,24 @@ export async function checkInboundAccessControl(params: {
   messageTimestampMs?: number;
   connectedAtMs?: number;
   pairingGraceMs?: number;
+  verbose?: boolean;
   sock: {
     sendMessage: (jid: string, content: { text: string }) => Promise<unknown>;
   };
   remoteJid: string;
 }): Promise<InboundAccessControlResult> {
   const cfg = loadConfig();
-  const account = resolveWhatsAppAccount({
+  const policy = resolveWhatsAppInboundPolicy({
     cfg,
     accountId: params.accountId,
+    selfE164: params.selfE164,
   });
-  const dmPolicy = account.dmPolicy ?? "pairing";
-  const configuredAllowFrom = account.allowFrom ?? [];
   const storeAllowFrom = await readStoreAllowFromForDmPolicy({
     provider: "whatsapp",
-    accountId: account.accountId,
-    dmPolicy,
+    accountId: policy.account.accountId,
+    dmPolicy: policy.dmPolicy,
+    shouldRead: policy.shouldReadStorePairingApprovals,
   });
-  // Without user config, default to self-only DM access so the owner can talk to themselves.
-  const defaultAllowFrom =
-    configuredAllowFrom.length === 0 && params.selfE164 ? [params.selfE164] : [];
-  const dmAllowFrom = configuredAllowFrom.length > 0 ? configuredAllowFrom : defaultAllowFrom;
-  const groupAllowFrom =
-    account.groupAllowFrom ?? (configuredAllowFrom.length > 0 ? configuredAllowFrom : undefined);
-  const isSamePhone = params.from === params.selfE164;
-  const isSelfChat = account.selfChatMode ?? isSelfChatMode(params.selfE164, configuredAllowFrom);
   const pairingGraceMs =
     typeof params.pairingGraceMs === "number" && params.pairingGraceMs > 0
       ? params.pairingGraceMs
@@ -87,28 +82,18 @@ export async function checkInboundAccessControl(params: {
   // - "open": groups bypass allowFrom, only mention-gating applies
   // - "disabled": block all group messages entirely
   // - "allowlist": only allow group messages from senders in groupAllowFrom/allowFrom
-  const defaultGroupPolicy = resolveDefaultGroupPolicy(cfg);
-  const { groupPolicy, providerMissingFallbackApplied } = resolveWhatsAppRuntimeGroupPolicy({
-    providerConfigPresent: cfg.channels?.whatsapp !== undefined,
-    groupPolicy: account.groupPolicy,
-    defaultGroupPolicy,
-  });
   warnMissingProviderGroupPolicyFallbackOnce({
-    providerMissingFallbackApplied,
+    providerMissingFallbackApplied: policy.providerMissingFallbackApplied,
     providerKey: "whatsapp",
-    accountId: account.accountId,
-    log: (message) => logVerbose(message),
+    accountId: policy.account.accountId,
+    log: (message) => logWhatsAppVerbose(params.verbose, message),
   });
-  const normalizedDmSender = normalizeE164(params.from);
-  const normalizedGroupSender =
-    typeof params.senderE164 === "string" ? normalizeE164(params.senderE164) : null;
   const access = resolveDmGroupAccessWithLists({
     isGroup: params.group,
-    dmPolicy,
-    groupPolicy,
-    // Groups intentionally fall back to configured allowFrom only (not DM self-chat fallback).
-    allowFrom: params.group ? configuredAllowFrom : dmAllowFrom,
-    groupAllowFrom,
+    dmPolicy: policy.dmPolicy,
+    groupPolicy: policy.groupPolicy,
+    allowFrom: params.group ? policy.configuredAllowFrom : policy.dmAllowFrom,
+    groupAllowFrom: policy.groupAllowFrom,
     storeAllowFrom,
     isSenderAllowed: (allowEntries) => {
       const hasWildcard = allowEntries.includes("*");
@@ -124,52 +109,59 @@ export async function checkInboundAccessControl(params: {
         return true;
       }
       return params.group
-        ? Boolean(normalizedGroupSender && normalizedEntrySet.has(normalizedGroupSender))
-        : normalizedEntrySet.has(normalizedDmSender);
+        ? policy.isGroupSenderAllowed(allowEntries, params.senderE164)
+        : policy.isDmSenderAllowed(allowEntries, params.from);
     },
   });
   if (params.group && access.decision !== "allow") {
     if (access.reason === "groupPolicy=disabled") {
-      logVerbose("Blocked group message (groupPolicy: disabled)");
+      logWhatsAppVerbose(params.verbose, "Blocked group message (groupPolicy: disabled)");
     } else if (access.reason === "groupPolicy=allowlist (empty allowlist)") {
-      logVerbose("Blocked group message (groupPolicy: allowlist, no groupAllowFrom)");
+      logWhatsAppVerbose(
+        params.verbose,
+        "Blocked group message (groupPolicy: allowlist, no groupAllowFrom)",
+      );
     } else {
-      logVerbose(
+      logWhatsAppVerbose(
+        params.verbose,
         `Blocked group message from ${params.senderE164 ?? "unknown sender"} (groupPolicy: allowlist)`,
       );
     }
     return {
       allowed: false,
       shouldMarkRead: false,
-      isSelfChat,
-      resolvedAccountId: account.accountId,
+      isSelfChat: policy.isSelfChat,
+      resolvedAccountId: policy.account.accountId,
     };
   }
 
   // DM access control (secure defaults): "pairing" (default) / "allowlist" / "open" / "disabled".
   if (!params.group) {
-    if (params.isFromMe && !isSamePhone) {
-      logVerbose("Skipping outbound DM (fromMe); no pairing reply needed.");
+    if (params.isFromMe && !policy.isSamePhone(params.from)) {
+      logWhatsAppVerbose(params.verbose, "Skipping outbound DM (fromMe); no pairing reply needed.");
       return {
         allowed: false,
         shouldMarkRead: false,
-        isSelfChat,
-        resolvedAccountId: account.accountId,
+        isSelfChat: policy.isSelfChat,
+        resolvedAccountId: policy.account.accountId,
       };
     }
     if (access.decision === "block" && access.reason === "dmPolicy=disabled") {
-      logVerbose("Blocked dm (dmPolicy: disabled)");
+      logWhatsAppVerbose(params.verbose, "Blocked dm (dmPolicy: disabled)");
       return {
         allowed: false,
         shouldMarkRead: false,
-        isSelfChat,
-        resolvedAccountId: account.accountId,
+        isSelfChat: policy.isSelfChat,
+        resolvedAccountId: policy.account.accountId,
       };
     }
-    if (access.decision === "pairing" && !isSamePhone) {
+    if (access.decision === "pairing" && !policy.isSamePhone(params.from)) {
       const candidate = params.from;
       if (suppressPairingReply) {
-        logVerbose(`Skipping pairing reply for historical DM from ${candidate}.`);
+        logWhatsAppVerbose(
+          params.verbose,
+          `Skipping pairing reply for historical DM from ${candidate}.`,
+        );
       } else {
         await issuePairingChallenge({
           channel: "whatsapp",
@@ -180,11 +172,12 @@ export async function checkInboundAccessControl(params: {
             await upsertChannelPairingRequest({
               channel: "whatsapp",
               id,
-              accountId: account.accountId,
+              accountId: policy.account.accountId,
               meta,
             }),
           onCreated: () => {
-            logVerbose(
+            logWhatsAppVerbose(
+              params.verbose,
               `whatsapp pairing request sender=${candidate} name=${params.pushName ?? "unknown"}`,
             );
           },
@@ -192,24 +185,30 @@ export async function checkInboundAccessControl(params: {
             await params.sock.sendMessage(params.remoteJid, { text });
           },
           onReplyError: (err) => {
-            logVerbose(`whatsapp pairing reply failed for ${candidate}: ${String(err)}`);
+            logWhatsAppVerbose(
+              params.verbose,
+              `whatsapp pairing reply failed for ${candidate}: ${String(err)}`,
+            );
           },
         });
       }
       return {
         allowed: false,
         shouldMarkRead: false,
-        isSelfChat,
-        resolvedAccountId: account.accountId,
+        isSelfChat: policy.isSelfChat,
+        resolvedAccountId: policy.account.accountId,
       };
     }
     if (access.decision !== "allow") {
-      logVerbose(`Blocked unauthorized sender ${params.from} (dmPolicy=${dmPolicy})`);
+      logWhatsAppVerbose(
+        params.verbose,
+        `Blocked unauthorized sender ${params.from} (dmPolicy=${policy.dmPolicy})`,
+      );
       return {
         allowed: false,
         shouldMarkRead: false,
-        isSelfChat,
-        resolvedAccountId: account.accountId,
+        isSelfChat: policy.isSelfChat,
+        resolvedAccountId: policy.account.accountId,
       };
     }
   }
@@ -217,11 +216,11 @@ export async function checkInboundAccessControl(params: {
   return {
     allowed: true,
     shouldMarkRead: true,
-    isSelfChat,
-    resolvedAccountId: account.accountId,
+    isSelfChat: policy.isSelfChat,
+    resolvedAccountId: policy.account.accountId,
   };
 }
 
 export const __testing = {
-  resolveWhatsAppRuntimeGroupPolicy,
+  resolveWhatsAppInboundPolicy,
 };

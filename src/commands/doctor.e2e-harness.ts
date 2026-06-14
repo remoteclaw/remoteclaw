@@ -233,6 +233,16 @@ vi.mock("../agents/auth-profiles.js", async (importOriginal) => {
   };
 });
 
+vi.mock("../agents/auth-profiles/store.js", async () => {
+  const actual = await vi.importActual<typeof import("../agents/auth-profiles/store.js")>(
+    "../agents/auth-profiles/store.js",
+  );
+  return {
+    ...actual,
+    ensureAuthProfileStore,
+  };
+});
+
 vi.mock("../daemon/service.js", () => ({
   resolveGatewayService: () => ({
     label: "LaunchAgent",

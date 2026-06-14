@@ -378,6 +378,58 @@ export function createTelegramThreadBindingManager(
   const listBindingsForAccount = () =>
     [...BINDINGS_BY_ACCOUNT_CONVERSATION.values()].filter((entry) => entry.accountId === accountId);
 
+  const acpSessionKeys = new Set<string>();
+  for (const binding of getThreadBindingsState().bindingsByAccountConversation.values()) {
+    if (binding.targetKind !== "acp" || !isAcpSessionKey(binding.targetSessionKey)) {
+      continue;
+    }
+    acpSessionKeys.add(binding.targetSessionKey);
+  }
+
+  const staleSessionKeys = new Set<string>();
+  for (const targetSessionKey of acpSessionKeys) {
+    const sessionEntry = readAcpSessionEntry({ sessionKey: targetSessionKey });
+    if (!sessionEntry || sessionEntry.storeReadFailed) {
+      continue;
+    }
+    const isStale =
+      !sessionEntry.entry ||
+      sessionEntry.entry.status === "failed" ||
+      sessionEntry.entry.status === "killed" ||
+      sessionEntry.entry.status === "timeout" ||
+      sessionEntry.entry.acp?.state === "error";
+    if (isStale) {
+      staleSessionKeys.add(targetSessionKey);
+    }
+  }
+
+  let needsPersist = false;
+  for (const sessionKey of staleSessionKeys) {
+    const bindingsToRemove = listBindingsForAccount(accountId).filter(
+      (b) => b.targetSessionKey === sessionKey,
+    );
+    for (const binding of bindingsToRemove) {
+      getThreadBindingsState().bindingsByAccountConversation.delete(
+        resolveBindingKey({ accountId, conversationId: binding.conversationId }),
+      );
+    }
+    if (bindingsToRemove.length > 0) {
+      needsPersist = true;
+      logVerbose(
+        `telegram thread binding: cleaned up ${bindingsToRemove.length} stale binding(s) for session ${sessionKey}`,
+      );
+    }
+  }
+
+  if (needsPersist && persist) {
+    persistBindingsSafely({
+      accountId,
+      persist: true,
+      bindings: listBindingsForAccount(accountId),
+      reason: "cleanup-stale",
+    });
+  }
+
   let sweepTimer: NodeJS.Timeout | null = null;
 
   const manager: TelegramThreadBindingManager = {

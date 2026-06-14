@@ -4,6 +4,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { captureEnv } from "../../test-utils/env.js";
 import { resolveApiKeyForProfile } from "./oauth.js";
+import { OAUTH_AGENT_ENV_KEYS, createExpiredOauthStore } from "./oauth-test-utils.js";
 import {
   clearRuntimeAuthProfileStoreSnapshots,
   ensureAuthProfileStore,
@@ -45,21 +46,18 @@ function createExpiredOauthStore(params: {
 }
 
 describe("resolveApiKeyForProfile openai-codex refresh fallback", () => {
-  const envSnapshot = captureEnv([
-    "REMOTECLAW_STATE_DIR",
-    "REMOTECLAW_AGENT_DIR",
-    "PI_CODING_AGENT_DIR",
-  ]);
+  const envSnapshot = captureEnv(OAUTH_AGENT_ENV_KEYS);
   let tempRoot = "";
   let agentDir = "";
+  let caseIndex = 0;
 
   beforeEach(async () => {
     getOAuthApiKeyMock.mockClear();
     clearRuntimeAuthProfileStoreSnapshots();
-    tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-codex-refresh-fallback-"));
-    agentDir = path.join(tempRoot, "agents", "main", "agent");
+    const caseRoot = path.join(tempRoot, `case-${++caseIndex}`);
+    agentDir = path.join(caseRoot, "agents", "main", "agent");
     await fs.mkdir(agentDir, { recursive: true });
-    process.env.REMOTECLAW_STATE_DIR = tempRoot;
+    process.env.REMOTECLAW_STATE_DIR = caseRoot;
     process.env.REMOTECLAW_AGENT_DIR = agentDir;
     process.env.PI_CODING_AGENT_DIR = agentDir;
   });
@@ -67,6 +65,9 @@ describe("resolveApiKeyForProfile openai-codex refresh fallback", () => {
   afterEach(async () => {
     clearRuntimeAuthProfileStoreSnapshots();
     envSnapshot.restore();
+  });
+
+  afterAll(async () => {
     await fs.rm(tempRoot, { recursive: true, force: true });
   });
 

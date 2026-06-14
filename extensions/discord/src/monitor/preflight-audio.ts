@@ -1,6 +1,15 @@
 import type { RemoteClawConfig } from "../../../../src/config/config.js";
 import { logVerbose } from "../../../../src/globals.js";
 
+type DiscordPreflightAudioRuntime = typeof import("./preflight-audio.runtime.js");
+
+let discordPreflightAudioRuntimePromise: Promise<DiscordPreflightAudioRuntime> | undefined;
+
+function loadDiscordPreflightAudioRuntime(): Promise<DiscordPreflightAudioRuntime> {
+  discordPreflightAudioRuntimePromise ??= import("./preflight-audio.runtime.js");
+  return discordPreflightAudioRuntimePromise;
+}
+
 type DiscordAudioAttachment = {
   content_type?: string;
   url?: string;

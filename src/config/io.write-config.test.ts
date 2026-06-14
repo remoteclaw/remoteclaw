@@ -156,6 +156,26 @@ describe("config io write", () => {
     });
   });
 
+  const createFastConfigIO = (home: string) =>
+    createConfigIO({
+      env: { REMOTECLAW_TEST_FAST: "1" } as NodeJS.ProcessEnv,
+      homedir: () => home,
+      logger: silentLogger,
+    });
+
+  const writeGatewayPortAndReadConfig = async (home: string, configPath: string) => {
+    const io = createFastConfigIO(home);
+
+    await io.writeConfigFile({
+      gateway: { mode: "local", port: 18789 },
+    });
+
+    return JSON.parse(await fs.readFile(configPath, "utf-8")) as {
+      $schema?: string;
+      gateway?: { mode?: string; port?: number };
+    };
+  };
+
   it.runIf(process.platform !== "win32")(
     "tightens world-writable state dir when writing the default config",
     async () => {

@@ -2,6 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import {
   listAgentIds,
+  resolveAgentEffectiveModelPrimary,
+  resolveAgentModelFallbacksOverride,
   resolveAgentWorkspaceDir,
   resolveSessionKeyAgentId,
   resolveSoleAgentId,
@@ -28,6 +30,7 @@ import {
 } from "../config/sessions.js";
 import { openBoundaryFileSync } from "../infra/boundary-file-read.js";
 import {
+  DEFAULT_AGENT_ID,
   normalizeAgentId,
   normalizeMainKey,
   parseAgentSessionKey,
@@ -484,6 +487,83 @@ export function canonicalizeSpawnedByForAgent(
   return canonicalizeMainSessionAlias({ cfg, agentId: resolvedAgent, sessionKey: result });
 }
 
+function resolveExplicitDeletedLegacyMainStoreTarget(params: {
+  cfg: RemoteClawConfig;
+  key: string;
+  scanLegacyKeys?: boolean;
+}): {
+  agentId: string;
+  storePath: string;
+  canonicalKey: string;
+  storeKeys: string[];
+} | null {
+  const parsed = parseAgentSessionKey(params.key);
+  const legacyAgentId = normalizeAgentId(parsed?.agentId);
+  if (
+    !parsed ||
+    legacyAgentId !== DEFAULT_AGENT_ID ||
+    listAgentIds(params.cfg).includes(legacyAgentId)
+  ) {
+    return null;
+  }
+
+  // Only preserve agent:main:* when it is backed by a discovered deleted-main store.
+  // Shared-store legacy aliases should continue remapping to the configured default agent.
+  const canonicalKey = resolveStoredSessionKeyForAgentStore({
+    cfg: params.cfg,
+    agentId: legacyAgentId,
+    sessionKey: params.key,
+  });
+  const agentMainKey = resolveAgentMainSessionKey({ cfg: params.cfg, agentId: legacyAgentId });
+  const legacyAgentMainKey = `agent:${legacyAgentId}:main`;
+  const lookupSeeds = Array.from(
+    new Set([params.key, canonicalKey, agentMainKey, legacyAgentMainKey]),
+  );
+  let best:
+    | {
+        storePath: string;
+        store: Record<string, SessionEntry>;
+        match: { entry: SessionEntry; key: string };
+      }
+    | undefined;
+  for (const target of resolveAllAgentSessionStoreTargetsSync(params.cfg)) {
+    if (target.agentId !== legacyAgentId) {
+      continue;
+    }
+    const store = loadSessionStore(target.storePath);
+    const match = findFreshestStoreMatch(store, ...lookupSeeds);
+    if (!match) {
+      continue;
+    }
+    if (!best || (match.entry.updatedAt ?? 0) >= (best.match.entry.updatedAt ?? 0)) {
+      best = { storePath: target.storePath, store, match };
+    }
+  }
+  if (!best) {
+    return null;
+  }
+
+  const storeKeys = new Set<string>([canonicalKey]);
+  if (params.key !== canonicalKey) {
+    storeKeys.add(params.key);
+  }
+  storeKeys.add(best.match.key);
+  if (params.scanLegacyKeys !== false) {
+    for (const seed of lookupSeeds) {
+      storeKeys.add(seed);
+      for (const legacyKey of findStoreKeysIgnoreCase(best.store, seed)) {
+        storeKeys.add(legacyKey);
+      }
+    }
+  }
+  return {
+    agentId: legacyAgentId,
+    storePath: best.storePath,
+    canonicalKey,
+    storeKeys: Array.from(storeKeys),
+  };
+}
+
 export function resolveGatewaySessionStoreTarget(params: {
   cfg: RemoteClawConfig;
   key: string;
@@ -580,7 +660,11 @@ export function loadCombinedSessionStoreForGateway(cfg: RemoteClawConfig): {
     const store = loadSessionStore(storePath);
     const combined: Record<string, SessionEntry> = {};
     for (const [key, entry] of Object.entries(store)) {
-      const canonicalKey = canonicalizeSessionKeyForAgent(defaultAgentId, key);
+      const canonicalKey = resolveStoredSessionKeyForAgentStore({
+        cfg,
+        agentId: defaultAgentId,
+        sessionKey: key,
+      });
       mergeSessionEntryIntoCombined({
         cfg,
         combined,
@@ -598,7 +682,11 @@ export function loadCombinedSessionStoreForGateway(cfg: RemoteClawConfig): {
     const storePath = resolveStorePath(storeConfig, { agentId });
     const store = loadSessionStore(storePath);
     for (const [key, entry] of Object.entries(store)) {
-      const canonicalKey = canonicalizeSessionKeyForAgent(agentId, key);
+      const canonicalKey = resolveStoredSessionKeyForAgentStore({
+        cfg,
+        agentId,
+        sessionKey: key,
+      });
       mergeSessionEntryIntoCombined({
         cfg,
         combined,

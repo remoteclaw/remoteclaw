@@ -66,6 +66,7 @@ function resolveModelCost(
     cacheRead: typeof raw?.cacheRead === "number" ? raw.cacheRead : DEFAULT_MODEL_COST.cacheRead,
     cacheWrite:
       typeof raw?.cacheWrite === "number" ? raw.cacheWrite : DEFAULT_MODEL_COST.cacheWrite,
+    ...(raw?.tieredPricing ? { tieredPricing: raw.tieredPricing } : {}),
   };
 }
 
@@ -287,8 +288,7 @@ export function applyModelDefaults(cfg: RemoteClawConfig): RemoteClawConfig {
           return model;
         }
         providerMutated = true;
-        return {
-          ...raw,
+        return Object.assign({}, raw, {
           reasoning,
           input,
           cost,
@@ -412,6 +412,32 @@ export function applyLoggingDefaults(cfg: RemoteClawConfig): RemoteClawConfig {
       redactSensitive: "tools",
     },
   };
+}
+
+function hasAnthropicDefaultSignal(cfg: RemoteClawConfig, env: NodeJS.ProcessEnv): boolean {
+  if (env.ANTHROPIC_API_KEY?.trim() || env.ANTHROPIC_OAUTH_TOKEN?.trim()) {
+    return true;
+  }
+  const profiles = cfg.auth?.profiles;
+  if (profiles) {
+    for (const profile of Object.values(profiles)) {
+      const provider = normalizeProviderId(profile?.provider);
+      if (provider === "anthropic" || provider === "claude-cli") {
+        return true;
+      }
+    }
+  }
+  const order = cfg.auth?.order;
+  if (!order) {
+    return false;
+  }
+  return Object.keys(order).some((provider) => {
+    const normalizedProvider = normalizeProviderId(provider);
+    if (normalizedProvider !== "anthropic" && normalizedProvider !== "claude-cli") {
+      return false;
+    }
+    return (order as Record<string, unknown>)[provider] !== undefined;
+  });
 }
 
 export function applyContextPruningDefaults(cfg: RemoteClawConfig): RemoteClawConfig {

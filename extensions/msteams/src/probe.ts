@@ -6,7 +6,7 @@ import {
 import { formatUnknownError } from "./errors.js";
 import { loadMSTeamsSdkWithAuth } from "./sdk.js";
 import { readAccessToken } from "./token-response.js";
-import { resolveMSTeamsCredentials } from "./token.js";
+import { loadDelegatedTokens, resolveMSTeamsCredentials } from "./token.js";
 
 export type ProbeMSTeamsResult = BaseProbeResult<string> & {
   appId?: string;

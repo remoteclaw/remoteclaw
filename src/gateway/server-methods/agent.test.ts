@@ -57,6 +57,16 @@ vi.mock("../../agents/agent-scope.js", () => ({
   listAgentIds: () => ["main"],
 }));
 
+vi.mock("../../auto-reply/reply/session-reset-prompt.js", async () => {
+  const actual = await vi.importActual<
+    typeof import("../../auto-reply/reply/session-reset-prompt.js")
+  >("../../auto-reply/reply/session-reset-prompt.js");
+  return {
+    ...actual,
+    resolveBareResetBootstrapFileAccess: mocks.resolveBareResetBootstrapFileAccess,
+  };
+});
+
 vi.mock("../../infra/agent-events.js", () => ({
   registerAgentRunContext: mocks.registerAgentRunContext,
   onAgentEvent: vi.fn(),
@@ -616,6 +626,51 @@ describe("gateway agent handler", () => {
     expect(call?.sessionId).toBe("reset-session-id");
 
     resetTimeConfig();
+  });
+
+  it("uses request model override when resolving bare /new bootstrap file access", async () => {
+    await withTempDir(
+      { prefix: "remoteclaw-gateway-reset-model-override-" },
+      async (workspaceDir) => {
+        await fs.writeFile(`${workspaceDir}/BOOTSTRAP.md`, "bootstrap ritual", "utf-8");
+        mocks.loadConfigReturn = {
+          agents: {
+            defaults: {
+              workspace: workspaceDir,
+            },
+          },
+        };
+        mockSessionResetSuccess({ reason: "new" });
+        primeMainAgentRun({ sessionId: "reset-session-id", cfg: mocks.loadConfigReturn });
+
+        await invokeAgent(
+          {
+            message: "/new",
+            sessionKey: "agent:main:main",
+            provider: "openai",
+            model: "gpt-5.4-mini",
+            idempotencyKey: "test-idem-new-bootstrap-model-override",
+          },
+          {
+            reqId: "4-bootstrap-model-override",
+            client: {
+              connect: { scopes: ["operator.admin"] },
+              internal: { allowModelOverride: true },
+            } as AgentHandlerArgs["client"],
+          },
+        );
+
+        await waitForAssertion(() =>
+          expect(mocks.resolveBareResetBootstrapFileAccess).toHaveBeenCalled(),
+        );
+        expect(mocks.resolveBareResetBootstrapFileAccess).toHaveBeenCalledWith(
+          expect.objectContaining({
+            modelProvider: "openai",
+            modelId: "gpt-5.4-mini",
+          }),
+        );
+      },
+    );
   });
 
   it("rejects malformed agent session keys early in agent handler", async () => {

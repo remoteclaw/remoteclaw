@@ -140,6 +140,28 @@ for (const entry of requiredRuntimeShimEntries) {
   }
 }
 
+for (const [entry, names] of Object.entries(requiredSubpathExports)) {
+  const jsPath = resolve(__dirname, "..", "dist", "plugin-sdk", `${entry}.js`);
+  if (!existsSync(jsPath)) {
+    continue;
+  }
+  let runtime;
+  try {
+    runtime = await import(pathToFileURL(jsPath).href);
+  } catch (err) {
+    console.error(`BROKEN SUBPATH JS: dist/plugin-sdk/${entry}.js`);
+    console.error(err instanceof Error ? err.message : String(err));
+    missing += 1;
+    continue;
+  }
+  for (const name of names) {
+    if (typeof runtime[name] !== "function") {
+      console.error(`MISSING SUBPATH EXPORT: dist/plugin-sdk/${entry}.js#${name}`);
+      missing += 1;
+    }
+  }
+}
+
 if (missing > 0) {
   console.error(
     `\nERROR: ${missing} required plugin-sdk artifact(s) missing (named exports or subpath files).`,

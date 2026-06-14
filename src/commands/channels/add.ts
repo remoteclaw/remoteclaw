@@ -1,7 +1,6 @@
 import { resolveTelegramAccount } from "../../../extensions/telegram/src/accounts.js";
 import { deleteTelegramUpdateOffset } from "../../../extensions/telegram/src/update-offset-store.js";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../../agents/agent-scope.js";
-import { listChannelPluginCatalogEntries } from "../../channels/plugins/catalog.js";
 import { parseOptionalDelimitedEntries } from "../../channels/plugins/helpers.js";
 import { getChannelPlugin, normalizeChannelId } from "../../channels/plugins/index.js";
 import { moveSingleAccountChannelSectionToDefaultAccount } from "../../channels/plugins/setup-helpers.js";
@@ -22,6 +21,22 @@ import {
 import { applyAccountName, applyChannelAccountConfig } from "./add-mutators.js";
 import { channelLabel, requireValidConfig, shouldUseWizard } from "./shared.js";
 
+type ChannelSetupPluginInstallModule = typeof import("../channel-setup/plugin-install.js");
+type OnboardChannelsModule = typeof import("../onboard-channels.js");
+
+let channelSetupPluginInstallPromise: Promise<ChannelSetupPluginInstallModule> | undefined;
+let onboardChannelsPromise: Promise<OnboardChannelsModule> | undefined;
+
+function loadChannelSetupPluginInstall(): Promise<ChannelSetupPluginInstallModule> {
+  channelSetupPluginInstallPromise ??= import("../channel-setup/plugin-install.js");
+  return channelSetupPluginInstallPromise;
+}
+
+function loadOnboardChannels(): Promise<OnboardChannelsModule> {
+  onboardChannelsPromise ??= import("../onboard-channels.js");
+  return onboardChannelsPromise;
+}
+
 export type ChannelsAddOptions = {
   channel?: string;
   account?: string;
@@ -30,11 +45,12 @@ export type ChannelsAddOptions = {
   dmAllowlist?: string;
 } & Omit<ChannelSetupInput, "groupChannels" | "dmAllowlist" | "initialSyncLimit">;
 
-function resolveCatalogChannelEntry(raw: string, cfg: RemoteClawConfig | null) {
+async function resolveCatalogChannelEntry(raw: string, cfg: RemoteClawConfig | null) {
   const trimmed = normalizeOptionalLowercaseString(raw);
   if (!trimmed) {
     return undefined;
   }
+  const { listChannelPluginCatalogEntries } = await import("../../channels/plugins/catalog.js");
   const workspaceDir = cfg ? resolveAgentWorkspaceDir(cfg, resolveDefaultAgentId(cfg)) : undefined;
   return listChannelPluginCatalogEntries({ workspaceDir }).find((entry) => {
     if (normalizeOptionalLowercaseString(entry.id) === trimmed) {
@@ -63,7 +79,7 @@ export async function channelsAddCommand(
     let selection: ChannelChoice[] = [];
     const accountIds: Partial<Record<ChannelChoice, string>> = {};
     await prompter.intro("Channel setup");
-    let nextConfig = await setupChannels(cfg, runtime, prompter, {
+    let nextConfig = await onboardChannels.setupChannels(cfg, runtime, prompter, {
       allowDisable: false,
       allowSignalInstall: true,
       promptAccountIds: true,
@@ -188,9 +204,39 @@ export async function channelsAddCommand(
       runtime,
       workspaceDir,
     });
-    nextConfig = result.cfg;
-    if (!result.installed) {
-      return;
+    return (
+      snapshot.channels.find((entry) => entry.plugin.id === channelId)?.plugin ??
+      snapshot.channelSetups.find((entry) => entry.plugin.id === channelId)?.plugin
+    );
+  };
+
+  if (!channel && catalogEntry) {
+    const workspaceDir = resolveWorkspaceDir();
+    const { isCatalogChannelInstalled } = await import("../channel-setup/discovery.js");
+    if (
+      !isCatalogChannelInstalled({
+        cfg: nextConfig,
+        entry: catalogEntry,
+        workspaceDir,
+      })
+    ) {
+      const { ensureChannelSetupPluginInstalled } = await loadChannelSetupPluginInstall();
+      const prompter = createClackPrompter();
+      const result = await ensureChannelSetupPluginInstalled({
+        cfg: nextConfig,
+        entry: catalogEntry,
+        prompter,
+        runtime,
+        workspaceDir,
+      });
+      nextConfig = result.cfg;
+      if (!result.installed) {
+        return;
+      }
+      catalogEntry = {
+        ...catalogEntry,
+        ...(result.pluginId ? { pluginId: result.pluginId } : {}),
+      };
     }
     reloadOnboardingPluginRegistry({ cfg: nextConfig, runtime, workspaceDir });
     channel = normalizeChannelId(catalogEntry.id) ?? (catalogEntry.id as ChannelId);

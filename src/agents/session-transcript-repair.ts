@@ -1,5 +1,12 @@
 import type { AgentMessage } from "./agent-types.js";
 import { extractToolCallsFromAssistant, extractToolResultId } from "./tool-call-id.js";
+import {
+  REDACTED_SESSIONS_SPAWN_ATTACHMENT_CONTENT,
+  SESSIONS_SPAWN_ATTACHMENT_METADATA_KEYS,
+  isAllowedToolCallName,
+  isRedactedSessionsSpawnAttachment,
+  normalizeAllowedToolNames,
+} from "./tool-call-shared.js";
 
 /**
  * Runtime attestation (ADR 0005 H9). Declares the implementation status
@@ -259,7 +266,7 @@ export function repairToolCallInputs(
         isRawToolCallBlock(block) &&
         (!hasToolCallInput(block) ||
           !hasToolCallId(block) ||
-          !hasToolCallName(block, allowedToolNames))
+          !isAllowedToolCallName((block as RawToolCallBlock).name, allowedToolNames))
       ) {
         droppedToolCalls += 1;
         droppedInMessage += 1;

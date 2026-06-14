@@ -7,7 +7,7 @@ import {
   makeCfg,
   requireSessionStorePath,
   withTempHome,
-} from "./reply.triggers.trigger-handling.test-harness.js";
+} from "../../test/helpers/auto-reply/trigger-handling-test-harness.js";
 
 type GetReplyFromConfig = typeof import("./reply.js").getReplyFromConfig;
 
@@ -16,8 +16,8 @@ async function readSessionStore(storePath: string): Promise<Record<string, unkno
   return JSON.parse(raw) as Record<string, unknown>;
 }
 
-function pickFirstStoreEntry<T>(store: Record<string, unknown>): T | undefined {
-  const entries = Object.values(store) as T[];
+function pickFirstStoreEntry(store: Record<string, unknown>): unknown {
+  const entries = Object.values(store);
   return entries[0];
 }
 

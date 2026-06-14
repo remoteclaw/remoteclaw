@@ -15,16 +15,12 @@ import { createNextcloudTalkReplayGuard } from "./replay-guard.js";
 import { getNextcloudTalkRuntime } from "./runtime.js";
 import { extractNextcloudTalkHeaders, verifyNextcloudTalkSignature } from "./signature.js";
 import type {
-  CoreConfig,
   NextcloudTalkInboundMessage,
   NextcloudTalkWebhookHeaders,
   NextcloudTalkWebhookPayload,
   NextcloudTalkWebhookServerOptions,
 } from "./types.js";
 
-const DEFAULT_WEBHOOK_PORT = 8788;
-const DEFAULT_WEBHOOK_HOST = "0.0.0.0";
-const DEFAULT_WEBHOOK_PATH = "/nextcloud-talk-webhook";
 const DEFAULT_WEBHOOK_MAX_BODY_BYTES = 1024 * 1024;
 const DEFAULT_WEBHOOK_BODY_TIMEOUT_MS = 30_000;
 const DEFAULT_AUTH_RATE_LIMIT_MAX_REQUESTS = 120;
@@ -45,14 +41,6 @@ function formatError(err: unknown): string {
     return err.message;
   }
   return typeof err === "string" ? err : JSON.stringify(err);
-}
-
-function normalizeOrigin(value: string): string | null {
-  try {
-    return normalizeLowercaseStringOrEmpty(new URL(value).origin);
-  } catch {
-    return null;
-  }
 }
 
 function parseWebhookPayload(body: string): NextcloudTalkWebhookPayload | null {

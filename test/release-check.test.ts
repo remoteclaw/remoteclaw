@@ -163,3 +163,13 @@ describe("collectForbiddenPackPaths", () => {
     ).toEqual(["extensions/tlon/node_modules/.bin/tlon", "node_modules/.bin/remoteclaw"]);
   });
 });
+
+describe("createPackedBundledPluginPostinstallEnv", () => {
+  it("enables eager bundled dependency repair for packed channel entry smoke", () => {
+    expect(createPackedBundledPluginPostinstallEnv({ PATH: "/usr/bin" })).toEqual({
+      PATH: "/usr/bin",
+      REMOTECLAW_DISABLE_BUNDLED_ENTRY_SOURCE_FALLBACK: "1",
+      REMOTECLAW_EAGER_BUNDLED_PLUGIN_DEPS: "1",
+    });
+  });
+});

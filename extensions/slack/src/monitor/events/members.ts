@@ -42,7 +42,9 @@ export function registerSlackMemberEvents(params: {
         contextKey: `slack:member:${params.verb}:${channelId ?? "unknown"}:${payload.user ?? "unknown"}`,
       });
     } catch (err) {
-      ctx.runtime.error?.(danger(`slack ${params.verb} handler failed: ${String(err)}`));
+      ctx.runtime.error?.(
+        danger(`slack ${params.verb} handler failed: ${formatErrorMessage(err)}`),
+      );
     }
   };
 

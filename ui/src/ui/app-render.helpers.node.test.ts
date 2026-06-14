@@ -12,6 +12,48 @@ function row(overrides: Partial<SessionRow> & { key: string }): SessionRow {
   return { kind: "direct", updatedAt: 0, ...overrides };
 }
 
+function labelsForSessionOptions(params: {
+  sessionKey: string;
+  sessions?: SessionRow[];
+  agentsList?: AppViewState["agentsList"];
+}) {
+  const groups = resolveSessionOptionGroups(
+    {
+      sessionsHideCron: true,
+      agentsList: params.agentsList ?? null,
+    } as AppViewState,
+    params.sessionKey,
+    {
+      ts: 0,
+      path: "",
+      count: params.sessions?.length ?? 0,
+      defaults: { modelProvider: "openai", model: "gpt-5", contextTokens: null },
+      sessions: params.sessions ?? [],
+    },
+  );
+  return groups.flatMap((group) => group.options.map((option) => option.label));
+}
+
+function createSettings(): AppViewState["settings"] {
+  return {
+    gatewayUrl: "",
+    token: "",
+    locale: "en",
+    sessionKey: "main",
+    lastActiveSessionKey: "main",
+    theme: "claw",
+    themeMode: "dark",
+    splitRatio: 0.6,
+    navWidth: 280,
+    navCollapsed: false,
+    navGroupsCollapsed: {},
+    borderRadius: 50,
+    chatFocusMode: false,
+    chatShowThinking: false,
+    chatShowToolCalls: true,
+  };
+}
+
 /* ================================================================
  *  parseSessionKey – low-level key → type / fallback mapping
  * ================================================================ */

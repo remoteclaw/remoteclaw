@@ -9,6 +9,7 @@ import type { WebInboundMsg } from "./types.js";
 export type MentionConfig = {
   mentionRegexes: RegExp[];
   allowFrom?: Array<string | number>;
+  isSelfChat?: boolean;
 };
 
 export type MentionTargets = {

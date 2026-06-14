@@ -77,9 +77,13 @@ describe("cron main job passes heartbeat target=last", () => {
 
     await runSingleTick(cron);
 
-    // wakeMode=next-heartbeat uses requestHeartbeatNow, not runHeartbeatOnce
     expect(requestHeartbeatNow).toHaveBeenCalled();
-    // runHeartbeatOnce should NOT have been called for next-heartbeat mode
+    expect(requestHeartbeatNow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        reason: "cron:test-next-heartbeat",
+        heartbeat: { target: "last" },
+      }),
+    );
     expect(runHeartbeatOnce).not.toHaveBeenCalled();
   });
 });

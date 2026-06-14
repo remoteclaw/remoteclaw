@@ -14,9 +14,15 @@ const TELEGRAM_POLL_RESTART_POLICY = {
   jitter: 0.25,
 };
 
-const POLL_STALL_THRESHOLD_MS = 90_000;
+const DEFAULT_POLL_STALL_THRESHOLD_MS = 120_000;
+const MIN_POLL_STALL_THRESHOLD_MS = 30_000;
+const MAX_POLL_STALL_THRESHOLD_MS = 600_000;
 const POLL_WATCHDOG_INTERVAL_MS = 30_000;
 const POLL_STOP_GRACE_MS = 15_000;
+const CONFIRM_PERSISTED_OFFSET_TIMEOUT_MS = 10_000;
+
+type TelegramBot = ReturnType<typeof createTelegramBot>;
+type TelegramApiAbortSignal = Parameters<TelegramBot["api"]["getUpdates"]>[1];
 
 const waitForGracefulStop = async (stop: () => Promise<void>) => {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -35,7 +41,18 @@ const waitForGracefulStop = async (stop: () => Promise<void>) => {
   }
 };
 
-type TelegramBot = ReturnType<typeof createTelegramBot>;
+const telegramApiTimeoutSignal = (timeoutMs: number): TelegramApiAbortSignal =>
+  AbortSignal.timeout(timeoutMs) as unknown as TelegramApiAbortSignal;
+
+const resolvePollingStallThresholdMs = (value: number | undefined): number => {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return DEFAULT_POLL_STALL_THRESHOLD_MS;
+  }
+  return Math.min(
+    MAX_POLL_STALL_THRESHOLD_MS,
+    Math.max(MIN_POLL_STALL_THRESHOLD_MS, Math.floor(value)),
+  );
+};
 
 type TelegramPollingSessionOpts = {
   token: string;
@@ -72,24 +89,33 @@ export class TelegramPollingSession {
   }
 
   async runUntilAbort(): Promise<void> {
-    while (!this.opts.abortSignal?.aborted) {
-      const bot = await this.#createPollingBot();
-      if (!bot) {
-        continue;
-      }
+    this.#status.notePollingStart();
+    try {
+      while (!this.opts.abortSignal?.aborted) {
+        const bot = await this.#createPollingBot();
+        if (!bot) {
+          continue;
+        }
 
-      const cleanupState = await this.#ensureWebhookCleanup(bot);
-      if (cleanupState === "retry") {
-        continue;
-      }
-      if (cleanupState === "exit") {
-        return;
-      }
+        const cleanupState = await this.#ensureWebhookCleanup(bot);
+        if (cleanupState === "retry") {
+          continue;
+        }
+        if (cleanupState === "exit") {
+          return;
+        }
 
-      const state = await this.#runPollingCycle(bot);
-      if (state === "exit") {
-        return;
+        const state = await this.#runPollingCycle(bot);
+        if (state === "exit") {
+          return;
+        }
       }
+    } finally {
+      // Release the transport's dispatchers on session shutdown. Without
+      // this, the undici keep-alive sockets survive beyond the session and
+      // leak to api.telegram.org; see remoteclaw#68128.
+      await this.#transportState.dispose();
+      this.#status.notePollingStop();
     }
   }
 
@@ -173,7 +199,10 @@ export class TelegramPollingSession {
       return;
     }
     try {
-      await bot.api.getUpdates({ offset: lastUpdateId + 1, limit: 1, timeout: 0 });
+      await bot.api.getUpdates(
+        { offset: lastUpdateId + 1, limit: 1, timeout: 0 },
+        telegramApiTimeoutSignal(CONFIRM_PERSISTED_OFFSET_TIMEOUT_MS),
+      );
     } catch {
       // Non-fatal: runner middleware still skips duplicates via shouldSkipUpdate.
     }

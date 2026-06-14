@@ -52,24 +52,6 @@ const saveMediaBufferMock = vi.fn(async () => ({
   size: Buffer.byteLength(PNG_BUFFER),
   contentType: CONTENT_TYPE_IMAGE_PNG,
 }));
-const readRemoteMediaResponse = async (
-  res: Response,
-  params: Pick<RemoteMediaFetchParams, "maxBytes" | "filePathHint">,
-) => {
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
-  const buffer = Buffer.from(await res.arrayBuffer());
-  if (typeof params.maxBytes === "number" && buffer.byteLength > params.maxBytes) {
-    throw new Error(`payload exceeds maxBytes ${params.maxBytes}`);
-  }
-  return {
-    buffer,
-    contentType: res.headers.get("content-type") ?? undefined,
-    fileName: params.filePathHint,
-  };
-};
-
 function isHostnameAllowedByPattern(hostname: string, pattern: string): boolean {
   if (pattern.startsWith("*.")) {
     const suffix = pattern.slice(2);

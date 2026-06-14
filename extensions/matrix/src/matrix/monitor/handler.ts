@@ -687,8 +687,14 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
       });
       const humanDelay = core.channel.reply.resolveHumanDelayConfig(cfg, route.agentId);
       const typingCallbacks = createTypingCallbacks({
-        start: () => sendTypingMatrix(roomId, true, undefined, client),
-        stop: () => sendTypingMatrix(roomId, false, undefined, client),
+        start: async () => {
+          const { sendTypingMatrix } = await loadMatrixSendModule();
+          await sendTypingMatrix(roomId, true, undefined, client);
+        },
+        stop: async () => {
+          const { sendTypingMatrix } = await loadMatrixSendModule();
+          await sendTypingMatrix(roomId, false, undefined, client);
+        },
         onStartError: (err) => {
           logTypingFailure({
             log: logVerboseMessage,

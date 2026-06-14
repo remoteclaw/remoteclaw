@@ -80,7 +80,7 @@ type TelegramCommandAuthResult = {
   resolvedThreadId?: number;
   senderId: string;
   senderUsername: string;
-  groupConfig?: TelegramGroupConfig;
+  groupConfig?: TelegramGroupConfig | TelegramDirectConfig;
   topicConfig?: TelegramTopicConfig;
   commandAuthorized: boolean;
 };
@@ -99,7 +99,7 @@ export type RegisterTelegramHandlerParams = {
   resolveTelegramGroupConfig: (
     chatId: string | number,
     messageThreadId?: number,
-  ) => { groupConfig?: TelegramGroupConfig; topicConfig?: TelegramTopicConfig };
+  ) => TelegramResolvedGroupConfig;
   shouldSkipUpdate: (ctx: TelegramUpdateKeyContext) => boolean;
   processMessage: (
     ctx: TelegramContext,
@@ -132,7 +132,7 @@ type RegisterTelegramNativeCommandsParams = {
   resolveTelegramGroupConfig: (
     chatId: string | number,
     messageThreadId?: number,
-  ) => { groupConfig?: TelegramGroupConfig; topicConfig?: TelegramTopicConfig };
+  ) => TelegramResolvedGroupConfig;
   shouldSkipUpdate: (ctx: TelegramUpdateKeyContext) => boolean;
   opts: { token: string };
 };
@@ -150,7 +150,7 @@ async function resolveTelegramCommandAuth(params: {
   resolveTelegramGroupConfig: (
     chatId: string | number,
     messageThreadId?: number,
-  ) => { groupConfig?: TelegramGroupConfig; topicConfig?: TelegramTopicConfig };
+  ) => TelegramResolvedGroupConfig;
   requireAuth: boolean;
 }): Promise<TelegramCommandAuthResult | null> {
   const {
@@ -500,6 +500,7 @@ export const registerTelegramNativeCommands = ({
     return { chatId, threadSpec, route, mediaLocalRoots, tableMode, chunkMode };
   };
   const buildCommandDeliveryBaseOptions = (params: {
+    cfg: RemoteClawConfig;
     chatId: string | number;
     accountId: string;
     mediaLocalRoots?: readonly string[];
@@ -507,6 +508,7 @@ export const registerTelegramNativeCommands = ({
     tableMode: ReturnType<typeof resolveMarkdownTableMode>;
     chunkMode: ReturnType<typeof resolveChunkMode>;
   }) => ({
+    cfg: params.cfg,
     chatId: String(params.chatId),
     accountId: params.accountId,
     token: opts.token,

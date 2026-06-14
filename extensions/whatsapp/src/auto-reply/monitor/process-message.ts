@@ -115,10 +115,9 @@ function resolvePinnedMainDmRecipient(params: {
   cfg: ReturnType<typeof loadConfig>;
   msg: WebInboundMsg;
 }): string | null {
-  const account = resolveWhatsAppAccount({ cfg: params.cfg, accountId: params.msg.accountId });
   return resolvePinnedMainDmOwnerFromAllowlist({
     dmScope: params.cfg.session?.dmScope,
-    allowFrom: account.allowFrom,
+    allowFrom: params.allowFrom,
     normalizeEntry: (entry) => normalizeE164(entry),
   });
 }
@@ -206,7 +205,7 @@ export async function processMessage(params: {
   }
 
   // Send ack reaction immediately upon message receipt (post-gating)
-  maybeSendAckReaction({
+  await maybeSendAckReaction({
     cfg: params.cfg,
     msg: params.msg,
     agentId: params.route.agentId,
@@ -266,7 +265,11 @@ export async function processMessage(params: {
   let didLogHeartbeatStrip = false;
   let didSendReply = false;
   const commandAuthorized = shouldComputeCommandAuthorized(params.msg.body, params.cfg)
-    ? await resolveWhatsAppCommandAuthorized({ cfg: params.cfg, msg: params.msg })
+    ? await resolveWhatsAppCommandAuthorized({
+        cfg: params.cfg,
+        msg: params.msg,
+        policy: inboundPolicy,
+      })
     : undefined;
   const configuredResponsePrefix = params.cfg.messages?.responsePrefix;
   const prefixOptions = createReplyPrefixOptions({
@@ -338,7 +341,7 @@ export async function processMessage(params: {
   // and updating mainSessionKey would corrupt routing for the session owner.
   const pinnedMainDmRecipient = resolvePinnedMainDmRecipient({
     cfg: params.cfg,
-    msg: params.msg,
+    allowFrom: inboundPolicy.configuredAllowFrom,
   });
   const shouldUpdateMainLastRoute =
     !pinnedMainDmRecipient || pinnedMainDmRecipient === dmRouteTarget;
@@ -470,3 +473,10 @@ export async function processMessage(params: {
 
   return didSendReply;
 }
+
+export const __testing = {
+  resolveWhatsAppCommandAuthorized,
+  resolveWhatsAppInboundPolicy: (
+    params: Parameters<typeof resolveWhatsAppInboundPolicy>[0],
+  ): ResolvedWhatsAppInboundPolicy => resolveWhatsAppInboundPolicy(params),
+};

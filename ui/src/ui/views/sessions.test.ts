@@ -31,7 +31,7 @@ function buildProps(result: SessionsListResult): SessionsProps {
 }
 
 describe("sessions view", () => {
-  it("renders verbose=full without falling back to inherit", async () => {
+  it("keeps session selects stable and deselects only the current page", async () => {
     const container = document.createElement("div");
     render(
       renderSessions(
@@ -40,7 +40,9 @@ describe("sessions view", () => {
             key: "agent:main:main",
             kind: "direct",
             updatedAt: Date.now(),
+            fastMode: true,
             verboseLevel: "full",
+            reasoningLevel: "custom-mode",
           }),
         ),
       ),
@@ -77,5 +79,41 @@ describe("sessions view", () => {
     expect(
       Array.from(elevated?.options ?? []).some((option) => option.value === "custom-mode"),
     ).toBe(true);
+
+    const onSelectPage = vi.fn();
+    const onDeselectPage = vi.fn();
+    const onDeselectAll = vi.fn();
+    render(
+      renderSessions({
+        ...buildProps(
+          buildMultiResult([
+            {
+              key: "page-0",
+              kind: "direct",
+              updatedAt: 20,
+            },
+            {
+              key: "page-1",
+              kind: "direct",
+              updatedAt: 10,
+            },
+          ]),
+        ),
+        pageSize: 1,
+        selectedKeys: new Set(["page-0", "off-page"]),
+        onSelectPage,
+        onDeselectPage,
+        onDeselectAll,
+      }),
+      container,
+    );
+    await Promise.resolve();
+
+    const headerCheckbox = container.querySelector("thead input[type=checkbox]");
+    headerCheckbox?.dispatchEvent(new Event("change", { bubbles: true }));
+
+    expect(onDeselectPage).toHaveBeenCalledWith(["page-0"]);
+    expect(onDeselectAll).not.toHaveBeenCalled();
+    expect(onSelectPage).not.toHaveBeenCalled();
   });
 });

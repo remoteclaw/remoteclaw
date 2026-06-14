@@ -10,6 +10,10 @@ import {
   mockBlueBubblesPrivateApiStatus,
   mockBlueBubblesPrivateApiStatusOnce,
 } from "./test-harness.js";
+import {
+  createBlueBubblesFetchRemoteMediaMock,
+  createBlueBubblesRuntimeStub,
+} from "./test-helpers.js";
 import type { BlueBubblesAttachment } from "./types.js";
 
 const mockFetch = vi.fn();
@@ -41,21 +45,14 @@ const fetchRemoteMediaMock = vi.fn(
       fileName: undefined,
     };
   },
-);
+});
 
 installBlueBubblesFetchTestHooks({
   mockFetch,
   privateApiStatusMock: vi.mocked(getCachedBlueBubblesPrivateApiStatus),
 });
 
-const runtimeStub = {
-  channel: {
-    media: {
-      fetchRemoteMedia:
-        fetchRemoteMediaMock as unknown as PluginRuntime["channel"]["media"]["fetchRemoteMedia"],
-    },
-  },
-} as unknown as PluginRuntime;
+const runtimeStub = createBlueBubblesRuntimeStub(fetchRemoteMediaMock);
 
 describe("downloadBlueBubblesAttachment", () => {
   beforeEach(() => {

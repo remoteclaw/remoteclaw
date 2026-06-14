@@ -45,6 +45,41 @@ function resolveAccountContext(
   return { accountId };
 }
 
+async function reconcileGatewayRuntimeAfterLocalLogin(params: {
+  cfg: RemoteClawConfig;
+  plugin: ChannelPlugin;
+  channelId: string;
+  accountId: string;
+  runtime: RuntimeEnv;
+}) {
+  if (!params.plugin.gateway?.startAccount) {
+    return;
+  }
+  if (params.cfg.gateway?.mode === "remote") {
+    params.runtime.log(
+      `Gateway is in remote mode; local login saved auth for ${params.channelId}/${params.accountId} but did not start the remote runtime.`,
+    );
+    return;
+  }
+  try {
+    await callGateway({
+      config: params.cfg,
+      method: "channels.start",
+      params: {
+        channel: params.channelId,
+        accountId: params.accountId,
+      },
+      mode: GATEWAY_CLIENT_MODES.BACKEND,
+      clientName: GATEWAY_CLIENT_NAMES.GATEWAY_CLIENT,
+      deviceIdentity: null,
+    });
+  } catch (error) {
+    params.runtime.log(
+      `Local login saved auth for ${params.channelId}/${params.accountId}, but the running gateway did not restart it: ${formatErrorMessage(error)}`,
+    );
+  }
+}
+
 export async function runChannelLogin(
   opts: ChannelAuthOptions,
   runtime: RuntimeEnv = defaultRuntime,
@@ -64,6 +99,13 @@ export async function runChannelLogin(
     runtime,
     verbose: Boolean(opts.verbose),
     channelInput,
+  });
+  await reconcileGatewayRuntimeAfterLocalLogin({
+    cfg,
+    plugin,
+    channelId: plugin.id,
+    accountId,
+    runtime,
   });
 }
 

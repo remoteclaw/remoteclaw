@@ -36,6 +36,14 @@ export type { SecretFileReadOptions, SecretFileReadResult } from "../infra/secre
 export { resolveGatewayBindUrl } from "../shared/gateway-bind-url.js";
 export type { GatewayBindUrlResult } from "../shared/gateway-bind-url.js";
 
+export async function ensureConfiguredAcpBindingReady(params: {
+  cfg: RemoteClawConfig;
+  configuredBinding: ResolvedConfiguredAcpBinding | null;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const runtime = await import("../acp/persistent-bindings.lifecycle.js");
+  return runtime.ensureConfiguredAcpBindingReady(params);
+}
+
 export { resolveTailnetHostWithRunner } from "../shared/tailscale-status.js";
 export type {
   TailscaleStatusCommandResult,

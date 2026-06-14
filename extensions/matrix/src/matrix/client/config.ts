@@ -9,6 +9,10 @@ import type { CoreConfig } from "../../types.js";
 import { loadMatrixSdk } from "../sdk-runtime.js";
 import { ensureMatrixSdkLoggingConfigured } from "./logging.js";
 import type { MatrixAuth, MatrixResolvedConfig } from "./types.js";
+import {
+  resolveValidatedMatrixHomeserverUrl,
+  validateMatrixHomeserverUrl,
+} from "./url-validation.js";
 
 function clean(value: unknown, path: string): string {
   return normalizeResolvedSecretInputString({ value, path }) ?? "";

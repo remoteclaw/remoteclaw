@@ -11,7 +11,6 @@ import { handleSlackHttpRequest } from "../../extensions/slack/src/http/index.js
 import { resolveAgentAvatar } from "../agents/identity-avatar.js";
 import { CANVAS_WS_PATH, handleA2uiHttpRequest } from "../canvas-host/a2ui.js";
 import type { CanvasHostHandler } from "../canvas-host/server.js";
-import { resolveBundledChannelGatewayAuthBypassPaths } from "../channels/plugins/gateway-auth-bypass.js";
 import { loadConfig } from "../config/config.js";
 import type { createSubsystemLogger } from "../logging/subsystem.js";
 import { safeEqualSecret } from "../security/secret-equal.js";
@@ -535,8 +534,7 @@ export function createHooksRequestHandler(
           }
           const sessionKey = resolveHookSessionKey({
             hooksConfig,
-            source:
-              mapped.action.sessionKeySource === "static" ? "mapping-static" : "mapping-templated",
+            source: "mapping",
             sessionKey: mapped.action.sessionKey,
           });
           if (!sessionKey.ok) {
@@ -796,8 +794,6 @@ export function attachGatewayUpgradeHandler(opts: {
   resolvedAuth: ResolvedGatewayAuth;
   /** Optional rate limiter for auth brute-force protection. */
   rateLimiter?: AuthRateLimiter;
-  /** Optional logger for error diagnostics. */
-  log?: { warn: (msg: string) => void };
 }) {
   const { httpServer, wss, canvasHost, preauthConnectionBudget } = opts;
   httpServer.on("upgrade", (req, socket, head) => {
@@ -874,10 +870,7 @@ export function attachGatewayUpgradeHandler(opts: {
         socket.destroy();
         throw err;
       }
-    })().catch((err) => {
-      const remoteAddress = (socket as { remoteAddress?: string }).remoteAddress ?? "unknown";
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      log?.warn(`ws upgrade error from ${remoteAddress}: ${errorMessage}`);
+    })().catch(() => {
       socket.destroy();
     });
   });

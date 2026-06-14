@@ -1,9 +1,5 @@
-import { generateHexPkceVerifierChallenge } from "remoteclaw/plugin-sdk/provider-auth";
-import {
-  generateOAuthState,
-  parseOAuthCallbackInput,
-  waitForLocalOAuthCallback,
-} from "remoteclaw/plugin-sdk/provider-auth-runtime";
+import { createHash, randomBytes } from "node:crypto";
+import { createServer } from "node:http";
 import { isWSL2Sync } from "remoteclaw/plugin-sdk/runtime-env";
 import {
   MSTEAMS_DEFAULT_DELEGATED_SCOPES,
@@ -18,10 +14,15 @@ export function shouldUseManualOAuthFlow(isRemote: boolean): boolean {
 }
 
 export function generatePkce(): { verifier: string; challenge: string } {
-  return generateHexPkceVerifierChallenge();
+  const verifier = randomBytes(32).toString("hex");
+  const challenge = createHash("sha256").update(verifier).digest("base64url");
+  return { verifier, challenge };
 }
 
-export { generateOAuthState };
+/** Generate an opaque random state value for OAuth CSRF protection (separate from PKCE verifier). */
+export function generateOAuthState(): string {
+  return randomBytes(32).toString("hex");
+}
 
 export function buildMSTeamsAuthUrl(params: {
   tenantId: string;
@@ -52,11 +53,29 @@ export function parseCallbackInput(
   // The caller compares the parsed `state` against the expected value.
   _expectedState: string,
 ): { code: string; state: string } | { error: string } {
-  return parseOAuthCallbackInput(input, {
-    missingState: "Missing 'state' parameter in URL. Paste the full redirect URL.",
-    invalidInput:
-      "Paste the full redirect URL (including code and state parameters), not just the authorization code.",
-  });
+  const trimmed = input.trim();
+  if (!trimmed) {
+    return { error: "No input provided" };
+  }
+
+  try {
+    const url = new URL(trimmed);
+    const code = url.searchParams.get("code");
+    const state = url.searchParams.get("state");
+    if (!code) {
+      return { error: "Missing 'code' parameter in URL" };
+    }
+    if (!state) {
+      return { error: "Missing 'state' parameter in URL. Paste the full redirect URL." };
+    }
+    return { code, state };
+  } catch {
+    // Not a valid URL — reject bare codes to enforce CSRF state verification.
+    return {
+      error:
+        "Paste the full redirect URL (including code and state parameters), not just the authorization code.",
+    };
+  }
 }
 
 export async function waitForLocalCallback(params: {
@@ -64,14 +83,90 @@ export async function waitForLocalCallback(params: {
   timeoutMs: number;
   onProgress?: (message: string) => void;
 }): Promise<{ code: string; state: string }> {
-  return await waitForLocalOAuthCallback({
-    expectedState: params.expectedState,
-    timeoutMs: params.timeoutMs,
-    port: MSTEAMS_OAUTH_CALLBACK_PORT,
-    callbackPath: MSTEAMS_OAUTH_CALLBACK_PATH,
-    redirectUri: MSTEAMS_OAUTH_REDIRECT_URI,
-    successTitle: "MSTeams Delegated OAuth complete",
-    progressMessage: `Waiting for OAuth callback on ${MSTEAMS_OAUTH_REDIRECT_URI}...`,
-    onProgress: params.onProgress,
+  const port = MSTEAMS_OAUTH_CALLBACK_PORT;
+  const hostname = "localhost";
+  const expectedPath = MSTEAMS_OAUTH_CALLBACK_PATH;
+
+  return new Promise<{ code: string; state: string }>((resolve, reject) => {
+    let timeout: NodeJS.Timeout | null = null;
+    const server = createServer((req, res) => {
+      try {
+        const requestUrl = new URL(req.url ?? "/", `http://${hostname}:${port}`);
+        if (requestUrl.pathname !== expectedPath) {
+          res.statusCode = 404;
+          res.setHeader("Content-Type", "text/plain");
+          res.end("Not found");
+          return;
+        }
+
+        const error = requestUrl.searchParams.get("error");
+        const code = requestUrl.searchParams.get("code")?.trim();
+        const state = requestUrl.searchParams.get("state")?.trim();
+
+        if (error) {
+          res.statusCode = 400;
+          res.setHeader("Content-Type", "text/plain");
+          res.end(`Authentication failed: ${error}`);
+          finish(new Error(`OAuth error: ${error}`));
+          return;
+        }
+
+        if (!code || !state) {
+          res.statusCode = 400;
+          res.setHeader("Content-Type", "text/plain");
+          res.end("Missing code or state");
+          finish(new Error("Missing OAuth code or state"));
+          return;
+        }
+
+        if (state !== params.expectedState) {
+          res.statusCode = 400;
+          res.setHeader("Content-Type", "text/plain");
+          res.end("Invalid state");
+          finish(new Error("OAuth state mismatch"));
+          return;
+        }
+
+        res.statusCode = 200;
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        res.end(
+          "<!doctype html><html><head><meta charset='utf-8'/></head>" +
+            "<body><h2>MSTeams Delegated OAuth complete</h2>" +
+            "<p>You can close this window and return to RemoteClaw.</p></body></html>",
+        );
+
+        finish(undefined, { code, state });
+      } catch (err) {
+        finish(err instanceof Error ? err : new Error("OAuth callback failed"));
+      }
+    });
+
+    const finish = (err?: Error, result?: { code: string; state: string }) => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+      try {
+        server.close();
+      } catch {
+        // ignore close errors
+      }
+      if (err) {
+        reject(err);
+      } else if (result) {
+        resolve(result);
+      }
+    };
+
+    server.once("error", (err) => {
+      finish(err instanceof Error ? err : new Error("OAuth callback server error"));
+    });
+
+    server.listen(port, hostname, () => {
+      params.onProgress?.(`Waiting for OAuth callback on ${MSTEAMS_OAUTH_REDIRECT_URI}...`);
+    });
+
+    timeout = setTimeout(() => {
+      finish(new Error("OAuth callback timeout"));
+    }, params.timeoutMs);
   });
 }

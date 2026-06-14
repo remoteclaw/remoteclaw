@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from "vitest";
 import type { MSTeamsMessageHandlerDeps } from "../monitor-handler.js";
 import { setMSTeamsRuntime } from "../runtime.js";
 import { createMSTeamsMessageHandler } from "./message-handler.js";
-import { createMessageHandlerDeps } from "./message-handler.test-support.js";
 
 describe("msteams monitor handler authz", () => {
   function createDeps(cfg: RemoteClawConfig) {

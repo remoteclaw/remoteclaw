@@ -1,7 +1,6 @@
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/bluebubbles";
 import { resolveBlueBubblesServerAccount } from "./account-resolve.js";
-import { createBlueBubblesClientFromParts } from "./client.js";
-import type { RemoteClawConfig } from "./runtime-api.js";
+import { blueBubblesFetchWithTimeout, buildBlueBubblesApiUrl } from "./types.js";
 
 export type BlueBubblesHistoryEntry = {
   sender: string;
@@ -99,11 +98,12 @@ export async function fetchBlueBubblesHistory(
 
   for (const path of possiblePaths) {
     try {
-      const res = await client.request({
-        method: "GET",
-        path,
-        timeoutMs: opts.timeoutMs ?? 10000,
-      });
+      const url = buildBlueBubblesApiUrl({ baseUrl, path, password });
+      const res = await blueBubblesFetchWithTimeout(
+        url,
+        { method: "GET" },
+        opts.timeoutMs ?? 10000,
+      );
 
       if (!res.ok) {
         continue; // Try next path

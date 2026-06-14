@@ -352,15 +352,17 @@ export async function collectPluginClawHubReleasePlan(params?: {
   });
 
   const all = await Promise.all(
-    selectedPublishable.map(async (plugin) =>
-      Object.assign({}, plugin, {
-        alreadyPublished: await isPluginVersionPublishedOnClawHub(
-          plugin.packageName,
-          plugin.version,
-          { registryBaseUrl: params?.registryBaseUrl, fetchImpl: params?.fetchImpl },
-        ),
-      }),
-    ),
+    selectedPublishable.map(async (plugin) => ({
+      ...plugin,
+      alreadyPublished: await isPluginVersionPublishedOnClawHub(
+        plugin.packageName,
+        plugin.version,
+        {
+          registryBaseUrl: params?.registryBaseUrl,
+          fetchImpl: params?.fetchImpl,
+        },
+      ),
+    })),
   );
 
   return {

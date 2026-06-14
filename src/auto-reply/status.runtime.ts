@@ -1,1 +1,1 @@
-export { buildStatusMessage } from "../status/status-message.js";
+export { buildStatusMessage } from "./status.js";

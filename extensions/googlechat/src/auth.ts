@@ -1,6 +1,5 @@
 import { GoogleAuth, OAuth2Client } from "google-auth-library";
 import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
-import { fetchWithSsrFGuard } from "../runtime-api.js";
 import type { ResolvedGoogleChatAccount } from "./accounts.js";
 
 const CHAT_SCOPE = "https://www.googleapis.com/auth/chat.bot";
@@ -81,20 +80,13 @@ async function fetchChatCerts(): Promise<Record<string, string>> {
   if (cachedCerts && now - cachedCerts.fetchedAt < 10 * 60 * 1000) {
     return cachedCerts.certs;
   }
-  const { response, release } = await fetchWithSsrFGuard({
-    url: CHAT_CERTS_URL,
-    auditContext: "googlechat.auth.certs",
-  });
-  try {
-    if (!response.ok) {
-      throw new Error(`Failed to fetch Chat certs (${response.status})`);
-    }
-    const certs = (await response.json()) as Record<string, string>;
-    cachedCerts = { fetchedAt: now, certs };
-    return certs;
-  } finally {
-    await release();
+  const res = await fetch(CHAT_CERTS_URL);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch Chat certs (${res.status})`);
   }
+  const certs = (await res.json()) as Record<string, string>;
+  cachedCerts = { fetchedAt: now, certs };
+  return certs;
 }
 
 export type GoogleChatAudienceType = "app-url" | "project-number";

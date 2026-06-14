@@ -3,7 +3,7 @@ import { loadBundledPluginPublicSurfaceSync } from "../../../src/test-utils/bund
 
 type BundledPluginEntryModule = {
   default: {
-    register(api: RemoteClawPluginApi): void;
+    register(api: RemoteClawPluginApi): void | Promise<void>;
   };
 };
 

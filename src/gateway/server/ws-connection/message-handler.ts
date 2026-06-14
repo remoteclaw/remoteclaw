@@ -1119,6 +1119,7 @@ export function attachGatewayWsMessageHandler(params: {
           connect: connectParams,
           connId,
           isDeviceTokenAuth: authMethod === "device-token",
+          usesSharedGatewayAuth: authMethod === "token" || authMethod === "password",
           presenceKey,
           clientIp: reportedClientIp,
           canvasHostUrl,

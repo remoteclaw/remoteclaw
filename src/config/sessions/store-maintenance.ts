@@ -4,6 +4,7 @@ import { parseByteSize } from "../../cli/parse-bytes.js";
 import { parseDurationMs } from "../../cli/parse-duration.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { normalizeStringifiedOptionalString } from "../../shared/string-coerce.js";
+import { loadConfig } from "../config.js";
 import type { SessionMaintenanceConfig, SessionMaintenanceMode } from "../types.base.js";
 import type { SessionEntry } from "./types.js";
 
@@ -146,6 +147,16 @@ export function resolveMaintenanceConfigFromInput(
     maxDiskBytes,
     highWaterBytes: resolveHighWaterBytes(maintenance, maxDiskBytes),
   };
+}
+
+export function resolveMaintenanceConfig(): ResolvedSessionMaintenanceConfig {
+  let maintenance: SessionMaintenanceConfig | undefined;
+  try {
+    maintenance = loadConfig().session?.maintenance;
+  } catch {
+    // Config may not be available (e.g. in tests). Use defaults.
+  }
+  return resolveMaintenanceConfigFromInput(maintenance);
 }
 
 /**

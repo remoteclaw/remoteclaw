@@ -16,6 +16,15 @@ export const workspaceConfig = {
   },
 } as RemoteClawConfig;
 
+export const slackConfig = {
+  channels: {
+    slack: {
+      botToken: "xoxb-test",
+      appToken: "xapp-test",
+    },
+  },
+} as RemoteClawConfig;
+
 export const telegramConfig = {
   channels: {
     telegram: {

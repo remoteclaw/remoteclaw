@@ -18,6 +18,7 @@ export function applyNonInteractiveGatewayConfig(params: {
   authMode: string;
   tailscaleMode: string;
   tailscaleResetOnExit: boolean;
+  gatewayToken: string | undefined;
 } | null {
   const { opts, runtime } = params;
 
@@ -183,5 +184,6 @@ export function applyNonInteractiveGatewayConfig(params: {
     authMode,
     tailscaleMode,
     tailscaleResetOnExit,
+    gatewayToken,
   };
 }

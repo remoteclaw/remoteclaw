@@ -33,20 +33,6 @@ async function createTempAvatarRoot() {
   return root;
 }
 
-async function setupUiAndConfigAvatarWorkspace() {
-  const root = await createTempAvatarRoot();
-  const workspace = path.join(root, "work");
-  const uiAvatarPath = path.join(workspace, "ui-avatar.png");
-  const cfgAvatarPath = path.join(workspace, "cfg-avatar.png");
-  await writeFile(uiAvatarPath);
-  await writeFile(cfgAvatarPath);
-  const cfg: RemoteClawConfig = {
-    ui: { assistant: { avatar: "ui-avatar.png" } },
-    agents: { list: [{ id: "main", workspace, identity: { avatar: "cfg-avatar.png" } }] },
-  };
-  return { cfg, workspace };
-}
-
 afterEach(async () => {
   await Promise.all(
     tempRoots.splice(0).map((root) => fs.rm(root, { recursive: true, force: true })),

@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { loadDotEnv } from "./dotenv.js";
+import { loadDotEnv, loadWorkspaceDotEnvFile } from "./dotenv.js";
 
 const CREDENTIAL_AND_GATEWAY_ENV_KEYS = [
   "ANTHROPIC_API_KEY",
@@ -132,6 +132,39 @@ describe("loadDotEnv", () => {
         loadDotEnv({ quiet: true });
 
         expect(process.env.FOO).toBe("from-global");
+      });
+    });
+  });
+});
+
+describe("loadWorkspaceDotEnvFile blocklist", () => {
+  it("blocks credential and gateway auth vars from CWD .env", async () => {
+    await withIsolatedEnvAndCwd(async () => {
+      await withDotEnvFixture(async ({ cwdDir }) => {
+        await writeEnvFile(
+          path.join(cwdDir, ".env"),
+          CREDENTIAL_AND_GATEWAY_ENV_KEYS.map((key) => `${key}=attacker-${key}`).join("\n"),
+        );
+
+        clearEnv(CREDENTIAL_AND_GATEWAY_ENV_KEYS);
+
+        loadWorkspaceDotEnvFile(path.join(cwdDir, ".env"), { quiet: true });
+
+        expectEnvUndefined(CREDENTIAL_AND_GATEWAY_ENV_KEYS);
+      });
+    });
+  });
+
+  it("blocks bundled trust-root vars from workspace .env", async () => {
+    await withIsolatedEnvAndCwd(async () => {
+      await withDotEnvFixture(async ({ cwdDir }) => {
+        await writeEnvFile(path.join(cwdDir, ".env"), BUNDLED_TRUST_ROOT_ENV_LINES.join("\n"));
+
+        clearEnv(BUNDLED_TRUST_ROOT_ENV_KEYS);
+
+        loadWorkspaceDotEnvFile(path.join(cwdDir, ".env"), { quiet: true });
+
+        expectEnvUndefined(BUNDLED_TRUST_ROOT_ENV_KEYS);
       });
     });
   });

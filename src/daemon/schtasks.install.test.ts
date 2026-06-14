@@ -19,14 +19,6 @@ beforeEach(() => {
 });
 
 describe("installScheduledTask", () => {
-  const okSchtasksResponse = { code: 0, stdout: "", stderr: "" };
-  const accessDeniedResponse = { code: 1, stdout: "", stderr: "ERROR: Access is denied." };
-  const missingTaskResponse = {
-    code: 1,
-    stdout: "",
-    stderr: "ERROR: The system cannot find the file specified.",
-  };
-
   async function withUserProfileDir(
     run: (tmpDir: string, env: Record<string, string>) => Promise<void>,
   ) {
@@ -40,24 +32,6 @@ describe("installScheduledTask", () => {
     } finally {
       await fs.rm(tmpDir, { recursive: true, force: true });
     }
-  }
-
-  function installDefaultGatewayTask(env: Record<string, string>) {
-    return installScheduledTask({
-      env,
-      stdout: new PassThrough(),
-      programArguments: ["node", "gateway.js"],
-      environment: {},
-    });
-  }
-
-  function expectInitialTaskQueries(): void {
-    expect(schtasksCalls[0]).toEqual(["/Query"]);
-    expect(schtasksCalls[1]).toEqual(["/Query", "/TN", "RemoteClaw Gateway"]);
-  }
-
-  function expectTaskRunCall(index: number): void {
-    expect(schtasksCalls[index]).toEqual(["/Run", "/TN", "RemoteClaw Gateway"]);
   }
 
   it("writes quoted set assignments and escapes metacharacters", async () => {

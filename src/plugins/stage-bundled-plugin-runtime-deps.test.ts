@@ -14,24 +14,6 @@ type StageBundledPluginRuntimeDeps = (params?: {
   installPluginRuntimeDepsImpl?: (params: StageRuntimeDepsInstallParams) => void;
 }) => void;
 
-type BaileysHotfixParams = {
-  chmodSync?: (path: string, mode: number) => void;
-  packageRoot?: string;
-  createTempPath?: (targetPath: string) => string;
-  writeFileSync?: (pathOrFd: string | number, value: string, encoding?: string) => void;
-};
-
-type BaileysHotfixResult = {
-  applied: boolean;
-  reason: string;
-  targetPath?: string;
-  error?: string;
-};
-
-type PostinstallBundledPluginsModule = {
-  applyBaileysEncryptedStreamFinishHotfix: (params?: BaileysHotfixParams) => BaileysHotfixResult;
-};
-
 async function loadStageBundledPluginRuntimeDeps(): Promise<StageBundledPluginRuntimeDeps> {
   const moduleUrl = new URL("../../scripts/stage-bundled-plugin-runtime-deps.mjs", import.meta.url);
   const loaded = (await import(moduleUrl.href)) as {

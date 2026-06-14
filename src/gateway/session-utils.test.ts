@@ -528,10 +528,7 @@ describe("resolveSessionModelRef", () => {
 });
 
 describe("resolveSessionModelIdentityRef", () => {
-  const resolveLegacyIdentityRef = (
-    cfg: RemoteClawConfig,
-    modelProvider?: string | undefined,
-  ) =>
+  const resolveLegacyIdentityRef = (cfg: RemoteClawConfig, modelProvider?: string) =>
     resolveSessionModelIdentityRef(cfg, {
       sessionId: "legacy-session",
       updatedAt: Date.now(),

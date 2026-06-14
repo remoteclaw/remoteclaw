@@ -1,5 +1,5 @@
 import type { PromptRequest } from "@agentclientprotocol/sdk";
-import { expect, vi } from "vitest";
+import { expect, vi, type Mock } from "vitest";
 import type { GatewayClient } from "../gateway/client.js";
 import type { EventFrame } from "../gateway/protocol/index.js";
 import { createInMemorySessionStore } from "./session.js";
@@ -52,7 +52,7 @@ export function promptAgent(
   } as unknown as PromptRequest);
 }
 
-export function observeSettlement(promise: ReturnType<AcpGatewayAgent["prompt"]>) {
+export function observeSettlement(promise: ReturnType<AcpGatewayAgent["prompt"]>): Mock {
   const settleSpy = vi.fn();
   void promise.then(
     (value) => settleSpy({ kind: "resolve", value }),

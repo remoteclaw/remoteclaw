@@ -13,6 +13,7 @@ let tempAgentDir: string | undefined;
 function makePrompter(confirmValue: boolean): DoctorPrompter {
   return {
     confirm: vi.fn().mockResolvedValue(confirmValue),
+    confirmAutoFix: vi.fn().mockResolvedValue(confirmValue),
     confirmRepair: vi.fn().mockResolvedValue(confirmValue),
     confirmAggressive: vi.fn().mockResolvedValue(confirmValue),
     confirmSkipInNonInteractive: vi.fn().mockResolvedValue(confirmValue),

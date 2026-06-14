@@ -55,9 +55,7 @@ describe("noteDevicePairingHealth", () => {
             clientMode: "webchat",
             displayName: "Dashboard",
           });
-          await approveDevicePairing(initial.request.requestId, {
-            callerScopes: ["operator.read"],
-          });
+          await approveDevicePairing(initial.request.requestId);
 
           await run({ stateDir, identity, publicKey, initial });
         },
@@ -128,7 +126,7 @@ describe("noteDevicePairingHealth", () => {
         deviceId: identity.deviceId,
         role: "operator",
       });
-      expect(rotated.ok).toBe(true);
+      expect(rotated).not.toBeNull();
 
       await noteDevicePairingHealth({
         cfg: { gateway: { mode: "local" } },

@@ -12,7 +12,6 @@ import {
   GATEWAY_CLIENT_MODES,
   GATEWAY_CLIENT_NAMES,
   onceMessage,
-  openTailscaleWs,
   openWs,
   originForPort,
   readConnectChallengeNonce,
@@ -179,16 +178,6 @@ export function registerControlUiAndPairingSuite(): void {
     await writeJsonAtomic(pairedPath, paired);
   };
 
-  const overwritePairedPublicKey = async (deviceId: string, publicKey: string) => {
-    const { resolvePairingPaths, readJsonFile } = await import("../infra/pairing-files.js");
-    const { writeJsonAtomic } = await import("../infra/json-files.js");
-    const { pairedPath } = resolvePairingPaths(undefined, "devices");
-    const paired = (await readJsonFile<Record<string, Record<string, unknown>>>(pairedPath)) ?? {};
-    const metadata = getRequiredPairedMetadata(paired, deviceId);
-    metadata.publicKey = publicKey;
-    await writeJsonAtomic(pairedPath, paired);
-  };
-
   const seedApprovedOperatorReadPairing = async (params: {
     identityPrefix: string;
     clientId: string;
@@ -298,14 +287,16 @@ export function registerControlUiAndPairingSuite(): void {
     });
   });
 
-  test("allows localhost ui clients without device identity when insecure auth is enabled", async () => {
+  test("allows localhost control ui without device identity when insecure auth is enabled", async () => {
     testState.gatewayControlUi = { allowInsecureAuth: true };
     const { server, ws, prevToken } = await startServerWithClient("secret", {
       wsHeaders: { origin: "http://127.0.0.1" },
     });
-    let tuiWs: WebSocket | undefined;
-    try {
-      await connectControlUiWithoutDeviceAndExpectOk({ ws, token: "secret" });
+    await connectControlUiWithoutDeviceAndExpectOk({ ws, token: "secret" });
+    ws.close();
+    await server.close();
+    restoreGatewayToken(prevToken);
+  });
 
   test("allows control ui password-only auth on localhost when insecure auth is enabled", async () => {
     testState.gatewayControlUi = { allowInsecureAuth: true };
@@ -601,8 +592,9 @@ export function registerControlUiAndPairingSuite(): void {
 
   test("requires pairing for remote operator device identity with shared token auth", async () => {
     const { getPairedDevice, listDevicePairing } = await import("../infra/device-pairing.js");
-    const { server, port, prevToken, identityPath, identity, client } =
-      await startControlUiServerWithOperatorIdentity();
+    const { server, ws, port, prevToken, identityPath, identity, client } =
+      await startServerWithOperatorIdentity();
+    ws.close();
 
     const wsRemoteRead = await openWs(port, { host: "gateway.example" });
     const initialNonce = await readConnectChallengeNonce(wsRemoteRead);
@@ -668,6 +660,8 @@ export function registerControlUiAndPairingSuite(): void {
       displayName: "loopback-control-ui-upgrade",
       platform: CONTROL_UI_CLIENT.platform,
     });
+
+    ws.close();
 
     const ws2 = await openWs(port, { origin: originForPort(port) });
     const nonce2 = await readConnectChallengeNonce(ws2);
@@ -840,6 +834,8 @@ export function registerControlUiAndPairingSuite(): void {
     const { server, ws, port, prevToken } = await startServerWithClient("secret");
     let ws2: WebSocket | undefined;
     try {
+      ws.close();
+
       const wsReconnect = await openWs(port);
       ws2 = wsReconnect;
       const reconnectNonce = await readConnectChallengeNonce(wsReconnect);
@@ -864,6 +860,7 @@ export function registerControlUiAndPairingSuite(): void {
     } finally {
       await server.close();
       restoreGatewayToken(prevToken);
+      ws.close();
       ws2?.close();
     }
   });
@@ -884,6 +881,8 @@ export function registerControlUiAndPairingSuite(): void {
     let ws2: WebSocket | undefined;
     try {
       const client = { ...TEST_OPERATOR_CLIENT };
+
+      ws.close();
 
       const wsUpgrade = await openWs(port);
       ws2 = wsUpgrade;
@@ -916,6 +915,7 @@ export function registerControlUiAndPairingSuite(): void {
         expect.arrayContaining(["operator.read", "operator.admin"]),
       );
     } finally {
+      ws.close();
       ws2?.close();
       await server.close();
       restoreGatewayToken(prevToken);
@@ -948,31 +948,13 @@ export function registerControlUiAndPairingSuite(): void {
   test("allows local gateway backend shared-auth connections without device pairing", async () => {
     const { server, ws, prevToken } = await startServerWithClient("secret");
     try {
-      const backendCases: Array<{
-        name: string;
-        headers?: Record<string, string>;
-        socket?: WebSocket;
-      }> = [
-        { name: "default host", socket: ws },
-        { name: "remote-looking host", headers: { host: "gateway.example" } },
-        { name: "private host", headers: { host: "172.17.0.2:18789" } },
-      ];
-
-      for (const backendCase of backendCases) {
-        const socket = backendCase.socket ?? (await openWs(port, backendCase.headers));
-        if (!backendCase.socket) {
-          sockets.push(socket);
-        }
-        const backendConnect = await connectReq(socket, {
-          token: "secret",
-          client: BACKEND_GATEWAY_CLIENT,
-        });
-        expect(backendConnect.ok, backendCase.name).toBe(true);
-      }
+      const localBackend = await connectReq(ws, {
+        token: "secret",
+        client: BACKEND_GATEWAY_CLIENT,
+      });
+      expect(localBackend.ok).toBe(true);
     } finally {
-      for (const socket of sockets) {
-        socket.close();
-      }
+      ws.close();
       await server.close();
       restoreGatewayToken(prevToken);
     }

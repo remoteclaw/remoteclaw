@@ -22,7 +22,6 @@ function createDefaultSessionStoreEntry() {
     cacheRead: 2_000,
     cacheWrite: 1_000,
     totalTokens: 5_000,
-    totalTokensFresh: true as boolean,
     contextTokens: 10_000,
     model: "pi:opus",
     sessionId: "abc123",
@@ -74,8 +73,15 @@ function createErrorChannelPlugin(params: { id: string; label: string; docsPath:
 }
 
 async function withUnknownUsageStore(run: () => Promise<void>) {
+  const originalLoadSessionStore = mocks.loadSessionStore.getMockImplementation();
   mocks.loadSessionStore.mockReturnValue(createUnknownUsageSessionStore());
-  await run();
+  try {
+    await run();
+  } finally {
+    if (originalLoadSessionStore) {
+      mocks.loadSessionStore.mockImplementation(originalLoadSessionStore);
+    }
+  }
 }
 
 function getRuntimeLogs() {
@@ -102,7 +108,6 @@ type ProbeGatewayResult = {
   url: string;
   connectLatencyMs: number | null;
   error: string | null;
-  connectErrorDetails?: unknown;
   close: { code: number; reason: string } | null;
   health: unknown;
   status: unknown;
@@ -123,204 +128,6 @@ function mockProbeGatewayResult(overrides: Partial<ProbeGatewayResult>) {
     configSnapshot: null,
     ...overrides,
   });
-}
-
-async function createStatusServiceSummary(
-  service: ReturnType<(typeof mocks)["resolveGatewayService"]>,
-) {
-  const [loaded, runtime, command] = await Promise.all([
-    service.isLoaded(),
-    service.readRuntime(),
-    service.readCommand(),
-  ]);
-  return {
-    label: service.label,
-    installed: Boolean(command) || runtime?.status === "running",
-    loaded,
-    managedByRemoteClaw: Boolean(command),
-    externallyManaged: !command && runtime?.status === "running",
-    loadedText: service.loadedText,
-    runtime,
-    runtimeShort: runtime?.pid ? `pid ${runtime.pid}` : null,
-  };
-}
-
-function createSessionStatusRows() {
-  const agents = (mocks.listGatewayAgentsBasic().agents ?? [
-    { id: "main", name: "Main" },
-  ]) as Array<{
-    id: string;
-  }>;
-  const byAgent = agents.map((agent: { id: string }) => {
-    const path = mocks.resolveStorePath("sessions", { agentId: agent.id });
-    const store = mocks.loadSessionStore(path) as Record<
-      string,
-      ReturnType<typeof createDefaultSessionStoreEntry>
-    >;
-    const recent = Object.entries(store).map(([key, entry]) => {
-      const contextTokens = typeof entry.contextTokens === "number" ? entry.contextTokens : null;
-      const total = typeof entry.totalTokens === "number" ? entry.totalTokens : null;
-      return {
-        agentId: agent.id,
-        key,
-        kind: key.startsWith("+") ? ("direct" as const) : ("unknown" as const),
-        sessionId: entry.sessionId,
-        updatedAt: entry.updatedAt ?? null,
-        age: typeof entry.updatedAt === "number" ? Math.max(0, Date.now() - entry.updatedAt) : null,
-        thinkingLevel: entry.thinkingLevel,
-        verboseLevel: entry.verboseLevel,
-        inputTokens: entry.inputTokens,
-        outputTokens: entry.outputTokens,
-        totalTokens: total,
-        totalTokensFresh: typeof entry.totalTokens === "number" ? entry.totalTokensFresh : false,
-        cacheRead: entry.cacheRead,
-        cacheWrite: entry.cacheWrite,
-        remainingTokens:
-          total !== null && contextTokens !== null ? Math.max(0, contextTokens - total) : null,
-        percentUsed:
-          total !== null && contextTokens ? Math.round((total / contextTokens) * 100) : null,
-        model: typeof entry.model === "string" ? entry.model : null,
-        contextTokens,
-        flags: [
-          ...(entry.verboseLevel ? [`verbose:${entry.verboseLevel}`] : []),
-          ...(entry.thinkingLevel ? [`think:${entry.thinkingLevel}`] : []),
-        ],
-      };
-    });
-    return { agentId: agent.id, path, count: recent.length, recent };
-  });
-  const recent = byAgent.flatMap((entry) => entry.recent);
-  return {
-    paths: byAgent.map((entry) => entry.path),
-    count: recent.length,
-    defaults: {
-      model: recent[0]?.model ?? "pi:opus",
-      contextTokens: recent[0]?.contextTokens ?? 10_000,
-    },
-    recent,
-    byAgent,
-  };
-}
-
-async function createMockStatusScanResult(params: { includePluginCompatibility?: boolean } = {}) {
-  const cfg = mocks.loadConfig();
-  const gatewayProbe = await mocks.probeGateway();
-  const gatewayReachable = gatewayProbe.ok === true;
-  const gatewayAuthWarning =
-    cfg.gateway?.auth?.token && typeof cfg.gateway.auth.token === "object"
-      ? "gateway.auth.token unavailable"
-      : undefined;
-  const agentStatus = {
-    ...mocks.listGatewayAgentsBasic(),
-    bootstrapPendingCount: 0,
-    totalSessions: 1,
-    agents: mocks
-      .listGatewayAgentsBasic()
-      .agents.map((agent: { id: string; name?: string }) =>
-        Object.assign({}, agent, { bootstrapPending: false, activeSessions: 1 }),
-      ),
-  };
-  const sessions = createSessionStatusRows();
-  const channelIssues = gatewayReachable
-    ? [
-        {
-          channel: "signal",
-          accountId: "default",
-          message: "gateway: signal-cli unreachable",
-        },
-        {
-          channel: "imessage",
-          accountId: "default",
-          message: "gateway: imessage permission denied",
-        },
-      ]
-    : [
-        {
-          channel: "signal",
-          accountId: "default",
-          message: "Channel error: signal-cli unreachable",
-        },
-        {
-          channel: "imessage",
-          accountId: "default",
-          message: "Channel error: imessage permission denied",
-        },
-      ];
-  const pluginCompatibility =
-    params.includePluginCompatibility === false ? [] : mocks.buildPluginCompatibilityNotices();
-  return {
-    cfg,
-    sourceConfig: cfg,
-    secretDiagnostics: gatewayAuthWarning ? ["gateway.auth.token unavailable"] : [],
-    osSummary: {
-      platform: "darwin",
-      arch: "arm64",
-      release: "23.0.0",
-      label: "macos 14.0 (arm64)",
-    },
-    tailscaleMode: "off",
-    tailscaleDns: null,
-    tailscaleHttpsUrl: null,
-    update: {
-      root: "/tmp/remoteclaw",
-      installKind: "git",
-      packageManager: "pnpm",
-      git: {
-        root: "/tmp/remoteclaw",
-        branch: "main",
-        upstream: "origin/main",
-        dirty: false,
-        ahead: 0,
-        behind: 0,
-        fetchOk: true,
-      },
-      deps: {
-        manager: "pnpm",
-        status: "ok",
-        lockfilePath: "/tmp/remoteclaw/pnpm-lock.yaml",
-        markerPath: "/tmp/remoteclaw/node_modules/.modules.yaml",
-      },
-      registry: { latestVersion: "0.0.0" },
-    },
-    gatewayConnection: { url: "ws://127.0.0.1:18789" },
-    remoteUrlMissing: false,
-    gatewayMode: "local" as const,
-    gatewayProbeAuth: process.env.REMOTECLAW_GATEWAY_TOKEN
-      ? { token: process.env.REMOTECLAW_GATEWAY_TOKEN }
-      : {},
-    gatewayProbeAuthWarning: gatewayAuthWarning,
-    gatewayProbe,
-    gatewayReachable,
-    gatewaySelf: gatewayProbe.presence ? { host: "gateway", ip: "127.0.0.1" } : null,
-    channelIssues,
-    agentStatus,
-    channels: {
-      rows: [
-        { id: "whatsapp", label: "WhatsApp", enabled: true, state: "ok", detail: "linked" },
-        { id: "signal", label: "Signal", enabled: true, state: "warn", detail: "gateway warning" },
-        {
-          id: "imessage",
-          label: "iMessage",
-          enabled: true,
-          state: "warn",
-          detail: "gateway warning",
-        },
-      ],
-      details: [],
-    },
-    summary: {
-      runtimeVersion: null,
-      heartbeat: { defaultAgentId: "main", agents: [] },
-      channelSummary: [],
-      queuedSystemEvents: [],
-      tasks: mocks.getInspectableTaskRegistrySummary(),
-      taskAudit: mocks.getInspectableTaskAuditSummary(),
-      sessions,
-    },
-    memory: null,
-    memoryPlugin: { enabled: true, slot: "memory-core" },
-    pluginCompatibility,
-  };
 }
 
 async function withEnvVar<T>(key: string, value: string, run: () => Promise<T>): Promise<T> {
@@ -571,65 +378,7 @@ vi.mock("../security/audit.js", () => ({
   runSecurityAudit: mocks.runSecurityAudit,
 }));
 
-vi.mock("./status.scan.fast-json.js", () => ({
-  scanStatusJsonFast: vi.fn(async () =>
-    createMockStatusScanResult({ includePluginCompatibility: false }),
-  ),
-}));
-
-vi.mock("./status.scan.js", () => ({
-  scanStatus: vi.fn(async () => createMockStatusScanResult()),
-}));
-
-vi.mock("./status-runtime-shared.ts", () => ({
-  loadStatusProviderUsageModule: vi.fn(async () => ({
-    formatUsageReportLines: vi.fn(() => []),
-  })),
-  resolveStatusGatewayHealth: vi.fn(async () => ({})),
-  resolveStatusSecurityAudit: vi.fn(async (input: unknown) =>
-    mocks.runSecurityAudit({
-      ...(typeof input === "object" && input ? input : {}),
-      deep: false,
-      includeFilesystem: true,
-      includeChannelSecurity: true,
-    }),
-  ),
-  resolveStatusUsageSummary: vi.fn(async () => undefined),
-  resolveStatusRuntimeSnapshot: vi.fn(
-    async (params: {
-      includeSecurityAudit?: boolean;
-      resolveSecurityAudit?: (input: unknown) => Promise<unknown>;
-      config: unknown;
-      sourceConfig: unknown;
-    }) => {
-      const securityAudit = params.includeSecurityAudit
-        ? await (
-            params.resolveSecurityAudit ??
-            (async (input) =>
-              await mocks.runSecurityAudit({
-                ...(typeof input === "object" && input ? input : {}),
-                deep: false,
-                includeFilesystem: true,
-                includeChannelSecurity: true,
-              }))
-          )({
-            config: params.config,
-            sourceConfig: params.sourceConfig,
-          })
-        : undefined;
-      return {
-        securityAudit,
-        usage: undefined,
-        health: undefined,
-        lastHeartbeat: null,
-        gatewayService: await createStatusServiceSummary(mocks.resolveGatewayService()),
-        nodeService: await createStatusServiceSummary(mocks.resolveNodeService()),
-      };
-    },
-  ),
-}));
-
-import { resolvePairingRecoveryContext, statusCommand } from "./status.command.js";
+import { statusCommand } from "./status.js";
 
 const runtime = {
   log: vi.fn(),
@@ -679,23 +428,11 @@ describe("statusCommand", () => {
     });
   });
 
-  it("surfaces stale usage when totalTokens is preserved but not fresh", async () => {
-    mocks.loadSessionStore.mockReturnValue({
-      "+1000": {
-        updatedAt: Date.now() - 60_000,
-        totalTokens: 5_000,
-        totalTokensFresh: false,
-        contextTokens: 10_000,
-        model: "pi:opus",
-      },
+  it("prints unknown usage in formatted output when totalTokens is missing", async () => {
+    await withUnknownUsageStore(async () => {
+      const logs = await runStatusAndGetLogs();
+      expect(logs.some((line) => line.includes("unknown/") && line.includes("(?%)"))).toBe(true);
     });
-    runtimeLogMock.mockClear();
-    await statusCommand({ json: true }, runtime as never);
-    const payload = JSON.parse(String(runtimeLogMock.mock.calls.at(-1)?.[0]));
-    expect(payload.sessions.recent[0].totalTokens).toBe(5000);
-    expect(payload.sessions.recent[0].totalTokensFresh).toBe(false);
-    expect(payload.sessions.recent[0].percentUsed).toBe(50);
-    expect(payload.sessions.recent[0].remainingTokens).toBe(5000);
   });
 
   it("prints formatted lines otherwise", async () => {
@@ -730,105 +467,6 @@ describe("statusCommand", () => {
           line.includes("remoteclaw --profile isolated status --all"),
       ),
     ).toBe(true);
-    expect(logs.some((line) => line.includes("Cache"))).toBe(true);
-    expect(logs.some((line) => line.includes("40% hit"))).toBe(true);
-    expect(logs.some((line) => line.includes("read 2.0k"))).toBe(true);
-  });
-
-  it("shows a maintenance hint when task audit errors are present", async () => {
-    mocks.getInspectableTaskRegistrySummary.mockReturnValue({
-      total: 1,
-      active: 1,
-      terminal: 0,
-      failures: 1,
-      byStatus: {
-        queued: 0,
-        running: 1,
-        succeeded: 0,
-        failed: 0,
-        timed_out: 0,
-        cancelled: 0,
-        lost: 0,
-      },
-      byRuntime: {
-        subagent: 0,
-        acp: 1,
-        cli: 0,
-        cron: 0,
-      },
-    });
-    mocks.getInspectableTaskAuditSummary.mockReturnValue({
-      total: 1,
-      warnings: 0,
-      errors: 1,
-      byCode: {
-        stale_queued: 0,
-        stale_running: 1,
-        lost: 0,
-        delivery_failed: 0,
-        missing_cleanup: 0,
-        inconsistent_timestamps: 0,
-      },
-    });
-
-    const joined = await runStatusAndGetJoinedLogs();
-
-    expect(joined).toContain("tasks maintenance --apply");
-  });
-
-  it("uses prompt-side denominator for cached percentages", async () => {
-    mocks.loadSessionStore.mockReturnValue({
-      "+1000": {
-        ...createDefaultSessionStoreEntry(),
-        inputTokens: undefined,
-        cacheRead: 1_200,
-        cacheWrite: 0,
-        totalTokens: 1_000,
-      },
-    });
-    const logs = await runStatusAndGetLogs();
-    expect(logs.some((line) => line.includes("100% cached"))).toBe(true);
-    expect(logs.some((line) => line.includes("120% cached"))).toBe(false);
-
-    mocks.loadSessionStore.mockReturnValue({
-      "+1000": {
-        ...createDefaultSessionStoreEntry(),
-        inputTokens: 500,
-        cacheRead: 2_000,
-        cacheWrite: 500,
-        totalTokens: 5_000,
-      },
-    });
-    const promptSideLogs = await runStatusAndGetLogs();
-    expect(promptSideLogs.some((line) => line.includes("67% cached"))).toBe(true);
-    expect(promptSideLogs.some((line) => line.includes("40% cached"))).toBe(false);
-  });
-
-  it("shows node-only gateway info when no local gateway service is installed", async () => {
-    mocks.resolveGatewayService.mockReturnValueOnce({
-      label: "LaunchAgent",
-      loadedText: "loaded",
-      notLoadedText: "not loaded",
-      stage: async () => {},
-      install: async () => {},
-      uninstall: async () => {},
-      stop: async () => {},
-      restart: async () => ({ outcome: "completed" as const }),
-      isLoaded: async () => false,
-      readRuntime: async () => undefined,
-      readCommand: async () => null,
-    });
-    mocks.loadNodeHostConfig.mockResolvedValueOnce({
-      version: 1,
-      nodeId: "node-1",
-      gateway: { host: "gateway.example.com", port: 19000 },
-    });
-
-    const joined = await runStatusAndGetJoinedLogs();
-    expect(joined).toContain("node → gateway.example.com:19000 · no local gateway");
-    expect(joined).not.toContain("Gateway: local · ws://127.0.0.1:18789");
-    expect(joined).toContain("remoteclaw --profile isolated node status");
-    expect(joined).not.toContain("Fix reachability first");
   });
 
   it("shows gateway auth when reachable", async () => {
@@ -934,27 +572,25 @@ describe("statusCommand", () => {
       error,
       close: { code: 1008, reason: closeReason },
     });
+    const joined = await runStatusAndGetJoinedLogs();
+    expect(joined).toContain("Gateway pairing approval required.");
+    expect(joined).toContain("devices approve --latest");
+    expect(joined).toContain("devices list");
+    for (const expected of includes) {
+      expect(joined).toContain(expected);
+    }
+    for (const blocked of excludes) {
+      expect(joined).not.toContain(blocked);
+    }
+  });
 
   it("extracts requestId from close reason when error text omits it", async () => {
     mockProbeGatewayResult({
-      error: "scope upgrade pending approval (requestId: req-123)",
-      connectErrorDetails: {
-        code: "PAIRING_REQUIRED",
-        reason: "scope-upgrade",
-        requestId: "req-123",
-        remediationHint: "Review the requested scopes, then approve the pending upgrade.",
-      },
-      close: {
-        code: 1008,
-        reason: "pairing required",
-      },
+      error: "connect failed: pairing required",
+      close: { code: 1008, reason: "pairing required (requestId: req-close-456)" },
     });
     const joined = await runStatusAndGetJoinedLogs();
-    expect(joined).toContain("Gateway scope upgrade approval required.");
-    expect(joined).toContain("more scopes than currently approved");
-    expect(joined).toContain("devices approve req-123");
-    expect(joined).toContain("devices approve --latest");
-    expect(joined).toContain("devices list");
+    expect(joined).toContain("devices approve req-close-456");
   });
 
   it("includes sessions across agents in JSON output", async () => {

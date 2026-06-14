@@ -114,8 +114,6 @@ import * as skillScanner from "./skill-scanner.js";
 import type { SkillScanFinding } from "./skill-scanner.js";
 import type { ExecFn } from "./windows-acl.js";
 
-export { collectPluginsTrustFindings } from "./audit-plugins-trust.js";
-
 export type SecurityAuditFinding = {
   checkId: string;
   severity: "info" | "warn" | "critical";

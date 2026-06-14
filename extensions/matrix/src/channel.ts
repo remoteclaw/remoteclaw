@@ -198,130 +198,20 @@ export const matrixPlugin: ChannelPlugin<ResolvedMatrixAccount> = {
           context.MessageThreadId != null ? String(context.MessageThreadId) : context.ReplyToId,
         hasRepliedRef,
       };
-    }
-  }
-  const conversationTarget = resolveMatrixTargetIdentity(params.conversationId);
-  if (conversationTarget?.kind === "room") {
-    return { to: `room:${conversationTarget.id}` };
-  }
-  return null;
-}
-
-export const matrixPlugin: ChannelPlugin<ResolvedMatrixAccount, MatrixProbe> =
-  createChatChannelPlugin<ResolvedMatrixAccount, MatrixProbe>({
-    base: {
-      id: "matrix",
-      meta,
-      setupWizard: matrixSetupWizard,
-      capabilities: {
-        chatTypes: ["direct", "group", "thread"],
-        polls: true,
-        reactions: true,
-        threads: true,
-        media: true,
-      },
-      reload: { configPrefixes: ["channels.matrix"] },
-      configSchema: buildChannelConfigSchema(MatrixConfigSchema),
-      config: {
-        ...matrixConfigAdapter,
-        isConfigured: (account) => account.configured,
-        describeAccount: (account) =>
-          describeAccountSnapshot({
-            account,
-            configured: account.configured,
-            extra: {
-              baseUrl: account.homeserver,
-            },
-          }),
-      },
-      approvalCapability: matrixApprovalCapability,
-      groups: {
-        resolveRequireMention: resolveMatrixGroupRequireMention,
-        resolveToolPolicy: resolveMatrixGroupToolPolicy,
-      },
-      conversationBindings: {
-        supportsCurrentConversationBinding: true,
-        defaultTopLevelPlacement: "child",
-        setIdleTimeoutBySessionKey: ({ targetSessionKey, accountId, idleTimeoutMs }) =>
-          setMatrixThreadBindingIdleTimeoutBySessionKey({
-            targetSessionKey,
-            accountId: accountId ?? "",
-            idleTimeoutMs,
-          }).map(projectMatrixConversationBinding),
-        setMaxAgeBySessionKey: ({ targetSessionKey, accountId, maxAgeMs }) =>
-          setMatrixThreadBindingMaxAgeBySessionKey({
-            targetSessionKey,
-            accountId: accountId ?? "",
-            maxAgeMs,
-          }).map(projectMatrixConversationBinding),
-      },
-      messaging: {
-        normalizeTarget: normalizeMatrixMessagingTarget,
-        resolveInboundConversation: ({ to, conversationId, threadId }) =>
-          resolveMatrixInboundConversation({ to, conversationId, threadId }),
-        resolveDeliveryTarget: ({ conversationId, parentConversationId }) =>
-          resolveMatrixDeliveryTarget({ conversationId, parentConversationId }),
-        resolveOutboundSessionRoute: (params) => resolveMatrixOutboundSessionRoute(params),
-        targetResolver: {
-          looksLikeId: (raw) => {
-            const trimmed = raw.trim();
-            if (!trimmed) {
-              return false;
-            }
-            if (/^(matrix:)?[!#@]/i.test(trimmed)) {
-              return true;
-            }
-            return trimmed.includes(":");
-          },
-          hint: "<room|alias|user>",
-        },
-      },
-      directory: createChannelDirectoryAdapter({
-        listPeers: async (params) => {
-          const entries = await listMatrixDirectoryPeersFromConfig(params);
-          return entries.map((entry) => {
-            const raw = entry.id.startsWith("user:") ? entry.id.slice("user:".length) : entry.id;
-            const incomplete = !raw.startsWith("@") || !raw.includes(":");
-            return incomplete
-              ? Object.assign({}, entry, { name: `incomplete id; expected @user:server` })
-              : entry;
-          });
-        },
-        listGroups: async (params) => await listMatrixDirectoryGroupsFromConfig(params),
-        ...createRuntimeDirectoryLiveAdapter({
-          getRuntime: loadMatrixChannelRuntime,
-          listPeersLive: (runtime) => runtime.listMatrixDirectoryPeersLive,
-          listGroupsLive: (runtime) => runtime.listMatrixDirectoryGroupsLive,
-        }),
-      }),
-      resolver: matrixResolverAdapter,
-      actions: matrixMessageActions,
-      secrets: {
-        secretTargetRegistryEntries,
-        collectRuntimeConfigAssignments,
-      },
-      setup: {
-        ...matrixSetupAdapter,
-        singleAccountKeysToMove,
-        namedAccountPromotionKeys,
-        resolveSingleAccountPromotionTarget,
-      },
-      bindings: {
-        compileConfiguredBinding: ({ conversationId }) =>
-          normalizeMatrixAcpConversationId(conversationId),
-        matchInboundConversation: ({ compiledBinding, conversationId, parentConversationId }) =>
-          matchMatrixAcpConversation({
-            bindingConversationId: compiledBinding.conversationId,
-            conversationId,
-            parentConversationId,
-          }),
-        resolveCommandConversation: ({ threadId, originatingTo, commandTo, fallbackTo }) =>
-          resolveMatrixCommandConversation({
-            threadId,
-            originatingTo,
-            commandTo,
-            fallbackTo,
-          }),
+    },
+  },
+  messaging: {
+    normalizeTarget: normalizeMatrixMessagingTarget,
+    targetResolver: {
+      looksLikeId: (raw) => {
+        const trimmed = raw.trim();
+        if (!trimmed) {
+          return false;
+        }
+        if (/^(matrix:)?[!#@]/i.test(trimmed)) {
+          return true;
+        }
+        return trimmed.includes(":");
       },
       hint: "<room|alias|user>",
     },

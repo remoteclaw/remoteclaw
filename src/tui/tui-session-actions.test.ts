@@ -50,13 +50,20 @@ describe("tui session actions", () => {
     const updateAutocompleteProvider = vi.fn();
     const requestRender = vi.fn();
 
-    const { refreshSessionInfo } = createTestSessionActions({
+    const { refreshSessionInfo } = createSessionActions({
       client: { listSessions } as unknown as GatewayChatClient,
       chatLog: { addSystem: vi.fn() } as unknown as import("./components/chat-log.js").ChatLog,
       tui: { requestRender } as unknown as import("@mariozechner/pi-tui").TUI,
+      opts: {},
       state,
+      agentNames: new Map(),
+      initialSessionInput: "",
+      initialSessionAgentId: null,
+      resolveSessionKey: vi.fn(),
+      updateHeader: vi.fn(),
       updateFooter,
       updateAutocompleteProvider,
+      setActivityStatus: vi.fn(),
     });
 
     const first = refreshSessionInfo();
@@ -138,14 +145,31 @@ describe("tui session actions", () => {
         modelProvider: "ollama",
         updatedAt: 100,
       },
-    });
+      initialSessionApplied: true,
+      isConnected: true,
+      autoMessageSent: false,
+      toolsExpanded: false,
+      showThinking: false,
+      connectionStatus: "connected",
+      activityStatus: "idle",
+      statusTimeout: null,
+      lastCtrlCAt: 0,
+    };
 
-    const { applySessionInfoFromPatch, refreshSessionInfo } = createTestSessionActions({
+    const { applySessionInfoFromPatch, refreshSessionInfo } = createSessionActions({
       client: { listSessions } as unknown as GatewayChatClient,
       chatLog: { addSystem: vi.fn() } as unknown as import("./components/chat-log.js").ChatLog,
       tui: { requestRender: vi.fn() } as unknown as import("@mariozechner/pi-tui").TUI,
       opts: {},
       state,
+      agentNames: new Map(),
+      initialSessionInput: "",
+      initialSessionAgentId: null,
+      resolveSessionKey: vi.fn(),
+      updateHeader: vi.fn(),
+      updateFooter: vi.fn(),
+      updateAutocompleteProvider: vi.fn(),
+      setActivityStatus: vi.fn(),
     });
 
     applySessionInfoFromPatch({
@@ -206,7 +230,16 @@ describe("tui session actions", () => {
         modelProvider: "anthropic",
         updatedAt: 500,
       },
-    });
+      initialSessionApplied: true,
+      isConnected: true,
+      autoMessageSent: false,
+      toolsExpanded: false,
+      showThinking: false,
+      connectionStatus: "connected",
+      activityStatus: "idle",
+      statusTimeout: null,
+      lastCtrlCAt: 0,
+    };
 
     const { setSession } = createSessionActions({
       client: {

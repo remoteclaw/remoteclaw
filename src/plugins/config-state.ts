@@ -176,7 +176,7 @@ export function isBundledChannelEnabledByChannelConfig(
 
 export const isBundledChannelEnabledByChannelConfig = isBundledChannelEnabledByChannelConfigShared;
 
-type EffectiveActivationParams = {
+export function resolveEffectiveEnableState(params: {
   id: string;
   origin: PluginRecord["origin"];
   config: NormalizedPluginsConfig;

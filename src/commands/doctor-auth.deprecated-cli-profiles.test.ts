@@ -1,21 +1,14 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { AuthProfileStore } from "../agents/auth-profiles/types.js";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import { captureEnv } from "../test-utils/env.js";
 import { maybeRemoveDeprecatedCliAuthProfiles } from "./doctor-auth.js";
 import type { DoctorPrompter } from "./doctor-prompter.js";
 
-vi.mock("../agents/auth-profiles/repair.js", () => ({
-  repairOAuthProfileIdMismatch: repairMocks.repairOAuthProfileIdMismatch,
-}));
-
-vi.mock("../agents/auth-profiles/store.js", () => ({
-  ensureAuthProfileStore: () => authProfileStoreMock.store,
-}));
-
-vi.mock("../terminal/note.js", () => ({
-  note: vi.fn(),
-}));
+let envSnapshot: ReturnType<typeof captureEnv>;
+let tempAgentDir: string | undefined;
 
 function makePrompter(confirmValue: boolean): DoctorPrompter {
   return {
@@ -79,11 +72,11 @@ describe("maybeRemoveDeprecatedCliAuthProfiles", () => {
             },
           },
         },
-      },
-      lastGood: {
-        anthropic: "anthropic:user@example.com",
-      },
-    };
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
 
     const cfg = {
       auth: {

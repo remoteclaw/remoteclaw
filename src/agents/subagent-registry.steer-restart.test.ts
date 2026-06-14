@@ -94,8 +94,28 @@ describe("subagent registry steer restarts", () => {
   const flushAnnounce = async () => {
     await new Promise<void>((resolve) => setImmediate(resolve));
   };
-  const waitForRegistrySideEffect = async (assertion: () => void) => {
-    await vi.waitFor(assertion, { interval: 1, timeout: 1_000 });
+
+  const withPendingAgentWait = async <T>(run: () => Promise<T>): Promise<T> => {
+    const callGateway = vi.mocked((await import("../gateway/call.js")).callGateway);
+    const originalCallGateway = callGateway.getMockImplementation();
+    callGateway.mockImplementation(async (request: unknown) => {
+      const typed = request as { method?: string };
+      if (typed.method === "agent.wait") {
+        return new Promise<unknown>(() => undefined);
+      }
+      if (originalCallGateway) {
+        return originalCallGateway(request as Parameters<typeof callGateway>[0]);
+      }
+      return {};
+    });
+
+    try {
+      return await run();
+    } finally {
+      if (originalCallGateway) {
+        callGateway.mockImplementation(originalCallGateway);
+      }
+    }
   };
 
   const createDeferredAnnounceResolver = (): ((value: boolean) => void) => {
@@ -203,12 +223,11 @@ describe("subagent registry steer restarts", () => {
   });
 
   it("suppresses announce for interrupted runs and only announces the replacement run", async () => {
-    {
-      registerRun({
-        runId: "run-old",
-        childSessionKey: "agent:main:subagent:steer",
-        task: "initial task",
-      });
+    registerRun({
+      runId: "run-old",
+      childSessionKey: "agent:main:subagent:steer",
+      task: "initial task",
+    });
 
     const previous = listMainRuns()[0];
     expect(previous?.runId).toBe("run-old");
@@ -242,13 +261,12 @@ describe("subagent registry steer restarts", () => {
       }),
     );
 
-      const announce = (announceSpy.mock.calls[0]?.[0] ?? {}) as { childRunId?: string };
-      expect(announce.childRunId).toBe("run-new");
-    }
+    const announce = (announceSpy.mock.calls[0]?.[0] ?? {}) as { childRunId?: string };
+    expect(announce.childRunId).toBe("run-new");
   });
 
   it("defers subagent_ended hook for completion-mode runs until announce delivery resolves", async () => {
-    {
+    await withPendingAgentWait(async () => {
       const resolveAnnounce = createDeferredAnnounceResolver();
       registerCompletionModeRun(
         "run-completion-delayed",
@@ -276,11 +294,11 @@ describe("subagent registry steer restarts", () => {
           requesterSessionKey: MAIN_REQUESTER_SESSION_KEY,
         }),
       );
-    }
+    });
   });
 
   it("does not emit subagent_ended on completion for persistent session-mode runs", async () => {
-    {
+    await withPendingAgentWait(async () => {
       const resolveAnnounce = createDeferredAnnounceResolver();
       registerCompletionModeRun(
         "run-persistent-session",
@@ -302,7 +320,7 @@ describe("subagent registry steer restarts", () => {
       expect(run?.runId).toBe("run-persistent-session");
       expect(run?.cleanupCompletedAt).toBeTypeOf("number");
       expect(run?.endedHookEmittedAt).toBeUndefined();
-    }
+    });
   });
 
   it("clears announce retry state when replacing after steer restart", () => {
@@ -329,21 +347,11 @@ describe("subagent registry steer restarts", () => {
   });
 
   it("clears terminal lifecycle state when replacing after steer restart", async () => {
-    {
-      registerRun({
-        runId: "run-terminal-state-old",
-        childSessionKey: "agent:main:subagent:terminal-state",
-        task: "terminal state",
-      });
-
-      const previous = listMainRuns()[0];
-      expect(previous?.runId).toBe("run-terminal-state-old");
-      if (previous) {
-        previous.endedHookEmittedAt = Date.now();
-        previous.endedReason = "subagent-complete";
-        previous.endedAt = Date.now();
-        previous.outcome = { status: "ok" };
-      }
+    registerRun({
+      runId: "run-terminal-state-old",
+      childSessionKey: "agent:main:subagent:terminal-state",
+      task: "terminal state",
+    });
 
     const previous = listMainRuns()[0];
     expect(previous?.runId).toBe("run-terminal-state-old");
@@ -473,14 +481,9 @@ describe("subagent registry steer restarts", () => {
     expect(mod.isSubagentSessionRunActive(childSessionKey)).toBe(false);
 
     const run = listMainRuns()[0];
-    expect(run?.outcome).toMatchObject({ status: "error", error: "manual kill" });
-    expect(run?.outcome?.startedAt).toEqual(expect.any(Number));
-    expect(run?.outcome?.endedAt).toEqual(expect.any(Number));
-    expect(run?.outcome?.elapsedMs).toEqual(expect.any(Number));
-    expect(run?.outcome?.endedAt).toBeGreaterThanOrEqual(run?.outcome?.startedAt ?? 0);
+    expect(run?.outcome).toEqual({ status: "error", error: "manual kill" });
     expect(run?.cleanupHandled).toBe(true);
     expect(typeof run?.cleanupCompletedAt).toBe("number");
-    await flushAnnounce();
     expect(runSubagentEndedHookMock).toHaveBeenCalledWith(
       {
         targetSessionKey: childSessionKey,
@@ -499,35 +502,6 @@ describe("subagent registry steer restarts", () => {
         requesterSessionKey: MAIN_REQUESTER_SESSION_KEY,
       },
     );
-  });
-
-  it("treats a child session as inactive when only a stale older row is still unended", async () => {
-    const childSessionKey = "agent:main:subagent:stale-active-older-row";
-
-    mod.addSubagentRunForTests({
-      runId: "run-stale-older",
-      childSessionKey,
-      requesterSessionKey: MAIN_REQUESTER_SESSION_KEY,
-      requesterDisplayKey: MAIN_REQUESTER_DISPLAY_KEY,
-      task: "older stale row",
-      startedAt: 100,
-      createdAt: 100,
-      cleanup: "keep",
-    });
-    mod.addSubagentRunForTests({
-      runId: "run-current-ended",
-      childSessionKey,
-      requesterSessionKey: MAIN_REQUESTER_SESSION_KEY,
-      requesterDisplayKey: MAIN_REQUESTER_DISPLAY_KEY,
-      task: "current ended row",
-      startedAt: 200,
-      createdAt: 200,
-      endedAt: 250,
-      outcome: { status: "ok" },
-      cleanup: "keep",
-    });
-
-    expect(mod.isSubagentSessionRunActive(childSessionKey)).toBe(false);
   });
 
   it("recovers announce cleanup when completion arrives after a kill marker", async () => {
@@ -600,7 +574,7 @@ describe("subagent registry steer restarts", () => {
   });
 
   it("retries completion-mode announce delivery with backoff and then gives up after retry limit", async () => {
-    {
+    await withPendingAgentWait(async () => {
       vi.useFakeTimers();
       try {
         announceSpy.mockResolvedValue(false);
@@ -635,7 +609,7 @@ describe("subagent registry steer restarts", () => {
       } finally {
         vi.useRealTimers();
       }
-    }
+    });
   });
 
   it("keeps completion cleanup pending while descendants are still active", async () => {

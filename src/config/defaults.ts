@@ -288,7 +288,8 @@ export function applyModelDefaults(cfg: RemoteClawConfig): RemoteClawConfig {
           return model;
         }
         providerMutated = true;
-        return Object.assign({}, raw, {
+        return {
+          ...raw,
           reasoning,
           input,
           cost,

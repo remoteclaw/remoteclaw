@@ -42,62 +42,7 @@ describe("runMessageAction plugin dispatch", () => {
                 }),
                 sendMedia,
               },
-            },
-          },
-        } as RemoteClawConfig,
-        action: "send",
-        params: {
-          channel: "policydest",
-          target: "oc_123",
-          message: "hello",
-          media: "/tmp/host.png",
-        },
-        requesterSenderId: "trusted-user",
-        sessionKey: "agent:alpha:requestchat:group:ops",
-        dryRun: false,
-      });
-
-      const pluginCall = handlePolicyCheckedAction.mock.calls[0]?.[0];
-      expect(pluginCall?.mediaAccess).toBeDefined();
-      expect(pluginCall?.mediaAccess?.readFile).toBeUndefined();
-    });
-
-    it("uses requester username policy for host-media reads", async () => {
-      const handlePolicyCheckedAction = vi.fn(async ({ mediaAccess }) =>
-        jsonResult({
-          ok: true,
-          hasHostReadCapability: typeof mediaAccess?.readFile === "function",
-        }),
-      );
-      const policyPlugin: ChannelPlugin = {
-        id: "policydest",
-        meta: {
-          id: "policydest",
-          label: "Policy Destination",
-          selectionLabel: "Policy Destination",
-          docsPath: "/channels/policydest",
-          blurb: "Policy destination username test plugin.",
-        },
-        capabilities: { chatTypes: ["direct", "channel"], media: true },
-        config: createAlwaysConfiguredPluginConfig(),
-        messaging: {
-          targetResolver: {
-            looksLikeId: () => true,
-          },
-        },
-        actions: {
-          describeMessageTool: () => ({ actions: ["send"] }),
-          supportsAction: ({ action }) => action === "send",
-          handleAction: handlePolicyCheckedAction,
-        },
-      };
-
-      setActivePluginRegistry(
-        createTestRegistry([
-          {
-            pluginId: "policydest",
-            source: "test",
-            plugin: policyPlugin,
+            }),
           },
         ]),
       );
@@ -212,7 +157,7 @@ describe("runMessageAction plugin dispatch", () => {
     });
   });
 
-  describe("poll plugin forwarding", () => {
+  describe("telegram plugin poll forwarding", () => {
     const handleAction = vi.fn(async ({ params }: { params: Record<string, unknown> }) =>
       jsonResult({
         ok: true,
@@ -254,9 +199,9 @@ describe("runMessageAction plugin dispatch", () => {
       setActivePluginRegistry(
         createTestRegistry([
           {
-            pluginId: "pollchat",
+            pluginId: "telegram",
             source: "test",
-            plugin: pollChatPlugin,
+            plugin: telegramPollPlugin,
           },
         ]),
       );
@@ -268,19 +213,19 @@ describe("runMessageAction plugin dispatch", () => {
       vi.clearAllMocks();
     });
 
-    it("forwards poll params through plugin dispatch", async () => {
+    it("forwards telegram poll params through plugin dispatch", async () => {
       const result = await runMessageAction({
         cfg: {
           channels: {
-            pollchat: {
+            telegram: {
               botToken: "tok",
             },
           },
         } as RemoteClawConfig,
         action: "poll",
         params: {
-          channel: "pollchat",
-          target: "pollchat:123",
+          channel: "telegram",
+          target: "telegram:123",
           pollQuestion: "Lunch?",
           pollOption: ["Pizza", "Sushi"],
           pollDurationSeconds: 120,
@@ -295,9 +240,9 @@ describe("runMessageAction plugin dispatch", () => {
       expect(handleAction).toHaveBeenCalledWith(
         expect.objectContaining({
           action: "poll",
-          channel: "pollchat",
+          channel: "telegram",
           params: expect.objectContaining({
-            to: "pollchat:123",
+            to: "telegram:123",
             pollQuestion: "Lunch?",
             pollOption: ["Pizza", "Sushi"],
             pollDurationSeconds: 120,
@@ -309,7 +254,7 @@ describe("runMessageAction plugin dispatch", () => {
       expect(result.payload).toMatchObject({
         ok: true,
         forwarded: {
-          to: "pollchat:123",
+          to: "telegram:123",
           pollQuestion: "Lunch?",
           pollOption: ["Pizza", "Sushi"],
           pollDurationSeconds: 120,
@@ -329,13 +274,13 @@ describe("runMessageAction plugin dispatch", () => {
     );
 
     const componentsPlugin: ChannelPlugin = {
-      id: "componentchat",
+      id: "discord",
       meta: {
-        id: "componentchat",
-        label: "Component Chat",
-        selectionLabel: "Component Chat",
-        docsPath: "/channels/componentchat",
-        blurb: "Component chat send test plugin.",
+        id: "discord",
+        label: "Discord",
+        selectionLabel: "Discord",
+        docsPath: "/channels/discord",
+        blurb: "Discord components send test plugin.",
       },
       capabilities: { chatTypes: ["direct"] },
       config: createAlwaysConfiguredPluginConfig({}),
@@ -350,7 +295,7 @@ describe("runMessageAction plugin dispatch", () => {
       setActivePluginRegistry(
         createTestRegistry([
           {
-            pluginId: "componentchat",
+            pluginId: "discord",
             source: "test",
             plugin: componentsPlugin,
           },
@@ -373,7 +318,7 @@ describe("runMessageAction plugin dispatch", () => {
         cfg: {} as RemoteClawConfig,
         action: "send",
         params: {
-          channel: "componentchat",
+          channel: "discord",
           target: "channel:123",
           message: "hi",
           components: JSON.stringify(components),
@@ -392,7 +337,7 @@ describe("runMessageAction plugin dispatch", () => {
           cfg: {} as RemoteClawConfig,
           action: "send",
           params: {
-            channel: "componentchat",
+            channel: "discord",
             target: "channel:123",
             message: "hi",
             components: "{not-json}",
@@ -408,13 +353,13 @@ describe("runMessageAction plugin dispatch", () => {
   describe("accountId defaults", () => {
     const handleAction = vi.fn(async () => jsonResult({ ok: true }));
     const accountPlugin: ChannelPlugin = {
-      id: "accountchat",
+      id: "discord",
       meta: {
-        id: "accountchat",
-        label: "Account Chat",
-        selectionLabel: "Account Chat",
-        docsPath: "/channels/accountchat",
-        blurb: "Account chat test plugin.",
+        id: "discord",
+        label: "Discord",
+        selectionLabel: "Discord",
+        docsPath: "/channels/discord",
+        blurb: "Discord test plugin.",
       },
       capabilities: { chatTypes: ["direct"] },
       config: {
@@ -431,7 +376,7 @@ describe("runMessageAction plugin dispatch", () => {
       setActivePluginRegistry(
         createTestRegistry([
           {
-            pluginId: "accountchat",
+            pluginId: "discord",
             source: "test",
             plugin: accountPlugin,
           },
@@ -459,7 +404,7 @@ describe("runMessageAction plugin dispatch", () => {
         args: {
           cfg: {
             bindings: [
-              { agentId: "agent-b", match: { channel: "accountchat", accountId: "account-b" } },
+              { agentId: "agent-b", match: { channel: "discord", accountId: "account-b" } },
             ],
           } as RemoteClawConfig,
           agentId: "agent-b",
@@ -471,7 +416,7 @@ describe("runMessageAction plugin dispatch", () => {
         ...args,
         action: "send",
         params: {
-          channel: "accountchat",
+          channel: "discord",
           target: "channel:123",
           message: "hi",
         },

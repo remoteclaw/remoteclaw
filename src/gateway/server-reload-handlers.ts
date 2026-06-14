@@ -15,7 +15,6 @@ import {
 import { setCommandLaneConcurrency, getTotalQueueSize } from "../process/command-queue.js";
 import { CommandLane } from "../process/lanes.js";
 import type { ChannelHealthMonitor } from "./channel-health-monitor.js";
-import { enqueueConfigRecoveryNotice } from "./config-recovery-notice.js";
 import type { ChannelKind } from "./config-reload-plan.js";
 import type { GatewayReloadPlan } from "./config-reload.js";
 import { resolveHooksConfig } from "./hooks.js";
@@ -30,12 +29,7 @@ type GatewayHotReloadState = {
   channelHealthMonitor: ChannelHealthMonitor | null;
 };
 
-type GatewayReloadLog = {
-  info: (msg: string) => void;
-  warn: (msg: string) => void;
-};
-
-type GatewayReloadHandlerParams = {
+export function createGatewayReloadHandlers(params: {
   deps: CliDeps;
   broadcast: (event: string, payload: unknown, opts?: { dropIfSlow?: boolean }) => void;
   getState: () => GatewayHotReloadState;

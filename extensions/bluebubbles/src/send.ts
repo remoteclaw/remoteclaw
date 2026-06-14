@@ -10,7 +10,6 @@ import { resolveBlueBubblesAccount } from "./accounts.js";
 import {
   getCachedBlueBubblesPrivateApiStatus,
   isBlueBubblesPrivateApiStatusEnabled,
-  isMacOS26OrHigher,
 } from "./probe.js";
 import { warnBlueBubbles } from "./runtime.js";
 import { normalizeSecretInputString } from "./secret-input.js";
@@ -92,18 +91,11 @@ function resolvePrivateApiDecision(params: {
   privateApiStatus: boolean | null;
   wantsReplyThread: boolean;
   wantsEffect: boolean;
-  accountId?: string;
 }): PrivateApiDecision {
-  const { privateApiStatus, wantsReplyThread, wantsEffect, accountId } = params;
+  const { privateApiStatus, wantsReplyThread, wantsEffect } = params;
   const needsPrivateApi = wantsReplyThread || wantsEffect;
-  // On macOS 26 Tahoe, AppleScript Messages.app automation is broken
-  // (`-1700` error) for outbound sends. Prefer Private API even for plain
-  // text when it is available so sends still reach the recipient.
-  // (#53159 Bug B, #64480)
-  const forceOnMacOS26 =
-    isMacOS26OrHigher(accountId) && isBlueBubblesPrivateApiStatusEnabled(privateApiStatus);
   const canUsePrivateApi =
-    (needsPrivateApi || forceOnMacOS26) && isBlueBubblesPrivateApiStatusEnabled(privateApiStatus);
+    needsPrivateApi && isBlueBubblesPrivateApiStatusEnabled(privateApiStatus);
   const throwEffectDisabledError = wantsEffect && privateApiStatus === false;
   if (!needsPrivateApi || privateApiStatus !== null) {
     return { canUsePrivateApi, throwEffectDisabledError };
@@ -208,19 +200,21 @@ async function queryChats(params: {
   offset: number;
   limit: number;
 }): Promise<BlueBubblesChatRecord[]> {
-  const client = createBlueBubblesClientFromParts({
+  const url = buildBlueBubblesApiUrl({
     baseUrl: params.baseUrl,
-    password: params.password,
-    allowPrivateNetwork: params.allowPrivateNetwork === true,
-    timeoutMs: params.timeoutMs,
-  });
-  const res = await client.request({
-    method: "POST",
     path: "/api/v1/chat/query",
-    body: {
-      limit: params.limit,
-      offset: params.offset,
-      with: ["participants"],
+    password: params.password,
+  });
+  const res = await blueBubblesFetchWithTimeout(
+    url,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        limit: params.limit,
+        offset: params.offset,
+        with: ["participants"],
+      }),
     },
     params.timeoutMs,
   );
@@ -249,27 +243,7 @@ export async function resolveChatGuidForTarget(params: {
     params.target.kind === "chat_identifier" ? params.target.chatIdentifier : null;
 
   const limit = 500;
-  // When matching by handle, prefer the caller's requested service. A user may
-  // have both an `iMessage;-;<handle>` and `SMS;-;<handle>` chat:
-  //   - default / `service: "imessage"` / `service: "auto"` -> prefer iMessage
-  //     so we never silently downgrade to SMS when iMessage is available.
-  //   - explicit `service: "sms"` (e.g. caller passed `sms:+15551234567`) ->
-  //     prefer SMS so explicit SMS intent is respected.
-  //
-  // A direct `<preferred>;-;<handle>` match is the strongest signal and
-  // returns immediately. Everything else is recorded as a ranked fallback.
-  const preferredService: "iMessage" | "SMS" =
-    params.target.kind === "handle" && params.target.service === "sms" ? "SMS" : "iMessage";
-  const preferredPrefix = `${preferredService};-;`;
-  const otherPrefix = preferredService === "iMessage" ? "SMS;-;" : "iMessage;-;";
-
-  // Note: a direct `preferredPrefix` match `return`s immediately below, so we
-  // only need to remember the other-service and unknown-service direct fallbacks.
-  let directHandleOtherServiceMatch: string | null = null;
-  let directHandleUnknownServiceMatch: string | null = null;
-  let participantPreferredMatch: string | null = null;
-  let participantOtherServiceMatch: string | null = null;
-  let participantUnknownServiceMatch: string | null = null;
+  let participantMatch: string | null = null;
   for (let offset = 0; offset < 5000; offset += limit) {
     const chats = await queryChats({
       baseUrl: params.baseUrl,
@@ -319,23 +293,10 @@ export async function resolveChatGuidForTarget(params: {
       if (normalizedHandle) {
         const guid = extractChatGuid(chat);
         const directHandle = guid ? extractHandleFromChatGuid(guid) : null;
-        if (directHandle && directHandle === normalizedHandle && guid) {
-          // A direct `<preferredPrefix><handle>` is the strongest signal and we
-          // can return immediately. Other services are remembered as fallbacks
-          // and we keep scanning in case a preferred-service chat exists later.
-          if (guid.startsWith(preferredPrefix)) {
-            return guid;
-          }
-          if (guid.startsWith(otherPrefix)) {
-            if (!directHandleOtherServiceMatch) {
-              directHandleOtherServiceMatch = guid;
-            }
-          } else if (!directHandleUnknownServiceMatch) {
-            // Unknown service; treat as a last-resort direct match.
-            directHandleUnknownServiceMatch = guid;
-          }
+        if (directHandle && directHandle === normalizedHandle) {
+          return guid;
         }
-        if (guid) {
+        if (!participantMatch && guid) {
           // Only consider DM chats (`;-;` separator) as participant matches.
           // Group chats (`;+;` separator) should never match when searching by handle/phone.
           // This prevents routing "send to +1234567890" to a group chat that contains that number.
@@ -345,33 +306,14 @@ export async function resolveChatGuidForTarget(params: {
               normalizeBlueBubblesHandle(entry),
             );
             if (participants.includes(normalizedHandle)) {
-              if (guid.startsWith(preferredPrefix)) {
-                if (!participantPreferredMatch) {
-                  participantPreferredMatch = guid;
-                }
-              } else if (guid.startsWith(otherPrefix)) {
-                if (!participantOtherServiceMatch) {
-                  participantOtherServiceMatch = guid;
-                }
-              } else if (!participantUnknownServiceMatch) {
-                participantUnknownServiceMatch = guid;
-              }
+              participantMatch = guid;
             }
           }
         }
       }
     }
-    // We deliberately do NOT break early on participant or non-preferred direct
-    // matches: a higher-priority direct `<preferredPrefix><handle>` chat may
-    // still exist on a later page, and only that branch can short-circuit.
   }
-  return (
-    participantPreferredMatch ??
-    directHandleOtherServiceMatch ??
-    participantOtherServiceMatch ??
-    directHandleUnknownServiceMatch ??
-    participantUnknownServiceMatch
-  );
+  return participantMatch;
 }
 
 /**
@@ -387,9 +329,8 @@ async function createNewChatWithMessage(params: {
 }): Promise<BlueBubblesSendResult> {
   const url = buildBlueBubblesApiUrl({
     baseUrl: params.baseUrl,
+    path: "/api/v1/chat/new",
     password: params.password,
-    allowPrivateNetwork: params.allowPrivateNetwork === true,
-    timeoutMs: params.timeoutMs,
   });
   const payload = {
     addresses: [params.address],
@@ -485,7 +426,6 @@ export async function sendMessageBlueBubbles(
     privateApiStatus,
     wantsReplyThread,
     wantsEffect,
-    accountId,
   });
   if (privateApiDecision.throwEffectDisabledError) {
     throw new Error(
@@ -495,16 +435,14 @@ export async function sendMessageBlueBubbles(
   if (privateApiDecision.warningMessage) {
     warnBlueBubbles(privateApiDecision.warningMessage);
   }
-  // Always set `method` explicitly. BB Server's behavior on an omitted
-  // `method` is version-dependent and silently drops on some setups (e.g.
-  // macOS without Private API — message lands in Messages.app locally but
-  // never reaches the phone). (#64480)
   const payload: Record<string, unknown> = {
     chatGuid,
     tempGuid: crypto.randomUUID(),
     message: strippedText,
-    method: privateApiDecision.canUsePrivateApi ? "private-api" : "apple-script",
   };
+  if (privateApiDecision.canUsePrivateApi) {
+    payload.method = "private-api";
+  }
 
   // Add reply threading support
   if (wantsReplyThread && privateApiDecision.canUsePrivateApi) {
@@ -517,17 +455,10 @@ export async function sendMessageBlueBubbles(
     payload.effectId = effectId;
   }
 
-  const client = createBlueBubblesClient({
-    cfg: opts.cfg ?? {},
-    accountId: opts.accountId,
-    serverUrl: opts.serverUrl,
-    password: opts.password,
-  });
-  const res = await client.request({
-    method: "POST",
+  const url = buildBlueBubblesApiUrl({
+    baseUrl,
     path: "/api/v1/message/text",
-    body: payload,
-    timeoutMs: effectiveSendTimeoutMs,
+    password,
   });
   const res = await blueBubblesFetchWithTimeout(
     url,

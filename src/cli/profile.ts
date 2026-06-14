@@ -24,6 +24,11 @@ function takeValue(
 }
 
 export function parseCliProfileArgs(argv: string[]): CliProfileParseResult {
+  if (argv.length < 2) {
+    return { ok: true, profile: null, argv };
+  }
+
+  const out: string[] = argv.slice(0, 2);
   let profile: string | null = null;
   let sawDev = false;
   let sawCommand = false;
@@ -42,16 +47,16 @@ export function parseCliProfileArgs(argv: string[]): CliProfileParseResult {
 
     if (arg === "--dev") {
       if (profile && profile !== "dev") {
-        return { kind: "error", error: "Cannot combine --dev with --profile" };
+        return { ok: false, error: "Cannot combine --dev with --profile" };
       }
       sawDev = true;
       profile = "dev";
-      return { kind: "handled" };
+      continue;
     }
 
     if (arg === "--profile" || arg.startsWith("--profile=")) {
       if (sawDev) {
-        return { kind: "error", error: "Cannot combine --dev with --profile" };
+        return { ok: false, error: "Cannot combine --dev with --profile" };
       }
       const next = args[i + 1];
       const { value, consumedNext } = takeValue(arg, next);
@@ -59,11 +64,11 @@ export function parseCliProfileArgs(argv: string[]): CliProfileParseResult {
         i += 1;
       }
       if (!value) {
-        return { kind: "error", error: "--profile requires a value" };
+        return { ok: false, error: "--profile requires a value" };
       }
       if (!isValidProfileName(value)) {
         return {
-          kind: "error",
+          ok: false,
           error: 'Invalid --profile (use letters, numbers, "_", "-" only)',
         };
       }
@@ -76,14 +81,11 @@ export function parseCliProfileArgs(argv: string[]): CliProfileParseResult {
       out.push(arg);
       continue;
     }
-    return { kind: "pass" };
-  });
 
-  if (!scanned.ok) {
-    return scanned;
+    out.push(arg);
   }
 
-  return { ok: true, profile, argv: scanned.argv };
+  return { ok: true, profile, argv: out };
 }
 
 function resolveProfileStateDir(

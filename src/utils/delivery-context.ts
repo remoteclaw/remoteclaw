@@ -90,13 +90,6 @@ export function formatConversationTarget(params: ConversationTargetParams): stri
     return undefined;
   }
   if (channel === "matrix") {
-    const parentConversationId =
-      typeof params.parentConversationId === "number" &&
-      Number.isFinite(params.parentConversationId)
-        ? String(Math.trunc(params.parentConversationId))
-        : typeof params.parentConversationId === "string"
-          ? normalizeOptionalString(params.parentConversationId)
-          : undefined;
     const roomId =
       parentConversationId && parentConversationId !== conversationId
         ? parentConversationId

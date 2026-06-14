@@ -668,21 +668,7 @@ function matchesBindingScope(match: NormalizedBindingMatch, scope: BindingScope)
       return false;
     }
   }
-  if (match.guildId && match.guildId !== scope.guildId) {
-    return false;
-  }
-  if (match.teamId && match.teamId !== scope.teamId) {
-    return false;
-  }
-  if (match.roles) {
-    for (const role of match.roles) {
-      if (scope.memberRoleIds.has(role)) {
-        return true;
-      }
-    }
-    return false;
-  }
-  return true;
+  return routeBindingScopeMatches(match, scope);
 }
 
 /**

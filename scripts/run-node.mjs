@@ -459,38 +459,56 @@ export async function runNodeMain(params = {}) {
 
   const buildRequirement = resolveBuildRequirement(deps);
   if (!buildRequirement.shouldBuild) {
-    if (!shouldSkipCleanWatchRuntimeSync(deps) && !syncRuntimeArtifacts(deps)) {
-      return 1;
+    if (!shouldSkipCleanWatchRuntimeSync(deps)) {
+      const synced = await withRunNodeBuildLock(deps, async () => await syncRuntimeArtifacts(deps));
+      if (!synced) {
+        return 1;
+      }
     }
     return await runRemoteClaw(deps);
   }
 
-  logRunner(
-    `Building TypeScript (dist is stale: ${buildRequirement.reason} - ${formatBuildReason(buildRequirement.reason)}).`,
-    deps,
-  );
-  const buildCmd = deps.execPath;
-  const buildArgs = compilerArgs;
-  const build = deps.spawn(buildCmd, buildArgs, {
-    cwd: deps.cwd,
-    env: deps.env,
-    stdio: "inherit",
-  });
+  // Serialize the build behind the artifact lock so concurrent run-node
+  // invocations don't clobber each other's TypeScript/runtime artifacts.
+  // Re-check the build requirement under the lock — another process may have
+  // produced a fresh dist while we waited to acquire it.
+  const buildExitCode = await withRunNodeBuildLock(deps, async () => {
+    const lockedBuildRequirement = resolveBuildRequirement(deps);
+    if (!lockedBuildRequirement.shouldBuild) {
+      return (await syncRuntimeArtifacts(deps)) ? 0 : 1;
+    }
 
-  const buildRes = await waitForSpawnedProcess(build, deps);
-  if (buildRes.exitSignal) {
-    return getSignalExitCode(buildRes.exitSignal);
+    logRunner(
+      `Building TypeScript (dist is stale: ${lockedBuildRequirement.reason} - ${formatBuildReason(lockedBuildRequirement.reason)}).`,
+      deps,
+    );
+    const buildCmd = deps.execPath;
+    const buildArgs = compilerArgs;
+    const build = deps.spawn(buildCmd, buildArgs, {
+      cwd: deps.cwd,
+      env: deps.env,
+      stdio: "inherit",
+    });
+
+    const buildRes = await waitForSpawnedProcess(build, deps);
+    if (buildRes.exitSignal) {
+      return getSignalExitCode(buildRes.exitSignal);
+    }
+    if (buildRes.forwardedSignal) {
+      return getSignalExitCode(buildRes.forwardedSignal);
+    }
+    if (buildRes.exitCode !== 0 && buildRes.exitCode !== null) {
+      return buildRes.exitCode;
+    }
+    if (!(await syncRuntimeArtifacts(deps))) {
+      return 1;
+    }
+    writeBuildStamp(deps);
+    return 0;
+  });
+  if (buildExitCode !== 0) {
+    return buildExitCode;
   }
-  if (buildRes.forwardedSignal) {
-    return getSignalExitCode(buildRes.forwardedSignal);
-  }
-  if (buildRes.exitCode !== 0 && buildRes.exitCode !== null) {
-    return buildRes.exitCode;
-  }
-  if (!syncRuntimeArtifacts(deps)) {
-    return 1;
-  }
-  writeBuildStamp(deps);
   return await runRemoteClaw(deps);
 }
 

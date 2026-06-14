@@ -11,6 +11,7 @@ import { resolveSessionAgentId } from "../../agents/agent-scope.js";
 import { resolveEffectiveMessagesConfig } from "../../agents/identity.js";
 import { normalizeChannelId } from "../../channels/plugins/index.js";
 import type { RemoteClawConfig } from "../../config/config.js";
+import { resolveSilentReplyPolicy } from "../../config/silent-reply.js";
 import { buildOutboundSessionContext } from "../../infra/outbound/session-context.js";
 import { INTERNAL_MESSAGE_CHANNEL, normalizeMessageChannel } from "../../utils/message-channel.js";
 import type { OriginatingChannelType } from "../templating.js";
@@ -78,6 +79,7 @@ export async function routeReply(params: RouteReplyParams): Promise<RouteReplyRe
     return { ok: true };
   }
   const normalizedChannel = normalizeMessageChannel(channel);
+  const channelId = normalizeChannelId(channel) ?? null;
   const resolvedAgentId = params.sessionKey
     ? resolveSessionAgentId({
         sessionKey: params.sessionKey,
@@ -98,9 +100,24 @@ export async function routeReply(params: RouteReplyParams): Promise<RouteReplyRe
     : cfg.messages?.responsePrefix === "auto"
       ? undefined
       : cfg.messages?.responsePrefix;
-  const normalized = normalizeReplyPayload(payload, {
-    responsePrefix,
-  });
+  // Silent-reply policy: when silence is disallowed on this surface, preserve the
+  // exact NO_REPLY token through normalization (instead of letting
+  // normalizeReplyPayload coerce/strip it). The fork drops the preserved token at
+  // the empty-reply skip below — the v4.20 rewrite-into-visible-text half of this
+  // feature lives in the reply-dispatcher path and is not yet wired here.
+  const policySessionKey = params.policySessionKey ?? params.sessionKey;
+  const shouldPreserveSilentPayload =
+    isSilentReplyPayloadText(payload.text) &&
+    resolveSilentReplyPolicy({
+      cfg,
+      sessionKey: policySessionKey,
+      surface: channelId ?? String(channel),
+    }) !== "allow";
+  const normalized = shouldPreserveSilentPayload
+    ? { ...payload, text: payload.text?.trim() || SILENT_REPLY_TOKEN }
+    : normalizeReplyPayload(payload, {
+        responsePrefix,
+      });
   if (!normalized) {
     return { ok: true };
   }
@@ -113,8 +130,10 @@ export async function routeReply(params: RouteReplyParams): Promise<RouteReplyRe
       : [];
   const replyToId = normalized.replyToId;
 
-  // Skip empty replies.
-  if (!text.trim() && mediaUrls.length === 0) {
+  // Skip empty replies, and exact silent tokens preserved above for a
+  // silence-disallowed surface (dropped here until the rewrite-to-visible half
+  // is wired — see the silent-reply policy note above).
+  if ((!text.trim() || isSilentReplyPayloadText(text)) && mediaUrls.length === 0) {
     return { ok: true };
   }
 
@@ -125,7 +144,6 @@ export async function routeReply(params: RouteReplyParams): Promise<RouteReplyRe
     };
   }
 
-  const channelId = normalizeChannelId(channel) ?? null;
   if (!channelId) {
     return { ok: false, error: `Unknown channel: ${String(channel)}` };
   }

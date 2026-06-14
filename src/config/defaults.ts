@@ -415,32 +415,6 @@ export function applyLoggingDefaults(cfg: RemoteClawConfig): RemoteClawConfig {
   };
 }
 
-function hasAnthropicDefaultSignal(cfg: RemoteClawConfig, env: NodeJS.ProcessEnv): boolean {
-  if (env.ANTHROPIC_API_KEY?.trim() || env.ANTHROPIC_OAUTH_TOKEN?.trim()) {
-    return true;
-  }
-  const profiles = cfg.auth?.profiles;
-  if (profiles) {
-    for (const profile of Object.values(profiles)) {
-      const provider = normalizeProviderId(profile?.provider);
-      if (provider === "anthropic" || provider === "claude-cli") {
-        return true;
-      }
-    }
-  }
-  const order = cfg.auth?.order;
-  if (!order) {
-    return false;
-  }
-  return Object.keys(order).some((provider) => {
-    const normalizedProvider = normalizeProviderId(provider);
-    if (normalizedProvider !== "anthropic" && normalizedProvider !== "claude-cli") {
-      return false;
-    }
-    return (order as Record<string, unknown>)[provider] !== undefined;
-  });
-}
-
 export function applyContextPruningDefaults(cfg: RemoteClawConfig): RemoteClawConfig {
   const defaults = cfg.agents?.defaults;
   if (!defaults) {

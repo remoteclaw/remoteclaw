@@ -61,7 +61,6 @@ export async function messageCommand(
     return;
   }
 
-  const { formatMessageCliText } = await import("./message-format.js");
   for (const line of formatMessageCliText(result)) {
     runtime.log(line);
   }

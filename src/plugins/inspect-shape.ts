@@ -1,18 +1,10 @@
 import type { PluginRegistry } from "./registry.js";
-import { hasKind } from "./slots.js";
 
-export type PluginCapabilityKind =
-  | "cli-backend"
-  | "text-inference"
-  | "speech"
-  | "realtime-transcription"
-  | "realtime-voice"
-  | "media-understanding"
-  | "image-generation"
-  | "web-search"
-  | "agent-harness"
-  | "context-engine"
-  | "channel";
+// RemoteClaw fork keeps cli-backend (CLI agents), generic providers, and
+// channels. The model-provider capability kinds (speech, realtime-*,
+// media-understanding, image-generation, web-search, agent-harness,
+// context-engine) were gutted with the provider ecosystem.
+export type PluginCapabilityKind = "cli-backend" | "text-inference" | "channel";
 
 export type PluginInspectShape =
   | "hook-only"
@@ -39,20 +31,6 @@ export function buildPluginCapabilityEntries(
   return [
     { kind: "cli-backend" as const, ids: plugin.cliBackendIds ?? [] },
     { kind: "text-inference" as const, ids: plugin.providerIds },
-    { kind: "speech" as const, ids: plugin.speechProviderIds },
-    { kind: "realtime-transcription" as const, ids: plugin.realtimeTranscriptionProviderIds },
-    { kind: "realtime-voice" as const, ids: plugin.realtimeVoiceProviderIds },
-    { kind: "media-understanding" as const, ids: plugin.mediaUnderstandingProviderIds },
-    { kind: "image-generation" as const, ids: plugin.imageGenerationProviderIds },
-    { kind: "web-search" as const, ids: plugin.webSearchProviderIds },
-    { kind: "agent-harness" as const, ids: plugin.agentHarnessIds },
-    {
-      kind: "context-engine" as const,
-      ids:
-        plugin.status === "loaded" && hasKind(plugin.kind, "context-engine")
-          ? (plugin.contextEngineIds ?? [])
-          : [],
-    },
     { kind: "channel" as const, ids: plugin.channelIds },
   ].filter((entry) => entry.ids.length > 0);
 }

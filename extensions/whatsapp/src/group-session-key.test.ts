@@ -10,7 +10,7 @@ describe("resolveWhatsAppGroupSessionRoute", () => {
       sessionKey: "agent:main:whatsapp:group:123@g.us",
       mainSessionKey: "agent:main:main",
       lastRoutePolicy: "session",
-      matchedBy: "default",
+      matchedBy: "fallback.soleAgent",
     } as const;
 
     expect(resolveWhatsAppGroupSessionRoute(route)).toEqual(route);
@@ -24,7 +24,7 @@ describe("resolveWhatsAppGroupSessionRoute", () => {
       sessionKey: "agent:main:whatsapp:group:123@g.us",
       mainSessionKey: "agent:main:main",
       lastRoutePolicy: "session",
-      matchedBy: "default",
+      matchedBy: "fallback.soleAgent",
     } as const;
 
     expect(resolveWhatsAppGroupSessionRoute(route)).toEqual({

@@ -96,21 +96,14 @@ export function applyGroupGating(params: ApplyGroupGatingParams) {
     params.msg.senderName,
   );
 
-  const baseMentionConfig = {
-    ...params.baseMentionConfig,
-    allowFrom: inboundPolicy.configuredAllowFrom,
-  };
-  const mentionConfig = {
-    ...buildMentionConfig(params.cfg, params.agentId),
-    allowFrom: inboundPolicy.configuredAllowFrom,
-  };
+  const mentionConfig = buildMentionConfig(params.cfg, params.agentId);
   const commandBody = stripMentionsForCommand(
     params.msg.body,
     mentionConfig.mentionRegexes,
     params.msg.selfE164,
   );
   const activationCommand = parseActivationCommand(commandBody);
-  const owner = isOwnerSender(baseMentionConfig, params.msg);
+  const owner = isOwnerSender(params.baseMentionConfig, params.msg);
   const shouldBypassMention = owner && hasControlCommand(commandBody, params.cfg);
 
   if (activationCommand.hasCommand && !owner) {
@@ -130,9 +123,8 @@ export function applyGroupGating(params: ApplyGroupGatingParams) {
     "group mention debug",
   );
   const wasMentioned = mentionDebug.wasMentioned;
-  const activation = await resolveGroupActivationFor({
+  const activation = resolveGroupActivationFor({
     cfg: params.cfg,
-    accountId: inboundPolicy.account.accountId,
     agentId: params.agentId,
     sessionKey: params.sessionKey,
     conversationId: params.conversationId,

@@ -69,7 +69,7 @@ function shouldUseDiscoveryCache(env: NodeJS.ProcessEnv): boolean {
   return resolveDiscoveryCacheMs(env) > 0;
 }
 
-function buildScopedDiscoveryCacheKey(params: {
+function buildDiscoveryCacheKey(params: {
   workspaceDir?: string;
   extraPaths?: string[];
   ownershipUid?: number | null;
@@ -726,9 +726,13 @@ export function discoverRemoteClawPlugins(params: {
     diagnostics,
     seen,
   });
-  const result = createDiscoveryResult();
-  const seenSources = new Set<string>();
-  mergeDiscoveryResult(result, scopedResult, seenSources);
-  mergeDiscoveryResult(result, sharedResult, seenSources);
+
+  const result = { candidates, diagnostics };
+  if (cacheEnabled) {
+    const ttl = resolveDiscoveryCacheMs(env);
+    if (ttl > 0) {
+      discoveryCache.set(cacheKey, { expiresAt: Date.now() + ttl, result });
+    }
+  }
   return result;
 }

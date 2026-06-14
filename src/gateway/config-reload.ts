@@ -147,32 +147,6 @@ export function startGatewayConfigReloader(opts: {
     return true;
   };
 
-  const recoverAndReadSnapshot = async (
-    snapshot: ConfigFileSnapshot,
-    reason: string,
-  ): Promise<ConfigFileSnapshot | null> => {
-    if (!opts.recoverSnapshot) {
-      return null;
-    }
-    const recovered = await opts.recoverSnapshot(snapshot, reason);
-    if (!recovered) {
-      return null;
-    }
-    opts.log.warn(`config reload restored last-known-good config after ${reason}`);
-    const nextSnapshot = await opts.readSnapshot();
-    if (!nextSnapshot.valid) {
-      const issues = formatConfigIssueLines(nextSnapshot.issues, "").join(", ");
-      opts.log.warn(`config reload recovery snapshot is invalid: ${issues}`);
-      return null;
-    }
-    try {
-      await opts.onRecovered?.({ reason, snapshot, recoveredSnapshot: nextSnapshot });
-    } catch (err) {
-      opts.log.warn(`config reload recovery notice failed: ${String(err)}`);
-    }
-    return nextSnapshot;
-  };
-
   const applySnapshot = async (nextConfig: RemoteClawConfig) => {
     const changedPaths = diffConfigPaths(currentConfig, nextConfig);
     currentConfig = nextConfig;
@@ -205,32 +179,6 @@ export function startGatewayConfigReloader(opts: {
     await opts.onHotReload(plan, nextConfig);
   };
 
-  const promoteAcceptedSnapshot = async (snapshot: ConfigFileSnapshot, reason: string) => {
-    if (!opts.promoteSnapshot || !snapshot.exists || !snapshot.valid) {
-      return;
-    }
-    try {
-      await opts.promoteSnapshot(snapshot, reason);
-    } catch (err) {
-      opts.log.warn(`config reload last-known-good promotion failed: ${String(err)}`);
-    }
-  };
-
-  const promoteAcceptedInProcessWrite = async (persistedHash: string) => {
-    if (!opts.promoteSnapshot) {
-      return;
-    }
-    try {
-      const snapshot = await opts.readSnapshot();
-      if (snapshot.hash !== persistedHash || !snapshot.valid) {
-        return;
-      }
-      await promoteAcceptedSnapshot(snapshot, "in-process-write");
-    } catch (err) {
-      opts.log.warn(`config reload in-process last-known-good promotion failed: ${String(err)}`);
-    }
-  };
-
   const runReload = async () => {
     if (stopped) {
       return;
@@ -249,16 +197,10 @@ export function startGatewayConfigReloader(opts: {
       if (handleMissingSnapshot(snapshot)) {
         return;
       }
-      if (!snapshot.valid) {
-        const recoveredSnapshot = await recoverAndReadSnapshot(snapshot, "invalid-config");
-        if (!recoveredSnapshot) {
-          handleInvalidSnapshot(snapshot);
-          return;
-        }
-        snapshot = recoveredSnapshot;
+      if (handleInvalidSnapshot(snapshot)) {
+        return;
       }
       await applySnapshot(snapshot.config);
-      await promoteAcceptedSnapshot(snapshot, "valid-config");
     } catch (err) {
       opts.log.error(`config reload failed: ${String(err)}`);
     } finally {

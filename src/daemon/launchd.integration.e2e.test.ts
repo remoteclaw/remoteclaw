@@ -114,15 +114,32 @@ describeLaunchdIntegration("launchd integration", () => {
   }, 60_000);
 
   it("restarts launchd service and keeps it running with a new pid", async () => {
-    const launchEnv = launchEnvOrThrow(env);
+    if (!env) {
+      throw new Error("launchd integration env was not initialized");
+    }
+    const launchEnv = env;
     try {
-      await initializeLaunchdRuntime(launchEnv, stdout);
+      await withTimeout({
+        run: async () => {
+          await installLaunchAgent({
+            env: launchEnv,
+            stdout,
+            programArguments: [process.execPath, "-e", "setInterval(() => {}, 1000);"],
+          });
+          await waitForRunningRuntime({ env: launchEnv });
+        },
+        timeoutMs: STARTUP_TIMEOUT_MS,
+        message: "Timed out initializing launchd integration runtime",
+      });
     } catch {
       // Best-effort integration check only; skip when launchctl is unstable in CI.
       return;
     }
     const before = await waitForRunningRuntime({ env: launchEnv });
     await restartLaunchAgent({ env: launchEnv, stdout });
-    await expectRuntimePidReplaced({ env: launchEnv, previousPid: before.pid });
+    const after = await waitForRunningRuntime({ env: launchEnv, pidNot: before.pid });
+    expect(after.pid).toBeGreaterThan(1);
+    expect(after.pid).not.toBe(before.pid);
+    await fs.access(resolveLaunchAgentPlistPath(launchEnv));
   }, 60_000);
 });

@@ -15,10 +15,6 @@ import { sendMessage, resolveChatUserId } from "./client.js";
 import { validateToken, authorizeUserForDm, sanitizeInput, RateLimiter } from "./security.js";
 import type { SynologyWebhookPayload, ResolvedSynologyChatAccount } from "./types.js";
 
-function normalizeLowercaseStringOrEmpty(value: unknown): string {
-  return typeof value === "string" ? value.trim().toLowerCase() : "";
-}
-
 // One rate limiter per account, created lazily
 const rateLimiters = new Map<string, RateLimiter>();
 const invalidTokenRateLimiters = new Map<string, InvalidTokenRateLimiter>();
@@ -139,10 +135,7 @@ export function getSynologyWebhookRateLimiterCountForTest(): number {
 }
 
 /** Read the full request body as a string. */
-async function readBody(
-  req: IncomingMessage,
-  timeoutMs = PREAUTH_BODY_TIMEOUT_MS,
-): Promise<
+async function readBody(req: IncomingMessage): Promise<
   | { ok: true; body: string }
   | {
       ok: false;
@@ -337,7 +330,6 @@ export interface WebhookHandlerDeps {
     warn: (...args: unknown[]) => void;
     error: (...args: unknown[]) => void;
   };
-  bodyTimeoutMs?: number;
 }
 
 /**
@@ -488,7 +480,6 @@ export function createWebhookHandler(deps: WebhookHandlerDeps) {
         accountId: account.accountId,
         commandAuthorized: auth.allowed,
         chatUserId: replyUserId,
-        bodyTimeoutMs: deps.bodyTimeoutMs,
       });
 
       const timeoutPromise = new Promise<null>((_, reject) =>

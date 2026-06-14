@@ -70,24 +70,14 @@ export async function prepareRestartScript(
     if (platform === "linux") {
       const unitName = resolveSystemdUnit(env);
       const escaped = shellEscape(unitName);
-      const logSetup = renderPosixRestartLogSetup({ ...process.env, ...env });
       filename = `remoteclaw-restart-${timestamp}.sh`;
       scriptContent = `#!/bin/sh
 # Standalone restart script — survives parent process termination.
 # Wait briefly to ensure file locks are released after update.
 sleep 1
-${logSetup}
-printf '[%s] remoteclaw restart attempt source=update target=%s\\n' "$(date -u +%FT%TZ)" '${escaped}' >&2
-if systemctl --user restart '${escaped}'; then
-  status=0
-  printf '[%s] remoteclaw restart done source=update\\n' "$(date -u +%FT%TZ)" >&2
-else
-  status=$?
-  printf '[%s] remoteclaw restart failed source=update status=%s\\n' "$(date -u +%FT%TZ)" "$status" >&2
-fi
+systemctl --user restart '${escaped}'
 # Self-cleanup
 rm -f "$0"
-exit "$status"
 `;
     } else if (platform === "darwin") {
       const label = resolveLaunchdLabel(env);
@@ -99,36 +89,21 @@ exit "$status"
       const home = env.HOME?.trim() || process.env.HOME || os.homedir();
       const plistPath = path.join(home, "Library", "LaunchAgents", `${label}.plist`);
       const escapedPlistPath = shellEscape(plistPath);
-      const logSetup = renderPosixRestartLogSetup({ ...process.env, ...env });
       filename = `remoteclaw-restart-${timestamp}.sh`;
       scriptContent = `#!/bin/sh
 # Standalone restart script — survives parent process termination.
 # Wait briefly to ensure file locks are released after update.
 sleep 1
-# Capture launchctl output so bootstrap/kickstart failures leave a durable
-# audit trail. Log setup is best-effort: restart must still run if the log path
-# is temporarily unavailable.
-${logSetup}
-printf '[%s] remoteclaw restart attempt source=update target=%s\\n' "$(date -u +%FT%TZ)" '${shellEscapeRestartLogValue(label)}' >&2
 # Try kickstart first (works when the service is still registered).
 # If it fails (e.g. after bootout), clear any persisted disabled state,
-# then re-register via bootstrap and kickstart. The final status is captured
-# before self-cleanup so a genuine failure remains observable.
-status=0
-if ! launchctl kickstart -k 'gui/${uid}/${escaped}'; then
-  launchctl enable 'gui/${uid}/${escaped}'
-  launchctl bootstrap 'gui/${uid}' '${escapedPlistPath}'
-  launchctl kickstart -k 'gui/${uid}/${escaped}'
-  status=$?
+# then re-register via bootstrap and kickstart.
+if ! launchctl kickstart -k 'gui/${uid}/${escaped}' 2>/dev/null; then
+  launchctl enable 'gui/${uid}/${escaped}' 2>/dev/null
+  launchctl bootstrap 'gui/${uid}' '${escapedPlistPath}' 2>/dev/null
+  launchctl kickstart -k 'gui/${uid}/${escaped}' 2>/dev/null || true
 fi
-if [ "$status" -eq 0 ]; then
-  printf '[%s] remoteclaw restart done source=update\\n' "$(date -u +%FT%TZ)" >&2
-else
-  printf '[%s] remoteclaw restart failed source=update status=%s\\n' "$(date -u +%FT%TZ)" "$status" >&2
-fi
-# Self-cleanup (log is retained under the RemoteClaw state logs directory).
+# Self-cleanup
 rm -f "$0"
-exit "$status"
 `;
     } else if (platform === "win32") {
       const taskName = resolveWindowsTaskName(env);
@@ -137,15 +112,12 @@ exit "$status"
       }
       const port =
         Number.isFinite(gatewayPort) && gatewayPort > 0 ? gatewayPort : DEFAULT_GATEWAY_PORT;
-      const restartLog = renderCmdRestartLogSetup({ ...process.env, ...env });
       filename = `remoteclaw-restart-${timestamp}.bat`;
       scriptContent = `@echo off
 REM Standalone restart script — survives parent process termination.
 REM Wait briefly to ensure file locks are released after update.
 timeout /t 2 /nobreak >nul
-${restartLog.lines.join("\r\n")}
->> ${restartLog.quotedLogPath} 2>&1 echo [%DATE% %TIME%] remoteclaw restart attempt source=update target=${taskName}
-schtasks /End /TN "${taskName}" >> ${restartLog.quotedLogPath} 2>&1
+schtasks /End /TN "${taskName}"
 REM Poll for gateway port release before rerun; force-kill listener if stuck.
 set /a attempts=0
 :wait_for_port_release
@@ -157,20 +129,13 @@ timeout /t 1 /nobreak >nul
 goto wait_for_port_release
 :force_kill_listener
 for /f "tokens=5" %%P in ('netstat -ano ^| findstr /R /C:":${port} .*LISTENING"') do (
-  taskkill /F /PID %%P >> ${restartLog.quotedLogPath} 2>&1
+  taskkill /F /PID %%P >nul 2>&1
   goto port_released
 )
 :port_released
-schtasks /Run /TN "${taskName}" >> ${restartLog.quotedLogPath} 2>&1
-set "status=%ERRORLEVEL%"
-if not "%status%"=="0" (
-  >> ${restartLog.quotedLogPath} 2>&1 echo [%DATE% %TIME%] remoteclaw restart failed source=update status=%status%
-) else (
-  >> ${restartLog.quotedLogPath} 2>&1 echo [%DATE% %TIME%] remoteclaw restart done source=update
-)
+schtasks /Run /TN "${taskName}"
 REM Self-cleanup
 del "%~f0"
-exit /b %status%
 `;
     } else {
       return null;

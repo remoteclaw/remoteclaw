@@ -92,7 +92,7 @@ export async function runSessionsSendA2AFlow(params: {
           message: incomingMessage,
           extraSystemPrompt: replyPrompt,
           timeoutMs: params.announceTimeoutMs,
-          lane: resolveNestedAgentLaneForSession(currentSessionKey),
+          lane: AGENT_LANE_NESTED,
           sourceSessionKey: nextSessionKey,
           sourceChannel:
             nextSessionKey === params.requesterSessionKey ? params.requesterChannel : targetChannel,
@@ -123,7 +123,7 @@ export async function runSessionsSendA2AFlow(params: {
       message: "Agent-to-agent announce step.",
       extraSystemPrompt: announcePrompt,
       timeoutMs: params.announceTimeoutMs,
-      lane: resolveNestedAgentLaneForSession(params.targetSessionKey),
+      lane: AGENT_LANE_NESTED,
       sourceSessionKey: params.requesterSessionKey,
       sourceChannel: params.requesterChannel,
       sourceTool: "sessions_send",

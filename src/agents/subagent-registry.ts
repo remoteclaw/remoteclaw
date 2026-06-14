@@ -1155,6 +1155,10 @@ export function releaseSubagentRun(runId: string) {
   }
 }
 
+function findRunIdsByChildSessionKey(childSessionKey: string): string[] {
+  return findRunIdsByChildSessionKeyFromRuns(subagentRuns, childSessionKey);
+}
+
 export function resolveRequesterForChildSession(childSessionKey: string): {
   requesterSessionKey: string;
   requesterOrigin?: DeliveryContext;
@@ -1166,10 +1170,9 @@ export function resolveRequesterForChildSession(childSessionKey: string): {
   if (!resolved) {
     return null;
   }
-  const requesterOrigin = normalizeDeliveryContext(resolved.requesterOrigin);
   return {
     requesterSessionKey: resolved.requesterSessionKey,
-    requesterOrigin,
+    requesterOrigin: normalizeDeliveryContext(resolved.requesterOrigin),
   };
 }
 

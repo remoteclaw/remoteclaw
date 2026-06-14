@@ -13,15 +13,7 @@ import {
   resolveSlackAttachmentContent,
   resolveSlackMedia,
   resolveSlackThreadHistory,
-  resolveSlackThreadStarter,
-  resetSlackThreadStarterCacheForTest,
 } from "./media.js";
-
-vi.mock("remoteclaw/plugin-sdk/runtime-env", () => ({
-  logVerbose: vi.fn(),
-  danger: (message: string) => message,
-  shouldLogVerbose: () => false,
-}));
 
 // Store original fetch
 const originalFetch = globalThis.fetch;
@@ -774,8 +766,7 @@ describe("resolveSlackThreadHistory", () => {
     expect(replies).not.toHaveBeenCalled();
   });
 
-  it("returns empty and surfaces the error via logVerbose when Slack API throws", async () => {
-    vi.mocked(logVerbose).mockClear();
+  it("returns empty when Slack API throws", async () => {
     const replies = vi.fn().mockRejectedValueOnce(new Error("slack down"));
     const client = {
       conversations: { replies },
@@ -789,125 +780,5 @@ describe("resolveSlackThreadHistory", () => {
     });
 
     expect(result).toEqual([]);
-    expect(vi.mocked(logVerbose)).toHaveBeenCalledWith(
-      expect.stringContaining("slack thread history fetch failed"),
-    );
-    expect(vi.mocked(logVerbose)).toHaveBeenCalledWith(expect.stringContaining("slack down"));
-    expect(vi.mocked(logVerbose)).toHaveBeenCalledWith(expect.stringContaining("channel=C1"));
-  });
-});
-
-describe("resolveSlackThreadStarter", () => {
-  beforeEach(() => {
-    resetSlackThreadStarterCacheForTest();
-    vi.mocked(logVerbose).mockClear();
-  });
-
-  it("returns the starter message when the Slack API succeeds", async () => {
-    const replies = vi.fn().mockResolvedValueOnce({
-      messages: [{ text: "hello thread", user: "U1", ts: "1.000" }],
-    });
-    const client = {
-      conversations: { replies },
-    } as unknown as Parameters<typeof resolveSlackThreadStarter>[0]["client"];
-
-    const result = await resolveSlackThreadStarter({
-      channelId: "C1",
-      threadTs: "1.000",
-      client,
-    });
-
-    expect(result).toEqual({
-      text: "hello thread",
-      userId: "U1",
-      botId: undefined,
-      ts: "1.000",
-      files: undefined,
-    });
-    expect(vi.mocked(logVerbose)).not.toHaveBeenCalled();
-  });
-
-  it("returns null when the starter message has no text or files", async () => {
-    const replies = vi.fn().mockResolvedValueOnce({ messages: [{ text: "   ", user: "U1" }] });
-    const client = {
-      conversations: { replies },
-    } as unknown as Parameters<typeof resolveSlackThreadStarter>[0]["client"];
-
-    const result = await resolveSlackThreadStarter({
-      channelId: "C1",
-      threadTs: "1.000",
-      client,
-    });
-
-    expect(result).toBeNull();
-    expect(vi.mocked(logVerbose)).not.toHaveBeenCalled();
-  });
-
-  it("returns a placeholder starter when the root message only has files", async () => {
-    const replies = vi.fn().mockResolvedValueOnce({
-      messages: [
-        {
-          text: "   ",
-          user: "U1",
-          ts: "1.000",
-          files: [{ name: "root.png", mimetype: "image/png" }],
-        },
-      ],
-    });
-    const client = {
-      conversations: { replies },
-    } as unknown as Parameters<typeof resolveSlackThreadStarter>[0]["client"];
-
-    const result = await resolveSlackThreadStarter({
-      channelId: "C1",
-      threadTs: "1.000",
-      client,
-    });
-
-    expect(result).toEqual({
-      text: "[attached: root.png]",
-      userId: "U1",
-      botId: undefined,
-      ts: "1.000",
-      files: [{ name: "root.png", mimetype: "image/png" }],
-    });
-    expect(vi.mocked(logVerbose)).not.toHaveBeenCalled();
-  });
-
-  it("returns null and surfaces the error via logVerbose when Slack API throws", async () => {
-    const replies = vi.fn().mockRejectedValueOnce(new Error("not_in_channel"));
-    const client = {
-      conversations: { replies },
-    } as unknown as Parameters<typeof resolveSlackThreadStarter>[0]["client"];
-
-    const result = await resolveSlackThreadStarter({
-      channelId: "C42",
-      threadTs: "9.999",
-      client,
-    });
-
-    expect(result).toBeNull();
-    expect(vi.mocked(logVerbose)).toHaveBeenCalledWith(
-      expect.stringContaining("slack thread starter fetch failed"),
-    );
-    expect(vi.mocked(logVerbose)).toHaveBeenCalledWith(expect.stringContaining("not_in_channel"));
-    expect(vi.mocked(logVerbose)).toHaveBeenCalledWith(expect.stringContaining("channel=C42"));
-    expect(vi.mocked(logVerbose)).toHaveBeenCalledWith(expect.stringContaining("ts=9.999"));
-  });
-
-  it("surfaces non-Error thrown values via logVerbose", async () => {
-    const replies = vi.fn().mockRejectedValueOnce("rate_limited");
-    const client = {
-      conversations: { replies },
-    } as unknown as Parameters<typeof resolveSlackThreadStarter>[0]["client"];
-
-    const result = await resolveSlackThreadStarter({
-      channelId: "C1",
-      threadTs: "1.000",
-      client,
-    });
-
-    expect(result).toBeNull();
-    expect(vi.mocked(logVerbose)).toHaveBeenCalledWith(expect.stringContaining("rate_limited"));
   });
 });

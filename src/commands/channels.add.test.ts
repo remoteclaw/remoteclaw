@@ -8,7 +8,7 @@ let channelsAddCommand: typeof import("./channels.js").channelsAddCommand;
 
 describe("channelsAddCommand", () => {
   beforeAll(async () => {
-    ({ channelsAddCommand } = await import("./channels/add.js"));
+    ({ channelsAddCommand } = await import("./channels.js"));
   });
 
   beforeEach(async () => {
@@ -21,39 +21,40 @@ describe("channelsAddCommand", () => {
     setDefaultChannelPluginRegistryForTests();
   });
 
-  it("runs channel lifecycle hooks only when account config changes", async () => {
+  it("clears telegram update offsets when the token changes", async () => {
     configMocks.readConfigFileSnapshot.mockResolvedValue({
       ...baseConfigSnapshot,
       config: {
         channels: {
-          "lifecycle-chat": { token: "old-token", enabled: true },
+          telegram: { botToken: "old-token", enabled: true },
         },
       },
     });
 
     await channelsAddCommand(
-      { channel: "lifecycle-chat", account: "default", token: "new-token" },
+      { channel: "telegram", account: "default", token: "new-token" },
       runtime,
       {
         hasFlags: true,
       },
     );
 
-    expect(lifecycleMocks.onAccountConfigChanged).toHaveBeenCalledTimes(1);
-    expect(lifecycleMocks.onAccountConfigChanged).toHaveBeenCalledWith({ accountId: "default" });
+    expect(offsetMocks.deleteTelegramUpdateOffset).toHaveBeenCalledTimes(1);
+    expect(offsetMocks.deleteTelegramUpdateOffset).toHaveBeenCalledWith({ accountId: "default" });
+  });
 
-    lifecycleMocks.onAccountConfigChanged.mockClear();
+  it("does not clear telegram update offsets when the token is unchanged", async () => {
     configMocks.readConfigFileSnapshot.mockResolvedValue({
       ...baseConfigSnapshot,
       config: {
         channels: {
-          "lifecycle-chat": { token: "same-token", enabled: true },
+          telegram: { botToken: "same-token", enabled: true },
         },
       },
     });
 
     await channelsAddCommand(
-      { channel: "lifecycle-chat", account: "default", token: "same-token" },
+      { channel: "telegram", account: "default", token: "same-token" },
       runtime,
       {
         hasFlags: true,

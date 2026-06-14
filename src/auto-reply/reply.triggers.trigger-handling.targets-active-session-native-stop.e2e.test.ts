@@ -16,7 +16,6 @@ import {
   withTempHome,
 } from "./reply.triggers.trigger-handling.test-harness.js";
 import { enqueueFollowupRun, getFollowupQueueDepth, type FollowupRun } from "./reply/queue.js";
-import type { MsgContext } from "./templating.js";
 import { HEARTBEAT_TOKEN } from "./tokens.js";
 
 // Session compaction and abort stubs — no-op since the embedded Pi runner was removed.
@@ -56,111 +55,6 @@ function maybeReplyText(reply: Awaited<ReturnType<typeof getReplyFromConfig>>) {
 
 function mockEmbeddedOkPayload() {
   return mockRunAgentOk("ok");
-}
-
-function mockRunEmbeddedPiAgentText(text: string, durationMs: number) {
-  const runEmbeddedPiAgentMock = getRunEmbeddedPiAgentMock();
-  runEmbeddedPiAgentMock.mockReset();
-  runEmbeddedPiAgentMock.mockResolvedValue({
-    payloads: [{ text }],
-    meta: {
-      durationMs,
-      agentMeta: { sessionId: "s", provider: "p", model: "m" },
-    },
-  });
-  return runEmbeddedPiAgentMock;
-}
-
-async function writeDailyMemoryNotes(
-  workspaceDir: string,
-  notes: Array<{ stamp: string; text: string }>,
-) {
-  const memoryDir = join(workspaceDir, "memory");
-  await fs.mkdir(memoryDir, { recursive: true });
-  for (const note of notes) {
-    await fs.writeFile(join(memoryDir, `${note.stamp}.md`), note.text, "utf-8");
-  }
-}
-
-async function seedTargetSession(storePath: string, targetSessionKey: string) {
-  await fs.writeFile(
-    storePath,
-    JSON.stringify({
-      [targetSessionKey]: {
-        sessionId: "session-target",
-        updatedAt: Date.now(),
-      },
-    }),
-  );
-}
-
-function makeNativeTelegramCommandMessage(params: {
-  body: string;
-  slashSessionKey: string;
-  targetSessionKey: string;
-}): MsgContext {
-  return {
-    Body: params.body,
-    ...TELEGRAM_DIRECT_MESSAGE,
-    SessionKey: params.slashSessionKey,
-    CommandSource: "native",
-    CommandTargetSessionKey: params.targetSessionKey,
-    CommandAuthorized: true,
-  };
-}
-
-function makeTelegramSessionMessage(body: string, sessionKey: string) {
-  return {
-    Body: body,
-    ...TELEGRAM_DIRECT_MESSAGE,
-    SessionKey: sessionKey,
-  };
-}
-
-function makeAuthorizedSmsCommandMessage(body: string) {
-  return {
-    Body: body,
-    From: "+1003",
-    To: "+2000",
-    CommandAuthorized: true,
-  };
-}
-
-function makeStartupContextCfg(home: string, startupContext?: { applyOn: Array<"new" | "reset"> }) {
-  const cfg = makeCfg(home);
-  cfg.agents ??= {};
-  cfg.agents.defaults ??= {};
-  cfg.agents.defaults.userTimezone = TEST_TIME_ZONE;
-  if (startupContext) {
-    cfg.agents.defaults.startupContext = startupContext;
-  }
-  return cfg;
-}
-
-async function runAuthorizedSmsCommand(body: string, cfg: ReturnType<typeof makeCfg>) {
-  return await getReplyFromConfig(makeAuthorizedSmsCommandMessage(body), {}, cfg);
-}
-
-async function expectNextRunUsesTargetSession(
-  params: {
-    cfg: ReturnType<typeof makeCfg>;
-    targetSessionKey: string;
-    runEmbeddedPiAgentMock: ReturnType<typeof getRunEmbeddedPiAgentMock>;
-  },
-  expected: Record<string, unknown>,
-) {
-  mockRunEmbeddedPiAgentText("ok", 5);
-
-  await getReplyFromConfig(
-    makeTelegramSessionMessage("hi", params.targetSessionKey),
-    {},
-    params.cfg,
-  );
-
-  expect(params.runEmbeddedPiAgentMock).toHaveBeenCalledOnce();
-  expect(params.runEmbeddedPiAgentMock.mock.calls[0]?.[0]).toEqual(
-    expect.objectContaining(expected),
-  );
 }
 
 async function writeStoredModelOverride(cfg: ReturnType<typeof makeCfg>): Promise<void> {

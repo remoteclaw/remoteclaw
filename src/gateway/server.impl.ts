@@ -14,7 +14,6 @@ import {
   isNixMode,
   loadConfig,
   migrateLegacyConfig,
-  promoteConfigSnapshotToLastKnownGood,
   readConfigFileSnapshot,
   writeConfigFile,
 } from "../config/config.js";
@@ -115,34 +114,6 @@ const logWsControl = log.child("ws");
 const gatewayRuntime = runtimeForLogger(log);
 const canvasRuntime = runtimeForLogger(logCanvas);
 
-function createGatewayStartupTrace() {
-  const enabled = isTruthyEnvValue(process.env.REMOTECLAW_GATEWAY_STARTUP_TRACE);
-  const started = performance.now();
-  let last = started;
-  const emit = (name: string, durationMs: number, totalMs: number) => {
-    if (enabled) {
-      log.info(`startup trace: ${name} ${durationMs.toFixed(1)}ms total=${totalMs.toFixed(1)}ms`);
-    }
-  };
-  return {
-    mark(name: string) {
-      const now = performance.now();
-      emit(name, now - last, now - started);
-      last = now;
-    },
-    async measure<T>(name: string, run: () => Promise<T> | T): Promise<T> {
-      const before = performance.now();
-      try {
-        return await run();
-      } finally {
-        const now = performance.now();
-        emit(name, now - before, now - started);
-        last = now;
-      }
-    },
-  };
-}
-
 type AuthRateLimitConfig = Parameters<typeof createAuthRateLimiter>[0];
 
 function createGatewayAuthRateLimiters(rateLimitConfig: AuthRateLimitConfig | undefined): {
@@ -218,7 +189,7 @@ export async function startGatewayServer(
   opts: GatewayServerOptions = {},
 ): Promise<GatewayServer> {
   const minimalTestGateway =
-    isVitestRuntimeEnv() && process.env.REMOTECLAW_TEST_MINIMAL_GATEWAY === "1";
+    process.env.VITEST === "1" && process.env.REMOTECLAW_TEST_MINIMAL_GATEWAY === "1";
 
   // Ensure all default port derivations (browser/canvas) see the actual runtime port.
   process.env.REMOTECLAW_GATEWAY_PORT = String(port);
@@ -230,7 +201,6 @@ export async function startGatewayServer(
     key: "REMOTECLAW_RAW_STREAM_PATH",
     description: "raw stream log path override",
   });
-  const startupTrace = createGatewayStartupTrace();
 
   let configSnapshot = await readConfigFileSnapshot();
   if (configSnapshot.legacyIssues.length > 0) {
@@ -417,14 +387,11 @@ export async function startGatewayServer(
 
   const deps = createDefaultDeps();
   let canvasHostServer: CanvasHostServer | null = null;
-  const gatewayTls = await startupTrace.measure("tls.runtime", () =>
-    loadGatewayTlsRuntime(cfgAtStart.gateway?.tls, log.child("tls")),
-  );
+  const gatewayTls = await loadGatewayTlsRuntime(cfgAtStart.gateway?.tls, log.child("tls"));
   if (cfgAtStart.gateway?.tls?.enabled && !gatewayTls.enabled) {
     throw new Error(gatewayTls.error ?? "gateway tls: failed to enable");
   }
   const serverStartedAt = Date.now();
-  let startupSidecarsReady = minimalTestGateway;
   const channelManager = createChannelManager({
     loadConfig,
     channelLogs,
@@ -434,14 +401,12 @@ export async function startGatewayServer(
   const getReadiness = createReadinessChecker({
     channelManager,
     startedAt: serverStartedAt,
-    getStartupPending: () => !startupSidecarsReady,
   });
   const {
     canvasHost,
     httpServer,
     httpServers,
     httpBindHosts,
-    startListening,
     wss,
     clients,
     broadcast,

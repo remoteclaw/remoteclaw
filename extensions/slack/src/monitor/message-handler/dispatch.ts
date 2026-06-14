@@ -70,29 +70,6 @@ function shouldUseStreaming(params: {
   return true;
 }
 
-export async function resolveSlackStreamRecipientTeamId(params: {
-  client: Pick<PreparedSlackMessage["ctx"]["app"]["client"], "users">;
-  token: string;
-  userId?: PreparedSlackMessage["message"]["user"];
-  fallbackTeamId?: string;
-}): Promise<string | undefined> {
-  if (params.userId) {
-    try {
-      const info = await params.client.users.info({
-        token: params.token,
-        user: params.userId,
-      });
-      const teamId = info.user?.team_id ?? info.user?.profile?.team;
-      if (teamId) {
-        return teamId;
-      }
-    } catch (err) {
-      logVerbose(`slack-stream: users.info team lookup failed (${formatErrorMessage(err)})`);
-    }
-  }
-  return params.fallbackTeamId;
-}
-
 export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessage) {
   const { ctx, account, message, route } = prepared;
   const cfg = ctx.cfg;
@@ -293,12 +270,7 @@ export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessag
           channel: message.channel,
           threadTs: streamThreadTs,
           text,
-          teamId: await resolveSlackStreamRecipientTeamId({
-            client: ctx.app.client,
-            token: ctx.botToken,
-            userId: message.user,
-            fallbackTeamId: ctx.teamId,
-          }),
+          teamId: ctx.teamId,
           userId: message.user,
         });
         usedReplyThreadTs ??= streamThreadTs;
@@ -312,7 +284,7 @@ export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessag
       });
     } catch (err) {
       runtime.error?.(
-        danger(`slack-stream: streaming API call failed: ${formatErrorMessage(err)}, falling back`),
+        danger(`slack-stream: streaming API call failed: ${String(err)}, falling back`),
       );
       streamFailed = true;
       await deliverNormally(payload, streamSession?.threadTs ?? plannedThreadTs);
@@ -355,7 +327,7 @@ export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessag
           return;
         } catch (err) {
           logVerbose(
-            `slack: preview final edit failed; falling back to standard send (${formatErrorMessage(err)})`,
+            `slack: preview final edit failed; falling back to standard send (${String(err)})`,
           );
         }
       } else if (previewStreamingEnabled && streamMode === "status_final" && hasStreamedMessage) {
@@ -371,7 +343,7 @@ export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessag
             });
           }
         } catch (err) {
-          logVerbose(`slack: status_final completion update failed (${formatErrorMessage(err)})`);
+          logVerbose(`slack: status_final completion update failed (${String(err)})`);
         }
       } else if (mediaCount > 0) {
         await draftStream?.clear();
@@ -492,7 +464,7 @@ export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessag
     try {
       await stopSlackStream({ session: finalStream });
     } catch (err) {
-      runtime.error?.(danger(`slack-stream: failed to stop stream: ${formatErrorMessage(err)}`));
+      runtime.error?.(danger(`slack-stream: failed to stop stream: ${String(err)}`));
     }
   }
 

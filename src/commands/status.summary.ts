@@ -147,7 +147,7 @@ export async function getStatusSummary(
             contextTokensOverride: entry?.contextTokens,
             fallbackContextTokens: configContextTokens ?? undefined,
           }) ?? null;
-        const total = resolveSessionTotalTokens(entry);
+        const total = resolveFreshSessionTotalTokens(entry);
         const totalTokensFresh =
           typeof entry?.totalTokens === "number" ? entry?.totalTokensFresh !== false : false;
         const remaining =

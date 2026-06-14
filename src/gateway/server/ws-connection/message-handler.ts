@@ -48,11 +48,7 @@ import { resolveNodeCommandAllowlist } from "../../node-command-policy.js";
 import { checkBrowserOrigin } from "../../origin-check.js";
 import { GATEWAY_CLIENT_IDS, GATEWAY_CLIENT_MODES } from "../../protocol/client-info.js";
 import {
-  buildPairingConnectCloseReason,
-  buildPairingConnectErrorDetails,
-  buildPairingConnectErrorMessage,
   ConnectErrorDetailCodes,
-  type ConnectPairingRequiredReason,
   resolveDeviceAuthConnectErrorDetailCode,
   resolveAuthConnectErrorDetailCode,
 } from "../../protocol/connect-error-details.js";
@@ -666,24 +662,6 @@ export function attachGatewayWsMessageHandler(params: {
             connectParams.scopes = scopes;
           }
         };
-        let pairingLocality = resolvePairingLocality({
-          connectParams,
-          isLocalClient,
-          requestHost,
-          requestOrigin,
-          remoteAddress: remoteAddr,
-          hasProxyHeaders,
-          hasBrowserOriginHeader,
-          sharedAuthOk,
-          authMethod,
-        });
-        let skipLocalBackendSelfPairing = shouldSkipLocalBackendSelfPairing({
-          connectParams,
-          locality: pairingLocality,
-          hasBrowserOriginHeader,
-          sharedAuthOk,
-          authMethod,
-        });
         const handleMissingDeviceIdentity = (): boolean => {
           if (!device) {
             clearUnboundScopes();
@@ -821,24 +799,6 @@ export function attachGatewayWsMessageHandler(params: {
           clientIp: browserRateLimitClientIp,
           verifyDeviceToken,
         }));
-        pairingLocality = resolvePairingLocality({
-          connectParams,
-          isLocalClient,
-          requestHost,
-          requestOrigin,
-          remoteAddress: remoteAddr,
-          hasProxyHeaders,
-          hasBrowserOriginHeader,
-          sharedAuthOk,
-          authMethod,
-        });
-        skipLocalBackendSelfPairing = shouldSkipLocalBackendSelfPairing({
-          connectParams,
-          locality: pairingLocality,
-          hasBrowserOriginHeader,
-          sharedAuthOk,
-          authMethod,
-        });
         if (!authOk) {
           rejectUnauthorized(authResult);
           return;
@@ -959,15 +919,7 @@ export function attachGatewayWsMessageHandler(params: {
                   },
                 }),
               });
-              close(
-                1008,
-                truncateCloseReason(
-                  buildPairingConnectCloseReason({
-                    reason,
-                    requestId: recoveryRequestId,
-                  }),
-                ),
-              );
+              close(1008, "pairing required");
               return false;
             }
             return true;
@@ -1136,7 +1088,6 @@ export function attachGatewayWsMessageHandler(params: {
           canvasHostUrl && canvasCapability
             ? (buildCanvasScopedHostUrl(canvasHostUrl, canvasCapability) ?? canvasHostUrl)
             : canvasHostUrl;
-        const helloOkAuthScopes = deviceToken ? deviceToken.scopes : scopes;
         const helloOk = {
           type: "hello-ok",
           protocol: PROTOCOL_VERSION,
@@ -1168,8 +1119,6 @@ export function attachGatewayWsMessageHandler(params: {
           connect: connectParams,
           connId,
           isDeviceTokenAuth: authMethod === "device-token",
-          usesSharedGatewayAuth,
-          sharedGatewaySessionGeneration,
           presenceKey,
           clientIp: reportedClientIp,
           canvasHostUrl,

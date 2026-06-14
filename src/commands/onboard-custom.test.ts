@@ -60,7 +60,7 @@ async function runPromptCustomApi(
 ) {
   return promptCustomApiConfig({
     prompter: prompter as unknown as Parameters<typeof promptCustomApiConfig>[0]["prompter"],
-    runtime: { log: vi.fn() } as unknown as Parameters<typeof promptCustomApiConfig>[0]["runtime"],
+    runtime: { ...defaultRuntime, log: vi.fn() },
     config,
   });
 }
@@ -244,6 +244,39 @@ describe("promptCustomApiConfig", () => {
       expect.stringContaining("did not respond"),
       "Endpoint detection",
     );
+  });
+
+  it("renames provider id when baseUrl differs", async () => {
+    const prompter = createTestPrompter({
+      text: ["http://localhost:11434/v1", "", "llama3", "custom", ""],
+      select: ["plaintext", "openai"],
+    });
+    stubFetchSequence([{ ok: true }]);
+    const result = await runPromptCustomApi(prompter, {
+      models: {
+        providers: {
+          custom: {
+            baseUrl: "http://old.example.com/v1",
+            api: "openai-completions",
+            models: [
+              {
+                id: "old-model",
+                name: "Old",
+                contextWindow: 1,
+                maxTokens: 1,
+                input: ["text"],
+                cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+                reasoning: false,
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    expect(result.providerId).toBe("custom-2");
+    expect(result.config.models?.providers?.custom).toBeDefined();
+    expect(result.config.models?.providers?.["custom-2"]).toBeDefined();
   });
 
   it("aborts verification after timeout", async () => {

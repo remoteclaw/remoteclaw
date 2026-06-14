@@ -68,6 +68,9 @@ describe("registerTelegramNativeCommands", () => {
     });
 
   it("truncates Telegram command registration to 100 commands", async () => {
+    const cfg: RemoteClawConfig = {
+      commands: { native: false },
+    };
     const customCommands = Array.from({ length: 120 }, (_, index) => ({
       command: `cmd_${index}`,
       description: `Command ${index}`,

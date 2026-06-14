@@ -114,12 +114,12 @@ export function buildMSTeamsGraphMessageUrls(params: {
   return Array.from(new Set(urls));
 }
 
-async function fetchGraphCollection(params: {
+async function fetchGraphCollection<T>(params: {
   url: string;
   accessToken: string;
   fetchFn?: typeof fetch;
   ssrfPolicy?: SsrFPolicy;
-}): Promise<{ status: number; items: unknown[] }> {
+}): Promise<{ status: number; items: T[] }> {
   const fetchFn = params.fetchFn ?? fetch;
   const { response, release } = await fetchWithSsrFGuard({
     url: params.url,
@@ -136,7 +136,7 @@ async function fetchGraphCollection(params: {
       return { status, items: [] };
     }
     try {
-      const data = (await response.json()) as { value?: unknown[] };
+      const data = (await response.json()) as { value?: T[] };
       return { status, items: Array.isArray(data.value) ? data.value : [] };
     } catch {
       return { status, items: [] };
@@ -176,12 +176,12 @@ async function downloadGraphHostedContent(params: {
   preserveFilenames?: boolean;
   ssrfPolicy?: SsrFPolicy;
 }): Promise<{ media: MSTeamsInboundMedia[]; status: number; count: number }> {
-  const hosted = (await fetchGraphCollection({
+  const hosted = await fetchGraphCollection<GraphHostedContent>({
     url: `${params.messageUrl}/hostedContents`,
     accessToken: params.accessToken,
     fetchFn: params.fetchFn,
     ssrfPolicy: params.ssrfPolicy,
-  })) as { status: number; items: GraphHostedContent[] };
+  });
   if (hosted.items.length === 0) {
     return { media: [], status: hosted.status, count: 0 };
   }

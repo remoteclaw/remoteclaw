@@ -125,35 +125,3 @@ export function normalizeReasoningLevel(raw?: string | null): ReasoningLevel | u
   }
   return undefined;
 }
-
-export function resolveLargestSupportedThinkingLevel(
-  provider?: string | null,
-  model?: string | null,
-): ThinkLevel {
-  if (isBinaryThinkingProvider(provider, model)) {
-    return "low";
-  }
-  if (supportsMaxThinking(provider, model)) {
-    return "max";
-  }
-  if (supportsXHighThinking(provider, model)) {
-    return "xhigh";
-  }
-  if (supportsAdaptiveThinking(provider, model)) {
-    return "adaptive";
-  }
-  return "high";
-}
-
-export function resolveSupportedThinkingLevel(params: {
-  provider?: string | null;
-  model?: string | null;
-  level: ThinkLevel;
-}): ThinkLevel {
-  if (params.level !== "max") {
-    return params.level;
-  }
-  return supportsMaxThinking(params.provider, params.model)
-    ? "max"
-    : resolveLargestSupportedThinkingLevel(params.provider, params.model);
-}

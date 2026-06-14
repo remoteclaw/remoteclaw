@@ -43,6 +43,17 @@ const persistentDedupe = createPersistentDedupe({
   resolveFilePath: resolveNamespaceFilePath,
 });
 
+function resolveEventDedupeKey(
+  namespace: string,
+  messageId: string | undefined | null,
+): string | null {
+  const trimmed = messageId?.trim();
+  if (!trimmed) {
+    return null;
+  }
+  return `${namespace}:${trimmed}`;
+}
+
 function normalizeMessageId(messageId: string | undefined | null): string | null {
   const trimmed = messageId?.trim();
   return trimmed ? trimmed : null;

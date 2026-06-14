@@ -524,8 +524,6 @@ async function handleSendAction(ctx: ResolvedActionContext): Promise<MessageActi
       params,
       agentId,
       accountId: accountId ?? undefined,
-      senderIsOwner: input.senderIsOwner,
-      sessionId: input.sessionId,
       gateway,
       toolContext: input.toolContext,
       deps: input.deps,
@@ -566,7 +564,7 @@ async function handleSendAction(ctx: ResolvedActionContext): Promise<MessageActi
 }
 
 async function handlePollAction(ctx: ResolvedActionContext): Promise<MessageActionRunResult> {
-  const { cfg, params, channel, accountId, dryRun, gateway, input, agentId, abortSignal } = ctx;
+  const { cfg, params, channel, accountId, dryRun, gateway, input, abortSignal } = ctx;
   throwIfAborted(abortSignal);
   const action: ChannelMessageActionName = "poll";
   const to = readStringParam(params, "to", { required: true });
@@ -623,11 +621,6 @@ async function handlePollAction(ctx: ResolvedActionContext): Promise<MessageActi
       channel,
       params,
       accountId: accountId ?? undefined,
-      agentId,
-      requesterSenderId: input.requesterSenderId ?? undefined,
-      senderIsOwner: input.senderIsOwner,
-      sessionKey: input.sessionKey,
-      sessionId: input.sessionId,
       gateway,
       toolContext: input.toolContext,
       dryRun,

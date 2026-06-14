@@ -26,6 +26,10 @@ export type SessionDisplayRow = {
   modelOverride?: string;
 };
 
+export type SessionDisplayDefaults = {
+  model: string;
+};
+
 export const SESSION_KEY_PAD = 26;
 export const SESSION_AGE_PAD = 9;
 export const SESSION_MODEL_PAD = 14;

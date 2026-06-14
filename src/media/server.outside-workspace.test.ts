@@ -40,6 +40,10 @@ async function expectOutsideWorkspaceServerResponse(url: string) {
 }
 
 describe("media server outside-workspace mapping", () => {
+  let server: Awaited<ReturnType<typeof startMediaServer>> | undefined;
+  let listenBlocked = false;
+  let port = 0;
+
   beforeAll(async () => {
     vi.useRealTimers();
     vi.doUnmock("undici");
@@ -83,13 +87,13 @@ describe("media server outside-workspace mapping", () => {
   });
 
   it("returns 400 with a specific outside-workspace message", async () => {
-    if (mediaHarness?.listenBlocked) {
+    if (listenBlocked) {
       return;
     }
     mocks.readFileWithinRoot.mockRejectedValueOnce(
       new SafeOpenError("outside-workspace", "file is outside workspace root"),
     );
 
-    await expectOutsideWorkspaceServerResponse(mediaHarness!.url("ok-id"));
+    await expectOutsideWorkspaceServerResponse(`http://127.0.0.1:${port}/media/ok-id`);
   });
 });

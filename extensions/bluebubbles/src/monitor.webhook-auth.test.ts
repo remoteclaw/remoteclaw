@@ -241,7 +241,6 @@ function getFirstDispatchCall(): DispatchReplyParams {
 
 describe("BlueBubbles webhook monitor", () => {
   let unregister: () => void;
-  const installFetchGuardPassthrough = createBlueBubblesFetchGuardPassthroughInstaller();
 
   beforeEach(() => {
     vi.clearAllMocks();

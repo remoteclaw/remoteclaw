@@ -1,4 +1,3 @@
-import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -156,28 +155,10 @@ describe("subagent registry persistence", () => {
     await Promise.resolve();
   };
 
-  const waitForRegistryWork = async (predicate: () => boolean | Promise<boolean>) => {
-    await vi.waitFor(async () => expect(await predicate()).toBe(true), {
-      interval: 1,
-      timeout: 1_000,
-    });
-  };
-
-  const restartRegistry = () => {
+  const restartRegistryAndFlush = async () => {
     resetSubagentRegistryForTests({ persist: false });
     initSubagentRegistry();
-  };
-
-  const fastPersistSubagentRunsToDisk = (runs: Map<string, SubagentRunRecord>) => {
-    const registryPath = tempStateDir
-      ? path.join(tempStateDir, "subagents", "runs.json")
-      : resolveSubagentRegistryPath();
-    fsSync.mkdirSync(path.dirname(registryPath), { recursive: true });
-    fsSync.writeFileSync(
-      registryPath,
-      `${JSON.stringify({ version: 2, runs: Object.fromEntries(runs) })}\n`,
-      "utf8",
-    );
+    await flushQueuedRegistryWork();
   };
 
   afterEach(async () => {
@@ -284,7 +265,9 @@ describe("subagent registry persistence", () => {
       sessionId: "sess-two",
     });
 
-    restartRegistry();
+    resetSubagentRegistryForTests({ persist: false });
+    initSubagentRegistry();
+
     await flushQueuedRegistryWork();
 
     // announce should NOT be called since cleanupHandled was true
@@ -340,18 +323,7 @@ describe("subagent registry persistence", () => {
     const registryPath = await writePersistedRegistry(persisted);
 
     announceSpy.mockResolvedValueOnce(false);
-    restartRegistry();
-    await waitForRegistryWork(async () => {
-      const afterFirst = await readPersistedRun<{
-        cleanupHandled?: boolean;
-        cleanupCompletedAt?: number;
-      }>(registryPath, "run-3");
-      return (
-        announceSpy.mock.calls.length === 1 &&
-        afterFirst?.cleanupHandled === false &&
-        afterFirst.cleanupCompletedAt === undefined
-      );
-    });
+    await restartRegistryAndFlush();
 
     expect(announceSpy).toHaveBeenCalledTimes(1);
     const afterFirst = await readPersistedRun<{
@@ -362,13 +334,7 @@ describe("subagent registry persistence", () => {
     expect(afterFirst?.cleanupCompletedAt).toBeUndefined();
 
     announceSpy.mockResolvedValueOnce(true);
-    restartRegistry();
-    await waitForRegistryWork(async () => {
-      const afterSecond = await readPersistedRun<{
-        cleanupCompletedAt?: number;
-      }>(registryPath, "run-3");
-      return announceSpy.mock.calls.length === 2 && afterSecond?.cleanupCompletedAt != null;
-    });
+    await restartRegistryAndFlush();
 
     expect(announceSpy).toHaveBeenCalledTimes(2);
     const afterSecond = JSON.parse(await fs.readFile(registryPath, "utf8")) as {
@@ -387,18 +353,7 @@ describe("subagent registry persistence", () => {
     const registryPath = await writePersistedRegistry(persisted);
 
     announceSpy.mockRejectedValueOnce(new Error("announce boom"));
-    restartRegistry();
-    await waitForRegistryWork(async () => {
-      const afterFirst = await readPersistedRun<{
-        cleanupHandled?: boolean;
-        cleanupCompletedAt?: number;
-      }>(registryPath, "run-reject");
-      return (
-        announceSpy.mock.calls.length === 1 &&
-        afterFirst?.cleanupHandled === false &&
-        afterFirst.cleanupCompletedAt === undefined
-      );
-    });
+    await restartRegistryAndFlush();
 
     expect(announceSpy).toHaveBeenCalledTimes(1);
     const afterFirst = JSON.parse(await fs.readFile(registryPath, "utf8")) as {
@@ -408,13 +363,7 @@ describe("subagent registry persistence", () => {
     expect(afterFirst.runs["run-reject"].cleanupCompletedAt).toBeUndefined();
 
     announceSpy.mockResolvedValueOnce(true);
-    restartRegistry();
-    await waitForRegistryWork(async () => {
-      const afterSecond = await readPersistedRun<{
-        cleanupCompletedAt?: number;
-      }>(registryPath, "run-reject");
-      return announceSpy.mock.calls.length === 2 && afterSecond?.cleanupCompletedAt != null;
-    });
+    await restartRegistryAndFlush();
 
     expect(announceSpy).toHaveBeenCalledTimes(2);
     const afterSecond = JSON.parse(await fs.readFile(registryPath, "utf8")) as {
@@ -433,27 +382,14 @@ describe("subagent registry persistence", () => {
     const registryPath = await writePersistedRegistry(persisted);
 
     announceSpy.mockResolvedValueOnce(false);
-    restartRegistry();
-    await waitForRegistryWork(async () => {
-      const afterFirst = await readPersistedRun<{ cleanupHandled?: boolean }>(
-        registryPath,
-        "run-4",
-      );
-      return announceSpy.mock.calls.length === 1 && afterFirst?.cleanupHandled === false;
-    });
+    await restartRegistryAndFlush();
 
     expect(announceSpy).toHaveBeenCalledTimes(1);
     const afterFirst = await readPersistedRun<{ cleanupHandled?: boolean }>(registryPath, "run-4");
     expect(afterFirst?.cleanupHandled).toBe(false);
 
     announceSpy.mockResolvedValueOnce(true);
-    restartRegistry();
-    await waitForRegistryWork(async () => {
-      const afterSecond = JSON.parse(await fs.readFile(registryPath, "utf8")) as {
-        runs?: Record<string, unknown>;
-      };
-      return announceSpy.mock.calls.length === 2 && afterSecond.runs?.["run-4"] === undefined;
-    });
+    await restartRegistryAndFlush();
 
     expect(announceSpy).toHaveBeenCalledTimes(2);
     const afterSecond = JSON.parse(await fs.readFile(registryPath, "utf8")) as {
@@ -473,13 +409,7 @@ describe("subagent registry persistence", () => {
       seedChildSessions: false,
     });
 
-    restartRegistry();
-    await waitForRegistryWork(async () => {
-      const after = JSON.parse(await fs.readFile(registryPath, "utf8")) as {
-        runs?: Record<string, unknown>;
-      };
-      return after.runs?.["run-orphan-restore"] === undefined;
-    });
+    await restartRegistryAndFlush();
 
     expect(announceSpy).not.toHaveBeenCalled();
     const after = JSON.parse(await fs.readFile(registryPath, "utf8")) as {

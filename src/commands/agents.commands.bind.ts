@@ -1,4 +1,4 @@
-import { listAgentEntries, resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { isRouteBinding, listRouteBindings } from "../config/bindings.js";
 import { writeConfigFile } from "../config/config.js";
 import { logConfigUpdated } from "../config/logging.js";
@@ -33,13 +33,6 @@ type AgentsUnbindOptions = {
   json?: boolean;
 };
 
-let agentBindingsModulePromise: Promise<AgentBindingsModule> | undefined;
-
-function loadAgentBindingsModule(): Promise<AgentBindingsModule> {
-  agentBindingsModulePromise ??= import("./agents.bindings.js");
-  return agentBindingsModulePromise;
-}
-
 function resolveAgentId(
   cfg: Awaited<ReturnType<typeof requireValidConfig>>,
   agentInput: string | undefined,
@@ -61,12 +54,7 @@ function hasAgent(cfg: Awaited<ReturnType<typeof requireValidConfig>>, agentId: 
   if (!cfg) {
     return false;
   }
-  const targetAgentId = normalizeAgentId(agentId);
-  const agents = listAgentEntries(cfg);
-  if (agents.length === 0) {
-    return targetAgentId === normalizeAgentId(resolveDefaultAgentId(cfg));
-  }
-  return agents.some((agent) => normalizeAgentId(agent.id) === targetAgentId);
+  return buildAgentSummaries(cfg).some((summary) => summary.id === agentId);
 }
 
 function formatBindingOwnerLine(binding: AgentRouteBinding): string {
@@ -102,16 +90,13 @@ function formatBindingConflicts(
   );
 }
 
-async function resolveParsedBindingsOrExit(params: {
+function resolveParsedBindingsOrExit(params: {
   runtime: RuntimeEnv;
   cfg: NonNullable<Awaited<ReturnType<typeof requireValidConfig>>>;
   agentId: string;
   bindValues: string[] | undefined;
   emptyMessage: string;
-}): Promise<{
-  bindings: AgentRouteBinding[];
-  errors: string[];
-} | null> {
+}): ReturnType<typeof parseBindingSpecs> | null {
   const specs = (params.bindValues ?? []).map((value) => value.trim()).filter(Boolean);
   if (specs.length === 0) {
     params.runtime.error(params.emptyMessage);
@@ -119,7 +104,6 @@ async function resolveParsedBindingsOrExit(params: {
     return null;
   }
 
-  const { parseBindingSpecs } = await loadAgentBindingsModule();
   const parsed = parseBindingSpecs({ agentId: params.agentId, specs, config: params.cfg });
   if (parsed.errors.length > 0) {
     params.runtime.error(parsed.errors.join("\n"));
@@ -231,7 +215,7 @@ export async function agentsBindCommand(
   }
   const { cfg, agentId } = resolved;
 
-  const parsed = await resolveParsedBindingsOrExit({
+  const parsed = resolveParsedBindingsOrExit({
     runtime,
     cfg,
     agentId,
@@ -242,7 +226,6 @@ export async function agentsBindCommand(
     return;
   }
 
-  const { applyAgentBindings } = await loadAgentBindingsModule();
   const result = applyAgentBindings(cfg, parsed.bindings);
   if (result.added.length > 0 || result.updated.length > 0) {
     await writeConfigFile(result.config);
@@ -345,7 +328,7 @@ export async function agentsUnbindCommand(
     return;
   }
 
-  const parsed = await resolveParsedBindingsOrExit({
+  const parsed = resolveParsedBindingsOrExit({
     runtime,
     cfg,
     agentId,
@@ -356,7 +339,6 @@ export async function agentsUnbindCommand(
     return;
   }
 
-  const { removeAgentBindings } = await loadAgentBindingsModule();
   const result = removeAgentBindings(cfg, parsed.bindings);
   if (result.removed.length > 0) {
     await writeConfigFile(result.config);

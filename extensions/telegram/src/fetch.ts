@@ -18,36 +18,6 @@ const log = createSubsystemLogger("telegram/network");
 const TELEGRAM_AUTO_SELECT_FAMILY_ATTEMPT_TIMEOUT_MS = 300;
 const TELEGRAM_API_HOSTNAME = "api.telegram.org";
 
-// Dispatcher defaults that bound the per-origin connection pool. Telegram long
-// polling keeps a handful of connections hot for hours, so the defaults must be
-// strict enough that (a) idle sockets are closed even when the pool is still
-// actively used and (b) the pool itself cannot grow unbounded under transient
-// concurrency spikes. These values are a defence-in-depth layer; the primary
-// fix for the leak observed in remoteclaw#68128 is the transport lifecycle that
-// calls `close()` on abandoned dispatchers.
-const TELEGRAM_DISPATCHER_KEEP_ALIVE_TIMEOUT_MS = 30_000;
-const TELEGRAM_DISPATCHER_KEEP_ALIVE_MAX_TIMEOUT_MS = 600_000;
-const TELEGRAM_DISPATCHER_CONNECTIONS_PER_ORIGIN = 10;
-const TELEGRAM_DISPATCHER_PIPELINING = 1;
-
-type TelegramAgentPoolOptions = {
-  allowH2: false;
-  keepAliveTimeout: number;
-  keepAliveMaxTimeout: number;
-  connections: number;
-  pipelining: number;
-};
-
-function telegramAgentPoolOptions(): TelegramAgentPoolOptions {
-  return {
-    allowH2: false,
-    keepAliveTimeout: TELEGRAM_DISPATCHER_KEEP_ALIVE_TIMEOUT_MS,
-    keepAliveMaxTimeout: TELEGRAM_DISPATCHER_KEEP_ALIVE_MAX_TIMEOUT_MS,
-    connections: TELEGRAM_DISPATCHER_CONNECTIONS_PER_ORIGIN,
-    pipelining: TELEGRAM_DISPATCHER_PIPELINING,
-  };
-}
-
 type RequestInitWithDispatcher = RequestInit & {
   dispatcher?: unknown;
 };
@@ -269,11 +239,6 @@ function createTelegramDispatcher(policy: PinnedDispatcherPolicy): {
   mode: TelegramDispatcherMode;
   effectivePolicy: PinnedDispatcherPolicy;
 } {
-  // Telegram polling uses long-lived connections. Undici 8 enables HTTP/2 ALPN
-  // by default, which can stall Telegram long-polling on Windows/IPv6 networks.
-  // Force HTTP/1.1 for every dispatcher while keeping bounded pool defaults.
-  const poolOptions = telegramAgentPoolOptions();
-
   if (policy.mode === "explicit-proxy") {
     const proxyOptions = policy.proxyTls
       ? ({
@@ -538,17 +503,6 @@ export function resolveTelegramTransport(
       throw err;
     }
   }) as typeof fetch;
-
-  let closed = false;
-  const close = async (): Promise<void> => {
-    if (closed) {
-      return;
-    }
-    closed = true;
-    const toDestroy = [...ownedDispatchers];
-    ownedDispatchers.clear();
-    await destroyOwnedDispatchers(toDestroy);
-  };
 
   return {
     fetch: resolvedFetch,

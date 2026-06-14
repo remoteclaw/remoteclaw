@@ -4,6 +4,7 @@
 // `docs/refactor/agentruntime-credential-injection.md` (#2574).
 
 export type OAuthProvider = string;
+export type ExternalOAuthManager = "codex-cli" | "minimax-cli";
 
 export type OAuthCredentials = {
   access: string;
@@ -14,7 +15,6 @@ export type OAuthCredentials = {
   enterpriseUrl?: string;
   projectId?: string;
   accountId?: string;
-  idToken?: string;
 };
 
 export type ApiKeyCredential = {

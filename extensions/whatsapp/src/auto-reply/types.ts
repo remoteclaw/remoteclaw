@@ -1,4 +1,4 @@
-import type { WebInboundMessage } from "../inbound/types.js";
+import type { monitorWebInbox } from "../inbound.js";
 import type { ReconnectPolicy } from "../reconnect.js";
 
 export type WebInboundMsg = Parameters<typeof monitorWebInbox>[0]["onMessage"] extends (

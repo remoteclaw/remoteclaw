@@ -1,3 +1,4 @@
+import { isIP } from "node:net";
 import path from "node:path";
 import { execDockerRaw } from "../agents/sandbox/docker.js";
 import { resolveBrowserConfig, resolveProfile } from "../browser/config.js";
@@ -49,6 +50,7 @@ import {
   inspectPathPermissions,
 } from "./audit-fs.js";
 import { collectEnabledInsecureOrDangerousFlags } from "./dangerous-config-flags.js";
+import { DEFAULT_GATEWAY_HTTP_TOOL_DENY } from "./dangerous-tools.js";
 import type { ExecFn } from "./windows-acl.js";
 
 export type SecurityAuditSeverity = "info" | "warn" | "critical";

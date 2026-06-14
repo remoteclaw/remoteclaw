@@ -5,6 +5,7 @@ import type {
 } from "remoteclaw/plugin-sdk/googlechat";
 import {
   createActionGate,
+  extractToolSend,
   jsonResult,
   readNumberParam,
   readReactionParams,

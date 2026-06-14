@@ -51,7 +51,6 @@ type CallGatewayBaseOptions = {
   clientVersion?: string;
   platform?: string;
   mode?: GatewayClientMode;
-  deviceIdentity?: DeviceIdentity | null;
   instanceId?: string;
   minProtocol?: number;
   maxProtocol?: number;
@@ -743,17 +742,7 @@ function formatGatewayCloseError(
   const hint =
     code === 1006 ? "abnormal closure (no close frame)" : code === 1000 ? "normal closure" : "";
   const suffix = hint ? ` ${hint}` : "";
-  let message = `gateway closed (${code}${suffix}): ${reasonText}\n${connectionDetails.message}`;
-  // Add troubleshooting hints for common issues
-  if (code === 1006) {
-    message +=
-      "\n\nPossible causes:" +
-      "\n- Gateway not yet ready to accept connections (retry after a moment)" +
-      "\n- TLS mismatch (connecting with ws:// to a wss:// gateway, or vice versa)" +
-      "\n- Gateway crashed or was terminated unexpectedly" +
-      "\nRun `remoteclaw doctor` for diagnostics.";
-  }
-  return message;
+  return `gateway closed (${code}${suffix}): ${reasonText}\n${connectionDetails.message}`;
 }
 
 function formatGatewayTimeoutError(

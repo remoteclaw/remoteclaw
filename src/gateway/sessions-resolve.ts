@@ -67,10 +67,6 @@ export async function resolveSessionKeyFromResolveParams(params: {
           };
         }
       }
-      const agentCheck = validateSessionAgentExists(cfg, target.canonicalKey);
-      if (agentCheck) {
-        return agentCheck;
-      }
       return { ok: true, key: target.canonicalKey };
     }
     const legacyKey = target.storeKeys.find((candidate) => store[candidate]);
@@ -107,10 +103,6 @@ export async function resolveSessionKeyFromResolveParams(params: {
           error: errorShape(ErrorCodes.INVALID_REQUEST, `No session found: ${key}`),
         };
       }
-    }
-    const agentCheckLegacy = validateSessionAgentExists(cfg, target.canonicalKey);
-    if (agentCheckLegacy) {
-      return agentCheckLegacy;
     }
     return { ok: true, key: target.canonicalKey };
   }

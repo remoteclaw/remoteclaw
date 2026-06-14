@@ -232,7 +232,7 @@ function resolveBlueBubblesAckReaction(params: {
     return null;
   }
   try {
-    normalizeBlueBubblesReactionInputStrict(raw);
+    normalizeBlueBubblesReactionInput(raw);
     return raw;
   } catch {
     const key = normalizeLowercaseStringOrEmpty(raw);
@@ -1140,14 +1140,6 @@ export async function processMessage(
     OriginatingTo: `bluebubbles:${outboundTarget}`,
     WasMentioned: effectiveWasMentioned,
     CommandAuthorized: commandAuthorized,
-    // Exact group match wins over the "*" wildcard fallback, matching the
-    // pattern used by resolveChannelGroupRequireMention/toolsPolicy.
-    GroupSystemPrompt: isGroup
-      ? normalizeOptionalString(
-          account.config.groups?.[peerId]?.systemPrompt ??
-            account.config.groups?.["*"]?.systemPrompt,
-        )
-      : undefined,
   });
 
   let sentMessage = false;

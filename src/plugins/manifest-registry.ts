@@ -202,20 +202,6 @@ export function loadPluginManifestRegistry(params: {
         : manifestRes.manifestPath;
     })();
 
-    const record = isBundleRecord
-      ? buildBundleRecord({
-          manifest: manifest as Parameters<typeof buildBundleRecord>[0]["manifest"],
-          candidate,
-          manifestPath: manifestRes.manifestPath,
-        })
-      : buildRecord({
-          manifest: manifest as PluginManifest,
-          candidate,
-          manifestPath: manifestRes.manifestPath,
-          schemaCacheKey,
-          configSchema,
-        });
-
     const existing = seenIds.get(manifest.id);
     if (existing) {
       // Check whether both candidates point to the same physical directory
@@ -245,33 +231,14 @@ export function loadPluginManifestRegistry(params: {
         }
         continue;
       }
-
-      const candidateRank = resolveDuplicatePrecedenceRank({
-        pluginId: manifest.id,
-        candidate,
-        config,
-        env,
-      });
-      const existingRank = resolveDuplicatePrecedenceRank({
-        pluginId: manifest.id,
-        candidate: existing.candidate,
-        config,
-        env,
-      });
-      const candidateWins = candidateRank < existingRank;
-      const winnerCandidate = candidateWins ? candidate : existing.candidate;
-      const overriddenCandidate = candidateWins ? existing.candidate : candidate;
-      if (candidateWins) {
-        records[existing.recordIndex] = record;
-        seenIds.set(manifest.id, { candidate, recordIndex: existing.recordIndex });
-      }
       diagnostics.push({
         level: "warn",
         pluginId: manifest.id,
         source: candidate.source,
         message: `duplicate plugin id detected; later plugin may be overridden (${candidate.source})`,
       });
-      continue;
+    } else {
+      seenIds.set(manifest.id, { candidate, recordIndex: records.length });
     }
 
     records.push(

@@ -130,7 +130,7 @@ afterEach(() => {
 });
 
 describe("loadPluginManifestRegistry", () => {
-  it("keeps only the higher-precedence plugin for truly distinct duplicates", () => {
+  it("emits duplicate warning for truly distinct plugins with same id", () => {
     const dirA = makeTempDir();
     const dirB = makeTempDir();
     const manifest = { id: "test-plugin", configSchema: { type: "object" } };
@@ -150,42 +150,7 @@ describe("loadPluginManifestRegistry", () => {
       }),
     ];
 
-    const registry = loadRegistry(candidates);
-    expect(countDuplicateWarnings(registry)).toBe(1);
-    expect(registry.plugins).toHaveLength(1);
-    expect(registry.plugins[0]?.origin).toBe("bundled");
-    expectRegistryDiagnosticContains(
-      registry,
-      "global plugin will be overridden by bundled plugin",
-    );
-  });
-
-  it("lets config-loaded plugins replace bundled duplicates", () => {
-    const bundledDir = makeTempDir();
-    const configDir = makeTempDir();
-    const manifest = { id: "config-shadow", configSchema: { type: "object" } };
-    writeManifest(bundledDir, manifest);
-    writeManifest(configDir, manifest);
-
-    const registry = loadRegistry([
-      createPluginCandidate({
-        idHint: "config-shadow",
-        rootDir: bundledDir,
-        origin: "bundled",
-      }),
-      createPluginCandidate({
-        idHint: "config-shadow",
-        rootDir: configDir,
-        origin: "config",
-      }),
-    ]);
-
-    expect(countDuplicateWarnings(registry)).toBe(1);
-    expect(registry.plugins).toHaveLength(1);
-    expect(registry.plugins[0]?.origin).toBe("config");
-    const warning = registry.diagnostics.find((diag) => diag.pluginId === "config-shadow");
-    expect(warning?.source).toBe(path.join(bundledDir, "index.ts"));
-    expect(warning?.message).toContain(path.join(configDir, "index.ts"));
+    expect(countDuplicateWarnings(loadRegistry(candidates))).toBe(1);
   });
 
   it("suppresses duplicate warning when candidates share the same physical directory via symlink", () => {

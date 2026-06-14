@@ -5,60 +5,40 @@ import { makeTempWorkspace } from "../test-helpers/workspace.js";
 import { captureEnv } from "../test-utils/env.js";
 import { createThrowingRuntime, readJsonFile } from "./onboard-non-interactive.test-helpers.js";
 
+const gatewayClientCalls: Array<{
+  url?: string;
+  token?: string;
+  password?: string;
+  onHelloOk?: (hello: { features?: { methods?: string[] } }) => void;
+  onClose?: (code: number, reason: string) => void;
+}> = [];
 const ensureWorkspaceAndSessionsMock = vi.fn(async (..._args: unknown[]) => {});
 
-function resolveTestConfigPath() {
-  const override = process.env.REMOTECLAW_CONFIG_PATH?.trim();
-  if (override) {
-    return override;
-  }
-  const stateDir = process.env.REMOTECLAW_STATE_DIR?.trim();
-  if (!stateDir) {
-    throw new Error("REMOTECLAW_STATE_DIR must be set before config IO in this test");
-  }
-  return path.join(stateDir, "remoteclaw.json");
-}
-
-// oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- Test helper lets assertions ascribe stored config shape.
-function readTestConfig<T = RemoteClawConfig>(): T {
-  return (testConfigStore.get(resolveTestConfigPath()) ?? {}) as T;
-}
-
-vi.mock("../config/io.js", () => ({
-  createConfigIO: () => ({
-    configPath: resolveTestConfigPath(),
-  }),
-  loadConfig: () => testConfigStore.get(resolveTestConfigPath()) ?? {},
-  readConfigFileSnapshot: async () => {
-    const configPath = resolveTestConfigPath();
-    const config = testConfigStore.get(configPath);
-    if (config) {
-      const raw = `${JSON.stringify(config, null, 2)}\n`;
-      return {
-        exists: true,
-        valid: true,
-        config,
-        sourceConfig: config,
-        raw,
-        hash: "test-config-hash",
-      };
-    }
-    return {
-      exists: false,
-      valid: true,
-      config: {},
-      sourceConfig: {},
-      raw: null,
-      hash: undefined,
+vi.mock("../gateway/client.js", () => ({
+  GatewayClient: class {
+    params: {
+      url?: string;
+      token?: string;
+      password?: string;
+      onHelloOk?: (hello: { features?: { methods?: string[] } }) => void;
     };
+    constructor(params: {
+      url?: string;
+      token?: string;
+      password?: string;
+      onHelloOk?: (hello: { features?: { methods?: string[] } }) => void;
+    }) {
+      this.params = params;
+      gatewayClientCalls.push(params);
+    }
+    async request() {
+      return { ok: true };
+    }
+    start() {
+      queueMicrotask(() => this.params.onHelloOk?.({ features: { methods: ["health"] } }));
+    }
+    stop() {}
   },
-}));
-
-vi.mock("../config/config.js", () => ({
-  replaceConfigFile: async ({ nextConfig }: { nextConfig: RemoteClawConfig }) => {
-    testConfigStore.set(resolveTestConfigPath(), nextConfig);
-  },
-  resolveGatewayPort: (cfg: RemoteClawConfig) => cfg.gateway?.port ?? 18789,
 }));
 
 vi.mock("./onboard-helpers.js", async (importOriginal) => {
@@ -125,8 +105,6 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
 
     tempHome = await makeTempWorkspace("remoteclaw-onboard-");
     process.env.HOME = tempHome;
-
-    await loadGatewayOnboardModules();
   });
 
   afterAll(async () => {
@@ -162,7 +140,7 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
         gateway?: { auth?: { mode?: string; token?: string } };
         agents?: { defaults?: { workspace?: string } };
         tools?: { profile?: string };
-      }>();
+      }>(configPath);
 
       expect(cfg?.agents?.defaults?.workspace).toBe(workspace);
       expect(cfg?.tools?.profile).toBe("coding");
@@ -305,7 +283,7 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
         runtime,
       );
 
-      const cfg = readTestConfig<{
+      const cfg = await readJsonFile<{
         gateway?: { mode?: string; remote?: { url?: string; token?: string } };
       }>(resolveConfigPath());
 
@@ -349,13 +327,14 @@ describe("onboard (non-interactive): gateway and remote auth", () => {
         runtime,
       );
 
-      const cfg = readTestConfig<{
+      const configPath = resolveStateConfigPath(process.env, stateDir);
+      const cfg = await readJsonFile<{
         gateway?: {
           bind?: string;
           port?: number;
           auth?: { mode?: string; token?: string };
         };
-      }>();
+      }>(configPath);
 
       expect(cfg.gateway?.bind).toBe("lan");
       expect(cfg.gateway?.port).toBe(port);

@@ -920,7 +920,7 @@ function resolveFallbackSession(
     return null;
   }
   const peer: RoutePeer = { kind: peerKind, id: peerId };
-  const baseSessionKey = buildOutboundBaseSessionKey({
+  const baseSessionKey = buildBaseSessionKey({
     cfg: params.cfg,
     agentId: params.agentId,
     channel: params.channel,

@@ -577,9 +577,6 @@ export const agentsHandlers: GatewayRequestHandlers = {
     const result = pruneAgentConfig(cfg, agentId);
     await writeConfigFile(result.config);
 
-    // Purge session store entries so orphaned sessions cannot be targeted (#65524).
-    await purgeAgentSessionStoreEntries(cfg, agentId);
-
     if (deleteFiles) {
       await Promise.all([
         moveToTrashBestEffort(workspaceDir),

@@ -226,7 +226,10 @@ describe("sanitizeToolCallIdsForCloudCodeAssist", () => {
       ]);
 
       const out = sanitizeToolCallIdsForCloudCodeAssist(input, "strict9");
-      expectDistinctStrict9Ids(out, input);
+      expect(out).not.toBe(input);
+      const { aId, bId } = expectCollisionIdsRemainDistinct(out, "strict9");
+      expect(aId.length).toBe(9);
+      expect(bId.length).toBe(9);
     });
   });
 });

@@ -142,12 +142,7 @@ async function startConnect(client: InstanceType<typeof GatewayBrowserClient>, n
     event: "connect.challenge",
     payload: { nonce },
   });
-  if (vi.isFakeTimers()) {
-    await vi.advanceTimersByTimeAsync(0);
-  } else {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  }
-  expect(ws.sent.length).toBeGreaterThan(0);
+  await vi.waitFor(() => expect(ws.sent.length).toBeGreaterThan(0));
   return { ws, connectFrame: parseLatestConnectFrame(ws) };
 }
 
@@ -369,7 +364,7 @@ describe("GatewayBrowserClient", () => {
         details: { code: "AUTH_TOKEN_MISMATCH", canRetryWithDeviceToken: true },
       },
     });
-    await expectSocketClosed(ws1);
+    await vi.waitFor(() => expect(ws1.readyState).toBe(3));
     ws1.emitClose(4008, "connect failed");
 
     await vi.advanceTimersByTimeAsync(800);
@@ -441,7 +436,7 @@ describe("GatewayBrowserClient", () => {
         details: { code: "AUTH_TOKEN_MISSING" },
       },
     });
-    await expectSocketClosed(ws1);
+    await vi.waitFor(() => expect(ws1.readyState).toBe(3));
     ws1.emitClose(4008, "connect failed");
 
     await vi.advanceTimersByTimeAsync(30_000);

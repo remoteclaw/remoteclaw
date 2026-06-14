@@ -27,11 +27,6 @@ import type { GatewayClient, GatewayRequestHandlers } from "./types.js";
 const DEVICE_TOKEN_ROTATION_DENIED_MESSAGE = "device token rotation denied";
 const DEVICE_TOKEN_REVOCATION_DENIED_MESSAGE = "device token revocation denied";
 
-type DeviceTokenRotateTarget = {
-  pairedDevice: NonNullable<Awaited<ReturnType<typeof getPairedDevice>>>;
-  normalizedRole: string;
-};
-
 type DeviceSessionAuthz = {
   callerDeviceId: string | null;
   callerScopes: string[];
@@ -42,9 +37,6 @@ type DeviceManagementAuthz = DeviceSessionAuthz & {
   normalizedTargetDeviceId: string;
 };
 
-const DEVICE_PAIR_APPROVAL_DENIED_MESSAGE = "device pairing approval denied";
-const DEVICE_PAIR_REJECTION_DENIED_MESSAGE = "device pairing rejection denied";
-
 function redactPairedDevice(
   device: { tokens?: Record<string, DeviceAuthToken> } & Record<string, unknown>,
 ) {
@@ -52,52 +44,6 @@ function redactPairedDevice(
   return {
     ...rest,
     tokens: summarizeDeviceTokens(tokens),
-  };
-}
-
-function logDeviceTokenRotationDenied(params: {
-  log: { warn: (message: string) => void };
-  deviceId: string;
-  role: string;
-  reason:
-    | RotateDeviceTokenDenyReason
-    | "caller-missing-scope"
-    | "unknown-device-or-role"
-    | "device-ownership-mismatch";
-  scope?: string | null;
-}) {
-  const suffix = params.scope ? ` scope=${params.scope}` : "";
-  params.log.warn(
-    `device token rotation denied device=${params.deviceId} role=${params.role} reason=${params.reason}${suffix}`,
-  );
-}
-
-async function loadDeviceTokenRotateTarget(params: {
-  deviceId: string;
-  role: string;
-  log: { warn: (message: string) => void };
-}): Promise<DeviceTokenRotateTarget | null> {
-  const normalizedRole = params.role.trim();
-  const pairedDevice = await getPairedDevice(params.deviceId);
-  if (!pairedDevice || !listApprovedPairedDeviceRoles(pairedDevice).includes(normalizedRole)) {
-    logDeviceTokenRotationDenied({
-      log: params.log,
-      deviceId: params.deviceId,
-      role: params.role,
-      reason: "unknown-device-or-role",
-    });
-    return null;
-  }
-  return { pairedDevice, normalizedRole };
-}
-
-function resolveDeviceManagementAuthz(
-  client: GatewayClient | null,
-  targetDeviceId: string,
-): DeviceManagementAuthz {
-  return {
-    ...resolveDeviceSessionAuthz(client),
-    normalizedTargetDeviceId: targetDeviceId.trim(),
   };
 }
 
@@ -138,7 +84,7 @@ function shouldReturnRotatedDeviceToken(authz: DeviceManagementAuthz): boolean {
 }
 
 export const deviceHandlers: GatewayRequestHandlers = {
-  "device.pair.list": async ({ params, respond, client }) => {
+  "device.pair.list": async ({ params, respond }) => {
     if (!validateDevicePairListParams(params)) {
       respond(
         false,
@@ -151,21 +97,11 @@ export const deviceHandlers: GatewayRequestHandlers = {
       return;
     }
     const list = await listDevicePairing();
-    const authz = resolveDeviceSessionAuthz(client);
-    const visibleList =
-      authz.callerDeviceId && !authz.isAdminCaller
-        ? {
-            pending: list.pending.filter(
-              (request) => request.deviceId.trim() === authz.callerDeviceId,
-            ),
-            paired: list.paired.filter((device) => device.deviceId.trim() === authz.callerDeviceId),
-          }
-        : list;
     respond(
       true,
       {
-        pending: visibleList.pending,
-        paired: visibleList.paired.map((device) => redactPairedDevice(device)),
+        pending: list.pending,
+        paired: list.paired.map((device) => redactPairedDevice(device)),
       },
       undefined,
     );
@@ -203,7 +139,7 @@ export const deviceHandlers: GatewayRequestHandlers = {
     );
     respond(true, { requestId, device: redactPairedDevice(approved.device) }, undefined);
   },
-  "device.pair.reject": async ({ params, respond, context, client }) => {
+  "device.pair.reject": async ({ params, respond, context }) => {
     if (!validateDevicePairRejectParams(params)) {
       respond(
         false,
@@ -216,29 +152,6 @@ export const deviceHandlers: GatewayRequestHandlers = {
       return;
     }
     const { requestId } = params as { requestId: string };
-    const authz = resolveDeviceSessionAuthz(client);
-    if (authz.callerDeviceId && !authz.isAdminCaller) {
-      const pending = await getPendingDevicePairing(requestId);
-      if (!pending) {
-        respond(
-          false,
-          undefined,
-          errorShape(ErrorCodes.INVALID_REQUEST, DEVICE_PAIR_REJECTION_DENIED_MESSAGE),
-        );
-        return;
-      }
-      if (pending.deviceId.trim() !== authz.callerDeviceId) {
-        context.logGateway.warn(
-          `device pairing rejection denied request=${requestId} reason=device-ownership-mismatch`,
-        );
-        respond(
-          false,
-          undefined,
-          errorShape(ErrorCodes.INVALID_REQUEST, DEVICE_PAIR_REJECTION_DENIED_MESSAGE),
-        );
-        return;
-      }
-    }
     const rejected = await rejectDevicePairing(requestId);
     if (!rejected) {
       respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "unknown requestId"));

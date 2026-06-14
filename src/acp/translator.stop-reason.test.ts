@@ -1,15 +1,9 @@
 import type { PromptRequest } from "@agentclientprotocol/sdk";
 import { describe, expect, it, vi } from "vitest";
 import type { GatewayClient } from "../gateway/client.js";
+import type { EventFrame } from "../gateway/protocol/index.js";
 import { createInMemorySessionStore } from "./session.js";
 import { AcpGatewayAgent } from "./translator.js";
-import {
-  createChatEvent,
-  createPendingPromptHarness,
-  createSessionAgentHarness,
-  observeSettlement,
-  promptAgent,
-} from "./translator.prompt-harness.test-support.js";
 import { createAcpConnection, createAcpGateway } from "./translator.test-helpers.js";
 
 type PendingPromptHarness = {

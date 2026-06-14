@@ -4,7 +4,10 @@ import type { ModelProviderConfig } from "../config/types.models.js";
 import { isSecretRef, type SecretInput } from "../config/types.secrets.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { fetchWithTimeout } from "../utils/fetch-timeout.js";
-import { normalizeSecretInput } from "../utils/normalize-secret-input.js";
+import {
+  normalizeSecretInput,
+  normalizeOptionalSecretInput,
+} from "../utils/normalize-secret-input.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 import type { SecretInputMode } from "./onboard-types.js";
 
@@ -71,6 +74,67 @@ function transformAzureUrl(baseUrl: string, modelId: string): string {
 
 export type CustomApiCompatibility = "openai" | "anthropic";
 type CustomApiCompatibilityChoice = CustomApiCompatibility | "unknown";
+export type CustomApiResult = {
+  config: RemoteClawConfig;
+  providerId?: string;
+  modelId?: string;
+  providerIdRenamedFrom?: string;
+};
+
+export type ApplyCustomApiConfigParams = {
+  config: RemoteClawConfig;
+  baseUrl: string;
+  modelId: string;
+  compatibility: CustomApiCompatibility;
+  apiKey?: SecretInput;
+  providerId?: string;
+  alias?: string;
+};
+
+export type ParseNonInteractiveCustomApiFlagsParams = {
+  baseUrl?: string;
+  modelId?: string;
+  compatibility?: string;
+  apiKey?: string;
+  providerId?: string;
+};
+
+export type ParsedNonInteractiveCustomApiFlags = {
+  baseUrl: string;
+  modelId: string;
+  compatibility: CustomApiCompatibility;
+  apiKey?: string;
+  providerId?: string;
+};
+
+export type CustomApiErrorCode =
+  | "missing_required"
+  | "invalid_compatibility"
+  | "invalid_base_url"
+  | "invalid_model_id"
+  | "invalid_provider_id"
+  | "invalid_alias";
+
+export class CustomApiError extends Error {
+  readonly code: CustomApiErrorCode;
+
+  constructor(code: CustomApiErrorCode, message: string) {
+    super(message);
+    this.name = "CustomApiError";
+    this.code = code;
+  }
+}
+
+export type ResolveCustomProviderIdParams = {
+  config: RemoteClawConfig;
+  baseUrl: string;
+  providerId?: string;
+};
+
+export type ResolvedCustomProviderId = {
+  providerId: string;
+  providerIdRenamedFrom?: string;
+};
 
 const COMPATIBILITY_OPTIONS: Array<{
   value: CustomApiCompatibilityChoice;
@@ -213,6 +277,31 @@ type VerificationResult = {
   error?: unknown;
 };
 
+function normalizeOptionalProviderApiKey(value: unknown): SecretInput | undefined {
+  if (isSecretRef(value)) {
+    return value;
+  }
+  return normalizeOptionalSecretInput(value);
+}
+
+function resolveVerificationEndpoint(params: {
+  baseUrl: string;
+  modelId: string;
+  endpointPath: "chat/completions" | "messages";
+}) {
+  const resolvedUrl = isAzureUrl(params.baseUrl)
+    ? transformAzureUrl(params.baseUrl, params.modelId)
+    : params.baseUrl;
+  const endpointUrl = new URL(
+    params.endpointPath,
+    resolvedUrl.endsWith("/") ? resolvedUrl : `${resolvedUrl}/`,
+  );
+  if (isAzureUrl(params.baseUrl)) {
+    endpointUrl.searchParams.set("api-version", "2024-10-21");
+  }
+  return endpointUrl.href;
+}
+
 async function requestVerification(params: {
   endpoint: string;
   headers: Record<string, string>;
@@ -242,7 +331,37 @@ async function requestOpenAiVerification(params: {
   apiKey: string;
   modelId: string;
 }): Promise<VerificationResult> {
-  return await requestVerification(buildOpenAiVerificationProbeRequest(params));
+  const endpoint = resolveVerificationEndpoint({
+    baseUrl: params.baseUrl,
+    modelId: params.modelId,
+    endpointPath: "chat/completions",
+  });
+  const isBaseUrlAzureUrl = isAzureUrl(params.baseUrl);
+  const headers = isBaseUrlAzureUrl
+    ? buildAzureOpenAiHeaders(params.apiKey)
+    : buildOpenAiHeaders(params.apiKey);
+  if (isBaseUrlAzureUrl) {
+    return await requestVerification({
+      endpoint,
+      headers,
+      body: {
+        messages: [{ role: "user", content: "Hi" }],
+        max_completion_tokens: 5,
+        stream: false,
+      },
+    });
+  } else {
+    return await requestVerification({
+      endpoint,
+      headers,
+      body: {
+        model: params.modelId,
+        messages: [{ role: "user", content: "Hi" }],
+        max_tokens: 1,
+        stream: false,
+      },
+    });
+  }
 }
 
 async function requestAnthropicVerification(params: {
@@ -250,7 +369,27 @@ async function requestAnthropicVerification(params: {
   apiKey: string;
   modelId: string;
 }): Promise<VerificationResult> {
-  return await requestVerification(buildAnthropicVerificationProbeRequest(params));
+  // Use a base URL with /v1 injected for this raw fetch only. The rest of the app uses the
+  // Anthropic client, which appends /v1 itself; config should store the base URL
+  // without /v1 to avoid /v1/v1/messages at runtime. See docs/gateway/configuration-reference.md.
+  const baseUrlForRequest = /\/v1\/?$/.test(params.baseUrl.trim())
+    ? params.baseUrl.trim()
+    : params.baseUrl.trim().replace(/\/?$/, "") + "/v1";
+  const endpoint = resolveVerificationEndpoint({
+    baseUrl: baseUrlForRequest,
+    modelId: params.modelId,
+    endpointPath: "messages",
+  });
+  return await requestVerification({
+    endpoint,
+    headers: buildAnthropicHeaders(params.apiKey),
+    body: {
+      model: params.modelId,
+      max_tokens: 1,
+      messages: [{ role: "user", content: "Hi" }],
+      stream: false,
+    },
+  });
 }
 
 async function promptBaseUrlAndKey(params: {
@@ -645,6 +784,7 @@ export async function promptCustomApiConfig(params: {
     }
   }
 
+  const providers = config.models?.providers ?? {};
   const suggestedId = buildEndpointIdFromUrl(baseUrl);
   const providerIdInput = await prompter.text({
     message: "Endpoint ID",
@@ -663,13 +803,14 @@ export async function promptCustomApiConfig(params: {
     placeholder: "e.g. local, ollama",
     initialValue: "",
     validate: (value) => {
-      const resolvedProvider = resolveCustomProviderId({
-        config,
+      const requestedId = normalizeEndpointId(providerIdInput) || "custom";
+      const providerIdResult = resolveUniqueEndpointId({
+        requestedId,
         baseUrl,
-        providerId: providerIdInput,
+        providers,
       });
-      const modelRef = modelKey(resolvedProvider.providerId, modelId);
-      return resolveCustomModelAliasError({ raw: value, cfg: config, modelRef });
+      const modelRef = modelKey(providerIdResult.providerId, modelId);
+      return resolveAliasError({ raw: value, cfg: config, modelRef });
     },
   });
   const resolvedCompatibility = compatibility ?? "openai";

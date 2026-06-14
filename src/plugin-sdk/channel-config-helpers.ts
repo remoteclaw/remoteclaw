@@ -306,18 +306,6 @@ type MultiAccountChannelConfigAdapterParams<
   resolveDefaultTo?: (account: AccessorAccount) => string | number | null | undefined;
 };
 
-type NamedAccountChannelConfigBaseParams<
-  ResolvedAccount,
-  Config extends RemoteClawConfig = RemoteClawConfig,
-> = {
-  sectionKey: string;
-  listAccountIds: (cfg: Config) => string[];
-  resolveAccount: (cfg: Config, accountId?: string | null) => ResolvedAccount;
-  defaultAccountId: (cfg: Config) => string;
-  inspectAccount?: (cfg: Config, accountId?: string | null) => unknown;
-  clearBaseFields: string[];
-};
-
 /** Coerce mixed allowlist config values into plain strings without trimming or deduping. */
 export function mapAllowFromEntries(
   allowFrom: Array<string | number> | null | undefined,
@@ -354,7 +342,6 @@ export function adaptScopedAccountAccessor<
 /** Build the shared allowlist/default target adapter surface for account-scoped channel configs. */
 export function createScopedAccountConfigAccessors<
   ResolvedAccount,
-  // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- Config preserves caller-specific config subtype for account resolvers.
   Config extends RemoteClawConfig = RemoteClawConfig,
 >(params: {
   resolveAccount: (params: { cfg: Config; accountId?: string | null }) => ResolvedAccount;
@@ -498,11 +485,23 @@ function createChannelConfigAdapterFromBase<
 export function createScopedChannelConfigBase<
   ResolvedAccount,
   Config extends RemoteClawConfig = RemoteClawConfig,
->(
-  params: NamedAccountChannelConfigBaseParams<ResolvedAccount, Config> & {
-    allowTopLevel?: boolean;
-  },
-): ChannelCrudConfigAdapter<ResolvedAccount> {
+>(params: {
+  sectionKey: string;
+  listAccountIds: (cfg: Config) => string[];
+  resolveAccount: (cfg: Config, accountId?: string | null) => ResolvedAccount;
+  defaultAccountId: (cfg: Config) => string;
+  inspectAccount?: (cfg: Config, accountId?: string | null) => unknown;
+  clearBaseFields: string[];
+  allowTopLevel?: boolean;
+}): Pick<
+  ChannelConfigAdapter<ResolvedAccount>,
+  | "listAccountIds"
+  | "resolveAccount"
+  | "inspectAccount"
+  | "defaultAccountId"
+  | "setAccountEnabled"
+  | "deleteAccount"
+> {
   return createNamedAccountConfigBase<ResolvedAccount, Config>({
     listAccountIds: params.listAccountIds,
     resolveAccount: params.resolveAccount,
@@ -711,11 +710,23 @@ export function createTopLevelChannelConfigAdapter<
 export function createHybridChannelConfigBase<
   ResolvedAccount,
   Config extends RemoteClawConfig = RemoteClawConfig,
->(
-  params: NamedAccountChannelConfigBaseParams<ResolvedAccount, Config> & {
-    preserveSectionOnDefaultDelete?: boolean;
-  },
-): ChannelCrudConfigAdapter<ResolvedAccount> {
+>(params: {
+  sectionKey: string;
+  listAccountIds: (cfg: Config) => string[];
+  resolveAccount: (cfg: Config, accountId?: string | null) => ResolvedAccount;
+  defaultAccountId: (cfg: Config) => string;
+  inspectAccount?: (cfg: Config, accountId?: string | null) => unknown;
+  clearBaseFields: string[];
+  preserveSectionOnDefaultDelete?: boolean;
+}): Pick<
+  ChannelConfigAdapter<ResolvedAccount>,
+  | "listAccountIds"
+  | "resolveAccount"
+  | "inspectAccount"
+  | "defaultAccountId"
+  | "setAccountEnabled"
+  | "deleteAccount"
+> {
   return createNamedAccountConfigBase<ResolvedAccount, Config>({
     listAccountIds: params.listAccountIds,
     resolveAccount: params.resolveAccount,
@@ -806,7 +817,6 @@ export function createScopedDmSecurityResolver<
   approveChannelId?: string;
   approveHint?: string;
   normalizeEntry?: (raw: string) => string;
-  inheritSharedDefaultsFromDefaultAccount?: boolean;
 }) {
   return ({
     cfg,
@@ -830,7 +840,6 @@ export function createScopedDmSecurityResolver<
       approveChannelId: params.approveChannelId,
       approveHint: params.approveHint,
       normalizeEntry: params.normalizeEntry,
-      inheritSharedDefaultsFromDefaultAccount: params.inheritSharedDefaultsFromDefaultAccount,
     });
 }
 

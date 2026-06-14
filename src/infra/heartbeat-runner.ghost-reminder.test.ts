@@ -62,43 +62,6 @@ describe("Ghost reminder bug (issue #13317)", () => {
     return { cfg, sessionKey };
   };
 
-  const createLastTargetConfig = (params: {
-    tmpDir: string;
-    storePath: string;
-    isolatedSession?: boolean;
-  }): RemoteClawConfig => ({
-    agents: {
-      defaults: {
-        workspace: params.tmpDir,
-        heartbeat: {
-          every: "5m",
-          target: "last",
-          ...(params.isolatedSession === true ? { isolatedSession: true } : {}),
-        },
-      },
-    },
-    channels: { telegram: { allowFrom: ["*"] } },
-    session: { store: params.storePath },
-  });
-
-  const writeTelegramSessionStore = async (
-    storePath: string,
-    sessionKey: string,
-    overrides: Record<string, unknown>,
-  ): Promise<void> => {
-    await fs.writeFile(
-      storePath,
-      JSON.stringify({
-        [sessionKey]: {
-          sessionId: "sid",
-          updatedAt: Date.now(),
-          lastChannel: "telegram",
-          ...overrides,
-        },
-      }),
-    );
-  };
-
   const expectCronEventPrompt = (
     calledCtx: {
       Provider?: string;

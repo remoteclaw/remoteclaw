@@ -10,20 +10,6 @@ import { getHeader } from "./http-utils.js";
 
 const MAX_MCP_BODY_BYTES = 1_048_576;
 
-function shouldLogMcpLoopbackHttp(): boolean {
-  return (
-    isTruthyEnvValue(process.env.REMOTECLAW_CLI_BACKEND_LOG_OUTPUT) ||
-    isTruthyEnvValue(process.env.REMOTECLAW_LIVE_CLI_BACKEND_DEBUG)
-  );
-}
-
-function logMcpLoopbackHttp(step: string, details: Record<string, unknown>): void {
-  if (!shouldLogMcpLoopbackHttp()) {
-    return;
-  }
-  console.error(`[mcp-loopback] ${step} ${JSON.stringify(details)}`);
-}
-
 export type McpRequestContext = {
   sessionKey: string;
   messageProvider: string | undefined;
@@ -45,7 +31,6 @@ export function validateMcpLoopbackRequest(params: {
   try {
     url = new URL(params.req.url ?? "/", `http://${params.req.headers.host ?? "localhost"}`);
   } catch {
-    logMcpLoopbackHttp("reject", { reason: "bad_request_url", method: params.req.method ?? "" });
     params.res.writeHead(400, { "Content-Type": "application/json" });
     params.res.end(JSON.stringify({ error: "bad_request" }));
     return false;
@@ -58,34 +43,19 @@ export function validateMcpLoopbackRequest(params: {
   }
 
   if (url.pathname !== "/mcp") {
-    logMcpLoopbackHttp("reject", {
-      reason: "not_found",
-      method: params.req.method ?? "",
-      path: url.pathname,
-    });
     params.res.writeHead(404, { "Content-Type": "application/json" });
     params.res.end(JSON.stringify({ error: "not_found" }));
     return false;
   }
 
   if (params.req.method !== "POST") {
-    logMcpLoopbackHttp("reject", {
-      reason: "method_not_allowed",
-      method: params.req.method ?? "",
-      path: url.pathname,
-    });
     params.res.writeHead(405, { Allow: "POST" });
     params.res.end();
     return false;
   }
 
   const authHeader = getHeader(params.req, "authorization") ?? "";
-  if (!safeEqualSecret(authHeader, `Bearer ${params.token}`)) {
-    logMcpLoopbackHttp("reject", {
-      reason: "unauthorized",
-      method: params.req.method ?? "",
-      hasAuthorization: authHeader.length > 0,
-    });
+  if (authHeader !== `Bearer ${params.token}`) {
     params.res.writeHead(401, { "Content-Type": "application/json" });
     params.res.end(JSON.stringify({ error: "unauthorized" }));
     return false;
@@ -93,11 +63,6 @@ export function validateMcpLoopbackRequest(params: {
 
   const contentType = getHeader(params.req, "content-type") ?? "";
   if (!contentType.startsWith("application/json")) {
-    logMcpLoopbackHttp("reject", {
-      reason: "unsupported_media_type",
-      method: params.req.method ?? "",
-      contentType,
-    });
     params.res.writeHead(415, { "Content-Type": "application/json" });
     params.res.end(JSON.stringify({ error: "unsupported_media_type" }));
     return false;

@@ -37,7 +37,6 @@ import {
 } from "../config/sessions.js";
 import type { AgentDefaultsConfig } from "../config/types.agent-defaults.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
-import { getActivePluginChannelRegistry } from "../plugins/runtime.js";
 import { getQueueSize } from "../process/command-queue.js";
 import { CommandLane } from "../process/lanes.js";
 import {
@@ -62,7 +61,6 @@ import {
   areHeartbeatsEnabled,
   type HeartbeatRunResult,
   type HeartbeatWakeHandler,
-  type HeartbeatWakeRequest,
   requestHeartbeatNow,
   setHeartbeatsEnabled,
   setHeartbeatWakeHandler,
@@ -84,13 +82,6 @@ export type HeartbeatDeps = OutboundSendDeps &
   };
 
 const log = createSubsystemLogger("gateway/heartbeat");
-
-function resolveHeartbeatChannelPlugin(channel: string): ChannelPlugin | undefined {
-  const activePlugin = getActivePluginChannelRegistry()?.channels.find(
-    (entry) => entry.plugin.id === channel,
-  )?.plugin;
-  return activePlugin ?? getChannelPlugin(channel as ChannelId);
-}
 
 export { areHeartbeatsEnabled, setHeartbeatsEnabled };
 
@@ -751,7 +742,7 @@ export async function runHeartbeatOnce(opts: {
     if (!canAttemptHeartbeatOk || delivery.channel === "none" || !delivery.to) {
       return false;
     }
-    const heartbeatPlugin = resolveHeartbeatChannelPlugin(delivery.channel);
+    const heartbeatPlugin = getChannelPlugin(delivery.channel);
     if (heartbeatPlugin?.heartbeat?.checkReady) {
       const readiness = await heartbeatPlugin.heartbeat.checkReady({
         cfg,
@@ -935,7 +926,7 @@ export async function runHeartbeatOnce(opts: {
     }
 
     const deliveryAccountId = delivery.accountId;
-    const heartbeatPlugin = resolveHeartbeatChannelPlugin(delivery.channel);
+    const heartbeatPlugin = getChannelPlugin(delivery.channel);
     if (heartbeatPlugin?.heartbeat?.checkReady) {
       const readiness = await heartbeatPlugin.heartbeat.checkReady({
         cfg,
@@ -1233,12 +1224,11 @@ export function startHeartbeatRunner(opts: {
     return { status: "skipped", reason: isInterval ? "not-due" : "disabled" };
   };
 
-  const wakeHandler: HeartbeatWakeHandler = async (params: HeartbeatWakeRequest) =>
+  const wakeHandler: HeartbeatWakeHandler = async (params) =>
     run({
       reason: params.reason,
       agentId: params.agentId,
       sessionKey: params.sessionKey,
-      heartbeat: params.heartbeat,
     });
   const disposeWakeHandler = setHeartbeatWakeHandler(wakeHandler);
   updateConfig(state.cfg);

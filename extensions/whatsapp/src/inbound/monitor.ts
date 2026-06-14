@@ -24,13 +24,6 @@ import type { WebInboundMessage, WebListenerCloseReason } from "./types.js";
 
 const LOGGED_OUT_STATUS = DisconnectReason?.loggedOut ?? 401;
 
-function logWhatsAppVerbose(enabled: boolean | undefined, message: string) {
-  if (!enabled) {
-    return;
-  }
-  defaultRuntime.log(message);
-}
-
 function isGroupJid(jid: string): boolean {
   return (typeof isJidGroup === "function" ? isJidGroup(jid) : jid.endsWith("@g.us")) === true;
 }
@@ -74,12 +67,11 @@ export async function monitorWebInbox(options: {
 
   try {
     await sock.sendPresenceUpdate(presence);
-    logWhatsAppVerbose(options.verbose, `Sent global '${presence}' presence on connect`);
+    if (shouldLogVerbose()) {
+      logVerbose(`Sent global '${presence}' presence on connect`);
+    }
   } catch (err) {
-    logWhatsAppVerbose(
-      options.verbose,
-      `Failed to send '${presence}' presence on connect: ${String(err)}`,
-    );
+    logVerbose(`Failed to send '${presence}' presence on connect: ${String(err)}`);
   }
 
   const selfJid = sock.user?.id;
@@ -163,10 +155,7 @@ export async function monitorWebInbox(options: {
       groupMetaCache.set(jid, entry);
       return entry;
     } catch (err) {
-      logWhatsAppVerbose(
-        options.verbose,
-        `Failed to fetch group metadata for ${jid}: ${String(err)}`,
-      );
+      logVerbose(`Failed to fetch group metadata for ${jid}: ${String(err)}`);
       return { expires: Date.now() + GROUP_META_TTL_MS };
     }
   };
@@ -261,17 +250,16 @@ export async function monitorWebInbox(options: {
     if (id && !access.isSelfChat && options.sendReadReceipts !== false) {
       try {
         await sock.readMessages([{ remoteJid, id, participant: participantJid, fromMe: false }]);
-        const suffix = participantJid ? ` (participant ${participantJid})` : "";
-        logWhatsAppVerbose(
-          options.verbose,
-          `Marked message ${id} as read for ${remoteJid}${suffix}`,
-        );
+        if (shouldLogVerbose()) {
+          const suffix = participantJid ? ` (participant ${participantJid})` : "";
+          logVerbose(`Marked message ${id} as read for ${remoteJid}${suffix}`);
+        }
       } catch (err) {
-        logWhatsAppVerbose(options.verbose, `Failed to mark message ${id} read: ${String(err)}`);
+        logVerbose(`Failed to mark message ${id} read: ${String(err)}`);
       }
-    } else if (id && access.isSelfChat && options.verbose) {
+    } else if (id && access.isSelfChat && shouldLogVerbose()) {
       // Self-chat mode: never auto-send read receipts (blue ticks) on behalf of the owner.
-      logWhatsAppVerbose(options.verbose, `Self-chat mode: skipping read receipt for ${id}`);
+      logVerbose(`Self-chat mode: skipping read receipt for ${id}`);
     }
   };
 
@@ -322,7 +310,7 @@ export async function monitorWebInbox(options: {
         mediaFileName = inboundMedia.fileName;
       }
     } catch (err) {
-      logWhatsAppVerbose(options.verbose, `Inbound media download failed: ${String(err)}`);
+      logVerbose(`Inbound media download failed: ${String(err)}`);
     }
 
     return {
@@ -345,7 +333,7 @@ export async function monitorWebInbox(options: {
       try {
         await sock.sendPresenceUpdate("composing", chatJid);
       } catch (err) {
-        logWhatsAppVerbose(options.verbose, `Presence update failed: ${String(err)}`);
+        logVerbose(`Presence update failed: ${String(err)}`);
       }
     };
     const reply = async (text: string) => {
@@ -469,18 +457,14 @@ export async function monitorWebInbox(options: {
   void (async () => {
     try {
       const groups = await sock.groupFetchAllParticipating();
-      logWhatsAppVerbose(
-        options.verbose,
-        `Hydrated ${Object.keys(groups ?? {}).length} participating groups on connect`,
-      );
+      if (shouldLogVerbose()) {
+        logVerbose(`Hydrated ${Object.keys(groups ?? {}).length} participating groups on connect`);
+      }
     } catch (err) {
       const error = String(err);
       inboundLogger.warn({ error }, "failed hydrating participating groups on connect");
       inboundConsoleLog.warn(`Failed hydrating participating groups on connect: ${error}`);
-      logWhatsAppVerbose(
-        options.verbose,
-        `Failed to hydrate participating groups on connect: ${error}`,
-      );
+      logVerbose(`Failed to hydrate participating groups on connect: ${error}`);
     }
   })();
 
@@ -514,7 +498,7 @@ export async function monitorWebInbox(options: {
         }
         sock.ws?.close();
       } catch (err) {
-        logWhatsAppVerbose(options.verbose, `Socket close failed: ${String(err)}`);
+        logVerbose(`Socket close failed: ${String(err)}`);
       }
     },
     onClose,

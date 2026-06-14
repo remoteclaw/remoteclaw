@@ -174,8 +174,6 @@ export function isBundledChannelEnabledByChannelConfig(
   return (entry as Record<string, unknown>).enabled === true;
 }
 
-export const isBundledChannelEnabledByChannelConfig = isBundledChannelEnabledByChannelConfigShared;
-
 export function resolveEffectiveEnableState(params: {
   id: string;
   origin: PluginRecord["origin"];

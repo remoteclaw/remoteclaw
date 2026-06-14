@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
 import type { NostrProfile } from "./config-schema.js";
 import {
+  createProfileEvent,
   profileToContent,
-  sanitizeProfileForDisplay,
   validateProfile,
-} from "./nostr-profile-core.js";
+  sanitizeProfileForDisplay,
+} from "./nostr-profile.js";
+
+// Test private key
+const TEST_HEX_KEY = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+const TEST_SK = new Uint8Array(TEST_HEX_KEY.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)));
 
 // ============================================================================
 // Unicode Attack Vectors

@@ -34,7 +34,6 @@ export type {
   CommandDetection,
   CommandNormalizeOptions,
   CommandScope,
-  CommandTier,
   NativeCommandSpec,
   ShouldHandleTextCommandsParams,
 } from "./commands-registry.types.js";
@@ -154,7 +153,6 @@ export function listNativeCommandSpecsForConfig(
 export function findCommandByNativeName(
   name: string,
   provider?: string,
-  options?: NativeCommandProviderLookupOptions,
 ): ChatCommandDefinition | undefined {
   const normalized = normalizeOptionalLowercaseString(name);
   if (!normalized) {
@@ -163,8 +161,7 @@ export function findCommandByNativeName(
   return getChatCommands().find(
     (command) =>
       command.scope !== "text" &&
-      normalizeOptionalLowercaseString(resolveNativeName(command, provider, options)) ===
-        normalized,
+      normalizeOptionalLowercaseString(resolveNativeName(command, provider)) === normalized,
   );
 }
 

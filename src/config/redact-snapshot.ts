@@ -573,59 +573,6 @@ function restoreGuessingArray(
   });
 }
 
-function shouldRestoreSensitiveGuessingPath(
-  path: string,
-  hintPaths: string[],
-  hints?: ConfigUiHints,
-): boolean {
-  return (
-    !isExplicitlyNonSensitivePath(hints, hintPaths) &&
-    (isSensitivePath(path) || hasSensitiveUrlHintPath(hints, hintPaths) || isSensitiveUrlPath(path))
-  );
-}
-
-function restoreRedactedEntryGuessing(params: {
-  key: string;
-  value: unknown;
-  path: string;
-  wildcardPath: string;
-  original: Record<string, unknown>;
-  hints?: ConfigUiHints;
-}): unknown {
-  const hintPaths = [params.path, params.wildcardPath];
-  const canRestoreSecretRef = shouldRestoreSensitiveGuessingPath(
-    params.path,
-    hintPaths,
-    params.hints,
-  );
-  if (params.value === REDACTED_SENTINEL && canRestoreSecretRef) {
-    return restoreOriginalValueOrThrow({
-      key: params.key,
-      path: params.path,
-      original: params.original,
-    });
-  }
-  if (typeof params.value === "object" && params.value !== null) {
-    if (canRestoreSecretRef) {
-      const restoredSecretRef = maybeRestoreSecretRefId({
-        incoming: params.value,
-        original: params.original[params.key],
-        path: params.path,
-      });
-      if (restoredSecretRef.handled) {
-        return restoredSecretRef.value;
-      }
-    }
-    return restoreRedactedValuesGuessing(
-      params.value,
-      params.original[params.key],
-      params.path,
-      params.hints,
-    );
-  }
-  return params.value;
-}
-
 /**
  * Worker for restoreRedactedValues().
  * Used when there are ConfigUiHints available.

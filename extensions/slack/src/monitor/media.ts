@@ -364,11 +364,18 @@ function evictThreadStarterCache(): void {
       THREAD_STARTER_CACHE.delete(cacheKey);
     }
   }
-  pruneMapToMaxSize(THREAD_STARTER_CACHE, THREAD_STARTER_CACHE_MAX);
-}
-
-function formatSlackFilePlaceholder(files: SlackFile[] | undefined): string {
-  return `[attached: ${files?.map((file) => file.name ?? "file").join(", ") ?? "file"}]`;
+  if (THREAD_STARTER_CACHE.size <= THREAD_STARTER_CACHE_MAX) {
+    return;
+  }
+  const excess = THREAD_STARTER_CACHE.size - THREAD_STARTER_CACHE_MAX;
+  let removed = 0;
+  for (const cacheKey of THREAD_STARTER_CACHE.keys()) {
+    THREAD_STARTER_CACHE.delete(cacheKey);
+    removed += 1;
+    if (removed >= excess) {
+      break;
+    }
+  }
 }
 
 export async function resolveSlackThreadStarter(params: {
@@ -402,16 +409,15 @@ export async function resolveSlackThreadStarter(params: {
     };
     const message = response?.messages?.[0];
     const text = (message?.text ?? "").trim();
-    const files = message?.files?.length ? message.files : undefined;
-    if (!message || (!text && !files)) {
+    if (!message || !text) {
       return null;
     }
     const starter: SlackThreadStarter = {
-      text: text || formatSlackFilePlaceholder(files),
+      text,
       userId: message.user,
       botId: message.bot_id,
       ts: message.ts,
-      files,
+      files: message.files,
     };
     if (THREAD_STARTER_CACHE.has(cacheKey)) {
       THREAD_STARTER_CACHE.delete(cacheKey);
@@ -422,10 +428,7 @@ export async function resolveSlackThreadStarter(params: {
     });
     evictThreadStarterCache();
     return starter;
-  } catch (err) {
-    logVerbose(
-      `slack thread starter fetch failed channel=${params.channelId} ts=${params.threadTs}: ${formatErrorMessage(err)}`,
-    );
+  } catch {
     return null;
   }
 }
@@ -509,16 +512,15 @@ export async function resolveSlackThreadHistory(params: {
 
     return retained.map((msg) => ({
       // For file-only messages, create a placeholder showing attached filenames
-      text: msg.text?.trim() ? msg.text : formatSlackFilePlaceholder(msg.files),
+      text: msg.text?.trim()
+        ? msg.text
+        : `[attached: ${msg.files?.map((f) => f.name ?? "file").join(", ")}]`,
       userId: msg.user,
       botId: msg.bot_id,
       ts: msg.ts,
       files: msg.files,
     }));
-  } catch (err) {
-    logVerbose(
-      `slack thread history fetch failed channel=${params.channelId} ts=${params.threadTs}: ${formatErrorMessage(err)}`,
-    );
+  } catch {
     return [];
   }
 }

@@ -18,49 +18,49 @@ runResolveOutboundTargetCoreTests();
 
 describe("resolveOutboundTarget defaultTo config fallback", () => {
   installResolveOutboundTargetPluginRegistryHooks();
-  const alphaDefaultCfg: RemoteClawConfig = {
-    channels: { alpha: { defaultTo: "Alpha:Room One", allowFrom: ["*"] } },
+  const whatsappDefaultCfg: RemoteClawConfig = {
+    channels: { whatsapp: { defaultTo: "+15551234567", allowFrom: ["*"] } },
   };
 
-  it("uses plugin defaultTo when no explicit target is provided", () => {
+  it("uses whatsapp defaultTo when no explicit target is provided", () => {
     const res = resolveOutboundTarget({
-      channel: "alpha",
+      channel: "whatsapp",
       to: undefined,
-      cfg: alphaDefaultCfg,
+      cfg: whatsappDefaultCfg,
       mode: "implicit",
     });
-    expect(res).toEqual({ ok: true, to: "room-one" });
+    expect(res).toEqual({ ok: true, to: "+15551234567" });
   });
 
-  it("uses a second plugin defaultTo when no explicit target is provided", () => {
+  it("uses telegram defaultTo when no explicit target is provided", () => {
     const cfg: RemoteClawConfig = {
-      channels: { beta: { defaultTo: "Beta:Default Room" } },
+      channels: { telegram: { defaultTo: "123456789" } },
     };
     const res = resolveOutboundTarget({
-      channel: "beta",
+      channel: "telegram",
       to: "",
       cfg,
       mode: "implicit",
     });
-    expect(res).toEqual({ ok: true, to: "default-room" });
+    expect(res).toEqual({ ok: true, to: "123456789" });
   });
 
   it("explicit --reply-to overrides defaultTo", () => {
     const res = resolveOutboundTarget({
-      channel: "alpha",
-      to: "Alpha:Override Room",
-      cfg: alphaDefaultCfg,
+      channel: "whatsapp",
+      to: "+15559999999",
+      cfg: whatsappDefaultCfg,
       mode: "explicit",
     });
-    expect(res).toEqual({ ok: true, to: "override-room" });
+    expect(res).toEqual({ ok: true, to: "+15559999999" });
   });
 
   it("still errors when no defaultTo and no explicit target", () => {
     const cfg: RemoteClawConfig = {
-      channels: { alpha: { allowFrom: ["room-one"] } },
+      channels: { whatsapp: { allowFrom: ["+1555"] } },
     };
     const res = resolveOutboundTarget({
-      channel: "alpha",
+      channel: "whatsapp",
       to: "",
       cfg,
       mode: "implicit",
@@ -73,19 +73,19 @@ describe("resolveOutboundTarget defaultTo config fallback", () => {
     setActivePluginRegistry(registry, "stale-registry-test");
 
     // Warm the cached channel map before mutating the registry in place.
-    expect(resolveOutboundTarget({ channel: "alpha", to: "room-one", mode: "explicit" }).ok).toBe(
+    expect(resolveOutboundTarget({ channel: "telegram", to: "123", mode: "explicit" }).ok).toBe(
       false,
     );
 
     registry.channels.push({
-      pluginId: "alpha",
-      plugin: createGenericTargetTestPlugin("alpha", "Alpha"),
+      pluginId: "telegram",
+      plugin: createOutboundTestPlugin({ id: "telegram", outbound: telegramOutbound }),
       source: "test",
     });
 
-    expect(resolveOutboundTarget({ channel: "alpha", to: "room-one", mode: "explicit" })).toEqual({
+    expect(resolveOutboundTarget({ channel: "telegram", to: "123", mode: "explicit" })).toEqual({
       ok: true,
-      to: "room-one",
+      to: "123",
     });
   });
 });
@@ -120,9 +120,9 @@ describe("resolveSessionDeliveryTarget", () => {
     const resolved = resolveSessionDeliveryTarget({
       entry,
       requestedChannel: "last",
-      explicitTo: "room:ops:topic:1008013",
+      explicitTo: "63448508:topic:1008013",
     });
-    expect(resolved.to).toBe("room:ops");
+    expect(resolved.to).toBe("63448508");
     expect(resolved.threadId).toBe(1008013);
   };
 
@@ -131,22 +131,22 @@ describe("resolveSessionDeliveryTarget", () => {
       entry: {
         sessionId: "sess-1",
         updatedAt: 1,
-        lastChannel: " alpha ",
-        lastTo: " Room One ",
+        lastChannel: " whatsapp ",
+        lastTo: " +1555 ",
         lastAccountId: " acct-1 ",
       },
       requestedChannel: "last",
     });
 
     expect(resolved).toEqual({
-      channel: "alpha",
-      to: "Room One",
+      channel: "whatsapp",
+      to: "+1555",
       accountId: "acct-1",
       threadId: undefined,
       threadIdExplicit: false,
       mode: "implicit",
-      lastChannel: "alpha",
-      lastTo: "Room One",
+      lastChannel: "whatsapp",
+      lastTo: "+1555",
       lastAccountId: "acct-1",
       lastThreadId: undefined,
     });
@@ -157,17 +157,17 @@ describe("resolveSessionDeliveryTarget", () => {
       entry: {
         sessionId: "sess-2",
         updatedAt: 1,
-        lastChannel: "alpha",
-        lastTo: "room-one",
+        lastChannel: "whatsapp",
+        lastTo: "+1555",
       },
-      requestedChannel: "beta",
+      requestedChannel: "telegram",
     });
 
     expectImplicitRoute(resolved, {
-      channel: "beta",
+      channel: "telegram",
       to: undefined,
-      lastChannel: "alpha",
-      lastTo: "room-one",
+      lastChannel: "whatsapp",
+      lastTo: "+1555",
     });
   });
 
@@ -176,18 +176,18 @@ describe("resolveSessionDeliveryTarget", () => {
       entry: {
         sessionId: "sess-3",
         updatedAt: 1,
-        lastChannel: "alpha",
-        lastTo: "room-one",
+        lastChannel: "whatsapp",
+        lastTo: "+1555",
       },
-      requestedChannel: "beta",
+      requestedChannel: "telegram",
       allowMismatchedLastTo: true,
     });
 
     expectImplicitRoute(resolved, {
-      channel: "beta",
-      to: "room-one",
-      lastChannel: "alpha",
-      lastTo: "room-one",
+      channel: "telegram",
+      to: "+1555",
+      lastChannel: "whatsapp",
+      lastTo: "+1555",
     });
   });
 
@@ -196,8 +196,8 @@ describe("resolveSessionDeliveryTarget", () => {
       entry: {
         sessionId: "sess-thread",
         updatedAt: 1,
-        lastChannel: "forum",
-        lastTo: "room:ops",
+        lastChannel: "telegram",
+        lastTo: "-100123",
         lastThreadId: 999,
       },
       requestedChannel: "last",
@@ -205,8 +205,8 @@ describe("resolveSessionDeliveryTarget", () => {
     });
 
     expect(resolved.threadId).toBe(42);
-    expect(resolved.channel).toBe("forum");
-    expect(resolved.to).toBe("room:ops");
+    expect(resolved.channel).toBe("telegram");
+    expect(resolved.to).toBe("-100123");
   });
 
   it("uses session lastThreadId when no explicitThreadId", () => {
@@ -214,8 +214,8 @@ describe("resolveSessionDeliveryTarget", () => {
       entry: {
         sessionId: "sess-thread-2",
         updatedAt: 1,
-        lastChannel: "forum",
-        lastTo: "room:ops",
+        lastChannel: "telegram",
+        lastTo: "-100123",
         lastThreadId: 999,
       },
       requestedChannel: "last",
@@ -229,9 +229,9 @@ describe("resolveSessionDeliveryTarget", () => {
       entry: {
         sessionId: "sess-heartbeat-thread",
         updatedAt: 1,
-        lastChannel: "alpha",
-        lastTo: "room-one",
-        lastThreadId: "thread-1",
+        lastChannel: "slack",
+        lastTo: "user:U123",
+        lastThreadId: "1739142736.000100",
       },
       requestedChannel: "last",
       mode: "heartbeat",
@@ -245,67 +245,67 @@ describe("resolveSessionDeliveryTarget", () => {
       entry: {
         sessionId: "sess-4",
         updatedAt: 1,
-        lastChannel: "alpha",
-        lastTo: "room-one",
+        lastChannel: "whatsapp",
+        lastTo: "+1555",
       },
       requestedChannel: "webchat",
-      fallbackChannel: "beta",
+      fallbackChannel: "slack",
     });
 
     expectImplicitRoute(resolved, {
-      channel: "beta",
+      channel: "slack",
       to: undefined,
-      lastChannel: "alpha",
-      lastTo: "room-one",
+      lastChannel: "whatsapp",
+      lastTo: "+1555",
     });
   });
 
-  it("parses plugin-owned explicit targets into threadId", () => {
+  it("parses :topic:NNN from explicitTo into threadId", () => {
     expectTopicParsedFromExplicitTo({
       sessionId: "sess-topic",
       updatedAt: 1,
-      lastChannel: "forum",
-      lastTo: "room:ops",
+      lastChannel: "telegram",
+      lastTo: "63448508",
     });
   });
 
-  it("parses plugin-owned explicit targets even when lastTo is absent", () => {
+  it("parses :topic:NNN even when lastTo is absent", () => {
     expectTopicParsedFromExplicitTo({
       sessionId: "sess-no-last",
       updatedAt: 1,
-      lastChannel: "forum",
+      lastChannel: "telegram",
     });
   });
 
-  it("skips plugin-owned target parsing for other channels", () => {
+  it("skips :topic: parsing for non-telegram channels", () => {
     const resolved = resolveSessionDeliveryTarget({
       entry: {
-        sessionId: "sess-alpha",
+        sessionId: "sess-slack",
         updatedAt: 1,
-        lastChannel: "alpha",
-        lastTo: "room-one",
+        lastChannel: "slack",
+        lastTo: "C12345",
       },
       requestedChannel: "last",
-      explicitTo: "room-one:topic:999",
+      explicitTo: "C12345:topic:999",
     });
 
-    expect(resolved.to).toBe("room-one:topic:999");
+    expect(resolved.to).toBe("C12345:topic:999");
     expect(resolved.threadId).toBeUndefined();
   });
 
-  it("skips plugin-owned target parsing when the requested channel differs from lastChannel", () => {
+  it("skips :topic: parsing when channel is explicitly non-telegram even if lastChannel was telegram", () => {
     const resolved = resolveSessionDeliveryTarget({
       entry: {
         sessionId: "sess-cross",
         updatedAt: 1,
-        lastChannel: "forum",
-        lastTo: "room:ops",
+        lastChannel: "telegram",
+        lastTo: "63448508",
       },
-      requestedChannel: "alpha",
-      explicitTo: "room-one:topic:999",
+      requestedChannel: "slack",
+      explicitTo: "C12345:topic:999",
     });
 
-    expect(resolved.to).toBe("room-one:topic:999");
+    expect(resolved.to).toBe("C12345:topic:999");
     expect(resolved.threadId).toBeUndefined();
   });
 
@@ -314,16 +314,16 @@ describe("resolveSessionDeliveryTarget", () => {
       entry: {
         sessionId: "sess-priority",
         updatedAt: 1,
-        lastChannel: "forum",
-        lastTo: "room:ops",
+        lastChannel: "telegram",
+        lastTo: "63448508",
       },
       requestedChannel: "last",
-      explicitTo: "room:ops:topic:1008013",
+      explicitTo: "63448508:topic:1008013",
       explicitThreadId: 42,
     });
 
     expect(resolved.threadId).toBe(42);
-    expect(resolved.to).toBe("room:ops");
+    expect(resolved.to).toBe("63448508");
   });
 
   const resolveHeartbeatTarget = (
@@ -357,105 +357,104 @@ describe("resolveSessionDeliveryTarget", () => {
 
   it.each([
     {
-      name: "allows heartbeat delivery to direct targets by default and drops inherited thread ids",
+      name: "allows heartbeat delivery to Slack DMs by default and drops inherited thread ids",
       entry: {
-        sessionId: "sess-heartbeat-alpha-direct",
+        sessionId: "sess-heartbeat-slack-direct",
         updatedAt: 1,
-        lastChannel: "alpha",
-        lastTo: "user:one",
-        lastThreadId: "thread-1",
+        lastChannel: "slack",
+        lastTo: "user:U123",
+        lastThreadId: "1739142736.000100",
       },
-      expectedChannel: "alpha",
-      expectedTo: "user:one",
+      expectedChannel: "slack",
+      expectedTo: "user:U123",
     },
     {
-      name: "blocks heartbeat delivery to direct targets when directPolicy is block",
+      name: "blocks heartbeat delivery to Slack DMs when directPolicy is block",
       entry: {
-        sessionId: "sess-heartbeat-alpha-direct-blocked",
+        sessionId: "sess-heartbeat-slack-direct-blocked",
         updatedAt: 1,
-        lastChannel: "alpha",
-        lastTo: "user:one",
-        lastThreadId: "thread-1",
+        lastChannel: "slack",
+        lastTo: "user:U123",
+        lastThreadId: "1739142736.000100",
       },
       directPolicy: "block" as const,
       expectedChannel: "none",
       expectedReason: "dm-blocked",
     },
     {
-      name: "allows heartbeat delivery to plugin-classified direct chats by default",
+      name: "allows heartbeat delivery to Telegram direct chats by default",
       entry: {
-        sessionId: "sess-heartbeat-forum-direct",
+        sessionId: "sess-heartbeat-telegram-direct",
         updatedAt: 1,
-        lastChannel: "forum",
-        lastTo: "dm:one",
+        lastChannel: "telegram",
+        lastTo: "5232990709",
       },
-      expectedChannel: "forum",
-      expectedTo: "dm:one",
+      expectedChannel: "telegram",
+      expectedTo: "5232990709",
     },
     {
-      name: "blocks heartbeat delivery to plugin-classified direct chats when directPolicy is block",
+      name: "blocks heartbeat delivery to Telegram direct chats when directPolicy is block",
       entry: {
-        sessionId: "sess-heartbeat-forum-direct-blocked",
+        sessionId: "sess-heartbeat-telegram-direct-blocked",
         updatedAt: 1,
-        lastChannel: "forum",
-        lastTo: "dm:one",
+        lastChannel: "telegram",
+        lastTo: "5232990709",
       },
       directPolicy: "block" as const,
       expectedChannel: "none",
       expectedReason: "dm-blocked",
     },
     {
-      name: "keeps heartbeat delivery to plugin-classified groups",
+      name: "keeps heartbeat delivery to Telegram groups",
       entry: {
-        sessionId: "sess-heartbeat-forum-group",
+        sessionId: "sess-heartbeat-telegram-group",
         updatedAt: 1,
-        lastChannel: "forum",
-        lastTo: "room:ops",
+        lastChannel: "telegram",
+        lastTo: "-1001234567890",
       },
-      expectedChannel: "forum",
-      expectedTo: "room:ops",
+      expectedChannel: "telegram",
+      expectedTo: "-1001234567890",
     },
     {
-      name: "allows heartbeat delivery to unknown-shape targets when session chatType is direct",
+      name: "allows heartbeat delivery to WhatsApp direct chats by default",
       entry: {
-        sessionId: "sess-heartbeat-beta-direct",
+        sessionId: "sess-heartbeat-whatsapp-direct",
         updatedAt: 1,
-        lastChannel: "beta",
-        lastTo: "unknown-shape",
-        chatType: "direct",
+        lastChannel: "whatsapp",
+        lastTo: "+15551234567",
       },
-      expectedChannel: "beta",
-      expectedTo: "unknown-shape",
+      expectedChannel: "whatsapp",
+      expectedTo: "+15551234567",
     },
     {
-      name: "keeps heartbeat delivery to generic group targets",
+      name: "keeps heartbeat delivery to WhatsApp groups",
       entry: {
-        sessionId: "sess-heartbeat-alpha-group",
+        sessionId: "sess-heartbeat-whatsapp-group",
         updatedAt: 1,
-        lastChannel: "alpha",
-        lastTo: "group:ops",
+        lastChannel: "whatsapp",
+        lastTo: "120363140186826074@g.us",
       },
-      expectedChannel: "alpha",
-      expectedTo: "group:ops",
+      expectedChannel: "whatsapp",
+      expectedTo: "120363140186826074@g.us",
     },
     {
       name: "uses session chatType hints when target parsing cannot classify a direct chat",
       entry: {
-        sessionId: "sess-heartbeat-alpha-unknown-direct",
+        sessionId: "sess-heartbeat-imessage-direct",
         updatedAt: 1,
-        lastChannel: "alpha",
+        lastChannel: "imessage",
         lastTo: "chat-guid-unknown-shape",
         chatType: "direct",
       },
-      expectedChannel: "alpha",
+      expectedChannel: "imessage",
       expectedTo: "chat-guid-unknown-shape",
     },
     {
       name: "blocks session chatType direct hints when directPolicy is block",
       entry: {
-        sessionId: "sess-heartbeat-alpha-unknown-direct-blocked",
+        sessionId: "sess-heartbeat-imessage-direct-blocked",
         updatedAt: 1,
-        lastChannel: "alpha",
+        lastChannel: "imessage",
         lastTo: "chat-guid-unknown-shape",
         chatType: "direct",
       },
@@ -481,14 +480,14 @@ describe("resolveSessionDeliveryTarget", () => {
     });
   });
 
-  it("allows heartbeat delivery to core direct target prefixes by default", () => {
+  it("allows heartbeat delivery to Discord DMs by default", () => {
     const cfg: RemoteClawConfig = {};
     const resolved = resolveHeartbeatDeliveryTarget({
       cfg,
       entry: {
-        sessionId: "sess-heartbeat-core-direct-prefix",
+        sessionId: "sess-heartbeat-discord-dm",
         updatedAt: 1,
-        lastChannel: "alpha",
+        lastChannel: "discord",
         lastTo: "user:12345",
       },
       heartbeat: {
@@ -496,18 +495,18 @@ describe("resolveSessionDeliveryTarget", () => {
       },
     });
 
-    expect(resolved.channel).toBe("alpha");
+    expect(resolved.channel).toBe("discord");
     expect(resolved.to).toBe("user:12345");
   });
 
-  it("keeps heartbeat delivery to core channel target prefixes", () => {
+  it("keeps heartbeat delivery to Discord channels", () => {
     const cfg: RemoteClawConfig = {};
     const resolved = resolveHeartbeatDeliveryTarget({
       cfg,
       entry: {
-        sessionId: "sess-heartbeat-core-channel-prefix",
+        sessionId: "sess-heartbeat-discord-channel",
         updatedAt: 1,
-        lastChannel: "alpha",
+        lastChannel: "discord",
         lastTo: "channel:999",
       },
       heartbeat: {
@@ -515,7 +514,7 @@ describe("resolveSessionDeliveryTarget", () => {
       },
     });
 
-    expect(resolved.channel).toBe("alpha");
+    expect(resolved.channel).toBe("discord");
     expect(resolved.to).toBe("channel:999");
   });
 
@@ -524,8 +523,8 @@ describe("resolveSessionDeliveryTarget", () => {
       entry: {
         sessionId: "sess-heartbeat-explicit-thread",
         updatedAt: 1,
-        lastChannel: "forum",
-        lastTo: "room:ops",
+        lastChannel: "telegram",
+        lastTo: "-100123",
         lastThreadId: 999,
       },
       requestedChannel: "last",
@@ -533,24 +532,24 @@ describe("resolveSessionDeliveryTarget", () => {
       explicitThreadId: 42,
     });
 
-    expect(resolved.channel).toBe("forum");
-    expect(resolved.to).toBe("room:ops");
+    expect(resolved.channel).toBe("telegram");
+    expect(resolved.to).toBe("-100123");
     expect(resolved.threadId).toBe(42);
     expect(resolved.threadIdExplicit).toBe(true);
   });
 
-  it("parses explicit heartbeat plugin targets into threadId", () => {
+  it("parses explicit heartbeat topic targets into threadId", () => {
     const cfg: RemoteClawConfig = {};
     const resolved = resolveHeartbeatDeliveryTarget({
       cfg,
       heartbeat: {
-        target: "forum",
-        to: "room:ops:topic:1008013",
+        target: "telegram",
+        to: "-10063448508:topic:1008013",
       },
     });
 
-    expect(resolved.channel).toBe("forum");
-    expect(resolved.to).toBe("room:ops");
+    expect(resolved.channel).toBe("telegram");
+    expect(resolved.to).toBe("-10063448508");
     expect(resolved.threadId).toBe(1008013);
   });
 
@@ -560,21 +559,21 @@ describe("resolveSessionDeliveryTarget", () => {
       entry: {
         sessionId: "sess-heartbeat-turn-source",
         updatedAt: 1,
-        lastChannel: "alpha",
-        lastTo: "wrong-room",
+        lastChannel: "slack",
+        lastTo: "U_WRONG",
       },
       heartbeat: {
         target: "last",
       },
       turnSource: {
-        channel: "forum",
-        to: "room:ops",
+        channel: "telegram",
+        to: "-100123",
         threadId: 42,
       },
     });
 
-    expect(resolved.channel).toBe("forum");
-    expect(resolved.to).toBe("room:ops");
+    expect(resolved.channel).toBe("telegram");
+    expect(resolved.to).toBe("-100123");
     expect(resolved.threadId).toBe(42);
   });
 
@@ -584,8 +583,8 @@ describe("resolveSessionDeliveryTarget", () => {
       entry: {
         sessionId: "sess-heartbeat-turn-source-partial",
         updatedAt: 1,
-        lastChannel: "forum",
-        lastTo: "room:ops",
+        lastChannel: "telegram",
+        lastTo: "-100123",
       },
       heartbeat: {
         target: "last",
@@ -595,30 +594,30 @@ describe("resolveSessionDeliveryTarget", () => {
       },
     });
 
-    expect(resolved.channel).toBe("forum");
-    expect(resolved.to).toBe("room:ops");
+    expect(resolved.channel).toBe("telegram");
+    expect(resolved.to).toBe("-100123");
     expect(resolved.threadId).toBe(42);
   });
 });
 
 describe("resolveSessionDeliveryTarget — cross-channel reply guard (#24152)", () => {
   it("uses turnSourceChannel over session lastChannel when provided", () => {
-    // Simulate: one channel originated the turn, but another channel
-    // concurrently updated the shared session route.
+    // Simulate: WhatsApp message originated the turn, but a Slack message
+    // arrived concurrently and updated lastChannel to "slack"
     const resolved = resolveSessionDeliveryTarget({
       entry: {
         sessionId: "sess-shared",
         updatedAt: 1,
-        lastChannel: "beta",
-        lastTo: "wrong-room",
+        lastChannel: "slack", // <- concurrently overwritten
+        lastTo: "U0AEMECNCBV", // <- Slack user (wrong target)
       },
       requestedChannel: "last",
-      turnSourceChannel: "alpha",
-      turnSourceTo: "room-one",
+      turnSourceChannel: "whatsapp", // <- originated from WhatsApp
+      turnSourceTo: "+66972796305", // <- WhatsApp user (correct target)
     });
 
-    expect(resolved.channel).toBe("alpha");
-    expect(resolved.to).toBe("room-one");
+    expect(resolved.channel).toBe("whatsapp");
+    expect(resolved.to).toBe("+66972796305");
   });
 
   it("falls back to session lastChannel when turnSourceChannel is not set", () => {
@@ -626,14 +625,14 @@ describe("resolveSessionDeliveryTarget — cross-channel reply guard (#24152)", 
       entry: {
         sessionId: "sess-normal",
         updatedAt: 1,
-        lastChannel: "alpha",
-        lastTo: "room-one",
+        lastChannel: "telegram",
+        lastTo: "8587265585",
       },
       requestedChannel: "last",
     });
 
-    expect(resolved.channel).toBe("alpha");
-    expect(resolved.to).toBe("room-one");
+    expect(resolved.channel).toBe("telegram");
+    expect(resolved.to).toBe("8587265585");
   });
 
   it("respects explicit requestedChannel over turnSourceChannel", () => {
@@ -641,17 +640,17 @@ describe("resolveSessionDeliveryTarget — cross-channel reply guard (#24152)", 
       entry: {
         sessionId: "sess-explicit",
         updatedAt: 1,
-        lastChannel: "beta",
-        lastTo: "wrong-room",
+        lastChannel: "slack",
+        lastTo: "U12345",
       },
-      requestedChannel: "forum",
-      explicitTo: "room:ops",
-      turnSourceChannel: "alpha",
-      turnSourceTo: "room-one",
+      requestedChannel: "telegram",
+      explicitTo: "8587265585",
+      turnSourceChannel: "whatsapp",
+      turnSourceTo: "+66972796305",
     });
 
-    // Explicit requestedChannel is not "last", so it takes priority.
-    expect(resolved.channel).toBe("forum");
+    // Explicit requestedChannel "telegram" is not "last", so it takes priority
+    expect(resolved.channel).toBe("telegram");
   });
 
   it("preserves turnSourceAccountId and turnSourceThreadId", () => {
@@ -659,19 +658,19 @@ describe("resolveSessionDeliveryTarget — cross-channel reply guard (#24152)", 
       entry: {
         sessionId: "sess-meta",
         updatedAt: 1,
-        lastChannel: "beta",
-        lastTo: "wrong-room",
+        lastChannel: "slack",
+        lastTo: "U_WRONG",
         lastAccountId: "wrong-account",
       },
       requestedChannel: "last",
-      turnSourceChannel: "forum",
-      turnSourceTo: "room:ops",
+      turnSourceChannel: "telegram",
+      turnSourceTo: "8587265585",
       turnSourceAccountId: "bot-123",
       turnSourceThreadId: 42,
     });
 
-    expect(resolved.channel).toBe("forum");
-    expect(resolved.to).toBe("room:ops");
+    expect(resolved.channel).toBe("telegram");
+    expect(resolved.to).toBe("8587265585");
     expect(resolved.accountId).toBe("bot-123");
     expect(resolved.threadId).toBe(42);
   });
@@ -681,16 +680,16 @@ describe("resolveSessionDeliveryTarget — cross-channel reply guard (#24152)", 
       entry: {
         sessionId: "sess-no-fallback",
         updatedAt: 1,
-        lastChannel: "beta",
-        lastTo: "wrong-room",
+        lastChannel: "slack",
+        lastTo: "U_WRONG",
         lastAccountId: "wrong-account",
-        lastThreadId: "thread-1",
+        lastThreadId: "1739142736.000100",
       },
       requestedChannel: "last",
-      turnSourceChannel: "alpha",
+      turnSourceChannel: "whatsapp",
     });
 
-    expect(resolved.channel).toBe("alpha");
+    expect(resolved.channel).toBe("whatsapp");
     expect(resolved.to).toBeUndefined();
     expect(resolved.accountId).toBeUndefined();
     expect(resolved.threadId).toBeUndefined();
@@ -704,16 +703,16 @@ describe("resolveSessionDeliveryTarget — cross-channel reply guard (#24152)", 
       entry: {
         sessionId: "sess-explicit-to",
         updatedAt: 1,
-        lastChannel: "beta",
-        lastTo: "wrong-room",
+        lastChannel: "slack",
+        lastTo: "U_WRONG",
       },
       requestedChannel: "last",
-      explicitTo: "room-one",
-      turnSourceChannel: "alpha",
+      explicitTo: "+15551234567",
+      turnSourceChannel: "whatsapp",
     });
 
-    expect(resolved.channel).toBe("alpha");
-    expect(resolved.to).toBe("room-one");
+    expect(resolved.channel).toBe("whatsapp");
+    expect(resolved.to).toBe("+15551234567");
   });
 
   it("still allows mismatched lastTo only from turn-scoped metadata", () => {
@@ -721,16 +720,16 @@ describe("resolveSessionDeliveryTarget — cross-channel reply guard (#24152)", 
       entry: {
         sessionId: "sess-mismatch-turn",
         updatedAt: 1,
-        lastChannel: "alpha",
-        lastTo: "wrong-room",
+        lastChannel: "slack",
+        lastTo: "U_WRONG",
       },
-      requestedChannel: "beta",
+      requestedChannel: "telegram",
       allowMismatchedLastTo: true,
-      turnSourceChannel: "alpha",
-      turnSourceTo: "room-one",
+      turnSourceChannel: "whatsapp",
+      turnSourceTo: "+15550000000",
     });
 
-    expect(resolved.channel).toBe("beta");
-    expect(resolved.to).toBe("room-one");
+    expect(resolved.channel).toBe("telegram");
+    expect(resolved.to).toBe("+15550000000");
   });
 });

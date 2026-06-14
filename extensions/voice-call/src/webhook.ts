@@ -460,7 +460,7 @@ export class VoiceCallWebhookServer {
     }
 
     try {
-      const { generateVoiceResponse } = await loadResponseGeneratorModule();
+      const { generateVoiceResponse } = await import("./response-generator.js");
 
       const result = await generateVoiceResponse({
         voiceConfig: this.config,

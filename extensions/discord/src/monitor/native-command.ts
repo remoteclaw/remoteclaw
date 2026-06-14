@@ -60,7 +60,6 @@ import {
   resolveDiscordOwnerAccess,
   resolveGroupDmAllow,
 } from "./allow-list.js";
-import { resolveDiscordChannelNameSafe, resolveDiscordChannelTopicSafe } from "./channel-access.js";
 import { resolveDiscordDmCommandAccess } from "./dm-command-auth.js";
 import { handleDiscordDmCommandDecision } from "./dm-command-decision.js";
 import { resolveDiscordChannelInfo } from "./message-utils.js";
@@ -508,19 +507,6 @@ function buildDiscordCommandArgMenu(params: {
   return { content, components: rows };
 }
 
-function createNativeCommandDefinition(command: NativeCommandSpec): ChatCommandDefinition {
-  return {
-    key: command.name,
-    nativeName: command.name,
-    description: command.description,
-    textAliases: [],
-    acceptsArgs: command.acceptsArgs,
-    args: command.args,
-    argsParsing: "none",
-    scope: "native",
-  };
-}
-
 export function createDiscordNativeCommand(params: {
   command: NativeCommandSpec;
   cfg: ReturnType<typeof loadConfig>;
@@ -539,13 +525,18 @@ export function createDiscordNativeCommand(params: {
     ephemeralDefault,
     threadBindings,
   } = params;
-  const fallbackCommandDefinition = createNativeCommandDefinition(command);
   const commandDefinition =
-    matchPluginCommandImpl(`/${command.name}`) !== null
-      ? fallbackCommandDefinition
-      : (findCommandByNativeName(command.name, "discord", {
-          includeBundledChannelFallback: false,
-        }) ?? fallbackCommandDefinition);
+    findCommandByNativeName(command.name, "discord") ??
+    ({
+      key: command.name,
+      nativeName: command.name,
+      description: command.description,
+      textAliases: [],
+      acceptsArgs: command.acceptsArgs,
+      args: command.args,
+      argsParsing: "none",
+      scope: "native",
+    } satisfies ChatCommandDefinition);
   const argDefinitions = commandDefinition.args ?? command.args;
   const commandOptions = buildDiscordCommandOptions({
     command: commandDefinition,
@@ -654,7 +645,7 @@ async function dispatchDiscordCommandInteraction(params: {
     channelType === ChannelType.PublicThread ||
     channelType === ChannelType.PrivateThread ||
     channelType === ChannelType.AnnouncementThread;
-  const channelName = resolveDiscordChannelNameSafe(channel);
+  const channelName = channel && "name" in channel ? (channel.name as string) : undefined;
   const channelSlug = channelName ? normalizeDiscordSlug(channelName) : "";
   const rawChannelId = channel?.id ?? "";
   const memberRoleIds = Array.isArray(interaction.rawData.member?.roles)
@@ -991,10 +982,8 @@ async function dispatchDiscordCommandInteraction(params: {
     interactionId,
     channelId,
     threadParentId,
-    memberRoleIds,
-    guildId: interaction.guild?.id,
     guildName: interaction.guild?.name,
-    channelTopic: resolveDiscordChannelTopicSafe(channel),
+    channelTopic: channel && "topic" in channel ? (channel.topic ?? undefined) : undefined,
     channelConfig,
     guildInfo,
     allowNameMatching,

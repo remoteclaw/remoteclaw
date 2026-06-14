@@ -591,9 +591,6 @@ async function maybeRestartService(params: {
             defaultRuntime.log(theme.muted(line));
           }
           defaultRuntime.log(
-            theme.muted(`Restart log: ${resolveGatewayRestartLogPath(process.env)}`),
-          );
-          defaultRuntime.log(
             theme.muted(
               `Run \`${replaceCliName(formatCliCommand("remoteclaw gateway status --deep"), CLI_NAME)}\` for details.`,
             ),

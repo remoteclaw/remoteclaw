@@ -8,10 +8,9 @@ import { resolveOutboundTarget } from "./targets.js";
 export function installResolveOutboundTargetPluginRegistryHooks(): void {
   beforeEach(() => {
     setActivePluginRegistry(
-      createTargetsTestRegistry([
-        createGenericTargetTestPlugin("alpha", "Alpha"),
-        createGenericTargetTestPlugin("beta", "Beta"),
-        createForumTargetTestPlugin(),
+      createTestRegistry([
+        { pluginId: "whatsapp", plugin: whatsappPlugin, source: "test" },
+        { pluginId: "telegram", plugin: telegramPlugin, source: "test" },
       ]),
     );
   });
@@ -25,50 +24,69 @@ export function runResolveOutboundTargetCoreTests(): void {
   describe("resolveOutboundTarget", () => {
     installResolveOutboundTargetPluginRegistryHooks();
 
-    it("rejects empty targets through the loaded channel plugin", () => {
+    it("rejects whatsapp with empty target even when allowFrom configured", () => {
       const cfg = {
-        channels: { alpha: { allowFrom: ["room-one"] } },
+        channels: { whatsapp: { allowFrom: ["+1555"] } },
       };
       const res = resolveOutboundTarget({
-        channel: "alpha",
+        channel: "whatsapp",
         to: "",
         cfg,
         mode: "explicit",
       });
       expect(res.ok).toBe(false);
       if (!res.ok) {
-        expect(res.error.message).toContain("Alpha");
+        expect(res.error.message).toContain("WhatsApp");
       }
     });
 
     it.each([
       {
-        name: "normalizes target through the loaded plugin",
-        input: { channel: "alpha" as const, to: " Alpha:Room One " },
-        expected: { ok: true as const, to: "room-one" },
+        name: "normalizes whatsapp target when provided",
+        input: { channel: "whatsapp" as const, to: " (555) 123-4567 " },
+        expected: { ok: true as const, to: "+5551234567" },
       },
       {
-        name: "uses channel defaultTo when no target was provided",
+        name: "keeps whatsapp group targets",
+        input: { channel: "whatsapp" as const, to: "120363401234567890@g.us" },
+        expected: { ok: true as const, to: "120363401234567890@g.us" },
+      },
+      {
+        name: "normalizes prefixed/uppercase whatsapp group targets",
         input: {
-          channel: "beta" as const,
-          to: "",
-          cfg: { channels: { beta: { defaultTo: "Beta:Default Room" } } },
+          channel: "whatsapp" as const,
+          to: " WhatsApp:120363401234567890@G.US ",
         },
-        expected: { ok: true as const, to: "default-room" },
+        expected: { ok: true as const, to: "120363401234567890@g.us" },
       },
       {
-        name: "passes explicit allowFrom without using it as an implicit target",
+        name: "rejects whatsapp with empty target and allowFrom (no silent fallback)",
+        input: { channel: "whatsapp" as const, to: "", allowFrom: ["+1555"] },
+        expectedErrorIncludes: "WhatsApp",
+      },
+      {
+        name: "rejects whatsapp with empty target and prefixed allowFrom (no silent fallback)",
         input: {
-          channel: "alpha" as const,
+          channel: "whatsapp" as const,
           to: "",
-          allowFrom: ["alpha:room-one"],
+          allowFrom: ["whatsapp:(555) 123-4567"],
         },
-        expectedErrorIncludes: "Alpha",
+        expectedErrorIncludes: "WhatsApp",
       },
       {
-        name: "rejects plugin-specific invalid targets",
-        input: { channel: "alpha" as const, to: "invalid" },
-        expectedErrorIncludes: "Alpha",
+        name: "rejects invalid whatsapp target",
+        input: { channel: "whatsapp" as const, to: "wat" },
+        expectedErrorIncludes: "WhatsApp",
+      },
+      {
+        name: "rejects whatsapp without to when allowFrom missing",
+        input: { channel: "whatsapp" as const, to: " " },
+        expectedErrorIncludes: "WhatsApp",
+      },
+      {
+        name: "rejects whatsapp allowFrom fallback when invalid",
+        input: { channel: "whatsapp" as const, to: "", allowFrom: ["wat"] },
+        expectedErrorIncludes: "WhatsApp",
       },
     ])("$name", ({ input, expected, expectedErrorIncludes }) => {
       const res = resolveOutboundTarget(input);
@@ -82,28 +100,11 @@ export function runResolveOutboundTargetCoreTests(): void {
       }
     });
 
-    it("uses the plugin hint when a channel has outbound support but no target resolver", () => {
-      setActivePluginRegistry(
-        createTargetsTestRegistry([
-          createForumTargetTestPlugin(),
-          createTestChannelPlugin({
-            id: "noresolver",
-            label: "NoResolver",
-            outbound: {
-              deliveryMode: "direct",
-              sendText: async () => ({ channel: "noresolver", messageId: "noresolver-msg" }),
-            },
-            messaging: {
-              targetResolver: { hint: "<test-target>" },
-            },
-          }),
-        ]),
-      );
-
-      const res = resolveOutboundTarget({ channel: "noresolver", to: " " });
+    it("rejects telegram with missing target", () => {
+      const res = resolveOutboundTarget({ channel: "telegram", to: " " });
       expect(res.ok).toBe(false);
       if (!res.ok) {
-        expect(res.error.message).toContain("NoResolver");
+        expect(res.error.message).toContain("Telegram");
       }
     });
 

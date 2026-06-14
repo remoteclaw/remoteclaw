@@ -92,36 +92,6 @@ const GATEWAY_AUTH_MODES: readonly GatewayAuthMode[] = [
 ];
 const GATEWAY_TAILSCALE_MODES: readonly GatewayTailscaleMode[] = ["off", "serve", "funnel"];
 
-function createGatewayCliStartupTrace() {
-  const enabled = isTruthyEnvValue(process.env.REMOTECLAW_GATEWAY_STARTUP_TRACE);
-  const started = performance.now();
-  let last = started;
-  const emit = (name: string, durationMs: number, totalMs: number) => {
-    if (enabled) {
-      gatewayLog.info(
-        `startup trace: ${name} ${durationMs.toFixed(1)}ms total=${totalMs.toFixed(1)}ms`,
-      );
-    }
-  };
-  return {
-    mark(name: string) {
-      const now = performance.now();
-      emit(name, now - last, now - started);
-      last = now;
-    },
-    async measure<T>(name: string, run: () => Awaitable<T>): Promise<T> {
-      const before = performance.now();
-      try {
-        return await run();
-      } finally {
-        const now = performance.now();
-        emit(name, now - before, now - started);
-        last = now;
-      }
-    },
-  };
-}
-
 function warnInlinePasswordFlag() {
   defaultRuntime.error(
     "Warning: --password can be exposed via process listings. Prefer --password-file or REMOTECLAW_GATEWAY_PASSWORD.",
@@ -150,11 +120,11 @@ function parseEnumOption<T extends string>(
   return (allowed as readonly string[]).includes(raw) ? (raw as T) : null;
 }
 
-function formatModeChoices(modes: readonly string[]): string {
+function formatModeChoices<T extends string>(modes: readonly T[]): string {
   return modes.map((mode) => `"${mode}"`).join("|");
 }
 
-function formatModeErrorList(modes: readonly string[]): string {
+function formatModeErrorList<T extends string>(modes: readonly T[]): string {
   const quoted = modes.map((mode) => `"${mode}"`);
   if (quoted.length === 0) {
     return "";
@@ -384,14 +354,12 @@ async function runGatewayCommand(opts: GatewayRunOpts) {
           ...(passwordRaw ? { password: passwordRaw } : {}),
         }
       : undefined;
-  const resolvedAuth = await startupTrace.measure("cli.auth-resolve", () =>
-    resolveGatewayAuth({
-      authConfig: cfg.gateway?.auth,
-      authOverride,
-      env: process.env,
-      tailscaleMode: tailscaleMode ?? cfg.gateway?.tailscale?.mode ?? "off",
-    }),
-  );
+  const resolvedAuth = resolveGatewayAuth({
+    authConfig: cfg.gateway?.auth,
+    authOverride,
+    env: process.env,
+    tailscaleMode: tailscaleMode ?? cfg.gateway?.tailscale?.mode ?? "off",
+  });
   const resolvedAuthMode = resolvedAuth.mode;
   const tokenValue = resolvedAuth.token;
   const passwordValue = resolvedAuth.password;

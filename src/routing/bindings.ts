@@ -1,26 +1,59 @@
-import { resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { resolveSoleAgentId } from "../agents/agent-scope.js";
+import { normalizeChatChannelId } from "../channels/registry.js";
 import { listRouteBindings } from "../config/bindings.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import type { AgentRouteBinding } from "../config/types.agents.js";
-import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
-import {
-  normalizeRouteBindingChannelId,
-  resolveNormalizedRouteBindingMatch,
-} from "./binding-scope.js";
-import { normalizeAgentId } from "./session-key.js";
+import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
+import { normalizeAccountId, normalizeAgentId } from "./session-key.js";
+
+function normalizeBindingChannelId(raw?: string | null): string | null {
+  const normalized = normalizeChatChannelId(raw);
+  if (normalized) {
+    return normalized;
+  }
+  const fallback = normalizeLowercaseStringOrEmpty(raw);
+  return fallback || null;
+}
 
 export function listBindings(cfg: RemoteClawConfig): AgentRouteBinding[] {
   return listRouteBindings(cfg);
 }
 
+function resolveNormalizedBindingMatch(binding: AgentRouteBinding): {
+  agentId: string;
+  accountId: string;
+  channelId: string;
+} | null {
+  if (!binding || typeof binding !== "object") {
+    return null;
+  }
+  const match = binding.match;
+  if (!match || typeof match !== "object") {
+    return null;
+  }
+  const channelId = normalizeBindingChannelId(match.channel);
+  if (!channelId) {
+    return null;
+  }
+  const accountId = typeof match.accountId === "string" ? match.accountId.trim() : "";
+  if (!accountId || accountId === "*") {
+    return null;
+  }
+  return {
+    agentId: normalizeAgentId(binding.agentId),
+    accountId: normalizeAccountId(accountId),
+    channelId,
+  };
+}
+
 export function listBoundAccountIds(cfg: RemoteClawConfig, channelId: string): string[] {
-  const normalizedChannel = normalizeRouteBindingChannelId(channelId);
+  const normalizedChannel = normalizeBindingChannelId(channelId);
   if (!normalizedChannel) {
     return [];
   }
   const ids = new Set<string>();
   for (const binding of listBindings(cfg)) {
-    const resolved = resolveNormalizedRouteBindingMatch(binding);
+    const resolved = resolveNormalizedBindingMatch(binding);
     if (!resolved || resolved.channelId !== normalizedChannel) {
       continue;
     }
@@ -40,7 +73,7 @@ export function resolveSoleAgentBoundAccountId(
   cfg: RemoteClawConfig,
   channelId: string,
 ): string | null {
-  const normalizedChannel = normalizeRouteBindingChannelId(channelId);
+  const normalizedChannel = normalizeBindingChannelId(channelId);
   if (!normalizedChannel) {
     return null;
   }
@@ -50,7 +83,7 @@ export function resolveSoleAgentBoundAccountId(
   }
   const normalizedSoleAgentId = normalizeAgentId(soleAgentId);
   for (const binding of listBindings(cfg)) {
-    const resolved = resolveNormalizedRouteBindingMatch(binding);
+    const resolved = resolveNormalizedBindingMatch(binding);
     if (
       !resolved ||
       resolved.channelId !== normalizedChannel ||
@@ -66,7 +99,7 @@ export function resolveSoleAgentBoundAccountId(
 export function buildChannelAccountBindings(cfg: RemoteClawConfig) {
   const map = new Map<string, Map<string, string[]>>();
   for (const binding of listBindings(cfg)) {
-    const resolved = resolveNormalizedRouteBindingMatch(binding);
+    const resolved = resolveNormalizedBindingMatch(binding);
     if (!resolved) {
       continue;
     }

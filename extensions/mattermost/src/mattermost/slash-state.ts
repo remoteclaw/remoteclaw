@@ -286,6 +286,7 @@ export function registerSlashCommandRoute(api: RemoteClawPluginApi) {
     const matchedHandler = match.handler!;
 
     // Replay: create a synthetic readable that re-emits the buffered body
+    const { Readable } = await import("node:stream");
     const syntheticReq = new Readable({
       read() {
         this.push(Buffer.from(bodyStr, "utf8"));

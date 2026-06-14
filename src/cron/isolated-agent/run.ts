@@ -274,19 +274,6 @@ export async function runCronIsolatedAgentTurn(params: {
       }
     }
   }
-  if (thinkLevel === "max") {
-    const fallbackThinkLevel = resolveSupportedThinkingLevel({
-      provider,
-      model,
-      level: thinkLevel,
-    });
-    if (fallbackThinkLevel !== thinkLevel) {
-      logWarn(
-        `[cron:${input.job.id}] Thinking level "max" is not supported for ${provider}/${model}; downgrading to "${fallbackThinkLevel}".`,
-      );
-      thinkLevel = fallbackThinkLevel;
-    }
-  }
 
   const timeoutMs = resolveAgentTimeoutMs({
     cfg: cfgWithAgentDefaults,
@@ -562,19 +549,11 @@ export async function runCronIsolatedAgentTurn(params: {
     abortReason,
     withRunSession,
   });
-  const deliveryTrace = buildCronDeliveryTrace({
-    deliveryPlan: prepared.deliveryPlan,
-    resolvedDelivery: prepared.resolvedDelivery,
-    messagingToolSentTargets,
-    fallbackUsed: deliveryResult.deliveryAttempted && !skipMessagingToolDelivery,
-    delivered: deliveryResult.delivered,
-  });
   if (deliveryResult.result) {
     const resultWithDeliveryMeta: RunCronAgentTurnResult = {
       ...deliveryResult.result,
       deliveryAttempted:
         deliveryResult.result.deliveryAttempted ?? deliveryResult.deliveryAttempted,
-      delivery: deliveryTrace,
     };
     if (!hasErrorPayload || deliveryResult.result.status !== "ok") {
       return resultWithDeliveryMeta;
@@ -582,7 +561,6 @@ export async function runCronIsolatedAgentTurn(params: {
     return resolveRunOutcome({
       delivered: deliveryResult.result.delivered,
       deliveryAttempted: resultWithDeliveryMeta.deliveryAttempted,
-      delivery: deliveryTrace,
     });
   }
   const delivered = deliveryResult.delivered;

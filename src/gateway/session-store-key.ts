@@ -1,15 +1,13 @@
-import { listAgentIds, resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { resolveDefaultAgentId } from "../agents/agent-scope.js";
 import {
   canonicalizeMainSessionAlias,
   resolveMainSessionKey,
 } from "../config/sessions/main-session.js";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import {
-  DEFAULT_AGENT_ID,
   normalizeAgentId,
   normalizeMainKey,
   parseAgentSessionKey,
-  type ParsedAgentSessionKey,
 } from "../routing/session-key.js";
 import {
   normalizeLowercaseStringOrEmpty,
@@ -31,45 +29,9 @@ function resolveDefaultStoreAgentId(cfg: RemoteClawConfig): string {
   return normalizeAgentId(resolveDefaultAgentId(cfg));
 }
 
-function shouldRemapLegacyDefaultMainAlias(
-  cfg: RemoteClawConfig,
-  parsed: ParsedAgentSessionKey,
-  options?: { storeAgentId?: string },
-): boolean {
-  const agentId = normalizeAgentId(parsed.agentId);
-  if (agentId !== DEFAULT_AGENT_ID || listAgentIds(cfg).includes(DEFAULT_AGENT_ID)) {
-    return false;
-  }
-  const defaultAgentId = resolveDefaultStoreAgentId(cfg);
-  if (options?.storeAgentId && normalizeAgentId(options.storeAgentId) !== defaultAgentId) {
-    return false;
-  }
-  const rest = normalizeLowercaseStringOrEmpty(parsed.rest);
-  const mainKey = normalizeMainKey(cfg.session?.mainKey);
-  return rest === "main" || rest === mainKey;
-}
-
-function resolveParsedSessionStoreKey(
-  cfg: RemoteClawConfig,
-  raw: string,
-  parsed: ParsedAgentSessionKey,
-  options?: { storeAgentId?: string },
-): { agentId: string; sessionKey: string } {
-  if (!shouldRemapLegacyDefaultMainAlias(cfg, parsed, options)) {
-    return {
-      agentId: normalizeAgentId(parsed.agentId),
-      sessionKey: normalizeLowercaseStringOrEmpty(raw),
-    };
-  }
-  const agentId = resolveDefaultStoreAgentId(cfg);
-  const rest = normalizeLowercaseStringOrEmpty(parsed.rest);
-  return { agentId, sessionKey: `agent:${agentId}:${rest}` };
-}
-
 export function resolveSessionStoreKey(params: {
   cfg: RemoteClawConfig;
   sessionKey: string;
-  storeAgentId?: string;
 }): string {
   const raw = normalizeOptionalString(params.sessionKey) ?? "";
   if (!raw) {
@@ -82,18 +44,17 @@ export function resolveSessionStoreKey(params: {
 
   const parsed = parseAgentSessionKey(raw);
   if (parsed) {
-    const resolved = resolveParsedSessionStoreKey(params.cfg, raw, parsed, {
-      storeAgentId: params.storeAgentId,
-    });
+    const agentId = normalizeAgentId(parsed.agentId);
+    const lowered = normalizeLowercaseStringOrEmpty(raw);
     const canonical = canonicalizeMainSessionAlias({
       cfg: params.cfg,
-      agentId: resolved.agentId,
-      sessionKey: resolved.sessionKey,
+      agentId,
+      sessionKey: lowered,
     });
-    if (canonical !== resolved.sessionKey) {
+    if (canonical !== lowered) {
       return canonical;
     }
-    return resolved.sessionKey;
+    return lowered;
   }
 
   const lowered = normalizeLowercaseStringOrEmpty(raw);
@@ -114,39 +75,6 @@ export function resolveSessionStoreAgentId(cfg: RemoteClawConfig, canonicalKey: 
     return normalizeAgentId(parsed.agentId);
   }
   return resolveDefaultStoreAgentId(cfg);
-}
-
-export function resolveStoredSessionKeyForAgentStore(params: {
-  cfg: RemoteClawConfig;
-  agentId: string;
-  sessionKey: string;
-}): string {
-  const raw = normalizeOptionalString(params.sessionKey) ?? "";
-  if (!raw) {
-    return raw;
-  }
-  const lowered = normalizeLowercaseStringOrEmpty(raw);
-  if (lowered === "global" || lowered === "unknown") {
-    return lowered;
-  }
-  const key = parseAgentSessionKey(raw) ? raw : canonicalizeSessionKeyForAgent(params.agentId, raw);
-  return resolveSessionStoreKey({
-    cfg: params.cfg,
-    sessionKey: key,
-    storeAgentId: params.agentId,
-  });
-}
-
-export function resolveStoredSessionOwnerAgentId(params: {
-  cfg: RemoteClawConfig;
-  agentId: string;
-  sessionKey: string;
-}): string | null {
-  const canonicalKey = resolveStoredSessionKeyForAgentStore(params);
-  if (canonicalKey === "global" || canonicalKey === "unknown") {
-    return null;
-  }
-  return resolveSessionStoreAgentId(params.cfg, canonicalKey);
 }
 
 export function canonicalizeSpawnedByForAgent(

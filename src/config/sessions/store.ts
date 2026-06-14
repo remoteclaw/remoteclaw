@@ -8,6 +8,7 @@ import {
 } from "../../gateway/session-archive.fs.js";
 import { writeTextAtomic } from "../../infra/json-files.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
+import { normalizeLowercaseStringOrEmpty } from "../../shared/string-coerce.js";
 import {
   deliveryContextFromSession,
   mergeDeliveryContext,
@@ -31,6 +32,7 @@ import {
   capEntryCount,
   getActiveSessionMaintenanceWarning,
   pruneStaleEntries,
+  resolveMaintenanceConfig,
   rotateSessionFile,
   type ResolvedSessionMaintenanceConfig,
   type SessionMaintenanceWarning,

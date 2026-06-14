@@ -568,7 +568,6 @@ export async function registerSlackMonitorSlashCommands(params: {
                 : `slack:group:${command.channel_id}`,
           }) ?? (isDirectMessage ? senderName : roomLabel),
         GroupSubject: isRoomish ? roomLabel : undefined,
-        GroupSpace: ctx.teamId || undefined,
         GroupSystemPrompt: groupSystemPrompt,
         UntrustedContext: untrustedChannelMetadata ? [untrustedChannelMetadata] : undefined,
         SenderName: senderName,
@@ -593,9 +592,7 @@ export async function registerSlackMonitorSlashCommands(params: {
         sessionKey: ctxPayload.SessionKey ?? route.sessionKey,
         ctx: ctxPayload,
         onError: (err) =>
-          runtime.error?.(
-            danger(`slack slash: failed updating session meta: ${formatErrorMessage(err)}`),
-          ),
+          runtime.error?.(danger(`slack slash: failed updating session meta: ${String(err)}`)),
       });
 
       const prefixOptions = createReplyPrefixOptions({
@@ -627,9 +624,7 @@ export async function registerSlackMonitorSlashCommands(params: {
           ...prefixOptions,
           deliver: async (payload) => deliverSlashPayloads([payload]),
           onError: (err, info) => {
-            runtime.error?.(
-              danger(`slack slash ${info.kind} reply failed: ${formatErrorMessage(err)}`),
-            );
+            runtime.error?.(danger(`slack slash ${info.kind} reply failed: ${String(err)}`));
           },
         },
         replyOptions: {
@@ -640,7 +635,7 @@ export async function registerSlackMonitorSlashCommands(params: {
         await deliverSlashPayloads([]);
       }
     } catch (err) {
-      runtime.error?.(danger(`slack slash handler failed: ${formatErrorMessage(err)}`));
+      runtime.error?.(danger(`slack slash handler failed: ${String(err)}`));
       await respond({
         text: "Sorry, something went wrong handling that command.",
         response_type: "ephemeral",
@@ -778,7 +773,7 @@ export async function registerSlackMonitorSlashCommands(params: {
   } catch (err) {
     supportsExternalArgMenus = false;
     logVerbose(
-      `slack: external arg-menu registration failed, falling back to static menus: ${formatErrorMessage(err)}`,
+      `slack: external arg-menu registration failed, falling back to static menus: ${String(err)}`,
     );
   }
 

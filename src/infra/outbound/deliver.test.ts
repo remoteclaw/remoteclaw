@@ -75,70 +75,13 @@ const telegramChunkConfig: RemoteClawConfig = {
   channels: { telegram: { botToken: "tok-1", textChunkLimit: 2 } },
 };
 
-const matrixChunkConfig: RemoteClawConfig = {
-  channels: { matrix: { textChunkLimit: 4000 } } as RemoteClawConfig["channels"],
+const whatsappChunkConfig: RemoteClawConfig = {
+  channels: { whatsapp: { textChunkLimit: 4000 } },
 };
 
 type DeliverOutboundArgs = Parameters<typeof deliverOutboundPayloads>[0];
 type DeliverOutboundPayload = DeliverOutboundArgs["payloads"][number];
 type DeliverSession = DeliverOutboundArgs["session"];
-type MatrixSendFn = (
-  to: string,
-  text: string,
-  options?: Record<string, unknown>,
-) => Promise<{ messageId: string } & Record<string, unknown>>;
-
-function resolveMatrixSender(deps: DeliverOutboundArgs["deps"]): MatrixSendFn {
-  const sender = deps?.matrix;
-  if (typeof sender !== "function") {
-    throw new Error("missing matrix sender");
-  }
-  return sender as MatrixSendFn;
-}
-
-function withMatrixChannel(result: Awaited<ReturnType<MatrixSendFn>>) {
-  return {
-    channel: "matrix" as const,
-    ...result,
-  };
-}
-
-const matrixOutboundForTest: ChannelOutboundAdapter = {
-  deliveryMode: "direct",
-  chunker: chunkText,
-  chunkerMode: "text",
-  textChunkLimit: 4000,
-  sanitizeText: ({ text }) => (text === "<br>" || text === "<br><br>" ? "" : text),
-  sendText: async ({ cfg, to, text, accountId, deps, gifPlayback }) =>
-    withMatrixChannel(
-      await resolveMatrixSender(deps)(to, text, {
-        cfg,
-        accountId: accountId ?? undefined,
-        gifPlayback,
-      }),
-    ),
-  sendMedia: async ({
-    cfg,
-    to,
-    text,
-    mediaUrl,
-    mediaLocalRoots,
-    mediaReadFile,
-    accountId,
-    deps,
-    gifPlayback,
-  }) =>
-    withMatrixChannel(
-      await resolveMatrixSender(deps)(to, text, {
-        cfg,
-        mediaUrl,
-        mediaLocalRoots,
-        mediaReadFile,
-        accountId: accountId ?? undefined,
-        gifPlayback,
-      }),
-    ),
-};
 
 async function deliverWhatsAppPayload(params: {
   sendWhatsApp: NonNullable<
@@ -148,9 +91,9 @@ async function deliverWhatsAppPayload(params: {
   cfg?: RemoteClawConfig;
 }) {
   return deliverOutboundPayloads({
-    cfg: params.cfg ?? matrixChunkConfig,
-    channel: "matrix",
-    to: "!room:example",
+    cfg: params.cfg ?? whatsappChunkConfig,
+    channel: "whatsapp",
+    to: "+1555",
     payloads: [params.payload],
     deps: { sendWhatsApp: params.sendWhatsApp },
   });
@@ -174,33 +117,33 @@ async function deliverTelegramPayload(params: {
   });
 }
 
-async function runChunkedMatrixDelivery(params?: {
+async function runChunkedWhatsAppDelivery(params?: {
   mirror?: Parameters<typeof deliverOutboundPayloads>[0]["mirror"];
 }) {
-  const sendMatrix = vi
+  const sendWhatsApp = vi
     .fn()
-    .mockResolvedValueOnce({ messageId: "m1", roomId: "!room:example" })
-    .mockResolvedValueOnce({ messageId: "m2", roomId: "!room:example" });
+    .mockResolvedValueOnce({ messageId: "w1", toJid: "jid" })
+    .mockResolvedValueOnce({ messageId: "w2", toJid: "jid" });
   const cfg: RemoteClawConfig = {
-    channels: { matrix: { textChunkLimit: 2 } } as RemoteClawConfig["channels"],
+    channels: { whatsapp: { textChunkLimit: 2 } },
   };
   const results = await deliverOutboundPayloads({
     cfg,
-    channel: "matrix",
-    to: "!room:example",
+    channel: "whatsapp",
+    to: "+1555",
     payloads: [{ text: "abcd" }],
     deps: { sendWhatsApp },
     ...(params?.mirror ? { mirror: params.mirror } : {}),
   });
-  return { sendMatrix, results };
+  return { sendWhatsApp, results };
 }
 
-async function deliverSingleMatrixForHookTest(params?: { sessionKey?: string }) {
-  const sendMatrix = vi.fn().mockResolvedValue({ messageId: "m1", roomId: "!room:example" });
+async function deliverSingleWhatsAppForHookTest(params?: { sessionKey?: string }) {
+  const sendWhatsApp = vi.fn().mockResolvedValue({ messageId: "w1", toJid: "jid" });
   await deliverOutboundPayloads({
-    cfg: matrixChunkConfig,
-    channel: "matrix",
-    to: "!room:example",
+    cfg: whatsappChunkConfig,
+    channel: "whatsapp",
+    to: "+1555",
     payloads: [{ text: "hello" }],
     deps: { sendWhatsApp },
     ...(params?.sessionKey ? { session: { key: params.sessionKey } } : {}),
@@ -208,25 +151,25 @@ async function deliverSingleMatrixForHookTest(params?: { sessionKey?: string }) 
 }
 
 async function runBestEffortPartialFailureDelivery() {
-  const sendMatrix = vi
+  const sendWhatsApp = vi
     .fn()
     .mockRejectedValueOnce(new Error("fail"))
-    .mockResolvedValueOnce({ messageId: "m2", roomId: "!room:example" });
+    .mockResolvedValueOnce({ messageId: "w2", toJid: "jid" });
   const onError = vi.fn();
   const cfg: RemoteClawConfig = {};
   const results = await deliverOutboundPayloads({
     cfg,
-    channel: "matrix",
-    to: "!room:example",
+    channel: "whatsapp",
+    to: "+1555",
     payloads: [{ text: "a" }, { text: "b" }],
     deps: { sendWhatsApp },
     bestEffort: true,
     onError,
   });
-  return { sendMatrix, onError, results };
+  return { sendWhatsApp, onError, results };
 }
 
-function expectSuccessfulMatrixInternalHookPayload(
+function expectSuccessfulWhatsAppInternalHookPayload(
   expected: Partial<{
     content: string;
     messageId: string;
@@ -235,10 +178,10 @@ function expectSuccessfulMatrixInternalHookPayload(
   }>,
 ) {
   return expect.objectContaining({
-    to: "!room:example",
+    to: "+1555",
     success: true,
-    channelId: "matrix",
-    conversationId: "!room:example",
+    channelId: "whatsapp",
+    conversationId: "+1555",
     ...expected,
   });
 }
@@ -460,19 +403,19 @@ describe("deliverOutboundPayloads", () => {
     );
   });
 
-  it("includes RemoteClaw tmp root in plugin mediaLocalRoots", async () => {
-    const sendMatrix = vi.fn().mockResolvedValue({ messageId: "m-media", roomId: "!room" });
+  it("includes RemoteClaw tmp root in signal mediaLocalRoots", async () => {
+    const sendSignal = vi.fn().mockResolvedValue({ messageId: "s1", timestamp: 123 });
 
     await deliverOutboundPayloads({
-      cfg: { channels: { matrix: {} } } as RemoteClawConfig,
-      channel: "matrix",
-      to: "!room:example",
+      cfg: { channels: { signal: {} } },
+      channel: "signal",
+      to: "+1555",
       payloads: [{ text: "hi", mediaUrl: "https://example.com/x.png" }],
-      deps: { matrix: sendMatrix },
+      deps: { sendSignal },
     });
 
-    expect(sendMatrix).toHaveBeenCalledWith(
-      "!room:example",
+    expect(sendSignal).toHaveBeenCalledWith(
+      "+1555",
       "hi",
       expect.objectContaining({
         mediaLocalRoots: expect.arrayContaining([resolvePreferredRemoteClawTmpDir()]),
@@ -579,38 +522,36 @@ describe("deliverOutboundPayloads", () => {
   it("chunks WhatsApp text and returns all results", async () => {
     const { sendWhatsApp, results } = await runChunkedWhatsAppDelivery();
 
-    expect(sendMatrix).toHaveBeenCalledTimes(2);
-    expect(results.map((r) => r.messageId)).toEqual(["m1", "m2"]);
+    expect(sendWhatsApp).toHaveBeenCalledTimes(2);
+    expect(results.map((r) => r.messageId)).toEqual(["w1", "w2"]);
   });
 
-  it("respects newline chunk mode for plugin text", async () => {
-    const sendMatrix = vi.fn().mockResolvedValue({ messageId: "m1", roomId: "!room:example" });
+  it("respects newline chunk mode for WhatsApp", async () => {
+    const sendWhatsApp = vi.fn().mockResolvedValue({ messageId: "w1", toJid: "jid" });
     const cfg: RemoteClawConfig = {
-      channels: {
-        matrix: { textChunkLimit: 4000, chunkMode: "newline" },
-      } as RemoteClawConfig["channels"],
+      channels: { whatsapp: { textChunkLimit: 4000, chunkMode: "newline" } },
     };
 
     await deliverOutboundPayloads({
       cfg,
-      channel: "matrix",
-      to: "!room:example",
+      channel: "whatsapp",
+      to: "+1555",
       payloads: [{ text: "Line one\n\nLine two" }],
       deps: { sendWhatsApp },
     });
 
-    expect(sendMatrix).toHaveBeenCalledTimes(2);
-    expect(sendMatrix).toHaveBeenNthCalledWith(
+    expect(sendWhatsApp).toHaveBeenCalledTimes(2);
+    expect(sendWhatsApp).toHaveBeenNthCalledWith(
       1,
-      "!room:example",
+      "+1555",
       "Line one",
-      expect.objectContaining({ cfg }),
+      expect.objectContaining({ verbose: false }),
     );
-    expect(sendMatrix).toHaveBeenNthCalledWith(
+    expect(sendWhatsApp).toHaveBeenNthCalledWith(
       2,
-      "!room:example",
+      "+1555",
       "Line two",
-      expect.objectContaining({ cfg }),
+      expect.objectContaining({ verbose: false }),
     );
   });
 
@@ -648,7 +589,7 @@ describe("deliverOutboundPayloads", () => {
       payload: { text: "<br><br>" },
     });
 
-    expect(sendMatrix).not.toHaveBeenCalled();
+    expect(sendWhatsApp).not.toHaveBeenCalled();
     expect(results).toEqual([]);
   });
 
@@ -675,13 +616,13 @@ describe("deliverOutboundPayloads", () => {
     const sendSignal = vi.fn().mockResolvedValue({ messageId: "s1", toJid: "jid" });
     const results = await deliverOutboundPayloads({
       cfg: {},
-      channel: "matrix",
-      to: "!room:example",
+      channel: "signal",
+      to: "+1555",
       payloads: [{ text: "<br>" }],
-      deps: { matrix: sendMatrix },
+      deps: { sendSignal },
     });
 
-    expect(sendMatrix).not.toHaveBeenCalled();
+    expect(sendSignal).not.toHaveBeenCalled();
     expect(results).toEqual([]);
   });
 
@@ -738,9 +679,9 @@ describe("deliverOutboundPayloads", () => {
     setActivePluginRegistry(
       createTestRegistry([
         {
-          pluginId: "matrix",
+          pluginId: "imessage",
           source: "test",
-          plugin: createOutboundTestPlugin({ id: "matrix", outbound: matrixOutboundForTest }),
+          plugin: createIMessageTestPlugin(),
         },
       ]),
     );
@@ -756,8 +697,8 @@ describe("deliverOutboundPayloads", () => {
       deps: { sendIMessage },
     });
 
-    expect(sendMatrix).toHaveBeenCalledWith(
-      "!room:example",
+    expect(sendIMessage).toHaveBeenCalledWith(
+      "chat_id:42",
       "hello",
       expect.objectContaining({ maxBytes: 3 * 1024 * 1024 }),
     );
@@ -776,66 +717,66 @@ describe("deliverOutboundPayloads", () => {
   });
 
   it("continues on errors when bestEffort is enabled", async () => {
-    const { sendMatrix, onError, results } = await runBestEffortPartialFailureDelivery();
+    const { sendWhatsApp, onError, results } = await runBestEffortPartialFailureDelivery();
 
-    expect(sendMatrix).toHaveBeenCalledTimes(2);
+    expect(sendWhatsApp).toHaveBeenCalledTimes(2);
     expect(onError).toHaveBeenCalledTimes(1);
-    expect(results).toEqual([{ channel: "matrix", messageId: "m2", roomId: "!room:example" }]);
+    expect(results).toEqual([{ channel: "whatsapp", messageId: "w2", toJid: "jid" }]);
   });
 
   it("emits internal message:sent hook with success=true for chunked payload delivery", async () => {
-    const { sendMatrix } = await runChunkedMatrixDelivery({
+    const { sendWhatsApp } = await runChunkedWhatsAppDelivery({
       mirror: {
         sessionKey: "agent:main:main",
         isGroup: true,
-        groupId: "matrix:room:123",
+        groupId: "whatsapp:group:123",
       },
     });
-    expect(sendMatrix).toHaveBeenCalledTimes(2);
+    expect(sendWhatsApp).toHaveBeenCalledTimes(2);
 
     expect(internalHookMocks.createInternalHookEvent).toHaveBeenCalledTimes(1);
     expect(internalHookMocks.createInternalHookEvent).toHaveBeenCalledWith(
       "message",
       "sent",
       "agent:main:main",
-      expectSuccessfulMatrixInternalHookPayload({
+      expectSuccessfulWhatsAppInternalHookPayload({
         content: "abcd",
-        messageId: "m2",
+        messageId: "w2",
         isGroup: true,
-        groupId: "matrix:room:123",
+        groupId: "whatsapp:group:123",
       }),
     );
     expect(internalHookMocks.triggerInternalHook).toHaveBeenCalledTimes(1);
   });
 
   it("does not emit internal message:sent hook when neither mirror nor sessionKey is provided", async () => {
-    await deliverSingleMatrixForHookTest();
+    await deliverSingleWhatsAppForHookTest();
 
     expect(internalHookMocks.createInternalHookEvent).not.toHaveBeenCalled();
     expect(internalHookMocks.triggerInternalHook).not.toHaveBeenCalled();
   });
 
   it("emits internal message:sent hook when sessionKey is provided without mirror", async () => {
-    await deliverSingleMatrixForHookTest({ sessionKey: "agent:main:main" });
+    await deliverSingleWhatsAppForHookTest({ sessionKey: "agent:main:main" });
 
     expect(internalHookMocks.createInternalHookEvent).toHaveBeenCalledTimes(1);
     expect(internalHookMocks.createInternalHookEvent).toHaveBeenCalledWith(
       "message",
       "sent",
       "agent:main:main",
-      expectSuccessfulMatrixInternalHookPayload({ content: "hello", messageId: "m1" }),
+      expectSuccessfulWhatsAppInternalHookPayload({ content: "hello", messageId: "w1" }),
     );
     expect(internalHookMocks.triggerInternalHook).toHaveBeenCalledTimes(1);
   });
 
   it("warns when session.agentId is set without a session key", async () => {
-    const sendMatrix = vi.fn().mockResolvedValue({ messageId: "m1", roomId: "!room:example" });
+    const sendWhatsApp = vi.fn().mockResolvedValue({ messageId: "w1", toJid: "jid" });
     hookMocks.runner.hasHooks.mockReturnValue(true);
 
     await deliverOutboundPayloads({
-      cfg: matrixChunkConfig,
-      channel: "matrix",
-      to: "!room:example",
+      cfg: whatsappChunkConfig,
+      channel: "whatsapp",
+      to: "+1555",
       payloads: [{ text: "hello" }],
       deps: { sendWhatsApp },
       session: { agentId: "agent-main" },
@@ -843,7 +784,7 @@ describe("deliverOutboundPayloads", () => {
 
     expect(logMocks.warn).toHaveBeenCalledWith(
       "deliverOutboundPayloads: session.agentId present without session key; internal message:sent hook will be skipped",
-      expect.objectContaining({ channel: "matrix", to: "!room:example", agentId: "agent-main" }),
+      expect.objectContaining({ channel: "whatsapp", to: "+1555", agentId: "agent-main" }),
     );
   });
 
@@ -862,7 +803,7 @@ describe("deliverOutboundPayloads", () => {
   });
 
   it("acks the queue entry when delivery is aborted", async () => {
-    const sendMatrix = vi.fn().mockResolvedValue({ messageId: "m1", roomId: "!room:example" });
+    const sendWhatsApp = vi.fn().mockResolvedValue({ messageId: "w1", toJid: "jid" });
     const abortController = new AbortController();
     abortController.abort();
     const cfg: RemoteClawConfig = {};
@@ -870,8 +811,8 @@ describe("deliverOutboundPayloads", () => {
     await expect(
       deliverOutboundPayloads({
         cfg,
-        channel: "matrix",
-        to: "!room:example",
+        channel: "whatsapp",
+        to: "+1555",
         payloads: [{ text: "a" }],
         deps: { sendWhatsApp },
         abortSignal: abortController.signal,
@@ -880,18 +821,18 @@ describe("deliverOutboundPayloads", () => {
 
     expect(queueMocks.ackDelivery).toHaveBeenCalledWith("mock-queue-id");
     expect(queueMocks.failDelivery).not.toHaveBeenCalled();
-    expect(sendMatrix).not.toHaveBeenCalled();
+    expect(sendWhatsApp).not.toHaveBeenCalled();
   });
 
   it("passes normalized payload to onError", async () => {
-    const sendMatrix = vi.fn().mockRejectedValue(new Error("boom"));
+    const sendWhatsApp = vi.fn().mockRejectedValue(new Error("boom"));
     const onError = vi.fn();
     const cfg: RemoteClawConfig = {};
 
     await deliverOutboundPayloads({
       cfg,
-      channel: "matrix",
-      to: "!room:example",
+      channel: "whatsapp",
+      to: "+1555",
       payloads: [{ text: "hi", mediaUrl: "https://x.test/a.jpg" }],
       deps: { sendWhatsApp },
       bestEffort: true,
@@ -929,19 +870,19 @@ describe("deliverOutboundPayloads", () => {
 
   it("emits message_sent success for text-only deliveries", async () => {
     hookMocks.runner.hasHooks.mockReturnValue(true);
-    const sendMatrix = vi.fn().mockResolvedValue({ messageId: "m1", roomId: "!room:example" });
+    const sendWhatsApp = vi.fn().mockResolvedValue({ messageId: "w1", toJid: "jid" });
 
     await deliverOutboundPayloads({
       cfg: {},
-      channel: "matrix",
-      to: "!room:example",
+      channel: "whatsapp",
+      to: "+1555",
       payloads: [{ text: "hello" }],
       deps: { sendWhatsApp },
     });
 
     expect(hookMocks.runner.runMessageSent).toHaveBeenCalledWith(
-      expect.objectContaining({ to: "!room:example", content: "hello", success: true }),
-      expect.objectContaining({ channelId: "matrix" }),
+      expect.objectContaining({ to: "+1555", content: "hello", success: true }),
+      expect.objectContaining({ channelId: "whatsapp" }),
     );
   });
 
@@ -976,7 +917,7 @@ describe("deliverOutboundPayloads", () => {
     );
   });
 
-  it("preserves channelData-only payloads with empty text for sendPayload channels", async () => {
+  it("preserves channelData-only payloads with empty text for non-WhatsApp sendPayload channels", async () => {
     const sendPayload = vi.fn().mockResolvedValue({ channel: "line", messageId: "ln-1" });
     const sendText = vi.fn();
     const sendMedia = vi.fn();
@@ -1139,13 +1080,13 @@ describe("deliverOutboundPayloads", () => {
 
   it("emits message_sent failure when delivery errors", async () => {
     hookMocks.runner.hasHooks.mockReturnValue(true);
-    const sendMatrix = vi.fn().mockRejectedValue(new Error("downstream failed"));
+    const sendWhatsApp = vi.fn().mockRejectedValue(new Error("downstream failed"));
 
     await expect(
       deliverOutboundPayloads({
         cfg: {},
-        channel: "matrix",
-        to: "!room:example",
+        channel: "whatsapp",
+        to: "+1555",
         payloads: [{ text: "hi" }],
         deps: { sendWhatsApp },
       }),
@@ -1153,12 +1094,12 @@ describe("deliverOutboundPayloads", () => {
 
     expect(hookMocks.runner.runMessageSent).toHaveBeenCalledWith(
       expect.objectContaining({
-        to: "!room:example",
+        to: "+1555",
         content: "hi",
         success: false,
         error: "downstream failed",
       }),
-      expect.objectContaining({ channelId: "matrix" }),
+      expect.objectContaining({ channelId: "whatsapp" }),
     );
   });
 });

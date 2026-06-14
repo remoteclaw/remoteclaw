@@ -25,19 +25,14 @@ export function getAccountConfig(
   }
 
   const cfg = coreConfig as RemoteClawConfig;
-  const normalizedAccountId = normalizeAccountId(accountId);
   const twitch = cfg.channels?.twitch;
   // Access accounts via unknown to handle union type (single-account vs multi-account)
   const twitchRaw = twitch as Record<string, unknown> | undefined;
   const accounts = twitchRaw?.accounts as Record<string, TwitchAccountConfig> | undefined;
 
   // For default account, check base-level config first
-  if (normalizedAccountId === DEFAULT_ACCOUNT_ID) {
-    const accountFromAccounts = resolveNormalizedAccountEntry(
-      accounts,
-      DEFAULT_ACCOUNT_ID,
-      normalizeAccountId,
-    );
+  if (accountId === DEFAULT_ACCOUNT_ID) {
+    const accountFromAccounts = accounts?.[DEFAULT_ACCOUNT_ID];
 
     // Base-level properties that can form an implicit default account
     const baseLevel = {
@@ -81,12 +76,11 @@ export function getAccountConfig(
   }
 
   // For non-default accounts, only check accounts object
-  const account = resolveNormalizedAccountEntry(accounts, normalizedAccountId, normalizeAccountId);
-  if (!account) {
+  if (!accounts || !accounts[accountId]) {
     return null;
   }
 
-  return account;
+  return accounts[accountId] as TwitchAccountConfig | null;
 }
 
 /**

@@ -84,22 +84,22 @@ describe("runMessageAction context isolation", () => {
     setActivePluginRegistry(
       createTestRegistry([
         {
-          pluginId: "workspace",
+          pluginId: "slack",
           source: "test",
           plugin: slackPlugin,
         },
         {
-          pluginId: "directchat",
+          pluginId: "whatsapp",
           source: "test",
           plugin: whatsappPlugin,
         },
         {
-          pluginId: "forum",
+          pluginId: "telegram",
           source: "test",
           plugin: telegramPlugin,
         },
         {
-          pluginId: "localchat",
+          pluginId: "imessage",
           source: "test",
           plugin: createIMessageTestPlugin(),
         },
@@ -114,9 +114,9 @@ describe("runMessageAction context isolation", () => {
   it.each([
     {
       name: "allows send when target matches current channel",
-      cfg: workspaceConfig,
+      cfg: slackConfig,
       actionParams: {
-        channel: "workspace",
+        channel: "slack",
         target: "#C12345678",
         message: "hi",
       },
@@ -124,27 +124,27 @@ describe("runMessageAction context isolation", () => {
     },
     {
       name: "accepts legacy to parameter for send",
-      cfg: workspaceConfig,
+      cfg: slackConfig,
       actionParams: {
-        channel: "workspace",
+        channel: "slack",
         to: "#C12345678",
         message: "hi",
       },
     },
     {
       name: "defaults to current channel when target is omitted",
-      cfg: workspaceConfig,
+      cfg: slackConfig,
       actionParams: {
-        channel: "workspace",
+        channel: "slack",
         message: "hi",
       },
       toolContext: { currentChannelId: "C12345678" },
     },
     {
       name: "allows media-only send when target matches current channel",
-      cfg: workspaceConfig,
+      cfg: slackConfig,
       actionParams: {
-        channel: "workspace",
+        channel: "slack",
         target: "#C12345678",
         media: "https://example.com/note.ogg",
       },
@@ -152,9 +152,9 @@ describe("runMessageAction context isolation", () => {
     },
     {
       name: "allows send when poll booleans are explicitly false",
-      cfg: workspaceConfig,
+      cfg: slackConfig,
       actionParams: {
-        channel: "workspace",
+        channel: "slack",
         target: "#C12345678",
         message: "hi",
         pollMulti: false,
@@ -230,31 +230,31 @@ describe("runMessageAction context isolation", () => {
 
   it.each([
     {
-      name: "send when target differs from current workspace channel",
+      name: "send when target differs from current slack channel",
       run: () =>
         runDrySend({
-          cfg: workspaceConfig,
+          cfg: slackConfig,
           actionParams: {
-            channel: "workspace",
+            channel: "slack",
             target: "channel:C99999999",
             message: "hi",
           },
-          toolContext: { currentChannelId: "C12345678", currentChannelProvider: "workspace" },
+          toolContext: { currentChannelId: "C12345678", currentChannelProvider: "slack" },
         }),
       expectedKind: "send",
     },
     {
-      name: "thread-reply when channelId differs from current workspace channel",
+      name: "thread-reply when channelId differs from current slack channel",
       run: () =>
         runDryAction({
-          cfg: workspaceConfig,
+          cfg: slackConfig,
           action: "thread-reply",
           actionParams: {
-            channel: "workspace",
+            channel: "slack",
             target: "C99999999",
             message: "hi",
           },
-          toolContext: { currentChannelId: "C12345678", currentChannelProvider: "workspace" },
+          toolContext: { currentChannelId: "C12345678", currentChannelProvider: "slack" },
         }),
       expectedKind: "action",
     },
@@ -265,34 +265,34 @@ describe("runMessageAction context isolation", () => {
 
   it.each([
     {
-      name: "direct chat match",
-      channel: "directchat",
+      name: "whatsapp match",
+      channel: "whatsapp",
       target: "123@g.us",
       currentChannelId: "123@g.us",
     },
     {
-      name: "local chat match",
-      channel: "localchat",
-      target: "localchat:+15551234567",
-      currentChannelId: "localchat:+15551234567",
+      name: "imessage match",
+      channel: "imessage",
+      target: "imessage:+15551234567",
+      currentChannelId: "imessage:+15551234567",
     },
     {
-      name: "direct chat mismatch",
-      channel: "directchat",
+      name: "whatsapp mismatch",
+      channel: "whatsapp",
       target: "456@g.us",
       currentChannelId: "123@g.us",
-      currentChannelProvider: "directchat",
+      currentChannelProvider: "whatsapp",
     },
     {
-      name: "local chat mismatch",
-      channel: "localchat",
-      target: "localchat:+15551230000",
-      currentChannelId: "localchat:+15551234567",
-      currentChannelProvider: "localchat",
+      name: "imessage mismatch",
+      channel: "imessage",
+      target: "imessage:+15551230000",
+      currentChannelId: "imessage:+15551234567",
+      currentChannelProvider: "imessage",
     },
   ] as const)("$name", async (testCase) => {
     const result = await runDrySend({
-      cfg: directChatConfig,
+      cfg: whatsappConfig,
       actionParams: {
         channel: testCase.channel,
         target: testCase.target,
@@ -314,12 +314,12 @@ describe("runMessageAction context isolation", () => {
       name: "infers channel + target from tool context when missing",
       cfg: {
         channels: {
-          workspace: {
-            botToken: "workspace-test",
-            appToken: "workspace-app-test",
+          slack: {
+            botToken: "xoxb-test",
+            appToken: "xapp-test",
           },
-          forum: {
-            token: "forum-test",
+          telegram: {
+            token: "tg-test",
           },
         },
       } as RemoteClawConfig,
@@ -327,35 +327,35 @@ describe("runMessageAction context isolation", () => {
       actionParams: {
         message: "hi",
       },
-      toolContext: { currentChannelId: "C12345678", currentChannelProvider: "workspace" },
+      toolContext: { currentChannelId: "C12345678", currentChannelProvider: "slack" },
       expectedKind: "send",
-      expectedChannel: "workspace",
+      expectedChannel: "slack",
     },
     {
       name: "falls back to tool-context provider when channel param is an id",
-      cfg: workspaceConfig,
+      cfg: slackConfig,
       action: "send" as const,
       actionParams: {
         channel: "C12345678",
         target: "#C12345678",
         message: "hi",
       },
-      toolContext: { currentChannelId: "C12345678", currentChannelProvider: "workspace" },
+      toolContext: { currentChannelId: "C12345678", currentChannelProvider: "slack" },
       expectedKind: "send",
-      expectedChannel: "workspace",
+      expectedChannel: "slack",
     },
     {
       name: "falls back to tool-context provider for broadcast channel ids",
-      cfg: workspaceConfig,
+      cfg: slackConfig,
       action: "broadcast" as const,
       actionParams: {
         targets: ["channel:C12345678"],
         channel: "C12345678",
         message: "hi",
       },
-      toolContext: { currentChannelProvider: "workspace" },
+      toolContext: { currentChannelProvider: "slack" },
       expectedKind: "broadcast",
-      expectedChannel: "workspace",
+      expectedChannel: "slack",
     },
   ])("$name", async ({ cfg, action, actionParams, toolContext, expectedKind, expectedChannel }) => {
     const result = await runDryAction({
@@ -374,17 +374,17 @@ describe("runMessageAction context isolation", () => {
       name: "blocks cross-provider sends by default",
       cfg: slackConfig,
       actionParams: {
-        channel: "forum",
+        channel: "telegram",
         target: "@opsbot",
         message: "hi",
       },
-      toolContext: { currentChannelId: "C12345678", currentChannelProvider: "workspace" },
+      toolContext: { currentChannelId: "C12345678", currentChannelProvider: "slack" },
       message: /Cross-context messaging denied/,
     },
     {
       name: "blocks same-provider cross-context when disabled",
       cfg: {
-        ...workspaceConfig,
+        ...slackConfig,
         tools: {
           message: {
             crossContext: {
@@ -394,11 +394,11 @@ describe("runMessageAction context isolation", () => {
         },
       } as RemoteClawConfig,
       actionParams: {
-        channel: "workspace",
+        channel: "slack",
         target: "channel:C99999999",
         message: "hi",
       },
-      toolContext: { currentChannelId: "C12345678", currentChannelProvider: "workspace" },
+      toolContext: { currentChannelId: "C12345678", currentChannelProvider: "slack" },
       message: /Cross-context messaging denied/,
     },
   ])("$name", async ({ cfg, actionParams, toolContext, message }) => {
@@ -416,9 +416,9 @@ describe("runMessageAction context isolation", () => {
       name: "send",
       run: (abortSignal: AbortSignal) =>
         runDrySend({
-          cfg: workspaceConfig,
+          cfg: slackConfig,
           actionParams: {
-            channel: "workspace",
+            channel: "slack",
             target: "#C12345678",
             message: "hi",
           },
@@ -429,11 +429,11 @@ describe("runMessageAction context isolation", () => {
       name: "broadcast",
       run: (abortSignal: AbortSignal) =>
         runDryAction({
-          cfg: workspaceConfig,
+          cfg: slackConfig,
           action: "broadcast",
           actionParams: {
             targets: ["channel:C12345678"],
-            channel: "workspace",
+            channel: "slack",
             message: "hi",
           },
           abortSignal,

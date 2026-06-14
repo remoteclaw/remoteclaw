@@ -1,8 +1,6 @@
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/mattermost";
 import { describe, expect, it, vi } from "vitest";
 import { resolveMattermostAccount } from "./accounts.js";
-import * as clientModule from "./client.js";
-import type { MattermostClient } from "./client.js";
 import {
   evaluateMattermostMentionGate,
   resolveMattermostReplyRootId,
@@ -35,34 +33,6 @@ function resolveRequireMentionForTest(params: MattermostRequireMentionResolverIn
   }
   return true;
 }
-
-const updateMattermostPostSpy = vi.spyOn(clientModule, "updateMattermostPost");
-
-function createMattermostClientMock(): MattermostClient {
-  return {
-    baseUrl: "https://chat.example.com",
-    apiBaseUrl: "https://chat.example.com/api/v4",
-    token: "token",
-    request: vi.fn(async () => ({})) as MattermostClient["request"],
-    fetchImpl: vi.fn(
-      async () => new Response(null, { status: 200 }),
-    ) as MattermostClient["fetchImpl"],
-  };
-}
-
-function createDraftStreamMock(postId: string | undefined = "preview-post-1") {
-  return {
-    flush: vi.fn(async () => {}),
-    postId: vi.fn(() => postId),
-    clear: vi.fn(async () => {}),
-    stop: vi.fn(async () => {}),
-  };
-}
-
-beforeEach(() => {
-  vi.clearAllMocks();
-  updateMattermostPostSpy.mockResolvedValue({ id: "patched" } as never);
-});
 
 function evaluateMentionGateForMessage(params: { cfg: RemoteClawConfig; threadRootId?: string }) {
   const account = resolveMattermostAccount({ cfg: params.cfg, accountId: "default" });

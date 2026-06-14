@@ -50,7 +50,6 @@ export type HookAction =
       agentId?: string;
       wakeMode: "now" | "next-heartbeat";
       sessionKey?: string;
-      sessionKeySource?: "static" | "templated";
       deliver?: boolean;
       allowUnsafeExternalContent?: boolean;
       channel?: HookMessageChannel;
@@ -58,8 +57,6 @@ export type HookAction =
       model?: string;
       timeoutSeconds?: number;
     };
-
-export type HookSessionKeyTemplateSource = "static" | "templated";
 
 export type HookMappingResult =
   | { ok: true; action: HookAction }
@@ -79,7 +76,6 @@ type HookTransformResult = Partial<{
   wakeMode: "now" | "next-heartbeat";
   name: string;
   sessionKey: string;
-  sessionKeySource: HookSessionKeyTemplateSource;
   deliver: boolean;
   allowUnsafeExternalContent: boolean;
   channel: HookMessageChannel;
@@ -112,7 +108,7 @@ export function resolveHookMappings(
     return [];
   }
 
-  const configDir = path.resolve(opts?.configDir ?? path.dirname(resolveConfigPathCandidate()));
+  const configDir = path.resolve(opts?.configDir ?? path.dirname(CONFIG_PATH));
   const transformsRootDir = path.join(configDir, "hooks", "transforms");
   const transformsDir = resolveOptionalContainedPath(
     transformsRootDir,
@@ -239,7 +235,6 @@ function buildActionFromMapping(
       agentId: mapping.agentId,
       wakeMode: mapping.wakeMode ?? "now",
       sessionKey: renderOptional(mapping.sessionKey, ctx),
-      sessionKeySource: getSessionKeyTemplateSource(mapping.sessionKey),
       deliver: mapping.deliver,
       allowUnsafeExternalContent: mapping.allowUnsafeExternalContent,
       channel: mapping.channel,
@@ -277,7 +272,6 @@ function mergeAction(
     name: override.name ?? baseAgent?.name,
     agentId: override.agentId ?? baseAgent?.agentId,
     sessionKey: override.sessionKey ?? baseAgent?.sessionKey,
-    sessionKeySource: resolveMergedSessionKeySource(baseAgent, override),
     deliver: typeof override.deliver === "boolean" ? override.deliver : baseAgent?.deliver,
     allowUnsafeExternalContent:
       typeof override.allowUnsafeExternalContent === "boolean"
@@ -301,36 +295,6 @@ function validateAction(action: HookAction): HookMappingResult {
     return { ok: false, error: "hook mapping requires message" };
   }
   return { ok: true, action };
-}
-
-function getSessionKeyTemplateSource(
-  sessionKeyTemplate: string | undefined,
-): HookSessionKeyTemplateSource | undefined {
-  const normalizedTemplate = normalizeOptionalString(sessionKeyTemplate);
-  if (!normalizedTemplate) {
-    return undefined;
-  }
-  return hasHookTemplateExpressions(normalizedTemplate) ? "templated" : "static";
-}
-
-function resolveMergedSessionKeySource(
-  baseAgent: Extract<HookAction, { kind: "agent" }> | undefined,
-  override: Exclude<HookTransformResult, null>,
-): HookSessionKeyTemplateSource | undefined {
-  if (typeof override.sessionKey === "string") {
-    const normalizedSessionKey = normalizeOptionalString(override.sessionKey);
-    if (!normalizedSessionKey) {
-      // Empty transform overrides behave like an absent sessionKey and fall
-      // through to the default/generated key path later in hook dispatch.
-      return undefined;
-    }
-    return override.sessionKeySource === "static" ? "static" : "templated";
-  }
-  return baseAgent?.sessionKeySource;
-}
-
-export function hasHookTemplateExpressions(template: string): boolean {
-  return /\{\{\s*[^}]+\s*\}\}/.test(template);
 }
 
 async function loadTransform(transform: HookMappingTransformResolved): Promise<HookTransformFn> {

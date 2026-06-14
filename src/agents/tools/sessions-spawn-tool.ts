@@ -139,12 +139,11 @@ export function createSessionsSpawnTool(opts?: {
           agentGroupId: opts?.agentGroupId,
           agentGroupChannel: opts?.agentGroupChannel,
           agentGroupSpace: opts?.agentGroupSpace,
-          agentMemberRoleIds: opts?.agentMemberRoleIds,
           requesterAgentIdOverride: opts?.requesterAgentIdOverride,
         },
       );
 
-      return jsonResult(addRoleToFailureResult(result, requestedAgentId));
+      return jsonResult(result);
     },
   };
 }

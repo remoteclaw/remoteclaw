@@ -137,69 +137,6 @@ describe("createWebhookHandler", () => {
     expect(deliver).not.toHaveBeenCalled();
   }
 
-  function makeTestHandler(params: {
-    accountIdSuffix: string;
-    deliver?: WebhookHandlerDeps["deliver"];
-    account?: Partial<ResolvedSynologyChatAccount>;
-  }) {
-    const deliver = params.deliver ?? vi.fn().mockResolvedValue(null);
-    return {
-      deliver,
-      handler: createWebhookHandler({
-        account: makeAccount({
-          accountId: `${params.accountIdSuffix}-${Date.now()}`,
-          ...params.account,
-        }),
-        deliver,
-        log,
-      }),
-    };
-  }
-
-  async function postToWebhook(
-    handler: ReturnType<typeof createWebhookHandler>,
-    body = validBody,
-    options?: Parameters<typeof makeReq>[2],
-  ) {
-    const req = makeReq("POST", body, options);
-    const res = makeRes();
-    await handler(req, res);
-    return res;
-  }
-
-  async function expectTokenlessBodyAccepted(params: {
-    accountIdSuffix: string;
-    options: Parameters<typeof makeReq>[2];
-  }) {
-    const { deliver, handler } = makeTestHandler({ accountIdSuffix: params.accountIdSuffix });
-    const res = await postToWebhook(
-      handler,
-      makeFormBody({ user_id: "123", username: "testuser", text: "hello" }),
-      params.options,
-    );
-    expect(res._status).toBe(204);
-    expect(deliver).toHaveBeenCalled();
-  }
-
-  async function runValidReply(params: { accountIdSuffix: string; reply?: string }) {
-    const { deliver, handler } = makeTestHandler({
-      accountIdSuffix: params.accountIdSuffix,
-      deliver: vi.fn().mockResolvedValue(params.reply ?? "Bot reply"),
-    });
-    const res = await postToWebhook(handler);
-    expect(res._status).toBe(204);
-    return { deliver, res };
-  }
-
-  function expectBotReplySentTo(chatUserId: string) {
-    expect(sendMessage).toHaveBeenCalledWith(
-      "https://nas.example.com/incoming",
-      "Bot reply",
-      chatUserId,
-      true,
-    );
-  }
-
   it("rejects non-POST methods with 405", async () => {
     const handler = createWebhookHandler({
       account: makeAccount(),
@@ -229,19 +166,26 @@ describe("createWebhookHandler", () => {
   });
 
   it("returns 408 when request body times out", async () => {
-    const handler = createWebhookHandler({
-      account: makeAccount(),
-      deliver: vi.fn(),
-      log,
-      bodyTimeoutMs: 1,
-    });
+    vi.useFakeTimers();
+    try {
+      const handler = createWebhookHandler({
+        account: makeAccount(),
+        deliver: vi.fn(),
+        log,
+      });
 
-    const req = makeStalledReq("POST");
-    const res = makeRes();
-    await handler(req, res);
+      const req = makeStalledReq("POST");
+      const res = makeRes();
+      const run = handler(req, res);
 
-    expect(res._status).toBe(408);
-    expect(res._body).toContain("timeout");
+      await vi.advanceTimersByTimeAsync(30_000);
+      await run;
+
+      expect(res._status).toBe(408);
+      expect(res._body).toContain("timeout");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("returns 401 for invalid token", async () => {
@@ -416,25 +360,51 @@ describe("createWebhookHandler", () => {
   });
 
   it("accepts token from query when body token is absent", async () => {
-    await expectTokenlessBodyAccepted({
-      accountIdSuffix: "query-token-test",
-      options: {
+    const deliver = vi.fn().mockResolvedValue(null);
+    const handler = createWebhookHandler({
+      account: makeAccount({ accountId: "query-token-test-" + Date.now() }),
+      deliver,
+      log,
+    });
+
+    const req = makeReq(
+      "POST",
+      makeFormBody({ user_id: "123", username: "testuser", text: "hello" }),
+      {
         headers: { "content-type": "application/x-www-form-urlencoded" },
         url: "/webhook/synology?token=valid-token",
       },
-    });
+    );
+    const res = makeRes();
+    await handler(req, res);
+
+    expect(res._status).toBe(204);
+    expect(deliver).toHaveBeenCalled();
   });
 
   it("accepts token from authorization header when body token is absent", async () => {
-    await expectTokenlessBodyAccepted({
-      accountIdSuffix: "header-token-test",
-      options: {
+    const deliver = vi.fn().mockResolvedValue(null);
+    const handler = createWebhookHandler({
+      account: makeAccount({ accountId: "header-token-test-" + Date.now() }),
+      deliver,
+      log,
+    });
+
+    const req = makeReq(
+      "POST",
+      makeFormBody({ user_id: "123", username: "testuser", text: "hello" }),
+      {
         headers: {
           "content-type": "application/x-www-form-urlencoded",
           authorization: "Bearer valid-token",
         },
       },
-    });
+    );
+    const res = makeRes();
+    await handler(req, res);
+
+    expect(res._status).toBe(204);
+    expect(deliver).toHaveBeenCalled();
   });
 
   it("returns 403 for unauthorized user with allowlist policy", async () => {
@@ -516,7 +486,18 @@ describe("createWebhookHandler", () => {
   });
 
   it("responds 204 immediately and delivers async", async () => {
-    const { deliver, res } = await runValidReply({ accountIdSuffix: "async-test" });
+    const deliver = vi.fn().mockResolvedValue("Bot reply");
+    const handler = createWebhookHandler({
+      account: makeAccount({ accountId: "async-test-" + Date.now() }),
+      deliver,
+      log,
+    });
+
+    const req = makeReq("POST", validBody);
+    const res = makeRes();
+    await handler(req, res);
+
+    expect(res._status).toBe(204);
     expect(res._body).toBe("");
     expect(deliver).toHaveBeenCalledWith(
       expect.objectContaining({

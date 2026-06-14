@@ -101,17 +101,17 @@ describe("runMessageAction poll handling", () => {
 
   it("passes Telegram durationSeconds, visibility, and auto threadId to executePollAction", async () => {
     const call = await runPollAction({
-      cfg: pollerConfig,
+      cfg: telegramConfig,
       actionParams: {
-        channel: "poller",
-        target: "poller:123",
+        channel: "telegram",
+        target: "telegram:123",
         pollQuestion: "Lunch?",
         pollOption: ["Pizza", "Sushi"],
         pollDurationSeconds: 90,
         pollPublic: true,
       },
       toolContext: {
-        currentChannelId: "poller:123",
+        currentChannelId: "telegram:123",
         currentThreadTs: "42",
       },
     });
@@ -124,10 +124,10 @@ describe("runMessageAction poll handling", () => {
 
   it("expands maxSelections when pollMulti is enabled", async () => {
     const call = await runPollAction({
-      cfg: pollerConfig,
+      cfg: telegramConfig,
       actionParams: {
-        channel: "poller",
-        target: "poller:123",
+        channel: "telegram",
+        target: "telegram:123",
         pollQuestion: "Lunch?",
         pollOption: ["Pizza", "Sushi", "Soup"],
         pollMulti: true,
@@ -139,10 +139,10 @@ describe("runMessageAction poll handling", () => {
 
   it("defaults maxSelections to one choice when pollMulti is omitted", async () => {
     const call = await runPollAction({
-      cfg: pollerConfig,
+      cfg: telegramConfig,
       actionParams: {
-        channel: "poller",
-        target: "poller:123",
+        channel: "telegram",
+        target: "telegram:123",
         pollQuestion: "Lunch?",
         pollOption: ["Pizza", "Sushi", "Soup"],
       },

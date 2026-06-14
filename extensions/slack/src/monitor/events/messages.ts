@@ -43,7 +43,7 @@ export function registerSlackMessageEvents(params: {
 
       await handleSlackMessage(message, { source: "message" });
     } catch (err) {
-      ctx.runtime.error?.(danger(`slack handler failed: ${formatErrorMessage(err)}`));
+      ctx.runtime.error?.(danger(`slack handler failed: ${String(err)}`));
     }
   };
 
@@ -77,7 +77,7 @@ export function registerSlackMessageEvents(params: {
         wasMentioned: true,
       });
     } catch (err) {
-      ctx.runtime.error?.(danger(`slack mention handler failed: ${formatErrorMessage(err)}`));
+      ctx.runtime.error?.(danger(`slack mention handler failed: ${String(err)}`));
     }
   });
 }

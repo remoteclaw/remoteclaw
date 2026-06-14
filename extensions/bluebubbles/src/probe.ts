@@ -2,6 +2,7 @@ import type { BaseProbeResult } from "remoteclaw/plugin-sdk/bluebubbles";
 import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 import { formatErrorMessage } from "../../../src/infra/errors.js";
 import { normalizeSecretInputString } from "./secret-input.js";
+import { buildBlueBubblesApiUrl, blueBubblesFetchWithTimeout } from "./types.js";
 
 export type BlueBubblesProbe = BaseProbeResult & {
   status?: number | null;

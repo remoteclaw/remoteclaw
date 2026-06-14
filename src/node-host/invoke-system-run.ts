@@ -69,14 +69,6 @@ export type HandleSystemRunInvokeOptions = {
   sendExecFinishedEvent: (params: ExecFinishedEventParams) => Promise<void>;
 };
 
-async function loadSystemRunConfig(opts: HandleSystemRunInvokeOptions): Promise<RemoteClawConfig> {
-  if (opts.loadConfig) {
-    return opts.loadConfig();
-  }
-  const { loadConfig } = await import("../config/config.js");
-  return loadConfig();
-}
-
 async function sendSystemRunDenied(
   opts: Pick<
     HandleSystemRunInvokeOptions,

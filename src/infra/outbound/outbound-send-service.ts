@@ -27,8 +27,6 @@ export type OutboundSendContext = {
   /** Active agent id for per-agent outbound media root scoping. */
   agentId?: string;
   accountId?: string | null;
-  senderIsOwner?: boolean;
-  sessionId?: string;
   gateway?: OutboundGatewayContext;
   toolContext?: ChannelThreadingToolContext;
   deps?: OutboundSendDeps;
@@ -68,11 +66,6 @@ async function tryHandleWithPluginAction(params: {
     params: params.ctx.params,
     mediaLocalRoots,
     accountId: params.ctx.accountId ?? undefined,
-    requesterSenderId: params.ctx.requesterSenderId,
-    senderIsOwner: params.ctx.senderIsOwner,
-    sessionKey: params.ctx.sessionKey,
-    sessionId: params.ctx.sessionId,
-    agentId: params.ctx.agentId,
     gateway: params.ctx.gateway,
     toolContext: params.ctx.toolContext,
     dryRun: params.ctx.dryRun,

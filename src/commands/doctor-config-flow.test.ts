@@ -6,6 +6,19 @@ import * as noteModule from "../terminal/note.js";
 import { loadAndMaybeMigrateDoctorConfig } from "./doctor-config-flow.js";
 import { runDoctorConfigWithInput } from "./doctor-config-flow.test-utils.js";
 
+function expectGoogleChatDmAllowFromRepaired(cfg: unknown) {
+  const typed = cfg as {
+    channels: {
+      googlechat: {
+        dm: { allowFrom: string[] };
+        allowFrom?: string[];
+      };
+    };
+  };
+  expect(typed.channels.googlechat.dm.allowFrom).toEqual(["*"]);
+  expect(typed.channels.googlechat.allowFrom).toBeUndefined();
+}
+
 async function collectDoctorWarnings(config: Record<string, unknown>): Promise<string[]> {
   const noteSpy = vi.spyOn(noteModule, "note").mockImplementation(() => {});
   try {
@@ -143,198 +156,6 @@ describe("doctor config flow", () => {
           line.includes("does not fall back to allowFrom"),
       ),
     ).toBe(true);
-  });
-
-  it("repairs generic legacy config surfaces in one pass", async () => {
-    const result = await runDoctorConfigWithInput({
-      repair: true,
-      config: {
-        bridge: { bind: "auto" },
-        gateway: { auth: { mode: "token", token: "ok", extra: true } },
-        agents: { list: [{ id: "pi" }] },
-        browser: {
-          relayBindHost: "0.0.0.0",
-          profiles: {
-            chromeLive: {
-              driver: "extension",
-              color: "#00AA00",
-            },
-          },
-        },
-        tools: {
-          alsoAllow: ["browser"],
-        },
-        plugins: {
-          allow: ["telegram"],
-        },
-      },
-      run: loadAndMaybeMigrateDoctorConfig,
-    });
-
-    const cfg = result.cfg as Record<string, unknown>;
-    expect(cfg.bridge).toBeUndefined();
-    expect((cfg.gateway as Record<string, unknown>)?.auth).toEqual({
-      mode: "token",
-      token: "ok",
-    });
-    const browser = (result.cfg as { browser?: Record<string, unknown> }).browser ?? {};
-    expect(browser.relayBindHost).toBeUndefined();
-    expect(
-      ((browser.profiles as Record<string, { driver?: string }>)?.chromeLive ?? {}).driver,
-    ).toBe("existing-session");
-    expect(result.cfg.plugins?.allow).toEqual(["telegram", "browser"]);
-    expect(result.cfg.plugins?.entries?.browser?.enabled).toBe(true);
-  });
-
-  it("preserves discord streaming intent while stripping unsupported keys on repair", async () => {
-    const result = await runDoctorConfigWithInput({
-      repair: true,
-      config: {
-        channels: {
-          discord: {
-            streaming: true,
-            lifecycle: {
-              enabled: true,
-              reactions: {
-                queued: "⏳",
-                thinking: "🧠",
-                tool: "🔧",
-                done: "✅",
-                error: "❌",
-              },
-            },
-          },
-        },
-      },
-      run: loadAndMaybeMigrateDoctorConfig,
-    });
-
-    const cfg = result.cfg as {
-      channels: {
-        discord: {
-          streamMode?: string;
-          streaming?:
-            | {
-                mode?: string;
-              }
-            | boolean;
-          lifecycle?: unknown;
-        };
-      };
-    };
-    expect(cfg.channels.discord.streaming).toEqual({ mode: "partial" });
-    expect(cfg.channels.discord.streamMode).toBeUndefined();
-    expect(cfg.channels.discord.lifecycle).toEqual({
-      enabled: true,
-      reactions: {
-        queued: "⏳",
-        thinking: "🧠",
-        tool: "🔧",
-        done: "✅",
-        error: "❌",
-      },
-    });
-  });
-
-  it("warns clearly about legacy channel streaming aliases and points to doctor --fix", async () => {
-    const noteSpy = resetTerminalNoteMock();
-    try {
-      await runDoctorConfigWithInput({
-        config: {
-          channels: {
-            telegram: {
-              streamMode: "block",
-            },
-            discord: {
-              streaming: false,
-            },
-            googlechat: {
-              streamMode: "append",
-            },
-            slack: {
-              streaming: true,
-            },
-          },
-        },
-        run: loadAndMaybeMigrateDoctorConfig,
-      });
-
-      expect(
-        noteSpy.mock.calls.some(
-          ([message, title]) =>
-            title === "Legacy config keys detected" &&
-            message.includes("channels.telegram:") &&
-            message.includes("channels.telegram.streamMode, channels.telegram.streaming"),
-        ),
-      ).toBe(true);
-      expect(
-        noteSpy.mock.calls.some(
-          ([message, title]) =>
-            title === "Legacy config keys detected" &&
-            message.includes("channels.googlechat:") &&
-            message.includes("channels.googlechat.streamMode is legacy and no longer used"),
-        ),
-      ).toBe(true);
-      expect(
-        noteSpy.mock.calls.some(
-          ([message, title]) =>
-            title === "Legacy config keys detected" &&
-            message.includes("channels.slack:") &&
-            message.includes("channels.slack.streamMode, channels.slack.streaming"),
-        ),
-      ).toBe(true);
-    } finally {
-      noteSpy.mockClear();
-    }
-  });
-
-  it("keeps discord streaming aliases on disk during repair so downgrades stay recoverable", async () => {
-    await withTempHome(
-      async (home) => {
-        const configDir = path.join(home, ".remoteclaw");
-        const configPath = path.join(configDir, "remoteclaw.json");
-        await fs.mkdir(configDir, { recursive: true });
-        await fs.writeFile(
-          configPath,
-          JSON.stringify(
-            {
-              channels: {
-                discord: {
-                  streaming: false,
-                  chunkMode: "newline",
-                  blockStreaming: true,
-                },
-              },
-            },
-            null,
-            2,
-          ),
-          "utf-8",
-        );
-
-        await loadAndMaybeMigrateDoctorConfig({
-          options: { nonInteractive: true, repair: true },
-          confirm: async () => false,
-        });
-
-        const persisted = JSON.parse(await fs.readFile(configPath, "utf-8")) as {
-          channels?: {
-            discord?: {
-              streaming?: unknown;
-              chunkMode?: unknown;
-              blockStreaming?: unknown;
-            };
-          };
-        };
-
-        expect(persisted.channels?.discord).toEqual({
-          streaming: false,
-          chunkMode: "newline",
-          blockStreaming: true,
-        });
-      },
-      { skipSessionCleanup: true },
-    );
   });
 
   it("drops unknown keys on repair", async () => {
@@ -627,7 +448,7 @@ describe("doctor config flow", () => {
     expect(cfg.channels.discord.accounts.default.allowFrom).toEqual(["123"]);
   });
 
-  it('repairs open dmPolicy allowFrom variants with ["*"] in one pass', async () => {
+  it('adds allowFrom ["*"] when dmPolicy="open" and allowFrom is missing on repair', async () => {
     const result = await runDoctorConfigWithInput({
       repair: true,
       config: {
@@ -743,24 +564,10 @@ describe("doctor config flow", () => {
 
     const cfg = result.cfg as unknown as {
       channels: {
-        discord: { allowFrom: string[]; dmPolicy: string };
-        googlechat: {
-          accounts: {
-            work: {
-              dm: {
-                policy: string;
-                allowFrom: string[];
-              };
-              allowFrom?: string[];
-            };
-          };
-        };
+        discord: { accounts: { work: { allowFrom: string[]; dmPolicy: string } } };
       };
     };
-    expect(cfg.channels.discord.allowFrom).toEqual(["*"]);
-    expect(cfg.channels.discord.dmPolicy).toBe("open");
-    expect(cfg.channels.googlechat.accounts.work.dm.allowFrom).toEqual(["*"]);
-    expect(cfg.channels.googlechat.accounts.work.allowFrom).toBeUndefined();
+    expect(cfg.channels.discord.accounts.work.allowFrom).toEqual(["*"]);
   });
 
   it('repairs dmPolicy="allowlist" by restoring allowFrom from pairing store on repair', async () => {
@@ -850,35 +657,14 @@ describe("doctor config flow", () => {
     expect(toolsBySender["*"]).toEqual({ deny: ["exec"] });
   });
 
-  it("repairs legacy root runtime config surfaces in one pass", async () => {
+  it("repairs googlechat dm.policy open by setting dm.allowFrom on repair", async () => {
     const result = await runDoctorConfigWithInput({
       repair: true,
       config: {
-        heartbeat: {
-          model: "anthropic/claude-3-5-haiku-20241022",
-          every: "30m",
-          showOk: true,
-          showAlerts: false,
-        },
-        gateway: {
-          bind: "0.0.0.0",
-        },
-        session: {
-          threadBindings: {
-            ttlHours: 24,
-          },
-        },
         channels: {
-          discord: {
-            threadBindings: {
-              ttlHours: 12,
-            },
-            accounts: {
-              alpha: {
-                threadBindings: {
-                  ttlHours: 6,
-                },
-              },
+          googlechat: {
+            dm: {
+              policy: "open",
             },
           },
         },
@@ -886,17 +672,23 @@ describe("doctor config flow", () => {
       run: loadAndMaybeMigrateDoctorConfig,
     });
 
+    expectGoogleChatDmAllowFromRepaired(result.cfg);
+  });
+
+  it("migrates top-level heartbeat into agents.defaults.heartbeat on repair", async () => {
+    const result = await runDoctorConfigWithInput({
+      repair: true,
+      config: {
+        heartbeat: {
+          model: "anthropic/claude-3-5-haiku-20241022",
+          every: "30m",
+        },
+      },
+      run: loadAndMaybeMigrateDoctorConfig,
+    });
+
     const cfg = result.cfg as {
       heartbeat?: unknown;
-      gateway?: {
-        bind?: string;
-      };
-      session?: {
-        threadBindings?: {
-          idleHours?: number;
-          ttlHours?: number;
-        };
-      };
       agents?: {
         defaults?: {
           heartbeat?: {
@@ -905,52 +697,11 @@ describe("doctor config flow", () => {
           };
         };
       };
-      channels?: {
-        defaults?: {
-          heartbeat?: {
-            showOk?: boolean;
-            showAlerts?: boolean;
-            useIndicator?: boolean;
-          };
-        };
-        discord?: {
-          threadBindings?: {
-            idleHours?: number;
-            ttlHours?: number;
-          };
-          accounts?: Record<
-            string,
-            {
-              threadBindings?: {
-                idleHours?: number;
-                ttlHours?: number;
-              };
-            }
-          >;
-        };
-      };
     };
     expect(cfg.heartbeat).toBeUndefined();
     expect(cfg.agents?.defaults?.heartbeat).toMatchObject({
       model: "anthropic/claude-3-5-haiku-20241022",
       every: "30m",
-    });
-    expect(cfg.gateway?.bind).toBe("lan");
-    expect(cfg.session?.threadBindings).toMatchObject({
-      idleHours: 24,
-    });
-    expect(cfg.channels?.discord?.threadBindings).toMatchObject({
-      idleHours: 12,
-    });
-    expect(cfg.channels?.discord?.accounts?.alpha?.threadBindings).toMatchObject({
-      idleHours: 6,
-    });
-    expect(cfg.session?.threadBindings?.ttlHours).toBeUndefined();
-    expect(cfg.channels?.discord?.threadBindings?.ttlHours).toBeUndefined();
-    expect(cfg.channels?.discord?.accounts?.alpha?.threadBindings?.ttlHours).toBeUndefined();
-    expect(cfg.channels?.defaults?.heartbeat).toMatchObject({
-      showOk: true,
-      showAlerts: false,
     });
   });
 

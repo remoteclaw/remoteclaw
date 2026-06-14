@@ -63,7 +63,7 @@ describe("channels list auth profiles", () => {
       },
     });
 
-    await channelsListCommand({ json: true, usage: false }, runtime);
+    await channelsListCommand({ json: true }, runtime);
 
     expect(mocks.resolveCommandConfigWithSecrets).toHaveBeenCalledTimes(1);
     const payload = JSON.parse(runtime.log.mock.calls[0]?.[0] as string) as {

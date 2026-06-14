@@ -1,4 +1,8 @@
 import type { ChannelId } from "../channels/plugins/types.js";
+import type {
+  SilentReplyPolicyShape,
+  SilentReplyRewriteShape,
+} from "../shared/silent-reply-policy.js";
 import type { AgentModelConfig, AgentSandboxConfig } from "./types.agents-shared.js";
 import type {
   BlockStreamingChunkConfig,
@@ -119,6 +123,10 @@ export type CliBackendConfig = {
 export type AgentDefaultsConfig = {
   /** Global default provider params applied to all models before per-model and per-agent overrides. */
   params?: Record<string, unknown>;
+  /** Default silent-reply policy applied across conversation types. */
+  silentReply?: SilentReplyPolicyShape;
+  /** Default silent-reply rewrite behavior applied across conversation types. */
+  silentReplyRewrite?: SilentReplyRewriteShape;
   /** Primary model and fallbacks (provider/model). Accepts string or {primary,fallbacks}. */
   model?: AgentModelConfig;
   /** Optional image-capable model and fallbacks (provider/model). Accepts string or {primary,fallbacks}. */

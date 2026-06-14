@@ -1,5 +1,5 @@
-import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import type { PluginEntryConfig } from "../config/types.plugins.js";
+import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import { hasExplicitPluginConfig } from "./config-policy.js";
 
 export function withBundledPluginAllowlistCompat(params: {

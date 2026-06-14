@@ -260,7 +260,9 @@ export async function loadBundledPluginPublicSurfaceModule<T extends object>(par
     absolutePath: location.modulePath,
     rootPath: location.boundaryRoot,
     boundaryLabel:
-      location.boundaryRoot === getRemoteClawPackageRoot() ? "RemoteClaw package root" : "plugin root",
+      location.boundaryRoot === getRemoteClawPackageRoot()
+        ? "RemoteClaw package root"
+        : "plugin root",
     rejectHardlinks: false,
   });
   if (!opened.ok) {

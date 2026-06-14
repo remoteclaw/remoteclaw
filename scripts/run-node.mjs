@@ -36,20 +36,6 @@ const isBuildRelevantSourcePath = (relativePath) => {
   return extensionSourceFilePattern.test(normalizedPath) && !isIgnoredSourcePath(normalizedPath);
 };
 
-export const isBuildRelevantRunNodePath = (repoPath) => {
-  const normalizedPath = normalizePath(repoPath).replace(/^\.\/+/, "");
-  if (runNodeConfigFiles.includes(normalizedPath)) {
-    return true;
-  }
-  if (normalizedPath.startsWith("src/")) {
-    return !isIgnoredSourcePath(normalizedPath.slice("src/".length));
-  }
-  if (normalizedPath.startsWith(BUNDLED_PLUGIN_PATH_PREFIX)) {
-    return isBuildRelevantSourcePath(normalizedPath.slice(BUNDLED_PLUGIN_PATH_PREFIX.length));
-  }
-  return false;
-};
-
 const isRestartRelevantExtensionPath = (relativePath) => {
   const normalizedPath = normalizePath(relativePath);
   if (extensionRestartMetadataFiles.has(path.posix.basename(normalizedPath))) {

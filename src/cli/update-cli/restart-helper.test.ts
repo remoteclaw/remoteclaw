@@ -159,7 +159,9 @@ exit 0
         REMOTECLAW_PROFILE: "default",
         HOME: "/Users/testuser",
       });
-      expect(content).toContain("exec >>'/Users/testuser/.remoteclaw/logs/gateway-restart.log' 2>&1");
+      expect(content).toContain(
+        "exec >>'/Users/testuser/.remoteclaw/logs/gateway-restart.log' 2>&1",
+      );
       // Every launchctl call should allow output through now (no `2>/dev/null`)
       // and the final kickstart must not swallow its exit code.
       expect(content).not.toMatch(/launchctl[^\n]*2>\/dev\/null/);
@@ -215,7 +217,9 @@ exit 0
       const log = await fs.readFile(path.join(stateDir, "logs", "gateway-restart.log"), "utf-8");
 
       expect(result.code).toBe(42);
-      expect(log).toContain("remoteclaw restart attempt source=update target=org.remoteclaw.gateway");
+      expect(log).toContain(
+        "remoteclaw restart attempt source=update target=org.remoteclaw.gateway",
+      );
       expect(log).toContain("launchctl kickstart -k gui/501/org.remoteclaw.gateway");
       expect(log).toContain("remoteclaw restart failed source=update status=42");
       expect(log).not.toContain("remoteclaw restart done source=update");
@@ -299,7 +303,9 @@ exit 0
       expect(scriptPath.endsWith(".bat")).toBe(true);
       expect(content).toContain("@echo off");
       expect(content).toContain("gateway-restart.log");
-      expect(content).toContain("remoteclaw restart attempt source=update target=RemoteClaw Gateway");
+      expect(content).toContain(
+        "remoteclaw restart attempt source=update target=RemoteClaw Gateway",
+      );
       expect(content).toContain('schtasks /End /TN "RemoteClaw Gateway"');
       expect(content).toContain('schtasks /Run /TN "RemoteClaw Gateway" >>');
       expectWindowsRestartWaitOrdering(content);

@@ -140,9 +140,9 @@ function renderModelCard(props: QuickSettingsProps) {
             ${THINKING_LEVELS.map(
               (level) => html`
                 <button
-                  class="qs-segmented__btn ${level === props.thinkingLevel
-                    ? "qs-segmented__btn--active"
-                    : ""}"
+                  class="qs-segmented__btn ${
+                    level === props.thinkingLevel ? "qs-segmented__btn--active" : ""
+                  }"
                   @click=${() => props.onThinkingChange?.(level)}
                 >
                   ${level.charAt(0).toUpperCase() + level.slice(1)}
@@ -177,28 +177,34 @@ function renderChannelsCard(props: QuickSettingsProps) {
     <div class="qs-card">
       ${renderCardHeader(icons.send, "Channels", badge)}
       <div class="qs-card__body">
-        ${props.channels.length === 0
-          ? html`<div class="qs-empty muted">No channels configured</div>`
-          : props.channels.map(
-              (ch) => html`
+        ${
+          props.channels.length === 0
+            ? html`
+                <div class="qs-empty muted">No channels configured</div>
+              `
+            : props.channels.map(
+                (ch) => html`
                 <div class="qs-row">
                   <span class="qs-row__label">
                     <span class="qs-status-dot ${ch.connected ? "qs-status-dot--ok" : ""}"></span>
                     ${ch.label}
                   </span>
                   <span class="qs-row__value">
-                    ${ch.connected
-                      ? html`<span class="muted">${ch.detail ?? "Connected"}</span>`
-                      : html`<button
+                    ${
+                      ch.connected
+                        ? html`<span class="muted">${ch.detail ?? "Connected"}</span>`
+                        : html`<button
                           class="qs-link-btn"
                           @click=${() => props.onChannelConfigure?.(ch.id)}
                         >
                           Connect →
-                        </button>`}
+                        </button>`
+                    }
                   </span>
                 </div>
               `,
-            )}
+              )
+        }
       </div>
     </div>
   `;
@@ -209,15 +215,19 @@ function renderApiKeysCard(props: QuickSettingsProps) {
     <div class="qs-card">
       ${renderCardHeader(icons.plug, "API Keys")}
       <div class="qs-card__body">
-        ${props.apiKeys.length === 0
-          ? html`<div class="qs-empty muted">No API keys configured</div>`
-          : props.apiKeys.map(
-              (key) => html`
+        ${
+          props.apiKeys.length === 0
+            ? html`
+                <div class="qs-empty muted">No API keys configured</div>
+              `
+            : props.apiKeys.map(
+                (key) => html`
                 <div class="qs-row">
                   <span class="qs-row__label">${key.label}</span>
                   <span class="qs-row__value">
-                    ${key.isSet
-                      ? html`
+                    ${
+                      key.isSet
+                        ? html`
                           <code class="qs-masked">${key.masked ?? "••••••••"}</code>
                           <button
                             class="qs-link-btn"
@@ -226,16 +236,18 @@ function renderApiKeysCard(props: QuickSettingsProps) {
                             Change
                           </button>
                         `
-                      : html`<button
+                        : html`<button
                           class="qs-link-btn"
                           @click=${() => props.onApiKeyChange?.(key.provider)}
                         >
                           Add →
-                        </button>`}
+                        </button>`
+                    }
                   </span>
                 </div>
               `,
-            )}
+              )
+        }
       </div>
     </div>
   `;
@@ -318,9 +330,9 @@ function renderAppearanceCard(props: QuickSettingsProps) {
             ${THEME_OPTIONS.map(
               (opt) => html`
                 <button
-                  class="qs-segmented__btn ${opt.id === props.theme
-                    ? "qs-segmented__btn--active"
-                    : ""}"
+                  class="qs-segmented__btn ${
+                    opt.id === props.theme ? "qs-segmented__btn--active" : ""
+                  }"
                   @click=${(e: Event) => {
                     if (opt.id !== props.theme) {
                       props.setTheme(opt.id, {
@@ -341,9 +353,9 @@ function renderAppearanceCard(props: QuickSettingsProps) {
             ${(["light", "dark", "system"] as ThemeMode[]).map(
               (mode) => html`
                 <button
-                  class="qs-segmented__btn ${mode === props.themeMode
-                    ? "qs-segmented__btn--active"
-                    : ""}"
+                  class="qs-segmented__btn ${
+                    mode === props.themeMode ? "qs-segmented__btn--active" : ""
+                  }"
                   @click=${(e: Event) => {
                     if (mode !== props.themeMode) {
                       props.setThemeMode(mode, {
@@ -364,10 +376,9 @@ function renderAppearanceCard(props: QuickSettingsProps) {
             ${BORDER_RADIUS_STOPS.map(
               (stop) => html`
                 <button
-                  class="qs-segmented__btn qs-segmented__btn--compact ${stop.value ===
-                  props.borderRadius
-                    ? "qs-segmented__btn--active"
-                    : ""}"
+                  class="qs-segmented__btn qs-segmented__btn--compact ${
+                    stop.value === props.borderRadius ? "qs-segmented__btn--active" : ""
+                  }"
                   @click=${() => props.setBorderRadius(stop.value)}
                 >
                   ${stop.label}

@@ -101,7 +101,7 @@ For the full access-control model, see [Pairing](/channels/pairing).
 
 The plugin checks the host RemoteClaw version at startup.
 
-| Plugin line | RemoteClaw version        | npm tag  |
+| Plugin line | RemoteClaw version      | npm tag  |
 | ----------- | ----------------------- | -------- |
 | `2.x`       | `>=2026.3.22`           | `latest` |
 | `1.x`       | `>=2026.1.0 <2026.3.22` | `legacy` |

@@ -38,6 +38,7 @@ beforeEach(() => {
 function createHeartbeatTelegramConfig(): RemoteClawConfig {
   return {
     agents: {
+      list: [{ id: "main" }],
       defaults: {
         heartbeat: { every: "30m" },
         model: { primary: "test/model" },

@@ -150,6 +150,41 @@ function isTransientCronError(error: string | undefined, retryOn?: CronRetryOn[]
   return keys.some((k) => TRANSIENT_PATTERNS[k]?.test(error));
 }
 
+/**
+ * Resolve the next run time for a recurring `cron` job, clamped to a lower
+ * bound (the backoff delay or the MIN_REFIRE_GAP_MS spin-loop guard).
+ *
+ * When the natural next run cannot be resolved (`computeJobNextRunAtMs`
+ * returned `undefined` — e.g. a timezone/DST edge case or a temporarily
+ * unresolvable expression), DO NOT synthesize a phantom run time from the
+ * lower bound. A synthesized time looks "due" on the next tick and refires
+ * the job forever even though its schedule never actually resolved. Instead,
+ * clear the schedule (return `undefined`); `armTimer` keeps a maintenance
+ * recheck armed while enabled jobs exist, and `recomputeNextRunsForMaintenance`
+ * always repairs a missing nextRunAtMs, so the job fires again on a later tick
+ * once the next run becomes resolvable. (Ported from upstream #66083.)
+ */
+function resolveCronNextRunWithLowerBound(params: {
+  state: CronServiceState;
+  job: CronJob;
+  naturalNext: number | undefined;
+  lowerBoundMs: number;
+  context: "completion" | "error_backoff";
+}): number | undefined {
+  if (params.naturalNext === undefined) {
+    params.state.deps.log.warn(
+      {
+        jobId: params.job.id,
+        jobName: params.job.name,
+        context: params.context,
+      },
+      "cron: next run unresolved; clearing schedule to avoid a refire loop",
+    );
+    return undefined;
+  }
+  return Math.max(params.naturalNext, params.lowerBoundMs);
+}
+
 function resolveRetryConfig(cronConfig?: CronConfig) {
   const retry = cronConfig?.retry;
   return {
@@ -400,8 +435,21 @@ export function applyJobResult(
       }
       const backoffNext = result.endedAt + backoff;
       // Use whichever is later: the natural next run or the backoff delay.
+      // For `cron` jobs an unresolved natural next clears the schedule (so the
+      // backoff delay is not synthesized into a refire loop); `every` jobs keep
+      // the backoff-only fallback since their next run is derived arithmetically.
       job.state.nextRunAtMs =
-        normalNext !== undefined ? Math.max(normalNext, backoffNext) : backoffNext;
+        job.schedule.kind === "cron"
+          ? resolveCronNextRunWithLowerBound({
+              state,
+              job,
+              naturalNext: normalNext,
+              lowerBoundMs: backoffNext,
+              context: "error_backoff",
+            })
+          : normalNext !== undefined
+            ? Math.max(normalNext, backoffNext)
+            : backoffNext;
       state.deps.log.info(
         {
           jobId: job.id,
@@ -430,8 +478,13 @@ export function applyJobResult(
         // schedule computation lands in the same second due to
         // timezone/croner edge cases (see #17821).
         const minNext = result.endedAt + MIN_REFIRE_GAP_MS;
-        job.state.nextRunAtMs =
-          naturalNext !== undefined ? Math.max(naturalNext, minNext) : minNext;
+        job.state.nextRunAtMs = resolveCronNextRunWithLowerBound({
+          state,
+          job,
+          naturalNext,
+          lowerBoundMs: minNext,
+          context: "completion",
+        });
       } else {
         job.state.nextRunAtMs = naturalNext;
       }

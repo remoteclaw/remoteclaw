@@ -22,13 +22,10 @@ This doc is a “how we test” guide:
 
 Most days:
 
-- Full gate (expected before push): `pnpm build && pnpm check && pnpm check:test-types && pnpm test`
-- Faster local full-suite run on a roomy machine: `pnpm test:max`
+- Full gate (expected before push): `pnpm build && pnpm check && pnpm test`
 - Direct Vitest watch loop: `pnpm test:watch`
-- Direct file targeting now routes extension/channel paths too: `pnpm test extensions/discord/src/monitor/message-handler.preflight.test.ts`
+- Direct file targeting routes extension/channel paths too: `pnpm test extensions/discord/src/monitor/message-handler.preflight.test.ts`
 - Prefer targeted runs first when you are iterating on a single failure.
-- Docker-backed QA site: `pnpm qa:lab:up`
-- Linux VM-backed QA lane: `pnpm openclaw qa suite --runner multipass --scenario channel-chat-baseline`
 
 When you touch tests or want extra confidence:
 
@@ -269,8 +266,7 @@ Think of the suites as “increasing realism” (and increasing flakiness/cost):
 - Projects note:
   - Untargeted `pnpm test` now runs eleven smaller shard configs (`core-unit-src`, `core-unit-security`, `core-unit-ui`, `core-unit-support`, `core-support-boundary`, `core-contracts`, `core-bundled`, `core-runtime`, `agentic`, `auto-reply`, `extensions`) instead of one giant native root-project process. This cuts peak RSS on loaded machines and avoids auto-reply/extension work starving unrelated suites.
   - `pnpm test --watch` still uses the native root `vitest.config.ts` project graph, because a multi-shard watch loop is not practical.
-  - `pnpm test`, `pnpm test:watch`, and `pnpm test:perf:imports` route explicit file/directory targets through scoped lanes first, so `pnpm test extensions/discord/src/monitor/message-handler.preflight.test.ts` avoids paying the full root project startup tax.
-  - `pnpm test:changed` expands changed git paths into the same scoped lanes when the diff only touches routable source/test files; config/setup edits still fall back to the broad root-project rerun.
+  - `pnpm test` and `pnpm test:watch` route explicit file/directory targets through scoped lanes first, so `pnpm test extensions/discord/src/monitor/message-handler.preflight.test.ts` avoids paying the full root project startup tax.
   - Import-light unit tests from agents, commands, plugins, auto-reply helpers, `plugin-sdk`, and similar pure utility areas route through the `unit-fast` lane, which skips `test/setup-openclaw-runtime.ts`; stateful/runtime-heavy files stay on the existing lanes.
   - Selected `plugin-sdk` and `commands` helper source files also map changed-mode runs to explicit sibling tests in those light lanes, so helper edits avoid rerunning the full heavy suite for that directory.
   - `auto-reply` now has three dedicated buckets: top-level core helpers, top-level `reply.*` integration tests, and the `src/auto-reply/reply/**` subtree. This keeps the heaviest reply harness work off the cheap status/chunk/token tests.
@@ -291,21 +287,6 @@ Think of the suites as “increasing realism” (and increasing flakiness/cost):
   - The root UI lane keeps its `jsdom` setup and optimizer, but now runs on the shared non-isolated runner too.
   - Each `pnpm test` shard inherits the same `threads` + `isolate: false` defaults from the shared Vitest config.
   - The shared `scripts/run-vitest.mjs` launcher now also adds `--no-maglev` for Vitest child Node processes by default to reduce V8 compile churn during big local runs. Set `OPENCLAW_VITEST_ENABLE_MAGLEV=1` if you need to compare against stock V8 behavior.
-- Fast-local iteration note:
-  - `pnpm changed:lanes` shows which architectural lanes a diff triggers.
-  - The pre-commit hook runs `pnpm check:changed --staged` after staged formatting/linting, so core-only commits do not pay extension test cost unless they touch public extension-facing contracts.
-  - `pnpm test:changed` routes through scoped lanes when the changed paths map cleanly to a smaller suite.
-  - `pnpm test:max` and `pnpm test:changed:max` keep the same routing behavior, just with a higher worker cap.
-  - Local worker auto-scaling is intentionally conservative now and also backs off when the host load average is already high, so multiple concurrent Vitest runs do less damage by default.
-  - The base Vitest config marks the projects/config files as `forceRerunTriggers` so changed-mode reruns stay correct when test wiring changes.
-  - The config keeps `OPENCLAW_VITEST_FS_MODULE_CACHE` enabled on supported hosts; set `OPENCLAW_VITEST_FS_MODULE_CACHE_PATH=/abs/path` if you want one explicit cache location for direct profiling.
-- Perf-debug note:
-  - `pnpm test:perf:imports` enables Vitest import-duration reporting plus import-breakdown output.
-  - `pnpm test:perf:imports:changed` scopes the same profiling view to files changed since `origin/main`.
-- `pnpm test:perf:changed:bench -- --ref <git-ref>` compares routed `test:changed` against the native root-project path for that committed diff and prints wall time plus macOS max RSS.
-- `pnpm test:perf:changed:bench -- --worktree` benchmarks the current dirty tree by routing the changed file list through `scripts/test-projects.mjs` and the root Vitest config.
-  - `pnpm test:perf:profile:main` writes a main-thread CPU profile for Vitest/Vite startup and transform overhead.
-  - `pnpm test:perf:profile:runner` writes runner CPU+heap profiles for the unit suite with file parallelism disabled.
 
 ### E2E (gateway smoke)
 

@@ -1,10 +1,21 @@
 import { describe, expect, it, vi } from "vitest";
 import { actionHasTarget, actionRequiresTarget } from "./message-action-spec.js";
 
-vi.mock("../../channels/plugins/bootstrap-registry.js", async () => ({
-  getBootstrapChannelPlugin: (
-    await import("./message-action-test-fixtures.js")
-  ).createPinboardMessageActionBootstrapRegistryMock(),
+vi.mock("../../channels/plugins/bootstrap-registry.js", () => ({
+  getBootstrapChannelPlugin: (channel: string) =>
+    channel === "feishu"
+      ? {
+          actions: {
+            messageActionTargetAliases: {
+              read: { aliases: ["messageId"] },
+              pin: { aliases: ["messageId"] },
+              unpin: { aliases: ["messageId"] },
+              "list-pins": { aliases: ["chatId"] },
+              "channel-info": { aliases: ["chatId"] },
+            },
+          },
+        }
+      : undefined,
 }));
 
 describe("actionRequiresTarget", () => {
@@ -26,32 +37,32 @@ describe("actionHasTarget", () => {
     {
       action: "read",
       params: { messageId: "msg_123" },
-      ctx: { channel: "pinboard" },
+      ctx: { channel: "feishu" },
       expected: true,
     },
     { action: "edit", params: { messageId: "  msg_123  " }, expected: true },
     {
       action: "pin",
       params: { messageId: "msg_123" },
-      ctx: { channel: "pinboard" },
+      ctx: { channel: "feishu" },
       expected: true,
     },
     {
       action: "unpin",
       params: { messageId: "msg_123" },
-      ctx: { channel: "pinboard" },
+      ctx: { channel: "feishu" },
       expected: true,
     },
     {
       action: "list-pins",
       params: { chatId: "oc_123" },
-      ctx: { channel: "pinboard" },
+      ctx: { channel: "feishu" },
       expected: true,
     },
     {
       action: "channel-info",
       params: { chatId: "oc_123" },
-      ctx: { channel: "pinboard" },
+      ctx: { channel: "feishu" },
       expected: true,
     },
     { action: "react", params: { chatGuid: "chat-guid" }, expected: true },
@@ -61,13 +72,13 @@ describe("actionHasTarget", () => {
     {
       action: "pin",
       params: { messageId: "msg_123" },
-      ctx: { channel: "workspace" },
+      ctx: { channel: "slack" },
       expected: false,
     },
     {
       action: "channel-info",
       params: { chatId: "oc_123" },
-      ctx: { channel: "richchat" },
+      ctx: { channel: "discord" },
       expected: false,
     },
     { action: "edit", params: { messageId: "   " }, expected: false },

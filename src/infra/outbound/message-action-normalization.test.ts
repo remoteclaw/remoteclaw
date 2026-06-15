@@ -1,16 +1,21 @@
 import { describe, expect, it, vi } from "vitest";
 import { normalizeMessageActionInput } from "./message-action-normalization.js";
 
-vi.mock("../../channels/plugins/bootstrap-registry.js", async () => ({
-  getBootstrapChannelPlugin: (
-    await import("./message-action-test-fixtures.js")
-  ).createPinboardMessageActionBootstrapRegistryMock(),
-}));
-
-vi.mock("../../utils/message-channel.js", () => ({
-  isDeliverableMessageChannel: (value: string) => ["workspace", "forum"].includes(value),
-  normalizeMessageChannel: (value?: string | null) =>
-    typeof value === "string" ? value.trim().toLowerCase() : undefined,
+vi.mock("../../channels/plugins/bootstrap-registry.js", () => ({
+  getBootstrapChannelPlugin: (channel: string) =>
+    channel === "feishu"
+      ? {
+          actions: {
+            messageActionTargetAliases: {
+              read: { aliases: ["messageId"] },
+              pin: { aliases: ["messageId"] },
+              unpin: { aliases: ["messageId"] },
+              "list-pins": { aliases: ["chatId"] },
+              "channel-info": { aliases: ["chatId"] },
+            },
+          },
+        }
+      : undefined,
 }));
 
 describe("normalizeMessageActionInput", () => {
@@ -72,10 +77,10 @@ describe("normalizeMessageActionInput", () => {
         },
         toolContext: {
           currentChannelId: "C1",
-          currentChannelProvider: "workspace",
+          currentChannelProvider: "slack",
         },
       },
-      expectedFields: { channel: "workspace" },
+      expectedFields: { channel: "slack" },
     },
     {
       input: {
@@ -116,7 +121,7 @@ describe("normalizeMessageActionInput", () => {
       input: {
         action: "pin",
         args: {
-          channel: "pinboard",
+          channel: "feishu",
           messageId: "om_123",
         },
       },
@@ -127,7 +132,7 @@ describe("normalizeMessageActionInput", () => {
       input: {
         action: "list-pins",
         args: {
-          channel: "pinboard",
+          channel: "feishu",
           chatId: "oc_123",
         },
       },
@@ -138,12 +143,12 @@ describe("normalizeMessageActionInput", () => {
       input: {
         action: "read",
         args: {
-          channel: "workspace",
+          channel: "slack",
           messageId: "123.456",
         },
         toolContext: {
           currentChannelId: "C12345678",
-          currentChannelProvider: "workspace",
+          currentChannelProvider: "slack",
         },
       },
       expectedFields: { target: "C12345678", messageId: "123.456" },

@@ -1104,6 +1104,8 @@ export const chatHandlers: GatewayRequestHandlers = {
         channel: INTERNAL_MESSAGE_CHANNEL,
       });
       const finalReplyParts: string[] = [];
+      const errorReplyParts: string[] = [];
+      let hasErrorPayload = false;
       const dispatcher = createReplyDispatcher({
         ...prefixOptions,
         onError: (err) => {
@@ -1113,11 +1115,22 @@ export const chatHandlers: GatewayRequestHandlers = {
           if (info.kind !== "final") {
             return;
           }
+          // Set the flag before the empty-text early return so text-less
+          // error payloads still mark the run as having errored.
+          if (payload.isError) {
+            hasErrorPayload = true;
+          }
           const text = payload.text?.trim() ?? "";
           if (!text) {
             return;
           }
-          finalReplyParts.push(text);
+          // Keep error text in a dedicated array so a mixed run (error +
+          // assistant text) is not misclassified as an error.
+          if (payload.isError) {
+            errorReplyParts.push(text);
+          } else {
+            finalReplyParts.push(text);
+          }
         },
       });
 
@@ -1195,6 +1208,28 @@ export const chatHandlers: GatewayRequestHandlers = {
               sessionKey: rawSessionKey,
               message,
             });
+          } else if (
+            hasErrorPayload &&
+            finalReplyParts.length === 0 &&
+            errorReplyParts.length > 0
+          ) {
+            // Agent run started but produced only error payloads (e.g. auth
+            // failure, CLI crash) — the lifecycle events carry no assistant
+            // text, so the normal agent-run broadcast surfaces nothing. Emit
+            // the error to the webchat UI explicitly instead of dropping it.
+            const combinedError = errorReplyParts
+              .map((part) => part.trim())
+              .filter(Boolean)
+              .join("\n\n")
+              .trim();
+            if (combinedError) {
+              broadcastChatError({
+                context,
+                runId: clientRunId,
+                sessionKey: rawSessionKey,
+                errorMessage: combinedError,
+              });
+            }
           }
           setGatewayDedupeEntry({
             dedupe: context.dedupe,

@@ -3,6 +3,11 @@ import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import { resolveFirstBoundAccountId } from "../routing/bound-account-read.js";
 import { normalizeDeliveryContext } from "../utils/delivery-context.shared.js";
 
+export const MODULE_ATTESTATIONS = {
+  extractRequesterPeer: "live",
+  resolveRequesterOriginForChild: "live",
+} as const;
+
 // Delivery targets often carry a transport wrapper (e.g. Matrix `room:<id>` or
 // LINE `line:group:<id>`), while route bindings commonly store raw peer ids on
 // `match.peer.id`. Peel wrappers for those lookups, and separately pass the

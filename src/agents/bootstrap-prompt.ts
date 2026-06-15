@@ -1,3 +1,8 @@
+export const MODULE_ATTESTATIONS = {
+  buildFullBootstrapPromptLines: "live",
+  buildLimitedBootstrapPromptLines: "live",
+} as const;
+
 export function buildFullBootstrapPromptLines(params: {
   readLine: string;
   firstReplyLine: string;

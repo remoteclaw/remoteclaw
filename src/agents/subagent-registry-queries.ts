@@ -18,6 +18,8 @@ export const MODULE_ATTESTATIONS = {
   countPendingDescendantRunsFromRuns: "live",
   countPendingDescendantRunsExcludingRunFromRuns: "live",
   listDescendantRunsForRequesterFromRuns: "live",
+  isSubagentSessionRunActiveFromRuns: "live",
+  getSubagentRunByChildSessionKeyFromRuns: "live",
 } as const;
 
 function resolveControllerSessionKey(entry: SubagentRunRecord): string {

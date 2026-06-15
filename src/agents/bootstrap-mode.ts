@@ -1,5 +1,9 @@
 export type BootstrapMode = "full" | "limited" | "none";
 
+export const MODULE_ATTESTATIONS = {
+  resolveBootstrapMode: "live",
+} as const;
+
 export function resolveBootstrapMode(params: {
   bootstrapPending: boolean;
   runKind?: "default" | "heartbeat" | "cron";

@@ -9,7 +9,6 @@ import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
  * updating these when sync or rebrand changes the surface.
  */
 export const MODULE_ATTESTATIONS = {
-  redactImageDataForDiagnostics: "live",
   sanitizeDiagnosticPayload: "live",
 } as const;
 

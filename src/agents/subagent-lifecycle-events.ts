@@ -4,9 +4,7 @@
  * attestations for the category definitions and the convention for
  * updating these when sync or rebrand changes the surface.
  */
-export const MODULE_ATTESTATIONS = {
-  resolveSubagentSessionEndedOutcome: "live",
-} as const;
+export const MODULE_ATTESTATIONS = {} as const;
 export const SUBAGENT_TARGET_KIND_SUBAGENT = "subagent" as const;
 
 export const SUBAGENT_ENDED_REASON_COMPLETE = "subagent-complete" as const;

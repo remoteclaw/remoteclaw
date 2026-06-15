@@ -1,30 +1,23 @@
 import { describe, expect, it, vi } from "vitest";
-import { baseConfigSnapshot, createTestRuntime } from "./test-runtime-config-helpers.js";
+import { createTestRuntime } from "./test-runtime-config-helpers.js";
 
+// Fork divergence: channelsListCommand resolves config via requireValidConfig
+// (src/commands/channels/shared.ts) and reads auth via loadAuthProfileStore from
+// the fork's consolidated src/auth/ barrel — NOT upstream's
+// resolveCommandConfigWithSecrets + src/agents/auth-profiles path. Mock the fork
+// seams so this test exercises the fork's real JSON-output code path.
 const mocks = vi.hoisted(() => ({
-  readConfigFileSnapshot: vi.fn(),
-  resolveCommandConfigWithSecrets: vi.fn(async ({ config }: { config: unknown }) => ({
-    resolvedConfig: config,
-    effectiveConfig: config,
-    diagnostics: [],
-  })),
+  requireValidConfig: vi.fn(async () => ({}) as unknown),
   loadAuthProfileStore: vi.fn(),
   listChannelPlugins: vi.fn(() => []),
 }));
 
-vi.mock("../config/config.js", () => ({
-  readConfigFileSnapshot: mocks.readConfigFileSnapshot,
+vi.mock("./channels/shared.js", () => ({
+  requireValidConfig: mocks.requireValidConfig,
+  formatChannelAccountLabel: () => "",
 }));
 
-vi.mock("../cli/command-config-resolution.js", () => ({
-  resolveCommandConfigWithSecrets: mocks.resolveCommandConfigWithSecrets,
-}));
-
-vi.mock("../cli/command-secret-targets.js", () => ({
-  getChannelsCommandSecretTargetIds: () => new Set<string>(),
-}));
-
-vi.mock("../agents/auth-profiles.js", () => ({
+vi.mock("../auth/index.js", () => ({
   loadAuthProfileStore: mocks.loadAuthProfileStore,
 }));
 
@@ -35,12 +28,8 @@ vi.mock("../channels/plugins/index.js", () => ({
 import { channelsListCommand } from "./channels/list.js";
 
 describe("channels list auth profiles", () => {
-  it("includes external auth profiles in JSON output", async () => {
+  it("includes auth profiles in JSON output", async () => {
     const runtime = createTestRuntime();
-    mocks.readConfigFileSnapshot.mockResolvedValue({
-      ...baseConfigSnapshot,
-      config: {},
-    });
     mocks.loadAuthProfileStore.mockReturnValue({
       version: 1,
       profiles: {
@@ -65,7 +54,6 @@ describe("channels list auth profiles", () => {
 
     await channelsListCommand({ json: true }, runtime);
 
-    expect(mocks.resolveCommandConfigWithSecrets).toHaveBeenCalledTimes(1);
     const payload = JSON.parse(runtime.log.mock.calls[0]?.[0] as string) as {
       auth?: Array<{ id: string }>;
     };

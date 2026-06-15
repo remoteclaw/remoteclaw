@@ -5,6 +5,10 @@ type IteratorHandler<T> = (
   value?: unknown,
 ) => IteratorResult<T, unknown> | Promise<IteratorResult<T, unknown>>;
 
+export const MODULE_ATTESTATIONS = {
+  createStreamIteratorWrapper: "live",
+} as const;
+
 export function createStreamIteratorWrapper<T>(params: {
   iterator: StreamIterator<T>;
   next: (iterator: StreamIterator<T>) => Promise<IteratorResult<T, unknown>>;

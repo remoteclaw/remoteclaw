@@ -8,6 +8,8 @@ import { CommandLane } from "../process/lanes.js";
  */
 export const MODULE_ATTESTATIONS = {
   resolveNestedAgentLane: "live",
+  resolveNestedAgentLaneForSession: "live",
+  isNestedAgentLane: "live",
 } as const;
 
 export const AGENT_LANE_NESTED = CommandLane.Nested;

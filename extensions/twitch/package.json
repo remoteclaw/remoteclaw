@@ -13,9 +13,6 @@
       "./index.ts"
     ],
     "setupEntry": "./setup-entry.ts",
-    "install": {
-      "minHostVersion": ">=2026.4.10"
-    },
     "channel": {
       "id": "twitch",
       "label": "Twitch",

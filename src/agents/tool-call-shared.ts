@@ -6,6 +6,13 @@ export const TOOL_CALL_NAME_RE = /^[A-Za-z0-9_:.-]+$/;
 export const REDACTED_SESSIONS_SPAWN_ATTACHMENT_CONTENT = "__REMOTECLAW_REDACTED__";
 export const SESSIONS_SPAWN_ATTACHMENT_METADATA_KEYS = ["name", "encoding", "mimeType"] as const;
 
+export const MODULE_ATTESTATIONS = {
+  normalizeAllowedToolNames: "live",
+  isAllowedToolCallName: "live",
+  isRedactedSessionsSpawnAttachment: "live",
+  hasUnredactedSessionsSpawnAttachments: "live",
+} as const;
+
 export function normalizeAllowedToolNames(allowedToolNames?: Iterable<string>): Set<string> | null {
   if (!allowedToolNames) {
     return null;

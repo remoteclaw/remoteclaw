@@ -9,6 +9,7 @@ import path from "node:path";
  */
 export const MODULE_ATTESTATIONS = {
   writeSkill: "live",
+  writeWorkspaceSkills: "live",
 } as const;
 
 export async function writeSkill(params: {

@@ -34,6 +34,24 @@ export const isSecureWebSocketUrlMock: TestMock<
   return opts?.allowPrivateWs === true || isLoopbackHostMock(parsed.hostname);
 });
 
+vi.mock("../config/config.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../config/config.js")>()),
+  loadConfig: loadConfigMock,
+  resolveGatewayPort: resolveGatewayPortMock,
+  resolveStateDir: resolveStateDirMock,
+  resolveConfigPath: resolveConfigPathMock,
+}));
+
 vi.mock("../infra/tailnet.js", () => ({
   pickPrimaryTailnetIPv4: pickPrimaryTailnetIPv4Mock,
 }));
+
+vi.mock("./net.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./net.js")>();
+  return {
+    ...actual,
+    pickPrimaryLanIPv4: pickPrimaryLanIPv4Mock,
+    isLoopbackHost: isLoopbackHostMock,
+    isSecureWebSocketUrl: isSecureWebSocketUrlMock,
+  };
+});

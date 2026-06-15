@@ -116,8 +116,6 @@ describe("git-hooks/pre-commit (integration)", () => {
       FAST_COMMIT: "1",
     });
 
-    expect(output).toContain(
-      "FAST_COMMIT enabled: skipping changed-scope check in pre-commit hook.",
-    );
+    expect(output).toContain("FAST_COMMIT enabled: skipping pnpm check in pre-commit hook.");
   });
 });

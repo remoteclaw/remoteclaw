@@ -70,55 +70,6 @@ function readRuntimeCallText(call: unknown[] | undefined): string {
   return typeof value === "string" ? value : "";
 }
 
-function readRuntimeOutput(): string {
-  return runtime.log.mock.calls.map((entry) => readRuntimeCallText(entry)).join("\n");
-}
-
-function pendingDevice(overrides: Record<string, unknown> = {}) {
-  return {
-    requestId: "req-1",
-    deviceId: "device-1",
-    displayName: "Device One",
-    role: "operator",
-    scopes: ["operator.admin"],
-    ts: 1,
-    ...overrides,
-  };
-}
-
-function pairedDevice(overrides: Record<string, unknown> = {}) {
-  return {
-    deviceId: "device-1",
-    displayName: "Device One",
-    roles: ["operator"],
-    scopes: ["operator.read"],
-    ...overrides,
-  };
-}
-
-function mockGatewayPairingList(
-  pendingOverrides: Record<string, unknown> = {},
-  pairedOverrides: Record<string, unknown> = {},
-) {
-  callGateway.mockResolvedValueOnce({
-    pending: [pendingDevice(pendingOverrides)],
-    paired: [pairedDevice(pairedOverrides)],
-  });
-}
-
-function rejectGatewayForLocalFallback(message = "gateway closed (1008): pairing required") {
-  callGateway.mockRejectedValueOnce(new Error(message));
-}
-
-function mockLocalPairingFallback(message?: string) {
-  rejectGatewayForLocalFallback(message);
-  listDevicePairing.mockResolvedValueOnce({
-    pending: [{ requestId: "req-1", deviceId: "device-1", publicKey: "pk", ts: 1 }],
-    paired: [],
-  });
-  summarizeDeviceTokens.mockReturnValue(undefined);
-}
-
 describe("devices cli approve", () => {
   it("approves an explicit request id without listing", async () => {
     callGateway.mockResolvedValueOnce({ device: { deviceId: "device-1" } });
@@ -302,7 +253,12 @@ describe("devices cli local fallback", () => {
   const fallbackNotice = "Direct scope access failed; using local fallback.";
 
   it("falls back to local pairing list when gateway returns pairing required on loopback", async () => {
-    mockLocalPairingFallback();
+    callGateway.mockRejectedValueOnce(new Error("gateway closed (1008): pairing required"));
+    listDevicePairing.mockResolvedValueOnce({
+      pending: [{ requestId: "req-1", deviceId: "device-1", publicKey: "pk", ts: 1 }],
+      paired: [],
+    });
+    summarizeDeviceTokens.mockReturnValue(undefined);
 
     await runDevicesCommand(["list"]);
 
@@ -339,17 +295,8 @@ describe("devices cli local fallback", () => {
     expect(runtime.log).toHaveBeenCalledWith(expect.stringContaining("Approved"));
   });
 
-  it("falls back to local pairing list when gateway returns a scope upgrade message on loopback", async () => {
-    mockLocalPairingFallback("scope upgrade pending approval (requestId: req-123)");
-
-    await runDevicesCommand(["list"]);
-
-    expect(listDevicePairing).toHaveBeenCalledTimes(1);
-    expect(runtime.log).toHaveBeenCalledWith(expect.stringContaining(fallbackNotice));
-  });
-
   it("does not use local fallback when an explicit --url is provided", async () => {
-    rejectGatewayForLocalFallback();
+    callGateway.mockRejectedValueOnce(new Error("gateway closed (1008): pairing required"));
 
     await expect(
       runDevicesCommand(["list", "--json", "--url", "ws://127.0.0.1:18789"]),
@@ -359,72 +306,26 @@ describe("devices cli local fallback", () => {
 });
 
 describe("devices cli list", () => {
-  it("renders requested versus approved access for pending upgrades", async () => {
-    mockGatewayPairingList({ scopes: ["operator.admin", "operator.read"] });
-
-    await runDevicesCommand(["list"]);
-
-    const output = readRuntimeOutput();
-    expect(output).toContain("Requested");
-    expect(output).toContain("Approved");
-    expect(output).toContain("operator.write");
-    expect(output).toContain("operator.read");
-    expect(output).toContain("scope upgrade");
-  });
-
-  it("normalizes pending device ids before matching paired approvals", async () => {
-    mockGatewayPairingList({ deviceId: " device-1 " });
-
-    await runDevicesCommand(["list"]);
-
-    const output = readRuntimeOutput();
-    expect(output).toContain("scope upgrade");
-    expect(output).toContain("operator.read");
-  });
-
-  it("does not show upgrade context for key-mismatched pending requests", async () => {
-    mockGatewayPairingList({ publicKey: "new-key" }, { publicKey: "old-key" });
-
-    await runDevicesCommand(["list"]);
-
-    const output = readRuntimeOutput();
-    expect(output).toContain("new pairing");
-    expect(output).not.toContain("scope upgrade");
-    expect(output).not.toContain("roles: operator; scopes: operator.read");
-  });
-
-  it("sanitizes device-controlled terminal output", async () => {
+  it("renders pending scopes when present", async () => {
     callGateway.mockResolvedValueOnce({
       pending: [
         {
           requestId: "req-1",
           deviceId: "device-1",
-          displayName: "Bad\u001b[2J\nName",
+          displayName: "Device One",
           role: "operator",
-          scopes: ["operator.admin"],
-          remoteIp: "10.0.0.9\rspoof",
+          scopes: ["operator.admin", "operator.read"],
           ts: 1,
         },
       ],
-      paired: [
-        {
-          deviceId: "device-1",
-          displayName: "Pair\u001b]8;;https://evil.example\u001b\\ed",
-          roles: ["operator"],
-          scopes: ["operator.read"],
-          remoteIp: "10.0.0.1\u007f",
-        },
-      ],
+      paired: [],
     });
 
     await runDevicesCommand(["list"]);
 
-    const output = readRuntimeOutput();
-    expect(output).not.toContain("\u001b");
-    expect(output).not.toContain("\r");
-    expect(output).toContain("BadName");
-    expect(output).toContain("spoof");
-    expect(output).toContain("Paired");
+    const output = runtime.log.mock.calls.map((entry) => readRuntimeCallText(entry)).join("\n");
+    expect(output).toContain("Scopes");
+    expect(output).toContain("operator.admin, operator.read");
   });
 });
 

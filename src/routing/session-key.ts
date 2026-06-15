@@ -21,10 +21,6 @@ export {
 // direct chats (format: `agent:{agentId}:{mainKey}`). Unrelated to the phantom
 // agent concept — this is a SESSION-KEY SEGMENT, not a default agent identity.
 export const DEFAULT_MAIN_KEY = "main";
-
-// Canonical default agent id ("default"). Consumed by session-target resolution
-// to special-case the implicit single-agent profile.
-export const DEFAULT_AGENT_ID = "default";
 export type SessionKeyShape = "missing" | "agent" | "legacy_or_alias" | "malformed_agent";
 
 // Pre-compiled regex

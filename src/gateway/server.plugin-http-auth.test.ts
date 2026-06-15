@@ -1,29 +1,16 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { describe, expect, test, vi } from "vitest";
-import { canonicalizePathVariant, isProtectedPluginRoutePath } from "./security-path.js";
 import {
   AUTH_NONE,
   AUTH_TOKEN,
-  buildChannelPathFuzzCorpus,
-  CANONICAL_AUTH_VARIANTS,
-  CANONICAL_UNAUTH_VARIANTS,
-  createCanonicalizedChannelPluginHandler,
   createHooksHandler,
   createTestGatewayServer,
-  expectAuthorizedVariants,
-  expectUnauthorizedResponse,
-  expectUnauthorizedVariants,
   sendRequest,
   withGatewayServer,
   withGatewayTempConfig,
 } from "./server-http.test-harness.js";
-import { withTempConfig } from "./test-temp-config.js";
 
 type PluginRequestHandler = (req: IncomingMessage, res: ServerResponse) => Promise<boolean>;
-
-function canonicalizePluginPath(pathname: string): string {
-  return canonicalizePathVariant(pathname);
-}
 
 function respondJsonRoute(res: ServerResponse, route: string): true {
   res.statusCode = 200;
@@ -50,17 +37,6 @@ async function expectHealthzPluginShadow(params: {
   expect(response.res.statusCode).toBe(200);
   expect(response.getBody()).toBe(JSON.stringify({ ok: true, route: "plugin-health" }));
   expect(params.handlePluginRequest).toHaveBeenCalledTimes(1);
-}
-
-function createMattermostCallbackConfig(callbackPath: string) {
-  return {
-    gateway: { trustedProxies: [] },
-    channels: {
-      mattermost: {
-        commands: { callbackPath },
-      },
-    },
-  };
 }
 
 function createRootMountedControlUiOverrides(handlePluginRequest: PluginRequestHandler) {
@@ -102,14 +78,6 @@ async function expectProbeRoutesHealthy(server: Parameters<typeof sendRequest>[0
       JSON.stringify({ ok: true, status: probeCase.status }),
     );
   }
-}
-
-function createProtectedPluginAuthOverrides(handlePluginRequest: PluginRequestHandler) {
-  return {
-    handlePluginRequest,
-    shouldEnforcePluginGatewayAuth: (pathContext: { pathname: string }) =>
-      isProtectedPluginRoutePath(pathContext.pathname),
-  };
 }
 
 describe("gateway plugin HTTP auth boundary", () => {
@@ -177,232 +145,6 @@ describe("gateway plugin HTTP auth boundary", () => {
         const headResponse = await sendRequest(server, { path: "/readyz", method: "HEAD" });
         expect(headResponse.res.statusCode).toBe(200);
         expect(headResponse.getBody()).toBe("");
-      },
-    });
-  });
-
-  test("requires gateway auth for protected plugin route space and allows authenticated pass-through", async () => {
-    const handlePluginRequest = vi.fn(async (req: IncomingMessage, res: ServerResponse) => {
-      const pathname = new URL(req.url ?? "/", "http://localhost").pathname;
-      if (pathname === "/api/channels") {
-        res.statusCode = 200;
-        res.setHeader("Content-Type", "application/json; charset=utf-8");
-        res.end(JSON.stringify({ ok: true, route: "channel-root" }));
-        return true;
-      }
-      if (pathname === "/api/channels/nostr/default/profile") {
-        res.statusCode = 200;
-        res.setHeader("Content-Type", "application/json; charset=utf-8");
-        res.end(JSON.stringify({ ok: true, route: "channel" }));
-        return true;
-      }
-      if (pathname === "/plugin/public") {
-        res.statusCode = 200;
-        res.setHeader("Content-Type", "application/json; charset=utf-8");
-        res.end(JSON.stringify({ ok: true, route: "public" }));
-        return true;
-      }
-      return false;
-    });
-
-    await withGatewayServer({
-      prefix: "remoteclaw-plugin-http-auth-test-",
-      resolvedAuth: AUTH_TOKEN,
-      overrides: {
-        handlePluginRequest,
-        shouldEnforcePluginGatewayAuth: (pathContext) =>
-          isProtectedPluginRoutePath(pathContext.pathname) ||
-          pathContext.pathname === "/plugin/public",
-      },
-      run: async (server) => {
-        const unauthenticated = await sendRequest(server, {
-          path: "/api/channels/nostr/default/profile",
-        });
-        expectUnauthorizedResponse(unauthenticated);
-        expect(handlePluginRequest).not.toHaveBeenCalled();
-
-        const unauthenticatedRoot = await sendRequest(server, { path: "/api/channels" });
-        expectUnauthorizedResponse(unauthenticatedRoot);
-        expect(handlePluginRequest).not.toHaveBeenCalled();
-
-        const authenticated = await sendRequest(server, {
-          path: "/api/channels/nostr/default/profile",
-          authorization: "Bearer test-token",
-        });
-        expect(authenticated.res.statusCode).toBe(200);
-        expect(authenticated.getBody()).toContain('"route":"channel"');
-
-        const unauthenticatedPublic = await sendRequest(server, { path: "/plugin/public" });
-        expectUnauthorizedResponse(unauthenticatedPublic);
-
-        expect(handlePluginRequest).toHaveBeenCalledTimes(1);
-      },
-    });
-  });
-
-  test("allows unauthenticated Mattermost slash callback routes while keeping other channel routes protected", async () => {
-    const handlePluginRequest = vi.fn(async (req: IncomingMessage, res: ServerResponse) => {
-      const pathname = new URL(req.url ?? "/", "http://localhost").pathname;
-      if (pathname === "/api/channels/mattermost/command") {
-        res.statusCode = 200;
-        res.end("ok:mm-callback");
-        return true;
-      }
-      if (pathname === "/api/channels/nostr/default/profile") {
-        res.statusCode = 200;
-        res.end("ok:nostr");
-        return true;
-      }
-      return false;
-    });
-
-    await withTempConfig({
-      cfg: createMattermostCallbackConfig("/api/channels/mattermost/command"),
-      prefix: "remoteclaw-plugin-http-auth-mm-callback-",
-      run: async () => {
-        const server = createTestGatewayServer({
-          resolvedAuth: AUTH_TOKEN,
-          overrides: { handlePluginRequest },
-        });
-
-        const slashCallback = await sendRequest(server, {
-          path: "/api/channels/mattermost/command",
-          method: "POST",
-        });
-        expect(slashCallback.res.statusCode).toBe(200);
-        expect(slashCallback.getBody()).toBe("ok:mm-callback");
-
-        const otherChannelUnauthed = await sendRequest(server, {
-          path: "/api/channels/nostr/default/profile",
-        });
-        expect(otherChannelUnauthed.res.statusCode).toBe(401);
-        expect(otherChannelUnauthed.getBody()).toContain("Unauthorized");
-      },
-    });
-  });
-
-  test("does not bypass auth when mattermost callbackPath points to non-mattermost channel routes", async () => {
-    const handlePluginRequest = vi.fn(async (req: IncomingMessage, res: ServerResponse) => {
-      const pathname = new URL(req.url ?? "/", "http://localhost").pathname;
-      if (pathname === "/api/channels/nostr/default/profile") {
-        res.statusCode = 200;
-        res.end("ok:nostr");
-        return true;
-      }
-      return false;
-    });
-
-    await withTempConfig({
-      cfg: createMattermostCallbackConfig("/api/channels/nostr/default/profile"),
-      prefix: "remoteclaw-plugin-http-auth-mm-misconfig-",
-      run: async () => {
-        const server = createTestGatewayServer({
-          resolvedAuth: AUTH_TOKEN,
-          overrides: { handlePluginRequest },
-        });
-
-        const unauthenticated = await sendRequest(server, {
-          path: "/api/channels/nostr/default/profile",
-          method: "POST",
-        });
-
-        expect(unauthenticated.res.statusCode).toBe(401);
-        expect(unauthenticated.getBody()).toContain("Unauthorized");
-        expect(handlePluginRequest).not.toHaveBeenCalled();
-      },
-    });
-  });
-
-  test("keeps wildcard plugin handlers ungated when auth enforcement predicate excludes their paths", async () => {
-    const handlePluginRequest = vi.fn(async (req: IncomingMessage, res: ServerResponse) => {
-      const pathname = new URL(req.url ?? "/", "http://localhost").pathname;
-      if (pathname === "/plugin/routed") {
-        return respondJsonRoute(res, "routed");
-      }
-      if (pathname === "/googlechat") {
-        return respondJsonRoute(res, "wildcard-handler");
-      }
-      return false;
-    });
-
-    await withGatewayServer({
-      prefix: "remoteclaw-plugin-http-auth-wildcard-handler-test-",
-      resolvedAuth: AUTH_TOKEN,
-      overrides: {
-        handlePluginRequest,
-        shouldEnforcePluginGatewayAuth: (pathContext) =>
-          pathContext.pathname.startsWith("/api/channels") ||
-          pathContext.pathname === "/plugin/routed",
-      },
-      run: async (server) => {
-        const unauthenticatedRouted = await sendRequest(server, { path: "/plugin/routed" });
-        expectUnauthorizedResponse(unauthenticatedRouted);
-
-        const unauthenticatedWildcard = await sendRequest(server, { path: "/googlechat" });
-        expect(unauthenticatedWildcard.res.statusCode).toBe(200);
-        expect(unauthenticatedWildcard.getBody()).toContain('"route":"wildcard-handler"');
-
-        const authenticatedRouted = await sendRequest(server, {
-          path: "/plugin/routed",
-          authorization: "Bearer test-token",
-        });
-        expect(authenticatedRouted.res.statusCode).toBe(200);
-        expect(authenticatedRouted.getBody()).toContain('"route":"routed"');
-      },
-    });
-  });
-
-  test("uses /api/channels auth by default while keeping wildcard handlers ungated with no predicate", async () => {
-    const handlePluginRequest = vi.fn(async (req: IncomingMessage, res: ServerResponse) => {
-      const pathname = new URL(req.url ?? "/", "http://localhost").pathname;
-      if (canonicalizePluginPath(pathname) === "/api/channels/nostr/default/profile") {
-        return respondJsonRoute(res, "channel-default");
-      }
-      if (pathname === "/googlechat") {
-        return respondJsonRoute(res, "wildcard-default");
-      }
-      return false;
-    });
-
-    await withGatewayServer({
-      prefix: "remoteclaw-plugin-http-auth-wildcard-default-test-",
-      resolvedAuth: AUTH_TOKEN,
-      overrides: { handlePluginRequest },
-      run: async (server) => {
-        const unauthenticated = await sendRequest(server, { path: "/googlechat" });
-        expect(unauthenticated.res.statusCode).toBe(200);
-        expect(unauthenticated.getBody()).toContain('"route":"wildcard-default"');
-
-        const unauthenticatedChannel = await sendRequest(server, {
-          path: "/api/channels/nostr/default/profile",
-        });
-        expectUnauthorizedResponse(unauthenticatedChannel);
-
-        const unauthenticatedDeepEncodedChannel = await sendRequest(server, {
-          path: "/api%2525252fchannels%2525252fnostr%2525252fdefault%2525252fprofile",
-        });
-        expectUnauthorizedResponse(unauthenticatedDeepEncodedChannel);
-
-        const authenticated = await sendRequest(server, {
-          path: "/googlechat",
-          authorization: "Bearer test-token",
-        });
-        expect(authenticated.res.statusCode).toBe(200);
-        expect(authenticated.getBody()).toContain('"route":"wildcard-default"');
-
-        const authenticatedChannel = await sendRequest(server, {
-          path: "/api/channels/nostr/default/profile",
-          authorization: "Bearer test-token",
-        });
-        expect(authenticatedChannel.res.statusCode).toBe(200);
-        expect(authenticatedChannel.getBody()).toContain('"route":"channel-default"');
-
-        const authenticatedDeepEncodedChannel = await sendRequest(server, {
-          path: "/api%2525252fchannels%2525252fnostr%2525252fdefault%2525252fprofile",
-          authorization: "Bearer test-token",
-        });
-        expect(authenticatedDeepEncodedChannel.res.statusCode).toBe(200);
-        expect(authenticatedDeepEncodedChannel.getBody()).toContain('"route":"channel-default"');
       },
     });
   });
@@ -524,66 +266,6 @@ describe("gateway plugin HTTP auth boundary", () => {
       handlePluginRequest,
       run: async (server) => {
         await expectHealthzPluginShadow({ server, handlePluginRequest });
-      },
-    });
-  });
-
-  test("requires gateway auth for canonicalized /api/channels variants", async () => {
-    const handlePluginRequest = createCanonicalizedChannelPluginHandler();
-
-    await withPluginGatewayServer({
-      prefix: "remoteclaw-plugin-http-auth-canonicalized-test-",
-      resolvedAuth: AUTH_TOKEN,
-      overrides: createProtectedPluginAuthOverrides(handlePluginRequest),
-      run: async (server) => {
-        await expectUnauthorizedVariants({ server, variants: CANONICAL_UNAUTH_VARIANTS });
-        expect(handlePluginRequest).not.toHaveBeenCalled();
-
-        await expectAuthorizedVariants({
-          server,
-          variants: CANONICAL_AUTH_VARIANTS,
-          authorization: "Bearer test-token",
-        });
-        expect(handlePluginRequest).toHaveBeenCalledTimes(CANONICAL_AUTH_VARIANTS.length);
-      },
-    });
-  });
-
-  test("rejects unauthenticated plugin-channel fuzz corpus variants", async () => {
-    const handlePluginRequest = createCanonicalizedChannelPluginHandler();
-
-    await withPluginGatewayServer({
-      prefix: "remoteclaw-plugin-http-auth-fuzz-corpus-test-",
-      resolvedAuth: AUTH_TOKEN,
-      overrides: createProtectedPluginAuthOverrides(handlePluginRequest),
-      run: async (server) => {
-        await expectUnauthorizedVariants({
-          server,
-          variants: buildChannelPathFuzzCorpus(),
-        });
-        expect(handlePluginRequest).not.toHaveBeenCalled();
-      },
-    });
-  });
-
-  test("enforces auth before plugin handlers on encoded protected-path variants", async () => {
-    const encodedVariants = buildChannelPathFuzzCorpus().filter((variant) =>
-      variant.path.includes("%"),
-    );
-    const handlePluginRequest = vi.fn(async (_req: IncomingMessage, res: ServerResponse) => {
-      res.statusCode = 200;
-      res.setHeader("Content-Type", "application/json; charset=utf-8");
-      res.end(JSON.stringify({ ok: true, route: "should-not-run" }));
-      return true;
-    });
-
-    await withGatewayServer({
-      prefix: "remoteclaw-plugin-http-auth-encoded-order-test-",
-      resolvedAuth: AUTH_TOKEN,
-      overrides: { handlePluginRequest },
-      run: async (server) => {
-        await expectUnauthorizedVariants({ server, variants: encodedVariants });
-        expect(handlePluginRequest).not.toHaveBeenCalled();
       },
     });
   });

@@ -9,6 +9,8 @@ import { runCommandWithRuntime } from "./cli-utils.js";
 import { hasExplicitOptions } from "./command-options.js";
 import { formatHelpExamples } from "./help-format.js";
 
+type ChannelsCommandsModule = typeof import("../commands/channels.js");
+
 const optionNamesAdd = [
   "channel",
   "account",
@@ -49,6 +51,13 @@ const optionNamesAdd = [
 
 const optionNamesRemove = ["channel", "account", "delete"] as const;
 
+let channelsCommandsPromise: Promise<ChannelsCommandsModule> | undefined;
+
+function loadChannelsCommands(): Promise<ChannelsCommandsModule> {
+  channelsCommandsPromise ??= import("../commands/channels.js");
+  return channelsCommandsPromise;
+}
+
 function runChannelsCommand(action: () => Promise<void>) {
   return runCommandWithRuntime(defaultRuntime, action);
 }
@@ -86,7 +95,7 @@ export function registerChannelsCli(program: Command) {
     .option("--json", "Output JSON", false)
     .action(async (opts) => {
       await runChannelsCommand(async () => {
-        const { channelsListCommand } = await import("../commands/channels.js");
+        const { channelsListCommand } = await loadChannelsCommands();
         await channelsListCommand(opts, defaultRuntime);
       });
     });
@@ -99,7 +108,7 @@ export function registerChannelsCli(program: Command) {
     .option("--json", "Output JSON", false)
     .action(async (opts) => {
       await runChannelsCommand(async () => {
-        const { channelsStatusCommand } = await import("../commands/channels.js");
+        const { channelsStatusCommand } = await loadChannelsCommands();
         await channelsStatusCommand(opts, defaultRuntime);
       });
     });
@@ -114,7 +123,7 @@ export function registerChannelsCli(program: Command) {
     .option("--json", "Output JSON", false)
     .action(async (opts) => {
       await runChannelsCommand(async () => {
-        const { channelsCapabilitiesCommand } = await import("../commands/channels.js");
+        const { channelsCapabilitiesCommand } = await loadChannelsCommands();
         await channelsCapabilitiesCommand(opts, defaultRuntime);
       });
     });
@@ -129,7 +138,7 @@ export function registerChannelsCli(program: Command) {
     .option("--json", "Output JSON", false)
     .action(async (entries, opts) => {
       await runChannelsCommand(async () => {
-        const { channelsResolveCommand } = await import("../commands/channels.js");
+        const { channelsResolveCommand } = await loadChannelsCommands();
         await channelsResolveCommand(
           {
             channel: opts.channel as string | undefined,
@@ -151,7 +160,7 @@ export function registerChannelsCli(program: Command) {
     .option("--json", "Output JSON", false)
     .action(async (opts) => {
       await runChannelsCommand(async () => {
-        const { channelsLogsCommand } = await import("../commands/channels.js");
+        const { channelsLogsCommand } = await loadChannelsCommands();
         await channelsLogsCommand(opts, defaultRuntime);
       });
     });
@@ -197,7 +206,7 @@ export function registerChannelsCli(program: Command) {
     .option("--use-env", "Use env token (default account only)", false)
     .action(async (opts, command) => {
       await runChannelsCommand(async () => {
-        const { channelsAddCommand } = await import("../commands/channels.js");
+        const { channelsAddCommand } = await loadChannelsCommands();
         const hasFlags = hasExplicitOptions(command, optionNamesAdd);
         await channelsAddCommand(opts, defaultRuntime, { hasFlags });
       });
@@ -211,7 +220,7 @@ export function registerChannelsCli(program: Command) {
     .option("--delete", "Delete config entries (no prompt)", false)
     .action(async (opts, command) => {
       await runChannelsCommand(async () => {
-        const { channelsRemoveCommand } = await import("../commands/channels.js");
+        const { channelsRemoveCommand } = await loadChannelsCommands();
         const hasFlags = hasExplicitOptions(command, optionNamesRemove);
         await channelsRemoveCommand(opts, defaultRuntime, { hasFlags });
       });

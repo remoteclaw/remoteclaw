@@ -87,6 +87,7 @@ function makeWsClient(params: {
 }): GatewayWsClient {
   return {
     socket: {} as unknown as WebSocket,
+    usesSharedGatewayAuth: false,
     connect: {
       role: params.role,
       client: {

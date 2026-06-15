@@ -43,7 +43,7 @@ describe("resolveMatrixRoomId", () => {
     const resolved = await resolveMatrixRoomId(client, userId);
 
     expect(resolved).toBe(roomId);
-    expect(setAccountData).toHaveBeenCalledWith(
+    expect(client.setAccountData).toHaveBeenCalledWith(
       EventType.Direct,
       expect.objectContaining({ [userId]: [roomId] }),
     );

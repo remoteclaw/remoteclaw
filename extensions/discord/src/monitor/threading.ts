@@ -10,6 +10,7 @@ import { logVerbose } from "../../../../src/globals.js";
 import { buildAgentSessionKey } from "../../../../src/routing/resolve-route.js";
 import { truncateUtf16Safe } from "../../../../src/utils.js";
 import type { DiscordChannelConfigResolved } from "./allow-list.js";
+import { resolveDiscordChannelNameSafe } from "./channel-access.js";
 import type { DiscordMessageEvent } from "./listeners.js";
 import {
   resolveDiscordChannelInfo,
@@ -160,7 +161,7 @@ export async function resolveDiscordThreadParentInfo(params: {
   if (!parentId) {
     return {};
   }
-  let parentName = threadChannel.parent?.name;
+  let parentName = resolveDiscordChannelNameSafe(threadChannel.parent);
   const parentInfo = await resolveDiscordChannelInfo(client, parentId);
   parentName = parentName ?? parentInfo?.name;
   const parentType = parentInfo?.type;

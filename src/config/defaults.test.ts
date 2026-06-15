@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_AGENT_MAX_CONCURRENT, DEFAULT_SUBAGENT_MAX_CONCURRENT } from "./agent-limits.js";
 
 const mocks = vi.hoisted(() => ({
@@ -23,6 +23,12 @@ describe("config defaults", () => {
     ({ applyAgentDefaults, applyContextPruningDefaults, applyMessageDefaults } =
       await import("./defaults.js"));
     mocks.applyProviderConfigDefaultsForConfig.mockReset();
+    vi.stubEnv("ANTHROPIC_API_KEY", "");
+    vi.stubEnv("ANTHROPIC_OAUTH_TOKEN", "");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it("skips provider defaults when agent defaults are absent", () => {
@@ -46,6 +52,11 @@ describe("config defaults", () => {
   // when agent defaults are present.
   it.skip("uses anthropic provider defaults when agent defaults exist", () => {
     const cfg = {
+      auth: {
+        profiles: {
+          anthropic: { provider: "anthropic", mode: "api_key" },
+        },
+      },
       agents: {
         defaults: {},
       },

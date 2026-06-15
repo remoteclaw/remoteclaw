@@ -136,6 +136,7 @@ describe("maybeRepairGatewayDaemon", () => {
   function createPrompter(confirmImpl: (message: string) => boolean) {
     return {
       confirm: vi.fn(),
+      confirmAutoFix: vi.fn(),
       confirmRepair: vi.fn(),
       confirmAggressive: vi.fn(),
       confirmSkipInNonInteractive: vi.fn(async ({ message }: { message: string }) =>

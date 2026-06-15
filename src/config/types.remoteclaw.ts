@@ -1,3 +1,7 @@
+import type {
+  SilentReplyPolicyShape,
+  SilentReplyRewriteShape,
+} from "../shared/silent-reply-policy.js";
 import type { AgentBinding, AgentsConfig } from "./types.agents.js";
 import type { AuthConfig } from "./types.auth.js";
 import type { DiagnosticsConfig, LoggingConfig, SessionConfig, WebConfig } from "./types.base.js";
@@ -22,6 +26,12 @@ import type { NodeHostConfig } from "./types.node-host.js";
 import type { PluginsConfig } from "./types.plugins.js";
 import type { ToolsConfig } from "./types.tools.js";
 
+/** Per-surface configuration overrides keyed by surface id. */
+export type SurfaceConfigEntry = {
+  silentReply?: SilentReplyPolicyShape;
+  silentReplyRewrite?: SilentReplyRewriteShape;
+};
+
 export type RemoteClawConfig = {
   meta?: {
     /** Last RemoteClaw version that wrote this config. */
@@ -30,6 +40,8 @@ export type RemoteClawConfig = {
     lastTouchedAt?: string;
   };
   auth?: AuthConfig;
+  /** Per-surface configuration overrides (e.g., silent-reply policy). */
+  surfaces?: Record<string, SurfaceConfigEntry>;
   env?: {
     /** Opt-in: import missing secrets from a login shell environment (exec `$SHELL -l -c 'env -0'`). */
     shellEnv?: {

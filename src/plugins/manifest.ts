@@ -141,6 +141,11 @@ export type PluginPackageInstall = {
   defaultChoice?: "npm" | "local";
 };
 
+export type RemoteClawPackageSetupFeatures = {
+  legacyStateMigrations?: boolean;
+  legacySessionSurfaces?: boolean;
+};
+
 export type RemoteClawPackageManifest = {
   extensions?: string[];
   channel?: PluginPackageChannel;

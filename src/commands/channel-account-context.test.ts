@@ -3,6 +3,10 @@ import type { ChannelPlugin } from "../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { resolveDefaultChannelAccountContext } from "./channel-account-context.js";
 
+vi.mock("../channels/read-only-account-inspect.js", () => ({
+  inspectReadOnlyChannelAccount: vi.fn(async () => null),
+}));
+
 describe("resolveDefaultChannelAccountContext", () => {
   it("uses enabled/configured defaults when hooks are missing", async () => {
     const account = { token: "x" };

@@ -30,6 +30,7 @@ let runServiceRestart: typeof import("./lifecycle-core.js").runServiceRestart;
 let runServiceStart: typeof import("./lifecycle-core.js").runServiceStart;
 let runServiceStop: typeof import("./lifecycle-core.js").runServiceStop;
 
+// oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- Test helper lets assertions ascribe logged JSON shape.
 function readJsonLog<T extends object>() {
   const jsonLine = runtimeLogs.find((line) => line.trim().startsWith("{"));
   return JSON.parse(jsonLine ?? "{}") as T;
@@ -43,6 +44,36 @@ function createServiceRunArgs(checkTokenDrift?: boolean) {
     opts: { json: true as const },
     ...(checkTokenDrift ? { checkTokenDrift } : {}),
   };
+}
+
+function stubConfigSecretRefGatewayToken() {
+  loadConfig.mockReturnValue({
+    secrets: {
+      providers: {
+        default: { source: "env" },
+      },
+    },
+    gateway: {
+      auth: {
+        mode: "token",
+        token: {
+          source: "env",
+          provider: "default",
+          id: "SERVICE_GATEWAY_TOKEN",
+        },
+      },
+    },
+  });
+}
+
+function stubServiceGatewayTokenEnv() {
+  service.readCommand.mockResolvedValue({
+    programArguments: [],
+    environment: {
+      REMOTECLAW_GATEWAY_TOKEN: "service-token",
+      SERVICE_GATEWAY_TOKEN: "service-token",
+    },
+  });
 }
 
 describe("runServiceRestart token drift", () => {
@@ -105,30 +136,8 @@ describe("runServiceRestart token drift", () => {
   // checks. Fork's resolveGatewayTokenForDriftCheck is sync and lacks this logic;
   // fork emits "Unable to verify gateway token drift" warnings instead.
   it.skip("resolves config token SecretRefs using service command env before drift checks", async () => {
-    loadConfig.mockReturnValue({
-      secrets: {
-        providers: {
-          default: { source: "env" },
-        },
-      },
-      gateway: {
-        auth: {
-          mode: "token",
-          token: {
-            source: "env",
-            provider: "default",
-            id: "SERVICE_GATEWAY_TOKEN",
-          },
-        },
-      },
-    });
-    service.readCommand.mockResolvedValue({
-      programArguments: [],
-      environment: {
-        REMOTECLAW_GATEWAY_TOKEN: "service-token",
-        SERVICE_GATEWAY_TOKEN: "service-token",
-      },
-    });
+    stubConfigSecretRefGatewayToken();
+    stubServiceGatewayTokenEnv();
 
     await runServiceRestart(createServiceRunArgs(true));
 
@@ -140,30 +149,8 @@ describe("runServiceRestart token drift", () => {
   // Same upstream feature as previous skipped test; fork lacks SecretRef resolution
   // in resolveGatewayTokenForDriftCheck (kept sync per D.4 to match fork's gateway).
   it.skip("prefers service command env over process env for SecretRef token drift resolution", async () => {
-    loadConfig.mockReturnValue({
-      secrets: {
-        providers: {
-          default: { source: "env" },
-        },
-      },
-      gateway: {
-        auth: {
-          mode: "token",
-          token: {
-            source: "env",
-            provider: "default",
-            id: "SERVICE_GATEWAY_TOKEN",
-          },
-        },
-      },
-    });
-    service.readCommand.mockResolvedValue({
-      programArguments: [],
-      environment: {
-        REMOTECLAW_GATEWAY_TOKEN: "service-token",
-        SERVICE_GATEWAY_TOKEN: "service-token",
-      },
-    });
+    stubConfigSecretRefGatewayToken();
+    stubServiceGatewayTokenEnv();
     vi.stubEnv("SERVICE_GATEWAY_TOKEN", "process-token");
 
     await runServiceRestart(createServiceRunArgs(true));

@@ -215,6 +215,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
     expect(prepared).toBeTruthy();
     // oxlint-disable-next-line typescript/no-explicit-any
     expectInboundContextContract(prepared!.ctxPayload as any);
+    expect(prepared!.ctxPayload.GroupSpace).toBe("T1");
   });
 
   it("includes forwarded shared attachment text in raw body", async () => {

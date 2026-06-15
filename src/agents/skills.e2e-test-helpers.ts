@@ -9,6 +9,7 @@ import path from "node:path";
  */
 export const MODULE_ATTESTATIONS = {
   writeSkill: "live",
+  writeWorkspaceSkills: "live",
 } as const;
 
 export async function writeSkill(params: {
@@ -37,4 +38,22 @@ ${body ?? `# ${name}\n`}
 `,
     "utf-8",
   );
+}
+
+export async function writeWorkspaceSkills(
+  workspaceDir: string,
+  skills: ReadonlyArray<{
+    name: string;
+    description: string;
+    metadata?: string;
+    body?: string;
+    frontmatterExtra?: string;
+  }>,
+) {
+  for (const skill of skills) {
+    await writeSkill({
+      dir: path.join(workspaceDir, "skills", skill.name),
+      ...skill,
+    });
+  }
 }

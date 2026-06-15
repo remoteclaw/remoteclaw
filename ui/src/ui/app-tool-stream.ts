@@ -168,9 +168,20 @@ export function resetToolStream(host: ToolStreamHost) {
 }
 
 export type CompactionStatus = {
-  active: boolean;
+  phase: "active" | "retrying" | "complete";
+  runId: string | null;
   startedAt: number | null;
   completedAt: number | null;
+};
+
+export type FallbackStatus = {
+  phase?: "active" | "cleared";
+  selected: string;
+  active: string;
+  previous?: string;
+  reason?: string;
+  attempts: string[];
+  occurredAt: number;
 };
 
 type CompactionHost = ToolStreamHost & {
@@ -192,13 +203,15 @@ export function handleCompactionEvent(host: CompactionHost, payload: AgentEventP
 
   if (phase === "start") {
     host.compactionStatus = {
-      active: true,
+      phase: "active",
+      runId: payload.runId,
       startedAt: Date.now(),
       completedAt: null,
     };
   } else if (phase === "end") {
     host.compactionStatus = {
-      active: false,
+      phase: "complete",
+      runId: payload.runId,
       startedAt: host.compactionStatus?.startedAt ?? null,
       completedAt: Date.now(),
     };

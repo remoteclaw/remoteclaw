@@ -427,8 +427,10 @@ export type GatewaySessionRow = {
   inputTokens?: number;
   outputTokens?: number;
   totalTokens?: number;
+  totalTokensFresh?: boolean;
   model?: string;
   modelProvider?: string;
+  contextTokens?: number;
 };
 
 export type SessionsListResult = {

@@ -55,32 +55,41 @@ export function normalizeDeliveryContext(context?: DeliveryContext): DeliveryCon
   return normalized;
 }
 
-export function formatConversationTarget(params: {
+type ConversationTargetParams = {
   channel?: string;
   conversationId?: string | number;
   parentConversationId?: string | number;
-}): string | undefined {
+};
+
+function normalizeConversationId(value: string | number | undefined): string | undefined {
+  return typeof value === "number" && Number.isFinite(value)
+    ? String(Math.trunc(value))
+    : typeof value === "string"
+      ? normalizeOptionalString(value)
+      : undefined;
+}
+
+function normalizeConversationTargetParams(params: ConversationTargetParams): {
+  channel?: string;
+  conversationId?: string;
+  parentConversationId?: string;
+} {
   const channel =
     typeof params.channel === "string"
       ? (normalizeMessageChannel(params.channel) ?? params.channel.trim())
       : undefined;
-  const conversationId =
-    typeof params.conversationId === "number" && Number.isFinite(params.conversationId)
-      ? String(Math.trunc(params.conversationId))
-      : typeof params.conversationId === "string"
-        ? normalizeOptionalString(params.conversationId)
-        : undefined;
+  const conversationId = normalizeConversationId(params.conversationId);
+  const parentConversationId = normalizeConversationId(params.parentConversationId);
+  return { channel, conversationId, parentConversationId };
+}
+
+export function formatConversationTarget(params: ConversationTargetParams): string | undefined {
+  const { channel, conversationId, parentConversationId } =
+    normalizeConversationTargetParams(params);
   if (!channel || !conversationId) {
     return undefined;
   }
   if (channel === "matrix") {
-    const parentConversationId =
-      typeof params.parentConversationId === "number" &&
-      Number.isFinite(params.parentConversationId)
-        ? String(Math.trunc(params.parentConversationId))
-        : typeof params.parentConversationId === "string"
-          ? normalizeOptionalString(params.parentConversationId)
-          : undefined;
     const roomId =
       parentConversationId && parentConversationId !== conversationId
         ? parentConversationId

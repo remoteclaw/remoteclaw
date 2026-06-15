@@ -9,7 +9,6 @@ import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
  * updating these when sync or rebrand changes the surface.
  */
 export const MODULE_ATTESTATIONS = {
-  redactImageDataForDiagnostics: "live",
   sanitizeDiagnosticPayload: "live",
 } as const;
 
@@ -104,13 +103,6 @@ function visitDiagnosticPayload(
   };
 
   return visit(value);
-}
-
-/**
- * Redacts image/base64 payload data from diagnostic objects before persistence.
- */
-export function redactImageDataForDiagnostics(value: unknown): unknown {
-  return visitDiagnosticPayload(value);
 }
 
 /**

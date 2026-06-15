@@ -6,6 +6,8 @@ export type GatewayWsClient = {
   connect: ConnectParams;
   connId: string;
   isDeviceTokenAuth?: boolean;
+  usesSharedGatewayAuth: boolean;
+  sharedGatewaySessionGeneration?: string;
   presenceKey?: string;
   clientIp?: string;
   canvasHostUrl?: string;

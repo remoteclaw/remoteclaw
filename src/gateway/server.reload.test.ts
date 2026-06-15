@@ -3,6 +3,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveMainSessionKeyFromConfig } from "../config/sessions.js";
 import { drainSystemEvents } from "../infra/system-events.js";
+import { withEnvAsync } from "../test-utils/env.js";
 import {
   TALK_TEST_PROVIDER_API_KEY_PATH,
   TALK_TEST_PROVIDER_ID,
@@ -468,8 +469,16 @@ describe("gateway hot reload", () => {
     );
   }
 
+  async function withNonMinimalGatewayServer(
+    fn: Parameters<typeof withGatewayServer>[0],
+  ): ReturnType<typeof withGatewayServer> {
+    return await withEnvAsync({ REMOTECLAW_TEST_MINIMAL_GATEWAY: undefined }, async () =>
+      withGatewayServer(fn),
+    );
+  }
+
   it("applies hot reload actions and emits restart signal", async () => {
-    await withGatewayServer(async () => {
+    await withNonMinimalGatewayServer(async () => {
       const onHotReload = hoisted.getOnHotReload();
       expect(onHotReload).toBeTypeOf("function");
 
@@ -641,7 +650,7 @@ describe("gateway hot reload", () => {
     await writeEnvRefConfig();
     process.env.OPENAI_API_KEY = "sk-startup"; // pragma: allowlist secret
 
-    await withGatewayServer(async () => {
+    await withNonMinimalGatewayServer(async () => {
       const onHotReload = hoisted.getOnHotReload();
       expect(onHotReload).toBeTypeOf("function");
       const sessionKey = resolveMainSessionKeyFromConfig();

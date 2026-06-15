@@ -13,6 +13,24 @@ import {
   TypingModeSchema,
 } from "./zod-schema.core.js";
 
+export const SilentReplyPolicySchema = z.union([z.literal("allow"), z.literal("disallow")]);
+
+export const SilentReplyPolicyConfigSchema = z
+  .object({
+    direct: SilentReplyPolicySchema.optional(),
+    group: SilentReplyPolicySchema.optional(),
+    internal: SilentReplyPolicySchema.optional(),
+  })
+  .strict();
+
+export const SilentReplyRewriteConfigSchema = z
+  .object({
+    direct: z.boolean().optional(),
+    group: z.boolean().optional(),
+    internal: z.boolean().optional(),
+  })
+  .strict();
+
 export const AgentDefaultsSchema = z
   .object({
     /** Global default provider params applied to all models before per-model and per-agent overrides. */

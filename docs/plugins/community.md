@@ -25,6 +25,19 @@ RemoteClaw checks ClawHub first and falls back to npm automatically.
 
 ## Listed plugins
 
+### Apify
+
+Scrape data from any website with 20,000+ ready-made scrapers. Let your agent
+extract data from Instagram, Facebook, TikTok, YouTube, Google Maps, Google
+Search, e-commerce sites, and more — just by asking.
+
+- **npm:** `@apify/apify-remoteclaw-plugin`
+- **repo:** [github.com/apify/apify-remoteclaw-plugin](https://github.com/apify/apify-remoteclaw-plugin)
+
+```bash
+remoteclaw plugins install @apify/apify-remoteclaw-plugin
+```
+
 ### Codex App Server Bridge
 
 Independent RemoteClaw bridge for Codex App Server conversations. Bind a chat to
@@ -73,6 +86,19 @@ cost, tokens, errors, and more.
 
 ```bash
 remoteclaw plugins install @opik/opik-remoteclaw
+```
+
+### Prometheus Avatar
+
+Give your RemoteClaw agent a Live2D avatar with real-time lip-sync, emotion
+expressions, and text-to-speech. Includes creator tools for AI asset generation
+and one-click deployment to the Prometheus Marketplace. Currently in alpha.
+
+- **npm:** `@prometheusavatar/remoteclaw-plugin`
+- **repo:** [github.com/myths-labs/prometheus-avatar](https://github.com/myths-labs/prometheus-avatar)
+
+```bash
+remoteclaw plugins install @prometheusavatar/remoteclaw-plugin
 ```
 
 ### QQbot

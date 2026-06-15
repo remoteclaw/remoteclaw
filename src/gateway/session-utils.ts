@@ -192,6 +192,27 @@ export function loadSessionEntry(sessionKey: string) {
 }
 
 /**
+ * Returns the agent id encoded in a session key when that agent no longer
+ * exists in configuration, or null when the key is agentless or the agent is
+ * still configured. Used to reject sends/steers that target sessions whose
+ * owning agent was deleted (#65524).
+ */
+export function resolveDeletedAgentIdFromSessionKey(
+  cfg: RemoteClawConfig,
+  sessionKey: string,
+): string | null {
+  const parsed = parseAgentSessionKey(sessionKey);
+  if (!parsed) {
+    return null;
+  }
+  const agentId = normalizeAgentId(parsed.agentId);
+  if (listAgentIds(cfg).includes(agentId)) {
+    return null;
+  }
+  return agentId;
+}
+
+/**
  * Find a session entry by exact or case-insensitive key match.
  * Returns both the entry and the actual store key it was found under,
  * so callers can clean up legacy mixed-case keys when they differ from canonicalKey.

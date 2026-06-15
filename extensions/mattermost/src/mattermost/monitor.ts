@@ -40,9 +40,12 @@ import {
   normalizeMattermostBaseUrl,
   sendMattermostTyping,
   type MattermostChannel,
+  updateMattermostPost,
+  type MattermostClient,
   type MattermostPost,
   type MattermostUser,
 } from "./client.js";
+import { buildMattermostToolStatusText, createMattermostDraftStream } from "./draft-stream.js";
 import {
   computeInteractionCallbackUrl,
   createMattermostInteractionHandler,

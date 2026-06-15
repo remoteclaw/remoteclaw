@@ -104,6 +104,7 @@ function makeDoctorIo() {
 function makeDoctorPrompts() {
   return {
     confirm: vi.fn().mockResolvedValue(true),
+    confirmAutoFix: vi.fn().mockResolvedValue(true),
     confirmRepair: vi.fn().mockResolvedValue(true),
     confirmAggressive: vi.fn().mockResolvedValue(true),
     confirmSkipInNonInteractive: vi.fn().mockResolvedValue(true),
@@ -515,6 +516,7 @@ describe("maybeScanExtraGatewayServices", () => {
     const runtime = { log: vi.fn(), error: vi.fn(), exit: vi.fn() };
     const prompter = {
       confirm: vi.fn(),
+      confirmAutoFix: vi.fn(),
       confirmRepair: vi.fn(),
       confirmAggressive: vi.fn(),
       confirmSkipInNonInteractive: vi.fn().mockResolvedValue(true),

@@ -71,6 +71,8 @@ export type CronProps = {
   onToggle: (job: CronJob, enabled: boolean) => void;
   onRun: (job: CronJob, mode?: "force" | "due") => void;
   onRemove: (job: CronJob) => void;
+  /** Open the simplified creation wizard. */
+  onQuickCreate?: () => void;
   onLoadRuns: (jobId: string) => void;
   onLoadMoreJobs: () => void;
   onJobsFiltersChange: (patch: {

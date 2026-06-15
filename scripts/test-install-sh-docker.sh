@@ -331,7 +331,7 @@ else
   echo "==> Run installer smoke test (root): $FRESH_TAG_URL"
   docker run --rm -t \
     --platform "$SMOKE_PLATFORM" \
-    "${UPDATE_DOCKER_HOST_ARGS[@]}" \
+    ${UPDATE_DOCKER_HOST_ARGS[@]+"${UPDATE_DOCKER_HOST_ARGS[@]}"} \
     -v "${LATEST_DIR}:/out" \
     -e REMOTECLAW_INSTALL_URL="$INSTALL_URL" \
     -e REMOTECLAW_INSTALL_PACKAGE="$PACKAGE_NAME" \
@@ -352,7 +352,7 @@ else
   echo "==> Run update smoke (${UPDATE_BASELINE_VERSION} -> ${UPDATE_EXPECT_VERSION})"
   docker run --rm -t \
     --platform "$SMOKE_PLATFORM" \
-    "${UPDATE_DOCKER_HOST_ARGS[@]}" \
+    ${UPDATE_DOCKER_HOST_ARGS[@]+"${UPDATE_DOCKER_HOST_ARGS[@]}"} \
     -e REMOTECLAW_INSTALL_PACKAGE="$PACKAGE_NAME" \
     -e REMOTECLAW_INSTALL_SMOKE_MODE=update \
     -e REMOTECLAW_INSTALL_UPDATE_BASELINE="$UPDATE_BASELINE_VERSION" \
@@ -370,7 +370,7 @@ else
     echo "==> Run direct npm global smoke (${UPDATE_BASELINE_VERSION} -> ${UPDATE_EXPECT_VERSION})"
     docker run --rm -t \
       --platform "$SMOKE_PLATFORM" \
-      "${UPDATE_DOCKER_HOST_ARGS[@]}" \
+      ${UPDATE_DOCKER_HOST_ARGS[@]+"${UPDATE_DOCKER_HOST_ARGS[@]}"} \
       -e REMOTECLAW_INSTALL_PACKAGE="$PACKAGE_NAME" \
       -e REMOTECLAW_INSTALL_SMOKE_MODE=npm-global \
       -e REMOTECLAW_INSTALL_UPDATE_BASELINE="$UPDATE_BASELINE_VERSION" \

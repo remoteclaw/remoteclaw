@@ -39,7 +39,7 @@ const coreTools = [
 ];
 
 vi.mock("../remoteclaw-tools.js", () => ({
-  createRemoteClawTools: () => coreTools.map((tool) => ({ ...tool })),
+  createRemoteClawTools: () => coreTools.map((tool) => Object.assign({}, tool)),
   __testing: {
     setDepsForTest: () => {},
   },

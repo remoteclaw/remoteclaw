@@ -880,7 +880,9 @@ final class NodeAppModel {
                 self.screen.showDefaultCanvas()
             } else {
                 let trustedA2UIURL = await self.resolveA2UIHostURL()
-                self.screen.navigate(to: url, trustA2UIActions: trustedA2UIURL == Self.normalizeURLForTrustComparison(url))
+                self.screen.navigate(
+                    to: url,
+                    trustA2UIActions: trustedA2UIURL == Self.normalizeURLForTrustComparison(url))
             }
             return BridgeInvokeResponse(id: req.id, ok: true)
         case RemoteClawCanvasCommand.hide.rawValue:
@@ -890,7 +892,9 @@ final class NodeAppModel {
             let params = try Self.decodeParams(RemoteClawCanvasNavigateParams.self, from: req.paramsJSON)
             let trimmedURL = params.url.trimmingCharacters(in: .whitespacesAndNewlines)
             let trustedA2UIURL = await self.resolveA2UIHostURL()
-            self.screen.navigate(to: trimmedURL, trustA2UIActions: trustedA2UIURL == Self.normalizeURLForTrustComparison(trimmedURL))
+            self.screen.navigate(
+                to: trimmedURL,
+                trustA2UIActions: trustedA2UIURL == Self.normalizeURLForTrustComparison(trimmedURL))
             return BridgeInvokeResponse(id: req.id, ok: true)
         case RemoteClawCanvasCommand.evalJS.rawValue:
             let params = try Self.decodeParams(RemoteClawCanvasEvalParams.self, from: req.paramsJSON)
@@ -2496,8 +2500,8 @@ extension NodeAppModel {
                 PendingForegroundNodeActionsResponse.self,
                 from: payload)
             guard !decoded.actions.isEmpty else { return }
-            self.pendingActionLogger.info(
-                "Pending actions pulled trigger=\(trigger, privacy: .public) count=\(decoded.actions.count, privacy: .public)")
+            // swiftlint:disable:next line_length
+            self.pendingActionLogger.info("Pending actions pulled trigger=\(trigger, privacy: .public) count=\(decoded.actions.count, privacy: .public)")
             await self.applyPendingForegroundNodeActions(decoded.actions, trigger: trigger)
         } catch {
             // Best-effort only.
@@ -2519,8 +2523,8 @@ extension NodeAppModel {
                 command: action.command,
                 paramsJSON: action.paramsJSON)
             let result = await self.handleInvoke(req)
-            self.pendingActionLogger.info(
-                "Pending action replay trigger=\(trigger, privacy: .public) id=\(action.id, privacy: .public) command=\(action.command, privacy: .public) ok=\(result.ok, privacy: .public)")
+            // swiftlint:disable:next line_length
+            self.pendingActionLogger.info("Pending action replay trigger=\(trigger, privacy: .public) id=\(action.id, privacy: .public) command=\(action.command, privacy: .public) ok=\(result.ok, privacy: .public)")
             guard result.ok else { return }
             let acked = await self.ackPendingForegroundNodeAction(
                 id: action.id,
@@ -2537,15 +2541,15 @@ extension NodeAppModel {
     {
         do {
             let payload = try JSONEncoder().encode(PendingForegroundNodeActionsAckRequest(ids: [id]))
-            let paramsJSON = String(decoding: payload, as: UTF8.self)
+            let paramsJSON = String(bytes: payload, encoding: .utf8) ?? "{}"
             _ = try await self.nodeGateway.request(
                 method: "node.pending.ack",
                 paramsJSON: paramsJSON,
                 timeoutSeconds: 6)
             return true
         } catch {
-            self.pendingActionLogger.error(
-                "Pending action ack failed trigger=\(trigger, privacy: .public) id=\(id, privacy: .public) command=\(command, privacy: .public) error=\(String(describing: error), privacy: .public)")
+            // swiftlint:disable:next line_length
+            self.pendingActionLogger.error("Pending action ack failed trigger=\(trigger, privacy: .public) id=\(id, privacy: .public) command=\(command, privacy: .public) error=\(String(describing: error), privacy: .public)")
             return false
         }
     }
@@ -2557,7 +2561,7 @@ extension NodeAppModel {
         case .deduped(let replyId):
             self.watchReplyLogger.debug(
                 "watch reply deduped replyId=\(replyId, privacy: .public)")
-        case .queue(let replyId, let actionId):
+        case let .queue(replyId, actionId):
             self.watchReplyLogger.info(
                 "watch reply queued replyId=\(replyId, privacy: .public) action=\(actionId, privacy: .public)")
         case .forward:
@@ -2862,8 +2866,8 @@ extension NodeAppModel {
                 notificationCenter: self.notificationCenter)
             self.clearPendingExecApprovalPromptIfMatches(approvalId)
         case let .failed(message):
-            self.execApprovalNotificationLogger.error(
-                "Exec approval prompt fetch failed id=\(approvalId, privacy: .public) reason=\(message, privacy: .public)")
+            // swiftlint:disable:next line_length
+            self.execApprovalNotificationLogger.error("Exec approval prompt fetch failed id=\(approvalId, privacy: .public) reason=\(message, privacy: .public)")
         }
     }
 

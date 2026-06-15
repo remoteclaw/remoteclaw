@@ -85,15 +85,22 @@ export function buildLiveCronProbeMessage(params: {
   }
   if (family === "claude") {
     return (
-      "Return only a tool call for the RemoteClaw MCP tool `cron`. " +
+      "Retry the RemoteClaw MCP tool named `cron` now. " +
       `Use these exact JSON arguments: ${params.argsJson}. ` +
-      "No prose. I will verify externally with the RemoteClaw cron CLI."
+      `If the cron job is created, reply exactly: ${params.exactReply}. ` +
+      "If the tool call is cancelled, the job is not created, or you cannot confirm creation, " +
+      "reply briefly saying that and ask me to retry. No markdown. " +
+      "I will verify externally with the RemoteClaw cron CLI."
     );
   }
   return (
-    "Use the RemoteClaw MCP tool named cron. " +
+    "Your previous RemoteClaw cron MCP tool call was cancelled before the job was created. " +
+    "Retry the RemoteClaw MCP tool named cron now. " +
     `Use these exact JSON arguments: ${params.argsJson}. ` +
-    "No prose before the tool call. I will verify externally with the RemoteClaw cron CLI."
+    `If the cron job is created, reply exactly: ${params.exactReply}. ` +
+    "If the tool call is cancelled, the job is not created, or you cannot confirm creation, " +
+    "reply briefly saying that and ask me to retry. No markdown. " +
+    "I will verify externally with the RemoteClaw cron CLI."
   );
 }
 

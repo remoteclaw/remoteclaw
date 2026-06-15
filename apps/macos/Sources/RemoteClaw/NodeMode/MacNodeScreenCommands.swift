@@ -1,7 +1,16 @@
 import Foundation
+import RemoteClawKit
 
 enum MacNodeScreenCommand: String, Codable {
+    case snapshot = "screen.snapshot"
     case record = "screen.record"
+}
+
+struct MacNodeScreenSnapshotParams: Codable, Equatable {
+    var screenIndex: Int?
+    var maxWidth: Int?
+    var quality: Double?
+    var format: RemoteClawScreenSnapshotFormat?
 }
 
 struct MacNodeScreenRecordParams: Codable, Equatable {

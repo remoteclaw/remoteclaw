@@ -65,7 +65,7 @@ describe("resolveMessagingTarget (directory fallback)", () => {
 
     const first = await resolveMessagingTarget({
       cfg,
-      channel: "discord",
+      channel: "richchat",
       input: "support",
     });
 
@@ -79,7 +79,7 @@ describe("resolveMessagingTarget (directory fallback)", () => {
 
     const second = await resolveMessagingTarget({
       cfg,
-      channel: "discord",
+      channel: "richchat",
       input: "support",
     });
 
@@ -91,7 +91,7 @@ describe("resolveMessagingTarget (directory fallback)", () => {
   it("skips directory lookup for direct ids", async () => {
     const result = await resolveMessagingTarget({
       cfg,
-      channel: "discord",
+      channel: "richchat",
       input: "123456789",
     });
 
@@ -121,7 +121,7 @@ describe("resolveMessagingTarget (directory fallback)", () => {
 
     const result = await resolveMessagingTarget({
       cfg,
-      channel: "mattermost",
+      channel: "workspace",
       input: "dthcxgoxhifn3pwh65cut3ud3w",
     });
 
@@ -160,7 +160,7 @@ describe("resolveMessagingTarget (directory fallback)", () => {
 
     const result = await resolveMessagingTarget({
       cfg,
-      channel: "slack",
+      channel: "workspace",
       input: "#C123ABC",
     });
 
@@ -174,10 +174,10 @@ describe("resolveMessagingTarget (directory fallback)", () => {
   it("defers target display formatting to the plugin when available", () => {
     mocks.getChannelPlugin.mockReturnValue({
       messaging: {
-        formatTargetDisplay: ({ target }: { target: string }) => target.replace(/^telegram:/i, ""),
+        formatTargetDisplay: ({ target }: { target: string }) => target.replace(/^forum:/i, ""),
       },
     });
 
-    expect(formatTargetDisplay({ channel: "telegram", target: "telegram:12345" })).toBe("12345");
+    expect(formatTargetDisplay({ channel: "forum", target: "forum:12345" })).toBe("12345");
   });
 });

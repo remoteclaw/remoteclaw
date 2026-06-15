@@ -39,7 +39,7 @@ describe("multi-agent agentDir validation", () => {
             },
           ],
         },
-        bindings: [{ agentId: "a", match: { channel: "telegram" } }],
+        bindings: [{ agentId: "a", match: { channel: "forum" } }],
       },
       async () => {
         const spy = vi.spyOn(console, "error").mockImplementation(() => {});

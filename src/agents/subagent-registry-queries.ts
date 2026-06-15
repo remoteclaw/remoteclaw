@@ -18,6 +18,8 @@ export const MODULE_ATTESTATIONS = {
   countPendingDescendantRunsFromRuns: "live",
   countPendingDescendantRunsExcludingRunFromRuns: "live",
   listDescendantRunsForRequesterFromRuns: "live",
+  isSubagentSessionRunActiveFromRuns: "live",
+  getSubagentRunByChildSessionKeyFromRuns: "live",
 } as const;
 
 function resolveControllerSessionKey(entry: SubagentRunRecord): string {
@@ -103,6 +105,43 @@ function findLatestRunForChildSession(
     }
   }
   return latest;
+}
+
+export function isSubagentSessionRunActiveFromRuns(
+  runs: Map<string, SubagentRunRecord>,
+  childSessionKey: string,
+): boolean {
+  const latest = findLatestRunForChildSession(runs, childSessionKey);
+  return Boolean(latest && typeof latest.endedAt !== "number");
+}
+
+export function getSubagentRunByChildSessionKeyFromRuns(
+  runs: Map<string, SubagentRunRecord>,
+  childSessionKey: string,
+): SubagentRunRecord | null {
+  const key = childSessionKey.trim();
+  if (!key) {
+    return null;
+  }
+
+  let latestActive: SubagentRunRecord | null = null;
+  let latestEnded: SubagentRunRecord | null = null;
+  for (const entry of runs.values()) {
+    if (entry.childSessionKey !== key) {
+      continue;
+    }
+    if (typeof entry.endedAt !== "number") {
+      if (!latestActive || entry.createdAt > latestActive.createdAt) {
+        latestActive = entry;
+      }
+      continue;
+    }
+    if (!latestEnded || entry.createdAt > latestEnded.createdAt) {
+      latestEnded = entry;
+    }
+  }
+
+  return latestActive ?? latestEnded;
 }
 
 export function resolveRequesterForChildSessionFromRuns(

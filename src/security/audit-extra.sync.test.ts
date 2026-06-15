@@ -1,10 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import {
   collectAttackSurfaceSummaryFindings,
   collectSmallModelRiskFindings,
 } from "./audit-extra.sync.js";
 import { safeEqualSecret } from "./secret-equal.js";
+
+vi.mock("../plugins/web-search-credential-presence.js", () => ({
+  hasConfiguredWebSearchCredential: () => false,
+}));
 
 describe("collectAttackSurfaceSummaryFindings", () => {
   it.each([
@@ -26,6 +30,13 @@ describe("collectAttackSurfaceSummaryFindings", () => {
       name: "reports both hook systems as disabled when neither is configured",
       cfg: {} satisfies RemoteClawConfig,
       expectedDetail: ["hooks.webhooks: disabled", "hooks.internal: disabled"],
+    },
+    {
+      name: "reports internal hooks as disabled when explicitly set to false",
+      cfg: {
+        hooks: { internal: { enabled: false } },
+      } satisfies RemoteClawConfig,
+      expectedDetail: ["hooks.internal: disabled"],
     },
   ])("$name", ({ cfg, expectedDetail }) => {
     const [finding] = collectAttackSurfaceSummaryFindings(cfg);

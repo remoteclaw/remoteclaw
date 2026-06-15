@@ -128,6 +128,10 @@ type ExecDockerRawFn = (
 ) => Promise<ExecDockerRawResult>;
 
 type CodeSafetySummaryCache = Map<string, Promise<unknown>>;
+type WorkspaceSkillScanLimits = {
+  maxFiles?: number;
+  maxDirVisits?: number;
+};
 const MAX_WORKSPACE_SKILL_SCAN_FILES_PER_WORKSPACE = 2_000;
 const MAX_WORKSPACE_SKILL_ESCAPE_DETAIL_ROWS = 12;
 
@@ -389,6 +393,7 @@ function realpathWithTimeout(p: string, timeoutMs = 2000): Promise<string | null
 
 async function listWorkspaceSkillMarkdownFiles(
   workspaceDir: string,
+  limits: WorkspaceSkillScanLimits = {},
 ): Promise<{ skillFilePaths: string[]; truncated: boolean }> {
   const skillsRoot = path.join(workspaceDir, "skills");
   const rootStat = await safeStat(skillsRoot);
@@ -396,18 +401,14 @@ async function listWorkspaceSkillMarkdownFiles(
     return { skillFilePaths: [], truncated: false };
   }
 
+  const maxFiles = limits.maxFiles ?? MAX_WORKSPACE_SKILL_SCAN_FILES_PER_WORKSPACE;
+  const maxTotalDirVisits = limits.maxDirVisits ?? maxFiles * 20;
   const skillFiles: string[] = [];
   const queue: string[] = [skillsRoot];
   const visitedDirs = new Set<string>();
-  // Caps total BFS dequeues, not per-path depth. Named to reflect actual semantics.
-  const MAX_TOTAL_DIR_VISITS = MAX_WORKSPACE_SKILL_SCAN_FILES_PER_WORKSPACE * 20;
   let totalDirVisits = 0;
 
-  while (
-    queue.length > 0 &&
-    skillFiles.length < MAX_WORKSPACE_SKILL_SCAN_FILES_PER_WORKSPACE &&
-    totalDirVisits++ < MAX_TOTAL_DIR_VISITS
-  ) {
+  while (queue.length > 0 && skillFiles.length < maxFiles && totalDirVisits++ < maxTotalDirVisits) {
     const dir = queue.shift()!;
     // Use realpathWithTimeout so a hanging network FS doesn't block the BFS
     // indefinitely (same 2 s guard as the outer escape-detection loop).
@@ -968,6 +969,7 @@ export async function collectPluginsTrustFindings(params: {
 
 export async function collectWorkspaceSkillSymlinkEscapeFindings(params: {
   cfg: RemoteClawConfig;
+  skillScanLimits?: WorkspaceSkillScanLimits;
 }): Promise<SecurityAuditFinding[]> {
   const findings: SecurityAuditFinding[] = [];
   const workspaceDirs = listAgentWorkspaceDirs(params.cfg);
@@ -985,7 +987,10 @@ export async function collectWorkspaceSkillSymlinkEscapeFindings(params: {
   for (const workspaceDir of workspaceDirs) {
     const workspacePath = path.resolve(workspaceDir);
     const workspaceRealPath = (await realpathWithTimeout(workspacePath)) ?? workspacePath;
-    const { skillFilePaths, truncated } = await listWorkspaceSkillMarkdownFiles(workspacePath);
+    const { skillFilePaths, truncated } = await listWorkspaceSkillMarkdownFiles(
+      workspacePath,
+      params.skillScanLimits,
+    );
 
     if (truncated) {
       // The BFS visit cap was hit before the full skills/ tree was scanned.

@@ -10,7 +10,7 @@ function hasScheme(value: string): boolean {
 }
 
 export function normalizeUrbitHostname(hostname: string | undefined): string {
-  return normalizeLowercaseStringOrEmpty(hostname).replace(/\.$/, "");
+  return (hostname ?? "").trim().toLowerCase().replace(/\.$/, "");
 }
 
 export function validateUrbitBaseUrl(raw: string): UrbitBaseUrlValidation {

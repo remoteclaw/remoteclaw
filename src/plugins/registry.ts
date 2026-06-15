@@ -115,6 +115,7 @@ export type PluginRecord = {
   hookNames: string[];
   channelIds: string[];
   providerIds: string[];
+  cliBackendIds?: string[];
   gatewayMethods: string[];
   cliCommands: string[];
   services: string[];

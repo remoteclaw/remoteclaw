@@ -48,9 +48,9 @@ describe("doctor command", () => {
               api: "openai-completions",
               baseUrl: "https://opencode.ai/zen/v1",
             },
-            "opencode-go": {
+            "opencode-zen": {
               api: "openai-completions",
-              baseUrl: "https://opencode.ai/zen/go/v1",
+              baseUrl: "https://opencode.ai/zen/custom/v1",
             },
           },
         },
@@ -64,9 +64,9 @@ describe("doctor command", () => {
 
     const warned = terminalNoteMock.mock.calls.some(
       ([message, title]) =>
-        title === "OpenCode" &&
-        String(message).includes("models.providers.opencode") &&
-        String(message).includes("models.providers.opencode-go"),
+        title === "OpenCode Zen" &&
+        String(message).includes("models.providers.opencode is set") &&
+        String(message).includes("models.providers.opencode-zen is set"),
     );
     expect(warned).toBe(true);
   });

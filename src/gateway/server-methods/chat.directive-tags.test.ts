@@ -35,6 +35,15 @@ vi.mock("../session-utils.js", async (importOriginal) => {
     ...original,
     loadSessionEntry: (rawKey: string) => ({
       cfg: {
+        // Post-#1581 agent resolution requires a non-empty agents.list. The
+        // real resolveDeletedAgentIdFromSessionKey (not mocked here — only
+        // loadSessionEntry is overridden) treats an `agent:<id>:...` session
+        // key whose <id> is absent from agents.list as a deleted agent and
+        // rejects the send. Every channel-scoped fixture below routes to the
+        // "main" agent, so seed it.
+        agents: {
+          list: [{ id: "main", workspace: path.dirname(mockState.transcriptPath) }],
+        },
         session: {
           mainKey: mockState.mainSessionKey,
         },

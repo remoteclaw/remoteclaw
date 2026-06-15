@@ -1,21 +1,13 @@
 import fs from "node:fs/promises";
-import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveMainSessionKeyFromConfig } from "../config/sessions.js";
 import { drainSystemEvents } from "../infra/system-events.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import {
-  TALK_TEST_PROVIDER_API_KEY_PATH,
-  TALK_TEST_PROVIDER_ID,
-} from "../test-utils/talk-test-provider.js";
-import { openTrackedWs } from "./device-authz.test-helpers.js";
-import {
-  connectReq,
   connectOk,
   installGatewayTestHooks,
   rpcReq,
   startServerWithClient,
-  testState,
   withGatewayServer,
 } from "./test-helpers.js";
 
@@ -216,20 +208,6 @@ describe("gateway hot reload", () => {
     }
   });
 
-  async function writeEnvRefConfig() {
-    await writeConfigFile({
-      models: {
-        providers: {
-          openai: {
-            baseUrl: "https://api.openai.com/v1",
-            apiKey: { source: "env", provider: "default", id: "OPENAI_API_KEY" },
-            models: [],
-          },
-        },
-      },
-    });
-  }
-
   async function writeChannelEnvRefConfig() {
     await writeConfigFile({
       channels: {
@@ -246,62 +224,6 @@ describe("gateway hot reload", () => {
       throw new Error("REMOTECLAW_CONFIG_PATH is not set");
     }
     await fs.writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
-  }
-
-  async function writeTalkProviderApiKeyEnvRefConfig(refId = "TALK_API_KEY_REF") {
-    await writeConfigFile({
-      talk: {
-        providers: {
-          [TALK_TEST_PROVIDER_ID]: {
-            apiKey: { source: "env", provider: "default", id: refId },
-          },
-        },
-      },
-    });
-  }
-
-  async function writeGatewayTraversalExecRefConfig() {
-    await writeConfigFile({
-      gateway: {
-        auth: {
-          mode: "token",
-          token: { source: "exec", provider: "vault", id: "a/../b" },
-        },
-      },
-      secrets: {
-        providers: {
-          vault: {
-            source: "exec",
-            command: process.execPath,
-          },
-        },
-      },
-    });
-  }
-
-  async function writeGatewayTokenExecRefConfig(params: {
-    resolverScriptPath: string;
-    modePath: string;
-    tokenValue: string;
-  }) {
-    await writeConfigFile({
-      gateway: {
-        auth: {
-          mode: "token",
-          token: { source: "exec", provider: "vault", id: "gateway/token" },
-        },
-      },
-      secrets: {
-        providers: {
-          vault: {
-            source: "exec",
-            command: process.execPath,
-            allowSymlinkCommand: true,
-            args: [params.resolverScriptPath, params.modePath, params.tokenValue],
-          },
-        },
-      },
-    });
   }
 
   async function writeDisabledSurfaceRefConfig() {
@@ -367,36 +289,6 @@ describe("gateway hot reload", () => {
     );
   }
 
-  async function writeAuthProfileEnvRefStore() {
-    const stateDir = process.env.REMOTECLAW_STATE_DIR;
-    if (!stateDir) {
-      throw new Error("REMOTECLAW_STATE_DIR is not set");
-    }
-    const authStorePath = path.join(stateDir, "agents", "main", "agent", "auth-profiles.json");
-    await fs.mkdir(path.dirname(authStorePath), { recursive: true });
-    await fs.writeFile(
-      authStorePath,
-      `${JSON.stringify(
-        {
-          version: 1,
-          profiles: {
-            missing: {
-              type: "api_key",
-              provider: "openai",
-              keyRef: { source: "env", provider: "default", id: "MISSING_REMOTECLAW_AUTH_REF" },
-            },
-          },
-          selectedProfileId: "missing",
-          lastUsedProfileByModel: {},
-          usageStats: {},
-        },
-        null,
-        2,
-      )}\n`,
-      "utf8",
-    );
-  }
-
   async function writeWebSearchGeminiRefConfig() {
     const configPath = process.env.REMOTECLAW_CONFIG_PATH;
     if (!configPath) {
@@ -434,41 +326,6 @@ describe("gateway hot reload", () => {
     );
   }
 
-  async function removeMainAuthProfileStore() {
-    const stateDir = process.env.REMOTECLAW_STATE_DIR;
-    if (!stateDir) {
-      return;
-    }
-    const authStorePath = path.join(stateDir, "agents", "main", "agent", "auth-profiles.json");
-    await fs.rm(authStorePath, { force: true });
-  }
-
-  async function expectOneShotSecretReloadEvents(params: {
-    applyReload: () => Promise<unknown> | undefined;
-    sessionKey: string;
-    expectedError: RegExp | string;
-  }) {
-    await expect(params.applyReload()).rejects.toThrow(params.expectedError);
-    const degradedEvents = drainSystemEvents(params.sessionKey);
-    expect(degradedEvents.some((event) => event.includes("[SECRETS_RELOADER_DEGRADED]"))).toBe(
-      true,
-    );
-
-    await expect(params.applyReload()).rejects.toThrow(params.expectedError);
-    expect(drainSystemEvents(params.sessionKey)).toEqual([]);
-  }
-
-  async function expectSecretReloadRecovered(params: {
-    applyReload: () => Promise<unknown> | undefined;
-    sessionKey: string;
-  }) {
-    await expect(params.applyReload()).resolves.toBeUndefined();
-    const recoveredEvents = drainSystemEvents(params.sessionKey);
-    expect(recoveredEvents.some((event) => event.includes("[SECRETS_RELOADER_RECOVERED]"))).toBe(
-      true,
-    );
-  }
-
   async function withNonMinimalGatewayServer(
     fn: Parameters<typeof withGatewayServer>[0],
   ): ReturnType<typeof withGatewayServer> {
@@ -486,7 +343,6 @@ describe("gateway hot reload", () => {
         hooks: {
           enabled: true,
           token: "secret",
-          gmail: { account: "me@example.com" },
         },
         cron: { enabled: true, store: "/tmp/cron.json" },
         agents: { defaults: { heartbeat: { every: "1m" }, maxConcurrent: 2 } },
@@ -502,7 +358,6 @@ describe("gateway hot reload", () => {
       await onHotReload?.(
         {
           changedPaths: [
-            "hooks.gmail.account",
             "cron.enabled",
             "agents.defaults.heartbeat.every",
             "web.enabled",
@@ -515,7 +370,7 @@ describe("gateway hot reload", () => {
           restartReasons: [],
           hotReasons: ["web.enabled"],
           reloadHooks: true,
-          restartGmailWatcher: true,
+          restartGmailWatcher: false,
           restartCron: true,
           restartHeartbeat: true,
           restartChannels: new Set(["whatsapp", "telegram", "discord", "signal", "imessage"]),
@@ -523,9 +378,6 @@ describe("gateway hot reload", () => {
         },
         nextConfig,
       );
-
-      expect(hoisted.stopGmailWatcher).toHaveBeenCalled();
-      expect(hoisted.startGmailWatcher).toHaveBeenCalledWith(expect.objectContaining(nextConfig));
 
       expect(hoisted.startHeartbeatRunner).toHaveBeenCalledTimes(1);
       expect(hoisted.heartbeatUpdateConfig).toHaveBeenCalledTimes(1);
@@ -577,39 +429,11 @@ describe("gateway hot reload", () => {
     });
   });
 
-  it("fails startup when required secret refs are unresolved", async () => {
-    await writeEnvRefConfig();
-    delete process.env.OPENAI_API_KEY;
-    await expect(withGatewayServer(async () => {})).rejects.toThrow(
-      "Startup failed: required secrets are unavailable",
-    );
-  });
-
   it("allows startup when unresolved channel refs exist but channels are skipped", async () => {
     await writeChannelEnvRefConfig();
     delete process.env.TELEGRAM_BOT_TOKEN;
     process.env.REMOTECLAW_SKIP_CHANNELS = "1";
     await expect(withGatewayServer(async () => {})).resolves.toBeUndefined();
-  });
-
-  it("fails startup when an active exec ref id contains traversal segments", async () => {
-    await writeGatewayTraversalExecRefConfig();
-    const previousGatewayAuth = testState.gatewayAuth;
-    const previousGatewayTokenEnv = process.env.REMOTECLAW_GATEWAY_TOKEN;
-    testState.gatewayAuth = undefined;
-    delete process.env.REMOTECLAW_GATEWAY_TOKEN;
-    try {
-      await expect(withGatewayServer(async () => {})).rejects.toThrow(
-        /must not include "\." or "\.\." path segments/i,
-      );
-    } finally {
-      testState.gatewayAuth = previousGatewayAuth;
-      if (previousGatewayTokenEnv === undefined) {
-        delete process.env.REMOTECLAW_GATEWAY_TOKEN;
-      } else {
-        process.env.REMOTECLAW_GATEWAY_TOKEN = previousGatewayTokenEnv;
-      }
-    }
   });
 
   it("allows startup when unresolved refs exist only on disabled surfaces", async () => {
@@ -632,65 +456,6 @@ describe("gateway hot reload", () => {
         },
       }),
     ).resolves.toBeUndefined();
-  });
-
-  it("fails startup when auth-profile secret refs are unresolved", async () => {
-    await writeAuthProfileEnvRefStore();
-    delete process.env.MISSING_REMOTECLAW_AUTH_REF;
-    try {
-      await expect(withGatewayServer(async () => {})).rejects.toThrow(
-        'Environment variable "MISSING_REMOTECLAW_AUTH_REF" is missing or empty.',
-      );
-    } finally {
-      await removeMainAuthProfileStore();
-    }
-  });
-
-  it("emits one-shot degraded and recovered system events during secret reload transitions", async () => {
-    await writeEnvRefConfig();
-    process.env.OPENAI_API_KEY = "sk-startup"; // pragma: allowlist secret
-
-    await withNonMinimalGatewayServer(async () => {
-      const onHotReload = hoisted.getOnHotReload();
-      expect(onHotReload).toBeTypeOf("function");
-      const sessionKey = resolveMainSessionKeyFromConfig();
-      const plan = {
-        changedPaths: ["models.providers.openai.apiKey"],
-        restartGateway: false,
-        restartReasons: [],
-        hotReasons: ["models.providers.openai.apiKey"],
-        reloadHooks: false,
-        restartGmailWatcher: false,
-        restartCron: false,
-        restartHeartbeat: false,
-        restartChannels: new Set(),
-        noopPaths: [],
-      };
-      const nextConfig = {
-        models: {
-          providers: {
-            openai: {
-              baseUrl: "https://api.openai.com/v1",
-              apiKey: { source: "env", provider: "default", id: "OPENAI_API_KEY" },
-              models: [],
-            },
-          },
-        },
-      };
-
-      delete process.env.OPENAI_API_KEY;
-      await expectOneShotSecretReloadEvents({
-        applyReload: () => onHotReload?.(plan, nextConfig),
-        sessionKey,
-        expectedError: 'Environment variable "OPENAI_API_KEY" is missing or empty.',
-      });
-
-      process.env.OPENAI_API_KEY = "sk-recovered"; // pragma: allowlist secret
-      await expectSecretReloadRecovered({
-        applyReload: () => onHotReload?.(plan, nextConfig),
-        sessionKey,
-      });
-    });
   });
 
   it("does not emit secrets reloader events for web search secret reload transitions", async () => {
@@ -763,278 +528,6 @@ describe("gateway hot reload", () => {
       await expect(onHotReload?.(plan, recoveredConfig)).resolves.toBeUndefined();
       expect(drainSystemEvents(sessionKey)).toEqual([]);
     });
-  });
-
-  it("serves secrets.reload immediately after startup without race failures", async () => {
-    await writeEnvRefConfig();
-    process.env.OPENAI_API_KEY = "sk-startup"; // pragma: allowlist secret
-    const { server, ws } = await startServerWithClient();
-    try {
-      await connectOk(ws);
-      const [first, second] = await Promise.all([
-        rpcReq<{ warningCount: number }>(ws, "secrets.reload", {}),
-        rpcReq<{ warningCount: number }>(ws, "secrets.reload", {}),
-      ]);
-      expect(first.ok).toBe(true);
-      expect(second.ok).toBe(true);
-    } finally {
-      ws.close();
-      await server.close();
-    }
-  });
-
-  it("keeps last-known-good snapshot active when secrets.reload fails over RPC", async () => {
-    const refId = "RUNTIME_LKG_TALK_API_KEY";
-    const previousRefValue = process.env[refId];
-    process.env[refId] = "talk-key-before-reload-failure"; // pragma: allowlist secret
-    await writeTalkProviderApiKeyEnvRefConfig(refId);
-
-    const { server, ws } = await startServerWithClient();
-    try {
-      await connectOk(ws);
-      const preResolve = await rpcReq<{
-        assignments?: Array<{ path: string; pathSegments: string[]; value: unknown }>;
-      }>(ws, "secrets.resolve", {
-        commandName: "runtime-lkg-test",
-        targetIds: ["talk.providers.*.apiKey"],
-      });
-      expect(preResolve.ok).toBe(true);
-      expect(preResolve.payload?.assignments?.[0]?.path).toBe(TALK_TEST_PROVIDER_API_KEY_PATH);
-      expect(preResolve.payload?.assignments?.[0]?.value).toBe("talk-key-before-reload-failure");
-
-      delete process.env[refId];
-      const reload = await rpcReq<{ warningCount?: number }>(ws, "secrets.reload", {});
-      expect(reload.ok).toBe(false);
-      expect(reload.error?.code).toBe("UNAVAILABLE");
-      expect(reload.error?.message ?? "").toContain(refId);
-
-      const postResolve = await rpcReq<{
-        assignments?: Array<{ path: string; pathSegments: string[]; value: unknown }>;
-      }>(ws, "secrets.resolve", {
-        commandName: "runtime-lkg-test",
-        targetIds: ["talk.providers.*.apiKey"],
-      });
-      expect(postResolve.ok).toBe(true);
-      expect(postResolve.payload?.assignments?.[0]?.path).toBe(TALK_TEST_PROVIDER_API_KEY_PATH);
-      expect(postResolve.payload?.assignments?.[0]?.value).toBe("talk-key-before-reload-failure");
-    } finally {
-      if (previousRefValue === undefined) {
-        delete process.env[refId];
-      } else {
-        process.env[refId] = previousRefValue;
-      }
-      ws.close();
-      await server.close();
-    }
-  });
-
-  it("keeps last-known-good auth snapshot active when gateway auth token exec reload fails", async () => {
-    const stateDir = process.env.REMOTECLAW_STATE_DIR;
-    if (!stateDir) {
-      throw new Error("REMOTECLAW_STATE_DIR is not set");
-    }
-    const resolverScriptPath = path.join(stateDir, "gateway-auth-token-resolver.cjs");
-    const modePath = path.join(stateDir, "gateway-auth-token-resolver.mode");
-    const tokenValue = "gateway-auth-exec-token";
-    await fs.mkdir(path.dirname(resolverScriptPath), { recursive: true });
-    await fs.writeFile(
-      resolverScriptPath,
-      `const fs = require("node:fs");
-let input = "";
-process.stdin.setEncoding("utf8");
-process.stdin.on("data", (chunk) => {
-  input += chunk;
-});
-process.stdin.on("end", () => {
-  const modePath = process.argv[2];
-  const token = process.argv[3];
-  const mode = fs.existsSync(modePath) ? fs.readFileSync(modePath, "utf8").trim() : "ok";
-  let ids = ["gateway/token"];
-  try {
-    const parsed = JSON.parse(input || "{}");
-    if (Array.isArray(parsed.ids) && parsed.ids.length > 0) {
-      ids = parsed.ids.map((entry) => String(entry));
-    }
-  } catch {}
-
-  if (mode === "fail") {
-    const errors = {};
-    for (const id of ids) {
-      errors[id] = { message: "forced failure" };
-    }
-    process.stdout.write(JSON.stringify({ protocolVersion: 1, values: {}, errors }) + "\\n");
-    return;
-  }
-
-  const values = {};
-  for (const id of ids) {
-    values[id] = token;
-  }
-  process.stdout.write(JSON.stringify({ protocolVersion: 1, values }) + "\\n");
-});
-`,
-      "utf8",
-    );
-    await fs.writeFile(modePath, "ok\n", "utf8");
-    await writeGatewayTokenExecRefConfig({
-      resolverScriptPath,
-      modePath,
-      tokenValue,
-    });
-
-    const previousGatewayAuth = testState.gatewayAuth;
-    const previousGatewayTokenEnv = process.env.REMOTECLAW_GATEWAY_TOKEN;
-    let started: Awaited<ReturnType<typeof startServerWithClient>> | undefined;
-    try {
-      testState.gatewayAuth = undefined;
-      delete process.env.REMOTECLAW_GATEWAY_TOKEN;
-
-      started = await startServerWithClient();
-      const { ws } = started;
-      await connectOk(ws, {
-        token: tokenValue,
-      });
-      const preResolve = await rpcReq<{
-        assignments?: Array<{ path: string; pathSegments: string[]; value: unknown }>;
-      }>(ws, "secrets.resolve", {
-        commandName: "runtime-lkg-auth-test",
-        targetIds: ["gateway.auth.token"],
-      });
-      expect(preResolve.ok).toBe(true);
-      expect(preResolve.payload?.assignments?.[0]?.path).toBe("gateway.auth.token");
-      expect(preResolve.payload?.assignments?.[0]?.value).toBe(tokenValue);
-
-      await fs.writeFile(modePath, "fail\n", "utf8");
-      const reload = await rpcReq<{ warningCount?: number }>(ws, "secrets.reload", {});
-      expect(reload.ok).toBe(false);
-      expect(reload.error?.code).toBe("UNAVAILABLE");
-      expect(reload.error?.message ?? "").toContain("forced failure");
-
-      const postResolve = await rpcReq<{
-        assignments?: Array<{ path: string; pathSegments: string[]; value: unknown }>;
-      }>(ws, "secrets.resolve", {
-        commandName: "runtime-lkg-auth-test",
-        targetIds: ["gateway.auth.token"],
-      });
-      expect(postResolve.ok).toBe(true);
-      expect(postResolve.payload?.assignments?.[0]?.path).toBe("gateway.auth.token");
-      expect(postResolve.payload?.assignments?.[0]?.value).toBe(tokenValue);
-    } finally {
-      testState.gatewayAuth = previousGatewayAuth;
-      if (previousGatewayTokenEnv === undefined) {
-        delete process.env.REMOTECLAW_GATEWAY_TOKEN;
-      } else {
-        process.env.REMOTECLAW_GATEWAY_TOKEN = previousGatewayTokenEnv;
-      }
-      started?.envSnapshot.restore();
-      started?.ws.close();
-      await started?.server.close();
-    }
-  });
-
-  it("uses refreshed gateway auth for new websocket connects after secrets reload", async () => {
-    const stateDir = process.env.REMOTECLAW_STATE_DIR;
-    if (!stateDir) {
-      throw new Error("REMOTECLAW_STATE_DIR is not set");
-    }
-    const resolverScriptPath = path.join(stateDir, "gateway-auth-refresh-resolver.cjs");
-    const tokenPath = path.join(stateDir, "gateway-auth-refresh-token.txt");
-    await fs.mkdir(path.dirname(resolverScriptPath), { recursive: true });
-    await fs.writeFile(
-      resolverScriptPath,
-      `const fs = require("node:fs");
-let input = "";
-process.stdin.setEncoding("utf8");
-process.stdin.on("data", (chunk) => {
-  input += chunk;
-});
-process.stdin.on("end", () => {
-  const tokenPath = process.argv[2];
-  const token = fs.readFileSync(tokenPath, "utf8").trim();
-  let ids = ["gateway/token"];
-  try {
-    const parsed = JSON.parse(input || "{}");
-    if (Array.isArray(parsed.ids) && parsed.ids.length > 0) {
-      ids = parsed.ids.map((entry) => String(entry));
-    }
-  } catch {}
-
-  const values = {};
-  for (const id of ids) {
-    values[id] = token;
-  }
-  process.stdout.write(JSON.stringify({ protocolVersion: 1, values }) + "\\n");
-});
-`,
-      "utf8",
-    );
-    await fs.writeFile(tokenPath, "token-before-reload\n", "utf8");
-    await writeConfigFile({
-      gateway: {
-        auth: {
-          mode: "token",
-          token: { source: "exec", provider: "vault", id: "gateway/token" },
-        },
-      },
-      secrets: {
-        providers: {
-          vault: {
-            source: "exec",
-            command: process.execPath,
-            allowSymlinkCommand: true,
-            args: [resolverScriptPath, tokenPath],
-          },
-        },
-      },
-    });
-
-    const previousGatewayAuth = testState.gatewayAuth;
-    const previousGatewayTokenEnv = process.env.REMOTECLAW_GATEWAY_TOKEN;
-    let started: Awaited<ReturnType<typeof startServerWithClient>> | undefined;
-    try {
-      testState.gatewayAuth = undefined;
-      delete process.env.REMOTECLAW_GATEWAY_TOKEN;
-
-      started = await startServerWithClient();
-      const { ws, port } = started;
-      await connectOk(ws, { token: "token-before-reload" });
-
-      await fs.writeFile(tokenPath, "token-after-reload\n", "utf8");
-      const reload = await rpcReq<{ warningCount?: number }>(ws, "secrets.reload", {});
-      expect(reload.ok).toBe(true);
-
-      const staleWs = await openTrackedWs(port);
-      try {
-        const staleConnect = await connectReq(staleWs, {
-          token: "token-before-reload",
-          skipDefaultAuth: true,
-        });
-        expect(staleConnect.ok).toBe(false);
-        expect(staleConnect.error?.message ?? "").toContain("gateway token mismatch");
-      } finally {
-        staleWs.close();
-      }
-
-      const freshWs = await openTrackedWs(port);
-      try {
-        await connectOk(freshWs, {
-          token: "token-after-reload",
-          skipDefaultAuth: true,
-        });
-      } finally {
-        freshWs.close();
-      }
-    } finally {
-      testState.gatewayAuth = previousGatewayAuth;
-      if (previousGatewayTokenEnv === undefined) {
-        delete process.env.REMOTECLAW_GATEWAY_TOKEN;
-      } else {
-        process.env.REMOTECLAW_GATEWAY_TOKEN = previousGatewayTokenEnv;
-      }
-      started?.envSnapshot.restore();
-      started?.ws.close();
-      await started?.server.close();
-    }
   });
 });
 

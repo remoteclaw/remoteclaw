@@ -151,6 +151,26 @@ async function resetGatewayTestState(options: { uniqueConfigRoot: boolean }) {
     "utf-8",
   );
   setTestConfigRoot(tempConfigRoot);
+  // Seed a minimal valid config so the *real* loadConfig (reached by
+  // resolveMainSessionKeyFromConfig below, and by any suite that imports it
+  // directly from ../config/sessions.js) resolves a main session key instead of
+  // throwing on an empty agents.list. Schema migration #1581 made
+  // resolveMainSessionKey hard-fail when agents.list is empty; production always
+  // has at least one agent, so the harness must too. Suites that need different
+  // agents override via their own config write or testState.agentsConfig.
+  await fs.writeFile(
+    path.join(tempConfigRoot, "remoteclaw.json"),
+    JSON.stringify(
+      {
+        agents: {
+          list: [{ id: "main", workspace: path.join(os.tmpdir(), "remoteclaw-gateway-test") }],
+        },
+      },
+      null,
+      2,
+    ),
+    "utf-8",
+  );
   sessionStoreSaveDelayMs.value = 0;
   testTailnetIPv4.value = undefined;
   testTailscaleWhois.value = null;

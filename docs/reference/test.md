@@ -9,55 +9,28 @@ title: "Tests"
 
 - Full testing kit (suites, live, Docker): [Testing](/help/testing)
 
+- `pnpm test`: runs the native Vitest root projects config directly. File filters work natively across the configured projects.
 - `pnpm test:force`: Kills any lingering gateway process holding the default control port, then runs the full Vitest suite with an isolated gateway port so server tests don’t collide with a running instance. Use this when a prior gateway run left port 18789 occupied.
 - `pnpm test:coverage`: Runs the unit suite with V8 coverage (via `vitest.unit.config.ts`). This is a loaded-file unit coverage gate, not whole-repo all-file coverage. Thresholds are 70% lines/functions/statements and 55% branches. Because `coverage.all` is false, the gate measures files loaded by the unit coverage suite instead of treating every split-lane source file as uncovered.
-- `pnpm test:coverage:changed`: Runs unit coverage only for files changed since `origin/main`.
-- `pnpm test:changed`: runs the native Vitest projects config with `--changed origin/main`. The base config treats the projects/config files as `forceRerunTriggers` so wiring changes still rerun broadly when needed.
-- `pnpm test`: runs the native Vitest root projects config directly. File filters work natively across the configured projects.
-- Base Vitest config now defaults to `pool: "threads"` and `isolate: false`, with the shared non-isolated runner enabled across the repo configs.
-- `pnpm test:channels` runs `vitest.channels.config.ts`.
-- `pnpm test:extensions` runs `vitest.extensions.config.ts`.
-- `pnpm test:extensions`: runs extension/plugin suites.
-- `pnpm test:perf:imports`: enables Vitest import-duration + import-breakdown reporting for the native root projects run.
-- `pnpm test:perf:imports:changed`: same import profiling, but only for files changed since `origin/main`.
-- `pnpm test:perf:profile:main`: writes a CPU profile for the Vitest main thread (`.artifacts/vitest-main-profile`).
-- `pnpm test:perf:profile:runner`: writes CPU + heap profiles for the unit runner (`.artifacts/vitest-runner-profile`).
+- Base Vitest config defaults to `pool: "threads"` and `isolate: false`, with the shared non-isolated runner enabled across the repo configs.
+- `pnpm test:channels`: runs `vitest.channels.config.ts`.
+- `pnpm test:extensions`: runs the extension/plugin suites (`vitest.extensions.config.ts`).
 - Gateway integration: opt-in via `REMOTECLAW_TEST_INCLUDE_GATEWAY=1 pnpm test` or `pnpm test:gateway`.
 - `pnpm test:e2e`: Runs gateway end-to-end smoke tests (multi-instance WS/HTTP/node pairing). Defaults to `threads` + `isolate: false` with adaptive workers in `vitest.e2e.config.ts`; tune with `REMOTECLAW_E2E_WORKERS=<n>` and set `REMOTECLAW_E2E_VERBOSE=1` for verbose logs.
-- `pnpm test:live`: Runs provider live tests (minimax/zai). Requires API keys and `LIVE=1` (or provider-specific `*_LIVE_TEST=1`) to unskip.
-- `pnpm test:docker:openwebui`: Starts Dockerized RemoteClaw + Open WebUI, signs in through Open WebUI, checks `/api/models`, then runs a real proxied chat through `/api/chat/completions`. Requires a usable live model key (for example OpenAI in `~/.profile`), pulls an external Open WebUI image, and is not expected to be CI-stable like the normal unit/e2e suites.
-- `pnpm test:docker:mcp-channels`: Starts a seeded Gateway container and a second client container that spawns `remoteclaw mcp serve`, then verifies routed conversation discovery, transcript reads, attachment metadata, live event queue behavior, outbound send routing, and Claude-style channel + permission notifications over the real stdio bridge. The Claude notification assertion reads the raw stdio MCP frames directly so the smoke reflects what the bridge actually emits.
+- `pnpm test:live`: Runs provider live tests. Requires API keys and `REMOTECLAW_LIVE_TEST=1` (or provider-specific `*_LIVE_TEST=1`) to unskip.
 
 ## Local PR gate
 
 For local PR land/gate checks, run:
 
-- `pnpm check:changed`
 - `pnpm check`
-- `pnpm check:test-types`
 - `pnpm build`
 - `pnpm test`
 - `pnpm check:docs`
 
 If `pnpm test` flakes on a loaded host, rerun once before treating it as a regression, then isolate with `pnpm test <path/to/test>`. For memory-constrained hosts, use:
 
-- `REMOTECLAW_VITEST_MAX_WORKERS=1 pnpm test`
-- `REMOTECLAW_VITEST_FS_MODULE_CACHE_PATH=/tmp/remoteclaw-vitest-cache pnpm test:changed`
-
-## Model latency bench (local keys)
-
-Script: [`scripts/bench-model.ts`](https://github.com/remoteclaw/remoteclaw/blob/main/scripts/bench-model.ts)
-
-Usage:
-
-- `source ~/.profile && pnpm tsx scripts/bench-model.ts --runs 10`
-- Optional env: `MINIMAX_API_KEY`, `MINIMAX_BASE_URL`, `MINIMAX_MODEL`, `ANTHROPIC_API_KEY`
-- Default prompt: “Reply with a single word: ok. No punctuation or extra text.”
-
-Last run (2025-12-31, 20 runs):
-
-- minimax median 1279ms (min 1114, max 2431)
-- opus median 2454ms (min 1224, max 3170)
+- `REMOTECLAW_TEST_WORKERS=1 pnpm test`
 
 ## CLI startup bench
 
@@ -65,18 +38,12 @@ Script: [`scripts/bench-cli-startup.ts`](https://github.com/remoteclaw/remotecla
 
 Usage:
 
-- `pnpm test:startup:bench`
-- `pnpm test:startup:bench:smoke`
-- `pnpm test:startup:bench:save`
-- `pnpm test:startup:bench:update`
-- `pnpm test:startup:bench:check`
 - `pnpm tsx scripts/bench-cli-startup.ts`
 - `pnpm tsx scripts/bench-cli-startup.ts --runs 12`
 - `pnpm tsx scripts/bench-cli-startup.ts --preset real`
 - `pnpm tsx scripts/bench-cli-startup.ts --preset real --case status --case gatewayStatus --runs 3`
 - `pnpm tsx scripts/bench-cli-startup.ts --entry remoteclaw.mjs --entry-secondary dist/entry.js --preset all`
 - `pnpm tsx scripts/bench-cli-startup.ts --preset all --output .artifacts/cli-startup-bench-all.json`
-- `pnpm tsx scripts/bench-cli-startup.ts --preset real --case gatewayStatusJson --output .artifacts/cli-startup-bench-smoke.json`
 - `pnpm tsx scripts/bench-cli-startup.ts --preset real --cpu-prof-dir .artifacts/cli-cpu`
 - `pnpm tsx scripts/bench-cli-startup.ts --json`
 
@@ -87,18 +54,6 @@ Presets:
 - `all`: both presets
 
 Output includes `sampleCount`, avg, p50, p95, min/max, exit-code/signal distribution, and max RSS summaries for each command. Optional `--cpu-prof-dir` / `--heap-prof-dir` writes V8 profiles per run so timing and profile capture use the same harness.
-
-Saved output conventions:
-
-- `pnpm test:startup:bench:smoke` writes the targeted smoke artifact at `.artifacts/cli-startup-bench-smoke.json`
-- `pnpm test:startup:bench:save` writes the full-suite artifact at `.artifacts/cli-startup-bench-all.json` using `runs=5` and `warmup=1`
-- `pnpm test:startup:bench:update` refreshes the checked-in baseline fixture at `test/fixtures/cli-startup-bench.json` using `runs=5` and `warmup=1`
-
-Checked-in fixture:
-
-- `test/fixtures/cli-startup-bench.json`
-- Refresh with `pnpm test:startup:bench:update`
-- Compare current results against the fixture with `pnpm test:startup:bench:check`
 
 ## Onboarding E2E (Docker)
 

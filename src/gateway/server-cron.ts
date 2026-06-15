@@ -27,7 +27,11 @@ import { SsrFBlockedError } from "../infra/net/ssrf.js";
 import { deliverOutboundPayloads } from "../infra/outbound/deliver.js";
 import { enqueueSystemEvent } from "../infra/system-events.js";
 import { getChildLogger } from "../logging.js";
-import { normalizeAgentId, toAgentStoreSessionKey } from "../routing/session-key.js";
+import {
+  normalizeAgentId,
+  resolveAgentIdFromSessionKeyOrNull,
+  toAgentStoreSessionKey,
+} from "../routing/session-key.js";
 import { defaultRuntime } from "../runtime.js";
 import {
   normalizeOptionalLowercaseString,
@@ -199,10 +203,21 @@ export function buildGatewayCronService(params: {
   const resolveCronWakeTarget = (opts?: { agentId?: string; sessionKey?: string | null }) => {
     const runtimeConfig = loadConfig();
     const requestedAgentId = opts?.agentId ? resolveCronAgent(opts.agentId).agentId : undefined;
+    // Mirror the enqueue path's default-agent fallback: when no explicit agentId
+    // is given and the requested sessionKey is unscoped (no agent: segment), bind
+    // to the default agent rather than throwing. The fork's strict
+    // resolveAgentIdFromSessionKey throws on a missing agent segment (the #1581
+    // agent-scoped-key invariant); use the OrNull variant here and fall back so
+    // an unscoped key like "discord:channel:ops" scopes to the default agent
+    // (resolveCronSessionKey -> toAgentStoreSessionKey preserves any embedded
+    // agent: prefix when one IS present).
     const derivedAgentId =
       requestedAgentId ??
       (opts?.sessionKey
-        ? normalizeAgentId(resolveAgentIdFromSessionKey(opts.sessionKey))
+        ? normalizeAgentId(
+            resolveAgentIdFromSessionKeyOrNull(opts.sessionKey) ??
+              resolveDefaultAgentId(runtimeConfig),
+          )
         : undefined);
     const agentId = derivedAgentId || undefined;
     const sessionKey =

@@ -4,6 +4,10 @@ import type { HeartbeatRunResult } from "../../infra/heartbeat-wake.js";
 import { resolveCronDeliveryPlan } from "../delivery.js";
 import { shouldEnqueueCronMainSummary } from "../heartbeat-policy.js";
 import { sweepCronRunSessions } from "../session-reaper.js";
+import {
+  assertSafeCronSessionTargetId,
+  isInvalidCronSessionTargetIdError,
+} from "../session-target.js";
 import type {
   CronDeliveryStatus,
   CronJob,
@@ -960,6 +964,24 @@ export async function executeJobCore(
 
   if (abortSignal?.aborted) {
     return resolveAbortError();
+  }
+  // Defense-in-depth fail-closed gate on the execution chokepoint shared by the
+  // manual-run and timer-tick paths: an unsafe persisted `session:<id>` target
+  // (one that bypassed the gateway normalizer and survived store hydration) is
+  // skipped before any dispatch rather than executed. The manual path fails
+  // closed earlier in inspectManualRunPreflight; this also protects the tick.
+  if (job.sessionTarget.startsWith("session:")) {
+    try {
+      assertSafeCronSessionTargetId(job.sessionTarget.slice(8));
+    } catch (error) {
+      if (isInvalidCronSessionTargetIdError(error)) {
+        return {
+          status: "skipped",
+          error: "cron job has an invalid sessionTarget session id; skipped",
+        };
+      }
+      throw error;
+    }
   }
   if (job.sessionTarget === "main") {
     const text = resolveJobPayloadTextForMain(job);

@@ -6,6 +6,7 @@ import {
   computeNextRunAtMs,
   computePreviousRunAtMs,
 } from "../schedule.js";
+import { assertSafeCronSessionTargetId } from "../session-target.js";
 import {
   normalizeCronStaggerMs,
   resolveCronStaggerMs,
@@ -132,11 +133,21 @@ function resolveEveryAnchorMs(params: {
 }
 
 export function assertSupportedJobSpec(job: Pick<CronJob, "sessionTarget" | "payload">) {
+  const isIsolatedLike =
+    job.sessionTarget === "isolated" ||
+    job.sessionTarget === "current" ||
+    job.sessionTarget.startsWith("session:");
+  // Validate the custom session id at the service layer (defense-in-depth,
+  // independent of the gateway normalizer) so a persisted/hand-edited job with
+  // an unsafe `session:<id>` target fails closed before it can be enqueued.
+  if (job.sessionTarget.startsWith("session:")) {
+    assertSafeCronSessionTargetId(job.sessionTarget.slice(8));
+  }
   if (job.sessionTarget === "main" && job.payload.kind !== "systemEvent") {
     throw new Error('main cron jobs require payload.kind="systemEvent"');
   }
-  if (job.sessionTarget === "isolated" && job.payload.kind !== "agentTurn") {
-    throw new Error('isolated cron jobs require payload.kind="agentTurn"');
+  if (isIsolatedLike && job.payload.kind !== "agentTurn") {
+    throw new Error('isolated/current/session cron jobs require payload.kind="agentTurn"');
   }
 }
 
@@ -194,7 +205,11 @@ function assertDeliverySupport(job: Pick<CronJob, "sessionTarget" | "delivery">)
     job.delivery.to = target;
     return;
   }
-  if (job.sessionTarget !== "isolated") {
+  const isIsolatedLike =
+    job.sessionTarget === "isolated" ||
+    job.sessionTarget === "current" ||
+    job.sessionTarget.startsWith("session:");
+  if (!isIsolatedLike) {
     throw new Error('cron channel delivery config is only supported for sessionTarget="isolated"');
   }
   if (job.delivery.channel === "telegram") {

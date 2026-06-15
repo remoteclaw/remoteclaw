@@ -41,7 +41,10 @@ afterAll(async () => {
   await server.close();
 });
 
-const createMSTeamsPlugin = (params?: { aliases?: string[] }): ChannelPlugin => ({
+const createMSTeamsPlugin = (params?: {
+  aliases?: string[];
+  accountIds?: string[];
+}): ChannelPlugin => ({
   id: "msteams",
   meta: {
     id: "msteams",
@@ -53,7 +56,7 @@ const createMSTeamsPlugin = (params?: { aliases?: string[] }): ChannelPlugin => 
   },
   capabilities: { chatTypes: ["direct"] },
   config: {
-    listAccountIds: () => [],
+    listAccountIds: () => params?.accountIds ?? [],
     resolveAccount: () => ({}),
   },
 });
@@ -193,12 +196,12 @@ describe("gateway server agent", () => {
     setRegistry(emptyRegistry);
   });
 
-  test("agent reuses the last plugin delivery route when channel=last", async () => {
+  test("agent reuses the last plugin delivery route when channel=last and the plugin is configured", async () => {
     const registry = createRegistry([
       {
         pluginId: "msteams",
         source: "test",
-        plugin: createMSTeamsPlugin(),
+        plugin: createMSTeamsPlugin({ accountIds: ["default"] }),
       },
     ]);
     setRegistry(registry);
@@ -221,6 +224,34 @@ describe("gateway server agent", () => {
       to: "conversation:teams-123",
       fromEnd: 1,
     });
+  });
+
+  test("agent falls back to internal delivery when the last channel is an unconfigured plugin channel", async () => {
+    const registry = createRegistry([
+      {
+        pluginId: "msteams",
+        source: "test",
+        plugin: createMSTeamsPlugin(),
+      },
+    ]);
+    setRegistry(registry);
+    await writeMainSessionEntry({
+      sessionId: "sess-teams-unconfigured",
+      lastChannel: "msteams",
+      lastTo: "conversation:teams-123",
+    });
+    const res = await rpcReq(ws, "agent", {
+      message: "hi",
+      sessionKey: "main",
+      channel: "last",
+      deliver: true,
+      bestEffortDeliver: false,
+      idempotencyKey: "idem-agent-last-msteams-unconfigured",
+    });
+    expect(res.ok).toBe(false);
+    expect(res.error?.code).toBe("INVALID_REQUEST");
+    expect(res.error?.message).toMatch(/Channel is required|delivery channel is required/);
+    expect(vi.mocked(agentCommand)).not.toHaveBeenCalled();
   });
 
   test("agent accepts built-in channel alias (imsg)", async () => {

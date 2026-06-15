@@ -6,6 +6,7 @@ import {
   resolveIngressWorkspaceOverrideForSpawnedRun,
 } from "../../agents/spawned-context.js";
 import { buildBareSessionResetPrompt } from "../../auto-reply/reply/session-reset-prompt.js";
+import { CHANNEL_IDS, type ChatChannelId } from "../../channels/registry.js";
 import { agentCommandFromIngress } from "../../commands/agent.js";
 import { loadConfig } from "../../config/config.js";
 import {
@@ -21,7 +22,10 @@ import {
   resolveAgentDeliveryPlan,
   resolveAgentOutboundTarget,
 } from "../../infra/outbound/agent-delivery.js";
-import { resolveMessageChannelSelection } from "../../infra/outbound/channel-selection.js";
+import {
+  listConfiguredMessageChannels,
+  resolveMessageChannelSelection,
+} from "../../infra/outbound/channel-selection.js";
 import { classifySessionKeyShape, normalizeAgentId } from "../../routing/session-key.js";
 import { defaultRuntime } from "../../runtime.js";
 import { normalizeInputProvenance, type InputProvenance } from "../../sessions/input-provenance.js";
@@ -606,6 +610,25 @@ export const agentHandlers: GatewayRequestHandlers = {
     let resolvedAccountId = deliveryPlan.resolvedAccountId;
     let resolvedTo = deliveryPlan.resolvedTo;
     let effectivePlan = deliveryPlan;
+
+    // A plugin channel may be registered but have no configured accounts,
+    // making it unusable for delivery. Fall back to INTERNAL_MESSAGE_CHANNEL
+    // so channel-selection can surface a proper error. Built-in channels
+    // (in CHANNEL_IDS) are always considered available.
+    if (
+      wantsDelivery &&
+      resolvedChannel !== INTERNAL_MESSAGE_CHANNEL &&
+      isDeliverableMessageChannel(resolvedChannel) &&
+      !CHANNEL_IDS.includes(resolvedChannel as ChatChannelId)
+    ) {
+      const cfgResolved = cfgForAgent ?? cfg;
+      const configured = await listConfiguredMessageChannels(cfgResolved);
+      if (!configured.includes(resolvedChannel)) {
+        resolvedChannel = INTERNAL_MESSAGE_CHANNEL;
+        resolvedTo = undefined;
+        resolvedAccountId = undefined;
+      }
+    }
 
     if (wantsDelivery && resolvedChannel === INTERNAL_MESSAGE_CHANNEL) {
       const cfgResolved = cfgForAgent ?? cfg;

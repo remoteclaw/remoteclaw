@@ -184,6 +184,25 @@ describe("chat error propagation separates error and non-error reply parts", () 
     expect(errorBroadcasts.length).toBe(0);
   });
 
+  it("broadcasts error when agent run produces only error payloads", async () => {
+    createTranscriptFixture("remoteclaw-chat-err-only-");
+    mockState.payloads = [{ text: "auth failed: invalid credentials", isError: true }];
+    const context = createChatContext();
+
+    const broadcasts = await runChatSendAndWaitForBroadcast({
+      context,
+      idempotencyKey: "idem-err-only",
+    });
+
+    // Error-only agent run (no assistant text) must surface the error to the
+    // webchat UI rather than silently completing as success.
+    const errorBroadcasts = broadcasts.filter((b) => b.state === "error");
+    expect(errorBroadcasts.length).toBe(1);
+    expect(errorBroadcasts[0]?.errorMessage).toContain("auth failed: invalid credentials");
+    const finalBroadcasts = broadcasts.filter((b) => b.state === "final");
+    expect(finalBroadcasts.length).toBe(0);
+  });
+
   it("does not broadcast error when only non-error payloads with no agent run", async () => {
     createTranscriptFixture("remoteclaw-chat-no-agent-");
     mockState.triggerAgentRunStart = false;

@@ -5,6 +5,7 @@ import {
 import { resolveChannelDefaultAccountId } from "../channels/plugins/helpers.js";
 import type { listChannelPlugins } from "../channels/plugins/index.js";
 import type { ChannelId } from "../channels/plugins/types.js";
+import { inspectReadOnlyChannelAccount } from "../channels/read-only-account-inspect.js";
 import {
   isNumericTelegramUserId,
   normalizeTelegramAllowFromEntry,
@@ -123,11 +124,20 @@ export async function collectChannelSecurityFindings(params: {
   const findings: SecurityAuditFinding[] = [];
   const sourceConfig = params.sourceConfig ?? params.cfg;
 
-  const inspectChannelAccount = (
+  const inspectChannelAccount = async (
     plugin: (typeof params.plugins)[number],
     cfg: RemoteClawConfig,
     accountId: string,
-  ) => plugin.config.inspectAccount?.(cfg, accountId) ?? undefined;
+  ) => {
+    if (plugin.config.inspectAccount) {
+      return await plugin.config.inspectAccount(cfg, accountId);
+    }
+    return await inspectReadOnlyChannelAccount({
+      channelId: plugin.id,
+      cfg,
+      accountId,
+    });
+  };
 
   const asAccountRecord = (value: unknown): Record<string, unknown> | null =>
     value && typeof value === "object" && !Array.isArray(value)
@@ -138,8 +148,8 @@ export async function collectChannelSecurityFindings(params: {
     plugin: (typeof params.plugins)[number],
     accountId: string,
   ) => {
-    const sourceInspectedAccount = inspectChannelAccount(plugin, sourceConfig, accountId);
-    const resolvedInspectedAccount = inspectChannelAccount(plugin, params.cfg, accountId);
+    const sourceInspectedAccount = await inspectChannelAccount(plugin, sourceConfig, accountId);
+    const resolvedInspectedAccount = await inspectChannelAccount(plugin, params.cfg, accountId);
     const sourceInspection = sourceInspectedAccount as {
       enabled?: boolean;
       configured?: boolean;

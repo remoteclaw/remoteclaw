@@ -183,7 +183,6 @@ const BROAD_CHANGED_RERUN_PATTERNS = [
 ];
 const TOOLING_SOURCE_TEST_TARGETS = new Map([
   ["scripts/changed-lanes.mjs", ["test/scripts/changed-lanes.test.ts"]],
-  ["scripts/check-changed.mjs", ["test/scripts/changed-lanes.test.ts"]],
   ["scripts/lib/vitest-local-scheduling.mjs", ["test/scripts/vitest-local-scheduling.test.ts"]],
   [
     "scripts/run-vitest.mjs",

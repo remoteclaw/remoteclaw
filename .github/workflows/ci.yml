@@ -167,16 +167,21 @@ jobs:
           REMOTECLAW_TEST_WORKERS: 1
           REMOTECLAW_TEST_MAX_OLD_SPACE_SIZE_MB: 1536
 
-  test-gateway-preauth:
-    # Scoped gateway lane for the pre-auth hardening defense-in-depth
-    # suite (#2644). The full gateway suite is gated behind
-    # REMOTECLAW_TEST_INCLUDE_GATEWAY=1 because of orthogonal pre-existing
-    # failures unrelated to this slice; running only the hardening file
-    # gives the new 1009 close-code + diagnostic event + connection budget
-    # behavior continuous CI coverage without enabling the full suite.
-    # Tracked separately from `test` so a hardening regression surfaces
-    # cleanly.
+  test-gateway:
+    # Full gateway behavioral suite — src/gateway/**/*.test.ts (~140 files,
+    # ~1,560 tests). Runs on its own runner, in parallel with `test`, and is
+    # aggregated through the `CI` rollup so a gateway regression blocks merge
+    # (#2720). Kept separate from `pnpm test` because the suite is global-state
+    # and ephemeral-port (port 0) sensitive: it is run serially
+    # (--no-file-parallelism) for determinism, mirroring the local invocation
+    # it was validated green against. Folding it into `test` would serialize it
+    # onto that job's critical path with no isolation benefit. Supersedes the
+    # former single-file `test-gateway-preauth` lane — the full suite subsumes
+    # server.preauth-hardening.test.ts (#2644), which matches the glob above.
     runs-on: ubuntu-latest
+    # Hard backstop: a hung gateway server (unreleased port, stalled connect)
+    # must fail fast, not hold the runner for the 6h job default.
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -191,8 +196,8 @@ jobs:
       - name: Build canvas bundle
         run: pnpm canvas:a2ui:bundle
 
-      - name: Run pre-auth hardening tests
-        run: pnpm exec vitest run --config vitest.gateway.config.ts --pool=forks src/gateway/server.preauth-hardening.test.ts
+      - name: Run gateway behavioral suite
+        run: pnpm exec vitest run --config vitest.gateway.config.ts --pool=forks --no-file-parallelism
         env:
           REMOTECLAW_TEST_INCLUDE_GATEWAY: "1"
 
@@ -270,14 +275,14 @@ jobs:
         lint,
         build,
         test,
-        test-gateway-preauth,
+        test-gateway,
         test-ui-smoke,
       ]
     runs-on: ubuntu-latest
     steps:
       - name: Check results
         run: |
-          if [[ "${{ needs.rebrand-gate.result }}" != "success" || "${{ needs.zombie-import-gate.result }}" != "success" || "${{ needs.stub-debt-gate.result }}" != "success" || "${{ needs.throwing-stub-callers-gate.result }}" != "success" || "${{ needs.obsolescence-audit-gate.result }}" != "success" || "${{ needs.lint.result }}" != "success" || "${{ needs.build.result }}" != "success" || "${{ needs.test.result }}" != "success" || "${{ needs.test-gateway-preauth.result }}" != "success" || "${{ needs.test-ui-smoke.result }}" != "success" ]]; then
+          if [[ "${{ needs.rebrand-gate.result }}" != "success" || "${{ needs.zombie-import-gate.result }}" != "success" || "${{ needs.stub-debt-gate.result }}" != "success" || "${{ needs.throwing-stub-callers-gate.result }}" != "success" || "${{ needs.obsolescence-audit-gate.result }}" != "success" || "${{ needs.lint.result }}" != "success" || "${{ needs.build.result }}" != "success" || "${{ needs.test.result }}" != "success" || "${{ needs.test-gateway.result }}" != "success" || "${{ needs.test-ui-smoke.result }}" != "success" ]]; then
             echo "::error::One or more required jobs failed"
             exit 1
           fi

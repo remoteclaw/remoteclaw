@@ -25,7 +25,7 @@ RemoteClaw is a fork of OpenClaw with the execution engine gutted (CLI-based age
 | `lint`                       | `pnpm check` — format check, prod typecheck (`tsgo`), lint, and fork guards       | Always               |
 | `build`                      | `pnpm build`, then `pnpm release:check` as an early release-artifact signal       | Always               |
 | `test`                       | `pnpm test` — the full Vitest suite (after building the canvas bundle)            | Always               |
-| `test-gateway-preauth`       | Scoped gateway pre-auth hardening suite (#2644)                                   | Always               |
+| `test-gateway`               | Full gateway behavioral suite — `src/gateway/**/*.test.ts` (#2720)                | Always               |
 | `test-ui-smoke`              | Browser-mode smoke for the Control UI sync-regression suites (#2495/#2496, #2519) | Always               |
 | `CI`                         | Required aggregate — fails if any job above did not succeed                       | Always               |
 | `publish-next`               | Publish a `next`-tagged prerelease to npm (OIDC provenance)                       | Push to `main`       |

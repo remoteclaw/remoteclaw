@@ -613,7 +613,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
   // SKIPPED — tracks a dropped authorization control on the KEPT OpenAI-compat endpoint.
   // Upstream derives senderIsOwner from request auth (resolveOpenAiCompatibleHttpSenderIsOwner,
-  // openclaw src/gateway/http-utils.ts:177-189): shared-secret bearer -> owner, otherwise
+  // upstream's src/gateway/http-utils.ts:177-189): shared-secret bearer -> owner, otherwise
   // resolveHttpSenderIsOwner keyed on ADMIN_SCOPE. The fork hardcodes senderIsOwner: true
   // (src/gateway/openai-http.ts:124), so an unauthenticated caller against an auth:"none"
   // gateway (a config-reachable posture, src/gateway/auth-resolve.ts:79-81) receives

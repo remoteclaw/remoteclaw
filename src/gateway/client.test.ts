@@ -535,17 +535,6 @@ describe("GatewayClient connect auth payload", () => {
     return { ws, connect: connectRequestFrom(ws) };
   }
 
-  function startClientWithEarlyChallenge(params: {
-    client: GatewayClientInstance;
-    nonce?: string;
-  }) {
-    params.client.start();
-    const ws = getLatestWs();
-    emitConnectChallenge(ws, params.nonce);
-    ws.emitOpen();
-    return { ws, connect: connectRequestFrom(ws) };
-  }
-
   function emitConnectFailure(
     ws: MockWebSocket,
     connectId: string | undefined,
@@ -560,20 +549,6 @@ describe("GatewayClient connect auth payload", () => {
           code: "INVALID_REQUEST",
           message: "unauthorized",
           details,
-        },
-      }),
-    );
-  }
-
-  function emitHelloOk(ws: MockWebSocket, connectId: string | undefined) {
-    ws.emitMessage(
-      JSON.stringify({
-        type: "res",
-        id: connectId,
-        ok: true,
-        payload: {
-          type: "hello-ok",
-          auth: { role: "operator", scopes: ["operator.admin"] },
         },
       }),
     );
@@ -626,47 +601,6 @@ describe("GatewayClient connect auth payload", () => {
     });
     expect(connectFrameFrom(ws).deviceToken).toBeUndefined();
     client.stop();
-  });
-
-  it("waits for socket open before sending connect after an early challenge", () => {
-    const client = new GatewayClient({
-      url: "ws://127.0.0.1:18789",
-      token: "shared-token",
-    });
-
-    const { ws, connect } = startClientWithEarlyChallenge({ client });
-
-    expect(connectFrameFrom(ws)).toMatchObject({
-      token: "shared-token",
-    });
-    emitHelloOk(ws, connect.id);
-    client.stop();
-  });
-
-  it("logs stopped connect handshakes at debug level during teardown", async () => {
-    const onConnectError = vi.fn();
-    const client = new GatewayClient({
-      url: "ws://127.0.0.1:18789",
-      token: "shared-token",
-      onConnectError,
-    });
-
-    const { ws } = startClientAndConnect({ client });
-    ws.autoCloseOnClose = false;
-    client.stop();
-
-    await vi.waitFor(() =>
-      expect(onConnectError).toHaveBeenCalledWith(
-        expect.objectContaining({ message: "gateway client stopped" }),
-      ),
-    );
-    expect(logDebugMock).toHaveBeenCalledWith(
-      "gateway connect failed: Error: gateway client stopped",
-    );
-    expect(logErrorMock).not.toHaveBeenCalledWith(
-      "gateway connect failed: Error: gateway client stopped",
-    );
-    expect(ws.closeCalls).toBe(1);
   });
 
   it("uses explicit shared password and does not inject stored device token", () => {

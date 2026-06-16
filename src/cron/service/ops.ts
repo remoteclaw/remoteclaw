@@ -1,5 +1,6 @@
 import { enqueueCommandInLane } from "../../process/command-queue.js";
 import { CommandLane } from "../../process/lanes.js";
+import { assertSafeCronSessionTargetId } from "../session-target.js";
 import type { CronJob, CronJobCreate, CronJobPatch } from "../types.js";
 import { normalizeCronCreateDeliveryInput } from "./initial-delivery.js";
 import {
@@ -392,6 +393,18 @@ async function inspectManualRunPreflight(
     // persist does not block manual triggers for up to STUCK_RUN_MS (#17554).
     recomputeNextRunsForMaintenance(state);
     const job = findJobOrThrow(state, id);
+    // Fail closed before any run is enqueued: a persisted/hand-edited job whose
+    // unsafe `session:<id>` sessionTarget survived store hydration (the loader
+    // falls back to the raw job on an invalid sessionTarget) must not execute.
+    // assertSafeCronSessionTargetId throws InvalidCronSessionTargetIdError,
+    // which the gateway cron.run handler maps to { ok: true, ran: false,
+    // reason: "invalid-spec" } so cronIsolatedRun is never invoked. Scope this
+    // to the session-id check only: other spec mismatches (e.g. a main job with
+    // an agentTurn payload) are handled as graceful skips in executeJobCore and
+    // must not throw out of the run path here.
+    if (job.sessionTarget.startsWith("session:")) {
+      assertSafeCronSessionTargetId(job.sessionTarget.slice(8));
+    }
     if (typeof job.state.runningAtMs === "number") {
       return { ok: true, ran: false, reason: "already-running" as const };
     }

@@ -631,7 +631,7 @@ describe("CronService", () => {
         wakeMode: "next-heartbeat",
         payload: { kind: "systemEvent", text: "nope" },
       }),
-    ).rejects.toThrow(/isolated cron jobs require/);
+    ).rejects.toThrow(/isolated\/current\/session cron jobs require/);
 
     await stopCronAndCleanup(cron, store);
   });

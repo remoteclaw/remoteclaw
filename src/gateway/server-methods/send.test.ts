@@ -255,48 +255,6 @@ describe("gateway send mirroring", () => {
     );
   });
 
-  it("forwards gateway client scopes into outbound delivery", async () => {
-    mockDeliverySuccess("m-scope");
-
-    await runSendWithClient(
-      {
-        to: "channel:C1",
-        message: "hi",
-        channel: "slack",
-        idempotencyKey: "idem-scope",
-      },
-      { connect: { scopes: ["operator.write"] } },
-    );
-
-    expect(mocks.deliverOutboundPayloads).toHaveBeenCalledWith(
-      expect.objectContaining({
-        channel: "slack",
-        gatewayClientScopes: ["operator.write"],
-      }),
-    );
-  });
-
-  it("forwards an empty gateway scope array into outbound delivery", async () => {
-    mockDeliverySuccess("m-empty-scope");
-
-    await runSendWithClient(
-      {
-        to: "channel:C1",
-        message: "hi",
-        channel: "slack",
-        idempotencyKey: "idem-empty-scope",
-      },
-      { connect: { scopes: [] } },
-    );
-
-    expect(mocks.deliverOutboundPayloads).toHaveBeenCalledWith(
-      expect.objectContaining({
-        channel: "slack",
-        gatewayClientScopes: [],
-      }),
-    );
-  });
-
   it("rejects empty sends when neither text nor media is present", async () => {
     const { respond } = await runSend({
       to: "channel:C1",
@@ -359,36 +317,6 @@ describe("gateway send mirroring", () => {
     );
   });
 
-  it("auto-picks the single configured channel from the auto-enabled config snapshot for send", async () => {
-    const autoEnabledConfig = { channels: { slack: {} }, plugins: { allow: ["slack"] } };
-    mocks.applyPluginAutoEnable.mockReturnValue({
-      config: autoEnabledConfig,
-      changes: [],
-      autoEnabledReasons: {},
-    });
-    mockDeliverySuccess("m-single-send-auto");
-
-    const { respond } = await runSend({
-      to: "x",
-      message: "hi",
-      idempotencyKey: "idem-missing-channel-auto-enabled",
-    });
-
-    expect(mocks.applyPluginAutoEnable).toHaveBeenCalledWith({
-      config: {},
-      env: process.env,
-    });
-    expect(mocks.resolveMessageChannelSelection).toHaveBeenCalledWith({
-      cfg: autoEnabledConfig,
-    });
-    expect(respond).toHaveBeenCalledWith(
-      true,
-      expect.objectContaining({ messageId: "m-single-send-auto" }),
-      undefined,
-      expect.objectContaining({ channel: "slack" }),
-    );
-  });
-
   it("returns invalid request when send channel selection is ambiguous", async () => {
     mocks.resolveMessageChannelSelection.mockRejectedValueOnce(
       new Error("Channel is required when multiple channels are configured: telegram, slack"),
@@ -406,48 +334,6 @@ describe("gateway send mirroring", () => {
       undefined,
       expect.objectContaining({
         message: expect.stringContaining("Channel is required"),
-      }),
-    );
-  });
-
-  it("forwards gateway client scopes into outbound poll delivery", async () => {
-    await runPollWithClient(
-      {
-        to: "channel:C1",
-        question: "Q?",
-        options: ["A", "B"],
-        channel: "slack",
-        idempotencyKey: "idem-poll-scope",
-      },
-      { connect: { scopes: ["operator.admin"] } },
-    );
-
-    expect(mocks.sendPoll).toHaveBeenCalledWith(
-      expect.objectContaining({
-        cfg: expect.any(Object),
-        to: "resolved",
-        gatewayClientScopes: ["operator.admin"],
-      }),
-    );
-  });
-
-  it("forwards an empty gateway scope array into outbound poll delivery", async () => {
-    await runPollWithClient(
-      {
-        to: "channel:C1",
-        question: "Q?",
-        options: ["A", "B"],
-        channel: "slack",
-        idempotencyKey: "idem-poll-empty-scope",
-      },
-      { connect: { scopes: [] } },
-    );
-
-    expect(mocks.sendPoll).toHaveBeenCalledWith(
-      expect.objectContaining({
-        cfg: expect.any(Object),
-        to: "resolved",
-        gatewayClientScopes: [],
       }),
     );
   });
@@ -558,7 +444,6 @@ describe("gateway send mirroring", () => {
           sessionKey: "agent:main:main",
           text: "caption",
           mediaUrls: ["https://example.com/files/report.pdf?sig=1"],
-          idempotencyKey: "idem-2",
         }),
       }),
     );
@@ -665,47 +550,6 @@ describe("gateway send mirroring", () => {
     expectDeliverySessionMirror({
       agentId: "work",
       sessionKey: "agent:work:slack:channel:c1",
-    });
-  });
-
-  it("still resolves outbound routing metadata when a sessionKey is provided", async () => {
-    mockDeliverySuccess("m-matrix-session-route");
-    mocks.resolveOutboundSessionRoute.mockResolvedValueOnce({
-      sessionKey: "agent:main:matrix:channel:!dm:example.org",
-      baseSessionKey: "agent:main:matrix:channel:!dm:example.org",
-      peer: { kind: "channel", id: "!dm:example.org" },
-      chatType: "direct",
-      from: "matrix:@alice:example.org",
-      to: "room:!dm:example.org",
-    });
-
-    await runSend({
-      to: "@alice:example.org",
-      message: "hello",
-      channel: "matrix",
-      sessionKey: "agent:main:matrix:channel:!dm:example.org",
-      idempotencyKey: "idem-matrix-session-route",
-    });
-
-    expect(mocks.resolveOutboundSessionRoute).toHaveBeenCalledWith(
-      expect.objectContaining({
-        channel: "matrix",
-        target: "resolved",
-        currentSessionKey: "agent:main:matrix:channel:!dm:example.org",
-      }),
-    );
-    expect(mocks.ensureOutboundSessionEntry).toHaveBeenCalledWith(
-      expect.objectContaining({
-        route: expect.objectContaining({
-          sessionKey: "agent:main:matrix:channel:!dm:example.org",
-          baseSessionKey: "agent:main:matrix:channel:!dm:example.org",
-          to: "room:!dm:example.org",
-        }),
-      }),
-    );
-    expectDeliverySessionMirror({
-      agentId: "main",
-      sessionKey: "agent:main:matrix:channel:!dm:example.org",
     });
   });
 

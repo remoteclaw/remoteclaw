@@ -72,15 +72,13 @@ describe("gateway startup agent validation — regression for #2308", () => {
     expect(message).toContain("agents.list");
   });
 
-  test("throws 'No agents configured' when agents.list is absent", async () => {
-    testState.agentConfig = { workspace: undefined };
-    testState.agentsConfig = undefined;
-    const { thrown } = await expectStartupFailure(await getFreePort());
-    expect(thrown).toBeInstanceOf(Error);
-    const message = String((thrown as Error).message);
-    expect(message).toContain("No agents configured");
-    expect(message).toContain("agents.list");
-  });
+  // NOTE: the "agents.list is absent" scenario is unreachable in the gateway
+  // test harness — when `testState.agentsConfig` is undefined, the harness
+  // (test-helpers.mocks.ts, #2672) injects a default `main` agent so
+  // session-key resolution works, so startup legitimately succeeds. The
+  // "agents.list is empty" case above (explicit `{ list: [] }`, which the
+  // harness does NOT override) provides the real coverage of the
+  // `resolveFirstAgentWorkspace` startup guard.
 
   test("throws 'No agents configured' when the sole agent has a whitespace-only workspace", async () => {
     // resolveFirstAgentWorkspace trims before evaluating; a non-empty-string

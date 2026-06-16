@@ -8,7 +8,11 @@ const mocks = vi.hoisted(() => ({
   updateSessionStore: vi.fn(),
   agentCommand: vi.fn(),
   registerAgentRunContext: vi.fn(),
-  performGatewaySessionReset: vi.fn(),
+  // The fork performs an agent-initiated reset by dispatching the in-process
+  // sessions.reset handler (sessionsHandlers["sessions.reset"]) — NOT upstream's
+  // performGatewaySessionReset service (which the fork consolidated away). The mock
+  // captures the handler's { params, respond } so tests can assert the dispatch.
+  sessionsReset: vi.fn(),
   loadConfigReturn: {} as Record<string, unknown>,
 }));
 
@@ -62,10 +66,17 @@ vi.mock("../../infra/agent-events.js", () => ({
   onAgentEvent: vi.fn(),
 }));
 
-vi.mock("../session-reset-service.js", () => ({
-  performGatewaySessionReset: (...args: unknown[]) =>
-    (mocks.performGatewaySessionReset as (...args: unknown[]) => unknown)(...args),
-}));
+vi.mock("./sessions.js", async () => {
+  const actual = await vi.importActual<typeof import("./sessions.js")>("./sessions.js");
+  return {
+    ...actual,
+    sessionsHandlers: {
+      ...actual.sessionsHandlers,
+      "sessions.reset": (...args: unknown[]) =>
+        (mocks.sessionsReset as (...args: unknown[]) => unknown)(...args),
+    },
+  };
+});
 
 vi.mock("../../sessions/send-policy.js", () => ({
   resolveSendPolicy: () => "allow",
@@ -156,7 +167,7 @@ function resetTimeConfig() {
 
 async function expectResetCall(expectedMessage: string) {
   await vi.waitFor(() => expect(mocks.agentCommand).toHaveBeenCalled());
-  expect(mocks.performGatewaySessionReset).toHaveBeenCalledTimes(1);
+  expect(mocks.sessionsReset).toHaveBeenCalledTimes(1);
   const call = readLastAgentCommandCall();
   expect(call?.message).toBe(expectedMessage);
   return call;
@@ -206,16 +217,14 @@ function mockSessionResetSuccess(params: {
 }) {
   const key = params.key ?? "agent:main:main";
   const sessionId = params.sessionId ?? "reset-session-id";
-  mocks.performGatewaySessionReset.mockImplementation(
-    async (opts: { key: string; reason: string; commandSource: string }) => {
-      expect(opts.key).toBe(key);
-      expect(opts.reason).toBe(params.reason);
-      expect(opts.commandSource).toBe("gateway:agent");
-      return {
-        ok: true,
-        key,
-        entry: { sessionId },
-      };
+  mocks.sessionsReset.mockImplementation(
+    async (opts: {
+      params: { key: string; reason: string };
+      respond: (ok: boolean, payload?: unknown, error?: unknown) => void;
+    }) => {
+      expect(opts.params.key).toBe(key);
+      expect(opts.params.reason).toBe(params.reason);
+      opts.respond(true, { key, entry: { sessionId } });
     },
   );
 }
@@ -582,7 +591,7 @@ describe("gateway agent handler", () => {
     );
 
     await vi.waitFor(() => expect(mocks.agentCommand).toHaveBeenCalled());
-    expect(mocks.performGatewaySessionReset).toHaveBeenCalledTimes(1);
+    expect(mocks.sessionsReset).toHaveBeenCalledTimes(1);
     const call = readLastAgentCommandCall();
     // Message is now dynamically built with current date — check key substrings
     expect(call?.message).toContain("Run your Session Startup sequence");
@@ -594,7 +603,7 @@ describe("gateway agent handler", () => {
   it("uses /reset suffix as the post-reset message and still injects timestamp", async () => {
     setupNewYorkTimeConfig("2026-01-29T01:30:00.000Z");
     mockSessionResetSuccess({ reason: "reset" });
-    mocks.performGatewaySessionReset.mockClear();
+    mocks.sessionsReset.mockClear();
     primeMainAgentRun({
       sessionId: "reset-session-id",
       cfg: mocks.loadConfigReturn,
@@ -641,7 +650,7 @@ describe("gateway agent handler", () => {
 
   it("rejects /reset for write-scoped gateway callers", async () => {
     mockMainSessionEntry({ sessionId: "existing-session-id" });
-    mocks.performGatewaySessionReset.mockClear();
+    mocks.sessionsReset.mockClear();
     mocks.agentCommand.mockClear();
 
     const respond = await invokeAgent(
@@ -656,7 +665,7 @@ describe("gateway agent handler", () => {
       },
     );
 
-    expect(mocks.performGatewaySessionReset).not.toHaveBeenCalled();
+    expect(mocks.sessionsReset).not.toHaveBeenCalled();
     expect(mocks.agentCommand).not.toHaveBeenCalled();
     expect(respond).toHaveBeenCalledWith(
       false,

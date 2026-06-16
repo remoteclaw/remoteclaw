@@ -59,6 +59,17 @@ const TalkConfigSchema = Type.Object(
     resolved: ResolvedTalkConfigSchema,
     interruptOnSpeech: Type.Optional(Type.Boolean()),
     silenceTimeoutMs: Type.Optional(Type.Integer({ minimum: 1 })),
+    // Legacy top-level compatibility fields emitted by buildTalkConfigResponse
+    // (src/config/talk.ts) via the legacy-compat spread. These mirror the
+    // resolved provider config for older clients that read voiceId/apiKey/etc.
+    // at the talk root. Fork divergence from upstream (whose builder does not
+    // emit these at top level); keep additionalProperties:false so the surface
+    // stays explicit. See ADR-0011 divergence record.
+    voiceId: Type.Optional(Type.String()),
+    voiceAliases: Type.Optional(Type.Record(Type.String(), Type.String())),
+    modelId: Type.Optional(Type.String()),
+    outputFormat: Type.Optional(Type.String()),
+    apiKey: Type.Optional(SecretInputSchema),
   },
   { additionalProperties: false },
 );

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { CreateResponseBodySchema, OutputItemSchema } from "./open-responses.schema.js";
-import { buildAgentPrompt } from "./openresponses-prompt.js";
 import { createAssistantOutputItem } from "./openresponses-shape.js";
 
 describe("openresponses phase support", () => {
@@ -82,22 +81,9 @@ describe("openresponses phase support", () => {
     });
   });
 
-  it("builds prompts from phased assistant history without dropping text", () => {
-    const prompt = buildAgentPrompt([
-      {
-        type: "message",
-        role: "assistant",
-        phase: "commentary",
-        content: "Checking logs before I answer.",
-      },
-      {
-        type: "message",
-        role: "user",
-        content: "What did you find?",
-      },
-    ]);
-
-    expect(prompt.message).toContain("Checking logs before I answer.");
-    expect(prompt.message).toContain("What did you find?");
-  });
+  // NOTE: the "builds prompts from phased assistant history" test was removed —
+  // buildAgentPrompt (OpenResponses prompt construction) is gutted in the fork
+  // (src/gateway/openresponses-prompt.ts returns an empty prompt under the
+  // Middleware Boundary Principle). The kept phase-metadata schema coverage above
+  // (accept assistant phase / reject user phase / output-item phase shaping) remains.
 });

@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { RemoteClawConfig } from "../config/config.js";
 import type { SessionScope } from "../config/sessions/types.js";
 
 const agentCommand = vi.fn();
@@ -23,11 +24,19 @@ describe("runBootOnce", () => {
     bootContent?: string;
   };
 
+  // Schema migration #1581 removed agents.list[].default and made
+  // resolveMainSessionKey hard-fail on an empty agents.list. Production always
+  // has at least one agent; mirror that with a minimal default agent so these
+  // tests exercise the real resolution path instead of the empty-list throw.
+  // (cfg is passed directly to runBootOnce, bypassing loadConfig's schema
+  // validation, so only the agent id is required here.)
+  const MAIN_CFG = { agents: { list: [{ id: "main" }] } } as RemoteClawConfig;
+
   const resolveMainStore = (
     cfg: {
       session?: { store?: string; scope?: SessionScope; mainKey?: string };
-      agents?: { list?: Array<{ id?: string; default?: boolean }> };
-    } = {},
+      agents?: { list?: Array<{ id?: string }> };
+    } = MAIN_CFG,
   ) => {
     const sessionKey = resolveMainSessionKey(cfg);
     const agentId = resolveAgentIdFromSessionKey(sessionKey);
@@ -94,17 +103,19 @@ describe("runBootOnce", () => {
 
   it("skips when BOOT.md is missing", async () => {
     await withBootWorkspace({}, async (workspaceDir) => {
-      await expect(runBootOnce({ cfg: {}, deps: makeDeps(), workspaceDir })).resolves.toEqual({
-        status: "skipped",
-        reason: "missing",
-      });
+      await expect(runBootOnce({ cfg: MAIN_CFG, deps: makeDeps(), workspaceDir })).resolves.toEqual(
+        {
+          status: "skipped",
+          reason: "missing",
+        },
+      );
       expect(agentCommand).not.toHaveBeenCalled();
     });
   });
 
   it("returns failed when BOOT.md cannot be read", async () => {
     await withBootWorkspace({ bootAsDirectory: true }, async (workspaceDir) => {
-      const result = await runBootOnce({ cfg: {}, deps: makeDeps(), workspaceDir });
+      const result = await runBootOnce({ cfg: MAIN_CFG, deps: makeDeps(), workspaceDir });
       expect(result.status).toBe("failed");
       if (result.status === "failed") {
         expect(result.reason.length).toBeGreaterThan(0);
@@ -118,10 +129,12 @@ describe("runBootOnce", () => {
     { title: "whitespace-only", content: "\n\t ", reason: "empty" as const },
   ])("skips when BOOT.md is $title", async ({ content, reason }) => {
     await withBootWorkspace({ bootContent: content }, async (workspaceDir) => {
-      await expect(runBootOnce({ cfg: {}, deps: makeDeps(), workspaceDir })).resolves.toEqual({
-        status: "skipped",
-        reason,
-      });
+      await expect(runBootOnce({ cfg: MAIN_CFG, deps: makeDeps(), workspaceDir })).resolves.toEqual(
+        {
+          status: "skipped",
+          reason,
+        },
+      );
       expect(agentCommand).not.toHaveBeenCalled();
     });
   });
@@ -130,16 +143,18 @@ describe("runBootOnce", () => {
     const content = "Say hello when you wake up.";
     await withBootWorkspace({ bootContent: content }, async (workspaceDir) => {
       agentCommand.mockResolvedValue(undefined);
-      await expect(runBootOnce({ cfg: {}, deps: makeDeps(), workspaceDir })).resolves.toEqual({
-        status: "ran",
-      });
+      await expect(runBootOnce({ cfg: MAIN_CFG, deps: makeDeps(), workspaceDir })).resolves.toEqual(
+        {
+          status: "ran",
+        },
+      );
 
       expect(agentCommand).toHaveBeenCalledTimes(1);
       const call = agentCommand.mock.calls[0]?.[0];
       expect(call).toEqual(
         expect.objectContaining({
           deliver: false,
-          sessionKey: resolveMainSessionKey({}),
+          sessionKey: resolveMainSessionKey(MAIN_CFG),
         }),
       );
       expect(call?.message).toContain("BOOT.md:");
@@ -151,10 +166,12 @@ describe("runBootOnce", () => {
   it("returns failed when agent command throws", async () => {
     await withBootWorkspace({ bootContent: "Wake up and report." }, async (workspaceDir) => {
       agentCommand.mockRejectedValue(new Error("boom"));
-      await expect(runBootOnce({ cfg: {}, deps: makeDeps(), workspaceDir })).resolves.toEqual({
-        status: "failed",
-        reason: expect.stringContaining("agent run failed: boom"),
-      });
+      await expect(runBootOnce({ cfg: MAIN_CFG, deps: makeDeps(), workspaceDir })).resolves.toEqual(
+        {
+          status: "failed",
+          reason: expect.stringContaining("agent run failed: boom"),
+        },
+      );
       expect(agentCommand).toHaveBeenCalledTimes(1);
     });
   });
@@ -162,7 +179,7 @@ describe("runBootOnce", () => {
   it("uses per-agent session key when agentId is provided", async () => {
     await withBootWorkspace({ bootContent: "Check status." }, async (workspaceDir) => {
       agentCommand.mockResolvedValue(undefined);
-      const cfg = {};
+      const cfg = MAIN_CFG;
       const agentId = "ops";
       await expect(runBootOnce({ cfg, deps: makeDeps(), workspaceDir, agentId })).resolves.toEqual({
         status: "ran",
@@ -178,7 +195,7 @@ describe("runBootOnce", () => {
     const content = "Say hello when you wake up.";
     await withBootWorkspace({ bootContent: content }, async (workspaceDir) => {
       agentCommand.mockResolvedValue(undefined);
-      const cfg = {};
+      const cfg = MAIN_CFG;
       await expect(runBootOnce({ cfg, deps: makeDeps(), workspaceDir })).resolves.toEqual({
         status: "ran",
       });
@@ -196,7 +213,7 @@ describe("runBootOnce", () => {
   it("uses a fresh boot session ID even when main session mapping already exists", async () => {
     const content = "Say hello when you wake up.";
     await withBootWorkspace({ bootContent: content }, async (workspaceDir) => {
-      const cfg = {};
+      const cfg = MAIN_CFG;
       const { sessionKey, storePath } = resolveMainStore(cfg);
       const existingSessionId = "main-session-abc123";
 
@@ -226,7 +243,7 @@ describe("runBootOnce", () => {
   it("restores the original main session mapping after the boot run", async () => {
     const content = "Check if the system is healthy.";
     await withBootWorkspace({ bootContent: content }, async (workspaceDir) => {
-      const cfg = {};
+      const cfg = MAIN_CFG;
       const { sessionKey, storePath } = resolveMainStore(cfg);
       const existingSessionId = "main-session-xyz789";
 
@@ -248,7 +265,7 @@ describe("runBootOnce", () => {
 
   it("removes a boot-created main-session mapping when none existed before", async () => {
     await withBootWorkspace({ bootContent: "health check" }, async (workspaceDir) => {
-      const cfg = {};
+      const cfg = MAIN_CFG;
       const { sessionKey, storePath } = resolveMainStore(cfg);
 
       mockAgentUpdatesMainSession(storePath, sessionKey);

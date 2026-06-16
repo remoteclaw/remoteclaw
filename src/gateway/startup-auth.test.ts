@@ -2,15 +2,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import { expectGeneratedTokenPersistedToGatewayAuth } from "../test-utils/auth-token-assertions.js";
 
+// The fork persists a generated startup token via `writeConfigFile(cfg)`
+// (positional config arg) — it has no `replaceConfigFile`/`config/mutate.ts`
+// (that is an upstream-only API). Mock the fork's real persist function.
 const mocks = vi.hoisted(() => ({
-  replaceConfigFile: vi.fn(async (_params: { nextConfig: RemoteClawConfig }) => {}),
+  writeConfigFile: vi.fn(async (_cfg: RemoteClawConfig) => {}),
 }));
 
 vi.mock("../config/config.js", async () => {
   const actual = await vi.importActual<typeof import("../config/config.js")>("../config/config.js");
   return {
     ...actual,
-    replaceConfigFile: mocks.replaceConfigFile,
+    writeConfigFile: mocks.writeConfigFile,
   };
 });
 
@@ -36,12 +39,12 @@ describe("ensureGatewayStartupAuth", () => {
     expect(result.persistedGeneratedToken).toBe(false);
     expect(result.auth.mode).toBe("token");
     expect(result.auth.token).toBe(result.generatedToken);
-    expect(mocks.replaceConfigFile).not.toHaveBeenCalled();
+    expect(mocks.writeConfigFile).not.toHaveBeenCalled();
   }
 
   beforeEach(async () => {
     vi.restoreAllMocks();
-    mocks.replaceConfigFile.mockClear();
+    mocks.writeConfigFile.mockClear();
     await loadFreshStartupAuthModuleForTest();
   });
 
@@ -55,7 +58,7 @@ describe("ensureGatewayStartupAuth", () => {
     expect(result.generatedToken).toBeUndefined();
     expect(result.persistedGeneratedToken).toBe(false);
     expect(result.auth.mode).toBe(mode);
-    expect(mocks.replaceConfigFile).not.toHaveBeenCalled();
+    expect(mocks.writeConfigFile).not.toHaveBeenCalled();
   }
 
   async function expectResolvedToken(params: {
@@ -77,7 +80,7 @@ describe("ensureGatewayStartupAuth", () => {
     if ("expectedConfiguredToken" in params) {
       expect(result.cfg.gateway?.auth?.token).toEqual(params.expectedConfiguredToken);
     }
-    expect(mocks.replaceConfigFile).not.toHaveBeenCalled();
+    expect(mocks.writeConfigFile).not.toHaveBeenCalled();
   }
 
   function createMissingGatewayTokenSecretRefConfig(): RemoteClawConfig {
@@ -106,14 +109,15 @@ describe("ensureGatewayStartupAuth", () => {
     expect(result.generatedToken).toMatch(/^[0-9a-f]{48}$/);
     expect(result.persistedGeneratedToken).toBe(true);
     expect(result.auth.mode).toBe("token");
-    expect(mocks.replaceConfigFile).toHaveBeenCalledTimes(1);
-    const persistedParams = mocks.replaceConfigFile.mock.calls[0]?.[0] as
-      | { nextConfig: RemoteClawConfig }
+    expect(mocks.writeConfigFile).toHaveBeenCalledTimes(1);
+    // writeConfigFile takes the next config as its first positional argument.
+    const persistedConfig = mocks.writeConfigFile.mock.calls[0]?.[0] as
+      | RemoteClawConfig
       | undefined;
     expectGeneratedTokenPersistedToGatewayAuth({
       generatedToken: result.generatedToken,
       authToken: result.auth.token,
-      persistedConfig: persistedParams?.nextConfig,
+      persistedConfig,
     });
   });
 
@@ -239,7 +243,7 @@ describe("ensureGatewayStartupAuth", () => {
         persist: true,
       }),
     ).rejects.toThrow(/MISSING_GW_TOKEN/i);
-    expect(mocks.replaceConfigFile).not.toHaveBeenCalled();
+    expect(mocks.writeConfigFile).not.toHaveBeenCalled();
   });
 
   it("requires explicit gateway.auth.mode when token and password are both configured", async () => {
@@ -257,7 +261,7 @@ describe("ensureGatewayStartupAuth", () => {
         persist: true,
       }),
     ).rejects.toThrow(/gateway\.auth\.mode is unset/i);
-    expect(mocks.replaceConfigFile).not.toHaveBeenCalled();
+    expect(mocks.writeConfigFile).not.toHaveBeenCalled();
   });
 
   it("uses REMOTECLAW_GATEWAY_PASSWORD without resolving configured password SecretRef", async () => {
@@ -360,7 +364,7 @@ describe("ensureGatewayStartupAuth", () => {
     expect(result.persistedGeneratedToken).toBe(false);
     expect(result.auth.mode).toBe("token");
     expect(result.auth.token).toBe("from-config");
-    expect(mocks.replaceConfigFile).not.toHaveBeenCalled();
+    expect(mocks.writeConfigFile).not.toHaveBeenCalled();
   });
 
   it("keeps generated token ephemeral when runtime override flips explicit non-token mode", async () => {

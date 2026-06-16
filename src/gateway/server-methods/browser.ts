@@ -3,6 +3,7 @@ import {
   createBrowserControlContext,
   startBrowserControlServiceFromConfig,
 } from "../../browser/control-service.js";
+import { isPersistentBrowserProfileMutation } from "../../browser/request-policy.js";
 import { createBrowserRouteDispatcher } from "../../browser/routes/dispatcher.js";
 import { loadConfig } from "../../config/config.js";
 import { isNodeCommandAllowed, resolveNodeCommandAllowlist } from "../node-command-policy.js";
@@ -164,6 +165,17 @@ export const browserHandlers: GatewayRequestHandlers = {
         false,
         undefined,
         errorShape(ErrorCodes.INVALID_REQUEST, "method must be GET, POST, or DELETE"),
+      );
+      return;
+    }
+    if (isPersistentBrowserProfileMutation(methodRaw, path)) {
+      respond(
+        false,
+        undefined,
+        errorShape(
+          ErrorCodes.INVALID_REQUEST,
+          "browser.request cannot create or delete persistent browser profiles",
+        ),
       );
       return;
     }

@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { resolveRemoteClawAgentDir } from "../agents/agent-paths.js";
 import { AUTH_PROFILE_FILENAME } from "../agents/auth-profiles/constants.js";
@@ -15,8 +16,6 @@ import {
 } from "./test-helpers.js";
 
 installGatewayTestHooks({ scope: "suite" });
-
-const CONFIG_SECRETREF_RPC_TIMEOUT_MS = 20_000;
 
 let startedServer: Awaited<ReturnType<typeof startServerWithClient>> | null = null;
 let sharedTempRoot: string;
@@ -99,37 +98,43 @@ beforeEach(() => {
 });
 
 describe("gateway config methods", () => {
-  it("rejects config.set when SecretRef resolution fails", async () => {
-    const missingEnvVar = `REMOTECLAW_MISSING_SECRETREF_${Date.now()}`;
-    delete process.env[missingEnvVar];
-    const current = await rpcReq<{
-      hash?: string;
-      config?: Record<string, unknown>;
-    }>(requireWs(), "config.get", {});
-    expect(current.ok).toBe(true);
-    expect(typeof current.payload?.hash).toBe("string");
-    expect(current.payload?.config).toBeTruthy();
+  // Fork divergence tripwire (replaces three deleted SecretRef-resolution tests on
+  // config.set / config.patch / config.apply): the Pi-era secrets subsystem is gutted,
+  // so the write-time "active SecretRef resolution failed" pre-validation path no longer
+  // exists. Security is NOT weakened — the gateway fails CLOSED at runtime via
+  // assertGatewayAuthConfigured: a token-mode auth whose env-sourced token cannot resolve
+  // leaves auth.token empty, and the guard throws (gateway refuses to serve). This tripwire
+  // asserts (a) the fail-closed runtime guard is intact and (b) the gutted write-time
+  // resolution error string has not been reintroduced. See follow-up hardening issue (LOW):
+  // restore write-time SecretRef pre-validation rejection if the secrets subsystem returns.
+  it("fails closed when token auth has no resolvable token (gutted SecretRef pre-validation tripwire)", async () => {
+    const { assertGatewayAuthConfigured } = await import("./auth.js");
 
-    const nextConfig = structuredClone(current.payload?.config ?? {});
-    const gateway = (nextConfig.gateway ??= {}) as Record<string, unknown>;
-    gateway.auth = {
-      mode: "token",
-      token: { source: "env", provider: "default", id: missingEnvVar },
-    };
+    expect(() =>
+      assertGatewayAuthConfigured(
+        { mode: "token", token: undefined, allowTailscale: false } as Parameters<
+          typeof assertGatewayAuthConfigured
+        >[0],
+        { mode: "token" } as Parameters<typeof assertGatewayAuthConfigured>[1],
+      ),
+    ).toThrow(/no token was configured/);
 
-    const res = await rpcReq<{ ok?: boolean; error?: { message?: string } }>(
-      requireWs(),
-      "config.set",
-      {
-        raw: JSON.stringify(nextConfig, null, 2),
-        baseHash: current.payload?.hash,
-      },
-      CONFIG_SECRETREF_RPC_TIMEOUT_MS,
+    // Tailscale fallback is the only sanctioned way a token-mode gateway may have no token.
+    expect(() =>
+      assertGatewayAuthConfigured(
+        { mode: "token", token: undefined, allowTailscale: true } as Parameters<
+          typeof assertGatewayAuthConfigured
+        >[0],
+        { mode: "token" } as Parameters<typeof assertGatewayAuthConfigured>[1],
+      ),
+    ).not.toThrow();
+
+    // The gutted write-time pre-validation error string must not creep back in.
+    const authSrc = await fs.readFile(
+      fileURLToPath(new URL("./auth.ts", import.meta.url)),
+      "utf-8",
     );
-    expect(res.ok).toBe(false);
-    expect(res.error?.message ?? "").toContain("active SecretRef resolution failed");
-    const afterHash = await getConfigHash();
-    expect(afterHash).toBe(current.payload?.hash);
+    expect(authSrc.includes("active SecretRef resolution failed")).toBe(false);
   });
 
   it("round-trips config.set and returns the live config path", async () => {
@@ -298,75 +303,9 @@ describe("gateway config methods", () => {
     expect(res.ok).toBe(false);
     expect(res.error?.message ?? "").toContain("raw must be an object");
   });
-
-  it("rejects config.patch when merged SecretRefs cannot resolve", async () => {
-    const missingEnvVar = `REMOTECLAW_MISSING_SECRETREF_PATCH_${Date.now()}`;
-    delete process.env[missingEnvVar];
-    const beforeHash = await getConfigHash();
-    const res = await rpcReq<{ ok?: boolean; error?: { message?: string } }>(
-      requireWs(),
-      "config.patch",
-      {
-        raw: JSON.stringify({
-          gateway: {
-            auth: {
-              mode: "token",
-              token: {
-                source: "env",
-                provider: "default",
-                id: missingEnvVar,
-              },
-            },
-          },
-        }),
-        baseHash: beforeHash,
-      },
-      CONFIG_SECRETREF_RPC_TIMEOUT_MS,
-    );
-    expect(res.ok).toBe(false);
-    expect(res.error?.message ?? "").toContain("active SecretRef resolution failed");
-    const afterHash = await getConfigHash();
-    expect(afterHash).toBe(beforeHash);
-  });
 });
 
 describe("gateway config.apply", () => {
-  it("rejects config.apply when SecretRef resolution fails", async () => {
-    const missingEnvVar = `REMOTECLAW_MISSING_SECRETREF_APPLY_${Date.now()}`;
-    delete process.env[missingEnvVar];
-    const current = await rpcReq<{
-      hash?: string;
-      raw?: string | null;
-      config?: Record<string, unknown>;
-    }>(requireWs(), "config.get", {});
-    expect(current.ok).toBe(true);
-    expect(typeof current.payload?.hash).toBe("string");
-    const nextConfig = structuredClone(current.payload?.config ?? {});
-    const gateway = (nextConfig.gateway ??= {}) as Record<string, unknown>;
-    gateway.auth = {
-      mode: "token",
-      token: { source: "env", provider: "default", id: missingEnvVar },
-    };
-
-    const res = await sendConfigApply(
-      {
-        raw: JSON.stringify(nextConfig, null, 2),
-        baseHash: current.payload?.hash,
-      },
-      CONFIG_SECRETREF_RPC_TIMEOUT_MS,
-    );
-    expect(res.ok).toBe(false);
-    expect(res.error?.message ?? "").toContain("active SecretRef resolution failed");
-
-    const after = await rpcReq<{
-      hash?: string;
-      raw?: string | null;
-    }>(requireWs(), "config.get", {});
-    expect(after.ok).toBe(true);
-    expect(after.payload?.hash).toBe(current.payload?.hash);
-    expect(after.payload?.raw).toBe(current.payload?.raw);
-  });
-
   it("does not reject config.apply for unresolved auth-profile refs outside submitted config", async () => {
     const missingEnvVar = `REMOTECLAW_MISSING_AUTH_PROFILE_REF_APPLY_${Date.now()}`;
     await writeUnresolvedAuthProfileTokenRef(missingEnvVar);
@@ -491,18 +430,22 @@ describe("gateway server sessions", () => {
     expect(resolved.ok).toBe(true);
     expect(resolved.payload?.key).toBe("agent:ops:work");
 
+    // Fork divergence: thinkingLevel is a gutted Pi-era field that
+    // applySessionsPatchToStore no longer persists. Probe with sendPolicy, a
+    // field the fork's sessions-patch handler still writes, so this test keeps
+    // verifying that the "main" alias resolves and patches to "agent:ops:work".
     const patched = await rpcReq<{ ok: true; key: string }>(requireWs(), "sessions.patch", {
       key: "main",
-      thinkingLevel: "medium",
+      sendPolicy: "deny",
     });
     expect(patched.ok).toBe(true);
     expect(patched.payload?.key).toBe("agent:ops:work");
 
     const stored = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<
       string,
-      { thinkingLevel?: string }
+      { sendPolicy?: string }
     >;
-    expect(stored["agent:ops:work"]?.thinkingLevel).toBe("medium");
+    expect(stored["agent:ops:work"]?.sendPolicy).toBe("deny");
     expect(stored.main).toBeUndefined();
   });
 });

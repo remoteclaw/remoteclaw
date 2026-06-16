@@ -68,6 +68,8 @@ type SelectedConnectAuth = {
   signatureToken?: string;
   resolvedDeviceToken?: string;
   storedToken?: string;
+  storedScopes?: string[];
+  usingStoredDeviceToken?: boolean;
 };
 
 export class GatewayClientRequestError extends Error {
@@ -410,6 +412,8 @@ export class GatewayClient {
       signatureToken,
       resolvedDeviceToken,
       storedToken,
+      storedScopes,
+      usingStoredDeviceToken,
     } = this.selectConnectAuth(role);
     if (this.pendingDeviceTokenRetry && authDeviceToken) {
       this.pendingDeviceTokenRetry = false;
@@ -424,7 +428,7 @@ export class GatewayClient {
           }
         : undefined;
     const signedAtMs = Date.now();
-    const scopes = this.opts.scopes ?? ["operator.admin"];
+    const scopes = this.resolveConnectScopes({ usingStoredDeviceToken, storedScopes });
     const platform = this.opts.platform ?? process.platform;
     const device = (() => {
       if (!this.opts.deviceIdentity) {
@@ -610,9 +614,11 @@ export class GatewayClient {
     const explicitBootstrapToken = normalizeOptionalString(this.opts.bootstrapToken);
     const explicitDeviceToken = normalizeOptionalString(this.opts.deviceToken);
     const authPassword = normalizeOptionalString(this.opts.password);
-    const storedToken = this.opts.deviceIdentity
-      ? loadDeviceAuthToken({ deviceId: this.opts.deviceIdentity.deviceId, role })?.token
+    const storedAuth = this.opts.deviceIdentity
+      ? loadDeviceAuthToken({ deviceId: this.opts.deviceIdentity.deviceId, role })
       : null;
+    const storedToken = storedAuth?.token ?? null;
+    const storedScopes = storedAuth?.scopes;
     const shouldUseDeviceRetryToken =
       this.pendingDeviceTokenRetry &&
       !explicitDeviceToken &&
@@ -625,6 +631,11 @@ export class GatewayClient {
       (!(explicitGatewayToken || authPassword) && (!explicitBootstrapToken || Boolean(storedToken)))
         ? (storedToken ?? undefined)
         : undefined);
+    const reusingStoredDeviceToken =
+      Boolean(resolvedDeviceToken) &&
+      !explicitDeviceToken &&
+      Boolean(storedToken) &&
+      resolvedDeviceToken === storedToken;
     // Legacy compatibility: keep `auth.token` populated for device-token auth when
     // no explicit shared token is present.
     const authToken = explicitGatewayToken ?? resolvedDeviceToken;
@@ -638,7 +649,25 @@ export class GatewayClient {
       signatureToken: authToken ?? authBootstrapToken ?? undefined,
       resolvedDeviceToken,
       storedToken: storedToken ?? undefined,
+      storedScopes,
+      usingStoredDeviceToken: reusingStoredDeviceToken,
     };
+  }
+
+  private resolveConnectScopes(params: {
+    usingStoredDeviceToken?: boolean;
+    storedScopes?: string[];
+  }): string[] {
+    // Reuse cached scopes only when the client is reusing the cached device token.
+    // Explicit device tokens should keep the caller-requested scope set.
+    if (
+      params.usingStoredDeviceToken &&
+      Array.isArray(params.storedScopes) &&
+      params.storedScopes.length > 0
+    ) {
+      return params.storedScopes;
+    }
+    return this.opts.scopes ?? ["operator.admin"];
   }
 
   private handleMessage(raw: string) {

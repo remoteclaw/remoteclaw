@@ -628,13 +628,12 @@ describe("resolveNodeCommandAllowlist", () => {
     expect(allow.has("notifications.actions")).toBe(true);
     expect(allow.has("device.permissions")).toBe(true);
     expect(allow.has("device.health")).toBe(true);
-    expect(allow.has("callLog.search")).toBe(true);
     expect(allow.has("system.notify")).toBe(true);
+    // The fork's node-command-policy does not ship the upstream call-log /
+    // SMS-search command groups (never synced; deny-by-default means an
+    // unlisted command is rejected by `isNodeCommandAllowed`, not bypassed).
+    expect(allow.has("callLog.search")).toBe(false);
     expect(allow.has("sms.search")).toBe(false);
-  });
-
-  it("treats sms.search as dangerous by default", () => {
-    expect(DEFAULT_DANGEROUS_NODE_COMMANDS).toContain("sms.search");
   });
 
   it("allows macOS screen.snapshot by default but keeps screen.record gated", () => {

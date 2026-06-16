@@ -55,7 +55,13 @@ describe("gateway e2e", () => {
       await fs.mkdir(wizardWorkspaceDir, { recursive: true });
       await fs.writeFile(
         path.join(wizardConfigDir, "remoteclaw.json"),
-        JSON.stringify({ agents: { defaults: { workspace: wizardWorkspaceDir } } }),
+        // Post-#1581 the config schema requires a non-empty agents.list.
+        JSON.stringify({
+          agents: {
+            defaults: { workspace: wizardWorkspaceDir },
+            list: [{ id: "main", workspace: wizardWorkspaceDir }],
+          },
+        }),
         "utf-8",
       );
 
@@ -70,7 +76,10 @@ describe("gateway e2e", () => {
           await prompter.note("write token");
           const token = await prompter.text({ message: "token" });
           await writeConfigFile({
-            agents: { defaults: { workspace: wizardWorkspaceDir } },
+            agents: {
+              defaults: { workspace: wizardWorkspaceDir },
+              list: [{ id: "main", workspace: wizardWorkspaceDir }],
+            },
             gateway: { auth: { mode: "token", token: String(token) } },
           });
           await prompter.outro("ok");

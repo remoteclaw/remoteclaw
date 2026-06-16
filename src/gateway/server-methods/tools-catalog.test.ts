@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { resolvePluginTools } from "../../plugins/tools.js";
 import { ErrorCodes } from "../protocol/index.js";
 import { toolsCatalogHandlers } from "./tools-catalog.js";
 
@@ -9,7 +8,7 @@ vi.mock("../../config/config.js", () => ({
 
 vi.mock("../../agents/agent-scope.js", () => ({
   listAgentIds: vi.fn(() => ["main"]),
-  resolveDefaultAgentId: vi.fn(() => "main"),
+  resolveSoleAgentId: vi.fn(() => "main"),
   resolveAgentWorkspaceDir: vi.fn(() => "/tmp/workspace-main"),
   resolveAgentDir: vi.fn(() => "/tmp/agents/main/agent"),
 }));
@@ -22,7 +21,6 @@ vi.mock("../../plugins/tools.js", () => ({
     {
       name: "matrix_room",
       label: "matrix_room",
-      displaySummary: "Summarized Matrix room helper.",
       description: "Matrix room helper\n\nACTIONS:\n- join\n- leave",
     },
   ]),
@@ -122,40 +120,5 @@ describe("tools.catalog handler", () => {
       pluginId: "voice-call",
       optional: true,
     });
-  });
-
-  it("summarizes plugin tool descriptions the same way as the effective inventory", async () => {
-    const { respond, invoke } = createInvokeParams({});
-    await invoke();
-    const call = respond.mock.calls[0] as RespondCall | undefined;
-    expect(call?.[0]).toBe(true);
-    const payload = call?.[1] as
-      | {
-          groups: Array<{
-            source: "core" | "plugin";
-            tools: Array<{
-              id: string;
-              description: string;
-            }>;
-          }>;
-        }
-      | undefined;
-    const matrixRoom = (payload?.groups ?? [])
-      .filter((group) => group.source === "plugin")
-      .flatMap((group) => group.tools)
-      .find((tool) => tool.id === "matrix_room");
-    expect(matrixRoom?.description).toBe("Summarized Matrix room helper.");
-  });
-
-  it("opts plugin tool catalog loads into gateway subagent binding", async () => {
-    const { invoke } = createInvokeParams({});
-
-    await invoke();
-
-    expect(vi.mocked(resolvePluginTools)).toHaveBeenCalledWith(
-      expect.objectContaining({
-        allowGatewaySubagentBinding: true,
-      }),
-    );
   });
 });

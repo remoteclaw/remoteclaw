@@ -46,6 +46,14 @@ function createCronConfig(name: string): RemoteClawConfig {
     session: {
       mainKey: "main",
     },
+    // Schema migration #1581 requires a non-empty agents.list; the default agent
+    // id resolves to this entry ("main"), which scopes session keys as
+    // agent:main:<sessionKey>. Without it, resolveDefaultAgentId falls back to
+    // the fork's DEFAULT_AGENT_ID ("default") and the scoped keys would be
+    // agent:default:..., not the agent:main:... the assertions below expect.
+    agents: {
+      list: [{ id: "main", workspace: tmpDir }],
+    },
     cron: {
       store: path.join(tmpDir, "cron.json"),
     },

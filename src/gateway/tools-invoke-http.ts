@@ -1,14 +1,14 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import {
-  resolveEffectiveToolPolicy,
-  resolveGroupToolPolicy,
-  resolveSubagentToolPolicy,
-} from "../agents/pi-tools.policy.js";
 import { createRemoteClawTools } from "../agents/remoteclaw-tools.js";
 import {
   applyToolPolicyPipeline,
   buildDefaultToolPolicyPipelineSteps,
 } from "../agents/tool-policy-pipeline.js";
+import {
+  resolveEffectiveToolPolicy,
+  resolveGroupToolPolicy,
+  resolveSubagentToolPolicy,
+} from "../agents/tool-policy-resolution.js";
 import {
   collectExplicitAllowlist,
   mergeAlsoAllowPolicy,

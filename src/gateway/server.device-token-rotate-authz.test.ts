@@ -165,13 +165,26 @@ describe("gateway device.token.rotate/revoke ownership guard (IDOR)", () => {
     try {
       await connectOk(started.ws);
 
-      const rotate = await rpcReq<{ token?: string }>(started.ws, "device.token.rotate", {
-        deviceId: device.deviceId,
-        role: "operator",
-        scopes: ["operator.pairing"],
-      });
+      const rotate = await rpcReq<{ token?: string; deviceId?: string }>(
+        started.ws,
+        "device.token.rotate",
+        {
+          deviceId: device.deviceId,
+          role: "operator",
+          scopes: ["operator.pairing"],
+        },
+      );
       expect(rotate.ok).toBe(true);
-      expect(rotate.payload?.token).toBeTruthy();
+      expect(rotate.payload?.deviceId).toBe(device.deviceId);
+      // RemoteClaw hardens device-token rotation beyond upstream: the rotated
+      // secret is echoed back over the wire ONLY when a device rotates its OWN
+      // token (caller deviceId === target deviceId). An admin rotating ANOTHER
+      // device's token gets confirmation but NOT the secret — that device fetches
+      // its refreshed token through its own paired channel. Echoing it here would
+      // let an admin (or an admin-scope-compromised caller) harvest other devices'
+      // live tokens for impersonation. See shouldReturnRotatedDeviceToken in
+      // server-methods/devices.ts. Do NOT assert the token is returned here.
+      expect(rotate.payload?.token).toBeUndefined();
     } finally {
       started.ws.close();
       await started.server.close();

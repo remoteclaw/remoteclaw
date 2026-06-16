@@ -88,6 +88,7 @@ import {
   evaluateMissingDeviceIdentity,
   isTrustedProxyControlUiOperatorAuth,
   resolveControlUiAuthPolicy,
+  shouldClearUnboundScopesForMissingDeviceIdentity,
   shouldSkipControlUiPairing,
 } from "./connect-policy.js";
 import { isUnauthorizedRoleError, UnauthorizedFloodGuard } from "./unauthorized-flood-guard.js";
@@ -96,6 +97,7 @@ type SubsystemLogger = ReturnType<typeof createSubsystemLogger>;
 
 const DEVICE_SIGNATURE_SKEW_MS = 2 * 60 * 1000;
 const BROWSER_ORIGIN_LOOPBACK_RATE_LIMIT_IP = "198.18.0.1";
+const BROWSER_ORIGIN_RATE_LIMIT_KEY_PREFIX = "browser-origin:";
 
 export type WsOriginCheckMetrics = {
   hostHeaderFallbackAccepted: number;
@@ -107,6 +109,23 @@ type HandshakeBrowserSecurityContext = {
   rateLimitClientIp: string | undefined;
   authRateLimiter?: AuthRateLimiter;
 };
+
+// Loopback browser-origin connects share a single client IP, so we key the
+// auth rate-limiter on the (browser-enforced, non-spoofable) Origin instead.
+// This isolates lockouts per origin — a single hostile localhost page cannot
+// lock out other honest co-resident origins. Falls back to the synthetic
+// loopback IP only when the Origin is absent or unparseable.
+function resolveBrowserOriginRateLimitKey(requestOrigin?: string): string {
+  const trimmedOrigin = requestOrigin?.trim();
+  if (!trimmedOrigin) {
+    return BROWSER_ORIGIN_LOOPBACK_RATE_LIMIT_IP;
+  }
+  try {
+    return `${BROWSER_ORIGIN_RATE_LIMIT_KEY_PREFIX}${new URL(trimmedOrigin).origin.toLowerCase()}`;
+  } catch {
+    return BROWSER_ORIGIN_LOOPBACK_RATE_LIMIT_IP;
+  }
+}
 
 function resolveHandshakeBrowserSecurityContext(params: {
   requestOrigin?: string;
@@ -123,7 +142,7 @@ function resolveHandshakeBrowserSecurityContext(params: {
     enforceOriginCheckForAnyClient: hasBrowserOriginHeader,
     rateLimitClientIp:
       hasBrowserOriginHeader && isLoopbackAddress(params.clientIp)
-        ? BROWSER_ORIGIN_LOOPBACK_RATE_LIMIT_IP
+        ? resolveBrowserOriginRateLimitKey(params.requestOrigin)
         : params.clientIp,
     authRateLimiter:
       hasBrowserOriginHeader && params.browserRateLimiter
@@ -545,7 +564,12 @@ export function attachGatewayWsMessageHandler(params: {
               host: requestHost ?? "n/a",
               reason: originCheck.reason,
             });
-            sendHandshakeErrorResponse(ErrorCodes.INVALID_REQUEST, errorMessage);
+            sendHandshakeErrorResponse(ErrorCodes.INVALID_REQUEST, errorMessage, {
+              details: {
+                code: ConnectErrorDetailCodes.CONTROL_UI_ORIGIN_NOT_ALLOWED,
+                reason: originCheck.reason,
+              },
+            });
             close(1008, truncateCloseReason(errorMessage));
             return;
           }
@@ -657,15 +681,12 @@ export function attachGatewayWsMessageHandler(params: {
           close(1008, truncateCloseReason(authMessage));
         };
         const clearUnboundScopes = () => {
-          if (scopes.length > 0 && !controlUiAuthPolicy.allowBypass && !sharedAuthOk) {
+          if (scopes.length > 0) {
             scopes = [];
             connectParams.scopes = scopes;
           }
         };
         const handleMissingDeviceIdentity = (): boolean => {
-          if (!device) {
-            clearUnboundScopes();
-          }
           const trustedProxyAuthOk = isTrustedProxyControlUiOperatorAuth({
             isControlUi,
             role,
@@ -673,6 +694,11 @@ export function attachGatewayWsMessageHandler(params: {
             authOk,
             authMethod,
           });
+          const preserveInsecureLocalControlUiScopes =
+            isControlUi &&
+            controlUiAuthPolicy.allowInsecureAuthConfigured &&
+            isLocalClient &&
+            (authMethod === "token" || authMethod === "password");
           const decision = evaluateMissingDeviceIdentity({
             hasDeviceIdentity: Boolean(device),
             role,
@@ -684,6 +710,21 @@ export function attachGatewayWsMessageHandler(params: {
             hasSharedAuth,
             isLocalClient,
           });
+          // Shared token/password auth can bypass pairing for trusted operators.
+          // Device-less clients only keep self-declared scopes on the explicit
+          // allow path, including trusted token-authenticated backend operators.
+          if (
+            !device &&
+            shouldClearUnboundScopesForMissingDeviceIdentity({
+              decision,
+              controlUiAuthPolicy,
+              preserveInsecureLocalControlUiScopes,
+              authMethod,
+              trustedProxyAuthOk,
+            })
+          ) {
+            clearUnboundScopes();
+          }
           if (decision.kind === "allow") {
             return true;
           }

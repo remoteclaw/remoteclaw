@@ -104,7 +104,7 @@ describe("startGatewayMaintenanceTimers", () => {
     stopMaintenanceTimers(timers);
   });
 
-  it("broadcasts tick keepalives without dropIfSlow", async () => {
+  it("broadcasts tick keepalives with dropIfSlow", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-04-12T00:00:00Z"));
     const { startGatewayMaintenanceTimers } = await import("./server-maintenance.js");
@@ -118,7 +118,7 @@ describe("startGatewayMaintenanceTimers", () => {
     broadcast.mockClear();
     await vi.advanceTimersByTimeAsync(30_000);
 
-    expect(broadcast).toHaveBeenCalledWith("tick", { ts: Date.now() });
+    expect(broadcast).toHaveBeenCalledWith("tick", { ts: Date.now() }, { dropIfSlow: true });
 
     stopMaintenanceTimers(timers);
   });

@@ -320,12 +320,15 @@ describe("gateway session utils", () => {
           }),
           "utf8",
         );
+        // Post-#1581, writeConfigFile runs full schema validation: it rejects the
+        // deprecated agents.list[].default field (agent ordering is now list-order)
+        // and requires a workspace string per agent. Omit default, add workspace.
         await writeConfigFile({
           session: {
             mainKey: "main",
             store: path.join(stateDir, "agents", "{agentId}", "sessions", "sessions.json"),
           },
-          agents: { list: [{ id: "main", default: true }] },
+          agents: { list: [{ id: "main", workspace: stateDir }] },
         });
         clearConfigCache();
 

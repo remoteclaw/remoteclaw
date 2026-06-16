@@ -274,18 +274,22 @@ describe("sanitizeChatSendMessageInput", () => {
 });
 
 describe("gateway chat transcript writes (guardrail)", () => {
-  it("routes transcript writes through helper and SessionManager parentId append", () => {
+  it("routes transcript writes through the inject helper", () => {
+    // Fork divergence: the Pi-era SessionManager (@mariozechner/pi-coding-agent)
+    // is gutted, so the inject helper appends transcript entries with a raw
+    // fs.appendFileSync rather than SessionManager.open/appendMessage. The
+    // guardrail still asserts chat.ts routes all transcript writes through the
+    // helper (never inline) and that the helper owns the single append site.
     const chatTs = fileURLToPath(new URL("./chat.ts", import.meta.url));
     const chatSrc = fs.readFileSync(chatTs, "utf-8");
     const helperTs = fileURLToPath(new URL("./chat-transcript-inject.ts", import.meta.url));
     const helperSrc = fs.readFileSync(helperTs, "utf-8");
 
-    expect(chatSrc.includes("fs.appendFileSync(transcriptPath")).toBe(false);
+    expect(chatSrc.includes("fs.appendFileSync(")).toBe(false);
     expect(chatSrc).toContain("appendInjectedAssistantMessageToTranscript(");
 
-    expect(helperSrc.includes("fs.appendFileSync(params.transcriptPath")).toBe(false);
-    expect(helperSrc).toContain("SessionManager.open(params.transcriptPath)");
-    expect(helperSrc).toContain("appendMessage(messageBody)");
+    expect(helperSrc).toContain("fs.appendFileSync(params.transcriptPath");
+    expect(helperSrc.includes("SessionManager")).toBe(false);
   });
 });
 

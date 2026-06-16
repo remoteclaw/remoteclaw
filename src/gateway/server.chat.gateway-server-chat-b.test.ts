@@ -304,7 +304,10 @@ describe("gateway server chat", () => {
     });
   });
 
-  test("chat.history preserves usage and cost metadata for assistant messages", async () => {
+  test("chat.history strips usage, cost, and details metadata for assistant messages", async () => {
+    // Fork divergence: the Pi-era cost/usage machinery is gutted. The gateway's
+    // sanitizeChatHistoryMessage deletes usage, cost, and details from history
+    // payloads (server-methods/chat.ts), so chat.history never exposes them.
     await withGatewayChatHarness(async ({ ws, createSessionDir }) => {
       await connectOk(ws);
 
@@ -326,11 +329,9 @@ describe("gateway server chat", () => {
 
       const messages = await fetchHistoryMessages(ws);
       expect(messages).toHaveLength(1);
-      expect(messages[0]).toMatchObject({
-        role: "assistant",
-        usage: { input: 12, output: 5, totalTokens: 17 },
-        cost: { total: 0.0123 },
-      });
+      expect(messages[0]).toMatchObject({ role: "assistant" });
+      expect(messages[0]).not.toHaveProperty("usage");
+      expect(messages[0]).not.toHaveProperty("cost");
       expect(messages[0]).not.toHaveProperty("details");
     });
   });

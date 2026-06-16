@@ -29,7 +29,13 @@ function getSessionsSendTool(): SessionSendTool {
   if (cachedSessionsSendTool) {
     return cachedSessionsSendTool;
   }
-  const tool = createRemoteClawTools().find((candidate) => candidate.name === "sessions_send");
+  // The gateway always hands the tool an agent-segmented requester key
+  // (tools-invoke-http.ts normalizes a missing/bare "main" requester to the
+  // canonical agent:main:main via resolveMainSessionKey before building tools).
+  // Mirror that here so the requester key is resolvable post-#1581.
+  const tool = createRemoteClawTools({ agentSessionKey: "agent:main:main" }).find(
+    (candidate) => candidate.name === "sessions_send",
+  );
   if (!tool) {
     throw new Error("missing sessions_send tool");
   }
@@ -126,7 +132,7 @@ describe("sessions_send gateway loopback", () => {
     const tool = getSessionsSendTool();
 
     const result = await tool.execute("call-loopback", {
-      sessionKey: "main",
+      sessionKey: "agent:main:main",
       message: "ping",
       timeoutSeconds: 5,
     });
@@ -137,7 +143,7 @@ describe("sessions_send gateway loopback", () => {
     };
     expect(details.status).toBe("ok");
     expect(details.reply).toBe("pong");
-    expect(details.sessionKey).toBe("main");
+    expect(details.sessionKey).toBe("agent:main:main");
 
     const firstCall = spy.mock.calls[0]?.[0] as
       | { lane?: string; inputProvenance?: { kind?: string; sourceTool?: string } }

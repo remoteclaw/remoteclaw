@@ -11,10 +11,40 @@ import {
   listSessionsFromStore,
   loadCombinedSessionStoreForGateway,
   pruneLegacyStoreKeys,
+  resolveDeletedAgentIdFromSessionKey,
   resolveGatewaySessionStoreTarget,
 } from "./session-utils.js";
 
 export type SessionsResolveResult = { ok: true; key: string } | { ok: false; error: ErrorShape };
+
+/**
+ * Reject a resolved session key whose owning agent was deleted from
+ * configuration, mirroring the send-path guard in
+ * `server-methods/chat.ts` (#65524). Returns a rejection result when the
+ * key encodes a deleted agent, or null when the key is safe to return.
+ *
+ * NOTE: legacy `main`-alias entries surfaced via sessionId/label that should
+ * be remapped onto the live default agent are NOT yet handled here; that
+ * remap is deferred to a separate hardening change so the reject parity can
+ * land without inventing new authorization behavior. See the skipped
+ * "resolves legacy main-alias matches" case in sessions-resolve-store.test.ts.
+ */
+function rejectDeletedAgentSessionKey(
+  cfg: RemoteClawConfig,
+  key: string,
+): SessionsResolveResult | null {
+  const deletedAgentId = resolveDeletedAgentIdFromSessionKey(cfg, key);
+  if (deletedAgentId === null) {
+    return null;
+  }
+  return {
+    ok: false,
+    error: errorShape(
+      ErrorCodes.INVALID_REQUEST,
+      `Agent "${deletedAgentId}" no longer exists in configuration`,
+    ),
+  };
+}
 
 export async function resolveSessionKeyFromResolveParams(params: {
   cfg: RemoteClawConfig;
@@ -67,6 +97,10 @@ export async function resolveSessionKeyFromResolveParams(params: {
           };
         }
       }
+      const deletedRejection = rejectDeletedAgentSessionKey(cfg, target.canonicalKey);
+      if (deletedRejection) {
+        return deletedRejection;
+      }
       return { ok: true, key: target.canonicalKey };
     }
     const legacyKey = target.storeKeys.find((candidate) => store[candidate]);
@@ -104,6 +138,10 @@ export async function resolveSessionKeyFromResolveParams(params: {
         };
       }
     }
+    const deletedRejection = rejectDeletedAgentSessionKey(cfg, target.canonicalKey);
+    if (deletedRejection) {
+      return deletedRejection;
+    }
     return { ok: true, key: target.canonicalKey };
   }
 
@@ -139,7 +177,12 @@ export async function resolveSessionKeyFromResolveParams(params: {
         ),
       };
     }
-    return { ok: true, key: String(matches[0]?.key ?? "") };
+    const matchKey = String(matches[0]?.key ?? "");
+    const deletedRejection = rejectDeletedAgentSessionKey(cfg, matchKey);
+    if (deletedRejection) {
+      return deletedRejection;
+    }
+    return { ok: true, key: matchKey };
   }
 
   const parsedLabel = parseSessionLabel(p.label);
@@ -184,5 +227,10 @@ export async function resolveSessionKeyFromResolveParams(params: {
     };
   }
 
-  return { ok: true, key: String(list.sessions[0]?.key ?? "") };
+  const labelKey = String(list.sessions[0]?.key ?? "");
+  const deletedRejection = rejectDeletedAgentSessionKey(cfg, labelKey);
+  if (deletedRejection) {
+    return deletedRejection;
+  }
+  return { ok: true, key: labelKey };
 }

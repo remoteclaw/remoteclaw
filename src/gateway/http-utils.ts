@@ -1,11 +1,18 @@
 import { randomUUID } from "node:crypto";
 import type { IncomingMessage } from "node:http";
+import { resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { type RemoteClawConfig, loadConfig } from "../config/config.js";
 import { buildAgentMainSessionKey, normalizeAgentId } from "../routing/session-key.js";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
 } from "../shared/string-coerce.js";
 import { normalizeMessageChannel } from "../utils/message-channel.js";
+
+/** Brand model id that routes to the configured default agent. */
+export const REMOTECLAW_MODEL_ID = "remoteclaw";
+/** Brand model id (with explicit `/default` slug) that also routes to the configured default agent. */
+export const REMOTECLAW_DEFAULT_MODEL_ID = "remoteclaw/default";
 
 export function getHeader(req: IncomingMessage, name: string): string | undefined {
   const raw = req.headers[normalizeLowercaseStringOrEmpty(name)];
@@ -37,10 +44,19 @@ export function resolveAgentIdFromHeader(req: IncomingMessage): string | undefin
   return normalizeAgentId(raw);
 }
 
-export function resolveAgentIdFromModel(model: string | undefined): string | undefined {
+export function resolveAgentIdFromModel(
+  model: string | undefined,
+  cfg: RemoteClawConfig = loadConfig(),
+): string | undefined {
   const raw = model?.trim();
   if (!raw) {
     return undefined;
+  }
+  // The bare brand id and the explicit `<brand>/default` slug both route to the
+  // configured default agent (which is not necessarily named "default").
+  const lowered = raw.toLowerCase();
+  if (lowered === REMOTECLAW_MODEL_ID || lowered === REMOTECLAW_DEFAULT_MODEL_ID) {
+    return resolveDefaultAgentId(cfg);
   }
 
   const m =
@@ -56,14 +72,16 @@ export function resolveAgentIdFromModel(model: string | undefined): string | und
 export function resolveAgentIdForRequest(params: {
   req: IncomingMessage;
   model: string | undefined;
+  cfg?: RemoteClawConfig;
 }): string {
   const fromHeader = resolveAgentIdFromHeader(params.req);
   if (fromHeader) {
     return fromHeader;
   }
 
-  const fromModel = resolveAgentIdFromModel(params.model);
-  return fromModel ?? "main";
+  const cfg = params.cfg ?? loadConfig();
+  const fromModel = resolveAgentIdFromModel(params.model, cfg);
+  return fromModel ?? resolveDefaultAgentId(cfg);
 }
 
 export function resolveSessionKey(params: {
@@ -90,7 +108,8 @@ export function resolveGatewayRequestContext(params: {
   defaultMessageChannel: string;
   useMessageChannelHeader?: boolean;
 }): { agentId: string; sessionKey: string; messageChannel: string } {
-  const agentId = resolveAgentIdForRequest({ req: params.req, model: params.model });
+  const cfg = loadConfig();
+  const agentId = resolveAgentIdForRequest({ req: params.req, model: params.model, cfg });
   const sessionKey = resolveSessionKey({
     req: params.req,
     agentId,

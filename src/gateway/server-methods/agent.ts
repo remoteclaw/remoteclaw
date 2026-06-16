@@ -400,6 +400,7 @@ export const agentHandlers: GatewayRequestHandlers = {
     let cfgForAgent: ReturnType<typeof loadConfig> | undefined;
     let resolvedSessionKey = requestedSessionKey;
     let skipTimestampInjection = false;
+    let deliveryDowngradeReason: string | undefined;
 
     const resetCommandMatch = message.match(RESET_COMMAND_RE);
     if (resetCommandMatch && requestedSessionKey) {
@@ -494,6 +495,7 @@ export const agentHandlers: GatewayRequestHandlers = {
         providerOverride: entry?.providerOverride,
         label: labelValue,
         spawnedBy: spawnedByValue,
+        spawnedWorkspaceDir: entry?.spawnedWorkspaceDir,
         spawnDepth: entry?.spawnDepth,
         channel: entry?.channel ?? request.channel?.trim(),
         groupId: resolvedGroupId ?? entry?.groupId,
@@ -643,8 +645,15 @@ export const agentHandlers: GatewayRequestHandlers = {
           resolvedAccountId,
         };
       } catch (err) {
-        respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, String(err)));
-        return;
+        // When best-effort delivery is requested and no external channel resolves,
+        // downgrade to session-only instead of failing the run.
+        const shouldDowngrade =
+          wantsDelivery && bestEffortDeliver && resolvedChannel === INTERNAL_MESSAGE_CHANNEL;
+        if (!shouldDowngrade) {
+          respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, String(err)));
+          return;
+        }
+        deliveryDowngradeReason = String(err);
       }
     }
 
@@ -662,15 +671,24 @@ export const agentHandlers: GatewayRequestHandlers = {
     }
 
     if (wantsDelivery && resolvedChannel === INTERNAL_MESSAGE_CHANNEL) {
-      respond(
-        false,
-        undefined,
-        errorShape(
-          ErrorCodes.INVALID_REQUEST,
-          "delivery channel is required: pass --channel/--reply-channel or use a main session with a previous channel",
-        ),
+      const shouldDowngrade =
+        wantsDelivery && bestEffortDeliver && resolvedChannel === INTERNAL_MESSAGE_CHANNEL;
+      if (!shouldDowngrade) {
+        respond(
+          false,
+          undefined,
+          errorShape(
+            ErrorCodes.INVALID_REQUEST,
+            "delivery channel is required: pass --channel/--reply-channel or use a main session with a previous channel",
+          ),
+        );
+        return;
+      }
+      context.logGateway.info(
+        deliveryDowngradeReason
+          ? `agent delivery downgraded to session-only (bestEffortDeliver): ${deliveryDowngradeReason}`
+          : "agent delivery downgraded to session-only (bestEffortDeliver): no deliverable channel",
       );
-      return;
     }
 
     const normalizedTurnSource = normalizeMessageChannel(turnSourceChannel);
@@ -738,9 +756,13 @@ export const agentHandlers: GatewayRequestHandlers = {
         internalEvents: request.internalEvents,
         inputProvenance,
         // Internal-only: allow workspace override for spawned subagent runs.
+        // Source the override from the persisted session entry (set once at spawn
+        // time via sessions.patch), NOT the inbound request — a per-request
+        // workspaceDir would let the caller of any agent invocation point a spawned
+        // run at an arbitrary directory.
         workspaceDir: resolveIngressWorkspaceOverrideForSpawnedRun({
           spawnedBy: spawnedByValue,
-          workspaceDir: request.workspaceDir,
+          workspaceDir: sessionEntry?.spawnedWorkspaceDir,
         }),
         senderIsOwner,
       },

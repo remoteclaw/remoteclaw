@@ -1,7 +1,9 @@
 import path from "node:path";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
-// Pinned legacy alias id used by the reserved-name delete test below.
+// The legacy OpenClaw default/reserved agent id. The fork no longer treats it
+// specially (no reservation on create, no protection on delete) — see the
+// "main is not a reserved id" / "main is not protected" tests below.
 // Hoisted so vi.mock() factories can close over it safely.
 const { LEGACY_RESERVED_ID } = vi.hoisted(() => ({ LEGACY_RESERVED_ID: "main" }));
 
@@ -264,7 +266,11 @@ describe("agents.create", () => {
     );
   });
 
-  it("rejects creating an agent with reserved 'main' id", async () => {
+  it("allows creating an agent named 'main' ('main' is not a reserved id)", async () => {
+    // The fork removed DEFAULT_AGENT_ID and the legacy "main" reservation guards
+    // (fork commit 7549f445a8 — "main" has no special meaning; agent ordering is
+    // list-order per #1581). Creating an agent literally named "main" now succeeds
+    // like any other name, provided no duplicate exists.
     const { respond, promise } = makeCall("agents.create", {
       name: "main",
       workspace: "/tmp/ws",
@@ -272,10 +278,11 @@ describe("agents.create", () => {
     await promise;
 
     expect(respond).toHaveBeenCalledWith(
-      false,
+      true,
+      expect.objectContaining({ ok: true, agentId: "main", name: "main" }),
       undefined,
-      expect.objectContaining({ message: expect.stringContaining("reserved") }),
     );
+    expect(mocks.writeConfigFile).toHaveBeenCalled();
   });
 
   it("rejects creating a duplicate agent", async () => {
@@ -446,18 +453,21 @@ describe("agents.delete", () => {
     expect(mocks.fsAccess).not.toHaveBeenCalled();
   });
 
-  it("rejects deleting the main agent", async () => {
+  it("allows deleting an agent named 'main' ('main' is not protected)", async () => {
+    // The fork removed the legacy "cannot be deleted" guard for "main"
+    // (fork commit 7549f445a8). Deleting an agent literally named "main" now
+    // succeeds like any other configured agent.
     const { respond, promise } = makeCall("agents.delete", {
       agentId: LEGACY_RESERVED_ID,
     });
     await promise;
 
     expect(respond).toHaveBeenCalledWith(
-      false,
+      true,
+      expect.objectContaining({ ok: true, agentId: "main" }),
       undefined,
-      expect.objectContaining({ message: expect.stringContaining("cannot be deleted") }),
     );
-    expect(mocks.writeConfigFile).not.toHaveBeenCalled();
+    expect(mocks.writeConfigFile).toHaveBeenCalled();
   });
 
   it("rejects deleting a nonexistent agent", async () => {

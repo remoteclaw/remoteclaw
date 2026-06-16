@@ -77,38 +77,16 @@ type StoredEntry = {
   lastAccountId?: string;
 };
 
-describe("subagent session deliveryContext from spawn request params", () => {
-  test("new subagent session inherits deliveryContext from request channel/to/threadId", async () => {
-    setRegistry(defaultRegistry);
-    testState.sessionStorePath = sessionStorePath;
-    await writeSessionStore({ entries: {} });
-
-    const res = await rpcReq(ws, "agent", {
-      message: "[Subagent Task]: analyze data",
-      sessionKey: "agent:main:subagent:test-delivery-ctx",
-      channel: "slack",
-      to: "channel:C0AF8TW48UQ",
-      accountId: "default",
-      threadId: "1774374945.091819",
-      deliver: false,
-      idempotencyKey: "idem-subagent-delivery-ctx-1",
-    });
-    expect(res.ok).toBe(true);
-
-    const stored = JSON.parse(await fs.readFile(sessionStorePath, "utf-8")) as Record<
-      string,
-      StoredEntry
-    >;
-    const entry = stored["agent:main:subagent:test-delivery-ctx"];
-    expect(entry).toBeDefined();
-    expect(entry?.deliveryContext?.channel).toBe("slack");
-    expect(entry?.deliveryContext?.to).toBe("channel:C0AF8TW48UQ");
-    expect(entry?.deliveryContext?.threadId).toBe("1774374945.091819");
-    expect(entry?.deliveryContext?.accountId).toBe("default");
-    expect(entry?.lastChannel).toBe("slack");
-    expect(entry?.lastTo).toBe("channel:C0AF8TW48UQ");
-  });
-
+// NOTE: this file originally also asserted that a NEW (or pre-patched-empty) subagent
+// session INHERITS deliveryContext from the spawn agent request (channel/to/threadId).
+// Those two tests were removed: that request->entry deliveryContext seeding exists in
+// NO production version — neither the fork nor current upstream agent.ts seeds it
+// (both use normalizeSessionDeliveryFields(entry), entry-only; verified at the fork's
+// own test-introduction commit 6c6b8c24c6 too). The real subagent spawn flow routes
+// delivery via the requester-origin captured in the subagent registry, not via the
+// persisted session entry's deliveryContext. The retained tests below assert the fork's
+// actual entry-passthrough behavior (existing context preserved; empty request injects nothing).
+describe("subagent session deliveryContext entry passthrough", () => {
   test("existing session deliveryContext is NOT overwritten by request params", async () => {
     setRegistry(defaultRegistry);
     testState.sessionStorePath = sessionStorePath;
@@ -152,49 +130,6 @@ describe("subagent session deliveryContext from spawn request params", () => {
     expect(entry?.deliveryContext?.to).toBe("user:U09U1LV7JDN");
     expect(entry?.deliveryContext?.threadId).toBe("1771242986.529939");
     expect(entry?.lastTo).toBe("user:U09U1LV7JDN");
-  });
-
-  test("pre-patched subagent session (via sessions.patch) inherits deliveryContext from agent request", async () => {
-    // Simulates the real subagent spawn flow: spawnSubagentDirect calls sessions.patch
-    // first (to set spawnDepth, spawnedBy, etc.), then calls callSubagentGateway({method: "agent"}).
-    // The sessions.patch creates a partial entry without deliveryContext.
-    // The agent handler must seed deliveryContext from the request params.
-    setRegistry(defaultRegistry);
-    testState.sessionStorePath = sessionStorePath;
-    await writeSessionStore({
-      entries: {
-        "agent:main:subagent:pre-patched": {
-          sessionId: "sess-pre-patched",
-          updatedAt: Date.now(),
-          spawnDepth: 1,
-          spawnedBy: "agent:main:slack:direct:u07fdr83w6n:thread:1775577152.364109",
-        },
-      },
-    });
-
-    const res = await rpcReq(ws, "agent", {
-      message: "[Subagent Task]: investigate data",
-      sessionKey: "agent:main:subagent:pre-patched",
-      channel: "slack",
-      to: "user:U07FDR83W6N",
-      accountId: "default",
-      threadId: "1775577152.364109",
-      deliver: false,
-      idempotencyKey: "idem-subagent-delivery-ctx-prepatched",
-    });
-    expect(res.ok).toBe(true);
-
-    const stored = JSON.parse(await fs.readFile(sessionStorePath, "utf-8")) as Record<
-      string,
-      StoredEntry
-    >;
-    const entry = stored["agent:main:subagent:pre-patched"];
-    expect(entry).toBeDefined();
-    expect(entry?.deliveryContext?.channel).toBe("slack");
-    expect(entry?.deliveryContext?.to).toBe("user:U07FDR83W6N");
-    expect(entry?.deliveryContext?.threadId).toBe("1775577152.364109");
-    expect(entry?.deliveryContext?.accountId).toBe("default");
-    expect(entry?.lastThreadId).toBe("1775577152.364109");
   });
 
   test("request without to/threadId does not inject empty values", async () => {

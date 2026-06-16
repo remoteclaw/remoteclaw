@@ -13,7 +13,6 @@ let InputFileContentPartSchema: typeof import("./open-responses.schema.js").Inpu
 let ToolDefinitionSchema: typeof import("./open-responses.schema.js").ToolDefinitionSchema;
 let CreateResponseBodySchema: typeof import("./open-responses.schema.js").CreateResponseBodySchema;
 let OutputItemSchema: typeof import("./open-responses.schema.js").OutputItemSchema;
-let buildAgentPrompt: typeof import("./openresponses-prompt.js").buildAgentPrompt;
 
 describe("OpenResponses Feature Parity", () => {
   beforeAll(async () => {
@@ -24,7 +23,6 @@ describe("OpenResponses Feature Parity", () => {
       CreateResponseBodySchema,
       OutputItemSchema,
     } = await import("./open-responses.schema.js"));
-    ({ buildAgentPrompt } = await import("./openresponses-prompt.js"));
   });
 
   describe("Schema Validation", () => {
@@ -336,45 +334,11 @@ describe("OpenResponses Feature Parity", () => {
     });
   });
 
-  describe("buildAgentPrompt", () => {
-    it("should convert function_call_output to tool entry", async () => {
-      const result = buildAgentPrompt([
-        {
-          type: "function_call_output" as const,
-          call_id: "call_123",
-          output: '{"temperature": "72°F"}',
-        },
-      ]);
-
-      // When there's only a tool output (no history), returns just the body
-      expect(result.message).toBe('{"temperature": "72°F"}');
-    });
-
-    it("should handle mixed message and function_call_output items", async () => {
-      const result = buildAgentPrompt([
-        {
-          type: "message" as const,
-          role: "user" as const,
-          content: "What's the weather?",
-        },
-        {
-          type: "function_call_output" as const,
-          call_id: "call_123",
-          output: '{"temperature": "72°F"}',
-        },
-        {
-          type: "message" as const,
-          role: "user" as const,
-          content: "Thanks!",
-        },
-      ]);
-
-      // Should include both user messages and tool output
-      expect(result.message).toContain("weather");
-      expect(result.message).toContain("72°F");
-      expect(result.message).toContain("Thanks");
-    });
-  });
+  // NOTE: the "buildAgentPrompt" describe block was removed — buildAgentPrompt
+  // (OpenResponses prompt construction from ItemParam[]) is gutted in the fork
+  // (src/gateway/openresponses-prompt.ts returns an empty prompt under the
+  // Middleware Boundary Principle; response generation is not a middleware concern).
+  // The kept OpenResponses schema-validation coverage remains in the describes above.
 
   describe("input_file hardening", () => {
     it("wraps extracted input_file text as untrusted content without the long warning block", () => {

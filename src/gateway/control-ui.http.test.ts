@@ -27,7 +27,6 @@ describe("handleControlUiHttpRequest", () => {
       basePath: string;
       assistantName: string;
       assistantAvatar: string;
-      assistantAgentId: string;
     };
   }
 
@@ -195,8 +194,11 @@ describe("handleControlUiHttpRequest", () => {
         const parsed = parseBootstrapPayload(end);
         expect(parsed.basePath).toBe("");
         expect(parsed.assistantName).toBe("</script><script>alert(1)//");
-        expect(parsed.assistantAvatar).toBe("/avatar/main");
-        expect(parsed.assistantAgentId).toBe("main");
+        // No agents.list configured → the default agent id resolves to
+        // DEFAULT_AGENT_ID ("default"). The bootstrap contract
+        // (ControlUiBootstrapConfig) exposes only basePath/assistantName/
+        // assistantAvatar — it does not carry an assistantAgentId field.
+        expect(parsed.assistantAvatar).toBe("/avatar/default");
       },
     });
   });
@@ -224,8 +226,7 @@ describe("handleControlUiHttpRequest", () => {
         const parsed = parseBootstrapPayload(end);
         expect(parsed.basePath).toBe("/remoteclaw");
         expect(parsed.assistantName).toBe("Ops");
-        expect(parsed.assistantAvatar).toBe("/remoteclaw/avatar/main");
-        expect(parsed.assistantAgentId).toBe("main");
+        expect(parsed.assistantAvatar).toBe("/remoteclaw/avatar/default");
       },
     });
   });

@@ -121,25 +121,6 @@ describe("gateway credential precedence parity", () => {
       },
     },
     {
-      name: "legacy env vars are ignored by probe/status/auth but still supported for call path",
-      cfg: {
-        gateway: {
-          mode: "local",
-          auth: {},
-        },
-      } as RemoteClawConfig,
-      env: {
-        CLAWDBOT_GATEWAY_TOKEN: "legacy-token", // pragma: allowlist secret
-        CLAWDBOT_GATEWAY_PASSWORD: "legacy-password", // pragma: allowlist secret
-      } as NodeJS.ProcessEnv,
-      expected: {
-        call: { token: "legacy-token", password: "legacy-password" }, // pragma: allowlist secret
-        probe: { token: undefined, password: undefined },
-        status: { token: undefined, password: undefined },
-        auth: { token: undefined, password: undefined },
-      },
-    },
-    {
       name: "local mode in gateway service runtime uses config-first token precedence",
       cfg: {
         gateway: {

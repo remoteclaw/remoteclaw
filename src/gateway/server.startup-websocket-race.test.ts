@@ -46,7 +46,7 @@ afterEach(() => {
 });
 
 describe("gateway startup websocket readiness", () => {
-  it("does not bind the websocket port until websocket handlers are attached", async () => {
+  it("rejects websocket upgrades with 503 until websocket handlers are attached", async () => {
     machineNameDelay.reset();
     const previousMinimal = process.env.REMOTECLAW_TEST_MINIMAL_GATEWAY;
     process.env.REMOTECLAW_TEST_MINIMAL_GATEWAY = "0";
@@ -88,7 +88,16 @@ describe("gateway startup websocket readiness", () => {
         req.end();
       });
 
-      expect(pendingUpgrade).toEqual({ kind: "error", code: "ECONNREFUSED" });
+      // The gateway binds the HTTP/WS port early and installs an `upgrade`
+      // handler that returns 503 ("Gateway websocket handlers unavailable")
+      // until the WSS connection listener is wired (see
+      // `attachGatewayUpgradeHandler` in server-http.ts, fork security commit
+      // ea4196e059). This is the deliberate, shipped behaviour in both the fork
+      // and upstream — a clean 503 beats a silent 1006 on the racing upgrade.
+      expect(pendingUpgrade.kind).toBe("response");
+      if (pendingUpgrade.kind === "response") {
+        expect(pendingUpgrade.status).toBe(503);
+      }
 
       machineNameDelay.release();
       server = await startup;

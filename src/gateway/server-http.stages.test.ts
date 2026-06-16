@@ -74,7 +74,12 @@ describe("runGatewayHttpRequestStages", () => {
     consoleSpy.mockRestore();
   });
 
-  it("rethrows when a stage throws without continueOnError", async () => {
+  it("skips a throwing stage and continues so later stages stay reachable", async () => {
+    // The runner catches every stage error and skips to the next stage (it does
+    // not honour a `continueOnError` flag — neither the fork nor upstream prod
+    // distinguishes the two). A plugin-facade load failure must not 500 the
+    // whole gateway; later stages (control-ui, gateway-probes) stay reachable.
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const stages = [
       {
         name: "broken",
@@ -85,6 +90,14 @@ describe("runGatewayHttpRequestStages", () => {
       { name: "unmatched", run: () => false },
     ];
 
-    await expect(runGatewayHttpRequestStages(stages)).rejects.toThrow("load failed");
+    const result = await runGatewayHttpRequestStages(stages);
+
+    expect(result).toBe(false);
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('stage "broken" threw'),
+      expect.any(Error),
+    );
+
+    consoleSpy.mockRestore();
   });
 });

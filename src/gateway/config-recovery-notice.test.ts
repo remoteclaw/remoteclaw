@@ -29,7 +29,9 @@ describe("config recovery notice", () => {
   it("queues the notice for the main agent session", () => {
     expect(
       enqueueConfigRecoveryNotice({
-        cfg: {},
+        // Post-#1581 the main session key derives from agents.list[0];
+        // resolveMainSessionKey throws on an empty list, so seed a main agent.
+        cfg: { agents: { list: [{ id: "main", workspace: "/home/test/remoteclaw" }] } },
         phase: "reload",
         reason: "reload-invalid-config",
         configPath: "/home/test/.remoteclaw/remoteclaw.json",

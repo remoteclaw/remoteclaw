@@ -302,7 +302,8 @@ implemented in `src/gateway/server-methods/*.ts`.
   requires `operator.talk.secrets` (or `operator.admin`).
 - `talk.mode` sets/broadcasts the current Talk mode state for WebChat/Control UI
   clients.
-- `talk.speak` synthesizes speech through the active Talk speech provider.
+- Talk-mode speech is synthesized client-side by the native apps (ElevenLabs
+  direct, system-TTS fallback — see `docs/nodes/talk.md`), not via a gateway RPC.
 - `tts.status` returns TTS enabled state, active provider, fallback providers,
   and provider config state.
 - `tts.providers` returns the visible TTS provider inventory.
@@ -310,12 +311,8 @@ implemented in `src/gateway/server-methods/*.ts`.
 - `tts.setProvider` updates the preferred TTS provider.
 - `tts.convert` runs one-shot text-to-speech conversion.
 
-### Secrets, config, update, and wizard
+### Config, update, and wizard
 
-- `secrets.reload` re-resolves active SecretRefs and swaps runtime secret state
-  only on full success.
-- `secrets.resolve` resolves command-target secret assignments for a specific
-  command/target set.
 - `config.get` returns the current config snapshot and hash.
 - `config.set` writes a validated config payload.
 - `config.patch` merges a partial config update.

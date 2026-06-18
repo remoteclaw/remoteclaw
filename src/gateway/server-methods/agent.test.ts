@@ -59,6 +59,10 @@ vi.mock("../../config/config.js", async () => {
 
 vi.mock("../../agents/agent-scope.js", () => ({
   listAgentIds: () => ["main"],
+  // assistant-identity.ts (imported transitively via agent.ts) now resolves the
+  // default agent id through resolveDefaultAgentId at module-init (#2724); the
+  // wholesale mock must export it. Mirror this mock's single-agent "main" fiction.
+  resolveDefaultAgentId: () => "main",
 }));
 
 vi.mock("../../infra/agent-events.js", () => ({

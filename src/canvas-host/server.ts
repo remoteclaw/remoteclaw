@@ -340,6 +340,27 @@ export async function createCanvasHostHandler(
     return true;
   };
 
+  // Internal authorization model — audited under #2724 (HTTP-pass / WS-reject
+  // asymmetry). This handler performs NO caller authentication by design: the
+  // gateway perimeter's canvas-auth stage is gutted to always-skip
+  // (`gateway/server-http.ts`), and the standalone host binds loopback-only.
+  // Its authorization is therefore entirely (a) METHOD confinement — GET/HEAD
+  // only (405 otherwise) — and (b) PATH confinement — `resolveFileWithinRoot`
+  // rejects `..` traversal, refuses symlinks, and opens with O_NOFOLLOW inside
+  // the canvas root, so only non-sensitive files genuinely under the root are
+  // served. The asymmetry is intentional and fail-secure on the higher-authority
+  // channel: HTTP serves static files, while the live-reload WS path is refused
+  // over HTTP here (426/404) and the WS UPGRADE is rejected outright at the
+  // gateway.
+  //
+  // This unauthenticated-but-confined posture is SAFE only while the canvas root
+  // holds non-sensitive static content. The writer that would place sensitive
+  // agent-rendered documents here (`gateway/canvas-documents.ts`
+  // `createCanvasDocument`) is fork-orphaned (no live callers). If it is ever
+  // re-wired, canvas HTTP must be re-authorized first (the capability-token
+  // scheme in `gateway/canvas-capability.ts` exists for exactly this). That
+  // precondition is mechanized by the re-wire tripwire in
+  // `gateway/server.canvas-auth.test.ts`.
   const handleHttpRequest = async (req: IncomingMessage, res: ServerResponse) => {
     const urlRaw = req.url;
     if (!urlRaw) {

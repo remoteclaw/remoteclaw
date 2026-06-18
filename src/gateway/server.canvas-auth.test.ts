@@ -1,3 +1,7 @@
+import { readdirSync, readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import ts from "typescript";
 import { describe, expect, test } from "vitest";
 import { WebSocket, WebSocketServer } from "ws";
 import { CANVAS_HOST_PATH, CANVAS_WS_PATH } from "../canvas-host/a2ui.js";
@@ -178,9 +182,14 @@ async function withCanvasGatewayHarness(params: {
 // This tripwire replaces them: it documents the CURRENT gutted posture and
 // fails loudly if a future upstream sync silently re-introduces (or further
 // changes) canvas gateway auth, so the gut stays a conscious decision.
-// Follow-up (filed on remoteclaw/remoteclaw): audit `canvasHost.handleHttpRequest`
-// internal authz now that the gateway perimeter no longer challenges it, and
-// add a DIFF-SYNC re-introduction guard (ADR-0010 pattern).
+// Follow-up RESOLVED (#2724 sub-part b): `canvasHost.handleHttpRequest` internal
+// authz has been audited (verdict: INTENTIONAL_SAFE). The handler is
+// unauthenticated by design but METHOD- and PATH-confined; the posture and its
+// emergent-from-dead-code precondition are documented at the handler in
+// `../canvas-host/server.ts` and pinned by the internal-authz asymmetry test in
+// `../canvas-host/server.test.ts`. The DIFF-SYNC re-introduction guard for the
+// precondition is the "canvas document pipeline re-wire tripwire" at the bottom
+// of this file.
 describe("gateway canvas host auth (gutted-posture tripwire)", () => {
   const tokenResolvedAuth: ResolvedGatewayAuth = {
     mode: "token",
@@ -240,4 +249,92 @@ describe("gateway canvas host auth (gutted-posture tripwire)", () => {
       },
     });
   }, 60_000);
+});
+
+// ---------------------------------------------------------------------------
+// Canvas document pipeline re-wire tripwire (#2724 sub-part b).
+//
+// Canvas HTTP is served UNAUTHENTICATED (the gateway canvas-auth perimeter is
+// gutted to always-skip — see `server-http.ts`). The audit concluded that is
+// SAFE only because the served canvas root holds a static shell, NOT sensitive
+// agent-rendered content. The single writer that would place such content in the
+// root is `createCanvasDocument` (`canvas-documents.ts`), and it is fork-orphaned
+// — no production caller. THAT dead-code fact is the load-bearing precondition of
+// the "unauthenticated is safe" verdict.
+//
+// This tripwire mechanizes the precondition: it fails the instant any production
+// (non-test) module under `src/` imports or calls `createCanvasDocument`. If it
+// fails, the document pipeline was re-wired while canvas HTTP is still
+// unauthenticated → an unauthenticated-disclosure regression. The fix is to
+// RE-AUTHORIZE canvas HTTP (the capability-token scheme in `canvas-capability.ts`
+// exists for exactly this), NOT to delete this test. Re-enabling document
+// publishing is an architecture decision needing its own ADR + security review.
+//
+// Mechanism is AST-confirmed (not raw grep): a cheap substring scan narrows the
+// candidate files, then the TypeScript compiler API confirms a real import/call
+// — so a mention of the symbol in a comment or string (e.g. the audit note in
+// `canvas-host/server.ts`) is not a false positive.
+
+const CANVAS_AUDIT_SRC_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const CANVAS_DOCUMENTS_MODULE = path.join(CANVAS_AUDIT_SRC_DIR, "gateway", "canvas-documents.ts");
+
+function collectProductionTsFiles(dir: string, acc: string[] = []): string[] {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name === "node_modules" || entry.name === "__tests__") {
+      continue;
+    }
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      collectProductionTsFiles(full, acc);
+    } else if (
+      entry.isFile() &&
+      entry.name.endsWith(".ts") &&
+      !entry.name.endsWith(".d.ts") &&
+      !entry.name.endsWith(".test.ts") &&
+      !entry.name.endsWith(".spec.ts") &&
+      full !== CANVAS_DOCUMENTS_MODULE
+    ) {
+      acc.push(full);
+    }
+  }
+  return acc;
+}
+
+function importsOrCallsCreateCanvasDocument(file: string): boolean {
+  const text = readFileSync(file, "utf8");
+  if (!text.includes("createCanvasDocument")) {
+    return false; // cheap narrow — skip the AST parse for the vast majority
+  }
+  const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, /* setParentNodes */ true);
+  let referenced = false;
+  const visit = (node: ts.Node) => {
+    if (
+      ts.isImportDeclaration(node) &&
+      node.importClause?.namedBindings !== undefined &&
+      ts.isNamedImports(node.importClause.namedBindings) &&
+      node.importClause.namedBindings.elements.some((el) => el.name.text === "createCanvasDocument")
+    ) {
+      referenced = true;
+    }
+    if (
+      ts.isCallExpression(node) &&
+      ((ts.isIdentifier(node.expression) && node.expression.text === "createCanvasDocument") ||
+        (ts.isPropertyAccessExpression(node.expression) &&
+          node.expression.name.text === "createCanvasDocument"))
+    ) {
+      referenced = true;
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sf);
+  return referenced;
+}
+
+describe("canvas document pipeline re-wire tripwire (#2724)", () => {
+  test("keeps createCanvasDocument fork-orphaned — no production caller of the canvas-document writer", () => {
+    const offenders = collectProductionTsFiles(CANVAS_AUDIT_SRC_DIR)
+      .filter(importsOrCallsCreateCanvasDocument)
+      .map((f) => path.relative(CANVAS_AUDIT_SRC_DIR, f));
+    expect(offenders).toEqual([]);
+  });
 });

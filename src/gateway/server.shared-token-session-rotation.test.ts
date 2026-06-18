@@ -74,14 +74,7 @@ function buildConfigSetWithRotatedToken(config: Record<string, unknown>): Record
 }
 
 describe("gateway shared token session rotation", () => {
-  // DEFERRED (hardening follow-up): the shared-secret-rotation -> WS-disconnect control is
-  // gutted in this fork. config.set/patch/apply no longer compute didSharedGatewayAuthChange,
-  // and GatewayRequestContext has no disconnectClientsUsingSharedGatewayAuth (upstream wires it
-  // in src/gateway/server.impl.ts, a cross-cutting core file outside this CI-green pass's scope).
-  // Restoring it is a security-semantics change (sessions authenticated against a revoked secret
-  // currently survive until the next restart) and requires shared-core edits, so it is tracked as
-  // a separate HIGH hardening issue rather than bundled here. See security-architect adjudication.
-  it.skip("invalidates shared-token websocket sessions after config.set rotation even with reload mode off", async () => {
+  it("invalidates shared-token websocket sessions after config.set rotation even with reload mode off", async () => {
     const ws = await openAuthenticatedGatewayWs(port, OLD_TOKEN);
     try {
       const current = await loadGatewayConfig(ws);

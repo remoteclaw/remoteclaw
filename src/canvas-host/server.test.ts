@@ -391,4 +391,61 @@ describe("canvas host", () => {
       }
     }
   });
+
+  // Audited under #2724: handleHttpRequest's internal authorization model is the
+  // HTTP-pass / WS-reject asymmetry. It is UNAUTHENTICATED by design — no bearer,
+  // no capability challenge — and relies entirely on METHOD confinement (GET/HEAD)
+  // and PATH confinement (no `..`, no symlink escape) for safety. This pins that
+  // intended posture against a future change that silently broadens it.
+  it("internal authorization: serves unauthenticated but method- and path-confined (HTTP-pass / WS-reject)", async () => {
+    const dir = await createCaseDir();
+    await fs.writeFile(
+      path.join(dir, "index.html"),
+      "<html><body>canvas-shell</body></html>",
+      "utf8",
+    );
+    // A symlink inside the root that points OUT of the root must not be followed.
+    const escapeLinkName = `escape-${Date.now()}-${Math.random().toString(16).slice(2)}.txt`;
+    await fs.symlink(path.join(process.cwd(), "package.json"), path.join(dir, escapeLinkName));
+
+    let server: Awaited<ReturnType<typeof startFixtureCanvasHost>>;
+    try {
+      server = await startFixtureCanvasHost(dir);
+    } catch (error) {
+      if (isLoopbackBindDenied(error)) {
+        return;
+      }
+      throw error;
+    }
+
+    try {
+      const base = `http://127.0.0.1:${server.port}${CANVAS_HOST_PATH}`;
+
+      // HTTP PASSES with no auth header at all — the unauthenticated half.
+      const served = await realFetch(`${base}/`);
+      expect(served.status).toBe(200);
+      expect(await served.text()).toContain("canvas-shell");
+
+      // Method-confined: a write method is refused (405), so the unauthenticated
+      // surface is read-only.
+      const post = await realFetch(`${base}/`, { method: "POST" });
+      expect(post.status).toBe(405);
+
+      // Path-confined: `..` traversal cannot escape the canvas root.
+      const traversal = await realFetch(`${base}/%2e%2e%2f%2e%2e%2fpackage.json`);
+      expect(traversal.status).toBe(404);
+
+      // Path-confined: a symlink escaping the root is not followed.
+      const symlink = await realFetch(`${base}/${escapeLinkName}`);
+      expect(symlink.status).toBe(404);
+
+      // WS-reject half: the live-reload WS path is refused over plain HTTP
+      // (426 upgrade-required while live reload is on) — it is never served as a
+      // file, and the WS UPGRADE itself is rejected at the gateway perimeter.
+      const wsOverHttp = await realFetch(`http://127.0.0.1:${server.port}${CANVAS_WS_PATH}`);
+      expect(wsOverHttp.status).toBe(426);
+    } finally {
+      await server.close();
+    }
+  });
 });

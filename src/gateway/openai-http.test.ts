@@ -167,11 +167,10 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         messages: [{ role: "user", content: message }],
       });
       expect(res.status).toBe(200);
-      // NOTE: the unauthenticated-caller ownership assertion that used to live here
-      // (expecting senderIsOwner === false) is tracked separately in the skipped test
-      // "derives senderIsOwner from request auth on the OpenAI-compat endpoint" below.
-      // The fork currently hardcodes senderIsOwner: true (a dropped authorization
-      // control); this helper now only exercises response-shape behavior.
+      // #2735: the default request carries a non-admin `x-remoteclaw-scopes:
+      // operator.write` header against an `auth:"none"` server, so the caller is
+      // NOT an owner. (Owner derivation is exercised exhaustively below.)
+      expect(getFirstAgentCall()?.senderIsOwner).toBe(false);
       return (await res.json()) as Record<string, unknown>;
     };
 
@@ -611,39 +610,89 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     }
   });
 
-  // SKIPPED — tracks a dropped authorization control on the KEPT OpenAI-compat endpoint.
-  // Upstream derives senderIsOwner from request auth (resolveOpenAiCompatibleHttpSenderIsOwner,
-  // upstream's src/gateway/http-utils.ts:177-189): shared-secret bearer -> owner, otherwise
-  // resolveHttpSenderIsOwner keyed on ADMIN_SCOPE. The fork hardcodes senderIsOwner: true
-  // (src/gateway/openai-http.ts:124), so an unauthenticated caller against an auth:"none"
-  // gateway (a config-reachable posture, src/gateway/auth-resolve.ts:79-81) receives
-  // owner-level tool policy. Restoring this is a HIGH-severity hardening change deferred to a
-  // dedicated PR: it requires (1) surfacing the auth result from the SHARED
-  // handleGatewayPostJsonEndpoint (src/gateway/http-endpoint-helpers.ts:69 currently discards
-  // `authorized`), (2) porting resolveOpenAiCompatibleHttpSenderIsOwner + resolveHttpSenderIsOwner
-  // + usesSharedSecretGatewayMethod + the AuthorizedGatewayHttpRequest type (all absent from the
-  // fork), (3) wiring senderIsOwner into buildAgentCommandInput. Un-skip when that lands.
-  // The shared-secret-bearer -> owner arm is already covered by
-  // "treats shared-secret bearer callers as owner operators" below.
-  it.skip("derives senderIsOwner from request auth on the OpenAI-compat endpoint", async () => {
+  // #2735: owner authority is DERIVED from the satisfying gateway auth method
+  // (resolveOpenAiCompatibleHttpSenderIsOwner), not hardcoded. An unauthenticated
+  // caller on an auth:"none" gateway must NOT be treated as owner. The
+  // shared-secret-bearer -> owner arm is covered by "treats shared-secret bearer
+  // callers as owner operators" below.
+  //
+  // CI-ASSERT ANCHOR — scripts/check-openai-http-owner-derivation.mjs verifies the
+  // test immediately below is present, un-skipped, and still asserts
+  // senderIsOwner === false for the unauthenticated no-header caller. That guard
+  // is what makes green CI a faithful proxy for "the #2735 hole is closed". Do NOT
+  // re-skip it or remove the senderIsOwner === false assertion.
+  it("derives senderIsOwner from request auth on the OpenAI-compat endpoint", async () => {
     const port = await getFreePort();
     const server = await startServer(port);
     try {
       agentCommand.mockClear();
       agentCommand.mockResolvedValueOnce({ payloads: [{ text: "hello" }] } as never);
-      const res = await postChatCompletions(port, {
-        model: "remoteclaw",
-        messages: [{ role: "user", content: "hi" }],
+      // Literal unauthenticated caller: auth:"none" server, NO bearer, NO
+      // x-remoteclaw-scopes header — the realistic attack. A faithful upstream
+      // port would MIS-GRANT owner here (no-header -> CLI_DEFAULT_OPERATOR_SCOPES,
+      // which includes operator.admin); the fork diverges to return [] (#2735).
+      const res = await fetch(`http://127.0.0.1:${port}/v1/chat/completions`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          model: "remoteclaw",
+          messages: [{ role: "user", content: "hi" }],
+        }),
       });
+      // The request must still CHAT (200, not 403): the fix downscopes owner, it
+      // does NOT reject the caller.
       expect(res.status).toBe(200);
       const firstCall = (agentCommand.mock.calls[0] as unknown[] | undefined)?.[0] as
         | { senderIsOwner?: boolean }
         | undefined;
-      // Unauthenticated caller (auth:"none" server, no bearer) must NOT be treated as owner.
       expect(firstCall?.senderIsOwner).toBe(false);
       await res.text();
     } finally {
       await server.close({ reason: "openai senderIsOwner auth-derivation test done" });
+    }
+  });
+
+  it("does not treat a non-admin declared scope as owner on an auth:none gateway", async () => {
+    const port = await getFreePort();
+    const server = await startServer(port);
+    try {
+      agentCommand.mockClear();
+      agentCommand.mockResolvedValueOnce({ payloads: [{ text: "hello" }] } as never);
+      const res = await postChatCompletions(
+        port,
+        { model: "remoteclaw", messages: [{ role: "user", content: "hi" }] },
+        { "x-remoteclaw-scopes": "operator.write" },
+      );
+      expect(res.status).toBe(200);
+      const firstCall = (agentCommand.mock.calls[0] as unknown[] | undefined)?.[0] as
+        | { senderIsOwner?: boolean }
+        | undefined;
+      expect(firstCall?.senderIsOwner).toBe(false);
+      await res.text();
+    } finally {
+      await server.close({ reason: "openai senderIsOwner non-admin scope test done" });
+    }
+  });
+
+  it("treats an explicit operator.admin declared scope as owner on an auth:none gateway", async () => {
+    const port = await getFreePort();
+    const server = await startServer(port);
+    try {
+      agentCommand.mockClear();
+      agentCommand.mockResolvedValueOnce({ payloads: [{ text: "hello" }] } as never);
+      const res = await postChatCompletions(
+        port,
+        { model: "remoteclaw", messages: [{ role: "user", content: "hi" }] },
+        { "x-remoteclaw-scopes": "operator.admin" },
+      );
+      expect(res.status).toBe(200);
+      const firstCall = (agentCommand.mock.calls[0] as unknown[] | undefined)?.[0] as
+        | { senderIsOwner?: boolean }
+        | undefined;
+      expect(firstCall?.senderIsOwner).toBe(true);
+      await res.text();
+    } finally {
+      await server.close({ reason: "openai senderIsOwner admin scope test done" });
     }
   });
 

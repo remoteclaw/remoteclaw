@@ -35,7 +35,10 @@ import type { AuthRateLimiter } from "./auth-rate-limit.js";
 import type { ResolvedGatewayAuth } from "./auth.js";
 import { sendJson, setSseHeaders, writeDone } from "./http-common.js";
 import { handleGatewayPostJsonEndpoint } from "./http-endpoint-helpers.js";
-import { resolveGatewayRequestContext } from "./http-utils.js";
+import {
+  resolveGatewayRequestContext,
+  resolveOpenAiCompatibleHttpSenderIsOwner,
+} from "./http-utils.js";
 import { normalizeInputHostnameAllowlist } from "./input-allowlist.js";
 import {
   CreateResponseBodySchema,
@@ -244,6 +247,7 @@ async function runResponsesAgentCommand(params: {
   sessionKey: string;
   runId: string;
   messageChannel: string;
+  senderIsOwner: boolean;
   deps: ReturnType<typeof createDefaultDeps>;
 }) {
   return agentCommandFromIngress(
@@ -258,8 +262,12 @@ async function runResponsesAgentCommand(params: {
       deliver: false,
       messageChannel: params.messageChannel,
       bestEffortDeliver: false,
-      // HTTP API callers are authenticated operator clients for this gateway context.
-      senderIsOwner: true,
+      // #2735: owner authority is DERIVED from the satisfying gateway auth method
+      // (resolveOpenAiCompatibleHttpSenderIsOwner), never hardcoded. Previously
+      // pinned to `true`, handing owner-only MCP tool families to an
+      // UNAUTHENTICATED caller on an `auth:"none"` gateway. Fork-introduced
+      // control — a future upstream DIFF-SYNC MUST keep this threaded.
+      senderIsOwner: params.senderIsOwner,
     },
     defaultRuntime,
     params.deps,
@@ -291,6 +299,12 @@ export async function handleOpenResponsesHttpRequest(
   if (!handled) {
     return true;
   }
+
+  // #2735: derive owner authority from the satisfying gateway auth method rather
+  // than hardcoding it (see runResponsesAgentCommand). Shared-secret bearer →
+  // owner; otherwise owner only when the caller explicitly declares
+  // operator.admin (unauthenticated `auth:"none"` callers are NOT owner).
+  const senderIsOwner = resolveOpenAiCompatibleHttpSenderIsOwner(req, handled.requestAuth);
 
   // Validate request body with Zod
   const parseResult = CreateResponseBodySchema.safeParse(handled.body);
@@ -479,6 +493,7 @@ export async function handleOpenResponsesHttpRequest(
         sessionKey,
         runId: responseId,
         messageChannel,
+        senderIsOwner,
         deps,
       });
 
@@ -711,6 +726,7 @@ export async function handleOpenResponsesHttpRequest(
         sessionKey,
         runId: responseId,
         messageChannel,
+        senderIsOwner,
         deps,
       });
 

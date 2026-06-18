@@ -31,7 +31,11 @@ import type { AuthRateLimiter } from "./auth-rate-limit.js";
 import type { ResolvedGatewayAuth } from "./auth.js";
 import { sendJson, setSseHeaders, writeDone } from "./http-common.js";
 import { handleGatewayPostJsonEndpoint } from "./http-endpoint-helpers.js";
-import { resolveGatewayRequestContext } from "./http-utils.js";
+import {
+  resolveGatewayRequestContext,
+  resolveOpenAiCompatibleHttpOperatorScopes,
+  resolveOpenAiCompatibleHttpSenderIsOwner,
+} from "./http-utils.js";
 import { normalizeInputHostnameAllowlist } from "./input-allowlist.js";
 
 type OpenAiHttpOptions = {
@@ -109,6 +113,7 @@ function buildAgentCommandInput(params: {
   sessionKey: string;
   runId: string;
   messageChannel: string;
+  senderIsOwner: boolean;
 }) {
   return {
     message: params.prompt.message,
@@ -119,8 +124,13 @@ function buildAgentCommandInput(params: {
     deliver: false as const,
     messageChannel: params.messageChannel,
     bestEffortDeliver: false as const,
-    // HTTP API callers are authenticated operator clients for this gateway context.
-    senderIsOwner: true as const,
+    // #2735: owner authority is DERIVED from the satisfying gateway auth method
+    // (resolveOpenAiCompatibleHttpSenderIsOwner), never hardcoded. Previously
+    // pinned to `true`, which handed owner-only MCP tool families to an
+    // UNAUTHENTICATED caller on an `auth:"none"` gateway. This is a
+    // fork-introduced control (RemoteClaw runs gateways network-exposed); a
+    // future upstream DIFF-SYNC MUST keep this threaded, not re-pin it to true.
+    senderIsOwner: params.senderIsOwner,
   };
 }
 
@@ -419,6 +429,12 @@ export async function handleOpenAiHttpRequest(
   const limits = resolveOpenAiChatCompletionsLimits(opts.config);
   const handled = await handleGatewayPostJsonEndpoint(req, res, {
     pathname: "/v1/chat/completions",
+    requiredOperatorMethod: "chat.send",
+    // Compat HTTP uses a different scope model from the generic HTTP helpers:
+    // shared-secret bearer auth is treated as full operator access, while a
+    // header-less `auth:"none"` caller still passes the method-scope gate (and
+    // chats) — it just isn't an owner (#2735).
+    resolveOperatorScopes: resolveOpenAiCompatibleHttpOperatorScopes,
     auth: opts.auth,
     trustedProxies: opts.trustedProxies,
     allowRealIpFallback: opts.allowRealIpFallback,
@@ -431,6 +447,12 @@ export async function handleOpenAiHttpRequest(
   if (!handled) {
     return true;
   }
+
+  // #2735: derive owner authority from the satisfying gateway auth method rather
+  // than hardcoding it. Shared-secret bearer → owner; otherwise owner only when
+  // the caller explicitly declares operator.admin (unauthenticated `auth:"none"`
+  // callers are NOT owner).
+  const senderIsOwner = resolveOpenAiCompatibleHttpSenderIsOwner(req, handled.requestAuth);
 
   const payload = coerceRequest(handled.body);
   const stream = Boolean(payload.stream);
@@ -482,6 +504,7 @@ export async function handleOpenAiHttpRequest(
     sessionKey,
     runId,
     messageChannel,
+    senderIsOwner,
   });
 
   if (!stream) {

@@ -2,10 +2,11 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import type { AuthRateLimiter } from "./auth-rate-limit.js";
 import type { ResolvedGatewayAuth } from "./auth.js";
 import {
-  authorizeGatewayBearerRequestOrReply,
+  authorizeGatewayHttpRequestOrReply,
   resolveGatewayRequestedOperatorScopes,
 } from "./http-auth-helpers.js";
 import { readJsonBodyOrError, sendJson, sendMethodNotAllowed } from "./http-common.js";
+import type { AuthorizedGatewayHttpRequest } from "./http-utils.js";
 import { authorizeOperatorScopesForMethod } from "./method-scopes.js";
 
 export async function handleGatewayPostJsonEndpoint(
@@ -19,8 +20,18 @@ export async function handleGatewayPostJsonEndpoint(
     allowRealIpFallback?: boolean;
     rateLimiter?: AuthRateLimiter;
     requiredOperatorMethod?: "chat.send" | (string & Record<never, never>);
+    /**
+     * Resolver for the method-scope gate's operator scopes. The compat surface
+     * passes `resolveOpenAiCompatibleHttpOperatorScopes` so shared-secret bearer
+     * auth maps to full operator access while a header-less `auth:"none"` caller
+     * still chats (#2735). Defaults to the header-only resolver.
+     */
+    resolveOperatorScopes?: (
+      req: IncomingMessage,
+      requestAuth: AuthorizedGatewayHttpRequest,
+    ) => string[];
   },
-): Promise<false | { body: unknown } | undefined> {
+): Promise<false | { body: unknown; requestAuth: AuthorizedGatewayHttpRequest } | undefined> {
   const url = new URL(req.url ?? "/", `http://${req.headers.host || "localhost"}`);
   if (url.pathname !== opts.pathname) {
     return false;
@@ -31,7 +42,7 @@ export async function handleGatewayPostJsonEndpoint(
     return undefined;
   }
 
-  const authorized = await authorizeGatewayBearerRequestOrReply({
+  const requestAuth = await authorizeGatewayHttpRequestOrReply({
     req,
     res,
     auth: opts.auth,
@@ -39,12 +50,13 @@ export async function handleGatewayPostJsonEndpoint(
     allowRealIpFallback: opts.allowRealIpFallback,
     rateLimiter: opts.rateLimiter,
   });
-  if (!authorized) {
+  if (!requestAuth) {
     return undefined;
   }
 
   if (opts.requiredOperatorMethod) {
-    const requestedScopes = resolveGatewayRequestedOperatorScopes(req);
+    const requestedScopes =
+      opts.resolveOperatorScopes?.(req, requestAuth) ?? resolveGatewayRequestedOperatorScopes(req);
     const scopeAuth = authorizeOperatorScopesForMethod(
       opts.requiredOperatorMethod,
       requestedScopes,
@@ -66,5 +78,5 @@ export async function handleGatewayPostJsonEndpoint(
     return undefined;
   }
 
-  return { body };
+  return { body, requestAuth };
 }

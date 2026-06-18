@@ -47,10 +47,19 @@ export async function ensureLoaded(
         throw error;
       }
       normalized = null;
-      state.deps.log.warn(
-        { storePath: state.deps.storePath, jobId: typeof raw.id === "string" ? raw.id : undefined },
-        "cron: job has invalid persisted sessionTarget; run remoteclaw doctor --fix to repair",
-      );
+      const jobId = typeof raw.id === "string" && raw.id ? raw.id : undefined;
+      // Warn once per job key, not once per tick. onTimer reloads the store
+      // with forceReload on every tick, so a single hand-edited unsafe job
+      // would otherwise flood the logs. `doctor --fix` quarantine is the
+      // durable remediation that removes the job from the active store.
+      const warnKey = jobId ?? `#${index}`;
+      if (!state.warnedInvalidSessionTarget.has(warnKey)) {
+        state.warnedInvalidSessionTarget.add(warnKey);
+        state.deps.log.warn(
+          { storePath: state.deps.storePath, jobId },
+          "cron: job has invalid persisted sessionTarget; run remoteclaw doctor --fix to repair",
+        );
+      }
     }
     const hydrated =
       normalized && typeof normalized === "object" ? (normalized as unknown as CronJob) : job;

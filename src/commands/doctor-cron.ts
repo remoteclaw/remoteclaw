@@ -1,5 +1,9 @@
 import { formatCliCommand } from "../cli/command-format.js";
 import type { RemoteClawConfig } from "../config/config.js";
+import {
+  quarantineUnsafePersistedCronJobs,
+  scanUnsafePersistedCronJobs,
+} from "../cron/quarantine.js";
 import { normalizeStoredCronJobs } from "../cron/store-migration.js";
 import { resolveCronStorePath, loadCronStore, saveCronStore } from "../cron/store.js";
 import type { CronJob } from "../cron/types.js";
@@ -181,4 +185,65 @@ export async function maybeRepairLegacyCronStore(params: {
   if (notifyMigration.warnings.length > 0) {
     note(notifyMigration.warnings.join("\n"), "Doctor warnings");
   }
+}
+
+function describeUnsafeCronJob(raw: Record<string, unknown>): string {
+  const name = normalizeOptionalString(raw.name);
+  const id = normalizeOptionalString(raw.id);
+  const sessionTarget = normalizeOptionalString(raw.sessionTarget) ?? "<missing>";
+  const label = name ? `"${name}"` : id ? `id ${id}` : "<unnamed>";
+  const idSuffix = name && id ? ` (id: ${id})` : "";
+  return `- ${label}${idSuffix}: unsafe sessionTarget ${JSON.stringify(sessionTarget)}`;
+}
+
+/**
+ * Quarantine cron jobs whose persisted `session:<id>` target is unsafe. They
+ * already fail closed at execution time, but they linger in the active store
+ * and warn on every load until removed. `doctor --fix` moves them to a sibling
+ * quarantine file (out of the scheduler's path) and reports what was moved. The
+ * store mutation lives in `cron/quarantine.ts`; this function owns the doctor
+ * note/confirm UX only.
+ */
+export async function maybeQuarantineUnsafeCronJobs(params: {
+  cfg: RemoteClawConfig;
+  options: DoctorOptions;
+  prompter: Pick<DoctorPrompter, "confirm">;
+}) {
+  const storePath = resolveCronStorePath(params.cfg.cron?.store);
+  const { quarantinePath, unsafe } = await scanUnsafePersistedCronJobs(storePath);
+  if (unsafe.length === 0) {
+    return;
+  }
+
+  note(
+    [
+      `Unsafe persisted cron ${pluralize(unsafe.length, "job")} detected at ${shortenHomePath(storePath)}.`,
+      ...unsafe.map(describeUnsafeCronJob),
+      `These never run (the scheduler fails closed) but warn on every load.`,
+      `Repair with ${formatCliCommand("remoteclaw doctor --fix")} to quarantine ${unsafe.length === 1 ? "it" : "them"} to ${shortenHomePath(quarantinePath)}.`,
+    ].join("\n"),
+    "Cron",
+  );
+
+  const shouldQuarantine = await params.prompter.confirm({
+    message: `Quarantine ${pluralize(unsafe.length, "unsafe cron job")} now?`,
+    initialValue: true,
+  });
+  if (!shouldQuarantine) {
+    return;
+  }
+
+  const result = await quarantineUnsafePersistedCronJobs({
+    storePath,
+    quarantinedAtMs: Date.now(),
+  });
+
+  note(
+    [
+      `Quarantined ${pluralize(result.quarantined.length, "unsafe cron job")} so ${result.quarantined.length === 1 ? "it does" : "they do"} not run:`,
+      ...result.quarantined.map(describeUnsafeCronJob),
+      `Moved to ${shortenHomePath(result.quarantinePath)}. Review and delete or fix ${result.quarantined.length === 1 ? "it" : "them"} manually.`,
+    ].join("\n"),
+    "Doctor changes",
+  );
 }

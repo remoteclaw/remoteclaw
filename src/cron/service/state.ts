@@ -130,6 +130,14 @@ export type CronServiceState = {
   running: boolean;
   op: Promise<unknown>;
   warnedDisabled: boolean;
+  /**
+   * Job keys (id, or `#<index>` for id-less jobs) already warned about for an
+   * invalid persisted sessionTarget. `onTimer` reloads the store with
+   * `forceReload: true` on every tick, so without this guard a single
+   * hand-edited unsafe job re-warns on every tick. Warn once per job key per
+   * process; `doctor --fix` quarantine is the durable remediation.
+   */
+  warnedInvalidSessionTarget: Set<string>;
   storeLoadedAtMs: number | null;
   storeFileMtimeMs: number | null;
 };
@@ -142,6 +150,7 @@ export function createCronServiceState(deps: CronServiceDeps): CronServiceState 
     running: false,
     op: Promise.resolve(),
     warnedDisabled: false,
+    warnedInvalidSessionTarget: new Set<string>(),
     storeLoadedAtMs: null,
     storeFileMtimeMs: null,
   };

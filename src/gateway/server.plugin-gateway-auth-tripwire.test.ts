@@ -233,34 +233,47 @@ function callsSymbol(sf: ts.SourceFile, name: string): boolean {
 }
 
 /**
- * True when an `authorizeHttpGatewayConnect({ ... })` call in the module forwards
- * a `rateLimiter` property — the wiring that actually feeds the per-origin
- * limiter into the bearer-auth path. A sync that kept the call but dropped this
- * property would disable per-origin brute-force protection while every
- * call-presence assertion below still passed green.
+ * True when EVERY `authorizeHttpGatewayConnect({ ... })` call in the module
+ * forwards a `rateLimiter` property — the wiring that actually feeds the
+ * per-origin limiter into the bearer-auth path. A sync that kept a call but
+ * dropped this property would disable per-origin brute-force protection while
+ * every call-presence assertion below still passed green.
+ *
+ * #2735 split the chokepoint into two wrappers in this module
+ * (authorizeGatewayBearerRequestOrReply + authorizeGatewayHttpRequestOrReply);
+ * requiring ALL calls to forward the limiter (not merely one) keeps the check
+ * honest now that more than one such call exists — otherwise one wrapper could
+ * silently lose its limiter while the other masks it.
  */
 function authConnectForwardsRateLimiter(sf: ts.SourceFile): boolean {
-  let forwarded = false;
+  let callCount = 0;
+  let allForward = true;
   const visit = (node: ts.Node) => {
     if (
       ts.isCallExpression(node) &&
       ts.isIdentifier(node.expression) &&
       node.expression.text === "authorizeHttpGatewayConnect"
     ) {
+      callCount += 1;
       const arg = node.arguments[0];
-      if (arg && ts.isObjectLiteralExpression(arg)) {
-        forwarded ||= arg.properties.some(
+      const forwards =
+        arg !== undefined &&
+        ts.isObjectLiteralExpression(arg) &&
+        arg.properties.some(
           (p) =>
             (ts.isPropertyAssignment(p) || ts.isShorthandPropertyAssignment(p)) &&
             ts.isIdentifier(p.name) &&
             p.name.text === "rateLimiter",
         );
+      if (!forwards) {
+        allForward = false;
       }
     }
     ts.forEachChild(node, visit);
   };
   visit(sf);
-  return forwarded;
+  // Non-degenerate: at least one chokepoint call must exist AND all forward it.
+  return callCount > 0 && allForward;
 }
 
 type ControlWiring = {
@@ -296,11 +309,29 @@ const WIRED_GATEWAY_AUTH_CONTROLS: ControlWiring[] = [
     callSiteImportsSymbol: true,
   },
   {
-    control: "per-origin rate-limit + bearer-auth chokepoint",
-    symbol: "authorizeGatewayBearerRequestOrReply",
+    // #2735: the JSON-POST endpoints (OpenAI-compat /v1/chat/completions and
+    // /v1/responses) authorize via authorizeGatewayHttpRequestOrReply, which
+    // surfaces the satisfying auth method for owner-derivation while preserving
+    // the SAME per-origin rate-limit + bearer-auth (it forwards `rateLimiter`
+    // into authorizeHttpGatewayConnect, asserted below). It REPLACED
+    // authorizeGatewayBearerRequestOrReply at this call site under the approved
+    // #2735 design + security review; per this file's header the row is
+    // RE-POINTED to the new chokepoint, never deleted.
+    control: "per-origin rate-limit + bearer-auth chokepoint (JSON POST endpoints)",
+    symbol: "authorizeGatewayHttpRequestOrReply",
     defModule: "http-auth-helpers.ts",
     defExported: true,
     callSiteModule: "http-endpoint-helpers.ts",
+    callSiteImportsSymbol: true,
+  },
+  {
+    // The boolean bearer chokepoint stays the live control for the tools-invoke
+    // HTTP endpoint, which needs only an allow/deny decision (no owner-derivation).
+    control: "per-origin rate-limit + bearer-auth chokepoint (tools-invoke endpoint)",
+    symbol: "authorizeGatewayBearerRequestOrReply",
+    defModule: "http-auth-helpers.ts",
+    defExported: true,
+    callSiteModule: "tools-invoke-http.ts",
     callSiteImportsSymbol: true,
   },
   {
@@ -337,15 +368,18 @@ describe("gateway-auth control wiring guard (#2724, positive-presence-AND-wiring
   it("pins the control COUNT so a silently dropped row fails loudly (degenerate-subject gate)", () => {
     // If a future edit deletes a row to "make the suite green" after a de-wire,
     // this fails instead. Bump it ONLY when intentionally adding/removing a
-    // guarded control — never to silence a real de-wiring.
-    expect(WIRED_GATEWAY_AUTH_CONTROLS).toHaveLength(4);
+    // guarded control — never to silence a real de-wiring. (#2735 took this 4→5:
+    // the JSON-endpoint chokepoint split into authorizeGatewayHttpRequestOrReply
+    // (compat endpoints) + authorizeGatewayBearerRequestOrReply (tools-invoke).)
+    expect(WIRED_GATEWAY_AUTH_CONTROLS).toHaveLength(5);
   });
 
-  it("keeps the per-origin rate limiter threaded through the bearer-auth chokepoint", () => {
-    // authorizeGatewayBearerRequestOrReply is the single HTTP auth chokepoint;
-    // it must forward `rateLimiter` into authorizeHttpGatewayConnect. The
-    // call-presence row above proves the chokepoint stays wired; this proves the
-    // limiter is still fed INTO it.
+  it("keeps the per-origin rate limiter threaded through every bearer-auth chokepoint", () => {
+    // http-auth-helpers.ts hosts the HTTP auth chokepoint wrappers
+    // (authorizeGatewayBearerRequestOrReply + authorizeGatewayHttpRequestOrReply
+    // since #2735); each must forward `rateLimiter` into authorizeHttpGatewayConnect.
+    // The call-presence rows above prove the chokepoints stay wired; this proves
+    // the limiter is still fed INTO every one of them.
     expect(authConnectForwardsRateLimiter(parseGatewayModule("http-auth-helpers.ts"))).toBe(true);
   });
 });

@@ -2,7 +2,13 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import type { AuthRateLimiter } from "./auth-rate-limit.js";
 import { authorizeHttpGatewayConnect, type ResolvedGatewayAuth } from "./auth.js";
 import { sendGatewayAuthFailure } from "./http-common.js";
-import { getBearerToken, getHeader, resolveHttpBrowserOriginPolicy } from "./http-utils.js";
+import {
+  type AuthorizedGatewayHttpRequest,
+  getBearerToken,
+  getHeader,
+  resolveHttpBrowserOriginPolicy,
+  usesSharedSecretGatewayMethod,
+} from "./http-utils.js";
 import { CLI_DEFAULT_OPERATOR_SCOPES } from "./method-scopes.js";
 
 const OPERATOR_SCOPES_HEADER = "x-remoteclaw-scopes";
@@ -31,6 +37,51 @@ export async function authorizeGatewayBearerRequestOrReply(params: {
     return false;
   }
   return true;
+}
+
+/**
+ * Like `authorizeGatewayBearerRequestOrReply`, but surfaces the satisfying auth
+ * context instead of a bare boolean (#2735). Endpoints that derive per-request
+ * authority — operator scopes / owner — from the auth method (e.g. the
+ * OpenAI-compatible surface) need this; `authorizeGatewayBearerRequestOrReply`
+ * is retained for callers that only need allow/deny (e.g. `tools-invoke-http`).
+ *
+ * Returns `null` (and writes the auth-failure response) when unauthorized, so
+ * callers branch on truthiness exactly as before.
+ */
+export async function authorizeGatewayHttpRequestOrReply(params: {
+  req: IncomingMessage;
+  res: ServerResponse;
+  auth: ResolvedGatewayAuth;
+  trustedProxies?: string[];
+  allowRealIpFallback?: boolean;
+  rateLimiter?: AuthRateLimiter;
+}): Promise<AuthorizedGatewayHttpRequest | null> {
+  const token = getBearerToken(params.req);
+  const browserOriginPolicy = resolveHttpBrowserOriginPolicy(params.req);
+  const authResult = await authorizeHttpGatewayConnect({
+    auth: params.auth,
+    connectAuth: token ? { token, password: token } : null,
+    req: params.req,
+    trustedProxies: params.trustedProxies,
+    allowRealIpFallback: params.allowRealIpFallback,
+    rateLimiter: params.rateLimiter,
+    browserOriginPolicy,
+  });
+  if (!authResult.ok) {
+    sendGatewayAuthFailure(params.res, authResult);
+    return null;
+  }
+  return {
+    authMethod: authResult.method,
+    // Shared-secret bearer auth proves possession of the gateway secret, not a
+    // narrower per-request operator identity, so its DECLARED scopes are NOT
+    // trusted (owner is granted via the compat short-circuit instead). Non-
+    // shared-secret callers (none / trusted-proxy) may have their declared
+    // scopes honored — but a missing or non-admin declaration is NOT owner
+    // (#2735; see resolveTrustedHttpOperatorScopes for the fork divergence).
+    trustDeclaredOperatorScopes: !usesSharedSecretGatewayMethod(authResult.method),
+  };
 }
 
 export function resolveGatewayRequestedOperatorScopes(req: IncomingMessage): string[] {

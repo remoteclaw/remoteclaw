@@ -8,6 +8,11 @@ import {
   normalizeOptionalString,
 } from "../shared/string-coerce.js";
 import { normalizeMessageChannel } from "../utils/message-channel.js";
+import type { GatewayAuthResult, ResolvedGatewayAuth } from "./auth.js";
+import { ADMIN_SCOPE, CLI_DEFAULT_OPERATOR_SCOPES } from "./method-scopes.js";
+
+/** Header by which a non-shared-secret HTTP caller may declare its operator scopes. */
+const OPERATOR_SCOPES_HEADER = "x-remoteclaw-scopes";
 
 /** Brand model id that routes to the configured default agent. */
 export const REMOTECLAW_MODEL_ID = "remoteclaw";
@@ -133,4 +138,173 @@ export function resolveHttpBrowserOriginPolicy(
   _req: IncomingMessage,
 ): { origin?: string; allowed?: boolean } | undefined {
   return undefined;
+}
+
+// --- HTTP auth → operator-scope / owner derivation (#2735) -------------------
+//
+// Restores the dropped owner-authorization control on the OpenAI-compatible HTTP
+// surface. `senderIsOwner` was hardcoded `true`, so an UNAUTHENTICATED caller on
+// an `auth:"none"` gateway was handed owner-level MCP tool authority. These
+// helpers derive operator scopes / owner from the *satisfying* gateway auth
+// method instead. See `resolveTrustedHttpOperatorScopes` for the load-bearing
+// fork-specific divergence from upstream.
+
+/** Minimal auth shape used to detect shared-secret (token/password) HTTP auth. */
+type SharedSecretGatewayAuth = Pick<ResolvedGatewayAuth, "mode">;
+
+/**
+ * The auth context that survives `handleGatewayPostJsonEndpoint`'s success path.
+ * `authMethod` is the method that satisfied the gateway connect check;
+ * `trustDeclaredOperatorScopes` is whether the caller's declared per-request
+ * scopes (the `x-remoteclaw-scopes` header) may be honored — false for
+ * shared-secret bearer auth, which proves possession of the gateway secret but
+ * not a narrower per-request operator identity.
+ */
+export type AuthorizedGatewayHttpRequest = {
+  authMethod?: GatewayAuthResult["method"];
+  trustDeclaredOperatorScopes: boolean;
+};
+
+/** Shared-secret gateway methods (token / password bearer). */
+export function usesSharedSecretGatewayMethod(
+  method: GatewayAuthResult["method"] | undefined,
+): boolean {
+  return method === "token" || method === "password";
+}
+
+function usesSharedSecretHttpAuth(auth: SharedSecretGatewayAuth | undefined): boolean {
+  return auth?.mode === "token" || auth?.mode === "password";
+}
+
+/** A bearer-token request against a shared-secret-configured gateway. */
+export function isGatewayBearerHttpRequest(
+  req: IncomingMessage,
+  auth?: SharedSecretGatewayAuth,
+): boolean {
+  return usesSharedSecretHttpAuth(auth) && Boolean(getBearerToken(req));
+}
+
+function shouldTrustDeclaredHttpOperatorScopes(
+  req: IncomingMessage,
+  authOrRequest:
+    | SharedSecretGatewayAuth
+    | Pick<AuthorizedGatewayHttpRequest, "trustDeclaredOperatorScopes">
+    | undefined,
+): boolean {
+  if (authOrRequest && "trustDeclaredOperatorScopes" in authOrRequest) {
+    return authOrRequest.trustDeclaredOperatorScopes;
+  }
+  return !isGatewayBearerHttpRequest(req, authOrRequest);
+}
+
+/**
+ * Parse the caller's explicitly declared operator scopes from the
+ * `x-remoteclaw-scopes` header. Returns `undefined` when the header is absent
+ * (no declaration), `[]` when present-but-empty (caller declared "no scopes"),
+ * or the parsed list otherwise.
+ */
+function parseDeclaredHttpOperatorScopes(req: IncomingMessage): string[] | undefined {
+  const headerValue = getHeader(req, OPERATOR_SCOPES_HEADER);
+  if (headerValue === undefined) {
+    return undefined;
+  }
+  const raw = headerValue.trim();
+  if (!raw) {
+    return [];
+  }
+  return raw
+    .split(",")
+    .map((scope) => scope.trim())
+    .filter((scope) => scope.length > 0);
+}
+
+/**
+ * Operator scopes used to derive OWNER authority for an HTTP caller.
+ *
+ * FORK-INTRODUCED SECURITY DIVERGENCE (#2735) — DO NOT "sync back" to upstream
+ * here. Upstream OpenClaw returns `[...CLI_DEFAULT_OPERATOR_SCOPES]` for a
+ * *trusted* (non-shared-secret) request that sends NO `x-*-scopes` header
+ * ("trusted clients without an explicit header get the default operator scopes,
+ * matching pre-#57783 behavior"). Those CLI defaults INCLUDE `operator.admin`,
+ * so upstream INTENTIONALLY grants OWNER to a header-less caller on an
+ * `auth:"none"` gateway — acceptable under upstream's local-trusted CLI model,
+ * but NOT for RemoteClaw, which runs gateways network-exposed over messaging
+ * channels where `auth:"none"` + no-header is the realistic attacker. The fork
+ * therefore returns `[]` (→ NOT owner) on that branch. A future DIFF-SYNC MUST
+ * NOT re-adopt the upstream `CLI_DEFAULT_OPERATOR_SCOPES` fallback on this branch
+ * — doing so silently re-opens the #2735 IDOR. (Parallel to the #2733
+ * re-introduction guard; ADR-0011.)
+ */
+export function resolveTrustedHttpOperatorScopes(
+  req: IncomingMessage,
+  authOrRequest?:
+    | SharedSecretGatewayAuth
+    | Pick<AuthorizedGatewayHttpRequest, "trustDeclaredOperatorScopes">,
+): string[] {
+  if (!shouldTrustDeclaredHttpOperatorScopes(req, authOrRequest)) {
+    // Shared-secret bearer auth proves possession of the gateway secret, not a
+    // narrower per-request operator identity. Don't let those callers self-assert
+    // operator scopes via request headers.
+    return [];
+  }
+  const declared = parseDeclaredHttpOperatorScopes(req);
+  if (declared === undefined) {
+    // #2735 divergence (see fn-level comment): no declared scopes ⇒ NOT owner.
+    return [];
+  }
+  return declared;
+}
+
+/** True when the request's TRUSTED operator scopes include `operator.admin`. */
+export function resolveHttpSenderIsOwner(
+  req: IncomingMessage,
+  authOrRequest?:
+    | SharedSecretGatewayAuth
+    | Pick<AuthorizedGatewayHttpRequest, "trustDeclaredOperatorScopes">,
+): boolean {
+  return resolveTrustedHttpOperatorScopes(req, authOrRequest).includes(ADMIN_SCOPE);
+}
+
+/**
+ * Operator scopes for the OpenAI-compatible surface's METHOD-scope gate
+ * (e.g. `chat.send`). This is method-authorization ONLY — it is NEVER used to
+ * derive owner authority (that is `resolveOpenAiCompatibleHttpSenderIsOwner`).
+ *
+ * It stays permissive on a missing header so a plain OpenAI-SDK chat still works
+ * under `auth:"none"` (the #2735 fix downscopes OWNER, it does NOT reject the
+ * request — that would be the rejected "B2" behavior). Shared-secret bearer auth
+ * is the documented trusted-operator surface for the compat API, so it restores
+ * the CLI defaults. A caller may still voluntarily restrict itself by declaring
+ * a narrower (or empty) `x-remoteclaw-scopes` header.
+ */
+export function resolveOpenAiCompatibleHttpOperatorScopes(
+  req: IncomingMessage,
+  requestAuth: AuthorizedGatewayHttpRequest,
+): string[] {
+  if (usesSharedSecretGatewayMethod(requestAuth.authMethod)) {
+    return [...CLI_DEFAULT_OPERATOR_SCOPES];
+  }
+  const declared = parseDeclaredHttpOperatorScopes(req);
+  return declared === undefined ? [...CLI_DEFAULT_OPERATOR_SCOPES] : declared;
+}
+
+/**
+ * Owner authority for the OpenAI-compatible surface.
+ *
+ * Shared-secret bearer auth also carries owner semantics here: there is no
+ * separate per-request owner primitive on that path, so owner-only tool policy
+ * follows the documented trusted-operator contract. The short-circuit happens
+ * BEFORE consulting declared scopes (so a shared-secret bearer is owner even
+ * when it declares a narrower scope). For non-shared-secret callers (`none` /
+ * `trusted-proxy`), owner requires an explicitly declared `operator.admin`
+ * scope — a header-less or non-admin caller is NOT owner (#2735).
+ */
+export function resolveOpenAiCompatibleHttpSenderIsOwner(
+  req: IncomingMessage,
+  requestAuth: AuthorizedGatewayHttpRequest,
+): boolean {
+  if (usesSharedSecretGatewayMethod(requestAuth.authMethod)) {
+    return true;
+  }
+  return resolveHttpSenderIsOwner(req, requestAuth);
 }

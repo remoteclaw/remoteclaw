@@ -4,6 +4,7 @@ import path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 import { WebSocket } from "ws";
 import { GATEWAY_CLIENT_IDS, GATEWAY_CLIENT_MODES } from "./protocol/client-info.js";
+import { ErrorCodes } from "./protocol/index.js";
 import { startGatewayServerHarness, type GatewayServerHarness } from "./server.e2e-ws-harness.js";
 import { createToolSummaryPreviewTranscriptLines } from "./session-preview.test-helpers.js";
 import {
@@ -30,6 +31,13 @@ const subagentLifecycleHookMocks = vi.hoisted(() => ({
 
 const subagentLifecycleHookState = vi.hoisted(() => ({
   hasSubagentEndedHook: true,
+}));
+
+// Controls whether an in-flight session run is treated as having stopped.
+// When false, the mocked session-run-registry reports the run never
+// terminated within the gateway's wait window (see vi.mock below).
+const runRegistryState = vi.hoisted(() => ({
+  runStops: true,
 }));
 
 const threadBindingMocks = vi.hoisted(() => ({
@@ -86,6 +94,19 @@ vi.mock("../../extensions/discord/src/monitor/thread-bindings.js", async (import
     ...actual,
     unbindThreadBindingsBySessionKey: (params: unknown) =>
       threadBindingMocks.unbindThreadBindingsBySessionKey(params),
+  };
+});
+
+// Fork-boundary mock (ADR 0005 H8, category: performance). Partial passthrough
+// keeps every export real; only `waitForSessionRunEnd` is overridable so a
+// "run does not stop" scenario resolves the terminal `false` instantly instead
+// of blocking for the real SESSION_RUN_TERMINATION_TIMEOUT_MS (15s) wait.
+vi.mock("../agents/session-run-registry.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../agents/session-run-registry.js")>();
+  return {
+    ...actual,
+    waitForSessionRunEnd: async (sessionKey: string, timeoutMs: number): Promise<boolean> =>
+      runRegistryState.runStops ? await actual.waitForSessionRunEnd(sessionKey, timeoutMs) : false,
   };
 });
 
@@ -168,6 +189,7 @@ describe("gateway server sessions", () => {
     sessionHookMocks.triggerInternalHook.mockClear();
     subagentLifecycleHookMocks.runSubagentEnded.mockClear();
     subagentLifecycleHookState.hasSubagentEndedHook = true;
+    runRegistryState.runStops = true;
     threadBindingMocks.unbindThreadBindingsBySessionKey.mockClear();
   });
 
@@ -823,6 +845,60 @@ describe("gateway server sessions", () => {
       reason: "session-reset",
       sendFarewell: true,
     });
+
+    ws.close();
+  });
+
+  test("sessions.reset reports UNAVAILABLE when the active run does not stop", async () => {
+    await seedActiveMainSession();
+    // The in-flight run never terminates within the gateway's wait window, so
+    // ensureSessionRuntimeCleanup gives up and reports the session unavailable.
+    runRegistryState.runStops = false;
+
+    const { ws } = await openClient();
+    const reset = await rpcReq<Record<string, unknown>>(ws, "sessions.reset", { key: "main" });
+
+    expect(reset.ok).toBe(false);
+    expect(reset.error?.code).toBe(ErrorCodes.UNAVAILABLE);
+    expect(reset.error?.message).toContain("is still active");
+    // Runtime cleanup was attempted before the method gave up...
+    expect(sessionCleanupMocks.stopSubagentsForRequester).toHaveBeenCalledWith({
+      cfg: expect.any(Object),
+      requesterSessionKey: "agent:main:main",
+    });
+    // ...but the session was never reset, so no unbound-lifecycle effects fired.
+    expect(subagentLifecycleHookMocks.runSubagentEnded).not.toHaveBeenCalled();
+    expect(threadBindingMocks.unbindThreadBindingsBySessionKey).not.toHaveBeenCalled();
+
+    ws.close();
+  });
+
+  test("sessions.delete reports UNAVAILABLE when the active run does not stop", async () => {
+    const { dir } = await createSessionStoreDir();
+    await writeSingleLineSession(dir, "sess-subagent", "hello");
+    await writeSessionStore({
+      entries: {
+        "agent:main:subagent:worker": {
+          sessionId: "sess-subagent",
+          updatedAt: Date.now(),
+        },
+      },
+    });
+    // The in-flight run never terminates within the gateway's wait window, so
+    // ensureSessionRuntimeCleanup gives up and reports the session unavailable.
+    runRegistryState.runStops = false;
+
+    const { ws } = await openClient();
+    const deleted = await rpcReq<Record<string, unknown>>(ws, "sessions.delete", {
+      key: "agent:main:subagent:worker",
+    });
+
+    expect(deleted.ok).toBe(false);
+    expect(deleted.error?.code).toBe(ErrorCodes.UNAVAILABLE);
+    expect(deleted.error?.message).toContain("is still active");
+    // The session was never deleted, so no unbound-lifecycle effects fired.
+    expect(subagentLifecycleHookMocks.runSubagentEnded).not.toHaveBeenCalled();
+    expect(threadBindingMocks.unbindThreadBindingsBySessionKey).not.toHaveBeenCalled();
 
     ws.close();
   });

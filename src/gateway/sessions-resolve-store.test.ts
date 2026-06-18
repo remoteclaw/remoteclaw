@@ -9,12 +9,12 @@ import { resolveSessionKeyFromResolveParams } from "./sessions-resolve.js";
 describe("resolveSessionKeyFromResolveParams store canonicalization", () => {
   const freshUpdatedAt = () => Date.now();
 
-  // TODO(#NNNN): legacy main-alias remap — separate hardening PR. The
-  // deleted-agent reject parity (T2/T3/T4 below) landed without inventing the
-  // remap-to-live-default behavior this case requires; sessions-resolve.ts
-  // currently rejects `agent:main:main` rather than remapping it onto the live
-  // default agent. Un-skip once the remap boundary is designed + reviewed.
-  it.skip("resolves legacy main-alias matches by sessionId and label for the configured default agent", async () => {
+  // #2733: legacy main-alias remap. A legacy single-store `agent:main:main`
+  // entry (default agent renamed away from `main`) remaps onto the live default
+  // agent's main session via the narrow 4-conjunct gate in sessions-resolve.ts.
+  // The reject falsifiers below (discovered per-agent store, explicit key) prove
+  // the boundary stays narrow and the #65524 deleted-agent guard is preserved.
+  it("resolves legacy main-alias matches by sessionId and label for the configured default agent", async () => {
     await withStateDirEnv("remoteclaw-sessions-resolve-alias-", async ({ stateDir }) => {
       const storePath = path.join(stateDir, "sessions.json");
       const cfg = {

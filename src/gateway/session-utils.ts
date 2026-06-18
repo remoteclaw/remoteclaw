@@ -3,6 +3,7 @@ import path from "node:path";
 import {
   listAgentIds,
   resolveAgentWorkspaceDir,
+  resolveDefaultAgentId,
   resolveSessionKeyAgentId,
   resolveSoleAgentId,
 } from "../agents/agent-scope.js";
@@ -241,6 +242,105 @@ export function resolveDeletedAgentIdFromSessionKey(
     return null;
   }
   return agentId;
+}
+
+/**
+ * The historical OpenClaw default-agent id. Legacy single-store deployments
+ * serialized the default agent's main session under `agent:main:main`. After a
+ * rebrand/rename the configured default agent is no longer `main`, so that
+ * on-disk entry now encodes a "deleted" agent. See sessions-resolve.ts ADR-NOTE.
+ */
+const LEGACY_DEFAULT_AGENT_ID = "main";
+
+/**
+ * True when sessions are backed by a single configured non-template store
+ * (`cfg.session.store` is set and is NOT an `{agentId}` template). This is the
+ * provenance signal that gates the legacy main-alias remap on the explicit-key
+ * lookup path, and it mirrors the single-store branch of
+ * `loadCombinedSessionStoreForGateway` (which surfaces the same signal as
+ * `fromSingleStore` for the sessionId/label paths). One predicate, no drift.
+ */
+export function isSingleConfiguredSessionStore(cfg: RemoteClawConfig): boolean {
+  const storeConfig = cfg.session?.store;
+  return Boolean(storeConfig) && !isStorePathTemplate(storeConfig);
+}
+
+/**
+ * Narrow remap of the legacy default-agent main-session alias `agent:main:main`
+ * onto the live default agent's main session, restoring continuity for an old
+ * default-agent "main" thread after the default agent was renamed (or the
+ * no-config default became `default`). Returns the remapped session key when
+ * ALL FOUR conjuncts hold, or null to leave the caller's reject/pass behavior
+ * unchanged.
+ *
+ * Conjuncts (full rationale + fork provenance: sessions-resolve.ts ADR-NOTE):
+ *   1. The encoded agent-id segment is the literal historical default-agent id
+ *      `main`, AND the key is the main-SESSION alias (`agent:main:main`). A
+ *      concrete non-alias session under the deleted `main` agent
+ *      (e.g. `agent:main:guildchat:direct:u1`) is NOT remapped — it stays
+ *      rejected.
+ *   2. `main` is NOT a currently-configured agent. If a live `main` agent
+ *      exists, `resolveDeletedAgentIdFromSessionKey` already returns null and
+ *      the key resolves normally, so no remap is needed.
+ *   3. A live DEFAULT agent exists: `resolveDefaultAgentId` resolves to a
+ *      CONFIGURED agent, not the no-config `DEFAULT_AGENT_ID` ("default")
+ *      fallback.
+ *   4. LEGACY SINGLE-STORE PROVENANCE: the matched entry came from the single
+ *      configured (non-template) store (`fromSingleStore`), NOT a discovered
+ *      per-agent store. LOAD-BEARING — a discovered per-agent deleted-agent
+ *      store MUST stay rejected to preserve the #65524 deleted-agent
+ *      send/steer guard; ignoring provenance would re-open that hole.
+ */
+export function resolveLegacyDefaultMainRemap(
+  cfg: RemoteClawConfig,
+  key: string,
+  fromSingleStore: boolean,
+): string | null {
+  // Conjunct 4 — provenance. Only the single configured store may remap;
+  // discovered per-agent stores never do.
+  if (!fromSingleStore) {
+    return null;
+  }
+  const parsed = parseAgentSessionKey(key);
+  if (!parsed) {
+    return null;
+  }
+  // Conjunct 1a — the encoded agent-id is the historical default-agent id.
+  if (normalizeAgentId(parsed.agentId) !== LEGACY_DEFAULT_AGENT_ID) {
+    return null;
+  }
+  // Conjunct 1b — restrict to the legacy main-SESSION alias (`agent:main:main`);
+  // concrete sessions under the deleted `main` agent stay rejected.
+  const legacyMainAliasKey = resolveAgentMainSessionKey({
+    cfg,
+    agentId: LEGACY_DEFAULT_AGENT_ID,
+  });
+  const canonicalUnderLegacyMain = canonicalizeMainSessionAlias({
+    cfg,
+    agentId: LEGACY_DEFAULT_AGENT_ID,
+    sessionKey: key,
+  });
+  if (canonicalUnderLegacyMain !== legacyMainAliasKey) {
+    return null;
+  }
+  // Conjunct 2 — `main` is not a live, configured agent.
+  if (listAgentIds(cfg).includes(LEGACY_DEFAULT_AGENT_ID)) {
+    return null;
+  }
+  // Conjunct 3 — a configured live default agent exists (not the no-config
+  // "default" fallback).
+  const liveDefaultAgentId = resolveDefaultAgentId(cfg);
+  if (!listAgentIds(cfg).includes(liveDefaultAgentId)) {
+    return null;
+  }
+  // Remap agent:main:<rest> -> agent:<live-default>:<rest>, then re-canonicalize
+  // the remainder so the returned key matches how the live default agent's main
+  // session is stored.
+  return canonicalizeMainSessionAlias({
+    cfg,
+    agentId: liveDefaultAgentId,
+    sessionKey: `agent:${liveDefaultAgentId}:${parsed.rest}`,
+  });
 }
 
 /**
@@ -738,9 +838,15 @@ function mergeSessionEntryIntoCombined(params: {
 export function loadCombinedSessionStoreForGateway(cfg: RemoteClawConfig): {
   storePath: string;
   store: Record<string, SessionEntry>;
+  /**
+   * True when the combined store was loaded from the single configured
+   * (non-template) store rather than discovered per-agent stores. Threaded to
+   * `resolveLegacyDefaultMainRemap` as the conjunct-4 provenance gate.
+   */
+  fromSingleStore: boolean;
 } {
   const storeConfig = cfg.session?.store;
-  if (storeConfig && !isStorePathTemplate(storeConfig)) {
+  if (isSingleConfiguredSessionStore(cfg)) {
     const storePath = resolveStorePath(storeConfig);
     const defaultAgentId = resolveSoleAgentId(cfg) ?? listAgentIds(cfg)[0];
     const store = loadSessionStore(storePath);
@@ -755,7 +861,7 @@ export function loadCombinedSessionStoreForGateway(cfg: RemoteClawConfig): {
         canonicalKey,
       });
     }
-    return { storePath, store: combined };
+    return { storePath, store: combined, fromSingleStore: true };
   }
 
   const targets = resolveAllAgentSessionStoreTargetsSync(cfg);
@@ -778,7 +884,7 @@ export function loadCombinedSessionStoreForGateway(cfg: RemoteClawConfig): {
 
   const storePath =
     typeof storeConfig === "string" && storeConfig.trim() ? storeConfig.trim() : "(multiple)";
-  return { storePath, store: combined };
+  return { storePath, store: combined, fromSingleStore: false };
 }
 
 export function getSessionDefaults(cfg: RemoteClawConfig): GatewaySessionsDefaults {

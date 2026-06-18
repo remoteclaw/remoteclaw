@@ -119,9 +119,18 @@ const CONTROL_UI_CLIENT = {
   mode: GATEWAY_CLIENT_MODES.WEBCHAT,
 };
 
+// Single source of truth for the simulated reverse-proxy peer IP used by the
+// trusted-proxy control-UI tests. RFC 5737 TEST-NET-3 documentation range — a
+// non-loopback address that is never a real peer. The trusted-proxy harness
+// seam (setTestUpgradeRemoteAddressOverride) makes the server observe this as
+// the socket remoteAddress, and it is listed in `trustedProxies` so
+// `authorizeTrustedProxy` treats it as a legitimate proxy (and, being
+// non-loopback, does NOT hit the loopback rejection).
+const TRUSTED_PROXY_CONTROL_UI_REMOTE_IP = "203.0.113.10";
+
 const TRUSTED_PROXY_CONTROL_UI_HEADERS = {
   origin: "https://localhost",
-  "x-forwarded-for": "203.0.113.10",
+  "x-forwarded-for": TRUSTED_PROXY_CONTROL_UI_REMOTE_IP,
   "x-forwarded-proto": "https",
   "x-forwarded-user": "peter@example.com",
 } as const;
@@ -231,7 +240,12 @@ async function writeTrustedProxyControlUiConfig(params?: { allowInsecureAuth?: b
   const { writeConfigFile } = await import("../config/config.js");
   await writeConfigFile({
     gateway: {
-      trustedProxies: ["127.0.0.1"],
+      // 127.0.0.1 keeps the loopback-source rejection cases meaningful; the
+      // TEST-NET-3 IP lets the harness simulate a legitimate non-loopback proxy
+      // for the successful-path case (L276). Adding it does not change the
+      // loopback-rejection cases — a loopback socket is rejected regardless of
+      // trustedProxies membership.
+      trustedProxies: ["127.0.0.1", TRUSTED_PROXY_CONTROL_UI_REMOTE_IP],
       controlUi: {
         allowedOrigins: ["https://localhost"],
         ...(params?.allowInsecureAuth ? { allowInsecureAuth: true } : {}),
@@ -382,6 +396,7 @@ export {
   TEST_OPERATOR_CLIENT,
   trackConnectChallengeNonce,
   TRUSTED_PROXY_CONTROL_UI_HEADERS,
+  TRUSTED_PROXY_CONTROL_UI_REMOTE_IP,
   testState,
   testTailscaleWhois,
   waitForWsClose,
@@ -390,6 +405,10 @@ export {
   writeTrustedProxyControlUiConfig,
 };
 export { ConnectErrorDetailCodes } from "./protocol/connect-error-details.js";
+// TEST-ONLY harness seam (no production callers). Lets a suite simulate a
+// non-loopback peer so the trusted-proxy auth path is reachable over the
+// loopback-only test transport. See test-remote-address-seam.ts § production-safe.
+export { setTestUpgradeRemoteAddressOverride } from "./server/ws-connection/test-remote-address-seam.js";
 export { getHandshakeTimeoutMs } from "./server-constants.js";
 export { PROTOCOL_VERSION } from "./protocol/index.js";
 export { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../utils/message-channel.js";

@@ -90,6 +90,17 @@ export class GatewayClientRequestError extends Error {
 
 export type GatewayClientOptions = {
   url?: string; // ws://127.0.0.1:18789
+  /**
+   * Extra HTTP headers to attach to the WS upgrade request.
+   *
+   * Test-only seam: lets a harness present forwarding headers (e.g.
+   * `x-forwarded-for`) so the server classifies the connect as remote
+   * (non-local-direct) via `isLocalDirectRequest`. Production callers never set
+   * this — real clients connect over loopback/SSH-tunnel/Tailscale without
+   * synthesizing proxy headers — so it does not alter the production auto-pair
+   * posture; it only routes test connects through the existing remote codepath.
+   */
+  headers?: Record<string, string>;
   connectChallengeTimeoutMs?: number;
   tickWatchMinIntervalMs?: number;
   requestTimeoutMs?: number;
@@ -214,6 +225,9 @@ export class GatewayClient {
     const wsOptions: ClientOptions = {
       maxPayload: 25 * 1024 * 1024,
     };
+    if (this.opts.headers && Object.keys(this.opts.headers).length > 0) {
+      wsOptions.headers = this.opts.headers;
+    }
     if (url.startsWith("wss://") && this.opts.tlsFingerprint) {
       wsOptions.rejectUnauthorized = false;
       wsOptions.checkServerIdentity = ((_host: string, cert: CertMeta) => {

@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { sanitizeInboundSystemTags } from "../../auto-reply/reply/inbound-text.js";
 import type { CliDeps } from "../../cli/deps.js";
 import { loadConfig } from "../../config/config.js";
 import { resolveMainSessionKeyFromConfig } from "../../config/sessions.js";
@@ -72,6 +73,12 @@ export function createGatewayHooksRequestHandler(params: {
 
     const runId = randomUUID();
     void (async () => {
+      // `value.name` and the agent-derived summary/error below are untrusted and flow into the
+      // MAIN session prompt, where the session-updates sink renders every line as `System: ...`
+      // (see src/auto-reply/reply/session-updates.ts). Sanitize the hook name here, while a
+      // leading `System:` is still line-anchored — the `Hook ` prefix would otherwise de-anchor
+      // it from sanitizeInboundSystemTags' line-prefix matcher.
+      const safeName = sanitizeInboundSystemTags(value.name);
       try {
         const cfg = loadConfig();
         const result = await runCronIsolatedAgentTurn({
@@ -87,10 +94,16 @@ export function createGatewayHooksRequestHandler(params: {
           normalizeOptionalString(result.error) ||
           result.status;
         const prefix =
-          result.status === "ok" ? `Hook ${value.name}` : `Hook ${value.name} (${result.status})`;
+          result.status === "ok" ? `Hook ${safeName}` : `Hook ${safeName} (${result.status})`;
         if (!result.delivered) {
-          enqueueSystemEvent(`${prefix}: ${summary}`.trim(), {
+          // Sanitize the FULL event string: the agent-derived summary can embed a spoofed
+          // `System:` (e.g. after a newline) or `[System Message]` marker that must not reach
+          // the main session as a trusted line. This text-level rewrite is the ENFORCED trust
+          // boundary. `trusted: false` mirrors dispatchWakeHook but is currently ADVISORY — no
+          // consumer gates on it today — so do not mistake the flag for the guard.
+          enqueueSystemEvent(sanitizeInboundSystemTags(`${prefix}: ${summary}`.trim()), {
             sessionKey: mainSessionKey,
+            trusted: false,
           });
           if (value.wakeMode === "now") {
             requestHeartbeatNow({ reason: `hook:${jobId}` });
@@ -98,8 +111,11 @@ export function createGatewayHooksRequestHandler(params: {
         }
       } catch (err) {
         logHooks.warn(`hook agent failed: ${String(err)}`);
-        enqueueSystemEvent(`Hook ${value.name} (error): ${String(err)}`, {
+        // Same trust boundary as the status path above: sanitize the full string;
+        // `trusted: false` is advisory parity with dispatchWakeHook (the sink does not gate on it).
+        enqueueSystemEvent(sanitizeInboundSystemTags(`Hook ${safeName} (error): ${String(err)}`), {
           sessionKey: mainSessionKey,
+          trusted: false,
         });
         if (value.wakeMode === "now") {
           requestHeartbeatNow({ reason: `hook:${jobId}:error` });

@@ -33,6 +33,7 @@ import {
 } from "../../infra/restart-sentinel.js";
 import { scheduleGatewaySigusr1Restart } from "../../infra/restart.js";
 import { loadRemoteClawPlugins } from "../../plugins/loader.js";
+import { resolveEffectiveSharedGatewayAuth } from "../auth.js";
 import { diffConfigPaths } from "../config-reload.js";
 import {
   formatControlPlaneActor,
@@ -53,7 +54,7 @@ import {
 } from "../protocol/index.js";
 import { resolveBaseHashParam } from "./base-hash.js";
 import { parseRestartRequestParams } from "./restart-request.js";
-import type { GatewayRequestHandlers, RespondFn } from "./types.js";
+import type { GatewayRequestContext, GatewayRequestHandlers, RespondFn } from "./types.js";
 import { assertValidParams } from "./validation.js";
 
 const MAX_CONFIG_ISSUES_IN_ERROR_MESSAGE = 3;
@@ -169,6 +170,48 @@ function parseValidateConfigFromRawOrRespond(
     return null;
   }
   return { config: validated.config, schema };
+}
+
+// Compare the EFFECTIVE shared gateway secret (the active auth mode's secret)
+// between two configs. Only a change to the currently-active credential counts —
+// editing the inactive password while mode is "token" must not evict live sessions.
+function didSharedGatewayAuthChange(prev: RemoteClawConfig, next: RemoteClawConfig): boolean {
+  const prevAuth = resolveEffectiveSharedGatewayAuth({
+    authConfig: prev.gateway?.auth,
+    env: process.env,
+    tailscaleMode: prev.gateway?.tailscale?.mode,
+  });
+  const nextAuth = resolveEffectiveSharedGatewayAuth({
+    authConfig: next.gateway?.auth,
+    env: process.env,
+    tailscaleMode: next.gateway?.tailscale?.mode,
+  });
+  if (prevAuth === null || nextAuth === null) {
+    return prevAuth !== nextAuth;
+  }
+  return prevAuth.mode !== nextAuth.mode || prevAuth.secret !== nextAuth.secret;
+}
+
+// A `reload.mode: "off"` config write is never picked up by the live-reload
+// watcher, so without an explicit disconnect the stale-secret sessions would
+// survive until the next manual restart. Other modes restart/hot-reload the
+// gateway, which drops the connections on their own.
+function isReloadDisabled(config: RemoteClawConfig): boolean {
+  return config.gateway?.reload?.mode === "off";
+}
+
+function queueSharedGatewayAuthDisconnect(
+  shouldDisconnect: boolean,
+  context?: GatewayRequestContext,
+): void {
+  if (!shouldDisconnect) {
+    return;
+  }
+  // Defer past the success response so the caller observes the write result
+  // before its socket (if shared-auth) is closed.
+  queueMicrotask(() => {
+    context?.disconnectClientsUsingSharedGatewayAuth?.();
+  });
 }
 
 function summarizeConfigValidationIssues(issues: ReadonlyArray<ConfigValidationIssue>): string {
@@ -325,7 +368,7 @@ export const configHandlers: GatewayRequestHandlers = {
     }
     respond(true, result, undefined);
   },
-  "config.set": async ({ params, respond }) => {
+  "config.set": async ({ params, respond, context }) => {
     if (!assertValidParams(params, validateConfigSetParams, "config.set", respond)) {
       return;
     }
@@ -337,6 +380,12 @@ export const configHandlers: GatewayRequestHandlers = {
     if (!parsed) {
       return;
     }
+    // config.set is a plain write that schedules no restart of its own. When
+    // reload is disabled, a secret rotation must explicitly evict shared-auth
+    // sessions here — otherwise they survive until the next manual restart.
+    // Compare before the write so we use the prior on-disk secret as the baseline.
+    const disconnectSharedAuthClients =
+      isReloadDisabled(parsed.config) && didSharedGatewayAuthChange(snapshot.config, parsed.config);
     await writeConfigFile(parsed.config, writeOptions);
     respond(
       true,
@@ -347,6 +396,7 @@ export const configHandlers: GatewayRequestHandlers = {
       },
       undefined,
     );
+    queueSharedGatewayAuthDisconnect(disconnectSharedAuthClients, context);
   },
   "config.patch": async ({ params, respond, client, context }) => {
     if (!assertValidParams(params, validateConfigPatchParams, "config.patch", respond)) {
@@ -449,6 +499,13 @@ export const configHandlers: GatewayRequestHandlers = {
     context?.logGateway?.info(
       `config.patch write ${formatControlPlaneActor(actor)} changedPaths=${summarizeChangedPaths(changedPaths)} restartReason=config.patch`,
     );
+    // config.patch always schedules a (delayed) restart. Evict shared-auth
+    // sessions immediately on an effective secret rotation so a revoked
+    // credential cannot keep working during the restart-delay window.
+    const disconnectSharedAuthClients = didSharedGatewayAuthChange(
+      snapshot.config,
+      validated.config,
+    );
     await writeConfigFile(validated.config, writeOptions);
 
     const { sessionKey, note, restartDelayMs, deliveryContext, threadId } =
@@ -491,6 +548,7 @@ export const configHandlers: GatewayRequestHandlers = {
       },
       undefined,
     );
+    queueSharedGatewayAuthDisconnect(disconnectSharedAuthClients, context);
   },
   "config.apply": async ({ params, respond, client, context }) => {
     if (!assertValidParams(params, validateConfigApplyParams, "config.apply", respond)) {
@@ -509,6 +567,9 @@ export const configHandlers: GatewayRequestHandlers = {
     context?.logGateway?.info(
       `config.apply write ${formatControlPlaneActor(actor)} changedPaths=${summarizeChangedPaths(changedPaths)} restartReason=config.apply`,
     );
+    // config.apply mirrors config.patch: restart-capable write, so evict
+    // shared-auth sessions immediately on an effective secret rotation.
+    const disconnectSharedAuthClients = didSharedGatewayAuthChange(snapshot.config, parsed.config);
     await writeConfigFile(parsed.config, writeOptions);
 
     const { sessionKey, note, restartDelayMs, deliveryContext, threadId } =
@@ -551,6 +612,7 @@ export const configHandlers: GatewayRequestHandlers = {
       },
       undefined,
     );
+    queueSharedGatewayAuthDisconnect(disconnectSharedAuthClients, context);
   },
   "config.openFile": ({ params, respond }) => {
     if (!assertValidParams(params, validateConfigGetParams, "config.openFile", respond)) {

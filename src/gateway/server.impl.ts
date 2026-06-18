@@ -654,6 +654,21 @@ export async function startGatewayServer(
       }
       return false;
     },
+    disconnectClientsUsingSharedGatewayAuth: () => {
+      // Evict every live socket that authenticated with a shared gateway secret
+      // (token/password). Called when a config write rotates the active shared
+      // secret so a revoked credential cannot survive on an existing connection.
+      for (const gatewayClient of clients) {
+        if (!gatewayClient.usesSharedGatewayAuth) {
+          continue;
+        }
+        try {
+          gatewayClient.socket.close(4001, "gateway auth changed");
+        } catch {
+          /* ignore close failures on already-terminated sockets */
+        }
+      }
+    },
     nodeRegistry,
     agentRunSeq,
     chatAbortControllers,

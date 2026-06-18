@@ -1,4 +1,4 @@
-import { listAgentEntries, resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
+import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { resolveAgentIdentity } from "../agents/identity.js";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle)
 const loadAgentIdentity = (
@@ -18,7 +18,11 @@ const MAX_ASSISTANT_AVATAR = 200;
 const MAX_ASSISTANT_EMOJI = 16;
 
 export const DEFAULT_ASSISTANT_IDENTITY: AssistantIdentity = {
-  agentId: "main",
+  // Derive the agent id from the single canonical source. With no config there
+  // are no agents, so resolveDefaultAgentId returns the canonical fallback
+  // ("default") — not a hardcoded literal, and never the eliminated phantom
+  // "main" agent. (#2724)
+  agentId: resolveDefaultAgentId({}),
   name: "Assistant",
   avatar: "A",
 };
@@ -86,9 +90,11 @@ export function resolveAssistantIdentity(params: {
   agentId?: string | null;
   workspaceDir?: string | null;
 }): AssistantIdentity {
-  const agentId = normalizeAgentId(
-    params.agentId ?? listAgentEntries(params.cfg)[0]?.id ?? "default",
-  );
+  // Route the default through the single canonical source (resolveDefaultAgentId)
+  // instead of re-implementing "first listed agent, else 'default'" inline. This
+  // also honors an agent marked `default: true` that is not first in the list,
+  // which the previous `[0]?.id` fallback ignored. (#2724)
+  const agentId = normalizeAgentId(params.agentId ?? resolveDefaultAgentId(params.cfg));
   const workspaceDir = params.workspaceDir ?? resolveAgentWorkspaceDir(params.cfg, agentId);
   const configAssistant = params.cfg.ui?.assistant;
   const agentIdentity = resolveAgentIdentity(params.cfg, agentId);

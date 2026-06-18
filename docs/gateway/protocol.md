@@ -265,16 +265,12 @@ implemented in `src/gateway/server-methods/*.ts`.
 - `last-heartbeat` returns the latest persisted heartbeat event.
 - `set-heartbeats` toggles heartbeat processing on the gateway.
 
-### Models and usage
+### Usage
 
-- `models.list` returns the runtime-allowed model catalog.
 - `usage.status` returns provider usage windows/remaining quota summaries.
 - `usage.cost` returns aggregated cost usage summaries for a date range.
 - `doctor.memory.status` returns vector-memory / embedding readiness for the
   active default agent workspace.
-- `sessions.usage` returns per-session usage summaries.
-- `sessions.usage.timeseries` returns timeseries usage for one session.
-- `sessions.usage.logs` returns usage log entries for one session.
 
 ### Channels and login helpers
 
@@ -406,18 +402,14 @@ implemented in `src/gateway/server-methods/*.ts`.
 
 #### Approval families
 
-- `exec.approval.request`, `exec.approval.get`, `exec.approval.list`, and
-  `exec.approval.resolve` cover one-shot exec approval requests plus pending
-  approval lookup/replay.
+- `exec.approval.request` and `exec.approval.resolve` cover one-shot exec
+  approval requests and resolution.
 - `exec.approval.waitDecision` waits on one pending exec approval and returns
   the final decision (or `null` on timeout).
 - `exec.approvals.get` and `exec.approvals.set` manage gateway exec approval
   policy snapshots.
 - `exec.approvals.node.get` and `exec.approvals.node.set` manage node-local exec
   approval policy via node relay commands.
-- `plugin.approval.request`, `plugin.approval.list`,
-  `plugin.approval.waitDecision`, and `plugin.approval.resolve` cover
-  plugin-defined approval flows.
 
 #### Other major families
 
@@ -425,7 +417,7 @@ implemented in `src/gateway/server-methods/*.ts`.
   - `wake` schedules an immediate or next-heartbeat wake text injection
   - `cron.list`, `cron.status`, `cron.add`, `cron.update`, `cron.remove`,
     `cron.run`, `cron.runs`
-- skills/tools: `commands.list`, `skills.*`, `tools.catalog`, `tools.effective`
+- skills/tools: `skills.*`, `tools.catalog`, `tools.effective`
 
 ### Common event families
 
@@ -449,25 +441,8 @@ implemented in `src/gateway/server-methods/*.ts`.
 - `plugin.approval.requested` / `plugin.approval.resolved`: plugin approval
   lifecycle.
 
-### Node helper methods
-
-- Nodes may call `skills.bins` to fetch the current list of skill executables
-  for auto-allow checks.
-
 ### Operator helper methods
 
-- Operators may call `commands.list` (`operator.read`) to fetch the runtime
-  command inventory for an agent.
-  - `agentId` is optional; omit it to read the default agent workspace.
-  - `scope` controls which surface the primary `name` targets:
-    - `text` returns the primary text command token without the leading `/`
-    - `native` and the default `both` path return provider-aware native names
-      when available
-  - `textAliases` carries exact slash aliases such as `/model` and `/m`.
-  - `nativeName` carries the provider-aware native command name when one exists.
-  - `provider` is optional and only affects native naming plus native plugin
-    command availability.
-  - `includeArgs=false` omits serialized argument metadata from the response.
 - Operators may call `tools.catalog` (`operator.read`) to fetch the runtime tool catalog for an
   agent. The response includes grouped tools and provenance metadata:
   - `source`: `core` or `plugin`
@@ -485,8 +460,6 @@ implemented in `src/gateway/server-methods/*.ts`.
   - `agentId` is optional; omit it to read the default agent workspace.
   - The response includes eligibility, missing requirements, config checks, and
     sanitized install options without exposing raw secret values.
-- Operators may call `skills.search` and `skills.detail` (`operator.read`) for
-  ClawHub discovery metadata.
 - Operators may call `skills.install` (`operator.admin`) in two modes:
   - ClawHub mode: `{ source: "clawhub", slug, version?, force? }` installs a
     skill folder into the default agent workspace `skills/` directory.
@@ -655,6 +628,6 @@ Migration target:
 
 ## Scope
 
-This protocol exposes the **full gateway API** (status, channels, models, chat,
+This protocol exposes the **full gateway API** (status, channels, chat,
 agent, sessions, nodes, approvals, etc.). The exact surface is defined by the
 TypeBox schemas in `src/gateway/protocol/schema.ts`.

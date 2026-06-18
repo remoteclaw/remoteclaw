@@ -413,24 +413,25 @@ Behavior:
 
 ## Command-path resolution
 
-Command paths can opt into supported SecretRef resolution via gateway snapshot RPC.
+Command paths resolve supported SecretRefs locally and in-process. Each CLI
+invocation reads the configured `env` / `file` / `exec` providers directly; it
+does not query a running gateway, and there is no `secrets.resolve` gateway RPC.
+This keeps command-path resolution independent of gateway availability.
 
 There are two broad behaviors:
 
-- Strict command paths (for example `remoteclaw memory` remote-memory paths and `remoteclaw qr --remote` when it needs remote shared-secret refs) read from the active snapshot and fail fast when a required SecretRef is unavailable.
-- Read-only command paths (for example `remoteclaw status`, `remoteclaw status --all`, `remoteclaw channels status`, `remoteclaw channels resolve`, `remoteclaw security audit`, and read-only doctor/config repair flows) also prefer the active snapshot, but degrade instead of aborting when a targeted SecretRef is unavailable in that command path.
+- Strict command paths (for example `remoteclaw memory` remote-memory paths and `remoteclaw qr --remote` when it needs remote shared-secret refs) fail fast when a required SecretRef cannot be resolved locally.
+- Read-only command paths (for example `remoteclaw status`, `remoteclaw status --all`, `remoteclaw channels status`, `remoteclaw channels resolve`, `remoteclaw security audit`, and read-only doctor/config repair flows) degrade instead of aborting when a targeted SecretRef cannot be resolved in that command path.
 
 Read-only behavior:
 
-- When the gateway is running, these commands read from the active snapshot first.
-- If gateway resolution is incomplete or the gateway is unavailable, they attempt targeted local fallback for the specific command surface.
+- These commands resolve the targeted SecretRef locally for the specific command surface.
 - If a targeted SecretRef is still unavailable, the command continues with degraded read-only output and explicit diagnostics such as “configured but unavailable in this command path”.
 - This degraded behavior is command-local only. It does not weaken runtime startup, reload, or send/auth paths.
 
 Other notes:
 
-- Snapshot refresh after backend secret rotation is handled by `remoteclaw secrets reload`.
-- Gateway RPC method used by these command paths: `secrets.resolve`.
+- After a backend secret rotation, the long-running gateway refreshes its own in-memory snapshot via `remoteclaw secrets reload`; command paths re-resolve from the configured providers on each invocation, so they pick up rotated values directly.
 
 ## Audit and configure workflow
 

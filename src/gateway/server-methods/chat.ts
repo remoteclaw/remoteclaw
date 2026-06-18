@@ -32,6 +32,7 @@ import {
 } from "../chat-abort.js";
 import { type ChatImageContent, parseMessageWithAttachments } from "../chat-attachments.js";
 import { stripEnvelopeFromMessage, stripEnvelopeFromMessages } from "../chat-sanitize.js";
+import { ADMIN_SCOPE } from "../method-scopes.js";
 import {
   GATEWAY_CLIENT_CAPS,
   GATEWAY_CLIENT_MODES,
@@ -702,6 +703,124 @@ function abortChatRunsForSessionKeyWithPartials(params: {
   return res;
 }
 
+type ChatAbortRequester = {
+  connId?: string;
+  deviceId?: string;
+  isAdmin: boolean;
+};
+
+function resolveChatAbortRequester(
+  client: GatewayRequestHandlerOptions["client"],
+): ChatAbortRequester {
+  const connId = typeof client?.connId === "string" ? client.connId : undefined;
+  const deviceId =
+    typeof client?.connect?.device?.id === "string" ? client.connect.device.id : undefined;
+  const scopes = client?.connect?.scopes;
+  const isAdmin = Array.isArray(scopes) && scopes.includes(ADMIN_SCOPE);
+  return { connId, deviceId, isAdmin };
+}
+
+/**
+ * Authorize a requester against a run's recorded owner.
+ *
+ * - `operator.admin` callers bypass owner checks.
+ * - Runs with no recorded owner stay abortable by any authenticated client, so
+ *   restoring ownership enforcement never strands legacy runs or runs started by
+ *   clients that carry no connId/deviceId identity.
+ * - Otherwise the requester must match the run owner by deviceId (a paired device
+ *   keeps abort rights across reconnects) or by connId (the originating
+ *   connection).
+ */
+function canRequesterAbortChatRun(
+  requester: ChatAbortRequester,
+  entry: Pick<ChatAbortControllerEntry, "ownerConnId" | "ownerDeviceId">,
+): boolean {
+  if (requester.isAdmin) {
+    return true;
+  }
+  if (entry.ownerConnId === undefined && entry.ownerDeviceId === undefined) {
+    return true;
+  }
+  if (
+    entry.ownerDeviceId !== undefined &&
+    requester.deviceId !== undefined &&
+    entry.ownerDeviceId === requester.deviceId
+  ) {
+    return true;
+  }
+  if (
+    entry.ownerConnId !== undefined &&
+    requester.connId !== undefined &&
+    entry.ownerConnId === requester.connId
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function resolveAuthorizedRunIdsForSession(params: {
+  chatAbortControllers: Map<string, ChatAbortControllerEntry>;
+  sessionKey: string;
+  requester: ChatAbortRequester;
+}): string[] {
+  const out: string[] = [];
+  for (const [runId, active] of params.chatAbortControllers) {
+    if (active.sessionKey !== params.sessionKey) {
+      continue;
+    }
+    if (canRequesterAbortChatRun(params.requester, active)) {
+      out.push(runId);
+    }
+  }
+  return out;
+}
+
+function abortAuthorizedSessionRunsWithPartials(params: {
+  context: GatewayRequestContext;
+  ops: ChatAbortOps;
+  sessionKey: string;
+  requester: ChatAbortRequester;
+  abortOrigin: AbortOrigin;
+  stopReason?: string;
+}): { aborted: boolean; runIds: string[] } {
+  const authorizedRunIds = new Set(
+    resolveAuthorizedRunIdsForSession({
+      chatAbortControllers: params.context.chatAbortControllers,
+      sessionKey: params.sessionKey,
+      requester: params.requester,
+    }),
+  );
+  if (authorizedRunIds.size === 0) {
+    return { aborted: false, runIds: [] };
+  }
+  const snapshots = collectSessionAbortPartials({
+    chatAbortControllers: params.context.chatAbortControllers,
+    chatRunBuffers: params.context.chatRunBuffers,
+    sessionKey: params.sessionKey,
+    abortOrigin: params.abortOrigin,
+  }).filter((snapshot) => authorizedRunIds.has(snapshot.runId));
+  const runIds: string[] = [];
+  for (const runId of authorizedRunIds) {
+    const res = abortChatRunById(params.ops, {
+      runId,
+      sessionKey: params.sessionKey,
+      stopReason: params.stopReason,
+    });
+    if (res.aborted) {
+      runIds.push(runId);
+    }
+  }
+  if (runIds.length > 0) {
+    const abortedRunIds = new Set(runIds);
+    persistAbortedPartials({
+      context: params.context,
+      sessionKey: params.sessionKey,
+      snapshots: snapshots.filter((snapshot) => abortedRunIds.has(snapshot.runId)),
+    });
+  }
+  return { aborted: runIds.length > 0, runIds };
+}
+
 function nextChatSeq(context: { agentRunSeq: Map<string, number> }, runId: string) {
   const next = (context.agentRunSeq.get(runId) ?? 0) + 1;
   context.agentRunSeq.set(runId, next);
@@ -812,7 +931,7 @@ export const chatHandlers: GatewayRequestHandlers = {
       verboseLevel,
     });
   },
-  "chat.abort": ({ params, respond, context }) => {
+  "chat.abort": ({ params, respond, context, client }) => {
     if (!validateChatAbortParams(params)) {
       respond(
         false,
@@ -830,12 +949,14 @@ export const chatHandlers: GatewayRequestHandlers = {
     };
 
     const ops = createChatAbortOps(context);
+    const requester = resolveChatAbortRequester(client);
 
     if (!runId) {
-      const res = abortChatRunsForSessionKeyWithPartials({
+      const res = abortAuthorizedSessionRunsWithPartials({
         context,
         ops,
         sessionKey: rawSessionKey,
+        requester,
         abortOrigin: "rpc",
         stopReason: "rpc",
       });
@@ -854,6 +975,10 @@ export const chatHandlers: GatewayRequestHandlers = {
         undefined,
         errorShape(ErrorCodes.INVALID_REQUEST, "runId does not match sessionKey"),
       );
+      return;
+    }
+    if (!canRequesterAbortChatRun(requester, active)) {
+      respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "unauthorized"));
       return;
     }
 
@@ -1033,12 +1158,17 @@ export const chatHandlers: GatewayRequestHandlers = {
 
     try {
       const abortController = new AbortController();
+      const ownerConnId = typeof client?.connId === "string" ? client.connId : undefined;
+      const ownerDeviceId =
+        typeof client?.connect?.device?.id === "string" ? client.connect.device.id : undefined;
       context.chatAbortControllers.set(clientRunId, {
         controller: abortController,
         sessionId: entry?.sessionId ?? clientRunId,
         sessionKey: rawSessionKey,
         startedAtMs: now,
         expiresAtMs: resolveChatRunExpiresAtMs({ now, timeoutMs }),
+        ownerConnId,
+        ownerDeviceId,
       });
       const ackPayload = {
         runId: clientRunId,

@@ -48,6 +48,13 @@ export async function connectGatewayClient(params: {
   connectChallengeTimeoutMs?: number;
   timeoutMs?: number;
   timeoutMessage?: string;
+  /**
+   * Test-only: extra WS upgrade headers. Forwarding headers (e.g.
+   * `x-forwarded-for`) make the server classify the connect as remote
+   * (non-local-direct) so it requires explicit pairing instead of loopback
+   * auto-pair. See `GatewayClientOptions.headers`.
+   */
+  headers?: Record<string, string>;
 }) {
   const role = params.role ?? "operator";
   const scopes = params.scopes ?? (role === "node" ? [] : undefined);
@@ -84,6 +91,7 @@ export async function connectGatewayClient(params: {
       url: params.url,
       token: params.token,
       deviceToken: params.deviceToken,
+      headers: params.headers,
       connectChallengeTimeoutMs: params.connectChallengeTimeoutMs ?? 0,
       clientName: params.clientName ?? GATEWAY_CLIENT_NAMES.TEST,
       clientDisplayName: params.clientDisplayName ?? "vitest",

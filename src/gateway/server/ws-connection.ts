@@ -20,6 +20,7 @@ import {
   attachGatewayWsMessageHandler,
   type WsOriginCheckMetrics,
 } from "./ws-connection/message-handler.js";
+import { applyTestUpgradeRemoteAddressOverride } from "./ws-connection/test-remote-address-seam.js";
 import type { GatewayWsClient } from "./ws-types.js";
 
 type SubsystemLogger = ReturnType<typeof createSubsystemLogger>;
@@ -114,6 +115,12 @@ export function attachGatewayWsConnectionHandler(params: AttachGatewayWsConnecti
   const originCheckMetrics: WsOriginCheckMetrics = { hostHeaderFallbackAccepted: 0 };
 
   wss.on("connection", (socket, upgradeReq) => {
+    // TEST-ONLY: let the harness simulate a non-loopback peer so the
+    // trusted-proxy auth path is reachable over the loopback-only test
+    // transport. No-op in production (override unset + Vitest-gated); the
+    // production loopback rejection in authorizeTrustedProxy is untouched.
+    // See ./ws-connection/test-remote-address-seam.ts for the safety rationale.
+    applyTestUpgradeRemoteAddressOverride(upgradeReq);
     let client: GatewayWsClient | null = null;
     let closed = false;
     const openedAt = Date.now();

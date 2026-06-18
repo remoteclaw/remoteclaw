@@ -17,11 +17,13 @@ import {
   readConnectChallengeNonce,
   restoreGatewayToken,
   rpcReq,
+  setTestUpgradeRemoteAddressOverride,
   startRateLimitedTokenServerWithPairedDeviceToken,
   startServerWithClient,
   TEST_OPERATOR_CLIENT,
   testState,
   TRUSTED_PROXY_CONTROL_UI_HEADERS,
+  TRUSTED_PROXY_CONTROL_UI_REMOTE_IP,
   withGatewayServer,
   writeTrustedProxyControlUiConfig,
 } from "./server.auth.shared.js";
@@ -262,18 +264,21 @@ export function registerControlUiAndPairingSuite(): void {
     });
   }
 
-  // SKIPPED: this asserts scope-confinement for a *successfully connected*
-  // device-less trusted-proxy operator, but the gateway test harness only ever
-  // connects from a loopback socket (`ws://127.0.0.1`), and `authorizeTrustedProxy`
-  // rejects loopback trusted-proxy sources unconditionally (matching current
-  // upstream — there is no `allowLoopback` escape hatch in either tree). So the
-  // connect never succeeds and the scope-clearing path under test is unreachable
-  // from this harness. The rejection is the *stricter* outcome (fails closed, not
-  // open), so skipping is safe. Re-enable if/when the harness can originate a
-  // non-loopback trusted-proxy connection. The scope-clearing wiring it would
-  // exercise (`shouldClearUnboundScopesForMissingDeviceIdentity`) is itself
-  // separately covered by the browser-hardening suite's trusted-proxy case.
-  test.skip("clears self-declared scopes for trusted-proxy control ui without device identity", async () => {
+  // This asserts scope-confinement for a *successfully connected* device-less
+  // trusted-proxy operator. `authorizeTrustedProxy` (src/gateway/auth.ts) rejects
+  // loopback trusted-proxy sources unconditionally (`trusted_proxy_loopback_source`)
+  // — the correct production posture (a real proxy fronts the gateway from a
+  // non-loopback address). The gateway test transport only connects over
+  // `ws://127.0.0.1`, so without a seam this successful path is unreachable.
+  //
+  // The TEST-ONLY harness seam `setTestUpgradeRemoteAddressOverride` makes the
+  // server observe a non-loopback peer (the TEST-NET-3 IP, which is listed in
+  // `trustedProxies`) for this connection — exactly the network condition that
+  // holds in production behind a real proxy — WITHOUT relaxing the loopback
+  // rejection. The production rejection branch in auth.ts is untouched; any
+  // genuine loopback trusted-proxy connection is still rejected. See
+  // server/ws-connection/test-remote-address-seam.ts § production-safe.
+  test("clears self-declared scopes for trusted-proxy control ui without device identity", async () => {
     await configureTrustedProxyControlUiAuth();
     const { publicKeyRawBase64UrlFromPem } = await import("../infra/device-identity.js");
     const { rejectDevicePairing, requestDevicePairing } =
@@ -289,27 +294,36 @@ export function registerControlUiAndPairingSuite(): void {
       clientId: CONTROL_UI_CLIENT.id,
       clientMode: CONTROL_UI_CLIENT.mode,
     });
-    await withGatewayServer(async ({ port }) => {
-      const ws = await openWs(port, TRUSTED_PROXY_CONTROL_UI_HEADERS);
-      try {
-        const res = await connectReq(ws, {
-          skipDefaultAuth: true,
-          scopes: ["operator.admin"],
-          device: null,
-          client: { ...CONTROL_UI_CLIENT },
-        });
-        expect(res.ok).toBe(true);
-        expect((res.payload as { auth?: unknown } | undefined)?.auth).toBeUndefined();
+    // Simulate a non-loopback reverse-proxy peer so authorizeTrustedProxy accepts
+    // the (configured, trusted) source instead of rejecting it as loopback. The
+    // override is process-global — always reset it in `finally` so it cannot leak
+    // into sibling tests sharing this worker.
+    setTestUpgradeRemoteAddressOverride(TRUSTED_PROXY_CONTROL_UI_REMOTE_IP);
+    try {
+      await withGatewayServer(async ({ port }) => {
+        const ws = await openWs(port, TRUSTED_PROXY_CONTROL_UI_HEADERS);
+        try {
+          const res = await connectReq(ws, {
+            skipDefaultAuth: true,
+            scopes: ["operator.admin"],
+            device: null,
+            client: { ...CONTROL_UI_CLIENT },
+          });
+          expect(res.ok).toBe(true);
+          expect((res.payload as { auth?: unknown } | undefined)?.auth).toBeUndefined();
 
-        await expectStatusMissingScopeButHealthOk(ws);
-        await expectAdminRpcDenied(ws);
-        await expectTalkSecretsDenied(ws);
-        await expectDevicePairApproveDenied(ws, pendingRequest.request.requestId);
-      } finally {
-        ws.close();
-        await rejectDevicePairing(pendingRequest.request.requestId);
-      }
-    });
+          await expectStatusMissingScopeButHealthOk(ws);
+          await expectAdminRpcDenied(ws);
+          await expectTalkSecretsDenied(ws);
+          await expectDevicePairApproveDenied(ws, pendingRequest.request.requestId);
+        } finally {
+          ws.close();
+          await rejectDevicePairing(pendingRequest.request.requestId);
+        }
+      });
+    } finally {
+      setTestUpgradeRemoteAddressOverride(undefined);
+    }
   });
 
   test("allows localhost control ui without device identity when insecure auth is enabled", async () => {

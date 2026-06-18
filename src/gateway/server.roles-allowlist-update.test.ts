@@ -35,6 +35,16 @@ installConnectedControlUiServerSuite((started) => {
   port = started.port;
 });
 
+// Forwarding header that makes the gateway classify a loopback test connect as
+// REMOTE (non-local-direct) via `isLocalDirectRequest` (src/gateway/auth.ts).
+// A remote node connect requires EXPLICIT pairing approval instead of the
+// secure-on-loopback silent auto-pair — which is exactly the path the
+// pairing-required tests below need. This is a TEST-ONLY harness lever: it only
+// passes the header through the existing WS upgrade; production classification
+// and the loopback auto-pair posture are unchanged. 203.0.113.0/24 is the
+// RFC 5737 TEST-NET-3 documentation range (never a real peer).
+const REMOTE_PEER_HEADERS = { "x-forwarded-for": "203.0.113.10" } as const;
+
 const connectNodeClient = async (params: {
   port: number;
   commands: string[];
@@ -44,6 +54,7 @@ const connectNodeClient = async (params: {
   instanceId?: string;
   displayName?: string;
   onEvent?: (evt: { event?: string; payload?: unknown }) => void;
+  headers?: Record<string, string>;
 }) => {
   const token = process.env.REMOTECLAW_GATEWAY_TOKEN;
   if (!token) {
@@ -64,6 +75,7 @@ const connectNodeClient = async (params: {
     commands: params.commands,
     deviceIdentity: params.deviceIdentity,
     onEvent: params.onEvent,
+    headers: params.headers,
     timeoutMessage: "timeout waiting for node to connect",
   });
 };
@@ -382,21 +394,23 @@ describe("gateway node command allowlist", () => {
     }
   });
 
-  // SKIPPED: this asserts that a node's declared commands appear in the
-  // `node.pair.list` PENDING set before approval. On this test harness every
-  // client connects from a loopback socket (`ws://127.0.0.1`), and
-  // `shouldAllowSilentLocalPairing` (message-handler.ts) silently auto-pairs a
-  // local non-browser node on first connect (reason "not-paired") — so the node
-  // is never parked in the pending set and `node.pair.list.pending` is empty.
-  // Production DOES record allowlist-filtered declared commands into the pending
-  // entry (reconcileNodePairingOnConnect → resolveNodeCommandAllowlist +
-  // normalizeDeclaredNodeCommands → requestPairing), and the connect-time
-  // allowlist filtering is covered by "filters system.run for confusable iOS
-  // metadata at connect time" (which reads node.list, observable on loopback).
-  // Re-enable when the harness can originate a remote (non-local-direct) node
-  // connect that requires explicit pairing approval. Silent local auto-pairing
-  // is the secure-on-loopback behavior (no fail-open). Same harness limitation
-  // as the trusted-proxy/pending-pairing cases elsewhere in this cluster.
+  // SKIPPED — blocked by gutted PRODUCTION wiring, not a harness gap (see
+  // remoteclaw/remoteclaw#2744). This asserts a node's allowlist-filtered
+  // declared commands appear in the `node.pair.list` PENDING set (the
+  // NODE-pairing system, distinct from device pairing) on connect. Upstream
+  // OpenClaw runs `reconcileNodePairingOnConnect` at connect time to park that
+  // node-pairing pending entry; the RemoteClaw fork gutted that wiring —
+  // `reconcileNodePairingOnConnect` has no call site (only its definition
+  // remains), and `node.pair.list.pending` is written ONLY by the explicit
+  // `node.pair.request` RPC, never on connect. So the pending entry is empty
+  // regardless of local-vs-remote classification: a remote connect
+  // (REMOTE_PEER_HEADERS) parks only a DEVICE-pairing entry — proven by
+  // "requires explicit pairing approval for a remote (non-local-direct) node
+  // connect" above, which exercises the harness's new remote-connect lever. The
+  // connect-time allowlist FILTERING this checks is still covered by "filters
+  // system.run for confusable iOS metadata at connect time" (reads node.list).
+  // Re-enabling needs restoring the gutted connect→node-pairing reconciliation
+  // (a production port, out of this PR's harness-only scope): #2744.
   test.skip("keeps allowlisted declared commands available before node pairing exists", async () => {
     const findConnectedNode = async (displayName: string) => {
       const listRes = await rpcReq<{
@@ -452,12 +466,13 @@ describe("gateway node command allowlist", () => {
     }
   });
 
-  // SKIPPED (same loopback silent-pairing limitation as the sibling above): the
-  // pending node-pairing entry this asserts on is never created for a loopback
-  // node (silent local auto-pairing fires first). The allowlist-filtering it
-  // checks (İOS confusable → only `canvas.snapshot` survives, `system.run`
-  // filtered) is exercised at connect time by the confusable-metadata test via
-  // node.list. No fail-open; re-enable with a remote-node harness capability.
+  // SKIPPED — same gutted-wiring blocker as the sibling above, not a harness gap
+  // (remoteclaw/remoteclaw#2744): the `node.pair.list` PENDING entry this asserts
+  // on is never created on connect because `reconcileNodePairingOnConnect` is
+  // unwired in the fork. The İOS-confusable allowlist filtering it checks (only
+  // `canvas.snapshot` survives, `system.run` filtered) is exercised at connect
+  // time by "filters system.run for confusable iOS metadata at connect time" via
+  // node.list. Re-enabling needs the production port tracked in #2744.
   test.skip("records only allowlisted commands in pending node pairing requests", async () => {
     const { loadOrCreateDeviceIdentity } = await import("../infra/device-identity.js");
     const deviceIdentityPath = path.join(
@@ -506,6 +521,67 @@ describe("gateway node command allowlist", () => {
       );
     } finally {
       await nodeClient?.stopAndWait();
+    }
+  });
+
+  // AC#1 (remoteclaw#2732): the harness can now originate a node connect that the
+  // gateway classifies as REMOTE (non-local-direct) by attaching a forwarding
+  // header (REMOTE_PEER_HEADERS) that flips `isLocalDirectRequest`
+  // (src/gateway/auth.ts) to false. A remote node connect must NOT take the
+  // secure-on-loopback silent auto-pair shortcut: it is rejected with
+  // PAIRING_REQUIRED and parks a pending DEVICE-pairing entry for explicit
+  // approval. Every other node connect in this suite uses loopback (no header)
+  // and silently auto-pairs — this test is the contrasting remote path. The
+  // header is a TEST-ONLY harness lever; production classification and the
+  // loopback auto-pair posture are unchanged.
+  test("requires explicit pairing approval for a remote (non-local-direct) node connect", async () => {
+    const { listDevicePairing, rejectDevicePairing } = await import("../infra/device-pairing.js");
+    const { loadOrCreateDeviceIdentity } = await import("../infra/device-identity.js");
+    const deviceIdentity = loadOrCreateDeviceIdentity(
+      path.join(
+        os.tmpdir(),
+        `remoteclaw-remote-node-pairing-${Date.now()}-${Math.random().toString(36).slice(2)}.json`,
+      ),
+    );
+    const displayName = "node-remote-pairing-required";
+
+    let connectError: unknown;
+    try {
+      await connectNodeClient({
+        port,
+        commands: ["canvas.snapshot"],
+        platform: "darwin",
+        instanceId: displayName,
+        displayName,
+        deviceIdentity,
+        headers: REMOTE_PEER_HEADERS,
+      });
+      throw new Error("expected remote node connect to require explicit pairing");
+    } catch (err) {
+      connectError = err;
+    }
+
+    // Assert the structured PAIRING_REQUIRED code rather than the rendered
+    // message so the contract is robust to wording (same convention as the
+    // spoof test below).
+    const detailCode = (connectError as { details?: { code?: string } } | undefined)?.details?.code;
+    expect(detailCode).toBe(ConnectErrorDetailCodes.PAIRING_REQUIRED);
+
+    // The explicit-pairing path parked exactly one pending DEVICE-pairing entry
+    // for this node's device identity (the loopback silent auto-pair did NOT
+    // fire), recording the "node" role it connected with.
+    const pending = (await listDevicePairing()).pending.filter(
+      (entry) => entry.deviceId === deviceIdentity.deviceId,
+    );
+    expect(pending).toHaveLength(1);
+    const pendingRoles = pending[0]?.roles ?? (pending[0]?.role ? [pending[0]?.role] : []);
+    expect(pendingRoles).toContain("node");
+
+    // Clean up the pending entry so it cannot leak into sibling tests (the suite
+    // shares device-pairing state — there is no per-test reset).
+    const requestId = pending[0]?.requestId;
+    if (requestId) {
+      await rejectDevicePairing(requestId);
     }
   });
 

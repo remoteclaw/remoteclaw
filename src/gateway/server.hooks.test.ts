@@ -350,20 +350,58 @@ describe("gateway server hooks", () => {
     });
   });
 
-  // SECURITY FOLLOW-UP (tracked separately, NOT in this CI-green test-remediation pass):
-  // Two tests removed here asserted a post-rebind session-namespace authorization re-check
-  // ("rejects rebinding into a session namespace that is not allowlisted" + the mapped variant).
-  // Upstream re-checks the agent-rebound sessionKey against hooks.allowedSessionKeyPrefixes after
-  // normalizeHookDispatchSessionKey (server-http.ts agent path + mapping path); the fork's
-  // server-http.ts has NEVER carried that re-check (git -S isSessionKeyAllowedByPrefix /
-  // getHookSessionKeyPrefixError in server-http.ts → 0 commits). This is a genuine kept-middleware
-  // authz-confinement gap (an authenticated hook caller can rebind a turn into a non-allowlisted
-  // namespace), but restoring it flips previously-accepted requests to 400 — a security-semantics
-  // change that must land in its own threat-modeled hardening PR, not a test-fix commit. See the
-  // security-architect ruling for this branch (file a tracked issue: restore the re-check of
-  // normalizeHookDispatchSessionKey output against allowedSessionKeyPrefixes on both /hooks/agent
-  // and /hooks/<mapping> paths). Deleting the failing assertions does NOT lower shipped posture —
-  // the control is already absent in the fork (which is why these tests fail).
+  // Post-rebind session-key-prefix re-check (remoteclaw#2723): after normalizeHookDispatchSessionKey
+  // rebinds the requested key to the target agent (e.g. agent:main:* -> agent:hooks:*), the rebound
+  // key is re-validated against hooks.allowedSessionKeyPrefixes on both /hooks/agent and
+  // /hooks/<mapping> paths. The requested key passing the pre-rebind check does not authorize the
+  // namespace the rebind lands in.
+  test("rejects rebinding into a session namespace that is not allowlisted", async () => {
+    testState.hooksConfig = {
+      enabled: true,
+      token: HOOK_TOKEN,
+      allowRequestSessionKey: true,
+      allowedSessionKeyPrefixes: ["hook:", "agent:main:"],
+    };
+    setMainAndHooksAgents();
+    await withGatewayServer(async ({ port }) => {
+      const denied = await postHook(port, "/hooks/agent", {
+        message: "Do it",
+        name: "Email",
+        agentId: "hooks",
+        sessionKey: "agent:main:slack:channel:c123",
+      });
+      expect(denied.status).toBe(400);
+      const body = (await denied.json()) as { error?: string };
+      expect(body.error).toContain("sessionKey must start with one of");
+      expect(cronIsolatedRun).not.toHaveBeenCalled();
+    });
+  });
+
+  test("rejects mapped hook session rebinding into a disallowed target-agent prefix", async () => {
+    testState.hooksConfig = {
+      enabled: true,
+      token: HOOK_TOKEN,
+      allowRequestSessionKey: true,
+      allowedSessionKeyPrefixes: ["hook:", "agent:main:"],
+      mappings: [
+        {
+          match: { path: "mapped-rebind-denied" },
+          action: "agent",
+          agentId: "hooks",
+          messageTemplate: "Mapped: {{payload.subject}}",
+          sessionKey: "agent:main:slack:channel:c123",
+        },
+      ],
+    };
+    setMainAndHooksAgents();
+    await withGatewayServer(async ({ port }) => {
+      const denied = await postHook(port, "/hooks/mapped-rebind-denied", { subject: "hello" });
+      expect(denied.status).toBe(400);
+      const body = (await denied.json()) as { error?: string };
+      expect(body.error).toContain("sessionKey must start with one of");
+      expect(cronIsolatedRun).not.toHaveBeenCalled();
+    });
+  });
 
   // BACKLOG (low-priority webhook hardening, NOT a regression): removed four tests here asserted
   // an idempotency replay-dedupe cache for /hooks/agent (same Idempotency-Key → same runId, single

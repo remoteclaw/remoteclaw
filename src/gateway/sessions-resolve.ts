@@ -8,42 +8,104 @@ import {
   type SessionsResolveParams,
 } from "./protocol/index.js";
 import {
+  isSingleConfiguredSessionStore,
   listSessionsFromStore,
   loadCombinedSessionStoreForGateway,
   pruneLegacyStoreKeys,
   resolveDeletedAgentIdFromSessionKey,
   resolveGatewaySessionStoreTarget,
+  resolveLegacyDefaultMainRemap,
 } from "./session-utils.js";
 
 export type SessionsResolveResult = { ok: true; key: string } | { ok: false; error: ErrorShape };
 
 /**
- * Reject a resolved session key whose owning agent was deleted from
- * configuration, mirroring the send-path guard in
- * `server-methods/chat.ts` (#65524). Returns a rejection result when the
- * key encodes a deleted agent, or null when the key is safe to return.
+ * Three-state resolution for a session key whose encoded agent is no longer in
+ * configuration:
+ *   - `pass`   — the key's agent is still live; return the key unchanged.
+ *   - `reject` — the agent was deleted; ship the deleted-agent error (mirrors
+ *                the send-path guard in `server-methods/chat.ts`, #65524).
+ *   - `remap`  — the key is the legacy default-agent main-session alias
+ *                `agent:main:main` and the narrow 4-conjunct gate holds, so it
+ *                resolves onto the live default agent's main session instead.
  *
- * NOTE: legacy `main`-alias entries surfaced via sessionId/label that should
- * be remapped onto the live default agent are NOT yet handled here; that
- * remap is deferred to a separate hardening change so the reject parity can
- * land without inventing new authorization behavior. See the skipped
- * "resolves legacy main-alias matches" case in sessions-resolve-store.test.ts.
+ * ADR-NOTE — legacy `agent:main:main` remap boundary (#2720 / #2733)
+ * -----------------------------------------------------------------
+ * WHY: a legacy single-store deployment serialized the default agent's main
+ * session under `agent:main:main`. After the default agent was renamed (e.g. to
+ * `ops`) — or the no-config default became `default` — that on-disk entry
+ * encodes a now-deleted agent and was rejected with `Agent "main" no longer
+ * exists`, breaking continuity for the user's old default-agent main thread.
+ * This remaps it onto the live default agent's main session. The boundary is
+ * deliberately NARROW: it fires iff ALL FOUR conjuncts hold (see
+ * `resolveLegacyDefaultMainRemap` for the per-conjunct guard):
+ *   1. encoded agent-id is the literal historical default id `main`, AND the
+ *      key is the main-SESSION alias `agent:main:main` (not a concrete
+ *      `agent:main:<peer>` session, which stays rejected);
+ *   2. `main` is NOT a currently-configured agent;
+ *   3. a live DEFAULT agent exists (a CONFIGURED agent, not the no-config
+ *      `default` fallback);
+ *   4. LEGACY SINGLE-STORE PROVENANCE — the matched entry came from the single
+ *      configured (non-template) store, NOT a discovered per-agent store.
+ *      Conjunct 4 is LOAD-BEARING FOR SECURITY: it keeps a discovered per-agent
+ *      deleted-agent store REJECTED, preserving the #65524 deleted-agent
+ *      send/steer guard. A remap that ignored provenance would re-open that
+ *      hole (regressing the discovered-store and explicit-key reject tests in
+ *      sessions-resolve-store.test.ts).
+ *
+ * FORK PROVENANCE (do NOT delete on upstream diff-sync): this deleted-agent
+ * reject guard AND its main-alias remap are FORK-INTRODUCED. Upstream
+ * OpenClaw's `sessions-resolve.ts` has NEITHER the guard NOR the skipped/now-
+ * unskipped test — it returns matched keys without a deleted-agent check. A
+ * future diff-sync that "restores" upstream's no-guard shape would silently
+ * delete this hardening and re-open #65524. Treat this block as a
+ * re-introduction-guarded divergence (ADR-0011 pattern): keep it across syncs.
  */
-function rejectDeletedAgentSessionKey(
+type DeletedAgentKeyResolution =
+  | { kind: "pass" }
+  | { kind: "remap"; key: string }
+  | { kind: "reject"; result: SessionsResolveResult };
+
+function resolveDeletedAgentSessionKey(
   cfg: RemoteClawConfig,
   key: string,
-): SessionsResolveResult | null {
+  fromSingleStore: boolean,
+): DeletedAgentKeyResolution {
   const deletedAgentId = resolveDeletedAgentIdFromSessionKey(cfg, key);
   if (deletedAgentId === null) {
-    return null;
+    return { kind: "pass" };
+  }
+  const remappedKey = resolveLegacyDefaultMainRemap(cfg, key, fromSingleStore);
+  if (remappedKey !== null) {
+    return { kind: "remap", key: remappedKey };
   }
   return {
-    ok: false,
-    error: errorShape(
-      ErrorCodes.INVALID_REQUEST,
-      `Agent "${deletedAgentId}" no longer exists in configuration`,
-    ),
+    kind: "reject",
+    result: {
+      ok: false,
+      error: errorShape(
+        ErrorCodes.INVALID_REQUEST,
+        `Agent "${deletedAgentId}" no longer exists in configuration`,
+      ),
+    },
   };
+}
+
+/**
+ * Apply a {@link DeletedAgentKeyResolution} to a freshly matched key: reject
+ * surfaces the error, remap swaps in the live-default key, pass returns the
+ * original. Shared by all four resolution paths (key / sessionId / label).
+ */
+function applyDeletedAgentResolution(
+  cfg: RemoteClawConfig,
+  matchKey: string,
+  fromSingleStore: boolean,
+): SessionsResolveResult {
+  const resolution = resolveDeletedAgentSessionKey(cfg, matchKey, fromSingleStore);
+  if (resolution.kind === "reject") {
+    return resolution.result;
+  }
+  return { ok: true, key: resolution.kind === "remap" ? resolution.key : matchKey };
 }
 
 export async function resolveSessionKeyFromResolveParams(params: {
@@ -97,11 +159,11 @@ export async function resolveSessionKeyFromResolveParams(params: {
           };
         }
       }
-      const deletedRejection = rejectDeletedAgentSessionKey(cfg, target.canonicalKey);
-      if (deletedRejection) {
-        return deletedRejection;
-      }
-      return { ok: true, key: target.canonicalKey };
+      return applyDeletedAgentResolution(
+        cfg,
+        target.canonicalKey,
+        isSingleConfiguredSessionStore(cfg),
+      );
     }
     const legacyKey = target.storeKeys.find((candidate) => store[candidate]);
     if (!legacyKey) {
@@ -138,15 +200,15 @@ export async function resolveSessionKeyFromResolveParams(params: {
         };
       }
     }
-    const deletedRejection = rejectDeletedAgentSessionKey(cfg, target.canonicalKey);
-    if (deletedRejection) {
-      return deletedRejection;
-    }
-    return { ok: true, key: target.canonicalKey };
+    return applyDeletedAgentResolution(
+      cfg,
+      target.canonicalKey,
+      isSingleConfiguredSessionStore(cfg),
+    );
   }
 
   if (hasSessionId) {
-    const { storePath, store } = loadCombinedSessionStoreForGateway(cfg);
+    const { storePath, store, fromSingleStore } = loadCombinedSessionStoreForGateway(cfg);
     const list = listSessionsFromStore({
       cfg,
       storePath,
@@ -178,11 +240,7 @@ export async function resolveSessionKeyFromResolveParams(params: {
       };
     }
     const matchKey = String(matches[0]?.key ?? "");
-    const deletedRejection = rejectDeletedAgentSessionKey(cfg, matchKey);
-    if (deletedRejection) {
-      return deletedRejection;
-    }
-    return { ok: true, key: matchKey };
+    return applyDeletedAgentResolution(cfg, matchKey, fromSingleStore);
   }
 
   const parsedLabel = parseSessionLabel(p.label);
@@ -193,7 +251,7 @@ export async function resolveSessionKeyFromResolveParams(params: {
     };
   }
 
-  const { storePath, store } = loadCombinedSessionStoreForGateway(cfg);
+  const { storePath, store, fromSingleStore } = loadCombinedSessionStoreForGateway(cfg);
   const list = listSessionsFromStore({
     cfg,
     storePath,
@@ -228,9 +286,5 @@ export async function resolveSessionKeyFromResolveParams(params: {
   }
 
   const labelKey = String(list.sessions[0]?.key ?? "");
-  const deletedRejection = rejectDeletedAgentSessionKey(cfg, labelKey);
-  if (deletedRejection) {
-    return deletedRejection;
-  }
-  return { ok: true, key: labelKey };
+  return applyDeletedAgentResolution(cfg, labelKey, fromSingleStore);
 }

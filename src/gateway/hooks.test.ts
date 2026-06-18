@@ -7,6 +7,7 @@ import {
   extractHookToken,
   isHookAgentAllowed,
   normalizeHookDispatchSessionKey,
+  resolveHookDispatchSessionKey,
   resolveHookSessionKey,
   resolveHookTargetAgentId,
   normalizeAgentPayload,
@@ -320,6 +321,42 @@ describe("gateway hooks helpers", () => {
         targetAgentId: "hooks",
       }),
     ).toBe("agent:hooks:slack:channel:c123");
+  });
+
+  test("resolveHookDispatchSessionKey re-checks the rebound key against allowed prefixes", () => {
+    const cfg = {
+      hooks: {
+        enabled: true,
+        token: "secret",
+        allowRequestSessionKey: true,
+        allowedSessionKeyPrefixes: ["hook:", "agent:main:"],
+      },
+    } as RemoteClawConfig;
+    const resolved = resolveHooksConfig(cfg);
+    expect(resolved).not.toBeNull();
+    if (!resolved) {
+      return;
+    }
+
+    // Rebinding an allowlisted agent:main:* request onto the hooks agent yields agent:hooks:*,
+    // which is not allowlisted -> rejected even though the requested key passed the pre-rebind check.
+    const blocked = resolveHookDispatchSessionKey({
+      hooksConfig: resolved,
+      sessionKey: "agent:main:slack:channel:c123",
+      targetAgentId: "hooks",
+    });
+    expect(blocked.ok).toBe(false);
+    if (!blocked.ok) {
+      expect(blocked.error).toContain("sessionKey must start with one of");
+    }
+
+    // Rebinding onto the main agent keeps agent:main:*, which stays allowlisted.
+    const allowed = resolveHookDispatchSessionKey({
+      hooksConfig: resolved,
+      sessionKey: "agent:main:slack:channel:c123",
+      targetAgentId: "main",
+    });
+    expect(allowed).toEqual({ ok: true, value: "agent:main:slack:channel:c123" });
   });
 
   test("resolveHooksConfig validates defaultSessionKey and generated fallback against prefixes", () => {

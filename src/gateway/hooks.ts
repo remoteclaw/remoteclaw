@@ -375,6 +375,29 @@ export function normalizeHookDispatchSessionKey(params: {
   return `agent:${targetAgentId}:${parsed.rest}`;
 }
 
+/**
+ * Rebind the session key to the target agent, then re-validate the rebound key against
+ * hooks.allowedSessionKeyPrefixes. The pre-rebind allowlist check on the requested key does not
+ * authorize the namespace the rebind lands in (e.g. an allowlisted `agent:main:*` request rebound
+ * to a target `hooks` agent becomes `agent:hooks:*`, which the allowlist may not permit), so the
+ * dispatch key must be re-checked here before it leaves the ingress boundary.
+ */
+export function resolveHookDispatchSessionKey(params: {
+  hooksConfig: HooksConfigResolved;
+  sessionKey: string;
+  targetAgentId: string | undefined;
+}): { ok: true; value: string } | { ok: false; error: string } {
+  const dispatchSessionKey = normalizeHookDispatchSessionKey({
+    sessionKey: params.sessionKey,
+    targetAgentId: params.targetAgentId,
+  });
+  const allowedPrefixes = params.hooksConfig.sessionPolicy.allowedSessionKeyPrefixes;
+  if (allowedPrefixes && !isSessionKeyAllowedByPrefix(dispatchSessionKey, allowedPrefixes)) {
+    return { ok: false, error: getHookSessionKeyPrefixError(allowedPrefixes) };
+  }
+  return { ok: true, value: dispatchSessionKey };
+}
+
 export function normalizeAgentPayload(payload: Record<string, unknown>):
   | {
       ok: true;

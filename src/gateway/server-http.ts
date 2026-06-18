@@ -45,7 +45,7 @@ import {
   normalizeHookHeaders,
   normalizeWakePayload,
   readJsonBody,
-  normalizeHookDispatchSessionKey,
+  resolveHookDispatchSessionKey,
   resolveHookSessionKey,
   resolveHookTargetAgentId,
   resolveHookChannel,
@@ -485,12 +485,18 @@ export function createHooksRequestHandler(
         return true;
       }
       const targetAgentId = resolveHookTargetAgentId(hooksConfig, normalized.value.agentId);
+      const dispatchSessionKey = resolveHookDispatchSessionKey({
+        hooksConfig,
+        sessionKey: sessionKey.value,
+        targetAgentId,
+      });
+      if (!dispatchSessionKey.ok) {
+        sendJson(res, 400, { ok: false, error: dispatchSessionKey.error });
+        return true;
+      }
       const runId = dispatchAgentHook({
         ...normalized.value,
-        sessionKey: normalizeHookDispatchSessionKey({
-          sessionKey: sessionKey.value,
-          targetAgentId,
-        }),
+        sessionKey: dispatchSessionKey.value,
         agentId: targetAgentId,
       });
       sendJson(res, 200, { ok: true, runId });
@@ -542,15 +548,21 @@ export function createHooksRequestHandler(
             return true;
           }
           const targetAgentId = resolveHookTargetAgentId(hooksConfig, mapped.action.agentId);
+          const dispatchSessionKey = resolveHookDispatchSessionKey({
+            hooksConfig,
+            sessionKey: sessionKey.value,
+            targetAgentId,
+          });
+          if (!dispatchSessionKey.ok) {
+            sendJson(res, 400, { ok: false, error: dispatchSessionKey.error });
+            return true;
+          }
           const runId = dispatchAgentHook({
             message: mapped.action.message,
             name: mapped.action.name ?? "Hook",
             agentId: targetAgentId,
             wakeMode: mapped.action.wakeMode,
-            sessionKey: normalizeHookDispatchSessionKey({
-              sessionKey: sessionKey.value,
-              targetAgentId,
-            }),
+            sessionKey: dispatchSessionKey.value,
             deliver: resolveHookDeliver(mapped.action.deliver),
             channel,
             to: mapped.action.to,

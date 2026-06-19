@@ -196,11 +196,6 @@ export const CommandsSchema = z
     native: NativeCommandsSettingSchema.optional().default("auto"),
     nativeSkills: NativeCommandsSettingSchema.optional().default("auto"),
     text: z.boolean().optional(),
-    // Config-compat only: accepted for upstream/shared-config parity. The fork delegates model
-    // selection to the CLI runtime (Middleware Boundary Principle) and ships no /models write —
-    // intentionally inert, no enforcement helper. If a fork /models write is ever added, gate it
-    // FAIL-CLOSED (=== true, false default), not the upstream fail-open default. See #2752.
-    modelsWrite: z.boolean().optional().default(true),
     bash: z.boolean().optional(),
     bashForegroundMs: z.number().int().min(0).max(30_000).optional(),
     config: z.boolean().optional(),
@@ -219,7 +214,6 @@ export const CommandsSchema = z
       ({
         native: "auto",
         nativeSkills: "auto",
-        modelsWrite: true,
         restart: true,
         ownerDisplay: "raw",
       }) as const,

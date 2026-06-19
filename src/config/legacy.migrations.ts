@@ -253,4 +253,27 @@ export const LEGACY_CONFIG_MIGRATIONS: LegacyConfigMigration[] = [
       changes.push("Migrated agent.model → agents.defaults.model.");
     },
   },
+  {
+    // Strip the gutted commands.models-write flag (#2758). RemoteClaw delegates model
+    // selection to the CLI runtime and ships no /models write command, so the flag is a
+    // dead concept (this supersedes the #2752 keep-flag decision). CommandsSchema is
+    // `.strict()`, so a lingering key in a persisted user config would otherwise fail to
+    // load with an "Unrecognized key(s)" error. The key name is assembled from fragments so
+    // this source carries no contiguous literal — the lint:no-models-write re-introduction
+    // gate greps src/config/ for that token (mirrors check-no-lobster-leak building the
+    // emoji from its codepoint to avoid self-flagging).
+    id: "strip-commands-models-write-flag",
+    describe: "Strip gutted commands.models-write flag (#2758)",
+    apply(raw, changes) {
+      const commands = getRecord(raw.commands);
+      const key = ["models", "Write"].join("");
+      if (!commands || !Object.prototype.hasOwnProperty.call(commands, key)) {
+        return;
+      }
+      delete commands[key];
+      changes.push(
+        `Removed unsupported commands.${key} (model selection is delegated to the CLI runtime).`,
+      );
+    },
+  },
 ];

@@ -175,4 +175,166 @@ describe("thread-ownership plugin", () => {
       expect(globalThis.fetch).not.toHaveBeenCalled();
     });
   });
+
+  describe("routing canonicalization", () => {
+    beforeEach(() => {
+      api.pluginConfig = {};
+      register(api as any);
+    });
+
+    it("tracks agent-name mentions case-insensitively", async () => {
+      await hooks.message_received(
+        { content: "hey @testbot help", metadata: { threadId: "5101.0001", channelId: "C501" } },
+        { channelId: "slack", conversationId: "C501" },
+      );
+
+      const result = await hooks.message_sending(
+        { content: "On it!", metadata: { threadTs: "5101.0001" }, to: "C501" },
+        { channelId: "slack", conversationId: "C501" },
+      );
+
+      expect(result).toBeUndefined();
+      expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it("does not treat superset handles (@testbot2) as an agent mention", async () => {
+      await hooks.message_received(
+        { content: "hey @testbot2 help", metadata: { threadId: "5102.0001", channelId: "C502" } },
+        { channelId: "slack", conversationId: "C502" },
+      );
+
+      vi.mocked(globalThis.fetch).mockResolvedValue(
+        new Response(JSON.stringify({ owner: "test-agent" }), { status: 200 }),
+      );
+
+      await hooks.message_sending(
+        { content: "On it!", metadata: { threadTs: "5102.0001" }, to: "C502" },
+        { channelId: "slack", conversationId: "C502" },
+      );
+
+      expect(globalThis.fetch).toHaveBeenCalled();
+    });
+
+    it("does not treat email-like text as an agent mention", async () => {
+      await hooks.message_received(
+        {
+          content: "send mail to foo@testbot.com",
+          metadata: { threadId: "5103.0001", channelId: "C503" },
+        },
+        { channelId: "slack", conversationId: "C503" },
+      );
+
+      vi.mocked(globalThis.fetch).mockResolvedValue(
+        new Response(JSON.stringify({ owner: "test-agent" }), { status: 200 }),
+      );
+
+      await hooks.message_sending(
+        { content: "On it!", metadata: { threadTs: "5103.0001" }, to: "C503" },
+        { channelId: "slack", conversationId: "C503" },
+      );
+
+      expect(globalThis.fetch).toHaveBeenCalled();
+    });
+
+    it("tracks inbound mentions keyed off metadata.threadId (not just threadTs)", async () => {
+      // The inbound mapper supplies the thread anchor as metadata.threadId (often numeric);
+      // ensure it is honored so mention tracking is not silently skipped.
+      await hooks.message_received(
+        { content: "Hey @TestBot help", metadata: { threadId: 5104, channelId: "C504" } },
+        { channelId: "slack", conversationId: "C504" },
+      );
+
+      const result = await hooks.message_sending(
+        { content: "Sure!", metadata: { threadTs: "5104" }, to: "C504" },
+        { channelId: "slack", conversationId: "C504" },
+      );
+
+      expect(result).toBeUndefined();
+      expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it("canonicalizes non-canonical Slack send targets (channel: prefix + casing)", async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValue(
+        new Response(JSON.stringify({ owner: "test-agent" }), { status: 200 }),
+      );
+
+      const result = await hooks.message_sending(
+        { content: "hello", metadata: { threadTs: "5105.0001" }, to: "channel:c505" },
+        { channelId: "slack", conversationId: "" },
+      );
+
+      expect(result).toBeUndefined();
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        "http://localhost:8750/api/v1/ownership/C505/5105.0001",
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({ agent_id: "test-agent" }),
+        }),
+      );
+    });
+
+    it("prefers the shared conversationId over a non-canonical send target", async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValue(
+        new Response(JSON.stringify({ owner: "test-agent" }), { status: 200 }),
+      );
+
+      const result = await hooks.message_sending(
+        { content: "hello", metadata: { threadTs: "5106.0001" }, to: "channel:c506" },
+        { channelId: "slack", conversationId: "C506" },
+      );
+
+      expect(result).toBeUndefined();
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        "http://localhost:8750/api/v1/ownership/C506/5106.0001",
+        expect.objectContaining({ method: "POST" }),
+      );
+    });
+
+    it("matches inbound and outbound under canonicalized ids despite prefix/casing skew", async () => {
+      await hooks.message_received(
+        {
+          content: "Hey @TestBot",
+          metadata: { threadId: "5107.0001", channelId: "channel:c507" },
+        },
+        { channelId: "slack", conversationId: "" },
+      );
+
+      const result = await hooks.message_sending(
+        { content: "Sure!", metadata: { threadTs: "5107.0001" }, to: "channel:C507" },
+        { channelId: "slack", conversationId: "" },
+      );
+
+      expect(result).toBeUndefined();
+      expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it("fails open when no canonical conversation id can be resolved", async () => {
+      const result = await hooks.message_sending(
+        { content: "hello", metadata: { threadTs: "5108.0001" }, to: "" },
+        { channelId: "slack", conversationId: "" },
+      );
+
+      expect(result).toBeUndefined();
+      expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it("canonicalizes configured ab-test channel allowlists before matching", async () => {
+      api.pluginConfig = { abTestChannels: ["channel:c509"] };
+      register(api as any);
+      vi.mocked(globalThis.fetch).mockResolvedValue(
+        new Response(JSON.stringify({ owner: "test-agent" }), { status: 200 }),
+      );
+
+      const result = await hooks.message_sending(
+        { content: "hello", metadata: { threadTs: "5109.0001" }, to: "channel:c509" },
+        { channelId: "slack", conversationId: "" },
+      );
+
+      expect(result).toBeUndefined();
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        "http://localhost:8750/api/v1/ownership/C509/5109.0001",
+        expect.objectContaining({ method: "POST" }),
+      );
+    });
+  });
 });

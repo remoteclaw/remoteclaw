@@ -8,7 +8,7 @@ title: "plugins"
 
 # `remoteclaw plugins`
 
-Manage Gateway plugins/extensions, hook packs, and compatible bundles.
+Manage Gateway plugins, hook packs, and compatible bundles.
 
 Related:
 
@@ -33,7 +33,7 @@ remoteclaw plugins enable <id>
 remoteclaw plugins disable <id>
 remoteclaw plugins uninstall <id>
 remoteclaw plugins doctor
-remoteclaw plugins update <id>
+remoteclaw plugins update <id-or-npm-spec>
 remoteclaw plugins update --all
 remoteclaw plugins marketplace list <marketplace>
 remoteclaw plugins marketplace list <marketplace> --json
@@ -68,6 +68,13 @@ remoteclaw plugins install <plugin> --marketplace https://github.com/<owner>/<re
 Bare package names are checked against ClawHub first, then npm. Security note:
 treat plugin installs like running code. Prefer pinned versions.
 
+If your `plugins` section is backed by a single-file `$include`, `plugins install`,
+`plugins update`, `plugins enable`, `plugins disable`, and `plugins uninstall`
+write through to that included file and leave `remoteclaw.json` untouched. Root
+includes, include arrays, and includes with sibling overrides fail closed
+instead of flattening. See [Config includes](/gateway/configuration) for the
+supported shapes.
+
 If config is invalid, `plugins install` normally fails closed and tells you to
 run `remoteclaw doctor --fix` first. The only documented exception is a narrow
 bundled-plugin recovery path for plugins that explicitly opt into
@@ -76,6 +83,13 @@ bundled-plugin recovery path for plugins that explicitly opt into
 `--force` reuses the existing install target and overwrites an already-installed
 plugin or hook pack in place. Use it when you are intentionally reinstalling
 the same id from a new local path, archive, ClawHub package, or npm artifact.
+For routine upgrades of an already tracked npm plugin, prefer
+`remoteclaw plugins update <id-or-npm-spec>`.
+
+If you run `plugins install` for a plugin id that is already installed, RemoteClaw
+stops and points you at `plugins update <id-or-npm-spec>` for a normal upgrade,
+or at `plugins install <package> --force` when you genuinely want to overwrite
+the current install from a different source.
 
 `--pin` applies to npm installs only. It is not supported with `--marketplace`,
 because marketplace installs persist marketplace source metadata instead of an
@@ -170,7 +184,7 @@ For local paths and archives, RemoteClaw auto-detects:
   component layout)
 - Cursor-compatible bundles (`.cursor-plugin/plugin.json`)
 
-Compatible bundles install into the normal extensions root and participate in
+Compatible bundles install into the normal plugin root and participate in
 the same list/info/enable/disable flow. Today, bundle skills, Claude
 command-skills, Claude `settings.json` defaults, Claude `.lsp.json` /
 manifest-declared `lspServers` defaults, Cursor command-skills, and compatible
@@ -243,9 +257,20 @@ or exact version. RemoteClaw resolves that package name back to the tracked plug
 record, updates that installed plugin, and records the new npm spec for future
 id-based updates.
 
+Passing the npm package name without a version or tag also resolves back to the
+tracked plugin record. Use this when a plugin was pinned to an exact version and
+you want to move it back to the registry's default release line.
+
+Before a live npm update, RemoteClaw checks the installed package version against
+the npm registry metadata. If the installed version and recorded artifact
+identity already match the resolved target, the update is skipped without
+downloading, reinstalling, or rewriting `remoteclaw.json`.
+
 When a stored integrity hash exists and the fetched artifact hash changes,
-RemoteClaw prints a warning and asks for confirmation before proceeding. Use
-global `--yes` to bypass prompts in CI/non-interactive runs.
+RemoteClaw treats that as npm artifact drift. The interactive
+`remoteclaw plugins update` command prints the expected and actual hashes and asks
+for confirmation before proceeding. Non-interactive update helpers fail closed
+unless the caller supplies an explicit continuation policy.
 
 `--dangerously-force-unsafe-install` is also available on `plugins update` as a
 break-glass override for built-in dangerous-code scan false positives during
@@ -291,6 +316,10 @@ remoteclaw plugins doctor
 `doctor` reports plugin load errors, manifest/discovery diagnostics, and
 compatibility notices. When everything is clean it prints `No plugin issues
 detected.`
+
+For module-shape failures such as missing `register`/`activate` exports, rerun
+with `REMOTECLAW_PLUGIN_LOAD_DEBUG=1` to include a compact export-shape summary in
+the diagnostic output.
 
 ### Marketplace
 

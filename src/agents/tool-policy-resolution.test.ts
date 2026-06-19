@@ -1,4 +1,4 @@
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import type { AgentTool, AgentToolResult } from "./agent-types.js";

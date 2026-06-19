@@ -78,7 +78,7 @@ export async function checkOpenAiHttpOwnerDerivationGuard() {
   const nextBoundary = afterDecl.slice(1).search(/\n {2}(?:x?it|fit|describe)[\s.(]/);
   const body = nextBoundary === -1 ? afterDecl : afterDecl.slice(0, nextBoundary + 1);
 
-  const assertsNotOwner = /senderIsOwner/.test(body) && /\.toBe\(\s*false\s*\)/.test(body);
+  const assertsNotOwner = body.includes("senderIsOwner") && /\.toBe\(\s*false\s*\)/.test(body);
   if (!assertsNotOwner) {
     violations.push(
       `${TEST_FILE}: anchor test no longer asserts \`senderIsOwner ... toBe(false)\` (#2735 invariant lost)`,

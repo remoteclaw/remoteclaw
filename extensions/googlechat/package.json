@@ -19,6 +19,9 @@
     }
   },
   "remoteclaw": {
+    "bundle": {
+      "stageRuntimeDependencies": true
+    },
     "extensions": [
       "./index.ts"
     ],

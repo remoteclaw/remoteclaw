@@ -23,6 +23,10 @@ const NON_CREDENTIAL_FIELD_NAMES = new Set([
   "tokens",
 ]);
 
+const AUTHORIZATION_VALUE_RE = /\b(Bearer|Basic)\s+[A-Za-z0-9+/._~=-]{8,}/giu;
+const JWT_VALUE_RE = /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/gu;
+const COOKIE_PAIR_RE = /\b([A-Za-z][A-Za-z0-9_.-]{1,64})=([A-Za-z0-9+/._~%=-]{16,})(?=;|\s|$)/gu;
+
 function normalizeFieldName(value: string): string {
   return normalizeLowercaseStringOrEmpty(value.replaceAll(/[^a-z0-9]/gi, ""));
 }
@@ -44,6 +48,18 @@ function isCredentialFieldName(key: string): boolean {
     normalized.endsWith("secretkey") ||
     normalized.endsWith("token")
   );
+}
+
+function redactSensitivePayloadString(value: string): string {
+  return value
+    .replace(AUTHORIZATION_VALUE_RE, "$1 <redacted>")
+    .replace(JWT_VALUE_RE, "<redacted-jwt>")
+    .replace(COOKIE_PAIR_RE, "$1=<redacted>");
+}
+
+function hasSensitiveNameValuePair(record: Record<string, unknown>): boolean {
+  const rawName = typeof record.name === "string" ? record.name : record.key;
+  return typeof rawName === "string" && isCredentialFieldName(rawName);
 }
 
 function hasImageMime(record: Record<string, unknown>): boolean {
@@ -77,6 +93,9 @@ function visitDiagnosticPayload(
     if (Array.isArray(input)) {
       return input.map((entry) => visit(entry));
     }
+    if (typeof input === "string") {
+      return redactSensitivePayloadString(input);
+    }
     if (!input || typeof input !== "object") {
       return input;
     }
@@ -87,11 +106,12 @@ function visitDiagnosticPayload(
 
     const record = input as Record<string, unknown>;
     const out: Record<string, unknown> = {};
+    const redactValueField = hasSensitiveNameValuePair(record);
     for (const [key, val] of Object.entries(record)) {
       if (opts?.omitField?.(key)) {
         continue;
       }
-      out[key] = visit(val);
+      out[key] = redactValueField && key === "value" ? "<redacted>" : visit(val);
     }
 
     if (shouldRedactImageData(record)) {

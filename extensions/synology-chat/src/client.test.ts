@@ -1,6 +1,10 @@
 import { EventEmitter } from "node:events";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
+const ssrfMocks = {
+  resolvePinnedHostnameWithPolicy: vi.fn(),
+};
+
 // Mock http and https modules before importing the client
 vi.mock("node:https", () => {
   const mockRequest = vi.fn();
@@ -57,6 +61,10 @@ function installFakeTimerHarness() {
     vi.useFakeTimers();
     fakeNowMs += 10_000;
     vi.setSystemTime(fakeNowMs);
+    ssrfMocks.resolvePinnedHostnameWithPolicy.mockResolvedValue({
+      hostname: "example.com",
+      addresses: ["93.184.216.34"],
+    });
   });
 
   afterEach(() => {

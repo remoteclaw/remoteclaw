@@ -56,7 +56,7 @@
     document.documentElement.setAttribute("data-theme", resolved);
     document.documentElement.setAttribute(
       "data-theme-mode",
-      resolved.indexOf("light") !== -1 ? "light" : "dark",
+      resolved.includes("light") ? "light" : "dark",
     );
   } catch {}
 })();

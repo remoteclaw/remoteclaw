@@ -15,7 +15,7 @@ type RecordInboundSessionFn = typeof import("../channels/session.js").recordInbo
 type DispatchReplyWithBufferedBlockDispatcherFn =
   typeof import("../auto-reply/reply/provider-dispatcher.js").dispatchReplyWithBufferedBlockDispatcher;
 
-type ReplyDispatchFromConfigOptions = Omit<GetReplyOptions, "onToolResult" | "onBlockReply">;
+type ReplyDispatchFromConfigOptions = Omit<GetReplyOptions, "onBlockReply">;
 
 export async function dispatchReplyFromConfigWithSettledDispatcher(params: {
   cfg: RemoteClawConfig;

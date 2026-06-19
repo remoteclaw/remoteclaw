@@ -368,7 +368,7 @@ describe("Metrics fuzz", () => {
       expect(() => metrics.emit("event.received", NaN)).not.toThrow();
 
       const snapshot = metrics.getSnapshot();
-      expect(isNaN(snapshot.eventsReceived)).toBe(true);
+      expect(Number.isNaN(snapshot.eventsReceived)).toBe(true);
     });
 
     it("handles Infinity value", () => {

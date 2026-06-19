@@ -5,7 +5,7 @@
   "description": "RemoteClaw QA synthetic channel plugin (runtime gutted in fork — pi-era synthetic transport removed; see CLAUDE.md § Fork Context)",
   "type": "module",
   "dependencies": {
-    "@sinclair/typebox": "0.34.49"
+    "typebox": "1.1.28"
   },
   "devDependencies": {
     "remoteclaw": "workspace:*"

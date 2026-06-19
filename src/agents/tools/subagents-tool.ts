@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 import { clearSessionQueues } from "../../auto-reply/reply/queue.js";
 import {
   resolveSubagentLabel,

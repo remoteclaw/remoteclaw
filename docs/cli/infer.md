@@ -123,6 +123,7 @@ This table maps common inference tasks to the corresponding infer command.
 - Use `--json` when the output will be consumed by another command or script.
 - Use `--provider` or `--model provider/model` when a specific backend is required.
 - For `image describe`, `audio transcribe`, and `video describe`, `--model` must use the form `<provider/model>`.
+- For `image describe`, an explicit `--model` runs that provider/model directly. The model must be image-capable in the model catalog or provider config.
 - Stateless execution commands default to local.
 - Gateway-managed state commands default to gateway.
 - The normal local path does not require the gateway to be running.
@@ -152,12 +153,14 @@ remoteclaw infer image generate --prompt "friendly lobster illustration" --json
 remoteclaw infer image generate --prompt "cinematic product photo of headphones" --json
 remoteclaw infer image describe --file ./photo.jpg --json
 remoteclaw infer image describe --file ./ui-screenshot.png --model openai/gpt-4.1-mini --json
+remoteclaw infer image describe --file ./photo.jpg --model ollama/qwen2.5vl:7b --json
 ```
 
 Notes:
 
 - Use `image edit` when starting from existing input files.
-- For `image describe`, `--model` must be `<provider/model>`.
+- For `image describe`, `--model` must be an image-capable `<provider/model>`.
+- For local Ollama vision models, pull the model first and set `OLLAMA_API_KEY` to any placeholder value, for example `ollama-local`. See [Ollama](/providers/ollama#vision-and-image-description).
 
 ## Audio
 
@@ -240,7 +243,7 @@ Infer commands normalize JSON output under a shared envelope:
   "capability": "image.generate",
   "transport": "local",
   "provider": "openai",
-  "model": "gpt-image-1",
+  "model": "gpt-image-2",
   "attempts": [],
   "outputs": []
 }

@@ -381,6 +381,8 @@ read without importing the plugin runtime.
 ```json
 {
   "contracts": {
+    "embeddedExtensionFactories": ["pi"],
+    "externalAuthProviders": ["acme-ai"],
     "speechProviders": ["openai"],
     "realtimeTranscriptionProviders": ["openai"],
     "realtimeVoiceProviders": ["openai"],
@@ -396,17 +398,61 @@ read without importing the plugin runtime.
 
 Each list is optional:
 
-| Field                            | Type       | What it means                                                  |
-| -------------------------------- | ---------- | -------------------------------------------------------------- |
-| `speechProviders`                | `string[]` | Speech provider ids this plugin owns.                          |
-| `realtimeTranscriptionProviders` | `string[]` | Realtime-transcription provider ids this plugin owns.          |
-| `realtimeVoiceProviders`         | `string[]` | Realtime-voice provider ids this plugin owns.                  |
-| `mediaUnderstandingProviders`    | `string[]` | Media-understanding provider ids this plugin owns.             |
-| `imageGenerationProviders`       | `string[]` | Image-generation provider ids this plugin owns.                |
-| `videoGenerationProviders`       | `string[]` | Video-generation provider ids this plugin owns.                |
-| `webFetchProviders`              | `string[]` | Web-fetch provider ids this plugin owns.                       |
-| `webSearchProviders`             | `string[]` | Web-search provider ids this plugin owns.                      |
-| `tools`                          | `string[]` | Agent tool names this plugin owns for bundled contract checks. |
+| Field                            | Type       | What it means                                                     |
+| -------------------------------- | ---------- | ----------------------------------------------------------------- |
+| `embeddedExtensionFactories`     | `string[]` | Embedded runtime ids a bundled plugin may register factories for. |
+| `externalAuthProviders`          | `string[]` | Provider ids whose external auth profile hook this plugin owns.   |
+| `speechProviders`                | `string[]` | Speech provider ids this plugin owns.                             |
+| `realtimeTranscriptionProviders` | `string[]` | Realtime-transcription provider ids this plugin owns.             |
+| `realtimeVoiceProviders`         | `string[]` | Realtime-voice provider ids this plugin owns.                     |
+| `mediaUnderstandingProviders`    | `string[]` | Media-understanding provider ids this plugin owns.                |
+| `imageGenerationProviders`       | `string[]` | Image-generation provider ids this plugin owns.                   |
+| `videoGenerationProviders`       | `string[]` | Video-generation provider ids this plugin owns.                   |
+| `webFetchProviders`              | `string[]` | Web-fetch provider ids this plugin owns.                          |
+| `webSearchProviders`             | `string[]` | Web-search provider ids this plugin owns.                         |
+| `tools`                          | `string[]` | Agent tool names this plugin owns for bundled contract checks.    |
+
+Provider plugins that implement `resolveExternalAuthProfiles` should declare
+`contracts.externalAuthProviders`. Plugins without the declaration still run
+through a deprecated compatibility fallback, but that fallback is slower and
+will be removed after the migration window.
+
+## mediaUnderstandingProviderMetadata reference
+
+Use `mediaUnderstandingProviderMetadata` when a media-understanding provider has
+default models, auto-auth fallback priority, or native document support that
+generic core helpers need before runtime loads. Keys must also be declared in
+`contracts.mediaUnderstandingProviders`.
+
+```json
+{
+  "contracts": {
+    "mediaUnderstandingProviders": ["example"]
+  },
+  "mediaUnderstandingProviderMetadata": {
+    "example": {
+      "capabilities": ["image", "audio"],
+      "defaultModels": {
+        "image": "example-vision-latest",
+        "audio": "example-transcribe-latest"
+      },
+      "autoPriority": {
+        "image": 40
+      },
+      "nativeDocumentInputs": ["pdf"]
+    }
+  }
+}
+```
+
+Each provider entry can include:
+
+| Field                  | Type                                | What it means                                                                |
+| ---------------------- | ----------------------------------- | ---------------------------------------------------------------------------- |
+| `capabilities`         | `("image" \| "audio" \| "video")[]` | Media capabilities exposed by this provider.                                 |
+| `defaultModels`        | `Record<string, string>`            | Capability-to-model defaults used when config does not specify a model.      |
+| `autoPriority`         | `Record<string, number>`            | Lower numbers sort earlier for automatic credential-based provider fallback. |
+| `nativeDocumentInputs` | `"pdf"[]`                           | Native document inputs supported by the provider.                            |
 
 ## channelConfigs reference
 
@@ -575,6 +621,23 @@ non-runtime inputs. If the check needs full config resolution or the real
 channel runtime, keep that logic in the plugin `config.hasConfiguredState`
 hook instead.
 
+## Discovery precedence (duplicate plugin ids)
+
+RemoteClaw discovers plugins from several roots (bundled, global install, workspace, explicit config-selected paths). If two discoveries share the same `id`, only the **highest-precedence** manifest is kept; lower-precedence duplicates are dropped instead of loading beside it.
+
+Precedence, highest to lowest:
+
+1. **Config-selected** — a path explicitly pinned in `plugins.entries.<id>`
+2. **Bundled** — plugins shipped with RemoteClaw
+3. **Global install** — plugins installed into the global RemoteClaw plugin root
+4. **Workspace** — plugins discovered relative to the current workspace
+
+Implications:
+
+- A forked or stale copy of a bundled plugin sitting in the workspace will not shadow the bundled build.
+- To actually override a bundled plugin with a local one, pin it via `plugins.entries.<id>` so it wins by precedence rather than relying on workspace discovery.
+- Duplicate drops are logged so Doctor and startup diagnostics can point at the discarded copy.
+
 ## JSON Schema requirements
 
 - **Every plugin must ship a JSON Schema**, even if it accepts no config.
@@ -622,7 +685,10 @@ See [Configuration reference](/gateway/configuration) for the full `plugins.*` s
   hardcoding the owning provider.
 - `channelEnvVars` is the cheap metadata path for shell-env fallback, setup
   prompts, and similar channel surfaces that should not boot plugin runtime
-  just to inspect env names.
+  just to inspect env names. Env names are metadata, not activation by
+  themselves: status, audit, cron delivery validation, and other read-only
+  surfaces still apply plugin trust and effective activation policy before they
+  treat an env var as a configured channel.
 - `providerAuthChoices` is the cheap metadata path for auth-choice pickers,
   `--auth-choice` resolution, preferred-provider mapping, and simple onboarding
   CLI flag registration before provider runtime loads. For runtime wizard

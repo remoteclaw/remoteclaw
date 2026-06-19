@@ -19,6 +19,7 @@ import { ensureBinary } from "./infra/binaries.js";
 import { loadDotEnv } from "./infra/dotenv.js";
 import { normalizeEnv } from "./infra/env.js";
 import { formatUncaughtError } from "./infra/errors.js";
+import { runFatalErrorHooks } from "./infra/fatal-error-hooks.js";
 import { isMainModule } from "./infra/is-main.js";
 import { ensureRemoteClawCliOnPath } from "./infra/path-env.js";
 import {
@@ -85,12 +86,18 @@ if (isMain) {
 
   process.on("uncaughtException", (error) => {
     console.error("[remoteclaw] Uncaught exception:", formatUncaughtError(error));
+    for (const message of runFatalErrorHooks({ reason: "uncaught_exception", error })) {
+      console.error("[remoteclaw]", message);
+    }
     restoreTerminalState("uncaught exception", { resumeStdinIfPaused: false });
     process.exit(1);
   });
 
   void program.parseAsync(process.argv).catch((err) => {
     console.error("[remoteclaw] CLI failed:", formatUncaughtError(err));
+    for (const message of runFatalErrorHooks({ reason: "legacy_cli_failure", error: err })) {
+      console.error("[remoteclaw]", message);
+    }
     restoreTerminalState("legacy cli failure", { resumeStdinIfPaused: false });
     process.exit(1);
   });

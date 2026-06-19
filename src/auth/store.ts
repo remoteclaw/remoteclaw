@@ -52,7 +52,7 @@ function coerceAuthStore(raw: unknown): AuthProfileStore | null {
   }
   const order =
     record.order && typeof record.order === "object"
-      ? Object.entries(record.order as Record<string, unknown>).reduce(
+      ? Object.entries(record.order as Record<string, unknown>).reduce<Record<string, string[]>>(
           (acc, [provider, value]) => {
             if (!Array.isArray(value)) {
               return acc;
@@ -66,7 +66,7 @@ function coerceAuthStore(raw: unknown): AuthProfileStore | null {
             acc[provider] = list;
             return acc;
           },
-          {} as Record<string, string[]>,
+          {},
         )
       : undefined;
 

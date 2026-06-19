@@ -11,6 +11,16 @@ import type {
   TypingMode,
 } from "./types.base.js";
 
+export type Gpt5PromptOverlayConfig = {
+  /** Friendly interaction-style layer for GPT-5-family models (default: friendly). */
+  personality?: "friendly" | "on" | "off";
+};
+
+export type PromptOverlaysConfig = {
+  /** Shared GPT-5-family prompt overlay used across providers. */
+  gpt5?: Gpt5PromptOverlayConfig;
+};
+
 export type AgentModelEntryConfig = {
   alias?: string;
   /** Provider-specific API parameters (e.g., GLM-4.7 thinking mode). */

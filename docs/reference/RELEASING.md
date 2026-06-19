@@ -109,6 +109,11 @@ OpenClaw has three public release lanes:
 - npm release preflight fails closed unless the tarball includes both
   `dist/control-ui/index.html` and a non-empty `dist/control-ui/assets/` payload
   so we do not ship an empty browser dashboard again
+- Post-publish verification also checks that the published registry install
+  contains non-empty bundled plugin runtime deps under the root `dist/*`
+  layout. A release that ships with missing or empty bundled plugin
+  dependency payloads fails the postpublish verifier and cannot be promoted
+  to `latest`.
 - `pnpm test:install:smoke` also enforces the npm pack `unpackedSize` budget on
   the candidate update tarball, so installer e2e catches accidental pack bloat
   before the release publish path
@@ -165,8 +170,8 @@ When cutting a stable npm release:
 2. Choose `npm_dist_tag=beta` for the normal beta-first flow, or `latest` only
    when you intentionally want a direct stable publish
 3. Run `RemoteClaw Release Checks` separately with the same tag or the
-   full current workflow-branch commit SHA when you want live prompt cache
-   coverage
+   full current workflow-branch commit SHA when you want live prompt cache,
+   QA Lab parity, Matrix, and Telegram coverage
    - This is separate on purpose so live coverage stays available without
      recoupling long-running or flaky checks to the publish workflow
 4. Save the successful `preflight_run_id`

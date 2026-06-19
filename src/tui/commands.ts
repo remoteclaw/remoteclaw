@@ -15,6 +15,7 @@ export type SlashCommandOptions = {
   cfg?: RemoteClawConfig;
   provider?: string;
   model?: string;
+  local?: boolean;
 };
 
 const COMMAND_ALIASES: Record<string, string> = {};

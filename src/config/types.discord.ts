@@ -204,6 +204,11 @@ export type DiscordSlashCommandConfig = {
   ephemeral?: boolean;
 };
 
+export type DiscordThreadConfig = {
+  /** If true, Discord thread sessions inherit the parent channel transcript. Default: false. */
+  inheritParent?: boolean;
+};
+
 export type DiscordAutoPresenceConfig = {
   /** Enable automatic runtime/quota-based Discord presence updates. Default: false. */
   enabled?: boolean;
@@ -291,6 +296,8 @@ export type DiscordAccountConfig = {
   actions?: DiscordActionConfig;
   /** Control reply threading when reply tags are present (off|first|all). */
   replyToMode?: ReplyToMode;
+  /** Thread session behavior. */
+  thread?: DiscordThreadConfig;
   /**
    * Alias for dm.policy (prefer this so it inherits cleanly via base->account shallow merge).
    * Legacy key: channels.discord.dm.policy.

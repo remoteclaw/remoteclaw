@@ -38,6 +38,111 @@ describe("config io write prepare", () => {
     expect(persisted).not.toHaveProperty("sessions.persistence");
   });
 
+  it("preserves authored source-only nested fields during partial writes", () => {
+    const persisted = resolvePersistCandidateForWrite({
+      runtimeConfig: {
+        plugins: {
+          entries: {},
+        },
+      },
+      sourceConfig: {
+        plugins: {
+          entries: {},
+          installs: {
+            "remoteclaw-web-search": {
+              source: "npm",
+              spec: "@ollama/remoteclaw-web-search",
+              installPath: "/tmp/remoteclaw-web-search",
+              resolvedName: "@ollama/remoteclaw-web-search",
+              resolvedVersion: "0.2.2",
+            },
+          },
+        },
+      },
+      nextConfig: {
+        plugins: {
+          entries: {},
+          installs: {
+            "remoteclaw-web-search": {
+              source: "npm",
+              spec: "@ollama/remoteclaw-web-search@0.2.2",
+              installPath: "/tmp/remoteclaw-web-search",
+              resolvedName: "@ollama/remoteclaw-web-search",
+              resolvedVersion: "0.2.2",
+            },
+          },
+        },
+      },
+    }) as {
+      plugins?: {
+        installs?: Record<string, Record<string, unknown>>;
+      };
+    };
+
+    expect(persisted.plugins?.installs?.["remoteclaw-web-search"]).toEqual({
+      source: "npm",
+      spec: "@ollama/remoteclaw-web-search@0.2.2",
+      installPath: "/tmp/remoteclaw-web-search",
+      resolvedName: "@ollama/remoteclaw-web-search",
+      resolvedVersion: "0.2.2",
+    });
+  });
+
+  it("preserves untouched include-owned subtrees during unrelated writes", () => {
+    const persisted = resolvePersistCandidateForWrite({
+      runtimeConfig: {
+        agents: {
+          defaults: { model: "openai/gpt-5.4" },
+        },
+        gateway: { mode: "local" },
+      },
+      sourceConfig: {
+        agents: {
+          defaults: { model: "openai/gpt-5.4" },
+        },
+        gateway: { mode: "local" },
+      },
+      rootAuthoredConfig: {
+        agents: { $include: "./config/agents.json" },
+        gateway: { mode: "local" },
+      },
+      nextConfig: {
+        agents: {
+          defaults: { model: "openai/gpt-5.4" },
+        },
+        gateway: { mode: "local", port: 18789 },
+      },
+    }) as Record<string, unknown>;
+
+    expect(persisted.agents).toEqual({ $include: "./config/agents.json" });
+    expect(persisted.gateway).toEqual({ mode: "local", port: 18789 });
+  });
+
+  it("rejects writes that would flatten include-owned subtrees", () => {
+    expect(() =>
+      resolvePersistCandidateForWrite({
+        runtimeConfig: {
+          agents: {
+            defaults: { model: "openai/gpt-5.4" },
+          },
+        },
+        sourceConfig: {
+          agents: {
+            defaults: { model: "openai/gpt-5.4" },
+          },
+        },
+        rootAuthoredConfig: {
+          agents: { $include: "./config/agents.json" },
+        },
+        nextConfig: {
+          agents: {
+            defaults: { model: "anthropic/sonnet-4.5" },
+          },
+        },
+      }),
+    ).toThrow("Config write would flatten $include-owned config at agents");
+  });
+
   it('formats actionable guidance for dmPolicy="open" without wildcard allowFrom', () => {
     const message = formatConfigValidationFailure(
       "channels.telegram.allowFrom",

@@ -45,6 +45,7 @@ export type SessionListDeliveryContext = {
 
 export type SessionListRow = {
   key: string;
+  agentId?: string;
   kind: SessionKind;
   channel: string;
   label?: string;

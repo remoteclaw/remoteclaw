@@ -222,6 +222,15 @@ function copyFileIfExists(sourcePath: string, targetPath: string): void {
   if (!fs.existsSync(sourcePath)) {
     return;
   }
+  let stat: fs.Stats;
+  try {
+    stat = fs.statSync(sourcePath);
+  } catch {
+    return;
+  }
+  if (!stat.isFile()) {
+    return;
+  }
   ensureParentDir(targetPath);
   fs.copyFileSync(sourcePath, targetPath);
 }

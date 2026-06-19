@@ -42,6 +42,40 @@ describe("gateway codex harness live helpers", () => {
     expect(isExpectedCodexModelsCommandText(text)).toBe(true);
   });
 
+  it("accepts missing codex CLI fallback output", () => {
+    const text = [
+      "`codex` is not installed on the shell PATH in this environment.",
+      "",
+      "Command result:",
+      "```text",
+      "/bin/bash: line 1: codex: command not found",
+      "```",
+    ].join("\n");
+
+    expect(
+      EXPECTED_CODEX_MODELS_COMMAND_TEXT.some((expectedText) => text.includes(expectedText)),
+    ).toBe(true);
+  });
+
+  it("accepts missing codex shell PATH fallback with current-session model", () => {
+    const texts = [
+      [
+        "I can only confirm the current session model here: `codex/gpt-5.4`.",
+        "",
+        "A direct `codex models` CLI lookup is not available in this environment because `codex` is not installed on the shell path.",
+      ].join("\n"),
+      [
+        "`codex models` is not available in this environment because the `codex` CLI is not installed on `PATH`.",
+        "",
+        "The current session model is `codex/gpt-5.4`.",
+      ].join("\n"),
+    ];
+
+    for (const text of texts) {
+      expect(isExpectedCodexModelsCommandText(text)).toBe(true);
+    }
+  });
+
   it("accepts sandbox escalation rejection for codex models", () => {
     const texts = [
       "I couldn’t list them because `codex models` requires running outside the sandbox here, and that approval was rejected.",

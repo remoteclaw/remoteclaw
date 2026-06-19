@@ -13,6 +13,7 @@ import { configHandlers } from "./server-methods/config.js";
 import { connectHandlers } from "./server-methods/connect.js";
 import { cronHandlers } from "./server-methods/cron.js";
 import { deviceHandlers } from "./server-methods/devices.js";
+import { diagnosticsHandlers } from "./server-methods/diagnostics.js";
 import { healthHandlers } from "./server-methods/health.js";
 import { logsHandlers } from "./server-methods/logs.js";
 import { nodePendingHandlers } from "./server-methods/nodes-pending.js";
@@ -65,6 +66,7 @@ export const coreGatewayHandlers: GatewayRequestHandlers = {
   ...logsHandlers,
   ...voicewakeHandlers,
   ...healthHandlers,
+  ...diagnosticsHandlers,
   ...channelsHandlers,
   ...chatHandlers,
   ...cronHandlers,

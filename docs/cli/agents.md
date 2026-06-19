@@ -196,7 +196,7 @@ remoteclaw agents set-identity --workspace ~/.remoteclaw/workspace --from-identi
 Override fields explicitly:
 
 ```bash
-remoteclaw agents set-identity --agent main --name "RemoteClaw" --emoji "🦞" --avatar avatars/remoteclaw.png
+remoteclaw agents set-identity --agent main --name "RemoteClaw" --emoji "🦀" --avatar avatars/remoteclaw.png
 ```
 
 Config sample:
@@ -209,8 +209,8 @@ Config sample:
         id: "main",
         identity: {
           name: "RemoteClaw",
-          theme: "space lobster",
-          emoji: "🦞",
+          theme: "space crab",
+          emoji: "🦀",
           avatar: "avatars/remoteclaw.png",
         },
       },

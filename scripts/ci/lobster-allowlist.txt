@@ -1,0 +1,38 @@
+# Lobster-emoji brand-leak allowlist — the few 🦞 that legitimately stay.
+#
+# RemoteClaw's mascot is the crab 🦀. The lobster 🦞 is upstream OpenClaw's. The
+# gate (scripts/check-no-lobster-leak.mjs, run via `pnpm lint:no-lobster-leak`)
+# fails on any 🦞 in the tree that is NOT matched by a rule below — a new brand
+# leak. The rules here enumerate the CURRENT legitimate occurrences: incidental
+# test fixture data, not brand expressions. Every line is a reviewed, deliberate
+# "this 🦞 is intentional" assertion — keep the list tiny.
+#
+# FORMAT (one rule per line; blank lines and `#` comments ignored):
+#   <path> <context-substring>
+#
+#   - <path>: repo-root-relative file path, no spaces (exact match).
+#   - <context-substring>: a substring of the offending line's content. A 🦞 hit is
+#     exempt iff its file == <path> AND its line contains <context-substring>.
+#     Context-anchored (not a bare line number) so it survives unrelated edits, yet
+#     a NEW unrelated 🦞 added to the same file is still caught.
+#
+# TO ADD A NEW LEGITIMATE 🦞 (e.g. a new test fixture):
+#   1. Confirm it is genuinely incidental fixture data, NOT a user-facing brand
+#      string (those must become 🦀 instead — fix, don't allowlist).
+#   2. Add one line: the file path + a stable, distinctive substring of its line.
+#   3. Run `pnpm lint:no-lobster-leak` to confirm the tree is clean.
+#   4. Get the line reviewed — each entry is a brand-intent assertion.
+#
+# (The gate always exempts THIS file: the context anchors below necessarily
+#  contain 🦞, and the file is the human-reviewed trust root, not a leak surface.)
+
+# Heartbeat ack marker — arbitrary non-event emoji in a system-events unit test.
+src/infra/system-events.test.ts HEARTBEAT_OK 🦞
+
+# Sample inbound chat message body in a Slack preview/finalize test fixture (×2 lines).
+extensions/slack/src/monitor/message-handler/preview-finalize.test.ts fair. poke harder then 🦞
+
+# Identity-defaults test: arbitrary explicit-override values (the default identity in
+# this file is a sloth 🦥; these 🦞 are incidental "non-default value" fixtures).
+src/config/config.identity-defaults.test.ts emoji: "🦞"
+src/config/config.identity-defaults.test.ts responsePrefix: "🦞"

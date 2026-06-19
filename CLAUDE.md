@@ -167,6 +167,18 @@ against regressions specific to the fork-sync lifecycle:
   not as a standalone job. Surfaces upstream class renames that silently
   desync from fork-side call sites — the regression shape that produced
   #2501, #2508-#2511.
+- **lobster-leak-gate** (`pnpm lint:no-lobster-leak`, part of `pnpm check`):
+  the preventive complement to **rebrand-gate** — that gate catches
+  `openclaw`/`OpenClaw` text leaks but not the OpenClaw mascot emoji (the
+  lobster), which RemoteClaw (the crab) rebrands. Text rebrand passes don't
+  substitute emoji, so every sync risks importing a stray lobster in a
+  user-facing string (e.g. the `placeholder="JD or …"` avatar leak fixed in
+  #2748). Greps the tree and fails on any lobster emoji not matched by the
+  context-anchored baseline in `scripts/ci/lobster-allowlist.txt` (which keeps
+  the few legitimate test-fixture lobsters); names the offending file:line and
+  suggests the crab. Runs inside the `lint` CI job (via `pnpm check`), not as a
+  standalone job. See that allowlist's header for how to add a new legitimate
+  fixture.
 
 ### Release publishing
 

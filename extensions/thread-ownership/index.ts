@@ -18,6 +18,40 @@ type AgentEntry = NonNullable<NonNullable<RemoteClawConfig["agents"]>["list"]>[n
 const mentionedThreads = new Map<string, number>();
 const MENTION_TTL_MS = 5 * 60 * 1000;
 
+// Coerce a thread token (string | number | unknown) to a string key; "" when absent.
+function resolveThreadToken(value: unknown): string {
+  return typeof value === "string" || typeof value === "number" ? String(value) : "";
+}
+
+// Canonicalize a Slack conversation id: strip an optional "slack:"/"channel:" prefix and
+// upper-case canonical Slack id shapes ([CDGUW]...), so inbound and outbound routing keys
+// match regardless of the prefix or casing supplied by the channel adapter.
+function resolveSlackConversationId(value: unknown): string {
+  const raw = normalizeOptionalString(value) ?? "";
+  if (!raw) {
+    return "";
+  }
+  const trimmed = raw.trim();
+  const match = /^(?:slack:)?channel:(.+)$/i.exec(trimmed);
+  const resolved = match?.[1]?.trim() || trimmed;
+  return /^[CDGUW][A-Z0-9]+$/i.test(resolved) ? resolved.toUpperCase() : resolved;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Match a standalone @name mention (word-boundary, case-insensitive) so that superset
+// handles (e.g. @testbot2) and email-like text (e.g. foo@testbot.com) are not mistaken
+// for a mention of the agent.
+function containsAgentNameMention(text: string, agentName: string): boolean {
+  const trimmedName = agentName.trim();
+  if (!trimmedName) {
+    return false;
+  }
+  return new RegExp(`(^|[^\\w])@${escapeRegExp(trimmedName)}(?=$|[^\\w])`, "i").test(text);
+}
+
 function cleanExpiredMentions(): void {
   const now = Date.now();
   for (const [key, ts] of mentionedThreads) {
@@ -52,9 +86,13 @@ export default function register(api: RemoteClawPluginApi) {
   ).replace(/\/$/, "");
 
   const abTestChannels = new Set(
-    pluginCfg.abTestChannels ??
+    (
+      pluginCfg.abTestChannels ??
       process.env.THREAD_OWNERSHIP_CHANNELS?.split(",").filter(Boolean) ??
-      [],
+      []
+    )
+      .map((entry) => resolveSlackConversationId(entry))
+      .filter(Boolean),
   );
 
   const { id: agentId, name: agentName } = resolveOwnershipAgent(api.config);
@@ -68,15 +106,20 @@ export default function register(api: RemoteClawPluginApi) {
     if (ctx.channelId !== "slack") return;
 
     const text = event.content ?? "";
-    const threadTs = (event.metadata?.threadTs as string) ?? "";
-    const channelId = (event.metadata?.channelId as string) ?? ctx.conversationId ?? "";
+    // The inbound mapper carries the thread anchor in metadata.threadId (not threadTs),
+    // so read both to track mentions across channel-adapter metadata shapes.
+    const threadTs =
+      resolveThreadToken(event.metadata?.threadId) || resolveThreadToken(event.metadata?.threadTs);
+    const channelId =
+      resolveSlackConversationId(ctx.conversationId) ||
+      resolveSlackConversationId(event.metadata?.channelId) ||
+      "";
 
     if (!threadTs || !channelId) return;
 
-    // Check if this agent was @-mentioned.
+    // Check if this agent was @-mentioned (case-insensitive, word-boundary).
     const mentioned =
-      (agentName && text.includes(`@${agentName}`)) ||
-      (botUserId && text.includes(`<@${botUserId}>`));
+      containsAgentNameMention(text, agentName) || (botUserId && text.includes(`<@${botUserId}>`));
 
     if (mentioned) {
       cleanExpiredMentions();
@@ -91,11 +134,19 @@ export default function register(api: RemoteClawPluginApi) {
   api.on("message_sending", async (event, ctx) => {
     if (ctx.channelId !== "slack") return;
 
-    const threadTs = (event.metadata?.threadTs as string) ?? "";
-    const channelId = (event.metadata?.channelId as string) ?? event.to;
+    // Slack threading anchors arrive via metadata; replyToId is the canonical reply target.
+    const threadTs =
+      resolveThreadToken(event.metadata?.replyToId) ||
+      resolveThreadToken(event.metadata?.threadId) ||
+      resolveThreadToken(event.metadata?.threadTs);
+    const channelId =
+      resolveSlackConversationId(ctx.conversationId) ||
+      resolveSlackConversationId(event.metadata?.channelId) ||
+      resolveSlackConversationId(event.to) ||
+      "";
 
-    // Top-level messages (no thread) are always allowed.
-    if (!threadTs) return;
+    // Top-level messages (no thread) or an unresolved channel are always allowed (fail open).
+    if (!threadTs || !channelId) return;
 
     // Only enforce in A/B test channels (if set is empty, skip entirely).
     if (abTestChannels.size > 0 && !abTestChannels.has(channelId)) return;

@@ -1,9 +1,9 @@
-import { Type } from "@sinclair/typebox";
 import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 import type {
   GatewayRequestHandlerOptions,
   RemoteClawPluginApi,
 } from "remoteclaw/plugin-sdk/voice-call";
+import { Type } from "typebox";
 import { formatErrorMessage } from "../../src/infra/errors.js";
 import { registerVoiceCallCli } from "./src/cli.js";
 import {

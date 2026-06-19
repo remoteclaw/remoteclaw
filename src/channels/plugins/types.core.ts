@@ -1,4 +1,4 @@
-import type { TSchema } from "@sinclair/typebox";
+import type { TSchema } from "typebox";
 import type { AgentTool, AgentToolResult } from "../../agents/agent-types.js";
 import type { MsgContext } from "../../auto-reply/templating.js";
 import type { RemoteClawConfig } from "../../config/config.js";

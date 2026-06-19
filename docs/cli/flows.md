@@ -15,4 +15,4 @@ remoteclaw tasks flow show <lookup>
 remoteclaw tasks flow cancel <lookup>
 ```
 
-For full documentation see [Task Flow](/automation/taskflow) and the [tasks CLI reference](/cli/index#tasks).
+For full documentation see [Task Flow](/automation/taskflow) and the [tasks CLI reference](/cli/tasks).

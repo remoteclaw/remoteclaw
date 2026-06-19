@@ -1,4 +1,4 @@
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 import { formatErrorMessage } from "../../../src/infra/errors.js";
 import { sendImageZalouser, sendLinkZalouser, sendMessageZalouser } from "./send.js";
 import {

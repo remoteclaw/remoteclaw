@@ -1,6 +1,6 @@
 import type * as Lark from "@larksuiteoapi/node-sdk";
-import { Type } from "@sinclair/typebox";
 import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk/feishu";
+import { Type } from "typebox";
 import { formatErrorMessage } from "../../../src/infra/errors.js";
 import { listEnabledFeishuAccounts } from "./accounts.js";
 import { createFeishuToolClient } from "./tool-account.js";

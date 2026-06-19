@@ -23,7 +23,18 @@
     "typescript/no-unsafe-type-assertion": "off",
     "eslint-plugin-unicorn/prefer-set-size": "off",
     "typescript/no-useless-default-assignment": "error",
+    "typescript/switch-exhaustiveness-check": [
+      "error",
+      { "considerDefaultExhaustiveForUnions": true }
+    ],
+    "typescript/prefer-return-this-type": "error",
+    "typescript/prefer-find": "error",
+    "typescript/prefer-function-type": "error",
+    "typescript/prefer-includes": "error",
+    "typescript/prefer-reduce-type-parameter": "error",
     "typescript/prefer-ts-expect-error": "error",
+    "unicorn/consistent-date-clone": "error",
+    "unicorn/consistent-empty-array-spread": "error",
     "unicorn/consistent-function-scoping": "off",
     "unicorn/require-post-message-target-origin": "off"
   },

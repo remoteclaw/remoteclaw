@@ -32,6 +32,10 @@ import { jidToE164, normalizeE164 } from "../../../../../src/utils.js";
 import { resolveWhatsAppAccount } from "../../accounts.js";
 import { newConnectionId } from "../../reconnect.js";
 import { formatError } from "../../session.js";
+import {
+  resolveWhatsAppDirectSystemPrompt,
+  resolveWhatsAppGroupSystemPrompt,
+} from "../../system-prompt.js";
 import { deliverWebReply } from "../deliver-reply.js";
 import { whatsappInboundLog, whatsappOutboundLog } from "../loggers.js";
 import type { WebInboundMsg } from "../types.js";

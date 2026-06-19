@@ -1,4 +1,4 @@
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 import type { ChannelAgentTool } from "../types.js";
 
 export function createWhatsAppLoginTool(): ChannelAgentTool {

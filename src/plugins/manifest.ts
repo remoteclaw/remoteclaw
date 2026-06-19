@@ -9,6 +9,7 @@ import type { PluginConfigUiHint, PluginKind } from "./types.js";
 
 export const PLUGIN_MANIFEST_FILENAME = "remoteclaw.plugin.json";
 export const PLUGIN_MANIFEST_FILENAMES = [PLUGIN_MANIFEST_FILENAME] as const;
+export const MAX_PLUGIN_MANIFEST_BYTES = 256 * 1024;
 
 export type PluginManifest = {
   id: string;
@@ -46,6 +47,7 @@ export function loadPluginManifest(
     absolutePath: manifestPath,
     rootPath: rootDir,
     boundaryLabel: "plugin root",
+    maxBytes: MAX_PLUGIN_MANIFEST_BYTES,
     rejectHardlinks,
   });
   if (!opened.ok) {
@@ -142,6 +144,7 @@ export type PluginPackageInstall = {
 };
 
 export type RemoteClawPackageSetupFeatures = {
+  configPromotion?: boolean;
   legacyStateMigrations?: boolean;
   legacySessionSurfaces?: boolean;
 };

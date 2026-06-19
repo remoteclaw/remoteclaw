@@ -151,7 +151,7 @@ describe("sanitizeToolCallIdsForCloudCodeAssist", () => {
           content: [
             {
               type: "toolCall",
-              id: "whatsapp_login_1768799841527_1",
+              id: "plugin_login_1768799841527_1",
               name: "login",
               arguments: {},
             },
@@ -159,7 +159,7 @@ describe("sanitizeToolCallIdsForCloudCodeAssist", () => {
         },
         {
           role: "toolResult",
-          toolCallId: "whatsapp_login_1768799841527_1",
+          toolCallId: "plugin_login_1768799841527_1",
           toolName: "login",
           content: [{ type: "text", text: "ok" }],
         },
@@ -168,7 +168,7 @@ describe("sanitizeToolCallIdsForCloudCodeAssist", () => {
       const out = sanitizeToolCallIdsForCloudCodeAssist(input, "strict");
       expect(out).not.toBe(input);
       // Strict mode strips all non-alphanumeric characters
-      expectSingleToolCallRewrite(out, "whatsapplogin17687998415271", "strict");
+      expectSingleToolCallRewrite(out, "pluginlogin17687998415271", "strict");
     });
 
     it("avoids collisions with alphanumeric-only suffixes", () => {

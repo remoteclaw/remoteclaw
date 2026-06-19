@@ -1,1 +1,1 @@
-Maintenance update for the current RemoteClaw release.
+Maintenance update for the current RemoteClaw development release.

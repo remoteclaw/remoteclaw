@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../../config/types.remoteclaw.js";
+import type { RestartSentinelPayload } from "../../infra/restart-sentinel.js";
 import {
   createConfigHandlerHarness,
   createConfigWriteSnapshot,
@@ -14,6 +15,11 @@ const scheduleGatewaySigusr1RestartMock = vi.fn(() => ({
   scheduled: true,
   delayMs: 1_000,
   coalesced: false,
+}));
+const restartSentinelMocks = vi.hoisted(() => ({
+  writeRestartSentinel: vi.fn(async (_payload: RestartSentinelPayload) => {
+    return "/tmp/restart-sentinel.json";
+  }),
 }));
 
 vi.mock("../../config/config.js", async () => {
@@ -40,6 +46,16 @@ vi.mock("../../infra/restart.js", () => ({
   scheduleGatewaySigusr1Restart: scheduleGatewaySigusr1RestartMock,
 }));
 
+vi.mock("../../infra/restart-sentinel.js", async () => {
+  const actual = await vi.importActual<typeof import("../../infra/restart-sentinel.js")>(
+    "../../infra/restart-sentinel.js",
+  );
+  return {
+    ...actual,
+    writeRestartSentinel: restartSentinelMocks.writeRestartSentinel,
+  };
+});
+
 const { configHandlers } = await import("./config.js");
 
 afterEach(() => {
@@ -52,6 +68,7 @@ beforeEach(() => {
     config,
   }));
   prepareSecretsRuntimeSnapshotMock.mockResolvedValue(undefined);
+  restartSentinelMocks.writeRestartSentinel.mockClear();
 });
 
 describe("config shared auth disconnects", () => {
@@ -142,5 +159,36 @@ describe("config shared auth disconnects", () => {
 
     expect(scheduleGatewaySigusr1RestartMock).toHaveBeenCalledTimes(1);
     expect(disconnectClientsUsingSharedGatewayAuth).not.toHaveBeenCalled();
+  });
+
+  it("does not add an agent continuation from generic control-plane sessionKey params", async () => {
+    const prevConfig: RemoteClawConfig = {
+      gateway: {
+        reload: {
+          mode: "hot",
+        },
+      },
+    };
+    readConfigFileSnapshotForWriteMock.mockResolvedValue(createConfigWriteSnapshot(prevConfig));
+
+    const { options } = createConfigHandlerHarness({
+      method: "config.patch",
+      params: {
+        baseHash: "base-hash",
+        raw: JSON.stringify({ gateway: { port: 19001 } }),
+        restartDelayMs: 1_000,
+        sessionKey: "agent:main:main",
+      },
+    });
+
+    await configHandlers["config.patch"](options);
+
+    expect(restartSentinelMocks.writeRestartSentinel).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sessionKey: "agent:main:main",
+      }),
+    );
+    const payload = restartSentinelMocks.writeRestartSentinel.mock.calls.at(-1)?.[0];
+    expect(payload?.continuation).toBeUndefined();
   });
 });

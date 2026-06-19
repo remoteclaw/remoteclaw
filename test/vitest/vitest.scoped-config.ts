@@ -65,6 +65,7 @@ const SCOPED_PROJECT_GROUP_ORDER_BY_NAME = new Map(
     "extension-irc",
     "extension-mattermost",
     "extension-matrix",
+    "extension-media",
     "extension-memory",
     "extension-messaging",
     "extension-msteams",

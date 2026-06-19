@@ -184,6 +184,30 @@ export type DiagnosticPayloadLargeEvent = DiagnosticBaseEvent & {
   reason?: string;
 };
 
+export type DiagnosticMemoryUsage = {
+  rssBytes: number;
+  heapTotalBytes: number;
+  heapUsedBytes: number;
+  externalBytes: number;
+  arrayBuffersBytes: number;
+};
+
+export type DiagnosticMemorySampleEvent = DiagnosticBaseEvent & {
+  type: "diagnostic.memory.sample";
+  memory: DiagnosticMemoryUsage;
+  uptimeMs?: number;
+};
+
+export type DiagnosticMemoryPressureEvent = DiagnosticBaseEvent & {
+  type: "diagnostic.memory.pressure";
+  level: "warning" | "critical";
+  reason: "rss_threshold" | "heap_threshold" | "rss_growth";
+  memory: DiagnosticMemoryUsage;
+  thresholdBytes?: number;
+  rssGrowthBytes?: number;
+  windowMs?: number;
+};
+
 export type DiagnosticEventPayload =
   | DiagnosticUsageEvent
   | DiagnosticWebhookReceivedEvent
@@ -199,6 +223,8 @@ export type DiagnosticEventPayload =
   | DiagnosticHeartbeatEvent
   | DiagnosticToolLoopEvent
   | DiagnosticRoutingDropEvent
+  | DiagnosticMemorySampleEvent
+  | DiagnosticMemoryPressureEvent
   | DiagnosticPayloadLargeEvent;
 
 export type DiagnosticEventInput = DiagnosticEventPayload extends infer Event
@@ -208,6 +234,7 @@ export type DiagnosticEventInput = DiagnosticEventPayload extends infer Event
   : never;
 
 type DiagnosticEventsGlobalState = {
+  enabled: boolean;
   seq: number;
   listeners: Set<(evt: DiagnosticEventPayload) => void>;
   dispatchDepth: number;
@@ -219,6 +246,7 @@ function getDiagnosticEventsState(): DiagnosticEventsGlobalState {
   };
   if (!globalStore.__remoteclawDiagnosticEventsState) {
     globalStore.__remoteclawDiagnosticEventsState = {
+      enabled: true,
       seq: 0,
       listeners: new Set<(evt: DiagnosticEventPayload) => void>(),
       dispatchDepth: 0,
@@ -228,11 +256,22 @@ function getDiagnosticEventsState(): DiagnosticEventsGlobalState {
 }
 
 export function isDiagnosticsEnabled(config?: RemoteClawConfig): boolean {
-  return config?.diagnostics?.enabled === true;
+  return config?.diagnostics?.enabled !== false;
+}
+
+export function setDiagnosticsEnabledForProcess(enabled: boolean): void {
+  getDiagnosticEventsState().enabled = enabled;
+}
+
+export function areDiagnosticsEnabledForProcess(): boolean {
+  return getDiagnosticEventsState().enabled;
 }
 
 export function emitDiagnosticEvent(event: DiagnosticEventInput) {
   const state = getDiagnosticEventsState();
+  if (!state.enabled) {
+    return;
+  }
   if (state.dispatchDepth > 100) {
     console.error(
       `[diagnostic-events] recursion guard tripped at depth=${state.dispatchDepth}, dropping type=${event.type}`,
@@ -275,6 +314,7 @@ export function onDiagnosticEvent(listener: (evt: DiagnosticEventPayload) => voi
 
 export function resetDiagnosticEventsForTest(): void {
   const state = getDiagnosticEventsState();
+  state.enabled = true;
   state.seq = 0;
   state.listeners.clear();
   state.dispatchDepth = 0;

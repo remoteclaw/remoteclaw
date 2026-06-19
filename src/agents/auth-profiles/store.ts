@@ -133,12 +133,12 @@ function warnRejectedCredentialEntries(source: string, rejected: RejectedCredent
   if (rejected.length === 0) {
     return;
   }
-  const reasons = rejected.reduce(
+  const reasons = rejected.reduce<Partial<Record<CredentialRejectReason, number>>>(
     (acc, current) => {
       acc[current.reason] = (acc[current.reason] ?? 0) + 1;
       return acc;
     },
-    {} as Partial<Record<CredentialRejectReason, number>>,
+    {},
   );
   log.warn("ignored invalid auth profile entries during store load", {
     source,
@@ -192,7 +192,7 @@ function coerceAuthStore(raw: unknown): AuthProfileStore | null {
   warnRejectedCredentialEntries("auth-profiles.json", rejected);
   const order =
     record.order && typeof record.order === "object"
-      ? Object.entries(record.order as Record<string, unknown>).reduce(
+      ? Object.entries(record.order as Record<string, unknown>).reduce<Record<string, string[]>>(
           (acc, [provider, value]) => {
             if (!Array.isArray(value)) {
               return acc;
@@ -206,7 +206,7 @@ function coerceAuthStore(raw: unknown): AuthProfileStore | null {
             acc[provider] = list;
             return acc;
           },
-          {} as Record<string, string[]>,
+          {},
         )
       : undefined;
   return {

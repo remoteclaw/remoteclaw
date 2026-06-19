@@ -288,11 +288,25 @@ Think of the suites as “increasing realism” (and increasing flakiness/cost):
   - Each `pnpm test` shard inherits the same `threads` + `isolate: false` defaults from the shared Vitest config.
   - The shared `scripts/run-vitest.mjs` launcher now also adds `--no-maglev` for Vitest child Node processes by default to reduce V8 compile churn during big local runs. Set `OPENCLAW_VITEST_ENABLE_MAGLEV=1` if you need to compare against stock V8 behavior.
 
+### Stability (gateway)
+
+- Command: `pnpm test:stability:gateway`
+- Config: `vitest.gateway.config.ts`, forced to one worker
+- Scope:
+  - Starts a real loopback Gateway with diagnostics enabled by default
+  - Drives synthetic gateway message, memory, and large-payload churn through the diagnostic event path
+  - Queries `diagnostics.stability` over the Gateway WS RPC
+  - Covers diagnostic stability bundle persistence helpers
+  - Asserts the recorder remains bounded, synthetic RSS samples stay under the pressure budget, and per-session queue depths drain back to zero
+- Expectations:
+  - CI-safe and keyless
+  - Narrow lane for stability-regression follow-up, not a substitute for the full Gateway suite
+
 ### E2E (gateway smoke)
 
 - Command: `pnpm test:e2e`
 - Config: `vitest.e2e.config.ts`
-- Files: `src/**/*.e2e.test.ts`, `test/**/*.e2e.test.ts`
+- Files: `src/**/*.e2e.test.ts`, `test/**/*.e2e.test.ts`, and bundled-plugin E2E tests under `extensions/`
 - Runtime defaults:
   - Uses Vitest `threads` with `isolate: false`, matching the rest of the repo.
   - Uses adaptive workers (CI: up to 2, local: 1 by default).
@@ -311,7 +325,7 @@ Think of the suites as “increasing realism” (and increasing flakiness/cost):
 ### E2E: OpenShell backend smoke
 
 - Command: `pnpm test:e2e:openshell`
-- File: `test/openshell-sandbox.e2e.test.ts`
+- File: `extensions/openshell/src/backend.e2e.test.ts`
 - Scope:
   - Starts an isolated OpenShell gateway on the host via Docker
   - Creates a sandbox from a temporary local Dockerfile
@@ -567,6 +581,9 @@ Docker notes:
     thread can resume
   - run `/codex status` and `/codex models` through the same gateway command
     path
+  - optionally run two Guardian-reviewed escalated shell probes: one benign
+    command that should be approved and one fake-secret upload that should be
+    denied so the agent asks back
 - Test: `src/gateway/gateway-codex-harness.live.test.ts`
 - Enable: `OPENCLAW_LIVE_CODEX_HARNESS=1`
 - Default model: `codex/gpt-5.4`
@@ -704,13 +721,13 @@ If you want to rely on env keys (e.g. exported in your `~/.profile`), run local 
 
 ## Deepgram live (audio transcription)
 
-- Test: `src/media-understanding/providers/deepgram/audio.live.test.ts`
-- Enable: `DEEPGRAM_API_KEY=... DEEPGRAM_LIVE_TEST=1 pnpm test:live src/media-understanding/providers/deepgram/audio.live.test.ts`
+- Test: `extensions/deepgram/audio.live.test.ts`
+- Enable: `DEEPGRAM_API_KEY=... DEEPGRAM_LIVE_TEST=1 pnpm test:live extensions/deepgram/audio.live.test.ts`
 
 ## BytePlus coding plan live
 
-- Test: `src/agents/byteplus.live.test.ts`
-- Enable: `BYTEPLUS_API_KEY=... BYTEPLUS_LIVE_TEST=1 pnpm test:live src/agents/byteplus.live.test.ts`
+- Test: `extensions/byteplus/live.test.ts`
+- Enable: `BYTEPLUS_API_KEY=... BYTEPLUS_LIVE_TEST=1 pnpm test:live extensions/byteplus/live.test.ts`
 - Optional model override: `BYTEPLUS_CODING_MODEL=ark-code-latest`
 
 ## ComfyUI workflow media live
@@ -724,8 +741,8 @@ If you want to rely on env keys (e.g. exported in your `~/.profile`), run local 
 
 ## Image generation live
 
-- Test: `src/image-generation/runtime.live.test.ts`
-- Command: `pnpm test:live src/image-generation/runtime.live.test.ts`
+- Test: `test/image-generation.runtime.live.test.ts`
+- Command: `pnpm test:live test/image-generation.runtime.live.test.ts`
 - Harness: `pnpm test:live:media image`
 - Scope:
   - Enumerates every registered image-generation provider plugin
@@ -738,8 +755,12 @@ If you want to rely on env keys (e.g. exported in your `~/.profile`), run local 
     - `google:pro-edit`
     - `openai:default-generate`
 - Current bundled providers covered:
-  - `openai`
+  - `fal`
   - `google`
+  - `minimax`
+  - `openai`
+  - `vydra`
+  - `xai`
 - Optional narrowing:
   - `OPENCLAW_LIVE_IMAGE_GENERATION_PROVIDERS="openai,google"`
   - `OPENCLAW_LIVE_IMAGE_GENERATION_MODELS="openai/gpt-image-1,google/gemini-3.1-flash-image-preview"`
@@ -832,8 +853,8 @@ These Docker runners split into two buckets:
   `OPENCLAW_LIVE_GATEWAY_STEP_TIMEOUT_MS=45000`, and
   `OPENCLAW_LIVE_GATEWAY_MODEL_TIMEOUT_MS=90000`. Override those env vars when you
   explicitly want the larger exhaustive scan.
-- `test:docker:all` builds the live Docker image once via `test:docker:live-build`, then reuses it for the two live Docker lanes.
-- Container smoke runners: `test:docker:openwebui`, `test:docker:onboard`, `test:docker:gateway-network`, `test:docker:mcp-channels`, and `test:docker:plugins` boot one or more real containers and verify higher-level integration paths.
+- `test:docker:all` builds the live Docker image once via `test:docker:live-build`, then reuses it for the two live Docker lanes. It also builds one shared `scripts/e2e/Dockerfile` image via `test:docker:e2e-build` and reuses it for the E2E container smoke runners that exercise the built app.
+- Container smoke runners: `test:docker:openwebui`, `test:docker:onboard`, `test:docker:npm-onboard-channel-agent`, `test:docker:gateway-network`, `test:docker:mcp-channels`, `test:docker:pi-bundle-mcp-tools`, `test:docker:cron-mcp-cleanup`, `test:docker:plugins`, `test:docker:plugin-update`, and `test:docker:config-reload` boot one or more real containers and verify higher-level integration paths.
 
 The live-model Docker runners also bind-mount only the needed CLI auth homes (or all supported ones when the run is not narrowed), then copy them into the container home before the run so external-CLI OAuth can refresh tokens without mutating the host auth store:
 
@@ -844,9 +865,27 @@ The live-model Docker runners also bind-mount only the needed CLI auth homes (or
 - Gateway + dev agent: `pnpm test:docker:live-gateway` (script: `scripts/test-live-gateway-models-docker.sh`)
 - Open WebUI live smoke: `pnpm test:docker:openwebui` (script: `scripts/e2e/openwebui-docker.sh`)
 - Onboarding wizard (TTY, full scaffolding): `pnpm test:docker:onboard` (script: `scripts/e2e/onboard-docker.sh`)
+- Npm tarball onboarding/channel/agent smoke: `pnpm test:docker:npm-onboard-channel-agent` installs the packed RemoteClaw tarball globally in Docker, configures OpenAI via env-ref onboarding plus Telegram by default, verifies enabling the plugin installs its runtime deps on demand, runs doctor, and runs one mocked OpenAI agent turn. Reuse a prebuilt tarball with `REMOTECLAW_NPM_ONBOARD_PACKAGE_TGZ=/path/to/remoteclaw-*.tgz`, skip the host rebuild with `REMOTECLAW_NPM_ONBOARD_HOST_BUILD=0`, or switch channel with `REMOTECLAW_NPM_ONBOARD_CHANNEL=discord`.
 - Gateway networking (two containers, WS auth + health): `pnpm test:docker:gateway-network` (script: `scripts/e2e/gateway-network-docker.sh`)
+- OpenAI Responses web_search minimal reasoning regression: `pnpm test:docker:openai-web-search-minimal` (script: `scripts/e2e/openai-web-search-minimal-docker.sh`) runs a mocked OpenAI server through Gateway, verifies `web_search` raises `reasoning.effort` from `minimal` to `low`, then forces the provider schema reject and checks the raw detail appears in Gateway logs.
 - MCP channel bridge (seeded Gateway + stdio bridge + raw Claude notification-frame smoke): `pnpm test:docker:mcp-channels` (script: `scripts/e2e/mcp-channels-docker.sh`)
+- Pi bundle MCP tools (real stdio MCP server + embedded Pi profile allow/deny smoke): `pnpm test:docker:pi-bundle-mcp-tools` (script: `scripts/e2e/pi-bundle-mcp-tools-docker.sh`)
+- Cron/subagent MCP cleanup (real Gateway + stdio MCP child teardown after isolated cron and one-shot subagent runs): `pnpm test:docker:cron-mcp-cleanup` (script: `scripts/e2e/cron-mcp-cleanup-docker.sh`)
 - Plugins (install smoke + `/plugin` alias + Claude-bundle restart semantics): `pnpm test:docker:plugins` (script: `scripts/e2e/plugins-docker.sh`)
+- Plugin update unchanged smoke: `pnpm test:docker:plugin-update` (script: `scripts/e2e/plugin-update-unchanged-docker.sh`)
+- Config reload metadata smoke: `pnpm test:docker:config-reload` (script: `scripts/e2e/config-reload-source-docker.sh`)
+- Bundled plugin runtime deps: `pnpm test:docker:bundled-channel-deps` builds a small Docker runner image by default, builds and packs RemoteClaw once on the host, then mounts that tarball into each Linux install scenario. Reuse the image with `REMOTECLAW_SKIP_DOCKER_BUILD=1`, skip the host rebuild after a fresh local build with `REMOTECLAW_BUNDLED_CHANNEL_HOST_BUILD=0`, or point at an existing tarball with `REMOTECLAW_BUNDLED_CHANNEL_PACKAGE_TGZ=/path/to/remoteclaw-*.tgz`.
+- Narrow bundled plugin runtime deps while iterating by disabling unrelated scenarios, for example:
+  `REMOTECLAW_BUNDLED_CHANNEL_SCENARIOS=0 REMOTECLAW_BUNDLED_CHANNEL_UPDATE_SCENARIO=0 REMOTECLAW_BUNDLED_CHANNEL_ROOT_OWNED_SCENARIO=0 REMOTECLAW_BUNDLED_CHANNEL_SETUP_ENTRY_SCENARIO=0 pnpm test:docker:bundled-channel-deps`.
+
+To prebuild and reuse the shared built-app image manually:
+
+```bash
+REMOTECLAW_DOCKER_E2E_IMAGE=remoteclaw-docker-e2e:local pnpm test:docker:e2e-build
+REMOTECLAW_DOCKER_E2E_IMAGE=remoteclaw-docker-e2e:local REMOTECLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:mcp-channels
+```
+
+Suite-specific image overrides such as `REMOTECLAW_GATEWAY_NETWORK_E2E_IMAGE` still win when set. When `REMOTECLAW_SKIP_DOCKER_BUILD=1` points at a remote shared image, the scripts pull it if it is not already local. The QR and installer Docker tests keep their own Dockerfiles because they validate package/install behavior rather than the shared built-app runtime.
 
 The live-model Docker runners also bind-mount the current checkout read-only and
 stage it into a temporary workdir inside the container. This keeps the runtime
@@ -879,6 +918,15 @@ live event queue behavior, outbound send routing, and Claude-style channel +
 permission notifications over the real stdio MCP bridge. The notification check
 inspects the raw stdio MCP frames directly so the smoke validates what the
 bridge actually emits, not just what a specific client SDK happens to surface.
+`test:docker:pi-bundle-mcp-tools` is deterministic and does not need a live
+model key. It builds the repo Docker image, starts a real stdio MCP probe server
+inside the container, materializes that server through the embedded Pi bundle
+MCP runtime, executes the tool, then verifies `coding` and `messaging` keep
+`bundle-mcp` tools while `minimal` and `tools.deny: ["bundle-mcp"]` filter them.
+`test:docker:cron-mcp-cleanup` is deterministic and does not need a live model
+key. It starts a seeded Gateway with a real stdio MCP probe server, runs an
+isolated cron turn and a `/subagents spawn` one-shot child turn, then verifies
+the MCP child process exits after each run.
 
 Manual ACP plain-language thread smoke (not CI):
 

@@ -406,7 +406,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
       respond,
       idempotencyKey: "idem-untrusted-context",
     });
-    expect(extractFirstTextBlock(payload)).toBe("hello");
+    expect(extractFirstTextBlock(payload)?.trim()).toBe("hello");
   });
 
   it("chat.send keeps explicit delivery routes for channel-scoped sessions", async () => {

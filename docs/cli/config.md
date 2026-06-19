@@ -38,6 +38,7 @@ remoteclaw config get browser.executablePath
 remoteclaw config set browser.executablePath "/usr/bin/google-chrome"
 remoteclaw config set agents.defaults.heartbeat.every "2h"
 remoteclaw config set agents.list[0].tools.exec.node "node-id-or-name"
+remoteclaw config set agents.defaults.models '{"openai-codex/gpt-5.4":{}}' --strict-json --merge
 remoteclaw config set channels.discord.token --ref-provider default --ref-source env --ref-id DISCORD_BOT_TOKEN
 remoteclaw config set secrets.providers.vaultfile --provider-source file --provider-path /etc/remoteclaw/secrets.json --provider-mode json
 remoteclaw config unset plugins.entries.brave.config.webSearch.apiKey
@@ -104,6 +105,22 @@ remoteclaw config set channels.whatsapp.groups '["*"]' --strict-json
 ```
 
 `config get <path> --json` prints the raw value as JSON instead of terminal-formatted text.
+
+Object assignment replaces the target path by default. Protected map/list paths
+that commonly hold user-added entries, such as `agents.defaults.models`,
+`models.providers`, `models.providers.<id>.models`, `plugins.entries`, and
+`auth.profiles`, refuse replacements that would remove existing entries unless
+you pass `--replace`.
+
+Use `--merge` when adding entries to those maps:
+
+```bash
+remoteclaw config set agents.defaults.models '{"openai-codex/gpt-5.4":{}}' --strict-json --merge
+remoteclaw config set models.providers.ollama.models '[{"id":"llama3.2","name":"Llama 3.2"}]' --strict-json --merge
+```
+
+Use `--replace` only when you intentionally want the provided value to become
+the complete target value.
 
 ## `config set` modes
 
@@ -342,6 +359,9 @@ If dry-run fails:
 post-change config before committing it to disk. If the new payload fails schema
 validation or looks like a destructive clobber, the active config is left alone
 and the rejected payload is saved beside it as `remoteclaw.json.rejected.*`.
+The active config path must be a regular file. Symlinked `remoteclaw.json`
+layouts are unsupported for writes; use `REMOTECLAW_CONFIG_PATH` to point directly
+at the real file instead.
 
 Prefer CLI writes for small edits:
 
@@ -366,7 +386,7 @@ last-known-good backup during startup or hot reload. See
 
 ## Subcommands
 
-- `config file`: Print the active config file path (resolved from `REMOTECLAW_CONFIG_PATH` or default location).
+- `config file`: Print the active config file path (resolved from `REMOTECLAW_CONFIG_PATH` or default location). The path should name a regular file, not a symlink.
 
 Restart the gateway after edits.
 
@@ -379,3 +399,31 @@ gateway.
 remoteclaw config validate
 remoteclaw config validate --json
 ```
+
+After `remoteclaw config validate` is passing, you can use the local TUI to have
+an embedded agent compare the active config against the docs while you validate
+each change from the same terminal:
+
+If validation is already failing, start with `remoteclaw configure` or
+`remoteclaw doctor --fix`. `remoteclaw chat` does not bypass the invalid-config
+guard.
+
+```bash
+remoteclaw chat
+```
+
+Then inside the TUI:
+
+```text
+!remoteclaw config file
+!remoteclaw docs gateway auth token secretref
+!remoteclaw config validate
+!remoteclaw doctor
+```
+
+Typical repair loop:
+
+- Ask the agent to compare your current config with the relevant docs page and suggest the smallest fix.
+- Apply targeted edits with `remoteclaw config set` or `remoteclaw configure`.
+- Rerun `remoteclaw config validate` after each change.
+- If validation passes but the runtime is still unhealthy, run `remoteclaw doctor` or `remoteclaw doctor --fix` for migration and repair help.

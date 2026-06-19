@@ -18,4 +18,5 @@ export type ApplyAuthChoiceParams = {
 export type ApplyAuthChoiceResult = {
   config: RemoteClawConfig;
   agentModelOverride?: string;
+  retrySelection?: boolean;
 };

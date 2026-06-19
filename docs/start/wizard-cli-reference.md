@@ -142,6 +142,12 @@ What you set:
     Sets `agents.defaults.model` to `openai-codex/gpt-5.4` when model is unset or `openai/*`.
 
   </Accordion>
+  <Accordion title="OpenAI Code subscription (device pairing)">
+    Browser pairing flow with a short-lived device code.
+
+    Sets `agents.defaults.model` to `openai-codex/gpt-5.4` when model is unset or `openai/*`.
+
+  </Accordion>
   <Accordion title="OpenAI API key">
     Uses `OPENAI_API_KEY` if present or prompts for a key, then stores the credential in auth profiles.
 

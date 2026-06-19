@@ -47,7 +47,7 @@ This page describes the current CLI behavior. If commands change, update this do
 - [`tui`](/cli/tui)
 - [`browser`](/cli/browser)
 - [`cron`](/cli/cron)
-- [`tasks`](/cli/index#tasks)
+- [`tasks`](/cli/tasks)
 - [`flows`](/cli/flows)
 - [`dns`](/cli/dns)
 - [`docs`](/cli/docs)
@@ -431,7 +431,7 @@ Notes:
 
 ## Plugins
 
-Manage extensions and their config:
+Manage plugins and their config:
 
 - `openclaw plugins list` — discover plugins (use `--json` for machine output).
 - `openclaw plugins inspect <id>` — show details for a plugin (`info` is an alias).
@@ -994,7 +994,7 @@ Options:
 - `-t, --to <dest>` (for session key and optional delivery)
 - `--session-id <id>`
 - `--agent <id>` (agent id; overrides routing bindings)
-- `--thinking <off|minimal|low|medium|high|xhigh>` (provider support varies; not model-gated at CLI level)
+- `--thinking <level>` (validated against the selected model's provider profile)
 - `--verbose <on|off>`
 - `--channel <channel>` (delivery channel; omit to use the main session channel)
 - `--reply-to <target>` (delivery target override, separate from session routing)
@@ -1528,9 +1528,12 @@ Options:
 
 - `--all`
 - `--local`
-- `--provider <name>`
+- `--provider <id>`
 - `--json`
 - `--plain`
+
+`--all` includes bundled provider-owned static catalog rows before auth is
+configured. Rows remain unavailable until matching provider credentials exist.
 
 ### `models status`
 

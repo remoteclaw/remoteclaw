@@ -2,13 +2,7 @@ import { DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk/account-id";
 import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk/channel-plugin-common";
 import { listSlackAccountIds, mergeSlackAccountConfig } from "../accounts.js";
 import { normalizeSlackWebhookPath } from "./paths.js";
-
-let slackHttpHandlerRuntimePromise: Promise<typeof import("./handler.runtime.js")> | null = null;
-
-async function loadSlackHttpHandlerRuntime() {
-  slackHttpHandlerRuntimePromise ??= import("./handler.runtime.js");
-  return await slackHttpHandlerRuntimePromise;
-}
+import { handleSlackHttpRequest } from "./registry.js";
 
 export function registerSlackPluginHttpRoutes(api: RemoteClawPluginApi): void {
   const accountIds = new Set<string>([DEFAULT_ACCOUNT_ID, ...listSlackAccountIds(api.config)]);
@@ -25,8 +19,7 @@ export function registerSlackPluginHttpRoutes(api: RemoteClawPluginApi): void {
     api.registerHttpRoute({
       path,
       auth: "plugin",
-      handler: async (req, res) =>
-        await (await loadSlackHttpHandlerRuntime()).handleSlackHttpRequest(req, res),
+      handler: async (req, res) => await handleSlackHttpRequest(req, res),
     });
   }
 }

@@ -49,6 +49,7 @@ apps/ios/.derivedData/
 apps/ios/.local-signing.xcconfig
 vendor/
 apps/macos/.build/**
+apps/macos-mlx-tts/.build/**
 **/*.bun-build
 apps/ios/*.xcfilelist
 

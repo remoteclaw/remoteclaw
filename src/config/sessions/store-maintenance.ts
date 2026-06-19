@@ -167,12 +167,19 @@ export function resolveMaintenanceConfig(): ResolvedSessionMaintenanceConfig {
 export function pruneStaleEntries(
   store: Record<string, SessionEntry>,
   overrideMaxAgeMs?: number,
-  opts: { log?: boolean; onPruned?: (params: { key: string; entry: SessionEntry }) => void } = {},
+  opts: {
+    log?: boolean;
+    onPruned?: (params: { key: string; entry: SessionEntry }) => void;
+    preserveKeys?: ReadonlySet<string>;
+  } = {},
 ): number {
   const maxAgeMs = overrideMaxAgeMs ?? resolveMaintenanceConfigFromInput().pruneAfterMs;
   const cutoffMs = Date.now() - maxAgeMs;
   let pruned = 0;
   for (const [key, entry] of Object.entries(store)) {
+    if (opts.preserveKeys?.has(key)) {
+      continue;
+    }
     if (entry?.updatedAt != null && entry.updatedAt < cutoffMs) {
       opts.onPruned?.({ key, entry });
       delete store[key];
@@ -276,11 +283,16 @@ export function capEntryCount(
   opts: {
     log?: boolean;
     onCapped?: (params: { key: string; entry: SessionEntry }) => void;
+    preserveKeys?: ReadonlySet<string>;
   } = {},
 ): number {
   const maxEntries = overrideMax ?? resolveMaintenanceConfigFromInput().maxEntries;
-  const keys = Object.keys(store);
-  if (keys.length <= maxEntries) {
+  const preservedCount = opts.preserveKeys
+    ? Object.keys(store).filter((key) => opts.preserveKeys?.has(key)).length
+    : 0;
+  const maxRemovableEntries = Math.max(0, maxEntries - preservedCount);
+  const keys = Object.keys(store).filter((key) => !opts.preserveKeys?.has(key));
+  if (keys.length <= maxRemovableEntries) {
     return 0;
   }
 
@@ -291,7 +303,7 @@ export function capEntryCount(
     return bTime - aTime;
   });
 
-  const toRemove = sorted.slice(maxEntries);
+  const toRemove = sorted.slice(maxRemovableEntries);
   for (const key of toRemove) {
     const entry = store[key];
     if (entry) {

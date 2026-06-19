@@ -133,6 +133,15 @@ OpenClaw requires Codex app-server `0.118.0` or newer. The Codex plugin checks
 the app-server initialize handshake and blocks older or unversioned servers so
 OpenClaw only runs against the protocol surface it has been tested with.
 
+### Codex app-server tool-result middleware
+
+Bundled plugins can also attach Codex app-server-specific `tool_result`
+middleware through `api.registerCodexAppServerExtensionFactory(...)` when their
+manifest declares `contracts.embeddedExtensionFactories: ["codex-app-server"]`.
+This is the trusted-plugin seam for async tool-result transforms that need to
+run inside the native Codex harness before the tool output is projected back
+into the RemoteClaw transcript.
+
 ### Native Codex harness mode
 
 The bundled `codex` harness is the native Codex mode for embedded OpenClaw
@@ -149,8 +158,9 @@ When this mode runs, Codex owns the native thread id, resume behavior,
 compaction, and app-server execution. OpenClaw still owns the chat channel,
 visible transcript mirror, tool policy, approvals, media delivery, and session
 selection. Use `embeddedHarness.runtime: "codex"` with
-`embeddedHarness.fallback: "none"` when you need to prove that the Codex
-app-server path is used and PI fallback is not hiding a broken native harness.
+`embeddedHarness.fallback: "none"` when you need to prove that only the Codex
+app-server path can claim the run. That config is only a selection guard:
+Codex app-server failures already fail directly instead of retrying through PI.
 
 ## Disable PI fallback
 

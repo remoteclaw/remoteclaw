@@ -113,6 +113,7 @@ remoteclaw message send --channel synology-chat --target synology-chat:123456 --
 ```
 
 Media sends are supported by URL-based file delivery.
+Outbound file URLs must use `http` or `https`, and private or otherwise blocked network targets are rejected before RemoteClaw forwards the URL to the NAS webhook.
 
 ## Multi-account
 

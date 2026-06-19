@@ -143,6 +143,26 @@ export async function listConfiguredMessageChannels(
   return channels;
 }
 
+/**
+ * Configured channels that can receive an announce delivery.
+ *
+ * This is the fork's equivalent of the upstream channel-presence-policy
+ * `listConfiguredAnnounceChannelIds` helper (RemoteClaw never imported that
+ * module). Announce delivery resolves over the same enabled-and-configured
+ * deliverable message channels that {@link resolveMessageChannelSelection}
+ * uses at fire time, so this delegates to {@link listConfiguredMessageChannels}.
+ *
+ * Used by the gateway `cron.add` / `cron.update` handlers to detect an
+ * ambiguous announce `delivery.channel` (absent / `"last"` with more than one
+ * channel configured) at create/update time instead of letting it fail at fire
+ * time. Disabled accounts are excluded, matching fire-time selection. See #2750.
+ */
+export async function listConfiguredAnnounceChannelIds(
+  cfg: RemoteClawConfig,
+): Promise<MessageChannelId[]> {
+  return await listConfiguredMessageChannels(cfg);
+}
+
 export async function resolveMessageChannelSelection(params: {
   cfg: RemoteClawConfig;
   channel?: string | null;

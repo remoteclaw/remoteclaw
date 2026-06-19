@@ -627,6 +627,74 @@ describe("gateway server cron", () => {
     }
   });
 
+  test("rejects ambiguous announce delivery when multiple channels are configured", async () => {
+    const { prevSkipCron } = await setupCronTestRun({
+      tempPrefix: "remoteclaw-gw-cron-announce-ambiguity-",
+      cronEnabled: false,
+    });
+
+    await writeCronConfig({
+      session: {
+        mainKey: "main",
+      },
+      channels: {
+        telegram: {
+          botToken: "telegram-token",
+        },
+        slack: {
+          botToken: "xoxb-slack-token",
+          appToken: "xapp-slack-token",
+        },
+      },
+    });
+
+    const { server, ws } = await startServerWithClient();
+    await connectOk(ws);
+
+    try {
+      // Absent announce channel with two configured channels is ambiguous.
+      const ambiguousAddRes = await rpcReq(ws, "cron.add", {
+        name: "ambiguous announce",
+        enabled: true,
+        schedule: { kind: "every", everyMs: 60_000 },
+        sessionTarget: "isolated",
+        wakeMode: "next-heartbeat",
+        payload: { kind: "agentTurn", message: "hello" },
+        delivery: { mode: "announce" },
+      });
+      expect(ambiguousAddRes.ok).toBe(false);
+      expect(ambiguousAddRes.error?.message).toContain("ambiguous");
+
+      // A named channel is unambiguous and still accepted.
+      const namedAddRes = await rpcReq(ws, "cron.add", {
+        name: "named announce",
+        enabled: true,
+        schedule: { kind: "every", everyMs: 60_000 },
+        sessionTarget: "isolated",
+        wakeMode: "next-heartbeat",
+        payload: { kind: "agentTurn", message: "hello" },
+        delivery: { mode: "announce", channel: "telegram", to: "19098680" },
+      });
+      if (!namedAddRes.ok) {
+        throw new Error(namedAddRes.error?.message ?? "cron.add failed");
+      }
+      expect(namedAddRes.ok).toBe(true);
+      const namedJobIdValue = (namedAddRes.payload as { id?: unknown } | null)?.id;
+      const namedJobId = typeof namedJobIdValue === "string" ? namedJobIdValue : "";
+      expect(namedJobId.length > 0).toBe(true);
+
+      // Updating the accepted job back to an ambiguous channel is rejected.
+      const ambiguousUpdateRes = await rpcReq(ws, "cron.update", {
+        id: namedJobId,
+        patch: { delivery: { mode: "announce", channel: "last" } },
+      });
+      expect(ambiguousUpdateRes.ok).toBe(false);
+      expect(ambiguousUpdateRes.error?.message).toContain("ambiguous");
+    } finally {
+      await cleanupCronTestRun({ ws, server, prevSkipCron, clearSessionConfig: true });
+    }
+  });
+
   test("keeps delivery updates valid after gateway config changes the default agent", async () => {
     const { prevSkipCron } = await setupCronTestRun({
       tempPrefix: "remoteclaw-gw-cron-main-default-agent-drift-",

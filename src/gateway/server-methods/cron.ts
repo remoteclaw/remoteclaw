@@ -1,3 +1,4 @@
+import { loadConfig } from "../../config/config.js";
 import { normalizeCronJobCreate, normalizeCronJobPatch } from "../../cron/normalize.js";
 import {
   readCronRunLogEntriesPage,
@@ -5,9 +6,10 @@ import {
   resolveCronRunLogPath,
 } from "../../cron/run-log.js";
 import { isInvalidCronSessionTargetIdError } from "../../cron/session-target.js";
-import type { CronJobCreate, CronJobPatch } from "../../cron/types.js";
+import type { CronDelivery, CronJobCreate, CronJobPatch } from "../../cron/types.js";
 import { validateScheduleTimestamp } from "../../cron/validate-timestamp.js";
 import { formatErrorMessage } from "../../infra/errors.js";
+import { listConfiguredAnnounceChannelIds } from "../../infra/outbound/channel-selection.js";
 import {
   ErrorCodes,
   errorShape,
@@ -21,6 +23,12 @@ import {
   validateCronUpdateParams,
   validateWakeParams,
 } from "../protocol/index.js";
+import {
+  assertValidCronCreateDelivery,
+  assertValidCronUpdateDelivery,
+  type CronDeliveryValidationInput,
+  isCronDeliveryValidationError,
+} from "./cron.validation.js";
 import type { GatewayRequestHandlers } from "./types.js";
 
 export const cronHandlers: GatewayRequestHandlers = {
@@ -133,6 +141,20 @@ export const cronHandlers: GatewayRequestHandlers = {
       );
       return;
     }
+    try {
+      const configuredAnnounceChannelIds = await listConfiguredAnnounceChannelIds(loadConfig());
+      assertValidCronCreateDelivery(jobCreate, configuredAnnounceChannelIds);
+    } catch (err) {
+      if (isCronDeliveryValidationError(err)) {
+        respond(
+          false,
+          undefined,
+          errorShape(ErrorCodes.INVALID_REQUEST, `invalid cron.add params: ${err.message}`),
+        );
+        return;
+      }
+      throw err;
+    }
     const job = await context.cron.add(jobCreate);
     context.logGateway.info("cron: job created", { jobId: job.id, schedule: jobCreate.schedule });
     respond(true, job, undefined);
@@ -191,6 +213,33 @@ export const cronHandlers: GatewayRequestHandlers = {
           errorShape(ErrorCodes.INVALID_REQUEST, timestampValidation.message),
         );
         return;
+      }
+    }
+    if (patch.delivery !== undefined) {
+      const existing = context.cron.getJob(jobId);
+      if (existing) {
+        // Validate the effective delivery the patch will persist (shallow merge
+        // over the existing delivery), so a partial patch that keeps an existing
+        // explicit channel is not flagged as ambiguous.
+        const effectiveJob: CronDeliveryValidationInput = {
+          sessionTarget: patch.sessionTarget ?? existing.sessionTarget,
+          payload: existing.payload,
+          delivery: { ...existing.delivery, ...patch.delivery } as CronDelivery,
+        };
+        try {
+          const configuredAnnounceChannelIds = await listConfiguredAnnounceChannelIds(loadConfig());
+          assertValidCronUpdateDelivery(effectiveJob, configuredAnnounceChannelIds);
+        } catch (err) {
+          if (isCronDeliveryValidationError(err)) {
+            respond(
+              false,
+              undefined,
+              errorShape(ErrorCodes.INVALID_REQUEST, `invalid cron.update params: ${err.message}`),
+            );
+            return;
+          }
+          throw err;
+        }
       }
     }
     const job = await context.cron.update(jobId, patch);

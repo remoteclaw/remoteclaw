@@ -501,7 +501,7 @@ function renderPersonalCard(props: QuickSettingsProps) {
               type="text"
               maxlength="16"
               .value=${avatarText}
-              placeholder="JD or 🦞"
+              placeholder="JD or 🦀"
               @input=${(e: Event) => {
                 const value = (e.target as HTMLInputElement).value;
                 props.onUserAvatarChange?.(value.trim() ? value : null);

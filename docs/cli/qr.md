@@ -3,7 +3,7 @@ summary: "CLI reference for `remoteclaw qr` (generate mobile pairing QR + setup 
 read_when:
   - You want to pair a mobile node app with a gateway quickly
   - You need setup-code output for remote/manual sharing
-title: "qr"
+title: "QR"
 ---
 
 # `remoteclaw qr`
@@ -49,3 +49,8 @@ remoteclaw qr --url wss://gateway.example/ws
 - After scanning, approve device pairing with:
   - `remoteclaw devices list`
   - `remoteclaw devices approve <requestId>`
+
+## Related
+
+- [CLI reference](/cli)
+- [Pairing](/cli/pairing)

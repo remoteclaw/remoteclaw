@@ -1,11 +1,5 @@
-const LEGACY_QA_LAB_DIR = ["qa", "lab"].join("-");
 const LEGACY_QA_CHANNEL_DIR = ["qa", "channel"].join("-");
-export const LEGACY_QA_CHANNEL_RUNTIME_API_PATH = [
-  "dist",
-  "extensions",
-  LEGACY_QA_CHANNEL_DIR,
-  "runtime-api.js",
-].join("/");
+const LEGACY_QA_LAB_DIR = ["qa", "lab"].join("-");
 
 type NpmUpdateCompatSidecar = {
   path: string;
@@ -16,7 +10,7 @@ const EMPTY_RUNTIME_SIDECAR = "export {};\n";
 
 export const NPM_UPDATE_COMPAT_SIDECARS = [
   {
-    path: LEGACY_QA_CHANNEL_RUNTIME_API_PATH,
+    path: `dist/extensions/${LEGACY_QA_CHANNEL_DIR}/runtime-api.js`,
     content: EMPTY_RUNTIME_SIDECAR,
   },
   {
@@ -30,6 +24,7 @@ export const NPM_UPDATE_COMPAT_SIDECAR_PATHS = new Set<string>(
 );
 
 export const NPM_UPDATE_OMITTED_BUNDLED_PLUGIN_ROOTS = new Set<string>([
+  `dist/extensions/${LEGACY_QA_CHANNEL_DIR}`,
   `dist/extensions/${LEGACY_QA_LAB_DIR}`,
   "dist/extensions/qa-matrix",
 ]);

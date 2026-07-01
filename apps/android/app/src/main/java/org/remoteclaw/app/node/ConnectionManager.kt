@@ -7,7 +7,7 @@ import org.remoteclaw.app.gateway.GatewayClientInfo
 import org.remoteclaw.app.gateway.GatewayConnectOptions
 import org.remoteclaw.app.gateway.GatewayEndpoint
 import org.remoteclaw.app.gateway.GatewayTlsParams
-import org.remoteclaw.app.gateway.isPrivateLanGatewayHost
+import org.remoteclaw.app.gateway.isLoopbackGatewayHost
 import org.remoteclaw.app.LocationMode
 import org.remoteclaw.app.VoiceWakeMode
 
@@ -34,7 +34,7 @@ class ConnectionManager(
       val stableId = endpoint.stableId
       val stored = storedFingerprint?.trim().takeIf { !it.isNullOrEmpty() }
       val isManual = stableId.startsWith("manual|")
-      val cleartextAllowedHost = isPrivateLanGatewayHost(endpoint.host)
+      val cleartextAllowedHost = isLoopbackGatewayHost(endpoint.host)
 
       if (isManual) {
         if (!manualTlsEnabled && cleartextAllowedHost) return null

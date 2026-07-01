@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { clearPluginManifestRegistryCache } from "../plugins/manifest-registry.js";
 import { validateConfigObjectWithPlugins } from "./config.js";
 
@@ -90,7 +90,6 @@ describe("config plugin validation", () => {
       REMOTECLAW_HOME: undefined,
       REMOTECLAW_STATE_DIR: path.join(suiteHome, ".remoteclaw"),
       REMOTECLAW_PLUGIN_MANIFEST_CACHE_MS: "10000",
-      REMOTECLAW_DISABLE_PLUGIN_DISCOVERY_CACHE: "1",
       REMOTECLAW_BUNDLED_PLUGINS_DIR: undefined,
       REMOTECLAW_VERSION: undefined,
       VITEST: "true",
@@ -195,11 +194,6 @@ describe("config plugin validation", () => {
         },
       },
     });
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-    clearPluginManifestRegistryCache();
   });
 
   afterAll(async () => {

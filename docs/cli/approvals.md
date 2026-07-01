@@ -3,7 +3,7 @@ summary: "CLI reference for `remoteclaw approvals` and `remoteclaw exec-policy`"
 read_when:
   - You want to edit exec approvals from the CLI
   - You need to manage allowlists on gateway or node hosts
-title: "approvals"
+title: "Approvals"
 ---
 
 # `remoteclaw approvals`
@@ -183,3 +183,8 @@ Targeting notes:
 - `--agent` defaults to `"*"`, which applies to all agents.
 - The node host must advertise `system.execApprovals.get/set` (macOS app or headless node host).
 - Approvals files are stored per host at `~/.remoteclaw/exec-approvals.json`.
+
+## Related
+
+- [CLI reference](/cli)
+- [Exec approvals](/tools/exec-approvals)

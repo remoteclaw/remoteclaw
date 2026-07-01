@@ -3,7 +3,7 @@ summary: "CLI reference for `remoteclaw wiki` (memory-wiki vault status, search,
 read_when:
   - You want to use the memory-wiki CLI
   - You are documenting or changing `remoteclaw wiki`
-title: "wiki"
+title: "Wiki"
 ---
 
 # `remoteclaw wiki`
@@ -212,3 +212,8 @@ These require the official `obsidian` CLI on `PATH` when
 - `plugins.entries.memory-wiki.config.context.includeCompiledDigestPrompt`
 
 See [Memory Wiki plugin](/plugins/memory-wiki) for the full config model.
+
+## Related
+
+- [CLI reference](/cli)
+- [Memory wiki](/plugins/memory-wiki)

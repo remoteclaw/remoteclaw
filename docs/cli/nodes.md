@@ -3,7 +3,7 @@ summary: "CLI reference for `remoteclaw nodes` (status, pairing, invoke, camera/
 read_when:
   - You’re managing paired nodes (cameras, screen, canvas)
   - You need to approve requests or invoke node commands
-title: "nodes"
+title: "Nodes"
 ---
 
 # `remoteclaw nodes`
@@ -42,6 +42,9 @@ filter to nodes that connected within a duration (e.g. `24h`, `7d`).
 Approval note:
 
 - `remoteclaw nodes pending` only needs pairing scope.
+- `gateway.nodes.pairing.autoApproveCidrs` can skip the pending step only for
+  explicitly trusted, first-time `role: node` device pairing. It is off by
+  default and does not approve upgrades.
 - `remoteclaw nodes approve <requestId>` inherits extra scope requirements from the
   pending request:
   - commandless request: pairing only
@@ -64,3 +67,8 @@ Invoke flags:
 For shell execution on a node, use the `exec` tool with `host=node` instead of `remoteclaw nodes run`.
 The `nodes` CLI is now capability-focused: direct RPC via `nodes invoke`, plus pairing, camera,
 screen, location, canvas, and notifications.
+
+## Related
+
+- [CLI reference](/cli)
+- [Nodes](/nodes)

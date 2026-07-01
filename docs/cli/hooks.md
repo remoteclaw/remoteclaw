@@ -3,7 +3,7 @@ summary: "CLI reference for `remoteclaw hooks` (agent hooks)"
 read_when:
   - You want to manage agent hooks
   - You want to inspect hook availability or enable workspace hooks
-title: "hooks"
+title: "Hooks"
 ---
 
 # `remoteclaw hooks`
@@ -15,7 +15,7 @@ Running `remoteclaw hooks` with no subcommand is equivalent to `remoteclaw hooks
 Related:
 
 - Hooks: [Hooks](/automation/hooks)
-- Plugin hooks: [Plugin hooks](/plugins/architecture#provider-runtime-hooks)
+- Plugin hooks: [Plugin hooks](/plugins/hooks)
 
 ## List All Hooks
 
@@ -336,3 +336,8 @@ remoteclaw hooks enable boot-md
 ```
 
 **See:** [boot-md documentation](/automation/hooks#boot-md)
+
+## Related
+
+- [CLI reference](/cli)
+- [Automation hooks](/automation/hooks)

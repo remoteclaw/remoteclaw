@@ -16,7 +16,7 @@ Feishu/Lark is an all-in-one collaboration platform where teams chat, share docu
 
 ## Quick start
 
-> **Requires OpenClaw 2026.4.10 or above.** Run `openclaw --version` to check. Upgrade with `openclaw update`.
+> **Requires RemoteClaw 2026.4.24 or above.** Run `remoteclaw --version` to check. Upgrade with `remoteclaw update`.
 
 <Steps>
   <Step title="Run the channel setup wizard">
@@ -429,6 +429,12 @@ Full configuration: [Gateway configuration](/gateway/configuration)
 - ✅ Inline replies
 - ✅ Thread replies
 - ✅ Media replies stay thread-aware when replying to a thread message
+
+For `groupSessionScope: "group_topic"` and `"group_topic_sender"`, native
+Feishu/Lark topic groups use the event `thread_id` (`omt_*`) as the canonical
+topic session key. Normal group replies that RemoteClaw turns into threads keep
+using the reply root message ID (`om_*`) so the first turn and follow-up turn
+stay in the same session.
 
 ---
 

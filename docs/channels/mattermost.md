@@ -6,8 +6,6 @@ read_when:
 title: "Mattermost"
 ---
 
-# Mattermost
-
 Status: bundled plugin (bot token + WebSocket events). Channels, groups, and DMs are supported.
 Mattermost is a self-hostable team messaging platform; see the official site at
 [mattermost.com](https://mattermost.com) for product details and downloads.
@@ -108,6 +106,8 @@ Set these on the gateway host if you prefer env vars:
 - `MATTERMOST_URL=https://chat.example.com`
 
 Env vars apply only to the **default** account (`default`). Other accounts must use config values.
+
+`MATTERMOST_URL` cannot be set from a workspace `.env`; see [Workspace `.env` files](/gateway/security).
 
 ## Chat modes
 

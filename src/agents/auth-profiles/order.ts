@@ -78,14 +78,21 @@ export function resolveAuthProfileOrder(params: {
   const providerAuthKey = normalizeProviderIdForAuth(provider);
   const now = Date.now();
 
-  const storedOrder = findNormalizedProviderValue(store.order, providerKey);
   const cfgAuth = (cfg as Record<string, unknown> | undefined)?.auth as
     | {
         order?: Record<string, string[]>;
         profiles?: Record<string, { provider: string }>;
       }
     | undefined;
-  const configuredOrder = findNormalizedProviderValue(cfgAuth?.order, providerKey);
+  // Resolve order by the auth-normalized provider key first so aliased
+  // providers (e.g. volcengine-plan → volcengine) inherit a shared order,
+  // falling back to the raw provider key. See #3604-adjacent upstream fix.
+  const storedOrder =
+    findNormalizedProviderValue(store.order, providerAuthKey) ??
+    findNormalizedProviderValue(store.order, providerKey);
+  const configuredOrder =
+    findNormalizedProviderValue(cfgAuth?.order, providerAuthKey) ??
+    findNormalizedProviderValue(cfgAuth?.order, providerKey);
   const explicitOrder = storedOrder ?? configuredOrder;
   const explicitProfiles = cfgAuth?.profiles
     ? Object.entries(cfgAuth.profiles)

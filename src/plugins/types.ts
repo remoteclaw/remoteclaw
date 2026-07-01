@@ -403,6 +403,8 @@ export const isPromptInjectionHookName = (hookName: PluginHookName): boolean =>
 
 // Agent context shared across agent hooks
 export type PluginHookAgentContext = {
+  /** Correlation id for this agent run, propagated into hook events. */
+  runId?: string;
   agentId?: string;
   sessionKey?: string;
   sessionId?: string;
@@ -470,6 +472,7 @@ void assertAllPluginPromptMutationResultFieldsListed;
 // before_agent_start hook (legacy compatibility: combines both phases)
 export type PluginHookBeforeAgentStartEvent = {
   prompt: string;
+  runId?: string;
   /** Optional because legacy hook can run in pre-session phase. */
   messages?: unknown[];
 };

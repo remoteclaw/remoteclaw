@@ -17,6 +17,7 @@ import {
   SsrFBlockedError,
   type SsrFPolicy,
 } from "./ssrf.js";
+import { _globalUndiciStreamTimeoutMs } from "./undici-global-dispatcher.js";
 import {
   createHttp1Agent,
   createHttp1EnvHttpProxyAgent,
@@ -24,6 +25,15 @@ import {
 } from "./undici-runtime.js";
 
 type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+
+function resolveDispatcherTimeoutMs(fromParams: number | undefined): number | undefined {
+  if (fromParams !== undefined) {
+    return fromParams;
+  }
+  // Fall back to the module-level bridge set by ensureGlobalUndiciStreamTimeouts
+  // (avoids reading Undici's non-public `.options` field).
+  return _globalUndiciStreamTimeoutMs;
+}
 
 export const GUARDED_FETCH_MODE = {
   STRICT: "strict",
@@ -110,6 +120,7 @@ function assertExplicitProxySupportsPinnedDns(
 
 function createPolicyDispatcherWithoutPinnedDns(
   dispatcherPolicy?: PinnedDispatcherPolicy,
+  timeoutMs?: number,
 ): Dispatcher | null {
   if (!dispatcherPolicy) {
     return null;
@@ -118,23 +129,30 @@ function createPolicyDispatcherWithoutPinnedDns(
   if (dispatcherPolicy.mode === "direct") {
     return createHttp1Agent(
       dispatcherPolicy.connect ? { connect: { ...dispatcherPolicy.connect } } : undefined,
+      timeoutMs,
     );
   }
 
   if (dispatcherPolicy.mode === "env-proxy") {
-    return createHttp1EnvHttpProxyAgent({
-      ...(dispatcherPolicy.connect ? { connect: { ...dispatcherPolicy.connect } } : {}),
-      ...(dispatcherPolicy.proxyTls ? { proxyTls: { ...dispatcherPolicy.proxyTls } } : {}),
-    });
+    return createHttp1EnvHttpProxyAgent(
+      {
+        ...(dispatcherPolicy.connect ? { connect: { ...dispatcherPolicy.connect } } : {}),
+        ...(dispatcherPolicy.proxyTls ? { proxyTls: { ...dispatcherPolicy.proxyTls } } : {}),
+      },
+      timeoutMs,
+    );
   }
 
   const proxyUrl = dispatcherPolicy.proxyUrl.trim();
   return dispatcherPolicy.proxyTls
-    ? createHttp1ProxyAgent({
-        uri: proxyUrl,
-        requestTls: { ...dispatcherPolicy.proxyTls },
-      })
-    : createHttp1ProxyAgent({ uri: proxyUrl });
+    ? createHttp1ProxyAgent(
+        {
+          uri: proxyUrl,
+          requestTls: { ...dispatcherPolicy.proxyTls },
+        },
+        timeoutMs,
+      )
+    : createHttp1ProxyAgent({ uri: proxyUrl }, timeoutMs);
 }
 
 async function assertExplicitProxyAllowed(
@@ -315,16 +333,22 @@ export async function fetchWithSsrFGuard(params: GuardedFetchOptions): Promise<G
       await assertExplicitProxyAllowed(params.dispatcherPolicy, params.lookupFn, params.policy);
       const canUseTrustedEnvProxy =
         mode === GUARDED_FETCH_MODE.TRUSTED_ENV_PROXY && hasProxyEnvConfigured();
+      const timeoutMs = resolveDispatcherTimeoutMs(params.timeoutMs);
       if (canUseTrustedEnvProxy) {
-        dispatcher = createHttp1EnvHttpProxyAgent();
+        dispatcher = createHttp1EnvHttpProxyAgent(undefined, timeoutMs);
       } else if (params.pinDns === false) {
-        dispatcher = createPolicyDispatcherWithoutPinnedDns(params.dispatcherPolicy);
+        dispatcher = createPolicyDispatcherWithoutPinnedDns(params.dispatcherPolicy, timeoutMs);
       } else {
         const pinned = await resolvePinnedHostnameWithPolicy(parsedUrl.hostname, {
           lookupFn: params.lookupFn,
           policy: params.policy,
         });
-        dispatcher = createPinnedDispatcher(pinned, params.dispatcherPolicy, params.policy);
+        dispatcher = createPinnedDispatcher(
+          pinned,
+          params.dispatcherPolicy,
+          params.policy,
+          timeoutMs,
+        );
       }
 
       const init: DispatcherAwareRequestInit = {

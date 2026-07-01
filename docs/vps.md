@@ -3,14 +3,12 @@ summary: "Run OpenClaw on a Linux server or cloud VPS — provider picker, archi
 read_when:
   - You want to run the Gateway on a Linux server or cloud VPS
   - You need a quick map of hosting guides
-  - You want generic Linux server tuning for OpenClaw
-title: "Linux Server"
+  - You want generic Linux server tuning for RemoteClaw
+title: "Linux server"
 sidebarTitle: "Linux Server"
 ---
 
-# Linux Server
-
-Run the OpenClaw Gateway on any Linux server or cloud VPS. This page helps you
+Run the RemoteClaw Gateway on any Linux server or cloud VPS. This page helps you
 pick a provider, explains how cloud deployments work, and covers generic Linux
 tuning that applies everywhere.
 
@@ -117,3 +115,10 @@ How `Restart=` policies help automated recovery:
 
 For Linux OOM behavior, child process victim selection, and `exit 137`
 diagnostics, see [Linux memory pressure and OOM kills](/platforms/linux#memory-pressure-and-oom-kills).
+
+## Related
+
+- [Install overview](/install)
+- [DigitalOcean](/install/digitalocean)
+- [Fly.io](/install/fly)
+- [Hetzner](/install/hetzner)

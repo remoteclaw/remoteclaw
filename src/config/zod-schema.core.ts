@@ -99,6 +99,7 @@ const SecretsFileProviderSchema = z
       .positive()
       .max(20 * 1024 * 1024)
       .optional(),
+    allowInsecurePath: z.boolean().optional(),
   })
   .strict();
 
@@ -285,7 +286,12 @@ export const QueueDropSchema = z.union([
   z.literal("new"),
   z.literal("summarize"),
 ]);
-export const ReplyToModeSchema = z.union([z.literal("off"), z.literal("first"), z.literal("all")]);
+export const ReplyToModeSchema = z.union([
+  z.literal("off"),
+  z.literal("first"),
+  z.literal("all"),
+  z.literal("batched"),
+]);
 export const TypingModeSchema = z.union([
   z.literal("never"),
   z.literal("instant"),

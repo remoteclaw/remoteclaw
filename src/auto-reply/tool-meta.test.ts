@@ -45,6 +45,11 @@ describe("tool meta formatting", () => {
     expect(out).toContain("`~/dir/a.txt`");
   });
 
+  it("uses a longer inline code delimiter when meta contains backticks", () => {
+    const out = formatToolAggregate("fs", ["name `with` ticks"], { markdown: true });
+    expect(out).toBe("🧩 Fs: ``name `with` ticks``");
+  });
+
   it("formats prefixes with default labels", () => {
     vi.stubEnv("HOME", home);
     expect(formatToolPrefix(undefined, undefined)).toBe("🧩 Tool");

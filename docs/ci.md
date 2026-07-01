@@ -63,3 +63,8 @@ All jobs run on GitHub-hosted `ubuntu-latest` runners.
 - On a pull request, a newer push cancels in-progress runs for the same PR (`concurrency` with `cancel-in-progress`). On `main`, runs are not cancelled — treat a `cancelled` job as CI noise unless the newest run for the same ref is also failing.
 - `publish-next` and `publish-latest` use the `npm-publish` environment with OIDC provenance and run only on push / release, never on PRs.
 - Separate workflows cover other concerns: CodeQL security scanning (`codeql.yml`), documentation build and deploy (`docs.yml`), and sync-PR auditing (`sync-pr-audit.yml`).
+
+## Related
+
+- [Install overview](/install)
+- [Release channels](/install/development-channels)

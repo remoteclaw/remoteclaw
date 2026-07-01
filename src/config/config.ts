@@ -12,12 +12,14 @@ export {
   readConfigFileSnapshot,
   readConfigFileSnapshotForWrite,
   resolveConfigSnapshotHash,
+  selectApplicableRuntimeConfig,
   setRuntimeConfigSnapshotRefreshHandler,
   setRuntimeConfigSnapshot,
   writeConfigFile,
 } from "./io.js";
 export { migrateLegacyConfig } from "./legacy-migrate.js";
 export * from "./paths.js";
+export * from "./recovery-policy.js";
 export * from "./runtime-overrides.js";
 export * from "./types.js";
 export {

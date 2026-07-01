@@ -16,6 +16,7 @@ export const MODULE_ATTESTATIONS = {
 } as const;
 
 export type ToolCallIdMode = "strict" | "strict9";
+const NATIVE_KIMI_TOOL_CALL_ID_RE = /^functions\.[A-Za-z0-9_-]+:\d+$/;
 
 const STRICT9_LEN = 9;
 const TOOL_CALL_TYPES = new Set(["toolCall", "toolUse", "functionCall"]);
@@ -48,6 +49,10 @@ export function sanitizeToolCallId(id: string, mode: ToolCallIdMode = "strict"):
       return shortHash(alphanumericOnly, STRICT9_LEN);
     }
     return shortHash("sanitized", STRICT9_LEN);
+  }
+
+  if (isNativeKimiToolCallId(id)) {
+    return id;
   }
 
   // Some providers require strictly alphanumeric tool call IDs.
@@ -103,12 +108,17 @@ export function isValidCloudCodeAssistToolId(id: string, mode: ToolCallIdMode = 
   if (mode === "strict9") {
     return /^[a-zA-Z0-9]{9}$/.test(id);
   }
-  // Strictly alphanumeric for providers with tighter tool ID constraints
-  return /^[a-zA-Z0-9]+$/.test(id);
+  // Strictly alphanumeric for providers with tighter tool ID constraints,
+  // plus native IDs we intentionally preserve for replay compatibility.
+  return /^[a-zA-Z0-9]+$/.test(id) || isNativeKimiToolCallId(id);
 }
 
 function shortHash(text: string, length = 8): string {
   return createHash("sha256").update(text).digest("hex").slice(0, length);
+}
+
+function isNativeKimiToolCallId(id: string): boolean {
+  return NATIVE_KIMI_TOOL_CALL_ID_RE.test(id);
 }
 
 function makeUniqueToolId(params: { id: string; used: Set<string>; mode: ToolCallIdMode }): string {

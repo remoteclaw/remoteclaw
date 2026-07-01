@@ -30,6 +30,7 @@ import { parsePostContent } from "./post.js";
 import { createFeishuReplyDispatcher } from "./reply-dispatcher.js";
 import { getFeishuRuntime } from "./runtime.js";
 import { getMessageFeishu, sendMessageFeishu } from "./send.js";
+import { isFeishuGroupChatType } from "./types.js";
 import type { FeishuMessageContext, FeishuMediaInfo, ResolvedFeishuAccount } from "./types.js";
 import type { DynamicAgentCreationConfig } from "./types.js";
 
@@ -190,7 +191,7 @@ export type FeishuMessageEvent = {
     parent_id?: string;
     thread_id?: string;
     chat_id: string;
-    chat_type: "p2p" | "group" | "private";
+    chat_type: "p2p" | "group" | "topic_group" | "private";
     message_type: string;
     content: string;
     create_time?: string;
@@ -892,7 +893,7 @@ export async function handleFeishuMessage(params: {
   }
 
   let ctx = parseFeishuMessageEvent(event, botOpenId, botName);
-  const isGroup = ctx.chatType === "group";
+  const isGroup = isFeishuGroupChatType(ctx.chatType);
   const isDirect = !isGroup;
   const senderUserId = event.sender.sender_id.user_id?.trim() || undefined;
 

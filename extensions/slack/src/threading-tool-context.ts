@@ -5,6 +5,7 @@ import type {
 } from "../../../src/channels/plugins/types.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import { resolveSlackAccount, resolveSlackReplyToMode } from "./accounts.js";
+import { normalizeSlackThreadTsCandidate } from "./thread-ts.js";
 
 export function buildSlackThreadingToolContext(params: {
   cfg: RemoteClawConfig;
@@ -28,7 +29,7 @@ export function buildSlackThreadingToolContext(params: {
     : normalizeOptionalString(params.context.NativeChannelId);
   return {
     currentChannelId,
-    currentThreadTs: threadId != null ? String(threadId) : undefined,
+    currentThreadTs: normalizeSlackThreadTsCandidate(threadId),
     replyToMode: effectiveReplyToMode,
     hasRepliedRef: params.hasRepliedRef,
   };

@@ -7,8 +7,6 @@ read_when:
 permalink: /security/formal-verification/
 ---
 
-# Formal Verification (Security Models)
-
 This page tracks RemoteClaw’s **formal security models** (TLA+/TLC today; more as needed).
 
 > Note: some older links may refer to the previous project name.
@@ -165,3 +163,8 @@ What it means:
 - Red (expected):
   - `make routing-precedence-negative`
   - `make routing-identitylinks-negative`
+
+## Related
+
+- [Threat model](/security/THREAT-MODEL-ATLAS)
+- [Contributing to the threat model](/security/CONTRIBUTING-THREAT-MODEL)

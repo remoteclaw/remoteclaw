@@ -7,12 +7,23 @@ export type WebListenerCloseReason = {
   error?: unknown;
 };
 
+export type WhatsAppStructuredContactContext = {
+  kind: "contact" | "contacts";
+  total: number;
+  contacts: Array<{
+    name?: string;
+    phones?: string[];
+  }>;
+};
+
 export type WebInboundMessage = {
   id?: string;
   from: string; // conversation id: E.164 for direct chats, group JID for groups
   conversationId: string; // alias for clarity (same as from)
   to: string;
   accountId: string;
+  /** Set by the real inbound monitor after access-control / pairing checks pass. */
+  accessControlPassed?: boolean;
   body: string;
   pushName?: string;
   timestamp?: number;
@@ -40,5 +51,11 @@ export type WebInboundMessage = {
   mediaType?: string;
   mediaFileName?: string;
   mediaUrl?: string;
+  untrustedStructuredContext?: Array<{
+    label: string;
+    source?: string;
+    type?: string;
+    payload: unknown;
+  }>;
   wasMentioned?: boolean;
 };

@@ -3,7 +3,7 @@ description: "CLI reference for `remoteclaw completion` (generate/install shell 
 read_when:
   - You want shell completions for zsh/bash/fish/PowerShell
   - You need to cache completion scripts under RemoteClaw state
-title: "completion"
+title: "Completion"
 ---
 
 # `remoteclaw completion`
@@ -33,3 +33,7 @@ remoteclaw completion --shell bash --write-state
 - `--install` writes a small "RemoteClaw Completion" block into your shell profile and points it at the cached script.
 - Without `--install` or `--write-state`, the command prints the script to stdout.
 - Completion generation eagerly loads command trees so nested subcommands are included.
+
+## Related
+
+- [CLI reference](/cli)

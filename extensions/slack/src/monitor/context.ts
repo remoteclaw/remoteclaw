@@ -23,7 +23,11 @@ import { resolveSlackChannelConfig } from "./channel-config.js";
 import { normalizeSlackChannelType } from "./channel-type.js";
 import { isSlackChannelAllowedByPolicy } from "./policy.js";
 
-export { inferSlackChannelType, normalizeSlackChannelType } from "./channel-type.js";
+export {
+  inferSlackChannelType,
+  normalizeSlackChannelType,
+  resolveSlackChatType,
+} from "./channel-type.js";
 
 export type SlackMonitorContext = {
   cfg: RemoteClawConfig;
@@ -55,7 +59,7 @@ export type SlackMonitorContext = {
   useAccessGroups: boolean;
   reactionMode: SlackReactionNotificationMode;
   reactionAllowlist: Array<string | number>;
-  replyToMode: "off" | "first" | "all";
+  replyToMode: "off" | "first" | "all" | "batched";
   threadHistoryScope: "thread" | "channel";
   threadInheritParent: boolean;
   slashCommand: Required<import("../../../../src/config/config.js").SlackSlashCommandConfig>;

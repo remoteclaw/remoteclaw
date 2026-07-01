@@ -1,5 +1,9 @@
 import type { ReplyToMode } from "../../config/types.js";
 
+export function isSingleUseReplyToMode(mode: ReplyToMode): boolean {
+  return mode === "first" || mode === "batched";
+}
+
 export type ReplyReferencePlanner = {
   /** Returns the effective reply/thread id for the next send and updates state. */
   use(): string | undefined;

@@ -3,7 +3,7 @@ summary: "CLI reference for `remoteclaw directory` (self, peers, groups)"
 read_when:
   - You want to look up contacts/groups/self ids for a channel
   - You are developing a channel directory adapter
-title: "directory"
+title: "Directory"
 ---
 
 # `remoteclaw directory`
@@ -61,3 +61,7 @@ remoteclaw directory groups list --channel zalouser
 remoteclaw directory groups list --channel zalouser --query "work"
 remoteclaw directory groups members --channel zalouser --group-id <id>
 ```
+
+## Related
+
+- [CLI reference](/cli)

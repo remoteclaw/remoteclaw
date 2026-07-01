@@ -1,5 +1,5 @@
 import { type ChannelId, listChannelPlugins } from "../channels/plugins/index.js";
-import { getActivePluginRegistry } from "../plugins/runtime.js";
+import { getActivePluginRegistry, getActivePluginRegistryVersion } from "../plugins/runtime.js";
 import { isPlainObject } from "../utils.js";
 
 export type ChannelKind = ChannelId;
@@ -115,12 +115,15 @@ const BASE_RELOAD_RULES_TAIL: ReloadRule[] = [
 
 let cachedReloadRules: ReloadRule[] | null = null;
 let cachedRegistry: ReturnType<typeof getActivePluginRegistry> | null = null;
+let cachedActiveRegistryVersion = -1;
 
 function listReloadRules(): ReloadRule[] {
   const registry = getActivePluginRegistry();
-  if (registry !== cachedRegistry) {
+  const activeRegistryVersion = getActivePluginRegistryVersion();
+  if (registry !== cachedRegistry || activeRegistryVersion !== cachedActiveRegistryVersion) {
     cachedReloadRules = null;
     cachedRegistry = registry;
+    cachedActiveRegistryVersion = activeRegistryVersion;
   }
   if (cachedReloadRules) {
     return cachedReloadRules;

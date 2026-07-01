@@ -141,6 +141,8 @@ export type PluginPackageInstall = {
   npmSpec?: string;
   localPath?: string;
   defaultChoice?: "npm" | "local";
+  /** Expected npm tarball integrity hash (sha512-...) for pinned installs. */
+  expectedIntegrity?: string;
 };
 
 export type RemoteClawPackageSetupFeatures = {

@@ -7,8 +7,6 @@ read_when:
 title: "WeChat"
 ---
 
-# WeChat
-
 RemoteClaw connects to WeChat through Tencent's external
 `@tencent-weixin/remoteclaw-weixin` channel plugin.
 

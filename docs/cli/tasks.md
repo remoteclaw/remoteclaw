@@ -6,8 +6,6 @@ read_when:
 title: "`remoteclaw tasks`"
 ---
 
-# `remoteclaw tasks`
-
 Inspect durable background tasks and Task Flow state. With no subcommand,
 `remoteclaw tasks` is equivalent to `remoteclaw tasks list`.
 
@@ -96,3 +94,8 @@ remoteclaw tasks flow cancel <lookup>
 ```
 
 Inspects or cancels durable Task Flow state under the task ledger.
+
+## Related
+
+- [CLI reference](/cli)
+- [Background tasks](/automation/tasks)

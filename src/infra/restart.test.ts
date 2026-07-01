@@ -1,4 +1,5 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { captureFullEnv } from "../test-utils/env.js";
 
 const spawnSyncMock = vi.hoisted(() => vi.fn());
 const resolveLsofCommandSyncMock = vi.hoisted(() => vi.fn());
@@ -25,12 +26,16 @@ vi.mock("../config/paths.js", async () => {
 let __testing: typeof import("./restart-stale-pids.js").__testing;
 let cleanStaleGatewayProcessesSync: typeof import("./restart-stale-pids.js").cleanStaleGatewayProcessesSync;
 let findGatewayPidsOnPortSync: typeof import("./restart-stale-pids.js").findGatewayPidsOnPortSync;
+let triggerRemoteClawRestart: typeof import("./restart.js").triggerRemoteClawRestart;
 
 let currentTimeMs = 0;
+const envSnapshot = captureFullEnv();
+const originalPlatformDescriptor = Object.getOwnPropertyDescriptor(process, "platform");
 
 beforeAll(async () => {
   ({ __testing, cleanStaleGatewayProcessesSync, findGatewayPidsOnPortSync } =
     await import("./restart-stale-pids.js"));
+  ({ triggerRemoteClawRestart } = await import("./restart.js"));
 });
 
 beforeEach(() => {
@@ -48,10 +53,24 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  envSnapshot.restore();
   __testing.setSleepSyncOverride(null);
   __testing.setDateNowOverride(null);
+  if (originalPlatformDescriptor) {
+    Object.defineProperty(process, "platform", originalPlatformDescriptor);
+  }
   vi.restoreAllMocks();
 });
+
+function setPlatform(platform: NodeJS.Platform): void {
+  if (!originalPlatformDescriptor) {
+    return;
+  }
+  Object.defineProperty(process, "platform", {
+    ...originalPlatformDescriptor,
+    value: platform,
+  });
+}
 
 describe.runIf(process.platform !== "win32")("findGatewayPidsOnPortSync", () => {
   it("parses lsof output and filters non-remoteclaw/current processes", () => {
@@ -162,5 +181,43 @@ describe.runIf(process.platform !== "win32")("cleanStaleGatewayProcessesSync", (
 
     expect(killed).toEqual([]);
     expect(killSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("triggerRemoteClawRestart", () => {
+  it("continues when launchctl bootstrap reports the service is already loaded", () => {
+    setPlatform("darwin");
+    delete process.env.VITEST;
+    delete process.env.NODE_ENV;
+    process.env.HOME = "/Users/test";
+    process.env.REMOTECLAW_PROFILE = "default";
+    const uid = typeof process.getuid === "function" ? process.getuid() : 501;
+    spawnSyncMock.mockImplementation((command: string, args: string[]) => {
+      if (command === "/usr/sbin/lsof") {
+        return { error: undefined, status: 1, stdout: "" };
+      }
+      if (command === "launchctl" && args[0] === "kickstart" && args[1] === "-k") {
+        return { error: undefined, status: 113, stderr: "service not loaded" };
+      }
+      if (command === "launchctl" && args[0] === "bootstrap") {
+        return { error: undefined, status: 37, stderr: "Operation already in progress" };
+      }
+      if (command === "launchctl" && args[0] === "kickstart") {
+        return { error: undefined, status: 0, stdout: "" };
+      }
+      return { error: undefined, status: 1, stdout: "" };
+    });
+
+    const result = triggerRemoteClawRestart();
+
+    expect(result).toEqual({
+      ok: true,
+      method: "launchctl",
+      tried: [
+        `launchctl kickstart -k gui/${uid}/org.remoteclaw.gateway`,
+        `launchctl bootstrap gui/${uid} /Users/test/Library/LaunchAgents/org.remoteclaw.gateway.plist`,
+        `launchctl kickstart gui/${uid}/org.remoteclaw.gateway`,
+      ],
+    });
   });
 });

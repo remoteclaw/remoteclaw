@@ -30,6 +30,11 @@ type LifecycleHost = {
   serverVersion: string | null;
   chatHasAutoScrolled: boolean;
   chatManualRefreshInFlight: boolean;
+  realtimeTalkSession?: { stop: () => void } | null;
+  realtimeTalkActive?: boolean;
+  realtimeTalkStatus?: string;
+  realtimeTalkDetail?: string | null;
+  realtimeTalkTranscript?: string | null;
   chatLoading: boolean;
   chatMessages: unknown[];
   chatToolMessages: unknown[];
@@ -74,6 +79,12 @@ export function handleDisconnected(host: LifecycleHost) {
   stopNodesPolling(host as unknown as Parameters<typeof stopNodesPolling>[0]);
   stopLogsPolling(host as unknown as Parameters<typeof stopLogsPolling>[0]);
   stopDebugPolling(host as unknown as Parameters<typeof stopDebugPolling>[0]);
+  host.realtimeTalkSession?.stop();
+  host.realtimeTalkSession = null;
+  host.realtimeTalkActive = false;
+  host.realtimeTalkStatus = "idle";
+  host.realtimeTalkDetail = null;
+  host.realtimeTalkTranscript = null;
   host.client?.stop();
   host.client = null;
   host.connected = false;

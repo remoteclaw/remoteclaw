@@ -1,15 +1,15 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import {
-  LEGACY_QA_CHANNEL_RUNTIME_API_PATH,
-  NPM_UPDATE_COMPAT_SIDECAR_PATHS,
-} from "./npm-update-compat-sidecars.js";
+import { NPM_UPDATE_COMPAT_SIDECAR_PATHS } from "./npm-update-compat-sidecars.js";
 
 export const PACKAGE_DIST_INVENTORY_RELATIVE_PATH = "dist/postinstall-inventory.json";
-const LEGACY_VERIFIER_COMPAT_INVENTORY_PATHS = [LEGACY_QA_CHANNEL_RUNTIME_API_PATH];
+const LEGACY_QA_CHANNEL_DIR = ["qa", "channel"].join("-");
 const LEGACY_QA_LAB_DIR = ["qa", "lab"].join("-");
+const LEGACY_VERIFIER_COMPAT_INVENTORY_PATHS = [
+  `dist/extensions/${LEGACY_QA_CHANNEL_DIR}/runtime-api.js`,
+];
 const OMITTED_QA_EXTENSION_PREFIXES = [
-  "dist/extensions/qa-channel/",
+  `dist/extensions/${LEGACY_QA_CHANNEL_DIR}/`,
   `dist/extensions/${LEGACY_QA_LAB_DIR}/`,
   "dist/extensions/qa-matrix/",
 ];

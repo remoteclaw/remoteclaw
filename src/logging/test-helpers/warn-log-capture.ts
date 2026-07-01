@@ -1,14 +1,10 @@
 import path from "node:path";
 import { resolvePreferredRemoteClawTmpDir } from "../../infra/tmp-remoteclaw-dir.js";
-import {
-  registerLogTransport,
-  resetLogger,
-  setLoggerOverride,
-  type LogTransportRecord,
-} from "../logger.js";
+import { resetLogger, setLoggerOverride } from "../logger.js";
+import { createDiagnosticLogRecordCapture } from "./diagnostic-log-capture.js";
 
 export function createWarnLogCapture(prefix: string) {
-  const records: LogTransportRecord[] = [];
+  const capture = createDiagnosticLogRecordCapture();
   setLoggerOverride({
     level: "warn",
     consoleLevel: "silent",
@@ -17,18 +13,16 @@ export function createWarnLogCapture(prefix: string) {
       `${prefix}-${process.pid}-${Date.now()}.log`,
     ),
   });
-  const unregister = registerLogTransport((record) => {
-    records.push(record);
-  });
   return {
-    findText(needle: string): string | undefined {
-      return records
-        .flatMap((record) => Object.values(record))
+    async findText(needle: string): Promise<string | undefined> {
+      await capture.flush();
+      return capture.records
+        .flatMap((record) => [record.message, ...Object.values(record.attributes ?? {})])
         .filter((value): value is string => typeof value === "string")
         .find((value) => value.includes(needle));
     },
     cleanup() {
-      unregister();
+      capture.cleanup();
       setLoggerOverride(null);
       resetLogger();
     },

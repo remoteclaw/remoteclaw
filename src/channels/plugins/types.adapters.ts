@@ -1,7 +1,9 @@
 import type { ReplyPayload } from "../../auto-reply/types.js";
 import type { RemoteClawConfig } from "../../config/config.js";
+import type { ReplyToMode } from "../../config/types.js";
 import type { GroupToolPolicyConfig } from "../../config/types.tools.js";
 import type { OutboundDeliveryResult, OutboundSendDeps } from "../../infra/outbound/deliver.js";
+import type { OutboundDeliveryFormattingOptions } from "../../infra/outbound/formatting.js";
 import type { OutboundIdentity } from "../../infra/outbound/identity.js";
 import type { PluginRuntime } from "../../plugins/runtime/types.js";
 import type { RuntimeEnv } from "../../runtime.js";
@@ -94,11 +96,15 @@ export type ChannelOutboundContext = {
   mediaLocalRoots?: readonly string[];
   gifPlayback?: boolean;
   replyToId?: string | null;
+  replyToIdSource?: "explicit" | "implicit";
+  replyToMode?: ReplyToMode;
   threadId?: string | number | null;
   accountId?: string | null;
   identity?: OutboundIdentity;
   deps?: OutboundSendDeps;
   silent?: boolean;
+  audioAsVoice?: boolean;
+  formatting?: OutboundDeliveryFormattingOptions;
 };
 
 export type ChannelOutboundPayloadContext = ChannelOutboundContext & {
@@ -107,7 +113,13 @@ export type ChannelOutboundPayloadContext = ChannelOutboundContext & {
 
 export type ChannelOutboundAdapter = {
   deliveryMode: "direct" | "gateway" | "hybrid";
-  chunker?: ((text: string, limit: number) => string[]) | null;
+  chunker?:
+    | ((
+        text: string,
+        limit: number,
+        ctx?: { formatting?: OutboundDeliveryFormattingOptions },
+      ) => string[])
+    | null;
   chunkerMode?: "text" | "markdown";
   textChunkLimit?: number;
   pollMaxOptions?: number;
@@ -284,6 +296,7 @@ export type ChannelGatewayAdapter<ResolvedAccount = unknown> = {
   loginWithQrWait?: (params: {
     accountId?: string;
     timeoutMs?: number;
+    currentQrDataUrl?: string;
   }) => Promise<ChannelLoginWithQrWaitResult>;
   logoutAccount?: (ctx: ChannelLogoutContext<ResolvedAccount>) => Promise<ChannelLogoutResult>;
 };

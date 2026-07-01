@@ -58,6 +58,7 @@ import { compareRemoteClawVersions } from "./version.js";
 // Re-export for backwards compatibility
 export { CircularIncludeError, ConfigIncludeError } from "./includes.js";
 export { MissingEnvVarError } from "./env-substitution.js";
+export { selectApplicableRuntimeConfig } from "./runtime-snapshot.js";
 
 const SHELL_ENV_EXPECTED_KEYS = [
   "OPENAI_API_KEY",

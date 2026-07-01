@@ -2,7 +2,7 @@
 summary: "CLI reference for `remoteclaw docs` (search the live docs index)"
 read_when:
   - You want to search the live RemoteClaw docs from the terminal
-title: "docs"
+title: "Docs"
 ---
 
 # `remoteclaw docs`
@@ -26,3 +26,7 @@ Notes:
 
 - With no query, `remoteclaw docs` opens the live docs search entrypoint.
 - Multi-word queries are passed through as one search request.
+
+## Related
+
+- [CLI reference](/cli)

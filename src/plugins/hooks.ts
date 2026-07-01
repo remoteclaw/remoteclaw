@@ -313,6 +313,16 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
     );
   }
 
+  function withAgentRunId<TEvent extends { runId?: string }>(
+    event: TEvent,
+    ctx: PluginHookAgentContext,
+  ): TEvent {
+    if (event.runId || !ctx.runId) {
+      return event;
+    }
+    return { ...event, runId: ctx.runId };
+  }
+
   /**
    * Run before_agent_start hook.
    * Legacy compatibility hook that combines model resolve + prompt build phases.
@@ -323,7 +333,7 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
   ): Promise<PluginHookBeforeAgentStartResult | undefined> {
     return runModifyingHook<"before_agent_start", PluginHookBeforeAgentStartResult>(
       "before_agent_start",
-      event,
+      withAgentRunId(event, ctx),
       ctx,
       (acc, next) => ({
         ...mergeBeforePromptBuild(acc, next),
@@ -341,7 +351,7 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
     event: PluginHookAgentEndEvent,
     ctx: PluginHookAgentContext,
   ): Promise<void> {
-    return runVoidHook("agent_end", event, ctx);
+    return runVoidHook("agent_end", withAgentRunId(event, ctx), ctx);
   }
 
   /**

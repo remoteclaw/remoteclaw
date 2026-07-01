@@ -19,6 +19,7 @@ import type { SignalReactionNotificationMode } from "../../../src/config/types.j
 import type { BackoffPolicy } from "../../../src/infra/backoff.js";
 import { waitForTransportReady } from "../../../src/infra/transport-ready.js";
 import { estimateBase64DecodedBytes } from "../../../src/media/base64.js";
+import { detectMime } from "../../../src/media/mime.js";
 import { saveMediaBuffer } from "../../../src/media/store.js";
 import { createNonExitingRuntime, type RuntimeEnv } from "../../../src/runtime.js";
 import { normalizeOptionalString } from "../../../src/shared/string-coerce.js";
@@ -286,11 +287,16 @@ async function fetchAttachment(params: {
     );
   }
   const buffer = Buffer.from(result.data, "base64");
+  const originalFilename = normalizeOptionalString(attachment.filename ?? undefined);
+  const contentType =
+    normalizeOptionalString(attachment.contentType ?? undefined) ??
+    (await detectMime({ buffer, filePath: originalFilename }));
   const saved = await saveMediaBuffer(
     buffer,
-    attachment.contentType ?? undefined,
+    contentType,
     "inbound",
     params.maxBytes,
+    originalFilename,
   );
   return { path: saved.path, contentType: saved.contentType };
 }

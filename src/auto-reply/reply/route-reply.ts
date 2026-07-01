@@ -13,6 +13,7 @@ import { normalizeChannelId } from "../../channels/plugins/index.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { resolveSilentReplyPolicy } from "../../config/silent-reply.js";
 import { buildOutboundSessionContext } from "../../infra/outbound/session-context.js";
+import type { SilentReplyConversationType } from "../../shared/silent-reply-policy.js";
 import { INTERNAL_MESSAGE_CHANNEL, normalizeMessageChannel } from "../../utils/message-channel.js";
 import type { OriginatingChannelType } from "../templating.js";
 import { isSilentReplyPayloadText, SILENT_REPLY_TOKEN } from "../tokens.js";
@@ -40,6 +41,8 @@ export type RouteReplyParams = {
   sessionKey?: string;
   /** Session key for policy resolution when native-command delivery targets a different session. */
   policySessionKey?: string;
+  /** Explicit conversation type for policy resolution when the policy key is generic. */
+  policyConversationType?: SilentReplyConversationType;
   /** Provider account id (multi-account). */
   accountId?: string;
   /** Thread id for replies (Telegram topic id or Matrix thread event id). */
@@ -112,6 +115,7 @@ export async function routeReply(params: RouteReplyParams): Promise<RouteReplyRe
       cfg,
       sessionKey: policySessionKey,
       surface: channelId ?? String(channel),
+      conversationType: params.policyConversationType,
     }) !== "allow";
   const normalized = shouldPreserveSilentPayload
     ? { ...payload, text: payload.text?.trim() || SILENT_REPLY_TOKEN }

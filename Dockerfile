@@ -24,9 +24,9 @@ ARG REMOTECLAW_NODE_BOOKWORM_SLIM_DIGEST="sha256:9c2c405e3ff9b9afb2873232d24bb06
 
 FROM ${REMOTECLAW_NODE_BOOKWORM_IMAGE} AS ext-deps
 ARG REMOTECLAW_EXTENSIONS
-COPY extensions /tmp/extensions
 # Copy package.json for opted-in extensions so pnpm resolves their deps.
-RUN mkdir -p /out && \
+RUN --mount=type=bind,source=extensions,target=/tmp/extensions,readonly \
+    mkdir -p /out && \
     for ext in $REMOTECLAW_EXTENSIONS; do \
       if [ -f "/tmp/extensions/$ext/package.json" ]; then \
         mkdir -p "/out/$ext" && \

@@ -116,6 +116,7 @@ export function registerOnboardCommand(program: Command) {
     .option("--daemon-runtime <runtime>", "Daemon runtime: node|bun")
     .option("--skip-channels", "Skip channel setup")
     .option("--skip-skills", "Skip skills setup")
+    .option("--skip-bootstrap", "Skip creating default agent workspace files")
     .option("--skip-search", "Skip search provider setup")
     .option("--skip-health", "Skip health check")
     .option("--skip-ui", "Skip Control UI/TUI prompts")
@@ -172,6 +173,7 @@ export function registerOnboardCommand(program: Command) {
           daemonRuntime: opts.daemonRuntime as GatewayDaemonRuntime | undefined,
           skipChannels: Boolean(opts.skipChannels),
           skipSkills: Boolean(opts.skipSkills),
+          skipBootstrap: Boolean(opts.skipBootstrap),
           skipSearch: Boolean(opts.skipSearch),
           skipHealth: Boolean(opts.skipHealth),
           skipUi: Boolean(opts.skipUi),

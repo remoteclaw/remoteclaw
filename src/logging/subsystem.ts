@@ -305,7 +305,16 @@ function logToFile(
   }
 }
 
-export function createSubsystemLogger(subsystem: string): SubsystemLogger {
+function normalizeSubsystemLabel(subsystem?: string | null): string {
+  if (typeof subsystem !== "string") {
+    return "unknown";
+  }
+  const normalized = subsystem.trim();
+  return normalized.length > 0 ? normalized : "unknown";
+}
+
+export function createSubsystemLogger(subsystemArg: string): SubsystemLogger {
+  const subsystem = normalizeSubsystemLabel(subsystemArg);
   let fileLogger: TsLogger<LogObj> | null = null;
   const getFileLogger = () => {
     if (!fileLogger) {

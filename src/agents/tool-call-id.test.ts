@@ -231,5 +231,24 @@ describe("sanitizeToolCallIdsForCloudCodeAssist", () => {
       expect(aId.length).toBe(9);
       expect(bId.length).toBe(9);
     });
+
+    it("rewrites native Kimi function ids in strict9 mode", () => {
+      const input = castAgentMessages([
+        {
+          role: "assistant",
+          content: [{ type: "toolCall", id: "functions.read:0", name: "read", arguments: {} }],
+        },
+        {
+          role: "toolResult",
+          toolCallId: "functions.read:0",
+          toolName: "read",
+          content: [{ type: "text", text: "ok" }],
+        },
+      ]);
+
+      const out = sanitizeToolCallIdsForCloudCodeAssist(input, "strict9");
+      expect(out).not.toBe(input);
+      expectSingleToolCallRewrite(out, "functions", "strict9");
+    });
   });
 });

@@ -3,7 +3,7 @@ summary: "CLI reference for `remoteclaw message` (send + channel actions)"
 read_when:
   - Adding or modifying message CLI actions
   - Changing outbound channel behavior
-title: "message"
+title: "Message"
 ---
 
 # `remoteclaw message`
@@ -296,3 +296,8 @@ Send a Telegram image as a document to avoid compression:
 remoteclaw message send --channel telegram --target @mychat \
   --media ./diagram.png --force-document
 ```
+
+## Related
+
+- [CLI reference](/cli)
+- [Agent send](/tools/agent-send)

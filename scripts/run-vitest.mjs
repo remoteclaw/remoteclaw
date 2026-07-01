@@ -40,10 +40,40 @@ export function resolveVitestNoOutputTimeoutMs(env = process.env) {
 
 export function resolveVitestSpawnParams(env = process.env, platform = process.platform) {
   return {
-    env,
+    env: resolveVitestSpawnEnv(env),
     detached: shouldUseDetachedVitestProcessGroup(platform),
     stdio: ["inherit", "pipe", "pipe"],
   };
+}
+
+export function resolveVitestSpawnEnv(env = process.env) {
+  if (!shouldApplyNativeWorkerBudget(env)) {
+    return env;
+  }
+
+  const nativeWorkerCount = String(resolveNativeWorkerCount(env));
+  return {
+    ...env,
+    RAYON_NUM_THREADS: env.RAYON_NUM_THREADS?.trim() || nativeWorkerCount,
+    TOKIO_WORKER_THREADS: env.TOKIO_WORKER_THREADS?.trim() || nativeWorkerCount,
+  };
+}
+
+function shouldApplyNativeWorkerBudget(env) {
+  if (env.RAYON_NUM_THREADS?.trim() && env.TOKIO_WORKER_THREADS?.trim()) {
+    return false;
+  }
+  return (
+    env.REMOTECLAW_TEST_PROJECTS_SERIAL === "1" || resolveExplicitVitestWorkerBudget(env) !== null
+  );
+}
+
+function resolveNativeWorkerCount(env) {
+  return Math.min(resolveExplicitVitestWorkerBudget(env) ?? 1, 4);
+}
+
+function resolveExplicitVitestWorkerBudget(env) {
+  return parsePositiveInt(env.REMOTECLAW_VITEST_MAX_WORKERS ?? env.REMOTECLAW_TEST_WORKERS);
 }
 
 export function shouldSuppressVitestStderrLine(line) {
@@ -180,7 +210,13 @@ export function forwardVitestOutput(stream, target, shouldSuppressLine = () => f
   });
 }
 
-export function spawnWatchedVitestProcess({ pnpmArgs, spawnParams, env, label }) {
+export function spawnWatchedVitestProcess({
+  pnpmArgs,
+  spawnParams,
+  env,
+  label,
+  onNoOutputTimeout,
+}) {
   const child = spawnVitestProcess({
     pnpmArgs,
     spawnParams,
@@ -194,6 +230,7 @@ export function spawnWatchedVitestProcess({ pnpmArgs, spawnParams, env, label })
       console.error(message);
     },
     onTimeout: () => {
+      onNoOutputTimeout?.();
       forwardSignalToVitestProcessGroup({
         child,
         signal: "SIGTERM",

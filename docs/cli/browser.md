@@ -4,7 +4,7 @@ read_when:
   - You use `openclaw browser` and want examples for common tasks
   - You want to control a browser running on another machine via a node host
   - You want to attach to your local signed-in Chrome via Chrome MCP
-title: "browser"
+title: "Browser"
 ---
 
 # `openclaw browser`
@@ -33,6 +33,8 @@ openclaw browser --browser-profile openclaw open https://example.com
 openclaw browser --browser-profile openclaw snapshot
 ```
 
+Agents can run the same readiness check with `browser({ action: "doctor" })`.
+
 ## Quick troubleshooting
 
 If `start` fails with `not reachable after start`, troubleshoot CDP readiness first. If `start` and `tabs` succeed but `open` or `navigate` fails, the browser control plane is healthy and the failure is usually navigation SSRF policy.
@@ -40,9 +42,10 @@ If `start` fails with `not reachable after start`, troubleshoot CDP readiness fi
 Minimal sequence:
 
 ```bash
-openclaw browser --browser-profile openclaw start
-openclaw browser --browser-profile openclaw tabs
-openclaw browser --browser-profile openclaw open https://example.com
+remoteclaw browser --browser-profile remoteclaw doctor
+remoteclaw browser --browser-profile remoteclaw start
+remoteclaw browser --browser-profile remoteclaw tabs
+remoteclaw browser --browser-profile remoteclaw open https://example.com
 ```
 
 Detailed guidance: [Browser troubleshooting](/tools/browser#cdp-startup-failure-vs-navigation-ssrf-block)
@@ -50,10 +53,11 @@ Detailed guidance: [Browser troubleshooting](/tools/browser#cdp-startup-failure-
 ## Lifecycle
 
 ```bash
-openclaw browser status
-openclaw browser start
-openclaw browser stop
-openclaw browser --browser-profile openclaw reset-profile
+remoteclaw browser status
+remoteclaw browser doctor
+remoteclaw browser start
+remoteclaw browser stop
+remoteclaw browser --browser-profile remoteclaw reset-profile
 ```
 
 Notes:
@@ -110,29 +114,38 @@ openclaw browser --browser-profile work tabs
 ## Tabs
 
 ```bash
-openclaw browser tabs
-openclaw browser tab new
-openclaw browser tab select 2
-openclaw browser tab close 2
-openclaw browser open https://docs.openclaw.ai
-openclaw browser focus <targetId>
-openclaw browser close <targetId>
+remoteclaw browser tabs
+remoteclaw browser tab new --label docs
+remoteclaw browser tab label t1 docs
+remoteclaw browser tab select 2
+remoteclaw browser tab close 2
+remoteclaw browser open https://docs.remoteclaw.org --label docs
+remoteclaw browser focus docs
+remoteclaw browser close t1
 ```
+
+`tabs` returns `suggestedTargetId` first, then the stable `tabId` such as `t1`,
+the optional label, and the raw `targetId`. Agents should pass
+`suggestedTargetId` back into `focus`, `close`, snapshots, and actions. You can
+assign a label with `open --label`, `tab new --label`, or `tab label`; labels,
+tab ids, raw target ids, and unique target-id prefixes are all accepted.
 
 ## Snapshot / screenshot / actions
 
 Snapshot:
 
 ```bash
-openclaw browser snapshot
+remoteclaw browser snapshot
+remoteclaw browser snapshot --urls
 ```
 
 Screenshot:
 
 ```bash
-openclaw browser screenshot
-openclaw browser screenshot --full-page
-openclaw browser screenshot --ref e12
+remoteclaw browser screenshot
+remoteclaw browser screenshot --full-page
+remoteclaw browser screenshot --ref e12
+remoteclaw browser screenshot --labels
 ```
 
 Notes:
@@ -141,21 +154,26 @@ Notes:
   or `--element`.
 - `existing-session` / `user` profiles support page screenshots and `--ref`
   screenshots from snapshot output, but not CSS `--element` screenshots.
+- `--labels` overlays current snapshot refs on the screenshot.
+- `snapshot --urls` appends discovered link destinations to AI snapshots so
+  agents can choose direct navigation targets instead of guessing from link
+  text alone.
 
 Navigate/click/type (ref-based UI automation):
 
 ```bash
-openclaw browser navigate https://example.com
-openclaw browser click <ref>
-openclaw browser type <ref> "hello"
-openclaw browser press Enter
-openclaw browser hover <ref>
-openclaw browser scrollintoview <ref>
-openclaw browser drag <startRef> <endRef>
-openclaw browser select <ref> OptionA OptionB
-openclaw browser fill --fields '[{"ref":"1","value":"Ada"}]'
-openclaw browser wait --text "Done"
-openclaw browser evaluate --fn '(el) => el.textContent' --ref <ref>
+remoteclaw browser navigate https://example.com
+remoteclaw browser click <ref>
+remoteclaw browser click-coords 120 340
+remoteclaw browser type <ref> "hello"
+remoteclaw browser press Enter
+remoteclaw browser hover <ref>
+remoteclaw browser scrollintoview <ref>
+remoteclaw browser drag <startRef> <endRef>
+remoteclaw browser select <ref> OptionA OptionB
+remoteclaw browser fill --fields '[{"ref":"1","value":"Ada"}]'
+remoteclaw browser wait --text "Done"
+remoteclaw browser evaluate --fn '(el) => el.textContent' --ref <ref>
 ```
 
 File + dialog helpers:
@@ -224,6 +242,8 @@ This path is host-only. For Docker, headless servers, Browserless, or other remo
 Current existing-session limits:
 
 - snapshot-driven actions use refs, not CSS selectors
+- `browser.actionTimeoutMs` defaults supported `act` requests to 60000 ms when
+  callers omit `timeoutMs`; per-call `timeoutMs` still wins.
 - `click` is left-click only
 - `type` does not support `slowly=true`
 - `press` does not support `delayMs`
@@ -245,3 +265,8 @@ If the Gateway runs on a different machine than the browser, run a **node host**
 Use `gateway.nodes.browser.mode` to control auto-routing and `gateway.nodes.browser.node` to pin a specific node if multiple are connected.
 
 Security + remote setup: [Browser tool](/tools/browser), [Remote access](/gateway/remote), [Tailscale](/gateway/tailscale), [Security](/gateway/security)
+
+## Related
+
+- [CLI reference](/cli)
+- [Browser](/tools/browser)

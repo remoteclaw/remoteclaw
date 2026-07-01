@@ -3,7 +3,7 @@ description: "CLI reference for `remoteclaw clawbot` (legacy alias namespace)"
 read_when:
   - You maintain older scripts using `remoteclaw clawbot ...`
   - You need migration guidance to current commands
-title: "clawbot"
+title: "Clawbot"
 ---
 
 # `remoteclaw clawbot`
@@ -19,3 +19,7 @@ Current supported alias:
 Prefer modern top-level commands directly:
 
 - `remoteclaw clawbot qr` -> `remoteclaw qr`
+
+## Related
+
+- [CLI reference](/cli)

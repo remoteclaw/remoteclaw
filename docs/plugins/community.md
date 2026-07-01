@@ -3,10 +3,8 @@ summary: "Community-maintained RemoteClaw plugins: browse, install, and submit y
 read_when:
   - You want to find third-party RemoteClaw plugins
   - You want to publish or list your own plugin
-title: "Community Plugins"
+title: "Community plugins"
 ---
-
-# Community Plugins
 
 Community plugins are third-party packages that extend RemoteClaw with new
 channels, tools, providers, or other capabilities. They are built and maintained

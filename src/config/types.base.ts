@@ -4,7 +4,7 @@ export type ReplyMode = "text" | "command";
 export type TypingMode = "never" | "instant" | "thinking" | "message";
 export type SessionScope = "per-sender" | "global";
 export type DmScope = "main" | "per-peer" | "per-channel-peer" | "per-account-channel-peer";
-export type ReplyToMode = "off" | "first" | "all";
+export type ReplyToMode = "off" | "first" | "all" | "batched";
 export type GroupPolicy = "open" | "disabled" | "allowlist";
 export type DmPolicy = "pairing" | "allowlist" | "open" | "disabled";
 
@@ -244,6 +244,21 @@ export type DiagnosticsOtelConfig = {
   sampleRate?: number;
   /** Metric export interval (ms). */
   flushIntervalMs?: number;
+  /**
+   * Opt-in raw content capture for OTEL span attributes.
+   * Boolean `true` captures non-system message/tool content; the object form
+   * can enable each content class explicitly.
+   */
+  captureContent?:
+    | boolean
+    | {
+        enabled?: boolean;
+        inputMessages?: boolean;
+        outputMessages?: boolean;
+        toolInputs?: boolean;
+        toolOutputs?: boolean;
+        systemPrompt?: boolean;
+      };
 };
 
 export type DiagnosticsCacheTraceConfig = {

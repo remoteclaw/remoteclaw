@@ -6,7 +6,7 @@
   "dependencies": {
     "@larksuiteoapi/node-sdk": "^1.59.0",
     "https-proxy-agent": "^8.0.0",
-    "typebox": "1.1.28",
+    "typebox": "1.1.31",
     "zod": "^4.3.6"
   },
   "remoteclaw": {

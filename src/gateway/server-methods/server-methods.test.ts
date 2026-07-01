@@ -41,17 +41,35 @@ describe("waitForAgentJob", () => {
     return waitPromise;
   }
 
-  it("maps lifecycle end events with aborted=true to timeout", async () => {
-    const snapshot = await runLifecycleScenario({
-      runIdPrefix: "run-timeout",
-      startedAt: 100,
-      endedAt: 200,
-      aborted: true,
-    });
-    expect(snapshot).not.toBeNull();
-    expect(snapshot?.status).toBe("timeout");
-    expect(snapshot?.startedAt).toBe(100);
-    expect(snapshot?.endedAt).toBe(200);
+  // agent-job.ts now holds an aborted-end timeout snapshot for
+  // AGENT_RUN_TIMEOUT_RETRY_GRACE_MS (15s) so a retry can supersede a stale
+  // timeout; advance past the grace window before asserting the snapshot.
+  it("maps lifecycle end events with aborted=true to timeout after the retry grace window", async () => {
+    vi.useFakeTimers();
+    try {
+      const runId = `run-timeout-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const snapshotPromise = waitForAgentJob({ runId, timeoutMs: 20_000 });
+
+      emitAgentEvent({
+        runId,
+        stream: "lifecycle",
+        data: { phase: "start", startedAt: 100 },
+      });
+      emitAgentEvent({
+        runId,
+        stream: "lifecycle",
+        data: { phase: "end", endedAt: 200, aborted: true },
+      });
+
+      await vi.advanceTimersByTimeAsync(15_000);
+      const snapshot = await snapshotPromise;
+      expect(snapshot).not.toBeNull();
+      expect(snapshot?.status).toBe("timeout");
+      expect(snapshot?.startedAt).toBe(100);
+      expect(snapshot?.endedAt).toBe(200);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("keeps non-aborted lifecycle end events as ok", async () => {

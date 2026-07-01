@@ -3,7 +3,7 @@ summary: "CLI reference for `remoteclaw plugins` (list, install, marketplace, un
 read_when:
   - You want to install or manage Gateway plugins or compatible bundles
   - You want to debug plugin load failures
-title: "plugins"
+title: "Plugins"
 ---
 
 # `remoteclaw plugins`
@@ -68,12 +68,7 @@ remoteclaw plugins install <plugin> --marketplace https://github.com/<owner>/<re
 Bare package names are checked against ClawHub first, then npm. Security note:
 treat plugin installs like running code. Prefer pinned versions.
 
-If your `plugins` section is backed by a single-file `$include`, `plugins install`,
-`plugins update`, `plugins enable`, `plugins disable`, and `plugins uninstall`
-write through to that included file and leave `remoteclaw.json` untouched. Root
-includes, include arrays, and includes with sibling overrides fail closed
-instead of flattening. See [Config includes](/gateway/configuration) for the
-supported shapes.
+If your `plugins` section is backed by a single-file `$include`, `plugins install/update/enable/disable/uninstall` write through to that included file and leave `remoteclaw.json` untouched. Root includes, include arrays, and includes with sibling overrides fail closed instead of flattening. See [Config includes](/gateway/configuration) for the supported shapes.
 
 If config is invalid, `plugins install` normally fails closed and tells you to
 run `remoteclaw doctor --fix` first. The only documented exception is a narrow
@@ -205,6 +200,23 @@ table view to per-plugin detail lines with source/origin/version/activation
 metadata. Use `--json` for machine-readable inventory plus registry
 diagnostics.
 
+`plugins list` runs discovery from the current CLI environment and config. It is
+useful for checking whether a plugin is enabled/loadable, but it is not a live
+runtime probe of an already-running Gateway process. After changing plugin code,
+enablement, hook policy, or `plugins.load.paths`, restart the Gateway that
+serves the channel before expecting new `register(api)` code or hooks to run.
+For remote/container deployments, verify you are restarting the actual
+`remoteclaw gateway run` child, not only a wrapper process.
+
+For runtime hook debugging:
+
+- `remoteclaw plugins inspect <id> --json` shows registered hooks and diagnostics
+  from a module-loaded inspection pass.
+- `remoteclaw gateway status --deep --require-rpc` confirms the reachable Gateway,
+  service/process hints, config path, and RPC health.
+- Non-bundled conversation hooks (`llm_input`, `llm_output`, `agent_end`) require
+  `plugins.entries.<id>.hooks.allowConversationAccess=true`.
+
 Use `--link` to avoid copying a local directory (adds to `plugins.load.paths`):
 
 ```bash
@@ -332,3 +344,9 @@ Marketplace list accepts a local marketplace path, a `marketplace.json` path, a
 GitHub shorthand like `owner/repo`, a GitHub repo URL, or a git URL. `--json`
 prints the resolved source label plus the parsed marketplace manifest and
 plugin entries.
+
+## Related
+
+- [CLI reference](/cli)
+- [Building plugins](/plugins/building-plugins)
+- [Community plugins](/plugins/community)

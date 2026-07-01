@@ -226,10 +226,13 @@ describe("web session", () => {
     sock.ev.emit("creds.update", {});
     sock.ev.emit("creds.update", {});
 
-    await flushCredsUpdate();
-    expect(inFlight).toBe(1);
-
-    (release as (() => void) | null)?.();
+    try {
+      await vi.waitFor(() => {
+        expect(inFlight).toBe(1);
+      });
+    } finally {
+      (release as (() => void) | null)?.();
+    }
 
     // let both queued saves complete
     await flushCredsUpdate();

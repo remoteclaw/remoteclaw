@@ -21,6 +21,7 @@ import {
 import { isMentionForwardRequest } from "./mention.js";
 import { fetchBotIdentityForMonitor } from "./monitor.startup.js";
 import { botNames, botOpenIds } from "./monitor.state.js";
+import { FeishuRetryableSyntheticEventError } from "./monitor.synthetic-error.js";
 import { monitorWebhook, monitorWebSocket } from "./monitor.transport.js";
 import { getFeishuRuntime } from "./runtime.js";
 import { getMessageFeishu } from "./send.js";
@@ -70,6 +71,7 @@ export async function resolveReactionSyntheticEvent(
     return null;
   }
 
+  const { resolveFeishuAccount } = await import("./accounts.js");
   const account = resolveFeishuAccount({ cfg, accountId });
   const reactionNotifications = account.config.reactionNotifications ?? "own";
   if (reactionNotifications === "off") {
@@ -136,7 +138,9 @@ export async function resolveReactionSyntheticEvent(
 }
 
 function normalizeFeishuChatType(value: unknown): FeishuChatType | undefined {
-  return value === "group" || value === "private" || value === "p2p" ? value : undefined;
+  return value === "group" || value === "topic_group" || value === "private" || value === "p2p"
+    ? value
+    : undefined;
 }
 
 type RegisterEventHandlersContext = {
@@ -508,6 +512,7 @@ export type MonitorSingleAccountParams = {
   runtime?: RuntimeEnv;
   abortSignal?: AbortSignal;
   botOpenIdSource?: BotOpenIdSource;
+  fireAndForget?: boolean;
 };
 
 export async function monitorSingleAccount(params: MonitorSingleAccountParams): Promise<void> {

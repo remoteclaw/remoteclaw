@@ -49,6 +49,29 @@ describe("shared/frontmatter", () => {
     ).toEqual({ foo: 2 });
   });
 
+  // RemoteClaw fork is a clean break (src/compat/legacy-names.ts: LEGACY_MANIFEST_KEYS
+  // is empty): legacy clawdbot/openclaw manifest keys are intentionally NOT read.
+  test("resolveRemoteClawManifestBlock ignores legacy manifest keys (clean break)", () => {
+    expect(
+      resolveRemoteClawManifestBlock({
+        frontmatter: {
+          metadata: "{ clawdbot: { requires: { bins: ['op'] }, install: [] } }",
+        },
+      }),
+    ).toBeUndefined();
+  });
+
+  test("resolveRemoteClawManifestBlock prefers current manifest keys over legacy keys", () => {
+    expect(
+      resolveRemoteClawManifestBlock({
+        frontmatter: {
+          metadata:
+            "{ remoteclaw: { requires: { bins: ['current'] } }, clawdbot: { requires: { bins: ['legacy'] } } }",
+        },
+      }),
+    ).toEqual({ requires: { bins: ["current"] } });
+  });
+
   test("resolveRemoteClawManifestBlock returns undefined for invalid input", () => {
     expect(resolveRemoteClawManifestBlock({ frontmatter: {} })).toBeUndefined();
     expect(

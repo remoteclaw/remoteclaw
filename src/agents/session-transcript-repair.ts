@@ -149,6 +149,12 @@ function sanitizeToolCallBlock(block: RawToolCallBlock): RawToolCallBlock {
 function makeMissingToolResult(params: {
   toolCallId: string;
   toolName?: string;
+  // OpenAI Responses/Codex replay should match upstream Codex's "aborted"
+  // function_call_output normalization; live coverage in
+  // openai-reasoning-compat.live.test.ts and tool-replay-repair.live.test.ts
+  // sends this repaired history to real models. Other providers keep the older,
+  // explicit RemoteClaw diagnostic text unless the caller opts in.
+  text?: string;
 }): Extract<AgentMessage, { role: "toolResult" }> {
   return {
     role: "toolResult",
@@ -157,7 +163,9 @@ function makeMissingToolResult(params: {
     content: [
       {
         type: "text",
-        text: "[remoteclaw] missing tool result in session history; inserted synthetic error result for transcript repair.",
+        text:
+          params.text ??
+          "[remoteclaw] missing tool result in session history; inserted synthetic error result for transcript repair.",
       },
     ],
     isError: true,
@@ -207,6 +215,13 @@ export type ToolCallInputRepairReport = {
 
 export type ToolCallInputRepairOptions = {
   allowedToolNames?: Iterable<string>;
+};
+
+export type ErroredAssistantResultPolicy = "preserve" | "drop";
+
+export type ToolUseResultPairingOptions = {
+  erroredAssistantResultPolicy?: ErroredAssistantResultPolicy;
+  missingToolResultText?: string;
 };
 
 export function stripToolResultDetails(messages: AgentMessage[]): AgentMessage[] {
@@ -341,8 +356,11 @@ export function sanitizeToolCallInputs(
   return repairToolCallInputs(messages, options).messages;
 }
 
-export function sanitizeToolUseResultPairing(messages: AgentMessage[]): AgentMessage[] {
-  return repairToolUseResultPairing(messages).messages;
+export function sanitizeToolUseResultPairing(
+  messages: AgentMessage[],
+  options?: ToolUseResultPairingOptions,
+): AgentMessage[] {
+  return repairToolUseResultPairing(messages, options).messages;
 }
 
 export type ToolUseRepairReport = {
@@ -353,7 +371,14 @@ export type ToolUseRepairReport = {
   moved: boolean;
 };
 
-export function repairToolUseResultPairing(messages: AgentMessage[]): ToolUseRepairReport {
+function shouldDropErroredAssistantResults(options?: ToolUseResultPairingOptions): boolean {
+  return options?.erroredAssistantResultPolicy === "drop";
+}
+
+export function repairToolUseResultPairing(
+  messages: AgentMessage[],
+  options?: ToolUseResultPairingOptions,
+): ToolUseRepairReport {
   // Anthropic (and Cloud Code Assist) reject transcripts where assistant tool calls are not
   // immediately followed by matching tool results. Session files can end up with results
   // displaced (e.g. after user turns) or duplicated. Repair by:
@@ -403,18 +428,6 @@ export function repairToolUseResultPairing(messages: AgentMessage[]): ToolUseRep
     }
 
     const assistant = msg as Extract<AgentMessage, { role: "assistant" }>;
-
-    // Skip tool call extraction for aborted or errored assistant messages.
-    // When stopReason is "error" or "aborted", the tool_use blocks may be incomplete
-    // (e.g., partialJson: true) and should not have synthetic tool_results created.
-    // Creating synthetic results for incomplete tool calls causes API 400 errors:
-    // "unexpected tool_use_id found in tool_result blocks"
-    // See: https://github.com/remoteclaw/remoteclaw/issues/4597
-    const stopReason = (assistant as { stopReason?: string }).stopReason;
-    if (stopReason === "error" || stopReason === "aborted") {
-      out.push(msg);
-      continue;
-    }
 
     const toolCalls = extractToolCallsFromAssistant(assistant);
     if (toolCalls.length === 0) {
@@ -473,9 +486,37 @@ export function repairToolUseResultPairing(messages: AgentMessage[]): ToolUseRep
       }
     }
 
+    // Aborted/errored assistant turns should never synthesize missing tool results, but
+    // the replay sanitizer can still legitimately retain real tool results for surviving
+    // tool calls in the same turn after malformed siblings are dropped.
+    const stopReason = (assistant as { stopReason?: string }).stopReason;
+    if (stopReason === "error" || stopReason === "aborted") {
+      if (!shouldDropErroredAssistantResults(options)) {
+        out.push(msg);
+        for (const toolCall of toolCalls) {
+          const result = spanResultsById.get(toolCall.id);
+          if (!result) {
+            continue;
+          }
+          pushToolResult(result);
+        }
+      } else if (spanResultsById.size > 0) {
+        changed = true;
+      } else {
+        changed = true;
+      }
+      for (const rem of remainder) {
+        out.push(rem);
+      }
+      i = j - 1;
+      continue;
+    }
+
     out.push(msg);
 
     if (spanResultsById.size > 0 && remainder.length > 0) {
+      // Preserve real late-arriving results before synthesizing missing siblings;
+      // otherwise parallel tool replay can replace useful output with repair noise.
       moved = true;
       changed = true;
     }
@@ -488,6 +529,7 @@ export function repairToolUseResultPairing(messages: AgentMessage[]): ToolUseRep
         const missing = makeMissingToolResult({
           toolCallId: call.id,
           toolName: call.name,
+          text: options?.missingToolResultText,
         });
         added.push(missing);
         changed = true;

@@ -32,3 +32,16 @@ export function applyOnboardingLocalWorkspaceConfig(
     },
   };
 }
+
+export function applySkipBootstrapConfig(baseConfig: RemoteClawConfig): RemoteClawConfig {
+  return {
+    ...baseConfig,
+    agents: {
+      ...baseConfig.agents,
+      defaults: {
+        ...baseConfig.agents?.defaults,
+        skipBootstrap: true,
+      },
+    },
+  };
+}

@@ -502,4 +502,9 @@ export type ToolsConfig = {
       deny?: string[];
     };
   };
+  /** Experimental built-in tool flags. Keep these off by default. */
+  experimental?: {
+    /** Enable the experimental structured `update_plan` tool for non-trivial multi-step work tracking. */
+    planTool?: boolean;
+  };
 };

@@ -2,7 +2,7 @@
 summary: "CLI reference for `remoteclaw config` (get/set/unset/file/schema/validate)"
 read_when:
   - You want to read or edit config non-interactively
-title: "config"
+title: "Config"
 ---
 
 # `remoteclaw config`
@@ -36,9 +36,10 @@ remoteclaw config --section gateway --section daemon
 remoteclaw config schema
 remoteclaw config get browser.executablePath
 remoteclaw config set browser.executablePath "/usr/bin/google-chrome"
+remoteclaw config set browser.profiles.work.executablePath "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 remoteclaw config set agents.defaults.heartbeat.every "2h"
 remoteclaw config set agents.list[0].tools.exec.node "node-id-or-name"
-remoteclaw config set agents.defaults.models '{"openai-codex/gpt-5.4":{}}' --strict-json --merge
+remoteclaw config set agents.defaults.models '{"openai/gpt-5.4":{}}' --strict-json --merge
 remoteclaw config set channels.discord.token --ref-provider default --ref-source env --ref-id DISCORD_BOT_TOKEN
 remoteclaw config set secrets.providers.vaultfile --provider-source file --provider-path /etc/remoteclaw/secrets.json --provider-mode json
 remoteclaw config unset plugins.entries.brave.config.webSearch.apiKey
@@ -115,7 +116,7 @@ you pass `--replace`.
 Use `--merge` when adding entries to those maps:
 
 ```bash
-remoteclaw config set agents.defaults.models '{"openai-codex/gpt-5.4":{}}' --strict-json --merge
+remoteclaw config set agents.defaults.models '{"openai/gpt-5.4":{}}' --strict-json --merge
 remoteclaw config set models.providers.ollama.models '[{"id":"llama3.2","name":"Llama 3.2"}]' --strict-json --merge
 ```
 
@@ -185,7 +186,7 @@ remoteclaw config set secrets.providers.vaultfile \
   --strict-json
 ```
 
-## Provider Builder Flags
+## Provider builder flags
 
 Provider builder targets must use `secrets.providers.<alias>` as the path.
 
@@ -203,6 +204,7 @@ File provider (`--provider-source file`):
 - `--provider-path <path>` (required)
 - `--provider-mode <singleValue|json>`
 - `--provider-max-bytes <bytes>`
+- `--provider-allow-insecure-path`
 
 Exec provider (`--provider-source exec`):
 
@@ -277,7 +279,7 @@ Dry-run behavior:
 - `skippedExecRefs`: number of exec refs skipped because `--allow-exec` was not set
 - `errors`: structured schema/resolvability failures when `ok=false`
 
-### JSON Output Shape
+### JSON output shape
 
 ```json5
 {
@@ -384,6 +386,15 @@ untrusted until they validate. Invalid direct edits can be restored from the
 last-known-good backup during startup or hot reload. See
 [Gateway troubleshooting](/gateway/troubleshooting#gateway-restored-last-known-good-config).
 
+Whole-file recovery is reserved for globally broken config, such as parse
+errors, root-level schema failures, legacy migration failures, or mixed plugin
+and root failures. If validation fails only under `plugins.entries.<id>...`,
+RemoteClaw keeps the active `remoteclaw.json` in place and reports the plugin-local
+issue instead of restoring `.last-good`. This prevents plugin schema changes or
+`minHostVersion` skew from rolling back unrelated user settings such as models,
+providers, auth profiles, channels, gateway exposure, tools, memory, browser, or
+cron config.
+
 ## Subcommands
 
 - `config file`: Print the active config file path (resolved from `REMOTECLAW_CONFIG_PATH` or default location). The path should name a regular file, not a symlink.
@@ -427,3 +438,8 @@ Typical repair loop:
 - Apply targeted edits with `remoteclaw config set` or `remoteclaw configure`.
 - Rerun `remoteclaw config validate` after each change.
 - If validation passes but the runtime is still unhealthy, run `remoteclaw doctor` or `remoteclaw doctor --fix` for migration and repair help.
+
+## Related
+
+- [CLI reference](/cli)
+- [Configuration](/gateway/configuration)

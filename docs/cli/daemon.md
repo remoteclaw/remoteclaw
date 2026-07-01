@@ -3,7 +3,7 @@ summary: "CLI reference for `remoteclaw daemon` (legacy alias for gateway servic
 read_when:
   - You still use `remoteclaw daemon ...` in scripts
   - You need service lifecycle commands (install/start/stop/restart/status)
-title: "daemon"
+title: "Daemon"
 ---
 
 # `remoteclaw daemon`
@@ -55,3 +55,8 @@ Notes:
 ## Prefer
 
 Use [`remoteclaw gateway`](/cli/gateway) for current docs and examples.
+
+## Related
+
+- [CLI reference](/cli)
+- [Gateway runbook](/gateway)

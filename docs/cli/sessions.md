@@ -2,7 +2,7 @@
 summary: "CLI reference for `remoteclaw sessions` (list stored sessions + usage)"
 read_when:
   - You want to list stored sessions and see recent activity
-title: "sessions"
+title: "Sessions"
 ---
 
 # `remoteclaw sessions`
@@ -110,4 +110,9 @@ remoteclaw sessions cleanup --json
 
 Related:
 
-- Session config: [Configuration reference](/gateway/configuration-reference#session)
+- Session config: [Configuration reference](/gateway/config-agents#session)
+
+## Related
+
+- [CLI reference](/cli)
+- [Session management](/concepts/session)

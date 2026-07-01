@@ -101,3 +101,23 @@ export function canonicalizeSpawnedByForAgent(
   const resolvedAgent = parsed?.agentId ? normalizeAgentId(parsed.agentId) : agentId;
   return canonicalizeMainSessionAlias({ cfg, agentId: resolvedAgent, sessionKey: result });
 }
+
+export function resolveStoredSessionKeyForAgentStore(params: {
+  cfg: RemoteClawConfig;
+  agentId: string;
+  sessionKey: string;
+}): string {
+  const raw = normalizeOptionalString(params.sessionKey) ?? "";
+  if (!raw) {
+    return raw;
+  }
+  const lowered = normalizeLowercaseStringOrEmpty(raw);
+  if (lowered === "global" || lowered === "unknown") {
+    return lowered;
+  }
+  const key = parseAgentSessionKey(raw) ? raw : canonicalizeSessionKeyForAgent(params.agentId, raw);
+  return resolveSessionStoreKey({
+    cfg: params.cfg,
+    sessionKey: key,
+  });
+}

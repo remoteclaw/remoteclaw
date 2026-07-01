@@ -4,7 +4,7 @@ read_when:
   - You need a beginner-friendly overview of logging
   - You want to configure log levels or formats
   - You are troubleshooting and need to find logs quickly
-title: "Logging Overview"
+title: "Logging overview"
 ---
 
 # Logging
@@ -216,6 +216,12 @@ Queue + session:
 - `run.attempt`: run retry/attempt metadata.
 - `diagnostic.heartbeat`: aggregate counters (webhooks/queue/session).
 
+Exec:
+
+- `exec.process.completed`: terminal exec process outcome, duration, target, mode,
+  exit code, and failure kind. Command text and working directories are not
+  included.
+
 ### Enable diagnostics (no exporter)
 
 Use this if you want diagnostics events available to plugins or custom sinks:
@@ -279,7 +285,15 @@ works with any OpenTelemetry collector/backend that accepts OTLP/HTTP.
       "metrics": true,
       "logs": true,
       "sampleRate": 0.2,
-      "flushIntervalMs": 60000
+      "flushIntervalMs": 60000,
+      "captureContent": {
+        "enabled": false,
+        "inputMessages": false,
+        "outputMessages": false,
+        "toolInputs": false,
+        "toolOutputs": false,
+        "systemPrompt": false
+      }
     }
   }
 }
@@ -293,9 +307,16 @@ Notes:
   counters/histograms (webhooks, queueing, session state, queue depth/wait).
 - Traces/metrics can be toggled with `traces` / `metrics` (default: on). Traces
   include model usage spans plus webhook/message processing spans when enabled.
+- Raw model/tool content is not exported by default. Use
+  `diagnostics.otel.captureContent` only when your collector and retention policy
+  are approved for prompt, response, tool, or system prompt text.
 - Set `headers` when your collector requires auth.
 - Environment variables supported: `OTEL_EXPORTER_OTLP_ENDPOINT`,
   `OTEL_SERVICE_NAME`, `OTEL_EXPORTER_OTLP_PROTOCOL`.
+- Set `REMOTECLAW_OTEL_PRELOADED=1` when another preload or host process already
+  registered the global OpenTelemetry SDK. In that mode the plugin does not start
+  or shut down its own SDK, but it still wires RemoteClaw diagnostic listeners and
+  honors `diagnostics.otel.traces`, `metrics`, and `logs`.
 
 ### Exported metrics (names + types)
 
@@ -337,12 +358,30 @@ Queues + sessions:
 - `remoteclaw.session.stuck_age_ms` (histogram, attrs: `remoteclaw.state`)
 - `remoteclaw.run.attempt` (counter, attrs: `remoteclaw.attempt`)
 
+Exec:
+
+- `remoteclaw.exec.duration_ms` (histogram, attrs: `remoteclaw.exec.target`,
+  `remoteclaw.exec.mode`, `remoteclaw.outcome`, `remoteclaw.failureKind`)
+
 ### Exported spans (names + key attributes)
 
 - `remoteclaw.model.usage`
   - `remoteclaw.channel`, `remoteclaw.provider`, `remoteclaw.model`
-  - `remoteclaw.sessionKey`, `remoteclaw.sessionId`
   - `remoteclaw.tokens.*` (input/output/cache_read/cache_write/total)
+- `remoteclaw.run`
+  - `remoteclaw.outcome`, `remoteclaw.channel`, `remoteclaw.provider`,
+    `remoteclaw.model`, `remoteclaw.errorCategory`
+- `remoteclaw.model.call`
+  - `gen_ai.system`, `gen_ai.request.model`, `gen_ai.operation.name`,
+    `remoteclaw.provider`, `remoteclaw.model`, `remoteclaw.api`,
+    `remoteclaw.transport`
+- `remoteclaw.tool.execution`
+  - `gen_ai.tool.name`, `remoteclaw.toolName`, `remoteclaw.errorCategory`,
+    `remoteclaw.tool.params.*`
+- `remoteclaw.exec`
+  - `remoteclaw.exec.target`, `remoteclaw.exec.mode`, `remoteclaw.outcome`,
+    `remoteclaw.failureKind`, `remoteclaw.exec.command_length`,
+    `remoteclaw.exec.exit_code`, `remoteclaw.exec.timed_out`
 - `remoteclaw.webhook.processed`
   - `remoteclaw.channel`, `remoteclaw.webhook`, `remoteclaw.chatId`
 - `remoteclaw.webhook.error`
@@ -350,11 +389,13 @@ Queues + sessions:
     `remoteclaw.error`
 - `remoteclaw.message.processed`
   - `remoteclaw.channel`, `remoteclaw.outcome`, `remoteclaw.chatId`,
-    `remoteclaw.messageId`, `remoteclaw.sessionKey`, `remoteclaw.sessionId`,
-    `remoteclaw.reason`
+    `remoteclaw.messageId`, `remoteclaw.reason`
 - `remoteclaw.session.stuck`
-  - `remoteclaw.state`, `remoteclaw.ageMs`, `remoteclaw.queueDepth`,
-    `remoteclaw.sessionKey`, `remoteclaw.sessionId`
+  - `remoteclaw.state`, `remoteclaw.ageMs`, `remoteclaw.queueDepth`
+
+When content capture is explicitly enabled, model/tool spans can also include
+bounded, redacted `remoteclaw.content.*` attributes for the specific content
+classes you opted into.
 
 ### Sampling + flushing
 
@@ -367,6 +408,8 @@ Queues + sessions:
   `OTEL_EXPORTER_OTLP_ENDPOINT`.
 - If the endpoint already contains `/v1/traces` or `/v1/metrics`, it is used as-is.
 - If the endpoint already contains `/v1/logs`, it is used as-is for logs.
+- `REMOTECLAW_OTEL_PRELOADED=1` reuses an externally registered OpenTelemetry SDK
+  for traces/metrics instead of starting a plugin-owned NodeSDK.
 - `diagnostics.otel.logs` enables OTLP log export for the main logger output.
 
 ### Log export behavior

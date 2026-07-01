@@ -3,7 +3,7 @@ summary: "CLI reference for `remoteclaw setup` (initialize config + workspace)"
 read_when:
   - You’re doing first-run setup without full CLI onboarding
   - You want to set the default workspace path
-title: "setup"
+title: "Setup"
 ---
 
 # `remoteclaw setup`
@@ -43,3 +43,8 @@ Notes:
 
 - Plain `remoteclaw setup` initializes config + workspace without the full onboarding flow.
 - Onboarding auto-runs when any onboarding flags are present (`--wizard`, `--non-interactive`, `--mode`, `--remote-url`, `--remote-token`).
+
+## Related
+
+- [CLI reference](/cli)
+- [Install overview](/install)

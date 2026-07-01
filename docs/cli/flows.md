@@ -2,7 +2,7 @@
 summary: "Redirect: flow commands live under `remoteclaw tasks flow`"
 read_when:
   - You encounter remoteclaw flows in older docs or release notes
-title: "flows (redirect)"
+title: "Flows (redirect)"
 ---
 
 # `remoteclaw tasks flow`
@@ -16,3 +16,8 @@ remoteclaw tasks flow cancel <lookup>
 ```
 
 For full documentation see [Task Flow](/automation/taskflow) and the [tasks CLI reference](/cli/tasks).
+
+## Related
+
+- [CLI reference](/cli)
+- [Automation](/automation)

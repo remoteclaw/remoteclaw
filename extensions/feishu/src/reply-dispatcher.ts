@@ -26,6 +26,30 @@ function shouldUseCard(text: string): boolean {
  * Messages older than this are likely replays after context compaction (#30418). */
 const TYPING_INDICATOR_MAX_AGE_MS = 2 * 60_000;
 const MS_EPOCH_MIN = 1_000_000_000_000;
+const STREAMING_START_FAILURE_BACKOFF_MS = 60_000;
+const streamingStartBackoffUntilByAccount = new Map<string, number>();
+
+function isStreamingStartBackedOff(accountId: string, now = Date.now()): boolean {
+  const backoffUntil = streamingStartBackoffUntilByAccount.get(accountId);
+  if (backoffUntil === undefined) {
+    return false;
+  }
+  if (backoffUntil <= now) {
+    streamingStartBackoffUntilByAccount.delete(accountId);
+    return false;
+  }
+  return true;
+}
+
+function rememberStreamingStartFailure(accountId: string, now = Date.now()): number {
+  const backoffUntil = now + STREAMING_START_FAILURE_BACKOFF_MS;
+  streamingStartBackoffUntilByAccount.set(accountId, backoffUntil);
+  return backoffUntil;
+}
+
+export function clearFeishuStreamingStartBackoffForTests() {
+  streamingStartBackoffUntilByAccount.clear();
+}
 
 function normalizeEpochMs(timestamp: number | undefined): number | undefined {
   if (!Number.isFinite(timestamp) || timestamp === undefined || timestamp <= 0) {
@@ -178,7 +202,12 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
   };
 
   const startStreaming = () => {
-    if (!streamingEnabled || streamingStartPromise || streaming) {
+    if (
+      !streamingEnabled ||
+      streamingStartPromise ||
+      streaming ||
+      isStreamingStartBackedOff(account.accountId)
+    ) {
       return;
     }
     streamingStartPromise = (async () => {
@@ -199,8 +228,14 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
           replyInThread: effectiveReplyInThread,
           rootId,
         });
+        streamingStartBackoffUntilByAccount.delete(account.accountId);
       } catch (error) {
-        params.runtime.error?.(`feishu: streaming start failed: ${String(error)}`);
+        rememberStreamingStartFailure(account.accountId);
+        params.runtime.error?.(
+          `feishu[${account.accountId}]: streaming start failed; using non-streaming card fallback for ${
+            STREAMING_START_FAILURE_BACKOFF_MS / 1000
+          }s: ${String(error)}`,
+        );
         streaming = null;
       }
     })();

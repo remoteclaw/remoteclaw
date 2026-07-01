@@ -2,6 +2,7 @@ import type { TSchema } from "typebox";
 import type { AgentTool, AgentToolResult } from "../../agents/agent-types.js";
 import type { MsgContext } from "../../auto-reply/templating.js";
 import type { RemoteClawConfig } from "../../config/config.js";
+import type { ReplyToMode } from "../../config/types.js";
 import type { PollInput } from "../../polls.js";
 import type { GatewayClientMode, GatewayClientName } from "../../utils/message-channel.js";
 import type { ChatType } from "../chat-type.js";
@@ -234,7 +235,7 @@ export type ChannelThreadingAdapter = {
     cfg: RemoteClawConfig;
     accountId?: string | null;
     chatType?: string | null;
-  }) => "off" | "first" | "all";
+  }) => ReplyToMode;
   /**
    * When replyToMode is "off", allow explicit reply tags/directives to keep replyToId.
    *
@@ -273,7 +274,7 @@ export type ChannelThreadingToolContext = {
   currentChannelProvider?: ChannelId;
   currentThreadTs?: string;
   currentMessageId?: string | number;
-  replyToMode?: "off" | "first" | "all";
+  replyToMode?: "off" | "first" | "all" | "batched";
   hasRepliedRef?: { value: boolean };
   /**
    * When true, skip cross-context decoration (e.g., "[from X]" prefix).

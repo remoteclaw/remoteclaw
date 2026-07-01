@@ -48,6 +48,32 @@ describe("plugins.slots.contextEngine", () => {
   });
 });
 
+describe("diagnostics.otel.captureContent", () => {
+  it("accepts boolean and granular OTEL content capture config", () => {
+    for (const captureContent of [
+      true,
+      false,
+      {
+        enabled: true,
+        inputMessages: true,
+        outputMessages: true,
+        toolInputs: true,
+        toolOutputs: true,
+        systemPrompt: false,
+      },
+    ]) {
+      const result = RemoteClawSchema.safeParse({
+        diagnostics: {
+          otel: {
+            captureContent,
+          },
+        },
+      });
+      expect(result.success).toBe(true);
+    }
+  });
+});
+
 describe("ui.seamColor", () => {
   it("accepts hex colors", () => {
     const res = validateConfigObject({ ui: { seamColor: "#FF4500" } });
@@ -65,7 +91,7 @@ describe("ui.seamColor", () => {
   });
 });
 
-describe("plugins.entries.*.hooks.allowPromptInjection", () => {
+describe("plugins.entries.*.hooks", () => {
   it("accepts boolean values", () => {
     const result = RemoteClawSchema.safeParse({
       plugins: {
@@ -73,6 +99,7 @@ describe("plugins.entries.*.hooks.allowPromptInjection", () => {
           "voice-call": {
             hooks: {
               allowPromptInjection: false,
+              allowConversationAccess: true,
             },
           },
         },
@@ -88,6 +115,23 @@ describe("plugins.entries.*.hooks.allowPromptInjection", () => {
           "voice-call": {
             hooks: {
               allowPromptInjection: "no",
+              allowConversationAccess: true,
+            },
+          },
+        },
+      },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects non-boolean conversation access values", () => {
+    const result = RemoteClawSchema.safeParse({
+      plugins: {
+        entries: {
+          "voice-call": {
+            hooks: {
+              allowPromptInjection: false,
+              allowConversationAccess: "yes",
             },
           },
         },

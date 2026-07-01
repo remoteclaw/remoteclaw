@@ -6,8 +6,6 @@ read_when:
 title: "Authentication"
 ---
 
-# Authentication (Model Providers)
-
 <Note>
 This page covers **model provider** authentication (API keys, OAuth, Claude CLI reuse, and Anthropic setup-token). For **gateway connection** authentication (token, password, trusted-proxy), see [Configuration](/gateway/configuration) and [Trusted Proxy Auth](/gateway/trusted-proxy-auth).
 </Note>
@@ -70,6 +68,24 @@ Claude CLI reuse is available on the host, that is now the preferred path.
 For long-lived gateway hosts, an Anthropic API key is still the most predictable
 setup. If you want to reuse an existing Claude login on the same host, use the
 Anthropic Claude CLI path in onboarding/configure.
+
+Recommended host setup for Claude CLI reuse:
+
+```bash
+# Run on the gateway host
+claude auth login
+claude auth status --text
+remoteclaw models auth login --provider anthropic --method cli --set-default
+```
+
+This is a two-step setup:
+
+1. Log Claude Code itself into Anthropic on the gateway host.
+2. Tell RemoteClaw to switch Anthropic model selection to the local `claude-cli`
+   backend and store the matching RemoteClaw auth profile.
+
+If `claude` is not on `PATH`, either install Claude Code first or set
+`agents.defaults.cliBackends.claude-cli.command` to the real binary path.
 
 Manual token entry (any provider; writes `auth-profiles.json` + updates config):
 
@@ -195,3 +211,9 @@ remoteclaw doctor --yes
 Doctor converts `anthropic:claude-cli` back to Anthropic token/OAuth when the
 stored credential bytes still exist. Otherwise it removes stale Claude CLI
 profile/config/model refs and leaves the next-step guidance.
+
+## Related
+
+- [Secrets management](/gateway/secrets)
+- [Remote access](/gateway/remote)
+- [Auth storage](/concepts/oauth)

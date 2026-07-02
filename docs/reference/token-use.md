@@ -1,5 +1,5 @@
 ---
-summary: "How OpenClaw builds prompt context and reports token usage + costs"
+summary: "How RemoteClaw builds prompt context and reports token usage + costs"
 read_when:
   - Explaining token usage, costs, or context windows
   - Debugging context growth or compaction behavior
@@ -8,12 +8,12 @@ title: "Token use and costs"
 
 # Token use & costs
 
-OpenClaw tracks **tokens**, not characters. Tokens are model-specific, but most
+RemoteClaw tracks **tokens**, not characters. Tokens are model-specific, but most
 OpenAI-style models average ~4 characters per token for English text.
 
 ## How the system prompt is built
 
-OpenClaw assembles its own system prompt on every run. It includes:
+RemoteClaw assembles its own system prompt on every run. It includes:
 
 - Tool list + short descriptions
 - Skills list (only metadata; instructions are loaded on demand with `read`).
@@ -51,7 +51,7 @@ for bounded runtime excerpts and injected runtime-owned blocks. They are
 separate from bootstrap limits, startup-context limits, and skills prompt
 limits.
 
-For images, OpenClaw downscales transcript/tool image payloads before provider calls.
+For images, RemoteClaw downscales transcript/tool image payloads before provider calls.
 Use `agents.defaults.imageMaxDimensionPx` (default: `1200`) to tune this:
 
 - Lower values usually reduce vision-token usage and payload size.
@@ -68,12 +68,12 @@ Use these in chat:
 - `/usage off|tokens|full` → appends a **per-response usage footer** to every reply.
   - Persists per session (stored as `responseUsage`).
   - OAuth auth **hides cost** (tokens only).
-- `/usage cost` → shows a local cost summary from OpenClaw session logs.
+- `/usage cost` → shows a local cost summary from RemoteClaw session logs.
 
 Other surfaces:
 
 - **TUI/Web TUI:** `/status` + `/usage` are supported.
-- **CLI:** `openclaw status --usage` and `openclaw channels list` show
+- **CLI:** `remoteclaw status --usage` and `remoteclaw channels list` show
   normalized provider quota windows (`X% left`, not per-response costs).
   Current usage-window providers: Anthropic, GitHub Copilot, Gemini CLI,
   OpenAI Codex, MiniMax, Xiaomi, and z.ai.
@@ -94,7 +94,7 @@ most recent transcript usage log. Existing nonzero live values still take
 precedence over transcript fallback values, and larger prompt-oriented
 transcript totals can win when stored totals are missing or smaller.
 Usage auth for provider quota windows comes from provider-specific hooks when
-available; otherwise OpenClaw falls back to matching OAuth/API-key credentials
+available; otherwise RemoteClaw falls back to matching OAuth/API-key credentials
 from auth profiles, env, or config.
 Assistant transcript entries persist the same normalized usage shape, including
 `usage.cost` when the active model has pricing configured and the provider
@@ -110,12 +110,12 @@ models.providers.<provider>.models[].cost
 ```
 
 These are **USD per 1M tokens** for `input`, `output`, `cacheRead`, and
-`cacheWrite`. If pricing is missing, OpenClaw shows tokens only. OAuth tokens
+`cacheWrite`. If pricing is missing, RemoteClaw shows tokens only. OAuth tokens
 never show dollar cost.
 
 ## Cache TTL and pruning impact
 
-Provider prompt caching only applies within the cache TTL window. OpenClaw can
+Provider prompt caching only applies within the cache TTL window. RemoteClaw can
 optionally run **cache-ttl pruning**: it prunes the session once the cache TTL
 has expired, then resets the cache window so subsequent requests can re-use the
 freshly cached context instead of re-caching the full history. This keeps cache
@@ -179,7 +179,7 @@ override only `cacheRetention` and inherit other model defaults unchanged.
 
 ### Example: enable Anthropic 1M context beta header
 
-Anthropic's 1M context window is currently beta-gated. OpenClaw can inject the
+Anthropic's 1M context window is currently beta-gated. RemoteClaw can inject the
 required `anthropic-beta` value when you enable `context1m` on supported Opus
 or Sonnet models.
 
@@ -200,7 +200,7 @@ Requirement: the credential must be eligible for long-context usage. If not,
 Anthropic responds with a provider-side rate limit error for that request.
 
 If you authenticate Anthropic with OAuth/subscription tokens (`sk-ant-oat-*`),
-OpenClaw skips the `context-1m-*` beta header because Anthropic currently
+RemoteClaw skips the `context-1m-*` beta header because Anthropic currently
 rejects that combination with HTTP 401.
 
 ## Tips for reducing token pressure

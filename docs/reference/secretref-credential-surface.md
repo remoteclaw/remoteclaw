@@ -11,12 +11,12 @@ This page defines the canonical SecretRef credential surface.
 
 Scope intent:
 
-- In scope: strictly user-supplied credentials that OpenClaw does not mint or rotate.
+- In scope: strictly user-supplied credentials that RemoteClaw does not mint or rotate.
 - Out of scope: runtime-minted or rotating credentials, OAuth refresh material, and session-like artifacts.
 
 ## Supported credentials
 
-### `openclaw.json` targets (`secrets configure` + `secrets apply` + `secrets audit`)
+### `remoteclaw.json` targets (`secrets configure` + `secrets apply` + `secrets audit`)
 
 [//]: # "secretref-supported-list-start"
 
@@ -117,7 +117,7 @@ Notes:
 - In `remoteclaw.json`, SecretRefs must use structured objects such as `{"source":"env","provider":"default","id":"DISCORD_BOT_TOKEN"}`. Legacy `secretref-env:<ENV_VAR>` marker strings are rejected on SecretRef credential paths; run `remoteclaw doctor --fix` to migrate valid markers.
 - OAuth policy guard: `auth.profiles.<id>.mode = "oauth"` cannot be combined with SecretRef inputs for that profile. Startup/reload and auth-profile resolution fail fast when this policy is violated.
 - For SecretRef-managed model providers, generated `agents/*/agent/models.json` entries persist non-secret markers (not resolved secret values) for `apiKey`/header surfaces.
-- Marker persistence is source-authoritative: OpenClaw writes markers from the active source config snapshot (pre-resolution), not from resolved runtime secret values.
+- Marker persistence is source-authoritative: RemoteClaw writes markers from the active source config snapshot (pre-resolution), not from resolved runtime secret values.
 - For web search:
   - In explicit provider mode (`tools.web.search.provider` set), only the selected provider key is active.
   - In auto mode (`tools.web.search.provider` unset), only the first provider key that resolves by precedence is active.

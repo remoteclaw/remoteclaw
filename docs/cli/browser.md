@@ -1,15 +1,15 @@
 ---
-summary: "CLI reference for `openclaw browser` (lifecycle, profiles, tabs, actions, state, and debugging)"
+summary: "CLI reference for `remoteclaw browser` (lifecycle, profiles, tabs, actions, state, and debugging)"
 read_when:
-  - You use `openclaw browser` and want examples for common tasks
+  - You use `remoteclaw browser` and want examples for common tasks
   - You want to control a browser running on another machine via a node host
   - You want to attach to your local signed-in Chrome via Chrome MCP
 title: "Browser"
 ---
 
-# `openclaw browser`
+# `remoteclaw browser`
 
-Manage OpenClaw's browser control surface and run browser actions (lifecycle, profiles, tabs, snapshots, screenshots, navigation, input, state emulation, and debugging).
+Manage RemoteClaw's browser control surface and run browser actions (lifecycle, profiles, tabs, snapshots, screenshots, navigation, input, state emulation, and debugging).
 
 Related:
 
@@ -27,10 +27,10 @@ Related:
 ## Quick start (local)
 
 ```bash
-openclaw browser profiles
-openclaw browser --browser-profile openclaw start
-openclaw browser --browser-profile openclaw open https://example.com
-openclaw browser --browser-profile openclaw snapshot
+remoteclaw browser profiles
+remoteclaw browser --browser-profile remoteclaw start
+remoteclaw browser --browser-profile remoteclaw open https://example.com
+remoteclaw browser --browser-profile remoteclaw snapshot
 ```
 
 Agents can run the same readiness check with `browser({ action: "doctor" })`.
@@ -62,16 +62,16 @@ remoteclaw browser --browser-profile remoteclaw reset-profile
 
 Notes:
 
-- For `attachOnly` and remote CDP profiles, `openclaw browser stop` closes the
+- For `attachOnly` and remote CDP profiles, `remoteclaw browser stop` closes the
   active control session and clears temporary emulation overrides even when
-  OpenClaw did not launch the browser process itself.
-- For local managed profiles, `openclaw browser stop` stops the spawned browser
+  RemoteClaw did not launch the browser process itself.
+- For local managed profiles, `remoteclaw browser stop` stops the spawned browser
   process.
 
 ## If the command is missing
 
-If `openclaw browser` is an unknown command, check `plugins.allow` in
-`~/.openclaw/openclaw.json`.
+If `remoteclaw browser` is an unknown command, check `plugins.allow` in
+`~/.remoteclaw/remoteclaw.json`.
 
 When `plugins.allow` is present, the bundled browser plugin must be listed
 explicitly:
@@ -93,22 +93,22 @@ Related: [Browser tool](/tools/browser#missing-browser-command-or-tool)
 
 Profiles are named browser routing configs. In practice:
 
-- `openclaw`: launches or attaches to a dedicated OpenClaw-managed Chrome instance (isolated user data dir).
+- `remoteclaw`: launches or attaches to a dedicated RemoteClaw-managed Chrome instance (isolated user data dir).
 - `user`: controls your existing signed-in Chrome session via Chrome DevTools MCP.
 - custom CDP profiles: point at a local or remote CDP endpoint.
 
 ```bash
-openclaw browser profiles
-openclaw browser create-profile --name work --color "#FF5A36"
-openclaw browser create-profile --name chrome-live --driver existing-session
-openclaw browser create-profile --name remote --cdp-url https://browser-host.example.com
-openclaw browser delete-profile --name work
+remoteclaw browser profiles
+remoteclaw browser create-profile --name work --color "#FF5A36"
+remoteclaw browser create-profile --name chrome-live --driver existing-session
+remoteclaw browser create-profile --name remote --cdp-url https://browser-host.example.com
+remoteclaw browser delete-profile --name work
 ```
 
 Use a specific profile:
 
 ```bash
-openclaw browser --browser-profile work tabs
+remoteclaw browser --browser-profile work tabs
 ```
 
 ## Tabs
@@ -179,10 +179,10 @@ remoteclaw browser evaluate --fn '(el) => el.textContent' --ref <ref>
 File + dialog helpers:
 
 ```bash
-openclaw browser upload /tmp/openclaw/uploads/file.pdf --ref <ref>
-openclaw browser waitfordownload
-openclaw browser download <ref> report.pdf
-openclaw browser dialog --accept
+remoteclaw browser upload /tmp/remoteclaw/uploads/file.pdf --ref <ref>
+remoteclaw browser waitfordownload
+remoteclaw browser download <ref> report.pdf
+remoteclaw browser dialog --accept
 ```
 
 ## State and storage
@@ -190,40 +190,40 @@ openclaw browser dialog --accept
 Viewport + emulation:
 
 ```bash
-openclaw browser resize 1280 720
-openclaw browser set viewport 1280 720
-openclaw browser set offline on
-openclaw browser set media dark
-openclaw browser set timezone Europe/London
-openclaw browser set locale en-GB
-openclaw browser set geo 51.5074 -0.1278 --accuracy 25
-openclaw browser set device "iPhone 14"
-openclaw browser set headers '{"x-test":"1"}'
-openclaw browser set credentials myuser mypass
+remoteclaw browser resize 1280 720
+remoteclaw browser set viewport 1280 720
+remoteclaw browser set offline on
+remoteclaw browser set media dark
+remoteclaw browser set timezone Europe/London
+remoteclaw browser set locale en-GB
+remoteclaw browser set geo 51.5074 -0.1278 --accuracy 25
+remoteclaw browser set device "iPhone 14"
+remoteclaw browser set headers '{"x-test":"1"}'
+remoteclaw browser set credentials myuser mypass
 ```
 
 Cookies + storage:
 
 ```bash
-openclaw browser cookies
-openclaw browser cookies set session abc123 --url https://example.com
-openclaw browser cookies clear
-openclaw browser storage local get
-openclaw browser storage local set token abc123
-openclaw browser storage session clear
+remoteclaw browser cookies
+remoteclaw browser cookies set session abc123 --url https://example.com
+remoteclaw browser cookies clear
+remoteclaw browser storage local get
+remoteclaw browser storage local set token abc123
+remoteclaw browser storage session clear
 ```
 
 ## Debugging
 
 ```bash
-openclaw browser console --level error
-openclaw browser pdf
-openclaw browser responsebody "**/api"
-openclaw browser highlight <ref>
-openclaw browser errors --clear
-openclaw browser requests --filter api
-openclaw browser trace start
-openclaw browser trace stop --out trace.zip
+remoteclaw browser console --level error
+remoteclaw browser pdf
+remoteclaw browser responsebody "**/api"
+remoteclaw browser highlight <ref>
+remoteclaw browser errors --clear
+remoteclaw browser requests --filter api
+remoteclaw browser trace start
+remoteclaw browser trace stop --out trace.zip
 ```
 
 ## Existing Chrome via MCP
@@ -231,10 +231,10 @@ openclaw browser trace stop --out trace.zip
 Use the built-in `user` profile, or create your own `existing-session` profile:
 
 ```bash
-openclaw browser --browser-profile user tabs
-openclaw browser create-profile --name chrome-live --driver existing-session
-openclaw browser create-profile --name brave-live --driver existing-session --user-data-dir "~/Library/Application Support/BraveSoftware/Brave-Browser"
-openclaw browser --browser-profile chrome-live tabs
+remoteclaw browser --browser-profile user tabs
+remoteclaw browser create-profile --name chrome-live --driver existing-session
+remoteclaw browser create-profile --name brave-live --driver existing-session --user-data-dir "~/Library/Application Support/BraveSoftware/Brave-Browser"
+remoteclaw browser --browser-profile chrome-live tabs
 ```
 
 This path is host-only. For Docker, headless servers, Browserless, or other remote setups, use a CDP profile instead.

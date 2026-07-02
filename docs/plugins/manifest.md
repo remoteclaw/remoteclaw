@@ -1,7 +1,7 @@
 ---
 summary: "Plugin manifest + JSON schema requirements (strict config validation)"
 read_when:
-  - You are building an OpenClaw plugin
+  - You are building an RemoteClaw plugin
   - You need to ship a plugin config schema or debug plugin validation errors
 title: "Plugin manifest"
 ---
@@ -17,16 +17,16 @@ Compatible bundle formats use different manifest files:
   layout without a manifest
 - Cursor bundle: `.cursor-plugin/plugin.json`
 
-OpenClaw auto-detects those bundle layouts too, but they are not validated
-against the `openclaw.plugin.json` schema described here.
+RemoteClaw auto-detects those bundle layouts too, but they are not validated
+against the `remoteclaw.plugin.json` schema described here.
 
-For compatible bundles, OpenClaw currently reads bundle metadata plus declared
+For compatible bundles, RemoteClaw currently reads bundle metadata plus declared
 skill roots, Claude command roots, Claude bundle `settings.json` defaults,
 Claude bundle LSP defaults, and supported hook packs when the layout matches
-OpenClaw runtime expectations.
+RemoteClaw runtime expectations.
 
-Every native OpenClaw plugin **must** ship a `openclaw.plugin.json` file in the
-**plugin root**. OpenClaw uses this manifest to validate configuration
+Every native RemoteClaw plugin **must** ship a `remoteclaw.plugin.json` file in the
+**plugin root**. RemoteClaw uses this manifest to validate configuration
 **without executing plugin code**. Missing or invalid manifests are treated as
 plugin errors and block config validation.
 
@@ -174,7 +174,7 @@ wizard metadata and install-catalog choices for compatibility.
 | `provider`            | Yes      | `string`                                        | Provider id this choice belongs to.                                                                      |
 | `method`              | Yes      | `string`                                        | Auth method id to dispatch to.                                                                           |
 | `choiceId`            | Yes      | `string`                                        | Stable auth-choice id used by onboarding and CLI flows.                                                  |
-| `choiceLabel`         | No       | `string`                                        | User-facing label. If omitted, OpenClaw falls back to `choiceId`.                                        |
+| `choiceLabel`         | No       | `string`                                        | User-facing label. If omitted, RemoteClaw falls back to `choiceId`.                                      |
 | `choiceHint`          | No       | `string`                                        | Short helper text for the picker.                                                                        |
 | `assistantPriority`   | No       | `number`                                        | Lower values sort earlier in assistant-driven interactive pickers.                                       |
 | `assistantVisibility` | No       | `"visible"` \| `"manual-only"`                  | Hide the choice from assistant pickers while still allowing manual CLI selection.                        |
@@ -191,7 +191,7 @@ wizard metadata and install-catalog choices for compatibility.
 ## commandAliases reference
 
 Use `commandAliases` when a plugin owns a runtime command name that users may
-mistakenly put in `plugins.allow` or try to run as a root CLI command. OpenClaw
+mistakenly put in `plugins.allow` or try to run as a root CLI command. RemoteClaw
 uses this metadata for diagnostics without importing plugin runtime code.
 
 ```json
@@ -403,7 +403,7 @@ Each field hint can include:
 
 ## contracts reference
 
-Use `contracts` only for static capability ownership metadata that OpenClaw can
+Use `contracts` only for static capability ownership metadata that RemoteClaw can
 read without importing the plugin runtime.
 
 ```json
@@ -566,7 +566,7 @@ loads.
 }
 ```
 
-OpenClaw applies this precedence:
+RemoteClaw applies this precedence:
 
 - explicit `provider/model` refs use the owning `providers` manifest metadata
 - `modelPatterns` beat `modelPrefixes`
@@ -593,37 +593,37 @@ ownership.
 
 The two files serve different jobs:
 
-| File                   | Use it for                                                                                                                       |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `openclaw.plugin.json` | Discovery, config validation, auth-choice metadata, and UI hints that must exist before plugin code runs                         |
-| `package.json`         | npm metadata, dependency installation, and the `openclaw` block used for entrypoints, install gating, setup, or catalog metadata |
+| File                     | Use it for                                                                                                                         |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `remoteclaw.plugin.json` | Discovery, config validation, auth-choice metadata, and UI hints that must exist before plugin code runs                           |
+| `package.json`           | npm metadata, dependency installation, and the `remoteclaw` block used for entrypoints, install gating, setup, or catalog metadata |
 
 If you are unsure where a piece of metadata belongs, use this rule:
 
-- if OpenClaw must know it before loading plugin code, put it in `openclaw.plugin.json`
+- if RemoteClaw must know it before loading plugin code, put it in `remoteclaw.plugin.json`
 - if it is about packaging, entry files, or npm install behavior, put it in `package.json`
 
 ### package.json fields that affect discovery
 
 Some pre-runtime plugin metadata intentionally lives in `package.json` under the
-`openclaw` block instead of `openclaw.plugin.json`.
+`remoteclaw` block instead of `remoteclaw.plugin.json`.
 
 Important examples:
 
-| Field                                                             | What it means                                                                                                                                |
-| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `openclaw.extensions`                                             | Declares native plugin entrypoints.                                                                                                          |
-| `openclaw.setupEntry`                                             | Lightweight setup-only entrypoint used during onboarding and deferred channel startup.                                                       |
-| `openclaw.channel`                                                | Cheap channel catalog metadata like labels, docs paths, aliases, and selection copy.                                                         |
-| `openclaw.channel.configuredState`                                | Lightweight configured-state checker metadata that can answer "does env-only setup already exist?" without loading the full channel runtime. |
-| `openclaw.channel.persistedAuthState`                             | Lightweight persisted-auth checker metadata that can answer "is anything already signed in?" without loading the full channel runtime.       |
-| `openclaw.install.npmSpec` / `openclaw.install.localPath`         | Install/update hints for bundled and externally published plugins.                                                                           |
-| `openclaw.install.defaultChoice`                                  | Preferred install path when multiple install sources are available.                                                                          |
-| `openclaw.install.minHostVersion`                                 | Minimum supported OpenClaw host version, using a semver floor like `>=2026.3.22`.                                                            |
-| `openclaw.install.allowInvalidConfigRecovery`                     | Allows a narrow bundled-plugin reinstall recovery path when config is invalid.                                                               |
-| `openclaw.startup.deferConfiguredChannelFullLoadUntilAfterListen` | Lets setup-only channel surfaces load before the full channel plugin during startup.                                                         |
+| Field                                                               | What it means                                                                                                                                |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `remoteclaw.extensions`                                             | Declares native plugin entrypoints.                                                                                                          |
+| `remoteclaw.setupEntry`                                             | Lightweight setup-only entrypoint used during onboarding and deferred channel startup.                                                       |
+| `remoteclaw.channel`                                                | Cheap channel catalog metadata like labels, docs paths, aliases, and selection copy.                                                         |
+| `remoteclaw.channel.configuredState`                                | Lightweight configured-state checker metadata that can answer "does env-only setup already exist?" without loading the full channel runtime. |
+| `remoteclaw.channel.persistedAuthState`                             | Lightweight persisted-auth checker metadata that can answer "is anything already signed in?" without loading the full channel runtime.       |
+| `remoteclaw.install.npmSpec` / `remoteclaw.install.localPath`       | Install/update hints for bundled and externally published plugins.                                                                           |
+| `remoteclaw.install.defaultChoice`                                  | Preferred install path when multiple install sources are available.                                                                          |
+| `remoteclaw.install.minHostVersion`                                 | Minimum supported RemoteClaw host version, using a semver floor like `>=2026.3.22`.                                                          |
+| `remoteclaw.install.allowInvalidConfigRecovery`                     | Allows a narrow bundled-plugin reinstall recovery path when config is invalid.                                                               |
+| `remoteclaw.startup.deferConfiguredChannelFullLoadUntilAfterListen` | Lets setup-only channel surfaces load before the full channel plugin during startup.                                                         |
 
-`openclaw.install.minHostVersion` is enforced during install and manifest
+`remoteclaw.install.minHostVersion` is enforced during install and manifest
 registry loading. Invalid values are rejected; newer-but-valid values skip the
 plugin on older hosts.
 
@@ -655,14 +655,14 @@ not make arbitrary broken configs installable. Today it only allows install
 flows to recover from specific stale bundled-plugin upgrade failures, such as a
 missing bundled plugin path or a stale `channels.<id>` entry for that same
 bundled plugin. Unrelated config errors still block install and send operators
-to `openclaw doctor --fix`.
+to `remoteclaw doctor --fix`.
 
-`openclaw.channel.persistedAuthState` is package metadata for a tiny checker
+`remoteclaw.channel.persistedAuthState` is package metadata for a tiny checker
 module:
 
 ```json
 {
-  "openclaw": {
+  "remoteclaw": {
     "channel": {
       "id": "whatsapp",
       "persistedAuthState": {
@@ -679,12 +679,12 @@ probe before the full channel plugin loads. The target export should be a small
 function that reads persisted state only; do not route it through the full
 channel runtime barrel.
 
-`openclaw.channel.configuredState` follows the same shape for cheap env-only
+`remoteclaw.channel.configuredState` follows the same shape for cheap env-only
 configured checks:
 
 ```json
 {
-  "openclaw": {
+  "remoteclaw": {
     "channel": {
       "id": "telegram",
       "configuredState": {

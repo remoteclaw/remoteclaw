@@ -9,7 +9,7 @@ title: "Control UI"
 The Control UI is a small **Vite + Lit** single-page app served by the Gateway:
 
 - default: `http://<host>:18789/`
-- optional prefix: set `gateway.controlUi.basePath` (e.g. `/openclaw`)
+- optional prefix: set `gateway.controlUi.basePath` (e.g. `/remoteclaw`)
 
 It speaks **directly to the Gateway WebSocket** on the same port.
 
@@ -19,7 +19,7 @@ If the Gateway is running on the same computer, open:
 
 - [http://127.0.0.1:18789/](http://127.0.0.1:18789/) (or [http://localhost:18789/](http://localhost:18789/))
 
-If the page fails to load, start the Gateway first: `openclaw gateway`.
+If the page fails to load, start the Gateway first: `remoteclaw gateway`.
 
 Auth is supplied during the WebSocket handshake via:
 
@@ -46,15 +46,15 @@ unauthorized access.
 
 ```bash
 # List pending requests
-openclaw devices list
+remoteclaw devices list
 
 # Approve by request ID
-openclaw devices approve <requestId>
+remoteclaw devices approve <requestId>
 ```
 
 If the browser retries pairing with changed auth details (role/scopes/public
 key), the previous pending request is superseded and a new `requestId` is
-created. Re-run `openclaw devices list` before approval.
+created. Re-run `remoteclaw devices list` before approval.
 
 If the browser is already paired and you change it from read access to
 write/admin access, this is treated as an approval upgrade, not a silent
@@ -62,7 +62,7 @@ reconnect. RemoteClaw keeps the old approval active, blocks the broader reconnec
 and asks you to approve the new scope set explicitly.
 
 Once approved, the device is remembered and won't require re-approval unless
-you revoke it with `openclaw devices revoke --device <id> --role <role>`. See
+you revoke it with `remoteclaw devices revoke --device <id> --role <role>`. See
 [Devices CLI](/cli/devices) for token rotation and revocation.
 
 **Notes:**
@@ -119,7 +119,7 @@ locale picker lives in the Gateway Access card, not under Appearance.
 - Skills: status, enable/disable, install, API key updates (`skills.*`)
 - Nodes: list + caps (`node.list`)
 - Exec approvals: edit gateway or node allowlists + ask policy for `exec host=gateway/node` (`exec.approvals.*`)
-- Config: view/edit `~/.openclaw/openclaw.json` (`config.get`, `config.set`)
+- Config: view/edit `~/.remoteclaw/remoteclaw.json` (`config.get`, `config.set`)
 - Config: apply + restart with validation (`config.apply`) and wake the last active session
 - Config writes include a base-hash guard to prevent clobbering concurrent edits
 - Config writes (`config.set`/`config.apply`/`config.patch`) also preflight active SecretRef resolution for refs in the submitted config payload; unresolved active submitted refs are rejected before write
@@ -226,7 +226,7 @@ intentionally want `[embed url="https://..."]` to load third-party pages, set
 Keep the Gateway on loopback and let Tailscale Serve proxy it with HTTPS:
 
 ```bash
-openclaw gateway --tailscale serve
+remoteclaw gateway --tailscale serve
 ```
 
 Open:
@@ -234,7 +234,7 @@ Open:
 - `https://<magicdns>/` (or your configured `gateway.controlUi.basePath`)
 
 By default, Control UI/WebSocket Serve requests can authenticate via Tailscale identity headers
-(`tailscale-user-login`) when `gateway.auth.allowTailscale` is `true`. OpenClaw
+(`tailscale-user-login`) when `gateway.auth.allowTailscale` is `true`. RemoteClaw
 verifies the identity by resolving the `x-forwarded-for` address with
 `tailscale whois` and matching it to the header, and only accepts these when the
 request hits loopback with Tailscale’s `x-forwarded-*` headers. Set
@@ -251,7 +251,7 @@ code may run on that host, require token/password auth.
 ### Bind to tailnet + token
 
 ```bash
-openclaw gateway --bind tailnet --token "$(openssl rand -hex 32)"
+remoteclaw gateway --bind tailnet --token "$(openssl rand -hex 32)"
 ```
 
 Then open:
@@ -265,7 +265,7 @@ Paste the matching shared secret into the UI settings (sent as
 
 If you open the dashboard over plain HTTP (`http://<lan-ip>` or `http://<tailscale-ip>`),
 the browser runs in a **non-secure context** and blocks WebCrypto. By default,
-OpenClaw **blocks** Control UI connections without device identity.
+RemoteClaw **blocks** Control UI connections without device identity.
 
 Documented exceptions:
 
@@ -355,7 +355,7 @@ pnpm ui:build
 Optional absolute base (when you want fixed asset URLs):
 
 ```bash
-OPENCLAW_CONTROL_UI_BASE_PATH=/openclaw/ pnpm ui:build
+REMOTECLAW_CONTROL_UI_BASE_PATH=/remoteclaw/ pnpm ui:build
 ```
 
 For local development (separate dev server):

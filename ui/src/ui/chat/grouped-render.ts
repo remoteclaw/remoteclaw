@@ -156,6 +156,10 @@ export function renderMessageGroup(
   `;
 }
 
+// Reject bidi/invisible control characters in assistant text avatars to prevent
+// visual identity-spoofing (avatar text originates from IDENTITY.md config).
+const UNSAFE_ASSISTANT_TEXT_AVATAR_CHARS = /[\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF]/u;
+
 function renderAvatar(role: string, assistant?: Pick<AssistantIdentity, "name" | "avatar">) {
   const normalized = normalizeRoleForGrouping(role);
   const assistantName = assistant?.name?.trim() || "Assistant";
@@ -185,7 +189,9 @@ function renderAvatar(role: string, assistant?: Pick<AssistantIdentity, "name" |
         alt="${assistantName}"
       />`;
     }
-    return html`<div class="chat-avatar ${className}">${assistantAvatar}</div>`;
+    if (!UNSAFE_ASSISTANT_TEXT_AVATAR_CHARS.test(assistantAvatar)) {
+      return html`<div class="chat-avatar ${className}">${assistantAvatar}</div>`;
+    }
   }
 
   return html`<div class="chat-avatar ${className}">${initial}</div>`;

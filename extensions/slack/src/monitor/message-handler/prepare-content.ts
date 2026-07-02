@@ -1,5 +1,6 @@
 import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 import { logVerbose } from "../../../../../src/globals.js";
+import { formatSlackFileReference } from "../../file-reference.js";
 import type { SlackFile, SlackMessageEvent } from "../../types.js";
 import {
   MAX_SLACK_MEDIA_FILES,
@@ -73,7 +74,7 @@ export async function resolveSlackMessageContent(params: {
     !mediaPlaceholder && fallbackFiles.length > 0
       ? fallbackFiles
           .slice(0, MAX_SLACK_MEDIA_FILES)
-          .map((file) => normalizeOptionalString(file.name) ?? "file")
+          .map((file) => formatSlackFileReference(file))
           .join(", ")
       : undefined;
   const fileOnlyPlaceholder = fileOnlyFallback ? `[Slack file: ${fileOnlyFallback}]` : undefined;

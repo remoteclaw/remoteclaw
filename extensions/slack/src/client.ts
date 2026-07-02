@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { type RetryOptions, type WebClientOptions, WebClient } from "@slack/web-api";
 
 export const SLACK_DEFAULT_RETRY_OPTIONS: RetryOptions = {
@@ -32,4 +33,8 @@ export function createSlackWebClient(token: string, options: WebClientOptions = 
 
 export function createSlackWriteClient(token: string, options: WebClientOptions = {}) {
   return new WebClient(token, resolveSlackWriteClientOptions(options));
+}
+
+export function createSlackTokenCacheKey(token: string): string {
+  return `sha256:${createHash("sha256").update(token).digest("base64url")}`;
 }

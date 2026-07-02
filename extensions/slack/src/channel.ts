@@ -40,6 +40,7 @@ import {
 } from "remoteclaw/plugin-sdk/slack";
 import { buildPassiveProbedChannelStatusSummary } from "../../shared/channel-status-summary.js";
 import { getSlackRuntime } from "./runtime.js";
+import { resolveSlackThreadTsValue } from "./thread-ts.js";
 
 const meta = getChatChannelMeta("slack");
 
@@ -86,7 +87,7 @@ function resolveSlackSendContext(params: {
   const token = getTokenForOperation(account, "write");
   const botToken = account.botToken?.trim();
   const tokenOverride = token && token !== botToken ? token : undefined;
-  const threadTsValue = params.replyToId ?? params.threadId;
+  const threadTsValue = resolveSlackThreadTsValue(params);
   return { send, threadTsValue, tokenOverride };
 }
 
@@ -379,7 +380,7 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount> = {
       });
       const result = await send(to, text, {
         cfg,
-        threadTs: threadTsValue != null ? String(threadTsValue) : undefined,
+        threadTs: threadTsValue,
         accountId: accountId ?? undefined,
         ...(tokenOverride ? { token: tokenOverride } : {}),
       });
@@ -407,7 +408,7 @@ export const slackPlugin: ChannelPlugin<ResolvedSlackAccount> = {
         cfg,
         mediaUrl,
         mediaLocalRoots,
-        threadTs: threadTsValue != null ? String(threadTsValue) : undefined,
+        threadTs: threadTsValue,
         accountId: accountId ?? undefined,
         ...(tokenOverride ? { token: tokenOverride } : {}),
       });

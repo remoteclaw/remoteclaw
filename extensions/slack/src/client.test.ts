@@ -14,6 +14,7 @@ vi.mock("@slack/web-api", () => {
 
 let createSlackWebClient: typeof import("./client.js").createSlackWebClient;
 let createSlackWriteClient: typeof import("./client.js").createSlackWriteClient;
+let createSlackTokenCacheKey: typeof import("./client.js").createSlackTokenCacheKey;
 let resolveSlackWebClientOptions: typeof import("./client.js").resolveSlackWebClientOptions;
 let resolveSlackWriteClientOptions: typeof import("./client.js").resolveSlackWriteClientOptions;
 let SLACK_DEFAULT_RETRY_OPTIONS: typeof import("./client.js").SLACK_DEFAULT_RETRY_OPTIONS;
@@ -25,6 +26,7 @@ beforeAll(async () => {
   ({
     createSlackWebClient,
     createSlackWriteClient,
+    createSlackTokenCacheKey,
     resolveSlackWebClientOptions,
     resolveSlackWriteClientOptions,
     SLACK_DEFAULT_RETRY_OPTIONS,
@@ -79,6 +81,17 @@ describe("slack web client config", () => {
         retryConfig: SLACK_WRITE_RETRY_OPTIONS,
       }),
     );
+  });
+
+  it("builds stable non-secret token cache keys", () => {
+    const token = "xoxb-sensitive-token";
+    const first = createSlackTokenCacheKey(token);
+    const second = createSlackTokenCacheKey(token);
+
+    expect(first).toBe(second);
+    expect(first).toMatch(/^sha256:/);
+    expect(first).not.toContain(token);
+    expect(createSlackTokenCacheKey("xoxb-other-token")).not.toBe(first);
   });
 });
 

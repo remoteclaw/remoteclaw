@@ -33,6 +33,7 @@ vi.mock("../../whatsapp/src/media.js", () => ({
 
 let sendMessageSlack: typeof import("./send.js").sendMessageSlack;
 let clearSlackDmChannelCache: typeof import("./send.js").clearSlackDmChannelCache;
+let clearSlackSendQueuesForTest: typeof import("./send.js").clearSlackSendQueuesForTest;
 
 type UploadTestClient = WebClient & {
   conversations: { open: ReturnType<typeof vi.fn> };
@@ -67,7 +68,8 @@ describe("sendMessageSlack file upload with user IDs", () => {
 
   beforeAll(async () => {
     vi.resetModules();
-    ({ sendMessageSlack, clearSlackDmChannelCache } = await import("./send.js"));
+    ({ sendMessageSlack, clearSlackDmChannelCache, clearSlackSendQueuesForTest } =
+      await import("./send.js"));
   });
 
   beforeEach(() => {
@@ -76,6 +78,7 @@ describe("sendMessageSlack file upload with user IDs", () => {
     ) as unknown as typeof fetch;
     fetchWithSsrFGuard.mockClear();
     clearSlackDmChannelCache();
+    clearSlackSendQueuesForTest();
   });
 
   afterEach(() => {
@@ -143,6 +146,42 @@ describe("sendMessageSlack file upload with user IDs", () => {
         channel: "D99RESOLVED",
         text: "second",
       }),
+    );
+  });
+
+  it("serializes concurrent sends to the same Slack target", async () => {
+    const client = createUploadTestClient();
+    let resolveFirst!: () => void;
+    client.chat.postMessage.mockImplementation(async (payload: { text?: string }) => {
+      if (payload.text === "first") {
+        await new Promise<void>((resolve) => {
+          resolveFirst = resolve;
+        });
+        return { ts: "1.000" };
+      }
+      return { ts: "2.000" };
+    });
+
+    const first = sendMessageSlack("channel:C123CHAN", "first", {
+      token: "xoxb-test",
+      client,
+    });
+    await vi.waitFor(() => expect(client.chat.postMessage).toHaveBeenCalledTimes(1));
+
+    const second = sendMessageSlack("channel:C123CHAN", "second", {
+      token: "xoxb-test",
+      client,
+    });
+    await Promise.resolve();
+
+    expect(client.chat.postMessage).toHaveBeenCalledTimes(1);
+    resolveFirst();
+
+    await expect(first).resolves.toEqual({ channelId: "C123CHAN", messageId: "1.000" });
+    await expect(second).resolves.toEqual({ channelId: "C123CHAN", messageId: "2.000" });
+    expect(client.chat.postMessage).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ text: "second" }),
     );
   });
 

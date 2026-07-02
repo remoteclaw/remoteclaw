@@ -30,7 +30,7 @@ function isManifestlessBundledRuntimeSupportPackage(params) {
   return params.topLevelPublicSurfaceEntries.length > 0;
 }
 
-function collectPluginSourceEntries(packageJson) {
+function collectPluginSourceEntries(packageJson, pluginDir) {
   let packageEntries = Array.isArray(packageJson?.remoteclaw?.extensions)
     ? packageJson.remoteclaw.extensions.filter(
         (entry) => typeof entry === "string" && entry.trim().length > 0,
@@ -44,7 +44,15 @@ function collectPluginSourceEntries(packageJson) {
   if (setupEntry) {
     packageEntries = Array.from(new Set([...packageEntries, setupEntry]));
   }
-  return packageEntries.length > 0 ? packageEntries : ["./index.ts"];
+  if (packageEntries.length > 0) {
+    return packageEntries;
+  }
+  // Fall back to the conventional ./index.ts entrypoint ONLY when it exists.
+  // A manifest-only plugin — a config-schema declaration with no runtime
+  // entrypoint (e.g. active-memory: a remoteclaw.plugin.json with no
+  // package.json and no index.ts) — must not synthesize a phantom ./index.ts
+  // build entry that points at a nonexistent file.
+  return fs.existsSync(path.join(pluginDir, "index.ts")) ? ["./index.ts"] : [];
 }
 
 function shouldStageBundledPluginRuntimeDependencies(packageJson) {
@@ -123,7 +131,7 @@ export function collectBundledPluginBuildEntries(params = {}) {
       packageJson,
       sourceEntries: Array.from(
         new Set([
-          ...(hasManifest ? collectPluginSourceEntries(packageJson) : []),
+          ...(hasManifest ? collectPluginSourceEntries(packageJson, pluginDir) : []),
           ...topLevelPublicSurfaceEntries,
         ]),
       ),

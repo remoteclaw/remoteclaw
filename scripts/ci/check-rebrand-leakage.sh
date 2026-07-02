@@ -2,7 +2,8 @@
 #
 # Rebrand leakage gate — detects unrebranded openclaw references.
 #
-# Two independent scans run over the same target file set:
+# Independent scans detect different leak classes (scans 1 & 2 over the changed
+# file set; scans 3 & 4 run unconditionally over the whole repo):
 #
 #   1. Generic        — any case-insensitive `openclaw` substring, filtered by
 #                       the broad allowlist (scripts/ci/rebrand-allowlist.txt).
@@ -33,6 +34,19 @@
 #                       UNCONDITIONALLY (independent of the changed-file set) so a
 #                       latent reversion already on the base branch is caught too;
 #                       a missing anchor file is tolerated. See issue #2697.
+#
+#   4. Manifest filename — the runtime + build load ONLY `remoteclaw.plugin.json`
+#                       (src/plugins/manifest.ts PLUGIN_MANIFEST_FILENAME); the
+#                       upstream filename `openclaw.plugin.json` is never read, so
+#                       every tracked `openclaw.plugin.json` is dead weight. Scan 1
+#                       greps file CONTENTS, so a dead manifest whose contents carry
+#                       no `openclaw` substring slips past it — the FILENAME is the
+#                       only leak. Every upstream sync re-imports these files and
+#                       silently drifts the live manifest, so assert their ABSENCE
+#                       directly by exact basename. Like scan 3 this runs
+#                       UNCONDITIONALLY (repo-wide `git ls-files`) so a latent file
+#                       already on the base branch is caught. See #2765 — the durable
+#                       follow-up that keeps the one-time #2763 cleanup from recurring.
 #
 # Modes:
 #   --staged   Pre-commit: checks staged files only
@@ -209,6 +223,24 @@ for entry in "${ANCHORS[@]}"; do
 done
 anchor_violations="${anchor_violations%$'\n'}"
 
+# --- Scan 4: dead openclaw.plugin.json manifest filenames --------------------
+#
+# Repo-wide (NUL-safe `git ls-files`), independent of the changed-file set. Match
+# on EXACT basename `openclaw.plugin.json` so legitimately-named files that merely
+# contain the `openclaw` substring (OpenClawProtocolConstants.kt, from-openclaw.mdx,
+# openclaw-prepack.ts) are untouched. There is no valid `openclaw.plugin.json` in
+# the fork, so no allowlist is provided; if a legitimate fixture ever needs one,
+# add a guarded exemption here.
+
+manifest_filename_violations=""
+while IFS= read -r -d '' f; do
+  case "$f" in
+    openclaw.plugin.json | */openclaw.plugin.json)
+      manifest_filename_violations+="$f: dead upstream manifest filename (runtime loads only remoteclaw.plugin.json)"$'\n' ;;
+  esac
+done < <(git ls-files -z)
+manifest_filename_violations="${manifest_filename_violations%$'\n'}"
+
 # --- Report ------------------------------------------------------------------
 
 status=0
@@ -254,6 +286,21 @@ if [[ -n "$anchor_violations" ]]; then
   echo "Fix: restore the fork-identity name; or — only if the subsystem was"
   echo "     intentionally removed — drop the stale anchor from"
   echo "     scripts/ci/check-rebrand-leakage.sh."
+  status=1
+fi
+
+if [[ -n "$manifest_filename_violations" ]]; then
+  [[ $status -ne 0 ]] && echo ""
+  count=$(printf '%s\n' "$manifest_filename_violations" | wc -l | tr -d ' ')
+  echo "Dead openclaw.plugin.json manifest(s) detected ($count violation(s)):"
+  echo ""
+  printf '%s\n' "$manifest_filename_violations" | sed 's/^/  /'
+  echo ""
+  echo "The runtime + build load ONLY remoteclaw.plugin.json; the upstream"
+  echo "openclaw.plugin.json filename is never read, so it is dead weight that"
+  echo "every sync silently re-imports (drifting the live manifest). See #2765."
+  echo "Fix: rename to remoteclaw.plugin.json (kept plugin) or delete the file"
+  echo "     (gutted/dead)."
   status=1
 fi
 

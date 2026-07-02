@@ -53,7 +53,9 @@ function git(cwd: string, ...args: string[]): string {
 // Builds a throwaway git repo containing the REAL gate + its REAL allowlists, so
 // the test exercises the actual apps/ exemption that lets a binary-name revert
 // slip past scans 1 & 2. `packageBody === null` omits Package.swift entirely.
-function makeRepo(packageBody: string | null): string {
+// `extraFiles` seeds additional tracked files (relative path → contents), used by
+// the scan-4 tests to plant an openclaw.plugin.json the content-scan can't see.
+function makeRepo(packageBody: string | null, extraFiles: Record<string, string> = {}): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-rebrand-gate-"));
   tempDirs.push(dir);
   git(dir, "init", "-q");
@@ -72,6 +74,12 @@ function makeRepo(packageBody: string | null): string {
     fs.mkdirSync(path.dirname(dest), { recursive: true });
     fs.writeFileSync(dest, packageBody);
     tracked.push(PACKAGE_REL);
+  }
+  for (const [rel, contents] of Object.entries(extraFiles)) {
+    const dest = path.join(dir, rel);
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.writeFileSync(dest, contents);
+    tracked.push(rel);
   }
 
   git(dir, "add", "--", ...tracked);
@@ -130,6 +138,47 @@ describe("check-rebrand-leakage scan 3 (fork-identity anchors)", () => {
 
   it("tolerates a legitimately-absent anchor file (subsystem gutted)", () => {
     const { status, output } = runGate(makeRepo(null));
+    expect(status).toBe(0);
+    expect(output).toContain("No rebrand leakage detected.");
+  });
+});
+
+describe("check-rebrand-leakage scan 4 (dead openclaw.plugin.json filenames)", () => {
+  // A dead manifest whose CONTENTS carry no `openclaw` substring — so only the
+  // FILENAME leaks and scan 1 (content grep) cannot see it. This is exactly the
+  // drift class every upstream sync re-imports. Package.swift is omitted (null)
+  // to isolate scan 4 from scan 3.
+  const DEAD_MANIFEST = '{\n  "id": "probe",\n  "channels": ["probe"]\n}\n';
+
+  it("passes when a plugin ships only the live remoteclaw.plugin.json", () => {
+    const { status, output } = runGate(
+      makeRepo(null, { "extensions/probe/remoteclaw.plugin.json": DEAD_MANIFEST }),
+    );
+    expect(status).toBe(0);
+    expect(output).toContain("No rebrand leakage detected.");
+  });
+
+  it("fails on a dead openclaw.plugin.json the content-scan cannot see", () => {
+    const { status, output } = runGate(
+      makeRepo(null, { "extensions/probe/openclaw.plugin.json": DEAD_MANIFEST }),
+    );
+    expect(status).toBe(1);
+    expect(output).toContain("Dead openclaw.plugin.json manifest(s) detected");
+    expect(output).toContain("extensions/probe/openclaw.plugin.json");
+    // Scan 1 (content grep) must NOT be what fired — the manifest body is clean.
+    expect(output).not.toContain("Rebrand leakage detected");
+  });
+
+  it("matches the exact basename only — a filename merely containing 'openclaw' is ignored", () => {
+    // `openclaw-notes.json` and an `openclaw-compat/` path segment both contain
+    // the substring but are not the manifest; neither may trip scan 4 (cf. the
+    // real repo's from-openclaw.mdx / openclaw-prepack.ts / OpenClawProtocol*.kt).
+    const { status, output } = runGate(
+      makeRepo(null, {
+        "extensions/probe/openclaw-notes.json": '{\n  "note": "legit"\n}\n',
+        "extensions/openclaw-compat/remoteclaw.plugin.json": DEAD_MANIFEST,
+      }),
+    );
     expect(status).toBe(0);
     expect(output).toContain("No rebrand leakage detected.");
   });

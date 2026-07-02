@@ -115,23 +115,16 @@ function resolveProviderLabel(rawProvider: string | undefined): string {
  * Build a persistent group-chat context block that is always included in the
  * system prompt for group-chat sessions (every turn, not just the first).
  *
- * Contains: group name, participants, and an explicit instruction to reply
- * directly instead of using the message tool.
+ * Contains the provider label and an explicit instruction to reply directly
+ * instead of using the message tool. Channel-sourced group names and
+ * participant labels are intentionally omitted from inline system
+ * instructions (data minimization / prompt-injection hardening).
  */
 export function buildGroupChatContext(params: { sessionCtx: TemplateContext }): string {
-  const subject = params.sessionCtx.GroupSubject?.trim();
-  const members = params.sessionCtx.GroupMembers?.trim();
   const providerLabel = resolveProviderLabel(params.sessionCtx.Provider);
 
   const lines: string[] = [];
-  if (subject) {
-    lines.push(`You are in the ${providerLabel} group chat "${subject}".`);
-  } else {
-    lines.push(`You are in a ${providerLabel} group chat.`);
-  }
-  if (members) {
-    lines.push(`Participants: ${members}.`);
-  }
+  lines.push(`You are in a ${providerLabel} group chat.`);
   lines.push(
     "Your replies are automatically sent to this group chat. Do not use the message tool to send to this same group — just reply normally.",
   );

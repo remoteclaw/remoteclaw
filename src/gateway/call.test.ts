@@ -70,6 +70,7 @@ vi.mock("./client.js", () => ({
       }
     }
     stop() {}
+    async stopAndWait() {}
   },
 }));
 

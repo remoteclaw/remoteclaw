@@ -401,6 +401,19 @@ const promptInjectionHookNameSet = new Set<PluginHookName>(PROMPT_INJECTION_HOOK
 export const isPromptInjectionHookName = (hookName: PluginHookName): boolean =>
   promptInjectionHookNameSet.has(hookName);
 
+export const CONVERSATION_HOOK_NAMES = [
+  "llm_input",
+  "llm_output",
+  "agent_end",
+] as const satisfies readonly PluginHookName[];
+
+export type ConversationHookName = (typeof CONVERSATION_HOOK_NAMES)[number];
+
+const conversationHookNameSet = new Set<PluginHookName>(CONVERSATION_HOOK_NAMES);
+
+export const isConversationHookName = (hookName: PluginHookName): boolean =>
+  conversationHookNameSet.has(hookName);
+
 // Agent context shared across agent hooks
 export type PluginHookAgentContext = {
   /** Correlation id for this agent run, propagated into hook events. */

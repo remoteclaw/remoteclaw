@@ -31,7 +31,12 @@ import { createFeishuReplyDispatcher } from "./reply-dispatcher.js";
 import { getFeishuRuntime } from "./runtime.js";
 import { getMessageFeishu, sendMessageFeishu } from "./send.js";
 import { isFeishuGroupChatType } from "./types.js";
-import type { FeishuMessageContext, FeishuMediaInfo, ResolvedFeishuAccount } from "./types.js";
+import type {
+  FeishuChatType,
+  FeishuMessageContext,
+  FeishuMediaInfo,
+  ResolvedFeishuAccount,
+} from "./types.js";
 import type { DynamicAgentCreationConfig } from "./types.js";
 
 // --- Permission error extraction ---
@@ -235,6 +240,7 @@ function resolveFeishuGroupSession(params: {
   messageId: string;
   rootId?: string;
   threadId?: string;
+  chatType?: FeishuChatType;
   groupConfig?: {
     groupSessionScope?: GroupSessionScope;
     topicSessionMode?: "enabled" | "disabled";
@@ -246,7 +252,8 @@ function resolveFeishuGroupSession(params: {
     replyInThread?: "enabled" | "disabled";
   };
 }): ResolvedFeishuGroupSession {
-  const { chatId, senderOpenId, messageId, rootId, threadId, groupConfig, feishuCfg } = params;
+  const { chatId, senderOpenId, messageId, rootId, threadId, chatType, groupConfig, feishuCfg } =
+    params;
 
   const normalizedThreadId = threadId?.trim();
   const normalizedRootId = rootId?.trim();
@@ -262,12 +269,17 @@ function resolveFeishuGroupSession(params: {
     feishuCfg?.groupSessionScope ??
     (legacyTopicSessionMode === "enabled" ? "group_topic" : "group");
 
-  // Keep topic session keys stable across the "first turn creates thread" flow:
-  // first turn may only have message_id, while the next turn carries root_id/thread_id.
-  // Prefer root_id first so both turns stay on the same peer key.
+  // Native Feishu/Lark topic groups carry the canonical topic in thread_id (omt_*),
+  // so key on it directly. Normal groups that the runtime turns into threads keep root_id
+  // precedence so the first turn (message_id only) and follow-ups stay on one peer key.
+  const normalizedTopicGroupThreadId =
+    chatType === "topic_group" ? (normalizedThreadId ?? normalizedRootId) : undefined;
   const topicScope =
     groupSessionScope === "group_topic" || groupSessionScope === "group_topic_sender"
-      ? (normalizedRootId ?? normalizedThreadId ?? (replyInThread ? messageId : null))
+      ? (normalizedTopicGroupThreadId ??
+        normalizedRootId ??
+        normalizedThreadId ??
+        (replyInThread ? messageId : null))
       : null;
 
   let peerId = chatId;
@@ -977,6 +989,7 @@ export async function handleFeishuMessage(params: {
         messageId: ctx.messageId,
         rootId: ctx.rootId,
         threadId: ctx.threadId,
+        chatType: ctx.chatType,
         groupConfig,
         feishuCfg,
       })

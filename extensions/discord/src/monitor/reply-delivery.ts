@@ -7,6 +7,7 @@ import type { MarkdownTableMode, ReplyToMode } from "../../../../src/config/type
 import { createDiscordRetryRunner, type RetryRunner } from "../../../../src/infra/retry-policy.js";
 import { resolveRetryConfig, retryAsync, type RetryConfig } from "../../../../src/infra/retry.js";
 import { convertMarkdownTables } from "../../../../src/markdown/tables.js";
+import { getGlobalHookRunner } from "../../../../src/plugins/hook-runner-global.js";
 import type { RuntimeEnv } from "../../../../src/runtime.js";
 import { resolveDiscordAccount } from "../accounts.js";
 import { chunkDiscordTextWithMode } from "../chunk.js";
@@ -286,10 +287,42 @@ export async function deliverDiscordReply(params: {
   const request: RetryRunner | undefined = channelId
     ? createDiscordRetryRunner({ configRetry: account.config.retry })
     : undefined;
+  const hookRunner = getGlobalHookRunner();
+  const hasMessageSendingHooks = hookRunner?.hasHooks("message_sending") ?? false;
+  const hookConversationId = channelId ?? params.target;
   let deliveredAny = false;
   for (const payload of params.replies) {
     const mediaList = payload.mediaUrls ?? (payload.mediaUrl ? [payload.mediaUrl] : []);
-    const rawText = payload.text ?? "";
+    let rawText = payload.text ?? "";
+    if (hasMessageSendingHooks) {
+      try {
+        const hookResult = await hookRunner?.runMessageSending(
+          {
+            to: hookConversationId,
+            content: rawText,
+            metadata: {
+              channel: "discord",
+              mediaUrls: mediaList,
+            },
+          },
+          {
+            channelId: "discord",
+            accountId: params.accountId,
+            conversationId: hookConversationId,
+          },
+        );
+        if (hookResult?.cancel) {
+          continue;
+        }
+        if (typeof hookResult?.content === "string") {
+          rawText = hookResult.content;
+        }
+      } catch (error) {
+        params.runtime.error?.(
+          `discord: message_sending hook failed: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
     const tableMode = params.tableMode ?? "code";
     const text = convertMarkdownTables(rawText, tableMode);
     if (!text && mediaList.length === 0) {

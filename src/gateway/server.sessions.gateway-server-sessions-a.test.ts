@@ -1037,7 +1037,7 @@ describe("gateway server sessions", () => {
     ws.close();
   });
 
-  test("webchat clients cannot patch or delete sessions", async () => {
+  test("webchat clients cannot patch, delete, or compact sessions", async () => {
     await createSessionStoreDir();
 
     await writeSessionStore({
@@ -1080,6 +1080,12 @@ describe("gateway server sessions", () => {
     });
     expect(deleted.ok).toBe(false);
     expect(deleted.error?.message ?? "").toMatch(/webchat clients cannot delete sessions/i);
+
+    const compacted = await rpcReq(ws, "sessions.compact", {
+      key: "agent:main:discord:group:dev",
+    });
+    expect(compacted.ok).toBe(false);
+    expect(compacted.error?.message ?? "").toMatch(/webchat clients cannot compact sessions/i);
 
     ws.close();
   });

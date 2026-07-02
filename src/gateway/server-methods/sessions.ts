@@ -74,7 +74,7 @@ function resolveGatewaySessionTargetFromKey(key: string) {
 }
 
 function rejectWebchatSessionMutation(params: {
-  action: "patch" | "delete";
+  action: "patch" | "delete" | "compact";
   client: GatewayClient | null;
   isWebchatConnect: (params: GatewayClient["connect"] | null | undefined) => boolean;
   respond: RespondFn;
@@ -625,13 +625,16 @@ export const sessionsHandlers: GatewayRequestHandlers = {
     const messages = limit < allMessages.length ? allMessages.slice(-limit) : allMessages;
     respond(true, { messages }, undefined);
   },
-  "sessions.compact": async ({ params, respond }) => {
+  "sessions.compact": async ({ params, respond, client, isWebchatConnect }) => {
     if (!assertValidParams(params, validateSessionsCompactParams, "sessions.compact", respond)) {
       return;
     }
     const p = params;
     const key = requireSessionKey(p.key, respond);
     if (!key) {
+      return;
+    }
+    if (rejectWebchatSessionMutation({ action: "compact", client, isWebchatConnect, respond })) {
       return;
     }
 

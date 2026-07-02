@@ -22,6 +22,7 @@ export type ChatHost = {
   hello: GatewayHelloOk | null;
   chatAvatarUrl: string | null;
   refreshSessionsAfterChat: Set<string>;
+  pendingAbort?: { runId: string; sessionKey: string } | null;
 };
 
 export const CHAT_SESSIONS_ACTIVE_MINUTES = 120;
@@ -61,6 +62,12 @@ function isChatResetCommand(text: string) {
 }
 
 export async function handleAbortChat(host: ChatHost) {
+  // If disconnected but we have an active runId, queue the abort for when we reconnect.
+  if (!host.connected && host.chatRunId) {
+    host.chatMessage = "";
+    host.pendingAbort = { runId: host.chatRunId, sessionKey: host.sessionKey };
+    return;
+  }
   if (!host.connected) {
     return;
   }

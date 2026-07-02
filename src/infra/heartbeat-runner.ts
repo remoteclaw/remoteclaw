@@ -46,6 +46,7 @@ import {
 } from "../routing/session-key.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
 import { escapeRegExp } from "../utils.js";
+import { MAX_SAFE_TIMEOUT_DELAY_MS, resolveSafeTimeoutDelayMs } from "../utils/timer-delay.js";
 import { formatErrorMessage, hasErrnoCode } from "./errors.js";
 import { isWithinActiveHours } from "./heartbeat-active-hours.js";
 import {
@@ -583,9 +584,6 @@ async function resolveHeartbeatRunPrompt(params: {
   workspaceDir: string;
 }): Promise<HeartbeatPromptResolution> {
   const pendingEventEntries = params.preflight.pendingEventEntries;
-  const pendingEvents = params.preflight.shouldInspectPendingEvents
-    ? pendingEventEntries.map((event) => event.text)
-    : [];
   const cronEvents = pendingEventEntries
     .filter((event) => {
       const isCronTagged =
@@ -603,10 +601,15 @@ async function resolveHeartbeatRunPrompt(params: {
       return isCronSystemEvent(event.text);
     })
     .map((event) => event.text);
-  const hasExecCompletion = pendingEvents.some(isExecCompletionEvent);
+  const execEvents = params.preflight.shouldInspectPendingEvents
+    ? pendingEventEntries
+        .filter((event) => event.trusted !== false && isExecCompletionEvent(event.text))
+        .map((event) => event.text)
+    : [];
+  const hasExecCompletion = execEvents.length > 0;
   const hasCronEvents = cronEvents.length > 0;
   const basePrompt = hasExecCompletion
-    ? buildExecEventPrompt({ deliverToUser: params.canRelayToUser })
+    ? buildExecEventPrompt(execEvents, { deliverToUser: params.canRelayToUser })
     : hasCronEvents
       ? buildCronEventPrompt(cronEvents, { deliverToUser: params.canRelayToUser })
       : await resolveHeartbeatPrompt(params.cfg, params.heartbeat);
@@ -1028,6 +1031,7 @@ export function startHeartbeatRunner(opts: {
     stopped: false,
   };
   let initialized = false;
+  let heartbeatTimeoutOverflowWarned = false;
 
   const resolveNextDue = (now: number, intervalMs: number, prevState?: HeartbeatAgentState) => {
     if (typeof prevState?.lastRunMs === "number") {
@@ -1065,7 +1069,15 @@ export function startHeartbeatRunner(opts: {
     if (!Number.isFinite(nextDue)) {
       return;
     }
-    const delay = Math.max(0, nextDue - now);
+    const rawDelay = Math.max(0, nextDue - now);
+    if (rawDelay > MAX_SAFE_TIMEOUT_DELAY_MS && !heartbeatTimeoutOverflowWarned) {
+      heartbeatTimeoutOverflowWarned = true;
+      log.warn("heartbeat: scheduled delay exceeds Node setTimeout cap; clamping to ~24.85d", {
+        rawDelayMs: rawDelay,
+        clampedMs: MAX_SAFE_TIMEOUT_DELAY_MS,
+      });
+    }
+    const delay = resolveSafeTimeoutDelayMs(rawDelay, { minMs: 0 });
     state.timer = setTimeout(() => {
       state.timer = null;
       requestHeartbeatNow({ reason: "interval", coalesceMs: 0 });

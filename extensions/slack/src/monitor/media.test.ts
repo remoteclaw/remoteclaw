@@ -433,8 +433,8 @@ describe("resolveSlackMedia", () => {
 
     const result = await resolveSlackMedia({
       files: [
-        { url_private: "https://files.slack.com/a.jpg", name: "a.jpg" },
-        { url_private: "https://files.slack.com/b.png", name: "b.png" },
+        { id: "FA", url_private: "https://files.slack.com/a.jpg", name: "a.jpg" },
+        { id: "FB", url_private: "https://files.slack.com/b.png", name: "b.png" },
       ],
       token: "xoxb-test-token",
       maxBytes: 1024 * 1024,
@@ -442,9 +442,9 @@ describe("resolveSlackMedia", () => {
 
     expect(result).toHaveLength(2);
     expect(result![0].path).toBe("/tmp/a.jpg");
-    expect(result![0].placeholder).toBe("[Slack file: a.jpg]");
+    expect(result![0].placeholder).toBe("[Slack file: a.jpg (fileId: FA)]");
     expect(result![1].path).toBe("/tmp/b.png");
-    expect(result![1].placeholder).toBe("[Slack file: b.png]");
+    expect(result![1].placeholder).toBe("[Slack file: b.png (fileId: FB)]");
   });
 
   it("caps downloads to 8 files for large multi-attachment messages", async () => {

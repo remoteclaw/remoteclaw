@@ -87,6 +87,7 @@ export type GatewayHost = SettingsHost &
     execApprovalQueue: ExecApprovalRequest[];
     execApprovalError: string | null;
     updateAvailable: UpdateAvailable | null;
+    pendingAbort?: { runId: string; sessionKey: string } | null;
   };
 
 type SessionDefaultsSnapshot = {
@@ -205,6 +206,21 @@ export function connectGateway(host: GatewayHost) {
       host.lastErrorCode = null;
       host.hello = hello;
       applySnapshot(host, hello);
+      // Process any pending abort from before the disconnect.
+      if (host.pendingAbort) {
+        const abort = host.pendingAbort;
+        host.pendingAbort = null;
+        void client
+          .request("chat.abort", {
+            sessionKey: abort.sessionKey,
+            runId: abort.runId,
+          })
+          .catch((err) => {
+            // Log to console for diagnostics; user sees no feedback for a stale abort
+            // since the run likely completed during the disconnect window anyway.
+            console.warn("[remoteclaw] pending abort failed:", err);
+          });
+      }
       // Reset orphaned chat run state from before disconnect.
       // Any in-flight run's final event was lost during the disconnect window.
       host.chatRunId = null;

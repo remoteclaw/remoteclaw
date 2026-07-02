@@ -5,7 +5,7 @@ import { inspect } from "node:util";
 import { cancel, isCancel } from "@clack/prompts";
 import { ensureAgentWorkspace } from "../agents/workspace.js";
 import type { RemoteClawConfig } from "../config/config.js";
-import { CONFIG_PATH } from "../config/config.js";
+import { resolveConfigPath } from "../config/config.js";
 import { resolveStateDir } from "../config/paths.js";
 import { resolveSessionTranscriptsDirForAgent } from "../config/sessions.js";
 import { callGateway } from "../gateway/call.js";
@@ -19,7 +19,7 @@ import type { RuntimeEnv } from "../runtime.js";
 import { normalizeOptionalString } from "../shared/string-coerce.js";
 import { stylePromptTitle } from "../terminal/prompt-style.js";
 import {
-  CONFIG_DIR,
+  resolveConfigDir,
   resolveUserPath,
   shortenHomeInString,
   shortenHomePath,
@@ -305,11 +305,11 @@ export async function moveToTrash(pathname: string, runtime: RuntimeEnv): Promis
 }
 
 export async function handleReset(scope: ResetScope, workspaceDir: string, runtime: RuntimeEnv) {
-  await moveToTrash(CONFIG_PATH, runtime);
+  await moveToTrash(resolveConfigPath(), runtime);
   if (scope === "config") {
     return;
   }
-  await moveToTrash(path.join(CONFIG_DIR, "credentials"), runtime);
+  await moveToTrash(path.join(resolveConfigDir(), "credentials"), runtime);
   // Reset removes the entire agents tree (every agent's sessions, workspace cache, etc.).
   // Per-agent dirs are created by setup/add commands, so this is the correct scope.
   await moveToTrash(path.join(resolveStateDir(), "agents"), runtime);

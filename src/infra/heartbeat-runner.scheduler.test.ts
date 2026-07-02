@@ -285,4 +285,30 @@ describe("startHeartbeatRunner", () => {
 
     runner.stop();
   });
+
+  it("clamps oversized scheduler delays so heartbeats do not fire in a tight loop (#71414)", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(0));
+
+    const runSpy = vi.fn().mockResolvedValue({ status: "ran", durationMs: 1 });
+    // 365d resolves to ~31_536_000_000 ms, well past Node setTimeout's
+    // 2_147_483_647 ms cap. Without clamping, setTimeout would fire after
+    // 1ms and re-arm in a tight loop, exhausting the runner.
+    const runner = startHeartbeatRunner({
+      cfg: {
+        agents: {
+          defaults: { heartbeat: { every: "365d" } },
+          list: [{ id: "main", heartbeat: { every: "365d" } }],
+        },
+      } as RemoteClawConfig,
+      runOnce: runSpy,
+    });
+
+    // Advance well past the broken 1ms re-arm but well under the clamped cap
+    // (~24.85d). If the bug is present, runSpy gets called many times.
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(runSpy).not.toHaveBeenCalled();
+
+    runner.stop();
+  });
 });

@@ -8,6 +8,7 @@ import type { FetchLike } from "../../../../src/media/fetch.js";
 import { fetchRemoteMedia } from "../../../../src/media/fetch.js";
 import { saveMediaBuffer } from "../../../../src/media/store.js";
 import { resolveRequestUrl } from "../../../../src/plugin-sdk/request-url.js";
+import { formatSlackFileReference } from "../file-reference.js";
 import type { SlackAttachment, SlackFile } from "../types.js";
 
 function isSlackHostname(hostname: string): boolean {
@@ -251,7 +252,7 @@ export async function resolveSlackMedia(params: {
         return {
           path: saved.path,
           ...(contentType ? { contentType } : {}),
-          placeholder: label ? `[Slack file: ${label}]` : "[Slack file]",
+          placeholder: `[Slack file: ${formatSlackFileReference({ ...file, name: label })}]`,
         };
       } catch {
         return null;

@@ -121,6 +121,54 @@ describe("slackPlugin outbound", () => {
     expect(result).toEqual({ channel: "slack", messageId: "m-media" });
   });
 
+  it("falls back to threadId when replyToId is not a Slack thread timestamp", async () => {
+    const sendSlack = vi.fn().mockResolvedValue({ messageId: "m-text" });
+    const sendText = slackPlugin.outbound?.sendText;
+    expect(sendText).toBeDefined();
+
+    const result = await sendText!({
+      cfg,
+      to: "C123",
+      text: "hello",
+      accountId: "default",
+      replyToId: "msg-internal-1",
+      threadId: "1712345678.123456",
+      deps: { sendSlack },
+    });
+
+    expect(sendSlack).toHaveBeenCalledWith(
+      "C123",
+      "hello",
+      expect.objectContaining({
+        threadTs: "1712345678.123456",
+      }),
+    );
+    expect(result).toEqual({ channel: "slack", messageId: "m-text" });
+  });
+
+  it("does not stringify numeric Slack thread ids", async () => {
+    const sendSlack = vi.fn().mockResolvedValue({ messageId: "m-text" });
+    const sendText = slackPlugin.outbound?.sendText;
+    expect(sendText).toBeDefined();
+
+    await sendText!({
+      cfg,
+      to: "C123",
+      text: "hello",
+      accountId: "default",
+      threadId: 1712345678.123456,
+      deps: { sendSlack },
+    });
+
+    expect(sendSlack).toHaveBeenCalledWith(
+      "C123",
+      "hello",
+      expect.objectContaining({
+        threadTs: undefined,
+      }),
+    );
+  });
+
   it("forwards mediaLocalRoots for sendMedia", async () => {
     const sendSlack = vi.fn().mockResolvedValue({ messageId: "m-media-local" });
     const sendMedia = slackPlugin.outbound?.sendMedia;

@@ -3,7 +3,7 @@ import { sanitizeVoiceReplyTextForSpeech } from "./sanitize.js";
 
 describe("sanitizeVoiceReplyTextForSpeech", () => {
   it("strips reply tags before speech", () => {
-    expect(sanitizeVoiceReplyTextForSpeech("[[reply_to_current]] hello there")).toBe("hello there");
+    expect(sanitizeVoiceReplyTextForSpeech("[[rc:reply]] hello there")).toBe("hello there");
   });
 
   it("strips the current speaker label prefix before speech", () => {
@@ -20,7 +20,7 @@ describe("sanitizeVoiceReplyTextForSpeech", () => {
 
   it("handles reply tags and speaker prefixes together", () => {
     expect(
-      sanitizeVoiceReplyTextForSpeech("[[reply_to_current]] speaker-1: hello there", "speaker-1"),
+      sanitizeVoiceReplyTextForSpeech("[[rc:reply]] speaker-1: hello there", "speaker-1"),
     ).toBe("hello there");
   });
 

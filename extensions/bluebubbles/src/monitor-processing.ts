@@ -21,6 +21,7 @@ import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
+  stripInlineDirectiveTagsForDelivery,
 } from "remoteclaw/plugin-sdk/text-runtime";
 import { downloadBlueBubblesAttachment } from "./attachments.js";
 import { markBlueBubblesChatRead, sendBlueBubblesTyping } from "./chat.js";
@@ -56,7 +57,6 @@ import { formatBlueBubblesChatTarget, isAllowedBlueBubblesSender } from "./targe
 
 const DEFAULT_TEXT_LIMIT = 4000;
 const invalidAckReactions = new Set<string>();
-const REPLY_DIRECTIVE_TAG_RE = /\[\[\s*(?:reply_to_current|reply_to\s*:\s*[^\]\n]+)\s*\]\]/gi;
 const PENDING_OUTBOUND_MESSAGE_ID_TTL_MS = 2 * 60 * 1000;
 
 type PendingOutboundMessageId = {
@@ -439,7 +439,7 @@ export async function processMessage(
   const attachments = message.attachments ?? [];
   const placeholder = buildMessagePlaceholder(message);
   // Check if text is a tapback pattern (e.g., 'Loved "hello"') and transform to emoji format
-  // For tapbacks, we'll append [[reply_to:N]] at the end; for regular messages, prepend it
+  // For tapbacks, we'll append [[rc:reply:N]] at the end; for regular messages, prepend it
   const tapbackContext = resolveTapbackContext(message);
   const tapbackParsed = parseTapbackText({
     text,
@@ -827,9 +827,9 @@ export async function processMessage(
     replyToShortId = getShortIdForUuid(replyToId);
   }
 
-  // Use inline [[reply_to:N]] tag format
-  // For tapbacks/reactions: append at end (e.g., "reacted with ❤️ [[reply_to:4]]")
-  // For regular replies: prepend at start (e.g., "[[reply_to:4]] Awesome")
+  // Use inline [[rc:reply:N]] tag format
+  // For tapbacks/reactions: append at end (e.g., "reacted with ❤️ [[rc:reply:4]]")
+  // For regular replies: prepend at start (e.g., "[[rc:reply:4]] Awesome")
   const replyTag = formatReplyTag({ replyToId, replyToShortId });
   const baseBody = replyTag
     ? isTapbackMessage
@@ -987,10 +987,7 @@ export async function processMessage(
     if (privateApiEnabled) {
       return value;
     }
-    return value
-      .replace(REPLY_DIRECTIVE_TAG_RE, " ")
-      .replace(/[ \t]+/g, " ")
-      .trim();
+    return stripInlineDirectiveTagsForDelivery(value).text;
   };
 
   // History: in-memory rolling map with bounded API backfill retries
@@ -1447,11 +1444,11 @@ export async function processReaction(
   const chatLabel = reaction.isGroup ? ` in group:${peerId}` : "";
   // Use short ID for token savings
   const messageDisplayId = getShortIdForUuid(reaction.messageId) || reaction.messageId;
-  // Format: "Tyler reacted with ❤️ [[reply_to:5]]" or "Tyler removed ❤️ reaction [[reply_to:5]]"
+  // Format: "Tyler reacted with ❤️ [[rc:reply:5]]" or "Tyler removed ❤️ reaction [[rc:reply:5]]"
   const text =
     reaction.action === "removed"
-      ? `${senderLabel} removed ${reaction.emoji} reaction [[reply_to:${messageDisplayId}]]${chatLabel}`
-      : `${senderLabel} reacted with ${reaction.emoji} [[reply_to:${messageDisplayId}]]${chatLabel}`;
+      ? `${senderLabel} removed ${reaction.emoji} reaction [[rc:reply:${messageDisplayId}]]${chatLabel}`
+      : `${senderLabel} reacted with ${reaction.emoji} [[rc:reply:${messageDisplayId}]]${chatLabel}`;
   core.system.enqueueSystemEvent(text, {
     sessionKey: route.sessionKey,
     contextKey: `bluebubbles:reaction:${reaction.action}:${peerId}:${reaction.messageId}:${reaction.senderId}:${reaction.emoji}`,

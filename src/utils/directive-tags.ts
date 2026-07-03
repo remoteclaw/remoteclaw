@@ -17,9 +17,9 @@ type InlineDirectiveParseOptions = {
 };
 
 const AUDIO_TAG_RE = /\[\[\s*audio_as_voice\s*\]\]/gi;
-const REPLY_TAG_RE = /\[\[\s*(?:reply_to_current|reply_to\s*:\s*([^\]\n]+))\s*\]\]/gi;
+const REPLY_TAG_RE = /\[\[\s*(?:rc:reply|rc:reply\s*:\s*([^\]\n]+))\s*\]\]/gi;
 const INLINE_DIRECTIVE_TAG_WITH_PADDING_RE =
-  /\s*(?:\[\[\s*audio_as_voice\s*\]\]|\[\[\s*(?:reply_to_current|reply_to\s*:\s*[^\]\n]+)\s*\]\])\s*/gi;
+  /\s*(?:\[\[\s*audio_as_voice\s*\]\]|\[\[\s*(?:rc:reply|rc:reply\s*:\s*[^\]\n]+)\s*\]\])\s*/gi;
 const MAX_REPLY_DIRECTIVE_ID_LENGTH = 256;
 
 function replacementPreservesWordBoundary(source: string, offset: number, length: number): string {

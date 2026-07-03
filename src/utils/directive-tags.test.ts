@@ -8,14 +8,14 @@ import {
 
 describe("stripInlineDirectiveTagsForDisplay", () => {
   test("removes reply and audio directives", () => {
-    const input = "hello [[reply_to_current]] world [[reply_to:abc-123]] [[audio_as_voice]]";
+    const input = "hello [[rc:reply]] world [[rc:reply:abc-123]] [[audio_as_voice]]";
     const result = stripInlineDirectiveTagsForDisplay(input);
     expect(result.changed).toBe(true);
     expect(result.text).toBe("hello  world  ");
   });
 
   test("supports whitespace variants", () => {
-    const input = "[[ reply_to : 123 ]]ok[[ audio_as_voice ]]";
+    const input = "[[ rc:reply : 123 ]]ok[[ audio_as_voice ]]";
     const result = stripInlineDirectiveTagsForDisplay(input);
     expect(result.changed).toBe(true);
     expect(result.text).toBe("ok");
@@ -31,14 +31,14 @@ describe("stripInlineDirectiveTagsForDisplay", () => {
 
 describe("stripInlineDirectiveTagsForDelivery", () => {
   test("removes directives and surrounding whitespace for outbound text", () => {
-    const input = "hello [[reply_to_current]] world [[audio_as_voice]]";
+    const input = "hello [[rc:reply]] world [[audio_as_voice]]";
     const result = stripInlineDirectiveTagsForDelivery(input);
     expect(result.changed).toBe(true);
     expect(result.text).toBe("hello world");
   });
 
   test("preserves intentional multi-space formatting away from directives", () => {
-    const input = "a  b [[reply_to:123]] c   d";
+    const input = "a  b [[rc:reply:123]] c   d";
     const result = stripInlineDirectiveTagsForDelivery(input);
     expect(result.changed).toBe(true);
     expect(result.text).toBe("a  b c   d");
@@ -54,20 +54,16 @@ describe("stripInlineDirectiveTagsForDelivery", () => {
 
 describe("parseInlineDirectives", () => {
   test("preserves leading spaces after stripping a reply tag", () => {
-    const input = "[[reply_to_current]]    keep this indent\n        and this one";
+    const input = "[[rc:reply]]    keep this indent\n        and this one";
     const result = parseInlineDirectives(input);
     expect(result.hasReplyTag).toBe(true);
     expect(result.text).toBe("    keep this indent\n        and this one");
   });
 
   test("preserves fenced code block indentation after stripping a reply tag", () => {
-    const input = [
-      "[[reply_to_current]]",
-      "```python",
-      "    if True:",
-      "        print('ok')",
-      "```",
-    ].join("\n");
+    const input = ["[[rc:reply]]", "```python", "    if True:", "        print('ok')", "```"].join(
+      "\n",
+    );
     const result = parseInlineDirectives(input);
     expect(result.hasReplyTag).toBe(true);
     expect(result.text).toBe(
@@ -76,14 +72,14 @@ describe("parseInlineDirectives", () => {
   });
 
   test("preserves word boundaries when a reply tag is adjacent to text", () => {
-    const input = "see[[reply_to_current]]now";
+    const input = "see[[rc:reply]]now";
     const result = parseInlineDirectives(input);
     expect(result.hasReplyTag).toBe(true);
     expect(result.text).toBe("see now");
   });
 
   test("drops all leading blank lines introduced by a stripped reply tag", () => {
-    const input = "[[reply_to_current]]\n\ntext";
+    const input = "[[rc:reply]]\n\ntext";
     const result = parseInlineDirectives(input);
     expect(result.hasReplyTag).toBe(true);
     expect(result.text).toBe("text");
@@ -93,7 +89,7 @@ describe("parseInlineDirectives", () => {
 
   test("preserves indented code block (4-space) inside a fenced block after stripping a directive", () => {
     const input = [
-      "[[reply_to_current]]",
+      "[[rc:reply]]",
       "```js",
       "function foo() {",
       "    return 42;",
@@ -117,7 +113,7 @@ describe("parseInlineDirectives", () => {
 
   test("preserves tab-indented lines inside a fenced code block", () => {
     const input = [
-      "[[reply_to_current]]",
+      "[[rc:reply]]",
       "```go",
       "func main() {",
       '\tfmt.Println("hello")',
@@ -142,7 +138,7 @@ describe("parseInlineDirectives", () => {
   });
 
   test("preserves indent-code-block lines (4-space prefix) outside a fenced block", () => {
-    const input = "[[reply_to_current]]\nHere is some code:\n\n    const x = 1;\n    const y = 2;";
+    const input = "[[rc:reply]]\nHere is some code:\n\n    const x = 1;\n    const y = 2;";
     const result = parseInlineDirectives(input);
     expect(result.hasReplyTag).toBe(true);
     expect(result.text).toBe("Here is some code:\n\n    const x = 1;\n    const y = 2;");
@@ -150,7 +146,7 @@ describe("parseInlineDirectives", () => {
 
   test("collapses multiple spaces on normal prose lines but not inside code blocks", () => {
     const input = [
-      "[[reply_to_current]]",
+      "[[rc:reply]]",
       "prose  with  extra  spaces",
       "```",
       "  preserved   spacing  inside",
@@ -164,13 +160,7 @@ describe("parseInlineDirectives", () => {
   });
 
   test("handles tilde fenced blocks (~~~) the same as backtick blocks", () => {
-    const input = [
-      "[[reply_to_current]]",
-      "~~~python",
-      "    x  =  1",
-      "        y  =  2",
-      "~~~",
-    ].join("\n");
+    const input = ["[[rc:reply]]", "~~~python", "    x  =  1", "        y  =  2", "~~~"].join("\n");
     const result = parseInlineDirectives(input);
     expect(result.hasReplyTag).toBe(true);
     expect(result.text).toBe(["~~~python", "    x  =  1", "        y  =  2", "~~~"].join("\n"));
@@ -195,7 +185,7 @@ describe("parseInlineDirectives", () => {
   test("preserves literal sentinel-like text while restoring masked code blocks", () => {
     const sentinelLikeText = "\uE0000\uE000";
     const input = [
-      "[[reply_to_current]]",
+      "[[rc:reply]]",
       `literal ${sentinelLikeText} text`,
       "```ts",
       "    const value = 1;",
@@ -213,7 +203,7 @@ describe("stripInlineDirectiveTagsFromMessageForDisplay", () => {
   test("strips inline directives from text content blocks", () => {
     const input = {
       role: "assistant",
-      content: [{ type: "text", text: "hello [[reply_to_current]] world [[audio_as_voice]]" }],
+      content: [{ type: "text", text: "hello [[rc:reply]] world [[audio_as_voice]]" }],
     };
     const result = stripInlineDirectiveTagsFromMessageForDisplay(input);
     expect(result).toBeDefined();
@@ -223,7 +213,7 @@ describe("stripInlineDirectiveTagsFromMessageForDisplay", () => {
   test("preserves empty-string text when directives are entire content", () => {
     const input = {
       role: "assistant",
-      content: [{ type: "text", text: "[[reply_to_current]]" }],
+      content: [{ type: "text", text: "[[rc:reply]]" }],
     };
     const result = stripInlineDirectiveTagsFromMessageForDisplay(input);
     expect(result).toBeDefined();

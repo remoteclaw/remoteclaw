@@ -53,6 +53,7 @@ export { buildSecretInputSchema } from "./secret-input-schema.js";
 export { createDedupeCache } from "../infra/dedupe.js";
 export { installRequestBodyLimitGuard } from "../infra/http-body.js";
 export { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
+export { registerUnhandledRejectionHandler } from "../infra/unhandled-rejections.js";
 export { emptyPluginConfigSchema } from "../plugins/config-schema.js";
 export type { PluginRuntime } from "../plugins/runtime/types.js";
 export type { AnyAgentTool, RemoteClawPluginApi } from "../plugins/types.js";

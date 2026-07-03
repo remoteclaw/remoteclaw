@@ -16,6 +16,7 @@ import {
   recordWebhookStatus,
   wsClients,
 } from "./monitor.state.js";
+import { registerFeishuWsUnhandledRejectionGuard } from "./monitor.unhandled-rejection.js";
 import type { ResolvedFeishuAccount } from "./types.js";
 
 export type MonitorTransportParams = {
@@ -40,6 +41,12 @@ export async function monitorWebSocket({
   const wsClient = await createFeishuWSClient(account);
   wsClients.set(accountId, wsClient);
 
+  // The vendored Lark SDK's WSClient 'message' handler runs an un-`.catch()`'d
+  // async path (decode / control JSON.parse), so a single malformed inbound frame
+  // rejects uncaught and the central handler crashes the WHOLE gateway. Guard it
+  // for the lifetime of this connection (unregistered in cleanup below).
+  const unregisterUnhandledRejection = registerFeishuWsUnhandledRejectionGuard(accountId, error);
+
   return new Promise((resolve, reject) => {
     let cleanedUp = false;
 
@@ -48,6 +55,7 @@ export async function monitorWebSocket({
         return;
       }
       cleanedUp = true;
+      unregisterUnhandledRejection();
       abortSignal?.removeEventListener("abort", handleAbort);
       try {
         wsClient.close();

@@ -7,6 +7,14 @@ enum class RemoteClawCapability(val rawValue: String) {
   Sms("sms"),
   VoiceWake("voiceWake"),
   Location("location"),
+  Device("device"),
+  Notifications("notifications"),
+  System("system"),
+  AppUpdate("appUpdate"),
+  Photos("photos"),
+  Contacts("contacts"),
+  Calendar("calendar"),
+  Motion("motion"),
 }
 
 enum class RemoteClawCanvasCommand(val rawValue: String) {
@@ -34,6 +42,7 @@ enum class RemoteClawCanvasA2UICommand(val rawValue: String) {
 }
 
 enum class RemoteClawCameraCommand(val rawValue: String) {
+  List("camera.list"),
   Snap("camera.snap"),
   Clip("camera.clip"),
   ;
@@ -67,5 +76,75 @@ enum class RemoteClawLocationCommand(val rawValue: String) {
 
   companion object {
     const val NamespacePrefix: String = "location."
+  }
+}
+
+enum class RemoteClawDeviceCommand(val rawValue: String) {
+  Status("device.status"),
+  Info("device.info"),
+  Permissions("device.permissions"),
+  Health("device.health"),
+  ;
+
+  companion object {
+    const val NamespacePrefix: String = "device."
+  }
+}
+
+enum class RemoteClawNotificationsCommand(val rawValue: String) {
+  List("notifications.list"),
+  Actions("notifications.actions"),
+  ;
+
+  companion object {
+    const val NamespacePrefix: String = "notifications."
+  }
+}
+
+enum class RemoteClawSystemCommand(val rawValue: String) {
+  Notify("system.notify"),
+  ;
+
+  companion object {
+    const val NamespacePrefix: String = "system."
+  }
+}
+
+enum class RemoteClawPhotosCommand(val rawValue: String) {
+  Latest("photos.latest"),
+  ;
+
+  companion object {
+    const val NamespacePrefix: String = "photos."
+  }
+}
+
+enum class RemoteClawContactsCommand(val rawValue: String) {
+  Search("contacts.search"),
+  Add("contacts.add"),
+  ;
+
+  companion object {
+    const val NamespacePrefix: String = "contacts."
+  }
+}
+
+enum class RemoteClawCalendarCommand(val rawValue: String) {
+  Events("calendar.events"),
+  Add("calendar.add"),
+  ;
+
+  companion object {
+    const val NamespacePrefix: String = "calendar."
+  }
+}
+
+enum class RemoteClawMotionCommand(val rawValue: String) {
+  Activity("motion.activity"),
+  Pedometer("motion.pedometer"),
+  ;
+
+  companion object {
+    const val NamespacePrefix: String = "motion."
   }
 }

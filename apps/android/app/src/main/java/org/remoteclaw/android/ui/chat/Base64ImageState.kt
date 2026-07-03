@@ -1,4 +1,4 @@
-package org.remoteclaw.app.ui.chat
+package org.remoteclaw.android.ui.chat
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect

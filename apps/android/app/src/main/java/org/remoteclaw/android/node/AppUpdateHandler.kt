@@ -163,11 +163,8 @@ class AppUpdateHandler(
             return@launch
           }
 
-          val contentLength = response.body?.contentLength() ?: -1L
-          val body = response.body ?: run {
-            notifManager.cancel(notifId)
-            return@launch
-          }
+          val contentLength = response.body.contentLength()
+          val body = response.body
 
           // Download with progress tracking
           var totalBytes = 0L

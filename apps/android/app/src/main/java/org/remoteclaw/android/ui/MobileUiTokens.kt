@@ -20,6 +20,7 @@ internal val mobileBackgroundGradient =
 
 internal val mobileSurface = Color(0xFFF6F7FA)
 internal val mobileSurfaceStrong = Color(0xFFECEEF3)
+internal val mobileCardSurface = Color(0xFFFFFFFF)
 internal val mobileBorder = Color(0xFFE5E7EC)
 internal val mobileBorderStrong = Color(0xFFD6DAE2)
 internal val mobileText = Color(0xFF17181C)
@@ -35,6 +36,7 @@ internal val mobileDanger = Color(0xFFD04B4B)
 internal val mobileDangerSoft = Color(0xFFFFF2F2)
 internal val mobileCodeBg = Color(0xFF15171B)
 internal val mobileCodeText = Color(0xFFE8EAEE)
+internal val mobileCodeBorder = Color(0xFF2B2E35)
 
 internal val mobileFontFamily =
   FontFamily(

@@ -87,7 +87,6 @@ class NodeRuntime(context: Context) {
     location = location,
     json = json,
     isForeground = { _isForeground.value },
-    locationMode = { locationMode.value },
     locationPreciseEnabled = { locationPreciseEnabled.value },
   )
 
@@ -408,7 +407,7 @@ class NodeRuntime(context: Context) {
   }
 
   private fun applyMainSessionKey(candidate: String?) {
-    val trimmed = normalizeMainKey(candidate) ?: return
+    val trimmed = normalizeMainKey(candidate)
     if (isCanonicalMainSessionKey(_mainSessionKey.value)) return
     if (_mainSessionKey.value == trimmed) return
     _mainSessionKey.value = trimmed
@@ -711,8 +710,8 @@ class NodeRuntime(context: Context) {
     val token = prefs.loadGatewayToken()
     val password = prefs.loadGatewayPassword()
     val tls = connectionManager.resolveTlsParams(endpoint)
-    operatorSession.connect(endpoint, token, password, connectionManager.buildOperatorConnectOptions(), tls)
-    nodeSession.connect(endpoint, token, password, connectionManager.buildNodeConnectOptions(), tls)
+    operatorSession.connect(endpoint, token, null, password, connectionManager.buildOperatorConnectOptions(), tls)
+    nodeSession.connect(endpoint, token, null, password, connectionManager.buildNodeConnectOptions(), tls)
     operatorSession.reconnect()
     nodeSession.reconnect()
   }
@@ -723,7 +722,7 @@ class NodeRuntime(context: Context) {
       // First-time TLS: capture fingerprint, ask user to verify out-of-band, then store and connect.
       _statusText.value = "Verify gateway TLS fingerprint…"
       scope.launch {
-        val fp = probeGatewayTlsFingerprint(endpoint.host, endpoint.port) ?: run {
+        val fp = probeGatewayTlsFingerprint(endpoint.host, endpoint.port).fingerprintSha256 ?: run {
           _statusText.value = "Failed: can't read TLS fingerprint"
           return@launch
         }
@@ -738,8 +737,8 @@ class NodeRuntime(context: Context) {
     updateStatus()
     val token = prefs.loadGatewayToken()
     val password = prefs.loadGatewayPassword()
-    operatorSession.connect(endpoint, token, password, connectionManager.buildOperatorConnectOptions(), tls)
-    nodeSession.connect(endpoint, token, password, connectionManager.buildNodeConnectOptions(), tls)
+    operatorSession.connect(endpoint, token, null, password, connectionManager.buildOperatorConnectOptions(), tls)
+    nodeSession.connect(endpoint, token, null, password, connectionManager.buildNodeConnectOptions(), tls)
   }
 
   fun acceptGatewayTrustPrompt() {

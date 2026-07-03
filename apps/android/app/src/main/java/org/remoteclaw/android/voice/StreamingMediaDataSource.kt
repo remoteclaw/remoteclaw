@@ -1,12 +1,15 @@
 package org.remoteclaw.android.voice
 
 import android.media.MediaDataSource
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 import kotlin.math.min
 
 internal class StreamingMediaDataSource : MediaDataSource() {
   private data class Chunk(val start: Long, val data: ByteArray)
 
-  private val lock = Object()
+  private val lock = ReentrantLock()
+  private val condition = lock.newCondition()
   private val chunks = ArrayList<Chunk>()
   private var totalSize: Long = 0
   private var closed = false
@@ -15,35 +18,35 @@ internal class StreamingMediaDataSource : MediaDataSource() {
 
   fun append(data: ByteArray) {
     if (data.isEmpty()) return
-    synchronized(lock) {
+    lock.withLock {
       if (closed || finished) return
       val chunk = Chunk(totalSize, data)
       chunks.add(chunk)
       totalSize += data.size.toLong()
-      lock.notifyAll()
+      condition.signalAll()
     }
   }
 
   fun finish() {
-    synchronized(lock) {
+    lock.withLock {
       if (closed) return
       finished = true
-      lock.notifyAll()
+      condition.signalAll()
     }
   }
 
   fun fail() {
-    synchronized(lock) {
+    lock.withLock {
       closed = true
-      lock.notifyAll()
+      condition.signalAll()
     }
   }
 
   override fun readAt(position: Long, buffer: ByteArray, offset: Int, size: Int): Int {
     if (position < 0) return -1
-    synchronized(lock) {
+    lock.withLock {
       while (!closed && !finished && position >= totalSize) {
-        lock.wait()
+        condition.await()
       }
       if (closed) return -1
       if (position >= totalSize && finished) return -1
@@ -79,9 +82,9 @@ internal class StreamingMediaDataSource : MediaDataSource() {
   override fun getSize(): Long = -1
 
   override fun close() {
-    synchronized(lock) {
+    lock.withLock {
       closed = true
-      lock.notifyAll()
+      condition.signalAll()
     }
   }
 

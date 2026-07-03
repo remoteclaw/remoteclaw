@@ -2,7 +2,7 @@ package org.remoteclaw.app
 
 import android.content.Intent
 
-const val actionAskRemoteClaw = "org.remoteclaw.app.action.ASK_OPENCLAW"
+const val actionAskRemoteClaw = "org.remoteclaw.app.action.ASK_REMOTECLAW"
 const val extraAssistantPrompt = "prompt"
 
 enum class HomeDestination {

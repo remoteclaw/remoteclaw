@@ -144,7 +144,7 @@ fun ChatSheetContent(viewModel: MainViewModel) {
                 base64 = att.base64,
               )
             }
-          viewModel.sendChat(message = text, attachments = outgoing)
+          viewModel.sendChat(message = text, thinking = viewModel.chatThinkingLevel.value, attachments = outgoing)
           attachments.clear()
         },
       )

@@ -1224,8 +1224,8 @@ describe("BlueBubbles webhook monitor", () => {
       expect(callArgs.ctx.ReplyToId).toBe("msg-0");
       expect(callArgs.ctx.ReplyToBody).toBe("original message");
       expect(callArgs.ctx.ReplyToSender).toBe("+15550000000");
-      // Body uses inline [[reply_to:N]] tag format
-      expect(callArgs.ctx.Body).toContain("[[reply_to:msg-0]]");
+      // Body uses inline [[rc:reply:N]] tag format
+      expect(callArgs.ctx.Body).toContain("[[rc:reply:msg-0]]");
     });
 
     it("preserves part index prefixes in reply tags when short IDs are unavailable", async () => {
@@ -1270,7 +1270,7 @@ describe("BlueBubbles webhook monitor", () => {
       const callArgs = getFirstDispatchCall();
       expect(callArgs.ctx.ReplyToId).toBe("p:1/msg-0");
       expect(callArgs.ctx.ReplyToIdFull).toBe("p:1/msg-0");
-      expect(callArgs.ctx.Body).toContain("[[reply_to:p:1/msg-0]]");
+      expect(callArgs.ctx.Body).toContain("[[rc:reply:p:1/msg-0]]");
     });
 
     it("hydrates missing reply sender/body from the recent-message cache", async () => {
@@ -1339,8 +1339,8 @@ describe("BlueBubbles webhook monitor", () => {
       expect(callArgs.ctx.ReplyToIdFull).toBe("cache-msg-0");
       expect(callArgs.ctx.ReplyToBody).toBe("original message (cached)");
       expect(callArgs.ctx.ReplyToSender).toBe("+15550000000");
-      // Body uses inline [[reply_to:N]] tag format with short ID
-      expect(callArgs.ctx.Body).toContain("[[reply_to:1]]");
+      // Body uses inline [[rc:reply:N]] tag format with short ID
+      expect(callArgs.ctx.Body).toContain("[[rc:reply:1]]");
     });
 
     it("falls back to threadOriginatorGuid when reply metadata is absent", async () => {
@@ -1461,7 +1461,7 @@ describe("BlueBubbles webhook monitor", () => {
       const callArgs = getFirstDispatchCall();
       expect(callArgs.ctx.RawBody).toBe("reacted with 😅");
       expect(callArgs.ctx.Body).toContain("reacted with 😅");
-      expect(callArgs.ctx.Body).not.toContain("[[reply_to:");
+      expect(callArgs.ctx.Body).not.toContain("[[rc:reply:");
     });
   });
 
@@ -2151,7 +2151,7 @@ describe("BlueBubbles webhook monitor", () => {
       await flushAsync();
 
       expect(mockEnqueueSystemEvent).toHaveBeenCalledWith(
-        expect.stringContaining("reacted with ❤️ [[reply_to:"),
+        expect.stringContaining("reacted with ❤️ [[rc:reply:"),
         expect.any(Object),
       );
     });
@@ -2191,7 +2191,7 @@ describe("BlueBubbles webhook monitor", () => {
       await flushAsync();
 
       expect(mockEnqueueSystemEvent).toHaveBeenCalledWith(
-        expect.stringContaining("removed ❤️ reaction [[reply_to:"),
+        expect.stringContaining("removed ❤️ reaction [[rc:reply:"),
         expect.any(Object),
       );
     });

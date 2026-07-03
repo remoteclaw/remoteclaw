@@ -93,11 +93,11 @@ describe("applyReplyThreading auto-threading", () => {
     expect(result[0].replyToTag).toBe(true);
   });
 
-  it("resolves [[reply_to_current]] to currentMessageId when replyToMode is 'all'", () => {
-    // Mattermost-style scenario: agent responds with [[reply_to_current]] and replyToMode
+  it("resolves [[rc:reply]] to currentMessageId when replyToMode is 'all'", () => {
+    // Mattermost-style scenario: agent responds with [[rc:reply]] and replyToMode
     // is "all". The tag should resolve to the inbound message id.
     const result = applyReplyThreading({
-      payloads: [{ text: "[[reply_to_current]] some reply text" }],
+      payloads: [{ text: "[[rc:reply]] some reply text" }],
       replyToMode: "all",
       currentMessageId: "mm-post-abc123",
     });
@@ -108,9 +108,9 @@ describe("applyReplyThreading auto-threading", () => {
     expect(result[0].text).toBe("some reply text");
   });
 
-  it("resolves [[reply_to:<id>]] to explicit id when replyToMode is 'all'", () => {
+  it("resolves [[rc:reply:<id>]] to explicit id when replyToMode is 'all'", () => {
     const result = applyReplyThreading({
-      payloads: [{ text: "[[reply_to:mm-post-xyz789]] threaded reply" }],
+      payloads: [{ text: "[[rc:reply:mm-post-xyz789]] threaded reply" }],
       replyToMode: "all",
       currentMessageId: "mm-post-abc123",
     });

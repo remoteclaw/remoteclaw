@@ -90,7 +90,7 @@ export function buildMessagePlaceholder(message: NormalizedWebhookMessage): stri
   return "";
 }
 
-// Returns inline reply tag like "[[reply_to:4]]" for prepending to message body
+// Returns inline reply tag like "[[rc:reply:4]]" for prepending to message body
 export function formatReplyTag(message: {
   replyToId?: string;
   replyToShortId?: string;
@@ -100,7 +100,7 @@ export function formatReplyTag(message: {
   if (!rawId) {
     return null;
   }
-  return `[[reply_to:${rawId}]]`;
+  return `[[rc:reply:${rawId}]]`;
 }
 
 function extractReplyMetadata(message: Record<string, unknown>): {

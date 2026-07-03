@@ -231,6 +231,69 @@ jobs:
         env:
           REMOTECLAW_TEST_INCLUDE_GATEWAY: "1"
 
+  test-extensions:
+    # Full extensions suite — extensions/**/*.test.ts: every channel adapter
+    # (BlueBubbles, Discord, Telegram, Slack, WhatsApp, iMessage, …) plus
+    # extension-side auto-reply handlers. Runs on its own runner, in parallel
+    # with `test`, and is aggregated through the `CI` rollup so a channel-adapter
+    # regression blocks merge (#2779 — the coverage gap that let #2775 ship
+    # broken). `pnpm test` (unit config) explicitly excludes extensions/**, so
+    # without this lane the whole tree merges unseen. Currently-failing files are
+    # quarantined in vitest.quarantine.ts so the lane is required-and-green; NEW
+    # breakage in any non-quarantined (or newly-added) file still fails here.
+    runs-on: ubuntu-latest
+    # Large suite; a hung adapter suite must fail fast, not hold the runner.
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: false
+
+      - name: Setup Node environment
+        uses: ./.github/actions/setup-node-env
+        with:
+          install-bun: "false"
+
+      - name: Build canvas bundle
+        run: pnpm canvas:a2ui:bundle
+
+      - name: Run extensions suite
+        run: pnpm exec vitest run --config vitest.extensions.config.ts
+        env:
+          REMOTECLAW_TEST_INCLUDE_EXTENSIONS: "1"
+          NODE_OPTIONS: "--max-old-space-size=4096"
+
+  test-auto-reply:
+    # Repo-root auto-reply suite — src/auto-reply/**/*.test.ts. Runs on its own
+    # runner, aggregated through the `CI` rollup so an auto-reply regression
+    # blocks merge (#2779). `pnpm test` (unit config) explicitly excludes
+    # src/auto-reply/**, so without this lane it merges unseen. Extension-side
+    # auto-reply handlers live under extensions/** and are covered by the
+    # `test-extensions` lane, keeping the two lanes non-overlapping. Currently-
+    # failing files are quarantined in vitest.quarantine.ts so the lane is
+    # required-and-green.
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: false
+
+      - name: Setup Node environment
+        uses: ./.github/actions/setup-node-env
+        with:
+          install-bun: "false"
+
+      - name: Build canvas bundle
+        run: pnpm canvas:a2ui:bundle
+
+      - name: Run auto-reply suite
+        run: pnpm exec vitest run --config vitest.auto-reply.config.ts
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
+
   test-ui-smoke:
     # Browser-mode smoke lane for the RemoteClawApp host class. Scoped to
     # the two sync-regression defense-in-depth suites — class-instance
@@ -307,13 +370,15 @@ jobs:
         packaged-boot-smoke,
         test,
         test-gateway,
+        test-extensions,
+        test-auto-reply,
         test-ui-smoke,
       ]
     runs-on: ubuntu-latest
     steps:
       - name: Check results
         run: |
-          if [[ "${{ needs.rebrand-gate.result }}" != "success" || "${{ needs.zombie-import-gate.result }}" != "success" || "${{ needs.stub-debt-gate.result }}" != "success" || "${{ needs.throwing-stub-callers-gate.result }}" != "success" || "${{ needs.obsolescence-audit-gate.result }}" != "success" || "${{ needs.lint.result }}" != "success" || "${{ needs.build.result }}" != "success" || "${{ needs.packaged-boot-smoke.result }}" != "success" || "${{ needs.test.result }}" != "success" || "${{ needs.test-gateway.result }}" != "success" || "${{ needs.test-ui-smoke.result }}" != "success" ]]; then
+          if [[ "${{ needs.rebrand-gate.result }}" != "success" || "${{ needs.zombie-import-gate.result }}" != "success" || "${{ needs.stub-debt-gate.result }}" != "success" || "${{ needs.throwing-stub-callers-gate.result }}" != "success" || "${{ needs.obsolescence-audit-gate.result }}" != "success" || "${{ needs.lint.result }}" != "success" || "${{ needs.build.result }}" != "success" || "${{ needs.packaged-boot-smoke.result }}" != "success" || "${{ needs.test.result }}" != "success" || "${{ needs.test-gateway.result }}" != "success" || "${{ needs.test-extensions.result }}" != "success" || "${{ needs.test-auto-reply.result }}" != "success" || "${{ needs.test-ui-smoke.result }}" != "success" ]]; then
             echo "::error::One or more required jobs failed"
             exit 1
           fi

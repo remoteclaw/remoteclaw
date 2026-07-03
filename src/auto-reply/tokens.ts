@@ -1,6 +1,7 @@
 import { escapeRegExp } from "../utils.js";
 
-export const HEARTBEAT_TOKEN = "HEARTBEAT_OK";
+// Single source of truth lives in the browser-safe ./heartbeat-token.js module.
+export { HEARTBEAT_TOKEN } from "./heartbeat-token.js";
 export const SILENT_REPLY_TOKEN = "NO_REPLY";
 
 const silentExactRegexByToken = new Map<string, RegExp>();

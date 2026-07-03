@@ -7,7 +7,7 @@ import org.remoteclaw.app.gateway.GatewayClientInfo
 import org.remoteclaw.app.gateway.GatewayConnectOptions
 import org.remoteclaw.app.gateway.GatewayEndpoint
 import org.remoteclaw.app.gateway.GatewayTlsParams
-import org.remoteclaw.app.gateway.isLoopbackGatewayHost
+import org.remoteclaw.app.gateway.isPrivateLanGatewayHost
 import org.remoteclaw.app.LocationMode
 import org.remoteclaw.app.VoiceWakeMode
 
@@ -18,10 +18,7 @@ class ConnectionManager(
   private val voiceWakeMode: () -> VoiceWakeMode,
   private val motionActivityAvailable: () -> Boolean,
   private val motionPedometerAvailable: () -> Boolean,
-  private val sendSmsAvailable: () -> Boolean,
-  private val readSmsAvailable: () -> Boolean,
-  private val smsSearchPossible: () -> Boolean,
-  private val callLogAvailable: () -> Boolean,
+  private val smsAvailable: () -> Boolean,
   private val hasRecordAudioPermission: () -> Boolean,
   private val manualTls: () -> Boolean,
 ) {
@@ -34,7 +31,7 @@ class ConnectionManager(
       val stableId = endpoint.stableId
       val stored = storedFingerprint?.trim().takeIf { !it.isNullOrEmpty() }
       val isManual = stableId.startsWith("manual|")
-      val cleartextAllowedHost = isLoopbackGatewayHost(endpoint.host)
+      val cleartextAllowedHost = isPrivateLanGatewayHost(endpoint.host)
 
       if (isManual) {
         if (!manualTlsEnabled && cleartextAllowedHost) return null
@@ -92,10 +89,7 @@ class ConnectionManager(
     NodeRuntimeFlags(
       cameraEnabled = cameraEnabled(),
       locationEnabled = locationMode() != LocationMode.Off,
-      sendSmsAvailable = sendSmsAvailable(),
-      readSmsAvailable = readSmsAvailable(),
-      smsSearchPossible = smsSearchPossible(),
-      callLogAvailable = callLogAvailable(),
+      smsAvailable = smsAvailable(),
       voiceWakeEnabled = voiceWakeMode() != VoiceWakeMode.Off && hasRecordAudioPermission(),
       motionActivityAvailable = motionActivityAvailable(),
       motionPedometerAvailable = motionPedometerAvailable(),

@@ -27,7 +27,7 @@ describe("talk silence timeout defaults", () => {
     const macDefaults = readRepoFile("apps/macos/Sources/RemoteClaw/TalkDefaults.swift");
     const iosDefaults = readRepoFile("apps/ios/Sources/Voice/TalkDefaults.swift");
     const androidDefaults = readRepoFile(
-      "apps/android/app/src/main/java/org/remoteclaw/android/voice/TalkDefaults.kt",
+      "apps/android/app/src/main/java/org/remoteclaw/app/voice/TalkDefaults.kt",
     );
 
     expect(macDefaults).toContain(

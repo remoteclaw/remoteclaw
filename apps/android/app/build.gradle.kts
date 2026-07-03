@@ -40,7 +40,7 @@ plugins {
 }
 
 android {
-    namespace = "org.remoteclaw.android"
+    namespace = "org.remoteclaw.app"
     compileSdk = 36
 
     // Release signing is local-only; keep the keystore path and passwords out of the repo.

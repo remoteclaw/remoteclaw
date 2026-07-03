@@ -106,7 +106,8 @@ type(scope): imperative description (#issue)
 - **Test naming**: `*.test.ts` (unit), `*.e2e.test.ts` (e2e), `*.live.test.ts` (live)
 - **Configs**: `vitest.config.ts` (base), `vitest.unit.config.ts`,
   `vitest.e2e.config.ts`, `vitest.extensions.config.ts`,
-  `vitest.gateway.config.ts`, `vitest.live.config.ts`
+  `vitest.auto-reply.config.ts`, `vitest.gateway.config.ts`,
+  `vitest.live.config.ts`
 - **CI env vars**: `REMOTECLAW_TEST_WORKERS=2`, `REMOTECLAW_TEST_MAX_OLD_SPACE_SIZE_MB=4096`
 
 ### Browser-mode smoke tests
@@ -132,6 +133,27 @@ catching "production renders but layout is broken" regressions like #2517.
   (the broader UI lane) is not in CI and has pre-existing failures
   unrelated to the sync-regression class
 
+### Extensions & auto-reply coverage lanes
+
+`extensions/**` (every channel adapter + extension-side auto-reply) and
+`src/auto-reply/**` are **excluded** from `vitest.unit.config.ts`, so `pnpm test`
+never ran them — a regression in any adapter or the reply path merged green (the
+gap that shipped #2775). Two required CI lanes close it (#2779):
+`test-extensions` (`vitest.extensions.config.ts`) and `test-auto-reply`
+(`vitest.auto-reply.config.ts`), both aggregated into the `CI` rollup like
+`test-gateway`.
+
+- **Run locally**: `pnpm test:extensions` / `pnpm test:auto-reply`
+- **Quarantine**: enabling the lanes surfaced a large volume of pre-existing
+  failures. Rather than block the gate on fixing all of them, currently-failing
+  test **files** are listed in `vitest.quarantine.ts` and excluded per lane, so
+  each lane is required-and-green and still fails on NEW breakage in any
+  non-quarantined (or newly-added) file. The list is a debt ledger — shrink it
+  by fixing (or CI-self-skipping) files and deleting their lines; un-quarantining
+  is tracked separately. Never quarantine fresh product breakage to green a red PR.
+- **Non-overlap**: the extensions lane owns `extensions/*/src/auto-reply/**`; the
+  auto-reply lane is scoped to repo-root `src/auto-reply/**` only.
+
 ## CI
 
 GitHub Actions (`.github/workflows/ci.yml`):
@@ -139,6 +161,10 @@ GitHub Actions (`.github/workflows/ci.yml`):
 - **test** job: checkout, setup Node env, canvas bundle, `pnpm test`
 - **test-ui-smoke** job: browser-mode RemoteClawApp smoke lane (see
   § Testing → Browser-mode smoke tests)
+- **test-extensions** / **test-auto-reply** jobs: run the `extensions/**` and
+  repo-root `src/auto-reply/**` suites that `pnpm test` excludes; aggregated into
+  the `CI` rollup so adapter / auto-reply regressions block merge (#2779). See
+  § Testing → Extensions & auto-reply coverage lanes
 - Jobs run on `ubuntu-latest` with Node 22 and pnpm 10.23.0
 - Branch protection requires `build`, `test`, `lint`, and `docs` to pass
 

@@ -145,6 +145,36 @@ jobs:
       - name: Validate release artifact (early signal — runs again in publish-next)
         run: pnpm release:check
 
+  packaged-boot-smoke:
+    # Installs the packed npm tarball into an isolated consumer OUTSIDE the repo
+    # checkout and boots `remoteclaw plugins doctor`, failing if any bundled
+    # plugin fails to load. Guards the sync #2762 regression class: the build
+    # emitted the plugin-sdk root alias (dist/plugin-sdk/root-alias.cjs) but not
+    # the concrete per-subpath dist files it resolves against, so the published
+    # package booted with ZERO plugins (`Cannot find module
+    # '.../root-alias.cjs/text-runtime'`). Neither `pnpm build` nor
+    # `pnpm release:check` exercises the installed package's runtime plugin
+    # loader, so this is a distinct required gate. The consumer must be isolated
+    # OUTSIDE the checkout or Node resolution climbs into the repo's own built
+    # dist and masks a broken tarball (see the script header).
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: false
+
+      - name: Setup Node environment
+        uses: ./.github/actions/setup-node-env
+        with:
+          install-bun: "false"
+
+      - name: Build
+        run: pnpm build
+
+      - name: Packaged plugin-boot smoke test
+        run: bash scripts/ci/check-packaged-plugin-boot.sh
+
   test:
     runs-on: ubuntu-latest
     steps:
@@ -274,6 +304,7 @@ jobs:
         obsolescence-audit-gate,
         lint,
         build,
+        packaged-boot-smoke,
         test,
         test-gateway,
         test-ui-smoke,
@@ -282,14 +313,18 @@ jobs:
     steps:
       - name: Check results
         run: |
-          if [[ "${{ needs.rebrand-gate.result }}" != "success" || "${{ needs.zombie-import-gate.result }}" != "success" || "${{ needs.stub-debt-gate.result }}" != "success" || "${{ needs.throwing-stub-callers-gate.result }}" != "success" || "${{ needs.obsolescence-audit-gate.result }}" != "success" || "${{ needs.lint.result }}" != "success" || "${{ needs.build.result }}" != "success" || "${{ needs.test.result }}" != "success" || "${{ needs.test-gateway.result }}" != "success" || "${{ needs.test-ui-smoke.result }}" != "success" ]]; then
+          if [[ "${{ needs.rebrand-gate.result }}" != "success" || "${{ needs.zombie-import-gate.result }}" != "success" || "${{ needs.stub-debt-gate.result }}" != "success" || "${{ needs.throwing-stub-callers-gate.result }}" != "success" || "${{ needs.obsolescence-audit-gate.result }}" != "success" || "${{ needs.lint.result }}" != "success" || "${{ needs.build.result }}" != "success" || "${{ needs.packaged-boot-smoke.result }}" != "success" || "${{ needs.test.result }}" != "success" || "${{ needs.test-gateway.result }}" != "success" || "${{ needs.test-ui-smoke.result }}" != "success" ]]; then
             echo "::error::One or more required jobs failed"
             exit 1
           fi
 
   publish-next:
     if: github.event_name == 'push'
-    needs: [lint, build, test]
+    # packaged-boot-smoke gates publish directly (not only via the CI rollup):
+    # this job runs in parallel with CI on push, so without the dependency a
+    # broken canary could ship even as the rollup fails. It is the exact failure
+    # mode #2762 hit — a published package that boots zero plugins.
+    needs: [lint, build, packaged-boot-smoke, test]
     runs-on: ubuntu-latest
     environment: npm-publish
     permissions:
@@ -333,7 +368,9 @@ jobs:
 
   publish-latest:
     if: github.event_name == 'release'
-    needs: [lint, build, test]
+    # See publish-next: gate the published artifact on the packaged plugin-boot
+    # smoke test so a package that boots zero plugins can never be released.
+    needs: [lint, build, packaged-boot-smoke, test]
     runs-on: ubuntu-latest
     environment: npm-publish
     permissions:

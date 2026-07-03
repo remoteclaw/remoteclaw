@@ -1,3 +1,4 @@
+import { existsSync, readFileSync } from "node:fs";
 import { defineConfig } from "tsdown";
 
 const env = {
@@ -40,51 +41,33 @@ function nodeBuildConfig(config: Record<string, unknown>) {
   };
 }
 
-const pluginSdkEntrypoints = [
-  "index",
-  "core",
-  "channel-config-helpers",
-  "group-access",
-  "reply-payload",
-  "runtime-store",
-  "compat",
-  "telegram",
-  "discord",
-  "slack",
-  "signal",
-  "imessage",
-  "whatsapp",
-  "line",
-  "msteams",
-  "acpx",
-  "bluebubbles",
-  "copilot-proxy",
-  "device-pair",
-  "diagnostics-otel",
-  "diffs",
-  "feishu",
-  "googlechat",
-  "irc",
-  "llm-task",
-  "lobster",
-  "matrix",
-  "mattermost",
-  "nextcloud-talk",
-  "nostr",
-  "open-prose",
-  "phone-control",
-  "synology-chat",
-  "talk-voice",
-  "test-utils",
-  "thread-ownership",
-  "tlon",
-  "twitch",
-  "voice-call",
-  "zalo",
-  "zalouser",
-  "account-id",
-  "keyed-async-queue",
-] as const;
+// Single source of truth for the plugin-sdk build set: the package.json `exports`
+// map. `src/plugin-sdk/root-alias.cjs` (buildPluginSdkAliasMap → useDist) resolves
+// each advertised `./plugin-sdk/<subpath>` against `dist/plugin-sdk/<subpath>.js`;
+// when that file is missing the alias is silently dropped and the plugin import
+// falls through to the bare root alias, failing at runtime as
+// `Cannot find module '.../dist/plugin-sdk/root-alias.cjs/<subpath>'`. Deriving the
+// build set from the same `exports` map root-alias reads (with the same subpath
+// regex) keeps build ⇄ exports ⇄ root-alias from silently diverging, so every
+// source-backed subpath export is guaranteed a concrete dist file.
+//
+// The `existsSync` filter drops phantom exports that have no `src/plugin-sdk/*.ts`
+// source (so tsdown is never asked to build a nonexistent input). `index` is always
+// built as the bare `./plugin-sdk` entry. Paths resolve against the build cwd (repo
+// root), matching the relative-path convention used by the entries below.
+const rootPackageExports = (
+  JSON.parse(readFileSync("package.json", "utf8")) as {
+    exports?: Record<string, unknown>;
+  }
+).exports;
+
+const exportedPluginSdkEntrypoints = Object.keys(rootPackageExports ?? {})
+  .filter((key) => key.startsWith("./plugin-sdk/"))
+  .map((key) => key.slice("./plugin-sdk/".length))
+  .filter((subpath) => /^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(subpath))
+  .filter((subpath) => existsSync(`src/plugin-sdk/${subpath}.ts`));
+
+const pluginSdkEntrypoints = [...new Set(["index", ...exportedPluginSdkEntrypoints])];
 
 export default defineConfig([
   nodeBuildConfig({

@@ -517,6 +517,26 @@ describe("loadChatHistory", () => {
     expect(state.chatLoading).toBe(false);
   });
 
+  it("filters assistant HEARTBEAT_OK acknowledgements from history", async () => {
+    const messages = [
+      { role: "user", content: [{ type: "text", text: "Are you there?" }] },
+      { role: "assistant", content: [{ type: "text", text: "HEARTBEAT_OK" }] },
+      { role: "assistant", content: [{ type: "text", text: "Real answer" }] },
+    ];
+    const mockClient = {
+      request: vi.fn().mockResolvedValue({ messages }),
+    };
+    const state = createState({
+      client: mockClient as unknown as ChatState["client"],
+      connected: true,
+    });
+
+    await loadChatHistory(state);
+
+    // The HEARTBEAT_OK ack is hidden; the user prompt and real answer remain.
+    expect(state.chatMessages).toEqual([messages[0], messages[2]]);
+  });
+
   it("keeps assistant message when text field has real content but content is NO_REPLY", async () => {
     const messages = [{ role: "assistant", text: "real reply", content: "NO_REPLY" }];
     const mockClient = {

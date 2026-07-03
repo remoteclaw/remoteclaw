@@ -1,3 +1,4 @@
+import { isHeartbeatOkResponse } from "../../../../src/auto-reply/heartbeat-filter.js";
 import { resetToolStream } from "../app-tool-stream.ts";
 import { extractText } from "../chat/message-extract.ts";
 import type { GatewayBrowserClient } from "../gateway.ts";
@@ -73,15 +74,33 @@ function isEmptyUserTextOnlyMessage(message: unknown): boolean {
   return (extractText(message)?.trim() ?? "") === "";
 }
 
-// NOTE: upstream also hides assistant heartbeat-ack messages here via
-// isHeartbeatOkResponse from src/auto-reply/heartbeat-filter. That helper is
-// not browser-importable in this fork — its transitive deps (heartbeat.ts →
-// utils.ts) pull in node:fs/node:path, which breaks the webchat browser
-// bundle. Skipped until a browser-safe heartbeat-ack helper exists (tracked
-// in #2764 remainder). No regression: neither this nor the server-side
-// history strip (upstream 3f63ba8fd80 session-history-state.ts) is on main.
+// Hide assistant heartbeat-ack turns (HEARTBEAT_OK) from visible chat history,
+// mirroring the empty-user hiding above. isHeartbeatOkResponse comes from the
+// browser-safe src/auto-reply/heartbeat-filter helper — its token-stripping
+// deps now live in src/auto-reply/heartbeat-token (no node:fs/node:path, no
+// node-coupled transitive imports), so it is safe in the webchat browser
+// bundle. See #2770. The fork has no server-side session-history strip
+// (upstream 3f63ba8fd80 session-history-state.ts is not on main), so this UI
+// filter is the single hiding point, as it already is for silent/empty-user turns.
+function isAssistantHeartbeatAck(message: unknown): boolean {
+  if (!message || typeof message !== "object") {
+    return false;
+  }
+  const entry = message as Record<string, unknown>;
+  const role = normalizeLowercaseStringOrEmpty(entry.role);
+  if (role !== "assistant") {
+    return false;
+  }
+  const content = entry.content ?? entry.text;
+  return isHeartbeatOkResponse({ role, content });
+}
+
 function shouldHideHistoryMessage(message: unknown): boolean {
-  return isAssistantSilentReply(message) || isEmptyUserTextOnlyMessage(message);
+  return (
+    isAssistantSilentReply(message) ||
+    isAssistantHeartbeatAck(message) ||
+    isEmptyUserTextOnlyMessage(message)
+  );
 }
 
 function hasTranscriptMeta(message: unknown): boolean {

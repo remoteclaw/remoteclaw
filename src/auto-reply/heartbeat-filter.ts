@@ -1,4 +1,4 @@
-import { stripHeartbeatToken } from "./heartbeat.js";
+import { stripHeartbeatToken } from "./heartbeat-token.js";
 
 const HEARTBEAT_TASK_PROMPT_PREFIX =
   "Run the following periodic tasks (only those due based on their intervals):";

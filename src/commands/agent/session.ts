@@ -1,12 +1,11 @@
 import crypto from "node:crypto";
-import { listAgentIds } from "../../agents/agent-scope.js";
+import { listAgentIds, resolveSessionAgentId } from "../../agents/agent-scope.js";
 import type { MsgContext } from "../../auto-reply/templating.js";
 import { normalizeVerboseLevel, type VerboseLevel } from "../../auto-reply/thinking.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import {
   evaluateSessionFreshness,
   loadSessionStore,
-  resolveAgentIdFromSessionKey,
   resolveChannelResetConfig,
   resolveExplicitAgentSessionKey,
   resolveSessionResetPolicy,
@@ -49,7 +48,11 @@ export function resolveSessionKeyForRequest(opts: {
       cfg: opts.cfg,
       agentId: opts.agentId,
     });
-  const storeAgentId = resolveAgentIdFromSessionKey(explicitSessionKey);
+  // #2796: with no explicit --agent/--session-key, explicitSessionKey is undefined.
+  // Fall back to the default/sole agent when picking the store rather than throwing
+  // "Cannot resolve agent id" (resolveSessionAgentId defaults an unresolved key to the
+  // default agent, matching how agent.ts resolves the session's agent downstream).
+  const storeAgentId = resolveSessionAgentId({ sessionKey: explicitSessionKey, config: opts.cfg });
   const storePath = resolveStorePath(sessionCfg?.store, {
     agentId: storeAgentId,
   });

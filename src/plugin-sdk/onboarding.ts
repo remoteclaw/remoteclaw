@@ -13,6 +13,7 @@ export type PromptAccountIdParams = {
 
 export async function promptAccountId(params: PromptAccountIdParams): Promise<string> {
   const existingIds = params.listAccountIds(params.cfg);
+  const existingNormalized = new Set(existingIds.map((id) => normalizeAccountId(id)));
   const initial = params.currentId?.trim() || params.defaultAccountId || DEFAULT_ACCOUNT_ID;
   const choice = await params.prompter.select({
     message: `${params.label} account`,
@@ -32,7 +33,18 @@ export async function promptAccountId(params: PromptAccountIdParams): Promise<st
 
   const entered = await params.prompter.text({
     message: `New ${params.label} account id`,
-    validate: (value) => (value?.trim() ? undefined : "Required"),
+    validate: (value) => {
+      if (!value?.trim()) {
+        return "Required";
+      }
+      // #586: reject ids that collide with an existing account — normalized, so
+      // "Pelykh" is caught against an existing "pelykh". Otherwise the new tokens
+      // silently overwrite the existing account's configuration.
+      if (existingNormalized.has(normalizeAccountId(value))) {
+        return `Account "${value.trim()}" already exists — pick a different id`;
+      }
+      return undefined;
+    },
   });
   const normalized = normalizeAccountId(String(entered));
   if (String(entered).trim() !== normalized) {

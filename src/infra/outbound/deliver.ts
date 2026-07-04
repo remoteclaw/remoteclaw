@@ -40,6 +40,7 @@ import { getAgentScopedMediaLocalRoots } from "../../media/local-roots.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
 import { throwIfAborted } from "./abort.js";
 import { ackDelivery, enqueueDelivery, failDelivery } from "./delivery-queue.js";
+import { describeDeliveryError } from "./describe-delivery-error.js";
 import type { OutboundIdentity } from "./identity.js";
 import type { NormalizedOutboundPayload } from "./payloads.js";
 import { normalizeReplyPayloadsForDelivery } from "./payloads.js";
@@ -521,9 +522,7 @@ export async function deliverOutboundPayloads(
       if (isAbortError(err)) {
         await ackDelivery(queueId).catch(() => {});
       } else {
-        await failDelivery(queueId, err instanceof Error ? err.message : String(err)).catch(
-          () => {},
-        );
+        await failDelivery(queueId, describeDeliveryError(err)).catch(() => {});
       }
     }
     throw err;
@@ -805,7 +804,7 @@ async function deliverOutboundPayloadsCore(
       emitMessageSent({
         success: false,
         content: payloadSummary.text,
-        error: err instanceof Error ? err.message : String(err),
+        error: describeDeliveryError(err),
       });
       if (!params.bestEffort) {
         throw err;

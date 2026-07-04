@@ -4,6 +4,7 @@ import type { ReplyPayload } from "../../auto-reply/types.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { resolveStateDir } from "../../config/paths.js";
 import { generateSecureUuid } from "../secure-random.js";
+import { describeDeliveryError } from "./describe-delivery-error.js";
 import type { OutboundChannel } from "./targets.js";
 
 const QUEUE_DIRNAME = "delivery-queue";
@@ -393,7 +394,7 @@ export async function recoverPendingDeliveries(opts: {
       recovered += 1;
       opts.log.info(`Recovered delivery ${entry.id} to ${entry.channel}:${entry.to}`);
     } catch (err) {
-      const errMsg = err instanceof Error ? err.message : String(err);
+      const errMsg = describeDeliveryError(err);
       if (isPermanentDeliveryError(errMsg)) {
         opts.log.warn(`Delivery ${entry.id} hit permanent error — moving to failed/: ${errMsg}`);
         try {
@@ -432,6 +433,9 @@ const PERMANENT_ERROR_PATTERNS: readonly RegExp[] = [
   /recipient is not a valid/i,
   /outbound not configured for channel/i,
   /ambiguous discord recipient/i,
+  // Slack: a required OAuth scope is missing from the app — cannot self-resolve
+  // without app reconfiguration, so retries only waste attempts (#2098).
+  /missing_scope/i,
 ];
 
 export function isPermanentDeliveryError(error: string): boolean {

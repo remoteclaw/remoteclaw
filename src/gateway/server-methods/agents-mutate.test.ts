@@ -437,6 +437,13 @@ describe("agents.delete", () => {
     expect(mocks.writeConfigFile).toHaveBeenCalled();
     // moveToTrashBestEffort calls fs.access then movePathToTrash for each dir
     expect(mocks.movePathToTrash).toHaveBeenCalled();
+    // #587: the user-owned workspace must NOT be trashed — only RemoteClaw-owned dirs.
+    const trashedPaths = (mocks.movePathToTrash.mock.calls as unknown as Array<[string]>).map(
+      (call) => call[0],
+    );
+    expect(trashedPaths).toContain("/agents/test-agent");
+    expect(trashedPaths).toContain("/transcripts/test-agent");
+    expect(trashedPaths).not.toContain("/workspace/test-agent");
   });
 
   it("skips file deletion when deleteFiles is false", async () => {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { NormalizedUsage } from "../../agents/usage.js";
 import type { AgentDeliveryResult } from "../../middleware/types.js";
 import { surfaceCliSessionMeta } from "./agent-runner-execution.js";
 
@@ -54,5 +55,37 @@ describe("surfaceCliSessionMeta — auto-reply CLI session persistence (#2786 va
     expect(out.meta?.durationMs).toBe(42);
     expect(out.meta?.aborted).toBe(true);
     expect(out.meta?.agentMeta?.sessionId).toBe("892f0aa8-cli-session");
+  });
+});
+
+describe("surfaceCliSessionMeta — usage normalization (#2801)", () => {
+  it("surfaces run.usage normalized to NormalizedUsage (inputTokens→input, outputTokens→output)", () => {
+    // The persistence layer reads meta.agentMeta.usage and treats it as
+    // NormalizedUsage (input/output). run.usage is AgentUsage (inputTokens/…);
+    // without normalization the field-name mismatch made every persisted count 0.
+    const out = surfaceCliSessionMeta(makeBridgeDelivery());
+    const usage = out.meta?.agentMeta?.usage as NormalizedUsage | undefined;
+    expect(usage?.input).toBe(10);
+    expect(usage?.output).toBe(5);
+  });
+
+  it("normalizes AgentUsage cache fields (cacheReadTokens→cacheRead, cacheWriteTokens→cacheWrite)", () => {
+    // These camelCase cache aliases were the specific gap: normalizeUsage did not
+    // recognize them, so cache counts persisted as zero even after usage surfaced.
+    const out = surfaceCliSessionMeta(
+      makeBridgeDelivery({
+        usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 900, cacheWriteTokens: 20 },
+      }),
+    );
+    const usage = out.meta?.agentMeta?.usage as NormalizedUsage | undefined;
+    expect(usage?.input).toBe(100);
+    expect(usage?.output).toBe(50);
+    expect(usage?.cacheRead).toBe(900);
+    expect(usage?.cacheWrite).toBe(20);
+  });
+
+  it("leaves agentMeta.usage undefined when the run reported no usage", () => {
+    const out = surfaceCliSessionMeta(makeBridgeDelivery({ usage: undefined }));
+    expect(out.meta?.agentMeta?.usage).toBeUndefined();
   });
 });

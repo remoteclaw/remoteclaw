@@ -22,6 +22,9 @@ export type UsageLike = {
   // Common alternates across providers/SDKs.
   inputTokens?: number;
   outputTokens?: number;
+  // CLI-runtime AgentUsage camelCase cache fields (middleware/types.ts AgentUsage).
+  cacheReadTokens?: number;
+  cacheWriteTokens?: number;
   promptTokens?: number;
   completionTokens?: number;
   input_tokens?: number;
@@ -117,6 +120,7 @@ export function normalizeUsage(raw?: UsageLike | null): NormalizedUsage | undefi
 
   const cacheRead = normalizeTokenCount(
     raw.cacheRead ??
+      raw.cacheReadTokens ??
       raw.cache_read ??
       raw.cache_read_input_tokens ??
       raw.cached_tokens ??
@@ -159,7 +163,7 @@ export function normalizeUsage(raw?: UsageLike | null): NormalizedUsage | undefi
       raw.timings?.predicted_n,
   );
   const cacheWrite = normalizeTokenCount(
-    raw.cacheWrite ?? raw.cache_write ?? raw.cache_creation_input_tokens,
+    raw.cacheWrite ?? raw.cacheWriteTokens ?? raw.cache_write ?? raw.cache_creation_input_tokens,
   );
   const total = normalizeTokenCount(raw.total ?? raw.totalTokens ?? raw.total_tokens);
 

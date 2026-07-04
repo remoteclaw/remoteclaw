@@ -134,19 +134,37 @@ export function resolveSession(opts: {
     ? evaluateSessionFreshness({ updatedAt: sessionEntry.updatedAt, now, policy: resetPolicy })
         .fresh
     : false;
+  const explicitSessionId = opts.sessionId?.trim();
+  // #2120: only reuse the stored entry when the session is genuinely being
+  // continued — either it's still fresh, or the caller passed an explicit
+  // sessionId matching the stored one. A stale entry (or a mismatched explicit
+  // id) is a rollover: start a new session and do NOT surface the old entry,
+  // whose expired cliSessionIds would otherwise be resumed via `--resume`
+  // (same class as #2112 in the cron path).
+  const reuseExistingSession = explicitSessionId
+    ? sessionEntry?.sessionId === explicitSessionId
+    : fresh;
   const sessionId =
-    opts.sessionId?.trim() || (fresh ? sessionEntry?.sessionId : undefined) || crypto.randomUUID();
-  const isNewSession = !fresh && !opts.sessionId;
+    explicitSessionId ||
+    (reuseExistingSession ? sessionEntry?.sessionId : undefined) ||
+    crypto.randomUUID();
+  const isNewSession = !reuseExistingSession;
+  const persistedSessionEntry = reuseExistingSession ? sessionEntry : undefined;
+
+  // Drop the stale store entry on rollover so its expired session can't be resumed later.
+  if (isNewSession && sessionKey && sessionStore[sessionKey]) {
+    delete sessionStore[sessionKey];
+  }
 
   const persistedVerbose =
-    fresh && sessionEntry?.verboseLevel
+    reuseExistingSession && sessionEntry?.verboseLevel
       ? normalizeVerboseLevel(sessionEntry.verboseLevel)
       : undefined;
 
   return {
     sessionId,
     sessionKey,
-    sessionEntry,
+    sessionEntry: persistedSessionEntry,
     sessionStore,
     storePath,
     isNewSession,

@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../../config/config.js";
-import { resolveSessionKeyForRequest } from "./session.js";
+import { resolveSession, resolveSessionKeyForRequest } from "./session.js";
 
 const mocks = vi.hoisted(() => ({
   loadSessionStore: vi.fn(),
   resolveStorePath: vi.fn(),
   listAgentIds: vi.fn(),
   resolveExplicitAgentSessionKey: vi.fn(),
+  evaluateSessionFreshness: vi.fn(),
 }));
 
 vi.mock("../../config/sessions/main-session.js", async () => {
@@ -19,9 +20,15 @@ vi.mock("../../config/sessions/main-session.js", async () => {
   };
 });
 
-vi.mock("../../config/sessions/store-load.js", () => ({
-  loadSessionStore: mocks.loadSessionStore,
-}));
+// The barrel (../../config/sessions.js) re-exports loadSessionStore from ./sessions/store.js
+// (NOT store-load.js), so store.js is the module session.ts actually binds. Partial-mock it:
+// importActual keeps every other store export real and overrides only loadSessionStore.
+vi.mock("../../config/sessions/store.js", async () => {
+  const actual = await vi.importActual<typeof import("../../config/sessions/store.js")>(
+    "../../config/sessions/store.js",
+  );
+  return { ...actual, loadSessionStore: mocks.loadSessionStore };
+});
 
 vi.mock("../../config/sessions/paths.js", () => ({
   resolveStorePath: mocks.resolveStorePath,
@@ -29,6 +36,19 @@ vi.mock("../../config/sessions/paths.js", () => ({
 
 vi.mock("../../agents/agent-scope.js", () => ({
   listAgentIds: mocks.listAgentIds,
+}));
+
+// Manual (non-importActual) mock of the reset module. resolveSession consumes exactly
+// four exports from here; freshness is driven entirely by the evaluateSessionFreshness
+// mock, and the reset-policy helpers only feed that (mocked) call, so plain stubs suffice.
+// NOTE: importActual here would pull a second real copy of the sessions module graph
+// through the `export *` barrel, causing session.ts to bind the real loadSessionStore
+// instead of the mock above — so keep this a pure manual factory.
+vi.mock("../../config/sessions/reset.js", () => ({
+  evaluateSessionFreshness: mocks.evaluateSessionFreshness,
+  resolveSessionResetType: () => "idle",
+  resolveSessionResetPolicy: () => ({}),
+  resolveChannelResetConfig: () => undefined,
 }));
 
 describe("resolveSessionKeyForRequest", () => {
@@ -249,5 +269,126 @@ describe("resolveSessionKeyForRequest", () => {
     expect(storePaths).toHaveLength(2);
     expect(storePaths).toContain(MAIN_STORE_PATH);
     expect(storePaths).toContain(MYBOT_STORE_PATH);
+  });
+});
+
+describe("resolveSession (#2120 stale session rollover)", () => {
+  const STORE_PATH = "/tmp/main-store.json";
+  const SESSION_KEY = "agent:main:main";
+  const baseCfg: RemoteClawConfig = {};
+
+  type StoredEntry = {
+    sessionId: string;
+    updatedAt: number;
+    cliSessionIds?: Record<string, string>;
+    verboseLevel?: string;
+  };
+
+  // These tests isolate resolveSession's rollover DECISION (the #2120 fix) from
+  // the orthogonal session-key resolution mechanism: resolveExplicitAgentSessionKey
+  // is mocked to a valid explicit key, so the store entry is fetched under SESSION_KEY
+  // regardless of how the key was derived. Freshness is driven entirely by the
+  // evaluateSessionFreshness mock.
+  const seedStore = (entry: StoredEntry): Record<string, StoredEntry> => {
+    const store: Record<string, StoredEntry> = { [SESSION_KEY]: entry };
+    mocks.loadSessionStore.mockReturnValue(store);
+    return store;
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.listAgentIds.mockReturnValue(["main"]);
+    mocks.resolveExplicitAgentSessionKey.mockReturnValue(SESSION_KEY);
+    mocks.resolveStorePath.mockReturnValue(STORE_PATH);
+    mocks.evaluateSessionFreshness.mockReturnValue({ fresh: true });
+  });
+
+  it("rolls over a stale session: no explicit id + stale entry → new session, old entry dropped", () => {
+    mocks.evaluateSessionFreshness.mockReturnValue({ fresh: false });
+    const store = seedStore({
+      sessionId: "old-session-id",
+      updatedAt: 1000,
+      cliSessionIds: { claude: "stale-cli-id" },
+    });
+
+    const result = resolveSession({ cfg: baseCfg });
+
+    expect(result.isNewSession).toBe(true);
+    // The stale entry must NOT be surfaced — otherwise its expired cliSessionIds
+    // would be resumed via `--resume` (the #2120 bug).
+    expect(result.sessionEntry).toBeUndefined();
+    expect(result.sessionId).not.toBe("old-session-id");
+    // And it is dropped from the store so it can't be resumed later.
+    expect(store[SESSION_KEY]).toBeUndefined();
+  });
+
+  it("continues a fresh session: no explicit id + fresh entry → reuse entry and id", () => {
+    mocks.evaluateSessionFreshness.mockReturnValue({ fresh: true });
+    const store = seedStore({
+      sessionId: "fresh-session-id",
+      updatedAt: 1000,
+      cliSessionIds: { claude: "fresh-cli-id" },
+    });
+
+    const result = resolveSession({ cfg: baseCfg });
+
+    expect(result.isNewSession).toBe(false);
+    expect(result.sessionEntry?.sessionId).toBe("fresh-session-id");
+    expect(result.sessionId).toBe("fresh-session-id");
+    // Reused, so the entry stays in the store.
+    expect(store[SESSION_KEY]).toBeDefined();
+  });
+
+  it("reuses a stale entry when an explicit sessionId matches it (explicit continue overrides staleness)", () => {
+    mocks.evaluateSessionFreshness.mockReturnValue({ fresh: false });
+    const store = seedStore({
+      sessionId: "explicit-session-id",
+      updatedAt: 1000,
+      cliSessionIds: { claude: "cli-id" },
+    });
+
+    const result = resolveSession({
+      cfg: baseCfg,
+      sessionId: "explicit-session-id",
+    });
+
+    expect(result.isNewSession).toBe(false);
+    expect(result.sessionEntry?.sessionId).toBe("explicit-session-id");
+    expect(result.sessionId).toBe("explicit-session-id");
+    expect(store[SESSION_KEY]).toBeDefined();
+  });
+
+  it("starts a new session when an explicit sessionId does not match the stored entry, dropping it", () => {
+    // Even if the entry is fresh by time, a mismatched explicit id is a rollover.
+    mocks.evaluateSessionFreshness.mockReturnValue({ fresh: true });
+    const store = seedStore({
+      sessionId: "old-session-id",
+      updatedAt: 1000,
+      cliSessionIds: { claude: "stale-cli-id" },
+    });
+
+    const result = resolveSession({
+      cfg: baseCfg,
+      sessionId: "brand-new-id",
+    });
+
+    expect(result.isNewSession).toBe(true);
+    expect(result.sessionEntry).toBeUndefined();
+    expect(result.sessionId).toBe("brand-new-id");
+    expect(store[SESSION_KEY]).toBeUndefined();
+  });
+
+  it("surfaces persistedVerbose only when the session is reused", () => {
+    // Fresh → reused → verbose preserved.
+    mocks.evaluateSessionFreshness.mockReturnValue({ fresh: true });
+    seedStore({ sessionId: "s", updatedAt: 1000, verboseLevel: "full" });
+    const reused = resolveSession({ cfg: baseCfg });
+    expect(reused.persistedVerbose).toBe("full");
+
+    // Stale → rolled over → verbose dropped with the entry.
+    mocks.evaluateSessionFreshness.mockReturnValue({ fresh: false });
+    seedStore({ sessionId: "s", updatedAt: 1000, verboseLevel: "full" });
+    const rolled = resolveSession({ cfg: baseCfg });
+    expect(rolled.persistedVerbose).toBeUndefined();
   });
 });

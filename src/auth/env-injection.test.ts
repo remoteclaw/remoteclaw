@@ -167,7 +167,7 @@ describe("resolveAuthEnv", () => {
     expect(result).toEqual({ OPENAI_API_KEY: "sk-openai-test" });
   });
 
-  it("returns undefined for missing profile and logs warning", async () => {
+  it("throws for a configured-but-missing profile (#2085)", async () => {
     const cfg: RemoteClawConfig = {
       agents: {
         list: [{ id: "test-agent", workspace: "~/w", auth: "anthropic:nonexistent" }],
@@ -175,11 +175,12 @@ describe("resolveAuthEnv", () => {
     };
     const store = makeStore({});
 
-    const result = await resolveAuthEnv({ cfg, agentId: "test-agent", store });
-    expect(result).toBeUndefined();
+    await expect(resolveAuthEnv({ cfg, agentId: "test-agent", store })).rejects.toThrow(
+      /not found or has no key/,
+    );
   });
 
-  it("returns undefined for profile with unknown provider", async () => {
+  it("throws for a configured profile with an unknown provider (#2085)", async () => {
     const cfg: RemoteClawConfig = {
       agents: {
         list: [{ id: "test-agent", workspace: "~/w", auth: "exotic:p1" }],
@@ -189,8 +190,9 @@ describe("resolveAuthEnv", () => {
       "exotic:p1": { provider: "exotic", key: "exotic-key" },
     });
 
-    const result = await resolveAuthEnv({ cfg, agentId: "test-agent", store });
-    expect(result).toBeUndefined();
+    await expect(resolveAuthEnv({ cfg, agentId: "test-agent", store })).rejects.toThrow(
+      /No env var mapping for provider "exotic"/,
+    );
   });
 
   it("inherits auth from defaults", async () => {

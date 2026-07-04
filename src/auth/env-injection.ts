@@ -8,7 +8,6 @@
 import { resolveAgentAuth } from "../agents/agent-scope.js";
 import { normalizeProviderId } from "../agents/provider-utils.js";
 import type { RemoteClawConfig } from "../config/config.js";
-import { createSubsystemLogger } from "../logging/subsystem.js";
 import { resolveApiKeyForProfile } from "./oauth.js";
 import { ensureAuthProfileStore } from "./store.js";
 import type { AuthProfileStore } from "./types.js";
@@ -18,8 +17,6 @@ import {
   markAuthProfileUsed,
   resolveProfileUnusableUntil,
 } from "./usage.js";
-
-const log = createSubsystemLogger("auth-env");
 
 /**
  * Map a provider ID to the primary environment variable name used by CLI agents.
@@ -152,8 +149,12 @@ export function resolveAuthProfileCount(cfg: RemoteClawConfig, agentId: string):
  * - `auth: ["id1", "id2"]` -> persistent cooldown-aware round-robin, inject selected profile
  * - `auth: undefined` -> no injection (returns `undefined`)
  *
- * Missing or invalid profiles log a warning and return `undefined`
- * (fall-through to next credential precedence level).
+ * When auth is NOT configured (`false` / `undefined`, or an empty profile
+ * list), returns `undefined` so the caller falls through to the next credential
+ * precedence level. When auth IS configured but resolution fails (profile
+ * missing, no key, unknown provider, or a resolver error), THROWS — so the
+ * failure surfaces as the agent/job error instead of silently running
+ * credential-less and failing later with a cryptic "Not logged in" (#2085).
  */
 export async function resolveAuthEnv(params: {
   cfg: RemoteClawConfig;
@@ -181,22 +182,25 @@ export async function resolveAuthEnv(params: {
       store,
       profileId,
     });
-  } catch {
-    log.warn(`Failed to resolve auth profile "${profileId}" — skipping env injection`);
-    return undefined;
+  } catch (err) {
+    // #2085: auth IS configured but the resolver threw — surface it instead of
+    // silently returning undefined (which the caller treats as "no auth" and
+    // proceeds credential-less, failing later with a cryptic "Not logged in").
+    throw new Error(
+      `Failed to resolve auth profile "${profileId}": ${err instanceof Error ? err.message : String(err)}`,
+      { cause: err },
+    );
   }
 
   if (!resolved) {
-    log.warn(`Auth profile "${profileId}" not found or has no key — skipping env injection`);
-    return undefined;
+    throw new Error(`Auth profile "${profileId}" not found or has no key`);
   }
 
   const envVarName = resolveProviderEnvVarName(resolved.provider);
   if (!envVarName) {
-    log.warn(
-      `No env var mapping for provider "${resolved.provider}" (profile "${profileId}") — skipping env injection`,
+    throw new Error(
+      `No env var mapping for provider "${resolved.provider}" (auth profile "${profileId}")`,
     );
-    return undefined;
   }
 
   // Token credentials for anthropic must be injected as CLAUDE_CODE_OAUTH_TOKEN,

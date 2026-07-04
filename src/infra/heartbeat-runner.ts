@@ -117,22 +117,31 @@ export type HeartbeatRunner = {
   updateConfig: (cfg: RemoteClawConfig) => void;
 };
 
-function hasExplicitHeartbeatAgents(cfg: RemoteClawConfig) {
-  const list = cfg.agents?.list ?? [];
-  return list.some((entry) => Boolean(entry?.heartbeat));
+/**
+ * Whether heartbeat is enabled for a specific, already-resolved agent.
+ *
+ * Enabled when the agent has its OWN heartbeat config, OR when
+ * `agents.defaults.heartbeat` is set — every listed agent inherits the
+ * defaults. When neither is configured, heartbeat is disabled: a bare config
+ * that lists agents but sets no heartbeat anywhere must NOT silently start
+ * heartbeats for them (#623). Per-agent config and defaults are independent
+ * axes, so a per-agent override on ONE agent no longer flips the OTHER agents
+ * off the defaults they would otherwise inherit.
+ */
+function isAgentHeartbeatEnabled(cfg: RemoteClawConfig, agentId: string): boolean {
+  if (resolveAgentConfig(cfg, agentId)?.heartbeat !== undefined) {
+    return true;
+  }
+  return cfg.agents?.defaults?.heartbeat !== undefined;
 }
 
 export function isHeartbeatEnabledForAgent(cfg: RemoteClawConfig, agentId?: string): boolean {
   const fallbackId = resolveSoleAgentId(cfg) ?? listAgentIds(cfg)[0];
   const resolvedAgentId = normalizeAgentId(agentId ?? fallbackId);
-  const list = cfg.agents?.list ?? [];
-  const hasExplicit = hasExplicitHeartbeatAgents(cfg);
-  if (hasExplicit) {
-    return list.some(
-      (entry) => Boolean(entry?.heartbeat) && normalizeAgentId(entry?.id) === resolvedAgentId,
-    );
+  if (!resolvedAgentId || !listAgentIds(cfg).includes(resolvedAgentId)) {
+    return false;
   }
-  return listAgentIds(cfg).includes(resolvedAgentId);
+  return isAgentHeartbeatEnabled(cfg, resolvedAgentId);
 }
 
 function resolveHeartbeatConfig(
@@ -196,20 +205,12 @@ export async function resolveHeartbeatSummaryForAgent(
 }
 
 function resolveHeartbeatAgents(cfg: RemoteClawConfig): HeartbeatAgent[] {
-  const list = cfg.agents?.list ?? [];
-  if (hasExplicitHeartbeatAgents(cfg)) {
-    return list
-      .filter((entry) => entry?.heartbeat)
-      .map((entry) => {
-        const id = normalizeAgentId(entry.id);
-        return { agentId: id, heartbeat: resolveHeartbeatConfig(cfg, id) };
-      })
-      .filter((entry) => entry.agentId);
-  }
-  return listAgentIds(cfg).map((agentId) => ({
-    agentId,
-    heartbeat: resolveHeartbeatConfig(cfg, agentId),
-  }));
+  return listAgentIds(cfg)
+    .filter((agentId) => isAgentHeartbeatEnabled(cfg, agentId))
+    .map((agentId) => ({
+      agentId,
+      heartbeat: resolveHeartbeatConfig(cfg, agentId),
+    }));
 }
 
 export function resolveHeartbeatIntervalMs(

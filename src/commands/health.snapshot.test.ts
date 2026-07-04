@@ -412,7 +412,7 @@ describe("getHealthSnapshot", () => {
     expect(exceptionTelegram.probe?.error).toMatch(/network down/i);
   });
 
-  it("disables heartbeat for agents without heartbeat blocks", async () => {
+  it("lets agents without their own heartbeat block inherit defaults.heartbeat (#623)", async () => {
     testConfig = {
       agents: {
         defaults: {
@@ -434,9 +434,33 @@ describe("getHealthSnapshot", () => {
     const main = byAgent.get("main");
     const ops = byAgent.get("ops");
 
-    expect(main?.heartbeat.everyMs).toBeNull();
-    expect(main?.heartbeat.every).toBe("disabled");
+    // #623: `main` has no per-agent heartbeat block, so it inherits
+    // agents.defaults.heartbeat instead of being silently disabled just because
+    // a different agent (ops) set its own override.
+    expect(main?.heartbeat.everyMs).toBe(30 * 60_000);
+    expect(main?.heartbeat.every).toBe("30m");
+    // `ops` keeps its own per-agent override.
     expect(ops?.heartbeat.everyMs).toBeTruthy();
     expect(ops?.heartbeat.every).toBe("1h");
+  });
+
+  it("reports heartbeat disabled when nothing configures it (#623)", async () => {
+    testConfig = {
+      agents: {
+        // No agents.defaults.heartbeat and no per-agent heartbeat: heartbeat is
+        // disabled for every agent, not silently enabled at the 30m default.
+        list: [{ id: "main", default: true }, { id: "ops" }],
+      },
+    };
+    testStore = {};
+
+    const snap = await getHealthSnapshot({ timeoutMs: 10, probe: false });
+    const byAgent = new Map(snap.agents.map((agent) => [agent.agentId, agent] as const));
+
+    for (const agentId of ["main", "ops"]) {
+      const agent = byAgent.get(agentId);
+      expect(agent?.heartbeat.everyMs).toBeNull();
+      expect(agent?.heartbeat.every).toBe("disabled");
+    }
   });
 });

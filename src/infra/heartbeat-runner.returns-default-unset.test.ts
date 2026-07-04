@@ -184,14 +184,42 @@ describe("resolveHeartbeatPrompt", () => {
 });
 
 describe("isHeartbeatEnabledForAgent", () => {
-  it("enables only explicit heartbeat agents when configured", () => {
+  it("disables every agent when no heartbeat is configured anywhere (#623)", () => {
+    // Regression (#623): a bare config that lists agents but sets NO heartbeat —
+    // neither agents.defaults.heartbeat nor any per-agent heartbeat — must leave
+    // heartbeat disabled. Previously the fallback silently enabled it for all
+    // listed agents at the 30m default, so agents heartbeat-ed without anyone
+    // asking.
+    const cfg: RemoteClawConfig = {
+      agents: {
+        list: [{ id: "alpha" }, { id: "ops" }],
+      },
+    };
+    expect(isHeartbeatEnabledForAgent(cfg, "alpha")).toBe(false);
+    expect(isHeartbeatEnabledForAgent(cfg, "ops")).toBe(false);
+  });
+
+  it("enables only agents with a per-agent heartbeat when no defaults are set", () => {
+    const cfg: RemoteClawConfig = {
+      agents: {
+        list: [{ id: "alpha" }, { id: "ops", heartbeat: { every: "1h" } }],
+      },
+    };
+    expect(isHeartbeatEnabledForAgent(cfg, "alpha")).toBe(false);
+    expect(isHeartbeatEnabledForAgent(cfg, "ops")).toBe(true);
+  });
+
+  it("lets agents without a per-agent heartbeat inherit agents.defaults.heartbeat (#623)", () => {
+    // Regression (#623): a per-agent heartbeat on ONE agent must not flip the
+    // OTHER agents off the defaults they would otherwise inherit. Both axes are
+    // independent — `ops` uses its override, `alpha` inherits the defaults.
     const cfg: RemoteClawConfig = {
       agents: {
         defaults: { heartbeat: { every: "30m" } },
         list: [{ id: "alpha" }, { id: "ops", heartbeat: { every: "1h" } }],
       },
     };
-    expect(isHeartbeatEnabledForAgent(cfg, "alpha")).toBe(false);
+    expect(isHeartbeatEnabledForAgent(cfg, "alpha")).toBe(true);
     expect(isHeartbeatEnabledForAgent(cfg, "ops")).toBe(true);
   });
 
@@ -483,7 +511,10 @@ describe("runHeartbeatOnce", () => {
   it("skips when agent heartbeat is not enabled", async () => {
     const cfg: RemoteClawConfig = {
       agents: {
-        defaults: { heartbeat: { every: "30m" } },
+        // No agents.defaults.heartbeat: alpha has no per-agent heartbeat either,
+        // so it is genuinely disabled (#623). ops opts in via its own config, so
+        // the "some agents configured" path is still exercised — alpha is the
+        // one that must skip.
         list: [{ id: "alpha" }, { id: "ops", heartbeat: { every: "1h" } }],
       },
     };

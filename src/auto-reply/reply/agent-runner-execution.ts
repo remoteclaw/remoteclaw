@@ -16,6 +16,7 @@ import {
 } from "../../agents/agent-scope.js";
 import { resolveChannelMessageToolHints } from "../../agents/channel-tools.js";
 import { resolveUserTimezone } from "../../agents/date-time.js";
+import { normalizeUsage } from "../../agents/usage.js";
 import { resolveGatewayPort } from "../../config/paths.js";
 import {
   resolveSessionTranscriptPath,
@@ -96,10 +97,10 @@ function createSessionMapAdapter(params: { getSessionId: () => string | undefine
  * value was always undefined on this path, so no session was ever stored under
  * any key. Mirror the /agent path so the runtime-keyed persistence has a value.
  *
- * Only `sessionId` is surfaced: `run.usage` (AgentUsage: inputTokens/…) has a
- * different shape than the NormalizedUsage (input/…) the persistence layer
- * casts it to, so surfacing it here would be a no-op — auto-reply token
- * accounting is a separate concern. See #2786 / #2105.
+ * `run.usage` is surfaced too, normalized from AgentUsage (inputTokens/…) to the
+ * NormalizedUsage (input/…) shape the persistence layer expects. Without the
+ * normalization the field-name mismatch made auto-reply token/context accounting
+ * a silent no-op (persisted counts stayed zero). See #2801 / #2795 / #2786 / #2105.
  */
 export function surfaceCliSessionMeta(delivery: AgentDeliveryResult): AgentDeliveryResult {
   return {
@@ -109,6 +110,7 @@ export function surfaceCliSessionMeta(delivery: AgentDeliveryResult): AgentDeliv
       agentMeta: {
         ...delivery.meta?.agentMeta,
         sessionId: delivery.run.sessionId,
+        usage: normalizeUsage(delivery.run.usage),
       },
     },
   };

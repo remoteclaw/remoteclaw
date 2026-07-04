@@ -82,6 +82,38 @@ function createSessionMapAdapter(params: { getSessionId: () => string | undefine
   } as unknown as SessionMap;
 }
 
+/**
+ * Surface the CLI session ID onto `meta.agentMeta` for the persistence layer.
+ *
+ * The ChannelBridge returns the CLI session ID only on `run.sessionId`, but the
+ * auto-reply persistence path (agent-runner.ts → session-usage.ts) reads it from
+ * `meta.agentMeta.sessionId` — the shape the /agent path builds in
+ * commands/agent/delivery.ts. On the bridge path that field is undefined, so
+ * `cliSessionId` resolves to undefined, `setCliSessionId` never fires,
+ * `cliSessionIds` stays empty, and `--resume` is never passed — every message
+ * starts a fresh CLI session with no prior context. This is the value half of
+ * the #2786 fix: #2786 keyed `cliSessionIds` by the resolved runtime, but the
+ * value was always undefined on this path, so no session was ever stored under
+ * any key. Mirror the /agent path so the runtime-keyed persistence has a value.
+ *
+ * Only `sessionId` is surfaced: `run.usage` (AgentUsage: inputTokens/…) has a
+ * different shape than the NormalizedUsage (input/…) the persistence layer
+ * casts it to, so surfacing it here would be a no-op — auto-reply token
+ * accounting is a separate concern. See #2786 / #2105.
+ */
+export function surfaceCliSessionMeta(delivery: AgentDeliveryResult): AgentDeliveryResult {
+  return {
+    ...delivery,
+    meta: {
+      ...delivery.meta,
+      agentMeta: {
+        ...delivery.meta?.agentMeta,
+        sessionId: delivery.run.sessionId,
+      },
+    },
+  };
+}
+
 /** Resolve gateway URL from config for local gateway. */
 function resolveGatewayUrlFromConfig(cfg: FollowupRun["run"]["config"]): string {
   const port = resolveGatewayPort(cfg ?? undefined);
@@ -384,7 +416,9 @@ export async function runAgentTurnWithFallback(params: {
         });
         lifecycleTerminalEmitted = true;
 
-        runResult = delivery;
+        // Surface run.sessionId onto meta.agentMeta so the persistence layer
+        // can store the CLI session ID and pass --resume next turn. See #2786.
+        runResult = surfaceCliSessionMeta(delivery);
       } catch (err) {
         if (!lifecycleTerminalEmitted) {
           emitAgentEvent({

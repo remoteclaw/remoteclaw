@@ -1,7 +1,7 @@
 import { enqueueCommandInLane } from "../../process/command-queue.js";
 import { CommandLane } from "../../process/lanes.js";
 import { assertSafeCronSessionTargetId } from "../session-target.js";
-import type { CronJob, CronJobCreate, CronJobPatch } from "../types.js";
+import type { CronJob, CronJobCreate, CronJobPatch, CronRunStatus } from "../types.js";
 import { normalizeCronCreateDeliveryInput } from "./initial-delivery.js";
 import {
   applyJobPatch,
@@ -476,7 +476,7 @@ async function finishPreparedManualRun(
   state: CronServiceState,
   prepared: Extract<PreparedManualRun, { ran: true }>,
   mode?: "due" | "force",
-): Promise<void> {
+): Promise<{ status: CronRunStatus; error?: string }> {
   const executionJob = prepared.executionJob;
   const startedAt = prepared.startedAt;
   const jobId = prepared.jobId;
@@ -557,6 +557,8 @@ async function finishPreparedManualRun(
     await persist(state);
     armTimer(state);
   });
+
+  return { status: coreResult.status, error: coreResult.error };
 }
 
 export async function run(state: CronServiceState, id: string, mode?: "due" | "force") {
@@ -564,8 +566,10 @@ export async function run(state: CronServiceState, id: string, mode?: "due" | "f
   if (!prepared.ok || !prepared.ran) {
     return prepared;
   }
-  await finishPreparedManualRun(state, prepared, mode);
-  return { ok: true, ran: true } as const;
+  const outcome = await finishPreparedManualRun(state, prepared, mode);
+  // #2084: surface the job's execution outcome so callers can distinguish a run
+  // that executed-and-failed from one that succeeded (previously always { ok, ran }).
+  return { ok: true, ran: true, status: outcome.status, error: outcome.error } as const;
 }
 
 export async function enqueueRun(state: CronServiceState, id: string, mode?: "due" | "force") {

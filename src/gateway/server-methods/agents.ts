@@ -570,7 +570,6 @@ export const agentsHandlers: GatewayRequestHandlers = {
     }
 
     const deleteFiles = typeof params.deleteFiles === "boolean" ? params.deleteFiles : true;
-    const workspaceDir = resolveAgentWorkspaceDir(cfg, agentId);
     const agentDir = resolveAgentDir(cfg, agentId);
     const sessionsDir = resolveSessionTranscriptsDirForAgent(agentId);
 
@@ -578,11 +577,10 @@ export const agentsHandlers: GatewayRequestHandlers = {
     await writeConfigFile(result.config);
 
     if (deleteFiles) {
-      await Promise.all([
-        moveToTrashBestEffort(workspaceDir),
-        moveToTrashBestEffort(agentDir),
-        moveToTrashBestEffort(sessionsDir),
-      ]);
+      // The workspace is user-owned (a project/git dir the user points RemoteClaw
+      // at) — never trash it on delete. Only remove RemoteClaw-owned state
+      // (agent dir + session transcripts).
+      await Promise.all([moveToTrashBestEffort(agentDir), moveToTrashBestEffort(sessionsDir)]);
     }
 
     respond(true, { ok: true, agentId, removedBindings: result.removedBindings }, undefined);

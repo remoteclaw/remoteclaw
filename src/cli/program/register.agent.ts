@@ -242,7 +242,7 @@ ${formatHelpExamples([
 
   agents
     .command("delete <id>")
-    .description("Delete an agent and prune workspace/state")
+    .description("Delete an agent and prune agent state")
     .option("--force", "Skip confirmation", false)
     .option("--json", "Output JSON summary", false)
     .action(async (id, opts) => {

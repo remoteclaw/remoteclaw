@@ -185,174 +185,8 @@ describe("agents delete command", () => {
     });
   });
 
-  it("skips workspace removal when another agent shares the same workspace (#70890)", async () => {
-    await withStateDirEnv("remoteclaw-agents-delete-shared-workspace-", async ({ stateDir }) => {
-      const sharedWorkspace = path.join(stateDir, "workspace-shared");
-      await fs.mkdir(sharedWorkspace, { recursive: true });
-
-      const now = Date.now();
-      const cfg: RemoteClawConfig = {
-        agents: {
-          list: [
-            { id: "main", workspace: sharedWorkspace },
-            { id: "ops", workspace: sharedWorkspace },
-          ],
-        },
-      } satisfies RemoteClawConfig;
-      await arrangeAgentsDeleteTest({
-        stateDir,
-        cfg,
-        deletedAgentId: "ops",
-        sessions: {
-          "agent:ops:main": { sessionId: "sess-ops-main", updatedAt: now + 1 },
-          "agent:main:main": { sessionId: "sess-main", updatedAt: now + 2 },
-        },
-      });
-
-      await agentsDeleteCommand({ id: "ops", force: true, json: true }, runtime);
-
-      // Workspace should still exist — it was shared
-      const stat = await fs.stat(sharedWorkspace).catch(() => null);
-      expect(stat).not.toBeNull();
-
-      // The JSON output should report why the workspace was retained.
-      const jsonOutput = readJsonLogs();
-      expect(jsonOutput).toHaveLength(1);
-      expect(jsonOutput[0]).toMatchObject({
-        workspaceRetained: true,
-        workspaceRetainedReason: "shared",
-        workspaceSharedWith: ["main"],
-      });
-      expect(processMocks.runCommandWithTimeout).not.toHaveBeenCalledWith(
-        ["trash", sharedWorkspace],
-        { timeoutMs: 5000 },
-      );
-    });
-  });
-
-  it("skips workspace removal when another agent workspace overlaps a child path (#70890)", async () => {
-    await withStateDirEnv(
-      "remoteclaw-agents-delete-overlapping-workspace-",
-      async ({ stateDir }) => {
-        const sharedWorkspace = path.join(stateDir, "workspace-shared");
-        const childWorkspace = path.join(sharedWorkspace, "ops-child");
-        await fs.mkdir(childWorkspace, { recursive: true });
-
-        const now = Date.now();
-        const cfg: RemoteClawConfig = {
-          agents: {
-            list: [
-              { id: "main", workspace: sharedWorkspace },
-              { id: "ops", workspace: childWorkspace },
-            ],
-          },
-        } satisfies RemoteClawConfig;
-        await arrangeAgentsDeleteTest({
-          stateDir,
-          cfg,
-          deletedAgentId: "ops",
-          sessions: {
-            "agent:ops:main": { sessionId: "sess-ops-main", updatedAt: now + 1 },
-            "agent:main:main": { sessionId: "sess-main", updatedAt: now + 2 },
-          },
-        });
-
-        await agentsDeleteCommand({ id: "ops", force: true, json: true }, runtime);
-
-        expect(readJsonLogs()[0]).toMatchObject({
-          workspaceRetained: true,
-          workspaceSharedWith: ["main"],
-        });
-        expect(processMocks.runCommandWithTimeout).not.toHaveBeenCalledWith(
-          ["trash", childWorkspace],
-          { timeoutMs: 5000 },
-        );
-      },
-    );
-  });
-
-  it("skips workspace removal when deleting a parent workspace that contains another agent workspace (#70890)", async () => {
-    await withStateDirEnv("remoteclaw-agents-delete-parent-workspace-", async ({ stateDir }) => {
-      const sharedWorkspace = path.join(stateDir, "workspace-shared");
-      const childWorkspace = path.join(sharedWorkspace, "main-child");
-      await fs.mkdir(childWorkspace, { recursive: true });
-
-      const now = Date.now();
-      const cfg: RemoteClawConfig = {
-        agents: {
-          list: [
-            { id: "main", workspace: childWorkspace },
-            { id: "ops", workspace: sharedWorkspace },
-          ],
-        },
-      } satisfies RemoteClawConfig;
-      await arrangeAgentsDeleteTest({
-        stateDir,
-        cfg,
-        deletedAgentId: "ops",
-        sessions: {
-          "agent:ops:main": { sessionId: "sess-ops-main", updatedAt: now + 1 },
-          "agent:main:main": { sessionId: "sess-main", updatedAt: now + 2 },
-        },
-      });
-
-      await agentsDeleteCommand({ id: "ops", force: true, json: true }, runtime);
-
-      expect(readJsonLogs()[0]).toMatchObject({
-        workspaceRetained: true,
-        workspaceSharedWith: ["main"],
-      });
-      expect(processMocks.runCommandWithTimeout).not.toHaveBeenCalledWith(
-        ["trash", sharedWorkspace],
-        { timeoutMs: 5000 },
-      );
-    });
-  });
-
-  it.runIf(process.platform !== "win32")(
-    "skips workspace removal when another agent reaches the same directory through a symlink (#70890)",
-    async () => {
-      await withStateDirEnv("remoteclaw-agents-delete-symlink-workspace-", async ({ stateDir }) => {
-        const realWorkspace = path.join(stateDir, "workspace-real");
-        const aliasWorkspace = path.join(stateDir, "workspace-alias");
-        await fs.mkdir(realWorkspace, { recursive: true });
-        await fs.symlink(realWorkspace, aliasWorkspace, "dir");
-
-        const now = Date.now();
-        const cfg: RemoteClawConfig = {
-          agents: {
-            list: [
-              { id: "main", workspace: realWorkspace },
-              { id: "ops", workspace: aliasWorkspace },
-            ],
-          },
-        } satisfies RemoteClawConfig;
-        await arrangeAgentsDeleteTest({
-          stateDir,
-          cfg,
-          deletedAgentId: "ops",
-          sessions: {
-            "agent:ops:main": { sessionId: "sess-ops-main", updatedAt: now + 1 },
-            "agent:main:main": { sessionId: "sess-main", updatedAt: now + 2 },
-          },
-        });
-
-        await agentsDeleteCommand({ id: "ops", force: true, json: true }, runtime);
-
-        expect(readJsonLogs()[0]).toMatchObject({
-          workspaceRetained: true,
-          workspaceSharedWith: ["main"],
-        });
-        expect(processMocks.runCommandWithTimeout).not.toHaveBeenCalledWith(
-          ["trash", aliasWorkspace],
-          { timeoutMs: 5000 },
-        );
-      });
-    },
-  );
-
-  it("trashes workspace when no other agent shares it", async () => {
-    await withStateDirEnv("remoteclaw-agents-delete-unique-workspace-", async ({ stateDir }) => {
+  it("never trashes the user-owned workspace, even when no other agent shares it (#587)", async () => {
+    await withStateDirEnv("remoteclaw-agents-delete-preserve-workspace-", async ({ stateDir }) => {
       const opsWorkspace = path.join(stateDir, "workspace-ops");
       const mainWorkspace = path.join(stateDir, "workspace-main");
       await fs.mkdir(opsWorkspace, { recursive: true });
@@ -379,10 +213,61 @@ describe("agents delete command", () => {
 
       await agentsDeleteCommand({ id: "ops", force: true, json: true }, runtime);
 
-      // trash command should have been called for the workspace
-      expect(processMocks.runCommandWithTimeout).toHaveBeenCalledWith(["trash", opsWorkspace], {
+      // The workspace is user-owned — never trash it, even though "ops" is the
+      // only agent using it (the pre-#587 behavior trashed the unique workspace).
+      expect(processMocks.runCommandWithTimeout).not.toHaveBeenCalledWith(["trash", opsWorkspace], {
         timeoutMs: 5000,
       });
+
+      // JSON output signals the workspace was preserved rather than deleted.
+      const jsonOutput = readJsonLogs();
+      expect(jsonOutput).toHaveLength(1);
+      expect(jsonOutput[0]).toMatchObject({
+        workspace: opsWorkspace,
+        workspacePreserved: true,
+      });
+    });
+  });
+
+  it("still trashes RemoteClaw-owned state and never the workspace (#587)", async () => {
+    await withStateDirEnv("remoteclaw-agents-delete-owned-state-", async ({ stateDir }) => {
+      const opsWorkspace = path.join(stateDir, "workspace-ops");
+      const mainWorkspace = path.join(stateDir, "workspace-main");
+      await fs.mkdir(opsWorkspace, { recursive: true });
+      await fs.mkdir(mainWorkspace, { recursive: true });
+
+      const now = Date.now();
+      const cfg: RemoteClawConfig = {
+        agents: {
+          list: [
+            { id: "main", workspace: mainWorkspace },
+            { id: "ops", workspace: opsWorkspace },
+          ],
+        },
+      } satisfies RemoteClawConfig;
+      await arrangeAgentsDeleteTest({
+        stateDir,
+        cfg,
+        deletedAgentId: "ops",
+        sessions: {
+          "agent:ops:main": { sessionId: "sess-ops-main", updatedAt: now + 1 },
+          "agent:main:main": { sessionId: "sess-main", updatedAt: now + 2 },
+        },
+      });
+
+      await agentsDeleteCommand({ id: "ops", force: true, json: true }, runtime);
+
+      const trashCalls = processMocks.runCommandWithTimeout.mock.calls as unknown as Array<
+        [string[], unknown]
+      >;
+      const trashedPaths = trashCalls
+        .map((call) => call[0])
+        .filter((argv) => argv[0] === "trash")
+        .map((argv) => argv[1]);
+      // Delete still cleans up RemoteClaw-owned state (it is not a no-op)...
+      expect(trashedPaths.length).toBeGreaterThan(0);
+      // ...but the user-owned workspace is never among the trashed paths.
+      expect(trashedPaths).not.toContain(opsWorkspace);
     });
   });
 });

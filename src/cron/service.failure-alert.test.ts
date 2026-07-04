@@ -93,4 +93,37 @@ describe("CronService failure alerts", () => {
     cron.stop();
     await store.cleanup();
   });
+
+  it("#2084: surfaces the failed job's status and error in the run result", async () => {
+    const store = await makeStorePath();
+    const sendCronFailureAlert = vi.fn(async () => undefined);
+    const runIsolatedAgentJob = vi.fn(async () => ({
+      status: "error" as const,
+      error: "cron announce delivery failed",
+    }));
+
+    const cron = createFailureAlertCron({
+      storePath: store.storePath,
+      runIsolatedAgentJob,
+      sendCronFailureAlert,
+    });
+
+    await cron.start();
+    const job = await cron.add({
+      name: "failing job",
+      enabled: true,
+      schedule: { kind: "every", everyMs: 60_000 },
+      sessionTarget: "isolated",
+      wakeMode: "next-heartbeat",
+      payload: { kind: "agentTurn", message: "run report" },
+    });
+
+    const result = await cron.run(job.id, "force");
+
+    expect(result).toMatchObject({ ok: true, ran: true, status: "error" });
+    expect((result as { error?: string }).error).toContain("cron announce delivery failed");
+
+    cron.stop();
+    await store.cleanup();
+  });
 });

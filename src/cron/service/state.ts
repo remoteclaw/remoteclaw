@@ -167,7 +167,7 @@ export type CronStatusSummary = {
 };
 
 export type CronRunResult =
-  | { ok: true; ran: true }
+  | { ok: true; ran: true; status: CronRunStatus; error?: string }
   | { ok: true; enqueued: true; runId: string }
   | { ok: true; ran: false; reason: "not-due" }
   | { ok: true; ran: false; reason: "already-running" }

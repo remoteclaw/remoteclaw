@@ -170,7 +170,6 @@ function isSessionExpiredBridgeError(error: string | undefined): boolean {
 async function runAgentAttempt(params: {
   cfg: ReturnType<typeof loadConfig>;
   sessionAgentId: string;
-  provider: string;
   runtimeEnv: Record<string, string>;
   message: ChannelMessage;
   abortSignal: AbortSignal | undefined;
@@ -181,12 +180,16 @@ async function runAgentAttempt(params: {
   sessionStore: Record<string, SessionEntry> | undefined;
   storePath: string;
 }): Promise<AgentDeliveryResult> {
+  // Key CLI sessions by the resolved CLI runtime (e.g. "claude") — the same value
+  // the bridge dispatches under — NOT the model provider (e.g. "unknown"), which
+  // isCliProvider() rejects, so no session ever resumed. See #2790 / #2786.
+  const cliRuntime = resolveAgentRuntimeOrThrow(params.cfg, params.sessionAgentId);
   const sessionMap = createSessionMapAdapter({
-    getSessionId: () => getCliSessionId(params.sessionEntryRef.current, params.provider),
+    getSessionId: () => getCliSessionId(params.sessionEntryRef.current, cliRuntime),
   });
 
   const bridge = new ChannelBridge({
-    provider: resolveAgentRuntimeOrThrow(params.cfg, params.sessionAgentId),
+    provider: cliRuntime,
     sessionMap,
     gatewayUrl: resolveGatewayUrlFromConfig(params.cfg),
     gatewayToken: resolveGatewayTokenFromConfig(params.cfg),
@@ -203,19 +206,19 @@ async function runAgentAttempt(params: {
   // Handle CLI session expired: clear stale session and retry once.
   if (
     isSessionExpiredBridgeError(bridgeResult.error) &&
-    getCliSessionId(params.sessionEntryRef.current, params.provider) &&
+    getCliSessionId(params.sessionEntryRef.current, cliRuntime) &&
     params.sessionKey &&
     params.sessionStore &&
     params.storePath
   ) {
     log.warn(
-      `CLI session expired, clearing from session store: provider=${params.provider} sessionKey=${params.sessionKey}`,
+      `CLI session expired, clearing from session store: provider=${cliRuntime} sessionKey=${params.sessionKey}`,
     );
 
     const entry = params.sessionStore[params.sessionKey];
     if (entry) {
       const updatedEntry = { ...entry };
-      const normalizedProvider = normalizeProviderId(params.provider);
+      const normalizedProvider = normalizeProviderId(cliRuntime);
       if (updatedEntry.cliSessionIds) {
         const newIds = { ...updatedEntry.cliSessionIds };
         delete newIds[normalizedProvider];
@@ -438,7 +441,6 @@ export async function agentCommand(
           runAgentAttempt({
             cfg,
             sessionAgentId,
-            provider,
             runtimeEnv,
             message,
             abortSignal: opts.abortSignal,
@@ -486,6 +488,7 @@ export async function agentCommand(
         sessionStore,
         defaultProvider: provider,
         defaultModel: model,
+        cliSessionProvider: resolveAgentRuntimeOrThrow(cfg, sessionAgentId),
         result,
       });
     }

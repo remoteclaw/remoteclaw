@@ -25,6 +25,9 @@ export async function updateSessionStoreAfterAgentRun(params: {
   defaultModel: string;
   fallbackProvider?: string;
   fallbackModel?: string;
+  /** Resolved CLI runtime (e.g. "claude") used to key cliSessionIds — NOT the
+   *  model provider carried in defaultProvider/providerUsed. See #2790 / #2786. */
+  cliSessionProvider?: string;
   result: RunResult;
 }) {
   const {
@@ -37,6 +40,7 @@ export async function updateSessionStoreAfterAgentRun(params: {
     defaultModel,
     fallbackProvider,
     fallbackModel,
+    cliSessionProvider,
     result,
   } = params;
 
@@ -68,10 +72,15 @@ export async function updateSessionStoreAfterAgentRun(params: {
     provider: providerUsed,
     model: modelUsed,
   });
-  if (isCliProvider(providerUsed, cfg)) {
+  // Key CLI session IDs by the resolved CLI runtime (cliSessionProvider, e.g.
+  // "claude"), NOT the model provider in providerUsed (e.g. "unknown"). Keying by
+  // "unknown" made isCliProvider() false and dropped the session ID, so the /agent
+  // command never passed --resume. providerUsed stays for display. See #2790 / #2786.
+  const cliSessionKey = cliSessionProvider ?? providerUsed;
+  if (isCliProvider(cliSessionKey, cfg)) {
     const cliSessionId = result.meta.agentMeta?.sessionId?.trim();
     if (cliSessionId) {
-      setCliSessionId(next, providerUsed, cliSessionId);
+      setCliSessionId(next, cliSessionKey, cliSessionId);
     }
   }
   next.abortedLastRun = result.meta.aborted ?? false;

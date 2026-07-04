@@ -41,8 +41,9 @@ vi.mock("../../agents/channel-tools.js", () => ({
 }));
 
 const resolveAgentRuntimeEnvMock = vi.fn();
+const resolveAgentConfigMock = vi.fn().mockReturnValue(undefined);
 vi.mock("../../agents/agent-scope.js", () => ({
-  resolveAgentConfig: vi.fn().mockReturnValue(undefined),
+  resolveAgentConfig: resolveAgentConfigMock,
   resolveAgentDir: vi.fn().mockReturnValue("/tmp/agent-dir"),
   resolveAgentRuntime: vi.fn().mockReturnValue("claude"),
   resolveAgentRuntimeArgs: vi.fn().mockReturnValue(undefined),
@@ -247,6 +248,7 @@ describe("runCronIsolatedAgentTurn — auth key retry wiring", () => {
     delete process.env.REMOTECLAW_TEST_FAST;
     resolveCronSessionMock.mockReturnValue(makeFreshSession());
     resolveAgentRuntimeEnvMock.mockReturnValue(undefined);
+    resolveAgentConfigMock.mockReturnValue(undefined);
 
     // Default: withAuthKeyRetry passes through to the execute callback
     withAuthKeyRetryMock.mockImplementation(
@@ -348,5 +350,24 @@ describe("runCronIsolatedAgentTurn — auth key retry wiring", () => {
 
     expect(result.status).toBe("error");
     expect(result.error).toContain("all auth keys exhausted");
+  });
+
+  it("#2083: preserves defaults.auth when the agent inherits auth (no explicit auth field)", async () => {
+    // An agent without an explicit `auth` yields { auth: undefined } from resolveAgentConfig.
+    resolveAgentConfigMock.mockReturnValue({ auth: undefined });
+
+    await runCronIsolatedAgentTurn(
+      makeParams({
+        agentId: "inheriting-agent",
+        cfg: {
+          agents: { defaults: { runtime: "claude" as const, auth: "claude:default-profile" } },
+        },
+      }),
+    );
+
+    // The merged cfg handed to withAuthKeyRetry must still carry the default auth profile —
+    // Object.assign must not clobber it with the override's `auth: undefined`.
+    const options = withAuthKeyRetryMock.mock.calls[0][0];
+    expect(options.cfg.agents.defaults.auth).toBe("claude:default-profile");
   });
 });

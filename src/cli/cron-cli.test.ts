@@ -236,6 +236,25 @@ describe("cron cli", () => {
     expect(exitSpy).toHaveBeenCalledWith(expectedExitCode);
   });
 
+  it("defaults the cron run gateway timeout to the 10-minute job timeout (#2086)", async () => {
+    // Isolated cron jobs can run for minutes (DEFAULT_JOB_TIMEOUT_MS = 10m), so
+    // `cron run` must not give up at the generic 30s gateway-client default —
+    // otherwise the CLI reports "gateway timeout after 30000ms" while the job is
+    // still running. When --timeout is not supplied, the timeout is bumped to
+    // 600000ms. This guards the fix against a silent regression from an upstream
+    // sync (it arrived via one and has no other test coverage).
+    const { runOpts } = await runCronRunAndCaptureExit({ ran: true });
+    expect(runOpts.timeout).toBe("600000");
+  });
+
+  it("honors an explicit --timeout for cron run (#2086)", async () => {
+    const { runOpts } = await runCronRunAndCaptureExit({
+      ran: true,
+      args: ["cron", "run", "job-1", "--timeout", "5000"],
+    });
+    expect(runOpts.timeout).toBe("5000");
+  });
+
   it("trims model on cron add", { timeout: CRON_CLI_TEST_TIMEOUT_MS }, async () => {
     await runCronCommand([
       "cron",

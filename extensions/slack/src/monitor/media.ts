@@ -3,6 +3,7 @@ import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
 } from "remoteclaw/plugin-sdk/text-runtime";
+import { logVerbose } from "../../../../src/globals.js";
 import { normalizeHostname } from "../../../../src/infra/net/hostname.js";
 import type { FetchLike } from "../../../../src/media/fetch.js";
 import { fetchRemoteMedia } from "../../../../src/media/fetch.js";
@@ -429,7 +430,14 @@ export async function resolveSlackThreadStarter(params: {
     });
     evictThreadStarterCache();
     return starter;
-  } catch {
+  } catch (err) {
+    // Best-effort: thread context is optional, so we still fall back to null.
+    // But surface WHY (permissions, rate limit, token expiry, network) instead
+    // of swallowing it silently — otherwise a blank-context session is
+    // impossible to diagnose (#2104).
+    logVerbose(
+      `slack: thread starter fetch failed for channel ${params.channelId} thread ${params.threadTs}: ${String(err)}`,
+    );
     return null;
   }
 }
@@ -521,7 +529,13 @@ export async function resolveSlackThreadHistory(params: {
       ts: msg.ts,
       files: msg.files,
     }));
-  } catch {
+  } catch (err) {
+    // Best-effort: still fall back to empty history, but log WHY so a
+    // missing-thread-context session can be diagnosed instead of silently
+    // swallowing the Slack API failure (#2104).
+    logVerbose(
+      `slack: thread history fetch failed for channel ${params.channelId} thread ${params.threadTs}: ${String(err)}`,
+    );
     return [];
   }
 }

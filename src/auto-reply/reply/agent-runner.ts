@@ -387,10 +387,13 @@ export async function runReplyAgent(params: {
     const promptTokens = runResult.meta?.agentMeta?.promptTokens as number | undefined;
     const modelUsed =
       (runResult.meta?.agentMeta?.model as string | undefined) ?? fallbackModel ?? defaultModel;
+    // The CLI runtime of record for this run (e.g. "claude"). run.provider carries
+    // the messaging channel (e.g. "slack") — NOT a provider of record — so falling
+    // back to it mislabelled modelProvider and misresolved auth mode. Fall back to
+    // the resolved runtime instead; it also keys cliSessionIds below. See #2788 / #2786.
+    const cliRuntime = resolveAgentRuntimeOrThrow(cfg, followupRun.run.agentId);
     const providerUsed =
-      (runResult.meta?.agentMeta?.provider as string | undefined) ??
-      fallbackProvider ??
-      followupRun.run.provider;
+      (runResult.meta?.agentMeta?.provider as string | undefined) ?? fallbackProvider ?? cliRuntime;
     const verboseEnabled = resolvedVerboseLevel !== "off";
     const selectedProvider = followupRun.run.provider;
     const selectedModel = followupRun.run.model;
@@ -427,11 +430,10 @@ export async function runReplyAgent(params: {
         });
       }
     }
-    // CLI session IDs are keyed by the resolved CLI runtime (e.g. "claude"), NOT
-    // the messaging channel carried in `providerUsed` (e.g. "slack"). Keying by the
-    // channel made isCliProvider() false and dropped every session ID, so no
+    // CLI session IDs are keyed by the resolved CLI runtime `cliRuntime` (e.g.
+    // "claude"), NOT the messaging channel (run.provider, e.g. "slack"). Keying by
+    // the channel made isCliProvider() false and dropped every session ID, so no
     // --resume was ever passed and each message started fresh. See #2786 / #2105.
-    const cliRuntime = resolveAgentRuntimeOrThrow(cfg, followupRun.run.agentId);
     const cliSessionId = isCliProvider(cliRuntime, cfg)
       ? (runResult.meta?.agentMeta?.sessionId as string | undefined)?.trim()
       : undefined;

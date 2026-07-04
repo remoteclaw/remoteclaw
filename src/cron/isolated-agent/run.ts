@@ -178,10 +178,17 @@ export async function runCronIsolatedAgentTurn(params: {
         "cron isolated run: cannot resolve agent id — no agent specified and no sole agent configured",
     };
   }
+  // #2083: strip undefined-valued keys from the agent override before merging. An agent
+  // without an explicit `auth` (etc.) yields { auth: undefined } from resolveAgentConfig,
+  // and Object.assign would otherwise overwrite the configured `defaults.auth` with
+  // undefined — breaking auth env injection for cron runs that inherit the default profile.
+  const definedAgentOverride = Object.fromEntries(
+    Object.entries(agentConfigOverride ?? {}).filter(([, value]) => value !== undefined),
+  ) as Partial<AgentDefaultsConfig>;
   const agentCfg: AgentDefaultsConfig = Object.assign(
     {},
     params.cfg.agents?.defaults,
-    (agentConfigOverride ?? {}) as Partial<AgentDefaultsConfig>,
+    definedAgentOverride,
   );
   const cfgWithAgentDefaults: RemoteClawConfig = {
     ...params.cfg,

@@ -219,7 +219,6 @@ export async function runAgentTurnWithFallback(params: {
       };
       const blockReplyPipeline = params.blockReplyPipeline;
       const onToolResult = params.opts?.onToolResult;
-      const provider = params.followupRun.run.provider;
 
       // Model fallback gutted in RemoteClaw — CLI agents handle their own model
       // selection and fallback. Run the agent directly with the configured model.
@@ -237,13 +236,17 @@ export async function runAgentTurnWithFallback(params: {
 
       let lifecycleTerminalEmitted = false;
       try {
-        // Session adapter: reads the CLI session ID from the auto-reply session entry.
-        const sessionMap = createSessionMapAdapter({
-          getSessionId: () => params.getActiveSessionEntry()?.cliSessionIds?.[provider],
-        });
-
         const cfg = params.followupRun.run.config;
         const agentId = params.followupRun.run.agentId;
+        // CLI session IDs are keyed by the resolved CLI runtime (e.g. "claude"),
+        // NOT the messaging channel (run.provider, e.g. "slack"). Keying by the
+        // channel dropped every session ID → no --resume → fresh session each
+        // message. See #2786 / #2105.
+        const cliRuntime = resolveAgentRuntimeOrThrow(cfg, agentId);
+        // Session adapter: reads the CLI session ID from the auto-reply session entry.
+        const sessionMap = createSessionMapAdapter({
+          getSessionId: () => params.getActiveSessionEntry()?.cliSessionIds?.[cliRuntime],
+        });
         const baseRuntimeEnv = resolveAgentRuntimeEnv(cfg, agentId);
 
         const messageToolHints = resolveChannelMessageToolHints({
@@ -338,7 +341,7 @@ export async function runAgentTurnWithFallback(params: {
           },
           async (runtimeEnv) => {
             const bridge = new ChannelBridge({
-              provider: resolveAgentRuntimeOrThrow(cfg, agentId),
+              provider: cliRuntime,
               sessionMap,
               gatewayUrl: resolveGatewayUrlFromConfig(cfg),
               gatewayToken: resolveGatewayTokenFromConfig(cfg),

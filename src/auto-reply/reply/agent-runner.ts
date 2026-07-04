@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { resolveAgentRuntimeOrThrow } from "../../agents/agent-scope.js";
 import { lookupContextTokens } from "../../agents/context.js";
 import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
 import { resolveModelAuthMode } from "../../agents/model-auth.js";
@@ -426,7 +427,12 @@ export async function runReplyAgent(params: {
         });
       }
     }
-    const cliSessionId = isCliProvider(providerUsed, cfg)
+    // CLI session IDs are keyed by the resolved CLI runtime (e.g. "claude"), NOT
+    // the messaging channel carried in `providerUsed` (e.g. "slack"). Keying by the
+    // channel made isCliProvider() false and dropped every session ID, so no
+    // --resume was ever passed and each message started fresh. See #2786 / #2105.
+    const cliRuntime = resolveAgentRuntimeOrThrow(cfg, followupRun.run.agentId);
+    const cliSessionId = isCliProvider(cliRuntime, cfg)
       ? (runResult.meta?.agentMeta?.sessionId as string | undefined)?.trim()
       : undefined;
     const contextTokensUsed =
@@ -443,6 +449,7 @@ export async function runReplyAgent(params: {
       promptTokens,
       modelUsed,
       providerUsed,
+      cliSessionProvider: cliRuntime,
       systemPromptReport: (runResult.meta as Record<string, unknown> | undefined)
         ?.systemPromptReport as
         | import("../../config/sessions.js").SessionSystemPromptReport

@@ -14,12 +14,17 @@ import { logVerbose } from "../../globals.js";
 function applyCliSessionIdToSessionPatch(
   params: {
     providerUsed?: string;
+    cliSessionProvider?: string;
     cliSessionId?: string;
   },
   entry: SessionEntry,
   patch: Partial<SessionEntry>,
 ): Partial<SessionEntry> {
-  const cliProvider = params.providerUsed ?? entry.modelProvider;
+  // Key CLI session IDs by the resolved CLI runtime (cliSessionProvider, e.g.
+  // "claude") when provided — NOT the messaging channel carried in providerUsed
+  // (e.g. "slack"), which is never a CLI runtime name and dropped every session
+  // ID. Falls back to providerUsed/modelProvider for non-channel callers. See #2786.
+  const cliProvider = params.cliSessionProvider ?? params.providerUsed ?? entry.modelProvider;
   if (params.cliSessionId && cliProvider) {
     const nextEntry = { ...entry, ...patch };
     setCliSessionId(nextEntry, cliProvider, params.cliSessionId);
@@ -45,6 +50,9 @@ export async function persistSessionUsageUpdate(params: {
   lastCallUsage?: NormalizedUsage;
   modelUsed?: string;
   providerUsed?: string;
+  /** Resolved CLI runtime (e.g. "claude") used to key `cliSessionIds` — distinct
+   *  from `providerUsed`, which carries the messaging channel (e.g. "slack"). See #2786. */
+  cliSessionProvider?: string;
   promptTokens?: number;
   systemPromptReport?: SessionSystemPromptReport;
   cliSessionId?: string;

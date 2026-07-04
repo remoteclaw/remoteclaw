@@ -55,6 +55,32 @@ describe("persistSessionUsageUpdate — CLI session ID persistence", () => {
     expect(patch.cliSessionIds?.["claude"]).toBe("sess-abc-123");
   });
 
+  it("keys cliSessionIds by cliSessionProvider (runtime), not providerUsed (channel) — #2786", async () => {
+    // Regression: the messaging channel ("slack") flows through providerUsed, but
+    // CLI session IDs must be keyed by the resolved runtime ("claude"). Keying by
+    // the channel produced cliSessionIds["slack"], which no reader ever resolves,
+    // so --resume never fired and every message started a fresh session.
+    const entry = makeEntry({ modelProvider: "slack" });
+    hoisted.updateSessionStoreEntryMock.mockImplementation(
+      async (params: { update: (e: SessionEntry) => Promise<Partial<SessionEntry>> }) => {
+        return params.update(entry);
+      },
+    );
+
+    await persistSessionUsageUpdate({
+      storePath: "/tmp/store.json",
+      sessionKey: "test-key",
+      usage: { input: 100, output: 50 },
+      providerUsed: "slack",
+      cliSessionProvider: "claude",
+      cliSessionId: "sess-runtime-keyed",
+    });
+
+    const patch = await hoisted.updateSessionStoreEntryMock.mock.results[0].value;
+    expect(patch.cliSessionIds?.["claude"]).toBe("sess-runtime-keyed");
+    expect(patch.cliSessionIds?.["slack"]).toBeUndefined();
+  });
+
   it("uses entry.modelProvider when providerUsed is absent", async () => {
     const entry = makeEntry({ modelProvider: "gemini" });
     hoisted.updateSessionStoreEntryMock.mockImplementation(

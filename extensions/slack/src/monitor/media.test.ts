@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { logVerbose } from "../../../../src/globals.js";
 import * as ssrf from "../../../../src/infra/net/ssrf.js";
 import * as mediaFetch from "../../../../src/media/fetch.js";
 import type { SavedMedia } from "../../../../src/media/store.js";
@@ -10,10 +11,17 @@ import {
 } from "../../../../test/helpers/extensions/fetch-mock.js";
 import {
   fetchWithSlackAuth,
+  resetSlackThreadStarterCacheForTest,
   resolveSlackAttachmentContent,
   resolveSlackMedia,
   resolveSlackThreadHistory,
+  resolveSlackThreadStarter,
 } from "./media.js";
+
+vi.mock("../../../../src/globals.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../../../src/globals.js")>()),
+  logVerbose: vi.fn(),
+}));
 
 // Store original fetch
 const originalFetch = globalThis.fetch;
@@ -766,7 +774,8 @@ describe("resolveSlackThreadHistory", () => {
     expect(replies).not.toHaveBeenCalled();
   });
 
-  it("returns empty when Slack API throws", async () => {
+  it("returns empty and logs the reason when Slack API throws (#2104)", async () => {
+    vi.mocked(logVerbose).mockClear();
     const replies = vi.fn().mockRejectedValueOnce(new Error("slack down"));
     const client = {
       conversations: { replies },
@@ -780,5 +789,37 @@ describe("resolveSlackThreadHistory", () => {
     });
 
     expect(result).toEqual([]);
+    // #2104: the failure must be visible (not silently swallowed), and must
+    // carry the error detail so operators can diagnose it.
+    expect(vi.mocked(logVerbose)).toHaveBeenCalledWith(
+      expect.stringContaining("thread history fetch failed"),
+    );
+    expect(vi.mocked(logVerbose)).toHaveBeenCalledWith(expect.stringContaining("slack down"));
+  });
+});
+
+describe("resolveSlackThreadStarter", () => {
+  afterEach(() => {
+    resetSlackThreadStarterCacheForTest();
+  });
+
+  it("returns null and logs the reason when Slack API throws (#2104)", async () => {
+    vi.mocked(logVerbose).mockClear();
+    const replies = vi.fn().mockRejectedValueOnce(new Error("scope missing"));
+    const client = {
+      conversations: { replies },
+    } as unknown as Parameters<typeof resolveSlackThreadStarter>[0]["client"];
+
+    const result = await resolveSlackThreadStarter({
+      channelId: "C1",
+      threadTs: "1.000",
+      client,
+    });
+
+    expect(result).toBeNull();
+    expect(vi.mocked(logVerbose)).toHaveBeenCalledWith(
+      expect.stringContaining("thread starter fetch failed"),
+    );
+    expect(vi.mocked(logVerbose)).toHaveBeenCalledWith(expect.stringContaining("scope missing"));
   });
 });

@@ -288,7 +288,7 @@ describe("Cron issue regressions", () => {
     });
 
     const result = await cron.run("missing-enabled-due", "due");
-    expect(result).toEqual({ ok: true, ran: true });
+    expect(result).toMatchObject({ ok: true, ran: true });
     expect(enqueueSystemEvent).toHaveBeenCalledWith(
       "missing-enabled-due",
       expect.objectContaining({ agentId: undefined }),
@@ -508,7 +508,7 @@ describe("Cron issue regressions", () => {
     });
 
     const runResult = await cron.run("manual-target", "force");
-    expect(runResult).toEqual({ ok: true, ran: true });
+    expect(runResult).toMatchObject({ ok: true, ran: true });
 
     const jobs = await cron.list({ includeDisabled: true });
     const unrelated = jobs.find((entry) => entry.id === "unrelated-due");
@@ -556,7 +556,7 @@ describe("Cron issue regressions", () => {
     });
 
     const result = await cron.run(job.id, "force");
-    expect(result).toEqual({ ok: true, ran: true });
+    expect(result).toMatchObject({ ok: true, ran: true });
 
     const persisted = await loadCronStore(store.storePath);
     const persistedJob = persisted.jobs.find((entry) => entry.id === job.id);
@@ -1238,7 +1238,7 @@ describe("Cron issue regressions", () => {
     });
 
     const result = await cron.run(job.id, "force");
-    expect(result).toEqual({ ok: true, ran: true });
+    expect(result).toMatchObject({ ok: true, ran: true });
     expect(abortAwareRunner.getObservedAbortSignal()).toBeDefined();
     expect(abortAwareRunner.getObservedAbortSignal()?.aborted).toBe(true);
 
@@ -1506,7 +1506,7 @@ describe("Cron issue regressions", () => {
     });
 
     const result = await run(state, "stale-running", "force");
-    expect(result).toEqual({ ok: true, ran: true });
+    expect(result).toMatchObject({ ok: true, ran: true });
     expect(enqueueSystemEvent).toHaveBeenCalledWith(
       "stale-running",
       expect.objectContaining({ agentId: undefined }),

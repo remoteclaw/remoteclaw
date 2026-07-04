@@ -982,6 +982,16 @@ async function deliverSubagentAnnouncement(params: {
     return direct;
   }
 
+  // Direct completion delivery failed. Surface the direct-send error now, before the
+  // queue fallback below: a successful fallback returns path:"queued" and would
+  // otherwise discard this error, leaving operators unable to tell a clean direct
+  // send from one that failed and was silently rescued by the queue (#2117).
+  if (direct.error) {
+    defaultRuntime.log(
+      `[warn] Subagent announce direct send failed, attempting queue fallback: ${direct.error}`,
+    );
+  }
+
   // If completion path failed direct delivery, try queueing as a fallback so the
   // report can still be delivered once the requester session is idle.
   const queueOutcome = await maybeQueueSubagentAnnounce({

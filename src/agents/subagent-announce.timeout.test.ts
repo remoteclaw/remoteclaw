@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { defaultRuntime } from "../runtime.js";
 import { createSubagentAnnounceDeliveryRuntimeMock } from "./subagent-announce.test-support.js";
 
 type GatewayCall = {
@@ -543,5 +544,31 @@ describe("subagent announce timeout config", () => {
     expect(internalEvents[0]?.result).toContain(
       "A longer partial summary that should stay silent.",
     );
+  });
+
+  it("logs the direct-send error before falling back to the queue (#2117)", async () => {
+    const logSpy = vi.spyOn(defaultRuntime, "log");
+    try {
+      callGatewayImpl = async (request) => {
+        if (request.method === "chat.history") {
+          return { messages: [] };
+        }
+        throw new Error("direct-send-boom");
+      };
+
+      await runAnnounceFlowForTest("run-2117-direct-fail-log", {
+        requesterOrigin: { channel: "discord", to: "12345" },
+        expectsCompletionMessage: true,
+      });
+
+      const warned = logSpy.mock.calls.some(
+        ([message]) =>
+          typeof message === "string" &&
+          message.includes("direct send failed, attempting queue fallback"),
+      );
+      expect(warned).toBe(true);
+    } finally {
+      logSpy.mockRestore();
+    }
   });
 });

@@ -1,17 +1,19 @@
 #!/usr/bin/env node
 
-// Regression gate: forbids `.ai` TLD references involving the RemoteClaw name.
-// The fork owns remoteclaw.org only — claims against the `.ai` TLD are stale or
-// upstream drift. Matches both forms:
+// Regression gate: forbids `.ai` TLD references involving the RemoteClaw name,
+// plus the upstream ClawHub skills-marketplace domain (a gutted feature we must
+// not advertise or link to). The fork owns remoteclaw.org only — claims against
+// the `.ai` TLD are stale or upstream drift. Matches:
 //   - forward domain   `remoteclaw.ai`   (URLs, hostnames)
 //   - reverse-DNS      `org.remoteclaw`   (bundle IDs, launch-agent labels, package names)
+//   - upstream domain  `clawhub.ai`       (ClawHub marketplace — gutted; do not link)
 // Exemptions are declared in scripts/ci/remoteclaw-ai-allowlist.txt.
 
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-const PATTERN = "(remoteclaw\\.ai|ai\\.remoteclaw)";
+const PATTERN = "(remoteclaw\\.ai|ai\\.remoteclaw|clawhub\\.ai)";
 const ALLOWLIST_REL = "scripts/ci/remoteclaw-ai-allowlist.txt";
 
 function resolveRepoRoot() {

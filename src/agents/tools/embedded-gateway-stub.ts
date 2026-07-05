@@ -8,8 +8,7 @@ type EmbeddedCallGateway = <T = Record<string, unknown>>(opts: CallGatewayOption
 
 interface EmbeddedGatewayRuntime {
   resolveSessionAgentId: (opts: { sessionKey: string; config: RemoteClawConfig }) => string;
-  loadConfig: () => RemoteClawConfig;
-  stripEnvelopeFromMessages: (msgs: unknown[]) => unknown[];
+  getRuntimeConfig: () => RemoteClawConfig;
   augmentChatHistoryWithCliSessionImports: (opts: {
     entry: unknown;
     provider: string | undefined;
@@ -26,7 +25,10 @@ interface EmbeddedGatewayRuntime {
     maxSingleMessageBytes: number;
   }) => { messages: unknown[] };
   resolveEffectiveChatHistoryMaxChars: (cfg: RemoteClawConfig) => number;
-  sanitizeChatHistoryMessages: (msgs: unknown[], maxChars: number) => unknown[];
+  projectRecentChatDisplayMessages: (
+    msgs: unknown[],
+    opts?: { maxChars?: number; maxMessages?: number },
+  ) => unknown[];
   capArrayByJsonBytes: (items: unknown[], maxBytes: number) => { items: unknown[] };
   listSessionsFromStore: (opts: {
     cfg: RemoteClawConfig;
@@ -67,7 +69,7 @@ async function getRuntime(): Promise<EmbeddedGatewayRuntime> {
 
 async function handleSessionsList(params: Record<string, unknown>) {
   const rt = await getRuntime();
-  const cfg = rt.loadConfig();
+  const cfg = rt.getRuntimeConfig();
   const { storePath, store } = rt.loadCombinedSessionStoreForGateway(cfg);
   return rt.listSessionsFromStore({
     cfg,
@@ -79,7 +81,7 @@ async function handleSessionsList(params: Record<string, unknown>) {
 
 async function handleSessionsResolve(params: Record<string, unknown>) {
   const rt = await getRuntime();
-  const cfg = rt.loadConfig();
+  const cfg = rt.getRuntimeConfig();
   const resolved = await rt.resolveSessionKeyFromResolveParams({
     cfg,
     p: params as SessionsResolveParams,
@@ -125,10 +127,11 @@ async function handleChatHistory(params: Record<string, unknown>): Promise<{
   const max = Math.min(hardMax, requested);
   const effectiveMaxChars = rt.resolveEffectiveChatHistoryMaxChars(cfg);
 
-  const sliced = rawMessages.length > max ? rawMessages.slice(-max) : rawMessages;
-  const sanitized = rt.stripEnvelopeFromMessages(sliced);
   const normalized = rt.augmentChatHistoryWithCanvasBlocks(
-    rt.sanitizeChatHistoryMessages(sanitized, effectiveMaxChars),
+    rt.projectRecentChatDisplayMessages(rawMessages, {
+      maxChars: effectiveMaxChars,
+      maxMessages: max,
+    }),
   );
 
   const maxHistoryBytes = rt.getMaxChatHistoryMessagesBytes();

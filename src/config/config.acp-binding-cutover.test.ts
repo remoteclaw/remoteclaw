@@ -52,6 +52,27 @@ describe("ACP binding cutover schema", () => {
     expect(parsed.success).toBe(true);
   });
 
+  it("accepts route binding session dmScope overrides", () => {
+    const parsed = RemoteClawSchema.safeParse({
+      bindings: [
+        {
+          type: "route",
+          agentId: "main",
+          match: {
+            channel: "discord",
+            accountId: "default",
+            peer: { kind: "direct", id: "1497598990336790559" },
+          },
+          session: {
+            dmScope: "per-account-channel-peer",
+          },
+        },
+      ],
+    });
+
+    expect(parsed.success).toBe(true);
+  });
+
   it("rejects legacy Discord channel-local ACP binding fields", () => {
     const parsed = RemoteClawSchema.safeParse({
       channels: {

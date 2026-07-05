@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import { captureEnv } from "../test-utils/env.js";
 import {
-  loadConfigMock as loadConfig,
+  loadConfigMock as getRuntimeConfig,
   pickPrimaryLanIPv4Mock as pickPrimaryLanIPv4,
   pickPrimaryTailnetIPv4Mock as pickPrimaryTailnetIPv4,
   resolveGatewayPortMock as resolveGatewayPort,
@@ -78,7 +78,7 @@ const { buildGatewayConnectionDetails, callGateway, callGatewayCli, callGatewayS
   await import("./call.js");
 
 function resetGatewayCallMocks() {
-  loadConfig.mockClear();
+  getRuntimeConfig.mockClear();
   resolveGatewayPort.mockClear();
   pickPrimaryTailnetIPv4.mockClear();
   pickPrimaryLanIPv4.mockClear();
@@ -96,7 +96,7 @@ function setGatewayNetworkDefaults(port = 18789) {
 }
 
 function setLocalLoopbackGatewayConfig(port = 18789) {
-  loadConfig.mockReturnValue({ gateway: { mode: "local", bind: "loopback" } });
+  getRuntimeConfig.mockReturnValue({ gateway: { mode: "local", bind: "loopback" } });
   setGatewayNetworkDefaults(port);
 }
 
@@ -139,7 +139,7 @@ describe("callGateway url resolution", () => {
       tailnetIp: undefined,
     },
   ])("local auto-bind: $label", async ({ tailnetIp }) => {
-    loadConfig.mockReturnValue({ gateway: { mode: "local", bind: "auto" } });
+    getRuntimeConfig.mockReturnValue({ gateway: { mode: "local", bind: "auto" } });
     resolveGatewayPort.mockReturnValue(18800);
     pickPrimaryTailnetIPv4.mockReturnValue(tailnetIp);
 
@@ -185,7 +185,7 @@ describe("callGateway url resolution", () => {
       expectedUrl: "ws://127.0.0.1:18800",
     },
   ])("uses loopback for $label", async ({ gateway, tailnetIp, lanIp, expectedUrl }) => {
-    loadConfig.mockReturnValue({ gateway });
+    getRuntimeConfig.mockReturnValue({ gateway });
     resolveGatewayPort.mockReturnValue(18800);
     pickPrimaryTailnetIPv4.mockReturnValue(tailnetIp);
     pickPrimaryLanIPv4.mockReturnValue(lanIp);
@@ -196,7 +196,7 @@ describe("callGateway url resolution", () => {
   });
 
   it("uses url override in remote mode even when remote url is missing", async () => {
-    loadConfig.mockReturnValue({
+    getRuntimeConfig.mockReturnValue({
       gateway: { mode: "remote", bind: "loopback", remote: {} },
     });
     resolveGatewayPort.mockReturnValue(18789);
@@ -226,7 +226,7 @@ describe("callGateway url resolution", () => {
   });
 
   it("uses REMOTECLAW_GATEWAY_URL env override in remote mode when remote URL is missing", async () => {
-    loadConfig.mockReturnValue({
+    getRuntimeConfig.mockReturnValue({
       gateway: { mode: "remote", bind: "loopback", remote: {} },
     });
     resolveGatewayPort.mockReturnValue(18789);
@@ -244,7 +244,7 @@ describe("callGateway url resolution", () => {
   });
 
   it("uses env URL override credentials without resolving local password SecretRefs", async () => {
-    loadConfig.mockReturnValue({
+    getRuntimeConfig.mockReturnValue({
       gateway: {
         mode: "local",
         auth: {
@@ -273,7 +273,7 @@ describe("callGateway url resolution", () => {
   });
 
   it("uses remote tlsFingerprint with env URL override", async () => {
-    loadConfig.mockReturnValue({
+    getRuntimeConfig.mockReturnValue({
       gateway: {
         mode: "remote",
         remote: {
@@ -295,7 +295,7 @@ describe("callGateway url resolution", () => {
   });
 
   it("does not apply remote tlsFingerprint for CLI url override", async () => {
-    loadConfig.mockReturnValue({
+    getRuntimeConfig.mockReturnValue({
       gateway: {
         mode: "remote",
         remote: {
@@ -372,7 +372,7 @@ describe("buildGatewayConnectionDetails", () => {
   });
 
   it("emits a remote fallback note when remote url is missing", () => {
-    loadConfig.mockReturnValue({
+    getRuntimeConfig.mockReturnValue({
       gateway: { mode: "remote", bind: "loopback", remote: {} },
     });
     resolveGatewayPort.mockReturnValue(18789);
@@ -401,7 +401,7 @@ describe("buildGatewayConnectionDetails", () => {
       expectedUrl: "ws://127.0.0.1:18800",
     },
   ])("uses loopback URL for bind=lan $label", ({ gateway, expectedUrl }) => {
-    loadConfig.mockReturnValue({ gateway });
+    getRuntimeConfig.mockReturnValue({ gateway });
     resolveGatewayPort.mockReturnValue(18800);
     pickPrimaryTailnetIPv4.mockReturnValue(undefined);
     pickPrimaryLanIPv4.mockReturnValue("10.0.0.5");
@@ -414,7 +414,7 @@ describe("buildGatewayConnectionDetails", () => {
   });
 
   it("prefers remote url when configured", () => {
-    loadConfig.mockReturnValue({
+    getRuntimeConfig.mockReturnValue({
       gateway: {
         mode: "remote",
         bind: "tailnet",
@@ -433,7 +433,7 @@ describe("buildGatewayConnectionDetails", () => {
   });
 
   it("uses env REMOTECLAW_GATEWAY_URL when set", () => {
-    loadConfig.mockReturnValue({ gateway: { mode: "local", bind: "loopback" } });
+    getRuntimeConfig.mockReturnValue({ gateway: { mode: "local", bind: "loopback" } });
     resolveGatewayPort.mockReturnValue(18800);
     pickPrimaryTailnetIPv4.mockReturnValue(undefined);
     const prevUrl = process.env.REMOTECLAW_GATEWAY_URL;
@@ -455,7 +455,7 @@ describe("buildGatewayConnectionDetails", () => {
   });
 
   it("throws for insecure ws:// remote URLs (CWE-319)", () => {
-    loadConfig.mockReturnValue({
+    getRuntimeConfig.mockReturnValue({
       gateway: {
         mode: "remote",
         bind: "loopback",
@@ -481,7 +481,7 @@ describe("buildGatewayConnectionDetails", () => {
 
   it("allows ws:// private remote URLs only when REMOTECLAW_ALLOW_INSECURE_PRIVATE_WS=1", () => {
     process.env.REMOTECLAW_ALLOW_INSECURE_PRIVATE_WS = "1";
-    loadConfig.mockReturnValue({
+    getRuntimeConfig.mockReturnValue({
       gateway: {
         mode: "remote",
         bind: "loopback",
@@ -498,7 +498,7 @@ describe("buildGatewayConnectionDetails", () => {
 
   it("allows ws:// hostname remote URLs when REMOTECLAW_ALLOW_INSECURE_PRIVATE_WS=1", () => {
     process.env.REMOTECLAW_ALLOW_INSECURE_PRIVATE_WS = "1";
-    loadConfig.mockReturnValue({
+    getRuntimeConfig.mockReturnValue({
       gateway: {
         mode: "remote",
         bind: "loopback",
@@ -608,7 +608,7 @@ describe("callGateway error details", () => {
   });
 
   it("fails fast when remote mode is missing remote url", async () => {
-    loadConfig.mockReturnValue({
+    getRuntimeConfig.mockReturnValue({
       gateway: { mode: "remote", bind: "loopback", remote: {} },
     });
     await expect(
@@ -654,7 +654,7 @@ describe("callGateway url override auth requirements", () => {
   it("throws when url override is set without explicit credentials", async () => {
     process.env.REMOTECLAW_GATEWAY_TOKEN = "env-token";
     process.env.REMOTECLAW_GATEWAY_PASSWORD = "env-password";
-    loadConfig.mockReturnValue({
+    getRuntimeConfig.mockReturnValue({
       gateway: {
         mode: "local",
         auth: { token: "local-token", password: "local-password" },
@@ -668,7 +668,7 @@ describe("callGateway url override auth requirements", () => {
 
   it("throws when env URL override is set without env credentials", async () => {
     process.env.REMOTECLAW_GATEWAY_URL = "wss://override.example/ws";
-    loadConfig.mockReturnValue({
+    getRuntimeConfig.mockReturnValue({
       gateway: {
         mode: "local",
         auth: { token: "local-token", password: "local-password" },
@@ -764,7 +764,7 @@ describe("callGateway password resolution", () => {
     if (envPassword !== undefined) {
       process.env.REMOTECLAW_GATEWAY_PASSWORD = envPassword;
     }
-    loadConfig.mockReturnValue(config);
+    getRuntimeConfig.mockReturnValue(config);
 
     await callGateway({ method: "health" });
 
@@ -773,7 +773,7 @@ describe("callGateway password resolution", () => {
 
   it("resolves gateway.auth.password SecretInput refs for gateway calls", async () => {
     process.env.LOCAL_REF_PASSWORD = "resolved-local-ref-password"; // pragma: allowlist secret
-    loadConfig.mockReturnValue({
+    getRuntimeConfig.mockReturnValue({
       gateway: {
         mode: "local",
         bind: "loopback",
@@ -796,7 +796,7 @@ describe("callGateway password resolution", () => {
 
   it("does not resolve local password ref when env password takes precedence", async () => {
     process.env.REMOTECLAW_GATEWAY_PASSWORD = "from-env";
-    loadConfig.mockReturnValue({
+    getRuntimeConfig.mockReturnValue({
       gateway: {
         mode: "local",
         bind: "loopback",
@@ -818,7 +818,7 @@ describe("callGateway password resolution", () => {
   });
 
   it("does not resolve local password ref when token auth can win", async () => {
-    loadConfig.mockReturnValue({
+    getRuntimeConfig.mockReturnValue({
       gateway: {
         mode: "local",
         bind: "loopback",
@@ -842,7 +842,7 @@ describe("callGateway password resolution", () => {
 
   it("resolves local password ref before unresolved local token ref can block auth", async () => {
     process.env.LOCAL_FALLBACK_PASSWORD = "resolved-local-fallback-password"; // pragma: allowlist secret
-    loadConfig.mockReturnValue({
+    getRuntimeConfig.mockReturnValue({
       gateway: {
         mode: "local",
         bind: "loopback",
@@ -866,7 +866,7 @@ describe("callGateway password resolution", () => {
 
   it("fails closed when unresolved local token SecretRef would otherwise fall back to remote token", async () => {
     process.env.LOCAL_REMOTE_FALLBACK_TOKEN = "resolved-local-remote-fallback-token";
-    loadConfig.mockReturnValue({
+    getRuntimeConfig.mockReturnValue({
       gateway: {
         mode: "local",
         bind: "loopback",
@@ -891,7 +891,7 @@ describe("callGateway password resolution", () => {
   it.each(["none", "trusted-proxy"] as const)(
     "ignores unresolved local password ref when auth mode is %s",
     async (mode) => {
-      loadConfig.mockReturnValue({
+      getRuntimeConfig.mockReturnValue({
         gateway: {
           mode: "local",
           bind: "loopback",
@@ -915,7 +915,7 @@ describe("callGateway password resolution", () => {
   );
 
   it("does not resolve local password ref when remote password is already configured", async () => {
-    loadConfig.mockReturnValue({
+    getRuntimeConfig.mockReturnValue({
       gateway: {
         mode: "remote",
         bind: "loopback",
@@ -942,7 +942,7 @@ describe("callGateway password resolution", () => {
 
   it("resolves gateway.remote.token SecretInput refs when remote token is required", async () => {
     process.env.REMOTE_REF_TOKEN = "resolved-remote-ref-token";
-    loadConfig.mockReturnValue({
+    getRuntimeConfig.mockReturnValue({
       gateway: {
         mode: "remote",
         bind: "loopback",
@@ -966,7 +966,7 @@ describe("callGateway password resolution", () => {
 
   it("resolves gateway.remote.password SecretInput refs when remote password is required", async () => {
     process.env.REMOTE_REF_PASSWORD = "resolved-remote-ref-password"; // pragma: allowlist secret
-    loadConfig.mockReturnValue({
+    getRuntimeConfig.mockReturnValue({
       gateway: {
         mode: "remote",
         bind: "loopback",
@@ -989,7 +989,7 @@ describe("callGateway password resolution", () => {
   });
 
   it("does not resolve remote token ref when remote password already wins", async () => {
-    loadConfig.mockReturnValue({
+    getRuntimeConfig.mockReturnValue({
       gateway: {
         mode: "remote",
         bind: "loopback",
@@ -1015,7 +1015,7 @@ describe("callGateway password resolution", () => {
 
   it("resolves remote token ref before unresolved remote password ref can block auth", async () => {
     process.env.REMOTE_REF_TOKEN = "resolved-remote-ref-token";
-    loadConfig.mockReturnValue({
+    getRuntimeConfig.mockReturnValue({
       gateway: {
         mode: "remote",
         bind: "loopback",
@@ -1040,7 +1040,7 @@ describe("callGateway password resolution", () => {
   });
 
   it("does not resolve remote password ref when remote token already wins", async () => {
-    loadConfig.mockReturnValue({
+    getRuntimeConfig.mockReturnValue({
       gateway: {
         mode: "remote",
         bind: "loopback",
@@ -1066,7 +1066,7 @@ describe("callGateway password resolution", () => {
 
   it("resolves remote token refs on local-mode calls when fallback token can win", async () => {
     process.env.LOCAL_FALLBACK_REMOTE_TOKEN = "resolved-local-fallback-remote-token";
-    loadConfig.mockReturnValue({
+    getRuntimeConfig.mockReturnValue({
       gateway: {
         mode: "local",
         bind: "loopback",
@@ -1092,7 +1092,7 @@ describe("callGateway password resolution", () => {
   it.each(["none", "trusted-proxy"] as const)(
     "does not resolve remote refs on non-remote gateway calls when auth mode is %s",
     async (mode) => {
-      loadConfig.mockReturnValue({
+      getRuntimeConfig.mockReturnValue({
         gateway: {
           mode: "local",
           bind: "loopback",
@@ -1123,7 +1123,7 @@ describe("callGateway password resolution", () => {
       password?: string;
       token?: string;
     };
-    loadConfig.mockReturnValue({
+    getRuntimeConfig.mockReturnValue({
       gateway: {
         mode: "local",
         auth,

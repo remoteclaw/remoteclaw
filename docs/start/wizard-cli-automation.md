@@ -204,7 +204,7 @@ sessions, and auth profiles. Running without `--workspace` launches the wizard.
 ```bash
 remoteclaw agents add work \
   --workspace ~/.remoteclaw/workspace-work \
-  --model openai/gpt-5.4 \
+  --model openai/gpt-5.5 \
   --bind whatsapp:biz \
   --non-interactive \
   --json

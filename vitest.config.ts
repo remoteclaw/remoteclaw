@@ -16,6 +16,7 @@ const pluginSdkSubpaths = [
   "channel-config-helpers",
   "group-access",
   "json-store",
+  "reply-chunking",
   "reply-payload",
   "runtime",
   "runtime-env",

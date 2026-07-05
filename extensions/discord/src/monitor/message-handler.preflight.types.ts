@@ -54,6 +54,7 @@ export type DiscordMessagePreflightContext = DiscordMessagePreflightSharedFields
   commandAuthorized: boolean;
   baseText: string;
   messageText: string;
+  preflightAudioTranscript?: string;
   wasMentioned: boolean;
 
   route: ReturnType<typeof resolveAgentRoute>;

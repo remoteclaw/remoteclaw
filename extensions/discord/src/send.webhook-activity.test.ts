@@ -7,7 +7,7 @@ vi.mock("../../../src/config/config.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../src/config/config.js")>();
   return {
     ...actual,
-    loadConfig: () => loadConfigMock(),
+    requireRuntimeConfig: (cfg: unknown) => cfg ?? loadConfigMock(),
   };
 });
 

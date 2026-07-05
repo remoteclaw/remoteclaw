@@ -1,3 +1,4 @@
+import { Buffer } from "node:buffer";
 import { formatErrorMessage } from "../../../src/infra/errors.js";
 import { resolveFetch } from "../../../src/infra/fetch.js";
 import { generateSecureUuid } from "../../../src/infra/secure-random.js";
@@ -28,6 +29,50 @@ export type SignalSseEvent = {
 };
 
 const DEFAULT_TIMEOUT_MS = 10_000;
+
+// Bound reads from the signal-cli daemon. A compromised/hostile daemon — or a
+// MITM on a plaintext http:// connection to a remote signal-cli — could otherwise
+// stream unbounded data (a body with no size limit, or an SSE stream with no
+// newline / an ever-growing data field) and exhaust process memory (OOM DoS).
+const MAX_SIGNAL_HTTP_RESPONSE_BYTES = 1_048_576;
+const MAX_SIGNAL_SSE_BUFFER_BYTES = 1_048_576;
+const MAX_SIGNAL_SSE_EVENT_DATA_BYTES = 1_048_576;
+
+// Read a response body as text while enforcing a hard byte cap. Streams via the
+// reader so the cap trips before the whole (potentially unbounded) body is
+// buffered — `res.text()` would read it all first, defeating the limit.
+async function readBodyTextWithCap(res: Response, cap: number): Promise<string> {
+  const declaredLength = Number(res.headers.get("content-length"));
+  if (Number.isFinite(declaredLength) && declaredLength > cap) {
+    throw new Error(`Signal HTTP response exceeded ${cap} byte limit`);
+  }
+  const body = res.body;
+  if (!body) {
+    const text = await res.text();
+    if (Buffer.byteLength(text, "utf8") > cap) {
+      throw new Error(`Signal HTTP response exceeded ${cap} byte limit`);
+    }
+    return text;
+  }
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let text = "";
+  let totalBytes = 0;
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) {
+      break;
+    }
+    totalBytes += value.byteLength;
+    if (totalBytes > cap) {
+      await reader.cancel().catch(() => {});
+      throw new Error(`Signal HTTP response exceeded ${cap} byte limit`);
+    }
+    text += decoder.decode(value, { stream: true });
+  }
+  text += decoder.decode();
+  return text;
+}
 
 function normalizeBaseUrl(url: string): string {
   const trimmed = url.trim();
@@ -94,7 +139,7 @@ export async function signalRpcRequest<T = unknown>(
   if (res.status === 201) {
     return undefined as T;
   }
-  const text = await res.text();
+  const text = await readBodyTextWithCap(res, MAX_SIGNAL_HTTP_RESPONSE_BYTES);
   if (!text) {
     throw new Error(`Signal RPC empty response (status ${res.status})`);
   }
@@ -180,6 +225,10 @@ export async function streamSignalEvents(params: {
       break;
     }
     buffer += decoder.decode(value, { stream: true });
+    if (Buffer.byteLength(buffer, "utf8") > MAX_SIGNAL_SSE_BUFFER_BYTES) {
+      await reader.cancel().catch(() => {});
+      throw new Error(`Signal SSE buffer exceeded ${MAX_SIGNAL_SSE_BUFFER_BYTES} byte limit`);
+    }
     let lineEnd = buffer.indexOf("\n");
     while (lineEnd !== -1) {
       let line = buffer.slice(0, lineEnd);
@@ -205,6 +254,12 @@ export async function streamSignalEvents(params: {
         currentEvent.event = value;
       } else if (field === "data") {
         currentEvent.data = currentEvent.data ? `${currentEvent.data}\n${value}` : value;
+        if (Buffer.byteLength(currentEvent.data, "utf8") > MAX_SIGNAL_SSE_EVENT_DATA_BYTES) {
+          await reader.cancel().catch(() => {});
+          throw new Error(
+            `Signal SSE event data exceeded ${MAX_SIGNAL_SSE_EVENT_DATA_BYTES} byte limit`,
+          );
+        }
       } else if (field === "id") {
         currentEvent.id = value;
       }

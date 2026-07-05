@@ -144,6 +144,7 @@ async function invokeNode(params: {
       nodeRegistry: params.nodeRegistry,
       execApprovalManager: undefined,
       logGateway,
+      loadConfig: () => mocks.loadConfig(),
     } as never,
     client: null,
     req: { type: "req", id: "req-node-invoke", method: "node.invoke" },
@@ -173,7 +174,7 @@ async function pullPending(nodeId: string, commands?: string[]) {
   await nodeHandlers["node.pending.pull"]({
     params: {},
     respond: respond as never,
-    context: {} as never,
+    context: { loadConfig: () => mocks.loadConfig() } as never,
     client: createNodeClient(nodeId, commands) as never,
     req: { type: "req", id: "req-node-pending", method: "node.pending.pull" },
     isWebchatConnect: () => false,
@@ -186,7 +187,7 @@ async function ackPending(nodeId: string, ids: string[], commands?: string[]) {
   await nodeHandlers["node.pending.ack"]({
     params: { ids },
     respond: respond as never,
-    context: {} as never,
+    context: { loadConfig: () => mocks.loadConfig() } as never,
     client: createNodeClient(nodeId, commands) as never,
     req: { type: "req", id: "req-node-pending-ack", method: "node.pending.ack" },
     isWebchatConnect: () => false,

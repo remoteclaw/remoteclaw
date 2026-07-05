@@ -52,6 +52,7 @@ import {
   ConfigSchemaParamsSchema,
   ConfigSchemaResponseSchema,
   ConfigSetParamsSchema,
+  UpdateStatusParamsSchema,
   UpdateRunParamsSchema,
 } from "./config.js";
 import {
@@ -118,6 +119,7 @@ import {
   NodePendingEnqueueResultSchema,
   NodePairApproveParamsSchema,
   NodePairListParamsSchema,
+  NodePairRemoveParamsSchema,
   NodePairRejectParamsSchema,
   NodePairRequestParamsSchema,
   NodePairVerifyParamsSchema,
@@ -184,6 +186,7 @@ export const ProtocolSchemas = {
   NodePairListParams: NodePairListParamsSchema,
   NodePairApproveParams: NodePairApproveParamsSchema,
   NodePairRejectParams: NodePairRejectParamsSchema,
+  NodePairRemoveParams: NodePairRemoveParamsSchema,
   NodePairVerifyParams: NodePairVerifyParamsSchema,
   NodeRenameParams: NodeRenameParamsSchema,
   NodeListParams: NodeListParamsSchema,
@@ -297,6 +300,7 @@ export const ProtocolSchemas = {
   ChatAbortParams: ChatAbortParamsSchema,
   ChatInjectParams: ChatInjectParamsSchema,
   ChatEvent: ChatEventSchema,
+  UpdateStatusParams: UpdateStatusParamsSchema,
   UpdateRunParams: UpdateRunParamsSchema,
   TickEvent: TickEventSchema,
   ShutdownEvent: ShutdownEventSchema,

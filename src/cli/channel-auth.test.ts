@@ -23,6 +23,7 @@ vi.mock("../channels/plugins/index.js", () => ({
 }));
 
 vi.mock("../config/config.js", () => ({
+  getRuntimeConfig: mocks.loadConfig,
   loadConfig: mocks.loadConfig,
 }));
 

@@ -29,6 +29,7 @@ remoteclaw nodes list --last-connected 24h
 remoteclaw nodes pending
 remoteclaw nodes approve <requestId>
 remoteclaw nodes reject <requestId>
+remoteclaw nodes remove --node <id|name|ip>
 remoteclaw nodes rename --node <id|name|ip> --name <displayName>
 remoteclaw nodes status
 remoteclaw nodes status --connected
@@ -38,6 +39,7 @@ remoteclaw nodes status --last-connected 24h
 `nodes list` prints pending/paired tables. Paired rows include the most recent connect age (Last Connect).
 Use `--connected` to only show currently-connected nodes. Use `--last-connected <duration>` to
 filter to nodes that connected within a duration (e.g. `24h`, `7d`).
+Use `nodes remove --node <id|name|ip>` to delete a stale gateway-owned node pairing record.
 
 Approval note:
 

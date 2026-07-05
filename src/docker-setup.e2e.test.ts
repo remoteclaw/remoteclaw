@@ -57,7 +57,16 @@ async function createDockerSetupSandbox(): Promise<DockerSetupSandbox> {
   const logPath = join(rootDir, "docker-stub.log");
 
   await mkdir(join(rootDir, "scripts", "docker"), { recursive: true });
+  await mkdir(join(rootDir, "scripts", "lib"), { recursive: true });
   await copyFile(join(repoRoot, "scripts", "docker", "setup.sh"), scriptPath);
+  await copyFile(
+    join(repoRoot, "scripts", "lib", "docker-build.sh"),
+    join(rootDir, "scripts", "lib", "docker-build.sh"),
+  );
+  await copyFile(
+    join(repoRoot, "scripts", "lib", "docker-e2e-logs.sh"),
+    join(rootDir, "scripts", "lib", "docker-e2e-logs.sh"),
+  );
   await chmod(scriptPath, 0o755);
   await writeFile(dockerfilePath, "FROM scratch\n");
   await writeFile(
@@ -217,6 +226,7 @@ describe("scripts/docker/setup.sh", () => {
     expect(envFile).toContain("REMOTECLAW_DOCKER_APT_PACKAGES=ffmpeg build-essential");
     expect(envFile).toContain("REMOTECLAW_EXTRA_MOUNTS=");
     expect(envFile).toContain("REMOTECLAW_HOME_VOLUME=remoteclaw-home"); // pragma: allowlist secret
+    expect(envFile).toContain("REMOTECLAW_DISABLE_BONJOUR=");
     const extraCompose = await readFile(
       join(activeSandbox.rootDir, "docker-compose.extra.yml"),
       "utf8",
@@ -233,6 +243,18 @@ describe("scripts/docker/setup.sh", () => {
       'run --rm --no-deps --entrypoint node remoteclaw-gateway dist/index.js config set --batch-json [{"path":"gateway.mode","value":"local"},{"path":"gateway.bind","value":"lan"},{"path":"gateway.controlUi.allowedOrigins","value":["http://localhost:18789","http://127.0.0.1:18789"]}]',
     );
     expect(log).not.toContain("run --rm remoteclaw-cli onboard --mode local --no-install-daemon");
+  });
+
+  it("persists explicit Docker Bonjour opt-in overrides", async () => {
+    const activeSandbox = requireSandbox(sandbox);
+
+    const result = runDockerSetup(activeSandbox, {
+      REMOTECLAW_DISABLE_BONJOUR: "0",
+    });
+
+    expect(result.status).toBe(0);
+    const envFile = await readFile(join(activeSandbox.rootDir, ".env"), "utf8");
+    expect(envFile).toContain("REMOTECLAW_DISABLE_BONJOUR=0");
   });
 
   it("avoids shared-network remoteclaw-cli before the gateway is started", async () => {
@@ -527,6 +549,13 @@ describe("scripts/docker/setup.sh", () => {
     const compose = await readFile(join(repoRoot, "docker-compose.yml"), "utf8");
     expect(compose).not.toContain("gateway-daemon");
     expect(compose).toContain('"gateway"');
+  });
+
+  it("keeps docker-compose gateway Bonjour advertising in auto mode by default", async () => {
+    const compose = await readFile(join(repoRoot, "docker-compose.yml"), "utf8");
+    expect(
+      compose.match(/REMOTECLAW_DISABLE_BONJOUR: \$\{REMOTECLAW_DISABLE_BONJOUR:-\}/g),
+    ).toHaveLength(1);
   });
 
   it("keeps docker-compose CLI network namespace settings in sync", async () => {

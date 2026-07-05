@@ -1,6 +1,7 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { SILENT_REPLY_TOKEN, type PluginRuntime } from "remoteclaw/plugin-sdk/msteams";
+import { SILENT_REPLY_TOKEN } from "remoteclaw/plugin-sdk/reply-chunking";
+import type { PluginRuntime } from "remoteclaw/plugin-sdk/runtime-store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createPluginRuntimeMock } from "../../test-utils/plugin-runtime-mock.js";
 import type { StoredConversationReference } from "./conversation-store.js";

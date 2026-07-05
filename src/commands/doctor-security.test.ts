@@ -6,13 +6,14 @@ import type { RemoteClawConfig } from "../config/config.js";
 
 const note = vi.hoisted(() => vi.fn());
 const pluginRegistry = vi.hoisted(() => ({ list: [] as unknown[] }));
+const listReadOnlyChannelPluginsForConfigMock = vi.hoisted(() => vi.fn());
 
 vi.mock("../terminal/note.js", () => ({
   note,
 }));
 
-vi.mock("../channels/plugins/index.js", () => ({
-  listChannelPlugins: () => pluginRegistry.list,
+vi.mock("../channels/plugins/read-only.js", () => ({
+  listReadOnlyChannelPluginsForConfig: listReadOnlyChannelPluginsForConfigMock,
 }));
 
 vi.mock("../channels/read-only-account-inspect.js", () => ({
@@ -28,6 +29,8 @@ describe("noteSecurityWarnings gateway exposure", () => {
 
   beforeEach(() => {
     note.mockClear();
+    listReadOnlyChannelPluginsForConfigMock.mockReset();
+    listReadOnlyChannelPluginsForConfigMock.mockImplementation(() => pluginRegistry.list);
     pluginRegistry.list = [];
     prevToken = process.env.REMOTECLAW_GATEWAY_TOKEN;
     prevPassword = process.env.REMOTECLAW_GATEWAY_PASSWORD;
@@ -197,6 +200,10 @@ describe("noteSecurityWarnings gateway exposure", () => {
     ];
     const cfg = { session: { dmScope: "main" } } as RemoteClawConfig;
     await noteSecurityWarnings(cfg);
+    expect(listReadOnlyChannelPluginsForConfigMock).toHaveBeenCalledWith(cfg, {
+      includePersistedAuthState: true,
+      includeSetupRuntimeFallback: false,
+    });
     const message = lastMessage();
     expect(message).toContain('config set session.dmScope "per-channel-peer"');
   });
@@ -454,6 +461,13 @@ describe("noteSecurityWarnings gateway exposure", () => {
     ];
 
     await noteSecurityWarnings({} as RemoteClawConfig);
+    expect(listReadOnlyChannelPluginsForConfigMock).toHaveBeenCalledWith(
+      {},
+      {
+        includePersistedAuthState: true,
+        includeSetupRuntimeFallback: false,
+      },
+    );
     const message = lastMessage();
     expect(message).toContain("[secrets]");
     expect(message).toContain("failed to resolve account");

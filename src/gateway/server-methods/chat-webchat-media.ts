@@ -84,6 +84,9 @@ export function buildWebchatAudioContentBlocksFromReplyPayloads(
   const seen = new Set<string>();
   const blocks: Array<Record<string, unknown>> = [];
   for (const payload of payloads) {
+    if (payload.isReasoning === true) {
+      continue;
+    }
     const parts = resolveSendableOutboundReplyParts(payload);
     for (const raw of parts.mediaUrls) {
       const url = raw.trim();

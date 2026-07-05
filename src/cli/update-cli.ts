@@ -70,7 +70,7 @@ ${theme.heading("Switch channels:")}
 
 ${theme.heading("Non-interactive:")}
   - Use --yes to accept downgrade prompts
-  - Combine with --channel/--tag/--restart/--json/--timeout as needed
+  - Combine with --channel/--tag/--no-restart/--json/--timeout as needed
   - Use --dry-run to preview actions without writing config/installing/restarting
 
 ${theme.heading("Examples:")}
@@ -103,7 +103,7 @@ ${theme.muted("Docs:")} ${formatDocsLink("/cli/update", "docs.remoteclaw.org/cli
   update
     .command("wizard")
     .description("Interactive update wizard")
-    .option("--timeout <seconds>", "Timeout for each update step in seconds (default: 1200)")
+    .option("--timeout <seconds>", "Timeout for each update step in seconds (default: 1800)")
     .addHelpText(
       "after",
       `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/update", "docs.remoteclaw.org/cli/update")}\n`,

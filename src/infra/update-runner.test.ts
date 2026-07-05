@@ -299,6 +299,6 @@ describe("runGatewayUpdate", () => {
     cwdSpy.mockRestore();
 
     expect(result.status).toBe("error");
-    expect(result.reason).toContain("no root");
+    expect(result.reason).toContain("not-remoteclaw-root");
   });
 });

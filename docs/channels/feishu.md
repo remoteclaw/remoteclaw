@@ -16,7 +16,9 @@ Feishu/Lark is an all-in-one collaboration platform where teams chat, share docu
 
 ## Quick start
 
-> **Requires RemoteClaw 2026.4.24 or above.** Run `remoteclaw --version` to check. Upgrade with `remoteclaw update`.
+<Note>
+Requires RemoteClaw 2026.4.25 or above. Run `remoteclaw --version` to check. Upgrade with `remoteclaw update`.
+</Note>
 
 <Steps>
   <Step title="Run the channel setup wizard">
@@ -70,6 +72,7 @@ Default: `allowlist`
 - `true` — require @mention (default)
 - `false` — respond without @mention
 - Per-group override: `channels.feishu.groups.<chat_id>.requireMention`
+- Broadcast-only `@all` and `@_all` are not treated as bot mentions. A message that mentions both `@all` and the bot directly still counts as a bot mention.
 
 ---
 
@@ -169,7 +172,9 @@ remoteclaw pairing list feishu
 | `/reset`  | Reset the current session   |
 | `/model`  | Show or switch the AI model |
 
-> Feishu/Lark does not support native slash-command menus, so send these as plain text messages.
+<Note>
+Feishu/Lark does not support native slash-command menus, so send these as plain text messages.
+</Note>
 
 ---
 
@@ -213,6 +218,11 @@ remoteclaw pairing list feishu
           appId: "cli_xxx",
           appSecret: "xxx",
           name: "Primary bot",
+          tts: {
+            providers: {
+              openai: { voice: "shimmer" },
+            },
+          },
         },
         backup: {
           appId: "cli_yyy",
@@ -227,6 +237,10 @@ remoteclaw pairing list feishu
 ```
 
 `defaultAccount` controls which account is used when outbound APIs do not specify an `accountId`.
+`accounts.<id>.tts` uses the same shape as `messages.tts` and deep-merges over
+global TTS config, so multi-bot Feishu setups can keep shared provider
+credentials globally while overriding only voice, model, persona, or auto mode
+per account.
 
 ### Message limits
 
@@ -386,6 +400,7 @@ Full configuration: [Gateway configuration](/gateway/configuration)
 | `channels.feishu.accounts.<id>.appId`             | App ID                                     | —                |
 | `channels.feishu.accounts.<id>.appSecret`         | App Secret                                 | —                |
 | `channels.feishu.accounts.<id>.domain`            | Per-account domain override                | `feishu`         |
+| `channels.feishu.accounts.<id>.tts`               | Per-account TTS override                   | `messages.tts`   |
 | `channels.feishu.dmPolicy`                        | DM policy                                  | `allowlist`      |
 | `channels.feishu.allowFrom`                       | DM allowlist (open_id list)                | [BotOwnerId]     |
 | `channels.feishu.groupPolicy`                     | Group policy                               | `allowlist`      |
@@ -414,6 +429,15 @@ Full configuration: [Gateway configuration](/gateway/configuration)
 - ✅ Video/media
 - ✅ Stickers
 
+Inbound Feishu/Lark audio messages are normalized as media placeholders instead
+of raw `file_key` JSON. When `tools.media.audio` is configured, RemoteClaw
+downloads the voice-note resource and runs shared audio transcription before the
+agent turn, so the agent receives the spoken transcript. If Feishu includes
+transcript text directly in the audio payload, that text is used without another
+ASR call. Without an audio transcription provider, the agent still receives a
+`<media:audio>` placeholder plus the saved attachment, not the raw Feishu
+resource payload.
+
 ### Send
 
 - ✅ Text
@@ -423,6 +447,14 @@ Full configuration: [Gateway configuration](/gateway/configuration)
 - ✅ Video/media
 - ✅ Interactive cards (including streaming updates)
 - ⚠️ Rich text (post-style formatting; doesn't support full Feishu/Lark authoring capabilities)
+
+Native Feishu/Lark audio bubbles use the Feishu `audio` message type and require
+Ogg/Opus upload media (`file_type: "opus"`). Existing `.opus` and `.ogg` media
+is sent directly as native audio. MP3/WAV/M4A and other likely audio formats are
+transcoded to 48kHz Ogg/Opus with `ffmpeg` only when the reply requests voice
+delivery (`audioAsVoice` / message tool `asVoice`, including TTS voice-note
+replies). Ordinary MP3 attachments stay regular files. If `ffmpeg` is missing or
+conversion fails, RemoteClaw falls back to a file attachment and logs the reason.
 
 ### Threads and replies
 

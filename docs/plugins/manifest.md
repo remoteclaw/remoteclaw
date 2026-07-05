@@ -78,12 +78,26 @@ or npm install metadata. Those belong in your plugin code and `package.json`.
   "modelSupport": {
     "modelPrefixes": ["router-"]
   },
+  "modelIdNormalization": {
+    "providers": {
+      "openrouter": {
+        "prefixWhenBare": "openrouter"
+      }
+    }
+  },
   "providerEndpoints": [
     {
-      "endpointClass": "xai-native",
-      "hosts": ["api.x.ai"]
+      "endpointClass": "openrouter",
+      "hostSuffixes": ["openrouter.ai"]
     }
   ],
+  "providerRequest": {
+    "providers": {
+      "openrouter": {
+        "family": "openrouter"
+      }
+    }
+  },
   "cliBackends": ["openrouter-cli"],
   "syntheticAuthRefs": ["openrouter-cli"],
   "providerAuthEnvVars": {
@@ -166,8 +180,8 @@ or npm install metadata. Those belong in your plugin code and `package.json`.
 
 Each `providerAuthChoices` entry describes one onboarding or auth choice.
 RemoteClaw reads this before provider runtime loads.
-Provider setup flow prefers these manifest choices, then falls back to runtime
-wizard metadata and install-catalog choices for compatibility.
+Provider setup lists use these manifest choices, descriptor-derived setup
+choices, and install-catalog metadata without loading provider runtime.
 
 | Field                 | Required | Type                                            | What it means                                                                                            |
 | --------------------- | -------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
@@ -228,6 +242,9 @@ Prefer the narrowest metadata that already describes ownership. Use
 `providers`, `channels`, `commandAliases`, setup descriptors, or `contracts`
 when those fields express the relationship. Use `activation` for extra planner
 hints that cannot be represented by those ownership fields.
+Use top-level `cliBackends` for CLI runtime aliases such as `claude-cli`,
+`codex-cli`, or `google-gemini-cli`; `activation.onAgentHarnesses` is only for
+embedded agent harness ids that do not already have an ownership field.
 
 This block is metadata only. It does not register runtime behavior, and it does
 not replace `register(...)`, `setupEntry`, or other runtime/plugin entrypoints.
@@ -242,25 +259,32 @@ change correctness while legacy manifest ownership fallbacks still exist.
     "onCommands": ["models"],
     "onChannels": ["web"],
     "onRoutes": ["gateway-webhook"],
+    "onConfigPaths": ["browser"],
     "onCapabilities": ["provider", "tool"]
   }
 }
 ```
 
-| Field            | Required | Type                                                 | What it means                                                                                           |
-| ---------------- | -------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `onProviders`    | No       | `string[]`                                           | Provider ids that should include this plugin in activation/load plans.                                  |
-| `onCommands`     | No       | `string[]`                                           | Command ids that should include this plugin in activation/load plans.                                   |
-| `onChannels`     | No       | `string[]`                                           | Channel ids that should include this plugin in activation/load plans.                                   |
-| `onRoutes`       | No       | `string[]`                                           | Route kinds that should include this plugin in activation/load plans.                                   |
-| `onCapabilities` | No       | `Array<"provider" \| "channel" \| "tool" \| "hook">` | Broad capability hints used by control-plane activation planning. Prefer narrower fields when possible. |
+| Field              | Required | Type                                                 | What it means                                                                                                                                     |
+| ------------------ | -------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `onProviders`      | No       | `string[]`                                           | Provider ids that should include this plugin in activation/load plans.                                                                            |
+| `onAgentHarnesses` | No       | `string[]`                                           | Embedded agent harness runtime ids that should include this plugin in activation/load plans. Use top-level `cliBackends` for CLI backend aliases. |
+| `onCommands`       | No       | `string[]`                                           | Command ids that should include this plugin in activation/load plans.                                                                             |
+| `onChannels`       | No       | `string[]`                                           | Channel ids that should include this plugin in activation/load plans.                                                                             |
+| `onRoutes`         | No       | `string[]`                                           | Route kinds that should include this plugin in activation/load plans.                                                                             |
+| `onConfigPaths`    | No       | `string[]`                                           | Root-relative config paths that should include this plugin in startup/load plans when the path is present and not explicitly disabled.            |
+| `onCapabilities`   | No       | `Array<"provider" \| "channel" \| "tool" \| "hook">` | Broad capability hints used by control-plane activation planning. Prefer narrower fields when possible.                                           |
 
 Current live consumers:
 
 - command-triggered CLI planning falls back to legacy
   `commandAliases[].cliCommand` or `commandAliases[].name`
+- agent-runtime startup planning uses `activation.onAgentHarnesses` for
+  embedded harnesses and top-level `cliBackends[]` for CLI runtime aliases
 - channel-triggered setup/channel planning falls back to legacy `channels[]`
   ownership when explicit channel activation metadata is missing
+- startup plugin planning uses `activation.onConfigPaths` for non-channel root
+  config surfaces such as the bundled browser plugin's `browser` block
 - provider-triggered setup/runtime planning falls back to legacy
   `providers[]` and top-level `cliBackends[]` ownership when explicit provider
   activation metadata is missing
@@ -420,6 +444,7 @@ read without importing the plugin runtime.
     "videoGenerationProviders": ["qwen"],
     "webFetchProviders": ["firecrawl"],
     "webSearchProviders": ["gemini"],
+    "migrationProviders": ["hermes"],
     "tools": ["firecrawl_search", "firecrawl_scrape"]
   }
 }
@@ -441,6 +466,7 @@ Each list is optional:
 | `videoGenerationProviders`       | `string[]` | Video-generation provider ids this plugin owns.                       |
 | `webFetchProviders`              | `string[]` | Web-fetch provider ids this plugin owns.                              |
 | `webSearchProviders`             | `string[]` | Web-search provider ids this plugin owns.                             |
+| `migrationProviders`             | `string[]` | Import provider ids this plugin owns for `remoteclaw migrate`.        |
 | `tools`                          | `string[]` | Agent tool names this plugin owns for bundled contract checks.        |
 
 `contracts.embeddedExtensionFactories` is retained for bundled Codex
@@ -505,6 +531,11 @@ runtime loads. Read-only channel setup/status discovery can use this metadata
 directly for configured external channels when no setup entry is available, or
 when `setup.requiresRuntime: false` declares setup runtime unnecessary.
 
+`channelConfigs` is plugin manifest metadata, not a new top-level user config
+section. Users still configure channel instances under `channels.<channel-id>`.
+RemoteClaw reads manifest metadata to decide which plugin owns that configured
+channel before plugin runtime code executes.
+
 For a channel plugin, `configSchema` and `channelConfigs` describe different
 paths:
 
@@ -515,6 +546,12 @@ Non-bundled plugins that declare `channels[]` should also declare matching
 `channelConfigs` entries. Without them, RemoteClaw can still load the plugin, but
 cold-path config schema, setup, and Control UI surfaces cannot know the
 channel-owned option shape until plugin runtime executes.
+
+`channelConfigs.<channel-id>.commands.nativeCommandsAutoEnabled` and
+`nativeSkillsAutoEnabled` can declare static `auto` defaults for command config
+checks that run before channel runtime loads. Bundled channels can also publish
+the same defaults through `package.json#remoteclaw.channel.commands` alongside
+their other package-owned channel catalog metadata.
 
 ```json
 {
@@ -535,6 +572,10 @@ channel-owned option shape until plugin runtime executes.
       },
       "label": "Matrix",
       "description": "Matrix homeserver connection",
+      "commands": {
+        "nativeCommandsAutoEnabled": true,
+        "nativeSkillsAutoEnabled": true
+      },
       "preferOver": ["matrix-legacy"]
     }
   }
@@ -549,7 +590,45 @@ Each channel entry can include:
 | `uiHints`     | `Record<string, object>` | Optional UI labels/placeholders/sensitive hints for that channel config section.          |
 | `label`       | `string`                 | Channel label merged into picker and inspect surfaces when runtime metadata is not ready. |
 | `description` | `string`                 | Short channel description for inspect and catalog surfaces.                               |
+| `commands`    | `object`                 | Static native command and native skill auto-defaults for pre-runtime config checks.       |
 | `preferOver`  | `string[]`               | Legacy or lower-priority plugin ids this channel should outrank in selection surfaces.    |
+
+### Replacing another channel plugin
+
+Use `preferOver` when your plugin is the preferred owner for a channel id that
+another plugin can also provide. Common cases are a renamed plugin id, a
+standalone plugin that supersedes a bundled plugin, or a maintained fork that
+keeps the same channel id for config compatibility.
+
+```json
+{
+  "id": "acme-chat",
+  "channels": ["chat"],
+  "channelConfigs": {
+    "chat": {
+      "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "webhookUrl": { "type": "string" }
+        }
+      },
+      "preferOver": ["chat"]
+    }
+  }
+}
+```
+
+When `channels.chat` is configured, RemoteClaw considers both the channel id and
+the preferred plugin id. If the lower-priority plugin was only selected because
+it is bundled or enabled by default, RemoteClaw disables it in the effective
+runtime config so one plugin owns the channel and its tools. Explicit user
+selection still wins: if the user explicitly enables both plugins, RemoteClaw
+preserves that choice and reports duplicate channel/tool diagnostics instead of
+silently changing the requested plugin set.
+
+Keep `preferOver` scoped to plugin ids that can really provide the same channel.
+It is not a general priority field and it does not rename user config keys.
 
 ## modelSupport reference
 

@@ -10,6 +10,24 @@ import { assertFeishuMessageApiSuccess, toFeishuSendResult } from "./send-result
 import { resolveFeishuSendTarget } from "./send-target.js";
 
 const FEISHU_MEDIA_HTTP_TIMEOUT_MS = 120_000;
+const FEISHU_VOICE_FILE_NAME = "voice.ogg";
+const FEISHU_VOICE_SAMPLE_RATE_HZ = 48_000;
+const FEISHU_VOICE_BITRATE = "64k";
+
+const FEISHU_TRANSCODABLE_AUDIO_EXTS = new Set([
+  ".aac",
+  ".aiff",
+  ".alac",
+  ".amr",
+  ".caf",
+  ".flac",
+  ".m4a",
+  ".mp3",
+  ".oga",
+  ".wav",
+  ".webm",
+  ".wma",
+]);
 
 export type DownloadImageResult = {
   buffer: Buffer;
@@ -417,6 +435,8 @@ export async function sendMediaFeishu(params: {
   accountId?: string;
   /** Allowed roots for local path reads; required for local filePath to work. */
   mediaLocalRoots?: readonly string[];
+  /** When true, transcode compatible audio to Feishu native Ogg/Opus voice bubbles. */
+  audioAsVoice?: boolean;
 }): Promise<SendMediaResult> {
   const {
     cfg,
@@ -428,6 +448,7 @@ export async function sendMediaFeishu(params: {
     replyInThread,
     accountId,
     mediaLocalRoots,
+    audioAsVoice,
   } = params;
   const account = resolveFeishuAccount({ cfg, accountId });
   if (!account.configured) {

@@ -154,9 +154,9 @@ export function buildAgentContext(
     ? resolveModelLabel(config.entry?.model)
     : resolveModelLabel(config.defaults?.model);
   const identityName =
-    normalizeOptionalString(agentIdentity?.name) ||
     normalizeOptionalString(agent.identity?.name) ||
     normalizeOptionalString(agent.name) ||
+    normalizeOptionalString(agentIdentity?.name) ||
     config.entry?.name ||
     agent.id;
   const identityEmoji = resolveAgentEmoji(agent, agentIdentity) || "-";

@@ -60,6 +60,12 @@ export type MsgContext = {
   /** Provider account id (multi-account). */
   AccountId?: string;
   ParentSessionKey?: string;
+  /**
+   * Session key used only for inheriting session-scoped model/provider
+   * overrides. Unlike ParentSessionKey, this must not trigger transcript
+   * forking or parent-session lifecycle behavior.
+   */
+  ModelParentSessionKey?: string;
   MessageSid?: string;
   /** Provider-specific full message id when MessageSid is a shortened alias. */
   MessageSidFull?: string;
@@ -105,6 +111,8 @@ export type MsgContext = {
   MediaPaths?: string[];
   MediaUrls?: string[];
   MediaTypes?: string[];
+  /** Attachment indexes whose audio was already transcribed before media understanding runs. */
+  MediaTranscribedIndexes?: number[];
   /** Telegram sticker metadata (emoji, set name, file IDs, cached description). */
   Sticker?: StickerMetadata;
   /** True when current-turn sticker media is present in MediaPaths (false for cached-description path). */

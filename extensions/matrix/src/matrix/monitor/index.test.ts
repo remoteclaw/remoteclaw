@@ -72,12 +72,13 @@ vi.mock("../../resolve-targets.js", () => ({
 vi.mock("../../runtime.js", () => ({
   getMatrixRuntime: () => ({
     config: {
-      loadConfig: () => ({
+      current: () => ({
         channels: {
           matrix: {},
         },
       }),
-      writeConfigFile: vi.fn(),
+      replaceConfigFile: vi.fn(),
+      mutateConfigFile: vi.fn(),
     },
     logging: {
       getChildLogger: () => hoisted.logger,

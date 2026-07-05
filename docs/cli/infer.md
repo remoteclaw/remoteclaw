@@ -130,6 +130,7 @@ This table maps common inference tasks to the corresponding infer command.
 - Stateless execution commands default to local.
 - Gateway-managed state commands default to gateway.
 - The normal local path does not require the gateway to be running.
+- `model run` is one-shot. MCP servers opened through the agent runtime for that command are retired after the reply for both local and `--gateway` execution, so repeated scripted invocations do not keep stdio MCP child processes alive.
 
 ## Model
 
@@ -145,6 +146,7 @@ remoteclaw infer model inspect --name gpt-5.5 --json
 Notes:
 
 - `model run` reuses the agent runtime so provider/model overrides behave like normal agent execution.
+- Because `model run` is intended for headless automation, it does not retain per-session bundled MCP runtimes after the command finishes.
 - `model auth login`, `model auth logout`, and `model auth status` manage saved provider auth state.
 
 ## Image
@@ -154,6 +156,10 @@ Use `image` for generation, edit, and description.
 ```bash
 remoteclaw infer image generate --prompt "friendly lobster illustration" --json
 remoteclaw infer image generate --prompt "cinematic product photo of headphones" --json
+remoteclaw infer image generate --model openai/gpt-image-1.5 --output-format png --background transparent --prompt "simple red circle sticker on a transparent background" --json
+remoteclaw infer image generate --prompt "slow image backend" --timeout-ms 180000 --json
+remoteclaw infer image edit --file ./logo.png --model openai/gpt-image-1.5 --output-format png --background transparent --prompt "keep the logo, remove the background" --json
+remoteclaw infer image edit --file ./poster.png --prompt "make this a vertical story ad" --size 2160x3840 --aspect-ratio 9:16 --resolution 4K --json
 remoteclaw infer image describe --file ./photo.jpg --json
 remoteclaw infer image describe --file ./ui-screenshot.png --model openai/gpt-4.1-mini --json
 remoteclaw infer image describe --file ./photo.jpg --model ollama/qwen2.5vl:7b --json
@@ -162,6 +168,12 @@ remoteclaw infer image describe --file ./photo.jpg --model ollama/qwen2.5vl:7b -
 Notes:
 
 - Use `image edit` when starting from existing input files.
+- Use `--size`, `--aspect-ratio`, or `--resolution` with `image edit` for
+  providers/models that support geometry hints on reference-image edits.
+- Use `--output-format png --background transparent` with
+  `--model openai/gpt-image-1.5` for transparent-background OpenAI PNG output;
+  `--openai-background` remains available as an OpenAI-specific alias. Providers
+  that do not declare background support report the hint as an ignored override.
 - Use `image providers --json` to verify which bundled image providers are
   discoverable, configured, selected, and which generation/edit capabilities
   each provider exposes.
@@ -221,13 +233,14 @@ Use `video` for generation and description.
 
 ```bash
 remoteclaw infer video generate --prompt "cinematic sunset over the ocean" --json
-remoteclaw infer video generate --prompt "slow drone shot over a forest lake" --json
+remoteclaw infer video generate --prompt "slow drone shot over a forest lake" --resolution 768P --duration 6 --json
 remoteclaw infer video describe --file ./clip.mp4 --json
 remoteclaw infer video describe --file ./clip.mp4 --model openai/gpt-4.1-mini --json
 ```
 
 Notes:
 
+- `video generate` accepts `--size`, `--aspect-ratio`, `--resolution`, `--duration`, `--audio`, `--watermark`, and `--timeout-ms` and forwards them to the video-generation runtime.
 - `--model` must be `<provider/model>` for `video describe`.
 
 ## Web

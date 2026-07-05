@@ -1,4 +1,4 @@
-import { escapeRegExp } from "../utils.js";
+import { escapeRegExp } from "../shared/regexp.js";
 
 // Single source of truth lives in the browser-safe ./heartbeat-token.js module.
 export { HEARTBEAT_TOKEN } from "./heartbeat-token.js";

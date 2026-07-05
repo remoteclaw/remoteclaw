@@ -1,4 +1,5 @@
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
+import { maxBytesForKind, type MediaKind } from "./constants.js";
 
 const MB = 1024 * 1024;
 
@@ -8,6 +9,10 @@ export function resolveConfiguredMediaMaxBytes(cfg?: RemoteClawConfig): number |
     return Math.floor(configured * MB);
   }
   return undefined;
+}
+
+export function resolveGeneratedMediaMaxBytes(cfg: RemoteClawConfig | undefined, kind: MediaKind) {
+  return resolveConfiguredMediaMaxBytes(cfg) ?? maxBytesForKind(kind);
 }
 
 export function resolveChannelAccountMediaMaxMb(params: {

@@ -37,7 +37,7 @@ function createInvokeParams(params: Record<string, unknown>) {
       await toolsCatalogHandlers["tools.catalog"]({
         params,
         respond: respond as never,
-        context: {} as never,
+        context: { loadConfig: () => ({}) } as never,
         client: null,
         req: { type: "req", id: "req-1", method: "tools.catalog" },
         isWebchatConnect: () => false,

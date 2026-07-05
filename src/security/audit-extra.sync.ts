@@ -72,6 +72,12 @@ import {
 } from "../gateway/node-command-policy.js";
 import { inferParamBFromIdOrName } from "../shared/model-param-b.js";
 
+/**
+ * Synchronous security audit collector functions.
+ *
+ * These functions analyze config-based security properties without I/O.
+ */
+
 export type SecurityAuditFinding = {
   checkId: string;
   severity: "info" | "warn" | "critical";

@@ -21,12 +21,22 @@ describe("shouldSkipRespawnForArgv", () => {
   it.each([
     { argv: ["node", "remoteclaw", "--help"] },
     { argv: ["node", "remoteclaw", "-V"] },
+    { argv: ["node", "remoteclaw", "gateway"] },
+    { argv: ["node", "remoteclaw", "gateway", "--port", "14720", "--bind", "loopback"] },
+    { argv: ["node", "remoteclaw", "gateway", "run", "--port=14720", "--bind", "loopback"] },
+    {
+      argv: ["node", "remoteclaw", "--profile", "server", "gateway", "run", "--allow-unconfigured"],
+    },
   ] as const)("skips respawn for argv %j", ({ argv }) => {
     expect(shouldSkipRespawnForArgv([...argv]), argv.join(" ")).toBe(true);
   });
 
-  it("keeps respawn path for normal commands", () => {
-    expect(shouldSkipRespawnForArgv(["node", "remoteclaw", "status"])).toBe(false);
+  it.each([
+    { argv: ["node", "remoteclaw", "status"] },
+    { argv: ["node", "remoteclaw", "gateway", "status"] },
+    { argv: ["node", "remoteclaw", "gateway", "call", "health"] },
+  ] as const)("keeps respawn path for argv %j", ({ argv }) => {
+    expect(shouldSkipRespawnForArgv([...argv]), argv.join(" ")).toBe(false);
   });
 });
 

@@ -17,7 +17,7 @@ Related:
 - Hooks: [Hooks](/automation/hooks)
 - Plugin hooks: [Plugin hooks](/plugins/hooks)
 
-## List All Hooks
+## List all hooks
 
 ```bash
 remoteclaw hooks list
@@ -60,7 +60,7 @@ remoteclaw hooks list --json
 
 Returns structured JSON for programmatic use.
 
-## Get Hook Information
+## Get hook information
 
 ```bash
 remoteclaw hooks info <name>
@@ -100,7 +100,7 @@ Requirements:
   Config: ✓ workspace.dir
 ```
 
-## Check Hooks Eligibility
+## Check hooks eligibility
 
 ```bash
 remoteclaw hooks check
@@ -194,10 +194,11 @@ remoteclaw hooks disable command-logger
 - `remoteclaw hooks list --json`, `info --json`, and `check --json` write structured JSON directly to stdout.
 - Plugin-managed hooks cannot be enabled or disabled here; enable or disable the owning plugin instead.
 
-## Install Hook Packs
+## Install hook packs
 
 ```bash
 remoteclaw plugins install <package>        # ClawHub first, then npm
+remoteclaw plugins install npm:<package>    # npm only
 remoteclaw plugins install <package> --pin  # pin version
 remoteclaw plugins install <path>           # local path
 ```
@@ -209,7 +210,8 @@ deprecation warning and forwards to `remoteclaw plugins install`.
 
 Npm specs are **registry-only** (package name + optional **exact version** or
 **dist-tag**). Git/URL/file specs and semver ranges are rejected. Dependency
-installs run with `--ignore-scripts` for safety.
+installs run project-local with `--ignore-scripts` for safety, even when your
+shell has global npm install settings.
 
 Bare specs and `@latest` stay on the stable track. If npm resolves either of
 those to a prerelease, RemoteClaw stops and asks you to opt in explicitly with a
@@ -247,7 +249,7 @@ remoteclaw plugins install -l ./my-hook-pack
 Linked hook packs are treated as managed hooks from an operator-configured
 directory, not as workspace hooks.
 
-## Update Hook Packs
+## Update hook packs
 
 ```bash
 remoteclaw plugins update <id>
@@ -268,7 +270,7 @@ When a stored integrity hash exists and the fetched artifact hash changes,
 RemoteClaw prints a warning and asks for confirmation before proceeding. Use
 global `--yes` to bypass prompts in CI/non-interactive runs.
 
-## Bundled Hooks
+## Bundled hooks
 
 ### session-memory
 

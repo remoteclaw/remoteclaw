@@ -385,9 +385,6 @@ describe("sessions_spawn subagent lifecycle hooks", () => {
     const callGatewayMock = getCallGatewayMock();
     callGatewayMock.mockImplementation(async (opts: unknown) => {
       const request = opts as { method?: string; params?: Record<string, unknown> };
-      if (request.method === "sessions.patch" && typeof request.params?.spawnedBy === "string") {
-        throw new Error("lineage patch failed");
-      }
       if (request.method === "sessions.delete") {
         return { ok: true };
       }

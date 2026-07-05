@@ -5,6 +5,7 @@ export function setPluginEnabledInConfig(
   config: RemoteClawConfig,
   pluginId: string,
   enabled: boolean,
+  options: { updateChannelConfig?: boolean } = {},
 ): RemoteClawConfig {
   const builtInChannelId = normalizeChatChannelId(pluginId);
   const resolvedId = builtInChannelId ?? pluginId;
@@ -23,7 +24,7 @@ export function setPluginEnabledInConfig(
     },
   };
 
-  if (!builtInChannelId) {
+  if (!builtInChannelId || options.updateChannelConfig === false) {
     return next;
   }
 

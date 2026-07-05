@@ -40,8 +40,8 @@ vi.mock("./protocol.js", async () => {
   };
 });
 
-vi.mock("remoteclaw/plugin-sdk/config-runtime", async () => {
-  const original = (await vi.importActual("remoteclaw/plugin-sdk/config-runtime")) as Record<
+vi.mock("remoteclaw/plugin-sdk/plugin-config-runtime", async () => {
+  const original = (await vi.importActual("remoteclaw/plugin-sdk/plugin-config-runtime")) as Record<
     string,
     unknown
   >;

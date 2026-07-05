@@ -6,6 +6,8 @@ export type AgentModelConfig =
       primary?: string;
       /** Per-agent model fallbacks (provider/model). */
       fallbacks?: string[];
+      /** Optional provider request timeout in milliseconds for capabilities that support it. */
+      timeoutMs?: number;
     };
 
 // Sandbox infrastructure removed (#68)
@@ -31,6 +33,13 @@ type SandboxBrowserSettings = {
 type SandboxPruneSettings = {
   enabled?: boolean;
   maxAge?: string;
+};
+
+export type AgentRuntimePolicyConfig = {
+  /** Agent runtime id. Omitted uses "pi"; "auto" opts into plugin harness auto-selection. */
+  id?: string;
+  /** Fallback when no plugin harness matches or an auto-selected plugin harness fails. */
+  fallback?: "pi" | "none";
 };
 
 export type AgentSandboxConfig = {

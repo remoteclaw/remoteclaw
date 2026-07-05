@@ -105,6 +105,10 @@ Connect RemoteClaw to QQ via the QQ Bot API. Supports private chats, group
 mentions, channel messages, and rich media including voice, images, videos,
 and files.
 
+Current RemoteClaw releases bundle QQ Bot. Use the bundled setup in
+[QQ Bot](/channels/qqbot) for normal installs; install this external plugin only
+when you intentionally want the Tencent-maintained standalone package.
+
 - **npm:** `@tencent-connect/remoteclaw-qqbot`
 - **repo:** [github.com/tencent-connect/remoteclaw-qqbot](https://github.com/tencent-connect/remoteclaw-qqbot)
 
@@ -124,6 +128,20 @@ formatting, built-in access control, and document/meeting/messaging skills.
 
 ```bash
 remoteclaw plugins install @wecom/wecom-remoteclaw-plugin
+```
+
+### Yuanbao
+
+Yuanbao channel plugin for RemoteClaw by the Tencent Yuanbao team. Powered by
+WebSocket persistent connections, it supports direct messages & group chats,
+streaming replies, proactive messaging, image/file/audio/video processing,
+Markdown formatting, built-in access control, and slash-command menus.
+
+- **npm:** `remoteclaw-plugin-yuanbao`
+- **repo:** [github.com/yb-claw/remoteclaw-plugin-yuanbao](https://github.com/yb-claw/remoteclaw-plugin-yuanbao)
+
+```bash
+remoteclaw plugins install remoteclaw-plugin-yuanbao
 ```
 
 ## Submit your plugin

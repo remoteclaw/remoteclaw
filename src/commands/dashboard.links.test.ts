@@ -87,6 +87,7 @@ describe("dashboardCommand", () => {
       bind: "loopback",
       customBindHost: undefined,
       basePath: undefined,
+      tlsEnabled: false,
     });
     // clipboard and browser still get the full authenticated URL
     expect(copyToClipboardMock).toHaveBeenCalledWith("http://127.0.0.1:18789/#token=abc123");

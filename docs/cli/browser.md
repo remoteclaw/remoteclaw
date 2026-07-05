@@ -55,26 +55,38 @@ Detailed guidance: [Browser troubleshooting](/tools/browser#cdp-startup-failure-
 ```bash
 remoteclaw browser status
 remoteclaw browser doctor
+remoteclaw browser doctor --deep
 remoteclaw browser start
+remoteclaw browser start --headless
 remoteclaw browser stop
 remoteclaw browser --browser-profile remoteclaw reset-profile
 ```
 
 Notes:
 
+- `doctor --deep` adds a live snapshot probe. It is useful when basic CDP
+  readiness is green but you want proof that the current tab can be inspected.
 - For `attachOnly` and remote CDP profiles, `remoteclaw browser stop` closes the
   active control session and clears temporary emulation overrides even when
   RemoteClaw did not launch the browser process itself.
 - For local managed profiles, `remoteclaw browser stop` stops the spawned browser
   process.
+- `remoteclaw browser start --headless` applies only to that start request and
+  only when RemoteClaw launches a local managed browser. It does not rewrite
+  `browser.headless` or profile config, and it is a no-op for an already-running
+  browser.
+- On Linux hosts without `DISPLAY` or `WAYLAND_DISPLAY`, local managed profiles
+  run headless automatically unless `REMOTECLAW_BROWSER_HEADLESS=0`,
+  `browser.headless=false`, or `browser.profiles.<name>.headless=false`
+  explicitly requests a visible browser.
 
 ## If the command is missing
 
 If `remoteclaw browser` is an unknown command, check `plugins.allow` in
 `~/.remoteclaw/remoteclaw.json`.
 
-When `plugins.allow` is present, the bundled browser plugin must be listed
-explicitly:
+When `plugins.allow` is present, list the bundled browser plugin explicitly
+unless the config already has a root `browser` block:
 
 ```json5
 {
@@ -84,8 +96,9 @@ explicitly:
 }
 ```
 
-`browser.enabled=true` does not restore the CLI subcommand when the plugin
-allowlist excludes `browser`.
+An explicit root `browser` block, for example `browser.enabled=true` or
+`browser.profiles.<name>`, also activates the bundled browser plugin under a
+restrictive plugin allowlist.
 
 Related: [Browser tool](/tools/browser#missing-browser-command-or-tool)
 
@@ -129,6 +142,10 @@ the optional label, and the raw `targetId`. Agents should pass
 `suggestedTargetId` back into `focus`, `close`, snapshots, and actions. You can
 assign a label with `open --label`, `tab new --label`, or `tab label`; labels,
 tab ids, raw target ids, and unique target-id prefixes are all accepted.
+When Chromium replaces the underlying raw target during a navigation or form
+submit, RemoteClaw keeps the stable `tabId`/label attached to the replacement tab
+when it can prove the match. Raw target ids remain volatile; prefer
+`suggestedTargetId`.
 
 ## Snapshot / screenshot / actions
 
@@ -176,6 +193,10 @@ remoteclaw browser wait --text "Done"
 remoteclaw browser evaluate --fn '(el) => el.textContent' --ref <ref>
 ```
 
+Action responses return the current raw `targetId` after action-triggered page
+replacement when RemoteClaw can prove the replacement tab. Scripts should still
+store and pass `suggestedTargetId`/labels for long-lived workflows.
+
 File + dialog helpers:
 
 ```bash
@@ -184,6 +205,11 @@ remoteclaw browser waitfordownload
 remoteclaw browser download <ref> report.pdf
 remoteclaw browser dialog --accept
 ```
+
+Managed Chrome profiles save ordinary click-triggered downloads into the RemoteClaw
+downloads directory (`/tmp/remoteclaw/downloads` by default, or the configured temp
+root). Use `waitfordownload` or `download` when the agent needs to wait for a
+specific file and return its path; those explicit waiters own the next download.
 
 ## State and storage
 

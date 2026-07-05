@@ -9,7 +9,7 @@ export function createInboundSlackTestContext(params: {
   cfg: RemoteClawConfig;
   appClient?: App["client"];
   defaultRequireMention?: boolean;
-  replyToMode?: "off" | "all" | "first";
+  replyToMode?: "off" | "all" | "first" | "batched";
   channelsConfig?: SlackChannelConfigEntries;
 }) {
   return createSlackMonitorContext({

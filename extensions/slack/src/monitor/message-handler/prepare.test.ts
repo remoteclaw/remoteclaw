@@ -8,6 +8,10 @@ import { resolveAgentRoute } from "../../../../../src/routing/resolve-route.js";
 import { resolveThreadSessionKeys } from "../../../../../src/routing/session-key.js";
 import { expectInboundContextContract } from "../../../../../test/helpers/inbound-contract.js";
 import type { ResolvedSlackAccount } from "../../accounts.js";
+import {
+  clearSlackThreadParticipationCache,
+  recordSlackThreadParticipation,
+} from "../../sent-thread-cache.js";
 import type { SlackMessageEvent } from "../../types.js";
 import type { SlackMonitorContext } from "../context.js";
 import { prepareSlackMessage } from "./prepare.js";

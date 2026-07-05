@@ -309,8 +309,10 @@ export function resolveCommandArgMenu(params: {
   command: ChatCommandDefinition;
   args?: CommandArgs;
   cfg?: RemoteClawConfig;
+  provider?: string;
+  model?: string;
 }): { arg: CommandArgDefinition; choices: ResolvedCommandArgChoice[]; title?: string } | null {
-  const { command, args, cfg } = params;
+  const { command, args, cfg, provider, model } = params;
   if (!command.args || !command.argsMenu) {
     return null;
   }
@@ -320,7 +322,9 @@ export function resolveCommandArgMenu(params: {
   const argSpec = command.argsMenu;
   const argName =
     argSpec === "auto"
-      ? command.args.find((arg) => resolveCommandArgChoices({ command, arg, cfg }).length > 0)?.name
+      ? command.args.find(
+          (arg) => resolveCommandArgChoices({ command, arg, cfg, provider, model }).length > 0,
+        )?.name
       : argSpec.arg;
   if (!argName) {
     return null;
@@ -335,7 +339,7 @@ export function resolveCommandArgMenu(params: {
   if (!arg) {
     return null;
   }
-  const choices = resolveCommandArgChoices({ command, arg, cfg });
+  const choices = resolveCommandArgChoices({ command, arg, cfg, provider, model });
   if (choices.length === 0) {
     return null;
   }

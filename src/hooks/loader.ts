@@ -52,7 +52,7 @@ function maybeWarnTrustedHookSource(source: string): void {
  *
  * @example
  * ```ts
- * const config = await loadConfig();
+ * const config = await getRuntimeConfig();
  * const workspaceDir = resolveAgentWorkspaceDir(config, agentId);
  * const count = await loadInternalHooks(config, workspaceDir);
  * console.log(`Loaded ${count} hook handlers`);

@@ -4,10 +4,10 @@ read_when:
   - Adding or modifying doctor migrations
   - Introducing breaking config changes
 title: "Doctor"
+sidebarTitle: "Doctor"
 ---
 
-`remoteclaw doctor` is the repair + migration tool for RemoteClaw. It fixes stale
-config/state, checks health, and provides actionable repair steps.
+`remoteclaw doctor` is the repair + migration tool for RemoteClaw. It fixes stale config/state, checks health, and provides actionable repair steps.
 
 ## Quick start
 
@@ -15,38 +15,50 @@ config/state, checks health, and provides actionable repair steps.
 remoteclaw doctor
 ```
 
-### Headless / automation
+### Headless and automation modes
 
-```bash
-remoteclaw doctor --yes
-```
+<Tabs>
+  <Tab title="--yes">
+    ```bash
+    remoteclaw doctor --yes
+    ```
 
-Accept defaults without prompting (including restart/service/sandbox repair steps when applicable).
+    Accept defaults without prompting (including restart/service/sandbox repair steps when applicable).
 
-```bash
-remoteclaw doctor --repair
-```
+  </Tab>
+  <Tab title="--repair">
+    ```bash
+    remoteclaw doctor --repair
+    ```
 
-Apply recommended repairs without prompting (repairs + restarts where safe).
+    Apply recommended repairs without prompting (repairs + restarts where safe).
 
-```bash
-remoteclaw doctor --repair --force
-```
+  </Tab>
+  <Tab title="--repair --force">
+    ```bash
+    remoteclaw doctor --repair --force
+    ```
 
-Apply aggressive repairs too (overwrites custom supervisor configs).
+    Apply aggressive repairs too (overwrites custom supervisor configs).
 
-```bash
-remoteclaw doctor --non-interactive
-```
+  </Tab>
+  <Tab title="--non-interactive">
+    ```bash
+    remoteclaw doctor --non-interactive
+    ```
 
-Run without prompts and only apply safe migrations (config normalization + on-disk state moves). Skips restart/service/sandbox actions that require human confirmation.
-Legacy state migrations run automatically when detected.
+    Run without prompts and only apply safe migrations (config normalization + on-disk state moves). Skips restart/service/sandbox actions that require human confirmation. Legacy state migrations run automatically when detected.
 
-```bash
-remoteclaw doctor --deep
-```
+  </Tab>
+  <Tab title="--deep">
+    ```bash
+    remoteclaw doctor --deep
+    ```
 
-Scan system services for extra gateway installs (launchd/systemd/schtasks).
+    Scan system services for extra gateway installs (launchd/systemd/schtasks).
+
+  </Tab>
+</Tabs>
 
 If you want to review changes before writing, open the config file first:
 
@@ -56,41 +68,58 @@ cat ~/.remoteclaw/remoteclaw.json
 
 ## What it does (summary)
 
-- Optional pre-flight update for git installs (interactive only).
-- UI protocol freshness check (rebuilds Control UI when the protocol schema is newer).
-- Health check + restart prompt.
-- Skills status summary (eligible/missing/blocked) and plugin status.
-- Config normalization for legacy values.
-- Talk config migration from legacy flat `talk.*` fields into `talk.provider` + `talk.providers.<provider>`.
-- Browser migration checks for legacy Chrome extension configs and Chrome MCP readiness.
-- OpenCode provider override warnings (`models.providers.opencode` / `models.providers.opencode-go`).
-- Codex OAuth shadowing warnings (`models.providers.openai-codex`).
-- OAuth TLS prerequisites check for OpenAI Codex OAuth profiles.
-- Legacy on-disk state migration (sessions/agent dir/WhatsApp auth).
-- Legacy plugin manifest contract key migration (`speechProviders`, `realtimeTranscriptionProviders`, `realtimeVoiceProviders`, `mediaUnderstandingProviders`, `imageGenerationProviders`, `videoGenerationProviders`, `webFetchProviders`, `webSearchProviders` → `contracts`).
-- Legacy cron store migration (`jobId`, `schedule.cron`, top-level delivery/payload fields, payload `provider`, simple `notify: true` webhook fallback jobs).
-- Session lock file inspection and stale lock cleanup.
-- State integrity and permissions checks (sessions, transcripts, state dir).
-- Config file permission checks (chmod 600) when running locally.
-- Model auth health: checks OAuth expiry, can refresh expiring tokens, and reports auth-profile cooldown/disabled states.
-- Extra workspace dir detection (`~/remoteclaw`).
-- Sandbox image repair when sandboxing is enabled.
-- Legacy service migration and extra gateway detection.
-- Matrix channel legacy state migration (in `--fix` / `--repair` mode).
-- Gateway runtime checks (service installed but not running; cached launchd label).
-- Channel status warnings (probed from the running gateway).
-- Supervisor config audit (launchd/systemd/schtasks) with optional repair.
-- Gateway runtime best-practice checks (Node vs Bun, version-manager paths).
-- Gateway port collision diagnostics (default `18789`).
-- Security warnings for open DM policies.
-- Gateway auth checks for local token mode (offers token generation when no token source exists; does not overwrite token SecretRef configs).
-- Device pairing trouble detection (pending first-time pair requests, pending role/scope upgrades, stale local device-token cache drift, and paired-record auth drift).
-- systemd linger check on Linux.
-- Workspace bootstrap file size check (truncation/near-limit warnings for context files).
-- Shell completion status check and auto-install/upgrade.
-- Memory search embedding provider readiness check (local model, remote API key, or QMD binary).
-- Source install checks (pnpm workspace mismatch, missing UI assets, missing tsx binary).
-- Writes updated config + wizard metadata.
+<AccordionGroup>
+  <Accordion title="Health, UI, and updates">
+    - Optional pre-flight update for git installs (interactive only).
+    - UI protocol freshness check (rebuilds Control UI when the protocol schema is newer).
+    - Health check + restart prompt.
+    - Skills status summary (eligible/missing/blocked) and plugin status.
+  </Accordion>
+  <Accordion title="Config and migrations">
+    - Config normalization for legacy values.
+    - Talk config migration from legacy flat `talk.*` fields into `talk.provider` + `talk.providers.<provider>`.
+    - Browser migration checks for legacy Chrome extension configs and Chrome MCP readiness.
+    - OpenCode provider override warnings (`models.providers.opencode` / `models.providers.opencode-go`).
+    - Codex OAuth shadowing warnings (`models.providers.openai-codex`).
+    - OAuth TLS prerequisites check for OpenAI Codex OAuth profiles.
+    - Legacy on-disk state migration (sessions/agent dir/WhatsApp auth).
+    - Legacy plugin manifest contract key migration (`speechProviders`, `realtimeTranscriptionProviders`, `realtimeVoiceProviders`, `mediaUnderstandingProviders`, `imageGenerationProviders`, `videoGenerationProviders`, `webFetchProviders`, `webSearchProviders` → `contracts`).
+    - Legacy cron store migration (`jobId`, `schedule.cron`, top-level delivery/payload fields, payload `provider`, simple `notify: true` webhook fallback jobs).
+    - Legacy agent runtime-policy migration to `agents.defaults.agentRuntime` and `agents.list[].agentRuntime`.
+  </Accordion>
+  <Accordion title="State and integrity">
+    - Session lock file inspection and stale lock cleanup.
+    - Session transcript repair for duplicated prompt-rewrite branches created by affected 2026.4.24 builds.
+    - State integrity and permissions checks (sessions, transcripts, state dir).
+    - Config file permission checks (chmod 600) when running locally.
+    - Model auth health: checks OAuth expiry, can refresh expiring tokens, and reports auth-profile cooldown/disabled states.
+    - Extra workspace dir detection (`~/remoteclaw`).
+  </Accordion>
+  <Accordion title="Gateway, services, and supervisors">
+    - Sandbox image repair when sandboxing is enabled.
+    - Legacy service migration and extra gateway detection.
+    - Matrix channel legacy state migration (in `--fix` / `--repair` mode).
+    - Gateway runtime checks (service installed but not running; cached launchd label).
+    - Channel status warnings (probed from the running gateway).
+    - Supervisor config audit (launchd/systemd/schtasks) with optional repair.
+    - Embedded proxy environment cleanup for gateway services that captured shell `HTTP_PROXY` / `HTTPS_PROXY` / `NO_PROXY` values during install or update.
+    - Gateway runtime best-practice checks (Node vs Bun, version-manager paths).
+    - Gateway port collision diagnostics (default `18789`).
+  </Accordion>
+  <Accordion title="Auth, security, and pairing">
+    - Security warnings for open DM policies.
+    - Gateway auth checks for local token mode (offers token generation when no token source exists; does not overwrite token SecretRef configs).
+    - Device pairing trouble detection (pending first-time pair requests, pending role/scope upgrades, stale local device-token cache drift, and paired-record auth drift).
+  </Accordion>
+  <Accordion title="Workspace and shell">
+    - systemd linger check on Linux.
+    - Workspace bootstrap file size check (truncation/near-limit warnings for context files).
+    - Shell completion status check and auto-install/upgrade.
+    - Memory search embedding provider readiness check (local model, remote API key, or QMD binary).
+    - Source install checks (pnpm workspace mismatch, missing UI assets, missing tsx binary).
+    - Writes updated config + wizard metadata.
+  </Accordion>
+</AccordionGroup>
 
 ## Detailed behavior and rationale
 
@@ -545,5 +574,5 @@ workspace structure and git backup (recommended private GitHub or GitLab).
 
 ## Related
 
-- [Gateway troubleshooting](/gateway/troubleshooting)
 - [Gateway runbook](/gateway)
+- [Gateway troubleshooting](/gateway/troubleshooting)

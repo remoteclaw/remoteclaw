@@ -76,6 +76,9 @@ const unitIsolatedFilesRaw = [
   "extensions/slack/src/monitor/slash.test.ts",
   // Uses process-level unhandledRejection listeners; keep it off vmForks to avoid cross-file leakage.
   "extensions/imessage/src/monitor.shutdown.unhandled-rejection.test.ts",
+  // Resolves git refs by walking the filesystem and caches package-root lookups at module
+  // scope; high-variance under vmForks cross-file leakage. Passes cleanly in the isolated lane.
+  "src/infra/git-commit.test.ts",
 ];
 const unitIsolatedFiles = unitIsolatedFilesRaw.filter((file) => fs.existsSync(file));
 

@@ -606,6 +606,7 @@ describe("preflightDiscordMessage", () => {
     );
     expect(result).not.toBeNull();
     expect(result?.wasMentioned).toBe(true);
+    expect(result?.preflightAudioTranscript).toBe("hey remoteclaw");
   });
 });
 

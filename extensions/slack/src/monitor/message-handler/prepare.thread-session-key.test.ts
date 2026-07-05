@@ -22,7 +22,7 @@ async function loadSlackPrepareModules() {
   createSlackTestAccount = helpers.createSlackTestAccount;
 }
 
-function buildCtx(overrides?: { replyToMode?: "all" | "first" | "off" }) {
+function buildCtx(overrides?: { replyToMode?: "all" | "first" | "off" | "batched" }) {
   const replyToMode = overrides?.replyToMode ?? "all";
   return createInboundSlackTestContext({
     cfg: {

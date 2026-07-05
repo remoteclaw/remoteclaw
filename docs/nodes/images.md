@@ -39,7 +39,7 @@ The WhatsApp channel runs via **Baileys Web**. This document captures the curren
 - When media is present, the web sender resolves local paths or URLs using the same pipeline as `remoteclaw message send`.
 - Multiple media entries are sent sequentially if provided.
 
-## Inbound Media to Commands (Pi)
+## Inbound media to commands (Pi)
 
 - When inbound web messages include media, RemoteClaw downloads to a temp file and exposes templating variables:
   - `{{MediaUrl}}` pseudo-URL for the inbound media.

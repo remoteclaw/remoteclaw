@@ -65,6 +65,15 @@ export function buildGatewayRuntimeHints(
     }
     return hints;
   }
+  if (runtime.missingSupervision && platform === "darwin") {
+    hints.push(
+      `LaunchAgent installed but not loaded. Run: ${formatCliCommand("remoteclaw gateway restart", env)}`,
+    );
+    if (fileLog) {
+      hints.push(`File logs: ${fileLog}`);
+    }
+    return hints;
+  }
   if (runtime.status === "stopped") {
     hints.push("Service is loaded but not running (likely exited immediately).");
     if (fileLog) {

@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetSubagentRegistryForTests } from "./subagent-registry.js";
 
 const callGatewayMock = vi.fn();
+const updateSessionStoreMock = vi.fn();
 
 vi.mock("../gateway/call.js", () => ({
   callGateway: (opts: unknown) => callGatewayMock(opts),
@@ -242,12 +243,20 @@ describe("spawnSubagentDirect filename validation", () => {
 
   it("removes materialized attachments when lineage patching fails", async () => {
     const calls: Array<{ method?: string; params?: Record<string, unknown> }> = [];
+    const store: Record<string, Record<string, unknown>> = {};
+    updateSessionStoreMock.mockImplementation(async (_storePath: unknown, mutator: unknown) => {
+      if (typeof mutator !== "function") {
+        throw new Error("missing session store mutator");
+      }
+      await mutator(store);
+      if (Object.values(store).some((entry) => typeof entry.spawnedBy === "string")) {
+        throw new Error("lineage patch failed");
+      }
+      return store;
+    });
     callGatewayMock.mockImplementation(async (opts: unknown) => {
       const request = opts as { method?: string; params?: Record<string, unknown> };
       calls.push(request);
-      if (request.method === "sessions.patch" && typeof request.params?.spawnedBy === "string") {
-        throw new Error("lineage patch failed");
-      }
       if (request.method === "sessions.delete") {
         return { ok: true };
       }
@@ -263,10 +272,8 @@ describe("spawnSubagentDirect filename validation", () => {
       ctx,
     );
 
-    expect(result).toMatchObject({
-      status: "error",
-      error: "lineage patch failed",
-    });
+    expect(result.status).toBe("error");
+    expect(result.error).toContain("lineage patch failed");
     const attachmentsRoot = path.join(workspaceDirOverride, ".remoteclaw", "attachments");
     const retainedDirs = fs.existsSync(attachmentsRoot)
       ? fs.readdirSync(attachmentsRoot).filter((entry) => !entry.startsWith("."))

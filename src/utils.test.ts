@@ -37,10 +37,13 @@ describe("ensureDir", () => {
 describe("sleep", () => {
   it("resolves after delay using fake timers", async () => {
     vi.useFakeTimers();
-    const promise = sleep(1000);
-    vi.advanceTimersByTime(1000);
-    await expect(promise).resolves.toBeUndefined();
-    vi.useRealTimers();
+    try {
+      const promise = sleep(1000);
+      vi.advanceTimersByTime(1000);
+      await expect(promise).resolves.toBeUndefined();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
@@ -71,10 +74,11 @@ describe("resolveHomeDir", () => {
   it("prefers REMOTECLAW_HOME over HOME", () => {
     vi.stubEnv("REMOTECLAW_HOME", "/srv/remoteclaw-home");
     vi.stubEnv("HOME", "/home/other");
-
-    expect(resolveHomeDir()).toBe(path.resolve("/srv/remoteclaw-home"));
-
-    vi.unstubAllEnvs();
+    try {
+      expect(resolveHomeDir()).toBe(path.resolve("/srv/remoteclaw-home"));
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });
 

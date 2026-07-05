@@ -127,12 +127,15 @@ Live tests are split into two layers so we can isolate failures:
     - Embedded agent forwards a multimodal user message to the model
     - Assertion: reply contains `cat` + the code (OCR tolerance: minor mistakes allowed)
 
-Tip: to see what you can test on your machine (and the exact `provider/model` ids), run:
+<Tip>
+To see what you can test on your machine (and the exact `provider/model` ids), run:
 
 ```bash
 remoteclaw models list
 remoteclaw models list --json
 ```
+
+</Tip>
 
 ## Live: CLI backend smoke (Claude, Codex, Gemini, or other local CLIs)
 
@@ -163,6 +166,18 @@ REMOTECLAW_LIVE_CLI_BACKEND=1 \
   REMOTECLAW_LIVE_CLI_BACKEND_MODEL="codex-cli/gpt-5.2" \
   pnpm test:live src/gateway/gateway-cli-backend.live.test.ts
 ```
+
+Cheap Gemini MCP config smoke:
+
+```bash
+REMOTECLAW_LIVE_TEST=1 \
+  pnpm test:live src/agents/cli-runner/bundle-mcp.gemini.live.test.ts
+```
+
+This does not ask Gemini to generate a response. It writes the same system
+settings RemoteClaw gives Gemini, then runs `gemini --debug mcp list` to prove a
+saved `transport: "streamable-http"` server is normalized to Gemini's HTTP MCP
+shape and can connect to a local streamable-HTTP MCP server.
 
 Docker recipe:
 
@@ -207,14 +222,20 @@ Notes:
 - Overrides:
   - `REMOTECLAW_LIVE_ACP_BIND_AGENT=claude`
   - `REMOTECLAW_LIVE_ACP_BIND_AGENT=codex`
+  - `REMOTECLAW_LIVE_ACP_BIND_AGENT=droid`
   - `REMOTECLAW_LIVE_ACP_BIND_AGENT=gemini`
+  - `REMOTECLAW_LIVE_ACP_BIND_AGENT=opencode`
   - `REMOTECLAW_LIVE_ACP_BIND_AGENTS=claude,codex,gemini`
   - `REMOTECLAW_LIVE_ACP_BIND_AGENT_COMMAND='npx -y @agentclientprotocol/claude-agent-acp@<version>'`
   - `REMOTECLAW_LIVE_ACP_BIND_CODEX_MODEL=gpt-5.2`
+  - `REMOTECLAW_LIVE_ACP_BIND_OPENCODE_MODEL=opencode/kimi-k2.6`
+  - `REMOTECLAW_LIVE_ACP_BIND_REQUIRE_TRANSCRIPT=1`
+  - `REMOTECLAW_LIVE_ACP_BIND_REQUIRE_CRON=1`
   - `REMOTECLAW_LIVE_ACP_BIND_PARENT_MODEL=openai/gpt-5.2`
 - Notes:
   - This lane uses the gateway `chat.send` surface with admin-only synthetic originating-route fields so tests can attach message-channel context without pretending to deliver externally.
   - When `REMOTECLAW_LIVE_ACP_BIND_AGENT_COMMAND` is unset, the test uses the embedded `acpx` plugin's built-in agent registry for the selected ACP harness agent.
+  - Bound-session cron MCP creation is best-effort by default because external ACP harnesses can cancel MCP calls after the bind/image proof has passed; set `REMOTECLAW_LIVE_ACP_BIND_REQUIRE_CRON=1` to make that post-bind cron probe strict.
 
 Example:
 
@@ -235,16 +256,20 @@ Single-agent Docker recipes:
 ```bash
 pnpm test:docker:live-acp-bind:claude
 pnpm test:docker:live-acp-bind:codex
+pnpm test:docker:live-acp-bind:droid
 pnpm test:docker:live-acp-bind:gemini
+pnpm test:docker:live-acp-bind:opencode
 ```
 
 Docker notes:
 
 - The Docker runner lives at `scripts/test-live-acp-bind-docker.sh`.
-- By default, it runs the ACP bind smoke against all supported live CLI agents in sequence: `claude`, `codex`, then `gemini`.
-- Use `REMOTECLAW_LIVE_ACP_BIND_AGENTS=claude`, `REMOTECLAW_LIVE_ACP_BIND_AGENTS=codex`, or `REMOTECLAW_LIVE_ACP_BIND_AGENTS=gemini` to narrow the matrix.
-- It sources `~/.profile`, stages the matching CLI auth material into the container, installs `acpx` into a writable npm prefix, then installs the requested live CLI (`@anthropic-ai/claude-code`, `@openai/codex`, or `@google/gemini-cli`) if missing.
-- Inside Docker, the runner sets `REMOTECLAW_LIVE_ACP_BIND_ACPX_COMMAND=$HOME/.npm-global/bin/acpx` so acpx keeps provider env vars from the sourced profile available to the child harness CLI.
+- By default, it runs the ACP bind smoke against the aggregate live CLI agents in sequence: `claude`, `codex`, then `gemini`.
+- Use `REMOTECLAW_LIVE_ACP_BIND_AGENTS=claude`, `REMOTECLAW_LIVE_ACP_BIND_AGENTS=codex`, `REMOTECLAW_LIVE_ACP_BIND_AGENTS=droid`, `REMOTECLAW_LIVE_ACP_BIND_AGENTS=gemini`, or `REMOTECLAW_LIVE_ACP_BIND_AGENTS=opencode` to narrow the matrix.
+- It sources `~/.profile`, stages the matching CLI auth material into the container, then installs the requested live CLI (`@anthropic-ai/claude-code`, `@openai/codex`, Factory Droid via `https://app.factory.ai/cli`, `@google/gemini-cli`, or `opencode-ai`) if missing. The ACP backend itself is the bundled embedded `acpx/runtime` package from the `acpx` plugin.
+- The Droid Docker variant stages `~/.factory` for settings, forwards `FACTORY_API_KEY`, and requires that API key because local Factory OAuth/keyring auth is not portable into the container. It uses ACPX's built-in `droid exec --output-format acp` registry entry.
+- The OpenCode Docker variant is a strict single-agent regression lane. It writes a temporary `OPENCODE_CONFIG_CONTENT` default model from `REMOTECLAW_LIVE_ACP_BIND_OPENCODE_MODEL` (default `opencode/kimi-k2.6`) after sourcing `~/.profile`, and `pnpm test:docker:live-acp-bind:opencode` requires a bound assistant transcript instead of accepting the generic post-bind skip.
+- Direct `acpx` CLI calls are only a manual/workaround path for comparing behavior outside the Gateway. The Docker ACP bind smoke exercises RemoteClaw's embedded `acpx` runtime backend.
 
 ## Live: Codex app-server harness smoke
 
@@ -317,7 +342,7 @@ Narrow, explicit allowlists are fastest and least flaky:
   - `REMOTECLAW_LIVE_GATEWAY_MODELS="openai/gpt-5.2" pnpm test:live src/gateway/gateway-models.profiles.live.test.ts`
 
 - Tool calling across several providers:
-  - `REMOTECLAW_LIVE_GATEWAY_MODELS="openai/gpt-5.2,openai-codex/gpt-5.2,anthropic/claude-opus-4-6,google/gemini-3-flash-preview,deepseek/deepseek-v4-flash,zai/glm-4.7,minimax/MiniMax-M2.7" pnpm test:live src/gateway/gateway-models.profiles.live.test.ts`
+  - `REMOTECLAW_LIVE_GATEWAY_MODELS="openai/gpt-5.2,openai-codex/gpt-5.2,anthropic/claude-opus-4-6,google/gemini-3-flash-preview,deepseek/deepseek-v4-flash,zai/glm-5.1,minimax/MiniMax-M2.7" pnpm test:live src/gateway/gateway-models.profiles.live.test.ts`
 
 - Google focus (Gemini API key + Antigravity):
   - Gemini (API key): `REMOTECLAW_LIVE_GATEWAY_MODELS="google/gemini-3-flash-preview" pnpm test:live src/gateway/gateway-models.profiles.live.test.ts`
@@ -351,11 +376,11 @@ This is the “common models” run we expect to keep working:
 - Google (Gemini API): `google/gemini-3.1-pro-preview` and `google/gemini-3-flash-preview` (avoid older Gemini 2.x models)
 - Google (Antigravity): `google-antigravity/claude-opus-4-6-thinking` and `google-antigravity/gemini-3-flash`
 - DeepSeek: `deepseek/deepseek-v4-flash` and `deepseek/deepseek-v4-pro`
-- Z.AI (GLM): `zai/glm-4.7`
+- Z.AI (GLM): `zai/glm-5.1`
 - MiniMax: `minimax/MiniMax-M2.7`
 
 Run gateway smoke with tools + image:
-`REMOTECLAW_LIVE_GATEWAY_MODELS="openai/gpt-5.2,openai-codex/gpt-5.2,anthropic/claude-opus-4-6,google/gemini-3.1-pro-preview,google/gemini-3-flash-preview,google-antigravity/claude-opus-4-6-thinking,google-antigravity/gemini-3-flash,deepseek/deepseek-v4-flash,zai/glm-4.7,minimax/MiniMax-M2.7" pnpm test:live src/gateway/gateway-models.profiles.live.test.ts`
+`REMOTECLAW_LIVE_GATEWAY_MODELS="openai/gpt-5.2,openai-codex/gpt-5.2,anthropic/claude-opus-4-6,google/gemini-3.1-pro-preview,google/gemini-3-flash-preview,google-antigravity/claude-opus-4-6-thinking,google-antigravity/gemini-3-flash,deepseek/deepseek-v4-flash,zai/glm-5.1,minimax/MiniMax-M2.7" pnpm test:live src/gateway/gateway-models.profiles.live.test.ts`
 
 ### Baseline: tool calling (Read + optional Exec)
 
@@ -365,7 +390,7 @@ Pick at least one per provider family:
 - Anthropic: `anthropic/claude-opus-4-6` (or `anthropic/claude-sonnet-4-6`)
 - Google: `google/gemini-3-flash-preview` (or `google/gemini-3.1-pro-preview`)
 - DeepSeek: `deepseek/deepseek-v4-flash`
-- Z.AI (GLM): `zai/glm-4.7`
+- Z.AI (GLM): `zai/glm-5.1`
 - MiniMax: `minimax/MiniMax-M2.7`
 
 Optional additional coverage (nice to have):
@@ -391,7 +416,9 @@ More providers you can include in the live matrix (if you have creds/config):
 - Built-in: `openai`, `openai-codex`, `anthropic`, `google`, `google-vertex`, `google-antigravity`, `google-gemini-cli`, `zai`, `openrouter`, `opencode`, `opencode-go`, `xai`, `groq`, `cerebras`, `mistral`, `github-copilot`
 - Via `models.providers` (custom endpoints): `minimax` (cloud/API), plus any OpenAI/Anthropic-compatible proxy (LM Studio, vLLM, LiteLLM, etc.)
 
-Tip: don’t try to hardcode “all models” in docs. The authoritative list is whatever `discoverModels(...)` returns on your machine + whatever keys are available.
+<Tip>
+Do not hardcode "all models" in docs. The authoritative list is whatever `discoverModels(...)` returns on your machine plus whatever keys are available.
+</Tip>
 
 ## Credentials (never commit)
 
@@ -492,7 +519,7 @@ image-generation runtime, and the live provider request.
     - `comfy`: separate Comfy live file, not this shared sweep
 - Optional narrowing:
   - `REMOTECLAW_LIVE_MUSIC_GENERATION_PROVIDERS="google,minimax"`
-  - `REMOTECLAW_LIVE_MUSIC_GENERATION_MODELS="google/lyria-3-clip-preview,minimax/music-2.5+"`
+  - `REMOTECLAW_LIVE_MUSIC_GENERATION_MODELS="google/lyria-3-clip-preview,minimax/music-2.6"`
 - Optional auth behavior:
   - `REMOTECLAW_LIVE_REQUIRE_PROFILE_KEYS=1` to force profile-store auth and ignore env-only overrides
 

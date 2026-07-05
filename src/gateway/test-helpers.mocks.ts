@@ -570,5 +570,3 @@ vi.mock("../plugins/loader.js", async () => {
 
 process.env.REMOTECLAW_SKIP_CHANNELS = "1";
 process.env.REMOTECLAW_SKIP_CRON = "1";
-process.env.REMOTECLAW_SKIP_CHANNELS = "1";
-process.env.REMOTECLAW_SKIP_CRON = "1";

@@ -401,6 +401,10 @@ describe("channels command", () => {
 
   it("formats gateway channel status lines in registry order", () => {
     const lines = formatGatewayChannelsStatusLines({
+      channelLabels: {
+        telegram: "Telegram",
+        whatsapp: "WhatsApp",
+      },
       channelAccounts: {
         telegram: [{ accountId: "default", configured: true }],
         whatsapp: [{ accountId: "default", linked: true }],
@@ -520,6 +524,9 @@ describe("channels command", () => {
 
   it("surfaces WhatsApp auth/runtime hints when unlinked or disconnected", () => {
     const unlinked = formatGatewayChannelsStatusLines({
+      channelLabels: {
+        whatsapp: "WhatsApp",
+      },
       channelAccounts: {
         whatsapp: [{ accountId: "default", enabled: true, linked: false }],
       },
@@ -528,6 +535,9 @@ describe("channels command", () => {
     expect(unlinked.join("\n")).toMatch(/Not linked/i);
 
     const disconnected = formatGatewayChannelsStatusLines({
+      channelLabels: {
+        whatsapp: "WhatsApp",
+      },
       channelAccounts: {
         whatsapp: [
           {

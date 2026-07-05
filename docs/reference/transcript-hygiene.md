@@ -26,8 +26,10 @@ Scope includes:
 - Tool result pairing repair
 - Turn validation / ordering
 - Thought signature cleanup
+- Thinking signature cleanup
 - Image payload sanitization
 - User-input provenance tagging (for inter-session routed prompts)
+- Empty assistant error-turn repair for Bedrock Converse replay
 
 If you need transcript storage details, see:
 
@@ -124,6 +126,13 @@ external end-user instructions.
 - Missing OpenAI Responses-family tool outputs are synthesized as `aborted` to match Codex replay normalization.
 - No thought signature stripping.
 
+**OpenAI-compatible Gemma 4**
+
+- Historical assistant thinking/reasoning blocks are stripped before replay so local
+  OpenAI-compatible Gemma 4 servers do not receive prior-turn reasoning content.
+- Current same-turn tool-call continuations keep the assistant reasoning block
+  attached to the tool call until the tool result has been replayed.
+
 **Google (Generative AI / Gemini CLI / Antigravity)**
 
 - Tool call id sanitization: strict alphanumeric.
@@ -136,6 +145,26 @@ external end-user instructions.
 
 - Tool result pairing repair and synthetic tool results.
 - Turn validation (merge consecutive user turns to satisfy strict alternation).
+- Thinking blocks with missing, empty, or blank replay signatures are stripped
+  before provider conversion. If that empties an assistant turn, RemoteClaw keeps
+  turn shape with non-empty omitted-reasoning text.
+- Older thinking-only assistant turns that must be stripped are replaced with
+  non-empty omitted-reasoning text so provider adapters do not drop the replay
+  turn.
+
+**Amazon Bedrock (Converse API)**
+
+- Empty assistant stream-error turns are repaired to a non-empty fallback text block
+  before replay. Bedrock Converse rejects assistant messages with `content: []`, so
+  persisted assistant turns with `stopReason: "error"` and empty content are also
+  repaired on disk before load.
+- Claude thinking blocks with missing, empty, or blank replay signatures are
+  stripped before Converse replay. If that empties an assistant turn, RemoteClaw
+  keeps turn shape with non-empty omitted-reasoning text.
+- Older thinking-only assistant turns that must be stripped are replaced with
+  non-empty omitted-reasoning text so the Converse replay keeps strict turn shape.
+- Replay filters RemoteClaw delivery-mirror and gateway-injected assistant turns.
+- Image sanitization applies through the global rule.
 
 **Mistral (including model-id based detection)**
 

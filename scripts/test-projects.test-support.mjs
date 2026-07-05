@@ -1,4 +1,3 @@
-import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -40,7 +39,10 @@ import {
   isBoundaryTestFile,
   isBundledPluginDependentUnitTestFile,
 } from "../test/vitest/vitest.unit-paths.mjs";
-import { detectChangedLanes } from "./changed-lanes.mjs";
+import {
+  detectChangedLanes,
+  listChangedPathsFromGit as listChangedPathsFromGitSource,
+} from "./changed-lanes.mjs";
 import { isCiLikeEnv, resolveLocalFullSuiteProfile } from "./lib/vitest-local-scheduling.mjs";
 import { resolveVitestCliEntry, resolveVitestNodeArgs } from "./run-vitest.mjs";
 
@@ -207,7 +209,7 @@ const VITEST_CONFIG_BY_KIND = {
   utils: UTILS_VITEST_CONFIG,
   wizard: WIZARD_VITEST_CONFIG,
 };
-const BROAD_CHANGED_RERUN_PATTERNS = [
+const BROAD_CHANGED_FALLBACK_PATTERNS = [
   /^package\.json$/u,
   /^pnpm-lock\.yaml$/u,
   /^test\/setup(?:\.shared|\.extensions|-remoteclaw-runtime)?\.ts$/u,
@@ -225,6 +227,7 @@ const PRECISE_SOURCE_TEST_TARGETS = new Map([
   ],
 ]);
 const TOOLING_SOURCE_TEST_TARGETS = new Map([
+  ["scripts/github/barnacle-auto-response.mjs", ["test/scripts/barnacle-auto-response.test.ts"]],
   ["scripts/changed-lanes.mjs", ["test/scripts/changed-lanes.test.ts"]],
   ["scripts/lib/vitest-local-scheduling.mjs", ["test/scripts/vitest-local-scheduling.test.ts"]],
   [
@@ -235,15 +238,21 @@ const TOOLING_SOURCE_TEST_TARGETS = new Map([
       "test/scripts/vitest-local-scheduling.test.ts",
     ],
   ],
+  ["scripts/run-oxlint.mjs", ["test/scripts/run-oxlint.test.ts"]],
+  ["scripts/ci-run-timings.mjs", ["test/scripts/ci-run-timings.test.ts"]],
   ["scripts/test-extension-batch.mjs", ["test/scripts/test-extension.test.ts"]],
   ["scripts/lib/extension-test-plan.mjs", ["test/scripts/test-extension.test.ts"]],
   ["scripts/lib/vitest-batch-runner.mjs", ["test/scripts/test-extension.test.ts"]],
+  ["scripts/lib/ci-node-test-plan.mjs", ["test/scripts/ci-node-test-plan.test.ts"]],
+  ["scripts/lib/vitest-shard-timings.mjs", ["test/scripts/vitest-shard-timings.test.ts"]],
   ["scripts/test-projects.mjs", ["test/scripts/test-projects.test.ts"]],
   ["scripts/test-projects.test-support.d.mts", ["test/scripts/test-projects.test.ts"]],
   ["scripts/test-projects.test-support.mjs", ["test/scripts/test-projects.test.ts"]],
 ]);
 const TOOLING_TEST_TARGETS = new Map([
+  ["test/scripts/barnacle-auto-response.test.ts", ["test/scripts/barnacle-auto-response.test.ts"]],
   ["test/scripts/changed-lanes.test.ts", ["test/scripts/changed-lanes.test.ts"]],
+  ["test/scripts/live-docker-stage.test.ts", ["test/scripts/live-docker-stage.test.ts"]],
   ["test/scripts/test-projects.test.ts", ["test/scripts/test-projects.test.ts"]],
   [
     "test/scripts/vitest-local-scheduling.test.ts",
@@ -253,6 +262,19 @@ const TOOLING_TEST_TARGETS = new Map([
 const SOURCE_TEST_TARGETS = new Map([
   ...PRECISE_SOURCE_TEST_TARGETS,
   ["src/agents/live-model-turn-probes.ts", ["src/agents/live-model-turn-probes.test.ts"]],
+  [
+    "src/plugins/provider-auth-choice.ts",
+    ["src/commands/auth-choice.apply.plugin-provider.test.ts", "src/commands/auth-choice.test.ts"],
+  ],
+  [
+    "src/secrets/provider-env-vars.ts",
+    ["src/secrets/provider-env-vars.dynamic.test.ts", "src/secrets/provider-env-vars.test.ts"],
+  ],
+  [
+    "src/memory-host-sdk/host/embedding-defaults.ts",
+    ["src/memory-host-sdk/host/embeddings.test.ts"],
+  ],
+  ["src/memory-host-sdk/host/embeddings.ts", ["src/memory-host-sdk/host/embeddings.test.ts"]],
   [
     "src/auto-reply/reply/dispatch-from-config.ts",
     ["src/auto-reply/reply/dispatch-from-config.test.ts"],
@@ -264,11 +286,21 @@ const SOURCE_TEST_TARGETS = new Map([
       "src/auto-reply/reply/dispatch-from-config.test.ts",
     ],
   ],
+  ["src/auto-reply/reply/commands-acp.ts", ["src/auto-reply/reply/commands-acp.test.ts"]],
+  [
+    "src/auto-reply/reply/dispatch-acp-command-bypass.ts",
+    ["src/auto-reply/reply/dispatch-acp-command-bypass.test.ts"],
+  ],
 ]);
 const GENERATED_CHANGED_TEST_TARGETS = new Set([
   "src/canvas-host/a2ui/.bundle.hash",
   "src/canvas-host/a2ui/a2ui.bundle.js",
 ]);
+const SOURCE_ROOTS_FOR_IMPORT_GRAPH = ["src", "extensions", "packages", "ui/src", "test"];
+const IMPORTABLE_FILE_EXTENSIONS = [".ts", ".tsx", ".mts", ".cts"];
+const IMPORT_SPECIFIER_PATTERN =
+  /\b(?:import|export)\s+(?:type\s+)?(?:[^'"]*?\s+from\s+)?["']([^"']+)["']|\bimport\s*\(\s*["']([^"']+)["']\s*\)/gu;
+const BROAD_CHANGED_ENV_KEY = "REMOTECLAW_TEST_CHANGED_BROAD";
 const VITEST_NO_OUTPUT_TIMEOUT_ENV_KEY = "REMOTECLAW_VITEST_NO_OUTPUT_TIMEOUT_MS";
 const VITEST_NO_OUTPUT_RETRY_ENV_KEY = "REMOTECLAW_VITEST_NO_OUTPUT_RETRY";
 export const DEFAULT_TEST_PROJECTS_VITEST_NO_OUTPUT_TIMEOUT_MS = "180000";
@@ -343,6 +375,10 @@ function isFileLikeTarget(arg) {
   return /\.(?:test|spec)\.[cm]?[jt]sx?$/u.test(arg);
 }
 
+function isTestFileTarget(arg) {
+  return /\.(?:test|spec)\.[cm]?[jt]sx?$/u.test(arg);
+}
+
 function isLikelyFileTarget(arg) {
   return /(?:^|\/)[^/]+\.[A-Za-z0-9]+$/u.test(arg);
 }
@@ -372,6 +408,128 @@ function toScopedIncludePattern(arg, cwd) {
     return directory === "." ? "**/*.test.ts" : `${directory}/**/*.test.ts`;
   }
   return `${relative.replace(/\/+$/u, "")}/**/*.test.ts`;
+}
+
+function isSkippedImportGraphDirectory(name) {
+  return (
+    name === ".git" ||
+    name === "dist" ||
+    name === "node_modules" ||
+    name === "vendor" ||
+    name.startsWith(".remoteclaw-runtime-deps")
+  );
+}
+
+function listImportGraphFiles(cwd, directory, files = []) {
+  let entries;
+  try {
+    entries = fs.readdirSync(path.join(cwd, directory), { withFileTypes: true });
+  } catch {
+    return files;
+  }
+
+  for (const entry of entries) {
+    const relative = normalizePathPattern(path.posix.join(directory, entry.name));
+    if (entry.isDirectory()) {
+      if (!isSkippedImportGraphDirectory(entry.name)) {
+        listImportGraphFiles(cwd, relative, files);
+      }
+      continue;
+    }
+    if (entry.isFile() && IMPORTABLE_FILE_EXTENSIONS.some((ext) => relative.endsWith(ext))) {
+      files.push(relative);
+    }
+  }
+  return files;
+}
+
+function resolveImportSpecifier(importer, specifier, fileSet) {
+  if (!specifier.startsWith(".")) {
+    return null;
+  }
+
+  const importerDir = path.posix.dirname(importer);
+  const base = normalizePathPattern(path.posix.normalize(path.posix.join(importerDir, specifier)));
+  const candidates = [];
+  const ext = path.posix.extname(base);
+  if (ext) {
+    candidates.push(base);
+    if ([".js", ".jsx", ".mjs", ".cjs"].includes(ext)) {
+      const withoutExt = base.slice(0, -ext.length);
+      candidates.push(
+        ...IMPORTABLE_FILE_EXTENSIONS.map((candidateExt) => `${withoutExt}${candidateExt}`),
+      );
+    }
+  } else {
+    candidates.push(
+      ...IMPORTABLE_FILE_EXTENSIONS.map((candidateExt) => `${base}${candidateExt}`),
+      ...IMPORTABLE_FILE_EXTENSIONS.map((candidateExt) => `${base}/index${candidateExt}`),
+    );
+  }
+
+  return candidates.find((candidate) => fileSet.has(candidate)) ?? null;
+}
+
+let cachedImportGraph = null;
+let cachedImportGraphCwd = null;
+
+function getImportGraph(cwd) {
+  if (cachedImportGraph && cachedImportGraphCwd === cwd) {
+    return cachedImportGraph;
+  }
+
+  const files = SOURCE_ROOTS_FOR_IMPORT_GRAPH.flatMap((root) => listImportGraphFiles(cwd, root));
+  const fileSet = new Set(files);
+  const reverseImports = new Map();
+  const testFiles = new Set(
+    files.filter((file) => isTestFileTarget(file) && !file.endsWith(".live.test.ts")),
+  );
+
+  for (const file of files) {
+    let source = "";
+    try {
+      source = fs.readFileSync(path.join(cwd, file), "utf8");
+    } catch {
+      continue;
+    }
+    for (const match of source.matchAll(IMPORT_SPECIFIER_PATTERN)) {
+      const imported = resolveImportSpecifier(file, match[1] ?? match[2] ?? "", fileSet);
+      if (!imported) {
+        continue;
+      }
+      const importers = reverseImports.get(imported) ?? [];
+      importers.push(file);
+      reverseImports.set(imported, importers);
+    }
+  }
+
+  cachedImportGraph = { reverseImports, testFiles };
+  cachedImportGraphCwd = cwd;
+  return cachedImportGraph;
+}
+
+function resolveAffectedTestsFromImportGraph(changedPath, cwd) {
+  const normalized = normalizePathPattern(changedPath);
+  const { reverseImports, testFiles } = getImportGraph(cwd);
+  const queue = [normalized];
+  const seen = new Set(queue);
+  const targets = [];
+
+  for (let index = 0; index < queue.length; index += 1) {
+    const current = queue[index];
+    for (const importer of reverseImports.get(current) ?? []) {
+      if (seen.has(importer)) {
+        continue;
+      }
+      seen.add(importer);
+      if (testFiles.has(importer)) {
+        targets.push(importer);
+      }
+      queue.push(importer);
+    }
+  }
+
+  return [...new Set(targets)].toSorted((left, right) => left.localeCompare(right));
 }
 
 function resolveVitestConfigTargetKind(relative) {
@@ -431,36 +589,7 @@ function resolveChannelContractTargetKind(relative) {
 }
 
 function listChangedPathsFromGit(baseRef, cwd) {
-  return [
-    ...new Set([
-      ...runGitNameOnlyDiff(cwd, [`${baseRef}...HEAD`]),
-      ...runGitNameOnlyDiff(cwd, ["--cached", "--diff-filter=ACMR"]),
-      ...runGitNameOnlyDiff(cwd, ["--diff-filter=ACMR"]),
-      ...runGitLsFiles(cwd, ["--others", "--exclude-standard"]),
-    ]),
-  ].toSorted((left, right) => left.localeCompare(right));
-}
-
-function runGitNameOnlyDiff(cwd, extraArgs) {
-  return execFileSync("git", ["diff", "--name-only", ...extraArgs], {
-    cwd,
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
-  })
-    .split("\n")
-    .map((line) => normalizePathPattern(line.trim()))
-    .filter((line) => line.length > 0);
-}
-
-function runGitLsFiles(cwd, extraArgs) {
-  return execFileSync("git", ["ls-files", ...extraArgs], {
-    cwd,
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
-  })
-    .split("\n")
-    .map((line) => normalizePathPattern(line.trim()))
-    .filter((line) => line.length > 0);
+  return listChangedPathsFromGitSource({ base: baseRef, cwd });
 }
 
 function extractChangedBaseRef(args) {
@@ -502,7 +631,7 @@ function shouldKeepBroadChangedRun(changedPaths) {
   return changedPaths.some((changedPath) =>
     PRECISE_SOURCE_TEST_TARGETS.has(changedPath)
       ? false
-      : BROAD_CHANGED_RERUN_PATTERNS.some((pattern) => pattern.test(changedPath)),
+      : BROAD_CHANGED_FALLBACK_PATTERNS.some((pattern) => pattern.test(changedPath)),
   );
 }
 
@@ -522,6 +651,11 @@ function resolveToolingTestTargets(changedPath) {
   return TOOLING_SOURCE_TEST_TARGETS.get(changedPath) ?? TOOLING_TEST_TARGETS.get(changedPath);
 }
 
+function shouldUseBroadChangedTargets(env = process.env) {
+  const value = env[BROAD_CHANGED_ENV_KEY]?.trim().toLowerCase();
+  return ["1", "true", "yes", "on"].includes(value ?? "");
+}
+
 function isRoutableChangedTarget(changedPath) {
   if (GENERATED_CHANGED_TEST_TARGETS.has(changedPath)) {
     return false;
@@ -532,7 +666,39 @@ function isRoutableChangedTarget(changedPath) {
   return /^(?:src|test|extensions|ui|packages)(?:\/|$)/u.test(changedPath);
 }
 
-export function resolveChangedTestTargetPlan(changedPaths) {
+function resolveSiblingTestTarget(changedPath, cwd) {
+  if (!/\.[cm]?tsx?$/u.test(changedPath) || isTestFileTarget(changedPath)) {
+    return null;
+  }
+  const withoutExtension = changedPath.replace(/\.[cm]?tsx?$/u, "");
+  const sibling = `${withoutExtension}.test.ts`;
+  return fs.existsSync(path.join(cwd, sibling)) ? sibling : null;
+}
+
+function resolvePreciseChangedTestTargets(changedPath, options) {
+  const cwd = options.cwd ?? process.cwd();
+  const mappedTargets =
+    resolveToolingTestTargets(changedPath) ?? SOURCE_TEST_TARGETS.get(changedPath);
+  if (mappedTargets) {
+    return mappedTargets;
+  }
+  if (isRoutableChangedTarget(changedPath) && isTestFileTarget(changedPath)) {
+    return [changedPath];
+  }
+  const siblingTest = resolveSiblingTestTarget(changedPath, cwd);
+  if (siblingTest) {
+    return [siblingTest];
+  }
+  if (/^(?:src|test\/helpers|extensions|packages|ui\/src)\//u.test(changedPath)) {
+    const affectedTests = resolveAffectedTestsFromImportGraph(changedPath, cwd);
+    if (affectedTests.length > 0) {
+      return affectedTests;
+    }
+  }
+  return null;
+}
+
+export function resolveChangedTestTargetPlan(changedPaths, options = {}) {
   if (changedPaths.length === 0) {
     return { mode: "none", targets: [] };
   }
@@ -540,22 +706,28 @@ export function resolveChangedTestTargetPlan(changedPaths) {
   if (toolingTargets) {
     return { mode: "targets", targets: toolingTargets };
   }
-  if (shouldKeepBroadChangedRun(changedPaths)) {
-    return { mode: "broad", targets: [] };
-  }
   const changedLanes = detectChangedLanes(changedPaths);
-  if (changedLanes.lanes.all) {
-    return { mode: "broad", targets: [] };
-  }
-  const targets = changedPaths.flatMap((changedPath) => {
-    const mappedTargets =
-      resolveToolingTestTargets(changedPath) ?? SOURCE_TEST_TARGETS.get(changedPath);
-    if (mappedTargets) {
-      return mappedTargets;
+  const env = options.env ?? {};
+  const useBroadFallback = options.broad ?? shouldUseBroadChangedTargets(env);
+  const targets = [];
+  for (const changedPath of changedPaths) {
+    const preciseTargets = resolvePreciseChangedTestTargets(changedPath, options);
+    if (preciseTargets) {
+      targets.push(...preciseTargets);
+      continue;
     }
-    return isRoutableChangedTarget(changedPath) ? [changedPath] : [];
-  });
-  if (changedLanes.extensionImpactFromCore) {
+    const needsBroadFallback = shouldKeepBroadChangedRun([changedPath]) || changedLanes.lanes.all;
+    if (needsBroadFallback) {
+      if (useBroadFallback) {
+        return { mode: "broad", targets: [] };
+      }
+      continue;
+    }
+    if (isRoutableChangedTarget(changedPath)) {
+      targets.push(changedPath);
+    }
+  }
+  if (useBroadFallback && changedLanes.extensionImpactFromCore) {
     targets.push("extensions");
   }
   return { mode: "targets", targets: [...new Set(targets)] };
@@ -572,13 +744,17 @@ export function resolveChangedTargetArgs(
   args,
   cwd = process.cwd(),
   listChangedPaths = listChangedPathsFromGit,
+  options = {},
 ) {
   const baseRef = extractChangedBaseRef(args);
   if (!baseRef) {
     return null;
   }
   const changedPaths = listChangedPaths(baseRef, cwd);
-  const plan = resolveChangedTestTargetPlan(changedPaths);
+  const plan = resolveChangedTestTargetPlan(changedPaths, {
+    cwd,
+    ...options,
+  });
   if (plan.mode === "broad") {
     return null;
   }
@@ -845,10 +1021,11 @@ export function buildVitestRunPlans(
   args,
   cwd = process.cwd(),
   listChangedPaths = listChangedPathsFromGit,
+  options = {},
 ) {
   const { forwardedArgs, targetArgs, watchMode } = parseTestProjectsArgs(args, cwd);
   const changedTargetArgs =
-    targetArgs.length === 0 ? resolveChangedTargetArgs(args, cwd, listChangedPaths) : null;
+    targetArgs.length === 0 ? resolveChangedTargetArgs(args, cwd, listChangedPaths, options) : null;
   const activeTargetArgs = changedTargetArgs ?? targetArgs;
   const activeForwardedArgs =
     changedTargetArgs !== null ? stripChangedArgs(forwardedArgs) : forwardedArgs;
@@ -1034,7 +1211,7 @@ export function buildFullSuiteVitestRunPlans(args, cwd = process.cwd()) {
     ) {
       return [];
     }
-    const expandShard = expandToProjectConfigs || shard.config === FULL_EXTENSIONS_VITEST_CONFIG;
+    const expandShard = expandToProjectConfigs;
     const configs = expandShard ? shard.projects : [shard.config];
     return configs.map((config) => ({
       config,
@@ -1160,7 +1337,10 @@ export function shouldRetryVitestNoOutputTimeout(env = process.env) {
 export function createVitestRunSpecs(args, params = {}) {
   const cwd = params.cwd ?? process.cwd();
   const baseEnv = params.baseEnv ?? process.env;
-  const plans = filterPlansForContractIncludeFile(buildVitestRunPlans(args, cwd), baseEnv);
+  const plans = filterPlansForContractIncludeFile(
+    buildVitestRunPlans(args, cwd, listChangedPathsFromGit, { env: baseEnv }),
+    baseEnv,
+  );
   return plans.map((plan, index) => {
     const includeFilePath = plan.includePatterns
       ? path.join(
@@ -1219,6 +1399,10 @@ function filterPlansForContractIncludeFile(plans, env) {
 }
 
 export function shouldAcquireLocalHeavyCheckLock(runSpecs, env = process.env) {
+  if (env.REMOTECLAW_TEST_HEAVY_CHECK_LOCK_HELD === "1") {
+    return false;
+  }
+
   if (env.REMOTECLAW_TEST_PROJECTS_FORCE_LOCK === "1") {
     return true;
   }

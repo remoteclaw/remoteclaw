@@ -61,7 +61,7 @@ describe("handleControlUiHttpRequest", () => {
 
   function runAvatarRequest(params: {
     url: string;
-    method: "GET" | "HEAD";
+    method: "GET" | "HEAD" | "POST";
     resolveAvatar: Parameters<typeof handleControlUiAvatarRequest>[2]["resolveAvatar"];
     basePath?: string;
   }) {

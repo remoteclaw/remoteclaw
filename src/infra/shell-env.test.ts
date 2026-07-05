@@ -139,8 +139,8 @@ describe("shell env fallback", () => {
     ).toBe(15000);
   });
 
-  it("skips when already has an expected key", () => {
-    const env: NodeJS.ProcessEnv = { OPENAI_API_KEY: "set" };
+  it("skips when already has all expected keys", () => {
+    const env: NodeJS.ProcessEnv = { OPENAI_API_KEY: "set", DISCORD_BOT_TOKEN: "set" };
     const exec = vi.fn(() => Buffer.from(""));
 
     const res = runShellEnvFallback({
@@ -154,6 +154,37 @@ describe("shell env fallback", () => {
     expect(res.applied).toEqual([]);
     expect(res.ok && res.skippedReason).toBe("already-has-keys");
     expect(exec).not.toHaveBeenCalled();
+  });
+
+  it("imports missing expected keys even when another expected key already exists", () => {
+    const env: NodeJS.ProcessEnv = { REMOTECLAW_GATEWAY_TOKEN: "set" };
+    const exec = vi.fn(() =>
+      Buffer.from(
+        "REMOTECLAW_GATEWAY_TOKEN=from-shell\0TWILIO_ACCOUNT_SID=AC123\0TWILIO_AUTH_TOKEN=secret\0TWILIO_FROM_NUMBER=+15550001234\0",
+      ),
+    );
+
+    const res = runShellEnvFallback({
+      enabled: true,
+      env,
+      expectedKeys: [
+        "REMOTECLAW_GATEWAY_TOKEN",
+        "TWILIO_ACCOUNT_SID",
+        "TWILIO_AUTH_TOKEN",
+        "TWILIO_FROM_NUMBER",
+      ],
+      exec,
+    });
+
+    expect(res).toEqual({
+      ok: true,
+      applied: ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_FROM_NUMBER"],
+    });
+    expect(env.REMOTECLAW_GATEWAY_TOKEN).toBe("set");
+    expect(env.TWILIO_ACCOUNT_SID).toBe("AC123");
+    expect(env.TWILIO_AUTH_TOKEN).toBe("secret");
+    expect(env.TWILIO_FROM_NUMBER).toBe("+15550001234");
+    expect(exec).toHaveBeenCalledTimes(1);
   });
 
   it("treats explicitly empty env vars as intentional overrides", () => {

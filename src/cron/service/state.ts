@@ -88,6 +88,7 @@ export type CronServiceDeps = {
     job: CronJob;
     message: string;
     abortSignal?: AbortSignal;
+    onExecutionStarted?: () => void;
   }) => Promise<
     {
       summary?: string;

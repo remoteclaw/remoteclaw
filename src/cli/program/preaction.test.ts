@@ -154,15 +154,15 @@ describe("registerPreActionHooks", () => {
 
     vi.clearAllMocks();
     await runPreAction({
-      parseArgv: ["message", "send"],
-      processArgv: ["node", "remoteclaw", "message", "send"],
+      parseArgv: ["agents", "list"],
+      processArgv: ["node", "remoteclaw", "agents", "list"],
     });
 
     expect(setVerboseMock).toHaveBeenCalledWith(false);
     expect(process.env.NODE_NO_WARNINGS).toBe("1");
     expect(ensureConfigReadyMock).toHaveBeenCalledWith({
       runtime: runtimeMock,
-      commandPath: ["message", "send"],
+      commandPath: ["agents", "list"],
     });
     expect(ensurePluginRegistryLoadedMock).toHaveBeenCalledTimes(1);
   });

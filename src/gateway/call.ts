@@ -935,13 +935,20 @@ export async function callGatewayLeastPrivilege<T = Record<string, unknown>>(
 export async function callGateway<T = Record<string, unknown>>(
   opts: CallGatewayOptions,
 ): Promise<T> {
-  if (Array.isArray(opts.scopes)) {
-    return await callGatewayWithScopes(opts, opts.scopes);
-  }
   const callerMode = opts.mode ?? GATEWAY_CLIENT_MODES.BACKEND;
   const callerName = opts.clientName ?? GATEWAY_CLIENT_NAMES.GATEWAY_CLIENT;
   if (callerMode === GATEWAY_CLIENT_MODES.CLI || callerName === GATEWAY_CLIENT_NAMES.CLI) {
     return await callGatewayCli(opts);
+  }
+  if (Array.isArray(opts.scopes)) {
+    return await callGatewayWithScopes(
+      {
+        ...opts,
+        mode: callerMode,
+        clientName: callerName,
+      },
+      opts.scopes,
+    );
   }
   return await callGatewayLeastPrivilege({
     ...opts,

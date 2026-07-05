@@ -201,12 +201,12 @@ describe("config plugin validation", () => {
     clearPluginManifestRegistryCache();
   });
 
-  it("reports missing plugin refs across load paths, entries, and allowlist surfaces", async () => {
+  it("reports missing plugin refs across entries and allowlist surfaces", async () => {
     const missingPath = path.join(suiteHome, "missing-plugin-dir");
     const res = validateInSuite({
       agents: { list: [{ id: "pi", workspace: "/tmp/pi" }] },
       plugins: {
-        enabled: false,
+        enabled: true,
         load: { paths: [missingPath] },
         entries: { "missing-plugin": { enabled: true } },
         allow: ["missing-allow"],
@@ -215,12 +215,6 @@ describe("config plugin validation", () => {
     });
     expect(res.ok).toBe(false);
     if (!res.ok) {
-      expect(
-        res.issues.some(
-          (issue) =>
-            issue.path === "plugins.load.paths" && issue.message.includes("plugin path not found"),
-        ),
-      ).toBe(true);
       expect(res.issues).toEqual(
         expect.arrayContaining([
           { path: "plugins.deny", message: "plugin not found: missing-deny" },

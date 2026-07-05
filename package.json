@@ -70,6 +70,10 @@
       "types": "./dist/plugin-sdk/media-store.d.ts",
       "default": "./dist/plugin-sdk/media-store.js"
     },
+    "./plugin-sdk/reply-chunking": {
+      "types": "./dist/plugin-sdk/reply-chunking.d.ts",
+      "default": "./dist/plugin-sdk/reply-chunking.js"
+    },
     "./plugin-sdk/reply-payload": {
       "types": "./dist/plugin-sdk/reply-payload.d.ts",
       "default": "./dist/plugin-sdk/reply-payload.js"
@@ -468,5 +472,5 @@
     ]
   },
   "upstreamRepo": "openclaw/openclaw",
-  "upstreamVersion": "2026.4.24"
+  "upstreamVersion": "2026.4.26"
 }

@@ -86,6 +86,9 @@ Security notes:
 Disable/override:
 
 - `REMOTECLAW_DISABLE_BONJOUR=1` disables advertising.
+- When `REMOTECLAW_DISABLE_BONJOUR` is unset, Bonjour advertises on normal hosts
+  and auto-disables inside detected containers. Use `0` only on host, macvlan,
+  or another mDNS-capable network; use `1` to force-disable.
 - `gateway.bind` in `~/.remoteclaw/remoteclaw.json` controls the Gateway bind mode.
 - `REMOTECLAW_SSH_PORT` overrides the SSH port advertised when `sshPort` is emitted.
 - `REMOTECLAW_TAILNET_DNS` publishes a `tailnetDns` hint (MagicDNS).

@@ -73,7 +73,7 @@ export type PluginReleasePlan = {
   skippedPublished: PluginReleasePlanItem[];
 };
 
-const CLAWHUB_DEFAULT_REGISTRY = "https://clawhub.ai";
+const CLAWHUB_DEFAULT_REGISTRY = "https://remoteclaw.org";
 const SAFE_EXTENSION_ID_RE = /^[a-z0-9][a-z0-9._-]*$/;
 const CLAWHUB_SHARED_RELEASE_INPUT_PATHS = [
   ".github/workflows/plugin-clawhub-release.yml",

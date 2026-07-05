@@ -316,7 +316,6 @@ lives on the [First-run FAQ](/help/faq-first-run).
 
   <Accordion title="How do I install skills on Linux?">
     Use native `remoteclaw skills` commands or drop skills into your workspace. The macOS Skills UI isn't available on Linux.
-    Browse skills at [https://clawhub.ai](https://clawhub.ai).
 
     ```bash
     remoteclaw skills search "calendar"

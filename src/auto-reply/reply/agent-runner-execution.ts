@@ -36,6 +36,7 @@ import type {
 } from "../../middleware/types.js";
 import { resolveAgentIdFromSessionKeyOrNull } from "../../routing/session-key.js";
 import { defaultRuntime } from "../../runtime.js";
+import { normalizeLowercaseStringOrEmpty } from "../../shared/string-coerce.js";
 import type { TemplateContext } from "../templating.js";
 import type { VerboseLevel } from "../thinking.js";
 import { isSilentReplyPrefixText, isSilentReplyText, SILENT_REPLY_TOKEN } from "../tokens.js";
@@ -161,6 +162,31 @@ function buildChannelMessage(params: {
     timezone: params.timezone || undefined,
     authorizedSenders: params.authorizedSenders?.length ? params.authorizedSenders : undefined,
   };
+}
+
+// Raw runner-failure boilerplate that must never leak into a group/channel.
+const AGENT_FAILED_BEFORE_REPLY_TEXT = "Agent failed before reply:";
+
+function isNonDirectConversationContext(ctx: TemplateContext): boolean {
+  const chatType = normalizeLowercaseStringOrEmpty(ctx.ChatType);
+  return chatType === "group" || chatType === "channel";
+}
+
+// Suppress raw/generic agent-failure boilerplate in group and channel contexts so a
+// bystander audience never sees internal error detail, while keeping curated guidance
+// (billing, context-overflow, role-ordering) and all direct-context replies unchanged.
+function resolveExternalRunFailureTextForConversation(params: {
+  text: string;
+  sessionCtx: TemplateContext;
+  isGenericRunnerFailure: boolean;
+}): string {
+  if (!isNonDirectConversationContext(params.sessionCtx)) {
+    return params.text;
+  }
+  if (!params.isGenericRunnerFailure && !params.text.includes(AGENT_FAILED_BEFORE_REPLY_TEXT)) {
+    return params.text;
+  }
+  return SILENT_REPLY_TOKEN;
 }
 
 // ── Main ─────────────────────────────────────────────────────────────────
@@ -594,10 +620,19 @@ export async function runAgentTurnWithFallback(params: {
             ? "⚠️ Message ordering conflict - please try again. If this persists, use /new to start a fresh session."
             : `⚠️ Agent failed before reply: ${trimmedMessage}.\nLogs: remoteclaw logs --follow`;
 
+      // A billing / context-overflow / role-ordering reply is curated guidance the user
+      // should always see; anything else is the raw runner-failure boilerplate that must
+      // be suppressed to a silent reply in group/channel contexts.
+      const userVisibleFallbackText = resolveExternalRunFailureTextForConversation({
+        text: fallbackText,
+        sessionCtx: params.sessionCtx,
+        isGenericRunnerFailure: !isBilling && !isContextOverflow && !isRoleOrderingError,
+      });
+
       return {
         kind: "final",
         payload: {
-          text: fallbackText,
+          text: userVisibleFallbackText,
         },
       };
     }

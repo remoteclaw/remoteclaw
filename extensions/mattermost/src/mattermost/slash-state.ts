@@ -10,7 +10,13 @@
  */
 
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk/mattermost";
+import {
+  isRequestBodyLimitError,
+  readRequestBodyWithLimit,
+  type RemoteClawPluginApi,
+  requestBodyErrorToText,
+  safeEqualSecret,
+} from "remoteclaw/plugin-sdk/mattermost";
 import type { ResolvedMattermostAccount } from "./accounts.js";
 import { resolveSlashCommandConfig, type MattermostRegisteredCommand } from "./slash-commands.js";
 import { createSlashCommandHttpHandler } from "./slash-http.js";
@@ -18,9 +24,7 @@ import { createSlashCommandHttpHandler } from "./slash-http.js";
 // ─── Per-account state ───────────────────────────────────────────────────────
 
 export type SlashCommandAccountState = {
-  /** Tokens from registered commands, used for validation. */
-  commandTokens: Set<string>;
-  /** Registered command IDs for cleanup on shutdown. */
+  /** Registered commands, used for per-command token validation and cleanup. */
   registeredCommands: MattermostRegisteredCommand[];
   /** Current HTTP handler for this account. */
   handler: ((req: IncomingMessage, res: ServerResponse) => Promise<void>) | null;
@@ -44,7 +48,10 @@ export function resolveSlashHandlerForToken(token: string): {
   }> = [];
 
   for (const [accountId, state] of accountStates) {
-    if (state.commandTokens.has(token) && state.handler) {
+    const matchesToken = state.registeredCommands.some((command) =>
+      safeEqualSecret(token, command.token),
+    );
+    if (matchesToken && state.handler) {
       matches.push({ accountId, handler: state.handler });
     }
   }
@@ -82,7 +89,6 @@ export function getAllSlashCommandStates(): ReadonlyMap<string, SlashCommandAcco
  */
 export function activateSlashCommands(params: {
   account: ResolvedMattermostAccount;
-  commandTokens: string[];
   registeredCommands: MattermostRegisteredCommand[];
   triggerMap?: Map<string, string>;
   api: {
@@ -91,22 +97,19 @@ export function activateSlashCommands(params: {
   };
   log?: (msg: string) => void;
 }) {
-  const { account, commandTokens, registeredCommands, triggerMap, api, log } = params;
+  const { account, registeredCommands, triggerMap, api, log } = params;
   const accountId = account.accountId;
-
-  const tokenSet = new Set(commandTokens);
 
   const handler = createSlashCommandHttpHandler({
     account,
     cfg: api.cfg,
     runtime: api.runtime,
-    commandTokens: tokenSet,
+    registeredCommands,
     triggerMap,
     log,
   });
 
   accountStates.set(accountId, {
-    commandTokens: tokenSet,
     registeredCommands,
     handler,
     account,
@@ -125,7 +128,6 @@ export function deactivateSlashCommands(accountId?: string) {
   if (accountId) {
     const state = accountStates.get(accountId);
     if (state) {
-      state.commandTokens.clear();
       state.registeredCommands = [];
       state.handler = null;
       accountStates.delete(accountId);
@@ -133,7 +135,6 @@ export function deactivateSlashCommands(accountId?: string) {
   } else {
     // Deactivate all accounts (full shutdown)
     for (const [, state] of accountStates) {
-      state.commandTokens.clear();
       state.registeredCommands = [];
       state.handler = null;
     }
@@ -225,20 +226,24 @@ export function registerSlashCommandRoute(api: RemoteClawPluginApi) {
     }
 
     // Multi-account: buffer the body, find the matching account by token,
-    // then replay the request to the correct handler.
-    const chunks: Buffer[] = [];
-    const MAX_BODY = 64 * 1024;
-    let size = 0;
-    for await (const chunk of req) {
-      size += (chunk as Buffer).length;
-      if (size > MAX_BODY) {
-        res.statusCode = 413;
-        res.end("Payload Too Large");
-        return;
+    // then replay the request to the correct handler. Bound the read by size
+    // AND time (the timeout guards against Slowloris-style slow-drip clients).
+    let bodyStr: string;
+    try {
+      bodyStr = await readRequestBodyWithLimit(req, {
+        maxBytes: 64 * 1024,
+        timeoutMs: 5_000,
+      });
+    } catch (err) {
+      if (isRequestBodyLimitError(err)) {
+        res.statusCode = err.statusCode;
+        res.end(requestBodyErrorToText(err.code));
+      } else {
+        res.statusCode = 400;
+        res.end("Bad Request");
       }
-      chunks.push(chunk as Buffer);
+      return;
     }
-    const bodyStr = Buffer.concat(chunks).toString("utf8");
 
     // Parse just the token to find the right account
     let token: string | null = null;

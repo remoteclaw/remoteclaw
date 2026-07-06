@@ -9,9 +9,13 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import {
   createReplyPrefixOptions,
   createTypingCallbacks,
+  isRequestBodyLimitError,
   logTypingFailure,
+  readRequestBodyWithLimit,
+  redactSensitiveText,
   type RemoteClawConfig,
   type ReplyPayload,
+  requestBodyErrorToText,
   type RuntimeEnv,
 } from "remoteclaw/plugin-sdk/mattermost";
 import type { ResolvedMattermostAccount } from "../mattermost/accounts.js";
@@ -30,43 +34,26 @@ import {
 import { deliverMattermostReplyPayload } from "./reply-delivery.js";
 import { sendMessageMattermost } from "./send.js";
 import {
+  isAuthorizedSlashCommandToken,
+  type MattermostRegisteredCommand,
+  type MattermostSlashCommandResponse,
+  normalizeSlashCommandTrigger,
   parseSlashCommandPayload,
   resolveCommandText,
-  type MattermostSlashCommandResponse,
+  sanitizeSlashLogValue,
 } from "./slash-commands.js";
 
 type SlashHttpHandlerParams = {
   account: ResolvedMattermostAccount;
   cfg: RemoteClawConfig;
   runtime: RuntimeEnv;
-  /** Expected token from registered commands (for validation). */
-  commandTokens: Set<string>;
+  /** Registered commands for this account (token validation is scoped per command). */
+  registeredCommands: readonly MattermostRegisteredCommand[];
   /** Map from trigger to original command name (for skill commands that start with oc_). */
   triggerMap?: ReadonlyMap<string, string>;
   log?: (msg: string) => void;
   bodyTimeoutMs?: number;
 };
-
-/**
- * Read the full request body as a string.
- */
-function readBody(req: IncomingMessage, maxBytes: number): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const chunks: Buffer[] = [];
-    let size = 0;
-    req.on("data", (chunk: Buffer) => {
-      size += chunk.length;
-      if (size > maxBytes) {
-        req.destroy();
-        reject(new Error("Request body too large"));
-        return;
-      }
-      chunks.push(chunk);
-    });
-    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
-    req.on("error", reject);
-  });
-}
 
 function sendJsonResponse(
   res: ServerResponse,
@@ -108,7 +95,9 @@ async function authorizeSlashInvocation(params: {
   try {
     channelInfo = await fetchMattermostChannel(client, channelId);
   } catch (err) {
-    log?.(`mattermost: slash channel lookup failed for ${channelId}: ${String(err)}`);
+    log?.(
+      `mattermost: slash channel lookup failed for ${sanitizeSlashLogValue(channelId)}: ${sanitizeSlashLogValue(redactSensitiveText(String(err)))}`,
+    );
   }
 
   if (!channelInfo) {
@@ -206,7 +195,7 @@ async function authorizeSlashInvocation(params: {
  * from the Mattermost server when a user invokes a registered slash command.
  */
 export function createSlashCommandHttpHandler(params: SlashHttpHandlerParams) {
-  const { account, cfg, runtime, commandTokens, triggerMap, log, bodyTimeoutMs } = params;
+  const { account, cfg, runtime, registeredCommands, triggerMap, log, bodyTimeoutMs } = params;
 
   const MAX_BODY_BYTES = 64 * 1024; // 64KB
 
@@ -220,10 +209,18 @@ export function createSlashCommandHttpHandler(params: SlashHttpHandlerParams) {
 
     let body: string;
     try {
-      body = await readBody(req, MAX_BODY_BYTES);
-    } catch {
-      res.statusCode = 413;
-      res.end("Payload Too Large");
+      body = await readRequestBodyWithLimit(req, {
+        maxBytes: MAX_BODY_BYTES,
+        timeoutMs: bodyTimeoutMs ?? 5_000,
+      });
+    } catch (err) {
+      if (isRequestBodyLimitError(err)) {
+        res.statusCode = err.statusCode;
+        res.end(requestBodyErrorToText(err.code));
+      } else {
+        res.statusCode = 400;
+        res.end("Bad Request");
+      }
       return;
     }
 
@@ -237,9 +234,10 @@ export function createSlashCommandHttpHandler(params: SlashHttpHandlerParams) {
       return;
     }
 
-    // Validate token — fail closed: reject when no tokens are registered
-    // (e.g. registration failed or startup was partial)
-    if (commandTokens.size === 0 || !commandTokens.has(payload.token)) {
+    // Validate the token against the specific command it claims to invoke.
+    // Scoped per command + constant-time compare; fails closed when no command
+    // matches (e.g. registration failed or startup was partial).
+    if (!isAuthorizedSlashCommandToken(registeredCommands, payload)) {
       sendJsonResponse(res, 401, {
         response_type: "ephemeral",
         text: "Unauthorized: invalid command token.",
@@ -247,8 +245,8 @@ export function createSlashCommandHttpHandler(params: SlashHttpHandlerParams) {
       return;
     }
 
-    // Extract command info
-    const trigger = payload.command.replace(/^\//, "").trim();
+    // Extract command info (same normalization the token gate matched on).
+    const trigger = normalizeSlashCommandTrigger(payload.command);
     const commandText = resolveCommandText(trigger, payload.text, triggerMap);
     const channelId = payload.channel_id;
     const senderId = payload.user_id;
@@ -279,7 +277,9 @@ export function createSlashCommandHttpHandler(params: SlashHttpHandlerParams) {
       return;
     }
 
-    log?.(`mattermost: slash command /${trigger} from ${senderName} in ${channelId}`);
+    log?.(
+      `mattermost: slash command /${sanitizeSlashLogValue(trigger)} from ${sanitizeSlashLogValue(senderName)} in ${sanitizeSlashLogValue(channelId)}`,
+    );
 
     // Acknowledge immediately — we'll send the actual reply asynchronously
     sendJsonResponse(res, 200, {
@@ -309,7 +309,9 @@ export function createSlashCommandHttpHandler(params: SlashHttpHandlerParams) {
         log,
       });
     } catch (err) {
-      log?.(`mattermost: slash command handler error: ${String(err)}`);
+      log?.(
+        `mattermost: slash command handler error: ${sanitizeSlashLogValue(redactSensitiveText(String(err)))}`,
+      );
       try {
         const to = `channel:${channelId}`;
         await sendMessageMattermost(to, "Sorry, something went wrong processing that command.", {

@@ -6,7 +6,7 @@ export const MODULE_ATTESTATIONS = {
 
 export const AGENT_CLEANUP_STEP_TIMEOUT_MS = 10_000;
 
-export type AgentCleanupLogger = {
+type AgentCleanupLogger = {
   warn: (message: string) => void;
 };
 

@@ -51,5 +51,6 @@ export function registerAppMountHooks() {
     document.body.innerHTML = "";
     await i18n.setLocale("en");
     vi.unstubAllGlobals();
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
   });
 }

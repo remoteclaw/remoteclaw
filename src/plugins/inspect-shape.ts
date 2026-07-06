@@ -25,7 +25,7 @@ export type PluginShapeSummary = {
   usesLegacyBeforeAgentStart: boolean;
 };
 
-export function buildPluginCapabilityEntries(
+function buildPluginCapabilityEntries(
   plugin: PluginRegistry["plugins"][number],
 ): PluginCapabilityEntry[] {
   return [
@@ -35,7 +35,7 @@ export function buildPluginCapabilityEntries(
   ].filter((entry) => entry.ids.length > 0);
 }
 
-export function derivePluginInspectShape(params: {
+function derivePluginInspectShape(params: {
   capabilityCount: number;
   typedHookCount: number;
   customHookCount: number;

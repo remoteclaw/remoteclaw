@@ -1,6 +1,6 @@
 export type TelegramButtonStyle = "danger" | "success" | "primary";
 
-export type TelegramInlineButton = {
+type TelegramInlineButton = {
   text: string;
   callback_data: string;
   style?: TelegramButtonStyle;

@@ -8,7 +8,7 @@ import {
 } from "../../../src/markdown/ir.js";
 import { renderMarkdownWithMarkers } from "../../../src/markdown/render.js";
 
-export type TelegramFormattedChunk = {
+type TelegramFormattedChunk = {
   html: string;
   text: string;
 };

@@ -1,12 +1,5 @@
 import { normalizeResolvedSecretInputString } from "../../../src/config/types.secrets.js";
 
-export function normalizeSlackToken(raw?: unknown): string | undefined {
-  return normalizeResolvedSecretInputString({
-    value: raw,
-    path: "channels.slack.*.token",
-  });
-}
-
 export function resolveSlackBotToken(
   raw?: unknown,
   path = "channels.slack.botToken",

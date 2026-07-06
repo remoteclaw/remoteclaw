@@ -8,7 +8,7 @@ import {
   type FixedWindowRateLimiter,
 } from "remoteclaw/plugin-sdk/synology-chat";
 
-export type DmAuthorizationResult =
+type DmAuthorizationResult =
   | { allowed: true }
   | { allowed: false; reason: "disabled" | "allowlist-empty" | "not-allowlisted" };
 

@@ -118,6 +118,7 @@ describe("startPluginServices", () => {
     expect(mockedLogger.error).toHaveBeenCalledWith(
       expect.stringContaining("plugin service failed (service-start-fail):"),
     );
+    expect(mockedLogger.error.mock.calls[0]?.[0]).not.toContain("\n");
     expect(mockedLogger.warn).toHaveBeenCalledWith(
       expect.stringContaining("plugin service stop failed (service-stop-fail):"),
     );

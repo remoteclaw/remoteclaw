@@ -37,6 +37,8 @@ export type ModelProviderConfig = {
   apiKey?: SecretInput;
   auth?: ModelProviderAuthMode;
   injectNumCtxForOpenAICompat?: boolean;
+  /** Provider-specific runtime parameters interpreted by provider plugins. */
+  params?: Record<string, unknown>;
   headers?: Record<string, SecretInput>;
   authHeader?: boolean;
   models: ModelDefinitionConfig[];

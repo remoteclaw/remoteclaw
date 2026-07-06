@@ -283,7 +283,6 @@ Primary files:
 Likely new helpers:
 
 - `ui/src/ui/custom-theme.ts`
-- `ui/src/ui/custom-theme-import.ts`
 
 Tests:
 

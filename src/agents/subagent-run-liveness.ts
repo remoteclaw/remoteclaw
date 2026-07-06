@@ -10,7 +10,6 @@ export const MODULE_ATTESTATIONS = {
   hasSubagentRunEnded: "live",
   isStaleUnendedSubagentRun: "live",
   isLiveUnendedSubagentRun: "live",
-  isRecentlyEndedSubagentRun: "live",
   shouldKeepSubagentRunChildLink: "live",
 } as const;
 
@@ -62,7 +61,7 @@ export function isLiveUnendedSubagentRun(
   return !hasSubagentRunEnded(entry) && !isStaleUnendedSubagentRun(entry, now);
 }
 
-export function isRecentlyEndedSubagentRun(
+function isRecentlyEndedSubagentRun(
   entry: Pick<SubagentRunRecord, "endedAt">,
   now = Date.now(),
   recentMs = RECENT_ENDED_SUBAGENT_CHILD_SESSION_MS,

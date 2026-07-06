@@ -1,7 +1,7 @@
 import { buildChannelKeyCandidates, resolveChannelEntryMatch } from "remoteclaw/plugin-sdk/matrix";
 import type { MatrixRoomConfig } from "../../types.js";
 
-export type MatrixRoomConfigResolved = {
+type MatrixRoomConfigResolved = {
   allowed: boolean;
   allowlistConfigured: boolean;
   config?: MatrixRoomConfig;

@@ -23,13 +23,13 @@ const ONE_HOUR_MS = 60 * 60_000;
  * This catches the half-dead WebSocket scenario where the connection appears
  * alive (health checks pass) but Slack silently stops delivering events.
  */
-export type ChannelHealthTimingPolicy = {
+type ChannelHealthTimingPolicy = {
   monitorStartupGraceMs: number;
   channelConnectGraceMs: number;
   staleEventThresholdMs: number;
 };
 
-export type ChannelHealthMonitorDeps = {
+type ChannelHealthMonitorDeps = {
   channelManager: ChannelManager;
   checkIntervalMs?: number;
   /** @deprecated use timing.monitorStartupGraceMs */

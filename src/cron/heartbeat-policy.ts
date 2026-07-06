@@ -1,7 +1,7 @@
 import { resolveSendableOutboundReplyParts } from "remoteclaw/plugin-sdk/reply-payload";
 import { stripHeartbeatToken } from "../auto-reply/heartbeat.js";
 
-export type HeartbeatDeliveryPayload = {
+type HeartbeatDeliveryPayload = {
   text?: string;
   mediaUrl?: string;
   mediaUrls?: string[];

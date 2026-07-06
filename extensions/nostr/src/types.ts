@@ -9,7 +9,7 @@ import type { NostrProfile } from "./config-schema.js";
 import { getPublicKeyFromPrivate } from "./nostr-bus.js";
 import { DEFAULT_RELAYS } from "./nostr-bus.js";
 
-export interface NostrAccountConfig {
+interface NostrAccountConfig {
   enabled?: boolean;
   name?: string;
   defaultAccount?: string;

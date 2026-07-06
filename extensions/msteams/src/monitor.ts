@@ -22,7 +22,7 @@ import { createMSTeamsAdapter, loadMSTeamsSdkWithAuth } from "./sdk.js";
 import { resolveMSTeamsCredentials } from "./token.js";
 import { applyMSTeamsWebhookTimeouts } from "./webhook-timeouts.js";
 
-export type MonitorMSTeamsOpts = {
+type MonitorMSTeamsOpts = {
   cfg: RemoteClawConfig;
   runtime?: RuntimeEnv;
   abortSignal?: AbortSignal;
@@ -30,7 +30,7 @@ export type MonitorMSTeamsOpts = {
   pollStore?: MSTeamsPollStore;
 };
 
-export type MonitorMSTeamsResult = {
+type MonitorMSTeamsResult = {
   app: unknown;
   shutdown: () => Promise<void>;
 };

@@ -3,7 +3,7 @@ import { fetchWithSsrFGuard } from "remoteclaw/plugin-sdk/tlon";
 import { validateUrbitBaseUrl } from "./base-url.js";
 import { UrbitUrlError } from "./errors.js";
 
-export type UrbitFetchOptions = {
+type UrbitFetchOptions = {
   baseUrl: string;
   path: string;
   init?: RequestInit;

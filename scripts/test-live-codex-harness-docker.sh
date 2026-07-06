@@ -187,6 +187,16 @@ source "$trusted_scripts_dir/lib/live-docker-stage.sh"
 remoteclaw_live_stage_source_tree "$tmp_dir"
 remoteclaw_live_stage_node_modules "$tmp_dir"
 remoteclaw_live_link_runtime_tree "$tmp_dir"
+if [ -d /app/dist-runtime/extensions/codex ]; then
+  export REMOTECLAW_BUNDLED_PLUGINS_DIR=/app/dist-runtime/extensions
+elif [ -d /app/dist/extensions/codex ]; then
+  export REMOTECLAW_BUNDLED_PLUGINS_DIR=/app/dist/extensions
+elif [ -f "$tmp_dir/extensions/codex/remoteclaw.plugin.json" ]; then
+  export REMOTECLAW_BUNDLED_PLUGINS_DIR="$tmp_dir/extensions"
+else
+  echo "ERROR: staged Codex plugin not found for live harness." >&2
+  exit 1
+fi
 remoteclaw_live_stage_state_dir "$tmp_dir/.remoteclaw-state"
 if [ -n "${REMOTECLAW_LIVE_CODEX_TRUSTED_HARNESS_DIR:-}" ] && [ -d "$REMOTECLAW_LIVE_CODEX_TRUSTED_HARNESS_DIR" ]; then
   for harness_file in src/gateway/gateway-codex-harness.live-helpers.ts; do
@@ -219,6 +229,11 @@ pnpm test:live ${REMOTECLAW_LIVE_CODEX_TEST_FILES:-src/gateway/gateway-codex-har
 EOF
 
 remoteclaw_live_codex_harness_append_build_extension codex
+# The release package image intentionally excludes externalized plugins such as
+# Codex. This lane must rebuild the live image so the plugin-owned harness is
+# present under the bundled plugin runtime directory.
+REMOTECLAW_SKIP_DOCKER_BUILD=0
+export REMOTECLAW_SKIP_DOCKER_BUILD
 REMOTECLAW_LIVE_DOCKER_REPO_ROOT="$ROOT_DIR" "$TRUSTED_HARNESS_DIR/scripts/test-live-build-docker.sh"
 
 echo "==> Run Codex harness live test in Docker"

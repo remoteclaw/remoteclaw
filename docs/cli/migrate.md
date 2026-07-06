@@ -8,7 +8,7 @@ title: "Migrate"
 
 # `remoteclaw migrate`
 
-Import state from another agent system through a plugin-owned migration provider. Bundled providers cover [Claude](/install/migrating-claude) and [Hermes](/install/migrating-hermes); third-party plugins can register additional providers.
+Import state from another agent system through a plugin-owned migration provider. Bundled providers cover Codex CLI state, [Claude](/install/migrating-claude), and [Hermes](/install/migrating-hermes); third-party plugins can register additional providers.
 
 <Tip>
 For user-facing walkthroughs, see [Migrating from Claude](/install/migrating-claude) and [Migrating from Hermes](/install/migrating-hermes). The [migration hub](/install/migrating) lists all paths.
@@ -19,8 +19,12 @@ For user-facing walkthroughs, see [Migrating from Claude](/install/migrating-cla
 ```bash
 remoteclaw migrate list
 remoteclaw migrate claude --dry-run
+remoteclaw migrate codex --dry-run
+remoteclaw migrate codex --skill gog-vault77-google-workspace
 remoteclaw migrate hermes --dry-run
 remoteclaw migrate hermes
+remoteclaw migrate apply codex --yes --skill gog-vault77-google-workspace
+remoteclaw migrate apply codex --yes
 remoteclaw migrate apply claude --yes
 remoteclaw migrate apply hermes --yes
 remoteclaw migrate apply hermes --include-secrets --yes
@@ -46,6 +50,9 @@ remoteclaw onboard --import-from hermes --import-source ~/.hermes
 </ParamField>
 <ParamField path="--yes" type="boolean">
   Skip the confirmation prompt. Required in non-interactive mode.
+</ParamField>
+<ParamField path="--skill <name>" type="string">
+  Select one skill copy item by skill name or item id. Repeat the flag to migrate multiple skills. When omitted, interactive Codex migrations show a checkbox selector and non-interactive migrations keep all planned skills.
 </ParamField>
 <ParamField path="--no-backup" type="boolean">
   Skip the pre-apply backup. Requires `--force` when local RemoteClaw state exists.
@@ -98,6 +105,43 @@ For a user-facing walkthrough, see [Migrating from Claude](/install/migrating-cl
 ### Archive and manual-review state
 
 Claude hooks, permissions, environment defaults, local memory, path-scoped rules, subagents, caches, plans, and project history are preserved in the migration report or reported as manual-review items. RemoteClaw does not execute hooks, copy broad allowlists, or import OAuth/Desktop credential state automatically.
+
+## Codex provider
+
+The bundled Codex provider detects Codex CLI state at `~/.codex` by default, or
+at `CODEX_HOME` when that environment variable is set. Use `--from <path>` to
+inventory a specific Codex home.
+
+Use this provider when moving to the RemoteClaw Codex harness and you want to
+promote useful personal Codex CLI assets deliberately. Local Codex app-server
+launches use per-agent `CODEX_HOME` and `HOME` directories, so they do not read
+your personal Codex CLI state by default.
+
+Running `remoteclaw migrate codex` in an interactive terminal previews the full
+plan, then opens a checkbox selector for skill copy items before the final
+apply confirmation. All skills start selected; uncheck any skill you do not want
+copied into this agent. For scripted or exact runs, pass `--skill <name>` once
+per skill, for example:
+
+```bash
+remoteclaw migrate codex --dry-run --skill gog-vault77-google-workspace
+remoteclaw migrate apply codex --yes --skill gog-vault77-google-workspace
+```
+
+### What Codex imports
+
+- Codex CLI skill directories under `$CODEX_HOME/skills`, excluding Codex's
+  `.system` cache.
+- Personal AgentSkills under `$HOME/.agents/skills`, copied into the current
+  RemoteClaw agent workspace when you want per-agent ownership.
+
+### Manual-review Codex state
+
+Codex native plugins, `config.toml`, and native `hooks/hooks.json` are not
+activated automatically. Plugins may expose MCP servers, apps, hooks, or other
+executable behavior, so the provider reports them for review instead of loading
+them into RemoteClaw. Config and hook files are copied into the migration report
+for manual review.
 
 ## Hermes provider
 

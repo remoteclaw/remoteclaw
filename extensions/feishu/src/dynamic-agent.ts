@@ -4,7 +4,7 @@ import path from "node:path";
 import type { RemoteClawConfig, PluginRuntime } from "remoteclaw/plugin-sdk/feishu";
 import type { DynamicAgentCreationConfig } from "./types.js";
 
-export type MaybeCreateDynamicAgentResult = {
+type MaybeCreateDynamicAgentResult = {
   created: boolean;
   updatedCfg: RemoteClawConfig;
   agentId?: string;

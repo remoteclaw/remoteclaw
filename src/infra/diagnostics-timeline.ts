@@ -6,9 +6,9 @@ import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import { isDiagnosticFlagEnabled } from "./diagnostic-flags.js";
 import { isTruthyEnvValue } from "./env.js";
 
-export const REMOTECLAW_DIAGNOSTICS_TIMELINE_SCHEMA_VERSION = "remoteclaw.diagnostics.v1";
+const REMOTECLAW_DIAGNOSTICS_TIMELINE_SCHEMA_VERSION = "remoteclaw.diagnostics.v1";
 
-export type DiagnosticsTimelineEventType =
+type DiagnosticsTimelineEventType =
   | "span.start"
   | "span.end"
   | "span.error"
@@ -17,9 +17,9 @@ export type DiagnosticsTimelineEventType =
   | "provider.request"
   | "childProcess.exit";
 
-export type DiagnosticsTimelineAttributes = Record<string, string | number | boolean | null>;
+type DiagnosticsTimelineAttributes = Record<string, string | number | boolean | null>;
 
-export type DiagnosticsTimelineEvent = {
+type DiagnosticsTimelineEvent = {
   type: DiagnosticsTimelineEventType;
   name: string;
   timestamp?: string;

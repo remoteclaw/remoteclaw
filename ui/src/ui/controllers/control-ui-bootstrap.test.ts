@@ -17,6 +17,7 @@ describe("loadControlUiBootstrapConfig", () => {
         localMediaPreviewRoots: ["/tmp/remoteclaw"],
         embedSandbox: "scripts",
         allowExternalEmbedUrls: true,
+        chatMessageMaxWidth: "min(1280px, 82%)",
       }),
     });
     vi.stubGlobal("fetch", fetchMock as unknown as typeof fetch);
@@ -29,6 +30,7 @@ describe("loadControlUiBootstrapConfig", () => {
       localMediaPreviewRoots: [],
       embedSandboxMode: "scripts" as const,
       allowExternalEmbedUrls: false,
+      chatMessageMaxWidth: null,
       serverVersion: null,
     };
 
@@ -45,6 +47,7 @@ describe("loadControlUiBootstrapConfig", () => {
     expect(state.localMediaPreviewRoots).toEqual(["/tmp/remoteclaw"]);
     expect(state.embedSandboxMode).toBe("scripts");
     expect(state.allowExternalEmbedUrls).toBe(true);
+    expect(state.chatMessageMaxWidth).toBe("min(1280px, 82%)");
 
     vi.unstubAllGlobals();
   });

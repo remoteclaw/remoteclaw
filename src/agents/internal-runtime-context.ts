@@ -8,7 +8,6 @@ export const MODULE_ATTESTATIONS = {
   escapeInternalRuntimeContextDelimiters: "live",
   stripInternalRuntimeContext: "live",
   hasInternalRuntimeContext: "live",
-  isRemoteClawRuntimeContextCustomMessage: "live",
   stripRuntimeContextCustomMessages: "live",
 } as const;
 
@@ -236,7 +235,7 @@ export function hasInternalRuntimeContext(text: string): boolean {
   );
 }
 
-export function isRemoteClawRuntimeContextCustomMessage(message: unknown): boolean {
+function isRemoteClawRuntimeContextCustomMessage(message: unknown): boolean {
   if (!message || typeof message !== "object") {
     return false;
   }

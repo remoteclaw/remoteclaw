@@ -6,6 +6,7 @@ export const MODULE_ATTESTATIONS = {
 } as const;
 
 const TOOL_DENY_BY_MESSAGE_PROVIDER: Readonly<Record<string, readonly string[]>> = {
+  "discord-voice": ["tts"],
   voice: ["tts"],
 };
 

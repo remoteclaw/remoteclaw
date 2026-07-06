@@ -110,7 +110,7 @@ function hasIMessageEchoMatch(params: {
   );
 }
 
-export type IMessageInboundDispatchDecision = {
+type IMessageInboundDispatchDecision = {
   kind: "dispatch";
   isGroup: boolean;
   chatId?: number;
@@ -131,7 +131,7 @@ export type IMessageInboundDispatchDecision = {
   effectiveGroupAllowFrom: string[];
 };
 
-export type IMessageInboundDecision =
+type IMessageInboundDecision =
   | { kind: "drop"; reason: string }
   | { kind: "pairing"; senderId: string }
   | IMessageInboundDispatchDecision;
@@ -623,7 +623,7 @@ export function buildIMessageInboundContext(params: {
   return { ctxPayload, fromLabel, chatTarget, imessageTo, inboundHistory };
 }
 
-export function buildIMessageEchoScope(params: {
+function buildIMessageEchoScope(params: {
   accountId: string;
   isGroup: boolean;
   chatId?: number;

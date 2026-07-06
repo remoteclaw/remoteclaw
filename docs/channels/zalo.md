@@ -12,16 +12,13 @@ Status: experimental. DMs are supported. The [Capabilities](#capabilities) secti
 Zalo ships as a bundled plugin in current RemoteClaw releases, so normal packaged
 builds do not need a separate install.
 
-If you are on an older build or a custom install that excludes Zalo, install a
-current npm package when one is published:
+If you are on an older build or a custom install that excludes Zalo, install the
+npm package directly:
 
 - Install via CLI: `remoteclaw plugins install @remoteclaw/zalo`
+- Pinned version: `remoteclaw plugins install @remoteclaw/zalo@2026.5.2`
 - Or from a source checkout: `remoteclaw plugins install ./path/to/local/zalo-plugin`
 - Details: [Plugins](/tools/plugin)
-
-If npm reports the RemoteClaw-owned package as deprecated, use a current packaged
-RemoteClaw build or the local checkout path until a newer npm package is
-published.
 
 ## Quick setup (beginner)
 

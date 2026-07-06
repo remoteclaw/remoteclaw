@@ -8,7 +8,7 @@ import {
 import { resolveDiscordChannelInfo, type DiscordChannelInfo } from "./message-utils.js";
 import { resolveDiscordThreadParentInfo } from "./threading.js";
 
-export type DiscordThreadLikeChannelContext = {
+type DiscordThreadLikeChannelContext = {
   channelType?: ChannelType;
   isThreadChannel: boolean;
   channelId: string;
@@ -21,7 +21,7 @@ export type DiscordThreadLikeChannelContext = {
   channelInfo: DiscordChannelInfo | null;
 };
 
-export function isDiscordThreadChannelType(type: ChannelType | number | undefined): boolean {
+function isDiscordThreadChannelType(type: ChannelType | number | undefined): boolean {
   return (
     type === ChannelType.PublicThread ||
     type === ChannelType.PrivateThread ||

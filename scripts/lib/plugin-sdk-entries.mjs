@@ -10,12 +10,6 @@ export function buildPluginSdkEntrySources() {
   );
 }
 
-export function buildPluginSdkSpecifiers() {
-  return pluginSdkEntrypoints.map((entry) =>
-    entry === "index" ? "remoteclaw/plugin-sdk" : `remoteclaw/plugin-sdk/${entry}`,
-  );
-}
-
 export function buildPluginSdkPackageExports() {
   return Object.fromEntries(
     pluginSdkEntrypoints.map((entry) => [

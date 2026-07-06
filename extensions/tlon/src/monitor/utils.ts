@@ -2,21 +2,6 @@ import { asNullableObjectRecord, readStringField } from "remoteclaw/plugin-sdk/t
 import { formatErrorMessage as sharedFormatErrorMessage } from "../../../../src/infra/errors.js";
 import { normalizeShip } from "../targets.js";
 
-// Cite types for message references
-export interface ChanCite {
-  chan: { nest: string; where: string };
-}
-export interface GroupCite {
-  group: string;
-}
-export interface DeskCite {
-  desk: { flag: string; where: string };
-}
-export interface BaitCite {
-  bait: { group: string; graph: string; where: string };
-}
-export type Cite = ChanCite | GroupCite | DeskCite | BaitCite;
-
 export interface ParsedCite {
   type: "chan" | "group" | "desk" | "bait";
   nest?: string;
@@ -371,13 +356,4 @@ export function isSummarizationRequest(messageText: string): boolean {
     /tldr/i,
   ];
   return patterns.some((pattern) => pattern.test(messageText));
-}
-
-export function formatChangesDate(daysAgo = 5): string {
-  const now = new Date();
-  const targetDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
-  const year = targetDate.getFullYear();
-  const month = targetDate.getMonth() + 1;
-  const day = targetDate.getDate();
-  return `~${year}.${month}.${day}..20.19.51..9b9d`;
 }

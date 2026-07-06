@@ -13,15 +13,14 @@ Microsoft Teams ships as a bundled plugin in current RemoteClaw releases, so no
 separate install is required in the normal packaged build.
 
 If you are on an older build or a custom install that excludes bundled Teams,
-install a current npm package when one is published:
+install the npm package directly:
 
 ```bash
 remoteclaw plugins install @remoteclaw/msteams
 ```
 
-If npm reports the RemoteClaw-owned package as deprecated, use a current packaged
-RemoteClaw build or the local checkout path until a newer npm package is
-published.
+Use the bare package to follow the current official release tag. Pin an exact
+version only when you need a reproducible install.
 
 Local checkout (when running from a git repo):
 

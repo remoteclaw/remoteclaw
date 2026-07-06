@@ -84,7 +84,7 @@ export function resolveRemoteClawCompileCacheDirectory(params: {
   );
 }
 
-export type RemoteClawCompileCacheRespawnPlan = {
+type RemoteClawCompileCacheRespawnPlan = {
   command: string;
   args: string[];
   env: NodeJS.ProcessEnv;

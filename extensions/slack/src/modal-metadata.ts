@@ -1,6 +1,6 @@
 import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 
-export type SlackModalPrivateMetadata = {
+type SlackModalPrivateMetadata = {
   sessionKey?: string;
   channelId?: string;
   channelType?: string;

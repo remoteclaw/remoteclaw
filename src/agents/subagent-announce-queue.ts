@@ -43,7 +43,7 @@ export type AnnounceQueueItem = {
   sourceTool?: string;
 };
 
-export type AnnounceQueueSettings = {
+type AnnounceQueueSettings = {
   mode: QueueMode;
   debounceMs?: number;
   cap?: number;

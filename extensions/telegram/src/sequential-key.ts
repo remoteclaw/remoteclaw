@@ -2,7 +2,7 @@ import { type Message, type UserFromGetMe } from "@grammyjs/types";
 import { isAbortRequestText } from "../../../src/auto-reply/reply/abort.js";
 import { resolveTelegramForumThreadId } from "./bot/helpers.js";
 
-export type TelegramSequentialKeyContext = {
+type TelegramSequentialKeyContext = {
   chat?: { id?: number };
   me?: UserFromGetMe;
   message?: Message;

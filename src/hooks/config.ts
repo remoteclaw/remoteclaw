@@ -3,8 +3,6 @@ import {
   evaluateRuntimeEligibility,
   hasBinary,
   isConfigPathTruthyWithDefaults,
-  resolveConfigPath,
-  resolveRuntimePlatform,
 } from "../shared/config-eval.js";
 import { resolveHookKey } from "./frontmatter.js";
 import type { HookEligibilityContext, HookEntry } from "./types.js";
@@ -15,7 +13,7 @@ const DEFAULT_CONFIG_VALUES: Record<string, boolean> = {
   "workspace.dir": true,
 };
 
-export { hasBinary, resolveConfigPath, resolveRuntimePlatform };
+export { hasBinary };
 
 export function isConfigPathTruthy(config: RemoteClawConfig | undefined, pathStr: string): boolean {
   return isConfigPathTruthyWithDefaults(config, pathStr, DEFAULT_CONFIG_VALUES);

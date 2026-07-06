@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import type { RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
 
-export type SignalDaemonOpts = {
+type SignalDaemonOpts = {
   cliPath: string;
   account?: string;
   httpHost: string;

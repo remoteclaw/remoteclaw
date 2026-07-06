@@ -19,7 +19,7 @@ function resolveStartupProbeTimeoutMs(): number {
   return FEISHU_STARTUP_BOT_INFO_TIMEOUT_DEFAULT_MS;
 }
 
-export const FEISHU_STARTUP_BOT_INFO_TIMEOUT_MS = resolveStartupProbeTimeoutMs();
+const FEISHU_STARTUP_BOT_INFO_TIMEOUT_MS = resolveStartupProbeTimeoutMs();
 
 type FetchBotOpenIdOptions = {
   runtime?: RuntimeEnv;
@@ -70,12 +70,4 @@ export async function fetchBotIdentityForMonitor(
     );
   }
   return {};
-}
-
-export async function fetchBotOpenIdForMonitor(
-  account: ResolvedFeishuAccount,
-  options: FetchBotOpenIdOptions = {},
-): Promise<string | undefined> {
-  const identity = await fetchBotIdentityForMonitor(account, options);
-  return identity.botOpenId;
 }

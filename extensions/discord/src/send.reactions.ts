@@ -120,5 +120,3 @@ export async function fetchReactionsDiscord(
   }
   return summaries;
 }
-
-export { fetchChannelPermissionsDiscord } from "./send.permissions.js";

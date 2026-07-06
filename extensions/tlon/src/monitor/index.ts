@@ -39,7 +39,7 @@ import {
   type ParsedCite,
 } from "./utils.js";
 
-export type MonitorTlonOpts = {
+type MonitorTlonOpts = {
   runtime?: RuntimeEnv;
   abortSignal?: AbortSignal;
   accountId?: string | null;

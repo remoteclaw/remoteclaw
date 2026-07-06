@@ -7,7 +7,7 @@ import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import { normalizeAgentId, normalizeMainKey } from "../routing/session-key.js";
 import { normalizeOptionalString } from "../shared/string-coerce.js";
 
-export type GatewayAgentListRow = {
+type GatewayAgentListRow = {
   id: string;
   name?: string;
 };

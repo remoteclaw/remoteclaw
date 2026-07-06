@@ -5,7 +5,7 @@ import type { TelegramAccountConfig } from "../../../src/config/types.telegram.j
 import { tryReadSecretFileSync } from "../../../src/infra/secret-file.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../src/routing/session-key.js";
 
-export type TelegramTokenSource = "env" | "tokenFile" | "config" | "none";
+type TelegramTokenSource = "env" | "tokenFile" | "config" | "none";
 
 export type TelegramTokenResolution = BaseTokenResolution & {
   source: TelegramTokenSource;

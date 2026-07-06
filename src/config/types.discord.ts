@@ -23,6 +23,8 @@ export type DiscordPluralKitConfig = {
   token?: string;
 };
 
+export type DiscordMentionAliasesConfig = Record<string, string>;
+
 export type DiscordDmConfig = {
   /** If false, ignore all incoming Discord DMs. Default: true. */
   enabled?: boolean;
@@ -139,6 +141,10 @@ export type DiscordVoiceConfig = {
   daveEncryption?: boolean;
   /** Consecutive decrypt failures before DAVE session reinitialization (default: 24). */
   decryptionFailureTolerance?: number;
+  /** Initial @discordjs/voice Ready wait in milliseconds (default: 30000). */
+  connectTimeoutMs?: number;
+  /** Grace period for Discord voice reconnect signalling after a disconnect (default: 15000). */
+  reconnectGraceMs?: number;
   /** Optional TTS overrides for Discord voice output. */
   tts?: TtsConfig;
 };
@@ -192,13 +198,21 @@ export type DiscordThreadBindingsConfig = {
    */
   maxAgeHours?: number;
   /**
-   * Allow `sessions_spawn({ thread: true })` to auto-create + bind Discord
-   * threads for subagent sessions. Default: false (opt-in).
+   * Allow session spawns to auto-create + bind Discord threads.
+   * Applies to native subagent and ACP thread spawns. Default: true.
+   */
+  spawnSessions?: boolean;
+  /**
+   * Default context mode for native subagents spawned into a bound Discord thread.
+   * Default: "fork".
+   */
+  defaultSpawnContext?: "isolated" | "fork";
+  /**
+   * @deprecated Use spawnSessions instead.
    */
   spawnSubagentSessions?: boolean;
   /**
-   * Allow `/acp spawn` to auto-create + bind Discord threads for ACP
-   * sessions. Default: false (opt-in).
+   * @deprecated Use spawnSessions instead.
    */
   spawnAcpSessions?: boolean;
 };
@@ -248,6 +262,10 @@ export type DiscordAccountConfig = {
   proxy?: string;
   /** Timeout for Discord /gateway/bot metadata lookup before falling back to the default gateway URL. Default: 30000. */
   gatewayInfoTimeoutMs?: number;
+  /** Startup wait for the gateway READY event before restarting the socket. Default: 15000. */
+  gatewayReadyTimeoutMs?: number;
+  /** Runtime reconnect wait for the gateway READY event before force-stopping the lifecycle. Default: 30000. */
+  gatewayRuntimeReadyTimeoutMs?: number;
   /** Allow bot-authored messages to trigger replies (default: false). Set "mentions" to gate on mentions. */
   allowBots?: boolean | "mentions";
   /**
@@ -255,6 +273,11 @@ export type DiscordAccountConfig = {
    * Default behavior is ID-only matching.
    */
   dangerouslyAllowNameMatching?: boolean;
+  /**
+   * Deterministic outbound @handle rewrites for known Discord users.
+   * Keys are handles without the leading @; values are Discord user IDs.
+   */
+  mentionAliases?: DiscordMentionAliasesConfig;
   /**
    * Controls how guild channel messages are handled:
    * - "open": guild channels bypass allowlists; mention-gating applies

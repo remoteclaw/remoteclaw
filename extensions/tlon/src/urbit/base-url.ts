@@ -1,7 +1,7 @@
 import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import { isBlockedHostnameOrIp } from "remoteclaw/plugin-sdk/tlon";
 
-export type UrbitBaseUrlValidation =
+type UrbitBaseUrlValidation =
   | { ok: true; baseUrl: string; hostname: string }
   | { ok: false; error: string };
 

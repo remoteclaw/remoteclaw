@@ -6,7 +6,7 @@ type DiscordInteractionChannel = {
   type?: ChannelType;
 };
 
-export type DiscordNativeInteractionChannelContext = {
+type DiscordNativeInteractionChannelContext = {
   channelType?: ChannelType;
   isDirectMessage: boolean;
   isGroupDm: boolean;

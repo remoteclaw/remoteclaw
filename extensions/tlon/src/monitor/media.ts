@@ -13,12 +13,12 @@ import { getDefaultSsrFPolicy } from "../urbit/context.js";
 // Default to RemoteClaw workspace media directory
 const DEFAULT_MEDIA_DIR = path.join(homedir(), ".remoteclaw", "workspace", "media", "inbound");
 
-export interface ExtractedImage {
+interface ExtractedImage {
   url: string;
   alt?: string;
 }
 
-export interface DownloadedMedia {
+interface DownloadedMedia {
   localPath: string;
   contentType: string;
   originalUrl: string;

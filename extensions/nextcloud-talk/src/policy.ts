@@ -43,7 +43,7 @@ export function resolveNextcloudTalkAllowlistMatch(params: {
   return { allowed: false };
 }
 
-export type NextcloudTalkRoomMatch = {
+type NextcloudTalkRoomMatch = {
   roomConfig?: NextcloudTalkRoomConfig;
   wildcardConfig?: NextcloudTalkRoomConfig;
   roomKey?: string;

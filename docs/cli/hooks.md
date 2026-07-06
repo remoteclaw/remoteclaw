@@ -197,7 +197,7 @@ remoteclaw hooks disable command-logger
 ## Install hook packs
 
 ```bash
-remoteclaw plugins install <package>        # ClawHub first, then npm
+remoteclaw plugins install <package>        # npm by default
 remoteclaw plugins install npm:<package>    # npm only
 remoteclaw plugins install <package> --pin  # pin version
 remoteclaw plugins install <path>           # local path

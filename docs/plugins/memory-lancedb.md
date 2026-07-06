@@ -294,9 +294,9 @@ supports `${ENV_VAR}` expansion:
 ## Runtime dependencies
 
 `memory-lancedb` depends on the native `@lancedb/lancedb` package. Packaged
-RemoteClaw installs first try the bundled runtime dependency and can repair the
-plugin runtime dependency under RemoteClaw state when the bundled import is not
-available.
+RemoteClaw treats that package as part of the plugin package. Gateway startup
+does not repair plugin dependencies; if the dependency is missing, reinstall or
+update the plugin package and restart the Gateway.
 
 If an older install logs a missing `dist/package.json` or missing
 `@lancedb/lancedb` error during plugin load, upgrade RemoteClaw and restart the

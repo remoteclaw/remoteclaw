@@ -4,7 +4,6 @@ import { resolveFirstBoundAccountId } from "../routing/bound-account-read.js";
 import { normalizeDeliveryContext } from "../utils/delivery-context.shared.js";
 
 export const MODULE_ATTESTATIONS = {
-  extractRequesterPeer: "live",
   resolveRequesterOriginForChild: "live",
 } as const;
 
@@ -55,7 +54,7 @@ function inferPeerKindFromBareId(value: string): ChatType | undefined {
   return undefined;
 }
 
-export function extractRequesterPeer(
+function extractRequesterPeer(
   channelId: string | undefined,
   requesterTo: string | undefined,
 ): { peerId?: string; peerKind?: ChatType } {

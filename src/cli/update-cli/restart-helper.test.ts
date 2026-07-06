@@ -134,6 +134,45 @@ exit 0
       await cleanupScript(scriptPath);
     });
 
+    it("fails with sudo systemd guidance when the gateway unit is system-scoped", async () => {
+      Object.defineProperty(process, "platform", { value: "linux" });
+      const tmpDir = await makeTempDir("remoteclaw-restart-helper-");
+      const fakeBinDir = path.join(tmpDir, "bin");
+      const callsPath = path.join(tmpDir, "systemctl-calls.log");
+      await fs.mkdir(fakeBinDir, { recursive: true });
+      await fs.writeFile(
+        path.join(fakeBinDir, "systemctl"),
+        `#!/bin/sh
+printf '%s\\n' "$*" >> "$REMOTECLAW_SYSTEMCTL_CALLS"
+if [ "$1" = "--user" ] && [ "$2" = "is-active" ]; then exit 3; fi
+if [ "$1" = "--user" ] && [ "$2" = "is-enabled" ]; then exit 1; fi
+if [ "$1" = "is-active" ] && [ "$2" = "--quiet" ]; then exit 0; fi
+if [ "$1" = "is-enabled" ] && [ "$2" = "--quiet" ]; then exit 0; fi
+if [ "$1" = "--user" ] && [ "$2" = "restart" ]; then exit 99; fi
+exit 1
+`,
+        { mode: 0o755 },
+      );
+
+      const { scriptPath } = await prepareAndReadScript({
+        REMOTECLAW_PROFILE: "default",
+        HOME: path.join(tmpDir, "home"),
+        REMOTECLAW_STATE_DIR: path.join(tmpDir, "state"),
+      });
+      const result = await executeScript(scriptPath, {
+        PATH: `${fakeBinDir}:${process.env.PATH ?? ""}`,
+        REMOTECLAW_SYSTEMCTL_CALLS: callsPath,
+      });
+      const calls = await fs.readFile(callsPath, "utf-8");
+
+      expect(result.code).toBe(78);
+      expect(result.stderr).toContain("system-scoped remoteclaw gateway unit detected");
+      expect(result.stderr).toContain("sudo systemctl restart remoteclaw-gateway.service");
+      expect(calls).toContain("--user is-active --quiet remoteclaw-gateway.service");
+      expect(calls).toContain("is-active --quiet remoteclaw-gateway.service");
+      expect(calls).not.toContain("--user restart remoteclaw-gateway.service");
+    });
+
     it("creates a launchd restart script on macOS", async () => {
       Object.defineProperty(process, "platform", { value: "darwin" });
       process.getuid = () => 501;

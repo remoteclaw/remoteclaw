@@ -3,7 +3,7 @@ import { formatErrorMessage } from "../../../src/infra/errors.js";
 import { createSubsystemLogger } from "../../../src/logging/subsystem.js";
 import type { RuntimeEnv } from "../../../src/runtime.js";
 
-export type TelegramApiLogger = (message: string) => void;
+type TelegramApiLogger = (message: string) => void;
 
 type TelegramApiLoggingParams<T> = {
   operation: string;

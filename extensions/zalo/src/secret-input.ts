@@ -5,9 +5,4 @@ import {
   normalizeSecretInputString,
 } from "remoteclaw/plugin-sdk/zalo";
 
-export {
-  buildSecretInputSchema,
-  hasConfiguredSecretInput,
-  normalizeResolvedSecretInputString,
-  normalizeSecretInputString,
-};
+export { buildSecretInputSchema, normalizeResolvedSecretInputString, normalizeSecretInputString };

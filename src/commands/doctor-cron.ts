@@ -1,3 +1,5 @@
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import {
@@ -19,6 +21,12 @@ type CronDoctorOutcome = {
   changed: boolean;
   warnings: string[];
 };
+
+type CrontabReader = () => Promise<{ stdout: string; stderr?: string }>;
+
+const execFileAsync = promisify(execFile);
+const LEGACY_WHATSAPP_HEALTH_SCRIPT_RE =
+  /(?:^|\s)(?:"[^"]*ensure-whatsapp\.sh"|'[^']*ensure-whatsapp\.sh'|[^\s#;|&]*ensure-whatsapp\.sh)\b/u;
 
 function pluralize(count: number, noun: string) {
   return `${count} ${noun}${count === 1 ? "" : "s"}`;
@@ -127,6 +135,58 @@ function migrateLegacyNotifyFallback(params: {
   }
 
   return { changed, warnings };
+}
+
+async function readUserCrontab(): Promise<{ stdout: string; stderr?: string }> {
+  const result = await execFileAsync("crontab", ["-l"], {
+    encoding: "utf8",
+    windowsHide: true,
+  });
+  return {
+    stdout: result.stdout,
+    stderr: result.stderr,
+  };
+}
+
+function findLegacyWhatsAppHealthCrontabLines(crontab: string): string[] {
+  return crontab
+    .split(/\r?\n/u)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0 && !line.startsWith("#"))
+    .filter((line) => LEGACY_WHATSAPP_HEALTH_SCRIPT_RE.test(line));
+}
+
+export async function noteLegacyWhatsAppCrontabHealthCheck(
+  params: {
+    platform?: NodeJS.Platform;
+    readCrontab?: CrontabReader;
+  } = {},
+): Promise<void> {
+  if ((params.platform ?? process.platform) !== "linux") {
+    return;
+  }
+
+  let crontab: string;
+  try {
+    crontab = (await (params.readCrontab ?? readUserCrontab)()).stdout;
+  } catch {
+    return;
+  }
+
+  const legacyLines = findLegacyWhatsAppHealthCrontabLines(crontab);
+  if (legacyLines.length === 0) {
+    return;
+  }
+
+  note(
+    [
+      "Legacy WhatsApp crontab health check detected.",
+      "`~/.remoteclaw/bin/ensure-whatsapp.sh` is not maintained by current RemoteClaw and can misreport `Gateway inactive` from cron when the systemd user bus environment is missing.",
+      `Remove the stale crontab entry with ${formatCliCommand("crontab -e")}; use ${formatCliCommand("remoteclaw channels status --probe")}, ${formatCliCommand("remoteclaw doctor")}, and ${formatCliCommand("remoteclaw gateway status")} for current health checks.`,
+      `Matched ${pluralize(legacyLines.length, "entry")}.`,
+    ].join("\n"),
+    "Cron",
+  );
 }
 
 export async function maybeRepairLegacyCronStore(params: {

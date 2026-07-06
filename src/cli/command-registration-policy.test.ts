@@ -52,6 +52,20 @@ describe("command-registration-policy", () => {
     ).toBe(false);
     expect(
       shouldSkipPluginCommandRegistration({
+        argv: ["node", "remoteclaw", "auth", "login"],
+        primary: "auth",
+        hasBuiltinPrimary: false,
+      }),
+    ).toBe(true);
+    expect(
+      shouldSkipPluginCommandRegistration({
+        argv: ["node", "remoteclaw", "tool", "image_generate"],
+        primary: "tool",
+        hasBuiltinPrimary: false,
+      }),
+    ).toBe(true);
+    expect(
+      shouldSkipPluginCommandRegistration({
         argv: ["node", "remoteclaw", "tools", "effective"],
         primary: "tools",
         hasBuiltinPrimary: false,

@@ -27,7 +27,7 @@ export const DEFAULT_ASSISTANT_IDENTITY: AssistantIdentity = {
   avatar: "A",
 };
 
-export type AssistantIdentity = {
+type AssistantIdentity = {
   agentId: string;
   name: string;
   avatar: string;

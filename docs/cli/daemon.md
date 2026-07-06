@@ -36,7 +36,8 @@ remoteclaw daemon uninstall
 
 - `status`: `--url`, `--token`, `--password`, `--timeout`, `--no-probe`, `--require-rpc`, `--deep`, `--json`
 - `install`: `--port`, `--runtime <node|bun>`, `--token`, `--force`, `--json`
-- lifecycle (`uninstall|start|stop|restart`): `--json`
+- `restart`: `--force`, `--wait <duration>`, `--json`
+- lifecycle (`uninstall|start|stop`): `--json`
 
 Notes:
 

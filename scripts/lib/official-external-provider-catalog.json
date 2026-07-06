@@ -1,0 +1,30 @@
+{
+  "entries": [
+    {
+      "name": "@remoteclaw/codex",
+      "description": "RemoteClaw Codex harness and model provider plugin",
+      "source": "official",
+      "kind": "provider",
+      "remoteclaw": {
+        "plugin": {
+          "id": "codex",
+          "label": "Codex"
+        },
+        "providers": [
+          {
+            "id": "codex",
+            "name": "Codex",
+            "docs": "/providers/models",
+            "categories": ["cloud", "llm"],
+            "authChoices": []
+          }
+        ],
+        "install": {
+          "npmSpec": "@remoteclaw/codex",
+          "defaultChoice": "npm",
+          "minHostVersion": ">=2026.5.1-beta.1"
+        }
+      }
+    }
+  ]
+}

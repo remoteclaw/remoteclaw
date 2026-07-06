@@ -7,6 +7,7 @@ import { formatErrorMessage } from "../infra/errors.js";
 import { readConfiguredLogTail } from "../logging/log-tail.js";
 import { parseLogLine } from "../logging/parse-log-line.js";
 import { formatTimestamp, isValidTimeZone } from "../logging/timestamps.js";
+import { createLazyImportLoader } from "../shared/lazy-promise.js";
 import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
 import { formatDocsLink } from "../terminal/links.js";
 import { clearActiveProgressLine } from "../terminal/progress-line.js";
@@ -17,11 +18,12 @@ import { addGatewayClientOptions, callGatewayFromCli } from "./gateway-rpc.js";
 
 type LogsCliRuntimeModule = typeof import("./logs-cli.runtime.js");
 
-let logsCliRuntimePromise: Promise<LogsCliRuntimeModule> | undefined;
+const logsCliRuntimeLoader = createLazyImportLoader<LogsCliRuntimeModule>(
+  () => import("./logs-cli.runtime.js"),
+);
 
 async function loadLogsCliRuntime(): Promise<LogsCliRuntimeModule> {
-  logsCliRuntimePromise ??= import("./logs-cli.runtime.js");
-  return logsCliRuntimePromise;
+  return logsCliRuntimeLoader.load();
 }
 
 type LogsTailPayload = {

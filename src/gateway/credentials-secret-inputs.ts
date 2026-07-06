@@ -20,7 +20,7 @@ import {
   type SupportedGatewaySecretInputPath,
 } from "./secret-input-paths.js";
 
-export type GatewayCredentialSecretInputOptions = {
+type GatewayCredentialSecretInputOptions = {
   config: RemoteClawConfig;
   explicitAuth?: ExplicitGatewayAuth;
   urlOverride?: string;

@@ -14,7 +14,7 @@ Twitch chat support via IRC connection. RemoteClaw connects as a Twitch user (bo
 Twitch ships as a bundled plugin in current RemoteClaw releases, so normal packaged builds do not need a separate install.
 </Note>
 
-If you are on an older build or a custom install that excludes Twitch, install a current npm package when one is published:
+If you are on an older build or a custom install that excludes Twitch, install the npm package directly:
 
 <Tabs>
   <Tab title="npm registry">
@@ -29,9 +29,8 @@ If you are on an older build or a custom install that excludes Twitch, install a
   </Tab>
 </Tabs>
 
-If npm reports the RemoteClaw-owned package as deprecated, use a current packaged
-RemoteClaw build or the local checkout path until a newer npm package is
-published.
+Use the bare package to follow the current official release tag. Pin an exact
+version only when you need a reproducible install.
 
 Details: [Plugins](/tools/plugin)
 

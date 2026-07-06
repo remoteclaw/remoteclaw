@@ -13,7 +13,7 @@ export async function requireValidConfig(
   return await requireValidConfigSnapshot(runtime);
 }
 
-export function formatAccountLabel(params: { accountId: string; name?: string }) {
+function formatAccountLabel(params: { accountId: string; name?: string }) {
   const base = params.accountId || DEFAULT_ACCOUNT_ID;
   if (params.name?.trim()) {
     return `${base} (${params.name.trim()})`;

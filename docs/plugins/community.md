@@ -9,18 +9,18 @@ title: "Community plugins"
 Community plugins are third-party packages that extend RemoteClaw with new
 channels, tools, providers, or other capabilities. They are built and maintained
 by the community, usually published on [ClawHub](/tools/clawhub), and installable
-with a single command. Npm remains a supported fallback for packages that have
-not moved to ClawHub yet.
+with a single command. Npm remains the launch default for bare package specs
+while ClawHub pack installs roll out.
 
 ClawHub is the canonical discovery surface for community plugins. Do not open
 docs-only PRs just to add your plugin here for discoverability; publish it on
 ClawHub instead.
 
 ```bash
-remoteclaw plugins install <package-name>
+remoteclaw plugins install clawhub:<package-name>
 ```
 
-RemoteClaw checks ClawHub first and falls back to npm automatically.
+Use `remoteclaw plugins install <package-name>` for npm-hosted packages.
 
 ## Listed plugins
 

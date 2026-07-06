@@ -1,6 +1,6 @@
 import { chunkMarkdownTextWithMode, type ChunkMode } from "../../../src/auto-reply/chunk.js";
 
-export type ChunkDiscordTextOpts = {
+type ChunkDiscordTextOpts = {
   /** Max characters per Discord message. Default: 2000. */
   maxChars?: number;
   /**

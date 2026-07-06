@@ -11,13 +11,16 @@ QQ Bot connects to RemoteClaw via the official QQ Bot API (WebSocket gateway). T
 plugin supports C2C private chat, group @messages, and guild channel messages with
 rich media (images, voice, video, files).
 
-Status: bundled plugin. Direct messages, group chats, guild channels, and
+Status: downloadable plugin. Direct messages, group chats, guild channels, and
 media are supported. Reactions and threads are not supported.
 
-## Bundled plugin
+## Install
 
-Current RemoteClaw releases bundle QQ Bot, so normal packaged builds do not need
-a separate `remoteclaw plugins install` step.
+Install QQ Bot before setup:
+
+```bash
+remoteclaw plugins install @remoteclaw/qqbot
+```
 
 ## Setup
 

@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `remoteclaw plugins` (list, install, marketplace, uninstall, enable/disable, deps, doctor)"
+summary: "CLI reference for `remoteclaw plugins` (list, install, marketplace, uninstall, enable/disable, doctor)"
 read_when:
   - You want to install or manage Gateway plugins or compatible bundles
   - You want to debug plugin load failures
@@ -12,6 +12,9 @@ Manage Gateway plugins, hook packs, and compatible bundles.
 <CardGroup cols={2}>
   <Card title="Plugin system" href="/tools/plugin">
     End-user guide for installing, enabling, and troubleshooting plugins.
+  </Card>
+  <Card title="Manage plugins" href="/plugins/manage-plugins">
+    Quick examples for install, list, update, uninstall, and publishing.
   </Card>
   <Card title="Plugin bundles" href="/plugins/bundles">
     Bundle compatibility model.
@@ -31,8 +34,12 @@ remoteclaw plugins list
 remoteclaw plugins list --enabled
 remoteclaw plugins list --verbose
 remoteclaw plugins list --json
+remoteclaw plugins search <query>
+remoteclaw plugins search <query> --limit 20
+remoteclaw plugins search <query> --json
 remoteclaw plugins install <path-or-spec>
 remoteclaw plugins inspect <id>
+remoteclaw plugins inspect <id> --runtime
 remoteclaw plugins inspect <id> --json
 remoteclaw plugins inspect --all
 remoteclaw plugins info <id>
@@ -41,10 +48,6 @@ remoteclaw plugins disable <id>
 remoteclaw plugins registry
 remoteclaw plugins registry --refresh
 remoteclaw plugins uninstall <id>
-remoteclaw plugins deps
-remoteclaw plugins deps --repair
-remoteclaw plugins deps --prune
-remoteclaw plugins deps --json
 remoteclaw plugins doctor
 remoteclaw plugins update <id-or-npm-spec>
 remoteclaw plugins update --all
@@ -67,9 +70,12 @@ Native RemoteClaw plugins must ship `remoteclaw.plugin.json` with an inline JSON
 ### Install
 
 ```bash
-remoteclaw plugins install <package>                      # ClawHub first, then npm
+remoteclaw plugins search "calendar"                   # search ClawHub plugins
+remoteclaw plugins install <package>                      # npm by default
 remoteclaw plugins install clawhub:<package>              # ClawHub only
 remoteclaw plugins install npm:<package>                  # npm only
+remoteclaw plugins install git:github.com/<owner>/<repo>  # git repo
+remoteclaw plugins install git:github.com/<owner>/<repo>@<ref>
 remoteclaw plugins install <package> --force              # overwrite existing install
 remoteclaw plugins install <package> --pin                # pin version
 remoteclaw plugins install <package> --dangerously-force-unsafe-install
@@ -80,17 +86,21 @@ remoteclaw plugins install <plugin> --marketplace https://github.com/<owner>/<re
 ```
 
 <Warning>
-Bare package names are checked against ClawHub first, then npm. Treat plugin installs like running code. Prefer pinned versions.
+Bare package names install from npm by default during the launch cutover. Use `clawhub:<package>` for ClawHub. Treat plugin installs like running code. Prefer pinned versions.
 </Warning>
+
+`plugins search` queries ClawHub for installable plugin packages and prints
+install-ready package names. It searches code-plugin and bundle-plugin packages,
+not skills. Use `remoteclaw skills search` for ClawHub skills.
 
 <Note>
 ClawHub is the primary distribution and discovery surface for most plugins. Npm
-remains a supported fallback and direct-install path. During the migration to
-ClawHub, RemoteClaw still ships some RemoteClaw-owned `@remoteclaw/*` plugin packages
-on npm; those package versions can lag the bundled source between plugin release
-trains. If npm reports an RemoteClaw-owned plugin package as deprecated, that
-published version is an old external artifact; use the plugin bundled with
-current RemoteClaw or a local checkout until a newer npm package is published.
+remains a supported fallback and direct-install path. RemoteClaw-owned
+`@remoteclaw/*` plugin packages are published on npm again; see the current list
+on [npmjs.com/org/remoteclaw](https://www.npmjs.com/org/remoteclaw) or the
+[plugin inventory](/plugins/plugin-inventory). Stable installs use `latest`.
+Beta-channel installs and updates prefer the npm `beta` dist-tag when that tag
+is available, then fall back to `latest`.
 </Note>
 
 <AccordionGroup>
@@ -107,7 +117,7 @@ current RemoteClaw or a local checkout until a newer npm package is published.
 
   </Accordion>
   <Accordion title="--pin scope">
-    `--pin` applies to npm installs only. It is not supported with `--marketplace`, because marketplace installs persist marketplace source metadata instead of an npm spec.
+    `--pin` applies to npm installs only. It is not supported with `git:` installs; use an explicit git ref such as `git:github.com/acme/plugin@v1.2.3` when you want a pinned source. It is not supported with `--marketplace`, because marketplace installs persist marketplace source metadata instead of an npm spec.
   </Accordion>
   <Accordion title="--dangerously-force-unsafe-install">
     `--dangerously-force-unsafe-install` is a break-glass option for false positives in the built-in dangerous-code scanner. It allows the install to continue even when the built-in scanner reports `critical` findings, but it does **not** bypass plugin `before_install` hook policy blocks and does **not** bypass scan failures.
@@ -122,11 +132,19 @@ current RemoteClaw or a local checkout until a newer npm package is published.
 
     Npm specs are **registry-only** (package name + optional **exact version** or **dist-tag**). Git/URL/file specs and semver ranges are rejected. Dependency installs run project-local with `--ignore-scripts` for safety, even when your shell has global npm install settings.
 
-    Use `npm:<package>` when you want to skip ClawHub lookup and install directly from npm. Bare package specs still prefer ClawHub and only fall back to npm when ClawHub does not have that package or version.
+    Use `npm:<package>` when you want to make npm resolution explicit. Bare package specs also install directly from npm during the launch cutover.
 
     Bare specs and `@latest` stay on the stable track. If npm resolves either of those to a prerelease, RemoteClaw stops and asks you to opt in explicitly with a prerelease tag such as `@beta`/`@rc` or an exact prerelease version such as `@1.2.3-beta.4`.
 
-    If a bare install spec matches a bundled plugin id (for example `diffs`), RemoteClaw installs the bundled plugin directly. To install an npm package with the same name, use an explicit scoped spec (for example `@scope/diffs`).
+    If a bare install spec matches an official plugin id (for example `diffs`), RemoteClaw installs the catalog entry directly. To install an npm package with the same name, use an explicit scoped spec (for example `@scope/diffs`).
+
+  </Accordion>
+  <Accordion title="Git repositories">
+    Use `git:<repo>` to install directly from a git repository. Supported forms include `git:github.com/owner/repo`, `git:owner/repo`, full `https://`, `ssh://`, `git://`, `file://`, and `git@host:owner/repo.git` clone URLs. Add `@<ref>` or `#<ref>` to check out a branch, tag, or commit before install.
+
+    Git installs clone into a temporary directory, check out the requested ref when present, then use the normal plugin directory installer. That means manifest validation, dangerous-code scanning, package-manager install work, and install records behave like npm installs. Recorded git installs include the source URL/ref plus the resolved commit so `remoteclaw plugins update` can re-resolve the source later.
+
+    After installing from git, use `remoteclaw plugins inspect <id> --runtime --json` to verify runtime registrations such as gateway methods and CLI commands. If the plugin registered a CLI root with `api.registerCli`, execute that command directly through the RemoteClaw root CLI, for example `remoteclaw demo-plugin ping`.
 
   </Accordion>
   <Accordion title="Archives">
@@ -144,20 +162,20 @@ remoteclaw plugins install clawhub:remoteclaw-codex-app-server
 remoteclaw plugins install clawhub:remoteclaw-codex-app-server@1.2.3
 ```
 
-RemoteClaw now also prefers ClawHub for bare npm-safe plugin specs. It only falls back to npm if ClawHub does not have that package or version:
+Bare npm-safe plugin specs install from npm by default during the launch cutover:
 
 ```bash
 remoteclaw plugins install remoteclaw-codex-app-server
 ```
 
-Use `npm:` to force npm-only resolution, for example when ClawHub is unreachable or you know the package exists only on npm:
+Use `npm:` to make npm-only resolution explicit:
 
 ```bash
 remoteclaw plugins install npm:remoteclaw-codex-app-server
 remoteclaw plugins install npm:@scope/plugin-name@1.0.1
 ```
 
-RemoteClaw downloads the package archive from ClawHub, checks the advertised plugin API / minimum gateway compatibility, then installs it through the normal archive path. Recorded installs keep their ClawHub source metadata for later updates.
+RemoteClaw checks the advertised plugin API / minimum gateway compatibility before install. When the selected ClawHub version publishes a ClawPack artifact, RemoteClaw downloads the versioned npm-pack `.tgz`, verifies the ClawHub digest header and the artifact digest, then installs it through the normal archive path. Older ClawHub versions without ClawPack metadata still install through the legacy package archive verification path. Recorded installs keep their ClawHub source metadata, artifact kind, npm integrity, npm shasum, tarball name, and ClawPack digest facts for later updates.
 Unversioned ClawHub installs keep an unversioned recorded spec so `remoteclaw plugins update` can follow newer ClawHub releases; explicit version or tag selectors such as `clawhub:pkg@1.2.3` and `clawhub:pkg@beta` remain pinned to that selector.
 
 #### Marketplace shorthand
@@ -210,6 +228,9 @@ remoteclaw plugins list
 remoteclaw plugins list --enabled
 remoteclaw plugins list --verbose
 remoteclaw plugins list --json
+remoteclaw plugins search <query>
+remoteclaw plugins search <query> --limit 20
+remoteclaw plugins search <query> --json
 ```
 
 <ParamField path="--enabled" type="boolean">
@@ -219,12 +240,23 @@ remoteclaw plugins list --json
   Switch from the table view to per-plugin detail lines with source/origin/version/activation metadata.
 </ParamField>
 <ParamField path="--json" type="boolean">
-  Machine-readable inventory plus registry diagnostics.
+  Machine-readable inventory plus registry diagnostics and package dependency install state.
 </ParamField>
 
 <Note>
 `plugins list` reads the persisted local plugin registry first, with a manifest-only derived fallback when the registry is missing or invalid. It is useful for checking whether a plugin is installed, enabled, and visible to cold startup planning, but it is not a live runtime probe of an already-running Gateway process. After changing plugin code, enablement, hook policy, or `plugins.load.paths`, restart the Gateway that serves the channel before expecting new `register(api)` code or hooks to run. For remote/container deployments, verify you are restarting the actual `remoteclaw gateway run` child, not only a wrapper process.
+
+`plugins list --json` includes each plugin's `dependencyStatus` from `package.json`
+`dependencies` and `optionalDependencies`. RemoteClaw checks whether those package
+names are present along the plugin's normal Node `node_modules` lookup path; it
+does not import plugin runtime code, run a package manager, or repair missing
+dependencies.
 </Note>
+
+`plugins search` is a remote ClawHub catalog lookup. It does not inspect local
+state, mutate config, install packages, or load plugin runtime code. Search
+results include the ClawHub package name, family, channel, version, summary, and
+an install hint such as `remoteclaw plugins install clawhub:<package>`.
 
 For bundled plugin work inside a packaged Docker image, bind-mount the plugin
 source directory over the matching packaged source path, such as
@@ -234,7 +266,7 @@ directory remains inert so normal packaged installs still use compiled dist.
 
 For runtime hook debugging:
 
-- `remoteclaw plugins inspect <id> --json` shows registered hooks and diagnostics from a module-loaded inspection pass.
+- `remoteclaw plugins inspect <id> --runtime --json` shows registered hooks and diagnostics from a module-loaded inspection pass. Runtime inspection never installs dependencies; use `remoteclaw doctor --fix` to clean legacy dependency state or install missing configured downloadable plugins.
 - `remoteclaw gateway status --deep --require-rpc` confirms the reachable Gateway, service/process hints, config path, and RPC health.
 - Non-bundled conversation hooks (`llm_input`, `llm_output`, `before_agent_finalize`, `agent_end`) require `plugins.entries.<id>.hooks.allowConversationAccess=true`.
 
@@ -256,19 +288,6 @@ Plugin install metadata is machine-managed state, not user config. Installs and 
 
 When RemoteClaw sees shipped legacy `plugins.installs` records in config, it moves them into the plugin index and removes the config key; if either write fails, the config records are kept so the install metadata is not lost.
 
-### Runtime deps
-
-```bash
-remoteclaw plugins deps
-remoteclaw plugins deps --repair
-remoteclaw plugins deps --prune
-remoteclaw plugins deps --json
-```
-
-`plugins deps` inspects the packaged runtime dependency stage for RemoteClaw-owned bundled plugins selected by plugin config, enabled/configured channels, configured model providers, or bundled manifest defaults. It is not the install/update path for third-party npm or ClawHub plugins.
-
-Use `--repair` when a packaged install reports missing bundled runtime dependencies during Gateway startup or `plugins doctor`. Repair installs only missing enabled bundled-plugin deps with lifecycle scripts disabled. Use `--prune` to remove stale unknown external runtime-dependency roots left behind by older packaged layouts.
-
 ### Uninstall
 
 ```bash
@@ -289,7 +308,7 @@ remoteclaw plugins uninstall <id> --keep-files
 remoteclaw plugins update <id-or-npm-spec>
 remoteclaw plugins update --all
 remoteclaw plugins update <id-or-npm-spec> --dry-run
-remoteclaw plugins update @remoteclaw/voice-call@beta
+remoteclaw plugins update @remoteclaw/voice-call
 remoteclaw plugins update remoteclaw-codex-app-server --dangerously-force-unsafe-install
 ```
 
@@ -302,6 +321,10 @@ Updates apply to tracked plugin installs in the managed plugin index and tracked
     For npm installs, you can also pass an explicit npm package spec with a dist-tag or exact version. RemoteClaw resolves that package name back to the tracked plugin record, updates that installed plugin, and records the new npm spec for future id-based updates.
 
     Passing the npm package name without a version or tag also resolves back to the tracked plugin record. Use this when a plugin was pinned to an exact version and you want to move it back to the registry's default release line.
+
+  </Accordion>
+  <Accordion title="Beta channel updates">
+    `remoteclaw plugins update` reuses the tracked plugin spec unless you pass a new spec. `remoteclaw update` additionally knows the active RemoteClaw update channel: on the beta channel, default-line npm and ClawHub plugin records try `@beta` first, then fall back to the recorded default/latest spec if no plugin beta release exists. Exact versions and explicit tags stay pinned to that selector.
 
   </Accordion>
   <Accordion title="Version checks and integrity drift">
@@ -319,10 +342,13 @@ Updates apply to tracked plugin installs in the managed plugin index and tracked
 
 ```bash
 remoteclaw plugins inspect <id>
+remoteclaw plugins inspect <id> --runtime
 remoteclaw plugins inspect <id> --json
 ```
 
-Deep introspection for a single plugin. Shows identity, load status, source, registered capabilities, hooks, tools, commands, services, gateway methods, HTTP routes, policy flags, diagnostics, install metadata, bundle capabilities, and any detected MCP or LSP server support.
+Inspect shows identity, load status, source, manifest capabilities, policy flags, diagnostics, install metadata, bundle capabilities, and any detected MCP or LSP server support without importing plugin runtime by default. Add `--runtime` to load the plugin module and include registered hooks, tools, commands, services, gateway methods, and HTTP routes. Runtime inspection reports missing plugin dependencies directly; installs and repairs stay in `remoteclaw plugins install`, `remoteclaw plugins update`, and `remoteclaw doctor --fix`.
+
+Plugin-owned CLI commands are installed as root `remoteclaw` command groups. After `inspect --runtime` shows a command under `cliCommands`, run it as `remoteclaw <command> ...`; for example a plugin that registers `demo-git` can be verified with `remoteclaw demo-git ping`.
 
 Each plugin is classified by what it actually registers at runtime:
 

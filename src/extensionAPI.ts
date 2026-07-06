@@ -7,6 +7,8 @@ export {
   resolveStorePath,
   loadSessionStore,
   saveSessionStore,
+  updateSessionStore,
+  updateSessionStoreEntry,
   resolveSessionFilePath,
 } from "./config/sessions.ts";
 

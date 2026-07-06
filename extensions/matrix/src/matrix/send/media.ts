@@ -19,7 +19,7 @@ import {
 const getCore = () => getMatrixRuntime();
 type IFileInfo = import("music-metadata").IFileInfo;
 
-export function buildMatrixMediaInfo(params: {
+function buildMatrixMediaInfo(params: {
   size: number;
   mimetype?: string;
   durationMs?: number;

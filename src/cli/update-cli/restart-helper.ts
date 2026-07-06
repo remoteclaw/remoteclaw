@@ -82,16 +82,32 @@ export async function prepareRestartScript(
 # Standalone restart script — survives parent process termination.
 # Wait briefly to ensure file locks are released after update.
 sleep 1
+exec 3>&2
 ${logSetup}
 printf '[%s] remoteclaw restart attempt source=update target=%s\\n' "$(date -u +%FT%TZ)" '${escaped}' >&2
-if systemctl --user restart '${escaped}'; then
-  status=0
-  printf '[%s] remoteclaw restart done source=update\\n' "$(date -u +%FT%TZ)" >&2
+if systemctl --user is-active --quiet '${escaped}' || systemctl --user is-enabled --quiet '${escaped}'; then
+  if systemctl --user restart '${escaped}'; then
+    status=0
+    printf '[%s] remoteclaw restart done source=update\\n' "$(date -u +%FT%TZ)" >&2
+  else
+    status=$?
+    printf '[%s] remoteclaw restart failed source=update status=%s\\n' "$(date -u +%FT%TZ)" "$status" >&2
+  fi
+elif systemctl is-active --quiet '${escaped}' || systemctl is-enabled --quiet '${escaped}'; then
+  status=78
+  printf '[%s] system-scoped remoteclaw gateway unit detected; update cannot restart it without sudo. Run: sudo systemctl restart %s\\n' "$(date -u +%FT%TZ)" '${escaped}' >&2
+  printf '[%s] system-scoped remoteclaw gateway unit detected; update cannot restart it without sudo. Run: sudo systemctl restart %s\\n' "$(date -u +%FT%TZ)" '${escaped}' >&3 2>/dev/null || true
 else
-  status=$?
-  printf '[%s] remoteclaw restart failed source=update status=%s\\n' "$(date -u +%FT%TZ)" "$status" >&2
+  if systemctl --user restart '${escaped}'; then
+    status=0
+    printf '[%s] remoteclaw restart done source=update\\n' "$(date -u +%FT%TZ)" >&2
+  else
+    status=$?
+    printf '[%s] remoteclaw restart failed source=update status=%s\\n' "$(date -u +%FT%TZ)" "$status" >&2
+  fi
 fi
 # Self-cleanup
+exec 3>&-
 rm -f "$0"
 exit "$status"
 `;

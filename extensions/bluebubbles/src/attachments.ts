@@ -18,7 +18,7 @@ import {
   type BlueBubblesSendTarget,
 } from "./types.js";
 
-export type BlueBubblesAttachmentOpts = {
+type BlueBubblesAttachmentOpts = {
   serverUrl?: string;
   password?: string;
   accountId?: string;
@@ -129,7 +129,7 @@ export async function downloadBlueBubblesAttachment(
   }
 }
 
-export type SendBlueBubblesAttachmentResult = {
+type SendBlueBubblesAttachmentResult = {
   messageId: string;
 };
 

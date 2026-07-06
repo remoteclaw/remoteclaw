@@ -110,6 +110,7 @@ Examples:
 ```bash
 remoteclaw message send --channel synology-chat --target 123456 --text "Hello from RemoteClaw"
 remoteclaw message send --channel synology-chat --target synology-chat:123456 --text "Hello again"
+remoteclaw message send --channel synology-chat --target synology:123456 --text "Short prefix"
 ```
 
 Media sends are supported by URL-based file delivery.

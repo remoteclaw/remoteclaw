@@ -2,14 +2,14 @@ import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/bluebubbles";
 import { resolveBlueBubblesServerAccount } from "./account-resolve.js";
 import { blueBubblesFetchWithTimeout, buildBlueBubblesApiUrl } from "./types.js";
 
-export type BlueBubblesHistoryEntry = {
+type BlueBubblesHistoryEntry = {
   sender: string;
   body: string;
   timestamp?: number;
   messageId?: string;
 };
 
-export type BlueBubblesHistoryFetchResult = {
+type BlueBubblesHistoryFetchResult = {
   entries: BlueBubblesHistoryEntry[];
   /**
    * True when at least one API path returned a recognized response shape.
@@ -18,7 +18,7 @@ export type BlueBubblesHistoryFetchResult = {
   resolved: boolean;
 };
 
-export type BlueBubblesMessageData = {
+type BlueBubblesMessageData = {
   guid?: string;
   text?: string;
   handle_id?: string;
@@ -32,7 +32,7 @@ export type BlueBubblesMessageData = {
   };
 };
 
-export type BlueBubblesChatOpts = {
+type BlueBubblesChatOpts = {
   serverUrl?: string;
   password?: string;
   accountId?: string;

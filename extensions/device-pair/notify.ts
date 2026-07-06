@@ -21,7 +21,7 @@ type NotifyStateFile = {
   notifiedRequestIds: Record<string, number>;
 };
 
-export type PendingPairingRequest = {
+type PendingPairingRequest = {
   requestId: string;
   deviceId: string;
   displayName?: string;

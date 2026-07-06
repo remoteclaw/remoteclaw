@@ -12,7 +12,7 @@ import {
   type SlackThreadStarter,
 } from "../media.js";
 
-export type SlackThreadContextData = {
+type SlackThreadContextData = {
   threadStarterBody: string | undefined;
   threadHistoryBody: string | undefined;
   threadSessionPreviousTimestamp: number | undefined;

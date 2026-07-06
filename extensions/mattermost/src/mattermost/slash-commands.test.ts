@@ -2,11 +2,18 @@ import { describe, expect, it, vi } from "vitest";
 import type { MattermostClient } from "./client.js";
 import {
   DEFAULT_COMMAND_SPECS,
+  findRegisteredCommandForPayload,
+  isAuthorizedSlashCommandToken,
   parseSlashCommandPayload,
   registerSlashCommands,
   resolveCallbackUrl,
   resolveCommandText,
   resolveSlashCommandConfig,
+  sanitizeSlashLogValue,
+} from "./slash-commands.js";
+import type {
+  MattermostRegisteredCommand,
+  MattermostSlashCommandPayload,
 } from "./slash-commands.js";
 
 describe("slash-commands", () => {
@@ -153,5 +160,94 @@ describe("slash-commands", () => {
 
     expect(result).toHaveLength(0);
     expect(request).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("slash-command token authorization", () => {
+  const baseCmd: MattermostRegisteredCommand = {
+    id: "cmd-1",
+    trigger: "oc_status",
+    teamId: "t1",
+    token: "known-token",
+    url: "https://chat.example.com/callback",
+    managed: true,
+  };
+  const payload = (
+    over: Partial<MattermostSlashCommandPayload> = {},
+  ): MattermostSlashCommandPayload => ({
+    token: "known-token",
+    team_id: "t1",
+    channel_id: "c1",
+    user_id: "u1",
+    command: "/oc_status",
+    text: "",
+    ...over,
+  });
+
+  it("finds the registered command by normalized trigger and team", () => {
+    const found = findRegisteredCommandForPayload([baseCmd], payload({ command: "/oc_status" }));
+    expect(found?.id).toBe("cmd-1");
+  });
+
+  it("returns null when the trigger is unknown or the team mismatches", () => {
+    expect(
+      findRegisteredCommandForPayload([baseCmd], payload({ command: "/oc_unknown" })),
+    ).toBeNull();
+    expect(findRegisteredCommandForPayload([baseCmd], payload({ team_id: "other" }))).toBeNull();
+  });
+
+  it("accepts the exact token for the matching command (constant-time gate)", () => {
+    expect(isAuthorizedSlashCommandToken([baseCmd], payload({ token: "known-token" }))).toBe(true);
+  });
+
+  it("rejects a wrong-value token", () => {
+    expect(isAuthorizedSlashCommandToken([baseCmd], payload({ token: "wrong-token" }))).toBe(false);
+  });
+
+  it("rejects a length-mismatch token (exercises the length guard)", () => {
+    expect(isAuthorizedSlashCommandToken([baseCmd], payload({ token: "known-tokenX" }))).toBe(
+      false,
+    );
+  });
+
+  it("scopes tokens per command — a token valid for A is rejected on B", () => {
+    const a: MattermostRegisteredCommand = {
+      ...baseCmd,
+      id: "a",
+      trigger: "oc_a",
+      token: "token-a",
+    };
+    const b: MattermostRegisteredCommand = {
+      ...baseCmd,
+      id: "b",
+      trigger: "oc_b",
+      token: "token-b",
+    };
+    expect(
+      isAuthorizedSlashCommandToken([a, b], payload({ command: "/oc_b", token: "token-a" })),
+    ).toBe(false);
+    expect(
+      isAuthorizedSlashCommandToken([a, b], payload({ command: "/oc_b", token: "token-b" })),
+    ).toBe(true);
+  });
+
+  it("fails closed when no commands are registered", () => {
+    expect(isAuthorizedSlashCommandToken([], payload())).toBe(false);
+  });
+});
+
+describe("sanitizeSlashLogValue", () => {
+  it("collapses CR/LF/tab to spaces to prevent log injection", () => {
+    expect(sanitizeSlashLogValue("line1\r\nline2\tend")).toBe("line1 line2 end");
+  });
+
+  it("truncates values beyond the length cap", () => {
+    const out = sanitizeSlashLogValue("x".repeat(300), 200);
+    expect(out.length).toBe(201); // 200 chars + ellipsis
+    expect(out.endsWith("…")).toBe(true);
+  });
+
+  it("passes short plain values through unchanged", () => {
+    expect(sanitizeSlashLogValue("channel-abc")).toBe("channel-abc");
   });
 });

@@ -12,6 +12,7 @@
  * - On shutdown, cleans up registered commands via DELETE /api/v4/commands/{id}
  */
 
+import { safeEqualSecret } from "remoteclaw/plugin-sdk/mattermost";
 import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 import type { MattermostClient } from "./client.js";
 
@@ -524,6 +525,51 @@ export function resolveCommandText(
 
 export function normalizeSlashCommandTrigger(command: string): string {
   return command.replace(/^\//, "").trim();
+}
+
+/**
+ * Locate the registered command a callback payload targets, matched by the
+ * normalized trigger word and team. Returns null when nothing matches — which
+ * the token gate treats as fail-closed.
+ */
+export function findRegisteredCommandForPayload(
+  registeredCommands: readonly MattermostRegisteredCommand[],
+  payload: Pick<MattermostSlashCommandPayload, "command" | "team_id">,
+): MattermostRegisteredCommand | null {
+  const trigger = normalizeSlashCommandTrigger(payload.command);
+  if (!trigger) {
+    return null;
+  }
+  for (const command of registeredCommands) {
+    if (command.trigger === trigger && command.teamId === payload.team_id) {
+      return command;
+    }
+  }
+  return null;
+}
+
+/**
+ * Validate a slash callback token against the registered command it claims to
+ * invoke. Scopes the token to that specific command (a token issued for command
+ * A is not accepted for command B) and compares in constant time to avoid a
+ * timing side-channel. Fails closed when no command matches.
+ */
+export function isAuthorizedSlashCommandToken(
+  registeredCommands: readonly MattermostRegisteredCommand[],
+  payload: Pick<MattermostSlashCommandPayload, "command" | "team_id" | "token">,
+): boolean {
+  const command = findRegisteredCommandForPayload(registeredCommands, payload);
+  return command !== null && safeEqualSecret(payload.token, command.token);
+}
+
+/**
+ * Sanitize a value before interpolating it into a log line: collapse CR/LF/tab
+ * (prevents log injection/forging via attacker-controlled fields such as sender
+ * name or channel id) and cap the length (bounds log flooding).
+ */
+export function sanitizeSlashLogValue(value: string, maxLength = 200): string {
+  const collapsed = value.replace(/[\r\n\t]+/g, " ").trim();
+  return collapsed.length > maxLength ? `${collapsed.slice(0, maxLength)}…` : collapsed;
 }
 
 // ─── Config resolution ───────────────────────────────────────────────────────

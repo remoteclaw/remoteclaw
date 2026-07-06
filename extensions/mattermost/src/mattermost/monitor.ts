@@ -428,7 +428,6 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
 
         activateSlashCommands({
           account,
-          commandTokens: allRegistered.map((cmd) => cmd.token).filter(Boolean),
           registeredCommands: allRegistered,
           triggerMap,
           api: { cfg, runtime },

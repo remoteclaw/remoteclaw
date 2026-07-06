@@ -3,12 +3,14 @@ import { PassThrough } from "node:stream";
 import type { RemoteClawConfig, RuntimeEnv } from "remoteclaw/plugin-sdk/mattermost";
 import { describe, expect, it } from "vitest";
 import type { ResolvedMattermostAccount } from "./accounts.js";
+import type { MattermostRegisteredCommand } from "./slash-commands.js";
 import { createSlashCommandHttpHandler } from "./slash-http.js";
 
 function createRequest(params: {
   method?: string;
   body?: string;
   contentType?: string;
+  keepOpen?: boolean;
 }): IncomingMessage {
   const req = new PassThrough();
   const incoming = req as unknown as IncomingMessage;
@@ -20,7 +22,9 @@ function createRequest(params: {
     if (params.body) {
       req.write(params.body);
     }
-    req.end();
+    if (!params.keepOpen) {
+      req.end();
+    }
   });
   return incoming;
 }
@@ -58,18 +62,37 @@ const accountFixture: ResolvedMattermostAccount = {
   config: {},
 };
 
+function cmd(overrides: Partial<MattermostRegisteredCommand> = {}): MattermostRegisteredCommand {
+  return {
+    id: "cmd-1",
+    trigger: "oc_status",
+    teamId: "t1",
+    token: "known-token",
+    url: "https://chat.example.com/callback",
+    managed: true,
+    ...overrides,
+  };
+}
+
 async function runSlashRequest(params: {
-  commandTokens: Set<string>;
+  registeredCommands: MattermostRegisteredCommand[];
   body: string;
   method?: string;
+  bodyTimeoutMs?: number;
+  keepOpen?: boolean;
 }) {
   const handler = createSlashCommandHttpHandler({
     account: accountFixture,
     cfg: {} as RemoteClawConfig,
     runtime: {} as RuntimeEnv,
-    commandTokens: params.commandTokens,
+    registeredCommands: params.registeredCommands,
+    bodyTimeoutMs: params.bodyTimeoutMs,
   });
-  const req = createRequest({ method: params.method, body: params.body });
+  const req = createRequest({
+    method: params.method,
+    body: params.body,
+    keepOpen: params.keepOpen,
+  });
   const response = createResponse();
   await handler(req, response.res);
   return response;
@@ -77,16 +100,11 @@ async function runSlashRequest(params: {
 
 describe("slash-http", () => {
   it("rejects non-POST methods", async () => {
-    const handler = createSlashCommandHttpHandler({
-      account: accountFixture,
-      cfg: {} as RemoteClawConfig,
-      runtime: {} as RuntimeEnv,
-      commandTokens: new Set(["valid-token"]),
+    const response = await runSlashRequest({
+      registeredCommands: [cmd()],
+      method: "GET",
+      body: "",
     });
-    const req = createRequest({ method: "GET", body: "" });
-    const response = createResponse();
-
-    await handler(req, response.res);
 
     expect(response.res.statusCode).toBe(405);
     expect(response.getBody()).toBe("Method Not Allowed");
@@ -94,24 +112,18 @@ describe("slash-http", () => {
   });
 
   it("rejects malformed payloads", async () => {
-    const handler = createSlashCommandHttpHandler({
-      account: accountFixture,
-      cfg: {} as RemoteClawConfig,
-      runtime: {} as RuntimeEnv,
-      commandTokens: new Set(["valid-token"]),
+    const response = await runSlashRequest({
+      registeredCommands: [cmd()],
+      body: "token=abc&command=%2Foc_status",
     });
-    const req = createRequest({ body: "token=abc&command=%2Foc_status" });
-    const response = createResponse();
-
-    await handler(req, response.res);
 
     expect(response.res.statusCode).toBe(400);
     expect(response.getBody()).toContain("Invalid slash command payload");
   });
 
-  it("fails closed when no command tokens are registered", async () => {
+  it("fails closed when no commands are registered", async () => {
     const response = await runSlashRequest({
-      commandTokens: new Set<string>(),
+      registeredCommands: [],
       body: "token=tok1&team_id=t1&channel_id=c1&user_id=u1&command=%2Foc_status&text=",
     });
 
@@ -121,11 +133,44 @@ describe("slash-http", () => {
 
   it("rejects unknown command tokens", async () => {
     const response = await runSlashRequest({
-      commandTokens: new Set(["known-token"]),
+      registeredCommands: [cmd({ token: "known-token" })],
       body: "token=unknown&team_id=t1&channel_id=c1&user_id=u1&command=%2Foc_status&text=",
     });
 
     expect(response.res.statusCode).toBe(401);
     expect(response.getBody()).toContain("Unauthorized: invalid command token.");
+  });
+
+  it("rejects a token registered for a different command (per-command scoping)", async () => {
+    const response = await runSlashRequest({
+      registeredCommands: [
+        cmd({ id: "a", trigger: "oc_a", token: "token-a" }),
+        cmd({ id: "b", trigger: "oc_b", token: "token-b" }),
+      ],
+      body: "token=token-a&team_id=t1&channel_id=c1&user_id=u1&command=%2Foc_b&text=",
+    });
+
+    expect(response.res.statusCode).toBe(401);
+    expect(response.getBody()).toContain("Unauthorized: invalid command token.");
+  });
+
+  it("returns 413 when the body exceeds the size limit", async () => {
+    const response = await runSlashRequest({
+      registeredCommands: [cmd()],
+      body: `token=${"x".repeat(70 * 1024)}`,
+    });
+
+    expect(response.res.statusCode).toBe(413);
+  });
+
+  it("returns 408 when the body read times out", async () => {
+    const response = await runSlashRequest({
+      registeredCommands: [cmd()],
+      body: "token=par",
+      keepOpen: true,
+      bodyTimeoutMs: 50,
+    });
+
+    expect(response.res.statusCode).toBe(408);
   });
 });

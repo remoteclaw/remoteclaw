@@ -49,9 +49,6 @@ export async function enforceTelegramDmAccess(params: {
   if (dmPolicy === "disabled") {
     return false;
   }
-  if (dmPolicy === "open") {
-    return true;
-  }
 
   const sender = resolveTelegramSenderIdentity(msg, chatId);
   const allowMatch = resolveSenderAllowMatch({
@@ -62,6 +59,15 @@ export async function enforceTelegramDmAccess(params: {
   const allowMatchMeta = `matchKey=${allowMatch.matchKey ?? "none"} matchSource=${allowMatch.matchSource ?? "none"}`;
   const allowed =
     effectiveDmAllow.hasWildcard || (effectiveDmAllow.hasEntries && allowMatch.allowed);
+  if (dmPolicy === "open") {
+    if (allowed) {
+      return true;
+    }
+    logVerbose(
+      `Blocked unauthorized telegram sender ${sender.candidateId} (dmPolicy=open, ${allowMatchMeta})`,
+    );
+    return false;
+  }
   if (allowed) {
     return true;
   }

@@ -153,19 +153,16 @@ async function renameNode(client: Lark.Client, spaceId: string, nodeToken: strin
 
 export function registerFeishuWikiTools(api: RemoteClawPluginApi) {
   if (!api.config) {
-    api.logger.debug?.("feishu_wiki: No config available, skipping wiki tools");
     return;
   }
 
   const accounts = listEnabledFeishuAccounts(api.config);
   if (accounts.length === 0) {
-    api.logger.debug?.("feishu_wiki: No Feishu accounts configured, skipping wiki tools");
     return;
   }
 
   const toolsCfg = resolveAnyEnabledFeishuToolsConfig(accounts);
   if (!toolsCfg.wiki) {
-    api.logger.debug?.("feishu_wiki: wiki tool disabled in config");
     return;
   }
 

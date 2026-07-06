@@ -25,8 +25,10 @@ export type MattermostEventPayload = {
 export type MattermostWebSocketLike = {
   on(event: "open", listener: () => void): void;
   on(event: "message", listener: (data: WebSocket.RawData) => void | Promise<void>): void;
+  on(event: "pong", listener: (data: Buffer) => void): void;
   on(event: "close", listener: (code: number, reason: Buffer) => void): void;
   on(event: "error", listener: (err: unknown) => void): void;
+  ping(): void;
   send(data: string): void;
   close(): void;
   terminate(): void;
@@ -63,6 +65,8 @@ type CreateMattermostConnectOnceOpts = {
    */
   getBotUpdateAt?: () => Promise<number>;
   healthCheckIntervalMs?: number;
+  pingIntervalMs?: number;
+  pongTimeoutMs?: number;
 };
 
 export const defaultMattermostWebSocketFactory: MattermostWebSocketFactory = (url) =>
@@ -112,6 +116,8 @@ export function createMattermostConnectOnce(
 ): () => Promise<void> {
   const webSocketFactory = opts.webSocketFactory ?? defaultMattermostWebSocketFactory;
   const healthCheckIntervalMs = opts.healthCheckIntervalMs ?? 30_000;
+  const pingIntervalMs = opts.pingIntervalMs ?? 30_000;
+  const pongTimeoutMs = opts.pongTimeoutMs ?? 10_000;
   return async () => {
     const ws = webSocketFactory(opts.wsUrl);
     const onAbort = () => ws.terminate();
@@ -125,6 +131,9 @@ export function createMattermostConnectOnce(
         let healthCheckEnabled = getBotUpdateAt != null;
         let healthCheckInFlight = false;
         let healthCheckTimer: ReturnType<typeof setTimeout> | undefined;
+        let protocolKeepaliveEnabled = true;
+        let protocolPingTimer: ReturnType<typeof setTimeout> | undefined;
+        let protocolPongTimer: ReturnType<typeof setTimeout> | undefined;
         let initialUpdateAt: number | undefined;
 
         const clearTimers = () => {
@@ -132,11 +141,58 @@ export function createMattermostConnectOnce(
             clearTimeout(healthCheckTimer);
             healthCheckTimer = undefined;
           }
+          if (protocolPingTimer !== undefined) {
+            clearTimeout(protocolPingTimer);
+            protocolPingTimer = undefined;
+          }
+          if (protocolPongTimer !== undefined) {
+            clearTimeout(protocolPongTimer);
+            protocolPongTimer = undefined;
+          }
         };
 
         const stopHealthChecks = () => {
           healthCheckEnabled = false;
+          protocolKeepaliveEnabled = false;
           clearTimers();
+        };
+
+        const sendProtocolPing = () => {
+          if (!protocolKeepaliveEnabled || settled) {
+            return;
+          }
+          if (protocolPongTimer !== undefined) {
+            clearTimeout(protocolPongTimer);
+          }
+          protocolPongTimer = setTimeout(() => {
+            protocolPongTimer = undefined;
+            if (!protocolKeepaliveEnabled || settled) {
+              return;
+            }
+            opts.runtime.error?.("mattermost websocket pong timeout — reconnecting");
+            stopHealthChecks();
+            ws.terminate();
+          }, pongTimeoutMs);
+          try {
+            ws.ping();
+          } catch (err) {
+            if (!protocolKeepaliveEnabled || settled) {
+              return;
+            }
+            opts.runtime.error?.(`mattermost websocket ping failed: ${String(err)}`);
+            stopHealthChecks();
+            ws.terminate();
+          }
+        };
+
+        const scheduleProtocolPing = () => {
+          if (!protocolKeepaliveEnabled || settled || protocolPingTimer !== undefined) {
+            return;
+          }
+          protocolPingTimer = setTimeout(() => {
+            protocolPingTimer = undefined;
+            sendProtocolPing();
+          }, pingIntervalMs);
         };
 
         const scheduleHealthCheck = () => {
@@ -216,6 +272,7 @@ export function createMattermostConnectOnce(
               data: { token: opts.botToken },
             }),
           );
+          scheduleProtocolPing();
 
           // Periodically check if the bot account was modified (e.g. disable/enable).
           // After such a cycle the WebSocket silently stops delivering events even
@@ -225,6 +282,14 @@ export function createMattermostConnectOnce(
             // Use a recursive timeout so only one REST poll can be in flight at a time.
             void runHealthCheck();
           }
+        });
+
+        ws.on("pong", () => {
+          if (protocolPongTimer !== undefined) {
+            clearTimeout(protocolPongTimer);
+            protocolPongTimer = undefined;
+          }
+          scheduleProtocolPing();
         });
 
         ws.on("message", async (data) => {

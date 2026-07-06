@@ -121,6 +121,7 @@ export const AgentDefaultsSchema = z
         memoryFlush: z
           .object({
             enabled: z.boolean().optional(),
+            model: z.string().optional(),
             softThresholdTokens: z.number().int().nonnegative().optional(),
             forceFlushTranscriptBytes: z
               .union([
@@ -141,6 +142,7 @@ export const AgentDefaultsSchema = z
       .strict()
       .optional(),
     verboseDefault: z.union([z.literal("off"), z.literal("on"), z.literal("full")]).optional(),
+    reasoningDefault: z.union([z.literal("off"), z.literal("on"), z.literal("stream")]).optional(),
     elevatedDefault: z
       .union([z.literal("off"), z.literal("on"), z.literal("ask"), z.literal("full")])
       .optional(),

@@ -12,7 +12,7 @@ vi.mock("./model-picker.js", () => ({
   applyPrimaryModel: vi.fn((cfg) => cfg),
 }));
 
-function createTestPrompter(params: { text: string[]; select?: string[] }): {
+function createTestPrompter(params: { text: string[]; select?: string[]; confirm?: boolean[] }): {
   text: ReturnType<typeof vi.fn>;
   select: ReturnType<typeof vi.fn>;
   confirm: ReturnType<typeof vi.fn>;
@@ -27,6 +27,10 @@ function createTestPrompter(params: { text: string[]; select?: string[] }): {
   for (const answer of params.select ?? []) {
     select.mockResolvedValueOnce(answer);
   }
+  const confirm = vi.fn(async () => false);
+  for (const answer of params.confirm ?? []) {
+    confirm.mockResolvedValueOnce(answer);
+  }
   return {
     text,
     progress: vi.fn(() => ({
@@ -34,7 +38,7 @@ function createTestPrompter(params: { text: string[]; select?: string[] }): {
       stop: vi.fn(),
     })),
     select,
-    confirm: vi.fn(),
+    confirm,
     note: vi.fn(),
   };
 }
@@ -131,6 +135,38 @@ describe("promptCustomApiConfig", () => {
 
     expectOpenAiCompatResult({ prompter, textCalls: 5, selectCalls: 2, result });
     expect(result.config.agents?.defaults?.models?.["custom/llama3"]?.alias).toBe("local");
+    expect(result.config.models?.providers?.custom?.models?.[0]?.input).toEqual(["text"]);
+    expect(prompter.confirm).not.toHaveBeenCalled();
+  });
+
+  it("skips the image-input prompt for known custom vision models", async () => {
+    const prompter = createTestPrompter({
+      text: ["https://proxy.example.com/v1", "test-key", "gpt-4o", "custom", ""],
+      select: ["plaintext", "openai"],
+    });
+    stubFetchSequence([{ ok: true }]);
+
+    const result = await runPromptCustomApi(prompter);
+
+    expect(result.config.models?.providers?.custom?.models?.[0]?.input).toEqual(["text", "image"]);
+    expect(prompter.confirm).not.toHaveBeenCalled();
+  });
+
+  it("prompts for custom model image support when the model is unknown", async () => {
+    const prompter = createTestPrompter({
+      text: ["https://proxy.example.com/v1", "test-key", "private-model", "custom", ""],
+      select: ["plaintext", "openai"],
+      confirm: [true],
+    });
+    stubFetchSequence([{ ok: true }]);
+
+    const result = await runPromptCustomApi(prompter);
+
+    expect(result.config.models?.providers?.custom?.models?.[0]?.input).toEqual(["text", "image"]);
+    expect(prompter.confirm).toHaveBeenCalledWith({
+      message: "Does this model support image input?",
+      initialValue: false,
+    });
   });
 
   it("retries when verification fails", async () => {

@@ -308,6 +308,5 @@ export function registerSlashCommandRoute(api: RemoteClawPluginApi) {
       auth: "plugin",
       handler: routeHandler,
     });
-    api.logger.info?.(`mattermost: registered slash command callback at ${callbackPath}`);
   }
 }

@@ -178,10 +178,7 @@ Validation` or from the `main`/release workflow ref so workflow logic and
   `REMOTECLAW_QA_TELEGRAM_*` env credentials directly.
 - Maintainers can run the same post-publish check from GitHub Actions via the
   manual `NPM Telegram Beta E2E` workflow. It is intentionally manual-only and
-  does not run on every merge. For pre-publish Telegram-only proof, run the
-  same workflow with `source=ref` and `package_ref=<branch-or-sha>` so CI packs
-  the candidate tarball before exercising Telegram. For exact registry proof
-  after publish, keep `source=npm` and `package_spec=remoteclaw@<version>`.
+  does not run on every merge.
 - Maintainer release automation now uses preflight-then-promote:
   - real npm publish must pass a successful npm `preflight_run_id`
   - the real npm publish must be dispatched from the same `main` or
@@ -214,8 +211,9 @@ Validation` or from the `main`/release workflow ref so workflow logic and
   before the release publish path
 - If the release work touched CI planning, extension timing manifests, or
   extension test matrices, regenerate and review the planner-owned
-  `checks-node-extensions` workflow matrix outputs from `.github/workflows/ci.yml`
-  before approval so release notes do not describe a stale CI layout
+  `plugin-prerelease-extension-shard` matrix outputs from
+  `.github/workflows/plugin-prerelease.yml` before approval so release notes do
+  not describe a stale CI layout
 - Stable macOS release readiness also includes the updater surfaces:
   - the GitHub release must end up with the packaged `.zip`, `.dmg`, and `.dSYM.zip`
   - `appcast.xml` on `main` must point at the new stable zip after publish
@@ -235,6 +233,7 @@ gh workflow run full-release-validation.yml \
   -f ref=release/YYYY.M.D \
   -f provider=openai \
   -f mode=both \
+  -f release_profile=full \
   -f evidence_package_spec=remoteclaw@YYYY.M.D-beta.N
 ```
 
@@ -246,14 +245,29 @@ install smoke, cross-OS release checks, live/E2E Docker release-path coverage,
 Package Acceptance with Telegram package QA, QA Lab parity, live Matrix, and
 live Telegram. A full run is only acceptable when the `Full Release Validation`
 summary shows `normal_ci` and `release_checks` as successful, and any optional
-`npm_telegram` child is either successful or intentionally skipped. A skipped
-`npm_telegram` child only means no exact published npm package was supplied;
-the pre-publish tarball-backed Telegram package proof still runs inside
-`RemoteClaw Release Checks` through Package Acceptance.
+`npm_telegram` child is either successful or intentionally skipped. The final
+verifier summary includes slowest-job tables for each child run, so the release
+manager can see the current critical path without downloading logs.
 Child workflows are dispatched from the trusted ref that runs `Full Release
 Validation`, normally `--ref main`, even when the target `ref` points at an
 older release branch or tag. There is no separate Full Release Validation
 workflow-ref input; choose the trusted harness by choosing the workflow run ref.
+
+Use `release_profile` to select live/provider breadth:
+
+- `minimum`: fastest release-critical OpenAI/core live and Docker path
+- `stable`: minimum plus stable provider/backend coverage for release approval
+- `full`: stable plus broad advisory provider/media coverage
+
+`RemoteClaw Release Checks` uses the trusted workflow ref to resolve the target
+ref once as `release-package-under-test` and reuses that artifact in both
+release-path Docker checks and Package Acceptance. This keeps all
+package-facing boxes on the same bytes and avoids repeated package builds.
+The cross-OS OpenAI install smoke uses `REMOTECLAW_CROSS_OS_OPENAI_MODEL` when the
+repo/org variable is set, otherwise `openai/gpt-5.4-mini`, because this lane is
+proving package install, onboarding, gateway startup, and one live agent turn
+rather than benchmarking the slowest default model. The broader live provider
+matrix remains the place for model-specific coverage.
 
 Use these variants depending on release stage:
 
@@ -263,7 +277,8 @@ gh workflow run full-release-validation.yml \
   --ref main \
   -f ref=release/YYYY.M.D \
   -f provider=openai \
-  -f mode=both
+  -f mode=both \
+  -f release_profile=stable
 
 # Validate an exact pushed commit.
 gh workflow run full-release-validation.yml \
@@ -283,27 +298,6 @@ gh workflow run full-release-validation.yml \
   -f npm_telegram_provider_mode=mock-openai
 ```
 
-For focused Telegram package proof before publishing, use the standalone
-`NPM Telegram Beta E2E` workflow with the same package candidate shapes as
-Package Acceptance:
-
-```bash
-# Pack and test a release branch or exact SHA through Telegram.
-gh workflow run npm-telegram-beta-e2e.yml \
-  --ref main \
-  -f source=ref \
-  -f package_ref=release/YYYY.M.D \
-  -f harness_ref=main \
-  -f provider_mode=mock-openai
-
-# Exact published package proof after beta/stable publish.
-gh workflow run npm-telegram-beta-e2e.yml \
-  --ref main \
-  -f source=npm \
-  -f package_spec=remoteclaw@YYYY.M.D-beta.N \
-  -f provider_mode=mock-openai
-```
-
 Do not use the full umbrella as the first rerun after a focused fix. If one box
 fails, use the failed child workflow, job, Docker lane, package profile, model
 provider, or QA lane for the next proof. Run the full umbrella again only when
@@ -311,6 +305,13 @@ the fix changed shared release orchestration or made earlier all-box evidence
 stale. The umbrella's final verifier re-checks the recorded child workflow run
 ids, so after a child workflow is rerun successfully, rerun only the failed
 `Verify full validation` parent job.
+
+For bounded recovery, pass `rerun_group` to the umbrella. `all` is the real
+release-candidate run, `ci` runs only the normal CI child, `plugin-prerelease`
+runs only the release-only plugin child, `release-checks` runs every release
+box, and the narrower release groups are `install-smoke`, `cross-os`,
+`live-e2e`, `package`, `qa`, `qa-parity`, `qa-live`, and `npm-telegram` when the
+standalone package Telegram lane is supplied.
 
 ### Vitest
 
@@ -346,15 +347,26 @@ Docker environments instead of only source-level tests.
 Release Docker coverage includes:
 
 - full install smoke with the slow Bun global install smoke enabled
+- root Dockerfile smoke image preparation/reuse by target SHA, with QR,
+  root/gateway, and installer/Bun smoke jobs running as separate install-smoke
+  shards
 - repository E2E lanes
-- release-path Docker chunks: `core`, `package-update`, `plugins-runtime`, and
-  `bundled-channels`
-- OpenWebUI coverage inside the `plugins-runtime` chunk when requested
-- split bundled-channel dependency lanes in their own `bundled-channels` chunk
-  instead of the serial all-in-one bundled-channel lane
+- release-path Docker chunks: `core`, `package-update-openai`,
+  `package-update-anthropic`, `package-update-core`, `plugins-runtime-plugins`,
+  `plugins-runtime-services`,
+  `plugins-runtime-install-a`, `plugins-runtime-install-b`,
+  `plugins-runtime-install-c`, `plugins-runtime-install-d`,
+  `plugins-runtime-install-e`, `plugins-runtime-install-f`,
+  `plugins-runtime-install-g`, `plugins-runtime-install-h`,
+  `bundled-channels-core`, `bundled-channels-update-a`,
+  `bundled-channels-update-discord`, `bundled-channels-update-b`, and
+  `bundled-channels-contracts`
+- OpenWebUI coverage inside the `plugins-runtime-services` chunk when requested
+- split bundled-channel dependency lanes across channel-smoke, update-target,
+  and setup/runtime contract chunks instead of one large bundled-channel job
 - split bundled plugin install/uninstall lanes
   `bundled-plugin-install-uninstall-0` through
-  `bundled-plugin-install-uninstall-7`
+  `bundled-plugin-install-uninstall-23`
 - live/E2E provider suites and Docker live model coverage when release checks
   include live suites
 
@@ -421,8 +433,10 @@ to npm: private QA inventory entries missing from the tarball, missing
 `gateway install --wrapper`, missing patch files in the tarball-derived git
 fixture, missing persisted `update.channel`, legacy plugin install-record
 locations, missing marketplace install-record persistence, and config metadata
-migration during `plugins update`. Packages after `2026.4.25` must satisfy the
-modern package contracts; those same gaps fail release validation.
+migration during `plugins update`. The published `2026.4.26` package may warn
+for local build metadata stamp files that were already shipped. Later packages
+must satisfy the modern package contracts; those same gaps fail release
+validation.
 
 Use broader Package Acceptance profiles when the release question is about an
 actual installable package:

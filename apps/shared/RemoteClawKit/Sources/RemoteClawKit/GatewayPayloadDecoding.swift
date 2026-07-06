@@ -1,5 +1,5 @@
-import RemoteClawProtocol
 import Foundation
+import RemoteClawProtocol
 
 public enum GatewayPayloadDecoding {
     public static func decode<T: Decodable>(

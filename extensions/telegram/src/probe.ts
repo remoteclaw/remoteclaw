@@ -24,6 +24,8 @@ export type TelegramProbeOptions = {
   proxyUrl?: string;
   network?: TelegramNetworkConfig;
   accountId?: string;
+  apiRoot?: string;
+  includeWebhookInfo?: boolean;
 };
 
 const probeFetcherCache = new Map<string, typeof fetch>();
@@ -100,6 +102,7 @@ export async function probeTelegram(
   const timeoutBudgetMs = Math.max(1, Math.floor(timeoutMs));
   const deadlineMs = started + timeoutBudgetMs;
   const options = resolveProbeOptions(proxyOrOptions);
+  const includeWebhookInfo = options?.includeWebhookInfo !== false;
   const fetcher = resolveProbeFetcher(token, options);
   const base = `${TELEGRAM_API_BASE}/bot${token}`;
   const retryDelayMs = Math.max(50, Math.min(1000, Math.floor(timeoutBudgetMs / 5)));
@@ -181,29 +184,31 @@ export async function probeTelegram(
           : null,
     };
 
-    // Try to fetch webhook info, but don't fail health if it errors.
-    try {
-      const webhookRemainingBudgetMs = resolveRemainingBudgetMs();
-      if (webhookRemainingBudgetMs > 0) {
-        const webhookRes = await fetchWithTimeout(
-          `${base}/getWebhookInfo`,
-          {},
-          Math.max(1, Math.min(timeoutBudgetMs, webhookRemainingBudgetMs)),
-          fetcher,
-        );
-        const webhookJson = (await webhookRes.json()) as {
-          ok?: boolean;
-          result?: { url?: string; has_custom_certificate?: boolean };
-        };
-        if (webhookRes.ok && webhookJson?.ok) {
-          result.webhook = {
-            url: webhookJson.result?.url ?? null,
-            hasCustomCert: webhookJson.result?.has_custom_certificate ?? null,
+    if (includeWebhookInfo) {
+      // Try to fetch webhook info, but don't fail health if it errors.
+      try {
+        const webhookRemainingBudgetMs = resolveRemainingBudgetMs();
+        if (webhookRemainingBudgetMs > 0) {
+          const webhookRes = await fetchWithTimeout(
+            `${base}/getWebhookInfo`,
+            {},
+            Math.max(1, Math.min(timeoutBudgetMs, webhookRemainingBudgetMs)),
+            fetcher,
+          );
+          const webhookJson = (await webhookRes.json()) as {
+            ok?: boolean;
+            result?: { url?: string; has_custom_certificate?: boolean };
           };
+          if (webhookRes.ok && webhookJson?.ok) {
+            result.webhook = {
+              url: webhookJson.result?.url ?? null,
+              hasCustomCert: webhookJson.result?.has_custom_certificate ?? null,
+            };
+          }
         }
+      } catch {
+        // ignore webhook errors for probe
       }
-    } catch {
-      // ignore webhook errors for probe
     }
 
     result.ok = true;

@@ -29,7 +29,11 @@ import {
   PortInUseError,
 } from "./infra/ports.js";
 import { assertSupportedRuntime } from "./infra/runtime-guard.js";
-import { installUnhandledRejectionHandler } from "./infra/unhandled-rejections.js";
+import {
+  installUnhandledRejectionHandler,
+  isBenignUncaughtExceptionError,
+  isUncaughtExceptionHandled,
+} from "./infra/unhandled-rejections.js";
 import { enableConsoleCapture } from "./logging.js";
 import { runCommandWithTimeout, runExec } from "./process/exec.js";
 import { assertWebChannel, normalizeE164, toWhatsappJid } from "./utils.js";
@@ -85,6 +89,16 @@ if (isMain) {
   installUnhandledRejectionHandler();
 
   process.on("uncaughtException", (error) => {
+    if (isUncaughtExceptionHandled(error)) {
+      return;
+    }
+    if (isBenignUncaughtExceptionError(error)) {
+      console.warn(
+        "[remoteclaw] Non-fatal uncaught exception (continuing):",
+        formatUncaughtError(error),
+      );
+      return;
+    }
     console.error("[remoteclaw] Uncaught exception:", formatUncaughtError(error));
     for (const message of runFatalErrorHooks({ reason: "uncaught_exception", error })) {
       console.error("[remoteclaw]", message);

@@ -300,6 +300,7 @@ function buildChannelTargetSchema() {
 
 function buildStickerSchema() {
   return {
+    fileId: Type.Optional(Type.String()),
     emojiName: Type.Optional(Type.String()),
     stickerId: Type.Optional(Type.Array(Type.String())),
     stickerName: Type.Optional(Type.String()),

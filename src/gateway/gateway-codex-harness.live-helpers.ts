@@ -1,6 +1,7 @@
 export const EXPECTED_CODEX_MODELS_COMMAND_TEXT = [
   "Codex models:",
   "Available Codex models",
+  "Available Codex agent models",
   "Available models:",
   "Available models, local cache:",
   "Available agent target:",
@@ -79,6 +80,7 @@ export const EXPECTED_CODEX_STATUS_COMMAND_TEXT = [
   "Session: agent:dev:live-codex-harness",
   "RemoteClaw `",
   "RemoteClaw status:",
+  "Status: running on",
   "model `codex/",
   "session `agent:dev:live-codex-harness`",
   "Model/status card shown above",
@@ -90,7 +92,8 @@ export function isExpectedCodexStatusCommandText(text: string): boolean {
   const mentionsRemoteClawStatus =
     normalized.includes("remoteclaw is running on") ||
     normalized.includes("remoteclaw status:") ||
-    normalized.includes("status: running on");
+    normalized.includes("status: running on") ||
+    normalized.includes("session status: running on");
   const mentionsHarnessSession =
     normalized.includes("session: `agent:dev:live-codex-harness`") ||
     normalized.includes("session: agent:dev:live-codex-harness") ||
@@ -99,6 +102,7 @@ export function isExpectedCodexStatusCommandText(text: string): boolean {
     normalized.includes("session `agent:dev:live-codex-harness`") ||
     normalized.includes("current session is `agent:dev:live-codex-harness`") ||
     normalized.includes("current session is agent:dev:live-codex-harness") ||
+    normalized.includes("session context is healthy") ||
     ((normalized.includes("session context") || normalized.includes("context is at")) &&
       normalized.includes("active task: `/codex status`"));
   const mentionsModel =
@@ -110,9 +114,15 @@ export function isExpectedCodexStatusCommandText(text: string): boolean {
     normalized.includes("current session status:") &&
     normalized.includes("runtime: `openai codex`") &&
     mentionsModel;
+  const isCompactSessionStatus =
+    normalized.includes("session status: running on") &&
+    normalized.includes("context at") &&
+    mentionsModel;
 
   return (
-    isCurrentSessionStatus || (mentionsRemoteClawStatus && mentionsHarnessSession && mentionsModel)
+    isCurrentSessionStatus ||
+    isCompactSessionStatus ||
+    (mentionsRemoteClawStatus && mentionsHarnessSession && mentionsModel)
   );
 }
 
@@ -182,6 +192,7 @@ export function isExpectedCodexModelsCommandText(text: string): boolean {
   const mentionsVisibleOptions =
     normalized.includes("visible options in this session:") ||
     normalized.includes("visible options:") ||
+    normalized.includes("available codex agent models:") ||
     normalized.includes("available model overrides listed in this session:") ||
     normalized.includes("available model overrides shown in this session:") ||
     normalized.includes("available here:") ||
@@ -202,6 +213,9 @@ export function isExpectedCodexModelsCommandText(text: string): boolean {
   const isAgentIdModelSummary =
     normalized.includes("available agent ids in this session:") &&
     (text.includes("`openai/") || text.includes("`codex/"));
+  const isCodexAgentModelSummary =
+    normalized.includes("available codex agent models:") &&
+    (text.includes("`openai/") || text.includes("`codex/"));
   const isAvailableHereModelSummary =
     normalized.includes("available here:") &&
     normalized.includes("current session model") &&
@@ -211,19 +225,14 @@ export function isExpectedCodexModelsCommandText(text: string): boolean {
     mentionsInteractiveSelection &&
     normalized.includes("plain list") &&
     mentionsCurrentSelectedModel;
-  const isInteractiveTuiHeaderSummary =
-    mentionsCodexModelsCommand &&
-    (normalized.includes("interactive here") || normalized.includes("interactive tui")) &&
-    (normalized.includes("did not print a model list") || normalized.includes("plain list")) &&
-    normalized.includes("visible session header showed the current model");
 
   return (
     isSandboxFallback ||
     isSessionConfigFallback ||
     isInteractiveSelectionSummary ||
     isAgentIdModelSummary ||
+    isCodexAgentModelSummary ||
     isAvailableHereModelSummary ||
-    isInteractiveTuiSummary ||
-    isInteractiveTuiHeaderSummary
+    isInteractiveTuiSummary
   );
 }

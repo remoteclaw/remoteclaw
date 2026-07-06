@@ -19,11 +19,15 @@ builds do not need a separate install.
 
 - Onboarding (`remoteclaw onboard`) and `remoteclaw channels add` still surface
   Nostr from the shared channel catalog.
-- If your build excludes bundled Nostr, install it manually.
+- If your build excludes bundled Nostr, install a current npm package when one
+  is published.
 
 ```bash
 remoteclaw plugins install @remoteclaw/nostr
 ```
+
+If npm reports the RemoteClaw-owned package as deprecated, use a current packaged
+RemoteClaw build or a local checkout until a newer npm package is published.
 
 Use a local checkout (dev workflows):
 

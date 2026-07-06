@@ -25,7 +25,7 @@ function makeAccount(
     nasHost: "nas.example.com",
     webhookPath: "/webhook/synology",
     dmPolicy: "open",
-    allowedUserIds: [],
+    allowedUserIds: ["*"],
     rateLimitPerMinute: 30,
     botName: "TestBot",
     allowInsecureSsl: true,

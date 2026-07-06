@@ -515,6 +515,40 @@ describe("scripts/docker/setup.sh", () => {
     expect(result.stderr).toContain("REMOTECLAW_TZ must match a timezone in /usr/share/zoneinfo");
   });
 
+  it("skips onboarding when REMOTECLAW_SKIP_ONBOARDING is set", async () => {
+    const activeSandbox = requireSandbox(sandbox);
+    await resetDockerLog(activeSandbox);
+
+    const result = runDockerSetup(activeSandbox, {
+      REMOTECLAW_SKIP_ONBOARDING: "1",
+    });
+
+    expect(result.status).toBe(0);
+    const log = await readDockerLog(activeSandbox);
+    expect(log).not.toContain("onboard");
+    // Gateway defaults (config set) and control UI allowlist should still run.
+    expect(log).toContain("config set --batch-json");
+    expect(log).toContain('"path":"gateway.mode","value":"local"');
+    expect(log).toContain('"path":"gateway.bind","value":"lan"');
+    const envFile = await readFile(join(activeSandbox.rootDir, ".env"), "utf8");
+    expect(envFile).toContain("REMOTECLAW_SKIP_ONBOARDING=1");
+  });
+
+  it("treats REMOTECLAW_SKIP_ONBOARDING=0 as disabled and runs onboarding", async () => {
+    const activeSandbox = requireSandbox(sandbox);
+    await resetDockerLog(activeSandbox);
+
+    const result = runDockerSetup(activeSandbox, {
+      REMOTECLAW_SKIP_ONBOARDING: "0",
+    });
+
+    expect(result.status).toBe(0);
+    const log = await readDockerLog(activeSandbox);
+    expect(log).toContain("onboard --mode local --no-install-daemon");
+    const envFile = await readFile(join(activeSandbox.rootDir, ".env"), "utf8");
+    expect(envFile).toMatch(/REMOTECLAW_SKIP_ONBOARDING=\n/);
+  });
+
   it("avoids associative arrays so the script remains Bash 3.2-compatible", async () => {
     const script = await readFile(join(repoRoot, "scripts", "docker", "setup.sh"), "utf8");
     expect(script).not.toMatch(/^\s*declare -A\b/m);
@@ -574,5 +608,18 @@ describe("scripts/docker/setup.sh", () => {
   it("keeps docker-compose timezone env defaults aligned across services", async () => {
     const compose = await readFile(join(repoRoot, "docker-compose.yml"), "utf8");
     expect(compose.match(/TZ: \$\{REMOTECLAW_TZ:-UTC\}/g)).toHaveLength(2);
+  });
+
+  it("keeps bundled plugin runtime deps on a Docker-managed volume", async () => {
+    const compose = await readFile(join(repoRoot, "docker-compose.yml"), "utf8");
+    expect(
+      compose.match(/REMOTECLAW_PLUGIN_STAGE_DIR: \/var\/lib\/remoteclaw\/plugin-runtime-deps/g),
+    ).toHaveLength(2);
+    expect(
+      compose.match(
+        /- remoteclaw-plugin-runtime-deps:\/var\/lib\/remoteclaw\/plugin-runtime-deps/g,
+      ),
+    ).toHaveLength(2);
+    expect(compose).toContain("\nvolumes:\n  remoteclaw-plugin-runtime-deps:\n");
   });
 });

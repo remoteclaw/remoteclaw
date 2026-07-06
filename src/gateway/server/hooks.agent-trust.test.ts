@@ -5,6 +5,8 @@ const requestHeartbeatNowMock = vi.fn();
 const runCronIsolatedAgentTurnMock = vi.fn();
 const resolveMainSessionKeyMock = vi.fn(() => "main-session");
 const loadConfigMock = vi.fn(() => ({}));
+const logHooksInfoMock = vi.fn();
+const logHooksWarnMock = vi.fn();
 
 vi.mock("../../infra/system-events.js", () => ({
   enqueueSystemEvent: enqueueSystemEventMock,
@@ -17,6 +19,13 @@ vi.mock("../../cron/isolated-agent.js", () => ({
 }));
 vi.mock("../../config/sessions.js", () => ({
   resolveMainSessionKeyFromConfig: resolveMainSessionKeyMock,
+  resolveMainSessionKey: vi.fn(
+    (cfg?: { session?: { mainKey?: string } }) => `agent:main:${cfg?.session?.mainKey ?? "main"}`,
+  ),
+  resolveAgentMainSessionKey: vi.fn(
+    (params: { cfg?: { session?: { mainKey?: string } }; agentId: string }) =>
+      `agent:${params.agentId}:${params.cfg?.session?.mainKey ?? "main"}`,
+  ),
 }));
 vi.mock("../../config/config.js", () => ({
   loadConfig: loadConfigMock,
@@ -48,22 +57,23 @@ function buildMinimalParams() {
     bindHost: "127.0.0.1",
     port: 18789,
     logHooks: {
-      warn: vi.fn(),
+      warn: logHooksWarnMock,
       debug: vi.fn(),
-      info: vi.fn(),
+      info: logHooksInfoMock,
       error: vi.fn(),
     } as never,
   };
 }
 
-function buildAgentPayload(name: string) {
+function buildAgentPayload(name: string, agentId?: string) {
   return {
     message: "test message",
     name,
-    agentId: undefined,
+    agentId,
     idempotencyKey: undefined,
     wakeMode: "now" as const,
     sessionKey: "session-1",
+    sourcePath: "/hooks/agent",
     deliver: false,
     channel: "last" as const,
     to: undefined,
@@ -94,7 +104,7 @@ describe("dispatchAgentHook trust handling", () => {
     vi.restoreAllMocks();
   });
 
-  it("marks non-delivery status events as untrusted and sanitizes hook names", async () => {
+  it("does not announce successful deliver:false hook results", async () => {
     runCronIsolatedAgentTurnMock.mockResolvedValueOnce({
       status: "ok",
       summary: "done",

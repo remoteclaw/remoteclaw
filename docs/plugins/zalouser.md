@@ -34,6 +34,10 @@ No external `zca`/`openzca` CLI binary is required.
 remoteclaw plugins install @remoteclaw/zalouser
 ```
 
+If npm reports the RemoteClaw-owned package as deprecated, that package version is
+from an older external package train; use a current packaged RemoteClaw build or
+the local folder path until a newer npm package is published.
+
 Restart the Gateway afterwards.
 
 ### Option B: install from a local folder (dev)

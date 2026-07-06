@@ -132,7 +132,7 @@ describe("resolveAgentConfig", () => {
     expect(resolveAgentEffectiveModelPrimary(cfg, "linus")).toBe("anthropic/claude-sonnet-4-6");
     expect(resolveAgentModelFallbacksOverride(cfg, "linus")).toEqual(["openai/gpt-5.4"]);
 
-    // If fallbacks isn't present, we don't override the global fallbacks.
+    // If an agent owns a primary, missing fallbacks means no model fallback.
     const cfgNoOverride: RemoteClawConfig = {
       agents: {
         list: [
@@ -145,7 +145,55 @@ describe("resolveAgentConfig", () => {
         ],
       },
     };
-    expect(resolveAgentModelFallbacksOverride(cfgNoOverride, "linus")).toBe(undefined);
+    expect(resolveAgentModelFallbacksOverride(cfgNoOverride, "linus")).toEqual([]);
+    expect(
+      resolveEffectiveModelFallbacks({
+        cfg: cfgNoOverride,
+        agentId: "linus",
+        hasSessionModelOverride: false,
+      }),
+    ).toEqual([]);
+
+    const cfgStringModel: RemoteClawConfig = {
+      agents: {
+        list: [
+          {
+            id: "linus",
+            model: "anthropic/claude-sonnet-4-6",
+          },
+        ],
+      },
+    };
+    expect(resolveAgentModelFallbacksOverride(cfgStringModel, "linus")).toEqual([]);
+
+    const cfgStrictAgentWithDefaultFallbacks: RemoteClawConfig = {
+      agents: {
+        defaults: {
+          model: {
+            fallbacks: ["custom-opencode-go-extras/deepseek-v4-flash"],
+          },
+        },
+        list: [
+          {
+            id: "linus",
+            model: {
+              primary: "opencode-go/minimax-m2.7",
+            },
+          },
+        ],
+      },
+    };
+    expect(resolveAgentModelFallbacksOverride(cfgStrictAgentWithDefaultFallbacks, "linus")).toEqual(
+      [],
+    );
+    expect(
+      resolveEffectiveModelFallbacks({
+        cfg: cfgStrictAgentWithDefaultFallbacks,
+        agentId: "linus",
+        hasSessionModelOverride: true,
+        modelOverrideSource: "auto",
+      }),
+    ).toEqual([]);
 
     // Explicit empty list disables global fallbacks for that agent.
     const cfgDisable: RemoteClawConfig = {
@@ -175,8 +223,24 @@ describe("resolveAgentConfig", () => {
         cfg,
         agentId: "linus",
         hasSessionModelOverride: true,
+        modelOverrideSource: "auto",
       }),
     ).toEqual(["openai/gpt-5.4"]);
+    expect(
+      resolveEffectiveModelFallbacks({
+        cfg,
+        agentId: "linus",
+        hasSessionModelOverride: true,
+        modelOverrideSource: "user",
+      }),
+    ).toEqual([]);
+    expect(
+      resolveEffectiveModelFallbacks({
+        cfg,
+        agentId: "linus",
+        hasSessionModelOverride: true,
+      }),
+    ).toEqual([]);
     expect(
       resolveEffectiveModelFallbacks({
         cfg: cfgNoOverride,
@@ -185,28 +249,22 @@ describe("resolveAgentConfig", () => {
       }),
     ).toEqual([]);
 
-    const cfgInheritDefaults: RemoteClawConfig = {
+    const cfgInheritDefaultsWithoutAgentModel: RemoteClawConfig = {
       agents: {
         defaults: {
           model: {
             fallbacks: ["openai/gpt-5.4"],
           },
         },
-        list: [
-          {
-            id: "linus",
-            model: {
-              primary: "anthropic/claude-sonnet-4-6",
-            },
-          },
-        ],
+        list: [{ id: "linus" }],
       },
     };
     expect(
       resolveEffectiveModelFallbacks({
-        cfg: cfgInheritDefaults,
+        cfg: cfgInheritDefaultsWithoutAgentModel,
         agentId: "linus",
         hasSessionModelOverride: true,
+        modelOverrideSource: "auto",
       }),
     ).toEqual(["openai/gpt-5.4"]);
     expect(
@@ -214,6 +272,7 @@ describe("resolveAgentConfig", () => {
         cfg: cfgDisable,
         agentId: "linus",
         hasSessionModelOverride: true,
+        modelOverrideSource: "auto",
       }),
     ).toEqual([]);
   });

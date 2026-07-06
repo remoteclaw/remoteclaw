@@ -13,11 +13,19 @@ It uses the official `matrix-js-sdk` and supports DMs, rooms, threads, media, re
 
 Current packaged RemoteClaw releases ship the Matrix plugin in the box. You do not need to install anything; configuring `channels.matrix.*` (see [Setup](#setup)) is what activates it.
 
-For older builds or custom installs that exclude Matrix, install manually first:
+For older builds or custom installs that exclude Matrix, install a current npm
+package when one is published:
 
 ```bash
 remoteclaw plugins install @remoteclaw/matrix
-# or, from a local checkout
+```
+
+If npm reports the RemoteClaw-owned package as deprecated, use a current packaged
+RemoteClaw build or a local checkout until a newer npm package is published.
+
+From a local checkout:
+
+```bash
 remoteclaw plugins install ./path/to/local/matrix-plugin
 ```
 
@@ -189,6 +197,24 @@ Matrix reply streaming is opt-in. `streaming` controls how RemoteClaw delivers t
 }
 ```
 
+To keep live answer previews but hide interim tool/progress lines, use object
+form:
+
+```json5
+{
+  channels: {
+    matrix: {
+      streaming: {
+        mode: "partial",
+        preview: {
+          toolProgress: false,
+        },
+      },
+    },
+  },
+}
+```
+
 | `streaming`       | Behavior                                                                                                                                                            |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `"off"` (default) | Wait for the full reply, send once. `true` ↔ `"partial"`, `false` ↔ `"off"`.                                                                                        |
@@ -206,7 +232,14 @@ Notes:
 
 - If a preview grows past Matrix's per-event size limit, RemoteClaw stops preview streaming and falls back to final-only delivery.
 - Media replies always send attachments normally. If a stale preview can no longer be reused safely, RemoteClaw redacts it before sending the final media reply.
+- Tool-progress preview updates are enabled by default when Matrix preview streaming is active. Set `streaming.preview.toolProgress: false` to keep preview edits for answer text but leave tool progress on the normal delivery path.
 - Preview edits cost extra Matrix API calls. Leave `streaming: "off"` if you want the most conservative rate-limit profile.
+
+## Approval metadata
+
+Matrix native approval prompts are normal `m.room.message` events with RemoteClaw-specific custom event content under `com.remoteclaw.approval`. Matrix permits custom event-content keys, so stock clients still render the text body while RemoteClaw-aware clients can read the structured approval id, kind, state, available decisions, and exec/plugin details.
+
+When an approval prompt is too long for one Matrix event, RemoteClaw chunks the visible text and attaches `com.remoteclaw.approval` to the first chunk only. Reactions for allow/deny decisions are bound to that first event, so long prompts keep the same approval target as single-event prompts.
 
 ### Self-hosted push rules for quiet finalized previews
 
@@ -846,13 +879,14 @@ Allowlist-style fields (`groupAllowFrom`, `dm.allowFrom`, `groups.<room>.users`)
 - `threadBindings`: per-channel overrides for thread-bound session routing and lifecycle.
 - `startupVerification`: automatic self-verification request mode on startup (`if-unverified`, `off`).
 - `startupVerificationCooldownHours`: cooldown before retrying automatic startup verification requests.
-- `textChunkLimit`: outbound message chunk size in characters (applies when `chunkMode` is `length`).
-- `chunkMode`: `length` splits messages by character count; `newline` splits at line boundaries.
-- `responsePrefix`: optional string prepended to all outbound replies for this channel.
-- `ackReaction`: optional ack reaction override for this channel/account.
-- `ackReactionScope`: optional ack reaction scope override (`group-mentions`, `group-all`, `direct`, `all`, `none`, `off`).
-- `reactionNotifications`: inbound reaction notification mode (`own`, `off`).
-- `mediaMaxMb`: media size cap in MB for outbound sends and inbound media processing.
+- `streaming`: `"off"` (default), `"partial"`, `"quiet"`, or object form `{ mode, preview: { toolProgress } }`. `true` ↔ `"partial"`, `false` ↔ `"off"`.
+- `blockStreaming`: when `true`, completed assistant blocks are kept as separate progress messages.
+- `markdown`: optional Markdown rendering config for outbound text.
+- `responsePrefix`: optional string prepended to outbound replies.
+- `textChunkLimit`: outbound chunk size in characters when `chunkMode: "length"`. Default: `4000`.
+- `chunkMode`: `"length"` (default, splits by character count) or `"newline"` (splits at line boundaries).
+- `historyLimit`: number of recent room messages included as `InboundHistory` when a room message triggers the agent. Falls back to `messages.groupChat.historyLimit`; effective default `0` (disabled).
+- `mediaMaxMb`: media size cap in MB for outbound sends and inbound processing.
 - `autoJoin`: invite auto-join policy (`always`, `allowlist`, `off`). Default: `off`. Applies to all Matrix invites, including DM-style invites.
 - `autoJoinAllowlist`: rooms/aliases allowed when `autoJoin` is `allowlist`. Alias entries are resolved to room IDs during invite handling; RemoteClaw does not trust alias state claimed by the invited room.
 - `dm`: DM policy block (`enabled`, `policy`, `allowFrom`, `sessionScope`, `threadReplies`).
@@ -860,19 +894,16 @@ Allowlist-style fields (`groupAllowFrom`, `dm.allowFrom`, `groups.<room>.users`)
 - `dm.allowFrom`: entries should be full Matrix user IDs unless you already resolved them through live directory lookup.
 - `dm.sessionScope`: `per-user` (default) or `per-room`. Use `per-room` when you want each Matrix DM room to keep separate context even if the peer is the same.
 - `dm.threadReplies`: DM-only thread policy override (`off`, `inbound`, `always`). It overrides the top-level `threadReplies` setting for both reply placement and session isolation in DMs.
-- `execApprovals`: Matrix-native exec approval delivery (`enabled`, `approvers`, `target`, `agentFilter`, `sessionFilter`).
-- `execApprovals.approvers`: Matrix user IDs allowed to approve exec requests. Optional when `dm.allowFrom` already identifies the approvers.
-- `execApprovals.target`: `dm | channel | both` (default: `dm`).
 - `accounts`: named per-account overrides. Top-level `channels.matrix` values act as defaults for these entries.
-- `groups`: per-room policy map. Prefer room IDs or aliases; unresolved room names are ignored at runtime. Session/group identity uses the stable room ID after resolution.
-- `groups.<room>.account`: restrict one inherited room entry to a specific Matrix account in multi-account setups.
-- `groups.<room>.allowBots`: room-level override for configured-bot senders (`true` or `"mentions"`).
-- `groups.<room>.users`: per-room sender allowlist.
-- `groups.<room>.tools`: per-room tool allow/deny overrides.
-- `groups.<room>.autoReply`: room-level mention-gating override. `true` disables mention requirements for that room; `false` forces them back on.
-- `groups.<room>.skills`: optional room-level skill filter.
-- `groups.<room>.systemPrompt`: optional room-level system prompt snippet.
-- `rooms`: legacy alias for `groups`.
+
+### Reaction settings
+
+- `ackReaction`: ack reaction override for this channel/account.
+- `ackReactionScope`: scope override (`"group-mentions"` default, `"group-all"`, `"direct"`, `"all"`, `"none"`, `"off"`).
+- `reactionNotifications`: inbound reaction notification mode (`"own"` default, `"off"`).
+
+### Tooling and per-room overrides
+
 - `actions`: per-action tool gating (`messages`, `reactions`, `pins`, `profile`, `memberInfo`, `channelInfo`, `verification`).
 - `groups`: per-room policy map. Session identity uses the stable room ID after resolution. (`rooms` is a legacy alias.)
   - `groups.<room>.account`: restrict one inherited room entry to a specific account.

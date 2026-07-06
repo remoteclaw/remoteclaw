@@ -34,6 +34,14 @@ vi.mock("../config/config.js", async () => {
   };
 });
 
+vi.mock("../config/io.js", async () => {
+  const actual = await vi.importActual<typeof import("../config/io.js")>("../config/io.js");
+  return {
+    ...actual,
+    getRuntimeConfig: () => loadConfigMock(),
+  };
+});
+
 vi.mock("../infra/net/fetch-guard.js", () => ({
   fetchWithSsrFGuard: (...args: unknown[]) => fetchWithSsrFGuardMock(...args),
 }));

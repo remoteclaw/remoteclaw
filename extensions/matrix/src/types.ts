@@ -91,7 +91,7 @@ export type MatrixConfig = {
   dm?: MatrixDmConfig;
   /** Room config allowlist keyed by room ID or alias (names resolved to IDs when possible). */
   groups?: Record<string, MatrixRoomConfig>;
-  /** Room config allowlist keyed by room ID or alias. Legacy; use groups. */
+  /** @deprecated Use groups. */
   rooms?: Record<string, MatrixRoomConfig>;
   /** Per-action tool gating (default: true for all). */
   actions?: MatrixActionConfig;

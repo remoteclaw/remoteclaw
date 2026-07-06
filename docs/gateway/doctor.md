@@ -74,6 +74,7 @@ cat ~/.remoteclaw/remoteclaw.json
     - UI protocol freshness check (rebuilds Control UI when the protocol schema is newer).
     - Health check + restart prompt.
     - Skills status summary (eligible/missing/blocked) and plugin status.
+
   </Accordion>
   <Accordion title="Config and migrations">
     - Config normalization for legacy values.
@@ -86,14 +87,18 @@ cat ~/.remoteclaw/remoteclaw.json
     - Legacy plugin manifest contract key migration (`speechProviders`, `realtimeTranscriptionProviders`, `realtimeVoiceProviders`, `mediaUnderstandingProviders`, `imageGenerationProviders`, `videoGenerationProviders`, `webFetchProviders`, `webSearchProviders` → `contracts`).
     - Legacy cron store migration (`jobId`, `schedule.cron`, top-level delivery/payload fields, payload `provider`, simple `notify: true` webhook fallback jobs).
     - Legacy agent runtime-policy migration to `agents.defaults.agentRuntime` and `agents.list[].agentRuntime`.
+    - Stale plugin config cleanup when plugins are enabled; when `plugins.enabled=false`, stale plugin references are treated as inert containment config and are preserved.
+
   </Accordion>
   <Accordion title="State and integrity">
     - Session lock file inspection and stale lock cleanup.
     - Session transcript repair for duplicated prompt-rewrite branches created by affected 2026.4.24 builds.
+    - Wedged subagent restart-recovery tombstone detection, with `--fix` support for clearing stale aborted recovery flags so startup does not keep treating the child as restart-aborted.
     - State integrity and permissions checks (sessions, transcripts, state dir).
     - Config file permission checks (chmod 600) when running locally.
     - Model auth health: checks OAuth expiry, can refresh expiring tokens, and reports auth-profile cooldown/disabled states.
     - Extra workspace dir detection (`~/remoteclaw`).
+
   </Accordion>
   <Accordion title="Gateway, services, and supervisors">
     - Sandbox image repair when sandboxing is enabled.
@@ -105,11 +110,13 @@ cat ~/.remoteclaw/remoteclaw.json
     - Embedded proxy environment cleanup for gateway services that captured shell `HTTP_PROXY` / `HTTPS_PROXY` / `NO_PROXY` values during install or update.
     - Gateway runtime best-practice checks (Node vs Bun, version-manager paths).
     - Gateway port collision diagnostics (default `18789`).
+
   </Accordion>
   <Accordion title="Auth, security, and pairing">
     - Security warnings for open DM policies.
     - Gateway auth checks for local token mode (offers token generation when no token source exists; does not overwrite token SecretRef configs).
     - Device pairing trouble detection (pending first-time pair requests, pending role/scope upgrades, stale local device-token cache drift, and paired-record auth drift).
+
   </Accordion>
   <Accordion title="Workspace and shell">
     - systemd linger check on Linux.
@@ -118,6 +125,7 @@ cat ~/.remoteclaw/remoteclaw.json
     - Memory search embedding provider readiness check (local model, remote API key, or QMD binary).
     - Source install checks (pnpm workspace mismatch, missing UI assets, missing tsx binary).
     - Writes updated config + wizard metadata.
+
   </Accordion>
 </AccordionGroup>
 

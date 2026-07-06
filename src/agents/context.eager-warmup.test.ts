@@ -26,6 +26,7 @@ describe("agents/context eager warmup", () => {
   it.each([
     ["models", ["node", "remoteclaw", "models", "set", "openai/gpt-5.4"]],
     ["agent", ["node", "remoteclaw", "agent", "--message", "ok"]],
+    ["memory", ["node", "remoteclaw", "memory", "search", "--json"]],
   ])("does not eager-load config for %s commands on import", async (_label, argv) => {
     process.argv = argv;
     await import("./context.js");

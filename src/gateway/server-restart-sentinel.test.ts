@@ -29,6 +29,9 @@ const mocks = vi.hoisted(() => ({
   enqueueSystemEvent: vi.fn(),
 }));
 
+vi.unmock("./server-restart-sentinel.js");
+vi.resetModules();
+
 vi.mock("../agents/agent-scope.js", () => ({
   resolveSessionAgentId: mocks.resolveSessionAgentId,
   resolveAgentRuntime: () => "claude",

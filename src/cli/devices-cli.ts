@@ -17,6 +17,7 @@ import {
 import { getTerminalTableWidth, renderTable } from "../terminal/table.js";
 import { theme } from "../terminal/theme.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../utils/message-channel.js";
+import { applyParentDefaultHelpAction } from "./program/parent-default-help.js";
 import { withProgress } from "./progress.js";
 
 type DevicesRpcOpts = {
@@ -477,4 +478,6 @@ export function registerDevicesCli(program: Command) {
         defaultRuntime.writeJson(result);
       }),
   );
+
+  applyParentDefaultHelpAction(devices);
 }

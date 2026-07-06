@@ -1,8 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-source "$ROOT_DIR/scripts/lib/live-docker-auth.sh"
+SCRIPT_ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="${REMOTECLAW_LIVE_DOCKER_REPO_ROOT:-$SCRIPT_ROOT_DIR}"
+ROOT_DIR="$(cd "$ROOT_DIR" && pwd)"
+TRUSTED_HARNESS_DIR="${REMOTECLAW_LIVE_DOCKER_TRUSTED_HARNESS_DIR:-${REMOTECLAW_LIVE_CODEX_TRUSTED_HARNESS_DIR:-$SCRIPT_ROOT_DIR}}"
+if [[ -z "$TRUSTED_HARNESS_DIR" || ! -d "$TRUSTED_HARNESS_DIR" ]]; then
+  echo "ERROR: trusted Codex harness directory not found: ${TRUSTED_HARNESS_DIR:-<empty>}." >&2
+  exit 1
+fi
+TRUSTED_HARNESS_DIR="$(cd "$TRUSTED_HARNESS_DIR" && pwd)"
+source "$TRUSTED_HARNESS_DIR/scripts/lib/live-docker-auth.sh"
 IMAGE_NAME="${REMOTECLAW_IMAGE:-remoteclaw:local}"
 LIVE_IMAGE_NAME="${REMOTECLAW_LIVE_IMAGE:-${IMAGE_NAME}-live}"
 CONFIG_DIR="${REMOTECLAW_CONFIG_DIR:-$HOME/.remoteclaw}"
@@ -12,6 +20,8 @@ CODEX_HARNESS_AUTH_MODE="${REMOTECLAW_LIVE_CODEX_HARNESS_AUTH:-codex-auth}"
 TEMP_DIRS=()
 DOCKER_USER="${REMOTECLAW_DOCKER_USER:-node}"
 DOCKER_HOME_MOUNT=()
+DOCKER_TRUSTED_HARNESS_MOUNT=()
+DOCKER_TRUSTED_HARNESS_CONTAINER_DIR=""
 DOCKER_EXTRA_ENV_FILES=()
 DOCKER_AUTH_PRESTAGED=0
 
@@ -80,6 +90,9 @@ if [[ -f "$PROFILE_FILE" && -r "$PROFILE_FILE" ]]; then
   PROFILE_MOUNT=(-v "$PROFILE_FILE":/home/node/.profile:ro)
   PROFILE_STATUS="$PROFILE_FILE"
 fi
+
+DOCKER_TRUSTED_HARNESS_CONTAINER_DIR="/trusted-harness"
+DOCKER_TRUSTED_HARNESS_MOUNT=(-v "$TRUSTED_HARNESS_DIR":"$DOCKER_TRUSTED_HARNESS_CONTAINER_DIR":ro)
 
 AUTH_FILES=()
 if [[ "$CODEX_HARNESS_AUTH_MODE" != "api-key" ]]; then
@@ -159,8 +172,9 @@ if [ "${REMOTECLAW_LIVE_CODEX_HARNESS_AUTH:-codex-auth}" != "api-key" ] && [ ! -
   echo "ERROR: missing ~/.codex/auth.json for Codex harness live test." >&2
   exit 1
 fi
+trusted_scripts_dir="${REMOTECLAW_LIVE_DOCKER_SCRIPTS_DIR:-/src/scripts}"
 if [ "${REMOTECLAW_LIVE_CODEX_HARNESS_AUTH:-codex-auth}" != "api-key" ]; then
-  node --import tsx /src/scripts/prepare-codex-ci-auth.ts "$HOME/.codex/auth.json"
+  node --import tsx "$trusted_scripts_dir/prepare-codex-ci-auth.ts" "$HOME/.codex/auth.json"
 fi
 if [ ! -x "$NPM_CONFIG_PREFIX/bin/codex" ]; then
   npm install -g @openai/codex
@@ -169,15 +183,23 @@ if [ "${REMOTECLAW_LIVE_CODEX_HARNESS_AUTH:-codex-auth}" = "api-key" ]; then
   printf '%s\n' "$OPENAI_API_KEY" | "$NPM_CONFIG_PREFIX/bin/codex" login --with-api-key >/dev/null
 fi
 tmp_dir="$(mktemp -d)"
-source /src/scripts/lib/live-docker-stage.sh
+source "$trusted_scripts_dir/lib/live-docker-stage.sh"
 remoteclaw_live_stage_source_tree "$tmp_dir"
 remoteclaw_live_stage_node_modules "$tmp_dir"
 remoteclaw_live_link_runtime_tree "$tmp_dir"
 remoteclaw_live_stage_state_dir "$tmp_dir/.remoteclaw-state"
+if [ -n "${REMOTECLAW_LIVE_CODEX_TRUSTED_HARNESS_DIR:-}" ] && [ -d "$REMOTECLAW_LIVE_CODEX_TRUSTED_HARNESS_DIR" ]; then
+  for harness_file in src/gateway/gateway-codex-harness.live-helpers.ts; do
+    if [ -f "$REMOTECLAW_LIVE_CODEX_TRUSTED_HARNESS_DIR/$harness_file" ]; then
+      mkdir -p "$(dirname "$tmp_dir/$harness_file")"
+      cp "$REMOTECLAW_LIVE_CODEX_TRUSTED_HARNESS_DIR/$harness_file" "$tmp_dir/$harness_file"
+    fi
+  done
+fi
 remoteclaw_live_prepare_staged_config
 cd "$tmp_dir"
 if [ "${REMOTECLAW_LIVE_CODEX_HARNESS_USE_CI_SAFE_CODEX_CONFIG:-1}" = "1" ]; then
-  node --import tsx /src/scripts/prepare-codex-ci-config.ts "$HOME/.codex/config.toml" "$tmp_dir"
+  node --import tsx "$trusted_scripts_dir/prepare-codex-ci-config.ts" "$HOME/.codex/config.toml" "$tmp_dir"
 fi
 codex_preflight_log="$tmp_dir/codex-preflight.log"
 codex_preflight_token="CODEX-PREFLIGHT-OK"
@@ -197,7 +219,7 @@ pnpm test:live ${REMOTECLAW_LIVE_CODEX_TEST_FILES:-src/gateway/gateway-codex-har
 EOF
 
 remoteclaw_live_codex_harness_append_build_extension codex
-"$ROOT_DIR/scripts/test-live-build-docker.sh"
+REMOTECLAW_LIVE_DOCKER_REPO_ROOT="$ROOT_DIR" "$TRUSTED_HARNESS_DIR/scripts/test-live-build-docker.sh"
 
 echo "==> Run Codex harness live test in Docker"
 echo "==> Model: ${REMOTECLAW_LIVE_CODEX_HARNESS_MODEL:-codex/gpt-5.5}"
@@ -235,6 +257,11 @@ DOCKER_RUN_ARGS=(docker run --rm -t \
   -e REMOTECLAW_LIVE_CODEX_HARNESS_SUBAGENT_ONLY="${REMOTECLAW_LIVE_CODEX_HARNESS_SUBAGENT_ONLY:-}" \
   -e REMOTECLAW_LIVE_CODEX_HARNESS_SUBAGENT_PROBE="${REMOTECLAW_LIVE_CODEX_HARNESS_SUBAGENT_PROBE:-1}" \
   -e REMOTECLAW_LIVE_CODEX_HARNESS_USE_CI_SAFE_CODEX_CONFIG="${REMOTECLAW_LIVE_CODEX_HARNESS_USE_CI_SAFE_CODEX_CONFIG:-1}" \
+  -e REMOTECLAW_CLI_BACKEND_LOG_OUTPUT="${REMOTECLAW_CLI_BACKEND_LOG_OUTPUT:-}" \
+  -e REMOTECLAW_TEST_CONSOLE="${REMOTECLAW_TEST_CONSOLE:-}" \
+  -e REMOTECLAW_LIVE_DOCKER_SCRIPTS_DIR="${DOCKER_TRUSTED_HARNESS_CONTAINER_DIR}/scripts" \
+  -e REMOTECLAW_LIVE_DOCKER_TRUSTED_HARNESS_DIR="$DOCKER_TRUSTED_HARNESS_CONTAINER_DIR" \
+  -e REMOTECLAW_LIVE_CODEX_TRUSTED_HARNESS_DIR="$DOCKER_TRUSTED_HARNESS_CONTAINER_DIR" \
   -e REMOTECLAW_LIVE_CODEX_BIND="${REMOTECLAW_LIVE_CODEX_BIND:-}" \
   -e REMOTECLAW_LIVE_CODEX_BIND_MODEL="${REMOTECLAW_LIVE_CODEX_BIND_MODEL:-}" \
   -e REMOTECLAW_LIVE_CODEX_TEST_FILES="${REMOTECLAW_LIVE_CODEX_TEST_FILES:-}" \
@@ -243,6 +270,7 @@ DOCKER_RUN_ARGS=(docker run --rm -t \
 remoteclaw_live_append_array DOCKER_RUN_ARGS DOCKER_AUTH_ENV
 remoteclaw_live_append_array DOCKER_RUN_ARGS DOCKER_EXTRA_ENV_FILES
 remoteclaw_live_append_array DOCKER_RUN_ARGS DOCKER_HOME_MOUNT
+remoteclaw_live_append_array DOCKER_RUN_ARGS DOCKER_TRUSTED_HARNESS_MOUNT
 DOCKER_RUN_ARGS+=(\
   -v "$CACHE_HOME_DIR":/home/node/.cache \
   -v "$ROOT_DIR":/src:ro \

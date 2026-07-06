@@ -252,9 +252,26 @@ Current consumers use it as a narrowing hint before broader plugin loading, so
 missing activation metadata usually only costs performance; it should not
 change correctness while legacy manifest ownership fallbacks still exist.
 
+Every plugin should set `activation.onStartup` intentionally as RemoteClaw moves
+away from implicit startup imports. Set it to `true` only when the plugin must
+run during Gateway startup. Set it to `false` when the plugin is inert at
+startup and should load only from narrower triggers. Omitting `onStartup` keeps
+the deprecated legacy implicit startup sidecar fallback for plugins with no
+static capability metadata; future versions may stop startup-loading those
+plugins unless they declare `activation.onStartup: true`. Plugin status and
+compatibility reports warn with `legacy-implicit-startup-sidecar` when a plugin
+still relies on that fallback.
+
+For migration testing, set
+`REMOTECLAW_DISABLE_LEGACY_IMPLICIT_STARTUP_SIDECARS=1` to disable only that
+deprecated fallback. This opt-in mode does not block explicit
+`activation.onStartup: true` plugins or plugins loaded by channel, config,
+agent-harness, memory, or other narrower activation triggers.
+
 ```json
 {
   "activation": {
+    "onStartup": false,
     "onProviders": ["openai"],
     "onCommands": ["models"],
     "onChannels": ["web"],
@@ -265,18 +282,21 @@ change correctness while legacy manifest ownership fallbacks still exist.
 }
 ```
 
-| Field              | Required | Type                                                 | What it means                                                                                                                                     |
-| ------------------ | -------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `onProviders`      | No       | `string[]`                                           | Provider ids that should include this plugin in activation/load plans.                                                                            |
-| `onAgentHarnesses` | No       | `string[]`                                           | Embedded agent harness runtime ids that should include this plugin in activation/load plans. Use top-level `cliBackends` for CLI backend aliases. |
-| `onCommands`       | No       | `string[]`                                           | Command ids that should include this plugin in activation/load plans.                                                                             |
-| `onChannels`       | No       | `string[]`                                           | Channel ids that should include this plugin in activation/load plans.                                                                             |
-| `onRoutes`         | No       | `string[]`                                           | Route kinds that should include this plugin in activation/load plans.                                                                             |
-| `onConfigPaths`    | No       | `string[]`                                           | Root-relative config paths that should include this plugin in startup/load plans when the path is present and not explicitly disabled.            |
-| `onCapabilities`   | No       | `Array<"provider" \| "channel" \| "tool" \| "hook">` | Broad capability hints used by control-plane activation planning. Prefer narrower fields when possible.                                           |
+| Field              | Required | Type                                                 | What it means                                                                                                                                                                                                                      |
+| ------------------ | -------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `onStartup`        | No       | `boolean`                                            | Explicit Gateway startup activation. Every plugin should set this. `true` imports the plugin during startup; `false` opts out of the deprecated implicit sidecar startup fallback unless another matched trigger requires loading. |
+| `onProviders`      | No       | `string[]`                                           | Provider ids that should include this plugin in activation/load plans.                                                                                                                                                             |
+| `onAgentHarnesses` | No       | `string[]`                                           | Embedded agent harness runtime ids that should include this plugin in activation/load plans. Use top-level `cliBackends` for CLI backend aliases.                                                                                  |
+| `onCommands`       | No       | `string[]`                                           | Command ids that should include this plugin in activation/load plans.                                                                                                                                                              |
+| `onChannels`       | No       | `string[]`                                           | Channel ids that should include this plugin in activation/load plans.                                                                                                                                                              |
+| `onRoutes`         | No       | `string[]`                                           | Route kinds that should include this plugin in activation/load plans.                                                                                                                                                              |
+| `onConfigPaths`    | No       | `string[]`                                           | Root-relative config paths that should include this plugin in startup/load plans when the path is present and not explicitly disabled.                                                                                             |
+| `onCapabilities`   | No       | `Array<"provider" \| "channel" \| "tool" \| "hook">` | Broad capability hints used by control-plane activation planning. Prefer narrower fields when possible.                                                                                                                            |
 
 Current live consumers:
 
+- Gateway startup planning uses `activation.onStartup` for explicit startup
+  import and opt-out of deprecated implicit sidecar startup fallback
 - command-triggered CLI planning falls back to legacy
   `commandAliases[].cliCommand` or `commandAliases[].name`
 - agent-runtime startup planning uses `activation.onAgentHarnesses` for
@@ -331,7 +351,16 @@ before runtime loads.
       {
         "id": "openai",
         "authMethods": ["api-key"],
-        "envVars": ["OPENAI_API_KEY"]
+        "envVars": ["OPENAI_API_KEY"],
+        "authEvidence": [
+          {
+            "type": "local-file-with-env",
+            "fileEnvVar": "OPENAI_CREDENTIALS_FILE",
+            "requiresAllEnv": ["OPENAI_PROJECT"],
+            "credentialMarker": "openai-local-credentials",
+            "source": "openai local credentials"
+          }
+        ]
       }
     ],
     "cliBackends": ["openai-cli"],
@@ -382,11 +411,29 @@ registration. These diagnostics are additive and do not reject legacy plugins.
 
 ### setup.providers reference
 
-| Field         | Required | Type       | What it means                                                                        |
-| ------------- | -------- | ---------- | ------------------------------------------------------------------------------------ |
-| `id`          | Yes      | `string`   | Provider id exposed during setup or onboarding. Keep normalized ids globally unique. |
-| `authMethods` | No       | `string[]` | Setup/auth method ids this provider supports without loading full runtime.           |
-| `envVars`     | No       | `string[]` | Env vars that generic setup/status surfaces can check before plugin runtime loads.   |
+| Field          | Required | Type       | What it means                                                                                    |
+| -------------- | -------- | ---------- | ------------------------------------------------------------------------------------------------ |
+| `id`           | Yes      | `string`   | Provider id exposed during setup or onboarding. Keep normalized ids globally unique.             |
+| `authMethods`  | No       | `string[]` | Setup/auth method ids this provider supports without loading full runtime.                       |
+| `envVars`      | No       | `string[]` | Env vars that generic setup/status surfaces can check before plugin runtime loads.               |
+| `authEvidence` | No       | `object[]` | Cheap local auth evidence checks for providers that can authenticate through non-secret markers. |
+
+`authEvidence` is for provider-owned local credential markers that can be
+verified without loading runtime code. These checks must stay cheap and local:
+no network calls, no keychain or secret-manager reads, no shell commands, and no
+provider API probes.
+
+Supported evidence entries:
+
+| Field              | Required | Type       | What it means                                                                                                  |
+| ------------------ | -------- | ---------- | -------------------------------------------------------------------------------------------------------------- |
+| `type`             | Yes      | `string`   | Currently `local-file-with-env`.                                                                               |
+| `fileEnvVar`       | No       | `string`   | Env var containing an explicit credential file path.                                                           |
+| `fallbackPaths`    | No       | `string[]` | Local credential file paths checked when `fileEnvVar` is absent or empty. Supports `${HOME}` and `${APPDATA}`. |
+| `requiresAnyEnv`   | No       | `string[]` | At least one listed env var must be non-empty before the evidence is valid.                                    |
+| `requiresAllEnv`   | No       | `string[]` | Every listed env var must be non-empty before the evidence is valid.                                           |
+| `credentialMarker` | Yes      | `string`   | Non-secret marker returned when the evidence is present.                                                       |
+| `source`           | No       | `string`   | User-facing source label for auth/status output.                                                               |
 
 ### setup fields
 
@@ -753,10 +800,12 @@ module:
 }
 ```
 
-Use it when setup, doctor, or configured-state flows need a cheap yes/no auth
-probe before the full channel plugin loads. The target export should be a small
-function that reads persisted state only; do not route it through the full
-channel runtime barrel.
+Use it when setup, doctor, status, or read-only presence flows need a cheap
+yes/no auth probe before the full channel plugin loads. Persisted auth state is
+not configured channel state: do not use this metadata to auto-enable plugins,
+repair runtime dependencies, or decide whether a channel runtime should load.
+The target export should be a small function that reads persisted state only; do
+not route it through the full channel runtime barrel.
 
 `remoteclaw.channel.configuredState` follows the same shape for cheap env-only
 configured checks:

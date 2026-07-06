@@ -536,12 +536,16 @@ export function findRegisteredCommandForPayload(
   registeredCommands: readonly MattermostRegisteredCommand[],
   payload: Pick<MattermostSlashCommandPayload, "command" | "team_id">,
 ): MattermostRegisteredCommand | null {
-  const trigger = normalizeSlashCommandTrigger(payload.command);
+  // Mattermost lowercases trigger words at registration and echoes the
+  // lowercased form in callbacks, so match case-insensitively to avoid
+  // rejecting a legitimate call for a mixed-case registered trigger. The token
+  // (compared constant-time by the caller) remains the actual auth gate.
+  const trigger = normalizeSlashCommandTrigger(payload.command).toLowerCase();
   if (!trigger) {
     return null;
   }
   for (const command of registeredCommands) {
-    if (command.trigger === trigger && command.teamId === payload.team_id) {
+    if (command.trigger.toLowerCase() === trigger && command.teamId === payload.team_id) {
       return command;
     }
   }

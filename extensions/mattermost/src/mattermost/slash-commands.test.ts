@@ -234,6 +234,20 @@ describe("slash-command token authorization", () => {
   it("fails closed when no commands are registered", () => {
     expect(isAuthorizedSlashCommandToken([], payload())).toBe(false);
   });
+
+  it("matches the trigger case-insensitively (MM lowercases registered triggers)", () => {
+    const mixed: MattermostRegisteredCommand = {
+      ...baseCmd,
+      trigger: "oc_MySkill",
+      token: "skill-token",
+    };
+    expect(
+      isAuthorizedSlashCommandToken(
+        [mixed],
+        payload({ command: "/oc_myskill", token: "skill-token" }),
+      ),
+    ).toBe(true);
+  });
 });
 
 describe("sanitizeSlashLogValue", () => {

@@ -129,6 +129,32 @@ describe("signal mention gating", () => {
     expect(getCapturedCtx()?.WasMentioned).toBe(false);
   });
 
+  it("allows explicitly configured Signal groups by group id without a mention", async () => {
+    const handler = createSignalEventHandler(
+      createBaseSignalEventHandlerDeps({
+        cfg: {
+          messages: {
+            inbound: { debounceMs: 0 },
+            groupChat: { mentionPatterns: ["@bot"] },
+          },
+          channels: {
+            signal: {
+              groupPolicy: "allowlist",
+              groupAllowFrom: ["group:g1"],
+              groups: { g1: {} },
+            },
+          },
+        } as unknown as RemoteClawConfig,
+        groupPolicy: "allowlist",
+        groupAllowFrom: ["group:g1"],
+      }),
+    );
+
+    await handler(makeGroupEvent({ message: "hello everyone" }));
+    expect(capturedCtx).toBeTruthy();
+    expect(getCapturedCtx()?.WasMentioned).toBe(false);
+  });
+
   it("records pending history for skipped group messages", async () => {
     capturedCtx = undefined;
     const { handler, groupHistories } = createMentionGatedHistoryHandler();
@@ -232,7 +258,7 @@ describe("signal mention gating", () => {
     );
 
     expect(capturedCtx).toBeTruthy();
-    const body = String(getCapturedCtx()?.Body ?? "");
+    const body = getCapturedCtx()?.Body ?? "";
     expect(body).toContain("@123e4567 hi @+15550002222");
     expect(body).not.toContain(placeholder);
   });
@@ -256,7 +282,7 @@ describe("signal mention gating", () => {
     );
 
     expect(capturedCtx).toBeTruthy();
-    expect(String(getCapturedCtx()?.Body ?? "")).toContain("@123e4567");
+    expect(getCapturedCtx()?.Body ?? "").toContain("@123e4567");
     expect(getCapturedCtx()?.WasMentioned).toBe(true);
   });
 });

@@ -383,3 +383,21 @@ select {
   outline: none;
   box-shadow: var(--focus-ring);
 }
+
+/*
+ * Screen-reader-only utility. Global so light-DOM components and the CSS
+ * class-drift gate resolve it; shadow-DOM components (e.g. modal-dialog)
+ * define their own scoped copy since global rules do not cross shadow roots.
+ */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

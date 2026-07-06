@@ -1,7 +1,7 @@
-import RemoteClawKit
 import Foundation
 import Network
 import Observation
+import RemoteClawKit
 
 @MainActor
 @Observable
@@ -13,7 +13,10 @@ final class GatewayDiscoveryModel {
     }
 
     struct DiscoveredGateway: Identifiable, Equatable {
-        var id: String { self.stableID }
+        var id: String {
+            self.stableID
+        }
+
         var name: String
         var endpoint: NWEndpoint
         var stableID: String

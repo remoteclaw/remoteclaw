@@ -156,6 +156,18 @@ remoteclaw gateway run
 Do not rely on writing only to `~/.remoteclaw/.env` for this variable; Node reads
 `NODE_EXTRA_CA_CERTS` at process startup.
 
+## Legacy environment variables
+
+RemoteClaw only reads `REMOTECLAW_*` environment variables. The legacy
+`CLAWDBOT_*` and `MOLTBOT_*` prefixes from earlier releases are silently
+ignored.
+
+If any are still set on the Gateway process at startup, RemoteClaw emits a
+single Node deprecation warning (`REMOTECLAW_LEGACY_ENV_VARS`) listing the
+detected prefixes and the total count. Rename each value by replacing the
+legacy prefix with `REMOTECLAW_` (for example `CLAWDBOT_GATEWAY_TOKEN` →
+`REMOTECLAW_GATEWAY_TOKEN`); the old names take no effect.
+
 ## Related
 
 - [Gateway configuration](/gateway/configuration)

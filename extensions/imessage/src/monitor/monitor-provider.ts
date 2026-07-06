@@ -354,36 +354,6 @@ export async function monitorIMessageProvider(opts: MonitorIMessageOpts = {}): P
       allowFrom,
       normalizeEntry: normalizeIMessageHandle,
     });
-    await recordInboundSession({
-      storePath,
-      sessionKey: ctxPayload.SessionKey ?? decision.route.sessionKey,
-      ctx: ctxPayload,
-      updateLastRoute:
-        !decision.isGroup && updateTarget
-          ? {
-              sessionKey: decision.route.mainSessionKey,
-              channel: "imessage",
-              to: updateTarget,
-              accountId: decision.route.accountId,
-              mainDmOwnerPin:
-                pinnedMainDmOwner && decision.senderNormalized
-                  ? {
-                      ownerRecipient: pinnedMainDmOwner,
-                      senderRecipient: decision.senderNormalized,
-                      onSkip: ({ ownerRecipient, senderRecipient }) => {
-                        logVerbose(
-                          `imessage: skip main-session last route for ${senderRecipient} (pinned owner ${ownerRecipient})`,
-                        );
-                      },
-                    }
-                  : undefined,
-            }
-          : undefined,
-      onRecordError: (err) => {
-        logVerbose(`imessage: failed updating session meta: ${String(err)}`);
-      },
-    });
-
     if (shouldLogVerbose()) {
       const preview = truncateUtf16Safe(String(ctxPayload.Body ?? ""), 200).replace(/\n/g, "\\n");
       logVerbose(
@@ -436,24 +406,6 @@ export async function monitorIMessageProvider(opts: MonitorIMessageOpts = {}): P
             : undefined,
       },
     });
-
-    if (!queuedFinal) {
-      if (decision.isGroup && decision.historyKey) {
-        clearHistoryEntriesIfEnabled({
-          historyMap: groupHistories,
-          historyKey: decision.historyKey,
-          limit: historyLimit,
-        });
-      }
-      return;
-    }
-    if (decision.isGroup && decision.historyKey) {
-      clearHistoryEntriesIfEnabled({
-        historyMap: groupHistories,
-        historyKey: decision.historyKey,
-        limit: historyLimit,
-      });
-    }
   }
 
   const handleMessage = async (raw: unknown) => {

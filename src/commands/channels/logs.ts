@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import { listChannelPlugins } from "../../channels/plugins/index.js";
 import { getResolvedLoggerSettings } from "../../logging.js";
+import { resolveLogFile } from "../../logging/log-tail.js";
 import { parseLogLine } from "../../logging/parse-log-line.js";
 import { defaultRuntime, type RuntimeEnv, writeRuntimeJson } from "../../runtime.js";
 import { normalizeLowercaseStringOrEmpty } from "../../shared/string-coerce.js";
@@ -85,7 +86,7 @@ export async function channelsLogsCommand(
       ? Math.floor(limitRaw)
       : DEFAULT_LIMIT;
 
-  const file = getResolvedLoggerSettings().file;
+  const file = await resolveLogFile(getResolvedLoggerSettings().file);
   const rawLines = await readTailLines(file, limit * 4);
   const parsed = rawLines
     .map(parseLogLine)

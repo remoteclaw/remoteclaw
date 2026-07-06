@@ -155,7 +155,23 @@ export const cronHandlers: GatewayRequestHandlers = {
       }
       throw err;
     }
-    const job = await context.cron.add(jobCreate);
+    let job: Awaited<ReturnType<typeof context.cron.add>>;
+    try {
+      job = await context.cron.add(jobCreate);
+    } catch (err) {
+      if (!(err instanceof TypeError) && !(err instanceof RangeError)) {
+        throw err;
+      }
+      respond(
+        false,
+        undefined,
+        errorShape(
+          ErrorCodes.INVALID_REQUEST,
+          `invalid cron.add params: ${formatErrorMessage(err)}`,
+        ),
+      );
+      return;
+    }
     context.logGateway.info("cron: job created", { jobId: job.id, schedule: jobCreate.schedule });
     respond(true, job, undefined);
   },
@@ -242,7 +258,23 @@ export const cronHandlers: GatewayRequestHandlers = {
         }
       }
     }
-    const job = await context.cron.update(jobId, patch);
+    let job: Awaited<ReturnType<typeof context.cron.update>>;
+    try {
+      job = await context.cron.update(jobId, patch);
+    } catch (err) {
+      if (!(err instanceof TypeError) && !(err instanceof RangeError)) {
+        throw err;
+      }
+      respond(
+        false,
+        undefined,
+        errorShape(
+          ErrorCodes.INVALID_REQUEST,
+          `invalid cron.update params: ${formatErrorMessage(err)}`,
+        ),
+      );
+      return;
+    }
     context.logGateway.info("cron: job updated", { jobId });
     respond(true, job, undefined);
   },

@@ -352,6 +352,9 @@ export async function sendChatMessage(
   const apiAttachments = hasAttachments
     ? attachments
         .map((att) => {
+          if (!att.dataUrl) {
+            return null;
+          }
           const parsed = dataUrlToBase64(att.dataUrl);
           if (!parsed) {
             return null;

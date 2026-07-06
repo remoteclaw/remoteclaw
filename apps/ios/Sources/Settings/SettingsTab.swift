@@ -1,6 +1,6 @@
-import RemoteClawKit
 import Network
 import Observation
+import RemoteClawKit
 import os
 import SwiftUI
 import UIKit
@@ -232,8 +232,7 @@ struct SettingsTab: View {
                                     .padding(10)
                                     .background(
                                         .thinMaterial,
-                                        in: RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    )
+                                        in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                             }
                         }
                     } label: {
@@ -255,15 +254,17 @@ struct SettingsTab: View {
                         self.featureToggle(
                             "Voice Wake",
                             isOn: self.$voiceWakeEnabled,
-                            help: "Enables wake-word activation to start a hands-free session.") { newValue in
-                                self.appModel.setVoiceWakeEnabled(newValue)
-                            }
+                            help: "Enables wake-word activation to start a hands-free session.")
+                        { newValue in
+                            self.appModel.setVoiceWakeEnabled(newValue)
+                        }
                         self.featureToggle(
                             "Talk Mode",
                             isOn: self.$talkEnabled,
-                            help: "Enables voice conversation mode with your connected RemoteClaw agent.") { newValue in
-                                self.appModel.setTalkEnabled(newValue)
-                            }
+                            help: "Enables voice conversation mode with your connected RemoteClaw agent.")
+                        { newValue in
+                            self.appModel.setTalkEnabled(newValue)
+                        }
                         Picker("Speech Language", selection: self.$talkSpeechLocale) {
                             ForEach(TalkSpeechLocale.supportedOptions()) { option in
                                 Text(option.label).tag(option.id)
@@ -286,8 +287,7 @@ struct SettingsTab: View {
                             "Allow Camera",
                             isOn: self.$cameraEnabled,
                             help: "Allows the gateway to request photos or short video clips "
-                                + "while RemoteClaw is foregrounded."
-                        )
+                                + "while RemoteClaw is foregrounded.")
 
                         HStack(spacing: 8) {
                             Text("Location Access")
@@ -298,8 +298,7 @@ struct SettingsTab: View {
                                     message: "Controls location permissions for RemoteClaw. "
                                         + "Off disables location tools, While Using enables "
                                         + "foreground location, and Always enables "
-                                        + "background location."
-                                )
+                                        + "background location.")
                             } label: {
                                 Image(systemName: "info.circle")
                                     .foregroundStyle(.secondary)
@@ -332,8 +331,7 @@ struct SettingsTab: View {
                                         ? (
                                             self.appModel.talkMode.gatewayTalkApiKeyConfigured
                                                 ? "Configured"
-                                                : "Not configured"
-                                        )
+                                                : "Not configured")
                                         : "Not loaded")
                                 LabeledContent(
                                     "Default Model",
@@ -350,7 +348,7 @@ struct SettingsTab: View {
                                 isOn: self.$talkButtonEnabled,
                                 help: "Shows the Talk control in the main toolbar.")
                             TextField("Default Share Instruction", text: self.$defaultShareInstruction, axis: .vertical)
-                                .lineLimit(2 ... 6)
+                                .lineLimit(2...6)
                                 .textInputAutocapitalization(.sentences)
                             HStack(spacing: 8) {
                                 Text("Default Share Instruction")
@@ -361,8 +359,7 @@ struct SettingsTab: View {
                                     self.activeFeatureHelp = FeatureHelp(
                                         title: "Default Share Instruction",
                                         message: "Appends this instruction when sharing content "
-                                            + "into RemoteClaw from iOS."
-                                    )
+                                            + "into RemoteClaw from iOS.")
                                 } label: {
                                     Image(systemName: "info.circle")
                                         .foregroundStyle(.secondary)
@@ -416,8 +413,7 @@ struct SettingsTab: View {
             } message: {
                 Text(
                     "This will disconnect, clear saved gateway connection + credentials, "
-                        + "and reopen the onboarding wizard."
-                )
+                        + "and reopen the onboarding wizard.")
             }
             .alert(item: self.$activeFeatureHelp) { help in
                 Alert(
@@ -607,8 +603,8 @@ struct SettingsTab: View {
         _ title: String,
         isOn: Binding<Bool>,
         help: String,
-        onChange: ((Bool) -> Void)? = nil
-    ) -> some View {
+        onChange: ((Bool) -> Void)? = nil) -> some View
+    {
         HStack(spacing: 8) {
             Toggle(title, isOn: isOn)
             Button {
@@ -726,8 +722,7 @@ struct SettingsTab: View {
         let hasPassword = !self.gatewayPassword.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         GatewayDiagnostics.log(
             "setup code applied host=\(host) port=\(resolvedPort ?? -1) "
-                + "tls=\(self.manualGatewayTLS) token=\(hasToken) password=\(hasPassword)"
-        )
+                + "tls=\(self.manualGatewayTLS) token=\(hasToken) password=\(hasPassword)")
         guard let port = resolvedPort else {
             self.setupStatusText = "Failed: invalid port"
             return
@@ -830,7 +825,7 @@ struct SettingsTab: View {
         }
         let trimmed = host.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
-        if self.manualGatewayTLS && trimmed.lowercased().hasSuffix(".ts.net") {
+        if self.manualGatewayTLS, trimmed.lowercased().hasSuffix(".ts.net") {
             return 443
         }
         return 18789
@@ -840,7 +835,7 @@ struct SettingsTab: View {
         let trimmed = host.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return false }
 
-        if Self.isTailnetHostOrIP(trimmed) && !Self.hasTailnetIPv4() {
+        if Self.isTailnetHostOrIP(trimmed), !Self.hasTailnetIPv4() {
             let msg = "Tailscale is off on this iPhone. Turn it on, then try again."
             self.setupStatusText = msg
             GatewayDiagnostics.log("preflight fail: tailnet missing host=\(trimmed)")
@@ -1056,4 +1051,5 @@ struct SettingsTab: View {
         return lines
     }
 }
+
 // swiftlint:enable type_body_length

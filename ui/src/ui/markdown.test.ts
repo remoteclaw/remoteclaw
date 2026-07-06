@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { i18n } from "../i18n/index.ts";
 import { md, toSanitizedMarkdownHtml } from "./markdown.ts";
 
 describe("toSanitizedMarkdownHtml", () => {
@@ -458,6 +459,23 @@ describe("toSanitizedMarkdownHtml", () => {
       const html = toSanitizedMarkdownHtml("```\ncode\n```");
       expect(html).toContain('class="code-block-copy"');
       expect(html).toContain("data-code=");
+    });
+
+    it("keeps localized copy labels fresh after locale changes", async () => {
+      const markdown = "```ts\nconst localizedCopy = true;\n```";
+      await i18n.setLocale("en");
+      const english = toSanitizedMarkdownHtml(markdown);
+
+      try {
+        await i18n.setLocale("zh-CN");
+        const chinese = toSanitizedMarkdownHtml(markdown);
+
+        expect(english).toContain(">Copy<");
+        expect(chinese).toContain(">复制<");
+        expect(chinese).not.toContain(">Copy<");
+      } finally {
+        await i18n.setLocale("en");
+      }
     });
 
     it("collapses JSON code blocks", () => {

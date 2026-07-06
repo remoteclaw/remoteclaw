@@ -1,6 +1,6 @@
-import RemoteClawKit
 import CoreLocation
 import Foundation
+import RemoteClawKit
 
 @MainActor
 final class LocationService: NSObject, CLLocationManagerDelegate, LocationServiceCommon {

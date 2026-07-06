@@ -27,6 +27,16 @@ describe("gateway codex harness live helpers", () => {
     expect(isExpectedCodexStatusCommandText(text)).toBe(true);
   });
 
+  it("accepts current status prose that reports healthy session context without the session id", () => {
+    const text = [
+      "Status: running on `openai/gpt-5.5` with low reasoning/text settings.",
+      "",
+      "Session context is healthy: `22k/272k` tokens used, `0` compactions, `53%` cache hit. Current workspace is `/tmp/remoteclaw-live-codex-harness/workspace/dev`.",
+    ].join("\n");
+
+    expect(isExpectedCodexStatusCommandText(text)).toBe(true);
+  });
+
   it("accepts current app-server status prose without the RemoteClaw prefix", () => {
     const text = [
       "Status: running on `openai/gpt-5.5` in `/tmp/remoteclaw-live-codex-harness/workspace/dev`.",
@@ -40,6 +50,13 @@ describe("gateway codex harness live helpers", () => {
   it("accepts current app-server status prose with session-is wording", () => {
     const text =
       "Status: running on `openai/gpt-5.5`, context at 22k/272k tokens (8%), no compactions. Session is `agent:dev:live-codex-harness`; execution is direct with elevated mode.";
+
+    expect(isExpectedCodexStatusCommandText(text)).toBe(true);
+  });
+
+  it("accepts compact session status prose emitted by current codex", () => {
+    const text =
+      "Session status: running on `openai/gpt-5.5`, context at 24k/272k (9%), no compactions, execution mode `direct`, reasoning `low`, text `low`.";
 
     expect(isExpectedCodexStatusCommandText(text)).toBe(true);
   });
@@ -105,6 +122,23 @@ describe("gateway codex harness live helpers", () => {
       "- `codex/gpt-5.4`",
       "",
       "I couldn’t get a fuller model catalog from the local `codex` CLI here.",
+    ].join("\n");
+
+    expect(
+      EXPECTED_CODEX_MODELS_COMMAND_TEXT.some((expectedText) => text.includes(expectedText)),
+    ).toBe(true);
+    expect(isExpectedCodexModelsCommandText(text)).toBe(true);
+  });
+
+  it("accepts the current Codex agent model list from the live harness", () => {
+    const text = [
+      "Available Codex agent models:",
+      "",
+      "- `dev`: `openai/gpt-5.5`",
+      "  - Runtime: `codex`",
+      "  - Configured: `false`",
+      "",
+      "No other agent models are currently exposed for this session.",
     ].join("\n");
 
     expect(
@@ -248,18 +282,6 @@ describe("gateway codex harness live helpers", () => {
     expect(
       EXPECTED_CODEX_MODELS_COMMAND_TEXT.some((expectedText) => text.includes(expectedText)),
     ).toBe(true);
-    expect(isExpectedCodexModelsCommandText(text)).toBe(true);
-  });
-
-  it("accepts the interactive TUI header summary from Docker live harness", () => {
-    const text = [
-      "`codex models` is interactive here and did not print a model list. It opened a Codex TUI session, which interpreted `models` as a prompt and replied:",
-      "",
-      "> Could you clarify what you want to do with “models”?",
-      "",
-      "The visible session header showed the current model as `gpt-5.5`.",
-    ].join("\n");
-
     expect(isExpectedCodexModelsCommandText(text)).toBe(true);
   });
 

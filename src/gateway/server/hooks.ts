@@ -42,6 +42,7 @@ export function createGatewayHooksRequestHandler(params: {
     });
     const mainSessionKey = resolveMainSessionKeyFromConfig();
     const jobId = randomUUID();
+    const runId = randomUUID();
     const now = Date.now();
     const delivery = value.deliver
       ? {
@@ -71,7 +72,6 @@ export function createGatewayHooksRequestHandler(params: {
       state: { nextRunAtMs: now },
     };
 
-    const runId = randomUUID();
     void (async () => {
       // `value.name` and the agent-derived summary/error below are untrusted and flow into the
       // MAIN session prompt, where the session-updates sink renders every line as `System: ...`
@@ -108,6 +108,16 @@ export function createGatewayHooksRequestHandler(params: {
           if (value.wakeMode === "now") {
             requestHeartbeatNow({ reason: `hook:${jobId}` });
           }
+        } else if (result.status === "ok" && !value.deliver) {
+          logHooks.info("hook agent run completed without announcement", {
+            sourcePath: value.sourcePath,
+            name: safeName,
+            runId,
+            jobId,
+            agentId: value.agentId,
+            sessionKey,
+            completedAt: new Date().toISOString(),
+          });
         }
       } catch (err) {
         logHooks.warn(`hook agent failed: ${String(err)}`);

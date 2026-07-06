@@ -88,6 +88,7 @@ export const createConfigIO = vi.fn(() => ({
 export const findLegacyGatewayServices = vi.fn().mockResolvedValue([]) as unknown as MockFn;
 export const uninstallLegacyGatewayServices = vi.fn().mockResolvedValue([]) as unknown as MockFn;
 export const findExtraGatewayServices = vi.fn().mockResolvedValue([]) as unknown as MockFn;
+export const findSystemGatewayServices = vi.fn().mockResolvedValue([]) as unknown as MockFn;
 export const renderGatewayServiceCleanupHints = vi
   .fn()
   .mockReturnValue(["cleanup"]) as unknown as MockFn;
@@ -170,6 +171,7 @@ vi.mock("../daemon/legacy.js", () => ({
 
 vi.mock("../daemon/inspect.js", () => ({
   findExtraGatewayServices,
+  findSystemGatewayServices,
   renderGatewayServiceCleanupHints,
 }));
 

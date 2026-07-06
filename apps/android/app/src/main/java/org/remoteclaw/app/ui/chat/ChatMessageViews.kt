@@ -1,9 +1,27 @@
 package org.remoteclaw.app.ui.chat
 
+import org.remoteclaw.app.chat.ChatMessage
+import org.remoteclaw.app.chat.ChatMessageContent
+import org.remoteclaw.app.chat.ChatPendingToolCall
+import org.remoteclaw.app.tools.ToolDisplayRegistry
+import org.remoteclaw.app.ui.mobileAccent
+import org.remoteclaw.app.ui.mobileAccentSoft
+import org.remoteclaw.app.ui.mobileBorder
+import org.remoteclaw.app.ui.mobileBorderStrong
+import org.remoteclaw.app.ui.mobileCallout
+import org.remoteclaw.app.ui.mobileCaption1
+import org.remoteclaw.app.ui.mobileCaption2
+import org.remoteclaw.app.ui.mobileCardSurface
+import org.remoteclaw.app.ui.mobileCodeBg
+import org.remoteclaw.app.ui.mobileCodeBorder
+import org.remoteclaw.app.ui.mobileCodeText
+import org.remoteclaw.app.ui.mobileText
+import org.remoteclaw.app.ui.mobileTextSecondary
+import org.remoteclaw.app.ui.mobileWarning
+import org.remoteclaw.app.ui.mobileWarningSoft
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,26 +43,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import org.remoteclaw.app.chat.ChatMessage
-import org.remoteclaw.app.chat.ChatMessageContent
-import org.remoteclaw.app.chat.ChatPendingToolCall
-import org.remoteclaw.app.tools.ToolDisplayRegistry
-import org.remoteclaw.app.ui.mobileAccent
-import org.remoteclaw.app.ui.mobileAccentSoft
-import org.remoteclaw.app.ui.mobileBorder
-import org.remoteclaw.app.ui.mobileBorderStrong
-import org.remoteclaw.app.ui.mobileCallout
-import org.remoteclaw.app.ui.mobileCaption1
-import org.remoteclaw.app.ui.mobileCaption2
-import org.remoteclaw.app.ui.mobileCardSurface
-import org.remoteclaw.app.ui.mobileCodeBg
-import org.remoteclaw.app.ui.mobileCodeBorder
-import org.remoteclaw.app.ui.mobileCodeText
-import org.remoteclaw.app.ui.mobileHeadline
-import org.remoteclaw.app.ui.mobileText
-import org.remoteclaw.app.ui.mobileTextSecondary
-import org.remoteclaw.app.ui.mobileWarning
-import org.remoteclaw.app.ui.mobileWarningSoft
 import java.util.Locale
 
 private data class ChatBubbleStyle(
@@ -110,7 +108,10 @@ private fun ChatBubbleContainer(
 }
 
 @Composable
-private fun ChatMessageBody(content: List<ChatMessageContent>, textColor: Color) {
+private fun ChatMessageBody(
+  content: List<ChatMessageContent>,
+  textColor: Color,
+) {
   Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
     for (part in content) {
       when (part.type) {
@@ -197,8 +198,8 @@ fun ChatStreamingAssistantBubble(text: String) {
 }
 
 @Composable
-private fun bubbleStyle(role: String): ChatBubbleStyle {
-  return when (role) {
+private fun bubbleStyle(role: String): ChatBubbleStyle =
+  when (role) {
     "user" ->
       ChatBubbleStyle(
         alignEnd = true,
@@ -223,18 +224,19 @@ private fun bubbleStyle(role: String): ChatBubbleStyle {
         roleColor = mobileTextSecondary,
       )
   }
-}
 
-private fun roleLabel(role: String): String {
-  return when (role) {
+private fun roleLabel(role: String): String =
+  when (role) {
     "user" -> "You"
     "system" -> "System"
     else -> "RemoteClaw"
   }
-}
 
 @Composable
-private fun ChatBase64Image(base64: String, mimeType: String?) {
+private fun ChatBase64Image(
+  base64: String,
+  mimeType: String?,
+) {
   val imageState = rememberBase64ImageState(base64)
   val image = imageState.image
 
@@ -267,7 +269,10 @@ private fun DotPulse(color: Color) {
 }
 
 @Composable
-private fun PulseDot(alpha: Float, color: Color) {
+private fun PulseDot(
+  alpha: Float,
+  color: Color,
+) {
   Surface(
     modifier = Modifier.size(6.dp).alpha(alpha),
     shape = CircleShape,
@@ -276,7 +281,10 @@ private fun PulseDot(alpha: Float, color: Color) {
 }
 
 @Composable
-fun ChatCodeBlock(code: String, language: String?) {
+fun ChatCodeBlock(
+  code: String,
+  language: String?,
+) {
   Surface(
     shape = RoundedCornerShape(8.dp),
     color = mobileCodeBg,

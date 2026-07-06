@@ -114,19 +114,16 @@ async function removeMember(
 
 export function registerFeishuPermTools(api: RemoteClawPluginApi) {
   if (!api.config) {
-    api.logger.debug?.("feishu_perm: No config available, skipping perm tools");
     return;
   }
 
   const accounts = listEnabledFeishuAccounts(api.config);
   if (accounts.length === 0) {
-    api.logger.debug?.("feishu_perm: No Feishu accounts configured, skipping perm tools");
     return;
   }
 
   const toolsCfg = resolveAnyEnabledFeishuToolsConfig(accounts);
   if (!toolsCfg.perm) {
-    api.logger.debug?.("feishu_perm: perm tool disabled in config (default: false)");
     return;
   }
 

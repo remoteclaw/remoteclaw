@@ -17,14 +17,18 @@ image uploads are supported. Reactions and polls are not yet supported.
 Tlon ships as a bundled plugin in current RemoteClaw releases, so normal packaged
 builds do not need a separate install.
 
-If you are on an older build or a custom install that excludes Tlon, install it
-manually:
+If you are on an older build or a custom install that excludes Tlon, install a
+current npm package when one is published:
 
-Install via CLI (npm registry):
+Install via CLI (npm registry, when a current package exists):
 
 ```bash
 remoteclaw plugins install @remoteclaw/tlon
 ```
+
+If npm reports the RemoteClaw-owned package as deprecated, use a current packaged
+RemoteClaw build or the local checkout path until a newer npm package is
+published.
 
 Local checkout (when running from a git repo):
 

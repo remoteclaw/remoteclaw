@@ -164,6 +164,9 @@ remoteclaw [--dev] [--profile <name>] <command>
     status
     index
     search
+  commitments
+    list
+    dismiss
   wiki
     status
     doctor

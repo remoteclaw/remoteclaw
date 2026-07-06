@@ -25,18 +25,6 @@ export const EXTENSION_PACKAGE_BOUNDARY_BASE_PATHS = {
   "remoteclaw/plugin-sdk/browser-maintenance": [
     "../packages/plugin-sdk/dist/extensions/browser/browser-maintenance.d.ts",
   ],
-  "remoteclaw/plugin-sdk/browser-config-runtime": [
-    "../dist/plugin-sdk/src/plugin-sdk/browser-config-runtime.d.ts",
-  ],
-  "remoteclaw/plugin-sdk/browser-node-runtime": [
-    "../dist/plugin-sdk/src/plugin-sdk/browser-node-runtime.d.ts",
-  ],
-  "remoteclaw/plugin-sdk/browser-setup-tools": [
-    "../dist/plugin-sdk/src/plugin-sdk/browser-setup-tools.d.ts",
-  ],
-  "remoteclaw/plugin-sdk/browser-security-runtime": [
-    "../dist/plugin-sdk/src/plugin-sdk/browser-security-runtime.d.ts",
-  ],
   "remoteclaw/plugin-sdk/channel-secret-basic-runtime": [
     "../packages/plugin-sdk/dist/src/plugin-sdk/channel-secret-basic-runtime.d.ts",
   ],

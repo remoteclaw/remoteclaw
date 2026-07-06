@@ -111,6 +111,10 @@ describe("route-args", () => {
       json: true,
       bindings: true,
     });
+    expect(parseAgentsListRouteArgs(["node", "remoteclaw", "agents"])).toEqual({
+      json: false,
+      bindings: false,
+    });
   });
 
   it("parses config routes", () => {

@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-source "$ROOT_DIR/scripts/lib/docker-build.sh"
+SCRIPT_ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="${REMOTECLAW_LIVE_DOCKER_REPO_ROOT:-$SCRIPT_ROOT_DIR}"
+ROOT_DIR="$(cd "$ROOT_DIR" && pwd)"
+source "$SCRIPT_ROOT_DIR/scripts/lib/docker-build.sh"
 IMAGE_NAME="${REMOTECLAW_IMAGE:-remoteclaw:local}"
 LIVE_IMAGE_NAME="${REMOTECLAW_LIVE_IMAGE:-${IMAGE_NAME}-live}"
 DOCKER_BUILD_EXTENSIONS="${REMOTECLAW_DOCKER_BUILD_EXTENSIONS:-${REMOTECLAW_EXTENSIONS:-}}"

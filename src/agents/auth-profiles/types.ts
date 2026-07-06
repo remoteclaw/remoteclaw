@@ -39,6 +39,11 @@ export type OAuthCredential = OAuthCredentials & {
   type: "oauth";
   provider: string;
   clientId?: string;
+  /**
+   * OAuth refresh tokens are not portable by default. Provider-owned flows may
+   * set this only when copying refresh material across agents is known safe.
+   */
+  copyToAgents?: boolean;
   email?: string;
   displayName?: string;
   managedBy?: ExternalOAuthManager;

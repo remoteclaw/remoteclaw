@@ -240,6 +240,11 @@ export type HookAgentPayload = {
 
 export type HookAgentDispatchPayload = Omit<HookAgentPayload, "sessionKey"> & {
   sessionKey: string;
+  // RemoteClaw fork: optional (upstream requires it). The fork keeps its own HTTP
+  // dispatch path (server-http.ts), which is not file-triggered and has no source
+  // path to report. `sourcePath` is log-only in the fork (server/hooks.ts) — the
+  // enforced trust boundary is the sanitizeInboundSystemTags rewrite, not this field.
+  sourcePath?: string;
   allowUnsafeExternalContent?: boolean;
 };
 

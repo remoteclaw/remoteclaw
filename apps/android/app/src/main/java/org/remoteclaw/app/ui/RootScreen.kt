@@ -1,11 +1,11 @@
 package org.remoteclaw.app.ui
 
+import org.remoteclaw.app.MainViewModel
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import org.remoteclaw.app.MainViewModel
 
 @Composable
 fun RootScreen(viewModel: MainViewModel) {

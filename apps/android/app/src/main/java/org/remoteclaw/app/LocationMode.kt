@@ -1,6 +1,8 @@
 package org.remoteclaw.app
 
-enum class LocationMode(val rawValue: String) {
+enum class LocationMode(
+  val rawValue: String,
+) {
   Off("off"),
   WhileUsing("whileUsing"),
   ;

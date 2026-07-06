@@ -4,11 +4,17 @@ import type { RemoteClawConfig } from "../../../src/config/config.js";
 import { loadConfig } from "../../../src/config/config.js";
 import { waitForAbortSignal } from "../../../src/infra/abort-signal.js";
 import { formatErrorMessage } from "../../../src/infra/errors.js";
-import { registerUnhandledRejectionHandler } from "../../../src/infra/unhandled-rejections.js";
+import {
+  registerUncaughtExceptionHandler,
+  registerUnhandledRejectionHandler,
+} from "../../../src/infra/unhandled-rejections.js";
 import type { RuntimeEnv } from "../../../src/runtime.js";
 import { resolveTelegramAccount } from "./accounts.js";
 import { resolveTelegramAllowedUpdates } from "./allowed-updates.js";
-import { isRecoverableTelegramNetworkError } from "./network-errors.js";
+import {
+  isRecoverableTelegramNetworkError,
+  isTelegramPollingNetworkError,
+} from "./network-errors.js";
 import { TelegramPollingSession } from "./polling-session.js";
 import { makeProxyFetch } from "./proxy.js";
 import { readTelegramUpdateOffset, writeTelegramUpdateOffset } from "./update-offset-store.js";
@@ -74,26 +80,34 @@ export async function monitorTelegramProvider(opts: MonitorTelegramOpts = {}) {
   const log = opts.runtime?.error ?? console.error;
   let pollingSession: TelegramPollingSession | undefined;
 
-  const unregisterHandler = registerUnhandledRejectionHandler((err) => {
+  const handlePollingNetworkFailure = (err: unknown, label: string) => {
     const isNetworkError = isRecoverableTelegramNetworkError(err, { context: "polling" });
-    if (isGrammyHttpError(err) && isNetworkError) {
-      log(`[telegram] Suppressed network error: ${formatErrorMessage(err)}`);
-      return true;
-    }
+    const isTelegramPollingError = isTelegramPollingNetworkError(err);
 
     const activeRunner = pollingSession?.activeRunner;
     if (isNetworkError && activeRunner && activeRunner.isRunning()) {
       pollingSession?.markForceRestarted();
       pollingSession?.abortActiveFetch();
       void activeRunner.stop().catch(() => {});
-      log(
-        `[telegram] Restarting polling after unhandled network error: ${formatErrorMessage(err)}`,
-      );
+      log("[telegram][diag] marking transport dirty after polling network failure");
+      log(`[telegram] Restarting polling after ${label}: ${formatErrorMessage(err)}`);
+      return true;
+    }
+
+    if (isGrammyHttpError(err) && isNetworkError && isTelegramPollingError) {
+      log(`[telegram] Suppressed network error: ${formatErrorMessage(err)}`);
       return true;
     }
 
     return false;
-  });
+  };
+
+  const unregisterUnhandledRejectionHandler = registerUnhandledRejectionHandler((err) =>
+    handlePollingNetworkFailure(err, "unhandled network error"),
+  );
+  const unregisterUncaughtExceptionHandler = registerUncaughtExceptionHandler((err) =>
+    handlePollingNetworkFailure(err, "uncaught network error"),
+  );
 
   try {
     const cfg = opts.config ?? loadConfig();
@@ -178,6 +192,7 @@ export async function monitorTelegramProvider(opts: MonitorTelegramOpts = {}) {
     });
     await pollingSession.runUntilAbort();
   } finally {
-    unregisterHandler();
+    unregisterUnhandledRejectionHandler();
+    unregisterUncaughtExceptionHandler();
   }
 }

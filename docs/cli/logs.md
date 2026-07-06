@@ -56,7 +56,7 @@ remoteclaw logs --url ws://127.0.0.1:18789 --token "$REMOTECLAW_GATEWAY_TOKEN"
 ## Notes
 
 - Use `--local-time` to render timestamps in your local timezone.
-- If the local loopback Gateway asks for pairing, `remoteclaw logs` falls back to the configured local log file automatically. Explicit `--url` targets do not use this fallback.
+- If the implicit local loopback Gateway asks for pairing, closes during connect, or times out before `logs.tail` answers, `remoteclaw logs` falls back to the configured Gateway file log automatically. Explicit `--url` targets do not use this fallback.
 
 ## Related
 

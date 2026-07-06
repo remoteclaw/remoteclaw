@@ -88,7 +88,7 @@ export type LegacyTtsConfigCompat = {
 export type TtsConfig = LegacyTtsConfigCompat & {
   /** Auto-TTS mode (preferred). */
   auto?: TtsAutoMode;
-  /** Legacy: enable auto-TTS when `auto` is not set. */
+  /** @deprecated Use auto. */
   enabled?: boolean;
   /** Apply TTS to final replies only or to all replies (tool/block/final). */
   mode?: TtsMode;

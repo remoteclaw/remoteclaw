@@ -128,7 +128,9 @@ enum RemoteClawChatTheme {
         #endif
     }
 
-    static var userText: Color { .white }
+    static var userText: Color {
+        .white
+    }
 
     static var assistantText: Color {
         #if os(macOS)

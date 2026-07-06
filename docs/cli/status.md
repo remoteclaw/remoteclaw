@@ -20,6 +20,8 @@ remoteclaw status --usage
 Notes:
 
 - `--deep` runs live probes (WhatsApp Web + Telegram + Discord + Slack + Signal).
+- Plain `remoteclaw status` stays on the fast read-only path and marks memory as `not checked` instead of unavailable when it skips memory inspection. Heavy security audit, plugin compatibility, and memory-vector probes are left to `remoteclaw status --all`, `remoteclaw status --deep`, `remoteclaw security audit`, and `remoteclaw memory status --deep`.
+- `status --json --all` reports memory details from the active memory plugin runtime selected by `plugins.slots.memory`. Custom memory plugins can leave built-in `agents.defaults.memorySearch.enabled` disabled and still report their own files, chunks, vector, and FTS state.
 - `--usage` prints normalized provider usage windows as `X% left`.
 - Session status output separates `Execution:` from `Runtime:`. `Execution` is the sandbox path (`direct`, `docker/*`), while `Runtime` tells you whether the session is using `RemoteClaw Pi Default`, `OpenAI Codex`, a CLI backend, or an ACP backend such as `codex (acp/acpx)`. See [Agent runtimes](/concepts/agent-runtimes) for the provider/model/runtime distinction.
 - MiniMax's raw `usage_percent` / `usagePercent` fields are remaining quota, so RemoteClaw inverts them before display; count-based fields win when present. `model_remains` responses prefer the chat-model entry, derive the window label from timestamps when needed, and include the model name in the plan label.

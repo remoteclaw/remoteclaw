@@ -333,7 +333,9 @@ export async function gatherDaemonStatus(
       }).catch(() => [])
     : [];
 
-  const timeoutMs = parseStrictPositiveInteger(opts.rpc.timeout ?? "10000") ?? 10_000;
+  const timeoutMs =
+    parseStrictPositiveInteger(opts.rpc.timeout ?? undefined) ??
+    Math.max(10_000, daemonCfg.gateway?.handshakeTimeoutMs ?? 0);
 
   const tlsEnabled = daemonCfg.gateway?.tls?.enabled === true;
   const shouldUseLocalTlsRuntime = opts.probe && !probeUrlOverride && tlsEnabled;

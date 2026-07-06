@@ -50,6 +50,43 @@ Disable all flags:
 REMOTECLAW_DIAGNOSTICS=0
 ```
 
+## Timeline artifacts
+
+The `timeline` flag writes structured startup and runtime timing events for
+external QA harnesses:
+
+```bash
+REMOTECLAW_DIAGNOSTICS=timeline \
+REMOTECLAW_DIAGNOSTICS_TIMELINE_PATH=/tmp/remoteclaw-timeline.jsonl \
+remoteclaw gateway run
+```
+
+You can also enable it in config:
+
+```json
+{
+  "diagnostics": {
+    "flags": ["timeline"]
+  }
+}
+```
+
+The timeline file path still comes from
+`REMOTECLAW_DIAGNOSTICS_TIMELINE_PATH`. When `timeline` is enabled only from
+config, the earliest config-loading spans are not emitted because RemoteClaw has
+not read config yet; subsequent startup spans use the config flag.
+
+`REMOTECLAW_DIAGNOSTICS=1`, `REMOTECLAW_DIAGNOSTICS=all`, and
+`REMOTECLAW_DIAGNOSTICS=*` also enable the timeline because they enable every
+diagnostics flag. Prefer `timeline` when you only want the JSONL timing
+artifact.
+
+Timeline records use the `remoteclaw.diagnostics.v1` envelope. Events can include
+process ids, phase names, span names, durations, plugin ids, dependency counts,
+event-loop delay samples, provider operation names, child-process exit state,
+and startup error names/messages. Treat timeline files as local diagnostics
+artifacts; review them before sharing outside your machine.
+
 ## Where logs go
 
 Flags emit logs into the standard diagnostics log file. By default:

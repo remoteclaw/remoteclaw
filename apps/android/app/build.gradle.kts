@@ -7,178 +7,168 @@ val androidStorePassword = providers.gradleProperty("REMOTECLAW_ANDROID_STORE_PA
 val androidKeyAlias = providers.gradleProperty("REMOTECLAW_ANDROID_KEY_ALIAS").orNull?.takeIf { it.isNotBlank() }
 val androidKeyPassword = providers.gradleProperty("REMOTECLAW_ANDROID_KEY_PASSWORD").orNull?.takeIf { it.isNotBlank() }
 val resolvedAndroidStoreFile =
-    androidStoreFile?.let { storeFilePath ->
-        if (storeFilePath.startsWith("~/")) {
-            "${System.getProperty("user.home")}/${storeFilePath.removePrefix("~/")}"
-        } else {
-            storeFilePath
-        }
+  androidStoreFile?.let { storeFilePath ->
+    if (storeFilePath.startsWith("~/")) {
+      "${System.getProperty("user.home")}/${storeFilePath.removePrefix("~/")}"
+    } else {
+      storeFilePath
     }
+  }
 
 val hasAndroidReleaseSigning =
-    listOf(resolvedAndroidStoreFile, androidStorePassword, androidKeyAlias, androidKeyPassword).all { it != null }
+  listOf(resolvedAndroidStoreFile, androidStorePassword, androidKeyAlias, androidKeyPassword).all { it != null }
 
 val wantsAndroidReleaseBuild =
-    gradle.startParameter.taskNames.any { taskName ->
-        taskName.contains("Release", ignoreCase = true) ||
-            Regex("""(^|:)(bundle|assemble)$""").containsMatchIn(taskName)
-    }
+  gradle.startParameter.taskNames.any { taskName ->
+    taskName.contains("Release", ignoreCase = true) ||
+      Regex("""(^|:)(bundle|assemble)$""").containsMatchIn(taskName)
+  }
 
 if (wantsAndroidReleaseBuild && !hasAndroidReleaseSigning) {
-    error(
-        "Missing Android release signing properties. Set REMOTECLAW_ANDROID_STORE_FILE, " +
-            "REMOTECLAW_ANDROID_STORE_PASSWORD, REMOTECLAW_ANDROID_KEY_ALIAS, and " +
-            "REMOTECLAW_ANDROID_KEY_PASSWORD in ~/.gradle/gradle.properties.",
-    )
+  error(
+    "Missing Android release signing properties. Set REMOTECLAW_ANDROID_STORE_FILE, " +
+      "REMOTECLAW_ANDROID_STORE_PASSWORD, REMOTECLAW_ANDROID_KEY_ALIAS, and " +
+      "REMOTECLAW_ANDROID_KEY_PASSWORD in ~/.gradle/gradle.properties.",
+  )
 }
 
 plugins {
-    id("com.android.application")
-    id("org.jlleitschuh.gradle.ktlint")
-    id("org.jetbrains.kotlin.plugin.compose")
-    id("org.jetbrains.kotlin.plugin.serialization")
+  alias(libs.plugins.android.application)
+  alias(libs.plugins.ktlint)
+  alias(libs.plugins.kotlin.compose)
+  alias(libs.plugins.kotlin.serialization)
 }
 
 android {
-    namespace = "org.remoteclaw.app"
-    compileSdk = 36
+  namespace = "org.remoteclaw.app"
+  compileSdk = 36
 
-    // Release signing is local-only; keep the keystore path and passwords out of the repo.
-    signingConfigs {
-        if (hasAndroidReleaseSigning) {
-            create("release") {
-                storeFile = project.file(checkNotNull(resolvedAndroidStoreFile))
-                storePassword = checkNotNull(androidStorePassword)
-                keyAlias = checkNotNull(androidKeyAlias)
-                keyPassword = checkNotNull(androidKeyPassword)
-            }
-        }
+  // Release signing is local-only; keep the keystore path and passwords out of the repo.
+  signingConfigs {
+    if (hasAndroidReleaseSigning) {
+      create("release") {
+        storeFile = project.file(checkNotNull(resolvedAndroidStoreFile))
+        storePassword = checkNotNull(androidStorePassword)
+        keyAlias = checkNotNull(androidKeyAlias)
+        keyPassword = checkNotNull(androidKeyPassword)
+      }
     }
+  }
 
-    sourceSets {
-        getByName("main") {
-            assets.directories.add("../../shared/RemoteClawKit/Sources/RemoteClawKit/Resources")
-        }
+  sourceSets {
+    getByName("main") {
+      assets.directories.add("../../shared/RemoteClawKit/Sources/RemoteClawKit/Resources")
     }
+  }
 
-    defaultConfig {
-        applicationId = "org.remoteclaw.app"
-        minSdk = 31
-        targetSdk = 36
-        versionCode = 2026042600
-        versionName = "2026.4.26"
-        ndk {
-            // Support all major ABIs — native libs are tiny (~47 KB per ABI)
-            abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
-        }
+  defaultConfig {
+    applicationId = "org.remoteclaw.app"
+    minSdk = 31
+    targetSdk = 36
+    versionCode = 2026042900
+    versionName = "2026.4.29"
+    ndk {
+      // Support all major ABIs — native libs are tiny (~47 KB per ABI)
+      abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
     }
+  }
 
-    flavorDimensions += "store"
+  flavorDimensions += "store"
 
-    productFlavors {
-        create("play") {
-            dimension = "store"
-            buildConfigField("boolean", "REMOTECLAW_ENABLE_SMS", "false")
-            buildConfigField("boolean", "REMOTECLAW_ENABLE_CALL_LOG", "false")
-        }
-        create("thirdParty") {
-            dimension = "store"
-            buildConfigField("boolean", "REMOTECLAW_ENABLE_SMS", "true")
-            buildConfigField("boolean", "REMOTECLAW_ENABLE_CALL_LOG", "true")
-        }
+  productFlavors {
+    create("play") {
+      dimension = "store"
     }
-
-    buildTypes {
-        release {
-            if (hasAndroidReleaseSigning) {
-                signingConfig = signingConfigs.getByName("release")
-            }
-            isMinifyEnabled = true
-            isShrinkResources = true
-            ndk {
-                debugSymbolLevel = "SYMBOL_TABLE"
-            }
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-        }
-        debug {
-            isMinifyEnabled = false
-        }
+    create("thirdParty") {
+      dimension = "store"
     }
+  }
 
-    buildFeatures {
-        compose = true
-        buildConfig = true
+  buildTypes {
+    release {
+      if (hasAndroidReleaseSigning) {
+        signingConfig = signingConfigs.getByName("release")
+      }
+      isMinifyEnabled = true
+      isShrinkResources = true
+      ndk {
+        debugSymbolLevel = "SYMBOL_TABLE"
+      }
+      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
     }
+    debug {
+      isMinifyEnabled = false
+    }
+  }
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
+  buildFeatures {
+    compose = true
+    buildConfig = true
+  }
 
-    packaging {
-        resources {
-            excludes +=
-                setOf(
-                    "/META-INF/{AL2.0,LGPL2.1}",
-                    "/META-INF/*.version",
-                    "/META-INF/LICENSE*.txt",
-                    "DebugProbesKt.bin",
-                    "kotlin-tooling-metadata.json",
-                    "org/bouncycastle/pqc/crypto/picnic/lowmcL1.bin.properties",
-                    "org/bouncycastle/pqc/crypto/picnic/lowmcL3.bin.properties",
-                    "org/bouncycastle/pqc/crypto/picnic/lowmcL5.bin.properties",
-                    "org/bouncycastle/x509/CertPathReviewerMessages*.properties",
-                )
-        }
-    }
+  compileOptions {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+  }
 
-    lint {
-        disable +=
-            setOf(
-                "AndroidGradlePluginVersion",
-                "GradleDependency",
-                "IconLauncherShape",
-                "NewerVersionAvailable",
-            )
-        warningsAsErrors = true
+  packaging {
+    resources {
+      excludes +=
+        setOf(
+          "/META-INF/{AL2.0,LGPL2.1}",
+          "/META-INF/*.version",
+          "/META-INF/LICENSE*.txt",
+          "DebugProbesKt.bin",
+          "kotlin-tooling-metadata.json",
+          "org/bouncycastle/pqc/crypto/picnic/lowmcL1.bin.properties",
+          "org/bouncycastle/pqc/crypto/picnic/lowmcL3.bin.properties",
+          "org/bouncycastle/pqc/crypto/picnic/lowmcL5.bin.properties",
+          "org/bouncycastle/x509/CertPathReviewerMessages*.properties",
+        )
     }
+  }
 
-    testOptions {
-        unitTests.isIncludeAndroidResources = true
-    }
+  lint {
+    lintConfig = file("lint.xml")
+    warningsAsErrors = true
+  }
+
+  testOptions {
+    unitTests.isIncludeAndroidResources = true
+  }
 }
 
 androidComponents {
-    onVariants { variant ->
-        variant.outputs
-            .filterIsInstance<VariantOutputImpl>()
-            .forEach { output ->
-                val versionName = output.versionName.orNull ?: "0"
-                val buildType = variant.buildType
-                val flavorName = variant.flavorName?.takeIf { it.isNotBlank() }
-                val outputFileName =
-                    if (flavorName == null) {
-                        "remoteclaw-$versionName-$buildType.apk"
-                    } else {
-                        "remoteclaw-$versionName-$flavorName-$buildType.apk"
-                    }
-                output.outputFileName = outputFileName
-            }
-    }
+  onVariants { variant ->
+    variant.outputs
+      .filterIsInstance<VariantOutputImpl>()
+      .forEach { output ->
+        val versionName = output.versionName.orNull ?: "0"
+        val buildType = variant.buildType
+        val flavorName = variant.flavorName?.takeIf { it.isNotBlank() }
+        val outputFileName =
+          if (flavorName == null) {
+            "remoteclaw-$versionName-$buildType.apk"
+          } else {
+            "remoteclaw-$versionName-$flavorName-$buildType.apk"
+          }
+        output.outputFileName = outputFileName
+      }
+  }
 }
 kotlin {
-    compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-        allWarningsAsErrors.set(true)
-    }
+  compilerOptions {
+    jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    allWarningsAsErrors.set(true)
+  }
 }
 
 ktlint {
-    android.set(true)
-    ignoreFailures.set(false)
-    filter {
-        exclude("**/build/**")
-    }
+  android.set(true)
+  ignoreFailures.set(false)
+  filter {
+    exclude("**/build/**")
+  }
 }
 
 dependencies {
@@ -237,55 +227,55 @@ dependencies {
 }
 
 tasks.withType<Test>().configureEach {
-    useJUnitPlatform()
+  useJUnitPlatform()
 }
 
 androidComponents {
-    onVariants(selector().withBuildType("release")) { variant ->
-        val variantName = variant.name
-        val variantNameCapitalized = variantName.replaceFirstChar(Char::titlecase)
-        val stripTaskName = "strip${variantNameCapitalized}DnsjavaServiceDescriptor"
-        val mergeTaskName = "merge${variantNameCapitalized}JavaResource"
-        val minifyTaskName = "minify${variantNameCapitalized}WithR8"
-        val mergedJar =
-            layout.buildDirectory.file(
-                "intermediates/merged_java_res/$variantName/$mergeTaskName/base.jar",
-            )
+  onVariants(selector().withBuildType("release")) { variant ->
+    val variantName = variant.name
+    val variantNameCapitalized = variantName.replaceFirstChar(Char::titlecase)
+    val stripTaskName = "strip${variantNameCapitalized}DnsjavaServiceDescriptor"
+    val mergeTaskName = "merge${variantNameCapitalized}JavaResource"
+    val minifyTaskName = "minify${variantNameCapitalized}WithR8"
+    val mergedJar =
+      layout.buildDirectory.file(
+        "intermediates/merged_java_res/$variantName/$mergeTaskName/base.jar",
+      )
 
-        val stripTask =
-            tasks.register(stripTaskName) {
-                inputs.file(mergedJar)
-                outputs.file(mergedJar)
+    val stripTask =
+      tasks.register(stripTaskName) {
+        inputs.file(mergedJar)
+        outputs.file(mergedJar)
 
-                doLast {
-                    val jarFile = mergedJar.get().asFile
-                    if (!jarFile.exists()) {
-                        return@doLast
-                    }
+        doLast {
+          val jarFile = mergedJar.get().asFile
+          if (!jarFile.exists()) {
+            return@doLast
+          }
 
-                    val unpackDir = temporaryDir.resolve("merged-java-res")
-                    delete(unpackDir)
-                    copy {
-                        from(zipTree(jarFile))
-                        into(unpackDir)
-                        exclude(dnsjavaInetAddressResolverService)
-                    }
-                    delete(jarFile)
-                    ant.invokeMethod(
-                        "zip",
-                        mapOf(
-                            "destfile" to jarFile.absolutePath,
-                            "basedir" to unpackDir.absolutePath,
-                        ),
-                    )
-                }
-            }
-
-        tasks.matching { it.name == mergeTaskName }.configureEach {
-            finalizedBy(stripTask)
+          val unpackDir = temporaryDir.resolve("merged-java-res")
+          delete(unpackDir)
+          copy {
+            from(zipTree(jarFile))
+            into(unpackDir)
+            exclude(dnsjavaInetAddressResolverService)
+          }
+          delete(jarFile)
+          ant.invokeMethod(
+            "zip",
+            mapOf(
+              "destfile" to jarFile.absolutePath,
+              "basedir" to unpackDir.absolutePath,
+            ),
+          )
         }
-        tasks.matching { it.name == minifyTaskName }.configureEach {
-            dependsOn(stripTask)
-        }
+      }
+
+    tasks.matching { it.name == mergeTaskName }.configureEach {
+      finalizedBy(stripTask)
     }
+    tasks.matching { it.name == minifyTaskName }.configureEach {
+      dependsOn(stripTask)
+    }
+  }
 }

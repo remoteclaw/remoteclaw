@@ -151,7 +151,7 @@ Migration sources are plugins. A plugin declares its provider ids in `remoteclaw
 
 At runtime the plugin calls `api.registerMigrationProvider(...)`. The provider implements `detect`, `plan`, and `apply`. Core owns CLI orchestration, backup policy, prompts, JSON output, and conflict preflight. Core passes the reviewed plan into `apply(ctx, plan)`, and providers may rebuild the plan only when that argument is absent for compatibility.
 
-Provider plugins can use `remoteclaw/plugin-sdk/migration` for item construction and summary counts, plus `remoteclaw/plugin-sdk/migration-runtime` for conflict-aware file copies, archive-only report copies, and migration reports.
+Provider plugins can use `remoteclaw/plugin-sdk/migration` for item construction and summary counts, plus `remoteclaw/plugin-sdk/migration-runtime` for conflict-aware file copies, archive-only report copies, cached config-runtime wrappers, and migration reports.
 
 ## Onboarding integration
 

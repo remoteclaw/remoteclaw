@@ -3,6 +3,7 @@ import { Type } from "typebox";
 import { loadConfig } from "../../config/config.js";
 import { callGateway } from "../../gateway/call.js";
 import { normalizeAgentId, resolveAgentIdFromSessionKey } from "../../routing/session-key.js";
+import { annotateInterSessionPromptText } from "../../sessions/input-provenance.js";
 import { SESSION_LABEL_MAX_LENGTH } from "../../sessions/session-label.js";
 import {
   type GatewayMessageChannel,
@@ -221,20 +222,21 @@ export function createSessionsSendTool(opts?: {
         requesterChannel: opts?.agentChannel,
         targetSessionKey: displayKey,
       });
+      const inputProvenance = {
+        kind: "inter_session" as const,
+        sourceSessionKey: opts?.agentSessionKey,
+        sourceChannel: opts?.agentChannel,
+        sourceTool: "sessions_send",
+      };
       const sendParams = {
-        message,
+        message: annotateInterSessionPromptText(message, inputProvenance),
         sessionKey: resolvedKey,
         idempotencyKey,
         deliver: false,
         channel: INTERNAL_MESSAGE_CHANNEL,
         lane: AGENT_LANE_NESTED,
         extraSystemPrompt: agentMessageContext,
-        inputProvenance: {
-          kind: "inter_session",
-          sourceSessionKey: opts?.agentSessionKey,
-          sourceChannel: opts?.agentChannel,
-          sourceTool: "sessions_send",
-        },
+        inputProvenance,
       };
       const requesterSessionKey = opts?.agentSessionKey;
       const requesterChannel = opts?.agentChannel;

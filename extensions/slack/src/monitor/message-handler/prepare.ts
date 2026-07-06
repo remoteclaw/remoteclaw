@@ -50,7 +50,7 @@ import {
   resolveSlackAllowListMatch,
   resolveSlackUserAllowed,
 } from "../allow-list.js";
-import { resolveSlackEffectiveAllowFrom } from "../auth.js";
+import { authorizeSlackBotRoomMessage, resolveSlackEffectiveAllowFrom } from "../auth.js";
 import { resolveSlackChannelConfig } from "../channel-config.js";
 import { stripSlackMentionsForCommandDetection } from "../commands.js";
 import { normalizeSlackChannelType, type SlackMonitorContext } from "../context.js";
@@ -183,8 +183,15 @@ async function authorizeSlackInboundMessage(params: {
   conversation: SlackConversationContext;
 }): Promise<SlackAuthorizationContext | null> {
   const { ctx, account, message, conversation } = params;
-  const { isDirectMessage, channelName, resolvedChannelType, isBotMessage, allowBots } =
-    conversation;
+  const {
+    isDirectMessage,
+    channelName,
+    resolvedChannelType,
+    isRoom,
+    isBotMessage,
+    allowBots,
+    channelConfig,
+  } = conversation;
 
   if (isBotMessage) {
     if (message.user && ctx.botUserId && message.user === ctx.botUserId) {
@@ -254,6 +261,21 @@ async function authorizeSlackInboundMessage(params: {
     if (!allowed) {
       return null;
     }
+  }
+
+  if (
+    isRoom &&
+    isBotMessage &&
+    allowBots &&
+    !(await authorizeSlackBotRoomMessage({
+      ctx,
+      channelId: message.channel,
+      senderId,
+      channelUsers: channelConfig?.users,
+      allowFromLower,
+    }))
+  ) {
+    return null;
   }
 
   return {

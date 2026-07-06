@@ -12,19 +12,27 @@ const DEFAULT_REDACT_MIN_LENGTH = 18;
 const DEFAULT_REDACT_KEEP_START = 6;
 const DEFAULT_REDACT_KEEP_END = 4;
 
+// Payment-credential key fragments woven into the ENV/URL/JSON/CLI/standalone
+// patterns below so card numbers, CVV/CVC codes, and payment tokens are redacted
+// alongside API keys/secrets. (Ported from upstream #75230; the structured
+// field-value helper it also added has no fork consumer and is omitted.)
+const PAYMENT_CREDENTIAL_ENV_KEYS = String.raw`CARD[_-]?NUMBER|CARD[_-]?CVC|CARD[_-]?CVV|CVC|CVV|SECURITY[_-]?CODE|PAYMENT[_-]?CREDENTIAL|SHARED[_-]?PAYMENT[_-]?TOKEN`;
+const PAYMENT_CREDENTIAL_QUERY_KEYS = String.raw`card[-_]?number|card[-_]?cvc|card[-_]?cvv|cvc|cvv|security[-_]?code|payment[-_]?credential|shared[-_]?payment[-_]?token`;
+const PAYMENT_CREDENTIAL_JSON_KEYS = String.raw`cardNumber|card_number|cardCvc|card_cvc|cardCvv|card_cvv|cvc|cvv|securityCode|security_code|paymentCredential|payment_credential|sharedPaymentToken|shared_payment_token`;
+
 const DEFAULT_REDACT_PATTERNS: string[] = [
   // ENV-style assignments. Keep this case-sensitive so diagnostics like
   // `Unrecognized key: "llm"` do not lose the actual config key.
-  String.raw`/\b[A-Z0-9_]*(?:KEY|TOKEN|SECRET|PASSWORD|PASSWD)\b\s*[=:]\s*(["']?)([^\s"'\\]+)\1/g`,
+  String.raw`/\b[A-Z0-9_]*(?:KEY|TOKEN|SECRET|PASSWORD|PASSWD|${PAYMENT_CREDENTIAL_ENV_KEYS})\b\s*[=:]\s*(["']?)([^\s"'\\]+)\1/g`,
   // URL query parameters. Kept separate from ENV-style assignments so lower-case URL
   // secrets (e.g. `?access_token=…`) stay redacted without hiding config-key diagnostics.
-  String.raw`[?&](?:access[-_]?token|auth[-_]?token|hook[-_]?token|refresh[-_]?token|api[-_]?key|client[-_]?secret|token|key|secret|password|pass|passwd|auth|signature)=([^&\s"'<>]+)`,
+  String.raw`[?&](?:access[-_]?token|auth[-_]?token|hook[-_]?token|refresh[-_]?token|api[-_]?key|client[-_]?secret|token|key|secret|password|pass|passwd|auth|signature|${PAYMENT_CREDENTIAL_QUERY_KEYS})=([^&\s"'<>]+)`,
   // Standalone credential assignments outside URLs (e.g. `token=…` in a log line).
-  String.raw`(^|[\s,;])(?:access_token|refresh_token|api[-_]?key|token|secret|password|passwd)=([^\s&#]+)`,
+  String.raw`(^|[\s,;])(?:access_token|refresh_token|api[-_]?key|token|secret|password|passwd|${PAYMENT_CREDENTIAL_QUERY_KEYS})=([^\s&#]+)`,
   // JSON fields.
-  String.raw`"(?:apiKey|token|secret|password|passwd|accessToken|refreshToken)"\s*:\s*"([^"]+)"`,
+  String.raw`"(?:apiKey|token|secret|password|passwd|accessToken|refreshToken|${PAYMENT_CREDENTIAL_JSON_KEYS})"\s*:\s*"([^"]+)"`,
   // CLI flags.
-  String.raw`--(?:api[-_]?key|token|secret|password|passwd)\s+(["']?)([^\s"']+)\1`,
+  String.raw`--(?:api[-_]?key|hook[-_]?token|token|secret|password|passwd|${PAYMENT_CREDENTIAL_QUERY_KEYS})\s+(["']?)([^\s"']+)\1`,
   // Authorization headers.
   String.raw`Authorization\s*[:=]\s*Bearer\s+([A-Za-z0-9._\-+=]+)`,
   String.raw`\bBearer\s+([A-Za-z0-9._\-+=]{18,})\b`,
@@ -40,6 +48,12 @@ const DEFAULT_REDACT_PATTERNS: string[] = [
   String.raw`\b(AIza[0-9A-Za-z\-_]{20,})\b`,
   String.raw`\b(pplx-[A-Za-z0-9_-]{10,})\b`,
   String.raw`\b(npm_[A-Za-z0-9]{10,})\b`,
+  // Additional access-key and token-style prefixes (Tencent AKID, Alibaba LTAI,
+  // HuggingFace hf_, Replicate r8_). Ported from upstream #58162.
+  String.raw`\b(AKID[A-Za-z0-9]{10,})\b`,
+  String.raw`\b(LTAI[A-Za-z0-9]{10,})\b`,
+  String.raw`\b(hf_[A-Za-z0-9]{10,})\b`,
+  String.raw`\b(r8_[A-Za-z0-9]{10,})\b`,
   // Telegram Bot API URLs embed the token as `/bot<token>/...` (no word-boundary before digits).
   String.raw`\bbot(\d{6,}:[A-Za-z0-9_-]{20,})\b`,
   String.raw`\b(\d{6,}:[A-Za-z0-9_-]{20,})\b`,

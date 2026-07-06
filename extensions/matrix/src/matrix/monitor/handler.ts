@@ -16,6 +16,7 @@ import {
   type RuntimeLogger,
 } from "remoteclaw/plugin-sdk/matrix";
 import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
+import { resolvePinnedMainDmOwnerFromAllowlist } from "../../../../../src/security/dm-policy-shared.js";
 import type { CoreConfig, MatrixRoomConfig, ReplyToMode } from "../../types.js";
 import { fetchEventSummary } from "../actions/summary.js";
 import {
@@ -28,6 +29,7 @@ import { reactMatrixMessage, sendMessageMatrix, sendTypingMatrix } from "../send
 import { enforceMatrixDirectMessageAccess, resolveMatrixAccessState } from "./access-policy.js";
 import {
   normalizeMatrixAllowList,
+  normalizeMatrixUserId,
   resolveMatrixAllowListMatch,
   resolveMatrixAllowListMatches,
 } from "./allowlist.js";
@@ -621,6 +623,14 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
         ParentSessionKey: parentSessionKey,
       });
 
+      const pinnedMainDmOwner = isDirectMessage
+        ? resolvePinnedMainDmOwnerFromAllowlist({
+            dmScope: cfg.session?.dmScope,
+            allowFrom: effectiveAllowFrom,
+            normalizeEntry: normalizeMatrixUserId,
+          })
+        : null;
+
       await core.channel.session.recordInboundSession({
         storePath,
         sessionKey: ctxPayload.SessionKey ?? route.sessionKey,
@@ -631,6 +641,17 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
               channel: "matrix",
               to: `room:${roomId}`,
               accountId: route.accountId,
+              mainDmOwnerPin: pinnedMainDmOwner
+                ? {
+                    ownerRecipient: pinnedMainDmOwner,
+                    senderRecipient: normalizeMatrixUserId(senderId),
+                    onSkip: ({ ownerRecipient, senderRecipient }) => {
+                      logVerboseMessage(
+                        `matrix: skip main-session last route for ${senderRecipient} (pinned owner ${ownerRecipient})`,
+                      );
+                    },
+                  }
+                : undefined,
             }
           : undefined,
         onRecordError: (err) => {

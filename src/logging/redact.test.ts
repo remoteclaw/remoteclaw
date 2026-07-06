@@ -146,4 +146,92 @@ describe("redactSensitiveText", () => {
     });
     expect(output).toBe(input);
   });
+
+  it("masks hook-token CLI flags", () => {
+    const input = "remoteclaw --hook-token abcdef1234567890ghij start";
+    const output = redactSensitiveText(input, {
+      mode: "tools",
+      patterns: defaults,
+    });
+    expect(output).toBe("remoteclaw --hook-token abcdef…ghij start");
+  });
+
+  it("masks payment credential JSON fields without redacting unrelated amounts", () => {
+    const input =
+      '{"card_number":"4242424242424242","cvc":"123","sharedPaymentToken":"spt_abcdefghijklmnopqrstuvwxyz","payment_credential":"paycred_abcdefghijklmnopqrstuvwxyz","amount":"4200"}';
+    const output = redactSensitiveText(input, {
+      mode: "tools",
+      patterns: defaults,
+    });
+    expect(output).toBe(
+      '{"card_number":"***","cvc":"***","sharedPaymentToken":"spt_ab…wxyz","payment_credential":"paycre…wxyz","amount":"4200"}',
+    );
+  });
+
+  it("masks payment credential assignments and flags", () => {
+    const input = [
+      "LINK_CARD_NUMBER=4242424242424242",
+      "LINK_CVC=123",
+      "shared_payment_token=spt_abcdefghijklmnopqrstuvwxyz",
+      "--payment-credential paycred_abcdefghijklmnopqrstuvwxyz",
+      "--card-number 4000056655665556",
+    ].join("\n");
+    const output = redactSensitiveText(input, {
+      mode: "tools",
+      patterns: defaults,
+    });
+    expect(output).toContain("LINK_CARD_NUMBER=***");
+    expect(output).toContain("LINK_CVC=***");
+    expect(output).toContain("shared_payment_token=spt_ab…wxyz");
+    expect(output).toContain("--payment-credential paycre…wxyz");
+    expect(output).toContain("--card-number ***");
+  });
+
+  it("masks payment credential URL query parameters", () => {
+    const input =
+      "POST /authorize?shared_payment_token=spt_abcdefghijklmnopqrstuvwxyz&card_number=4242424242424242&amount=4200";
+    const output = redactSensitiveText(input, {
+      mode: "tools",
+      patterns: defaults,
+    });
+    expect(output).toBe(
+      "POST /authorize?shared_payment_token=spt_ab…wxyz&card_number=***&amount=4200",
+    );
+  });
+
+  it("masks Tencent Cloud SecretId (AKID prefix)", () => {
+    const input = "SecretId is AKIDZ8EXAMPLEFAKE01KEY99TEST";
+    const output = redactSensitiveText(input, {
+      mode: "tools",
+      patterns: defaults,
+    });
+    expect(output).toBe("SecretId is AKIDZ8…TEST");
+  });
+
+  it("masks Alibaba Cloud AccessKey ID (LTAI prefix)", () => {
+    const input = "AccessKeyId=LTAI5tExampleFakeKeyXyz9";
+    const output = redactSensitiveText(input, {
+      mode: "tools",
+      patterns: defaults,
+    });
+    expect(output).toBe("AccessKeyId=LTAI5t…Xyz9");
+  });
+
+  it("masks HuggingFace tokens (hf_ prefix)", () => {
+    const input = "hf_ABCDEFghijklmnopqrstuv";
+    const output = redactSensitiveText(input, {
+      mode: "tools",
+      patterns: defaults,
+    });
+    expect(output).toBe("hf_ABC…stuv");
+  });
+
+  it("masks Replicate tokens (r8_ prefix)", () => {
+    const input = "r8_ABCDEFghijklmnopqrstuv";
+    const output = redactSensitiveText(input, {
+      mode: "tools",
+      patterns: defaults,
+    });
+    expect(output).toBe("r8_ABC…stuv");
+  });
 });

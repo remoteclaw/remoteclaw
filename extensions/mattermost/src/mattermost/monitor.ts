@@ -29,6 +29,7 @@ import {
   warnMissingProviderGroupPolicyFallbackOnce,
   type HistoryEntry,
 } from "remoteclaw/plugin-sdk/mattermost";
+import { resolvePinnedMainDmOwnerFromAllowlist } from "../../../../src/security/dm-policy-shared.js";
 import { getMattermostRuntime } from "../runtime.js";
 import { resolveMattermostAccount } from "./accounts.js";
 import {
@@ -53,7 +54,11 @@ import {
   setInteractionCallbackUrl,
   setInteractionSecret,
 } from "./interactions.js";
-import { isMattermostSenderAllowed, normalizeMattermostAllowList } from "./monitor-auth.js";
+import {
+  isMattermostSenderAllowed,
+  normalizeMattermostAllowEntry,
+  normalizeMattermostAllowList,
+} from "./monitor-auth.js";
 import {
   createDedupeCache,
   formatInboundFromLabel,
@@ -1140,19 +1145,36 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
     });
 
     if (kind === "direct") {
-      const sessionCfg = cfg.session;
-      const storePath = core.channel.session.resolveStorePath(sessionCfg?.store, {
-        agentId: route.agentId,
+      // Owner-pin: a non-owner DMing the bot must not repoint the main session's
+      // last route. This path uses the low-level updateLastRoute (which bypasses the
+      // central shouldSkipPinnedMainDmRouteUpdate gate in recordInboundSession), so
+      // replicate that gate inline. resolvePinnedMainDmOwnerFromAllowlist returns null
+      // (pin inactive) unless dmScope is "main" and the allowlist names exactly one owner.
+      const pinnedMainDmOwner = resolvePinnedMainDmOwnerFromAllowlist({
+        dmScope: cfg.session?.dmScope,
+        allowFrom: account.config.allowFrom,
+        normalizeEntry: normalizeMattermostAllowEntry,
       });
-      await core.channel.session.updateLastRoute({
-        storePath,
-        sessionKey: route.mainSessionKey,
-        deliveryContext: {
-          channel: "mattermost",
-          to,
-          accountId: route.accountId,
-        },
-      });
+      const normalizedSender = normalizeMattermostAllowEntry(senderId);
+      if (pinnedMainDmOwner && normalizedSender && pinnedMainDmOwner !== normalizedSender) {
+        logVerboseMessage(
+          `mattermost: skip main-session last route for ${normalizedSender} (pinned owner ${pinnedMainDmOwner})`,
+        );
+      } else {
+        const sessionCfg = cfg.session;
+        const storePath = core.channel.session.resolveStorePath(sessionCfg?.store, {
+          agentId: route.agentId,
+        });
+        await core.channel.session.updateLastRoute({
+          storePath,
+          sessionKey: route.mainSessionKey,
+          deliveryContext: {
+            channel: "mattermost",
+            to,
+            accountId: route.accountId,
+          },
+        });
+      }
     }
 
     const previewLine = bodyText.slice(0, 200).replace(/\n/g, "\\n");

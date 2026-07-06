@@ -109,6 +109,8 @@ export type CoreConfig = {
   };
   session?: {
     store?: string;
+    /** Mirrors the canonical DmScope union in src/config/types.base.ts. */
+    dmScope?: "main" | "per-peer" | "per-channel-peer" | "per-account-channel-peer";
   };
   messages?: {
     ackReaction?: string;

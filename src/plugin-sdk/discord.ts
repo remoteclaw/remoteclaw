@@ -47,3 +47,5 @@ export {
   buildComputedAccountStatusSnapshot,
   buildTokenChannelStatusSummary,
 } from "./status-helpers.js";
+
+export { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";

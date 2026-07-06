@@ -16,6 +16,11 @@ ARG REMOTECLAW_NODE_BOOKWORM_IMAGE="node:22-bookworm@sha256:b501c082306a4f528bc4
 ARG REMOTECLAW_NODE_BOOKWORM_DIGEST="sha256:b501c082306a4f528bc4038cbf2fbb58095d583d0419a259b2114b5ac53d12e9"
 ARG REMOTECLAW_NODE_BOOKWORM_SLIM_IMAGE="node:22-bookworm-slim@sha256:9c2c405e3ff9b9afb2873232d24bb06367d649aa3e6259cbe314da59578e81e9"
 ARG REMOTECLAW_NODE_BOOKWORM_SLIM_DIGEST="sha256:9c2c405e3ff9b9afb2873232d24bb06367d649aa3e6259cbe314da59578e81e9"
+# Pinned Bun image for the build stage — replaces the unpinned `curl | bash`
+# Bun install (supply-chain hardening). Keep the version in sync with
+# .github/actions/setup-node-env/action.yml bun-version (1.3.13). To update:
+# docker buildx imagetools inspect oven/bun:<version> and use the manifest-list digest.
+ARG REMOTECLAW_BUN_IMAGE="oven/bun:1.3.13@sha256:87416c977a612a204eb54ab9f3927023c2a3c971f4f345a01da08ea6262ae30e"
 
 # Base images are pinned to SHA256 digests for reproducible builds.
 # Trade-off: digests must be updated manually when upstream tags move.
@@ -35,11 +40,12 @@ RUN --mount=type=bind,source=extensions,target=/tmp/extensions,readonly \
     done
 
 # ── Stage 2: Build ──────────────────────────────────────────────
+FROM ${REMOTECLAW_BUN_IMAGE} AS bun-binary
 FROM ${REMOTECLAW_NODE_BOOKWORM_IMAGE} AS build
 
-# Install Bun (required for build scripts)
-RUN curl -fsSL https://bun.sh/install | bash
-ENV PATH="/root/.bun/bin:${PATH}"
+# Copy the pinned Bun binary from the official image instead of fetching it
+# via `curl | bash` (removes an unverified network-fetched install script).
+COPY --from=bun-binary /usr/local/bin/bun /usr/local/bin/bun
 
 RUN corepack enable
 

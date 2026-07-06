@@ -14,6 +14,7 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { RateLimitError, type RequestClient } from "@buape/carbon";
+import { fetchWithSsrFGuard } from "remoteclaw/plugin-sdk/discord";
 import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import { formatErrorMessage } from "../../../src/infra/errors.js";
 import type { RetryRunner } from "../../../src/infra/retry-policy.js";
@@ -267,40 +268,51 @@ export async function sendDiscordVoiceMessage(
   }
   const uploadUrlResponse = await request(async () => {
     const url = `${rest.options?.baseUrl ?? "https://discord.com/api"}/channels/${channelId}/attachments`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        Authorization: `Bot ${botToken}`,
-        "Content-Type": "application/json",
+    // Route through the SSRF guard: the request URL honors a config-overridable baseUrl.
+    const { response: res, release } = await fetchWithSsrFGuard({
+      url,
+      init: {
+        method: "POST",
+        headers: {
+          Authorization: `Bot ${botToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          files: [{ filename, file_size: fileSize, id: "0" }],
+        }),
       },
-      body: JSON.stringify({
-        files: [{ filename, file_size: fileSize, id: "0" }],
-      }),
+      auditContext: "discord.voice.upload-url",
     });
-    if (!res.ok) {
-      if (res.status === 429) {
-        const retryData = (await res.json().catch(() => ({}))) as {
+    try {
+      if (!res.ok) {
+        if (res.status === 429) {
+          const retryData = (await res.json().catch(() => ({}))) as {
+            message?: string;
+            retry_after?: number;
+            global?: boolean;
+          };
+          throw new RateLimitError(res, {
+            message: retryData.message ?? "You are being rate limited.",
+            retry_after: retryData.retry_after ?? 1,
+            global: retryData.global ?? false,
+          });
+        }
+        const errorBody = (await res.json().catch(() => null)) as {
+          code?: number;
           message?: string;
-          retry_after?: number;
-          global?: boolean;
-        };
-        throw new RateLimitError(res, {
-          message: retryData.message ?? "You are being rate limited.",
-          retry_after: retryData.retry_after ?? 1,
-          global: retryData.global ?? false,
-        });
+        } | null;
+        const err = new Error(
+          `Upload URL request failed: ${res.status} ${errorBody?.message ?? ""}`,
+        );
+        if (errorBody?.code !== undefined) {
+          (err as Error & { code: number }).code = errorBody.code;
+        }
+        throw err;
       }
-      const errorBody = (await res.json().catch(() => null)) as {
-        code?: number;
-        message?: string;
-      } | null;
-      const err = new Error(`Upload URL request failed: ${res.status} ${errorBody?.message ?? ""}`);
-      if (errorBody?.code !== undefined) {
-        (err as Error & { code: number }).code = errorBody.code;
-      }
-      throw err;
+      return (await res.json()) as UploadUrlResponse;
+    } finally {
+      await release();
     }
-    return (await res.json()) as UploadUrlResponse;
   }, "voice-upload-url");
 
   if (!uploadUrlResponse.attachments?.[0]) {
@@ -310,17 +322,27 @@ export async function sendDiscordVoiceMessage(
   const { upload_url, upload_filename } = uploadUrlResponse.attachments[0];
 
   // Step 2: Upload the file to Discord's CDN
-  // Note: Not wrapped in retry runner - upload URLs are single-use and CDN behavior differs
-  const uploadResponse = await fetch(upload_url, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "audio/ogg",
+  // Note: Not wrapped in retry runner - upload URLs are single-use and CDN behavior differs.
+  // The upload_url comes from Discord's /attachments response, so route the PUT through the
+  // SSRF guard as defense-in-depth against a redirected/attacker-influenced upload target.
+  const { response: uploadResponse, release: releaseUpload } = await fetchWithSsrFGuard({
+    url: upload_url,
+    init: {
+      method: "PUT",
+      headers: {
+        "Content-Type": "audio/ogg",
+      },
+      body: new Uint8Array(audioBuffer),
     },
-    body: new Uint8Array(audioBuffer),
+    auditContext: "discord.voice.attachment-upload",
   });
 
-  if (!uploadResponse.ok) {
-    throw new Error(`Failed to upload voice message: ${uploadResponse.status}`);
+  try {
+    if (!uploadResponse.ok) {
+      throw new Error(`Failed to upload voice message: ${uploadResponse.status}`);
+    }
+  } finally {
+    await releaseUpload();
   }
 
   // Step 3: Send the message with voice message flag and metadata

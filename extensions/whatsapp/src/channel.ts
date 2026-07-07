@@ -424,8 +424,12 @@ export const whatsappPlugin: ChannelPlugin<ResolvedWhatsAppAccount> = {
         timeoutMs,
         verbose,
       }),
-    loginWithQrWait: async ({ accountId, timeoutMs }) =>
-      await getWhatsAppRuntime().channel.whatsapp.waitForWebLogin({ accountId, timeoutMs }),
+    loginWithQrWait: async ({ accountId, timeoutMs, currentQrDataUrl }) =>
+      await getWhatsAppRuntime().channel.whatsapp.waitForWebLogin({
+        accountId,
+        timeoutMs,
+        currentQrDataUrl,
+      }),
     logoutAccount: async ({ account, runtime }) => {
       const cleared = await getWhatsAppRuntime().channel.whatsapp.logoutWeb({
         authDir: account.authDir,

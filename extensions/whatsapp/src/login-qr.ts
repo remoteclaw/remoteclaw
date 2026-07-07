@@ -216,8 +216,13 @@ export async function startWebLoginWithQr(
 }
 
 export async function waitForWebLogin(
-  opts: { timeoutMs?: number; runtime?: RuntimeEnv; accountId?: string } = {},
-): Promise<{ connected: boolean; message: string }> {
+  opts: {
+    timeoutMs?: number;
+    runtime?: RuntimeEnv;
+    accountId?: string;
+    currentQrDataUrl?: string;
+  } = {},
+): Promise<{ connected: boolean; message: string; qrDataUrl?: string }> {
   const runtime = opts.runtime ?? defaultRuntime;
   const cfg = loadConfig();
   const account = resolveWhatsAppAccount({ cfg, accountId: opts.accountId });
@@ -239,8 +244,26 @@ export async function waitForWebLogin(
   }
   const timeoutMs = Math.max(opts.timeoutMs ?? 120_000, 1000);
   const deadline = Date.now() + timeoutMs;
+  const currentQrDataUrl = opts.currentQrDataUrl;
 
   while (true) {
+    // Bound the wait to the caller's current QR: if the active login now holds a
+    // different QR image than the one the caller is displaying, tell them to
+    // re-scan the latest code instead of racing a stale QR. Terminal states
+    // (connected/error) are handled below and take priority over this refresh.
+    if (
+      !login.connected &&
+      !login.error &&
+      login.qrDataUrl &&
+      currentQrDataUrl &&
+      login.qrDataUrl !== currentQrDataUrl
+    ) {
+      return {
+        connected: false,
+        message: "QR refreshed. Scan the latest code in WhatsApp → Linked Devices.",
+        qrDataUrl: login.qrDataUrl,
+      };
+    }
     const remaining = deadline - Date.now();
     if (remaining <= 0) {
       return {

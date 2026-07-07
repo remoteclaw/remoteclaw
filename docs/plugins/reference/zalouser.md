@@ -12,7 +12,7 @@ Adds the Zalo Personal channel surface for sending and receiving RemoteClaw mess
 ## Distribution
 
 - Package: `@remoteclaw/zalouser`
-- Install route: ClawHub + npm
+- Install route: npm; ClawHub
 
 ## Surface
 

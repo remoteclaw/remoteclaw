@@ -8,6 +8,7 @@ import { createSlackWebClient } from "./client.js";
 import { resolveSlackMedia } from "./monitor/media.js";
 import type { SlackMediaResult } from "./monitor/media.js";
 import { sendMessageSlack } from "./send.js";
+import { extractSlackErrorCode } from "./streaming.js";
 import { resolveSlackBotToken } from "./token.js";
 
 export type SlackActionClientOpts = {
@@ -84,11 +85,18 @@ export async function reactSlackMessage(
   opts: SlackActionClientOpts = {},
 ) {
   const client = await getClient(opts);
-  await client.reactions.add({
-    channel: channelId,
-    timestamp: messageId,
-    name: normalizeEmoji(emoji),
-  });
+  try {
+    await client.reactions.add({
+      channel: channelId,
+      timestamp: messageId,
+      name: normalizeEmoji(emoji),
+    });
+  } catch (err) {
+    if (extractSlackErrorCode(err) === "already_reacted") {
+      return;
+    }
+    throw err;
+  }
 }
 
 export async function removeSlackReaction(
@@ -98,11 +106,18 @@ export async function removeSlackReaction(
   opts: SlackActionClientOpts = {},
 ) {
   const client = await getClient(opts);
-  await client.reactions.remove({
-    channel: channelId,
-    timestamp: messageId,
-    name: normalizeEmoji(emoji),
-  });
+  try {
+    await client.reactions.remove({
+      channel: channelId,
+      timestamp: messageId,
+      name: normalizeEmoji(emoji),
+    });
+  } catch (err) {
+    if (extractSlackErrorCode(err) === "no_reaction") {
+      return;
+    }
+    throw err;
+  }
 }
 
 export async function removeOwnSlackReactions(
@@ -112,7 +127,7 @@ export async function removeOwnSlackReactions(
 ): Promise<string[]> {
   const client = await getClient(opts);
   const userId = await resolveBotUserId(client);
-  const reactions = await listSlackReactions(channelId, messageId, { client });
+  const reactions = await listSlackReactions(channelId, messageId, { ...opts, client });
   const toRemove = new Set<string>();
   for (const reaction of reactions ?? []) {
     const name = reaction?.name;
@@ -129,11 +144,7 @@ export async function removeOwnSlackReactions(
   }
   await Promise.all(
     Array.from(toRemove, (name) =>
-      client.reactions.remove({
-        channel: channelId,
-        timestamp: messageId,
-        name,
-      }),
+      removeSlackReaction(channelId, messageId, name, { ...opts, client }),
     ),
   );
   return Array.from(toRemove);

@@ -215,9 +215,11 @@ RemoteClaw classifies sessions by the work it can still observe:
 - `session.long_running`: active embedded work, model calls, or tool calls are
   still making progress.
 - `session.stalled`: active work exists, but the active run has not reported
-  recent progress.
-- `session.stuck`: stale session bookkeeping with no active work. This is the
-  only liveness classification that releases the affected session lane.
+  recent progress. Stalled embedded runs stay observe-only at first, then
+  abort-drain after at least 10 minutes and 5x `diagnostics.stuckSessionWarnMs`
+  with no progress so queued turns behind the lane can resume.
+- `session.stuck`: stale session bookkeeping with no active work. This releases
+  the affected session lane immediately.
 
 Only `session.stuck` emits the `remoteclaw.session.stuck` counter, the
 `remoteclaw.session.stuck_age_ms` histogram, and the `remoteclaw.session.stuck`
@@ -266,11 +268,11 @@ heartbeat tick. For the config knob and defaults, see
 - `remoteclaw.exec`
   - `remoteclaw.exec.target`, `remoteclaw.exec.mode`, `remoteclaw.outcome`, `remoteclaw.failureKind`, `remoteclaw.exec.command_length`, `remoteclaw.exec.exit_code`, `remoteclaw.exec.timed_out`
 - `remoteclaw.webhook.processed`
-  - `remoteclaw.channel`, `remoteclaw.webhook`, `remoteclaw.chatId`
+  - `remoteclaw.channel`, `remoteclaw.webhook`
 - `remoteclaw.webhook.error`
-  - `remoteclaw.channel`, `remoteclaw.webhook`, `remoteclaw.chatId`, `remoteclaw.error`
+  - `remoteclaw.channel`, `remoteclaw.webhook`, `remoteclaw.error`
 - `remoteclaw.message.processed`
-  - `remoteclaw.channel`, `remoteclaw.outcome`, `remoteclaw.chatId`, `remoteclaw.messageId`, `remoteclaw.reason`
+  - `remoteclaw.channel`, `remoteclaw.outcome`, `remoteclaw.reason`
 - `remoteclaw.message.delivery`
   - `remoteclaw.channel`, `remoteclaw.delivery.kind`, `remoteclaw.outcome`, `remoteclaw.errorCategory`, `remoteclaw.delivery.result_count`
 - `remoteclaw.session.stuck`

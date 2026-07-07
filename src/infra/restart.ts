@@ -421,7 +421,7 @@ export function triggerRemoteClawRestart(): RestartAttempt {
   }
 
   // kickstart fails when the service was previously booted out (deregistered from launchd).
-  // Fall back to bootstrap (re-register from plist) + kickstart.
+  // Fall back to bootstrap, which loads RunAtLoad agents without a follow-up kickstart.
   // Use env HOME to match how launchd.ts resolves the plist install path.
   const home = process.env.HOME?.trim() || os.homedir();
   const plistPath = path.join(home, "Library", "LaunchAgents", `${label}.plist`);
@@ -443,6 +443,9 @@ export function triggerRemoteClawRestart(): RestartAttempt {
       detail: formatSpawnDetail(boot),
       tried,
     };
+  }
+  if (boot.status === 0) {
+    return { ok: true, method: "launchctl", tried };
   }
   const retryArgs = ["kickstart", target];
   tried.push(`launchctl ${retryArgs.join(" ")}`);

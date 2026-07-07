@@ -54,7 +54,9 @@ same gateway beacon via a configured wide-area DNS-SD domain, so discovery can c
 
 Target direction:
 
-- The **gateway** advertises its WS endpoint via Bonjour.
+- The **gateway** advertises its WS endpoint via Bonjour when the bundled
+  `bonjour` plugin is enabled. The plugin auto-starts on macOS hosts and is
+  opt-in elsewhere.
 - Clients browse and show a “pick a gateway” list, then store the chosen endpoint.
 
 Troubleshooting and beacon details: [Bonjour](/gateway/bonjour).
@@ -83,12 +85,16 @@ Security notes:
 - TLS pinning must never allow an advertised `gatewayTlsSha256` to override a previously stored pin.
 - iOS/Android nodes should require an explicit “trust this fingerprint” confirmation before storing a first-time pin (out-of-band verification) whenever the chosen route is secure/TLS-based.
 
-Disable/override:
+Enable/disable/override:
 
+- `remoteclaw plugins enable bonjour` enables LAN multicast advertising.
 - `REMOTECLAW_DISABLE_BONJOUR=1` disables advertising.
-- When `REMOTECLAW_DISABLE_BONJOUR` is unset, Bonjour advertises on normal hosts
-  and auto-disables inside detected containers. Use `0` only on host, macvlan,
-  or another mDNS-capable network; use `1` to force-disable.
+- When the Bonjour plugin is enabled and `REMOTECLAW_DISABLE_BONJOUR` is unset,
+  Bonjour advertises on normal hosts and auto-disables inside detected containers.
+  Empty-config macOS Gateway startup enables the plugin automatically; Linux,
+  Windows, and containerized deployments need explicit enablement.
+  Use `0` only on host, macvlan, or another mDNS-capable network; use `1` to
+  force-disable.
 - `gateway.bind` in `~/.remoteclaw/remoteclaw.json` controls the Gateway bind mode.
 - `REMOTECLAW_SSH_PORT` overrides the SSH port advertised when `sshPort` is emitted.
 - `REMOTECLAW_TAILNET_DNS` publishes a `tailnetDns` hint (MagicDNS).

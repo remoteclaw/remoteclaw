@@ -118,6 +118,7 @@ export function registerStatusHealthSessionsCommands(program: Command) {
     .option("--agent <id>", "Agent id to inspect (default: configured default agent)")
     .option("--all-agents", "Aggregate sessions across all configured agents", false)
     .option("--active <minutes>", "Only show sessions updated within the past N minutes")
+    .option("--limit <count>", 'Max sessions to show (default: 100; use "all" for full output)')
     .addHelpText(
       "after",
       () =>
@@ -126,6 +127,7 @@ export function registerStatusHealthSessionsCommands(program: Command) {
           ["remoteclaw sessions --agent work", "List sessions for one agent."],
           ["remoteclaw sessions --all-agents", "Aggregate sessions across agents."],
           ["remoteclaw sessions --active 120", "Only last 2 hours."],
+          ["remoteclaw sessions --limit 25", "Show the 25 newest sessions."],
           ["remoteclaw sessions --json", "Machine-readable output."],
           ["remoteclaw sessions --store ./tmp/sessions.json", "Use a specific session store."],
         ])}\n\n${theme.muted("Shows token usage per session when the agent reports it.")}`,
@@ -144,6 +146,7 @@ export function registerStatusHealthSessionsCommands(program: Command) {
           agent: opts.agent as string | undefined,
           allAgents: Boolean(opts.allAgents),
           active: opts.active as string | undefined,
+          limit: opts.limit as string | undefined,
         },
         defaultRuntime,
       );

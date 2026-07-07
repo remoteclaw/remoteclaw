@@ -139,6 +139,14 @@ export const sharedVitestConfig = {
         find: "@remoteclaw/qa-channel/api.js",
         replacement: path.join(repoRoot, "extensions", "qa-channel", "api.ts"),
       },
+      {
+        find: "@remoteclaw/discord/api.js",
+        replacement: path.join(repoRoot, "extensions", "discord", "api.ts"),
+      },
+      {
+        find: "@remoteclaw/slack/api.js",
+        replacement: path.join(repoRoot, "extensions", "slack", "api.ts"),
+      },
       ...sourcePluginSdkSubpaths.map((subpath) => ({
         find: `remoteclaw/plugin-sdk/${subpath}`,
         replacement: path.join(repoRoot, "src", "plugin-sdk", `${subpath}.ts`),
@@ -262,7 +270,7 @@ export const sharedVitestConfig = {
       "ui/src/ui/views/chat.test.ts",
       "ui/src/ui/views/nodes.devices.test.ts",
       "ui/src/ui/views/skills.test.ts",
-      "ui/src/ui/views/dreams.test.ts",
+      "ui/src/ui/views/dreaming.test.ts",
       "ui/src/ui/views/usage-render-details.test.ts",
       "ui/src/ui/controllers/agents.test.ts",
       "ui/src/ui/controllers/chat.test.ts",
@@ -282,6 +290,7 @@ export const sharedVitestConfig = {
       "**/node_modules/**",
       "**/vendor/**",
       "dist/RemoteClaw.app/**",
+      "**/._*",
       "**/*.live.test.ts",
       "**/*.e2e.test.ts",
     ],

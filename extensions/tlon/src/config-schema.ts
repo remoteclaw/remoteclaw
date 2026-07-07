@@ -22,6 +22,7 @@ const tlonCommonConfigFields = {
   allowPrivateNetwork: z.boolean().optional(),
   groupChannels: z.array(ChannelNestSchema).optional(),
   dmAllowlist: z.array(ShipSchema).optional(),
+  groupInviteAllowlist: z.array(ShipSchema).optional(),
   autoDiscoverChannels: z.boolean().optional(),
   showModelSignature: z.boolean().optional(),
   responsePrefix: z.string().optional(),

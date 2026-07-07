@@ -282,7 +282,7 @@ Saves session context to memory when you issue `/new` or `/reset`.
 remoteclaw hooks enable session-memory
 ```
 
-**Output:** `~/.remoteclaw/workspace/memory/YYYY-MM-DD-slug.md`
+**Output:** `~/.remoteclaw/workspace/memory/YYYY-MM-DD-HHMM.md` by default. Set `hooks.internal.entries.session-memory.llmSlug: true` for model-generated filename slugs.
 
 **See:** [session-memory documentation](/automation/hooks#session-memory)
 

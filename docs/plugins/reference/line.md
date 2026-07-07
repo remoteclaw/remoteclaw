@@ -12,7 +12,7 @@ Adds the LINE channel surface for sending and receiving RemoteClaw messages.
 ## Distribution
 
 - Package: `@remoteclaw/line`
-- Install route: ClawHub + npm
+- Install route: npm; ClawHub
 
 ## Surface
 

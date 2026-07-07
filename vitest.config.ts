@@ -10,10 +10,12 @@ const localWorkers = Math.max(4, Math.min(16, os.cpus().length));
 const ciWorkers = isWindows ? 2 : 3;
 const pluginSdkSubpaths = [
   "account-id",
+  "account-resolution",
   "allow-from",
   "channel-lifecycle",
   "core",
   "channel-config-helpers",
+  "channel-streaming",
   "group-access",
   "json-store",
   "reply-chunking",

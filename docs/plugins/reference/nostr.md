@@ -12,7 +12,7 @@ Adds the Nostr channel surface for sending and receiving RemoteClaw messages.
 ## Distribution
 
 - Package: `@remoteclaw/nostr`
-- Install route: ClawHub + npm
+- Install route: npm; ClawHub
 
 ## Surface
 

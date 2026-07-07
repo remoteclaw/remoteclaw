@@ -12,7 +12,7 @@ Adds web search provider support.
 ## Distribution
 
 - Package: `@remoteclaw/brave-plugin`
-- Install route: ClawHub + npm
+- Install route: npm; ClawHub
 
 ## Surface
 

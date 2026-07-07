@@ -12,7 +12,7 @@ Adds the BlueBubbles channel surface for sending and receiving RemoteClaw messag
 ## Distribution
 
 - Package: `@remoteclaw/bluebubbles`
-- Install route: ClawHub + npm
+- Install route: npm; ClawHub
 
 ## Surface
 

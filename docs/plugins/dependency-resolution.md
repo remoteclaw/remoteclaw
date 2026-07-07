@@ -43,13 +43,21 @@ RemoteClaw uses stable per-source roots:
 npm installs run in the npm root with:
 
 ```bash
-npm install --prefix ~/.remoteclaw/npm <spec> --omit=dev --ignore-scripts --no-audit --no-fund
+npm install --prefix ~/.remoteclaw/npm <spec> --omit=dev --omit=peer --legacy-peer-deps --ignore-scripts --no-audit --no-fund
 ```
 
 npm may hoist transitive dependencies to `~/.remoteclaw/npm/node_modules` beside
 the plugin package. RemoteClaw scans the managed npm root before trusting the
 install and uses npm to remove npm-managed packages during uninstall, so hoisted
 runtime dependencies stay inside the managed cleanup boundary.
+
+Plugins that import `remoteclaw/plugin-sdk/*` declare `remoteclaw` as a peer
+dependency. RemoteClaw does not let npm install a separate registry copy of the
+host package into the managed root, because stale host packages can affect npm
+peer resolution during later plugin installs. Managed npm installs skip npm peer
+resolution/materialization for the shared root and RemoteClaw reasserts
+plugin-local `node_modules/remoteclaw` links for installed packages that declare
+the host peer after install, update, or uninstall.
 
 git installs clone or refresh the repository, then run:
 
@@ -85,9 +93,10 @@ remoteclaw plugins install <source>
 remoteclaw doctor --fix
 ```
 
-`doctor --fix` can clean legacy RemoteClaw-generated dependency state and install
-configured downloadable plugins that are missing from the local install records.
-It does not repair dependencies for an already-installed local plugin.
+`doctor --fix` can clean legacy RemoteClaw-generated dependency state and recover
+downloadable plugins that are missing from the local install records when config
+references them. Doctor does not repair dependencies for an already-installed
+local plugin.
 
 ## Bundled plugins
 
@@ -118,8 +127,11 @@ not a supported way to prepare bundled plugin dependencies.
 
 Older RemoteClaw versions generated bundled-plugin dependency roots at startup or
 during doctor repair. Current doctor cleanup removes those stale directories and
-symlinks when `--fix` is used, including old `plugin-runtime-deps` roots,
+symlinks when `--fix` is used, including old `plugin-runtime-deps` roots, global
+Node-prefix package symlinks that point at pruned `plugin-runtime-deps` targets,
 `.remoteclaw-runtime-deps*` manifests, generated plugin `node_modules`, install
-stage directories, and package-local pnpm stores.
+stage directories, and package-local pnpm stores. Packaged postinstall also
+removes those global symlinks before pruning the legacy target roots so upgrades
+do not leave dangling ESM package imports.
 
 These paths are legacy debris only. New installs should not create them.

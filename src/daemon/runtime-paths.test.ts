@@ -2,11 +2,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const fsMocks = vi.hoisted(() => ({
   access: vi.fn(),
+  realpath: vi.fn(),
 }));
 
 vi.mock("node:fs/promises", () => ({
-  default: { access: fsMocks.access },
+  default: { access: fsMocks.access, realpath: fsMocks.realpath },
   access: fsMocks.access,
+  realpath: fsMocks.realpath,
 }));
 
 import {
@@ -20,7 +22,12 @@ afterEach(() => {
   vi.resetAllMocks();
 });
 
+function mockNodeRealpath(realpaths: Record<string, string> = {}) {
+  fsMocks.realpath.mockImplementation(async (target: string) => realpaths[target] ?? target);
+}
+
 function mockNodePathPresent(...nodePaths: string[]) {
+  mockNodeRealpath();
   fsMocks.access.mockImplementation(async (target: string) => {
     if (nodePaths.includes(target)) {
       return;
@@ -33,10 +40,13 @@ describe("resolvePreferredNodePath", () => {
   const darwinNode = "/opt/homebrew/bin/node";
   const fnmNode = "/Users/test/.fnm/node-versions/v24.11.1/installation/bin/node";
 
-  it("prefers execPath (version manager node) over system node", async () => {
+  it("prefers supported system node over version-manager execPath", async () => {
     mockNodePathPresent(darwinNode);
 
-    const execFile = vi.fn().mockResolvedValue({ stdout: "24.11.1\n", stderr: "" });
+    const execFile = vi
+      .fn()
+      .mockResolvedValueOnce({ stdout: "24.11.1\n", stderr: "" })
+      .mockResolvedValueOnce({ stdout: "24.11.1\n", stderr: "" });
 
     const result = await resolvePreferredNodePath({
       env: {},
@@ -46,8 +56,8 @@ describe("resolvePreferredNodePath", () => {
       execPath: fnmNode,
     });
 
-    expect(result).toBe(fnmNode);
-    expect(execFile).toHaveBeenCalledTimes(1);
+    expect(result).toBe(darwinNode);
+    expect(execFile).toHaveBeenCalledTimes(2);
   });
 
   it("falls back to system node when execPath version is unsupported", async () => {

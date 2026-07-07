@@ -125,7 +125,7 @@ export function configureProgramHelp(program: Command, ctx: ProgramContext) {
   }
 
   program.addHelpText("beforeAll", () => {
-    if (hasEmittedCliBanner()) {
+    if (hasEmittedCliBanner() || process.env.REMOTECLAW_SUPPRESS_HELP_BANNER === "1") {
       return "";
     }
     const rich = isRich();

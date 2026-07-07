@@ -2,6 +2,7 @@ import { loadConfig } from "../../config/config.js";
 import { extractDeliveryInfo } from "../../config/sessions.js";
 import { resolveRemoteClawPackageRoot } from "../../infra/remoteclaw-root.js";
 import {
+  buildRestartSuccessContinuation,
   formatDoctorNonInteractiveHint,
   type RestartSentinelPayload,
   writeRestartSentinel,
@@ -26,6 +27,7 @@ export const updateHandlers: GatewayRequestHandlers = {
       deliveryContext: requestedDeliveryContext,
       threadId: requestedThreadId,
       note,
+      continuationMessage,
       restartDelayMs,
     } = parseRestartRequestParams(params);
     const { deliveryContext: sessionDeliveryContext, threadId: sessionThreadId } =
@@ -64,6 +66,10 @@ export const updateHandlers: GatewayRequestHandlers = {
       };
     }
 
+    const continuation =
+      result.status === "ok"
+        ? buildRestartSuccessContinuation({ sessionKey, continuationMessage })
+        : null;
     const payload: RestartSentinelPayload = {
       kind: "update",
       status: result.status,
@@ -72,6 +78,7 @@ export const updateHandlers: GatewayRequestHandlers = {
       deliveryContext,
       threadId,
       message: note ?? null,
+      ...(continuation ? { continuation } : {}),
       doctorHint: formatDoctorNonInteractiveHint(),
       stats: {
         mode: result.mode,

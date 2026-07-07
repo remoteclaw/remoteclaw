@@ -17,6 +17,10 @@ export type HeartbeatSessionSeed = {
   lastChannel: string;
   lastProvider: string;
   lastTo: string;
+  agentHarnessId?: string;
+  agentRuntimeOverride?: string;
+  model?: string;
+  modelProvider?: string;
 };
 
 export async function seedSessionStore(

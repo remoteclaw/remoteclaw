@@ -46,6 +46,7 @@ export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
 export { createReplyPrefixOptions } from "../channels/reply-prefix.js";
 export { createTypingCallbacks } from "../channels/typing.js";
 export type { RemoteClawConfig } from "../config/config.js";
+export { isDangerousNameMatchingEnabled } from "../config/dangerous-name-matching.js";
 export {
   resolveDefaultGroupPolicy,
   resolveOpenProviderRuntimeGroupPolicy,

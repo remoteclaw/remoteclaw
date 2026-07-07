@@ -149,6 +149,10 @@ describe("resolveBundledRuntimeDepsNpmRunner", () => {
       npm_config_location: "project",
       npm_config_package_lock: "false",
       npm_config_save: "false",
+      // Adopted hardening (npm-install-env): the POSIX install env pins the
+      // npm script shell to /bin/sh to block SHELL-based injection. Not set on
+      // win32 (resolvePosixNpmScriptShell returns null there).
+      ...(process.platform === "win32" ? {} : { NPM_CONFIG_SCRIPT_SHELL: "/bin/sh" }),
     });
   });
 

@@ -34,6 +34,20 @@ vi.mock("../../logger.js", async () => {
   };
 });
 
+const { getDefaultAutoSelectFamily, isWSL2SyncMock } = vi.hoisted(() => ({
+  getDefaultAutoSelectFamily: vi.fn(() => true as boolean | undefined),
+  isWSL2SyncMock: vi.fn(() => false),
+}));
+
+vi.mock("node:net", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("node:net")>()),
+  getDefaultAutoSelectFamily,
+}));
+
+vi.mock("../wsl.js", () => ({
+  isWSL2Sync: isWSL2SyncMock,
+}));
+
 function createPinnedDispatcherCompatibilityError(): Error {
   const cause = Object.assign(new Error("invalid onRequestStart method"), {
     code: "UND_ERR_INVALID_ARG",
@@ -164,6 +178,14 @@ describe("fetchWithSsrFGuard hardening", () => {
       expect(envHttpProxyAgentCtor).toHaveBeenCalledTimes(1);
       expect(envHttpProxyAgentCtor).toHaveBeenCalledWith({
         allowH2: false,
+        connect: {
+          autoSelectFamily: true,
+          autoSelectFamilyAttemptTimeout: 300,
+        },
+        proxyTls: {
+          autoSelectFamily: true,
+          autoSelectFamilyAttemptTimeout: 300,
+        },
       });
     }
     await result.release();
@@ -512,6 +534,10 @@ describe("fetchWithSsrFGuard hardening", () => {
     expect(proxyAgentCtor).toHaveBeenCalledWith({
       uri: "http://proxy.example:7890",
       allowH2: false,
+      proxyTls: {
+        autoSelectFamily: true,
+        autoSelectFamilyAttemptTimeout: 300,
+      },
       requestTls: {
         servername: "public.example",
       },

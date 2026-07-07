@@ -185,6 +185,38 @@ describe.runIf(process.platform !== "win32")("cleanStaleGatewayProcessesSync", (
 });
 
 describe("triggerRemoteClawRestart", () => {
+  it("does not kickstart after bootstrap registers an unloaded LaunchAgent", () => {
+    setPlatform("darwin");
+    delete process.env.VITEST;
+    delete process.env.NODE_ENV;
+    process.env.HOME = "/Users/test";
+    process.env.REMOTECLAW_PROFILE = "default";
+    const uid = typeof process.getuid === "function" ? process.getuid() : 501;
+    spawnSyncMock.mockImplementation((command: string, args: string[]) => {
+      if (command === "/usr/sbin/lsof") {
+        return { error: undefined, status: 1, stdout: "" };
+      }
+      if (command === "launchctl" && args[0] === "kickstart" && args[1] === "-k") {
+        return { error: undefined, status: 113, stderr: "service not loaded" };
+      }
+      if (command === "launchctl" && args[0] === "bootstrap") {
+        return { error: undefined, status: 0, stderr: "" };
+      }
+      return { error: undefined, status: 1, stdout: "" };
+    });
+
+    const result = triggerRemoteClawRestart();
+
+    expect(result).toEqual({
+      ok: true,
+      method: "launchctl",
+      tried: [
+        `launchctl kickstart -k gui/${uid}/org.remoteclaw.gateway`,
+        `launchctl bootstrap gui/${uid} /Users/test/Library/LaunchAgents/org.remoteclaw.gateway.plist`,
+      ],
+    });
+  });
+
   it("continues when launchctl bootstrap reports the service is already loaded", () => {
     setPlatform("darwin");
     delete process.env.VITEST;

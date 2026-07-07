@@ -46,6 +46,8 @@ export const EXTENSION_PACKAGE_BOUNDARY_BASE_PATHS = {
   ],
   "remoteclaw/plugin-sdk/ssrf-runtime": ["../dist/plugin-sdk/src/plugin-sdk/ssrf-runtime.d.ts"],
   "@remoteclaw/qa-channel/api.js": ["../dist/plugin-sdk/extensions/qa-channel/api.d.ts"],
+  "@remoteclaw/discord/api.js": ["../dist/plugin-sdk/extensions/discord/api.d.ts"],
+  "@remoteclaw/slack/api.js": ["../dist/plugin-sdk/extensions/slack/api.d.ts"],
   "@remoteclaw/*.js": ["../packages/plugin-sdk/dist/extensions/*.d.ts", "../extensions/*"],
   "@remoteclaw/*": ["../packages/plugin-sdk/dist/extensions/*", "../extensions/*"],
   "@remoteclaw/plugin-sdk/*": ["../dist/plugin-sdk/src/plugin-sdk/*.d.ts"],
@@ -68,6 +70,8 @@ export const EXTENSION_PACKAGE_BOUNDARY_XAI_PATHS = {
     (({
       "remoteclaw/plugin-sdk/channel-secret-basic-runtime": _omitBasic,
       "remoteclaw/plugin-sdk/channel-secret-tts-runtime": _omitTts,
+      "@remoteclaw/discord/api.js": _omitDiscord,
+      "@remoteclaw/slack/api.js": _omitSlack,
       ...rest
     }) => rest)(EXTENSION_PACKAGE_BOUNDARY_BASE_PATHS),
     "../",

@@ -108,6 +108,25 @@ describe("plugins.entries.*.hooks", () => {
     expect(result.success).toBe(true);
   });
 
+  it("accepts bounded typed hook timeout overrides", () => {
+    const result = RemoteClawSchema.safeParse({
+      plugins: {
+        entries: {
+          "memory-recall": {
+            hooks: {
+              timeoutMs: 30_000,
+              timeouts: {
+                before_prompt_build: 90_000,
+                agent_end: 60_000,
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(result.success).toBe(true);
+  });
+
   it("rejects non-boolean values", () => {
     const result = RemoteClawSchema.safeParse({
       plugins: {
@@ -138,6 +157,24 @@ describe("plugins.entries.*.hooks", () => {
       },
     });
     expect(result.success).toBe(false);
+  });
+
+  it("rejects invalid typed hook timeout overrides", () => {
+    for (const hooks of [
+      { timeoutMs: 0 },
+      { timeoutMs: 600_001 },
+      { timeouts: { before_prompt_build: -1 } },
+      { timeouts: { before_prompt_build: 1.5 } },
+    ]) {
+      const result = RemoteClawSchema.safeParse({
+        plugins: {
+          entries: {
+            "memory-recall": { hooks },
+          },
+        },
+      });
+      expect(result.success).toBe(false);
+    }
   });
 });
 

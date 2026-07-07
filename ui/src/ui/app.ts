@@ -312,9 +312,11 @@ export class RemoteClawApp extends LitElement {
   chatScrollFrame: number | null = null;
   chatScrollTimeout: number | null = null;
   chatHasAutoScrolled = false;
+  chatLastScrollTop = 0;
   connectGeneration = 0;
   chatUserNearBottom = true;
   @state() chatNewMessagesBelow = false;
+  @state() chatHeaderControlsHidden = false;
   nodesPollInterval: number | null = null;
   logsPollInterval: number | null = null;
   debugPollInterval: number | null = null;

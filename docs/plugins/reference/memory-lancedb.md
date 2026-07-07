@@ -12,7 +12,7 @@ Adds agent-callable tools.
 ## Distribution
 
 - Package: `@remoteclaw/memory-lancedb`
-- Install route: ClawHub + npm
+- Install route: npm; ClawHub
 
 ## Surface
 

@@ -108,7 +108,7 @@ const GATEWAY_SERVICE_REGISTRY: Record<SupportedGatewayServicePlatform, GatewayS
     readRuntime: readLaunchAgentRuntime,
   },
   linux: {
-    label: "systemd",
+    label: "systemd user",
     loadedText: "enabled",
     notLoadedText: "disabled",
     install: ignoreInstallResult(installSystemdService),

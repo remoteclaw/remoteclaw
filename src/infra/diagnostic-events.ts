@@ -125,6 +125,16 @@ export type DiagnosticRunAttemptEvent = DiagnosticBaseEvent & {
   attempt: number;
 };
 
+export type DiagnosticSessionActiveWorkKind = "embedded_run" | "model_call" | "tool_call";
+
+export type DiagnosticRunProgressEvent = DiagnosticBaseEvent & {
+  type: "run.progress";
+  sessionKey?: string;
+  sessionId?: string;
+  runId?: string;
+  reason: string;
+};
+
 export type DiagnosticHeartbeatEvent = DiagnosticBaseEvent & {
   type: "diagnostic.heartbeat";
   webhooks: {
@@ -138,6 +148,20 @@ export type DiagnosticHeartbeatEvent = DiagnosticBaseEvent & {
 };
 
 export type DiagnosticLivenessWarningReason = "event_loop_delay" | "event_loop_utilization" | "cpu";
+
+export type DiagnosticPhaseDetails = Record<string, string | number | boolean>;
+
+export type DiagnosticPhaseSnapshot = {
+  name: string;
+  startedAt: number;
+  endedAt?: number;
+  durationMs?: number;
+  cpuUserMs?: number;
+  cpuSystemMs?: number;
+  cpuTotalMs?: number;
+  cpuCoreRatio?: number;
+  details?: DiagnosticPhaseDetails;
+};
 
 export type DiagnosticLivenessWarningEvent = DiagnosticBaseEvent & {
   type: "diagnostic.liveness.warning";
@@ -153,7 +177,17 @@ export type DiagnosticLivenessWarningEvent = DiagnosticBaseEvent & {
   active: number;
   waiting: number;
   queued: number;
+  phase?: string;
+  recentPhases?: DiagnosticPhaseSnapshot[];
+  activeWorkLabels?: string[];
+  waitingWorkLabels?: string[];
+  queuedWorkLabels?: string[];
 };
+
+export type DiagnosticPhaseCompletedEvent = DiagnosticBaseEvent &
+  DiagnosticPhaseSnapshot & {
+    type: "diagnostic.phase.completed";
+  };
 
 export type DiagnosticToolLoopEvent = DiagnosticBaseEvent & {
   type: "tool.loop";
@@ -357,8 +391,10 @@ export type DiagnosticEventPayload =
   | DiagnosticLaneEnqueueEvent
   | DiagnosticLaneDequeueEvent
   | DiagnosticRunAttemptEvent
+  | DiagnosticRunProgressEvent
   | DiagnosticHeartbeatEvent
   | DiagnosticLivenessWarningEvent
+  | DiagnosticPhaseCompletedEvent
   | DiagnosticToolLoopEvent
   | DiagnosticToolExecutionStartedEvent
   | DiagnosticToolExecutionCompletedEvent

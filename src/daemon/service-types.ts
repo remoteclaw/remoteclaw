@@ -8,6 +8,7 @@ export type GatewayServiceInstallArgs = {
   programArguments: string[];
   workingDirectory?: string;
   environment?: GatewayServiceEnv;
+  environmentValueSources?: Record<string, GatewayServiceEnvironmentValueSource | undefined>;
   description?: string;
 };
 
@@ -28,6 +29,8 @@ export type GatewayServiceRestartResult = { outcome: "completed" } | { outcome: 
 export type GatewayServiceEnvArgs = {
   env?: GatewayServiceEnv;
 };
+
+export type GatewayServiceEnvironmentValueSource = "inline" | "file" | "inline-and-file";
 
 export type GatewayServiceCommandConfig = {
   programArguments: string[];

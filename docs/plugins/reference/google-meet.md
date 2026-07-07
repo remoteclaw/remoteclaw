@@ -12,7 +12,7 @@ Join Google Meet calls through Chrome or Twilio transports.
 ## Distribution
 
 - Package: `@remoteclaw/google-meet`
-- Install route: ClawHub + npm
+- Install route: npm; ClawHub
 
 ## Surface
 

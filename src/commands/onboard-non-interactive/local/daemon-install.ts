@@ -53,13 +53,14 @@ export async function installGatewayDaemonNonInteractive(params: {
     runtime.exit(1);
     return;
   }
-  const { programArguments, workingDirectory, environment } = await buildGatewayInstallPlan({
-    env: process.env,
-    port,
-    runtime: daemonRuntimeRaw,
-    warn: (message) => runtime.log(message),
-    config: params.nextConfig,
-  });
+  const { programArguments, workingDirectory, environment, environmentValueSources } =
+    await buildGatewayInstallPlan({
+      env: process.env,
+      port,
+      runtime: daemonRuntimeRaw,
+      warn: (message) => runtime.log(message),
+      config: params.nextConfig,
+    });
   try {
     await service.install({
       env: process.env,
@@ -67,6 +68,7 @@ export async function installGatewayDaemonNonInteractive(params: {
       programArguments,
       workingDirectory,
       environment,
+      environmentValueSources,
     });
   } catch (err) {
     runtime.error(`Gateway service install failed: ${String(err)}`);

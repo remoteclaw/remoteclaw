@@ -12,7 +12,7 @@ RemoteClaw diagnostics OpenTelemetry exporter.
 ## Distribution
 
 - Package: `@remoteclaw/diagnostics-otel`
-- Install route: ClawHub: `clawhub:@remoteclaw/diagnostics-otel`; npm
+- Install route: npm; ClawHub: `clawhub:@remoteclaw/diagnostics-otel`
 
 ## Surface
 

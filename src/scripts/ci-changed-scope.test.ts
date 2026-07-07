@@ -98,6 +98,19 @@ describe("detectChangedScope", () => {
       runChangedSmoke: false,
       runControlUiI18n: false,
     });
+    // NOTE: upstream's `apps/swabble/...` positive control was dropped — that
+    // app is gutted in RemoteClaw and deliberately excluded from
+    // MACOS_NATIVE_RE (do not re-add). Top-level `Swabble/` remains and covers
+    // the native-swift-forces-macOS control below.
+    expect(detectChangedScope(["Swabble/Sources/SwabbleKit/WakeWordGate.swift"])).toEqual({
+      runNode: false,
+      runMacos: true,
+      runAndroid: false,
+      runWindows: false,
+      runSkillsPython: false,
+      runChangedSmoke: false,
+      runControlUiI18n: false,
+    });
   });
 
   it("enables node lane for non-native non-doc files by fallback", () => {
@@ -111,7 +124,7 @@ describe("detectChangedScope", () => {
       runControlUiI18n: false,
     });
 
-    expect(detectChangedScope(["assets/icon.png"])).toEqual({
+    expect(detectChangedScope([".crabbox.yaml"])).toEqual({
       runNode: true,
       runMacos: false,
       runAndroid: false,
@@ -147,7 +160,7 @@ describe("detectChangedScope", () => {
   });
 
   it("runs Python skill tests when shared Python config changes", () => {
-    expect(detectChangedScope(["pyproject.toml"])).toEqual({
+    expect(detectChangedScope(["skills/pyproject.toml"])).toEqual({
       runNode: true,
       runMacos: false,
       runAndroid: false,

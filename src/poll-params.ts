@@ -66,12 +66,15 @@ export function hasPollCreationParams(params: Record<string, unknown>): boolean 
       }
     }
     if (def.kind === "number") {
-      if (typeof value === "number" && Number.isFinite(value)) {
+      // A zero-valued poll param (pollDurationHours: 0) is a no-op, not an
+      // intent to create a poll — don't let it misclassify a plain send.
+      if (typeof value === "number" && Number.isFinite(value) && value !== 0) {
         return true;
       }
       if (typeof value === "string") {
         const trimmed = value.trim();
-        if (trimmed.length > 0 && Number.isFinite(Number(trimmed))) {
+        const parsed = Number(trimmed);
+        if (trimmed.length > 0 && Number.isFinite(parsed) && parsed !== 0) {
           return true;
         }
       }

@@ -46,8 +46,10 @@ const createHost = (tab: Tab): SettingsHost => ({
   style: {} as CSSStyleDeclaration,
   chatScrollFrame: null,
   chatScrollTimeout: null,
+  chatLastScrollTop: 0,
   chatUserNearBottom: true,
   chatNewMessagesBelow: false,
+  chatHeaderControlsHidden: false,
   logsScrollFrame: null,
   topbarObserver: null,
 });

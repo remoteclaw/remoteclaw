@@ -14,7 +14,7 @@ packages:
   RemoteClawKit:
     path: ../shared/RemoteClawKit
   Swabble:
-    path: ../../Swabble
+    path: ../swabble
 
 schemes:
   RemoteClaw:
@@ -70,8 +70,8 @@ targets:
             echo "error: swiftformat not found (brew install swiftformat)" >&2
             exit 1
           fi
-          swiftformat --lint --config "$SRCROOT/../../.swiftformat" \
-            --unexclude "$SRCROOT/Sources,$SRCROOT/ShareExtension,$SRCROOT/ActivityWidget,$SRCROOT/WatchExtension,$SRCROOT/../shared/RemoteClawKit,$SRCROOT/../../Swabble" \
+          swiftformat --lint --config "$SRCROOT/../../config/swiftformat" \
+            --unexclude "$SRCROOT/Sources,$SRCROOT/ShareExtension,$SRCROOT/ActivityWidget,$SRCROOT/WatchExtension,$SRCROOT/../shared/RemoteClawKit,$SRCROOT/../swabble" \
             --filelist "$SRCROOT/SwiftSources.input.xcfilelist"
       - name: SwiftLint
         basedOnDependencyAnalysis: false

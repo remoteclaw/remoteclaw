@@ -12,7 +12,7 @@ Adds the Microsoft Teams channel surface for sending and receiving RemoteClaw me
 ## Distribution
 
 - Package: `@remoteclaw/msteams`
-- Install route: ClawHub + npm
+- Install route: npm; ClawHub
 
 ## Surface
 

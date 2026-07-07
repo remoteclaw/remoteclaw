@@ -402,15 +402,22 @@ function normalizeLegacyDotBetaVersion(version: string): string {
   return suffix ? `${base}-beta.${suffix}` : `${base}-beta`;
 }
 
+// A RemoteClaw stable correction release (e.g. 2026.5.3-1) carries a purely
+// numeric prerelease identifier and is NEWER than its base release, unlike a
+// conventional prerelease (e.g. 1.0.0-beta.1) which is older than its base.
+function isNumericCorrectionPrerelease(prerelease: string[] | null): boolean {
+  return prerelease != null && prerelease.length > 0 && /^[0-9]+$/.test(prerelease[0] ?? "");
+}
+
 function comparePrerelease(a: string[] | null, b: string[] | null): number {
   if (!a?.length && !b?.length) {
     return 0;
   }
   if (!a?.length) {
-    return 1;
+    return isNumericCorrectionPrerelease(b) ? -1 : 1;
   }
   if (!b?.length) {
-    return -1;
+    return isNumericCorrectionPrerelease(a) ? 1 : -1;
   }
 
   const max = Math.max(a.length, b.length);

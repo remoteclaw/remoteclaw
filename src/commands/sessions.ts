@@ -28,6 +28,8 @@ type SessionRow = SessionDisplayRow & {
 const AGENT_PAD = 10;
 const KIND_PAD = 6;
 const TOKENS_PAD = 20;
+const DEFAULT_SESSIONS_LIMIT = 100;
+const TOP_N_SELECTION_LIMIT = 200;
 
 const formatKTokens = (value: number) => `${(value / 1000).toFixed(value >= 10_000 ? 0 : 1)}k`;
 
@@ -57,8 +59,61 @@ const formatKindCell = (kind: SessionRow["kind"], rich: boolean) => {
   return theme.muted(label);
 };
 
+function compareSessionRowsByUpdatedAt(a: SessionRow, b: SessionRow): number {
+  return (b.updatedAt ?? 0) - (a.updatedAt ?? 0);
+}
+
+function selectNewestSessionRows(rows: SessionRow[], limit: number | undefined): SessionRow[] {
+  if (limit === undefined) {
+    return rows.toSorted(compareSessionRowsByUpdatedAt);
+  }
+  if (limit > TOP_N_SELECTION_LIMIT) {
+    return rows.toSorted(compareSessionRowsByUpdatedAt).slice(0, limit);
+  }
+  const selected: SessionRow[] = [];
+  for (const row of rows) {
+    const insertAt = selected.findIndex(
+      (candidate) => compareSessionRowsByUpdatedAt(row, candidate) < 0,
+    );
+    if (insertAt >= 0) {
+      selected.splice(insertAt, 0, row);
+      if (selected.length > limit) {
+        selected.pop();
+      }
+    } else if (selected.length < limit) {
+      selected.push(row);
+    }
+  }
+  return selected;
+}
+
+function parseSessionsLimit(value: string | number | undefined): number | undefined | null {
+  if (value === undefined) {
+    return DEFAULT_SESSIONS_LIMIT;
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed.toLowerCase() === "all") {
+      return undefined;
+    }
+    if (!/^\d+$/.test(trimmed)) {
+      return null;
+    }
+    const parsed = Number.parseInt(trimmed, 10);
+    return parsed > 0 ? parsed : null;
+  }
+  return Number.isInteger(value) && value > 0 ? value : null;
+}
+
 export async function sessionsCommand(
-  opts: { json?: boolean; store?: string; active?: string; agent?: string; allAgents?: boolean },
+  opts: {
+    json?: boolean;
+    store?: string;
+    active?: string;
+    agent?: string;
+    allAgents?: boolean;
+    limit?: string | number;
+  },
   runtime: RuntimeEnv,
 ) {
   const aggregateAgents = opts.allAgents === true;
@@ -88,7 +143,14 @@ export async function sessionsCommand(
     activeMinutes = parsed;
   }
 
-  const rows = targets
+  const limit = parseSessionsLimit(opts.limit);
+  if (limit === null) {
+    runtime.error('--limit must be a positive integer or "all"');
+    runtime.exit(1);
+    return;
+  }
+
+  const allRows = targets
     .flatMap((target) => {
       const store = loadSessionStore(target.storePath);
       return toSessionDisplayRows(store).map((row) =>
@@ -106,8 +168,11 @@ export async function sessionsCommand(
         return false;
       }
       return Date.now() - row.updatedAt <= activeMinutes * 60_000;
-    })
-    .toSorted((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
+    });
+
+  const totalCount = allRows.length;
+  const rows = selectNewestSessionRows(allRows, limit);
+  const hasMore = rows.length < totalCount;
 
   if (opts.json) {
     const multi = targets.length > 1;
@@ -124,6 +189,9 @@ export async function sessionsCommand(
             : undefined,
           allAgents: aggregateAgents ? true : undefined,
           count: rows.length,
+          totalCount,
+          limitApplied: limit ?? null,
+          hasMore,
           activeMinutes: activeMinutes ?? null,
           sessions: rows.map((r) => {
             const model = resolveSessionDisplayModel(cfg, r, displayDefaults);
@@ -150,7 +218,13 @@ export async function sessionsCommand(
       info(`Session stores: ${targets.length} (${targets.map((t) => t.agentId).join(", ")})`),
     );
   }
-  runtime.log(info(`Sessions listed: ${rows.length}`));
+  runtime.log(
+    info(
+      hasMore && limit !== undefined
+        ? `Sessions listed: ${rows.length} of ${totalCount} (limit ${limit})`
+        : `Sessions listed: ${rows.length}`,
+    ),
+  );
   if (activeMinutes) {
     runtime.log(info(`Filtered to last ${activeMinutes} minute(s)`));
   }

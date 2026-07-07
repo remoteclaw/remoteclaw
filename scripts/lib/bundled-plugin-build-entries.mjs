@@ -31,7 +31,7 @@ function isManifestlessBundledRuntimeSupportPackage(params) {
   return params.topLevelPublicSurfaceEntries.length > 0;
 }
 
-function collectPluginSourceEntries(packageJson, pluginDir) {
+export function collectPluginSourceEntries(packageJson, pluginDir) {
   let packageEntries = Array.isArray(packageJson?.remoteclaw?.extensions)
     ? packageJson.remoteclaw.extensions.filter(
         (entry) => typeof entry === "string" && entry.trim().length > 0,
@@ -56,7 +56,7 @@ function collectPluginSourceEntries(packageJson, pluginDir) {
   return fs.existsSync(path.join(pluginDir, "index.ts")) ? ["./index.ts"] : [];
 }
 
-function collectTopLevelPublicSurfaceEntries(pluginDir) {
+export function collectTopLevelPublicSurfaceEntries(pluginDir) {
   if (!fs.existsSync(pluginDir)) {
     return [];
   }

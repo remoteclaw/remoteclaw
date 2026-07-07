@@ -12,7 +12,7 @@ Adds the Twitch channel surface for sending and receiving RemoteClaw messages.
 ## Distribution
 
 - Package: `@remoteclaw/twitch`
-- Install route: ClawHub + npm
+- Install route: npm; ClawHub
 
 ## Surface
 

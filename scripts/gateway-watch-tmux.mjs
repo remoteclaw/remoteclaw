@@ -9,6 +9,8 @@ const TMUX_ATTACH_FORCE_VALUES = new Set(["1", "true", "yes", "on"]);
 const DEFAULT_PROFILE_NAME = "main";
 const DEFAULT_BENCHMARK_PROFILE_DIR = ".artifacts/gateway-watch-profiles";
 const RUN_NODE_CPU_PROF_DIR_ENV = "REMOTECLAW_RUN_NODE_CPU_PROF_DIR";
+const RUN_NODE_OUTPUT_LOG_ENV = "REMOTECLAW_RUN_NODE_OUTPUT_LOG";
+const RUN_NODE_FILTER_SYNC_IO_STDERR_ENV = "REMOTECLAW_RUN_NODE_FILTER_SYNC_IO_STDERR";
 const RAW_WATCH_SCRIPT = "scripts/watch-node.mjs";
 const TMUX_CWD_ENV_KEY = "REMOTECLAW_GATEWAY_WATCH_CWD";
 const TMUX_CWD_OPTION_KEY = "@remoteclaw.gateway_watch.cwd";
@@ -19,8 +21,11 @@ const TMUX_CHILD_ENV_KEYS = [
   "REMOTECLAW_HOME",
   "REMOTECLAW_PROFILE",
   RUN_NODE_CPU_PROF_DIR_ENV,
+  RUN_NODE_FILTER_SYNC_IO_STDERR_ENV,
+  RUN_NODE_OUTPUT_LOG_ENV,
   "REMOTECLAW_SKIP_CHANNELS",
   "REMOTECLAW_STATE_DIR",
+  "REMOTECLAW_TRACE_SYNC_IO",
 ];
 
 const sanitizeSessionPart = (value) => {
@@ -49,15 +54,27 @@ const readArgValue = (args, flag) => {
   return null;
 };
 
+const joinArtifactPath = (dir, basename) => {
+  const normalizedDir = String(dir || DEFAULT_BENCHMARK_PROFILE_DIR).replace(/[\\/]+$/g, "");
+  return `${normalizedDir || "."}/${basename}`;
+};
+
 const resolveGatewayWatchBenchmarkArgs = ({ args = [], env = process.env } = {}) => {
   const passthroughArgs = [];
   let benchmarkDir = null;
   let benchmarkFlagSeen = false;
+  let benchmarkNoForceSeen = false;
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
     if (arg === "--benchmark") {
       benchmarkFlagSeen = true;
+      benchmarkDir ??= DEFAULT_BENCHMARK_PROFILE_DIR;
+      continue;
+    }
+    if (arg === "--benchmark-no-force") {
+      benchmarkFlagSeen = true;
+      benchmarkNoForceSeen = true;
       benchmarkDir ??= DEFAULT_BENCHMARK_PROFILE_DIR;
       continue;
     }
@@ -89,10 +106,25 @@ const resolveGatewayWatchBenchmarkArgs = ({ args = [], env = process.env } = {})
   if (benchmarkFlagSeen) {
     nextEnv[RUN_NODE_CPU_PROF_DIR_ENV] =
       benchmarkDir || nextEnv[RUN_NODE_CPU_PROF_DIR_ENV] || DEFAULT_BENCHMARK_PROFILE_DIR;
+    nextEnv.REMOTECLAW_TRACE_SYNC_IO ??= "0";
+    if (nextEnv.REMOTECLAW_TRACE_SYNC_IO === "1") {
+      nextEnv[RUN_NODE_OUTPUT_LOG_ENV] ??= joinArtifactPath(
+        nextEnv[RUN_NODE_CPU_PROF_DIR_ENV],
+        "gateway-watch-output.log",
+      );
+      nextEnv[RUN_NODE_FILTER_SYNC_IO_STDERR_ENV] ??= "1";
+    }
   }
   return {
-    args: passthroughArgs,
+    args: benchmarkNoForceSeen
+      ? passthroughArgs.filter((arg) => arg !== "--force")
+      : passthroughArgs,
+    benchmarkNoForce: benchmarkNoForceSeen,
     benchmarkProfileDir: nextEnv[RUN_NODE_CPU_PROF_DIR_ENV] || null,
+    benchmarkTraceOutputLog:
+      nextEnv[RUN_NODE_FILTER_SYNC_IO_STDERR_ENV] === "1"
+        ? nextEnv[RUN_NODE_OUTPUT_LOG_ENV] || null
+        : null,
     env: nextEnv,
   };
 };
@@ -237,6 +269,15 @@ export const runGatewayWatchTmuxMain = (params = {}) => {
 
   if (resolvedArgs.benchmarkProfileDir) {
     log(deps.stderr, `gateway:watch benchmark CPU profiles: ${resolvedArgs.benchmarkProfileDir}`);
+  }
+  if (resolvedArgs.benchmarkTraceOutputLog) {
+    log(
+      deps.stderr,
+      `gateway:watch benchmark trace output: ${resolvedArgs.benchmarkTraceOutputLog}`,
+    );
+  }
+  if (resolvedArgs.benchmarkNoForce) {
+    log(deps.stderr, "gateway:watch benchmark running without --force");
   }
 
   if (TMUX_DISABLE_VALUES.has((deps.env.REMOTECLAW_GATEWAY_WATCH_TMUX ?? "").toLowerCase())) {

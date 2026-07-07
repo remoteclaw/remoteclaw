@@ -96,6 +96,8 @@ describe("route-args", () => {
         "sqlite",
         "--active",
         "true",
+        "--limit",
+        "25",
       ]),
     ).toEqual({
       json: true,
@@ -103,8 +105,10 @@ describe("route-args", () => {
       agent: "default",
       store: "sqlite",
       active: "true",
+      limit: "25",
     });
     expect(parseSessionsRouteArgs(["node", "remoteclaw", "sessions", "--agent"])).toBeNull();
+    expect(parseSessionsRouteArgs(["node", "remoteclaw", "sessions", "--limit"])).toBeNull();
     expect(
       parseAgentsListRouteArgs(["node", "remoteclaw", "agents", "list", "--json", "--bindings"]),
     ).toEqual({

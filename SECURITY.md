@@ -15,6 +15,7 @@ Report vulnerabilities directly to the repository where the issue lives:
 For issues that don't fit a specific repo, or if you're unsure, email **[security@remoteclaw.org](mailto:security@remoteclaw.org)** and we'll route it.
 
 For full reporting instructions see our [Trust page](https://trust.remoteclaw.org).
+For maintainer response workflow, see the [incident response plan](docs/security/incident-response.md).
 
 ### Required in Reports
 

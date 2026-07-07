@@ -9,6 +9,7 @@ export const MODULE_ATTESTATIONS = {
   stripInternalRuntimeContext: "live",
   hasInternalRuntimeContext: "live",
   stripRuntimeContextCustomMessages: "live",
+  stripHistoricalRuntimeContextCustomMessages: "live",
 } as const;
 
 export const INTERNAL_RUNTIME_CONTEXT_BEGIN = "<<<BEGIN_REMOTECLAW_INTERNAL_CONTEXT>>>";
@@ -250,4 +251,24 @@ export function stripRuntimeContextCustomMessages<T>(messages: T[]): T[] {
     return messages;
   }
   return messages.filter((message) => !isRemoteClawRuntimeContextCustomMessage(message));
+}
+
+function isUserMessage(message: unknown): boolean {
+  return Boolean(
+    message && typeof message === "object" && (message as { role?: unknown }).role === "user",
+  );
+}
+
+/** Removes stale runtime-context custom messages while preserving current-turn context. */
+export function stripHistoricalRuntimeContextCustomMessages<T>(messages: T[]): T[] {
+  if (!messages.some(isRemoteClawRuntimeContextCustomMessage)) {
+    return messages;
+  }
+  const lastUserIndex = messages.findLastIndex(isUserMessage);
+  if (lastUserIndex === -1) {
+    return messages.filter((message) => !isRemoteClawRuntimeContextCustomMessage(message));
+  }
+  return messages.filter(
+    (message, index) => !isRemoteClawRuntimeContextCustomMessage(message) || index > lastUserIndex,
+  );
 }

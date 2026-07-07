@@ -88,6 +88,8 @@ const REQUIRED_SPAN_NAMES = [
 ] as const;
 const DISALLOWED_ATTRIBUTE_KEYS = new Set([
   "remoteclaw.runId",
+  "remoteclaw.chatId",
+  "remoteclaw.messageId",
   "remoteclaw.sessionKey",
   "remoteclaw.sessionId",
   "remoteclaw.callId",

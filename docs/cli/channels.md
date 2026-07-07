@@ -19,12 +19,16 @@ Related docs:
 
 ```bash
 remoteclaw channels list
+remoteclaw channels list --all
 remoteclaw channels status
 remoteclaw channels capabilities
 remoteclaw channels capabilities --channel discord --target channel:123
+remoteclaw channels capabilities --channel discord --target channel:<voice-channel-id>
 remoteclaw channels resolve --channel slack "#general" "@jane"
 remoteclaw channels logs --channel all
 ```
+
+`channels list` shows chat channels only: configured accounts by default, with `installed`, `configured`, and `enabled` status tags per account. Pass `--all` to also surface bundled channels that have no configured account yet and installable catalog channels that are not yet on disk. Auth providers (OAuth + API keys) and model-provider usage/quota snapshots are no longer printed here; use `remoteclaw models auth list` for provider auth profiles and `remoteclaw status` or `remoteclaw models list` for usage.
 
 ## Status / capabilities / resolve / logs
 
@@ -108,7 +112,7 @@ remoteclaw channels logout --channel whatsapp
 
 - Run `remoteclaw status --deep` for a broad probe.
 - Use `remoteclaw doctor` for guided fixes.
-- `remoteclaw channels list` prints `Claude: HTTP 403 ... user:profile` → usage snapshot needs the `user:profile` scope. Use `--no-usage`, or provide a claude.ai session key (`CLAUDE_WEB_SESSION_KEY` / `CLAUDE_WEB_COOKIE`), or re-auth via Claude CLI.
+- `remoteclaw channels list` no longer prints model provider usage/quota snapshots. For those, use `remoteclaw status` (overview) or `remoteclaw models list` (per-provider).
 - `remoteclaw channels status` falls back to config-only summaries when the gateway is unreachable. If a supported channel credential is configured via SecretRef but unavailable in the current command path, it reports that account as configured with degraded notes instead of showing it as not configured.
 
 ## Capabilities probe
@@ -124,7 +128,7 @@ Notes:
 
 - `--channel` is optional; omit it to list every channel (including extensions).
 - `--account` is only valid with `--channel`.
-- `--target` accepts `channel:<id>` or a raw numeric channel id and only applies to Discord.
+- `--target` accepts `channel:<id>` or a raw numeric channel id and only applies to Discord. For Discord voice channels, the permission check flags missing `ViewChannel`, `Connect`, `Speak`, `SendMessages`, and `ReadMessageHistory`.
 - Probes are provider-specific: Discord intents + optional channel permissions; Slack bot + user scopes; Telegram bot flags + webhook; Signal daemon version; Microsoft Teams app token + Graph roles/scopes (annotated where known). Channels without probes report `Probe: unavailable`.
 
 ## Resolve names to IDs

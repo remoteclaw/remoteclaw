@@ -4,7 +4,10 @@ import { registerDnsCli } from "./dns-cli.js";
 import { parseCanvasSnapshotPayload } from "./nodes-canvas.js";
 import { parseByteSize } from "./parse-bytes.js";
 import { parseDurationMs } from "./parse-duration.js";
-import { shouldSkipRespawnForArgv } from "./respawn-policy.js";
+import {
+  shouldSkipRespawnForArgv,
+  shouldSkipStartupEnvironmentRespawnForArgv,
+} from "./respawn-policy.js";
 import { waitForever } from "./wait.js";
 
 describe("waitForever", () => {
@@ -21,6 +24,9 @@ describe("shouldSkipRespawnForArgv", () => {
   it.each([
     { argv: ["node", "remoteclaw", "--help"] },
     { argv: ["node", "remoteclaw", "-V"] },
+    { argv: ["node", "remoteclaw", "tui"] },
+    { argv: ["node", "remoteclaw", "terminal"] },
+    { argv: ["node", "remoteclaw", "chat"] },
     { argv: ["node", "remoteclaw", "gateway"] },
     { argv: ["node", "remoteclaw", "gateway", "--port", "14720", "--bind", "loopback"] },
     { argv: ["node", "remoteclaw", "gateway", "run", "--port=14720", "--bind", "loopback"] },
@@ -37,6 +43,25 @@ describe("shouldSkipRespawnForArgv", () => {
     { argv: ["node", "remoteclaw", "gateway", "call", "health"] },
   ] as const)("keeps respawn path for argv %j", ({ argv }) => {
     expect(shouldSkipRespawnForArgv([...argv]), argv.join(" ")).toBe(false);
+  });
+});
+
+describe("shouldSkipStartupEnvironmentRespawnForArgv", () => {
+  it.each([
+    { argv: ["node", "remoteclaw", "--help"] },
+    { argv: ["node", "remoteclaw", "gateway"] },
+    { argv: ["node", "remoteclaw", "gateway", "run", "--port=14720"] },
+  ] as const)("skips startup env respawn for argv %j", ({ argv }) => {
+    expect(shouldSkipStartupEnvironmentRespawnForArgv([...argv]), argv.join(" ")).toBe(true);
+  });
+
+  it.each([
+    { argv: ["node", "remoteclaw", "tui"] },
+    { argv: ["node", "remoteclaw", "terminal"] },
+    { argv: ["node", "remoteclaw", "chat"] },
+    { argv: ["node", "remoteclaw", "status"] },
+  ] as const)("allows startup env respawn for argv %j", ({ argv }) => {
+    expect(shouldSkipStartupEnvironmentRespawnForArgv([...argv]), argv.join(" ")).toBe(false);
   });
 });
 

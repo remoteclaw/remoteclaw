@@ -12,7 +12,7 @@ Adds the Google Chat channel surface for sending and receiving RemoteClaw messag
 ## Distribution
 
 - Package: `@remoteclaw/googlechat`
-- Install route: ClawHub + npm
+- Install route: npm; ClawHub
 
 ## Surface
 

@@ -147,6 +147,11 @@ export type GatewayTrustedProxyConfig = {
    * Example: ["nick@example.com", "admin@company.org"]
    */
   allowUsers?: string[];
+  /**
+   * Allow loopback (127.0.0.1/::1) connections to bypass proxy-header trust
+   * checks. Defaults to false; enable only for local development.
+   */
+  allowLoopback?: boolean;
 };
 
 export type GatewayAuthConfig = {

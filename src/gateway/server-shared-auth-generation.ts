@@ -1,5 +1,5 @@
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
-import { resolveGatewayReloadSettings } from "./config-reload.js";
+import { resolveGatewayReloadSettings } from "./config-reload-settings.js";
 
 export type SharedGatewayAuthClient = {
   usesSharedGatewayAuth?: boolean;

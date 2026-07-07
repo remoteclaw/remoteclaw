@@ -12,7 +12,7 @@ Read-only diff viewer and file renderer for agents.
 ## Distribution
 
 - Package: `@remoteclaw/diffs`
-- Install route: ClawHub + npm
+- Install route: npm; ClawHub
 
 ## Surface
 

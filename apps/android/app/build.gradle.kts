@@ -65,8 +65,8 @@ android {
     applicationId = "org.remoteclaw.app"
     minSdk = 31
     targetSdk = 36
-    versionCode = 2026050200
-    versionName = "2026.5.2"
+    versionCode = 2026050700
+    versionName = "2026.5.7"
     ndk {
       // Support all major ABIs — native libs are tiny (~47 KB per ABI)
       abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")

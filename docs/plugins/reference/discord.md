@@ -12,7 +12,7 @@ Adds the Discord channel surface for sending and receiving RemoteClaw messages.
 ## Distribution
 
 - Package: `@remoteclaw/discord`
-- Install route: ClawHub + npm
+- Install route: npm; ClawHub
 
 ## Surface
 

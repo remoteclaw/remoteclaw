@@ -12,7 +12,7 @@ Typed workflow tool with resumable approvals.
 ## Distribution
 
 - Package: `@remoteclaw/lobster`
-- Install route: ClawHub + npm
+- Install route: npm; ClawHub
 
 ## Surface
 

@@ -23,11 +23,15 @@ describe("poll params", () => {
     },
   );
 
-  it("treats finite numeric poll params as poll creation intent", () => {
-    expect(hasPollCreationParams({ pollDurationHours: 0 })).toBe(true);
+  it("treats non-zero finite numeric poll params as poll creation intent", () => {
+    // A zero-valued numeric param (e.g. pollDurationHours: 0) is an unset default,
+    // not poll-creation intent — it must not turn a plain send into a poll (v5.7
+    // semantics; consumed by message-action-runner's send-vs-poll classification).
+    expect(hasPollCreationParams({ pollDurationHours: 0 })).toBe(false);
     expect(hasPollCreationParams({ pollDurationSeconds: 60 })).toBe(true);
     expect(hasPollCreationParams({ pollDurationSeconds: "60" })).toBe(true);
     expect(hasPollCreationParams({ pollDurationSeconds: "1e3" })).toBe(true);
+    expect(hasPollCreationParams({ pollDurationHours: -1 })).toBe(true);
     expect(hasPollCreationParams({ pollDurationHours: Number.NaN })).toBe(false);
     expect(hasPollCreationParams({ pollDurationSeconds: Infinity })).toBe(false);
     expect(hasPollCreationParams({ pollDurationSeconds: "60abc" })).toBe(false);

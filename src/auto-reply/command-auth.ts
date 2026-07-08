@@ -470,13 +470,15 @@ function resolveFallbackCommandOptions(providerId?: ChannelId): {
 // Deduplicates the fail-closed-cliff warning so a per-message denial does not spam
 // the logs. Keyed by provider + account: one warning per misconfigured shape.
 //
-// This dedup is process-lifetime by design and never reset or pruned: the fork has
-// no runtime config hot-reload path (no watchConfig/reloadConfig/onConfigChange —
-// config is loaded once at startup), so a fail-closed cliff for a given key cannot
-// be newly *created* mid-process — the misconfigured shape (owner enforcement on,
-// no resolvable owner) that caused it is fixed for the lifetime of the process. The
-// only way the misconfiguration changes is a process restart, which also clears
-// this Set, so a still-misconfigured restarted process correctly warns again.
+// This dedup is process-lifetime by design and never reset or pruned. It gates only
+// log emission — never authorization — so a stale entry can at worst suppress a
+// repeat warning, never change an authz outcome. The fork DOES support runtime config
+// hot-reload (startGatewayConfigReloader, wired in gateway/server.impl.ts via
+// onHotReload; default gateway.reload.mode "hybrid"), so the cliff shape (owner
+// enforcement on, no resolvable owner) CAN arise mid-process. That is still handled
+// correctly: the first cliff denial for an as-yet-unwarned key always warns (this Set
+// only suppresses repeats). Accepted gap: a config fix -> re-break cycle for the SAME
+// key within one process will not re-warn until a restart (which also clears this Set).
 const ownerEnforcementCliffWarned = new Set<string>();
 
 function warnOwnerEnforcementCliff(

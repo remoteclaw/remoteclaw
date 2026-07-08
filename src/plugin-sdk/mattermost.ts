@@ -78,11 +78,21 @@ export {
   readRequestBodyWithLimit,
   requestBodyErrorToText,
 } from "../infra/http-body.js";
+export {
+  createFixedWindowRateLimiter,
+  WEBHOOK_RATE_LIMIT_DEFAULTS,
+} from "./webhook-memory-guards.js";
+export { applyBasicWebhookRequestGuards } from "./webhook-request-guards.js";
 export { parseStrictPositiveInteger } from "../infra/parse-finite-number.js";
 export { rawDataToString } from "../infra/ws.js";
 export { redactSensitiveText } from "../logging/redact.js";
 export { safeEqualSecret } from "../security/secret-equal.js";
-export { isLoopbackHost, isTrustedProxyAddress, resolveClientIp } from "../gateway/net.js";
+export {
+  isLoopbackHost,
+  isTrustedProxyAddress,
+  resolveClientIp,
+  resolveRequestClientIp,
+} from "../gateway/net.js";
 export { registerPluginHttpRoute } from "../plugins/http-registry.js";
 export { emptyPluginConfigSchema } from "../plugins/config-schema.js";
 export type { PluginRuntime } from "../plugins/runtime/types.js";

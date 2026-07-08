@@ -11,11 +11,16 @@
 
 import type { IncomingMessage, ServerResponse } from "node:http";
 import {
+  applyBasicWebhookRequestGuards,
+  createFixedWindowRateLimiter,
   isRequestBodyLimitError,
   readRequestBodyWithLimit,
+  type RemoteClawConfig,
   type RemoteClawPluginApi,
   requestBodyErrorToText,
+  resolveRequestClientIp,
   safeEqualSecret,
+  WEBHOOK_RATE_LIMIT_DEFAULTS,
 } from "remoteclaw/plugin-sdk/mattermost";
 import type { ResolvedMattermostAccount } from "./accounts.js";
 import { resolveSlashCommandConfig, type MattermostRegisteredCommand } from "./slash-commands.js";
@@ -143,6 +148,28 @@ export function deactivateSlashCommands(accountId?: string) {
 }
 
 /**
+ * Resolve the per-source rate-limit key for a slash callback request.
+ *
+ * Keyed by `${callbackPath}:${clientIp}` so each registered callback path gets
+ * an isolated budget per client IP. When trusted proxies are configured the
+ * forwarded client IP is used; otherwise the socket peer address. Falls back to
+ * "unknown" when no address can be resolved (still bounded — a shared bucket).
+ */
+function resolveSlashCallbackRateLimitKey(
+  req: IncomingMessage,
+  callbackPath: string,
+  config?: RemoteClawConfig,
+): string {
+  const clientIp =
+    resolveRequestClientIp(
+      req,
+      config?.gateway?.trustedProxies,
+      config?.gateway?.allowRealIpFallback === true,
+    ) ?? "unknown";
+  return `${callbackPath}:${clientIp}`;
+}
+
+/**
  * Register the HTTP route for slash command callbacks.
  * Called during plugin registration.
  *
@@ -190,7 +217,38 @@ export function registerSlashCommandRoute(api: RemoteClawPluginApi) {
     addCallbackPaths(accountCommandsRaw);
   }
 
-  const routeHandler = async (req: IncomingMessage, res: ServerResponse) => {
+  // One per-source fixed-window limiter shared across every registered callback
+  // path. Keying by `${callbackPath}:${clientIp}` isolates each path's budget
+  // per source while a single instance bounds total tracked keys.
+  const slashCallbackRateLimiter = createFixedWindowRateLimiter({
+    windowMs: WEBHOOK_RATE_LIMIT_DEFAULTS.windowMs,
+    maxRequests: WEBHOOK_RATE_LIMIT_DEFAULTS.maxRequests,
+    maxTrackedKeys: WEBHOOK_RATE_LIMIT_DEFAULTS.maxTrackedKeys,
+  });
+
+  const handleSlashCallback = async (
+    req: IncomingMessage,
+    res: ServerResponse,
+    callbackPath: string,
+  ) => {
+    // Bound the externally reachable callback route per source before any body
+    // read or token routing. The method pre-check (405) runs before the rate
+    // check, so non-POST probes spend no budget; invalid-token floods and
+    // slow-drip clients are counted in the same window as any later request
+    // from that source. Mirrors the telegram/feishu/zalo/googlechat guards.
+    // No content-type gate: Mattermost callbacks are form-urlencoded or JSON.
+    if (
+      !applyBasicWebhookRequestGuards({
+        req,
+        res,
+        allowMethods: ["POST"],
+        rateLimiter: slashCallbackRateLimiter,
+        rateLimitKey: resolveSlashCallbackRateLimitKey(req, callbackPath, api.config),
+      })
+    ) {
+      return;
+    }
+
     if (accountStates.size === 0) {
       res.statusCode = 503;
       res.setHeader("Content-Type", "application/json; charset=utf-8");
@@ -311,7 +369,7 @@ export function registerSlashCommandRoute(api: RemoteClawPluginApi) {
     api.registerHttpRoute({
       path: callbackPath,
       auth: "plugin",
-      handler: routeHandler,
+      handler: (req, res) => handleSlashCallback(req, res, callbackPath),
     });
   }
 }

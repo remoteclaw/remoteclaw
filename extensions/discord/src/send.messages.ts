@@ -15,23 +15,24 @@ export async function readMessagesDiscord(
   query: DiscordMessageQuery = {},
   opts: DiscordReactOpts = {},
 ): Promise<APIMessage[]> {
+  const messageQuery = query ?? {};
   const rest = resolveDiscordRest(opts);
   const limit =
-    typeof query.limit === "number" && Number.isFinite(query.limit)
-      ? Math.min(Math.max(Math.floor(query.limit), 1), 100)
+    typeof messageQuery.limit === "number" && Number.isFinite(messageQuery.limit)
+      ? Math.min(Math.max(Math.floor(messageQuery.limit), 1), 100)
       : undefined;
   const params: Record<string, string | number> = {};
   if (limit) {
     params.limit = limit;
   }
-  if (query.before) {
-    params.before = query.before;
+  if (messageQuery.before) {
+    params.before = messageQuery.before;
   }
-  if (query.after) {
-    params.after = query.after;
+  if (messageQuery.after) {
+    params.after = messageQuery.after;
   }
-  if (query.around) {
-    params.around = query.around;
+  if (messageQuery.around) {
+    params.around = messageQuery.around;
   }
   return (await rest.get(Routes.channelMessages(channelId), params)) as APIMessage[];
 }

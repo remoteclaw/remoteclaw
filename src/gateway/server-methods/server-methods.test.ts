@@ -17,6 +17,17 @@ vi.mock("../../commands/status.js", () => ({
   getStatusSummary: vi.fn().mockResolvedValue({ ok: true }),
 }));
 
+function expectRecordFields(record: unknown, expected: Record<string, unknown>) {
+  if (!record || typeof record !== "object") {
+    throw new Error("Expected record");
+  }
+  const actual = record as Record<string, unknown>;
+  for (const [key, value] of Object.entries(expected)) {
+    expect(actual[key]).toEqual(value);
+  }
+  return actual;
+}
+
 describe("waitForAgentJob", () => {
   async function runLifecycleScenario(params: {
     runIdPrefix: string;
@@ -63,10 +74,11 @@ describe("waitForAgentJob", () => {
 
       await vi.advanceTimersByTimeAsync(15_000);
       const snapshot = await snapshotPromise;
-      expect(snapshot).not.toBeNull();
-      expect(snapshot?.status).toBe("timeout");
-      expect(snapshot?.startedAt).toBe(100);
-      expect(snapshot?.endedAt).toBe(200);
+      expectRecordFields(snapshot, {
+        status: "timeout",
+        startedAt: 100,
+        endedAt: 200,
+      });
     } finally {
       vi.useRealTimers();
     }
@@ -78,10 +90,11 @@ describe("waitForAgentJob", () => {
       startedAt: 300,
       endedAt: 400,
     });
-    expect(snapshot).not.toBeNull();
-    expect(snapshot?.status).toBe("ok");
-    expect(snapshot?.startedAt).toBe(300);
-    expect(snapshot?.endedAt).toBe(400);
+    expectRecordFields(snapshot, {
+      status: "ok",
+      startedAt: 300,
+      endedAt: 400,
+    });
   });
 
   it("can ignore cached snapshots and wait for fresh lifecycle events", async () => {

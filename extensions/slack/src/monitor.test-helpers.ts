@@ -15,6 +15,9 @@ type SlackTestState = {
   reactMock: Mock<(...args: unknown[]) => unknown>;
   readAllowFromStoreMock: Mock<(...args: unknown[]) => Promise<unknown>>;
   upsertPairingRequestMock: Mock<(...args: unknown[]) => Promise<unknown>>;
+  resolveSlackUserAllowlistMock: Mock<
+    (params: { entries: string[] }) => Promise<Array<{ input: string; resolved: boolean }>>
+  >;
 };
 
 const slackTestState: SlackTestState = vi.hoisted(() => ({
@@ -25,6 +28,7 @@ const slackTestState: SlackTestState = vi.hoisted(() => ({
   reactMock: vi.fn(),
   readAllowFromStoreMock: vi.fn(),
   upsertPairingRequestMock: vi.fn(),
+  resolveSlackUserAllowlistMock: vi.fn(),
 }));
 
 export const getSlackTestState = (): SlackTestState => slackTestState;
@@ -146,6 +150,11 @@ export function resetSlackTestState(config: Record<string, unknown> = defaultSla
     code: "PAIRCODE",
     created: true,
   });
+  slackTestState.resolveSlackUserAllowlistMock
+    .mockReset()
+    .mockImplementation(async ({ entries }) =>
+      entries.map((input) => ({ input, resolved: false })),
+    );
   getSlackHandlers()?.clear();
 }
 
@@ -167,8 +176,8 @@ vi.mock("./resolve-channels.js", () => ({
 }));
 
 vi.mock("./resolve-users.js", () => ({
-  resolveSlackUserAllowlist: async ({ entries }: { entries: string[] }) =>
-    entries.map((input) => ({ input, resolved: false })),
+  resolveSlackUserAllowlist: (params: { entries: string[] }) =>
+    slackTestState.resolveSlackUserAllowlistMock(params),
 }));
 
 vi.mock("./send.js", () => ({

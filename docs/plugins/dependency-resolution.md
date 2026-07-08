@@ -8,8 +8,6 @@ title: "Plugin dependency resolution"
 sidebarTitle: "Dependencies"
 ---
 
-# Plugin dependency resolution
-
 RemoteClaw keeps plugin dependency work at install/update time. Runtime loading
 does not run package managers, repair dependency trees, or mutate the RemoteClaw
 package directory.
@@ -43,8 +41,16 @@ RemoteClaw uses stable per-source roots:
 npm installs run in the npm root with:
 
 ```bash
-npm install --prefix ~/.remoteclaw/npm <spec> --omit=dev --omit=peer --legacy-peer-deps --ignore-scripts --no-audit --no-fund
+cd ~/.remoteclaw/npm
+npm install --omit=dev --omit=peer --legacy-peer-deps --ignore-scripts --no-audit --no-fund
 ```
+
+`remoteclaw plugins install npm-pack:<path.tgz>` uses that same managed npm root
+for a local npm-pack tarball. RemoteClaw reads the tarball's npm metadata, adds it
+to the managed root as a copied `file:` dependency, runs the normal npm install,
+and then verifies the installed lockfile metadata before trusting the plugin.
+This is intended for package-acceptance and release-candidate proof where a
+local pack artifact should behave like the registry artifact it simulates.
 
 npm may hoist transitive dependencies to `~/.remoteclaw/npm/node_modules` beside
 the plugin package. RemoteClaw scans the managed npm root before trusting the

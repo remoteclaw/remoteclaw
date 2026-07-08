@@ -36,6 +36,7 @@ import UIKit
             #expect(caps.contains(RemoteClawCapability.camera.rawValue))
             #expect(caps.contains(RemoteClawCapability.location.rawValue))
             #expect(caps.contains(RemoteClawCapability.voiceWake.rawValue))
+            #expect(caps.contains(RemoteClawCapability.talk.rawValue))
         }
     }
 

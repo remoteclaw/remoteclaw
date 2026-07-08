@@ -32,6 +32,14 @@ function mockFetchWithRedirect(redirectMap: Record<string, string>, finalBody = 
   });
 }
 
+function fetchInitAt(fetchMock: ReturnType<typeof vi.fn>, index: number): unknown {
+  const call = fetchMock.mock.calls[index];
+  if (!call) {
+    throw new Error(`expected fetch call ${index}`);
+  }
+  return call[1];
+}
+
 async function expectSafeFetchStatus(params: {
   fetchMock: ReturnType<typeof vi.fn>;
   url: string;
@@ -147,7 +155,7 @@ describe("safeFetch", () => {
     });
     expect(fetchMock).toHaveBeenCalledOnce();
     // Should have used redirect: "manual"
-    expect(fetchMock.mock.calls[0][1]).toHaveProperty("redirect", "manual");
+    expect(fetchInitAt(fetchMock, 0)).toHaveProperty("redirect", "manual");
   });
 
   it("follows a redirect to an allowlisted host with public IP", async () => {
@@ -406,7 +414,7 @@ describe("msteams inline image limits", () => {
       },
     ];
     const out = extractInlineImageCandidates(attachments, { maxInlineBytes: 4 });
-    expect(out).toEqual([]);
+    expect(out).toStrictEqual([]);
   });
 
   it("accepts inline data images within limit", () => {

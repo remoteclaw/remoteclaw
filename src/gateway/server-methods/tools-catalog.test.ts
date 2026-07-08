@@ -88,9 +88,10 @@ describe("tools.catalog handler", () => {
         }
       | undefined;
     expect(payload?.agentId).toBe("main");
-    expect(payload?.groups.some((group) => group.source === "plugin")).toBe(false);
-    const media = payload?.groups.find((group) => group.id === "media");
-    expect(media?.tools.some((tool) => tool.id === "tts" && tool.source === "core")).toBe(true);
+    const groups = payload?.groups ?? [];
+    expect(groups.some((group) => group.source === "plugin")).toBe(false);
+    const media = groups.find((group) => group.id === "media");
+    expect(media?.tools.map((tool) => `${tool.source}:${tool.id}`) ?? []).toContain("core:tts");
   });
 
   it("includes plugin groups with plugin metadata", async () => {
@@ -117,10 +118,16 @@ describe("tools.catalog handler", () => {
     const voiceCall = pluginGroups
       .flatMap((group) => group.tools)
       .find((tool) => tool.id === "voice_call");
-    expect(voiceCall).toMatchObject({
+    expect(voiceCall).toEqual({
+      id: "voice_call",
+      label: "voice_call",
+      description: "Plugin calling tool",
       source: "plugin",
       pluginId: "voice-call",
       optional: true,
+      risk: undefined,
+      tags: undefined,
+      defaultProfiles: [],
     });
   });
 });

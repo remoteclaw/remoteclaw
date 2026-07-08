@@ -109,6 +109,11 @@ Uninstall removes the plugin's config entry, plugin index record, allow/deny lis
 entries, and linked load paths when applicable. Managed install directories are
 removed unless you pass `--keep-files`.
 
+In Nix mode (`REMOTECLAW_NIX_MODE=1`), plugin install, update, uninstall, enable,
+and disable commands are disabled. Manage those choices in the Nix source for
+the install instead; for nix-remoteclaw, use the agent-first
+[Quick Start](https://github.com/remoteclaw/nix-remoteclaw#quick-start).
+
 ## Publish plugins
 
 You can publish external plugins to ClawHub, npmjs.com, or
@@ -182,6 +187,6 @@ forces npm resolution.
 
 - [Plugins](/tools/plugin) - overview and troubleshooting
 - [`remoteclaw plugins`](/cli/plugins) - full CLI reference
-- [ClawHub](/tools/clawhub) - publish and registry operations
+- [ClawHub](/clawhub/cli) - publish and registry operations
 - [Building plugins](/plugins/building-plugins) - create a plugin package
 - [Plugin manifest](/plugins/manifest) - manifest and package metadata

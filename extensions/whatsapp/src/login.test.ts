@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import { resetLogger, setLoggerOverride } from "remoteclaw/plugin-sdk/runtime-env";
+import { resetLogger, setLoggerOverride, success } from "remoteclaw/plugin-sdk/runtime-env";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderQrPngBase64 } from "./qr-image.js";
 

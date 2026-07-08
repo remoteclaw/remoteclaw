@@ -17,6 +17,29 @@ const createOutput = () => {
   };
 };
 
+function requireRecord(value: unknown, label: string): Record<string, unknown> {
+  if (!value || typeof value !== "object") {
+    throw new Error(`expected ${label}`);
+  }
+  return value as Record<string, unknown>;
+}
+
+function spawnCall(mock: unknown, callIndex: number) {
+  const calls = (mock as { mock?: { calls?: Array<Array<unknown>> } }).mock?.calls ?? [];
+  const call = calls.at(callIndex);
+  if (!call) {
+    throw new Error(`Expected spawn call ${callIndex + 1}`);
+  }
+  return call;
+}
+
+function expectSpawn(mock: unknown, callIndex: number, command: string, args: Array<unknown>) {
+  const call = spawnCall(mock, callIndex);
+  expect(call[0]).toBe(command);
+  expect(call[1]).toEqual(args);
+  return requireRecord(call[2], "spawn options");
+}
+
 describe("gateway-watch tmux wrapper", () => {
   it("derives stable session names from profile and port", () => {
     expect(resolveGatewayWatchTmuxSessionName({ args: ["gateway", "--force"], env: {} })).toBe(
@@ -136,51 +159,42 @@ describe("gateway-watch tmux wrapper", () => {
     });
 
     expect(code).toBe(0);
-    expect(spawnSync).toHaveBeenNthCalledWith(
-      1,
-      "tmux",
-      ["has-session", "-t", "remoteclaw-gateway-watch-main"],
-      expect.objectContaining({ encoding: "utf8" }),
-    );
-    expect(spawnSync).toHaveBeenNthCalledWith(
-      2,
-      "tmux",
-      [
-        "new-session",
-        "-d",
-        "-s",
-        "remoteclaw-gateway-watch-main",
-        "-c",
-        "/repo",
-        expect.stringContaining("scripts/watch-node.mjs"),
-      ],
-      expect.objectContaining({ encoding: "utf8" }),
-    );
-    expect(spawnSync).toHaveBeenNthCalledWith(
-      3,
-      "tmux",
-      [
+    expect(
+      expectSpawn(spawnSync, 0, "tmux", ["has-session", "-t", "remoteclaw-gateway-watch-main"])
+        .encoding,
+    ).toBe("utf8");
+    const newSessionCall = spawnCall(spawnSync, 1);
+    expect(newSessionCall[0]).toBe("tmux");
+    const newSessionArgs = newSessionCall[1] as Array<unknown>;
+    expect(newSessionArgs.slice(0, 6)).toEqual([
+      "new-session",
+      "-d",
+      "-s",
+      "remoteclaw-gateway-watch-main",
+      "-c",
+      "/repo",
+    ]);
+    expect(String(newSessionArgs[6])).toContain("scripts/watch-node.mjs");
+    expect(requireRecord(newSessionCall[2], "spawn options").encoding).toBe("utf8");
+    expect(
+      expectSpawn(spawnSync, 2, "tmux", [
         "set-option",
         "-q",
         "-t",
         "remoteclaw-gateway-watch-main",
         "@remoteclaw.gateway_watch.cwd",
         "/repo",
-      ],
-      expect.objectContaining({ encoding: "utf8" }),
-    );
-    expect(spawnSync).toHaveBeenNthCalledWith(
-      4,
-      "tmux",
-      [
+      ]).encoding,
+    ).toBe("utf8");
+    expect(
+      expectSpawn(spawnSync, 3, "tmux", [
         "set-environment",
         "-t",
         "remoteclaw-gateway-watch-main",
         "REMOTECLAW_GATEWAY_WATCH_CWD",
         "/repo",
-      ],
-      expect.objectContaining({ encoding: "utf8" }),
-    );
+      ]).encoding,
+    ).toBe("utf8");
     expect(stderr.chunks.join("")).toContain(
       "gateway:watch started in tmux session remoteclaw-gateway-watch-main",
     );
@@ -214,12 +228,10 @@ describe("gateway-watch tmux wrapper", () => {
     });
 
     expect(code).toBe(0);
-    expect(spawnSync).toHaveBeenNthCalledWith(
-      5,
-      "tmux",
-      ["attach-session", "-t", "remoteclaw-gateway-watch-main"],
-      expect.objectContaining({ stdio: "inherit" }),
-    );
+    expect(
+      expectSpawn(spawnSync, 4, "tmux", ["attach-session", "-t", "remoteclaw-gateway-watch-main"])
+        .stdio,
+    ).toBe("inherit");
     expect(stdout.chunks.join("")).not.toContain("tmux attach -t");
   });
 
@@ -247,12 +259,10 @@ describe("gateway-watch tmux wrapper", () => {
     });
 
     expect(code).toBe(0);
-    expect(spawnSync).toHaveBeenNthCalledWith(
-      5,
-      "tmux",
-      ["switch-client", "-t", "remoteclaw-gateway-watch-main"],
-      expect.objectContaining({ stdio: "inherit" }),
-    );
+    expect(
+      expectSpawn(spawnSync, 4, "tmux", ["switch-client", "-t", "remoteclaw-gateway-watch-main"])
+        .stdio,
+    ).toBe("inherit");
   });
 
   it("keeps detached output in CI unless attach is forced", () => {
@@ -303,20 +313,19 @@ describe("gateway-watch tmux wrapper", () => {
     });
 
     expect(code).toBe(0);
-    expect(spawnSync).toHaveBeenNthCalledWith(
-      2,
-      "tmux",
-      [
-        "respawn-pane",
-        "-k",
-        "-t",
-        "remoteclaw-gateway-watch-dev-19001",
-        "-c",
-        "/repo",
-        expect.stringContaining("scripts/watch-node.mjs"),
-      ],
-      expect.objectContaining({ encoding: "utf8" }),
-    );
+    const respawnCall = spawnCall(spawnSync, 1);
+    expect(respawnCall[0]).toBe("tmux");
+    const respawnArgs = respawnCall[1] as Array<unknown>;
+    expect(respawnArgs.slice(0, 6)).toEqual([
+      "respawn-pane",
+      "-k",
+      "-t",
+      "remoteclaw-gateway-watch-dev-19001",
+      "-c",
+      "/repo",
+    ]);
+    expect(String(respawnArgs[6])).toContain("scripts/watch-node.mjs");
+    expect(requireRecord(respawnCall[2], "spawn options").encoding).toBe("utf8");
     expect(stderr.chunks.join("")).toContain(
       "gateway:watch restarted in tmux session remoteclaw-gateway-watch-dev-19001",
     );
@@ -345,40 +354,36 @@ describe("gateway-watch tmux wrapper", () => {
     });
 
     expect(code).toBe(0);
-    expect(spawnSync).toHaveBeenNthCalledWith(
-      2,
-      "tmux",
-      [
-        "respawn-pane",
-        "-k",
-        "-t",
-        "remoteclaw-gateway-watch-main",
-        "-c",
-        "/repo",
-        expect.stringContaining("scripts/watch-node.mjs"),
-      ],
-      expect.objectContaining({ encoding: "utf8" }),
-    );
-    expect(spawnSync).toHaveBeenNthCalledWith(
-      3,
-      "tmux",
-      ["kill-session", "-t", "remoteclaw-gateway-watch-main"],
-      expect.objectContaining({ encoding: "utf8" }),
-    );
-    expect(spawnSync).toHaveBeenNthCalledWith(
-      4,
-      "tmux",
-      [
-        "new-session",
-        "-d",
-        "-s",
-        "remoteclaw-gateway-watch-main",
-        "-c",
-        "/repo",
-        expect.stringContaining("scripts/watch-node.mjs"),
-      ],
-      expect.objectContaining({ encoding: "utf8" }),
-    );
+    const staleRespawnCall = spawnCall(spawnSync, 1);
+    expect(staleRespawnCall[0]).toBe("tmux");
+    const staleRespawnArgs = staleRespawnCall[1] as Array<unknown>;
+    expect(staleRespawnArgs.slice(0, 6)).toEqual([
+      "respawn-pane",
+      "-k",
+      "-t",
+      "remoteclaw-gateway-watch-main",
+      "-c",
+      "/repo",
+    ]);
+    expect(String(staleRespawnArgs[6])).toContain("scripts/watch-node.mjs");
+    expect(requireRecord(staleRespawnCall[2], "spawn options").encoding).toBe("utf8");
+    expect(
+      expectSpawn(spawnSync, 2, "tmux", ["kill-session", "-t", "remoteclaw-gateway-watch-main"])
+        .encoding,
+    ).toBe("utf8");
+    const recreatedCall = spawnCall(spawnSync, 3);
+    expect(recreatedCall[0]).toBe("tmux");
+    const recreatedArgs = recreatedCall[1] as Array<unknown>;
+    expect(recreatedArgs.slice(0, 6)).toEqual([
+      "new-session",
+      "-d",
+      "-s",
+      "remoteclaw-gateway-watch-main",
+      "-c",
+      "/repo",
+    ]);
+    expect(String(recreatedArgs[6])).toContain("scripts/watch-node.mjs");
+    expect(requireRecord(recreatedCall[2], "spawn options").encoding).toBe("utf8");
   });
 
   it("runs the raw foreground watcher when tmux mode is disabled", () => {

@@ -5,9 +5,11 @@ export function isSlackChannelAllowedByPolicy(params: {
   channelAllowlistConfigured: boolean;
   channelAllowed: boolean;
 }): boolean {
-  return evaluateGroupRouteAccessForPolicy({
-    groupPolicy: params.groupPolicy,
-    routeAllowlistConfigured: params.channelAllowlistConfigured,
-    routeMatched: params.channelAllowed,
-  }).allowed;
+  if (params.groupPolicy === "disabled") {
+    return false;
+  }
+  return (
+    params.groupPolicy !== "allowlist" ||
+    (params.channelAllowlistConfigured && params.channelAllowed)
+  );
 }

@@ -34,6 +34,8 @@ import { isLikelyWhatsAppCryptoError } from "./util.js";
 function isNonRetryableWebCloseStatus(statusCode: unknown): boolean {
   // WhatsApp 440 = session conflict ("Unknown Stream Errored (conflict)").
   // This is persistent until the operator resolves the conflicting session.
+  // Baileys 428 = DisconnectReason.connectionClosed, a generic WebSocket close
+  // that is often transient and must stay on the reconnect path.
   return statusCode === 440;
 }
 

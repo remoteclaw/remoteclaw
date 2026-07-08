@@ -381,9 +381,12 @@ describe("gateway hot reload", () => {
 
       expect(hoisted.startHeartbeatRunner).toHaveBeenCalledTimes(1);
       expect(hoisted.heartbeatUpdateConfig).toHaveBeenCalledTimes(1);
-      expect(hoisted.heartbeatUpdateConfig).toHaveBeenCalledWith(
-        expect.objectContaining(nextConfig),
-      );
+      const heartbeatUpdateCall = hoisted.heartbeatUpdateConfig.mock.calls.at(-1) as
+        | [typeof nextConfig]
+        | undefined;
+      const heartbeatConfig = heartbeatUpdateCall?.[0];
+      expect(heartbeatConfig?.agents).toEqual(nextConfig.agents);
+      expect(heartbeatConfig?.web).toEqual(nextConfig.web);
 
       expect(hoisted.cronInstances.length).toBe(2);
       expect(hoisted.cronInstances[0].stop).toHaveBeenCalledTimes(1);

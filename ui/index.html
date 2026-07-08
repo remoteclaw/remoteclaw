@@ -12,6 +12,124 @@
   </head>
   <body>
     <remoteclaw-app></remoteclaw-app>
+    <section
+      id="remoteclaw-mount-fallback"
+      class="mount-fallback"
+      data-remoteclaw-mount-timeout-ms="12000"
+      role="alert"
+      aria-labelledby="remoteclaw-mount-fallback-title"
+      hidden
+    >
+      <div class="mount-fallback__panel" tabindex="-1">
+        <p class="mount-fallback__eyebrow">RemoteClaw Control UI</p>
+        <h1 id="remoteclaw-mount-fallback-title">Control UI did not start</h1>
+        <p>
+          The browser loaded the static page, but the app bundle did not register the
+          <code>remoteclaw-app</code> web component. A browser extension or early content script may
+          be blocking module execution.
+        </p>
+        <ul>
+          <li>Try again in a clean browser profile or private window.</li>
+          <li>Disable extensions that run on all pages, then reload this dashboard.</li>
+          <li>
+            See
+            <a
+              href="https://docs.remoteclaw.org/web/control-ui#blank-control-ui-page"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Control UI troubleshooting</a
+            >.
+          </li>
+        </ul>
+        <div class="mount-fallback__actions">
+          <button
+            type="button"
+            id="remoteclaw-mount-retry"
+            class="mount-fallback__button mount-fallback__button--primary"
+          >
+            Try again
+          </button>
+          <button type="button" id="remoteclaw-mount-wait" class="mount-fallback__button">
+            Keep waiting
+          </button>
+        </div>
+      </div>
+    </section>
+    <script>
+      (function () {
+        var tagName = "remoteclaw-app";
+        var app = document.querySelector(tagName);
+        var fallback = document.getElementById("remoteclaw-mount-fallback");
+        if (!app || !fallback) return;
+
+        var panel = fallback.querySelector(".mount-fallback__panel");
+        var retry = document.getElementById("remoteclaw-mount-retry");
+        var wait = document.getElementById("remoteclaw-mount-wait");
+        var rawDelay = Number(fallback.getAttribute("data-remoteclaw-mount-timeout-ms"));
+        var delay = Number.isFinite(rawDelay) && rawDelay > 0 ? rawDelay : 12000;
+        var timer;
+
+        function appMounted() {
+          try {
+            return Boolean(
+              app.isConnected &&
+              window.customElements &&
+              typeof window.customElements.get === "function" &&
+              window.customElements.get(tagName),
+            );
+          } catch (e) {
+            return false;
+          }
+        }
+
+        function hideFallback() {
+          fallback.hidden = true;
+          document.body.classList.remove("remoteclaw-mount-fallback-active");
+        }
+
+        function showFallback() {
+          if (appMounted()) return;
+          fallback.hidden = false;
+          document.body.classList.add("remoteclaw-mount-fallback-active");
+          if (panel && typeof panel.focus === "function") {
+            try {
+              panel.focus({ preventScroll: true });
+            } catch (e) {
+              panel.focus();
+            }
+          }
+        }
+
+        function armFallbackTimer() {
+          window.clearTimeout(timer);
+          timer = window.setTimeout(showFallback, delay);
+        }
+
+        armFallbackTimer();
+
+        if (window.customElements && typeof window.customElements.whenDefined === "function") {
+          window.customElements.whenDefined(tagName).then(
+            function () {
+              window.clearTimeout(timer);
+              hideFallback();
+            },
+            function () {},
+          );
+        }
+
+        if (retry) {
+          retry.addEventListener("click", function () {
+            window.location.reload();
+          });
+        }
+        if (wait) {
+          wait.addEventListener("click", function () {
+            hideFallback();
+            armFallbackTimer();
+          });
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

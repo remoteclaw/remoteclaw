@@ -1,3 +1,4 @@
+import { realpathSync } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -51,18 +52,15 @@ function expectPathIsolatedToTmpRoot(pathValue: string, key: string): void {
   expect(pathValue).not.toContain(key);
   expect(pathValue).not.toContain("..");
 
-  const tmpRoot = path.resolve(resolvePreferredRemoteClawTmpDir());
+  const tmpRoot = realpathSync(resolvePreferredRemoteClawTmpDir());
   const resolved = path.resolve(pathValue);
   const rel = path.relative(tmpRoot, resolved);
   expect(rel === ".." || rel.startsWith(`..${path.sep}`)).toBe(false);
 }
 
 function expectMediaTimeoutClientConfigured(): void {
-  expect(createFeishuClientMock).toHaveBeenCalledWith(
-    expect.objectContaining({
-      httpTimeoutMs: FEISHU_MEDIA_HTTP_TIMEOUT_MS,
-    }),
-  );
+  const options = mockCallArg<{ httpTimeoutMs?: number }>(createFeishuClientMock, 0, 0);
+  expect(options.httpTimeoutMs).toBe(FEISHU_MEDIA_HTTP_TIMEOUT_MS);
 }
 
 function mockResolvedFeishuAccount() {
@@ -74,6 +72,31 @@ function mockResolvedFeishuAccount() {
     appSecret: "app_secret",
     domain: "feishu",
   });
+}
+
+function mockCallArg<T>(
+  mock: { mock: { calls: unknown[][] } },
+  callIndex: number,
+  argIndex: number,
+  _type?: (value: unknown) => value is T,
+): T {
+  const call = mock.mock.calls[callIndex];
+  if (!call) {
+    throw new Error(`Expected mock call at index ${callIndex}`);
+  }
+  return call[argIndex] as T;
+}
+
+function callData<T>(
+  mock: { mock: { calls: unknown[][] } },
+  callIndex = 0,
+  _type?: (value: unknown) => value is T,
+): T {
+  const arg = mockCallArg<{ data?: unknown }>(mock, callIndex, 0);
+  if (arg.data === undefined) {
+    throw new Error(`Expected mock call data at index ${callIndex}`);
+  }
+  return arg.data as T;
 }
 
 describe("sendMediaFeishu msg_type routing", () => {
@@ -141,17 +164,8 @@ describe("sendMediaFeishu msg_type routing", () => {
       fileName: "clip.mp4",
     });
 
-    expect(fileCreateMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ file_type: "mp4" }),
-      }),
-    );
-
-    expect(messageCreateMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ msg_type: "media" }),
-      }),
-    );
+    expect(callData<{ file_type?: string }>(fileCreateMock).file_type).toBe("mp4");
+    expect(callData<{ msg_type?: string }>(messageCreateMock).msg_type).toBe("media");
   });
 
   it("uses msg_type=audio for opus", async () => {
@@ -162,17 +176,8 @@ describe("sendMediaFeishu msg_type routing", () => {
       fileName: "voice.opus",
     });
 
-    expect(fileCreateMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ file_type: "opus" }),
-      }),
-    );
-
-    expect(messageCreateMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ msg_type: "audio" }),
-      }),
-    );
+    expect(callData<{ file_type?: string }>(fileCreateMock).file_type).toBe("opus");
+    expect(callData<{ msg_type?: string }>(messageCreateMock).msg_type).toBe("audio");
   });
 
   it("uses msg_type=file for documents", async () => {
@@ -183,17 +188,8 @@ describe("sendMediaFeishu msg_type routing", () => {
       fileName: "paper.pdf",
     });
 
-    expect(fileCreateMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ file_type: "pdf" }),
-      }),
-    );
-
-    expect(messageCreateMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ msg_type: "file" }),
-      }),
-    );
+    expect(callData<{ file_type?: string }>(fileCreateMock).file_type).toBe("pdf");
+    expect(callData<{ msg_type?: string }>(messageCreateMock).msg_type).toBe("file");
   });
 
   it("uses msg_type=media for remote mp4 content even when the filename is generic", async () => {
@@ -210,16 +206,8 @@ describe("sendMediaFeishu msg_type routing", () => {
       mediaUrl: "https://example.com/video",
     });
 
-    expect(fileCreateMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ file_type: "mp4" }),
-      }),
-    );
-    expect(messageCreateMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ msg_type: "media" }),
-      }),
-    );
+    expect(callData<{ file_type?: string }>(fileCreateMock).file_type).toBe("mp4");
+    expect(callData<{ msg_type?: string }>(messageCreateMock).msg_type).toBe("media");
   });
 
   it("falls back to generic file for unsupported audio formats", async () => {
@@ -257,11 +245,7 @@ describe("sendMediaFeishu msg_type routing", () => {
     });
 
     expectMediaTimeoutClientConfigured();
-    expect(messageCreateMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ msg_type: "image" }),
-      }),
-    );
+    expect(callData<{ msg_type?: string }>(messageCreateMock).msg_type).toBe("image");
   });
 
   it("uses msg_type=media when replying with mp4", async () => {
@@ -273,12 +257,12 @@ describe("sendMediaFeishu msg_type routing", () => {
       replyToMessageId: "om_parent",
     });
 
-    expect(messageReplyMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        path: { message_id: "om_parent" },
-        data: expect.objectContaining({ msg_type: "media" }),
-      }),
-    );
+    const replyRequest = mockCallArg<{
+      data?: { msg_type?: string };
+      path?: { message_id?: string };
+    }>(messageReplyMock, 0, 0);
+    expect(replyRequest.path).toEqual({ message_id: "om_parent" });
+    expect(replyRequest.data?.msg_type).toBe("media");
 
     expect(messageCreateMock).not.toHaveBeenCalled();
   });
@@ -293,15 +277,13 @@ describe("sendMediaFeishu msg_type routing", () => {
       replyInThread: true,
     });
 
-    expect(messageReplyMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        path: { message_id: "om_parent" },
-        data: expect.objectContaining({
-          msg_type: "media",
-          reply_in_thread: true,
-        }),
-      }),
-    );
+    const replyRequest = mockCallArg<{
+      data?: { msg_type?: string; reply_in_thread?: boolean };
+      path?: { message_id?: string };
+    }>(messageReplyMock, 0, 0);
+    expect(replyRequest.path).toEqual({ message_id: "om_parent" });
+    expect(replyRequest.data?.msg_type).toBe("media");
+    expect(replyRequest.data?.reply_in_thread).toBe(true);
   });
 
   it("omits reply_in_thread when replyInThread is false", async () => {
@@ -334,14 +316,15 @@ describe("sendMediaFeishu msg_type routing", () => {
       mediaLocalRoots: roots,
     });
 
-    expect(loadWebMediaMock).toHaveBeenCalledWith(
-      "/allowed/workspace/file.pdf",
-      expect.objectContaining({
-        maxBytes: expect.any(Number),
-        optimizeImages: false,
-        localRoots: roots,
-      }),
-    );
+    expect(mockCallArg(loadWebMediaMock, 0, 0)).toBe("/allowed/workspace/file.pdf");
+    const options = mockCallArg<{
+      localRoots?: string[];
+      maxBytes?: number;
+      optimizeImages?: boolean;
+    }>(loadWebMediaMock, 0, 1);
+    expect(typeof options.maxBytes).toBe("number");
+    expect(options.optimizeImages).toBe(false);
+    expect(options.localRoots).toBe(roots);
   });
 
   it("fails closed when media URL fetch is blocked", async () => {
@@ -379,15 +362,14 @@ describe("sendMediaFeishu msg_type routing", () => {
       imageKey,
     });
 
-    expect(imageGetMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        path: { image_key: imageKey },
-      }),
-    );
+    const request = mockCallArg<{ path?: { image_key?: string } }>(imageGetMock, 0, 0);
+    expect(request.path).toEqual({ image_key: imageKey });
     expectMediaTimeoutClientConfigured();
     expect(result.buffer).toEqual(Buffer.from("image-data"));
-    expect(capturedPath).toBeDefined();
-    expectPathIsolatedToTmpRoot(capturedPath as string, imageKey);
+    if (!capturedPath) {
+      throw new Error("expected Feishu image temp path");
+    }
+    expectPathIsolatedToTmpRoot(capturedPath, imageKey);
   });
 
   it("uses isolated temp paths for message resource downloads", async () => {
@@ -409,8 +391,10 @@ describe("sendMediaFeishu msg_type routing", () => {
     });
 
     expect(result.buffer).toEqual(Buffer.from("resource-data"));
-    expect(capturedPath).toBeDefined();
-    expectPathIsolatedToTmpRoot(capturedPath as string, fileKey);
+    if (!capturedPath) {
+      throw new Error("expected Feishu resource temp path");
+    }
+    expectPathIsolatedToTmpRoot(capturedPath, fileKey);
   });
 
   it("rejects invalid image keys before calling feishu api", async () => {
@@ -544,12 +528,12 @@ describe("downloadMessageResourceFeishu", () => {
       type: "file",
     });
 
-    expect(messageResourceGetMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        path: { message_id: "om_audio_msg", file_key: "file_key_audio" },
-        params: { type: "file" },
-      }),
-    );
+    const request = mockCallArg<{
+      params?: { type?: string };
+      path?: { file_key?: string; message_id?: string };
+    }>(messageResourceGetMock, 0, 0);
+    expect(request.path).toEqual({ message_id: "om_audio_msg", file_key: "file_key_audio" });
+    expect(request.params).toEqual({ type: "file" });
     expectMediaTimeoutClientConfigured();
     expect(result.buffer).toBeInstanceOf(Buffer);
   });
@@ -564,12 +548,12 @@ describe("downloadMessageResourceFeishu", () => {
       type: "image",
     });
 
-    expect(messageResourceGetMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        path: { message_id: "om_img_msg", file_key: "img_key_1" },
-        params: { type: "image" },
-      }),
-    );
+    const request = mockCallArg<{
+      params?: { type?: string };
+      path?: { file_key?: string; message_id?: string };
+    }>(messageResourceGetMock, 0, 0);
+    expect(request.path).toEqual({ message_id: "om_img_msg", file_key: "img_key_1" });
+    expect(request.params).toEqual({ type: "image" });
     expectMediaTimeoutClientConfigured();
     expect(result.buffer).toBeInstanceOf(Buffer);
   });
@@ -590,10 +574,8 @@ describe("downloadMessageResourceFeishu", () => {
       type: "file",
     });
 
-    expect(result).toMatchObject({
-      buffer: Buffer.from("fake-video-data"),
-      contentType: "video/mp4",
-      fileName: "clip.mp4",
-    });
+    expect(result.buffer).toEqual(Buffer.from("fake-video-data"));
+    expect(result.contentType).toBe("video/mp4");
+    expect(result.fileName).toBe("clip.mp4");
   });
 });

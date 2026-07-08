@@ -103,7 +103,7 @@ describe("pairing cli", () => {
     });
   }
 
-  it("evaluates pairing channels when registering the CLI (not at import)", async () => {
+  it("evaluates pairing channels when registering the CLI (not at import)", () => {
     expect(listPairingChannels).not.toHaveBeenCalled();
 
     createProgram();

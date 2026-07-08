@@ -21,9 +21,11 @@ describe("restart-helper", () => {
 
   async function prepareAndReadScript(env: Record<string, string>, gatewayPort = 18789) {
     const scriptPath = await prepareRestartScript(env, gatewayPort);
-    expect(scriptPath).toBeTruthy();
-    const content = await fs.readFile(scriptPath!, "utf-8");
-    return { scriptPath: scriptPath!, content };
+    if (scriptPath == null) {
+      throw new Error("expected restart script path");
+    }
+    const content = await fs.readFile(scriptPath, "utf-8");
+    return { scriptPath, content };
   }
 
   async function cleanupScript(scriptPath: string) {
@@ -51,6 +53,10 @@ exit 0
   ) {
     const launchctlPath = path.join(fakeBinDir, "launchctl");
     await fs.writeFile(launchctlPath, content, { mode: 0o755 });
+  }
+
+  async function writeFakeSleep(fakeBinDir: string) {
+    await fs.writeFile(path.join(fakeBinDir, "sleep"), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
   }
 
   async function executeScript(scriptPath: string, env: Record<string, string>) {
@@ -140,6 +146,7 @@ exit 0
       const fakeBinDir = path.join(tmpDir, "bin");
       const callsPath = path.join(tmpDir, "systemctl-calls.log");
       await fs.mkdir(fakeBinDir, { recursive: true });
+      await writeFakeSleep(fakeBinDir);
       await fs.writeFile(
         path.join(fakeBinDir, "systemctl"),
         `#!/bin/sh
@@ -239,6 +246,7 @@ exit 1
       const fakeBinDir = path.join(tmpDir, "bin");
       const stateDir = path.join(tmpDir, "state");
       await fs.mkdir(fakeBinDir, { recursive: true });
+      await writeFakeSleep(fakeBinDir);
       await writeFakeLaunchctl(
         fakeBinDir,
         `#!/bin/sh
@@ -280,6 +288,7 @@ exit 0
       const stateFile = path.join(tmpDir, "state-file");
       const markerPath = path.join(tmpDir, "launchctl-ran");
       await fs.mkdir(fakeBinDir, { recursive: true });
+      await writeFakeSleep(fakeBinDir);
       await fs.writeFile(stateFile, "not a directory");
       await writeFakeLaunchctl(
         fakeBinDir,
@@ -311,6 +320,7 @@ exit 0
       const fakeBinDir = path.join(tmpDir, "bin");
       const stateDir = path.join(tmpDir, "state");
       await fs.mkdir(fakeBinDir, { recursive: true });
+      await writeFakeSleep(fakeBinDir);
       await writeFakeLaunchctl(fakeBinDir);
 
       const { scriptPath } = await prepareAndReadScript({
@@ -517,7 +527,7 @@ exit 0
         stdio: "ignore",
         windowsHide: true,
       });
-      expect(mockChild.unref).toHaveBeenCalled();
+      expect(mockChild.unref).toHaveBeenCalledTimes(1);
     });
 
     it("uses cmd.exe on Windows", async () => {
@@ -533,7 +543,7 @@ exit 0
         stdio: "ignore",
         windowsHide: true,
       });
-      expect(mockChild.unref).toHaveBeenCalled();
+      expect(mockChild.unref).toHaveBeenCalledTimes(1);
     });
 
     it("quotes cmd.exe /c paths with metacharacters on Windows", async () => {

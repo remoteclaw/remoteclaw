@@ -346,7 +346,7 @@ describe("callGateway url resolution", () => {
     expect(lastClientOptions?.scopes).toEqual(["operator.read"]);
 
     await callGatewayScoped({ method: "health", scopes: [] });
-    expect(lastClientOptions?.scopes).toEqual([]);
+    expect(lastClientOptions?.scopes).toStrictEqual([]);
   });
 });
 

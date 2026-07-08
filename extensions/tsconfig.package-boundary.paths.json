@@ -40,6 +40,7 @@
       "@remoteclaw/qa-channel/api.js": ["../dist/plugin-sdk/extensions/qa-channel/api.d.ts"],
       "@remoteclaw/discord/api.js": ["../dist/plugin-sdk/extensions/discord/api.d.ts"],
       "@remoteclaw/slack/api.js": ["../dist/plugin-sdk/extensions/slack/api.d.ts"],
+      "@remoteclaw/whatsapp/api.js": ["../dist/plugin-sdk/extensions/whatsapp/api.d.ts"],
       "@remoteclaw/*.js": ["../packages/plugin-sdk/dist/extensions/*.d.ts", "../extensions/*"],
       "@remoteclaw/*": ["../packages/plugin-sdk/dist/extensions/*", "../extensions/*"],
       "@remoteclaw/plugin-sdk/*": ["../dist/plugin-sdk/src/plugin-sdk/*.d.ts"]

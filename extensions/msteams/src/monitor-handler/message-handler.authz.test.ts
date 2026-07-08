@@ -5,7 +5,12 @@ import { setMSTeamsRuntime } from "../runtime.js";
 import { createMSTeamsMessageHandler } from "./message-handler.js";
 
 describe("msteams monitor handler authz", () => {
-  function createDeps(cfg: RemoteClawConfig) {
+  function createDeps(
+    cfg: RemoteClawConfig,
+    options: {
+      hasControlCommand?: PluginRuntime["channel"]["text"]["hasControlCommand"];
+    } = {},
+  ) {
     const readAllowFromStore = vi.fn(async () => ["attacker-aad"]);
     setMSTeamsRuntime({
       logging: { shouldLogVerbose: () => false },

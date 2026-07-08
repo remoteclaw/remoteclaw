@@ -1,4 +1,4 @@
-import { normalizeOptionalLowercaseString } from "remoteclaw/plugin-sdk/text-runtime";
+import { normalizeOptionalLowercaseString } from "remoteclaw/plugin-sdk/string-coerce-runtime";
 
 export const TELEGRAM_COMMAND_NAME_PATTERN = /^[a-z0-9_]{1,32}$/;
 

@@ -54,7 +54,7 @@ describe("executeZalouserTool", () => {
   });
 
   it("sends text message for send action", async () => {
-    mockSendMessage.mockResolvedValueOnce({ ok: true, messageId: "m-1" });
+    mockSendMessage.mockResolvedValueOnce({ ok: true, messageId: "m-1" } as never);
     const result = await executeZalouserTool("tool-1", {
       action: "send",
       threadId: "t-1",
@@ -70,7 +70,7 @@ describe("executeZalouserTool", () => {
   });
 
   it("returns tool error when send action fails", async () => {
-    mockSendMessage.mockResolvedValueOnce({ ok: false, error: "blocked" });
+    mockSendMessage.mockResolvedValueOnce({ ok: false, error: "blocked" } as never);
     const result = await executeZalouserTool("tool-1", {
       action: "send",
       threadId: "t-1",
@@ -80,7 +80,7 @@ describe("executeZalouserTool", () => {
   });
 
   it("routes image and link actions to correct helpers", async () => {
-    mockSendImage.mockResolvedValueOnce({ ok: true, messageId: "img-1" });
+    mockSendImage.mockResolvedValueOnce({ ok: true, messageId: "img-1" } as never);
     const imageResult = await executeZalouserTool("tool-1", {
       action: "image",
       threadId: "g-1",
@@ -95,7 +95,7 @@ describe("executeZalouserTool", () => {
     });
     expect(extractDetails(imageResult)).toEqual({ success: true, messageId: "img-1" });
 
-    mockSendLink.mockResolvedValueOnce({ ok: true, messageId: "lnk-1" });
+    mockSendLink.mockResolvedValueOnce({ ok: true, messageId: "lnk-1" } as never);
     const linkResult = await executeZalouserTool("tool-1", {
       action: "link",
       threadId: "t-2",

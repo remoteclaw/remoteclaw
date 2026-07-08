@@ -1,4 +1,4 @@
-import { isRecord } from "remoteclaw/plugin-sdk/text-runtime";
+import { isRecord } from "remoteclaw/plugin-sdk/string-coerce-runtime";
 
 type UnsupportedSecretRefConfigCandidate = {
   path: string;

@@ -149,6 +149,11 @@ remoteclaw plugins install "@tencent-weixin/remoteclaw-weixin" --force
 remoteclaw gateway restart
 ```
 
+If startup reports that the installed plugin package `requires compiled runtime
+output for TypeScript entry`, the npm package was published without the compiled
+JavaScript runtime files RemoteClaw needs. Update/reinstall after the plugin
+publisher ships a fixed package, or temporarily disable/uninstall the plugin.
+
 Temporary disable:
 
 ```bash

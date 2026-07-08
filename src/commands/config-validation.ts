@@ -12,8 +12,9 @@ export async function requireValidConfigSnapshot(
       snapshot.issues.length > 0
         ? formatConfigIssueLines(snapshot.issues, "-").join("\n")
         : "Unknown validation issue.";
-    runtime.error(`Config invalid:\n${issues}`);
-    runtime.error(`Fix the config or run ${formatCliCommand("remoteclaw doctor")}.`);
+    runtime.error(`RemoteClaw config is invalid: ${snapshot.path}\n${issues}`);
+    runtime.error(`Fix: ${formatCliCommand("remoteclaw doctor --fix")}`);
+    runtime.error(`Inspect: ${formatCliCommand("remoteclaw config validate")}`);
     runtime.exit(1);
     return null;
   }

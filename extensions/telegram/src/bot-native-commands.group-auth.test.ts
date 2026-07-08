@@ -92,7 +92,7 @@ describe("native command auth in groups", () => {
     expect(sendMessage).toHaveBeenCalledWith(
       -100999,
       "You are not authorized to use this command.",
-      expect.objectContaining({ message_thread_id: 42 }),
+      { message_thread_id: 42 },
     );
   });
 
@@ -120,11 +120,9 @@ describe("native command auth in groups", () => {
 
     await handlers.status?.(ctx);
 
-    expect(sendMessage).toHaveBeenCalledWith(
-      -100999,
-      "Telegram group commands are disabled.",
-      expect.objectContaining({ message_thread_id: 42 }),
-    );
+    expect(sendMessage).toHaveBeenCalledWith(-100999, "Telegram group commands are disabled.", {
+      message_thread_id: 42,
+    });
   });
 
   it("keeps group chat allowlists enforced when commands.allowFrom is configured", async () => {
@@ -148,11 +146,9 @@ describe("native command auth in groups", () => {
 
     await handlers.status?.(ctx);
 
-    expect(sendMessage).toHaveBeenCalledWith(
-      -100999,
-      "This group is not allowed.",
-      expect.objectContaining({ message_thread_id: 42 }),
-    );
+    expect(sendMessage).toHaveBeenCalledWith(-100999, "This group is not allowed.", {
+      message_thread_id: 42,
+    });
   });
 
   it("rejects native commands in groups when sender is in neither allowlist", async () => {
@@ -188,7 +184,7 @@ describe("native command auth in groups", () => {
     expect(sendMessage).toHaveBeenCalledWith(
       -100999,
       "You are not authorized to use this command.",
-      expect.objectContaining({ message_thread_id: 42 }),
+      { message_thread_id: 42 },
     );
   });
 });

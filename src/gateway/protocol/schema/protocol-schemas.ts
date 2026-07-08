@@ -35,6 +35,13 @@ import {
 import {
   ChannelsStartParamsSchema,
   ChannelsLogoutParamsSchema,
+  TalkEventSchema,
+  TalkCatalogParamsSchema,
+  TalkCatalogResultSchema,
+  TalkClientCreateParamsSchema,
+  TalkClientCreateResultSchema,
+  TalkClientToolCallParamsSchema,
+  TalkClientToolCallResultSchema,
   TalkConfigParamsSchema,
   TalkConfigResultSchema,
   ChannelsStatusParamsSchema,
@@ -57,6 +64,7 @@ import {
 } from "./config.js";
 import {
   CronAddParamsSchema,
+  CronGetParamsSchema,
   CronJobSchema,
   CronListParamsSchema,
   CronRemoveParamsSchema,
@@ -76,6 +84,14 @@ import {
   DeviceTokenRevokeParamsSchema,
   DeviceTokenRotateParamsSchema,
 } from "./devices.js";
+import {
+  EnvironmentSummarySchema,
+  EnvironmentsListParamsSchema,
+  EnvironmentsListResultSchema,
+  EnvironmentsStatusParamsSchema,
+  EnvironmentsStatusResultSchema,
+  EnvironmentStatusSchema,
+} from "./environments.js";
 import {
   ExecApprovalsGetParamsSchema,
   ExecApprovalsNodeGetParamsSchema,
@@ -97,8 +113,12 @@ import {
   TickEventSchema,
 } from "./frames.js";
 import {
+  ChatAbortedEventSchema,
   ChatAbortParamsSchema,
+  ChatDeltaEventSchema,
+  ChatErrorEventSchema,
   ChatEventSchema,
+  ChatFinalEventSchema,
   ChatHistoryParamsSchema,
   ChatInjectParamsSchema,
   ChatSendParamsSchema,
@@ -155,6 +175,15 @@ import {
 } from "./sessions.js";
 import { PresenceEntrySchema, SnapshotSchema, StateVersionSchema } from "./snapshot.js";
 import {
+  TasksCancelParamsSchema,
+  TasksCancelResultSchema,
+  TasksGetParamsSchema,
+  TasksGetResultSchema,
+  TasksListParamsSchema,
+  TasksListResultSchema,
+  TaskSummarySchema,
+} from "./tasks.js";
+import {
   WizardCancelParamsSchema,
   WizardNextParamsSchema,
   WizardNextResultSchema,
@@ -176,6 +205,12 @@ export const ProtocolSchemas = {
   StateVersion: StateVersionSchema,
   Snapshot: SnapshotSchema,
   ErrorShape: ErrorShapeSchema,
+  EnvironmentStatus: EnvironmentStatusSchema,
+  EnvironmentSummary: EnvironmentSummarySchema,
+  EnvironmentsListParams: EnvironmentsListParamsSchema,
+  EnvironmentsListResult: EnvironmentsListResultSchema,
+  EnvironmentsStatusParams: EnvironmentsStatusParamsSchema,
+  EnvironmentsStatusResult: EnvironmentsStatusResultSchema,
   AgentEvent: AgentEventSchema,
   SendParams: SendParamsSchema,
   PollParams: PollParamsSchema,
@@ -227,6 +262,13 @@ export const ProtocolSchemas = {
   SessionsDeleteParams: SessionsDeleteParamsSchema,
   SessionsCompactParams: SessionsCompactParamsSchema,
   SessionsUsageParams: SessionsUsageParamsSchema,
+  TaskSummary: TaskSummarySchema,
+  TasksListParams: TasksListParamsSchema,
+  TasksListResult: TasksListResultSchema,
+  TasksGetParams: TasksGetParamsSchema,
+  TasksGetResult: TasksGetResultSchema,
+  TasksCancelParams: TasksCancelParamsSchema,
+  TasksCancelResult: TasksCancelResultSchema,
   ConfigGetParams: ConfigGetParamsSchema,
   ConfigSetParams: ConfigSetParamsSchema,
   ConfigApplyParams: ConfigApplyParamsSchema,
@@ -244,6 +286,13 @@ export const ProtocolSchemas = {
   WizardStartResult: WizardStartResultSchema,
   WizardStatusResult: WizardStatusResultSchema,
   TalkModeParams: TalkModeParamsSchema,
+  TalkEvent: TalkEventSchema,
+  TalkCatalogParams: TalkCatalogParamsSchema,
+  TalkCatalogResult: TalkCatalogResultSchema,
+  TalkClientCreateParams: TalkClientCreateParamsSchema,
+  TalkClientCreateResult: TalkClientCreateResultSchema,
+  TalkClientToolCallParams: TalkClientToolCallParamsSchema,
+  TalkClientToolCallResult: TalkClientToolCallResultSchema,
   TalkConfigParams: TalkConfigParamsSchema,
   TalkConfigResult: TalkConfigResultSchema,
   ChannelsStatusParams: ChannelsStatusParamsSchema,
@@ -276,6 +325,7 @@ export const ProtocolSchemas = {
   CronJob: CronJobSchema,
   CronListParams: CronListParamsSchema,
   CronStatusParams: CronStatusParamsSchema,
+  CronGetParams: CronGetParamsSchema,
   CronAddParams: CronAddParamsSchema,
   CronUpdateParams: CronUpdateParamsSchema,
   CronRemoveParams: CronRemoveParamsSchema,
@@ -303,6 +353,10 @@ export const ProtocolSchemas = {
   ChatSendParams: ChatSendParamsSchema,
   ChatAbortParams: ChatAbortParamsSchema,
   ChatInjectParams: ChatInjectParamsSchema,
+  ChatDeltaEvent: ChatDeltaEventSchema,
+  ChatFinalEvent: ChatFinalEventSchema,
+  ChatAbortedEvent: ChatAbortedEventSchema,
+  ChatErrorEvent: ChatErrorEventSchema,
   ChatEvent: ChatEventSchema,
   UpdateStatusParams: UpdateStatusParamsSchema,
   UpdateRunParams: UpdateRunParamsSchema,
@@ -310,4 +364,8 @@ export const ProtocolSchemas = {
   ShutdownEvent: ShutdownEventSchema,
 } satisfies Record<string, TSchema>;
 
-export { PROTOCOL_VERSION } from "../version.js";
+export {
+  MIN_CLIENT_PROTOCOL_VERSION,
+  MIN_PROBE_PROTOCOL_VERSION,
+  PROTOCOL_VERSION,
+} from "../version.js";

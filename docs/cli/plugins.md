@@ -60,6 +60,10 @@ command with `REMOTECLAW_PLUGIN_LIFECYCLE_TRACE=1`. The trace writes phase timin
 to stderr and keeps JSON output parseable. See [Debugging](/help/debugging#plugin-lifecycle-trace).
 
 <Note>
+In Nix mode (`REMOTECLAW_NIX_MODE=1`), plugin lifecycle mutators are disabled. Use the Nix source for this install instead of `plugins install`, `plugins update`, `plugins uninstall`, `plugins enable`, or `plugins disable`; for nix-remoteclaw, use the agent-first [Quick Start](https://github.com/remoteclaw/nix-remoteclaw#quick-start).
+</Note>
+
+<Note>
 Bundled plugins ship with RemoteClaw. Some are enabled by default (for example bundled model providers, bundled speech providers, and the bundled browser plugin); others require `plugins enable`.
 
 Native RemoteClaw plugins must ship `remoteclaw.plugin.json` with an inline JSON Schema (`configSchema`, even if empty). Compatible bundles use their own bundle manifests instead.
@@ -74,6 +78,7 @@ remoteclaw plugins search "calendar"                   # search ClawHub plugins
 remoteclaw plugins install <package>                      # npm by default
 remoteclaw plugins install clawhub:<package>              # ClawHub only
 remoteclaw plugins install npm:<package>                  # npm only
+remoteclaw plugins install npm-pack:<path.tgz>            # local npm pack through npm install semantics
 remoteclaw plugins install git:github.com/<owner>/<repo>  # git repo
 remoteclaw plugins install git:github.com/<owner>/<repo>@<ref>
 remoteclaw plugins install <package> --force              # overwrite existing install
@@ -84,6 +89,10 @@ remoteclaw plugins install <plugin>@<marketplace>         # marketplace
 remoteclaw plugins install <plugin> --marketplace <name>  # marketplace (explicit)
 remoteclaw plugins install <plugin> --marketplace https://github.com/<owner>/<repo>
 ```
+
+Maintainers testing setup-time installs can override automatic plugin install
+sources with guarded environment variables. See
+[Plugin install overrides](/plugins/install-overrides).
 
 <Warning>
 Bare package names install from npm by default during the launch cutover. Use `clawhub:<package>` for ClawHub. Treat plugin installs like running code. Prefer pinned versions.
@@ -124,7 +133,7 @@ is available, then fall back to `latest`.
 
     This CLI flag applies to plugin install/update flows. Gateway-backed skill dependency installs use the matching `dangerouslyForceUnsafeInstall` request override, while `remoteclaw skills install` remains a separate ClawHub skill download/install flow.
 
-    If a plugin you published on ClawHub is blocked by a registry scan, use the publisher steps in [ClawHub](/tools/clawhub).
+    If a plugin you published on ClawHub is hidden or blocked by a registry scan, use the publisher steps in [ClawHub publishing](/clawhub/publishing). `--dangerously-force-unsafe-install` only affects installs on your own machine; it does not ask ClawHub to rescan the plugin or make a blocked release public.
 
   </Accordion>
   <Accordion title="Hook packs and npm specs">
@@ -149,6 +158,12 @@ is available, then fall back to `latest`.
   </Accordion>
   <Accordion title="Archives">
     Supported archives: `.zip`, `.tgz`, `.tar.gz`, `.tar`. Native RemoteClaw plugin archives must contain a valid `remoteclaw.plugin.json` at the extracted plugin root; archives that only contain `package.json` are rejected before RemoteClaw writes install records.
+
+    Use `npm-pack:<path.tgz>` when the file is an npm-pack tarball and you want
+    to test the same managed npm-root install path used by registry installs,
+    including `package-lock.json` verification, hoisted dependency scanning, and
+    npm install records. Plain archive paths still install as local archives
+    under the plugin extensions root.
 
     Claude marketplace installs are also supported.
 
@@ -268,7 +283,7 @@ For runtime hook debugging:
 
 - `remoteclaw plugins inspect <id> --runtime --json` shows registered hooks and diagnostics from a module-loaded inspection pass. Runtime inspection never installs dependencies; use `remoteclaw doctor --fix` to clean legacy dependency state or recover missing downloadable plugins that are referenced by config.
 - `remoteclaw gateway status --deep --require-rpc` confirms the reachable Gateway, service/process hints, config path, and RPC health.
-- Non-bundled conversation hooks (`llm_input`, `llm_output`, `before_agent_finalize`, `agent_end`) require `plugins.entries.<id>.hooks.allowConversationAccess=true`.
+- Non-bundled conversation hooks (`llm_input`, `llm_output`, `before_model_resolve`, `before_agent_reply`, `before_agent_run`, `before_agent_finalize`, `agent_end`) require `plugins.entries.<id>.hooks.allowConversationAccess=true`.
 
 Use `--link` to avoid copying a local directory (adds to `plugins.load.paths`):
 
@@ -286,7 +301,7 @@ Use `--pin` on npm installs to save the resolved exact spec (`name@version`) in 
 
 Plugin install metadata is machine-managed state, not user config. Installs and updates write it to `plugins/installs.json` under the active RemoteClaw state directory. Its top-level `installRecords` map is the durable source of install metadata, including records for broken or missing plugin manifests. The `plugins` array is the manifest-derived cold registry cache. The file includes a do-not-edit warning and is used by `remoteclaw plugins update`, uninstall, diagnostics, and the cold plugin registry.
 
-When RemoteClaw sees shipped legacy `plugins.installs` records in config, it moves them into the plugin index and removes the config key; if either write fails, the config records are kept so the install metadata is not lost.
+When RemoteClaw sees shipped legacy `plugins.installs` records in config, runtime reads treat them as compatibility input without rewriting `remoteclaw.json`. Explicit plugin writes and `remoteclaw doctor --fix` move those records into the plugin index and remove the config key when config writes are allowed; if either write fails, the config records are kept so the install metadata is not lost.
 
 ### Uninstall
 
@@ -324,7 +339,7 @@ Updates apply to tracked plugin installs in the managed plugin index and tracked
 
   </Accordion>
   <Accordion title="Beta channel updates">
-    `remoteclaw plugins update` reuses the tracked plugin spec unless you pass a new spec. `remoteclaw update` additionally knows the active RemoteClaw update channel: on the beta channel, default-line npm and ClawHub plugin records try `@beta` first, then fall back to the recorded default/latest spec if no plugin beta release exists. Exact versions and explicit tags stay pinned to that selector.
+    `remoteclaw plugins update` reuses the tracked plugin spec unless you pass a new spec. `remoteclaw update` additionally knows the active RemoteClaw update channel: on the beta channel, default-line npm and ClawHub plugin records try `@beta` first, then fall back to the recorded default/latest spec if no plugin beta release exists. That fallback is reported as a warning and does not fail the core update. Exact versions and explicit tags stay pinned to that selector.
 
   </Accordion>
   <Accordion title="Version checks and integrity drift">
@@ -348,7 +363,7 @@ remoteclaw plugins inspect <id> --json
 
 Inspect shows identity, load status, source, manifest capabilities, policy flags, diagnostics, install metadata, bundle capabilities, and any detected MCP or LSP server support without importing plugin runtime by default. Add `--runtime` to load the plugin module and include registered hooks, tools, commands, services, gateway methods, and HTTP routes. Runtime inspection reports missing plugin dependencies directly; installs and repairs stay in `remoteclaw plugins install`, `remoteclaw plugins update`, and `remoteclaw doctor --fix`.
 
-Plugin-owned CLI commands are installed as root `remoteclaw` command groups. After `inspect --runtime` shows a command under `cliCommands`, run it as `remoteclaw <command> ...`; for example a plugin that registers `demo-git` can be verified with `remoteclaw demo-git ping`.
+Plugin-owned CLI commands are usually installed as root `remoteclaw` command groups, but plugins may also register nested commands under a core parent such as `remoteclaw nodes`. After `inspect --runtime` shows a command under `cliCommands`, run it at the listed path; for example a plugin that registers `demo-git` can be verified with `remoteclaw demo-git ping`.
 
 Each plugin is classified by what it actually registers at runtime:
 
@@ -387,7 +402,7 @@ The local plugin registry is RemoteClaw's persisted cold read model for installe
 
 Use `plugins registry` to inspect whether the persisted registry is present, current, or stale. Use `--refresh` to rebuild it from the persisted plugin index, config policy, and manifest/package metadata. This is a repair path, not a runtime activation path.
 
-`remoteclaw doctor --fix` also repairs registry-adjacent managed npm drift: if an orphaned or recovered `@remoteclaw/*` package under the managed plugin npm root shadows a bundled plugin, doctor removes that stale package and rebuilds the registry so startup validates against the bundled manifest.
+`remoteclaw doctor --fix` also repairs registry-adjacent managed npm drift: if an orphaned or recovered `@remoteclaw/*` package under the managed plugin npm root shadows a bundled plugin, doctor removes that stale package and rebuilds the registry so startup validates against the bundled manifest. Doctor also relinks the host `remoteclaw` package into managed npm plugins that declare `peerDependencies.remoteclaw`, so package-local runtime imports such as `remoteclaw/plugin-sdk/*` resolve after updates or npm repairs.
 
 <Warning>
 `REMOTECLAW_DISABLE_PERSISTED_PLUGIN_REGISTRY=1` is a deprecated break-glass compatibility switch for registry read failures. Prefer `plugins registry --refresh` or `remoteclaw doctor --fix`; the env fallback is only for emergency startup recovery while the migration rolls out.
@@ -406,4 +421,4 @@ Marketplace list accepts a local marketplace path, a `marketplace.json` path, a 
 
 - [Building plugins](/plugins/building-plugins)
 - [CLI reference](/cli)
-- [Community plugins](/plugins/community)
+- [ClawHub](/clawhub)

@@ -31,3 +31,28 @@ export async function loadMSTeamsSdkWithAuth(creds: MSTeamsCredentials) {
   const authConfig = buildMSTeamsAuthConfig(creds, sdk);
   return { sdk, authConfig };
 }
+
+/**
+ * Return true when the error originated from a network-level failure fetching
+ * the JWKS endpoint (DNS resolution, connection refused, TLS handshake, etc.)
+ * rather than from token verification logic.
+ */
+function isJwksNetworkError(err: unknown): boolean {
+  if (!(err instanceof Error)) {
+    return false;
+  }
+  const code = (err as NodeJS.ErrnoException).code;
+  if (
+    code === "ECONNREFUSED" ||
+    code === "ENOTFOUND" ||
+    code === "EHOSTUNREACH" ||
+    code === "ETIMEDOUT" ||
+    code === "ECONNRESET"
+  ) {
+    return true;
+  }
+  // jwks-rsa wraps fetch failures with a message containing the URL or "key fetching"
+  return (
+    /jwks|key fetch|getSigningKey/i.test(err.message) && /network|fetch|connect/i.test(err.message)
+  );
+}

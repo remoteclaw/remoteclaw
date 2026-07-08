@@ -10,6 +10,28 @@ vi.mock("../logging/subsystem.js", () => ({
 
 import { buildTimeoutAbortSignal } from "./fetch-timeout.js";
 
+function requireWarnCall(callIndex: number): [string, Record<string, unknown>] {
+  const call = warn.mock.calls.at(callIndex);
+  if (!call) {
+    throw new Error(`missing warning call ${callIndex}`);
+  }
+  const [message, record] = call;
+  if (typeof message !== "string" || !record || typeof record !== "object") {
+    throw new Error(`invalid warning call ${callIndex}`);
+  }
+  return [message, record as Record<string, unknown>];
+}
+
+function requireWarnMessage(callIndex: number): string {
+  const [message] = requireWarnCall(callIndex);
+  return message;
+}
+
+function requireWarnRecord(callIndex: number): Record<string, unknown> {
+  const [, record] = requireWarnCall(callIndex);
+  return record;
+}
+
 describe("buildTimeoutAbortSignal", () => {
   beforeEach(() => {
     warn.mockClear();
@@ -31,15 +53,13 @@ describe("buildTimeoutAbortSignal", () => {
 
     expect(signal?.aborted).toBe(true);
     expect(warn).toHaveBeenCalledTimes(1);
-    expect(warn).toHaveBeenCalledWith(
-      "fetch timeout reached; aborting operation",
-      expect.objectContaining({
-        timeoutMs: 25,
-        operation: "unit-test",
-        url: "https://example.com/v1/responses",
-        consoleMessage:
-          "fetch timeout after 25ms (elapsed 25ms) operation=unit-test url=https://example.com/v1/responses",
-      }),
+    expect(requireWarnMessage(0)).toBe("fetch timeout reached; aborting operation");
+    const record = requireWarnRecord(0);
+    expect(record.timeoutMs).toBe(25);
+    expect(record.operation).toBe("unit-test");
+    expect(record.url).toBe("https://example.com/v1/responses");
+    expect(record.consoleMessage).toBe(
+      "fetch timeout after 25ms (elapsed 25ms) operation=unit-test url=https://example.com/v1/responses",
     );
 
     cleanup();
@@ -54,12 +74,8 @@ describe("buildTimeoutAbortSignal", () => {
 
     await vi.advanceTimersByTimeAsync(25);
 
-    expect(warn).toHaveBeenCalledWith(
-      "fetch timeout reached; aborting operation",
-      expect.objectContaining({
-        url: "/api/responses",
-      }),
-    );
+    expect(requireWarnMessage(0)).toBe("fetch timeout reached; aborting operation");
+    expect(requireWarnRecord(0).url).toBe("/api/responses");
 
     cleanup();
   });

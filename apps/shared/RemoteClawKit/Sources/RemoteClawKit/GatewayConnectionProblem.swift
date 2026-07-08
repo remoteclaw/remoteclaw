@@ -10,6 +10,7 @@ public struct GatewayConnectionProblem: Equatable, Sendable {
         case gatewayAuthPasswordNotConfigured
         case bootstrapTokenInvalid
         case deviceTokenMismatch
+        case deviceTokenScopeMismatch
         case pairingRequired
         case pairingRoleUpgradeRequired
         case pairingScopeUpgradeRequired
@@ -52,6 +53,10 @@ public struct GatewayConnectionProblem: Equatable, Sendable {
     public let retryable: Bool
     public let pauseReconnect: Bool
     public let technicalDetails: String?
+    public let tlsStoreKey: String?
+    public let tlsExpectedFingerprint: String?
+    public let tlsObservedFingerprint: String?
+    public let tlsSystemTrustOk: Bool
 
     public init(
         kind: Kind,
@@ -64,7 +69,11 @@ public struct GatewayConnectionProblem: Equatable, Sendable {
         requestId: String? = nil,
         retryable: Bool,
         pauseReconnect: Bool,
-        technicalDetails: String? = nil)
+        technicalDetails: String? = nil,
+        tlsStoreKey: String? = nil,
+        tlsExpectedFingerprint: String? = nil,
+        tlsObservedFingerprint: String? = nil,
+        tlsSystemTrustOk: Bool = false)
     {
         self.kind = kind
         self.owner = owner
@@ -77,6 +86,10 @@ public struct GatewayConnectionProblem: Equatable, Sendable {
         self.retryable = retryable
         self.pauseReconnect = pauseReconnect
         self.technicalDetails = Self.trimmedOrNil(technicalDetails)
+        self.tlsStoreKey = Self.trimmedOrNil(tlsStoreKey)
+        self.tlsExpectedFingerprint = Self.trimmedOrNil(tlsExpectedFingerprint)
+        self.tlsObservedFingerprint = Self.trimmedOrNil(tlsObservedFingerprint)
+        self.tlsSystemTrustOk = tlsSystemTrustOk
     }
 
     public var needsPairingApproval: Bool {
@@ -114,6 +127,13 @@ public struct GatewayConnectionProblem: Equatable, Sendable {
         default:
             return self.title
         }
+    }
+
+    public var canTrustRotatedCertificate: Bool {
+        self.kind == .tlsPinMismatch
+            && self.tlsSystemTrustOk
+            && self.tlsStoreKey != nil
+            && self.tlsObservedFingerprint != nil
     }
 
     private static func trimmedOrNil(_ value: String?) -> String? {
@@ -272,6 +292,20 @@ public enum GatewayConnectionProblemMapper {
                 message: authError.userMessageOverride
                     ?? "The gateway rejected the stored device token for this role.",
                 actionLabel: authError.actionLabel ?? "Repair pairing",
+                actionCommand: authError.actionCommand ?? pairingCommand,
+                docsURL: self.docsURL(authError.docsURLString, fallback: "https://docs.remoteclaw.org/gateway/pairing"),
+                requestId: authError.requestId,
+                retryable: false,
+                pauseReconnect: true,
+                authError: authError)
+        case .authScopeMismatch:
+            return self.problem(
+                kind: .deviceTokenScopeMismatch,
+                owner: .both,
+                title: authError.titleOverride ?? "Device permissions need approval",
+                message: authError.userMessageOverride
+                    ?? "The gateway accepted this device token but rejected the requested operator scopes.",
+                actionLabel: authError.actionLabel ?? "Review pairing",
                 actionCommand: authError.actionCommand ?? pairingCommand,
                 docsURL: self.docsURL(authError.docsURLString, fallback: "https://docs.remoteclaw.org/gateway/pairing"),
                 requestId: authError.requestId,

@@ -86,4 +86,96 @@ describe("status.scan.config-shared", () => {
       secretDiagnostics: ["resolved"],
     });
   });
+
+  it("adds a status diagnostic for gateway token source conflicts", async () => {
+    const sourceConfig = { gateway: { auth: { token: "config-token" } } };
+    const resolvedConfig = sourceConfig;
+    const readBestEffortConfig = vi.fn(async () => sourceConfig);
+    const resolveConfig = vi.fn(async () => ({
+      resolvedConfig,
+      diagnostics: [],
+    }));
+
+    const result = await loadStatusScanCommandConfig({
+      commandName: "status --json",
+      readBestEffortConfig,
+      resolveConfig,
+      env: { VITEST: "true", REMOTECLAW_GATEWAY_TOKEN: "env-token" },
+      allowMissingConfigFastPath: true,
+    });
+
+    expect(result.secretDiagnostics).toEqual([
+      "REMOTECLAW_GATEWAY_TOKEN conflicts with gateway.auth.token: Remove REMOTECLAW_GATEWAY_TOKEN from the shell, ~/.remoteclaw/.env, or launchctl env if gateway.auth.token is intended, or point gateway.auth.token at ${REMOTECLAW_GATEWAY_TOKEN} if the env var should be canonical.",
+    ]);
+  });
+
+  it("does not add a token conflict diagnostic inside the managed gateway service context", async () => {
+    const sourceConfig = { gateway: { auth: { token: "config-token" } } };
+    const readBestEffortConfig = vi.fn(async () => sourceConfig);
+    const resolveConfig = vi.fn(async () => ({
+      resolvedConfig: sourceConfig,
+      diagnostics: [],
+    }));
+
+    const result = await loadStatusScanCommandConfig({
+      commandName: "status --json",
+      readBestEffortConfig,
+      resolveConfig,
+      env: {
+        VITEST: "true",
+        REMOTECLAW_GATEWAY_TOKEN: "env-token",
+        REMOTECLAW_SERVICE_KIND: "gateway",
+      },
+      allowMissingConfigFastPath: true,
+    });
+
+    expect(result.secretDiagnostics).toStrictEqual([]);
+  });
+
+  it("does not add a status diagnostic when config uses REMOTECLAW_GATEWAY_TOKEN", async () => {
+    const sourceConfig = {
+      gateway: { auth: { token: "${REMOTECLAW_GATEWAY_TOKEN}" } },
+      secrets: { providers: { default: { source: "env" as const } } },
+    };
+    const readBestEffortConfig = vi.fn(async () => sourceConfig);
+    const resolveConfig = vi.fn(async () => ({
+      resolvedConfig: sourceConfig,
+      diagnostics: [],
+    }));
+
+    const result = await loadStatusScanCommandConfig({
+      commandName: "status --json",
+      readBestEffortConfig,
+      resolveConfig,
+      env: { VITEST: "true", REMOTECLAW_GATEWAY_TOKEN: "env-token" },
+      allowMissingConfigFastPath: true,
+    });
+
+    expect(result.secretDiagnostics).toStrictEqual([]);
+  });
+
+  it("does not add a status diagnostic for remote gateway mode", async () => {
+    const sourceConfig = {
+      gateway: {
+        mode: "remote" as const,
+        remote: { token: "remote-token" },
+        auth: { token: "local-token" },
+      },
+    };
+    const readBestEffortConfig = vi.fn(async () => sourceConfig);
+    const resolveConfig = vi.fn(async () => ({
+      resolvedConfig: sourceConfig,
+      diagnostics: [],
+    }));
+
+    const result = await loadStatusScanCommandConfig({
+      commandName: "status --json",
+      readBestEffortConfig,
+      resolveConfig,
+      env: { VITEST: "true", REMOTECLAW_GATEWAY_TOKEN: "env-token" },
+      allowMissingConfigFastPath: true,
+    });
+
+    expect(result.secretDiagnostics).toStrictEqual([]);
+  });
 });

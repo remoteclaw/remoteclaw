@@ -19,8 +19,8 @@ Each ACP session spawn is tracked as a [background task](/automation/tasks).
 
 <Note>
 **ACP is the external-harness path, not the default Codex path.** The
-native Codex app-server plugin owns `/codex ...` controls and the
-`agentRuntime.id: "codex"` embedded runtime; ACP owns
+native Codex app-server plugin owns `/codex ...` controls and the default
+`openai/gpt-*` embedded runtime for agent turns; ACP owns
 `/acp ...` controls and `sessions_spawn({ runtime: "acp" })` sessions.
 
 If you want Codex or Claude Code to connect as an external MCP client
@@ -62,6 +62,7 @@ an unavailable backend.
   <Accordion title="First-run gotchas">
     - If `plugins.allow` is set, it is a restrictive plugin inventory and **must** include `acpx`; otherwise the installed ACP backend is intentionally blocked and `/acp doctor` reports the missing allowlist entry.
     - The Codex ACP adapter is staged with the `acpx` plugin and launched locally when possible.
+    - Codex ACP runs with an isolated `CODEX_HOME`; RemoteClaw copies only trusted project entries from the host Codex config and trusts the active workspace, leaving auth, notifications, and hooks on the host config.
     - Other target harness adapters may still be fetched on demand with `npx` the first time you use them.
     - Vendor auth still has to exist on the host for that harness.
     - If the host has no npm or network access, first-run adapter fetches fail until caches are pre-warmed or the adapter is installed another way.
@@ -79,7 +80,7 @@ an unavailable backend.
     - The target id is allowed by `acp.allowedAgents` when that allowlist is set.
     - The harness command can start on the Gateway host.
     - Provider auth is present for that harness (`claude`, `codex`, `gemini`, `opencode`, `droid`, etc.).
-    - The selected model exists for that harness — model ids are not portable across harnesses.
+    - The selected model exists for that harness - model ids are not portable across harnesses.
     - The requested `cwd` exists and is accessible, or omit `cwd` and let the backend use its default.
     - Permission mode matches the work. Non-interactive sessions cannot click native permission prompts, so write/exec-heavy coding runs usually need an ACPX permission profile that can proceed headlessly.
 
@@ -88,7 +89,7 @@ an unavailable backend.
 
 RemoteClaw plugin tools and built-in RemoteClaw tools are **not** exposed to
 ACP harnesses by default. Enable the explicit MCP bridges in
-[ACP agents — setup](/tools/acp-agents-setup) only when the harness
+[ACP agents - setup](/tools/acp-agents-setup) only when the harness
 should call those tools directly.
 
 ## Supported harness targets
@@ -156,6 +157,7 @@ Quick `/acp` flow from chat:
     - Gateway commands stay local. `/acp ...`, `/status`, and `/unfocus` are never sent as normal prompt text to a bound ACP harness.
     - `cancel` aborts the active turn when the backend supports cancellation; it does not delete the binding or session metadata.
     - `close` ends the ACP session from RemoteClaw's point of view and removes the binding. A harness may still keep its own upstream history if it supports resume.
+    - The acpx plugin cleans up RemoteClaw-owned wrapper and adapter process trees after `close`, and reaps stale RemoteClaw-owned ACPX orphans during Gateway startup.
     - Idle runtime workers are eligible for cleanup after `acp.runtime.ttlMinutes`; stored session metadata remains available for `/acp sessions`.
 
   </Accordion>
@@ -180,14 +182,14 @@ Quick `/acp` flow from chat:
     arguments or rewrite Codex thread records. Use explicit ACP only
     when you want the ACP runtime/session model. The embedded Codex
     support boundary is documented in the
-    [Codex harness v1 support contract](/plugins/codex-harness#v1-support-contract).
+    [Codex harness v1 support contract](/plugins/codex-harness-runtime#v1-support-contract).
 
   </Accordion>
   <Accordion title="Model / provider / runtime selection cheat sheet">
-    - `openai-codex/*` — PI Codex OAuth/subscription route.
-    - `openai/*` plus `agentRuntime.id: "codex"` — native Codex app-server embedded runtime.
-    - `/codex ...` — native Codex conversation control.
-    - `/acp ...` or `runtime: "acp"` — explicit ACP/acpx control.
+    - `openai-codex/*` - legacy Codex OAuth/subscription model route repaired by doctor.
+    - `openai/*` - native Codex app-server embedded runtime for OpenAI agent turns.
+    - `/codex ...` - native Codex conversation control.
+    - `/acp ...` or `runtime: "acp"` - explicit ACP/acpx control.
 
   </Accordion>
   <Accordion title="ACP-routing natural-language triggers">
@@ -246,7 +248,7 @@ For Claude Code through ACP, the stack is:
 ACP Claude is a **harness session** with ACP controls, session resume,
 background-task tracking, and optional conversation/thread binding.
 
-CLI backends are separate text-only local fallback runtimes — see
+CLI backends are separate text-only local fallback runtimes - see
 [CLI Backends](/gateway/cli-backends).
 
 For operators, the practical rule is:
@@ -258,15 +260,15 @@ For operators, the practical rule is:
 
 ### Mental model
 
-- **Chat surface** — where people keep talking (Discord channel, Telegram topic, iMessage chat).
-- **ACP session** — the durable Codex/Claude/Gemini runtime state RemoteClaw routes to.
-- **Child thread/topic** — an optional extra messaging surface created only by `--thread ...`.
-- **Runtime workspace** — the filesystem location (`cwd`, repo checkout, backend workspace) where the harness runs. Independent of the chat surface.
+- **Chat surface** - where people keep talking (Discord channel, Telegram topic, iMessage chat).
+- **ACP session** - the durable Codex/Claude/Gemini runtime state RemoteClaw routes to.
+- **Child thread/topic** - an optional extra messaging surface created only by `--thread ...`.
+- **Runtime workspace** - the filesystem location (`cwd`, repo checkout, backend workspace) where the harness runs. Independent of the chat surface.
 
 ### Current-conversation binds
 
 `/acp spawn <harness> --bind here` pins the current conversation to the
-spawned ACP session — no child thread, same chat surface. RemoteClaw keeps
+spawned ACP session - no child thread, same chat surface. RemoteClaw keeps
 owning transport, auth, safety, and delivery. Follow-up messages in that
 conversation route to the same session; `/new` and `/reset` reset the
 session in place; `/acp close` removes the binding.
@@ -286,9 +288,9 @@ Examples:
   <Accordion title="Binding rules and exclusivity">
     - `--bind here` and `--thread ...` are mutually exclusive.
     - `--bind here` only works on channels that advertise current-conversation binding; RemoteClaw returns a clear unsupported message otherwise. Bindings persist across gateway restarts.
-    - On Discord, `spawnSessions` gates child thread creation for `--thread auto|here` — not `--bind here`.
+    - On Discord, `spawnSessions` gates child thread creation for `--thread auto|here` - not `--bind here`.
     - If you spawn to a different ACP agent without `--cwd`, RemoteClaw inherits the **target agent's** workspace by default. Missing inherited paths (`ENOENT`/`ENOTDIR`) fall back to the backend default; other access errors (e.g. `EACCES`) surface as spawn errors.
-    - Gateway management commands stay local in bound conversations — `/acp ...` commands are handled by RemoteClaw even when normal follow-up text routes to the bound ACP session; `/status` and `/unfocus` also stay local whenever command handling is enabled for that surface.
+    - Gateway management commands stay local in bound conversations - `/acp ...` commands are handled by RemoteClaw even when normal follow-up text routes to the bound ACP session; `/status` and `/unfocus` also stay local whenever command handling is enabled for that surface.
 
   </Accordion>
   <Accordion title="Thread-bound sessions">
@@ -335,8 +337,8 @@ top-level `bindings[]` entries.
   Identifies the target conversation. Per-channel shapes:
 
 - **Discord channel/thread:** `match.channel="discord"` + `match.peer.id="<channelOrThreadId>"`
+- **Slack channel/DM:** `match.channel="slack"` + `match.peer.id="<channelId|channel:<channelId>|#<channelId>|userId|user:<userId>|slack:<userId>|<@userId>>"`. Prefer stable Slack ids; channel bindings also match replies inside that channel's threads.
 - **Telegram forum topic:** `match.channel="telegram"` + `match.peer.id="<chatId>:topic:<topicId>"`
-- **BlueBubbles DM/group:** `match.channel="bluebubbles"` + `match.peer.id="<handle|chat_id:*|chat_guid:*|chat_identifier:*>"`. Prefer `chat_id:*` or `chat_identifier:*` for stable group bindings.
 - **iMessage DM/group:** `match.channel="imessage"` + `match.peer.id="<handle|chat_id:*|chat_guid:*|chat_identifier:*>"`. Prefer `chat_id:*` for stable group bindings.
 
 </ParamField>
@@ -678,7 +680,7 @@ background work. The delivery path depends on that shape.
 
     ```json
     {
-      "task": "Continue where we left off — fix the remaining test failures",
+      "task": "Continue where we left off - fix the remaining test failures",
       "runtime": "acp",
       "agentId": "codex",
       "resumeSessionId": "<previous-session-id>"
@@ -687,7 +689,7 @@ background work. The delivery path depends on that shape.
 
     Common use cases:
 
-    - Hand off a Codex session from your laptop to your phone — tell your agent to pick up where you left off.
+    - Hand off a Codex session from your laptop to your phone - tell your agent to pick up where you left off.
     - Continue a coding session you started interactively in the CLI, now headlessly through your agent.
     - Pick up work that was interrupted by a gateway restart or idle timeout.
 
@@ -698,7 +700,7 @@ background work. The delivery path depends on that shape.
     - `resumeSessionId` is a host-local ACP/harness resume id, not an RemoteClaw channel session key; RemoteClaw still checks ACP spawn policy and target agent policy before dispatch, while the ACP backend or harness owns authorization for loading that upstream id.
     - `resumeSessionId` restores the upstream ACP conversation history; `thread` and `mode` still apply normally to the new RemoteClaw session you are creating, so `mode: "session"` still requires `thread: true`.
     - The target agent must support `session/load` (Codex and Claude Code do).
-    - If the session id is not found, the spawn fails with a clear error — no silent fallback to a new session.
+    - If the session id is not found, the spawn fails with a clear error - no silent fallback to a new session.
 
   </Accordion>
   <Accordion title="Post-deploy smoke test">
@@ -711,7 +713,7 @@ background work. The delivery path depends on that shape.
     4. Verify `accepted=yes`, a real `childSessionKey`, and no validator error.
     5. Clean up the temporary bridge session.
 
-    Keep the gate on `mode: "run"` and skip `streamTo: "parent"` —
+    Keep the gate on `mode: "run"` and skip `streamTo: "parent"` -
     thread-bound `mode: "session"` and stream-relay paths are separate
     richer integration passes.
 
@@ -806,7 +808,7 @@ operations:
 For acpx harness configuration (Claude Code / Codex / Gemini CLI
 aliases), the plugin-tools and RemoteClaw-tools MCP bridges, and ACP
 permission modes, see
-[ACP agents — setup](/tools/acp-agents-setup).
+[ACP agents - setup](/tools/acp-agents-setup).
 
 ## Troubleshooting
 
@@ -837,10 +839,11 @@ permission modes, see
 
 ## Related
 
-- [ACP agents — setup](/tools/acp-agents-setup)
+- [ACP agents - setup](/tools/acp-agents-setup)
 - [Agent send](/tools/agent-send)
 - [CLI Backends](/gateway/cli-backends)
 - [Codex harness](/plugins/codex-harness)
+- [Codex harness runtime](/plugins/codex-harness-runtime)
 - [Multi-agent sandbox tools](/tools/multi-agent-sandbox-tools)
 - [`remoteclaw acp` (bridge mode)](/cli/acp)
 - [Sub-agents](/tools/subagents)

@@ -202,7 +202,7 @@ describe("runtime snapshot state", () => {
     const loadFreshConfig = vi.fn<() => RemoteClawConfig>(() => ({
       gateway: { auth: { mode: "token" } },
     }));
-    let releaseRefresh!: () => void;
+    let releaseRefresh: (() => void) | undefined;
     const refreshPending = new Promise<boolean>((resolve) => {
       releaseRefresh = () => resolve(true);
     });
@@ -264,6 +264,9 @@ describe("runtime snapshot state", () => {
     expect(getRuntimeConfigSnapshot()?.gateway?.auth).toBeUndefined();
     expect(loadFreshConfig).not.toHaveBeenCalled();
 
+    if (!releaseRefresh) {
+      throw new Error("Expected runtime snapshot refresh release callback to be initialized");
+    }
     releaseRefresh();
     await writePromise;
 

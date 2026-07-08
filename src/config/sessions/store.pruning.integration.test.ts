@@ -68,6 +68,20 @@ async function createCaseDir(prefix: string): Promise<string> {
   return dir;
 }
 
+async function expectPathExists(targetPath: string): Promise<void> {
+  await expect(fs.access(targetPath)).resolves.toBeUndefined();
+}
+
+async function expectPathMissing(targetPath: string): Promise<void> {
+  try {
+    await fs.stat(targetPath);
+  } catch (error) {
+    expect((error as { code?: unknown }).code).toBe("ENOENT");
+    return;
+  }
+  throw new Error(`expected missing path: ${targetPath}`);
+}
+
 function createStaleAndFreshStore(now = Date.now()): Record<string, SessionEntry> {
   return {
     stale: makeEntry(now - 30 * DAY_MS),
@@ -119,7 +133,7 @@ describe("Integration: saveSessionStore with pruning", () => {
 
     const loaded = loadSessionStore(storePath, { skipCache: true });
     expect(loaded.stale).toBeUndefined();
-    expect(loaded.fresh).toBeDefined();
+    expect(loaded).toHaveProperty("fresh");
   });
 
   it("archives transcript files for stale sessions pruned on write", async () => {
@@ -141,9 +155,9 @@ describe("Integration: saveSessionStore with pruning", () => {
 
     const loaded = loadSessionStore(storePath);
     expect(loaded.stale).toBeUndefined();
-    expect(loaded.fresh).toBeDefined();
-    await expect(fs.stat(staleTranscript)).rejects.toThrow();
-    await expect(fs.stat(freshTranscript)).resolves.toBeDefined();
+    expect(loaded).toHaveProperty("fresh");
+    await expectPathMissing(staleTranscript);
+    await expectPathExists(freshTranscript);
     const dirEntries = await fs.readdir(testDir);
     const archived = dirEntries.filter((entry) =>
       entry.startsWith(`${staleSessionId}.jsonl.deleted.`),
@@ -182,9 +196,9 @@ describe("Integration: saveSessionStore with pruning", () => {
 
     await saveSessionStore(storePath, store);
 
-    await expect(fs.stat(oldArchived)).rejects.toThrow();
-    await expect(fs.stat(recentArchived)).resolves.toBeDefined();
-    await expect(fs.stat(bakArchived)).resolves.toBeDefined();
+    await expectPathMissing(oldArchived);
+    await expectPathExists(recentArchived);
+    await expectPathExists(bakArchived);
   });
 
   it("cleans up reset archives using resetArchiveRetention", async () => {
@@ -217,8 +231,8 @@ describe("Integration: saveSessionStore with pruning", () => {
 
     await saveSessionStore(storePath, store);
 
-    await expect(fs.stat(oldReset)).rejects.toThrow();
-    await expect(fs.stat(freshReset)).resolves.toBeDefined();
+    await expectPathMissing(oldReset);
+    await expectPathExists(freshReset);
   });
 
   it("saveSessionStore skips enforcement when maintenance mode is warn", async () => {
@@ -238,8 +252,8 @@ describe("Integration: saveSessionStore with pruning", () => {
     await saveSessionStore(storePath, store);
 
     const loaded = loadSessionStore(storePath);
-    expect(loaded.stale).toBeDefined();
-    expect(loaded.fresh).toBeDefined();
+    expect(loaded).toHaveProperty("stale");
+    expect(loaded).toHaveProperty("fresh");
     expect(Object.keys(loaded)).toHaveLength(2);
   });
 
@@ -262,11 +276,14 @@ describe("Integration: saveSessionStore with pruning", () => {
 
     const loaded = loadSessionStore(storePath);
     expect(loaded.oldest).toBeUndefined();
-    expect(loaded.newest).toBeDefined();
-    await expect(fs.stat(oldestTranscript)).rejects.toThrow();
-    await expect(fs.stat(newestTranscript)).resolves.toBeDefined();
+    expect(loaded).toHaveProperty("newest");
+    await expectPathMissing(oldestTranscript);
+    await expectPathExists(newestTranscript);
     const files = await fs.readdir(testDir);
-    expect(files.some((name) => name.startsWith(`${oldestSessionId}.jsonl.deleted.`))).toBe(true);
+    const archivedOldestTranscripts = files.filter((name) =>
+      name.startsWith(`${oldestSessionId}.jsonl.deleted.`),
+    );
+    expect(archivedOldestTranscripts.length).toBeGreaterThan(0);
   });
 
   it("does not archive external transcript paths when capping entries", async () => {
@@ -290,8 +307,8 @@ describe("Integration: saveSessionStore with pruning", () => {
       await saveSessionStore(storePath, store);
       const loaded = loadSessionStore(storePath);
       expect(loaded.oldest).toBeUndefined();
-      expect(loaded.newest).toBeDefined();
-      await expect(fs.stat(externalTranscript)).resolves.toBeDefined();
+      expect(loaded).toHaveProperty("newest");
+      await expectPathExists(externalTranscript);
     } finally {
       await fs.rm(externalDir, { recursive: true, force: true });
     }
@@ -325,9 +342,9 @@ describe("Integration: saveSessionStore with pruning", () => {
 
     const loaded = loadSessionStore(storePath);
     expect(Object.keys(loaded).length).toBe(1);
-    expect(loaded.recent).toBeDefined();
-    await expect(fs.stat(path.join(testDir, `${oldSessionId}.jsonl`))).rejects.toThrow();
-    await expect(fs.stat(path.join(testDir, `${newSessionId}.jsonl`))).resolves.toBeDefined();
+    expect(loaded).toHaveProperty("recent");
+    await expectPathMissing(path.join(testDir, `${oldSessionId}.jsonl`));
+    await expectPathExists(path.join(testDir, `${newSessionId}.jsonl`));
   });
 
   it("uses projected sessions.json size to avoid over-eviction", async () => {
@@ -358,8 +375,8 @@ describe("Integration: saveSessionStore with pruning", () => {
     await saveSessionStore(storePath, store);
 
     const loaded = loadSessionStore(storePath);
-    expect(loaded.older).toBeDefined();
-    expect(loaded.newer).toBeDefined();
+    expect(loaded).toHaveProperty("older");
+    expect(loaded).toHaveProperty("newer");
   });
 
   it("never deletes transcripts outside the agent sessions directory during budget cleanup", async () => {
@@ -396,7 +413,7 @@ describe("Integration: saveSessionStore with pruning", () => {
 
     try {
       await saveSessionStore(storePath, store);
-      await expect(fs.stat(externalTranscript)).resolves.toBeDefined();
+      await expectPathExists(externalTranscript);
     } finally {
       await fs.rm(externalDir, { recursive: true, force: true });
     }

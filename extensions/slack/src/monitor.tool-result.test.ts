@@ -64,8 +64,32 @@ describe("monitorSlackProvider tool results", () => {
     };
   }
 
+  function firstMockCall(mock: ReturnType<typeof vi.fn>, label: string): unknown[] {
+    const [call] = mock.mock.calls;
+    if (!call) {
+      throw new Error(`expected ${label} call`);
+    }
+    return call;
+  }
+
+  function firstMockArg(mock: ReturnType<typeof vi.fn>, label: string, argIndex: number): unknown {
+    return firstMockCall(mock, label)[argIndex];
+  }
+
+  function firstMockRecordArg(
+    mock: ReturnType<typeof vi.fn>,
+    label: string,
+    argIndex: number,
+  ): Record<string, unknown> {
+    const value = firstMockArg(mock, label, argIndex);
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      throw new Error(`expected ${label} argument ${argIndex + 1} to be an object`);
+    }
+    return value as Record<string, unknown>;
+  }
+
   function firstReplyCtx(): { WasMentioned?: boolean } {
-    return (replyMock.mock.calls[0]?.[0] ?? {}) as { WasMentioned?: boolean };
+    return firstMockRecordArg(replyMock, "reply", 0) as { WasMentioned?: boolean };
   }
 
   function setRequireMentionChannelConfig(mentionPatterns?: string[]) {

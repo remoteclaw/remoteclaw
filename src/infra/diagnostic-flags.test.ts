@@ -40,7 +40,7 @@ describe("resolveDiagnosticFlags", () => {
         resolveDiagnosticFlags(cfg, {
           REMOTECLAW_DIAGNOSTICS: raw,
         } as NodeJS.ProcessEnv),
-      ).toEqual([]);
+      ).toStrictEqual([]);
     }
   });
 });

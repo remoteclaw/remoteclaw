@@ -32,7 +32,7 @@ describe("path prepend helpers", () => {
         42 as any,
       ]),
     ).toEqual(["/custom/bin", "/opt/bin"]);
-    expect(normalizePathPrepend()).toEqual([]);
+    expect(normalizePathPrepend()).toStrictEqual([]);
   });
 
   it.each([

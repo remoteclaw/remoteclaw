@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createMetrics, createNoopMetrics, type MetricEvent } from "./metrics.js";
 import { createSeenTracker } from "./seen-tracker.js";
 
@@ -139,7 +139,7 @@ describe("SeenTracker", () => {
   });
 
   describe("TTL expiration", () => {
-    it("expires entries after TTL", async () => {
+    it("expires entries after TTL", () => {
       vi.useFakeTimers();
 
       const tracker = createSeenTracker({
@@ -161,7 +161,7 @@ describe("SeenTracker", () => {
       vi.useRealTimers();
     });
 
-    it("has() refreshes TTL", async () => {
+    it("has() refreshes TTL", () => {
       vi.useFakeTimers();
 
       const tracker = createSeenTracker({
@@ -354,7 +354,7 @@ describe("Metrics", () => {
   });
 
   describe("createNoopMetrics", () => {
-    it("does not throw on emit", () => {
+    it("ignores emitted metrics", () => {
       const metrics = createNoopMetrics();
 
       expect(() => {

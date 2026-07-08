@@ -72,33 +72,29 @@ describe("safe npm install helpers", () => {
   });
 
   it("does not inherit host legacy peer dependency mode by default", () => {
-    expect(
-      createSafeNpmInstallEnv({
-        PATH: "/usr/bin:/bin",
-        npm_config_legacy_peer_deps: "true",
-        npm_config_strict_peer_deps: "true",
-      }),
-    ).toMatchObject({
+    const env = createSafeNpmInstallEnv({
       PATH: "/usr/bin:/bin",
-      npm_config_legacy_peer_deps: "false",
-      npm_config_strict_peer_deps: "false",
+      npm_config_legacy_peer_deps: "true",
+      npm_config_strict_peer_deps: "true",
     });
+
+    expect(env.PATH).toBe("/usr/bin:/bin");
+    expect(env.npm_config_legacy_peer_deps).toBe("false");
+    expect(env.npm_config_strict_peer_deps).toBe("false");
   });
 
   it("allows package-lock-enabled installs to write lockfiles", () => {
-    expect(
-      createSafeNpmInstallEnv(
-        {
-          PATH: "/usr/bin:/bin",
-          npm_config_save: "false",
-        },
-        {
-          packageLock: true,
-        },
-      ),
-    ).toMatchObject({
-      npm_config_package_lock: "true",
-      npm_config_save: "true",
-    });
+    const env = createSafeNpmInstallEnv(
+      {
+        PATH: "/usr/bin:/bin",
+        npm_config_save: "false",
+      },
+      {
+        packageLock: true,
+      },
+    );
+
+    expect(env.npm_config_package_lock).toBe("true");
+    expect(env.npm_config_save).toBe("true");
   });
 });

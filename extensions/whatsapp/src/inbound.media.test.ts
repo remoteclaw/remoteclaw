@@ -57,6 +57,7 @@ vi.mock("../../../src/media/store.js", async (importOriginal) => {
 });
 
 const HOME = path.join(os.tmpdir(), `remoteclaw-inbound-media-${crypto.randomUUID()}`);
+const ORIGINAL_HOME = process.env.HOME;
 process.env.HOME = HOME;
 
 vi.mock("@whiskeysockets/baileys", async (importOriginal) => {
@@ -118,7 +119,14 @@ async function waitForMessage(onMessage: ReturnType<typeof vi.fn>) {
     interval: 1,
     timeout: 250,
   });
-  return onMessage.mock.calls[0][0];
+  return onMessage.mock.calls.at(0)?.[0];
+}
+
+function requireMediaPath(value: unknown): string {
+  if (typeof value !== "string" || value.length === 0) {
+    throw new Error("expected inbound media path");
+  }
+  return value;
 }
 
 describe("web inbound media saves with extension", () => {
@@ -146,6 +154,11 @@ describe("web inbound media saves with extension", () => {
 
   afterAll(async () => {
     await fs.rm(HOME, { recursive: true, force: true });
+    if (ORIGINAL_HOME === undefined) {
+      delete process.env.HOME;
+    } else {
+      process.env.HOME = ORIGINAL_HOME;
+    }
   });
 
   it("stores image extension, extracts caption mentions, and keeps document filename", async () => {
@@ -170,10 +183,9 @@ describe("web inbound media saves with extension", () => {
     });
 
     const first = await waitForMessage(onMessage);
-    const mediaPath = first.mediaPath;
-    expect(mediaPath).toBeDefined();
-    expect(path.extname(mediaPath as string)).toBe(".jpg");
-    const stat = await fs.stat(mediaPath as string);
+    const mediaPath = requireMediaPath(first.mediaPath);
+    expect(path.extname(mediaPath)).toBe(".jpg");
+    const stat = await fs.stat(mediaPath);
     expect(stat.size).toBeGreaterThan(0);
 
     onMessage.mockClear();

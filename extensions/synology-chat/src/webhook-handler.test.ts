@@ -14,6 +14,36 @@ vi.mock("./client.js", () => ({
   resolveChatUserId: vi.fn().mockResolvedValue(undefined),
 }));
 
+function countMatching<T>(items: readonly T[], predicate: (item: T) => boolean): number {
+  let count = 0;
+  for (const item of items) {
+    if (predicate(item)) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+function deliveredMessage(deliver: ReturnType<typeof vi.fn>) {
+  expect(deliver).toHaveBeenCalledTimes(1);
+  const message = deliver.mock.calls.at(0)?.[0] as
+    | {
+        accountId?: unknown;
+        body?: unknown;
+        chatType?: unknown;
+        chatUserId?: unknown;
+        commandAuthorized?: unknown;
+        from?: unknown;
+        provider?: unknown;
+        senderName?: unknown;
+      }
+    | undefined;
+  if (!message) {
+    throw new Error("expected delivered Synology Chat message");
+  }
+  return message;
+}
+
 function makeAccount(
   overrides: Partial<ResolvedSynologyChatAccount> = {},
 ): ResolvedSynologyChatAccount {
@@ -349,14 +379,14 @@ describe("createWebhookHandler", () => {
     await handler(req, res);
 
     expect(res._status).toBe(204);
-    expect(deliver).toHaveBeenCalledWith(
-      expect.objectContaining({
-        body: "Hello from json",
-        from: "123",
-        senderName: "json-user",
-        commandAuthorized: true,
-      }),
-    );
+    const message = deliveredMessage(deliver);
+    expect(message.body).toBe("Hello from json");
+    expect(message.from).toBe("123");
+    expect(message.senderName).toBe("json-user");
+    expect(message.provider).toBe("synology-chat");
+    expect(message.chatType).toBe("direct");
+    expect(message.commandAuthorized).toBe(true);
+    expect(message.chatUserId).toBe("123");
   });
 
   it("accepts token from query when body token is absent", async () => {
@@ -482,7 +512,7 @@ describe("createWebhookHandler", () => {
 
     expect(res._status).toBe(204);
     // deliver should have been called with the stripped text
-    expect(deliver).toHaveBeenCalledWith(expect.objectContaining({ body: "Hello there" }));
+    expect(deliveredMessage(deliver).body).toBe("Hello there");
   });
 
   it("responds 204 immediately and delivers async", async () => {
@@ -499,16 +529,14 @@ describe("createWebhookHandler", () => {
 
     expect(res._status).toBe(204);
     expect(res._body).toBe("");
-    expect(deliver).toHaveBeenCalledWith(
-      expect.objectContaining({
-        body: "Hello bot",
-        from: "123",
-        senderName: "testuser",
-        provider: "synology-chat",
-        chatType: "direct",
-        commandAuthorized: true,
-      }),
-    );
+    const message = deliveredMessage(deliver);
+    expect(message.body).toBe("Hello bot");
+    expect(message.from).toBe("123");
+    expect(message.senderName).toBe("testuser");
+    expect(message.provider).toBe("synology-chat");
+    expect(message.chatType).toBe("direct");
+    expect(message.commandAuthorized).toBe(true);
+    expect(message.chatUserId).toBe("123");
   });
 
   it("sanitizes input before delivery", async () => {
@@ -530,11 +558,8 @@ describe("createWebhookHandler", () => {
     const res = makeRes();
     await handler(req, res);
 
-    expect(deliver).toHaveBeenCalledWith(
-      expect.objectContaining({
-        body: expect.stringContaining("[FILTERED]"),
-        commandAuthorized: true,
-      }),
-    );
+    const message = deliveredMessage(deliver);
+    expect(String(message.body)).toContain("[FILTERED]");
+    expect(message.commandAuthorized).toBe(true);
   });
 });

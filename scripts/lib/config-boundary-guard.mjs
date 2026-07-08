@@ -3,6 +3,7 @@ import { dirname, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const DEFAULT_REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const sourceCache = new Map();
 
 const COMPAT_CONFIG_API_FILES = new Set([
   "src/config/config.ts",
@@ -12,8 +13,11 @@ const COMPAT_CONFIG_API_FILES = new Set([
   "src/plugin-sdk/config-runtime.ts",
   "src/plugin-sdk/memory-core-host-runtime-core.ts",
   "src/plugins/compat/registry.ts",
+  "src/plugins/registry.runtime-config.test.ts",
+  "src/plugins/registry.ts",
   "src/plugins/contracts/config-boundary-guard.test.ts",
   "src/plugins/contracts/deprecated-internal-config-api.test.ts",
+  "src/plugins/registry.runtime-config.test.ts",
   "src/plugins/runtime/runtime-config.test.ts",
   "src/plugins/runtime/runtime-config.ts",
   "src/plugins/runtime/types-core.ts",
@@ -60,6 +64,16 @@ function collectTypeScriptFiles(dir) {
 
 function repoRelative(repoRoot, filePath) {
   return relative(repoRoot, filePath).split(sep).join("/");
+}
+
+function readTypeScriptSource(filePath) {
+  const cached = sourceCache.get(filePath);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const source = readFileSync(filePath, "utf8");
+  sourceCache.set(filePath, source);
+  return source;
 }
 
 function isProductionExtensionFile(relPath) {
@@ -151,7 +165,7 @@ function pushDeprecatedRuntimeApiViolations(violations, files) {
   ];
 
   for (const { filePath, relPath } of files) {
-    const source = readFileSync(filePath, "utf8");
+    const source = readTypeScriptSource(filePath);
     for (const guard of guards) {
       for (const line of findMatchLineNumbers(source, guard.pattern)) {
         violations.push(`${relPath}:${line} ${guard.replacement}`);
@@ -169,7 +183,7 @@ function pushBroadConfigRuntimeBarrelViolations(violations, files) {
     /\b(?:typeof\s+)?import\(["']remoteclaw\/plugin-sdk\/config-runtime["']\)\.[A-Za-z_$][\w$]*/g;
 
   for (const { filePath, relPath } of files) {
-    const source = readFileSync(filePath, "utf8");
+    const source = readTypeScriptSource(filePath);
     for (const pattern of [staticImportPattern, dynamicImportPattern, typeQueryPattern]) {
       for (const line of findMatchLineNumbers(source, pattern)) {
         violations.push(
@@ -184,7 +198,7 @@ function pushBroadConfigRuntimeSpecifierViolations(violations, files) {
   const moduleSpecifierPattern = /["']remoteclaw\/plugin-sdk\/config-runtime["']/g;
 
   for (const { filePath, relPath } of files) {
-    const source = readFileSync(filePath, "utf8");
+    const source = readTypeScriptSource(filePath);
     for (const line of findMatchLineNumbers(source, moduleSpecifierPattern)) {
       violations.push(
         `${relPath}:${line} use narrow plugin-sdk config subpaths instead of remoteclaw/plugin-sdk/config-runtime`,
@@ -218,7 +232,7 @@ export function collectDeprecatedInternalConfigApiViolations({
   pushBroadConfigRuntimeBarrelViolations(violations, productionExtensionFiles);
 
   for (const { filePath, relPath } of productionExtensionFiles) {
-    const source = readFileSync(filePath, "utf8");
+    const source = readTypeScriptSource(filePath);
     const guards = [
       {
         pattern:
@@ -274,7 +288,7 @@ export function collectDeprecatedInternalConfigApiViolations({
   for (const { filePath, relPath } of repoFiles.filter(
     ({ relPath }) => !isCompatConfigApiFile(relPath),
   )) {
-    const source = readFileSync(filePath, "utf8");
+    const source = readTypeScriptSource(filePath);
     const guards = [
       {
         pattern:
@@ -301,7 +315,7 @@ export function collectDeprecatedInternalConfigApiViolations({
       !isCompatConfigApiFile(relPath) &&
       !relPath.startsWith("test/"),
   )) {
-    const source = readFileSync(filePath, "utf8");
+    const source = readTypeScriptSource(filePath);
     const importPattern =
       /\bimport\s+\{[\s\S]*?\bwriteConfigFile\b[\s\S]*?\}\s+from\s+["'][^"']*(?:config\/config|config\/io)\.js["']/;
     const dynamicImportPattern =
@@ -328,7 +342,7 @@ export function collectDeprecatedInternalConfigApiViolations({
       !PROCESS_BOUNDARY_DIRECT_CONFIG_LOAD_FILES.has(relPath) &&
       !relPath.startsWith("test/"),
   )) {
-    const source = readFileSync(filePath, "utf8");
+    const source = readTypeScriptSource(filePath);
     for (const line of findNonCommentLineNumbers(source, /(?<!\.)\bloadConfig\s*\(/)) {
       violations.push(
         `${relPath}:${line} use a passed cfg, context.getRuntimeConfig(), or getRuntimeConfig() at an explicit process boundary`,
@@ -344,7 +358,7 @@ export function collectDeprecatedInternalConfigApiViolations({
   for (const { filePath, relPath } of collectTypeScriptFiles(gatewayServerMethodsRoot)
     .map((filePath) => ({ filePath, relPath: repoRelative(repoRoot, filePath) }))
     .filter(({ relPath }) => !isTestOrHarnessFile(relPath))) {
-    const source = readFileSync(filePath, "utf8");
+    const source = readTypeScriptSource(filePath);
     const importPattern =
       /\bimport\s+\{[\s\S]*?\bloadConfig\b[\s\S]*?\}\s+from\s+["'][^"']*(?:config\/config|config\/io)\.js["']/;
     for (const line of findMatchLineNumbers(source, importPattern)) {
@@ -368,7 +382,7 @@ export function collectDeprecatedInternalConfigApiViolations({
         !isCompatConfigApiFile(relPath) &&
         !isAmbientRuntimeConfigCompatFile(relPath),
     )) {
-    const source = readFileSync(filePath, "utf8");
+    const source = readTypeScriptSource(filePath);
     const loadConfigLines = findNonCommentLineNumbers(source, /(?<!\.)\bloadConfig\s*\(/);
     if (loadConfigLines.length === 0) {
       continue;
@@ -444,7 +458,7 @@ export function collectRuntimeActionLoadConfigViolations({ repoRoot = DEFAULT_RE
     .map((filePath) => ({ filePath, relPath: repoRelative(repoRoot, filePath) }))
     .filter(({ relPath }) => isRuntimeActionLoadConfigCandidate(relPath))
     .flatMap(({ filePath, relPath }) => {
-      const lines = readFileSync(filePath, "utf8").split(/\r?\n/);
+      const lines = readTypeScriptSource(filePath).split(/\r?\n/);
       return lines.flatMap((line, index) =>
         RUNTIME_ACTION_FORBIDDEN_CONFIG_LOAD_PATTERNS.some((pattern) => pattern.test(line))
           ? [`${relPath}:${index + 1}: ${line.trim()}`]

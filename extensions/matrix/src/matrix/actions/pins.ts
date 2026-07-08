@@ -29,7 +29,6 @@ async function withResolvedPinRoom<T>(
 
 async function updateMatrixPins(
   roomId: string,
-  messageId: string,
   opts: MatrixActionClientOpts,
   update: (current: string[]) => string[],
 ): Promise<{ pinned: string[] }> {
@@ -47,7 +46,7 @@ export async function pinMatrixMessage(
   messageId: string,
   opts: MatrixActionClientOpts = {},
 ): Promise<{ pinned: string[] }> {
-  return await updateMatrixPins(roomId, messageId, opts, (current) =>
+  return await updateMatrixPins(roomId, opts, (current) =>
     current.includes(messageId) ? current : [...current, messageId],
   );
 }
@@ -57,7 +56,7 @@ export async function unpinMatrixMessage(
   messageId: string,
   opts: MatrixActionClientOpts = {},
 ): Promise<{ pinned: string[] }> {
-  return await updateMatrixPins(roomId, messageId, opts, (current) =>
+  return await updateMatrixPins(roomId, opts, (current) =>
     current.filter((id) => id !== messageId),
   );
 }

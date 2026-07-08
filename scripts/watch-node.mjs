@@ -277,9 +277,6 @@ export async function runWatchMain(params = {}) {
   // The watcher owns process restarts; keep SIGUSR1/config reloads in-process
   // so inherited launchd/systemd markers do not make the child exit and stall.
   childEnv.REMOTECLAW_NO_RESPAWN = "1";
-  if (isGatewayWatchCommand(deps.args) && childEnv.REMOTECLAW_TRACE_SYNC_IO === undefined) {
-    childEnv.REMOTECLAW_TRACE_SYNC_IO = "1";
-  }
   if (deps.args.length > 0) {
     childEnv.REMOTECLAW_WATCH_COMMAND = deps.args.join(" ");
   }

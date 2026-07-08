@@ -92,7 +92,9 @@ export async function issueOperatorToken(params: {
 
   const device = await getPairedDevice(paired.identity.deviceId);
   const token = device?.tokens?.operator?.token ?? "";
-  expect(token).toBeTruthy();
+  if (!token) {
+    throw new Error(`expected operator token for paired device ${paired.identity.deviceId}`);
+  }
   expect(device?.approvedScopes).toEqual(params.approvedScopes);
   return {
     deviceId: paired.identity.deviceId,

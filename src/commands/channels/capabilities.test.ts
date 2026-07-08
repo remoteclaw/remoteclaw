@@ -132,8 +132,14 @@ describe("channelsCapabilitiesCommand", () => {
 
     await channelsCapabilitiesCommand({ channel: "msteams" }, runtime);
 
-    const output = logs.join("\n");
-    expect(output).toContain("ChannelMessage.Read.All (channel history)");
-    expect(output).toContain("Files.Read.All (files (OneDrive))");
+    expect(logs).toStrictEqual([
+      [
+        "msteams:default",
+        "Support: chatTypes=direct",
+        "Actions: send, broadcast, poll",
+        "App: app-id",
+        "Graph roles: ChannelMessage.Read.All (channel history), Files.Read.All (files (OneDrive))",
+      ].join("\n"),
+    ]);
   });
 });

@@ -104,8 +104,8 @@ describe("runServiceRestart token drift", () => {
 
     expect(loadConfig).toHaveBeenCalledTimes(1);
     const payload = readJsonLog<{ warnings?: string[] }>();
-    expect(payload.warnings).toEqual(
-      expect.arrayContaining([expect.stringContaining("gateway install --force")]),
+    expect(payload.warnings?.some((warning) => warning.includes("gateway install --force"))).toBe(
+      true,
     );
   });
 
@@ -126,8 +126,8 @@ describe("runServiceRestart token drift", () => {
     await runServiceRestart(createServiceRunArgs(true));
 
     const payload = readJsonLog<{ warnings?: string[] }>();
-    expect(payload.warnings).toEqual(
-      expect.arrayContaining([expect.stringContaining("gateway install --force")]),
+    expect(payload.warnings?.some((warning) => warning.includes("gateway install --force"))).toBe(
+      true,
     );
   });
 

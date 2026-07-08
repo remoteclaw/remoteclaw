@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 const telemetryState = vi.hoisted(() => {
   const counters = new Map<string, { add: ReturnType<typeof vi.fn> }>();
@@ -172,6 +172,33 @@ function createTraceOnlyContext(endpoint: string): RemoteClawPluginServiceContex
   return createOtelContext(endpoint, { traces: true });
 }
 
+function startedSpanCall(name: string) {
+  const calls = telemetryState.tracer.startSpan.mock.calls as unknown as Array<
+    [string, { attributes?: Record<string, unknown>; startTime?: unknown }?, unknown?]
+  >;
+  return calls.find(([spanName]) => spanName === name);
+}
+
+function startedSpanOptions(name: string) {
+  return startedSpanCall(name)?.[1];
+}
+
+function lastHistogramRecord(name: string) {
+  return telemetryState.histograms.get(name)?.record.mock.calls.at(-1) as
+    | [unknown, Record<string, unknown>?]
+    | undefined;
+}
+
+function histogramCreateOptions(name: string) {
+  const calls = telemetryState.meter.createHistogram.mock.calls as unknown as Array<
+    [string, unknown?]
+  >;
+  const call = calls.find(([histogramName]) => histogramName === name);
+  return call?.[1] as
+    | { unit?: unknown; advice?: { explicitBucketBoundaries?: unknown[] } }
+    | undefined;
+}
+
 async function emitAndCaptureLog(
   event: Omit<Extract<Parameters<typeof emitDiagnosticEvent>[0], { type: "log.record" }>, "type">,
 ) {
@@ -192,6 +219,20 @@ async function emitAndCaptureLog(
 function flushDiagnosticEvents() {
   return new Promise<void>((resolve) => setImmediate(resolve));
 }
+
+afterAll(() => {
+  vi.doUnmock("@opentelemetry/api");
+  vi.doUnmock("@opentelemetry/sdk-node");
+  vi.doUnmock("@opentelemetry/exporter-metrics-otlp-proto");
+  vi.doUnmock("@opentelemetry/exporter-trace-otlp-proto");
+  vi.doUnmock("@opentelemetry/exporter-logs-otlp-proto");
+  vi.doUnmock("@opentelemetry/sdk-logs");
+  vi.doUnmock("@opentelemetry/sdk-metrics");
+  vi.doUnmock("@opentelemetry/sdk-trace-base");
+  vi.doUnmock("@opentelemetry/resources");
+  vi.doUnmock("@opentelemetry/semantic-conventions");
+  vi.resetModules();
+});
 
 describe("diagnostics-otel service", () => {
   beforeEach(() => {
@@ -263,21 +304,70 @@ describe("diagnostics-otel service", () => {
       attempt: 2,
     });
 
-    expect(telemetryState.counters.get("remoteclaw.webhook.received")?.add).toHaveBeenCalled();
+    expect(telemetryState.counters.get("remoteclaw.webhook.received")?.add).toHaveBeenCalledWith(
+      1,
+      {
+        "remoteclaw.channel": "telegram",
+        "remoteclaw.webhook": "telegram-post",
+      },
+    );
     expect(
       telemetryState.histograms.get("remoteclaw.webhook.duration_ms")?.record,
-    ).toHaveBeenCalled();
-    expect(telemetryState.counters.get("remoteclaw.message.queued")?.add).toHaveBeenCalled();
-    expect(telemetryState.counters.get("remoteclaw.message.processed")?.add).toHaveBeenCalled();
+    ).toHaveBeenCalledWith(120, {
+      "remoteclaw.channel": "telegram",
+      "remoteclaw.webhook": "telegram-post",
+    });
+    expect(telemetryState.counters.get("remoteclaw.message.queued")?.add).toHaveBeenCalledWith(1, {
+      "remoteclaw.channel": "telegram",
+      "remoteclaw.source": "telegram",
+    });
+    expect(telemetryState.histograms.get("remoteclaw.queue.depth")?.record).toHaveBeenCalledTimes(
+      2,
+    );
+    expect(telemetryState.histograms.get("remoteclaw.queue.depth")?.record).toHaveBeenCalledWith(
+      2,
+      {
+        "remoteclaw.channel": "telegram",
+        "remoteclaw.source": "telegram",
+      },
+    );
+    expect(telemetryState.histograms.get("remoteclaw.queue.depth")?.record).toHaveBeenCalledWith(
+      3,
+      {
+        "remoteclaw.lane": "main",
+      },
+    );
+    expect(telemetryState.counters.get("remoteclaw.message.processed")?.add).toHaveBeenCalledWith(
+      1,
+      {
+        "remoteclaw.channel": "telegram",
+        "remoteclaw.outcome": "completed",
+      },
+    );
     expect(
       telemetryState.histograms.get("remoteclaw.message.duration_ms")?.record,
-    ).toHaveBeenCalled();
-    expect(telemetryState.histograms.get("remoteclaw.queue.wait_ms")?.record).toHaveBeenCalled();
-    expect(telemetryState.counters.get("remoteclaw.session.stuck")?.add).toHaveBeenCalled();
+    ).toHaveBeenCalledWith(55, {
+      "remoteclaw.channel": "telegram",
+      "remoteclaw.outcome": "completed",
+    });
+    expect(telemetryState.histograms.get("remoteclaw.queue.wait_ms")?.record).toHaveBeenCalledWith(
+      10,
+      {
+        "remoteclaw.lane": "main",
+      },
+    );
+    expect(telemetryState.counters.get("remoteclaw.session.stuck")?.add).toHaveBeenCalledTimes(1);
+    expect(telemetryState.counters.get("remoteclaw.session.stuck")?.add).toHaveBeenCalledWith(1, {
+      "remoteclaw.state": "processing",
+    });
     expect(
       telemetryState.histograms.get("remoteclaw.session.stuck_age_ms")?.record,
-    ).toHaveBeenCalled();
-    expect(telemetryState.counters.get("remoteclaw.run.attempt")?.add).toHaveBeenCalled();
+    ).toHaveBeenCalledWith(125_000, {
+      "remoteclaw.state": "processing",
+    });
+    expect(telemetryState.counters.get("remoteclaw.run.attempt")?.add).toHaveBeenCalledWith(1, {
+      "remoteclaw.attempt": 2,
+    });
 
     const spanNames = telemetryState.tracer.startSpan.mock.calls.map((call) => call[0]);
     expect(spanNames).toContain("remoteclaw.webhook.processed");
@@ -572,11 +662,9 @@ describe("diagnostics-otel service", () => {
 
     const emitCall = logEmit.mock.calls[0]?.[0];
     expect(emitCall?.body.length).toBeLessThanOrEqual(4200);
-    expect(emitCall?.attributes).toMatchObject({
-      "remoteclaw.good": expect.stringMatching(/^y+/),
-      "code.lineno": 42,
-      "code.function": "handler",
-    });
+    expect(String(emitCall?.attributes?.["remoteclaw.good"])).toMatch(/^y+/);
+    expect(emitCall?.attributes?.["code.lineno"]).toBe(42);
+    expect(emitCall?.attributes?.["code.function"]).toBe("handler");
     expect(String(emitCall?.attributes?.["remoteclaw.good"]).length).toBeLessThanOrEqual(4200);
     expect(Object.hasOwn(emitCall?.attributes ?? {}, `remoteclaw.${PROTO_KEY}`)).toBe(false);
     expect(Object.hasOwn(emitCall?.attributes ?? {}, "remoteclaw.constructor")).toBe(false);
@@ -587,13 +675,9 @@ describe("diagnostics-otel service", () => {
         "remoteclaw.sk-1234567890abcdef1234567890abcdef", // pragma: allowlist secret
       ),
     ).toBe(false);
-    expect(emitCall?.attributes).toEqual(
-      expect.not.objectContaining({
-        "remoteclaw.bad key": expect.anything(),
-        "code.filepath": expect.anything(),
-        "remoteclaw.code.location": expect.anything(),
-      }),
-    );
+    expect(Object.hasOwn(emitCall?.attributes ?? {}, "remoteclaw.bad key")).toBe(false);
+    expect(Object.hasOwn(emitCall?.attributes ?? {}, "code.filepath")).toBe(false);
+    expect(Object.hasOwn(emitCall?.attributes ?? {}, "remoteclaw.code.location")).toBe(false);
     await service.stop?.(ctx);
   });
 
@@ -822,7 +906,7 @@ describe("diagnostics-otel service", () => {
       code: 2,
       message: "TypeError",
     });
-    expect(toolSpan?.end).toHaveBeenCalledWith(expect.any(Number));
+    expect(toolSpan?.end.mock.calls[0]?.[0]).toBeTypeOf("number");
     expect(telemetryState.tracer.setSpanContext).not.toHaveBeenCalled();
     await service.stop?.(ctx);
   });
@@ -886,7 +970,7 @@ describe("diagnostics-otel service", () => {
       code: 2,
       message: "runtime-error",
     });
-    expect(execSpan?.end).toHaveBeenCalledWith(expect.any(Number));
+    expect(execSpan?.end.mock.calls[0]?.[0]).toBeTypeOf("number");
     await service.stop?.(ctx);
   });
 
@@ -917,27 +1001,25 @@ describe("diagnostics-otel service", () => {
     } as Parameters<typeof emitDiagnosticEvent>[0]);
     await flushDiagnosticEvents();
 
-    const modelCall = telemetryState.tracer.startSpan.mock.calls.find(
-      (call) => call[0] === "remoteclaw.model.call",
+    const modelOptions = startedSpanOptions("remoteclaw.model.call");
+    expect(Object.hasOwn(modelOptions?.attributes ?? {}, "remoteclaw.content.input_messages")).toBe(
+      false,
     );
-    const toolCall = telemetryState.tracer.startSpan.mock.calls.find(
-      (call) => call[0] === "remoteclaw.tool.execution",
+    expect(
+      Object.hasOwn(modelOptions?.attributes ?? {}, "remoteclaw.content.output_messages"),
+    ).toBe(false);
+    expect(Object.hasOwn(modelOptions?.attributes ?? {}, "remoteclaw.content.system_prompt")).toBe(
+      false,
     );
-    expect(modelCall?.[1]).toEqual({
-      attributes: expect.not.objectContaining({
-        "remoteclaw.content.input_messages": expect.anything(),
-        "remoteclaw.content.output_messages": expect.anything(),
-        "remoteclaw.content.system_prompt": expect.anything(),
-      }),
-      startTime: expect.any(Number),
-    });
-    expect(toolCall?.[1]).toEqual({
-      attributes: expect.not.objectContaining({
-        "remoteclaw.content.tool_input": expect.anything(),
-        "remoteclaw.content.tool_output": expect.anything(),
-      }),
-      startTime: expect.any(Number),
-    });
+    expect(modelOptions?.startTime).toBeTypeOf("number");
+    const toolOptions = startedSpanOptions("remoteclaw.tool.execution");
+    expect(Object.hasOwn(toolOptions?.attributes ?? {}, "remoteclaw.content.tool_input")).toBe(
+      false,
+    );
+    expect(Object.hasOwn(toolOptions?.attributes ?? {}, "remoteclaw.content.tool_output")).toBe(
+      false,
+    );
+    expect(toolOptions?.startTime).toBeTypeOf("number");
     await service.stop?.(ctx);
   });
 
@@ -990,16 +1072,12 @@ describe("diagnostics-otel service", () => {
     const toolAttrs = (toolCall?.[1] as { attributes?: Record<string, unknown> } | undefined)
       ?.attributes;
 
-    expect(modelAttrs).toMatchObject({
-      "remoteclaw.content.output_messages": "model reply",
-      "remoteclaw.content.system_prompt": "system prompt",
-    });
+    expect(modelAttrs?.["remoteclaw.content.output_messages"]).toBe("model reply");
+    expect(modelAttrs?.["remoteclaw.content.system_prompt"]).toBe("system prompt");
     expect(String(modelAttrs?.["remoteclaw.content.input_messages"])).not.toContain(
       "sk-1234567890abcdef1234567890abcdef", // pragma: allowlist secret
     );
-    expect(toolAttrs).toMatchObject({
-      "remoteclaw.content.tool_input": "tool input",
-    });
+    expect(toolAttrs?.["remoteclaw.content.tool_input"]).toBe("tool input");
     expect(String(toolAttrs?.["remoteclaw.content.tool_output"]).length).toBeLessThanOrEqual(
       MAX_TEST_OTEL_CONTENT_ATTRIBUTE_CHARS + OTEL_TRUNCATED_SUFFIX_MAX_CHARS,
     );
@@ -1045,13 +1123,9 @@ describe("diagnostics-otel service", () => {
     });
 
     const sessionCounter = telemetryState.counters.get("remoteclaw.session.state");
-    expect(sessionCounter?.add).toHaveBeenCalledWith(
-      1,
-      expect.objectContaining({
-        "remoteclaw.reason": expect.stringContaining("…"),
-      }),
-    );
     const attrs = sessionCounter?.add.mock.calls[0]?.[1] as Record<string, unknown> | undefined;
+    expect(sessionCounter?.add.mock.calls[0]?.[0]).toBe(1);
+    expect(String(attrs?.["remoteclaw.reason"])).toContain("…");
     expect(typeof attrs?.["remoteclaw.reason"]).toBe("string");
     expect(String(attrs?.["remoteclaw.reason"])).not.toContain(
       "ghp_abcdefghijklmnopqrstuvwxyz123456", // pragma: allowlist secret

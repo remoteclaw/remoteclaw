@@ -5,7 +5,7 @@ import { loadConfig, validateConfigObject } from "./config.js";
 import { withTempHomeConfig } from "./test-helpers.js";
 
 describe("multi-agent agentDir validation", () => {
-  it("rejects shared agents.list agentDir", async () => {
+  it("rejects shared agents.list agentDir", () => {
     const shared = path.join(tmpdir(), "remoteclaw-shared-agentdir");
     const res = validateConfigObject({
       agents: {
@@ -17,7 +17,7 @@ describe("multi-agent agentDir validation", () => {
     });
     expect(res.ok).toBe(false);
     if (!res.ok) {
-      expect(res.issues.some((i) => i.path === "agents.list")).toBe(true);
+      expect(res.issues.map((issue) => issue.path)).toContain("agents.list");
       expect(res.issues[0]?.message).toContain("Duplicate agentDir");
     }
   });

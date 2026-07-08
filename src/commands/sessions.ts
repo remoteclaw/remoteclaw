@@ -136,7 +136,7 @@ export async function sessionsCommand(
   if (opts.active !== undefined) {
     const parsed = Number.parseInt(String(opts.active), 10);
     if (Number.isNaN(parsed) || parsed <= 0) {
-      runtime.error("--active must be a positive integer (minutes)");
+      runtime.error("--active must be a positive number of minutes, for example --active 30.");
       runtime.exit(1);
       return;
     }
@@ -145,7 +145,7 @@ export async function sessionsCommand(
 
   const limit = parseSessionsLimit(opts.limit);
   if (limit === null) {
-    runtime.error('--limit must be a positive integer or "all"');
+    runtime.error('--limit must be a positive integer or "all", for example --limit 25.');
     runtime.exit(1);
     return;
   }
@@ -266,3 +266,7 @@ export async function sessionsCommand(
     runtime.log(line.trimEnd());
   }
 }
+
+export const __testing = {
+  parseSessionsLimit,
+} as const;

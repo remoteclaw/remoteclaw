@@ -27,6 +27,13 @@ function createChannelContext(params?: {
   };
 }
 
+function requireChannelHandler(handler: SlackChannelHandler | null): SlackChannelHandler {
+  if (!handler) {
+    throw new Error("expected Slack channel_created handler");
+  }
+  return handler;
+}
+
 describe("registerSlackChannelEvents", () => {
   it("does not track mismatched events", async () => {
     const trackEvent = vi.fn();
@@ -34,10 +41,9 @@ describe("registerSlackChannelEvents", () => {
       trackEvent,
       shouldDropMismatchedSlackEvent: () => true,
     });
-    const createdHandler = getCreatedHandler();
-    expect(createdHandler).toBeTruthy();
+    const createdHandler = requireChannelHandler(getCreatedHandler());
 
-    await createdHandler!({
+    await createdHandler({
       event: {
         channel: { id: "C1", name: "general" },
       },
@@ -51,10 +57,9 @@ describe("registerSlackChannelEvents", () => {
   it("tracks accepted events", async () => {
     const trackEvent = vi.fn();
     const { getCreatedHandler } = createChannelContext({ trackEvent });
-    const createdHandler = getCreatedHandler();
-    expect(createdHandler).toBeTruthy();
+    const createdHandler = requireChannelHandler(getCreatedHandler());
 
-    await createdHandler!({
+    await createdHandler({
       event: {
         channel: { id: "C1", name: "general" },
       },

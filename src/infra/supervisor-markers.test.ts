@@ -3,15 +3,12 @@ import { detectRespawnSupervisor, SUPERVISOR_HINT_ENV_VARS } from "./supervisor-
 
 describe("SUPERVISOR_HINT_ENV_VARS", () => {
   it("includes the cross-platform supervisor hint env vars", () => {
-    expect(SUPERVISOR_HINT_ENV_VARS).toEqual(
-      expect.arrayContaining([
-        "LAUNCH_JOB_LABEL",
-        "INVOCATION_ID",
-        "REMOTECLAW_WINDOWS_TASK_NAME",
-        "REMOTECLAW_SERVICE_MARKER",
-        "REMOTECLAW_SERVICE_KIND",
-      ]),
-    );
+    const envVars = new Set(SUPERVISOR_HINT_ENV_VARS);
+    expect(envVars.has("LAUNCH_JOB_LABEL")).toBe(true);
+    expect(envVars.has("INVOCATION_ID")).toBe(true);
+    expect(envVars.has("REMOTECLAW_WINDOWS_TASK_NAME")).toBe(true);
+    expect(envVars.has("REMOTECLAW_SERVICE_MARKER")).toBe(true);
+    expect(envVars.has("REMOTECLAW_SERVICE_KIND")).toBe(true);
   });
 });
 

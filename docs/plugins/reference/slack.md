@@ -12,7 +12,7 @@ Adds the Slack channel surface for sending and receiving RemoteClaw messages.
 ## Distribution
 
 - Package: `@remoteclaw/slack`
-- Install route: included in RemoteClaw
+- Install route: npm; ClawHub
 
 ## Surface
 

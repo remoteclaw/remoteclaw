@@ -2,6 +2,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { botApi, botCtorSpy } = vi.hoisted(() => ({
   botApi: {
+    config: { use: vi.fn() },
     sendMessage: vi.fn(),
     setMessageReaction: vi.fn(),
     deleteMessage: vi.fn(),
@@ -70,15 +71,13 @@ describe("telegram proxy client", () => {
     return { proxyFetch, fetchImpl };
   };
 
-  const expectProxyClient = (fetchImpl: ReturnType<typeof vi.fn>) => {
+  const expectProxyClient = (params: {
+    proxyFetch: ReturnType<typeof vi.fn>;
+    fetchImpl: ReturnType<typeof vi.fn>;
+  }) => {
     expect(makeProxyFetch).toHaveBeenCalledWith(proxyUrl);
-    expect(resolveTelegramFetch).toHaveBeenCalledWith(expect.any(Function), { network: undefined });
-    expect(botCtorSpy).toHaveBeenCalledWith(
-      "tok",
-      expect.objectContaining({
-        client: expect.objectContaining({ fetch: fetchImpl }),
-      }),
-    );
+    expect(resolveTelegramFetch).toHaveBeenCalledWith(params.proxyFetch, { network: undefined });
+    expect(botCtorSpy).toHaveBeenCalledWith("tok", { client: { fetch: params.fetchImpl } });
   };
 
   beforeAll(async () => {
@@ -97,6 +96,7 @@ describe("telegram proxy client", () => {
     botApi.sendMessage.mockResolvedValue({ message_id: 1, chat: { id: "123" } });
     botApi.setMessageReaction.mockResolvedValue(undefined);
     botApi.deleteMessage.mockResolvedValue(true);
+    botApi.config.use.mockClear();
     botCtorSpy.mockClear();
     loadConfig.mockReturnValue(TELEGRAM_PROXY_CFG);
     makeProxyFetch.mockClear();
@@ -104,7 +104,7 @@ describe("telegram proxy client", () => {
   });
 
   it("reuses cached Telegram client options for repeated sends with same account transport settings", async () => {
-    const { fetchImpl } = prepareProxyFetch();
+    const { proxyFetch, fetchImpl } = prepareProxyFetch();
     vi.stubEnv("VITEST", "");
     vi.stubEnv("NODE_ENV", "production");
 
@@ -122,20 +122,9 @@ describe("telegram proxy client", () => {
     expect(makeProxyFetch).toHaveBeenCalledTimes(1);
     expect(resolveTelegramFetch).toHaveBeenCalledTimes(1);
     expect(botCtorSpy).toHaveBeenCalledTimes(2);
-    expect(botCtorSpy).toHaveBeenNthCalledWith(
-      1,
-      "tok",
-      expect.objectContaining({
-        client: expect.objectContaining({ fetch: fetchImpl }),
-      }),
-    );
-    expect(botCtorSpy).toHaveBeenNthCalledWith(
-      2,
-      "tok",
-      expect.objectContaining({
-        client: expect.objectContaining({ fetch: fetchImpl }),
-      }),
-    );
+    expect(resolveTelegramFetch).toHaveBeenCalledWith(proxyFetch, { network: undefined });
+    expect(botCtorSpy).toHaveBeenNthCalledWith(1, "tok", { client: { fetch: fetchImpl } });
+    expect(botCtorSpy).toHaveBeenNthCalledWith(2, "tok", { client: { fetch: fetchImpl } });
   });
 
   it.each([
@@ -167,10 +156,10 @@ describe("telegram proxy client", () => {
         }),
     },
   ])("uses proxy fetch for $name", async (testCase) => {
-    const { fetchImpl } = prepareProxyFetch();
+    const { proxyFetch, fetchImpl } = prepareProxyFetch();
 
     await testCase.run();
 
-    expectProxyClient(fetchImpl);
+    expectProxyClient({ proxyFetch, fetchImpl });
   });
 });

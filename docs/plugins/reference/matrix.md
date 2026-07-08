@@ -12,7 +12,7 @@ Adds the Matrix channel surface for sending and receiving RemoteClaw messages.
 ## Distribution
 
 - Package: `@remoteclaw/matrix`
-- Install route: included in RemoteClaw
+- Install route: ClawHub: `clawhub:@remoteclaw/matrix`; npm
 
 ## Surface
 

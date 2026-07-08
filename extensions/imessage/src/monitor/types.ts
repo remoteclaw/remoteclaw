@@ -1,7 +1,7 @@
 import type { RemoteClawConfig } from "../../../../src/config/config.js";
 import type { RuntimeEnv } from "../../../../src/runtime.js";
 
-type IMessageAttachment = {
+export type IMessageAttachment = {
   original_path?: string | null;
   mime_type?: string | null;
   missing?: boolean | null;
@@ -18,6 +18,14 @@ export type IMessagePayload = {
   reply_to_text?: string | null;
   reply_to_sender?: string | null;
   created_at?: string | null;
+  is_reaction?: boolean | null;
+  is_tapback?: boolean | null;
+  associated_message_guid?: string | null;
+  associated_message_type?: number | null;
+  reaction_type?: string | null;
+  reaction_emoji?: string | null;
+  is_reaction_add?: boolean | null;
+  reacted_to_guid?: string | null;
   attachments?: IMessageAttachment[] | null;
   chat_identifier?: string | null;
   chat_guid?: string | null;

@@ -1,8 +1,10 @@
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import {
   resolveManifestCommandAliasOwnerInRegistry,
+  resolveManifestToolOwnerInRegistry,
   type PluginManifestCommandAliasRecord,
   type PluginManifestCommandAliasRegistry,
+  type PluginManifestToolOwnerRecord,
 } from "../plugins/manifest-command-aliases.js";
 import {
   normalizeLowercaseStringOrEmpty,
@@ -16,6 +18,22 @@ import {
 import { isReservedNonPluginCommandRoot } from "./command-registration-policy.js";
 
 const ROOT_HELP_ALIASES = new Set(["tools"]);
+const BARE_PARENT_DEFAULT_HELP_COMMANDS = new Set([
+  "approvals",
+  "channels",
+  "cron",
+  "devices",
+  "mcp",
+  "plugins",
+]);
+
+function isBareParentDefaultHelpArgv(argv: string[]): boolean {
+  const invocation = resolveCliArgvInvocation(argv);
+  const [primary, extra] = invocation.commandPath;
+  return !invocation.hasHelpOrVersion && primary !== undefined && extra === undefined
+    ? BARE_PARENT_DEFAULT_HELP_COMMANDS.has(primary)
+    : false;
+}
 
 export function rewriteUpdateFlagArgv(argv: string[]): string[] {
   const index = argv.indexOf("--update");
@@ -30,7 +48,11 @@ export function rewriteUpdateFlagArgv(argv: string[]): string[] {
 
 export function shouldEnsureCliPath(argv: string[]): boolean {
   const invocation = resolveCliArgvInvocation(argv);
-  if (invocation.hasHelpOrVersion || shouldStartCrestodianForBareRoot(argv)) {
+  if (
+    invocation.hasHelpOrVersion ||
+    shouldStartCrestodianForBareRoot(argv) ||
+    isBareParentDefaultHelpArgv(argv)
+  ) {
     return false;
   }
   return resolveCliCommandPathPolicy(invocation.commandPath).ensureCliPath;
@@ -89,7 +111,7 @@ export function shouldStartProxyForCli(argv: string[]): boolean {
   if (invocation.hasHelpOrVersion || !primary) {
     return false;
   }
-  if (invocation.commandPath.length === 1 && primary === "channels") {
+  if (isBareParentDefaultHelpArgv(policyArgv)) {
     return false;
   }
   return resolveCliNetworkProxyPolicy(policyArgv) === "default";
@@ -105,6 +127,16 @@ export function resolveMissingPluginCommandMessage(
       config?: RemoteClawConfig;
       registry?: PluginManifestCommandAliasRegistry;
     }) => PluginManifestCommandAliasRecord | undefined;
+    resolveToolOwner?: (params: {
+      toolName: string | undefined;
+      config?: RemoteClawConfig;
+      registry?: PluginManifestCommandAliasRegistry;
+    }) => PluginManifestToolOwnerRecord | undefined;
+    resolveCliCommandSurfaceOwner?: (params: {
+      command: string | undefined;
+      config?: RemoteClawConfig;
+      registry?: PluginManifestCommandAliasRegistry;
+    }) => string | undefined;
   },
 ): string | null {
   const normalizedPluginId = normalizeLowercaseStringOrEmpty(pluginId);
@@ -131,6 +163,13 @@ export function resolveMissingPluginCommandMessage(
   const parentPluginId = commandAlias?.pluginId;
   if (parentPluginId) {
     if (allow.length > 0 && !allow.includes(parentPluginId)) {
+      if (parentPluginId === normalizedPluginId) {
+        return (
+          `The \`remoteclaw ${normalizedPluginId}\` command is unavailable because ` +
+          `\`plugins.allow\` excludes "${normalizedPluginId}". Add "${normalizedPluginId}" to ` +
+          `\`plugins.allow\` if you want that bundled plugin CLI surface.`
+        );
+      }
       return (
         `"${normalizedPluginId}" is not a plugin; it is a command provided by the ` +
         `"${parentPluginId}" plugin. Add "${parentPluginId}" to \`plugins.allow\` ` +
@@ -171,9 +210,77 @@ export function resolveMissingPluginCommandMessage(
     return null;
   }
 
+  const toolOwner = options?.registry
+    ? resolveManifestToolOwnerInRegistry({
+        toolName: normalizedPluginId,
+        registry: options.registry,
+      })
+    : options?.resolveToolOwner?.({
+        toolName: normalizedPluginId,
+        config,
+        ...(options?.registry ? { registry: options.registry } : {}),
+      });
+  if (toolOwner) {
+    // Apply plugins.allow / plugins.entries[X].enabled to the owning plugin so
+    // a disabled/denied plugin's manifest-declared tool name does not get a
+    // false attribution. The runtime resolver
+    // (resolveManifestToolOwner) already filters by control-plane availability,
+    // but pure-registry callers and any future ones still need this guard.
+    const ownerEnabled =
+      config?.plugins?.entries?.[toolOwner.pluginId]?.enabled !== false &&
+      (allow.length === 0 || allow.includes(toolOwner.pluginId));
+    if (ownerEnabled) {
+      // Per-account / per-tool runtime gates (e.g. Feishu's
+      // channels.feishu.enabled / tools.<x> toggles) are not declarable as
+      // manifest configSignals, so a positive manifest-availability signal
+      // proves "could be loaded if config permits", not "currently registered".
+      // Soften the wording when the runtime resolver could only prove
+      // manifest-level ownership.
+      if (toolOwner.availability === "manifest-only") {
+        return (
+          `"${normalizedPluginId}" may be provided by the "${toolOwner.pluginId}" plugin ` +
+          `as an agent tool, not a CLI subcommand. ` +
+          "Run `remoteclaw --help` to see available CLI subcommands."
+        );
+      }
+      return (
+        `"${normalizedPluginId}" is an agent tool available from the "${toolOwner.pluginId}" plugin, ` +
+        `not a CLI subcommand. Use it from an agent turn (model tool-use), not the CLI. ` +
+        "Run `remoteclaw --help` to see available CLI subcommands."
+      );
+    }
+  }
+
   if (allow.length > 0 && !allow.includes(normalizedPluginId)) {
     if (parentPluginId && allow.includes(parentPluginId)) {
       return null;
+    }
+    const cliCommandSurfaceOwner = options?.resolveCliCommandSurfaceOwner
+      ? options.resolveCliCommandSurfaceOwner({
+          command: normalizedPluginId,
+          config,
+          ...(options?.registry ? { registry: options.registry } : {}),
+        })
+      : options?.registry
+        ? resolveManifestCommandAliasOwnerInRegistry({
+            command: normalizedPluginId,
+            registry: options.registry,
+          })?.pluginId
+        : undefined;
+    const normalizedCliCommandSurfaceOwner =
+      normalizeOptionalLowercaseString(cliCommandSurfaceOwner);
+    if (!normalizedCliCommandSurfaceOwner) {
+      return null;
+    }
+    if (allow.includes(normalizedCliCommandSurfaceOwner)) {
+      return null;
+    }
+    if (normalizedCliCommandSurfaceOwner !== normalizedPluginId) {
+      return (
+        `"${normalizedPluginId}" is not a plugin; it is a command provided by the ` +
+        `"${normalizedCliCommandSurfaceOwner}" plugin. Add "${normalizedCliCommandSurfaceOwner}" to ` +
+        `\`plugins.allow\` instead of "${normalizedPluginId}".`
+      );
     }
     return (
       `The \`remoteclaw ${normalizedPluginId}\` command is unavailable because ` +

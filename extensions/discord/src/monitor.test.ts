@@ -28,6 +28,17 @@ vi.mock("../../../src/pairing/pairing-store.js", () => ({
 
 const fakeGuild = (id: string, name: string) => ({ id, name }) as Guild;
 
+function expectNormalizedAllowList(
+  entries: string[],
+  prefixes: string[],
+): NonNullable<ReturnType<typeof normalizeDiscordAllowList>> {
+  const allow = normalizeDiscordAllowList(entries, prefixes);
+  if (allow === null) {
+    throw new Error("Expected allow list to be normalized");
+  }
+  return allow;
+}
+
 const makeEntries = (
   entries: Record<string, Partial<DiscordGuildEntryResolved>>,
 ): Record<string, DiscordGuildEntryResolved> => {
@@ -209,14 +220,10 @@ describe("discord allowlist helpers", () => {
   });
 
   it("matches ids by default and names only when enabled", () => {
-    const allow = normalizeDiscordAllowList(
+    const allow = expectNormalizedAllowList(
       ["123", "steipete", "Friends of RemoteClaw"],
       ["discord:", "user:", "guild:", "channel:"],
     );
-    expect(allow).not.toBeNull();
-    if (!allow) {
-      throw new Error("Expected allow list to be normalized");
-    }
     expect(allowListMatches(allow, { id: "123" })).toBe(true);
     expect(allowListMatches(allow, { name: "steipete" })).toBe(false);
     expect(allowListMatches(allow, { name: "friends-of-remoteclaw" })).toBe(false);
@@ -228,11 +235,7 @@ describe("discord allowlist helpers", () => {
   });
 
   it("matches pk-prefixed allowlist entries", () => {
-    const allow = normalizeDiscordAllowList(["pk:member-123"], ["discord:", "user:", "pk:"]);
-    expect(allow).not.toBeNull();
-    if (!allow) {
-      throw new Error("Expected allow list to be normalized");
-    }
+    const allow = expectNormalizedAllowList(["pk:member-123"], ["discord:", "user:", "pk:"]);
     expect(allowListMatches(allow, { id: "member-123" })).toBe(true);
     expect(allowListMatches(allow, { id: "member-999" })).toBe(false);
   });
@@ -628,15 +631,15 @@ describe("discord group DM gating", () => {
   it("matches group DM allowlist", () => {
     expect(
       resolveGroupDmAllow({
-        channels: ["openclaw-dm"],
+        channels: ["remoteclaw-dm"],
         channelId: "1",
-        channelName: "OpenClaw DM",
-        channelSlug: "openclaw-dm",
+        channelName: "RemoteClaw DM",
+        channelSlug: "remoteclaw-dm",
       }),
     ).toBe(true);
     expect(
       resolveGroupDmAllow({
-        channels: ["openclaw-dm"],
+        channels: ["remoteclaw-dm"],
         channelId: "1",
         channelName: "Other",
         channelSlug: "other",
@@ -900,6 +903,27 @@ vi.mock("../../../src/routing/resolve-route.js", () => ({
   resolveAgentRoute: resolveAgentRouteMock,
 }));
 
+type MockWithCalls = { mock: { calls: unknown[][] } };
+
+function firstMockCall(mock: MockWithCalls, label: string): unknown[] {
+  const call = mock.mock.calls.at(0);
+  if (!call) {
+    throw new Error(`expected ${label} call`);
+  }
+  return call;
+}
+
+function firstMockArg(mock: MockWithCalls, label: string) {
+  return firstMockCall(mock, label)[0];
+}
+
+function requireRecord(value: unknown, label: string): Record<string, unknown> {
+  if (typeof value !== "object" || value === null) {
+    throw new Error(`expected ${label} to be an object`);
+  }
+  return value as Record<string, unknown>;
+}
+
 function makeReactionEvent(overrides?: {
   guildId?: string;
   channelId?: string;
@@ -1031,12 +1055,14 @@ describe("discord DM reaction handling", () => {
       await listener.handle(data, client);
 
       expect(enqueueSystemEventSpy, testCase.name).toHaveBeenCalledOnce();
-      const [text, opts] = enqueueSystemEventSpy.mock.calls[0];
+      const [text, opts] = firstMockCall(enqueueSystemEventSpy, "enqueueSystemEvent");
       expect(text, testCase.name).toContain("Discord reaction added");
       expect(text, testCase.name).toContain("👍");
       expect(text, testCase.name).toContain("dm");
       expect(text, testCase.name).not.toContain("undefined");
-      expect(opts.sessionKey, testCase.name).toBe("discord:acc-1:dm:user-1");
+      expect(requireRecord(opts, "system event options").sessionKey, testCase.name).toBe(
+        "discord:acc-1:dm:user-1",
+      );
     }
   });
 
@@ -1169,7 +1195,7 @@ describe("discord DM reaction handling", () => {
     await listener.handle(data, client);
 
     expect(enqueueSystemEventSpy).toHaveBeenCalledOnce();
-    const [text] = enqueueSystemEventSpy.mock.calls[0];
+    const text = firstMockArg(enqueueSystemEventSpy, "enqueueSystemEvent");
     expect(text).toContain("Discord reaction added");
   });
 
@@ -1184,12 +1210,9 @@ describe("discord DM reaction handling", () => {
     await listener.handle(data, client);
 
     expect(resolveAgentRouteMock).toHaveBeenCalledOnce();
-    const routeArgs = (resolveAgentRouteMock.mock.calls[0]?.[0] ?? {}) as {
+    const routeArgs = firstMockArg(resolveAgentRouteMock, "resolveAgentRoute") as {
       peer?: unknown;
     };
-    if (!routeArgs) {
-      throw new Error("expected route arguments");
-    }
     expect(routeArgs.peer).toEqual({ kind: "direct", id: "user-42" });
   });
 
@@ -1204,12 +1227,9 @@ describe("discord DM reaction handling", () => {
     await listener.handle(data, client);
 
     expect(resolveAgentRouteMock).toHaveBeenCalledOnce();
-    const routeArgs = (resolveAgentRouteMock.mock.calls[0]?.[0] ?? {}) as {
+    const routeArgs = firstMockArg(resolveAgentRouteMock, "resolveAgentRoute") as {
       peer?: unknown;
     };
-    if (!routeArgs) {
-      throw new Error("expected route arguments");
-    }
     expect(routeArgs.peer).toEqual({ kind: "group", id: "channel-1" });
   });
 });

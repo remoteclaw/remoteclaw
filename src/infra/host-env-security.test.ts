@@ -706,7 +706,7 @@ describe("sanitizeHostExecEnvWithDiagnostics", () => {
       },
     });
 
-    expect(result.rejectedOverrideBlockedKeys).toEqual([]);
+    expect(result.rejectedOverrideBlockedKeys).toStrictEqual([]);
     expect(result.rejectedOverrideInvalidKeys).toEqual(["BAD-KEY"]);
     expect(result.env["ProgramFiles(x86)"]).toBe("D:\\SDKs");
   });

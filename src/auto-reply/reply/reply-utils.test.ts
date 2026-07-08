@@ -15,6 +15,17 @@ import { createMockTypingController } from "./test-helpers.js";
 import { createTypingSignaler, resolveTypingMode } from "./typing-mode.js";
 import { createTypingController } from "./typing.js";
 
+type NormalizedReplyPayload = NonNullable<ReturnType<typeof normalizeReplyPayload>>;
+
+function expectNormalizedReply(
+  result: ReturnType<typeof normalizeReplyPayload>,
+): NormalizedReplyPayload {
+  if (result === null) {
+    throw new Error("Expected normalized reply payload");
+  }
+  return result;
+}
+
 describe("matchesMentionWithExplicit", () => {
   const mentionRegexes = [/\bremoteclaw\b/i];
 
@@ -89,9 +100,9 @@ describe("normalizeReplyPayload", () => {
 
     const normalized = normalizeReplyPayload(payload);
 
-    expect(normalized).not.toBeNull();
-    expect(normalized?.text).toBeUndefined();
-    expect(normalized?.channelData).toEqual(payload.channelData);
+    const reply = expectNormalizedReply(normalized);
+    expect(reply.text).toBeUndefined();
+    expect(reply.channelData).toEqual(payload.channelData);
   });
 
   it("records skip reasons for silent/empty payloads", () => {
@@ -111,24 +122,23 @@ describe("normalizeReplyPayload", () => {
 
   it("strips NO_REPLY from mixed emoji message (#30916)", () => {
     const result = normalizeReplyPayload({ text: "😄 NO_REPLY" });
-    expect(result).not.toBeNull();
-    expect(result!.text).toContain("😄");
-    expect(result!.text).not.toContain("NO_REPLY");
+    const reply = expectNormalizedReply(result);
+    expect(reply.text).toContain("😄");
+    expect(reply.text).not.toContain("NO_REPLY");
   });
 
   it("strips NO_REPLY appended after substantive text (#30916)", () => {
     const result = normalizeReplyPayload({
       text: "File's there. Not urgent.\n\nNO_REPLY",
     });
-    expect(result).not.toBeNull();
-    expect(result!.text).toContain("File's there");
-    expect(result!.text).not.toContain("NO_REPLY");
+    const reply = expectNormalizedReply(result);
+    expect(reply.text).toContain("File's there");
+    expect(reply.text).not.toContain("NO_REPLY");
   });
 
   it("keeps NO_REPLY when used as leading substantive text", () => {
     const result = normalizeReplyPayload({ text: "NO_REPLY -- nope" });
-    expect(result).not.toBeNull();
-    expect(result!.text).toBe("NO_REPLY -- nope");
+    expect(expectNormalizedReply(result).text).toBe("NO_REPLY -- nope");
   });
 
   it("suppresses message when stripping NO_REPLY leaves nothing", () => {
@@ -146,9 +156,9 @@ describe("normalizeReplyPayload", () => {
       text: "NO_REPLY",
       mediaUrl: "https://example.com/img.png",
     });
-    expect(result).not.toBeNull();
-    expect(result!.text).toBe("");
-    expect(result!.mediaUrl).toBe("https://example.com/img.png");
+    const reply = expectNormalizedReply(result);
+    expect(reply.text).toBe("");
+    expect(reply.mediaUrl).toBe("https://example.com/img.png");
   });
 });
 
@@ -499,8 +509,8 @@ describe("createTypingSignaler", () => {
     await signaler.signalReasoningDelta();
     expect(typing.startTypingLoop).not.toHaveBeenCalled();
     await signaler.signalTextDelta("hi");
-    expect(typing.startTypingLoop).toHaveBeenCalled();
-    expect(typing.refreshTypingTtl).toHaveBeenCalled();
+    expect(typing.startTypingLoop).toHaveBeenCalledTimes(1);
+    expect(typing.refreshTypingTtl).toHaveBeenCalledTimes(1);
     expect(typing.startTypingOnText).not.toHaveBeenCalled();
   });
 
@@ -514,15 +524,15 @@ describe("createTypingSignaler", () => {
 
     await signaler.signalToolStart();
 
-    expect(typing.startTypingLoop).toHaveBeenCalled();
-    expect(typing.refreshTypingTtl).toHaveBeenCalled();
+    expect(typing.startTypingLoop).toHaveBeenCalledTimes(1);
+    expect(typing.refreshTypingTtl).toHaveBeenCalledTimes(1);
     expect(typing.startTypingOnText).not.toHaveBeenCalled();
     (typing.isActive as ReturnType<typeof vi.fn>).mockReturnValue(true);
     (typing.startTypingLoop as ReturnType<typeof vi.fn>).mockClear();
     (typing.refreshTypingTtl as ReturnType<typeof vi.fn>).mockClear();
     await signaler.signalToolStart();
 
-    expect(typing.refreshTypingTtl).toHaveBeenCalled();
+    expect(typing.refreshTypingTtl).toHaveBeenCalledTimes(1);
     expect(typing.startTypingLoop).not.toHaveBeenCalled();
   });
 
@@ -594,7 +604,7 @@ describe("block reply coalescer", () => {
 
     coalescer.enqueue({ text: "short" });
     await vi.advanceTimersByTimeAsync(50);
-    expect(flushes).toEqual([]);
+    expect(flushes).toStrictEqual([]);
 
     coalescer.enqueue({ text: "message" });
     await vi.advanceTimersByTimeAsync(50);

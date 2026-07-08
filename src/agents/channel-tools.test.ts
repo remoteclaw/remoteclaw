@@ -47,10 +47,10 @@ describe("channel tools", () => {
 
   it("skips crashing plugins and logs once", () => {
     const cfg = {} as RemoteClawConfig;
-    expect(listAllChannelSupportedActions({ cfg })).toEqual([]);
+    expect(listAllChannelSupportedActions({ cfg })).toStrictEqual([]);
     expect(errorSpy).toHaveBeenCalledTimes(1);
 
-    expect(listAllChannelSupportedActions({ cfg })).toEqual([]);
+    expect(listAllChannelSupportedActions({ cfg })).toStrictEqual([]);
     expect(errorSpy).toHaveBeenCalledTimes(1);
   });
 
@@ -81,7 +81,7 @@ describe("channel tools", () => {
     setActivePluginRegistry(createTestRegistry([{ pluginId: "polltest", source: "test", plugin }]));
 
     const cfg = {} as RemoteClawConfig;
-    expect(listChannelSupportedActions({ cfg, channel: "polltest" })).toEqual([]);
-    expect(listAllChannelSupportedActions({ cfg })).toEqual([]);
+    expect(listChannelSupportedActions({ cfg, channel: "polltest" })).toStrictEqual([]);
+    expect(listAllChannelSupportedActions({ cfg })).toStrictEqual([]);
   });
 });

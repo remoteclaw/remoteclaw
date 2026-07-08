@@ -8,6 +8,10 @@ sidebarTitle: "Config"
 
 Config helpers for non-interactive edits in `remoteclaw.json`: get/set/patch/unset/file/schema/validate values by path and print the active config file. Run without a subcommand to open the configure wizard (same as `remoteclaw configure`).
 
+<Note>
+When `REMOTECLAW_NIX_MODE=1`, RemoteClaw treats `remoteclaw.json` as immutable. Read-only commands such as `config get`, `config file`, `config schema`, and `config validate` still work, but config writers refuse. Agents should edit the Nix source for the install instead; for the first-party nix-remoteclaw distribution, use [nix-remoteclaw Quick Start](https://github.com/remoteclaw/nix-remoteclaw#quick-start) and set values under `programs.remoteclaw.config` or `instances.<name>.config`.
+</Note>
+
 ## Root options
 
 <ParamField path="--section <section>" type="string">

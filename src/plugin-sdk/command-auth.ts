@@ -1,6 +1,7 @@
 import type { RemoteClawConfig } from "../config/config.js";
 import { resolveDmGroupAccessWithLists } from "../security/dm-policy-shared.js";
 
+/** @deprecated Use `resolveChannelMessageIngress` from `remoteclaw/plugin-sdk/channel-ingress-runtime`. */
 export type ResolveSenderCommandAuthorizationParams = {
   cfg: RemoteClawConfig;
   rawBody: string;
@@ -12,12 +13,14 @@ export type ResolveSenderCommandAuthorizationParams = {
   isSenderAllowed: (senderId: string, allowFrom: string[]) => boolean;
   readAllowFromStore: () => Promise<string[]>;
   shouldComputeCommandAuthorized: (rawBody: string, cfg: RemoteClawConfig) => boolean;
-  resolveCommandAuthorizedFromAuthorizers: (params: {
+  /** @deprecated Command authorization is resolved by channel ingress. Kept for runtime injection compatibility. */
+  resolveCommandAuthorizedFromAuthorizers?: (params: {
     useAccessGroups: boolean;
     authorizers: Array<{ configured: boolean; allowed: boolean }>;
   }) => boolean;
 };
 
+/** @deprecated Use `resolveChannelMessageIngress` from `remoteclaw/plugin-sdk/channel-ingress-runtime`. */
 export type CommandAuthorizationRuntime = {
   shouldComputeCommandAuthorized: (rawBody: string, cfg: RemoteClawConfig) => boolean;
   resolveCommandAuthorizedFromAuthorizers: (params: {
@@ -26,6 +29,7 @@ export type CommandAuthorizationRuntime = {
   }) => boolean;
 };
 
+/** @deprecated Use `resolveChannelMessageIngress` from `remoteclaw/plugin-sdk/channel-ingress-runtime`. */
 export type ResolveSenderCommandAuthorizationWithRuntimeParams = Omit<
   ResolveSenderCommandAuthorizationParams,
   "shouldComputeCommandAuthorized" | "resolveCommandAuthorizedFromAuthorizers"
@@ -95,13 +99,13 @@ export async function resolveSenderCommandAuthorization(
   const ownerAllowedForCommands = params.isSenderAllowed(params.senderId, effectiveAllowFrom);
   const groupAllowedForCommands = params.isSenderAllowed(params.senderId, effectiveGroupAllowFrom);
   const commandAuthorized = shouldComputeAuth
-    ? params.resolveCommandAuthorizedFromAuthorizers({
+    ? (params.resolveCommandAuthorizedFromAuthorizers?.({
         useAccessGroups,
         authorizers: [
           { configured: effectiveAllowFrom.length > 0, allowed: ownerAllowedForCommands },
           { configured: effectiveGroupAllowFrom.length > 0, allowed: groupAllowedForCommands },
         ],
-      })
+      }) ?? senderAllowedForCommands)
     : undefined;
 
   return {

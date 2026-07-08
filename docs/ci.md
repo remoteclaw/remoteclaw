@@ -11,13 +11,13 @@ read_when:
 
 CI runs on every pull request, every push to `main`, and on published releases. The workflow is defined in `.github/workflows/ci.yml`.
 
-RemoteClaw is a fork of OpenClaw with the execution engine gutted (CLI-based agent runtimes replace in-process model providers). Its CI is correspondingly leaner than upstream's lane-based pipeline: a flat set of correctness jobs plus fork-integrity gates, with no changed-scope lane routing — every job runs on every PR.
+RemoteClaw is a fork of RemoteClaw with the execution engine gutted (CLI-based agent runtimes replace in-process model providers). Its CI is correspondingly leaner than upstream's lane-based pipeline: a flat set of correctness jobs plus fork-integrity gates, with no changed-scope lane routing — every job runs on every PR.
 
 ## Jobs
 
 | Job                          | Purpose                                                                           | When it runs         |
 | ---------------------------- | --------------------------------------------------------------------------------- | -------------------- |
-| `rebrand-gate`               | Detect `openclaw`/`OpenClaw` leakage that should have been rebranded              | Always               |
+| `rebrand-gate`               | Detect `remoteclaw`/`RemoteClaw` leakage that should have been rebranded          | Always               |
 | `zombie-import-gate`         | Catch imports from gutted modules                                                 | Always               |
 | `stub-debt-gate`             | Bound the number of gutted stubs against the committed baseline                   | Always               |
 | `throwing-stub-callers-gate` | Reject live callers of throwing stubs (self-tested against a fixture first)       | Always               |
@@ -32,7 +32,7 @@ RemoteClaw is a fork of OpenClaw with the execution engine gutted (CLI-based age
 | `publish-next`               | Publish a `next`-tagged prerelease to npm (OIDC provenance)                       | Push to `main`       |
 | `publish-latest`             | Publish the release version to npm (OIDC provenance)                              | On published release |
 
-The six `*-gate` jobs are fork-specific integrity checks that enforce the gut/keep boundary (the Middleware Boundary Principle). They have no upstream equivalent — they guard against an upstream sync silently re-introducing gutted code, leaking the `openclaw` brand, or growing stub debt.
+The six `*-gate` jobs are fork-specific integrity checks that enforce the gut/keep boundary (the Middleware Boundary Principle). They have no upstream equivalent — they guard against an upstream sync silently re-introducing gutted code, leaking the `remoteclaw` brand, or growing stub debt.
 
 ## Local equivalents
 
@@ -81,9 +81,18 @@ Local changed-test routing lives in `scripts/test-projects.test-support.mjs` and
 
 ## Testbox validation
 
-Run Testbox from the repo root and prefer a fresh warmed box for broad proof. Before spending a slow gate on a box that was reused, expired, or just reported an unexpectedly large sync, run `pnpm testbox:sanity` inside the box first.
+Crabbox is the repo-owned remote-box wrapper for maintainer Linux proof. Use it
+from the repo root when a check is too broad for a local edit loop, when CI
+parity matters, or when the proof needs secrets, Docker, package lanes,
+reusable boxes, or remote logs. The normal RemoteClaw backend is
+`blacksmith-testbox`; owned AWS/Hetzner capacity is a fallback for Blacksmith
+outages, quota issues, or explicit owned-capacity testing.
 
-The sanity check fails fast when required root files such as `pnpm-lock.yaml` disappeared or when `git status --short` shows at least 200 tracked deletions. That usually means the remote sync state is not a trustworthy copy of the PR; stop that box and warm a fresh one instead of debugging the product test failure. For intentional large-deletion PRs, set `REMOTECLAW_TESTBOX_ALLOW_MASS_DELETIONS=1` for that sanity run.
+Crabbox-backed Blacksmith runs warm, claim, sync, run, report, and clean up
+one-shot Testboxes. The built-in sync sanity check fails fast when required
+root files such as `pnpm-lock.yaml` disappear or when `git status --short`
+shows at least 200 tracked deletions. For intentional large-deletion PRs, set
+`REMOTECLAW_TESTBOX_ALLOW_MASS_DELETIONS=1` for the remote command.
 
 `pnpm testbox:run` also terminates a local Blacksmith CLI invocation that stays in the sync phase for more than five minutes without post-sync output. Set `REMOTECLAW_TESTBOX_SYNC_TIMEOUT_MS=0` to disable that guard, or use a larger millisecond value for unusually large local diffs.
 

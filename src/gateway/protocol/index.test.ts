@@ -96,7 +96,7 @@ describe("validateTalkConfigResult", () => {
     ).toBe(true);
   });
 
-  it("rejects normalized talk payloads without talk.resolved", () => {
+  it("accepts normalized talk payloads without resolved provider materialization", () => {
     expect(
       validateTalkConfigResult({
         config: {
@@ -110,7 +110,37 @@ describe("validateTalkConfigResult", () => {
           },
         },
       }),
-    ).toBe(false);
+    ).toBe(true);
+  });
+
+  it("accepts realtime Talk defaults without requiring a speech provider", () => {
+    expect(
+      validateTalkConfigResult({
+        config: {
+          talk: {
+            realtime: {
+              provider: "openai",
+              providers: {
+                openai: {
+                  apiKey: {
+                    source: "env",
+                    provider: "default",
+                    id: "OPENAI_API_KEY",
+                  },
+                  model: "gpt-realtime",
+                },
+              },
+              model: "gpt-realtime",
+              voice: "alloy",
+              instructions: "Speak with crisp diction.",
+              mode: "realtime",
+              transport: "gateway-relay",
+              brain: "agent-consult",
+            },
+          },
+        },
+      }),
+    ).toBe(true);
   });
 });
 

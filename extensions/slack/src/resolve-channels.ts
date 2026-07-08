@@ -1,5 +1,5 @@
 import type { WebClient } from "@slack/web-api";
-import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/string-coerce-runtime";
 import { createSlackWebClient } from "./client.js";
 import {
   collectSlackCursorItems,

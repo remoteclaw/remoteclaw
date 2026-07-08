@@ -78,6 +78,15 @@ function expectInspectSuccess(
   expect(result.entries).toHaveLength(expectedEntries);
 }
 
+function expectIcaclsResetCommand(
+  result: ReturnType<typeof createIcaclsResetCommand>,
+): NonNullable<ReturnType<typeof createIcaclsResetCommand>> {
+  if (!result) {
+    throw new Error("Expected icacls reset command");
+  }
+  return result;
+}
+
 function expectSummaryCounts(
   entries: readonly WindowsAclEntry[],
   expected: { trusted?: number; untrustedWorld?: number; untrustedGroup?: number },
@@ -681,7 +690,8 @@ Successfully processed 1 files`;
         isDir: false,
         env,
       });
-      expect(result?.display).toBe(expected);
+      const command = expectIcaclsResetCommand(result);
+      expect(command.display).toBe(expected);
     });
 
     it("world SIDs in USERSID env are not added to trusted set", () => {

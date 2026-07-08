@@ -7,6 +7,21 @@ import {
 
 const repoRoot = path.resolve(import.meta.dirname, "..");
 
+type PluginNpmRuntimeBuildPlan = NonNullable<ReturnType<typeof resolvePluginNpmRuntimeBuildPlan>>;
+
+function expectDistRelativePaths(paths: string[]) {
+  expect(paths.every((entry) => entry.startsWith("./dist/"))).toBe(true);
+}
+
+function expectPluginNpmRuntimeBuildPlan(
+  plan: ReturnType<typeof resolvePluginNpmRuntimeBuildPlan>,
+): PluginNpmRuntimeBuildPlan {
+  if (!plan) {
+    throw new Error("expected plugin npm runtime build plan");
+  }
+  return plan;
+}
+
 describe("plugin npm runtime build planning", () => {
   it("plans package-local runtime entries for every publishable plugin package", () => {
     const packageDirs = listPublishablePluginPackageDirs({ repoRoot });
@@ -18,18 +33,19 @@ describe("plugin npm runtime build planning", () => {
         packageDir,
       }),
     );
-    expect(plans.filter(Boolean).map((plan) => plan?.pluginDir)).toEqual(
+    const resolvedPlans = plans.map(expectPluginNpmRuntimeBuildPlan);
+    expect(resolvedPlans.map((plan) => plan.pluginDir)).toEqual(
       packageDirs.map((packageDir) => path.basename(packageDir)),
     );
-    for (const plan of plans) {
-      expect(plan?.outDir).toBe(path.join(plan?.packageDir ?? "", "dist"));
-      expect(plan?.runtimeExtensions.every((entry) => entry.startsWith("./dist/"))).toBe(true);
-      expect(plan?.runtimeBuildOutputs.every((entry) => entry.startsWith("./dist/"))).toBe(true);
-      expect(plan?.packageFiles).toContain("dist/**");
-      expect(plan?.packagePeerMetadata.peerDependencies.remoteclaw).toBe(
-        plan?.packageJson.remoteclaw.compat.pluginApi,
+    for (const plan of resolvedPlans) {
+      expect(plan.outDir).toBe(path.join(plan.packageDir, "dist"));
+      expectDistRelativePaths(plan.runtimeExtensions);
+      expectDistRelativePaths(plan.runtimeBuildOutputs);
+      expect(plan.packageFiles).toContain("dist/**");
+      expect(plan.packagePeerMetadata.peerDependencies.remoteclaw).toBe(
+        plan.packageJson.remoteclaw.compat.pluginApi,
       );
-      expect(plan?.packagePeerMetadata.peerDependenciesMeta.remoteclaw.optional).toBe(true);
+      expect(plan.packagePeerMetadata.peerDependenciesMeta.remoteclaw.optional).toBe(true);
     }
   });
 });

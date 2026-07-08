@@ -116,7 +116,7 @@ describe("cron tool", () => {
     callGatewayMock.mockResolvedValue({ ok: true });
   });
 
-  it("marks cron as owner-only", async () => {
+  it("marks cron as owner-only", () => {
     const tool = createTestCronTool();
     expect(tool.ownerOnly).toBe(true);
   });
@@ -146,6 +146,8 @@ describe("cron tool", () => {
     ["remove", { action: "remove", id: "job-2" }, { id: "job-2" }],
     ["run", { action: "run", jobId: "job-1" }, { id: "job-1", mode: "force" }],
     ["run", { action: "run", id: "job-2" }, { id: "job-2", mode: "force" }],
+    ["get", { action: "get", jobId: "job-1" }, { id: "job-1" }],
+    ["get", { action: "get", id: "job-2" }, { id: "job-2" }],
     ["runs", { action: "runs", jobId: "job-1" }, { id: "job-1" }],
     ["runs", { action: "runs", id: "job-2" }, { id: "job-2" }],
   ])("%s sends id to gateway", async (action, args, expectedParams) => {
@@ -214,7 +216,7 @@ describe("cron tool", () => {
       },
     });
 
-    const call = callGatewayMock.mock.calls[0]?.[0] as {
+    const call = callGatewayMock.mock.calls.at(0)?.[0] as {
       params?: { agentId?: unknown };
     };
     expect(call?.params?.agentId).toBeNull();
@@ -381,7 +383,7 @@ describe("cron tool", () => {
       },
     });
 
-    const call = callGatewayMock.mock.calls[0]?.[0] as {
+    const call = callGatewayMock.mock.calls.at(0)?.[0] as {
       method?: string;
       params?: { agentId?: string | null };
     };
@@ -515,7 +517,7 @@ describe("cron tool", () => {
       name: "flat-name-should-be-ignored",
     });
 
-    const call = callGatewayMock.mock.calls[0]?.[0] as {
+    const call = callGatewayMock.mock.calls.at(0)?.[0] as {
       params?: { name?: string; payload?: { text?: string } };
     };
     expect(call?.params?.name).toBe("nested-job");

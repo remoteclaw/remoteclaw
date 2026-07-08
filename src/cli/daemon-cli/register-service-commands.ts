@@ -113,6 +113,11 @@ export function addGatewayServiceCommands(parent: Command, opts?: { statusDescri
     .command("stop")
     .description("Stop the Gateway service (launchd/systemd/schtasks)")
     .option("--json", "Output JSON", false)
+    .option(
+      "--disable",
+      "Persistently suppress KeepAlive/RunAtLoad so the gateway does not respawn until next start (launchd only)",
+      false,
+    )
     .action(async (cmdOpts) => {
       const { runDaemonStop } = await loadDaemonLifecycleModule();
       await runDaemonStop(cmdOpts);
@@ -123,6 +128,7 @@ export function addGatewayServiceCommands(parent: Command, opts?: { statusDescri
     .description("Restart the Gateway service (launchd/systemd/schtasks)")
     .option("--force", "Restart immediately without waiting for active gateway work", false)
     .option("--safe", "Request an RemoteClaw-aware restart after active work drains", false)
+    .option("--skip-deferral", "Bypass the safe-restart deferral gate; requires --safe", false)
     .option(
       "--wait <duration>",
       "Wait duration before forcing restart (ms, 10s, 5m; 0 waits indefinitely)",

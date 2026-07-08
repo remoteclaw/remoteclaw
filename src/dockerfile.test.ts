@@ -15,7 +15,7 @@ describe("Dockerfile", () => {
     expect(dockerfile).toContain(
       'ARG REMOTECLAW_NODE_BOOKWORM_SLIM_IMAGE="node:22-bookworm-slim@sha256:9c2c405e3ff9b9afb2873232d24bb06367d649aa3e6259cbe314da59578e81e9"',
     );
-    expect(dockerfile).toContain("FROM ${REMOTECLAW_NODE_BOOKWORM_IMAGE} AS ext-deps");
+    expect(dockerfile).toContain("FROM ${REMOTECLAW_NODE_BOOKWORM_IMAGE} AS workspace-deps");
     expect(dockerfile).toContain("FROM ${REMOTECLAW_NODE_BOOKWORM_IMAGE} AS build");
     expect(dockerfile).toContain("FROM ${REMOTECLAW_NODE_BOOKWORM_IMAGE} AS base-default");
     expect(dockerfile).toContain("FROM ${REMOTECLAW_NODE_BOOKWORM_SLIM_IMAGE} AS base-slim");
@@ -35,7 +35,7 @@ describe("Dockerfile", () => {
     expect(dockerfile).not.toContain("playwright-core");
   });
 
-  it("prunes runtime dependencies after the build stage", async () => {
+  it("installs runtime dependencies after the build stage", async () => {
     const dockerfile = await readFile(dockerfilePath, "utf8");
     expect(dockerfile).toContain("FROM build AS runtime-assets");
     expect(dockerfile).toContain("CI=true pnpm prune --prod");

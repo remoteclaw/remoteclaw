@@ -12,7 +12,7 @@ Adds Amazon Bedrock Mantle model provider support to RemoteClaw.
 ## Distribution
 
 - Package: `@remoteclaw/amazon-bedrock-mantle-provider`
-- Install route: included in RemoteClaw
+- Install route: npm
 
 ## Surface
 

@@ -35,6 +35,7 @@ export function buildDefaultToolPolicyPipelineSteps(params: {
   agentPolicy?: ToolPolicyLike;
   agentProviderPolicy?: ToolPolicyLike;
   groupPolicy?: ToolPolicyLike;
+  senderPolicy?: ToolPolicyLike;
   agentId?: string;
 }): ToolPolicyPipelineStep[] {
   const agentId = params.agentId?.trim();
@@ -70,6 +71,7 @@ export function buildDefaultToolPolicyPipelineSteps(params: {
       stripPluginOnlyAllowlist: true,
     },
     { policy: params.groupPolicy, label: "group tools.allow", stripPluginOnlyAllowlist: true },
+    { policy: params.senderPolicy, label: "tools.toolsBySender", stripPluginOnlyAllowlist: true },
   ];
 }
 

@@ -53,7 +53,7 @@ describe("applyJobPatch", () => {
       to: "123",
     });
 
-    expect(() => applyJobPatch(job, switchToMainPatch())).not.toThrow();
+    applyJobPatch(job, switchToMainPatch());
     expect(job.sessionTarget).toBe("main");
     expect(job.payload.kind).toBe("systemEvent");
     expect(job.delivery).toBeUndefined();
@@ -65,7 +65,7 @@ describe("applyJobPatch", () => {
       to: "https://example.invalid/cron",
     });
 
-    expect(() => applyJobPatch(job, switchToMainPatch())).not.toThrow();
+    applyJobPatch(job, switchToMainPatch());
     expect(job.sessionTarget).toBe("main");
     expect(job.delivery).toEqual({ mode: "webhook", to: "https://example.invalid/cron" });
   });
@@ -87,7 +87,7 @@ describe("applyJobPatch", () => {
       },
     };
 
-    expect(() => applyJobPatch(job, patch)).not.toThrow();
+    applyJobPatch(job, patch);
     expect(job.payload.kind).toBe("agentTurn");
     if (job.payload.kind === "agentTurn") {
       expect(job.payload.deliver).toBe(false);
@@ -223,13 +223,11 @@ describe("applyJobPatch", () => {
       to: "https://example.invalid/original",
     });
 
-    expect(() =>
-      applyJobPatch(job, { delivery: { mode: "webhook", to: "  https://example.invalid/trim  " } }),
-    ).not.toThrow();
+    applyJobPatch(job, { delivery: { mode: "webhook", to: "  https://example.invalid/trim  " } });
     expect(job.delivery).toEqual({ mode: "webhook", to: "https://example.invalid/trim" });
   });
 
-  it("rejects failureDestination on main jobs without webhook delivery mode", () => {
+  it("rejects failureDestination on existing main jobs without webhook delivery mode", () => {
     const job = createMainSystemEventJob("job-main-failure-dest", {
       mode: "announce",
       channel: "telegram",
@@ -270,7 +268,7 @@ describe("applyJobPatch", () => {
         to: "  https://example.invalid/failure  ",
       },
     };
-    expect(() => applyJobPatch(job, { enabled: true })).not.toThrow();
+    applyJobPatch(job, { enabled: true });
     expect(job.delivery?.failureDestination?.to).toBe("https://example.invalid/failure");
   });
 
@@ -352,7 +350,8 @@ describe("applyJobPatch", () => {
       to: "@mybot",
     });
 
-    expect(() => applyJobPatch(job, { enabled: true })).not.toThrow();
+    applyJobPatch(job, { enabled: true });
+    expect(job.enabled).toBe(true);
   });
 });
 

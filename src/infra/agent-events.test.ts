@@ -17,7 +17,7 @@ describe("agent-events sequencing", () => {
     expect(getAgentRunContext("run-1")).toBeUndefined();
   });
 
-  test("maintains monotonic seq per runId", async () => {
+  test("maintains monotonic seq per runId", () => {
     const seen: Record<string, number[]> = {};
     const stop = onAgentEvent((evt) => {
       const list = seen[evt.runId] ?? [];
@@ -36,7 +36,7 @@ describe("agent-events sequencing", () => {
     expect(seen["run-2"]).toEqual([1]);
   });
 
-  test("preserves compaction ordering on the event bus", async () => {
+  test("preserves compaction ordering on the event bus", () => {
     const phases: Array<string> = [];
     const stop = onAgentEvent((evt) => {
       if (evt.runId !== "run-1") {
@@ -103,7 +103,7 @@ describe("agent-events sequencing", () => {
     });
   });
 
-  test("falls back to registered sessionKey when event sessionKey is blank", async () => {
+  test("falls back to registered sessionKey when event sessionKey is blank", () => {
     resetAgentRunContextForTest();
     registerAgentRunContext("run-ctx", { sessionKey: "session-main" });
 
@@ -122,7 +122,7 @@ describe("agent-events sequencing", () => {
     expect(receivedSessionKey).toBe("session-main");
   });
 
-  test("keeps notifying later listeners when one throws", async () => {
+  test("keeps notifying later listeners when one throws", () => {
     const seen: string[] = [];
     const stopBad = onAgentEvent(() => {
       throw new Error("boom");
@@ -131,13 +131,13 @@ describe("agent-events sequencing", () => {
       seen.push(evt.runId);
     });
 
-    expect(() =>
+    expect(
       emitAgentEvent({
         runId: "run-safe",
         stream: "assistant",
         data: { text: "hi" },
       }),
-    ).not.toThrow();
+    ).toBeUndefined();
 
     stopGood();
     stopBad();

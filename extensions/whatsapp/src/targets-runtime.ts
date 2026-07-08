@@ -2,8 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { normalizeE164 } from "remoteclaw/plugin-sdk/account-resolution";
 import { logVerbose, shouldLogVerbose } from "remoteclaw/plugin-sdk/runtime-env";
-import { escapeRegExp } from "remoteclaw/plugin-sdk/text-runtime";
-import { CONFIG_DIR, resolveUserPath } from "remoteclaw/plugin-sdk/text-runtime";
+import { escapeRegExp } from "remoteclaw/plugin-sdk/text-utility-runtime";
+import { CONFIG_DIR, resolveUserPath } from "remoteclaw/plugin-sdk/text-utility-runtime";
 
 const WHATSAPP_FENCE_PLACEHOLDER = "\x00FENCE";
 const WHATSAPP_INLINE_CODE_PLACEHOLDER = "\x00CODE";

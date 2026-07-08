@@ -3,7 +3,7 @@ import { uploadToConsentUrl } from "./file-consent.js";
 
 describe("uploadToConsentUrl", () => {
   it("sends the RemoteClaw User-Agent header with consent uploads", async () => {
-    const fetchFn = vi.fn(async () => new Response(null, { status: 200 }));
+    const fetchFn = vi.fn<typeof fetch>(async () => new Response(null, { status: 200 }));
 
     await uploadToConsentUrl({
       url: "https://upload.example.com/file",

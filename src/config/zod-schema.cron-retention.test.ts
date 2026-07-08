@@ -3,17 +3,16 @@ import { RemoteClawSchema } from "./zod-schema.js";
 
 describe("RemoteClawSchema cron retention and run-log validation", () => {
   it("accepts valid cron.sessionRetention and runLog values", () => {
-    expect(() =>
-      RemoteClawSchema.parse({
-        cron: {
-          sessionRetention: "1h30m",
-          runLog: {
-            maxBytes: "5mb",
-            keepLines: 2500,
-          },
+    const result = RemoteClawSchema.safeParse({
+      cron: {
+        sessionRetention: "1h30m",
+        runLog: {
+          maxBytes: "5mb",
+          keepLines: 2500,
         },
-      }),
-    ).not.toThrow();
+      },
+    });
+    expect(result.success).toBe(true);
   });
 
   it("rejects invalid cron.sessionRetention", () => {

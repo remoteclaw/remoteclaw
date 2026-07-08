@@ -154,6 +154,23 @@
       }
     },
     {
+      "name": "@remoteclaw/openshell-sandbox",
+      "description": "RemoteClaw OpenShell sandbox backend",
+      "source": "official",
+      "kind": "plugin",
+      "remoteclaw": {
+        "plugin": {
+          "id": "openshell",
+          "label": "OpenShell Sandbox"
+        },
+        "install": {
+          "npmSpec": "@remoteclaw/openshell-sandbox",
+          "defaultChoice": "npm",
+          "minHostVersion": ">=2026.5.12-beta.1"
+        }
+      }
+    },
+    {
       "name": "@remoteclaw/voice-call",
       "description": "RemoteClaw voice-call plugin",
       "source": "official",

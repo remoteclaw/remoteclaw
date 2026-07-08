@@ -35,8 +35,12 @@ async function createIdentityWorkspace(subdir = "work") {
 }
 
 function getWrittenMainIdentity() {
-  const written = configMocks.writeConfigFile.mock.calls[0]?.[0] as ConfigWritePayload;
-  return written.agents?.list?.find((entry) => entry.id === "main")?.identity;
+  const [written] = configMocks.writeConfigFile.mock.calls.at(0) ?? [];
+  if (!written) {
+    throw new Error("expected written agent config");
+  }
+  const payload = written as ConfigWritePayload;
+  return payload.agents?.list?.find((entry) => entry.id === "main")?.identity;
 }
 
 describe("agents set-identity command", () => {
@@ -92,7 +96,9 @@ describe("agents set-identity command", () => {
 
     await agentsSetIdentityCommand({ workspace, name: "Echo" }, runtime);
 
-    expect(runtime.error).toHaveBeenCalledWith(expect.stringContaining("Multiple agents match"));
+    expect(runtime.error).toHaveBeenCalledWith(
+      `Multiple agents match ${workspace}: main, ops. Pass --agent to choose one.`,
+    );
     expect(runtime.exit).toHaveBeenCalledWith(1);
     expect(configMocks.writeConfigFile).not.toHaveBeenCalled();
   });

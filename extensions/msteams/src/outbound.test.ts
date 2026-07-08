@@ -30,6 +30,51 @@ vi.mock("./runtime.js", () => ({
 
 import { msteamsOutbound } from "./outbound.js";
 
+type MSTeamsSendText = NonNullable<typeof msteamsOutbound.sendText>;
+type MSTeamsSendMedia = NonNullable<typeof msteamsOutbound.sendMedia>;
+type MSTeamsSendPoll = NonNullable<typeof msteamsOutbound.sendPoll>;
+
+function requireSendText(): MSTeamsSendText {
+  const sendText = msteamsOutbound.sendText;
+  if (!sendText) {
+    throw new Error("Expected msteams outbound sendText");
+  }
+  return sendText;
+}
+
+function requireSendMedia(): MSTeamsSendMedia {
+  const sendMedia = msteamsOutbound.sendMedia;
+  if (!sendMedia) {
+    throw new Error("Expected msteams outbound sendMedia");
+  }
+  return sendMedia;
+}
+
+function requireSendPoll(): MSTeamsSendPoll {
+  const sendPoll = msteamsOutbound.sendPoll;
+  if (!sendPoll) {
+    throw new Error("Expected msteams outbound sendPoll");
+  }
+  return sendPoll;
+}
+
+type PollRecord = Record<string, unknown> & { createdAt: string };
+
+function firstPollRecord(): PollRecord {
+  const [call] = mocks.createPoll.mock.calls;
+  if (!call) {
+    throw new Error("expected createPoll call");
+  }
+  const [pollRecord] = call;
+  if (!pollRecord || typeof pollRecord !== "object" || Array.isArray(pollRecord)) {
+    throw new Error("expected createPoll record");
+  }
+  if (typeof (pollRecord as { createdAt?: unknown }).createdAt !== "string") {
+    throw new Error("expected createPoll record timestamp");
+  }
+  return pollRecord as PollRecord;
+}
+
 describe("msteamsOutbound cfg threading", () => {
   beforeEach(() => {
     mocks.sendMessageMSTeams.mockReset();
@@ -56,7 +101,7 @@ describe("msteamsOutbound cfg threading", () => {
       },
     } as RemoteClawConfig;
 
-    await msteamsOutbound.sendText!({
+    await requireSendText()({
       cfg,
       to: "conversation:abc",
       text: "hello",
@@ -78,7 +123,7 @@ describe("msteamsOutbound cfg threading", () => {
       },
     } as RemoteClawConfig;
 
-    await msteamsOutbound.sendMedia!({
+    await requireSendMedia()({
       cfg,
       to: "conversation:abc",
       text: "photo",
@@ -104,7 +149,7 @@ describe("msteamsOutbound cfg threading", () => {
       },
     } as RemoteClawConfig;
 
-    await msteamsOutbound.sendPoll!({
+    await requireSendPoll()({
       cfg,
       to: "conversation:abc",
       poll: {
@@ -120,12 +165,17 @@ describe("msteamsOutbound cfg threading", () => {
       options: ["Pizza", "Sushi"],
       maxSelections: 1,
     });
-    expect(mocks.createPoll).toHaveBeenCalledWith(
-      expect.objectContaining({
-        id: "poll-1",
-        question: "Snack?",
-        options: ["Pizza", "Sushi"],
-      }),
-    );
+    const pollRecord = firstPollRecord();
+    expect(pollRecord).toEqual({
+      id: "poll-1",
+      question: "Snack?",
+      options: ["Pizza", "Sushi"],
+      maxSelections: 1,
+      createdAt: pollRecord?.createdAt,
+      conversationId: "conv-1",
+      messageId: "msg-poll-1",
+      votes: {},
+    });
+    expect(Number.isNaN(Date.parse(pollRecord?.createdAt))).toBe(false);
   });
 });

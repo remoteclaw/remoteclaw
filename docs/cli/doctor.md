@@ -25,6 +25,15 @@ remoteclaw doctor --repair --non-interactive
 remoteclaw doctor --generate-gateway-token
 ```
 
+For channel-specific permissions, use the channel probes instead of `doctor`:
+
+```bash
+remoteclaw channels capabilities --channel discord --target channel:<channel-id>
+remoteclaw channels status --probe
+```
+
+The targeted Discord capabilities probe reports the bot's effective channel permissions; the status probe audits configured Discord channels and voice auto-join targets.
+
 ## Options
 
 - `--no-workspace-suggestions`: disable workspace memory/search suggestions
@@ -47,9 +56,9 @@ Notes:
 - Doctor also scans `~/.remoteclaw/cron/jobs.json` (or `cron.store`) for legacy cron job shapes and can rewrite them in place before the scheduler has to auto-normalize them at runtime.
 - On Linux, doctor warns when the user's crontab still runs legacy `~/.remoteclaw/bin/ensure-whatsapp.sh`; that script is no longer maintained and can log false WhatsApp gateway outages when cron lacks the systemd user-bus environment.
 - When WhatsApp is enabled, doctor checks for a degraded Gateway event loop with local `remoteclaw-tui` clients still running. `doctor --fix` stops only verified local TUI clients so WhatsApp replies are not queued behind stale TUI refresh loops.
-- Doctor checks `openai-codex/*` model refs across primary models, fallbacks, heartbeat/subagent/compaction overrides, hooks, channel model overrides, and stale session route pins. `--fix` rewrites them to `openai/*` only when the native Codex runtime is installed, enabled, contributes the `codex` harness, and has usable OAuth, or when direct OpenAI auth is already available and no usable Codex OAuth route would be moved. When `openai-codex/*` is the working Codex OAuth route through RemoteClaw PI, doctor preserves it. If an earlier repair left `openai/*` GPT-5 routes on PI while only Codex OAuth auth is available, `--fix` recovers them back to `openai-codex/*`; when direct OpenAI auth is also usable, doctor warns and leaves the ambiguous mixed-auth route unchanged for explicit confirmation.
-- Doctor cleans legacy plugin dependency staging state created by older RemoteClaw versions. It also repairs missing downloadable plugins that are referenced by config, such as `plugins.entries`, configured channels, configured provider/search settings, or configured agent runtimes. During package updates, doctor skips package-manager plugin repair until the package swap is complete; rerun `remoteclaw doctor --fix` afterward if a configured plugin still needs recovery. If the download fails, doctor reports the install error and preserves the configured plugin entry for the next repair attempt.
-- Doctor repairs stale plugin config by removing missing plugin ids from `plugins.allow`/`plugins.entries`, plus matching dangling channel config, heartbeat targets, and channel model overrides when plugin discovery is healthy.
+- Doctor rewrites legacy `openai-codex/*` model refs to canonical `openai/*` refs across primary models, fallbacks, heartbeat/subagent/compaction overrides, hooks, channel model overrides, and stale session route pins. `--fix` moves Codex intent onto provider/model-scoped `agentRuntime.id: "codex"` entries, preserves session auth-profile pins such as `openai-codex:...`, removes stale whole-agent/session runtime pins, and keeps repaired OpenAI agent refs on Codex auth routing instead of direct OpenAI API-key auth.
+- Doctor cleans legacy plugin dependency staging state created by older RemoteClaw versions and relinks the host `remoteclaw` package for managed npm plugins that declare it as a peer dependency. It also repairs missing downloadable plugins that are referenced by config, such as `plugins.entries`, configured channels, configured provider/search settings, or configured agent runtimes. During package updates, doctor skips package-manager plugin repair until the package swap is complete; rerun `remoteclaw doctor --fix` afterward if a configured plugin still needs recovery. If the download fails, doctor reports the install error and preserves the configured plugin entry for the next repair attempt.
+- Doctor repairs stale plugin config by removing missing plugin ids from `plugins.allow`/`plugins.deny`/`plugins.entries`, plus matching dangling channel config, heartbeat targets, and channel model overrides when plugin discovery is healthy.
 - Doctor quarantines invalid plugin config by disabling the affected `plugins.entries.<id>` entry and removing its invalid `config` payload. Gateway startup already skips only that bad plugin so other plugins and channels can keep running.
 - Set `REMOTECLAW_SERVICE_REPAIR_POLICY=external` when another supervisor owns the gateway lifecycle. Doctor still reports gateway/service health and applies non-service repairs, but skips service install/start/restart/bootstrap and legacy service cleanup.
 - On Linux, doctor ignores inactive extra gateway-like systemd units and does not rewrite command/entrypoint metadata for a running systemd gateway service during repair. Stop the service first or use `remoteclaw gateway install --force` when you intentionally want to replace the active launcher.
@@ -58,6 +67,7 @@ Notes:
 - Doctor includes a memory-search readiness check and can recommend `remoteclaw configure --section model` when embedding credentials are missing.
 - Doctor warns when no command owner is configured. The command owner is the human operator account allowed to run owner-only commands and approve dangerous actions. DM pairing only lets someone talk to the bot; if you approved a sender before first-owner bootstrap existed, set `commands.ownerAllowFrom` explicitly.
 - Doctor warns when Codex-mode agents are configured and personal Codex CLI assets exist in the operator's Codex home. Local Codex app-server launches use isolated per-agent homes, so use `remoteclaw migrate codex --dry-run` to inventory assets that should be promoted deliberately.
+- Doctor removes retired `plugins.entries.codex.config.codexDynamicToolsProfile`; Codex app-server always keeps Codex-native workspace tools native.
 - Doctor warns when skills allowed for the default agent are unavailable in the current runtime environment because bins, env vars, config, or OS requirements are missing. `doctor --fix` can disable those unavailable skills with `skills.entries.<skill>.enabled=false`; install/configure the missing requirement instead when you want to keep the skill active.
 - If sandbox mode is enabled but Docker is unavailable, doctor reports a high-signal warning with remediation (`install Docker` or `remoteclaw config set agents.defaults.sandbox.mode off`).
 - If legacy sandbox registry files (`~/.remoteclaw/sandbox/containers.json` or `~/.remoteclaw/sandbox/browsers.json`) are present, doctor reports them; `remoteclaw doctor --fix` migrates valid entries into sharded registry directories and quarantines invalid legacy files.

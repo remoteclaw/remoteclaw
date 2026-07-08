@@ -1,7 +1,7 @@
 import path from "node:path";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
-// The legacy OpenClaw default/reserved agent id. The fork no longer treats it
+// The legacy RemoteClaw default/reserved agent id. The fork no longer treats it
 // specially (no reservation on create, no protection on delete) — see the
 // "main is not a reserved id" / "main is not protected" tests below.
 // Hoisted so vi.mock() factories can close over it safely.
@@ -134,6 +134,45 @@ function makeCall(method: keyof typeof agentsHandlers, params: Record<string, un
   return { respond, promise };
 }
 
+function expectRecordFields(record: unknown, expected: Record<string, unknown>) {
+  if (!record || typeof record !== "object") {
+    throw new Error("Expected record");
+  }
+  const actual = record as Record<string, unknown>;
+  for (const [key, value] of Object.entries(expected)) {
+    expect(actual[key]).toEqual(value);
+  }
+  return actual;
+}
+
+function mockCallArg(mock: ReturnType<typeof vi.fn>, callIndex = 0, argIndex = 0) {
+  const call = mock.mock.calls[callIndex];
+  if (!call) {
+    throw new Error(`Expected mock call ${callIndex}`);
+  }
+  return call[argIndex];
+}
+
+function expectRespondOk(respond: ReturnType<typeof vi.fn>, expected: Record<string, unknown>) {
+  expect(mockCallArg(respond)).toBe(true);
+  const payload = expectRecordFields(mockCallArg(respond, 0, 1), expected);
+  expect(mockCallArg(respond, 0, 2)).toBeUndefined();
+  return payload;
+}
+
+function expectRespondErrorContaining(respond: ReturnType<typeof vi.fn>, text: string) {
+  expect(mockCallArg(respond)).toBe(false);
+  expect(mockCallArg(respond, 0, 1)).toBeUndefined();
+  const error = expectRecordFields(mockCallArg(respond, 0, 2), {});
+  expectStringContaining(error.message, text);
+  return error;
+}
+
+function expectStringContaining(value: unknown, text: string) {
+  expect(typeof value).toBe("string");
+  expect(value as string).toContain(text);
+}
+
 function createEnoentError() {
   const err = new Error("ENOENT") as NodeJS.ErrnoException;
   err.code = "ENOENT";
@@ -168,11 +207,7 @@ function makeSymlinkStat(params?: { dev?: number; ino?: number }): import("node:
 }
 
 function expectNotFoundResponseAndNoWrite(respond: ReturnType<typeof vi.fn>) {
-  expect(respond).toHaveBeenCalledWith(
-    false,
-    undefined,
-    expect.objectContaining({ message: expect.stringContaining("not found") }),
-  );
+  expectRespondErrorContaining(respond, "not found");
   expect(mocks.writeConfigFile).not.toHaveBeenCalled();
 }
 
@@ -183,11 +218,7 @@ async function expectUnsafeWorkspaceFile(method: "agents.files.get" | "agents.fi
       : { agentId: "test-agent", name: "AGENTS.md" };
   const { respond, promise } = makeCall(method, params);
   await promise;
-  expect(respond).toHaveBeenCalledWith(
-    false,
-    undefined,
-    expect.objectContaining({ message: expect.stringContaining("unsafe workspace file") }),
-  );
+  expectRespondErrorContaining(respond, "unsafe workspace file");
 }
 
 beforeEach(() => {
@@ -232,15 +263,11 @@ describe("agents.create", () => {
     });
     await promise;
 
-    expect(respond).toHaveBeenCalledWith(
-      true,
-      expect.objectContaining({
-        ok: true,
-        agentId: "test-agent",
-        name: "Test Agent",
-      }),
-      undefined,
-    );
+    expectRespondOk(respond, {
+      ok: true,
+      agentId: "test-agent",
+      name: "Test Agent",
+    });
     expect(mocks.ensureAgentWorkspace).toHaveBeenCalled();
     expect(mocks.writeConfigFile).toHaveBeenCalled();
   });
@@ -294,11 +321,7 @@ describe("agents.create", () => {
     });
     await promise;
 
-    expect(respond).toHaveBeenCalledWith(
-      false,
-      undefined,
-      expect.objectContaining({ message: expect.stringContaining("already exists") }),
-    );
+    expectRespondErrorContaining(respond, "already exists");
     expect(mocks.writeConfigFile).not.toHaveBeenCalled();
   });
 
@@ -308,11 +331,7 @@ describe("agents.create", () => {
     });
     await promise;
 
-    expect(respond).toHaveBeenCalledWith(
-      false,
-      undefined,
-      expect.objectContaining({ message: expect.stringContaining("invalid") }),
-    );
+    expectRespondErrorContaining(respond, "invalid");
   });
 
   it("writes identity to config when creating agent with name only", async () => {
@@ -455,7 +474,7 @@ describe("agents.delete", () => {
     });
     await promise;
 
-    expect(respond).toHaveBeenCalledWith(true, expect.objectContaining({ ok: true }), undefined);
+    expectRespondOk(respond, { ok: true });
     // moveToTrashBestEffort should not be called at all
     expect(mocks.fsAccess).not.toHaveBeenCalled();
   });
@@ -492,11 +511,7 @@ describe("agents.delete", () => {
     const { respond, promise } = makeCall("agents.delete", {});
     await promise;
 
-    expect(respond).toHaveBeenCalledWith(
-      false,
-      undefined,
-      expect.objectContaining({ message: expect.stringContaining("invalid") }),
-    );
+    expectRespondErrorContaining(respond, "invalid");
   });
 });
 

@@ -141,11 +141,15 @@ type StartChannelOptions = {
   preserveManualStop?: boolean;
 };
 
+type StopChannelOptions = {
+  manual?: boolean;
+};
+
 export type ChannelManager = {
   getRuntimeSnapshot: () => ChannelRuntimeSnapshot;
   startChannels: () => Promise<void>;
   startChannel: (channel: ChannelId, accountId?: string) => Promise<void>;
-  stopChannel: (channel: ChannelId, accountId?: string) => Promise<void>;
+  stopChannel: (channel: ChannelId, accountId?: string, opts?: StopChannelOptions) => Promise<void>;
   markChannelLoggedOut: (channelId: ChannelId, cleared: boolean, accountId?: string) => void;
   isManuallyStopped: (channelId: ChannelId, accountId: string) => boolean;
   resetRestartAttempts: (channelId: ChannelId, accountId: string) => void;
@@ -162,6 +166,7 @@ export function createChannelManager(opts: ChannelManagerOptions): ChannelManage
   const restartAttempts = new Map<string, number>();
   // Tracks accounts that were manually stopped so we don't auto-restart them.
   const manuallyStopped = new Set<string>();
+  const recoveryStopTimedOut = new Set<string>();
 
   const restartKey = (channelId: ChannelId, accountId: string) => `${channelId}:${accountId}`;
 
@@ -409,15 +414,24 @@ export function createChannelManager(opts: ChannelManagerOptions): ChannelManage
                 restartPending: true,
                 reconnectAttempts: attempt,
               });
+              const recoveryRestartSleepAbort = recoveryStopTimedOut.has(rKey)
+                ? new AbortController()
+                : undefined;
+              if (recoveryRestartSleepAbort) {
+                store.aborts.set(id, recoveryRestartSleepAbort);
+              }
               try {
-                await sleepWithAbort(delayMs, abort.signal);
+                const restartSleepAbort = recoveryRestartSleepAbort?.signal ?? abort.signal;
+                await sleepWithAbort(delayMs, restartSleepAbort);
                 if (manuallyStopped.has(rKey)) {
+                  recoveryStopTimedOut.delete(rKey);
                   return;
                 }
+                recoveryStopTimedOut.delete(rKey);
                 if (store.tasks.get(id) === trackedPromise) {
                   store.tasks.delete(id);
                 }
-                if (store.aborts.get(id) === abort) {
+                if (store.aborts.get(id) === (recoveryRestartSleepAbort ?? abort)) {
                   store.aborts.delete(id);
                 }
                 await startChannelInternal(channelId, id, {
@@ -426,6 +440,13 @@ export function createChannelManager(opts: ChannelManagerOptions): ChannelManage
                 });
               } catch {
                 // abort or startup failure — next crash will retry
+              } finally {
+                if (recoveryRestartSleepAbort) {
+                  recoveryStopTimedOut.delete(rKey);
+                  if (store.aborts.get(id) === recoveryRestartSleepAbort) {
+                    store.aborts.delete(id);
+                  }
+                }
               }
             })
             .finally(() => {
@@ -455,7 +476,12 @@ export function createChannelManager(opts: ChannelManagerOptions): ChannelManage
     await startChannelInternal(channelId, accountId);
   };
 
-  const stopChannel = async (channelId: ChannelId, accountId?: string) => {
+  const stopChannel = async (
+    channelId: ChannelId,
+    accountId?: string,
+    opts: StopChannelOptions = {},
+  ) => {
+    const manual = opts.manual ?? true;
     const plugin = getChannelPlugin(channelId);
     const store = getStore(channelId);
     // Fast path: nothing running and no explicit plugin shutdown hook to run.
@@ -481,7 +507,10 @@ export function createChannelManager(opts: ChannelManagerOptions): ChannelManage
         if (!abort && !task && !plugin?.gateway?.stopAccount) {
           return;
         }
-        manuallyStopped.add(restartKey(channelId, id));
+        const rKey = restartKey(channelId, id);
+        if (manual) {
+          manuallyStopped.add(rKey);
+        }
         abort?.abort();
         if (plugin?.gateway?.stopAccount) {
           const account = plugin.config.resolveAccount(cfg, id);
@@ -501,6 +530,7 @@ export function createChannelManager(opts: ChannelManagerOptions): ChannelManage
         } catch {
           // ignore
         }
+        recoveryStopTimedOut.delete(rKey);
         store.aborts.delete(id);
         store.tasks.delete(id);
         setRuntime(channelId, id, {

@@ -87,7 +87,13 @@ export const EXPECTED_CODEX_STATUS_COMMAND_TEXT = [
   "model `codex/",
   "session `agent:dev:live-codex-harness`",
   "Model/status card shown above",
+  "RemoteClaw status shown above.",
   "Status shown above.",
+  "No active task is running.",
+  "No active work is running.",
+  "Working normally.",
+  "Idle and ready.",
+  "Ready.",
 ] as const;
 
 export function isExpectedCodexStatusCommandText(text: string): boolean {
@@ -131,11 +137,21 @@ export function isExpectedCodexStatusCommandText(text: string): boolean {
     normalized.includes("no compactions") &&
     (normalized.includes("current session is") || normalized.includes("cache hit")) &&
     mentionsModel;
+  const isWorkspaceOnlyHealthyStatus =
+    normalized.includes("working normally.") && normalized.includes("current workspace:");
+  const isIdleReadyStatus = normalized.includes("idle and ready");
+  const isReadyStatus = normalized.trim() === "ready.";
+  const isOnlineIdleStatus =
+    normalized.includes("online") && normalized.includes("no active task is running");
 
   return (
     isCurrentSessionStatus ||
     isCompactSessionStatus ||
     isRunningSessionStatus ||
+    isWorkspaceOnlyHealthyStatus ||
+    isIdleReadyStatus ||
+    isReadyStatus ||
+    isOnlineIdleStatus ||
     (mentionsRemoteClawStatus && mentionsHarnessSession && mentionsModel)
   );
 }

@@ -12,7 +12,7 @@ Sandbox backend powered by OpenShell with mirrored local workspaces and SSH-base
 ## Distribution
 
 - Package: `@remoteclaw/openshell-sandbox`
-- Install route: included in RemoteClaw
+- Install route: npm; ClawHub
 
 ## Surface
 

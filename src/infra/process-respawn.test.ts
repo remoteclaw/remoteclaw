@@ -146,10 +146,11 @@ describe("restartGatewayProcessWithFreshPid", () => {
     expect(spawnMock).toHaveBeenCalledWith(
       process.execPath,
       ["--import", "tsx", "/repo/dist/index.js", "gateway", "run"],
-      expect.objectContaining({
+      {
         detached: true,
+        env: process.env,
         stdio: "inherit",
-      }),
+      },
     );
   });
 

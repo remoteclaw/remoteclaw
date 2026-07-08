@@ -10,6 +10,13 @@ title: "CLI Reference"
 
 This page describes the current CLI behavior. If commands change, update this doc.
 
+Use the setup commands by intent:
+
+- `remoteclaw setup` creates the baseline config and workspace without walking the full guided onboarding flow.
+- `remoteclaw onboard` is the full guided first-run path for gateway, model auth, workspace, channels, skills, and health.
+- `remoteclaw configure` changes targeted parts of an existing setup, such as model auth, gateway, channels, plugins, or skills.
+- `remoteclaw channels add` configures channel accounts after the baseline exists; run it without flags for guided channel setup or with channel-specific flags for scripts.
+
 ## Command pages
 
 - [`setup`](/cli/setup)
@@ -164,6 +171,12 @@ remoteclaw [--dev] [--profile <name>] <command>
     status
     index
     search
+  path
+    resolve
+    find
+    set
+    validate
+    emit
   commitments
     list
     dismiss
@@ -286,6 +299,7 @@ remoteclaw [--dev] [--profile <name>] <command>
   cron
     status
     list
+    get
     add
     edit
     rm

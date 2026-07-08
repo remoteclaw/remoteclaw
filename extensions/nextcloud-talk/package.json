@@ -26,5 +26,8 @@
       "localPath": "extensions/nextcloud-talk",
       "defaultChoice": "npm"
     }
+  },
+  "dependencies": {
+    "zod": "^4.3.6"
   }
 }

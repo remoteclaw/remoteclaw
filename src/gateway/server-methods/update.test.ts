@@ -109,6 +109,13 @@ async function invokeUpdateRun(
   } as never);
 }
 
+function readCapturedPayload(): RestartSentinelPayload {
+  if (!capturedPayload) {
+    throw new Error("expected restart sentinel payload");
+  }
+  return capturedPayload;
+}
+
 describe("update.run sentinel deliveryContext", () => {
   it("includes deliveryContext in sentinel payload when sessionKey is provided", async () => {
     capturedPayload = undefined;
@@ -119,13 +126,13 @@ describe("update.run sentinel deliveryContext", () => {
     });
 
     expect(responded).toBe(true);
-    expect(capturedPayload).toBeDefined();
-    expect(capturedPayload!.deliveryContext).toEqual({
+    const payload = readCapturedPayload();
+    expect(payload.deliveryContext).toEqual({
       channel: "webchat",
       to: "webchat:user-123",
       accountId: "default",
     });
-    expect(capturedPayload!.continuation).toEqual({
+    expect(payload.continuation).toEqual({
       kind: "agentTurn",
       message: DEFAULT_RESTART_SUCCESS_CONTINUATION_MESSAGE,
     });
@@ -136,10 +143,10 @@ describe("update.run sentinel deliveryContext", () => {
 
     await invokeUpdateRun({});
 
-    expect(capturedPayload).toBeDefined();
-    expect(capturedPayload!.deliveryContext).toBeUndefined();
-    expect(capturedPayload!.threadId).toBeUndefined();
-    expect(capturedPayload!.continuation).toBeUndefined();
+    const payload = readCapturedPayload();
+    expect(payload.deliveryContext).toBeUndefined();
+    expect(payload.threadId).toBeUndefined();
+    expect(payload.continuation).toBeUndefined();
   });
 
   it("includes threadId in sentinel payload for threaded sessions", async () => {
@@ -147,14 +154,14 @@ describe("update.run sentinel deliveryContext", () => {
 
     await invokeUpdateRun({ sessionKey: "agent:main:slack:dm:C0123ABC:thread:1234567890.123456" });
 
-    expect(capturedPayload).toBeDefined();
-    expect(capturedPayload!.deliveryContext).toEqual({
+    const payload = readCapturedPayload();
+    expect(payload.deliveryContext).toEqual({
       channel: "slack",
       to: "slack:C0123ABC",
       accountId: "workspace-1",
     });
-    expect(capturedPayload!.threadId).toBe("1234567890.123456");
-    expect(capturedPayload!.continuation).toEqual({
+    expect(payload.threadId).toBe("1234567890.123456");
+    expect(payload.continuation).toEqual({
       kind: "agentTurn",
       message: DEFAULT_RESTART_SUCCESS_CONTINUATION_MESSAGE,
     });
@@ -165,11 +172,12 @@ describe("update.run timeout normalization", () => {
   it("enforces a 1000ms minimum timeout for tiny values", async () => {
     await invokeUpdateRun({ timeoutMs: 1 });
 
-    expect(runGatewayUpdateMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        timeoutMs: 1000,
-      }),
-    );
+    expect(runGatewayUpdateMock).toHaveBeenCalledTimes(1);
+    const updateCall = runGatewayUpdateMock.mock.calls[0] as unknown as
+      | [{ timeoutMs?: number }]
+      | undefined;
+    const updateParams = updateCall?.[0];
+    expect(updateParams?.timeoutMs).toBe(1000);
   });
 });
 

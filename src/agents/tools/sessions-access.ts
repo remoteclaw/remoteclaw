@@ -23,6 +23,7 @@ export {
   createAgentToAgentPolicy,
   createSessionVisibilityChecker,
   createSessionVisibilityGuard,
+  createSessionVisibilityRowChecker,
   listSpawnedSessionKeys,
   resolveEffectiveSessionToolsVisibility,
   resolveSandboxSessionToolsVisibility,

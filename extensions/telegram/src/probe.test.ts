@@ -182,7 +182,7 @@ describe("probeTelegram retry logic", () => {
     expect(result.ok).toBe(true);
     expect(result.webhook).toBeUndefined();
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock.mock.calls[0]?.[0]).toBe("https://api.telegram.org/bottest-token/getMe");
+    expect(fetchMock.mock.calls.at(0)?.[0]).toBe("https://api.telegram.org/bottest-token/getMe");
   });
 
   it("uses resolver-scoped Telegram fetch with probe network options", async () => {

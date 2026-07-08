@@ -4,6 +4,7 @@ import { defineConfig } from "tsdown";
 const env = {
   NODE_ENV: "production",
 };
+const OUTPUT_SOURCE_MAPS = process.env.OUTPUT_SOURCE_MAPS === "1";
 
 function buildInputOptions(options: { onLog?: unknown; [key: string]: unknown }) {
   if (process.env.REMOTECLAW_BUILD_VERBOSE === "1") {
@@ -37,6 +38,7 @@ function nodeBuildConfig(config: Record<string, unknown>) {
     env,
     fixedExtension: false,
     platform: "node",
+    sourcemap: OUTPUT_SOURCE_MAPS,
     inputOptions: buildInputOptions,
   };
 }

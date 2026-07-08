@@ -29,5 +29,8 @@
       "localPath": "extensions/zalo",
       "defaultChoice": "npm"
     }
+  },
+  "dependencies": {
+    "zod": "^4.3.6"
   }
 }

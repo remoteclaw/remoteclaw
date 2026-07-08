@@ -15,7 +15,7 @@ describe("buildPlatformRuntimeLogHints", () => {
       }),
     ).toEqual([
       "Launchd stdout (if installed): /tmp/remoteclaw-state/logs/gateway.log",
-      "Launchd stderr (if installed): /tmp/remoteclaw-state/logs/gateway.err.log",
+      "Launchd stderr (if installed): suppressed",
       "Restart attempts: /tmp/remoteclaw-state/logs/gateway-restart.log",
     ]);
   });

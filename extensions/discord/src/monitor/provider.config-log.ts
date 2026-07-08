@@ -1,5 +1,5 @@
 import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
-import { summarizeStringEntries } from "remoteclaw/plugin-sdk/text-runtime";
+import { summarizeStringEntries } from "remoteclaw/plugin-sdk/string-coerce-runtime";
 import { formatThreadBindingDurationLabel } from "./thread-bindings.messages.js";
 
 function formatThreadBindingDurationForConfigLabel(durationMs: number): string {

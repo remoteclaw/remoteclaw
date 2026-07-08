@@ -3,6 +3,11 @@ import type { ChannelId, ChannelPlugin } from "../channels/plugins/types.js";
 import { normalizeAnyChannelId } from "../channels/registry.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import {
+  createFixedWindowRateLimiter,
+  type FixedWindowRateLimiter,
+} from "../infra/fixed-window-rate-limit.js";
+import { createSubsystemLogger } from "../logging/subsystem.js";
+import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
@@ -464,6 +469,14 @@ function resolveFallbackCommandOptions(providerId?: ChannelId): {
 
 // Deduplicates the fail-closed-cliff warning so a per-message denial does not spam
 // the logs. Keyed by provider + account: one warning per misconfigured shape.
+//
+// This dedup is process-lifetime by design and never reset or pruned: the fork has
+// no runtime config hot-reload path (no watchConfig/reloadConfig/onConfigChange —
+// config is loaded once at startup), so a fail-closed cliff for a given key cannot
+// be newly *created* mid-process — the misconfigured shape (owner enforcement on,
+// no resolvable owner) that caused it is fixed for the lifetime of the process. The
+// only way the misconfiguration changes is a process restart, which also clears
+// this Set, so a still-misconfigured restarted process correctly warns again.
 const ownerEnforcementCliffWarned = new Set<string>();
 
 function warnOwnerEnforcementCliff(
@@ -479,6 +492,46 @@ function warnOwnerEnforcementCliff(
     `[command-auth] Owner enforcement is enabled for provider "${providerId ?? "unknown"}" but no ` +
       `command owner is resolvable, so all commands are denied. Configure commands.ownerAllowFrom ` +
       `(e.g. ["*"] for public command access, or an explicit owner list) to authorize senders.`,
+  );
+}
+
+const log = createSubsystemLogger("command-auth");
+
+// Rate-limits the silent-denial diagnostic below (logDeniedNonOwnerSender) so a
+// spraying sender cannot flood the logs once an operator turns debug logging on.
+// `debug` is level-gated off by default (see SubsystemLogger), so production is
+// quiet already; this throttle only bounds the opt-in case where debug is enabled
+// to investigate a denial. Keyed by provider + account — the same small, bounded
+// cardinality as the cliff dedup key above — rather than by sender: a sender
+// identifier is attacker-influenced, so a per-sender Set/Map would let a spraying
+// sender grow it without bound. Unlike the cliff dedup, this is a genuine
+// time-windowed throttle, not a permanent one: at most one diagnostic per key per
+// window, then the window rolls over so a later, still-ongoing denial for that key
+// is diagnosable again.
+const DENIED_SENDER_LOG_WINDOW_MS = 60_000;
+const deniedSenderLogLimiters = new Map<string, FixedWindowRateLimiter>();
+
+function logDeniedNonOwnerSender(params: {
+  providerId: ChannelId | undefined;
+  accountId?: string | null;
+  senderId?: string;
+}): void {
+  const key = `${params.providerId ?? ""}:${normalizeOptionalLowercaseString(params.accountId) ?? ""}`;
+  let limiter = deniedSenderLogLimiters.get(key);
+  if (!limiter) {
+    limiter = createFixedWindowRateLimiter({
+      maxRequests: 1,
+      windowMs: DENIED_SENDER_LOG_WINDOW_MS,
+    });
+    deniedSenderLogLimiters.set(key, limiter);
+  }
+  if (!limiter.consume().allowed) {
+    return;
+  }
+  log.debug(
+    `Denied command from non-owner sender "${params.senderId ?? "unknown"}" for provider ` +
+      `"${params.providerId ?? "unknown"}"`,
+    { providerId: params.providerId, accountId: params.accountId, senderId: params.senderId },
   );
 }
 
@@ -629,6 +682,12 @@ export function resolveCommandAuthorization(params: {
       // every sender is denied. Point the operator at the remediation once per
       // provider+account so a silently-locked-out deployment is diagnosable.
       warnOwnerEnforcementCliff(providerId, ctx.AccountId);
+    } else {
+      // An owner IS configured — this is normal enforcement correctly denying a
+      // non-owner sender, not a misconfiguration, so this is a debug diagnostic
+      // rather than the warn-level cliff above. Rate-limited so a spraying sender
+      // cannot flood the logs when debug is enabled (see logDeniedNonOwnerSender).
+      logDeniedNonOwnerSender({ providerId, accountId: ctx.AccountId, senderId });
     }
   } else if (
     commandsAllowFromList !== null ||

@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased
+
+### Breaking
+
+- **Security — honor owner enforcement for commands
+  ([remoteclaw#2821](https://github.com/remoteclaw/remoteclaw/issues/2821)):**
+  When owner enforcement is on (the WhatsApp default) but no owner is resolvable,
+  command authorization now **denies** non-owner senders instead of authorizing
+  them. Previously, silently-insecure configurations — `channels.whatsapp.allowFrom:
+["*"]`, an empty/unset allowFrom, or `commands.allowFrom` opened to `"*"` — let any
+  sender run privileged commands (session reset, subagent spawn, TTS, status,
+  directives). This flips those setups from accepted to rejected. To keep public
+  command access, configure `commands.ownerAllowFrom: ["*"]` (or an explicit owner
+  list); an internal `operator.admin` session is still authorized. Restores upstream
+  OpenClaw #78864, dropped by a content-only sync when this fork's resolver had
+  structurally diverged.
+
 ## 0.1.0
 
 First RemoteClaw release. Forked from [OpenClaw v2026.2.25](https://github.com/openclaw/openclaw/releases/tag/v2026.2.25)

@@ -59,8 +59,9 @@ const BASE_RELOAD_RULES: ReloadRule[] = [
     kind: "hot",
     actions: ["restart-health-monitor"],
   },
-  // Stuck-session warning threshold is read by the diagnostics heartbeat loop.
+  // Stuck-session thresholds are read by the diagnostics heartbeat loop.
   { prefix: "diagnostics.stuckSessionWarnMs", kind: "none" },
+  { prefix: "diagnostics.stuckSessionAbortMs", kind: "none" },
   { prefix: "hooks.gmail", kind: "hot", actions: ["restart-gmail-watcher"] },
   { prefix: "hooks", kind: "hot", actions: ["reload-hooks"] },
   {
@@ -116,7 +117,6 @@ const BASE_RELOAD_RULES_TAIL: ReloadRule[] = [
   { prefix: "ui", kind: "none" },
   { prefix: "gateway", kind: "restart" },
   { prefix: "discovery", kind: "restart" },
-  { prefix: "canvasHost", kind: "restart" },
 ];
 
 let cachedReloadRules: ReloadRule[] | null = null;

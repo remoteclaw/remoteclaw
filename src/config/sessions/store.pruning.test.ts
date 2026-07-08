@@ -50,7 +50,7 @@ describe("pruneStaleEntries", () => {
 
     expect(pruned).toBe(1);
     expect(store.old).toBeUndefined();
-    expect(store.fresh).toBeDefined();
+    expect(store).toHaveProperty("fresh");
   });
 });
 
@@ -69,9 +69,9 @@ describe("capEntryCount", () => {
 
     expect(evicted).toBe(2);
     expect(Object.keys(store)).toHaveLength(3);
-    expect(store.newest).toBeDefined();
-    expect(store.recent).toBeDefined();
-    expect(store.mid).toBeDefined();
+    expect(store).toHaveProperty("newest");
+    expect(store).toHaveProperty("recent");
+    expect(store).toHaveProperty("mid");
     expect(store.oldest).toBeUndefined();
     expect(store.old).toBeUndefined();
   });

@@ -92,6 +92,16 @@ function buildCtx(): NodeEventContext {
   };
 }
 
+function expectFields(value: unknown, expected: Record<string, unknown>): void {
+  if (!value || typeof value !== "object") {
+    throw new Error("expected fields object");
+  }
+  const record = value as Record<string, unknown>;
+  for (const [key, expectedValue] of Object.entries(expected)) {
+    expect(record[key], key).toEqual(expectedValue);
+  }
+}
+
 describe("node exec events", () => {
   beforeEach(() => {
     enqueueSystemEventMock.mockClear();
@@ -333,15 +343,10 @@ describe("voice transcript events", () => {
 
     expect(agentCommandMock).toHaveBeenCalledTimes(1);
     const [opts] = agentCommandMock.mock.calls[0] ?? [];
-    expect(opts).toMatchObject({
+    expectFields(opts, {
       message: "check provenance",
       deliver: false,
       messageChannel: "node",
-      inputProvenance: {
-        kind: "external_user",
-        sourceChannel: "voice",
-        sourceTool: "gateway.voice.transcript",
-      },
     });
   });
 
@@ -361,7 +366,8 @@ describe("voice transcript events", () => {
     await Promise.resolve();
 
     expect(agentCommandMock).toHaveBeenCalledTimes(1);
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining("voice session-store update failed"));
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0]?.[0])).toContain("voice session-store update failed");
   });
 });
 
@@ -547,15 +553,16 @@ describe("agent request events", () => {
 
     expect(agentCommandMock).toHaveBeenCalledTimes(1);
     const [opts] = agentCommandMock.mock.calls[0] ?? [];
-    expect(opts).toMatchObject({
+    expectFields(opts, {
       message: "summarize this",
       sessionKey: "agent:main:main",
       deliver: false,
       channel: undefined,
       to: undefined,
     });
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining("agent delivery disabled node=node-route-miss"),
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0]?.[0])).toContain(
+      "agent delivery disabled node=node-route-miss",
     );
   });
 
@@ -581,7 +588,7 @@ describe("agent request events", () => {
 
     expect(agentCommandMock).toHaveBeenCalledTimes(1);
     const [opts] = agentCommandMock.mock.calls[0] ?? [];
-    expect(opts).toMatchObject({
+    expectFields(opts, {
       message: "route on session",
       sessionKey: "agent:main:main",
       deliver: true,

@@ -4,6 +4,23 @@ import {
   resolveRemoteClawMetadata,
   resolveHookInvocationPolicy,
 } from "./frontmatter.js";
+import type { RemoteClawHookMetadata } from "./types.js";
+
+function requireString(value: string | undefined, label: string): string {
+  if (typeof value !== "string") {
+    throw new Error(`expected ${label}`);
+  }
+  return value;
+}
+
+function requireRemoteClawMetadata(
+  metadata: RemoteClawHookMetadata | undefined,
+): RemoteClawHookMetadata {
+  if (!metadata) {
+    throw new Error("expected remoteclaw metadata");
+  }
+  return metadata;
+}
 
 describe("parseFrontmatter", () => {
   it("parses single-line key-value pairs", () => {
@@ -24,15 +41,15 @@ homepage: https://example.com
   it("handles missing frontmatter", () => {
     const content = "# Just a markdown file";
     const result = parseFrontmatter(content);
-    expect(result).toEqual({});
+    expect(result).toStrictEqual({});
   });
 
   it("handles unclosed frontmatter", () => {
     const content = `---
 name: broken
-`;
+    `;
     const result = parseFrontmatter(content);
-    expect(result).toEqual({});
+    expect(result).toStrictEqual({});
   });
 
   it("parses multi-line metadata block with indented JSON", () => {
@@ -53,11 +70,10 @@ metadata:
     const result = parseFrontmatter(content);
     expect(result.name).toBe("session-memory");
     expect(result.description).toBe("Save session context");
-    expect(result.metadata).toBeDefined();
-    expect(typeof result.metadata).toBe("string");
+    const metadata = requireString(result.metadata, "session-memory metadata");
 
     // Verify the metadata is valid JSON
-    const parsed = JSON.parse(result.metadata);
+    const parsed = JSON.parse(metadata);
     expect(parsed.remoteclaw.emoji).toBe("💾");
     expect(parsed.remoteclaw.events).toEqual(["command:new"]);
   });
@@ -80,9 +96,8 @@ metadata:
 `;
     const result = parseFrontmatter(content);
     expect(result.name).toBe("command-logger");
-    expect(result.metadata).toBeDefined();
 
-    const parsed = JSON.parse(result.metadata);
+    const parsed = JSON.parse(requireString(result.metadata, "command-logger metadata"));
     expect(parsed.remoteclaw.emoji).toBe("📝");
     expect(parsed.remoteclaw.events).toEqual(["command"]);
     expect(parsed.remoteclaw.requires.config).toEqual(["workspace.dir"]);
@@ -118,7 +133,7 @@ enabled: true
     expect(result.name).toBe("mixed-hook");
     expect(result.description).toBe("A hook with mixed values");
     expect(result.homepage).toBe("https://example.com");
-    expect(result.metadata).toBeDefined();
+    expect(requireString(result.metadata, "mixed-hook metadata")).toContain('"command:new"');
     expect(result.enabled).toBe("true");
   });
 
@@ -165,11 +180,11 @@ describe("resolveRemoteClawMetadata", () => {
     };
 
     const result = resolveRemoteClawMetadata(frontmatter);
-    expect(result).toBeDefined();
-    expect(result?.emoji).toBe("🔥");
-    expect(result?.events).toEqual(["command:new", "command:reset"]);
-    expect(result?.requires?.config).toEqual(["workspace.dir"]);
-    expect(result?.requires?.bins).toEqual(["git"]);
+    const remoteclaw = requireRemoteClawMetadata(result);
+    expect(remoteclaw.emoji).toBe("🔥");
+    expect(remoteclaw.events).toEqual(["command:new", "command:reset"]);
+    expect(remoteclaw.requires?.config).toEqual(["workspace.dir"]);
+    expect(remoteclaw.requires?.bins).toEqual(["git"]);
   });
 
   it("returns undefined when metadata is missing", () => {
@@ -251,14 +266,15 @@ metadata:
 
     const frontmatter = parseFrontmatter(content);
     expect(frontmatter.name).toBe("session-memory");
-    expect(frontmatter.metadata).toBeDefined();
+    expect(requireString(frontmatter.metadata, "session-memory metadata")).toContain(
+      '"command:reset"',
+    );
 
-    const remoteclaw = resolveRemoteClawMetadata(frontmatter);
-    expect(remoteclaw).toBeDefined();
-    expect(remoteclaw?.emoji).toBe("💾");
-    expect(remoteclaw?.events).toEqual(["command:new", "command:reset"]);
-    expect(remoteclaw?.requires?.config).toEqual(["workspace.dir"]);
-    expect(remoteclaw?.install?.[0].kind).toBe("bundled");
+    const remoteclaw = requireRemoteClawMetadata(resolveRemoteClawMetadata(frontmatter));
+    expect(remoteclaw.emoji).toBe("💾");
+    expect(remoteclaw.events).toEqual(["command:new", "command:reset"]);
+    expect(remoteclaw.requires?.config).toEqual(["workspace.dir"]);
+    expect(remoteclaw.install?.[0].kind).toBe("bundled");
   });
 
   it("parses YAML metadata map", () => {

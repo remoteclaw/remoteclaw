@@ -147,6 +147,10 @@ export const sharedVitestConfig = {
         find: "@remoteclaw/slack/api.js",
         replacement: path.join(repoRoot, "extensions", "slack", "api.ts"),
       },
+      {
+        find: "@remoteclaw/whatsapp/api.js",
+        replacement: path.join(repoRoot, "extensions", "whatsapp", "api.ts"),
+      },
       ...sourcePluginSdkSubpaths.map((subpath) => ({
         find: `remoteclaw/plugin-sdk/${subpath}`,
         replacement: path.join(repoRoot, "src", "plugin-sdk", `${subpath}.ts`),

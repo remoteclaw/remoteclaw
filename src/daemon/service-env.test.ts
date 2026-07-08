@@ -37,11 +37,6 @@ describe("getMinimalServicePathParts - Linux user directories", () => {
 
     // Should only include system directories
     expect(result).toEqual(["/usr/local/bin", "/usr/bin", "/bin"]);
-
-    // Should not include any user-specific paths
-    expect(result.some((p) => p.includes(".local"))).toBe(false);
-    expect(result.some((p) => p.includes(".npm-global"))).toBe(false);
-    expect(result.some((p) => p.includes(".nvm"))).toBe(false);
   });
 
   it("places user directories before system directories on Linux", () => {
@@ -166,7 +161,7 @@ describe("getMinimalServicePathParts - Linux user directories", () => {
     });
 
     // Windows returns empty array (uses existing PATH)
-    expect(result).toEqual([]);
+    expect(result).toStrictEqual([]);
   });
 });
 
@@ -220,9 +215,6 @@ describe("buildMinimalServicePath", () => {
 
     // Should only have system directories
     expect(parts).toEqual(["/usr/local/bin", "/usr/bin", "/bin"]);
-
-    // No user-specific paths
-    expect(parts.some((p) => p.includes("home"))).toBe(false);
   });
 
   it("ensures user directories come before system directories on Linux", () => {
@@ -418,7 +410,7 @@ describe("buildNodeServiceEnvironment", () => {
   });
 });
 
-describe("shared Node TLS env defaults", () => {
+describe("shared Node TLS env defaults matrix", () => {
   const builders = [
     {
       name: "gateway service env",

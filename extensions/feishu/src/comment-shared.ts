@@ -2,7 +2,7 @@ import {
   isRecord as sharedIsRecord,
   normalizeOptionalString,
   readStringValue,
-} from "remoteclaw/plugin-sdk/text-runtime";
+} from "remoteclaw/plugin-sdk/string-coerce-runtime";
 import { FEISHU_COMMENT_FILE_TYPES, type CommentFileType } from "./comment-target.js";
 
 export function encodeQuery(params: Record<string, string | undefined>): string {

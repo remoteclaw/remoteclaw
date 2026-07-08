@@ -56,18 +56,20 @@ describe.skip("diagnostic log events", () => {
     unsubscribe();
 
     expect(received).toHaveLength(1);
-    expect(received[0]).toMatchObject({
-      type: "log.record",
-      level: "INFO",
-      message: "hello diagnostic logs",
-      attributes: {
-        subsystem: "diagnostic",
-        runId: "run-1",
-      },
-      trace: {
-        traceId: TRACE_ID,
-        spanId: SPAN_ID,
-      },
+    const [event] = received;
+    if (!event) {
+      throw new Error("missing diagnostic log event");
+    }
+    expect(event.type).toBe("log.record");
+    expect(event.level).toBe("INFO");
+    expect(event.message).toBe("hello diagnostic logs");
+    expect(event.attributes).toStrictEqual({
+      subsystem: "diagnostic",
+      runId: "run-1",
+    });
+    expect(event.trace).toStrictEqual({
+      traceId: TRACE_ID,
+      spanId: SPAN_ID,
     });
   });
 
@@ -127,17 +129,9 @@ describe.skip("diagnostic log events", () => {
     expect(event.attributes?.token).not.toBe(secret);
     expect(String(event.attributes?.token)).toContain("…");
     expect(String(event.attributes?.longValue).length).toBeLessThanOrEqual(2100);
-    expect(event.attributes).toEqual(
-      expect.not.objectContaining({
-        nested: expect.anything(),
-        "bad key": expect.anything(),
-      }),
-    );
-    expect(event).toEqual(
-      expect.not.objectContaining({
-        argsJson: expect.anything(),
-      }),
-    );
+    expect(Object.hasOwn(event.attributes ?? {}, "nested")).toBe(false);
+    expect(Object.hasOwn(event.attributes ?? {}, "bad key")).toBe(false);
+    expect(Object.hasOwn(event, "argsJson")).toBe(false);
   });
 
   it("drops sensitive, blocked, and excess log attribute keys without copying large objects", async () => {

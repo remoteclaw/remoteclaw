@@ -7,6 +7,7 @@
 export const MODULE_ATTESTATIONS = {
   flattenStringOnlyCompletionContent: "live",
   flattenCompletionMessagesToStringContent: "live",
+  stripCompletionMessagesToRoleContent: "live",
 } as const;
 
 export function flattenStringOnlyCompletionContent(content: unknown): unknown {
@@ -42,5 +43,22 @@ export function flattenCompletionMessagesToStringContent(messages: unknown[]): u
       ...message,
       content: flattenedContent,
     };
+  });
+}
+
+export function stripCompletionMessagesToRoleContent(messages: unknown[]): unknown[] {
+  return messages.map((message) => {
+    if (!message || typeof message !== "object" || Array.isArray(message)) {
+      return message;
+    }
+    const record = message as Record<string, unknown>;
+    const stripped: Record<string, unknown> = {};
+    if (Object.prototype.hasOwnProperty.call(record, "role")) {
+      stripped.role = record.role;
+    }
+    if (Object.prototype.hasOwnProperty.call(record, "content")) {
+      stripped.content = record.content;
+    }
+    return stripped;
   });
 }

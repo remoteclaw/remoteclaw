@@ -86,6 +86,6 @@ describe("collectEnabledInsecureOrDangerousFlags", () => {
           },
         }),
       ),
-    ).toEqual([]);
+    ).toStrictEqual([]);
   });
 });

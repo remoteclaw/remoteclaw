@@ -29,6 +29,6 @@ describe("test-helper extension import boundary inventory", () => {
 
     expect(exitCode).toBe(0);
     expect(captured.readStderr()).toBe("");
-    expect(JSON.parse(captured.readStdout())).toEqual([]);
+    expect(JSON.parse(captured.readStdout())).toStrictEqual([]);
   });
 });

@@ -69,13 +69,15 @@ describe("mattermost mention gating", () => {
     const { resolver, decision } = evaluateMentionGateForMessage({ cfg });
     expect(decision.dropReason).toBeNull();
     expect(decision.shouldRequireMention).toBe(false);
-    expect(resolver).toHaveBeenCalledWith(
-      expect.objectContaining({
-        accountId: "default",
-        groupId: "chan-1",
-        requireMentionOverride: false,
-      }),
-    );
+    expect(resolver).toHaveBeenCalledTimes(1);
+    const [resolverCall] = resolver.mock.calls[0] ?? [];
+    expect(resolverCall).toStrictEqual({
+      cfg,
+      channel: "mattermost",
+      accountId: "default",
+      groupId: "chan-1",
+      requireMentionOverride: false,
+    });
   });
 
   it("accepts unmentioned thread replies in onmessage mode", () => {

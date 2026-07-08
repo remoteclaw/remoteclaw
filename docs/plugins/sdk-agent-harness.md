@@ -103,14 +103,11 @@ export default definePluginEntry({
 
 RemoteClaw chooses a harness after provider/model resolution:
 
-1. An existing session's recorded harness id wins, so config/env changes do not
-   hot-switch that transcript to another runtime.
-2. `REMOTECLAW_AGENT_RUNTIME=<id>` forces a registered harness with that id for
-   sessions that are not already pinned.
-3. `REMOTECLAW_AGENT_RUNTIME=pi` forces the built-in PI harness.
-4. `REMOTECLAW_AGENT_RUNTIME=auto` asks registered harnesses if they support the
-   resolved provider/model.
-5. If no registered harness matches, RemoteClaw uses PI unless PI fallback is
+1. Model-scoped runtime policy wins.
+2. Provider-scoped runtime policy comes next.
+3. `auto` asks registered harnesses if they support the resolved
+   provider/model.
+4. If no registered harness matches, RemoteClaw uses PI unless PI fallback is
    disabled.
 
 Forced plugin harness failures surface as run failures. In `auto` mode,
@@ -118,11 +115,10 @@ RemoteClaw may fall back to PI when the selected plugin harness fails before a
 turn has produced side effects. Set `REMOTECLAW_AGENT_HARNESS_FALLBACK=none` or
 `embeddedHarness.fallback: "none"` to make that fallback a hard failure instead.
 
-The selected harness id is persisted with the session id after an embedded run.
-Legacy sessions created before harness pins are treated as PI-pinned once they
-have transcript history. Use a new/reset session when changing between PI and a
-native plugin harness. `/status` shows non-default harness ids such as `codex`
-next to `Fast`; PI stays hidden because it is the default compatibility path.
+Whole-session and whole-agent runtime pins are ignored by selection. That
+includes stale session `agentHarnessId` values, `agents.defaults.agentRuntime`,
+`agents.list[].agentRuntime`, and `REMOTECLAW_AGENT_RUNTIME`. `/status` shows the
+effective runtime selected from the provider/model route.
 If the selected harness is surprising, enable `agents/harness` debug logging and
 inspect the gateway's structured `agent harness selected` record. It includes
 the selected harness id, selection reason, runtime/fallback policy, and, in
@@ -140,8 +136,7 @@ RemoteClaw. The harness then claims that provider in `supports(...)`.
 
 The bundled Codex plugin follows this pattern:
 
-- preferred user model refs: `openai/gpt-5.5` plus
-  `agentRuntime.id: "codex"`
+- preferred user model refs: `openai/gpt-5.5`
 - compatibility refs: legacy `codex/gpt-*` refs remain accepted, but new
   configs should not use them as normal provider/model refs
 - harness id: `codex`
@@ -150,10 +145,9 @@ The bundled Codex plugin follows this pattern:
 - app-server request: RemoteClaw sends the bare model id to Codex and lets the
   harness talk to the native app-server protocol
 
-The Codex plugin is additive. Plain `openai/gpt-*` refs continue to use the
-normal RemoteClaw provider path unless you force the Codex harness with
-`agentRuntime.id: "codex"`. Older `codex/gpt-*` refs still select the
-Codex provider and harness for compatibility.
+The Codex plugin is additive. Plain `openai/gpt-*` agent refs on the official
+OpenAI provider select the Codex harness by default. Older `codex/gpt-*` refs
+still select the Codex provider and harness for compatibility.
 
 For operator setup, model prefix examples, and Codex-only configs, see
 [Codex Harness](/plugins/codex-harness).
@@ -193,9 +187,10 @@ intentional silent replies such as `NO_REPLY` unclassified.
 The bundled `codex` harness is the native Codex mode for embedded RemoteClaw
 agent turns. Enable the bundled `codex` plugin first, and include `codex` in
 `plugins.allow` if your config uses a restrictive allowlist. Native app-server
-configs should use `openai/gpt-*` with `agentRuntime.id: "codex"`.
-Use `openai-codex/*` for Codex OAuth through PI instead. Legacy `codex/*`
-model refs remain compatibility aliases for the native harness.
+configs should use `openai/gpt-*`; OpenAI agent turns select the Codex harness
+by default. Legacy `openai-codex/*` routes should be repaired with
+`remoteclaw doctor --fix`, and legacy `codex/*` model refs remain compatibility
+aliases for the native harness.
 
 When this mode runs, Codex owns the native thread id, resume behavior,
 compaction, and app-server execution. RemoteClaw still owns the chat channel,
@@ -224,12 +219,18 @@ For Codex-only embedded runs:
 
 ```json
 {
+  "models": {
+    "providers": {
+      "openai": {
+        "agentRuntime": {
+          "id": "codex"
+        }
+      }
+    }
+  },
   "agents": {
     "defaults": {
-      "model": "openai/gpt-5.5",
-      "agentRuntime": {
-        "id": "codex"
-      }
+      "model": "openai/gpt-5.5"
     }
   }
 }
@@ -252,7 +253,7 @@ the fallback:
 }
 ```
 
-Per-agent overrides use the same shape:
+Per-agent overrides use the same model-scoped shape:
 
 ```json
 {

@@ -22,13 +22,17 @@ import { formatCliCommand } from "./command-format.js";
 function parseChannel(raw: unknown, channels: PairingChannel[]): PairingChannel {
   const value = normalizeLowercaseStringOrEmpty(normalizeStringifiedOptionalString(raw) ?? "");
   if (!value) {
-    throw new Error("Channel required");
+    throw new Error(
+      `Missing channel. Use ${formatCliCommand("remoteclaw pairing list --channel <channel>")}.`,
+    );
   }
 
   const normalized = normalizeChannelId(value);
   if (normalized) {
     if (!channels.includes(normalized)) {
-      throw new Error(`Channel ${normalized} does not support pairing`);
+      throw new Error(
+        `Channel "${normalized}" does not support pairing. Supported pairing channels: ${channels.join(", ") || "none"}.`,
+      );
     }
     return normalized;
   }
@@ -37,7 +41,9 @@ function parseChannel(raw: unknown, channels: PairingChannel[]): PairingChannel 
   if (/^[a-z][a-z0-9_-]{0,63}$/.test(value)) {
     return value as PairingChannel;
   }
-  throw new Error(`Invalid channel: ${value}`);
+  throw new Error(
+    `Invalid channel "${value}". Use lowercase letters, numbers, "_" or "-", for example "telegram".`,
+  );
 }
 
 async function notifyApproved(channel: PairingChannel, id: string) {
@@ -152,7 +158,9 @@ export function registerPairingCli(program: Command) {
             code: String(resolvedCode),
           });
       if (!approved) {
-        throw new Error(`No pending pairing request found for code: ${String(resolvedCode)}`);
+        throw new Error(
+          `No pending pairing request found for code "${String(resolvedCode)}". Run ${formatCliCommand(`remoteclaw pairing list --channel ${channel}`)} to list pending requests.`,
+        );
       }
 
       defaultRuntime.log(

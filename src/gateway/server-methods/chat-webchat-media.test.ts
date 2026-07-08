@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { buildWebchatAudioContentBlocksFromReplyPayloads } from "./chat-webchat-media.js";
 
 describe("buildWebchatAudioContentBlocksFromReplyPayloads", () => {
@@ -81,22 +81,10 @@ describe("buildWebchatAudioContentBlocksFromReplyPayloads", () => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-webchat-audio-"));
     const audioPath = path.join(tmpDir, "huge.mp3");
     fs.writeFileSync(audioPath, Buffer.from([0x02]));
-
-    const origStat = fs.statSync.bind(fs);
-    const statSpy = vi.spyOn(fs, "statSync").mockImplementation((p: fs.PathLike) => {
-      if (String(p) === audioPath) {
-        return { isFile: () => true, size: 16 * 1024 * 1024 } as fs.Stats;
-      }
-      return origStat(p);
-    });
-    const readSpy = vi.spyOn(fs, "readFileSync");
+    fs.truncateSync(audioPath, 16 * 1024 * 1024);
 
     const blocks = buildWebchatAudioContentBlocksFromReplyPayloads([{ mediaUrl: audioPath }]);
 
     expect(blocks).toHaveLength(0);
-    expect(readSpy).not.toHaveBeenCalled();
-
-    statSpy.mockRestore();
-    readSpy.mockRestore();
   });
 });

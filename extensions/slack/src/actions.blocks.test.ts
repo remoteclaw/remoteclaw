@@ -4,6 +4,20 @@ import { createSlackEditTestClient, installSlackBlockTestMocks } from "./blocks.
 installSlackBlockTestMocks();
 const { editSlackMessage } = await import("./actions.js");
 
+function readFirstChatUpdatePayload(client: ReturnType<typeof createSlackEditTestClient>): {
+  text?: string;
+} {
+  const [call] = client.chat.update.mock.calls;
+  if (!call) {
+    throw new Error("expected Slack chat.update call");
+  }
+  const [payload] = call;
+  if (!payload || typeof payload !== "object") {
+    throw new Error("expected Slack chat.update payload");
+  }
+  return payload as { text?: string };
+}
+
 describe("editSlackMessage blocks", () => {
   it("updates with valid blocks", async () => {
     const client = createSlackEditTestClient();
@@ -14,14 +28,12 @@ describe("editSlackMessage blocks", () => {
       blocks: [{ type: "divider" }],
     });
 
-    expect(client.chat.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        channel: "C123",
-        ts: "171234.567",
-        text: "Shared a Block Kit message",
-        blocks: [{ type: "divider" }],
-      }),
-    );
+    expect(client.chat.update).toHaveBeenCalledWith({
+      channel: "C123",
+      ts: "171234.567",
+      text: "Shared a Block Kit message",
+      blocks: [{ type: "divider" }],
+    });
   });
 
   it("uses image block text as edit fallback", async () => {
@@ -33,11 +45,12 @@ describe("editSlackMessage blocks", () => {
       blocks: [{ type: "image", image_url: "https://example.com/a.png", alt_text: "Chart" }],
     });
 
-    expect(client.chat.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        text: "Chart",
-      }),
-    );
+    expect(client.chat.update).toHaveBeenCalledWith({
+      channel: "C123",
+      ts: "171234.567",
+      text: "Chart",
+      blocks: [{ type: "image", image_url: "https://example.com/a.png", alt_text: "Chart" }],
+    });
   });
 
   it("uses video block title as edit fallback", async () => {
@@ -57,11 +70,20 @@ describe("editSlackMessage blocks", () => {
       ],
     });
 
-    expect(client.chat.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        text: "Walkthrough",
-      }),
-    );
+    expect(client.chat.update).toHaveBeenCalledWith({
+      channel: "C123",
+      ts: "171234.567",
+      text: "Walkthrough",
+      blocks: [
+        {
+          type: "video",
+          title: { type: "plain_text", text: "Walkthrough" },
+          video_url: "https://example.com/demo.mp4",
+          thumbnail_url: "https://example.com/thumb.jpg",
+          alt_text: "demo",
+        },
+      ],
+    });
   });
 
   it("uses generic file fallback text for file blocks", async () => {
@@ -73,11 +95,12 @@ describe("editSlackMessage blocks", () => {
       blocks: [{ type: "file", source: "remote", external_id: "F123" }],
     });
 
-    expect(client.chat.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        text: "Shared a file",
-      }),
-    );
+    expect(client.chat.update).toHaveBeenCalledWith({
+      channel: "C123",
+      ts: "171234.567",
+      text: "Shared a file",
+      blocks: [{ type: "file", source: "remote", external_id: "F123" }],
+    });
   });
 
   it("rejects empty blocks arrays", async () => {

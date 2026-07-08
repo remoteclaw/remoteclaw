@@ -27,7 +27,9 @@ export async function runNonInteractiveOnboarding(
     : {};
   const mode = opts.mode ?? "local";
   if (mode !== "local" && mode !== "remote") {
-    runtime.error(`Invalid --mode "${String(mode)}" (use local|remote).`);
+    runtime.error(
+      `Invalid --mode "${String(mode)}". Use "local" or "remote", or run ${formatCliCommand("remoteclaw onboard")} for interactive setup.`,
+    );
     runtime.exit(1);
     return;
   }

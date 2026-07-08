@@ -150,7 +150,13 @@ const hasDirtySourceTree = (deps) => {
   if (output === null) {
     return null;
   }
-  return parseGitStatusPaths(output).some((repoPath) => isBuildRelevantRunNodePath(repoPath));
+  return parseGitStatusPaths(output).some((repoPath) => {
+    const normalizedPath = normalizePath(repoPath).replace(/^\.\/+/, "");
+    return (
+      isBuildRelevantRunNodePath(normalizedPath) ||
+      isDirtyBundledPluginPackageEntryChangeWithoutBuiltOutputs(normalizedPath, deps)
+    );
+  });
 };
 
 const readBuildStamp = (deps) => {
@@ -218,8 +224,15 @@ export const resolveBuildRequirement = (deps) => {
       return { shouldBuild: true, reason: "dirty_watched_tree" };
     }
     if (dirty === false) {
+      if (hasMissingBuiltBundledPluginRuntimeEntryOutput(deps)) {
+        return { shouldBuild: true, reason: "missing_bundled_plugin_dist_entry" };
+      }
       return { shouldBuild: false, reason: "clean" };
     }
+  }
+
+  if (hasMissingBuiltBundledPluginRuntimeEntryOutput(deps)) {
+    return { shouldBuild: true, reason: "missing_bundled_plugin_dist_entry" };
   }
 
   if (hasSourceMtimeChanged(stamp.mtime, deps)) {
@@ -236,6 +249,7 @@ const BUILD_REASON_LABELS = {
   build_stamp_missing_head: "build stamp missing git head",
   git_head_changed: "git head changed",
   dirty_watched_tree: "dirty watched source tree",
+  missing_bundled_plugin_dist_entry: "bundled plugin dist entry missing",
   source_mtime_newer: "source mtime newer than build stamp",
   clean: "clean",
 };

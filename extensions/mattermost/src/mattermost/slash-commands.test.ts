@@ -41,13 +41,18 @@ describe("slash-commands", () => {
       "token=t1&team_id=team&channel_id=ch1&user_id=u1&command=%2Foc_status&text=now",
       "application/x-www-form-urlencoded",
     );
-    expect(payload).toMatchObject({
+    expect(payload).toEqual({
       token: "t1",
       team_id: "team",
+      team_domain: undefined,
       channel_id: "ch1",
+      channel_name: undefined,
       user_id: "u1",
+      user_name: undefined,
       command: "/oc_status",
       text: "now",
+      trigger_id: undefined,
+      response_url: undefined,
     });
   });
 
@@ -63,10 +68,18 @@ describe("slash-commands", () => {
       }),
       "application/json; charset=utf-8",
     );
-    expect(payload).toMatchObject({
+    expect(payload).toEqual({
       token: "t2",
+      team_id: "team",
+      team_domain: undefined,
+      channel_id: "ch2",
+      channel_name: undefined,
+      user_id: "u2",
+      user_name: undefined,
       command: "/oc_model",
       text: "gpt-5",
+      trigger_id: undefined,
+      response_url: undefined,
     });
   });
 
@@ -130,8 +143,12 @@ describe("slash-commands", () => {
     const result = await registerSingleStatusCommand(request);
 
     expect(result).toHaveLength(1);
-    expect(result[0]?.managed).toBe(false);
-    expect(result[0]?.id).toBe("cmd-1");
+    const firstCommand = result[0];
+    if (!firstCommand) {
+      throw new Error("expected Mattermost slash command result");
+    }
+    expect(firstCommand.managed).toBe(false);
+    expect(firstCommand.id).toBe("cmd-1");
     expect(request).toHaveBeenCalledTimes(1);
   });
 

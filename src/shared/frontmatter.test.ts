@@ -11,11 +11,20 @@ import {
   resolveRemoteClawManifestRequires,
 } from "./frontmatter.js";
 
+function expectInstallBase(
+  parsed: ReturnType<typeof parseRemoteClawManifestInstallBase>,
+): NonNullable<ReturnType<typeof parseRemoteClawManifestInstallBase>> {
+  if (parsed === undefined) {
+    throw new Error("Expected manifest install base");
+  }
+  return parsed;
+}
+
 describe("shared/frontmatter", () => {
   test("normalizeStringList handles strings, arrays, and non-list values", () => {
     expect(normalizeStringList("a, b,,c")).toEqual(["a", "b", "c"]);
     expect(normalizeStringList([" a ", "", "b", 42])).toEqual(["a", "b", "42"]);
-    expect(normalizeStringList(null)).toEqual([]);
+    expect(normalizeStringList(null)).toStrictEqual([]);
   });
 
   test("getFrontmatterString extracts strings only", () => {
@@ -50,7 +59,7 @@ describe("shared/frontmatter", () => {
   });
 
   // RemoteClaw fork is a clean break (src/compat/legacy-names.ts: LEGACY_MANIFEST_KEYS
-  // is empty): legacy clawdbot/openclaw manifest keys are intentionally NOT read.
+  // is empty): legacy clawdbot/remoteclaw manifest keys are intentionally NOT read.
   test("resolveRemoteClawManifestBlock ignores legacy manifest keys (clean break)", () => {
     expect(
       resolveRemoteClawManifestBlock({
@@ -137,7 +146,7 @@ describe("shared/frontmatter", () => {
         id?: string;
         label?: string;
         bins?: string[];
-      }>({ extra: true }, parsed!),
+      }>({ extra: true }, expectInstallBase(parsed)),
     ).toEqual({
       extra: true,
       id: "brew.git",

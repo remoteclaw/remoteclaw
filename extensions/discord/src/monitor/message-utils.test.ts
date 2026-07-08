@@ -47,13 +47,38 @@ const DISCORD_CDN_HOSTNAMES = [
   "*.discordapp.net",
 ];
 
+function requireRecord(value: unknown, label: string): Record<string, unknown> {
+  if (!value || typeof value !== "object") {
+    throw new Error(`expected ${label}`);
+  }
+  return value as Record<string, unknown>;
+}
+
+function requireArray(value: unknown, label: string): Array<unknown> {
+  expect(Array.isArray(value), label).toBe(true);
+  return value as Array<unknown>;
+}
+
+function callArg(mock: unknown, callIndex: number, argIndex: number, label: string) {
+  const calls = (mock as { mock?: { calls?: Array<Array<unknown>> } }).mock?.calls ?? [];
+  const call = calls.at(callIndex);
+  if (!call) {
+    throw new Error(`Expected ${label}`);
+  }
+  return call[argIndex];
+}
+
+function fetchParams(): Record<string, unknown> {
+  return requireRecord(callArg(fetchRemoteMedia, 0, 0, "fetch media params"), "fetch media params");
+}
+
 function expectDiscordCdnSsrFPolicy(policy: unknown) {
-  expect(policy).toEqual(
-    expect.objectContaining({
-      allowRfc2544BenchmarkRange: true,
-      hostnameAllowlist: expect.arrayContaining(DISCORD_CDN_HOSTNAMES),
-    }),
-  );
+  const policyRecord = requireRecord(policy, "ssrf policy");
+  expect(policyRecord.allowRfc2544BenchmarkRange).toBe(true);
+  const hostnameAllowlist = requireArray(policyRecord.hostnameAllowlist, "hostname allowlist");
+  for (const hostname of DISCORD_CDN_HOSTNAMES) {
+    expect(hostnameAllowlist).toContain(hostname);
+  }
 }
 
 function expectSinglePngDownload(params: {
@@ -248,9 +273,7 @@ describe("resolveForwardedMediaList", () => {
       proxyFetch,
     );
 
-    expect(fetchRemoteMedia).toHaveBeenCalledWith(
-      expect.objectContaining({ fetchImpl: proxyFetch }),
-    );
+    expect(fetchParams().fetchImpl).toBe(proxyFetch);
   });
 
   it("keeps forwarded attachment metadata when download fails", async () => {
@@ -310,7 +333,7 @@ describe("resolveForwardedMediaList", () => {
   it("returns empty when no snapshots are present", async () => {
     const result = await resolveForwardedMediaList(asMessage({}), 512);
 
-    expect(result).toEqual([]);
+    expect(result).toStrictEqual([]);
     expect(fetchRemoteMedia).not.toHaveBeenCalled();
   });
 
@@ -356,7 +379,7 @@ describe("resolveForwardedMediaList", () => {
       512,
     );
 
-    expect(result).toEqual([]);
+    expect(result).toStrictEqual([]);
     expect(fetchRemoteMedia).not.toHaveBeenCalled();
   });
 });
@@ -422,9 +445,7 @@ describe("resolveMediaList", () => {
       proxyFetch,
     );
 
-    expect(fetchRemoteMedia).toHaveBeenCalledWith(
-      expect.objectContaining({ fetchImpl: proxyFetch }),
-    );
+    expect(fetchParams().fetchImpl).toBe(proxyFetch);
   });
 
   it("keeps attachment metadata when download fails", async () => {
@@ -462,7 +483,7 @@ describe("resolveMediaList", () => {
 
     expect(fetchRemoteMedia).not.toHaveBeenCalled();
     expect(saveMediaBuffer).not.toHaveBeenCalled();
-    expect(result).toEqual([]);
+    expect(result).toStrictEqual([]);
   });
 
   it("classifies audio attachments by filename when content type is missing", async () => {
@@ -641,8 +662,7 @@ describe("Discord media SSRF policy", () => {
       1024,
     );
 
-    const policy = fetchRemoteMedia.mock.calls[0]?.[0]?.ssrfPolicy;
-    expectDiscordCdnSsrFPolicy(policy);
+    expectDiscordCdnSsrFPolicy(fetchParams().ssrfPolicy);
   });
 
   it("merges provided ssrfPolicy with Discord CDN defaults", async () => {
@@ -668,15 +688,17 @@ describe("Discord media SSRF policy", () => {
       },
     );
 
-    const policy = fetchRemoteMedia.mock.calls[0]?.[0]?.ssrfPolicy;
-    expect(policy).toEqual(
-      expect.objectContaining({
-        allowPrivateNetwork: true,
-        allowRfc2544BenchmarkRange: true,
-        allowedHostnames: expect.arrayContaining(["assets.example.com"]),
-        hostnameAllowlist: expect.arrayContaining(["assets.example.com", ...DISCORD_CDN_HOSTNAMES]),
-      }),
+    const policy = requireRecord(fetchParams().ssrfPolicy, "ssrf policy");
+    expect(policy.allowPrivateNetwork).toBe(true);
+    expect(policy.allowRfc2544BenchmarkRange).toBe(true);
+    expect(requireArray(policy.allowedHostnames, "allowed hostnames")).toContain(
+      "assets.example.com",
     );
+    const hostnameAllowlist = requireArray(policy.hostnameAllowlist, "hostname allowlist");
+    expect(hostnameAllowlist).toContain("assets.example.com");
+    for (const hostname of DISCORD_CDN_HOSTNAMES) {
+      expect(hostnameAllowlist).toContain(hostname);
+    }
   });
 });
 

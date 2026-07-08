@@ -156,10 +156,9 @@ describe("telegram inbound media", () => {
     });
 
     expect(runtimeError).not.toHaveBeenCalled();
-    expect(proxyFetch).toHaveBeenCalledWith(
-      "https://api.telegram.org/file/bottok/photos/2.jpg",
-      expect.objectContaining({ redirect: "manual" }),
-    );
+    const proxyCall = proxyFetch.mock.calls.at(-1);
+    expect(proxyCall?.[0]).toBe("https://api.telegram.org/file/bottok/photos/2.jpg");
+    expect((proxyCall?.[1] as RequestInit | undefined)?.redirect).toBe("manual");
 
     globalFetchSpy.mockRestore();
   });

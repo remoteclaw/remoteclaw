@@ -1,4 +1,4 @@
-import { normalizeOptionalLowercaseString } from "remoteclaw/plugin-sdk/text-runtime";
+import { normalizeOptionalLowercaseString } from "remoteclaw/plugin-sdk/string-coerce-runtime";
 import type { SlackMessageEvent } from "../types.js";
 
 type SlackChatType = "direct" | "group" | "channel";

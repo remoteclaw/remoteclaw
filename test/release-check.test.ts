@@ -14,7 +14,7 @@ describe("collectAppcastSparkleVersionErrors", () => {
   it("accepts legacy 9-digit calver builds before lane-floor cutover", () => {
     const xml = `<rss><channel>${makeItem("2026.2.26", "202602260")}</channel></rss>`;
 
-    expect(collectAppcastSparkleVersionErrors(xml)).toEqual([]);
+    expect(collectAppcastSparkleVersionErrors(xml)).toStrictEqual([]);
   });
 
   it("requires lane-floor builds on and after lane-floor cutover", () => {
@@ -28,7 +28,7 @@ describe("collectAppcastSparkleVersionErrors", () => {
   it("accepts canonical stable lane builds on and after lane-floor cutover", () => {
     const xml = `<rss><channel>${makeItem("2026.3.1", "2026030190")}</channel></rss>`;
 
-    expect(collectAppcastSparkleVersionErrors(xml)).toEqual([]);
+    expect(collectAppcastSparkleVersionErrors(xml)).toStrictEqual([]);
   });
 });
 

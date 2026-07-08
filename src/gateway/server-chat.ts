@@ -205,6 +205,13 @@ export type ChatRunState = {
   deltaSentAt: Map<string, number>;
   /** Length of text at the time of the last broadcast, used to avoid duplicate flushes. */
   deltaLastBroadcastLen: Map<string, number>;
+  /**
+   * Structural-compat field for the shared gateway maintenance sweep. The fork's
+   * delta broadcaster is length-based (deltaLastBroadcastLen); it never populates
+   * this map, so it stays empty and the maintenance sweep's delete() is a no-op on
+   * it. Kept so ChatRunState satisfies the maintenance-timer parameter contract.
+   */
+  deltaLastBroadcastText: Map<string, string>;
   abortedRuns: Map<string, number>;
   clear: () => void;
 };
@@ -214,6 +221,7 @@ export function createChatRunState(): ChatRunState {
   const buffers = new Map<string, string>();
   const deltaSentAt = new Map<string, number>();
   const deltaLastBroadcastLen = new Map<string, number>();
+  const deltaLastBroadcastText = new Map<string, string>();
   const abortedRuns = new Map<string, number>();
 
   const clear = () => {
@@ -221,6 +229,7 @@ export function createChatRunState(): ChatRunState {
     buffers.clear();
     deltaSentAt.clear();
     deltaLastBroadcastLen.clear();
+    deltaLastBroadcastText.clear();
     abortedRuns.clear();
   };
 
@@ -229,6 +238,7 @@ export function createChatRunState(): ChatRunState {
     buffers,
     deltaSentAt,
     deltaLastBroadcastLen,
+    deltaLastBroadcastText,
     abortedRuns,
     clear,
   };

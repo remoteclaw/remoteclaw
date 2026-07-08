@@ -34,6 +34,7 @@
     "CHANGELOG.md",
     "LICENSE",
     "remoteclaw.mjs",
+    "pnpm-workspace.yaml",
     "README.md",
     "assets/",
     "dist/",
@@ -472,6 +473,6 @@
       "sharp"
     ]
   },
-  "upstreamRepo": "openclaw/openclaw",
+  "upstreamRepo": "remoteclaw/remoteclaw",
   "upstreamVersion": "2026.5.7"
 }

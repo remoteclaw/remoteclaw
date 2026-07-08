@@ -67,6 +67,7 @@ const CronFailoverReasonSchema = Type.Union([
   Type.Literal("format"),
   Type.Literal("rate_limit"),
   Type.Literal("billing"),
+  Type.Literal("server_error"),
   Type.Literal("timeout"),
   Type.Literal("model_not_found"),
   Type.Literal("empty_response"),
@@ -343,11 +344,14 @@ export const CronListParamsSchema = Type.Object(
     enabled: Type.Optional(CronJobsEnabledFilterSchema),
     sortBy: Type.Optional(CronJobsSortBySchema),
     sortDir: Type.Optional(CronSortDirSchema),
+    agentId: Type.Optional(NonEmptyString),
   },
   { additionalProperties: false },
 );
 
 export const CronStatusParamsSchema = Type.Object({}, { additionalProperties: false });
+
+export const CronGetParamsSchema = cronIdOrJobIdParams({});
 
 export const CronAddParamsSchema = Type.Object(
   {

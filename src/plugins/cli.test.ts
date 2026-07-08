@@ -18,6 +18,7 @@ vi.mock("./loader.js", () => ({
       {
         pluginId: "other",
         register: mocks.otherRegister,
+        parentPath: [],
         commands: ["other"],
         source: "bundled",
       },

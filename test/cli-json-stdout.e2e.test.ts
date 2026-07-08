@@ -23,7 +23,7 @@ describe("cli json stdout contract", () => {
         delete env.REMOTECLAW_CONFIG_PATH;
         delete env.VITEST;
 
-        const entry = path.resolve(process.cwd(), "remoteclaw.mjs");
+        const entry = path.resolve(process.cwd(), "src/entry.ts");
         const result = spawnSync(
           process.execPath,
           [entry, "update", "status", "--json", "--timeout", "1"],
@@ -37,7 +37,15 @@ describe("cli json stdout contract", () => {
         expect(result.status).toBe(0);
         const stdout = result.stdout.trim();
         expect(stdout.length).toBeGreaterThan(0);
-        expect(() => JSON.parse(stdout)).not.toThrow();
+        const parsed = JSON.parse(stdout) as unknown;
+        if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+          throw new Error(`Expected JSON object stdout, got: ${stdout}`);
+        }
+        expect(Object.keys(parsed).toSorted((a, b) => a.localeCompare(b))).toEqual([
+          "availability",
+          "channel",
+          "update",
+        ]);
         expect(stdout).not.toContain("Doctor warnings");
         expect(stdout).not.toContain("Doctor changes");
         expect(stdout).not.toContain("Config invalid");

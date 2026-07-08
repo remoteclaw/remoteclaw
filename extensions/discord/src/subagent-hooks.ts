@@ -2,7 +2,7 @@ import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk/channel-plugin-c
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalStringifiedId,
-} from "remoteclaw/plugin-sdk/text-runtime";
+} from "remoteclaw/plugin-sdk/string-coerce-runtime";
 import { resolveDiscordAccount } from "./accounts.js";
 import {
   autoBindSpawnedDiscordSubagent,

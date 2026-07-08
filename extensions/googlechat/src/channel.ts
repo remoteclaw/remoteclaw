@@ -126,6 +126,7 @@ const googlechatActions: ChannelMessageActionAdapter = {
   listActions: (ctx) => googlechatMessageActions.listActions?.(ctx) ?? [],
   extractToolSend: (ctx) => googlechatMessageActions.extractToolSend?.(ctx) ?? null,
   handleAction: async (ctx) => {
+    const { googlechatMessageActions } = await import("./actions.js");
     if (!googlechatMessageActions.handleAction) {
       throw new Error("Google Chat actions are not available.");
     }

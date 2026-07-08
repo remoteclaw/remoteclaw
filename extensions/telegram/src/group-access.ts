@@ -175,29 +175,24 @@ export const evaluateTelegramGroupPolicyAccess = (params: {
   }
   if (groupPolicy === "allowlist" && params.enforceAllowlistAuthorization) {
     const senderId = params.senderId ?? "";
-    const senderAuthorization = evaluateMatchedGroupAccessForPolicy({
-      groupPolicy,
-      requireMatchInput: params.requireSenderForAllowlistAuthorization,
-      hasMatchInput: Boolean(senderId),
-      allowlistConfigured:
-        chatExplicitlyAllowed ||
-        params.allowEmptyAllowlistEntries ||
-        params.effectiveGroupAllow.hasEntries,
-      allowlistMatched:
-        (chatExplicitlyAllowed && !params.effectiveGroupAllow.hasEntries) ||
-        isSenderAllowed({
-          allow: params.effectiveGroupAllow,
-          senderId,
-          senderUsername: params.senderUsername ?? "",
-        }),
-    });
-    if (!senderAuthorization.allowed && senderAuthorization.reason === "missing_match_input") {
+    const allowlistConfigured =
+      chatExplicitlyAllowed ||
+      params.allowEmptyAllowlistEntries ||
+      params.effectiveGroupAllow.hasEntries;
+    const allowlistMatched =
+      (chatExplicitlyAllowed && !params.effectiveGroupAllow.hasEntries) ||
+      isSenderAllowed({
+        allow: params.effectiveGroupAllow,
+        senderId,
+        senderUsername: params.senderUsername ?? "",
+      });
+    if (params.requireSenderForAllowlistAuthorization && !senderId) {
       return { allowed: false, reason: "group-policy-allowlist-no-sender", groupPolicy };
     }
-    if (!senderAuthorization.allowed && senderAuthorization.reason === "empty_allowlist") {
+    if (!allowlistConfigured) {
       return { allowed: false, reason: "group-policy-allowlist-empty", groupPolicy };
     }
-    if (!senderAuthorization.allowed && senderAuthorization.reason === "not_allowlisted") {
+    if (!allowlistMatched) {
       return { allowed: false, reason: "group-policy-allowlist-unauthorized", groupPolicy };
     }
   }

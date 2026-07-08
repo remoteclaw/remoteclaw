@@ -3,6 +3,16 @@ import { createMetrics, type MetricName } from "./metrics.js";
 import { validatePrivateKey, isValidPubkey, normalizePubkey } from "./nostr-bus.js";
 import { createSeenTracker } from "./seen-tracker.js";
 
+function expectThrowsError(run: () => unknown): void {
+  let error: unknown;
+  try {
+    run();
+  } catch (caught) {
+    error = caught;
+  }
+  expect(error).toBeInstanceOf(Error);
+}
+
 // ============================================================================
 // Fuzz Tests for validatePrivateKey
 // ============================================================================
@@ -99,18 +109,18 @@ describe("validatePrivateKey fuzz", () => {
   describe("edge cases", () => {
     it("rejects very long string", () => {
       const veryLong = "a".repeat(10000);
-      expect(() => validatePrivateKey(veryLong)).toThrow();
+      expectThrowsError(() => validatePrivateKey(veryLong));
     });
 
     it("rejects string of spaces matching length", () => {
       const spaces = " ".repeat(64);
-      expect(() => validatePrivateKey(spaces)).toThrow();
+      expectThrowsError(() => validatePrivateKey(spaces));
     });
 
     it("rejects hex with spaces between characters", () => {
       const withSpaces =
         "01 23 45 67 89 ab cd ef 01 23 45 67 89 ab cd ef 01 23 45 67 89 ab cd ef 01 23 45 67 89 ab cd ef";
-      expect(() => validatePrivateKey(withSpaces)).toThrow();
+      expectThrowsError(() => validatePrivateKey(withSpaces));
     });
   });
 
@@ -118,15 +128,15 @@ describe("validatePrivateKey fuzz", () => {
     it("rejects nsec with invalid bech32 characters", () => {
       // 'b', 'i', 'o' are not valid bech32 characters
       const invalidBech32 = "nsec1qypqxpq9qtpqscx7peytbfwtdjmcv0mrz5rjpej8vjppfkqfqy8skqfv3l";
-      expect(() => validatePrivateKey(invalidBech32)).toThrow();
+      expectThrowsError(() => validatePrivateKey(invalidBech32));
     });
 
     it("rejects nsec with wrong prefix", () => {
-      expect(() => validatePrivateKey("nsec0aaaa")).toThrow();
+      expectThrowsError(() => validatePrivateKey("nsec0aaaa"));
     });
 
     it("rejects partial nsec", () => {
-      expect(() => validatePrivateKey("nsec1")).toThrow();
+      expectThrowsError(() => validatePrivateKey("nsec1"));
     });
   });
 });
@@ -219,7 +229,7 @@ describe("SeenTracker fuzz", () => {
     it("handles very long IDs", () => {
       const tracker = createSeenTracker({ maxEntries: 100 });
       const longId = "a".repeat(100000);
-      expect(() => tracker.add(longId)).not.toThrow();
+      expect(tracker.add(longId)).toBeUndefined();
       expect(tracker.peek(longId)).toBe(true);
       tracker.stop();
     });
@@ -227,7 +237,7 @@ describe("SeenTracker fuzz", () => {
     it("handles unicode IDs", () => {
       const tracker = createSeenTracker({ maxEntries: 100 });
       const unicodeId = "事件ID_🎉_тест";
-      expect(() => tracker.add(unicodeId)).not.toThrow();
+      expect(tracker.add(unicodeId)).toBeUndefined();
       expect(tracker.peek(unicodeId)).toBe(true);
       tracker.stop();
     });
@@ -235,7 +245,7 @@ describe("SeenTracker fuzz", () => {
     it("handles IDs with null bytes", () => {
       const tracker = createSeenTracker({ maxEntries: 100 });
       const idWithNull = "event\x00id";
-      expect(() => tracker.add(idWithNull)).not.toThrow();
+      expect(tracker.add(idWithNull)).toBeUndefined();
       expect(tracker.peek(idWithNull)).toBe(true);
       tracker.stop();
     });
@@ -244,10 +254,10 @@ describe("SeenTracker fuzz", () => {
       const tracker = createSeenTracker({ maxEntries: 100 });
 
       // These should not affect the tracker's internal operation
-      expect(() => tracker.add("__proto__")).not.toThrow();
-      expect(() => tracker.add("constructor")).not.toThrow();
-      expect(() => tracker.add("toString")).not.toThrow();
-      expect(() => tracker.add("hasOwnProperty")).not.toThrow();
+      expect(tracker.add("__proto__")).toBeUndefined();
+      expect(tracker.add("constructor")).toBeUndefined();
+      expect(tracker.add("toString")).toBeUndefined();
+      expect(tracker.add("hasOwnProperty")).toBeUndefined();
 
       expect(tracker.peek("__proto__")).toBe(true);
       expect(tracker.peek("constructor")).toBe(true);
@@ -289,7 +299,7 @@ describe("SeenTracker fuzz", () => {
         }
       }
 
-      expect(() => tracker.size()).not.toThrow();
+      expect(tracker.size()).toBeGreaterThan(0);
       tracker.stop();
     });
   });
@@ -329,9 +339,7 @@ describe("Metrics fuzz", () => {
       const metrics = createMetrics();
 
       // Cast to bypass type checking - testing runtime behavior
-      expect(() => {
-        metrics.emit("invalid.metric.name" as MetricName);
-      }).not.toThrow();
+      expect(metrics.emit("invalid.metric.name" as MetricName)).toBeUndefined();
     });
   });
 
@@ -353,12 +361,26 @@ describe("Metrics fuzz", () => {
     it("handles very long relay URL", () => {
       const metrics = createMetrics();
       const longUrl = "wss://" + "a".repeat(10000) + ".com";
-      expect(() => {
-        metrics.emit("relay.connect", 1, { relay: longUrl });
-      }).not.toThrow();
+      expect(metrics.emit("relay.connect", 1, { relay: longUrl })).toBeUndefined();
 
       const snapshot = metrics.getSnapshot();
-      expect(snapshot.relays[longUrl]).toBeDefined();
+      expect(snapshot.relays[longUrl]).toEqual({
+        connects: 1,
+        disconnects: 0,
+        reconnects: 0,
+        errors: 0,
+        messagesReceived: {
+          event: 0,
+          eose: 0,
+          closed: 0,
+          notice: 0,
+          ok: 0,
+          auth: 0,
+        },
+        circuitBreakerState: "closed",
+        circuitBreakerOpens: 0,
+        circuitBreakerCloses: 0,
+      });
     });
   });
 

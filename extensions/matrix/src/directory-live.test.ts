@@ -58,7 +58,7 @@ describe("matrix directory live", () => {
       query: "   ",
     });
 
-    expect(result).toEqual([]);
+    expect(result).toStrictEqual([]);
     expect(resolveMatrixAuth).not.toHaveBeenCalled();
   });
 
@@ -68,7 +68,7 @@ describe("matrix directory live", () => {
       query: "",
     });
 
-    expect(result).toEqual([]);
+    expect(result).toStrictEqual([]);
     expect(resolveMatrixAuth).not.toHaveBeenCalled();
   });
 

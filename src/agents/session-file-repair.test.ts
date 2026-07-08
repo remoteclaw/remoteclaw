@@ -30,6 +30,13 @@ async function createTempSessionPath() {
   return { dir, file: path.join(dir, "session.jsonl") };
 }
 
+function requireBackupPath(result: { backupPath?: string }): string {
+  if (!result.backupPath) {
+    throw new Error("expected session repair backup path");
+  }
+  return result.backupPath;
+}
+
 afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map((dir) => fs.rm(dir, { recursive: true, force: true })));
 });
@@ -45,15 +52,17 @@ describe("repairSessionFileIfNeeded", () => {
     const result = await repairSessionFileIfNeeded({ sessionFile: file });
     expect(result.repaired).toBe(true);
     expect(result.droppedLines).toBe(1);
-    expect(result.backupPath).toBeTruthy();
+    const backupPath = requireBackupPath(result);
 
     const repaired = await fs.readFile(file, "utf-8");
-    expect(repaired.trim().split("\n")).toHaveLength(2);
+    const repairedLines = repaired
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    expect(repairedLines).toEqual([header, message]);
 
-    if (result.backupPath) {
-      const backup = await fs.readFile(result.backupPath, "utf-8");
-      expect(backup).toBe(content);
-    }
+    const backup = await fs.readFile(backupPath, "utf-8");
+    expect(backup).toBe(content);
   });
 
   it("does not drop CRLF-terminated JSONL lines", async () => {
@@ -84,7 +93,7 @@ describe("repairSessionFileIfNeeded", () => {
     expect(result.repaired).toBe(false);
     expect(result.reason).toBe("invalid session header");
     expect(warn).toHaveBeenCalledTimes(1);
-    expect(warn.mock.calls[0]?.[0]).toContain("invalid session header");
+    expect(warn.mock.calls.at(0)?.[0]).toContain("invalid session header");
   });
 
   it("returns a detailed reason when read errors are not ENOENT", async () => {

@@ -533,15 +533,14 @@ export function isDiscordGroupAllowedByPolicy(params: {
   if (params.groupPolicy === "allowlist" && !params.guildAllowlisted) {
     return false;
   }
-
-  return evaluateGroupRouteAccessForPolicy({
-    groupPolicy:
-      params.groupPolicy === "allowlist" && !params.channelAllowlistConfigured
-        ? "open"
-        : params.groupPolicy,
-    routeAllowlistConfigured: params.channelAllowlistConfigured,
-    routeMatched: params.channelAllowed,
-  }).allowed;
+  if (params.groupPolicy === "disabled") {
+    return false;
+  }
+  return (
+    params.groupPolicy !== "allowlist" ||
+    !params.channelAllowlistConfigured ||
+    params.channelAllowed
+  );
 }
 
 export function resolveGroupDmAllow(params: {

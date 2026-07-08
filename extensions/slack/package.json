@@ -3,6 +3,10 @@
   "version": "0.8.0",
   "private": true,
   "description": "RemoteClaw Slack channel plugin",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/remoteclaw/remoteclaw"
+  },
   "type": "module",
   "remoteclaw": {
     "extensions": [

@@ -232,11 +232,11 @@ describe("web auto-reply util", () => {
   describe("isLikelyWhatsAppCryptoError", () => {
     it("matches known Baileys crypto auth errors (Error)", () => {
       const err = new Error("bad mac");
-      err.stack = "at something\nat @whiskeysockets/baileys/noise-handler\n";
+      err.stack = "at something\nat baileys/noise-handler\n";
       expect(isLikelyWhatsAppCryptoError(err)).toBe(true);
     });
 
-    it("does not throw on circular objects", () => {
+    it("returns false for circular objects", () => {
       const circular: Record<string, unknown> = {};
       circular.self = circular;
       expect(isLikelyWhatsAppCryptoError(circular)).toBe(false);

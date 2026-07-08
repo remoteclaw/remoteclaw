@@ -84,7 +84,7 @@ describe("bot-native-command-menu", () => {
     });
 
     expect(result.commands).toEqual([{ command: "agent_run", description: "Run agent" }]);
-    expect(result.issues).toEqual([]);
+    expect(result.issues).toStrictEqual([]);
   });
 
   it("ignores malformed plugin specs without crashing", () => {
@@ -177,16 +177,23 @@ describe("bot-native-command-menu", () => {
     expect(hashCommandList(a)).not.toBe(hashCommandList(b));
   });
 
+  it("produces different hashes for delimiter-like command lists", () => {
+    const a = [{ command: "a", description: "b\0c\0d" }];
+    const b = [
+      { command: "a", description: "b" },
+      { command: "c", description: "d" },
+    ];
+    expect(hashCommandList(a)).not.toBe(hashCommandList(b));
+  });
+
   it("skips sync when command hash is unchanged (#32017)", async () => {
     const deleteMyCommands = vi.fn(async () => undefined);
     const setMyCommands = vi.fn(async () => undefined);
     const runtimeLog = vi.fn();
 
-    // Use a unique accountId so cached hashes from other tests don't interfere.
     const accountId = `test-skip-${Date.now()}`;
     const commands = [{ command: "skip_test", description: "Skip test command" }];
 
-    // First sync — no cached hash, should call setMyCommands.
     syncMenuCommandsWithMocks({
       deleteMyCommands,
       setMyCommands,
@@ -200,7 +207,6 @@ describe("bot-native-command-menu", () => {
       expect(setMyCommands).toHaveBeenCalledTimes(2);
     });
 
-    // Second sync with the same commands — hash is cached, should skip.
     syncMenuCommandsWithMocks({
       deleteMyCommands,
       setMyCommands,
@@ -210,7 +216,6 @@ describe("bot-native-command-menu", () => {
       botIdentity: "bot-a",
     });
 
-    // setMyCommands should NOT have been called again for either scope.
     expect(setMyCommands).toHaveBeenCalledTimes(2);
   });
 

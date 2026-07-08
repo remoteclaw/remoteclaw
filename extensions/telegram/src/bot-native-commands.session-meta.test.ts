@@ -178,8 +178,10 @@ function registerAndResolveCommandHandlerBase(params: {
   });
 
   const handler = commandHandlers.get(commandName);
-  expect(handler).toBeTruthy();
-  return { handler: handler as TelegramCommandHandler, sendMessage };
+  if (!handler) {
+    throw new Error(`expected ${commandName} command handler to be registered`);
+  }
+  return { handler, sendMessage };
 }
 
 function registerAndResolveCommandHandler(params: {
@@ -235,6 +237,62 @@ function createConfiguredAcpTopicBinding(boundSessionKey: string) {
       boundAt: 0,
     },
   } satisfies import("../../../src/acp/persistent-bindings.js").ResolvedConfiguredAcpBinding;
+}
+
+function requireValue<T>(value: T | null | undefined, label: string): T {
+  if (value == null) {
+    throw new Error(`expected ${label}`);
+  }
+  return value;
+}
+
+function requireRecord(value: unknown, label: string): Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error(`expected ${label} to be an object`);
+  }
+  return value as Record<string, unknown>;
+}
+
+function expectRecordFields(
+  value: unknown,
+  expected: Record<string, unknown>,
+  label: string,
+): Record<string, unknown> {
+  const record = requireRecord(value, label);
+  for (const [key, expectedValue] of Object.entries(expected)) {
+    expect(record[key], `${label}.${key}`).toEqual(expectedValue);
+  }
+  return record;
+}
+
+function expectSendMessageCall(params: {
+  sendMessage: ReturnType<typeof vi.fn>;
+  callIndex?: number;
+  chatId: unknown;
+  text?: string;
+  textIncludes?: string;
+  optionFields?: Record<string, unknown>;
+  requireReplyMarkup?: boolean;
+  label: string;
+}): Record<string, unknown> {
+  const call = requireValue(
+    params.sendMessage.mock.calls[params.callIndex ?? 0],
+    `${params.label} sendMessage call`,
+  );
+  expect(call[0]).toBe(params.chatId);
+  if (params.text !== undefined) {
+    expect(call[1]).toBe(params.text);
+  }
+  if (params.textIncludes !== undefined) {
+    expect(String(call[1])).toContain(params.textIncludes);
+  }
+  const options = params.optionFields
+    ? expectRecordFields(call[2], params.optionFields, `${params.label} sendMessage options`)
+    : requireRecord(call[2], `${params.label} sendMessage options`);
+  if (params.requireReplyMarkup) {
+    requireRecord(options.reply_markup, `${params.label} reply markup`);
+  }
+  return options;
 }
 
 function expectUnauthorizedNewCommandBlocked(sendMessage: ReturnType<typeof vi.fn>) {
@@ -403,11 +461,13 @@ describe("registerTelegramNativeCommands — session metadata", () => {
     await handler(buildStatusTopicCommandContext());
 
     expect(replyMocks.dispatchReplyWithBufferedBlockDispatcher).not.toHaveBeenCalled();
-    expect(sendMessage).toHaveBeenCalledWith(
-      -1001234567890,
-      "Configured ACP binding is unavailable right now. Please try again.",
-      expect.objectContaining({ message_thread_id: 42 }),
-    );
+    expectSendMessageCall({
+      sendMessage,
+      chatId: -1001234567890,
+      text: "Configured ACP binding is unavailable right now. Please try again.",
+      optionFields: { message_thread_id: 42 },
+      label: "unavailable ACP binding",
+    });
   });
 
   it("keeps /new blocked in ACP-bound Telegram topics when sender is unauthorized", async () => {

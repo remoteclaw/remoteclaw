@@ -42,10 +42,10 @@ const createIMessageAliasPlugin = () => ({
 describe("gateway hooks helpers", () => {
   const resolveHooksConfigOrThrow = (cfg: RemoteClawConfig) => {
     const resolved = resolveHooksConfig(cfg);
-    expect(resolved).not.toBeNull();
     if (!resolved) {
       throw new Error("hooks config missing");
     }
+    expect(resolved.token).toBe(cfg.hooks?.token);
     return resolved;
   };
 
@@ -189,11 +189,7 @@ describe("gateway hooks helpers", () => {
         list: [{ id: "main", default: true }, { id: "hooks" }],
       },
     } as RemoteClawConfig;
-    const resolved = resolveHooksConfig(cfg);
-    expect(resolved).not.toBeNull();
-    if (!resolved) {
-      return;
-    }
+    const resolved = resolveHooksConfigOrThrow(cfg);
     expect(resolveHookTargetAgentId(resolved, "hooks")).toBe("hooks");
     expect(resolveHookTargetAgentId(resolved, "missing-agent")).toBe("main");
     expect(resolveHookTargetAgentId(resolved, undefined)).toBeUndefined();
@@ -224,11 +220,7 @@ describe("gateway hooks helpers", () => {
     const cfg = {
       hooks: { enabled: true, token: "secret" },
     } as RemoteClawConfig;
-    const resolved = resolveHooksConfig(cfg);
-    expect(resolved).not.toBeNull();
-    if (!resolved) {
-      return;
-    }
+    const resolved = resolveHooksConfigOrThrow(cfg);
     const denied = resolveHookSessionKey({
       hooksConfig: resolved,
       source: "request",
@@ -241,11 +233,7 @@ describe("gateway hooks helpers", () => {
     const cfg = {
       hooks: { enabled: true, token: "secret", allowRequestSessionKey: true },
     } as RemoteClawConfig;
-    const resolved = resolveHooksConfig(cfg);
-    expect(resolved).not.toBeNull();
-    if (!resolved) {
-      return;
-    }
+    const resolved = resolveHooksConfigOrThrow(cfg);
     const allowed = resolveHookSessionKey({
       hooksConfig: resolved,
       source: "request",
@@ -263,11 +251,7 @@ describe("gateway hooks helpers", () => {
         allowedSessionKeyPrefixes: ["hook:"],
       },
     } as RemoteClawConfig;
-    const resolved = resolveHooksConfig(cfg);
-    expect(resolved).not.toBeNull();
-    if (!resolved) {
-      return;
-    }
+    const resolved = resolveHooksConfigOrThrow(cfg);
 
     const blocked = resolveHookSessionKey({
       hooksConfig: resolved,
@@ -292,11 +276,7 @@ describe("gateway hooks helpers", () => {
         defaultSessionKey: "hook:ingress",
       },
     } as RemoteClawConfig;
-    const resolved = resolveHooksConfig(cfg);
-    expect(resolved).not.toBeNull();
-    if (!resolved) {
-      return;
-    }
+    const resolved = resolveHooksConfigOrThrow(cfg);
 
     const resolvedKey = resolveHookSessionKey({
       hooksConfig: resolved,

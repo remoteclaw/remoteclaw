@@ -65,8 +65,8 @@ describe("config schema", () => {
     heartbeatChannelInput = {
       channels: [
         {
-          id: "bluebubbles",
-          label: "BlueBubbles",
+          id: "imessage",
+          label: "iMessage",
           configSchema: { type: "object" },
         },
       ],
@@ -133,7 +133,7 @@ describe("config schema", () => {
     const pluginConfig = pluginEntry?.properties as Record<string, unknown> | undefined;
     const pluginConfigSchema = pluginConfig?.config as Record<string, unknown> | undefined;
     const pluginConfigProps = pluginConfigSchema?.properties as Record<string, unknown> | undefined;
-    expect(pluginConfigProps?.provider).toBeTruthy();
+    expect(pluginConfigProps).toHaveProperty("provider");
 
     const channelsNode = schema.properties?.channels as Record<string, unknown> | undefined;
     const channelsProps = channelsNode?.properties as Record<string, unknown> | undefined;
@@ -165,11 +165,9 @@ describe("config schema", () => {
     const serialized = JSON.stringify(res);
     expect(serialized).not.toContain("oversized-marker");
     const lookup = lookupConfigSchema(res, "plugins.entries.huge.config");
-    expect(lookup?.schema).toMatchObject({
-      type: "object",
-      additionalProperties: true,
-      description: expect.stringContaining("omitted"),
-    });
+    expect(lookup?.schema?.type).toBe("object");
+    expect(lookup?.schema?.additionalProperties).toBe(true);
+    expect(lookup?.schema?.description).toContain("omitted");
   });
 
   it("omits later plugin schemas after the aggregate extension schema budget is exhausted", () => {
@@ -191,12 +189,10 @@ describe("config schema", () => {
 
     const first = lookupConfigSchema(res, "plugins.entries.plugin-0.config.value");
     const last = lookupConfigSchema(res, "plugins.entries.plugin-39.config");
-    expect(first?.schema).toMatchObject({ type: "string" });
-    expect(last?.schema).toMatchObject({
-      type: "object",
-      additionalProperties: true,
-      description: expect.stringContaining("omitted"),
-    });
+    expect(first?.schema?.type).toBe("string");
+    expect(last?.schema?.type).toBe("object");
+    expect(last?.schema?.additionalProperties).toBe(true);
+    expect(last?.schema?.description).toContain("omitted");
   });
 
   it("looks up plugin config paths for slash-delimited plugin ids", () => {
@@ -218,11 +214,10 @@ describe("config schema", () => {
     const lookup = lookupConfigSchema(res, "plugins.entries.pack/one.config");
     expect(lookup?.path).toBe("plugins.entries.pack/one.config");
     expect(lookup?.hintPath).toBe("plugins.entries.pack/one.config");
-    expect(lookup?.children.find((child) => child.key === "provider")).toMatchObject({
-      key: "provider",
-      path: "plugins.entries.pack/one.config.provider",
-      type: "string",
-    });
+    const providerChild = lookup?.children.find((child) => child.key === "provider");
+    expect(providerChild?.key).toBe("provider");
+    expect(providerChild?.path).toBe("plugins.entries.pack/one.config.provider");
+    expect(providerChild?.type).toBe("string");
   });
 
   it("adds heartbeat target hints with dynamic channels", () => {
@@ -230,9 +225,9 @@ describe("config schema", () => {
 
     const defaultsHint = res.uiHints["agents.defaults.heartbeat.target"];
     const listHint = res.uiHints["agents.list.*.heartbeat.target"];
-    expect(defaultsHint?.help).toContain("bluebubbles");
+    expect(defaultsHint?.help).toContain("imessage");
     expect(defaultsHint?.help).toContain("last");
-    expect(listHint?.help).toContain("bluebubbles");
+    expect(listHint?.help).toContain("imessage");
   });
 
   it("caches merged schemas for identical plugin/channel metadata", () => {
@@ -289,7 +284,7 @@ describe("config schema", () => {
     const lookup = lookupConfigSchema(baseSchema, "gateway.auth");
     expect(lookup?.path).toBe("gateway.auth");
     expect(lookup?.hintPath).toBe("gateway.auth");
-    expect(lookup?.children.some((child) => child.key === "token")).toBe(true);
+    expect(lookup?.children.map((child) => child.key)).toContain("token");
     const tokenChild = lookup?.children.find((child) => child.key === "token");
     expect(tokenChild?.path).toBe("gateway.auth.token");
     expect(tokenChild?.hint?.sensitive).toBe(true);
@@ -352,12 +347,11 @@ describe("config schema", () => {
 
     const lookup = lookupConfigSchema(tupleSchema, "pair.1");
     expect(lookup?.path).toBe("pair.1");
-    expect(lookup?.schema).toMatchObject({ type: "number" });
+    expect(lookup?.schema?.type).toBe("number");
     expect((lookup?.schema as { items?: unknown } | undefined)?.items).toBeUndefined();
   });
 
   it("rejects prototype-chain lookup segments", () => {
-    expect(() => lookupConfigSchema(baseSchema, "constructor")).not.toThrow();
     expect(lookupConfigSchema(baseSchema, "constructor")).toBeNull();
     expect(lookupConfigSchema(baseSchema, "__proto__.polluted")).toBeNull();
   });

@@ -23,7 +23,7 @@ describe("stripPluginOnlyAllowlist", () => {
   it('keeps allowlist when it uses "*"', () => {
     const policy = stripPluginOnlyAllowlist({ allow: ["*"] }, pluginGroups, coreTools);
     expect(policy.policy?.allow).toEqual(["*"]);
-    expect(policy.unknownAllowlist).toEqual([]);
+    expect(policy.unknownAllowlist).toStrictEqual([]);
   });
 
   it("keeps allowlist when it mixes plugin and core entries", () => {

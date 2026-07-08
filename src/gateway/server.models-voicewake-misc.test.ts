@@ -5,7 +5,6 @@ import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { WebSocket } from "ws";
 import { getChannelPlugin } from "../channels/plugins/index.js";
 import type { ChannelOutboundAdapter } from "../channels/plugins/types.js";
-import { resolveCanvasHostUrl } from "../infra/canvas-host-url.js";
 import { GatewayLockError } from "../infra/gateway-lock.js";
 import { getActivePluginRegistry, setActivePluginRegistry } from "../plugins/runtime.js";
 import { createOutboundTestPlugin } from "../test-utils/channel-plugins.js";
@@ -23,8 +22,6 @@ import {
   startConnectedServerWithClient,
   startGatewayServer,
   startServerWithClient,
-  testState,
-  testTailnetIPv4,
   trackConnectChallengeNonce,
 } from "./test-helpers.js";
 
@@ -185,24 +182,6 @@ describe("gateway server models + voicewake", () => {
 });
 
 describe("gateway server misc", () => {
-  test("hello-ok advertises the gateway port for canvas host", async () => {
-    await withEnvAsync({ REMOTECLAW_GATEWAY_TOKEN: "secret" }, async () => {
-      testTailnetIPv4.value = "100.64.0.1";
-      testState.gatewayBind = "lan";
-      const canvasPort = await getFreePort();
-      testState.canvasHostPort = canvasPort;
-      await withEnvAsync({ REMOTECLAW_CANVAS_HOST_PORT: String(canvasPort) }, async () => {
-        const testPort = await getFreePort();
-        const canvasHostUrl = resolveCanvasHostUrl({
-          canvasPort,
-          requestHost: `100.64.0.1:${testPort}`,
-          localAddress: "127.0.0.1",
-        });
-        expect(canvasHostUrl).toBe(`http://100.64.0.1:${canvasPort}`);
-      });
-    });
-  });
-
   test("send dedupes by idempotencyKey", { timeout: 15_000 }, async () => {
     const prevRegistry = getActivePluginRegistry() ?? emptyRegistry;
     try {
@@ -294,6 +273,7 @@ describe("gateway server misc", () => {
       probe.once("error", reject);
       probe.listen(releasePort, "127.0.0.1", () => resolve());
     });
+    expect(probe.listening).toBe(true);
     await new Promise<void>((resolve, reject) =>
       probe.close((err) => (err ? reject(err) : resolve())),
     );

@@ -80,9 +80,9 @@ Full troubleshooting: [Discord troubleshooting](/channels/discord#troubleshootin
 
 Full troubleshooting: [Slack troubleshooting](/channels/slack#troubleshooting)
 
-## iMessage and BlueBubbles
+## iMessage
 
-### iMessage and BlueBubbles failure signatures
+### iMessage failure signatures
 
 | Symptom                          | Fastest check                                                               | Fix                                                   |
 | -------------------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------- |
@@ -93,7 +93,6 @@ Full troubleshooting: [Slack troubleshooting](/channels/slack#troubleshooting)
 Full troubleshooting:
 
 - [iMessage troubleshooting](/channels/imessage#troubleshooting)
-- [BlueBubbles troubleshooting](/channels/bluebubbles#troubleshooting)
 
 ## Signal
 

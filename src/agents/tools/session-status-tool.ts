@@ -22,7 +22,7 @@ import { formatUserTime, resolveUserTimeFormat, resolveUserTimezone } from "../d
 // Model management defaults gutted in RemoteClaw — CLI runtimes own model selection.
 import { parseModelRef } from "../provider-utils.js";
 import type { AnyAgentTool } from "./common.js";
-import { readStringParam } from "./common.js";
+import { normalizeToolModelOverride, readStringParam } from "./common.js";
 import {
   shouldResolveSessionIdInput,
   resolveInternalSessionKey,
@@ -112,11 +112,8 @@ async function resolveModelOverride(params: {
       isDefault: boolean;
     }
 > {
-  const raw = params.raw.trim();
+  const raw = normalizeToolModelOverride(params.raw);
   if (!raw) {
-    return { kind: "reset" };
-  }
-  if (normalizeOptionalLowercaseString(raw) === "default") {
     return { kind: "reset" };
   }
 

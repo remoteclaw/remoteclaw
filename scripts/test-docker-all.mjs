@@ -1167,6 +1167,7 @@ async function main() {
     planReleaseAll: planJson && planReleaseAll,
     profile,
     releaseChunk,
+    releaseProfile,
     selectedLaneNames,
     timingStore,
     upgradeSurvivorBaselines: process.env.REMOTECLAW_UPGRADE_SURVIVOR_BASELINE_SPECS,
@@ -1181,6 +1182,9 @@ async function main() {
   await mkdir(logDir, { recursive: true });
   console.log(`==> Docker test logs: ${logDir}`);
   console.log(`==> Profile: ${profile}${releaseChunk ? ` chunk=${releaseChunk}` : ""}`);
+  if (profile === RELEASE_PATH_PROFILE) {
+    console.log(`==> Release profile: ${releaseProfile}`);
+  }
   console.log(`==> Parallelism: ${parallelism}`);
   console.log(`==> Tail parallelism: ${tailParallelism}`);
   console.log(`==> Lane timeout: ${laneTimeoutMs}ms`);
@@ -1243,7 +1247,7 @@ async function main() {
 
   if (buildEnabled) {
     const buildEntries = [];
-    if (scheduledLanes.some((poolLane) => poolLane.live)) {
+    if (scheduledLanes.some((poolLane) => poolLane.needsLiveImage)) {
       buildEntries.push({
         command: liveDockerHarnessScriptCommand("test-live-build-docker.sh"),
         label: "shared live-test image once",

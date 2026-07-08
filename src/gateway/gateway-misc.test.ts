@@ -9,6 +9,7 @@ import {
   DEFAULT_DANGEROUS_NODE_COMMANDS,
   resolveNodeCommandAllowlist,
 } from "./node-command-policy.js";
+import type { SerializedEventPayload } from "./node-registry.js";
 import type { RequestFrame } from "./protocol/index.js";
 import { createGatewayBroadcaster } from "./server-broadcast.js";
 import { createChatRunRegistry } from "./server-chat.js";
@@ -566,10 +567,13 @@ describe("node subscription manager", () => {
     const sent: Array<{
       nodeId: string;
       event: string;
-      payloadJSON?: string | null;
+      payloadJSON?: SerializedEventPayload | null;
     }> = [];
-    const sendEvent = (evt: { nodeId: string; event: string; payloadJSON?: string | null }) =>
-      sent.push(evt);
+    const sendEvent = (evt: {
+      nodeId: string;
+      event: string;
+      payloadJSON?: SerializedEventPayload | null;
+    }) => sent.push(evt);
 
     manager.subscribe("node-a", "main");
     manager.subscribe("node-b", "main");

@@ -37,6 +37,14 @@ function makeGatewayService(
   } as unknown as GatewayService;
 }
 
+function firstCallArg(mock: { mock: { calls: unknown[][] } }): unknown {
+  const call = mock.mock.calls.at(0);
+  if (!call) {
+    throw new Error("Expected first mock call");
+  }
+  return call[0];
+}
+
 async function inspectGatewayRestartWithSnapshot(params: {
   runtime: { status: "running"; pid: number } | { status: "stopped" };
   portUsage: PortUsage;
@@ -142,7 +150,7 @@ describe("inspectGatewayRestart", () => {
     });
 
     expect(snapshot.healthy).toBe(true);
-    expect(snapshot.staleGatewayPids).toEqual([]);
+    expect(snapshot.staleGatewayPids).toStrictEqual([]);
   });
 
   it("marks non-owned gateway listener pids as stale while runtime is running", async () => {
@@ -175,7 +183,7 @@ describe("inspectGatewayRestart", () => {
       includeUnknownListenersAsStale: false,
     });
 
-    expect(snapshot.staleGatewayPids).toEqual([]);
+    expect(snapshot.staleGatewayPids).toStrictEqual([]);
   });
 
   it("does not apply unknown-listener fallback while runtime is running", async () => {
@@ -184,7 +192,7 @@ describe("inspectGatewayRestart", () => {
       includeUnknownListenersAsStale: true,
     });
 
-    expect(snapshot.staleGatewayPids).toEqual([]);
+    expect(snapshot.staleGatewayPids).toStrictEqual([]);
   });
 
   it("does not treat known non-gateway listeners as stale in fallback mode", async () => {
@@ -202,7 +210,7 @@ describe("inspectGatewayRestart", () => {
       includeUnknownListenersAsStale: true,
     });
 
-    expect(snapshot.staleGatewayPids).toEqual([]);
+    expect(snapshot.staleGatewayPids).toStrictEqual([]);
   });
 
   it("uses a local gateway probe when ownership is ambiguous", async () => {
@@ -212,9 +220,7 @@ describe("inspectGatewayRestart", () => {
     });
 
     expect(snapshot.healthy).toBe(true);
-    expect(probeGateway).toHaveBeenCalledWith(
-      expect.objectContaining({ url: "ws://127.0.0.1:18789" }),
-    );
+    expect((firstCallArg(probeGateway) as { url?: string }).url).toBe("ws://127.0.0.1:18789");
   });
 
   it("treats a busy port as healthy when runtime status lags but the probe succeeds", async () => {
@@ -236,7 +242,7 @@ describe("inspectGatewayRestart", () => {
     });
 
     expect(snapshot.healthy).toBe(true);
-    expect(snapshot.staleGatewayPids).toEqual([]);
+    expect(snapshot.staleGatewayPids).toStrictEqual([]);
   });
 
   it("treats auth-closed probe as healthy gateway reachability", async () => {
@@ -271,15 +277,15 @@ describe("inspectGatewayRestart", () => {
   });
 
   it("annotates stopped-free early exits with the actual elapsed time", async () => {
+    Object.defineProperty(process, "platform", { value: "linux", configurable: true });
+
     const snapshot = await waitForStoppedFreeGatewayRestart();
 
-    expect(snapshot).toMatchObject({
-      healthy: false,
-      runtime: { status: "stopped" },
-      portUsage: { status: "free" },
-      waitOutcome: "stopped-free",
-      elapsedMs: 12_500,
-    });
+    expect(snapshot.healthy).toBe(false);
+    expect(snapshot.runtime.status).toBe("stopped");
+    expect(snapshot.portUsage.status).toBe("free");
+    expect(snapshot.waitOutcome).toBe("stopped-free");
+    expect(snapshot.elapsedMs).toBe(12_500);
     expect(sleep).toHaveBeenCalledTimes(25);
   });
 
@@ -288,13 +294,11 @@ describe("inspectGatewayRestart", () => {
 
     const snapshot = await waitForStoppedFreeGatewayRestart();
 
-    expect(snapshot).toMatchObject({
-      healthy: false,
-      runtime: { status: "stopped" },
-      portUsage: { status: "free" },
-      waitOutcome: "stopped-free",
-      elapsedMs: 92_500,
-    });
+    expect(snapshot.healthy).toBe(false);
+    expect(snapshot.runtime.status).toBe("stopped");
+    expect(snapshot.portUsage.status).toBe("free");
+    expect(snapshot.waitOutcome).toBe("stopped-free");
+    expect(snapshot.elapsedMs).toBe(92_500);
     expect(sleep).toHaveBeenCalledTimes(185);
   });
 
@@ -315,13 +319,12 @@ describe("inspectGatewayRestart", () => {
       delayMs: 1_000,
     });
 
-    expect(snapshot).toMatchObject({
-      healthy: false,
-      runtime: { status: "running", pid: 8000 },
-      portUsage: { status: "free" },
-      waitOutcome: "timeout",
-      elapsedMs: 4_000,
-    });
+    expect(snapshot.healthy).toBe(false);
+    expect(snapshot.runtime.status).toBe("running");
+    expect(snapshot.runtime.pid).toBe(8000);
+    expect(snapshot.portUsage.status).toBe("free");
+    expect(snapshot.waitOutcome).toBe("timeout");
+    expect(snapshot.elapsedMs).toBe(4_000);
     expect(sleep).toHaveBeenCalledTimes(4);
   });
 });

@@ -13,6 +13,22 @@ vi.mock("../terminal/note.js", () => ({
 
 let doctorCommand: typeof import("./doctor.js").doctorCommand;
 
+function requireTerminalNote(params: { title?: string; messageIncludes?: string }) {
+  const note = terminalNoteMock.mock.calls.find(
+    ([message, title]) =>
+      (params.title === undefined || title === params.title) &&
+      (params.messageIncludes === undefined || String(message).includes(params.messageIncludes)),
+  );
+  if (!note) {
+    throw new Error(
+      `expected terminal note${params.title ? ` titled ${params.title}` : ""}${
+        params.messageIncludes ? ` containing ${params.messageIncludes}` : ""
+      }`,
+    );
+  }
+  return note;
+}
+
 describe("doctor command", () => {
   beforeEach(async () => {
     vi.resetModules();
@@ -32,11 +48,8 @@ describe("doctor command", () => {
       workspaceSuggestions: false,
     });
 
-    const stateNote = terminalNoteMock.mock.calls.find(([message]) =>
-      String(message).includes("state directory missing"),
-    );
-    expect(stateNote).toBeTruthy();
-    expect(String(stateNote?.[0])).toContain("CRITICAL");
+    const stateNote = requireTerminalNote({ messageIncludes: "state directory missing" });
+    expect(String(stateNote[0])).toContain("CRITICAL");
   });
 
   it("warns about opencode provider overrides", async () => {
@@ -117,11 +130,10 @@ describe("doctor command", () => {
       workspaceSuggestions: false,
     });
 
-    const gatewayAuthNote = terminalNoteMock.mock.calls.find((call) => call[1] === "Gateway auth");
-    expect(gatewayAuthNote).toBeTruthy();
-    expect(String(gatewayAuthNote?.[0])).toContain("gateway.auth.mode is unset");
-    expect(String(gatewayAuthNote?.[0])).toContain("remoteclaw config set gateway.auth.mode token");
-    expect(String(gatewayAuthNote?.[0])).toContain(
+    const gatewayAuthNote = requireTerminalNote({ title: "Gateway auth" });
+    expect(String(gatewayAuthNote[0])).toContain("gateway.auth.mode is unset");
+    expect(String(gatewayAuthNote[0])).toContain("remoteclaw config set gateway.auth.mode token");
+    expect(String(gatewayAuthNote[0])).toContain(
       "remoteclaw config set gateway.auth.mode password",
     );
   });
@@ -163,12 +175,11 @@ describe("doctor command", () => {
       }
     }
 
-    const gatewayAuthNote = terminalNoteMock.mock.calls.find((call) => call[1] === "Gateway auth");
-    expect(gatewayAuthNote).toBeTruthy();
-    expect(String(gatewayAuthNote?.[0])).toContain(
+    const gatewayAuthNote = requireTerminalNote({ title: "Gateway auth" });
+    expect(String(gatewayAuthNote[0])).toContain(
       "Gateway token is managed via SecretRef and is currently unavailable.",
     );
-    expect(String(gatewayAuthNote?.[0])).toContain(
+    expect(String(gatewayAuthNote[0])).toContain(
       "Doctor will not overwrite gateway.auth.token with a plaintext value.",
     );
   });

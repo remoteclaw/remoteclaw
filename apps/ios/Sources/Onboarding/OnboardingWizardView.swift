@@ -988,6 +988,22 @@ struct OnboardingWizardView: View {
         defer { self.connectingGatewayID = nil }
         await self.gatewayController.connectLastKnown()
     }
+
+    private func gatewayProblemPrimaryActionTitle(_ problem: GatewayConnectionProblem) -> String {
+        problem.canTrustRotatedCertificate ? "Trust certificate" : "Retry connection"
+    }
+
+    private func handleGatewayProblemPrimaryAction(_ problem: GatewayConnectionProblem) async {
+        if problem.canTrustRotatedCertificate {
+            self.connectingGatewayID = "trust-certificate"
+            self.connectMessage = "Updating gateway certificate…"
+            self.statusLine = "Updating gateway certificate…"
+            defer { self.connectingGatewayID = nil }
+            _ = await self.gatewayController.trustRotatedGatewayCertificate(from: problem)
+            return
+        }
+        await self.retryLastAttempt()
+    }
 }
 
 private struct OnboardingModeRow: View {

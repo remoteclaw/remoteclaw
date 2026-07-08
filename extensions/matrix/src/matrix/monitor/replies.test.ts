@@ -12,6 +12,14 @@ vi.mock("../send.js", () => ({
 import { setMatrixRuntime } from "../../runtime.js";
 import { deliverMatrixReplies } from "./replies.js";
 
+function sendOptions(index: number): Record<string, unknown> {
+  const options = sendMessageMatrixMock.mock.calls[index]?.[2];
+  if (!options || typeof options !== "object") {
+    throw new Error(`Expected send options at call ${index}`);
+  }
+  return options as Record<string, unknown>;
+}
+
 describe("deliverMatrixReplies", () => {
   const loadConfigMock = vi.fn(() => ({}));
   const resolveMarkdownTableModeMock = vi.fn(() => "code");
@@ -63,15 +71,12 @@ describe("deliverMatrixReplies", () => {
     });
 
     expect(sendMessageMatrixMock).toHaveBeenCalledTimes(3);
-    expect(sendMessageMatrixMock.mock.calls[0]?.[2]).toEqual(
-      expect.objectContaining({ replyToId: "reply-1", threadId: undefined }),
-    );
-    expect(sendMessageMatrixMock.mock.calls[1]?.[2]).toEqual(
-      expect.objectContaining({ replyToId: "reply-1", threadId: undefined }),
-    );
-    expect(sendMessageMatrixMock.mock.calls[2]?.[2]).toEqual(
-      expect.objectContaining({ replyToId: undefined, threadId: undefined }),
-    );
+    expect(sendOptions(0).replyToId).toBe("reply-1");
+    expect(sendOptions(0).threadId).toBeUndefined();
+    expect(sendOptions(1).replyToId).toBe("reply-1");
+    expect(sendOptions(1).threadId).toBeUndefined();
+    expect(sendOptions(2).replyToId).toBeUndefined();
+    expect(sendOptions(2).threadId).toBeUndefined();
   });
 
   it("keeps replyToId on every reply when replyToMode=all", async () => {

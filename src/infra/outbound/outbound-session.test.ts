@@ -380,7 +380,9 @@ describe("resolveOutboundSessionRoute", () => {
       resolvedTarget,
     });
 
-    expect(route).toMatchObject(expected);
+    for (const [key, value] of Object.entries(expected)) {
+      expect((route as Record<string, unknown>)[key]).toEqual(value);
+    }
   });
 
   it("rejects bare numeric Discord targets when the caller has no kind hint", async () => {

@@ -12,7 +12,7 @@ process.env.FORCE_COLOR = "0";
 
 mockSessionsConfig();
 
-import { sessionsCommand } from "./sessions.js";
+import { sessionsCommand, __testing } from "./sessions.js";
 
 describe("sessionsCommand", () => {
   beforeEach(() => {
@@ -65,9 +65,9 @@ describe("sessionsCommand", () => {
     fs.rmSync(store);
 
     const row = logs.find((line) => line.includes("quietchat:group:demo")) ?? "";
-    expect(row).toContain("unknown/32k (?%)");
-    expect(row).toContain("think:high");
-    expect(row).toContain("5m ago");
+    expect(row).toBe(
+      "group  quietchat:group:demo       5m ago    pi:opus        OpenAI Codex       unknown/32k (?%)     think:high id:xyz",
+    );
   });
 
   it("exports freshness metadata in JSON output", async () => {
@@ -166,7 +166,9 @@ describe("sessionsCommand", () => {
     const { runtime, errors } = makeRuntime();
 
     await expect(sessionsCommand({ store, active: "0" }, runtime)).rejects.toThrow("exit 1");
-    expect(errors[0]).toContain("--active must be a positive integer");
+    expect(errors).toStrictEqual([
+      "--active must be a positive number of minutes, for example --active 30.",
+    ]);
 
     fs.rmSync(store);
   });

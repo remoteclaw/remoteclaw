@@ -63,12 +63,10 @@ describe("cleanup path removals", () => {
       { dryRun: true },
     );
 
-    const joinedLogs = runtime.log.mock.calls
-      .map(([line]) => line.replaceAll("\\", "/"))
-      .join("\n");
-    expect(joinedLogs).toContain("/tmp/remoteclaw-cleanup/state");
-    expect(joinedLogs).toContain("/tmp/remoteclaw-cleanup/oauth");
-    expect(joinedLogs).not.toContain("remoteclaw.json");
+    expect(runtime.log.mock.calls.map(([line]) => line.replaceAll("\\", "/"))).toEqual([
+      "[dry-run] remove /tmp/remoteclaw-cleanup/state",
+      "[dry-run] remove /tmp/remoteclaw-cleanup/oauth",
+    ]);
   });
 
   it("removes every workspace directory", async () => {
@@ -78,7 +76,9 @@ describe("cleanup path removals", () => {
     await removeWorkspaceDirs(workspaces, runtime, { dryRun: true });
 
     const logs = runtime.log.mock.calls.map(([line]) => line);
-    expect(logs).toContain("[dry-run] remove /tmp/remoteclaw-workspace-1");
-    expect(logs).toContain("[dry-run] remove /tmp/remoteclaw-workspace-2");
+    expect(logs).toEqual([
+      "[dry-run] remove /tmp/remoteclaw-workspace-1",
+      "[dry-run] remove /tmp/remoteclaw-workspace-2",
+    ]);
   });
 });

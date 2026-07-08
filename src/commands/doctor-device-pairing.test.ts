@@ -26,6 +26,38 @@ vi.mock("../terminal/note.js", () => ({
   note: (...args: unknown[]) => noteMock(...args),
 }));
 
+function requireMockCall(
+  mock: { mock: { calls: unknown[][] } },
+  callIndex: number,
+  label: string,
+): unknown[] {
+  const call = mock.mock.calls.at(callIndex);
+  if (!call) {
+    throw new Error(`expected ${label} call ${callIndex}`);
+  }
+  return call;
+}
+
+function requireNoteMessage(callIndex = 0): string {
+  const [message] = requireMockCall(noteMock, callIndex, "doctor note");
+  if (typeof message !== "string") {
+    throw new Error(`expected doctor note message ${callIndex}`);
+  }
+  return message;
+}
+
+function requireNoteTitle(callIndex = 0): unknown {
+  const [, title] = requireMockCall(noteMock, callIndex, "doctor note");
+  return title;
+}
+
+function requireRecord(value: unknown, label: string): Record<string, unknown> {
+  if (!value || typeof value !== "object") {
+    throw new Error(`expected ${label} record`);
+  }
+  return value as Record<string, unknown>;
+}
+
 describe("noteDevicePairingHealth", () => {
   let noteDevicePairingHealth: typeof import("./doctor-device-pairing.js").noteDevicePairingHealth;
 
@@ -93,8 +125,8 @@ describe("noteDevicePairingHealth", () => {
       });
 
       expect(noteMock).toHaveBeenCalledTimes(1);
-      const message = String(noteMock.mock.calls[0]?.[0] ?? "");
-      expect(noteMock.mock.calls[0]?.[1]).toBe("Device pairing");
+      const message = requireNoteMessage();
+      expect(requireNoteTitle()).toBe("Device pairing");
       expect(message).toContain("Pending scope upgrade");
       expect(message).toContain("operator.admin");
       expect(message).toContain("remoteclaw devices approve");
@@ -120,8 +152,8 @@ describe("noteDevicePairingHealth", () => {
           });
 
           expect(noteMock).toHaveBeenCalledTimes(1);
-          const message = String(noteMock.mock.calls[0]?.[0] ?? "");
-          expect(noteMock.mock.calls[0]?.[1]).toBe("Device pairing");
+          const message = requireNoteMessage();
+          expect(requireNoteTitle()).toBe("Device pairing");
           expect(message).toContain("paired.json");
           expect(message).toContain("refused to treat it as empty");
           expect(await fs.readFile(pairedPath, "utf8")).toBe("{not-json}");
@@ -162,9 +194,32 @@ describe("noteDevicePairingHealth", () => {
       });
 
       expect(noteMock).toHaveBeenCalledTimes(1);
-      const message = String(noteMock.mock.calls[0]?.[0] ?? "");
+      const message = requireNoteMessage();
       expect(message).toContain("stale device-token pattern");
       expect(message).toContain("remoteclaw devices rotate");
+    });
+  });
+
+  it("does not suggest rotating local auth for a role that is no longer approved", async () => {
+    await withApprovedOperatorPairing(async ({ identity }) => {
+      storeDeviceAuthToken({
+        deviceId: identity.deviceId,
+        role: "node",
+        token: "stale-node-token",
+        scopes: [],
+      });
+
+      await noteDevicePairingHealth({
+        cfg: { gateway: { mode: "local" } },
+        healthOk: false,
+      });
+
+      expect(noteMock).toHaveBeenCalledTimes(1);
+      const message = requireNoteMessage();
+      expect(message).toContain("Local cached node device auth");
+      expect(message).toContain("role is no longer approved");
+      expect(message).toContain("remove the stale cached node auth entry");
+      expect(message).not.toContain("--role node");
     });
   });
 
@@ -193,13 +248,12 @@ describe("noteDevicePairingHealth", () => {
       healthOk: true,
     });
 
-    expect(callGatewayMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        method: "device.pair.list",
-      }),
-    );
+    expect(callGatewayMock).toHaveBeenCalledOnce();
+    const [rawGatewayRequest] = requireMockCall(callGatewayMock, 0, "gateway call");
+    const gatewayRequest = requireRecord(rawGatewayRequest, "gateway request");
+    expect(gatewayRequest?.method).toBe("device.pair.list");
     expect(noteMock).toHaveBeenCalledTimes(1);
-    expect(String(noteMock.mock.calls[0]?.[0] ?? "")).toContain("req-gateway-1");
+    expect(requireNoteMessage()).toContain("req-gateway-1");
   });
 
   it("sanitizes device labels before printing doctor notes", async () => {
@@ -227,7 +281,7 @@ describe("noteDevicePairingHealth", () => {
       healthOk: true,
     });
 
-    const message = String(noteMock.mock.calls[0]?.[0] ?? "");
+    const message = requireNoteMessage();
     expect(message).toContain("bad\\nname");
     expect(message).not.toContain("\u001b");
     expect(message).not.toContain("control-ui\tclient");
@@ -273,7 +327,7 @@ describe("noteDevicePairingHealth", () => {
       healthOk: true,
     });
 
-    const message = String(noteMock.mock.calls[0]?.[0] ?? "");
+    const message = requireNoteMessage();
     expect(message).toContain("remoteclaw devices remove 'device; echo pwn'");
     expect(message).toContain(
       "remoteclaw devices rotate --device 'device; echo pwn' --role 'operator; touch /tmp/pwn'",
@@ -298,7 +352,7 @@ describe("noteDevicePairingHealth", () => {
         healthOk: false,
       });
 
-      const message = String(noteMock.mock.calls[0]?.[0] ?? "");
+      const message = requireNoteMessage();
       expect(message).toContain("has no active operator device token");
       expect(message).not.toContain("no longer has a matching active gateway token");
     });

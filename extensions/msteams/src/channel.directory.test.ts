@@ -26,34 +26,28 @@ describe("msteams directory", () => {
 
     const directory = expectDirectorySurface(msteamsPlugin.directory);
 
-    await expect(
-      directory.listPeers({
-        cfg,
-        query: undefined,
-        limit: undefined,
-        runtime: runtimeEnv,
-      }),
-    ).resolves.toEqual(
-      expect.arrayContaining([
-        { kind: "user", id: "user:alice" },
-        { kind: "user", id: "user:Bob" },
-        { kind: "user", id: "user:carol" },
-        { kind: "user", id: "user:bob" },
-      ]),
-    );
+    const peers = await directory.listPeers({
+      cfg,
+      query: undefined,
+      limit: undefined,
+      runtime: runtimeEnv,
+    });
+    expect(peers).toStrictEqual([
+      { kind: "user", id: "user:alice" },
+      { kind: "user", id: "user:Bob" },
+      { kind: "user", id: "user:carol" },
+      { kind: "user", id: "user:bob" },
+    ]);
 
-    await expect(
-      directory.listGroups({
-        cfg,
-        query: undefined,
-        limit: undefined,
-        runtime: runtimeEnv,
-      }),
-    ).resolves.toEqual(
-      expect.arrayContaining([
-        { kind: "group", id: "conversation:chan1" },
-        { kind: "group", id: "conversation:chan2" },
-      ]),
-    );
+    const groups = await directory.listGroups({
+      cfg,
+      query: undefined,
+      limit: undefined,
+      runtime: runtimeEnv,
+    });
+    expect(groups).toStrictEqual([
+      { kind: "group", id: "conversation:chan1" },
+      { kind: "group", id: "conversation:chan2" },
+    ]);
   });
 });

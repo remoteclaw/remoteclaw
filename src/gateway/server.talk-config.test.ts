@@ -71,7 +71,8 @@ async function createFreshOperatorDevice(scopes: string[], nonce: string) {
 
 async function connectOperator(ws: GatewaySocket, scopes: string[]) {
   const nonce = await readConnectChallengeNonce(ws);
-  expect(nonce).toBeTruthy();
+  expect(nonce).toBeTypeOf("string");
+  expect(String(nonce).length).toBeGreaterThan(0);
   await connectOk(ws, {
     token: "secret",
     scopes,

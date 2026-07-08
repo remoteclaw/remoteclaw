@@ -267,35 +267,57 @@ adds a separate Codex agent:
         fallback: "pi",
       },
     },
-    list: [
-      {
-        id: "main",
-        default: true,
-        model: "anthropic/claude-opus-4-6",
-      },
-      {
-        id: "codex",
-        name: "Codex",
-        model: "openai/gpt-5.5",
-        agentRuntime: {
-          id: "codex",
-        },
-      },
-    ],
   },
 }
 ```
 
-With this shape:
+In that shape, both profiles still run through Codex for `openai/gpt-*` agent
+turns. The API key is only an auth fallback, not a request to switch to PI or
+plain OpenAI Responses.
 
-- The default `main` agent uses the normal provider path and PI compatibility fallback.
-- The `codex` agent uses the Codex app-server harness.
-- If Codex is missing or unsupported for the `codex` agent, the turn fails
-  instead of quietly using PI.
+The rest of this page covers common variants users must choose between:
+deployment shape, fail-closed routing, guardian approval policy, native Codex
+plugins, and Computer Use. For full option lists, defaults, enums, discovery,
+environment isolation, timeouts, and app-server transport fields, see
+[Codex harness reference](/plugins/codex-harness-reference).
 
-## Agent command routing
+## Verify Codex runtime
 
-Agents should route user requests by intent, not by the word "Codex" alone:
+Use `/status` in the chat where you expect Codex. A Codex-backed OpenAI agent
+turn shows:
+
+```text
+Runtime: OpenAI Codex
+```
+
+Then check Codex app-server state:
+
+```text
+/codex status
+/codex models
+```
+
+`/codex status` reports app-server connectivity, account, rate limits, MCP
+servers, and skills. `/codex models` lists the live Codex app-server catalog for
+the harness and account. If `/status` is surprising, see
+[Troubleshooting](#troubleshooting).
+
+## Routing and model selection
+
+Keep provider refs and runtime policy separate:
+
+- Use `openai/gpt-*` for OpenAI agent turns through Codex.
+- Do not use `openai-codex/gpt-*` in config. Run `remoteclaw doctor --fix` to
+  repair legacy refs and stale session route pins.
+- `agentRuntime.id: "codex"` is optional for normal OpenAI auto mode, but useful
+  when a deployment should fail closed if Codex is unavailable.
+- `agentRuntime.id: "pi"` opts a provider or model into direct PI behavior when
+  that is intentional.
+- `/codex ...` controls native Codex app-server conversations from chat.
+- ACP/acpx is a separate external harness path. Use it only when the user asks
+  for ACP/acpx or an external harness adapter.
+
+Common command routing:
 
 | User asks for...                                           | Agent should use...                              |
 | ---------------------------------------------------------- | ------------------------------------------------ |
@@ -307,12 +329,18 @@ Agents should route user requests by intent, not by the word "Codex" alone:
 | "Run Codex through ACP/acpx"                               | ACP `sessions_spawn({ runtime: "acp", ... })`    |
 | "Start Claude Code/Gemini/OpenCode/Cursor in a thread"     | ACP/acpx, not `/codex` and not native sub-agents |
 
-RemoteClaw only advertises ACP spawn guidance to agents when ACP is enabled,
-dispatchable, and backed by a loaded runtime backend. If ACP is not available,
-the system prompt and plugin skills should not teach the agent about ACP
-routing.
+| Use case                                             | Configure                                                        | Verify                                  | Notes                              |
+| ---------------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------- | ---------------------------------- |
+| ChatGPT/Codex subscription with native Codex runtime | `openai/gpt-*` plus enabled `codex` plugin                       | `/status` shows `Runtime: OpenAI Codex` | Recommended path                   |
+| Fail closed if Codex is unavailable                  | Provider or model `agentRuntime.id: "codex"`                     | Turn fails instead of PI fallback       | Use for Codex-only deployments     |
+| Direct OpenAI API-key traffic through PI             | Provider or model `agentRuntime.id: "pi"` and normal OpenAI auth | `/status` shows PI runtime              | Use only when PI is intentional    |
+| Legacy config                                        | `openai-codex/gpt-*`                                             | `remoteclaw doctor --fix` rewrites it   | Do not write new config this way   |
+| ACP/acpx Codex adapter                               | ACP `sessions_spawn({ runtime: "acp" })`                         | ACP task/session status                 | Separate from native Codex harness |
 
-## Codex-only deployments
+`agents.defaults.imageModel` follows the same prefix split. Use `openai/gpt-*`
+for the normal OpenAI route and `codex/gpt-*` only when image understanding
+should run through a bounded Codex app-server turn. Do not use
+`openai-codex/gpt-*`; doctor rewrites that legacy prefix to `openai/gpt-*`.
 
 Force the Codex harness when you need to prove that every embedded agent turn
 uses Codex. Explicit plugin runtimes default to no PI fallback, so
@@ -320,6 +348,13 @@ uses Codex. Explicit plugin runtimes default to no PI fallback, so
 
 ```json5
 {
+  plugins: {
+    entries: {
+      codex: {
+        enabled: true,
+      },
+    },
+  },
   agents: {
     defaults: {
       model: "openai/gpt-5.5",
@@ -332,11 +367,7 @@ uses Codex. Explicit plugin runtimes default to no PI fallback, so
 }
 ```
 
-Environment override:
-
-```bash
-REMOTECLAW_AGENT_RUNTIME=codex remoteclaw gateway run
-```
+### Mixed provider deployment
 
 With Codex forced, RemoteClaw fails early if the Codex plugin is disabled, the
 app-server is too old, or the app-server cannot start. Set
@@ -350,6 +381,13 @@ auto-selection:
 
 ```json5
 {
+  plugins: {
+    entries: {
+      codex: {
+        enabled: true,
+      },
+    },
+  },
   agents: {
     defaults: {
       agentRuntime: {
@@ -377,54 +415,35 @@ auto-selection:
 }
 ```
 
-Use normal session commands to switch agents and models. `/new` creates a fresh
-RemoteClaw session and the Codex harness creates or resumes its sidecar app-server
-thread as needed. `/reset` clears the RemoteClaw session binding for that thread
-and lets the next turn resolve the harness from current config again.
+With this config, the `main` agent uses its normal provider path and the
+`codex` agent uses Codex app-server.
 
-## Model discovery
+### Fail-closed Codex deployment
 
-By default, the Codex plugin asks the app-server for available models. If
-discovery fails or times out, it uses a bundled fallback catalog for:
-
-- GPT-5.5
-- GPT-5.4 mini
-- GPT-5.2
-
-You can tune discovery under `plugins.entries.codex.config.discovery`:
+For OpenAI agent turns, `openai/gpt-*` already resolves to Codex when the
+bundled plugin is available. Add explicit runtime policy when you want a written
+fail-closed rule:
 
 ```json5
 {
-  plugins: {
-    entries: {
-      codex: {
-        enabled: true,
-        config: {
-          discovery: {
-            enabled: true,
-            timeoutMs: 2500,
-          },
+  models: {
+    providers: {
+      openai: {
+        agentRuntime: {
+          id: "codex",
         },
       },
     },
   },
-}
-```
-
-Disable discovery when you want startup to avoid probing Codex and stick to the
-fallback catalog:
-
-```json5
-{
+  agents: {
+    defaults: {
+      model: "openai/gpt-5.5",
+    },
+  },
   plugins: {
     entries: {
       codex: {
         enabled: true,
-        config: {
-          discovery: {
-            enabled: false,
-          },
-        },
       },
     },
   },
@@ -445,48 +464,12 @@ version tied to the bundled plugin instead of whichever separate Codex CLI
 happens to be installed locally. Set `appServer.command` only when you
 intentionally want to run a different executable.
 
-By default, RemoteClaw starts local Codex harness sessions in YOLO mode:
-`approvalPolicy: "never"`, `approvalsReviewer: "user"`, and
-`sandbox: "danger-full-access"`. This is the trusted local operator posture used
-for autonomous heartbeats: Codex can use shell and network tools without
-stopping on native approval prompts that nobody is around to answer.
+## App-server policy
 
-To opt in to Codex guardian-reviewed approvals, set `appServer.mode:
-"guardian"`:
-
-```json5
-{
-  plugins: {
-    entries: {
-      codex: {
-        enabled: true,
-        config: {
-          appServer: {
-            mode: "guardian",
-            serviceTier: "fast",
-          },
-        },
-      },
-    },
-  },
-}
-```
-
-Guardian mode uses Codex's native auto-review approval path. When Codex asks to
-leave the sandbox, write outside the workspace, or add permissions like network
-access, Codex routes that approval request to the native reviewer instead of a
-human prompt. The reviewer applies Codex's risk framework and approves or denies
-the specific request. Use Guardian when you want more guardrails than YOLO mode
-but still need unattended agents to make progress.
-
-The `guardian` preset expands to `approvalPolicy: "on-request"`,
-`approvalsReviewer: "auto_review"`, and `sandbox: "workspace-write"`.
-Individual policy fields still override `mode`, so advanced deployments can mix
-the preset with explicit choices. The older `guardian_subagent` reviewer value is
-still accepted as a compatibility alias, but new configs should use
-`auto_review`.
-
-For an already-running app-server, use WebSocket transport:
+By default, the plugin starts RemoteClaw's managed Codex binary locally with stdio
+transport. Set `appServer.command` only when you intentionally want to run a
+different executable. Use WebSocket transport only when an app-server is already
+running elsewhere:
 
 ```json5
 {
@@ -497,9 +480,37 @@ For an already-running app-server, use WebSocket transport:
         config: {
           appServer: {
             transport: "websocket",
-            url: "ws://127.0.0.1:39175",
+            url: "ws://gateway-host:39175",
             authToken: "${CODEX_APP_SERVER_TOKEN}",
-            requestTimeoutMs: 60000,
+          },
+        },
+      },
+    },
+  },
+}
+```
+
+Local stdio app-server sessions default to the trusted local operator posture:
+`approvalPolicy: "never"`, `approvalsReviewer: "user"`, and
+`sandbox: "danger-full-access"`. If local Codex requirements disallow that
+implicit YOLO posture, RemoteClaw selects allowed guardian permissions instead.
+When an RemoteClaw sandbox is active for the session, RemoteClaw narrows Codex
+`danger-full-access` to Codex `workspace-write` so native Codex code-mode turns
+stay inside the sandboxed workspace.
+
+Use guardian mode when you want Codex native auto-review before sandbox escapes
+or extra permissions:
+
+```json5
+{
+  plugins: {
+    entries: {
+      codex: {
+        enabled: true,
+        config: {
+          appServer: {
+            mode: "guardian",
+            serviceTier: "priority",
           },
         },
       },
@@ -526,6 +537,11 @@ Explicit Codex API-key profiles and local stdio env-key fallback use app-server
 login instead of inherited child-process env. WebSocket app-server connections
 do not receive Gateway env API-key fallback; use an explicit auth profile or the
 remote app-server's own account.
+
+If a subscription profile hits a Codex usage limit, RemoteClaw records the reset
+time when Codex reports one and tries the next ordered auth profile for the same
+Codex run. When the reset time passes, the subscription profile becomes eligible
+again without changing the selected `openai/gpt-*` model or Codex runtime.
 
 If a deployment needs additional environment isolation, add those variables to
 `appServer.clearEnv`:
@@ -568,17 +584,32 @@ Supported `appServer` fields:
 | `serviceTier`       | unset                                    | Optional Codex app-server service tier: `"fast"`, `"flex"`, or `null`. Invalid legacy values are ignored.                             |
 
 RemoteClaw-owned dynamic tool calls are bounded independently from
-`appServer.requestTimeoutMs`: each Codex `item/tool/call` request must receive
-an RemoteClaw response within 30 seconds. On timeout, RemoteClaw aborts the tool
-signal where supported and returns a failed dynamic-tool response to Codex so
-the turn can continue instead of leaving the session in `processing`.
+`appServer.requestTimeoutMs`: Codex `item/tool/call` requests use a 30 second
+RemoteClaw watchdog by default. A positive per-call `timeoutMs` argument extends
+or shortens that specific tool budget. The `image_generate` tool also uses
+`agents.defaults.imageGenerationModel.timeoutMs` when the tool call does not
+provide its own timeout, and the media-understanding `image` tool uses
+`tools.media.image.timeoutSeconds` or its 60 second media default. Dynamic tool
+budgets are capped at 600000 ms. On timeout, RemoteClaw aborts the tool signal
+where supported and returns a failed dynamic-tool response to Codex so the turn
+can continue instead of leaving the session in `processing`.
 
 After RemoteClaw responds to a Codex turn-scoped app-server request, the harness
 also expects Codex to finish the native turn with `turn/completed`. If the
-app-server goes quiet for 60 seconds after that response, RemoteClaw best-effort
-interrupts the Codex turn, records a diagnostic timeout, and releases the
-RemoteClaw session lane so follow-up chat messages are not queued behind a stale
-native turn.
+app-server goes quiet for `appServer.turnCompletionIdleTimeoutMs` after that
+response, RemoteClaw best-effort interrupts the Codex turn, records a diagnostic
+timeout, and releases the RemoteClaw session lane so follow-up chat messages are
+not queued behind a stale native turn. Any non-terminal notification for the
+same turn, including `rawResponseItem/completed`, disarms that short watchdog
+because Codex has proven the turn is still alive; the longer terminal watchdog
+continues to protect genuinely stuck turns. Global app-server notifications,
+such as rate-limit updates, do not reset turn-idle progress. When Codex emits a
+completed `agentMessage` item and then goes quiet without `turn/completed`,
+RemoteClaw treats the assistant output as effectively complete, best-effort
+interrupts the native Codex turn, and releases the session lane. Timeout
+diagnostics include the last app-server notification method and, for raw
+assistant response items, the item type, role, id, and a bounded assistant text
+preview.
 
 Environment overrides remain available for local testing:
 
@@ -597,22 +628,18 @@ Environment overrides remain available for local testing:
 preferred for repeatable deployments because it keeps the plugin behavior in the
 same reviewed file as the rest of the Codex harness setup.
 
-## Computer use
+## Native Codex plugins
 
-Computer Use is covered in its own setup guide:
-[Codex Computer Use](/plugins/codex-computer-use).
+Native Codex plugin support uses Codex app-server's own app and plugin
+capabilities in the same Codex thread as the RemoteClaw harness turn. RemoteClaw
+does not translate Codex plugins into synthetic `codex_plugin_*` RemoteClaw
+dynamic tools.
 
-The short version: RemoteClaw does not vendor the desktop-control app or execute
-desktop actions itself. It prepares Codex app-server, verifies that the
-`computer-use` MCP server is available, and then lets Codex handle the native
-MCP tool calls during Codex-mode turns.
+`codexPlugins` affects only sessions that select the native Codex harness. It
+has no effect on PI runs, normal OpenAI provider runs, ACP conversation
+bindings, or other harnesses.
 
-For direct TryCua driver access outside the Codex marketplace flow, register
-`cua-driver mcp` with `remoteclaw mcp set cua-driver '{"command":"cua-driver","args":["mcp"]}'`.
-See [Codex Computer Use](/plugins/codex-computer-use) for the distinction
-between Codex-owned Computer Use and direct MCP registration.
-
-Minimal config:
+Minimal migrated config:
 
 ```json5
 {
@@ -772,69 +799,15 @@ Common forms:
 
 ### Common debugging workflow
 
-When a Codex-backed agent does something surprising in Telegram, Discord, Slack,
-or another channel, start with the conversation where the problem happened:
+## Computer Use
 
-1. Run `/diagnostics bad tool choice after image upload` or another short note
-   that describes what you saw.
-2. Approve the diagnostics request once. The approval creates the local Gateway
-   diagnostics zip and, because the session is using the Codex harness, also
-   sends the relevant Codex feedback bundle to OpenAI servers.
-3. Copy the completed diagnostics reply into the bug report or support thread.
-   It includes the local bundle path, privacy summary, RemoteClaw session ids,
-   Codex thread ids, and an `Inspect locally` line for each Codex thread.
-4. If you want to debug the run yourself, run the printed `Inspect locally`
-   command in a terminal. It looks like `codex resume <thread-id>` and opens the
-   native Codex thread so you can inspect the conversation, continue it locally,
-   or ask Codex why it chose a particular tool or plan.
+Computer Use is covered in its own setup guide:
+[Codex Computer Use](/plugins/codex-computer-use).
 
-Use `/codex diagnostics [note]` only when you specifically want the Codex
-feedback upload for the currently attached thread without the full RemoteClaw
-Gateway diagnostics bundle. For most support reports, `/diagnostics [note]` is
-the better starting point because it ties the local Gateway state and Codex
-thread ids together in one reply. See [Diagnostics export](/gateway/diagnostics)
-for the full privacy model and group-chat behavior.
-
-Core RemoteClaw also exposes owner-only `/diagnostics [note]` as the general
-Gateway diagnostics command. Its approval prompt shows the sensitive-data
-preamble, links to [Diagnostics Export](/gateway/diagnostics), and requests
-`remoteclaw gateway diagnostics export --json` through explicit exec approval
-every time. Do not approve diagnostics with an allow-all rule. After approval,
-RemoteClaw sends a pasteable report with the local bundle path and manifest
-summary. When the active RemoteClaw session is using the Codex harness, that
-same approval also authorizes sending the relevant Codex feedback bundles to
-OpenAI servers. The approval prompt says that Codex feedback will be sent, but
-it does not list Codex session or thread ids before approval.
-
-If `/diagnostics` is invoked by an owner in a group chat, RemoteClaw keeps the
-shared channel clean: the group receives only a short notice, while the
-diagnostics preamble, approval prompts, and Codex session/thread ids are sent to
-the owner through the private approval route. If there is no private owner route,
-RemoteClaw refuses the group request and asks the owner to run it from a DM.
-
-The approved Codex upload calls Codex app-server `feedback/upload` and asks
-app-server to include logs for each listed thread and spawned Codex subthreads
-when available. The upload goes through Codex's normal feedback path to OpenAI
-servers; if Codex feedback is disabled in that app-server, the command returns
-the app-server error. The completed diagnostics reply lists the channels,
-RemoteClaw session ids, Codex thread ids, and local `codex resume <thread-id>`
-commands for the threads that were sent. If you deny or ignore the approval,
-RemoteClaw does not print those Codex ids. This upload does not replace the local
-Gateway diagnostics export.
-
-`/codex resume` writes the same sidecar binding file that the harness uses for
-normal turns. On the next message, RemoteClaw resumes that Codex thread, passes the
-currently selected RemoteClaw model into app-server, and keeps extended history
-enabled.
-
-### Inspect a Codex thread from the CLI
-
-The fastest way to understand a bad Codex run is often to open the native Codex
-thread directly:
-
-```sh
-codex resume <thread-id>
-```
+The short version: RemoteClaw does not vendor the desktop-control app or execute
+desktop actions itself. It prepares Codex app-server, verifies that the
+`computer-use` MCP server is available, and then lets Codex own the native MCP
+tool calls during Codex-mode turns.
 
 Use this when you notice a bug in a channel conversation and want to inspect the
 problematic Codex session, continue it locally, or ask Codex why it made a
@@ -923,59 +896,26 @@ Not supported in Codex runtime v1:
 
 The Codex harness changes the low-level embedded agent executor only.
 
-RemoteClaw still builds the tool list and receives dynamic tool results from the
-harness. Text, images, video, music, TTS, approvals, and messaging-tool output
-continue through the normal RemoteClaw delivery path.
+- RemoteClaw dynamic tools are supported. Codex asks RemoteClaw to execute those
+  tools, so RemoteClaw remains in the execution path.
+- Codex-native shell, patch, MCP, and native app tools are owned by Codex.
+  RemoteClaw can observe or block selected native events through the supported
+  relay, but it does not rewrite native tool arguments.
+- Codex owns native compaction. RemoteClaw keeps a transcript mirror for channel
+  history, search, `/new`, `/reset`, and future model or harness switching.
+- Media generation, media understanding, TTS, approvals, and messaging-tool
+  output continue through the matching RemoteClaw provider/model settings.
+- `tool_result_persist` applies to RemoteClaw-owned transcript tool results, not
+  Codex-native tool result records.
 
-The native hook relay is intentionally generic, but the v1 support contract is
-limited to the Codex-native tool and permission paths that RemoteClaw tests. In
-the Codex runtime, that includes shell, patch, and MCP `PreToolUse`,
-`PostToolUse`, and `PermissionRequest` payloads. Do not assume every future
-Codex hook event is an RemoteClaw plugin surface until the runtime contract names
-it.
-
-For `PermissionRequest`, RemoteClaw only returns explicit allow or deny decisions
-when policy decides. A no-decision result is not an allow. Codex treats it as no
-hook decision and falls through to its own guardian or user approval path.
-
-Codex MCP tool approval elicitations are routed through RemoteClaw's plugin
-approval flow when Codex marks `_meta.codex_approval_kind` as
-`"mcp_tool_call"`. Codex `request_user_input` prompts are sent back to the
-originating chat, and the next queued follow-up message answers that native
-server request instead of being steered as extra context. Other MCP elicitation
-requests still fail closed.
-
-Active-run queue steering maps onto Codex app-server `turn/steer`. With the
-default `messages.queue.mode: "steer"`, RemoteClaw batches queued chat messages
-for the configured quiet window and sends them as one `turn/steer` request in
-arrival order. Legacy `queue` mode sends separate `turn/steer` requests. Codex
-review and manual compaction turns can reject same-turn steering, in which case
-RemoteClaw uses the followup queue when the selected mode allows fallback. See
-[Steering queue](/concepts/queue-steering).
-
-When the selected model uses the Codex harness, native thread compaction is
-delegated to Codex app-server. RemoteClaw keeps a transcript mirror for channel
-history, search, `/new`, `/reset`, and future model or harness switching. The
-mirror includes the user prompt, final assistant text, and lightweight Codex
-reasoning or plan records when the app-server emits them. Today, RemoteClaw only
-records native compaction start and completion signals. It does not yet expose a
-human-readable compaction summary or an auditable list of which entries Codex
-kept after compaction.
-
-Because Codex owns the canonical native thread, `tool_result_persist` does not
-currently rewrite Codex-native tool result records. It only applies when
-RemoteClaw is writing an RemoteClaw-owned session transcript tool result.
-
-Media generation does not require PI. Image, video, music, PDF, TTS, and media
-understanding continue to use the matching provider/model settings such as
-`agents.defaults.imageGenerationModel`, `videoGenerationModel`, `pdfModel`, and
-`messages.tts`.
+For hook layers, supported V1 surfaces, native permission handling, queue
+steering, Codex feedback upload mechanics, and compaction details, see
+[Codex harness runtime](/plugins/codex-harness-runtime).
 
 ## Troubleshooting
 
 **Codex does not appear as a normal `/model` provider:** that is expected for
-new configs. Select an `openai/gpt-*` model with
-`agentRuntime.id: "codex"` (or a legacy `codex/*` ref), enable
+new configs. Select an `openai/gpt-*` model, enable
 `plugins.entries.codex.enabled`, and check whether `plugins.allow` excludes
 `codex`.
 
@@ -986,36 +926,44 @@ forced Codex runtime now fails instead of falling back to PI unless you
 explicitly set `agentRuntime.fallback: "pi"`. Once Codex app-server is
 selected, its failures surface directly without extra fallback config.
 
-**The app-server is rejected:** upgrade Codex so the app-server handshake
-reports version `0.125.0` or newer. Same-version prereleases or build-suffixed
-versions such as `0.125.0-alpha.2` or `0.125.0+custom` are rejected because the
-stable `0.125.0` protocol floor is what RemoteClaw tests.
+**The app-server is rejected:** use Codex app-server `0.125.0` or newer.
+Same-version prereleases or build-suffixed versions such as
+`0.125.0-alpha.2` or `0.125.0+custom` are rejected because RemoteClaw tests the
+stable `0.125.0` protocol floor.
 
-**Model discovery is slow:** lower `plugins.entries.codex.config.discovery.timeoutMs`
-or disable discovery.
+**`/codex status` cannot connect:** check that the bundled `codex` plugin is
+enabled, that `plugins.allow` includes it when an allowlist is configured, and
+that any custom `appServer.command`, `url`, `authToken`, or headers are valid.
+
+**Model discovery is slow:** lower
+`plugins.entries.codex.config.discovery.timeoutMs` or disable discovery. See
+[Codex harness reference](/plugins/codex-harness-reference#model-discovery).
 
 **WebSocket transport fails immediately:** check `appServer.url`, `authToken`,
-and that the remote app-server speaks the same Codex app-server protocol version.
+headers, and that the remote app-server speaks the same Codex app-server
+protocol version.
 
-**A non-Codex model uses PI:** that is expected unless you forced
-`agentRuntime.id: "codex"` for that agent or selected a legacy
-`codex/*` ref. Plain `openai/gpt-*` and other provider refs stay on their normal
-provider path in `auto` mode. If you force `agentRuntime.id: "codex"`, every embedded
-turn for that agent must be a Codex-supported OpenAI model.
+**A non-Codex model uses PI:** that is expected unless provider or model runtime
+policy routes it to another harness. Plain non-OpenAI provider refs stay on
+their normal provider path in `auto` mode.
 
 **Computer Use is installed but tools do not run:** check
 `/codex computer-use status` from a fresh session. If a tool reports
 `Native hook relay unavailable`, use `/new` or `/reset`; if it persists, restart
-the gateway to clear stale native hook registrations. If `computer-use.list_apps`
-times out, restart Codex Computer Use or Codex Desktop and retry.
+the gateway to clear stale native hook registrations. See
+[Codex Computer Use](/plugins/codex-computer-use#troubleshooting).
 
 ## Related
 
-- [Agent harness plugins](/plugins/sdk-agent-harness)
+- [Codex harness reference](/plugins/codex-harness-reference)
+- [Codex harness runtime](/plugins/codex-harness-runtime)
+- [Native Codex plugins](/plugins/codex-native-plugins)
+- [Codex Computer Use](/plugins/codex-computer-use)
 - [Agent runtimes](/concepts/agent-runtimes)
 - [Model providers](/concepts/model-providers)
 - [OpenAI provider](/providers/openai)
-- [Status](/cli/status)
+- [Agent harness plugins](/plugins/sdk-agent-harness)
 - [Plugin hooks](/plugins/hooks)
-- [Configuration reference](/gateway/configuration-reference)
+- [Diagnostics export](/gateway/diagnostics)
+- [Status](/cli/status)
 - [Testing](/help/testing-live#live-codex-app-server-harness-smoke)

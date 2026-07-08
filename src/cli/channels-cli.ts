@@ -81,7 +81,9 @@ export function registerChannelsCli(program: Command) {
       "after",
       () =>
         `\n${theme.heading("Examples:")}\n${formatHelpExamples([
-          ["remoteclaw channels list", "List configured channels and auth profiles."],
+          ["remoteclaw channels list", "List configured channels."],
+          ["remoteclaw channels list --all", "Show configured, bundled, and installable channels."],
+          ["remoteclaw channels add", "Open guided channel setup."],
           ["remoteclaw channels status --probe", "Run channel status checks and probes."],
           [
             "remoteclaw channels add --channel telegram --token <token>",
@@ -106,6 +108,7 @@ export function registerChannelsCli(program: Command) {
   channels
     .command("status")
     .description("Show gateway channel status (use status --deep for local)")
+    .option("--channel <name>", `Only show one channel (${formatCliChannelOptions(["all"])})`)
     .option("--probe", "Probe channel credentials", false)
     .option("--timeout <ms>", "Timeout in ms", "10000")
     .option("--json", "Output JSON", false)
@@ -171,6 +174,18 @@ export function registerChannelsCli(program: Command) {
   channels
     .command("add")
     .description("Add or update a channel account")
+    .addHelpText(
+      "after",
+      () =>
+        `\n${theme.heading("Examples:")}\n${formatHelpExamples([
+          ["remoteclaw channels add", "Open guided setup for available chat channels."],
+          [
+            "remoteclaw channels add --channel telegram --token <token>",
+            "Add or update Telegram non-interactively.",
+          ],
+          ["remoteclaw channels list --all", "Find channel ids before using --channel."],
+        ])}\n`,
+    )
     .option("--channel <name>", `Channel (${channelNames})`)
     .option("--account <id>", "Account id (default when omitted)")
     .option("--name <name>", "Display name for this account")

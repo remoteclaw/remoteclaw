@@ -69,7 +69,6 @@ describe("Ghost reminder bug (issue #13317)", () => {
     } | null,
     reminderText: string,
   ) => {
-    expect(calledCtx).not.toBeNull();
     expect(calledCtx?.Provider).toBe("cron-event");
     expect(calledCtx?.Body).toContain("scheduled reminder has been triggered");
     expect(calledCtx?.Body).toContain(reminderText);

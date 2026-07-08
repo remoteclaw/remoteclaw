@@ -92,6 +92,10 @@ function getJoinedRuntimeLogs() {
   return getRuntimeLogs().join("\n");
 }
 
+function expectLogsInclude(logs: readonly string[], fragment: string) {
+  expect(logs.some((log) => log.includes(fragment))).toBe(true);
+}
+
 async function runStatusAndGetLogs(args: Parameters<typeof statusCommand>[0] = {}) {
   runtimeLogMock.mockClear();
   await statusCommand(args, runtime as never);
@@ -402,7 +406,7 @@ describe("statusCommand", () => {
     expect(payload.memory.vector.available).toBe(true);
     expect(payload.sessions.count).toBe(1);
     expect(payload.sessions.paths).toContain("/tmp/sessions.json");
-    expect(payload.sessions.defaults.model).toBeTruthy();
+    expect(payload.sessions.defaults.model).toBe("pi:opus");
     expect(payload.sessions.defaults.contextTokens).toBeGreaterThan(0);
     expect(payload.sessions.recent[0].percentUsed).toBe(50);
     expect(payload.sessions.recent[0].cacheRead).toBe(2_000);
@@ -475,7 +479,7 @@ describe("statusCommand", () => {
       "Troubleshooting:",
       "Next steps:",
     ]) {
-      expect(logs.some((line) => line.includes(token))).toBe(true);
+      expectLogsInclude(logs, token);
     }
     expect(
       logs.some(
@@ -497,7 +501,7 @@ describe("statusCommand", () => {
         presence: [],
       });
       const logs = await runStatusAndGetLogs();
-      expect(logs.some((l: string) => l.includes("auth token"))).toBe(true);
+      expectLogsInclude(logs, "auth token");
     });
   });
 

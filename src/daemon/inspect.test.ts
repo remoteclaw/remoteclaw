@@ -85,7 +85,7 @@ describe("findExtraGatewayServices (linux / scanSystemdDir) — real filesystem"
       await fs.mkdir(systemdDir, { recursive: true });
       await fs.writeFile(path.join(systemdDir, "remoteclaw-test.service"), TEST_SERVICE_CONTENTS);
       const result = await findExtraGatewayServices({ HOME: tmpHome });
-      expect(result).toEqual([]);
+      expect(result).toStrictEqual([]);
     } finally {
       await fs.rm(tmpHome, { recursive: true, force: true });
     }
@@ -103,7 +103,7 @@ describe("findExtraGatewayServices (linux / scanSystemdDir) — real filesystem"
           GATEWAY_SERVICE_CONTENTS,
         );
         const result = await findExtraGatewayServices({ HOME: tmpHome });
-        expect(result).toEqual([]);
+        expect(result).toStrictEqual([]);
       } finally {
         await fs.rm(tmpHome, { recursive: true, force: true });
       }
@@ -157,7 +157,7 @@ describe("findExtraGatewayServices (win32)", () => {
 
   it("skips schtasks queries unless deep mode is enabled", async () => {
     const result = await findExtraGatewayServices({});
-    expect(result).toEqual([]);
+    expect(result).toStrictEqual([]);
     expect(execSchtasksMock).not.toHaveBeenCalled();
   });
 
@@ -169,7 +169,7 @@ describe("findExtraGatewayServices (win32)", () => {
     });
 
     const result = await findExtraGatewayServices({}, { deep: true });
-    expect(result).toEqual([]);
+    expect(result).toStrictEqual([]);
   });
 
   it("collects only non-remoteclaw marker tasks from schtasks output", async () => {

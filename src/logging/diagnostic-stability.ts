@@ -357,6 +357,9 @@ function sanitizeDiagnosticEvent(event: DiagnosticEventPayload): DiagnosticStabi
       record.channel = event.channel;
       assignReasonCode(record, event.reason);
       break;
+    case "session.recovery.requested":
+    case "session.recovery.completed":
+      break;
   }
 
   return record;

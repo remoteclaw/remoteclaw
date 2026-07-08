@@ -102,12 +102,18 @@ For traces, logs, OTLP push, and OpenTelemetry GenAI semantic attributes, see [O
 | `remoteclaw_harness_run_duration_seconds`       | histogram | `channel`, `error_category`, `harness`, `model`, `outcome`, `phase`, `plugin`, `provider` |
 | `remoteclaw_message_processed_total`            | counter   | `channel`, `outcome`, `reason`                                                            |
 | `remoteclaw_message_processed_duration_seconds` | histogram | `channel`, `outcome`, `reason`                                                            |
+| `remoteclaw_message_delivery_started_total`     | counter   | `channel`, `delivery_kind`                                                                |
 | `remoteclaw_message_delivery_total`             | counter   | `channel`, `delivery_kind`, `error_category`, `outcome`                                   |
 | `remoteclaw_message_delivery_duration_seconds`  | histogram | `channel`, `delivery_kind`, `error_category`, `outcome`                                   |
+| `remoteclaw_talk_event_total`                   | counter   | `brain`, `event_type`, `mode`, `provider`, `transport`                                    |
+| `remoteclaw_talk_event_duration_seconds`        | histogram | `brain`, `event_type`, `mode`, `provider`, `transport`                                    |
+| `remoteclaw_talk_audio_bytes`                   | histogram | `brain`, `event_type`, `mode`, `provider`, `transport`                                    |
 | `remoteclaw_queue_lane_size`                    | gauge     | `lane`                                                                                    |
 | `remoteclaw_queue_lane_wait_seconds`            | histogram | `lane`                                                                                    |
 | `remoteclaw_session_state_total`                | counter   | `reason`, `state`                                                                         |
 | `remoteclaw_session_queue_depth`                | gauge     | `state`                                                                                   |
+| `remoteclaw_session_recovery_total`             | counter   | `action`, `active_work_kind`, `state`, `status`                                           |
+| `remoteclaw_session_recovery_age_seconds`       | histogram | `action`, `active_work_kind`, `state`, `status`                                           |
 | `remoteclaw_memory_bytes`                       | gauge     | `kind`                                                                                    |
 | `remoteclaw_memory_rss_bytes`                   | histogram | none                                                                                      |
 | `remoteclaw_memory_pressure_total`              | counter   | `level`, `reason`                                                                         |
@@ -131,6 +137,7 @@ For traces, logs, OTLP push, and OpenTelemetry GenAI semantic attributes, see [O
   </Accordion>
   <Accordion title="What never appears in Prometheus output">
     - prompt text, response text, tool inputs, tool outputs, system prompts
+    - Talk transcripts, audio payloads, call ids, room ids, handoff tokens, turn ids, and raw session ids
     - raw provider request IDs (only bounded hashes, where applicable, on spans — never on metrics)
     - session keys and session IDs
     - hostnames, file paths, secret values

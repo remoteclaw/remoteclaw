@@ -1,17 +1,27 @@
 ---
-summary: "Talk mode: continuous speech conversations with configured TTS providers"
+summary: "Talk mode: continuous speech conversations across local STT/TTS and realtime voice"
 read_when:
   - Implementing Talk mode on macOS/iOS/Android
   - Changing voice/TTS/interrupt behavior
 title: "Talk mode"
 ---
 
-Talk mode is a continuous voice conversation loop:
+Talk mode has two runtime shapes:
+
+- Native macOS/iOS/Android Talk uses local speech recognition, Gateway chat, and `talk.speak` TTS. Nodes advertise the `talk` capability and declare the `talk.*` commands they support.
+- Browser Talk uses `talk.client.create` for client-owned `webrtc` and `provider-websocket` sessions, or `talk.session.create` for Gateway-owned `gateway-relay` sessions. `managed-room` is reserved for Gateway handoff and walkie-talkie rooms.
+- Transcription-only clients use `talk.session.create({ mode: "transcription", transport: "gateway-relay", brain: "none" })`, then `talk.session.appendAudio`, `talk.session.cancelTurn`, and `talk.session.close` when they need captions or dictation without an assistant voice response.
+
+Native Talk is a continuous voice conversation loop:
 
 1. Listen for speech
-2. Send transcript to the model (main session, chat.send)
+2. Send transcript to the model through the active session
 3. Wait for the response
 4. Speak it via the configured Talk provider — synthesized on-device (ElevenLabs direct, with system-TTS fallback)
+
+Browser realtime Talk forwards provider tool calls through `talk.client.toolCall`; browser clients do not call `chat.send` directly for realtime consults.
+
+Transcription-only Talk emits the same common Talk event envelope as realtime and STT/TTS sessions, but uses `mode: "transcription"` and `brain: "none"`. It is for captions, dictation, and observe-only speech capture; one-shot uploaded voice notes still use the media/audio path.
 
 ## Behavior (macOS)
 
@@ -66,6 +76,20 @@ Supported keys:
     speechLocale: "ru-RU",
     silenceTimeoutMs: 1500,
     interruptOnSpeech: true,
+    realtime: {
+      provider: "openai",
+      providers: {
+        openai: {
+          apiKey: "openai_api_key",
+          model: "gpt-realtime-2",
+          voice: "cedar",
+        },
+      },
+      instructions: "Speak warmly and keep answers brief.",
+      mode: "realtime",
+      transport: "webrtc",
+      brain: "agent-consult",
+    },
   },
 }
 ```
@@ -79,6 +103,15 @@ Defaults:
 - `providers.elevenlabs.modelId`: defaults to `eleven_v3` when unset.
 - `providers.mlx.modelId`: defaults to `mlx-community/Soprano-80M-bf16` when unset.
 - `providers.elevenlabs.apiKey`: falls back to `ELEVENLABS_API_KEY` (or gateway shell profile if available).
+- `consultThinkingLevel`: optional thinking level override for the full RemoteClaw agent run behind realtime `remoteclaw_agent_consult` calls.
+- `consultFastMode`: optional fast-mode override for realtime `remoteclaw_agent_consult` calls.
+- `realtime.provider`: selects the active browser/server realtime voice provider. Use `openai` for WebRTC, `google` for provider WebSocket, or a bridge-only provider through Gateway relay.
+- `realtime.providers.<provider>` stores provider-owned realtime config. The browser receives only ephemeral or constrained session credentials, never a standard API key.
+- `realtime.providers.openai.voice`: built-in OpenAI Realtime voice id. Current `gpt-realtime-2` voices are `alloy`, `ash`, `ballad`, `coral`, `echo`, `sage`, `shimmer`, `verse`, `marin`, and `cedar`; `marin` and `cedar` are recommended for best quality.
+- `realtime.brain`: `agent-consult` routes realtime tool calls through Gateway policy; `direct-tools` is owner-only compatibility behavior; `none` is for transcription or external orchestration.
+- `realtime.instructions`: appends provider-facing system instructions to RemoteClaw's built-in realtime prompt. Use it for voice style and tone; RemoteClaw keeps the default `remoteclaw_agent_consult` guidance.
+- `talk.catalog` exposes each provider's valid modes, transports, brain strategies, realtime audio formats, and capability flags so first-party Talk clients can avoid unsupported combinations.
+- Streaming transcription providers are discovered through `talk.catalog.transcription`. The current Gateway relay uses the Voice Call streaming provider config until the dedicated Talk transcription config surface is added.
 - `speechLocale`: optional BCP 47 locale id for on-device Talk speech recognition on iOS/macOS. Leave unset to use the device default.
 - `outputFormat`: defaults to `pcm_44100` on macOS/iOS and `pcm_24000` on Android (set `mp3_*` to force MP3 streaming)
 

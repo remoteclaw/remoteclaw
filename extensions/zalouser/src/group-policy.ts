@@ -1,4 +1,4 @@
-import { normalizeOptionalLowercaseString } from "remoteclaw/plugin-sdk/text-runtime";
+import { normalizeOptionalLowercaseString } from "remoteclaw/plugin-sdk/string-coerce-runtime";
 import type { ZalouserGroupConfig } from "./types.js";
 
 type ZalouserGroups = Record<string, ZalouserGroupConfig>;

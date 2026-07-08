@@ -662,6 +662,7 @@ export async function maybeRecoverSuspiciousConfigRead(params: {
   let restoredFromBackup = false;
   try {
     await params.deps.fs.promises.copyFile(backupPath, params.configPath);
+    await params.deps.fs.promises.chmod?.(params.configPath, 0o600).catch(() => {});
     restoredFromBackup = true;
   } catch {}
 
@@ -752,6 +753,9 @@ export function maybeRecoverSuspiciousConfigReadSync(params: {
   let restoredFromBackup = false;
   try {
     params.deps.fs.copyFileSync(backupPath, params.configPath);
+    try {
+      params.deps.fs.chmodSync?.(params.configPath, 0o600);
+    } catch {}
     restoredFromBackup = true;
   } catch {}
 
@@ -1021,7 +1025,7 @@ export async function recoverConfigFromLastKnownGood(params: {
   if (!shouldAttemptLastKnownGoodRecovery(snapshot)) {
     if (isPluginLocalInvalidConfigSnapshot(snapshot)) {
       deps.logger.warn(
-        `Config last-known-good recovery skipped: invalidity is scoped to plugin entries (${params.reason})`,
+        `Config last-known-good recovery skipped: invalidity is scoped to stale plugin config (${params.reason})`,
       );
     }
     return false;

@@ -114,13 +114,11 @@ describe("buildGatewayInstallPlan", () => {
     expect(plan.workingDirectory).toBe("/Users/me");
     expect(plan.environment).toEqual({ REMOTECLAW_PORT: "3000" });
     expect(mocks.resolvePreferredNodePath).not.toHaveBeenCalled();
-    expect(mocks.buildServiceEnvironment).toHaveBeenCalledWith(
-      expect.objectContaining({
-        env: { HOME: isolatedHome },
-        port: 3000,
-        extraPathDirs: ["/custom"],
-      }),
-    );
+    expect(mocks.buildServiceEnvironment).toHaveBeenCalledOnce();
+    const serviceEnvRequest = mocks.buildServiceEnvironment.mock.calls[0]?.[0];
+    expect(serviceEnvRequest?.env).toStrictEqual({ HOME: isolatedHome });
+    expect(serviceEnvRequest?.port).toBe(3000);
+    expect(serviceEnvRequest?.extraPathDirs).toStrictEqual(["/custom"]);
   });
 
   it("does not prepend '.' when nodePath is a bare executable name", async () => {
@@ -133,11 +131,8 @@ describe("buildGatewayInstallPlan", () => {
       nodePath: "node",
     });
 
-    expect(mocks.buildServiceEnvironment).toHaveBeenCalledWith(
-      expect.objectContaining({
-        extraPathDirs: undefined,
-      }),
-    );
+    expect(mocks.buildServiceEnvironment).toHaveBeenCalledOnce();
+    expect(mocks.buildServiceEnvironment.mock.calls[0]?.[0]?.extraPathDirs).toBeUndefined();
   });
 
   it("emits warnings when renderSystemNodeWarning returns one", async () => {

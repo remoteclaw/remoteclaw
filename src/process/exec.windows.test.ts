@@ -44,6 +44,16 @@ type MockChild = EventEmitter & {
   killed?: boolean;
 };
 
+type SpawnCall = [string, string[], Record<string, unknown>];
+
+function requireSpawnCall(callIndex: number): SpawnCall {
+  const call = spawnMock.mock.calls[callIndex];
+  if (!call) {
+    throw new Error(`expected spawn call ${callIndex}`);
+  }
+  return call as SpawnCall;
+}
+
 function createMockChild(params?: {
   closeCode?: number | null;
   closeSignal?: NodeJS.Signals | null;
@@ -78,8 +88,6 @@ function createMockChild(params?: {
   return child;
 }
 
-type SpawnCall = [string, string[], Record<string, unknown>];
-
 type ExecCall = [
   string,
   string[],
@@ -87,13 +95,18 @@ type ExecCall = [
   (err: Error | null, stdout: string, stderr: string) => void,
 ];
 
+function requireExecFileCall(callIndex: number): ExecCall {
+  const call = execFileMock.mock.calls[callIndex];
+  if (!call) {
+    throw new Error(`expected execFile call ${callIndex}`);
+  }
+  return call as ExecCall;
+}
+
 function expectCmdWrappedInvocation(params: {
-  captured: SpawnCall | ExecCall | undefined;
+  captured: SpawnCall | ExecCall;
   expectedComSpec: string;
 }) {
-  if (!params.captured) {
-    throw new Error("expected command wrapper to be called");
-  }
   expect(params.captured[0]).toBe(params.expectedComSpec);
   expect(params.captured[1].slice(0, 3)).toEqual(["/d", "/s", "/c"]);
   expect(params.captured[1][3]).toContain("pnpm.cmd --version");
@@ -166,7 +179,7 @@ describe("windows command wrapper behavior", () => {
     try {
       const result = await runCommandWithTimeout(["pnpm", "--version"], { timeoutMs: 1000 });
       expect(result.code).toBe(0);
-      const captured = spawnMock.mock.calls[0] as SpawnCall | undefined;
+      const captured = requireSpawnCall(0);
       expectCmdWrappedInvocation({ captured, expectedComSpec });
     } finally {
       platformSpy.mockRestore();
@@ -184,10 +197,7 @@ describe("windows command wrapper behavior", () => {
     try {
       const result = await runCommandWithTimeout(["corepack", "--version"], { timeoutMs: 1000 });
       expect(result.code).toBe(0);
-      const captured = spawnMock.mock.calls[0] as SpawnCall | undefined;
-      if (!captured) {
-        throw new Error("expected corepack shim spawn");
-      }
+      const captured = requireSpawnCall(0);
       expect(captured[0]).toBe(expectedComSpec);
       expect(captured[1].slice(0, 3)).toEqual(["/d", "/s", "/c"]);
       expect(captured[1][3]).toContain("corepack.cmd --version");
@@ -222,10 +232,7 @@ describe("windows command wrapper behavior", () => {
     try {
       const result = await runCommandWithTimeout(["npm", "--version"], { timeoutMs: 1000 });
       expect(result.code).toBe(0);
-      const captured = spawnMock.mock.calls[0] as SpawnCall | undefined;
-      if (!captured) {
-        throw new Error("expected npm shim spawn");
-      }
+      const captured = requireSpawnCall(0);
       expect(captured[0]).toBe(process.execPath);
       expect(captured[1][0]).toBe(
         path.join(path.dirname(process.execPath), "node_modules", "npm", "bin", "npm-cli.js"),
@@ -252,10 +259,7 @@ describe("windows command wrapper behavior", () => {
     try {
       const result = await runCommandWithTimeout(["npm", "--version"], { timeoutMs: 1000 });
       expect(result.code).toBe(0);
-      const captured = spawnMock.mock.calls[0] as SpawnCall | undefined;
-      if (!captured) {
-        throw new Error("expected npm.cmd fallback spawn");
-      }
+      const captured = requireSpawnCall(0);
       expect(captured[0]).toBe(expectedComSpec);
       expect(captured[1].slice(0, 3)).toEqual(["/d", "/s", "/c"]);
       expect(captured[1][3]).toContain("npm.cmd --version");
@@ -312,7 +316,7 @@ describe("windows command wrapper behavior", () => {
 
     try {
       await runExec("pnpm", ["--version"], 1000);
-      const captured = execFileMock.mock.calls[0] as ExecCall | undefined;
+      const captured = requireExecFileCall(0);
       expectCmdWrappedInvocation({ captured, expectedComSpec });
     } finally {
       platformSpy.mockRestore();
@@ -335,10 +339,7 @@ describe("windows command wrapper behavior", () => {
 
     try {
       await runExec("node", ["--version"], 1000);
-      const captured = execFileMock.mock.calls[0] as ExecCall | undefined;
-      if (!captured) {
-        throw new Error("expected direct execFile invocation");
-      }
+      const captured = requireExecFileCall(0);
       expect(captured[0]).toBe("node");
       expect(captured[1]).toEqual(["--version"]);
       expect(captured[2].windowsHide).toBe(true);
@@ -357,10 +358,7 @@ describe("windows command wrapper behavior", () => {
     try {
       const result = await runCommandWithTimeout(["node", "--version"], { timeoutMs: 1000 });
       expect(result.code).toBe(0);
-      const captured = spawnMock.mock.calls[0] as SpawnCall | undefined;
-      if (!captured) {
-        throw new Error("expected direct spawn invocation");
-      }
+      const captured = requireSpawnCall(0);
       expect(captured[0]).toBe("node");
       expect(captured[1]).toEqual(["--version"]);
       expect(captured[2].windowsHide).toBe(true);
@@ -390,8 +388,8 @@ describe("windows command wrapper behavior", () => {
       const result = await runExec("node", ["gbk-output.js"], 1000);
       expect(result.stdout).toBe("测试");
       expect(result.stderr).toBe("；");
-      const captured = execFileMock.mock.calls[0] as ExecCall | undefined;
-      expect(captured?.[2].encoding).toBe("buffer");
+      const captured = requireExecFileCall(0);
+      expect(captured[2].encoding).toBe("buffer");
     } finally {
       platformSpy.mockRestore();
     }
@@ -412,8 +410,9 @@ describe("windows command wrapper behavior", () => {
     );
 
     try {
-      await expect(runExec("node", ["utf8-output.js"], 1000)).resolves.toMatchObject({
+      await expect(runExec("node", ["utf8-output.js"], 1000)).resolves.toEqual({
         stdout: "测试",
+        stderr: "",
       });
     } finally {
       platformSpy.mockRestore();
@@ -436,8 +435,15 @@ describe("windows command wrapper behavior", () => {
     try {
       await expect(
         runCommandWithTimeout(["node", "gbk-output.js"], { timeoutMs: 1000 }),
-      ).resolves.toMatchObject({
+      ).resolves.toEqual({
+        pid: 1234,
         stdout: "测试",
+        stderr: "",
+        code: 0,
+        signal: null,
+        killed: false,
+        termination: "exit",
+        noOutputTimedOut: false,
       });
     } finally {
       platformSpy.mockRestore();

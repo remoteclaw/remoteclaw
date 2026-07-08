@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
+import { normalizeOptionalString } from "remoteclaw/plugin-sdk/string-coerce-runtime";
 import type { SlackFile } from "./types.js";
 
 export function formatSlackFileReference(file: SlackFile | undefined): string {

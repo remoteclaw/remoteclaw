@@ -165,6 +165,25 @@ function setupBaseWizardState() {
   });
 }
 
+function requireRecord(value: unknown, label: string): Record<string, unknown> {
+  if (!value || typeof value !== "object") {
+    throw new Error(`expected ${label}`);
+  }
+  return value as Record<string, unknown>;
+}
+
+function requireWriteConfig(callIndex = 0) {
+  const call = mocks.writeConfigFile.mock.calls.at(callIndex);
+  if (!call) {
+    throw new Error(`Expected writeConfigFile call ${callIndex}`);
+  }
+  return requireRecord(call[0], "written config");
+}
+
+function getGateway(config: Record<string, unknown>) {
+  return requireRecord(config.gateway, "gateway config");
+}
+
 function queueWizardPrompts(params: { select: string[]; confirm: boolean[]; text?: string }) {
   const selectQueue = [...params.select];
   const confirmQueue = [...params.confirm];
@@ -208,11 +227,7 @@ describe("runConfigureWizard", () => {
 
     await runConfigureWizard({ command: "configure" }, createRuntime());
 
-    expect(mocks.writeConfigFile).toHaveBeenCalledWith(
-      expect.objectContaining({
-        gateway: expect.objectContaining({ mode: "local" }),
-      }),
-    );
+    expect(getGateway(requireWriteConfig()).mode).toBe("local");
   });
 
   it("exits with code 1 when configure wizard is cancelled", async () => {

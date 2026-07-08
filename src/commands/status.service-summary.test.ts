@@ -19,6 +19,14 @@ function createService(overrides: Partial<GatewayService>): GatewayService {
   };
 }
 
+function requireMockArg(mock: { mock: { calls: unknown[][] } }, label: string): unknown {
+  const call = mock.mock.calls.at(0);
+  if (!call) {
+    throw new Error(`expected ${label} call`);
+  }
+  return call[0];
+}
+
 describe("readServiceStatusSummary", () => {
   it("marks RemoteClaw-managed services as installed", async () => {
     const summary = await readServiceStatusSummary(
@@ -80,20 +88,12 @@ describe("readServiceStatusSummary", () => {
       "Daemon",
     );
 
-    expect(isLoaded).toHaveBeenCalledWith(
-      expect.objectContaining({
-        env: expect.objectContaining({
-          REMOTECLAW_GATEWAY_PORT: "18789",
-        }),
-      }),
-    );
-    expect(readRuntime).toHaveBeenCalledWith(
-      expect.objectContaining({
-        REMOTECLAW_GATEWAY_PORT: "18789",
-      }),
-    );
+    const loadedArgs = requireMockArg(isLoaded, "isLoaded") as GatewayServiceEnvArgs;
+    expect(loadedArgs?.env?.REMOTECLAW_GATEWAY_PORT).toBe("18789");
+    const runtimeEnv = requireMockArg(readRuntime, "readRuntime") as NodeJS.ProcessEnv;
+    expect(runtimeEnv?.REMOTECLAW_GATEWAY_PORT).toBe("18789");
     expect(summary.installed).toBe(true);
     expect(summary.loaded).toBe(true);
-    expect(summary.runtime).toMatchObject({ status: "running" });
+    expect(summary.runtime?.status).toBe("running");
   });
 });

@@ -3,10 +3,23 @@ export {
   findCommandByNativeName,
   listNativeCommandSpecs,
   listNativeCommandSpecsForConfig,
+  maybeResolveTextAlias,
+  normalizeCommandBody,
   parseCommandArgs,
+  serializeCommandArgs,
   resolveCommandArgMenu,
 } from "../auto-reply/commands-registry.js";
-export type { CommandArgs } from "../auto-reply/commands-registry.js";
+export type {
+  ChatCommandDefinition,
+  CommandArgDefinition,
+  CommandArgValues,
+  CommandArgs,
+  NativeCommandSpec,
+} from "../auto-reply/commands-registry.js";
+export {
+  hasControlCommand,
+  shouldComputeCommandAuthorized,
+} from "../auto-reply/command-detection.js";
 export {
   resolveCommandAuthorizedFromAuthorizers,
   resolveControlCommandGate,

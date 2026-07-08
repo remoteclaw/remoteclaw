@@ -142,8 +142,10 @@ describe("runGatewayUpdate", () => {
 
     expect(result.status).toBe("skipped");
     expect(result.reason).toBe("not-git-install");
-    expect(calls.some((call) => call.startsWith("pnpm add -g"))).toBe(false);
-    expect(calls.some((call) => call.startsWith("npm i -g"))).toBe(false);
+    const pnpmGlobalInstallCalls = calls.filter((call) => call.startsWith("pnpm add -g"));
+    const npmGlobalInstallCalls = calls.filter((call) => call.startsWith("npm i -g"));
+    expect(pnpmGlobalInstallCalls).toStrictEqual([]);
+    expect(npmGlobalInstallCalls).toStrictEqual([]);
   });
 
   async function runNpmGlobalUpdateCase(params: {
@@ -234,7 +236,7 @@ describe("runGatewayUpdate", () => {
     expect(result.mode).toBe("npm");
     expect(result.before?.version).toBe("1.0.0");
     expect(result.after?.version).toBe("2.0.0");
-    expect(calls.some((call) => call === expectedInstallCommand)).toBe(true);
+    expect(calls).toContain(expectedInstallCommand);
   });
 
   it("cleans stale npm rename dirs before global update", async () => {
@@ -286,7 +288,7 @@ describe("runGatewayUpdate", () => {
       expect(result.mode).toBe("bun");
       expect(result.before?.version).toBe("1.0.0");
       expect(result.after?.version).toBe("2.0.0");
-      expect(calls.some((call) => call === "bun add -g remoteclaw@latest")).toBe(true);
+      expect(calls).toContain("bun add -g remoteclaw@latest");
     });
   });
 

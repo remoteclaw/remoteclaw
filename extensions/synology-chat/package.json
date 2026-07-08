@@ -21,5 +21,8 @@
       "localPath": "extensions/synology-chat",
       "defaultChoice": "npm"
     }
+  },
+  "dependencies": {
+    "zod": "^4.3.6"
   }
 }

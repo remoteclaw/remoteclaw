@@ -21,9 +21,22 @@ class FakeEmitter {
   }
 }
 
+function statusCallAt(setStatus: ReturnType<typeof vi.fn>, index: number): Record<string, unknown> {
+  const call = setStatus.mock.calls[index];
+  if (!call) {
+    throw new Error(`expected status call ${index}`);
+  }
+  const [status] = call;
+  if (!status || typeof status !== "object" || Array.isArray(status)) {
+    throw new Error(`expected status call ${index} payload`);
+  }
+  return status as Record<string, unknown>;
+}
+
 describe("slack socket reconnect helpers", () => {
   it("seeds event liveness when socket mode connects", () => {
     const setStatus = vi.fn();
+    vi.spyOn(Date, "now").mockReturnValue(1_711_406_400_000);
 
     __testing.publishSlackConnectedStatus(setStatus);
 
@@ -41,6 +54,7 @@ describe("slack socket reconnect helpers", () => {
   it("clears connected state when socket mode disconnects", () => {
     const setStatus = vi.fn();
     const err = new Error("dns down");
+    vi.spyOn(Date, "now").mockReturnValue(1_711_406_401_000);
 
     __testing.publishSlackDisconnectedStatus(setStatus, err);
 
@@ -48,7 +62,7 @@ describe("slack socket reconnect helpers", () => {
     expect(setStatus).toHaveBeenCalledWith({
       connected: false,
       lastDisconnect: {
-        at: expect.any(Number),
+        at: 1_711_406_401_000,
         error: "dns down",
       },
       lastError: "dns down",
@@ -57,6 +71,7 @@ describe("slack socket reconnect helpers", () => {
 
   it("clears connected state without error when socket mode disconnects cleanly", () => {
     const setStatus = vi.fn();
+    vi.spyOn(Date, "now").mockReturnValue(1_711_406_402_000);
 
     __testing.publishSlackDisconnectedStatus(setStatus);
 
@@ -64,7 +79,7 @@ describe("slack socket reconnect helpers", () => {
     expect(setStatus).toHaveBeenCalledWith({
       connected: false,
       lastDisconnect: {
-        at: expect.any(Number),
+        at: 1_711_406_402_000,
       },
       lastError: null,
     });

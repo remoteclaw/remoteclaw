@@ -27,7 +27,7 @@ ARG REMOTECLAW_BUN_IMAGE="oven/bun:1.3.13@sha256:87416c977a612a204eb54ab9f392702
 # To update, run: docker manifest inspect node:22-bookworm (or podman)
 # and replace the digest below with the current multi-arch manifest list entry.
 
-FROM ${REMOTECLAW_NODE_BOOKWORM_IMAGE} AS ext-deps
+FROM ${REMOTECLAW_NODE_BOOKWORM_IMAGE} AS workspace-deps
 ARG REMOTECLAW_EXTENSIONS
 # Copy package.json for opted-in extensions so pnpm resolves their deps.
 RUN --mount=type=bind,source=extensions,target=/tmp/extensions,readonly \
@@ -67,11 +67,11 @@ COPY . .
 # A2UI bundle may fail under QEMU cross-compilation (e.g. building amd64
 # on Apple Silicon). CI builds natively per-arch so this is a no-op there.
 # Stub it so local cross-arch builds still succeed.
-RUN pnpm canvas:a2ui:bundle || \
+RUN pnpm_config_verify_deps_before_run=false pnpm canvas:a2ui:bundle || \
     (echo "A2UI bundle: creating stub (non-fatal)" && \
-     mkdir -p src/canvas-host/a2ui && \
-     echo "/* A2UI bundle unavailable in this build */" > src/canvas-host/a2ui/a2ui.bundle.js && \
-     echo "stub" > src/canvas-host/a2ui/.bundle.hash && \
+     mkdir -p extensions/canvas/src/host/a2ui && \
+     echo "/* A2UI bundle unavailable in this build */" > extensions/canvas/src/host/a2ui/a2ui.bundle.js && \
+     echo "stub" > extensions/canvas/src/host/a2ui/.bundle.hash && \
      rm -rf vendor/a2ui apps/shared/RemoteClawKit/Tools/CanvasA2UI)
 RUN pnpm build
 # Force pnpm for UI build (Bun may fail on ARM/Synology architectures)
@@ -180,4 +180,5 @@ USER node
 #   2. Override CMD: ["node","remoteclaw.mjs","gateway","--allow-unconfigured","--bind","lan"]
 HEALTHCHECK --interval=3m --timeout=10s --start-period=15s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:18789/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+ENTRYPOINT ["tini", "-s", "--"]
 CMD ["node", "remoteclaw.mjs", "gateway", "--allow-unconfigured"]

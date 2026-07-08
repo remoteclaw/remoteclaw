@@ -68,7 +68,6 @@ describe("buildTelegramMessageContext per-topic agentId routing", () => {
       topicConfig: { agentId: "zu", systemPrompt: "I am Zu" },
     });
 
-    expect(ctx).not.toBeNull();
     expect(ctx?.ctxPayload?.SessionKey).toContain("agent:zu:");
     expect(ctx?.ctxPayload?.SessionKey).toContain("telegram:group:-1001234567890:topic:3");
   });
@@ -134,7 +133,6 @@ describe("buildTelegramMessageContext per-topic agentId routing", () => {
       }),
     });
 
-    expect(ctx).not.toBeNull();
     expect(ctx?.ctxPayload?.SessionKey).toContain("agent:support:");
   });
 });

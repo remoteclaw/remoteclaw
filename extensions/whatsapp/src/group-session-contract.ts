@@ -1,4 +1,4 @@
-import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/string-coerce-runtime";
 
 export function resolveLegacyGroupSessionKey(ctx: { From?: string }): {
   key: string;

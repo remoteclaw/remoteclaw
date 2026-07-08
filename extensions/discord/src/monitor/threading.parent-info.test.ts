@@ -106,6 +106,6 @@ describe("resolveDiscordThreadParentInfo", () => {
 
     expect(fetchChannel).toHaveBeenCalledTimes(1);
     expect(fetchChannel).toHaveBeenCalledWith("thread-1");
-    expect(result).toEqual({});
+    expect(result).toStrictEqual({});
   });
 });

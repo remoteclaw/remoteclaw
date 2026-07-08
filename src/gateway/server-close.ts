@@ -34,6 +34,10 @@ export function createGatewayCloseHandler(params: {
   wss: WebSocketServer;
   httpServer: HttpServer;
   httpServers?: HttpServer[];
+  drainActiveSessionsForShutdown?: (params: {
+    reason: "shutdown" | "restart";
+    totalTimeoutMs?: number;
+  }) => Promise<{ emittedSessionIds: string[]; timedOut: boolean }>;
 }) {
   return async (opts?: { reason?: string; restartExpectedMs?: number | null }) => {
     const reasonRaw = normalizeOptionalString(opts?.reason) ?? "";

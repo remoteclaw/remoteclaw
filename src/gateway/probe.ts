@@ -147,6 +147,7 @@ export async function probeGateway(opts: {
   includeDetails?: boolean;
   detailLevel?: "none" | "presence" | "full";
   tlsFingerprint?: string;
+  env?: NodeJS.ProcessEnv;
 }): Promise<GatewayProbeResult> {
   const startedAt = Date.now();
   const instanceId = randomUUID();

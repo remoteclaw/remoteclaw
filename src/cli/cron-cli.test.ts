@@ -96,6 +96,16 @@ function resetGatewayMock() {
   defaultRuntime.exit.mockClear();
 }
 
+function runtimeErrorMessages(): string[] {
+  return defaultRuntime.error.mock.calls
+    .map(([message]) => message)
+    .filter((message): message is string => typeof message === "string");
+}
+
+function expectRuntimeErrorContaining(text: string): void {
+  expect(runtimeErrorMessages().some((message) => message.includes(text))).toBe(true);
+}
+
 async function runCronCommand(args: string[]): Promise<void> {
   resetGatewayMock();
   const program = buildProgram();
@@ -796,9 +806,7 @@ describe("cron cli", () => {
         { from: "user" },
       ),
     ).rejects.toThrow("__exit__:1");
-    expect(defaultRuntime.error).toHaveBeenCalledWith(
-      expect.stringContaining("Use either --failure-alert-include-skipped"),
-    );
+    expectRuntimeErrorContaining("Use either --failure-alert-include-skipped");
     expect(callGatewayFromCli).not.toHaveBeenCalled();
   });
 });

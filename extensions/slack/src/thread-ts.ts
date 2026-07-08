@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
+import { normalizeOptionalString } from "remoteclaw/plugin-sdk/string-coerce-runtime";
 
 const SLACK_THREAD_TS_PATTERN = /^\d+\.\d+$/;
 

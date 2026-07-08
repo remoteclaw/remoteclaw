@@ -75,11 +75,34 @@ function expectNoAccountFieldInPassedOptions() {
   const passedOpts = (
     messageCommandMock.mock.calls as unknown as Array<[Record<string, unknown>]>
   )?.[0]?.[0];
-  expect(passedOpts).toBeTruthy();
-  if (!passedOpts) {
+  if (passedOpts === undefined) {
     throw new Error("expected message command call");
   }
   expect(passedOpts).not.toHaveProperty("account");
+}
+
+function requireRecord(value: unknown, label: string): Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error(`expected ${label} to be an object`);
+  }
+  return value as Record<string, unknown>;
+}
+
+function expectMessageCommandOptions(expected: Record<string, unknown>, callIndex = 0): void {
+  const call = (messageCommandMock.mock.calls as unknown[][])[callIndex];
+  if (!call) {
+    throw new Error(`expected messageCommand call ${callIndex}`);
+  }
+  const options = requireRecord(call[0], `messageCommand options ${callIndex}`);
+  for (const [key, expectedValue] of Object.entries(expected)) {
+    expect(options[key], `messageCommand options.${key}`).toEqual(expectedValue);
+  }
+  if (call[1] == null) {
+    throw new Error("expected messageCommand runtime");
+  }
+  if (call[2] == null) {
+    throw new Error("expected messageCommand deps");
+  }
 }
 
 describe("runMessageAction", () => {
@@ -217,17 +240,13 @@ describe("runMessageAction", () => {
       }),
     ).rejects.toThrow("exit");
 
-    expect(messageCommandMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        action: "poll",
-        channel: "discord",
-        target: "456",
-        accountId: "acct-1",
-        message: "hi",
-      }),
-      expect.anything(),
-      expect.anything(),
-    );
+    expectMessageCommandOptions({
+      action: "poll",
+      channel: "discord",
+      target: "456",
+      accountId: "acct-1",
+      message: "hi",
+    });
     // account key should be stripped in favor of accountId
     expectNoAccountFieldInPassedOptions();
   });
@@ -244,16 +263,12 @@ describe("runMessageAction", () => {
       }),
     ).rejects.toThrow("exit");
 
-    expect(messageCommandMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        action: "send",
-        channel: "discord",
-        target: "789",
-        accountId: undefined,
-      }),
-      expect.anything(),
-      expect.anything(),
-    );
+    expectMessageCommandOptions({
+      action: "send",
+      channel: "discord",
+      target: "789",
+      accountId: undefined,
+    });
     expectNoAccountFieldInPassedOptions();
   });
 });

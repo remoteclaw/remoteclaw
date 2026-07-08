@@ -31,7 +31,7 @@ export function startGatewayMaintenanceTimers(params: {
   logHealth: { error: (msg: string) => void };
   dedupe: Map<string, DedupeEntry>;
   chatAbortControllers: Map<string, ChatAbortControllerEntry>;
-  chatRunState: { abortedRuns: Map<string, number> };
+  chatRunState: { abortedRuns: Map<string, number>; deltaLastBroadcastText: Map<string, string> };
   chatRunBuffers: Map<string, string>;
   chatDeltaSentAt: Map<string, number>;
   chatDeltaLastBroadcastLen: Map<string, number>;
@@ -82,15 +82,34 @@ export function startGatewayMaintenanceTimers(params: {
   const dedupeCleanup = setInterval(() => {
     const AGENT_RUN_SEQ_MAX = 10_000;
     const now = Date.now();
+    const isActiveRunDedupeKey = (key: string) => {
+      if (!key.startsWith("agent:") && !key.startsWith("chat:")) {
+        return false;
+      }
+      const runId = key.slice(key.indexOf(":") + 1);
+      const entry = runId ? params.chatAbortControllers.get(runId) : undefined;
+      if (!entry) {
+        return false;
+      }
+      return key.startsWith("agent:") ? entry.kind === "agent" : entry.kind !== "agent";
+    };
     for (const [k, v] of params.dedupe) {
+      if (isActiveRunDedupeKey(k)) {
+        continue;
+      }
       if (now - v.ts > DEDUPE_TTL_MS) {
         params.dedupe.delete(k);
       }
     }
     if (params.dedupe.size > DEDUPE_MAX) {
-      const entries = [...params.dedupe.entries()].toSorted((a, b) => a[1].ts - b[1].ts);
-      for (let i = 0; i < params.dedupe.size - DEDUPE_MAX; i++) {
-        params.dedupe.delete(entries[i][0]);
+      const excess = params.dedupe.size - DEDUPE_MAX;
+      const oldestKeys = [...params.dedupe.entries()]
+        .filter(([key]) => !isActiveRunDedupeKey(key))
+        .toSorted(([, left], [, right]) => left.ts - right.ts)
+        .slice(0, excess)
+        .map(([key]) => key);
+      for (const key of oldestKeys) {
+        params.dedupe.delete(key);
       }
     }
 
@@ -134,6 +153,7 @@ export function startGatewayMaintenanceTimers(params: {
       params.chatRunBuffers.delete(runId);
       params.chatDeltaSentAt.delete(runId);
       params.chatDeltaLastBroadcastLen.delete(runId);
+      params.chatRunState.deltaLastBroadcastText.delete(runId);
     }
 
     // Sweep stale buffers for runs that were never explicitly aborted.
@@ -153,6 +173,7 @@ export function startGatewayMaintenanceTimers(params: {
       params.chatRunBuffers.delete(runId);
       params.chatDeltaSentAt.delete(runId);
       params.chatDeltaLastBroadcastLen.delete(runId);
+      params.chatRunState.deltaLastBroadcastText.delete(runId);
     }
   }, 60_000);
 

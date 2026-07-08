@@ -8,7 +8,7 @@ title: "Directory"
 
 # `remoteclaw directory`
 
-Directory lookups for channels that support it (contacts/peers, groups, and “me”).
+Directory lookups for channels that support it (contacts/peers, groups, and "me").
 
 ## Common flags
 

@@ -48,8 +48,7 @@ describe("Synology channel wiring integration", () => {
     const started = plugin.gateway.startAccount(ctx);
     expect(registerPluginHttpRouteMock).toHaveBeenCalledTimes(1);
 
-    const firstCall = registerPluginHttpRouteMock.mock.calls[0];
-    expect(firstCall).toBeTruthy();
+    const firstCall = registerPluginHttpRouteMock.mock.calls.at(0);
     if (!firstCall) {
       throw new Error("Expected registerPluginHttpRoute to be called");
     }

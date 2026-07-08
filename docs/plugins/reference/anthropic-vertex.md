@@ -12,7 +12,7 @@ Adds Anthropic Vertex model provider support to RemoteClaw.
 ## Distribution
 
 - Package: `@remoteclaw/anthropic-vertex-provider`
-- Install route: included in RemoteClaw
+- Install route: npm; ClawHub
 
 ## Surface
 

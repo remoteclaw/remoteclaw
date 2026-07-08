@@ -59,11 +59,11 @@ describe("markdownToWhatsApp", () => {
 
 describe("assertWebChannel", () => {
   it("accepts valid channel", () => {
-    expect(() => assertWebChannel("web")).not.toThrow();
+    expect(assertWebChannel("web")).toBeUndefined();
   });
 
   it("throws for invalid channel", () => {
-    expect(() => assertWebChannel("bad" as string)).toThrow();
+    expect(() => assertWebChannel("bad" as string)).toThrow("Web channel must be 'web'");
   });
 });
 
@@ -95,10 +95,10 @@ describe("jidToE164", () => {
         const { jidToE164: freshJidToE164 } = await import("./text-runtime.js");
         expect(freshJidToE164("123@lid")).toBe("+5551234");
       } finally {
-        if (previousStateDir) {
-          process.env.REMOTECLAW_STATE_DIR = previousStateDir;
-        } else {
+        if (previousStateDir === undefined) {
           delete process.env.REMOTECLAW_STATE_DIR;
+        } else {
+          process.env.REMOTECLAW_STATE_DIR = previousStateDir;
         }
         vi.resetModules();
       }

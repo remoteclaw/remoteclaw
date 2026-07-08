@@ -17,6 +17,8 @@ export type HeartbeatSessionSeed = {
   lastChannel: string;
   lastProvider: string;
   lastTo: string;
+  pendingFinalDelivery?: boolean;
+  pendingFinalDeliveryText?: string;
   agentHarnessId?: string;
   agentRuntimeOverride?: string;
   model?: string;

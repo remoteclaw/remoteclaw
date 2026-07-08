@@ -25,7 +25,7 @@ function createLegacyRuntimeListConfig(
   models?: Record<string, Record<string, never>>,
 ): RemoteClawConfig {
   return createModelDefaultsConfig({
-    primary: "google-gemini-cli/gemini-3-pro-preview",
+    primary: "google-gemini-cli/gemini-3.1-pro-preview",
     ...(models ? { models } : {}),
   });
 }
@@ -289,14 +289,12 @@ describe("listSessionsFromStore search", () => {
           } as SessionEntry,
         });
 
-        expect(result.sessions[0]).toMatchObject({
-          key: "agent:main:main",
-          modelProvider: "openai",
-          model: "gpt-5.4",
-          totalTokens: 3_200,
-          totalTokensFresh: true,
-          contextTokens: 200_000,
-        });
+        expect(result.sessions[0]?.key).toBe("agent:main:main");
+        expect(result.sessions[0]?.modelProvider).toBe("openai");
+        expect(result.sessions[0]?.model).toBe("gpt-5.4");
+        expect(result.sessions[0]?.totalTokens).toBe(3_200);
+        expect(result.sessions[0]?.totalTokensFresh).toBe(true);
+        expect(result.sessions[0]?.contextTokens).toBe(200_000);
       },
     });
   });

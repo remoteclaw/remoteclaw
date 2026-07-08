@@ -101,7 +101,7 @@ describe("msteams messenger", () => {
         textChunkLimit: 4000,
         tableMode: "code",
       });
-      expect(messages).toEqual([]);
+      expect(messages).toStrictEqual([]);
     });
 
     it("does not filter non-exact silent reply prefixes", () => {
@@ -318,8 +318,8 @@ describe("msteams messenger", () => {
 
       const adapter = createNoopAdapter();
 
-      await expect(
-        sendMSTeamsMessages({
+      try {
+        await sendMSTeamsMessages({
           replyStyle: "thread",
           adapter,
           appId: "app123",
@@ -327,8 +327,11 @@ describe("msteams messenger", () => {
           context: ctx,
           messages: [{ text: "one" }],
           retry: { maxAttempts: 3, baseDelayMs: 0, maxDelayMs: 0 },
-        }),
-      ).rejects.toMatchObject({ statusCode: 400 });
+        });
+        throw new Error("expected Teams send client error");
+      } catch (error) {
+        expect((error as { statusCode?: unknown }).statusCode).toBe(400);
+      }
     });
 
     it("falls back to proactive messaging when thread context is revoked", async () => {

@@ -56,6 +56,18 @@ vi.mock("../gateway/call.js", () => ({
   callGateway: (...args: unknown[]) => callGatewayMock(...args),
 }));
 
+function requireFirstRuntimeLog(): string {
+  const [call] = runtime.log.mock.calls;
+  if (!call) {
+    throw new Error("expected health command log output");
+  }
+  const [message] = call;
+  if (message === undefined) {
+    throw new Error("expected health command log output");
+  }
+  return String(message);
+}
+
 describe("healthCommand", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -90,8 +102,7 @@ describe("healthCommand", () => {
     await healthCommand({ json: true, timeoutMs: 5000, config: {} }, runtime as never);
 
     expect(runtime.exit).not.toHaveBeenCalled();
-    const logged = runtime.log.mock.calls[0]?.[0] as string;
-    const parsed = JSON.parse(logged) as HealthSummary;
+    const parsed = JSON.parse(requireFirstRuntimeLog()) as HealthSummary;
     expect(parsed.channels.whatsapp?.linked).toBe(true);
     expect(parsed.channels.telegram?.configured).toBe(true);
     expect(parsed.sessions.count).toBe(1);
@@ -151,9 +162,9 @@ describe("healthCommand", () => {
     });
 
     const lines = formatHealthChannelLines(summary, { accountMode: "all" });
-    expect(lines).toContain(
+    expect(lines).toStrictEqual([
       "Telegram: ok (@pinguini_ugi_bot:main:196ms, @flurry_ugi_bot:flurry:190ms, @poe_ugi_bot:poe:188ms)",
-    );
+    ]);
   });
 });
 

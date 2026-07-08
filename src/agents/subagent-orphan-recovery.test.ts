@@ -76,10 +76,27 @@ async function expectSkippedRecovery(store: ReturnType<typeof sessions.loadSessi
 }
 
 function getResumeMessage() {
-  const call = vi.mocked(gateway.callGateway).mock.calls[0];
-  expect(call).toBeDefined();
+  const call = vi.mocked(gateway.callGateway).mock.calls.at(0);
+  if (call === undefined) {
+    throw new Error("expected resume gateway call");
+  }
   const params = call[0].params as Record<string, unknown>;
   return params.message as string;
+}
+
+function firstCallParam(calls: ReadonlyArray<readonly unknown[]>, label: string) {
+  const call = calls[0];
+  if (call === undefined) {
+    throw new Error(`expected ${label} call`);
+  }
+  return call[0];
+}
+
+function requireRecord(value: unknown, label: string): Record<string, unknown> {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`expected ${label} to be a record`);
+  }
+  return value as Record<string, unknown>;
 }
 
 describe("subagent-orphan-recovery", () => {
@@ -116,20 +133,27 @@ describe("subagent-orphan-recovery", () => {
 
     // Should have called callGateway to resume the session
     expect(gateway.callGateway).toHaveBeenCalledOnce();
-    const callArgs = vi.mocked(gateway.callGateway).mock.calls[0];
+    const callArgs = vi.mocked(gateway.callGateway).mock.calls.at(0);
+    if (callArgs === undefined) {
+      throw new Error("expected gateway resume call");
+    }
     const opts = callArgs[0];
     expect(opts.method).toBe("agent");
     const params = opts.params as Record<string, unknown>;
     expect(params.sessionKey).toBe("agent:main:subagent:test-session-1");
     expect(params.message).toContain("gateway reload");
     expect(params.message).toContain("Test task: implement feature X");
-    expect(subagentRegistrySteerRuntime.replaceSubagentRunAfterSteer).toHaveBeenCalledWith(
-      expect.objectContaining({
-        previousRunId: "run-1",
-        nextRunId: "test-run-id",
-        fallback: run,
-      }),
+    expect(subagentRegistrySteerRuntime.replaceSubagentRunAfterSteer).toHaveBeenCalledOnce();
+    const replaceParams = requireRecord(
+      firstCallParam(
+        vi.mocked(subagentRegistrySteerRuntime.replaceSubagentRunAfterSteer).mock.calls,
+        "run replacement",
+      ),
+      "run replacement params",
     );
+    expect(replaceParams.previousRunId).toBe("run-1");
+    expect(replaceParams.nextRunId).toBe("test-run-id");
+    expect(replaceParams.fallback).toBe(run);
   });
 
   it("skips sessions that are not aborted", async () => {

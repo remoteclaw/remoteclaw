@@ -20,12 +20,11 @@ describe("gateway startup log", () => {
       isNixMode: false,
     });
 
-    expect(warn).toHaveBeenCalledTimes(1);
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining("dangerous config flags enabled"));
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining("gateway.controlUi.dangerouslyDisableDeviceAuth=true"),
-    );
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining("remoteclaw security audit"));
+    expect(warn.mock.calls).toEqual([
+      [
+        "security warning: dangerous config flags enabled: gateway.controlUi.dangerouslyDisableDeviceAuth=true. Run `remoteclaw security audit`.",
+      ],
+    ]);
   });
 
   it("does not warn when dangerous config flags are disabled", () => {

@@ -41,8 +41,9 @@ describe("tool-policy-pipeline", () => {
         },
       ],
     });
-    expect(warnings.length).toBe(1);
-    expect(warnings[0]).toContain("unknown entries (wat)");
+    expect(warnings).toEqual([
+      "tools: tools.allow allowlist contains unknown entries (wat). These entries won't match any tool unless the plugin is enabled.",
+    ]);
   });
 
   test("warns gated core tools as unavailable instead of plugin-only unknowns", () => {

@@ -3,12 +3,12 @@ import {
   resolveCompiledAllowlistMatch,
   type AllowlistMatch,
 } from "remoteclaw/plugin-sdk/allow-from";
+import { normalizeOptionalLowercaseString } from "remoteclaw/plugin-sdk/string-coerce-runtime";
 import {
   normalizeHyphenSlug,
   normalizeStringEntries,
   normalizeStringEntriesLower,
 } from "remoteclaw/plugin-sdk/string-normalization-runtime";
-import { normalizeOptionalLowercaseString } from "remoteclaw/plugin-sdk/text-runtime";
 
 const SLACK_SLUG_CACHE_MAX = 512;
 const slackSlugCache = new Map<string, string>();

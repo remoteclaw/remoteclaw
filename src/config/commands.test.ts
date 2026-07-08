@@ -115,15 +115,6 @@ describe("resolveNativeSkillsEnabled", () => {
       }),
     ).toBe(false);
   });
-
-  it("uses the plugin registry for auto defaults even when chat-channel normalization misses", () => {
-    expect(
-      resolveNativeSkillsEnabled({
-        providerId: "demo-channel",
-        globalSetting: "auto",
-      }),
-    ).toBe(true);
-  });
 });
 
 describe("resolveNativeCommandsEnabled", () => {
@@ -137,15 +128,6 @@ describe("resolveNativeCommandsEnabled", () => {
     expect(resolveNativeCommandsEnabled({ providerId: "slack", globalSetting: "auto" })).toBe(
       false,
     );
-  });
-
-  it("uses the plugin registry for auto defaults even when chat-channel normalization misses", () => {
-    expect(
-      resolveNativeCommandsEnabled({
-        providerId: "demo-channel",
-        globalSetting: "auto",
-      }),
-    ).toBe(true);
   });
 
   it("honors explicit provider/global booleans", () => {
@@ -163,6 +145,29 @@ describe("resolveNativeCommandsEnabled", () => {
       }),
     ).toBe(false);
   });
+});
+
+describe("plugin registry auto defaults", () => {
+  it.each([
+    {
+      name: "native skills",
+      resolve: resolveNativeSkillsEnabled,
+    },
+    {
+      name: "native commands",
+      resolve: resolveNativeCommandsEnabled,
+    },
+  ])(
+    "uses the plugin registry for auto defaults even when chat-channel normalization misses for $name",
+    ({ resolve }) => {
+      expect(
+        resolve({
+          providerId: "demo-channel",
+          globalSetting: "auto",
+        }),
+      ).toBe(true);
+    },
+  );
 });
 
 describe("isNativeCommandsExplicitlyDisabled", () => {

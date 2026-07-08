@@ -1,12 +1,22 @@
 # RemoteClaw iOS Changelog
 
-## 2026.5.7 - 2026-05-06
+## 2026.5.12 - 2026-05-12
 
-Maintenance update for the current RemoteClaw release.
+Maintenance update for the current RemoteClaw beta release.
+
+## 2026.5.10 - 2026-05-10
+
+Maintenance update for the current RemoteClaw beta release.
+
+- Gateway connections now recover after a trusted Gateway certificate changes by refreshing the stored certificate pin during reconnect.
+
+## 2026.5.8 - 2026-05-08
+
+Maintenance update for the current RemoteClaw development release.
 
 ## 2026.5.6 - 2026-05-06
 
-Maintenance update for the current RemoteClaw release.
+Maintenance update for the current RemoteClaw development release.
 
 ## 2026.5.5 - 2026-05-05
 
@@ -78,12 +88,12 @@ Maintenance update for the current RemoteClaw beta release.
 
 ## 2026.4.12 - 2026-04-12
 
-Maintenance update for the current OpenClaw release.
+Maintenance update for the current RemoteClaw release.
 
 ## 2026.4.10 - 2026-04-10
 
-Maintenance update for the current OpenClaw release.
+Maintenance update for the current RemoteClaw release.
 
 ## 2026.4.6 - 2026-04-06
 
-First App Store release of OpenClaw for iPhone. Pair with your OpenClaw Gateway to use chat, voice, sharing, and device actions from iOS.
+First App Store release of RemoteClaw for iPhone. Pair with your RemoteClaw Gateway to use chat, voice, sharing, and device actions from iOS.

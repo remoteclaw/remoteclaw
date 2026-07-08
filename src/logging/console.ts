@@ -155,9 +155,6 @@ const SUPPRESSED_DISCORD_EVENTQUEUE_LISTENERS = [
 ] as const;
 
 function shouldSuppressConsoleMessage(message: string): boolean {
-  if (isVerbose()) {
-    return false;
-  }
   if (SUPPRESSED_CONSOLE_PREFIXES.some((prefix) => message.startsWith(prefix))) {
     return true;
   }

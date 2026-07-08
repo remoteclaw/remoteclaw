@@ -1,6 +1,7 @@
 import type { RemoteClawConfig } from "../../../config/config.js";
 import { resolveGatewayService } from "../../../daemon/service.js";
 import { isSystemdUserServiceAvailable } from "../../../daemon/systemd.js";
+import { formatErrorMessage } from "../../../infra/errors.js";
 import type { RuntimeEnv } from "../../../runtime.js";
 import { buildGatewayInstallPlan, gatewayInstallErrorHint } from "../../daemon-install-helpers.js";
 import { DEFAULT_GATEWAY_DAEMON_RUNTIME, isGatewayDaemonRuntime } from "../../daemon-runtime.js";
@@ -27,7 +28,7 @@ export async function installGatewayDaemonNonInteractive(params: {
   }
 
   if (!isGatewayDaemonRuntime(daemonRuntimeRaw)) {
-    runtime.error("Invalid --daemon-runtime (use node or bun)");
+    runtime.error('Invalid --daemon-runtime. Use "node" or "bun".');
     runtime.exit(1);
     return;
   }
@@ -71,7 +72,7 @@ export async function installGatewayDaemonNonInteractive(params: {
       environmentValueSources,
     });
   } catch (err) {
-    runtime.error(`Gateway service install failed: ${String(err)}`);
+    runtime.error(`Gateway service install failed: ${formatErrorMessage(err)}`);
     runtime.log(gatewayInstallErrorHint());
     return;
   }

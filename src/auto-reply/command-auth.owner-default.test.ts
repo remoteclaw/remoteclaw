@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import { resolveCommandAuthorization } from "./command-auth.js";
 import type { MsgContext } from "./templating.js";
@@ -184,5 +184,187 @@ describe("senderIsOwner only reflects explicit owner authorization", () => {
     });
 
     expect(auth.senderIsOwner).toBe(true);
+  });
+});
+
+// Owner enforcement (WhatsApp default enforceOwnerForCommands) must deny a
+// non-owner regardless of how permissive the allow-lists are. Restores the
+// guarantee from upstream OpenClaw #78864, whose literal diff a content-only
+// sync dropped because this fork's resolver is inlined rather than split into
+// upstream's resolveCommandSenderAuthorization helper. See remoteclaw#2821.
+describe("owner enforcement denies non-owner senders under WhatsApp (remoteclaw#2821)", () => {
+  it('denies a non-owner WhatsApp sender when channels.whatsapp.allowFrom is ["*"] (the CVE)', () => {
+    const cfg = {
+      channels: { whatsapp: { allowFrom: ["*"] } },
+    } as RemoteClawConfig;
+
+    const ctx = {
+      Provider: "whatsapp",
+      Surface: "whatsapp",
+      ChatType: "direct",
+      From: "whatsapp:+14155559999",
+      SenderId: "+14155559999",
+      SenderE164: "+14155559999",
+    } as MsgContext;
+
+    const auth = resolveCommandAuthorization({ ctx, cfg, commandAuthorized: true });
+
+    expect(auth.isAuthorizedSender).toBe(false);
+    expect(auth.senderIsOwner).toBe(false);
+  });
+
+  it("denies a non-owner WhatsApp sender when no allowFrom is configured at all", () => {
+    const cfg = {
+      channels: { whatsapp: {} },
+    } as RemoteClawConfig;
+
+    const ctx = {
+      Provider: "whatsapp",
+      Surface: "whatsapp",
+      ChatType: "direct",
+      From: "whatsapp:+14155559999",
+      SenderId: "+14155559999",
+      SenderE164: "+14155559999",
+    } as MsgContext;
+
+    const auth = resolveCommandAuthorization({ ctx, cfg, commandAuthorized: true });
+
+    expect(auth.isAuthorizedSender).toBe(false);
+    expect(auth.senderIsOwner).toBe(false);
+  });
+
+  it('authorizes any WhatsApp sender when commands.ownerAllowFrom is ["*"]', () => {
+    // The discriminator a naive `!senderIsOwnerByIdentity` gate would fail: the
+    // sender is not an identity-matched owner, but ownerAllowFrom: ["*"] makes
+    // everyone an owner, so isOwnerForCommands is true and the gate must NOT deny.
+    const cfg = {
+      channels: { whatsapp: {} },
+      commands: { ownerAllowFrom: ["*"] },
+    } as RemoteClawConfig;
+
+    const ctx = {
+      Provider: "whatsapp",
+      Surface: "whatsapp",
+      ChatType: "direct",
+      From: "whatsapp:+14155559999",
+      SenderId: "+14155559999",
+      SenderE164: "+14155559999",
+    } as MsgContext;
+
+    const auth = resolveCommandAuthorization({ ctx, cfg, commandAuthorized: true });
+
+    expect(auth.isAuthorizedSender).toBe(true);
+    expect(auth.senderIsOwner).toBe(true);
+  });
+
+  it("authorizes an internal operator.admin session even when an owner allowlist excludes it", () => {
+    // operator.admin scope is inherently an internal-provider path, so the
+    // whatsapp-only enforceOwner default is false here; owner enforcement is
+    // active via the configured allowlist. The scope must still pass — a naive
+    // `!senderIsOwnerByIdentity` gate (no identity match here) would wrongly deny.
+    const cfg = {
+      commands: { ownerAllowFrom: ["nonmatching-owner"] },
+    } as RemoteClawConfig;
+
+    const ctx = {
+      Provider: "webchat",
+      Surface: "webchat",
+      GatewayClientScopes: ["operator.admin"],
+    } as MsgContext;
+
+    const auth = resolveCommandAuthorization({ ctx, cfg, commandAuthorized: true });
+
+    expect(auth.isAuthorizedSender).toBe(true);
+    expect(auth.senderIsOwner).toBe(true);
+  });
+
+  it("denies an arbitrary WhatsApp sender when neither allowFrom nor ownerAllowFrom is set, but authorizes an identity-listed one", () => {
+    const arbitraryCtx = {
+      Provider: "whatsapp",
+      Surface: "whatsapp",
+      ChatType: "direct",
+      From: "whatsapp:+14155559999",
+      SenderId: "+14155559999",
+      SenderE164: "+14155559999",
+    } as MsgContext;
+
+    const failClosed = resolveCommandAuthorization({
+      ctx: arbitraryCtx,
+      cfg: { channels: { whatsapp: {} } } as RemoteClawConfig,
+      commandAuthorized: true,
+    });
+    expect(failClosed.isAuthorizedSender).toBe(false);
+
+    // Contrast: the same sender listed in channels.whatsapp.allowFrom is an owner
+    // by identity (matchedCommandOwner), so enforcement authorizes it.
+    const ownerCtx = {
+      Provider: "whatsapp",
+      Surface: "whatsapp",
+      ChatType: "direct",
+      From: "whatsapp:+14155550123",
+      SenderId: "+14155550123",
+      SenderE164: "+14155550123",
+    } as MsgContext;
+
+    const identityOwner = resolveCommandAuthorization({
+      ctx: ownerCtx,
+      cfg: { channels: { whatsapp: { allowFrom: ["+14155550123"] } } } as RemoteClawConfig,
+      commandAuthorized: true,
+    });
+    expect(identityOwner.isAuthorizedSender).toBe(true);
+  });
+
+  it('denies a non-owner even when commands.allowFrom opens commands to all ("*")', () => {
+    // Both-paths fidelity: enforcement must override commands.allowFrom too, not
+    // only the channel-allowFrom fallback path. Without the top-of-branch gate,
+    // commandsAllowAll would authorize this non-owner.
+    const cfg = {
+      channels: { whatsapp: {} },
+      commands: { allowFrom: { "*": ["*"] } },
+    } as RemoteClawConfig;
+
+    const ctx = {
+      Provider: "whatsapp",
+      Surface: "whatsapp",
+      ChatType: "direct",
+      From: "whatsapp:+14155559999",
+      SenderId: "+14155559999",
+      SenderE164: "+14155559999",
+    } as MsgContext;
+
+    const auth = resolveCommandAuthorization({ ctx, cfg, commandAuthorized: true });
+
+    expect(auth.isAuthorizedSender).toBe(false);
+  });
+
+  it("warns operators to configure commands.ownerAllowFrom when enforcement locks everyone out", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const cfg = {
+        channels: { whatsapp: { allowFrom: ["*"] } },
+      } as RemoteClawConfig;
+
+      const ctx = {
+        Provider: "whatsapp",
+        Surface: "whatsapp",
+        ChatType: "direct",
+        // Unique AccountId so the module-level dedup key does not collide with the
+        // other WhatsApp cliff cases in this file.
+        AccountId: "owner-enforcement-cliff-warn-fixture",
+        From: "whatsapp:+14155559999",
+        SenderId: "+14155559999",
+        SenderE164: "+14155559999",
+      } as MsgContext;
+
+      const auth = resolveCommandAuthorization({ ctx, cfg, commandAuthorized: true });
+
+      expect(auth.isAuthorizedSender).toBe(false);
+      expect(warnSpy).toHaveBeenCalled();
+      expect(
+        warnSpy.mock.calls.some((call) => String(call[0]).includes("commands.ownerAllowFrom")),
+      ).toBe(true);
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 });

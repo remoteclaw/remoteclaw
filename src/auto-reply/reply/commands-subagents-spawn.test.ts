@@ -43,8 +43,15 @@ function forbiddenResult(error: string): SpawnSubagentResult {
   };
 }
 
+// ownerAllowFrom: ["*"] authorizes the fixture sender so these spawn-mechanics
+// tests run under the WhatsApp owner-enforcement default (enforceOwner). Without a
+// resolvable owner, the remoteclaw#2821 owner-enforcement gate denies the sender and
+// the command is silently ignored. This fixture is NOT testing authorization —
+// command-auth denial coverage lives in command-auth.owner-default.test.ts and the
+// "ignores unauthorized sender" test below. Do not drop this without re-homing that.
 const baseCfg = {
   session: { mainKey: "main", scope: "per-sender" },
+  commands: { ownerAllowFrom: ["*"] },
 } satisfies RemoteClawConfig;
 
 describe("/subagents spawn command", () => {

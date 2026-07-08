@@ -462,6 +462,26 @@ function resolveFallbackCommandOptions(providerId?: ChannelId): {
   };
 }
 
+// Deduplicates the fail-closed-cliff warning so a per-message denial does not spam
+// the logs. Keyed by provider + account: one warning per misconfigured shape.
+const ownerEnforcementCliffWarned = new Set<string>();
+
+function warnOwnerEnforcementCliff(
+  providerId: ChannelId | undefined,
+  accountId?: string | null,
+): void {
+  const key = `${providerId ?? ""}:${normalizeOptionalLowercaseString(accountId) ?? ""}`;
+  if (ownerEnforcementCliffWarned.has(key)) {
+    return;
+  }
+  ownerEnforcementCliffWarned.add(key);
+  console.warn(
+    `[command-auth] Owner enforcement is enabled for provider "${providerId ?? "unknown"}" but no ` +
+      `command owner is resolvable, so all commands are denied. Configure commands.ownerAllowFrom ` +
+      `(e.g. ["*"] for public command access, or an explicit owner list) to authorize senders.`,
+  );
+}
+
 export function resolveCommandAuthorization(params: {
   ctx: MsgContext;
   cfg: RemoteClawConfig;
@@ -590,12 +610,30 @@ export function resolveCommandAuthorization(params: {
       ? true
       : ownerAllowlistConfigured
         ? senderIsOwner
-        : allowAll || ownerCandidatesForCommands.length === 0 || Boolean(matchedCommandOwner);
+        : senderIsOwnerByScope || Boolean(matchedCommandOwner);
 
   // If commands.allowFrom is configured, use it for command authorization
   // Otherwise, fall back to existing behavior (channel allowFrom + owner checks)
   let isAuthorizedSender: boolean;
-  if (commandsAllowFromList !== null || (providerResolutionError && commandsAllowFromConfigured)) {
+  if (enforceOwner && !isOwnerForCommands) {
+    // Owner enforcement is on (e.g. the WhatsApp default) but the sender is not a
+    // resolved owner. Deny ahead of BOTH authorization paths so enforcement
+    // overrides even commands.allowFrom: ["*"] — a non-owner cannot escalate to
+    // privileged commands (session reset, subagent spawn, TTS, status, directives)
+    // via a permissive allowFrom. Restores upstream OpenClaw #78864 (owner
+    // enforcement for native commands), whose literal diff a content-only sync
+    // dropped because this fork's inlined resolver diverged from upstream's shape.
+    isAuthorizedSender = false;
+    if (ownerList.length === 0 && !senderIsOwnerByScope && !ownerAllowAll) {
+      // Fail-closed cliff: enforcement is on but no owner is configured at all, so
+      // every sender is denied. Point the operator at the remediation once per
+      // provider+account so a silently-locked-out deployment is diagnosable.
+      warnOwnerEnforcementCliff(providerId, ctx.AccountId);
+    }
+  } else if (
+    commandsAllowFromList !== null ||
+    (providerResolutionError && commandsAllowFromConfigured)
+  ) {
     // commands.allowFrom is configured - use it for authorization
     const commandsAllowAll =
       !providerResolutionError &&

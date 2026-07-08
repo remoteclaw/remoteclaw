@@ -1,8 +1,33 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import { resolveCommandAuthorization } from "./command-auth.js";
 import type { MsgContext } from "./templating.js";
 import { installDiscordRegistryHooks } from "./test-helpers/command-auth-registry-fixture.js";
+
+// Replaces the subsystem logger so the silent-denial debug diagnostic
+// (remoteclaw#2825) is observable regardless of the ambient console/file log
+// level — `debug` is off by default, so asserting against the real logger's
+// console/file output would require raising the level just to observe the call.
+// Mirrors the established pattern in src/agents/tool-images.log.test.ts.
+const { debugMock } = vi.hoisted(() => ({
+  debugMock: vi.fn(),
+}));
+
+vi.mock("../logging/subsystem.js", () => {
+  const makeLogger = () => ({
+    subsystem: "command-auth",
+    isEnabled: () => true,
+    trace: vi.fn(),
+    debug: debugMock,
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    fatal: vi.fn(),
+    raw: vi.fn(),
+    child: () => makeLogger(),
+  });
+  return { createSubsystemLogger: () => makeLogger() };
+});
 
 installDiscordRegistryHooks();
 
@@ -365,6 +390,188 @@ describe("owner enforcement denies non-owner senders under WhatsApp (remoteclaw#
       ).toBe(true);
     } finally {
       warnSpy.mockRestore();
+    }
+  });
+});
+
+describe("silent-denial diagnostic (remoteclaw#2825)", () => {
+  beforeEach(() => {
+    debugMock.mockClear();
+  });
+
+  it("emits a rate-limited debug diagnostic naming provider + denied sender when an owner IS configured", () => {
+    const cfg = {
+      channels: { whatsapp: {} },
+      commands: { ownerAllowFrom: ["+14155550042"] },
+    } as RemoteClawConfig;
+
+    const ctx = {
+      Provider: "whatsapp",
+      Surface: "whatsapp",
+      ChatType: "direct",
+      AccountId: "silent-denial-diagnostic-fixture",
+      From: "whatsapp:+14155559999",
+      SenderId: "+14155559999",
+      SenderE164: "+14155559999",
+    } as MsgContext;
+
+    const auth = resolveCommandAuthorization({ ctx, cfg, commandAuthorized: true });
+
+    expect(auth.isAuthorizedSender).toBe(false);
+    expect(auth.senderIsOwner).toBe(false);
+    expect(debugMock).toHaveBeenCalledTimes(1);
+    const [message, meta] = debugMock.mock.calls[0];
+    expect(String(message)).toContain("whatsapp");
+    expect(String(message)).toContain("+14155559999");
+    expect(meta).toMatchObject({ providerId: "whatsapp", senderId: "+14155559999" });
+  });
+
+  it("still fires the fail-closed cliff console.warn exactly once for the no-owner case, and never the new diagnostic", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const cfg = {
+        channels: { whatsapp: { allowFrom: ["*"] } },
+      } as RemoteClawConfig;
+
+      const ctx = {
+        Provider: "whatsapp",
+        Surface: "whatsapp",
+        ChatType: "direct",
+        // Unique AccountId so the module-level dedup key does not collide with the
+        // other WhatsApp cliff cases in this file.
+        AccountId: "silent-denial-diagnostic-cliff-unchanged-fixture",
+        From: "whatsapp:+14155559999",
+        SenderId: "+14155559999",
+        SenderE164: "+14155559999",
+      } as MsgContext;
+
+      // Call twice: the cliff console.warn dedups per-key (process-lifetime), so
+      // this also demonstrates the "exactly once" behavior is unchanged by the
+      // new diagnostic code path.
+      resolveCommandAuthorization({ ctx, cfg, commandAuthorized: true });
+      const auth = resolveCommandAuthorization({ ctx, cfg, commandAuthorized: true });
+
+      expect(auth.isAuthorizedSender).toBe(false);
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      expect(String(warnSpy.mock.calls[0][0])).toContain("commands.ownerAllowFrom");
+      expect(debugMock).not.toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it("does not emit the denial diagnostic for an authorized owner (identity, operator.admin scope, or wildcard ownerAllowFrom)", () => {
+    // identity match: sender IS the configured owner.
+    const identityCfg = {
+      channels: { whatsapp: {} },
+      commands: { ownerAllowFrom: ["+14155550042"] },
+    } as RemoteClawConfig;
+
+    const identityCtx = {
+      Provider: "whatsapp",
+      Surface: "whatsapp",
+      ChatType: "direct",
+      AccountId: "silent-denial-diagnostic-identity-owner-fixture",
+      From: "whatsapp:+14155550042",
+      SenderId: "+14155550042",
+      SenderE164: "+14155550042",
+    } as MsgContext;
+
+    const identityAuth = resolveCommandAuthorization({
+      ctx: identityCtx,
+      cfg: identityCfg,
+      commandAuthorized: true,
+    });
+
+    expect(identityAuth.isAuthorizedSender).toBe(true);
+    expect(debugMock).not.toHaveBeenCalled();
+
+    // operator.admin scope: internal channel sender authorized via GatewayClientScopes.
+    const scopeCfg = {
+      commands: { ownerAllowFrom: ["nonmatching-owner"] },
+    } as RemoteClawConfig;
+
+    const scopeCtx = {
+      Provider: "webchat",
+      Surface: "webchat",
+      GatewayClientScopes: ["operator.admin"],
+    } as MsgContext;
+
+    const scopeAuth = resolveCommandAuthorization({
+      ctx: scopeCtx,
+      cfg: scopeCfg,
+      commandAuthorized: true,
+    });
+
+    expect(scopeAuth.isAuthorizedSender).toBe(true);
+    expect(debugMock).not.toHaveBeenCalled();
+
+    // wildcard ownerAllowFrom: every sender is authorized as owner.
+    const wildcardCfg = {
+      channels: { whatsapp: {} },
+      commands: { ownerAllowFrom: ["*"] },
+    } as RemoteClawConfig;
+
+    const wildcardCtx = {
+      Provider: "whatsapp",
+      Surface: "whatsapp",
+      ChatType: "direct",
+      AccountId: "silent-denial-diagnostic-wildcard-owner-fixture",
+      From: "whatsapp:+14155559999",
+      SenderId: "+14155559999",
+      SenderE164: "+14155559999",
+    } as MsgContext;
+
+    const wildcardAuth = resolveCommandAuthorization({
+      ctx: wildcardCtx,
+      cfg: wildcardCfg,
+      commandAuthorized: true,
+    });
+
+    expect(wildcardAuth.isAuthorizedSender).toBe(true);
+    expect(debugMock).not.toHaveBeenCalled();
+  });
+
+  it("rate-limits repeated denials from the same provider+account within the window to at most one diagnostic", () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
+
+      const cfg = {
+        channels: { whatsapp: {} },
+        commands: { ownerAllowFrom: ["+14155550042"] },
+      } as RemoteClawConfig;
+
+      const ctx = {
+        Provider: "whatsapp",
+        Surface: "whatsapp",
+        ChatType: "direct",
+        AccountId: "silent-denial-diagnostic-ratelimit-fixture",
+        From: "whatsapp:+14155559999",
+        SenderId: "+14155559999",
+        SenderE164: "+14155559999",
+      } as MsgContext;
+
+      resolveCommandAuthorization({ ctx, cfg, commandAuthorized: true });
+      resolveCommandAuthorization({ ctx, cfg, commandAuthorized: true });
+      resolveCommandAuthorization({ ctx, cfg, commandAuthorized: true });
+
+      expect(debugMock).toHaveBeenCalledTimes(1);
+
+      // Still inside the same 60s window: no additional diagnostic.
+      vi.setSystemTime(new Date("2026-01-01T00:00:59.000Z"));
+      resolveCommandAuthorization({ ctx, cfg, commandAuthorized: true });
+
+      expect(debugMock).toHaveBeenCalledTimes(1);
+
+      // Past the window: the throttle rolls over and the still-ongoing denial is
+      // diagnosable again.
+      vi.setSystemTime(new Date("2026-01-01T00:01:01.000Z"));
+      resolveCommandAuthorization({ ctx, cfg, commandAuthorized: true });
+
+      expect(debugMock).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
     }
   });
 });

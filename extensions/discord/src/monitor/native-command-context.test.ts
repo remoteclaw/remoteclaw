@@ -91,15 +91,11 @@ describe("buildDiscordNativeCommandContext", () => {
     expect(ctx.MessageThreadId).toBe("chan-1");
     expect(ctx.ThreadParentId).toBe("parent-1");
     expect(ctx.OriginatingTo).toBe("channel:chan-1");
-    expect(ctx.UntrustedContext).toBeUndefined();
-    expect(ctx.UntrustedStructuredContext).toEqual([
-      {
-        label: "Discord channel metadata",
-        source: "discord",
-        type: "channel_metadata",
-        payload: { topic: "Production alerts only" },
-      },
-    ]);
+    expect(ctx.UntrustedContext).toHaveLength(1);
+    const [untrustedContext] = ctx.UntrustedContext ?? [];
+    expect(untrustedContext).toContain("Source: Channel metadata");
+    expect(untrustedContext).toContain("UNTRUSTED channel metadata (discord)");
+    expect(untrustedContext).toContain("Discord channel topic:\nProduction alerts only");
     expect(ctx.Timestamp).toBe(456);
   });
 });

@@ -7,7 +7,12 @@ import { checkZaloAuthenticated, getZaloUserInfo } from "./zalo-js.js";
 const {
   listAccountIds: listZalouserAccountIds,
   resolveDefaultAccountId: resolveDefaultZalouserAccountId,
-} = createAccountListHelpers("zalouser");
+} = createAccountListHelpers("zalouser", {
+  implicitDefaultAccount: {
+    channelKeys: ["profile"],
+    envVars: ["ZALOUSER_PROFILE", "ZCA_PROFILE"],
+  },
+});
 export { listZalouserAccountIds, resolveDefaultZalouserAccountId };
 
 function resolveAccountConfig(

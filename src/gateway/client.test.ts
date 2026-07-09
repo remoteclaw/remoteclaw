@@ -539,6 +539,7 @@ describe("GatewayClient connect auth payload", () => {
     ws: MockWebSocket,
     connectId: string | undefined,
     details: Record<string, unknown>,
+    message = "unauthorized",
   ) {
     ws.emitMessage(
       JSON.stringify({
@@ -547,7 +548,7 @@ describe("GatewayClient connect auth payload", () => {
         ok: false,
         error: {
           code: "INVALID_REQUEST",
-          message: "unauthorized",
+          message,
           details,
         },
       }),
@@ -583,6 +584,56 @@ describe("GatewayClient connect auth payload", () => {
       vi.useRealTimers();
     }
   }
+
+  it("redacts credential-bearing URLs in connect failure logs", async () => {
+    const client = new GatewayClient({
+      url: "ws://127.0.0.1:18789",
+      token: "shared-token",
+    });
+
+    const { ws, connect } = startClientAndConnect({ client });
+    emitConnectFailure(
+      ws,
+      connect.id,
+      { code: "AUTH_UNAUTHORIZED" },
+      "wss://user:pass@gateway.example/ws?token=secret-token failed", // pragma: allowlist secret
+    );
+
+    await vi.waitFor(() => {
+      expect(logErrorMock).toHaveBeenCalledWith(expect.stringContaining("gateway connect failed:"));
+    });
+    const logged = String(logErrorMock.mock.calls.at(-1)?.[0] ?? "");
+    expect(logged).not.toContain("user:pass");
+    expect(logged).not.toContain("secret-token");
+    expect(logged).toContain("//***:***@");
+    expect(logged).toContain("token=***");
+    expect(logged).toContain("failed");
+    client.stop();
+  });
+
+  it("preserves trailing diagnostics after redacted connect failure URL query params", async () => {
+    const client = new GatewayClient({
+      url: "ws://127.0.0.1:18789",
+      token: "shared-token",
+    });
+
+    const { ws, connect } = startClientAndConnect({ client });
+    emitConnectFailure(
+      ws,
+      connect.id,
+      { code: "AUTH_UNAUTHORIZED" },
+      "wss://gateway.example/ws?token=secret-token failed with 401 from remote gateway", // pragma: allowlist secret
+    );
+
+    await vi.waitFor(() => {
+      expect(logErrorMock).toHaveBeenCalledWith(expect.stringContaining("gateway connect failed:"));
+    });
+    const logged = String(logErrorMock.mock.calls.at(-1)?.[0] ?? "");
+    expect(logged).toContain("wss://gateway.example/ws?token=*** failed with 401");
+    expect(logged).toContain("from remote gateway");
+    expect(logged).not.toContain("secret-token");
+    client.stop();
+  });
 
   it("uses explicit shared token and does not inject stored device token", () => {
     loadDeviceAuthTokenMock.mockReturnValue({ token: "stored-device-token" });

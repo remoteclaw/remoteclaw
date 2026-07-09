@@ -25,21 +25,71 @@ type InstallResult = {
   installed: boolean;
 };
 
-function hasGitWorkspace(workspaceDir?: string): boolean {
-  const candidates = new Set<string>();
-  candidates.add(path.join(process.cwd(), ".git"));
-  if (workspaceDir && workspaceDir !== process.cwd()) {
-    candidates.add(path.join(workspaceDir, ".git"));
+function resolveRealDirectory(dir: string): string | null {
+  try {
+    const resolved = fs.realpathSync(dir);
+    return fs.statSync(resolved).isDirectory() ? resolved : null;
+  } catch {
+    return null;
   }
-  for (const candidate of candidates) {
-    if (fs.existsSync(candidate)) {
-      return true;
-    }
-  }
-  return false;
 }
 
-function resolveLocalPath(
+function resolveGitDirectoryMarker(dir: string): string | null {
+  const marker = path.join(dir, ".git");
+  try {
+    const stat = fs.statSync(marker);
+    if (stat.isDirectory()) {
+      return resolveRealDirectory(marker);
+    }
+    if (!stat.isFile()) {
+      return null;
+    }
+    // A `.git` FILE is a gitdir pointer (worktrees, submodules): `gitdir: <path>`.
+    const content = fs.readFileSync(marker, "utf8").trim();
+    const gitDir = /^gitdir:\s*(.+)$/i.exec(content)?.[1]?.trim();
+    if (!gitDir) {
+      return null;
+    }
+    return resolveRealDirectory(path.isAbsolute(gitDir) ? gitDir : path.resolve(dir, gitDir));
+  } catch {
+    return null;
+  }
+}
+
+// Exported for unit testing of the load-path containment hardening (issue #2838).
+export function isWithinBaseDirectory(baseDir: string, targetPath: string): boolean {
+  const relative = path.relative(baseDir, targetPath);
+  return (
+    relative === "" ||
+    (!path.isAbsolute(relative) && !relative.startsWith(`..${path.sep}`) && relative !== "..")
+  );
+}
+
+export function hasTrustedGitWorkspace(root: string): boolean {
+  const realRoot = resolveRealDirectory(root);
+  if (!realRoot) {
+    return false;
+  }
+  for (let dir = realRoot; ; dir = path.dirname(dir)) {
+    if (resolveGitDirectoryMarker(dir)) {
+      return true;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) {
+      return false;
+    }
+  }
+}
+
+function hasGitWorkspace(workspaceDir?: string): boolean {
+  const roots = [process.cwd()];
+  if (workspaceDir && workspaceDir !== process.cwd()) {
+    roots.push(workspaceDir);
+  }
+  return roots.some((root) => hasTrustedGitWorkspace(root));
+}
+
+export function resolveLocalPath(
   entry: ChannelPluginCatalogEntry,
   workspaceDir: string | undefined,
   allowLocal: boolean,
@@ -51,14 +101,37 @@ function resolveLocalPath(
   if (!raw) {
     return null;
   }
-  const candidates = new Set<string>();
-  candidates.add(path.resolve(process.cwd(), raw));
+  const bases = [process.cwd()];
   if (workspaceDir && workspaceDir !== process.cwd()) {
-    candidates.add(path.resolve(workspaceDir, raw));
+    bases.push(workspaceDir);
+  }
+  const candidates = new Set<string>();
+  for (const base of bases) {
+    const realBase = resolveRealDirectory(base);
+    if (realBase) {
+      candidates.add(path.resolve(realBase, raw));
+    }
   }
   for (const candidate of candidates) {
-    if (fs.existsSync(candidate)) {
-      return candidate;
+    try {
+      // Realpath BEFORE the containment check so a symlink cannot point the
+      // resolved target outside a trusted base. Reject anything that escapes
+      // (symlink / `..` / absolute) or is not a directory.
+      const resolved = fs.realpathSync(candidate);
+      const withinTrustedBase = bases.some((base) => {
+        const realBase = resolveRealDirectory(base);
+        return realBase ? isWithinBaseDirectory(realBase, resolved) : false;
+      });
+      if (!withinTrustedBase) {
+        continue;
+      }
+      if (fs.statSync(resolved).isDirectory()) {
+        return resolved;
+      }
+    } catch {
+      // Missing / unreadable / broken-symlink candidate — fall through to the
+      // next candidate, then to null (which drives the npm-install fallback).
+      continue;
     }
   }
   return null;
@@ -85,16 +158,23 @@ function resolveLocalPath(
  *     (that override is CLI-only), so there would be no supported way to
  *     proceed.
  *
- * Known residual: a catalog `localPath` is relative and resolved against the
- * process CWD (`resolveLocalPath`), so a checkout whose CWD holds an
- * attacker-controlled file at the catalog-relative location could be
- * registered unscanned. Accepted for now given the git-workspace + existence
- * gating above.
+ * Residual after hardening: `resolveLocalPath` now realpaths each candidate,
+ * requires the resolved target to stay within a trusted base directory
+ * (realpath'd CWD or agent workspace, via `isWithinBaseDirectory`), and gates
+ * to directories only — closing the symlink / `..` / absolute-path escape and
+ * the file-vs-directory sub-vectors. `hasGitWorkspace` likewise realpaths and
+ * walks up for a `.git` marker (directory or gitdir-pointer file) rather than a
+ * bare existence check. What remains is narrow: an attacker who can already
+ * write a directory at the exact catalog-relative location INSIDE the trusted
+ * workspace could still have it registered unscanned — but that presupposes
+ * write access to the victim's checkout, itself a serious local compromise and
+ * the same already-compromised precondition under which this first-party
+ * local-source exception is accepted.
  *
  * REVISIT this exception if either changes: (a) the wizard gains a UI to set
  * the force-unsafe override, or (b) `trustedSourceLinkedOfficialInstall`
  * (already plumbed in cli/plugin-install-plan.ts) is consumed to scan-and-warn
- * for catalog-verified sources. See issue #2834.
+ * for catalog-verified sources.
  */
 function addPluginLoadPath(cfg: RemoteClawConfig, pluginPath: string): RemoteClawConfig {
   const existing = cfg.plugins?.load?.paths ?? [];

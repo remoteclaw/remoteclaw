@@ -8,6 +8,8 @@ import {
 import {
   pickMatchingExternalInterfaceAddress,
   readNetworkInterfaces,
+  safeNetworkInterfaces,
+  type NetworkInterfacesSnapshot,
 } from "../infra/network-interfaces.js";
 import { pickPrimaryTailnetIPv4 } from "../infra/tailnet.js";
 import {
@@ -55,6 +57,40 @@ export function resolveHostName(hostHeader?: string): string {
 
 export function isLoopbackAddress(ip: string | undefined): boolean {
   return isLoopbackIpAddress(ip);
+}
+
+export function isLocalInterfaceAddress(
+  ip: string | undefined,
+  snapshot?: NetworkInterfacesSnapshot,
+): boolean {
+  return (
+    (arguments.length >= 2
+      ? resolveLocalInterfaceAddressMatch(ip, snapshot)
+      : resolveLocalInterfaceAddressMatch(ip)) === true
+  );
+}
+
+export function resolveLocalInterfaceAddressMatch(
+  ip: string | undefined,
+  snapshot?: NetworkInterfacesSnapshot,
+): boolean | undefined {
+  const normalized = normalizeIp(ip);
+  if (!normalized) {
+    return false;
+  }
+  const effectiveSnapshot = arguments.length >= 2 ? snapshot : safeNetworkInterfaces();
+  if (!effectiveSnapshot) {
+    return undefined;
+  }
+
+  for (const entries of Object.values(effectiveSnapshot)) {
+    for (const entry of entries ?? []) {
+      if (normalizeIp(entry.address) === normalized) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 /**
@@ -440,8 +476,9 @@ function parseHostForAddressChecks(
  *
  * Returns true if the URL is secure for transmitting data:
  * - wss:// (TLS) is always secure
- * - ws:// is secure only for loopback addresses by default
- * - optional break-glass: private ws:// can be enabled for trusted networks
+ * - ws:// is secure only for loopback by default
+ * - optional break-glass (allowPrivateWs): private IP literals over ws:// can be
+ *   enabled for trusted private-network overlays
  *
  * All other ws:// URLs are considered insecure because both credentials
  * AND chat/conversation data would be exposed to network interception.

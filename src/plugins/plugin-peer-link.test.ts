@@ -103,4 +103,31 @@ describe("plugin peer links", () => {
       expect(warnings.join("\n")).toContain("is not a real directory");
     },
   );
+
+  it("does not delete an existing real remoteclaw package directory", async () => {
+    const root = makeTempDir();
+    const packageDir = path.join(root, "peer-plugin");
+    const existingRemoteClawDir = path.join(packageDir, "node_modules", "remoteclaw");
+    fs.mkdirSync(existingRemoteClawDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(existingRemoteClawDir, "package.json"),
+      '{"name":"remoteclaw"}',
+      "utf8",
+    );
+
+    const warnings: string[] = [];
+    const result = await linkRemoteClawPeerDependencies({
+      installedDir: packageDir,
+      peerDependencies: {
+        remoteclaw: ">=2026.0.0",
+      },
+      logger: {
+        warn: (message) => warnings.push(message),
+      },
+    });
+
+    expect(result).toEqual({ repaired: 0, skipped: 1 });
+    expect(fs.existsSync(path.join(existingRemoteClawDir, "package.json"))).toBe(true);
+    expect(warnings.join("\n")).toContain("already exists and is not a symlink");
+  });
 });

@@ -172,7 +172,7 @@ describe("resizable-divider", () => {
 
     dispatchPointer(divider, "pointerdown", 100);
     expect(document.activeElement).toBe(divider);
-    expect(divider.classList.contains("dragging")).toBe(true);
+    expect([...divider.classList]).toEqual(["dragging"]);
     expect(setPointerCapture).toHaveBeenCalledWith(7);
 
     dispatchPointer(document, "pointermove", 220);
@@ -181,7 +181,7 @@ describe("resizable-divider", () => {
     );
 
     dispatchPointer(document, "pointerup", 220);
-    expect(divider.classList.contains("dragging")).toBe(false);
+    expect([...divider.classList]).toEqual([]);
     expect(releasePointerCapture).toHaveBeenCalledWith(7);
   });
 });

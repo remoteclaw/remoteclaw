@@ -677,6 +677,8 @@ export async function startGatewayServer(
     chatAbortedRuns: chatRunState.abortedRuns,
     chatRunBuffers: chatRunState.buffers,
     chatDeltaSentAt: chatRunState.deltaSentAt,
+    agentDeltaSentAt: chatRunState.agentDeltaSentAt,
+    bufferedAgentEvents: chatRunState.bufferedAgentEvents,
     addChatRun,
     removeChatRun,
     registerToolEventRecipient: toolEventRecipients.add,

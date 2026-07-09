@@ -36,7 +36,11 @@ export type ResolvedWhatsAppAccount = {
 export const DEFAULT_WHATSAPP_MEDIA_MAX_MB = 50;
 
 const { listConfiguredAccountIds, listAccountIds, resolveDefaultAccountId } =
-  createAccountListHelpers("whatsapp");
+  createAccountListHelpers("whatsapp", {
+    implicitDefaultAccount: {
+      channelKeys: ["authDir"],
+    },
+  });
 export const listWhatsAppAccountIds = listAccountIds;
 export const resolveDefaultWhatsAppAccountId = resolveDefaultAccountId;
 
@@ -99,7 +103,13 @@ export function resolveWhatsAppAuthDir(params: { cfg: RemoteClawConfig; accountI
 } {
   const accountId = params.accountId.trim() || DEFAULT_ACCOUNT_ID;
   const account = resolveAccountConfig(params.cfg, accountId);
-  const configured = account?.authDir?.trim();
+  // The default account inherits the channel's top-level authDir, mirroring the
+  // top-level-as-default-account merge the other account fields already apply.
+  const rootAuthDir =
+    accountId === DEFAULT_ACCOUNT_ID
+      ? (params.cfg.channels?.whatsapp as { authDir?: string } | undefined)?.authDir?.trim()
+      : undefined;
+  const configured = account?.authDir?.trim() || rootAuthDir;
   if (configured) {
     return { authDir: resolveUserPath(configured), isLegacy: false };
   }

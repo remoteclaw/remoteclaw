@@ -150,6 +150,20 @@ function quoteEnvValue(value: string): string {
   return /^[A-Za-z0-9_./:=@+-]+$/.test(value) ? value : `'${value.replace(/'/g, "'\\''")}'`;
 }
 
+function appendAcpxLeaseArgs(params: {
+  command: string;
+  leaseId: string;
+  gatewayInstanceId: string;
+}): string {
+  return [
+    params.command,
+    REMOTECLAW_ACPX_LEASE_ID_ARG,
+    quoteEnvValue(params.leaseId),
+    REMOTECLAW_GATEWAY_INSTANCE_ID_ARG,
+    quoteEnvValue(params.gatewayInstanceId),
+  ].join(" ");
+}
+
 export function withAcpxLeaseEnvironment(params: {
   command: string;
   leaseId: string;
@@ -157,16 +171,12 @@ export function withAcpxLeaseEnvironment(params: {
   platform?: NodeJS.Platform;
 }): string {
   if ((params.platform ?? process.platform) === "win32") {
-    return params.command;
+    return appendAcpxLeaseArgs(params);
   }
   return [
     "env",
     `${REMOTECLAW_ACPX_LEASE_ID_ENV}=${quoteEnvValue(params.leaseId)}`,
     `${REMOTECLAW_GATEWAY_INSTANCE_ID_ENV}=${quoteEnvValue(params.gatewayInstanceId)}`,
-    params.command,
-    REMOTECLAW_ACPX_LEASE_ID_ARG,
-    quoteEnvValue(params.leaseId),
-    REMOTECLAW_GATEWAY_INSTANCE_ID_ARG,
-    quoteEnvValue(params.gatewayInstanceId),
+    appendAcpxLeaseArgs(params),
   ].join(" ");
 }

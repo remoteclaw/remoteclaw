@@ -48,7 +48,16 @@ function parseIntEnv(value?: string): number | undefined {
 }
 
 const { listAccountIds: listIrcAccountIds, resolveDefaultAccountId: resolveDefaultIrcAccountId } =
-  createAccountListHelpers("irc", { normalizeAccountId });
+  createAccountListHelpers("irc", {
+    normalizeAccountId,
+    hasImplicitDefaultAccount: (cfg) => {
+      const irc = cfg.channels?.irc as { host?: string; nick?: string } | undefined;
+      return Boolean(
+        (irc?.host?.trim() || process.env.IRC_HOST?.trim()) &&
+        (irc?.nick?.trim() || process.env.IRC_NICK?.trim()),
+      );
+    },
+  });
 export { listIrcAccountIds, resolveDefaultIrcAccountId };
 
 function resolveAccountConfig(cfg: CoreConfig, accountId: string): IrcAccountConfig | undefined {

@@ -1,4 +1,5 @@
 import type { Block, KnownBlock, WebClient } from "@slack/web-api";
+import { z } from "zod";
 import { loadConfig } from "../../../src/config/config.js";
 import { logVerbose } from "../../../src/globals.js";
 import { resolveSlackAccount } from "./accounts.js";
@@ -215,6 +216,42 @@ export async function deleteSlackMessage(
   });
 }
 
+const SLACK_TIMESTAMP_RE = /^\d+(?:\.\d+)?$/;
+const ISO_8601_TIMESTAMP_SCHEMA = z.iso.datetime({ offset: true });
+
+function formatEpochSeconds(milliseconds: number): string {
+  const seconds = milliseconds / 1000;
+  if (Number.isInteger(seconds)) {
+    return String(seconds);
+  }
+  return seconds.toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+}
+
+function normalizeSlackReadTimestamp(
+  raw: string | undefined,
+  field: "before" | "after",
+): string | undefined {
+  const trimmed = raw?.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  if (SLACK_TIMESTAMP_RE.test(trimmed)) {
+    return trimmed;
+  }
+  if (!ISO_8601_TIMESTAMP_SCHEMA.safeParse(trimmed).success) {
+    throw new Error(
+      `Invalid Slack read ${field} timestamp "${trimmed}": expected a Slack timestamp or ISO-8601 date string`,
+    );
+  }
+  const parsed = Date.parse(trimmed);
+  if (!Number.isFinite(parsed)) {
+    throw new Error(
+      `Invalid Slack read ${field} timestamp "${trimmed}": expected a Slack timestamp or ISO-8601 date string`,
+    );
+  }
+  return formatEpochSeconds(parsed);
+}
+
 export async function readSlackMessages(
   channelId: string,
   opts: SlackActionClientOpts & {
@@ -235,8 +272,8 @@ export async function readSlackMessages(
         oldest: undefined,
       }
     : {
-        latest: opts.before,
-        oldest: opts.after,
+        latest: normalizeSlackReadTimestamp(opts.before, "before"),
+        oldest: normalizeSlackReadTimestamp(opts.after, "after"),
       };
 
   // Use conversations.replies for thread messages, conversations.history for channel messages.

@@ -161,7 +161,7 @@ function liveOpenAiChatToolsLane() {
 
 export const mainLanes = [
   liveLane("live-models", liveDockerScriptCommand("test-live-models-docker.sh"), {
-    providers: ["claude-cli", "codex-cli", "google-gemini-cli"],
+    providers: ["claude-cli", "google-gemini-cli"],
     timeoutMs: LIVE_PROFILE_TIMEOUT_MS,
     weight: 4,
   }),
@@ -169,11 +169,11 @@ export const mainLanes = [
     "live-gateway",
     liveDockerScriptCommand(
       "test-live-gateway-models-docker.sh",
-      "REMOTECLAW_IMAGE=remoteclaw:local-live-gateway REMOTECLAW_DOCKER_BUILD_EXTENSIONS=matrix REMOTECLAW_LIVE_GATEWAY_PROVIDERS=claude-cli,codex-cli,google-gemini-cli",
+      "REMOTECLAW_IMAGE=remoteclaw:local-live-gateway REMOTECLAW_DOCKER_BUILD_EXTENSIONS=matrix REMOTECLAW_LIVE_GATEWAY_PROVIDERS=claude-cli,google-gemini-cli",
       { skipBuild: false },
     ),
     {
-      providers: ["claude-cli", "codex-cli", "google-gemini-cli"],
+      providers: ["claude-cli", "google-gemini-cli"],
       timeoutMs: LIVE_PROFILE_TIMEOUT_MS,
       weight: 4,
     },
@@ -237,6 +237,56 @@ export const mainLanes = [
     "npm-onboard-slack-channel-agent",
     "REMOTECLAW_NPM_ONBOARD_CHANNEL=slack REMOTECLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:npm-onboard-channel-agent",
     { resources: ["service"], stateScenario: "empty", weight: 3 },
+  ),
+  npmLane(
+    "release-user-journey",
+    "REMOTECLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:release-user-journey",
+    {
+      resources: ["npm", "service"],
+      stateScenario: "empty",
+      timeoutMs: 20 * 60 * 1000,
+      weight: 4,
+    },
+  ),
+  npmLane(
+    "release-typed-onboarding",
+    "REMOTECLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:release-typed-onboarding",
+    {
+      resources: ["npm", "service"],
+      stateScenario: "empty",
+      timeoutMs: 20 * 60 * 1000,
+      weight: 3,
+    },
+  ),
+  npmLane(
+    "release-media-memory",
+    "REMOTECLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:release-media-memory",
+    {
+      resources: ["npm", "service"],
+      stateScenario: "empty",
+      timeoutMs: 20 * 60 * 1000,
+      weight: 3,
+    },
+  ),
+  npmLane(
+    "release-upgrade-user-journey",
+    "REMOTECLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:release-upgrade-user-journey",
+    {
+      resources: ["npm", "service"],
+      stateScenario: "empty",
+      timeoutMs: 30 * 60 * 1000,
+      weight: 5,
+    },
+  ),
+  npmLane(
+    "release-plugin-marketplace",
+    "REMOTECLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:release-plugin-marketplace",
+    {
+      resources: ["npm"],
+      stateScenario: "empty",
+      timeoutMs: 20 * 60 * 1000,
+      weight: 3,
+    },
   ),
   serviceLane("gateway-network", "REMOTECLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:gateway-network"),
   serviceLane(
@@ -389,11 +439,22 @@ export const tailLanes = [
   ),
   liveLane("live-codex-harness", liveDockerScriptCommand("test-live-codex-harness-docker.sh"), {
     cacheKey: "codex-harness",
-    provider: "codex-cli",
+    provider: "openai",
     resources: ["npm"],
     timeoutMs: LIVE_ACP_TIMEOUT_MS,
     weight: 3,
   }),
+  liveLane(
+    "live-subagent-announce",
+    liveDockerScriptCommand("test-live-subagent-announce-docker.sh"),
+    {
+      cacheKey: "subagent-announce",
+      provider: "openai",
+      resources: ["npm"],
+      timeoutMs: 25 * 60 * 1000,
+      weight: 3,
+    },
+  ),
   liveLane(
     "live-codex-bind",
     liveDockerScriptCommand(
@@ -402,7 +463,7 @@ export const tailLanes = [
     ),
     {
       cacheKey: "codex-harness",
-      provider: "codex-cli",
+      provider: "openai",
       resources: ["npm"],
       timeoutMs: LIVE_ACP_TIMEOUT_MS,
       weight: 3,
@@ -423,20 +484,6 @@ export const tailLanes = [
   ),
   livePluginToolLane(),
   liveLane(
-    "live-cli-backend-codex",
-    liveDockerScriptCommand(
-      "test-live-cli-backend-docker.sh",
-      "REMOTECLAW_LIVE_CLI_BACKEND_AUTH=api-key REMOTECLAW_LIVE_CLI_BACKEND_MODEL=codex-cli/gpt-5.4",
-    ),
-    {
-      cacheKey: "cli-backend-codex",
-      provider: "codex-cli",
-      resources: ["npm"],
-      timeoutMs: LIVE_CLI_TIMEOUT_MS,
-      weight: 3,
-    },
-  ),
-  liveLane(
     "live-acp-bind-claude",
     liveDockerScriptCommand(
       "test-live-acp-bind-docker.sh",
@@ -455,7 +502,7 @@ export const tailLanes = [
     liveDockerScriptCommand("test-live-acp-bind-docker.sh", "REMOTECLAW_LIVE_ACP_BIND_AGENT=codex"),
     {
       cacheKey: "acp-bind-codex",
-      provider: "codex-cli",
+      provider: "openai",
       resources: ["npm"],
       timeoutMs: LIVE_ACP_TIMEOUT_MS,
       weight: 3,

@@ -100,7 +100,8 @@ describe("runGatewayUpdate", () => {
     onBaseInstall?: () => Promise<CommandResult>;
     onOmitOptionalInstall?: () => Promise<CommandResult>;
   }) {
-    const baseInstallKey = "npm i -g remoteclaw@latest --no-fund --no-audit --loglevel=error";
+    const baseInstallKey =
+      "npm i -g remoteclaw@latest --no-fund --no-audit --loglevel=error --min-release-age=0";
     const omitOptionalInstallKey =
       "npm i -g remoteclaw@latest --omit=optional --no-fund --no-audit --loglevel=error";
 
@@ -213,16 +214,19 @@ describe("runGatewayUpdate", () => {
   it.each([
     {
       title: "updates global npm installs when detected",
-      expectedInstallCommand: "npm i -g remoteclaw@latest --no-fund --no-audit --loglevel=error",
+      expectedInstallCommand:
+        "npm i -g remoteclaw@latest --no-fund --no-audit --loglevel=error --min-release-age=0",
     },
     {
       title: "uses update channel for global npm installs when tag is omitted",
-      expectedInstallCommand: "npm i -g remoteclaw@beta --no-fund --no-audit --loglevel=error",
+      expectedInstallCommand:
+        "npm i -g remoteclaw@beta --no-fund --no-audit --loglevel=error --min-release-age=0",
       channel: "beta" as const,
     },
     {
       title: "updates global npm installs with tag override",
-      expectedInstallCommand: "npm i -g remoteclaw@beta --no-fund --no-audit --loglevel=error",
+      expectedInstallCommand:
+        "npm i -g remoteclaw@beta --no-fund --no-audit --loglevel=error --min-release-age=0",
       tag: "beta",
     },
   ])("$title", async ({ expectedInstallCommand, channel, tag }) => {

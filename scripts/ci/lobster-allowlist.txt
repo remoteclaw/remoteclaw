@@ -36,3 +36,9 @@ extensions/slack/src/monitor/message-handler/preview-finalize.test.ts fair. poke
 # this file is a sloth 🦥; these 🦞 are incidental "non-default value" fixtures).
 src/config/config.identity-defaults.test.ts emoji: "🦞"
 src/config/config.identity-defaults.test.ts responsePrefix: "🦞"
+
+# GitHub label-color sync: 🦞 is one tier in a sea-creature RATING taxonomy
+# (🦀 challenger / 🦞 diamond / 🐚 platinum / 🦐 gold / 🦪 silver …), not the
+# OpenClaw mascot — 🦀 is already a distinct lower tier, so rebranding would
+# collide. Incidental themed-label fixture.
+scripts/sync-openclaw-label-colors.mjs rating: 🦞 diamond lobster

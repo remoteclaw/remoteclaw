@@ -96,7 +96,7 @@
       "class": "core-runtime",
       "risk": ["file-sniffing", "untrusted-files"]
     },
-    "global-agent": {
+    "@remoteclaw/proxyline": {
       "owner": "core:proxy",
       "class": "core-runtime",
       "risk": ["network", "proxy"]

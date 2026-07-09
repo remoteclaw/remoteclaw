@@ -9,7 +9,7 @@ import type { FeishuConfig, FeishuGroupConfig } from "./types.js";
 
 type FeishuAllowlistMatch = AllowlistMatch<"wildcard" | "id">;
 
-function normalizeFeishuAllowEntry(raw: string): string {
+export function normalizeFeishuAllowEntry(raw: string): string {
   const trimmed = raw.trim();
   if (!trimmed) {
     return "";

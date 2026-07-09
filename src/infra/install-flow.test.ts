@@ -19,6 +19,10 @@ async function runExtractedArchiveFailureCase(configureArchive: () => void) {
   });
 }
 
+function firstMockCall<T extends unknown[]>(mock: { mock: { calls: T[] } }): T | undefined {
+  return mock.mock.calls[0];
+}
+
 describe("resolveExistingInstallPath", () => {
   let fixtureRoot = "";
 
@@ -84,11 +88,11 @@ describe("withExtractedArchiveRoot", () => {
     });
 
     expect(withTempDirSpy).toHaveBeenCalledTimes(1);
-    const withTempDirCall = withTempDirSpy.mock.calls[0];
+    const withTempDirCall = firstMockCall(withTempDirSpy);
     expect(withTempDirCall?.[0]).toBe("remoteclaw-plugin-");
     expect(typeof withTempDirCall?.[1]).toBe("function");
     expect(extractSpy).toHaveBeenCalledOnce();
-    expect(extractSpy.mock.calls[0]?.[0]?.archivePath).toBe(archivePath);
+    expect(firstMockCall(extractSpy)?.[0]?.archivePath).toBe(archivePath);
     expect(resolveRootSpy).toHaveBeenCalledWith(extractDir, {
       rootMarkers: ["package.json"],
     });

@@ -2,7 +2,7 @@
 summary: "CLI backends: local AI CLI fallback with optional MCP tool bridge"
 read_when:
   - You want a reliable fallback when API providers fail
-  - You are running Codex CLI or other local AI CLIs and want to reuse them
+  - You are running local AI CLIs and want to reuse them
   - You want to understand the MCP loopback bridge for CLI backend tool access
 title: "CLI backends"
 ---
@@ -33,11 +33,11 @@ thread/conversation binding, and persistent external coding sessions, use
 
 ## Beginner-friendly quick start
 
-You can use Codex CLI **without any config** (the bundled OpenAI plugin
+You can use Claude Code CLI **without any config** (the bundled Anthropic plugin
 registers a default backend):
 
 ```bash
-remoteclaw agent --message "hi" --model codex-cli/gpt-5.5
+remoteclaw agent --message "hi" --model claude-cli/claude-sonnet-4-6
 ```
 
 If your gateway runs under launchd/systemd and PATH is minimal, add just the
@@ -48,8 +48,8 @@ command path:
   agents: {
     defaults: {
       cliBackends: {
-        "codex-cli": {
-          command: "/opt/homebrew/bin/codex",
+        "claude-cli": {
+          command: "/opt/homebrew/bin/claude",
         },
       },
     },
@@ -74,11 +74,11 @@ Add a CLI backend to your fallback list so it only runs when primary models fail
     defaults: {
       model: {
         primary: "anthropic/claude-opus-4-6",
-        fallbacks: ["codex-cli/gpt-5.5"],
+        fallbacks: ["claude-cli/claude-sonnet-4-6"],
       },
       models: {
         "anthropic/claude-opus-4-6": { alias: "Opus" },
-        "codex-cli/gpt-5.5": {},
+        "claude-cli/claude-sonnet-4-6": {},
       },
     },
   },
@@ -99,7 +99,7 @@ All CLI backends live under:
 agents.defaults.cliBackends
 ```
 
-Each entry is keyed by a **provider id** (e.g. `codex-cli`, `my-cli`).
+Each entry is keyed by a **provider id** (e.g. `claude-cli`, `my-cli`).
 The provider id becomes the left side of your model ref:
 
 ```
@@ -113,9 +113,6 @@ The provider id becomes the left side of your model ref:
   agents: {
     defaults: {
       cliBackends: {
-        "codex-cli": {
-          command: "/opt/homebrew/bin/codex",
-        },
         "my-cli": {
           command: "my-cli",
           args: ["--json"],
@@ -151,7 +148,7 @@ The provider id becomes the left side of your model ref:
 
 ## How it works
 
-1. **Selects a backend** based on the provider prefix (`codex-cli/...`).
+1. **Selects a backend** based on the provider prefix (`claude-cli/...`).
 2. **Builds a system prompt** using the same RemoteClaw prompt + workspace context.
 3. **Executes the CLI** with a session id (if supported) so history stays consistent.
    The bundled `claude-cli` backend keeps a Claude stdio process alive per
@@ -165,12 +162,6 @@ told us RemoteClaw-style Claude CLI usage is allowed again, so RemoteClaw treats
 `claude -p` usage as sanctioned for this integration unless Anthropic publishes
 a new policy.
 </Note>
-
-The bundled OpenAI `codex-cli` backend passes RemoteClaw's system prompt through
-Codex's `model_instructions_file` config override (`-c
-model_instructions_file="..."`). Codex does not expose a Claude-style
-`--append-system-prompt` flag, so RemoteClaw writes the assembled prompt to a
-temporary file for each fresh Codex CLI session.
 
 The bundled Anthropic `claude-cli` backend receives the RemoteClaw skills snapshot
 two ways: the compact RemoteClaw skills catalog in the appended system prompt, and
@@ -290,7 +281,7 @@ load local files from plain paths.
 - `output: "json"` (default) tries to parse JSON and extract text + session id.
 - For Gemini CLI JSON output, RemoteClaw reads reply text from `response` and
   usage from `stats` when `usage` is missing or empty.
-- `output: "jsonl"` parses JSONL streams (for example Codex CLI `--json`) and extracts the final agent message plus session
+- `output: "jsonl"` parses JSONL streams and extracts the final agent message plus session
   identifiers when present.
 - `output: "text"` treats stdout as the final response.
 
@@ -302,16 +293,19 @@ Input modes:
 
 ## Defaults (plugin-owned)
 
-The bundled OpenAI plugin also registers a default for `codex-cli`:
+Bundled CLI backend defaults live with their owning plugin. For example,
+Anthropic owns `claude-cli` and Google owns `google-gemini-cli`. OpenAI Codex
+agent runs use the Codex app-server harness through `openai/*`; RemoteClaw no
+longer registers a bundled `codex-cli` backend.
 
-- `command: "codex"`
-- `args: ["exec","--json","--color","never","--sandbox","workspace-write","--skip-git-repo-check"]`
-- `resumeArgs: ["exec","resume","{sessionId}","-c","sandbox_mode=\"workspace-write\"","--skip-git-repo-check"]`
+The bundled Anthropic plugin registers a default for `claude-cli`:
+
+- `command: "claude"`
+- `args: ["-p","--output-format","stream-json","--include-partial-messages","--verbose", ...]`
 - `output: "jsonl"`
-- `resumeOutput: "text"`
+- `input: "stdin"`
 - `modelArg: "--model"`
-- `imageArg: "--image"`
-- `sessionMode: "existing"`
+- `sessionMode: "always"`
 
 The bundled Google plugin also registers a default for `google-gemini-cli`:
 
@@ -381,9 +375,6 @@ opt into a generated MCP config overlay with `bundleMcp: true`.
 Current bundled behavior:
 
 - `claude-cli`: generated strict MCP config file
-- `codex-cli`: inline config overrides for `mcp_servers`; the generated
-  RemoteClaw loopback server is marked with Codex's per-server tool approval mode
-  so MCP calls cannot stall on local approval prompts
 - `google-gemini-cli`: generated Gemini system settings file
 
 When bundle MCP is enabled, RemoteClaw:
@@ -412,16 +403,13 @@ children and Streamable HTTP/SSE streams do not outlive the run.
 - **Streaming is backend-specific.** Some backends stream JSONL; others buffer
   until exit.
 - **Structured outputs** depend on the CLI's JSON format.
-- **Codex CLI sessions** resume via text output (no JSONL), which is less
-  structured than the initial `--json` run. RemoteClaw sessions still work
-  normally.
 
 ## Troubleshooting
 
 - **CLI not found**: set `command` to a full path.
 - **Wrong model name**: use `modelAliases` to map `provider/model` → CLI model.
 - **No session continuity**: ensure `sessionArg` is set and `sessionMode` is not
-  `none` (Codex CLI currently cannot resume with JSON output).
+  `none`.
 - **Images ignored**: set `imageArg` (and verify CLI supports file paths).
 
 ## Related

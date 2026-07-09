@@ -16,6 +16,10 @@ vi.mock("../agents/subagent-announce.js", () => ({
   runSubagentAnnounceFlow: vi.fn(),
 }));
 
+vi.mock("./isolated-agent/run-runtime-plugins.runtime.js", () => ({
+  ensureRuntimePluginsLoaded: vi.fn(),
+}));
+
 vi.mock("../gateway/call.js", () => ({
   callGateway: vi.fn(),
 }));

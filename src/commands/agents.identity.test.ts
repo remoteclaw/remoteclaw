@@ -35,7 +35,7 @@ async function createIdentityWorkspace(subdir = "work") {
 }
 
 function getWrittenMainIdentity() {
-  const [written] = configMocks.writeConfigFile.mock.calls.at(0) ?? [];
+  const [written] = configMocks.writeConfigFile.mock.calls[0] ?? [];
   if (!written) {
     throw new Error("expected written agent config");
   }

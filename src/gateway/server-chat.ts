@@ -212,6 +212,15 @@ export type ChatRunState = {
    * it. Kept so ChatRunState satisfies the maintenance-timer parameter contract.
    */
   deltaLastBroadcastText: Map<string, string>;
+  /**
+   * Structural-compat fields for the shared gateway maintenance sweep and the
+   * chat abort caller (same rationale as deltaLastBroadcastText above). The fork
+   * does not wire agent-event buffering, so these stay empty and every
+   * sweep/abort delete() is a no-op — kept so ChatRunState satisfies the
+   * maintenance-timer and abort-ops parameter contracts.
+   */
+  agentDeltaSentAt: Map<string, number>;
+  bufferedAgentEvents: Map<string, unknown>;
   abortedRuns: Map<string, number>;
   clear: () => void;
 };
@@ -222,6 +231,8 @@ export function createChatRunState(): ChatRunState {
   const deltaSentAt = new Map<string, number>();
   const deltaLastBroadcastLen = new Map<string, number>();
   const deltaLastBroadcastText = new Map<string, string>();
+  const agentDeltaSentAt = new Map<string, number>();
+  const bufferedAgentEvents = new Map<string, unknown>();
   const abortedRuns = new Map<string, number>();
 
   const clear = () => {
@@ -230,6 +241,8 @@ export function createChatRunState(): ChatRunState {
     deltaSentAt.clear();
     deltaLastBroadcastLen.clear();
     deltaLastBroadcastText.clear();
+    agentDeltaSentAt.clear();
+    bufferedAgentEvents.clear();
     abortedRuns.clear();
   };
 
@@ -239,6 +252,8 @@ export function createChatRunState(): ChatRunState {
     deltaSentAt,
     deltaLastBroadcastLen,
     deltaLastBroadcastText,
+    agentDeltaSentAt,
+    bufferedAgentEvents,
     abortedRuns,
     clear,
   };

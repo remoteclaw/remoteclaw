@@ -20,7 +20,8 @@ diagnostic surfaces around that boundary.
 RemoteClaw still owns channel routing, session files, visible message delivery,
 RemoteClaw dynamic tools, approvals, media delivery, and a transcript mirror.
 Codex owns the canonical native thread, native model loop, native tool
-continuation, and native compaction.
+continuation, and native compaction unless the active RemoteClaw context engine
+declares that it owns compaction.
 
 ## Thread bindings and model changes
 
@@ -150,13 +151,14 @@ requests fail closed.
 ## Queue steering
 
 Active-run queue steering maps onto Codex app-server `turn/steer`. With the
-default `messages.queue.mode: "steer"`, RemoteClaw batches queued chat messages
-for the configured quiet window and sends them as one `turn/steer` request in
-arrival order. Legacy `queue` mode sends separate `turn/steer` requests.
+default `messages.queue.mode: "steer"`, RemoteClaw batches steer-mode chat
+messages for the configured quiet window and sends them as one `turn/steer`
+request in arrival order.
 
 Codex review and manual compaction turns can reject same-turn steering. In that
-case, RemoteClaw uses the follow-up queue when the selected mode allows fallback.
-See [Steering queue](/concepts/queue-steering).
+case, RemoteClaw waits for the active run to finish before starting the prompt.
+Use `/queue followup` or `/queue collect` when messages should queue by default
+instead of steering. See [Steering queue](/concepts/queue-steering).
 
 ## Codex feedback upload
 
@@ -183,8 +185,17 @@ diagnostics bundle.
 ## Compaction and transcript mirror
 
 When the selected model uses the Codex harness, native thread compaction is
-delegated to Codex app-server. RemoteClaw keeps a transcript mirror for channel
-history, search, `/new`, `/reset`, and future model or harness switching.
+delegated to Codex app-server unless an active context engine declares
+`ownsCompaction: true`. Owning context engines compact first and cause RemoteClaw
+to abandon the old Codex backend thread so the next turn can rehydrate a fresh
+thread from engine-managed context. RemoteClaw keeps a transcript mirror for
+channel history, search, `/new`, `/reset`, and future model or harness
+switching.
+
+When a context engine requests Codex thread-bootstrap projection, RemoteClaw
+projects tool-call names and ids, input shapes, and redacted tool-result content
+into the fresh Codex thread. It does not copy raw tool-call argument values into
+that projection.
 
 The mirror includes the user prompt, final assistant text, and lightweight Codex
 reasoning or plan records when the app-server emits them. Today, RemoteClaw only

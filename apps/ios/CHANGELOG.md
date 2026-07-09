@@ -1,5 +1,13 @@
 # RemoteClaw iOS Changelog
 
+## 2026.5.18 - 2026-05-18
+
+Maintenance update for the current RemoteClaw beta release.
+
+## 2026.5.17 - 2026-05-17
+
+Maintenance update for the current RemoteClaw release.
+
 ## 2026.5.12 - 2026-05-12
 
 Maintenance update for the current RemoteClaw beta release.

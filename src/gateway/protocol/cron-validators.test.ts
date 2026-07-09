@@ -134,6 +134,7 @@ describe("cron protocol validators", () => {
     expect(
       validateCronRunsParams({
         id: "job-1",
+        runId: "manual:job-1:123:0",
         limit: 50,
         offset: 0,
         status: "error",
@@ -142,6 +143,7 @@ describe("cron protocol validators", () => {
       }),
     ).toBe(true);
     expect(validateCronRunsParams({ id: "job-1", offset: -1 })).toBe(false);
+    expect(validateCronRunsParams({ id: "job-1", runId: "" })).toBe(false);
   });
 
   it("accepts all-scope runs with multi-select filters", () => {

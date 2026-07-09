@@ -36,6 +36,14 @@ export type UpdateStatusOptions = {
   timeout?: string;
 };
 
+export type UpdateFinalizeOptions = {
+  json?: boolean;
+  channel?: string;
+  timeout?: string;
+  yes?: boolean;
+  restart?: boolean;
+};
+
 export type UpdateWizardOptions = {
   timeout?: string;
 };
@@ -43,13 +51,17 @@ export type UpdateWizardOptions = {
 const INVALID_TIMEOUT_ERROR = "--timeout must be a positive integer (seconds)";
 
 export function parseTimeoutMsOrExit(timeout?: string): number | undefined | null {
-  const timeoutMs = timeout ? Number.parseInt(timeout, 10) * 1000 : undefined;
-  if (timeoutMs !== undefined && (Number.isNaN(timeoutMs) || timeoutMs <= 0)) {
+  if (timeout === undefined) {
+    return undefined;
+  }
+  const trimmed = timeout.trim();
+  const seconds = Number(trimmed);
+  if (!/^\d+$/u.test(trimmed) || !Number.isSafeInteger(seconds) || seconds <= 0) {
     defaultRuntime.error(INVALID_TIMEOUT_ERROR);
     defaultRuntime.exit(1);
     return null;
   }
-  return timeoutMs;
+  return seconds * 1000;
 }
 
 const REMOTECLAW_REPO_URL = "https://github.com/remoteclaw/remoteclaw.git";

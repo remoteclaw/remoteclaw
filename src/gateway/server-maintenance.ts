@@ -31,7 +31,12 @@ export function startGatewayMaintenanceTimers(params: {
   logHealth: { error: (msg: string) => void };
   dedupe: Map<string, DedupeEntry>;
   chatAbortControllers: Map<string, ChatAbortControllerEntry>;
-  chatRunState: { abortedRuns: Map<string, number>; deltaLastBroadcastText: Map<string, string> };
+  chatRunState: {
+    abortedRuns: Map<string, number>;
+    deltaLastBroadcastText: Map<string, string>;
+    agentDeltaSentAt: Map<string, number>;
+    bufferedAgentEvents: Map<string, unknown>;
+  };
   chatRunBuffers: Map<string, string>;
   chatDeltaSentAt: Map<string, number>;
   chatDeltaLastBroadcastLen: Map<string, number>;
@@ -82,11 +87,39 @@ export function startGatewayMaintenanceTimers(params: {
   const dedupeCleanup = setInterval(() => {
     const AGENT_RUN_SEQ_MAX = 10_000;
     const now = Date.now();
-    const isActiveRunDedupeKey = (key: string) => {
+    const clearAgentThrottleState = (runId: string) => {
+      for (const agentStreamKey of [runId, `${runId}:assistant`, `${runId}:thinking`]) {
+        params.chatRunState.agentDeltaSentAt.delete(agentStreamKey);
+        params.chatRunState.bufferedAgentEvents.delete(agentStreamKey);
+      }
+    };
+    // Resolve the abort-controller runId a dedupe key refers to. The key's
+    // sliced suffix is tried first; if no controller matches (e.g. exec-approval
+    // aliases whose canonical runId carries a nonce/retry suffix), fall back to
+    // the runId recorded in the dedupe entry payload.
+    const resolveDedupeRunId = (key: string, entry: DedupeEntry) => {
+      if (!key.startsWith("agent:") && !key.startsWith("chat:")) {
+        return undefined;
+      }
+      const keyRunId = key.slice(key.indexOf(":") + 1);
+      if (keyRunId) {
+        const directEntry = params.chatAbortControllers.get(keyRunId);
+        if (directEntry) {
+          return keyRunId;
+        }
+      }
+      const payload = entry.payload;
+      return payload && typeof payload === "object" && !Array.isArray(payload)
+        ? typeof (payload as { runId?: unknown }).runId === "string"
+          ? (payload as { runId: string }).runId.trim() || undefined
+          : undefined
+        : undefined;
+    };
+    const isActiveRunDedupeKey = (key: string, dedupeEntry: DedupeEntry) => {
       if (!key.startsWith("agent:") && !key.startsWith("chat:")) {
         return false;
       }
-      const runId = key.slice(key.indexOf(":") + 1);
+      const runId = resolveDedupeRunId(key, dedupeEntry);
       const entry = runId ? params.chatAbortControllers.get(runId) : undefined;
       if (!entry) {
         return false;
@@ -94,7 +127,7 @@ export function startGatewayMaintenanceTimers(params: {
       return key.startsWith("agent:") ? entry.kind === "agent" : entry.kind !== "agent";
     };
     for (const [k, v] of params.dedupe) {
-      if (isActiveRunDedupeKey(k)) {
+      if (isActiveRunDedupeKey(k, v)) {
         continue;
       }
       if (now - v.ts > DEDUPE_TTL_MS) {
@@ -104,7 +137,7 @@ export function startGatewayMaintenanceTimers(params: {
     if (params.dedupe.size > DEDUPE_MAX) {
       const excess = params.dedupe.size - DEDUPE_MAX;
       const oldestKeys = [...params.dedupe.entries()]
-        .filter(([key]) => !isActiveRunDedupeKey(key))
+        .filter(([key, entry]) => !isActiveRunDedupeKey(key, entry))
         .toSorted(([, left], [, right]) => left.ts - right.ts)
         .slice(0, excess)
         .map(([key]) => key);
@@ -154,6 +187,7 @@ export function startGatewayMaintenanceTimers(params: {
       params.chatDeltaSentAt.delete(runId);
       params.chatDeltaLastBroadcastLen.delete(runId);
       params.chatRunState.deltaLastBroadcastText.delete(runId);
+      clearAgentThrottleState(runId);
     }
 
     // Sweep stale buffers for runs that were never explicitly aborted.
@@ -174,6 +208,24 @@ export function startGatewayMaintenanceTimers(params: {
       params.chatDeltaSentAt.delete(runId);
       params.chatDeltaLastBroadcastLen.delete(runId);
       params.chatRunState.deltaLastBroadcastText.delete(runId);
+    }
+
+    // Sweep orphaned agent throttle/buffer state once the run's controller is
+    // gone (mirrors the chat-delta orphan sweep above; agent state is keyed per
+    // stream, e.g. `${runId}:assistant`).
+    for (const [agentKey, lastSentAt] of params.chatRunState.agentDeltaSentAt) {
+      const baseRunId = agentKey.replace(/:(assistant|thinking)$/, "");
+      if (params.chatRunState.abortedRuns.has(baseRunId)) {
+        continue; // aborted-run sweep above owns cleanup
+      }
+      if (params.chatAbortControllers.has(baseRunId)) {
+        continue; // run still active
+      }
+      if (now - lastSentAt <= ABORTED_RUN_TTL_MS) {
+        continue;
+      }
+      params.chatRunState.agentDeltaSentAt.delete(agentKey);
+      params.chatRunState.bufferedAgentEvents.delete(agentKey);
     }
   }, 60_000);
 

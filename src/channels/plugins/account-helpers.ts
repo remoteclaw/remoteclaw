@@ -15,8 +15,31 @@ export function createAccountListHelpers(
   options?: {
     normalizeAccountId?: (id: string) => string;
     allowUnlistedDefaultAccount?: boolean;
+    implicitDefaultAccount?: {
+      channelKeys?: readonly string[];
+      envVars?: readonly string[];
+    };
+    hasImplicitDefaultAccount?: (cfg: RemoteClawConfig) => boolean;
   },
 ) {
+  function hasImplicitDefaultAccount(cfg: RemoteClawConfig): boolean {
+    if (options?.hasImplicitDefaultAccount?.(cfg)) {
+      return true;
+    }
+    const channel = cfg.channels?.[channelKey] as Record<string, unknown> | undefined;
+    for (const key of options?.implicitDefaultAccount?.channelKeys ?? []) {
+      if (hasConfiguredAccountValue(channel?.[key])) {
+        return true;
+      }
+    }
+    for (const key of options?.implicitDefaultAccount?.envVars ?? []) {
+      if (hasConfiguredAccountValue(process.env[key])) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   function resolveConfiguredDefaultAccountId(cfg: RemoteClawConfig): string | undefined {
     const channel = cfg.channels?.[channelKey] as Record<string, unknown> | undefined;
     const preferred = normalizeOptionalAccountId(
@@ -52,6 +75,7 @@ export function createAccountListHelpers(
   function listAccountIds(cfg: RemoteClawConfig): string[] {
     return listCombinedAccountIds({
       configuredAccountIds: listConfiguredAccountIds(cfg),
+      implicitAccountId: hasImplicitDefaultAccount(cfg) ? DEFAULT_ACCOUNT_ID : undefined,
       fallbackAccountIdWhenEmpty: DEFAULT_ACCOUNT_ID,
     });
   }
@@ -65,6 +89,13 @@ export function createAccountListHelpers(
   }
 
   return { listConfiguredAccountIds, listAccountIds, resolveDefaultAccountId };
+}
+
+export function hasConfiguredAccountValue(value: unknown): boolean {
+  if (typeof value === "string") {
+    return value.trim().length > 0;
+  }
+  return value !== undefined && value !== null;
 }
 
 export function listCombinedAccountIds(params: {

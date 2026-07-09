@@ -12,7 +12,7 @@ Adds Amazon Bedrock model provider support to RemoteClaw.
 ## Distribution
 
 - Package: `@remoteclaw/amazon-bedrock-provider`
-- Install route: npm
+- Install route: npm; ClawHub
 
 ## Surface
 

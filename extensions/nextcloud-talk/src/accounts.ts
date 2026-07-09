@@ -2,6 +2,7 @@ import { tryReadSecretFileSync } from "remoteclaw/plugin-sdk/core";
 import {
   createAccountListHelpers,
   DEFAULT_ACCOUNT_ID,
+  hasConfiguredSecretInput,
   normalizeAccountId,
   resolveAccountWithDefaultFallback,
 } from "remoteclaw/plugin-sdk/nextcloud-talk";
@@ -38,6 +39,15 @@ const {
   resolveDefaultAccountId: resolveDefaultNextcloudTalkAccountId,
 } = createAccountListHelpers("nextcloud-talk", {
   normalizeAccountId,
+  hasImplicitDefaultAccount: (cfg) => {
+    const channel = cfg.channels?.["nextcloud-talk"];
+    return Boolean(
+      channel?.baseUrl?.trim() &&
+      (hasConfiguredSecretInput(channel.botSecret) ||
+        channel.botSecretFile?.trim() ||
+        process.env.NEXTCLOUD_TALK_BOT_SECRET?.trim()),
+    );
+  },
 });
 export { resolveDefaultNextcloudTalkAccountId };
 

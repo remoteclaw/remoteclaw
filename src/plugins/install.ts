@@ -161,7 +161,7 @@ type PackageInstallCommonParams = InstallSafetyOverrides & {
 
 type FileInstallCommonParams = Pick<
   PackageInstallCommonParams,
-  "extensionsDir" | "logger" | "mode" | "dryRun"
+  "extensionsDir" | "logger" | "mode" | "dryRun" | "dangerouslyForceUnsafeInstall"
 >;
 
 function pickPackageInstallCommonParams(
@@ -180,11 +180,104 @@ function pickPackageInstallCommonParams(
 
 function pickFileInstallCommonParams(params: FileInstallCommonParams): FileInstallCommonParams {
   return {
+    dangerouslyForceUnsafeInstall: params.dangerouslyForceUnsafeInstall,
     extensionsDir: params.extensionsDir,
     logger: params.logger,
     mode: params.mode,
     dryRun: params.dryRun,
   };
+}
+
+type InstallScanGateResult = { proceed: true } | { proceed: false; result: InstallPluginResult };
+
+/**
+ * Shared code-safety scan gate for every install path that copies plugin
+ * sources into the extensions directory. Installed plugins run in-process with
+ * full host capability (no sandbox), so this is the single source of truth for
+ * the fail-closed policy:
+ *   - critical findings BLOCK the install (SECURITY_SCAN_BLOCKED);
+ *   - a scanner error fails CLOSED (SECURITY_SCAN_FAILED);
+ *   - when `failClosedOnNoCoverage` is set (single-file installs, where the
+ *     whole plugin is one file), a target the scanner cannot certify — a
+ *     non-scannable extension or one over the size limit, so `scannedFiles === 0`
+ *     — also fails CLOSED (SECURITY_SCAN_FAILED) rather than silently proceeding
+ *     unscanned.
+ * Each branch is bypassable only by an explicit operator opt-in via
+ * `dangerouslyForceUnsafeInstall` after reviewing the findings.
+ */
+async function enforceInstallScanGate(params: {
+  scanDir: string;
+  includeFiles: string[];
+  onlyIncludeFiles: boolean;
+  failClosedOnNoCoverage: boolean;
+  pluginId: string;
+  logger: PluginInstallLogger;
+  forceUnsafeInstall: boolean;
+}): Promise<InstallScanGateResult> {
+  const { pluginId, logger, forceUnsafeInstall } = params;
+  try {
+    const scanSummary = await skillScanner.scanDirectoryWithSummary(params.scanDir, {
+      includeFiles: params.includeFiles,
+      onlyIncludeFiles: params.onlyIncludeFiles,
+    });
+    if (params.failClosedOnNoCoverage && scanSummary.scannedFiles === 0) {
+      if (!forceUnsafeInstall) {
+        return {
+          proceed: false,
+          result: {
+            ok: false,
+            error: `Plugin "${pluginId}" installation blocked: the file could not be scanned for dangerous code (not a scannable plugin file — expected .js/.ts/.mjs/.cjs/.mts/.cts/.jsx/.tsx — or it exceeds the scan size limit). Re-run with --dangerously-force-unsafe-install to override.`,
+            code: PLUGIN_INSTALL_ERROR_CODE.SECURITY_SCAN_FAILED,
+          },
+        };
+      }
+      logger.warn?.(
+        `Plugin "${pluginId}" could not be scanned for dangerous code. Proceeding because --dangerously-force-unsafe-install was set.`,
+      );
+      return { proceed: true };
+    }
+    if (scanSummary.critical > 0) {
+      const criticalDetails = scanSummary.findings
+        .filter((f) => f.severity === "critical")
+        .map((f) => `${f.message} (${f.file}:${f.line})`)
+        .join("; ");
+      logger.warn?.(
+        `WARNING: Plugin "${pluginId}" contains dangerous code patterns: ${criticalDetails}`,
+      );
+      if (!forceUnsafeInstall) {
+        return {
+          proceed: false,
+          result: {
+            ok: false,
+            error: `Plugin "${pluginId}" installation blocked: dangerous code patterns detected: ${criticalDetails}. Review the findings and re-run with --dangerously-force-unsafe-install to override.`,
+            code: PLUGIN_INSTALL_ERROR_CODE.SECURITY_SCAN_BLOCKED,
+          },
+        };
+      }
+      logger.warn?.(
+        `Proceeding with install of "${pluginId}" despite critical findings because --dangerously-force-unsafe-install was set.`,
+      );
+    } else if (scanSummary.warn > 0) {
+      logger.warn?.(
+        `Plugin "${pluginId}" has ${scanSummary.warn} suspicious code pattern(s). Run "remoteclaw security audit --deep" for details.`,
+      );
+    }
+  } catch (err) {
+    if (!forceUnsafeInstall) {
+      return {
+        proceed: false,
+        result: {
+          ok: false,
+          error: `Plugin "${pluginId}" installation blocked: code safety scan failed (${String(err)}). Run "remoteclaw security audit --deep" for details, or re-run with --dangerously-force-unsafe-install to override.`,
+          code: PLUGIN_INSTALL_ERROR_CODE.SECURITY_SCAN_FAILED,
+        },
+      };
+    }
+    logger.warn?.(
+      `Plugin "${pluginId}" code safety scan failed (${String(err)}). Proceeding because --dangerously-force-unsafe-install was set.`,
+    );
+  }
+  return { proceed: true };
 }
 
 export function resolvePluginInstallDir(pluginId: string, extensionsDir?: string): string {
@@ -285,50 +378,22 @@ async function installPluginFromPackageDir(
     forcedScanEntries.push(resolvedEntry);
   }
 
-  // Scan plugin source for dangerous code patterns. Installed plugins run
-  // in-process with full host capability (no sandbox), so critical findings
-  // BLOCK the install and a scanner error fails CLOSED — both unless the
-  // operator has explicitly opted into an unsafe install after reviewing the
-  // findings via dangerouslyForceUnsafeInstall.
-  const forceUnsafeInstall = params.dangerouslyForceUnsafeInstall === true;
-  try {
-    const scanSummary = await skillScanner.scanDirectoryWithSummary(params.packageDir, {
-      includeFiles: forcedScanEntries,
-    });
-    if (scanSummary.critical > 0) {
-      const criticalDetails = scanSummary.findings
-        .filter((f) => f.severity === "critical")
-        .map((f) => `${f.message} (${f.file}:${f.line})`)
-        .join("; ");
-      logger.warn?.(
-        `WARNING: Plugin "${pluginId}" contains dangerous code patterns: ${criticalDetails}`,
-      );
-      if (!forceUnsafeInstall) {
-        return {
-          ok: false,
-          error: `Plugin "${pluginId}" installation blocked: dangerous code patterns detected: ${criticalDetails}. Review the findings and re-run with --dangerously-force-unsafe-install to override.`,
-          code: PLUGIN_INSTALL_ERROR_CODE.SECURITY_SCAN_BLOCKED,
-        };
-      }
-      logger.warn?.(
-        `Proceeding with install of "${pluginId}" despite critical findings because --dangerously-force-unsafe-install was set.`,
-      );
-    } else if (scanSummary.warn > 0) {
-      logger.warn?.(
-        `Plugin "${pluginId}" has ${scanSummary.warn} suspicious code pattern(s). Run "remoteclaw security audit --deep" for details.`,
-      );
-    }
-  } catch (err) {
-    if (!forceUnsafeInstall) {
-      return {
-        ok: false,
-        error: `Plugin "${pluginId}" installation blocked: code safety scan failed (${String(err)}). Run "remoteclaw security audit --deep" for details, or re-run with --dangerously-force-unsafe-install to override.`,
-        code: PLUGIN_INSTALL_ERROR_CODE.SECURITY_SCAN_FAILED,
-      };
-    }
-    logger.warn?.(
-      `Plugin "${pluginId}" code safety scan failed (${String(err)}). Proceeding because --dangerously-force-unsafe-install was set.`,
-    );
+  // Scan plugin source for dangerous code patterns before copying it into the
+  // extensions directory. Installed plugins run in-process with full host
+  // capability (no sandbox), so enforceInstallScanGate blocks on critical
+  // findings and fails closed on scanner errors — both unless the operator has
+  // explicitly opted into an unsafe install via dangerouslyForceUnsafeInstall.
+  const packageScanGate = await enforceInstallScanGate({
+    scanDir: params.packageDir,
+    includeFiles: forcedScanEntries,
+    onlyIncludeFiles: false,
+    failClosedOnNoCoverage: false,
+    pluginId,
+    logger,
+    forceUnsafeInstall: params.dangerouslyForceUnsafeInstall === true,
+  });
+  if (!packageScanGate.proceed) {
+    return packageScanGate.result;
   }
 
   const extensionsDir = params.extensionsDir
@@ -463,6 +528,7 @@ export async function installPluginFromFile(params: {
   logger?: PluginInstallLogger;
   mode?: "install" | "update";
   dryRun?: boolean;
+  dangerouslyForceUnsafeInstall?: boolean;
 }): Promise<InstallPluginResult> {
   const { logger, mode, dryRun } = resolveInstallModeOptions(params, defaultLogger);
 
@@ -482,6 +548,25 @@ export async function installPluginFromFile(params: {
   if (pluginIdError) {
     return { ok: false, error: pluginIdError };
   }
+
+  // Scan the single plugin file for dangerous code before copying it into the
+  // extensions directory (mirrors the package-directory install path). The scan
+  // runs ahead of the dry-run early-return below so that a `--link <file>`
+  // probe — which reaches here via installPluginFromPath({ dryRun: true }) — is
+  // gated too. failClosedOnNoCoverage rejects a file the scanner cannot certify.
+  const fileScanGate = await enforceInstallScanGate({
+    scanDir: path.dirname(filePath),
+    includeFiles: [filePath],
+    onlyIncludeFiles: true,
+    failClosedOnNoCoverage: true,
+    pluginId,
+    logger,
+    forceUnsafeInstall: params.dangerouslyForceUnsafeInstall === true,
+  });
+  if (!fileScanGate.proceed) {
+    return fileScanGate.result;
+  }
+
   const targetFile = path.join(extensionsDir, `${safeFileName(pluginId)}${path.extname(filePath)}`);
 
   const availability = await ensureInstallTargetAvailable({

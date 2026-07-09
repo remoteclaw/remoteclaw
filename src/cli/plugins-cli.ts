@@ -198,7 +198,7 @@ async function installBundledPluginSource(params: {
 
 async function runPluginInstallCommand(params: {
   raw: string;
-  opts: { link?: boolean; pin?: boolean };
+  opts: { link?: boolean; pin?: boolean; dangerouslyForceUnsafeInstall?: boolean };
 }) {
   const { raw, opts } = params;
   const fileSpec = resolveFileNpmSpecToLocalPath(raw);
@@ -214,7 +214,11 @@ async function runPluginInstallCommand(params: {
     if (opts.link) {
       const existing = cfg.plugins?.load?.paths ?? [];
       const merged = Array.from(new Set([...existing, resolved]));
-      const probe = await installPluginFromPath({ path: resolved, dryRun: true });
+      const probe = await installPluginFromPath({
+        path: resolved,
+        dryRun: true,
+        dangerouslyForceUnsafeInstall: opts.dangerouslyForceUnsafeInstall,
+      });
       if (!probe.ok) {
         defaultRuntime.error(probe.error);
         process.exit(1);
@@ -252,6 +256,7 @@ async function runPluginInstallCommand(params: {
     const result = await installPluginFromPath({
       path: resolved,
       logger: createPluginInstallLogger(),
+      dangerouslyForceUnsafeInstall: opts.dangerouslyForceUnsafeInstall,
     });
     if (!result.ok) {
       defaultRuntime.error(result.error);
@@ -317,6 +322,7 @@ async function runPluginInstallCommand(params: {
   const result = await installPluginFromNpmSpec({
     spec: raw,
     logger: createPluginInstallLogger(),
+    dangerouslyForceUnsafeInstall: opts.dangerouslyForceUnsafeInstall,
   });
   if (!result.ok) {
     const bundledFallbackPlan = resolveBundledInstallPlanForNpmFailure({
@@ -716,9 +722,19 @@ export function registerPluginsCli(program: Command) {
     .argument("<path-or-spec>", "Path (.ts/.js/.zip/.tgz/.tar.gz) or an npm package spec")
     .option("-l, --link", "Link a local path instead of copying", false)
     .option("--pin", "Record npm installs as exact resolved <name>@<version>", false)
-    .action(async (raw: string, opts: { link?: boolean; pin?: boolean }) => {
-      await runPluginInstallCommand({ raw, opts });
-    });
+    .option(
+      "--dangerously-force-unsafe-install",
+      "Install even if the code safety scan reports critical findings or fails",
+      false,
+    )
+    .action(
+      async (
+        raw: string,
+        opts: { link?: boolean; pin?: boolean; dangerouslyForceUnsafeInstall?: boolean },
+      ) => {
+        await runPluginInstallCommand({ raw, opts });
+      },
+    );
 
   plugins
     .command("update")

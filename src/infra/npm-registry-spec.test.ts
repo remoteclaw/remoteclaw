@@ -3,6 +3,7 @@ import {
   compareRemoteClawReleaseVersions,
   formatPrereleaseResolutionError,
   isExactSemverVersion,
+  isRemoteClawOrgNpmSpec,
   isRemoteClawStableCorrectionVersion,
   isPrereleaseSemverVersion,
   isPrereleaseResolutionAllowed,
@@ -102,6 +103,17 @@ describe("npm registry spec parsing helpers", () => {
     },
   ])("parses %s", ({ spec, expected }) => {
     expect(parseRegistryNpmSpec(spec)).toEqual(expected);
+  });
+
+  it.each([
+    { spec: "@remoteclaw/voice-call", expected: true },
+    { spec: "@remoteclaw/voice-call@1.2.3", expected: true },
+    { spec: "@other/voice-call", expected: false },
+    { spec: "voice-call", expected: false },
+    { spec: "npm:@remoteclaw/voice-call", expected: false },
+    { spec: undefined, expected: false },
+  ])("detects RemoteClaw-org npm specs for %s", ({ spec, expected }) => {
+    expect(isRemoteClawOrgNpmSpec(spec)).toBe(expected);
   });
 
   it.each([

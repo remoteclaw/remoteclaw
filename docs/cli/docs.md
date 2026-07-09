@@ -8,7 +8,7 @@ title: "Docs"
 
 # `remoteclaw docs`
 
-Search the live RemoteClaw docs index from the terminal. The command shells out to the public Mintlify-hosted docs MCP search endpoint at `https://docs.remoteclaw.org/mcp.SearchRemoteClaw` and renders the results in your terminal.
+Search the live RemoteClaw docs index from the terminal. The command shells out to the public Mintlify-hosted docs MCP search endpoint at `https://docs.remoteclaw.org/mcp.search_open_claw` and renders the results in your terminal.
 
 ## Usage
 

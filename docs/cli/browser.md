@@ -204,12 +204,17 @@ remoteclaw browser upload /tmp/remoteclaw/uploads/file.pdf --ref <ref>
 remoteclaw browser waitfordownload
 remoteclaw browser download <ref> report.pdf
 remoteclaw browser dialog --accept
+remoteclaw browser dialog --dismiss --dialog-id d1
 ```
 
 Managed Chrome profiles save ordinary click-triggered downloads into the RemoteClaw
 downloads directory (`/tmp/remoteclaw/downloads` by default, or the configured temp
 root). Use `waitfordownload` or `download` when the agent needs to wait for a
 specific file and return its path; those explicit waiters own the next download.
+When an action opens a modal dialog, the action response returns
+`blockedByDialog` with `browserState.dialogs.pending`; pass `--dialog-id` to
+answer it directly. Dialogs handled outside RemoteClaw appear under
+`browserState.dialogs.recent`.
 
 ## State and storage
 

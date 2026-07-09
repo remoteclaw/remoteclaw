@@ -5,6 +5,8 @@ export type { DmPolicy, GroupPolicy } from "../config/types.js";
 export type { SecretInput } from "../config/types.secrets.js";
 export type { WizardPrompter } from "../wizard/prompts.js";
 export { WizardCancelledError } from "../wizard/prompts.js";
+export { createSetupTranslator } from "../wizard/i18n/index.js";
+export type { SetupTranslator, WizardI18nParams } from "../wizard/i18n/index.js";
 export type { ChannelSetupAdapter } from "../channels/plugins/types.adapters.js";
 export type { ChannelSetupInput } from "../channels/plugins/types.core.js";
 // [reconcile] dropped re-export (gutted source: ../channels/plugins/setup-wizard-types.js)

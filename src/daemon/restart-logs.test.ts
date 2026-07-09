@@ -5,6 +5,7 @@ import {
   renderPosixRestartLogSetup,
   resolveGatewayLogPaths,
   resolveGatewayRestartLogPath,
+  resolveGatewaySupervisorLogPaths,
 } from "./restart-logs.js";
 
 describe("restart log conventions", () => {
@@ -33,6 +34,35 @@ describe("restart log conventions", () => {
     expect(resolveGatewayRestartLogPath(env)).toBe(
       `/tmp/remoteclaw-state/logs/${GATEWAY_RESTART_LOG_FILENAME}`,
     );
+  });
+
+  it("keeps macOS LaunchAgent stdout outside the state directory", () => {
+    const env = {
+      HOME: "/Users/test",
+      REMOTECLAW_STATE_DIR: "/Volumes/External/remoteclaw",
+    };
+
+    expect(resolveGatewaySupervisorLogPaths(env, { platform: "darwin" })).toEqual({
+      logDir: "/Users/test/Library/Logs/remoteclaw",
+      stdoutPath: "/Users/test/Library/Logs/remoteclaw/gateway.log",
+      stderrPath: "/Users/test/Library/Logs/remoteclaw/gateway.err.log",
+    });
+    expect(resolveGatewayRestartLogPath(env)).toBe(
+      `/Volumes/External/remoteclaw/logs/${GATEWAY_RESTART_LOG_FILENAME}`,
+    );
+  });
+
+  it("keeps macOS LaunchAgent logs profile-aware in the shared user log directory", () => {
+    const env = {
+      HOME: "/Users/test",
+      REMOTECLAW_PROFILE: "work",
+    };
+
+    expect(resolveGatewaySupervisorLogPaths(env, { platform: "darwin" })).toEqual({
+      logDir: "/Users/test/Library/Logs/remoteclaw",
+      stdoutPath: "/Users/test/Library/Logs/remoteclaw/gateway-work.log",
+      stderrPath: "/Users/test/Library/Logs/remoteclaw/gateway-work.err.log",
+    });
   });
 
   it("renders best-effort POSIX log setup with escaped paths", () => {

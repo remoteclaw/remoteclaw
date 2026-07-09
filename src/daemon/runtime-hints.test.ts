@@ -7,6 +7,7 @@ describe("buildPlatformRuntimeLogHints", () => {
       buildPlatformRuntimeLogHints({
         platform: "darwin",
         env: {
+          HOME: "/Users/test",
           REMOTECLAW_STATE_DIR: "/tmp/remoteclaw-state",
           REMOTECLAW_LOG_PREFIX: "gateway",
         },
@@ -14,7 +15,7 @@ describe("buildPlatformRuntimeLogHints", () => {
         windowsTaskName: "RemoteClaw Gateway",
       }),
     ).toEqual([
-      "Launchd stdout (if installed): /tmp/remoteclaw-state/logs/gateway.log",
+      "Launchd stdout (if installed): /Users/test/Library/Logs/remoteclaw/gateway.log",
       "Launchd stderr (if installed): suppressed",
       "Restart attempts: /tmp/remoteclaw-state/logs/gateway-restart.log",
     ]);

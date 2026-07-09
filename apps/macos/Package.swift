@@ -81,6 +81,7 @@ let package = Package(
             dependencies: [
                 "RemoteClawIPC",
                 "RemoteClaw",
+                "RemoteClawMacCLI",
                 "RemoteClawDiscovery",
                 .product(name: "RemoteClawProtocol", package: "RemoteClawKit"),
                 .product(name: "SwabbleKit", package: "swabble"),

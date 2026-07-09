@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { randomBytes } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -252,6 +253,27 @@ function renderExports(env) {
     .join("\n");
 }
 
+function generateAuthProfileSecretKey() {
+  return randomBytes(32).toString("hex");
+}
+
+function renderAuthProfileSecretKeyExport() {
+  return [
+    'REMOTECLAW_AUTH_PROFILE_SECRET_KEY_FILE="$REMOTECLAW_TEST_STATE_HOME/.remoteclaw-test-auth-profile-secret-key"',
+    'if [ -s "$REMOTECLAW_AUTH_PROFILE_SECRET_KEY_FILE" ]; then',
+    '  REMOTECLAW_AUTH_PROFILE_SECRET_KEY="$(cat "$REMOTECLAW_AUTH_PROFILE_SECRET_KEY_FILE")"',
+    "else",
+    '  REMOTECLAW_AUTH_PROFILE_SECRET_KEY="$(od -An -N 32 -tx1 /dev/urandom | tr -d " \\n")"',
+    '  ( umask 077; printf "%s\\n" "$REMOTECLAW_AUTH_PROFILE_SECRET_KEY" > "$REMOTECLAW_AUTH_PROFILE_SECRET_KEY_FILE" )',
+    "fi",
+    'if [ -z "$REMOTECLAW_AUTH_PROFILE_SECRET_KEY" ]; then',
+    '  echo "failed to generate REMOTECLAW_AUTH_PROFILE_SECRET_KEY" >&2',
+    "  return 1 2>/dev/null || exit 1",
+    "fi",
+    "export REMOTECLAW_AUTH_PROFILE_SECRET_KEY",
+  ];
+}
+
 function renderConfigWrite(configPathExpression, config) {
   if (config === undefined) {
     return "";
@@ -282,6 +304,7 @@ function buildCreatePlan(options = {}) {
     REMOTECLAW_HOME: home,
     REMOTECLAW_STATE_DIR: stateDir,
     REMOTECLAW_CONFIG_PATH: configPath,
+    REMOTECLAW_AUTH_PROFILE_SECRET_KEY: generateAuthProfileSecretKey(),
     ...scenarioEnv(scenario),
   };
   return {
@@ -330,6 +353,7 @@ export function renderShellSnippet(options = {}) {
     'export REMOTECLAW_HOME="$REMOTECLAW_TEST_STATE_HOME"',
     'export REMOTECLAW_STATE_DIR="$REMOTECLAW_TEST_STATE_HOME/.remoteclaw"',
     'export REMOTECLAW_CONFIG_PATH="$REMOTECLAW_STATE_DIR/remoteclaw.json"',
+    ...renderAuthProfileSecretKeyExport(),
     'export REMOTECLAW_TEST_WORKSPACE_DIR="$REMOTECLAW_TEST_STATE_HOME/workspace"',
     'mkdir -p "$REMOTECLAW_STATE_DIR" "$REMOTECLAW_TEST_WORKSPACE_DIR"',
   ];
@@ -373,6 +397,7 @@ export function renderShellFunction() {
   export REMOTECLAW_HOME="$REMOTECLAW_TEST_STATE_HOME"
   export REMOTECLAW_STATE_DIR="$REMOTECLAW_TEST_STATE_HOME/.remoteclaw"
   export REMOTECLAW_CONFIG_PATH="$REMOTECLAW_STATE_DIR/remoteclaw.json"
+  ${renderAuthProfileSecretKeyExport().join("\n  ")}
   export REMOTECLAW_TEST_WORKSPACE_DIR="$REMOTECLAW_TEST_STATE_HOME/workspace"
   unset REMOTECLAW_AGENT_DIR
   unset PI_CODING_AGENT_DIR

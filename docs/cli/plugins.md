@@ -1,7 +1,8 @@
 ---
-summary: "CLI reference for `remoteclaw plugins` (list, install, marketplace, uninstall, enable/disable, doctor)"
+summary: "CLI reference for `remoteclaw plugins` (init, build, validate, list, install, marketplace, uninstall, enable/disable, doctor)"
 read_when:
   - You want to install or manage Gateway plugins or compatible bundles
+  - You want to scaffold or validate a simple tool plugin
   - You want to debug plugin load failures
 title: "Plugins"
 sidebarTitle: "Plugins"
@@ -53,6 +54,11 @@ remoteclaw plugins update <id-or-npm-spec>
 remoteclaw plugins update --all
 remoteclaw plugins marketplace list <marketplace>
 remoteclaw plugins marketplace list <marketplace> --json
+remoteclaw plugins init <id>
+remoteclaw plugins init <id> --directory ./my-plugin --name "My Plugin"
+remoteclaw plugins build --entry ./dist/index.js
+remoteclaw plugins build --entry ./dist/index.js --check
+remoteclaw plugins validate --entry ./dist/index.js
 ```
 
 For slow install, inspect, uninstall, or registry-refresh investigation, run the
@@ -70,6 +76,28 @@ Native RemoteClaw plugins must ship `remoteclaw.plugin.json` with an inline JSON
 
 `plugins list` shows `Format: remoteclaw` or `Format: bundle`. Verbose list/info output also shows the bundle subtype (`codex`, `claude`, or `cursor`) plus detected bundle capabilities.
 </Note>
+
+### Author
+
+```bash
+remoteclaw plugins init stock-quotes --name "Stock Quotes"
+cd stock-quotes
+npm run plugin:build
+npm run plugin:validate
+```
+
+`plugins init` creates a minimal TypeScript tool plugin that uses
+`defineToolPlugin`. `plugins build` imports that entry, reads its static tool
+metadata, writes `remoteclaw.plugin.json`, and keeps `package.json`
+`remoteclaw.extensions` aligned. `plugins validate` checks that the generated
+manifest, package metadata, and current entry export still agree. See
+[Tool Plugins](/plugins/tool-plugins) for the full authoring workflow.
+
+The scaffold writes TypeScript source but generates metadata from the built
+`./dist/index.js` entry so the workflow also works with the published CLI. Use
+`--entry <path>` when the entry is not the default package entry. Use
+`plugins build --check` in CI to fail when generated metadata is stale without
+rewriting files.
 
 ### Install
 
@@ -130,6 +158,8 @@ is available, then fall back to `latest`.
   </Accordion>
   <Accordion title="--dangerously-force-unsafe-install">
     `--dangerously-force-unsafe-install` is a break-glass option for false positives in the built-in dangerous-code scanner. It allows the install to continue even when the built-in scanner reports `critical` findings, but it does **not** bypass plugin `before_install` hook policy blocks and does **not** bypass scan failures.
+
+    Install scans ignore common test files and directories such as `tests/`, `__tests__/`, `*.test.*`, and `*.spec.*` to avoid blocking packaged test mocks; declared plugin runtime entrypoints are still scanned even if they use one of those names.
 
     This CLI flag applies to plugin install/update flows. Gateway-backed skill dependency installs use the matching `dangerouslyForceUnsafeInstall` request override, while `remoteclaw skills install` remains a separate ClawHub skill download/install flow.
 
@@ -282,7 +312,7 @@ directory remains inert so normal packaged installs still use compiled dist.
 For runtime hook debugging:
 
 - `remoteclaw plugins inspect <id> --runtime --json` shows registered hooks and diagnostics from a module-loaded inspection pass. Runtime inspection never installs dependencies; use `remoteclaw doctor --fix` to clean legacy dependency state or recover missing downloadable plugins that are referenced by config.
-- `remoteclaw gateway status --deep --require-rpc` confirms the reachable Gateway, service/process hints, config path, and RPC health.
+- `remoteclaw gateway status --deep --require-rpc` confirms the reachable Gateway URL/profile, service/process hints, config path, and RPC health.
 - Non-bundled conversation hooks (`llm_input`, `llm_output`, `before_model_resolve`, `before_agent_reply`, `before_agent_run`, `before_agent_finalize`, `agent_end`) require `plugins.entries.<id>.hooks.allowConversationAccess=true`.
 
 Use `--link` to avoid copying a local directory (adds to `plugins.load.paths`):
@@ -339,7 +369,7 @@ Updates apply to tracked plugin installs in the managed plugin index and tracked
 
   </Accordion>
   <Accordion title="Beta channel updates">
-    `remoteclaw plugins update` reuses the tracked plugin spec unless you pass a new spec. `remoteclaw update` additionally knows the active RemoteClaw update channel: on the beta channel, default-line npm and ClawHub plugin records try `@beta` first, then fall back to the recorded default/latest spec if no plugin beta release exists. That fallback is reported as a warning and does not fail the core update. Exact versions and explicit tags stay pinned to that selector.
+    `remoteclaw plugins update` reuses the tracked plugin spec unless you pass a new spec. `remoteclaw update` additionally knows the active RemoteClaw update channel: on the beta channel, default-line npm and ClawHub plugin records try `@beta` first. They fall back to the recorded default/latest spec if no plugin beta release exists; npm plugins also fall back when the beta package exists but fails install validation. That fallback is reported as a warning and does not fail the core update. Exact versions and explicit tags stay pinned to that selector.
 
   </Accordion>
   <Accordion title="Version checks and integrity drift">
@@ -384,7 +414,7 @@ The `--json` flag outputs a machine-readable report suitable for scripting and a
 remoteclaw plugins doctor
 ```
 
-`doctor` reports plugin load errors, manifest/discovery diagnostics, and compatibility notices. When everything is clean it prints `No plugin issues detected.`
+`doctor` reports plugin load errors, manifest/discovery diagnostics, compatibility notices, and stale plugin config references such as missing plugin slots. When the install tree and plugin config are clean it prints `No plugin issues detected.` If stale config remains but the install tree is otherwise healthy, the summary says so instead of implying full plugin health.
 
 If a configured plugin is present on disk but blocked by the loader's path-safety checks, config validation keeps the plugin entry and reports it as `present but blocked`. Fix the preceding blocked-plugin diagnostic, such as path ownership or world-writable permissions, instead of removing the `plugins.entries.<id>` or `plugins.allow` config.
 

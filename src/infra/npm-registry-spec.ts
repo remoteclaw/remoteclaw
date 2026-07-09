@@ -117,6 +117,11 @@ export function parseRegistryNpmSpec(rawSpec: string): ParsedRegistryNpmSpec | n
   return parsed.ok ? parsed.parsed : null;
 }
 
+export function isRemoteClawOrgNpmSpec(rawSpec: string | undefined): boolean {
+  const parsed = rawSpec ? parseRegistryNpmSpec(rawSpec) : null;
+  return parsed?.name.startsWith("@remoteclaw/") === true;
+}
+
 export function validateRegistryNpmSpec(rawSpec: string): string | null {
   const parsed = parseRegistryNpmSpecInternal(rawSpec);
   return parsed.ok ? null : parsed.error;

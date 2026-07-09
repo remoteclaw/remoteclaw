@@ -16,7 +16,7 @@ Adds fal model provider support to RemoteClaw.
 
 ## Surface
 
-providers: fal; contracts: imageGenerationProviders, videoGenerationProviders
+providers: fal; contracts: imageGenerationProviders, musicGenerationProviders, videoGenerationProviders
 
 ## Related docs
 

@@ -10,6 +10,7 @@ type AbortResponsePayload = {
   aborted?: boolean;
   runIds?: string[];
 };
+type AbortRespond = Awaited<ReturnType<typeof invokeChatAbortHandler>>;
 
 async function invokeSingleRunAbort({
   context,
@@ -46,6 +47,15 @@ function createSingleAbortContext() {
   });
 }
 
+function requireLastRespondCall(respond: AbortRespond) {
+  const calls = respond.mock.calls;
+  const call = calls[calls.length - 1];
+  if (!call) {
+    throw new Error("expected respond call");
+  }
+  return call;
+}
+
 describe("chat.abort authorization", () => {
   // chat.abort owner-authorization (restored in #2721): the handler resolves the requesting
   // client's identity (resolveChatAbortRequester) and authorizes it against the run's recorded
@@ -62,7 +72,7 @@ describe("chat.abort authorization", () => {
       scopes: ["operator.write"],
     });
 
-    const [ok, payload, error] = respond.mock.calls.at(-1) ?? [];
+    const [ok, payload, error] = requireLastRespondCall(respond);
     expect(ok).toBe(false);
     expect(payload).toBeUndefined();
     expect(error?.code).toBe("INVALID_REQUEST");
@@ -87,12 +97,51 @@ describe("chat.abort authorization", () => {
       },
     });
 
-    const [ok, payload] = respond.mock.calls.at(-1) ?? [];
+    const [ok, payload] = requireLastRespondCall(respond);
     expect(ok).toBe(true);
     const abortPayload = payload as AbortResponsePayload | undefined;
     expect(abortPayload?.aborted).toBe(true);
     expect(abortPayload?.runIds).toEqual(["run-1"]);
     expect(context.chatAbortControllers.has("run-1")).toBe(false);
+  });
+
+  it("clears agent text throttle state through the real abort caller", async () => {
+    const context = createChatAbortContext({
+      chatAbortControllers: new Map([
+        ["run-1", createActiveRun("main", { owner: { connId: "conn-owner", deviceId: "dev-1" } })],
+      ]),
+      agentDeltaSentAt: new Map([["run-1:assistant", Date.now()]]),
+      bufferedAgentEvents: new Map([
+        [
+          "run-1:assistant",
+          {
+            payload: {
+              runId: "run-1",
+              seq: 1,
+              stream: "assistant",
+              ts: Date.now(),
+              data: { text: "pending", delta: "pending" },
+            },
+          },
+        ],
+      ]),
+    });
+
+    const respond = await invokeChatAbortHandler({
+      handler: chatHandlers["chat.abort"],
+      context,
+      request: { sessionKey: "main", runId: "run-1" },
+      client: {
+        connId: "conn-owner",
+        connect: { device: { id: "dev-1" }, scopes: ["operator.write"] },
+      },
+    });
+
+    const [ok, payload] = respond.mock.calls.at(-1) ?? [];
+    expect(ok).toBe(true);
+    expect(payload).toMatchObject({ aborted: true, runIds: ["run-1"] });
+    expect(context.agentDeltaSentAt.has("run-1:assistant")).toBe(false);
+    expect(context.bufferedAgentEvents.has("run-1:assistant")).toBe(false);
   });
 
   it("only aborts session-scoped runs owned by the requester", async () => {
@@ -113,7 +162,7 @@ describe("chat.abort authorization", () => {
       },
     });
 
-    const [ok, payload] = respond.mock.calls.at(-1) ?? [];
+    const [ok, payload] = requireLastRespondCall(respond);
     expect(ok).toBe(true);
     const abortPayload = payload as AbortResponsePayload | undefined;
     expect(abortPayload?.aborted).toBe(true);
@@ -132,7 +181,7 @@ describe("chat.abort authorization", () => {
       scopes: ["operator.admin"],
     });
 
-    const [ok, payload] = respond.mock.calls.at(-1) ?? [];
+    const [ok, payload] = requireLastRespondCall(respond);
     expect(ok).toBe(true);
     const abortPayload = payload as AbortResponsePayload | undefined;
     expect(abortPayload?.aborted).toBe(true);

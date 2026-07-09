@@ -7,9 +7,9 @@ describe("formatCliParseErrorOutput", () => {
       argv: ["node", "remoteclaw", "wat"],
     });
 
-    expect(output).toContain('RemoteClaw does not know the command "wat".');
-    expect(output).toContain("remoteclaw --help");
-    expect(output).toContain("remoteclaw plugins list");
+    expect(output).toBe(
+      'RemoteClaw does not know the command "wat".\nTry: remoteclaw --help\nPlugin command? remoteclaw plugins list\nDocs: https://docs.remoteclaw.org/cli\n',
+    );
   });
 
   it("points unknown options at the active command help", () => {
@@ -17,8 +17,9 @@ describe("formatCliParseErrorOutput", () => {
       argv: ["node", "remoteclaw", "channels", "status", "--wat"],
     });
 
-    expect(output).toContain('RemoteClaw does not recognize option "--wat".');
-    expect(output).toContain("remoteclaw channels status --help");
+    expect(output).toBe(
+      'RemoteClaw does not recognize option "--wat".\nTry: remoteclaw channels status --help\n',
+    );
   });
 
   it("points missing required arguments at command help", () => {
@@ -26,7 +27,8 @@ describe("formatCliParseErrorOutput", () => {
       argv: ["node", "remoteclaw", "plugins", "install"],
     });
 
-    expect(output).toContain('Missing required argument "name".');
-    expect(output).toContain("remoteclaw plugins install --help");
+    expect(output).toBe(
+      'Missing required argument "name".\nTry: remoteclaw plugins install --help\n',
+    );
   });
 });

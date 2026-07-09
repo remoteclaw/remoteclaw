@@ -95,7 +95,11 @@ beforeEach(() => {
 });
 
 describe("config shared auth disconnects", () => {
-  it("returns the persisted config from config.set write results", async () => {
+  // Fork divergence: writeConfigFile returns void (the fork omits upstream's
+  // commitGatewayConfigWrite write-result plumbing), so config.set echoes the
+  // redacted SUBMITTED config — not the persisted write result upstream stamps
+  // with meta.lastTouchedVersion.
+  it("echoes the submitted config from config.set (fork does not surface the persisted write result)", async () => {
     const prevConfig: RemoteClawConfig = {
       gateway: {
         port: 19000,
@@ -134,7 +138,7 @@ describe("config shared auth disconnects", () => {
       {
         ok: true,
         path: "/tmp/remoteclaw.json",
-        config: persistedConfig,
+        config: submittedConfig,
       },
       undefined,
     );

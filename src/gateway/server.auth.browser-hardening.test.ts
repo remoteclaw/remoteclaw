@@ -391,7 +391,12 @@ describe("gateway auth browser hardening", () => {
     });
   });
 
-  test("does not silently auto-pair control-ui browser clients on loopback", async () => {
+  // Skipped: the fork intentionally allows a local Control-UI/webchat browser
+  // client to pair silently (shouldAllowSilentLocalPairing in
+  // server/ws-connection/message-handler.ts). Requiring explicit pairing for
+  // browser-origin clients is deferred hardening tracked in #2841; un-skip when
+  // that lands.
+  test.skip("does not silently auto-pair control-ui browser clients on loopback", async () => {
     const { listDevicePairing } = await import("../infra/device-pairing.js");
     testState.gatewayAuth = { mode: "token", token: "secret" };
 

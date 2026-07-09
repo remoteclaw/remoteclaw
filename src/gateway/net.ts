@@ -476,8 +476,9 @@ function parseHostForAddressChecks(
  *
  * Returns true if the URL is secure for transmitting data:
  * - wss:// (TLS) is always secure
- * - ws:// is secure for loopback, private IP literals, .local, and Tailnet hosts
- * - optional break-glass: other private-DNS ws:// hostnames can be enabled for trusted networks
+ * - ws:// is secure only for loopback by default
+ * - optional break-glass (allowPrivateWs): private IP literals over ws:// can be
+ *   enabled for trusted private-network overlays
  *
  * All other ws:// URLs are considered insecure because both credentials
  * AND chat/conversation data would be exposed to network interception.

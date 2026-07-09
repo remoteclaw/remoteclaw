@@ -149,6 +149,15 @@ describe("resolveBundledRuntimeDepsNpmRunner", () => {
       npm_config_location: "project",
       npm_config_package_lock: "false",
       npm_config_save: "false",
+      // Adopted hardening (npm-install-env): neutralize any ambient npm
+      // min-release-age / --before freshness gate (empty overrides plus a
+      // min-release-age=0 pin) so bundled runtime deps install deterministically.
+      NPM_CONFIG_BEFORE: "",
+      npm_config_before: "",
+      NPM_CONFIG_MIN_RELEASE_AGE: "",
+      npm_config_min_release_age: "",
+      "NPM_CONFIG_MIN-RELEASE-AGE": "",
+      "npm_config_min-release-age": "0",
       // Adopted hardening (npm-install-env): the POSIX install env pins the
       // npm script shell to /bin/sh to block SHELL-based injection. Not set on
       // win32 (resolvePosixNpmScriptShell returns null there).

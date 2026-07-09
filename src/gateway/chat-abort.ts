@@ -111,6 +111,8 @@ export type ChatAbortOps = {
   chatAbortControllers: Map<string, ChatAbortControllerEntry>;
   chatRunBuffers: Map<string, string>;
   chatDeltaSentAt: Map<string, number>;
+  agentDeltaSentAt?: Map<string, number>;
+  bufferedAgentEvents?: Map<string, unknown>;
   chatAbortedRuns: Map<string, number>;
   removeChatRun: (
     sessionId: string,
@@ -174,6 +176,12 @@ export function abortChatRunById(
   ops.chatAbortControllers.delete(runId);
   ops.chatRunBuffers.delete(runId);
   ops.chatDeltaSentAt.delete(runId);
+  // Agent text/event throttle state is keyed per stream (`${runId}:assistant`,
+  // `${runId}:thinking`); clear the bare runId too for defensive parity.
+  for (const agentStreamKey of [runId, `${runId}:assistant`, `${runId}:thinking`]) {
+    ops.agentDeltaSentAt?.delete(agentStreamKey);
+    ops.bufferedAgentEvents?.delete(agentStreamKey);
+  }
   const removed = ops.removeChatRun(runId, runId, sessionKey);
   broadcastChatAborted(ops, { runId, sessionKey, stopReason, partialText });
   emitAgentEvent({

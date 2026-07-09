@@ -509,15 +509,11 @@ export function isSecureWebSocketUrl(
     return false;
   }
 
-  // Default policy allows local/Tailnet endpoints that cannot be given public TLS
-  // without extra operator setup. Public DNS hostnames still require wss://.
+  // Default policy stays strict: loopback-only plaintext ws://.
   if (isLoopbackHost(parsed.hostname)) {
     return true;
   }
-  if (isTrustedPlaintextWebSocketHost(parsed.hostname)) {
-    return true;
-  }
-  // Optional break-glass for trusted private-DNS overlays.
+  // Optional break-glass for trusted private-network overlays.
   if (opts?.allowPrivateWs) {
     if (isPrivateOrLoopbackHost(parsed.hostname)) {
       return true;
@@ -531,12 +527,4 @@ export function isSecureWebSocketUrl(
     return net.isIP(hostForIpCheck) === 0;
   }
   return false;
-}
-
-function isTrustedPlaintextWebSocketHost(hostname: string): boolean {
-  if (isPrivateOrLoopbackHost(hostname)) {
-    return true;
-  }
-  const normalized = normalizeLowercaseStringOrEmpty(hostname).replace(/\.+$/, "");
-  return normalized.endsWith(".local") || normalized.endsWith(".ts.net");
 }

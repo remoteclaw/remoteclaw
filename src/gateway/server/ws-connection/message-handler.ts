@@ -159,8 +159,12 @@ function shouldAllowSilentLocalPairing(params: {
   reason: "not-paired" | "role-upgrade" | "scope-upgrade" | "metadata-upgrade";
 }): boolean {
   return (
+    // Fork hardening (browser-pairing bypass): a browser-origin client can
+    // self-claim control-ui/webchat (client.id is client-supplied and spoofable),
+    // so silent local pairing is restricted to non-browser (native) local clients.
+    // Browser-origin clients — including a real Control-UI — must pair explicitly.
     params.isLocalClient &&
-    (!params.hasBrowserOriginHeader || params.isControlUi || params.isWebchat) &&
+    !params.hasBrowserOriginHeader &&
     (params.reason === "not-paired" || params.reason === "scope-upgrade")
   );
 }

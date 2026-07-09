@@ -144,6 +144,46 @@ export function describeGatewayCloseCode(code: number): string | undefined {
   return GATEWAY_CLOSE_CODE_HINTS[code];
 }
 
+// Query-parameter names whose values may carry credentials in a gateway URL.
+// Mirrors the sensitive-parameter set upstream redacts via
+// `isSensitiveUrlQueryParamName` (src/shared/net/redact-sensitive-url.ts), which
+// this fork does not vendor; the set is inlined here to keep the client
+// self-contained.
+const SENSITIVE_URL_QUERY_PARAMS = new Set([
+  "token",
+  "apikey",
+  "api_key",
+  "password",
+  "passwd",
+  "secret",
+  "auth",
+  "authorization",
+  "access_token",
+  "refresh_token",
+  "key",
+  "sig",
+  "signature",
+  "session",
+  "sessionid",
+  // Upstream (50508b1d0c8) also redacts these two; kept for parity.
+  "pass",
+  "client_secret",
+]);
+
+// Redacts credential-bearing gateway URLs from a diagnostic string before it is
+// logged: strips `//user:pass@` userinfo and masks the values of sensitive query
+// parameters, while leaving the surrounding diagnostic text intact. Mirrors
+// upstream's `formatGatewayClientErrorForLog` (commit 50508b1d0c8); this fork
+// vendors neither `redactToolPayloadText` nor `isSensitiveUrlQueryParamName`, so
+// the URL redaction is inlined and the general log-redaction layer is omitted.
+function formatGatewayClientErrorForLog(err: unknown): string {
+  return String(err)
+    .replace(/\/\/([^@/?#\s]+)@/g, "//***:***@")
+    .replace(/([?&])([^=&\s]+)=([^&#\s"'<>)]*)/g, (match, prefix: string, key: string) =>
+      SENSITIVE_URL_QUERY_PARAMS.has(key.toLowerCase()) ? `${prefix}${key}=***` : match,
+    );
+}
+
 const FORCE_STOP_TERMINATE_GRACE_MS = 250;
 const STOP_AND_WAIT_TIMEOUT_MS = 1_000;
 
@@ -306,7 +346,7 @@ export class GatewayClient {
       this.opts.onClose?.(code, reasonText);
     });
     ws.on("error", (err) => {
-      logDebug(`gateway client error: ${String(err)}`);
+      logDebug(`gateway client error: ${formatGatewayClientErrorForLog(err)}`);
       if (!this.connectSent) {
         this.opts.onConnectError?.(err instanceof Error ? err : new Error(String(err)));
       }
@@ -533,7 +573,7 @@ export class GatewayClient {
           this.backoffMs = Math.min(this.backoffMs, 250);
         }
         this.opts.onConnectError?.(err instanceof Error ? err : new Error(String(err)));
-        const msg = `gateway connect failed: ${String(err)}`;
+        const msg = `gateway connect failed: ${formatGatewayClientErrorForLog(err)}`;
         if (this.opts.mode === GATEWAY_CLIENT_MODES.PROBE) {
           logDebug(msg);
         } else {
@@ -747,7 +787,7 @@ export class GatewayClient {
         }
       }
     } catch (err) {
-      logDebug(`gateway client parse error: ${String(err)}`);
+      logDebug(`gateway client parse error: ${formatGatewayClientErrorForLog(err)}`);
     }
   }
 

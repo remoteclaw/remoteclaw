@@ -30,6 +30,7 @@ import { validateRegistryNpmSpec } from "../infra/npm-registry-spec.js";
 import { extensionUsesSkippedScannerPath, isPathInside } from "../security/scan-paths.js";
 import * as skillScanner from "../security/skill-scanner.js";
 import { CONFIG_DIR, resolveUserPath } from "../utils.js";
+import type { InstallSafetyOverrides } from "./install-security-scan.types.js";
 import {
   loadPluginManifest,
   resolvePackageExtensionEntries,
@@ -54,6 +55,8 @@ export const PLUGIN_INSTALL_ERROR_CODE = {
   EMPTY_REMOTECLAW_EXTENSIONS: "empty_remoteclaw_extensions",
   NPM_PACKAGE_NOT_FOUND: "npm_package_not_found",
   PLUGIN_ID_MISMATCH: "plugin_id_mismatch",
+  SECURITY_SCAN_BLOCKED: "security_scan_blocked",
+  SECURITY_SCAN_FAILED: "security_scan_failed",
 } as const;
 
 export type PluginInstallErrorCode =
@@ -147,7 +150,7 @@ function buildFileInstallResult(pluginId: string, targetFile: string): InstallPl
   };
 }
 
-type PackageInstallCommonParams = {
+type PackageInstallCommonParams = InstallSafetyOverrides & {
   extensionsDir?: string;
   timeoutMs?: number;
   logger?: PluginInstallLogger;
@@ -165,6 +168,7 @@ function pickPackageInstallCommonParams(
   params: PackageInstallCommonParams,
 ): PackageInstallCommonParams {
   return {
+    dangerouslyForceUnsafeInstall: params.dangerouslyForceUnsafeInstall,
     extensionsDir: params.extensionsDir,
     timeoutMs: params.timeoutMs,
     logger: params.logger,
@@ -281,7 +285,12 @@ async function installPluginFromPackageDir(
     forcedScanEntries.push(resolvedEntry);
   }
 
-  // Scan plugin source for dangerous code patterns (warn-only; never blocks install)
+  // Scan plugin source for dangerous code patterns. Installed plugins run
+  // in-process with full host capability (no sandbox), so critical findings
+  // BLOCK the install and a scanner error fails CLOSED — both unless the
+  // operator has explicitly opted into an unsafe install after reviewing the
+  // findings via dangerouslyForceUnsafeInstall.
+  const forceUnsafeInstall = params.dangerouslyForceUnsafeInstall === true;
   try {
     const scanSummary = await skillScanner.scanDirectoryWithSummary(params.packageDir, {
       includeFiles: forcedScanEntries,
@@ -294,14 +303,31 @@ async function installPluginFromPackageDir(
       logger.warn?.(
         `WARNING: Plugin "${pluginId}" contains dangerous code patterns: ${criticalDetails}`,
       );
+      if (!forceUnsafeInstall) {
+        return {
+          ok: false,
+          error: `Plugin "${pluginId}" installation blocked: dangerous code patterns detected: ${criticalDetails}. Review the findings and re-run with --dangerously-force-unsafe-install to override.`,
+          code: PLUGIN_INSTALL_ERROR_CODE.SECURITY_SCAN_BLOCKED,
+        };
+      }
+      logger.warn?.(
+        `Proceeding with install of "${pluginId}" despite critical findings because --dangerously-force-unsafe-install was set.`,
+      );
     } else if (scanSummary.warn > 0) {
       logger.warn?.(
         `Plugin "${pluginId}" has ${scanSummary.warn} suspicious code pattern(s). Run "remoteclaw security audit --deep" for details.`,
       );
     }
   } catch (err) {
+    if (!forceUnsafeInstall) {
+      return {
+        ok: false,
+        error: `Plugin "${pluginId}" installation blocked: code safety scan failed (${String(err)}). Run "remoteclaw security audit --deep" for details, or re-run with --dangerously-force-unsafe-install to override.`,
+        code: PLUGIN_INSTALL_ERROR_CODE.SECURITY_SCAN_FAILED,
+      };
+    }
     logger.warn?.(
-      `Plugin "${pluginId}" code safety scan failed (${String(err)}). Installation continues; run "remoteclaw security audit --deep" after install.`,
+      `Plugin "${pluginId}" code safety scan failed (${String(err)}). Proceeding because --dangerously-force-unsafe-install was set.`,
     );
   }
 
@@ -399,6 +425,7 @@ export async function installPluginFromArchive(
       await installPluginFromPackageDir({
         packageDir,
         ...pickPackageInstallCommonParams({
+          dangerouslyForceUnsafeInstall: params.dangerouslyForceUnsafeInstall,
           extensionsDir: params.extensionsDir,
           timeoutMs,
           logger,
@@ -493,6 +520,7 @@ export async function installPluginFromNpmSpec(params: {
   dryRun?: boolean;
   expectedPluginId?: string;
   expectedIntegrity?: string;
+  dangerouslyForceUnsafeInstall?: boolean;
   onIntegrityDrift?: (params: PluginNpmIntegrityDriftParams) => boolean | Promise<boolean>;
 }): Promise<InstallPluginResult> {
   const { logger, timeoutMs, mode, dryRun } = resolveTimedInstallModeOptions(params, defaultLogger);
@@ -519,6 +547,7 @@ export async function installPluginFromNpmSpec(params: {
     },
     installFromArchive: installPluginFromArchive,
     archiveInstallParams: {
+      dangerouslyForceUnsafeInstall: params.dangerouslyForceUnsafeInstall,
       extensionsDir: params.extensionsDir,
       timeoutMs,
       logger,

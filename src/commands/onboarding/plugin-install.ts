@@ -64,6 +64,38 @@ function resolveLocalPath(
   return null;
 }
 
+/**
+ * Registers a local plugin directory as a load path WITHOUT running the
+ * dangerous-code scanner that the npm / archive / path install flows enforce
+ * (see src/plugins/install.ts). This unscanned path is a deliberate, reviewed
+ * exception — not an oversight:
+ *
+ *   - `pluginPath` is never a user-typed path. It is resolved from the
+ *     first-party channel catalog (`entry.install.localPath`) or a bundled
+ *     plugin source shipped inside this repo — i.e. code we author and release,
+ *     not an arbitrary third-party plugin.
+ *   - The local option is only offered when a git workspace is present
+ *     (`hasGitWorkspace`) and the resolved path exists on disk — i.e. a
+ *     developer running from a checkout, not an end user.
+ *   - First-party channel plugins legitimately trip the scanner's critical
+ *     rules: e.g. the Signal plugin shells out to signal-cli via
+ *     child_process.spawn (extensions/signal/src/daemon.ts). Scanning-and-
+ *     blocking here would break that first-party flow, and the onboarding
+ *     wizard has no UI to set the `dangerouslyForceUnsafeInstall` override
+ *     (that override is CLI-only), so there would be no supported way to
+ *     proceed.
+ *
+ * Known residual: a catalog `localPath` is relative and resolved against the
+ * process CWD (`resolveLocalPath`), so a checkout whose CWD holds an
+ * attacker-controlled file at the catalog-relative location could be
+ * registered unscanned. Accepted for now given the git-workspace + existence
+ * gating above.
+ *
+ * REVISIT this exception if either changes: (a) the wizard gains a UI to set
+ * the force-unsafe override, or (b) `trustedSourceLinkedOfficialInstall`
+ * (already plumbed in cli/plugin-install-plan.ts) is consumed to scan-and-warn
+ * for catalog-verified sources. See issue #2834.
+ */
 function addPluginLoadPath(cfg: RemoteClawConfig, pluginPath: string): RemoteClawConfig {
   const existing = cfg.plugins?.load?.paths ?? [];
   const merged = Array.from(new Set([...existing, pluginPath]));
@@ -173,6 +205,8 @@ export async function ensureOnboardingPluginInstalled(params: {
   }
 
   if (choice === "local" && localPath) {
+    // Local path registered without a code-safety scan by design — first-party
+    // catalog/bundled source; see addPluginLoadPath and issue #2834.
     next = addPluginLoadPath(next, localPath);
     next = enablePluginInConfig(next, entry.id).config;
     return { cfg: next, installed: true };
@@ -210,6 +244,8 @@ export async function ensureOnboardingPluginInstalled(params: {
       initialValue: true,
     });
     if (fallback) {
+      // Local path registered without a code-safety scan by design — first-party
+      // catalog/bundled source; see addPluginLoadPath and issue #2834.
       next = addPluginLoadPath(next, localPath);
       next = enablePluginInConfig(next, entry.id).config;
       return { cfg: next, installed: true };

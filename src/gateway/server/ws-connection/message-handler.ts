@@ -16,7 +16,11 @@ import {
   verifyDeviceToken,
 } from "../../../infra/device-pairing.js";
 import { emitDiagnosticEvent } from "../../../infra/diagnostic-events.js";
-import { updatePairedNodeMetadata } from "../../../infra/node-pairing.js";
+import {
+  getPairedNode,
+  requestNodePairing,
+  updatePairedNodeMetadata,
+} from "../../../infra/node-pairing.js";
 import { upsertPresence } from "../../../infra/system-presence.js";
 import { loadVoiceWakeConfig } from "../../../infra/voicewake.js";
 import { rawDataToString } from "../../../infra/ws.js";
@@ -44,7 +48,7 @@ import {
   isTrustedProxyAddress,
   resolveClientIp,
 } from "../../net.js";
-import { resolveNodeCommandAllowlist } from "../../node-command-policy.js";
+import { reconcileNodePairingOnConnect } from "../../node-connect-reconcile.js";
 import { checkBrowserOrigin } from "../../origin-check.js";
 import { GATEWAY_CLIENT_IDS, GATEWAY_CLIENT_MODES } from "../../protocol/client-info.js";
 import {
@@ -1060,16 +1064,27 @@ export function attachGatewayWsMessageHandler(params: {
           : null;
 
         if (role === "node") {
-          const cfg = loadConfig();
-          const allowlist = resolveNodeCommandAllowlist(cfg, {
-            platform: connectParams.client.platform,
-            deviceFamily: connectParams.client.deviceFamily,
+          // Must stay in sync with NodeRegistry.register, so the pending pairing entry
+          // is keyed by the same id the node is registered and invoked under.
+          const nodeIdForPairing = connectParams.device?.id ?? connectParams.client.id;
+          const reconciled = await reconcileNodePairingOnConnect({
+            cfg: loadConfig(),
+            connectParams,
+            pairedNode: await getPairedNode(nodeIdForPairing),
+            reportedClientIp,
+            requestPairing: (input) => requestNodePairing(input),
           });
-          const declared = Array.isArray(connectParams.commands) ? connectParams.commands : [];
-          const filtered = declared
-            .map((cmd) => cmd.trim())
-            .filter((cmd) => cmd.length > 0 && allowlist.has(cmd));
-          connectParams.commands = filtered;
+          // Connect admission belongs to the device-pairing gate above. A node-pairing
+          // pending entry is an operator approval record only — rejecting the connect
+          // here would break secure-on-loopback silent local pairing.
+          connectParams.commands = reconciled.effectiveCommands;
+          if (reconciled.pendingPairing?.created) {
+            buildRequestContext().broadcast(
+              "node.pair.requested",
+              reconciled.pendingPairing.request,
+              { dropIfSlow: true },
+            );
+          }
         }
 
         const shouldTrackPresence = !isGatewayCliClient(connectParams.client);

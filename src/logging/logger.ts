@@ -12,6 +12,7 @@ import type { ConsoleStyle } from "./console.js";
 import { resolveEnvLogLevelOverride } from "./env-log-level.js";
 import { type LogLevel, levelToMinLevel, normalizeLogLevel } from "./levels.js";
 import { resolveNodeRequireFromMeta } from "./node-require.js";
+import { redactSensitiveText } from "./redact.js";
 import { loggingState } from "./state.js";
 import { formatTimestamp } from "./timestamps.js";
 
@@ -159,6 +160,59 @@ export function isFileLogLevelEnabled(level: LogLevel): boolean {
   return levelToMinLevel(level) >= levelToMinLevel(settings.level);
 }
 
+// Redact every string leaf of a caller-provided log argument in raw text, so a
+// credential is masked in the same form the console sink sees it — before JSON
+// serialization can wrap it in quotes or split it across structure. Objects and
+// arrays recurse (a fresh copy is built; the input is never mutated, so sibling
+// transports see the original); non-strings (numbers, booleans, Date) pass
+// through. See the file transport in `buildLogger` for why redaction must run
+// here, pre-serialization, rather than over the serialized JSON string.
+//
+// Known limitation: a value that materializes its string only at serialization
+// time via an own-enumerable `toJSON()` returning a secret-bearing string is not
+// reached (the recursion sees the object's fields, not the string JSON.stringify
+// later emits). This is non-regressive — the previous serialized-string pass had
+// the same blind spot — and no in-tree caller logs such a shape.
+function redactLogArgLeaves(value: unknown): unknown {
+  if (typeof value === "string") {
+    return redactSensitiveText(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(redactLogArgLeaves);
+  }
+  if (value !== null && typeof value === "object" && !(value instanceof Date)) {
+    const out: Record<string, unknown> = {};
+    for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
+      out[key] = redactLogArgLeaves(nested);
+    }
+    return out;
+  }
+  return value;
+}
+
+// tslog's `_meta` is framework-generated — runtime info, timestamp, source path,
+// log level — and carries no caller secrets, WITH two exceptions: `name` and
+// `parentNames` echo the label/bindings passed to getChildLogger(), which are
+// caller-controlled (a plugin could bind request-scoped context that embeds a
+// credential). Redact just those two fields and pass the rest of `_meta` through
+// untouched, so the hot path skips recursing the (secret-free) source-path graph.
+function redactLogMeta(meta: unknown): unknown {
+  if (meta === null || typeof meta !== "object") {
+    return meta;
+  }
+  const source = meta as Record<string, unknown>;
+  const out: Record<string, unknown> = { ...source };
+  if (typeof source.name === "string") {
+    out.name = redactSensitiveText(source.name);
+  }
+  if (Array.isArray(source.parentNames)) {
+    out.parentNames = source.parentNames.map((entry) =>
+      typeof entry === "string" ? redactSensitiveText(entry) : entry,
+    );
+  }
+  return out;
+}
+
 function buildLogger(settings: ResolvedSettings): TsLogger<LogObj> {
   const logger = new TsLogger<LogObj>({
     name: "remoteclaw",
@@ -185,7 +239,33 @@ function buildLogger(settings: ResolvedSettings): TsLogger<LogObj> {
   logger.attachTransport((logObj: LogObj) => {
     try {
       const time = formatTimestamp(logObj.date ?? new Date(), { style: "long" });
-      const line = JSON.stringify({ ...logObj, time });
+      // Redact at write ("redact-at-source"). This file sink is served to remote
+      // operator clients via the gateway `logs.tail` method and the CLI `logs`
+      // command, neither of which redacts on read; the console sinks redact
+      // separately. This transport is the sole writer and the single choke point
+      // for every file feeder — subsystem file logging, the patched console.*
+      // capture, and direct getLogger()/getChildLogger() callers — so it scrubs
+      // the record here, which also hardens the on-disk file against direct
+      // filesystem access.
+      //
+      // Redaction runs over each string LEAF of the caller-provided arguments,
+      // in raw text, BEFORE serialization — never over the serialized JSON.
+      // Regex-redacting serialized JSON is unsafe: a raw-text value class such as
+      // `token=[^\s&#]+` runs past a value's closing quote and eats adjacent
+      // structure (corrupting the line), and a credential beginning a value sits
+      // after a `"` the redactor treats as a non-word boundary (and leaks).
+      // Redacting raw leaves — where a value ends at the string's own boundary —
+      // avoids both and keeps the record valid JSON once re-serialized. tslog's
+      // own `_meta` is mostly framework-generated (runtime info, source path);
+      // its two caller-derived fields (child-logger name/parentNames) are redacted
+      // by `redactLogMeta` while the rest is passed through to keep this hot path
+      // cheap.
+      const record: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(logObj)) {
+        record[key] = key === "_meta" ? redactLogMeta(value) : redactLogArgLeaves(value);
+      }
+      record.time = time;
+      const line = JSON.stringify(record);
       const payload = `${line}\n`;
       const payloadBytes = Buffer.byteLength(payload, "utf8");
       const nextBytes = currentFileBytes + payloadBytes;

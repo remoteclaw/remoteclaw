@@ -88,6 +88,14 @@ export function resolveStateDir(
   return newDir;
 }
 
+export function normalizeStateDirEnv(env: NodeJS.ProcessEnv = process.env): void {
+  const effectiveHomedir = () => resolveRequiredHomeDir(env, envHomedir(env));
+  const remoteclawOverride = env.REMOTECLAW_STATE_DIR?.trim();
+  if (remoteclawOverride) {
+    env.REMOTECLAW_STATE_DIR = resolveUserPath(remoteclawOverride, env, effectiveHomedir);
+  }
+}
+
 function resolveUserPath(
   input: string,
   env: NodeJS.ProcessEnv = process.env,

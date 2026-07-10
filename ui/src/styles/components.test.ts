@@ -11,6 +11,18 @@ function readComponentsCss(): string {
   return readFileSync(cssPath!, "utf8");
 }
 
+describe("code block highlight styles", () => {
+  it("targets the markdown renderer's generated code block wrapper", () => {
+    const css = readComponentsCss();
+
+    expect(css).toContain(":is(.code-block .hljs, .code-block-wrapper pre code.hljs)");
+    expect(css).toContain(":is(.code-block, .code-block-wrapper pre code.hljs) .hljs-keyword");
+    expect(css).toContain(
+      ':root[data-theme-mode="light"] :is(.code-block, .code-block-wrapper pre code.hljs) .hljs-string',
+    );
+  });
+});
+
 describe("agent fallback chip styles", () => {
   it("styles the chip remove control inside the agent model input", () => {
     const css = readComponentsCss();

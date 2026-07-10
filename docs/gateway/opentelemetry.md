@@ -70,11 +70,11 @@ remoteclaw plugins enable diagnostics-otel
 
 ## Signals exported
 
-| Signal      | What goes in it                                                                                                                                         |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Metrics** | Counters and histograms for token usage, cost, run duration, message flow, Talk events, queue lanes, session state/recovery, exec, and memory pressure. |
-| **Traces**  | Spans for model usage, model calls, harness lifecycle, tool execution, exec, webhook/message processing, context assembly, and tool loops.              |
-| **Logs**    | Structured `logging.file` records exported over OTLP when `diagnostics.otel.logs` is enabled.                                                           |
+| Signal      | What goes in it                                                                                                                                                     |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Metrics** | Counters and histograms for token usage, cost, run duration, message flow, Talk events, queue lanes, session state/recovery, exec, and memory pressure.             |
+| **Traces**  | Spans for model usage, model calls, harness lifecycle, tool execution, exec, webhook/message processing, context assembly, and tool loops.                          |
+| **Logs**    | Structured `logging.file` records exported over OTLP when `diagnostics.otel.logs` is enabled; log bodies are withheld unless content capture is explicitly enabled. |
 
 Toggle `traces`, `metrics`, and `logs` independently. All three default to on
 when `diagnostics.otel.enabled` is true.
@@ -129,6 +129,11 @@ Raw model/tool content is **not** exported by default. Spans carry bounded
 identifiers (channel, provider, model, error category, hash-only request ids)
 and never include prompt text, response text, tool inputs, tool outputs, or
 session keys.
+OTLP log records keep severity, logger, code location, trusted trace context,
+and sanitized attributes by default, but the raw log message body is exported
+only when `diagnostics.otel.captureContent` is set to boolean `true`. Granular
+`captureContent.*` subkeys do not enable log bodies. Labels that look like
+scoped agent session keys are replaced with `unknown`.
 Talk metrics export only bounded event metadata such as mode, transport,
 provider, and event type. They do not include transcripts, audio payloads,
 session ids, turn ids, call ids, room ids, or handoff tokens.
@@ -149,7 +154,9 @@ text. Each subkey is opt-in independently:
 - `systemPrompt` - assembled system/developer prompt.
 
 When any subkey is enabled, model and tool spans get bounded, redacted
-`remoteclaw.content.*` attributes for that class only.
+`remoteclaw.content.*` attributes for that class only. Use boolean
+`captureContent: true` only for broad diagnostics captures where OTLP log
+message bodies are also approved for export.
 
 ## Sampling and flushing
 
@@ -189,6 +196,10 @@ When any subkey is enabled, model and tool spans get bounded, redacted
 - `remoteclaw.webhook.error` (counter, attrs: `remoteclaw.channel`, `remoteclaw.webhook`)
 - `remoteclaw.webhook.duration_ms` (histogram, attrs: `remoteclaw.channel`, `remoteclaw.webhook`)
 - `remoteclaw.message.queued` (counter, attrs: `remoteclaw.channel`, `remoteclaw.source`)
+- `remoteclaw.message.received` (counter, attrs: `remoteclaw.channel`, `remoteclaw.source`)
+- `remoteclaw.message.dispatch.started` (counter, attrs: `remoteclaw.channel`, `remoteclaw.source`)
+- `remoteclaw.message.dispatch.completed` (counter, attrs: `remoteclaw.channel`, `remoteclaw.outcome`, `remoteclaw.reason`, `remoteclaw.source`)
+- `remoteclaw.message.dispatch.duration_ms` (histogram, attrs: `remoteclaw.channel`, `remoteclaw.outcome`, `remoteclaw.reason`, `remoteclaw.source`)
 - `remoteclaw.message.processed` (counter, attrs: `remoteclaw.channel`, `remoteclaw.outcome`)
 - `remoteclaw.message.duration_ms` (histogram, attrs: `remoteclaw.channel`, `remoteclaw.outcome`)
 - `remoteclaw.message.delivery.started` (counter, attrs: `remoteclaw.channel`, `remoteclaw.delivery.kind`)
@@ -209,6 +220,7 @@ When any subkey is enabled, model and tool spans get bounded, redacted
 - `remoteclaw.session.state` (counter, attrs: `remoteclaw.state`, `remoteclaw.reason`)
 - `remoteclaw.session.stuck` (counter, attrs: `remoteclaw.state`; emitted only for stale session bookkeeping with no active work)
 - `remoteclaw.session.stuck_age_ms` (histogram, attrs: `remoteclaw.state`; emitted only for stale session bookkeeping with no active work)
+- `remoteclaw.session.turn.created` (counter, attrs: `remoteclaw.agent`, `remoteclaw.channel`, `remoteclaw.trigger`)
 - `remoteclaw.session.recovery.requested` (counter, attrs: `remoteclaw.state`, `remoteclaw.action`, `remoteclaw.active_work_kind`, `remoteclaw.reason`)
 - `remoteclaw.session.recovery.completed` (counter, attrs: `remoteclaw.state`, `remoteclaw.action`, `remoteclaw.status`, `remoteclaw.active_work_kind`, `remoteclaw.reason`)
 - `remoteclaw.session.recovery.age_ms` (histogram, attrs: same as the matching recovery counter)

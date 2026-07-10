@@ -4,6 +4,7 @@ export const GATEWAY_SYSTEMD_SERVICE_NAME = "remoteclaw-gateway";
 export const GATEWAY_WINDOWS_TASK_NAME = "RemoteClaw Gateway";
 export const GATEWAY_SERVICE_MARKER = "remoteclaw";
 export const GATEWAY_SERVICE_KIND = "gateway";
+export const GATEWAY_SERVICE_RUNTIME_PID_ENV = "REMOTECLAW_GATEWAY_SERVICE_PID";
 const NODE_LAUNCH_AGENT_LABEL = "org.remoteclaw.node";
 const NODE_SYSTEMD_SERVICE_NAME = "remoteclaw-node";
 const NODE_WINDOWS_TASK_NAME = "RemoteClaw Node";

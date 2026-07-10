@@ -18,7 +18,7 @@ function resetTargetNormalizerCacheForTests(): void {
   targetNormalizerCacheByChannelId.clear();
 }
 
-export const __testing = {
+export const testing = {
   resetTargetNormalizerCacheForTests,
 } as const;
 
@@ -67,3 +67,4 @@ function hashSignature(value: string): string {
   }
   return (hash >>> 0).toString(36);
 }
+export { testing as __testing };

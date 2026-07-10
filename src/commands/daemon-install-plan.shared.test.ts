@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   resolveDaemonInstallRuntimeInputs,
   resolveDaemonNodeBinDir,
+  resolveDaemonRemoteClawBinDir,
+  resolveDaemonServicePathDirs,
   resolveGatewayDevMode,
 } from "./daemon-install-plan.shared.js";
 
@@ -38,5 +40,70 @@ describe("resolveDaemonNodeBinDir", () => {
 
   it("ignores bare executable names", () => {
     expect(resolveDaemonNodeBinDir("node")).toBeUndefined();
+  });
+});
+
+describe("resolveDaemonRemoteClawBinDir", () => {
+  it("uses the active remoteclaw command directory", () => {
+    expect(
+      resolveDaemonRemoteClawBinDir({
+        argv: ["node", "/Users/testuser/.npm-global/bin/remoteclaw", "gateway", "install"],
+        env: { PATH: "" },
+        platform: "darwin",
+      }),
+    ).toEqual(["/Users/testuser/.npm-global/bin"]);
+  });
+
+  it("finds the PATH shim that resolves to the active package entrypoint", () => {
+    const realpaths = new Map([
+      ["/Users/testuser/.npm-global/bin/remoteclaw", "/pkg/remoteclaw/remoteclaw.mjs"],
+      [
+        "/Users/testuser/.npm-global/lib/node_modules/remoteclaw/remoteclaw.mjs",
+        "/pkg/remoteclaw/remoteclaw.mjs",
+      ],
+    ]);
+
+    expect(
+      resolveDaemonRemoteClawBinDir({
+        argv: [
+          "node",
+          "/Users/testuser/.npm-global/lib/node_modules/remoteclaw/remoteclaw.mjs",
+          "gateway",
+          "install",
+        ],
+        env: { PATH: "/Users/testuser/.npm-global/bin:/usr/bin" },
+        platform: "darwin",
+        existsSync: (candidate) => candidate === "/Users/testuser/.npm-global/bin/remoteclaw",
+        realpathSync: (candidate) => realpaths.get(candidate) ?? candidate,
+      }),
+    ).toEqual(["/Users/testuser/.npm-global/bin"]);
+  });
+
+  it("ignores unrelated remoteclaw commands elsewhere on PATH", () => {
+    expect(
+      resolveDaemonRemoteClawBinDir({
+        argv: ["node", "/opt/remoteclaw/remoteclaw.mjs", "gateway", "install"],
+        env: { PATH: "/Users/testuser/.npm-global/bin" },
+        platform: "darwin",
+        existsSync: () => true,
+        realpathSync: (candidate) =>
+          candidate === "/Users/testuser/.npm-global/bin/remoteclaw"
+            ? "/other/remoteclaw.mjs"
+            : candidate,
+      }),
+    ).toBeUndefined();
+  });
+});
+
+describe("resolveDaemonServicePathDirs", () => {
+  it("combines node and active remoteclaw command directories", () => {
+    expect(
+      resolveDaemonServicePathDirs({
+        nodePath: "/opt/homebrew/opt/node/bin/node",
+        argv: ["node", "/Users/testuser/.npm-global/bin/remoteclaw", "gateway", "install"],
+        env: { PATH: "" },
+        platform: "darwin",
+      }),
+    ).toEqual(["/opt/homebrew/opt/node/bin", "/Users/testuser/.npm-global/bin"]);
   });
 });

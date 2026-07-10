@@ -1,6 +1,10 @@
 import type { RemoteClawConfig } from "./types.js";
 
-export type RuntimeConfigSnapshotRefreshParams = {
+export type RuntimeConfigSnapshotRefreshOptions = {
+  includeAuthStoreRefs?: boolean;
+};
+
+export type RuntimeConfigSnapshotRefreshParams = RuntimeConfigSnapshotRefreshOptions & {
   sourceConfig: RemoteClawConfig;
 };
 
@@ -138,6 +142,7 @@ export function loadPinnedRuntimeConfig(loadFresh: () => RemoteClawConfig): Remo
 
 export async function finalizeRuntimeSnapshotWrite(params: {
   nextSourceConfig: RemoteClawConfig;
+  refreshOptions?: RuntimeConfigSnapshotRefreshOptions;
   hadRuntimeSnapshot: boolean;
   hadBothSnapshots: boolean;
   loadFreshConfig: () => RemoteClawConfig;
@@ -148,7 +153,10 @@ export async function finalizeRuntimeSnapshotWrite(params: {
   const refreshHandler = getRuntimeConfigSnapshotRefreshHandler();
   if (refreshHandler) {
     try {
-      const refreshed = await refreshHandler.refresh({ sourceConfig: params.nextSourceConfig });
+      const refreshed = await refreshHandler.refresh({
+        sourceConfig: params.nextSourceConfig,
+        ...params.refreshOptions,
+      });
       if (refreshed) {
         params.notifyCommittedWrite();
         return;

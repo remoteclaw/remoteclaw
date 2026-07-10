@@ -546,7 +546,12 @@ export const handleNodeEvent = async (ctx: NodeEventContext, nodeId: string, evt
           : undefined;
       const timedOut = obj.timedOut === true;
       const output = typeof obj.output === "string" ? obj.output.trim() : "";
-      const reason = typeof obj.reason === "string" ? obj.reason.trim() : "";
+      // Strip parens from the untrusted, node-supplied reason before it is embedded
+      // in the `Exec denied (node=..., <reason>): cmd` wire format. Readers locate
+      // the metadata by scanning for the first balanced `(...)` (see
+      // parseExecApprovalResultText), so stray parens here would break the
+      // metadata/body boundary and let a malicious node forge the parsed command.
+      const reason = typeof obj.reason === "string" ? obj.reason.trim().replace(/[()]/g, "") : "";
 
       let text = "";
       if (evt.event === "exec.started") {

@@ -96,6 +96,7 @@ RemoteClaw also injects context markers into spawned child processes:
 - `REMOTECLAW_SHELL=acp`: set for ACP runtime backend process spawns (for example `acpx`).
 - `REMOTECLAW_SHELL=acp-client`: set for `remoteclaw acp client` when it spawns the ACP bridge process.
 - `REMOTECLAW_SHELL=tui-local`: set for local TUI `!` shell commands.
+- `REMOTECLAW_CLI=1`: set for child processes spawned by the CLI entry point.
 
 These are runtime markers (not required user config). They can be used in shell/profile logic
 to apply context-specific rules.

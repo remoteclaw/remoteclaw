@@ -267,6 +267,7 @@ export async function sessionsCommand(
   }
 }
 
-export const __testing = {
+export const testing = {
   parseSessionsLimit,
 } as const;
+export { testing as __testing };

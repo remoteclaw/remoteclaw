@@ -95,6 +95,7 @@ tmp/
 
 # local tooling
 .serena/
+.crabbox/
 
 # Agent credentials and memory (NEVER COMMIT)
 /memory/

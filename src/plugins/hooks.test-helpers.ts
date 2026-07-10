@@ -42,6 +42,7 @@ export function createMockPluginRegistry(
     channels: [],
     channelSetups: [],
     providers: [],
+    embeddingProviders: [],
     speechProviders: [],
     mediaUnderstandingProviders: [],
     imageGenerationProviders: [],

@@ -23,7 +23,7 @@ function resetSessionMaintenanceWarningForTests() {
   deliverRuntimePromise = null;
 }
 
-export const __testing = {
+export const testing = {
   resetSessionMaintenanceWarningForTests,
 } as const;
 
@@ -145,3 +145,4 @@ export async function deliverSessionMaintenanceWarning(params: WarningParams): P
     enqueueSystemEvent(text, { sessionKey: params.sessionKey });
   }
 }
+export { testing as __testing };

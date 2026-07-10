@@ -1,8 +1,22 @@
 # RemoteClaw iOS Changelog
 
-## 2026.5.18 - 2026-05-18
+## 2026.5.22 - 2026-05-22
 
-Maintenance update for the current RemoteClaw beta release.
+Maintenance update for the current RemoteClaw release.
+
+## 2026.5.21 - 2026-05-21
+
+Maintenance update for the current RemoteClaw release.
+
+- Added realtime Gateway Talk relay support for iOS voice sessions, including OpenAI realtime provider and voice selection controls. Thanks @Solvely-Colin.
+
+## 2026.5.20 - 2026-05-20
+
+Maintenance update for the current RemoteClaw release.
+
+## 2026.5.19 - 2026-05-19
+
+Maintenance update for the current RemoteClaw release.
 
 ## 2026.5.17 - 2026-05-17
 

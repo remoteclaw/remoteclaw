@@ -13,7 +13,7 @@ const roomCache = new Map<
   { kind?: "direct" | "group"; fetchedAt: number; error?: string }
 >();
 
-export const __testing = {
+export const testing = {
   resetRoomCache() {
     roomCache.clear();
   },
@@ -126,3 +126,4 @@ export async function resolveNextcloudTalkRoomKind(params: {
     return undefined;
   }
 }
+export { testing as __testing };

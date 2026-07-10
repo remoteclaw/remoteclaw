@@ -16,7 +16,7 @@ Adds the Tlon channel surface for sending and receiving RemoteClaw messages.
 
 ## Surface
 
-channels: tlon; contracts: tools; skills
+channels: tlon; skills
 
 ## Related docs
 

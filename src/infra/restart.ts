@@ -567,7 +567,7 @@ export function scheduleGatewaySigusr1Restart(opts?: {
   };
 }
 
-export const __testing = {
+export const testing = {
   resetSigusr1State() {
     sigusr1AuthorizedCount = 0;
     sigusr1AuthorizedUntil = 0;
@@ -581,3 +581,4 @@ export const __testing = {
     clearPendingScheduledRestart();
   },
 };
+export { testing as __testing };

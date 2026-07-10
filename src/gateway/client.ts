@@ -209,13 +209,16 @@ function isSensitiveUrlQueryParamKey(rawKey: string): boolean {
 // The userinfo pattern spans to the LAST `@` inside the authority (bounded by
 // the first `/`, `?`, `#`, or whitespace), so a malformed userinfo carrying a
 // literal, non-encoded `@` — e.g. `//user:p@ss@host` (#2847) — is masked whole
-// instead of leaking the post-`@` tail. Each regex uses a single character-class
-// repetition with no nested quantifier or overlapping alternation, so matching
-// is linear-time (ReDoS-safe).
+// instead of leaking the post-`@` tail. Each repeated character class excludes
+// the delimiters that bound it — the userinfo class excludes `/?#` + whitespace,
+// the query-key class excludes `?`, `&`, `=` + whitespace — so a run self-
+// terminates at the next delimiter instead of over-consuming and backtracking.
+// Matching is therefore linear-time (ReDoS-safe) even on adversarial input such
+// as a long `?x` run carrying no `=` (#2847).
 export function formatGatewayClientErrorForLog(err: unknown): string {
   return String(err)
     .replace(/\/\/([^/?#\s]+)@/g, "//***:***@")
-    .replace(/([?&])([^=&\s]+)=([^&#\s"'<>)]*)/g, (match, prefix: string, key: string) =>
+    .replace(/([?&])([^=&\s?]+)=([^&#\s"'<>)]*)/g, (match, prefix: string, key: string) =>
       isSensitiveUrlQueryParamKey(key) ? `${prefix}${key}=***` : match,
     );
 }

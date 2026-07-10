@@ -936,8 +936,9 @@ describe("formatGatewayClientErrorForLog redaction (#2847)", () => {
   describe("ReDoS resistance (linear-time matching)", () => {
     it("completes on pathological inputs without catastrophic backtracking", () => {
       // If either regex were backtracking-prone, these would hang past the test
-      // timeout. Both use a single character-class repetition (no nested
-      // quantifier), so they are linear-time; assert completion + correctness.
+      // timeout. Each repeated character class excludes the delimiters bounding
+      // it, so runs self-terminate instead of over-consuming and backtracking;
+      // assert completion + correctness on adversarial shapes.
       const longUserinfo = `wss://${"a".repeat(100_000)}@host/ws`;
       expect(redact(longUserinfo)).toBe("wss://***:***@host/ws");
 
@@ -946,6 +947,15 @@ describe("formatGatewayClientErrorForLog redaction (#2847)", () => {
 
       const longParam = `wss://host/ws?token=${"a".repeat(100_000)}`;
       expect(redact(longParam)).toBe("wss://host/ws?token=***");
+
+      // Adversarial (#2847): a long run of `?`-prefixed keys with no `=`. If the
+      // query-key class admitted `?`, the greedy key would over-consume the tail
+      // and backtrack quadratically (O(n^2), multi-second at this size); excluding
+      // `?` makes each `?x` self-terminate. Bound wall-clock so a regression fails.
+      const questionRun = "?x".repeat(100_000);
+      const questionStart = performance.now();
+      expect(redact(questionRun)).toBe(questionRun);
+      expect(performance.now() - questionStart).toBeLessThan(1_000);
     });
   });
 });

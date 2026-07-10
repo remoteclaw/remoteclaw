@@ -402,24 +402,12 @@ describe("gateway node command allowlist", () => {
     }
   });
 
-  // SKIPPED — blocked by gutted PRODUCTION wiring, not a harness gap (see
-  // remoteclaw/remoteclaw#2744). This asserts a node's allowlist-filtered
-  // declared commands appear in the `node.pair.list` PENDING set (the
-  // NODE-pairing system, distinct from device pairing) on connect. Upstream
-  // OpenClaw runs `reconcileNodePairingOnConnect` at connect time to park that
-  // node-pairing pending entry; the RemoteClaw fork gutted that wiring —
-  // `reconcileNodePairingOnConnect` has no call site (only its definition
-  // remains), and `node.pair.list.pending` is written ONLY by the explicit
-  // `node.pair.request` RPC, never on connect. So the pending entry is empty
-  // regardless of local-vs-remote classification: a remote connect
-  // (REMOTE_PEER_HEADERS) parks only a DEVICE-pairing entry — proven by
-  // "requires explicit pairing approval for a remote (non-local-direct) node
-  // connect" above, which exercises the harness's new remote-connect lever. The
-  // connect-time allowlist FILTERING this checks is still covered by "filters
-  // system.run for confusable iOS metadata at connect time" (reads node.list).
-  // Re-enabling needs restoring the gutted connect→node-pairing reconciliation
-  // (a production port, out of this PR's harness-only scope): #2744.
-  test.skip("keeps allowlisted declared commands available before node pairing exists", async () => {
+  // A loopback node connect silently auto-pairs at the DEVICE layer and stays
+  // connected, while `reconcileNodePairingOnConnect` parks a NODE-pairing pending
+  // entry (a distinct system) recording the allowlist-filtered declared commands.
+  // Pending is an operator approval record, not a connect gate: the node's declared
+  // commands remain available before any node pairing exists.
+  test("keeps allowlisted declared commands available before node pairing exists", async () => {
     const findConnectedNode = async (displayName: string) => {
       const listRes = await rpcReq<{
         nodes?: Array<{
@@ -474,14 +462,11 @@ describe("gateway node command allowlist", () => {
     }
   });
 
-  // SKIPPED — same gutted-wiring blocker as the sibling above, not a harness gap
-  // (remoteclaw/remoteclaw#2744): the `node.pair.list` PENDING entry this asserts
-  // on is never created on connect because `reconcileNodePairingOnConnect` is
-  // unwired in the fork. The İOS-confusable allowlist filtering it checks (only
-  // `canvas.snapshot` survives, `system.run` filtered) is exercised at connect
-  // time by "filters system.run for confusable iOS metadata at connect time" via
-  // node.list. Re-enabling needs the production port tracked in #2744.
-  test.skip("records only allowlisted commands in pending node pairing requests", async () => {
+  // The pending node-pairing entry records the allowlist-filtered command set, not
+  // the raw declaration: `İOS` (Turkish dotted capital I) does not lowercase to an
+  // `ios` prefix, so the platform resolves via the `iPhone` device family and
+  // `system.run` is filtered out — only `canvas.snapshot` is recorded for approval.
+  test("records only allowlisted commands in pending node pairing requests", async () => {
     const { loadOrCreateDeviceIdentity } = await import("../infra/device-identity.js");
     const deviceIdentityPath = path.join(
       os.tmpdir(),
@@ -544,6 +529,7 @@ describe("gateway node command allowlist", () => {
   // loopback auto-pair posture are unchanged.
   test("requires explicit pairing approval for a remote (non-local-direct) node connect", async () => {
     const { listDevicePairing, rejectDevicePairing } = await import("../infra/device-pairing.js");
+    const { listNodePairing } = await import("../infra/node-pairing.js");
     const { loadOrCreateDeviceIdentity } = await import("../infra/device-identity.js");
     const deviceIdentity = loadOrCreateDeviceIdentity(
       path.join(
@@ -584,6 +570,15 @@ describe("gateway node command allowlist", () => {
     expect(pending).toHaveLength(1);
     const pendingRoles = pending[0]?.roles ?? (pending[0]?.role ? [pending[0]?.role] : []);
     expect(pendingRoles).toContain("node");
+
+    // The device-pairing gate closes the connection before the connect flow reaches
+    // node-pairing reconciliation, so an unapproved remote node parks NO node-pairing
+    // entry. This pins the ordering: `reconcileNodePairingOnConnect` must stay behind
+    // the device gate and never be reachable by a device the operator has not approved.
+    const nodePending = (await listNodePairing()).pending.filter(
+      (entry) => entry.nodeId === deviceIdentity.deviceId,
+    );
+    expect(nodePending).toHaveLength(0);
 
     // Clean up the pending entry so it cannot leak into sibling tests (the suite
     // shares device-pairing state — there is no per-test reset).

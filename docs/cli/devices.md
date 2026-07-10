@@ -77,6 +77,36 @@ remoteclaw devices approve <requestId>
 remoteclaw devices approve --latest
 ```
 
+## Paperclip / `remoteclaw_gateway` first-run approval
+
+When a new Paperclip agent connects through the `remoteclaw_gateway` adapter for the first time, the Gateway may require a one-time device pairing approval before runs can succeed. If Paperclip reports `remoteclaw_gateway_pairing_required`, approve the pending device and retry.
+
+For local gateways, preview the latest pending request:
+
+```bash
+remoteclaw devices approve --latest
+```
+
+The preview prints the exact `remoteclaw devices approve <requestId>` command. Verify the request details, then rerun that command with the request ID to approve it.
+
+For remote gateways or explicit credentials, pass the same options while previewing and approving:
+
+```bash
+remoteclaw devices approve --latest --url <gateway-ws-url> --token <gateway-token>
+```
+
+To avoid re-approving after restarts, keep a persistent device key in the Paperclip adapter config instead of generating a new ephemeral identity each run:
+
+```json
+{
+  "adapterConfig": {
+    "devicePrivateKeyPem": "<ed25519-private-key-pkcs8-pem>"
+  }
+}
+```
+
+If approval keeps failing, run `remoteclaw devices list` first to confirm a pending request exists.
+
 ### `remoteclaw devices reject <requestId>`
 
 Reject a pending device pairing request.

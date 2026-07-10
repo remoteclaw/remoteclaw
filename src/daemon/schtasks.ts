@@ -35,6 +35,7 @@ function resolveTaskName(env: GatewayServiceEnv): string {
 
 function shouldFallbackToStartupEntry(params: { code: number; detail: string }): boolean {
   return (
+    params.code === 1 ||
     /(?:access is denied|acceso denegado)/i.test(params.detail) ||
     params.code === 124 ||
     /schtasks timed out/i.test(params.detail) ||
@@ -48,6 +49,11 @@ export function resolveTaskScriptPath(env: GatewayServiceEnv): string {
     return override;
   }
   const scriptName = env.REMOTECLAW_TASK_SCRIPT_NAME?.trim() || "gateway.cmd";
+  if (/[/\\]|\.\./.test(scriptName)) {
+    throw new Error(
+      `REMOTECLAW_TASK_SCRIPT_NAME must be a file name only, not a path: ${scriptName}`,
+    );
+  }
   const stateDir = resolveGatewayStateDir(env);
   return path.join(stateDir, scriptName);
 }
@@ -214,7 +220,7 @@ const RUNNING_RESULT_CODES = new Set(["0x41301"]);
 const UNKNOWN_STATUS_DETAIL =
   "Task status is locale-dependent and no numeric Last Run Result was available.";
 
-export function deriveScheduledTaskRuntimeStatus(parsed: ScheduledTaskInfo): {
+function deriveScheduledTaskRuntimeStatus(parsed: ScheduledTaskInfo): {
   status: GatewayServiceRuntime["status"];
   detail?: string;
 } {

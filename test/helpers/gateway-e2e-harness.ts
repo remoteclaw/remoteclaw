@@ -22,8 +22,8 @@ export type ChatEventPayload = {
 
 export type GatewayInstance = RemoteClawTestInstance;
 
-const GATEWAY_CONNECT_STATUS_TIMEOUT_MS = 2_000;
-const GATEWAY_NODE_STATUS_TIMEOUT_MS = 4_000;
+const GATEWAY_CONNECT_STATUS_TIMEOUT_MS = 10_000;
+const GATEWAY_NODE_STATUS_TIMEOUT_MS = 15_000;
 const GATEWAY_NODE_STATUS_POLL_MS = 20;
 
 export async function spawnGatewayInstance(name: string): Promise<GatewayInstance> {
@@ -153,7 +153,7 @@ async function connectStatusClient(
     });
 
     timer = setTimeout(() => {
-      finish(new Error("timeout waiting for node.list"));
+      finish(new Error(`timeout waiting for status client hello for ${inst.name}`));
     }, timeoutMs);
 
     client.start();
@@ -165,11 +165,11 @@ export async function waitForNodeStatus(
   nodeId: string,
   timeoutMs = GATEWAY_NODE_STATUS_TIMEOUT_MS,
 ) {
-  const deadline = Date.now() + timeoutMs;
   const client = await connectStatusClient(
     inst,
     Math.min(GATEWAY_CONNECT_STATUS_TIMEOUT_MS, timeoutMs),
   );
+  const deadline = Date.now() + timeoutMs;
   try {
     while (Date.now() < deadline) {
       const list = await client.request("node.list", {});

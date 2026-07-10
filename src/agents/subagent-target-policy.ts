@@ -39,6 +39,20 @@ function normalizeAllowAgents(allowAgents: readonly string[] | undefined): {
   };
 }
 
+function normalizeConfiguredAgentIds(
+  configuredAgentIds: readonly string[] | undefined,
+): Set<string> {
+  return new Set((configuredAgentIds ?? []).map((id) => normalizeAgentId(id)).filter(Boolean));
+}
+
+function filterConfiguredAllowedIds(params: {
+  allowedIds: readonly string[];
+  configuredAgentIds?: readonly string[];
+}): string[] {
+  const configuredIds = normalizeConfiguredAgentIds(params.configuredAgentIds);
+  return params.allowedIds.filter((id) => configuredIds.has(id));
+}
+
 export function resolveSubagentAllowedTargetIds(params: {
   requesterAgentId: string;
   allowAgents?: readonly string[];
@@ -53,9 +67,10 @@ export function resolveSubagentAllowedTargetIds(params: {
     };
   }
   if (policy.allowAny) {
-    const configuredIds = (params.configuredAgentIds ?? [])
-      .map((id) => normalizeAgentId(id))
-      .filter(Boolean);
+    const configuredIds = Array.from(normalizeConfiguredAgentIds(params.configuredAgentIds));
+    if (requesterAgentId) {
+      configuredIds.push(requesterAgentId);
+    }
     return {
       allowAny: true,
       allowedIds: Array.from(new Set(configuredIds)).toSorted((a, b) => a.localeCompare(b)),
@@ -63,7 +78,10 @@ export function resolveSubagentAllowedTargetIds(params: {
   }
   return {
     allowAny: false,
-    allowedIds: policy.allowedIds,
+    allowedIds: filterConfiguredAllowedIds({
+      allowedIds: policy.allowedIds,
+      configuredAgentIds: params.configuredAgentIds,
+    }).toSorted((a, b) => a.localeCompare(b)),
   };
 }
 
@@ -72,6 +90,7 @@ export function resolveSubagentTargetPolicy(params: {
   targetAgentId: string;
   requestedAgentId?: string;
   allowAgents?: readonly string[];
+  configuredAgentIds?: readonly string[];
 }): SubagentTargetPolicyResult {
   const requesterAgentId = normalizeAgentId(params.requesterAgentId);
   const targetAgentId = normalizeAgentId(params.targetAgentId);
@@ -82,11 +101,20 @@ export function resolveSubagentTargetPolicy(params: {
   const allowed = resolveSubagentAllowedTargetIds({
     requesterAgentId,
     allowAgents: params.allowAgents,
+    configuredAgentIds: params.configuredAgentIds,
   });
-  if (allowed.allowAny || allowed.allowedIds.includes(targetAgentId)) {
+  if (allowed.allowedIds.includes(targetAgentId)) {
     return { ok: true };
   }
   const allowedText = allowed.allowedIds.length > 0 ? allowed.allowedIds.join(", ") : "none";
+  const policy = normalizeAllowAgents(params.allowAgents);
+  if (allowed.allowAny || policy.allowedIds.includes(targetAgentId)) {
+    return {
+      ok: false,
+      allowedText,
+      error: `agentId "${targetAgentId}" is not in the configured agent registry (allowed: ${allowedText})`,
+    };
+  }
   return {
     ok: false,
     allowedText,

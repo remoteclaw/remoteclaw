@@ -159,7 +159,7 @@ export type UpdateInstallSurface =
 
 function mapManagerResolutionFailure(
   reason: UpdatePackageManagerFailureReason,
-): UpdateRunResult["reason"] {
+): NonNullable<UpdateRunResult["reason"]> {
   return reason;
 }
 
@@ -223,7 +223,12 @@ function buildStartDirs(opts: UpdateRunnerOptions): string[] {
       dirs.push(packageRoot);
     }
   }
-  const proc = normalizeDir(process.cwd());
+  let proc: string | null = null;
+  try {
+    proc = normalizeDir(process.cwd());
+  } catch {
+    proc = null;
+  }
   if (proc) {
     dirs.push(proc);
   }
@@ -757,7 +762,7 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
     const beforeVersion = await readPackageVersion(gitRoot);
     const channel: UpdateChannel = opts.channel ?? "dev";
     const devTargetRef = channel === "dev" ? normalizeDevTargetRef(opts.devTargetRef) : null;
-    const branch = channel === "dev" ? await readBranchName(runCommand, gitRoot, timeoutMs) : null;
+    const branch = await readBranchName(runCommand, gitRoot, timeoutMs);
     const needsCheckoutMain = channel === "dev" && !devTargetRef && branch !== DEV_BRANCH;
     gitTotalSteps = channel === "dev" ? (needsCheckoutMain ? 11 : 10) : 9;
     const buildGitErrorResult = (reason: string): UpdateRunResult => ({
@@ -776,6 +781,60 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
         return buildGitErrorResult(reason);
       }
       return null;
+    };
+    const appendRecoveryStep = async (name: string, argv: string[]) => {
+      const started = Date.now();
+      const result = await runCommand(argv, { cwd: gitRoot, timeoutMs });
+      const recoveryStep: UpdateStepResult = {
+        name,
+        command: argv.join(" "),
+        cwd: gitRoot,
+        durationMs: Date.now() - started,
+        exitCode: result.code,
+        stdoutTail: trimLogTail(result.stdout, MAX_LOG_CHARS),
+        stderrTail: trimLogTail(result.stderr, MAX_LOG_CHARS),
+      };
+      steps.push(recoveryStep);
+      return recoveryStep.exitCode === 0;
+    };
+    const rollbackGitCheckout = async () => {
+      if (!beforeSha) {
+        return;
+      }
+      await appendRecoveryStep("git rollback clean", ["git", "-C", gitRoot, "reset", "--hard"]);
+      if (branch && branch !== "HEAD") {
+        const checkedOutBranch = await appendRecoveryStep("git rollback checkout", [
+          "git",
+          "-C",
+          gitRoot,
+          "checkout",
+          "--force",
+          branch,
+        ]);
+        if (checkedOutBranch) {
+          await appendRecoveryStep("git rollback reset", [
+            "git",
+            "-C",
+            gitRoot,
+            "reset",
+            "--hard",
+            beforeSha,
+          ]);
+        }
+        return;
+      }
+      await appendRecoveryStep("git rollback checkout", [
+        "git",
+        "-C",
+        gitRoot,
+        "checkout",
+        "--detach",
+        beforeSha,
+      ]);
+    };
+    const buildGitErrorResultWithRollback = async (reason: string): Promise<UpdateRunResult> => {
+      await rollbackGitCheckout();
+      return buildGitErrorResult(reason);
     };
 
     const statusCheck = await runStep(
@@ -1203,15 +1262,7 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
       "require-preferred",
     );
     if (manager.kind === "missing-required") {
-      return {
-        status: "error",
-        mode: "git",
-        root: gitRoot,
-        reason: mapManagerResolutionFailure(manager.reason),
-        before: { sha: beforeSha, version: beforeVersion },
-        steps,
-        durationMs: Date.now() - startedAt,
-      };
+      return await buildGitErrorResultWithRollback(mapManagerResolutionFailure(manager.reason));
     }
     try {
       const installEnv = resolveInstallEnv(manager.manager, manager.env);
@@ -1238,15 +1289,7 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
         }
       }
       if (finalDepsStep.exitCode !== 0) {
-        return {
-          status: "error",
-          mode: "git",
-          root: gitRoot,
-          reason: "deps-install-failed",
-          before: { sha: beforeSha, version: beforeVersion },
-          steps,
-          durationMs: Date.now() - startedAt,
-        };
+        return await buildGitErrorResultWithRollback("deps-install-failed");
       }
 
       const buildStep = await runStep(
@@ -1259,15 +1302,7 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
       );
       steps.push(buildStep);
       if (buildStep.exitCode !== 0) {
-        return {
-          status: "error",
-          mode: "git",
-          root: gitRoot,
-          reason: "build-failed",
-          before: { sha: beforeSha, version: beforeVersion },
-          steps,
-          durationMs: Date.now() - startedAt,
-        };
+        return await buildGitErrorResultWithRollback("build-failed");
       }
 
       const uiBuildStep = await runStep(
@@ -1275,15 +1310,7 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
       );
       steps.push(uiBuildStep);
       if (uiBuildStep.exitCode !== 0) {
-        return {
-          status: "error",
-          mode: "git",
-          root: gitRoot,
-          reason: "ui-build-failed",
-          before: { sha: beforeSha, version: beforeVersion },
-          steps,
-          durationMs: Date.now() - startedAt,
-        };
+        return await buildGitErrorResultWithRollback("ui-build-failed");
       }
 
       const doctorEntry = path.join(gitRoot, "remoteclaw.mjs");
@@ -1300,15 +1327,7 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
           exitCode: 1,
           stderrTail: `missing ${doctorEntry}`,
         });
-        return {
-          status: "error",
-          mode: "git",
-          root: gitRoot,
-          reason: "doctor-entry-missing",
-          before: { sha: beforeSha, version: beforeVersion },
-          steps,
-          durationMs: Date.now() - startedAt,
-        };
+        return await buildGitErrorResultWithRollback("doctor-entry-missing");
       }
 
       // Use --fix so that doctor auto-strips unknown config keys introduced by
@@ -1323,15 +1342,7 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
       );
       steps.push(doctorStep);
       if (doctorStep.exitCode !== 0) {
-        return {
-          status: "error",
-          mode: "git",
-          root: gitRoot,
-          reason: "doctor-failed",
-          before: { sha: beforeSha, version: beforeVersion },
-          steps,
-          durationMs: Date.now() - startedAt,
-        };
+        return await buildGitErrorResultWithRollback("doctor-failed");
       }
 
       const uiIndexHealth = await resolveControlUiDistIndexHealth({ root: gitRoot });
@@ -1355,15 +1366,7 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
         steps.push(repairStep);
 
         if (repairResult.code !== 0) {
-          return {
-            status: "error",
-            mode: "git",
-            root: gitRoot,
-            reason: "ui-build-failed",
-            before: { sha: beforeSha, version: beforeVersion },
-            steps,
-            durationMs: Date.now() - startedAt,
-          };
+          return await buildGitErrorResultWithRollback("ui-build-failed");
         }
 
         const repairedUiIndexHealth = await resolveControlUiDistIndexHealth({ root: gitRoot });
@@ -1378,15 +1381,7 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
             exitCode: 1,
             stderrTail: `missing ${uiIndexPath}`,
           });
-          return {
-            status: "error",
-            mode: "git",
-            root: gitRoot,
-            reason: "ui-assets-missing",
-            before: { sha: beforeSha, version: beforeVersion },
-            steps,
-            durationMs: Date.now() - startedAt,
-          };
+          return await buildGitErrorResultWithRollback("ui-assets-missing");
         }
       }
 
@@ -1471,6 +1466,7 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
           return null;
         }
         const doctorNodePath = await resolveStableNodePath(process.execPath);
+        const candidateHostVersion = await readPackageVersion(verifiedPackageRoot);
         return await runStep({
           runCommand,
           name: "remoteclaw doctor",
@@ -1480,6 +1476,9 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
           env: {
             REMOTECLAW_UPDATE_IN_PROGRESS: "1",
             [UPDATE_PARENT_SUPPORTS_DOCTOR_CONFIG_WRITE_ENV]: "1",
+            ...(candidateHostVersion === null
+              ? {}
+              : { REMOTECLAW_COMPATIBILITY_HOST_VERSION: candidateHostVersion }),
           },
           progress,
           stepIndex: 0,

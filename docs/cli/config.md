@@ -31,7 +31,7 @@ remoteclaw config get browser.executablePath
 remoteclaw config set browser.executablePath "/usr/bin/google-chrome"
 remoteclaw config set browser.profiles.work.executablePath "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 remoteclaw config set agents.defaults.heartbeat.every "2h"
-remoteclaw config set agents.list[0].tools.exec.node "node-id-or-name"
+remoteclaw config set 'agents.list[0].tools.exec.node' "node-id-or-name"
 remoteclaw config set agents.defaults.models '{"openai/gpt-5.4":{}}' --strict-json --merge
 remoteclaw config set channels.discord.token --ref-provider default --ref-source env --ref-id DISCORD_BOT_TOKEN
 remoteclaw config set secrets.providers.vaultfile --provider-source file --provider-path /etc/remoteclaw/secrets.json --provider-mode json
@@ -73,18 +73,18 @@ remoteclaw config schema > remoteclaw.schema.json
 
 ### Paths
 
-Paths use dot or bracket notation:
+Paths use dot or bracket notation. Quote bracket-notation paths in shell examples so shells such as zsh do not expand `[0]` as a glob before RemoteClaw receives the path:
 
 ```bash
 remoteclaw config get agents.defaults.workspace
-remoteclaw config get agents.list[0].id
+remoteclaw config get 'agents.list[0].id'
 ```
 
 Use the agent list index to target a specific agent:
 
 ```bash
 remoteclaw config get agents.list
-remoteclaw config set agents.list[1].tools.exec.node "node-id-or-name"
+remoteclaw config set 'agents.list[1].tools.exec.node' "node-id-or-name"
 ```
 
 ## Values

@@ -128,12 +128,12 @@ export function authorizeMattermostCommandInvocation(params: {
     hasControlCommand,
   } = params;
 
-  if (!channelInfo) {
+  if (!channelInfo?.type) {
     return {
       ok: false,
       denyReason: "unknown-channel",
       commandAuthorized: false,
-      channelInfo: null,
+      channelInfo,
       kind: "channel",
       chatType: "channel",
       channelName: "",

@@ -119,6 +119,9 @@ export function resolvePluginNpmRuntimePackageFiles(plan) {
   if (packageRelativePathExists(plan.packageDir, "remoteclaw.plugin.json")) {
     merged.add("remoteclaw.plugin.json");
   }
+  if (packageRelativePathExists(plan.packageDir, "npm-shrinkwrap.json")) {
+    merged.add("npm-shrinkwrap.json");
+  }
   if (packageRelativePathExists(plan.packageDir, "README.md")) {
     merged.add("README.md");
   }

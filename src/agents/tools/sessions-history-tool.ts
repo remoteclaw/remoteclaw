@@ -76,6 +76,10 @@ function sanitizeHistoryContentBlock(block: unknown): {
       delete entry.thinkingSignature;
       truncated = true;
     }
+    if ("remoteclawReasoningReplay" in entry) {
+      delete entry.remoteclawReasoningReplay;
+      truncated = true;
+    }
   }
   if (typeof entry.partialJson === "string") {
     const res = truncateHistoryText(entry.partialJson);

@@ -24,6 +24,10 @@ const DEFAULT_REDACT_PATTERNS: string[] = [
   // ENV-style assignments. Keep this case-sensitive so diagnostics like
   // `Unrecognized key: "llm"` do not lose the actual config key.
   String.raw`/\b[A-Z0-9_]*(?:KEY|TOKEN|SECRET|PASSWORD|PASSWD|${PAYMENT_CREDENTIAL_ENV_KEYS})\b\s*[=:]\s*(["']?)([^\s"'\\]+)\1/g`,
+  // Same, but for backslash-escaped quotes. The pattern above excludes `\` from the
+  // value class, so a JSON-embedded shell command (`{"command":"export KEY=\"secret\""}`)
+  // never matches it and would otherwise log the credential in cleartext.
+  String.raw`/\b[A-Z0-9_]*(?:KEY|TOKEN|SECRET|PASSWORD|PASSWD|${PAYMENT_CREDENTIAL_ENV_KEYS})\b\s*[=:]\s*\\+(["'])([^\s"'\\]+)\\+\1/g`,
   // URL query parameters. Kept separate from ENV-style assignments so lower-case URL
   // secrets (e.g. `?access_token=…`) stay redacted without hiding config-key diagnostics.
   String.raw`[?&](?:access[-_]?token|auth[-_]?token|hook[-_]?token|refresh[-_]?token|api[-_]?key|client[-_]?secret|token|key|secret|password|pass|passwd|auth|signature|${PAYMENT_CREDENTIAL_QUERY_KEYS})=([^&\s"'<>]+)`,

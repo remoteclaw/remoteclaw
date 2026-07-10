@@ -58,7 +58,7 @@ const createRemoteClawToolsMock = vi.fn(
 
 vi.mock("../remoteclaw-tools.js", () => ({
   createRemoteClawTools: createRemoteClawToolsMock,
-  __testing: {
+  testing: {
     setDepsForTest: () => {},
   },
 }));

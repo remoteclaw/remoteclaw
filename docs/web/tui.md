@@ -47,7 +47,7 @@ Notes:
 - `remoteclaw chat` and `remoteclaw terminal` are aliases for `remoteclaw tui --local`.
 - `--local` cannot be combined with `--url`, `--token`, or `--password`.
 - Local mode uses the embedded agent runtime directly. Most local tools work, but Gateway-only features are unavailable.
-- `remoteclaw` and `remoteclaw crestodian` also use this TUI shell, with Crestodian as the local setup and repair chat backend.
+- After a config file has authored settings, `remoteclaw` and `remoteclaw crestodian` also use this TUI shell, with Crestodian as the local setup and repair chat backend.
 
 ## What you see
 

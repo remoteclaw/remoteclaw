@@ -396,14 +396,14 @@ Per-agent override:
 
 ```bash
 remoteclaw config get agents.list
-remoteclaw config set agents.list[0].tools.exec.node "node-id-or-name"
+remoteclaw config set 'agents.list[0].tools.exec.node' "node-id-or-name"
 ```
 
 Unset to allow any node:
 
 ```bash
 remoteclaw config unset tools.exec.node
-remoteclaw config unset agents.list[0].tools.exec.node
+remoteclaw config unset 'agents.list[0].tools.exec.node'
 ```
 
 ## Permissions map

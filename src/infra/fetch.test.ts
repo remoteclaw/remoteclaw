@@ -37,7 +37,7 @@ function createThrowingCleanupSignalHarness(cleanupError: Error) {
   });
   const fakeSignal = {
     aborted: false,
-    addEventListener: (_event: string, _handler: () => void) => {},
+    addEventListener: (_eventValue: string, _handler: () => void) => {},
     removeEventListener,
   } as unknown as AbortSignal;
   return { fakeSignal, removeEventListener };

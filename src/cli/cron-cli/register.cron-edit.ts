@@ -64,7 +64,10 @@ export function registerCronEditCommand(cron: Command) {
         "Delivery destination (E.164, Telegram chatId, or Discord channel/user)",
       )
       .option("--account <id>", "Channel account id for delivery (multi-account setups)")
-      .option("--best-effort-deliver", "Do not fail job if delivery fails")
+      .option(
+        "--best-effort-deliver",
+        "Do not fail job if delivery fails (also implies --announce when used alone)",
+      )
       .option("--no-best-effort-deliver", "Fail job when delivery fails")
       .option("--failure-alert", "Enable failure alerts for this job")
       .option("--no-failure-alert", "Disable failure alerts for this job")

@@ -30,6 +30,37 @@ function isDirectory(dirPath: string): boolean {
   }
 }
 
+function splitPathParts(pathEnv: string): Set<string> {
+  return new Set(
+    pathEnv
+      .split(path.delimiter)
+      .map((part) => part.trim())
+      .filter(Boolean),
+  );
+}
+
+function isKnownPathDir(existingPathParts: ReadonlySet<string>, dirPath: string): boolean {
+  return existingPathParts.has(dirPath) || isDirectory(dirPath);
+}
+
+function isLinuxbrewPath(dirPath: string): boolean {
+  return dirPath.split(path.sep).includes(".linuxbrew");
+}
+
+function resolvePathBootstrapBrewDirs(params: {
+  homeDir: string;
+  platform: NodeJS.Platform;
+  existingPathParts: ReadonlySet<string>;
+}): string[] {
+  const candidates = resolveBrewPathDirs({ homeDir: params.homeDir });
+  if (params.platform !== "darwin") {
+    return candidates;
+  }
+  return candidates.filter(
+    (candidate) => !isLinuxbrewPath(candidate) || params.existingPathParts.has(candidate),
+  );
+}
+
 function mergePath(params: { existing: string; prepend?: string[]; append?: string[] }): string {
   const partsExisting = params.existing
     .split(path.delimiter)
@@ -49,7 +80,10 @@ function mergePath(params: { existing: string; prepend?: string[]; append?: stri
   return merged.join(path.delimiter);
 }
 
-function candidateBinDirs(opts: EnsureRemoteClawPathOpts): { prepend: string[]; append: string[] } {
+function candidateBinDirs(
+  opts: EnsureRemoteClawPathOpts,
+  existingPathParts: ReadonlySet<string>,
+): { prepend: string[]; append: string[] } {
   const execPath = opts.execPath ?? process.execPath;
   const cwd = opts.cwd ?? process.cwd();
   const homeDir = opts.homeDir ?? os.homedir();
@@ -89,10 +123,10 @@ function candidateBinDirs(opts: EnsureRemoteClawPathOpts): { prepend: string[]; 
   // shadow trusted OS binaries.
   // This includes Brew/Homebrew dirs, which are useful for finding `remoteclaw`
   // in launchd/minimal environments but must not be treated as trusted.
-  append.push(...resolveBrewPathDirs({ homeDir }));
+  append.push(...resolvePathBootstrapBrewDirs({ homeDir, platform, existingPathParts }));
   const miseDataDir = process.env.MISE_DATA_DIR ?? path.join(homeDir, ".local", "share", "mise");
   const miseShims = path.join(miseDataDir, "shims");
-  if (isDirectory(miseShims)) {
+  if (isKnownPathDir(existingPathParts, miseShims)) {
     append.push(miseShims);
   }
   if (platform === "darwin") {
@@ -106,7 +140,10 @@ function candidateBinDirs(opts: EnsureRemoteClawPathOpts): { prepend: string[]; 
   append.push(path.join(homeDir, ".bun", "bin"));
   append.push(path.join(homeDir, ".yarn", "bin"));
 
-  return { prepend: prepend.filter(isDirectory), append: append.filter(isDirectory) };
+  return {
+    prepend: prepend.filter((candidate) => isKnownPathDir(existingPathParts, candidate)),
+    append: append.filter((candidate) => isKnownPathDir(existingPathParts, candidate)),
+  };
 }
 
 /**
@@ -120,7 +157,8 @@ export function ensureRemoteClawCliOnPath(opts: EnsureRemoteClawPathOpts = {}) {
   process.env.REMOTECLAW_PATH_BOOTSTRAPPED = "1";
 
   const existing = opts.pathEnv ?? process.env.PATH ?? "";
-  const { prepend, append } = candidateBinDirs(opts);
+  const existingPathParts = splitPathParts(existing);
+  const { prepend, append } = candidateBinDirs(opts, existingPathParts);
   if (prepend.length === 0 && append.length === 0) {
     return;
   }

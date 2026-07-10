@@ -1,4 +1,5 @@
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
+import { consumeRootOptionToken } from "../infra/cli-root-options.js";
 import {
   resolveManifestCommandAliasOwnerInRegistry,
   resolveManifestToolOwnerInRegistry,
@@ -11,6 +12,7 @@ import {
   normalizeOptionalLowercaseString,
 } from "../shared/string-coerce.js";
 import { resolveCliArgvInvocation } from "./argv-invocation.js";
+import { hasFlag } from "./argv.js";
 import {
   resolveCliCommandPathPolicy,
   resolveCliNetworkProxyPolicy,
@@ -18,6 +20,10 @@ import {
 import { isReservedNonPluginCommandRoot } from "./command-registration-policy.js";
 
 const ROOT_HELP_ALIASES = new Set(["tools"]);
+const SETUP_ONBOARD_CONFIGURE_HELP_COMMANDS = new Set(["setup", "onboard", "configure"]);
+const PRECOMPUTED_SUBCOMMAND_HELP_COMMANDS = new Set(["doctor", "gateway", "models", "plugins"]);
+const HELP_FLAGS = new Set(["-h", "--help"]);
+const VERSION_FLAGS = new Set(["-V", "--version"]);
 const BARE_PARENT_DEFAULT_HELP_COMMANDS = new Set([
   "approvals",
   "channels",
@@ -26,6 +32,48 @@ const BARE_PARENT_DEFAULT_HELP_COMMANDS = new Set([
   "mcp",
   "plugins",
 ]);
+
+function hasHelpFlag(argv: string[]): boolean {
+  return hasFlag(argv, "-h") || hasFlag(argv, "--help");
+}
+
+function resolveStrictPrecomputedSubcommandHelpCommand(argv: string[]): string | null {
+  const args = argv.slice(2);
+  let commandName: string | null = null;
+  let sawHelp = false;
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (!arg || arg === "--") {
+      return null;
+    }
+    if (VERSION_FLAGS.has(arg)) {
+      return null;
+    }
+    if (!commandName) {
+      const consumed = consumeRootOptionToken(args, index);
+      if (consumed > 0) {
+        index += consumed - 1;
+        continue;
+      }
+      if (arg.startsWith("-")) {
+        return null;
+      }
+      if (!PRECOMPUTED_SUBCOMMAND_HELP_COMMANDS.has(arg)) {
+        return null;
+      }
+      commandName = arg;
+      continue;
+    }
+    if (HELP_FLAGS.has(arg)) {
+      sawHelp = true;
+      continue;
+    }
+    return null;
+  }
+
+  return commandName && sawHelp ? commandName : null;
+}
 
 function isBareParentDefaultHelpArgv(argv: string[]): boolean {
   const invocation = resolveCliArgvInvocation(argv);
@@ -86,8 +134,63 @@ export function shouldUseBrowserHelpFastPath(
   return (
     invocation.commandPath.length === 1 &&
     invocation.commandPath[0] === "browser" &&
+    hasHelpFlag(argv)
+  );
+}
+
+export function shouldUseSecretsHelpFastPath(
+  argv: string[],
+  env: NodeJS.ProcessEnv = process.env,
+): boolean {
+  if (env.REMOTECLAW_DISABLE_CLI_STARTUP_HELP_FAST_PATH === "1") {
+    return false;
+  }
+  const invocation = resolveCliArgvInvocation(argv);
+  return (
+    invocation.commandPath.length === 1 &&
+    invocation.commandPath[0] === "secrets" &&
+    hasHelpFlag(argv)
+  );
+}
+
+export function shouldUseNodesHelpFastPath(
+  argv: string[],
+  env: NodeJS.ProcessEnv = process.env,
+): boolean {
+  if (env.REMOTECLAW_DISABLE_CLI_STARTUP_HELP_FAST_PATH === "1") {
+    return false;
+  }
+  const invocation = resolveCliArgvInvocation(argv);
+  return (
+    invocation.commandPath.length === 1 &&
+    invocation.commandPath[0] === "nodes" &&
+    hasHelpFlag(argv)
+  );
+}
+
+export function shouldUseSetupOnboardConfigureHelpFastPath(
+  argv: string[],
+  env: NodeJS.ProcessEnv = process.env,
+): boolean {
+  if (env.REMOTECLAW_DISABLE_CLI_STARTUP_HELP_FAST_PATH === "1") {
+    return false;
+  }
+  const invocation = resolveCliArgvInvocation(argv);
+  return (
+    invocation.commandPath.length === 1 &&
+    SETUP_ONBOARD_CONFIGURE_HELP_COMMANDS.has(invocation.commandPath[0] ?? "") &&
     invocation.hasHelpOrVersion
   );
+}
+
+export function resolvePrecomputedSubcommandHelpFastPath(
+  argv: string[],
+  env: NodeJS.ProcessEnv = process.env,
+): string | null {
+  if (env.REMOTECLAW_DISABLE_CLI_STARTUP_HELP_FAST_PATH === "1") {
+    return null;
+  }
+  return resolveStrictPrecomputedSubcommandHelpCommand(argv);
 }
 
 export function shouldStartCrestodianForBareRoot(argv: string[]): boolean {

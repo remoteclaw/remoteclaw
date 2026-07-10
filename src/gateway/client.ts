@@ -168,7 +168,36 @@ const SENSITIVE_URL_QUERY_PARAMS = new Set([
   // Upstream (50508b1d0c8) also redacts these two; kept for parity.
   "pass",
   "client_secret",
+  // Fork hardening (#2847): common credential-bearing params upstream's set omits.
+  "bearer",
+  "jwt",
+  "id_token",
+  // Servlet session-id convention (sibling of `session`/`sessionid` above).
+  "jsessionid",
+  // OAuth authorization code — short-lived but directly exchangeable for tokens.
+  // Only ever matched as a `?code=`/`&code=` URL query param (the value regex
+  // below requires that prefix), so WS close-code fragments like `: code=1000`
+  // are unaffected.
+  "code",
 ]);
+
+// True when a URL query-parameter key names a credential-bearing value. The raw
+// key is checked first, then a percent-decoded form, so an encoded key such as
+// `%74oken` (percent-encoded `token`, #2847) cannot slip its value past
+// redaction. Malformed percent-encoding degrades to "not sensitive" rather than
+// throwing (a redactor must never itself blow up a log call).
+function isSensitiveUrlQueryParamKey(rawKey: string): boolean {
+  if (SENSITIVE_URL_QUERY_PARAMS.has(rawKey.toLowerCase())) {
+    return true;
+  }
+  let decodedKey: string;
+  try {
+    decodedKey = decodeURIComponent(rawKey);
+  } catch {
+    return false;
+  }
+  return SENSITIVE_URL_QUERY_PARAMS.has(decodedKey.toLowerCase());
+}
 
 // Redacts credential-bearing gateway URLs from a diagnostic string before it is
 // logged: strips `//user:pass@` userinfo and masks the values of sensitive query
@@ -176,11 +205,18 @@ const SENSITIVE_URL_QUERY_PARAMS = new Set([
 // upstream's `formatGatewayClientErrorForLog` (commit 50508b1d0c8); this fork
 // vendors neither `redactToolPayloadText` nor `isSensitiveUrlQueryParamName`, so
 // the URL redaction is inlined and the general log-redaction layer is omitted.
-function formatGatewayClientErrorForLog(err: unknown): string {
+//
+// The userinfo pattern spans to the LAST `@` inside the authority (bounded by
+// the first `/`, `?`, `#`, or whitespace), so a malformed userinfo carrying a
+// literal, non-encoded `@` — e.g. `//user:p@ss@host` (#2847) — is masked whole
+// instead of leaking the post-`@` tail. Each regex uses a single character-class
+// repetition with no nested quantifier or overlapping alternation, so matching
+// is linear-time (ReDoS-safe).
+export function formatGatewayClientErrorForLog(err: unknown): string {
   return String(err)
-    .replace(/\/\/([^@/?#\s]+)@/g, "//***:***@")
+    .replace(/\/\/([^/?#\s]+)@/g, "//***:***@")
     .replace(/([?&])([^=&\s]+)=([^&#\s"'<>)]*)/g, (match, prefix: string, key: string) =>
-      SENSITIVE_URL_QUERY_PARAMS.has(key.toLowerCase()) ? `${prefix}${key}=***` : match,
+      isSensitiveUrlQueryParamKey(key) ? `${prefix}${key}=***` : match,
     );
 }
 

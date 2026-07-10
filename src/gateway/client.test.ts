@@ -842,3 +842,110 @@ describe("GatewayClient connect auth payload", () => {
     });
   });
 });
+
+describe("formatGatewayClientErrorForLog redaction (#2847)", () => {
+  let redact: GatewayClientModule["formatGatewayClientErrorForLog"];
+
+  beforeAll(async () => {
+    ({ formatGatewayClientErrorForLog: redact } = await import("./client.js"));
+  });
+
+  describe("userinfo with a literal unencoded @", () => {
+    it("masks the whole userinfo including an embedded literal @ (no tail leak)", () => {
+      const out = redact(new Error("wss://user:p@ss@host/ws?token=abc failed")); // pragma: allowlist secret
+      expect(out).toBe("Error: wss://***:***@host/ws?token=*** failed");
+      expect(out).not.toContain("ss@host");
+      expect(out).not.toContain("p@ss");
+      expect(out).not.toContain("abc");
+    });
+
+    it("masks userinfo that contains several literal @ characters", () => {
+      const out = redact("wss://a@b:c@d@host/ws"); // pragma: allowlist secret
+      expect(out).toBe("wss://***:***@host/ws");
+      expect(out).not.toContain("@b");
+      expect(out).not.toContain("@d");
+    });
+
+    it("still fully redacts an RFC-conformant %40-encoded userinfo (no regression)", () => {
+      const out = redact("wss://user:p%40ss@host/ws?token=abc"); // pragma: allowlist secret
+      expect(out).toBe("wss://***:***@host/ws?token=***");
+      expect(out).not.toContain("p%40ss");
+    });
+
+    it("leaves a host with no userinfo untouched", () => {
+      const out = redact("wss://gateway.example/ws?token=secret failed with 401"); // pragma: allowlist secret
+      expect(out).toBe("wss://gateway.example/ws?token=*** failed with 401");
+    });
+  });
+
+  describe("percent-encoded sensitive parameter keys", () => {
+    it("redacts a value whose key is fully percent-encoded (%74oken → token)", () => {
+      const out = redact("wss://host/ws?%74oken=leak-me"); // pragma: allowlist secret
+      expect(out).toBe("wss://host/ws?%74oken=***");
+      expect(out).not.toContain("leak-me");
+    });
+
+    it("redacts a value whose key is partially percent-encoded (to%6Ben → token)", () => {
+      const out = redact("wss://host/ws?to%6Ben=leak-me"); // pragma: allowlist secret
+      expect(out).toBe("wss://host/ws?to%6Ben=***");
+      expect(out).not.toContain("leak-me");
+    });
+
+    it("does not throw on malformed percent-encoding and leaves the pair intact", () => {
+      // `%zz` and a lone `%` are invalid escapes: decodeURIComponent would throw,
+      // so the key degrades to "not sensitive" rather than blowing up the log call.
+      expect(() => redact("wss://host/ws?%zztoken=v1&bad%=v2")).not.toThrow();
+      const out = redact("wss://host/ws?%zztoken=v1&bad%=v2");
+      expect(out).toBe("wss://host/ws?%zztoken=v1&bad%=v2");
+    });
+  });
+
+  describe("extended sensitive-parameter set", () => {
+    it.each(["bearer", "jwt", "id_token", "jsessionid", "code"])(
+      "redacts the %s query parameter",
+      (param) => {
+        const out = redact(`wss://host/ws?${param}=leak-me`);
+        expect(out).toBe(`wss://host/ws?${param}=***`);
+        expect(out).not.toContain("leak-me");
+      },
+    );
+
+    it("does not redact a WS close-code fragment formatted as `: code=NNNN`", () => {
+      // The value regex only matches a `?`/`&`-prefixed query param, so close-code
+      // diagnostics (joined with `: ` in ws-log) survive — no over-redaction.
+      const out = redact("GatewayError: connection reset: code=1006");
+      expect(out).toBe("GatewayError: connection reset: code=1006");
+    });
+  });
+
+  describe("preserves non-sensitive content", () => {
+    it("keeps non-sensitive query params and surrounding diagnostics", () => {
+      const out = redact(
+        "wss://host/ws?instanceId=abc123&token=secret failed with 401 from remote",
+      ); // pragma: allowlist secret
+      expect(out).toBe("wss://host/ws?instanceId=abc123&token=*** failed with 401 from remote");
+      expect(out).toContain("instanceId=abc123");
+    });
+
+    it("passes non-URL diagnostic strings through unchanged", () => {
+      const out = redact(new Error("gateway handshake timed out after 5000ms"));
+      expect(out).toBe("Error: gateway handshake timed out after 5000ms");
+    });
+  });
+
+  describe("ReDoS resistance (linear-time matching)", () => {
+    it("completes on pathological inputs without catastrophic backtracking", () => {
+      // If either regex were backtracking-prone, these would hang past the test
+      // timeout. Both use a single character-class repetition (no nested
+      // quantifier), so they are linear-time; assert completion + correctness.
+      const longUserinfo = `wss://${"a".repeat(100_000)}@host/ws`;
+      expect(redact(longUserinfo)).toBe("wss://***:***@host/ws");
+
+      const longNoAt = `wss://${"a".repeat(100_000)}/ws`;
+      expect(redact(longNoAt)).toBe(longNoAt);
+
+      const longParam = `wss://host/ws?token=${"a".repeat(100_000)}`;
+      expect(redact(longParam)).toBe("wss://host/ws?token=***");
+    });
+  });
+});

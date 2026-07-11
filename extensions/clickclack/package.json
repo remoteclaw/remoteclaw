@@ -1,6 +1,6 @@
 {
   "name": "@remoteclaw/clickclack",
-  "version": "2026.5.27",
+  "version": "0.8.0",
   "private": true,
   "description": "RemoteClaw ClickClack channel plugin",
   "type": "module",

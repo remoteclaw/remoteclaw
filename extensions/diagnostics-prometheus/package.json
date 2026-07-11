@@ -1,6 +1,6 @@
 {
   "name": "@remoteclaw/diagnostics-prometheus",
-  "version": "2026.5.27",
+  "version": "0.8.0",
   "description": "RemoteClaw diagnostics Prometheus exporter for runtime metrics.",
   "repository": {
     "type": "git",

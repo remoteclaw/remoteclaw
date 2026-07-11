@@ -2640,6 +2640,35 @@ description: test skill
     expectNoFinding(res, "gateway.http.no_auth");
   });
 
+  it("threads auditGatewayAuthOverride through runSecurityAudit into gateway HTTP auth checks", async () => {
+    const cfg: RemoteClawConfig = {
+      gateway: {
+        bind: "loopback",
+        auth: { mode: "token", token: "secret" },
+        http: {
+          endpoints: {
+            chatCompletions: { enabled: true },
+            responses: { enabled: true },
+          },
+        },
+      },
+    };
+
+    // Baseline: the configured token auth suppresses the finding, and the
+    // override defaults to undefined so runtime behavior is unchanged.
+    const baseline = await audit(cfg, { env: {} });
+    expectNoFinding(baseline, "gateway.http.no_auth");
+
+    // A `--auth none` what-if override forces the resolved mode to "none",
+    // surfacing the finding even though the config still carries a token —
+    // proving the override reaches the collector leaf via runSecurityAudit.
+    const overridden = await audit(cfg, {
+      env: {},
+      auditGatewayAuthOverride: { mode: "none" },
+    });
+    expectFinding(overridden, "gateway.http.no_auth", "warn");
+  });
+
   it("reports HTTP API session-key override surfaces when enabled", async () => {
     const cfg: RemoteClawConfig = {
       gateway: {

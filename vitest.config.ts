@@ -41,6 +41,7 @@ const pluginSdkSubpaths = [
   "copilot-proxy",
   "device-pair",
   "diagnostics-otel",
+  "diagnostics-prometheus",
   "diffs",
   "feishu",
   "googlechat",

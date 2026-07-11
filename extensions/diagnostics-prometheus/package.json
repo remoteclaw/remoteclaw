@@ -1,0 +1,21 @@
+{
+  "name": "@remoteclaw/diagnostics-prometheus",
+  "version": "0.8.0",
+  "description": "RemoteClaw diagnostics Prometheus exporter for runtime metrics",
+  "type": "module",
+  "remoteclaw": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "compat": {
+      "pluginApi": ">=2026.4.20"
+    },
+    "build": {
+      "remoteclawVersion": "2026.4.20"
+    },
+    "release": {
+      "publishToClawHub": true,
+      "publishToNpm": true
+    }
+  }
+}

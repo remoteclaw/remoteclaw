@@ -54,6 +54,8 @@ const requiredPathGroups = [
   "dist/plugin-sdk/device-pair.d.ts",
   "dist/plugin-sdk/diagnostics-otel.js",
   "dist/plugin-sdk/diagnostics-otel.d.ts",
+  "dist/plugin-sdk/diagnostics-prometheus.js",
+  "dist/plugin-sdk/diagnostics-prometheus.d.ts",
   "dist/plugin-sdk/diffs.js",
   "dist/plugin-sdk/diffs.d.ts",
   "dist/plugin-sdk/feishu.js",

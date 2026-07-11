@@ -304,6 +304,8 @@ importers:
         specifier: ^1.40.0
         version: 1.40.0
 
+  extensions/diagnostics-prometheus: {}
+
   extensions/discord: {}
 
   extensions/feishu:

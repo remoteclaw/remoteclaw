@@ -15,6 +15,10 @@ const bundledExtensionSubpathLoaders = [
   { id: "copilot-proxy", load: () => import("remoteclaw/plugin-sdk/copilot-proxy") },
   { id: "device-pair", load: () => import("remoteclaw/plugin-sdk/device-pair") },
   { id: "diagnostics-otel", load: () => import("remoteclaw/plugin-sdk/diagnostics-otel") },
+  {
+    id: "diagnostics-prometheus",
+    load: () => import("remoteclaw/plugin-sdk/diagnostics-prometheus"),
+  },
   { id: "diffs", load: () => import("remoteclaw/plugin-sdk/diffs") },
   { id: "feishu", load: () => import("remoteclaw/plugin-sdk/feishu") },
   { id: "googlechat", load: () => import("remoteclaw/plugin-sdk/googlechat") },

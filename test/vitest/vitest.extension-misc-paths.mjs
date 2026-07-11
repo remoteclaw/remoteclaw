@@ -3,6 +3,7 @@ export const miscExtensionTestRoots = [
   "extensions/brave",
   "extensions/device-pair",
   "extensions/diagnostics-otel",
+  "extensions/diagnostics-prometheus",
   "extensions/duckduckgo",
   "extensions/exa",
   "extensions/firecrawl",

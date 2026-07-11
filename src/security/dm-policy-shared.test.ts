@@ -260,7 +260,9 @@ describe("security/dm-policy-shared", () => {
       isSenderAllowed: () => false,
       command: controlCommand,
     });
-    expect(resolved.decision).toBe("allow");
+    // Hardened: open + empty allowFrom now blocks the DM entirely; the control
+    // command remains unauthorized (never auto-granted in open mode).
+    expect(resolved.decision).toBe("block");
     expect(resolved.commandAuthorized).toBe(false);
     expect(resolved.shouldBlockControlCommand).toBe(false);
   });
@@ -326,8 +328,11 @@ describe("security/dm-policy-shared", () => {
       groupAllowFrom: [],
       storeAllowFrom: [],
       isSenderAllowed: () => false,
-      expectedDecision: "allow",
-      expectedReactionAllowed: true,
+      // Default matches the hardened open + empty allowFrom outcome (fail-closed). Every case
+      // below overrides both fields, so this is defense-in-depth: a future bare-default case
+      // cannot silently assert open+empty→allow.
+      expectedDecision: "block",
+      expectedReactionAllowed: false,
       ...overrides,
     };
   }
@@ -355,8 +360,10 @@ describe("security/dm-policy-shared", () => {
         createParityCase({
           name: "dmPolicy=open",
           dmPolicy: "open",
-          expectedDecision: "allow",
-          expectedReactionAllowed: true,
+          // Hardened: open + empty allowFrom (no wildcard, sender not allowlisted)
+          // now fails closed (blocks) rather than allowing all senders.
+          expectedDecision: "block",
+          expectedReactionAllowed: false,
         }),
         createParityCase({
           name: "dmPolicy=disabled",

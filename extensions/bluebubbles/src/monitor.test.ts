@@ -169,7 +169,9 @@ function createMockAccount(
       password: "test-password",
       dmPolicy: "open",
       groupPolicy: "open",
-      allowFrom: [],
+      // Wildcard so open-policy DMs are processed under the hardened gate (open + empty
+      // allowFrom now fails closed). Tests that exercise blocking override dmPolicy/allowFrom.
+      allowFrom: ["*"],
       groupAllowFrom: [],
       ...overrides,
     },
@@ -503,7 +505,7 @@ describe("BlueBubbles webhook monitor", () => {
       expect(sendMessageBlueBubbles).not.toHaveBeenCalled();
     });
 
-    it("allows all DMs when dmPolicy=open", async () => {
+    it("blocks DMs when dmPolicy=open and allowFrom is empty (hardened fail-closed)", async () => {
       const account = createMockAccount({
         dmPolicy: "open",
         allowFrom: [],
@@ -538,7 +540,9 @@ describe("BlueBubbles webhook monitor", () => {
       await handleBlueBubblesWebhookRequest(req, res);
       await flushAsync();
 
-      expect(mockDispatchReplyWithBufferedBlockDispatcher).toHaveBeenCalled();
+      // Hardened: open + empty allowFrom now fails closed. Prior allow-all requires
+      // allowFrom:["*"] (exercised by the default fixture used throughout this suite).
+      expect(mockDispatchReplyWithBufferedBlockDispatcher).not.toHaveBeenCalled();
     });
 
     it("blocks all DMs when dmPolicy=disabled", async () => {
@@ -660,6 +664,9 @@ describe("BlueBubbles webhook monitor", () => {
       const account = createMockAccount({
         groupPolicy: "allowlist",
         dmPolicy: "open",
+        // Empty DM allowlist so the group's empty groupAllowFrom does not fall back to the
+        // wildcard default — isolates chat_guid group routing + the group-allowlist block.
+        allowFrom: [],
       });
       const config: RemoteClawConfig = {};
       const core = createMockRuntime();
@@ -1606,7 +1613,7 @@ describe("BlueBubbles webhook monitor", () => {
       expect(mockDispatchReplyWithBufferedBlockDispatcher).not.toHaveBeenCalled();
     });
 
-    it("does not auto-authorize DM control commands in open mode without allowlists", async () => {
+    it("blocks control-command DMs in open mode without allowlists (hardened)", async () => {
       mockHasControlCommand.mockReturnValue(true);
 
       const account = createMockAccount({
@@ -1643,12 +1650,9 @@ describe("BlueBubbles webhook monitor", () => {
       await handleBlueBubblesWebhookRequest(req, res);
       await flushAsync();
 
-      expect(mockDispatchReplyWithBufferedBlockDispatcher).toHaveBeenCalled();
-      const latestDispatch =
-        mockDispatchReplyWithBufferedBlockDispatcher.mock.calls[
-          mockDispatchReplyWithBufferedBlockDispatcher.mock.calls.length - 1
-        ]?.[0];
-      expect(latestDispatch?.ctx?.CommandAuthorized).toBe(false);
+      // Hardened: open + empty allowFrom blocks the DM entirely, so an unauthorized control
+      // command never reaches dispatch (previously it dispatched with CommandAuthorized=false).
+      expect(mockDispatchReplyWithBufferedBlockDispatcher).not.toHaveBeenCalled();
     });
   });
 

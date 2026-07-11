@@ -418,7 +418,7 @@ describe("gateway server hooks", () => {
   // true) and would mislead a future reviewer into thinking dedupe coverage exists. File a backlog
   // issue to evaluate porting the replay cache if /hooks/agent retry-storm dedupe is wanted.
 
-  test("enforces hooks.allowedAgentIds for explicit agent routing", async () => {
+  test("enforces hooks.allowedAgentIds for effective agent routing", async () => {
     testState.hooksConfig = {
       enabled: true,
       token: HOOK_TOKEN,
@@ -434,15 +434,14 @@ describe("gateway server hooks", () => {
     };
     setMainAndHooksAgents();
     await withGatewayServer(async ({ port }) => {
-      mockIsolatedRunOkOnce();
+      // Omitted agentId dispatches to the default agent ("main"), which is not in
+      // the allowlist, so it must be denied before any isolated run is scheduled.
       const resNoAgent = await postHook(port, "/hooks/agent", { message: "No explicit agent" });
-      expect(resNoAgent.status).toBe(200);
-      await waitForSystemEvent();
-      const noAgentCall = (cronIsolatedRun.mock.calls[0] as unknown[] | undefined)?.[0] as {
-        job?: { agentId?: string };
-      };
-      expect(noAgentCall?.job?.agentId).toBeUndefined();
-      drainSystemEvents(resolveMainKey());
+      expect(resNoAgent.status).toBe(400);
+      const noAgentBody = (await resNoAgent.json()) as { error?: string };
+      expect(noAgentBody.error).toContain("hooks.allowedAgentIds");
+      expect(cronIsolatedRun).not.toHaveBeenCalled();
+      expect(peekSystemEvents(resolveMainKey()).length).toBe(0);
 
       mockIsolatedRunOkOnce();
       const resAllowed = await postHook(port, "/hooks/agent", {

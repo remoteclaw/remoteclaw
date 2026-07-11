@@ -6,7 +6,7 @@ import type { RemoteClawConfig } from "../config/config.js";
 import type { AgentRouteBinding } from "../config/types.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAgentId } from "../routing/session-key.js";
 import { normalizeOptionalString } from "../shared/string-coerce.js";
-import { normalizeStringEntries } from "../shared/string-normalization.js";
+import { normalizeSortedUniqueStringEntries } from "../shared/string-normalization.js";
 import type { ChannelChoice } from "./onboard-types.js";
 
 export { describeBinding } from "./agents.binding-format.js";
@@ -18,9 +18,7 @@ function bindingMatchKey(match: AgentRouteBinding["match"]) {
 }
 
 function bindingMatchIdentityKey(match: AgentRouteBinding["match"]) {
-  const roles = Array.isArray(match.roles)
-    ? Array.from(new Set(normalizeStringEntries(match.roles).toSorted()))
-    : [];
+  const roles = Array.isArray(match.roles) ? normalizeSortedUniqueStringEntries(match.roles) : [];
   return JSON.stringify([
     match.channel,
     match.peer?.kind ?? "",

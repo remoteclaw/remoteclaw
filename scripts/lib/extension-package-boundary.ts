@@ -31,9 +31,6 @@ export const EXTENSION_PACKAGE_BOUNDARY_BASE_PATHS = {
   "remoteclaw/plugin-sdk/channel-secret-tts-runtime": [
     "../packages/plugin-sdk/dist/src/plugin-sdk/channel-secret-tts-runtime.d.ts",
   ],
-  "remoteclaw/plugin-sdk/channel-streaming": [
-    "../dist/plugin-sdk/src/plugin-sdk/channel-streaming.d.ts",
-  ],
   "remoteclaw/plugin-sdk/error-runtime": ["../dist/plugin-sdk/src/plugin-sdk/error-runtime.d.ts"],
   "remoteclaw/plugin-sdk/provider-catalog-shared": [
     "../packages/plugin-sdk/dist/src/plugin-sdk/provider-catalog-shared.d.ts",

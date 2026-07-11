@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { registerCronCli } from "./cron-cli.js";
 
 const CRON_CLI_TEST_TIMEOUT_MS = 15_000;
@@ -38,6 +38,10 @@ const defaultGatewayMock = async (
 };
 callGatewayFromCli.mockImplementation(defaultGatewayMock);
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 vi.mock("./gateway-rpc.js", async () => {
   const actual = await vi.importActual<typeof import("./gateway-rpc.js")>("./gateway-rpc.js");
   return {
@@ -71,7 +75,7 @@ type CronUpdatePatch = {
 };
 
 type CronAddParams = {
-  schedule?: { kind?: string; staggerMs?: number };
+  schedule?: { kind?: string; at?: string; staggerMs?: number };
   payload?: { model?: string; lightContext?: boolean };
   delivery?: { mode?: string; accountId?: string };
   deleteAfterRun?: boolean;
@@ -361,6 +365,34 @@ describe("cron cli", () => {
     const addCall = callGatewayFromCli.mock.calls.find((call) => call[0] === "cron.add");
     const params = addCall?.[2] as { deleteAfterRun?: boolean };
     expect(params?.deleteAfterRun).toBe(false);
+  });
+
+  it("accepts leading plus relative durations for cron add --at", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-25T00:00:00.000Z"));
+
+    const params = await runCronAddAndGetParams([
+      "--name",
+      "Plus duration",
+      "--at",
+      "+30m",
+      "--session",
+      "main",
+      "--system-event",
+      "hello",
+    ]);
+
+    expect(params?.schedule).toEqual({ kind: "at", at: "2026-05-25T00:30:00.000Z" });
+  });
+
+  it("rejects partial cron runs limit", async () => {
+    await expectCronCommandExit(["cron", "runs", "--id", "job-1", "--limit", "10x"]);
+    expectRuntimeErrorContaining("Invalid --limit");
+    expect(callGatewayFromCli).not.toHaveBeenCalledWith(
+      "cron.runs",
+      expect.anything(),
+      expect.anything(),
+    );
   });
 
   it("includes --account on isolated cron add delivery", async () => {
@@ -716,6 +748,16 @@ describe("cron cli", () => {
     expect(patch?.patch?.failureAlert?.cooldownMs).toBe(3_600_000);
     expect(patch?.patch?.failureAlert?.channel).toBe("telegram");
     expect(patch?.patch?.failureAlert?.to).toBe("19098680");
+  });
+
+  it("rejects partial failure alert threshold on cron edit", async () => {
+    await expectCronCommandExit(["cron", "edit", "job-1", "--failure-alert-after", "3x"]);
+    expectRuntimeErrorContaining("Invalid --failure-alert-after");
+    expect(callGatewayFromCli).not.toHaveBeenCalledWith(
+      "cron.update",
+      expect.anything(),
+      expect.anything(),
+    );
   });
 
   it("supports --no-failure-alert on cron edit", async () => {

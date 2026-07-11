@@ -8,8 +8,17 @@ import {
   withTempDir,
 } from "./install-source-utils.js";
 
+const execFileSyncMock = vi.hoisted(() => vi.fn(() => "/tmp/remoteclaw-test-global-npmrc\n"));
 const runCommandWithTimeoutMock = vi.fn();
 const TEMP_DIR_PREFIX = "remoteclaw-install-source-utils-";
+
+vi.mock("node:child_process", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:child_process")>();
+  return {
+    ...actual,
+    execFileSync: execFileSyncMock,
+  };
+});
 
 vi.mock("../process/exec.js", () => ({
   runCommandWithTimeout: (...args: unknown[]) => runCommandWithTimeoutMock(...args),
@@ -95,6 +104,7 @@ function expectPackError(result: { ok: boolean; error?: string }, expected: stri
 }
 
 beforeEach(() => {
+  execFileSyncMock.mockClear();
   runCommandWithTimeoutMock.mockClear();
 });
 

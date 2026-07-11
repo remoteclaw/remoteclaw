@@ -1,3 +1,4 @@
+import { listBundledChannelCatalogEntries } from "../channels/bundled-channel-catalog-read.js";
 import type { ChannelId } from "../channels/plugins/types.js";
 import {
   CHANNEL_IDS,
@@ -130,5 +131,12 @@ export function isMarkdownCapableMessageChannel(raw?: string | null): boolean {
   if (!channel) {
     return false;
   }
-  return MARKDOWN_CAPABLE_CHANNELS.has(channel);
+  if (MARKDOWN_CAPABLE_CHANNELS.has(channel)) {
+    return true;
+  }
+  const catalogMeta = listBundledChannelCatalogEntries().find((entry) => entry.id === channel);
+  if (catalogMeta) {
+    return catalogMeta.channel.markdownCapable === true;
+  }
+  return false;
 }

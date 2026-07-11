@@ -77,7 +77,15 @@ const isGrammyHttpError = (err: unknown): boolean => {
 };
 
 export async function monitorTelegramProvider(opts: MonitorTelegramOpts = {}) {
-  const log = opts.runtime?.error ?? console.error;
+  const logInfo = (line: string) => (opts.runtime?.log ?? console.log)(line);
+  const logError = (line: string) => (opts.runtime?.error ?? console.error)(line);
+  const log = (line: string) => {
+    if (line.includes("[telegram][diag]")) {
+      logInfo(line);
+      return;
+    }
+    logError(line);
+  };
   let pollingSession: TelegramPollingSession | undefined;
 
   const handlePollingNetworkFailure = (err: unknown, label: string) => {
@@ -153,9 +161,7 @@ export async function monitorTelegramProvider(opts: MonitorTelegramOpts = {}) {
           botToken: token,
         });
       } catch (err) {
-        (opts.runtime?.error ?? console.error)(
-          `telegram: failed to persist update offset: ${String(err)}`,
-        );
+        logError(`telegram: failed to persist update offset: ${String(err)}`);
       }
     };
 

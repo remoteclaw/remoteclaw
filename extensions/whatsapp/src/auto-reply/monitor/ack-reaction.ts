@@ -1,5 +1,7 @@
+import { resolveAgentIdentity } from "../../../../../src/agents/identity.js";
 import { shouldAckReactionForWhatsApp } from "../../../../../src/channels/ack-reactions.js";
 import type { loadConfig } from "../../../../../src/config/config.js";
+import type { WhatsAppAckReactionConfig } from "../../../../../src/config/types.whatsapp.js";
 import { logVerbose } from "../../../../../src/globals.js";
 import { sendReactionWhatsApp } from "../../outbound.js";
 import { formatError } from "../../session.js";
@@ -22,7 +24,11 @@ export function maybeSendAckReaction(params: {
   }
 
   const ackConfig = params.cfg.channels?.whatsapp?.ackReaction;
-  const emoji = (ackConfig?.emoji ?? "").trim();
+  const emoji = resolveWhatsAppAckEmoji({
+    cfg: params.cfg,
+    agentId: params.agentId,
+    ackConfig,
+  });
   const directEnabled = ackConfig?.direct ?? true;
   const groupMode = ackConfig?.group ?? "mentions";
   const conversationIdForCheck = params.msg.conversationId ?? params.msg.from;
@@ -71,4 +77,23 @@ export function maybeSendAckReaction(params: {
     );
     logVerbose(`WhatsApp ack reaction failed for chat ${params.msg.chatId}: ${formatError(err)}`);
   });
+}
+
+const DEFAULT_WHATSAPP_ACK_REACTION = "👀";
+
+// Re-homed in the RemoteClaw fork — the upstream `./ack-emoji.js` module was removed;
+// this live resolver is inlined here against the fork's `resolveAgentIdentity`.
+function resolveWhatsAppAckEmoji(params: {
+  cfg: ReturnType<typeof loadConfig>;
+  agentId: string;
+  ackConfig: WhatsAppAckReactionConfig | undefined;
+}): string {
+  if (!params.ackConfig) {
+    return "";
+  }
+  if (params.ackConfig.emoji !== undefined) {
+    return params.ackConfig.emoji.trim();
+  }
+  const identityEmoji = resolveAgentIdentity(params.cfg, params.agentId)?.emoji?.trim();
+  return identityEmoji || DEFAULT_WHATSAPP_ACK_REACTION;
 }

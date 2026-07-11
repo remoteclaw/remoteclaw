@@ -4,7 +4,9 @@ import { readConfigFileSnapshot, writeConfigFile } from "../config/config.js";
 import { formatConfigIssueLines, normalizeConfigIssues } from "../config/issue-format.js";
 import { CONFIG_PATH } from "../config/paths.js";
 import { isBlockedObjectKey } from "../config/prototype-keys.js";
+import { isPluginPackagingRuntimeOutputInvalidConfigSnapshot } from "../config/recovery-policy.js";
 import { redactConfigObject } from "../config/redact-snapshot.js";
+import type { ConfigFileSnapshot } from "../config/types.js";
 import { danger, info, success } from "../globals.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
@@ -12,6 +14,7 @@ import { formatDocsLink } from "../terminal/links.js";
 import { theme } from "../terminal/theme.js";
 import { shortenHomePath } from "../utils.js";
 import { formatCliCommand } from "./command-format.js";
+import { formatPluginPackagingRuntimeOutputRecoveryHint } from "./config-recovery-hints.js";
 
 type PathSegment = string;
 type ConfigSetParseOpts = {
@@ -101,6 +104,15 @@ function hasOwnPathKey(value: Record<string, unknown>, key: string): boolean {
 
 function formatDoctorHint(message: string): string {
   return `Run \`${formatCliCommand("remoteclaw doctor")}\` ${message}`;
+}
+
+function formatInvalidConfigRepairHint(
+  snapshot: Pick<ConfigFileSnapshot, "valid" | "issues" | "warnings" | "legacyIssues">,
+  doctorMessage: string,
+): string {
+  return isPluginPackagingRuntimeOutputInvalidConfigSnapshot(snapshot)
+    ? formatPluginPackagingRuntimeOutputRecoveryHint()
+    : formatDoctorHint(doctorMessage);
 }
 
 function validatePathSegments(path: PathSegment[]): void {
@@ -238,7 +250,7 @@ async function loadValidConfig(runtime: RuntimeEnv = defaultRuntime) {
   for (const line of formatConfigIssueLines(snapshot.issues, "-", { normalizeRoot: true })) {
     runtime.error(line);
   }
-  runtime.error(formatDoctorHint("to repair, then retry."));
+  runtime.error(formatInvalidConfigRepairHint(snapshot, "to repair, then retry."));
   runtime.exit(1);
   return snapshot;
 }
@@ -371,7 +383,9 @@ export async function runConfigValidate(opts: { json?: boolean; runtime?: Runtim
           runtime.error(`  ${line}`);
         }
         runtime.error("");
-        runtime.error(formatDoctorHint("to repair, or fix the keys above manually."));
+        runtime.error(
+          formatInvalidConfigRepairHint(snapshot, "to repair, or fix the keys above manually."),
+        );
       }
       runtime.exit(1);
       return;

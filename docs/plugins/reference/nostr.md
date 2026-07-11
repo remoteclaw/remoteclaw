@@ -1,5 +1,5 @@
 ---
-summary: "Adds the Nostr channel surface for sending and receiving RemoteClaw messages."
+summary: "RemoteClaw Nostr channel plugin for NIP-04 encrypted direct messages."
 read_when:
   - You are installing, configuring, or auditing the nostr plugin
 title: "Nostr plugin"
@@ -7,7 +7,7 @@ title: "Nostr plugin"
 
 # Nostr plugin
 
-Adds the Nostr channel surface for sending and receiving RemoteClaw messages.
+RemoteClaw Nostr channel plugin for NIP-04 encrypted direct messages.
 
 ## Distribution
 

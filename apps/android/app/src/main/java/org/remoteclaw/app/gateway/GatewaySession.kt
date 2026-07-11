@@ -73,6 +73,7 @@ private data class SelectedConnectAuth(
   val authDeviceToken: String?,
   val authPassword: String?,
   val signatureToken: String?,
+  val storedScopes: List<String>,
   val authSource: GatewayConnectAuthSource,
   val attemptedDeviceTokenRetry: Boolean,
 )
@@ -466,7 +467,8 @@ class GatewaySession(
 
     private suspend fun sendConnect(connectNonce: String) {
       val identity = identityStore.loadOrCreate()
-      val storedToken = deviceAuthStore.loadToken(identity.deviceId, options.role)?.trim()
+      val storedEntry = deviceAuthStore.loadEntry(identity.deviceId, options.role)
+      val storedToken = storedEntry?.token?.trim()
       val selectedAuth =
         selectConnectAuth(
           endpoint = endpoint,
@@ -476,6 +478,7 @@ class GatewaySession(
           explicitBootstrapToken = bootstrapToken?.trim()?.takeIf { it.isNotEmpty() },
           explicitPassword = password?.trim()?.takeIf { it.isNotEmpty() },
           storedToken = storedToken?.takeIf { it.isNotEmpty() },
+          storedScopes = storedEntry?.scopes.orEmpty(),
         )
       if (selectedAuth.attemptedDeviceTokenRetry) {
         pendingDeviceTokenRetry = false
@@ -657,6 +660,7 @@ class GatewaySession(
           else -> null
         }
 
+      val connectScopes = resolveConnectScopes(selectedAuth)
       val signedAtMs = System.currentTimeMillis()
       val payload =
         DeviceAuthPayload.buildV3(
@@ -664,7 +668,7 @@ class GatewaySession(
           clientId = client.id,
           clientMode = client.mode,
           role = options.role,
-          scopes = options.scopes,
+          scopes = connectScopes,
           signedAtMs = signedAtMs,
           token = selectedAuth.signatureToken,
           nonce = connectNonce,
@@ -703,7 +707,7 @@ class GatewaySession(
           )
         }
         put("role", JsonPrimitive(options.role))
-        if (options.scopes.isNotEmpty()) put("scopes", JsonArray(options.scopes.map(::JsonPrimitive)))
+        if (connectScopes.isNotEmpty()) put("scopes", JsonArray(connectScopes.map(::JsonPrimitive)))
         authJson?.let { put("auth", it) }
         deviceJson?.let { put("device", it) }
         put("locale", JsonPrimitive(locale))
@@ -711,6 +715,16 @@ class GatewaySession(
           put("userAgent", JsonPrimitive(it))
         }
       }
+    }
+
+    private fun resolveConnectScopes(selectedAuth: SelectedConnectAuth): List<String> {
+      if (selectedAuth.authSource == GatewayConnectAuthSource.BOOTSTRAP_TOKEN) {
+        return filteredBootstrapHandoffScopes(options.role, options.scopes).orEmpty()
+      }
+      if (selectedAuth.authSource == GatewayConnectAuthSource.DEVICE_TOKEN && selectedAuth.storedScopes.isNotEmpty()) {
+        return selectedAuth.storedScopes
+      }
+      return options.scopes
     }
 
     private suspend fun handleMessage(text: String) {
@@ -983,6 +997,7 @@ class GatewaySession(
     explicitBootstrapToken: String?,
     explicitPassword: String?,
     storedToken: String?,
+    storedScopes: List<String>,
   ): SelectedConnectAuth {
     val shouldUseDeviceRetryToken =
       pendingDeviceTokenRetry &&
@@ -1016,6 +1031,7 @@ class GatewaySession(
       authDeviceToken = authDeviceToken,
       authPassword = explicitPassword,
       signatureToken = authToken ?: authBootstrapToken,
+      storedScopes = storedScopes,
       authSource = authSource,
       attemptedDeviceTokenRetry = shouldUseDeviceRetryToken,
     )

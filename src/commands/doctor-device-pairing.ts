@@ -16,6 +16,7 @@ import { JsonFileReadError } from "../infra/json-files.js";
 import type { DeviceAuthStore } from "../shared/device-auth.js";
 import { normalizeDeviceAuthScopes } from "../shared/device-auth.js";
 import { roleScopesAllow } from "../shared/operator-scope-compat.js";
+import { normalizeUniqueSingleOrTrimmedStringList } from "../shared/string-normalization.js";
 import { note } from "../terminal/note.js";
 import { sanitizeTerminalText } from "../terminal/safe-text.js";
 
@@ -102,29 +103,6 @@ function isDeviceAuthStoreTokenEntry(value: unknown): value is DeviceAuthStore["
     "updatedAtMs" in value &&
     typeof value.updatedAtMs === "number"
   );
-}
-
-function uniqueStrings(...items: Array<string | string[] | undefined>): string[] {
-  const values = new Set<string>();
-  for (const item of items) {
-    if (!item) {
-      continue;
-    }
-    if (Array.isArray(item)) {
-      for (const value of item) {
-        const trimmed = value.trim();
-        if (trimmed) {
-          values.add(trimmed);
-        }
-      }
-      continue;
-    }
-    const trimmed = item.trim();
-    if (trimmed) {
-      values.add(trimmed);
-    }
-  }
-  return [...values];
 }
 
 function normalizeGatewayPairedDevice(device: GatewayListedPairedDevice): DoctorPairedDevice {
@@ -274,7 +252,9 @@ function resolvePendingPairingIssue(
       removeCommand: formatCliArgs(["remoteclaw", "devices", "remove", pending.deviceId]),
     };
   }
-  const requestedRoles = uniqueStrings(pending.roles, pending.role);
+  const requestedRoles = normalizeUniqueSingleOrTrimmedStringList(
+    [pending.roles, pending.role].flat(),
+  );
   const approvedRoles = listApprovedPairedDeviceRoles(paired);
   if (requestedRoles.some((role) => !approvedRoles.includes(role))) {
     return {

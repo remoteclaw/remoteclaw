@@ -385,6 +385,24 @@ export type ToolsConfig = {
         /** @deprecated Legacy Sonar/OpenRouter field. Ignored by Search API. */
         model?: string;
       };
+      /** Optional native Codex web search for Codex-capable models. */
+      openaiCodex?: {
+        /** Enable native Codex web search for eligible models. */
+        enabled?: boolean;
+        /** Use cached or live external web access. Default: "cached". */
+        mode?: "cached" | "live";
+        /** Optional allowlist of domains passed to the native Codex tool. */
+        allowedDomains?: string[];
+        /** Optional Codex native search context size hint. */
+        contextSize?: "low" | "medium" | "high";
+        /** Optional approximate user location passed to the native Codex tool. */
+        userLocation?: {
+          country?: string;
+          region?: string;
+          city?: string;
+          timezone?: string;
+        };
+      };
     };
     fetch?: {
       /** Enable web fetch tool (default: true). */

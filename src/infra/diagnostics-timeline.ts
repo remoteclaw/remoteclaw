@@ -52,6 +52,7 @@ type DiagnosticsTimelineSpanOptions = {
   attributes?: DiagnosticsTimelineAttributes;
   config?: RemoteClawConfig;
   env?: NodeJS.ProcessEnv;
+  omitErrorMessage?: boolean;
 };
 
 type DiagnosticsTimelineOptions = {
@@ -224,7 +225,9 @@ export async function measureDiagnosticsTimelineSpan<T>(
         durationMs: performance.now() - startedAt,
         attributes: options.attributes,
         errorName: error instanceof Error ? error.name : typeof error,
-        errorMessage: error instanceof Error ? error.message : String(error),
+        ...(options.omitErrorMessage
+          ? {}
+          : { errorMessage: error instanceof Error ? error.message : String(error) }),
       },
       { config: options.config, env },
     );
@@ -280,7 +283,9 @@ export function measureDiagnosticsTimelineSpanSync<T>(
         durationMs: performance.now() - startedAt,
         attributes: options.attributes,
         errorName: error instanceof Error ? error.name : typeof error,
-        errorMessage: error instanceof Error ? error.message : String(error),
+        ...(options.omitErrorMessage
+          ? {}
+          : { errorMessage: error instanceof Error ? error.message : String(error) }),
       },
       { config: options.config, env },
     );

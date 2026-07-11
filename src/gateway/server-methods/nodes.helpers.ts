@@ -1,12 +1,15 @@
-import type { ErrorObject } from "ajv";
 import { normalizeOptionalString } from "../../shared/string-coerce.js";
 import { ErrorCodes, errorShape, formatValidationErrors } from "../protocol/index.js";
 export { safeParseJson } from "../server-json.js";
 import { formatForLog } from "../ws-log.js";
 import type { RespondFn } from "./types.js";
 
+// Ajv `ErrorObject`, derived from the exported `formatValidationErrors` contract
+// (the fork's protocol module no longer re-exports a `ValidationError` alias).
+type ValidationError = NonNullable<Parameters<typeof formatValidationErrors>[0]>[number];
+
 type ValidatorFn = ((value: unknown) => boolean) & {
-  errors?: ErrorObject[] | null;
+  errors?: ValidationError[] | null;
 };
 
 export function respondInvalidParams(params: {

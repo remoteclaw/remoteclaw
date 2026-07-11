@@ -682,7 +682,20 @@ describe("normalizeCronJobCreate", () => {
     expect(normalized.sessionTarget).toBe("session:MySessionID");
   });
 
-  it("rejects custom session ids with path separators", () => {
+  it("rejects custom session ids with native path separators", () => {
+    // Fork-stricter guard (assertSafeCronSessionTargetId): `session:<id>` targets
+    // must not carry `/` or `\` (path-traversal defense). Upstream relaxed this to
+    // null-byte-only; the fork keeps the path-separator rejection — adapt the
+    // fixture, do NOT relax the guard.
+    expect(() =>
+      normalizeCronJobCreate({
+        name: "dingtalk-group",
+        schedule: { kind: "cron", expr: "* * * * *" },
+        sessionTarget: "session:agent:main:dingtalk:group:cid3tmd4xb19xjfk/wogxwy2a==",
+        payload: { kind: "agentTurn", message: "hello" },
+      }),
+    ).toThrow("invalid cron sessionTarget session id");
+
     expect(() =>
       normalizeCronJobCreate({
         name: "bad-custom-session",
@@ -695,6 +708,17 @@ describe("normalizeCronJobCreate", () => {
     expect(() =>
       normalizeCronJobPatch({
         sessionTarget: "session:..\\outside",
+      }),
+    ).toThrow("invalid cron sessionTarget session id");
+  });
+
+  it("rejects null bytes in custom session ids", () => {
+    expect(() =>
+      normalizeCronJobCreate({
+        name: "null-byte-session",
+        schedule: { kind: "cron", expr: "* * * * *" },
+        sessionTarget: "session:bad\0id",
+        payload: { kind: "agentTurn", message: "hello" },
       }),
     ).toThrow("invalid cron sessionTarget session id");
   });

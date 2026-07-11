@@ -133,6 +133,7 @@ export type PluginPackageChannel = {
   selectionDocsPrefix?: string;
   selectionDocsOmitLabel?: boolean;
   selectionExtras?: string[];
+  markdownCapable?: boolean;
   showConfigured?: boolean;
   quickstartAllowFrom?: boolean;
   forceAccountBinding?: boolean;
@@ -169,7 +170,8 @@ export const DEFAULT_PLUGIN_ENTRY_CANDIDATES = [
 export type PackageExtensionResolution =
   | { status: "ok"; entries: string[] }
   | { status: "missing"; entries: [] }
-  | { status: "empty"; entries: [] };
+  | { status: "empty"; entries: [] }
+  | { status: "invalid"; entries: []; error: string };
 
 export type ManifestKey = typeof MANIFEST_KEY;
 
@@ -191,11 +193,40 @@ export function getPackageManifestMetadata(
 export function resolvePackageExtensionEntries(
   manifest: PackageManifest | undefined,
 ): PackageExtensionResolution {
-  const raw = getPackageManifestMetadata(manifest)?.extensions;
-  if (!Array.isArray(raw)) {
+  const rawRemoteClaw = manifest?.[MANIFEST_KEY] as unknown;
+  if (rawRemoteClaw === undefined || rawRemoteClaw === null) {
     return { status: "missing", entries: [] };
   }
-  const entries = raw.map((entry) => normalizeOptionalString(entry) ?? "").filter(Boolean);
+  if (!isRecord(rawRemoteClaw)) {
+    return {
+      status: "invalid",
+      entries: [],
+      error: "package.json remoteclaw must be an object",
+    };
+  }
+  const raw = rawRemoteClaw.extensions;
+  if (raw === undefined || raw === null) {
+    return { status: "missing", entries: [] };
+  }
+  if (!Array.isArray(raw)) {
+    return {
+      status: "invalid",
+      entries: [],
+      error: "package.json remoteclaw.extensions must be an array",
+    };
+  }
+  const entries: string[] = [];
+  for (const [index, entry] of raw.entries()) {
+    const normalized = normalizeOptionalString(entry);
+    if (!normalized) {
+      return {
+        status: "invalid",
+        entries: [],
+        error: `package.json remoteclaw.extensions[${index}] must be a non-empty string`,
+      };
+    }
+    entries.push(normalized);
+  }
   if (entries.length === 0) {
     return { status: "empty", entries: [] };
   }

@@ -405,6 +405,16 @@ function resolvePackageEntrySource(params: {
     rejectHardlinks: params.rejectHardlinks ?? true,
   });
   if (!opened.ok) {
+    // A genuinely missing entry (ENOENT/ENOTDIR/ELOOP surfaces as reason
+    // "path") is not a boundary violation. Skip it silently so discovery can
+    // fall through to the next candidate instead of emitting a spurious
+    // "escapes package directory" error for a file that simply does not exist
+    // (e.g. an externalized bundled plugin that declares ./index.ts but ships
+    // no local source). Real boundary/symlink/hardlink violations surface as
+    // "validation" (or unexpected "io") and must still be reported and rejected.
+    if (opened.reason === "path") {
+      return null;
+    }
     params.diagnostics.push({
       level: "error",
       message: `extension entry escapes package directory: ${params.entryPath}`,

@@ -30,6 +30,7 @@ import {
   type PortUsageStatus,
 } from "../../infra/ports.js";
 import { loadGatewayTlsRuntime } from "../../infra/tls/gateway.js";
+import { uniqueStrings } from "../../shared/string-normalization.js";
 import { probeGatewayStatus } from "./probe.js";
 import { inspectGatewayRestart } from "./restart-health.js";
 import { normalizeListenerAddress, parsePortFromArgs, pickProbeHostForBind } from "./shared.js";
@@ -84,7 +85,7 @@ function appendProbeNote(
   if (values.length === 0) {
     return undefined;
   }
-  return [...new Set(values)].join(" ");
+  return uniqueStrings(values).join(" ");
 }
 export type DaemonStatus = {
   service: {

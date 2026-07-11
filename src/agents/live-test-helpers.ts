@@ -11,6 +11,8 @@ export const MODULE_ATTESTATIONS = {
   isLiveProfileKeyModeEnabled: "live",
   createSingleUserPromptMessage: "live",
   extractNonEmptyAssistantText: "live",
+  requiresLiveProfileCredential: "live",
+  resolveLiveCredentialPrecedence: "live",
 } as const;
 
 export const LIVE_OK_PROMPT = "Reply with the word ok.";
@@ -26,6 +28,22 @@ export function isLiveTestEnabled(
 
 export function isLiveProfileKeyModeEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
   return isTruthyEnvValue(env.REMOTECLAW_LIVE_REQUIRE_PROFILE_KEYS);
+}
+
+export function requiresLiveProfileCredential(
+  provider: string,
+  requireProfileKeys: boolean,
+): boolean {
+  return requireProfileKeys || provider === "openai-codex";
+}
+
+export function resolveLiveCredentialPrecedence(
+  provider: string,
+  requireProfileKeys: boolean,
+): "profile-first" | "env-first" {
+  return requiresLiveProfileCredential(provider, requireProfileKeys)
+    ? "profile-first"
+    : "env-first";
 }
 
 export function createSingleUserPromptMessage(content = LIVE_OK_PROMPT) {

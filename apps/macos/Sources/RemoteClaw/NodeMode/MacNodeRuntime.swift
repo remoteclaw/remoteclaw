@@ -704,7 +704,7 @@ actor MacNodeRuntime {
         }
 
         if requiresAsk, !approvedByAsk {
-            let decision = await MainActor.run {
+            let promptDecision = await MainActor.run {
                 ExecApprovalsPromptPresenter.prompt(
                     ExecApprovalPromptRequest(
                         command: context.displayCommand,
@@ -714,7 +714,26 @@ actor MacNodeRuntime {
                         ask: context.ask.rawValue,
                         agentId: context.agentId,
                         resolvedPath: context.resolution?.resolvedPath,
-                        sessionKey: context.sessionKey))
+                        sessionKey: context.sessionKey,
+                        allowedDecisions: ExecApprovalPromptRequest.allowedDecisions(
+                            forAsk: context.ask.rawValue)))
+            }
+            guard let decision = promptDecision else {
+                await self.emitExecEvent(
+                    "exec.denied",
+                    payload: ExecEventPayload(
+                        sessionKey: context.sessionKey,
+                        runId: context.runId,
+                        host: "node",
+                        command: context.displayCommand,
+                        reason: "approval-cancelled"))
+                return ExecApprovalOutcome(
+                    approvedByAsk: approvedByAsk,
+                    persistAllowlist: persistAllowlist,
+                    response: Self.errorResponse(
+                        req,
+                        code: .unavailable,
+                        message: "SYSTEM_RUN_DENIED: approval prompt closed without decision"))
             }
             switch decision {
             case .deny:

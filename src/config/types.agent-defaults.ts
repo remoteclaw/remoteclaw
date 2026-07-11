@@ -257,6 +257,11 @@ export type AgentDefaultsConfig = {
      * Default: false (only the final heartbeat payload is delivered).
      */
     includeReasoning?: boolean;
+    /**
+     * If true, defer heartbeat runs while this agent's session-keyed subagent or nested command lanes are busy.
+     * Cron lanes are always treated as busy for heartbeat deferral.
+     */
+    skipWhenBusy?: boolean;
   };
   /** Max concurrent agent runs across all conversations. Default: 1 (sequential). */
   maxConcurrent?: number;

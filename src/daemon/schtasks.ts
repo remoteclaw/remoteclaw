@@ -1,10 +1,12 @@
 import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { isGatewayArgv } from "../infra/gateway-process-argv.js";
 import { findVerifiedGatewayListenerPidsOnPortSync } from "../infra/gateway-processes.js";
 import { inspectPortUsage } from "../infra/ports.js";
 import { killProcessTree } from "../process/kill-tree.js";
+import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
 import { sleep } from "../utils.js";
 import { parseCmdScriptCommandLine, quoteCmdScriptArg } from "./cmd-argv.js";
 import { assertNoCmdLineBreak, parseCmdSetAssignment, renderCmdSetAssignment } from "./cmd-set.js";
@@ -88,15 +90,6 @@ function resolveStartupEntryPath(env: GatewayServiceEnv): string {
   return path.join(resolveWindowsStartupDir(env), `${sanitizeWindowsFilename(taskName)}.cmd`);
 }
 
-// `/TR` is parsed by schtasks itself, while the generated `gateway.cmd` line is parsed by cmd.exe.
-// Keep their quoting strategies separate so each parser gets the encoding it expects.
-function quoteSchtasksArg(value: string): string {
-  if (!/[ \t"]/g.test(value)) {
-    return value;
-  }
-  return `"${value.replace(/"/g, '\\"')}"`;
-}
-
 function resolveTaskUser(env: GatewayServiceEnv): string | null {
   const username = env.USERNAME || env.USER || env.LOGNAME;
   if (!username) {
@@ -106,10 +99,110 @@ function resolveTaskUser(env: GatewayServiceEnv): string | null {
     return username;
   }
   const domain = env.USERDOMAIN;
+  if (normalizeLowercaseStringOrEmpty(domain) === "workgroup") {
+    return username;
+  }
   if (domain) {
     return `${domain}\\${username}`;
   }
   return username;
+}
+
+function resolveSchtasksCreateUser(env: GatewayServiceEnv, taskUser: string | null): string | null {
+  // Workgroup hosts can report USERDOMAIN=WORKGROUP even though schtasks wants
+  // the current local account. Keep the XML user-scoped, but omit /RU so
+  // Task Scheduler binds the task to the caller instead of prompting.
+  if (normalizeLowercaseStringOrEmpty(env.USERDOMAIN) === "workgroup") {
+    return null;
+  }
+  return taskUser;
+}
+
+// XML 1.0 text-node escape for Task Scheduler payloads. `<Command>`, `<Arguments>`,
+// `<Description>`, and `<UserId>` accept any literal user/script path, so the
+// only characters that need encoding are XML structural ones. CR/LF are already
+// rejected upstream in `assertNoCmdLineBreak`.
+function escapeXmlText(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+// Task Scheduler XML payload for `schtasks /Create /XML`. We switched off the
+// CLI flag form to set `<DisallowStartIfOnBatteries>` and `<StopIfGoingOnBatteries>`
+// to `false`, which the `schtasks /Create` and `/Change` CLI surfaces do not
+// expose. The CLI default leaves both at `true`, which kills the Gateway task
+// when a laptop unplugs from AC power (#59299). The rest of the XML mirrors
+// the prior CLI flags: ONLOGON trigger, LeastPrivilege run level, single-instance
+// policy, no idle restrictions, and the same `<Exec>` action wired to the
+// existing `gateway.cmd` / `gateway.vbs` launcher.
+function buildScheduledTaskXml(params: {
+  taskDescription: string;
+  taskUser: string | null;
+  launchPath: string;
+}): string {
+  const description = escapeXmlText(params.taskDescription);
+  const command = escapeXmlText(params.launchPath);
+  const principalLogon = params.taskUser
+    ? `\n      <UserId>${escapeXmlText(params.taskUser)}</UserId>\n      <LogonType>InteractiveToken</LogonType>`
+    : "\n      <GroupId>S-1-5-32-545</GroupId>";
+  const triggerUser = params.taskUser
+    ? `\n      <UserId>${escapeXmlText(params.taskUser)}</UserId>`
+    : "";
+  return `<?xml version="1.0" encoding="UTF-16"?>
+<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo>
+    <Description>${description}</Description>
+  </RegistrationInfo>
+  <Triggers>
+    <LogonTrigger>
+      <Enabled>true</Enabled>${triggerUser}
+    </LogonTrigger>
+  </Triggers>
+  <Principals>
+    <Principal id="Author">${principalLogon}
+      <RunLevel>LeastPrivilege</RunLevel>
+    </Principal>
+  </Principals>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <AllowHardTerminate>true</AllowHardTerminate>
+    <StartWhenAvailable>false</StartWhenAvailable>
+    <RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>
+    <IdleSettings>
+      <StopOnIdleEnd>false</StopOnIdleEnd>
+      <RestartOnIdle>false</RestartOnIdle>
+    </IdleSettings>
+    <AllowStartOnDemand>true</AllowStartOnDemand>
+    <Enabled>true</Enabled>
+    <Hidden>false</Hidden>
+    <RunOnlyIfIdle>false</RunOnlyIfIdle>
+    <WakeToRun>false</WakeToRun>
+    <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>
+    <Priority>7</Priority>
+  </Settings>
+  <Actions Context="Author">
+    <Exec>
+      <Command>${command}</Command>
+    </Exec>
+  </Actions>
+</Task>`;
+}
+
+async function writeTaskXmlTempFile(xml: string): Promise<string> {
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-task-xml-"));
+  const xmlPath = path.join(tmpDir, "task.xml");
+  // schtasks /XML expects UTF-16 LE with BOM; Node's "utf16le" Buffer plus a
+  // manual FFFE BOM matches what Task Scheduler import accepts on all locales.
+  const bom = Buffer.from([0xff, 0xfe]);
+  const body = Buffer.from(xml, "utf16le");
+  await fs.writeFile(xmlPath, Buffer.concat([bom, body]));
+  return xmlPath;
 }
 
 export async function readScheduledTaskCommand(
@@ -621,25 +714,32 @@ async function activateScheduledTask(params: {
   const taskDescription = params.description ?? "RemoteClaw Gateway";
 
   const taskName = resolveTaskName(params.env);
-  const quotedScript = quoteSchtasksArg(params.scriptPath);
-  const baseArgs = [
-    "/Create",
-    "/F",
-    "/SC",
-    "ONLOGON",
-    "/RL",
-    "LIMITED",
-    "/TN",
-    taskName,
-    "/TR",
-    quotedScript,
-  ];
   const taskUser = resolveTaskUser(params.env);
-  let create = await execSchtasks(
-    taskUser ? [...baseArgs, "/RU", taskUser, "/NP", "/IT"] : baseArgs,
+  // Use `schtasks /Create /XML` so the task carries explicit
+  // `DisallowStartIfOnBatteries=false` and `StopIfGoingOnBatteries=false`
+  // settings. The CLI flag form (`/Create /SC ONLOGON ...`) cannot set those
+  // flags and inherits the Task Scheduler defaults (both true), which kills
+  // the Gateway when a laptop unplugs from AC power (#59299).
+  const xmlPath = await writeTaskXmlTempFile(
+    buildScheduledTaskXml({
+      taskDescription,
+      taskUser,
+      launchPath: params.scriptPath,
+    }),
   );
-  if (create.code !== 0 && taskUser) {
-    create = await execSchtasks(baseArgs);
+  let create: Awaited<ReturnType<typeof execSchtasks>>;
+  try {
+    const xmlArgs = ["/Create", "/F", "/TN", taskName, "/XML", xmlPath];
+    const createUser = resolveSchtasksCreateUser(params.env, taskUser);
+    const xmlArgsWithUser = createUser ? [...xmlArgs, "/RU", createUser, "/NP"] : xmlArgs;
+    create = await execSchtasks(xmlArgsWithUser);
+    if (create.code !== 0 && createUser) {
+      // Retry without the elevated `/RU` form, matching the pre-XML behavior
+      // for accounts whose service password cannot be stored.
+      create = await execSchtasks(xmlArgs);
+    }
+  } finally {
+    await fs.rm(path.dirname(xmlPath), { recursive: true, force: true }).catch(() => {});
   }
   if (create.code !== 0) {
     const detail = create.stderr || create.stdout;

@@ -11,6 +11,10 @@ import {
   isPathWithinRoot,
   isWindowsAbsolutePath,
 } from "../shared/avatar-policy.js";
+import {
+  formatUnsafeGatewayTailscaleNoAuthMessage,
+  isUnsafeGatewayTailscaleNoAuth,
+} from "../shared/gateway-tailscale-auth-policy.js";
 import { isCanonicalDottedDecimalIPv4, isLoopbackIpAddress } from "../shared/net/ip.js";
 import { isRecord } from "../utils.js";
 import { findDuplicateAgentDirs, formatDuplicateAgentDirError } from "./agent-dirs.js";
@@ -218,6 +222,19 @@ function validateGatewayTailscaleBind(config: RemoteClawConfig): ConfigValidatio
   ];
 }
 
+function validateGatewayTailscaleAuth(config: RemoteClawConfig): ConfigValidationIssue[] {
+  const tailscaleMode = config.gateway?.tailscale?.mode ?? "off";
+  if (!isUnsafeGatewayTailscaleNoAuth({ authMode: config.gateway?.auth?.mode, tailscaleMode })) {
+    return [];
+  }
+  return [
+    {
+      path: "gateway.auth.mode",
+      message: formatUnsafeGatewayTailscaleNoAuthMessage(tailscaleMode),
+    },
+  ];
+}
+
 /**
  * Validates config without applying runtime defaults.
  * Use this when you need the raw validated config (e.g., for writing back to file).
@@ -263,6 +280,12 @@ export function validateConfigObjectRaw(
   );
   if (gatewayTailscaleBindIssues.length > 0) {
     return { ok: false, issues: gatewayTailscaleBindIssues };
+  }
+  const gatewayTailscaleAuthIssues = validateGatewayTailscaleAuth(
+    validated.data as RemoteClawConfig,
+  );
+  if (gatewayTailscaleAuthIssues.length > 0) {
+    return { ok: false, issues: gatewayTailscaleAuthIssues };
   }
   return {
     ok: true,

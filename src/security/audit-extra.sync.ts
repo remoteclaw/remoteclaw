@@ -64,13 +64,15 @@ import {
   resolveAgentModelFallbackValues,
   resolveAgentModelPrimaryValue,
 } from "../config/model-input.js";
+import type { GatewayAuthConfig } from "../config/types.gateway.js";
 import type { AgentToolsConfig } from "../config/types.tools.js";
-import { resolveGatewayAuth } from "../gateway/auth.js";
+import { resolveGatewayAuth, type ResolvedGatewayAuth } from "../gateway/auth.js";
 import {
   DEFAULT_DANGEROUS_NODE_COMMANDS,
   resolveNodeCommandAllowlist,
 } from "../gateway/node-command-policy.js";
 import { inferParamBFromIdOrName } from "../shared/model-param-b.js";
+import { normalizeOptionalString } from "../shared/string-coerce.js";
 
 /**
  * Synchronous security audit collector functions.
@@ -691,9 +693,91 @@ export function collectSecretsInConfigFindings(cfg: RemoteClawConfig): SecurityA
   return findings;
 }
 
+type GatewayAuthSharedSecretLabel = "gateway auth token" | "gateway auth password";
+type ActiveGatewaySharedSecret = {
+  label: GatewayAuthSharedSecretLabel;
+  value?: string;
+};
+
+export type HooksHardeningAuditOptions = {
+  gatewayAuthOverride?: Pick<GatewayAuthConfig, "mode" | "token" | "password">;
+};
+
+export type GatewayHttpNoAuthAuditOptions = {
+  gatewayAuthOverride?: Pick<GatewayAuthConfig, "mode" | "token" | "password">;
+};
+
+function formatGatewayAuthDisplayLabel(label: GatewayAuthSharedSecretLabel): string {
+  if (label === "gateway auth password") {
+    return "Gateway password";
+  }
+  return "Gateway token";
+}
+
+function formatHooksTokenReuseDetail(reusedGatewayAuthLabel: GatewayAuthSharedSecretLabel): string {
+  if (reusedGatewayAuthLabel === "gateway auth password") {
+    return "hooks.token matches gateway.auth password; compromise of hooks expands blast radius to Gateway password auth.";
+  }
+  return "hooks.token matches gateway.auth token; compromise of hooks expands blast radius to the Gateway API.";
+}
+
+function listActiveGatewaySharedSecrets(auth: ResolvedGatewayAuth): ActiveGatewaySharedSecret[] {
+  if (auth.mode === "token") {
+    return [{ label: "gateway auth token", value: auth.token }];
+  }
+  if (auth.mode === "password" || auth.mode === "trusted-proxy") {
+    return [{ label: "gateway auth password", value: auth.password }];
+  }
+  return [];
+}
+
+function findGatewayAuthLabelMatchingHooksToken(params: {
+  hooksToken: string;
+  auth: ResolvedGatewayAuth;
+}): GatewayAuthSharedSecretLabel | undefined {
+  return listActiveGatewaySharedSecrets(params.auth).find(
+    (candidate) => normalizeOptionalString(candidate.value) === params.hooksToken,
+  )?.label;
+}
+
+function findHooksTokenGatewayAuthReuseLabel(params: {
+  hooksToken: string;
+  configGatewayAuth: ResolvedGatewayAuth;
+  overrideGatewayAuth?: ResolvedGatewayAuth;
+}): GatewayAuthSharedSecretLabel | undefined {
+  const configReuseLabel = findGatewayAuthLabelMatchingHooksToken({
+    hooksToken: params.hooksToken,
+    auth: params.configGatewayAuth,
+  });
+  if (configReuseLabel) {
+    return configReuseLabel;
+  }
+
+  return params.overrideGatewayAuth
+    ? findGatewayAuthLabelMatchingHooksToken({
+        hooksToken: params.hooksToken,
+        auth: params.overrideGatewayAuth,
+      })
+    : undefined;
+}
+
+function hasResolvedGatewayHttpAuth(auth: ResolvedGatewayAuth): boolean {
+  if (auth.mode === "token") {
+    return Boolean(normalizeOptionalString(auth.token));
+  }
+  if (auth.mode === "password") {
+    return Boolean(normalizeOptionalString(auth.password));
+  }
+  if (auth.mode === "trusted-proxy") {
+    return true;
+  }
+  return false;
+}
+
 export function collectHooksHardeningFindings(
   cfg: RemoteClawConfig,
   env: NodeJS.ProcessEnv = process.env,
+  options: HooksHardeningAuditOptions = {},
 ): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
   if (cfg.hooks?.enabled !== true) {
@@ -710,31 +794,32 @@ export function collectHooksHardeningFindings(
     });
   }
 
-  const gatewayAuth = resolveGatewayAuth({
+  const configGatewayAuth = resolveGatewayAuth({
     authConfig: cfg.gateway?.auth,
     tailscaleMode: cfg.gateway?.tailscale?.mode ?? "off",
     env,
   });
-  const remoteclawGatewayToken =
-    typeof env.REMOTECLAW_GATEWAY_TOKEN === "string" && env.REMOTECLAW_GATEWAY_TOKEN.trim()
-      ? env.REMOTECLAW_GATEWAY_TOKEN.trim()
-      : null;
-  const gatewayToken =
-    gatewayAuth.mode === "token" &&
-    typeof gatewayAuth.token === "string" &&
-    gatewayAuth.token.trim()
-      ? gatewayAuth.token.trim()
-      : remoteclawGatewayToken
-        ? remoteclawGatewayToken
-        : null;
-  if (token && gatewayToken && token === gatewayToken) {
+  const overrideGatewayAuth = options.gatewayAuthOverride
+    ? resolveGatewayAuth({
+        authConfig: cfg.gateway?.auth,
+        authOverride: options.gatewayAuthOverride,
+        tailscaleMode: cfg.gateway?.tailscale?.mode ?? "off",
+        env,
+      })
+    : undefined;
+  const reusedGatewayAuthLabel = findHooksTokenGatewayAuthReuseLabel({
+    hooksToken: token,
+    configGatewayAuth,
+    overrideGatewayAuth,
+  });
+  if (token && reusedGatewayAuthLabel) {
     findings.push({
       checkId: "hooks.token_reuse_gateway_token",
       severity: "critical",
-      title: "Hooks token reuses the Gateway token",
-      detail:
-        "hooks.token matches gateway.auth token; compromise of hooks expands blast radius to the Gateway API.",
-      remediation: "Use a separate hooks.token dedicated to hook ingress.",
+      title: `Hooks token reuses the ${formatGatewayAuthDisplayLabel(reusedGatewayAuthLabel)}`,
+      detail: formatHooksTokenReuseDetail(reusedGatewayAuthLabel),
+      remediation:
+        "Use a separate hooks.token dedicated to hook ingress and keep it distinct from Gateway token/password shared-secret auth.",
     });
   }
 
@@ -767,6 +852,26 @@ export function collectHooksHardeningFindings(
       detail:
         "Hook agent runs without explicit sessionKey use generated per-request keys. Set hooks.defaultSessionKey to keep hook ingress scoped to a known session.",
       remediation: 'Set hooks.defaultSessionKey (for example, "hook:ingress").',
+    });
+  }
+
+  // Config-only audit of the operator-declared allowlist. The runtime DOES enforce
+  // hooks agent-routing at dispatch via resolveAllowedAgentIds (src/gateway/hooks.ts)
+  // and isHookAgentAllowed (src/gateway/server/hooks-request-handler.ts); this check
+  // independently flags configs that leave routing unrestricted. Unrestricted ==
+  // allowedAgentIds unset or includes "*".
+  const rawAllowedAgentIds = cfg.hooks?.allowedAgentIds;
+  const hooksAgentRoutingUnrestricted =
+    !Array.isArray(rawAllowedAgentIds) || rawAllowedAgentIds.some((entry) => entry.trim() === "*");
+  if (hooksAgentRoutingUnrestricted) {
+    findings.push({
+      checkId: "hooks.allowed_agent_ids_unrestricted",
+      severity: remoteExposure ? "critical" : "warn",
+      title: "Hook agent routing allows any configured agent",
+      detail:
+        "hooks.allowedAgentIds is unset or includes '*', so authenticated hook callers may route to any configured agent id, including the default agent when agentId is omitted.",
+      remediation:
+        'Set hooks.allowedAgentIds to an explicit allowlist (for example, ["hooks", "main"]) or [] to deny hook agent routing.',
     });
   }
 
@@ -827,11 +932,17 @@ export function collectGatewayHttpSessionKeyOverrideFindings(
 export function collectGatewayHttpNoAuthFindings(
   cfg: RemoteClawConfig,
   env: NodeJS.ProcessEnv,
+  options: GatewayHttpNoAuthAuditOptions = {},
 ): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
   const tailscaleMode = cfg.gateway?.tailscale?.mode ?? "off";
-  const auth = resolveGatewayAuth({ authConfig: cfg.gateway?.auth, tailscaleMode, env });
-  if (auth.mode !== "none") {
+  const auth = resolveGatewayAuth({
+    authConfig: cfg.gateway?.auth,
+    authOverride: options.gatewayAuthOverride,
+    tailscaleMode,
+    env,
+  });
+  if (hasResolvedGatewayHttpAuth(auth)) {
     return findings;
   }
 

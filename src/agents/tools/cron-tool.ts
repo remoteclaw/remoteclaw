@@ -380,7 +380,10 @@ Use jobId as the canonical identifier; id is accepted for compatibility. Use con
                 (job as { agentId?: string }).agentId = agentId;
               }
             }
-            if (!("sessionKey" in job) && resolvedSessionKey) {
+            const sessionTarget = normalizeLowercaseStringOrEmpty(
+              (job as { sessionTarget?: unknown }).sessionTarget,
+            );
+            if (!("sessionKey" in job) && resolvedSessionKey && sessionTarget !== "isolated") {
               (job as { sessionKey?: string }).sessionKey = resolvedSessionKey;
             }
           }

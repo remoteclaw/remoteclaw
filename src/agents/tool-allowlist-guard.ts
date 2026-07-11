@@ -1,4 +1,5 @@
-import { normalizeToolName } from "./tool-policy.js";
+import { normalizeStringEntries } from "../shared/string-normalization.js";
+import { normalizeToolList, normalizeToolName } from "./tool-policy.js";
 
 type ExplicitToolAllowlistSource = {
   label: string;
@@ -15,7 +16,7 @@ export function collectExplicitToolAllowlistSources(
   sources: Array<{ label: string; allow?: string[]; enforceWhenToolsDisabled?: boolean }>,
 ): ExplicitToolAllowlistSource[] {
   return sources.flatMap((source) => {
-    const entries = (source.allow ?? []).map((entry) => entry.trim()).filter(Boolean);
+    const entries = normalizeStringEntries(source.allow);
     if (entries.length === 0) {
       return [];
     }
@@ -39,7 +40,7 @@ export function buildEmptyExplicitToolAllowlistError(params: {
     params.disableTools === true
       ? params.sources.filter((source) => source.enforceWhenToolsDisabled === true)
       : params.sources;
-  const callableToolNames = params.callableToolNames.map(normalizeToolName).filter(Boolean);
+  const callableToolNames = normalizeToolList(params.callableToolNames);
   if (sources.length === 0 || callableToolNames.length > 0) {
     return null;
   }

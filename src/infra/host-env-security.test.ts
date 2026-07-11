@@ -168,6 +168,14 @@ describe("isDangerousHostEnvVarName", () => {
     expect(isDangerousHostEnvVarName("glibc_tunables")).toBe(true);
     expect(isDangerousHostEnvVarName("MAVEN_OPTS")).toBe(true);
     expect(isDangerousHostEnvVarName("maven_opts")).toBe(true);
+    expect(isDangerousHostEnvVarName("NODE_REDIRECT_WARNINGS")).toBe(true);
+    expect(isDangerousHostEnvVarName("node_redirect_warnings")).toBe(true);
+    expect(isDangerousHostEnvVarName("NODE_REPL_EXTERNAL_MODULE")).toBe(true);
+    expect(isDangerousHostEnvVarName("node_repl_external_module")).toBe(true);
+    expect(isDangerousHostEnvVarName("NODE_REPL_HISTORY")).toBe(true);
+    expect(isDangerousHostEnvVarName("node_repl_history")).toBe(true);
+    expect(isDangerousHostEnvVarName("NODE_V8_COVERAGE")).toBe(true);
+    expect(isDangerousHostEnvVarName("node_v8_coverage")).toBe(true);
     expect(isDangerousHostEnvVarName("SBT_OPTS")).toBe(true);
     expect(isDangerousHostEnvVarName("sbt_opts")).toBe(true);
     expect(isDangerousHostEnvVarName("GRADLE_OPTS")).toBe(true);
@@ -599,7 +607,6 @@ describe("sanitizeHostExecEnvWithDiagnostics", () => {
     });
 
     expect(result.rejectedOverrideBlockedKeys).toEqual([
-      "C_INCLUDE_PATH",
       "CARGO_REGISTRIES_CRATES_IO_INDEX",
       "CLASSPATH",
       "CMAKE_C_COMPILER",
@@ -607,6 +614,7 @@ describe("sanitizeHostExecEnvWithDiagnostics", () => {
       "CPLUS_INCLUDE_PATH",
       "CURL_CA_BUNDLE",
       "CXX",
+      "C_INCLUDE_PATH",
       "DOCKER_CERT_PATH",
       "DOCKER_CONTEXT",
       "DOCKER_HOST",

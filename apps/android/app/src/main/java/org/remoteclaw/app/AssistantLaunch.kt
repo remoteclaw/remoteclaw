@@ -3,6 +3,7 @@ package org.remoteclaw.app
 import android.content.Intent
 
 const val actionAskRemoteClaw = "org.remoteclaw.app.action.ASK_REMOTECLAW"
+const val actionOpenVoiceE2e = "org.remoteclaw.app.debug.OPEN_VOICE_E2E"
 const val extraAssistantPrompt = "prompt"
 
 enum class HomeDestination {
@@ -18,6 +19,14 @@ data class AssistantLaunchRequest(
   val prompt: String?,
   val autoSend: Boolean,
 )
+
+fun parseHomeDestinationIntent(intent: Intent?): HomeDestination? {
+  val action = intent?.action ?: return null
+  return when {
+    BuildConfig.DEBUG && action == actionOpenVoiceE2e -> HomeDestination.Voice
+    else -> null
+  }
+}
 
 fun parseAssistantLaunchIntent(intent: Intent?): AssistantLaunchRequest? {
   val action = intent?.action ?: return null

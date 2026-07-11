@@ -1,5 +1,4 @@
-// Narrow inbound envelope helpers for hot channel message-formatting paths.
-
+/** @deprecated Compatibility subpath. Use `remoteclaw/plugin-sdk/channel-inbound`. */
 export {
   formatInboundEnvelope,
   resolveEnvelopeFormatOptions,

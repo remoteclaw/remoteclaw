@@ -108,6 +108,10 @@ describe("applyModelDefaults", () => {
     expect(next.agents?.defaults?.models?.["google/gemini-3-flash-preview"]?.alias).toBe(
       "gemini-flash",
     );
+    // Fork catalog: gemini 3.x are preview ids (DEFAULT_MODEL_ALIASES in
+    // config/defaults.ts maps gemini-flash-lite -> ...-flash-lite-preview),
+    // so the alias lands on the -preview key. Upstream's catalog uses the
+    // non-preview id; adapt the assertion to the fork's target key.
     expect(next.agents?.defaults?.models?.["google/gemini-3.1-flash-lite-preview"]?.alias).toBe(
       "gemini-flash-lite",
     );

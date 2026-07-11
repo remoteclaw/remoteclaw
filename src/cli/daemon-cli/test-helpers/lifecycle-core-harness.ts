@@ -37,9 +37,9 @@ export function resetLifecycleRuntimeLogs() {
 }
 
 export function resetLifecycleServiceMocks() {
-  service.isLoaded.mockClear();
-  service.readCommand.mockClear();
-  service.restart.mockClear();
+  service.isLoaded.mockReset();
+  service.readCommand.mockReset();
+  service.restart.mockReset();
   service.isLoaded.mockResolvedValue(true);
   service.readCommand.mockResolvedValue({ programArguments: [], environment: {} });
   service.restart.mockResolvedValue({ outcome: "completed" });

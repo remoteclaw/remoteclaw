@@ -1,5 +1,5 @@
 ---
-summary: "Adds the Synology Chat channel surface for sending and receiving RemoteClaw messages."
+summary: "Synology Chat channel plugin for RemoteClaw channels and direct messages."
 read_when:
   - You are installing, configuring, or auditing the synology-chat plugin
 title: "Synology Chat plugin"
@@ -7,7 +7,7 @@ title: "Synology Chat plugin"
 
 # Synology Chat plugin
 
-Adds the Synology Chat channel surface for sending and receiving RemoteClaw messages.
+Synology Chat channel plugin for RemoteClaw channels and direct messages.
 
 ## Distribution
 

@@ -465,6 +465,16 @@ describe("config plugin validation", () => {
     expect(res.ok).toBe(true);
   });
 
+  it("accepts bundled channel aliases for heartbeat targets", async () => {
+    const res = validateInSuite({
+      agents: {
+        defaults: { heartbeat: { target: "gchat" } },
+        list: [{ id: "pi", workspace: "/tmp/pi" }],
+      },
+    });
+    expect(res.ok).toBe(true);
+  });
+
   it("rejects unknown heartbeat targets", async () => {
     const res = validateInSuite({
       agents: {

@@ -18,6 +18,7 @@ import {
   normalizePollInput,
   type PollInput,
 } from "../../../src/polls.js";
+import { normalizeStringEntries } from "../../../src/shared/string-normalization.js";
 import { loadWebMedia } from "../../whatsapp/src/media.js";
 import { resolveDiscordAccount } from "./accounts.js";
 import { chunkDiscordTextWithMode } from "./chunk.js";
@@ -119,7 +120,7 @@ export async function parseAndResolveRecipient(
 }
 
 function normalizeStickerIds(raw: string[]) {
-  const ids = raw.map((entry) => entry.trim()).filter(Boolean);
+  const ids = normalizeStringEntries(raw);
   if (ids.length === 0) {
     throw new Error("At least one sticker id is required");
   }

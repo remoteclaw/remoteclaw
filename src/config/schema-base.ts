@@ -67,6 +67,7 @@ function computeBaseConfigSchemaStablePayload(): BaseConfigSchemaStablePayload {
     };
   }
   const schema = RemoteClawSchema.toJSONSchema({
+    io: "input",
     target: "draft-07",
     unrepresentable: "any",
   });

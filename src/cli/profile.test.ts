@@ -91,6 +91,7 @@ describe("applyCliProfileEnv", () => {
 
   it("does not override explicit env values", () => {
     const env: Record<string, string | undefined> = {
+      REMOTECLAW_PROFILE: "prod",
       REMOTECLAW_STATE_DIR: "/custom",
       REMOTECLAW_GATEWAY_PORT: "19099",
     };
@@ -99,6 +100,7 @@ describe("applyCliProfileEnv", () => {
       env,
       homedir: () => "/home/peter",
     });
+    expect(env.REMOTECLAW_PROFILE).toBe("dev");
     expect(env.REMOTECLAW_STATE_DIR).toBe("/custom");
     expect(env.REMOTECLAW_GATEWAY_PORT).toBe("19099");
     expect(env.REMOTECLAW_CONFIG_PATH).toBe(path.join("/custom", "remoteclaw.json"));

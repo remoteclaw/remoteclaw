@@ -68,6 +68,9 @@ export async function fetchMemberGuildPermissionsDiscord(
       rest.get(Routes.guild(guildId)) as Promise<APIGuild>,
       rest.get(Routes.guildMember(guildId, userId)) as Promise<APIGuildMember>,
     ]);
+    if (guild.owner_id === userId) {
+      return ALL_PERMISSIONS;
+    }
     const rolesById = new Map<string, APIRole>((guild.roles ?? []).map((role) => [role.id, role]));
     const everyoneRole = rolesById.get(guildId);
     let permissions = 0n;

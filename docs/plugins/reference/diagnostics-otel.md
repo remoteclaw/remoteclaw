@@ -1,5 +1,5 @@
 ---
-summary: "RemoteClaw diagnostics OpenTelemetry exporter."
+summary: "RemoteClaw diagnostics OpenTelemetry exporter for metrics and traces."
 read_when:
   - You are installing, configuring, or auditing the diagnostics-otel plugin
 title: "Diagnostics OpenTelemetry plugin"
@@ -7,7 +7,7 @@ title: "Diagnostics OpenTelemetry plugin"
 
 # Diagnostics OpenTelemetry plugin
 
-RemoteClaw diagnostics OpenTelemetry exporter.
+RemoteClaw diagnostics OpenTelemetry exporter for metrics and traces.
 
 ## Distribution
 

@@ -141,7 +141,9 @@ const resolveAgentOrder = (cfg: ReturnType<typeof loadConfig>) => {
 };
 
 const buildSessionSummary = (storePath: string) => {
-  const store = loadSessionStore(storePath);
+  // Read-only summary: skip the defensive return clone to avoid copying a
+  // potentially large session store just to read updatedAt timestamps.
+  const store = loadSessionStore(storePath, { clone: false });
   const sessions = Object.entries(store)
     .filter(([key]) => key !== "global" && key !== "unknown")
     .map(([key, entry]) => ({ key, updatedAt: entry?.updatedAt ?? 0 }))

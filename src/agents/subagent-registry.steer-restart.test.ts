@@ -333,8 +333,7 @@ describe("subagent registry steer restarts", () => {
     const previous = listMainRuns()[0];
     expect(previous?.runId).toBe("run-retry-reset-old");
     if (previous) {
-      previous.announceRetryCount = 2;
-      previous.lastAnnounceRetryAt = Date.now();
+      previous.delivery = { status: "pending", attemptCount: 2, lastAttemptAt: Date.now() };
     }
 
     const run = replaceRunAfterSteer({
@@ -342,8 +341,8 @@ describe("subagent registry steer restarts", () => {
       nextRunId: "run-retry-reset-new",
       fallback: previous,
     });
-    expect(run.announceRetryCount).toBeUndefined();
-    expect(run.lastAnnounceRetryAt).toBeUndefined();
+    expect(run.delivery?.attemptCount).toBeUndefined();
+    expect(run.delivery?.lastAttemptAt).toBeUndefined();
   });
 
   it("clears terminal lifecycle state when replacing after steer restart", async () => {
@@ -394,8 +393,11 @@ describe("subagent registry steer restarts", () => {
     const previous = listMainRuns()[0];
     expect(previous?.runId).toBe("run-frozen-old");
     if (previous) {
-      previous.frozenResultText = "stale frozen completion";
-      previous.frozenResultCapturedAt = Date.now();
+      previous.completion = {
+        required: false,
+        resultText: "stale frozen completion",
+        capturedAt: Date.now(),
+      };
       previous.cleanupCompletedAt = Date.now();
       previous.cleanupHandled = true;
     }
@@ -406,8 +408,8 @@ describe("subagent registry steer restarts", () => {
       fallback: previous,
     });
 
-    expect(run.frozenResultText).toBeUndefined();
-    expect(run.frozenResultCapturedAt).toBeUndefined();
+    expect(run.completion?.resultText).toBeUndefined();
+    expect(run.completion?.capturedAt).toBeUndefined();
     expect(run.cleanupCompletedAt).toBeUndefined();
     expect(run.cleanupHandled).toBe(false);
   });
@@ -422,8 +424,11 @@ describe("subagent registry steer restarts", () => {
     const previous = listMainRuns()[0];
     expect(previous?.runId).toBe("run-wake-old");
     if (previous) {
-      previous.frozenResultText = "final summary before wake";
-      previous.frozenResultCapturedAt = 1234;
+      previous.completion = {
+        required: false,
+        resultText: "final summary before wake",
+        capturedAt: 1234,
+      };
     }
 
     const replaced = mod.replaceSubagentRunAfterSteer({
@@ -434,10 +439,10 @@ describe("subagent registry steer restarts", () => {
     expect(replaced).toBe(true);
 
     const run = listMainRuns().find((entry) => entry.runId === "run-wake-new");
-    expect(run).toMatchObject({
-      frozenResultText: undefined,
-      fallbackFrozenResultText: "final summary before wake",
-      fallbackFrozenResultCapturedAt: 1234,
+    expect(run?.completion).toMatchObject({
+      resultText: undefined,
+      fallbackResultText: "final summary before wake",
+      fallbackCapturedAt: 1234,
     });
   });
 
@@ -589,19 +594,19 @@ describe("subagent registry steer restarts", () => {
 
         await vi.advanceTimersByTimeAsync(0);
         expect(announceSpy).toHaveBeenCalledTimes(1);
-        expect(listMainRuns()[0]?.announceRetryCount).toBe(1);
+        expect(listMainRuns()[0]?.delivery?.attemptCount).toBe(1);
 
         await vi.advanceTimersByTimeAsync(999);
         expect(announceSpy).toHaveBeenCalledTimes(1);
         await vi.advanceTimersByTimeAsync(1);
         expect(announceSpy).toHaveBeenCalledTimes(2);
-        expect(listMainRuns()[0]?.announceRetryCount).toBe(2);
+        expect(listMainRuns()[0]?.delivery?.attemptCount).toBe(2);
 
         await vi.advanceTimersByTimeAsync(1_999);
         expect(announceSpy).toHaveBeenCalledTimes(2);
         await vi.advanceTimersByTimeAsync(1);
         expect(announceSpy).toHaveBeenCalledTimes(3);
-        expect(listMainRuns()[0]?.announceRetryCount).toBe(3);
+        expect(listMainRuns()[0]?.delivery?.attemptCount).toBe(3);
 
         await vi.advanceTimersByTimeAsync(4_001);
         expect(announceSpy).toHaveBeenCalledTimes(3);

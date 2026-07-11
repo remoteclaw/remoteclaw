@@ -10,6 +10,7 @@ import type {
 import { formatRelativeTimestamp, formatMs } from "../format.ts";
 import { pathForTab } from "../navigation.ts";
 import { formatCronSchedule, formatNextRun } from "../presenter.ts";
+import { normalizeStringEntries, uniqueStrings } from "../string-coerce.ts";
 import type { ChannelUiMetaEntry, CronJob, CronRunLogEntry, CronStatus } from "../types.ts";
 import type {
   CronDeliveryStatus,
@@ -204,7 +205,7 @@ function renderRunFilterDropdown(params: {
 }
 
 function renderSuggestionList(id: string, options: string[]) {
-  const clean = Array.from(new Set(options.map((option) => option.trim()).filter(Boolean)));
+  const clean = uniqueStrings(normalizeStringEntries(options));
   if (clean.length === 0) {
     return nothing;
   }

@@ -22,6 +22,7 @@
       "docsLabel": "matrix",
       "blurb": "open protocol; install the plugin to enable.",
       "order": 70,
+      "markdownCapable": true,
       "quickstartAllowFrom": true
     },
     "install": {

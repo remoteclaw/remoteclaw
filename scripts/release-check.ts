@@ -1,7 +1,7 @@
 #!/usr/bin/env -S node --import tsx
 
-import { execSync } from "node:child_process";
-import { readdirSync, readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
@@ -10,6 +10,7 @@ import {
   type BundledExtension,
   type ExtensionPackageJson as PackageJson,
 } from "./lib/bundled-extension-manifest.ts";
+import { resolveNpmRunner } from "./npm-runner.mjs";
 import { sparkleBuildFloorsFromShortVersion, type SparkleBuildFloors } from "./sparkle-build.ts";
 
 export { collectBundledExtensionManifestErrors } from "./lib/bundled-extension-manifest.ts";
@@ -199,11 +200,42 @@ function checkBundledExtensionRootDependencyMirrors() {
   }
 }
 
+export function resolveReleaseNpmCommand(
+  args: string[],
+  params: {
+    comSpec?: string;
+    env?: NodeJS.ProcessEnv;
+    execPath?: string;
+    existsSync?: typeof existsSync;
+    platform?: NodeJS.Platform;
+  } = {},
+) {
+  // Route npm through the toolchain-local resolver so the release check never
+  // shells out to a bare `npm` on PATH (Windows PATH-hijack / command-resolution
+  // hardening — resolveNpmRunner refuses bare npm on win32).
+  return resolveNpmRunner({
+    comSpec: params.comSpec,
+    env: params.env,
+    execPath: params.execPath,
+    existsSync: params.existsSync,
+    npmArgs: args,
+    platform: params.platform,
+  });
+}
+
 function runPackDry(): PackResult[] {
-  const raw = execSync("npm pack --dry-run --json --ignore-scripts", {
+  const invocation = resolveReleaseNpmCommand(["pack", "--dry-run", "--json", "--ignore-scripts"], {
+    env: process.env,
+  });
+  const raw = execFileSync(invocation.command, invocation.args, {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
     maxBuffer: 1024 * 1024 * 100,
+    ...(invocation.env ? { env: invocation.env } : {}),
+    ...(invocation.shell !== undefined ? { shell: invocation.shell } : {}),
+    ...(invocation.windowsVerbatimArguments !== undefined
+      ? { windowsVerbatimArguments: invocation.windowsVerbatimArguments }
+      : {}),
   });
   return JSON.parse(raw) as PackResult[];
 }

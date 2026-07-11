@@ -15,6 +15,9 @@ packages:
     path: ../shared/RemoteClawKit
   Swabble:
     path: ../swabble
+  WebRTC:
+    url: https://github.com/stasel/WebRTC.git
+    exactVersion: 147.0.0
 
 schemes:
   RemoteClaw:
@@ -57,6 +60,7 @@ targets:
         product: RemoteClawProtocol
       - package: Swabble
         product: SwabbleKit
+      - package: WebRTC
       - sdk: AppIntents.framework
     preBuildScripts:
       - name: SwiftFormat (lint)

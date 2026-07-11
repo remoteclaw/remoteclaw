@@ -709,7 +709,9 @@ export async function noteStateIntegrity(
     );
   }
 
-  const store = loadSessionStore(storePath);
+  // Read-only diagnostic load: skip the cache and the defensive return clone so a
+  // corrupt or oversized store can't OOM the doctor and we always inspect disk state.
+  const store = loadSessionStore(storePath, { skipCache: true, clone: false });
   const sessionPathOpts = resolveSessionFilePathOptions({ agentId, storePath });
   const entries = Object.entries(store).filter(([, entry]) => entry && typeof entry === "object");
   if (entries.length > 0) {

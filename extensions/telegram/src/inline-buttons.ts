@@ -4,7 +4,8 @@ import {
 } from "remoteclaw/plugin-sdk/text-runtime";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import type { TelegramInlineButtonsScope } from "../../../src/config/types.telegram.js";
-import { listTelegramAccountIds, resolveTelegramAccount } from "./accounts.js";
+import { inspectTelegramAccount } from "./account-inspect.js";
+import { listTelegramAccountIds } from "./accounts.js";
 
 const DEFAULT_INLINE_BUTTONS_SCOPE: TelegramInlineButtonsScope = "allowlist";
 
@@ -48,7 +49,7 @@ export function resolveTelegramInlineButtonsScope(params: {
   cfg: RemoteClawConfig;
   accountId?: string | null;
 }): TelegramInlineButtonsScope {
-  const account = resolveTelegramAccount({ cfg: params.cfg, accountId: params.accountId });
+  const account = inspectTelegramAccount({ cfg: params.cfg, accountId: params.accountId });
   return resolveInlineButtonsScopeFromCapabilities(account.config.capabilities);
 }
 

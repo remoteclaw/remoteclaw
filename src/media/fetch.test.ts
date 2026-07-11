@@ -22,6 +22,21 @@ function makeStream(chunks: Uint8Array[]) {
   });
 }
 
+function makeCancelableStream(chunks: Uint8Array[]) {
+  let canceled = false;
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      for (const chunk of chunks) {
+        controller.enqueue(chunk);
+      }
+    },
+    cancel() {
+      canceled = true;
+    },
+  });
+  return { stream, wasCanceled: () => canceled };
+}
+
 function makeStallingFetch(firstChunk: Uint8Array) {
   return vi.fn(async () => {
     return new Response(
@@ -114,6 +129,30 @@ describe("fetchRemoteMedia", () => {
         lookupFn,
       }),
     ).rejects.toThrow("exceeds maxBytes");
+  });
+
+  it("cancels ignored content-length overflow bodies", async () => {
+    const lookupFn = vi.fn(async () => ({
+      address: "93.184.216.34",
+      family: 4,
+    })) as unknown as LookupFn;
+    const body = makeCancelableStream([new Uint8Array([1, 2, 3, 4, 5])]);
+    const fetchImpl = async () =>
+      new Response(body.stream, {
+        status: 200,
+        headers: { "content-length": "5" },
+      });
+
+    await expect(
+      fetchRemoteMedia({
+        url: "https://example.com/file.bin",
+        fetchImpl,
+        maxBytes: 4,
+        lookupFn,
+      }),
+    ).rejects.toThrow("exceeds maxBytes");
+
+    expect(body.wasCanceled()).toBe(true);
   });
 
   it("rejects when streamed payload exceeds maxBytes", async () => {

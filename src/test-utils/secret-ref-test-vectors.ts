@@ -39,5 +39,10 @@ export const INVALID_EXEC_SECRET_REF_IDS = [
   "/absolute/path",
   "bad id",
   "a\\b",
+  // Fork-stricter: `#json_key` fragment refs are rejected. EXEC_SECRET_REF_ID
+  // (ref-contract.ts) does not allow `#` in the char class; upstream relaxed to
+  // accept json-key fragments, the fork keeps the narrower pattern. Do NOT relax
+  // the schema to re-admit this — adapt the vector.
+  "aws/secret#json_key",
   `a${"b".repeat(256)}`,
 ] as const;

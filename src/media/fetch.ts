@@ -188,6 +188,7 @@ export async function fetchRemoteMedia(options: FetchMediaOptions): Promise<Fetc
     if (contentLength) {
       const length = Number(contentLength);
       if (Number.isFinite(length) && length > effectiveMaxBytes) {
+        await res.body?.cancel().catch(() => undefined);
         throw new MediaFetchError(
           "max_bytes",
           `Failed to fetch media from ${sourceUrl}: content length ${length} exceeds maxBytes ${effectiveMaxBytes}`,

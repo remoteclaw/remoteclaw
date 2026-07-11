@@ -1,6 +1,5 @@
 import type { Command } from "commander";
 import { getPrimaryCommand, hasHelpOrVersion } from "../argv.js";
-import { reparseProgramFromActionArgs } from "./action-reparse.js";
 import { removeCommandByName } from "./command-tree.js";
 import type { ProgramContext } from "./context.js";
 import { registerSubCliCommands } from "./register.subclis.js";
@@ -237,6 +236,9 @@ function registerLazyCoreCommand(
   placeholder.action(async (...actionArgs) => {
     removeEntryCommands(program, entry);
     await entry.register({ program, ctx, argv: process.argv });
+    // Dynamic import breaks the argv.js <-> command-registry.js <-> action-reparse.js
+    // static cycle so tests can mock ../argv.js through action-reparse.js.
+    const { reparseProgramFromActionArgs } = await import("./action-reparse.js");
     await reparseProgramFromActionArgs(program, actionArgs);
   });
 }

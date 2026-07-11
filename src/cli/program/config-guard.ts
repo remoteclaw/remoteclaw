@@ -1,11 +1,13 @@
 import { loadAndMaybeMigrateDoctorConfig } from "../../commands/doctor-config-flow.js";
 import { readConfigFileSnapshot } from "../../config/config.js";
 import { formatConfigIssueLines } from "../../config/issue-format.js";
+import { isPluginPackagingRuntimeOutputInvalidConfigSnapshot } from "../../config/recovery-policy.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import { colorize, isRich, theme } from "../../terminal/theme.js";
 import { shortenHomePath } from "../../utils.js";
 import { shouldMigrateStateFromPath } from "../argv.js";
 import { formatCliCommand } from "../command-format.js";
+import { formatPluginPackagingRuntimeOutputRecoveryHint } from "../config-recovery-hints.js";
 
 const ALLOWED_INVALID_COMMANDS = new Set(["doctor", "logs", "health", "help", "status"]);
 const ALLOWED_INVALID_GATEWAY_SUBCOMMANDS = new Set([
@@ -115,9 +117,10 @@ export async function ensureConfigReady(params: {
     params.runtime.error(legacyIssues.map((issue) => `  ${error(issue)}`).join("\n"));
   }
   params.runtime.error("");
-  params.runtime.error(
-    `${muted("Fix:")} ${commandText(formatCliCommand("remoteclaw doctor --fix"))}`,
-  );
+  const fixHint = isPluginPackagingRuntimeOutputInvalidConfigSnapshot(snapshot)
+    ? formatPluginPackagingRuntimeOutputRecoveryHint()
+    : commandText(formatCliCommand("remoteclaw doctor --fix"));
+  params.runtime.error(`${muted("Fix:")} ${fixHint}`);
   params.runtime.error(
     `${muted("Inspect:")} ${commandText(formatCliCommand("remoteclaw config validate"))}`,
   );

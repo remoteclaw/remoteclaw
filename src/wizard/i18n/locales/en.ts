@@ -327,6 +327,7 @@ export const en = {
       setEnv: "Set {env} for {name}?",
       skipDepsHint: "Continue without installing dependencies",
       statusTitle: "Skills status",
+      allReadyTitle: "All skills ready",
     },
     channels: {
       account: "{label} account",

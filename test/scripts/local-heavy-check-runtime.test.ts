@@ -32,7 +32,13 @@ function makeEnv(overrides: Record<string, string | undefined> = {}) {
 
 describe("local-heavy-check-runtime", () => {
   it("tightens local tsgo runs to a single checker with a Go memory limit", () => {
-    const { args, env } = applyLocalTsgoPolicy([], makeEnv());
+    // applyLocalTsgoPolicy defaults to "auto" throttle mode, which skips throttling on roomy hosts
+    // (>=48GiB RAM and >=12 CPUs). Pass a constrained host so the throttled path fires deterministically
+    // regardless of the machine running the suite (mirrors upstream's CONSTRAINED_HOST fixture).
+    const { args, env } = applyLocalTsgoPolicy([], makeEnv(), {
+      totalMemoryBytes: 16 * 1024 ** 3,
+      logicalCpuCount: 8,
+    });
 
     expect(args).toEqual([
       "--declaration",

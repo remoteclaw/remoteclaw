@@ -175,6 +175,12 @@ export async function withSessionStoreLockForTest<T>(
 
 type LoadSessionStoreOptions = {
   skipCache?: boolean;
+  /**
+   * Skip the defensive return clone. Read-only callers that never mutate the
+   * returned store (diagnostics such as `health`/`doctor`) can opt out to avoid
+   * a full `structuredClone` of a potentially large session store.
+   */
+  clone?: boolean;
 };
 
 export function loadSessionStore(
@@ -250,7 +256,7 @@ export function loadSessionStore(
     });
   }
 
-  return structuredClone(store);
+  return opts.clone === false ? store : structuredClone(store);
 }
 
 export function readSessionUpdatedAt(params: {

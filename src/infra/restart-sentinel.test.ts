@@ -279,9 +279,20 @@ describe("restart sentinel message dedup", () => {
     expect(result).toContain("Reason: /restart");
   });
 
-  it("formats the non-interactive doctor command", () => {
-    expect(formatDoctorNonInteractiveHint({ PATH: "/usr/bin:/bin" })).toContain(
-      "remoteclaw doctor --non-interactive",
+  it("formats the non-interactive doctor command as actionability guidance", () => {
+    expect(formatDoctorNonInteractiveHint({ PATH: "/usr/bin:/bin" })).toBe(
+      "Recommended follow-up: run remoteclaw doctor --non-interactive in a terminal or approvals-capable RemoteClaw surface.",
+    );
+  });
+
+  it("keeps profile-aware doctor guidance actionable outside constrained delivery surfaces", () => {
+    expect(
+      formatDoctorNonInteractiveHint({
+        REMOTECLAW_PROFILE: "isolated",
+        PATH: "/usr/bin:/bin",
+      }),
+    ).toBe(
+      "Recommended follow-up: run remoteclaw --profile isolated doctor --non-interactive in a terminal or approvals-capable RemoteClaw surface.",
     );
   });
 });

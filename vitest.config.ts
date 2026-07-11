@@ -116,9 +116,6 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "lcov"],
-      // Keep coverage stable without an ever-growing exclude list:
-      // only count files actually exercised by the test suite.
-      all: false,
       thresholds: {
         lines: 70,
         functions: 70,

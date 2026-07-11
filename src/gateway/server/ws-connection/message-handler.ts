@@ -95,6 +95,11 @@ import {
   shouldClearUnboundScopesForMissingDeviceIdentity,
   shouldSkipControlUiPairing,
 } from "./connect-policy.js";
+import {
+  isReleasedVersion,
+  resolveLocalNodeId,
+  shouldCloseNodeForVersionSkew,
+} from "./node-version-skew.js";
 import { isUnauthorizedRoleError, UnauthorizedFloodGuard } from "./unauthorized-flood-guard.js";
 
 type SubsystemLogger = ReturnType<typeof createSubsystemLogger>;
@@ -1064,6 +1069,44 @@ export function attachGatewayWsMessageHandler(params: {
           : null;
 
         if (role === "node") {
+          // Version skew: close the co-located local node host so its OS supervisor
+          // restarts it on the gateway's version. Scoped to the same-install local node —
+          // the connecting client's instanceId must match this install's node.json nodeId;
+          // SSH-tunneled remote nodes share loopback but carry a different instanceId, so
+          // they are exempt (closing them would not trigger a local supervisor restart).
+          // Runs before pairing reconcile and setClient/presence so a rejected node leaves
+          // no phantom online state or pending-pairing record. The client-side handler for
+          // the CLIENT_VERSION_MISMATCH detail code already exists (client.ts) to receive it.
+          if (isLocalClient) {
+            const gatewayVersion = resolveRuntimeServiceVersion(process.env);
+            const clientVersion = connectParams.client.version;
+            // A dev-versioned gateway never kicks a node, so short-circuit on the cheap
+            // released-gateway check before reading node.json — the same-install identity
+            // read only matters once a released skew is actually possible.
+            if (
+              isReleasedVersion(gatewayVersion) &&
+              shouldCloseNodeForVersionSkew({
+                localNodeId: await resolveLocalNodeId(),
+                clientInstanceId: connectParams.client.instanceId,
+                clientVersion,
+                gatewayVersion,
+              })
+            ) {
+              markHandshakeFailure("node-version-mismatch", { clientVersion, gatewayVersion });
+              logWsControl.info(
+                `node version mismatch conn=${connId} client=${formatForLog(clientLabel)} clientVersion=${formatForLog(clientVersion)} gatewayVersion=${formatForLog(gatewayVersion)}; closing for supervisor restart`,
+              );
+              sendHandshakeErrorResponse(ErrorCodes.INVALID_REQUEST, "client version mismatch", {
+                details: {
+                  code: ConnectErrorDetailCodes.CLIENT_VERSION_MISMATCH,
+                  clientVersion,
+                  gatewayVersion,
+                },
+              });
+              close(1008, "client version mismatch");
+              return;
+            }
+          }
           // Must stay in sync with NodeRegistry.register, so the pending pairing entry
           // is keyed by the same id the node is registered and invoked under.
           const nodeIdForPairing = connectParams.device?.id ?? connectParams.client.id;

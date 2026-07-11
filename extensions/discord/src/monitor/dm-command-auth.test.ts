@@ -20,11 +20,13 @@ describe("resolveDiscordDmCommandAccess", () => {
     });
   }
 
-  it("allows open DMs and keeps command auth enabled without allowlist entries", async () => {
+  it("blocks open DMs without allowlist entries (hardened fail-closed)", async () => {
     const result = await resolveOpenDmAccess([]);
 
-    expect(result.decision).toBe("allow");
-    expect(result.commandAuthorized).toBe(true);
+    // dmPolicy=open with an empty allowFrom now fails closed (blocks) rather than
+    // allowing all senders; command auth is consequently not granted.
+    expect(result.decision).toBe("block");
+    expect(result.commandAuthorized).toBe(false);
   });
 
   it("marks command auth true when sender is allowlisted", async () => {
@@ -34,7 +36,7 @@ describe("resolveDiscordDmCommandAccess", () => {
     expect(result.commandAuthorized).toBe(true);
   });
 
-  it("keeps command auth enabled for open DMs when configured allowlist does not match", async () => {
+  it("blocks open DMs when configured allowlist does not match the sender (hardened)", async () => {
     const result = await resolveDiscordDmCommandAccess({
       accountId: "default",
       dmPolicy: "open",
@@ -45,9 +47,10 @@ describe("resolveDiscordDmCommandAccess", () => {
       readStoreAllowFrom: async () => [],
     });
 
-    expect(result.decision).toBe("allow");
+    // open + a configured allowlist the sender is not on now blocks (allowlist wins).
+    expect(result.decision).toBe("block");
     expect(result.allowMatch.allowed).toBe(false);
-    expect(result.commandAuthorized).toBe(true);
+    expect(result.commandAuthorized).toBe(false);
   });
 
   it("returns pairing decision and unauthorized command auth for unknown senders", async () => {
@@ -80,7 +83,7 @@ describe("resolveDiscordDmCommandAccess", () => {
     expect(result.commandAuthorized).toBe(true);
   });
 
-  it("keeps open DM command auth true when access groups are disabled", async () => {
+  it("blocks open DMs without allowlist even when access groups are disabled (hardened)", async () => {
     const result = await resolveDiscordDmCommandAccess({
       accountId: "default",
       dmPolicy: "open",
@@ -91,7 +94,12 @@ describe("resolveDiscordDmCommandAccess", () => {
       readStoreAllowFrom: async () => [],
     });
 
-    expect(result.decision).toBe("allow");
+    // The DM-access hardening blocks open + empty allowFrom regardless of the
+    // access-groups toggle — this is the operative security outcome.
+    expect(result.decision).toBe("block");
+    // commandAuthorized is a separate, unchanged axis: with access groups off and no
+    // allowlist configured it stays true (legacy "no allowlist ⇒ commands open"), but it
+    // is moot here because the DM is blocked before any command is processed.
     expect(result.commandAuthorized).toBe(true);
   });
 });

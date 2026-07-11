@@ -7,6 +7,7 @@ import { listChannelPlugins } from "../channels/plugins/index.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { ConfigFileSnapshot, RemoteClawConfig } from "../config/config.js";
 import { resolveConfigPath, resolveStateDir } from "../config/paths.js";
+import type { GatewayAuthConfig } from "../config/types.gateway.js";
 import { hasConfiguredSecretInput } from "../config/types.secrets.js";
 import { resolveGatewayAuth } from "../gateway/auth.js";
 import { buildGatewayConnectionDetails } from "../gateway/call.js";
@@ -84,6 +85,12 @@ export type SecurityAuditReport = {
   };
 };
 
+/** Runtime "what-if" Gateway auth override for config-only audit checks (diagnostic; CLI `--auth`). */
+export type SecurityAuditGatewayAuthOverride = Pick<
+  GatewayAuthConfig,
+  "mode" | "token" | "password"
+>;
+
 export type SecurityAuditOptions = {
   config: RemoteClawConfig;
   sourceConfig?: RemoteClawConfig;
@@ -110,6 +117,8 @@ export type SecurityAuditOptions = {
   configSnapshot?: ConfigFileSnapshot | null;
   /** Optional cache for code-safety summaries across repeated deep audits. */
   codeSafetySummaryCache?: Map<string, Promise<unknown>>;
+  /** Optional explicit Gateway auth mode/secret for config-only audit checks (diagnostic what-if). */
+  auditGatewayAuthOverride?: SecurityAuditGatewayAuthOverride;
 };
 
 type AuditExecutionContext = {
@@ -129,6 +138,7 @@ type AuditExecutionContext = {
   plugins?: ReturnType<typeof listChannelPlugins>;
   configSnapshot: ConfigFileSnapshot | null;
   codeSafetySummaryCache: Map<string, Promise<unknown>>;
+  auditGatewayAuthOverride?: SecurityAuditGatewayAuthOverride;
 };
 
 function countBySeverity(findings: SecurityAuditFinding[]): SecurityAuditSummary {
@@ -1125,6 +1135,7 @@ async function createAuditExecutionContext(
     plugins: opts.plugins,
     configSnapshot,
     codeSafetySummaryCache: opts.codeSafetySummaryCache ?? new Map<string, Promise<unknown>>(),
+    auditGatewayAuthOverride: opts.auditGatewayAuthOverride,
   };
 }
 
@@ -1141,8 +1152,16 @@ export async function runSecurityAudit(opts: SecurityAuditOptions): Promise<Secu
   findings.push(...collectLoggingFindings(cfg));
   findings.push(...collectElevatedFindings(cfg));
   findings.push(...collectExecRuntimeFindings(cfg));
-  findings.push(...collectHooksHardeningFindings(cfg, env));
-  findings.push(...collectGatewayHttpNoAuthFindings(cfg, env));
+  findings.push(
+    ...collectHooksHardeningFindings(cfg, env, {
+      gatewayAuthOverride: context.auditGatewayAuthOverride,
+    }),
+  );
+  findings.push(
+    ...collectGatewayHttpNoAuthFindings(cfg, env, {
+      gatewayAuthOverride: context.auditGatewayAuthOverride,
+    }),
+  );
   findings.push(...collectGatewayHttpSessionKeyOverrideFindings(cfg));
   findings.push(...collectSandboxDockerNoopFindings(cfg));
   findings.push(...collectSandboxDangerousConfigFindings(cfg));

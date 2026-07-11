@@ -1,8 +1,10 @@
 import type { Command } from "commander";
 import { loadConfig } from "../config/config.js";
+import type { GatewayAuthMode } from "../config/types.gateway.js";
 import { defaultRuntime } from "../runtime.js";
 import { runSecurityAudit } from "../security/audit.js";
 import { fixSecurityFootguns } from "../security/fix.js";
+import { normalizeOptionalLowercaseString } from "../shared/string-coerce.js";
 import { formatDocsLink } from "../terminal/links.js";
 import { isRich, theme } from "../terminal/theme.js";
 import { shortenHomeInString, shortenHomePath } from "../utils.js";
@@ -13,7 +15,23 @@ type SecurityAuditOptions = {
   json?: boolean;
   deep?: boolean;
   fix?: boolean;
+  auth?: string;
 };
+
+/**
+ * Parse the `--auth` value into a validated Gateway auth mode. Returns undefined
+ * when the flag is absent; throws on an unrecognized mode.
+ */
+export function parseGatewayAuthMode(value: string | undefined): GatewayAuthMode | undefined {
+  const mode = normalizeOptionalLowercaseString(value);
+  if (!mode) {
+    return undefined;
+  }
+  if (mode === "none" || mode === "token" || mode === "password" || mode === "trusted-proxy") {
+    return mode;
+  }
+  throw new Error('Invalid --auth value. Use "none", "token", "password", or "trusted-proxy".');
+}
 
 function formatSummary(summary: { critical: number; warn: number; info: number }): string {
   const rich = isRich();
@@ -37,6 +55,10 @@ export function registerSecurityCli(program: Command) {
         `\n${theme.heading("Examples:")}\n${formatHelpExamples([
           ["remoteclaw security audit", "Run a local security audit."],
           ["remoteclaw security audit --deep", "Include best-effort live Gateway probe checks."],
+          [
+            "remoteclaw security audit --auth none",
+            "Audit as if gateway auth were disabled (diagnostic what-if).",
+          ],
           ["remoteclaw security audit --fix", "Apply safe remediations and file-permission fixes."],
           ["remoteclaw security audit --json", "Output machine-readable JSON."],
         ])}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/security", "docs.remoteclaw.org/cli/security")}\n`,
@@ -46,9 +68,14 @@ export function registerSecurityCli(program: Command) {
     .command("audit")
     .description("Audit config + local state for common security foot-guns")
     .option("--deep", "Attempt live Gateway probe (best-effort)", false)
+    .option(
+      "--auth <mode>",
+      'Runtime "what-if" gateway auth mode for HTTP/hooks shared-secret checks ("none"|"token"|"password"|"trusted-proxy")',
+    )
     .option("--fix", "Apply safe fixes (tighten defaults + chmod state/config)", false)
     .option("--json", "Print JSON", false)
     .action(async (opts: SecurityAuditOptions) => {
+      const authMode = parseGatewayAuthMode(opts.auth);
       const fixResult = opts.fix ? await fixSecurityFootguns().catch((_err) => null) : null;
 
       const cfg = loadConfig();
@@ -57,6 +84,7 @@ export function registerSecurityCli(program: Command) {
         deep: Boolean(opts.deep),
         includeFilesystem: true,
         includeChannelSecurity: true,
+        auditGatewayAuthOverride: authMode ? { mode: authMode } : undefined,
       });
 
       if (opts.json) {

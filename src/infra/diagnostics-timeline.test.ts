@@ -35,6 +35,14 @@ async function readTimeline(path: string) {
     .map((line) => JSON.parse(line) as Record<string, unknown>);
 }
 
+function eventRecord(events: Record<string, unknown>[], index: number): Record<string, unknown> {
+  const event = events[index];
+  if (!event) {
+    throw new Error(`Expected diagnostics event at index ${index}`);
+  }
+  return event;
+}
+
 afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
@@ -197,6 +205,30 @@ describe("diagnostics timeline", () => {
       errorName: "TypeError",
       errorMessage: "bad plugin",
     });
+  });
+
+  it("can omit sensitive span error messages", async () => {
+    const { env, path } = await createTimelineEnv();
+
+    await expect(
+      measureDiagnosticsTimelineSpan(
+        "secrets.prepare",
+        () => {
+          throw new Error('Secret provider "prod" failed for ref "TOKEN_ID"');
+        },
+        { env, omitErrorMessage: true, phase: "startup" },
+      ),
+    ).rejects.toThrow("TOKEN_ID");
+
+    const events = await readTimeline(path);
+    expect(events).toHaveLength(2);
+    const errorEvent = eventRecord(events, 1);
+    expect(errorEvent.type).toBe("span.error");
+    expect(errorEvent.name).toBe("secrets.prepare");
+    expect(errorEvent.errorName).toBe("Error");
+    expect(errorEvent.errorMessage).toBeUndefined();
+    expect(JSON.stringify(events)).not.toContain("TOKEN_ID");
+    expect(JSON.stringify(events)).not.toContain("prod");
   });
 
   it("records synchronous spans", async () => {

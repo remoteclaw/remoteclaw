@@ -49,9 +49,10 @@ the maintainer-only release runbook.
 
 1. Start from current `main`: pull latest, confirm the target commit is pushed,
    and confirm current `main` CI is green enough to branch from it.
-2. Rewrite the top `CHANGELOG.md` section from real commit history with
-   `/changelog`, keep entries user-facing, commit it, push it, and rebase/pull
-   once more before branching.
+2. Generate the top `CHANGELOG.md` section from merged PRs and all direct
+   commits since the last reachable release tag. Keep entries user-facing,
+   dedupe overlapping PR/direct-commit entries, commit the rewrite, push it,
+   and rebase/pull once more before branching.
 3. Review release compatibility records in
    `src/plugins/compat/registry.ts` and
    `src/commands/doctor/shared/deprecation-compat.ts`. Remove expired
@@ -111,9 +112,11 @@ the maintainer-only release runbook.
   for a package candidate while release work continues. Use `source=npm` for
   `remoteclaw@beta`, `remoteclaw@latest`, or an exact release version; `source=ref`
   to pack a trusted `package_ref` branch/tag/SHA with the current
-  `workflow_ref` harness; `source=url` for an HTTPS tarball with a required
-  SHA-256; or `source=artifact` for a tarball uploaded by another GitHub
-  Actions run. The workflow resolves the candidate to
+  `workflow_ref` harness; `source=url` for a public HTTPS tarball with a
+  required SHA-256 and strict public URL policy; `source=trusted-url` for a
+  named trusted-source policy using required `trusted_source_id` and SHA-256; or
+  `source=artifact` for a tarball uploaded by another GitHub Actions run. The
+  workflow resolves the candidate to
   `package-under-test`, reuses the Docker E2E release scheduler against that
   tarball, and can run Telegram QA against the same tarball with
   `telegram_mode=mock-openai` or `telegram_mode=live-frontier`.
@@ -425,7 +428,14 @@ Supported candidate sources:
   version
 - `source=ref`: pack a trusted `package_ref` branch, tag, or full commit SHA
   with the selected `workflow_ref` harness
-- `source=url`: download an HTTPS `.tgz` with required `package_sha256`
+- `source=url`: download a public HTTPS `.tgz` with required `package_sha256`;
+  URL credentials, non-default HTTPS ports, private/internal/special-use
+  hostnames or resolved addresses, and unsafe redirects are rejected
+- `source=trusted-url`: download an HTTPS `.tgz` with required
+  `package_sha256` and `trusted_source_id` from a named policy in
+  `.github/package-trusted-sources.json`; use this for maintainer-owned
+  enterprise mirrors or private package repositories instead of adding an
+  input-level private-network bypass to `source=url`
 - `source=artifact`: reuse a `.tgz` uploaded by another GitHub Actions run
 
 `RemoteClaw Release Checks` runs Package Acceptance with `source=ref`,

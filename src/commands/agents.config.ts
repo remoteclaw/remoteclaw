@@ -8,6 +8,7 @@ import { listRouteBindings } from "../config/bindings.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import { normalizeOptionalString, resolvePrimaryStringValue } from "../shared/string-coerce.js";
+import { uniqueStrings } from "../shared/string-normalization.js";
 
 export type AgentSummary = {
   id: string;
@@ -64,7 +65,7 @@ export function buildAgentSummaries(cfg: RemoteClawConfig): AgentSummary[] {
     bindingCounts.set(agentId, (bindingCounts.get(agentId) ?? 0) + 1);
   }
 
-  const ordered = orderedIds.filter((id, index) => orderedIds.indexOf(id) === index);
+  const ordered = uniqueStrings(orderedIds);
 
   return ordered.map((id) => {
     const workspace = resolveAgentWorkspaceDir(cfg, id);

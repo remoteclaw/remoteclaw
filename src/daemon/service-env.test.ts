@@ -346,6 +346,15 @@ describe("buildNodeServiceEnvironment", () => {
     expect(env.HOME).toBe("/home/user");
   });
 
+  it("sets the RemoteClaw-owned launchd marker for macOS node services", () => {
+    const env = buildNodeServiceEnvironment({
+      env: { HOME: "/Users/user" },
+      platform: "darwin",
+    });
+
+    expect(env.REMOTECLAW_LAUNCHD_LABEL).toBe("org.remoteclaw.node");
+  });
+
   it("passes through REMOTECLAW_GATEWAY_TOKEN for node services", () => {
     const env = buildNodeServiceEnvironment({
       env: { HOME: "/home/user", REMOTECLAW_GATEWAY_TOKEN: " node-token " },

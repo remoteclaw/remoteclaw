@@ -222,6 +222,43 @@ describe("slack prepareSlackMessage inbound contract", () => {
     expect(prepared!.ctxPayload.GroupSpace).toBe("T1");
   });
 
+  it("prepares wildcard open-policy account DMs", async () => {
+    const ctx = createInboundSlackCtx({
+      cfg: {
+        channels: {
+          slack: {
+            enabled: true,
+            accounts: {
+              soltea: {
+                dmPolicy: "open",
+                dm: { enabled: true, policy: "open" },
+              },
+            },
+          },
+        },
+      } as RemoteClawConfig,
+    });
+    ctx.accountId = "soltea";
+    ctx.allowFrom = ["*"];
+    ctx.dmPolicy = "open";
+    // oxlint-disable-next-line typescript/no-explicit-any
+    ctx.resolveUserName = async () => ({ name: "External User" }) as any;
+
+    const prepared = await prepareSlackMessage({
+      ctx,
+      account: createSlackAccount({
+        dmPolicy: "open",
+        dm: { enabled: true, policy: "open" },
+      }),
+      message: createSlackMessage({ channel: "D999", user: "U123", text: "hello" }),
+      opts: { source: "message" },
+    });
+
+    expect(prepared).not.toBeNull();
+    expect(prepared!.ctxPayload.RawBody).toContain("hello");
+    expect(prepared!.ctxPayload.From).toBe("slack:U123");
+  });
+
   it("includes forwarded shared attachment text in raw body", async () => {
     const prepared = await prepareWithDefaultCtx(
       createSlackMessage({

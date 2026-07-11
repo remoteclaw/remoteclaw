@@ -1,7 +1,8 @@
 import crypto from "node:crypto";
 import os from "node:os";
 import path from "node:path";
-import { Mock, vi } from "vitest";
+import { vi } from "vitest";
+import type { Mock } from "vitest";
 import type { MsgContext } from "../auto-reply/templating.js";
 import type { GetReplyOptions, ReplyPayload } from "../auto-reply/types.js";
 import type { RemoteClawConfig } from "../config/config.js";

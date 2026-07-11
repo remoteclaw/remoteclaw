@@ -13,12 +13,38 @@ describe("SUPERVISOR_HINT_ENV_VARS", () => {
 });
 
 describe("detectRespawnSupervisor", () => {
-  it("detects launchd and systemd only from non-blank platform-specific hints", () => {
+  it("detects launchd from RemoteClaw's explicit marker or current gateway launchd job", () => {
     expect(
-      detectRespawnSupervisor({ LAUNCH_JOB_LABEL: " org.remoteclaw.gateway " }, "darwin"),
+      detectRespawnSupervisor({ REMOTECLAW_LAUNCHD_LABEL: " org.remoteclaw.gateway " }, "darwin"),
     ).toBe("launchd");
-    expect(detectRespawnSupervisor({ LAUNCH_JOB_LABEL: "   " }, "darwin")).toBeNull();
+    expect(detectRespawnSupervisor({ REMOTECLAW_LAUNCHD_LABEL: "   " }, "darwin")).toBeNull();
+    expect(detectRespawnSupervisor({ LAUNCH_JOB_LABEL: "org.remoteclaw.gateway" }, "darwin")).toBe(
+      "launchd",
+    );
+    expect(
+      detectRespawnSupervisor(
+        { LAUNCH_JOB_NAME: "org.remoteclaw.work", REMOTECLAW_PROFILE: "work" },
+        "darwin",
+      ),
+    ).toBe("launchd");
+    expect(
+      detectRespawnSupervisor({ LAUNCH_JOB_LABEL: "org.remoteclaw.mac" }, "darwin"),
+    ).toBeNull();
+    expect(
+      detectRespawnSupervisor({ XPC_SERVICE_NAME: "org.remoteclaw.mac" }, "darwin"),
+    ).toBeNull();
+    expect(
+      detectRespawnSupervisor(
+        { XPC_SERVICE_NAME: "org.remoteclaw.mac", REMOTECLAW_PROFILE: "mac" },
+        "darwin",
+      ),
+    ).toBeNull();
+    expect(detectRespawnSupervisor({ XPC_SERVICE_NAME: "org.remoteclaw.gateway" }, "darwin")).toBe(
+      "launchd",
+    );
+  });
 
+  it("detects systemd only from non-blank platform-specific hints", () => {
     expect(detectRespawnSupervisor({ INVOCATION_ID: "abc123" }, "linux")).toBe("systemd");
     expect(detectRespawnSupervisor({ JOURNAL_STREAM: "" }, "linux")).toBeNull();
   });

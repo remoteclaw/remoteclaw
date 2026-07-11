@@ -958,3 +958,131 @@ export type PluginHookRegistration<K extends PluginHookName = PluginHookName> = 
   priority?: number;
   source: string;
 };
+
+// --- Migration provider types (`remoteclaw migrate` + plugin-sdk/migration.ts) ---
+// Restored from upstream OpenClaw's migration block. Fork adaptations vs upstream:
+//   - OpenClawConfig → RemoteClawConfig.
+//   - MigrationProviderContext.runtime exposes a self-contained OPTIONAL config API
+//     (current/mutateConfigFile) instead of the fork's PluginRuntime, whose config was
+//     gutted to { loadConfig, writeConfigFile }. migration.ts guards both methods with
+//     existence checks and degrades to a "config runtime unavailable" error item when absent.
+// (Upstream's PluginConfigMigration is intentionally NOT restored — the fork uses
+//  SetupPluginConfigMigration in setup-registry.types.ts instead.)
+
+export type MigrationItemStatus =
+  | "planned"
+  | "migrated"
+  | "skipped"
+  | "warning"
+  | "conflict"
+  | "error";
+export type MigrationItemKind =
+  | "auth"
+  | "config"
+  | "secret"
+  | "memory"
+  | "skill"
+  | "workspace"
+  | "session"
+  | "file"
+  | "archive"
+  | "manual";
+export type MigrationItemAction =
+  | "copy"
+  | "create"
+  | "update"
+  | "merge"
+  | "append"
+  | "archive"
+  | "skip"
+  | "manual";
+
+export type MigrationItem = {
+  id: string;
+  kind: MigrationItemKind | (string & {});
+  action: MigrationItemAction | (string & {});
+  status: MigrationItemStatus;
+  source?: string;
+  target?: string;
+  message?: string;
+  reason?: string;
+  sensitive?: boolean;
+  details?: Record<string, unknown>;
+};
+
+export type MigrationSummary = {
+  total: number;
+  planned: number;
+  migrated: number;
+  skipped: number;
+  conflicts: number;
+  errors: number;
+  sensitive: number;
+};
+
+export type MigrationDetection = {
+  found: boolean;
+  source?: string;
+  label?: string;
+  confidence?: "low" | "medium" | "high";
+  message?: string;
+};
+
+export type MigrationPlan = {
+  providerId: string;
+  source: string;
+  target?: string;
+  summary: MigrationSummary;
+  items: MigrationItem[];
+  warnings?: string[];
+  nextSteps?: string[];
+  metadata?: Record<string, unknown>;
+};
+
+export type MigrationApplyResult = MigrationPlan & {
+  backupPath?: string;
+  reportDir?: string;
+};
+
+export type MigrationProviderPreparation = {
+  dispose?: () => void | Promise<void>;
+};
+
+export type MigrationProviderContext = {
+  config: RemoteClawConfig;
+  runtime?: {
+    config: {
+      current?: () => RemoteClawConfig;
+      mutateConfigFile?: (params: {
+        base?: string;
+        afterWrite?: { mode?: string };
+        mutate: (draft: RemoteClawConfig) => void;
+      }) => Promise<void>;
+    };
+  };
+  logger: PluginLogger;
+  stateDir: string;
+  source?: string;
+  includeSecrets?: boolean;
+  overwrite?: boolean;
+  providerOptions?: Record<string, unknown>;
+  backupPath?: string;
+  reportDir?: string;
+  signal?: AbortSignal;
+};
+
+/** Migration source implemented by a plugin and orchestrated by `remoteclaw migrate`. */
+export type MigrationProviderPlugin = {
+  id: string;
+  label: string;
+  description?: string;
+  detect?: (ctx: MigrationProviderContext) => MigrationDetection | Promise<MigrationDetection>;
+  prepareApply?: (
+    ctx: MigrationProviderContext,
+  ) => MigrationProviderPreparation | Promise<MigrationProviderPreparation | undefined> | undefined;
+  plan: (ctx: MigrationProviderContext) => MigrationPlan | Promise<MigrationPlan>;
+  apply: (
+    ctx: MigrationProviderContext,
+    plan?: MigrationPlan,
+  ) => MigrationApplyResult | Promise<MigrationApplyResult>;
+};

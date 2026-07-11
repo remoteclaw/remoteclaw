@@ -6,16 +6,34 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { installScheduledTask, readScheduledTaskCommand } from "./schtasks.js";
 
 const schtasksCalls: string[][] = [];
+// Captures the XML payload at `/Create /XML` time before the production code's
+// `finally` block deletes the temp file, so tests can assert on battery flags.
+const xmlPayloadCaptures: Array<{ index: number; xml: string }> = [];
 
 vi.mock("./schtasks-exec.js", () => ({
   execSchtasks: async (argv: string[]) => {
+    const index = schtasksCalls.length;
     schtasksCalls.push(argv);
+    const xmlFlagPos = argv.indexOf("/XML");
+    if (xmlFlagPos !== -1) {
+      const xmlPath = argv[xmlFlagPos + 1];
+      if (typeof xmlPath === "string") {
+        try {
+          const raw = await fs.readFile(xmlPath);
+          // Strip the UTF-16 LE BOM and decode for readable assertions.
+          xmlPayloadCaptures.push({ index, xml: raw.slice(2).toString("utf16le") });
+        } catch {
+          // Mock cannot block production cleanup; tests assert via captured payloads.
+        }
+      }
+    }
     return { code: 0, stdout: "", stderr: "" };
   },
 }));
 
 beforeEach(() => {
   schtasksCalls.length = 0;
+  xmlPayloadCaptures.length = 0;
 });
 
 describe("installScheduledTask", () => {
@@ -99,6 +117,66 @@ describe("installScheduledTask", () => {
       expect(schtasksCalls[0]).toEqual(["/Query"]);
       expect(schtasksCalls[1]?.[0]).toBe("/Create");
       expect(schtasksCalls[2]).toEqual(["/Run", "/TN", "RemoteClaw Gateway"]);
+    });
+  });
+
+  it("creates the Scheduled Task via XML with battery start/continue enabled (#59299)", async () => {
+    await withUserProfileDir(async (_tmpDir, env) => {
+      await installScheduledTask({
+        env: {
+          ...env,
+          USERDOMAIN: "WORKSTATION",
+          USERNAME: "alice",
+        },
+        stdout: new PassThrough(),
+        programArguments: ["node", "gateway.js"],
+        environment: {},
+      });
+
+      // `/Create` must use `/XML <path>` so battery flags can be set; the
+      // CLI flag form (`/SC ONLOGON /RL LIMITED /TR ...`) cannot express
+      // `DisallowStartIfOnBatteries`/`StopIfGoingOnBatteries`.
+      const createCall = schtasksCalls[1];
+      expect(createCall?.[0]).toBe("/Create");
+      expect(createCall).toContain("/XML");
+
+      const captured = xmlPayloadCaptures.find((entry) => entry.index === 1);
+      expect(captured).toBeDefined();
+      const xml = captured?.xml ?? "";
+      expect(xml).toContain("<DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>");
+      expect(xml).toContain("<StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>");
+      // Preserve the prior CLI semantics: ONLOGON trigger, LeastPrivilege, exec action.
+      expect(xml).toContain("<LogonTrigger>");
+      expect(xml).toContain("<RunLevel>LeastPrivilege</RunLevel>");
+      expect(xml).toContain("<UserId>WORKSTATION\\alice</UserId>");
+      expect(xml).toContain("<Exec>");
+    });
+  });
+
+  it("omits /RU for workgroup accounts so schtasks can use the current local user", async () => {
+    await withUserProfileDir(async (_tmpDir, env) => {
+      await installScheduledTask({
+        env: {
+          ...env,
+          USERDOMAIN: "WORKGROUP",
+          USERNAME: "alice",
+        },
+        stdout: new PassThrough(),
+        programArguments: ["node", "gateway.js"],
+        environment: {},
+      });
+
+      const createCall = schtasksCalls[1];
+      expect(createCall?.slice(0, 5)).toEqual([
+        "/Create",
+        "/F",
+        "/TN",
+        "RemoteClaw Gateway",
+        "/XML",
+      ]);
+      expect(createCall).not.toContain("/RU");
+      const captured = xmlPayloadCaptures.find((entry) => entry.index === 1);
+      expect(captured?.xml).toContain("<UserId>alice</UserId>");
     });
   });
 

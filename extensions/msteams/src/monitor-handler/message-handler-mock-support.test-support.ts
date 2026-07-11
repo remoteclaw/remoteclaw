@@ -12,8 +12,10 @@ export function getRuntimeApiMockState() {
   return runtimeApiMockState;
 }
 
-vi.mock("remoteclaw/plugin-sdk/inbound-reply-dispatch", () => {
+vi.mock("remoteclaw/plugin-sdk/msteams", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/msteams")>();
   return {
+    ...actual,
     dispatchReplyFromConfigWithSettledDispatcher:
       runtimeApiMockState.dispatchReplyFromConfigWithSettledDispatcher,
   };

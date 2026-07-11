@@ -11,6 +11,8 @@
  * @see https://github.com/remoteclaw/remoteclaw/issues/18558
  */
 
+import { stripPlainTextToolCallBlocks } from "../../shared/text/plain-text-tool-call-blocks.js";
+
 /** Channels where HTML tags should be converted/stripped. */
 const PLAIN_TEXT_SURFACES = new Set([
   "whatsapp",
@@ -127,7 +129,7 @@ export function stripInternalRuntimeScaffolding(text: string): string {
   for (const marker of INTERNAL_RUNTIME_MARKER_LINES) {
     stripped = stripStandaloneMarkerLine(stripped, marker);
   }
-  return stripped;
+  return stripPlainTextToolCallBlocks(stripped);
 }
 
 /**

@@ -1,3 +1,4 @@
+/** @deprecated Use `remoteclaw/plugin-sdk/channel-targets`. */
 export {
   buildMessagingTarget,
   ensureTargetId,

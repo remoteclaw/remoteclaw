@@ -16,6 +16,26 @@ import type { RuntimeEnv } from "../runtime.js";
 import { note } from "../terminal/note.js";
 import type { DoctorPrompter } from "./doctor-prompter.js";
 
+type HealthFindingSeverity = "info" | "warning" | "error";
+
+// The shared flows/health-checks framework was gutted in the RemoteClaw fork.
+// These minimal local shapes back the two shell-completion adapter helpers below
+// (and their tests), which are the only remaining consumers.
+type HealthFinding = {
+  readonly checkId: string;
+  readonly severity: HealthFindingSeverity;
+  readonly message: string;
+  readonly path?: string;
+  readonly fixHint?: string;
+};
+
+type HealthRepairEffect = {
+  readonly kind: "config" | "file" | "service" | "process" | "package" | "state" | "other";
+  readonly action: string;
+  readonly target?: string;
+  readonly dryRunSafe?: boolean;
+};
+
 type CompletionShell = "zsh" | "bash" | "fish" | "powershell";
 
 const COMPLETION_CACHE_WRITE_TIMEOUT_MS = 30_000;
@@ -83,6 +103,66 @@ export async function checkShellCompletionStatus(
     cachePath,
     usesSlowPattern,
   };
+}
+
+export function shellCompletionStatusToHealthFindings(
+  status: ShellCompletionStatus,
+): readonly HealthFinding[] {
+  const checkId = "core/doctor/shell-completion";
+  const path = `shellCompletion.${status.shell}`;
+  if (status.usesSlowPattern) {
+    return [
+      {
+        checkId,
+        severity: "info",
+        message: `Your ${status.shell} profile uses slow dynamic completion (source <(...)).`,
+        path,
+        fixHint: "Run `remoteclaw doctor --fix` to upgrade to cached completion.",
+      },
+    ];
+  }
+  if (status.profileInstalled && !status.cacheExists) {
+    return [
+      {
+        checkId,
+        severity: "info",
+        message: `Shell completion is configured in your ${status.shell} profile but the cache is missing.`,
+        path,
+        fixHint: `Run \`remoteclaw completion --write-state\` or \`remoteclaw doctor --fix\` to regenerate ${status.cachePath}.`,
+      },
+    ];
+  }
+  return [];
+}
+
+export function shellCompletionStatusToRepairEffects(
+  status: ShellCompletionStatus,
+): readonly HealthRepairEffect[] {
+  const effects: HealthRepairEffect[] = [];
+  if (status.usesSlowPattern && !status.cacheExists) {
+    effects.push({
+      kind: "state",
+      action: "would-generate-completion-cache",
+      target: status.cachePath,
+      dryRunSafe: true,
+    });
+  }
+  if (status.usesSlowPattern) {
+    effects.push({
+      kind: "file",
+      action: "would-upgrade-shell-profile-completion",
+      target: status.shell,
+      dryRunSafe: false,
+    });
+  } else if (status.profileInstalled && !status.cacheExists) {
+    effects.push({
+      kind: "state",
+      action: "would-regenerate-completion-cache",
+      target: status.cachePath,
+      dryRunSafe: true,
+    });
+  }
+  return effects;
 }
 
 export type DoctorCompletionOptions = {

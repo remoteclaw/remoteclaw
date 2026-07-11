@@ -12,6 +12,7 @@ export type ReplaceSubagentRunAfterSteerParams = {
   fallback?: SubagentRunRecord;
   runTimeoutSeconds?: number;
   preserveFrozenResultFallback?: boolean;
+  transcriptFile?: string;
 };
 
 type ReplaceSubagentRunAfterSteerFn = (params: ReplaceSubagentRunAfterSteerParams) => boolean;

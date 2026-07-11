@@ -20,9 +20,9 @@
 	<string>$(REMOTECLAW_MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(REMOTECLAW_BUILD_VERSION)</string>
-	<key>WKApplication</key>
-	<true/>
 	<key>WKCompanionAppBundleIdentifier</key>
 	<string>$(REMOTECLAW_APP_BUNDLE_ID)</string>
+	<key>WKWatchKitApp</key>
+	<true/>
 </dict>
 </plist>

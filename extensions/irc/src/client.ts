@@ -136,6 +136,7 @@ export async function connectIrcClient(options: IrcClientOptions): Promise<IrcCl
   let closed = false;
   let nickServRecoverAttempted = false;
   let fallbackNickAttempted = false;
+  let removeAbortListener: (() => void) | null = null;
 
   const socket = options.tls
     ? tls.connect({
@@ -164,6 +165,11 @@ export async function connectIrcClient(options: IrcClientOptions): Promise<IrcCl
       rejectReady = null;
       resolveReady = null;
     }
+  };
+
+  const failAndClose = (err: unknown) => {
+    fail(err);
+    close();
   };
 
   const sendRaw = (line: string) => {
@@ -242,6 +248,8 @@ export async function connectIrcClient(options: IrcClientOptions): Promise<IrcCl
       return;
     }
     closed = true;
+    removeAbortListener?.();
+    removeAbortListener = null;
     const safeReason = sanitizeIrcOutboundText(reason != null ? reason : "bye");
     try {
       if (safeReason) {
@@ -260,6 +268,8 @@ export async function connectIrcClient(options: IrcClientOptions): Promise<IrcCl
       return;
     }
     closed = true;
+    removeAbortListener?.();
+    removeAbortListener = null;
     socket.destroy();
   };
 
@@ -419,12 +429,17 @@ export async function connectIrcClient(options: IrcClientOptions): Promise<IrcCl
 
   if (options.abortSignal) {
     const abort = () => {
+      if (!ready) {
+        failAndClose(new Error("IRC connect aborted"));
+        return;
+      }
       quit("shutdown");
     };
     if (options.abortSignal.aborted) {
       abort();
     } else {
       options.abortSignal.addEventListener("abort", abort, { once: true });
+      removeAbortListener = () => options.abortSignal?.removeEventListener("abort", abort);
     }
   }
 

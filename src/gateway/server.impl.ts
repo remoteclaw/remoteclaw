@@ -116,10 +116,10 @@ const canvasRuntime = runtimeForLogger(logCanvas);
 type AuthRateLimitConfig = Parameters<typeof createAuthRateLimiter>[0];
 
 function createGatewayAuthRateLimiters(rateLimitConfig: AuthRateLimitConfig | undefined): {
-  rateLimiter?: AuthRateLimiter;
+  rateLimiter: AuthRateLimiter;
   browserRateLimiter: AuthRateLimiter;
 } {
-  const rateLimiter = rateLimitConfig ? createAuthRateLimiter(rateLimitConfig) : undefined;
+  const rateLimiter = createAuthRateLimiter(rateLimitConfig ?? {});
   // Browser-origin WS auth attempts always use loopback-non-exempt throttling.
   const browserRateLimiter = createAuthRateLimiter({
     ...rateLimitConfig,
@@ -865,7 +865,7 @@ export async function startGatewayServer(
       if (diagnosticsEnabled) {
         stopDiagnosticHeartbeat();
       }
-      authRateLimiter?.dispose();
+      authRateLimiter.dispose();
       browserAuthRateLimiter.dispose();
       channelHealthMonitor?.stop();
       await close(opts);

@@ -1,3 +1,4 @@
+import { createSubsystemLogger } from "../logging/subsystem.js";
 import { getGlobalHookRunner } from "../plugins/hook-runner-global.js";
 import type { SubagentRunOutcome } from "./subagent-announce.js";
 import {
@@ -21,6 +22,8 @@ export const MODULE_ATTESTATIONS = {
   resolveLifecycleOutcomeFromRunOutcome: "live",
   emitSubagentEndedHookOnce: "live",
 } as const;
+
+const log = createSubsystemLogger("agents/subagent-registry-completion");
 
 export function runOutcomesEqual(
   a: SubagentRunOutcome | undefined,
@@ -103,7 +106,10 @@ export async function emitSubagentEndedHookOnce(params: {
     params.entry.endedHookEmittedAt = Date.now();
     params.persist();
     return true;
-  } catch {
+  } catch (err) {
+    log.warn(
+      `failed to emit subagent_ended hook for run ${runId}: ${err instanceof Error ? err.message : String(err)}`,
+    );
     return false;
   } finally {
     params.inFlightRunIds.delete(runId);

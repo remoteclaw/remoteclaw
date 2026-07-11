@@ -1438,6 +1438,12 @@ export const chatHandlers: GatewayRequestHandlers = {
         runId: clientRunId,
         error: formatForLog(err),
       });
+      broadcastChatError({
+        context,
+        runId: clientRunId,
+        sessionKey,
+        errorMessage: String(err),
+      });
     }
   },
   "chat.inject": async ({ params, respond, context }) => {

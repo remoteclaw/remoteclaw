@@ -39,7 +39,8 @@ function createDescendantRun(params?: {
   task?: string;
   cleanup?: "keep" | "delete";
   endedAt?: number;
-  frozenResultText?: string | null;
+  resultText?: string | null;
+  executionTranscriptFile?: string;
 }) {
   return {
     runId: params?.runId ?? "run-1",
@@ -50,9 +51,17 @@ function createDescendantRun(params?: {
     cleanup: params?.cleanup ?? "keep",
     createdAt: 1000,
     endedAt: params?.endedAt ?? 2000,
-    ...(params?.frozenResultText === undefined
+    ...(params?.resultText === undefined
       ? {}
-      : { frozenResultText: params.frozenResultText }),
+      : { completion: { required: true, resultText: params.resultText } }),
+    ...(params?.executionTranscriptFile
+      ? {
+          execution: {
+            status: "terminal" as const,
+            transcriptFile: params.executionTranscriptFile,
+          },
+        }
+      : {}),
   };
 }
 
@@ -121,7 +130,7 @@ describe("readDescendantSubagentFallbackReply", () => {
     vi.mocked(listDescendantRunsForRequester).mockReturnValue([
       createDescendantRun({
         cleanup: "delete",
-        frozenResultText: "frozen child output",
+        resultText: "frozen child output",
       }),
     ]);
     vi.mocked(readLatestAssistantReply).mockResolvedValue(undefined);
@@ -134,7 +143,7 @@ describe("readDescendantSubagentFallbackReply", () => {
 
   it("prefers session transcript over frozenResultText", async () => {
     vi.mocked(listDescendantRunsForRequester).mockReturnValue([
-      createDescendantRun({ frozenResultText: "frozen text" }),
+      createDescendantRun({ resultText: "frozen text" }),
     ]);
     vi.mocked(readLatestAssistantReply).mockResolvedValue("live transcript text");
     const result = await readDescendantSubagentFallbackReply({
@@ -144,15 +153,47 @@ describe("readDescendantSubagentFallbackReply", () => {
     expect(result).toBe("live transcript text");
   });
 
+  it("prefers captured completion for internally resumed descendants", async () => {
+    vi.mocked(listDescendantRunsForRequester).mockReturnValue([
+      createDescendantRun({
+        resultText: "fresh recovered output",
+        executionTranscriptFile: "/tmp/remoteclaw-internal-run.jsonl",
+      }),
+    ]);
+    vi.mocked(readLatestAssistantReply).mockResolvedValue("stale visible transcript");
+    const result = await readDescendantSubagentFallbackReply({
+      sessionKey: "test-session",
+      runStartedAt,
+    });
+    expect(result).toBe("fresh recovered output");
+  });
+
+  it("does not fall back to visible transcript for internally resumed descendants without captured output", async () => {
+    vi.mocked(listDescendantRunsForRequester).mockReturnValue([
+      createDescendantRun({
+        resultText: null,
+        executionTranscriptFile: "/tmp/remoteclaw-empty-internal-run.jsonl",
+      }),
+    ]);
+    vi.mocked(readLatestAssistantReply).mockClear();
+    vi.mocked(readLatestAssistantReply).mockResolvedValue("stale visible transcript");
+    const result = await readDescendantSubagentFallbackReply({
+      sessionKey: "test-session",
+      runStartedAt,
+    });
+    expect(result).toBeUndefined();
+    expect(readLatestAssistantReply).not.toHaveBeenCalled();
+  });
+
   it("joins replies from multiple descendants", async () => {
     vi.mocked(listDescendantRunsForRequester).mockReturnValue([
-      createDescendantRun({ frozenResultText: "first child output" }),
+      createDescendantRun({ resultText: "first child output" }),
       createDescendantRun({
         runId: "run-2",
         childSessionKey: "child-2",
         task: "task-2",
         endedAt: 3000,
-        frozenResultText: "second child output",
+        resultText: "second child output",
       }),
     ]);
     vi.mocked(readLatestAssistantReply).mockResolvedValue(undefined);
@@ -171,7 +212,7 @@ describe("readDescendantSubagentFallbackReply", () => {
         childSessionKey: "child-2",
         task: "task-2",
         endedAt: 3000,
-        frozenResultText: "useful output",
+        resultText: "useful output",
       }),
     ]);
     vi.mocked(readLatestAssistantReply).mockImplementation(async (params) => {
@@ -187,11 +228,11 @@ describe("readDescendantSubagentFallbackReply", () => {
     expect(result).toBe("useful output");
   });
 
-  it("returns undefined when frozenResultText is null", async () => {
+  it("returns undefined when completion result is null", async () => {
     vi.mocked(listDescendantRunsForRequester).mockReturnValue([
       createDescendantRun({
         cleanup: "delete",
-        frozenResultText: null,
+        resultText: null,
       }),
     ]);
     vi.mocked(readLatestAssistantReply).mockResolvedValue(undefined);
@@ -213,7 +254,7 @@ describe("readDescendantSubagentFallbackReply", () => {
         cleanup: "keep",
         createdAt: 500,
         endedAt: 900,
-        frozenResultText: "stale output from previous run",
+        completion: { required: true, resultText: "stale output from previous run" },
       },
     ]);
     vi.mocked(readLatestAssistantReply).mockResolvedValue(undefined);

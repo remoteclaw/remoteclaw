@@ -91,7 +91,8 @@ Options:
 When you switch channels explicitly (`--channel ...`), RemoteClaw also keeps the
 install method aligned:
 
-- `dev` → ensures a git checkout (default: `~/remoteclaw`, override with `REMOTECLAW_GIT_DIR`),
+- `dev` → ensures a git checkout (default: `~/remoteclaw`, or `$REMOTECLAW_HOME/remoteclaw` when
+  `REMOTECLAW_HOME` is set; override with `REMOTECLAW_GIT_DIR`),
   updates it, and installs the global CLI from that checkout.
 - `stable` → installs from npm using `latest`.
 - `beta` → prefers npm dist-tag `beta`, but falls back to `latest` when beta is

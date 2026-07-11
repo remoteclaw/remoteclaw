@@ -2,7 +2,6 @@ import type { Command } from "commander";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { isTruthyEnvValue } from "../../infra/env.js";
 import { getPrimaryCommand, hasHelpOrVersion } from "../argv.js";
-import { reparseProgramFromActionArgs } from "./action-reparse.js";
 import { removeCommand, removeCommandByName } from "./command-tree.js";
 
 type SubCliRegistrar = (program: Command) => Promise<void> | void;
@@ -262,6 +261,9 @@ function registerLazyCommand(program: Command, entry: SubCliEntry) {
   placeholder.action(async (...actionArgs) => {
     removeCommand(program, placeholder);
     await entry.register(program);
+    // Dynamic import breaks the argv.js <-> register.subclis.js <-> action-reparse.js
+    // static cycle so tests can mock ../argv.js through action-reparse.js.
+    const { reparseProgramFromActionArgs } = await import("./action-reparse.js");
     await reparseProgramFromActionArgs(program, actionArgs);
   });
 }

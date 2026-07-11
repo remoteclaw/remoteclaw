@@ -14,6 +14,11 @@ import { type DeliveryContext, normalizeDeliveryContext } from "../utils/deliver
 import { resetAnnounceQueuesForTests } from "./subagent-announce-queue.js";
 import { runSubagentAnnounceFlow, type SubagentRunOutcome } from "./subagent-announce.js";
 import {
+  ensureDeliveryState,
+  getDeliveryAttemptCount,
+  getDeliveryLastAttemptAt,
+} from "./subagent-delivery-state.js";
+import {
   SUBAGENT_ENDED_OUTCOME_KILLED,
   SUBAGENT_ENDED_REASON_COMPLETE,
   SUBAGENT_ENDED_REASON_ERROR,
@@ -121,7 +126,7 @@ function resolveAnnounceRetryDelayMs(retryCount: number) {
 }
 
 function logAnnounceGiveUp(entry: SubagentRunRecord, reason: "retry-limit" | "expiry") {
-  const retryCount = entry.announceRetryCount ?? 0;
+  const retryCount = getDeliveryAttemptCount(entry);
   const endedAgoMs =
     typeof entry.endedAt === "number" ? Math.max(0, Date.now() - entry.endedAt) : undefined;
   const endedAgoLabel = endedAgoMs != null ? `${Math.round(endedAgoMs / 1000)}s` : "n/a";
@@ -476,7 +481,7 @@ function resumeSubagentRun(runId: string) {
     return;
   }
   // Skip entries that have exhausted their retry budget or expired (#18264).
-  if ((entry.announceRetryCount ?? 0) >= MAX_ANNOUNCE_RETRY_COUNT) {
+  if (getDeliveryAttemptCount(entry) >= MAX_ANNOUNCE_RETRY_COUNT) {
     logAnnounceGiveUp(entry, "retry-limit");
     entry.cleanupCompletedAt = Date.now();
     persistSubagentRuns();
@@ -494,11 +499,11 @@ function resumeSubagentRun(runId: string) {
   }
 
   const now = Date.now();
-  const delayMs = resolveAnnounceRetryDelayMs(entry.announceRetryCount ?? 0);
-  const earliestRetryAt = (entry.lastAnnounceRetryAt ?? 0) + delayMs;
+  const delayMs = resolveAnnounceRetryDelayMs(getDeliveryAttemptCount(entry));
+  const earliestRetryAt = (getDeliveryLastAttemptAt(entry) ?? 0) + delayMs;
   if (
     entry.expectsCompletionMessage === true &&
-    entry.lastAnnounceRetryAt &&
+    getDeliveryLastAttemptAt(entry) &&
     now < earliestRetryAt
   ) {
     const waitMs = Math.max(1, earliestRetryAt - now);
@@ -768,7 +773,7 @@ async function finalizeSubagentCleanup(
   });
 
   if (deferredDecision.kind === "defer-descendants") {
-    entry.lastAnnounceRetryAt = now;
+    ensureDeliveryState(entry).lastAttemptAt = now;
     entry.cleanupHandled = false;
     resumedRuns.delete(runId);
     persistSubagentRuns();
@@ -779,8 +784,9 @@ async function finalizeSubagentCleanup(
   }
 
   if (deferredDecision.retryCount != null) {
-    entry.announceRetryCount = deferredDecision.retryCount;
-    entry.lastAnnounceRetryAt = now;
+    const delivery = ensureDeliveryState(entry);
+    delivery.attemptCount = deferredDecision.retryCount;
+    delivery.lastAttemptAt = now;
   }
 
   if (deferredDecision.kind === "give-up") {
@@ -981,8 +987,8 @@ export function replaceSubagentRunAfterSteer(params: {
     cleanupCompletedAt: undefined,
     cleanupHandled: false,
     suppressAnnounceReason: undefined,
-    announceRetryCount: undefined,
-    lastAnnounceRetryAt: undefined,
+    delivery: undefined,
+    completion: undefined,
     spawnMode,
     archiveAtMs,
     runTimeoutSeconds,

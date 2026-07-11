@@ -2,6 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { collectDeprecatedInternalConfigApiViolations } from "./lib/deprecated-config-api-guard.mjs";
+import { buildDeprecatedPluginSdkModuleSpecifiers } from "./lib/deprecated-plugin-sdk-usage.mjs";
 
 const repoRoot = process.cwd();
 
@@ -11,6 +12,13 @@ const skippedFilePatterns = [
   /\.test\.[cm]?[jt]sx?$/u,
   /\.spec\.[cm]?[jt]sx?$/u,
   /\.e2e\.[cm]?[jt]sx?$/u,
+  /\.test-(?:harness|loader|support)\.[cm]?[jt]sx?$/u,
+  /\.contract-test-support\.[cm]?[jt]sx?$/u,
+  /(?:^|\/)test-(?:helpers|support)\.[cm]?[jt]sx?$/u,
+  /(?:^|\/)(?:test-helpers|test-support)\//u,
+  /^extensions\/test-support\//u,
+  /^src\/channels\/plugins\/contracts\/test-helpers\//u,
+  /^src\/plugins\/contracts\/tts-contract-suites\.ts$/u,
   /\.d\.ts$/u,
 ];
 
@@ -130,23 +138,16 @@ const rules = [
   },
   {
     id: "plugin-sdk-compat-subpaths",
-    roots: ["src", "extensions", "packages"],
-    moduleSpecifiers: [
-      "remoteclaw/plugin-sdk/agent-dir-compat",
-      "remoteclaw/plugin-sdk/channel-config-schema-legacy",
-      "remoteclaw/plugin-sdk/channel-reply-pipeline",
-      "remoteclaw/plugin-sdk/channel-runtime",
-      "remoteclaw/plugin-sdk/compat",
-      "remoteclaw/plugin-sdk/discord",
-      "remoteclaw/plugin-sdk/infra-runtime",
-      "remoteclaw/plugin-sdk/mattermost",
-      "remoteclaw/plugin-sdk/matrix",
-      "remoteclaw/plugin-sdk/telegram-account",
-      "remoteclaw/plugin-sdk/testing",
-      "remoteclaw/plugin-sdk/test-utils",
-      "remoteclaw/plugin-sdk/zalouser",
-    ],
+    roots: ["src", "packages"],
+    moduleSpecifiers: buildDeprecatedPluginSdkModuleSpecifiers(),
     message: "use focused non-deprecated plugin SDK subpaths",
+  },
+  {
+    id: "extension-plugin-sdk-compat-subpaths",
+    roots: ["extensions"],
+    skippedFilePatterns: [],
+    moduleSpecifiers: buildDeprecatedPluginSdkModuleSpecifiers(),
+    message: "extensions must use focused non-deprecated plugin SDK subpaths",
   },
   {
     id: "message-api",
@@ -165,6 +166,7 @@ const rules = [
     allowedFiles: [
       "src/channels/turn/durable-delivery.ts",
       "src/channels/turn/kernel.ts",
+      "src/channels/message/inbound-reply-dispatch.ts",
       "src/infra/outbound/deliver-runtime.ts",
       "src/infra/outbound/deliver.ts",
       "src/plugin-sdk/channel-message-runtime.ts",

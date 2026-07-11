@@ -9,6 +9,7 @@ import {
 } from "./changed-lanes.mjs";
 import { booleanFlag, parseFlagArgs, stringFlag } from "./lib/arg-utils.mjs";
 import { printTimingSummary } from "./lib/check-timing-summary.mjs";
+import { isDirectRunUrl } from "./lib/direct-run.mjs";
 import {
   acquireLocalHeavyCheckLockSync,
   resolveLocalHeavyCheckEnv,
@@ -368,6 +369,7 @@ function parseArgs(argv) {
     staged: false,
     dryRun: false,
     timed: false,
+    help: false,
     paths: [],
   };
   return parseFlagArgs(
@@ -379,6 +381,8 @@ function parseArgs(argv) {
       booleanFlag("--staged", "staged"),
       booleanFlag("--dry-run", "dryRun"),
       booleanFlag("--timed", "timed"),
+      booleanFlag("--help", "help"),
+      booleanFlag("-h", "help"),
     ],
     {
       onUnhandledArg(arg, target) {
@@ -392,17 +396,36 @@ function parseArgs(argv) {
   );
 }
 
+function printUsage() {
+  process.stdout.write(
+    [
+      "Usage: node scripts/check-changed.mjs [options] [-- <paths...>]",
+      "",
+      "Options:",
+      "  --base <ref>     Base ref for changed paths (default: origin/main)",
+      "  --head <ref>     Head ref for changed paths (default: HEAD)",
+      "  --staged         Check staged paths instead of git diff paths",
+      "  --dry-run        Print the planned checks without running them",
+      "  --timed          Print timing summary",
+      "  -h, --help       Show this help",
+      "",
+    ].join("\n"),
+  );
+}
+
 function isDirectRun() {
-  const direct = process.argv[1];
-  return Boolean(direct && import.meta.url.endsWith(direct));
+  return isDirectRunUrl(process.argv[1], import.meta.url);
 }
 
 if (isDirectRun()) {
   const argv = process.argv.slice(2);
-  if (shouldDelegateChangedCheckToCrabbox(argv, process.env)) {
+  const args = parseArgs(argv);
+  if (args.help) {
+    printUsage();
+    process.exitCode = 0;
+  } else if (shouldDelegateChangedCheckToCrabbox(argv, process.env)) {
     process.exitCode = await runChangedCheckViaCrabbox(argv, process.env);
   } else {
-    const args = parseArgs(argv);
     const paths =
       args.paths.length > 0
         ? args.paths

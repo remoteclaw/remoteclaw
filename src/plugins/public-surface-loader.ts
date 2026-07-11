@@ -64,7 +64,7 @@ function resolvePublicSurfaceLocationUncached(params: {
   const bundledPluginsDir = resolveBundledPluginsDir();
   const modulePath = resolveBundledPluginPublicSurfacePath({
     rootDir: REMOTECLAW_PACKAGE_ROOT,
-    ...(bundledPluginsDir ? { bundledPluginsDir } : {}),
+    ...(bundledPluginsDir ? { bundledPluginsDir, bundledPluginsDirMode: "auto" as const } : {}),
     dirName: params.dirName,
     artifactBasename: params.artifactBasename,
   });

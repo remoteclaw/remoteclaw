@@ -1,3 +1,4 @@
+import { updateActivityFromToolEvent, type ActivityEntry } from "./activity-model.ts";
 import { formatUnknownText, truncateText } from "./format.ts";
 
 const TOOL_STREAM_LIMIT = 50;
@@ -34,6 +35,7 @@ export type ToolStreamHost = {
   toolStreamById: Map<string, ToolStreamEntry>;
   toolStreamOrder: string[];
   chatToolMessages: Record<string, unknown>[];
+  activityEntries?: ActivityEntry[];
   toolStreamSyncTimer: number | null;
 };
 
@@ -251,6 +253,7 @@ export function handleAgentEvent(host: ToolStreamHost, payload?: AgentEventPaylo
   if (!toolCallId) {
     return;
   }
+  updateActivityFromToolEvent(host, { ...payload, data });
   const name = typeof data.name === "string" ? data.name : "tool";
   const phase = typeof data.phase === "string" ? data.phase : "";
   const args = phase === "start" ? data.args : undefined;

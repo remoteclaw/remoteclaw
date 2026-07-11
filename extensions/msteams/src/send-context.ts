@@ -5,11 +5,17 @@ import {
 } from "remoteclaw/plugin-sdk/msteams";
 import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import type { MSTeamsAccessTokenProvider } from "./attachments/types.js";
+import {
+  describeBotFrameworkServiceUrlHost,
+  isAllowedBotFrameworkServiceUrl,
+  normalizeBotFrameworkServiceUrl,
+} from "./bot-framework-service-url.js";
 import { createMSTeamsConversationStoreFs } from "./conversation-store-fs.js";
 import type {
   MSTeamsConversationStore,
   StoredConversationReference,
 } from "./conversation-store.js";
+import { formatUnknownError } from "./errors.js";
 import type { MSTeamsAdapter } from "./messenger.js";
 import { getMSTeamsRuntime } from "./runtime.js";
 import { createMSTeamsAdapter, loadMSTeamsSdkWithAuth } from "./sdk.js";
@@ -124,6 +130,24 @@ export async function resolveMSTeamsSendContext(params: {
   const core = getMSTeamsRuntime();
   const log = core.logging.getChildLogger({ name: "msteams:send" });
 
+  if (ref.serviceUrl && !isAllowedBotFrameworkServiceUrl(ref.serviceUrl)) {
+    try {
+      await store.remove(conversationId);
+    } catch (err) {
+      log.warn?.("failed to remove blocked msteams conversation reference", {
+        conversationId,
+        error: formatUnknownError(err),
+      });
+    }
+    throw new Error(
+      `Stored Microsoft Teams conversation reference has blocked serviceUrl host: ${describeBotFrameworkServiceUrlHost(ref.serviceUrl)}. ` +
+        `The bot must receive a new message from this conversation before it can send proactively.`,
+    );
+  }
+  const safeRef = ref.serviceUrl
+    ? { ...ref, serviceUrl: normalizeBotFrameworkServiceUrl(ref.serviceUrl) }
+    : ref;
+
   const { sdk, authConfig } = await loadMSTeamsSdkWithAuth(creds);
   const adapter = createMSTeamsAdapter(authConfig, sdk);
 
@@ -132,7 +156,7 @@ export async function resolveMSTeamsSendContext(params: {
 
   // Determine conversation type from stored reference
   const storedConversationType = normalizeLowercaseStringOrEmpty(
-    ref.conversation?.conversationType ?? "",
+    safeRef.conversation?.conversationType ?? "",
   );
   let conversationType: MSTeamsConversationType;
   if (storedConversationType === "personal") {
@@ -156,7 +180,7 @@ export async function resolveMSTeamsSendContext(params: {
   return {
     appId: creds.appId,
     conversationId,
-    ref,
+    ref: safeRef,
     adapter: adapter as unknown as MSTeamsAdapter,
     log,
     conversationType,

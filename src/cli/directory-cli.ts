@@ -4,6 +4,7 @@ import { getChannelPlugin } from "../channels/plugins/index.js";
 import { loadConfig } from "../config/config.js";
 import { danger } from "../globals.js";
 import { resolveMessageChannelSelection } from "../infra/outbound/channel-selection.js";
+import { parseStrictPositiveInteger } from "../infra/parse-finite-number.js";
 import { defaultRuntime } from "../runtime.js";
 import {
   normalizeOptionalString,
@@ -15,22 +16,12 @@ import { theme } from "../terminal/theme.js";
 import { formatHelpExamples } from "./help-format.js";
 
 function parseLimit(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    if (value <= 0) {
-      return null;
-    }
-    return Math.floor(value);
-  }
-  if (typeof value !== "string") {
+  if (value === undefined || value === null || value === "") {
     return null;
   }
-  const raw = normalizeOptionalString(value) ?? "";
-  if (!raw) {
-    return null;
-  }
-  const parsed = Number.parseInt(raw, 10);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    return null;
+  const parsed = parseStrictPositiveInteger(value);
+  if (parsed === undefined) {
+    throw new Error("--limit must be a positive integer.");
   }
   return parsed;
 }
@@ -125,6 +116,7 @@ export function registerDirectoryCli(program: Command) {
     title: string;
     emptyMessage: string;
   }) => {
+    const limit = parseLimit(params.opts.limit);
     const { cfg, channelId, accountId, plugin } = await resolve({
       channel: params.opts.channel as string | undefined,
       account: params.opts.account as string | undefined,
@@ -140,7 +132,7 @@ export function registerDirectoryCli(program: Command) {
       cfg,
       accountId,
       query: (params.opts.query as string | undefined) ?? null,
-      limit: parseLimit(params.opts.limit),
+      limit,
       runtime: defaultRuntime,
     });
     if (params.opts.json) {
@@ -236,6 +228,7 @@ export function registerDirectoryCli(program: Command) {
     .option("--limit <n>", "Limit results")
     .action(async (opts) => {
       try {
+        const limit = parseLimit(opts.limit);
         const { cfg, channelId, accountId, plugin } = await resolve({
           channel: opts.channel as string | undefined,
           account: opts.account as string | undefined,
@@ -252,7 +245,7 @@ export function registerDirectoryCli(program: Command) {
           cfg,
           accountId,
           groupId,
-          limit: parseLimit(opts.limit),
+          limit,
           runtime: defaultRuntime,
         });
         if (opts.json) {

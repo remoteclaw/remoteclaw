@@ -157,4 +157,49 @@ describe("msteams monitor handler authz", () => {
 
     expect(conversationStore.upsert).not.toHaveBeenCalled();
   });
+
+  it("does not persist blocked serviceUrl hosts in conversation references", async () => {
+    const { conversationStore, deps } = createDeps({
+      channels: {
+        msteams: {
+          dmPolicy: "allowlist",
+          allowFrom: ["sender-aad"],
+        },
+      },
+    } as RemoteClawConfig);
+
+    const handler = createMSTeamsMessageHandler(deps);
+    await handler({
+      activity: {
+        id: "msg-blocked-service-url",
+        type: "message",
+        text: "hello",
+        from: {
+          id: "sender-id",
+          aadObjectId: "sender-aad",
+          name: "Sender",
+        },
+        recipient: {
+          id: "bot-id",
+          name: "Bot",
+        },
+        conversation: {
+          id: "a:personal-chat",
+          conversationType: "personal",
+        },
+        channelId: "msteams",
+        serviceUrl: "https://attacker.example.com/teams/",
+        channelData: {},
+        attachments: [],
+      },
+      sendActivity: vi.fn(async () => undefined),
+    } as unknown as Parameters<typeof handler>[0]);
+
+    expect(conversationStore.upsert).toHaveBeenCalledTimes(1);
+    const upsertCalls = conversationStore.upsert.mock.calls as unknown as Array<
+      [string, Record<string, unknown>]
+    >;
+    const storedRef = upsertCalls[0][1];
+    expect("serviceUrl" in storedRef).toBe(false);
+  });
 });

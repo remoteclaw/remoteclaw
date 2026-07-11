@@ -593,6 +593,38 @@ describe("diagnostics-otel service", () => {
     }
   });
 
+  test("drops snake_case diagnostic id log attributes before export", async () => {
+    const emitCall = await emitAndCaptureLog({
+      level: "INFO",
+      message: "diagnostic id attributes",
+      attributes: {
+        call_id: "call-snake",
+        parent_span_id: "parent-snake",
+        run_id: "run-snake",
+        session_id: "session-snake",
+        session_key: "session-key-snake",
+        span_id: "span-snake",
+        tool_call_id: "tool-snake",
+        trace_id: "trace-snake",
+        provider: "openai",
+      },
+    });
+
+    expect(emitCall?.attributes?.["remoteclaw.provider"]).toBe("openai");
+    for (const key of [
+      "remoteclaw.call_id",
+      "remoteclaw.parent_span_id",
+      "remoteclaw.run_id",
+      "remoteclaw.session_id",
+      "remoteclaw.session_key",
+      "remoteclaw.span_id",
+      "remoteclaw.tool_call_id",
+      "remoteclaw.trace_id",
+    ]) {
+      expect(Object.hasOwn(emitCall?.attributes ?? {}, key)).toBe(false);
+    }
+  });
+
   test("attaches diagnostic trace context to exported logs", async () => {
     const emitCall = await emitAndCaptureLog({
       level: "INFO",

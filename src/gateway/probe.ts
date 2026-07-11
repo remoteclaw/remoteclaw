@@ -54,6 +54,10 @@ export type GatewayProbeResult = {
 
 export const MIN_PROBE_TIMEOUT_MS = 250;
 export const MAX_TIMER_DELAY_MS = MAX_SAFE_TIMEOUT_DELAY_MS;
+// Bound how long the probe waits for the client WebSocket's underlying socket to
+// fully close before resolving, so a completed probe leaves no live client
+// handle (see probe.close-drain.test.ts).
+const PROBE_CLIENT_STOP_TIMEOUT_MS = 1_000;
 const PAIRING_REQUIRED_PATTERN = /\bpairing required\b/i;
 const OPERATOR_READ_SCOPE = "operator.read";
 const OPERATOR_WRITE_SCOPE = "operator.write";
@@ -196,7 +200,7 @@ export async function probeGateway(opts: {
       clearProbeTimer();
       timer = setTimeout(onTimeout, clampProbeTimeoutMs(opts.timeoutMs));
     };
-    const settle = (
+    const settle = async (
       result: Omit<GatewayProbeResult, "url" | "connectErrorDetails"> & {
         connectErrorDetails?: unknown;
       },
@@ -206,7 +210,15 @@ export async function probeGateway(opts: {
       }
       settled = true;
       clearProbeTimer();
-      client.stop();
+      // Drain the client-side socket close before resolving so a completed probe
+      // leaves no live WebSocket handle (regression: probe.close-drain.test.ts).
+      // stopAndWait bounds the wait AND rejects on timeout, so guard it — resolve
+      // regardless. client.stop() alone returned before the socket closed.
+      try {
+        await client.stopAndWait({ timeoutMs: PROBE_CLIENT_STOP_TIMEOUT_MS });
+      } catch {
+        // Best-effort drain — never let a stop timeout hang the probe.
+      }
       const { connectErrorDetails: resultConnectErrorDetails, ...rest } = result;
       resolve({
         url: opts.url,
@@ -225,7 +237,10 @@ export async function probeGateway(opts: {
       presence: SystemPresence[] | null;
       configSnapshot: unknown;
     }) => {
-      settle({
+      // settle is async only to drain the client socket before resolve(); it
+      // never rejects (stopAndWait is guarded) and the enclosing Promise
+      // executor is sync, so fire-and-forget is intended.
+      void settle({
         ok: params.ok,
         connectLatencyMs,
         error: params.error,

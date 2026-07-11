@@ -439,7 +439,7 @@ export const tailLanes = [
   ),
   liveLane("live-codex-harness", liveDockerScriptCommand("test-live-codex-harness-docker.sh"), {
     cacheKey: "codex-harness",
-    provider: "openai",
+    provider: "codex-cli",
     resources: ["npm"],
     timeoutMs: LIVE_ACP_TIMEOUT_MS,
     weight: 3,
@@ -463,7 +463,7 @@ export const tailLanes = [
     ),
     {
       cacheKey: "codex-harness",
-      provider: "openai",
+      provider: "codex-cli",
       resources: ["npm"],
       timeoutMs: LIVE_ACP_TIMEOUT_MS,
       weight: 3,
@@ -502,8 +502,8 @@ export const tailLanes = [
     liveDockerScriptCommand("test-live-acp-bind-docker.sh", "REMOTECLAW_LIVE_ACP_BIND_AGENT=codex"),
     {
       cacheKey: "acp-bind-codex",
-      provider: "openai",
-      resources: ["npm"],
+      provider: "codex-cli",
+      resources: ["live:openai", "npm"],
       timeoutMs: LIVE_ACP_TIMEOUT_MS,
       weight: 3,
     },

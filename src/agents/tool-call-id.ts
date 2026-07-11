@@ -11,6 +11,7 @@ export const MODULE_ATTESTATIONS = {
   sanitizeToolCallId: "live",
   extractToolCallsFromAssistant: "live",
   extractToolResultId: "live",
+  extractToolResultIds: "live",
   isValidCloudCodeAssistToolId: "live",
   sanitizeToolCallIdsForCloudCodeAssist: "live",
 } as const;
@@ -90,15 +91,36 @@ export function extractToolCallsFromAssistant(
 export function extractToolResultId(
   msg: Extract<AgentMessage, { role: "toolResult" }>,
 ): string | null {
-  const toolCallId = (msg as { toolCallId?: unknown }).toolCallId;
-  if (typeof toolCallId === "string" && toolCallId) {
-    return toolCallId;
+  return extractToolResultIds(msg)[0] ?? null;
+}
+
+export function extractToolResultIds(msg: Extract<AgentMessage, { role: "toolResult" }>): string[] {
+  const ids: string[] = [];
+  const record = msg as {
+    toolCallId?: unknown;
+    toolUseId?: unknown;
+    tool_call_id?: unknown;
+    tool_use_id?: unknown;
+    callId?: unknown;
+    call_id?: unknown;
+  };
+  for (const value of [
+    record.toolCallId,
+    record.toolUseId,
+    record.tool_call_id,
+    record.tool_use_id,
+    record.callId,
+    record.call_id,
+  ]) {
+    if (typeof value !== "string") {
+      continue;
+    }
+    const id = value.trim();
+    if (id && !ids.includes(id)) {
+      ids.push(id);
+    }
   }
-  const toolUseId = (msg as { toolUseId?: unknown }).toolUseId;
-  if (typeof toolUseId === "string" && toolUseId) {
-    return toolUseId;
-  }
-  return null;
+  return ids;
 }
 
 export function isValidCloudCodeAssistToolId(id: string, mode: ToolCallIdMode = "strict"): boolean {

@@ -38,6 +38,7 @@ export type QueuedSessionDeliveryPayload =
       sessionKey: string;
       message: string;
       messageId: string;
+      expectedSessionId?: string;
       route?: SessionDeliveryRoute;
       deliveryContext?: SessionDeliveryContext;
       idempotencyKey?: string;

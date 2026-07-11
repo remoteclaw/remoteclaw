@@ -50,6 +50,50 @@ Disable all flags:
 REMOTECLAW_DIAGNOSTICS=0
 ```
 
+`REMOTECLAW_DIAGNOSTICS=0` is a process-level disable override: it disables
+flags from both env and config for that process.
+
+## Profiling flags
+
+Profiler flags enable targeted timing spans without raising global logging
+levels. They are disabled by default.
+
+Enable all profiler-gated spans for one gateway run:
+
+```bash
+REMOTECLAW_DIAGNOSTICS=profiler remoteclaw gateway run
+```
+
+Enable only reply-dispatch profiler spans:
+
+```bash
+REMOTECLAW_DIAGNOSTICS=reply.profiler remoteclaw gateway run
+```
+
+Enable only Codex app-server startup/tool/thread profiler spans:
+
+```bash
+REMOTECLAW_DIAGNOSTICS=codex.profiler remoteclaw gateway run
+```
+
+Enable profiler flags from config:
+
+```json
+{
+  "diagnostics": {
+    "flags": ["reply.profiler", "codex.profiler"]
+  }
+}
+```
+
+Restart the gateway after changing config flags. To disable a profiler flag,
+remove it from `diagnostics.flags` and restart. To temporarily disable every
+diagnostics flag even when config enables profiler flags, start the process with:
+
+```bash
+REMOTECLAW_DIAGNOSTICS=0 remoteclaw gateway run
+```
+
 ## Timeline artifacts
 
 The `timeline` flag writes structured startup and runtime timing events for

@@ -44,11 +44,25 @@ function consumeLineBreak(text: string, start: number): number | null {
   return null;
 }
 
-function parseOpening(text: string, start: number): { end: number; name: string } | null {
+function parseOpening(
+  text: string,
+  start: number,
+): { end: number; name: string; requiresClosing: boolean } | null {
   if (text[start] !== "[") {
     return null;
   }
   let cursor = start + 1;
+  if (text.startsWith("tool:", cursor)) {
+    cursor += "tool:".length;
+    const nameStart = cursor;
+    while (isToolNameChar(text[cursor])) {
+      cursor += 1;
+    }
+    if (cursor === nameStart || text[cursor] !== "]") {
+      return null;
+    }
+    return { end: cursor + 1, name: text.slice(nameStart, cursor), requiresClosing: false };
+  }
   const nameStart = cursor;
   while (isToolNameChar(text[cursor])) {
     cursor += 1;
@@ -63,7 +77,7 @@ function parseOpening(text: string, start: number): { end: number; name: string 
   if (afterLineBreak === null) {
     return null;
   }
-  return { end: afterLineBreak, name };
+  return { end: afterLineBreak, name, requiresClosing: true };
 }
 
 function consumeJsonObject(
@@ -153,7 +167,7 @@ function parseBlockAt(
   if (!payload) {
     return null;
   }
-  const end = parseClosing(text, payload.end, opening.name);
+  const end = opening.requiresClosing ? parseClosing(text, payload.end, opening.name) : payload.end;
   if (end === null) {
     return null;
   }
@@ -184,7 +198,7 @@ export function parseStandalonePlainTextToolCallBlocks(
 }
 
 export function stripPlainTextToolCallBlocks(text: string): string {
-  if (!text || !/\[[A-Za-z0-9_-]+\]/.test(text)) {
+  if (!text || !/\[(?:tool:)?[A-Za-z0-9_-]+\]/.test(text)) {
     return text;
   }
   let result = "";
@@ -204,7 +218,11 @@ export function stripPlainTextToolCallBlocks(text: string): string {
     }
     result += text.slice(cursor, index);
     cursor = block.end;
-    index = block.end;
+    const afterBlockLineBreak = consumeLineBreak(text, cursor);
+    if (afterBlockLineBreak !== null) {
+      cursor = afterBlockLineBreak;
+    }
+    index = cursor;
   }
   result += text.slice(cursor);
   return result;

@@ -3,6 +3,7 @@ import type { AgentTool, AgentToolResult } from "../../agents/agent-types.js";
 import type { MsgContext } from "../../auto-reply/templating.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import type { ReplyToMode } from "../../config/types.js";
+import type { OutboundSessionRoute } from "../../infra/outbound/outbound-session.js";
 import type { PollInput } from "../../polls.js";
 import type { GatewayClientMode, GatewayClientName } from "../../utils/message-channel.js";
 import type { ChatType } from "../chat-type.js";
@@ -307,6 +308,27 @@ export type ChannelMessagingAdapter = {
     display?: string;
     kind?: ChannelDirectoryEntryKind;
   }) => string;
+  /**
+   * Optional per-channel hook signaling the adapter supports outbound
+   * session/thread route resolution. Its presence acts as a capability flag —
+   * the actual route is resolved by the standalone `resolveOutboundSessionRoute`
+   * helper. Kept optional so adapters that don't route sessions are unaffected.
+   */
+  resolveOutboundSessionRoute?: (params: {
+    cfg: RemoteClawConfig;
+    agentId: string;
+    accountId?: string | null;
+    target: string;
+    currentSessionKey?: string;
+    resolvedTarget?: {
+      to: string;
+      kind: ChannelDirectoryEntryKind | "channel";
+      display?: string;
+      source: "normalized" | "directory";
+    };
+    replyToId?: string | null;
+    threadId?: string | number | null;
+  }) => OutboundSessionRoute | Promise<OutboundSessionRoute | null> | null;
 };
 
 export type ChannelAgentPromptAdapter = {

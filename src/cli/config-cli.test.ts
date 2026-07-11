@@ -74,6 +74,7 @@ function withRuntimeDefaults(resolved: RemoteClawConfig): RemoteClawConfig {
 
 function makeInvalidSnapshot(params: {
   issues: ConfigFileSnapshot["issues"];
+  warnings?: ConfigFileSnapshot["warnings"];
   path?: string;
 }): ConfigFileSnapshot {
   return {
@@ -85,7 +86,7 @@ function makeInvalidSnapshot(params: {
     valid: false,
     config: {},
     issues: params.issues,
-    warnings: [],
+    warnings: params.warnings ?? [],
     legacyIssues: [],
   };
 }
@@ -251,6 +252,37 @@ describe("config cli", () => {
       expect(mockError).toHaveBeenCalledWith(
         expect.stringContaining("agents.defaults.suppressToolErrorWarnings"),
       );
+      expect(mockLog).not.toHaveBeenCalled();
+    });
+
+    it("replaces doctor advice for plugin packaging compiled-output failures", async () => {
+      setSnapshotOnce(
+        makeInvalidSnapshot({
+          issues: [
+            {
+              path: "plugins.slots.memory",
+              message: "plugin not found: source-only-pack",
+            },
+          ],
+          warnings: [
+            {
+              path: "plugins",
+              message:
+                "plugin source-only-pack: installed plugin package requires compiled runtime output for TypeScript entry index.ts: expected ./dist/index.js. This is a plugin packaging issue, not a local config problem.",
+            },
+          ],
+        }),
+      );
+
+      await expect(runConfigCommand(["config", "validate"])).rejects.toThrow("__exit__:1");
+
+      const errorOutput = mockError.mock.calls.map((call) => String(call[0])).join("\n");
+      expect(errorOutput).toContain("plugin not found: source-only-pack");
+      expect(errorOutput).toContain(
+        "This is a plugin packaging issue, not a local config problem.",
+      );
+      expect(errorOutput).toContain("disable/uninstall the plugin");
+      expect(errorOutput).not.toContain("remoteclaw doctor");
       expect(mockLog).not.toHaveBeenCalled();
     });
 

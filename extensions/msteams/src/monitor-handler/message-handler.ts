@@ -26,6 +26,7 @@ import {
   type MSTeamsAttachmentLike,
   summarizeMSTeamsHtmlAttachments,
 } from "../attachments.js";
+import { tryNormalizeBotFrameworkServiceUrl } from "../bot-framework-service-url.js";
 import type { StoredConversationReference } from "../conversation-store.js";
 import { formatUnknownError } from "../errors.js";
 import {
@@ -327,6 +328,7 @@ export function createMSTeamsMessageHandler(deps: MSTeamsMessageHandlerDeps) {
 
     // Build conversation reference for proactive replies.
     const agent = activity.recipient;
+    const serviceUrl = tryNormalizeBotFrameworkServiceUrl(activity.serviceUrl);
     const conversationRef: StoredConversationReference = {
       activityId: activity.id,
       user: { id: from.id, name: from.name, aadObjectId: from.aadObjectId },
@@ -339,7 +341,7 @@ export function createMSTeamsMessageHandler(deps: MSTeamsMessageHandlerDeps) {
       },
       teamId,
       channelId: activity.channelId,
-      serviceUrl: activity.serviceUrl,
+      ...(serviceUrl ? { serviceUrl } : {}),
       locale: activity.locale,
     };
     conversationStore.upsert(conversationId, conversationRef).catch((err) => {

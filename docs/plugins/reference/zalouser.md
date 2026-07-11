@@ -1,5 +1,5 @@
 ---
-summary: "Adds the Zalo Personal channel surface for sending and receiving RemoteClaw messages."
+summary: "RemoteClaw Zalo Personal Account plugin via native zca-js integration."
 read_when:
   - You are installing, configuring, or auditing the zalouser plugin
 title: "Zalo Personal plugin"
@@ -7,7 +7,7 @@ title: "Zalo Personal plugin"
 
 # Zalo Personal plugin
 
-Adds the Zalo Personal channel surface for sending and receiving RemoteClaw messages.
+RemoteClaw Zalo Personal Account plugin via native zca-js integration.
 
 ## Distribution
 

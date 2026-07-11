@@ -14,8 +14,27 @@ describe("cron session target helpers", () => {
     );
   });
 
-  it("rejects unsafe persistent session targets", () => {
+  it("rejects native path separators in persistent session targets", () => {
+    // Fork-stricter guard (assertSafeCronSessionTargetId): a `session:<id>`
+    // target must not carry `/` or `\` so it cannot smuggle path traversal
+    // (`session:../../outside`) into session-key/store resolution. Upstream
+    // relaxed this to null-byte-only; the fork keeps the path-separator
+    // rejection — adapt the fixture, do NOT relax the guard.
+    expect(() =>
+      resolveCronSessionTargetSessionKey(
+        "session: agent:main:dingtalk:group:cid3tmd4xb19xjfk/wogxwy2a== ",
+      ),
+    ).toThrow("invalid cron sessionTarget session id");
+    expect(() => resolveCronSessionTargetSessionKey("session:..\\outside")).toThrow(
+      "invalid cron sessionTarget session id",
+    );
     expect(() => resolveCronSessionTargetSessionKey("session:../../outside")).toThrow(
+      "invalid cron sessionTarget session id",
+    );
+  });
+
+  it("rejects null bytes in persistent session targets", () => {
+    expect(() => resolveCronSessionTargetSessionKey("session:bad\0id")).toThrow(
       "invalid cron sessionTarget session id",
     );
   });

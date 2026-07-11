@@ -1,5 +1,5 @@
 ---
-summary: "Adds the Nextcloud Talk channel surface for sending and receiving RemoteClaw messages."
+summary: "RemoteClaw Nextcloud Talk channel plugin for conversations."
 read_when:
   - You are installing, configuring, or auditing the nextcloud-talk plugin
 title: "Nextcloud Talk plugin"
@@ -7,7 +7,7 @@ title: "Nextcloud Talk plugin"
 
 # Nextcloud Talk plugin
 
-Adds the Nextcloud Talk channel surface for sending and receiving RemoteClaw messages.
+RemoteClaw Nextcloud Talk channel plugin for conversations.
 
 ## Distribution
 

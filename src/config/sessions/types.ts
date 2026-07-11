@@ -106,6 +106,33 @@ export type SessionCompactionCheckpoint = {
   postCompaction: SessionCompactionTranscriptReference;
 };
 
+export type SessionContextBudgetStatusRoute =
+  | "fits"
+  | "compact_only"
+  | "truncate_tool_results_only"
+  | "compact_then_truncate";
+
+export type SessionContextBudgetStatus = {
+  schemaVersion: 1;
+  source: "pre-prompt-estimate";
+  updatedAt: number;
+  provider: string;
+  model: string;
+  route: SessionContextBudgetStatusRoute;
+  shouldCompact: boolean;
+  estimatedPromptTokens: number;
+  contextTokenBudget: number;
+  promptBudgetBeforeReserve: number;
+  reserveTokens: number;
+  effectiveReserveTokens: number;
+  remainingPromptBudgetTokens: number;
+  overflowTokens: number;
+  toolResultReducibleChars: number;
+  messageCount: number;
+  unwindowedMessageCount: number;
+  sessionId?: string;
+};
+
 export type SessionPluginDebugEntry = {
   pluginId: string;
   lines: string[];
@@ -334,6 +361,7 @@ export type SessionEntry = {
   fallbackNoticeActiveModel?: string;
   fallbackNoticeReason?: string;
   contextTokens?: number;
+  contextBudgetStatus?: SessionContextBudgetStatus;
   compactionCount?: number;
   compactionCheckpoints?: SessionCompactionCheckpoint[];
   memoryFlushAt?: number;

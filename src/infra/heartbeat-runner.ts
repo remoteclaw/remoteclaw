@@ -36,8 +36,10 @@ import {
   updateSessionStore,
 } from "../config/sessions.js";
 import type { AgentDefaultsConfig } from "../config/types.agent-defaults.js";
+import { hasActiveCronJobs } from "../cron/active-jobs.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
-import { getQueueSize } from "../process/command-queue.js";
+import { getCommandLaneSnapshots, getQueueSize } from "../process/command-queue.js";
+import type { CommandLaneSnapshot } from "../process/command-queue.js";
 import { CommandLane } from "../process/lanes.js";
 import {
   normalizeAgentId,
@@ -60,6 +62,9 @@ import { resolveHeartbeatReasonKind } from "./heartbeat-reason.js";
 import { resolveHeartbeatVisibility } from "./heartbeat-visibility.js";
 import {
   areHeartbeatsEnabled,
+  HEARTBEAT_SKIP_CRON_IN_PROGRESS,
+  HEARTBEAT_SKIP_LANES_BUSY,
+  HEARTBEAT_SKIP_REQUESTS_IN_FLIGHT,
   type HeartbeatRunResult,
   type HeartbeatWakeHandler,
   requestHeartbeatNow,
@@ -79,6 +84,9 @@ export type HeartbeatDeps = OutboundSendDeps &
   ChannelHeartbeatDeps & {
     runtime?: RuntimeEnv;
     getQueueSize?: (lane?: string) => number;
+    getCommandLaneSnapshots?: () => readonly CommandLaneSnapshot[];
+    listActiveReplyRunSessionKeys?: () => readonly string[];
+    isReplyRunActive?: (key: string) => boolean;
     nowMs?: () => number;
   };
 
@@ -619,6 +627,76 @@ async function resolveHeartbeatRunPrompt(params: {
   return { prompt, hasExecCompletion, hasCronEvents };
 }
 
+// Lanes that always represent in-flight cron work regardless of agent scoping.
+const HEARTBEAT_ALWAYS_BUSY_LANES = [CommandLane.Cron, CommandLane.CronNested] as const;
+
+function hasQueuedWorkInLanes(
+  lanes: readonly string[],
+  getSize: (lane?: string) => number,
+): boolean {
+  return lanes.some((lane) => getSize(lane) > 0);
+}
+
+function hasQueuedWorkInLaneSnapshots(
+  snapshots: readonly CommandLaneSnapshot[],
+  matchesLane: (lane: string) => boolean,
+): boolean {
+  return snapshots.some(
+    (snapshot) => matchesLane(snapshot.lane) && snapshot.activeCount + snapshot.queuedCount > 0,
+  );
+}
+
+/**
+ * Return true when `lane` carries a session-key suffix that parses to
+ * `agentId` (`session:agent:<agentId>:...` or `nested:agent:<agentId>:...`).
+ * The generic `subagent`/`nested` global lanes carry no agent identity, so a
+ * stalled subagent on one agent must not silently disable another agent's
+ * heartbeat; only the session-keyed variants are attributable here.
+ */
+function laneBelongsToAgent(lane: string, agentId: string): boolean {
+  let suffix: string | undefined;
+  if (lane.startsWith("session:")) {
+    suffix = lane.slice("session:".length);
+  } else if (lane.startsWith("nested:")) {
+    suffix = lane.slice("nested:".length);
+  }
+  if (!suffix) {
+    return false;
+  }
+  const parsed = parseAgentSessionKey(suffix);
+  if (!parsed) {
+    return false;
+  }
+  return normalizeAgentId(parsed.agentId) === normalizeAgentId(agentId);
+}
+
+function hasAgentOptInBusyLaneWork(
+  agentId: string,
+  getSnapshots: () => readonly CommandLaneSnapshot[],
+): boolean {
+  return hasQueuedWorkInLaneSnapshots(getSnapshots(), (lane) => laneBelongsToAgent(lane, agentId));
+}
+
+function hasActiveReplyRunForAgent(
+  agentId: string,
+  listSessionKeys: () => readonly string[],
+): boolean {
+  const normalizedAgentId = normalizeAgentId(agentId);
+  return listSessionKeys().some((sessionKey) => {
+    const parsed = parseAgentSessionKey(sessionKey);
+    return parsed ? normalizeAgentId(parsed.agentId) === normalizedAgentId : false;
+  });
+}
+
+// Fork note: the Pi-era `pi-embedded-runner/lanes.ts` (which owned
+// `resolveEmbeddedSessionLane`) was gutted. The `session:<sessionKey>` lane-key
+// shape it produced is still the command-queue convention, so resolve it
+// locally rather than reintroduce the gutted module.
+function resolveEmbeddedSessionLane(key: string): string {
+  const cleaned = key.trim() || CommandLane.Main;
+  return cleaned.startsWith("session:") ? cleaned : `session:${cleaned}`;
+}
+
 export async function runHeartbeatOnce(opts: {
   cfg?: RemoteClawConfig;
   agentId?: string;
@@ -649,9 +727,69 @@ export async function runHeartbeatOnce(opts: {
     return { status: "skipped", reason: "quiet-hours" };
   }
 
-  const queueSize = (opts.deps?.getQueueSize ?? getQueueSize)(CommandLane.Main);
-  if (queueSize > 0) {
-    return { status: "skipped", reason: "requests-in-flight" };
+  const getSize = opts.deps?.getQueueSize ?? getQueueSize;
+  const getSnapshots = opts.deps?.getCommandLaneSnapshots ?? getCommandLaneSnapshots;
+  if (getSize(CommandLane.Main) > 0) {
+    return { status: "skipped", reason: HEARTBEAT_SKIP_REQUESTS_IN_FLIGHT };
+  }
+
+  if (hasActiveCronJobs() || hasQueuedWorkInLanes(HEARTBEAT_ALWAYS_BUSY_LANES, getSize)) {
+    emitHeartbeatEvent({
+      status: "skipped",
+      reason: HEARTBEAT_SKIP_CRON_IN_PROGRESS,
+      durationMs: Date.now() - startedAt,
+    });
+    return { status: "skipped", reason: HEARTBEAT_SKIP_CRON_IN_PROGRESS };
+  }
+
+  if (heartbeat?.skipWhenBusy === true && hasAgentOptInBusyLaneWork(agentId, getSnapshots)) {
+    emitHeartbeatEvent({
+      status: "skipped",
+      reason: HEARTBEAT_SKIP_LANES_BUSY,
+      durationMs: Date.now() - startedAt,
+    });
+    return { status: "skipped", reason: HEARTBEAT_SKIP_LANES_BUSY };
+  }
+
+  // Scheduled heartbeats are background work, so defer them when any session on
+  // the same agent is already replying; immediate/manual wakes keep their
+  // existing semantics for explicit user/system actions.
+  const shouldHonorActiveReplyRuns = opts.reason !== "immediate" && opts.reason !== "manual";
+  const listActiveReplyRuns = opts.deps?.listActiveReplyRunSessionKeys ?? (() => []);
+  if (shouldHonorActiveReplyRuns && hasActiveReplyRunForAgent(agentId, listActiveReplyRuns)) {
+    emitHeartbeatEvent({
+      status: "skipped",
+      reason: HEARTBEAT_SKIP_REQUESTS_IN_FLIGHT,
+      durationMs: Date.now() - startedAt,
+    });
+    return { status: "skipped", reason: HEARTBEAT_SKIP_REQUESTS_IN_FLIGHT };
+  }
+
+  // Stronger heartbeat deferral while a final delivery replay is pending. Plain
+  // `updatedAt` changes are normal for heartbeat sessions and must not suppress
+  // runs; only defer when final delivery recovery is active AND the pending text
+  // is real content (a heartbeat ack does not warrant deferral).
+  const { entry: recentSessionEntry } = resolveHeartbeatSession(
+    cfg,
+    agentId,
+    heartbeat,
+    opts.sessionKey,
+  );
+  const HEARTBEAT_DEFER_WINDOW_MS = 30_000;
+  const pendingFinalDeliveryText = recentSessionEntry?.pendingFinalDeliveryText;
+  const pendingFinalDeliveryIsHeartbeatAck =
+    typeof pendingFinalDeliveryText === "string" &&
+    stripHeartbeatToken(pendingFinalDeliveryText, {
+      mode: "heartbeat",
+      maxAckChars: resolveHeartbeatAckMaxChars(cfg, heartbeat),
+    }).shouldSkip;
+  if (
+    recentSessionEntry?.pendingFinalDelivery === true &&
+    !pendingFinalDeliveryIsHeartbeatAck &&
+    recentSessionEntry?.updatedAt &&
+    startedAt - recentSessionEntry.updatedAt < HEARTBEAT_DEFER_WINDOW_MS
+  ) {
+    return { status: "skipped", reason: HEARTBEAT_SKIP_REQUESTS_IN_FLIGHT };
   }
 
   // Preflight centralizes trigger classification, event inspection, and HEARTBEAT.md gating.
@@ -671,6 +809,28 @@ export async function runHeartbeatOnce(opts: {
     return { status: "skipped", reason: preflight.skipReason };
   }
   const { entry, sessionKey, storePath } = preflight.session;
+  const isReplyRunActive = opts.deps?.isReplyRunActive ?? (() => false);
+  if (isReplyRunActive(sessionKey)) {
+    emitHeartbeatEvent({
+      status: "skipped",
+      reason: HEARTBEAT_SKIP_REQUESTS_IN_FLIGHT,
+      durationMs: Date.now() - startedAt,
+    });
+    return { status: "skipped", reason: HEARTBEAT_SKIP_REQUESTS_IN_FLIGHT };
+  }
+
+  // Check the resolved session lane — if it is busy, skip to avoid interrupting
+  // an active streaming turn. The wake-layer retry re-schedules the wake.
+  const sessionLaneKey = resolveEmbeddedSessionLane(sessionKey);
+  if (getSize(sessionLaneKey) > 0) {
+    emitHeartbeatEvent({
+      status: "skipped",
+      reason: HEARTBEAT_SKIP_REQUESTS_IN_FLIGHT,
+      durationMs: Date.now() - startedAt,
+    });
+    return { status: "skipped", reason: HEARTBEAT_SKIP_REQUESTS_IN_FLIGHT };
+  }
+
   const previousUpdatedAt = entry?.updatedAt;
   const delivery = resolveHeartbeatDeliveryTarget({ cfg, entry, heartbeat });
   const heartbeatAccountId = heartbeat?.accountId?.trim();

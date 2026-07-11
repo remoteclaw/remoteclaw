@@ -107,4 +107,21 @@ describe("completion-runtime", () => {
       await fs.rm(stateDir, { recursive: true, force: true });
     }
   });
+
+  it("rejects install when the completion cache is missing", async () => {
+    const homeDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-completion-home-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "remoteclaw-completion-state-"));
+
+    process.env.HOME = homeDir;
+    process.env.REMOTECLAW_STATE_DIR = stateDir;
+
+    try {
+      await expect(installCompletion("zsh", true, "remoteclaw")).rejects.toThrow(
+        "Completion cache not found",
+      );
+    } finally {
+      await fs.rm(homeDir, { recursive: true, force: true });
+      await fs.rm(stateDir, { recursive: true, force: true });
+    }
+  });
 });

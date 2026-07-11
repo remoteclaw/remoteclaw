@@ -2,13 +2,13 @@
 summary: "CLI reference for `remoteclaw docs` (search the live docs index)"
 read_when:
   - You want to search the live RemoteClaw docs from the terminal
-  - You need to know which helper binaries the docs CLI shells out to
+  - You need to know which hosted search API the docs CLI calls
 title: "Docs"
 ---
 
 # `remoteclaw docs`
 
-Search the live RemoteClaw docs index from the terminal. The command shells out to the public Mintlify-hosted docs MCP search endpoint at `https://docs.remoteclaw.org/mcp.search_open_claw` and renders the results in your terminal.
+Search the live RemoteClaw docs index from the terminal. The command calls RemoteClaw's Cloudflare-hosted docs search API and renders the results in your terminal.
 
 ## Usage
 
@@ -35,17 +35,7 @@ With no query, `remoteclaw docs` prints the docs entrypoint URL plus a sample se
 
 ## How it works
 
-`remoteclaw docs` invokes the `mcporter` CLI to call the docs search MCP tool, then parses the `Title: / Link: / Content:` blocks from the tool output into a list of results.
-
-To resolve `mcporter`, RemoteClaw checks in order:
-
-1. `mcporter` on `PATH` (used directly if present).
-2. `pnpm dlx mcporter ...` if `pnpm` is installed.
-3. `npx -y mcporter ...` if `npx` is installed.
-
-If none are available, the command fails with a hint to install `pnpm` (`npm install -g pnpm`).
-
-The search call uses a fixed 30 second timeout. Result snippets are truncated to ~220 characters per entry.
+`remoteclaw docs` calls `https://docs.remoteclaw.org/api/search` and renders the JSON results. The search call uses a fixed 30 second timeout.
 
 ## Output
 
@@ -62,10 +52,10 @@ In non-rich output (piped, `--no-color`, scripts), the same data renders as Mark
 
 ## Exit codes
 
-| Code | Meaning                                             |
-| ---- | --------------------------------------------------- |
-| `0`  | Search succeeded (including zero-result responses). |
-| `1`  | The MCP tool call failed; stderr is printed inline. |
+| Code | Meaning                                                           |
+| ---- | ----------------------------------------------------------------- |
+| `0`  | Search succeeded (including zero-result responses).               |
+| `1`  | The hosted docs search API call failed; stderr is printed inline. |
 
 ## Related
 

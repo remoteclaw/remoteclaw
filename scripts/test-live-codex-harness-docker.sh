@@ -17,6 +17,7 @@ CONFIG_DIR="${REMOTECLAW_CONFIG_DIR:-$HOME/.remoteclaw}"
 WORKSPACE_DIR="${REMOTECLAW_WORKSPACE_DIR:-$HOME/.remoteclaw/workspace}"
 PROFILE_FILE="$(remoteclaw_live_default_profile_file)"
 CODEX_HARNESS_AUTH_MODE="${REMOTECLAW_LIVE_CODEX_HARNESS_AUTH:-codex-auth}"
+CODEX_CLI_PACKAGE_SPEC="${REMOTECLAW_LIVE_CODEX_CLI_PACKAGE_SPEC:-}"
 TEMP_DIRS=()
 DOCKER_USER="${REMOTECLAW_DOCKER_USER:-node}"
 DOCKER_HOME_MOUNT=()
@@ -69,6 +70,16 @@ if [[ "$CODEX_HARNESS_AUTH_MODE" != "api-key" && ! -s "$HOME/.codex/auth.json" ]
     echo "If this is a Testbox/API-key run, set REMOTECLAW_LIVE_CODEX_HARNESS_AUTH=api-key and run through remoteclaw-testbox-env." >&2
   fi
   exit 1
+fi
+if [[ -z "$CODEX_CLI_PACKAGE_SPEC" ]]; then
+  CODEX_CLI_PACKAGE_SPEC="$(
+    node -e '
+      const pkg = require(process.argv[1]);
+      const version = pkg.dependencies?.["@openai/codex"];
+      if (!version || typeof version !== "string") process.exit(1);
+      process.stdout.write(`@openai/codex@${version}`);
+    ' "$ROOT_DIR/extensions/codex/package.json"
+  )"
 fi
 
 cleanup_temp_dirs() {
@@ -203,6 +214,23 @@ fi
 mkdir -p "$NPM_CONFIG_PREFIX" "$XDG_CACHE_HOME" "$COREPACK_HOME" "$NPM_CONFIG_CACHE"
 chmod 700 "$XDG_CACHE_HOME" "$COREPACK_HOME" "$NPM_CONFIG_CACHE" || true
 export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
+run_setup_command() {
+  local timeout_value="${REMOTECLAW_LIVE_CODEX_HARNESS_SETUP_TIMEOUT_SECONDS:-180}s"
+  local timeout_bin=""
+  if command -v timeout >/dev/null 2>&1; then
+    timeout_bin="timeout"
+  elif command -v gtimeout >/dev/null 2>&1; then
+    timeout_bin="gtimeout"
+  else
+    echo "timeout command not found; cannot bound live Codex harness setup after ${timeout_value}" >&2
+    return 127
+  fi
+  if "$timeout_bin" --kill-after=1s 1s true >/dev/null 2>&1; then
+    "$timeout_bin" --kill-after=30s "$timeout_value" "$@"
+  else
+    "$timeout_bin" "$timeout_value" "$@"
+  fi
+}
 if [ "${REMOTECLAW_DOCKER_AUTH_PRESTAGED:-0}" != "1" ]; then
   IFS=',' read -r -a auth_files <<<"${REMOTECLAW_DOCKER_AUTH_FILES_RESOLVED:-}"
   if ((${#auth_files[@]} > 0)); then
@@ -224,9 +252,8 @@ trusted_scripts_dir="${REMOTECLAW_LIVE_DOCKER_SCRIPTS_DIR:-/src/scripts}"
 if [ "${REMOTECLAW_LIVE_CODEX_HARNESS_AUTH:-codex-auth}" != "api-key" ]; then
   node --import tsx "$trusted_scripts_dir/prepare-codex-ci-auth.ts" "$HOME/.codex/auth.json"
 fi
-if [ ! -x "$NPM_CONFIG_PREFIX/bin/codex" ]; then
-  npm install -g @openai/codex
-fi
+run_setup_command npm install -g "$REMOTECLAW_LIVE_CODEX_CLI_PACKAGE_SPEC"
+"$NPM_CONFIG_PREFIX/bin/codex" --version
 if [ "${REMOTECLAW_LIVE_CODEX_HARNESS_AUTH:-codex-auth}" = "api-key" ]; then
   printf '%s\n' "$OPENAI_API_KEY" | "$NPM_CONFIG_PREFIX/bin/codex" login --with-api-key >/dev/null
 fi
@@ -267,8 +294,8 @@ if ! "$NPM_CONFIG_PREFIX/bin/codex" exec \
   --skip-git-repo-check \
   "Reply exactly: $codex_preflight_token" >"$codex_preflight_log" 2>&1; then
   if grep -q "Failed to extract accountId from token" "$codex_preflight_log"; then
-    echo "SKIP: Codex auth cannot extract accountId from the available token; skipping live Codex harness lane."
-    exit 0
+    echo "ERROR: Codex auth cannot extract accountId from the available token; refresh REMOTECLAW_CODEX_AUTH_JSON or use REMOTECLAW_LIVE_CODEX_HARNESS_AUTH=api-key." >&2
+    exit 1
   fi
   cat "$codex_preflight_log" >&2
   exit 1
@@ -296,9 +323,12 @@ echo "==> Auth mode: $CODEX_HARNESS_AUTH_MODE"
 echo "==> Profile file: $PROFILE_STATUS"
 echo "==> CI-safe Codex config: ${REMOTECLAW_LIVE_CODEX_HARNESS_USE_CI_SAFE_CODEX_CONFIG:-1}"
 echo "==> Test files: ${REMOTECLAW_LIVE_CODEX_TEST_FILES:-src/gateway/gateway-codex-harness.live.test.ts}"
+echo "==> Codex CLI package: $CODEX_CLI_PACKAGE_SPEC"
 echo "==> Harness fallback: none"
 echo "==> Auth files: ${AUTH_FILES_CSV:-none}"
-DOCKER_RUN_ARGS=(docker run --rm -t \
+DOCKER_RUN_ARGS=()
+remoteclaw_live_init_docker_run_args DOCKER_RUN_ARGS "${REMOTECLAW_LIVE_CODEX_HARNESS_DOCKER_RUN_TIMEOUT:-2100s}"
+DOCKER_RUN_ARGS+=(--rm -t \
   -u "$DOCKER_USER" \
   --entrypoint bash \
   -e COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
@@ -325,9 +355,11 @@ DOCKER_RUN_ARGS=(docker run --rm -t \
   -e REMOTECLAW_LIVE_CODEX_HARNESS_MODEL="${REMOTECLAW_LIVE_CODEX_HARNESS_MODEL:-codex/gpt-5.5}" \
   -e REMOTECLAW_LIVE_CODEX_HARNESS_REQUIRE_GUARDIAN_EVENTS="${REMOTECLAW_LIVE_CODEX_HARNESS_REQUIRE_GUARDIAN_EVENTS:-1}" \
   -e REMOTECLAW_LIVE_CODEX_HARNESS_REQUEST_TIMEOUT_MS="${REMOTECLAW_LIVE_CODEX_HARNESS_REQUEST_TIMEOUT_MS:-}" \
+  -e REMOTECLAW_LIVE_CODEX_HARNESS_SETUP_TIMEOUT_SECONDS="${REMOTECLAW_LIVE_CODEX_HARNESS_SETUP_TIMEOUT_SECONDS:-180}" \
   -e REMOTECLAW_LIVE_CODEX_HARNESS_SUBAGENT_ONLY="${REMOTECLAW_LIVE_CODEX_HARNESS_SUBAGENT_ONLY:-}" \
   -e REMOTECLAW_LIVE_CODEX_HARNESS_SUBAGENT_PROBE="${REMOTECLAW_LIVE_CODEX_HARNESS_SUBAGENT_PROBE:-1}" \
   -e REMOTECLAW_LIVE_CODEX_HARNESS_USE_CI_SAFE_CODEX_CONFIG="${REMOTECLAW_LIVE_CODEX_HARNESS_USE_CI_SAFE_CODEX_CONFIG:-1}" \
+  -e REMOTECLAW_LIVE_CODEX_CLI_PACKAGE_SPEC="$CODEX_CLI_PACKAGE_SPEC" \
   -e REMOTECLAW_CLI_BACKEND_LOG_OUTPUT="${REMOTECLAW_CLI_BACKEND_LOG_OUTPUT:-}" \
   -e REMOTECLAW_TEST_CONSOLE="${REMOTECLAW_TEST_CONSOLE:-}" \
   -e REMOTECLAW_LIVE_DOCKER_SCRIPTS_DIR="${DOCKER_TRUSTED_HARNESS_CONTAINER_DIR}/scripts" \

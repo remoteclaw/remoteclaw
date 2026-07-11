@@ -1,4 +1,5 @@
 import { normalizeAgentId } from "../routing/session-key.js";
+import { normalizeUniqueStringEntries, sortUniqueStrings } from "../shared/string-normalization.js";
 
 /**
  * Runtime attestation (ADR 0005 H9). Declares the implementation status
@@ -35,14 +36,14 @@ function normalizeAllowAgents(allowAgents: readonly string[] | undefined): {
   return {
     configured: true,
     allowAny: allowAgents.some((value) => value.trim() === "*"),
-    allowedIds: Array.from(new Set(allowedIds)).toSorted((a, b) => a.localeCompare(b)),
+    allowedIds: sortUniqueStrings(allowedIds),
   };
 }
 
 function normalizeConfiguredAgentIds(
   configuredAgentIds: readonly string[] | undefined,
 ): Set<string> {
-  return new Set((configuredAgentIds ?? []).map((id) => normalizeAgentId(id)).filter(Boolean));
+  return new Set(normalizeUniqueStringEntries((configuredAgentIds ?? []).map(normalizeAgentId)));
 }
 
 function filterConfiguredAllowedIds(params: {
@@ -73,7 +74,7 @@ export function resolveSubagentAllowedTargetIds(params: {
     }
     return {
       allowAny: true,
-      allowedIds: Array.from(new Set(configuredIds)).toSorted((a, b) => a.localeCompare(b)),
+      allowedIds: sortUniqueStrings(configuredIds),
     };
   }
   return {

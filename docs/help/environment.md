@@ -138,11 +138,11 @@ shorthand values.
 
 ## Path-related env vars
 
-| Variable                 | Purpose                                                                                                                                                                              |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `REMOTECLAW_HOME`        | Override the home directory used for all internal path resolution (`~/.remoteclaw/`, agent dirs, sessions, credentials). Useful when running RemoteClaw as a dedicated service user. |
-| `REMOTECLAW_STATE_DIR`   | Override the state directory (default `~/.remoteclaw`).                                                                                                                              |
-| `REMOTECLAW_CONFIG_PATH` | Override the config file path (default `~/.remoteclaw/remoteclaw.json`).                                                                                                             |
+| Variable                 | Purpose                                                                                                                                                                                                                                       |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `REMOTECLAW_HOME`        | Override the home directory used for internal RemoteClaw path defaults (`~/.remoteclaw/`, agent dirs, sessions, credentials, installer onboarding, and the default dev checkout). Useful when running RemoteClaw as a dedicated service user. |
+| `REMOTECLAW_STATE_DIR`   | Override the state directory (default `~/.remoteclaw`).                                                                                                                                                                                       |
+| `REMOTECLAW_CONFIG_PATH` | Override the config file path (default `~/.remoteclaw/remoteclaw.json`).                                                                                                                                                                      |
 
 ## Logging
 
@@ -152,9 +152,9 @@ shorthand values.
 
 ### `REMOTECLAW_HOME`
 
-When set, `REMOTECLAW_HOME` replaces the system home directory (`$HOME` / `os.homedir()`) for all internal path resolution. This enables full filesystem isolation for headless service accounts.
+When set, `REMOTECLAW_HOME` replaces the system home directory (`$HOME` / `os.homedir()`) for internal RemoteClaw path defaults. This includes the default state directory, config path, agent directories, credentials, installer onboarding workspace, and the default dev checkout used by `remoteclaw update --channel dev`.
 
-**Precedence:** `REMOTECLAW_HOME` > `$HOME` > `USERPROFILE` > `os.homedir()`
+**Precedence:** `REMOTECLAW_HOME` > `$HOME` > `USERPROFILE` > Termux `PREFIX` home fallback on Android > `os.homedir()`
 
 **Example** (macOS LaunchDaemon):
 
@@ -166,7 +166,9 @@ When set, `REMOTECLAW_HOME` replaces the system home directory (`$HOME` / `os.ho
 </dict>
 ```
 
-`REMOTECLAW_HOME` can also be set to a tilde path (e.g. `~/svc`), which gets expanded using `$HOME` before use.
+`REMOTECLAW_HOME` can also be set to a tilde path (e.g. `~/svc`), which gets expanded using the same OS home fallback chain before use.
+
+Explicit path variables such as `REMOTECLAW_STATE_DIR`, `REMOTECLAW_CONFIG_PATH`, and `REMOTECLAW_GIT_DIR` still take precedence. OS-account tasks such as shell startup file detection, package-manager setup, and host `~` expansion may still use the real system home.
 
 ## nvm users: web_fetch TLS failures
 

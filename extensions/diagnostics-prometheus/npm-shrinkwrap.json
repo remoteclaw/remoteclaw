@@ -1,0 +1,12 @@
+{
+  "name": "@remoteclaw/diagnostics-prometheus",
+  "version": "2026.5.27",
+  "lockfileVersion": 3,
+  "requires": true,
+  "packages": {
+    "": {
+      "name": "@remoteclaw/diagnostics-prometheus",
+      "version": "2026.5.27"
+    }
+  }
+}

@@ -1,6 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 import { validateConfigObjectRaw } from "./validation.js";
 
+function requireIssue<T extends { path: string }>(issues: T[], path: string): T {
+  const issue = issues.find((entry) => entry.path === path);
+  if (!issue) {
+    throw new Error(`expected validation issue at ${path}`);
+  }
+  return issue;
+}
+
 vi.mock("../channels/plugins/legacy-config.js", () => ({
   collectChannelLegacyConfigRules: () => [],
 }));
@@ -217,6 +225,9 @@ describe("config validation SecretRef policy guards", () => {
             entry.message.includes("webhookTokne"),
         ),
       ).toBe(true);
+      const schemaIssue = requireIssue(result.issues, "channels.discord.threadBindings");
+      expect(schemaIssue.message).toContain("webhookTokne");
+      expect(schemaIssue.message).not.toContain("webhookToken");
     }
   });
 });

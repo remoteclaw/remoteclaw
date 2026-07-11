@@ -780,9 +780,10 @@ describe("installBundledRuntimeDeps", () => {
       error: new Error("spawn npm ENOENT"),
     });
 
+    const installRoot = makeTempDir();
     expect(() =>
       installBundledRuntimeDeps({
-        installRoot: "/tmp/remoteclaw",
+        installRoot,
         missingSpecs: ["browser-runtime@1.0.0"],
         env: {},
       }),

@@ -4,6 +4,11 @@ import {
   FLAG_TERMINATOR,
   isValueToken,
 } from "../infra/cli-root-options.js";
+import {
+  getCoreCliCommandNames,
+  getCoreCliCommandsWithSubcommands,
+} from "./program/command-registry.js";
+import { getSubCliCommandsWithSubcommands, getSubCliEntries } from "./program/register.subclis.js";
 
 const HELP_FLAGS = new Set(["-h", "--help"]);
 const VERSION_FLAGS = new Set(["-V", "--version"]);
@@ -57,7 +62,7 @@ export function hasRootVersionAlias(argv: string[]): boolean {
       continue;
     }
     if (arg.startsWith("-")) {
-      continue;
+      return false;
     }
     return false;
   }
@@ -103,6 +108,114 @@ function isRootInvocationForFlags(
 
 export function isRootHelpInvocation(argv: string[]): boolean {
   return isRootInvocationForFlags(argv, HELP_FLAGS);
+}
+
+let knownRootCommandsCache: ReadonlySet<string> | undefined;
+function getKnownRootCommands(): ReadonlySet<string> {
+  knownRootCommandsCache ??= new Set<string>([
+    ...getCoreCliCommandNames(),
+    ...getSubCliEntries().map((entry) => entry.name),
+  ]);
+  return knownRootCommandsCache;
+}
+
+let rootCommandsWithSubcommandsCache: ReadonlySet<string> | undefined;
+function getRootCommandsWithSubcommands(): ReadonlySet<string> {
+  rootCommandsWithSubcommandsCache ??= new Set<string>([
+    ...getCoreCliCommandsWithSubcommands(),
+    ...getSubCliCommandsWithSubcommands(),
+  ]);
+  return rootCommandsWithSubcommandsCache;
+}
+
+export function normalizeGeneratedHelpCommandArgv(argv: string[]): string[] {
+  const positionals: Array<{ value: string; index: number }> = [];
+  const rootOptions: string[] = [];
+  let helpFlagIndex: number | null = null;
+
+  for (let index = 2; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (!arg || arg === FLAG_TERMINATOR) {
+      break;
+    }
+    const consumed = consumeRootOptionToken(argv, index);
+    if (consumed > 0) {
+      rootOptions.push(...argv.slice(index, index + consumed));
+      index += consumed - 1;
+      continue;
+    }
+    if (HELP_FLAGS.has(arg)) {
+      helpFlagIndex = index;
+      continue;
+    }
+    if (arg.startsWith("-")) {
+      return argv;
+    }
+    positionals.push({ value: arg, index });
+  }
+
+  const [primary, secondary, target] = positionals;
+  if (
+    !primary ||
+    secondary?.value !== "help" ||
+    (getKnownRootCommands().has(primary.value) &&
+      !getRootCommandsWithSubcommands().has(primary.value))
+  ) {
+    return argv;
+  }
+
+  if (positionals.length === 2 && helpFlagIndex === secondary.index + 1) {
+    return argv.toSpliced(helpFlagIndex, 1);
+  }
+
+  if (
+    !target ||
+    positionals.length !== 3 ||
+    (helpFlagIndex !== null && helpFlagIndex !== target.index + 1)
+  ) {
+    return argv;
+  }
+
+  return [argv[0], argv[1], ...rootOptions, primary.value, target.value, "--help"];
+}
+
+export function normalizeRootHelpTargetArgv(argv: string[]): string[] {
+  const positionals: Array<{ value: string; index: number }> = [];
+  const rootOptions: string[] = [];
+  let helpFlagIndex: number | null = null;
+
+  for (let index = 2; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (!arg || arg === FLAG_TERMINATOR) {
+      break;
+    }
+    const consumed = consumeRootOptionToken(argv, index);
+    if (consumed > 0) {
+      rootOptions.push(...argv.slice(index, index + consumed));
+      index += consumed - 1;
+      continue;
+    }
+    if (HELP_FLAGS.has(arg)) {
+      helpFlagIndex = index;
+      continue;
+    }
+    if (arg.startsWith("-")) {
+      return argv;
+    }
+    positionals.push({ value: arg, index });
+  }
+
+  const [help, target] = positionals;
+  if (
+    help?.value !== "help" ||
+    !target ||
+    (helpFlagIndex !== null && helpFlagIndex !== positionals.at(-1)!.index + 1)
+  ) {
+    return argv;
+  }
+
+  const targetPath = positionals.slice(1).map((positional) => positional.value);
+  return [argv[0], argv[1], ...rootOptions, ...targetPath, "--help"];
 }
 
 export function getFlagValue(argv: string[], name: string): string | null | undefined {
@@ -324,5 +437,5 @@ export function shouldMigrateStateFromPath(path: string[]): boolean {
 }
 
 export function shouldMigrateState(argv: string[]): boolean {
-  return shouldMigrateStateFromPath(getCommandPath(argv, 2));
+  return shouldMigrateStateFromPath(getCommandPathWithRootOptions(argv, 2));
 }

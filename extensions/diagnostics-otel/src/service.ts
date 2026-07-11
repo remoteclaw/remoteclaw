@@ -31,13 +31,21 @@ import {
 const DEFAULT_SERVICE_NAME = "remoteclaw";
 const DROPPED_OTEL_ATTRIBUTE_KEYS = new Set([
   "remoteclaw.callId",
+  "remoteclaw.call_id",
   "remoteclaw.parentSpanId",
+  "remoteclaw.parent_span_id",
   "remoteclaw.runId",
+  "remoteclaw.run_id",
   "remoteclaw.sessionId",
+  "remoteclaw.session_id",
   "remoteclaw.sessionKey",
+  "remoteclaw.session_key",
   "remoteclaw.spanId",
+  "remoteclaw.span_id",
   "remoteclaw.toolCallId",
+  "remoteclaw.tool_call_id",
   "remoteclaw.traceId",
+  "remoteclaw.trace_id",
 ]);
 const LOW_CARDINALITY_VALUE_RE = /^[A-Za-z0-9_.:-]{1,120}$/u;
 const MAX_OTEL_CONTENT_ATTRIBUTE_CHARS = 4 * 1024;

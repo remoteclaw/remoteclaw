@@ -4,6 +4,7 @@ import { resolveRemoteClawPackageRootSync } from "../infra/remoteclaw-root.js";
 import { listChannelCatalogEntries } from "../plugins/channel-catalog-registry.js";
 import type { PluginPackageChannel } from "../plugins/manifest.js";
 import { normalizeOptionalLowercaseString } from "../shared/string-coerce.js";
+import { uniqueStrings } from "../shared/string-normalization.js";
 
 type ChannelCatalogEntryLike = {
   remoteclaw?: {
@@ -22,10 +23,12 @@ const OFFICIAL_CHANNEL_CATALOG_RELATIVE_PATH = path.join("dist", "channel-catalo
 const officialCatalogFileCache = new Map<string, ChannelCatalogEntryLike[] | null>();
 
 function listPackageRoots(): string[] {
-  return [
-    resolveRemoteClawPackageRootSync({ cwd: process.cwd() }),
-    resolveRemoteClawPackageRootSync({ moduleUrl: import.meta.url }),
-  ].filter((entry, index, all): entry is string => Boolean(entry) && all.indexOf(entry) === index);
+  return uniqueStrings(
+    [
+      resolveRemoteClawPackageRootSync({ cwd: process.cwd() }),
+      resolveRemoteClawPackageRootSync({ moduleUrl: import.meta.url }),
+    ].filter((entry): entry is string => Boolean(entry)),
+  );
 }
 
 function readBundledExtensionCatalogEntriesSync(): PluginPackageChannel[] {
@@ -102,15 +105,20 @@ function toBundledChannelEntry(
 
 export function listBundledChannelCatalogEntries(): BundledChannelCatalogEntry[] {
   const entries = new Map<string, BundledChannelCatalogEntry>();
-  for (const entry of readOfficialCatalogFileSync()
-    .map((entry) => toBundledChannelEntry(entry))
-    .filter((entry): entry is BundledChannelCatalogEntry => Boolean(entry))) {
-    entries.set(entry.id, entry);
+  for (const entry of readBundledExtensionCatalogEntriesSync()) {
+    const channelEntry = toBundledChannelEntry(entry);
+    if (channelEntry) {
+      entries.set(channelEntry.id, channelEntry);
+    }
   }
-  for (const entry of readBundledExtensionCatalogEntriesSync()
-    .map((entry) => toBundledChannelEntry(entry))
-    .filter((entry): entry is BundledChannelCatalogEntry => Boolean(entry))) {
-    entries.set(entry.id, entry);
+  for (const entry of readOfficialCatalogFileSync()) {
+    const channelEntry = toBundledChannelEntry(entry);
+    if (channelEntry) {
+      entries.set(channelEntry.id, entries.get(channelEntry.id) ?? channelEntry);
+    }
+  }
+  if (entries.size === 0) {
+    return [];
   }
   return Array.from(entries.values()).toSorted(
     (left, right) => left.order - right.order || left.id.localeCompare(right.id),

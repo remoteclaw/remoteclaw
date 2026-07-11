@@ -112,6 +112,29 @@ describe("security audit gateway config findings", () => {
     ]);
   });
 
+  it("honors runtime password auth override for bind auth checks", () => {
+    const cfg: RemoteClawConfig = {
+      gateway: {
+        bind: "lan",
+        auth: {},
+      },
+    };
+
+    const findings = collectGatewayConfigFindings(
+      cfg,
+      cfg,
+      {},
+      {
+        gatewayAuthOverride: {
+          mode: "password",
+          password: "runtime-gateway-password-1234567890", // pragma: allowlist secret
+        },
+      },
+    );
+
+    expect(hasFinding("gateway.bind_no_auth", findings)).toBe(false);
+  });
+
   it("warns when REMOTECLAW_GATEWAY_TOKEN shadows a different configured token source", () => {
     const cfg: RemoteClawConfig = {
       gateway: { auth: { token: "config-token" } },

@@ -88,6 +88,8 @@ vi.mock("./controllers/devices.ts", () => ({
 
 vi.mock("./controllers/exec-approval.ts", () => ({
   addExecApproval: vi.fn((queue, entry) => [...queue, entry]),
+  clearResolvedExecApprovalPrompt: vi.fn(),
+  enqueueExecApprovalPrompt: vi.fn(),
   parseExecApprovalRequested: vi.fn(() => null),
   parseExecApprovalResolved: vi.fn(() => null),
   parsePluginApprovalRequested: vi.fn(() => null),
@@ -107,6 +109,7 @@ vi.mock("./controllers/sessions.ts", () => ({
   applySessionsChangedEvent: vi.fn(() => ({ applied: false })),
   loadSessions: vi.fn(async () => undefined),
   subscribeSessions: subscribeSessionsMock,
+  syncSelectedSessionMessageSubscription: vi.fn(),
 }));
 
 function createHost(tab: Tab) {

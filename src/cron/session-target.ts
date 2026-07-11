@@ -9,6 +9,11 @@ export function assertSafeCronSessionTargetId(sessionId: string): string {
   if (!trimmed) {
     throw new Error(INVALID_CRON_SESSION_TARGET_ID_ERROR);
   }
+  // Fork-stricter guard (do NOT relax to upstream's null-byte-only check):
+  // reject path separators so a persisted/custom `session:<id>` target cannot
+  // smuggle path traversal (`session:../../outside`) into session-key/store
+  // resolution. Restored after the v2026.5.27 mechanical apply adopted the
+  // weaker upstream form.
   if (trimmed.includes("/") || trimmed.includes("\\") || trimmed.includes("\0")) {
     throw new Error(INVALID_CRON_SESSION_TARGET_ID_ERROR);
   }

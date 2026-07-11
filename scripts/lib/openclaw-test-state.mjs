@@ -345,6 +345,8 @@ export function renderShellSnippet(options = {}) {
   const homeTemplate = `remoteclaw-${label}-${scenario}-home.XXXXXX`;
   const lines = [
     'REMOTECLAW_TEST_STATE_TMP_ROOT="${REMOTECLAW_TEST_STATE_TMPDIR:-${TMPDIR:-/tmp}}"',
+    'REMOTECLAW_TEST_STATE_TMP_ROOT="${REMOTECLAW_TEST_STATE_TMP_ROOT%/}"',
+    '[ -n "$REMOTECLAW_TEST_STATE_TMP_ROOT" ] || REMOTECLAW_TEST_STATE_TMP_ROOT="/tmp"',
     "export REMOTECLAW_TEST_STATE_TMP_ROOT",
     'mkdir -p "$REMOTECLAW_TEST_STATE_TMP_ROOT"',
     `REMOTECLAW_TEST_STATE_HOME="$(mktemp -d "$REMOTECLAW_TEST_STATE_TMP_ROOT/${homeTemplate}")"`,
@@ -388,6 +390,8 @@ export function renderShellFunction() {
       label="$(printf "%s" "$label" | tr -cs "A-Za-z0-9_.-" "-" | sed -e "s/^-*//" -e "s/-*$//")"
       [ -n "$label" ] || label="state"
       local tmp_root="\${REMOTECLAW_TEST_STATE_TMPDIR:-\${TMPDIR:-/tmp}}"
+      tmp_root="\${tmp_root%/}"
+      [ -n "$tmp_root" ] || tmp_root="/tmp"
       mkdir -p "$tmp_root"
       REMOTECLAW_TEST_STATE_HOME="$(mktemp -d "$tmp_root/remoteclaw-$label-$scenario-home.XXXXXX")"
       ;;

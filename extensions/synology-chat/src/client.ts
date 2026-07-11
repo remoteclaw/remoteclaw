@@ -9,6 +9,7 @@ import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runt
 
 const MIN_SEND_INTERVAL_MS = 500;
 let lastSendTime = 0;
+let sendQueue: Promise<void> = Promise.resolve();
 
 // --- Chat user_id resolution ---
 // Synology Chat uses two different user_id spaces:
@@ -56,21 +57,14 @@ export async function sendMessage(
   // The @mention is optional but user_ids is mandatory
   const body = buildWebhookBody({ text }, userId);
 
-  // Internal rate limit: min 500ms between sends
-  const now = Date.now();
-  const elapsed = now - lastSendTime;
-  if (elapsed < MIN_SEND_INTERVAL_MS) {
-    await sleep(MIN_SEND_INTERVAL_MS - elapsed);
-  }
-
   // Retry with exponential backoff (3 attempts, 300ms base)
   const maxRetries = 3;
   const baseDelay = 300;
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
+      await waitForSendSlot();
       const ok = await doPost(incomingUrl, body, allowInsecureSsl);
-      lastSendTime = Date.now();
       if (ok) return true;
     } catch {
       // will retry
@@ -96,8 +90,8 @@ export async function sendFileUrl(
   const body = buildWebhookBody({ file_url: fileUrl }, userId);
 
   try {
+    await waitForSendSlot();
     const ok = await doPost(incomingUrl, body, allowInsecureSsl);
-    lastSendTime = Date.now();
     return ok;
   } catch {
     return false;
@@ -124,17 +118,25 @@ export async function fetchChatUsers(
   }
 
   return new Promise((resolve) => {
+    let settled = false;
+    const finish = (users: ChatUser[]) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      resolve(users);
+    };
     let parsedUrl: URL;
     try {
       parsedUrl = new URL(listUrl);
     } catch {
       log?.warn("fetchChatUsers: invalid user_list URL, using cached data");
-      resolve(cached?.users ?? []);
+      finish(cached?.users ?? []);
       return;
     }
     const transport = parsedUrl.protocol === "https:" ? https : http;
 
-    transport
+    const req = transport
       .get(listUrl, { rejectUnauthorized: !allowInsecureSsl } as any, (res) => {
         let data = "";
         res.on("data", (c: Buffer) => {
@@ -153,24 +155,41 @@ export async function fetchChatUsers(
                 users,
                 cachedAt: now,
               });
-              resolve(users);
+              finish(users);
             } else {
               log?.warn(
                 `fetchChatUsers: API returned success=${result.success}, using cached data`,
               );
-              resolve(cached?.users ?? []);
+              finish(cached?.users ?? []);
             }
           } catch {
             log?.warn("fetchChatUsers: failed to parse user_list response");
-            resolve(cached?.users ?? []);
+            finish(cached?.users ?? []);
           }
         });
       })
       .on("error", (err) => {
         log?.warn(`fetchChatUsers: HTTP error — ${err instanceof Error ? err.message : err}`);
-        resolve(cached?.users ?? []);
+        finish(cached?.users ?? []);
       });
+    req.setTimeout?.(15_000, () => {
+      log?.warn("fetchChatUsers: request timed out, using cached data");
+      req.destroy?.();
+      finish(cached?.users ?? []);
+    });
   });
+}
+
+async function waitForSendSlot(): Promise<void> {
+  const next = sendQueue.then(async () => {
+    const elapsed = Date.now() - lastSendTime;
+    if (elapsed < MIN_SEND_INTERVAL_MS) {
+      await sleep(MIN_SEND_INTERVAL_MS - elapsed);
+    }
+    lastSendTime = Date.now();
+  });
+  sendQueue = next.catch(() => {});
+  await next;
 }
 
 /**

@@ -163,22 +163,25 @@ told us RemoteClaw-style Claude CLI usage is allowed again, so RemoteClaw treats
 a new policy.
 </Note>
 
-The bundled Anthropic `claude-cli` backend receives the RemoteClaw skills snapshot
-two ways: the compact RemoteClaw skills catalog in the appended system prompt, and
-a temporary Claude Code plugin passed with `--plugin-dir`. The plugin contains
-only the eligible skills for that agent/session, so Claude Code's native skill
-resolver sees the same filtered set that RemoteClaw would otherwise advertise in
-the prompt. Skill env/API key overrides are still applied by RemoteClaw to the
-child process environment for the run.
+The bundled Anthropic `claude-cli` backend prefers Claude Code's native skill
+resolver for RemoteClaw skills. When the current skills snapshot includes at least
+one selected skill with a materialized path, RemoteClaw passes a temporary Claude
+Code plugin with `--plugin-dir` and omits the duplicate RemoteClaw skills catalog
+from the appended system prompt. If the snapshot has no materialized plugin
+skill, RemoteClaw keeps the prompt catalog as a fallback. Skill env/API key
+overrides are still applied by RemoteClaw to the child process environment for the
+run.
 
 Claude CLI also has its own noninteractive permission mode. RemoteClaw maps that
-to the existing exec policy instead of adding Claude-specific config: when the
-effective requested exec policy is YOLO (`tools.exec.security: "full"` and
-`tools.exec.ask: "off"`), RemoteClaw adds `--permission-mode bypassPermissions`.
-Per-agent `agents.list[].tools.exec` settings override global `tools.exec` for
-that agent. To force a different Claude mode, set explicit raw backend args
-such as `--permission-mode default` or `--permission-mode acceptEdits` under
-`agents.defaults.cliBackends.claude-cli.args` and matching `resumeArgs`.
+to the existing exec policy instead of adding Claude-specific policy config.
+For RemoteClaw-managed Claude live sessions, the effective RemoteClaw exec policy is
+authoritative: YOLO (`tools.exec.security: "full"` and
+`tools.exec.ask: "off"`) launches Claude with
+`--permission-mode bypassPermissions`, while restrictive effective exec policy
+launches Claude with `--permission-mode default`. Per-agent
+`agents.list[].tools.exec` settings override global `tools.exec` for that
+agent. Raw Claude backend args may still include `--permission-mode`, but live
+Claude launches normalize that flag to match the effective RemoteClaw exec policy.
 
 The bundled Anthropic `claude-cli` backend also maps RemoteClaw `/think` levels
 to Claude Code's native `--effort` flag for non-off levels. `minimal` and
@@ -394,6 +397,22 @@ reaped after `mcp.sessionIdleTtlMs` milliseconds of idle time (default 10
 minutes; set `0` to disable). One-shot embedded runs such as auth probes,
 slug generation, and active-memory recall request cleanup at run end so stdio
 children and Streamable HTTP/SSE streams do not outlive the run.
+
+## Reseed history cap
+
+When a fresh CLI session is seeded from a prior RemoteClaw transcript (for
+example after a `session_expired` retry), the rendered
+`<conversation_history>` block is capped to keep reseed prompts from
+exploding. The default is `12288` characters (about 3000 tokens).
+
+Claude CLI backends automatically use a larger cap derived from the resolved
+Claude context tier. Standard 200K-token Claude runs keep a larger transcript
+slice, and 1M-token Claude runs keep a larger slice again, while other CLI
+backends keep the conservative default.
+
+- The cap only governs the reseed prompt's prior-history block. Live-session
+  output limits are tuned separately under `reliability.outputLimits`
+  (see [Sessions](#sessions)).
 
 ## Limitations
 

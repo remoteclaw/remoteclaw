@@ -53,6 +53,7 @@ export const PLUGIN_INSTALL_ERROR_CODE = {
   INVALID_NPM_SPEC: "invalid_npm_spec",
   MISSING_REMOTECLAW_EXTENSIONS: "missing_remoteclaw_extensions",
   EMPTY_REMOTECLAW_EXTENSIONS: "empty_remoteclaw_extensions",
+  INVALID_REMOTECLAW_EXTENSIONS: "invalid_remoteclaw_extensions",
   NPM_PACKAGE_NOT_FOUND: "npm_package_not_found",
   PLUGIN_ID_MISMATCH: "plugin_id_mismatch",
   SECURITY_SCAN_BLOCKED: "security_scan_blocked",
@@ -123,6 +124,13 @@ function ensureRemoteClawExtensions(params: { manifest: PackageManifest }):
       ok: false,
       error: "package.json remoteclaw.extensions is empty",
       code: PLUGIN_INSTALL_ERROR_CODE.EMPTY_REMOTECLAW_EXTENSIONS,
+    };
+  }
+  if (resolved.status === "invalid") {
+    return {
+      ok: false,
+      error: resolved.error,
+      code: PLUGIN_INSTALL_ERROR_CODE.INVALID_REMOTECLAW_EXTENSIONS,
     };
   }
   return {

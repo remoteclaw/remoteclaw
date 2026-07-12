@@ -330,4 +330,47 @@ describe("redactLogArgLeaves hardening (#2853)", () => {
     }
     fs.rmSync(file, { force: true });
   });
+
+  it("strips an Array-subclass prototype toJSON so a secret cannot re-materialize (#2881)", () => {
+    // Array.prototype.map uses ArraySpeciesCreate, so mapping an Array subclass
+    // returns a same-subclass instance whose prototype toJSON JSON.stringify would
+    // later invoke — re-emitting the secret raw past redaction. The array branch
+    // must normalize to a plain array first, mirroring the object-branch rebuild.
+    class TaggedList extends Array {
+      toJSON() {
+        return "token=supersecretvalue1234567890";
+      }
+    }
+    const arg = new TaggedList();
+    arg.push("visible-element");
+    const serialized = JSON.stringify(redact(arg));
+    expect(serialized).not.toContain("supersecretvalue1234567890");
+    expect(serialized).toContain("visible-element");
+    expect(() => JSON.parse(serialized)).not.toThrow();
+  });
+
+  it("masks an Array-subclass prototype toJSON secret written to the on-disk log (#2881)", () => {
+    // End-to-end at the file sink: the residual array-branch leak, proven masked.
+    const file = tmpLogPath("array-subclass-tojson");
+    fs.rmSync(file, { force: true });
+    setLoggerOverride({ level: "info", file, consoleLevel: "silent" });
+
+    class TaggedList extends Array {
+      toJSON() {
+        return "token=supersecretvalue1234567890";
+      }
+    }
+    const arg = new TaggedList();
+    arg.push("visible-element");
+    getChildLogger({ subsystem: "gateway" }).error("array serialize failed", arg);
+
+    const content = readLog(file);
+    expect(content.length).toBeGreaterThan(0);
+    expect(content).not.toContain("supersecretvalue1234567890");
+    expect(content).toContain("array serialize failed");
+    for (const rawLine of content.split("\n").filter(Boolean)) {
+      expect(() => JSON.parse(rawLine)).not.toThrow();
+    }
+    fs.rmSync(file, { force: true });
+  });
 });

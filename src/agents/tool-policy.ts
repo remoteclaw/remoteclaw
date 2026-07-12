@@ -6,7 +6,6 @@ import {
   resolveToolProfilePolicy,
   TOOL_GROUPS,
 } from "./tool-policy-shared.js";
-import type { AnyAgentTool } from "./tools/common.js";
 
 /**
  * Runtime attestation (ADR 0005 H9). Declares the implementation status
@@ -15,9 +14,6 @@ import type { AnyAgentTool } from "./tools/common.js";
  * updating these when sync or rebrand changes the surface.
  */
 export const MODULE_ATTESTATIONS = {
-  resolveOwnerOnlyToolApprovalClass: "live",
-  isOwnerOnlyToolName: "live",
-  applyOwnerOnlyToolPolicy: "live",
   collectExplicitAllowlist: "live",
   buildPluginToolGroups: "live",
   expandPluginGroups: "live",
@@ -33,67 +29,6 @@ export {
   TOOL_GROUPS,
 } from "./tool-policy-shared.js";
 export type { ToolProfileId } from "./tool-policy-shared.js";
-
-export type OwnerOnlyToolApprovalClass = "control_plane" | "exec_capable" | "interactive";
-
-// Keep tool-policy browser-safe: do not import tools/common at runtime.
-function wrapOwnerOnlyToolExecution(tool: AnyAgentTool, authorized: boolean): AnyAgentTool {
-  if (tool.ownerOnly !== true || authorized || !tool.execute) {
-    return tool;
-  }
-  return {
-    ...tool,
-    execute: async () => {
-      throw new Error("Tool restricted to owner senders.");
-    },
-  };
-}
-
-const OWNER_ONLY_TOOL_APPROVAL_CLASS_FALLBACKS = new Map<string, OwnerOnlyToolApprovalClass>([
-  ["cron", "control_plane"],
-  ["gateway", "control_plane"],
-  ["nodes", "exec_capable"],
-]);
-
-export function resolveOwnerOnlyToolApprovalClass(
-  name: string,
-): OwnerOnlyToolApprovalClass | undefined {
-  return OWNER_ONLY_TOOL_APPROVAL_CLASS_FALLBACKS.get(normalizeToolName(name));
-}
-
-export function isOwnerOnlyToolName(name: string) {
-  return resolveOwnerOnlyToolApprovalClass(name) !== undefined;
-}
-
-function isOwnerOnlyTool(tool: AnyAgentTool) {
-  return tool.ownerOnly === true || isOwnerOnlyToolName(tool.name);
-}
-
-/**
- * Filters owner-only tools unless the sender is an owner or a server-side
- * runtime grant authorizes a specific owner-only tool for this run.
- */
-export function applyOwnerOnlyToolPolicy(
-  tools: AnyAgentTool[],
-  senderIsOwner: boolean,
-  ownerOnlyToolAllowlist?: string[],
-) {
-  const allowedOwnerOnlyTools = new Set(
-    ownerOnlyToolAllowlist?.map((name) => normalizeToolName(name)) ?? [],
-  );
-  const isAuthorized = (tool: AnyAgentTool) =>
-    senderIsOwner || allowedOwnerOnlyTools.has(normalizeToolName(tool.name));
-  const withGuard = tools.map((tool) => {
-    if (!isOwnerOnlyTool(tool)) {
-      return tool;
-    }
-    return wrapOwnerOnlyToolExecution(tool, isAuthorized(tool));
-  });
-  if (senderIsOwner) {
-    return withGuard;
-  }
-  return withGuard.filter((tool) => !isOwnerOnlyTool(tool) || isAuthorized(tool));
-}
 
 export type ToolPolicyLike = {
   allow?: string[];

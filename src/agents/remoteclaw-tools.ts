@@ -68,8 +68,6 @@ export function createRemoteClawTools(options?: {
   disableMessageTool?: boolean;
   /** Trusted sender id from inbound context (not tool args). */
   requesterSenderId?: string | null;
-  /** Whether the requesting sender is an owner. */
-  senderIsOwner?: boolean;
   /** HTTP callers consume tool output directly; preserve raw media invoke payloads. */
   allowMediaInvokeCommands?: boolean;
 }): AnyAgentTool[] {

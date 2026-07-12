@@ -56,6 +56,7 @@ import {
   canonicalizeSpawnedByForAgent,
   loadSessionEntry,
   pruneLegacyStoreKeys,
+  resolveFreshestSessionStoreMatchFromStoreKeys,
   resolveGatewaySessionStoreTarget,
 } from "../session-utils.js";
 import { formatForLog } from "../ws-log.js";
@@ -492,33 +493,52 @@ export const agentHandlers: GatewayRequestHandlers = {
       resolvedGroupId = resolvedGroupId || inheritedGroup?.groupId;
       resolvedGroupChannel = resolvedGroupChannel || inheritedGroup?.groupChannel;
       resolvedGroupSpace = resolvedGroupSpace || inheritedGroup?.groupSpace;
-      const deliveryFields = normalizeSessionDeliveryFields(entry);
-      const nextEntryPatch: SessionEntry = {
-        sessionId,
-        updatedAt: now,
-        verboseLevel: entry?.verboseLevel,
-        reasoningLevel: entry?.reasoningLevel,
-        systemSent: entry?.systemSent,
-        sendPolicy: entry?.sendPolicy,
-        skillsSnapshot: entry?.skillsSnapshot,
-        deliveryContext: deliveryFields.deliveryContext,
-        lastChannel: deliveryFields.lastChannel ?? entry?.lastChannel,
-        lastTo: deliveryFields.lastTo ?? entry?.lastTo,
-        lastAccountId: deliveryFields.lastAccountId ?? entry?.lastAccountId,
-        modelOverride: entry?.modelOverride,
-        providerOverride: entry?.providerOverride,
-        label: labelValue,
-        spawnedBy: spawnedByValue,
-        spawnedWorkspaceDir: entry?.spawnedWorkspaceDir,
-        spawnDepth: entry?.spawnDepth,
-        channel: entry?.channel ?? request.channel?.trim(),
-        groupId: resolvedGroupId ?? entry?.groupId,
-        groupChannel: resolvedGroupChannel ?? entry?.groupChannel,
-        space: resolvedGroupSpace ?? entry?.space,
-        cliSessionIds: entry?.cliSessionIds,
-        claudeCliSessionId: entry?.claudeCliSessionId,
+      // Build the session-store patch from a supplied source entry so the
+      // persisted merge (below) can source every carried-forward / fallback
+      // field from the FRESH in-lock entry rather than the pre-lock snapshot.
+      // Request-resolved intent (label, spawnedBy, resolved group ids, now) is
+      // captured as-is; only the fields sourced from / falling back to this
+      // session's own entry read from `sourceEntry`. This prevents concurrent
+      // same-session ops from clobbering each other's committed metadata (#2858).
+      const buildNextEntryPatch = (sourceEntry: SessionEntry | undefined): SessionEntry => {
+        const deliveryFields = normalizeSessionDeliveryFields(sourceEntry);
+        return {
+          // Prefer the fresh entry's identity when a concurrent op rotated it
+          // since the pre-lock load; otherwise fall back to the pre-lock
+          // sessionId (a fresh randomUUID for first-time sessions).
+          sessionId: sourceEntry?.sessionId ?? sessionId,
+          updatedAt: now,
+          verboseLevel: sourceEntry?.verboseLevel,
+          reasoningLevel: sourceEntry?.reasoningLevel,
+          systemSent: sourceEntry?.systemSent,
+          sendPolicy: sourceEntry?.sendPolicy,
+          skillsSnapshot: sourceEntry?.skillsSnapshot,
+          deliveryContext: deliveryFields.deliveryContext,
+          lastChannel: deliveryFields.lastChannel ?? sourceEntry?.lastChannel,
+          lastTo: deliveryFields.lastTo ?? sourceEntry?.lastTo,
+          lastAccountId: deliveryFields.lastAccountId ?? sourceEntry?.lastAccountId,
+          modelOverride: sourceEntry?.modelOverride,
+          providerOverride: sourceEntry?.providerOverride,
+          // label / spawnedBy carry this op's request-resolved intent (scoped
+          // out of the fresh-source switch per #2858; low concurrent-write risk).
+          label: labelValue,
+          spawnedBy: spawnedByValue,
+          spawnedWorkspaceDir: sourceEntry?.spawnedWorkspaceDir,
+          spawnDepth: sourceEntry?.spawnDepth,
+          channel: sourceEntry?.channel ?? request.channel?.trim(),
+          groupId: resolvedGroupId ?? sourceEntry?.groupId,
+          groupChannel: resolvedGroupChannel ?? sourceEntry?.groupChannel,
+          space: resolvedGroupSpace ?? sourceEntry?.space,
+          cliSessionIds: sourceEntry?.cliSessionIds,
+          claudeCliSessionId: sourceEntry?.claudeCliSessionId,
+        };
       };
-      sessionEntry = mergeSessionEntry(entry, nextEntryPatch);
+      // Provisional entry for the no-store path / pre-persist use. Built from the
+      // pre-lock `entry`; behavior is unchanged when `storePath` is falsy.
+      sessionEntry = mergeSessionEntry(entry, buildNextEntryPatch(entry));
+      // Per-op ALLOW/DENY gate, intentionally evaluated against the pre-lock
+      // `entry`: it is a decision about THIS request, not persisted metadata, so
+      // it is out of scope for the stale-writeback fix (#2858) and unchanged.
       const sendPolicy = resolveSendPolicy({
         cfg,
         entry,
@@ -546,16 +566,38 @@ export const agentHandlers: GatewayRequestHandlers = {
             key: requestedSessionKey,
             store,
           });
+          // Re-derive the freshest committed entry the same way loadSessionEntry
+          // does (freshest match across candidate keys), inside the lock and
+          // BEFORE pruning — prune deletes the legacy keys the freshest match may
+          // live under. Building the patch from THIS fresh entry, rather than the
+          // pre-lock snapshot, is what prevents a concurrent same-session
+          // writer's just-committed metadata from being clobbered. In the
+          // non-racing case this equals the pre-lock `entry`, so the single-op
+          // path is byte-identical. Fall back to the pre-lock `entry` only when
+          // the session is absent from the in-lock store (nothing committed to
+          // clobber — a concurrent writer always lands under a candidate key, so
+          // this fallback never reintroduces the race). See #2858.
+          const freshEntry =
+            resolveFreshestSessionStoreMatchFromStoreKeys(store, target.storeKeys)?.entry ?? entry;
           pruneLegacyStoreKeys({
             store,
             canonicalKey: target.canonicalKey,
             candidates: target.storeKeys,
           });
-          const merged = mergeSessionEntry(store[canonicalSessionKey], nextEntryPatch);
+          // Base stays `store[canonicalSessionKey]` (unchanged from the original);
+          // only the patch source moves from the stale pre-lock `entry` to
+          // `freshEntry`.
+          const merged = mergeSessionEntry(
+            store[canonicalSessionKey],
+            buildNextEntryPatch(freshEntry),
+          );
           store[canonicalSessionKey] = merged;
           return merged;
         });
         sessionEntry = persisted;
+        // Reflect the persisted (possibly concurrently-rotated) identity so the
+        // dispatched run and abort controller use the committed sessionId.
+        resolvedSessionId = persisted?.sessionId ?? resolvedSessionId;
       }
       if (canonicalSessionKey === mainSessionKey || canonicalSessionKey === "global") {
         context.addChatRun(idem, {

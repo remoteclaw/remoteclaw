@@ -697,4 +697,73 @@ describe("gateway agent handler", () => {
       }),
     );
   });
+
+  it("does not clobber a concurrently-committed metadata field with the stale pre-lock snapshot (#2858)", async () => {
+    // Op A's pre-lock snapshot was loaded BEFORE op B committed — it lacks the
+    // verboseLevel op B set.
+    mockMainSessionEntry({ sessionId: "existing-session-id" });
+
+    // Inside the write lock, op B has already committed verboseLevel=3 to the
+    // canonical entry (older updatedAt, so op A's own write still advances it).
+    let capturedEntry: Record<string, unknown> | undefined;
+    mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
+      const store: Record<string, unknown> = {
+        "agent:main:main": {
+          sessionId: "existing-session-id",
+          updatedAt: 10,
+          verboseLevel: 3,
+        },
+      };
+      const result = await updater(store);
+      capturedEntry = store["agent:main:main"] as Record<string, unknown>;
+      return result;
+    });
+    mocks.agentCommand.mockResolvedValue({
+      payloads: [{ text: "ok" }],
+      meta: { durationMs: 100 },
+    });
+
+    await runMainAgent("concurrent op A", "test-idem-2858-noclobber");
+
+    expect(mocks.updateSessionStore).toHaveBeenCalled();
+    expect(capturedEntry).toBeDefined();
+    // Before #2858 the patch was built from the stale pre-lock entry
+    // (verboseLevel undefined), and the object-spread merge overwrote op B's
+    // committed value with undefined. The fix sources the patch from the fresh
+    // in-lock entry, so op B's field survives...
+    expect(capturedEntry?.verboseLevel).toBe(3);
+    // ...and op A's own write still lands (updatedAt advances past op B's).
+    expect(capturedEntry?.updatedAt as number).toBeGreaterThan(10);
+  });
+
+  it("adopts a concurrently-rotated sessionId instead of forcing the stale one back (#2858)", async () => {
+    // Op A's pre-lock snapshot holds the stale identity.
+    mockMainSessionEntry({ sessionId: "stale-session-id" });
+
+    // Inside the write lock, op B has already rotated the identity.
+    let capturedEntry: Record<string, unknown> | undefined;
+    mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
+      const store: Record<string, unknown> = {
+        "agent:main:main": {
+          sessionId: "rotated-session-id",
+          updatedAt: 10,
+        },
+      };
+      const result = await updater(store);
+      capturedEntry = store["agent:main:main"] as Record<string, unknown>;
+      return result;
+    });
+    mocks.agentCommand.mockResolvedValue({
+      payloads: [{ text: "ok" }],
+      meta: { durationMs: 100 },
+    });
+
+    await runMainAgent("op A after rotation", "test-idem-2858-rotation");
+
+    // The persisted entry keeps the fresh identity rather than the stale one...
+    expect(capturedEntry?.sessionId).toBe("rotated-session-id");
+    // ...and the dispatched run uses it (resolvedSessionId reflects the persist).
+    await vi.waitFor(() => expect(mocks.agentCommand).toHaveBeenCalled());
+    expect(readLastAgentCommandCall()?.sessionId).toBe("rotated-session-id");
+  });
 });

@@ -108,6 +108,20 @@ describe("buildSlackManifest", () => {
     expect(events).toContain("pin_added");
   });
 
+  it("includes DM and private-channel conversation scopes by default", () => {
+    // conversations.open needs im:write (DMs) and mpim:write (group DMs); the
+    // paired read + groups scopes are required to list/interact with those
+    // conversation types the manifest already subscribes to. See #2099.
+    const manifest = JSON.parse(buildSlackManifest());
+    const bot = manifest.oauth_config.scopes.bot;
+    expect(bot).toContain("im:write");
+    expect(bot).toContain("im:read");
+    expect(bot).toContain("mpim:write");
+    expect(bot).toContain("mpim:read");
+    expect(bot).toContain("groups:write");
+    expect(bot).toContain("groups:read");
+  });
+
   it("defaultManifestConfig has expected values", () => {
     expect(defaultManifestConfig).toEqual({
       botName: "RemoteClaw",

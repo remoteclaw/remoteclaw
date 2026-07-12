@@ -10,8 +10,8 @@ import {
   resolveGatewayWindowsTaskName,
 } from "../../daemon/constants.js";
 import {
-  renderCmdRestartLogSetup,
   renderPosixRestartLogSetup,
+  resolveGatewayRestartLogPath,
   shellEscapeRestartLogValue,
 } from "../../daemon/restart-logs.js";
 import { normalizeOptionalString } from "../../shared/string-coerce.js";
@@ -25,10 +25,13 @@ function shellEscape(value: string): string {
   return value.replace(/'/g, "'\\''");
 }
 
-/** Validates a string is safe for embedding in a batch (cmd.exe) script. */
-function isBatchSafe(value: string): boolean {
-  // Reject characters that have special meaning in batch: & | < > ^ % " ` $
+/** Validates a task name is safe for embedding in Windows restart scripts. */
+function isWindowsTaskNameSafe(value: string): boolean {
   return /^[A-Za-z0-9 _\-().]+$/.test(value);
+}
+
+function powerShellSingleQuote(value: string): string {
+  return `'${value.replace(/'/g, "''")}'`;
 }
 
 function resolveSystemdUnit(env: NodeJS.ProcessEnv): string {
@@ -159,45 +162,209 @@ exit "$status"
 `;
     } else if (platform === "win32") {
       const taskName = resolveWindowsTaskName(env);
-      if (!isBatchSafe(taskName)) {
+      if (!isWindowsTaskNameSafe(taskName)) {
         return null;
       }
       const port =
         Number.isFinite(gatewayPort) && gatewayPort > 0 ? gatewayPort : DEFAULT_GATEWAY_PORT;
-      const restartLog = renderCmdRestartLogSetup({ ...process.env, ...env });
-      filename = `remoteclaw-restart-${timestamp}.bat`;
+      const restartLogPath = resolveGatewayRestartLogPath({ ...process.env, ...env });
+      const quotedLogPath = powerShellSingleQuote(restartLogPath);
+      const quotedTaskName = powerShellSingleQuote(taskName);
+      filename = `remoteclaw-restart-${timestamp}.cmd`;
       scriptContent = `@echo off
-REM Standalone restart script — survives parent process termination.
-REM Wait briefly to ensure file locks are released after update.
-timeout /t 2 /nobreak >nul
-${restartLog.lines.join("\r\n")}
->> ${restartLog.quotedLogPath} 2>&1 echo [%DATE% %TIME%] remoteclaw restart attempt source=update target=${taskName}
-schtasks /End /TN "${taskName}" >> ${restartLog.quotedLogPath} 2>&1
-REM Poll for gateway port release before rerun; force-kill listener if stuck.
-set /a attempts=0
-:wait_for_port_release
-set /a attempts+=1
-netstat -ano | findstr /R /C:":${port} .*LISTENING" >nul
-if errorlevel 1 goto port_released
-if %attempts% GEQ 10 goto force_kill_listener
-timeout /t 1 /nobreak >nul
-goto wait_for_port_release
-:force_kill_listener
-for /f "tokens=5" %%P in ('netstat -ano ^| findstr /R /C:":${port} .*LISTENING"') do (
-  taskkill /F /PID %%P >> ${restartLog.quotedLogPath} 2>&1
-  goto port_released
-)
-:port_released
-schtasks /Run /TN "${taskName}" >> ${restartLog.quotedLogPath} 2>&1
+REM Standalone restart script - survives parent process termination.
+REM Keep this as a cmd wrapper so Group Policy script execution policies
+REM cannot block the update restart handoff before schtasks.exe runs.
+setlocal
+set "REMOTECLAW_RESTART_SCRIPT=%~f0"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$p=$env:REMOTECLAW_RESTART_SCRIPT; $s=Get-Content -Raw -LiteralPath $p; $m='# POWERSHELL'; $i=$s.IndexOf($m); if ($i -lt 0) { exit 1 }; Invoke-Expression $s.Substring($i)"
 set "status=%ERRORLEVEL%"
-if not "%status%"=="0" (
-  >> ${restartLog.quotedLogPath} 2>&1 echo [%DATE% %TIME%] remoteclaw restart failed source=update status=%status%
-) else (
-  >> ${restartLog.quotedLogPath} 2>&1 echo [%DATE% %TIME%] remoteclaw restart done source=update
-)
-REM Self-cleanup
-del "%~f0"
+del "%~f0" >nul 2>&1
 exit /b %status%
+# POWERSHELL
+# Wait briefly to ensure file locks are released after update.
+$ErrorActionPreference = "Continue"
+Start-Sleep -Seconds 2
+
+$logPath = ${quotedLogPath}
+try {
+  $logDir = Split-Path -Parent $logPath
+  New-Item -ItemType Directory -Path $logDir -Force | Out-Null
+  Add-Content -LiteralPath $logPath -Value "[$(Get-Date -Format o)] remoteclaw restart log initialized"
+} catch {
+  # Restart should still run if log setup is unavailable.
+}
+
+function Write-RestartLog {
+  param([string]$Message)
+  try {
+    Add-Content -LiteralPath $logPath -Value "[$(Get-Date -Format o)] $Message"
+  } catch {
+  }
+}
+
+function Join-RemoteClawProcessArguments {
+  param([string[]]$Arguments)
+  ($Arguments | ForEach-Object {
+    if ($_ -match "\\s") {
+      '"' + $_ + '"'
+    } else {
+      $_
+    }
+  }) -join " "
+}
+
+function Invoke-RemoteClawSchtasksWithTimeout {
+  param(
+    [string[]]$Arguments,
+    [int]$TimeoutSeconds
+  )
+  $process = $null
+  try {
+    $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+    $startInfo.FileName = "schtasks.exe"
+    $startInfo.Arguments = Join-RemoteClawProcessArguments -Arguments $Arguments
+    $startInfo.UseShellExecute = $false
+    $startInfo.RedirectStandardOutput = $true
+    $startInfo.RedirectStandardError = $true
+    $process = [System.Diagnostics.Process]::Start($startInfo)
+    if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
+      try {
+        $process.Kill()
+      } catch {
+      }
+      Write-RestartLog "remoteclaw restart schtasks timeout source=update args=$($Arguments -join ' ')"
+      return 124
+    }
+    $stdout = $process.StandardOutput.ReadToEnd()
+    $stderr = $process.StandardError.ReadToEnd()
+    if ($stdout) {
+      Write-RestartLog $stdout.Trim()
+    }
+    if ($stderr) {
+      Write-RestartLog $stderr.Trim()
+    }
+    return $process.ExitCode
+  } catch {
+    Write-RestartLog "remoteclaw restart schtasks failed source=update args=$($Arguments -join ' ') error=$($_.Exception.Message)"
+    return 1
+  }
+}
+
+function Get-RemoteClawScheduledTaskState {
+  param([string]$TaskName)
+  try {
+    $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+    if ($task -and $task.State) {
+      return [string]$task.State
+    }
+  } catch {
+  }
+
+  try {
+    $queryOutput = & schtasks.exe /Query /TN $TaskName /FO LIST 2>$null
+    foreach ($line in $queryOutput) {
+      if ($line -match "^\\s*Status:\\s*(.+?)\\s*$") {
+        return $Matches[1]
+      }
+    }
+  } catch {
+  }
+
+  return "Unknown"
+}
+
+function Get-RemoteClawListenerPids {
+  param([int]$Port)
+  $listenerPids = @()
+
+  try {
+    if (Get-Command Get-NetTCPConnection -ErrorAction SilentlyContinue) {
+      $listenerPids += Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue |
+        ForEach-Object { [int]$_.OwningProcess }
+    }
+  } catch {
+  }
+
+  if ($listenerPids.Count -eq 0) {
+    try {
+      $portPattern = [regex]::Escape(":$Port")
+      $linePattern = "^\\s*TCP\\s+\\S+$portPattern\\s+\\S+\\s+LISTENING\\s+(\\d+)\\s*$"
+      & netstat.exe -ano -p tcp 2>$null | ForEach-Object {
+        if ($_ -match $linePattern) {
+          $listenerPids += [int]$Matches[1]
+        }
+      }
+    } catch {
+    }
+  }
+
+  $listenerPids | Sort-Object -Unique
+}
+
+function Invoke-RemoteClawStartupLauncher {
+  $launcherPath = Join-Path $env:USERPROFILE ".remoteclaw\\gateway.cmd"
+  if (-not (Test-Path -LiteralPath $launcherPath)) {
+    Write-RestartLog "remoteclaw restart startup launcher missing source=update path=$launcherPath"
+    return 1
+  }
+
+  try {
+    Start-Process -FilePath $launcherPath -WindowStyle Hidden | Out-Null
+    Write-RestartLog "remoteclaw restart launched startup fallback source=update path=$launcherPath"
+    return 0
+  } catch {
+    Write-RestartLog "remoteclaw restart startup fallback failed source=update error=$($_.Exception.Message)"
+    return 1
+  }
+}
+
+$taskName = ${quotedTaskName}
+$port = ${port}
+Write-RestartLog "remoteclaw restart attempt source=update target=$taskName"
+
+$taskState = Get-RemoteClawScheduledTaskState -TaskName $taskName
+if ($taskState -eq "Running") {
+  $endStatus = Invoke-RemoteClawSchtasksWithTimeout -Arguments @("/End", "/TN", $taskName) -TimeoutSeconds 10
+  if ($endStatus -ne 0) {
+    Write-RestartLog "remoteclaw restart schtasks end did not complete cleanly source=update status=$endStatus"
+  }
+} else {
+  Write-RestartLog "remoteclaw restart skipped schtasks end source=update state=$taskState"
+}
+
+for ($attempt = 1; $attempt -le 10; $attempt++) {
+  $listeners = @(Get-RemoteClawListenerPids -Port $port)
+  if ($listeners.Count -eq 0) {
+    break
+  }
+
+  if ($attempt -eq 10) {
+    foreach ($listenerPid in $listeners) {
+      try {
+        Stop-Process -Id $listenerPid -Force -ErrorAction Stop
+        Write-RestartLog "remoteclaw restart killed stale listener source=update pid=$listenerPid"
+      } catch {
+        Write-RestartLog "remoteclaw restart failed to kill stale listener source=update pid=$listenerPid error=$($_.Exception.Message)"
+      }
+    }
+    break
+  }
+
+  Start-Sleep -Seconds 1
+}
+
+$status = Invoke-RemoteClawSchtasksWithTimeout -Arguments @("/Run", "/TN", $taskName) -TimeoutSeconds 30
+if ($status -ne 0) {
+  $status = Invoke-RemoteClawStartupLauncher
+}
+if ($status -eq 0) {
+  Write-RestartLog "remoteclaw restart done source=update"
+} else {
+  Write-RestartLog "remoteclaw restart failed source=update status=$status"
+}
+
+exit $status
 `;
     } else {
       return null;

@@ -15,6 +15,10 @@ export const DEFAULT_GATEWAY_HTTP_TOOL_DENY = [
   "cron",
   // Gateway control plane — prevents gateway reconfiguration via HTTP
   "gateway",
+  // Node command relay — can reach system.run on paired hosts, i.e. RCE over a
+  // non-interactive HTTP surface (matches upstream default; #2877). Still
+  // reachable via an explicit gateway.tools.allow opt-in.
+  "nodes",
   // Interactive setup — requires terminal QR scan, hangs on HTTP
   "whatsapp_login",
 ] as const;

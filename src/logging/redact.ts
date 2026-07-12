@@ -52,6 +52,10 @@ const DEFAULT_REDACT_PATTERNS: string[] = [
   String.raw`\b(AIza[0-9A-Za-z\-_]{20,})\b`,
   String.raw`\b(pplx-[A-Za-z0-9_-]{10,})\b`,
   String.raw`\b(npm_[A-Za-z0-9]{10,})\b`,
+  // AWS long-term access-key IDs (literal AKIA + 16 upper-alphanumerics, 20 total).
+  // Case-sensitive `/…/g` form (not the bare `gi` fallback form) since AWS key IDs are
+  // uppercase — avoids over-masking mixed-case words that merely start "akia". (Fork-side, #2852.)
+  String.raw`/\b(AKIA[0-9A-Z]{16})\b/g`,
   // Additional access-key and token-style prefixes (Tencent AKID, Alibaba LTAI,
   // HuggingFace hf_, Replicate r8_). Ported from upstream #58162.
   String.raw`\b(AKID[A-Za-z0-9]{10,})\b`,

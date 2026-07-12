@@ -249,4 +249,31 @@ describe("redactSensitiveText", () => {
     });
     expect(output).toBe("r8_ABC…stuv");
   });
+
+  it("masks AWS long-term access-key IDs (AKIA prefix)", () => {
+    const input = "AccessKeyId is AKIAIOSFODNN7EXAMPLE";
+    const output = redactSensitiveText(input, {
+      mode: "tools",
+      patterns: defaults,
+    });
+    expect(output).toBe("AccessKeyId is AKIAIO…MPLE");
+  });
+
+  it("does not over-mask an AKIA sequence that appears mid-word", () => {
+    const input = "prefixAKIAIOSFODNN7EXAMPLE stays visible";
+    const output = redactSensitiveText(input, {
+      mode: "tools",
+      patterns: defaults,
+    });
+    expect(output).toBe(input);
+  });
+
+  it("does not mask a lowercase akia-prefixed token (case-sensitive form)", () => {
+    const input = "value akiaiosfodnn7example stays";
+    const output = redactSensitiveText(input, {
+      mode: "tools",
+      patterns: defaults,
+    });
+    expect(output).toBe(input);
+  });
 });

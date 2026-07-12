@@ -4,6 +4,18 @@
 
 ### Breaking
 
+- **Security — fail closed on `dmPolicy: open` without an allowlist
+  ([remoteclaw#2870](https://github.com/remoteclaw/remoteclaw/pull/2870)):**
+  Direct-message access under `dmPolicy: open` now routes through the adopted
+  upstream channel-SDK ingress gate. A wildcard `allowFrom: ["*"]` or an
+  allowlisted sender is allowed, but a bare `dmPolicy: open` with an empty or
+  unset `allowFrom` now **denies** all senders instead of allowing them. This
+  flips silently-permissive open-mode setups from accepted to rejected. To keep
+  the prior allow-all behavior, set `allowFrom: ["*"]` explicitly. Adopts
+  upstream OpenClaw's consolidated message-access gate
+  (`src/channels/message-access/`), replacing this fork's frozen inline
+  `dm-policy-shared` copy which carried the weaker pre-fork semantics.
+
 - **Security — honor owner enforcement for commands
   ([remoteclaw#2821](https://github.com/remoteclaw/remoteclaw/issues/2821)):**
   When owner enforcement is on (the WhatsApp default) but no owner is resolvable,

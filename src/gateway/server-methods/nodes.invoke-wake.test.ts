@@ -76,13 +76,11 @@ type WakeResultOverrides = Partial<{
   tokenSuffix: string;
   topic: string;
   environment: "sandbox" | "production";
-  transport: "direct";
 }>;
 
 function directRegistration(nodeId: string) {
   return {
     nodeId,
-    transport: "direct" as const,
     token: "abcd1234abcd1234abcd1234abcd1234",
     topic: "org.remoteclaw.ios",
     environment: "sandbox" as const,
@@ -106,7 +104,6 @@ function mockDirectWakeConfig(nodeId: string, overrides: WakeResultOverrides = {
     tokenSuffix: "1234abcd",
     topic: "org.remoteclaw.ios",
     environment: "sandbox",
-    transport: "direct",
     ...overrides,
   });
 }

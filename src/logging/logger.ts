@@ -168,26 +168,76 @@ export function isFileLogLevelEnabled(level: LogLevel): boolean {
 // through. See the file transport in `buildLogger` for why redaction must run
 // here, pre-serialization, rather than over the serialized JSON string.
 //
-// Known limitation: a value that materializes its string only at serialization
-// time via an own-enumerable `toJSON()` returning a secret-bearing string is not
-// reached (the recursion sees the object's fields, not the string JSON.stringify
-// later emits). This is non-regressive — the previous serialized-string pass had
-// the same blind spot — and no in-tree caller logs such a shape.
+// An own-enumerable `toJSON()` is intercepted (#2853): JSON.stringify would call
+// it AFTER this pass and re-materialize whatever it returns unredacted, so the
+// method is invoked here and its output redacted before serialization. A
+// prototype / non-enumerable `toJSON` is not copied onto the rebuilt plain object
+// (Object.entries below only copies own-enumerable props), so it never reaches
+// the serializer — class instances stay safe and are left untouched. Recursion is
+// bounded by a visited-set cycle break and a max-depth cap (#2853): a cyclic or
+// deeply-nested graph yields a "[cyclic]" / "[maxDepth]" marker instead of
+// overflowing the stack (the cap bounds recursion depth, not total node count) —
+// which the transport's try/catch would otherwise turn into a silently dropped
+// line.
+const MAX_LOG_ARG_DEPTH = 32;
+
 function redactLogArgLeaves(value: unknown): unknown {
+  return redactLogArgLeaf(value, 0, new WeakSet<object>());
+}
+
+function redactLogArgLeaf(value: unknown, depth: number, seen: WeakSet<object>): unknown {
   if (typeof value === "string") {
     return redactSensitiveText(value);
   }
-  if (Array.isArray(value)) {
-    return value.map(redactLogArgLeaves);
+  // Only arrays and plain (non-Date) objects recurse; everything else — numbers,
+  // booleans, null, undefined, functions, Date — is a leaf and passes through.
+  if (value === null || typeof value !== "object" || value instanceof Date) {
+    return value;
   }
-  if (value !== null && typeof value === "object" && !(value instanceof Date)) {
+  // Depth/cycle guard, shared by both container kinds (see the header comment
+  // for the stack-overflow / dropped-line rationale).
+  if (depth >= MAX_LOG_ARG_DEPTH) {
+    return "[maxDepth]";
+  }
+  if (seen.has(value)) {
+    return "[cyclic]";
+  }
+  seen.add(value);
+  try {
+    if (Array.isArray(value)) {
+      return value.map((entry) => redactLogArgLeaf(entry, depth + 1, seen));
+    }
+    // An own-enumerable `toJSON` survives the property copy below and is invoked
+    // by JSON.stringify after redaction, re-materializing its (possibly
+    // secret-bearing) return value raw. Intercept it: materialize now and redact
+    // the result — or emit "[unserializable]" if it throws, rather than letting the
+    // exception propagate out and drop the line. Scoped to own-enumerable (via
+    // propertyIsEnumerable) because a prototype / non-enumerable `toJSON` is not
+    // copied onto `out` and so never reaches the serializer — leaving it uninvoked
+    // preserves existing behavior.
+    const maybeToJSON = (value as { toJSON?: unknown }).toJSON;
+    if (
+      typeof maybeToJSON === "function" &&
+      Object.prototype.propertyIsEnumerable.call(value, "toJSON")
+    ) {
+      let materialized: unknown;
+      try {
+        materialized = (maybeToJSON as () => unknown).call(value);
+      } catch {
+        return "[unserializable]";
+      }
+      return redactLogArgLeaf(materialized, depth + 1, seen);
+    }
     const out: Record<string, unknown> = {};
     for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
-      out[key] = redactLogArgLeaves(nested);
+      out[key] = redactLogArgLeaf(nested, depth + 1, seen);
     }
     return out;
+  } finally {
+    // Backtrack so a shared (non-cyclic) reference in a sibling position is not
+    // mistaken for a cycle — only an ancestor still on the stack counts.
+    seen.delete(value);
   }
-  return value;
 }
 
 // tslog's `_meta` is framework-generated — runtime info, timestamp, source path,
@@ -414,6 +464,7 @@ export function registerLogTransport(transport: LogTransport): () => void {
 
 export const __test__ = {
   shouldSkipLoadConfigFallback,
+  redactLogArgLeaves,
 };
 
 function formatLocalDate(date: Date): string {

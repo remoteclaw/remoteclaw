@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { getChildLogger, resetLogger, setLoggerOverride } from "./logger.js";
+import { __test__, getChildLogger, resetLogger, setLoggerOverride } from "./logger.js";
 import { createSubsystemLogger } from "./subsystem.js";
 
 // Regression coverage for issue #2848 (redaction-coverage audit): the file log
@@ -188,6 +188,143 @@ describe("file log write-path redaction", () => {
 
     const content = readLog(file).trim();
     expect(content).toContain("service ready on port 8080");
+    for (const rawLine of content.split("\n").filter(Boolean)) {
+      expect(() => JSON.parse(rawLine)).not.toThrow();
+    }
+    fs.rmSync(file, { force: true });
+  });
+});
+
+// Hardening coverage for issue #2853: two residual gaps in redactLogArgLeaves.
+// (1) an own-enumerable toJSON() re-materializes secrets AFTER the leaf pass
+// because JSON.stringify invokes it later; (2) no intrinsic cycle/depth guard, so
+// a cyclic or pathologically deep graph could overflow the stack (the transport
+// try/catch would then drop the whole line — observability loss). The function is
+// exposed via `__test__` so the depth cap can be asserted deterministically —
+// tslog pre-truncates very deep args on the end-to-end path, which would mask it.
+describe("redactLogArgLeaves hardening (#2853)", () => {
+  const redact = __test__.redactLogArgLeaves;
+
+  afterEach(() => {
+    setLoggerOverride(null);
+    resetLogger();
+  });
+
+  it("materializes and redacts an own-enumerable toJSON returning a secret string", () => {
+    // JSON.stringify would call this toJSON *after* redaction, re-emitting the raw
+    // secret; the pass must invoke it now and redact its output instead.
+    const out = redact({
+      toJSON: () => "connect failed token=supersecretvalue1234567890",
+    }) as string;
+    expect(typeof out).toBe("string");
+    expect(out).not.toContain("supersecretvalue1234567890");
+    expect(out).toContain("connect failed");
+  });
+
+  it("redacts secrets inside a toJSON that returns an object", () => {
+    const serialized = JSON.stringify(
+      redact({ toJSON: () => ({ detail: "token=supersecretvalue1234567890" }) }),
+    );
+    expect(serialized).not.toContain("supersecretvalue1234567890");
+    expect(() => JSON.parse(serialized)).not.toThrow();
+  });
+
+  it("emits [unserializable] when an own-enumerable toJSON throws (line not dropped)", () => {
+    // A throwing toJSON must not propagate out of the redactor — the transport's
+    // try/catch would otherwise drop the whole line. Materialization is caught here
+    // and replaced with a marker so the record still serializes.
+    const out = redact({
+      toJSON: () => {
+        throw new Error("cannot serialize");
+      },
+    });
+    expect(out).toBe("[unserializable]");
+  });
+
+  it("does not invoke a prototype (non-own) toJSON — class instances stay untouched", () => {
+    // A prototype toJSON is not copied onto the rebuilt plain object, so it never
+    // reaches JSON.stringify; the own fields are redacted instead. Guards that the
+    // own-enumerable scoping does not newly invoke an inherited toJSON.
+    class Sneaky {
+      readonly label = "safe-field";
+      toJSON() {
+        return "token=supersecretvalue1234567890";
+      }
+    }
+    const out = redact(new Sneaky()) as Record<string, unknown>;
+    expect(JSON.stringify(out)).not.toContain("supersecretvalue1234567890");
+    expect(out.label).toBe("safe-field");
+  });
+
+  it("leaves a non-function own toJSON as a redacted leaf (not invoked)", () => {
+    const out = redact({ toJSON: "token=supersecretvalue1234567890", other: 1 }) as Record<
+      string,
+      unknown
+    >;
+    expect(out.other).toBe(1);
+    expect(String(out.toJSON)).not.toContain("supersecretvalue1234567890");
+  });
+
+  it("breaks reference cycles with a [cyclic] marker instead of overflowing", () => {
+    const node: Record<string, unknown> = { name: "root" };
+    node.self = node;
+    const out = redact(node) as Record<string, unknown>;
+    expect(out.name).toBe("root");
+    expect(out.self).toBe("[cyclic]");
+    expect(() => JSON.stringify(out)).not.toThrow();
+  });
+
+  it("breaks cycles that route through arrays", () => {
+    const arr: unknown[] = ["head"];
+    arr.push(arr);
+    const out = redact(arr) as unknown[];
+    expect(out[0]).toBe("head");
+    expect(out[1]).toBe("[cyclic]");
+  });
+
+  it("does not flag shared (non-cyclic) references as cyclic", () => {
+    const shared = { k: "v" };
+    const out = redact({ a: shared, b: shared }) as Record<string, Record<string, unknown>>;
+    expect(out.a).toEqual({ k: "v" });
+    expect(out.b).toEqual({ k: "v" });
+  });
+
+  it("bounds pathologically deep graphs with a [maxDepth] marker", () => {
+    const top: Record<string, unknown> = {};
+    let cursor = top;
+    for (let i = 0; i < 100; i++) {
+      const child: Record<string, unknown> = {};
+      cursor.child = child;
+      cursor = child;
+    }
+    const serialized = JSON.stringify(redact(top));
+    expect(serialized).toContain("[maxDepth]");
+    expect(() => JSON.parse(serialized)).not.toThrow();
+  });
+
+  it("still redacts ordinary nested string leaves and preserves non-strings", () => {
+    const out = redact({ detail: "token=supersecretvalue1234567890", port: 8080 }) as Record<
+      string,
+      unknown
+    >;
+    expect(out.port).toBe(8080);
+    expect(String(out.detail)).not.toContain("supersecretvalue1234567890");
+  });
+
+  it("masks an own-enumerable toJSON secret written to the on-disk log", () => {
+    // End-to-end: the residual leak the unit tests guard, proven at the file sink.
+    const file = tmpLogPath("tojson");
+    fs.rmSync(file, { force: true });
+    setLoggerOverride({ level: "info", file, consoleLevel: "silent" });
+
+    getChildLogger({ subsystem: "gateway" }).error("serialize failed", {
+      toJSON: () => "token=supersecretvalue1234567890",
+    });
+
+    const content = readLog(file);
+    expect(content.length).toBeGreaterThan(0);
+    expect(content).not.toContain("supersecretvalue1234567890");
+    expect(content).toContain("serialize failed");
     for (const rawLine of content.split("\n").filter(Boolean)) {
       expect(() => JSON.parse(rawLine)).not.toThrow();
     }

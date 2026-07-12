@@ -244,6 +244,48 @@ export async function loadApnsRegistration(
   return state.registrationsByNodeId[normalizedNodeId] ?? null;
 }
 
+// Remove a node's stored registration, but only if the currently-persisted token still
+// matches the token that failed. The match guard avoids racing a fresh re-registration:
+// if the device re-registered a new token between the doomed push and this eviction, the
+// stored (valid) token differs and we leave it untouched.
+export async function clearApnsRegistrationIfCurrent(params: {
+  nodeId: string;
+  token: string;
+  baseDir?: string;
+}): Promise<boolean> {
+  const nodeId = normalizeNodeId(params.nodeId);
+  const token = normalizeApnsToken(params.token);
+  if (!nodeId || !token) {
+    return false;
+  }
+  return await withLock(async () => {
+    const state = await loadRegistrationsState(params.baseDir);
+    const current = state.registrationsByNodeId[nodeId];
+    if (!current || normalizeApnsToken(current.token) !== token) {
+      return false;
+    }
+    delete state.registrationsByNodeId[nodeId];
+    await persistRegistrationsState(state, params.baseDir);
+    return true;
+  });
+}
+
+// A permanently-invalid APNs response means the token can never deliver again: HTTP 410
+// (Unregistered) or HTTP 400 with reason BadDeviceToken. Transient failures (429 rate-limit,
+// 5xx server errors) must NOT evict — the token is still valid, retry later.
+export function isApnsTokenPermanentlyInvalid(result: {
+  status: number;
+  reason?: string;
+}): boolean {
+  if (result.status === 410) {
+    return true;
+  }
+  if (result.status === 400 && result.reason === "BadDeviceToken") {
+    return true;
+  }
+  return false;
+}
+
 export async function resolveApnsAuthConfigFromEnv(
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<ApnsAuthConfigResolution> {

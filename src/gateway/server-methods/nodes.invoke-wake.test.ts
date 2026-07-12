@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ErrorCodes } from "../protocol/index.js";
-import { nodeHandlers } from "./nodes.js";
+import { maybeSendNodeWakeNudge, maybeWakeNodeWithApns, nodeHandlers } from "./nodes.js";
 
 type MockNodeCommandPolicyParams = {
   command: string;
@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => ({
   resolveApnsAuthConfigFromEnv: vi.fn(),
   sendApnsBackgroundWake: vi.fn(),
   sendApnsAlert: vi.fn(),
+  clearApnsRegistrationIfCurrent: vi.fn(),
 }));
 
 vi.mock("../../config/config.js", () => ({
@@ -37,12 +38,19 @@ vi.mock("../node-invoke-sanitize.js", () => ({
   sanitizeNodeInvokeParamsForForwarding: mocks.sanitizeNodeInvokeParamsForForwarding,
 }));
 
-vi.mock("../../infra/push-apns.js", () => ({
-  loadApnsRegistration: mocks.loadApnsRegistration,
-  resolveApnsAuthConfigFromEnv: mocks.resolveApnsAuthConfigFromEnv,
-  sendApnsBackgroundWake: mocks.sendApnsBackgroundWake,
-  sendApnsAlert: mocks.sendApnsAlert,
-}));
+vi.mock("../../infra/push-apns.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../infra/push-apns.js")>();
+  return {
+    loadApnsRegistration: mocks.loadApnsRegistration,
+    resolveApnsAuthConfigFromEnv: mocks.resolveApnsAuthConfigFromEnv,
+    sendApnsBackgroundWake: mocks.sendApnsBackgroundWake,
+    sendApnsAlert: mocks.sendApnsAlert,
+    clearApnsRegistrationIfCurrent: mocks.clearApnsRegistrationIfCurrent,
+    // Use the REAL predicate so eviction wiring is exercised against the actual
+    // 410 / 400-BadDeviceToken decision, not a mock's canned boolean.
+    isApnsTokenPermanentlyInvalid: actual.isApnsTokenPermanentlyInvalid,
+  };
+});
 
 type RespondCall = [
   boolean,
@@ -214,6 +222,8 @@ describe("node.invoke APNs wake path", () => {
     mocks.resolveApnsAuthConfigFromEnv.mockClear();
     mocks.sendApnsBackgroundWake.mockClear();
     mocks.sendApnsAlert.mockClear();
+    mocks.clearApnsRegistrationIfCurrent.mockClear();
+    mocks.clearApnsRegistrationIfCurrent.mockResolvedValue(true);
   });
 
   afterEach(() => {
@@ -501,5 +511,103 @@ describe("node.invoke APNs wake path", () => {
     });
     const actions = (pullCall?.[1] as { actions?: unknown[] } | undefined)?.actions ?? [];
     expect(actions).toHaveLength(1);
+  });
+});
+
+describe("APNs registration eviction on permanent-invalid wake failures", () => {
+  // The stored token is the normalized form of directRegistration()'s token; the wiring must
+  // forward exactly this (the token that failed) so the store-side guard can no-op on a race.
+  const STORED_TOKEN = "abcd1234abcd1234abcd1234abcd1234";
+
+  beforeEach(() => {
+    mocks.loadApnsRegistration.mockReset();
+    mocks.resolveApnsAuthConfigFromEnv.mockReset();
+    mocks.sendApnsBackgroundWake.mockReset();
+    mocks.sendApnsAlert.mockReset();
+    mocks.clearApnsRegistrationIfCurrent.mockReset();
+    mocks.clearApnsRegistrationIfCurrent.mockResolvedValue(true);
+  });
+
+  it("evicts the stored registration when the background wake returns 410 Unregistered", async () => {
+    mockDirectWakeConfig("evict-410", { ok: false, status: 410, reason: "Unregistered" });
+
+    const attempt = await maybeWakeNodeWithApns("evict-410");
+
+    expect(attempt.path).toBe("send-error");
+    expect(attempt.apnsStatus).toBe(410);
+    expect(mocks.clearApnsRegistrationIfCurrent).toHaveBeenCalledTimes(1);
+    expect(mocks.clearApnsRegistrationIfCurrent).toHaveBeenCalledWith({
+      nodeId: "evict-410",
+      token: STORED_TOKEN,
+    });
+  });
+
+  it("evicts the stored registration when the background wake returns 400 BadDeviceToken", async () => {
+    mockDirectWakeConfig("evict-400", { ok: false, status: 400, reason: "BadDeviceToken" });
+
+    const attempt = await maybeWakeNodeWithApns("evict-400");
+
+    expect(attempt.path).toBe("send-error");
+    expect(attempt.apnsStatus).toBe(400);
+    expect(mocks.clearApnsRegistrationIfCurrent).toHaveBeenCalledTimes(1);
+    expect(mocks.clearApnsRegistrationIfCurrent).toHaveBeenCalledWith({
+      nodeId: "evict-400",
+      token: STORED_TOKEN,
+    });
+  });
+
+  it("retains the registration on transient or non-permanent wake failures", async () => {
+    mockDirectWakeConfig("keep-429", { ok: false, status: 429, reason: "TooManyRequests" });
+    const rateLimited = await maybeWakeNodeWithApns("keep-429");
+    expect(rateLimited.apnsStatus).toBe(429);
+
+    mockDirectWakeConfig("keep-503", { ok: false, status: 503, reason: "ServiceUnavailable" });
+    const serverError = await maybeWakeNodeWithApns("keep-503");
+    expect(serverError.apnsStatus).toBe(503);
+
+    // 400 with a reason other than BadDeviceToken is NOT a dead token — must not evict.
+    mockDirectWakeConfig("keep-400-other", { ok: false, status: 400, reason: "BadCollapseId" });
+    const otherBadRequest = await maybeWakeNodeWithApns("keep-400-other");
+    expect(otherBadRequest.apnsStatus).toBe(400);
+
+    expect(mocks.clearApnsRegistrationIfCurrent).not.toHaveBeenCalled();
+  });
+
+  it("evicts a permanently-invalid nudge target but retains a transient one", async () => {
+    // maybeSendNodeWakeNudge uses sendApnsAlert; wire the same permanent/transient guard.
+    mockDirectWakeConfig("nudge-410");
+    mocks.sendApnsAlert.mockResolvedValue({
+      ok: false,
+      status: 410,
+      reason: "Unregistered",
+      tokenSuffix: "1234abcd",
+      topic: "org.remoteclaw.ios",
+      environment: "sandbox",
+    });
+
+    const permanent = await maybeSendNodeWakeNudge("nudge-410");
+    expect(permanent.reason).toBe("apns-not-ok");
+    expect(permanent.apnsStatus).toBe(410);
+    expect(mocks.clearApnsRegistrationIfCurrent).toHaveBeenCalledTimes(1);
+    expect(mocks.clearApnsRegistrationIfCurrent).toHaveBeenCalledWith({
+      nodeId: "nudge-410",
+      token: STORED_TOKEN,
+    });
+
+    mocks.clearApnsRegistrationIfCurrent.mockClear();
+    mockDirectWakeConfig("nudge-503");
+    mocks.sendApnsAlert.mockResolvedValue({
+      ok: false,
+      status: 503,
+      reason: "ServiceUnavailable",
+      tokenSuffix: "1234abcd",
+      topic: "org.remoteclaw.ios",
+      environment: "sandbox",
+    });
+
+    const transient = await maybeSendNodeWakeNudge("nudge-503");
+    expect(transient.reason).toBe("apns-not-ok");
+    expect(transient.apnsStatus).toBe(503);
+    expect(mocks.clearApnsRegistrationIfCurrent).not.toHaveBeenCalled();
   });
 });

@@ -1,4 +1,4 @@
-import { mkdtemp } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
@@ -9,6 +9,7 @@ import {
   requestNodePairing,
   verifyNodeToken,
 } from "./node-pairing.js";
+import { resolvePairingPaths } from "./pairing-files.js";
 
 async function setupPairedNode(baseDir: string): Promise<string> {
   const request = await requestNodePairing(
@@ -239,5 +240,23 @@ describe("node pairing tokens", () => {
       ],
       paired: [],
     });
+  });
+
+  test("refuses to overwrite corrupt paired node state when requesting pairing", async () => {
+    const baseDir = await mkdtemp(join(tmpdir(), "remoteclaw-node-pairing-"));
+    const { dir, pairedPath } = resolvePairingPaths(baseDir, "nodes");
+    await mkdir(dir, { recursive: true });
+    await writeFile(pairedPath, "{not-json}", "utf8");
+
+    await expect(
+      requestNodePairing(
+        {
+          nodeId: "node-1",
+          platform: "darwin",
+        },
+        baseDir,
+      ),
+    ).rejects.toThrow(/paired\.json/);
+    await expect(readFile(pairedPath, "utf8")).resolves.toBe("{not-json}");
   });
 });

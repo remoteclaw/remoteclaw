@@ -11,6 +11,8 @@ import {
   verifyNodeToken,
 } from "../../infra/node-pairing.js";
 import {
+  clearApnsRegistrationIfCurrent,
+  isApnsTokenPermanentlyInvalid,
   loadApnsRegistration,
   resolveApnsAuthConfigFromEnv,
   sendApnsAlert,
@@ -297,6 +299,11 @@ export async function maybeWakeNodeWithApns(
         wakeReason: opts?.wakeReason ?? "node.invoke",
       });
       if (!wakeResult.ok) {
+        if (isApnsTokenPermanentlyInvalid(wakeResult)) {
+          // Best-effort eviction of a token Apple reports as permanently invalid, so we
+          // stop firing doomed wakes and let the registration table shed dead entries.
+          await clearApnsRegistrationIfCurrent({ nodeId, token: registration.token });
+        }
         return withDuration({
           available: true,
           throttled: false,
@@ -376,6 +383,11 @@ export async function maybeSendNodeWakeNudge(nodeId: string): Promise<NodeWakeNu
       body: "Tap to reopen RemoteClaw and restore the node connection.",
     });
     if (!result.ok) {
+      if (isApnsTokenPermanentlyInvalid(result)) {
+        // Best-effort eviction on a permanently-invalid nudge target (same guard as the
+        // background-wake path) — keep transient failures (429/5xx) registered for retry.
+        await clearApnsRegistrationIfCurrent({ nodeId, token: registration.token });
+      }
       return withDuration({
         sent: false,
         throttled: false,

@@ -4,6 +4,8 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  clearApnsRegistrationIfCurrent,
+  isApnsTokenPermanentlyInvalid,
   loadApnsRegistration,
   normalizeApnsEnvironment,
   registerApnsToken,
@@ -223,5 +225,95 @@ describe("push APNs send semantics", () => {
         nodeId: "ios-node-wake-default-reason",
       },
     });
+  });
+});
+
+describe("push APNs registration eviction", () => {
+  it("removes the registration when the stored token matches the failed token", async () => {
+    const baseDir = await makeTempDir();
+    await registerApnsToken({
+      nodeId: "ios-node-evict",
+      token: "ABCD1234ABCD1234ABCD1234ABCD1234",
+      topic: "org.remoteclaw.ios",
+      environment: "sandbox",
+      baseDir,
+    });
+
+    const cleared = await clearApnsRegistrationIfCurrent({
+      nodeId: "ios-node-evict",
+      token: "ABCD1234ABCD1234ABCD1234ABCD1234",
+      baseDir,
+    });
+
+    expect(cleared).toBe(true);
+    expect(await loadApnsRegistration("ios-node-evict", baseDir)).toBeNull();
+  });
+
+  it("retains the registration when the stored token differs (race guard)", async () => {
+    const baseDir = await makeTempDir();
+    await registerApnsToken({
+      nodeId: "ios-node-race",
+      token: "ABCD1234ABCD1234ABCD1234ABCD1234",
+      topic: "org.remoteclaw.ios",
+      environment: "sandbox",
+      baseDir,
+    });
+
+    // Simulate a fresh re-registration having replaced the token between the doomed push and
+    // this eviction attempt: the failed (now-stale) token no longer matches what is stored.
+    const cleared = await clearApnsRegistrationIfCurrent({
+      nodeId: "ios-node-race",
+      token: "ffff0000ffff0000ffff0000ffff0000",
+      baseDir,
+    });
+
+    expect(cleared).toBe(false);
+    const retained = await loadApnsRegistration("ios-node-race", baseDir);
+    expect(retained).not.toBeNull();
+    expect(retained?.token).toBe("abcd1234abcd1234abcd1234abcd1234");
+  });
+
+  it("matches tokens through normalization (case and angle-bracket/space formatting)", async () => {
+    const baseDir = await makeTempDir();
+    await registerApnsToken({
+      nodeId: "ios-node-normalize",
+      token: "ABCD1234ABCD1234ABCD1234ABCD1234",
+      topic: "org.remoteclaw.ios",
+      environment: "sandbox",
+      baseDir,
+    });
+
+    // The failed token arriving in a raw APNs formatting variant must still match the
+    // normalized stored form, or the guard would wrongly refuse to evict a dead token.
+    const cleared = await clearApnsRegistrationIfCurrent({
+      nodeId: "ios-node-normalize",
+      token: "<ABCD1234 ABCD1234 ABCD1234 ABCD1234>",
+      baseDir,
+    });
+
+    expect(cleared).toBe(true);
+    expect(await loadApnsRegistration("ios-node-normalize", baseDir)).toBeNull();
+  });
+
+  it("returns false when the node has no registration", async () => {
+    const baseDir = await makeTempDir();
+    const cleared = await clearApnsRegistrationIfCurrent({
+      nodeId: "ios-node-missing",
+      token: "ABCD1234ABCD1234ABCD1234ABCD1234",
+      baseDir,
+    });
+    expect(cleared).toBe(false);
+  });
+});
+
+describe("isApnsTokenPermanentlyInvalid", () => {
+  it("treats only 410 and 400 BadDeviceToken as permanent; everything else is retryable", () => {
+    expect(isApnsTokenPermanentlyInvalid({ status: 410, reason: "Unregistered" })).toBe(true);
+    expect(isApnsTokenPermanentlyInvalid({ status: 400, reason: "BadDeviceToken" })).toBe(true);
+    expect(isApnsTokenPermanentlyInvalid({ status: 400, reason: "BadCollapseId" })).toBe(false);
+    expect(isApnsTokenPermanentlyInvalid({ status: 400 })).toBe(false);
+    expect(isApnsTokenPermanentlyInvalid({ status: 429, reason: "TooManyRequests" })).toBe(false);
+    expect(isApnsTokenPermanentlyInvalid({ status: 503 })).toBe(false);
+    expect(isApnsTokenPermanentlyInvalid({ status: 200 })).toBe(false);
   });
 });

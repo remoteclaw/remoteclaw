@@ -205,7 +205,12 @@ function redactLogArgLeaf(value: unknown, depth: number, seen: WeakSet<object>):
   seen.add(value);
   try {
     if (Array.isArray(value)) {
-      return value.map((entry) => redactLogArgLeaf(entry, depth + 1, seen));
+      // Normalize to a plain array first: Array.prototype.map uses
+      // ArraySpeciesCreate, so mapping an Array *subclass* returns a same-subclass
+      // instance — preserving a prototype `toJSON` that JSON.stringify would later
+      // invoke, re-materializing a secret raw past redaction (#2881). The spread
+      // strips the subclass prototype, mirroring the plain-`{}` object rebuild below.
+      return [...value].map((entry) => redactLogArgLeaf(entry, depth + 1, seen));
     }
     // An own-enumerable `toJSON` survives the property copy below and is invoked
     // by JSON.stringify after redaction, re-materializing its (possibly

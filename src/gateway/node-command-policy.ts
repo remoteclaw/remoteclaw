@@ -9,6 +9,24 @@ import {
 // oxlint-disable-next-line typescript/no-explicit-any
 const normalizeDeviceMetadataForPolicy = (value?: string) => (value ?? "").toLowerCase().trim();
 import type { NodeSession } from "./node-registry.js";
+import type { ConnectParams } from "./protocol/index.js";
+
+/**
+ * Canonical node-identity derivation for the node-pairing key.
+ *
+ * A connecting node is registered, paired, and `node.invoke`-authorized under a
+ * single id: its device id when a device identity is present, otherwise its
+ * client id. This is a security-relevant key — it selects the paired-node
+ * record, the pending-pairing entry, and the identity a node is authorized
+ * under — so every pairing site MUST derive it identically. Centralizing the
+ * formula here replaces the former comment-enforced "must stay in sync"
+ * invariant across the pairing sites (`NodeRegistry.register`,
+ * `reconcileNodePairingOnConnect`, and the node connect handler) with sameness
+ * by construction.
+ */
+export function resolveNodeIdFromConnect(connect: ConnectParams): string {
+  return connect.device?.id ?? connect.client.id;
+}
 
 const CANVAS_COMMANDS = [
   "canvas.present",

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { logRejectedLargePayload } from "../logging/diagnostic-payload.js";
+import { resolveNodeIdFromConnect } from "./node-command-policy.js";
 import { MAX_BUFFERED_BYTES } from "./server-constants.js";
 import type { GatewayWsClient } from "./server/ws-types.js";
 
@@ -158,7 +159,7 @@ export class NodeRegistry {
 
   register(client: GatewayWsClient, opts: { remoteIp?: string | undefined }) {
     const connect = client.connect;
-    const nodeId = connect.device?.id ?? connect.client.id;
+    const nodeId = resolveNodeIdFromConnect(connect);
     const caps = Array.isArray(connect.caps) ? connect.caps : [];
     const declaredCaps = Array.isArray((connect as { declaredCaps?: string[] }).declaredCaps)
       ? ((connect as { declaredCaps?: string[] }).declaredCaps ?? [])

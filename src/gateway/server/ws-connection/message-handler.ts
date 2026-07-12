@@ -48,6 +48,7 @@ import {
   isTrustedProxyAddress,
   resolveClientIp,
 } from "../../net.js";
+import { resolveNodeIdFromConnect } from "../../node-command-policy.js";
 import { reconcileNodePairingOnConnect } from "../../node-connect-reconcile.js";
 import { checkBrowserOrigin } from "../../origin-check.js";
 import { GATEWAY_CLIENT_IDS, GATEWAY_CLIENT_MODES } from "../../protocol/client-info.js";
@@ -1107,9 +1108,7 @@ export function attachGatewayWsMessageHandler(params: {
               return;
             }
           }
-          // Must stay in sync with NodeRegistry.register, so the pending pairing entry
-          // is keyed by the same id the node is registered and invoked under.
-          const nodeIdForPairing = connectParams.device?.id ?? connectParams.client.id;
+          const nodeIdForPairing = resolveNodeIdFromConnect(connectParams);
           const reconciled = await reconcileNodePairingOnConnect({
             cfg: loadConfig(),
             connectParams,

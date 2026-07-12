@@ -7,6 +7,7 @@ import type {
 import {
   normalizeDeclaredNodeCommands,
   resolveNodeCommandAllowlist,
+  resolveNodeIdFromConnect,
 } from "./node-command-policy.js";
 import type { ConnectParams } from "./protocol/index.js";
 
@@ -58,7 +59,7 @@ export async function reconcileNodePairingOnConnect(params: {
   reportedClientIp?: string;
   requestPairing: (input: NodePairingRequestInput) => Promise<PendingNodePairingResult>;
 }): Promise<NodeConnectPairingReconcileResult> {
-  const nodeId = params.connectParams.device?.id ?? params.connectParams.client.id;
+  const nodeId = resolveNodeIdFromConnect(params.connectParams);
   const allowlist = resolveNodeCommandAllowlist(params.cfg, {
     platform: params.connectParams.client.platform,
     deviceFamily: params.connectParams.client.deviceFamily,

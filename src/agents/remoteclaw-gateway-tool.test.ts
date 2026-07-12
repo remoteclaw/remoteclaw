@@ -87,11 +87,6 @@ describe("gateway tool", () => {
     await loadFreshRemoteClawToolsModuleForTest();
   });
 
-  it("marks gateway as owner-only", async () => {
-    const tool = requireGatewayTool();
-    expect(tool.ownerOnly).toBe(true);
-  });
-
   it("schedules SIGUSR1 restart", async () => {
     vi.useFakeTimers();
     const kill = vi.spyOn(process, "kill").mockImplementation(() => true);

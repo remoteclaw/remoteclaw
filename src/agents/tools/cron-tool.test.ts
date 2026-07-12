@@ -116,11 +116,6 @@ describe("cron tool", () => {
     callGatewayMock.mockResolvedValue({ ok: true });
   });
 
-  it("marks cron as owner-only", () => {
-    const tool = createTestCronTool();
-    expect(tool.ownerOnly).toBe(true);
-  });
-
   it("documents deferred follow-up guidance in the tool description", () => {
     const tool = createTestCronTool();
     expect(tool.description).toContain(

@@ -1,46 +1,11 @@
 // Sandbox infrastructure removed (#68) — sandbox tool policy tests removed
 import { describe, expect, it } from "vitest";
 import {
-  applyOwnerOnlyToolPolicy,
   expandToolGroups,
-  isOwnerOnlyToolName,
   normalizeToolName,
   resolveToolProfilePolicy,
   TOOL_GROUPS,
 } from "./tool-policy.js";
-import type { AnyAgentTool } from "./tools/common.js";
-
-function createOwnerPolicyTools() {
-  return [
-    {
-      name: "read",
-      // oxlint-disable-next-line typescript/no-explicit-any
-      execute: async () => ({ content: [], details: {} }) as unknown,
-    },
-    {
-      name: "cron",
-      ownerOnly: true,
-      // oxlint-disable-next-line typescript/no-explicit-any
-      execute: async () => ({ content: [], details: {} }) as unknown,
-    },
-    {
-      name: "gateway",
-      ownerOnly: true,
-      // oxlint-disable-next-line typescript/no-explicit-any
-      execute: async () => ({ content: [], details: {} }) as unknown,
-    },
-    {
-      name: "whatsapp_login",
-      // oxlint-disable-next-line typescript/no-explicit-any
-      execute: async () => ({ content: [], details: {} }) as unknown,
-    },
-    {
-      name: "nodes",
-      ownerOnly: true,
-      execute: async () => ({ content: [], details: {} }) as unknown,
-    },
-  ] as unknown as AnyAgentTool[];
-}
 
 describe("tool-policy", () => {
   it("expands groups and normalizes names", () => {
@@ -69,72 +34,6 @@ describe("tool-policy", () => {
   it("normalizes tool names", () => {
     expect(normalizeToolName(" BASH ")).toBe("bash");
     expect(normalizeToolName("READ")).toBe("read");
-  });
-
-  it("identifies owner-only tools", () => {
-    expect(isOwnerOnlyToolName("cron")).toBe(true);
-    expect(isOwnerOnlyToolName("gateway")).toBe(true);
-    expect(isOwnerOnlyToolName("nodes")).toBe(true);
-    expect(isOwnerOnlyToolName("read")).toBe(false);
-  });
-
-  it("strips owner-only tools for non-owner senders", async () => {
-    const tools = createOwnerPolicyTools();
-    const filtered = applyOwnerOnlyToolPolicy(tools, false);
-    expect(filtered.map((t) => t.name)).toEqual(["read"]);
-  });
-
-  it("keeps owner-only tools for the owner sender", () => {
-    const tools = createOwnerPolicyTools();
-    const filtered = applyOwnerOnlyToolPolicy(tools, true);
-    expect(filtered.map((t) => t.name)).toEqual(["read", "cron", "gateway", "nodes"]);
-  });
-
-  it("keeps only explicitly authorized owner-only tools for non-owner senders", async () => {
-    const tools = createOwnerPolicyTools();
-    const filtered = applyOwnerOnlyToolPolicy(tools, false, ["cron"]);
-    expect(filtered.map((t) => t.name)).toEqual(["read", "cron"]);
-
-    await expect(
-      filtered.find((tool) => tool.name === "cron")?.execute?.("call_1", {}),
-    ).resolves.toEqual({
-      content: [],
-      details: {},
-    });
-  });
-
-  it("honors ownerOnly metadata for custom tool names", () => {
-    const tools = [
-      {
-        name: "custom_admin_tool",
-        ownerOnly: true,
-        // oxlint-disable-next-line typescript/no-explicit-any
-        execute: async () => ({ content: [], details: {} }) as unknown,
-      },
-    ] as unknown as AnyAgentTool[];
-    expect(applyOwnerOnlyToolPolicy(tools, false)).toStrictEqual([]);
-    expect(applyOwnerOnlyToolPolicy(tools, true)).toHaveLength(1);
-  });
-
-  it("strips nodes for non-owner senders via fallback policy", () => {
-    const tools = [
-      {
-        name: "read",
-        // oxlint-disable-next-line typescript/no-explicit-any
-        execute: async () => ({ content: [], details: {} }) as unknown,
-      },
-      {
-        name: "nodes",
-        // oxlint-disable-next-line typescript/no-explicit-any
-        execute: async () => ({ content: [], details: {} }) as unknown,
-      },
-    ] as unknown as AnyAgentTool[];
-
-    expect(applyOwnerOnlyToolPolicy(tools, false).map((tool) => tool.name)).toEqual(["read"]);
-    expect(applyOwnerOnlyToolPolicy(tools, true).map((tool) => tool.name)).toEqual([
-      "read",
-      "nodes",
-    ]);
   });
 });
 

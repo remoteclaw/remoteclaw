@@ -39,10 +39,9 @@ describe("security audit gateway HTTP auth findings", () => {
           auth: { mode: "none" },
           http: { endpoints: { responses: { enabled: true } } },
         },
-        plugins: { entries: { "admin-http-rpc": { enabled: true } } },
       } satisfies RemoteClawConfig,
       expectedFinding: { checkId: "gateway.http.no_auth", severity: "critical" as const },
-      detailIncludes: ["/api/v1/admin/rpc"],
+      detailIncludes: ["/tools/invoke", "/v1/responses"],
       env: {} as NodeJS.ProcessEnv,
     },
     {

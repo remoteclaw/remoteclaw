@@ -948,12 +948,10 @@ export function collectGatewayHttpNoAuthFindings(
 
   const chatCompletionsEnabled = cfg.gateway?.http?.endpoints?.chatCompletions?.enabled === true;
   const responsesEnabled = cfg.gateway?.http?.endpoints?.responses?.enabled === true;
-  const adminHttpRpcEnabled = cfg.plugins?.entries?.["admin-http-rpc"]?.enabled === true;
   const enabledEndpoints = [
     "/tools/invoke",
     chatCompletionsEnabled ? "/v1/chat/completions" : null,
     responsesEnabled ? "/v1/responses" : null,
-    adminHttpRpcEnabled ? "/api/v1/admin/rpc" : null,
   ].filter((entry): entry is string => Boolean(entry));
 
   const remoteExposure = isGatewayRemotelyExposed(cfg);

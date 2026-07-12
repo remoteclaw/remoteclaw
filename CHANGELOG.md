@@ -4,6 +4,20 @@
 
 ### Breaking
 
+- **Bot-loop protection now wired end-to-end and enabled by default
+  ([remoteclaw#2868](https://github.com/remoteclaw/remoteclaw/issues/2868)):**
+  The `botLoopProtection` channel setting was previously advertised but inert —
+  the strict config schema rejected it and no adapter consumed it. It is now
+  accepted (additive, all-optional fields) and enforced on the inbound path of
+  the Discord, Google Chat, and Slack adapters, suppressing runaway bot-to-bot
+  message loops. It defaults **on** (`maxEventsPerWindow: 20`, `windowSeconds:
+60`, `cooldownSeconds: 60`), so an existing `allowBots: true` setup with no
+  `botLoopProtection` block now suppresses a bot pair after 20 messages in 60
+  seconds where it previously dispatched unconditionally. To keep the prior
+  behavior, set `botLoopProtection.enabled: false` or raise `maxEventsPerWindow`.
+  Matrix is not yet wired (its inbound path lacks the required configured-bot-sender
+  machinery).
+
 - **Security — fail closed on `dmPolicy: open` without an allowlist
   ([remoteclaw#2870](https://github.com/remoteclaw/remoteclaw/pull/2870)):**
   Direct-message access under `dmPolicy: open` now routes through the adopted

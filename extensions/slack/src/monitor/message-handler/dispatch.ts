@@ -6,10 +6,15 @@ import type { ReplyPayload } from "../../../../../src/auto-reply/types.js";
 import { removeAckReactionAfterReply } from "../../../../../src/channels/ack-reactions.js";
 import { logAckFailure, logTypingFailure } from "../../../../../src/channels/logging.js";
 import { createReplyPrefixOptions } from "../../../../../src/channels/reply-prefix.js";
+import {
+  recordChannelBotPairLoopAndCheckSuppression,
+  type ChannelBotLoopProtectionFacts,
+} from "../../../../../src/channels/turn/bot-loop-protection.js";
 import { createTypingCallbacks } from "../../../../../src/channels/typing.js";
 import { resolveStorePath, updateLastRoute } from "../../../../../src/config/sessions.js";
 import { danger, logVerbose, shouldLogVerbose } from "../../../../../src/globals.js";
 import { resolveAgentOutboundIdentity } from "../../../../../src/infra/outbound/identity.js";
+import { mergePairLoopGuardConfig } from "../../../../../src/plugin-sdk/pair-loop-guard-runtime.js";
 import { resolvePinnedMainDmOwnerFromAllowlist } from "../../../../../src/security/dm-policy-shared.js";
 import { reactSlackMessage, removeSlackReaction } from "../../actions.js";
 import { createSlackDraftStream } from "../../draft-stream.js";
@@ -70,10 +75,65 @@ function shouldUseStreaming(params: {
   return true;
 }
 
+function resolveSlackMessageTimestampMs(
+  message: PreparedSlackMessage["message"],
+): number | undefined {
+  const ts = message.event_ts ?? message.ts;
+  if (!ts) {
+    return undefined;
+  }
+  const parsed = Number(ts);
+  return Number.isFinite(parsed) ? Math.trunc(parsed * 1000) : undefined;
+}
+
+function resolveSlackBotLoopProtection(
+  prepared: PreparedSlackMessage,
+): ChannelBotLoopProtectionFacts | undefined {
+  const senderBotId = prepared.message.bot_id;
+  if (!senderBotId) {
+    return undefined;
+  }
+  const receiverBotId = prepared.ctx.botId || prepared.ctx.botUserId;
+  if (
+    !receiverBotId ||
+    senderBotId === prepared.ctx.botId ||
+    prepared.message.user === prepared.ctx.botUserId
+  ) {
+    return undefined;
+  }
+  return {
+    scopeId: prepared.route.accountId,
+    conversationId: prepared.message.channel,
+    senderId: senderBotId,
+    receiverId: receiverBotId,
+    config: mergePairLoopGuardConfig(
+      prepared.account.config.botLoopProtection,
+      prepared.channelConfig?.botLoopProtection,
+    ),
+    defaultsConfig: prepared.ctx.cfg.channels?.defaults?.botLoopProtection,
+    defaultEnabled: true,
+    nowMs: resolveSlackMessageTimestampMs(prepared.message),
+  };
+}
+
 export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessage) {
   const { ctx, account, message, route } = prepared;
   const cfg = ctx.cfg;
   const runtime = ctx.runtime;
+
+  const botLoopProtection = resolveSlackBotLoopProtection(prepared);
+  if (botLoopProtection) {
+    const botLoopResult = recordChannelBotPairLoopAndCheckSuppression(botLoopProtection);
+    if (botLoopResult.suppressed) {
+      logVerbose(
+        `slack: bot-to-bot loop detected, suppressing for ${Math.max(
+          0,
+          Math.ceil((botLoopResult.cooldownUntilMs - Date.now()) / 1000),
+        )}s`,
+      );
+      return;
+    }
+  }
 
   // Resolve agent identity for Slack chat:write.customize overrides.
   const outboundIdentity = resolveAgentOutboundIdentity(cfg, route.agentId);

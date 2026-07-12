@@ -3,6 +3,7 @@ import { ChannelHeartbeatVisibilitySchema } from "./zod-schema.channels.js";
 import { GroupPolicySchema } from "./zod-schema.core.js";
 import {
   BlueBubblesConfigSchema,
+  BotLoopProtectionSchema,
   DiscordConfigSchema,
   GoogleChatConfigSchema,
   IMessageConfigSchema,
@@ -24,6 +25,7 @@ export const ChannelsSchema = z
       .object({
         groupPolicy: GroupPolicySchema.optional(),
         heartbeat: ChannelHeartbeatVisibilitySchema,
+        botLoopProtection: BotLoopProtectionSchema.optional(),
       })
       .strict()
       .optional(),

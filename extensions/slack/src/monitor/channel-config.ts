@@ -6,6 +6,8 @@ import {
   type ChannelMatchSource,
 } from "../../../../src/channels/channel-config.js";
 import type { SlackReactionNotificationMode } from "../../../../src/config/config.js";
+import type { ChannelBotLoopProtectionConfig } from "../../../../src/config/types.bot-loop-protection.js";
+import { mergePairLoopGuardConfig } from "../../../../src/plugin-sdk/pair-loop-guard-runtime.js";
 import type { SlackMessageEvent } from "../types.js";
 import { allowListMatches, normalizeAllowListLower, normalizeSlackSlug } from "./allow-list.js";
 
@@ -13,6 +15,7 @@ export type SlackChannelConfigResolved = {
   allowed: boolean;
   requireMention: boolean;
   allowBots?: boolean;
+  botLoopProtection?: ChannelBotLoopProtectionConfig;
   users?: Array<string | number>;
   skills?: string[];
   systemPrompt?: string;
@@ -25,6 +28,7 @@ export type SlackChannelConfigEntry = {
   allow?: boolean;
   requireMention?: boolean;
   allowBots?: boolean;
+  botLoopProtection?: ChannelBotLoopProtectionConfig;
   users?: Array<string | number>;
   skills?: string[];
   systemPrompt?: string;
@@ -143,6 +147,10 @@ export function resolveSlackChannelConfig(params: {
     firstDefined(resolved.requireMention, fallback?.requireMention, requireMentionDefault) ??
     requireMentionDefault;
   const allowBots = firstDefined(resolved.allowBots, fallback?.allowBots);
+  const botLoopProtection = mergePairLoopGuardConfig(
+    fallback?.botLoopProtection,
+    matched?.botLoopProtection,
+  );
   const users = firstDefined(resolved.users, fallback?.users);
   const skills = firstDefined(resolved.skills, fallback?.skills);
   const systemPrompt = firstDefined(resolved.systemPrompt, fallback?.systemPrompt);
@@ -150,6 +158,7 @@ export function resolveSlackChannelConfig(params: {
     allowed,
     requireMention,
     allowBots,
+    botLoopProtection,
     users,
     skills,
     systemPrompt,

@@ -22,6 +22,7 @@ import {
   DEFAULT_TIMING,
   type StatusReactionAdapter,
 } from "../../../../src/channels/status-reactions.js";
+import { recordChannelBotPairLoopAndCheckSuppression } from "../../../../src/channels/turn/bot-loop-protection.js";
 import { createTypingCallbacks } from "../../../../src/channels/typing.js";
 import { isDangerousNameMatchingEnabled } from "../../../../src/config/dangerous-name-matching.js";
 import { resolveDiscordPreviewStreamMode } from "../../../../src/config/discord-preview-streaming.js";
@@ -129,9 +130,22 @@ export async function processDiscordMessage(ctx: DiscordMessagePreflightContext)
     commandAuthorized,
     discordRestFetch,
     abortSignal,
+    botLoopProtection,
   } = ctx;
   if (isProcessAborted(abortSignal)) {
     return;
+  }
+  if (botLoopProtection) {
+    const botLoopResult = recordChannelBotPairLoopAndCheckSuppression(botLoopProtection);
+    if (botLoopResult.suppressed) {
+      logVerbose(
+        `discord: bot-to-bot loop detected before dispatch setup, suppressing for ${Math.max(
+          0,
+          Math.ceil((botLoopResult.cooldownUntilMs - Date.now()) / 1000),
+        )}s`,
+      );
+      return;
+    }
   }
 
   const ssrfPolicy = cfg.browser?.ssrfPolicy;

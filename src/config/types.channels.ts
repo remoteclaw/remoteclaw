@@ -1,4 +1,5 @@
 import type { GroupPolicy } from "./types.base.js";
+import type { ChannelBotLoopProtectionConfig } from "./types.bot-loop-protection.js";
 
 export type ChannelHeartbeatVisibilityConfig = {
   /** Show HEARTBEAT_OK acknowledgments in chat (default: false). */
@@ -21,6 +22,8 @@ export type ChannelDefaultsConfig = {
   groupPolicy?: GroupPolicy;
   /** Default heartbeat visibility for all channels. */
   heartbeat?: ChannelHeartbeatVisibilityConfig;
+  /** Default bot-to-bot loop protection for channels that support it. */
+  botLoopProtection?: ChannelBotLoopProtectionConfig;
 };
 
 export type ChannelModelByChannelConfig = Record<string, Record<string, string>>;

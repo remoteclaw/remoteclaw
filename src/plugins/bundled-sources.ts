@@ -1,4 +1,5 @@
 import { normalizeOptionalString } from "../shared/string-coerce.js";
+import { isRecord } from "../utils.js";
 import { discoverRemoteClawPlugins } from "./discovery.js";
 import { loadPluginManifest } from "./manifest.js";
 
@@ -6,6 +7,8 @@ export type BundledPluginSource = {
   pluginId: string;
   localPath: string;
   npmSpec?: string;
+  configSchema?: Record<string, unknown>;
+  requiresConfig?: boolean;
 };
 
 export type BundledPluginLookup =
@@ -59,10 +62,22 @@ export function resolveBundledPluginSources(params: {
       pluginId,
       localPath: candidate.rootDir,
       npmSpec,
+      ...(isRecord(manifest.manifest.configSchema)
+        ? { configSchema: manifest.manifest.configSchema }
+        : {}),
+      requiresConfig: pluginConfigSchemaHasRequiredFields(manifest.manifest.configSchema),
     });
   }
 
   return bundled;
+}
+
+function pluginConfigSchemaHasRequiredFields(schema: unknown): boolean {
+  if (!isRecord(schema)) {
+    return false;
+  }
+  const required = schema.required;
+  return Array.isArray(required) && required.some((entry) => typeof entry === "string");
 }
 
 export function findBundledPluginSource(params: {

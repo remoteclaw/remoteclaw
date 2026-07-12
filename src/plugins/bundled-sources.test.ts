@@ -74,6 +74,7 @@ describe("bundled plugin sources", () => {
       pluginId: "feishu",
       localPath: "/app/extensions/feishu",
       npmSpec: "@remoteclaw/feishu",
+      requiresConfig: false,
     });
   });
 
@@ -127,6 +128,41 @@ describe("bundled plugin sources", () => {
     expect(resolved?.pluginId).toBe("diffs");
     expect(resolved?.localPath).toBe("/app/extensions/diffs");
     expect(missing).toBeUndefined();
+  });
+
+  it("marks bundled sources that require plugin config before activation", () => {
+    discoverRemoteClawPluginsMock.mockReturnValue({
+      candidates: [
+        {
+          origin: "bundled",
+          rootDir: "/app/extensions/memory-lancedb",
+          packageName: "@remoteclaw/memory-lancedb",
+          packageManifest: { install: { npmSpec: "@remoteclaw/memory-lancedb" } },
+        },
+      ],
+      diagnostics: [],
+    });
+    loadPluginManifestMock.mockReturnValue({
+      ok: true,
+      manifest: {
+        id: "memory-lancedb",
+        configSchema: {
+          type: "object",
+          required: ["embedding"],
+        },
+      },
+    });
+
+    expect(resolveBundledPluginSources({}).get("memory-lancedb")).toEqual({
+      pluginId: "memory-lancedb",
+      localPath: "/app/extensions/memory-lancedb",
+      npmSpec: "@remoteclaw/memory-lancedb",
+      configSchema: {
+        type: "object",
+        required: ["embedding"],
+      },
+      requiresConfig: true,
+    });
   });
 
   it("reuses a pre-resolved bundled map for repeated lookups", () => {

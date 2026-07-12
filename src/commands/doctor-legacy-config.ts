@@ -10,6 +10,13 @@ import {
 } from "../config/discord-preview-streaming.js";
 import { DEFAULT_ACCOUNT_ID } from "../routing/session-key.js";
 
+// Account-scoped access-policy keys that act as shared channel-level defaults. During the
+// single→multi-account promotion (seedMissingDefaultAccountsFromSingleAccountBase) these must be
+// inherited onto existing named accounts, not silently stripped when the channel-top-level values
+// are moved into accounts.default — otherwise an allowlist-gated channel can flip OPEN.
+// See remoteclaw/remoteclaw#2097 (adapted from upstream commit 7b461676072).
+const INHERITED_ACCOUNT_POLICY_KEYS = ["dmPolicy", "allowFrom", "groupPolicy", "groupAllowFrom"];
+
 export function normalizeCompatibilityConfigValues(cfg: RemoteClawConfig): {
   config: RemoteClawConfig;
   changes: string[];
@@ -19,6 +26,9 @@ export function normalizeCompatibilityConfigValues(cfg: RemoteClawConfig): {
 
   const isRecord = (value: unknown): value is Record<string, unknown> =>
     Boolean(value) && typeof value === "object" && !Array.isArray(value);
+
+  const cloneIfObject = (value: unknown): unknown =>
+    value && typeof value === "object" ? structuredClone(value) : value;
 
   const normalizeDmAliases = (params: {
     provider: "slack" | "discord";
@@ -331,8 +341,7 @@ export function normalizeCompatibilityConfigValues(cfg: RemoteClawConfig): {
 
       const defaultAccount: Record<string, unknown> = {};
       for (const key of keysToMove) {
-        const value = rawChannel[key];
-        defaultAccount[key] = value && typeof value === "object" ? structuredClone(value) : value;
+        defaultAccount[key] = cloneIfObject(rawChannel[key]);
       }
       const nextChannel: Record<string, unknown> = {
         ...rawChannel,
@@ -340,10 +349,37 @@ export function normalizeCompatibilityConfigValues(cfg: RemoteClawConfig): {
       for (const key of keysToMove) {
         delete nextChannel[key];
       }
-      nextChannel.accounts = {
+      const inheritedPolicyKeys = INHERITED_ACCOUNT_POLICY_KEYS.filter((key) =>
+        keysToMove.includes(key),
+      );
+      const nextAccounts: Record<string, unknown> = {
         ...rawAccounts,
         [DEFAULT_ACCOUNT_ID]: defaultAccount,
       };
+      // The moved keys previously acted as shared defaults for every existing named account
+      // (they were resolved from the channel top level). Preserve that inheritance: copy each
+      // moved policy key down onto every named account that does not already define its own
+      // value. Never clobber an account's own override, and only inherit keys actually moved.
+      if (inheritedPolicyKeys.length > 0) {
+        for (const [accountId, rawAccount] of Object.entries(rawAccounts)) {
+          if (!isRecord(rawAccount)) {
+            continue;
+          }
+          const nextAccount = { ...rawAccount };
+          let accountChanged = false;
+          for (const key of inheritedPolicyKeys) {
+            if (Object.prototype.hasOwnProperty.call(nextAccount, key)) {
+              continue;
+            }
+            nextAccount[key] = cloneIfObject(rawChannel[key]);
+            accountChanged = true;
+          }
+          if (accountChanged) {
+            nextAccounts[accountId] = nextAccount;
+          }
+        }
+      }
+      nextChannel.accounts = nextAccounts;
 
       nextChannels[channelId] = nextChannel;
       channelsChanged = true;

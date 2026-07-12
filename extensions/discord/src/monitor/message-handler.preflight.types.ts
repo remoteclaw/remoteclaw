@@ -1,5 +1,6 @@
 import type { ChannelType, Client, User } from "@buape/carbon";
 import type { HistoryEntry } from "../../../../src/auto-reply/reply/history.js";
+import type { ChannelBotLoopProtectionFacts } from "../../../../src/channels/turn/bot-loop-protection.js";
 import type { ReplyToMode } from "../../../../src/config/config.js";
 import type { SessionBindingRecord } from "../../../../src/infra/outbound/session-binding-service.js";
 import type { resolveAgentRoute } from "../../../../src/routing/resolve-route.js";
@@ -91,6 +92,13 @@ export type DiscordMessagePreflightContext = DiscordMessagePreflightSharedFields
   historyEntry?: HistoryEntry;
   threadBindings: DiscordThreadBindingLookup;
   discordRestFetch?: typeof fetch;
+
+  /**
+   * Bot-to-bot loop protection facts, assembled during preflight when the
+   * message is bot-authored, allowBots-admitted, and not self-authored.
+   * Consumed by the process step to short-circuit before dispatch.
+   */
+  botLoopProtection?: ChannelBotLoopProtectionFacts;
 };
 
 export type DiscordMessagePreflightParams = DiscordMessagePreflightSharedFields & {

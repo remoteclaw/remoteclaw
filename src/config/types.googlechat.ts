@@ -4,6 +4,7 @@ import type {
   GroupPolicy,
   ReplyToMode,
 } from "./types.base.js";
+import type { ChannelBotLoopProtectionConfig } from "./types.bot-loop-protection.js";
 import type { ChannelHealthMonitorConfig } from "./types.channels.js";
 import type { DmConfig } from "./types.messages.js";
 import type { SecretRef } from "./types.secrets.js";
@@ -43,6 +44,8 @@ export type GoogleChatAccountConfig = {
   enabled?: boolean;
   /** Allow bot-authored messages to trigger replies (default: false). */
   allowBots?: boolean;
+  /** Bot-to-bot loop protection applied when allowBots admits bot-authored messages. */
+  botLoopProtection?: ChannelBotLoopProtectionConfig;
   /**
    * Break-glass override: allow mutable principal matching (raw email entries) in allowlists.
    * Default behavior is ID-only matching.

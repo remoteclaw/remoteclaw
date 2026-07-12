@@ -1,8 +1,12 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/googlechat";
+import type {
+  ChannelBotLoopProtectionFacts,
+  RemoteClawConfig,
+} from "remoteclaw/plugin-sdk/googlechat";
 import {
   createWebhookInFlightLimiter,
   createReplyPrefixOptions,
+  recordChannelBotPairLoopAndCheckSuppression,
   registerWebhookTargetWithPluginRoute,
   resolveInboundRouteEnvelopeBuilderWithRuntime,
   resolveWebhookPath,
@@ -104,6 +108,14 @@ function resolveBotDisplayName(params: {
   return "RemoteClaw";
 }
 
+function resolveGoogleChatTimestampMs(eventTime?: string): number | undefined {
+  if (!eventTime) {
+    return undefined;
+  }
+  const parsed = Date.parse(eventTime);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
 async function processMessageWithPipeline(params: {
   event: GoogleChatEvent;
   account: ResolvedGoogleChatAccount;
@@ -130,10 +142,12 @@ async function processMessageWithPipeline(params: {
   const senderId = sender?.name ?? "";
   const senderName = sender?.displayName ?? "";
   const senderEmail = sender?.email ?? undefined;
+  const isBotSender = sender?.type?.toUpperCase() === "BOT";
+  const appUserId = account.config.botUser?.trim() || "users/app";
 
   const allowBots = account.config.allowBots === true;
   if (!allowBots) {
-    if (sender?.type?.toUpperCase() === "BOT") {
+    if (isBotSender) {
       logVerbose(core, runtime, `skip bot-authored message (${senderId || "unknown"})`);
       return;
     }
@@ -169,6 +183,34 @@ async function processMessageWithPipeline(params: {
     return;
   }
   const { commandAuthorized, effectiveWasMentioned, groupSystemPrompt } = access;
+
+  const botLoopProtection: ChannelBotLoopProtectionFacts | undefined =
+    allowBots && isBotSender && senderId && senderId !== appUserId
+      ? {
+          scopeId: account.accountId,
+          conversationId: spaceId,
+          senderId,
+          receiverId: appUserId,
+          config: account.config.botLoopProtection,
+          defaultsConfig: config.channels?.defaults?.botLoopProtection,
+          defaultEnabled: true,
+          nowMs: resolveGoogleChatTimestampMs(event.eventTime),
+        }
+      : undefined;
+  if (botLoopProtection) {
+    const botLoopResult = recordChannelBotPairLoopAndCheckSuppression(botLoopProtection);
+    if (botLoopResult.suppressed) {
+      logVerbose(
+        core,
+        runtime,
+        `googlechat: bot-to-bot loop detected, suppressing for ${Math.max(
+          0,
+          Math.ceil((botLoopResult.cooldownUntilMs - Date.now()) / 1000),
+        )}s`,
+      );
+      return;
+    }
+  }
 
   const { route, buildEnvelope } = resolveInboundRouteEnvelopeBuilderWithRuntime({
     cfg: config,

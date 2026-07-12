@@ -776,6 +776,23 @@ export async function preflightDiscordMessage(
   logDebug(
     `[discord-preflight] success: route=${effectiveRoute.agentId} sessionKey=${effectiveRoute.sessionKey}`,
   );
+  const botLoopProtection =
+    author.bot &&
+    !sender.isPluralKit &&
+    allowBotsMode !== "off" &&
+    params.botUserId &&
+    author.id !== params.botUserId
+      ? {
+          scopeId: params.accountId,
+          conversationId: messageChannelId,
+          senderId: author.id,
+          receiverId: params.botUserId,
+          config: params.discordConfig?.botLoopProtection,
+          defaultsConfig: params.cfg.channels?.defaults?.botLoopProtection,
+          defaultEnabled: true,
+          nowMs: resolveTimestampMs(message.timestamp),
+        }
+      : undefined;
   return {
     cfg: params.cfg,
     discordConfig: params.discordConfig,
@@ -835,5 +852,6 @@ export async function preflightDiscordMessage(
     historyEntry,
     threadBindings: params.threadBindings,
     discordRestFetch: params.discordRestFetch,
+    botLoopProtection,
   };
 }

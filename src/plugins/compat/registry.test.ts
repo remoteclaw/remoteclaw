@@ -8,6 +8,16 @@ import {
 
 const datePattern = /^\d{4}-\d{2}-\d{2}$/u;
 
+function parseDate(date: string): Date {
+  return new Date(`${date}T00:00:00Z`);
+}
+
+function addUtcMonths(date: Date, months: number): Date {
+  const next = new Date(date);
+  next.setUTCMonth(next.getUTCMonth() + months);
+  return next;
+}
+
 describe("plugin compatibility registry", () => {
   it("keeps compatibility codes unique and lookup-safe", () => {
     const records = listPluginCompatRecords();
@@ -23,6 +33,13 @@ describe("plugin compatibility registry", () => {
     for (const record of listDeprecatedPluginCompatRecords()) {
       expect(record.deprecated, record.code).toMatch(datePattern);
       expect(record.warningStarts, record.code).toMatch(datePattern);
+      expect(record.removeAfter, record.code).toMatch(datePattern);
+      if (!record.warningStarts || !record.removeAfter) {
+        throw new Error(`${record.code} is missing deprecation window dates`);
+      }
+      const maxRemoveAfter = addUtcMonths(parseDate(record.warningStarts), 3);
+      const removeAfter = parseDate(record.removeAfter);
+      expect(removeAfter <= maxRemoveAfter, record.code).toBe(true);
       expect(record.replacement, record.code).toBeTruthy();
       expect(record.docsPath, record.code).toMatch(/^\//u);
     }

@@ -49,6 +49,11 @@ const entrypoints = [
   "zalouser",
   "account-id",
   "keyed-async-queue",
+  "health",
+  "provider-model-shared",
+  "routing",
+  "secret-ref-runtime",
+  "string-coerce-runtime",
 ] as const;
 for (const entry of entrypoints) {
   const out = path.join(process.cwd(), `dist/plugin-sdk/${entry}.d.ts`);

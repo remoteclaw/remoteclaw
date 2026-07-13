@@ -395,6 +395,16 @@ importers:
         specifier: workspace:*
         version: link:../..
 
+  extensions/policy:
+    dependencies:
+      json5:
+        specifier: ^2.2.3
+        version: 2.2.3
+    devDependencies:
+      remoteclaw:
+        specifier: workspace:*
+        version: link:../..
+
   extensions/qa-channel:
     dependencies:
       typebox:
@@ -5683,9 +5693,6 @@ packages:
 
   zod@4.3.6:
     resolution: {integrity: sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg==}
-
-  zod@4.4.3:
-    resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
 
 snapshots:
 
@@ -11527,5 +11534,3 @@ snapshots:
   zod@3.25.75: {}
 
   zod@4.3.6: {}
-
-  zod@4.4.3: {}

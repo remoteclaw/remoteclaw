@@ -1,0 +1,35 @@
+{
+  "name": "@remoteclaw/policy",
+  "version": "0.8.0",
+  "private": true,
+  "description": "RemoteClaw policy doctor checks for workspace conformance",
+  "type": "module",
+  "dependencies": {
+    "json5": "^2.2.3"
+  },
+  "devDependencies": {
+    "remoteclaw": "workspace:*"
+  },
+  "peerDependencies": {
+    "remoteclaw": ">=2026.4.20"
+  },
+  "peerDependenciesMeta": {
+    "remoteclaw": {
+      "optional": true
+    }
+  },
+  "remoteclaw": {
+    "bundle": {
+      "stageRuntimeDependencies": true
+    },
+    "extensions": [
+      "./index.ts"
+    ],
+    "compat": {
+      "pluginApi": ">=2026.4.20"
+    },
+    "build": {
+      "remoteclawVersion": "2026.4.20"
+    }
+  }
+}

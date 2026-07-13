@@ -102,6 +102,16 @@ const requiredPathGroups = [
   "dist/plugin-sdk/account-id.d.ts",
   "dist/plugin-sdk/keyed-async-queue.js",
   "dist/plugin-sdk/keyed-async-queue.d.ts",
+  "dist/plugin-sdk/health.js",
+  "dist/plugin-sdk/health.d.ts",
+  "dist/plugin-sdk/provider-model-shared.js",
+  "dist/plugin-sdk/provider-model-shared.d.ts",
+  "dist/plugin-sdk/routing.js",
+  "dist/plugin-sdk/routing.d.ts",
+  "dist/plugin-sdk/secret-ref-runtime.js",
+  "dist/plugin-sdk/secret-ref-runtime.d.ts",
+  "dist/plugin-sdk/string-coerce-runtime.js",
+  "dist/plugin-sdk/string-coerce-runtime.d.ts",
   "dist/build-info.json",
 ];
 const forbiddenPrefixes = ["dist/RemoteClaw.app/"];

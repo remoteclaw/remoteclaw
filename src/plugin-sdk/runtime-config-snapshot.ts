@@ -1,3 +1,4 @@
+export { clearConfigCache } from "../config/io.js";
 export {
   clearRuntimeConfigSnapshot,
   getRuntimeConfigSnapshot,

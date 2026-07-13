@@ -81,6 +81,11 @@ const requiredSubpathEntries = [
   "zalouser",
   "account-id",
   "keyed-async-queue",
+  "health",
+  "provider-model-shared",
+  "routing",
+  "secret-ref-runtime",
+  "string-coerce-runtime",
 ];
 
 const requiredRuntimeShimEntries = ["root-alias.cjs"];

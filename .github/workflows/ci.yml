@@ -110,6 +110,33 @@ jobs:
       - name: Check obsolescence audit
         run: node scripts/check-obsolescence-audit.mjs
 
+  policy-doctor-boundary-gate:
+    # Structural security gate for the policy-doctor bounded-write boundary
+    # (PR #2895): detect is pure-read, the repair reducer does no I/O, the ext
+    # exposes exactly one repair(), and the core wiring gates repair behind
+    # `--fix` + mode:"fix". The rationale home
+    # (src/commands/doctor-policy-checks.boundary.test.ts) lives under
+    # src/commands/**, which is DELIBERATELY excluded from every fork vitest lane,
+    # so this standalone gate re-homes the invariant as a required CI check without
+    # reversing that exclusion. See § Fork-integrity gates.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: false
+
+      - name: Setup Node environment
+        uses: ./.github/actions/setup-node-env
+        with:
+          install-bun: "false"
+
+      - name: Self-test detector (planted violation must fail)
+        run: node scripts/check-policy-doctor-boundary.mjs --self-test
+
+      - name: Check policy-doctor bounded-write boundary
+        run: node scripts/check-policy-doctor-boundary.mjs
+
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -365,6 +392,7 @@ jobs:
         stub-debt-gate,
         throwing-stub-callers-gate,
         obsolescence-audit-gate,
+        policy-doctor-boundary-gate,
         lint,
         build,
         packaged-boot-smoke,
@@ -378,7 +406,7 @@ jobs:
     steps:
       - name: Check results
         run: |
-          if [[ "${{ needs.rebrand-gate.result }}" != "success" || "${{ needs.zombie-import-gate.result }}" != "success" || "${{ needs.stub-debt-gate.result }}" != "success" || "${{ needs.throwing-stub-callers-gate.result }}" != "success" || "${{ needs.obsolescence-audit-gate.result }}" != "success" || "${{ needs.lint.result }}" != "success" || "${{ needs.build.result }}" != "success" || "${{ needs.packaged-boot-smoke.result }}" != "success" || "${{ needs.test.result }}" != "success" || "${{ needs.test-gateway.result }}" != "success" || "${{ needs.test-extensions.result }}" != "success" || "${{ needs.test-auto-reply.result }}" != "success" || "${{ needs.test-ui-smoke.result }}" != "success" ]]; then
+          if [[ "${{ needs.rebrand-gate.result }}" != "success" || "${{ needs.zombie-import-gate.result }}" != "success" || "${{ needs.stub-debt-gate.result }}" != "success" || "${{ needs.throwing-stub-callers-gate.result }}" != "success" || "${{ needs.obsolescence-audit-gate.result }}" != "success" || "${{ needs.policy-doctor-boundary-gate.result }}" != "success" || "${{ needs.lint.result }}" != "success" || "${{ needs.build.result }}" != "success" || "${{ needs.packaged-boot-smoke.result }}" != "success" || "${{ needs.test.result }}" != "success" || "${{ needs.test-gateway.result }}" != "success" || "${{ needs.test-extensions.result }}" != "success" || "${{ needs.test-auto-reply.result }}" != "success" || "${{ needs.test-ui-smoke.result }}" != "success" ]]; then
             echo "::error::One or more required jobs failed"
             exit 1
           fi

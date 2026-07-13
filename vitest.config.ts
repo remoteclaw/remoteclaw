@@ -67,6 +67,12 @@ const pluginSdkSubpaths = [
   "zalo",
   "zalouser",
   "keyed-async-queue",
+  "health",
+  "plugin-test-runtime",
+  "provider-model-shared",
+  "routing",
+  "runtime-config-snapshot",
+  "secret-ref-runtime",
 ] as const;
 
 export default defineConfig({

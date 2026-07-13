@@ -37,6 +37,7 @@ import {
   noteDeprecatedLegacyEnvVars,
   noteStartupOptimizationHints,
 } from "./doctor-platform-notes.js";
+import { runPolicyDoctorChecks } from "./doctor-policy-checks.js";
 import { createDoctorPrompter, type DoctorOptions } from "./doctor-prompter.js";
 import { noteSecurityWarnings } from "./doctor-security.js";
 import { noteSessionLockHealth } from "./doctor-session-locks.js";
@@ -232,6 +233,8 @@ export async function doctorCommand(
   }
 
   noteWorkspaceStatus(cfg);
+
+  cfg = await runPolicyDoctorChecks({ runtime, cfg, configPath, prompter });
 
   // Check and fix shell completion
   await doctorShellCompletion(runtime, prompter, {

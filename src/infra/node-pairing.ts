@@ -365,3 +365,20 @@ export async function renamePairedNode(
     return next;
   });
 }
+
+export async function removePairedNode(
+  nodeId: string,
+  baseDir?: string,
+): Promise<NodePairingPairedNode | null> {
+  return await withLock(async () => {
+    const state = await loadState(baseDir);
+    const normalized = normalizeNodeId(nodeId);
+    const existing = state.pairedByNodeId[normalized];
+    if (!existing) {
+      return null;
+    }
+    delete state.pairedByNodeId[normalized];
+    await persistState(state, baseDir);
+    return existing;
+  });
+}

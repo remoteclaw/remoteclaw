@@ -28,6 +28,9 @@ export {
   type HealthRepairEffect,
   type HealthRepairResult,
 } from "./_health/health-checks.js";
+// `registerHealthCheck` is public for upstream parity but intended first-party only
+// (the bundled `policy` ext); see the ratified open-registration posture at its
+// definition in `./_health/health-check-registry.js`.
 export {
   getHealthCheck,
   listHealthChecks,

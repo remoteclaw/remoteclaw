@@ -20,89 +20,48 @@ const PAYMENT_CREDENTIAL_ENV_KEYS = String.raw`CARD[_-]?NUMBER|CARD[_-]?CVC|CARD
 const PAYMENT_CREDENTIAL_QUERY_KEYS = String.raw`card[-_]?number|card[-_]?cvc|card[-_]?cvv|cvc|cvv|security[-_]?code|payment[-_]?credential|shared[-_]?payment[-_]?token`;
 const PAYMENT_CREDENTIAL_JSON_KEYS = String.raw`cardNumber|card_number|cardCvc|card_cvc|cardCvv|card_cvv|cvc|cvv|securityCode|security_code|paymentCredential|payment_credential|sharedPaymentToken|shared_payment_token`;
 
+// ORDER IS SEMANTIC — do not regroup by theme.
+//
+// `redactText` applies these SEQUENTIALLY in array order, feeding each pattern's `.replace()`
+// output to the next. A GENERIC `key=value` pattern that runs early can therefore capture and mask
+// the very ANCHOR a later, more specific pattern matches on — silently disabling it. That is not
+// hypothetical: it is #2904. The ENV pattern used to run first, and its value class stops at the
+// first space, so
+//
+//     PRIVATE_KEY=-----BEGIN RSA PRIVATE KEY-----\n<base64 body>\n-----END RSA PRIVATE KEY-----
+//
+// had `-----BEGIN` captured as the ENV "value" and masked to `***`. That destroyed the PEM opener,
+// the PEM pattern below could no longer match, and the entire base64 body shipped in CLEARTEXT.
+//
+// Hence: MOST-ANCHORED-FIRST, MOST-GENERIC-LAST.
+//
+//   1. PEM blocks              — multi-line, anchored on a `-----BEGIN` opener a generic can eat.
+//   2. Authorization / Bearer  — anchored on a `Bearer` keyword a generic can eat.
+//   3. Vendor-prefix tokens    — self-anchored on their own literal prefix (sk-, ghp_, AKIA, …).
+//   4. ENV → URL → standalone → JSON → CLI — the generic `key=value` families.
+//
+// Reordering is SAFE where a generic and a specific pattern both match the same token, because
+// `maskToken`'s idempotence guard (`isAlreadyMasked`) returns an already-masked value verbatim.
+// `OPENAI_API_KEY=sk-1234567890abcdef` is masked by the vendor `sk-` pattern first; the later ENV
+// pass then captures `sk-123…cdef`, recognises maskToken's own image, and leaves it alone instead
+// of collapsing it to `***`. Whichever of the two runs first wins; the other is a no-op. Order
+// therefore decides WHICH pattern masks a token, never WHETHER it is masked.
+//
+// Adding a pattern? Place it by ANCHOR STRENGTH, not by theme.
 const DEFAULT_REDACT_PATTERNS: string[] = [
-  // ENV-style assignments. Keep this case-sensitive so diagnostics like
-  // `Unrecognized key: "llm"` do not lose the actual config key.
-  String.raw`/\b[A-Z0-9_]*(?:KEY|TOKEN|SECRET|PASSWORD|PASSWD|${PAYMENT_CREDENTIAL_ENV_KEYS})\b\s*[=:]\s*(["']?)([^\s"'\\]+)\1/g`,
-  // Same, but for backslash-escaped quotes. The pattern above excludes `\` from the
-  // value class, so a JSON-embedded shell command (`{"command":"export KEY=\"secret\""}`)
-  // never matches it and would otherwise log the credential in cleartext.
-  String.raw`/\b[A-Z0-9_]*(?:KEY|TOKEN|SECRET|PASSWORD|PASSWD|${PAYMENT_CREDENTIAL_ENV_KEYS})\b\s*[=:]\s*\\+(["'])([^\s"'\\]+)\\+\1/g`,
-  // URL query parameters. Kept separate from ENV-style assignments so lower-case URL
-  // secrets (e.g. `?access_token=…`) stay redacted without hiding config-key diagnostics.
-  // The key set here is a superset of the standalone pattern's key set below. That is what
-  // makes the two patterns' disjoint domains lossless: every key redacted standalone is
-  // also redacted at URL position, so the standalone pattern can safely refuse to fire
-  // there. `id[-_]?token`, `app[-_]?secret`, `jwt`, and `credential` were added for that
-  // containment (#2903); the first two also closed real leaks at URL position.
-  String.raw`[?&](?:access[-_]?token|auth[-_]?token|hook[-_]?token|refresh[-_]?token|id[-_]?token|api[-_]?key|client[-_]?secret|app[-_]?secret|jwt|token|key|secret|password|pass|passwd|auth|credential|signature|${PAYMENT_CREDENTIAL_QUERY_KEYS})=([^&\s"'<>]+)`,
-  // Standalone credential assignments outside URLs (e.g. `token=…` in a log line).
-  //
-  // Leading boundary is `\b` (#2902). The previous delimiter whitelist accepted only
-  // whitespace/comma/semicolon/quote/backtick, so every other non-word delimiter leaked:
-  // `(token=…)`, `[token=…]`, `{cmd:token=…}`, `:token=…`, `.token=…`, `--token=…`. `\b` is
-  // a strict superset of that whitelist and still refuses to fire mid-word, so `mytoken=…`
-  // stays untouched. It is zero-width, so it consumes nothing and needs no capture group —
-  // the value is the only group, which is what `redactMatch` takes.
-  //
-  // `(?<![?&][-\w]*)` keeps this pattern's domain disjoint from the URL-query pattern above,
-  // which runs first (patterns apply in array order, each fed the previous one's output).
-  // Without the lookbehind, `\b` re-enters INSIDE a hyphenated query key — `?auth-token=`
-  // has a word boundary at `-|token` — and re-matches the already-masked value. Blocking only
-  // the single char before the key is not enough: a query key spans many chars, hence the
-  // variable-length lookbehind. It is unbounded on purpose — a length cap would only change
-  // behavior for keys longer than the cap, where it reverts to the broken re-entry. Cost is
-  // not measurable: the lookbehind fails fast and prunes the alternation attempt entirely.
-  //
-  // `maskToken`'s idempotence guard now makes that re-entry harmless, so the lookbehind may be
-  // redundant. That is NOT established. The two patterns' value classes differ (`[^\s&#]+` here
-  // vs `[^&\s"'<>]+` above), so a re-entered match need not span the same text as the original,
-  // and nothing exercises that divergence — quotes and `#` are exactly where they part company.
-  // Removing it is a separate question resting on an unproven premise; retained deliberately.
-  //
-  // Compound keys are enumerated explicitly (#2903) because `_` is a word character:
-  // `auth_token=` has NO word boundary before `token`, so the generic `token` alternative
-  // can never reach it and `\b` alone cannot fix that. Hyphenated spellings need no entry —
-  // the hyphen IS a boundary, so generic `token` already catches `auth-token=`. The
-  // boundary fix and the key list are complementary; neither alone closes the gap.
-  //
-  // Deliberately NOT here: `pass` (over-masks `pass=1`/`pass=true` in ordinary prose),
-  // `authorization` and `private_key`. The latter two are ordering-sensitive: this pattern
-  // runs BEFORE the dedicated Bearer and PEM patterns below, and its value class stops at
-  // whitespace, so it would mask the `Bearer`/`-----BEGIN` marker those patterns match on
-  // and let the actual credential through. Tracked in #2904.
-  //
-  // Idempotence — not re-masking a value some earlier pattern already masked — is deliberately
-  // NOT enforced here. It is a property of the redactor (any pattern can re-enter any other's
-  // output), not of this pattern, so the guard lives in `maskToken`; see `isAlreadyMasked`.
-  // Two attempts to encode it in this regex both got the skip set wrong, in the same way: they
-  // keyed on a proxy for "this value is a mask" rather than on the mask itself. Do not retry.
-  //
-  // The value class `[^\s&#]+` is byte-identical to HEAD's on purpose. It admits `,` and `=`,
-  // so a whitespace-delimited run spans adjacent assignments: `token=<secret>,user=alice` masks
-  // as one blob — eating the `user=alice` diagnostic, and making the mask tail (`…lice`) the
-  // tail of `alice` rather than of the token. The 6+4 shape exists to let the same token be
-  // correlated across log lines; a tail borrowed from neighbouring text breaks that. Structural,
-  // not cosmetic, and out of scope here. Tracked in #2907.
-  //
-  // Known gap: a hyphenated key absent from the URL key set above (`?csrf-token=…`) leaks at
-  // URL position — this pattern is correctly blocked there, and the URL pattern does not
-  // know the key. Pre-existing at HEAD, not introduced here. The fix belongs in the URL key
-  // set, where it is legible and works for BOTH separators. Tracked in #2905.
-  //
-  // Upstream shares this text-level gap and relies on structured tool-output redaction the
-  // fork does not carry. (Fork-side, #2852.)
-  String.raw`\b(?<![?&][-\w]*)(?:access_token|refresh_token|id_token|auth[-_]?token|hook[-_]?token|api[-_]?key|client[-_]?secret|app[-_]?secret|jwt|token|secret|password|passwd|credential|${PAYMENT_CREDENTIAL_QUERY_KEYS})=([^\s&#]+)`,
-  // JSON fields.
-  String.raw`"(?:apiKey|token|secret|password|passwd|accessToken|refreshToken|${PAYMENT_CREDENTIAL_JSON_KEYS})"\s*:\s*"([^"]+)"`,
-  // CLI flags.
-  String.raw`--(?:api[-_]?key|hook[-_]?token|token|secret|password|passwd|${PAYMENT_CREDENTIAL_QUERY_KEYS})\s+(["']?)([^\s"']+)\1`,
-  // Authorization headers.
+  // --- 1. PEM blocks ------------------------------------------------------------------------
+  // FIRST on purpose (#2904). Any generic `key=value` family running ahead of this would mask the
+  // `-----BEGIN` opener of a `PRIVATE_KEY=<pem>` line and leak the body. See the ORDER note above.
+  String.raw`-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]+?-----END [A-Z ]*PRIVATE KEY-----`,
+  // --- 2. Authorization headers / Bearer tokens ---------------------------------------------
+  // Anchored on the `Bearer` keyword. A generic family running first would capture `Bearer` as the
+  // VALUE of `authorization=…` and mask it, leaving the real token in cleartext behind it (#2904).
   String.raw`Authorization\s*[:=]\s*Bearer\s+([A-Za-z0-9._\-+=]+)`,
   String.raw`\bBearer\s+([A-Za-z0-9._\-+=]{18,})\b`,
-  // PEM blocks.
-  String.raw`-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]+?-----END [A-Z ]*PRIVATE KEY-----`,
-  // Common token prefixes.
+  // --- 3. Vendor-prefix / self-anchored tokens ----------------------------------------------
+  // Each anchors on its own literal prefix, so it is immune to key-name spelling — but NOT to a
+  // generic pattern masking its value first. Running them here means the pattern that actually
+  // understands a token's shape is the one that masks it, at every position it can appear.
   String.raw`\b(sk-[A-Za-z0-9_-]{8,})\b`,
   String.raw`\b(ghp_[A-Za-z0-9]{20,})\b`,
   String.raw`\b(github_pat_[A-Za-z0-9_]{20,})\b`,
@@ -123,8 +82,129 @@ const DEFAULT_REDACT_PATTERNS: string[] = [
   String.raw`\b(hf_[A-Za-z0-9]{10,})\b`,
   String.raw`\b(r8_[A-Za-z0-9]{10,})\b`,
   // Telegram Bot API URLs embed the token as `/bot<token>/...` (no word-boundary before digits).
+  // Distinct from the `bot[-_]?token` KEY added to the generic families below — that one is a
+  // query/log key literally named `bot-token`; this one is the token's own `<digits>:<secret>` shape.
   String.raw`\bbot(\d{6,}:[A-Za-z0-9_-]{20,})\b`,
   String.raw`\b(\d{6,}:[A-Za-z0-9_-]{20,})\b`,
+  // --- 4. Generic `key=value` families ------------------------------------------------------
+  // ENV-style assignments. Keep this case-sensitive so diagnostics like
+  // `Unrecognized key: "llm"` do not lose the actual config key.
+  String.raw`/\b[A-Z0-9_]*(?:KEY|TOKEN|SECRET|PASSWORD|PASSWD|${PAYMENT_CREDENTIAL_ENV_KEYS})\b\s*[=:]\s*(["']?)([^\s"'\\]+)\1/g`,
+  // Same, but for backslash-escaped quotes. The pattern above excludes `\` from the
+  // value class, so a JSON-embedded shell command (`{"command":"export KEY=\"secret\""}`)
+  // never matches it and would otherwise log the credential in cleartext.
+  String.raw`/\b[A-Z0-9_]*(?:KEY|TOKEN|SECRET|PASSWORD|PASSWD|${PAYMENT_CREDENTIAL_ENV_KEYS})\b\s*[=:]\s*\\+(["'])([^\s"'\\]+)\\+\1/g`,
+  // URL query parameters. Kept separate from ENV-style assignments so lower-case URL
+  // secrets (e.g. `?access_token=…`) stay redacted without hiding config-key diagnostics.
+  //
+  // CONTAINMENT INVARIANT: this key set is a SUPERSET of the standalone pattern's key set below.
+  // That is what makes the two patterns' disjoint domains lossless — the standalone pattern's
+  // lookbehind refuses to fire at URL position, which is only safe because every key it would
+  // redact is redacted HERE instead. `id[-_]?token`, `app[-_]?secret`, `jwt`, and `credential`
+  // were added for that containment (#2903); the first two also closed real leaks at URL position.
+  // ANY key added to the standalone set MUST be added here too or containment breaks — pinned by
+  // the "#2903 losslessness" test.
+  //
+  // `authorization` and `private[-_]?key` are here for containment with the standalone set (#2904).
+  //
+  // The prefixed compounds (`csrf[-_]?token`, `session[-_]?token`, `webhook[-_]?secret`,
+  // `signing[-_]?secret`, `bot[-_]?token`, `user[-_]?password`) close #2905: `?csrf-token=…` leaked
+  // because `[?&]` anchors the alternation to the START of the key, so the generic `token`
+  // alternative can never reach the `token` inside `csrf-token`. Enumerated EXPLICITLY rather than
+  // via a broad `(?:[\w-]*[-_])?(?:token|secret|key)=` prefix, which would over-mask non-secrets:
+  // `?public-key=`, `?sort-key=`, `?primary-key=`, `?partition-key=`, `?idempotency-key=`. Every
+  // key on this list is an unambiguous credential; a hyphen/underscore-agnostic `[-_]?` covers both
+  // spellings, so no lookbehind artefact is needed. Pinned by negative tests.
+  String.raw`[?&](?:access[-_]?token|auth[-_]?token|hook[-_]?token|refresh[-_]?token|id[-_]?token|csrf[-_]?token|session[-_]?token|bot[-_]?token|api[-_]?key|private[-_]?key|client[-_]?secret|app[-_]?secret|webhook[-_]?secret|signing[-_]?secret|user[-_]?password|authorization|jwt|token|key|secret|password|pass|passwd|auth|credential|signature|${PAYMENT_CREDENTIAL_QUERY_KEYS})=([^&\s"'<>]+)`,
+  // Standalone credential assignments outside URLs (e.g. `token=…` in a log line).
+  //
+  // Leading boundary is `\b` (#2902). The previous delimiter whitelist accepted only
+  // whitespace/comma/semicolon/quote/backtick, so every other non-word delimiter leaked:
+  // `(token=…)`, `[token=…]`, `{cmd:token=…}`, `:token=…`, `.token=…`, `--token=…`. `\b` is
+  // a strict superset of that whitelist and still refuses to fire mid-word, so `mytoken=…`
+  // stays untouched. It is zero-width, so it consumes nothing and needs no capture group —
+  // the value is the only group, which is what `redactMatch` takes.
+  //
+  // `(?<![?&][-\w]*)` keeps this pattern's domain disjoint from the URL-query pattern above,
+  // which runs first (patterns apply in array order, each fed the previous one's output).
+  // Without the lookbehind, `\b` re-enters INSIDE a hyphenated query key — `?auth-token=`
+  // has a word boundary at `-|token` — and re-matches the already-masked value. Blocking only
+  // the single char before the key is not enough: a query key spans many chars, hence the
+  // variable-length lookbehind. It is unbounded on purpose — a length cap would only change
+  // behavior for keys longer than the cap, where it reverts to the broken re-entry. Cost is
+  // not measurable: the lookbehind fails fast and prunes the alternation attempt entirely.
+  //
+  // `maskToken`'s idempotence guard now makes that re-entry harmless, so the lookbehind may be
+  // redundant. That is NOT established. The two patterns' value classes still differ
+  // (`[^\s&#,<>)\]}]+` here vs `[^&\s"'<>]+` above), so a re-entered match need not span the same
+  // text as the original, and nothing exercises that divergence — quotes and `#` are exactly where
+  // they part company. Removing it is a separate question resting on an unproven premise; retained
+  // deliberately.
+  //
+  // Compound keys are enumerated explicitly (#2903, #2905) because `_` is a word character:
+  // `auth_token=` has NO word boundary before `token`, so the generic `token` alternative
+  // can never reach it and `\b` alone cannot fix that. Hyphenated spellings need no entry —
+  // the hyphen IS a boundary, so generic `token` already catches `auth-token=`. The
+  // boundary fix and the key list are complementary; neither alone closes the gap. The #2905
+  // compounds are listed at BOTH positions: `csrf_token=<v>` leaks in a plain (non-URL) log line
+  // for exactly this `_`-is-a-word-char reason, and containment (see the URL pattern) requires any
+  // standalone key to exist at URL position too.
+  //
+  // `authorization` and `private[-_]?key` are now IN (#2904). They were previously excluded as
+  // ordering-sensitive: this pattern used to run BEFORE the Bearer and PEM patterns, and its value
+  // class stops at whitespace, so it masked the `Bearer` / `-----BEGIN` marker those patterns match
+  // on and let the real credential through. The reorder (see the ORDER note at the top of this
+  // array) puts PEM/Bearer FIRST, so both anchors are consumed before this pattern ever sees them —
+  // which is what makes these two keys safe to add. `authorization=<opaque-token>` (no `Bearer`
+  // keyword) and lowercase `private_key=<opaque>` were BOTH leaking in full at HEAD; they are the
+  // leaks this closes.
+  //
+  // Still deliberately NOT here: `pass` — it over-masks `pass=1` / `pass=true` in ordinary prose.
+  //
+  // Idempotence — not re-masking a value some earlier pattern already masked — is deliberately
+  // NOT enforced here. It is a property of the redactor (any pattern can re-enter any other's
+  // output), not of this pattern, so the guard lives in `maskToken`; see `isAlreadyMasked`.
+  // Two attempts to encode it in this regex both got the skip set wrong, in the same way: they
+  // keyed on a proxy for "this value is a mask" rather than on the mask itself. Do not retry.
+  //
+  // VALUE CLASS `[^\s&#,<>)\]}]+` (#2907). HEAD's `[^\s&#]+` admitted `,` and the closing
+  // delimiters, so a whitespace-delimited run spanned adjacent assignments:
+  // `token=<secret>,user=alice` masked as ONE blob — eating the `user=alice` diagnostic and making
+  // the mask tail (`…lice`) the tail of `alice` rather than of the token. The 6+4 shape exists to
+  // let the same token be correlated across log lines; a tail borrowed from neighbouring text
+  // breaks that. Excluding `,` `<` `>` `)` `]` `}` makes each credential assignment mask
+  // INDEPENDENTLY and leaves the band as exactly maskToken's image.
+  //
+  // CORRECT-BY-POLICY TRADE: a run no longer sweeps a NON-credential neighbour into the mask, so
+  // `token=abcdef…ghij,other=<highentropy>` now leaves `other=<highentropy>` in cleartext. That is
+  // not a new leak — this redactor targets KNOWN credential keys, and `other` is not one, so
+  // `other=<v>` is out of scope at EVERY position (a bare `other=<v>` was never masked either). The
+  // old behavior was an accidental, position-dependent over-mask. The mask tail now also reveals
+  // the token's real last-KEEP_END chars where an absorbed suffix previously hid them; maskToken's
+  // 6+4 reveal is the deliberate product policy, so this is that policy applied honestly.
+  //
+  // `=` is KEPT in the class on purpose: base64 padding (`…==`) must stay INSIDE the captured value.
+  // Excluding it would strand the padding in cleartext and truncate the mask.
+  //
+  // `"` `'` and `` ` `` are also KEPT, and that is load-bearing rather than an oversight: this
+  // pattern is the SOLE handler of the quoted-value form `token="<secret>"` (the ENV pattern is
+  // uppercase-only; the JSON pattern needs `"key":"value"`). The value class governs the value's
+  // FIRST character as well as its rest, so excluding `"` would make the class fail to match at the
+  // opening quote — the pattern would not fire at all and `token="<secret>"` would LEAK. Keeping
+  // them costs only a borrowed quote in the mask tail of the (rarer) trailing-quote form; the
+  // alternative costs a credential. Pinned by the `token="…"` test.
+  //
+  // The URL pattern's class above stays `[^&\s"'<>]+`, and the ENV pattern's stays `[^\s"'\\]+`.
+  // They terminate correctly for their own positions (URL on `&`, ENV on quote/backslash) and are
+  // deliberately NOT converged with this one: value classes differ BY POSITION.
+  //
+  // Upstream shares this text-level gap and relies on structured tool-output redaction the
+  // fork does not carry. (Fork-side, #2852.)
+  String.raw`\b(?<![?&][-\w]*)(?:access_token|refresh_token|id_token|auth[-_]?token|hook[-_]?token|csrf[-_]?token|session[-_]?token|bot[-_]?token|api[-_]?key|private[-_]?key|client[-_]?secret|app[-_]?secret|webhook[-_]?secret|signing[-_]?secret|user[-_]?password|authorization|jwt|token|secret|password|passwd|credential|${PAYMENT_CREDENTIAL_QUERY_KEYS})=([^\s&#,<>)\]}]+)`,
+  // JSON fields.
+  String.raw`"(?:apiKey|token|secret|password|passwd|accessToken|refreshToken|${PAYMENT_CREDENTIAL_JSON_KEYS})"\s*:\s*"([^"]+)"`,
+  // CLI flags.
+  String.raw`--(?:api[-_]?key|hook[-_]?token|token|secret|password|passwd|${PAYMENT_CREDENTIAL_QUERY_KEYS})\s+(["']?)([^\s"']+)\1`,
 ];
 
 type RedactOptions = {
@@ -231,11 +311,15 @@ const MASKED_TOKEN_LENGTH = DEFAULT_REDACT_KEEP_START + 1 + DEFAULT_REDACT_KEEP_
 // Idempotence guard: `maskToken` must never mask its own output.
 //
 // Patterns apply in array order, each fed the previous one's output, and their domains overlap.
-// The ENV pattern at index 0 is case-SENSITIVE, while bare `String.raw` entries compile with
-// flags `gi`, so an `AUTH_TOKEN=` masked by index 0 is re-matched by `auth[-_]?token` under `i`.
-// Without this guard the second pass masks a mask \u2014 and since a mask is exactly
-// KEEP_START + 1 + KEEP_END = 11 chars while MIN_LENGTH is 18, `maskToken` would classify it as
-// a short token and collapse the legible `abcdef\u2026ghij` to `***`.
+// The ENV pattern is case-SENSITIVE, while bare `String.raw` entries compile with flags `gi`, so an
+// `AUTH_TOKEN=` masked by the ENV pattern is re-matched by `auth[-_]?token` under `i` in the
+// standalone pattern that follows it. Without this guard the second pass masks a mask \u2014 and since a
+// mask is exactly KEEP_START + 1 + KEEP_END = 11 chars while MIN_LENGTH is 18, `maskToken` would
+// classify it as a short token and collapse the legible `abcdef\u2026ghij` to `***`.
+//
+// This guard is also what makes the anchored-first pattern ORDER safe (see the note above
+// DEFAULT_REDACT_PATTERNS): a vendor-prefix pattern and a generic `key=value` pattern routinely
+// match the SAME token, and whichever runs second must not re-mask the first one's output.
 //
 // That collapse is an accident of two unrelated constants, not a policy. Nobody decided an
 // ENV-assigned secret should reveal 0 bytes where a URL-assigned one reveals 10; it falls out of

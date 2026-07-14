@@ -6,7 +6,10 @@ import {
   approveNodePairing,
   getPairedNode,
   listNodePairing,
+  removePairedNode,
+  renamePairedNode,
   requestNodePairing,
+  updatePairedNodeMetadata,
   verifyNodeToken,
 } from "./node-pairing.js";
 import { resolvePairingPaths } from "./pairing-files.js";
@@ -258,5 +261,100 @@ describe("node pairing tokens", () => {
       ),
     ).rejects.toThrow(/paired\.json/);
     await expect(readFile(pairedPath, "utf8")).resolves.toBe("{not-json}");
+  });
+});
+
+describe("node pairing prototype-key hardening", () => {
+  const dangerousKeys = ["__proto__", "constructor", "prototype"] as const;
+
+  test("read paths do not resolve special prototype keys to inherited values", async () => {
+    const baseDir = await mkdtemp(join(tmpdir(), "remoteclaw-node-pairing-"));
+    for (const key of dangerousKeys) {
+      await expect(getPairedNode(key, baseDir)).resolves.toBeNull();
+      await expect(verifyNodeToken(key, "any-token", baseDir)).resolves.toEqual({ ok: false });
+    }
+  });
+
+  test("removePairedNode reports not-found for special keys instead of a false success", async () => {
+    const baseDir = await mkdtemp(join(tmpdir(), "remoteclaw-node-pairing-"));
+    for (const key of dangerousKeys) {
+      await expect(removePairedNode(key, baseDir)).resolves.toBeNull();
+    }
+  });
+
+  test("write paths never mutate a prototype through a special key", async () => {
+    const baseDir = await mkdtemp(join(tmpdir(), "remoteclaw-node-pairing-"));
+    for (const key of dangerousKeys) {
+      await expect(renamePairedNode(key, "pwned", baseDir)).resolves.toBeNull();
+      await expect(
+        updatePairedNodeMetadata(key, { displayName: "pwned" }, baseDir),
+      ).resolves.toBeUndefined();
+    }
+    // Prototype pollution would leak the injected value onto every object.
+    expect(({} as Record<string, unknown>).displayName).toBeUndefined();
+    expect(Object.prototype).not.toHaveProperty("displayName");
+  });
+
+  test("special-key inputs leave a real paired node and persisted state intact", async () => {
+    const baseDir = await mkdtemp(join(tmpdir(), "remoteclaw-node-pairing-"));
+    await setupPairedNode(baseDir);
+
+    for (const key of dangerousKeys) {
+      await expect(removePairedNode(key, baseDir)).resolves.toBeNull();
+      await expect(renamePairedNode(key, "pwned", baseDir)).resolves.toBeNull();
+      await expect(
+        updatePairedNodeMetadata(key, { displayName: "pwned" }, baseDir),
+      ).resolves.toBeUndefined();
+    }
+
+    const paired = await getPairedNode("node-1", baseDir);
+    expect(paired?.nodeId).toBe("node-1");
+    const listed = await listNodePairing(baseDir);
+    expect(listed.paired.map((node) => node.nodeId)).toEqual(["node-1"]);
+  });
+
+  test("drops dangerous own-keys from a corrupted paired-node state file on load", async () => {
+    const baseDir = await mkdtemp(join(tmpdir(), "remoteclaw-node-pairing-"));
+    const { dir, pairedPath } = resolvePairingPaths(baseDir, "nodes");
+    await mkdir(dir, { recursive: true });
+    // A corrupted state file carrying special keys as own properties. `__proto__`
+    // set via an object literal would mutate the prototype rather than serialize,
+    // so build the raw JSON directly — JSON.parse materializes these as own keys.
+    const evil = { token: "x", createdAtMs: 0, approvedAtMs: 0 };
+    const entries = [
+      `"node-1":${JSON.stringify({ nodeId: "node-1", token: "t".repeat(43), createdAtMs: 1, approvedAtMs: 2 })}`,
+      `"__proto__":${JSON.stringify({ nodeId: "__proto__", ...evil })}`,
+      `"constructor":${JSON.stringify({ nodeId: "constructor", ...evil })}`,
+    ];
+    await writeFile(pairedPath, `{${entries.join(",")}}`, "utf8");
+
+    // listNodePairing enumerates the map directly (bypassing normalizeNodeId),
+    // so it exercises toSafeRecord's own-key sanitization on load.
+    const listed = await listNodePairing(baseDir);
+    expect(listed.paired.map((node) => node.nodeId)).toEqual(["node-1"]);
+    await expect(getPairedNode("__proto__", baseDir)).resolves.toBeNull();
+    await expect(getPairedNode("constructor", baseDir)).resolves.toBeNull();
+    expect(({} as Record<string, unknown>).nodeId).toBeUndefined();
+  });
+
+  test("node ids that merely contain a special key are still handled normally", async () => {
+    const baseDir = await mkdtemp(join(tmpdir(), "remoteclaw-node-pairing-"));
+    const nearMissId = "__proto__-device";
+    const request = await requestNodePairing({ nodeId: nearMissId, platform: "darwin" }, baseDir);
+    await approveNodePairing(
+      request.request.requestId,
+      { callerScopes: ["operator.pairing"] },
+      baseDir,
+    );
+
+    const paired = await getPairedNode(nearMissId, baseDir);
+    expect(paired?.nodeId).toBe(nearMissId);
+    await expect(renamePairedNode(nearMissId, "Renamed", baseDir)).resolves.toEqual(
+      expect.objectContaining({ nodeId: nearMissId, displayName: "Renamed" }),
+    );
+    await expect(removePairedNode(nearMissId, baseDir)).resolves.toEqual(
+      expect.objectContaining({ nodeId: nearMissId }),
+    );
+    await expect(getPairedNode(nearMissId, baseDir)).resolves.toBeNull();
   });
 });

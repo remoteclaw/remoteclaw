@@ -11,6 +11,7 @@ import {
 } from "./pairing-files.js";
 import { rejectPendingPairingRequest } from "./pairing-pending.js";
 import { generatePairingToken, verifyPairingToken } from "./pairing-token.js";
+import { isBlockedObjectKey } from "./prototype-keys.js";
 
 type NodeDeclaredSurface = {
   nodeId: string;
@@ -65,6 +66,24 @@ const PENDING_TTL_MS = 5 * 60 * 1000;
 const OPERATOR_ROLE = "operator";
 
 const withLock = createAsyncLock();
+
+// Rebuild an untrusted record as a null-prototype object so JavaScript special
+// keys (`__proto__` etc.) carry no inherited meaning, dropping any blocked
+// own-keys a corrupted state file may hold (JSON.parse materializes `__proto__`
+// as an own data property). Pairing surfaces are already gated by the
+// operator.pairing scope, so this is defense-in-depth / input-hardening.
+function toSafeRecord<T>(source: Record<string, T> | null | undefined): Record<string, T> {
+  const safe = Object.create(null) as Record<string, T>;
+  if (source) {
+    for (const key of Object.keys(source)) {
+      if (isBlockedObjectKey(key)) {
+        continue;
+      }
+      safe[key] = source[key];
+    }
+  }
+  return safe;
+}
 
 function normalizeStringList(values?: string[]): string[] | undefined {
   if (!Array.isArray(values)) {
@@ -145,8 +164,8 @@ async function loadState(baseDir?: string): Promise<NodePairingStateFile> {
     readDurableJsonFile<Record<string, NodePairingPairedNode>>(pairedPath),
   ]);
   const state: NodePairingStateFile = {
-    pendingById: pending ?? {},
-    pairedByNodeId: paired ?? {},
+    pendingById: toSafeRecord(pending),
+    pairedByNodeId: toSafeRecord(paired),
   };
   pruneExpiredPending(state.pendingById, Date.now(), PENDING_TTL_MS);
   return state;
@@ -161,7 +180,12 @@ async function persistState(state: NodePairingStateFile, baseDir?: string) {
 }
 
 function normalizeNodeId(nodeId: string) {
-  return nodeId.trim();
+  const trimmed = nodeId.trim();
+  // Reject JavaScript special prototype keys so an untrusted nodeId can never
+  // index or mutate the paired-node map through its prototype chain. Every
+  // caller already treats an empty id as not-found / invalid (e.g.
+  // requestNodePairing's `if (!nodeId) throw`).
+  return isBlockedObjectKey(trimmed) ? "" : trimmed;
 }
 
 function newToken() {

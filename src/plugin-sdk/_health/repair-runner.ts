@@ -1,20 +1,19 @@
 import type { RemoteClawConfig } from "../../config/types.remoteclaw.js";
 import { uniqueStrings } from "../string-coerce-runtime.js";
-import { scrubDoctorErrorMessage } from "./doctor-error-message.js";
 import { listHealthChecks } from "./health-check-registry.js";
-import type {
-  HealthCheck,
-  HealthFinding,
-  HealthRepairContext,
-  HealthRepairDiff,
-  HealthRepairEffect,
-} from "./health-checks.js";
+import type { HealthCheck, HealthFinding, HealthRepairContext } from "./health-checks.js";
 
 // Fork-local port of the upstream doctor-repair-flow reducer, reduced to the
 // SPLIT-contract path (detect + optional repair). The upstream runnable-contract
 // path and `normalizeHealthCheck` adapter are intentionally dropped: every policy
 // health check exposes a plain `detect`/`repair` pair. The reducer is pure — it
 // threads `result.config` forward and returns it; the CALLER persists.
+//
+// The result reports `config` + `changes` (consumed by the sole caller,
+// `runPolicyDoctorChecks`) plus the detect/validate bookkeeping. Upstream's
+// `warnings`/`diffs`/`effects` accumulators were dropped: the fork's bounded
+// policy-doctor never read them, and the collected-but-never-executed `effects`
+// in particular invited a misread that they were being applied (#2897).
 export interface DoctorRepairRunOptions {
   readonly checks?: readonly HealthCheck[];
   readonly dryRun?: boolean;
@@ -26,9 +25,6 @@ export interface DoctorRepairRunResult {
   readonly findings: readonly HealthFinding[];
   readonly remainingFindings: readonly HealthFinding[];
   readonly changes: readonly string[];
-  readonly warnings: readonly string[];
-  readonly diffs: readonly HealthRepairDiff[];
-  readonly effects: readonly HealthRepairEffect[];
   readonly checksRun: number;
   readonly checksRepaired: number;
   readonly checksValidated: number;
@@ -42,9 +38,6 @@ export async function runDoctorHealthRepairs(
   const findings: HealthFinding[] = [];
   const remainingFindings: HealthFinding[] = [];
   const changes: string[] = [];
-  const warnings: string[] = [];
-  const diffs: HealthRepairDiff[] = [];
-  const effects: HealthRepairEffect[] = [];
   let cfg = ctx.cfg;
   let checksRepaired = 0;
   let checksValidated = 0;
@@ -56,9 +49,6 @@ export async function runDoctorHealthRepairs(
     findings.push(...runResult.findings);
     remainingFindings.push(...runResult.remainingFindings);
     changes.push(...runResult.changes);
-    warnings.push(...runResult.warnings);
-    diffs.push(...runResult.diffs);
-    effects.push(...runResult.effects);
     checksRepaired += runResult.checksRepaired;
     checksValidated += runResult.checksValidated;
   }
@@ -68,9 +58,6 @@ export async function runDoctorHealthRepairs(
     findings,
     remainingFindings,
     changes,
-    warnings,
-    diffs,
-    effects,
     checksRun: checks.length,
     checksRepaired,
     checksValidated,
@@ -85,9 +72,6 @@ async function runSplitHealthCheck(
   const findings: HealthFinding[] = [];
   const remainingFindings: HealthFinding[] = [];
   const changes: string[] = [];
-  const warnings: string[] = [];
-  const diffs: HealthRepairDiff[] = [];
-  const effects: HealthRepairEffect[] = [];
   let cfg = ctx.cfg;
   let checksRepaired = 0;
   let checksValidated = 0;
@@ -95,13 +79,13 @@ async function runSplitHealthCheck(
   let checkFindings: readonly HealthFinding[];
   try {
     checkFindings = await check.detect(ctx);
-  } catch (err) {
-    warnings.push(`${check.id} detect failed: ${scrubDoctorErrorMessage(err)}`);
-    return repairRunResult(cfg, findings, remainingFindings, changes, warnings, diffs, effects);
+  } catch {
+    // A throwing detect yields no findings for this check; the reducer degrades gracefully.
+    return repairRunResult(cfg, findings, remainingFindings, changes);
   }
   findings.push(...checkFindings);
   if (checkFindings.length === 0 || check.repair === undefined) {
-    return repairRunResult(cfg, findings, remainingFindings, changes, warnings, diffs, effects);
+    return repairRunResult(cfg, findings, remainingFindings, changes);
   }
 
   try {
@@ -109,13 +93,9 @@ async function runSplitHealthCheck(
       { ...ctx, dryRun: opts.dryRun === true, diff: opts.diff === true },
       checkFindings,
     );
-    warnings.push(...(result.warnings ?? []));
-    diffs.push(...(result.diffs ?? []));
-    effects.push(...(result.effects ?? []));
     const status = result.status ?? "repaired";
     if (status !== "repaired") {
-      warnings.push(`${check.id} repair ${status}${result.reason ? `: ${result.reason}` : ""}`);
-      return repairRunResult(cfg, findings, remainingFindings, changes, warnings, diffs, effects);
+      return repairRunResult(cfg, findings, remainingFindings, changes);
     }
     if (result.config !== undefined && opts.dryRun !== true) {
       cfg = result.config;
@@ -123,7 +103,7 @@ async function runSplitHealthCheck(
     changes.push(...result.changes);
     checksRepaired++;
     if (opts.dryRun === true) {
-      return repairRunResult(cfg, findings, remainingFindings, changes, warnings, diffs, effects, {
+      return repairRunResult(cfg, findings, remainingFindings, changes, {
         checksRepaired,
         checksValidated,
       });
@@ -135,17 +115,14 @@ async function runSplitHealthCheck(
       );
       remainingFindings.push(...validationFindings);
       checksValidated++;
-      if (validationFindings.length > 0) {
-        warnings.push(`${check.id} repair left ${validationFindings.length} finding(s)`);
-      }
-    } catch (err) {
-      warnings.push(`${check.id} validation failed: ${scrubDoctorErrorMessage(err)}`);
+    } catch {
+      // Post-repair re-detect threw; leave checksValidated unincremented.
     }
-  } catch (err) {
-    warnings.push(`${check.id} repair failed: ${scrubDoctorErrorMessage(err)}`);
+  } catch {
+    // A throwing repair leaves this check unrepaired; the reducer degrades gracefully.
   }
 
-  return repairRunResult(cfg, findings, remainingFindings, changes, warnings, diffs, effects, {
+  return repairRunResult(cfg, findings, remainingFindings, changes, {
     checksRepaired,
     checksValidated,
   });
@@ -156,9 +133,6 @@ function repairRunResult(
   findings: readonly HealthFinding[],
   remainingFindings: readonly HealthFinding[],
   changes: readonly string[],
-  warnings: readonly string[],
-  diffs: readonly HealthRepairDiff[],
-  effects: readonly HealthRepairEffect[],
   counts: { checksRepaired?: number; checksValidated?: number } = {},
 ): DoctorRepairRunResult {
   return {
@@ -166,9 +140,6 @@ function repairRunResult(
     findings,
     remainingFindings,
     changes,
-    warnings,
-    diffs,
-    effects,
     checksRun: 1,
     checksRepaired: counts.checksRepaired ?? 0,
     checksValidated: counts.checksValidated ?? 0,

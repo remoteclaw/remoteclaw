@@ -1,5 +1,10 @@
-import { describe, expect, it } from "vitest";
-import { getDefaultRedactPatterns, redactSensitiveText } from "./redact.js";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  compileRedactPatternForTests,
+  getDefaultRedactPatterns,
+  redactSensitiveText,
+  resetRedactDiagnosticsForTests,
+} from "./redact.js";
 
 const defaults = getDefaultRedactPatterns();
 
@@ -135,13 +140,23 @@ describe("redactSensitiveText", () => {
     expect(output).toBe("token=abcdef…ghij");
   });
 
-  it("ignores unsafe nested-repetition custom patterns", () => {
-    const input = `${"a".repeat(28)}!`;
-    const output = redactSensitiveText(input, {
-      mode: "tools",
-      patterns: ["(a+)+$"],
-    });
-    expect(output).toBe(input);
+  it("falls back to defaults (not zero redaction) for an unsafe nested-repetition custom pattern", () => {
+    // A lone ReDoS-rejected pattern used to resolve to [] and disable redaction
+    // entirely (#2906). It now degrades to the built-in defaults, so a real secret
+    // in the same text is still masked rather than returned verbatim.
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const output = redactSensitiveText("OPENAI_API_KEY=sk-1234567890abcdef", {
+        mode: "tools",
+        patterns: ["(a+)+$"],
+      });
+      expect(output).toBe("OPENAI_API_KEY=sk-123…cdef");
+      expect(output).not.toContain("sk-1234567890abcdef");
+    } finally {
+      warn.mockRestore();
+      error.mockRestore();
+    }
   });
 
   it("redacts large payloads with bounded regex passes", () => {
@@ -555,5 +570,193 @@ describe("redactSensitiveText", () => {
     // covers both separators. This pins current behavior so #2905 flips it deliberately.
     const input = `GET /x?csrf-token=${SECRET}&ok=1`;
     expect(redact(input)).toBe(input);
+  });
+});
+
+describe("redactSensitiveText — redactPatterns compilation guard (#2906)", () => {
+  const SECRET = "abcdef1234567890ghij";
+  const ENV_LINE = "OPENAI_API_KEY=sk-1234567890abcdef";
+
+  beforeEach(() => {
+    // The once-per-process diagnostic dedupe is module state; reset it so each test
+    // observes the diagnostics for its own input regardless of execution order.
+    resetRedactDiagnosticsForTests();
+  });
+
+  it("falls back to built-in defaults when every caller pattern is uncompilable", () => {
+    // A non-empty redactPatterns list REPLACES the defaults. Before the fix an
+    // all-uncompilable list resolved to [] and redactSensitiveText returned its input
+    // verbatim — redaction silently disabled while redactSensitive still read enabled.
+    // It must degrade to the defaults instead, which still mask the secret.
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const output = redactSensitiveText(ENV_LINE, {
+        mode: "tools",
+        patterns: ["(unclosed-group"],
+      });
+      expect(output).toBe("OPENAI_API_KEY=sk-123…cdef");
+      expect(output).not.toContain("sk-1234567890abcdef");
+    } finally {
+      warn.mockRestore();
+      error.mockRestore();
+    }
+  });
+
+  it("does not return input verbatim when the sole caller pattern is uncompilable", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const output = redactSensitiveText(`connecting with token=${SECRET} now`, {
+        mode: "tools",
+        patterns: ["[unterminated-class"],
+      });
+      expect(output).not.toContain(SECRET);
+    } finally {
+      warn.mockRestore();
+      error.mockRestore();
+    }
+  });
+
+  it("emits a WARN diagnostic naming the rejected pattern and reason (invalid regex)", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      redactSensitiveText(ENV_LINE, { mode: "tools", patterns: ["(bad-regex"] });
+      expect(warn).toHaveBeenCalledTimes(1);
+      const message = String(warn.mock.calls[0]?.[0] ?? "");
+      expect(message).toContain("logging.redactPatterns");
+      expect(message).toContain("(bad-regex");
+      expect(message).toContain("invalid-regex");
+    } finally {
+      warn.mockRestore();
+      error.mockRestore();
+    }
+  });
+
+  it("emits a diagnostic for a ReDoS-rejected (unsafe nested repetition) pattern", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      redactSensitiveText(ENV_LINE, { mode: "tools", patterns: ["(a+)+$"] });
+      expect(warn).toHaveBeenCalledTimes(1);
+      const message = String(warn.mock.calls[0]?.[0] ?? "");
+      expect(message).toContain("(a+)+$");
+      expect(message).toContain("unsafe-nested-repetition");
+    } finally {
+      warn.mockRestore();
+      error.mockRestore();
+    }
+  });
+
+  it("emits an ERROR when the whole set is rejected and it falls back to defaults", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      redactSensitiveText(ENV_LINE, { mode: "tools", patterns: ["(fallback-probe"] });
+      expect(error).toHaveBeenCalledTimes(1);
+      const message = String(error.mock.calls[0]?.[0] ?? "");
+      expect(message).toContain("falling back to built-in default redaction patterns");
+    } finally {
+      warn.mockRestore();
+      error.mockRestore();
+    }
+  });
+
+  it("keeps compiled caller patterns and warns only about the rejected one (partial failure)", () => {
+    // One good pattern + one broken. The good one must still apply; the broken one is
+    // reported but does NOT trigger fallback (the resolved set is non-empty).
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const output = redactSensitiveText(`token=${SECRET}`, {
+        mode: "tools",
+        patterns: ["/token=([A-Za-z0-9]+)/i", "(broken-partial"],
+      });
+      expect(output).toBe("token=abcdef…ghij");
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(String(warn.mock.calls[0]?.[0] ?? "")).toContain("(broken-partial");
+      // Non-empty resolved set -> no fallback -> no error.
+      expect(error).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+      error.mockRestore();
+    }
+  });
+
+  it("emits each distinct diagnostic only once across repeated calls", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      for (let i = 0; i < 5; i += 1) {
+        redactSensitiveText(ENV_LINE, { mode: "tools", patterns: ["(dedupe-probe"] });
+      }
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(error).toHaveBeenCalledTimes(1);
+    } finally {
+      warn.mockRestore();
+      error.mockRestore();
+    }
+  });
+
+  it("bounds re-entry depth to one when captured console routes diagnostics back through redaction", () => {
+    // enableConsoleCapture() patches console.* to re-run redactSensitiveText on each
+    // console line. Emitting a diagnostic from inside resolvePatterns therefore
+    // re-enters it. Without the `emitting` guard, a config of N distinct broken
+    // patterns recurses to depth ~N (stack-overflow risk); the guard suppresses
+    // emission during a re-entry, so depth never exceeds 1 regardless of N. Measuring
+    // depth (not relying on an actual overflow) makes this environment-independent.
+    const broken = Array.from({ length: 6 }, (_, i) => `(broken-${i}`);
+    let depth = 0;
+    let maxDepth = 0;
+    let warnCalls = 0;
+    let errorCalls = 0;
+    const reenter = (msg?: unknown) => {
+      depth += 1;
+      maxDepth = Math.max(maxDepth, depth);
+      try {
+        // mimic console.ts forward(): re-redact the console line with the same config
+        redactSensitiveText(String(msg), { mode: "tools", patterns: broken });
+      } finally {
+        depth -= 1;
+      }
+    };
+    const warn = vi.spyOn(console, "warn").mockImplementation((msg?: unknown) => {
+      warnCalls += 1;
+      reenter(msg);
+    });
+    const error = vi.spyOn(console, "error").mockImplementation((msg?: unknown) => {
+      errorCalls += 1;
+      reenter(msg);
+    });
+    try {
+      expect(() =>
+        redactSensitiveText("OPENAI_API_KEY=sk-1234567890abcdef", {
+          mode: "tools",
+          patterns: broken,
+        }),
+      ).not.toThrow();
+      expect(maxDepth).toBeLessThanOrEqual(1);
+      expect(warnCalls).toBe(broken.length);
+      expect(errorCalls).toBe(1);
+    } finally {
+      warn.mockRestore();
+      error.mockRestore();
+    }
+  });
+
+  it("compiles every built-in DEFAULT_REDACT_PATTERNS entry to a non-null RegExp", () => {
+    // A dropped default silently weakens the shipped redaction posture with no operator
+    // signal; this makes such a regression loud at CI (#2906). Confined to a read of
+    // getDefaultRedactPatterns(); it does not touch the pattern array itself.
+    const failures = getDefaultRedactPatterns()
+      .map((raw) => ({ raw, ...compileRedactPatternForTests(raw) }))
+      .filter((entry) => entry.regex === null);
+    expect(
+      failures,
+      `these DEFAULT_REDACT_PATTERNS entries do not compile: ${JSON.stringify(
+        failures.map((entry) => ({ pattern: entry.raw, reason: entry.reason })),
+      )}`,
+    ).toEqual([]);
   });
 });

@@ -1,5 +1,5 @@
 import type { RemoteClawConfig } from "../config/config.js";
-import { compileSafeRegex } from "../security/safe-regex.js";
+import { compileSafeRegexDetailed, type SafeRegexRejectReason } from "../security/safe-regex.js";
 import { resolveNodeRequireFromMeta } from "./node-require.js";
 import { replacePatternBounded } from "./redact-bounded.js";
 
@@ -136,21 +136,94 @@ function normalizeMode(value?: string): RedactSensitiveMode {
   return value === "off" ? "off" : DEFAULT_REDACT_MODE;
 }
 
-function parsePattern(raw: string): RegExp | null {
+// Human-readable text for each rejection reason, surfaced in the operator-facing
+// diagnostic below. Keyed by the exhaustive SafeRegexRejectReason union, so a new
+// reason added upstream fails the type-check here until it is described.
+const REJECT_REASON_TEXT: Record<SafeRegexRejectReason, string> = {
+  empty: "pattern is empty",
+  "invalid-regex": "not a valid regular expression",
+  "unsafe-nested-repetition": "rejected as ReDoS-prone (unsafe nested repetition)",
+};
+
+// A redaction pattern is a security control; a silently-dropped one weakens it with
+// no operator-visible signal (#2906). Emit each distinct diagnostic once — enough to
+// alert, not enough to spam a path called on every log line.
+//
+// enableConsoleCapture() (logging/console.ts) monkey-patches console.* to route back
+// through redactSensitiveText -> resolvePatterns, so emitting a diagnostic re-enters
+// this module. Two guards keep that bounded: the key is added BEFORE emit so the
+// re-entrant call for the SAME diagnostic is deduped, and `emitting` suppresses
+// emission (not resolution) during a re-entry, so a config with many distinct broken
+// patterns cannot drive resolve depth past one re-entry. Resolution still runs on
+// re-entry, so the diagnostic line itself is redacted. Mirrors
+// loggingState.resolvingConsoleSettings in logging/console.ts.
+const emittedRedactDiagnostics = new Set<string>();
+let emittingRedactDiagnostic = false;
+
+function emitRedactDiagnosticOnce(key: string, emit: () => void): void {
+  if (emittingRedactDiagnostic || emittedRedactDiagnostics.has(key)) {
+    return;
+  }
+  emittedRedactDiagnostics.add(key);
+  emittingRedactDiagnostic = true;
+  try {
+    emit();
+  } finally {
+    emittingRedactDiagnostic = false;
+  }
+}
+
+type ParsedPattern = {
+  regex: RegExp | null;
+  reason: SafeRegexRejectReason | null;
+};
+
+function parsePatternDetailed(raw: string): ParsedPattern {
   if (!raw.trim()) {
-    return null;
+    return { regex: null, reason: "empty" };
   }
   const match = raw.match(/^\/(.+)\/([gimsuy]*)$/);
-  if (match) {
-    const flags = match[2].includes("g") ? match[2] : `${match[2]}g`;
-    return compileSafeRegex(match[1], flags);
-  }
-  return compileSafeRegex(raw, "gi");
+  const result = match
+    ? compileSafeRegexDetailed(match[1], match[2].includes("g") ? match[2] : `${match[2]}g`)
+    : compileSafeRegexDetailed(raw, "gi");
+  return { regex: result.regex, reason: result.reason };
 }
 
 function resolvePatterns(value?: string[]): RegExp[] {
+  const callerSupplied = Boolean(value?.length);
   const source = value?.length ? value : DEFAULT_REDACT_PATTERNS;
-  return source.map(parsePattern).filter((re): re is RegExp => Boolean(re));
+  const compiled: RegExp[] = [];
+  for (const raw of source) {
+    const { regex, reason } = parsePatternDetailed(raw);
+    if (regex) {
+      compiled.push(regex);
+      continue;
+    }
+    if (reason) {
+      // (a) Never drop silently — name the offending pattern and why it was rejected.
+      emitRedactDiagnosticOnce(`reject:${reason}:${raw}`, () => {
+        console.warn(
+          `[remoteclaw] logging.redactPatterns: ignoring pattern ${JSON.stringify(raw)} — ${REJECT_REASON_TEXT[reason]} (${reason}). It will NOT be used to redact logs.`,
+        );
+      });
+    }
+  }
+  if (compiled.length > 0) {
+    return compiled;
+  }
+  // (b) Fail closed. A caller-supplied set that resolves to empty degrades to the
+  // built-in defaults, never to zero redaction (#2906): a broken redactPatterns
+  // config must not silently disable a security control that still reads enabled.
+  if (callerSupplied) {
+    emitRedactDiagnosticOnce("fallback:defaults", () => {
+      console.error(
+        "[remoteclaw] logging.redactPatterns: every configured pattern was rejected — falling back to built-in default redaction patterns so logs are still redacted. Custom patterns are NOT applied until the reported patterns are fixed.",
+      );
+    });
+    return resolvePatterns(undefined);
+  }
+  // Source was already the defaults and produced nothing — nothing to fall back to.
+  return compiled;
 }
 
 const MASKED_TOKEN_LENGTH = DEFAULT_REDACT_KEEP_START + 1 + DEFAULT_REDACT_KEEP_END;
@@ -269,4 +342,20 @@ export function redactToolDetail(detail: string): string {
 
 export function getDefaultRedactPatterns(): string[] {
   return [...DEFAULT_REDACT_PATTERNS];
+}
+
+// Test-only: reset the once-per-process diagnostic dedupe so each test observes the
+// diagnostics for its own input, independent of order. Mirrors the
+// setConsoleConfigLoaderForTests test-hook convention in logging/console.ts.
+export function resetRedactDiagnosticsForTests(): void {
+  emittedRedactDiagnostics.clear();
+  emittingRedactDiagnostic = false;
+}
+
+// Test-only: compile one pattern string through the redactor's own parsing path,
+// exposing the null-or-RegExp result plus rejection reason. Used by the CI guard
+// asserting every DEFAULT_REDACT_PATTERNS entry compiles (#2906) — a dropped default
+// silently weakens the shipped redaction posture.
+export function compileRedactPatternForTests(raw: string): ParsedPattern {
+  return parsePatternDetailed(raw);
 }

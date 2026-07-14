@@ -384,16 +384,17 @@ describe("redactSensitiveText", () => {
     }
   });
 
-  it("borrows the mask tail from a trailing closing delimiter (#2907, pinned as-is)", () => {
-    // The value class admits `)` `]` `}` `>`, so a closing delimiter is captured INTO the value
-    // and supplies the mask's last KEEP_END chars: `(token=<secret>)` -> `(token=abcdef…hij)`.
-    // The secret is still masked — confidentiality holds — but the tail is NOT the token's tail,
-    // so the same token masks differently depending on surrounding punctuation. That breaks the
-    // cross-line correlation the 6+4 shape exists to provide. It lands hardest on exactly the
-    // bracket delimiters #2902 fixes. Value class deliberately byte-identical here; see #2907.
-    expect(redact(`(token=${SECRET})`)).toBe("(token=abcdef…hij)");
-    expect(redact(`[token=${SECRET}]`)).toBe("[token=abcdef…hij]");
-    expect(redact(`<token=${SECRET}>`)).toBe("<token=abcdef…hij>");
+  it("masks to an exact band when a closing delimiter trails the value (#2907)", () => {
+    // FLIPPED BY #2907. HEAD's value class `[^\s&#]+` admitted `)` `]` `}` `>`, so a closing
+    // delimiter was captured INTO the value and supplied the mask's last KEEP_END chars:
+    // `(token=<secret>)` -> `(token=abcdef…hij)`. The secret was still masked — confidentiality
+    // held — but the tail was NOT the token's tail, so the same token masked DIFFERENTLY depending
+    // on the punctuation around it, breaking the cross-line correlation the 6+4 shape exists to
+    // provide. It landed hardest on exactly the bracket delimiters #2902 had just fixed.
+    // The narrowed class excludes them, so the band is now exactly maskToken's image.
+    expect(redact(`(token=${SECRET})`)).toBe("(token=abcdef…ghij)");
+    expect(redact(`[token=${SECRET}]`)).toBe("[token=abcdef…ghij]");
+    expect(redact(`<token=${SECRET}>`)).toBe("<token=abcdef…ghij>");
   });
 
   it("still refuses to fire mid-word after boundary broadening (#2902)", () => {
@@ -432,8 +433,14 @@ describe("redactSensitiveText", () => {
 
   it("keeps the standalone key set contained in the URL key set (#2903 losslessness)", () => {
     // The standalone pattern refuses to fire at URL position (its lookbehind blocks `?`/`&`).
-    // That is only lossless because the URL pattern's key set is a superset: every key the
+    // That is only lossless because the URL pattern's key set is a SUPERSET: every key the
     // standalone pattern would redact must still be redacted at URL position by the URL pattern.
+    //
+    // This is the invariant that governs every future key addition: a key added to the standalone
+    // set and NOT to the URL set silently stops being redacted the moment it appears in a query
+    // string. The `authorization` / `private_key` keys (#2904) and the prefixed compounds (#2905)
+    // are listed here because they were added to the standalone set, so they MUST hold at URL
+    // position too. Extend this list whenever the standalone key set grows.
     const standaloneKeys = [
       "access_token",
       "refresh_token",
@@ -467,6 +474,24 @@ describe("redactSensitiveText", () => {
       "security_code",
       "payment_credential",
       "shared_payment_token",
+      // Added to the standalone set by #2904 — containment requires them here.
+      "authorization",
+      "private_key",
+      "private-key",
+      "privatekey",
+      // Added to the standalone set by #2905 — containment requires them here.
+      "csrf_token",
+      "csrf-token",
+      "session_token",
+      "session-token",
+      "webhook_secret",
+      "webhook-secret",
+      "signing_secret",
+      "signing-secret",
+      "bot_token",
+      "bot-token",
+      "user_password",
+      "user-password",
     ];
     for (const key of standaloneKeys) {
       expect(redact(`GET /x?${key}=${SECRET}&ok=1`), `URL-position leak: ${key}`).not.toContain(
@@ -537,12 +562,56 @@ describe("redactSensitiveText", () => {
   });
 
   it("masks a fresh secret in a run that already contains a mask", () => {
-    // The value class admits `,` and `=`, so a whitespace-delimited run spans adjacent
-    // assignments (#2907). Any guard keyed on "this RUN contains U+2026" is therefore disarmed by
-    // an already-masked NEIGHBOUR and lets the fresh secret through in full. maskToken's guard
-    // keys on the token itself, so the rest of the run is irrelevant to it.
+    // Any idempotence guard keyed on "this RUN contains U+2026" would be disarmed by an
+    // already-masked NEIGHBOUR and let the fresh secret through in full. maskToken's guard keys on
+    // the TOKEN itself, so the rest of the run is irrelevant to it — which is what this pins.
     expect(redact(`token=${SECRET},other=abcdef…ghij`)).not.toContain(SECRET);
-    expect(redact(`token=abcdef…ghij,other=${SECRET}`)).not.toContain(SECRET);
+
+    // REFRAMED BY #2907. The neighbour is now a CREDENTIAL key, so it is in scope and masks on its
+    // own merit. This assertion previously read `other=${SECRET}` and only passed because the wide
+    // value class swept the NON-credential `other=` neighbour into the token's mask — it was
+    // asserting an accident of the run-spanning bug, not the guard. Post-narrowing `other=<v>` is
+    // out of scope at every position, so a credential key is the honest way to test the guard.
+    expect(redact(`token=abcdef…ghij,secret=${SECRET}`)).not.toContain(SECRET);
+  });
+
+  it("masks each credential assignment independently and keeps the neighbour diagnostic (#2907)", () => {
+    // The positive demonstration of #2907. HEAD's value class admitted `,`, so the run spanned into
+    // the next assignment and `token=<secret>,user=alice` masked as ONE blob — eating the
+    // `user=alice` diagnostic AND borrowing the mask tail (`…lice`) from `alice` rather than from
+    // the token. Narrowed: the run stops at the comma, the token's own tail is revealed, and the
+    // non-credential neighbour survives intact.
+    expect(redact(`token=${SECRET},user=alice`)).toBe("token=abcdef…ghij,user=alice");
+  });
+
+  it("masks only the credential in a comma-separated run of assignments (#2907)", () => {
+    // Same property across a longer run: every non-credential diagnostic beside the secret is
+    // preserved verbatim instead of being swallowed into one blob.
+    expect(redact(`token=${SECRET},retries=3,region=eu-west-1`)).toBe(
+      "token=abcdef…ghij,retries=3,region=eu-west-1",
+    );
+  });
+
+  it("keeps base64 padding inside the captured value (#2907 value class keeps `=`)", () => {
+    // `=` is deliberately KEPT in the narrowed value class. Excluding it would terminate the
+    // capture at the padding — stranding `=`/`==` in cleartext beside a truncated mask.
+    const padded = "YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXo=";
+    const output = redact(`token=${padded}`);
+    expect(output).not.toContain(padded);
+    // Padding sits INSIDE the mask's revealed tail, not stranded next to it.
+    expect(output).toMatch(/^token=[A-Za-z0-9]{6}…[A-Za-z0-9]{3}=$/);
+  });
+
+  it("keeps the quoted-value form redacted (#2907 value class keeps quotes)", () => {
+    // `"` `'` and backtick are deliberately KEPT in the narrowed value class. This pattern is the
+    // SOLE handler of `token="<secret>"` — the ENV pattern is uppercase-only and the JSON pattern
+    // needs `"key":"value"`. A character class governs the value's FIRST character as well as its
+    // rest, so excluding `"` would make the class fail to match AT the opening quote: the pattern
+    // would not fire at all and the secret would ship in cleartext. Pinned so that trade cannot be
+    // silently reversed while chasing a tidier mask tail.
+    for (const input of [`token="${SECRET}"`, `token='${SECRET}'`, `token=\`${SECRET}\``]) {
+      expect(redact(input), `leaked: ${input}`).not.toContain(SECRET);
+    }
   });
 
   it("skips exactly maskToken's own image and nothing wider (idempotence guard)", () => {
@@ -563,13 +632,157 @@ describe("redactSensitiveText", () => {
     expect(redact("password=abcdef…ghijklmnopqrstuv")).toBe("password=abcdef…stuv");
   });
 
-  it("does not redact prefixed URL-query credential keys (known gap, #2905)", () => {
-    // `?csrf-token=` leaks at URL position: the URL pattern does not know the key, and the
-    // standalone pattern is correctly blocked from URL position by its lookbehind. Pre-existing
-    // at HEAD — NOT introduced here. The fix belongs in the URL key set, where it is legible and
-    // covers both separators. This pins current behavior so #2905 flips it deliberately.
-    const input = `GET /x?csrf-token=${SECRET}&ok=1`;
-    expect(redact(input)).toBe(input);
+  it("redacts prefixed URL-query credential keys (#2905)", () => {
+    // FLIPPED BY #2905. `?csrf-token=` used to leak IN FULL at URL position: `[?&]` anchors the URL
+    // pattern's alternation to the START of the key, so the generic `token` alternative could never
+    // reach the `token` inside `csrf-token`, and the standalone pattern is correctly blocked from
+    // URL position by its lookbehind. Neither pattern knew the key. It is now enumerated in the URL
+    // key set, so it masks — and the non-secret `&ok=1` beside it is still preserved.
+    const output = redact(`GET /x?csrf-token=${SECRET}&ok=1`);
+    expect(output).not.toContain(SECRET);
+    expect(output).toBe("GET /x?csrf-token=abcdef…ghij&ok=1");
+  });
+
+  it("redacts prefixed compound credential keys at BOTH positions, both separators (#2905)", () => {
+    // At URL position `[?&]` anchors the alternation to the START of the key, so a generic
+    // `token`/`secret`/`password` alternative can never reach the one inside `csrf-token` /
+    // `webhook-secret` / `user-password` — the compound must be enumerated.
+    //
+    // At STANDALONE position the UNDERSCORE spelling is the one that leaks: `_` is a word char, so
+    // `csrf_token=` has no `\b` before `token` for the generic alternative to reach through. The
+    // hyphen spelling does have one (the hyphen IS a boundary), so it was already caught there —
+    // pinned anyway, because the two spellings must not diverge.
+    const keys = [
+      "csrf-token",
+      "csrf_token",
+      "session-token",
+      "session_token",
+      "webhook-secret",
+      "webhook_secret",
+      "signing-secret",
+      "signing_secret",
+      "bot-token",
+      "bot_token",
+      "user-password",
+      "user_password",
+    ];
+    for (const key of keys) {
+      expect(redact(`GET /x?${key}=${SECRET}&ok=1`), `URL-position leak: ${key}`).toBe(
+        `GET /x?${key}=abcdef…ghij&ok=1`,
+      );
+      expect(redact(`connecting with ${key}=${SECRET} now`), `standalone leak: ${key}`).toBe(
+        `connecting with ${key}=abcdef…ghij now`,
+      );
+    }
+  });
+
+  it("does not over-mask non-credential prefixed keys (#2905 explicit-list discipline)", () => {
+    // #2905 is closed with an EXPLICIT list of unambiguous credential compounds. The shorter fix —
+    // a broad `[?&](?:[\w-]*[-_])?(?:token|secret|key)=` prefix — would also have swallowed these
+    // ordinary, non-secret parameters, masking routine diagnostics into uselessness. That is the
+    // trade this test pins: the list must stay explicit, and must not grow an ambiguous key.
+    for (const key of [
+      "public-key",
+      "sort-key",
+      "primary-key",
+      "partition-key",
+      "idempotency-key",
+    ]) {
+      const input = `GET /x?${key}=${SECRET}&ok=1`;
+      expect(redact(input), `over-masked: ${key}`).toBe(input);
+    }
+  });
+
+  it("keeps a PEM body redacted when the block is the value of a PRIVATE_KEY= assignment (#2904)", () => {
+    // THE live leak #2904 closes, and the reason the array is ordered anchored-first.
+    //
+    // The ENV pattern used to run FIRST, and its value class stops at the first space — so it
+    // captured `-----BEGIN` as the "value" of `PRIVATE_KEY=` and masked it to `***`. That destroyed
+    // the PEM opener; the PEM pattern could no longer match its own block; and the entire base64
+    // body shipped in CLEARTEXT. PEM now runs before every generic family, so the block is redacted
+    // before anything can chew its opener.
+    const body = "MIIEowIBAAKCAQEAxGZ1kQm9SxWfBnP0tOQiL7VnJ3hYdKcRbFgUvNzMpAeIoQwT";
+    const input = [
+      "PRIVATE_KEY=-----BEGIN RSA PRIVATE KEY-----",
+      body,
+      "-----END RSA PRIVATE KEY-----",
+    ].join("\n");
+    const output = redact(input);
+    // The body is the thing that must never appear. The trailing ENV pass may additionally mask the
+    // now-orphaned `-----BEGIN` opener token to `***` — harmless, the body is already redacted.
+    expect(output).not.toContain(body);
+    expect(output).toContain("…redacted…");
+  });
+
+  it("still redacts a bare PEM block after the reorder (#2904)", () => {
+    const input = [
+      "-----BEGIN PRIVATE KEY-----",
+      "ABCDEF1234567890",
+      "ZYXWVUT987654321",
+      "-----END PRIVATE KEY-----",
+    ].join("\n");
+    expect(redact(input)).toBe(
+      ["-----BEGIN PRIVATE KEY-----", "…redacted…", "-----END PRIVATE KEY-----"].join("\n"),
+    );
+  });
+
+  it("masks an authorization= assignment at standalone position (#2904)", () => {
+    // `authorization` is newly IN the standalone key set — the reorder is what made it safe. It was
+    // excluded before because this pattern ran BEFORE the Bearer pattern and its value class stops
+    // at whitespace, so it masked the `Bearer` KEYWORD and let the real token through behind it.
+    //
+    // Bearer form: the Authorization pattern (now first) masks the token; the standalone pattern
+    // then masks the residual `Bearer` keyword to `***`. Belt and braces — no token leak.
+    const bearer = redact(`authorization=Bearer ${SECRET}`);
+    expect(bearer).not.toContain(SECRET);
+    expect(bearer).toBe("authorization=*** abcdef…ghij");
+
+    // Opaque form (NO `Bearer` keyword). THIS one leaked in full at HEAD: the Authorization pattern
+    // requires the `Bearer` keyword, and `authorization` was not a standalone key, so nothing
+    // matched it at all.
+    const opaque = redact(`authorization=${SECRET}`);
+    expect(opaque).not.toContain(SECRET);
+    expect(opaque).toBe("authorization=abcdef…ghij");
+  });
+
+  it("keeps the Authorization: Bearer header form masked after the reorder (#2904)", () => {
+    // The reorder moved this pattern from last-ish to near-first. It must still behave identically.
+    expect(redact(`Authorization: Bearer ${SECRET}`)).toBe("Authorization: Bearer abcdef…ghij");
+    expect(redact(`Bearer ${SECRET}`)).toBe("Bearer abcdef…ghij");
+  });
+
+  it("masks lowercase private_key= at standalone and URL position (#2904)", () => {
+    // Lowercase `private_key=<opaque>` leaked IN FULL at HEAD: the ENV pattern is uppercase-only,
+    // and `_` is a word char so the standalone pattern had no `\b` before `key` to reach it with —
+    // and it carried no bare `key` alternative anyway. `private[-_]?key` closes both spellings.
+    expect(redact(`private_key=${SECRET}`)).toBe("private_key=abcdef…ghij");
+    expect(redact(`private-key=${SECRET}`)).toBe("private-key=abcdef…ghij");
+    // Containment: both new keys must also mask at URL position (see the losslessness test).
+    expect(redact(`GET /x?private_key=${SECRET}&ok=1`)).toBe("GET /x?private_key=abcdef…ghij&ok=1");
+    expect(redact(`GET /x?authorization=${SECRET}&ok=1`)).toBe(
+      "GET /x?authorization=abcdef…ghij&ok=1",
+    );
+  });
+
+  it("masks a vendor-prefixed token exactly once under the new order (#2904 reorder safety)", () => {
+    // The vendor `sk-` pattern now runs BEFORE the generic families, so the generic pass sees an
+    // ALREADY-MASKED value. maskToken's idempotence guard returns it verbatim rather than
+    // collapsing the legible 11-char band to `***` (11 < DEFAULT_REDACT_MIN_LENGTH = 18). Parity
+    // across all three positions IS that guard holding across the new order — this test fails if
+    // the reorder is landed without it.
+    const vendor = "sk-1234567890abcdef";
+    const outputs = [
+      redact(`api_key=${vendor}`),
+      redact(`API_KEY=${vendor}`),
+      redact(`{"apiKey":"${vendor}"}`),
+    ];
+    expect(outputs[0]).toBe("api_key=sk-123…cdef");
+    expect(outputs[1]).toBe("API_KEY=sk-123…cdef");
+    expect(outputs[2]).toBe('{"apiKey":"sk-123…cdef"}');
+    for (const output of outputs) {
+      expect(output, `collapsed to ***: ${output}`).not.toContain("***");
+      expect(output, `leaked: ${output}`).not.toContain(vendor);
+    }
   });
 });
 

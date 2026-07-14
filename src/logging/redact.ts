@@ -32,7 +32,12 @@ const DEFAULT_REDACT_PATTERNS: string[] = [
   // secrets (e.g. `?access_token=…`) stay redacted without hiding config-key diagnostics.
   String.raw`[?&](?:access[-_]?token|auth[-_]?token|hook[-_]?token|refresh[-_]?token|api[-_]?key|client[-_]?secret|token|key|secret|password|pass|passwd|auth|signature|${PAYMENT_CREDENTIAL_QUERY_KEYS})=([^&\s"'<>]+)`,
   // Standalone credential assignments outside URLs (e.g. `token=…` in a log line).
-  String.raw`(^|[\s,;])(?:access_token|refresh_token|api[-_]?key|token|secret|password|passwd|${PAYMENT_CREDENTIAL_QUERY_KEYS})=([^\s&#]+)`,
+  // Leading boundary broadened to accept quote/backtick delimiters (`"`, `'`, and `\x60`
+  // for backtick, which keeps the String.raw template intact) so a lowercase key touching
+  // a quote in key=value form — `"token=…"`, `{"cmd":"token=…"}` — is redacted rather than
+  // leaking. Upstream shares this text-level gap and relies on structured tool-output
+  // redaction the fork does not carry. (Fork-side, #2852.)
+  String.raw`(^|[\s,;"'\x60])(?:access_token|refresh_token|api[-_]?key|token|secret|password|passwd|${PAYMENT_CREDENTIAL_QUERY_KEYS})=([^\s&#]+)`,
   // JSON fields.
   String.raw`"(?:apiKey|token|secret|password|passwd|accessToken|refreshToken|${PAYMENT_CREDENTIAL_JSON_KEYS})"\s*:\s*"([^"]+)"`,
   // CLI flags.

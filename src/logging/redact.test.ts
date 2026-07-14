@@ -276,4 +276,59 @@ describe("redactSensitiveText", () => {
     });
     expect(output).toBe(input);
   });
+
+  it("redacts quote/backtick-adjacent lowercase credential keys in key=value form (#2852)", () => {
+    // A lowercase key touching a quote/backtick fell through both the ENV pattern
+    // (uppercase-only) and the standalone pattern (leading boundary excluded quote chars),
+    // leaking the value. The broadened boundary now redacts these.
+    const secret = "abcdef1234567890ghij";
+    const cases = [
+      `"token=${secret}"`,
+      `{"cmd":"token=${secret}"}`,
+      `\`token=${secret}\``,
+      `'password=${secret}'`,
+    ];
+    for (const input of cases) {
+      const output = redactSensitiveText(input, {
+        mode: "tools",
+        patterns: defaults,
+      });
+      expect(output).not.toContain("1234567890");
+    }
+  });
+
+  it("keeps existing credential-assignment forms redacted after boundary broadening (#2852)", () => {
+    const bare = redactSensitiveText("token=abcdef1234567890ghij", {
+      mode: "tools",
+      patterns: defaults,
+    });
+    expect(bare).toBe("token=abcdef…ghij");
+    const quotedValue = redactSensitiveText('token="abcdef1234567890ghij"', {
+      mode: "tools",
+      patterns: defaults,
+    });
+    expect(quotedValue).not.toContain("1234567890");
+    const jsonColon = redactSensitiveText('{"token":"abcdef1234567890ghij"}', {
+      mode: "tools",
+      patterns: defaults,
+    });
+    expect(jsonColon).not.toContain("1234567890");
+  });
+
+  it("does not over-mask quoted credential-key references without an assignment (#2852)", () => {
+    const diagnostic = 'Unrecognized key: "token"';
+    expect(
+      redactSensitiveText(diagnostic, {
+        mode: "tools",
+        patterns: defaults,
+      }),
+    ).toBe(diagnostic);
+    const fieldRef = 'the "token" field is required';
+    expect(
+      redactSensitiveText(fieldRef, {
+        mode: "tools",
+        patterns: defaults,
+      }),
+    ).toBe(fieldRef);
+  });
 });

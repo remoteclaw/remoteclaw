@@ -11,6 +11,7 @@ import type { RemoteClawConfig } from "../config/config.js";
 import {
   clearHealthChecksForTest,
   listHealthChecks,
+  registerBundledHealthCheck,
 } from "../plugin-sdk/_health/health-check-registry.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { runPolicyDoctorChecks } from "./doctor-policy-checks.js";
@@ -73,12 +74,17 @@ describe("runPolicyDoctorChecks", () => {
     await fs.rm(workspaceDir, { recursive: true, force: true });
   });
 
-  // (i) Module-singleton: the policy ext registers via the plugin-sdk barrel; the
-  // core doctor reads the very same registry Map. If the barrel and the core-side
-  // import resolved to different module instances, this list would be empty.
+  // These tests register the policy checks through a BUNDLED-origin host
+  // (`registerBundledHealthCheck`) — the same marking the framework applies in
+  // production via `api.registerHealthCheck` for the bundled `policy` ext (#2896).
+  // Without the bundled marker, the `--fix` reducer drops the repair (see test iv).
+  //
+  // (i) Module-singleton: the core doctor reads the very same registry Map the ext
+  // registers into. If that import resolved to a different module instance, this
+  // list would be empty.
   it("registers policy checks into the registry the core doctor reads", () => {
     expect(listHealthChecks()).toHaveLength(0);
-    registerPolicyDoctorChecks();
+    registerPolicyDoctorChecks({ registerHealthCheck: registerBundledHealthCheck });
     const ids = listHealthChecks().map((check) => check.id);
     expect(ids.length).toBeGreaterThan(0);
     expect(new Set(ids)).toEqual(new Set(POLICY_CHECK_IDS));
@@ -88,7 +94,7 @@ describe("runPolicyDoctorChecks", () => {
   // config is returned untouched (same reference).
   it("leaves config untouched without --fix even when a channel is denied", async () => {
     const configPath = await writeTelegramDenyPolicy();
-    registerPolicyDoctorChecks();
+    registerPolicyDoctorChecks({ registerHealthCheck: registerBundledHealthCheck });
     const cfg = cfgWithPolicy(
       { workspaceRepairs: true },
       { channels: { telegram: { enabled: true } } },
@@ -109,7 +115,7 @@ describe("runPolicyDoctorChecks", () => {
   // `workspaceRepairs` opt-in OFF, the repair self-skips and nothing changes.
   it("does not repair under --fix when workspaceRepairs is off", async () => {
     const configPath = await writeTelegramDenyPolicy();
-    registerPolicyDoctorChecks();
+    registerPolicyDoctorChecks({ registerHealthCheck: registerBundledHealthCheck });
     const cfg = cfgWithPolicy(
       { workspaceRepairs: false },
       { channels: { telegram: { enabled: true } } },
@@ -131,7 +137,7 @@ describe("runPolicyDoctorChecks", () => {
   // `enabled` flag; agents/plugins and every other channel field are left intact.
   it("under --fix + workspaceRepairs disables only the denied channel", async () => {
     const configPath = await writeTelegramDenyPolicy();
-    registerPolicyDoctorChecks();
+    registerPolicyDoctorChecks({ registerHealthCheck: registerBundledHealthCheck });
     const cfg = cfgWithPolicy(
       { workspaceRepairs: true },
       { channels: { telegram: { enabled: true }, discord: { enabled: true } } },

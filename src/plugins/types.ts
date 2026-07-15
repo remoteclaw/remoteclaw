@@ -12,6 +12,7 @@ import type { ModelProviderConfig } from "../config/types.js";
 import type { GatewayRequestHandler } from "../gateway/server-methods/types.js";
 import type { InternalHookHandler } from "../hooks/internal-hooks.js";
 import type { HookEntry } from "../hooks/types.js";
+import type { HealthCheck } from "../plugin-sdk/_health/health-checks.js";
 import type { RuntimeEnv } from "../runtime.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 import type { PluginRuntime } from "./runtime/types.js";
@@ -287,6 +288,15 @@ export type RemoteClawPluginApi = {
   registerCli: (registrar: RemoteClawPluginCliRegistrar, opts?: { commands?: string[] }) => void;
   registerService: (service: RemoteClawPluginService) => void;
   registerProvider: (provider: ProviderPlugin) => void;
+  /**
+   * Register a `doctor` health check. When called by a BUNDLED extension the check
+   * is marked bundled-origin — the only origin whose `repair()` output the
+   * `doctor --fix` reducer will persist. A non-bundled plugin's check still runs its
+   * read-only `detect()`, but its `repair()` cannot mutate persisted config (#2896).
+   * The bundled marker is keyed on the loader-derived, non-forgeable plugin origin,
+   * not on anything the plugin declares.
+   */
+  registerHealthCheck: (check: HealthCheck) => void;
   /**
    * Register a custom command that bypasses the LLM agent.
    * Plugin commands are processed before built-in commands and before agent invocation.

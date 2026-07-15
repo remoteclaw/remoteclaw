@@ -9,6 +9,10 @@ import type {
 } from "../gateway/server-methods/types.js";
 import { registerInternalHook } from "../hooks/internal-hooks.js";
 import type { HookEntry } from "../hooks/types.js";
+import {
+  registerBundledHealthCheck,
+  registerHealthCheck as registerUnmarkedHealthCheck,
+} from "../plugin-sdk/_health/health-check-registry.js";
 import { resolveUserPath } from "../utils.js";
 import { registerPluginCommand } from "./commands.js";
 import { normalizePluginHttpPath } from "./http-path.js";
@@ -622,6 +626,15 @@ export function createPluginRegistry(registryParams: PluginRegistryParams) {
       registerHttpRoute: (params) => registerHttpRoute(record, params),
       registerChannel: (registration) => registerChannel(record, registration),
       registerProvider: (provider) => registerProvider(record, provider),
+      // #2896: mark a health check bundled-origin ONLY when the framework knows this
+      // plugin is bundled (`record.origin`, loader-derived from discovery location —
+      // NOT plugin-declared, so unforgeable). Non-bundled plugins fall through to the
+      // public, UNMARKED registrar; their checks still detect() but their repair()
+      // cannot mutate persisted config. Mirrors the origin gate used for typed hooks.
+      registerHealthCheck: (check) =>
+        record.origin === "bundled"
+          ? registerBundledHealthCheck(check)
+          : registerUnmarkedHealthCheck(check),
       registerGatewayMethod: (method, handler) => registerGatewayMethod(record, method, handler),
       registerCli: (registrar, opts) => registerCli(record, registrar, opts),
       registerService: (service) => registerService(record, service),

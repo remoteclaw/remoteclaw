@@ -14,6 +14,7 @@ export function createTestPluginApi(api: TestPluginApiInput): RemoteClawPluginAp
     registerCli() {},
     registerService() {},
     registerProvider() {},
+    registerHealthCheck() {},
     registerCommand() {},
     registerContextEngine() {},
     resolvePath(input: string) {

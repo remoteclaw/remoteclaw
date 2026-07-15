@@ -16,7 +16,14 @@ const plugin = {
     // Populate the fork-local health-check registry at plugin load, so the core
     // `doctor` command sees the policy checks when it iterates `listHealthChecks()`.
     // Idempotent: `registerPolicyDoctorChecks` guards on an internal `registered` flag.
-    registerPolicyDoctorChecks();
+    //
+    // Route registration through the framework's origin-aware registrar
+    // (`api.registerHealthCheck`) rather than the public plugin-sdk export: because
+    // this is the bundled `policy` extension, the framework marks these checks
+    // bundled-origin, which is what lets their `repair()` persist under `doctor --fix`.
+    // The public registrar would leave them UNMARKED and the persistence gate (#2896)
+    // would drop the repair.
+    registerPolicyDoctorChecks({ registerHealthCheck: (check) => api.registerHealthCheck(check) });
   },
 };
 

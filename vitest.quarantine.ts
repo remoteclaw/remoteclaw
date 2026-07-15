@@ -47,20 +47,15 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   "extensions/bluebubbles/src/attachments.test.ts",
   "extensions/bluebubbles/src/monitor-normalize.test.ts",
   "extensions/diagnostics-otel/src/service.test.ts",
-  "extensions/discord/src/accounts.test.ts",
-  "extensions/discord/src/gateway-logging.test.ts",
   "extensions/discord/src/monitor.test.ts",
   "extensions/discord/src/monitor.tool-result.sends-status-replies-responseprefix.test.ts",
   "extensions/discord/src/monitor/auto-presence.test.ts",
-  "extensions/discord/src/monitor/listeners.test.ts",
   "extensions/discord/src/monitor/message-handler.preflight.test.ts",
-  "extensions/discord/src/monitor/message-handler.process.test.ts",
   "extensions/discord/src/monitor/message-handler.queue.test.ts",
   "extensions/discord/src/monitor/message-utils.test.ts",
   "extensions/discord/src/monitor/native-command.commands-allowfrom.test.ts",
   "extensions/discord/src/monitor/provider.proxy.test.ts",
   "extensions/discord/src/monitor/provider.rest-proxy.test.ts",
-  "extensions/discord/src/monitor/thread-bindings.lifecycle.test.ts",
   "extensions/discord/src/monitor/threading.starter.test.ts",
   "extensions/discord/src/voice-message.test.ts",
   // #2782 (feishu): media/monitor.reaction/send.reply-fallback remain — each needs a
@@ -78,24 +73,26 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   "extensions/imessage/src/monitor/parse-notification.test.ts",
   "extensions/irc/src/send.test.ts",
   "extensions/line/src/channel.sendPayload.test.ts",
-  "extensions/matrix/src/channel.directory.test.ts",
+  // #2782 (matrix): 4 of 6 un-quarantined (channel.directory/allowlist/handler.body-for-agent
+  // pass as-is on clean CI; format fixed test-side after restoring a dropped source guard — see
+  // PR). The 2 below stay, each needing out-of-scope work:
+  // - manifest: asserts matrix stages `fake-indexeddb` + opts into `bundle.stageRuntimeDependencies`.
+  //   The fork re-architected matrix onto @vector-im/matrix-bot-sdk with filesystem crypto storage
+  //   (no `indexedDB` usage anywhere; the idb-persistence files are orphaned), so the fake-indexeddb
+  //   dep is stale upstream baggage. Whether matrix should opt into runtime-dep STAGING is a separate
+  //   release-surface call complicated by its NATIVE dep (@matrix-org/matrix-sdk-crypto-nodejs) —
+  //   unlike the pure-JS googlechat/policy precedents — so it needs a release-gated PR.
+  // - matrix/monitor/index: asserts the full Pi-era monitor orchestration (thread-binding manager,
+  //   inbound-event deduper, graceful stop-sync/drain-decryptions/wait-for-handlers shutdown,
+  //   cold-start `dropPreStartupMessages` guard, account-aware text limit). The fork gutted all of
+  //   it (index.ts references none of those symbols; 7 mocked modules no longer exist). Reconciling
+  //   is a wholesale test rewrite over correctness-sensitive shutdown paths — separate PR.
   "extensions/matrix/src/manifest.test.ts",
-  "extensions/matrix/src/matrix/format.test.ts",
-  "extensions/matrix/src/matrix/monitor/allowlist.test.ts",
-  "extensions/matrix/src/matrix/monitor/handler.body-for-agent.test.ts",
   "extensions/matrix/src/matrix/monitor/index.test.ts",
   "extensions/mattermost/channel-plugin-api.test.ts",
   "extensions/mattermost/src/mattermost/interactions.test.ts",
   "extensions/mattermost/src/mattermost/monitor-auth.test.ts",
   "extensions/mattermost/src/mattermost/reply-delivery.test.ts",
-  "extensions/msteams/src/attachments.test.ts",
-  "extensions/msteams/src/attachments/shared.test.ts",
-  "extensions/msteams/src/channel.directory.test.ts",
-  "extensions/msteams/src/file-consent.test.ts",
-  "extensions/msteams/src/monitor-handler.file-consent.test.ts",
-  "extensions/msteams/src/monitor-handler/message-handler.authz.test.ts",
-  "extensions/msteams/src/monitor-handler/message-handler.thread-session.test.ts",
-  "extensions/msteams/src/probe.test.ts",
   "extensions/nextcloud-talk/src/channel.core.test.ts",
   "extensions/nextcloud-talk/src/monitor.replay.test.ts",
   "extensions/nextcloud-talk/src/room-info.test.ts",
@@ -139,11 +136,14 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   "extensions/zalo/runtime-api.test.ts",
   "extensions/zalo/src/monitor.webhook.test.ts",
   "extensions/zalo/src/token.test.ts",
-  "extensions/zalouser/src/channel.directory.test.ts",
-  "extensions/zalouser/src/channel.sendpayload.test.ts",
-  "extensions/zalouser/src/channel.test.ts",
-  "extensions/zalouser/src/monitor.group-gating.test.ts",
-  "extensions/zalouser/src/security-audit.test.ts",
+  // #2782 (zalouser): channel.directory + security-audit un-quarantined (they passed once the
+  // `temp-path` + `dangerous-name-runtime` plugin-sdk subpaths — imported by zalouser source via
+  // the bare `remoteclaw/plugin-sdk/*` specifier — were added to the vitest.config.ts resolve-alias
+  // mirror; a test-harness resolution gap, not a product-source change). The 3 below stay: each
+  // needs a SOURCE change to the outbound / DM-routing / authz paths (see PR for details).
+  "extensions/zalouser/src/channel.sendpayload.test.ts", // #2782: SOURCE regression — channel.ts outbound (sendText/sendPayload) never passes textMode:"markdown" + resolved textChunkMode/textChunkLimit, and double-chunks long text at the sendPayload layer instead of passing through once (send.ts already implements passthrough markdown chunking; the caller wiring was lost)
+  "extensions/zalouser/src/channel.test.ts", // #2782: SOURCE regression — same root as channel.sendpayload: channel.ts sendText omits textMode/textChunkMode/textChunkLimit
+  "extensions/zalouser/src/monitor.group-gating.test.ts", // #2782: 3 SOURCE regressions — (a) deliverZalouserReply outer-chunks + omits textMode/chunk opts (same passthrough root); (b) open-policy non-command DMs are dropped before dispatch (resolveAgentRoute never reached); (c) SECURITY: monitor.ts processMessage group-match (~L321) omits allowNameMatching, so a mutable group NAME always matches config entries → group-allowlist bypass by name impersonation even without dangerouslyAllowNameMatching — needs a security-reviewed fix
 ];
 
 /** Currently-failing test files under `src/auto-reply/**` (run by the `test-auto-reply` lane). */

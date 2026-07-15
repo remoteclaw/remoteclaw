@@ -5,25 +5,24 @@ const hostMockState = vi.hoisted(() => ({
   tokenError: null as Error | null,
 }));
 
-vi.mock("@microsoft/teams.apps", () => ({
-  App: class {
-    protected async getBotToken() {
-      if (hostMockState.tokenError) {
-        throw hostMockState.tokenError;
-      }
-      return { value: "token" };
-    }
-    protected async getAppGraphToken() {
-      if (hostMockState.tokenError) {
-        throw hostMockState.tokenError;
-      }
-      return { value: "token" };
-    }
-  },
-}));
-
-vi.mock("@microsoft/teams.api", () => ({
-  Client: class {},
+// probe.ts acquires tokens through `loadMSTeamsSdkWithAuth().sdk.MsalTokenProvider`
+// (agents-hosting), not the legacy `@microsoft/teams.apps` App surface. Mock the
+// SDK loader so no real MSAL/AAD call is attempted.
+vi.mock("./sdk.js", () => ({
+  loadMSTeamsSdkWithAuth: vi.fn(async () => ({
+    sdk: {
+      MsalTokenProvider: class {
+        constructor(_authConfig: unknown) {}
+        async getAccessToken(_resource: string) {
+          if (hostMockState.tokenError) {
+            throw hostMockState.tokenError;
+          }
+          return { value: "token" };
+        }
+      },
+    },
+    authConfig: {},
+  })),
 }));
 
 import { probeMSTeams } from "./probe.js";

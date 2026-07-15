@@ -62,7 +62,7 @@ describe("DiscordMessageListener", () => {
     await handlerDone;
   });
 
-  it("runs handlers for the same channel concurrently (no per-channel serialization)", async () => {
+  it("serializes handlers for the same channel to preserve ordering", async () => {
     const order: string[] = [];
     const deferredA = createDeferred();
     const deferredB = createDeferred();
@@ -80,25 +80,31 @@ describe("DiscordMessageListener", () => {
     });
     const listener = new DiscordMessageListener(handler as never, createLogger() as never);
 
-    // Both messages target the same channel — previously serialized, now concurrent.
+    // Both messages target the same channel — the fork serializes them via a
+    // per-channel KeyedAsyncQueue to preserve ordering (see listeners.ts).
     await listener.handle(fakeEvent("ch-1"), {} as never);
     await listener.handle(fakeEvent("ch-1"), {} as never);
 
     await flushAsyncWork();
-    expect(handler).toHaveBeenCalledTimes(2);
-    // Both handlers started without waiting for the first to finish.
+    // Only the first handler has started; the second is queued behind it.
+    expect(handler).toHaveBeenCalledTimes(1);
     expect(order).toContain("start:1");
+    expect(order).not.toContain("start:2");
+
+    // Completing the first releases the queue so the second can start.
+    deferredA.resolve?.();
+    for (let i = 0; i < 6; i += 1) {
+      await flushAsyncWork();
+    }
+    expect(order).toContain("end:1");
+    expect(handler).toHaveBeenCalledTimes(2);
     expect(order).toContain("start:2");
+    // Ordering preserved: the first fully finished before the second began.
+    expect(order.indexOf("end:1")).toBeLessThan(order.indexOf("start:2"));
 
     deferredB.resolve?.();
     await flushAsyncWork();
     expect(order).toContain("end:2");
-    // First handler is still running — no serialization.
-    expect(order).not.toContain("end:1");
-
-    deferredA.resolve?.();
-    await flushAsyncWork();
-    expect(order).toContain("end:1");
   });
 
   it("runs handlers for different channels in parallel", async () => {

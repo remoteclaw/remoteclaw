@@ -63,14 +63,13 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   "extensions/discord/src/monitor/thread-bindings.lifecycle.test.ts",
   "extensions/discord/src/monitor/threading.starter.test.ts",
   "extensions/discord/src/voice-message.test.ts",
-  "extensions/feishu/src/bot.test.ts",
-  "extensions/feishu/src/client.test.ts",
+  // #2782 (feishu): media/monitor.reaction/send.reply-fallback remain — each needs a
+  // separate SOURCE change (see PR for un-quarantine of the other 6, which were stale
+  // tests fixed test-side). media.ts dropped content-type→file_type routing + download
+  // header metadata; monitor.account.ts lacks receive-layer early-event dedup; send.ts
+  // lost the thread-reply-fallback safety guard + Feishu error-diagnostics wrap.
   "extensions/feishu/src/media.test.ts",
   "extensions/feishu/src/monitor.reaction.test.ts",
-  "extensions/feishu/src/monitor.startup.test.ts",
-  "extensions/feishu/src/monitor.webhook-security.test.ts",
-  "extensions/feishu/src/outbound.test.ts",
-  "extensions/feishu/src/probe.test.ts",
   "extensions/feishu/src/send.reply-fallback.test.ts",
   "extensions/googlechat/src/monitor.webhook-routing.test.ts",
   "extensions/imessage/src/accounts.test.ts",

@@ -13,7 +13,13 @@ export type ResolvedIMessageAccount = {
   configured: boolean;
 };
 
-const { listAccountIds, resolveDefaultAccountId } = createAccountListHelpers("imessage");
+const { listAccountIds, resolveDefaultAccountId } = createAccountListHelpers("imessage", {
+  // Top-level channels.imessage.cliPath/dbPath configure the implicit "default"
+  // account, so it must appear alongside any named accounts.
+  implicitDefaultAccount: {
+    channelKeys: ["cliPath", "dbPath"],
+  },
+});
 export const listIMessageAccountIds = listAccountIds;
 export const resolveDefaultIMessageAccountId = resolveDefaultAccountId;
 
@@ -40,7 +46,9 @@ export function resolveIMessageAccount(params: {
   cfg: RemoteClawConfig;
   accountId?: string | null;
 }): ResolvedIMessageAccount {
-  const accountId = normalizeAccountId(params.accountId);
+  const accountId = normalizeAccountId(
+    params.accountId ?? resolveDefaultIMessageAccountId(params.cfg),
+  );
   const baseEnabled = params.cfg.channels?.imessage?.enabled !== false;
   const merged = mergeIMessageAccountConfig(params.cfg, accountId);
   const accountEnabled = merged.enabled !== false;

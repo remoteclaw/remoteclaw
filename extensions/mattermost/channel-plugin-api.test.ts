@@ -15,14 +15,17 @@ const importEnv = {
 } satisfies NodeJS.ProcessEnv;
 
 describe("mattermost bundled api seam", () => {
-  it("loads the narrow channel plugin api in direct smoke", async () => {
+  // The fork exposes the bundled Mattermost plugin value via the
+  // `channel-plugin-runtime.ts` seam (there is no `channel-plugin-api.ts` /
+  // `mattermostSetupPlugin` — those upstream seams were consolidated away).
+  it("loads the channel plugin runtime seam in direct smoke", async () => {
     const { stdout } = await execFileAsync(
       process.execPath,
       [
         "--import",
         "tsx",
         "-e",
-        'const mod = await import("./extensions/mattermost/channel-plugin-api.ts"); process.stdout.write(JSON.stringify({keys:Object.keys(mod).sort(), id: mod.mattermostPlugin.id, setupId: mod.mattermostSetupPlugin.id}));',
+        'const mod = await import("./extensions/mattermost/channel-plugin-runtime.ts"); process.stdout.write(JSON.stringify({keys:Object.keys(mod).sort(), id: mod.mattermostPlugin.id}));',
       ],
       {
         cwd: repoRoot,
@@ -31,8 +34,6 @@ describe("mattermost bundled api seam", () => {
       },
     );
 
-    expect(stdout).toBe(
-      '{"keys":["mattermostPlugin","mattermostSetupPlugin"],"id":"mattermost","setupId":"mattermost"}',
-    );
+    expect(stdout).toBe('{"keys":["mattermostPlugin"],"id":"mattermost"}');
   }, 45_000);
 });

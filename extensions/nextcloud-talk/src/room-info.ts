@@ -107,9 +107,16 @@ export async function resolveNextcloudTalkRoomKind(params: {
         return undefined;
       }
 
-      const payload = (await response.json()) as {
-        ocs?: { data?: { type?: number | string } };
-      };
+      let payload: { ocs?: { data?: { type?: number | string } } };
+      try {
+        payload = (await response.json()) as {
+          ocs?: { data?: { type?: number | string } };
+        };
+      } catch {
+        // Produce a stable, Node-version-independent error instead of leaking
+        // the engine-specific JSON SyntaxError text.
+        throw new Error("Nextcloud Talk room info failed: malformed JSON response");
+      }
       const type = coerceRoomType(payload.ocs?.data?.type);
       const kind = resolveRoomKindFromType(type);
       roomCache.set(key, { fetchedAt: Date.now(), kind });

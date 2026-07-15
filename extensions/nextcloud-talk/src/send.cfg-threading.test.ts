@@ -11,25 +11,26 @@ const hoisted = vi.hoisted(() => ({
   convertMarkdownTables: vi.fn((text: string) => text),
   record: vi.fn(),
   resolveNextcloudTalkAccount: vi.fn(),
-  ssrfPolicyFromPrivateNetworkOptIn: vi.fn(() => undefined),
   generateNextcloudTalkSignature: vi.fn(() => ({
     random: "r",
     signature: "s",
   })),
-  mockFetchGuard: vi.fn(),
 }));
 
-vi.mock("./send.runtime.js", () => {
-  return {
-    convertMarkdownTables: hoisted.convertMarkdownTables,
-    fetchWithSsrFGuard: hoisted.mockFetchGuard,
-    generateNextcloudTalkSignature: hoisted.generateNextcloudTalkSignature,
-    getNextcloudTalkRuntime: () => createSendCfgThreadingRuntime(hoisted),
-    resolveNextcloudTalkAccount: hoisted.resolveNextcloudTalkAccount,
-    resolveMarkdownTableMode: hoisted.resolveMarkdownTableMode,
-    ssrfPolicyFromPrivateNetworkOptIn: hoisted.ssrfPolicyFromPrivateNetworkOptIn,
-  };
-});
+// The fork's send.ts imports helpers directly from the real modules (there is no
+// `./send.runtime.js` barrel), reads config/markdown/activity off the runtime
+// object, and calls the global `fetch` directly.
+vi.mock("./runtime.js", () => ({
+  getNextcloudTalkRuntime: () => createSendCfgThreadingRuntime(hoisted),
+}));
+
+vi.mock("./accounts.js", () => ({
+  resolveNextcloudTalkAccount: hoisted.resolveNextcloudTalkAccount,
+}));
+
+vi.mock("./signature.js", () => ({
+  generateNextcloudTalkSignature: hoisted.generateNextcloudTalkSignature,
+}));
 
 const { sendMessageNextcloudTalk, sendReactionNextcloudTalk } = await import("./send.js");
 
@@ -69,16 +70,10 @@ describe("nextcloud-talk send cfg threading", () => {
 
   beforeEach(() => {
     vi.stubGlobal("fetch", fetchMock);
-    // Route the SSRF guard mock through the global fetch mock.
-    hoisted.mockFetchGuard.mockImplementation(async (p: { url: string; init?: RequestInit }) => {
-      const response = await globalThis.fetch(p.url, p.init);
-      return { response, release: async () => {}, finalUrl: p.url };
-    });
     hoisted.loadConfig.mockReset();
     hoisted.resolveMarkdownTableMode.mockClear();
     hoisted.convertMarkdownTables.mockClear();
     hoisted.record.mockReset();
-    hoisted.ssrfPolicyFromPrivateNetworkOptIn.mockClear();
     hoisted.generateNextcloudTalkSignature.mockClear();
     hoisted.resolveNextcloudTalkAccount.mockReset();
     hoisted.resolveNextcloudTalkAccount.mockReturnValue(defaultAccount);
@@ -86,7 +81,6 @@ describe("nextcloud-talk send cfg threading", () => {
 
   afterEach(() => {
     fetchMock.mockReset();
-    hoisted.mockFetchGuard.mockReset();
     vi.unstubAllGlobals();
   });
 

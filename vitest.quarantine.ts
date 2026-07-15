@@ -85,10 +85,21 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   "extensions/feishu/src/media.test.ts",
   "extensions/feishu/src/monitor.reaction.test.ts",
   "extensions/feishu/src/send.reply-fallback.test.ts",
-  "extensions/imessage/src/accounts.test.ts",
+  // #2782 (imessage): accounts + parse-notification un-quarantined via SOURCE fixes — accounts.ts
+  // restores the createAccountListHelpers `implicitDefaultAccount` options + `defaultAccount`
+  // resolution; parse-notification.ts restores stripImessageLengthPrefixedUtf8Text. The 2 below
+  // stay, each needing out-of-scope work:
+  // - deliver: the fork gutted the sentText/echoText send-result contract (send.ts returns only
+  //   {messageId}); test asserts the actual media-echo placeholder + post-send-only remember
+  //   (#47830, no pre-send full-text remember). Restoring is a multi-module outbound/self-chat-echo
+  //   subsystem change — separate PR.
+  // - inbound-processing: SECURITY-sensitive — the dmPolicy access-control + echo/self-chat
+  //   detection ORDER diverged from upstream (fork does access-before-echo; tests expect
+  //   echo/self-chat-before-access) AND `dmPolicy:"open"` with an empty allowlist blocks where the
+  //   tests expect allow; reconciling touches shared src/security/dm-policy-shared authz — separate
+  //   security-reviewed PR.
   "extensions/imessage/src/monitor/deliver.test.ts",
   "extensions/imessage/src/monitor/inbound-processing.test.ts",
-  "extensions/imessage/src/monitor/parse-notification.test.ts",
   // #2782 (line): channel.sendPayload.test.ts — 8/12 pass; the 4 failures are a
   // SOURCE gap (not a test fix). channel.ts `sendPayload` has no LINE video-media
   // handling: `sendMediaMessages()` drops mediaKind/previewImageUrl/trackingId/
@@ -113,14 +124,20 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   //   is a wholesale test rewrite over correctness-sensitive shutdown paths — separate PR.
   "extensions/matrix/src/manifest.test.ts",
   "extensions/matrix/src/matrix/monitor/index.test.ts",
-  "extensions/mattermost/channel-plugin-api.test.ts",
+  // #2782 (mattermost): channel-plugin-api + reply-delivery un-quarantined (test-side — retarget
+  // the bundled-seam smoke test to channel-plugin-runtime.ts since the fork consolidated away
+  // channel-plugin-api.ts/mattermostSetupPlugin; rebrand OPENCLAW_STATE_DIR→REMOTECLAW_STATE_DIR).
+  // The 2 below stay, each needing out-of-scope work:
+  // - interactions: 2/47 assert an un-ported post-threading feature — forwarding the fetched `post`
+  //   (with root_id) to resolveSessionKey (positional→object signature change), handleInteraction,
+  //   and dispatchButtonClick for thread-scoped session keys; spans interactions.ts + monitor.ts
+  //   session-key resolution — multi-file, separate PR.
+  // - monitor-auth: SECURITY (authz) — normalizeMattermostAllowEntry lowercases `accessGroup:Ops`
+  //   entries, but the test expects case-preserved (upstream parseAccessGroupAllowFromEntry). The
+  //   access-group allowlist-normalization semantics need a security-reviewed source change —
+  //   separate PR. (The file's other two tests also carry a stale mock target + sync/async drift.)
   "extensions/mattermost/src/mattermost/interactions.test.ts",
   "extensions/mattermost/src/mattermost/monitor-auth.test.ts",
-  "extensions/mattermost/src/mattermost/reply-delivery.test.ts",
-  "extensions/nextcloud-talk/src/channel.core.test.ts",
-  "extensions/nextcloud-talk/src/monitor.replay.test.ts",
-  "extensions/nextcloud-talk/src/room-info.test.ts",
-  "extensions/nextcloud-talk/src/send.cfg-threading.test.ts",
   // #2782 (slack): monitor.tool-result un-quarantined (test-side: the ack-reaction test
   // needs statusReactions disabled to exercise the direct one-shot react path — status
   // reactions now supersede it when enabled; pairing assertion updated to the shared

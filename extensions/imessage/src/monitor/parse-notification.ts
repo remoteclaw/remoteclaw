@@ -1,4 +1,5 @@
 import { isRecord } from "remoteclaw/plugin-sdk/text-runtime";
+import { stripImessageLengthPrefixedUtf8Text } from "./strip-imsg-length-prefixed-text.js";
 import type { IMessagePayload } from "./types.js";
 
 function isOptionalString(value: unknown): value is string | null | undefined {
@@ -87,5 +88,17 @@ export function parseIMessageNotification(raw: unknown): IMessagePayload | null 
     return null;
   }
 
-  return message;
+  // The imsg RPC can wrap text/reply_to_text in a length-delimited field
+  // wrapper; strip it so downstream consumers see the plain UTF-8 payload.
+  return {
+    ...message,
+    text:
+      typeof message.text === "string"
+        ? stripImessageLengthPrefixedUtf8Text(message.text)
+        : message.text,
+    reply_to_text:
+      typeof message.reply_to_text === "string"
+        ? stripImessageLengthPrefixedUtf8Text(message.reply_to_text)
+        : message.reply_to_text,
+  };
 }

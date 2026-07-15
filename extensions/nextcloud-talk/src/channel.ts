@@ -65,7 +65,10 @@ export const nextcloudTalkPlugin: ChannelPlugin<ResolvedNextcloudTalkAccount> = 
   pairing: {
     idLabel: "nextcloudUserId",
     normalizeAllowEntry: (entry) =>
-      entry.replace(/^(nextcloud-talk|nc-talk|nc):/i, "").toLowerCase(),
+      entry
+        .trim()
+        .replace(/^(nextcloud-talk|nc-talk|nc):/i, "")
+        .toLowerCase(),
     notifyApproval: async ({ id }) => {
       console.log(`[nextcloud-talk] User ${id} approved for pairing`);
     },
@@ -129,7 +132,11 @@ export const nextcloudTalkPlugin: ChannelPlugin<ResolvedNextcloudTalkAccount> = 
         policy: account.config.dmPolicy,
         allowFrom: account.config.allowFrom ?? [],
         policyPathSuffix: "dmPolicy",
-        normalizeEntry: (raw) => raw.replace(/^(nextcloud-talk|nc-talk|nc):/i, "").toLowerCase(),
+        normalizeEntry: (raw) =>
+          raw
+            .trim()
+            .replace(/^(nextcloud-talk|nc-talk|nc):/i, "")
+            .toLowerCase(),
       });
     },
     collectWarnings: ({ account, cfg }) => {

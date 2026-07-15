@@ -4,9 +4,13 @@ import { resolveNextcloudTalkRoomKind, __testing } from "./room-info.js";
 const fetchWithSsrFGuard = vi.hoisted(() => vi.fn());
 const readFileSync = vi.hoisted(() => vi.fn());
 
-vi.mock("../runtime-api.js", () => {
+// Source imports `fetchWithSsrFGuard` from the plugin-sdk barrel, not the local
+// `../runtime-api.js` re-export — mock the module the source actually resolves.
+vi.mock("remoteclaw/plugin-sdk/nextcloud-talk", () => {
   return vi
-    .importActual<typeof import("../runtime-api.js")>("../runtime-api.js")
+    .importActual<typeof import("remoteclaw/plugin-sdk/nextcloud-talk")>(
+      "remoteclaw/plugin-sdk/nextcloud-talk",
+    )
     .then((actual) => ({
       ...actual,
       fetchWithSsrFGuard,

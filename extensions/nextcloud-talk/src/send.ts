@@ -157,11 +157,20 @@ export async function sendMessageNextcloudTalk(
     console.log(`[nextcloud-talk] Sent message ${messageId} to room ${roomToken}`);
   }
 
-  getNextcloudTalkRuntime().channel.activity.record({
-    channel: "nextcloud-talk",
-    accountId: account.accountId,
-    direction: "outbound",
-  });
+  // Activity recording is best-effort: the message has already been sent, so a
+  // recording failure (e.g. runtime store not initialized) must not fail the
+  // send. Re-throw any other error.
+  try {
+    getNextcloudTalkRuntime().channel.activity.record({
+      channel: "nextcloud-talk",
+      accountId: account.accountId,
+      direction: "outbound",
+    });
+  } catch (error) {
+    if (!(error instanceof Error) || error.message !== "Nextcloud Talk runtime not initialized") {
+      throw error;
+    }
+  }
 
   return { messageId, roomToken, timestamp };
 }

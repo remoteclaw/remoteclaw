@@ -8,9 +8,14 @@ export function trackBackgroundTask(
   task: Promise<unknown>,
 ) {
   backgroundTasks.add(task);
-  void task.finally(() => {
+  const cleanup = () => {
     backgroundTasks.delete(task);
-  });
+  };
+  // Attach cleanup as BOTH the fulfillment and rejection handler so a rejecting
+  // tracked task does not leak an unhandled rejection. `void task.finally(...)`
+  // re-rejects the chained promise (which nothing awaits) and leaks; a
+  // `then(cleanup, cleanup)` swallows the settled reason after cleanup runs.
+  task.then(cleanup, cleanup);
 }
 
 export function updateLastRouteInBackground(params: {

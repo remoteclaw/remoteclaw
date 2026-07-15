@@ -9,6 +9,10 @@ import type { WebInboundMsg } from "./types.js";
 export type MentionConfig = {
   mentionRegexes: RegExp[];
   allowFrom?: Array<string | number>;
+  // When set, callers pin the self-chat verdict explicitly instead of having it
+  // recomputed from `allowFrom` (which is a config-shaped check, not a
+  // conversation-shaped one). Falls back to the computed value when omitted.
+  isSelfChat?: boolean;
 };
 
 export type MentionTargets = {
@@ -44,7 +48,10 @@ export function isBotMentionedFromTargets(
     // Remove zero-width and directionality markers WhatsApp injects around display names
     normalizeMentionText(text);
 
-  const isSelfChat = isSelfChatMode(targets.selfE164, mentionCfg.allowFrom);
+  const isSelfChat =
+    typeof mentionCfg.isSelfChat === "boolean"
+      ? mentionCfg.isSelfChat
+      : isSelfChatMode(targets.selfE164, mentionCfg.allowFrom);
 
   const hasMentions = (msg.mentionedJids?.length ?? 0) > 0;
   if (hasMentions && !isSelfChat) {

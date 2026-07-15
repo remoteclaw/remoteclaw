@@ -154,15 +154,16 @@ export function readWebSelfId(authDir: string = resolveDefaultWebAuthDir()) {
   try {
     const credsPath = resolveWebCredsPath(resolveUserPath(authDir));
     if (!fsSync.existsSync(credsPath)) {
-      return { e164: null, jid: null } as const;
+      return { e164: null, jid: null, lid: null } as const;
     }
     const raw = fsSync.readFileSync(credsPath, "utf-8");
-    const parsed = JSON.parse(raw) as { me?: { id?: string } } | undefined;
+    const parsed = JSON.parse(raw) as { me?: { id?: string; lid?: string } } | undefined;
     const jid = parsed?.me?.id ?? null;
+    const lid = parsed?.me?.lid ?? null;
     const e164 = jid ? jidToE164(jid, { authDir }) : null;
-    return { e164, jid } as const;
+    return { e164, jid, lid } as const;
   } catch {
-    return { e164: null, jid: null } as const;
+    return { e164: null, jid: null, lid: null } as const;
   }
 }
 
@@ -185,8 +186,14 @@ export function logWebSelfId(
   includeChannelPrefix = false,
 ) {
   // Human-friendly log of the currently linked personal web session.
-  const { e164, jid } = readWebSelfId(authDir);
-  const details = e164 || jid ? `${e164 ?? "unknown"}${jid ? ` (jid ${jid})` : ""}` : "unknown";
+  const { e164, jid, lid } = readWebSelfId(authDir);
+  const parts = [jid ? `jid ${jid}` : null, lid ? `lid ${lid}` : null].filter(
+    (value): value is string => Boolean(value),
+  );
+  const details =
+    e164 || parts.length > 0
+      ? `${e164 ?? "unknown"}${parts.length > 0 ? ` (${parts.join(", ")})` : ""}`
+      : "unknown";
   const prefix = includeChannelPrefix ? "Web Channel: " : "";
   runtime.log(info(`${prefix}${details}`));
 }

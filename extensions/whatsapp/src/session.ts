@@ -1,12 +1,5 @@
 import { randomUUID } from "node:crypto";
 import fsSync from "node:fs";
-import {
-  DisconnectReason,
-  fetchLatestBaileysVersion,
-  makeCacheableSignalKeyStore,
-  makeWASocket,
-  useMultiFileAuthState,
-} from "@whiskeysockets/baileys";
 import qrcode from "qrcode-terminal";
 import { formatCliCommand } from "../../../src/cli/command-format.js";
 import { danger, success } from "../../../src/globals.js";
@@ -20,6 +13,16 @@ import {
   resolveWebCredsBackupPath,
   resolveWebCredsPath,
 } from "./auth-store.js";
+import {
+  DisconnectReason,
+  fetchLatestBaileysVersion,
+  makeCacheableSignalKeyStore,
+  makeWASocket,
+  useMultiFileAuthState,
+  // Import Baileys through the thin `session.runtime.js` re-export seam so tests
+  // can mock socket creation; importing `@whiskeysockets/baileys` directly here
+  // bypassed the seam (test-helpers mocks `./session.runtime.js`).
+} from "./session.runtime.js";
 
 export {
   getWebAuthAgeMs,

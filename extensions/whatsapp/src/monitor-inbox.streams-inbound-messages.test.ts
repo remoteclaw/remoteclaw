@@ -84,28 +84,22 @@ describe("web monitor inbox", () => {
     sock.ev.emit("messages.upsert", upsert);
     await tick();
 
+    // The fork's WebInboundMessage carries reply/sender/self identity as FLAT
+    // fields (replyToId/replyToBody/replyToSender[Jid|E164], from/senderE164,
+    // selfJid/selfE164); it does not build upstream's nested `sender`/`replyTo`/
+    // `self` objects (nothing in the fork consumes them). Assert the flat shape.
     expect(onMessage).toHaveBeenCalledWith(
       expect.objectContaining({
+        from: "+999",
+        senderE164: "+999",
+        pushName: "Tester",
         replyToId: "q1",
         replyToBody: "original",
         replyToSender: "+111",
-        sender: expect.objectContaining({
-          e164: "+999",
-          name: "Tester",
-        }),
-        replyTo: expect.objectContaining({
-          id: "q1",
-          body: "original",
-          sender: expect.objectContaining({
-            jid: "111@s.whatsapp.net",
-            e164: "+111",
-            label: "+111",
-          }),
-        }),
-        self: expect.objectContaining({
-          jid: "123@s.whatsapp.net",
-          e164: "+123",
-        }),
+        replyToSenderJid: "111@s.whatsapp.net",
+        replyToSenderE164: "+111",
+        selfJid: "123@s.whatsapp.net",
+        selfE164: "+123",
       }),
     );
     expect(sock.sendMessage).toHaveBeenCalledWith("999@s.whatsapp.net", {

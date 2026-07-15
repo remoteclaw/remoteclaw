@@ -11,11 +11,13 @@ import { parseVcard } from "../vcard.js";
 import type { WhatsAppStructuredContactContext } from "./types.js";
 
 const MESSAGE_WRAPPER_KEYS = [
+  "botInvokeMessage",
   "ephemeralMessage",
   "viewOnceMessage",
   "viewOnceMessageV2",
   "viewOnceMessageV2Extension",
   "documentWithCaptionMessage",
+  "groupMentionedMessage",
 ] as const;
 
 const MESSAGE_CONTENT_KEYS = [
@@ -365,7 +367,13 @@ export function describeReplyContext(rawMessage: proto.IMessage | undefined): {
     return null;
   }
   const contextInfo = extractContextInfo(message);
-  const quoted = normalizeMessage(contextInfo?.quotedMessage as proto.IMessage | undefined);
+  // Baileys' `normalizeMessageContent` unwraps standard wrappers (viewOnce,
+  // ephemeral) but not `botInvokeMessage`/`groupMentionedMessage`. Run the
+  // wrapper-key fallback too so a reply quoting one of those still yields the
+  // quoted body (otherwise the whole reply context — incl. stanzaId — is lost).
+  const quoted = fallbackNormalizeMessageContent(
+    normalizeMessage(contextInfo?.quotedMessage as proto.IMessage | undefined),
+  );
   if (!quoted) {
     return null;
   }

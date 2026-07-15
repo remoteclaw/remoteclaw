@@ -130,8 +130,15 @@ export function expectPairingPromptSent(sock: MockSock, jid: string, senderE164:
   expect(sock.sendMessage).toHaveBeenCalledWith(jid, {
     text: expect.stringContaining(`Your WhatsApp phone number: ${senderE164}`),
   });
+  // The shared pairing template (src/pairing/pairing-messages.ts) renders the
+  // code on its own line inside a fenced block ("Pairing code:\n```\nPAIRCODE\n```"),
+  // not inline as "Pairing code: PAIRCODE". Assert label + code presence
+  // (mirrors src/pairing/pairing-messages.test.ts) rather than the old inline form.
   expect(sock.sendMessage).toHaveBeenCalledWith(jid, {
-    text: expect.stringContaining("Pairing code: PAIRCODE"),
+    text: expect.stringContaining("Pairing code:"),
+  });
+  expect(sock.sendMessage).toHaveBeenCalledWith(jid, {
+    text: expect.stringContaining("PAIRCODE"),
   });
 }
 
@@ -165,6 +172,13 @@ export function installWebMonitorInboxUnitTestHooks(opts?: { authDir?: boolean }
   });
 
   afterEach(() => {
+    // The mock `sock` is a module-level singleton shared across tests. A test that
+    // fails its assertions before reaching `await listener.close()` leaves its
+    // `messages.upsert`/`connection.update` handler attached; the next test's emit
+    // then fans out to the stale handler, which consumes the shared inbound-dedupe
+    // slot first and starves the live handler (0 onMessage calls). Strip listeners
+    // after every test so ordering never leaks state, regardless of pass/fail.
+    sock.ev.removeAllListeners();
     resetLogger();
     setLoggerOverride(null);
     vi.useRealTimers();

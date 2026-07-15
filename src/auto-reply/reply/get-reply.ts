@@ -98,6 +98,10 @@ export async function getReplyFromConfig(
     onReplyStart: opts?.onReplyStart,
     onCleanup: opts?.onTypingCleanup,
     typingIntervalSeconds,
+    // Align the typing-indicator TTL with the agent runtime timeout so long/quiet
+    // runs (long tool calls, thinking) don't stop typing mid-execution; the real
+    // stop is the run's markRunComplete/markDispatchIdle, the TTL is the backstop.
+    typingTtlMs: timeoutMs,
     silentToken: SILENT_REPLY_TOKEN,
     log: defaultRuntime.log,
   });

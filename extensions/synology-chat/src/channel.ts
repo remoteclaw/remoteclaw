@@ -173,14 +173,14 @@ export function createSynologyChatPlugin() {
         const trimmed = target.trim();
         if (!trimmed) return undefined;
         // Strip common prefixes
-        return trimmed.replace(/^synology[-_]?chat:/i, "").trim();
+        return trimmed.replace(/^synology(?:[-_]?chat)?:/i, "").trim();
       },
       targetResolver: {
         looksLikeId: (id: string) => {
           const trimmed = id?.trim();
           if (!trimmed) return false;
           // Synology Chat user IDs are numeric
-          return /^\d+$/.test(trimmed) || /^synology[-_]?chat:/i.test(trimmed);
+          return /^\d+$/.test(trimmed) || /^synology(?:[-_]?chat)?:/i.test(trimmed);
         },
         hint: "<userId>",
       },

@@ -42,6 +42,15 @@
 
 /** Currently-failing test files under `extensions/**` (run by the `test-extensions` lane). */
 export const EXTENSIONS_QUARANTINE: string[] = [
+  // #2782 (acpx): manifest.test.ts reads `extensions/acpx/package.json`, but that
+  // file does not exist in the fork (untracked; no build step generates it — the
+  // `test-extensions` CI lane runs no `pnpm build`), so it ENOENTs on clean CI
+  // too. acpx's own AGENTS.md documents `package.json` as a required, hand-
+  // maintained file, so its absence is a fork-integrity gap the test correctly
+  // catches; creating it is out of scope (would break `pnpm install
+  // --frozen-lockfile` without a coordinated pnpm-lock importer). The pinned deps
+  // it asserts DO live in the tracked `npm-shrinkwrap.json` — retargeting the test
+  // there is a viable alternative iff package.json is deemed intentionally absent.
   "extensions/acpx/src/manifest.test.ts",
   // #2782 (groupB): 3 bluebubbles files stay, each out of this ledger-shrink's scope:
   // - account-resolve: asserts an `allowPrivateNetworkConfig` field that the fork-authored
@@ -57,7 +66,6 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   "extensions/bluebubbles/src/account-resolve.test.ts",
   "extensions/bluebubbles/src/attachments.test.ts",
   "extensions/bluebubbles/src/monitor-normalize.test.ts",
-  "extensions/diagnostics-otel/src/service.test.ts",
   "extensions/discord/src/monitor.test.ts",
   "extensions/discord/src/monitor.tool-result.sends-status-replies-responseprefix.test.ts",
   "extensions/discord/src/monitor/auto-presence.test.ts",
@@ -77,12 +85,17 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   "extensions/feishu/src/media.test.ts",
   "extensions/feishu/src/monitor.reaction.test.ts",
   "extensions/feishu/src/send.reply-fallback.test.ts",
-  "extensions/googlechat/src/monitor.webhook-routing.test.ts",
   "extensions/imessage/src/accounts.test.ts",
   "extensions/imessage/src/monitor/deliver.test.ts",
   "extensions/imessage/src/monitor/inbound-processing.test.ts",
   "extensions/imessage/src/monitor/parse-notification.test.ts",
-  "extensions/irc/src/send.test.ts",
+  // #2782 (line): channel.sendPayload.test.ts — 8/12 pass; the 4 failures are a
+  // SOURCE gap (not a test fix). channel.ts `sendPayload` has no LINE video-media
+  // handling: `sendMediaMessages()` drops mediaKind/previewImageUrl/trackingId/
+  // durationMs, and the quick-reply inline media loop always emits `type:"image"`
+  // (never `type:"video"`) and never rejects video without previewImageUrl. That
+  // is a media-path feature to implement + verify, not reverse-engineer from the
+  // tests — separate PR.
   "extensions/line/src/channel.sendPayload.test.ts",
   // #2782 (matrix): 4 of 6 un-quarantined (channel.directory/allowlist/handler.body-for-agent
   // pass as-is on clean CI; format fixed test-side after restoring a dropped source guard — see
@@ -108,7 +121,6 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   "extensions/nextcloud-talk/src/monitor.replay.test.ts",
   "extensions/nextcloud-talk/src/room-info.test.ts",
   "extensions/nextcloud-talk/src/send.cfg-threading.test.ts",
-  "extensions/nostr/src/channel.outbound.test.ts",
   // #2782 (slack): monitor.tool-result un-quarantined (test-side: the ack-reaction test
   // needs statusReactions disabled to exercise the direct one-shot react path — status
   // reactions now supersede it when enabled; pairing assertion updated to the shared
@@ -130,7 +142,6 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   "extensions/slack/src/monitor/message-handler/dispatch.preview-fallback.test.ts",
   "extensions/slack/src/monitor/slash.test.ts",
   "extensions/slack/src/send.identity-fallback.test.ts",
-  "extensions/synology-chat/src/channel.test.ts",
   "extensions/telegram/src/bot-message-context.audio-transcript.test.ts",
   "extensions/telegram/src/bot-message-context.body.test.ts",
   "extensions/telegram/src/bot-message-context.dm-threads.test.ts",

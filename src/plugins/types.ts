@@ -293,8 +293,11 @@ export type RemoteClawPluginApi = {
    * is marked bundled-origin — the only origin whose `repair()` output the
    * `doctor --fix` reducer will persist. A non-bundled plugin's check still runs its
    * read-only `detect()`, but its `repair()` cannot mutate persisted config (#2896).
-   * The bundled marker is keyed on the loader-derived, non-forgeable plugin origin,
-   * not on anything the plugin declares.
+   * The bundled marker is keyed on the loader-derived plugin origin (`record.origin`,
+   * not anything the plugin declares) AND recorded against the check's object identity,
+   * so it is forgeable neither at registration (only a bundled loader origin marks a
+   * check) nor at gate-time (the persistence gate matches the check object itself, not
+   * its self-declared, potentially polymorphic `id`) — see #2896, #2921.
    */
   registerHealthCheck: (check: HealthCheck) => void;
   /**

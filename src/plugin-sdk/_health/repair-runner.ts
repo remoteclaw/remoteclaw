@@ -105,7 +105,10 @@ async function runSplitHealthCheck(
     // and it is not counted as repaired. There is no other persistence channel
     // (upstream file/effect application was gutted in the fork), so dropping the
     // returned config fully neutralizes an untrusted check's attempt to rewrite it.
-    if (!isBundledOriginCheck(check.id)) {
+    // #2921: the gate keys on the check's OBJECT IDENTITY (`check`), not its `check.id`
+    // string, so a public-path check cannot borrow a bundled check's id at gate-time
+    // through a polymorphic `get id()`.
+    if (!isBundledOriginCheck(check)) {
       return repairRunResult(cfg, findings, remainingFindings, changes);
     }
     if (result.config !== undefined && opts.dryRun !== true) {

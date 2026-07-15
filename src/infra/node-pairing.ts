@@ -76,7 +76,11 @@ function toSafeRecord<T>(source: Record<string, T> | null | undefined): Record<s
   const safe = Object.create(null) as Record<string, T>;
   if (source) {
     for (const key of Object.keys(source)) {
-      if (isBlockedObjectKey(key)) {
+      // Drop blocked prototype keys and the empty-string key. No legitimate
+      // node/request id is empty (creation rejects empty ids) and normalizeNodeId
+      // maps every blocked id to "", so refusing "" as a real key keeps a
+      // blocked-key lookup resolving to not-found even against a corrupted file.
+      if (!key || isBlockedObjectKey(key)) {
         continue;
       }
       safe[key] = source[key];
@@ -171,6 +175,19 @@ async function loadState(baseDir?: string): Promise<NodePairingStateFile> {
   return state;
 }
 
+/**
+ * Test-only accessor returning the freshly loaded state maps so a tripwire test
+ * can assert their null-prototype invariant directly. The un-normalized index
+ * sites in this module (approve/reject by requestId, approve by pending.nodeId)
+ * are safe partly because these maps carry no prototype — this export lets CI
+ * fail if a future refactor drops that guarantee.
+ */
+export async function loadNodePairingStateForTest(
+  baseDir?: string,
+): Promise<{ pendingById: Record<string, unknown>; pairedByNodeId: Record<string, unknown> }> {
+  return await loadState(baseDir);
+}
+
 async function persistState(state: NodePairingStateFile, baseDir?: string) {
   const { pendingPath, pairedPath } = resolvePairingPaths(baseDir, "nodes");
   await Promise.all([
@@ -257,9 +274,22 @@ export async function approveNodePairing(
   baseDir?: string,
 ): Promise<ApproveNodePairingResult> {
   return await withLock(async () => {
+    // Defense-in-depth: never index the pending/paired maps with a raw prototype
+    // key. requestId is not a nodeId, so guard it with the blocked-key check
+    // directly; pending.nodeId is a nodeId, so route it through normalizeNodeId.
+    // A blocked key reads as not-found — identical to a missing entry — so
+    // legitimate approvals are unchanged and safety no longer relies solely on
+    // the maps being null-prototype.
+    if (isBlockedObjectKey(requestId)) {
+      return null;
+    }
     const state = await loadState(baseDir);
     const pending = state.pendingById[requestId];
     if (!pending) {
+      return null;
+    }
+    const nodeKey = normalizeNodeId(pending.nodeId);
+    if (!nodeKey) {
       return null;
     }
     const requiredScopes = resolveNodeApprovalRequiredScopes(pending);
@@ -273,7 +303,7 @@ export async function approveNodePairing(
     }
 
     const now = Date.now();
-    const existing = state.pairedByNodeId[pending.nodeId];
+    const existing = state.pairedByNodeId[nodeKey];
     const node: NodePairingPairedNode = {
       nodeId: pending.nodeId,
       token: newToken(),
@@ -293,7 +323,7 @@ export async function approveNodePairing(
     };
 
     delete state.pendingById[requestId];
-    state.pairedByNodeId[pending.nodeId] = node;
+    state.pairedByNodeId[nodeKey] = node;
     await persistState(state, baseDir);
     return { requestId, node };
   });
@@ -304,6 +334,12 @@ export async function rejectNodePairing(
   baseDir?: string,
 ): Promise<{ requestId: string; nodeId: string } | null> {
   return await withLock(async () => {
+    // Defense-in-depth: requestId indexes pendingById via a raw key inside the
+    // shared reject helper. Reject a blocked prototype key up front so it reads
+    // as not-found, matching the helper's own missing-entry path.
+    if (isBlockedObjectKey(requestId)) {
+      return null;
+    }
     return await rejectPendingPairingRequest<
       NodePairingPendingRequest,
       NodePairingStateFile,

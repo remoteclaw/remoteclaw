@@ -183,6 +183,17 @@ const DEFAULT_REDACT_PATTERNS: string[] = [
   // the token's real last-KEEP_END chars where an absorbed suffix previously hid them; maskToken's
   // 6+4 reveal is the deliberate product policy, so this is that policy applied honestly.
   //
+  // The same exclusion has a SECOND reading that DOES cost confidentiality (unlike the benign
+  // neighbour case above): a credential value whose OWN bytes contain one of the newly-excluded
+  // delimiters (`,` `<` `>` `)` `]` `}`) is captured only UP TO that delimiter, so the remainder
+  // ships in cleartext. `password=Tr0ub4dorExtra,LongPart9876` masks to `password=***,LongPart9876`
+  // — `Tr0ub4dorExtra` is shorter than MIN_LENGTH so it collapses to `***`, and `,LongPart9876`
+  // LEAKS. It is bounded to THIS lowercase-standalone form: the URL/ENV/JSON/CLI patterns keep their
+  // own comma-admitting value classes, so the same value masks WHOLE at those positions. And no
+  // standard high-entropy credential alphabet reaches it — base64, base64url, hex, JWT, and
+  // vendor-prefixed tokens all exclude every one of `,` `<` `>` `)` `]` `}` — so the only value that
+  // leaks here is a special-char passphrase logged UNQUOTED in a lowercase `key=value` line.
+  //
   // `=` is KEPT in the class on purpose: base64 padding (`…==`) must stay INSIDE the captured value.
   // Excluding it would strand the padding in cleartext and truncate the mask.
   //

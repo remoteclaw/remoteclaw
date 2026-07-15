@@ -137,28 +137,20 @@ describe("thread binding lifecycle", () => {
     });
   };
 
-  it("includes idle and max-age details in intro text", () => {
-    const intro = resolveThreadBindingIntroText({
-      agentId: "test-agent",
-      label: "worker",
-      idleTimeoutMs: 24 * 60 * 60 * 1000,
-      maxAgeMs: 48 * 60 * 60 * 1000,
-    });
-    expect(intro).toContain("idle auto-unfocus after 24h inactivity");
-    expect(intro).toContain("max age 48h");
+  it("does not emit intro text (gutted in the RemoteClaw fork — Middleware Boundary Principle)", () => {
+    // thread-bindings-messages is intentionally gutted in the fork; the message
+    // generators return "" (see thread-bindings.messages.ts).
+    expect(
+      resolveThreadBindingIntroText({
+        agentId: "test-agent",
+        label: "worker",
+        idleTimeoutMs: 24 * 60 * 60 * 1000,
+        maxAgeMs: 48 * 60 * 60 * 1000,
+      }),
+    ).toBe("");
   });
 
-  it("includes cwd near the top of intro text", () => {
-    const intro = resolveThreadBindingIntroText({
-      agentId: "codex",
-      idleTimeoutMs: 24 * 60 * 60 * 1000,
-      sessionCwd: "/home/bob/clawd",
-      sessionDetails: ["session ids: pending (available after the first reply)"],
-    });
-    expect(intro).toContain("\ncwd: /home/bob/clawd\nsession ids: pending");
-  });
-
-  it("auto-unfocuses idle-expired bindings and sends inactivity message", async () => {
+  it("auto-unfocuses idle-expired bindings (farewell message gutted in fork)", async () => {
     vi.useFakeTimers();
     try {
       const manager = createThreadBindingManager({
@@ -181,7 +173,7 @@ describe("thread binding lifecycle", () => {
       });
       expectFields(binding, "binding", {
         threadId: "thread-1",
-        targetSessionKey: "agent:main:subagent:child",
+        targetSessionKey: "agent:test-agent:subagent:child",
       });
       hoisted.sendMessageDiscord.mockClear();
       hoisted.sendWebhookMessageDiscord.mockClear();
@@ -191,17 +183,15 @@ describe("thread binding lifecycle", () => {
       expect(manager.getByThreadId("thread-1")).toBeUndefined();
       expect(hoisted.restGet).not.toHaveBeenCalled();
       expect(hoisted.sendWebhookMessageDiscord).not.toHaveBeenCalled();
-      expect(hoisted.sendMessageDiscord).toHaveBeenCalledTimes(1);
-      const farewell = mockCallArg(hoisted.sendMessageDiscord, 0, 1, "sendMessageDiscord") as
-        | string
-        | undefined;
-      expect(farewell).toContain("after 1m of inactivity");
+      // Farewell messages are gutted in the RemoteClaw fork (Middleware Boundary
+      // Principle — thread-bindings-messages removed → empty text is not sent).
+      expect(hoisted.sendMessageDiscord).not.toHaveBeenCalled();
     } finally {
       vi.useRealTimers();
     }
   });
 
-  it("auto-unfocuses max-age-expired bindings and sends max-age message", async () => {
+  it("auto-unfocuses max-age-expired bindings (farewell message gutted in fork)", async () => {
     vi.useFakeTimers();
     try {
       const manager = createThreadBindingManager({
@@ -223,18 +213,16 @@ describe("thread binding lifecycle", () => {
       });
       expectFields(binding, "binding", {
         threadId: "thread-1",
-        targetSessionKey: "agent:main:subagent:child",
+        targetSessionKey: "agent:test-agent:subagent:child",
       });
       hoisted.sendMessageDiscord.mockClear();
 
       await vi.advanceTimersByTimeAsync(120_000);
 
       expect(manager.getByThreadId("thread-1")).toBeUndefined();
-      expect(hoisted.sendMessageDiscord).toHaveBeenCalledTimes(1);
-      const farewell = mockCallArg(hoisted.sendMessageDiscord, 0, 1, "sendMessageDiscord") as
-        | string
-        | undefined;
-      expect(farewell).toContain("max age of 1m");
+      // Farewell messages are gutted in the RemoteClaw fork (Middleware Boundary
+      // Principle — thread-bindings-messages removed → empty text is not sent).
+      expect(hoisted.sendMessageDiscord).not.toHaveBeenCalled();
     } finally {
       vi.useRealTimers();
     }
@@ -579,7 +567,7 @@ describe("thread binding lifecycle", () => {
     });
     expectFields(first, "first binding", {
       threadId: "thread-1",
-      targetSessionKey: "agent:main:subagent:child-1",
+      targetSessionKey: "agent:test-agent:subagent:child-1",
     });
     expect(hoisted.restPost).toHaveBeenCalledTimes(1);
 
@@ -632,7 +620,7 @@ describe("thread binding lifecycle", () => {
 
     expectFields(childBinding, "child binding", {
       threadId: "thread-created-2",
-      targetSessionKey: "agent:main:subagent:child-2",
+      targetSessionKey: "agent:test-agent:subagent:child-2",
     });
     expect(hoisted.createThreadDiscord).toHaveBeenCalledTimes(1);
     expect(mockCallArg(hoisted.createThreadDiscord, 0, 0, "createThreadDiscord")).toBe("parent-1");
@@ -738,7 +726,7 @@ describe("thread binding lifecycle", () => {
 
     expectFields(childBinding, "child binding", {
       threadId: "thread-created-runtime",
-      targetSessionKey: "agent:main:subagent:child-runtime",
+      targetSessionKey: "agent:test-agent:subagent:child-runtime",
     });
     const firstClientArgs = mockCallArg(
       hoisted.createDiscordRestClient,
@@ -854,7 +842,7 @@ describe("thread binding lifecycle", () => {
 
     expectFields(bound, "bound thread", {
       threadId: "thread-created-token-refresh",
-      targetSessionKey: "agent:main:subagent:token-refresh",
+      targetSessionKey: "agent:test-agent:subagent:token-refresh",
     });
     expect(mockCallArg(hoisted.createThreadDiscord, 0, 0, "createThreadDiscord")).toBe(
       "parent-runtime",

@@ -9,7 +9,7 @@ vi.mock("./client.js", () => ({
   createSlackWebClient: createSlackWebClientMock,
 }));
 
-vi.mock("remoteclaw/plugin-sdk/text-utility-runtime", () => ({
+vi.mock("../../../src/utils/with-timeout.js", () => ({
   withTimeout: withTimeoutMock,
 }));
 

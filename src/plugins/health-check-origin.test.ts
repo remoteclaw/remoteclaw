@@ -7,6 +7,7 @@ import {
 import type { RemoteClawConfig } from "../config/config.js";
 import {
   clearHealthChecksForTest,
+  getHealthCheck,
   isBundledOriginCheck,
 } from "../plugin-sdk/_health/health-check-registry.js";
 import type { HealthCheck } from "../plugin-sdk/_health/health-checks.js";
@@ -70,9 +71,10 @@ describe("api.registerHealthCheck origin marking (#2896)", () => {
     const { createApi } = createPluginRegistry(makeRegistryParams());
     const api = createApi(makeRecord({ origin: "bundled" }), { config: EMPTY_CONFIG });
 
-    api.registerHealthCheck(stubCheck("bundled/x"));
+    const check = stubCheck("bundled/x");
+    api.registerHealthCheck(check);
 
-    expect(isBundledOriginCheck("bundled/x")).toBe(true);
+    expect(isBundledOriginCheck(check)).toBe(true);
   });
 
   it("does NOT mark a check bundled-origin for a non-bundled plugin", () => {
@@ -81,9 +83,10 @@ describe("api.registerHealthCheck origin marking (#2896)", () => {
       clearHealthChecksForTest();
       const api = createApi(makeRecord({ origin }), { config: EMPTY_CONFIG });
 
-      api.registerHealthCheck(stubCheck(`${origin}/x`));
+      const check = stubCheck(`${origin}/x`);
+      api.registerHealthCheck(check);
 
-      expect(isBundledOriginCheck(`${origin}/x`)).toBe(false);
+      expect(isBundledOriginCheck(check)).toBe(false);
     }
   });
 });
@@ -107,10 +110,18 @@ describe("bundled policy ext registers as bundled-origin (#2896)", () => {
     // Mirrors extensions/policy/index.ts `register(api)`.
     registerPolicyDoctorChecks({ registerHealthCheck: (check) => api.registerHealthCheck(check) });
 
-    // The one repairable check must be bundled-origin so `doctor --fix` persists it.
-    expect(isBundledOriginCheck("policy/channels-denied-provider")).toBe(true);
+    // Resolve each id to the actual registered object (the registry stores the object
+    // registered under that id) and assert its object identity is bundled-origin. The
+    // one repairable check must be bundled-origin so `doctor --fix` persists it.
+    const repairable = getHealthCheck("policy/channels-denied-provider");
+    expect(repairable !== undefined && isBundledOriginCheck(repairable)).toBe(true);
     // ...and so must every other policy check.
-    expect(POLICY_CHECK_IDS.every((id) => isBundledOriginCheck(id))).toBe(true);
+    expect(
+      POLICY_CHECK_IDS.every((id) => {
+        const check = getHealthCheck(id);
+        return check !== undefined && isBundledOriginCheck(check);
+      }),
+    ).toBe(true);
   });
 
   it("would NOT mark the policy checks if the ext were loaded as non-bundled", () => {
@@ -119,6 +130,9 @@ describe("bundled policy ext registers as bundled-origin (#2896)", () => {
 
     registerPolicyDoctorChecks({ registerHealthCheck: (check) => api.registerHealthCheck(check) });
 
-    expect(isBundledOriginCheck("policy/channels-denied-provider")).toBe(false);
+    // Registered (so resolvable), but via the non-bundled path ⇒ not bundled-origin.
+    const repairable = getHealthCheck("policy/channels-denied-provider");
+    expect(repairable).toBeDefined();
+    expect(repairable !== undefined && isBundledOriginCheck(repairable)).toBe(false);
   });
 });

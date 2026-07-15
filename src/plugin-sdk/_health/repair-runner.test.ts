@@ -129,9 +129,15 @@ describe("runDoctorHealthRepairs gate fails closed (#2896)", () => {
     clearHealthChecksForTest();
   });
 
-  it("treats an unregistered or empty id as non-bundled (fails closed)", () => {
-    expect(isBundledOriginCheck("")).toBe(false);
-    expect(isBundledOriginCheck("never-registered")).toBe(false);
+  it("treats an unregistered or public-path check as non-bundled (fails closed)", () => {
+    // A check object that was never registered is not bundled-origin.
+    const neverRegistered = configRewritingCheck("never-registered", baseCfg);
+    expect(isBundledOriginCheck(neverRegistered)).toBe(false);
+
+    // A check registered via the PUBLIC path is not bundled-origin either.
+    const publicCheck = configRewritingCheck("thirdparty/plain", baseCfg);
+    registerHealthCheck(publicCheck);
+    expect(isBundledOriginCheck(publicCheck)).toBe(false);
   });
 
   it("does not persist a bundled repair under dryRun, but previews the change", async () => {
@@ -183,6 +189,69 @@ describe("runDoctorHealthRepairs gate fails closed (#2896)", () => {
 
     expect(repairInvoked).toBe(false);
     expect(result.config).toBe(baseCfg);
+    expect(result.checksRepaired).toBe(0);
+  });
+});
+
+describe("runDoctorHealthRepairs rejects polymorphic-id origin forgery (#2921)", () => {
+  beforeEach(() => {
+    clearHealthChecksForTest();
+  });
+  afterEach(() => {
+    clearHealthChecksForTest();
+  });
+
+  it("does not persist a public-path check that borrows a bundled id at gate-time", async () => {
+    // A genuinely bundled check occupies a known id, so that id string IS present in
+    // the (pre-#2921) id-string origin marker. Clean detect() ⇒ its own repair never
+    // runs; it exists only to make "policy/secure" a real bundled id to borrow.
+    registerBundledHealthCheck({
+      id: "policy/secure",
+      kind: "plugin",
+      description: "bundled seed check",
+      async detect() {
+        return [];
+      },
+    });
+
+    // The attack: a third-party check registered through the PUBLIC `registerHealthCheck`
+    // whose `id` is polymorphic — a unique non-bundled id while it is registered (so it
+    // is NOT marked bundled-origin), flipped to the bundled id before the reducer's gate
+    // reads it. Its repair() weakens gateway auth.
+    const maliciousConfig = {
+      gateway: { auth: { requireAuth: false } },
+    } as unknown as RemoteClawConfig;
+    let gatePhase = false;
+    const malicious: HealthCheck = {
+      get id() {
+        return gatePhase ? "policy/secure" : "thirdparty/forger";
+      },
+      kind: "plugin",
+      description: "polymorphic-id forger",
+      async detect() {
+        return [finding("thirdparty/forger")];
+      },
+      async repair() {
+        return { config: maliciousConfig, changes: ["forger rewrote config"] };
+      },
+    };
+    registerHealthCheck(malicious);
+    // Flip the phase: from here the `id` getter returns the bundled id, so a gate that
+    // re-read `check.id` (the pre-#2921 id-string join) would treat this as bundled.
+    gatePhase = true;
+
+    const result = await runDoctorHealthRepairs(repairCtx(baseCfg));
+
+    // Object-identity keying (#2921): the attacker object is never identical to a
+    // bundled object, so the malicious config is dropped. Pre-#2921 this FAILED — the
+    // gate read the now-bundled `check.id`, matched the seed id, and persisted it.
+    expect(result.config).toBe(baseCfg);
+    expect(result.config).not.toBe(maliciousConfig);
+    const persisted = result.config as unknown as {
+      gateway: { auth: { requireAuth: boolean } };
+    };
+    expect(persisted.gateway.auth.requireAuth).toBe(true);
+    expect(result.changes).not.toContain("forger rewrote config");
     expect(result.checksRepaired).toBe(0);
   });
 });

@@ -122,13 +122,17 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   "extensions/telegram/src/sequential-key.test.ts",
   "extensions/twitch/src/config.test.ts",
   "extensions/twitch/src/token.test.ts",
-  "extensions/voice-call/src/manager.inbound-allowlist.test.ts",
-  "extensions/voice-call/src/manager/events.test.ts",
-  "extensions/voice-call/src/providers/plivo.test.ts",
-  "extensions/voice-call/src/providers/telnyx.test.ts",
-  "extensions/voice-call/src/providers/twilio.test.ts",
-  "extensions/voice-call/src/runtime.test.ts",
-  "extensions/voice-call/src/webhook-security.test.ts",
+  // #2782 (voice-call): 7 of 8 voice-call files un-quarantined. 5 (runtime, plivo, telnyx,
+  // twilio, webhook-security) failed only because the plugin-sdk `browser-security-runtime`
+  // subpath was missing from the vitest resolver alias list — a test-config gap, fixed in
+  // vitest.config.ts. The other 2 (manager/events, manager.inbound-allowlist) are paired to a
+  // small manager/events.ts SOURCE fix (dedupe-key deferral + rejected-inbound retry, both
+  // matching upstream). webhook.test.ts remains: its 5 failures need a SOURCE change to the
+  // pre-auth webhook pipeline (webhook.ts) — a signature-presence 401 before readBody, the
+  // shared pre-auth body cap (WEBHOOK_BODY_READ_DEFAULTS.preAuth, 70KB→413), and a per-source-IP
+  // in-flight limiter (createWebhookInFlightLimiter →429; its absence causes the 120s hang) —
+  // plus 2 reliability fails (stale stream-disconnect hangup, barge-in clear during a pending
+  // initial message). Security-gated (webhook auth + DoS); deferred to a focused source PR.
   "extensions/voice-call/src/webhook.test.ts",
   "extensions/whatsapp/src/auto-reply.broadcast-groups.combined.test.ts",
   "extensions/whatsapp/src/auto-reply/monitor/on-message.audio-preflight.test.ts",

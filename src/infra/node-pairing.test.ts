@@ -341,6 +341,30 @@ describe("node pairing prototype-key hardening", () => {
     expect(({} as Record<string, unknown>).nodeId).toBeUndefined();
   });
 
+  test("drops the empty-string own-key from a corrupted paired-node state file on load", async () => {
+    const baseDir = await mkdtemp(join(tmpdir(), "remoteclaw-node-pairing-"));
+    const { dir, pairedPath } = resolvePairingPaths(baseDir, "nodes");
+    await mkdir(dir, { recursive: true });
+    // A corrupted/hostile state file carrying a literal empty-string own-key.
+    // normalizeNodeId maps every blocked id (e.g. "__proto__") to "", so if this
+    // "" entry survived load, pairedByNodeId[""] would resolve to it and a
+    // blocked-key lookup would return the attacker-planted node and its token.
+    // toSafeRecord's `!key` drop closes that: the "" key never lands in the map.
+    const entries = [
+      `"node-1":${JSON.stringify({ nodeId: "node-1", token: "t".repeat(43), createdAtMs: 1, approvedAtMs: 2 })}`,
+      `"":${JSON.stringify({ nodeId: "", token: "planted-empty-key-token", createdAtMs: 0, approvedAtMs: 0 })}`,
+    ];
+    await writeFile(pairedPath, `{${entries.join(",")}}`, "utf8");
+
+    // The legit node survives; the "" entry is dropped on load.
+    const listed = await listNodePairing(baseDir);
+    expect(listed.paired.map((node) => node.nodeId)).toEqual(["node-1"]);
+    // A blocked-key lookup (normalizes to "") and a literal "" lookup must both
+    // miss — no path can resolve to the planted "" entry.
+    await expect(getPairedNode("__proto__", baseDir)).resolves.toBeNull();
+    await expect(getPairedNode("", baseDir)).resolves.toBeNull();
+  });
+
   test("loads pairing maps as null-prototype objects (positional invariant tripwire)", async () => {
     const baseDir = await mkdtemp(join(tmpdir(), "remoteclaw-node-pairing-"));
     const state = await loadNodePairingStateForTest(baseDir);

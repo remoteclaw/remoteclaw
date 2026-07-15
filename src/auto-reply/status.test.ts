@@ -172,7 +172,8 @@ describe("buildHelpMessage", () => {
       commands: { config: false, debug: false },
     } as unknown as RemoteClawConfig);
     expect(text).toContain("Session");
-    expect(text).toContain("/skill <name> [input]");
+    expect(text).toContain("Options");
+    expect(text).toContain("/verbose on|off");
     expect(text).not.toContain("/config");
     expect(text).not.toContain("/debug");
   });
@@ -188,7 +189,7 @@ describe("buildCommandsMessagePaginated", () => {
     );
     expect(result.text).toContain("ℹ️ Commands (1/");
     expect(result.text).toContain("Session");
-    expect(result.text).toContain("/stop - Stop the current run.");
+    expect(result.text).toContain("/reset - Reset the current session.");
   });
 
   it("includes plugin commands in the paginated list", () => {

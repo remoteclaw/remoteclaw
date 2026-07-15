@@ -106,7 +106,7 @@ describe("handleCommands gating", () => {
         commandBody: "/config show",
         makeCfg: () =>
           ({
-            commands: { config: false, debug: false, text: true },
+            commands: { config: false, debug: false, text: true, ownerAllowFrom: ["*"] },
             channels: { whatsapp: { allowFrom: ["*"] } },
           }) as RemoteClawConfig,
         expectedText: "/config is disabled",
@@ -116,7 +116,7 @@ describe("handleCommands gating", () => {
         commandBody: "/debug show",
         makeCfg: () =>
           ({
-            commands: { config: false, debug: false, text: true },
+            commands: { config: false, debug: false, text: true, ownerAllowFrom: ["*"] },
             channels: { whatsapp: { allowFrom: ["*"] } },
           }) as RemoteClawConfig,
         expectedText: "/debug is disabled",
@@ -130,6 +130,9 @@ describe("handleCommands gating", () => {
             config: true,
             debug: true,
           }) as Record<string, unknown>;
+          // Authorize the sender (own property) so the command reaches the gate; the
+          // config/debug flags stay inherited to prove prototype flags do not enable.
+          inheritedCommands.ownerAllowFrom = ["*"];
           return {
             commands: inheritedCommands as never,
             channels: { whatsapp: { allowFrom: ["*"] } },
@@ -146,6 +149,9 @@ describe("handleCommands gating", () => {
             config: true,
             debug: true,
           }) as Record<string, unknown>;
+          // Authorize the sender (own property) so the command reaches the gate; the
+          // config/debug flags stay inherited to prove prototype flags do not enable.
+          inheritedCommands.ownerAllowFrom = ["*"];
           return {
             commands: inheritedCommands as never,
             channels: { whatsapp: { allowFrom: ["*"] } },
@@ -239,8 +245,8 @@ describe("extractMessageText", () => {
       },
       {
         message: { role: "assistant", content: "Here [Tool Call: foo (ID: 1)] ok" },
-        // stripDowngradedToolCallText gutted to no-op in RemoteClaw fork
-        expectedText: "Here [Tool Call: foo (ID: 1)] ok",
+        // assistant text is sanitized: stripDowngradedToolCallText strips the [Tool Call: ...] marker
+        expectedText: "Here ok",
       },
     ] as const;
 
@@ -254,7 +260,7 @@ describe("extractMessageText", () => {
 describe("handleCommands /config configWrites gating", () => {
   it("blocks /config set when channel config writes are disabled", async () => {
     const cfg = {
-      commands: { config: true, text: true },
+      commands: { config: true, text: true, ownerAllowFrom: ["*"] },
       channels: { whatsapp: { allowFrom: ["*"], configWrites: false } },
     } as RemoteClawConfig;
     const params = buildParams('/config set messages.ackReaction=":)"', cfg);
@@ -359,6 +365,7 @@ describe("handleCommands /allowlist", () => {
     expect(addChannelAllowFromStoreEntryMock).toHaveBeenCalledWith({
       channel: "telegram",
       entry: "789",
+      accountId: "default",
     });
     expect(result.reply?.text).toContain("DM allowlist added");
   });
@@ -453,7 +460,7 @@ describe("handleCommands plugin commands", () => {
     expect(result.ok).toBe(true);
 
     const cfg = {
-      commands: { text: true },
+      commands: { text: true, ownerAllowFrom: ["*"] },
       channels: { whatsapp: { allowFrom: ["*"] } },
     } as RemoteClawConfig;
     const params = buildParams("/card", cfg);
@@ -468,7 +475,7 @@ describe("handleCommands plugin commands", () => {
 describe("handleCommands identity", () => {
   it("returns sender details for /whoami", async () => {
     const cfg = {
-      commands: { text: true },
+      commands: { text: true, ownerAllowFrom: ["*"] },
       channels: { whatsapp: { allowFrom: ["*"] } },
     } as RemoteClawConfig;
     const params = buildParams("/whoami", cfg, {
@@ -488,7 +495,7 @@ describe("handleCommands identity", () => {
 describe("handleCommands hooks", () => {
   it("triggers hooks for /new with arguments", async () => {
     const cfg = {
-      commands: { text: true },
+      commands: { text: true, ownerAllowFrom: ["*"] },
       channels: { whatsapp: { allowFrom: ["*"] } },
     } as RemoteClawConfig;
     const params = buildParams("/new take notes", cfg);
@@ -540,7 +547,7 @@ describe("handleCommands subagents", () => {
 
   it("lists subagents when none exist", async () => {
     const cfg = {
-      commands: { text: true },
+      commands: { text: true, ownerAllowFrom: ["*"] },
       channels: { whatsapp: { allowFrom: ["*"] } },
     } as RemoteClawConfig;
     const params = buildParams("/subagents list", cfg);
@@ -565,7 +572,7 @@ describe("handleCommands subagents", () => {
       startedAt: 1000,
     });
     const cfg = {
-      commands: { text: true },
+      commands: { text: true, ownerAllowFrom: ["*"] },
       channels: { whatsapp: { allowFrom: ["*"] } },
     } as RemoteClawConfig;
     const params = buildParams("/subagents list", cfg);
@@ -578,12 +585,16 @@ describe("handleCommands subagents", () => {
     expect(result.reply?.text).not.toContain("after a short hard cutoff.");
   });
 
-  it("lists subagents for the current command session over the target session", async () => {
+  it("prefers the command target session over the current command session for native commands", async () => {
+    // Native commands carry an explicit CommandTargetSessionKey and resolve the
+    // subagent requester to it: resolveRequesterSessionKey's preferCommandTarget
+    // defaults to CommandSource === "native" (upstream sync #2298). So the target
+    // session's subagents are listed, not the current command session's.
     addSubagentRunForTests({
       runId: "run-1",
       childSessionKey: "agent:main:subagent:abc",
-      requesterSessionKey: "agent:main:slack:slash:u1",
-      requesterDisplayKey: "agent:main:slack:slash:u1",
+      requesterSessionKey: "agent:main:main",
+      requesterDisplayKey: "agent:main:main",
       task: "do thing",
       cleanup: "keep",
       createdAt: 1000,
@@ -600,7 +611,7 @@ describe("handleCommands subagents", () => {
       startedAt: 2000,
     });
     const cfg = {
-      commands: { text: true },
+      commands: { text: true, ownerAllowFrom: ["*"] },
       channels: { whatsapp: { allowFrom: ["*"] } },
     } as RemoteClawConfig;
     const params = buildParams("/subagents list", cfg, {
@@ -611,8 +622,9 @@ describe("handleCommands subagents", () => {
     const result = await handleCommands(params);
     expect(result.shouldContinue).toBe(false);
     expect(result.reply?.text).toContain("active subagents:");
+    // Target session's subagent is listed; the current command session's is not.
     expect(result.reply?.text).toContain("do thing");
-    expect(result.reply?.text).not.toContain("\n\n2.");
+    expect(result.reply?.text).not.toContain("another thing");
   });
 
   it("formats subagent usage with io and prompt/cache breakdown", async () => {
@@ -638,7 +650,7 @@ describe("handleCommands subagents", () => {
       };
     });
     const cfg = {
-      commands: { text: true },
+      commands: { text: true, ownerAllowFrom: ["*"] },
       channels: { whatsapp: { allowFrom: ["*"] } },
       session: { store: storePath },
     } as RemoteClawConfig;
@@ -709,7 +721,7 @@ describe("handleCommands subagents", () => {
   ])("$name", async ({ seedRuns, verboseLevel, expectedText, unexpectedText }) => {
     seedRuns();
     const cfg = {
-      commands: { text: true },
+      commands: { text: true, ownerAllowFrom: ["*"] },
       channels: { whatsapp: { allowFrom: ["*"] } },
       session: { mainKey: "main", scope: "per-sender" },
     } as RemoteClawConfig;
@@ -729,7 +741,7 @@ describe("handleCommands subagents", () => {
 
   it("returns help/usage for invalid or incomplete subagents commands", async () => {
     const cfg = {
-      commands: { text: true },
+      commands: { text: true, ownerAllowFrom: ["*"] },
       channels: { whatsapp: { allowFrom: ["*"] } },
     } as RemoteClawConfig;
     const cases = [
@@ -759,7 +771,7 @@ describe("handleCommands subagents", () => {
       outcome: { status: "ok" },
     });
     const cfg = {
-      commands: { text: true },
+      commands: { text: true, ownerAllowFrom: ["*"] },
       channels: { whatsapp: { allowFrom: ["*"] } },
       session: { mainKey: "main", scope: "per-sender" },
     } as RemoteClawConfig;
@@ -783,7 +795,7 @@ describe("handleCommands subagents", () => {
       startedAt: 1000,
     });
     const cfg = {
-      commands: { text: true },
+      commands: { text: true, ownerAllowFrom: ["*"] },
       channels: { whatsapp: { allowFrom: ["*"] } },
     } as RemoteClawConfig;
     const params = buildParams("/kill 1", cfg);
@@ -817,7 +829,7 @@ describe("handleCommands subagents", () => {
       outcome: { status: "ok" },
     });
     const cfg = {
-      commands: { text: true },
+      commands: { text: true, ownerAllowFrom: ["*"] },
       channels: { whatsapp: { allowFrom: ["*"] } },
     } as RemoteClawConfig;
     const params = buildParams("/kill 1", cfg);
@@ -854,7 +866,7 @@ describe("handleCommands subagents", () => {
       outcome: { status: "ok" },
     });
     const cfg = {
-      commands: { text: true },
+      commands: { text: true, ownerAllowFrom: ["*"] },
       channels: { whatsapp: { allowFrom: ["*"] } },
     } as RemoteClawConfig;
     const params = buildParams("/subagents send 1 continue with follow-up details", cfg);
@@ -909,7 +921,7 @@ describe("handleCommands subagents", () => {
       startedAt: 1000,
     });
     const cfg = {
-      commands: { text: true },
+      commands: { text: true, ownerAllowFrom: ["*"] },
       channels: { whatsapp: { allowFrom: ["*"] } },
       session: { store: storePath },
     } as RemoteClawConfig;
@@ -969,7 +981,7 @@ describe("handleCommands subagents", () => {
       startedAt: 1000,
     });
     const cfg = {
-      commands: { text: true },
+      commands: { text: true, ownerAllowFrom: ["*"] },
       channels: { whatsapp: { allowFrom: ["*"] } },
     } as RemoteClawConfig;
     const params = buildParams("/steer 1 check timer.ts instead", cfg);
@@ -987,7 +999,7 @@ describe("handleCommands subagents", () => {
 describe("handleCommands /tts", () => {
   it("returns status for bare /tts on text command surfaces", async () => {
     const cfg = {
-      commands: { text: true },
+      commands: { text: true, ownerAllowFrom: ["*"] },
       channels: { whatsapp: { allowFrom: ["*"] } },
       messages: { tts: { prefsPath: path.join(testWorkspaceDir, "tts.json") } },
     } as RemoteClawConfig;

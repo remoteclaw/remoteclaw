@@ -175,6 +175,7 @@ describe("runReplyAgent onAgentRunStart", () => {
       summaryLine: "hello",
       enqueuedAt: Date.now(),
       run: {
+        agentId: "test-agent",
         sessionId: "session",
         sessionKey: "test-agent",
         messageProvider: "webchat",
@@ -429,6 +430,7 @@ describe("runReplyAgent block streaming", () => {
       summaryLine: "hello",
       enqueuedAt: Date.now(),
       run: {
+        agentId: "test-agent",
         sessionId: "session",
         sessionKey: "test-agent",
         messageProvider: "discord",
@@ -521,6 +523,7 @@ describe("runReplyAgent block streaming", () => {
       summaryLine: "hello",
       enqueuedAt: Date.now(),
       run: {
+        agentId: "test-agent",
         sessionId: "session",
         sessionKey: "test-agent",
         messageProvider: "discord",
@@ -594,6 +597,7 @@ describe("runReplyAgent claude-cli routing", () => {
       summaryLine: "hello",
       enqueuedAt: Date.now(),
       run: {
+        agentId: "test-agent",
         sessionId: "session",
         sessionKey: "test-agent",
         messageProvider: "webchat",
@@ -677,6 +681,7 @@ describe("runReplyAgent messaging tool suppression", () => {
       summaryLine: "hello",
       enqueuedAt: Date.now(),
       run: {
+        agentId: "test-agent",
         sessionId: "session",
         sessionKey,
         messageProvider,
@@ -1060,6 +1065,7 @@ describe("runReplyAgent reminder commitment guard", () => {
       summaryLine: "hello",
       enqueuedAt: Date.now(),
       run: {
+        agentId: "test-agent",
         sessionId: "session",
         sessionKey: "test-agent",
         messageProvider: "telegram",
@@ -1237,6 +1243,7 @@ describe("runReplyAgent transient HTTP retry", () => {
       summaryLine: "hello",
       enqueuedAt: Date.now(),
       run: {
+        agentId: "test-agent",
         sessionId: "session",
         sessionKey: "test-agent",
         messageProvider: "telegram",

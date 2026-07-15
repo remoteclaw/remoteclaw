@@ -2,6 +2,9 @@ import type { RemoteClawConfig, PluginRuntime, RuntimeEnv } from "remoteclaw/plu
 import { describe, expect, it, vi } from "vitest";
 import type { MSTeamsMessageHandlerDeps } from "../monitor-handler.js";
 import { setMSTeamsRuntime } from "../runtime.js";
+// Mocks the agent-dispatch + reply-dispatcher module surface so the authorized
+// message path runs to completion without a real dispatch.
+import "./message-handler-mock-support.test-support.js";
 import { createMSTeamsMessageHandler } from "./message-handler.js";
 
 describe("msteams monitor handler authz", () => {
@@ -32,6 +35,23 @@ describe("msteams monitor handler authz", () => {
         text: {
           hasControlCommand: () => false,
         },
+        routing: {
+          resolveAgentRoute: ({ peer }: { peer: { kind: string; id: string } }) => ({
+            sessionKey: `msteams:${peer.kind}:${peer.id}`,
+            agentId: "default",
+            accountId: "default",
+          }),
+        },
+        reply: {
+          formatAgentEnvelope: ({ body }: { body: string }) => body,
+          finalizeInboundContext: <T>(ctx: T): T => ctx,
+        },
+        session: {
+          recordInboundSession: vi.fn(async () => undefined),
+        },
+      },
+      system: {
+        enqueueSystemEvent: vi.fn(),
       },
     } as unknown as PluginRuntime);
 

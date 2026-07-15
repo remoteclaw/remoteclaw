@@ -24,17 +24,17 @@ type DeliverWithParams = Omit<
   Partial<Pick<DeliverRepliesParams, "replyToMode" | "textLimit">>;
 type RuntimeStub = Pick<RuntimeEnv, "error" | "log" | "exit">;
 
-vi.mock("../../web/media.js", () => ({
+vi.mock("../../../whatsapp/src/media.js", () => ({
   loadWebMedia: (...args: unknown[]) => loadWebMedia(...args),
 }));
 
-vi.mock("../../plugins/hook-runner-global.js", () => ({
+vi.mock("../../../../src/plugins/hook-runner-global.js", () => ({
   getGlobalHookRunner: () => messageHookRunner,
 }));
 
-vi.mock("../../hooks/internal-hooks.js", async () => {
+vi.mock("../../../../src/hooks/internal-hooks.js", async () => {
   const actual = await vi.importActual<typeof import("../../../../src/hooks/internal-hooks.js")>(
-    "../../hooks/internal-hooks.js",
+    "../../../../src/hooks/internal-hooks.js",
   );
   return {
     ...actual,
@@ -473,23 +473,24 @@ describe("deliverReplies", () => {
     expectRecordFields(mockCallArg(sendMessage, 0, 2), { message_thread_id: 42 });
   });
 
-  it("does not retry DM topic sends without the topic id when the topic is missing", async () => {
+  it("retries DM topic sends without the message_thread_id when the topic is missing", async () => {
     const runtime = createRuntime();
-    const sendMessage = vi.fn().mockRejectedValueOnce(createThreadNotFoundError("sendMessage"));
+    const sendMessage = vi
+      .fn()
+      .mockRejectedValueOnce(createThreadNotFoundError("sendMessage"))
+      .mockResolvedValueOnce({ message_id: 4, chat: { id: "123" } });
     const bot = createBot({ sendMessage });
 
-    await expect(
-      deliverWith({
-        replies: [{ text: "hello" }],
-        runtime,
-        bot,
-        thread: { id: 42, scope: "dm" },
-      }),
-    ).rejects.toThrow("message thread not found");
+    await deliverWith({
+      replies: [{ text: "hello" }],
+      runtime,
+      bot,
+      thread: { id: 42, scope: "dm" },
+    });
 
-    expect(sendMessage).toHaveBeenCalledTimes(1);
+    expect(sendMessage).toHaveBeenCalledTimes(2);
     expectRecordFields(sendMessage.mock.calls[0]?.[2], { message_thread_id: 42 });
-    expect(runtime.error).toHaveBeenCalledTimes(1);
+    expect(sendMessage.mock.calls[1]?.[2]).not.toHaveProperty("message_thread_id");
   });
 
   it("does not retry forum sends without message_thread_id", async () => {
@@ -512,23 +513,24 @@ describe("deliverReplies", () => {
 
   it("retries media sends without message_thread_id for DM topics", async () => {
     const runtime = createRuntime();
-    const sendPhoto = vi.fn().mockRejectedValueOnce(createThreadNotFoundError("sendPhoto"));
+    const sendPhoto = vi
+      .fn()
+      .mockRejectedValueOnce(createThreadNotFoundError("sendPhoto"))
+      .mockResolvedValueOnce({ message_id: 5, chat: { id: "123" } });
     const bot = createBot({ sendPhoto });
 
     mockMediaLoad("photo.jpg", "image/jpeg", "image");
 
-    await expect(
-      deliverWith({
-        replies: [{ mediaUrl: "https://example.com/photo.jpg", text: "caption" }],
-        runtime,
-        bot,
-        thread: { id: 42, scope: "dm" },
-      }),
-    ).rejects.toThrow("message thread not found");
+    await deliverWith({
+      replies: [{ mediaUrl: "https://example.com/photo.jpg", text: "caption" }],
+      runtime,
+      bot,
+      thread: { id: 42, scope: "dm" },
+    });
 
-    expect(sendPhoto).toHaveBeenCalledTimes(1);
+    expect(sendPhoto).toHaveBeenCalledTimes(2);
     expectRecordFields(sendPhoto.mock.calls[0]?.[2], { message_thread_id: 42 });
-    expect(runtime.error).toHaveBeenCalledTimes(1);
+    expect(sendPhoto.mock.calls[1]?.[2]).not.toHaveProperty("message_thread_id");
   });
 
   it("does not include link_preview_options when linkPreview is true", async () => {

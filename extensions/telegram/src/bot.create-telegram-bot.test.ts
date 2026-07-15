@@ -238,7 +238,7 @@ describe("createTelegramBot", () => {
         expect(pairingText, testCase.name).toContain(
           "remoteclaw pairing approve telegram PAIRME12",
         );
-        expect(pairingText, testCase.name).not.toContain("<code>");
+        expect(pairingText, testCase.name).toContain("<pre><code>");
       }
     }
   });
@@ -782,6 +782,7 @@ describe("createTelegramBot", () => {
             opie: {
               botToken: "tok-opie",
               dmPolicy: "open",
+              allowFrom: ["*"],
             },
           },
         },
@@ -823,6 +824,7 @@ describe("createTelegramBot", () => {
             opie: {
               botToken: "tok-opie",
               dmPolicy: "open",
+              allowFrom: ["*"],
             },
           },
         },
@@ -1780,6 +1782,7 @@ describe("createTelegramBot", () => {
     replySpy.mockResolvedValue({ text: "response" });
 
     loadConfig.mockReturnValue({
+      agents: { list: [{ id: "main" }] },
       commands: { native: true },
       channels: {
         telegram: {
@@ -1813,6 +1816,7 @@ describe("createTelegramBot", () => {
     });
 
     loadConfig.mockReturnValue({
+      agents: { list: [{ id: "main" }] },
       commands: { native: true },
       channels: {
         telegram: {

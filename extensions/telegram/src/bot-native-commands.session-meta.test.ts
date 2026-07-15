@@ -34,7 +34,7 @@ const sessionBindingMocks = vi.hoisted(() => ({
   touch: vi.fn(),
 }));
 
-vi.mock("../acp/persistent-bindings.js", async (importOriginal) => {
+vi.mock("../../../src/acp/persistent-bindings.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../src/acp/persistent-bindings.js")>();
   return {
     ...actual,
@@ -42,23 +42,23 @@ vi.mock("../acp/persistent-bindings.js", async (importOriginal) => {
     ensureConfiguredAcpBindingSession: persistentBindingMocks.ensureConfiguredAcpBindingSession,
   };
 });
-vi.mock("../config/sessions.js", () => ({
+vi.mock("../../../src/config/sessions.js", () => ({
   recordSessionMetaFromInbound: sessionMocks.recordSessionMetaFromInbound,
   resolveStorePath: sessionMocks.resolveStorePath,
 }));
-vi.mock("../pairing/pairing-store.js", () => ({
+vi.mock("../../../src/pairing/pairing-store.js", () => ({
   readChannelAllowFromStore: vi.fn(async () => []),
 }));
-vi.mock("../auto-reply/reply/inbound-context.js", () => ({
+vi.mock("../../../src/auto-reply/reply/inbound-context.js", () => ({
   finalizeInboundContext: vi.fn((ctx: unknown) => ctx),
 }));
-vi.mock("../auto-reply/reply/provider-dispatcher.js", () => ({
+vi.mock("../../../src/auto-reply/reply/provider-dispatcher.js", () => ({
   dispatchReplyWithBufferedBlockDispatcher: replyMocks.dispatchReplyWithBufferedBlockDispatcher,
 }));
-vi.mock("../channels/reply-prefix.js", () => ({
+vi.mock("../../../src/channels/reply-prefix.js", () => ({
   createReplyPrefixOptions: vi.fn(() => ({ onModelSelected: () => {} })),
 }));
-vi.mock("../infra/outbound/session-binding-service.js", () => ({
+vi.mock("../../../src/infra/outbound/session-binding-service.js", () => ({
   getSessionBindingService: () => ({
     bind: vi.fn(),
     getCapabilities: vi.fn(),
@@ -68,7 +68,7 @@ vi.mock("../infra/outbound/session-binding-service.js", () => ({
     unbind: vi.fn(),
   }),
 }));
-vi.mock("../plugins/commands.js", () => ({
+vi.mock("../../../src/plugins/commands.js", () => ({
   getPluginCommandSpecs: vi.fn(() => []),
   matchPluginCommand: vi.fn(() => null),
   executePluginCommand: vi.fn(async () => ({ text: "ok" })),
@@ -323,7 +323,7 @@ describe("registerTelegramNativeCommands — session metadata", () => {
   });
 
   it("calls recordSessionMetaFromInbound after a native slash command", async () => {
-    const cfg: RemoteClawConfig = {};
+    const cfg: RemoteClawConfig = { agents: { list: [{ id: "main", default: true }] } };
     const { handler } = registerAndResolveStatusHandler({ cfg });
     await handler(buildStatusCommandContext());
 
@@ -342,7 +342,7 @@ describe("registerTelegramNativeCommands — session metadata", () => {
     const deferred = createDeferred<void>();
     sessionMocks.recordSessionMetaFromInbound.mockReturnValue(deferred.promise);
 
-    const cfg: RemoteClawConfig = {};
+    const cfg: RemoteClawConfig = { agents: { list: [{ id: "main", default: true }] } };
     const { handler } = registerAndResolveStatusHandler({ cfg });
     const runPromise = handler(buildStatusCommandContext());
 
@@ -368,7 +368,7 @@ describe("registerTelegramNativeCommands — session metadata", () => {
     });
 
     const { handler } = registerAndResolveStatusHandler({
-      cfg: {},
+      cfg: { agents: { list: [{ id: "main", default: true }] } },
       allowFrom: ["200"],
       groupAllowFrom: ["200"],
     });
@@ -392,7 +392,7 @@ describe("registerTelegramNativeCommands — session metadata", () => {
 
   it("routes Telegram native commands through topic-specific agent sessions", async () => {
     const { handler } = registerAndResolveStatusHandler({
-      cfg: {},
+      cfg: { agents: { list: [{ id: "main", default: true }] } },
       allowFrom: ["200"],
       groupAllowFrom: ["200"],
       resolveTelegramGroupConfig: () => ({
@@ -419,7 +419,7 @@ describe("registerTelegramNativeCommands — session metadata", () => {
     });
 
     const { handler } = registerAndResolveStatusHandler({
-      cfg: {},
+      cfg: { agents: { list: [{ id: "main", default: true }] } },
       allowFrom: ["200"],
       groupAllowFrom: ["200"],
     });
@@ -454,7 +454,7 @@ describe("registerTelegramNativeCommands — session metadata", () => {
     });
 
     const { handler, sendMessage } = registerAndResolveStatusHandler({
-      cfg: {},
+      cfg: { agents: { list: [{ id: "main", default: true }] } },
       allowFrom: ["200"],
       groupAllowFrom: ["200"],
     });

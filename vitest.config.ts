@@ -77,6 +77,8 @@ const pluginSdkSubpaths = [
   "ssrf-policy",
   "temp-path",
   "dangerous-name-runtime",
+  "webhook-request-guards",
+  "webhook-targets",
 ] as const;
 
 export default defineConfig({

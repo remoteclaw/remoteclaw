@@ -73,6 +73,8 @@ const pluginSdkSubpaths = [
   "routing",
   "runtime-config-snapshot",
   "secret-ref-runtime",
+  "temp-path",
+  "dangerous-name-runtime",
 ] as const;
 
 export default defineConfig({

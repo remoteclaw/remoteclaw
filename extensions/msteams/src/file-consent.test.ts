@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { uploadToConsentUrl } from "./file-consent.js";
 
 describe("uploadToConsentUrl", () => {
-  it("sends the RemoteClaw User-Agent header with consent uploads", async () => {
+  it("PUTs the buffer to the consent URL with content-range and content-type headers", async () => {
     const fetchFn = vi.fn<typeof fetch>(async () => new Response(null, { status: 200 }));
 
     await uploadToConsentUrl({
@@ -18,8 +18,8 @@ describe("uploadToConsentUrl", () => {
         headers: expect.objectContaining({
           "Content-Range": "bytes 0-4/5",
           "Content-Type": "application/octet-stream",
-          "User-Agent": expect.stringMatching(/^teams\.ts\[apps\]\/.+ RemoteClaw\/.+$/),
         }),
+        body: new Uint8Array(Buffer.from("hello")),
       }),
     );
   });

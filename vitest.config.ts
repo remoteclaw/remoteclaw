@@ -73,6 +73,7 @@ const pluginSdkSubpaths = [
   "routing",
   "runtime-config-snapshot",
   "secret-ref-runtime",
+  "ssrf-policy",
   "temp-path",
   "dangerous-name-runtime",
 ] as const;

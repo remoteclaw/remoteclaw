@@ -42,7 +42,9 @@ export function createDiscordActionGate(params: {
   cfg: RemoteClawConfig;
   accountId?: string | null;
 }): (key: keyof DiscordActionConfig, defaultValue?: boolean) => boolean {
-  const accountId = normalizeAccountId(params.accountId);
+  const accountId = normalizeAccountId(
+    params.accountId ?? resolveDefaultDiscordAccountId(params.cfg),
+  );
   return createAccountActionGate({
     baseActions: params.cfg.channels?.discord?.actions,
     accountActions: resolveDiscordAccountConfig(params.cfg, accountId)?.actions,
@@ -53,7 +55,9 @@ export function resolveDiscordAccount(params: {
   cfg: RemoteClawConfig;
   accountId?: string | null;
 }): ResolvedDiscordAccount {
-  const accountId = normalizeAccountId(params.accountId);
+  const accountId = normalizeAccountId(
+    params.accountId ?? resolveDefaultDiscordAccountId(params.cfg),
+  );
   const baseEnabled = params.cfg.channels?.discord?.enabled !== false;
   const merged = mergeDiscordAccountConfig(params.cfg, accountId);
   const accountEnabled = merged.enabled !== false;

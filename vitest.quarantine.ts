@@ -47,20 +47,15 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   "extensions/bluebubbles/src/attachments.test.ts",
   "extensions/bluebubbles/src/monitor-normalize.test.ts",
   "extensions/diagnostics-otel/src/service.test.ts",
-  "extensions/discord/src/accounts.test.ts",
-  "extensions/discord/src/gateway-logging.test.ts",
   "extensions/discord/src/monitor.test.ts",
   "extensions/discord/src/monitor.tool-result.sends-status-replies-responseprefix.test.ts",
   "extensions/discord/src/monitor/auto-presence.test.ts",
-  "extensions/discord/src/monitor/listeners.test.ts",
   "extensions/discord/src/monitor/message-handler.preflight.test.ts",
-  "extensions/discord/src/monitor/message-handler.process.test.ts",
   "extensions/discord/src/monitor/message-handler.queue.test.ts",
   "extensions/discord/src/monitor/message-utils.test.ts",
   "extensions/discord/src/monitor/native-command.commands-allowfrom.test.ts",
   "extensions/discord/src/monitor/provider.proxy.test.ts",
   "extensions/discord/src/monitor/provider.rest-proxy.test.ts",
-  "extensions/discord/src/monitor/thread-bindings.lifecycle.test.ts",
   "extensions/discord/src/monitor/threading.starter.test.ts",
   "extensions/discord/src/voice-message.test.ts",
   // #2782 (feishu): media/monitor.reaction/send.reply-fallback remain — each needs a
@@ -127,11 +122,14 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   "extensions/zalo/runtime-api.test.ts",
   "extensions/zalo/src/monitor.webhook.test.ts",
   "extensions/zalo/src/token.test.ts",
-  "extensions/zalouser/src/channel.directory.test.ts",
-  "extensions/zalouser/src/channel.sendpayload.test.ts",
-  "extensions/zalouser/src/channel.test.ts",
-  "extensions/zalouser/src/monitor.group-gating.test.ts",
-  "extensions/zalouser/src/security-audit.test.ts",
+  // #2782 (zalouser): channel.directory + security-audit un-quarantined (they passed once the
+  // `temp-path` + `dangerous-name-runtime` plugin-sdk subpaths — imported by zalouser source via
+  // the bare `remoteclaw/plugin-sdk/*` specifier — were added to the vitest.config.ts resolve-alias
+  // mirror; a test-harness resolution gap, not a product-source change). The 3 below stay: each
+  // needs a SOURCE change to the outbound / DM-routing / authz paths (see PR for details).
+  "extensions/zalouser/src/channel.sendpayload.test.ts", // #2782: SOURCE regression — channel.ts outbound (sendText/sendPayload) never passes textMode:"markdown" + resolved textChunkMode/textChunkLimit, and double-chunks long text at the sendPayload layer instead of passing through once (send.ts already implements passthrough markdown chunking; the caller wiring was lost)
+  "extensions/zalouser/src/channel.test.ts", // #2782: SOURCE regression — same root as channel.sendpayload: channel.ts sendText omits textMode/textChunkMode/textChunkLimit
+  "extensions/zalouser/src/monitor.group-gating.test.ts", // #2782: 3 SOURCE regressions — (a) deliverZalouserReply outer-chunks + omits textMode/chunk opts (same passthrough root); (b) open-policy non-command DMs are dropped before dispatch (resolveAgentRoute never reached); (c) SECURITY: monitor.ts processMessage group-match (~L321) omits allowNameMatching, so a mutable group NAME always matches config entries → group-allowlist bypass by name impersonation even without dangerouslyAllowNameMatching — needs a security-reviewed fix
 ];
 
 /** Currently-failing test files under `src/auto-reply/**` (run by the `test-auto-reply` lane). */

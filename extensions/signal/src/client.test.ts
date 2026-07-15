@@ -3,13 +3,22 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 const fetchWithTimeoutMock = vi.fn();
 const resolveFetchMock = vi.fn();
 
-vi.mock("remoteclaw/plugin-sdk/fetch-runtime", () => ({
-  resolveFetch: (...args: unknown[]) => resolveFetchMock(...args),
-}));
+// client.ts imports these directly from the repo-root `src/` tree, not from the
+// `remoteclaw/plugin-sdk/*` barrels, so the mocks must target the same specifiers
+// the source uses — otherwise the real fetch runs (ECONNREFUSED).
+vi.mock("../../../src/infra/fetch.js", async () => {
+  const actual = await vi.importActual<typeof import("../../../src/infra/fetch.js")>(
+    "../../../src/infra/fetch.js",
+  );
+  return {
+    ...actual,
+    resolveFetch: (...args: unknown[]) => resolveFetchMock(...args),
+  };
+});
 
-vi.mock("remoteclaw/plugin-sdk/core", async () => {
-  const actual = await vi.importActual<typeof import("remoteclaw/plugin-sdk/core")>(
-    "remoteclaw/plugin-sdk/core",
+vi.mock("../../../src/infra/secure-random.js", async () => {
+  const actual = await vi.importActual<typeof import("../../../src/infra/secure-random.js")>(
+    "../../../src/infra/secure-random.js",
   );
   return {
     ...actual,
@@ -17,9 +26,15 @@ vi.mock("remoteclaw/plugin-sdk/core", async () => {
   };
 });
 
-vi.mock("remoteclaw/plugin-sdk/text-runtime", () => ({
-  fetchWithTimeout: (...args: unknown[]) => fetchWithTimeoutMock(...args),
-}));
+vi.mock("../../../src/utils/fetch-timeout.js", async () => {
+  const actual = await vi.importActual<typeof import("../../../src/utils/fetch-timeout.js")>(
+    "../../../src/utils/fetch-timeout.js",
+  );
+  return {
+    ...actual,
+    fetchWithTimeout: (...args: unknown[]) => fetchWithTimeoutMock(...args),
+  };
+});
 
 let signalRpcRequest: typeof import("./client.js").signalRpcRequest;
 

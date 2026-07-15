@@ -22,7 +22,7 @@ describe("zalo runtime api", () => {
         "--import",
         "tsx",
         "-e",
-        'const runtimeApi = await import("./extensions/zalo/runtime-api.ts"); process.stdout.write(runtimeApi.zaloPlugin.id);',
+        'const runtimeApi = await import("./extensions/zalo/index.ts"); process.stdout.write(runtimeApi.default.id);',
       ],
       {
         cwd: repoRoot,

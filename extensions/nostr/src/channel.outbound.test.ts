@@ -12,6 +12,9 @@ const mocks = vi.hoisted(() => ({
 vi.mock("./nostr-bus.js", () => ({
   DEFAULT_RELAYS: ["wss://relay.example.com"],
   startNostrBus: mocks.startNostrBus,
+  // `channel.ts` imports `normalizePubkey` from `./nostr-bus.js` (which
+  // re-exports it from `./nostr-key-utils.js`), so the mock must expose it here.
+  normalizePubkey: mocks.normalizePubkey,
 }));
 
 vi.mock("./nostr-key-utils.js", () => ({

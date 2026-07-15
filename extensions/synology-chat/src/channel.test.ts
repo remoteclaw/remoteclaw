@@ -5,14 +5,11 @@ vi.mock("./webhook-handler.js", () => ({
   createWebhookHandler: vi.fn(() => vi.fn()),
 }));
 
-vi.mock("zod", () => ({
-  z: {
-    object: vi.fn(() => ({
-      passthrough: vi.fn(() => ({ _type: "zod-schema" })),
-    })),
-  },
-}));
-
+// NOTE: `zod` is intentionally NOT mocked. `channel.ts` only needs
+// `z.object({}).passthrough()`, but importing it transitively pulls in the core
+// config schema (`src/config/zod-schema.*`), which uses `z.string()`, `z.union()`,
+// etc. A partial `zod` stub broke that transitive import ("z.string is not a
+// function"); the real module satisfies every call site.
 const { createSynologyChatPlugin } = await import("./channel.js");
 
 describe("createSynologyChatPlugin", () => {

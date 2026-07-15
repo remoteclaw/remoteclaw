@@ -55,6 +55,12 @@ export function finalizeInboundContext<T extends Record<string, unknown>>(
     normalized.UntrustedContext = normalizedUntrusted;
   }
 
+  if (typeof normalized.GroupSystemPrompt === "string") {
+    // Trusted operator config: normalize newlines only. Do NOT sanitizeInboundSystemTags —
+    // its [Assistant]/System: markers must be preserved verbatim (#2930).
+    normalized.GroupSystemPrompt = normalizeInboundTextNewlines(normalized.GroupSystemPrompt);
+  }
+
   const chatType = normalizeChatType(normalized.ChatType);
   if (chatType && (opts.forceChatType || normalized.ChatType !== chatType)) {
     normalized.ChatType = chatType;

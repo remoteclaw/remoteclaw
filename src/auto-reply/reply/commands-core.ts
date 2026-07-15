@@ -1,8 +1,9 @@
 import fs from "node:fs/promises";
+import path from "node:path";
 import { logVerbose } from "../../globals.js";
 import { createInternalHookEvent, triggerInternalHook } from "../../hooks/internal-hooks.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
-import { resolveAgentIdFromSessionKey } from "../../routing/session-key.js";
+import { resolveAgentIdFromSessionKeyOrNull } from "../../routing/session-key.js";
 import { resolveSendPolicy } from "../../sessions/send-policy.js";
 import { shouldHandleTextCommands } from "../commands-registry.js";
 import { handleAllowlistCommand } from "./commands-allowlist.js";
@@ -35,6 +36,41 @@ import { routeReply } from "./route-reply.js";
 let HANDLERS: CommandHandler[] | null = null;
 
 export type ResetCommandAction = "new" | "reset";
+
+// The reset flow archives the previous transcript to `<file>.reset.<ts>` before before_reset
+// reads it. Recover the most recent archive so an archived reset still extracts memory (#2931).
+async function findArchivedResetTranscript(sessionFile: string): Promise<string | null> {
+  const dir = path.dirname(sessionFile);
+  const prefix = `${path.basename(sessionFile)}.reset.`;
+  let entries: string[];
+  try {
+    entries = await fs.readdir(dir);
+  } catch {
+    return null;
+  }
+  const latest = entries
+    .filter((name) => name.startsWith(prefix))
+    .toSorted()
+    .at(-1);
+  return latest ? path.join(dir, latest) : null;
+}
+
+async function readResetTranscript(
+  sessionFile: string,
+): Promise<{ sessionFile: string; content: string }> {
+  try {
+    return { sessionFile, content: await fs.readFile(sessionFile, "utf-8") };
+  } catch (readErr: unknown) {
+    if ((readErr as { code?: unknown })?.code !== "ENOENT") {
+      throw readErr;
+    }
+    const archived = await findArchivedResetTranscript(sessionFile);
+    if (!archived) {
+      throw readErr;
+    }
+    return { sessionFile: archived, content: await fs.readFile(archived, "utf-8") };
+  }
+}
 
 export async function emitResetCommandHooks(params: {
   action: ResetCommandAction;
@@ -91,9 +127,11 @@ export async function emitResetCommandHooks(params: {
     void (async () => {
       try {
         const messages: unknown[] = [];
-        if (sessionFile) {
-          const content = await fs.readFile(sessionFile, "utf-8");
-          for (const line of content.split("\n")) {
+        let resolvedSessionFile = sessionFile;
+        if (resolvedSessionFile) {
+          const transcript = await readResetTranscript(resolvedSessionFile);
+          resolvedSessionFile = transcript.sessionFile;
+          for (const line of transcript.content.split("\n")) {
             if (!line.trim()) {
               continue;
             }
@@ -110,9 +148,9 @@ export async function emitResetCommandHooks(params: {
           logVerbose("before_reset: no session file available, firing hook with empty messages");
         }
         await hookRunner.runBeforeReset(
-          { sessionFile, messages, reason: params.action },
+          { sessionFile: resolvedSessionFile, messages, reason: params.action },
           {
-            agentId: resolveAgentIdFromSessionKey(params.sessionKey),
+            agentId: resolveAgentIdFromSessionKeyOrNull(params.sessionKey) ?? "main",
             sessionKey: params.sessionKey,
             sessionId: prevEntry?.sessionId,
             workspaceDir: params.workspaceDir,

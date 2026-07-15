@@ -165,19 +165,19 @@ export const EXTENSIONS_QUARANTINE: string[] = [
 
 /** Currently-failing test files under `src/auto-reply/**` (run by the `test-auto-reply` lane). */
 export const AUTO_REPLY_QUARANTINE: string[] = [
-  // #2782 (auto-reply batch): 8 of the original 19 were un-quarantined (stale tests
-  // fixed test-side). The 11 below remain — most reveal genuine SOURCE bugs (test
-  // synced ahead of source, or feature gutted) that need a separate security-gated
-  // source PR, not a test-side change. Reasons per line.
+  // #2782 (auto-reply batch): 10 of the original 19 are now un-quarantined (8 stale tests
+  // fixed test-side; strip-inbound-meta + commands-core after fixing #2928/#2931). The 9
+  // below remain — most reveal genuine SOURCE bugs (test synced ahead of source, or feature
+  // gutted) that need a separate security-gated source PR, not a test-side change. Reasons
+  // per line. inbound + commands-session-lifecycle had their named SOURCE bug fixed in the
+  // #2927/#2930/#2932 PR but stay here on UNRELATED pre-existing fails (see per-line notes).
   "src/auto-reply/command-control.test.ts", // #2782: auth-UNIT tests vs fork-diverged command-auth.ts (#2824/#2828) — security-sensitive per-assertion reconciliation deferred to a focused PR
-  "src/auto-reply/inbound.test.ts", // #2782: SOURCE bugs — inbound-context.ts drops GroupSystemPrompt CRLF normalization; mentions.ts buildMentionRegexes lacks ReDoS/safe-regex filtering
-  "src/auto-reply/reply/commands-core.test.ts", // #2782: SOURCE gap — emitResetCommandHooks: before_reset hook swallowed on keyless reset + no *.reset.<ts> archive recovery (deferred source hunk from #2662)
-  "src/auto-reply/reply/commands-session-lifecycle.test.ts", // #2782: SOURCE bug — commands-session.ts uses gutted formatThreadBindingDurationLabel (returns "") → empty duration in /session idle+max-age replies
+  "src/auto-reply/inbound.test.ts", // #2782: #2927+#2930 SOURCE bugs FIXED (paired asserts pass; focused specs live in mentions.test.ts + inbound-context.test.ts); file stays quarantined on UNRELATED pre-existing fails — normalizeMentionText rebrand-expectation test, provider-dock mention strip, resolveGroupRequireMention (groups.js) — out of the fix PR's 5-file scope
+  "src/auto-reply/reply/commands-session-lifecycle.test.ts", // #2782: #2932 duration-label FIXED (Discord label asserts pass; focused spec in extensions/discord/src/monitor/thread-bindings.messages.test.ts); file stays quarantined on UNRELATED pre-existing fails — Telegram binding path + "unavailable outside discord/telegram" (commands-session.ts) — out of the fix PR's 5-file scope
   "src/auto-reply/reply/commands-subagents-focus.test.ts", // #2782: SOURCE gap — action-focus.ts/action-unfocus.ts lack the Matrix branch (un-ported D.4 EXTRACT; sibling action-agents.ts already has it)
   "src/auto-reply/reply/dispatch-from-config.test.ts", // #2782: 12 ACP-dispatch tests obsolete (ACP dispatch gutted in 4fd565bf89f) — belongs in a dedicated stale-test-deletion PR, not this ledger-shrink
   "src/auto-reply/reply/followup-runner.channel-bridge.test.ts", // #2782: premise gutted in #2377 (followup-runner is a no-op; ChannelBridge wiring moved to agent-runner-execution.ts) — port the assertions there
   "src/auto-reply/reply/reply-media-paths.test.ts", // #2782: not triaged (delegated agent aborted mid-run) — left quarantined pending investigation
   "src/auto-reply/reply/reply-plumbing.test.ts", // #2782: SOURCE bug — subagents-utils.ts formatRunLabel missing stripInternalRuntimeContext → internal runtime-context info leak into user-facing subagent labels
   "src/auto-reply/reply/session.test.ts", // #2782: SOURCE bug — session.ts resolveConversationIdFromTargets gutted to ()=>undefined → /new silently suppressed for all ACP-shaped session keys
-  "src/auto-reply/reply/strip-inbound-meta.test.ts", // #2782: SOURCE bug — strip-inbound-meta.ts:219 never re-strips a timestamp prefix exposed after block removal (upstream 98ea8e244f9 fix not synced)
 ];

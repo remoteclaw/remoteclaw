@@ -216,7 +216,13 @@ export function stripInboundMetadata(text: string): string {
     result.push(line);
   }
 
-  return result.join("\n").replace(/^\n+/, "").replace(/\n+$/, "");
+  // Re-strip a leading timestamp envelope that only becomes leading after the
+  // metadata blocks above are removed (e.g. backfilled CLI history). See #2928.
+  return result
+    .join("\n")
+    .replace(/^\n+/, "")
+    .replace(/\n+$/, "")
+    .replace(LEADING_TIMESTAMP_PREFIX_RE, "");
 }
 
 export function stripLeadingInboundMetadata(text: string): string {

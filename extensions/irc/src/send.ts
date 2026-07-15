@@ -79,11 +79,17 @@ export async function sendMessageIrc(
     transient.quit("sent");
   }
 
-  runtime.channel.activity.record({
-    channel: "irc",
-    accountId: account.accountId,
-    direction: "outbound",
-  });
+  try {
+    runtime.channel.activity.record({
+      channel: "irc",
+      accountId: account.accountId,
+      direction: "outbound",
+    });
+  } catch {
+    // Activity metrics are best-effort: an uninitialized/unavailable runtime
+    // store must not fail an otherwise-successful send. Restores the upstream
+    // `recordIrcOutboundActivity` try/catch guard dropped during fork sync.
+  }
 
   return {
     messageId: makeIrcMessageId(),

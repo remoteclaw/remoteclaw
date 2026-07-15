@@ -12,6 +12,7 @@ const pluginSdkSubpaths = [
   "account-id",
   "account-resolution",
   "allow-from",
+  "browser-security-runtime",
   "channel-lifecycle",
   "core",
   "channel-config-helpers",
@@ -76,6 +77,8 @@ const pluginSdkSubpaths = [
   "ssrf-policy",
   "temp-path",
   "dangerous-name-runtime",
+  "webhook-request-guards",
+  "webhook-targets",
 ] as const;
 
 export default defineConfig({

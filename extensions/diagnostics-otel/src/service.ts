@@ -1190,6 +1190,27 @@ export function createDiagnosticsOtelService(): RemoteClawPluginService {
             case "run.attempt":
               recordRunAttempt(evt);
               return;
+            case "run.completed":
+              recordRunCompleted(evt);
+              return;
+            case "model.call.completed":
+              recordModelCallCompleted(evt);
+              return;
+            case "model.call.error":
+              recordModelCallError(evt);
+              return;
+            case "tool.execution.completed":
+              recordToolExecutionCompleted(evt);
+              return;
+            case "tool.execution.error":
+              recordToolExecutionError(evt);
+              return;
+            case "exec.process.completed":
+              recordExecProcessCompleted(evt);
+              return;
+            case "log.record":
+              recordLogRecord?.(evt);
+              return;
             case "diagnostic.heartbeat":
               recordHeartbeat(evt);
               return;

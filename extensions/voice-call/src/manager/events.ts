@@ -103,7 +103,6 @@ export function processEvent(ctx: EventContext, event: NormalizedEvent): void {
   if (ctx.processedEventIds.has(dedupeKey)) {
     return;
   }
-  ctx.processedEventIds.add(dedupeKey);
 
   let call = findCall({
     activeCalls: ctx.activeCalls,
@@ -142,6 +141,7 @@ export function processEvent(ctx: EventContext, event: NormalizedEvent): void {
           reason: "hangup-bot",
         })
         .catch((err) => {
+          ctx.rejectedProviderCallIds.delete(pid);
           const message = formatErrorMessage(err);
           console.warn(`[voice-call] Failed to reject inbound call ${pid}:`, message);
         });
@@ -176,7 +176,14 @@ export function processEvent(ctx: EventContext, event: NormalizedEvent): void {
     }
   }
 
-  call.processedEventIds.push(dedupeKey);
+  // Don't burn the replay/dedupe key for events that could not be meaningfully
+  // applied yet: an as-yet-unknown call returns above without committing, and a
+  // retryable `call.error` stays replayable so a later retry can resolve it.
+  const shouldCommitReplayKey = !(event.type === "call.error" && event.retryable);
+  if (shouldCommitReplayKey) {
+    ctx.processedEventIds.add(dedupeKey);
+    call.processedEventIds.push(dedupeKey);
+  }
 
   switch (event.type) {
     case "call.initiated":

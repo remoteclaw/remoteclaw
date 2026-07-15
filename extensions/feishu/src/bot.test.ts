@@ -469,7 +469,9 @@ describe("handleFeishuMessage command authorization", () => {
     expect(mockSendMessageFeishu).toHaveBeenCalledWith(
       expect.objectContaining({
         to: "chat:oc-dm",
-        text: expect.stringContaining("Pairing code: ABCDEFGH"),
+        // Pairing code is rendered inside a fenced code block (see buildPairingReply),
+        // so assert the code itself rather than an inline "Pairing code: <code>" string.
+        text: expect.stringContaining("ABCDEFGH"),
         accountId: "default",
       }),
     );

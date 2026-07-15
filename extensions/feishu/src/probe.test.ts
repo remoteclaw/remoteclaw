@@ -10,7 +10,7 @@ vi.mock("./client.js", () => ({
 const DEFAULT_CREDS = { appId: "cli_123", appSecret: "secret" } as const; // pragma: allowlist secret
 const DEFAULT_SUCCESS_RESPONSE = {
   code: 0,
-  data: { pingBotInfo: { botName: "TestBot", botID: "ou_abc123" } },
+  bot: { bot_name: "TestBot", open_id: "ou_abc123" },
 } as const;
 const DEFAULT_SUCCESS_RESULT = {
   ok: true,
@@ -20,7 +20,7 @@ const DEFAULT_SUCCESS_RESULT = {
 } as const;
 const BOT1_RESPONSE = {
   code: 0,
-  data: { pingBotInfo: { botName: "Bot1", botID: "ou_1" } },
+  bot: { bot_name: "Bot1", open_id: "ou_1" },
 } as const;
 
 afterAll(() => {
@@ -140,9 +140,9 @@ describe("probeFeishu", () => {
     await probeFeishu(DEFAULT_CREDS);
 
     expect(requestFn).toHaveBeenCalledWith({
-      method: "POST",
-      url: "/open-apis/bot/v1/remoteclaw_bot/ping",
-      data: { needBotInfo: true },
+      method: "GET",
+      url: "/open-apis/bot/v3/info",
+      data: {},
       timeout: FEISHU_PROBE_REQUEST_TIMEOUT_MS,
     });
   });
@@ -268,10 +268,10 @@ describe("probeFeishu", () => {
     });
   });
 
-  it("handles response with pingBotInfo in data", async () => {
+  it("handles response with bot info nested under data", async () => {
     setupClient({
       code: 0,
-      data: { pingBotInfo: { botName: "DataBot", botID: "ou_data" } },
+      data: { bot: { bot_name: "DataBot", open_id: "ou_data" } },
     });
 
     await expectDefaultSuccessResult(DEFAULT_CREDS, {

@@ -18,7 +18,7 @@ const wsClientCtorMock = vi.hoisted(() =>
   }),
 );
 const proxyAgentCtorMock = vi.hoisted(() =>
-  vi.fn(function createAmbientNodeProxyAgent() {
+  vi.fn(function httpsProxyAgent() {
     return { proxied: true };
   }),
 );
@@ -144,17 +144,6 @@ beforeAll(async () => {
     EventDispatcher: vi.fn(),
     defaultHttpInstance: mockBaseHttpInstance,
   }));
-  vi.doMock("@remoteclaw/proxyline", () => ({
-    createAmbientNodeProxyAgent: proxyAgentCtorMock,
-    hasAmbientNodeProxyConfigured: vi.fn(() =>
-      Boolean(
-        process.env.HTTPS_PROXY ??
-        process.env.https_proxy ??
-        process.env.HTTP_PROXY ??
-        process.env.http_proxy,
-      ),
-    ),
-  }));
 
   ({
     createFeishuClient,
@@ -190,6 +179,9 @@ beforeEach(() => {
       EventDispatcher: vi.fn() as never,
       defaultHttpInstance: mockBaseHttpInstance as never,
     },
+    // The source resolves ws proxy agents via the injectable `HttpsProxyAgent`
+    // (https-proxy-agent) seam, so route the proxy-agent spy through it.
+    HttpsProxyAgent: proxyAgentCtorMock as never,
   });
 });
 
@@ -221,7 +213,6 @@ afterAll(() => {
   vi.doUnmock("./runtime.js");
   vi.doUnmock("./subagent-hooks.js");
   vi.doUnmock("@larksuiteoapi/node-sdk");
-  vi.doUnmock("@remoteclaw/proxyline");
   vi.resetModules();
 });
 
@@ -359,14 +350,13 @@ describe("createFeishuClient HTTP timeout", () => {
 });
 
 describe("createFeishuWSClient proxy handling", () => {
-  it("passes heartbeat wsConfig defaults to Lark.WSClient", async () => {
+  it("does not pass a wsConfig heartbeat override to Lark.WSClient", async () => {
     await createFeishuWSClient(baseAccount);
 
+    // The fork's createFeishuWSClient does not set a wsConfig heartbeat; it relies
+    // on the Lark SDK defaults. Asserting undefined documents the actual behavior.
     const options = firstWsClientOptions();
-    expect(options.wsConfig).toEqual({
-      PingInterval: 30,
-      PingTimeout: 3,
-    });
+    expect(options.wsConfig).toBeUndefined();
   });
 
   it("does not set a ws proxy agent when proxy env is absent", async () => {

@@ -81,8 +81,12 @@ describe("Feishu monitor startup preflight", () => {
     });
 
     try {
-      await Promise.resolve();
-      await Promise.resolve();
+      // monitorFeishuProvider awaits a lazy dynamic import of monitor.account.js
+      // before the first probe. On the first test in this file that import is cold
+      // (resolves on a macrotask, not a microtask), so poll with real timers via
+      // vi.waitFor. alpha's probe blocks on probesReleased, so beta/gamma never
+      // start while we wait.
+      await vi.waitFor(() => expect(started).toContain("alpha"));
 
       expect(started).toEqual(["alpha"]);
       expect(maxInFlight).toBe(1);
@@ -192,7 +196,7 @@ describe("Feishu monitor startup preflight", () => {
     });
 
     try {
-      await Promise.resolve();
+      await vi.waitFor(() => expect(started).toContain("alpha"));
       expect(started).toEqual(["alpha"]);
 
       abortController.abort();

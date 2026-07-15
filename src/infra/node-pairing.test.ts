@@ -6,6 +6,8 @@ import {
   approveNodePairing,
   getPairedNode,
   listNodePairing,
+  loadNodePairingStateForTest,
+  rejectNodePairing,
   removePairedNode,
   renamePairedNode,
   requestNodePairing,
@@ -325,6 +327,7 @@ describe("node pairing prototype-key hardening", () => {
       `"node-1":${JSON.stringify({ nodeId: "node-1", token: "t".repeat(43), createdAtMs: 1, approvedAtMs: 2 })}`,
       `"__proto__":${JSON.stringify({ nodeId: "__proto__", ...evil })}`,
       `"constructor":${JSON.stringify({ nodeId: "constructor", ...evil })}`,
+      `"prototype":${JSON.stringify({ nodeId: "prototype", ...evil })}`,
     ];
     await writeFile(pairedPath, `{${entries.join(",")}}`, "utf8");
 
@@ -334,7 +337,82 @@ describe("node pairing prototype-key hardening", () => {
     expect(listed.paired.map((node) => node.nodeId)).toEqual(["node-1"]);
     await expect(getPairedNode("__proto__", baseDir)).resolves.toBeNull();
     await expect(getPairedNode("constructor", baseDir)).resolves.toBeNull();
+    await expect(getPairedNode("prototype", baseDir)).resolves.toBeNull();
     expect(({} as Record<string, unknown>).nodeId).toBeUndefined();
+  });
+
+  test("loads pairing maps as null-prototype objects (positional invariant tripwire)", async () => {
+    const baseDir = await mkdtemp(join(tmpdir(), "remoteclaw-node-pairing-"));
+    const state = await loadNodePairingStateForTest(baseDir);
+    // The un-normalized index sites (approve/reject by requestId, approve by
+    // pending.nodeId) are safe partly because these maps carry no prototype. If a
+    // future refactor restores a plain `{}`, this trips before the hole reopens.
+    expect(Object.getPrototypeOf(state.pairedByNodeId)).toBeNull();
+    expect(Object.getPrototypeOf(state.pendingById)).toBeNull();
+  });
+
+  test("approve and reject treat special-key request ids as not-found", async () => {
+    const baseDir = await mkdtemp(join(tmpdir(), "remoteclaw-node-pairing-"));
+    for (const key of dangerousKeys) {
+      await expect(
+        approveNodePairing(key, { callerScopes: ["operator.pairing", "operator.admin"] }, baseDir),
+      ).resolves.toBeNull();
+      await expect(rejectNodePairing(key, baseDir)).resolves.toBeNull();
+    }
+    // A raw special-key index of the store would have leaked a value onto every
+    // object; nothing must persist to the prototype.
+    expect(Object.prototype).not.toHaveProperty("token");
+  });
+
+  test("approve refuses a corrupted pending entry whose nodeId is a special key", async () => {
+    const baseDir = await mkdtemp(join(tmpdir(), "remoteclaw-node-pairing-"));
+    const { dir, pendingPath } = resolvePairingPaths(baseDir, "nodes");
+    await mkdir(dir, { recursive: true });
+    // A corrupted pending map keyed by a benign requestId but carrying a special
+    // key as its nodeId. Approving it must not write pairedByNodeId["__proto__"]
+    // nor pollute the prototype; the local normalizeNodeId guard reads it as
+    // not-found instead. Keep ts fresh so the entry survives load-time pruning.
+    const ts = Date.now();
+    for (const key of dangerousKeys) {
+      const requestId = `req-${key}`;
+      await writeFile(
+        pendingPath,
+        JSON.stringify({ [requestId]: { requestId, nodeId: key, ts } }),
+        "utf8",
+      );
+      await expect(
+        approveNodePairing(
+          requestId,
+          { callerScopes: ["operator.pairing", "operator.admin"] },
+          baseDir,
+        ),
+      ).resolves.toBeNull();
+    }
+    expect(({} as Record<string, unknown>).token).toBeUndefined();
+    expect(Object.prototype).not.toHaveProperty("token");
+  });
+
+  test("drops dangerous own-keys from a corrupted pending state file on load", async () => {
+    const baseDir = await mkdtemp(join(tmpdir(), "remoteclaw-node-pairing-"));
+    const { dir, pendingPath } = resolvePairingPaths(baseDir, "nodes");
+    await mkdir(dir, { recursive: true });
+    // Keep the legit entry within the pending TTL so load-time pruning retains it.
+    const ts = Date.now();
+    const evil = (key: string) => JSON.stringify({ requestId: key, nodeId: key, ts });
+    const entries = [
+      `"req-1":${JSON.stringify({ requestId: "req-1", nodeId: "node-1", ts })}`,
+      `"__proto__":${evil("__proto__")}`,
+      `"constructor":${evil("constructor")}`,
+      `"prototype":${evil("prototype")}`,
+    ];
+    await writeFile(pendingPath, `{${entries.join(",")}}`, "utf8");
+
+    // listNodePairing enumerates pendingById directly, exercising toSafeRecord's
+    // own-key sanitization on load.
+    const listed = await listNodePairing(baseDir);
+    expect(listed.pending.map((req) => req.requestId)).toEqual(["req-1"]);
+    expect(({} as Record<string, unknown>).nodeId).toBeUndefined();
+    expect(Object.prototype).not.toHaveProperty("nodeId");
   });
 
   test("node ids that merely contain a special key are still handled normally", async () => {

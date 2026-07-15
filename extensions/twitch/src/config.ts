@@ -1,3 +1,8 @@
+import {
+  listCombinedAccountIds,
+  normalizeAccountId,
+  resolveNormalizedAccountEntry,
+} from "remoteclaw/plugin-sdk/account-resolution";
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/twitch";
 import type { TwitchAccountConfig } from "./types.js";
 
@@ -25,14 +30,19 @@ export function getAccountConfig(
   }
 
   const cfg = coreConfig as RemoteClawConfig;
+  const normalizedAccountId = normalizeAccountId(accountId);
   const twitch = cfg.channels?.twitch;
   // Access accounts via unknown to handle union type (single-account vs multi-account)
   const twitchRaw = twitch as Record<string, unknown> | undefined;
   const accounts = twitchRaw?.accounts as Record<string, TwitchAccountConfig> | undefined;
 
   // For default account, check base-level config first
-  if (accountId === DEFAULT_ACCOUNT_ID) {
-    const accountFromAccounts = accounts?.[DEFAULT_ACCOUNT_ID];
+  if (normalizedAccountId === DEFAULT_ACCOUNT_ID) {
+    const accountFromAccounts = resolveNormalizedAccountEntry(
+      accounts,
+      DEFAULT_ACCOUNT_ID,
+      normalizeAccountId,
+    );
 
     // Base-level properties that can form an implicit default account
     const baseLevel = {
@@ -76,11 +86,12 @@ export function getAccountConfig(
   }
 
   // For non-default accounts, only check accounts object
-  if (!accounts || !accounts[accountId]) {
+  const account = resolveNormalizedAccountEntry(accounts, normalizedAccountId, normalizeAccountId);
+  if (!account) {
     return null;
   }
 
-  return accounts[accountId] as TwitchAccountConfig | null;
+  return account;
 }
 
 /**
@@ -94,13 +105,6 @@ export function listAccountIds(cfg: RemoteClawConfig): string[] {
   const twitchRaw = twitch as Record<string, unknown> | undefined;
   const accountMap = twitchRaw?.accounts as Record<string, unknown> | undefined;
 
-  const ids: string[] = [];
-
-  // Add explicit accounts
-  if (accountMap) {
-    ids.push(...Object.keys(accountMap));
-  }
-
   // Add implicit "default" if base-level config exists and "default" not already present
   const hasBaseLevelConfig =
     twitchRaw &&
@@ -108,9 +112,10 @@ export function listAccountIds(cfg: RemoteClawConfig): string[] {
       typeof twitchRaw.accessToken === "string" ||
       typeof twitchRaw.channel === "string");
 
-  if (hasBaseLevelConfig && !ids.includes(DEFAULT_ACCOUNT_ID)) {
-    ids.push(DEFAULT_ACCOUNT_ID);
-  }
-
-  return ids;
+  return listCombinedAccountIds({
+    configuredAccountIds: Object.keys(accountMap ?? {}).map((accountId) =>
+      normalizeAccountId(accountId),
+    ),
+    implicitAccountId: hasBaseLevelConfig ? DEFAULT_ACCOUNT_ID : undefined,
+  });
 }

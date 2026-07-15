@@ -43,6 +43,17 @@
 /** Currently-failing test files under `extensions/**` (run by the `test-extensions` lane). */
 export const EXTENSIONS_QUARANTINE: string[] = [
   "extensions/acpx/src/manifest.test.ts",
+  // #2782 (groupB): 3 bluebubbles files stay, each out of this ledger-shrink's scope:
+  // - account-resolve: asserts an `allowPrivateNetworkConfig` field that the fork-authored
+  //   resolveBlueBubblesServerAccount (no parity at 27ae826f65) never emits and nothing consumes;
+  //   whether that SSRF/private-network flag should exist is a product decision, not a test fix.
+  // - attachments: fails to load — `Cannot find package 'remoteclaw/plugin-sdk/request-url'`. It IS a
+  //   real product subpath (src/plugin-sdk/request-url.ts exists) merely missing from the
+  //   vitest.config.ts resolve-alias mirror (needs `"request-url"` in pluginSdkSubpaths, like the
+  //   zalouser temp-path precedent); a harness fix outside this PR's allowed file set.
+  // - monitor-normalize: 2 fails want participant extraction from message-level `handles` /
+  //   `participantHandles`; extractChatContext only reads `participants`, and `participantHandles`
+  //   was never in the fork's history (feature-add, no parity) — separate source PR.
   "extensions/bluebubbles/src/account-resolve.test.ts",
   "extensions/bluebubbles/src/attachments.test.ts",
   "extensions/bluebubbles/src/monitor-normalize.test.ts",
@@ -98,8 +109,6 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   "extensions/nextcloud-talk/src/room-info.test.ts",
   "extensions/nextcloud-talk/src/send.cfg-threading.test.ts",
   "extensions/nostr/src/channel.outbound.test.ts",
-  "extensions/signal/src/accounts.test.ts",
-  "extensions/signal/src/client.test.ts",
   "extensions/slack/src/client.test.ts",
   "extensions/slack/src/monitor.tool-result.test.ts",
   "extensions/slack/src/monitor/message-handler/dispatch.preview-fallback.test.ts",
@@ -117,8 +126,6 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   "extensions/telegram/src/bot-message-dispatch.test.ts",
   "extensions/telegram/src/format.wrap-md.test.ts",
   "extensions/telegram/src/sequential-key.test.ts",
-  "extensions/twitch/src/config.test.ts",
-  "extensions/twitch/src/token.test.ts",
   "extensions/voice-call/src/manager.inbound-allowlist.test.ts",
   "extensions/voice-call/src/manager/events.test.ts",
   "extensions/voice-call/src/providers/plivo.test.ts",
@@ -129,7 +136,16 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   "extensions/voice-call/src/webhook.test.ts",
   "extensions/whatsapp/src/auto-reply.broadcast-groups.combined.test.ts",
   "extensions/whatsapp/src/auto-reply/monitor/on-message.audio-preflight.test.ts",
-  "extensions/zalo/runtime-api.test.ts",
+  // #2782 (groupB): 2 zalo files stay, each out of this ledger-shrink's scope:
+  // - monitor.webhook: test expects registerZaloWebhookTarget to auto-register a plugin HTTP route
+  //   into registry.httpRoutes, but the fork only registers a route when opts.route is passed (API
+  //   changed); the resulting un-cleaned target also flips the "400 for non-object payloads" test to
+  //   401 (ambiguous-secret state leak). Webhook-ingress test rewrite — separate PR.
+  // - token: `uses configured defaultAccount token` is a real fork regression (token.ts dropped
+  //   `normalizeAccountId(accountId ?? config?.defaultAccount)`), but the file ALSO asserts that a
+  //   symlinked token file is REJECTED by throw; the shared tryReadSecretFileSync swallows that
+  //   rejection (returns undefined, never throws), so the file can't go green without a
+  //   src/infra/secret-file.ts change outside this PR's file set.
   "extensions/zalo/src/monitor.webhook.test.ts",
   "extensions/zalo/src/token.test.ts",
   // #2782 (zalouser): channel.directory + security-audit un-quarantined (they passed once the

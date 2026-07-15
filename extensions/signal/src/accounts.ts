@@ -14,7 +14,11 @@ export type ResolvedSignalAccount = {
   config: SignalAccountConfig;
 };
 
-const { listAccountIds, resolveDefaultAccountId } = createAccountListHelpers("signal");
+const { listAccountIds, resolveDefaultAccountId } = createAccountListHelpers("signal", {
+  implicitDefaultAccount: {
+    channelKeys: ["account"],
+  },
+});
 export const listSignalAccountIds = listAccountIds;
 export const resolveDefaultSignalAccountId = resolveDefaultAccountId;
 
@@ -37,7 +41,9 @@ export function resolveSignalAccount(params: {
   cfg: RemoteClawConfig;
   accountId?: string | null;
 }): ResolvedSignalAccount {
-  const accountId = normalizeAccountId(params.accountId);
+  const accountId = normalizeAccountId(
+    params.accountId ?? resolveDefaultSignalAccountId(params.cfg),
+  );
   const baseEnabled = params.cfg.channels?.signal?.enabled !== false;
   const merged = mergeSignalAccountConfig(params.cfg, accountId);
   const accountEnabled = merged.enabled !== false;

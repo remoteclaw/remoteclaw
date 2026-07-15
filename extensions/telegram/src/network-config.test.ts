@@ -1,22 +1,22 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TelegramNetworkConfig } from "../../../src/config/types.telegram.js";
 
-vi.mock("remoteclaw/plugin-sdk/runtime-env", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/runtime-env")>();
+vi.mock("../../../src/infra/wsl.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../../src/infra/wsl.js")>();
   return {
     ...actual,
     isWSL2Sync: vi.fn(() => false),
   };
 });
 
-let isWSL2Sync: typeof import("remoteclaw/plugin-sdk/runtime-env").isWSL2Sync;
+let isWSL2Sync: typeof import("../../../src/infra/wsl.js").isWSL2Sync;
 let resetTelegramNetworkConfigStateForTests: typeof import("./network-config.js").resetTelegramNetworkConfigStateForTests;
 let resolveTelegramAutoSelectFamilyDecision: typeof import("./network-config.js").resolveTelegramAutoSelectFamilyDecision;
 let resolveTelegramDnsResultOrderDecision: typeof import("./network-config.js").resolveTelegramDnsResultOrderDecision;
 
 async function loadModule() {
   vi.resetModules();
-  ({ isWSL2Sync } = await import("remoteclaw/plugin-sdk/runtime-env"));
+  ({ isWSL2Sync } = await import("../../../src/infra/wsl.js"));
   ({
     resetTelegramNetworkConfigStateForTests,
     resolveTelegramAutoSelectFamilyDecision,
@@ -217,17 +217,24 @@ describe("resolveTelegramDnsResultOrderDecision", () => {
       env,
       network,
       nodeMajor,
+      defaultResultOrder: null,
     });
     expect(decision).toEqual(expected);
   });
 
   it("defaults to ipv4first on Node 22", () => {
-    const decision = resolveTelegramDnsResultOrderDecision({ nodeMajor: 22 });
+    const decision = resolveTelegramDnsResultOrderDecision({
+      nodeMajor: 22,
+      defaultResultOrder: null,
+    });
     expect(decision).toEqual({ value: "ipv4first", source: "default-node22" });
   });
 
   it("returns null when no dns decision applies", () => {
-    const decision = resolveTelegramDnsResultOrderDecision({ nodeMajor: 20 });
+    const decision = resolveTelegramDnsResultOrderDecision({
+      nodeMajor: 20,
+      defaultResultOrder: null,
+    });
     expect(decision).toEqual({ value: null });
   });
 });

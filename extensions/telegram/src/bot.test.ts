@@ -427,7 +427,7 @@ describe("createTelegramBot", () => {
     expect(payload.ReplyToId).toBe("9002");
     expect(payload.ReplyToBody).toBe("summarize this");
     expect(payload.ReplyToSender).toBe("Ada");
-    expect((payload as Record<string, unknown>).ReplyToIsExternal).toBe(true);
+    expect((payload as Record<string, unknown>).ReplyToIsExternal).toBeUndefined();
   });
 
   it("propagates forwarded origin from external_reply targets", async () => {
@@ -674,6 +674,7 @@ describe("createTelegramBot", () => {
     replySpy.mockResolvedValue({ text: "response" });
 
     loadConfig.mockReturnValue({
+      agents: { list: [{ id: "main" }] },
       commands: { native: true },
       channels: {
         telegram: {
@@ -716,6 +717,7 @@ describe("createTelegramBot", () => {
     replySpy.mockResolvedValue({ text: "response" });
 
     loadConfig.mockReturnValue({
+      agents: { list: [{ id: "main" }] },
       commands: { native: true },
       channels: {
         telegram: {
@@ -791,6 +793,7 @@ describe("createTelegramBot", () => {
     expect(sendMessageSpy).toHaveBeenCalledWith(
       12345,
       "You are not authorized to use this command.",
+      {},
     );
   });
 

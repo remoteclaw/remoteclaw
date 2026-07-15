@@ -6,15 +6,15 @@ import type { TelegramContext } from "./types.js";
 const saveMediaBuffer = vi.fn();
 const fetchRemoteMedia = vi.fn();
 
-vi.mock("../../media/store.js", () => ({
+vi.mock("../../../../src/media/store.js", () => ({
   saveMediaBuffer: (...args: unknown[]) => saveMediaBuffer(...args),
 }));
 
-vi.mock("../../media/fetch.js", () => ({
+vi.mock("../../../../src/media/fetch.js", () => ({
   fetchRemoteMedia: (...args: unknown[]) => fetchRemoteMedia(...args),
 }));
 
-vi.mock("../../globals.js", () => ({
+vi.mock("../../../../src/globals.js", () => ({
   danger: (s: string) => s,
   warn: (s: string) => s,
   logVerbose: () => {},

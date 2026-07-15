@@ -3,7 +3,7 @@ import { buildTelegramMessageContextForTest } from "./bot-message-context.test-h
 
 // Mock recordInboundSession to capture updateLastRoute parameter
 const recordInboundSessionMock = vi.fn().mockResolvedValue(undefined);
-vi.mock("../channels/session.js", () => ({
+vi.mock("../../../src/channels/session.js", () => ({
   recordInboundSession: (...args: unknown[]) => recordInboundSessionMock(...args),
 }));
 

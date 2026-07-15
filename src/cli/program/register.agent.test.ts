@@ -103,6 +103,13 @@ describe("registerAgentCommands", () => {
     expect(deps).toEqual({ deps: true });
   });
 
+  it("forwards the --thinking level to the agent command", async () => {
+    await runCli(["agent", "--message", "hi", "--thinking", "high"]);
+
+    const [options] = commandCall(agentCliCommandMock);
+    expect((options as { thinking?: string }).thinking).toBe("high");
+  });
+
   it("runs agents add and computes hasFlags based on explicit options", async () => {
     await runCli(["agents", "add", "alpha"]);
     const [alphaOptions, alphaRuntime, alphaFlags] = commandCall(agentsAddCommandMock, 0);

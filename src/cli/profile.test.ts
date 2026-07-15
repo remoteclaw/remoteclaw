@@ -197,6 +197,14 @@ describe("formatCliCommand", () => {
     ).toBe("remoteclaw --container demo gateway status --deep");
   });
 
+  it("ignores unsafe container hints", () => {
+    // A hint carrying shell metacharacters fails CONTAINER_HINT_RE, so no
+    // --container is injected and the command is returned unchanged.
+    expect(
+      formatCliCommand("remoteclaw doctor", { REMOTECLAW_CONTAINER_HINT: "demo; rm -rf /" }),
+    ).toBe("remoteclaw doctor");
+  });
+
   it("preserves both --container and --profile hints", () => {
     expect(
       formatCliCommand("remoteclaw doctor", {

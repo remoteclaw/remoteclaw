@@ -218,6 +218,7 @@ Notes:
 - `typingIndicator` supports `none`, `message` (default), and `reaction` (reaction requires user OAuth).
 - Attachments are downloaded through the Chat API and stored in the media pipeline (size capped by `mediaMaxMb`).
 - Bot-authored Google Chat messages are ignored by default. If you intentionally set `allowBots: true`, accepted bot-authored messages use shared [bot loop protection](/channels/bot-loop-protection). Configure `channels.defaults.botLoopProtection`, then override with `channels.googlechat.botLoopProtection` or `channels.googlechat.groups.<space>.botLoopProtection` when one space needs a different budget.
+- With `allowBots: true`, also set `botUser` to the app's own `users/<id>` sender name for accurate self-exclusion. Third-party bot-loop detection is unaffected either way — the tracked pair key is stable — but the app only excludes _its own_ messages from the guard when `botUser` matches the sender name Google Chat delivers; when `botUser` is unset it falls back to `users/app`, so a self-message whose real sender name differs would be pair-tracked instead of self-excluded. Low impact in practice, since an app's own messages are not normally re-ingested as inbound in Google Chat.
 
 Secrets reference details: [Secrets Management](/gateway/secrets).
 

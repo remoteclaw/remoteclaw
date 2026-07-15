@@ -517,6 +517,9 @@ describe("monitorSlackProvider tool results", () => {
   });
 
   it("reacts to mention-gated room messages when ackReaction is enabled", async () => {
+    (slackTestState.config as { messages: Record<string, unknown> }).messages.statusReactions = {
+      enabled: false,
+    };
     replyMock.mockResolvedValue(undefined);
     const client = getSlackClient();
     if (!client) {
@@ -555,7 +558,7 @@ describe("monitorSlackProvider tool results", () => {
     expect(upsertPairingRequestMock).toHaveBeenCalled();
     expect(sendMock).toHaveBeenCalledTimes(1);
     expect(sendMock.mock.calls[0]?.[1]).toContain("Your Slack user id: U1");
-    expect(sendMock.mock.calls[0]?.[1]).toContain("Pairing code: PAIRCODE");
+    expect(sendMock.mock.calls[0]?.[1]).toContain("Pairing code:\n```\nPAIRCODE\n```");
   });
 
   it("does not resend pairing code when a request is already pending", async () => {

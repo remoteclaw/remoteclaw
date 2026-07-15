@@ -1,6 +1,6 @@
 import type { RemoteClawConfig } from "../../config/types.remoteclaw.js";
 import { uniqueStrings } from "../string-coerce-runtime.js";
-import { listHealthChecks } from "./health-check-registry.js";
+import { isBundledOriginCheck, listHealthChecks } from "./health-check-registry.js";
 import type { HealthCheck, HealthFinding, HealthRepairContext } from "./health-checks.js";
 
 // Fork-local port of the upstream doctor-repair-flow reducer, reduced to the
@@ -95,6 +95,17 @@ async function runSplitHealthCheck(
     );
     const status = result.status ?? "repaired";
     if (status !== "repaired") {
+      return repairRunResult(cfg, findings, remainingFindings, changes);
+    }
+    // #2896 defense-in-depth: only a BUNDLED-ORIGIN check may mutate persisted
+    // config through repair(). Every check's detect() already ran (read-only,
+    // above) — this gates PERSISTENCE only, so third-party checks still surface
+    // findings. A non-bundled-origin repair is dropped wholesale: its config is
+    // never threaded to the caller's config writer, its changes are not reported,
+    // and it is not counted as repaired. There is no other persistence channel
+    // (upstream file/effect application was gutted in the fork), so dropping the
+    // returned config fully neutralizes an untrusted check's attempt to rewrite it.
+    if (!isBundledOriginCheck(check.id)) {
       return repairRunResult(cfg, findings, remainingFindings, changes);
     }
     if (result.config !== undefined && opts.dryRun !== true) {

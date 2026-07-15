@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { expectInboundContextContract } from "../../../test/helpers/inbound-contract.js";
 import type { RemoteClawConfig } from "../../config/config.js";
+import * as secureRandom from "../../infra/secure-random.js";
 import { defaultRuntime } from "../../runtime.js";
 import type { MsgContext } from "../templating.js";
 import { HEARTBEAT_TOKEN, SILENT_REPLY_TOKEN } from "../tokens.js";
@@ -1439,7 +1440,9 @@ describe("createReplyDispatcher", () => {
 
   it("delays block replies after the first when humanDelay is natural", async () => {
     vi.useFakeTimers();
-    const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0);
+    // Natural mode draws the random component from generateSecureInt (crypto),
+    // not Math.random — pin it to 0 so the delay is exactly the 800ms floor.
+    const delaySpy = vi.spyOn(secureRandom, "generateSecureInt").mockReturnValue(0);
     const deliver = vi.fn().mockResolvedValue(undefined);
     const dispatcher = createReplyDispatcher({
       deliver,
@@ -1461,7 +1464,7 @@ describe("createReplyDispatcher", () => {
     await dispatcher.waitForIdle();
     expect(deliver).toHaveBeenCalledTimes(2);
 
-    randomSpy.mockRestore();
+    delaySpy.mockRestore();
     vi.useRealTimers();
   });
 

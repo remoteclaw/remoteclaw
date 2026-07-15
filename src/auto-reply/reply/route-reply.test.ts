@@ -39,7 +39,7 @@ vi.mock("../../../extensions/signal/src/send.js", () => ({
 vi.mock("../../../extensions/slack/src/send.js", () => ({
   sendMessageSlack: mocks.sendMessageSlack,
 }));
-vi.mock("../../telegram/send.js", () => ({
+vi.mock("../../../extensions/telegram/src/send.js", () => ({
   sendMessageTelegram: mocks.sendMessageTelegram,
 }));
 vi.mock("../../../extensions/whatsapp/src/outbound.js", () => ({
@@ -194,7 +194,14 @@ describe("routeReply", () => {
     );
   });
 
-  it("routes directive-only Slack replies when interactive replies are enabled", async () => {
+  it("routes directive-only Slack replies without dropping them", async () => {
+    // Outbound interactive-reply block rendering ([[slack_select: …]] → Block Kit
+    // `blocks`) was removed from the delivery path in the v2026.4.24 upstream sync
+    // (#2762); only the inbound action-id handling in monitor/{slash,events} remains,
+    // and sendMessageSlack now only accepts caller-supplied `blocks`. routeReply
+    // therefore forwards the directive text verbatim to the Slack send layer. This
+    // guards that a directive-only payload is still routed (not dropped by the
+    // empty-reply guard) even with interactiveReplies enabled.
     mocks.sendMessageSlack.mockClear();
     const cfg = {
       channels: {
@@ -211,15 +218,8 @@ describe("routeReply", () => {
     });
     expect(mocks.sendMessageSlack).toHaveBeenCalledWith(
       "channel:C123",
-      "",
-      expect.objectContaining({
-        blocks: [
-          expect.objectContaining({
-            type: "actions",
-            block_id: "remoteclaw_reply_select_1",
-          }),
-        ],
-      }),
+      "[[slack_select: Choose one | Alpha:alpha]]",
+      expect.objectContaining({ cfg }),
     );
   });
 

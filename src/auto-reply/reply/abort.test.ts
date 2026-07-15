@@ -2,6 +2,10 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  registerSessionRun,
+  resetSessionRunRegistryForTest,
+} from "../../agents/session-run-registry.js";
 import type { SubagentRunRecord } from "../../agents/subagent-registry.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import {
@@ -404,16 +408,24 @@ describe("abort detection", () => {
     expectSessionLaneCleared(sessionKey);
   });
 
-  it("plain-language stop on ACP-bound session triggers ACP cancel", async () => {
+  it("plain-language stop on ACP-bound session terminates the active run", async () => {
     const sessionKey = "agent:codex:acp:test-1";
     const sessionId = "session-123";
     const { cfg } = await createAbortConfig({
       sessionIdsByKey: { [sessionKey]: sessionId },
     });
-    acpManagerMocks.resolveSession.mockReturnValue({
-      kind: "ready",
+    // Fork reality: the upstream ACP control-plane manager cancel path
+    // (getAcpSessionManager().cancelSession) was gutted (a8374ec5ca) and no longer
+    // exists in the tree; fix(abort) (7784ae780) routes fast-abort through
+    // killSessionRun, which aborts the run's AbortController. Assert that live
+    // termination: a fast-abort on an ACP-bound session actually kills its active run.
+    resetSessionRunRegistryForTest();
+    const abortController = new AbortController();
+    registerSessionRun(sessionKey, {
+      startedAt: Date.now(),
       sessionKey,
-      meta: {} as never,
+      agentId: "codex",
+      abortController,
     });
 
     const result = await runStopCommand({
@@ -425,11 +437,8 @@ describe("abort detection", () => {
     });
 
     expect(result.handled).toBe(true);
-    expect(acpManagerMocks.cancelSession).toHaveBeenCalledWith({
-      cfg,
-      sessionKey,
-      reason: "fast-abort",
-    });
+    expect(result.aborted).toBe(true);
+    expect(abortController.signal.aborted).toBe(true);
   });
 
   it("ACP cancel failures do not skip queue and lane cleanup", async () => {

@@ -4,7 +4,11 @@ import {
   isHeartbeatOkResponse,
   isHeartbeatUserMessage,
 } from "./heartbeat-filter.js";
-import { HEARTBEAT_PROMPT } from "./heartbeat.js";
+// `HEARTBEAT_PROMPT` is gutted to "" in the RemoteClaw fork — heartbeat prompts
+// must be explicitly configured and resolved at runtime (#281), then passed to
+// these helpers. This local sample stands in for a resolved prompt so the
+// config-provided-prompt matching path in heartbeat-filter.ts stays covered.
+const HEARTBEAT_PROMPT = "Read HEARTBEAT.md and run any periodic tasks that are due.";
 
 describe("isHeartbeatUserMessage", () => {
   it("matches heartbeat prompts", () => {

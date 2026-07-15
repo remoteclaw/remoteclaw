@@ -78,11 +78,21 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   "extensions/imessage/src/monitor/parse-notification.test.ts",
   "extensions/irc/src/send.test.ts",
   "extensions/line/src/channel.sendPayload.test.ts",
-  "extensions/matrix/src/channel.directory.test.ts",
+  // #2782 (matrix): 4 of 6 un-quarantined (channel.directory/allowlist/handler.body-for-agent
+  // pass as-is on clean CI; format fixed test-side after restoring a dropped source guard — see
+  // PR). The 2 below stay, each needing out-of-scope work:
+  // - manifest: asserts matrix stages `fake-indexeddb` + opts into `bundle.stageRuntimeDependencies`.
+  //   The fork re-architected matrix onto @vector-im/matrix-bot-sdk with filesystem crypto storage
+  //   (no `indexedDB` usage anywhere; the idb-persistence files are orphaned), so the fake-indexeddb
+  //   dep is stale upstream baggage. Whether matrix should opt into runtime-dep STAGING is a separate
+  //   release-surface call complicated by its NATIVE dep (@matrix-org/matrix-sdk-crypto-nodejs) —
+  //   unlike the pure-JS googlechat/policy precedents — so it needs a release-gated PR.
+  // - matrix/monitor/index: asserts the full Pi-era monitor orchestration (thread-binding manager,
+  //   inbound-event deduper, graceful stop-sync/drain-decryptions/wait-for-handlers shutdown,
+  //   cold-start `dropPreStartupMessages` guard, account-aware text limit). The fork gutted all of
+  //   it (index.ts references none of those symbols; 7 mocked modules no longer exist). Reconciling
+  //   is a wholesale test rewrite over correctness-sensitive shutdown paths — separate PR.
   "extensions/matrix/src/manifest.test.ts",
-  "extensions/matrix/src/matrix/format.test.ts",
-  "extensions/matrix/src/matrix/monitor/allowlist.test.ts",
-  "extensions/matrix/src/matrix/monitor/handler.body-for-agent.test.ts",
   "extensions/matrix/src/matrix/monitor/index.test.ts",
   "extensions/mattermost/channel-plugin-api.test.ts",
   "extensions/mattermost/src/mattermost/interactions.test.ts",

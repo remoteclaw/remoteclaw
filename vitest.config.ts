@@ -12,6 +12,7 @@ const pluginSdkSubpaths = [
   "account-id",
   "account-resolution",
   "allow-from",
+  "browser-security-runtime",
   "channel-lifecycle",
   "core",
   "channel-config-helpers",

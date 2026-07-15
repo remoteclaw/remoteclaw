@@ -350,7 +350,7 @@ describe("processDiscordMessage ack reactions", () => {
     expect(emojis).toContain("🏁");
   });
 
-  it("shows compacting reaction during auto-compaction and resumes thinking", async () => {
+  it("does not emit compaction reactions (onCompactionStart/End gutted in fork)", async () => {
     vi.useFakeTimers();
     dispatchInboundMessage.mockImplementationOnce(async (params?: DispatchInboundParams) => {
       await params?.replyOptions?.onCompactionStart?.();
@@ -379,8 +379,12 @@ describe("processDiscordMessage ack reactions", () => {
     await runPromise;
 
     const emojis = getReactionEmojis();
-    expect(emojis).toContain(DEFAULT_EMOJIS.compacting);
-    expect(emojis).toContain(DEFAULT_EMOJIS.thinking);
+    // The fork does not populate onCompactionStart/onCompactionEnd on
+    // replyOptions — compaction lifecycle callbacks were removed with the
+    // Pi-era runtime (CLI agents compact internally, opaque to middleware).
+    // The optional-chained calls in the dispatch mock above are no-ops, so no
+    // compacting reaction is scheduled.
+    expect(emojis).not.toContain(DEFAULT_EMOJIS.compacting);
   });
 
   it("clears status reactions when dispatch aborts and removeAckAfterReply is enabled", async () => {
@@ -427,7 +431,7 @@ describe("processDiscordMessage session routing", () => {
     await processDiscordMessage(ctx as any);
 
     expect(getLastRouteUpdate()).toEqual({
-      sessionKey: "agent:main:discord:direct:u1",
+      sessionKey: "agent:test-agent:discord:direct:u1",
       channel: "discord",
       to: "user:U1",
       accountId: "default",
@@ -603,7 +607,7 @@ describe("processDiscordMessage draft streaming", () => {
     expect(deliverDiscordReply).toHaveBeenCalledTimes(1);
   });
 
-  it("streams block previews using draft chunking", async () => {
+  it("does not stream block previews — EmbeddedBlockChunker gutted in fork", async () => {
     const draftStream = createMockDraftStreamForTest();
 
     dispatchInboundMessage.mockImplementationOnce(async (params?: DispatchInboundParams) => {
@@ -617,7 +621,10 @@ describe("processDiscordMessage draft streaming", () => {
     await processDiscordMessage(ctx as any);
 
     const updates = draftStream.update.mock.calls.map((call) => call[0]);
-    expect(updates).toEqual(["Hello", "HelloWorld"]);
+    // Block-mode draft chunking routes through EmbeddedBlockChunker, which is a
+    // no-op stand-in in the fork (draft-streaming chunking is not implemented),
+    // so no chunked preview updates are emitted.
+    expect(updates).toEqual([]);
   });
 
   it("forces new preview messages on assistant boundaries in block mode", async () => {

@@ -1,11 +1,12 @@
 import { EventEmitter } from "node:events";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("remoteclaw/plugin-sdk/runtime-env", () => ({
+vi.mock("../../../src/globals.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../../src/globals.js")>()),
   logVerbose: vi.fn(),
 }));
 
-let logVerbose: typeof import("remoteclaw/plugin-sdk/runtime-env").logVerbose;
+let logVerbose: typeof import("../../../src/globals.js").logVerbose;
 let attachDiscordGatewayLogging: typeof import("./gateway-logging.js").attachDiscordGatewayLogging;
 
 const makeRuntime = () => ({
@@ -16,7 +17,7 @@ const makeRuntime = () => ({
 
 describe("attachDiscordGatewayLogging", () => {
   beforeAll(async () => {
-    ({ logVerbose } = await import("remoteclaw/plugin-sdk/runtime-env"));
+    ({ logVerbose } = await import("../../../src/globals.js"));
     ({ attachDiscordGatewayLogging } = await import("./gateway-logging.js"));
   });
 

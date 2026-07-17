@@ -3,6 +3,7 @@ import { resolveMarkdownTableMode } from "../../../src/config/markdown-tables.js
 import { convertMarkdownTables } from "../../../src/markdown/tables.js";
 import { kindFromMime } from "../../../src/media/mime.js";
 import { resolveOutboundAttachmentFromUrl } from "../../../src/media/outbound-attachment.js";
+import { stripInlineDirectiveTagsForDelivery } from "../../../src/utils/directive-tags.js";
 import { resolveIMessageAccount, type ResolvedIMessageAccount } from "./accounts.js";
 import { createIMessageRpcClient, type IMessageRpcClient } from "./client.js";
 import { formatIMessageChatTarget, type IMessageService, parseIMessageTarget } from "./targets.js";
@@ -41,7 +42,6 @@ type IMessageSendResult = {
   sentText: string;
 };
 
-const LEADING_REPLY_TAG_RE = /^\s*\[\[\s*rc:reply\s*:\s*([^\]\n]+)\s*\]\]\s*/i;
 const MAX_REPLY_TO_ID_LENGTH = 256;
 
 function stripUnsafeReplyTagChars(value: string): string {
@@ -69,21 +69,6 @@ function sanitizeReplyToId(rawReplyToId?: string): string | undefined {
     return sanitized.slice(0, MAX_REPLY_TO_ID_LENGTH);
   }
   return sanitized;
-}
-
-function prependReplyTagIfNeeded(message: string, replyToId?: string): string {
-  const resolvedReplyToId = sanitizeReplyToId(replyToId);
-  if (!resolvedReplyToId) {
-    return message;
-  }
-  const replyTag = `[[rc:reply:${resolvedReplyToId}]]`;
-  const existingLeadingTag = message.match(LEADING_REPLY_TAG_RE);
-  if (existingLeadingTag) {
-    const remainder = message.slice(existingLeadingTag[0].length).trimStart();
-    return remainder ? `${replyTag} ${remainder}` : replyTag;
-  }
-  const trimmedMessage = message.trimStart();
-  return trimmedMessage ? `${replyTag} ${trimmedMessage}` : replyTag;
 }
 
 function resolveMessageId(result: Record<string, unknown> | null | undefined): string | null {
@@ -154,13 +139,26 @@ export async function sendMessageIMessage(
     });
     message = convertMarkdownTables(message, tableMode);
   }
-  message = prependReplyTagIfNeeded(message, opts.replyToId);
+  // Strip inline directive tags ([[rc:reply:...]], [[audio_as_voice]]) from the
+  // user-visible body before handing it to the bridge. The legacy `imsg` CLI
+  // delivers text verbatim and has no knowledge of these RemoteClaw-internal
+  // tags, so any that reach here would ship literally to the human recipient.
+  // Reply threading is conveyed via the structured `reply_to` RPC field, not an
+  // inline tag. (#2990; ports openclaw#39512)
+  message = stripInlineDirectiveTagsForDelivery(message).text;
+  if (!message.trim() && !filePath) {
+    throw new Error("iMessage send requires text or media");
+  }
+  const resolvedReplyToId = sanitizeReplyToId(opts.replyToId);
 
   const params: Record<string, unknown> = {
     text: message,
     service: service || "auto",
     region,
   };
+  if (resolvedReplyToId) {
+    params.reply_to = resolvedReplyToId;
+  }
   if (filePath) {
     params.file = filePath;
   }

@@ -61,7 +61,10 @@ import {
   resolveTelegramThreadSpec,
 } from "./bot/helpers.js";
 import type { TelegramContext } from "./bot/types.js";
-import { resolveTelegramConversationRoute } from "./conversation-route.js";
+import {
+  resolveTelegramConversationRoute,
+  shouldDropNamedAccountGroupMessage,
+} from "./conversation-route.js";
 import {
   evaluateTelegramGroupBaseAccess,
   evaluateTelegramGroupPolicyAccess,
@@ -468,6 +471,16 @@ export const registerTelegramNativeCommands = ({
       return null;
     }
     let { route, configuredBinding } = conversationRoute;
+    if (isGroup && shouldDropNamedAccountGroupMessage(route)) {
+      // #2961 scenario C parity (#3001 gap B): a named-account group route on a non-binding
+      // tier is not this account's traffic. Commands are account-scoped so this is not a
+      // cross-account leak, but the isolation posture is applied consistently with the inbound
+      // message (bot-message-context.ts) and reaction (bot-handlers.ts) paths.
+      logVerbose(
+        `telegram native command: dropped named-account group command without an explicit binding (chat=${chatId})`,
+      );
+      return null;
+    }
     if (configuredBinding) {
       const ensured = await ensureConfiguredAcpRouteReady({
         cfg,

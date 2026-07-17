@@ -45,7 +45,6 @@ import {
   type CanonicalInboundMessageHookContext,
 } from "../../../src/hooks/message-hook-mappers.js";
 import { recordChannelActivity } from "../../../src/infra/channel-activity.js";
-import { DEFAULT_ACCOUNT_ID, type ResolvedAgentRoute } from "../../../src/routing/resolve-route.js";
 import { resolveThreadSessionKeys } from "../../../src/routing/session-key.js";
 import { resolvePinnedMainDmOwnerFromAllowlist } from "../../../src/security/dm-policy-shared.js";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
@@ -72,7 +71,10 @@ import {
   resolveTelegramThreadSpec,
 } from "./bot/helpers.js";
 import type { StickerMetadata, TelegramContext } from "./bot/types.js";
-import { resolveTelegramConversationRoute } from "./conversation-route.js";
+import {
+  resolveTelegramConversationRoute,
+  shouldDropNamedAccountGroupMessage,
+} from "./conversation-route.js";
 import { enforceTelegramDmAccess } from "./dm-access.js";
 import { isTelegramForumServiceMessage } from "./forum-service-message.js";
 import { evaluateTelegramGroupBaseAccess } from "./group-access.js";
@@ -135,35 +137,6 @@ export type BuildTelegramMessageContextParams = {
   /** Global (per-account) handler for sendChatAction 401 backoff (#27092). */
   sendChatActionHandler: import("./sendchataction-401-backoff.js").TelegramSendChatActionHandler;
 };
-
-/**
- * #2961 scenario C — named-account group isolation (cross-account authorization).
- *
- * A non-default ("named") account is an explicitly configured, distinct bot identity, so
- * per #2961 it "must have an explicit binding to handle group traffic".
- *
- * Upstream keyed this gate on `matchedBy === "default"` — the phantom default-agent tier
- * this fork DELETED (see `src/routing/resolve-route.ts`: sole-agent promotion exists
- * "without reintroducing the phantom 'default' agent fallback"). A verbatim port would be
- * dead code that can never fire, because no fork tier is ever named "default". The
- * fork-native equivalent is the tier CLASS: a route that did not match an explicit
- * `binding.*` tier only landed on this agent via an operator catch-all
- * (`unmatched.catchAll`), sole-agent promotion (`fallback.soleAgent`), or the legacy
- * fail-open (`fallback.legacyRoute`) — none of which is an operator declaring "this named
- * account handles this group".
- *
- * This gate is DISTINCT from the scenario-D drop rather than a restatement of it: D fires
- * when the route resolves to NOTHING (the resolver returned null); C fires when the route
- * resolves perfectly well, but on a non-binding tier. A named-account group message under
- * a configured catch-all is delivered past D and dropped only here.
- *
- * DMs are deliberately not gated — the isolation boundary #2961 names is group traffic.
- */
-function shouldDropNamedAccountGroupMessage(route: ResolvedAgentRoute): boolean {
-  const isNamedAccount = route.accountId !== DEFAULT_ACCOUNT_ID;
-  const matchedExplicitBinding = route.matchedBy.startsWith("binding.");
-  return isNamedAccount && !matchedExplicitBinding;
-}
 
 /**
  * Resolve `ingest` for a group, honoring the `groups["*"]` wildcard default so a specific

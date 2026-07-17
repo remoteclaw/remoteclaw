@@ -142,18 +142,18 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   // (including the GroupSpace regression guard). The remaining arg-menu divergence is skipped
   // in-file via `describe.skip` with rationale (slash.test.ts) rather than darkening the whole
   // file here — narrower debt, still tracked by #2782.
-  // The 3 below stay, each out of scope for a test-side un-quarantine (see PR for details):
+  // #2962 (slack): send.identity-fallback un-quarantined — both SOURCE regressions are fixed in
+  // send.ts (unfurl_links:false payload default + Slack Web API error enrichment at every throw
+  // site). The feared blast radius did not materialize: the other send tests asserting postMessage
+  // payloads (send.blocks, send.upload) use expect.objectContaining, which tolerates the added key.
+  // The 2 below stay, each out of scope for a test-side un-quarantine (see PR for details):
   // - client: proxy-agent support was gutted (no client-options.ts); restoring needs new
   //   plugin-sdk fetch-runtime helpers (resolveEnvHttpProxyUrl / resolveActiveManagedProxyTlsOptions)
   //   that don't exist in the fork — a network-egress SOURCE change for a separate security-gated PR.
-  // - send.identity-fallback: send.ts dropped upstream's Slack Web API error-enrichment
-  //   (needed/granted/accepted detail) + the unfurl_links:false payload default; restoring is a
-  //   SOURCE change with blast radius on non-quarantined send tests (unfurl_links on every payload).
   // - dispatch.preview-fallback: obsolete premise — dispatch.ts finalizes previews via inline
   //   chat.update now, not finalizeSlackPreviewEdit (which is dead code); the test needs a rewrite.
   "extensions/slack/src/client.test.ts",
   "extensions/slack/src/monitor/message-handler/dispatch.preview-fallback.test.ts",
-  "extensions/slack/src/send.identity-fallback.test.ts",
   "extensions/telegram/src/bot-message-context.dm-threads.test.ts",
   "extensions/telegram/src/bot-message-context.group-body.test.ts",
   "extensions/telegram/src/bot-message-context.named-account-dm.test.ts",

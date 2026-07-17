@@ -64,34 +64,106 @@ type SlackSendOpts = {
   threadTs?: string;
   identity?: SlackSendIdentity;
   blocks?: (Block | KnownBlock)[];
+  /** Opt back into Slack's inline link previews for this send. Defaults to false. */
+  unfurlLinks?: boolean;
+};
+
+type SlackWebApiErrorData = {
+  error?: unknown;
+  needed?: unknown;
+  response_metadata?: {
+    scopes?: unknown;
+    acceptedScopes?: unknown;
+  };
 };
 
 function hasCustomIdentity(identity?: SlackSendIdentity): boolean {
   return Boolean(identity?.username || identity?.iconUrl || identity?.iconEmoji);
 }
 
-function isSlackCustomizeScopeError(err: unknown): boolean {
+function readSlackWebApiErrorData(err: unknown): SlackWebApiErrorData | undefined {
   if (!(err instanceof Error)) {
-    return false;
+    return undefined;
   }
-  const maybeData = err as Error & {
-    data?: {
-      error?: string;
-      needed?: string;
-      response_metadata?: { scopes?: string[]; acceptedScopes?: string[] };
-    };
-  };
-  const code = normalizeLowercaseStringOrEmpty(maybeData.data?.error);
+  const data = (err as Error & { data?: unknown }).data;
+  return data && typeof data === "object" ? (data as SlackWebApiErrorData) : undefined;
+}
+
+function normalizeSlackScopeList(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.flatMap((scope) => {
+    const normalized = normalizeOptionalString(scope);
+    return normalized ? [normalized] : [];
+  });
+}
+
+/**
+ * Append the OAuth scope detail Slack attaches to a Web API error so operators see
+ * which scope to grant instead of a bare "An API error occurred: missing_scope".
+ */
+function formatSlackWebApiErrorMessage(err: unknown): string | undefined {
+  if (!(err instanceof Error)) {
+    return undefined;
+  }
+  const data = readSlackWebApiErrorData(err);
+  const code = normalizeOptionalString(data?.error);
+  if (!code) {
+    return undefined;
+  }
+  const details: string[] = [];
+  const needed = normalizeOptionalString(data?.needed);
+  if (needed) {
+    details.push(`needed: ${needed}`);
+  }
+  const scopes = normalizeSlackScopeList(data?.response_metadata?.scopes);
+  if (scopes.length) {
+    details.push(`granted: ${scopes.join(", ")}`);
+  }
+  const acceptedScopes = normalizeSlackScopeList(data?.response_metadata?.acceptedScopes);
+  if (acceptedScopes.length) {
+    details.push(`accepted: ${acceptedScopes.join(", ")}`);
+  }
+  const base = err.message || `An API error occurred: ${code}`;
+  return details.length ? `${base} (${details.join("; ")})` : base;
+}
+
+/**
+ * Returning a fresh Error (rather than mutating `err.message`) drops the `data`
+ * payload, which is load-bearing twice over: it keeps this idempotent, and it stops
+ * `describeDeliveryError` — which duck-types on `data` — from appending the same
+ * scope detail a second time.
+ */
+function enrichSlackWebApiError(err: unknown): unknown {
+  const message = formatSlackWebApiErrorMessage(err);
+  if (!message || !(err instanceof Error) || message === err.message) {
+    return err;
+  }
+  return new Error(message);
+}
+
+async function withEnrichedSlackWebApiError<T>(task: () => Promise<T>): Promise<T> {
+  try {
+    return await task();
+  } catch (err) {
+    throw enrichSlackWebApiError(err);
+  }
+}
+
+function isSlackCustomizeScopeError(err: unknown): boolean {
+  const data = readSlackWebApiErrorData(err);
+  const code = normalizeLowercaseStringOrEmpty(data?.error);
   if (code !== "missing_scope") {
     return false;
   }
-  const needed = normalizeLowercaseStringOrEmpty(maybeData.data?.needed);
-  if (needed?.includes("chat:write.customize")) {
+  const needed = normalizeLowercaseStringOrEmpty(data?.needed);
+  if (needed.includes("chat:write.customize")) {
     return true;
   }
   const scopes = [
-    ...(maybeData.data?.response_metadata?.scopes ?? []),
-    ...(maybeData.data?.response_metadata?.acceptedScopes ?? []),
+    ...normalizeSlackScopeList(data?.response_metadata?.scopes),
+    ...normalizeSlackScopeList(data?.response_metadata?.acceptedScopes),
   ].map((scope) => normalizeLowercaseStringOrEmpty(scope));
   return scopes.includes("chat:write.customize");
 }
@@ -103,12 +175,15 @@ async function postSlackMessageBestEffort(params: {
   threadTs?: string;
   identity?: SlackSendIdentity;
   blocks?: (Block | KnownBlock)[];
+  unfurlLinks?: boolean;
 }) {
   const basePayload = {
     channel: params.channelId,
     text: params.text,
     thread_ts: params.threadTs,
     ...(params.blocks?.length ? { blocks: params.blocks } : {}),
+    // Bot replies should not expand inline link previews unless a caller opts in.
+    unfurl_links: params.unfurlLinks ?? false,
   };
   try {
     // Slack Web API types model icon_url and icon_emoji as mutually exclusive.
@@ -133,10 +208,10 @@ async function postSlackMessageBestEffort(params: {
     });
   } catch (err) {
     if (!hasCustomIdentity(params.identity) || !isSlackCustomizeScopeError(err)) {
-      throw err;
+      throw enrichSlackWebApiError(err);
     }
     logVerbose("slack send: missing chat:write.customize, retrying without custom identity");
-    return params.client.chat.postMessage(basePayload);
+    return withEnrichedSlackWebApiError(() => params.client.chat.postMessage(basePayload));
   }
 }
 
@@ -255,7 +330,9 @@ async function resolveChannelId(
   if (cachedChannelId) {
     return { channelId: cachedChannelId, isDm: true, cacheHit: true };
   }
-  const response = await client.conversations.open({ users: recipient.id });
+  const response = await withEnrichedSlackWebApiError(() =>
+    client.conversations.open({ users: recipient.id }),
+  );
   const channelId = response.channel?.id;
   if (!channelId) {
     throw new Error("Failed to open Slack DM channel");
@@ -365,15 +442,20 @@ export async function sendMessageSlack(
     threadTs: opts.threadTs,
   });
   const result = await runQueuedSlackSend(queueKey, () =>
-    sendMessageSlackQueued({
-      trimmedMessage,
-      opts,
-      cfg,
-      account,
-      token,
-      recipient,
-      blocks,
-    }),
+    // Catch-all for the queued path: covers the files.* upload calls, which have their
+    // own missing_scope failure mode (see uploadSlackFile). Already-enriched errors from
+    // the postMessage / conversations.open sites pass through untouched.
+    withEnrichedSlackWebApiError(() =>
+      sendMessageSlackQueued({
+        trimmedMessage,
+        opts,
+        cfg,
+        account,
+        token,
+        recipient,
+        blocks,
+      }),
+    ),
   );
   const threadTs = normalizeSlackThreadTsCandidate(opts.threadTs);
   if (threadTs && result.channelId && account.accountId) {
@@ -412,6 +494,7 @@ async function sendMessageSlackQueued(params: {
       threadTs: opts.threadTs,
       identity: opts.identity,
       blocks,
+      unfurlLinks: opts.unfurlLinks,
     });
     return {
       messageId: response.ts ?? "unknown",
@@ -460,6 +543,7 @@ async function sendMessageSlackQueued(params: {
         text: chunk,
         threadTs: opts.threadTs,
         identity: opts.identity,
+        unfurlLinks: opts.unfurlLinks,
       });
       lastMessageId = response.ts ?? lastMessageId;
     }
@@ -471,6 +555,7 @@ async function sendMessageSlackQueued(params: {
         text: chunk,
         threadTs: opts.threadTs,
         identity: opts.identity,
+        unfurlLinks: opts.unfurlLinks,
       });
       lastMessageId = response.ts ?? lastMessageId;
     }

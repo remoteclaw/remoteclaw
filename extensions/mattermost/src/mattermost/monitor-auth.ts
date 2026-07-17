@@ -2,6 +2,7 @@ import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/mattermost";
 import {
   ACCESS_GROUP_ALLOW_FROM_PREFIX,
   evaluateSenderGroupAccessForPolicy,
+  expandAccessGroupAllowFromEntries,
   isDangerousNameMatchingEnabled,
   parseAccessGroupAllowFromEntry,
   resolveAllowlistMatchSimple,
@@ -60,8 +61,23 @@ export function isMattermostSenderAllowed(params: {
   senderName?: string;
   allowFrom: string[];
   allowNameMatching?: boolean;
+  accessGroups?: RemoteClawConfig["accessGroups"];
+  channelId?: string;
 }): boolean {
-  const allowFrom = normalizeMattermostAllowList(params.allowFrom);
+  // Expand `accessGroup:<name>` references into their configured member entries BEFORE matching.
+  // Without this, an access-group reference reaches the literal matcher as an inert token
+  // (`accessgroup:<name>`) that no real sender id/name can equal — silently denying every group
+  // member (fail-closed). Members flow through the same matcher as direct entries, so id-first,
+  // non-spoofable matching is preserved (a member written as a name matches only when the caller
+  // enables dangerous name-matching). When `accessGroups`/`channelId` are absent, behavior is
+  // unchanged and unexpanded references stay inert.
+  const allowFrom = normalizeMattermostAllowList(
+    expandAccessGroupAllowFromEntries({
+      entries: params.allowFrom,
+      accessGroups: params.accessGroups,
+      channelId: params.channelId,
+    }),
+  );
   if (allowFrom.length === 0) {
     return false;
   }
@@ -185,12 +201,16 @@ export function authorizeMattermostCommandInvocation(params: {
     senderName,
     allowFrom: commandDmAllowFrom,
     allowNameMatching,
+    accessGroups: cfg.accessGroups,
+    channelId,
   });
   const groupAllowedForCommands = isMattermostSenderAllowed({
     senderId,
     senderName,
     allowFrom: commandGroupAllowFrom,
     allowNameMatching,
+    accessGroups: cfg.accessGroups,
+    channelId,
   });
 
   const commandGate = resolveControlCommandGate({
@@ -251,6 +271,8 @@ export function authorizeMattermostCommandInvocation(params: {
           senderName,
           allowFrom,
           allowNameMatching,
+          accessGroups: cfg.accessGroups,
+          channelId,
         }),
     });
 

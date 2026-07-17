@@ -2,6 +2,7 @@ import type {
   SilentReplyPolicyShape,
   SilentReplyRewriteShape,
 } from "../shared/silent-reply-policy.js";
+import type { AccessGroupsConfig } from "./types.access-groups.js";
 import type { AgentBinding, AgentsConfig } from "./types.agents.js";
 import type { AuthConfig } from "./types.auth.js";
 import type { DiagnosticsConfig, LoggingConfig, SessionConfig, WebConfig } from "./types.base.js";
@@ -115,6 +116,12 @@ export type RemoteClawConfig = {
   audio?: AudioConfig;
   messages?: MessagesConfig;
   commands?: CommandsConfig;
+  /**
+   * Named sender access groups referenceable from any channel allowlist via
+   * `accessGroup:<name>`. Static `message.senders` groups carry an operator-configured
+   * member set; dynamic groups (e.g. `discord.channelAudience`) resolve per platform.
+   */
+  accessGroups?: AccessGroupsConfig;
   session?: SessionConfig;
   web?: WebConfig;
   channels?: ChannelsConfig;

@@ -136,13 +136,13 @@ describe("slack web client config", () => {
   it("passes no-retry config into the write client by default", () => {
     const customAgent = {} as never;
 
-    expect(WebClient).toHaveBeenCalledWith(
-      "xoxb-test",
-      expect.objectContaining({
-        timeout: 4321,
-        retryConfig: SLACK_WRITE_RETRY_OPTIONS,
-      }),
-    );
+    createSlackWriteClient("xoxb-test", { timeout: 4321, agent: customAgent });
+
+    expect(WebClient).toHaveBeenCalledWith("xoxb-test", {
+      agent: customAgent,
+      retryConfig: SLACK_WRITE_RETRY_OPTIONS,
+      timeout: 4321,
+    });
   });
 
   it("builds stable non-secret token cache keys", () => {

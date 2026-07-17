@@ -17,3 +17,8 @@ export { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
 export type { RemoteClawPluginApi } from "../plugins/types.js";
 export { resolveOpenAITtsInstructions } from "../tts/tts-core.js";
 export { sleep } from "../utils.js";
+export {
+  WEBHOOK_BODY_READ_DEFAULTS,
+  createWebhookInFlightLimiter,
+} from "./webhook-request-guards.js";
+export type { WebhookInFlightLimiter } from "./webhook-request-guards.js";

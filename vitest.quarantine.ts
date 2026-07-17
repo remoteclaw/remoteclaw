@@ -77,12 +77,12 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   "extensions/discord/src/monitor/provider.rest-proxy.test.ts",
   "extensions/discord/src/monitor/threading.starter.test.ts",
   "extensions/discord/src/voice-message.test.ts",
-  // #2782 (feishu): media/monitor.reaction/send.reply-fallback remain — each needs a
+  // #2782 (feishu): monitor.reaction/send.reply-fallback remain — each needs a
   // separate SOURCE change (see PR for un-quarantine of the other 6, which were stale
-  // tests fixed test-side). media.ts dropped content-type→file_type routing + download
-  // header metadata; monitor.account.ts lacks receive-layer early-event dedup; send.ts
-  // lost the thread-reply-fallback safety guard + Feishu error-diagnostics wrap.
-  "extensions/feishu/src/media.test.ts",
+  // tests fixed test-side). monitor.account.ts lacks receive-layer early-event dedup;
+  // send.ts lost the thread-reply-fallback safety guard + Feishu error-diagnostics wrap.
+  // media.test.ts un-quarantined in #2969 (content-type→file_type routing + download
+  // header metadata restored in media.ts).
   "extensions/feishu/src/monitor.reaction.test.ts",
   "extensions/feishu/src/send.reply-fallback.test.ts",
   // #2782 (imessage): accounts + parse-notification un-quarantined via SOURCE fixes — accounts.ts

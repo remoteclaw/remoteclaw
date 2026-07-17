@@ -8,6 +8,7 @@ import type { DiscordAccountConfig } from "../../../../src/config/types.js";
 import { danger } from "../../../../src/globals.js";
 import { formatErrorMessage } from "../../../../src/infra/errors.js";
 import type { RuntimeEnv } from "../../../../src/runtime.js";
+import { validateDiscordProxyUrl } from "../proxy-fetch.js";
 import { normalizeDiscordGatewayInfoTimeoutMs } from "./timeouts.js";
 
 const DISCORD_GATEWAY_BOT_URL = "https://discord.com/api/v10/gateway/bot";
@@ -300,6 +301,9 @@ export function createDiscordGatewayPlugin(params: {
   }
 
   try {
+    // The bot token rides this leg too — on the WS IDENTIFY and on the /gateway/bot metadata
+    // fetch — so the proxy is held to the same loopback-only bar as the REST path.
+    validateDiscordProxyUrl(proxy);
     const wsAgent = new HttpsProxyAgent<string>(proxy);
     const fetchAgent = new ProxyAgent(proxy);
 

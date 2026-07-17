@@ -72,7 +72,6 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   "extensions/discord/src/monitor/message-handler.preflight.test.ts",
   "extensions/discord/src/monitor/message-handler.queue.test.ts",
   "extensions/discord/src/monitor/native-command.commands-allowfrom.test.ts",
-  "extensions/discord/src/monitor/provider.rest-proxy.test.ts",
   "extensions/discord/src/voice-message.test.ts",
   // #2782 (feishu): monitor.reaction remains — needs a separate SOURCE change
   // (monitor.account.ts lacks receive-layer early-event dedup). send.reply-fallback.test.ts

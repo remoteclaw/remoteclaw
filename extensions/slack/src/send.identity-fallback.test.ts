@@ -1,11 +1,12 @@
-import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { logVerbose } from "../../../src/globals.js";
 import { createSlackSendTestClient, installSlackBlockTestMocks } from "./blocks.test-helpers.js";
 
-vi.mock("remoteclaw/plugin-sdk/runtime-env", () => ({
+// send.ts imports logVerbose from src/globals.js directly, so mock that module rather
+// than the plugin-sdk/runtime-env barrel that merely re-exports it.
+vi.mock("../../../src/globals.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../../src/globals.js")>()),
   logVerbose: vi.fn(),
-  danger: (message: string) => message,
-  shouldLogVerbose: () => false,
 }));
 
 installSlackBlockTestMocks();
@@ -191,6 +192,46 @@ describe("sendMessageSlack customize-scope fallback", () => {
     ).rejects.toThrow(
       "An API error occurred: missing_scope (needed: im:write; granted: chat:write, users:read; accepted: im:write, mpim:write)",
     );
+  });
+
+  // The assertions above use rejects.toThrow(string), which matches on substring and so
+  // would pass even if the detail were appended twice. The send path enriches at each
+  // throw site and again at the queued catch-all, so pin the exact message.
+  it("appends the scope detail exactly once across nested throw sites", async () => {
+    const client = createSlackSendTestClient();
+    vi.mocked(client.chat.postMessage).mockRejectedValueOnce(
+      buildMissingScopeError({ needed: "im:write", scopes: ["chat:write"] }),
+    );
+
+    const err = await sendMessageSlack("channel:C123", "hello", {
+      token: "xoxb-test",
+      cfg: SLACK_TEST_CFG,
+      client,
+    }).then(
+      () => undefined,
+      (reason: unknown) => reason as Error,
+    );
+
+    expect(err?.message).toBe(
+      "An API error occurred: missing_scope (needed: im:write; granted: chat:write)",
+    );
+  });
+
+  it("opts back into link unfurling when unfurlLinks is true", async () => {
+    const client = createSlackSendTestClient();
+
+    await sendMessageSlack("channel:C123", "https://example.com", {
+      token: "xoxb-test",
+      cfg: SLACK_TEST_CFG,
+      client,
+      unfurlLinks: true,
+    });
+
+    expect(readPostMessagePayload(client, 0)).toEqual({
+      channel: "C123",
+      text: "https://example.com",
+      unfurl_links: true,
+    });
   });
 
   it("preserves Slack missing-scope details while opening DMs", async () => {

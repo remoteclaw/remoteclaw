@@ -13,6 +13,7 @@ export type { ReplyPayload } from "../auto-reply/types.js";
 export type { ChatType } from "../channels/chat-type.js";
 export {
   ACCESS_GROUP_ALLOW_FROM_PREFIX,
+  expandAccessGroupAllowFromEntries,
   parseAccessGroupAllowFromEntry,
 } from "../channels/allow-from.js";
 export { resolveControlCommandGate } from "../channels/command-gating.js";

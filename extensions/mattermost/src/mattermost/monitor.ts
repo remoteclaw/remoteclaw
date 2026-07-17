@@ -832,6 +832,8 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
           senderName,
           allowFrom,
           allowNameMatching,
+          accessGroups: cfg.accessGroups,
+          channelId,
         }),
     });
     const effectiveAllowFrom = accessDecision.effectiveAllowFrom;
@@ -849,12 +851,16 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
       senderName,
       allowFrom: commandDmAllowFrom,
       allowNameMatching,
+      accessGroups: cfg.accessGroups,
+      channelId,
     });
     const groupAllowedForCommands = isMattermostSenderAllowed({
       senderId,
       senderName,
       allowFrom: effectiveGroupAllowFrom,
       allowNameMatching,
+      accessGroups: cfg.accessGroups,
+      channelId,
     });
     const commandGate = resolveControlCommandGate({
       useAccessGroups,
@@ -1349,6 +1355,8 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
           senderName,
           allowFrom,
           allowNameMatching,
+          accessGroups: cfg.accessGroups,
+          channelId,
         }),
     });
     if (reactionAccess.decision !== "allow") {

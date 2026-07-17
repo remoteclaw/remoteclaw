@@ -7,6 +7,7 @@ import WebSocket from "ws";
 import type { DiscordAccountConfig } from "../../../../src/config/types.js";
 import { danger } from "../../../../src/globals.js";
 import { formatErrorMessage } from "../../../../src/infra/errors.js";
+import { resolveActiveManagedProxyTlsOptions } from "../../../../src/infra/net/proxy/managed-proxy-undici.js";
 import type { RuntimeEnv } from "../../../../src/runtime.js";
 import { validateDiscordProxyUrl } from "../proxy-fetch.js";
 import { normalizeDiscordGatewayInfoTimeoutMs } from "./timeouts.js";
@@ -304,7 +305,14 @@ export function createDiscordGatewayPlugin(params: {
     // The bot token rides this leg too — on the WS IDENTIFY and on the /gateway/bot metadata
     // fetch — so the proxy is held to the same loopback-only bar as the REST path.
     validateDiscordProxyUrl(proxy);
-    const wsAgent = new HttpsProxyAgent<string>(proxy);
+    // An intercepting managed proxy terminates TLS with its own CA; mirror the REST
+    // path (createHttp1ProxyAgent → addActiveManagedProxyTlsOptions) so the token-bearing
+    // gateway WS handshake trusts it. No-op when the managed proxy is inactive or does not
+    // match this proxy URL, so cert validation is unchanged for non-managed proxies. The
+    // config proxy is loopback-only (validateDiscordProxyUrl), so — like the REST path — it
+    // is not subject to NO_PROXY (that governs the env-proxy path, not an explicit override).
+    const wsProxyCa = resolveActiveManagedProxyTlsOptions({ proxyUrl: proxy })?.ca;
+    const wsAgent = new HttpsProxyAgent<string>(proxy, wsProxyCa ? { ca: wsProxyCa } : undefined);
     const fetchAgent = new ProxyAgent(proxy);
 
     params.runtime.log?.("discord: gateway proxy enabled");

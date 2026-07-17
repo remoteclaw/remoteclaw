@@ -42,16 +42,6 @@
 
 /** Currently-failing test files under `extensions/**` (run by the `test-extensions` lane). */
 export const EXTENSIONS_QUARANTINE: string[] = [
-  // #2782 (acpx): manifest.test.ts reads `extensions/acpx/package.json`, but that
-  // file does not exist in the fork (untracked; no build step generates it — the
-  // `test-extensions` CI lane runs no `pnpm build`), so it ENOENTs on clean CI
-  // too. acpx's own AGENTS.md documents `package.json` as a required, hand-
-  // maintained file, so its absence is a fork-integrity gap the test correctly
-  // catches; creating it is out of scope (would break `pnpm install
-  // --frozen-lockfile` without a coordinated pnpm-lock importer). The pinned deps
-  // it asserts DO live in the tracked `npm-shrinkwrap.json` — retargeting the test
-  // there is a viable alternative iff package.json is deemed intentionally absent.
-  "extensions/acpx/src/manifest.test.ts",
   // #2782 (groupB): 3 bluebubbles files stay, each out of this ledger-shrink's scope:
   // - account-resolve: asserts an `allowPrivateNetworkConfig` field that the fork-authored
   //   resolveBlueBubblesServerAccount (no parity at 27ae826f65) never emits and nothing consumes;

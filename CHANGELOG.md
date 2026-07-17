@@ -43,6 +43,21 @@
   OpenClaw #78864, dropped by a content-only sync when this fork's resolver had
   structurally diverged.
 
+### Fixed
+
+- **iMessage — stop leaking the `[[rc:reply:<id>]]` reply tag into delivered text
+  ([remoteclaw#2990](https://github.com/remoteclaw/remoteclaw/issues/2990)):**
+  The legacy `imsg` outbound path re-encoded reply threading as an inline
+  `[[rc:reply:<id>]]` tag prepended to the message body. Because `imsg`
+  (`steipete/tap/imsg`) delivers text verbatim and has no knowledge of this
+  RemoteClaw-internal directive, reply-to sends shipped the literal tag to the
+  human recipient (for example `[[rc:reply:123]] Sure, that works`). Reply
+  threading now travels via a structured `reply_to` RPC field, and any inline
+  directive tags (`[[rc:reply:...]]`, `[[audio_as_voice]]`) are stripped from the
+  user-visible body before delivery. Ports upstream OpenClaw #39512 (thanks
+  @mvanhorn), which had not reached this fork. BlueBubbles was unaffected — it
+  already threads via a structured `selectedMessageGuid`.
+
 ## 0.1.0
 
 First RemoteClaw release. Forked from [OpenClaw v2026.2.25](https://github.com/openclaw/openclaw/releases/tag/v2026.2.25)

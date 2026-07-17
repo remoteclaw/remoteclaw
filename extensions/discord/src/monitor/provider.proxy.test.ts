@@ -262,7 +262,7 @@ describe("createDiscordGatewayPlugin", () => {
     const runtime = createRuntime();
 
     const plugin = createDiscordGatewayPlugin({
-      discordConfig: { proxy: "http://proxy.test:8080" },
+      discordConfig: { proxy: "http://127.0.0.1:8080" },
       runtime,
     });
 
@@ -272,7 +272,7 @@ describe("createDiscordGatewayPlugin", () => {
       .createWebSocket;
     createWebSocket("wss://gateway.discord.gg");
 
-    expect(wsProxyAgentSpy).toHaveBeenCalledWith("http://proxy.test:8080");
+    expect(wsProxyAgentSpy).toHaveBeenCalledWith("http://127.0.0.1:8080");
     expect(webSocketSpy).toHaveBeenCalledWith(
       "wss://gateway.discord.gg",
       expect.objectContaining({ agent: getLastAgent() }),
@@ -294,21 +294,55 @@ describe("createDiscordGatewayPlugin", () => {
     expect(runtime.log).not.toHaveBeenCalled();
   });
 
+  // The gateway leg carries the bot token too — on the WS IDENTIFY and on the /gateway/bot
+  // metadata fetch — so a remote proxy here is the same token-exfil vector the REST path already
+  // rejects. Without the `validateDiscordProxyUrl` guard both agents below get built and the token
+  // flows to the link-local metadata endpoint.
+  it("falls back to the non-proxy gateway plugin when proxy URL is remote", async () => {
+    const runtime = createRuntime();
+
+    const plugin = createDiscordGatewayPlugin({
+      discordConfig: { proxy: "http://169.254.169.254:80" },
+      runtime,
+    });
+
+    expect(wsProxyAgentSpy).not.toHaveBeenCalled();
+    expect(restProxyAgentSpy).not.toHaveBeenCalled();
+    expect(undiciProxyAgentSpy).not.toHaveBeenCalled();
+    expect(String(runtime.error.mock.calls.at(0)?.[0])).toContain("invalid gateway proxy");
+    expect(String(runtime.error.mock.calls.at(0)?.[0])).toContain("loopback host");
+    expect(runtime.log).not.toHaveBeenCalled();
+
+    // The returned plugin is genuinely the un-proxied one: the socket gets no agent...
+    const createWebSocket = (plugin as unknown as { createWebSocket: (url: string) => unknown })
+      .createWebSocket;
+    createWebSocket("wss://gateway.discord.gg");
+    expect(webSocketSpy).toHaveBeenCalledWith("wss://gateway.discord.gg", undefined);
+
+    // ...and the token-bearing metadata lookup rides global fetch with no proxy dispatcher.
+    await registerGatewayClientWithMetadata({ plugin, fetchMock: globalFetchMock });
+    expect(undiciFetchMock).not.toHaveBeenCalled();
+    expect(globalFetchMock).toHaveBeenCalledWith(
+      "https://discord.com/api/v10/gateway/bot",
+      expect.objectContaining({ headers: { Authorization: "Bot token-123" } }),
+    );
+  });
+
   it("uses proxy fetch for gateway metadata lookup before registering", async () => {
     const runtime = createRuntime();
     const plugin = createDiscordGatewayPlugin({
-      discordConfig: { proxy: "http://proxy.test:8080" },
+      discordConfig: { proxy: "http://127.0.0.1:8080" },
       runtime,
     });
 
     await registerGatewayClientWithMetadata({ plugin, fetchMock: undiciFetchMock });
 
-    expect(restProxyAgentSpy).toHaveBeenCalledWith("http://proxy.test:8080");
+    expect(restProxyAgentSpy).toHaveBeenCalledWith("http://127.0.0.1:8080");
     expect(undiciFetchMock).toHaveBeenCalledWith(
       "https://discord.com/api/v10/gateway/bot",
       expect.objectContaining({
         headers: { Authorization: "Bot token-123" },
-        dispatcher: expect.objectContaining({ proxyUrl: "http://proxy.test:8080" }),
+        dispatcher: expect.objectContaining({ proxyUrl: "http://127.0.0.1:8080" }),
       }),
     );
     expect(baseRegisterClientSpy).toHaveBeenCalledTimes(1);

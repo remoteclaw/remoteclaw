@@ -20,7 +20,6 @@ import {
   buildBaseAccountStatusSnapshot,
   buildChannelConfigSchema,
   DEFAULT_ACCOUNT_ID,
-  chunkTextForOutbound,
   deleteAccountFromConfigSection,
   formatAllowFromLowercase,
   isNumericTargetId,
@@ -45,6 +44,7 @@ import { probeZalouser } from "./probe.js";
 import { writeQrDataUrlToTempFile } from "./qr-temp-file.js";
 import { sendMessageZalouser, sendReactionZalouser } from "./send.js";
 import { collectZalouserStatusIssues } from "./status-issues.js";
+import { resolveZalouserTextOptions, ZALOUSER_TEXT_CHUNK_LIMIT } from "./text-options.js";
 import {
   listZaloFriendsMatching,
   listZaloGroupMembers,
@@ -595,9 +595,10 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
   },
   outbound: {
     deliveryMode: "direct",
-    chunker: chunkTextForOutbound,
-    chunkerMode: "text",
-    textChunkLimit: 2000,
+    // send.ts chunks after parsing markdown into style ranges; chunking here would split raw
+    // markdown mid-marker and orphan the styling. See resolveZalouserTextOptions.
+    chunker: null,
+    textChunkLimit: ZALOUSER_TEXT_CHUNK_LIMIT,
     sendPayload: async (ctx) =>
       await sendPayloadWithChunkedTextAndMedia({
         ctx,
@@ -613,6 +614,7 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
       const result = await sendMessageZalouser(target.threadId, text, {
         profile: account.profile,
         isGroup: target.isGroup,
+        ...resolveZalouserTextOptions({ cfg, accountId }),
       });
       return buildChannelSendResult("zalouser", result);
     },
@@ -624,6 +626,7 @@ export const zalouserPlugin: ChannelPlugin<ResolvedZalouserAccount> = {
         isGroup: target.isGroup,
         mediaUrl,
         mediaLocalRoots,
+        ...resolveZalouserTextOptions({ cfg, accountId }),
       });
       return buildChannelSendResult("zalouser", result);
     },

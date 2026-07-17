@@ -32,6 +32,13 @@ type IMessageSendOpts = {
 
 type IMessageSendResult = {
   messageId: string;
+  /**
+   * The text as handed to the bridge — after markdown-table conversion, media
+   * placeholder substitution, and reply-tag prefixing. The echo cache matches
+   * inbound self-echoes against the body the platform actually echoes, so this
+   * must be the post-transform text rather than the caller's input.
+   */
+  sentText: string;
 };
 
 const LEADING_REPLY_TAG_RE = /^\s*\[\[\s*rc:reply\s*:\s*([^\]\n]+)\s*\]\]\s*/i;
@@ -181,6 +188,7 @@ export async function sendMessageIMessage(
     const resolvedId = resolveMessageId(result);
     return {
       messageId: resolvedId ?? (result?.ok ? "ok" : "unknown"),
+      sentText: message,
     };
   } finally {
     if (shouldClose) {

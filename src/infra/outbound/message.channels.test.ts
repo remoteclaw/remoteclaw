@@ -144,7 +144,7 @@ describe("sendMessage channel normalization", () => {
         to: "someone@example.com",
         channel: "imsg",
         deps: {
-          sendIMessage: vi.fn(async () => ({ messageId: "i1" })),
+          sendIMessage: vi.fn(async () => ({ messageId: "i1", sentText: "hi" })),
         },
       },
       assertDeps: (deps: { sendIMessage?: ReturnType<typeof vi.fn> }) => {

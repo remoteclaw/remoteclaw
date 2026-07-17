@@ -1,11 +1,14 @@
-import { chunkTextWithMode, resolveChunkMode } from "../../../../src/auto-reply/chunk.js";
 import type { ReplyPayload } from "../../../../src/auto-reply/types.js";
-import { loadConfig } from "../../../../src/config/config.js";
-import { resolveMarkdownTableMode } from "../../../../src/config/markdown-tables.js";
-import { convertMarkdownTables } from "../../../../src/markdown/tables.js";
 import type { RuntimeEnv } from "../../../../src/runtime.js";
 import type { createIMessageRpcClient } from "../client.js";
 import { sendMessageIMessage } from "../send.js";
+import {
+  chunkTextWithMode,
+  convertMarkdownTables,
+  loadConfig,
+  resolveChunkMode,
+  resolveMarkdownTableMode,
+} from "./deliver.runtime.js";
 import type { SentMessageCache } from "./echo-cache.js";
 import { sanitizeOutboundText } from "./sanitize-outbound.js";
 
@@ -37,7 +40,6 @@ export async function deliverReplies(params: {
       continue;
     }
     if (mediaList.length === 0) {
-      sentMessageCache?.remember(scope, { text });
       for (const chunk of chunkTextWithMode(text, textLimit, chunkMode)) {
         const sent = await sendMessageIMessage(target, chunk, {
           maxBytes,
@@ -45,7 +47,10 @@ export async function deliverReplies(params: {
           accountId,
           replyToId: payload.replyToId,
         });
-        sentMessageCache?.remember(scope, { text: chunk, messageId: sent.messageId });
+        sentMessageCache?.remember(scope, {
+          text: sent.sentText,
+          messageId: sent.messageId,
+        });
       }
     } else {
       let first = true;
@@ -60,7 +65,7 @@ export async function deliverReplies(params: {
           replyToId: payload.replyToId,
         });
         sentMessageCache?.remember(scope, {
-          text: caption || undefined,
+          text: sent.sentText || undefined,
           messageId: sent.messageId,
         });
       }

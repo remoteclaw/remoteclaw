@@ -1,3 +1,4 @@
+import { createRequire } from "node:module";
 import * as SlackBolt from "@slack/bolt";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { resolveSlackWebClientOptions } from "./client.js";
@@ -93,5 +94,51 @@ describe("slack socket mode proxy wiring", () => {
     } finally {
       delete process.env.NO_PROXY;
     }
+  });
+});
+
+/**
+ * Dependency tripwire for the un-asserted tail of the Socket-Mode agent-forwarding chain.
+ *
+ * The proxy tests above pin the contract only up to `SocketModeClient.webClientOptions.agent`
+ * — the last seam observable without opening a live WebSocket. The final hops
+ * (`SocketModeClient` → `SlackWebSocket`, which hands the agent to `ws` as `httpAgent`) live
+ * inside `@slack/socket-mode` and run only against the live network. A `@slack/bolt` or
+ * `@slack/socket-mode` MAJOR that renamed or dropped that private
+ * `installerOptions.clientOptions` → `webClientOptions.agent` → `httpAgent` forwarding would
+ * leave the tests above GREEN while the WebSocket silently egressed direct (the #2954
+ * regression: Web API still proxied, bot token unproxied, nothing else failing).
+ *
+ * Semver-major is the review signal: these guards fail when either package leaves its verified
+ * major, forcing a human re-review of the forwarding path — App → SocketModeReceiver →
+ * SocketModeClient → SlackWebSocket → ws `httpAgent` — before the bump lands. Within-major
+ * bumps are trusted (a break there would surface as a live regression, not a semver signal).
+ */
+const tripwireRequire = createRequire(import.meta.url);
+const VERIFIED_BOLT_MAJOR = 4; // @slack/bolt@4.7.3
+const VERIFIED_SOCKET_MODE_MAJOR = 2; // @slack/socket-mode@2.0.7 (transitive via @slack/bolt)
+
+function majorOf(version: string): number {
+  return Number.parseInt(version.split(".")[0] ?? "", 10);
+}
+
+describe("slack socket mode proxy dependency tripwire", () => {
+  it("keeps @slack/bolt within the verified major (installerOptions merge re-review gate)", () => {
+    const { version } = tripwireRequire("@slack/bolt/package.json") as { version: string };
+    expect(
+      majorOf(version),
+      `@slack/bolt left verified major ${VERIFIED_BOLT_MAJOR} (installed ${version}). Re-verify App → SocketModeReceiver → SocketModeClient still forwards installerOptions.clientOptions.agent, then bump VERIFIED_BOLT_MAJOR.`,
+    ).toBe(VERIFIED_BOLT_MAJOR);
+  });
+
+  it("keeps @slack/socket-mode within the verified major (webClientOptions.agent → ws httpAgent re-review gate)", () => {
+    // socket-mode is transitive; pnpm's strict layout hides it from the workspace root, so
+    // resolve its package.json from @slack/bolt's own location.
+    const requireFromBolt = createRequire(tripwireRequire.resolve("@slack/bolt"));
+    const { version } = requireFromBolt("@slack/socket-mode/package.json") as { version: string };
+    expect(
+      majorOf(version),
+      `@slack/socket-mode left verified major ${VERIFIED_SOCKET_MODE_MAJOR} (installed ${version}). Re-verify SocketModeClient still hands webClientOptions.agent to SlackWebSocket as ws httpAgent, then bump VERIFIED_SOCKET_MODE_MAJOR.`,
+    ).toBe(VERIFIED_SOCKET_MODE_MAJOR);
   });
 });

@@ -5,6 +5,12 @@ import {
 } from "../../../../src/channels/inbound-debounce-policy.js";
 import { resolveOpenProviderRuntimeGroupPolicy } from "../../../../src/config/runtime-group-policy.js";
 import { danger } from "../../../../src/globals.js";
+import {
+  buildDiscordInboundReplayKey,
+  claimDiscordInboundReplay,
+  createDiscordInboundReplayGuard,
+  releaseDiscordInboundReplay,
+} from "./inbound-dedupe.js";
 import { buildDiscordInboundJob } from "./inbound-job.js";
 import { createDiscordInboundWorker } from "./inbound-worker.js";
 import type { DiscordMessageEvent, DiscordMessageHandler } from "./listeners.js";
@@ -42,12 +48,36 @@ export function createDiscordMessageHandler(
     params.discordConfig?.ackReactionScope ??
     params.cfg.messages?.ackReactionScope ??
     "group-mentions";
+  const replayGuard = createDiscordInboundReplayGuard();
   const inboundWorker = createDiscordInboundWorker({
     runtime: params.runtime,
     setStatus: params.setStatus,
     abortSignal: params.abortSignal,
     runTimeoutMs: params.workerRunTimeoutMs,
+    replayGuard,
   });
+
+  async function claimDiscordInboundReplayKeys(
+    entries: ReadonlyArray<{ data: DiscordMessageEvent }>,
+  ): Promise<{ claimedKeys: string[]; anyClaimAttempted: boolean }> {
+    const claimedKeys: string[] = [];
+    let anyClaimAttempted = false;
+    for (const entry of entries) {
+      const replayKey = buildDiscordInboundReplayKey({
+        accountId: params.accountId,
+        data: entry.data,
+      });
+      if (!replayKey) {
+        continue;
+      }
+      anyClaimAttempted = true;
+      const claimed = await claimDiscordInboundReplay({ replayKey, replayGuard });
+      if (claimed) {
+        claimedKeys.push(replayKey);
+      }
+    }
+    return { claimedKeys, anyClaimAttempted };
+  }
 
   const { debouncer } = createChannelInboundDebouncer<{
     data: DiscordMessageEvent;
@@ -95,6 +125,16 @@ export function createDiscordMessageHandler(
       if (abortSignal?.aborted) {
         return;
       }
+      // Claim each message's replay key BEFORE preflight so a gateway RESUME
+      // redelivery of an already-seen message is dropped here instead of being
+      // preflighted and dispatched a second time. Messages without an id can't be
+      // deduped and pass through; when every claimable id is a duplicate the whole
+      // flush is dropped. Claimed keys travel with the job so the worker can commit
+      // them on success or release them on a retryable failure.
+      const { claimedKeys, anyClaimAttempted } = await claimDiscordInboundReplayKeys(entries);
+      if (anyClaimAttempted && claimedKeys.length === 0) {
+        return;
+      }
       if (entries.length === 1) {
         const ctx = await preflightDiscordMessage({
           ...params,
@@ -105,9 +145,10 @@ export function createDiscordMessageHandler(
           client: last.client,
         });
         if (!ctx) {
+          releaseDiscordInboundReplay({ replayKeys: claimedKeys, replayGuard });
           return;
         }
-        inboundWorker.enqueue(buildDiscordInboundJob(ctx));
+        inboundWorker.enqueue(buildDiscordInboundJob(ctx, { replayKeys: claimedKeys }));
         return;
       }
       const combinedBaseText = entries
@@ -137,6 +178,7 @@ export function createDiscordMessageHandler(
         client: last.client,
       });
       if (!ctx) {
+        releaseDiscordInboundReplay({ replayKeys: claimedKeys, replayGuard });
         return;
       }
       if (entries.length > 1) {
@@ -152,7 +194,7 @@ export function createDiscordMessageHandler(
           ctxBatch.MessageSidLast = ids[ids.length - 1];
         }
       }
-      inboundWorker.enqueue(buildDiscordInboundJob(ctx));
+      inboundWorker.enqueue(buildDiscordInboundJob(ctx, { replayKeys: claimedKeys }));
     },
     onError: (err) => {
       params.runtime.error?.(danger(`discord debounce flush failed: ${String(err)}`));

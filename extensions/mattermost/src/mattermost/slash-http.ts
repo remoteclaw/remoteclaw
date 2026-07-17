@@ -400,6 +400,12 @@ async function handleSlashCommandAsync(params: {
     ChatType: chatType,
     ConversationLabel: fromLabel,
     GroupSubject: kind !== "direct" ? channelDisplay || roomLabel : undefined,
+    // Workspace-scope parity with the message path (monitor.ts:548 / :1126) —
+    // slash-initiated sessions must carry GroupSpace so downstream group-space
+    // scoping (session `space`, gateway group inheritance, require-mention)
+    // resolves the same as message-initiated ones. `teamId` is a non-nullable
+    // string here (payload.team_id). (#2975)
+    GroupSpace: teamId,
     SenderName: senderName,
     SenderId: senderId,
     Provider: "mattermost" as const,

@@ -1,10 +1,62 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { PassThrough } from "node:stream";
 import type { RemoteClawConfig, RuntimeEnv } from "remoteclaw/plugin-sdk/mattermost";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { setMattermostRuntime } from "../runtime.js";
 import type { ResolvedMattermostAccount } from "./accounts.js";
+import type { MattermostChannel } from "./client.js";
+import type { MattermostCommandAuthDecision } from "./monitor-auth.js";
 import type { MattermostRegisteredCommand } from "./slash-commands.js";
 import { createSlashCommandHttpHandler } from "./slash-http.js";
+
+// The GroupSpace session-metadata test below drives a fully authorized slash
+// request all the way into handleSlashCommandAsync. Stub the channel lookup and
+// the authorization decision so the request reaches the inbound-context builder
+// without a live Mattermost server. Real exports are preserved; only the two
+// functions on this path are overridden.
+vi.mock("./client.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./client.js")>();
+  return {
+    ...actual,
+    createMattermostClient: vi.fn(
+      () => ({}) as unknown as ReturnType<typeof actual.createMattermostClient>,
+    ),
+    fetchMattermostChannel: vi.fn(
+      async (): Promise<MattermostChannel> => ({
+        id: "c1",
+        name: "general",
+        display_name: "General",
+        type: "O",
+        team_id: "t1",
+      }),
+    ),
+  };
+});
+
+vi.mock("./monitor-auth.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./monitor-auth.js")>();
+  return {
+    ...actual,
+    authorizeMattermostCommandInvocation: vi.fn(
+      (): MattermostCommandAuthDecision => ({
+        ok: true,
+        commandAuthorized: true,
+        channelInfo: {
+          id: "c1",
+          name: "general",
+          display_name: "General",
+          type: "O",
+          team_id: "t1",
+        },
+        kind: "channel",
+        chatType: "channel",
+        channelName: "general",
+        channelDisplay: "General",
+        roomLabel: "#general",
+      }),
+    ),
+  };
+});
 
 function createRequest(params: {
   method?: string;
@@ -172,5 +224,67 @@ describe("slash-http", () => {
     });
 
     expect(response.res.statusCode).toBe(408);
+  });
+});
+
+describe("slash-http session metadata", () => {
+  // Capture the inbound-context payload the slash path hands to
+  // finalizeInboundContext. That builder mutates-and-returns its argument
+  // without stripping unknown keys, so the captured object is the payload the
+  // session is recorded from.
+  let capturedCtx: Record<string, unknown> | undefined;
+
+  beforeEach(() => {
+    capturedCtx = undefined;
+    setMattermostRuntime({
+      channel: {
+        routing: {
+          resolveAgentRoute: () => ({
+            sessionKey: "mattermost:channel:c1",
+            accountId: "default",
+            agentId: "agent-1",
+          }),
+        },
+        commands: {
+          shouldHandleTextCommands: () => false,
+        },
+        text: {
+          hasControlCommand: () => false,
+          resolveTextChunkLimit: () => 4000,
+          resolveMarkdownTableMode: () => "auto",
+        },
+        pairing: {
+          readAllowFromStore: async () => [],
+        },
+        reply: {
+          finalizeInboundContext: (ctx: Record<string, unknown>) => {
+            capturedCtx = ctx;
+            return ctx;
+          },
+          createReplyDispatcherWithTyping: () => ({
+            dispatcher: {},
+            replyOptions: {},
+            markDispatchIdle: () => {},
+          }),
+          resolveHumanDelayConfig: () => ({}),
+          // No-op: never invoke `run`, so we capture the payload without
+          // exercising reply dispatch/delivery.
+          withReplyDispatcher: async () => {},
+        },
+      },
+    } as unknown as Parameters<typeof setMattermostRuntime>[0]);
+  });
+
+  it("carries GroupSpace (the invoking team id) on the slash-command session payload — parity with the message path (monitor.ts:548)", async () => {
+    await runSlashRequest({
+      registeredCommands: [cmd()],
+      body: "token=known-token&team_id=t1&channel_id=c1&user_id=u1&user_name=alice&command=%2Foc_status&text=status",
+    });
+
+    // Regression guard for #2975: the slash path previously omitted GroupSpace,
+    // so slash-initiated sessions lost workspace-scope parity with the message
+    // path. It must now equal the invoking team id, exactly as monitor.ts sets it.
+    expect(capturedCtx).toBeDefined();
+    expect(capturedCtx?.GroupSpace).toBe("t1");
   });
 });

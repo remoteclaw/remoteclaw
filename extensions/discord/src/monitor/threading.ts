@@ -15,6 +15,7 @@ import type { DiscordMessageEvent } from "./listeners.js";
 import {
   resolveDiscordChannelInfo,
   resolveDiscordEmbedText,
+  resolveDiscordForwardedMessagesText,
   resolveDiscordMessageChannelId,
 } from "./message-utils.js";
 
@@ -194,6 +195,15 @@ export async function resolveDiscordThreadStarter(params: {
     )) as {
       content?: string | null;
       embeds?: Array<{ title?: string | null; description?: string | null }>;
+      message_snapshots?: Array<{
+        message?: {
+          content?: string | null;
+          embeds?: Array<{ title?: string | null; description?: string | null }>;
+          attachments?: unknown[];
+          stickers?: unknown[];
+          sticker_items?: unknown[];
+        };
+      }>;
       member?: { nick?: string | null; displayName?: string | null };
       author?: {
         id?: string | null;
@@ -207,7 +217,10 @@ export async function resolveDiscordThreadStarter(params: {
     }
     const content = normalizeOptionalString(starter.content) ?? "";
     const embedText = resolveDiscordEmbedText(starter.embeds?.[0]);
-    const text = content || embedText;
+    // A forward-rooted thread starter carries its content in message_snapshots, not
+    // in content/embeds; extract the forwarded text (with attachment/sticker placeholders).
+    const forwardedText = resolveDiscordForwardedMessagesText(starter);
+    const text = content || embedText || forwardedText;
     if (!text) {
       return null;
     }

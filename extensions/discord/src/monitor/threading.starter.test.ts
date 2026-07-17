@@ -122,10 +122,6 @@ describe("resolveDiscordThreadStarter", () => {
     expect(requireThreadStarter(result)).toEqual({
       text: "Alert\nDetails",
       author: "Alice",
-      authorId: "u1",
-      authorName: "Alice",
-      authorTag: "Alice",
-      memberRoleIds: undefined,
       timestamp: 123,
     });
   });
@@ -144,24 +140,17 @@ describe("resolveDiscordThreadStarter", () => {
     expect(result.text).toBe("starter content");
   });
 
-  it("preserves username, tag, and role metadata for downstream visibility checks", async () => {
+  it("formats the author tag with a discriminator when present", async () => {
     const { result } = await resolveStarter({
       message: createStarterMessage({
         content: "starter content",
         author: createStarterAuthor({ discriminator: "1234" }),
-        member: {
-          roles: ["role-1", "role-2"],
-        },
       }),
     });
 
     expect(requireThreadStarter(result)).toEqual({
       text: "starter content",
       author: "Alice#1234",
-      authorId: "u1",
-      authorName: "Alice",
-      authorTag: "Alice#1234",
-      memberRoleIds: ["role-1", "role-2"],
       timestamp: undefined,
     });
   });

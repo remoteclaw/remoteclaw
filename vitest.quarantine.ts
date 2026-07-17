@@ -71,10 +71,8 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   "extensions/discord/src/monitor/auto-presence.test.ts",
   "extensions/discord/src/monitor/message-handler.preflight.test.ts",
   "extensions/discord/src/monitor/message-handler.queue.test.ts",
-  "extensions/discord/src/monitor/message-utils.test.ts",
   "extensions/discord/src/monitor/native-command.commands-allowfrom.test.ts",
   "extensions/discord/src/monitor/provider.rest-proxy.test.ts",
-  "extensions/discord/src/monitor/threading.starter.test.ts",
   "extensions/discord/src/voice-message.test.ts",
   // #2782 (feishu): monitor.reaction/send.reply-fallback remain — each needs a
   // separate SOURCE change (see PR for un-quarantine of the other 6, which were stale

@@ -1,4 +1,5 @@
 import { createRequire } from "node:module";
+import { addActiveManagedProxyTlsOptions } from "./proxy/managed-proxy-undici.js";
 import { resolveUndiciAutoSelectFamilyConnectOptions } from "./undici-family-policy.js";
 
 export const TEST_UNDICI_RUNTIME_DEPS_KEY = "__REMOTECLAW_TEST_UNDICI_RUNTIME_DEPS__";
@@ -156,8 +157,10 @@ export function createHttp1EnvHttpProxyAgent(
   timeoutMs?: number,
 ): import("undici").EnvHttpProxyAgent {
   const { EnvHttpProxyAgent } = loadUndiciRuntimeDeps();
+  // `options` is optional, so the managed-proxy wrap can return undefined here;
+  // normalize to `{}` (the ProxyAgent path below always passes a built object).
   return new EnvHttpProxyAgent(
-    withHttp1OnlyDispatcherOptions(options, timeoutMs, {
+    withHttp1OnlyDispatcherOptions(addActiveManagedProxyTlsOptions(options) ?? {}, timeoutMs, {
       connect: true,
       proxyTls: true,
     }),
@@ -174,8 +177,12 @@ export function createHttp1ProxyAgent(
       ? { uri: options.toString() }
       : { ...options };
   return new ProxyAgent(
-    withHttp1OnlyDispatcherOptions(normalized as object, timeoutMs, {
-      proxyTls: true,
-    }) as UndiciProxyAgentOptions,
+    withHttp1OnlyDispatcherOptions(
+      addActiveManagedProxyTlsOptions(normalized as object),
+      timeoutMs,
+      {
+        proxyTls: true,
+      },
+    ) as UndiciProxyAgentOptions,
   );
 }

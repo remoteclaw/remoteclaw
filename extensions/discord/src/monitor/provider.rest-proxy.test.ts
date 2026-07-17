@@ -189,11 +189,9 @@ describe("resolveDiscordRestFetch", () => {
     expect(runtime.error).not.toHaveBeenCalled();
   });
 
-  // Skipped pending #2984: `createHttp1ProxyAgent` dropped its
-  // `addActiveManagedProxyTlsOptions` wrapper, so `proxyTls.ca` is never populated.
-  // That fix is shared infra (it also reaches the guarded SSRF path), so it is tracked
-  // separately from the Discord proxy hardening in #2960. Un-skip with #2984.
-  it.skip("uses managed proxy CA trust when a configured REST proxy matches the managed proxy", async () => {
+  // #2984: `createHttp1ProxyAgent` applies `addActiveManagedProxyTlsOptions`, so a
+  // configured REST proxy that matches the active managed proxy inherits its CA trust.
+  it("uses managed proxy CA trust when a configured REST proxy matches the managed proxy", async () => {
     const caFile = writeTempCa("discord-rest-configured-proxy-ca");
     vi.stubEnv("HTTPS_PROXY", "https://127.0.0.1:8443");
     vi.stubEnv("https_proxy", "https://127.0.0.1:8443");
@@ -313,9 +311,9 @@ describe("resolveDiscordRestFetch", () => {
     expect(runtime.log).not.toHaveBeenCalled();
   });
 
-  // Skipped pending #2984 — see the note above; same missing
-  // `addActiveManagedProxyTlsOptions` wrapper, here in `createHttp1EnvHttpProxyAgent`.
-  it.skip("uses managed env proxy CA trust when no discord proxy URL is configured", async () => {
+  // #2984: same wrapper in `createHttp1EnvHttpProxyAgent` — the managed env proxy
+  // inherits CA trust when no explicit discord proxy URL is configured.
+  it("uses managed env proxy CA trust when no discord proxy URL is configured", async () => {
     const caFile = writeTempCa("discord-rest-managed-proxy-ca");
     vi.stubEnv("HTTPS_PROXY", "https://proxy.example:8443");
     vi.stubEnv("https_proxy", "https://proxy.example:8443");

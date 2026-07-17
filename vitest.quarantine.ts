@@ -144,13 +144,15 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   // send.ts (unfurl_links:false payload default + Slack Web API error enrichment at every throw
   // site). The feared blast radius did not materialize: the other send tests asserting postMessage
   // payloads (send.blocks, send.upload) use expect.objectContaining, which tolerates the added key.
-  // The 2 below stay, each out of scope for a test-side un-quarantine (see PR for details):
-  // - client: proxy-agent support was gutted (no client-options.ts); restoring needs new
-  //   plugin-sdk fetch-runtime helpers (resolveEnvHttpProxyUrl / resolveActiveManagedProxyTlsOptions)
-  //   that don't exist in the fork — a network-egress SOURCE change for a separate security-gated PR.
+  // #2954 (slack): client un-quarantined — the proxy-agent SOURCE regression is fixed in client.ts
+  // (resolveSlackProxyAgent). The earlier note here claimed the required helpers "don't exist in
+  // the fork"; that was wrong — resolveEnvHttpProxyUrl (src/infra/net/proxy-env.ts) and
+  // resolveActiveManagedProxyTlsOptions (src/infra/net/proxy/managed-proxy-undici.ts) both exist,
+  // and extensions already import that first module directly (discord rest-fetch, telegram fetch).
+  // No plugin-sdk fetch-runtime subpath was needed. The file's whole proxy suite now runs in CI.
+  // The 1 below stays, out of scope for a test-side un-quarantine (see PR for details):
   // - dispatch.preview-fallback: obsolete premise — dispatch.ts finalizes previews via inline
   //   chat.update now, not finalizeSlackPreviewEdit (which is dead code); the test needs a rewrite.
-  "extensions/slack/src/client.test.ts",
   "extensions/slack/src/monitor/message-handler/dispatch.preview-fallback.test.ts",
   "extensions/telegram/src/bot-message-context.dm-threads.test.ts",
   "extensions/telegram/src/bot-message-context.group-body.test.ts",

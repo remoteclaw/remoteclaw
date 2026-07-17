@@ -1,5 +1,7 @@
 import * as Lark from "@larksuiteoapi/node-sdk";
 import { HttpsProxyAgent } from "https-proxy-agent";
+import { matchesNoProxy, resolveEnvHttpProxyUrl } from "../../../src/infra/net/proxy-env.js";
+import { resolveActiveManagedProxyTlsOptions } from "../../../src/infra/net/proxy/managed-proxy-undici.js";
 import type { FeishuConfig, FeishuDomain, ResolvedFeishuAccount } from "./types.js";
 
 type FeishuClientSdk = Pick<
@@ -36,14 +38,32 @@ type FeishuHttpInstanceLike = Pick<
   "request" | "get" | "post" | "put" | "patch" | "delete" | "head" | "options"
 >;
 
-function getWsProxyAgent(): HttpsProxyAgent<string> | undefined {
-  const proxyUrl =
-    process.env.https_proxy ||
-    process.env.HTTPS_PROXY ||
-    process.env.http_proxy ||
-    process.env.HTTP_PROXY;
-  if (!proxyUrl) return undefined;
-  return new httpsProxyAgentCtor(proxyUrl);
+/**
+ * Build an HTTPS proxy agent from the standard proxy env vars for the Feishu
+ * long-connection WebSocket. Mirrors the Slack path (`resolveSlackProxyAgent`):
+ * honor NO_PROXY for the target Feishu/Lark host, and apply the active
+ * managed-proxy CA so a TLS-terminating managed proxy is trusted.
+ *
+ * `targetUrl` is the resolved Feishu/Lark domain the long connection reaches, so
+ * an operator can exclude it via NO_PROXY exactly as they would any other host.
+ *
+ * Returns `undefined` when no proxy is configured, when NO_PROXY excludes the
+ * target host, or when the proxy URL is unusable — each of which leaves Feishu on
+ * a direct connection, matching the behavior before a proxy was configured.
+ */
+function getWsProxyAgent(targetUrl: string): HttpsProxyAgent<string> | undefined {
+  try {
+    const proxyUrl = resolveEnvHttpProxyUrl("https");
+    if (!proxyUrl || matchesNoProxy(targetUrl)) {
+      return undefined;
+    }
+    // An intercepting managed proxy terminates TLS with its own CA; without it
+    // the long-connection handshake fails certificate validation.
+    const ca = resolveActiveManagedProxyTlsOptions({ proxyUrl })?.ca;
+    return new httpsProxyAgentCtor(proxyUrl, ca ? { ca } : undefined);
+  } catch {
+    return undefined;
+  }
 }
 
 // Multi-account client cache
@@ -61,6 +81,24 @@ function resolveDomain(domain: FeishuDomain | undefined): Lark.Domain | string {
   }
   if (domain === "feishu" || !domain) {
     return feishuClientSdk.Domain.Feishu;
+  }
+  return domain.replace(/\/+$/, ""); // Custom URL for private deployment
+}
+
+/**
+ * The egress URL the Feishu/Lark long connection reaches, used as the NO_PROXY
+ * match target. NOT `resolveDomain`: that returns the Lark SDK's `Domain` enum,
+ * which is NUMERIC at runtime (`Domain.Feishu === 0`, `Domain.Lark === 1`), so
+ * `String(resolveDomain(...))` yields "0"/"1" — not a URL — and NO_PROXY would
+ * never match. The base URLs mirror the SDK's own domain mapping
+ * (`@larksuiteoapi/node-sdk`: Feishu → open.feishu.cn, Lark → open.larksuite.com).
+ */
+function resolveDomainUrl(domain: FeishuDomain | undefined): string {
+  if (domain === "lark") {
+    return "https://open.larksuite.com";
+  }
+  if (domain === "feishu" || !domain) {
+    return "https://open.feishu.cn";
   }
   return domain.replace(/\/+$/, ""); // Custom URL for private deployment
 }
@@ -186,7 +224,7 @@ export function createFeishuWSClient(account: ResolvedFeishuAccount): Lark.WSCli
     throw new Error(`Feishu credentials not configured for account "${accountId}"`);
   }
 
-  const agent = getWsProxyAgent();
+  const agent = getWsProxyAgent(resolveDomainUrl(domain));
   return new feishuClientSdk.WSClient({
     appId,
     appSecret,

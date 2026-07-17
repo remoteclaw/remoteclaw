@@ -1,3 +1,6 @@
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
@@ -60,11 +63,13 @@ const {
   class HttpsProxyAgent {
     static lastCreated: HttpsProxyAgent | undefined;
     proxyUrl: string;
-    constructor(proxyUrl: string) {
+    options: unknown;
+    constructor(proxyUrl: string, options?: unknown) {
       if (proxyUrl === "bad-proxy") {
         throw new Error("bad proxy");
       }
       this.proxyUrl = proxyUrl;
+      this.options = options;
       HttpsProxyAgent.lastCreated = this;
       wsProxyAgentSpy(proxyUrl);
     }
@@ -114,6 +119,16 @@ vi.mock("undici", () => ({
 vi.mock("ws", () => ({
   default: MockWebSocket,
 }));
+
+const tempDirs: string[] = [];
+
+function writeTempCa(contents: string): string {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "remoteclaw-discord-gateway-proxy-ca-"));
+  tempDirs.push(dir);
+  const caFile = path.join(dir, "proxy-ca.pem");
+  writeFileSync(caFile, contents, "utf8");
+  return caFile;
+}
 
 describe("createDiscordGatewayPlugin", () => {
   let createDiscordGatewayPlugin: typeof import("./gateway-plugin.js").createDiscordGatewayPlugin;
@@ -206,6 +221,9 @@ describe("createDiscordGatewayPlugin", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllEnvs();
+    for (const dir of tempDirs.splice(0)) {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it("uses safe gateway metadata lookup without proxy", async () => {
@@ -278,6 +296,58 @@ describe("createDiscordGatewayPlugin", () => {
       expect.objectContaining({ agent: getLastAgent() }),
     );
     expect(runtime.log).toHaveBeenCalledWith("discord: gateway proxy enabled");
+    expect(runtime.error).not.toHaveBeenCalled();
+  });
+
+  // #2995: the gateway WS carries the bot token, so when a managed proxy that matches the
+  // configured (loopback) proxy is active, the WS agent must trust its CA — mirroring the REST
+  // path (createHttp1ProxyAgent → addActiveManagedProxyTlsOptions).
+  it("applies the managed proxy CA to the gateway WebSocket agent when the managed proxy is active", async () => {
+    // The managed CA only applies to a TLS-terminating (https) proxy, so the loopback proxy is
+    // https here (proxy-tls.ts isHttpsProxyUrl gate).
+    const caFile = writeTempCa("discord-gateway-managed-proxy-ca");
+    vi.stubEnv("HTTPS_PROXY", "https://127.0.0.1:8443");
+    vi.stubEnv("https_proxy", "https://127.0.0.1:8443");
+    vi.stubEnv("REMOTECLAW_PROXY_ACTIVE", "1");
+    vi.stubEnv("REMOTECLAW_PROXY_CA_FILE", caFile);
+    const runtime = createRuntime();
+
+    const plugin = createDiscordGatewayPlugin({
+      discordConfig: { proxy: "https://127.0.0.1:8443" },
+      runtime,
+    });
+
+    const createWebSocket = (plugin as unknown as { createWebSocket: (url: string) => unknown })
+      .createWebSocket;
+    createWebSocket("wss://gateway.discord.gg");
+
+    expect(wsProxyAgentSpy).toHaveBeenCalledWith("https://127.0.0.1:8443");
+    expect((getLastAgent() as { options?: unknown } | undefined)?.options).toEqual({
+      ca: "discord-gateway-managed-proxy-ca",
+    });
+    expect(runtime.error).not.toHaveBeenCalled();
+  });
+
+  // #2995 + #2960: no managed proxy active → no CA override, so cert validation is unchanged for
+  // a non-managed proxy.
+  it("builds the gateway WebSocket agent without a CA when no managed proxy is active", async () => {
+    vi.stubEnv("HTTPS_PROXY", "");
+    vi.stubEnv("https_proxy", "");
+    vi.stubEnv("REMOTECLAW_PROXY_ACTIVE", "");
+    vi.stubEnv("REMOTECLAW_PROXY_CA_FILE", "");
+    const runtime = createRuntime();
+
+    const plugin = createDiscordGatewayPlugin({
+      discordConfig: { proxy: "http://127.0.0.1:8080" },
+      runtime,
+    });
+
+    const createWebSocket = (plugin as unknown as { createWebSocket: (url: string) => unknown })
+      .createWebSocket;
+    createWebSocket("wss://gateway.discord.gg");
+
+    expect(wsProxyAgentSpy).toHaveBeenCalledWith("http://127.0.0.1:8080");
+    expect((getLastAgent() as { options?: unknown } | undefined)?.options).toBeUndefined();
     expect(runtime.error).not.toHaveBeenCalled();
   });
 

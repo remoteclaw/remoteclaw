@@ -1,3 +1,6 @@
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { FeishuConfigSchema } from "./config-schema.js";
 import type { ResolvedFeishuAccount } from "./types.js";
@@ -32,7 +35,16 @@ const mockBaseHttpInstance = vi.hoisted(() => ({
   head: vi.fn().mockResolvedValue({}),
   options: vi.fn().mockResolvedValue({}),
 }));
-const proxyEnvKeys = ["https_proxy", "HTTPS_PROXY", "http_proxy", "HTTP_PROXY"] as const;
+const proxyEnvKeys = [
+  "https_proxy",
+  "HTTPS_PROXY",
+  "http_proxy",
+  "HTTP_PROXY",
+  "no_proxy",
+  "NO_PROXY",
+  "REMOTECLAW_PROXY_ACTIVE",
+  "REMOTECLAW_PROXY_CA_FILE",
+] as const;
 type ProxyEnvKey = (typeof proxyEnvKeys)[number];
 const registerFeishuDocToolsMock = vi.hoisted(() => vi.fn());
 const registerFeishuChatToolsMock = vi.hoisted(() => vi.fn());
@@ -134,10 +146,23 @@ function firstWsClientOptions(): { agent?: unknown; wsConfig?: unknown } {
   return { agent: options.agent, wsConfig: options.wsConfig };
 }
 
+const tempDirs: string[] = [];
+
+function writeTempCa(contents: string): string {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "remoteclaw-feishu-ws-proxy-ca-"));
+  tempDirs.push(dir);
+  const caFile = path.join(dir, "proxy-ca.pem");
+  writeFileSync(caFile, contents, "utf8");
+  return caFile;
+}
+
 beforeAll(async () => {
   vi.doMock("@larksuiteoapi/node-sdk", () => ({
     AppType: { SelfBuild: "self" },
-    Domain: { Feishu: "https://open.feishu.cn", Lark: "https://open.larksuite.com" },
+    // Numeric to match the real SDK enum (Domain.Feishu === 0, Domain.Lark === 1). A
+    // regression that stringifies resolveDomain() for the NO_PROXY target — instead of the
+    // URL-returning resolveDomainUrl() — would yield "0"/"1" and fail the NO_PROXY test below.
+    Domain: { Feishu: 0, Lark: 1 },
     LoggerLevel: { info: "info" },
     Client: clientCtorMock,
     WSClient: wsClientCtorMock,
@@ -169,10 +194,7 @@ beforeEach(() => {
   setFeishuClientRuntimeForTest({
     sdk: {
       AppType: { SelfBuild: "self" } as never,
-      Domain: {
-        Feishu: "https://open.feishu.cn",
-        Lark: "https://open.larksuite.com",
-      } as never,
+      Domain: { Feishu: 0, Lark: 1 } as never,
       LoggerLevel: { info: "info" } as never,
       Client: clientCtorMock as never,
       WSClient: wsClientCtorMock as never,
@@ -186,6 +208,9 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  for (const dir of tempDirs.splice(0)) {
+    rmSync(dir, { recursive: true, force: true });
+  }
   for (const key of proxyEnvKeys) {
     const value = priorProxyEnv[key];
     if (value === undefined) {
@@ -393,6 +418,46 @@ describe("createFeishuWSClient proxy handling", () => {
     await createFeishuWSClient(baseAccount);
 
     expect(proxyAgentCtorMock).toHaveBeenCalledTimes(1);
+    const options = firstWsClientOptions();
+    expect(options.agent).toEqual({ proxied: true });
+  });
+
+  it("does not set a ws proxy agent when NO_PROXY excludes the Feishu domain", async () => {
+    process.env.https_proxy = "http://proxy.example:8001";
+    // baseAccount.domain is "feishu" → resolveDomainUrl → https://open.feishu.cn.
+    process.env.NO_PROXY = "open.feishu.cn";
+
+    await createFeishuWSClient(baseAccount);
+
+    expect(proxyAgentCtorMock).not.toHaveBeenCalled();
+    const options = firstWsClientOptions();
+    expect(options.agent).toBeUndefined();
+  });
+
+  it("applies the managed proxy CA to the ws proxy agent when the managed proxy is active", async () => {
+    const caFile = writeTempCa("feishu-ws-managed-proxy-ca");
+    process.env.https_proxy = "https://127.0.0.1:8443";
+    process.env.HTTPS_PROXY = "https://127.0.0.1:8443";
+    process.env.REMOTECLAW_PROXY_ACTIVE = "1";
+    process.env.REMOTECLAW_PROXY_CA_FILE = caFile;
+
+    await createFeishuWSClient(baseAccount);
+
+    expect(proxyAgentCtorMock).toHaveBeenCalledWith("https://127.0.0.1:8443", {
+      ca: "feishu-ws-managed-proxy-ca",
+    });
+    const options = firstWsClientOptions();
+    expect(options.agent).toEqual({ proxied: true });
+  });
+
+  it("does not apply a CA when no managed proxy is active", async () => {
+    process.env.https_proxy = "http://proxy.example:8001";
+
+    await createFeishuWSClient(baseAccount);
+
+    // Second constructor arg is undefined → no CA override, so cert validation for a
+    // non-managed proxy is unchanged (#2960 no-op).
+    expect(proxyAgentCtorMock).toHaveBeenCalledWith("http://proxy.example:8001", undefined);
     const options = firstWsClientOptions();
     expect(options.agent).toEqual({ proxied: true });
   });

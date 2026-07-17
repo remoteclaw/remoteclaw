@@ -4,6 +4,10 @@ export const DISCORD_DEFAULT_LISTENER_TIMEOUT_MS = 120_000;
 export const DISCORD_DEFAULT_INBOUND_WORKER_TIMEOUT_MS = 30 * 60_000;
 export const DISCORD_ATTACHMENT_IDLE_TIMEOUT_MS = 60_000;
 export const DISCORD_ATTACHMENT_TOTAL_TIMEOUT_MS = 120_000;
+export const DISCORD_DEFAULT_GATEWAY_INFO_TIMEOUT_MS = 30_000;
+// Mirrors the `.max(120_000)` bound the config schema already enforces on
+// `discord.gatewayInfoTimeoutMs` (src/config/zod-schema.providers-core.ts).
+const MAX_DISCORD_GATEWAY_INFO_TIMEOUT_MS = 120_000;
 
 function clampDiscordTimeoutMs(timeoutMs: number, minimumMs: number): number {
   return Math.max(minimumMs, Math.min(Math.floor(timeoutMs), MAX_DISCORD_TIMEOUT_MS));
@@ -14,6 +18,13 @@ export function normalizeDiscordListenerTimeoutMs(raw: number | undefined): numb
     return DISCORD_DEFAULT_LISTENER_TIMEOUT_MS;
   }
   return clampDiscordTimeoutMs(raw!, 1_000);
+}
+
+export function normalizeDiscordGatewayInfoTimeoutMs(raw: number | undefined): number {
+  if (!Number.isFinite(raw) || (raw ?? 0) <= 0) {
+    return DISCORD_DEFAULT_GATEWAY_INFO_TIMEOUT_MS;
+  }
+  return Math.min(Math.floor(raw!), MAX_DISCORD_GATEWAY_INFO_TIMEOUT_MS);
 }
 
 export function normalizeDiscordInboundWorkerTimeoutMs(

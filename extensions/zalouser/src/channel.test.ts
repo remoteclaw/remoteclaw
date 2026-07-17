@@ -42,6 +42,59 @@ function resolveGroupToolPolicy(
   });
 }
 
+// Resolves the tool policy with a group id and a DISTINCT, attacker-mutable display name
+// (groupChannel), optionally opting into the spoofable name-matching behavior. Used by the
+// #2976 spoofable-name necropsy specs below.
+function resolveGroupToolPolicyWithName(params: {
+  groups: Record<string, { tools?: { allow?: string[]; deny?: string[] } }>;
+  groupId: string;
+  groupChannel: string;
+  dangerouslyAllowNameMatching?: boolean;
+}) {
+  return getResolveToolPolicy()({
+    cfg: {
+      channels: {
+        zalouser: {
+          ...(params.dangerouslyAllowNameMatching ? { dangerouslyAllowNameMatching: true } : {}),
+          groups: params.groups,
+        },
+      },
+    },
+    accountId: "default",
+    groupId: params.groupId,
+    groupChannel: params.groupChannel,
+  });
+}
+
+// Same spoofable-name setup as resolveGroupToolPolicyWithName, but for the requireMention consumer
+// of the shared resolveZalouserGroupPolicyEntry — mention-gating is the second privilege surface a
+// spoofed name could inherit (a trusted entry's requireMention:false). Used by the #2976 specs.
+function resolveRequireMentionWithName(params: {
+  groups: Record<string, { requireMention?: boolean }>;
+  groupId: string;
+  groupChannel: string;
+  dangerouslyAllowNameMatching?: boolean;
+}) {
+  const resolveRequireMention = zalouserPlugin.groups?.resolveRequireMention;
+  expect(resolveRequireMention).toBeTypeOf("function");
+  if (!resolveRequireMention) {
+    throw new Error("resolveRequireMention unavailable");
+  }
+  return resolveRequireMention({
+    cfg: {
+      channels: {
+        zalouser: {
+          ...(params.dangerouslyAllowNameMatching ? { dangerouslyAllowNameMatching: true } : {}),
+          groups: params.groups,
+        },
+      },
+    },
+    accountId: "default",
+    groupId: params.groupId,
+    groupChannel: params.groupChannel,
+  });
+}
+
 describe("zalouser outbound", () => {
   beforeEach(() => {
     mockSendMessage.mockClear();
@@ -162,5 +215,80 @@ describe("zalouser channel policies", () => {
       remove: false,
     });
     expect(result).toBeDefined();
+  });
+});
+
+// Necropsy regression specs for #2976 (post-admission tool-policy inheritance via a spoofable
+// group name). resolveZalouserGroupPolicyEntry resolved the policy entry with the group's mutable
+// display name (groupChannel) as an unconditional match candidate — unlike the inbound-admission
+// path (monitor.ts), which was hardened by #2953 to gate name matching on
+// dangerouslyAllowNameMatching. The helper buildZalouserGroupCandidates already honored
+// allowNameMatching:false (green in group-policy.test.ts throughout the vulnerable window); the
+// defect was the caller wiring in channel.ts, so these specs exercise the plugin's
+// resolveToolPolicy consumer rather than the helper.
+describe("zalouser group tool policy — spoofable-name gating (#2976)", () => {
+  it("does NOT inherit a trusted entry's tools when a spoofable group name impersonates it", () => {
+    // Attacker's real (non-allowlisted) group id, whose mutable display name has been set to
+    // impersonate the allowlisted "Trusted Team" entry. Pre-fix, "Trusted Team" was a match
+    // candidate and the attacker inherited system.run; post-fix (name matching off by default),
+    // only the stable id / wildcard resolve, so nothing matches.
+    const policy = resolveGroupToolPolicyWithName({
+      groups: { "Trusted Team": { tools: { allow: ["system.run"] } } },
+      groupId: "g-attacker-001",
+      groupChannel: "Trusted Team",
+    });
+    expect(policy).toBeUndefined();
+  });
+
+  it("still resolves by group name when dangerouslyAllowNameMatching is explicitly enabled", () => {
+    // The break-glass opt-in is unchanged: an operator who accepts mutable-name matching still
+    // gets it. Guards against over-correcting the fix into "names never match".
+    const policy = resolveGroupToolPolicyWithName({
+      groups: { "Trusted Team": { tools: { allow: ["system.run"] } } },
+      groupId: "g-attacker-001",
+      groupChannel: "Trusted Team",
+      dangerouslyAllowNameMatching: true,
+    });
+    expect(policy).toEqual({ allow: ["system.run"] });
+  });
+
+  it("still resolves by stable group id with name matching disabled (no regression)", () => {
+    const policy = resolveGroupToolPolicyWithName({
+      groups: { "g-real-001": { tools: { allow: ["search"] } } },
+      groupId: "g-real-001",
+      groupChannel: "Some Display Name",
+    });
+    expect(policy).toEqual({ allow: ["search"] });
+  });
+
+  it("still resolves the wildcard group policy with name matching disabled (no regression)", () => {
+    const policy = resolveGroupToolPolicyWithName({
+      groups: { "*": { tools: { deny: ["system.run"] } } },
+      groupId: "g-attacker-001",
+      groupChannel: "Trusted Team",
+    });
+    expect(policy).toEqual({ deny: ["system.run"] });
+  });
+
+  it("does NOT inherit a trusted entry's requireMention via a spoofable group name (fail-closed)", () => {
+    // requireMention is the second surface reached through the same resolver: pre-fix the spoofed
+    // name matched "Trusted Team" and inherited requireMention:false (bot replies without a
+    // mention); post-fix the name is not a candidate, so it falls back to the fail-closed default.
+    const requireMention = resolveRequireMentionWithName({
+      groups: { "Trusted Team": { requireMention: false } },
+      groupId: "g-attacker-001",
+      groupChannel: "Trusted Team",
+    });
+    expect(requireMention).toBe(true);
+  });
+
+  it("still honors requireMention by group name when dangerouslyAllowNameMatching is enabled", () => {
+    const requireMention = resolveRequireMentionWithName({
+      groups: { "Trusted Team": { requireMention: false } },
+      groupId: "g-attacker-001",
+      groupChannel: "Trusted Team",
+      dangerouslyAllowNameMatching: true,
+    });
+    expect(requireMention).toBe(false);
   });
 });

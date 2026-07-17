@@ -141,8 +141,13 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   // #2782 (slack): monitor.tool-result un-quarantined (test-side: the ack-reaction test
   // needs statusReactions disabled to exercise the direct one-shot react path — status
   // reactions now supersede it when enabled; pairing assertion updated to the shared
-  // fenced buildPairingReply format). The 4 below stay, each out of scope for a test-side
-  // un-quarantine (see PR for details):
+  // fenced buildPairingReply format).
+  // #2958 (slack): slash un-quarantined — its ctx-payload GroupSpace SOURCE regression is fixed
+  // and the createReplyPrefixOptions mock gap closed, so 11 of its 32 tests now run in CI
+  // (including the GroupSpace regression guard). The remaining arg-menu divergence is skipped
+  // in-file via `describe.skip` with rationale (slash.test.ts) rather than darkening the whole
+  // file here — narrower debt, still tracked by #2782.
+  // The 3 below stay, each out of scope for a test-side un-quarantine (see PR for details):
   // - client: proxy-agent support was gutted (no client-options.ts); restoring needs new
   //   plugin-sdk fetch-runtime helpers (resolveEnvHttpProxyUrl / resolveActiveManagedProxyTlsOptions)
   //   that don't exist in the fork — a network-egress SOURCE change for a separate security-gated PR.
@@ -151,13 +156,8 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   //   SOURCE change with blast radius on non-quarantined send tests (unfurl_links on every payload).
   // - dispatch.preview-fallback: obsolete premise — dispatch.ts finalizes previews via inline
   //   chat.update now, not finalizeSlackPreviewEdit (which is dead code); the test needs a rewrite.
-  // - slash: createReplyPrefixOptions mock gap (test-side, fixable) is not enough — slash.ts also
-  //   dropped GroupSpace:ctx.teamId from the ctx payload (SOURCE regression; the message path still
-  //   sets it) AND the arg-menu subsystem (21 tests) diverged from upstream (action_id suffixing
-  //   removed, RegExp→string listener) needing a large, correctness-sensitive reconciliation.
   "extensions/slack/src/client.test.ts",
   "extensions/slack/src/monitor/message-handler/dispatch.preview-fallback.test.ts",
-  "extensions/slack/src/monitor/slash.test.ts",
   "extensions/slack/src/send.identity-fallback.test.ts",
   "extensions/telegram/src/bot-message-context.audio-transcript.test.ts",
   "extensions/telegram/src/bot-message-context.body.test.ts",

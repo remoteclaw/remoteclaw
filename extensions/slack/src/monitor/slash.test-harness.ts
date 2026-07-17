@@ -13,6 +13,11 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("./slash-dispatch.runtime.js", () => {
   return {
+    createReplyPrefixOptions: vi.fn(() => ({
+      responsePrefix: undefined,
+      enableSlackInteractiveReplies: undefined,
+      responsePrefixContextProvider: () => ({}),
+    })),
     deliverSlackSlashReplies: vi.fn(async () => {}),
     dispatchReplyWithDispatcher: (...args: unknown[]) => mocks.dispatchMock(...args),
     finalizeInboundContext: (...args: unknown[]) => mocks.finalizeInboundContextMock(...args),

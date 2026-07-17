@@ -1,12 +1,16 @@
 import http from "node:http";
 import { URL } from "node:url";
 import {
+  WEBHOOK_BODY_READ_DEFAULTS,
+  createWebhookInFlightLimiter,
   isRequestBodyLimitError,
   readRequestBodyWithLimit,
   requestBodyErrorToText,
+  type WebhookInFlightLimiter,
 } from "remoteclaw/plugin-sdk/voice-call";
 import { normalizeVoiceCallConfig, type VoiceCallConfig } from "./config.js";
 import type { CoreConfig } from "./core-bridge.js";
+import type { HttpHeaderMap } from "./http-headers.js";
 import type { CallManager } from "./manager.js";
 import type { MediaStreamConfig } from "./media-stream.js";
 import { MediaStreamHandler } from "./media-stream.js";
@@ -14,9 +18,15 @@ import type { VoiceCallProvider } from "./providers/base.js";
 import { OpenAIRealtimeSTTProvider } from "./providers/stt-openai-realtime.js";
 import type { TwilioProvider } from "./providers/twilio.js";
 import type { NormalizedEvent, WebhookContext } from "./types.js";
+import {
+  hasPlivoSignatureHeaders,
+  hasTelnyxSignatureHeaders,
+  hasTwilioSignatureHeaders,
+} from "./webhook-security.js";
 import { startStaleCallReaper } from "./webhook/stale-call-reaper.js";
 
-const MAX_WEBHOOK_BODY_BYTES = 1024 * 1024;
+/** In-flight limiter key for requests whose source address the socket never reported. */
+const UNKNOWN_SOURCE_IN_FLIGHT_KEY = "unknown";
 
 type WebhookResponsePayload = {
   statusCode: number;
@@ -56,6 +66,15 @@ export class VoiceCallWebhookServer {
   private provider: VoiceCallProvider;
   private coreConfig: CoreConfig | null;
   private stopStaleCallReaper: (() => void) | null = null;
+
+  /**
+   * Caps concurrent pre-auth webhook handlers per source address.
+   *
+   * The body must be read before a signature can be checked, so an unauthenticated
+   * flood would otherwise pin one body read per connection with nothing bounding the
+   * total. Keyed per source so one noisy address cannot starve the others.
+   */
+  private readonly preAuthInFlight: WebhookInFlightLimiter = createWebhookInFlightLimiter();
 
   /** Media stream handler for bidirectional audio (when streaming enabled) */
   private mediaStreamHandler: MediaStreamHandler | null = null;
@@ -364,9 +383,71 @@ export class VoiceCallWebhookServer {
       return { statusCode: 405, body: "Method Not Allowed" };
     }
 
+    const headers = req.headers as HttpHeaderMap;
+
+    // Reject requests that can never verify before spending a body read on them.
+    // This is only a presence check; verifyWebhook below still decides authenticity.
+    if (!this.hasRequiredSignatureHeaders(headers)) {
+      console.warn(
+        `[voice-call] Webhook rejected: missing ${this.provider.name} signature header(s)`,
+      );
+      return { statusCode: 401, body: "Unauthorized" };
+    }
+
+    const inFlightKey = req.socket.remoteAddress ?? UNKNOWN_SOURCE_IN_FLIGHT_KEY;
+    if (!this.preAuthInFlight.tryAcquire(inFlightKey)) {
+      console.warn(
+        `[voice-call] Webhook rejected: too many concurrent requests from ${inFlightKey}`,
+      );
+      return { statusCode: 429, body: "Too Many Requests" };
+    }
+
+    try {
+      return await this.runGuardedWebhookPipeline(req, url, headers);
+    } finally {
+      this.preAuthInFlight.release(inFlightKey);
+    }
+  }
+
+  /**
+   * Report whether the request carries the signature header(s) the active provider needs.
+   *
+   * Mirrors each provider's own verification prerequisites, so a rejection here is always
+   * one the full verification would have made anyway — never a stricter one.
+   */
+  private hasRequiredSignatureHeaders(headers: HttpHeaderMap): boolean {
+    // Dev-mode escape hatch: every provider's verifier short-circuits to ok before it
+    // reads a header, so gating on headers here would reject what verification accepts.
+    if (this.config.skipSignatureVerification) {
+      return true;
+    }
+
+    switch (this.provider.name) {
+      case "twilio":
+        return hasTwilioSignatureHeaders(headers);
+      case "telnyx":
+        return hasTelnyxSignatureHeaders(headers);
+      case "plivo":
+        return hasPlivoSignatureHeaders(headers);
+      case "mock":
+        // The mock provider verifies nothing, so it requires no headers.
+        return true;
+    }
+  }
+
+  /** Read, verify, and dispatch a webhook that has cleared the pre-auth guards. */
+  private async runGuardedWebhookPipeline(
+    req: http.IncomingMessage,
+    url: URL,
+    headers: HttpHeaderMap,
+  ): Promise<WebhookResponsePayload> {
     let body = "";
     try {
-      body = await this.readBody(req, MAX_WEBHOOK_BODY_BYTES);
+      body = await this.readBody(
+        req,
+        WEBHOOK_BODY_READ_DEFAULTS.preAuth.maxBytes,
+        WEBHOOK_BODY_READ_DEFAULTS.preAuth.timeoutMs,
+      );
     } catch (err) {
       if (isRequestBodyLimitError(err, "PAYLOAD_TOO_LARGE")) {
         return { statusCode: 413, body: "Payload Too Large" };
@@ -378,7 +459,7 @@ export class VoiceCallWebhookServer {
     }
 
     const ctx: WebhookContext = {
-      headers: req.headers as Record<string, string | string[] | undefined>,
+      headers,
       rawBody: body,
       url: url.toString(),
       method: "POST",

@@ -162,17 +162,12 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   "extensions/telegram/src/bot-message-dispatch.test.ts",
   "extensions/telegram/src/format.wrap-md.test.ts",
   "extensions/telegram/src/sequential-key.test.ts",
-  // #2782 (voice-call): 7 of 8 voice-call files un-quarantined. 5 (runtime, plivo, telnyx,
-  // twilio, webhook-security) failed only because the plugin-sdk `browser-security-runtime`
-  // subpath was missing from the vitest resolver alias list — a test-config gap, fixed in
-  // vitest.config.ts. The other 2 (manager/events, manager.inbound-allowlist) are paired to a
-  // small manager/events.ts SOURCE fix (dedupe-key deferral + rejected-inbound retry, both
-  // matching upstream). webhook.test.ts remains: its 5 failures need a SOURCE change to the
-  // pre-auth webhook pipeline (webhook.ts) — a signature-presence 401 before readBody, the
-  // shared pre-auth body cap (WEBHOOK_BODY_READ_DEFAULTS.preAuth, 70KB→413), and a per-source-IP
-  // in-flight limiter (createWebhookInFlightLimiter →429; its absence causes the 120s hang) —
-  // plus 2 reliability fails (stale stream-disconnect hangup, barge-in clear during a pending
-  // initial message). Security-gated (webhook auth + DoS); deferred to a focused source PR.
+  // #2782 (voice-call): the 3 pre-auth guard specs this file used to carry moved to
+  // webhook.pre-auth-guards.test.ts (un-quarantined, so the #2955 signature-presence 401 /
+  // 64KiB pre-auth cap / per-source-IP in-flight limiter now gate CI). What stays here are 2
+  // media-stream reliability fails, both out of #2955's scope and each needing its own source
+  // fix: stale stream-disconnect still auto-ends the call after a reconnect, and barge-in clear
+  // is not suppressed while an outbound conversation's initial message is pending.
   "extensions/voice-call/src/webhook.test.ts",
   "extensions/whatsapp/src/auto-reply.broadcast-groups.combined.test.ts",
   "extensions/whatsapp/src/auto-reply/monitor/on-message.audio-preflight.test.ts",

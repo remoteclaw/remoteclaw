@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { safeEqualSecret } from "remoteclaw/plugin-sdk/browser-security-runtime";
 import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import { formatErrorMessage } from "../../../src/infra/errors.js";
-import { getHeader } from "./http-headers.js";
+import { getHeader, type HttpHeaderMap } from "./http-headers.js";
 import type { WebhookContext } from "./types.js";
 
 const REPLAY_WINDOW_MS = 10 * 60 * 1000;
@@ -481,6 +481,22 @@ function importEd25519PublicKey(publicKey: string): crypto.KeyObject | string {
   });
 }
 
+const TELNYX_SIGNATURE_HEADER = "telnyx-signature-ed25519";
+const TELNYX_TIMESTAMP_HEADER = "telnyx-timestamp";
+
+/**
+ * Report whether a request carries the headers Telnyx verification requires.
+ *
+ * Cheap presence check only — it proves nothing about the signature's validity.
+ * Callers use it to reject unsignable requests before reading the body; the real
+ * check stays in `verifyTelnyxWebhook`.
+ */
+export function hasTelnyxSignatureHeaders(headers: HttpHeaderMap): boolean {
+  return Boolean(
+    getHeader(headers, TELNYX_SIGNATURE_HEADER) && getHeader(headers, TELNYX_TIMESTAMP_HEADER),
+  );
+}
+
 /**
  * Verify Telnyx webhook signature using Ed25519.
  *
@@ -513,8 +529,8 @@ export function verifyTelnyxWebhook(
     return { ok: false, reason: "Missing telnyx.publicKey (configure to verify webhooks)" };
   }
 
-  const signature = getHeader(ctx.headers, "telnyx-signature-ed25519");
-  const timestamp = getHeader(ctx.headers, "telnyx-timestamp");
+  const signature = getHeader(ctx.headers, TELNYX_SIGNATURE_HEADER);
+  const timestamp = getHeader(ctx.headers, TELNYX_TIMESTAMP_HEADER);
 
   if (!signature || !timestamp) {
     return { ok: false, reason: "Missing signature or timestamp header" };
@@ -553,6 +569,17 @@ export function verifyTelnyxWebhook(
       reason: `Verification error: ${formatErrorMessage(err)}`,
     };
   }
+}
+
+const TWILIO_SIGNATURE_HEADER = "x-twilio-signature";
+
+/**
+ * Report whether a request carries the header Twilio verification requires.
+ *
+ * Cheap presence check only — see `hasTelnyxSignatureHeaders`.
+ */
+export function hasTwilioSignatureHeaders(headers: HttpHeaderMap): boolean {
+  return Boolean(getHeader(headers, TWILIO_SIGNATURE_HEADER));
 }
 
 /**
@@ -608,7 +635,7 @@ export function verifyTwilioWebhook(
     };
   }
 
-  const signature = getHeader(ctx.headers, "x-twilio-signature");
+  const signature = getHeader(ctx.headers, TWILIO_SIGNATURE_HEADER);
 
   if (!signature) {
     return { ok: false, reason: "Missing X-Twilio-Signature header" };
@@ -855,6 +882,27 @@ function validatePlivoV3Signature(params: {
   return false;
 }
 
+const PLIVO_V3_SIGNATURE_HEADER = "x-plivo-signature-v3";
+const PLIVO_V3_NONCE_HEADER = "x-plivo-signature-v3-nonce";
+const PLIVO_V2_SIGNATURE_HEADER = "x-plivo-signature-v2";
+const PLIVO_V2_NONCE_HEADER = "x-plivo-signature-v2-nonce";
+
+/**
+ * Report whether a request carries a complete Plivo signature pair (V3 or V2).
+ *
+ * Cheap presence check only — see `hasTelnyxSignatureHeaders`. A half pair (signature
+ * without its nonce) counts as absent, matching the verifier's own pair requirement.
+ */
+export function hasPlivoSignatureHeaders(headers: HttpHeaderMap): boolean {
+  const hasV3 = Boolean(
+    getHeader(headers, PLIVO_V3_SIGNATURE_HEADER) && getHeader(headers, PLIVO_V3_NONCE_HEADER),
+  );
+  const hasV2 = Boolean(
+    getHeader(headers, PLIVO_V2_SIGNATURE_HEADER) && getHeader(headers, PLIVO_V2_NONCE_HEADER),
+  );
+  return hasV3 || hasV2;
+}
+
 /**
  * Verify Plivo webhooks using V3 signature if present; fall back to V2.
  *
@@ -903,10 +951,10 @@ export function verifyPlivoWebhook(
     };
   }
 
-  const signatureV3 = getHeader(ctx.headers, "x-plivo-signature-v3");
-  const nonceV3 = getHeader(ctx.headers, "x-plivo-signature-v3-nonce");
-  const signatureV2 = getHeader(ctx.headers, "x-plivo-signature-v2");
-  const nonceV2 = getHeader(ctx.headers, "x-plivo-signature-v2-nonce");
+  const signatureV3 = getHeader(ctx.headers, PLIVO_V3_SIGNATURE_HEADER);
+  const nonceV3 = getHeader(ctx.headers, PLIVO_V3_NONCE_HEADER);
+  const signatureV2 = getHeader(ctx.headers, PLIVO_V2_SIGNATURE_HEADER);
+  const nonceV2 = getHeader(ctx.headers, PLIVO_V2_NONCE_HEADER);
 
   const reconstructed = reconstructWebhookUrl(ctx, {
     allowedHosts: options?.allowedHosts,

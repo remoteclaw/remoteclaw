@@ -44,6 +44,7 @@ import {
   sendSeenZalouser,
   sendTypingZalouser,
 } from "./send.js";
+import { resolveZalouserTextOptions } from "./text-options.js";
 import type { ResolvedZalouserAccount, ZaloInboundMessage } from "./types.js";
 import {
   listZaloFriends,
@@ -63,8 +64,6 @@ export type ZalouserMonitorOptions = {
 export type ZalouserMonitorResult = {
   stop: () => void;
 };
-
-const ZALOUSER_TEXT_LIMIT = 2000;
 
 function normalizeZalouserEntry(entry: string): string {
   return entry.replace(/^(zalouser|zlu):/i, "").trim();
@@ -708,6 +707,7 @@ async function deliverZalouserReply(params: {
     params;
   const tableMode = params.tableMode ?? "code";
   const text = core.channel.text.convertMarkdownTables(payload.text ?? "", tableMode);
+  const textOptions = resolveZalouserTextOptions({ cfg: config, accountId });
 
   const sentMedia = await sendMediaWithLeadingCaption({
     mediaUrls: resolveOutboundMediaUrls(payload),
@@ -718,6 +718,7 @@ async function deliverZalouserReply(params: {
         profile,
         mediaUrl,
         isGroup,
+        ...textOptions,
       });
       statusSink?.({ lastOutboundAt: Date.now() });
     },
@@ -730,20 +731,12 @@ async function deliverZalouserReply(params: {
   }
 
   if (text) {
-    const chunkMode = core.channel.text.resolveChunkMode(config, "zalouser", accountId);
-    const chunks = core.channel.text.chunkMarkdownTextWithMode(
-      text,
-      ZALOUSER_TEXT_LIMIT,
-      chunkMode,
-    );
-    logVerbose(core, runtime, `Sending ${chunks.length} text chunk(s) to ${chatId}`);
-    for (const chunk of chunks) {
-      try {
-        await sendMessageZalouser(chatId, chunk, { profile, isGroup });
-        statusSink?.({ lastOutboundAt: Date.now() });
-      } catch (err) {
-        runtime.error(`Zalouser message send failed: ${String(err)}`);
-      }
+    logVerbose(core, runtime, `Sending text to ${chatId}`);
+    try {
+      await sendMessageZalouser(chatId, text, { profile, isGroup, ...textOptions });
+      statusSink?.({ lastOutboundAt: Date.now() });
+    } catch (err) {
+      runtime.error(`Zalouser message send failed: ${String(err)}`);
     }
   }
 }

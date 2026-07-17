@@ -22,6 +22,7 @@ import {
   DEFAULT_ACCOUNT_ID,
   deleteAccountFromConfigSection,
   formatAllowFromLowercase,
+  isDangerousNameMatchingEnabled,
   isNumericTargetId,
   migrateBaseNameToDefaultAccount,
   normalizeAccountId,
@@ -200,12 +201,18 @@ function resolveZalouserGroupPolicyEntry(params: ChannelGroupContext) {
     accountId: params.accountId ?? undefined,
   });
   const groups = account.config.groups ?? {};
+  // Group display names/channels are mutable and attacker-controlled: anyone can create or rename
+  // a group to impersonate a trusted allowlist entry. Gate name matching on the same opt-in the
+  // inbound-admission path uses (monitor.ts, hardened in #2953) so a spoofable name cannot inherit
+  // a trusted entry's tool policy / requireMention on an already-admitted route.
+  const allowNameMatching = isDangerousNameMatchingEnabled(account.config);
   return findZalouserGroupEntry(
     groups,
     buildZalouserGroupCandidates({
       groupId: params.groupId,
       groupChannel: params.groupChannel,
       includeWildcard: true,
+      allowNameMatching,
     }),
   );
 }

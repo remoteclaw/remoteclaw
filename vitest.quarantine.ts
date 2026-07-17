@@ -178,13 +178,6 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   "extensions/telegram/src/bot-message-dispatch.test.ts",
   "extensions/telegram/src/format.wrap-md.test.ts",
   "extensions/telegram/src/sequential-key.test.ts",
-  // #2782 (voice-call): the 3 pre-auth guard specs this file used to carry moved to
-  // webhook.pre-auth-guards.test.ts (un-quarantined, so the #2955 signature-presence 401 /
-  // 64KiB pre-auth cap / per-source-IP in-flight limiter now gate CI). What stays here are 2
-  // media-stream reliability fails, both out of #2955's scope and each needing its own source
-  // fix: stale stream-disconnect still auto-ends the call after a reconnect, and barge-in clear
-  // is not suppressed while an outbound conversation's initial message is pending.
-  "extensions/voice-call/src/webhook.test.ts",
   "extensions/whatsapp/src/auto-reply.broadcast-groups.combined.test.ts",
   "extensions/whatsapp/src/auto-reply/monitor/on-message.audio-preflight.test.ts",
   // #2782 (groupB): 2 zalo files stay, each out of this ledger-shrink's scope:

@@ -1,5 +1,6 @@
 import http from "node:http";
 import { URL } from "node:url";
+import { normalizeOptionalString } from "remoteclaw/plugin-sdk/text-runtime";
 import {
   WEBHOOK_BODY_READ_DEFAULTS,
   createWebhookInFlightLimiter,
@@ -17,7 +18,7 @@ import { MediaStreamHandler } from "./media-stream.js";
 import type { VoiceCallProvider } from "./providers/base.js";
 import { OpenAIRealtimeSTTProvider } from "./providers/stt-openai-realtime.js";
 import type { TwilioProvider } from "./providers/twilio.js";
-import type { NormalizedEvent, WebhookContext } from "./types.js";
+import type { CallRecord, NormalizedEvent, WebhookContext } from "./types.js";
 import {
   hasPlivoSignatureHeaders,
   hasTelnyxSignatureHeaders,
@@ -27,6 +28,14 @@ import { startStaleCallReaper } from "./webhook/stale-call-reaper.js";
 
 /** In-flight limiter key for requests whose source address the socket never reported. */
 const UNKNOWN_SOURCE_IN_FLIGHT_KEY = "unknown";
+
+/**
+ * Grace window before a media-stream disconnect auto-ends the call. A Twilio media stream can
+ * briefly drop and reconnect; waiting lets a reconnect (which re-registers a stream) cancel the
+ * hangup, and lets a stale disconnect for an already-superseded streamSid resolve to a no-op
+ * rather than ending a live call.
+ */
+const STREAM_DISCONNECT_HANGUP_GRACE_MS = 2000;
 
 type WebhookResponsePayload = {
   statusCode: number;
@@ -79,6 +88,9 @@ export class VoiceCallWebhookServer {
   /** Media stream handler for bidirectional audio (when streaming enabled) */
   private mediaStreamHandler: MediaStreamHandler | null = null;
 
+  /** Pending grace-period hangup timers per provider call ID (media-stream disconnect). */
+  private readonly pendingDisconnectHangups = new Map<string, ReturnType<typeof setTimeout>>();
+
   constructor(
     config: VoiceCallConfig,
     manager: CallManager,
@@ -101,6 +113,38 @@ export class VoiceCallWebhookServer {
    */
   getMediaStreamHandler(): MediaStreamHandler | null {
     return this.mediaStreamHandler;
+  }
+
+  /** Cancel any pending grace-period hangup for a call (e.g. on reconnect or stop). */
+  private clearPendingDisconnectHangup(callId: string): void {
+    const timer = this.pendingDisconnectHangups.get(callId);
+    if (timer) {
+      clearTimeout(timer);
+      this.pendingDisconnectHangups.delete(callId);
+    }
+  }
+
+  /**
+   * Whether a transcript / speech-start should NOT trigger barge-in (TTS clear) or auto-response.
+   *
+   * While an outbound conversation call is still playing its initial greeting, the caller's own
+   * audio (or echo) must not interrupt the greeting or trigger a premature auto-response. Once the
+   * greeting finishes — state leaves "speaking" and `metadata.initialMessage` is cleared — normal
+   * barge-in resumes. Inbound calls always allow barge-in.
+   */
+  private shouldSuppressBargeInForInitialMessage(call: CallRecord | undefined): boolean {
+    if (!call || call.direction !== "outbound") {
+      return false;
+    }
+    if (call.state !== "speaking") {
+      return false;
+    }
+    const mode = (call.metadata?.mode as string | undefined) ?? "conversation";
+    if (mode !== "conversation") {
+      return false;
+    }
+    const initialMessage = normalizeOptionalString(call.metadata?.initialMessage) ?? "";
+    return initialMessage.length > 0;
   }
 
   /**
@@ -145,16 +189,25 @@ export class VoiceCallWebhookServer {
       onTranscript: (providerCallId, transcript) => {
         console.log(`[voice-call] Transcript for ${providerCallId}: ${transcript}`);
 
-        // Clear TTS queue on barge-in (user started speaking, interrupt current playback)
-        if (this.provider.name === "twilio") {
-          (this.provider as TwilioProvider).clearTtsQueue(providerCallId);
-        }
-
         // Look up our internal call ID from the provider call ID
         const call = this.manager.getCallByProviderCallId(providerCallId);
         if (!call) {
           console.warn(`[voice-call] No active call found for provider ID: ${providerCallId}`);
           return;
+        }
+
+        // Suppress barge-in + auto-response while an outbound conversation's initial greeting is
+        // still playing — the caller's own audio/echo must not interrupt it or trigger a response.
+        if (this.shouldSuppressBargeInForInitialMessage(call)) {
+          console.log(
+            `[voice-call] Ignoring barge transcript while initial message plays (${providerCallId})`,
+          );
+          return;
+        }
+
+        // Clear TTS queue on barge-in (user started speaking, interrupt current playback)
+        if (this.provider.name === "twilio") {
+          (this.provider as TwilioProvider).clearTtsQueue(providerCallId);
         }
 
         // Create a speech event and process it through the manager
@@ -179,15 +232,22 @@ export class VoiceCallWebhookServer {
         }
       },
       onSpeechStart: (providerCallId) => {
-        if (this.provider.name === "twilio") {
-          (this.provider as TwilioProvider).clearTtsQueue(providerCallId);
+        if (this.provider.name !== "twilio") {
+          return;
         }
+        const call = this.manager.getCallByProviderCallId(providerCallId);
+        if (this.shouldSuppressBargeInForInitialMessage(call)) {
+          return;
+        }
+        (this.provider as TwilioProvider).clearTtsQueue(providerCallId);
       },
       onPartialTranscript: (callId, partial) => {
         console.log(`[voice-call] Partial for ${callId}: ${partial}`);
       },
       onConnect: (callId, streamSid) => {
         console.log(`[voice-call] Media stream connected: ${callId} -> ${streamSid}`);
+        // A reconnect cancels any pending grace-period hangup from a prior disconnect.
+        this.clearPendingDisconnectHangup(callId);
         // Register stream with provider for TTS routing
         if (this.provider.name === "twilio") {
           (this.provider as TwilioProvider).registerCallStream(callId, streamSid);
@@ -201,22 +261,39 @@ export class VoiceCallWebhookServer {
           });
         }, 500);
       },
-      onDisconnect: (callId) => {
-        console.log(`[voice-call] Media stream disconnected: ${callId}`);
-        // Auto-end call when media stream disconnects to prevent stuck calls.
-        // Without this, calls can remain active indefinitely after the stream closes.
-        const disconnectedCall = this.manager.getCallByProviderCallId(callId);
-        if (disconnectedCall) {
+      onDisconnect: (callId, streamSid) => {
+        console.log(`[voice-call] Media stream disconnected: ${callId} (${streamSid})`);
+        // Unregister only if this is the current stream; a stale streamSid (already superseded by
+        // a reconnect) is a no-op inside unregisterCallStream, leaving the live stream registered.
+        if (this.provider.name === "twilio") {
+          (this.provider as TwilioProvider).unregisterCallStream(callId, streamSid);
+        }
+
+        // Grace period before auto-ending, so a brief drop/reconnect does not hang up a live call.
+        // When the timer fires, a still-registered stream (reconnect landed, or this disconnect was
+        // stale) leaves the call alone; only a genuinely disconnected call is auto-ended.
+        this.clearPendingDisconnectHangup(callId);
+        const timer = setTimeout(() => {
+          this.pendingDisconnectHangups.delete(callId);
+          const disconnectedCall = this.manager.getCallByProviderCallId(callId);
+          if (!disconnectedCall) {
+            return;
+          }
+          if (
+            this.provider.name === "twilio" &&
+            (this.provider as TwilioProvider).hasRegisteredStream(callId)
+          ) {
+            return;
+          }
           console.log(
-            `[voice-call] Auto-ending call ${disconnectedCall.callId} on stream disconnect`,
+            `[voice-call] Auto-ending call ${disconnectedCall.callId} after stream disconnect grace`,
           );
           void this.manager.endCall(disconnectedCall.callId).catch((err) => {
             console.warn(`[voice-call] Failed to auto-end call ${disconnectedCall.callId}:`, err);
           });
-        }
-        if (this.provider.name === "twilio") {
-          (this.provider as TwilioProvider).unregisterCallStream(callId);
-        }
+        }, STREAM_DISCONNECT_HANGUP_GRACE_MS);
+        timer.unref?.();
+        this.pendingDisconnectHangups.set(callId, timer);
       },
     };
 
@@ -290,6 +367,10 @@ export class VoiceCallWebhookServer {
    * Stop the webhook server.
    */
   async stop(): Promise<void> {
+    for (const timer of this.pendingDisconnectHangups.values()) {
+      clearTimeout(timer);
+    }
+    this.pendingDisconnectHangups.clear();
     if (this.stopStaleCallReaper) {
       this.stopStaleCallReaper();
       this.stopStaleCallReaper = null;

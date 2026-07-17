@@ -1,5 +1,10 @@
 import type { ChannelType, Client, Message } from "@buape/carbon";
-import { StickerFormatType, type APIAttachment, type APIStickerItem } from "discord-api-types/v10";
+import {
+  MessageReferenceType,
+  StickerFormatType,
+  type APIAttachment,
+  type APIStickerItem,
+} from "discord-api-types/v10";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
@@ -96,6 +101,16 @@ type DiscordSnapshotMessage = {
 
 type DiscordMessageSnapshot = {
   message?: DiscordSnapshotMessage | null;
+};
+
+// Duck-typed view of the forward-carrying fields shared by a live `Message` and the
+// REST-fetched thread starter, so forwarded-content resolution can be reused across both.
+type DiscordForwardedMessageSource = {
+  rawData?: { message_snapshots?: unknown } | null;
+  message_snapshots?: unknown;
+  messageSnapshots?: unknown;
+  messageReference?: { type?: MessageReferenceType | null } | null;
+  referencedMessage?: unknown;
 };
 
 const DISCORD_CHANNEL_INFO_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -238,12 +253,33 @@ export async function resolveForwardedMediaList(
   fetchImpl?: FetchLike,
   ssrfPolicy?: SsrFPolicy,
 ): Promise<DiscordMediaInfo[]> {
-  const snapshots = resolveDiscordMessageSnapshots(message);
-  if (snapshots.length === 0) {
-    return [];
-  }
   const out: DiscordMediaInfo[] = [];
   const resolvedSsrFPolicy = resolveDiscordMediaSsrFPolicy(ssrfPolicy);
+  const snapshots = resolveDiscordMessageSnapshots(message);
+  if (snapshots.length === 0) {
+    // Reference-style forwards carry content on the resolved referenced message,
+    // not in message_snapshots. Fall back to it so forwarded media is still downloaded.
+    const referenced = resolveDiscordForwardedReferencedMessage(message);
+    if (referenced) {
+      await appendResolvedMediaFromAttachments({
+        attachments: referenced.attachments,
+        maxBytes,
+        out,
+        errorPrefix: "discord: failed to download forwarded attachment",
+        fetchImpl,
+        ssrfPolicy: resolvedSsrFPolicy,
+      });
+      await appendResolvedMediaFromStickers({
+        stickers: resolveDiscordSnapshotStickers(referenced),
+        maxBytes,
+        out,
+        errorPrefix: "discord: failed to download forwarded sticker",
+        fetchImpl,
+        ssrfPolicy: resolvedSsrFPolicy,
+      });
+    }
+    return out;
+  }
   for (const snapshot of snapshots) {
     await appendResolvedMediaFromAttachments({
       attachments: snapshot.message?.attachments,
@@ -547,27 +583,18 @@ function resolveDiscordMentions(text: string, message: Message): string {
   return out;
 }
 
-function resolveDiscordForwardedMessagesText(message: Message): string {
+export function resolveDiscordForwardedMessagesText(
+  message: DiscordForwardedMessageSource,
+): string {
   const snapshots = resolveDiscordMessageSnapshots(message);
   if (snapshots.length === 0) {
-    return "";
+    // Reference-style forwards carry their content on the resolved referenced message,
+    // not in message_snapshots. Fall back to it so forwarded text is still included.
+    const referenced = resolveDiscordForwardedReferencedMessage(message);
+    return referenced ? (formatDiscordForwardedBlock(referenced) ?? "") : "";
   }
   const forwardedBlocks = snapshots
-    .map((snapshot) => {
-      const snapshotMessage = snapshot.message;
-      if (!snapshotMessage) {
-        return null;
-      }
-      const text = resolveDiscordSnapshotMessageText(snapshotMessage);
-      if (!text) {
-        return null;
-      }
-      const authorLabel = formatDiscordSnapshotAuthor(snapshotMessage.author);
-      const heading = authorLabel
-        ? `[Forwarded message from ${authorLabel}]`
-        : "[Forwarded message]";
-      return `${heading}\n${text}`;
-    })
+    .map((snapshot) => (snapshot.message ? formatDiscordForwardedBlock(snapshot.message) : null))
     .filter((entry): entry is string => Boolean(entry));
   if (forwardedBlocks.length === 0) {
     return "";
@@ -575,18 +602,42 @@ function resolveDiscordForwardedMessagesText(message: Message): string {
   return forwardedBlocks.join("\n\n");
 }
 
-function resolveDiscordMessageSnapshots(message: Message): DiscordMessageSnapshot[] {
-  const rawData = (message as { rawData?: { message_snapshots?: unknown } }).rawData;
+function formatDiscordForwardedBlock(snapshotMessage: DiscordSnapshotMessage): string | null {
+  const text = resolveDiscordSnapshotMessageText(snapshotMessage);
+  if (!text) {
+    return null;
+  }
+  const authorLabel = formatDiscordSnapshotAuthor(snapshotMessage.author);
+  const heading = authorLabel ? `[Forwarded message from ${authorLabel}]` : "[Forwarded message]";
+  return `${heading}\n${text}`;
+}
+
+function resolveDiscordMessageSnapshots(
+  message: DiscordForwardedMessageSource,
+): DiscordMessageSnapshot[] {
   const snapshots =
-    rawData?.message_snapshots ??
-    (message as { message_snapshots?: unknown }).message_snapshots ??
-    (message as { messageSnapshots?: unknown }).messageSnapshots;
+    message.rawData?.message_snapshots ?? message.message_snapshots ?? message.messageSnapshots;
   if (!Array.isArray(snapshots)) {
     return [];
   }
   return snapshots.filter(
     (entry): entry is DiscordMessageSnapshot => Boolean(entry) && typeof entry === "object",
   );
+}
+
+// A forward delivered as a message reference (type Forward) carries the original
+// content on `referencedMessage` rather than in `message_snapshots`.
+function resolveDiscordForwardedReferencedMessage(
+  message: DiscordForwardedMessageSource,
+): DiscordSnapshotMessage | undefined {
+  if (message.messageReference?.type !== MessageReferenceType.Forward) {
+    return undefined;
+  }
+  const referenced = message.referencedMessage;
+  if (!referenced || typeof referenced !== "object") {
+    return undefined;
+  }
+  return referenced as DiscordSnapshotMessage;
 }
 
 function resolveDiscordSnapshotMessageText(snapshot: DiscordSnapshotMessage): string {

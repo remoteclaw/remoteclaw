@@ -15,14 +15,19 @@ const internalHookMocks = vi.hoisted(() => ({
   triggerInternalHook: vi.fn(async () => undefined),
 }));
 
-vi.mock("remoteclaw/plugin-sdk/hook-runtime", () => {
+// Mock target repaired (#2961): the upstream test mocked the
+// `remoteclaw/plugin-sdk/hook-runtime` barrel, which does not exist in this fork — it is
+// a DEPRECATED plugin-sdk subpath (scripts/lib/plugin-sdk-deprecated-barrel-subpaths.json)
+// with no backing `src/plugin-sdk/hook-runtime.ts`, so the mock resolved to nothing and
+// never applied. The fork imports the hook primitives from `src/hooks/*` directly — the
+// same seam `src/auto-reply/reply/dispatch-from-config.ts` uses — so mock that instead.
+// Only the two capture points are stubbed; `fireAndForgetHook` and the real
+// `toInternalMessageReceivedContext` mapper deliberately run for real here.
+vi.mock("../../../src/hooks/internal-hooks.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../../src/hooks/internal-hooks.js")>();
   return {
+    ...actual,
     createInternalHookEvent: internalHookMocks.createInternalHookEvent,
-    fireAndForgetHook: (task: Promise<unknown>) => void task,
-    toInternalMessageReceivedContext: (context: Record<string, unknown>) => ({
-      ...context,
-      metadata: { to: context.to },
-    }),
     triggerInternalHook: internalHookMocks.triggerInternalHook,
   };
 });
@@ -46,6 +51,9 @@ describe("telegram mention-skip silent ingest", () => {
       message: makeGroupMessage("hello without mention"),
       cfg: {
         agents: {
+          // Fail-closed routing (#2961): without a configured agent the message is
+          // dropped as unmatched before it can reach the mention-skip branch at all.
+          list: [{ id: "main" }],
           defaults: {
             model: "anthropic/sonnet-4.6",
             workspace: "/tmp/remoteclaw",
@@ -98,6 +106,9 @@ describe("telegram mention-skip silent ingest", () => {
       message: makeGroupMessage("hello without mention"),
       cfg: {
         agents: {
+          // Fail-closed routing (#2961): without a configured agent the message is
+          // dropped as unmatched before it can reach the mention-skip branch at all.
+          list: [{ id: "main" }],
           defaults: {
             model: "anthropic/sonnet-4.6",
             workspace: "/tmp/remoteclaw",

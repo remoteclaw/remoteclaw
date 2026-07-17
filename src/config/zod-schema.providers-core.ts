@@ -113,6 +113,11 @@ export const TelegramTopicSchema = z
 export const TelegramGroupSchema = z
   .object({
     requireMention: z.boolean().optional(),
+    // Emit an internal `message:received` event for non-mention group messages that
+    // `requireMention` skips (context ingestion without dispatch). The shared
+    // ChannelGroupConfig (src/config/group-policy.ts) already carried this field, but
+    // this strict schema rejected it, so it was unreachable config surface (#2961).
+    ingest: z.boolean().optional(),
     disableAudioPreflight: z.boolean().optional(),
     groupPolicy: GroupPolicySchema.optional(),
     tools: ToolPolicySchema,

@@ -1,4 +1,5 @@
 import type { Bot } from "grammy";
+import { ensureConfiguredAcpRouteReady } from "../../../src/acp/persistent-bindings.route.js";
 import { resolveAckReaction } from "../../../src/agents/identity.js";
 import { hasControlCommand } from "../../../src/auto-reply/command-detection.js";
 import { normalizeCommandBody } from "../../../src/auto-reply/commands-registry.js";
@@ -29,6 +30,7 @@ import {
 } from "../../../src/channels/status-reactions.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import { loadConfig } from "../../../src/config/config.js";
+import { resolveChannelGroupPolicy } from "../../../src/config/group-policy.js";
 import { readSessionUpdatedAt, resolveStorePath } from "../../../src/config/sessions.js";
 import type {
   DmPolicy,
@@ -36,8 +38,14 @@ import type {
   TelegramTopicConfig,
 } from "../../../src/config/types.js";
 import { logVerbose, shouldLogVerbose } from "../../../src/globals.js";
+import { fireAndForgetHook } from "../../../src/hooks/fire-and-forget.js";
+import { createInternalHookEvent, triggerInternalHook } from "../../../src/hooks/internal-hooks.js";
+import {
+  toInternalMessageReceivedContext,
+  type CanonicalInboundMessageHookContext,
+} from "../../../src/hooks/message-hook-mappers.js";
 import { recordChannelActivity } from "../../../src/infra/channel-activity.js";
-import { resolveAgentRoute } from "../../../src/routing/resolve-route.js";
+import { DEFAULT_ACCOUNT_ID, type ResolvedAgentRoute } from "../../../src/routing/resolve-route.js";
 import { resolveThreadSessionKeys } from "../../../src/routing/session-key.js";
 import { resolvePinnedMainDmOwnerFromAllowlist } from "../../../src/security/dm-policy-shared.js";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
@@ -52,10 +60,8 @@ import {
   buildGroupLabel,
   buildSenderLabel,
   buildSenderName,
-  resolveTelegramDirectPeerId,
   buildTelegramGroupFrom,
   buildTelegramGroupPeerId,
-  buildTelegramParentPeer,
   buildTypingThreadParams,
   resolveTelegramMediaPlaceholder,
   expandTextLinks,
@@ -66,6 +72,7 @@ import {
   resolveTelegramThreadSpec,
 } from "./bot/helpers.js";
 import type { StickerMetadata, TelegramContext } from "./bot/types.js";
+import { resolveTelegramConversationRoute } from "./conversation-route.js";
 import { enforceTelegramDmAccess } from "./dm-access.js";
 import { isTelegramForumServiceMessage } from "./forum-service-message.js";
 import { evaluateTelegramGroupBaseAccess } from "./group-access.js";
@@ -129,6 +136,116 @@ export type BuildTelegramMessageContextParams = {
   sendChatActionHandler: import("./sendchataction-401-backoff.js").TelegramSendChatActionHandler;
 };
 
+/**
+ * #2961 scenario C — named-account group isolation (cross-account authorization).
+ *
+ * A non-default ("named") account is an explicitly configured, distinct bot identity, so
+ * per #2961 it "must have an explicit binding to handle group traffic".
+ *
+ * Upstream keyed this gate on `matchedBy === "default"` — the phantom default-agent tier
+ * this fork DELETED (see `src/routing/resolve-route.ts`: sole-agent promotion exists
+ * "without reintroducing the phantom 'default' agent fallback"). A verbatim port would be
+ * dead code that can never fire, because no fork tier is ever named "default". The
+ * fork-native equivalent is the tier CLASS: a route that did not match an explicit
+ * `binding.*` tier only landed on this agent via an operator catch-all
+ * (`unmatched.catchAll`), sole-agent promotion (`fallback.soleAgent`), or the legacy
+ * fail-open (`fallback.legacyRoute`) — none of which is an operator declaring "this named
+ * account handles this group".
+ *
+ * This gate is DISTINCT from the scenario-D drop rather than a restatement of it: D fires
+ * when the route resolves to NOTHING (the resolver returned null); C fires when the route
+ * resolves perfectly well, but on a non-binding tier. A named-account group message under
+ * a configured catch-all is delivered past D and dropped only here.
+ *
+ * DMs are deliberately not gated — the isolation boundary #2961 names is group traffic.
+ */
+function shouldDropNamedAccountGroupMessage(route: ResolvedAgentRoute): boolean {
+  const isNamedAccount = route.accountId !== DEFAULT_ACCOUNT_ID;
+  const matchedExplicitBinding = route.matchedBy.startsWith("binding.");
+  return isNamedAccount && !matchedExplicitBinding;
+}
+
+/**
+ * Resolve `ingest` for a group, honoring the `groups["*"]` wildcard default so a specific
+ * group entry that omits `ingest` inherits it instead of silently disabling ingest.
+ */
+function resolveTelegramGroupIngest(params: {
+  cfg: RemoteClawConfig;
+  chatId: number | string;
+  accountId: string;
+}): boolean {
+  const { groupConfig, defaultConfig } = resolveChannelGroupPolicy({
+    cfg: params.cfg,
+    channel: "telegram",
+    groupId: String(params.chatId),
+    accountId: params.accountId,
+  });
+  return groupConfig?.ingest ?? defaultConfig?.ingest ?? false;
+}
+
+/**
+ * #2961 scenario E — silent ingest.
+ *
+ * A non-mention group message that `requireMention` skips is still conversation context:
+ * when the group opts into `ingest`, emit the internal `message:received` event for it
+ * without dispatching to the agent. Mirrors the internal-hook bridge in
+ * `src/auto-reply/reply/dispatch-from-config.ts` (and `bot/delivery.replies.ts` for the
+ * `message:sent` side). No-ops unless the group has `ingest` enabled.
+ */
+function emitTelegramSilentIngestEvent(params: {
+  cfg: RemoteClawConfig;
+  accountId: string;
+  chatId: number | string;
+  resolvedThreadId?: number;
+  threadId?: number;
+  sessionKey: string;
+  content: string;
+  messageId?: string;
+  timestamp?: number;
+  senderId?: string;
+  senderName?: string;
+  senderUsername?: string;
+}): void {
+  if (
+    !resolveTelegramGroupIngest({
+      cfg: params.cfg,
+      chatId: params.chatId,
+      accountId: params.accountId,
+    })
+  ) {
+    return;
+  }
+  const conversationId = buildTelegramGroupFrom(params.chatId, params.resolvedThreadId);
+  const canonical: CanonicalInboundMessageHookContext = {
+    from: conversationId,
+    to: `telegram:${params.chatId}`,
+    content: params.content,
+    body: params.content,
+    timestamp: params.timestamp,
+    channelId: "telegram",
+    accountId: params.accountId,
+    conversationId,
+    messageId: params.messageId,
+    senderId: params.senderId,
+    senderName: params.senderName,
+    senderUsername: params.senderUsername,
+    provider: "telegram",
+    surface: "telegram",
+    threadId: params.threadId,
+    isGroup: true,
+    groupId: String(params.chatId),
+  };
+  fireAndForgetHook(
+    triggerInternalHook(
+      createInternalHookEvent("message", "received", params.sessionKey, {
+        ...toInternalMessageReceivedContext(canonical),
+        timestamp: params.timestamp,
+      }),
+    ),
+    "telegram: message:received internal hook failed",
+  );
+}
+
 export const buildTelegramMessageContext = async ({
   primaryCtx,
   allMedia,
@@ -154,7 +271,15 @@ export const buildTelegramMessageContext = async ({
   const isGroup = msg.chat.type === "group" || msg.chat.type === "supergroup";
   const senderId = msg.from?.id ? String(msg.from.id) : "";
   const messageThreadId = (msg as { message_thread_id?: number }).message_thread_id;
-  const isForum = (msg.chat as { is_forum?: boolean }).is_forum === true;
+  // Telegram omits `chat.is_forum` on some supergroup payloads even when the message is a
+  // topic message. Fall back to the message-level `is_topic_message` flag so topic scoping
+  // — and with it the per-topic agent override (#2961 scenario A) — survives; without this
+  // every topic in such a payload collapses onto one group session. Mirrors the same
+  // fallback already used by sequential-key.ts.
+  const isForum =
+    (msg.chat as { is_forum?: boolean }).is_forum === true ||
+    (msg.chat.type === "supergroup" &&
+      (msg as { is_topic_message?: boolean }).is_topic_message === true);
   const threadSpec = resolveTelegramThreadSpec({
     isGroup,
     isForum,
@@ -163,21 +288,39 @@ export const buildTelegramMessageContext = async ({
   const resolvedThreadId = threadSpec.scope === "forum" ? threadSpec.id : undefined;
   const replyThreadId = threadSpec.id;
   const { groupConfig, topicConfig } = resolveTelegramGroupConfig(chatId, resolvedThreadId);
-  const peerId = isGroup
-    ? buildTelegramGroupPeerId(chatId, resolvedThreadId)
-    : resolveTelegramDirectPeerId({ chatId, senderId });
-  const parentPeer = buildTelegramParentPeer({ isGroup, resolvedThreadId, chatId });
+  // Route inbound through the SAME full resolver the native-command path uses
+  // (bot-native-commands.ts) rather than the bare, policy-bypassing resolveAgentRoute.
+  // That is what re-applies the per-topic agent override, configured + session bindings,
+  // and the `routing.unmatched` drop policy to ordinary inbound messages (#2961).
   // Fresh config for bindings lookup; other routing inputs are payload-derived.
-  const route = resolveAgentRoute({
-    cfg: loadConfig(),
-    channel: "telegram",
+  const freshCfg = loadConfig();
+  const conversationRoute = resolveTelegramConversationRoute({
+    cfg: freshCfg,
     accountId: account.accountId,
-    peer: {
-      kind: isGroup ? "group" : "direct",
-      id: peerId,
-    },
-    parentPeer,
+    chatId,
+    isGroup,
+    resolvedThreadId,
+    replyThreadId,
+    senderId,
+    topicAgentId: topicConfig?.agentId,
   });
+  if (!conversationRoute) {
+    // #2961 scenario D — `routing.unmatched` drop policy: nothing matched, no sole agent,
+    // and no operator catch-all. Drop-with-telemetry already fired inside handleUnmatched().
+    // The bare resolveAgentRoute() this replaced swallowed that drop and fail-open routed
+    // the message to `fallback.legacyRoute` instead.
+    return null;
+  }
+  const route = conversationRoute.route;
+  if (isGroup && shouldDropNamedAccountGroupMessage(route)) {
+    logInboundDrop({
+      log: logVerbose,
+      channel: "telegram",
+      reason: "named-account group without an explicit binding",
+      target: buildTelegramGroupPeerId(chatId, resolvedThreadId),
+    });
+    return null;
+  }
   const baseSessionKey = route.sessionKey;
   // DMs: use raw messageThreadId for thread sessions (not forum topic ids)
   const dmThreadId = threadSpec.scope === "dm" ? threadSpec.id : undefined;
@@ -454,6 +597,22 @@ export const buildTelegramMessageContext = async ({
             }
           : null,
       });
+      // #2961 scenario E — the message is not dispatched, but it is still context: when
+      // the group opts into `ingest`, emit `message:received` before dropping it.
+      emitTelegramSilentIngestEvent({
+        cfg,
+        accountId: account.accountId,
+        chatId,
+        resolvedThreadId,
+        threadId: threadSpec.id,
+        sessionKey,
+        content: rawBody,
+        messageId: typeof msg.message_id === "number" ? String(msg.message_id) : undefined,
+        timestamp: msg.date ? msg.date * 1000 : undefined,
+        senderId: senderId || undefined,
+        senderName: buildSenderName(msg),
+        senderUsername: senderUsername || undefined,
+      });
       return null;
     }
   }
@@ -728,6 +887,30 @@ export const buildTelegramMessageContext = async ({
     OriginatingChannel: "telegram" as const,
     OriginatingTo: `telegram:${chatId}`,
   });
+
+  // The route above may have been rewritten to a configured ACP binding's targetSessionKey
+  // (`binding.channel`). Routing there is only half the contract: the bound session also has to
+  // be running, or the message lands in a session that was never started. Mirrors the discord
+  // inbound path (monitor/message-handler.preflight.ts) — drop-with-log rather than the
+  // user-facing error the native-command path sends, since an ordinary inbound message has no
+  // command to answer. No-op (`{ok:true}`) when no ACP binding is configured, so the common
+  // path pays nothing. Deliberately last: every cheaper drop above short-circuits first, and
+  // this runs before recordInboundSession() so a failed ensure writes no session state.
+  if (conversationRoute.configuredBinding) {
+    const ensured = await ensureConfiguredAcpRouteReady({
+      cfg: freshCfg,
+      configuredBinding: conversationRoute.configuredBinding,
+    });
+    if (!ensured.ok) {
+      logInboundDrop({
+        log: logVerbose,
+        channel: "telegram",
+        reason: `configured ACP binding unavailable: ${ensured.error}`,
+        target: conversationRoute.configuredBinding.spec.conversationId,
+      });
+      return null;
+    }
+  }
 
   const pinnedMainDmOwner = !isGroup
     ? resolvePinnedMainDmOwnerFromAllowlist({

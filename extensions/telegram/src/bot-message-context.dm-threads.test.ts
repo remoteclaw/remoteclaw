@@ -120,7 +120,12 @@ describe("buildTelegramMessageContext group sessions without forum", () => {
 describe("buildTelegramMessageContext direct peer routing", () => {
   it("isolates dm sessions by sender id when chat id differs", async () => {
     const runtimeCfg = {
-      agents: { defaults: { model: "anthropic/claude-opus-4-5", workspace: "/tmp/remoteclaw" } },
+      agents: {
+        // Fail-closed routing (#2961): with no configured agent nothing matches and the
+        // message is dropped as unmatched before a session key is ever built.
+        list: [{ id: "main" }],
+        defaults: { model: "anthropic/claude-opus-4-5", workspace: "/tmp/remoteclaw" },
+      },
       channels: { telegram: {} },
       messages: { groupChat: { mentionPatterns: [] } },
       session: { dmScope: "per-channel-peer" as const },

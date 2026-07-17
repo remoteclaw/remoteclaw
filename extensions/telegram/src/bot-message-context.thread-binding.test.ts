@@ -9,7 +9,10 @@ const hoisted = vi.hoisted(() => {
   };
 });
 
-vi.mock("../infra/outbound/session-binding-service.js", async (importOriginal) => {
+// Mock path repaired (#2961): "../infra/outbound/session-binding-service.js" predates the
+// src/telegram/ -> extensions/telegram/src/ move and resolved to nothing, so the binding
+// service was never mocked and these cases could not exercise bound-conversation routing.
+vi.mock("../../../src/infra/outbound/session-binding-service.js", async (importOriginal) => {
   const actual =
     await importOriginal<typeof import("../../../src/infra/outbound/session-binding-service.js")>();
   return {

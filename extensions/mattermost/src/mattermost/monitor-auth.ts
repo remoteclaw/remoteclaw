@@ -1,7 +1,9 @@
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/mattermost";
 import {
+  ACCESS_GROUP_ALLOW_FROM_PREFIX,
   evaluateSenderGroupAccessForPolicy,
   isDangerousNameMatchingEnabled,
+  parseAccessGroupAllowFromEntry,
   resolveAllowlistMatchSimple,
   resolveControlCommandGate,
   resolveEffectiveAllowFromLists,
@@ -17,6 +19,13 @@ export function normalizeMattermostAllowEntry(entry: string): string {
   }
   if (trimmed === "*") {
     return "*";
+  }
+  // Access-group references (`accessGroup:<name>`) must stay case-preserved: the
+  // downstream parser matches the prefix case-sensitively, so lowercasing the whole
+  // entry corrupts it into an inert literal that authorizes no one (fail-closed).
+  const accessGroupName = parseAccessGroupAllowFromEntry(trimmed);
+  if (accessGroupName) {
+    return `${ACCESS_GROUP_ALLOW_FROM_PREFIX}${accessGroupName}`;
   }
   const stripped = trimmed.replace(/^(mattermost|user):/i, "").replace(/^@/, "");
   return stripped.trim() ? normalizeLowercaseStringOrEmpty(stripped) : "";

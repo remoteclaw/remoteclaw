@@ -3,10 +3,18 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 const isDangerousNameMatchingEnabled = vi.hoisted(() => vi.fn());
 const resolveAllowlistMatchSimple = vi.hoisted(() => vi.fn());
 
-vi.mock("./runtime-api.js", () => ({
-  isDangerousNameMatchingEnabled,
-  resolveAllowlistMatchSimple,
-}));
+// monitor-auth.ts resolves these two sender helpers from `remoteclaw/plugin-sdk/mattermost`
+// (the fork consolidated the former `./runtime-api.js` seam into the plugin-sdk barrel).
+// Override only those two; keep every other real export (parseAccessGroupAllowFromEntry,
+// resolveControlCommandGate, resolveEffectiveAllowFromLists, group-access helpers, …).
+vi.mock("remoteclaw/plugin-sdk/mattermost", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remoteclaw/plugin-sdk/mattermost")>();
+  return {
+    ...actual,
+    isDangerousNameMatchingEnabled,
+    resolveAllowlistMatchSimple,
+  };
+});
 
 describe("mattermost monitor auth", () => {
   let authorizeMattermostCommandInvocation: typeof import("./monitor-auth.js").authorizeMattermostCommandInvocation;
@@ -31,6 +39,7 @@ describe("mattermost monitor auth", () => {
   it("normalizes allowlist entries", () => {
     expect(normalizeMattermostAllowEntry(" @Alice ")).toBe("alice");
     expect(normalizeMattermostAllowEntry("mattermost:Bob")).toBe("bob");
+    expect(normalizeMattermostAllowEntry("User:Alice")).toBe("alice");
     expect(normalizeMattermostAllowEntry("accessGroup:Ops")).toBe("accessGroup:Ops");
     expect(normalizeMattermostAllowEntry("*")).toBe("*");
     expect(normalizeMattermostAllowList([" Alice ", "user:alice", "ALICE", "*"])).toEqual([
@@ -57,11 +66,11 @@ describe("mattermost monitor auth", () => {
     });
   });
 
-  it("resolves direct command authorization from shared ingress", async () => {
+  it("resolves direct command authorization from shared ingress", () => {
     isDangerousNameMatchingEnabled.mockReturnValue(false);
     resolveAllowlistMatchSimple.mockReturnValue({ allowed: false });
 
-    await expect(
+    expect(
       authorizeMattermostCommandInvocation({
         account: {
           config: { dmPolicy: "open" },
@@ -74,7 +83,7 @@ describe("mattermost monitor auth", () => {
         allowTextCommands: true,
         hasControlCommand: true,
       }),
-    ).resolves.toEqual({
+    ).toEqual({
       ok: false,
       denyReason: "unauthorized",
       commandAuthorized: false,
@@ -88,7 +97,7 @@ describe("mattermost monitor auth", () => {
 
     resolveAllowlistMatchSimple.mockReturnValue({ allowed: true });
 
-    await expect(
+    expect(
       authorizeMattermostCommandInvocation({
         account: {
           config: { dmPolicy: "open", allowFrom: ["*"] },
@@ -101,7 +110,7 @@ describe("mattermost monitor auth", () => {
         allowTextCommands: false,
         hasControlCommand: false,
       }),
-    ).resolves.toEqual({
+    ).toEqual({
       ok: true,
       commandAuthorized: true,
       channelInfo: { type: "D", name: "alice", display_name: "Alice" },
@@ -112,7 +121,7 @@ describe("mattermost monitor auth", () => {
       roomLabel: "#alice",
     });
 
-    await expect(
+    expect(
       authorizeMattermostCommandInvocation({
         account: {
           config: { dmPolicy: "disabled" },
@@ -125,7 +134,7 @@ describe("mattermost monitor auth", () => {
         allowTextCommands: false,
         hasControlCommand: false,
       }),
-    ).resolves.toEqual({
+    ).toEqual({
       ok: false,
       denyReason: "dm-disabled",
       commandAuthorized: false,
@@ -137,7 +146,7 @@ describe("mattermost monitor auth", () => {
       roomLabel: "#alice",
     });
 
-    await expect(
+    expect(
       authorizeMattermostCommandInvocation({
         account: {
           config: { groupPolicy: "allowlist" },
@@ -150,7 +159,7 @@ describe("mattermost monitor auth", () => {
         allowTextCommands: true,
         hasControlCommand: false,
       }),
-    ).resolves.toEqual({
+    ).toEqual({
       ok: false,
       denyReason: "channel-no-allowlist",
       commandAuthorized: false,

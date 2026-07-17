@@ -126,17 +126,17 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   // #2782 (mattermost): channel-plugin-api + reply-delivery un-quarantined (test-side — retarget
   // the bundled-seam smoke test to channel-plugin-runtime.ts since the fork consolidated away
   // channel-plugin-api.ts/mattermostSetupPlugin; rebrand OPENCLAW_STATE_DIR→REMOTECLAW_STATE_DIR).
-  // The 2 below stay, each needing out-of-scope work:
+  // #2959 (mattermost): monitor-auth un-quarantined — the `accessGroup:Ops` lowercasing regression
+  // is fixed at source (normalizeMattermostAllowEntry now carves access-group entries out of the
+  // lowercasing branch, case-preserved), and the file's other two tests were retargeted from the
+  // stale `./runtime-api.js` mock to the plugin-sdk barrel seam and de-drifted from `await`/async
+  // to the sync `authorizeMattermostCommandInvocation` signature.
+  // The 1 below stays, needing out-of-scope work:
   // - interactions: 2/47 assert an un-ported post-threading feature — forwarding the fetched `post`
   //   (with root_id) to resolveSessionKey (positional→object signature change), handleInteraction,
   //   and dispatchButtonClick for thread-scoped session keys; spans interactions.ts + monitor.ts
   //   session-key resolution — multi-file, separate PR.
-  // - monitor-auth: SECURITY (authz) — normalizeMattermostAllowEntry lowercases `accessGroup:Ops`
-  //   entries, but the test expects case-preserved (upstream parseAccessGroupAllowFromEntry). The
-  //   access-group allowlist-normalization semantics need a security-reviewed source change —
-  //   separate PR. (The file's other two tests also carry a stale mock target + sync/async drift.)
   "extensions/mattermost/src/mattermost/interactions.test.ts",
-  "extensions/mattermost/src/mattermost/monitor-auth.test.ts",
   // #2782 (slack): monitor.tool-result un-quarantined (test-side: the ack-reaction test
   // needs statusReactions disabled to exercise the direct one-shot react path — status
   // reactions now supersede it when enabled; pairing assertion updated to the shared

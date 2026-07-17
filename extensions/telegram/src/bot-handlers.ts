@@ -16,7 +16,6 @@ import { danger, logVerbose, warn } from "../../../src/globals.js";
 import { enqueueSystemEvent } from "../../../src/infra/system-events.js";
 import { MediaFetchError } from "../../../src/media/fetch.js";
 import { readChannelAllowFromStore } from "../../../src/pairing/pairing-store.js";
-import { resolveAgentRoute } from "../../../src/routing/resolve-route.js";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
 import {
   isSenderAllowed,
@@ -33,12 +32,14 @@ import {
 import { resolveMedia } from "./bot/delivery.js";
 import {
   getTelegramTextParts,
-  buildTelegramGroupPeerId,
-  buildTelegramParentPeer,
   resolveTelegramForumThreadId,
   resolveTelegramGroupAllowFromContext,
 } from "./bot/helpers.js";
 import type { TelegramContext } from "./bot/types.js";
+import {
+  resolveTelegramConversationRoute,
+  shouldDropNamedAccountGroupMessage,
+} from "./conversation-route.js";
 import { enforceTelegramDmAccess } from "./dm-access.js";
 import {
   evaluateTelegramGroupBaseAccess,
@@ -644,16 +645,34 @@ export const registerTelegramHandlers = ({
       const resolvedThreadId = isForum
         ? resolveTelegramForumThreadId({ isForum, messageThreadId: undefined })
         : undefined;
-      const peerId = isGroup ? buildTelegramGroupPeerId(chatId, resolvedThreadId) : String(chatId);
-      const parentPeer = buildTelegramParentPeer({ isGroup, resolvedThreadId, chatId });
-      // Fresh config for bindings lookup; other routing inputs are payload-derived.
-      const route = resolveAgentRoute({
+      // Route reactions through the SAME policy-aware resolver the inbound message path uses
+      // (#3001 gap A). The bare resolveAgentRoute() this replaced failed OPEN to
+      // fallback.legacyRoute on a policy drop and never applied the named-account group gate,
+      // so a reaction in a named-account group matched via a non-binding tier leaked a
+      // "reaction added" system event into the first agent's session. Fresh config for
+      // bindings lookup; other routing inputs are payload-derived.
+      const conversationRoute = resolveTelegramConversationRoute({
         cfg: loadConfig(),
-        channel: "telegram",
         accountId,
-        peer: { kind: isGroup ? "group" : "direct", id: peerId },
-        parentPeer,
+        chatId,
+        isGroup,
+        resolvedThreadId,
+        senderId,
       });
+      if (!conversationRoute) {
+        // #2961 scenario D — routing.unmatched drop policy: nothing matched, no sole agent,
+        // no operator catch-all. Telemetry already fired inside handleUnmatched().
+        return;
+      }
+      const route = conversationRoute.route;
+      if (isGroup && shouldDropNamedAccountGroupMessage(route)) {
+        // #2961 scenario C — a named-account group route on a non-binding tier is not this
+        // account's traffic; drop the reaction rather than route it cross-account.
+        logVerbose(
+          `telegram: dropped reaction in named-account group without an explicit binding (chat=${chatId})`,
+        );
+        return;
+      }
       const sessionKey = route.sessionKey;
 
       // Enqueue system event for each added reaction.

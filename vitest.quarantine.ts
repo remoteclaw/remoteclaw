@@ -82,18 +82,17 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   "extensions/feishu/src/monitor.reaction.test.ts",
   // #2782 (imessage): accounts + parse-notification un-quarantined via SOURCE fixes — accounts.ts
   // restores the createAccountListHelpers `implicitDefaultAccount` options + `defaultAccount`
-  // resolution; parse-notification.ts restores stripImessageLengthPrefixedUtf8Text. The 2 below
-  // stay, each needing out-of-scope work:
-  // - deliver: the fork gutted the sentText/echoText send-result contract (send.ts returns only
-  //   {messageId}); test asserts the actual media-echo placeholder + post-send-only remember
-  //   (#47830, no pre-send full-text remember). Restoring is a multi-module outbound/self-chat-echo
-  //   subsystem change — separate PR.
+  // resolution; parse-notification.ts restores stripImessageLengthPrefixedUtf8Text.
+  // #2971 (imessage): deliver un-quarantined via SOURCE fix — send.ts now returns the post-
+  // transform `sentText` alongside `messageId`, and deliver.ts remembers THAT (not the caller's
+  // pre-transform text) post-send only, restoring the media-echo placeholder + the #47830
+  // no-pre-send-full-text-remember contract.
+  // The 1 below stays, needing out-of-scope work:
   // - inbound-processing: SECURITY-sensitive — the dmPolicy access-control + echo/self-chat
   //   detection ORDER diverged from upstream (fork does access-before-echo; tests expect
   //   echo/self-chat-before-access) AND `dmPolicy:"open"` with an empty allowlist blocks where the
   //   tests expect allow; reconciling touches shared src/security/dm-policy-shared authz — separate
   //   security-reviewed PR.
-  "extensions/imessage/src/monitor/deliver.test.ts",
   "extensions/imessage/src/monitor/inbound-processing.test.ts",
   // #2782 (line): channel.sendPayload.test.ts — 8/12 pass; the 4 failures are a
   // SOURCE gap (not a test fix). channel.ts `sendPayload` has no LINE video-media

@@ -11,6 +11,10 @@ export {
 } from "../auto-reply/reply/history.js";
 export type { ReplyPayload } from "../auto-reply/types.js";
 export type { ChatType } from "../channels/chat-type.js";
+export {
+  ACCESS_GROUP_ALLOW_FROM_PREFIX,
+  parseAccessGroupAllowFromEntry,
+} from "../channels/allow-from.js";
 export { resolveControlCommandGate } from "../channels/command-gating.js";
 export { logInboundDrop, logTypingFailure } from "../channels/logging.js";
 export { resolveAllowlistMatchSimple } from "../channels/plugins/allowlist-match.js";

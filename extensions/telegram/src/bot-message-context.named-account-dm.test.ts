@@ -74,7 +74,15 @@ describe("buildTelegramMessageContext named-account routing", () => {
     expect(ctx).toBeNull();
   });
 
-  it("still drops named-account group messages without an explicit binding", async () => {
+  // Scenario D (unmatched), NOT the scenario-C named-account gate — the group analog of the
+  // DM case above. `unmatchedCfg` has no `agents.list`, so the route resolves to NOTHING and
+  // bot-message-context.ts drops it as unmatched (returns null on `!conversationRoute`) BEFORE
+  // shouldDropNamedAccountGroupMessage (the C gate) is ever reached. This case would still pass
+  // if the C gate were deleted, so it is NOT discriminating C coverage. The genuine C control —
+  // a NON-null catch-all route dropped ONLY by the gate — lives in
+  // bot-message-context.routing-policy.test.ts ("drops a named-account group message that only
+  // matched via the catch-all").
+  it("drops an unbound named-account group message when nothing matches (fail-closed)", async () => {
     const ctx = await buildTelegramMessageContextForTest({
       cfg: unmatchedCfg,
       accountId: "atlas",

@@ -156,13 +156,16 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   // - dispatch.preview-fallback: obsolete premise — dispatch.ts finalizes previews via inline
   //   chat.update now, not finalizeSlackPreviewEdit (which is dead code); the test needs a rewrite.
   "extensions/slack/src/monitor/message-handler/dispatch.preview-fallback.test.ts",
-  // #2961 (telegram): 5 bot-message-context files un-quarantined via a SOURCE fix —
+  // #2961 (telegram): 4 bot-message-context files un-quarantined via a SOURCE fix
+  // (named-account-dm, silent-ingest, thread-binding, topic-agentid), plus 1 net-new
+  // routing-policy test (bot-message-context.routing-policy.test.ts) added in the same PR —
+  // never quarantined, so not one of the 4 "un-quarantined". The fix:
   // the inbound path now routes through resolveTelegramConversationRoute (the same full
   // resolver the native-command path uses) instead of the bare, policy-bypassing
   // resolveAgentRoute, so topic-agent override (A), session bindings (B), the
   // routing.unmatched drop policy (D) and the named-account group gate (C) apply to
   // ordinary inbound messages, and the mention-skip branch fires the ingest hook (E).
-  // Each file ALSO needed its upstream mock paths repaired: they predate the
+  // Each of those 4 ALSO needed its upstream mock paths repaired: they predate the
   // src/telegram/ -> extensions/telegram/src/ move, so `vi.mock("../config/config.js")`
   // & co. silently targeted non-existent modules and the mocks never applied.
   // The 5 below stay, each out of #2961's scope. dm-threads specifically: its 2 remaining

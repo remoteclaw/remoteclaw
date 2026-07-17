@@ -73,7 +73,6 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   "extensions/discord/src/monitor/message-handler.queue.test.ts",
   "extensions/discord/src/monitor/message-utils.test.ts",
   "extensions/discord/src/monitor/native-command.commands-allowfrom.test.ts",
-  "extensions/discord/src/monitor/provider.proxy.test.ts",
   "extensions/discord/src/monitor/provider.rest-proxy.test.ts",
   "extensions/discord/src/monitor/threading.starter.test.ts",
   "extensions/discord/src/voice-message.test.ts",

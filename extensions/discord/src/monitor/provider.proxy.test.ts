@@ -7,6 +7,7 @@ const {
   globalFetchMock,
   HttpsProxyAgent,
   getLastAgent,
+  MockWebSocket,
   restProxyAgentSpy,
   undiciFetchMock,
   undiciProxyAgentSpy,
@@ -33,6 +34,12 @@ const {
     GuildMembers: 1 << 7,
   } as const;
 
+  class MockWebSocket {
+    constructor(url: string, options?: { agent?: unknown }) {
+      webSocketSpy(url, options);
+    }
+  }
+
   class GatewayPlugin {
     options: unknown;
     gatewayInfo: unknown;
@@ -42,6 +49,11 @@ const {
     }
     async registerClient(client: unknown) {
       baseRegisterClientSpy(client);
+    }
+    // Mirrors Carbon's own GatewayPlugin.createWebSocket, which already constructs from `ws` with no
+    // options — that is what makes "uses ws even without proxy" true for the un-proxied `super` path.
+    createWebSocket(url: string) {
+      return new MockWebSocket(url);
     }
   }
 
@@ -65,6 +77,7 @@ const {
     globalFetchMock,
     HttpsProxyAgent,
     getLastAgent: () => HttpsProxyAgent.lastCreated,
+    MockWebSocket,
     restProxyAgentSpy,
     undiciFetchMock,
     undiciProxyAgentSpy,
@@ -99,11 +112,7 @@ vi.mock("undici", () => ({
 }));
 
 vi.mock("ws", () => ({
-  default: class MockWebSocket {
-    constructor(url: string, options?: { agent?: unknown }) {
-      webSocketSpy(url, options);
-    }
-  },
+  default: MockWebSocket,
 }));
 
 describe("createDiscordGatewayPlugin", () => {
@@ -319,13 +328,15 @@ describe("createDiscordGatewayPlugin", () => {
     vi.useFakeTimers();
     const runtime = createRuntime();
     globalFetchMock.mockImplementation(() => new Promise(() => {}));
+    // A short configured timeout both crosses the fake-timer deadline below and asserts that
+    // discord.gatewayInfoTimeoutMs is threaded from config through to the metadata-fetch race.
     const plugin = createDiscordGatewayPlugin({
-      discordConfig: {},
+      discordConfig: { gatewayInfoTimeoutMs: 5_000 },
       runtime,
     });
 
     const registerPromise = registerGatewayClient(plugin);
-    await vi.advanceTimersByTimeAsync(10_000);
+    await vi.advanceTimersByTimeAsync(5_000);
     await registerPromise;
 
     expect(baseRegisterClientSpy).toHaveBeenCalledTimes(1);

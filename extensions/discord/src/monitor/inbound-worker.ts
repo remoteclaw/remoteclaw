@@ -1,8 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import type { ClaimableDedupe } from "remoteclaw/plugin-sdk/persistent-dedupe";
 import { createRunStateMachine } from "../../../../src/channels/run-state-machine.js";
 import { danger } from "../../../../src/globals.js";
 import { formatDurationSeconds } from "../../../../src/infra/format-time/format-duration.ts";
 import { KeyedAsyncQueue } from "../../../../src/plugin-sdk/keyed-async-queue.js";
+import {
+  commitDiscordInboundReplay,
+  DiscordRetryableInboundError,
+  releaseDiscordInboundReplay,
+} from "./inbound-dedupe.js";
 import { materializeDiscordInboundJob, type DiscordInboundJob } from "./inbound-job.js";
 import type { RuntimeEnv } from "./message-handler.preflight.types.js";
 import { processDiscordMessage } from "./message-handler.process.js";
@@ -14,6 +20,7 @@ type DiscordInboundWorkerParams = {
   setStatus?: any;
   abortSignal?: AbortSignal;
   runTimeoutMs?: number;
+  replayGuard: ClaimableDedupe;
 };
 
 export type DiscordInboundWorker = {
@@ -66,6 +73,37 @@ async function processDiscordInboundJob(params: {
   });
 }
 
+// The replay key is claimed before preflight (see message-handler.ts) and its claim is
+// resolved here, once the run's outcome is known: committed so a gateway RESUME
+// redelivery is dropped, or released so it is reprocessed.
+async function runDiscordInboundJobWithReplayGuard(params: {
+  job: DiscordInboundJob;
+  runtime: RuntimeEnv;
+  replayGuard: ClaimableDedupe;
+  lifecycleSignal?: AbortSignal;
+  runTimeoutMs?: number;
+}) {
+  const { job, replayGuard } = params;
+  try {
+    await processDiscordInboundJob({
+      job,
+      runtime: params.runtime,
+      lifecycleSignal: params.lifecycleSignal,
+      runTimeoutMs: params.runTimeoutMs,
+    });
+  } catch (error) {
+    if (error instanceof DiscordRetryableInboundError) {
+      releaseDiscordInboundReplay({ replayKeys: job.replayKeys, replayGuard, error });
+    } else {
+      // A non-retryable failure can still have emitted user-visible side effects, so
+      // keep the claim committed rather than replaying them on redelivery.
+      await commitDiscordInboundReplay({ replayKeys: job.replayKeys, replayGuard });
+    }
+    throw error;
+  }
+  await commitDiscordInboundReplay({ replayKeys: job.replayKeys, replayGuard });
+}
+
 export function createDiscordInboundWorker(
   params: DiscordInboundWorkerParams,
 ): DiscordInboundWorker {
@@ -80,16 +118,25 @@ export function createDiscordInboundWorker(
       void runQueue
         .enqueue(job.queueKey, async () => {
           if (!runState.isActive()) {
+            releaseDiscordInboundReplay({
+              replayKeys: job.replayKeys,
+              replayGuard: params.replayGuard,
+            });
             return;
           }
           runState.onRunStart();
           try {
             if (!runState.isActive()) {
+              releaseDiscordInboundReplay({
+                replayKeys: job.replayKeys,
+                replayGuard: params.replayGuard,
+              });
               return;
             }
-            await processDiscordInboundJob({
+            await runDiscordInboundJobWithReplayGuard({
               job,
               runtime: params.runtime,
+              replayGuard: params.replayGuard,
               lifecycleSignal: params.abortSignal,
               runTimeoutMs: params.runTimeoutMs,
             });

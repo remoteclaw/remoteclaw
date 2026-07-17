@@ -70,6 +70,18 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   "extensions/discord/src/monitor.tool-result.sends-status-replies-responseprefix.test.ts",
   "extensions/discord/src/monitor/auto-presence.test.ts",
   "extensions/discord/src/monitor/message-handler.preflight.test.ts",
+  // #2968 (discord): the inbound message-ID replay guard is now wired into
+  // inbound-worker.ts / message-handler.ts, and this file's 3 dedup cases were re-homed to
+  // message-handler.dedupe.test.ts (un-quarantined, so the dedup behavior gates CI) — the
+  // #2953/#2970 focused-spec re-homing precedent. message-handler.queue.test.ts STAYS
+  // quarantined ONLY on its 3 timeout-fallback-reply cases ("applies explicit inbound worker
+  // timeout ...", "waits for the timeout fallback reply before starting the next queued run",
+  // "routes the timeout fallback to the created auto-thread target"): they assert a
+  // user-facing "Discord inbound worker timed out." channel reply, but onTimeout is
+  // deliberately still log-only pending a separate, ratification-pending maintainer decision
+  // on whether that fallback reply should exist. (The file's remaining queue-behavior cases
+  // pass, but file-level quarantine is all-or-nothing.) Un-quarantine when the timeout-reply
+  // decision lands.
   "extensions/discord/src/monitor/message-handler.queue.test.ts",
   "extensions/discord/src/monitor/native-command.commands-allowfrom.test.ts",
   "extensions/discord/src/voice-message.test.ts",

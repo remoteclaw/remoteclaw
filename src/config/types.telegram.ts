@@ -272,6 +272,13 @@ export type TelegramTopicConfig = {
 
 export type TelegramGroupConfig = {
   requireMention?: boolean;
+  /**
+   * When `requireMention` skips a non-mention group message, still emit an internal
+   * `message:received` event for it so the message is ingested as conversation context
+   * without being dispatched to the agent. Resolved with `groups["*"]` wildcard
+   * fallback, so a specific group entry that omits `ingest` inherits the default (#2961).
+   */
+  ingest?: boolean;
   /** Per-group override for group message policy (open|disabled|allowlist). */
   groupPolicy?: GroupPolicy;
   /** Optional tool policy overrides for this group. */

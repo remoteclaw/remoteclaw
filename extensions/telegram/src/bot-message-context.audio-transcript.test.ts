@@ -48,7 +48,12 @@ async function buildGroupVoiceContext(params: {
     allMedia: [{ path: params.mediaPath, contentType: "audio/ogg" }],
     options: { forceWasMentioned: params.forceWasMentioned ?? true },
     cfg: {
-      agents: { defaults: { model: DEFAULT_MODEL, workspace: DEFAULT_WORKSPACE } },
+      agents: {
+        // Fail-closed routing (#2961): with no configured agent the message is dropped as
+        // unmatched before any transcript work happens.
+        list: [{ id: "main" }],
+        defaults: { model: DEFAULT_MODEL, workspace: DEFAULT_WORKSPACE },
+      },
       channels: { telegram: {} },
       messages: { groupChat: { mentionPatterns: [DEFAULT_MENTION_PATTERN] } },
     },

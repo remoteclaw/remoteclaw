@@ -154,12 +154,25 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   // - dispatch.preview-fallback: obsolete premise — dispatch.ts finalizes previews via inline
   //   chat.update now, not finalizeSlackPreviewEdit (which is dead code); the test needs a rewrite.
   "extensions/slack/src/monitor/message-handler/dispatch.preview-fallback.test.ts",
+  // #2961 (telegram): 5 bot-message-context files un-quarantined via a SOURCE fix —
+  // the inbound path now routes through resolveTelegramConversationRoute (the same full
+  // resolver the native-command path uses) instead of the bare, policy-bypassing
+  // resolveAgentRoute, so topic-agent override (A), session bindings (B), the
+  // routing.unmatched drop policy (D) and the named-account group gate (C) apply to
+  // ordinary inbound messages, and the mention-skip branch fires the ingest hook (E).
+  // Each file ALSO needed its upstream mock paths repaired: they predate the
+  // src/telegram/ -> extensions/telegram/src/ move, so `vi.mock("../config/config.js")`
+  // & co. silently targeted non-existent modules and the mocks never applied.
+  // The 5 below stay, each out of #2961's scope. dm-threads specifically: its 2 remaining
+  // fails are session-key/route-echo SHAPE divergences, not routing-resolution bugs, and
+  // each needs its own source change — (a) `uses thread session key for dm topics` wants the
+  // DM thread key to embed the chat id (`agent:main:main:thread:1234:42`) but the fork
+  // derives it from the thread id alone (`:thread:42`, resolveThreadSessionKeys); (b) `uses
+  // topic session for forum groups` wants OriginatingTo to carry the topic suffix
+  // (`telegram:<chat>:topic:99`) but bot-message-context.ts emits a bare `telegram:<chat>`.
+  // Both have live outbound consumers, so they are a separate, reply-routing-reviewed PR.
   "extensions/telegram/src/bot-message-context.dm-threads.test.ts",
   "extensions/telegram/src/bot-message-context.group-body.test.ts",
-  "extensions/telegram/src/bot-message-context.named-account-dm.test.ts",
-  "extensions/telegram/src/bot-message-context.silent-ingest.test.ts",
-  "extensions/telegram/src/bot-message-context.thread-binding.test.ts",
-  "extensions/telegram/src/bot-message-context.topic-agentid.test.ts",
   "extensions/telegram/src/bot-message-dispatch.test.ts",
   "extensions/telegram/src/format.wrap-md.test.ts",
   "extensions/telegram/src/sequential-key.test.ts",

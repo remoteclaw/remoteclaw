@@ -816,8 +816,11 @@ describe("createTelegramBot", () => {
     expect(payload.SessionKey).toBe("agent:opie:main");
   });
 
-  it("accepts non-default account DMs when dmPolicy is open (upstream no longer requires explicit bindings)", async () => {
+  it("accepts non-default account DMs when dmPolicy is open (no explicit binding required)", async () => {
     loadConfig.mockReturnValue({
+      // Declared explicitly rather than relying on the harness backfill, because this case
+      // IS a routing assertion: the DM is delivered only because a resolvable route exists.
+      agents: { list: [{ id: "main" }] },
       channels: {
         telegram: {
           accounts: {
@@ -846,8 +849,13 @@ describe("createTelegramBot", () => {
       getFile: async () => ({ download: async () => new Uint8Array() }),
     });
 
-    // Upstream changed: non-default accounts with dmPolicy=open now accept DMs
-    // without explicit bindings (routes via default agent fallback)
+    // A named account's DM needs no explicit binding: the route resolves via sole-agent
+    // promotion, and #2961's named-account gate is scoped to GROUP traffic, so DMs are not
+    // gated. The MECHANISM changed in #2961 though — this used to be delivered by the
+    // fail-open `fallback.legacyRoute` (the "default agent fallback" this comment used to
+    // describe). With no agent configured at all, this DM is now DROPPED instead, which is
+    // the fail-closed posture scenario D asks for; see
+    // bot-message-context.routing-policy.test.ts.
     expect(replySpy).toHaveBeenCalledTimes(1);
   });
 

@@ -31,11 +31,32 @@ const { loadConfig } = vi.hoisted((): { loadConfig: AnyMock } => ({
 export function getLoadConfigMock(): AnyMock {
   return loadConfig;
 }
+
+/**
+ * Backfill the schema-mandatory `agents.list` onto fixtures that omit it.
+ *
+ * Inbound routing is fail-closed since #2961: it honors the `routing.unmatched` policy
+ * instead of fail-open routing through `fallback.legacyRoute`. A fixture with no
+ * configured agent therefore matches nothing and is dropped as unmatched BEFORE the
+ * behavior these suites actually assert (envelopes, dedupe, pairing, mention gating,
+ * media-group buffering) can run. Production configs always carry a non-empty
+ * `agents.list` (schema-enforced); these fixtures simply predate that and omit it.
+ *
+ * A fixture that DOES declare `agents.list` is passed through untouched, so any suite
+ * making a real routing assertion still controls its own agents.
+ */
+function withFallbackAgentsList(cfg: RemoteClawConfig): RemoteClawConfig {
+  if (cfg?.agents?.list?.length) {
+    return cfg;
+  }
+  return { ...cfg, agents: { ...cfg?.agents, list: [{ id: "main" }] } };
+}
+
 vi.mock("../../../src/config/config.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../src/config/config.js")>();
   return {
     ...actual,
-    loadConfig,
+    loadConfig: () => withFallbackAgentsList(loadConfig() as RemoteClawConfig),
   };
 });
 
@@ -216,6 +237,11 @@ export const getOnHandler = (event: string) => {
 
 const DEFAULT_TELEGRAM_TEST_CONFIG: RemoteClawConfig = {
   agents: {
+    // Routing is fail-closed (#2961): the inbound path now honors the `routing.unmatched`
+    // policy, so a config with no `agents.list` matches nothing and every message is
+    // dropped before these suites can observe anything. Production configs always carry a
+    // non-empty `agents.list` (schema-enforced), so one agent is the realistic minimum.
+    list: [{ id: "main" }],
     defaults: {
       envelopeTimezone: "utc",
     },

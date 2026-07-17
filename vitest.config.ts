@@ -1,91 +1,44 @@
+import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
+import { pluginSdkSubpaths } from "./scripts/lib/plugin-sdk-entries.mjs";
+import privateLocalOnlyPluginSdkSubpaths from "./scripts/lib/plugin-sdk-private-local-only-subpaths.json" with { type: "json" };
 
 const repoRoot = path.dirname(fileURLToPath(import.meta.url));
 const isCI = process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true";
 const isWindows = process.platform === "win32";
 const localWorkers = Math.max(4, Math.min(16, os.cpus().length));
 const ciWorkers = isWindows ? 2 : 3;
-const pluginSdkSubpaths = [
-  "account-id",
-  "account-resolution",
-  "allow-from",
-  "browser-security-runtime",
-  "channel-lifecycle",
-  "core",
-  "channel-config-helpers",
-  "channel-streaming",
-  "group-access",
-  "json-store",
-  "media-store",
-  "persistent-dedupe",
-  "reply-chunking",
-  "reply-payload",
-  "runtime",
-  "runtime-env",
-  "runtime-store",
-  "string-coerce-runtime",
-  "string-normalization-runtime",
-  "compat",
-  "telegram",
-  "discord",
-  "slack",
-  "signal",
-  "imessage",
-  "whatsapp",
-  "line",
-  "msteams",
-  "acpx",
-  "bluebubbles",
-  "copilot-proxy",
-  "device-pair",
-  "diagnostics-otel",
-  "diagnostics-prometheus",
-  "diffs",
-  "feishu",
-  "googlechat",
-  "irc",
-  "llm-task",
-  "lobster",
-  "matrix",
-  "mattermost",
-  "nextcloud-talk",
-  "nostr",
-  "open-prose",
-  "phone-control",
-  "synology-chat",
-  "talk-voice",
-  "test-utils",
-  "text-runtime",
-  "text-utility-runtime",
-  "thread-ownership",
-  "tlon",
-  "tool-send",
-  "twitch",
-  "voice-call",
-  "zalo",
-  "zalouser",
-  "keyed-async-queue",
-  "health",
-  "plugin-test-runtime",
-  "provider-model-shared",
-  "routing",
-  "runtime-config-snapshot",
-  "secret-ref-runtime",
-  "ssrf-policy",
-  "temp-path",
-  "dangerous-name-runtime",
-  "webhook-request-guards",
-  "webhook-targets",
-] as const;
+
+/** Subpaths backed by a real `src/plugin-sdk/<name>.ts`, including fork-side ones
+ * absent from the published entrypoint list (`telegram`, `discord`, `health`, ...). */
+function listLocalPluginSdkSubpaths(): string[] {
+  return fs
+    .readdirSync(path.join(repoRoot, "src", "plugin-sdk"), { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".ts"))
+    .map((entry) => entry.name.slice(0, -".ts".length))
+    .filter((subpath) => subpath !== "index" && !/\.(?:test|spec|d)$/u.test(subpath));
+}
+
+// Derived, never hand-maintained: the same shared source of truth that
+// test/vitest/vitest.shared.config.ts uses, unioned with the subpaths actually on
+// disk. The previous hand-maintained copy silently omitted `request-url`, so bare
+// `vitest` failed to resolve imports the scoped/CI lanes resolved fine (#2964).
+const pluginSdkAliasSubpaths = [
+  ...new Set([
+    ...pluginSdkSubpaths,
+    ...privateLocalOnlyPluginSdkSubpaths,
+    ...listLocalPluginSdkSubpaths(),
+  ]),
+].toSorted((left, right) => left.localeCompare(right));
 
 export default defineConfig({
   resolve: {
     // Keep this ordered: the base `remoteclaw/plugin-sdk` alias is a prefix match.
     alias: [
-      ...pluginSdkSubpaths.map((subpath) => ({
+      ...pluginSdkAliasSubpaths.map((subpath) => ({
         find: `remoteclaw/plugin-sdk/${subpath}`,
         replacement: path.join(repoRoot, "src", "plugin-sdk", `${subpath}.ts`),
       })),

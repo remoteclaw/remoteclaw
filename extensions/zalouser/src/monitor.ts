@@ -213,6 +213,7 @@ function resolveGroupRequireMention(params: {
   groupId: string;
   groupName?: string | null;
   groups: Record<string, { allow?: boolean; enabled?: boolean; requireMention?: boolean }>;
+  allowNameMatching: boolean;
 }): boolean {
   const entry = findZalouserGroupEntry(
     params.groups ?? {},
@@ -221,6 +222,7 @@ function resolveGroupRequireMention(params: {
       groupName: params.groupName,
       includeGroupIdAlias: true,
       includeWildcard: true,
+      allowNameMatching: params.allowNameMatching,
     }),
   );
   if (typeof entry?.requireMention === "boolean") {
@@ -317,6 +319,10 @@ async function processMessage(
   });
 
   const groups = account.config.groups ?? {};
+  // Group display names are mutable and attacker-controlled: anyone can create or rename a group
+  // to impersonate a trusted allowlist entry. Only treat the name as an allowlist match candidate
+  // when the operator explicitly opted into the spoofable behavior.
+  const allowNameMatching = isDangerousNameMatchingEnabled(account.config);
   if (isGroup) {
     const groupEntry = findZalouserGroupEntry(
       groups,
@@ -325,6 +331,7 @@ async function processMessage(
         groupName,
         includeGroupIdAlias: true,
         includeWildcard: true,
+        allowNameMatching,
       }),
     );
     const routeAccess = evaluateGroupRouteAccessForPolicy({
@@ -467,6 +474,7 @@ async function processMessage(
         groupId: chatId,
         groupName,
         groups,
+        allowNameMatching,
       })
     : false;
   const mentionRegexes = core.channel.mentions.buildMentionRegexes(config, route.agentId);

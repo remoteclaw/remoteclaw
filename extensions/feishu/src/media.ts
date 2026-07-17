@@ -1,7 +1,14 @@
 import fs from "fs";
 import path from "path";
 import { Readable } from "stream";
-import { withTempDownloadPath, type ClawdbotConfig } from "remoteclaw/plugin-sdk/feishu";
+import {
+  mediaKindFromMime,
+  normalizeLowercaseStringOrEmpty,
+  normalizeMimeType,
+  transcodeAudioBufferToOpus,
+  withTempDownloadPath,
+  type ClawdbotConfig,
+} from "remoteclaw/plugin-sdk/feishu";
 import { resolveFeishuAccount } from "./accounts.js";
 import { createFeishuClient } from "./client.js";
 import { normalizeFeishuExternalKey } from "./external-keys.js";
@@ -79,7 +86,130 @@ function extractFeishuUploadKey(
   return key;
 }
 
-async function readFeishuResponseBuffer(params: {
+type FeishuHeaderMap = Record<string, string | string[]>;
+
+/** Narrow an unknown `headers`/`header` bag to a string-valued map, or reject it. */
+function asHeaderMap(value: unknown): FeishuHeaderMap | undefined {
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+  const entries = Object.entries(value as Record<string, unknown>);
+  if (entries.length === 0) {
+    return undefined;
+  }
+  if (entries.every(([, entry]) => typeof entry === "string" || Array.isArray(entry))) {
+    return Object.fromEntries(entries) as FeishuHeaderMap;
+  }
+  return undefined;
+}
+
+function readHeaderValue(headers: FeishuHeaderMap | undefined, name: string): string | undefined {
+  if (!headers) {
+    return undefined;
+  }
+  const target = normalizeLowercaseStringOrEmpty(name);
+  for (const [key, value] of Object.entries(headers)) {
+    if (normalizeLowercaseStringOrEmpty(key) !== target) {
+      continue;
+    }
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+    if (Array.isArray(value)) {
+      const first = value.find((entry) => typeof entry === "string" && entry.trim());
+      if (typeof first === "string") {
+        return first.trim();
+      }
+    }
+  }
+  return undefined;
+}
+
+function containsEastAsianScript(value: string): boolean {
+  return /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u.test(value);
+}
+
+/**
+ * Feishu serves `content-disposition` filenames as raw UTF-8 bytes, which Node
+ * surfaces as latin1. Recover the original CJK display name when the round-trip
+ * is unambiguous; otherwise keep the header verbatim.
+ */
+function recoverUtf8FileNameFromLatin1Header(value: string): string {
+  const recovered = Buffer.from(value, "latin1").toString("utf8");
+  if (recovered !== value && !recovered.includes("�") && containsEastAsianScript(recovered)) {
+    return recovered;
+  }
+  return value;
+}
+
+function decodeDispositionFileName(value: string): string | undefined {
+  const utf8Match = value.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    const raw = utf8Match[1].trim().replace(/^"(.*)"$/, "$1");
+    try {
+      return decodeURIComponent(raw);
+    } catch {
+      return raw;
+    }
+  }
+
+  const plainMatch = value.match(/filename="?([^";]+)"?/i);
+  const plainFileName = plainMatch?.[1]?.trim();
+  return plainFileName ? recoverUtf8FileNameFromLatin1Header(plainFileName) : undefined;
+}
+
+/**
+ * Recover the content-type / filename the SDK exposes alongside a download so
+ * callers can classify media that carries no usable filename extension.
+ */
+function extractFeishuDownloadMetadata(response: unknown): {
+  contentType?: string;
+  fileName?: string;
+} {
+  if (!response || typeof response !== "object") {
+    return {};
+  }
+  const responseWithOptionalFields = response as {
+    headers?: unknown;
+    header?: unknown;
+    contentType?: string;
+    mime_type?: string;
+    file_name?: string;
+    fileName?: string;
+    data?: {
+      contentType?: string;
+      mime_type?: string;
+      file_name?: string;
+      fileName?: string;
+    };
+  };
+  const headers =
+    asHeaderMap(responseWithOptionalFields.headers) ??
+    asHeaderMap(responseWithOptionalFields.header);
+  const data = Buffer.isBuffer(responseWithOptionalFields.data)
+    ? undefined
+    : responseWithOptionalFields.data;
+
+  const contentType = normalizeMimeType(
+    readHeaderValue(headers, "content-type") ??
+      responseWithOptionalFields.contentType ??
+      responseWithOptionalFields.mime_type ??
+      data?.contentType ??
+      data?.mime_type,
+  );
+
+  const disposition = readHeaderValue(headers, "content-disposition");
+  const fileName =
+    (disposition ? decodeDispositionFileName(disposition) : undefined) ??
+    responseWithOptionalFields.file_name ??
+    responseWithOptionalFields.fileName ??
+    data?.file_name ??
+    data?.fileName;
+
+  return { contentType, fileName };
+}
+
+async function readFeishuResponseBytes(params: {
   response: unknown;
   tmpDirPrefix: string;
   errorPrefix: string;
@@ -137,6 +267,15 @@ async function readFeishuResponseBuffer(params: {
   throw new Error(`${params.errorPrefix}: unexpected response format. Keys: [${types}]`);
 }
 
+async function readFeishuResponsePayload(params: {
+  response: unknown;
+  tmpDirPrefix: string;
+  errorPrefix: string;
+}): Promise<{ buffer: Buffer; contentType?: string; fileName?: string }> {
+  const buffer = await readFeishuResponseBytes(params);
+  return { buffer, ...extractFeishuDownloadMetadata(params.response) };
+}
+
 /**
  * Download an image from Feishu using image_key.
  * Used for downloading images sent in messages.
@@ -157,12 +296,12 @@ export async function downloadImageFeishu(params: {
     path: { image_key: normalizedImageKey },
   });
 
-  const buffer = await readFeishuResponseBuffer({
+  const { buffer, contentType } = await readFeishuResponsePayload({
     response,
     tmpDirPrefix: "remoteclaw-feishu-img-",
     errorPrefix: "Feishu image download failed",
   });
-  return { buffer };
+  return { buffer, contentType };
 }
 
 /**
@@ -188,12 +327,12 @@ export async function downloadMessageResourceFeishu(params: {
     params: { type },
   });
 
-  const buffer = await readFeishuResponseBuffer({
+  const { buffer, contentType, fileName } = await readFeishuResponsePayload({
     response,
     tmpDirPrefix: "remoteclaw-feishu-resource-",
     errorPrefix: "Feishu message resource download failed",
   });
-  return { buffer };
+  return { buffer, contentType, fileName };
 }
 
 export type UploadImageResult = {
@@ -419,6 +558,119 @@ export function detectFileType(
   }
 }
 
+const FEISHU_IMAGE_EXTS = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".ico", ".tiff"];
+
+/**
+ * Pick the Feishu upload `file_type` and message `msg_type` for outbound media.
+ *
+ * Classification prefers the resolved MIME type and falls back to the filename
+ * extension, because callers frequently supply media with a valid content-type
+ * but no usable extension (the name degrades to the literal "file").
+ */
+function resolveFeishuOutboundMediaKind(params: { fileName: string; contentType?: string }): {
+  fileType?: "opus" | "mp4" | "pdf" | "doc" | "xls" | "ppt" | "stream";
+  msgType: "image" | "file" | "audio" | "media";
+} {
+  const { fileName } = params;
+  const contentType = normalizeMimeType(params.contentType);
+  const ext = normalizeLowercaseStringOrEmpty(path.extname(fileName));
+  const mimeKind = mediaKindFromMime(contentType);
+
+  if (FEISHU_IMAGE_EXTS.includes(ext) || mimeKind === "image") {
+    return { msgType: "image" };
+  }
+
+  if (
+    ext === ".opus" ||
+    ext === ".ogg" ||
+    contentType === "audio/ogg" ||
+    contentType === "audio/opus"
+  ) {
+    return { fileType: "opus", msgType: "audio" };
+  }
+
+  if (
+    [".mp4", ".mov", ".avi"].includes(ext) ||
+    contentType === "video/mp4" ||
+    contentType === "video/quicktime" ||
+    contentType === "video/x-msvideo"
+  ) {
+    return { fileType: "mp4", msgType: "media" };
+  }
+
+  // Feishu has no native file_type for other audio/video codecs (mp3, wav, ...),
+  // so they intentionally degrade to a generic "stream" file attachment.
+  const fileType = detectFileType(fileName);
+  return {
+    fileType,
+    msgType: fileType === "opus" ? "audio" : fileType === "mp4" ? "media" : "file",
+  };
+}
+
+/** Ogg/Opus is the only container Feishu renders as a native voice bubble. */
+function isFeishuNativeVoiceAudio(params: { fileName: string; contentType?: string }): boolean {
+  const ext = normalizeLowercaseStringOrEmpty(path.extname(params.fileName));
+  const contentType = normalizeMimeType(params.contentType);
+  return (
+    ext === ".opus" || ext === ".ogg" || contentType === "audio/ogg" || contentType === "audio/opus"
+  );
+}
+
+function isLikelyTranscodableAudio(params: { fileName: string; contentType?: string }): boolean {
+  const ext = normalizeLowercaseStringOrEmpty(path.extname(params.fileName));
+  return (
+    FEISHU_TRANSCODABLE_AUDIO_EXTS.has(ext) ||
+    mediaKindFromMime(normalizeMimeType(params.contentType)) === "audio"
+  );
+}
+
+async function transcodeToFeishuVoiceOpus(params: {
+  buffer: Buffer;
+  fileName: string;
+}): Promise<{ buffer: Buffer; fileName: string; contentType: string }> {
+  const buffer = await transcodeAudioBufferToOpus({
+    audioBuffer: params.buffer,
+    inputFileName: params.fileName,
+    tempPrefix: "feishu-voice-",
+    outputFileName: FEISHU_VOICE_FILE_NAME,
+    sampleRateHz: FEISHU_VOICE_SAMPLE_RATE_HZ,
+    bitrate: FEISHU_VOICE_BITRATE,
+  });
+  return { buffer, fileName: FEISHU_VOICE_FILE_NAME, contentType: "audio/ogg" };
+}
+
+/**
+ * Transcode compatible audio to Ogg/Opus when the caller asked for a voice
+ * bubble. Media that is already Ogg/Opus needs no work, and anything that is
+ * not transcodable audio (or that ffmpeg cannot convert) falls through to its
+ * normal attachment routing rather than failing the send.
+ */
+async function prepareFeishuVoiceMedia(params: {
+  buffer: Buffer;
+  fileName: string;
+  contentType?: string;
+  audioAsVoice?: boolean;
+}): Promise<{ buffer: Buffer; fileName: string; contentType?: string }> {
+  const { buffer, fileName, contentType, audioAsVoice } = params;
+  const unchanged = { buffer, fileName, contentType };
+
+  if (isFeishuNativeVoiceAudio({ fileName, contentType })) {
+    return unchanged;
+  }
+  if (audioAsVoice !== true || !isLikelyTranscodableAudio({ fileName, contentType })) {
+    return unchanged;
+  }
+  try {
+    return await transcodeToFeishuVoiceOpus({ buffer, fileName });
+  } catch (err) {
+    console.warn(
+      `[feishu] audioAsVoice transcode failed; sending ${fileName} as a file attachment:`,
+      err,
+    );
+    return unchanged;
+  }
+}
+
 /**
  * Upload and send media (image or file) from URL, local path, or buffer.
  * When mediaUrl is a local path, mediaLocalRoots (from core outbound context)
@@ -458,6 +710,7 @@ export async function sendMediaFeishu(params: {
 
   let buffer: Buffer;
   let name: string;
+  let contentType: string | undefined;
 
   if (mediaBuffer) {
     buffer = mediaBuffer;
@@ -470,36 +723,42 @@ export async function sendMediaFeishu(params: {
     });
     buffer = loaded.buffer;
     name = fileName ?? loaded.fileName ?? "file";
+    contentType = loaded.contentType;
   } else {
     throw new Error("Either mediaUrl or mediaBuffer must be provided");
   }
 
-  // Determine if it's an image based on extension
-  const ext = path.extname(name).toLowerCase();
-  const isImage = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".ico", ".tiff"].includes(ext);
+  const prepared = await prepareFeishuVoiceMedia({
+    buffer,
+    fileName: name,
+    contentType,
+    audioAsVoice,
+  });
 
-  if (isImage) {
-    const { imageKey } = await uploadImageFeishu({ cfg, image: buffer, accountId });
+  const routing = resolveFeishuOutboundMediaKind({
+    fileName: prepared.fileName,
+    contentType: prepared.contentType,
+  });
+
+  if (routing.msgType === "image") {
+    const { imageKey } = await uploadImageFeishu({ cfg, image: prepared.buffer, accountId });
     return sendImageFeishu({ cfg, to, imageKey, replyToMessageId, replyInThread, accountId });
-  } else {
-    const fileType = detectFileType(name);
-    const { fileKey } = await uploadFileFeishu({
-      cfg,
-      file: buffer,
-      fileName: name,
-      fileType,
-      accountId,
-    });
-    // Feishu API: opus -> "audio", mp4/video -> "media" (playable), others -> "file"
-    const msgType = fileType === "opus" ? "audio" : fileType === "mp4" ? "media" : "file";
-    return sendFileFeishu({
-      cfg,
-      to,
-      fileKey,
-      msgType,
-      replyToMessageId,
-      replyInThread,
-      accountId,
-    });
   }
+
+  const { fileKey } = await uploadFileFeishu({
+    cfg,
+    file: prepared.buffer,
+    fileName: prepared.fileName,
+    fileType: routing.fileType ?? "stream",
+    accountId,
+  });
+  return sendFileFeishu({
+    cfg,
+    to,
+    fileKey,
+    msgType: routing.msgType,
+    replyToMessageId,
+    replyInThread,
+    accountId,
+  });
 }

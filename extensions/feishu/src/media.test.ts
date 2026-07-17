@@ -9,6 +9,7 @@ const resolveFeishuAccountMock = vi.hoisted(() => vi.fn());
 const normalizeFeishuTargetMock = vi.hoisted(() => vi.fn());
 const resolveReceiveIdTypeMock = vi.hoisted(() => vi.fn());
 const loadWebMediaMock = vi.hoisted(() => vi.fn());
+const transcodeAudioBufferToOpusMock = vi.hoisted(() => vi.fn());
 
 const fileCreateMock = vi.hoisted(() => vi.fn());
 const imageCreateMock = vi.hoisted(() => vi.fn());
@@ -18,6 +19,13 @@ const messageResourceGetMock = vi.hoisted(() => vi.fn());
 const messageReplyMock = vi.hoisted(() => vi.fn());
 
 const FEISHU_MEDIA_HTTP_TIMEOUT_MS = 120_000;
+
+// Keep the real plugin-sdk surface (withTempDownloadPath, MIME helpers) and stub
+// only the ffmpeg-backed transcode so voice tests stay hermetic.
+vi.mock("remoteclaw/plugin-sdk/feishu", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("remoteclaw/plugin-sdk/feishu")>()),
+  transcodeAudioBufferToOpus: transcodeAudioBufferToOpusMock,
+}));
 
 vi.mock("./client.js", () => ({
   createFeishuClient: createFeishuClientMock,
@@ -52,10 +60,17 @@ function expectPathIsolatedToTmpRoot(pathValue: string, key: string): void {
   expect(pathValue).not.toContain(key);
   expect(pathValue).not.toContain("..");
 
-  const tmpRoot = realpathSync(resolvePreferredRemoteClawTmpDir());
+  // Accept the path under either spelling of the tmp root: on macOS the preferred
+  // root (/tmp/remoteclaw) is reached through a symlink (/tmp -> /private/tmp), so
+  // realpath-ing only the root reports a false escape. Escaping paths still fail
+  // both comparisons.
+  const rawRoot = resolvePreferredRemoteClawTmpDir();
   const resolved = path.resolve(pathValue);
-  const rel = path.relative(tmpRoot, resolved);
-  expect(rel === ".." || rel.startsWith(`..${path.sep}`)).toBe(false);
+  const isWithinRoot = (root: string): boolean => {
+    const rel = path.relative(root, resolved);
+    return rel !== ".." && !rel.startsWith(`..${path.sep}`);
+  };
+  expect(isWithinRoot(rawRoot) || isWithinRoot(realpathSync(rawRoot))).toBe(true);
 }
 
 function expectMediaTimeoutClientConfigured(): void {
@@ -152,6 +167,8 @@ describe("sendMediaFeishu msg_type routing", () => {
       contentType: "audio/ogg",
     });
 
+    transcodeAudioBufferToOpusMock.mockResolvedValue(Buffer.from("ogg-opus-bytes"));
+
     imageGetMock.mockResolvedValue(Buffer.from("image-bytes"));
     messageResourceGetMock.mockResolvedValue(Buffer.from("resource-bytes"));
   });
@@ -208,6 +225,136 @@ describe("sendMediaFeishu msg_type routing", () => {
 
     expect(callData<{ file_type?: string }>(fileCreateMock).file_type).toBe("mp4");
     expect(callData<{ msg_type?: string }>(messageCreateMock).msg_type).toBe("media");
+  });
+
+  it("uses msg_type=image for image content-type when the filename has no extension (#2969)", async () => {
+    loadWebMediaMock.mockResolvedValueOnce({
+      buffer: Buffer.from("remote-image"),
+      fileName: "download",
+      kind: "image",
+      contentType: "image/png",
+    });
+
+    await sendMediaFeishu({
+      cfg: {} as any,
+      to: "user:ou_target",
+      mediaUrl: "https://example.com/image",
+    });
+
+    expect(imageCreateMock).toHaveBeenCalledTimes(1);
+    expect(callData<{ msg_type?: string }>(messageCreateMock).msg_type).toBe("image");
+    expect(fileCreateMock).not.toHaveBeenCalled();
+  });
+
+  it("uses msg_type=audio for ogg content-type when the filename has no extension (#2969)", async () => {
+    loadWebMediaMock.mockResolvedValueOnce({
+      buffer: Buffer.from("remote-voice"),
+      fileName: "download",
+      kind: "audio",
+      contentType: "audio/ogg",
+    });
+
+    await sendMediaFeishu({
+      cfg: {} as any,
+      to: "user:ou_target",
+      mediaUrl: "https://example.com/voice",
+    });
+
+    expect(callData<{ file_type?: string }>(fileCreateMock).file_type).toBe("opus");
+    expect(callData<{ msg_type?: string }>(messageCreateMock).msg_type).toBe("audio");
+  });
+
+  it("normalizes content-type parameters when classifying (#2969)", async () => {
+    loadWebMediaMock.mockResolvedValueOnce({
+      buffer: Buffer.from("remote-video"),
+      fileName: "download",
+      kind: "video",
+      contentType: "video/mp4; charset=binary",
+    });
+
+    await sendMediaFeishu({
+      cfg: {} as any,
+      to: "user:ou_target",
+      mediaUrl: "https://example.com/video",
+    });
+
+    expect(callData<{ file_type?: string }>(fileCreateMock).file_type).toBe("mp4");
+    expect(callData<{ msg_type?: string }>(messageCreateMock).msg_type).toBe("media");
+  });
+
+  it("transcodes transcodable audio to a native voice bubble when audioAsVoice is set (#2969)", async () => {
+    loadWebMediaMock.mockResolvedValueOnce({
+      buffer: Buffer.from("remote-mp3"),
+      fileName: "song.mp3",
+      kind: "audio",
+      contentType: "audio/mpeg",
+    });
+
+    await sendMediaFeishu({
+      cfg: {} as any,
+      to: "user:ou_target",
+      mediaUrl: "https://example.com/song.mp3",
+      audioAsVoice: true,
+    });
+
+    expect(transcodeAudioBufferToOpusMock).toHaveBeenCalledTimes(1);
+    const uploaded = callData<{ file_type?: string; file_name?: string }>(fileCreateMock);
+    expect(uploaded.file_type).toBe("opus");
+    expect(uploaded.file_name).toBe("voice.ogg");
+    expect(callData<{ msg_type?: string }>(messageCreateMock).msg_type).toBe("audio");
+  });
+
+  it("skips transcoding when audio is already ogg/opus and audioAsVoice is set (#2969)", async () => {
+    await sendMediaFeishu({
+      cfg: {} as any,
+      to: "user:ou_target",
+      mediaUrl: "https://example.com/remote.opus",
+      audioAsVoice: true,
+    });
+
+    expect(transcodeAudioBufferToOpusMock).not.toHaveBeenCalled();
+    expect(callData<{ file_type?: string }>(fileCreateMock).file_type).toBe("opus");
+    expect(callData<{ msg_type?: string }>(messageCreateMock).msg_type).toBe("audio");
+  });
+
+  it("leaves audio as a file attachment when audioAsVoice is not set (#2969)", async () => {
+    loadWebMediaMock.mockResolvedValueOnce({
+      buffer: Buffer.from("remote-mp3"),
+      fileName: "song.mp3",
+      kind: "audio",
+      contentType: "audio/mpeg",
+    });
+
+    await sendMediaFeishu({
+      cfg: {} as any,
+      to: "user:ou_target",
+      mediaUrl: "https://example.com/song.mp3",
+    });
+
+    expect(transcodeAudioBufferToOpusMock).not.toHaveBeenCalled();
+    expect(callData<{ file_type?: string }>(fileCreateMock).file_type).toBe("stream");
+  });
+
+  it("falls back to a file attachment when the voice transcode fails (#2969)", async () => {
+    transcodeAudioBufferToOpusMock.mockRejectedValueOnce(new Error("ffmpeg not found"));
+    loadWebMediaMock.mockResolvedValueOnce({
+      buffer: Buffer.from("remote-mp3"),
+      fileName: "song.mp3",
+      kind: "audio",
+      contentType: "audio/mpeg",
+    });
+
+    await sendMediaFeishu({
+      cfg: {} as any,
+      to: "user:ou_target",
+      mediaUrl: "https://example.com/song.mp3",
+      audioAsVoice: true,
+    });
+
+    const uploaded = callData<{ file_type?: string; file_name?: string }>(fileCreateMock);
+    expect(uploaded.file_type).toBe("stream");
+    expect(uploaded.file_name).toBe("song.mp3");
+    expect(callData<{ msg_type?: string }>(messageCreateMock).msg_type).toBe("file");
   });
 
   it("falls back to generic file for unsupported audio formats", async () => {
@@ -395,6 +542,21 @@ describe("sendMediaFeishu msg_type routing", () => {
       throw new Error("expected Feishu resource temp path");
     }
     expectPathIsolatedToTmpRoot(capturedPath, fileKey);
+  });
+
+  it("extracts content-type from image download headers (#2969)", async () => {
+    imageGetMock.mockResolvedValueOnce({
+      data: Buffer.from("png-bytes"),
+      headers: { "Content-Type": "image/png" },
+    });
+
+    const result = await downloadImageFeishu({
+      cfg: {} as any,
+      imageKey: "img_v3_01abc123",
+    });
+
+    expect(result.buffer).toEqual(Buffer.from("png-bytes"));
+    expect(result.contentType).toBe("image/png");
   });
 
   it("rejects invalid image keys before calling feishu api", async () => {

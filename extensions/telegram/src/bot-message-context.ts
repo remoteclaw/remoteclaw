@@ -47,6 +47,7 @@ import {
   normalizeAllowFrom,
   normalizeDmAllowFromWithStore,
 } from "./bot-access.js";
+import { formatAudioTranscriptForAgent } from "./bot-message-context.body.js";
 import {
   buildGroupLabel,
   buildSenderLabel,
@@ -330,6 +331,9 @@ export const buildTelegramMessageContext = async ({
   }
 
   let bodyText = rawBody;
+  // Tracks whether bodyText holds a machine-generated audio transcript, so the agent-facing
+  // BodyForAgent can be framed as untrusted content without altering the raw envelope/mention text.
+  let bodyIsAudioTranscript = false;
   const hasAudio = allMedia.some((media) => media.contentType?.startsWith("audio/"));
 
   const disableAudioPreflight =
@@ -370,12 +374,14 @@ export const buildTelegramMessageContext = async ({
   // Replace audio placeholder with transcript when preflight succeeds.
   if (hasAudio && bodyText === "<media:audio>" && preflightTranscript) {
     bodyText = preflightTranscript;
+    bodyIsAudioTranscript = true;
   }
 
   // Build bodyText fallback for messages that still have no text.
   if (!bodyText && allMedia.length > 0) {
     if (hasAudio) {
       bodyText = preflightTranscript || "<media:audio>";
+      bodyIsAudioTranscript = Boolean(preflightTranscript);
     } else {
       bodyText = `<media:image>${allMedia.length > 1 ? ` (${allMedia.length} images)` : ""}`;
     }
@@ -648,7 +654,10 @@ export const buildTelegramMessageContext = async ({
   const ctxPayload = finalizeInboundContext({
     Body: combinedBody,
     // Agent prompt should be the raw user text only; metadata/context is provided via system prompt.
-    BodyForAgent: bodyText,
+    // Machine-generated audio transcripts are untrusted content: frame them so a crafted voice note
+    // cannot masquerade as user-typed instructions (#2956). Only the agent-facing body is framed —
+    // mention-matching (raw preflightTranscript) and the envelope Body keep the raw transcript.
+    BodyForAgent: bodyIsAudioTranscript ? formatAudioTranscriptForAgent(bodyText) : bodyText,
     InboundHistory: inboundHistory,
     RawBody: rawBody,
     CommandBody: commandBody,

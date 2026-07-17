@@ -154,8 +154,6 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   "extensions/slack/src/client.test.ts",
   "extensions/slack/src/monitor/message-handler/dispatch.preview-fallback.test.ts",
   "extensions/slack/src/send.identity-fallback.test.ts",
-  "extensions/telegram/src/bot-message-context.audio-transcript.test.ts",
-  "extensions/telegram/src/bot-message-context.body.test.ts",
   "extensions/telegram/src/bot-message-context.dm-threads.test.ts",
   "extensions/telegram/src/bot-message-context.group-body.test.ts",
   "extensions/telegram/src/bot-message-context.named-account-dm.test.ts",

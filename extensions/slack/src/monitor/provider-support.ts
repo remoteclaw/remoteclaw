@@ -7,10 +7,6 @@ type SlackAppConstructor = typeof import("@slack/bolt").App;
 type SlackHttpReceiverConstructor = typeof import("@slack/bolt").HTTPReceiver;
 type SlackSocketModeReceiverConstructor = typeof import("@slack/bolt").SocketModeReceiver;
 type SlackSocketModeReceiverOptions = ConstructorParameters<SlackSocketModeReceiverConstructor>[0];
-type SlackSocketModeConfig = Pick<
-  SlackSocketModeReceiverOptions,
-  "clientPingTimeout" | "serverPingTimeout" | "pingPongLoggingEnabled"
->;
 type SlackSdkLogger = NonNullable<SlackSocketModeReceiverOptions["logger"]>;
 type SlackSdkLogLevel = ReturnType<SlackSdkLogger["getLevel"]>;
 type SlackSocketModeLogger = SlackSdkLogger & {
@@ -18,9 +14,6 @@ type SlackSocketModeLogger = SlackSdkLogger & {
 };
 type SlackSocketDisconnect = Awaited<ReturnType<typeof waitForSlackSocketDisconnect>>;
 
-const REMOTECLAW_SLACK_CLIENT_PING_TIMEOUT_MS = 15_000;
-const REMOTECLAW_SLACK_SOCKET_START_FAILED_EVENT = "unable_to_socket_mode_start";
-const REMOTECLAW_SLACK_NATIVE_RECONNECT_OBSERVER_KEY = "__remoteclawNativeReconnectFailureObserver";
 const SLACK_SOCKET_PONG_TIMEOUT_WARNING_PREFIX = "A pong wasn't received from the server";
 const SLACK_SOCKET_PING_TIMEOUT_WARNING_PREFIX = "A ping wasn't received from the server";
 const SLACK_SOCKET_LOG_LEVEL_IGNORED_WARNING_RE =
@@ -50,66 +43,6 @@ function isConstructorFunction<
   T extends Constructor,
 >(value: unknown): value is T {
   return typeof value === "function";
-}
-
-function installSlackNativeReconnectFailureObserver(receiver: unknown) {
-  if (!receiver || typeof receiver !== "object") {
-    return;
-  }
-  const client = Reflect.get(receiver, "client");
-  if (!client || typeof client !== "object") {
-    return;
-  }
-  if (Reflect.get(client, REMOTECLAW_SLACK_NATIVE_RECONNECT_OBSERVER_KEY)) {
-    return;
-  }
-  const delayReconnectAttempt = Reflect.get(client, "delayReconnectAttempt");
-  const emit = Reflect.get(client, "emit");
-  if (typeof delayReconnectAttempt !== "function" || typeof emit !== "function") {
-    return;
-  }
-
-  Reflect.set(client, REMOTECLAW_SLACK_NATIVE_RECONNECT_OBSERVER_KEY, true);
-  Reflect.set(
-    client,
-    "delayReconnectAttempt",
-    function patchedDelayReconnectAttempt(this: object, callback: unknown) {
-      if (typeof callback !== "function") {
-        return delayReconnectAttempt.call(this, callback);
-      }
-      const failureCount = Number(Reflect.get(this, "numOfConsecutiveReconnectionFailures") ?? 0);
-      const nextFailureCount = failureCount + 1;
-      Reflect.set(this, "numOfConsecutiveReconnectionFailures", nextFailureCount);
-      const pingTimeoutMs = Number(Reflect.get(this, "clientPingTimeoutMS"));
-      const delayMs =
-        (Number.isFinite(pingTimeoutMs) && pingTimeoutMs >= 0
-          ? pingTimeoutMs
-          : REMOTECLAW_SLACK_CLIENT_PING_TIMEOUT_MS) * nextFailureCount;
-      const logger = Reflect.get(this, "logger") as { debug?: (message: string) => void };
-      logger?.debug?.(
-        `Before trying to reconnect, this client will wait for ${delayMs} milliseconds`,
-      );
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          if (Reflect.get(this, "shuttingDown")) {
-            logger?.debug?.("Client shutting down, will not attempt reconnect.");
-            resolve(undefined);
-            return;
-          }
-          logger?.debug?.("Continuing with reconnect...");
-          emit.call(this, "reconnecting");
-          Promise.resolve(callback.call(this)).then(resolve, (error: unknown) => {
-            if (callback === Reflect.get(this, "start")) {
-              emit.call(this, REMOTECLAW_SLACK_SOCKET_START_FAILED_EVENT, error);
-              resolve(undefined);
-              return;
-            }
-            reject(error);
-          });
-        }, delayMs);
-      });
-    },
-  );
 }
 
 function resolveSlackBoltModule(value: unknown): SlackBoltResolvedExports | null {
@@ -291,63 +224,6 @@ export function shouldSkipRemoteClawSlackSelfEvent(args: SlackSelfFilterArgs): b
     typeof event.type === "string" &&
     !eventsWhichShouldBeKept.has(event.type),
   );
-}
-
-export function createSlackBoltApp(params: {
-  interop: SlackBoltResolvedExports;
-  slackMode: "socket" | "http";
-  botToken: string;
-  appToken?: string;
-  signingSecret?: string;
-  slackWebhookPath: string;
-  clientOptions: Record<string, unknown>;
-  socketMode?: SlackSocketModeConfig;
-}) {
-  const socketModeLogger = createSlackSocketModeLogger();
-  const socketModeReceiverOptions: SlackSocketModeReceiverOptions = {
-    appToken: params.appToken ?? "",
-    autoReconnectEnabled: true,
-    clientPingTimeout:
-      params.socketMode?.clientPingTimeout ?? REMOTECLAW_SLACK_CLIENT_PING_TIMEOUT_MS,
-    logger: socketModeLogger,
-    installerOptions: {
-      clientOptions: params.clientOptions,
-    },
-  };
-  if (params.socketMode?.serverPingTimeout !== undefined) {
-    socketModeReceiverOptions.serverPingTimeout = params.socketMode.serverPingTimeout;
-  }
-  if (params.socketMode?.pingPongLoggingEnabled !== undefined) {
-    socketModeReceiverOptions.pingPongLoggingEnabled = params.socketMode.pingPongLoggingEnabled;
-  }
-
-  const receiver =
-    params.slackMode === "socket"
-      ? new params.interop.SocketModeReceiver(socketModeReceiverOptions)
-      : new params.interop.HTTPReceiver({
-          signingSecret: params.signingSecret ?? "",
-          endpoints: params.slackWebhookPath,
-        });
-  if (params.slackMode === "socket") {
-    installSlackNativeReconnectFailureObserver(receiver);
-  }
-  const app = new params.interop.App({
-    token: params.botToken,
-    receiver,
-    clientOptions: params.clientOptions,
-    ignoreSelf: false,
-    // Bolt eagerly starts an auth.test promise in the constructor when token
-    // verification is enabled. Invalid tokens can reject before any listener
-    // consumes that promise, tripping RemoteClaw's fatal unhandled-rejection path.
-    tokenVerificationEnabled: false,
-  });
-  app.use(async (args) => {
-    if (shouldSkipRemoteClawSlackSelfEvent(args)) {
-      return;
-    }
-    await args.next();
-  });
-  return { app, receiver, socketModeLogger };
 }
 
 export function createSlackSocketDisconnectWaiter(app: unknown, abortSignal?: AbortSignal) {

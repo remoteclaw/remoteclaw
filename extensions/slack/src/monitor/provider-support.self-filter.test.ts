@@ -1,12 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { shouldSkipRemoteClawSlackSelfEvent } from "./provider-support.js";
 
-// The Bolt app is created with `ignoreSelf: false` and a global middleware that
-// calls `shouldSkipRemoteClawSlackSelfEvent` (see createSlackBoltApp). Dropping
-// every self-attributed event would swallow the assistant DM `message_changed`
-// edits that carry a real human sender in `metadata.event_payload.user`, so the
-// self-filter is deliberately scoped: it skips genuine bot noise but keeps the
-// message_changed passthrough. These cases pin that scoping.
+// `shouldSkipRemoteClawSlackSelfEvent` decides whether to drop a self-attributed Slack
+// event. It is deliberately scoped rather than a blanket self-drop: swallowing every
+// self-attributed event would also swallow the assistant DM `message_changed` edits that
+// carry a real human sender in `metadata.event_payload.user`, so it skips genuine bot
+// noise but keeps the message_changed passthrough. These cases pin that scoping.
 const CONTEXT = { botUserId: "U_BOT", botId: "B_BOT" };
 
 describe("shouldSkipRemoteClawSlackSelfEvent", () => {

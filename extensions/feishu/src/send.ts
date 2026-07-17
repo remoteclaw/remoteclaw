@@ -1,6 +1,7 @@
 import type { ClawdbotConfig } from "remoteclaw/plugin-sdk/feishu";
 import { resolveFeishuAccount } from "./accounts.js";
 import { createFeishuClient } from "./client.js";
+import { createFeishuApiError, requestFeishuApi } from "./comment-shared.js";
 import type { MentionTarget } from "./mention.js";
 import { buildMentionedMessage, buildMentionedCardContent } from "./mention.js";
 import { parsePostContent } from "./post.js";
@@ -90,16 +91,53 @@ async function sendFallbackDirect(
   },
   errorPrefix: string,
 ): Promise<FeishuSendResult> {
-  const response = await client.im.message.create({
-    params: { receive_id_type: params.receiveIdType },
-    data: {
-      receive_id: params.receiveId,
-      content: params.content,
-      msg_type: params.msgType,
-    },
-  });
+  const response = await requestFeishuApi(
+    () =>
+      client.im.message.create({
+        params: { receive_id_type: params.receiveIdType },
+        data: {
+          receive_id: params.receiveId,
+          content: params.content,
+          msg_type: params.msgType,
+        },
+      }),
+    errorPrefix,
+    { includeNestedErrorLogId: true },
+  );
   assertFeishuMessageApiSuccess(response, errorPrefix);
   return toFeishuSendResult(response, params.receiveId);
+}
+
+const THREAD_REPLY_FALLBACK_BLOCKED_ERROR =
+  "Feishu thread reply failed: reply target is unavailable and cannot safely fall back to a top-level send.";
+
+/**
+ * Decide how to handle a withdrawn/unavailable reply target.
+ *
+ * A thread reply (`replyInThread`) must never silently escalate to a top-level
+ * message: falling back would broadcast thread-scoped content to the whole chat
+ * (over-disclosure). Unless the caller explicitly opts in via
+ * `allowTopLevelReplyFallback`, a thread reply to an unavailable target FAILS.
+ * Non-thread replies retain the existing top-level fallback.
+ */
+function sendReplyFallbackOrThrow(
+  client: FeishuCreateMessageClient,
+  params: {
+    replyInThread?: boolean;
+    allowTopLevelReplyFallback?: boolean;
+    directParams: {
+      receiveId: string;
+      receiveIdType: "chat_id" | "email" | "open_id" | "union_id" | "user_id";
+      content: string;
+      msgType: string;
+    };
+    directErrorPrefix: string;
+  },
+): Promise<FeishuSendResult> {
+  if (params.replyInThread && params.allowTopLevelReplyFallback !== true) {
+    throw new Error(THREAD_REPLY_FALLBACK_BLOCKED_ERROR);
+  }
+  return sendFallbackDirect(client, params.directParams, params.directErrorPrefix);
 }
 
 async function sendReplyOrFallbackDirect(
@@ -107,6 +145,7 @@ async function sendReplyOrFallbackDirect(
   params: {
     replyToMessageId?: string;
     replyInThread?: boolean;
+    allowTopLevelReplyFallback?: boolean;
     content: string;
     msgType: string;
     directParams: {
@@ -135,12 +174,12 @@ async function sendReplyOrFallbackDirect(
     });
   } catch (err) {
     if (!isWithdrawnReplyError(err)) {
-      throw err;
+      throw createFeishuApiError(err, params.replyErrorPrefix, { includeNestedErrorLogId: true });
     }
-    return sendFallbackDirect(client, params.directParams, params.directErrorPrefix);
+    return sendReplyFallbackOrThrow(client, params);
   }
   if (shouldFallbackFromReplyTarget(response)) {
-    return sendFallbackDirect(client, params.directParams, params.directErrorPrefix);
+    return sendReplyFallbackOrThrow(client, params);
   }
   assertFeishuMessageApiSuccess(response, params.replyErrorPrefix);
   return toFeishuSendResult(response, params.directParams.receiveId);
@@ -288,6 +327,12 @@ export type SendFeishuMessageParams = {
   replyToMessageId?: string;
   /** When true, reply creates a Feishu topic thread instead of an inline reply */
   replyInThread?: boolean;
+  /**
+   * When true, a reply to an unavailable (withdrawn/deleted) target may fall back
+   * to a top-level send even for thread replies. Defaults to false: thread replies
+   * FAIL rather than escalate thread-scoped content to the whole chat.
+   */
+  allowTopLevelReplyFallback?: boolean;
   /** Mention target users */
   mentions?: MentionTarget[];
   /** Account ID (optional, uses default if not specified) */
@@ -319,7 +364,16 @@ function buildFeishuPostMessagePayload(params: { messageText: string }): {
 export async function sendMessageFeishu(
   params: SendFeishuMessageParams,
 ): Promise<FeishuSendResult> {
-  const { cfg, to, text, replyToMessageId, replyInThread, mentions, accountId } = params;
+  const {
+    cfg,
+    to,
+    text,
+    replyToMessageId,
+    replyInThread,
+    allowTopLevelReplyFallback,
+    mentions,
+    accountId,
+  } = params;
   const { client, receiveId, receiveIdType } = resolveFeishuSendTarget({ cfg, to, accountId });
   const tableMode = getFeishuRuntime().channel.text.resolveMarkdownTableMode({
     cfg,
@@ -339,6 +393,7 @@ export async function sendMessageFeishu(
   return sendReplyOrFallbackDirect(client, {
     replyToMessageId,
     replyInThread,
+    allowTopLevelReplyFallback,
     content,
     msgType,
     directParams,
@@ -354,11 +409,18 @@ export type SendFeishuCardParams = {
   replyToMessageId?: string;
   /** When true, reply creates a Feishu topic thread instead of an inline reply */
   replyInThread?: boolean;
+  /**
+   * When true, a reply to an unavailable (withdrawn/deleted) target may fall back
+   * to a top-level send even for thread replies. Defaults to false: thread replies
+   * FAIL rather than escalate thread-scoped content to the whole chat.
+   */
+  allowTopLevelReplyFallback?: boolean;
   accountId?: string;
 };
 
 export async function sendCardFeishu(params: SendFeishuCardParams): Promise<FeishuSendResult> {
-  const { cfg, to, card, replyToMessageId, replyInThread, accountId } = params;
+  const { cfg, to, card, replyToMessageId, replyInThread, allowTopLevelReplyFallback, accountId } =
+    params;
   const { client, receiveId, receiveIdType } = resolveFeishuSendTarget({ cfg, to, accountId });
   const content = JSON.stringify(card);
 
@@ -366,6 +428,7 @@ export async function sendCardFeishu(params: SendFeishuCardParams): Promise<Feis
   return sendReplyOrFallbackDirect(client, {
     replyToMessageId,
     replyInThread,
+    allowTopLevelReplyFallback,
     content,
     msgType: "interactive",
     directParams,
@@ -432,17 +495,40 @@ export async function sendMarkdownCardFeishu(params: {
   replyToMessageId?: string;
   /** When true, reply creates a Feishu topic thread instead of an inline reply */
   replyInThread?: boolean;
+  /**
+   * When true, a reply to an unavailable (withdrawn/deleted) target may fall back
+   * to a top-level send even for thread replies. Defaults to false: thread replies
+   * FAIL rather than escalate thread-scoped content to the whole chat.
+   */
+  allowTopLevelReplyFallback?: boolean;
   /** Mention target users */
   mentions?: MentionTarget[];
   accountId?: string;
 }): Promise<FeishuSendResult> {
-  const { cfg, to, text, replyToMessageId, replyInThread, mentions, accountId } = params;
+  const {
+    cfg,
+    to,
+    text,
+    replyToMessageId,
+    replyInThread,
+    allowTopLevelReplyFallback,
+    mentions,
+    accountId,
+  } = params;
   let cardText = text;
   if (mentions && mentions.length > 0) {
     cardText = buildMentionedCardContent(mentions, text);
   }
   const card = buildMarkdownCard(cardText);
-  return sendCardFeishu({ cfg, to, card, replyToMessageId, replyInThread, accountId });
+  return sendCardFeishu({
+    cfg,
+    to,
+    card,
+    replyToMessageId,
+    replyInThread,
+    allowTopLevelReplyFallback,
+    accountId,
+  });
 }
 
 /**

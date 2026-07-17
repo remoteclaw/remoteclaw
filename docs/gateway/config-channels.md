@@ -457,8 +457,6 @@ WhatsApp runs through the gateway's web channel (Baileys Web). It starts automat
         ephemeral: true,
       },
       typingReaction: "hourglass_flowing_sand",
-      unfurlLinks: false,
-      unfurlMedia: false,
       textChunkLimit: 4000,
       chunkMode: "length",
       streaming: {
@@ -491,7 +489,6 @@ WhatsApp runs through the gateway's web channel (Baileys Web). It starts automat
 - `configWrites: false` blocks Slack-initiated config writes.
 - Optional `channels.slack.defaultAccount` overrides default account selection when it matches a configured account id.
 - `channels.slack.streaming.mode` is the canonical Slack stream mode key. `channels.slack.streaming.nativeTransport` controls Slack's native streaming transport. Legacy `streamMode`, boolean `streaming`, and `nativeStreaming` values remain runtime aliases; run `remoteclaw doctor --fix` to rewrite persisted config.
-- `unfurlLinks` and `unfurlMedia` pass Slack's `chat.postMessage` link and media unfurl booleans through for bot replies. `unfurlLinks` defaults to `false` so outbound bot links do not expand inline unless enabled; `unfurlMedia` is omitted unless configured. Set either value at `channels.slack.accounts.<accountId>` to override the top-level value for one account.
 - Use `user:<id>` (DM) or `channel:<id>` for delivery targets.
 
 **Reaction notification modes:** `off`, `own` (default), `all`, `allowlist` (from `reactionAllowlist`).

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # scripts/run-opengrep.sh
 #
-# Run the RemoteClaw precise OpenGrep rulepack against the local working tree
+# Run the OpenClaw precise OpenGrep rulepack against the local working tree
 # using the same paths and exclusions as CI. The .semgrepignore at the repo root
 # is the single source of truth for skipped paths.
 #
@@ -46,7 +46,7 @@ if ! command -v opengrep >/dev/null 2>&1; then
 error: 'opengrep' not found on PATH.
 
 Install with one of:
-  curl -fsSL https://raw.githubusercontent.com/opengrep/opengrep/v1.19.0/install.sh | bash -s -- -v v1.19.0
+  curl -fsSL https://raw.githubusercontent.com/opengrep/opengrep/v1.22.0/install.sh | bash -s -- -v v1.22.0
   brew install opengrep/tap/opengrep
   pipx install opengrep
 
@@ -125,7 +125,7 @@ if (( PATHS_PASSED == 0 )); then
       SCAN_PATHS+=( "$path" )
     done < <(
       {
-        git diff --name-only --diff-filter=ACMRTUXB "${REMOTECLAW_OPENGREP_BASE_REF:-origin/main...HEAD}" 2>/dev/null || true
+        git diff --name-only --diff-filter=ACMRTUXB "${OPENCLAW_OPENGREP_BASE_REF:-origin/main...HEAD}" 2>/dev/null || true
         git diff --name-only --diff-filter=ACMRTUXB -- 2>/dev/null || true
         git ls-files --others --exclude-standard
       } | awk '/^(src|extensions|apps|packages|scripts)\// { print }' | sort -u
@@ -135,7 +135,7 @@ if (( PATHS_PASSED == 0 )); then
       RULEPACK_CHANGED_PATHS+=( "$path" )
     done < <(
       {
-        git diff --name-only --diff-filter=ACMRTUXB "${REMOTECLAW_OPENGREP_BASE_REF:-origin/main...HEAD}" 2>/dev/null || true
+        git diff --name-only --diff-filter=ACMRTUXB "${OPENCLAW_OPENGREP_BASE_REF:-origin/main...HEAD}" 2>/dev/null || true
         git diff --name-only --diff-filter=ACMRTUXB -- 2>/dev/null || true
         git ls-files --others --exclude-standard
       } | awk '/^(security\/opengrep\/|scripts\/run-opengrep\.sh$|\.semgrepignore$|\.github\/workflows\/opengrep-)/ { print }' | sort -u

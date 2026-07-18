@@ -6,7 +6,7 @@ read_when:
 title: "OpenResponses API"
 ---
 
-RemoteClaw's Gateway can serve an OpenResponses-compatible `POST /v1/responses` endpoint.
+OpenClaw's Gateway can serve an OpenResponses-compatible `POST /v1/responses` endpoint.
 
 This endpoint is **disabled by default**. Enable it in config first.
 
@@ -14,7 +14,7 @@ This endpoint is **disabled by default**. Enable it in config first.
 - Same port as the Gateway (WS + HTTP multiplex): `http://<gateway-host>:<port>/v1/responses`
 
 Under the hood, requests are executed as a normal Gateway agent run (same codepath as
-`remoteclaw agent`), so routing/permissions/config match your Gateway.
+`openclaw agent`), so routing/permissions/config match your Gateway.
 
 ## Authentication, security, and routing
 
@@ -23,13 +23,13 @@ Operational behavior matches [OpenAI Chat Completions](/gateway/openai-http-api)
 - use the matching Gateway HTTP auth path:
   - shared-secret auth (`gateway.auth.mode="token"` or `"password"`): `Authorization: Bearer <token-or-password>`
   - trusted-proxy auth (`gateway.auth.mode="trusted-proxy"`): identity-aware proxy headers from a configured trusted proxy source; same-host loopback proxies require explicit `gateway.auth.trustedProxy.allowLoopback = true`
-  - trusted-proxy local direct fallback: same-host callers with no `Forwarded`, `X-Forwarded-*`, or `X-Real-IP` headers can use `gateway.auth.password` / `REMOTECLAW_GATEWAY_PASSWORD`
+  - trusted-proxy local direct fallback: same-host callers with no `Forwarded`, `X-Forwarded-*`, or `X-Real-IP` headers can use `gateway.auth.password` / `OPENCLAW_GATEWAY_PASSWORD`
   - private-ingress open auth (`gateway.auth.mode="none"`): no auth header
 - treat the endpoint as full operator access for the gateway instance
 - for shared-secret auth modes (`token` and `password`), ignore narrower bearer-declared `x-remoteclaw-scopes` values and restore the normal full operator defaults
 - for trusted identity-bearing HTTP modes (for example trusted proxy auth or `gateway.auth.mode="none"`), honor `x-remoteclaw-scopes` when present and otherwise fall back to the normal operator default scope set
-- select agents with `model: "remoteclaw"`, `model: "remoteclaw/default"`, `model: "remoteclaw/<agentId>"`, or `x-remoteclaw-agent-id`
-- use `x-remoteclaw-model` when you want to override the selected agent's backend model
+- select agents with `model: "openclaw"`, `model: "openclaw/default"`, `model: "remoteclaw/<agentId>"`, or `x-remoteclaw-agent-id`
+- use `x-openclaw-model` when you want to override the selected agent's backend model
 - use `x-remoteclaw-session-key` for explicit session routing
 - use `x-remoteclaw-message-channel` when you want a non-default synthetic ingress channel context
 
@@ -56,7 +56,7 @@ The same compatibility surface also includes:
 - `POST /v1/embeddings`
 - `POST /v1/chat/completions`
 
-For the canonical explanation of how agent-target models, `remoteclaw/default`, embeddings pass-through, and backend model overrides fit together, see [OpenAI Chat Completions](/gateway/openai-http-api#agent-first-model-contract) and [Model list and agent routing](/gateway/openai-http-api#model-list-and-agent-routing).
+For the canonical explanation of how agent-target models, `openclaw/default`, embeddings pass-through, and backend model overrides fit together, see [OpenAI Chat Completions](/gateway/openai-http-api#agent-first-model-contract) and [Model list and agent routing](/gateway/openai-http-api#model-list-and-agent-routing).
 
 ## Session behavior
 
@@ -89,7 +89,7 @@ Accepted but **currently ignored**:
 
 Supported:
 
-- `previous_response_id`: RemoteClaw reuses the earlier response session when the request stays within the same agent/user/requested-session scope.
+- `previous_response_id`: OpenClaw reuses the earlier response session when the request stays within the same agent/user/requested-session scope.
 
 ## Items (input)
 
@@ -175,9 +175,9 @@ Current behavior:
   rasterized into images and passed to the model, and the injected file block uses
   the placeholder `[PDF content rendered to images]`.
 
-PDF parsing is provided by the bundled `document-extract` plugin, which uses the
-Node-friendly `pdfjs-dist` legacy build (no worker). The modern PDF.js build
-expects browser workers/DOM globals, so it is not used in the Gateway.
+PDF parsing is provided by the bundled `document-extract` plugin, which uses
+`clawpdf` and its packaged PDFium WebAssembly runtime for text extraction and
+page rendering.
 
 URL fetch defaults:
 
@@ -294,7 +294,7 @@ Event types currently emitted:
 ## Usage
 
 `usage` is populated when the underlying provider reports token counts.
-RemoteClaw normalizes common OpenAI-style aliases before those counters reach
+OpenClaw normalizes common OpenAI-style aliases before those counters reach
 downstream status/session surfaces, including `input_tokens` / `output_tokens`
 and `prompt_tokens` / `completion_tokens`.
 
@@ -322,7 +322,7 @@ curl -sS http://127.0.0.1:18789/v1/responses \
   -H 'Content-Type: application/json' \
   -H 'x-remoteclaw-agent-id: main' \
   -d '{
-    "model": "remoteclaw",
+    "model": "openclaw",
     "input": "hi"
   }'
 ```
@@ -335,7 +335,7 @@ curl -N http://127.0.0.1:18789/v1/responses \
   -H 'Content-Type: application/json' \
   -H 'x-remoteclaw-agent-id: main' \
   -d '{
-    "model": "remoteclaw",
+    "model": "openclaw",
     "stream": true,
     "input": "hi"
   }'

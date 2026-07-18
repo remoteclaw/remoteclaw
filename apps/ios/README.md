@@ -1,6 +1,6 @@
-# RemoteClaw iOS (Super Alpha)
+# OpenClaw iOS (Super Alpha)
 
-This iPhone app is super-alpha and internal-use only. It connects to an RemoteClaw Gateway as a `role: node`.
+This iPhone app is super-alpha and internal-use only. It connects to an OpenClaw Gateway as a `role: node`.
 
 ## Distribution Status
 
@@ -29,11 +29,11 @@ pnpm install
 ./scripts/ios-configure-signing.sh
 cd apps/ios
 xcodegen generate
-open RemoteClaw.xcodeproj
+open OpenClaw.xcodeproj
 ```
 
 3. In Xcode:
-   - Scheme: `RemoteClaw`
+   - Scheme: `OpenClaw`
    - Destination: connected iPhone (recommended for real behavior)
    - Build configuration: `Debug`
    - Run (`Product` -> `Run`)
@@ -61,8 +61,8 @@ Prereqs:
 Release behavior:
 
 - Local development keeps using unique per-developer bundle IDs from `scripts/ios-configure-signing.sh`.
-- Beta release uses canonical `org.remoteclaw.client*` bundle IDs through a temporary generated xcconfig in `apps/ios/build/BetaRelease.xcconfig`.
-- Beta release also switches the app to `RemoteClawPushTransport=relay`, `RemoteClawPushDistribution=official`, and `RemoteClawPushAPNsEnvironment=production`.
+- Beta release uses canonical `ai.openclaw.client*` bundle IDs through a temporary generated xcconfig in `apps/ios/build/BetaRelease.xcconfig`.
+- Beta release also switches the app to `OpenClawPushTransport=relay`, `OpenClawPushDistribution=official`, and `OpenClawPushAPNsEnvironment=production`.
 - The beta flow does not modify `apps/ios/.local-signing.xcconfig` or `apps/ios/LocalSigning.xcconfig`.
 - `apps/ios/version.json` is the pinned iOS release version source.
 - `apps/ios/CHANGELOG.md` is the iOS-only changelog and release-note source.
@@ -73,9 +73,10 @@ Release behavior:
 - Changing the root gateway version does not change the iOS app version until you explicitly pin from the gateway.
 - See `apps/ios/VERSIONING.md` for the full workflow.
 
-Required env for beta builds:
+Relay behavior for beta builds:
 
-- `REMOTECLAW_PUSH_RELAY_BASE_URL=https://relay.example.com`
+- Beta builds default to `https://ios-push-relay.openclaw.ai`.
+- Optional custom relay override: `OPENCLAW_PUSH_RELAY_BASE_URL=https://relay.example.com`
   This must be a plain `https://host[:port][/path]` base URL without whitespace, query params, fragments, or xcconfig metacharacters.
 
 Archive without upload:
@@ -118,10 +119,10 @@ scripts/ios-asc-keychain-setup.sh \
 
 This should create `apps/ios/fastlane/.env` with the non-secret ASC variables while the private key stays in Keychain.
 
-3. Set the official/TestFlight relay URL for the build:
+3. Optional: set a custom official/TestFlight relay URL for the build. If unset, the beta flow uses `https://ios-push-relay.openclaw.ai`.
 
 ```bash
-export REMOTECLAW_PUSH_RELAY_BASE_URL=https://relay.example.com
+export OPENCLAW_PUSH_RELAY_BASE_URL=https://relay.example.com
 ```
 
 4. If you are starting a brand-new production release train, pin iOS to the current gateway version first:
@@ -141,12 +142,12 @@ pnpm ios:beta
    - verifies synced iOS versioning artifacts
    - resolves the next TestFlight build number for that short version
    - generates `apps/ios/build/BetaRelease.xcconfig`
-   - archives `RemoteClaw`
+   - archives `OpenClaw`
    - uploads the IPA to TestFlight
 
 7. Expected outputs after a successful run:
-   - `apps/ios/build/beta/RemoteClaw-<version>.ipa`
-   - `apps/ios/build/beta/RemoteClaw-<version>.app.dSYM.zip`
+   - `apps/ios/build/beta/OpenClaw-<version>.ipa`
+   - `apps/ios/build/beta/OpenClaw-<version>.app.dSYM.zip`
    - Fastlane log line like `Uploaded iOS beta: version=<version> short=<short> build=<build>`
 
 8. If this is a fresh clone on a maintainer machine that already works elsewhere, it is OK to copy the non-secret `apps/ios/fastlane/.env` from another trusted local clone on the same Mac. The Keychain-backed private key remains machine-local and is not stored in the repo.
@@ -196,15 +197,15 @@ See `apps/ios/VERSIONING.md` for the detailed spec.
 ## APNs Expectations For Local/Manual Builds
 
 - The app calls `registerForRemoteNotifications()` at launch.
-- `apps/ios/Sources/RemoteClaw.entitlements` sets `aps-environment` to `development`.
+- `apps/ios/Sources/OpenClaw.entitlements` sets `aps-environment` to `development`.
 - APNs token registration to gateway happens only after gateway connection (`push.apns.register`).
-- Local/manual builds default to `RemoteClawPushTransport=direct` and `RemoteClawPushDistribution=local`.
+- Local/manual builds default to `OpenClawPushTransport=direct` and `OpenClawPushDistribution=local`.
 - Your selected team/profile must support Push Notifications for the app bundle ID you are signing.
 - If push capability or provisioning is wrong, APNs registration fails at runtime (check Xcode logs for `APNs registration failed`).
-- The gateway host also needs direct APNs auth configured separately with `REMOTECLAW_APNS_TEAM_ID`, `REMOTECLAW_APNS_KEY_ID`, and either `REMOTECLAW_APNS_PRIVATE_KEY_P8` or `REMOTECLAW_APNS_PRIVATE_KEY_PATH`.
-- Recommended gateway-host storage for the APNs `.p8` file is `~/.remoteclaw/credentials/apns/AuthKey_<KEYID>.p8` with restrictive permissions, then point `REMOTECLAW_APNS_PRIVATE_KEY_PATH` at that file.
+- The gateway host also needs direct APNs auth configured separately with `OPENCLAW_APNS_TEAM_ID`, `OPENCLAW_APNS_KEY_ID`, and either `OPENCLAW_APNS_PRIVATE_KEY_P8` or `OPENCLAW_APNS_PRIVATE_KEY_PATH`.
+- Recommended gateway-host storage for the APNs `.p8` file is `~/.openclaw/credentials/apns/AuthKey_<KEYID>.p8` with restrictive permissions, then point `OPENCLAW_APNS_PRIVATE_KEY_PATH` at that file.
 - `apps/ios/fastlane/.env` only covers App Store Connect / Fastlane auth; it does not provide gateway APNs credentials for local direct-push testing.
-- Debug builds default to `RemoteClawPushAPNsEnvironment=sandbox`; Release builds default to `production`.
+- Debug builds default to `OpenClawPushAPNsEnvironment=sandbox`; Release builds default to `production`.
 
 ## APNs Expectations For Official Builds
 
@@ -214,7 +215,7 @@ See `apps/ios/VERSIONING.md` for the detailed spec.
 - The app persists the relay handle metadata locally so reconnects can republish the gateway registration without re-registering on every connect.
 - If the relay base URL changes in a later build, the app refreshes the relay registration instead of reusing the old relay origin.
 - Relay mode requires a reachable relay base URL and uses App Attest plus a StoreKit app transaction JWS during registration.
-- Gateway-side relay sending is configured through `gateway.push.apns.relay.baseUrl` in `remoteclaw.json`. `REMOTECLAW_APNS_RELAY_BASE_URL` remains a temporary env override only.
+- Gateway-side relay sending is configured through `gateway.push.apns.relay.baseUrl` in `openclaw.json`. `OPENCLAW_APNS_RELAY_BASE_URL` remains a temporary env override only.
 
 ## Official Build Relay Trust Model
 
@@ -236,7 +237,7 @@ See `apps/ios/VERSIONING.md` for the detailed spec.
   - Production APNs credentials and raw official-build APNs tokens stay in the relay deployment,
     not on the gateway.
 
-This exists to keep the hosted relay limited to genuine RemoteClaw official builds and to ensure a
+This exists to keep the hosted relay limited to genuine OpenClaw official builds and to ensure a
 gateway can only send pushes for iOS devices that paired with that gateway.
 
 ## What Works Now (Concrete)
@@ -250,7 +251,7 @@ gateway can only send pushes for iOS devices that paired with that gateway.
 
 ## Computer Use Relationship
 
-The iOS app is not a Codex Computer Use backend. Computer Use and `cua-driver mcp` are macOS desktop-control paths; iOS exposes device capabilities as RemoteClaw node commands through the gateway. Agents can drive the iPhone canvas, camera, screen, location, voice, and other node capabilities with `node.invoke`, subject to iOS foreground/background limits.
+The iOS app is not a Codex Computer Use backend. Computer Use and `cua-driver mcp` are macOS desktop-control paths; iOS exposes device capabilities as OpenClaw node commands through the gateway. Agents can drive the iPhone canvas, camera, screen, location, voice, and other node capabilities with `node.invoke`, subject to iOS foreground/background limits.
 
 ## Location Automation Use Case (Testing)
 
@@ -318,7 +319,7 @@ Automatic wake/reconnect hardening:
 5. If network path is unclear:
    - switch to manual host/port + TLS in Gateway Advanced settings
 6. In Xcode console, filter for subsystem/category signals:
-   - `org.remoteclaw.ios`
+   - `ai.openclaw.ios`
    - `GatewayDiag`
    - `APNs registration failed`
 7. Validate background expectations:

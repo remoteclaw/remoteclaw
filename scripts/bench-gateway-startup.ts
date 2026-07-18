@@ -1,4 +1,4 @@
-import { spawn, spawnSync, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { request } from "node:http";
 import { createServer } from "node:net";
@@ -7,6 +7,7 @@ import path from "node:path";
 import { performance } from "node:perf_hooks";
 import { pathToFileURL } from "node:url";
 import { parseStrictIntegerOption } from "./lib/dev-tooling-safety.ts";
+import { delay, stopChild } from "./lib/gateway-bench-child.ts";
 
 type GatewayBenchCase = {
   config: Record<string, unknown>;
@@ -80,15 +81,6 @@ type BenchmarkFailure = {
   sampleIndex: number;
 };
 
-type ChildExit = {
-  exitCode: number | null;
-  signal: string | null;
-};
-
-type StopChildResult = ChildExit & {
-  exitedBeforeTeardown: boolean;
-};
-
 type PluginFixtureResult = {
   pluginIds: string[];
   pluginsDir: string;
@@ -109,8 +101,6 @@ const DEFAULT_RUNS = 5;
 const DEFAULT_WARMUP = 1;
 const DEFAULT_TIMEOUT_MS = 30_000;
 const DEFAULT_ENTRY = "dist/entry.js";
-const TEARDOWN_GRACE_MS = 2_000;
-const TEARDOWN_KILL_GRACE_MS = 1_000;
 
 const BASE_CONFIG = {
   browser: { enabled: false },
@@ -138,13 +128,13 @@ const GATEWAY_CASES: readonly GatewayBenchCase[] = [
   {
     id: "skipChannels",
     name: "gateway, skip channels",
-    env: { REMOTECLAW_SKIP_CHANNELS: "1" },
+    env: { OPENCLAW_SKIP_CHANNELS: "1" },
     config: BASE_CONFIG,
   },
   {
     id: "oneInternalHook",
     name: "gateway, one configured internal hook",
-    env: { REMOTECLAW_SKIP_CHANNELS: "1" },
+    env: { OPENCLAW_SKIP_CHANNELS: "1" },
     config: {
       ...BASE_CONFIG,
       hooks: {
@@ -159,7 +149,7 @@ const GATEWAY_CASES: readonly GatewayBenchCase[] = [
   {
     id: "allInternalHooks",
     name: "gateway, all internal hooks",
-    env: { REMOTECLAW_SKIP_CHANNELS: "1" },
+    env: { OPENCLAW_SKIP_CHANNELS: "1" },
     config: {
       ...BASE_CONFIG,
       hooks: {
@@ -172,7 +162,7 @@ const GATEWAY_CASES: readonly GatewayBenchCase[] = [
   {
     id: "fiftyPlugins",
     name: "gateway, 50 manifest plugins",
-    env: { REMOTECLAW_SKIP_CHANNELS: "1" },
+    env: { OPENCLAW_SKIP_CHANNELS: "1" },
     pluginActivationOnStartup: true,
     pluginCount: 50,
     config: BASE_CONFIG,
@@ -180,7 +170,7 @@ const GATEWAY_CASES: readonly GatewayBenchCase[] = [
   {
     id: "fiftyStartupLazyPlugins",
     name: "gateway, 50 startup-lazy manifest plugins",
-    env: { REMOTECLAW_SKIP_CHANNELS: "1" },
+    env: { OPENCLAW_SKIP_CHANNELS: "1" },
     pluginActivationOnStartup: false,
     pluginCount: 50,
     config: BASE_CONFIG,
@@ -271,7 +261,7 @@ function parseOptions(): CliOptions {
 }
 
 function printUsage(): void {
-  console.log(`RemoteClaw Gateway startup benchmark
+  console.log(`OpenClaw Gateway startup benchmark
 
 Usage:
   pnpm test:startup:gateway -- [options]
@@ -624,10 +614,6 @@ function requestStatus(port: number, pathname: string): Promise<number> {
   });
 }
 
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 function writePluginFixtures(
   root: string,
   count: number,
@@ -644,7 +630,7 @@ function writePluginFixtures(
     const entry = path.join(pluginDir, "index.cjs");
     writeFileSync(entry, `module.exports = { id: ${JSON.stringify(id)}, register() {} };\n`);
     writeFileSync(
-      path.join(pluginDir, "remoteclaw.plugin.json"),
+      path.join(pluginDir, "openclaw.plugin.json"),
       `${JSON.stringify(
         {
           id,
@@ -677,7 +663,7 @@ function writeConfig(root: string, benchCase: GatewayBenchCase): string {
         : {}),
     },
   };
-  const configPath = path.join(root, "remoteclaw.json");
+  const configPath = path.join(root, "openclaw.json");
   writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`);
   return configPath;
 }
@@ -698,93 +684,16 @@ function sanitizedEnv(
     TMPDIR: process.env.TMPDIR,
     USER: process.env.USER ?? "remoteclaw-bench",
     npm_config_update_notifier: "false",
-    REMOTECLAW_CONFIG: configPath,
-    REMOTECLAW_CONFIG_PATH: configPath,
-    REMOTECLAW_GATEWAY_STARTUP_TRACE: "1",
-    REMOTECLAW_HOME: root,
-    REMOTECLAW_NO_RESPAWN: "1",
-    REMOTECLAW_STATE_DIR: path.join(root, "state"),
-    REMOTECLAW_TEST_DISABLE_UPDATE_CHECK: "1",
+    OPENCLAW_CONFIG: configPath,
+    OPENCLAW_CONFIG_PATH: configPath,
+    OPENCLAW_GATEWAY_STARTUP_TRACE: "1",
+    OPENCLAW_HOME: root,
+    OPENCLAW_NO_RESPAWN: "1",
+    OPENCLAW_STATE_DIR: path.join(root, "state"),
+    OPENCLAW_TEST_DISABLE_UPDATE_CHECK: "1",
     ...benchCase.env,
   };
   return env;
-}
-
-async function stopChild(
-  child: ChildProcessWithoutNullStreams,
-  options: { killGraceMs?: number; teardownGraceMs?: number } = {},
-): Promise<StopChildResult> {
-  const currentExit = (): ChildExit | null =>
-    child.exitCode != null || child.signalCode != null
-      ? { exitCode: child.exitCode, signal: child.signalCode }
-      : null;
-
-  const existingExit = currentExit();
-  if (existingExit != null) {
-    return { ...existingExit, exitedBeforeTeardown: true };
-  }
-
-  let observedExit: ChildExit | null = null;
-  const exited = new Promise<ChildExit>((resolve) => {
-    child.once("exit", (exitCode, signal) => {
-      observedExit = { exitCode, signal };
-      resolve(observedExit);
-    });
-  });
-  const waitForExit = async (ms: number): Promise<ChildExit | null> =>
-    await Promise.race([exited, delay(ms).then(() => null)]);
-
-  await new Promise<void>((resolve) => setImmediate(resolve));
-  const queuedExit = observedExit ?? currentExit();
-  if (queuedExit != null) {
-    return { ...queuedExit, exitedBeforeTeardown: true };
-  }
-
-  const teardownGraceMs = options.teardownGraceMs ?? TEARDOWN_GRACE_MS;
-  const killGraceMs = options.killGraceMs ?? TEARDOWN_KILL_GRACE_MS;
-  const sentTeardownSignal = killProcessTree(child, "SIGTERM");
-  const gracefulExit = await waitForExit(teardownGraceMs);
-  if (gracefulExit != null) {
-    return { ...gracefulExit, exitedBeforeTeardown: !sentTeardownSignal };
-  }
-
-  const postGraceExit = currentExit() ?? observedExit;
-  if (postGraceExit != null) {
-    return { ...postGraceExit, exitedBeforeTeardown: !sentTeardownSignal };
-  }
-  if (!sentTeardownSignal) {
-    releaseUnsettledChild(child);
-    return { exitCode: null, exitedBeforeTeardown: true, signal: null };
-  }
-
-  killProcessTree(child, "SIGKILL");
-  const killedExit = await waitForExit(killGraceMs);
-  const finalExit = killedExit ?? currentExit() ?? observedExit;
-  if (finalExit != null) {
-    return { ...finalExit, exitedBeforeTeardown: false };
-  }
-
-  releaseUnsettledChild(child);
-  return { exitCode: null, exitedBeforeTeardown: false, signal: "SIGKILL" };
-}
-
-function releaseUnsettledChild(child: ChildProcessWithoutNullStreams): void {
-  child.stdin.destroy();
-  child.stdout.destroy();
-  child.stderr.destroy();
-  child.unref();
-}
-
-function killProcessTree(child: ChildProcessWithoutNullStreams, signal: NodeJS.Signals): boolean {
-  if (process.platform !== "win32" && child.pid !== undefined) {
-    try {
-      process.kill(-child.pid, signal);
-      return true;
-    } catch {
-      // Fall back to the direct child below.
-    }
-  }
-  return child.kill(signal);
 }
 
 function collectStartupTrace(line: string, startupTrace: Record<string, number>): void {

@@ -2,7 +2,7 @@ import RemoteClawKit
 import SwiftUI
 import Testing
 import UIKit
-@testable import RemoteClaw
+@testable import OpenClaw
 
 @Suite struct SwiftUIRenderSmokeTests {
     @MainActor private static func host(_ view: some View) -> UIWindow {
@@ -14,26 +14,31 @@ import UIKit
         return window
     }
 
-    @Test @MainActor func statusPillConnectingBuildsAViewHierarchy() {
-        let root = StatusPill(gateway: .connecting, voiceWakeEnabled: true, brighten: true) {}
-        _ = Self.host(root)
-    }
-
-    @Test @MainActor func statusPillDisconnectedBuildsAViewHierarchy() {
-        let root = StatusPill(gateway: .disconnected, voiceWakeEnabled: false) {}
-        _ = Self.host(root)
-    }
-
-    @Test @MainActor func settingsTabBuildsAViewHierarchy() {
+    @Test @MainActor func settingsProTabBuildsAViewHierarchy() {
         let appModel = NodeAppModel()
         let gatewayController = GatewayConnectionController(appModel: appModel, startDiscovery: false)
 
-        let root = SettingsTab()
+        let root = SettingsProTab()
             .environment(appModel)
             .environment(appModel.voiceWake)
             .environment(gatewayController)
 
         _ = Self.host(root)
+    }
+
+    @Test @MainActor func settingsProTabBuildsInLightAndDarkMode() {
+        for scheme in [ColorScheme.light, ColorScheme.dark] {
+            let appModel = NodeAppModel()
+            let gatewayController = GatewayConnectionController(appModel: appModel, startDiscovery: false)
+
+            let root = SettingsProTab()
+                .environment(appModel)
+                .environment(appModel.voiceWake)
+                .environment(gatewayController)
+                .preferredColorScheme(scheme)
+
+            _ = Self.host(root)
+        }
     }
 
     @Test @MainActor func rootTabsBuildAViewHierarchy() {
@@ -48,16 +53,6 @@ import UIKit
         _ = Self.host(root)
     }
 
-    @Test @MainActor func voiceTabBuildsAViewHierarchy() {
-        let appModel = NodeAppModel()
-
-        let root = VoiceTab()
-            .environment(appModel)
-            .environment(appModel.voiceWake)
-
-        _ = Self.host(root)
-    }
-
     @Test @MainActor func voiceWakeWordsViewBuildsAViewHierarchy() {
         let appModel = NodeAppModel()
         let root = NavigationStack { VoiceWakeWordsSettingsView() }
@@ -65,17 +60,8 @@ import UIKit
         _ = Self.host(root)
     }
 
-    @Test @MainActor func chatSheetBuildsAViewHierarchy() {
-        let appModel = NodeAppModel()
-        let gateway = GatewayNodeSession()
-        let root = ChatSheet(gateway: gateway, sessionKey: "test")
-            .environment(appModel)
-            .environment(appModel.voiceWake)
-        _ = Self.host(root)
-    }
-
     @Test @MainActor func voiceWakeToastBuildsAViewHierarchy() {
-        let root = VoiceWakeToast(command: "remoteclaw: do something")
+        let root = VoiceWakeToast(command: "openclaw: do something")
         _ = Self.host(root)
     }
 }

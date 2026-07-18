@@ -4,16 +4,11 @@ import {
 } from "./subagent-registry.store.js";
 import type { SubagentRunRecord } from "./subagent-registry.types.js";
 
-/**
- * Runtime attestation (ADR 0005 H9). Declares the implementation status
- * of each runtime export in this module. See CONTRIBUTING.md § Module
- * attestations for the category definitions and the convention for
- * updating these when sync or rebrand changes the surface.
- */
 export const MODULE_ATTESTATIONS = {
   persistSubagentRunsToDisk: "live",
   restoreSubagentRunsFromDisk: "live",
   getSubagentRunsSnapshotForRead: "live",
+  persistSubagentRunsToDiskOrThrow: "live",
 } as const;
 
 export function persistSubagentRunsToDisk(runs: Map<string, SubagentRunRecord>) {
@@ -22,6 +17,10 @@ export function persistSubagentRunsToDisk(runs: Map<string, SubagentRunRecord>) 
   } catch {
     // ignore persistence failures
   }
+}
+
+export function persistSubagentRunsToDiskOrThrow(runs: Map<string, SubagentRunRecord>) {
+  saveSubagentRegistryToDisk(runs);
 }
 
 export function restoreSubagentRunsFromDisk(params: {
@@ -51,12 +50,12 @@ export function getSubagentRunsSnapshotForRead(
 ): Map<string, SubagentRunRecord> {
   const merged = new Map<string, SubagentRunRecord>();
   const shouldReadDisk =
-    process.env.REMOTECLAW_TEST_READ_SUBAGENT_RUNS_FROM_DISK === "1" ||
+    process.env.OPENCLAW_TEST_READ_SUBAGENT_RUNS_FROM_DISK === "1" ||
     !(process.env.VITEST || process.env.NODE_ENV === "test");
   if (shouldReadDisk) {
     try {
       // Persisted state lets other worker processes observe active runs.
-      for (const [runId, entry] of loadSubagentRegistryFromDisk().entries()) {
+      for (const [runId, entry] of loadSubagentRegistryFromDisk({ clone: false }).entries()) {
         merged.set(runId, entry);
       }
     } catch {

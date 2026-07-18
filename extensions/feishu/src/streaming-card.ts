@@ -4,6 +4,7 @@
 
 import type { Client } from "@larksuiteoapi/node-sdk";
 import { fetchWithSsrFGuard } from "remoteclaw/plugin-sdk/feishu";
+import { resolveExpiresAtMsFromDurationSeconds } from "remoteclaw/plugin-sdk/string-coerce-runtime";
 import type { FeishuDomain } from "./types.js";
 
 type Credentials = { appId: string; appSecret: string; domain?: FeishuDomain };
@@ -24,7 +25,21 @@ type StreamingStartOptions = {
 };
 
 // Token cache (keyed by domain + appId)
+const FEISHU_STREAMING_TOKEN_DEFAULT_LIFETIME_SECONDS = 7200;
+
 const tokenCache = new Map<string, { token: string; expiresAt: number }>();
+
+// A hostile or buggy `expire` (huge, negative, non-numeric) would otherwise
+// overflow the cache deadline and pin a stale token forever.
+function resolveStreamingTokenExpiresAt(value: unknown): number {
+  if (typeof value === "number" && Number.isFinite(value) && value <= 0) {
+    return Date.now();
+  }
+  return (
+    resolveExpiresAtMsFromDurationSeconds(value) ??
+    Date.now() + FEISHU_STREAMING_TOKEN_DEFAULT_LIFETIME_SECONDS * 1000
+  );
+}
 
 function resolveApiBase(domain?: FeishuDomain): string {
   if (domain === "lark") {
@@ -83,7 +98,7 @@ async function getToken(creds: Credentials): Promise<string> {
   }
   tokenCache.set(key, {
     token: data.tenant_access_token,
-    expiresAt: Date.now() + (data.expire ?? 7200) * 1000,
+    expiresAt: resolveStreamingTokenExpiresAt(data.expire),
   });
   return data.tenant_access_token;
 }

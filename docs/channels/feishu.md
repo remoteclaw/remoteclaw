@@ -15,20 +15,20 @@ Feishu/Lark is an all-in-one collaboration platform where teams chat, share docu
 ## Quick start
 
 <Note>
-Requires RemoteClaw 2026.4.25 or above. Run `remoteclaw --version` to check. Upgrade with `remoteclaw update`.
+Requires OpenClaw 2026.5.29 or above. Run `openclaw --version` to check. Upgrade with `openclaw update`.
 </Note>
 
 <Steps>
   <Step title="Run the channel setup wizard">
   ```bash
-  remoteclaw channels login --channel feishu
+  openclaw channels login --channel feishu
   ```
   Choose manual setup to paste an App ID and App Secret from Feishu Open Platform, or choose QR setup to create a bot automatically. If the domestic Feishu mobile app does not react to the QR code, rerun setup and choose manual setup.
   </Step>
   
   <Step title="After setup completes, restart the gateway to apply the changes">
   ```bash
-  remoteclaw gateway restart
+  openclaw gateway restart
   ```
   </Step>
 </Steps>
@@ -49,8 +49,8 @@ Configure `dmPolicy` to control who can DM the bot:
 **Approve a pairing request:**
 
 ```bash
-remoteclaw pairing list feishu
-remoteclaw pairing approve feishu <CODE>
+openclaw pairing list feishu
+openclaw pairing approve feishu <CODE>
 ```
 
 ### Group chats
@@ -168,13 +168,13 @@ Open the group in Feishu/Lark, click the menu icon in the top-right corner, and 
 Start the gateway, send a DM to the bot, then check the logs:
 
 ```bash
-remoteclaw logs --follow
+openclaw logs --follow
 ```
 
 Look for `open_id` in the log output. You can also check pending pairing requests:
 
 ```bash
-remoteclaw pairing list feishu
+openclaw pairing list feishu
 ```
 
 ---
@@ -200,7 +200,7 @@ Feishu/Lark does not support native slash-command menus, so send these as plain 
 1. Ensure the bot is added to the group
 2. Ensure you @mention the bot (required by default)
 3. Verify `groupPolicy` is not `"disabled"`
-4. Check logs: `remoteclaw logs --follow`
+4. Check logs: `openclaw logs --follow`
 
 ### Bot does not receive messages
 
@@ -208,12 +208,12 @@ Feishu/Lark does not support native slash-command menus, so send these as plain 
 2. Ensure event subscription includes `im.message.receive_v1`
 3. Ensure **persistent connection** (WebSocket) is selected
 4. Ensure all required permission scopes are granted
-5. Ensure the gateway is running: `remoteclaw gateway status`
-6. Check logs: `remoteclaw logs --follow`
+5. Ensure the gateway is running: `openclaw gateway status`
+6. Check logs: `openclaw logs --follow`
 
 ### QR setup does not react in the Feishu mobile app
 
-1. Rerun setup: `remoteclaw channels login --channel feishu`
+1. Rerun setup: `openclaw channels login --channel feishu`
 2. Choose manual setup
 3. In Feishu Open Platform, create a self-built app and copy its App ID and App Secret
 4. Paste those credentials into the setup wizard
@@ -222,7 +222,7 @@ Feishu/Lark does not support native slash-command menus, so send these as plain 
 
 1. Reset the App Secret in Feishu Open Platform / Lark Developer
 2. Update the value in your config
-3. Restart the gateway: `remoteclaw gateway restart`
+3. Restart the gateway: `openclaw gateway restart`
 
 ---
 
@@ -322,7 +322,7 @@ Feishu/Lark supports ACP for DMs and group thread messages. Feishu/Lark ACP is t
             agent: "codex",
             backend: "acpx",
             mode: "persistent",
-            cwd: "/workspace/remoteclaw",
+            cwd: "/workspace/openclaw",
           },
         },
       },
@@ -416,7 +416,7 @@ Enable `dynamicAgentCreation` to automatically create **isolated agent instances
 This is essential for public bots where you want each user to have their own private AI assistant experience.
 
 <Note>
-**Account limitation**: `dynamicAgentCreation` currently works with the **default Feishu account only**. Named/multi-account setups are not yet fully supported — dynamic bindings are created without `accountId`, so messages to named accounts may still route to `agent:main`. Track progress in [Issue #42837](https://github.com/remoteclaw/remoteclaw/issues/42837).
+**Account limitation**: `dynamicAgentCreation` currently works with the **default Feishu account only**. Named/multi-account setups are not yet fully supported — dynamic bindings are created without `accountId`, so messages to named accounts may still route to `agent:main`. Track progress in [Issue #42837](https://github.com/openclaw/openclaw/issues/42837).
 </Note>
 
 ### Quick setup
@@ -429,8 +429,8 @@ This is essential for public bots where you want each user to have their own pri
       allowFrom: ["*"],
       dynamicAgentCreation: {
         enabled: true,
-        workspaceTemplate: "~/.remoteclaw/workspace-{agentId}",
-        agentDirTemplate: "~/.remoteclaw/agents/{agentId}/agent",
+        workspaceTemplate: "~/.openclaw/workspace-{agentId}",
+        agentDirTemplate: "~/.openclaw/agents/{agentId}/agent",
       },
     },
   },
@@ -455,12 +455,12 @@ When a new user sends their first DM:
 
 ### Configuration options
 
-| Setting                                                  | Description                                | Default                                |
-| -------------------------------------------------------- | ------------------------------------------ | -------------------------------------- |
-| `channels.feishu.dynamicAgentCreation.enabled`           | Enable automatic per-user agent creation   | `false`                                |
-| `channels.feishu.dynamicAgentCreation.workspaceTemplate` | Path template for dynamic agent workspaces | `~/.remoteclaw/workspace-{agentId}`    |
-| `channels.feishu.dynamicAgentCreation.agentDirTemplate`  | Agent directory name template              | `~/.remoteclaw/agents/{agentId}/agent` |
-| `channels.feishu.dynamicAgentCreation.maxAgents`         | Maximum number of dynamic agents to create | unlimited                              |
+| Setting                                                  | Description                                | Default                              |
+| -------------------------------------------------------- | ------------------------------------------ | ------------------------------------ |
+| `channels.feishu.dynamicAgentCreation.enabled`           | Enable automatic per-user agent creation   | `false`                              |
+| `channels.feishu.dynamicAgentCreation.workspaceTemplate` | Path template for dynamic agent workspaces | `~/.openclaw/workspace-{agentId}`    |
+| `channels.feishu.dynamicAgentCreation.agentDirTemplate`  | Agent directory name template              | `~/.openclaw/agents/{agentId}/agent` |
+| `channels.feishu.dynamicAgentCreation.maxAgents`         | Maximum number of dynamic agents to create | unlimited                            |
 
 Template variables:
 
@@ -508,8 +508,8 @@ Template variables:
       requireMention: true,
       dynamicAgentCreation: {
         enabled: true,
-        workspaceTemplate: "~/.remoteclaw/workspace-{agentId}",
-        agentDirTemplate: "~/.remoteclaw/agents/{agentId}/agent",
+        workspaceTemplate: "~/.openclaw/workspace-{agentId}",
+        agentDirTemplate: "~/.openclaw/agents/{agentId}/agent",
       },
     },
   },
@@ -528,14 +528,14 @@ Check gateway logs to confirm dynamic creation is working:
 
 ```
 feishu: creating dynamic agent "feishu-ou_xxxxxx" for user ou_xxxxxx
-workspace: /Users/you/.remoteclaw/workspace-feishu-ou_xxxxxx
+workspace: /Users/you/.openclaw/workspace-feishu-ou_xxxxxx
 feishu: dynamic agent created, new route: agent:feishu-ou_xxxxxx:main
 ```
 
 List all created workspaces:
 
 ```bash
-ls -la ~/.remoteclaw/workspace-*
+ls -la ~/.openclaw/workspace-*
 ```
 
 ### Notes
@@ -552,38 +552,38 @@ ls -la ~/.remoteclaw/workspace-*
 
 Full configuration: [Gateway configuration](/gateway/configuration)
 
-| Setting                                                  | Description                                                                      | Default                                |
-| -------------------------------------------------------- | -------------------------------------------------------------------------------- | -------------------------------------- |
-| `channels.feishu.enabled`                                | Enable/disable the channel                                                       | `true`                                 |
-| `channels.feishu.domain`                                 | API domain (`feishu` or `lark`)                                                  | `feishu`                               |
-| `channels.feishu.connectionMode`                         | Event transport (`websocket` or `webhook`)                                       | `websocket`                            |
-| `channels.feishu.defaultAccount`                         | Default account for outbound routing                                             | `default`                              |
-| `channels.feishu.verificationToken`                      | Required for webhook mode                                                        | -                                      |
-| `channels.feishu.encryptKey`                             | Required for webhook mode                                                        | -                                      |
-| `channels.feishu.webhookPath`                            | Webhook route path                                                               | `/feishu/events`                       |
-| `channels.feishu.webhookHost`                            | Webhook bind host                                                                | `127.0.0.1`                            |
-| `channels.feishu.webhookPort`                            | Webhook bind port                                                                | `3000`                                 |
-| `channels.feishu.accounts.<id>.appId`                    | App ID                                                                           | -                                      |
-| `channels.feishu.accounts.<id>.appSecret`                | App Secret                                                                       | -                                      |
-| `channels.feishu.accounts.<id>.domain`                   | Per-account domain override                                                      | `feishu`                               |
-| `channels.feishu.accounts.<id>.tts`                      | Per-account TTS override                                                         | `messages.tts`                         |
-| `channels.feishu.dmPolicy`                               | DM policy                                                                        | `allowlist`                            |
-| `channels.feishu.allowFrom`                              | DM allowlist (open_id list)                                                      | [BotOwnerId]                           |
-| `channels.feishu.groupPolicy`                            | Group policy                                                                     | `allowlist`                            |
-| `channels.feishu.groupAllowFrom`                         | Group allowlist                                                                  | -                                      |
-| `channels.feishu.requireMention`                         | Require @mention in groups                                                       | `true`                                 |
-| `channels.feishu.groups.<chat_id>.requireMention`        | Per-group @mention override; explicit IDs also admit the group in allowlist mode | inherited                              |
-| `channels.feishu.groups.<chat_id>.enabled`               | Enable/disable a specific group                                                  | `true`                                 |
-| `channels.feishu.dynamicAgentCreation.enabled`           | Enable automatic per-user agent creation                                         | `false`                                |
-| `channels.feishu.dynamicAgentCreation.workspaceTemplate` | Path template for dynamic agent workspaces                                       | `~/.remoteclaw/workspace-{agentId}`    |
-| `channels.feishu.dynamicAgentCreation.agentDirTemplate`  | Agent directory name template                                                    | `~/.remoteclaw/agents/{agentId}/agent` |
-| `channels.feishu.dynamicAgentCreation.maxAgents`         | Maximum number of dynamic agents to create                                       | unlimited                              |
-| `channels.feishu.textChunkLimit`                         | Message chunk size                                                               | `2000`                                 |
-| `channels.feishu.mediaMaxMb`                             | Media size limit                                                                 | `30`                                   |
-| `channels.feishu.streaming`                              | Streaming card output                                                            | `true`                                 |
-| `channels.feishu.blockStreaming`                         | Completed-block reply streaming                                                  | `false`                                |
-| `channels.feishu.typingIndicator`                        | Send typing reactions                                                            | `true`                                 |
-| `channels.feishu.resolveSenderNames`                     | Resolve sender display names                                                     | `true`                                 |
+| Setting                                                  | Description                                                                      | Default                              |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------ |
+| `channels.feishu.enabled`                                | Enable/disable the channel                                                       | `true`                               |
+| `channels.feishu.domain`                                 | API domain (`feishu` or `lark`)                                                  | `feishu`                             |
+| `channels.feishu.connectionMode`                         | Event transport (`websocket` or `webhook`)                                       | `websocket`                          |
+| `channels.feishu.defaultAccount`                         | Default account for outbound routing                                             | `default`                            |
+| `channels.feishu.verificationToken`                      | Required for webhook mode                                                        | -                                    |
+| `channels.feishu.encryptKey`                             | Required for webhook mode                                                        | -                                    |
+| `channels.feishu.webhookPath`                            | Webhook route path                                                               | `/feishu/events`                     |
+| `channels.feishu.webhookHost`                            | Webhook bind host                                                                | `127.0.0.1`                          |
+| `channels.feishu.webhookPort`                            | Webhook bind port                                                                | `3000`                               |
+| `channels.feishu.accounts.<id>.appId`                    | App ID                                                                           | -                                    |
+| `channels.feishu.accounts.<id>.appSecret`                | App Secret                                                                       | -                                    |
+| `channels.feishu.accounts.<id>.domain`                   | Per-account domain override                                                      | `feishu`                             |
+| `channels.feishu.accounts.<id>.tts`                      | Per-account TTS override                                                         | `messages.tts`                       |
+| `channels.feishu.dmPolicy`                               | DM policy                                                                        | `allowlist`                          |
+| `channels.feishu.allowFrom`                              | DM allowlist (open_id list)                                                      | [BotOwnerId]                         |
+| `channels.feishu.groupPolicy`                            | Group policy                                                                     | `allowlist`                          |
+| `channels.feishu.groupAllowFrom`                         | Group allowlist                                                                  | -                                    |
+| `channels.feishu.requireMention`                         | Require @mention in groups                                                       | `true`                               |
+| `channels.feishu.groups.<chat_id>.requireMention`        | Per-group @mention override; explicit IDs also admit the group in allowlist mode | inherited                            |
+| `channels.feishu.groups.<chat_id>.enabled`               | Enable/disable a specific group                                                  | `true`                               |
+| `channels.feishu.dynamicAgentCreation.enabled`           | Enable automatic per-user agent creation                                         | `false`                              |
+| `channels.feishu.dynamicAgentCreation.workspaceTemplate` | Path template for dynamic agent workspaces                                       | `~/.openclaw/workspace-{agentId}`    |
+| `channels.feishu.dynamicAgentCreation.agentDirTemplate`  | Agent directory name template                                                    | `~/.openclaw/agents/{agentId}/agent` |
+| `channels.feishu.dynamicAgentCreation.maxAgents`         | Maximum number of dynamic agents to create                                       | unlimited                            |
+| `channels.feishu.textChunkLimit`                         | Message chunk size                                                               | `2000`                               |
+| `channels.feishu.mediaMaxMb`                             | Media size limit                                                                 | `30`                                 |
+| `channels.feishu.streaming`                              | Streaming card output                                                            | `true`                               |
+| `channels.feishu.blockStreaming`                         | Completed-block reply streaming                                                  | `false`                              |
+| `channels.feishu.typingIndicator`                        | Send typing reactions                                                            | `true`                               |
+| `channels.feishu.resolveSenderNames`                     | Resolve sender display names                                                     | `true`                               |
 
 ---
 
@@ -600,7 +600,7 @@ Full configuration: [Gateway configuration](/gateway/configuration)
 - ✅ Stickers
 
 Inbound Feishu/Lark audio messages are normalized as media placeholders instead
-of raw `file_key` JSON. When `tools.media.audio` is configured, RemoteClaw
+of raw `file_key` JSON. When `tools.media.audio` is configured, OpenClaw
 downloads the voice-note resource and runs shared audio transcription before the
 agent turn, so the agent receives the spoken transcript. If Feishu includes
 transcript text directly in the audio payload, that text is used without another
@@ -624,7 +624,7 @@ is sent directly as native audio. MP3/WAV/M4A and other likely audio formats are
 transcoded to 48kHz Ogg/Opus with `ffmpeg` only when the reply requests voice
 delivery (`audioAsVoice` / message tool `asVoice`, including TTS voice-note
 replies). Ordinary MP3 attachments stay regular files. If `ffmpeg` is missing or
-conversion fails, RemoteClaw falls back to a file attachment and logs the reason.
+conversion fails, OpenClaw falls back to a file attachment and logs the reason.
 
 ### Threads and replies
 
@@ -634,9 +634,9 @@ conversion fails, RemoteClaw falls back to a file attachment and logs the reason
 
 For `groupSessionScope: "group_topic"` and `"group_topic_sender"`, native
 Feishu/Lark topic groups use the event `thread_id` (`omt_*`) as the canonical
-topic session key. If a native topic starter event omits `thread_id`, RemoteClaw
+topic session key. If a native topic starter event omits `thread_id`, OpenClaw
 hydrates it from Feishu before routing the turn. Normal group replies that
-RemoteClaw turns into threads keep using the reply root message ID (`om_*`) so the
+OpenClaw turns into threads keep using the reply root message ID (`om_*`) so the
 first turn and follow-up turn stay in the same session.
 
 ---

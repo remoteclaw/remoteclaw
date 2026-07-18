@@ -1,10 +1,10 @@
 ---
 title: "Codex Harness Context Engine Port"
-summary: "Specification for making the bundled Codex app-server harness honor RemoteClaw context-engine plugins"
+summary: "Specification for making the bundled Codex app-server harness honor OpenClaw context-engine plugins"
 read_when:
   - You are wiring context-engine lifecycle behavior into the Codex harness
   - You need lossless-claw or another context-engine plugin to work with codex/* embedded harness sessions
-  - You are comparing embedded PI and Codex app-server context behavior
+  - You are comparing embedded OpenClaw and Codex app-server context behavior
 ---
 
 ## Status
@@ -13,13 +13,13 @@ Draft implementation specification.
 
 ## Goal
 
-Make the bundled Codex app-server harness honor the same RemoteClaw context-engine
-lifecycle contract that embedded PI turns already honor.
+Make the bundled Codex app-server harness honor the same OpenClaw context-engine
+lifecycle contract that embedded OpenClaw turns already honor.
 
-A session using `agents.defaults.embeddedHarness.runtime: "codex"` or a
-`codex/*` model should still let the selected context-engine plugin, such as
+A session using provider/model `agentRuntime.id: "codex"` or a `codex/*` model
+should still let the selected context-engine plugin, such as
 `lossless-claw`, control context assembly, post-turn ingest, maintenance, and
-RemoteClaw-level compaction policy as far as the Codex app-server boundary allows.
+OpenClaw-level compaction policy as far as the Codex app-server boundary allows.
 
 ## Non-goals
 
@@ -36,7 +36,7 @@ RemoteClaw-level compaction policy as far as the Codex app-server boundary allow
 The embedded run loop resolves the configured context engine once per run before
 selecting a concrete low-level harness:
 
-- `src/agents/pi-embedded-runner/run.ts`
+- `src/agents/embedded-agent-runner/run.ts`
   - initializes context-engine plugins
   - calls `resolveContextEngine(params.config)`
   - passes `contextEngine` and `contextTokenBudget` into
@@ -44,7 +44,7 @@ selecting a concrete low-level harness:
 
 `runEmbeddedAttemptWithBackend(...)` delegates to the selected agent harness:
 
-- `src/agents/pi-embedded-runner/run/backend.ts`
+- `src/agents/embedded-agent-runner/run/backend.ts`
 - `src/agents/harness/selection.ts`
 
 The Codex app-server harness is registered by the bundled Codex plugin:
@@ -53,19 +53,19 @@ The Codex app-server harness is registered by the bundled Codex plugin:
 - `extensions/codex/harness.ts`
 
 The Codex harness implementation receives the same `EmbeddedRunAttemptParams`
-as PI-backed attempts:
+as built-in OpenClaw attempts:
 
 - `extensions/codex/src/app-server/run-attempt.ts`
 
-That means the required hook point is in RemoteClaw-controlled code. The external
-boundary is the Codex app-server protocol itself: RemoteClaw can control what it
+That means the required hook point is in OpenClaw-controlled code. The external
+boundary is the Codex app-server protocol itself: OpenClaw can control what it
 sends to `thread/start`, `thread/resume`, and `turn/start`, and can observe
 notifications, but it cannot change Codex's internal thread store or native
 compactor.
 
 ## Current gap
 
-Embedded PI attempts call the context-engine lifecycle directly:
+Built-in OpenClaw attempts call the context-engine lifecycle directly:
 
 - bootstrap/maintenance before the attempt
 - assemble before the model call
@@ -73,11 +73,11 @@ Embedded PI attempts call the context-engine lifecycle directly:
 - maintenance after a successful turn
 - context-engine compaction for engines that own compaction
 
-Relevant PI code:
+Relevant OpenClaw code:
 
-- `src/agents/pi-embedded-runner/run/attempt.ts`
-- `src/agents/pi-embedded-runner/run/attempt.context-engine-helpers.ts`
-- `src/agents/pi-embedded-runner/context-engine-maintenance.ts`
+- `src/agents/embedded-agent-runner/run/attempt.ts`
+- `src/agents/embedded-agent-runner/run/attempt.context-engine-helpers.ts`
+- `src/agents/embedded-agent-runner/context-engine-maintenance.ts`
 
 Codex app-server attempts currently run generic agent-harness hooks and mirror
 the transcript, but do not call `params.contextEngine.bootstrap`,
@@ -94,9 +94,9 @@ Relevant Codex code:
 
 ## Desired behavior
 
-For Codex harness turns, RemoteClaw should preserve this lifecycle:
+For Codex harness turns, OpenClaw should preserve this lifecycle:
 
-1. Read the mirrored RemoteClaw session transcript.
+1. Read the mirrored OpenClaw session transcript.
 2. Bootstrap the active context engine when a previous session file exists.
 3. Run bootstrap maintenance when available.
 4. Assemble context using the active context engine.
@@ -104,21 +104,21 @@ For Codex harness turns, RemoteClaw should preserve this lifecycle:
 6. Start or resume the Codex thread with developer instructions that include any
    context-engine `systemPromptAddition`.
 7. Start the Codex turn with the assembled user-facing prompt.
-8. Mirror the Codex result back into the RemoteClaw transcript.
+8. Mirror the Codex result back into the OpenClaw transcript.
 9. Call `afterTurn` if implemented, otherwise `ingestBatch`/`ingest`, using the
    mirrored transcript snapshot.
 10. Run turn maintenance after successful non-aborted turns.
-11. Preserve Codex native compaction signals and RemoteClaw compaction hooks.
+11. Preserve Codex native compaction signals and OpenClaw compaction hooks.
 
 ## Design constraints
 
 ### Codex app-server remains canonical for native thread state
 
-Codex owns its native thread and any internal extended history. RemoteClaw should
+Codex owns its native thread and any internal extended history. OpenClaw should
 not try to mutate the app-server's internal history except through supported
 protocol calls.
 
-RemoteClaw's transcript mirror remains the source for RemoteClaw features:
+OpenClaw's transcript mirror remains the source for OpenClaw features:
 
 - chat history
 - search
@@ -128,7 +128,7 @@ RemoteClaw's transcript mirror remains the source for RemoteClaw features:
 
 ### Context engine assembly must be projected into Codex inputs
 
-The context-engine interface returns RemoteClaw `AgentMessage[]`, not a Codex
+The context-engine interface returns OpenClaw `AgentMessage[]`, not a Codex
 thread patch. Codex app-server `turn/start` accepts a current user input, while
 `thread/start` and `thread/resume` accept developer instructions.
 
@@ -147,10 +147,10 @@ ordering to generated context text.
 
 Harness selection remains as-is:
 
-- `runtime: "pi"` forces PI
+- `runtime: "openclaw"` selects the built-in OpenClaw harness
 - `runtime: "codex"` selects the registered Codex harness
 - `runtime: "auto"` lets plugin harnesses claim supported providers
-- unmatched `auto` runs use PI
+- unmatched `auto` runs use the built-in OpenClaw harness
 
 This work changes what happens after the Codex harness is selected.
 
@@ -158,14 +158,14 @@ This work changes what happens after the Codex harness is selected.
 
 ### 1. Export or relocate reusable context-engine attempt helpers
 
-Today the reusable lifecycle helpers live under the PI runner:
+Today the reusable lifecycle helpers live under the embedded agent runner:
 
-- `src/agents/pi-embedded-runner/run/attempt.context-engine-helpers.ts`
-- `src/agents/pi-embedded-runner/run/attempt.prompt-helpers.ts`
-- `src/agents/pi-embedded-runner/context-engine-maintenance.ts`
+- `src/agents/embedded-agent-runner/run/attempt.context-engine-helpers.ts`
+- `src/agents/embedded-agent-runner/run/attempt.prompt-helpers.ts`
+- `src/agents/embedded-agent-runner/context-engine-maintenance.ts`
 
-Codex should not import from an implementation path whose name implies PI if we
-can avoid it.
+Codex should import harness-neutral helpers rather than reaching into runner
+implementation details.
 
 Create a harness-neutral module, for example:
 
@@ -180,10 +180,9 @@ Move or re-export:
 - `buildAfterTurnRuntimeContextFromUsage`
 - a small wrapper around `runContextEngineMaintenance`
 
-Keep PI imports working either by re-exporting from the old files or updating PI
-call sites in the same PR.
+Update built-in harness call sites in the same PR.
 
-The neutral helper names should not mention PI.
+The neutral helper names should not mention the built-in harness.
 
 Suggested names:
 
@@ -231,14 +230,14 @@ Recommended first projection:
 
 - Put `systemPromptAddition` into developer instructions.
 - Put the assembled transcript context before the current prompt in `promptText`.
-- Label it clearly as RemoteClaw assembled context.
+- Label it clearly as OpenClaw assembled context.
 - Keep current prompt last.
 - Exclude duplicate current user prompt if it already appears at the tail.
 
 Example prompt shape:
 
 ```text
-RemoteClaw assembled context for this turn:
+OpenClaw assembled context for this turn:
 
 <conversation_context>
 [user]
@@ -253,7 +252,7 @@ Current user request:
 ```
 
 This is less elegant than native Codex history surgery, but it is implementable
-inside RemoteClaw and preserves context-engine semantics.
+inside OpenClaw and preserves context-engine semantics.
 
 Future improvement: if Codex app-server exposes a protocol for replacing or
 supplementing thread history, swap this projection layer to use that API.
@@ -324,10 +323,11 @@ should become context-aware:
 3. run `before_prompt_build` with the projected prompt/developer instructions
 
 This order lets generic prompt hooks see the same prompt Codex will receive. If
-we need strict PI parity, run context-engine assembly before hook composition,
-because PI applies context-engine `systemPromptAddition` to the final system
-prompt after its prompt pipeline. The important invariant is that both context
-engine and hooks get a deterministic, documented order.
+we need strict OpenClaw parity, run context-engine assembly before hook
+composition, because the built-in harness applies context-engine
+`systemPromptAddition` to the final system prompt after its prompt pipeline. The
+important invariant is that both context engine and hooks get a deterministic,
+documented order.
 
 Recommended order for first implementation:
 
@@ -359,7 +359,7 @@ Use fixed delimiters and explicit sections.
 
 Codex's `CodexAppServerEventProjector` builds a local `messagesSnapshot` for the
 current turn. `mirrorTranscriptBestEffort(...)` writes that snapshot into the
-RemoteClaw transcript mirror.
+OpenClaw transcript mirror.
 
 After mirroring succeeds or fails, call the context-engine finalizer with the
 best available message snapshot:
@@ -418,16 +418,16 @@ inventing zeros.
 
 There are two compaction systems:
 
-1. RemoteClaw context-engine `compact()`
+1. OpenClaw context-engine `compact()`
 2. Codex app-server native `thread/compact/start`
 
 Do not silently conflate them.
 
-#### `/compact` and explicit RemoteClaw compaction
+#### `/compact` and explicit OpenClaw compaction
 
 When the selected context engine has `info.ownsCompaction === true`, explicit
-RemoteClaw compaction should prefer the context engine's `compact()` result for
-the RemoteClaw transcript mirror and plugin state.
+OpenClaw compaction should prefer the context engine's `compact()` result for
+the OpenClaw transcript mirror and plugin state.
 
 When the selected Codex harness has a native thread binding, we may additionally
 request Codex native compaction to keep the app-server thread healthy, but this
@@ -464,15 +464,15 @@ This makes the split auditable.
 ### 9. Session reset and binding behavior
 
 The existing Codex harness `reset(...)` clears the Codex app-server binding from
-the RemoteClaw session file. Preserve that behavior.
+the OpenClaw session file. Preserve that behavior.
 
 Also ensure context-engine state cleanup continues to happen through existing
-RemoteClaw session lifecycle paths. Do not add Codex-specific cleanup unless the
+OpenClaw session lifecycle paths. Do not add Codex-specific cleanup unless the
 context-engine lifecycle currently misses reset/delete events for all harnesses.
 
 ### 10. Error handling
 
-Follow PI semantics:
+Follow built-in OpenClaw semantics:
 
 - bootstrap failures warn and continue
 - assemble failures warn and fall back to unassembled pipeline messages/prompt
@@ -486,7 +486,7 @@ Codex-specific additions:
 - If transcript mirror fails, still attempt context-engine finalization with
   fallback messages.
 - If Codex native compaction fails after context-engine compaction succeeds,
-  do not fail the whole RemoteClaw compaction when the context engine is primary.
+  do not fail the whole OpenClaw compaction when the context engine is primary.
 
 ## Test plan
 
@@ -526,7 +526,7 @@ Add tests under `extensions/codex/src/app-server`:
   event details change.
 - `src/agents/harness/selection.test.ts` should not need changes unless config
   behavior changes; it should remain stable.
-- PI context-engine tests should continue to pass unchanged.
+- Built-in harness context-engine tests should continue to pass unchanged.
 
 ### Integration / live tests
 
@@ -534,14 +534,14 @@ Add or extend live Codex harness smoke tests:
 
 - configure `plugins.slots.contextEngine` to a test engine
 - configure `agents.defaults.model` to a `codex/*` model
-- configure `agents.defaults.embeddedHarness.runtime = "codex"`
+- configure provider/model `agentRuntime.id = "codex"`
 - assert test engine observed:
   - bootstrap
   - assemble
   - afterTurn or ingest
   - maintenance
 
-Avoid requiring lossless-claw in RemoteClaw core tests. Use a small in-repo fake
+Avoid requiring lossless-claw in OpenClaw core tests. Use a small in-repo fake
 context engine plugin.
 
 ## Observability
@@ -599,9 +599,9 @@ This should be backward-compatible:
 3. Should `before_prompt_build` run before or after context-engine assembly?
 
    Recommendation: after context-engine projection for Codex, so generic harness
-   hooks see the actual prompt/developer instructions Codex will receive. If PI
-   parity requires the opposite, encode the chosen order in tests and document it
-   here.
+   hooks see the actual prompt/developer instructions Codex will receive. If
+   built-in harness parity requires the opposite, encode the chosen order in
+   tests and document it here.
 
 4. Can Codex app-server accept a future structured context/history override?
 
@@ -617,8 +617,8 @@ This should be backward-compatible:
 - Successful Codex turns call `afterTurn` or ingest fallback.
 - Successful Codex turns run context-engine turn maintenance.
 - Failed/aborted/yield-aborted turns do not run turn maintenance.
-- Context-engine-owned compaction remains primary for RemoteClaw/plugin state.
+- Context-engine-owned compaction remains primary for OpenClaw/plugin state.
 - Codex native compaction remains auditable as native Codex behavior.
-- Existing PI context-engine behavior is unchanged.
+- Existing built-in harness context-engine behavior is unchanged.
 - Existing Codex harness behavior is unchanged when no non-legacy context engine
   is selected or when assembly fails.

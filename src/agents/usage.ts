@@ -1,11 +1,5 @@
 import { asFiniteNumber } from "../shared/number-coercion.js";
 
-/**
- * Runtime attestation (ADR 0005 H9). Declares the implementation status
- * of each runtime export in this module. See CONTRIBUTING.md § Module
- * attestations for the category definitions and the convention for
- * updating these when sync or rebrand changes the surface.
- */
 export const MODULE_ATTESTATIONS = {
   makeZeroUsageSnapshot: "live",
   hasNonzeroUsage: "live",
@@ -13,7 +7,9 @@ export const MODULE_ATTESTATIONS = {
   derivePromptTokens: "live",
   deriveContextPromptTokens: "live",
   deriveSessionTotalTokens: "live",
+  toOpenAiChatCompletionsUsage: "live",
 } as const;
+
 export type UsageLike = {
   input?: number;
   output?: number;
@@ -34,6 +30,10 @@ export type UsageLike = {
   completion_tokens?: number;
   cache_read_input_tokens?: number;
   cache_creation_input_tokens?: number;
+  reasoningTokens?: number;
+  reasoning_tokens?: number;
+  completion_tokens_details?: { reasoning_tokens?: number };
+  output_tokens_details?: { reasoning_tokens?: number };
   // Moonshot/Kimi uses cached_tokens for cache read count (explicit caching API).
   cached_tokens?: number;
   // OpenAI Responses reports cached prompt reuse here.
@@ -59,7 +59,16 @@ export type NormalizedUsage = {
   output?: number;
   cacheRead?: number;
   cacheWrite?: number;
+  reasoningTokens?: number;
   total?: number;
+};
+
+export type OpenAiChatCompletionsUsage = {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  prompt_tokens_details?: { cached_tokens: number };
+  completion_tokens_details?: { reasoning_tokens: number };
 };
 
 export type AssistantUsageSnapshot = {
@@ -98,9 +107,14 @@ export function hasNonzeroUsage(usage?: NormalizedUsage | null): usage is Normal
   if (!usage) {
     return false;
   }
-  return [usage.input, usage.output, usage.cacheRead, usage.cacheWrite, usage.total].some(
-    (v) => typeof v === "number" && Number.isFinite(v) && v > 0,
-  );
+  return [
+    usage.input,
+    usage.output,
+    usage.cacheRead,
+    usage.cacheWrite,
+    usage.reasoningTokens,
+    usage.total,
+  ].some((v) => typeof v === "number" && Number.isFinite(v) && v > 0);
 }
 
 const normalizeTokenCount = (value: unknown): number | undefined => {
@@ -143,7 +157,7 @@ export function normalizeUsage(raw?: UsageLike | null): NormalizedUsage | undefi
     raw.input_tokens_details?.cached_tokens !== undefined ||
     raw.prompt_tokens_details?.cached_tokens !== undefined;
 
-  // Some providers (pi-ai OpenAI-format) pre-subtract cached_tokens from
+  // Some providers (shared model runtime OpenAI-format) pre-subtract cached_tokens from
   // prompt/input totals upstream, while OpenAI-style prompt/input aliases
   // include cached tokens in the reported prompt total. Normalize both cases
   // to uncached input tokens so downstream prompt-token math does not double-
@@ -166,6 +180,12 @@ export function normalizeUsage(raw?: UsageLike | null): NormalizedUsage | undefi
   const cacheWrite = normalizeTokenCount(
     raw.cacheWrite ?? raw.cacheWriteTokens ?? raw.cache_write ?? raw.cache_creation_input_tokens,
   );
+  const reasoningTokens = normalizeTokenCount(
+    raw.reasoningTokens ??
+      raw.reasoning_tokens ??
+      raw.completion_tokens_details?.reasoning_tokens ??
+      raw.output_tokens_details?.reasoning_tokens,
+  );
   const total = normalizeTokenCount(raw.total ?? raw.totalTokens ?? raw.total_tokens);
 
   if (
@@ -173,6 +193,7 @@ export function normalizeUsage(raw?: UsageLike | null): NormalizedUsage | undefi
     output === undefined &&
     cacheRead === undefined &&
     cacheWrite === undefined &&
+    reasoningTokens === undefined &&
     total === undefined
   ) {
     return undefined;
@@ -183,7 +204,51 @@ export function normalizeUsage(raw?: UsageLike | null): NormalizedUsage | undefi
     output,
     cacheRead,
     cacheWrite,
+    ...(reasoningTokens !== undefined ? { reasoningTokens } : {}),
     total,
+  };
+}
+
+/**
+ * Maps normalized usage to OpenAI Chat Completions `usage` fields.
+ *
+ * `prompt_tokens` is input + cacheRead (cache write is excluded to match the
+ * OpenAI-style breakdown used by the compat endpoint).
+ *
+ * `total_tokens` is the greater of the component sum and aggregate `total` when
+ * present, so a partial breakdown cannot discard a valid upstream total.
+ *
+ * `prompt_tokens_details.cached_tokens` is emitted when `cacheRead > 0` so
+ * downstream chat-completions clients can compute the cache-aware blended
+ * cost. Field name and shape match OpenAI's documented usage breakdown:
+ * https://platform.openai.com/docs/guides/prompt-caching
+ */
+export function toOpenAiChatCompletionsUsage(
+  usage: NormalizedUsage | undefined,
+): OpenAiChatCompletionsUsage {
+  const input = usage?.input ?? 0;
+  const output = usage?.output ?? 0;
+  const cacheRead = usage?.cacheRead ?? 0;
+  const promptTokens = Math.max(0, input + cacheRead);
+  const completionTokens = Math.max(0, output);
+  const componentTotal = promptTokens + completionTokens;
+  const aggregateRaw = usage?.total;
+  const aggregateTotal =
+    typeof aggregateRaw === "number" && Number.isFinite(aggregateRaw)
+      ? Math.max(0, aggregateRaw)
+      : undefined;
+  const totalTokens =
+    aggregateTotal !== undefined ? Math.max(componentTotal, aggregateTotal) : componentTotal;
+
+  const reasoningTokens = normalizeTokenCount(usage?.reasoningTokens);
+  return {
+    prompt_tokens: promptTokens,
+    completion_tokens: completionTokens,
+    total_tokens: totalTokens,
+    ...(cacheRead > 0 ? { prompt_tokens_details: { cached_tokens: cacheRead } } : {}),
+    ...(reasoningTokens !== undefined
+      ? { completion_tokens_details: { reasoning_tokens: reasoningTokens } }
+      : {}),
   };
 }
 
@@ -223,6 +288,7 @@ export function deriveSessionTotalTokens(params: {
     cacheRead?: number;
     cacheWrite?: number;
   };
+  contextTokens?: number;
   promptTokens?: number;
 }): number | undefined {
   const promptOverride = params.promptTokens;

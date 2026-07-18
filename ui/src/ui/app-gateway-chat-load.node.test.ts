@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { connectGateway } from "./app-gateway.ts";
 import type { GatewayHelloOk } from "./gateway.ts";
 import type { Tab } from "./navigation.ts";
@@ -39,7 +39,7 @@ vi.mock("./gateway.ts", async (importOriginal) => {
           this.opts.onHello?.(
             hello ?? {
               type: "hello-ok",
-              protocol: 3,
+              protocol: 4,
               snapshot: {},
               auth: { role: "operator", scopes: [] },
             },
@@ -58,8 +58,13 @@ vi.mock("./gateway.ts", async (importOriginal) => {
 
 vi.mock("./app-chat.ts", () => ({
   CHAT_SESSIONS_ACTIVE_MINUTES: 60,
+  CHAT_SESSIONS_REFRESH_LIMIT: 50,
+  createChatSessionsLoadOverrides: () => ({ activeMinutes: 60, limit: 50 }),
   clearPendingQueueItemsForRun: vi.fn(),
   flushChatQueueForEvent: vi.fn(),
+  hasReconnectableQueuedChatSends: vi.fn(() => false),
+  markQueuedChatSendsWaitingForReconnect: vi.fn(),
+  retryReconnectableQueuedChatSends: vi.fn(async () => undefined),
   refreshChatAvatar: refreshChatAvatarMock,
 }));
 
@@ -112,6 +117,21 @@ vi.mock("./controllers/sessions.ts", () => ({
   syncSelectedSessionMessageSubscription: vi.fn(),
 }));
 
+afterAll(() => {
+  vi.doUnmock("./gateway.ts");
+  vi.doUnmock("./app-chat.ts");
+  vi.doUnmock("./app-settings.ts");
+  vi.doUnmock("./controllers/agents.ts");
+  vi.doUnmock("./controllers/assistant-identity.ts");
+  vi.doUnmock("./controllers/control-ui-bootstrap.ts");
+  vi.doUnmock("./controllers/devices.ts");
+  vi.doUnmock("./controllers/exec-approval.ts");
+  vi.doUnmock("./controllers/health.ts");
+  vi.doUnmock("./controllers/nodes.ts");
+  vi.doUnmock("./controllers/sessions.ts");
+  vi.resetModules();
+});
+
 function createHost(tab: Tab) {
   return {
     settings: {
@@ -139,7 +159,7 @@ function createHost(tab: Tab) {
     healthResult: null,
     healthError: null,
     debugHealth: null,
-    assistantName: "RemoteClaw",
+    assistantName: "OpenClaw",
     assistantAvatar: null,
     assistantAgentId: null,
     serverVersion: null,
@@ -167,7 +187,9 @@ function connectHost(tab: Tab) {
   const host = createHost(tab);
   connectGateway(host);
   const client = gatewayClients[0];
-  expect(client).toBeDefined();
+  if (!client) {
+    throw new Error("Expected gateway client instance");
+  }
   return { host, client };
 }
 
@@ -186,21 +208,31 @@ beforeEach(() => {
 });
 
 describe("connectGateway chat load startup work", () => {
-  it("lets the active chat refresh own avatar loading on initial chat hello", () => {
+  it("lets the active chat refresh own avatar loading on initial chat hello", async () => {
     const { host, client } = connectHost("chat");
 
     client.emitHello();
 
-    expect(refreshActiveTabMock).toHaveBeenCalledWith(host);
+    await vi.waitFor(() => expect(refreshActiveTabMock).toHaveBeenCalledWith(host));
     expect(refreshChatAvatarMock).not.toHaveBeenCalled();
   });
 
-  it("still preloads the chat avatar when connecting outside the chat tab", () => {
+  it("still preloads the chat avatar when connecting outside the chat tab", async () => {
     const { host, client } = connectHost("overview");
 
     client.emitHello();
 
-    expect(refreshActiveTabMock).toHaveBeenCalledWith(host);
+    await vi.waitFor(() => expect(refreshActiveTabMock).toHaveBeenCalledWith(host));
     expect(refreshChatAvatarMock).toHaveBeenCalledWith(host);
+  });
+
+  it("lets the active tab refresh own node and device loading after hello", async () => {
+    const { host, client } = connectHost("overview");
+
+    client.emitHello();
+
+    await vi.waitFor(() => expect(refreshActiveTabMock).toHaveBeenCalledWith(host));
+    expect(loadNodesMock).not.toHaveBeenCalled();
+    expect(loadDevicesMock).not.toHaveBeenCalled();
   });
 });

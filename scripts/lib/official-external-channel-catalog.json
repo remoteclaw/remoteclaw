@@ -2,10 +2,10 @@
   "entries": [
     {
       "name": "@wecom/wecom-remoteclaw-plugin",
-      "description": "RemoteClaw WeCom channel plugin by the Tencent WeCom team.",
+      "description": "OpenClaw WeCom channel plugin by the Tencent WeCom team.",
       "source": "external",
       "kind": "channel",
-      "remoteclaw": {
+      "openclaw": {
         "plugin": {
           "id": "wecom-remoteclaw-plugin",
           "label": "WeCom"
@@ -43,10 +43,10 @@
     },
     {
       "name": "remoteclaw-plugin-yuanbao",
-      "description": "RemoteClaw Yuanbao channel plugin by the Tencent Yuanbao team.",
+      "description": "OpenClaw Yuanbao channel plugin by the Tencent Yuanbao team.",
       "source": "external",
       "kind": "channel",
-      "remoteclaw": {
+      "openclaw": {
         "plugin": {
           "id": "remoteclaw-plugin-yuanbao",
           "label": "Yuanbao"
@@ -84,10 +84,10 @@
     },
     {
       "name": "@tencent-weixin/remoteclaw-weixin",
-      "description": "RemoteClaw Weixin channel plugin by the Tencent Weixin team.",
+      "description": "OpenClaw Weixin channel plugin by the Tencent Weixin team.",
       "source": "external",
       "kind": "channel",
-      "remoteclaw": {
+      "openclaw": {
         "plugin": {
           "id": "remoteclaw-weixin",
           "label": "Weixin"
@@ -123,10 +123,10 @@
     },
     {
       "name": "@remoteclaw/discord",
-      "description": "RemoteClaw Discord channel plugin",
+      "description": "OpenClaw Discord channel plugin",
       "source": "official",
       "kind": "channel",
-      "remoteclaw": {
+      "openclaw": {
         "channel": {
           "id": "discord",
           "label": "Discord",
@@ -149,10 +149,10 @@
     },
     {
       "name": "@remoteclaw/feishu",
-      "description": "RemoteClaw Feishu/Lark channel plugin",
+      "description": "OpenClaw Feishu/Lark channel plugin",
       "source": "official",
       "kind": "channel",
-      "remoteclaw": {
+      "openclaw": {
         "channel": {
           "id": "feishu",
           "label": "Feishu",
@@ -167,16 +167,16 @@
         "install": {
           "npmSpec": "@remoteclaw/feishu",
           "defaultChoice": "npm",
-          "minHostVersion": ">=2026.4.25"
+          "minHostVersion": ">=2026.5.29"
         }
       }
     },
     {
       "name": "@remoteclaw/googlechat",
-      "description": "RemoteClaw Google Chat channel plugin",
+      "description": "OpenClaw Google Chat channel plugin",
       "source": "official",
       "kind": "channel",
-      "remoteclaw": {
+      "openclaw": {
         "channel": {
           "id": "googlechat",
           "label": "Google Chat",
@@ -223,10 +223,10 @@
     },
     {
       "name": "@remoteclaw/line",
-      "description": "RemoteClaw LINE channel plugin",
+      "description": "OpenClaw LINE channel plugin",
       "source": "official",
       "kind": "channel",
-      "remoteclaw": {
+      "openclaw": {
         "channel": {
           "id": "line",
           "label": "LINE",
@@ -248,10 +248,10 @@
     },
     {
       "name": "@remoteclaw/matrix",
-      "description": "RemoteClaw Matrix channel plugin",
+      "description": "OpenClaw Matrix channel plugin",
       "source": "official",
       "kind": "channel",
-      "remoteclaw": {
+      "openclaw": {
         "channel": {
           "id": "matrix",
           "label": "Matrix",
@@ -302,10 +302,10 @@
     },
     {
       "name": "@remoteclaw/msteams",
-      "description": "RemoteClaw Microsoft Teams channel plugin",
+      "description": "OpenClaw Microsoft Teams channel plugin",
       "source": "official",
       "kind": "channel",
-      "remoteclaw": {
+      "openclaw": {
         "channel": {
           "id": "msteams",
           "label": "Microsoft Teams",
@@ -325,10 +325,10 @@
     },
     {
       "name": "@remoteclaw/nextcloud-talk",
-      "description": "RemoteClaw Nextcloud Talk channel plugin",
+      "description": "OpenClaw Nextcloud Talk channel plugin",
       "source": "official",
       "kind": "channel",
-      "remoteclaw": {
+      "openclaw": {
         "channel": {
           "id": "nextcloud-talk",
           "label": "Nextcloud Talk",
@@ -349,10 +349,10 @@
     },
     {
       "name": "@remoteclaw/nostr",
-      "description": "RemoteClaw Nostr channel plugin for NIP-04 encrypted DMs",
+      "description": "OpenClaw Nostr channel plugin for NIP-04 encrypted DMs",
       "source": "official",
       "kind": "channel",
-      "remoteclaw": {
+      "openclaw": {
         "channel": {
           "id": "nostr",
           "label": "Nostr",
@@ -372,10 +372,10 @@
     },
     {
       "name": "@remoteclaw/qqbot",
-      "description": "RemoteClaw QQ Bot channel plugin",
+      "description": "OpenClaw QQ Bot channel plugin",
       "source": "official",
       "kind": "channel",
-      "remoteclaw": {
+      "openclaw": {
         "channel": {
           "id": "qqbot",
           "label": "QQ Bot",
@@ -395,10 +395,10 @@
     },
     {
       "name": "@remoteclaw/slack",
-      "description": "RemoteClaw Slack channel plugin",
+      "description": "OpenClaw Slack channel plugin",
       "source": "official",
       "kind": "channel",
-      "remoteclaw": {
+      "openclaw": {
         "channel": {
           "id": "slack",
           "label": "Slack",
@@ -420,17 +420,17 @@
     },
     {
       "name": "@remoteclaw/synology-chat",
-      "description": "Synology Chat channel plugin for RemoteClaw",
+      "description": "Synology Chat channel plugin for OpenClaw",
       "source": "official",
       "kind": "channel",
-      "remoteclaw": {
+      "openclaw": {
         "channel": {
           "id": "synology-chat",
           "label": "Synology Chat",
           "selectionLabel": "Synology Chat (Webhook)",
           "docsPath": "/channels/synology-chat",
           "docsLabel": "synology-chat",
-          "blurb": "Connect your Synology NAS Chat to RemoteClaw with full agent capabilities.",
+          "blurb": "Connect your Synology NAS Chat to OpenClaw with full agent capabilities.",
           "order": 90
         },
         "install": {
@@ -442,10 +442,10 @@
     },
     {
       "name": "@remoteclaw/tlon",
-      "description": "RemoteClaw Tlon/Urbit channel plugin",
+      "description": "OpenClaw Tlon/Urbit channel plugin",
       "source": "official",
       "kind": "channel",
-      "remoteclaw": {
+      "openclaw": {
         "channel": {
           "id": "tlon",
           "label": "Tlon",
@@ -465,10 +465,10 @@
     },
     {
       "name": "@remoteclaw/twitch",
-      "description": "RemoteClaw Twitch channel plugin",
+      "description": "OpenClaw Twitch channel plugin",
       "source": "official",
       "kind": "channel",
-      "remoteclaw": {
+      "openclaw": {
         "channel": {
           "id": "twitch",
           "label": "Twitch",
@@ -486,10 +486,10 @@
     },
     {
       "name": "@remoteclaw/whatsapp",
-      "description": "RemoteClaw WhatsApp channel plugin",
+      "description": "OpenClaw WhatsApp channel plugin",
       "source": "official",
       "kind": "channel",
-      "remoteclaw": {
+      "openclaw": {
         "channel": {
           "id": "whatsapp",
           "label": "WhatsApp",
@@ -510,10 +510,10 @@
     },
     {
       "name": "@remoteclaw/zalo",
-      "description": "RemoteClaw Zalo channel plugin",
+      "description": "OpenClaw Zalo channel plugin",
       "source": "official",
       "kind": "channel",
-      "remoteclaw": {
+      "openclaw": {
         "channel": {
           "id": "zalo",
           "label": "Zalo",
@@ -534,10 +534,10 @@
     },
     {
       "name": "@remoteclaw/zalouser",
-      "description": "RemoteClaw Zalo Personal Account plugin via native zca-js integration",
+      "description": "OpenClaw Zalo Personal Account plugin via native zca-js integration",
       "source": "official",
       "kind": "channel",
-      "remoteclaw": {
+      "openclaw": {
         "channel": {
           "id": "zalouser",
           "label": "Zalo Personal",

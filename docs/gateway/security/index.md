@@ -8,7 +8,7 @@ title: "Security"
 <Warning>
   **Personal assistant trust model.** This guidance assumes one trusted
   operator boundary per gateway (single-user, personal-assistant model).
-  RemoteClaw is **not** a hostile multi-tenant security boundary for multiple
+  OpenClaw is **not** a hostile multi-tenant security boundary for multiple
   adversarial users sharing one agent or gateway. If you need mixed-trust or
   adversarial-user operation, split trust boundaries (separate gateway +
   credentials, ideally separate OS users or hosts).
@@ -16,7 +16,7 @@ title: "Security"
 
 ## Scope first: personal assistant security model
 
-RemoteClaw security guidance assumes a **personal assistant** deployment: one trusted operator boundary, potentially many agents.
+OpenClaw security guidance assumes a **personal assistant** deployment: one trusted operator boundary, potentially many agents.
 
 - Supported security posture: one user/trust boundary per gateway (prefer one OS user/host/VPS per boundary).
 - Not a supported security boundary: one shared gateway/agent used by mutually untrusted or adversarial users.
@@ -29,17 +29,17 @@ Before changing remote access, DM policy, reverse proxy, or public exposure,
 use the [Gateway exposure runbook](/gateway/security/exposure-runbook) as a
 pre-flight and rollback checklist.
 
-## Quick check: `remoteclaw security audit`
+## Quick check: `openclaw security audit`
 
 See also: [Formal Verification (Security Models)](/security/formal-verification)
 
 Run this regularly (especially after changing config or exposing network surfaces):
 
 ```bash
-remoteclaw security audit
-remoteclaw security audit --deep
-remoteclaw security audit --fix
-remoteclaw security audit --json
+openclaw security audit
+openclaw security audit --deep
+openclaw security audit --fix
+openclaw security audit --json
 ```
 
 `security audit --fix` stays intentionally narrow: it flips common open group
@@ -49,7 +49,7 @@ POSIX `chmod` when running on Windows.
 
 It flags common footguns (Gateway auth exposure, browser control exposure, elevated allowlists, filesystem permissions, permissive exec approvals, and open-channel tool exposure).
 
-RemoteClaw is both a product and an experiment: you're wiring frontier-model behavior into real messaging surfaces and real tools. **There is no "perfectly secure" setup.** The goal is to be deliberate about:
+OpenClaw is both a product and an experiment: you're wiring frontier-model behavior into real messaging surfaces and real tools. **There is no "perfectly secure" setup.** The goal is to be deliberate about:
 
 - who can talk to your bot
 - where the bot is allowed to act
@@ -59,77 +59,21 @@ Start with the smallest access that still works, then widen it as you gain confi
 
 ### Published package dependency lock
 
-RemoteClaw source checkouts use `pnpm-lock.yaml`. The published `remoteclaw` npm
-package and RemoteClaw-owned npm plugin packages include `npm-shrinkwrap.json`,
+OpenClaw source checkouts use `pnpm-lock.yaml`. The published `openclaw` npm
+package and OpenClaw-owned npm plugin packages include `npm-shrinkwrap.json`,
 npm's publishable dependency lockfile, so package installs use the reviewed
 transitive dependency graph from the release instead of resolving a fresh graph
-at install time. Suitable RemoteClaw-owned npm plugin packages can also publish
-with explicit `bundledDependencies`, so their runtime dependency files are
-carried in the plugin tarball instead of depending only on install-time
-resolution.
+at install time.
 
-This is a supply-chain hardening measure:
-
-- release installs are more reproducible;
-- transitive dependency updates become visible review surfaces;
-- the package tarball contains the dependency graph that release validators
-  checked;
-- suitable RemoteClaw-owned plugin tarballs contain the dependency files from
-  that graph;
-- `package-lock.json` stays out of the published package, because npm does not
-  treat it as the publishable lock contract.
-
-Shrinkwrap is not a sandbox and does not make every dependency trustworthy. It
-does not replace `remoteclaw security audit`, host isolation, npm provenance,
-signature/audit checks, or `--ignore-scripts` install smoke tests when those are
-appropriate. Treat it as a release reproducibility and review-control boundary.
-
-Maintainers should update and verify shrinkwrap whenever the root package or an
-RemoteClaw-owned published plugin package changes its published dependency graph:
-
-```bash
-pnpm deps:shrinkwrap:generate
-pnpm deps:shrinkwrap:check
-```
-
-The generator resolves npm's publishable lock format but rejects generated
-package versions that are not already present in `pnpm-lock.yaml`, preserving
-the pnpm dependency age, override, and patch review boundary.
-
-Use `pnpm deps:shrinkwrap:root:generate` and
-`pnpm deps:shrinkwrap:root:check` only when you intentionally want to refresh
-the root `remoteclaw` package without touching plugin packages.
-
-Review `pnpm-lock.yaml`, `npm-shrinkwrap.json`, bundled plugin dependency
-payloads, and any `package-lock.json` diff as security-sensitive. The package
-validators require shrinkwrap in new root package tarballs and the plugin npm
-publish path checks plugin-local shrinkwrap, installs package-local bundled
-dependencies, and then packs or publishes. Package validators reject
-`package-lock.json`.
-
-To inspect a published package:
-
-```bash
-npm pack remoteclaw@<version> --json --pack-destination /tmp/remoteclaw-pack
-tar -tf /tmp/remoteclaw-pack/remoteclaw-<version>.tgz | grep '^package/npm-shrinkwrap.json$'
-```
-
-To inspect an RemoteClaw-owned plugin package, replace the package spec and check
-the same tar entry:
-
-```bash
-npm pack @remoteclaw/discord@<version> --json --pack-destination /tmp/remoteclaw-plugin-pack
-tar -tf /tmp/remoteclaw-plugin-pack/remoteclaw-discord-<version>.tgz | grep '^package/npm-shrinkwrap.json$'
-tar -tf /tmp/remoteclaw-plugin-pack/remoteclaw-discord-<version>.tgz | grep '^package/node_modules/'
-```
-
-Background: [npm-shrinkwrap.json](https://docs.npmjs.com/cli/v11/configuring-npm/npm-shrinkwrap-json).
+Shrinkwrap is a supply-chain hardening and release reproducibility boundary,
+not a sandbox. For the plain-English model, maintainer commands, and package
+inspection checks, see [npm shrinkwrap](/gateway/security/shrinkwrap).
 
 ### Deployment and host trust
 
-RemoteClaw assumes the host and config boundary are trusted:
+OpenClaw assumes the host and config boundary are trusted:
 
-- If someone can modify Gateway host state/config (`~/.remoteclaw`, including `remoteclaw.json`), treat them as a trusted operator.
+- If someone can modify Gateway host state/config (`~/.remoteclaw`, including `openclaw.json`), treat them as a trusted operator.
 - Running one Gateway for multiple mutually untrusted/adversarial operators is **not a recommended setup**.
 - For mixed-trust teams, split trust boundaries with separate gateways (or at minimum separate OS users/hosts).
 - Recommended default: one user per machine/host (or VPS), one gateway for that user, and one or more agents in that gateway.
@@ -139,7 +83,7 @@ RemoteClaw assumes the host and config boundary are trusted:
 
 ### Secure file operations
 
-RemoteClaw uses `@remoteclaw/fs-safe` for root-bounded file access, atomic writes, archive extraction, temp workspaces, and secret-file helpers. RemoteClaw defaults fs-safe's optional POSIX Python helper to **off**; set `REMOTECLAW_FS_SAFE_PYTHON_MODE=auto` or `require` only when you want the extra fd-relative mutation hardening and can support a Python runtime.
+OpenClaw uses `@openclaw/fs-safe` for root-bounded file access, atomic writes, archive extraction, temp workspaces, and secret-file helpers. OpenClaw defaults fs-safe's optional POSIX Python helper to **off**; set `OPENCLAW_FS_SAFE_PYTHON_MODE=auto` or `require` only when you want the extra fd-relative mutation hardening and can support a Python runtime.
 
 Details: [Secure file operations](/gateway/security/secure-file-operations).
 
@@ -179,7 +123,7 @@ Treat Gateway and node as one operator trust domain, with different roles:
   still go through pairing and scope-upgrade enforcement.
 - `sessionKey` is routing/context selection, not per-user auth.
 - Exec approvals (allowlist + ask) are guardrails for operator intent, not hostile multi-tenant isolation.
-- RemoteClaw's product default for trusted single-operator setups is that host exec on `gateway`/`node` is allowed without approval prompts (`security="full"`, `ask="off"` unless you tighten it). That default is intentional UX, not a vulnerability by itself.
+- OpenClaw's product default for trusted single-operator setups is that host exec on `gateway`/`node` is allowed without approval prompts (`security="full"`, `ask="off"` unless you tighten it). That default is intentional UX, not a vulnerability by itself.
 - Exec approvals bind exact request context and best-effort direct local file operands; they do not semantically model every runtime/interpreter loader path. Use sandboxing and host isolation for strong boundaries.
 
 If you need hostile-user isolation, split trust boundaries by OS user/host and run separate gateways.
@@ -270,7 +214,7 @@ If more than one person can DM your bot:
 
 ## Context visibility model
 
-RemoteClaw separates two concepts:
+OpenClaw separates two concepts:
 
 - **Trigger authorization**: who can trigger the agent (`dmPolicy`, `groupPolicy`, allowlists, mention gates).
 - **Context visibility**: what supplemental context is injected into model input (reply body, quoted text, thread history, forwarded metadata).
@@ -303,23 +247,23 @@ Advisory triage guidance:
 - **Runtime expectation drift** (for example assuming implicit exec still means `sandbox` when `tools.exec.host` now defaults to `auto`, or explicitly setting `tools.exec.host="sandbox"` while sandbox mode is off).
 - **Model hygiene** (warn when configured models look legacy; not a hard block).
 
-If you run `--deep`, RemoteClaw also attempts a best-effort live Gateway probe.
+If you run `--deep`, OpenClaw also attempts a best-effort live Gateway probe.
 
 ## Credential storage map
 
 Use this when auditing access or deciding what to back up:
 
-- **WhatsApp**: `~/.remoteclaw/credentials/whatsapp/<accountId>/creds.json`
+- **WhatsApp**: `~/.openclaw/credentials/whatsapp/<accountId>/creds.json`
 - **Telegram bot token**: config/env or `channels.telegram.tokenFile` (regular file only; symlinks rejected)
 - **Discord bot token**: config/env or SecretRef (env/file/exec providers)
 - **Slack tokens**: config/env (`channels.slack.*`)
 - **Pairing allowlists**:
-  - `~/.remoteclaw/credentials/<channel>-allowFrom.json` (default account)
-  - `~/.remoteclaw/credentials/<channel>-<accountId>-allowFrom.json` (non-default accounts)
-- **Model auth profiles**: `~/.remoteclaw/agents/<agentId>/agent/auth-profiles.json`
-- **Codex runtime state**: `~/.remoteclaw/agents/<agentId>/agent/codex-home/`
-- **File-backed secrets payload (optional)**: `~/.remoteclaw/secrets.json`
-- **Legacy OAuth import**: `~/.remoteclaw/credentials/oauth.json`
+  - `~/.openclaw/credentials/<channel>-allowFrom.json` (default account)
+  - `~/.openclaw/credentials/<channel>-<accountId>-allowFrom.json` (non-default accounts)
+- **Model auth profiles**: `~/.openclaw/agents/<agentId>/agent/auth-profiles.json`
+- **Codex runtime state**: `~/.openclaw/agents/<agentId>/agent/codex-home/`
+- **File-backed secrets payload (optional)**: `~/.openclaw/secrets.json`
+- **Legacy OAuth import**: `~/.openclaw/credentials/oauth.json`
 
 ## Security audit checklist
 
@@ -368,11 +312,11 @@ can admit **operator** Control UI sessions without device identity. That is an
 intentional auth-mode behavior, not an `allowInsecureAuth` shortcut, and it still
 does not extend to node-role Control UI sessions.
 
-`remoteclaw security audit` warns when this setting is enabled.
+`openclaw security audit` warns when this setting is enabled.
 
 ## Insecure or dangerous flags summary
 
-`remoteclaw security audit` raises `config.insecure_or_dangerous_flags` when
+`openclaw security audit` raises `config.insecure_or_dangerous_flags` when
 known insecure/dangerous debug switches are enabled. Keep these unset in
 production. Each enabled flag is reported as its own finding. If audit
 suppressions are configured, `security.audit.suppressions.active` remains in the
@@ -446,7 +390,7 @@ gateway:
   allowRealIpFallback: false
   auth:
     mode: password
-    password: ${REMOTECLAW_GATEWAY_PASSWORD}
+    password: ${OPENCLAW_GATEWAY_PASSWORD}
 ```
 
 When `trustedProxies` is configured, the Gateway uses `X-Forwarded-For` to determine the client IP. `X-Real-IP` is ignored by default unless `gateway.allowRealIpFallback: true` is explicitly set.
@@ -472,8 +416,8 @@ proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 
 ## HSTS and origin notes
 
-- RemoteClaw gateway is local/loopback first. If you terminate TLS at a reverse proxy, set HSTS on the proxy-facing HTTPS domain there.
-- If the gateway itself terminates HTTPS, you can set `gateway.http.securityHeaders.strictTransportSecurity` to emit the HSTS header from RemoteClaw responses.
+- OpenClaw gateway is local/loopback first. If you terminate TLS at a reverse proxy, set HSTS on the proxy-facing HTTPS domain there.
+- If the gateway itself terminates HTTPS, you can set `gateway.http.securityHeaders.strictTransportSecurity` to emit the HSTS header from OpenClaw responses.
 - Detailed deployment guidance is in [Trusted Proxy Auth](/gateway/trusted-proxy-auth#tls-termination-and-hsts).
 - For non-loopback Control UI deployments, `gateway.controlUi.allowedOrigins` is required by default.
 - `gateway.controlUi.allowedOrigins: ["*"]` is an explicit allow-all browser-origin policy, not a hardened default. Avoid it outside tightly controlled local testing.
@@ -485,7 +429,7 @@ proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 
 ## Local session logs live on disk
 
-RemoteClaw stores session transcripts on disk under `~/.remoteclaw/agents/<agentId>/sessions/*.jsonl`.
+OpenClaw stores session transcripts on disk under `~/.openclaw/agents/<agentId>/sessions/*.jsonl`.
 This is required for session continuity and (optionally) session memory indexing, but it also means
 **any process/user with filesystem access can read those logs**. Treat disk access as the trust
 boundary and lock down permissions on `~/.remoteclaw` (see the audit section below). If you need
@@ -501,7 +445,7 @@ If a macOS node is paired, the Gateway can invoke `system.run` on that node. Thi
 - Controlled on the Mac via **Settings → Exec approvals** (security + ask + allowlist).
 - The per-node `system.run` policy is the node's own exec approvals file (`exec.approvals.node.*`), which can be stricter or looser than the gateway's global command-ID policy.
 - A node running with `security="full"` and `ask="off"` is following the default trusted-operator model. Treat that as expected behavior unless your deployment explicitly requires a tighter approval or allowlist stance.
-- Approval mode binds exact request context and, when possible, one concrete local script/file operand. If RemoteClaw cannot identify exactly one direct local file for an interpreter/runtime command, approval-backed execution is denied rather than promising full semantic coverage.
+- Approval mode binds exact request context and, when possible, one concrete local script/file operand. If OpenClaw cannot identify exactly one direct local file for an interpreter/runtime command, approval-backed execution is denied rather than promising full semantic coverage.
 - For `host=node`, approval-backed runs also store a canonical prepared
   `systemRunPlan`; later approved forwards reuse that stored plan, and gateway
   validation rejects caller edits to command/cwd/session context after the
@@ -515,7 +459,7 @@ This distinction matters for triage:
 
 ## Dynamic skills (watcher / remote nodes)
 
-RemoteClaw can refresh the skills list mid-session:
+OpenClaw can refresh the skills list mid-session:
 
 - **Skills watcher**: changes to `SKILL.md` can update the skills snapshot on the next agent turn.
 - **Remote nodes**: connecting a macOS node can make macOS-only skills eligible (based on bin probing).
@@ -541,7 +485,7 @@ People who message you can:
 
 Most failures here are not fancy exploits - they're "someone messaged the bot and the bot did what they asked."
 
-RemoteClaw's stance:
+OpenClaw's stance:
 
 - **Identity first:** decide who can talk to the bot (DM pairing / allowlists / explicit "open").
 - **Scope next:** decide where the bot is allowed to act (group allowlists + mention gating, tools, sandboxing, device permissions).
@@ -592,13 +536,13 @@ Plugins run **in-process** with the Gateway. Treat them as trusted code:
 - Prefer explicit `plugins.allow` allowlists.
 - Review plugin config before enabling.
 - Restart the Gateway after plugin changes.
-- If you install or update plugins (`remoteclaw plugins install <package>`, `remoteclaw plugins update <id>`), treat it like running untrusted code:
+- If you install or update plugins (`openclaw plugins install <package>`, `openclaw plugins update <id>`), treat it like running untrusted code:
   - The install path is the per-plugin directory under the active plugin install root.
-  - RemoteClaw runs a built-in dangerous-code scan before install/update. `critical` findings block by default.
-  - npm and git plugin installs run package-manager dependency convergence only during the explicit install/update flow. Local paths and archives are treated as self-contained plugin packages; RemoteClaw copies/references them without running `npm install`.
+  - OpenClaw runs a built-in dangerous-code scan before install/update. `critical` findings block by default.
+  - npm and git plugin installs run package-manager dependency convergence only during the explicit install/update flow. Local paths and archives are treated as self-contained plugin packages; OpenClaw copies/references them without running `npm install`.
   - Prefer pinned, exact versions (`@scope/pkg@1.2.3`), and inspect the unpacked code on disk before enabling.
   - `--dangerously-force-unsafe-install` is break-glass only for built-in scan false positives on plugin install/update flows. It does not bypass plugin `before_install` hook policy blocks and does not bypass scan failures.
-  - Gateway-backed skill dependency installs follow the same dangerous/suspicious split: built-in `critical` findings block unless the caller explicitly sets `dangerouslyForceUnsafeInstall`, while suspicious findings still warn only. `remoteclaw skills install` remains the separate ClawHub skill download/install flow.
+  - Gateway-backed skill dependency installs follow the same dangerous/suspicious split: built-in `critical` findings block unless the caller explicitly sets `dangerouslyForceUnsafeInstall`, while suspicious findings still warn only. `openclaw skills install` remains the separate ClawHub skill download/install flow.
 
 Details: [Plugins](/tools/plugin)
 
@@ -614,15 +558,15 @@ All current DM-capable channels support a DM policy (`dmPolicy` or `*.dm.policy`
 Approve via CLI:
 
 ```bash
-remoteclaw pairing list <channel>
-remoteclaw pairing approve <channel> <code>
+openclaw pairing list <channel>
+openclaw pairing approve <channel> <code>
 ```
 
 Details + files on disk: [Pairing](/channels/pairing)
 
 ## DM session isolation (multi-user mode)
 
-By default, RemoteClaw routes **all DMs into the main session** so your assistant has continuity across devices and channels. If **multiple people** can DM the bot (open DMs or a multi-person allowlist), consider isolating DM sessions:
+By default, OpenClaw routes **all DMs into the main session** so your assistant has continuity across devices and channels. If **multiple people** can DM the bot (open DMs or a multi-person allowlist), consider isolating DM sessions:
 
 ```json5
 {
@@ -647,10 +591,10 @@ If you run multiple accounts on the same channel, use `per-account-channel-peer`
 
 ## Allowlists for DMs and groups
 
-RemoteClaw has two separate "who can trigger me?" layers:
+OpenClaw has two separate "who can trigger me?" layers:
 
 - **DM allowlist** (`allowFrom` / `channels.discord.allowFrom` / `channels.slack.allowFrom`; legacy: `channels.discord.dm.allowFrom`, `channels.slack.dm.allowFrom`): who is allowed to talk to the bot in direct messages.
-  - When `dmPolicy="pairing"`, approvals are written to the account-scoped pairing allowlist store under `~/.remoteclaw/credentials/` (`<channel>-allowFrom.json` for default account, `<channel>-<accountId>-allowFrom.json` for non-default accounts), merged with config allowlists.
+  - When `dmPolicy="pairing"`, approvals are written to the account-scoped pairing allowlist store under `~/.openclaw/credentials/` (`<channel>-allowFrom.json` for default account, `<channel>-<accountId>-allowFrom.json` for non-default accounts), merged with config allowlists.
 - **Group allowlist** (channel-specific): which groups/channels/guilds the bot will accept messages from at all.
   - Common patterns:
     - `channels.whatsapp.groups`, `channels.telegram.groups`, `channels.imessage.groups`: per-group defaults like `requireMention`; when set, it also acts as a group allowlist (include `"*"` to keep allow-all behavior).
@@ -687,7 +631,7 @@ Red flags to treat as untrusted:
 
 ## External content special-token sanitization
 
-RemoteClaw strips common self-hosted LLM chat-template special-token literals from wrapped external content and metadata before they reach the model. Covered marker families include Qwen/ChatML, Llama, Gemma, Mistral, Phi, and GPT-OSS role/turn tokens.
+OpenClaw strips common self-hosted LLM chat-template special-token literals from wrapped external content and metadata before they reach the model. Covered marker families include Qwen/ChatML, Llama, Gemma, Mistral, Phi, and GPT-OSS role/turn tokens.
 
 Why:
 
@@ -699,7 +643,7 @@ This does not replace the other hardening on this page - `dmPolicy`, allowlists,
 
 ## Unsafe external content bypass flags
 
-RemoteClaw includes explicit bypass flags that disable external-content safety wrapping:
+OpenClaw includes explicit bypass flags that disable external-content safety wrapping:
 
 - `hooks.mappings[].allowUnsafeExternalContent`
 - `hooks.gmail.allowUnsafeExternalContent`
@@ -753,7 +697,7 @@ such as `<|im_start|>`, `<|start_header_id|>`, or `<start_of_turn>` as
 structural chat-template tokens inside user content, untrusted text can try to
 forge role boundaries at the tokenizer layer.
 
-RemoteClaw strips common model-family special-token literals from wrapped
+OpenClaw strips common model-family special-token literals from wrapped
 external content before dispatching it to the model. Keep external-content
 wrapping enabled, and prefer backend settings that split or escape special
 tokens in user-provided content when available. Hosted providers such as OpenAI
@@ -797,19 +741,19 @@ Keep config + state private on the gateway host:
 - `~/.remoteclaw/remoteclaw.json`: `600` (user read/write only)
 - `~/.remoteclaw`: `700` (user only)
 
-`remoteclaw doctor` can warn and offer to tighten these permissions.
+`openclaw doctor` can warn and offer to tighten these permissions.
 
 ### Network exposure (bind, port, firewall)
 
 The Gateway multiplexes **WebSocket + HTTP** on a single port:
 
 - Default: `18789`
-- Config/flags/env: `gateway.port`, `--port`, `REMOTECLAW_GATEWAY_PORT`
+- Config/flags/env: `gateway.port`, `--port`, `OPENCLAW_GATEWAY_PORT`
 
 This HTTP surface includes the Control UI and the canvas host:
 
 - Control UI (SPA assets) (default base path `/`)
-- Canvas host: `/__remoteclaw__/canvas/` and `/__remoteclaw__/a2ui/` (arbitrary HTML/JS; treat as untrusted content)
+- Canvas host: `/__openclaw__/canvas/` and `/__openclaw__/a2ui/` (arbitrary HTML/JS; treat as untrusted content)
 
 If you load canvas content in a normal browser, treat it like any other untrusted web page:
 
@@ -829,7 +773,7 @@ Rules of thumb:
 
 ### Docker port publishing with UFW
 
-If you run RemoteClaw with Docker on a VPS, remember that published container ports
+If you run OpenClaw with Docker on a VPS, remember that published container ports
 (`-p HOST:CONTAINER` or Compose `ports:`) are routed through Docker's forwarding
 chains, not only host `INPUT` rules.
 
@@ -920,7 +864,7 @@ When the bundled `bonjour` plugin is enabled, the Gateway broadcasts its presenc
    }
    ```
 
-5. **Environment variable** (alternative): set `REMOTECLAW_DISABLE_BONJOUR=1` to disable mDNS without config changes.
+5. **Environment variable** (alternative): set `OPENCLAW_DISABLE_BONJOUR=1` to disable mDNS without config changes.
 
 When Bonjour is enabled in minimal mode, the Gateway broadcasts enough for device discovery (`role`, `gatewayPort`, `transport`) but omits `cliPath` and `sshPort`. Apps that need CLI path information can fetch it via the authenticated WebSocket connection instead.
 
@@ -942,7 +886,7 @@ Set a token so **all** WS clients must authenticate:
 }
 ```
 
-Doctor can generate one for you: `remoteclaw doctor --generate-gateway-token`.
+Doctor can generate one for you: `openclaw doctor --generate-gateway-token`.
 
 <Note>
 `gateway.remote.token` and `gateway.remote.password` are client credential sources. They do **not** protect local WS access by themselves. Local call paths can use `gateway.remote.*` as fallback only when `gateway.auth.*` is unset. If `gateway.auth.token` or `gateway.auth.password` is explicitly configured via SecretRef and unresolved, resolution fails closed (no remote fallback masking).
@@ -950,8 +894,8 @@ Doctor can generate one for you: `remoteclaw doctor --generate-gateway-token`.
 Optional: pin remote TLS with `gateway.remote.tlsFingerprint` when using `wss://`.
 Plaintext `ws://` is accepted for loopback, private IP literals, `.local`, and
 Tailnet `*.ts.net` gateway URLs. For other trusted private-DNS names, set
-`REMOTECLAW_ALLOW_INSECURE_PRIVATE_WS=1` on the client process as break-glass.
-This is intentionally process environment only, not an `remoteclaw.json` config
+`OPENCLAW_ALLOW_INSECURE_PRIVATE_WS=1` on the client process as break-glass.
+This is intentionally process environment only, not an `openclaw.json` config
 key.
 Mobile pairing and Android manual or scanned gateway routes are stricter:
 cleartext is accepted for loopback, but private-LAN, link-local, `.local`, and
@@ -962,7 +906,7 @@ Local device pairing:
 
 - Device pairing is auto-approved for direct local loopback connects to keep
   same-host clients smooth.
-- RemoteClaw also has a narrow backend/container-local self-connect path for
+- OpenClaw also has a narrow backend/container-local self-connect path for
   trusted shared-secret helper flows.
 - Tailnet and LAN connects, including same-host tailnet binds, are treated as
   remote for pairing and still need approval.
@@ -973,21 +917,21 @@ Local device pairing:
 Auth modes:
 
 - `gateway.auth.mode: "token"`: shared bearer token (recommended for most setups).
-- `gateway.auth.mode: "password"`: password auth (prefer setting via env: `REMOTECLAW_GATEWAY_PASSWORD`).
+- `gateway.auth.mode: "password"`: password auth (prefer setting via env: `OPENCLAW_GATEWAY_PASSWORD`).
 - `gateway.auth.mode: "trusted-proxy"`: trust an identity-aware reverse proxy to authenticate users and pass identity via headers (see [Trusted Proxy Auth](/gateway/trusted-proxy-auth)).
 
 Rotation checklist (token/password):
 
-1. Generate/set a new secret (`gateway.auth.token` or `REMOTECLAW_GATEWAY_PASSWORD`).
+1. Generate/set a new secret (`gateway.auth.token` or `OPENCLAW_GATEWAY_PASSWORD`).
 2. Restart the Gateway (or restart the macOS app if it supervises the Gateway).
 3. Update any remote clients (`gateway.remote.token` / `.password` on machines that call into the Gateway).
 4. Verify you can no longer connect with the old credentials.
 
 ### Tailscale Serve identity headers
 
-When `gateway.auth.allowTailscale` is `true` (default for Serve), RemoteClaw
+When `gateway.auth.allowTailscale` is `true` (default for Serve), OpenClaw
 accepts Tailscale Serve identity headers (`tailscale-user-login`) for Control
-UI/WebSocket authentication. RemoteClaw verifies the identity by resolving the
+UI/WebSocket authentication. OpenClaw verifies the identity by resolving the
 `x-forwarded-for` address through the local Tailscale daemon (`tailscale whois`)
 and matching it to the header. This only triggers for requests that hit loopback
 and include `x-forwarded-for`, `x-forwarded-proto`, and `x-forwarded-host` as
@@ -1025,7 +969,7 @@ instead.
 Trusted proxies:
 
 - If you terminate TLS in front of the Gateway, set `gateway.trustedProxies` to your proxy IPs.
-- RemoteClaw will trust `x-forwarded-for` (or `x-real-ip`) from those IPs to determine the client IP for local pairing checks and HTTP auth/local checks.
+- OpenClaw will trust `x-forwarded-for` (or `x-real-ip`) from those IPs to determine the client IP for local pairing checks and HTTP auth/local checks.
 - Ensure your proxy **overwrites** `x-forwarded-for` and blocks direct access to the Gateway port.
 
 See [Tailscale](/gateway/tailscale) and [Web overview](/web).
@@ -1048,9 +992,9 @@ Avoid:
 
 ### Secrets on disk
 
-Assume anything under `~/.remoteclaw/` (or `$REMOTECLAW_STATE_DIR/`) may contain secrets or private data:
+Assume anything under `~/.openclaw/` (or `$OPENCLAW_STATE_DIR/`) may contain secrets or private data:
 
-- `remoteclaw.json`: config may include tokens (gateway, remote gateway), provider settings, and allowlists.
+- `openclaw.json`: config may include tokens (gateway, remote gateway), provider settings, and allowlists.
 - `credentials/**`: channel credentials (example: WhatsApp creds), pairing allowlists, legacy OAuth imports.
 - `agents/<agentId>/agent/auth-profiles.json`: API keys, token profiles, OAuth tokens, and optional `keyRef`/`tokenRef`.
 - `agents/<agentId>/agent/codex-home/**`: per-agent Codex app-server account, config, skills, plugins, native thread state, and diagnostics.
@@ -1068,14 +1012,15 @@ Hardening tips:
 
 ### Workspace `.env` files
 
-RemoteClaw loads workspace-local `.env` files for agents and tools, but never lets those files silently override gateway runtime controls.
+OpenClaw loads workspace-local `.env` files for agents and tools, but never lets those files silently override gateway runtime controls.
 
-- Any key that starts with `REMOTECLAW_*` is blocked from untrusted workspace `.env` files.
+- Provider credential environment variables are blocked from untrusted workspace `.env` files. Examples include `GEMINI_API_KEY`, `GOOGLE_API_KEY`, `XAI_API_KEY`, `MISTRAL_API_KEY`, `GROQ_API_KEY`, `DEEPSEEK_API_KEY`, `PERPLEXITY_API_KEY`, `BRAVE_API_KEY`, `TAVILY_API_KEY`, `EXA_API_KEY`, `FIRECRAWL_API_KEY`, and provider auth keys declared by installed trusted plugins. Put provider credentials in the Gateway process environment, `~/.remoteclaw/.env` (`$OPENCLAW_STATE_DIR/.env`), the config `env` block, or optional login-shell import.
+- Any key that starts with `OPENCLAW_*` is blocked from untrusted workspace `.env` files.
 - Channel endpoint settings for Matrix, Mattermost, IRC, and Synology Chat are also blocked from workspace `.env` overrides, so cloned workspaces cannot redirect bundled connector traffic through local endpoint config. Endpoint env keys (such as `MATRIX_HOMESERVER`, `MATTERMOST_URL`, `IRC_HOST`, `SYNOLOGY_CHAT_INCOMING_URL`) must come from the gateway process environment or `env.shellEnv`, not from a workspace-loaded `.env`.
 - The block is fail-closed: a new runtime-control variable added in a future release cannot be inherited from a checked-in or attacker-supplied `.env`; the key is ignored and the gateway keeps its own value.
-- Trusted process/OS environment variables (the gateway's own shell, launchd/systemd unit, app bundle) still apply - this only constrains `.env` file loading.
+- Trusted process/OS environment variables, global runtime dotenv, config `env`, and enabled login-shell import still apply - this only constrains workspace `.env` file loading.
 
-Why: workspace `.env` files frequently live next to agent code, get committed by accident, or get written by tools. Blocking the whole `REMOTECLAW_*` prefix means adding a new `REMOTECLAW_*` flag later can never regress into silent inheritance from workspace state.
+Why: workspace `.env` files frequently live next to agent code, get committed by accident, or get written by tools. Blocking provider credentials prevents a cloned workspace from substituting attacker-controlled provider accounts. Blocking the whole `OPENCLAW_*` prefix means adding a new `OPENCLAW_*` flag later can never regress into silent inheritance from workspace state.
 
 ### Logs and transcripts (redaction and retention)
 
@@ -1088,7 +1033,7 @@ Recommendations:
 
 - Keep log and transcript redaction on (`logging.redactSensitive: "tools"`; default).
 - Add custom patterns for your environment via `logging.redactPatterns` (tokens, hostnames, internal URLs).
-- When sharing diagnostics, prefer `remoteclaw status --all` (pasteable, secrets redacted) over raw logs.
+- When sharing diagnostics, prefer `openclaw status --all` (pasteable, secrets redacted) over raw logs.
 - Prune old session transcripts and log files if you don't need long retention.
 
 Details: [Logging](/gateway/logging)
@@ -1116,7 +1061,7 @@ Details: [Logging](/gateway/logging)
     "list": [
       {
         "id": "main",
-        "groupChat": { "mentionPatterns": ["@remoteclaw", "@mybot"] }
+        "groupChat": { "mentionPatterns": ["@openclaw", "@mybot"] }
       }
     ]
   }
@@ -1185,7 +1130,7 @@ To prevent cross-agent access, keep `agents.defaults.sandbox.scope` at `"agent"`
 
 Also consider agent workspace access inside the sandbox:
 
-- `agents.defaults.sandbox.workspaceAccess: "none"` (default) keeps the agent workspace off-limits; tools run against a sandbox workspace under `~/.remoteclaw/sandboxes`
+- `agents.defaults.sandbox.workspaceAccess: "none"` (default) keeps the agent workspace off-limits; tools run against a sandbox workspace under `~/.openclaw/sandboxes`
 - `agents.defaults.sandbox.workspaceAccess: "ro"` mounts the agent workspace read-only at `/agent` (disables `write`/`edit`/`apply_patch`)
 - `agents.defaults.sandbox.workspaceAccess: "rw"` mounts the agent workspace read/write at `/workspace`
 - Extra `sandbox.docker.binds` are validated against normalized and canonicalized source paths. Parent-symlink tricks and canonical home aliases still fail closed if they resolve into blocked roots such as `/etc`, `/var/run`, or credential directories under the OS home.
@@ -1209,7 +1154,7 @@ Enabling browser control gives the model the ability to drive a real browser.
 If that browser profile already contains logged-in sessions, the model can
 access those accounts and data. Treat browser profiles as **sensitive state**:
 
-- Prefer a dedicated profile for the agent (the default `remoteclaw` profile).
+- Prefer a dedicated profile for the agent (the default `openclaw` profile).
 - Avoid pointing the agent at your personal daily-driver profile.
 - Keep host browser control disabled for sandboxed agents unless you trust them.
 - The standalone loopback browser control API only honors shared-secret auth
@@ -1224,7 +1169,7 @@ access those accounts and data. Treat browser profiles as **sensitive state**:
 
 ### Browser SSRF policy (strict by default)
 
-RemoteClaw's browser navigation policy is strict by default: private/internal destinations stay blocked unless you explicitly opt in.
+OpenClaw's browser navigation policy is strict by default: private/internal destinations stay blocked unless you explicitly opt in.
 
 - Default: `browser.ssrfPolicy.dangerouslyAllowPrivateNetwork` is unset, so browser navigation keeps private/internal/special-use destinations blocked.
 - Legacy alias: `browser.ssrfPolicy.allowPrivateNetwork` is still accepted for compatibility.
@@ -1267,7 +1212,7 @@ Common use cases:
     list: [
       {
         id: "personal",
-        workspace: "~/.remoteclaw/workspace-personal",
+        workspace: "~/.openclaw/workspace-personal",
         sandbox: { mode: "off" },
       },
     ],
@@ -1283,7 +1228,7 @@ Common use cases:
     list: [
       {
         id: "family",
-        workspace: "~/.remoteclaw/workspace-family",
+        workspace: "~/.openclaw/workspace-family",
         sandbox: {
           mode: "all",
           scope: "agent",
@@ -1307,13 +1252,13 @@ Common use cases:
     list: [
       {
         id: "public",
-        workspace: "~/.remoteclaw/workspace-public",
+        workspace: "~/.openclaw/workspace-public",
         sandbox: {
           mode: "all",
           scope: "agent",
           workspaceAccess: "none",
         },
-        // Session tools can reveal sensitive data from transcripts. By default RemoteClaw limits these tools
+        // Session tools can reveal sensitive data from transcripts. By default OpenClaw limits these tools
         // to the current session + spawned subagent sessions, but you can clamp further if needed.
         // See `tools.sessions.visibility` in the configuration reference.
         tools: {
@@ -1356,26 +1301,26 @@ If your AI does something bad:
 
 ### Contain
 
-1. **Stop it:** stop the macOS app (if it supervises the Gateway) or terminate your `remoteclaw gateway` process.
+1. **Stop it:** stop the macOS app (if it supervises the Gateway) or terminate your `openclaw gateway` process.
 2. **Close exposure:** set `gateway.bind: "loopback"` (or disable Tailscale Funnel/Serve) until you understand what happened.
 3. **Freeze access:** switch risky DMs/groups to `dmPolicy: "disabled"` / require mentions, and remove `"*"` allow-all entries if you had them.
 
 ### Rotate (assume compromise if secrets leaked)
 
-1. Rotate Gateway auth (`gateway.auth.token` / `REMOTECLAW_GATEWAY_PASSWORD`) and restart.
+1. Rotate Gateway auth (`gateway.auth.token` / `OPENCLAW_GATEWAY_PASSWORD`) and restart.
 2. Rotate remote client secrets (`gateway.remote.token` / `.password`) on any machine that can call the Gateway.
 3. Rotate provider/API credentials (WhatsApp creds, Slack/Discord tokens, model/API keys in `auth-profiles.json`, and encrypted secrets payload values when used).
 
 ### Audit
 
-1. Check Gateway logs: `/tmp/remoteclaw/remoteclaw-YYYY-MM-DD.log` (or `logging.file`).
-2. Review the relevant transcript(s): `~/.remoteclaw/agents/<agentId>/sessions/*.jsonl`.
+1. Check Gateway logs: `/tmp/openclaw/openclaw-YYYY-MM-DD.log` (or `logging.file`).
+2. Review the relevant transcript(s): `~/.openclaw/agents/<agentId>/sessions/*.jsonl`.
 3. Review recent config changes (anything that could have widened access: `gateway.bind`, `gateway.auth`, dm/group policies, `tools.elevated`, plugin changes).
-4. Re-run `remoteclaw security audit --deep` and confirm critical findings are resolved.
+4. Re-run `openclaw security audit --deep` and confirm critical findings are resolved.
 
 ### Collect for a report
 
-- Timestamp, gateway host OS + RemoteClaw version
+- Timestamp, gateway host OS + OpenClaw version
 - The session transcript(s) + a short log tail (after redacting)
 - What the attacker sent + what the agent did
 - Whether the Gateway was exposed beyond loopback (LAN/Tailscale Funnel/Serve)
@@ -1391,8 +1336,8 @@ pre-commit run --all-files detect-private-key
 
 ## Reporting security issues
 
-Found a vulnerability in RemoteClaw? Please report responsibly:
+Found a vulnerability in OpenClaw? Please report responsibly:
 
-1. Email: [security@remoteclaw.org](mailto:security@remoteclaw.org)
+1. Email: [security@openclaw.ai](mailto:security@openclaw.ai)
 2. Don't post publicly until fixed
 3. We'll credit you (unless you prefer anonymity)

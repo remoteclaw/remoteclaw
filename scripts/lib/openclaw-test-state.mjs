@@ -237,7 +237,7 @@ function scenarioConfig(scenario, options = {}) {
 function scenarioEnv(scenario) {
   if (scenario === "external-service") {
     return {
-      REMOTECLAW_SERVICE_REPAIR_POLICY: "external",
+      OPENCLAW_SERVICE_REPAIR_POLICY: "external",
     };
   }
   return {};
@@ -259,18 +259,18 @@ function generateAuthProfileSecretKey() {
 
 function renderAuthProfileSecretKeyExport() {
   return [
-    'REMOTECLAW_AUTH_PROFILE_SECRET_KEY_FILE="$REMOTECLAW_TEST_STATE_HOME/.remoteclaw-test-auth-profile-secret-key"',
-    'if [ -s "$REMOTECLAW_AUTH_PROFILE_SECRET_KEY_FILE" ]; then',
-    '  REMOTECLAW_AUTH_PROFILE_SECRET_KEY="$(cat "$REMOTECLAW_AUTH_PROFILE_SECRET_KEY_FILE")"',
+    'OPENCLAW_AUTH_PROFILE_SECRET_KEY_FILE="$OPENCLAW_TEST_STATE_HOME/.openclaw-test-auth-profile-secret-key"',
+    'if [ -s "$OPENCLAW_AUTH_PROFILE_SECRET_KEY_FILE" ]; then',
+    '  OPENCLAW_AUTH_PROFILE_SECRET_KEY="$(cat "$OPENCLAW_AUTH_PROFILE_SECRET_KEY_FILE")"',
     "else",
-    '  REMOTECLAW_AUTH_PROFILE_SECRET_KEY="$(od -An -N 32 -tx1 /dev/urandom | tr -d " \\n")"',
-    '  ( umask 077; printf "%s\\n" "$REMOTECLAW_AUTH_PROFILE_SECRET_KEY" > "$REMOTECLAW_AUTH_PROFILE_SECRET_KEY_FILE" )',
+    '  OPENCLAW_AUTH_PROFILE_SECRET_KEY="$(od -An -N 32 -tx1 /dev/urandom | tr -d " \\n")"',
+    '  ( umask 077; printf "%s\\n" "$OPENCLAW_AUTH_PROFILE_SECRET_KEY" > "$OPENCLAW_AUTH_PROFILE_SECRET_KEY_FILE" )',
     "fi",
-    'if [ -z "$REMOTECLAW_AUTH_PROFILE_SECRET_KEY" ]; then',
-    '  echo "failed to generate REMOTECLAW_AUTH_PROFILE_SECRET_KEY" >&2',
+    'if [ -z "$OPENCLAW_AUTH_PROFILE_SECRET_KEY" ]; then',
+    '  echo "failed to generate OPENCLAW_AUTH_PROFILE_SECRET_KEY" >&2',
     "  return 1 2>/dev/null || exit 1",
     "fi",
-    "export REMOTECLAW_AUTH_PROFILE_SECRET_KEY",
+    "export OPENCLAW_AUTH_PROFILE_SECRET_KEY",
   ];
 }
 
@@ -280,9 +280,9 @@ function renderConfigWrite(configPathExpression, config) {
   }
   const json = JSON.stringify(config, null, 2);
   return [
-    `cat > ${configPathExpression} <<'REMOTECLAW_TEST_STATE_JSON'`,
+    `cat > ${configPathExpression} <<'OPENCLAW_TEST_STATE_JSON'`,
     json,
-    "REMOTECLAW_TEST_STATE_JSON",
+    "OPENCLAW_TEST_STATE_JSON",
   ].join("\n");
 }
 
@@ -294,17 +294,17 @@ function buildCreatePlan(options = {}) {
   }
   const root = options.root;
   const home = path.join(root, "home");
-  const stateDir = path.join(home, ".remoteclaw");
-  const configPath = path.join(stateDir, "remoteclaw.json");
+  const stateDir = path.join(home, ".openclaw");
+  const configPath = path.join(stateDir, "openclaw.json");
   const workspaceDir = path.join(home, "workspace");
   const config = scenarioConfig(scenario, options);
   const env = {
     HOME: home,
     USERPROFILE: home,
-    REMOTECLAW_HOME: home,
-    REMOTECLAW_STATE_DIR: stateDir,
-    REMOTECLAW_CONFIG_PATH: configPath,
-    REMOTECLAW_AUTH_PROFILE_SECRET_KEY: generateAuthProfileSecretKey(),
+    OPENCLAW_HOME: home,
+    OPENCLAW_STATE_DIR: stateDir,
+    OPENCLAW_CONFIG_PATH: configPath,
+    OPENCLAW_AUTH_PROFILE_SECRET_KEY: generateAuthProfileSecretKey(),
     ...scenarioEnv(scenario),
   };
   return {
@@ -323,7 +323,7 @@ function buildCreatePlan(options = {}) {
 
 export async function createState(options = {}) {
   const label = normalizeLabel(options.label);
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), `remoteclaw-${label}-`));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), `openclaw-${label}-`));
   const plan = buildCreatePlan({ ...options, root });
   await fs.mkdir(plan.stateDir, { recursive: true });
   await fs.mkdir(plan.workspaceDir, { recursive: true });
@@ -342,27 +342,27 @@ export function renderShellSnippet(options = {}) {
   const scenario = requireScenario(options.scenario);
   const config = scenarioConfig(scenario, options);
   const env = scenarioEnv(scenario);
-  const homeTemplate = `remoteclaw-${label}-${scenario}-home.XXXXXX`;
+  const homeTemplate = `openclaw-${label}-${scenario}-home.XXXXXX`;
   const lines = [
-    'REMOTECLAW_TEST_STATE_TMP_ROOT="${REMOTECLAW_TEST_STATE_TMPDIR:-${TMPDIR:-/tmp}}"',
-    'REMOTECLAW_TEST_STATE_TMP_ROOT="${REMOTECLAW_TEST_STATE_TMP_ROOT%/}"',
-    '[ -n "$REMOTECLAW_TEST_STATE_TMP_ROOT" ] || REMOTECLAW_TEST_STATE_TMP_ROOT="/tmp"',
-    "export REMOTECLAW_TEST_STATE_TMP_ROOT",
-    'mkdir -p "$REMOTECLAW_TEST_STATE_TMP_ROOT"',
-    `REMOTECLAW_TEST_STATE_HOME="$(mktemp -d "$REMOTECLAW_TEST_STATE_TMP_ROOT/${homeTemplate}")"`,
-    'export HOME="$REMOTECLAW_TEST_STATE_HOME"',
-    'export USERPROFILE="$REMOTECLAW_TEST_STATE_HOME"',
-    'export REMOTECLAW_HOME="$REMOTECLAW_TEST_STATE_HOME"',
-    'export REMOTECLAW_STATE_DIR="$REMOTECLAW_TEST_STATE_HOME/.remoteclaw"',
-    'export REMOTECLAW_CONFIG_PATH="$REMOTECLAW_STATE_DIR/remoteclaw.json"',
+    'OPENCLAW_TEST_STATE_TMP_ROOT="${OPENCLAW_TEST_STATE_TMPDIR:-${TMPDIR:-/tmp}}"',
+    'OPENCLAW_TEST_STATE_TMP_ROOT="${OPENCLAW_TEST_STATE_TMP_ROOT%/}"',
+    '[ -n "$OPENCLAW_TEST_STATE_TMP_ROOT" ] || OPENCLAW_TEST_STATE_TMP_ROOT="/tmp"',
+    "export OPENCLAW_TEST_STATE_TMP_ROOT",
+    'mkdir -p "$OPENCLAW_TEST_STATE_TMP_ROOT"',
+    `OPENCLAW_TEST_STATE_HOME="$(mktemp -d "$OPENCLAW_TEST_STATE_TMP_ROOT/${homeTemplate}")"`,
+    'export HOME="$OPENCLAW_TEST_STATE_HOME"',
+    'export USERPROFILE="$OPENCLAW_TEST_STATE_HOME"',
+    'export OPENCLAW_HOME="$OPENCLAW_TEST_STATE_HOME"',
+    'export OPENCLAW_STATE_DIR="$OPENCLAW_TEST_STATE_HOME/.openclaw"',
+    'export OPENCLAW_CONFIG_PATH="$OPENCLAW_STATE_DIR/openclaw.json"',
     ...renderAuthProfileSecretKeyExport(),
-    'export REMOTECLAW_TEST_WORKSPACE_DIR="$REMOTECLAW_TEST_STATE_HOME/workspace"',
-    'mkdir -p "$REMOTECLAW_STATE_DIR" "$REMOTECLAW_TEST_WORKSPACE_DIR"',
+    'export OPENCLAW_TEST_WORKSPACE_DIR="$OPENCLAW_TEST_STATE_HOME/workspace"',
+    'mkdir -p "$OPENCLAW_STATE_DIR" "$OPENCLAW_TEST_WORKSPACE_DIR"',
   ];
   for (const [key, value] of Object.entries(env)) {
     lines.push(`export ${key}=${shellQuote(value)}`);
   }
-  const configWrite = renderConfigWrite('"$REMOTECLAW_CONFIG_PATH"', config);
+  const configWrite = renderConfigWrite('"$OPENCLAW_CONFIG_PATH"', config);
   if (configWrite) {
     lines.push(configWrite);
   }
@@ -377,54 +377,53 @@ export function renderShellFunction() {
   case "$scenario" in
     empty|minimal|update-stable|upgrade-survivor|gateway-loopback|external-service) ;;
     *)
-      echo "unknown RemoteClaw test-state scenario: $scenario" >&2
+      echo "unknown OpenClaw test-state scenario: $scenario" >&2
       return 1
       ;;
   esac
   case "$raw_label" in
     /*)
-      REMOTECLAW_TEST_STATE_HOME="$raw_label"
-      mkdir -p "$REMOTECLAW_TEST_STATE_HOME"
+      OPENCLAW_TEST_STATE_HOME="$raw_label"
+      mkdir -p "$OPENCLAW_TEST_STATE_HOME"
       ;;
     *)
       label="$(printf "%s" "$label" | tr -cs "A-Za-z0-9_.-" "-" | sed -e "s/^-*//" -e "s/-*$//")"
       [ -n "$label" ] || label="state"
-      local tmp_root="\${REMOTECLAW_TEST_STATE_TMPDIR:-\${TMPDIR:-/tmp}}"
+      local tmp_root="\${OPENCLAW_TEST_STATE_TMPDIR:-\${TMPDIR:-/tmp}}"
       tmp_root="\${tmp_root%/}"
       [ -n "$tmp_root" ] || tmp_root="/tmp"
       mkdir -p "$tmp_root"
-      REMOTECLAW_TEST_STATE_HOME="$(mktemp -d "$tmp_root/remoteclaw-$label-$scenario-home.XXXXXX")"
+      OPENCLAW_TEST_STATE_HOME="$(mktemp -d "$tmp_root/remoteclaw-$label-$scenario-home.XXXXXX")"
       ;;
   esac
-  export HOME="$REMOTECLAW_TEST_STATE_HOME"
-  export USERPROFILE="$REMOTECLAW_TEST_STATE_HOME"
-  export REMOTECLAW_HOME="$REMOTECLAW_TEST_STATE_HOME"
-  export REMOTECLAW_STATE_DIR="$REMOTECLAW_TEST_STATE_HOME/.remoteclaw"
-  export REMOTECLAW_CONFIG_PATH="$REMOTECLAW_STATE_DIR/remoteclaw.json"
+  export HOME="$OPENCLAW_TEST_STATE_HOME"
+  export USERPROFILE="$OPENCLAW_TEST_STATE_HOME"
+  export OPENCLAW_HOME="$OPENCLAW_TEST_STATE_HOME"
+  export OPENCLAW_STATE_DIR="$OPENCLAW_TEST_STATE_HOME/.openclaw"
+  export OPENCLAW_CONFIG_PATH="$OPENCLAW_STATE_DIR/openclaw.json"
   ${renderAuthProfileSecretKeyExport().join("\n  ")}
-  export REMOTECLAW_TEST_WORKSPACE_DIR="$REMOTECLAW_TEST_STATE_HOME/workspace"
-  unset REMOTECLAW_AGENT_DIR
-  unset PI_CODING_AGENT_DIR
-  unset REMOTECLAW_SERVICE_REPAIR_POLICY
-  mkdir -p "$REMOTECLAW_STATE_DIR" "$REMOTECLAW_TEST_WORKSPACE_DIR"
+  export OPENCLAW_TEST_WORKSPACE_DIR="$OPENCLAW_TEST_STATE_HOME/workspace"
+  unset OPENCLAW_AGENT_DIR
+  unset OPENCLAW_SERVICE_REPAIR_POLICY
+  mkdir -p "$OPENCLAW_STATE_DIR" "$OPENCLAW_TEST_WORKSPACE_DIR"
   case "$scenario" in
     minimal)
-      cat > "$REMOTECLAW_CONFIG_PATH" <<'REMOTECLAW_TEST_STATE_JSON'
+      cat > "$OPENCLAW_CONFIG_PATH" <<'OPENCLAW_TEST_STATE_JSON'
 {}
-REMOTECLAW_TEST_STATE_JSON
+OPENCLAW_TEST_STATE_JSON
       ;;
     update-stable)
-      cat > "$REMOTECLAW_CONFIG_PATH" <<'REMOTECLAW_TEST_STATE_JSON'
+      cat > "$OPENCLAW_CONFIG_PATH" <<'OPENCLAW_TEST_STATE_JSON'
 {
   "update": {
     "channel": "stable"
   },
   "plugins": {}
 }
-REMOTECLAW_TEST_STATE_JSON
+OPENCLAW_TEST_STATE_JSON
       ;;
     upgrade-survivor)
-      cat > "$REMOTECLAW_CONFIG_PATH" <<'REMOTECLAW_TEST_STATE_JSON'
+      cat > "$OPENCLAW_CONFIG_PATH" <<'OPENCLAW_TEST_STATE_JSON'
 {
   "update": {
     "channel": "stable"
@@ -596,10 +595,10 @@ REMOTECLAW_TEST_STATE_JSON
     }
   }
 }
-REMOTECLAW_TEST_STATE_JSON
+OPENCLAW_TEST_STATE_JSON
       ;;
     gateway-loopback)
-      cat > "$REMOTECLAW_CONFIG_PATH" <<'REMOTECLAW_TEST_STATE_JSON'
+      cat > "$OPENCLAW_CONFIG_PATH" <<'OPENCLAW_TEST_STATE_JSON'
 {
   "gateway": {
     "port": 18789,
@@ -612,13 +611,13 @@ REMOTECLAW_TEST_STATE_JSON
     }
   }
 }
-REMOTECLAW_TEST_STATE_JSON
+OPENCLAW_TEST_STATE_JSON
       ;;
     external-service)
-      export REMOTECLAW_SERVICE_REPAIR_POLICY="external"
-      cat > "$REMOTECLAW_CONFIG_PATH" <<'REMOTECLAW_TEST_STATE_JSON'
+      export OPENCLAW_SERVICE_REPAIR_POLICY="external"
+      cat > "$OPENCLAW_CONFIG_PATH" <<'OPENCLAW_TEST_STATE_JSON'
 {}
-REMOTECLAW_TEST_STATE_JSON
+OPENCLAW_TEST_STATE_JSON
       ;;
   esac
 }

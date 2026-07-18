@@ -7,6 +7,9 @@ export { escapeRegExp } from "../../src/utils.js";
 
 type EnvelopeTimestampZone = string;
 
+// Mirrors formatEnvelopeTimestamp in src/auto-reply/envelope.ts, which renders
+// seconds as of upstream v2026.5.28 — keep displaySeconds in sync with it or
+// every envelope-header assertion drifts by the seconds field.
 export function formatEnvelopeTimestamp(date: Date, zone: EnvelopeTimestampZone = "utc"): string {
   const trimmedZone = zone.trim();
   const normalized = trimmedZone.toLowerCase();
@@ -27,14 +30,18 @@ export function formatEnvelopeTimestamp(date: Date, zone: EnvelopeTimestampZone 
   })();
 
   if (normalized === "utc" || normalized === "gmt") {
-    const ts = formatUtcTimestamp(date);
+    const ts = formatUtcTimestamp(date, { displaySeconds: true });
     return weekday ? `${weekday} ${ts}` : ts;
   }
   if (normalized === "local" || normalized === "host") {
-    const ts = formatZonedTimestamp(date) ?? formatUtcTimestamp(date);
+    const ts =
+      formatZonedTimestamp(date, { displaySeconds: true }) ??
+      formatUtcTimestamp(date, { displaySeconds: true });
     return weekday ? `${weekday} ${ts}` : ts;
   }
-  const ts = formatZonedTimestamp(date, { timeZone: trimmedZone }) ?? formatUtcTimestamp(date);
+  const ts =
+    formatZonedTimestamp(date, { timeZone: trimmedZone, displaySeconds: true }) ??
+    formatUtcTimestamp(date, { displaySeconds: true });
   return weekday ? `${weekday} ${ts}` : ts;
 }
 

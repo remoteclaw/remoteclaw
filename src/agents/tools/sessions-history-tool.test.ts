@@ -16,7 +16,7 @@ function useLoggingConfig(name: string, logging: Record<string, unknown>): void 
   }
   const configPath = path.join(tempDir, name);
   fs.writeFileSync(configPath, `${JSON.stringify({ logging })}\n`, "utf8");
-  process.env.REMOTECLAW_CONFIG_PATH = configPath;
+  process.env.OPENCLAW_CONFIG_PATH = configPath;
 }
 
 function createHistoryToolWithMessage(content: string) {
@@ -40,7 +40,7 @@ function createHistoryToolWithMessage(content: string) {
 
 describe("sessions_history redaction", () => {
   beforeAll(async () => {
-    previousConfigPath = process.env.REMOTECLAW_CONFIG_PATH;
+    previousConfigPath = process.env.OPENCLAW_CONFIG_PATH;
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-sessions-history-redact-"));
     useLoggingConfig("redaction-off.json", { redactSensitive: "off" });
     ({ createSessionsHistoryTool } = await import("./sessions-history-tool.js"));
@@ -48,9 +48,9 @@ describe("sessions_history redaction", () => {
 
   afterAll(() => {
     if (previousConfigPath === undefined) {
-      delete process.env.REMOTECLAW_CONFIG_PATH;
+      delete process.env.OPENCLAW_CONFIG_PATH;
     } else {
-      process.env.REMOTECLAW_CONFIG_PATH = previousConfigPath;
+      process.env.OPENCLAW_CONFIG_PATH = previousConfigPath;
     }
     if (tempDir) {
       fs.rmSync(tempDir, { recursive: true, force: true });
@@ -82,5 +82,13 @@ describe("sessions_history redaction", () => {
     expect(serialized).not.toContain("internal-ticket-AbC12345");
     expect(serialized).toContain("intern");
     expect((result.details as { contentRedacted?: unknown }).contentRedacted).toBe(true);
+  });
+
+  it.each([0, 1.5])("rejects invalid limit value %s", async (limit) => {
+    const tool = createHistoryToolWithMessage("hello");
+
+    await expect(tool.execute("call-1", { sessionKey: "main", limit })).rejects.toThrow(
+      "limit must be a positive integer",
+    );
   });
 });

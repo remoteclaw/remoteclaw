@@ -1,5 +1,5 @@
 ---
-description: "Reference: provider-specific transcript sanitization and repair rules"
+summary: "Reference: provider-specific transcript sanitization and repair rules"
 read_when:
   - You are debugging provider request rejections tied to transcript shape
   - You are changing transcript sanitization or tool-call repair logic
@@ -7,16 +7,7 @@ read_when:
 title: "Transcript hygiene"
 ---
 
-# Transcript Hygiene (Provider Fixups)
-
-This document describes **provider-specific fixes** applied to transcripts before they
-are forwarded to a CLI agent. These are **in-memory** adjustments used to satisfy strict
-provider requirements — RemoteClaw sanitizes transcripts in its middleware layer so that
-the CLI agent receiving the session history does not encounter provider-specific rejection
-errors. These hygiene steps do **not** rewrite the stored JSONL transcript on disk;
-however, a separate session-file repair pass may rewrite malformed JSONL files by
-dropping invalid lines before the session is loaded. When a repair occurs, the original
-file is backed up alongside the session file.
+OpenClaw applies **provider-specific fixes** to transcripts before a run (building model context). Most of these are **in-memory** adjustments used to satisfy strict provider requirements. A separate session-file repair pass may also rewrite stored JSONL before the session is loaded, but only for malformed lines or persisted turns that are invalid durable records. Delivered assistant replies are preserved on disk; provider-specific assistant-prefill stripping happens only while constructing outbound payloads. When a repair occurs, the original file is written to a transient `*.bak-<pid>-<ts>` sibling before the atomic replace and removed once the replace succeeds; the backup is only retained if cleanup itself fails (in which case the path is reported back).
 
 Scope includes:
 
@@ -41,8 +32,8 @@ If you need transcript storage details, see:
 ## Global rule: runtime context is not user transcript
 
 Runtime/system context can be added to the model prompt for a turn, but it is
-not end-user-authored content. RemoteClaw keeps a separate transcript-facing
-prompt body for Gateway replies, queued followups, ACP, CLI, and embedded Pi
+not end-user-authored content. OpenClaw keeps a separate transcript-facing
+prompt body for Gateway replies, queued followups, ACP, CLI, and embedded OpenClaw
 runs. Stored visible user turns use that transcript body instead of the
 runtime-enriched prompt.
 
@@ -54,19 +45,17 @@ TUI, REST, or SSE clients.
 
 ## Where this runs
 
-Transcript hygiene is split across several middleware modules:
+All transcript hygiene is centralized in the embedded runner:
 
-- **Image sanitization**: `sanitizeSessionMessagesImages` in `src/agents/agent-helpers/images.ts`
-- **Tool-call ID sanitization**: `sanitizeToolCallId` / `sanitizeToolCallIdsForCloudCodeAssist` in `src/agents/tool-call-id.ts`
-- **Malformed tool-call input cleanup**: `sanitizeToolCallInputs` in `src/agents/session-transcript-repair.ts`
-- **Turn ordering / thought-signature cleanup**: `src/agents/agent-helpers/message-sanitization.ts`
-- **Tool-result image sanitization**: `sanitizeContentBlocksImages` in `src/agents/tool-images.ts`
+- Policy selection: `src/agents/transcript-policy.ts`
+- Sanitization/repair application: `sanitizeSessionHistory` in `src/agents/embedded-agent-runner/replay-history.ts`
 
-The runtime name (e.g., `google`, `anthropic`, `openai`) determines which fixups to apply.
+The policy uses `provider`, `modelApi`, and `modelId` to decide what to apply.
 
 Separate from transcript hygiene, session files are repaired (if needed) before load:
 
 - `repairSessionFileIfNeeded` in `src/agents/session-file-repair.ts`
+- Called from `run/attempt.ts` and `compact.ts` (embedded runner)
 
 ---
 
@@ -80,7 +69,7 @@ Lower max dimensions generally reduce token usage; higher dimensions preserve de
 
 Implementation:
 
-- `sanitizeSessionMessagesImages` in `src/agents/agent-helpers/images.ts`
+- `sanitizeSessionMessagesImages` in `src/agents/embedded-agent-helpers/images.ts`
 - `sanitizeContentBlocksImages` in `src/agents/tool-images.ts`
 - Max image side is configurable via `agents.defaults.imageMaxDimensionPx` (default: `1200`).
 - Blank text blocks are removed while this pass walks replay content. Assistant
@@ -98,36 +87,38 @@ persisted tool calls (for example, after a rate limit failure).
 Implementation:
 
 - `sanitizeToolCallInputs` in `src/agents/session-transcript-repair.ts`
+- Applied in `sanitizeSessionHistory` in `src/agents/embedded-agent-runner/replay-history.ts`
 
 ---
 
 ## Global rule: inter-session input provenance
 
 When an agent sends a prompt into another session via `sessions_send` (including
-agent-to-agent reply/announce steps), RemoteClaw persists the created user turn with:
+agent-to-agent reply/announce steps), OpenClaw persists the created user turn with:
 
 - `message.provenance.kind = "inter_session"`
 
-RemoteClaw also prepends a same-turn `[Inter-session message ... isUser=false]`
+OpenClaw also prepends a same-turn `[Inter-session message ... isUser=false]`
 marker before the routed prompt text so the active model call can distinguish
 foreign session output from external end-user instructions. This marker includes
 the source session, channel, and tool when available. The transcript still uses
 `role: "user"` for provider compatibility, but the visible text and provenance
 metadata both mark the turn as inter-session data.
 
-During context rebuild, RemoteClaw applies the same marker to older persisted
+During context rebuild, OpenClaw applies the same marker to older persisted
 inter-session user turns that only have provenance metadata.
 
 ---
 
-## Provider matrix (transcript sanitization before forwarding)
+## Provider matrix (current behavior)
 
 **OpenAI / OpenAI Codex**
 
 - Image sanitization only.
 - Drop orphaned reasoning signatures (standalone reasoning items without a following content block) for OpenAI Responses/Codex transcripts, and drop replayable OpenAI reasoning after a model route switch.
 - Preserve replayable OpenAI Responses reasoning item payloads, including encrypted empty-summary items, so manual/WebSocket replay keeps required `rs_*` state paired with assistant output items.
-- No tool call id sanitization.
+- Native ChatGPT Codex Responses follows Codex wire parity by replaying prior Responses reasoning/message/function payloads without prior item IDs while preserving session `prompt_cache_key`.
+- OpenAI Responses-family replay preserves canonical `call_*|fc_*` same-model reasoning pairs, but deterministically normalizes malformed or overlong `call_id` / function-call item ids before pi-ai payload conversion.
 - Tool result pairing repair may move real matched outputs and synthesize Codex-style `aborted` outputs for missing tool calls.
 - No turn validation or reordering.
 - Missing OpenAI Responses-family tool outputs are synthesized as `aborted` to match Codex replay normalization.
@@ -158,7 +149,7 @@ inter-session user turns that only have provenance metadata.
 - Trailing assistant prefill turns are stripped from outgoing Anthropic Messages
   payloads when thinking is enabled, including Cloudflare AI Gateway routes.
 - Thinking blocks with missing, empty, or blank replay signatures are stripped
-  before provider conversion. If that empties an assistant turn, RemoteClaw keeps
+  before provider conversion. If that empties an assistant turn, OpenClaw keeps
   turn shape with non-empty omitted-reasoning text.
 - Older thinking-only assistant turns that must be stripped are replaced with
   non-empty omitted-reasoning text so provider adapters do not drop the replay
@@ -173,11 +164,11 @@ inter-session user turns that only have provenance metadata.
 - Assistant stream-error turns that contain only blank text blocks are dropped
   from the in-memory replay copy instead of replaying an invalid blank block.
 - Claude thinking blocks with missing, empty, or blank replay signatures are
-  stripped before Converse replay. If that empties an assistant turn, RemoteClaw
+  stripped before Converse replay. If that empties an assistant turn, OpenClaw
   keeps turn shape with non-empty omitted-reasoning text.
 - Older thinking-only assistant turns that must be stripped are replaced with
   non-empty omitted-reasoning text so the Converse replay keeps strict turn shape.
-- Replay filters RemoteClaw delivery-mirror and gateway-injected assistant turns.
+- Replay filters OpenClaw delivery-mirror and gateway-injected assistant turns.
 - Image sanitization applies through the global rule.
 
 **Mistral (including model-id based detection)**
@@ -202,12 +193,12 @@ inter-session user turns that only have provenance metadata.
 
 ## Historical behavior (pre-2026.1.22)
 
-Before the 2026.1.22 release, RemoteClaw applied multiple layers of transcript hygiene:
+Before the 2026.1.22 release, OpenClaw applied multiple layers of transcript hygiene:
 
 - A **transcript-sanitize extension** ran on every context build and could:
   - Repair tool use/result pairing.
   - Sanitize tool call ids (including a non-strict mode that preserved `_`/`-`).
-- The CLI agent subprocess also performed provider-specific sanitization, which duplicated work.
+- The runner also performed provider-specific sanitization, which duplicated work.
 - Additional mutations occurred outside the provider policy, including:
   - Stripping `<final>` tags from assistant text before persistence.
   - Dropping empty assistant error turns.
@@ -215,8 +206,7 @@ Before the 2026.1.22 release, RemoteClaw applied multiple layers of transcript h
 
 This complexity caused cross-provider regressions (notably `openai-responses`
 `call_id|fc_id` pairing). The 2026.1.22 cleanup removed the extension, centralized
-logic in the middleware sanitization modules, and made OpenAI **no-touch** beyond image
-sanitization.
+logic in the runner, and made OpenAI **no-touch** beyond image sanitization.
 
 ## Related
 

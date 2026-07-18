@@ -1,27 +1,27 @@
 ---
 summary: "CLI reference and security model for Crestodian, the configless-safe setup and repair helper"
 read_when:
-  - You run remoteclaw with no command after setup and want to understand Crestodian
-  - You need a configless-safe way to inspect or repair RemoteClaw
+  - You run openclaw with no command after setup and want to understand Crestodian
+  - You need a configless-safe way to inspect or repair OpenClaw
   - You are designing or enabling message-channel rescue mode
 title: "Crestodian"
 ---
 
-# `remoteclaw crestodian`
+# `openclaw crestodian`
 
-Crestodian is RemoteClaw's local setup, repair, and configuration helper. It is
+Crestodian is OpenClaw's local setup, repair, and configuration helper. It is
 designed to stay reachable when the normal agent path is broken.
 
-Running `remoteclaw` with no command starts classic onboarding first when the
+Running `openclaw` with no command starts classic onboarding first when the
 active config file is missing or has no authored settings (empty or
-metadata-only). After a config file has authored settings, running `remoteclaw`
+metadata-only). After a config file has authored settings, running `openclaw`
 with no command starts Crestodian in an interactive terminal. Running
-`remoteclaw crestodian` starts the same helper explicitly.
+`openclaw crestodian` starts the same helper explicitly.
 
 ## What Crestodian shows
 
 On startup, interactive Crestodian opens the same TUI shell used by
-`remoteclaw tui`, with a Crestodian chat backend. The chat log starts with a short
+`openclaw tui`, with a Crestodian chat backend. The chat log starts with a short
 greeting:
 
 - when to start Crestodian
@@ -37,23 +37,23 @@ and editor controls.
 Use `status` for the detailed inventory with config path, docs/source paths,
 local CLI probes, API-key presence, agents, model, and Gateway details.
 
-Crestodian uses the same RemoteClaw reference discovery as regular agents. In a Git checkout,
+Crestodian uses the same OpenClaw reference discovery as regular agents. In a Git checkout,
 it points itself at local `docs/` and the local source tree. In an npm package install, it
 uses the bundled package docs and links to
-[https://github.com/remoteclaw/remoteclaw](https://github.com/remoteclaw/remoteclaw), with explicit
+[https://github.com/openclaw/openclaw](https://github.com/openclaw/openclaw), with explicit
 guidance to review source whenever the docs are not enough.
 
 ## Examples
 
 ```bash
-remoteclaw
-remoteclaw crestodian
-remoteclaw crestodian --json
-remoteclaw crestodian --message "models"
-remoteclaw crestodian --message "validate config"
-remoteclaw crestodian --message "setup workspace ~/Projects/work model openai/gpt-5.5" --yes
-remoteclaw crestodian --message "set default model openai/gpt-5.5" --yes
-remoteclaw onboard --modern
+openclaw
+openclaw crestodian
+openclaw crestodian --json
+openclaw crestodian --message "models"
+openclaw crestodian --message "validate config"
+openclaw crestodian --message "setup workspace ~/Projects/work model openai/gpt-5.5" --yes
+openclaw crestodian --message "set default model openai/gpt-5.5" --yes
+openclaw onboard --modern
 ```
 
 Inside the Crestodian TUI:
@@ -67,7 +67,7 @@ validate config
 setup
 setup workspace ~/Projects/work model openai/gpt-5.5
 config set gateway.port 19001
-config set-ref gateway.auth.token env REMOTECLAW_GATEWAY_TOKEN
+config set-ref gateway.auth.token env OPENCLAW_GATEWAY_TOKEN
 gateway status
 restart gateway
 agents
@@ -88,14 +88,14 @@ quit
 
 Crestodian's startup path is deliberately small. It can run when:
 
-- `remoteclaw.json` is missing
-- `remoteclaw.json` is invalid
+- `openclaw.json` is missing
+- `openclaw.json` is invalid
 - the Gateway is down
 - plugin command registration is unavailable
 - no agent has been configured yet
 
-`remoteclaw --help` and `remoteclaw --version` still use the normal fast paths.
-Noninteractive bare `remoteclaw` exits with a short message instead of printing
+`openclaw --help` and `openclaw --version` still use the normal fast paths.
+Noninteractive bare `openclaw` exits with a short message instead of printing
 root help. On a fresh install, the message points to non-interactive onboarding;
 after setup, it points to one-shot Crestodian commands.
 
@@ -133,13 +133,13 @@ you pass `--yes` for a direct command:
 Applied writes are recorded in:
 
 ```text
-~/.remoteclaw/audit/crestodian.jsonl
+~/.openclaw/audit/crestodian.jsonl
 ```
 
 Discovery is not audited. Only applied operations and writes are logged.
 
-`remoteclaw onboard --modern` starts Crestodian as the modern onboarding preview.
-Plain `remoteclaw onboard` still runs classic onboarding.
+`openclaw onboard --modern` starts Crestodian as the modern onboarding preview.
+Plain `openclaw onboard` still runs classic onboarding.
 
 ## Setup bootstrap
 
@@ -157,8 +157,8 @@ order and tells you what it chose:
 
 - existing explicit model, if already configured
 - `OPENAI_API_KEY` -> `openai/gpt-5.5`
-- `ANTHROPIC_API_KEY` -> `anthropic/claude-opus-4-7`
-- Claude Code CLI -> `claude-cli/claude-opus-4-7`
+- `ANTHROPIC_API_KEY` -> `anthropic/claude-opus-4-8`
+- Claude Code CLI -> `claude-cli/claude-opus-4-8`
 - Codex -> `openai/gpt-5.5` through the Codex app-server harness
 
 If none are available, setup still writes the default workspace and leaves the
@@ -169,11 +169,11 @@ model unset. Install or log into Codex/Claude Code, or expose
 
 Crestodian always starts in deterministic mode. For fuzzy commands that the
 deterministic parser does not understand, local Crestodian can make one bounded
-planner turn through RemoteClaw's normal runtime paths. It first uses the
-configured RemoteClaw model. If no configured model is usable yet, it can fall
+planner turn through OpenClaw's normal runtime paths. It first uses the
+configured OpenClaw model. If no configured model is usable yet, it can fall
 back to local runtimes already present on the machine:
 
-- Claude Code CLI: `claude-cli/claude-opus-4-7`
+- Claude Code CLI: `claude-cli/claude-opus-4-8`
 - Codex app-server harness: `openai/gpt-5.5`
 
 The model-assisted planner cannot mutate config directly. It must translate the
@@ -197,7 +197,7 @@ talk to work agent
 switch to main agent
 ```
 
-`remoteclaw tui`, `remoteclaw chat`, and `remoteclaw terminal` still open the normal
+`openclaw tui`, `openclaw chat`, and `openclaw terminal` still open the normal
 agent TUI directly. They do not start Crestodian.
 
 After switching into the normal TUI, use `/crestodian` to return to Crestodian.
@@ -224,11 +224,11 @@ Operator flow:
 
 ```text
 You, in a trusted owner DM: /crestodian status
-RemoteClaw: Crestodian rescue mode. Gateway reachable: no. Config valid: no.
+OpenClaw: Crestodian rescue mode. Gateway reachable: no. Config valid: no.
 You: /crestodian restart gateway
-RemoteClaw: Plan: restart the Gateway. Reply /crestodian yes to apply.
+OpenClaw: Plan: restart the Gateway. Reply /crestodian yes to apply.
 You: /crestodian yes
-RemoteClaw: Applied. Audit entry written.
+OpenClaw: Applied. Audit entry written.
 ```
 
 Agent creation can also be queued from the local prompt or rescue mode:
@@ -255,7 +255,7 @@ Security contract for remote rescue:
   because it downloads executable code. Plugin uninstall can be allowed as an
   approved repair operation when rescue policy permits persistent writes.
 - Remote rescue cannot open the local TUI or switch into an interactive agent
-  session. Use local `remoteclaw` for agent handoff.
+  session. Use local `openclaw` for agent handoff.
 - Persistent writes still require approval, even in rescue mode.
 - Audit every applied rescue operation. Message-channel rescue records channel,
   account, sender, and source-address metadata. Config-mutating operations also
@@ -325,7 +325,7 @@ checks the audit log. QA Lab also has a repo-backed scenario for the same Ring 0
 flow:
 
 ```bash
-pnpm remoteclaw qa suite --scenario crestodian-ring-zero-setup
+pnpm openclaw qa suite --scenario crestodian-ring-zero-setup
 ```
 
 ## Related

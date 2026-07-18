@@ -1,21 +1,15 @@
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
+import { clampTimerTimeoutMs, MAX_TIMER_TIMEOUT_MS } from "../shared/number-coercion.js";
 
-/**
- * Runtime attestation (ADR 0005 H9). Declares the implementation status
- * of each runtime export in this module. See CONTRIBUTING.md § Module
- * attestations for the category definitions and the convention for
- * updating these when sync or rebrand changes the surface.
- */
+const DEFAULT_AGENT_TIMEOUT_SECONDS = 48 * 60 * 60;
+
+const normalizeNumber = (value: unknown): number | undefined =>
+  typeof value === "number" && Number.isFinite(value) ? Math.floor(value) : undefined;
+
 export const MODULE_ATTESTATIONS = {
   resolveAgentTimeoutSeconds: "live",
   resolveAgentTimeoutMs: "live",
 } as const;
-
-const DEFAULT_AGENT_TIMEOUT_SECONDS = 48 * 60 * 60;
-const MAX_SAFE_TIMEOUT_MS = 2_147_000_000;
-
-const normalizeNumber = (value: unknown): number | undefined =>
-  typeof value === "number" && Number.isFinite(value) ? Math.floor(value) : undefined;
 
 export function resolveAgentTimeoutSeconds(cfg?: RemoteClawConfig): number {
   const raw = normalizeNumber(cfg?.agents?.defaults?.timeoutSeconds);
@@ -30,11 +24,10 @@ export function resolveAgentTimeoutMs(opts: {
   minMs?: number;
 }): number {
   const minMs = Math.max(normalizeNumber(opts.minMs) ?? 1, 1);
-  const clampTimeoutMs = (valueMs: number) =>
-    Math.min(Math.max(valueMs, minMs), MAX_SAFE_TIMEOUT_MS);
+  const clampTimeoutMs = (valueMs: number) => clampTimerTimeoutMs(valueMs, minMs) ?? minMs;
   const defaultMs = clampTimeoutMs(resolveAgentTimeoutSeconds(opts.cfg) * 1000);
   // Use the maximum timer-safe timeout to represent "no timeout" when explicitly set to 0.
-  const NO_TIMEOUT_MS = MAX_SAFE_TIMEOUT_MS;
+  const NO_TIMEOUT_MS = MAX_TIMER_TIMEOUT_MS;
   const overrideMs = normalizeNumber(opts.overrideMs);
   if (overrideMs !== undefined) {
     if (overrideMs === 0) {

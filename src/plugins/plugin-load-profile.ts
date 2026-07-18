@@ -1,13 +1,13 @@
 /**
  * Shared probe primitives for plugin-load profiling.
  *
- * All plugin-load probes — across `src/plugins/loader.ts`,
- * `src/plugins/source-loader.ts`, and `src/plugin-sdk/channel-entry-contract.ts`
+ * All plugin-load probes — across `src/plugins/loader.ts` and
+ * `src/plugin-sdk/channel-entry-contract.ts`
  * — emit a single line per measurement to stderr in the form:
  *
  *     [plugin-load-profile] phase=<X> plugin=<Y> elapsedMs=<N> [extras…] source=<S>
  *
- * The same `REMOTECLAW_PLUGIN_LOAD_PROFILE=1` env flag activates all probes.
+ * The same `OPENCLAW_PLUGIN_LOAD_PROFILE=1` env flag activates all probes.
  *
  * Tooling that scrapes these lines (e.g. PERF-STARTUP-PLAN.md profiling
  * methodology) depends on the field order being:
@@ -22,7 +22,7 @@
  */
 
 export function shouldProfilePluginLoader(): boolean {
-  return process.env.REMOTECLAW_PLUGIN_LOAD_PROFILE === "1";
+  return process.env.OPENCLAW_PLUGIN_LOAD_PROFILE === "1";
 }
 
 /**

@@ -7,8 +7,8 @@ import {
 } from "./lib/extension-test-plan.mjs";
 import { isDirectScriptRun, runVitestBatch } from "./lib/vitest-batch-runner.mjs";
 
-const FS_MODULE_CACHE_PATH_ENV_KEY = "REMOTECLAW_VITEST_FS_MODULE_CACHE_PATH";
-const PARALLEL_ENV_KEY = "REMOTECLAW_EXTENSION_BATCH_PARALLEL";
+const FS_MODULE_CACHE_PATH_ENV_KEY = "OPENCLAW_VITEST_FS_MODULE_CACHE_PATH";
+const PARALLEL_ENV_KEY = "OPENCLAW_EXTENSION_BATCH_PARALLEL";
 const ALLOW_NO_TESTS_FLAG = "--allow-no-tests";
 const ALLOW_EMPTY_AFTER_EXCLUDE_FLAG = "--allow-empty-after-exclude";
 
@@ -22,9 +22,11 @@ function printUsage() {
 }
 
 export function parseExtensionIds(rawArgs) {
-  const separatorIndex = rawArgs.indexOf("--");
-  const args = separatorIndex >= 0 ? rawArgs.slice(0, separatorIndex) : [...rawArgs];
-  const separatorPassthroughArgs = separatorIndex >= 0 ? rawArgs.slice(separatorIndex + 1) : [];
+  const normalizedArgs = rawArgs[0] === "--" ? rawArgs.slice(1) : rawArgs;
+  const separatorIndex = normalizedArgs.indexOf("--");
+  const args = separatorIndex >= 0 ? normalizedArgs.slice(0, separatorIndex) : [...normalizedArgs];
+  const separatorPassthroughArgs =
+    separatorIndex >= 0 ? normalizedArgs.slice(separatorIndex + 1) : [];
   const extensionIds = [];
 
   while (args[0] && !args[0].startsWith("-")) {

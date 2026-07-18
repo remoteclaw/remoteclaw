@@ -30,17 +30,46 @@ const DEFAULTS = {
 };
 
 const WATCH_GATEWAY_SKIP_ENV = {
-  REMOTECLAW_DISABLE_BONJOUR: "1",
-  REMOTECLAW_SKIP_ACPX_RUNTIME: "1",
-  REMOTECLAW_SKIP_ACPX_RUNTIME_PROBE: "1",
-  REMOTECLAW_SKIP_BROWSER_CONTROL_SERVER: "1",
-  REMOTECLAW_SKIP_CANVAS_HOST: "1",
-  REMOTECLAW_SKIP_CHANNELS: "1",
-  REMOTECLAW_SKIP_CRON: "1",
-  REMOTECLAW_SKIP_GMAIL_WATCHER: "1",
-  REMOTECLAW_TEST_MINIMAL_GATEWAY: "1",
+  OPENCLAW_DISABLE_BONJOUR: "1",
+  OPENCLAW_SKIP_ACPX_RUNTIME: "1",
+  OPENCLAW_SKIP_ACPX_RUNTIME_PROBE: "1",
+  OPENCLAW_SKIP_BROWSER_CONTROL_SERVER: "1",
+  OPENCLAW_SKIP_CANVAS_HOST: "1",
+  OPENCLAW_SKIP_CHANNELS: "1",
+  OPENCLAW_SKIP_CRON: "1",
+  OPENCLAW_SKIP_GMAIL_WATCHER: "1",
+  OPENCLAW_TEST_MINIMAL_GATEWAY: "1",
   NODE_ENV: "test",
 };
+
+export const WATCH_LOG_CAPTURE_MAX_CHARS = 2 * 1024 * 1024;
+const WATCH_BUILD_DETECTION_MAX_CHARS = 4096;
+
+export function appendBoundedWatchLog(current, chunk, maxChars = WATCH_LOG_CAPTURE_MAX_CHARS) {
+  const next = `${current}${String(chunk)}`;
+  if (next.length <= maxChars) {
+    return { text: next, truncated: false };
+  }
+  return { text: next.slice(-maxChars), truncated: true };
+}
+
+function formatCapturedWatchLog(text, truncated) {
+  return truncated
+    ? `[openclaw] log truncated to last ${WATCH_LOG_CAPTURE_MAX_CHARS} chars\n${text}`
+    : text;
+}
+
+export function updateWatchBuildDetection(state, chunk) {
+  const combined = `${state.buffer ?? ""}${String(chunk)}`;
+  const next = appendBoundedWatchLog("", combined, WATCH_BUILD_DETECTION_MAX_CHARS);
+  const reason = detectWatchBuildReason(combined, "");
+  const triggered = state.triggered || combined.includes("Building TypeScript (dist is stale");
+  return {
+    buffer: next.text,
+    triggered,
+    reason: state.reason ?? reason,
+  };
+}
 
 function parseArgs(argv) {
   const options = { ...DEFAULTS };
@@ -382,15 +411,15 @@ async function allocateLoopbackPort() {
 
 function buildTimedWatchCommand(pidFilePath, timeFilePath, isolatedHomeDir, port) {
   const shellSource = [
-    'echo "$$" > "$REMOTECLAW_WATCH_PID_FILE"',
-    'mkdir -p "$REMOTECLAW_HOME/.remoteclaw"',
-    `printf '%s\n' '{"gateway":{"controlUi":{"enabled":false}},"plugins":{"enabled":false}}' > "$REMOTECLAW_HOME/.remoteclaw/remoteclaw.json"`,
+    'echo "$$" > "$OPENCLAW_WATCH_PID_FILE"',
+    'mkdir -p "$OPENCLAW_HOME/.openclaw"',
+    `printf '%s\n' '{"gateway":{"controlUi":{"enabled":false}},"plugins":{"enabled":false}}' > "$OPENCLAW_HOME/.openclaw/openclaw.json"`,
     `exec node scripts/watch-node.mjs gateway --force --allow-unconfigured --port ${String(port)} --token watch-regression-token`,
   ].join("\n");
   const env = {
-    REMOTECLAW_WATCH_PID_FILE: pidFilePath,
+    OPENCLAW_WATCH_PID_FILE: pidFilePath,
     HOME: isolatedHomeDir,
-    REMOTECLAW_HOME: isolatedHomeDir,
+    OPENCLAW_HOME: isolatedHomeDir,
     ...WATCH_GATEWAY_SKIP_ENV,
   };
 
@@ -464,11 +493,20 @@ async function runTimedWatch(options, outputDir) {
 
   let stdout = "";
   let stderr = "";
+  let stdoutTruncated = false;
+  let stderrTruncated = false;
+  let buildDetection = { buffer: "", triggered: false, reason: null };
   child.stdout?.on("data", (chunk) => {
-    stdout += String(chunk);
+    const next = appendBoundedWatchLog(stdout, chunk);
+    stdout = next.text;
+    stdoutTruncated ||= next.truncated;
+    buildDetection = updateWatchBuildDetection(buildDetection, chunk);
   });
   child.stderr?.on("data", (chunk) => {
-    stderr += String(chunk);
+    const next = appendBoundedWatchLog(stderr, chunk);
+    stderr = next.text;
+    stderrTruncated ||= next.truncated;
+    buildDetection = updateWatchBuildDetection(buildDetection, chunk);
   });
 
   let watchPid = null;
@@ -492,8 +530,8 @@ async function runTimedWatch(options, outputDir) {
   const idleCpuEndMs = watchPid ? readProcessTreeCpuMs(watchPid) : null;
 
   const exit = await stopTimedWatchChild(child, watchPid, options);
-  fs.writeFileSync(stdoutPath, stdout, "utf8");
-  fs.writeFileSync(stderrPath, stderr, "utf8");
+  fs.writeFileSync(stdoutPath, formatCapturedWatchLog(stdout, stdoutTruncated), "utf8");
+  fs.writeFileSync(stderrPath, formatCapturedWatchLog(stderr, stderrTruncated), "utf8");
   const timing = fs.existsSync(timeFilePath)
     ? parseTimingFile(timeFilePath)
     : { userSeconds: Number.NaN, sysSeconds: Number.NaN, elapsedSeconds: Number.NaN };
@@ -509,6 +547,8 @@ async function runTimedWatch(options, outputDir) {
     stdoutPath,
     stderrPath,
     timeFilePath,
+    watchTriggeredBuild: buildDetection.triggered,
+    watchBuildReason: buildDetection.reason,
   };
 }
 
@@ -706,15 +746,8 @@ async function main() {
     (watchResult.timing.userSeconds + watchResult.timing.sysSeconds) * 1000,
   );
   const cpuMs = watchResult.idleCpuMs ?? totalCpuMs;
-  const watchTriggeredBuild =
-    fs
-      .readFileSync(watchResult.stderrPath, "utf8")
-      .includes("Building TypeScript (dist is stale") ||
-    fs.readFileSync(watchResult.stdoutPath, "utf8").includes("Building TypeScript (dist is stale");
-  const watchBuildReason = detectWatchBuildReason(
-    fs.readFileSync(watchResult.stdoutPath, "utf8"),
-    fs.readFileSync(watchResult.stderrPath, "utf8"),
-  );
+  const watchTriggeredBuild = watchResult.watchTriggeredBuild;
+  const watchBuildReason = watchResult.watchBuildReason;
 
   const summary = {
     windowMs: options.windowMs,

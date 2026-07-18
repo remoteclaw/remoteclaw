@@ -7,6 +7,7 @@ import { attachChildProcessBridge } from "./process/child-process-bridge.js";
 
 const COMPILE_CACHE_RESPAWN_SIGNAL_EXIT_GRACE_MS = 1_000;
 const COMPILE_CACHE_RESPAWN_SIGNAL_FORCE_KILL_GRACE_MS = 1_000;
+const COMPILE_CACHE_RESPAWN_SIGNAL_HARD_EXIT_GRACE_MS = 1_000;
 
 export function resolveEntryInstallRoot(entryFile: string): string {
   const entryDir = path.dirname(entryFile);
@@ -29,7 +30,7 @@ function isNodeCompileCacheRequested(env: NodeJS.ProcessEnv | undefined): boolea
   return env?.NODE_COMPILE_CACHE !== undefined && !isNodeCompileCacheDisabled(env);
 }
 
-export function shouldEnableRemoteClawCompileCache(params: {
+export function shouldEnableOpenClawCompileCache(params: {
   env?: NodeJS.ProcessEnv;
   installRoot: string;
 }): boolean {
@@ -62,7 +63,7 @@ function readPackageVersion(packageJsonPath: string): string {
   return "unknown";
 }
 
-export function resolveRemoteClawCompileCacheDirectory(params: {
+export function resolveOpenClawCompileCacheDirectory(params: {
   env?: NodeJS.ProcessEnv;
   installRoot: string;
 }): string {
@@ -82,7 +83,7 @@ export function resolveRemoteClawCompileCacheDirectory(params: {
       : path.join(os.tmpdir(), "node-compile-cache");
   return path.join(
     baseDirectory,
-    "remoteclaw",
+    "openclaw",
     version,
     sanitizeCompileCachePathSegment(installMarker),
   );
@@ -101,7 +102,7 @@ type RemoteClawCompileCacheRespawnRuntime = {
   writeError: (message: string) => void;
 };
 
-export function buildRemoteClawCompileCacheRespawnPlan(params: {
+export function buildOpenClawCompileCacheRespawnPlan(params: {
   currentFile: string;
   env?: NodeJS.ProcessEnv;
   execArgv?: string[];
@@ -114,7 +115,7 @@ export function buildRemoteClawCompileCacheRespawnPlan(params: {
   if (!isSourceCheckoutInstallRoot(params.installRoot)) {
     return undefined;
   }
-  if (env.REMOTECLAW_SOURCE_COMPILE_CACHE_RESPAWNED === "1") {
+  if (env.OPENCLAW_SOURCE_COMPILE_CACHE_RESPAWNED === "1") {
     return undefined;
   }
   if (!params.compileCacheDir && !isNodeCompileCacheRequested(env)) {
@@ -123,7 +124,7 @@ export function buildRemoteClawCompileCacheRespawnPlan(params: {
   const nextEnv: NodeJS.ProcessEnv = {
     ...env,
     NODE_DISABLE_COMPILE_CACHE: "1",
-    REMOTECLAW_SOURCE_COMPILE_CACHE_RESPAWNED: "1",
+    OPENCLAW_SOURCE_COMPILE_CACHE_RESPAWNED: "1",
   };
   delete nextEnv.NODE_COMPILE_CACHE;
   return {
@@ -137,11 +138,11 @@ export function buildRemoteClawCompileCacheRespawnPlan(params: {
   };
 }
 
-export function respawnWithoutRemoteClawCompileCacheIfNeeded(params: {
+export function respawnWithoutOpenClawCompileCacheIfNeeded(params: {
   currentFile: string;
   installRoot: string;
 }): boolean {
-  const plan = buildRemoteClawCompileCacheRespawnPlan({
+  const plan = buildOpenClawCompileCacheRespawnPlan({
     currentFile: params.currentFile,
     installRoot: params.installRoot,
     compileCacheDir: getCompileCacheDir?.(),
@@ -149,11 +150,11 @@ export function respawnWithoutRemoteClawCompileCacheIfNeeded(params: {
   if (!plan) {
     return false;
   }
-  runRemoteClawCompileCacheRespawnPlan(plan);
+  runOpenClawCompileCacheRespawnPlan(plan);
   return true;
 }
 
-export function runRemoteClawCompileCacheRespawnPlan(
+export function runOpenClawCompileCacheRespawnPlan(
   plan: RemoteClawCompileCacheRespawnPlan,
   runtime: RemoteClawCompileCacheRespawnRuntime = {
     spawn,
@@ -170,6 +171,7 @@ export function runRemoteClawCompileCacheRespawnPlan(
   // a child that ignores SIGTERM cannot keep the compile-cache wrapper alive indefinitely.
   let signalExitTimer: NodeJS.Timeout | undefined;
   let signalForceKillTimer: NodeJS.Timeout | undefined;
+  let signalHardExitTimer: NodeJS.Timeout | undefined;
   const clearSignalExitTimer = (): void => {
     if (signalExitTimer) {
       clearTimeout(signalExitTimer);
@@ -178,6 +180,10 @@ export function runRemoteClawCompileCacheRespawnPlan(
     if (signalForceKillTimer) {
       clearTimeout(signalForceKillTimer);
       signalForceKillTimer = undefined;
+    }
+    if (signalHardExitTimer) {
+      clearTimeout(signalHardExitTimer);
+      signalHardExitTimer = undefined;
     }
   };
   const forceKillChild = (): void => {
@@ -195,7 +201,10 @@ export function runRemoteClawCompileCacheRespawnPlan(
     }
     signalForceKillTimer = setTimeout(() => {
       forceKillChild();
-      runtime.exit(1);
+      signalHardExitTimer = setTimeout(() => {
+        runtime.exit(1);
+      }, COMPILE_CACHE_RESPAWN_SIGNAL_HARD_EXIT_GRACE_MS);
+      signalHardExitTimer.unref?.();
     }, COMPILE_CACHE_RESPAWN_SIGNAL_FORCE_KILL_GRACE_MS);
     signalForceKillTimer.unref?.();
   };
@@ -234,15 +243,15 @@ export function runRemoteClawCompileCacheRespawnPlan(
   return child;
 }
 
-export function enableRemoteClawCompileCache(params: {
+export function enableOpenClawCompileCache(params: {
   env?: NodeJS.ProcessEnv;
   installRoot: string;
 }): void {
-  if (!shouldEnableRemoteClawCompileCache(params)) {
+  if (!shouldEnableOpenClawCompileCache(params)) {
     return;
   }
   try {
-    enableCompileCache(resolveRemoteClawCompileCacheDirectory(params));
+    enableCompileCache(resolveOpenClawCompileCacheDirectory(params));
   } catch {
     // Best-effort only; never block startup.
   }

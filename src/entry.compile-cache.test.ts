@@ -5,12 +5,12 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanupTempDirs, makeTempDir } from "../test/helpers/temp-dir.js";
 import {
-  buildRemoteClawCompileCacheRespawnPlan,
+  buildOpenClawCompileCacheRespawnPlan,
   isSourceCheckoutInstallRoot,
-  resolveRemoteClawCompileCacheDirectory,
+  resolveOpenClawCompileCacheDirectory,
   resolveEntryInstallRoot,
-  runRemoteClawCompileCacheRespawnPlan,
-  shouldEnableRemoteClawCompileCache,
+  runOpenClawCompileCacheRespawnPlan,
+  shouldEnableOpenClawCompileCache,
 } from "./entry.compile-cache.js";
 
 function requireFirstMockCall(mock: { mock: { calls: unknown[][] } }, label: string): unknown[] {
@@ -47,7 +47,7 @@ describe("entry compile cache", () => {
     await fs.writeFile(path.join(root, "src", "entry.ts"), "export {};\n", "utf8");
 
     expect(
-      shouldEnableRemoteClawCompileCache({
+      shouldEnableOpenClawCompileCache({
         env: {},
         installRoot: root,
       }),
@@ -57,9 +57,9 @@ describe("entry compile cache", () => {
   it("keeps compile cache enabled for packaged installs unless disabled by env", () => {
     const root = makeTempDir(tempDirs, "remoteclaw-compile-cache-package-");
 
-    expect(shouldEnableRemoteClawCompileCache({ env: {}, installRoot: root })).toBe(true);
+    expect(shouldEnableOpenClawCompileCache({ env: {}, installRoot: root })).toBe(true);
     expect(
-      shouldEnableRemoteClawCompileCache({
+      shouldEnableOpenClawCompileCache({
         env: { NODE_DISABLE_COMPILE_CACHE: "1" },
         installRoot: root,
       }),
@@ -71,12 +71,12 @@ describe("entry compile cache", () => {
     const packageJsonPath = path.join(root, "package.json");
     await fs.writeFile(packageJsonPath, '{"version":"2026.4.29"}\n', "utf8");
 
-    const directory = resolveRemoteClawCompileCacheDirectory({
+    const directory = resolveOpenClawCompileCacheDirectory({
       env: { NODE_COMPILE_CACHE: path.join(root, ".node-cache") },
       installRoot: root,
     });
 
-    expect(directory).toContain(path.join(".node-cache", "remoteclaw"));
+    expect(directory).toContain(path.join(".node-cache", "openclaw"));
     expect(directory).toContain("2026.4.29");
     expect(path.basename(directory)).toMatch(/^\d+-\d+$/);
   });
@@ -86,7 +86,7 @@ describe("entry compile cache", () => {
     await fs.mkdir(path.join(root, "src"), { recursive: true });
     await fs.writeFile(path.join(root, "src", "entry.ts"), "export {};\n", "utf8");
 
-    const plan = buildRemoteClawCompileCacheRespawnPlan({
+    const plan = buildOpenClawCompileCacheRespawnPlan({
       currentFile: path.join(root, "dist", "entry.js"),
       env: { NODE_COMPILE_CACHE: "/tmp/remoteclaw-cache" },
       execArgv: ["--no-warnings"],
@@ -100,7 +100,7 @@ describe("entry compile cache", () => {
       args: ["--no-warnings", path.join(root, "dist", "entry.js"), "status", "--json"],
       env: {
         NODE_DISABLE_COMPILE_CACHE: "1",
-        REMOTECLAW_SOURCE_COMPILE_CACHE_RESPAWNED: "1",
+        OPENCLAW_SOURCE_COMPILE_CACHE_RESPAWNED: "1",
       },
     });
   });
@@ -109,7 +109,7 @@ describe("entry compile cache", () => {
     const root = makeTempDir(tempDirs, "remoteclaw-compile-cache-package-respawn-");
 
     expect(
-      buildRemoteClawCompileCacheRespawnPlan({
+      buildOpenClawCompileCacheRespawnPlan({
         currentFile: path.join(root, "dist", "entry.js"),
         env: { NODE_COMPILE_CACHE: "/tmp/remoteclaw-cache" },
         installRoot: root,
@@ -123,11 +123,11 @@ describe("entry compile cache", () => {
     await fs.writeFile(path.join(root, "src", "entry.ts"), "export {};\n", "utf8");
 
     expect(
-      buildRemoteClawCompileCacheRespawnPlan({
+      buildOpenClawCompileCacheRespawnPlan({
         currentFile: path.join(root, "dist", "entry.js"),
         env: {
           NODE_COMPILE_CACHE: "/tmp/remoteclaw-cache",
-          REMOTECLAW_SOURCE_COMPILE_CACHE_RESPAWNED: "1",
+          OPENCLAW_SOURCE_COMPILE_CACHE_RESPAWNED: "1",
         },
         installRoot: root,
       }),
@@ -141,7 +141,7 @@ describe("entry compile cache", () => {
     const exit = vi.fn();
     const writeError = vi.fn();
 
-    runRemoteClawCompileCacheRespawnPlan(
+    runOpenClawCompileCacheRespawnPlan(
       {
         command: "/usr/bin/node",
         args: ["/repo/remoteclaw/dist/entry.js", "status"],
@@ -181,7 +181,7 @@ describe("entry compile cache", () => {
     const spawn = vi.fn(() => child);
     const exit = vi.fn();
 
-    runRemoteClawCompileCacheRespawnPlan(
+    runOpenClawCompileCacheRespawnPlan(
       {
         command: "/usr/bin/node",
         args: ["/repo/remoteclaw/dist/entry.js"],
@@ -200,7 +200,7 @@ describe("entry compile cache", () => {
     expect(exit).toHaveBeenCalledWith(1);
   });
 
-  it("terminates before force-killing a signaled compile-cache respawn child", () => {
+  it("waits for a signaled compile-cache respawn child after force-killing it", () => {
     vi.useFakeTimers();
     const child = new EventEmitter() as ChildProcess;
     const kill = vi.fn<(signal?: NodeJS.Signals) => boolean>(() => true);
@@ -210,7 +210,7 @@ describe("entry compile cache", () => {
     let onSignal: ((signal: NodeJS.Signals) => void) | undefined;
 
     try {
-      runRemoteClawCompileCacheRespawnPlan(
+      runOpenClawCompileCacheRespawnPlan(
         {
           command: "/usr/bin/node",
           args: ["/repo/remoteclaw/dist/entry.js"],
@@ -236,6 +236,10 @@ describe("entry compile cache", () => {
       vi.advanceTimersByTime(1_000);
 
       expect(kill).toHaveBeenCalledWith(process.platform === "win32" ? "SIGTERM" : "SIGKILL");
+      expect(exit).not.toHaveBeenCalled();
+
+      child.emit("exit", null, "SIGKILL");
+
       expect(exit).toHaveBeenCalledWith(1);
     } finally {
       vi.useRealTimers();

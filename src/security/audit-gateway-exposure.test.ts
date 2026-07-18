@@ -285,6 +285,23 @@ describe("security audit gateway exposure findings", () => {
       } satisfies RemoteClawConfig,
       expectedSeverity: "critical" as const,
     },
+    {
+      name: "loopback trusted-proxy with partial loopback CIDR prefix",
+      cfg: {
+        gateway: {
+          bind: "loopback",
+          allowRealIpFallback: true,
+          trustedProxies: ["127.0.0.1/32abc"],
+          auth: {
+            mode: "trusted-proxy",
+            trustedProxy: {
+              userHeader: "x-forwarded-user",
+            },
+          },
+        },
+      } satisfies RemoteClawConfig,
+      expectedSeverity: "critical" as const,
+    },
   ])("scores X-Real-IP fallback risk by gateway exposure: $name", ({ cfg, expectedSeverity }) => {
     expect(
       hasFinding(
@@ -408,6 +425,25 @@ describe("security audit gateway exposure findings", () => {
           },
         },
         expectedCheckId: "gateway.trusted_proxy_no_allowlist",
+        expectedSeverity: "warn",
+      },
+      {
+        name: "loopback proxy source explicitly allowed",
+        cfg: {
+          gateway: {
+            bind: "loopback",
+            trustedProxies: ["127.0.0.1"],
+            auth: {
+              mode: "trusted-proxy",
+              trustedProxy: {
+                userHeader: "x-forwarded-user",
+                allowUsers: ["nick@example.com"],
+                allowLoopback: true,
+              },
+            },
+          },
+        },
+        expectedCheckId: "gateway.trusted_proxy_allow_loopback",
         expectedSeverity: "warn",
       },
     ];

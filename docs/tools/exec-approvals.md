@@ -19,17 +19,17 @@ skips approvals).
 Effective policy is the **stricter** of `tools.exec.*` and approvals
 defaults; if an approvals field is omitted, the `tools.exec` value is
 used. Host exec also uses local approvals state on that machine - a
-host-local `ask: "always"` in `~/.remoteclaw/exec-approvals.json` keeps
+host-local `ask: "always"` in `~/.openclaw/exec-approvals.json` keeps
 prompting even if session or config defaults request `ask: "on-miss"`.
 </Note>
 
 ## Inspecting the effective policy
 
-| Command                                                            | What it shows                                                                          |
-| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
-| `remoteclaw approvals get` / `--gateway` / `--node <id\|name\|ip>` | Requested policy, host policy sources, and the effective result.                       |
-| `remoteclaw exec-policy show`                                      | Local-machine merged view.                                                             |
-| `remoteclaw exec-policy set` / `preset`                            | Synchronize the local requested policy with the local host approvals file in one step. |
+| Command                                                          | What it shows                                                                          |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `openclaw approvals get` / `--gateway` / `--node <id\|name\|ip>` | Requested policy, host policy sources, and the effective result.                       |
+| `openclaw exec-policy show`                                      | Local-machine merged view.                                                             |
+| `openclaw exec-policy set` / `preset`                            | Synchronize the local requested policy with the local host approvals file in one step. |
 
 When a local scope requests `host=node`, `exec-policy show` reports that
 scope as node-managed at runtime instead of pretending the local
@@ -49,7 +49,7 @@ pending approval message. For example, Matrix seeds reaction shortcuts
 
 Exec approvals are enforced locally on the execution host:
 
-- **Gateway host** → `remoteclaw` process on the gateway machine.
+- **Gateway host** → `openclaw` process on the gateway machine.
 - **Node host** → node runner (macOS companion app or headless node host).
 
 ### Trust model
@@ -59,7 +59,7 @@ Exec approvals are enforced locally on the execution host:
 - Exec approvals reduce accidental execution risk, but are **not** a per-user auth boundary or filesystem read-only policy.
 - Once approved, a command can mutate files according to the selected host or sandbox filesystem permissions.
 - Approved node-host runs bind canonical execution context: canonical cwd, exact argv, env binding when present, and pinned executable path when applicable.
-- For shell scripts and direct interpreter/runtime file invocations, RemoteClaw also tries to bind one concrete local file operand. If that bound file changes after approval but before execution, the run is denied instead of executing drifted content.
+- For shell scripts and direct interpreter/runtime file invocations, OpenClaw also tries to bind one concrete local file operand. If that bound file changes after approval but before execution, the run is denied instead of executing drifted content.
 - File binding is intentionally best-effort, **not** a complete semantic model of every interpreter/runtime loader path. If approval mode cannot identify exactly one concrete local file to bind, it refuses to mint an approval-backed run instead of pretending full coverage.
 
 ### macOS split
@@ -72,7 +72,7 @@ Exec approvals are enforced locally on the execution host:
 Approvals live in a local JSON file on the execution host:
 
 ```text
-~/.remoteclaw/exec-approvals.json
+~/.openclaw/exec-approvals.json
 ```
 
 Example schema:
@@ -81,7 +81,7 @@ Example schema:
 {
   "version": 1,
   "socket": {
-    "path": "~/.remoteclaw/exec-approvals.sock",
+    "path": "~/.openclaw/exec-approvals.sock",
     "token": "base64url-token"
   },
   "defaults": {
@@ -113,6 +113,20 @@ Example schema:
 ```
 
 ## Policy knobs
+
+### `tools.exec.mode`
+
+`tools.exec.mode` is the preferred normalized policy surface for host exec.
+Values are:
+
+- `deny` - block host exec.
+- `allowlist` - run only allowlisted commands without asking.
+- `ask` - use allowlist policy and ask on misses.
+- `auto` - use allowlist policy, run deterministic matches directly, and send approval misses through OpenClaw's native auto reviewer before falling back to a human approval route.
+- `full` - run host exec without approval prompts.
+
+Legacy `tools.exec.security` / `tools.exec.ask` remain supported and still win
+when set at the narrower session or agent scope.
 
 ### `exec.security`
 
@@ -146,7 +160,7 @@ Example schema:
 ### `tools.exec.strictInlineEval`
 
 <ParamField path="strictInlineEval" type="boolean">
-  When `true`, RemoteClaw treats inline code-eval forms as approval-only
+  When `true`, OpenClaw treats inline code-eval forms as approval-only
   even if the interpreter binary itself is allowlisted. Defense-in-depth
   for interpreter loaders that do not map cleanly to one stable file
   operand.
@@ -170,7 +184,7 @@ automatically.
 
 <ParamField path="commandHighlighting" type="boolean" default="false">
   Controls only presentation in exec approval prompts. When enabled,
-  RemoteClaw may attach parser-derived command spans so Web approval
+  OpenClaw may attach parser-derived command spans so Web approval
   prompts can highlight command tokens. Set it to `true` to enable
   command text highlighting.
 </ParamField>
@@ -183,9 +197,9 @@ agent under `agents.list[].tools.exec.commandHighlighting`.
 ## YOLO mode (no-approval)
 
 If you want host exec to run without approval prompts, you must open
-**both** policy layers - requested exec policy in RemoteClaw config
+**both** policy layers - requested exec policy in OpenClaw config
 (`tools.exec.*`) **and** host-local approvals policy in
-`~/.remoteclaw/exec-approvals.json`.
+`~/.openclaw/exec-approvals.json`.
 
 YOLO is the default host behavior unless you tighten it explicitly:
 
@@ -200,22 +214,22 @@ YOLO is the default host behavior unless you tighten it explicitly:
 
 - `tools.exec.host=auto` chooses **where** exec runs: sandbox when available, otherwise gateway.
 - YOLO chooses **how** host exec is approved: `security=full` plus `ask=off`.
-- In YOLO mode, RemoteClaw does **not** add a separate heuristic command-obfuscation approval gate or script-preflight rejection layer on top of the configured host exec policy.
+- In YOLO mode, OpenClaw does **not** add a separate heuristic command-obfuscation approval gate or script-preflight rejection layer on top of the configured host exec policy.
 - `auto` does not make gateway routing a free override from a sandboxed session. A per-call `host=node` request is allowed from `auto`; `host=gateway` is only allowed from `auto` when no sandbox runtime is active. For a stable non-auto default, set `tools.exec.host` or use `/exec host=...` explicitly.
 
 </Warning>
 
 CLI-backed providers that expose their own noninteractive permission mode
 can follow this policy. Claude CLI adds
-`--permission-mode bypassPermissions` when RemoteClaw's effective exec
-policy is YOLO. For RemoteClaw-managed Claude live sessions, RemoteClaw's
+`--permission-mode bypassPermissions` when OpenClaw's effective exec
+policy is YOLO. For OpenClaw-managed Claude live sessions, OpenClaw's
 effective exec policy is authoritative over Claude's native permission mode:
 YOLO normalizes live launches to `--permission-mode bypassPermissions`, and
 restrictive effective exec policy normalizes live launches to
 `--permission-mode default`, even if raw Claude backend args specify another
 mode.
 
-If you want a more conservative setup, tighten RemoteClaw exec policy back to
+If you want a more conservative setup, tighten OpenClaw exec policy back to
 `allowlist` / `on-miss` or `deny`.
 
 ### Persistent gateway-host "never prompt" setup
@@ -223,15 +237,15 @@ If you want a more conservative setup, tighten RemoteClaw exec policy back to
 <Steps>
   <Step title="Set the requested config policy">
     ```bash
-    remoteclaw config set tools.exec.host gateway
-    remoteclaw config set tools.exec.security full
-    remoteclaw config set tools.exec.ask off
-    remoteclaw gateway restart
+    openclaw config set tools.exec.host gateway
+    openclaw config set tools.exec.security full
+    openclaw config set tools.exec.ask off
+    openclaw gateway restart
     ```
   </Step>
   <Step title="Match the host approvals file">
     ```bash
-    remoteclaw approvals set --stdin <<'EOF'
+    openclaw approvals set --stdin <<'EOF'
     {
       version: 1,
       defaults: {
@@ -248,24 +262,24 @@ If you want a more conservative setup, tighten RemoteClaw exec policy back to
 ### Local shortcut
 
 ```bash
-remoteclaw exec-policy preset yolo
+openclaw exec-policy preset yolo
 ```
 
 That local shortcut updates both:
 
 - Local `tools.exec.host/security/ask`.
-- Local `~/.remoteclaw/exec-approvals.json` defaults.
+- Local `~/.openclaw/exec-approvals.json` defaults.
 
 It is intentionally local-only. To change gateway-host or node-host
-approvals remotely, use `remoteclaw approvals set --gateway` or
-`remoteclaw approvals set --node <id|name|ip>`.
+approvals remotely, use `openclaw approvals set --gateway` or
+`openclaw approvals set --node <id|name|ip>`.
 
 ### Node host
 
 For a node host, apply the same approvals file on that node instead:
 
 ```bash
-remoteclaw approvals set --node <id|name|ip> --stdin <<'EOF'
+openclaw approvals set --node <id|name|ip> --stdin <<'EOF'
 {
   version: 1,
   defaults: {
@@ -280,16 +294,19 @@ EOF
 <Note>
 **Local-only limitations:**
 
-- `remoteclaw exec-policy` does not synchronize node approvals.
-- `remoteclaw exec-policy set --host node` is rejected.
-- Node exec approvals are fetched from the node at runtime, so node-targeted updates must use `remoteclaw approvals --node ...`.
+- `openclaw exec-policy` does not synchronize node approvals.
+- `openclaw exec-policy set --host node` is rejected.
+- Node exec approvals are fetched from the node at runtime, so node-targeted updates must use `openclaw approvals --node ...`.
 
 </Note>
 
 ### Session-only shortcut
 
 - `/exec security=full ask=off` changes only the current session.
-- `/elevated full` is a break-glass shortcut that also skips exec approvals for that session.
+- `/elevated full` is a break-glass shortcut that skips exec approvals only when
+  both the requested policy and the host approvals file resolve to
+  `security: "full"` and `ask: "off"`. A stricter host file, such as
+  `ask: "always"`, still prompts.
 
 If the host approvals file stays stricter than config, the stricter host
 policy still wins.
@@ -319,7 +336,7 @@ Examples:
 ### Restricting arguments with argPattern
 
 Add `argPattern` when an allowlist entry should match a binary and a
-specific argument shape. RemoteClaw evaluates the regular expression
+specific argument shape. OpenClaw evaluates the regular expression
 against the parsed command arguments, excluding the executable token
 (`argv[0]`). For hand-authored entries, arguments are joined with a
 single space, so anchor the pattern when you need an exact match.
@@ -347,7 +364,7 @@ entry when the goal is to restrict the binary to the declared arguments.
 
 Entries saved by approval flows can use an internal separator format for
 exact argv matching. Prefer the UI or approval flow to regenerate those
-entries instead of hand-editing the encoded value. If RemoteClaw cannot
+entries instead of hand-editing the encoded value. If OpenClaw cannot
 parse argv for a command segment, entries with `argPattern` do not match.
 
 Each allowlist entry supports:
@@ -394,9 +411,9 @@ shows last-used metadata per pattern so you can keep the list tidy.
 The target selector chooses **Gateway** (local approvals) or a **Node**.
 Nodes must advertise `system.execApprovals.get/set` (macOS app or
 headless node host). If a node does not advertise exec approvals yet,
-edit its local `~/.remoteclaw/exec-approvals.json` directly.
+edit its local `~/.openclaw/exec-approvals.json` directly.
 
-CLI: `remoteclaw approvals` supports gateway or node editing - see
+CLI: `openclaw approvals` supports gateway or node editing - see
 [Approvals CLI](/cli/approvals).
 
 ## Approval flow
@@ -426,7 +443,7 @@ Exec lifecycle is surfaced as system messages:
 - `Exec finished`.
 
 These are posted to the agent's session after the node reports the event.
-Denied exec approvals are terminal: RemoteClaw can report the denial to the
+Denied exec approvals are terminal: OpenClaw can report the denial to the
 operator or direct chat route, but it does not post `Exec denied` back into the
 agent session or wake agent work.
 Gateway-host exec approvals emit the same lifecycle events when the
@@ -436,7 +453,7 @@ messages for easy correlation.
 
 ## Denied approval behavior
 
-When an async exec approval is denied, RemoteClaw treats the request as terminal.
+When an async exec approval is denied, OpenClaw treats the request as terminal.
 It can show a concise denial to the operator or direct chat route, but it does
 not send denial guidance back through the agent session. That keeps a denied
 command from becoming another model turn and prevents the agent from reusing

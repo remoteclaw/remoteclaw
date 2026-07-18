@@ -29,9 +29,9 @@ const NONCE_REFUSAL_MARKERS = [
   "no read tool available",
   "won't output",
   "won’t output",
-  "isn't a real remoteclaw probe",
-  "is not a real remoteclaw probe",
-  "not a real remoteclaw probe",
+  "isn't a real openclaw probe",
+  "is not a real openclaw probe",
+  "not a real openclaw probe",
   "no part of the system asks me",
 ];
 
@@ -66,6 +66,7 @@ function hasMalformedToolOutput(text: string): boolean {
   }
   if (
     lower.includes("try reading the file again") ||
+    lower.includes("try again with a slightly different approach") ||
     lower.includes("trying to read the file again") ||
     lower.includes("try the read tool again") ||
     lower.includes("file wasn't found immediately after") ||

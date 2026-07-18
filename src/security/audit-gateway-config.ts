@@ -4,6 +4,7 @@ import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import { hasConfiguredSecretInput } from "../config/types.secrets.js";
 import { resolveGatewayAuth } from "../gateway/auth-resolve.js";
 import { resolveGatewayAuthTokenSourceConflict } from "../gateway/auth-token-source-conflict.js";
+import { parseStrictNonNegativeInteger } from "../infra/parse-finite-number.js";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
@@ -51,8 +52,8 @@ export function collectGatewayConfigFindings(
     : [];
   const hasToken = typeof auth.token === "string" && auth.token.trim().length > 0;
   const hasPassword = typeof auth.password === "string" && auth.password.trim().length > 0;
-  const envTokenConfigured = hasNonEmptyString(env.REMOTECLAW_GATEWAY_TOKEN);
-  const envPasswordConfigured = hasNonEmptyString(env.REMOTECLAW_GATEWAY_PASSWORD);
+  const envTokenConfigured = hasNonEmptyString(env.OPENCLAW_GATEWAY_TOKEN);
+  const envPasswordConfigured = hasNonEmptyString(env.OPENCLAW_GATEWAY_PASSWORD);
   const tokenConfiguredFromConfig = hasConfiguredSecretInput(
     sourceConfig.gateway?.auth?.token,
     sourceConfig.secrets?.defaults,
@@ -346,6 +347,20 @@ export function collectGatewayConfigFindings(
       });
     }
 
+    if (trustedProxyConfig?.allowLoopback === true) {
+      findings.push({
+        checkId: "gateway.trusted_proxy_allow_loopback",
+        severity: "warn",
+        title: "Trusted-proxy auth allows loopback proxy sources",
+        detail:
+          "gateway.auth.trustedProxy.allowLoopback=true allows loopback-source requests " +
+          "from configured gateway.trustedProxies entries to satisfy trusted-proxy auth.",
+        remediation:
+          "Enable this only when a same-host reverse proxy is the intended trust boundary. " +
+          "Keep direct Gateway access private to the host and require the proxy to strip or overwrite identity headers.",
+      });
+    }
+
     const allowUsers = trustedProxyConfig?.allowUsers ?? [];
     if (allowUsers.length === 0) {
       findings.push({
@@ -393,8 +408,8 @@ function isStrictLoopbackTrustedProxyEntry(entry: string): boolean {
     return false;
   }
   const ipVersion = isIP(rawIp.trim());
-  const prefix = Number.parseInt(rawPrefix.trim(), 10);
-  if (!Number.isInteger(prefix)) {
+  const prefix = parseStrictNonNegativeInteger(rawPrefix);
+  if (prefix === undefined) {
     return false;
   }
   if (ipVersion === 4) {

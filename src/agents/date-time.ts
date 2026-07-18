@@ -1,11 +1,5 @@
 import { execFileSync } from "node:child_process";
 
-/**
- * Runtime attestation (ADR 0005 H9). Declares the implementation status
- * of each runtime export in this module. See CONTRIBUTING.md § Module
- * attestations for the category definitions and the convention for
- * updating these when sync or rebrand changes the surface.
- */
 export const MODULE_ATTESTATIONS = {
   resolveUserTimezone: "live",
   resolveUserTimeFormat: "live",
@@ -18,6 +12,16 @@ export type TimeFormatPreference = "auto" | "12" | "24";
 export type ResolvedTimeFormat = "12" | "24";
 
 let cachedTimeFormat: ResolvedTimeFormat | undefined;
+
+function buildNormalizedTimestamp(
+  timestampMs: number,
+): { timestampMs: number; timestampUtc: string } | undefined {
+  if (!Number.isSafeInteger(timestampMs)) {
+    return undefined;
+  }
+  const timestampUtc = new Date(timestampMs).toISOString();
+  return { timestampMs, timestampUtc };
+}
 
 export function resolveUserTimezone(configured?: string): string {
   const trimmed = configured?.trim();
@@ -83,7 +87,11 @@ export function normalizeTimestamp(
   if (timestampMs === undefined || !Number.isFinite(timestampMs)) {
     return undefined;
   }
-  return { timestampMs, timestampUtc: new Date(timestampMs).toISOString() };
+  try {
+    return buildNormalizedTimestamp(timestampMs);
+  } catch {
+    return undefined;
+  }
 }
 
 export function withNormalizedTimestamp<T extends Record<string, unknown>>(

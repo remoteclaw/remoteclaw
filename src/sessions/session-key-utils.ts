@@ -1,42 +1,3 @@
-// PROTECTED fork divergence — do not port upstream `bea53d7a3f` (#58400).
-//
-// Upstream moved bootstrap session-grammar parsing out of this module and into
-// plugin-owned `session-key-api.ts` / `session-conversation.ts` surfaces, with
-// dispatch through `src/channels/plugins/session-conversation.ts` and the
-// `loadBundledPluginPublicSurfaceModuleSync` plugin-SDK facade-runtime loader.
-// RemoteClaw cannot adopt that pattern as-is:
-//
-//   1. `src/plugin-sdk/facade-runtime.ts` and
-//      `src/plugins/bundled-plugin-metadata.ts` (the loader + path resolver
-//      the upstream dispatch relies on) are gutted in this fork as part of
-//      the Pi-era plugin-marketplace removal. The fork retains only
-//      `bundled-plugin-metadata.generated.ts`, which exposes a different
-//      surface that does not back the plugin-public-surface loader.
-//
-//   2. `ChannelMessagingAdapter` (`src/channels/plugins/types.core.ts`) is
-//      deliberately minimal in this fork (`normalizeTarget`, `targetResolver`,
-//      `formatTargetDisplay`). Upstream's port adds
-//      `resolveSessionConversation` and `resolveParentConversationCandidates`
-//      hooks plus a per-plugin `session-key-api.ts` artifact, neither of
-//      which has an analogue here.
-//
-//   3. `parseSessionConversationRef` (the function upstream renames to
-//      `parseRawSessionConversationRef`) has no fork callers. Only
-//      `parseThreadSessionSuffix` is used (by `config/sessions/reset.ts` and
-//      `config/sessions/delivery-info.ts`), and the channelHint-based
-//      implementation correctly handles Telegram's `:topic:` marker (see
-//      `src/routing/session-key.test.ts`).
-//
-// Net: porting `bea53d7a3f` would require resurrecting gutted plugin-SDK
-// infrastructure, expanding the channel-plugin adapter surface, and adding
-// a per-adapter session-grammar artifact — all for zero functional gain
-// over the existing channelHint approach. The disposition is PROTECTED in
-// `hq/upstream/disposition.tsv`; future syncs MUST NOT re-port this file
-// from upstream without first either (a) reversing the plugin-SDK gut, or
-// (b) re-evaluating this rationale.
-//
-// Tracked-by: remoteclaw#2666. Paired sync revert: 477212d342 (sync v2026.4.2).
-
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
@@ -48,18 +9,71 @@ export type ParsedAgentSessionKey = {
   rest: string;
 };
 
-export type SessionKeyChatType = "direct" | "group" | "channel" | "unknown";
 export type ParsedThreadSessionSuffix = {
   baseSessionKey: string | undefined;
   threadId: string | undefined;
 };
 
-export type ParsedSessionConversationRef = {
+export type RawSessionConversationRef = {
   channel: string;
   kind: "group" | "channel";
-  id: string;
-  threadId: string | undefined;
+  rawId: string;
+  prefix: string;
 };
+
+/**
+ * Generic, opt-in case-preservation policy for session-key peer IDs.
+ *
+ * Session keys are canonicalized to lowercase for stable comparison/routing, but
+ * some channels own opaque, case-SENSITIVE peer IDs that must survive verbatim.
+ * Channels enroll here individually; un-enrolled channels keep the default
+ * lowercase behavior. See openclaw/openclaw#75670 (Matrix) and #82853 (Signal).
+ *
+ *   span "segment" — preserve a single colon-free id segment, matched anywhere
+ *                    (incl. unscoped keys without an `agent:<id>:` head).
+ *   span "tail"    — preserve the entire opaque tail after the agent-scoped
+ *                    `agent:<id>:<channel>:<peerKind>:` head (opaque id with
+ *                    embedded colons plus any `:thread:<event>` suffix).
+ */
+type CasePreservingPeerDescriptor = {
+  channel: string;
+  peerKinds: ReadonlySet<string>;
+  span: "segment" | "tail";
+  /** Preserve even without the `agent:<id>:` structural head (legacy Signal). */
+  unscoped: boolean;
+};
+
+const CASE_PRESERVING_PEERS: readonly CasePreservingPeerDescriptor[] = [
+  // #82853 — Signal group IDs (opaque). Encoded to match prior behavior exactly.
+  { channel: "signal", peerKinds: new Set(["group"]), span: "segment", unscoped: true },
+  // #75670 — Matrix room IDs (opaque, embedded `:server`) plus thread event suffix.
+  { channel: "matrix", peerKinds: new Set(["channel", "group"]), span: "tail", unscoped: true },
+];
+
+/** True when (channel, peerKind) owns a case-sensitive opaque peer ID. */
+export function isCasePreservingPeer(
+  channel: string | undefined | null,
+  peerKind: string | undefined | null,
+): boolean {
+  const c = normalizeLowercaseStringOrEmpty(channel);
+  const k = normalizeLowercaseStringOrEmpty(peerKind);
+  return findCasePreservingPeerDescriptor(c, k) !== undefined;
+}
+
+function findCasePreservingPeerDescriptor(
+  channel: string | undefined | null,
+  peerKind: string | undefined | null,
+): CasePreservingPeerDescriptor | undefined {
+  const c = normalizeLowercaseStringOrEmpty(channel);
+  const k = normalizeLowercaseStringOrEmpty(peerKind);
+  return CASE_PRESERVING_PEERS.find((d) => d.channel === c && d.peerKinds.has(k));
+}
+
+export function requiresFoldedSessionKeyAliasProof(sessionKey: string | undefined | null): boolean {
+  const ref = parseRawSessionConversationRef(sessionKey);
+  const descriptor = findCasePreservingPeerDescriptor(ref?.channel, ref?.kind);
+  return descriptor?.span === "tail";
+}
 
 export function normalizeSessionPeerId(params: {
   channel: string | undefined | null;
@@ -70,14 +84,107 @@ export function normalizeSessionPeerId(params: {
   if (!peerId) {
     return "";
   }
-  const channel = normalizeLowercaseStringOrEmpty(params.channel);
-  const peerKind = normalizeLowercaseStringOrEmpty(params.peerKind);
-  return channel === "signal" && peerKind === "group"
+  return isCasePreservingPeer(params.channel, params.peerKind)
     ? peerId
     : normalizeLowercaseStringOrEmpty(peerId);
 }
 
-const SIGNAL_GROUP_SESSION_SEGMENT_RE = /(^|:)signal:group:([^:]+)/gi;
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+type PreservedSpan = { start: number; end: number; trim: boolean };
+
+const NORMALIZED_SESSION_KEY_CACHE_MAX_ENTRIES = 2048;
+const NORMALIZED_SESSION_KEY_CACHE_MAX_LENGTH = 4096;
+const normalizedSessionKeyCache = new Map<string, string>();
+
+function readNormalizedSessionKeyCache(raw: string): string | undefined {
+  return raw.length <= NORMALIZED_SESSION_KEY_CACHE_MAX_LENGTH
+    ? normalizedSessionKeyCache.get(raw)
+    : undefined;
+}
+
+function writeNormalizedSessionKeyCache(raw: string, normalized: string): void {
+  if (raw.length > NORMALIZED_SESSION_KEY_CACHE_MAX_LENGTH) {
+    return;
+  }
+  normalizedSessionKeyCache.set(raw, normalized);
+  while (normalizedSessionKeyCache.size > NORMALIZED_SESSION_KEY_CACHE_MAX_ENTRIES) {
+    const oldest = normalizedSessionKeyCache.keys().next().value;
+    if (oldest === undefined) {
+      return;
+    }
+    normalizedSessionKeyCache.delete(oldest);
+  }
+}
+
+function mayContainCasePreservingPeer(raw: string): boolean {
+  const folded = raw.toLowerCase();
+  return CASE_PRESERVING_PEERS.some((descriptor) => folded.includes(`${descriptor.channel}:`));
+}
+
+/**
+ * Collect [start,end) index ranges in `raw` whose case must be preserved, per the
+ * CASE_PRESERVING_PEERS registry. Spans may come from multiple descriptors; the
+ * caller lowercases everything OUTSIDE their union — collect-then-emit, never
+ * sequential transforms that could re-lowercase an already-preserved span.
+ */
+function collectCasePreservedSpans(raw: string): PreservedSpan[] {
+  const spans: PreservedSpan[] = [];
+  for (const descriptor of CASE_PRESERVING_PEERS) {
+    const channel = escapeRegExp(descriptor.channel);
+    for (const peerKind of descriptor.peerKinds) {
+      const kind = escapeRegExp(peerKind);
+      if (descriptor.span === "segment") {
+        // Unscoped: `<channel>:<peerKind>:<segment>` at start or after any colon.
+        const re = new RegExp(`(^|:)${channel}:${kind}:([^:]+)`, "gi");
+        for (const match of raw.matchAll(re)) {
+          const matched = match[0] ?? "";
+          const segment = match[2] ?? "";
+          const segStart = (match.index ?? 0) + matched.length - segment.length;
+          // Segment spans match the legacy `peerId.trim()` behavior exactly.
+          spans.push({ start: segStart, end: segStart + segment.length, trim: true });
+        }
+      } else {
+        const collectTailSpan = (tailStart: number): void => {
+          if (tailStart >= raw.length) {
+            return;
+          }
+          // Preserve Matrix room/event IDs, but keep structural thread marker
+          // casing canonical so `:Thread:` cannot fork a session key.
+          const tail = raw.slice(tailStart);
+          const threadMarker = ":thread:";
+          const markerIndex = normalizeLowercaseStringOrEmpty(tail).lastIndexOf(threadMarker);
+          if (markerIndex === -1) {
+            spans.push({ start: tailStart, end: raw.length, trim: false });
+            return;
+          }
+          spans.push({ start: tailStart, end: tailStart + markerIndex, trim: false });
+          const threadIdStart = tailStart + markerIndex + threadMarker.length;
+          if (threadIdStart < raw.length) {
+            spans.push({ start: threadIdStart, end: raw.length, trim: false });
+          }
+        };
+        // Tail: anchored to the real agent-scoped head; preserve through key end.
+        const scopedRe = new RegExp(`^agent:[^:]+:${channel}:${kind}:`, "i");
+        const scopedMatch = scopedRe.exec(raw);
+        if (scopedMatch) {
+          collectTailSpan(scopedMatch[0].length);
+          continue;
+        }
+        if (descriptor.unscoped) {
+          const unscopedRe = new RegExp(`^${channel}:${kind}:`, "i");
+          const unscopedMatch = unscopedRe.exec(raw);
+          if (unscopedMatch) {
+            collectTailSpan(unscopedMatch[0].length);
+          }
+        }
+      }
+    }
+  }
+  return spans;
+}
 
 export function normalizeSessionKeyPreservingOpaquePeerIds(
   sessionKey: string | undefined | null,
@@ -86,19 +193,33 @@ export function normalizeSessionKeyPreservingOpaquePeerIds(
   if (!raw) {
     return "";
   }
+  const cached = readNormalizedSessionKeyCache(raw);
+  if (cached !== undefined) {
+    return cached;
+  }
+  if (!mayContainCasePreservingPeer(raw)) {
+    const normalized = raw.toLowerCase();
+    writeNormalizedSessionKeyCache(raw, normalized);
+    return normalized;
+  }
+  const spans = collectCasePreservedSpans(raw)
+    .filter((span) => span.end > span.start)
+    .toSorted((a, b) => a.start - b.start);
 
   let normalized = "";
   let cursor = 0;
-  for (const match of raw.matchAll(SIGNAL_GROUP_SESSION_SEGMENT_RE)) {
-    const matchIndex = match.index ?? 0;
-    const matched = match[0] ?? "";
-    const peerId = match[2] ?? "";
-    const peerStart = matchIndex + matched.length - peerId.length;
-    normalized += normalizeLowercaseStringOrEmpty(raw.slice(cursor, peerStart));
-    normalized += peerId.trim();
-    cursor = matchIndex + matched.length;
+  for (const span of spans) {
+    if (span.start < cursor) {
+      // Overlapping/contained in an already-emitted preserved range; skip.
+      continue;
+    }
+    normalized += normalizeLowercaseStringOrEmpty(raw.slice(cursor, span.start));
+    const preserved = raw.slice(span.start, span.end);
+    normalized += span.trim ? preserved.trim() : preserved;
+    cursor = span.end;
   }
   normalized += normalizeLowercaseStringOrEmpty(raw.slice(cursor));
+  writeNormalizedSessionKeyCache(raw, normalized);
   return normalized;
 }
 
@@ -127,33 +248,6 @@ export function parseAgentSessionKey(
     return null;
   }
   return { agentId, rest };
-}
-
-/**
- * Best-effort chat-type extraction from session keys across canonical and legacy formats.
- */
-export function deriveSessionChatType(sessionKey: string | undefined | null): SessionKeyChatType {
-  const raw = (sessionKey ?? "").trim().toLowerCase();
-  if (!raw) {
-    return "unknown";
-  }
-  const scoped = parseAgentSessionKey(raw)?.rest ?? raw;
-  const tokens = new Set(scoped.split(":").filter(Boolean));
-  if (tokens.has("group")) {
-    return "group";
-  }
-  if (tokens.has("channel")) {
-    return "channel";
-  }
-  if (tokens.has("direct") || tokens.has("dm")) {
-    return "direct";
-  }
-  // Legacy Discord keys can be shaped like:
-  // discord:<accountId>:guild-<guildId>:channel-<channelId>
-  if (/^discord:(?:[^:]+:)?guild-[^:]+:channel-[^:]+$/.test(scoped)) {
-    return "channel";
-  }
-  return "unknown";
 }
 
 export function isCronRunSessionKey(sessionKey: string | undefined | null): boolean {
@@ -205,8 +299,14 @@ export function isAcpSessionKey(sessionKey: string | undefined | null): boolean 
   return normalizeOptionalLowercaseString(parsed?.rest)?.startsWith("acp:") === true;
 }
 
+// Fork divergence (restored after upstream v2026.5.28 dropped it): RemoteClaw
+// keeps Telegram, whose forum topics encode the topic id as a `:topic:<id>`
+// session-key suffix (extensions/telegram still emits it). Upstream's refactor
+// only recognizes the generic `:thread:` marker, so without this the fork
+// regresses Telegram topic session parsing (src/routing/session-key.test.ts +
+// config/sessions delivery-info/reset tests).
 function normalizeThreadSuffixChannelHint(value: string | undefined | null): string | undefined {
-  const trimmed = (value ?? "").trim().toLowerCase();
+  const trimmed = normalizeLowercaseStringOrEmpty(value);
   return trimmed || undefined;
 }
 
@@ -215,7 +315,7 @@ function inferThreadSuffixChannelHint(sessionKey: string): string | undefined {
   if (parts.length === 0) {
     return undefined;
   }
-  if ((parts[0] ?? "").trim().toLowerCase() === "agent") {
+  if (normalizeLowercaseStringOrEmpty(parts[0]) === "agent") {
     return normalizeThreadSuffixChannelHint(parts[2]);
   }
   return normalizeThreadSuffixChannelHint(parts[0]);
@@ -225,16 +325,19 @@ export function parseThreadSessionSuffix(
   sessionKey: string | undefined | null,
   options?: { channelHint?: string | null },
 ): ParsedThreadSessionSuffix {
-  const raw = (sessionKey ?? "").trim();
+  const raw = normalizeOptionalString(sessionKey);
   if (!raw) {
     return { baseSessionKey: undefined, threadId: undefined };
   }
 
   const channelHint =
     normalizeThreadSuffixChannelHint(options?.channelHint) ?? inferThreadSuffixChannelHint(raw);
-  const lowerRaw = raw.toLowerCase();
+  const lowerRaw = normalizeLowercaseStringOrEmpty(raw);
   const topicMarker = ":topic:";
   const threadMarker = ":thread:";
+  // Telegram forum topics use `:topic:`; everything else (incl. Matrix rooms)
+  // uses the generic `:thread:` marker upstream introduced. Whichever appears
+  // last wins, so a base id embedding the other literal cannot be mis-split.
   const topicIndex = channelHint === "telegram" ? lowerRaw.lastIndexOf(topicMarker) : -1;
   const threadIndex = lowerRaw.lastIndexOf(threadMarker);
   const markerIndex = Math.max(topicIndex, threadIndex);
@@ -242,44 +345,40 @@ export function parseThreadSessionSuffix(
 
   const baseSessionKey = markerIndex === -1 ? raw : raw.slice(0, markerIndex);
   const threadIdRaw = markerIndex === -1 ? undefined : raw.slice(markerIndex + marker.length);
-  const threadId = threadIdRaw?.trim() || undefined;
+  const threadId = normalizeOptionalString(threadIdRaw);
 
   return { baseSessionKey, threadId };
 }
 
-export function parseSessionConversationRef(
+export function parseRawSessionConversationRef(
   sessionKey: string | undefined | null,
-): ParsedSessionConversationRef | null {
-  const raw = (sessionKey ?? "").trim();
+): RawSessionConversationRef | null {
+  const raw = normalizeOptionalString(sessionKey);
   if (!raw) {
     return null;
   }
 
   const rawParts = raw.split(":").filter(Boolean);
-  const parts =
-    rawParts.length >= 3 && rawParts[0]?.trim().toLowerCase() === "agent"
-      ? rawParts.slice(2)
-      : rawParts;
+  const bodyStartIndex =
+    rawParts.length >= 3 && normalizeOptionalLowercaseString(rawParts[0]) === "agent" ? 2 : 0;
+  const parts = rawParts.slice(bodyStartIndex);
   if (parts.length < 3) {
     return null;
   }
 
-  const channel = normalizeThreadSuffixChannelHint(parts[0]);
-  const kind = parts[1]?.trim().toLowerCase();
+  const channel = normalizeOptionalLowercaseString(parts[0]);
+  const kind = normalizeOptionalLowercaseString(parts[1]);
   if (!channel || (kind !== "group" && kind !== "channel")) {
     return null;
   }
 
-  const joined = parts.slice(2).join(":");
-  const { baseSessionKey, threadId } = parseThreadSessionSuffix(joined, {
-    channelHint: channel,
-  });
-  const id = (baseSessionKey ?? joined).trim();
-  if (!id) {
+  const rawId = normalizeOptionalString(parts.slice(2).join(":"));
+  const prefix = normalizeOptionalString(rawParts.slice(0, bodyStartIndex + 2).join(":"));
+  if (!rawId || !prefix) {
     return null;
   }
 
-  return { channel, kind, id, threadId };
+  return { channel, kind, rawId, prefix };
 }
 
 export function resolveThreadParentSessionKey(
@@ -289,7 +388,7 @@ export function resolveThreadParentSessionKey(
   if (!threadId) {
     return null;
   }
-  const parent = baseSessionKey?.trim();
+  const parent = normalizeOptionalString(baseSessionKey);
   if (!parent) {
     return null;
   }

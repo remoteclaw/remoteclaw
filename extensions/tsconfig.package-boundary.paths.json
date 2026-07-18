@@ -3,47 +3,101 @@
   "compilerOptions": {
     "paths": {
       "remoteclaw/extension-api": ["../src/extensionAPI.ts"],
-      "remoteclaw/plugin-sdk": ["../dist/plugin-sdk/src/plugin-sdk/index.d.ts"],
-      "remoteclaw/plugin-sdk/*": ["../dist/plugin-sdk/src/plugin-sdk/*.d.ts"],
-      "remoteclaw/plugin-sdk/account-id": ["../dist/plugin-sdk/src/plugin-sdk/account-id.d.ts"],
+      "openclaw/plugin-sdk": ["../dist/plugin-sdk/index.d.ts"],
+      "openclaw/plugin-sdk/*": ["../dist/plugin-sdk/*.d.ts"],
+      "openclaw/plugin-sdk/reply-payload-testing": [
+        "../packages/plugin-sdk/dist/src/plugin-sdk/reply-payload-testing.d.ts"
+      ],
+      "openclaw/plugin-sdk/ssrf-runtime-internal": [
+        "../packages/plugin-sdk/dist/src/plugin-sdk/ssrf-runtime-internal.d.ts"
+      ],
+      "openclaw/plugin-sdk/codex-native-task-runtime": [
+        "../packages/plugin-sdk/dist/src/plugin-sdk/codex-native-task-runtime.d.ts"
+      ],
+      "openclaw/plugin-sdk/agent-runtime-test-contracts": [
+        "../packages/plugin-sdk/dist/src/plugin-sdk/agent-runtime-test-contracts.d.ts"
+      ],
+      "openclaw/plugin-sdk/channel-target-testing": [
+        "../packages/plugin-sdk/dist/src/plugin-sdk/channel-target-testing.d.ts"
+      ],
+      "openclaw/plugin-sdk/channel-test-helpers": [
+        "../packages/plugin-sdk/dist/src/plugin-sdk/channel-test-helpers.d.ts"
+      ],
+      "openclaw/plugin-sdk/plugin-test-api": [
+        "../packages/plugin-sdk/dist/src/plugin-sdk/plugin-test-api.d.ts"
+      ],
+      "openclaw/plugin-sdk/plugin-test-contracts": [
+        "../packages/plugin-sdk/dist/src/plugin-sdk/plugin-test-contracts.d.ts"
+      ],
+      "openclaw/plugin-sdk/plugin-state-test-runtime": [
+        "../packages/plugin-sdk/dist/src/plugin-sdk/plugin-state-test-runtime.d.ts"
+      ],
+      "remoteclaw/plugin-sdk/plugin-test-runtime": [
+        "../packages/plugin-sdk/dist/src/plugin-sdk/plugin-test-runtime.d.ts"
+      ],
+      "openclaw/plugin-sdk/provider-http-test-mocks": [
+        "../packages/plugin-sdk/dist/src/plugin-sdk/provider-http-test-mocks.d.ts"
+      ],
+      "openclaw/plugin-sdk/provider-test-contracts": [
+        "../packages/plugin-sdk/dist/src/plugin-sdk/provider-test-contracts.d.ts"
+      ],
+      "remoteclaw/plugin-sdk/test-env": [
+        "../packages/plugin-sdk/dist/src/plugin-sdk/test-env.d.ts"
+      ],
+      "openclaw/plugin-sdk/test-fixtures": [
+        "../packages/plugin-sdk/dist/src/plugin-sdk/test-fixtures.d.ts"
+      ],
+      "openclaw/plugin-sdk/test-node-mocks": [
+        "../packages/plugin-sdk/dist/src/plugin-sdk/test-node-mocks.d.ts"
+      ],
+      "remoteclaw/plugin-sdk/testing": [
+        "../packages/plugin-sdk/dist/src/plugin-sdk/testing.d.ts"
+      ],
+      "openclaw/plugin-sdk/channel-contract-testing": [
+        "../packages/plugin-sdk/dist/src/plugin-sdk/channel-contract-testing.d.ts"
+      ],
+      "remoteclaw/plugin-sdk/account-id": ["../dist/plugin-sdk/account-id.d.ts"],
       "remoteclaw/plugin-sdk/channel-entry-contract": [
-        "../packages/plugin-sdk/dist/src/plugin-sdk/channel-entry-contract.d.ts"
+        "../dist/plugin-sdk/channel-entry-contract.d.ts"
       ],
       "remoteclaw/plugin-sdk/browser-maintenance": [
         "../packages/plugin-sdk/dist/extensions/browser/browser-maintenance.d.ts"
       ],
       "remoteclaw/plugin-sdk/channel-secret-basic-runtime": [
-        "../packages/plugin-sdk/dist/src/plugin-sdk/channel-secret-basic-runtime.d.ts"
+        "../dist/plugin-sdk/channel-secret-basic-runtime.d.ts"
       ],
       "remoteclaw/plugin-sdk/channel-secret-runtime": [
-        "../dist/plugin-sdk/src/plugin-sdk/channel-secret-runtime.d.ts"
+        "../dist/plugin-sdk/channel-secret-runtime.d.ts"
       ],
       "remoteclaw/plugin-sdk/channel-secret-tts-runtime": [
-        "../packages/plugin-sdk/dist/src/plugin-sdk/channel-secret-tts-runtime.d.ts"
+        "../dist/plugin-sdk/channel-secret-tts-runtime.d.ts"
       ],
       "remoteclaw/plugin-sdk/channel-streaming": [
-        "../dist/plugin-sdk/src/plugin-sdk/channel-streaming.d.ts"
+        "../dist/plugin-sdk/channel-streaming.d.ts"
       ],
-      "remoteclaw/plugin-sdk/error-runtime": [
-        "../dist/plugin-sdk/src/plugin-sdk/error-runtime.d.ts"
-      ],
+      "remoteclaw/plugin-sdk/error-runtime": ["../dist/plugin-sdk/error-runtime.d.ts"],
       "remoteclaw/plugin-sdk/provider-catalog-shared": [
-        "../packages/plugin-sdk/dist/src/plugin-sdk/provider-catalog-shared.d.ts"
+        "../dist/plugin-sdk/provider-catalog-shared.d.ts"
       ],
       "remoteclaw/plugin-sdk/provider-entry": [
-        "../packages/plugin-sdk/dist/src/plugin-sdk/provider-entry.d.ts"
+        "../dist/plugin-sdk/provider-entry.d.ts"
       ],
       "remoteclaw/plugin-sdk/secret-ref-runtime": [
-        "../dist/plugin-sdk/src/plugin-sdk/secret-ref-runtime.d.ts"
+        "../dist/plugin-sdk/secret-ref-runtime.d.ts"
       ],
-      "remoteclaw/plugin-sdk/ssrf-runtime": ["../dist/plugin-sdk/src/plugin-sdk/ssrf-runtime.d.ts"],
+      "remoteclaw/plugin-sdk/ssrf-runtime": ["../dist/plugin-sdk/ssrf-runtime.d.ts"],
       "@remoteclaw/qa-channel/api.js": ["../dist/plugin-sdk/extensions/qa-channel/api.d.ts"],
       "@remoteclaw/discord/api.js": ["../dist/plugin-sdk/extensions/discord/api.d.ts"],
       "@remoteclaw/slack/api.js": ["../dist/plugin-sdk/extensions/slack/api.d.ts"],
       "@remoteclaw/whatsapp/api.js": ["../dist/plugin-sdk/extensions/whatsapp/api.d.ts"],
-      "@remoteclaw/*.js": ["../packages/plugin-sdk/dist/extensions/*.d.ts", "../extensions/*"],
-      "@remoteclaw/*": ["../packages/plugin-sdk/dist/extensions/*", "../extensions/*"],
-      "@remoteclaw/plugin-sdk/*": ["../dist/plugin-sdk/src/plugin-sdk/*.d.ts"]
+      "@openclaw/*.js": ["../packages/plugin-sdk/dist/extensions/*.d.ts", "../extensions/*"],
+      "@openclaw/*": ["../packages/plugin-sdk/dist/extensions/*", "../extensions/*"],
+      "openclaw/plugin-sdk/qa-channel": ["../dist/plugin-sdk/src/plugin-sdk/qa-channel.d.ts"],
+      "remoteclaw/plugin-sdk/qa-channel-protocol": [
+        "../dist/plugin-sdk/src/plugin-sdk/qa-channel-protocol.d.ts"
+      ],
+      "openclaw/plugin-sdk/qa-runtime": ["../dist/plugin-sdk/src/plugin-sdk/qa-runtime.d.ts"],
+      "@remoteclaw/plugin-sdk/*": ["../dist/plugin-sdk/*.d.ts"]
     }
   }
 }

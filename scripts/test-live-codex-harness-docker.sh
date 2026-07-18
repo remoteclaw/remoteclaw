@@ -2,24 +2,24 @@
 set -euo pipefail
 
 SCRIPT_ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ROOT_DIR="${REMOTECLAW_LIVE_DOCKER_REPO_ROOT:-$SCRIPT_ROOT_DIR}"
+ROOT_DIR="${OPENCLAW_LIVE_DOCKER_REPO_ROOT:-$SCRIPT_ROOT_DIR}"
 ROOT_DIR="$(cd "$ROOT_DIR" && pwd)"
-TRUSTED_HARNESS_DIR="${REMOTECLAW_LIVE_DOCKER_TRUSTED_HARNESS_DIR:-${REMOTECLAW_LIVE_CODEX_TRUSTED_HARNESS_DIR:-$SCRIPT_ROOT_DIR}}"
+TRUSTED_HARNESS_DIR="${OPENCLAW_LIVE_DOCKER_TRUSTED_HARNESS_DIR:-${OPENCLAW_LIVE_CODEX_TRUSTED_HARNESS_DIR:-$SCRIPT_ROOT_DIR}}"
 if [[ -z "$TRUSTED_HARNESS_DIR" || ! -d "$TRUSTED_HARNESS_DIR" ]]; then
   echo "ERROR: trusted Codex harness directory not found: ${TRUSTED_HARNESS_DIR:-<empty>}." >&2
   exit 1
 fi
 TRUSTED_HARNESS_DIR="$(cd "$TRUSTED_HARNESS_DIR" && pwd)"
 source "$TRUSTED_HARNESS_DIR/scripts/lib/live-docker-auth.sh"
-IMAGE_NAME="${REMOTECLAW_IMAGE:-remoteclaw:local}"
-LIVE_IMAGE_NAME="${REMOTECLAW_LIVE_IMAGE:-${IMAGE_NAME}-live}"
-CONFIG_DIR="${REMOTECLAW_CONFIG_DIR:-$HOME/.remoteclaw}"
-WORKSPACE_DIR="${REMOTECLAW_WORKSPACE_DIR:-$HOME/.remoteclaw/workspace}"
+IMAGE_NAME="${OPENCLAW_IMAGE:-remoteclaw:local}"
+LIVE_IMAGE_NAME="${OPENCLAW_LIVE_IMAGE:-${IMAGE_NAME}-live}"
+CONFIG_DIR="${OPENCLAW_CONFIG_DIR:-$HOME/.remoteclaw}"
+WORKSPACE_DIR="${OPENCLAW_WORKSPACE_DIR:-$HOME/.remoteclaw/workspace}"
 PROFILE_FILE="$(remoteclaw_live_default_profile_file)"
-CODEX_HARNESS_AUTH_MODE="${REMOTECLAW_LIVE_CODEX_HARNESS_AUTH:-codex-auth}"
-CODEX_CLI_PACKAGE_SPEC="${REMOTECLAW_LIVE_CODEX_CLI_PACKAGE_SPEC:-}"
+CODEX_HARNESS_AUTH_MODE="${OPENCLAW_LIVE_CODEX_HARNESS_AUTH:-codex-auth}"
+CODEX_CLI_PACKAGE_SPEC="${OPENCLAW_LIVE_CODEX_CLI_PACKAGE_SPEC:-}"
 TEMP_DIRS=()
-DOCKER_USER="${REMOTECLAW_DOCKER_USER:-node}"
+DOCKER_USER="${OPENCLAW_DOCKER_USER:-node}"
 DOCKER_HOME_MOUNT=()
 DOCKER_TRUSTED_HARNESS_MOUNT=()
 DOCKER_TRUSTED_HARNESS_CONTAINER_DIR=""
@@ -34,12 +34,12 @@ remoteclaw_live_codex_harness_is_ci() {
 
 remoteclaw_live_codex_harness_append_build_extension() {
   local extension="${1:?extension required}"
-  local current="${REMOTECLAW_DOCKER_BUILD_EXTENSIONS:-${REMOTECLAW_EXTENSIONS:-}}"
+  local current="${OPENCLAW_DOCKER_BUILD_EXTENSIONS:-${OPENCLAW_EXTENSIONS:-}}"
   case " $current " in
     *" $extension "*)
       ;;
     *)
-      export REMOTECLAW_DOCKER_BUILD_EXTENSIONS="${current:+$current }$extension"
+      export OPENCLAW_DOCKER_BUILD_EXTENSIONS="${current:+$current }$extension"
       ;;
   esac
 }
@@ -48,7 +48,7 @@ case "$CODEX_HARNESS_AUTH_MODE" in
   codex-auth | api-key)
     ;;
   *)
-    echo "ERROR: REMOTECLAW_LIVE_CODEX_HARNESS_AUTH must be one of: codex-auth, api-key." >&2
+    echo "ERROR: OPENCLAW_LIVE_CODEX_HARNESS_AUTH must be one of: codex-auth, api-key." >&2
     exit 1
     ;;
 esac
@@ -61,13 +61,13 @@ if [[ -f "$PROFILE_FILE" && -r "$PROFILE_FILE" ]]; then
 fi
 
 if [[ "$CODEX_HARNESS_AUTH_MODE" == "api-key" && -z "${OPENAI_API_KEY:-}" ]]; then
-  echo "ERROR: REMOTECLAW_LIVE_CODEX_HARNESS_AUTH=api-key requires OPENAI_API_KEY." >&2
+  echo "ERROR: OPENCLAW_LIVE_CODEX_HARNESS_AUTH=api-key requires OPENAI_API_KEY." >&2
   exit 1
 fi
 if [[ "$CODEX_HARNESS_AUTH_MODE" != "api-key" && ! -s "$HOME/.codex/auth.json" ]]; then
-  echo "ERROR: REMOTECLAW_LIVE_CODEX_HARNESS_AUTH=codex-auth requires ~/.codex/auth.json before building the live Docker image." >&2
+  echo "ERROR: OPENCLAW_LIVE_CODEX_HARNESS_AUTH=codex-auth requires ~/.codex/auth.json before building the live Docker image." >&2
   if [[ -n "${OPENAI_API_KEY:-}" ]]; then
-    echo "If this is a Testbox/API-key run, set REMOTECLAW_LIVE_CODEX_HARNESS_AUTH=api-key and run through remoteclaw-testbox-env." >&2
+    echo "If this is a Testbox/API-key run, set OPENCLAW_LIVE_CODEX_HARNESS_AUTH=api-key and run through remoteclaw-testbox-env." >&2
   fi
   exit 1
 fi
@@ -89,16 +89,16 @@ cleanup_temp_dirs() {
 }
 trap cleanup_temp_dirs EXIT
 
-if [[ -n "${REMOTECLAW_DOCKER_CLI_TOOLS_DIR:-}" ]]; then
-  CLI_TOOLS_DIR="${REMOTECLAW_DOCKER_CLI_TOOLS_DIR}"
+if [[ -n "${OPENCLAW_DOCKER_CLI_TOOLS_DIR:-}" ]]; then
+  CLI_TOOLS_DIR="${OPENCLAW_DOCKER_CLI_TOOLS_DIR}"
 elif remoteclaw_live_codex_harness_is_ci; then
   CLI_TOOLS_DIR="$(mktemp -d "${RUNNER_TEMP:-/tmp}/remoteclaw-docker-cli-tools.XXXXXX")"
   TEMP_DIRS+=("$CLI_TOOLS_DIR")
 else
   CLI_TOOLS_DIR="$HOME/.cache/remoteclaw/docker-cli-tools"
 fi
-if [[ -n "${REMOTECLAW_DOCKER_CACHE_HOME_DIR:-}" ]]; then
-  CACHE_HOME_DIR="${REMOTECLAW_DOCKER_CACHE_HOME_DIR}"
+if [[ -n "${OPENCLAW_DOCKER_CACHE_HOME_DIR:-}" ]]; then
+  CACHE_HOME_DIR="${OPENCLAW_DOCKER_CACHE_HOME_DIR}"
 elif remoteclaw_live_codex_harness_is_ci; then
   CACHE_HOME_DIR="$(mktemp -d "${RUNNER_TEMP:-/tmp}/remoteclaw-docker-cache.XXXXXX")"
   TEMP_DIRS+=("$CACHE_HOME_DIR")
@@ -200,7 +200,7 @@ cleanup_codex_live_mounts() {
   chmod -R a+rwX "$HOME" "$NPM_CONFIG_PREFIX" "$XDG_CACHE_HOME" 2>/dev/null || true
 }
 trap cleanup_codex_live_mounts EXIT
-if [ "${REMOTECLAW_LIVE_CODEX_HARNESS_DEBUG:-}" = "1" ]; then
+if [ "${OPENCLAW_LIVE_CODEX_HARNESS_DEBUG:-}" = "1" ]; then
   id
   mount | grep -E 'remoteclaw-cache|remoteclaw-npm|/home/node' || true
   ls -ld "$HOME" "$XDG_CACHE_HOME" "$NPM_CONFIG_PREFIX" 2>/dev/null || true
@@ -208,14 +208,14 @@ fi
 # Force the Codex harness to use the staged `~/.codex` auth files. This lane
 # is not meant to exercise raw OpenAI API-key routing unless the lane
 # explicitly opts into API-key auth for CI.
-if [ "${REMOTECLAW_LIVE_CODEX_HARNESS_AUTH:-codex-auth}" != "api-key" ]; then
+if [ "${OPENCLAW_LIVE_CODEX_HARNESS_AUTH:-codex-auth}" != "api-key" ]; then
   unset OPENAI_API_KEY OPENAI_BASE_URL
 fi
 mkdir -p "$NPM_CONFIG_PREFIX" "$XDG_CACHE_HOME" "$COREPACK_HOME" "$NPM_CONFIG_CACHE"
 chmod 700 "$XDG_CACHE_HOME" "$COREPACK_HOME" "$NPM_CONFIG_CACHE" || true
 export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
 run_setup_command() {
-  local timeout_value="${REMOTECLAW_LIVE_CODEX_HARNESS_SETUP_TIMEOUT_SECONDS:-180}s"
+  local timeout_value="${OPENCLAW_LIVE_CODEX_HARNESS_SETUP_TIMEOUT_SECONDS:-180}s"
   local timeout_bin=""
   if command -v timeout >/dev/null 2>&1; then
     timeout_bin="timeout"
@@ -231,8 +231,8 @@ run_setup_command() {
     "$timeout_bin" "$timeout_value" "$@"
   fi
 }
-if [ "${REMOTECLAW_DOCKER_AUTH_PRESTAGED:-0}" != "1" ]; then
-  IFS=',' read -r -a auth_files <<<"${REMOTECLAW_DOCKER_AUTH_FILES_RESOLVED:-}"
+if [ "${OPENCLAW_DOCKER_AUTH_PRESTAGED:-0}" != "1" ]; then
+  IFS=',' read -r -a auth_files <<<"${OPENCLAW_DOCKER_AUTH_FILES_RESOLVED:-}"
   if ((${#auth_files[@]} > 0)); then
     for auth_file in "${auth_files[@]}"; do
       [ -n "$auth_file" ] || continue
@@ -244,17 +244,17 @@ if [ "${REMOTECLAW_DOCKER_AUTH_PRESTAGED:-0}" != "1" ]; then
     done
   fi
 fi
-if [ "${REMOTECLAW_LIVE_CODEX_HARNESS_AUTH:-codex-auth}" != "api-key" ] && [ ! -s "$HOME/.codex/auth.json" ]; then
+if [ "${OPENCLAW_LIVE_CODEX_HARNESS_AUTH:-codex-auth}" != "api-key" ] && [ ! -s "$HOME/.codex/auth.json" ]; then
   echo "ERROR: missing ~/.codex/auth.json for Codex harness live test." >&2
   exit 1
 fi
-trusted_scripts_dir="${REMOTECLAW_LIVE_DOCKER_SCRIPTS_DIR:-/src/scripts}"
-if [ "${REMOTECLAW_LIVE_CODEX_HARNESS_AUTH:-codex-auth}" != "api-key" ]; then
+trusted_scripts_dir="${OPENCLAW_LIVE_DOCKER_SCRIPTS_DIR:-/src/scripts}"
+if [ "${OPENCLAW_LIVE_CODEX_HARNESS_AUTH:-codex-auth}" != "api-key" ]; then
   node --import tsx "$trusted_scripts_dir/prepare-codex-ci-auth.ts" "$HOME/.codex/auth.json"
 fi
-run_setup_command npm install -g "$REMOTECLAW_LIVE_CODEX_CLI_PACKAGE_SPEC"
+run_setup_command npm install -g "$OPENCLAW_LIVE_CODEX_CLI_PACKAGE_SPEC"
 "$NPM_CONFIG_PREFIX/bin/codex" --version
-if [ "${REMOTECLAW_LIVE_CODEX_HARNESS_AUTH:-codex-auth}" = "api-key" ]; then
+if [ "${OPENCLAW_LIVE_CODEX_HARNESS_AUTH:-codex-auth}" = "api-key" ]; then
   printf '%s\n' "$OPENAI_API_KEY" | "$NPM_CONFIG_PREFIX/bin/codex" login --with-api-key >/dev/null
 fi
 tmp_dir="$(mktemp -d)"
@@ -263,27 +263,27 @@ remoteclaw_live_stage_source_tree "$tmp_dir"
 remoteclaw_live_stage_node_modules "$tmp_dir"
 remoteclaw_live_link_runtime_tree "$tmp_dir"
 if [ -d /app/dist-runtime/extensions/codex ]; then
-  export REMOTECLAW_BUNDLED_PLUGINS_DIR=/app/dist-runtime/extensions
+  export OPENCLAW_BUNDLED_PLUGINS_DIR=/app/dist-runtime/extensions
 elif [ -d /app/dist/extensions/codex ]; then
-  export REMOTECLAW_BUNDLED_PLUGINS_DIR=/app/dist/extensions
+  export OPENCLAW_BUNDLED_PLUGINS_DIR=/app/dist/extensions
 elif [ -f "$tmp_dir/extensions/codex/remoteclaw.plugin.json" ]; then
-  export REMOTECLAW_BUNDLED_PLUGINS_DIR="$tmp_dir/extensions"
+  export OPENCLAW_BUNDLED_PLUGINS_DIR="$tmp_dir/extensions"
 else
   echo "ERROR: staged Codex plugin not found for live harness." >&2
   exit 1
 fi
 remoteclaw_live_stage_state_dir "$tmp_dir/.remoteclaw-state"
-if [ -n "${REMOTECLAW_LIVE_CODEX_TRUSTED_HARNESS_DIR:-}" ] && [ -d "$REMOTECLAW_LIVE_CODEX_TRUSTED_HARNESS_DIR" ]; then
+if [ -n "${OPENCLAW_LIVE_CODEX_TRUSTED_HARNESS_DIR:-}" ] && [ -d "$OPENCLAW_LIVE_CODEX_TRUSTED_HARNESS_DIR" ]; then
   for harness_file in src/gateway/gateway-codex-harness.live-helpers.ts; do
-    if [ -f "$REMOTECLAW_LIVE_CODEX_TRUSTED_HARNESS_DIR/$harness_file" ]; then
+    if [ -f "$OPENCLAW_LIVE_CODEX_TRUSTED_HARNESS_DIR/$harness_file" ]; then
       mkdir -p "$(dirname "$tmp_dir/$harness_file")"
-      cp "$REMOTECLAW_LIVE_CODEX_TRUSTED_HARNESS_DIR/$harness_file" "$tmp_dir/$harness_file"
+      cp "$OPENCLAW_LIVE_CODEX_TRUSTED_HARNESS_DIR/$harness_file" "$tmp_dir/$harness_file"
     fi
   done
 fi
 remoteclaw_live_prepare_staged_config
 cd "$tmp_dir"
-if [ "${REMOTECLAW_LIVE_CODEX_HARNESS_USE_CI_SAFE_CODEX_CONFIG:-1}" = "1" ]; then
+if [ "${OPENCLAW_LIVE_CODEX_HARNESS_USE_CI_SAFE_CODEX_CONFIG:-1}" = "1" ]; then
   node --import tsx "$trusted_scripts_dir/prepare-codex-ci-config.ts" "$HOME/.codex/config.toml" "$tmp_dir"
 fi
 codex_preflight_log="$tmp_dir/codex-preflight.log"
@@ -294,40 +294,40 @@ if ! "$NPM_CONFIG_PREFIX/bin/codex" exec \
   --skip-git-repo-check \
   "Reply exactly: $codex_preflight_token" >"$codex_preflight_log" 2>&1; then
   if grep -q "Failed to extract accountId from token" "$codex_preflight_log"; then
-    echo "ERROR: Codex auth cannot extract accountId from the available token; refresh REMOTECLAW_CODEX_AUTH_JSON or use REMOTECLAW_LIVE_CODEX_HARNESS_AUTH=api-key." >&2
+    echo "ERROR: Codex auth cannot extract accountId from the available token; refresh OPENCLAW_CODEX_AUTH_JSON or use OPENCLAW_LIVE_CODEX_HARNESS_AUTH=api-key." >&2
     exit 1
   fi
   cat "$codex_preflight_log" >&2
   exit 1
 fi
-node scripts/test-live.mjs -- ${REMOTECLAW_LIVE_CODEX_TEST_FILES:-src/gateway/gateway-codex-harness.live.test.ts}
+node scripts/test-live.mjs -- ${OPENCLAW_LIVE_CODEX_TEST_FILES:-src/gateway/gateway-codex-harness.live.test.ts}
 EOF
 
 remoteclaw_live_codex_harness_append_build_extension codex
 # The release package image intentionally excludes externalized plugins such as
 # Codex. This lane must rebuild the live image so the plugin-owned harness is
 # present under the bundled plugin runtime directory.
-REMOTECLAW_SKIP_DOCKER_BUILD=0
-export REMOTECLAW_SKIP_DOCKER_BUILD
-REMOTECLAW_LIVE_DOCKER_REPO_ROOT="$ROOT_DIR" "$TRUSTED_HARNESS_DIR/scripts/test-live-build-docker.sh"
+OPENCLAW_SKIP_DOCKER_BUILD=0
+export OPENCLAW_SKIP_DOCKER_BUILD
+OPENCLAW_LIVE_DOCKER_REPO_ROOT="$ROOT_DIR" "$TRUSTED_HARNESS_DIR/scripts/test-live-build-docker.sh"
 
 echo "==> Run Codex harness live test in Docker"
-echo "==> Model: ${REMOTECLAW_LIVE_CODEX_HARNESS_MODEL:-codex/gpt-5.5}"
-echo "==> Chat image probe: ${REMOTECLAW_LIVE_CODEX_HARNESS_CHAT_IMAGE_PROBE:-0}"
-echo "==> Image probe: ${REMOTECLAW_LIVE_CODEX_HARNESS_IMAGE_PROBE:-1}"
-echo "==> MCP probe: ${REMOTECLAW_LIVE_CODEX_HARNESS_MCP_PROBE:-1}"
-echo "==> Subagent probe: ${REMOTECLAW_LIVE_CODEX_HARNESS_SUBAGENT_PROBE:-1}"
-echo "==> Subagent-only fast path: ${REMOTECLAW_LIVE_CODEX_HARNESS_SUBAGENT_ONLY:-auto}"
-echo "==> Guardian probe: ${REMOTECLAW_LIVE_CODEX_HARNESS_GUARDIAN_PROBE:-1}"
+echo "==> Model: ${OPENCLAW_LIVE_CODEX_HARNESS_MODEL:-codex/gpt-5.5}"
+echo "==> Chat image probe: ${OPENCLAW_LIVE_CODEX_HARNESS_CHAT_IMAGE_PROBE:-0}"
+echo "==> Image probe: ${OPENCLAW_LIVE_CODEX_HARNESS_IMAGE_PROBE:-1}"
+echo "==> MCP probe: ${OPENCLAW_LIVE_CODEX_HARNESS_MCP_PROBE:-1}"
+echo "==> Subagent probe: ${OPENCLAW_LIVE_CODEX_HARNESS_SUBAGENT_PROBE:-1}"
+echo "==> Subagent-only fast path: ${OPENCLAW_LIVE_CODEX_HARNESS_SUBAGENT_ONLY:-auto}"
+echo "==> Guardian probe: ${OPENCLAW_LIVE_CODEX_HARNESS_GUARDIAN_PROBE:-1}"
 echo "==> Auth mode: $CODEX_HARNESS_AUTH_MODE"
 echo "==> Profile file: $PROFILE_STATUS"
-echo "==> CI-safe Codex config: ${REMOTECLAW_LIVE_CODEX_HARNESS_USE_CI_SAFE_CODEX_CONFIG:-1}"
-echo "==> Test files: ${REMOTECLAW_LIVE_CODEX_TEST_FILES:-src/gateway/gateway-codex-harness.live.test.ts}"
+echo "==> CI-safe Codex config: ${OPENCLAW_LIVE_CODEX_HARNESS_USE_CI_SAFE_CODEX_CONFIG:-1}"
+echo "==> Test files: ${OPENCLAW_LIVE_CODEX_TEST_FILES:-src/gateway/gateway-codex-harness.live.test.ts}"
 echo "==> Codex CLI package: $CODEX_CLI_PACKAGE_SPEC"
 echo "==> Harness fallback: none"
 echo "==> Auth files: ${AUTH_FILES_CSV:-none}"
 DOCKER_RUN_ARGS=()
-remoteclaw_live_init_docker_run_args DOCKER_RUN_ARGS "${REMOTECLAW_LIVE_CODEX_HARNESS_DOCKER_RUN_TIMEOUT:-2100s}"
+remoteclaw_live_init_docker_run_args DOCKER_RUN_ARGS "${OPENCLAW_LIVE_CODEX_HARNESS_DOCKER_RUN_TIMEOUT:-2100s}"
 DOCKER_RUN_ARGS+=(--rm -t \
   -u "$DOCKER_USER" \
   --entrypoint bash \
@@ -339,38 +339,38 @@ DOCKER_RUN_ARGS+=(--rm -t \
   -e COREPACK_HOME="$DOCKER_CACHE_CONTAINER_DIR/node/corepack" \
   -e NPM_CONFIG_CACHE="$DOCKER_CACHE_CONTAINER_DIR/npm" \
   -e npm_config_cache="$DOCKER_CACHE_CONTAINER_DIR/npm" \
-  -e NODE_OPTIONS=--disable-warning=ExperimentalWarning \
-  -e REMOTECLAW_AGENT_HARNESS_FALLBACK=none \
-  -e REMOTECLAW_DOCKER_AUTH_PRESTAGED="$DOCKER_AUTH_PRESTAGED" \
-  -e REMOTECLAW_CODEX_APP_SERVER_BIN="${REMOTECLAW_CODEX_APP_SERVER_BIN:-codex}" \
-  -e REMOTECLAW_DOCKER_AUTH_FILES_RESOLVED="$AUTH_FILES_CSV" \
-  -e REMOTECLAW_LIVE_DOCKER_SOURCE_STAGE_MODE="${REMOTECLAW_LIVE_DOCKER_SOURCE_STAGE_MODE:-copy}" \
-  -e REMOTECLAW_LIVE_CODEX_HARNESS_AUTH="$CODEX_HARNESS_AUTH_MODE" \
-  -e REMOTECLAW_LIVE_CODEX_HARNESS=1 \
-  -e REMOTECLAW_LIVE_CODEX_HARNESS_CHAT_IMAGE_PROBE="${REMOTECLAW_LIVE_CODEX_HARNESS_CHAT_IMAGE_PROBE:-0}" \
-  -e REMOTECLAW_LIVE_CODEX_HARNESS_DEBUG="${REMOTECLAW_LIVE_CODEX_HARNESS_DEBUG:-}" \
-  -e REMOTECLAW_LIVE_CODEX_HARNESS_GUARDIAN_PROBE="${REMOTECLAW_LIVE_CODEX_HARNESS_GUARDIAN_PROBE:-1}" \
-  -e REMOTECLAW_LIVE_CODEX_HARNESS_IMAGE_PROBE="${REMOTECLAW_LIVE_CODEX_HARNESS_IMAGE_PROBE:-1}" \
-  -e REMOTECLAW_LIVE_CODEX_HARNESS_MCP_PROBE="${REMOTECLAW_LIVE_CODEX_HARNESS_MCP_PROBE:-1}" \
-  -e REMOTECLAW_LIVE_CODEX_HARNESS_MODEL="${REMOTECLAW_LIVE_CODEX_HARNESS_MODEL:-codex/gpt-5.5}" \
-  -e REMOTECLAW_LIVE_CODEX_HARNESS_REQUIRE_GUARDIAN_EVENTS="${REMOTECLAW_LIVE_CODEX_HARNESS_REQUIRE_GUARDIAN_EVENTS:-1}" \
-  -e REMOTECLAW_LIVE_CODEX_HARNESS_REQUEST_TIMEOUT_MS="${REMOTECLAW_LIVE_CODEX_HARNESS_REQUEST_TIMEOUT_MS:-}" \
-  -e REMOTECLAW_LIVE_CODEX_HARNESS_SETUP_TIMEOUT_SECONDS="${REMOTECLAW_LIVE_CODEX_HARNESS_SETUP_TIMEOUT_SECONDS:-180}" \
-  -e REMOTECLAW_LIVE_CODEX_HARNESS_SUBAGENT_ONLY="${REMOTECLAW_LIVE_CODEX_HARNESS_SUBAGENT_ONLY:-}" \
-  -e REMOTECLAW_LIVE_CODEX_HARNESS_SUBAGENT_PROBE="${REMOTECLAW_LIVE_CODEX_HARNESS_SUBAGENT_PROBE:-1}" \
-  -e REMOTECLAW_LIVE_CODEX_HARNESS_USE_CI_SAFE_CODEX_CONFIG="${REMOTECLAW_LIVE_CODEX_HARNESS_USE_CI_SAFE_CODEX_CONFIG:-1}" \
-  -e REMOTECLAW_LIVE_CODEX_CLI_PACKAGE_SPEC="$CODEX_CLI_PACKAGE_SPEC" \
-  -e REMOTECLAW_CLI_BACKEND_LOG_OUTPUT="${REMOTECLAW_CLI_BACKEND_LOG_OUTPUT:-}" \
-  -e REMOTECLAW_TEST_CONSOLE="${REMOTECLAW_TEST_CONSOLE:-}" \
-  -e REMOTECLAW_LIVE_DOCKER_SCRIPTS_DIR="${DOCKER_TRUSTED_HARNESS_CONTAINER_DIR}/scripts" \
-  -e REMOTECLAW_LIVE_DOCKER_TRUSTED_HARNESS_DIR="$DOCKER_TRUSTED_HARNESS_CONTAINER_DIR" \
-  -e REMOTECLAW_LIVE_CODEX_TRUSTED_HARNESS_DIR="$DOCKER_TRUSTED_HARNESS_CONTAINER_DIR" \
-  -e REMOTECLAW_LIVE_CODEX_BIND="${REMOTECLAW_LIVE_CODEX_BIND:-}" \
-  -e REMOTECLAW_LIVE_CODEX_BIND_MODEL="${REMOTECLAW_LIVE_CODEX_BIND_MODEL:-}" \
-  -e REMOTECLAW_LIVE_CODEX_BIND_PROVIDER="${REMOTECLAW_LIVE_CODEX_BIND_PROVIDER:-}" \
-  -e REMOTECLAW_LIVE_CODEX_TEST_FILES="${REMOTECLAW_LIVE_CODEX_TEST_FILES:-}" \
-  -e REMOTECLAW_LIVE_TEST=1 \
-  -e REMOTECLAW_VITEST_FS_MODULE_CACHE=0)
+  -e NODE_OPTIONS="$(remoteclaw_live_container_node_options)" \
+  -e OPENCLAW_AGENT_HARNESS_FALLBACK=none \
+  -e OPENCLAW_DOCKER_AUTH_PRESTAGED="$DOCKER_AUTH_PRESTAGED" \
+  -e OPENCLAW_CODEX_APP_SERVER_BIN="${OPENCLAW_CODEX_APP_SERVER_BIN:-codex}" \
+  -e OPENCLAW_DOCKER_AUTH_FILES_RESOLVED="$AUTH_FILES_CSV" \
+  -e OPENCLAW_LIVE_DOCKER_SOURCE_STAGE_MODE="${OPENCLAW_LIVE_DOCKER_SOURCE_STAGE_MODE:-copy}" \
+  -e OPENCLAW_LIVE_CODEX_HARNESS_AUTH="$CODEX_HARNESS_AUTH_MODE" \
+  -e OPENCLAW_LIVE_CODEX_HARNESS=1 \
+  -e OPENCLAW_LIVE_CODEX_HARNESS_CHAT_IMAGE_PROBE="${OPENCLAW_LIVE_CODEX_HARNESS_CHAT_IMAGE_PROBE:-0}" \
+  -e OPENCLAW_LIVE_CODEX_HARNESS_DEBUG="${OPENCLAW_LIVE_CODEX_HARNESS_DEBUG:-}" \
+  -e OPENCLAW_LIVE_CODEX_HARNESS_GUARDIAN_PROBE="${OPENCLAW_LIVE_CODEX_HARNESS_GUARDIAN_PROBE:-1}" \
+  -e OPENCLAW_LIVE_CODEX_HARNESS_IMAGE_PROBE="${OPENCLAW_LIVE_CODEX_HARNESS_IMAGE_PROBE:-1}" \
+  -e OPENCLAW_LIVE_CODEX_HARNESS_MCP_PROBE="${OPENCLAW_LIVE_CODEX_HARNESS_MCP_PROBE:-1}" \
+  -e OPENCLAW_LIVE_CODEX_HARNESS_MODEL="${OPENCLAW_LIVE_CODEX_HARNESS_MODEL:-codex/gpt-5.5}" \
+  -e OPENCLAW_LIVE_CODEX_HARNESS_REQUIRE_GUARDIAN_EVENTS="${OPENCLAW_LIVE_CODEX_HARNESS_REQUIRE_GUARDIAN_EVENTS:-1}" \
+  -e OPENCLAW_LIVE_CODEX_HARNESS_REQUEST_TIMEOUT_MS="${OPENCLAW_LIVE_CODEX_HARNESS_REQUEST_TIMEOUT_MS:-}" \
+  -e OPENCLAW_LIVE_CODEX_HARNESS_SETUP_TIMEOUT_SECONDS="${OPENCLAW_LIVE_CODEX_HARNESS_SETUP_TIMEOUT_SECONDS:-180}" \
+  -e OPENCLAW_LIVE_CODEX_HARNESS_SUBAGENT_ONLY="${OPENCLAW_LIVE_CODEX_HARNESS_SUBAGENT_ONLY:-}" \
+  -e OPENCLAW_LIVE_CODEX_HARNESS_SUBAGENT_PROBE="${OPENCLAW_LIVE_CODEX_HARNESS_SUBAGENT_PROBE:-1}" \
+  -e OPENCLAW_LIVE_CODEX_HARNESS_USE_CI_SAFE_CODEX_CONFIG="${OPENCLAW_LIVE_CODEX_HARNESS_USE_CI_SAFE_CODEX_CONFIG:-1}" \
+  -e OPENCLAW_LIVE_CODEX_CLI_PACKAGE_SPEC="$CODEX_CLI_PACKAGE_SPEC" \
+  -e OPENCLAW_CLI_BACKEND_LOG_OUTPUT="${OPENCLAW_CLI_BACKEND_LOG_OUTPUT:-}" \
+  -e OPENCLAW_TEST_CONSOLE="${OPENCLAW_TEST_CONSOLE:-}" \
+  -e OPENCLAW_LIVE_DOCKER_SCRIPTS_DIR="${DOCKER_TRUSTED_HARNESS_CONTAINER_DIR}/scripts" \
+  -e OPENCLAW_LIVE_DOCKER_TRUSTED_HARNESS_DIR="$DOCKER_TRUSTED_HARNESS_CONTAINER_DIR" \
+  -e OPENCLAW_LIVE_CODEX_TRUSTED_HARNESS_DIR="$DOCKER_TRUSTED_HARNESS_CONTAINER_DIR" \
+  -e OPENCLAW_LIVE_CODEX_BIND="${OPENCLAW_LIVE_CODEX_BIND:-}" \
+  -e OPENCLAW_LIVE_CODEX_BIND_MODEL="${OPENCLAW_LIVE_CODEX_BIND_MODEL:-}" \
+  -e OPENCLAW_LIVE_CODEX_BIND_PROVIDER="${OPENCLAW_LIVE_CODEX_BIND_PROVIDER:-}" \
+  -e OPENCLAW_LIVE_CODEX_TEST_FILES="${OPENCLAW_LIVE_CODEX_TEST_FILES:-}" \
+  -e OPENCLAW_LIVE_TEST=1 \
+  -e OPENCLAW_VITEST_FS_MODULE_CACHE=0)
 remoteclaw_live_append_array DOCKER_RUN_ARGS DOCKER_AUTH_ENV
 remoteclaw_live_append_array DOCKER_RUN_ARGS DOCKER_EXTRA_ENV_FILES
 remoteclaw_live_append_array DOCKER_RUN_ARGS DOCKER_HOME_MOUNT
@@ -389,7 +389,7 @@ remoteclaw_live_append_array DOCKER_RUN_ARGS PROFILE_MOUNT
 DOCKER_RUN_ARGS+=(\
   "$LIVE_IMAGE_NAME" \
   -lc "$LIVE_TEST_CMD")
-if [[ "${REMOTECLAW_LIVE_CODEX_HARNESS_DEBUG:-}" == "1" ]]; then
+if [[ "${OPENCLAW_LIVE_CODEX_HARNESS_DEBUG:-}" == "1" ]]; then
   echo "==> Docker debug: host ids and mounted dirs"
   id
   ls -ld "$CACHE_HOME_DIR" "$CLI_TOOLS_DIR" "${DOCKER_HOME_DIR:-$HOME}" 2>/dev/null || true

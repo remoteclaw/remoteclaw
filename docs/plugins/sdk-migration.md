@@ -3,14 +3,14 @@ summary: "Migrate from the legacy backwards-compatibility layer to the modern pl
 title: "Plugin SDK migration"
 sidebarTitle: "Migrate to SDK"
 read_when:
-  - You see the REMOTECLAW_PLUGIN_SDK_COMPAT_DEPRECATED warning
-  - You see the REMOTECLAW_EXTENSION_API_DEPRECATED warning
-  - You used api.registerEmbeddedExtensionFactory before RemoteClaw 2026.4.25
+  - You see the OPENCLAW_PLUGIN_SDK_COMPAT_DEPRECATED warning
+  - You see the OPENCLAW_EXTENSION_API_DEPRECATED warning
+  - You used api.registerEmbeddedExtensionFactory before OpenClaw 2026.4.25
   - You are updating a plugin to the modern plugin architecture
-  - You maintain an external RemoteClaw plugin
+  - You maintain an external OpenClaw plugin
 ---
 
-RemoteClaw has moved from a broad backwards-compatibility layer to a modern plugin
+OpenClaw has moved from a broad backwards-compatibility layer to a modern plugin
 architecture with focused, documented imports. If your plugin was built before
 the new architecture, this guide helps you migrate.
 
@@ -22,24 +22,24 @@ anything they needed from a single entry point:
 - **`remoteclaw/plugin-sdk/compat`** - a single import that re-exported dozens of
   helpers. It was introduced to keep older hook-based plugins working while the
   new plugin architecture was being built.
-- **`remoteclaw/plugin-sdk/infra-runtime`** - a broad runtime helper barrel that
+- **`openclaw/plugin-sdk/infra-runtime`** - a broad runtime helper barrel that
   mixed system events, heartbeat state, delivery queues, fetch/proxy helpers,
   file helpers, approval types, and unrelated utilities.
-- **`remoteclaw/plugin-sdk/config-runtime`** - a broad config compatibility barrel
+- **`openclaw/plugin-sdk/config-runtime`** - a broad config compatibility barrel
   that still carries deprecated direct load/write helpers during the migration
   window.
 - **`remoteclaw/extension-api`** - a bridge that gave plugins direct access to
   host-side helpers like the embedded agent runner.
-- **`api.registerEmbeddedExtensionFactory(...)`** - a removed Pi-only bundled
+- **`api.registerEmbeddedExtensionFactory(...)`** - a removed embedded-runner-only bundled
   extension hook that could observe embedded-runner events such as
   `tool_result`.
 
 The broad import surfaces are now **deprecated**. They still work at runtime,
 but new plugins must not use them, and existing plugins should migrate before
-the next major release removes them. The Pi-only embedded extension factory
+the next major release removes them. The embedded-runner-only extension factory
 registration API has been removed; use tool-result middleware instead.
 
-RemoteClaw does not remove or reinterpret documented plugin behavior in the same
+OpenClaw does not remove or reinterpret documented plugin behavior in the same
 change that introduces a replacement. Breaking contract changes must first go
 through a compatibility adapter, diagnostics, docs, and a deprecation window.
 That applies to SDK imports, manifest fields, setup APIs, hooks, and runtime
@@ -48,7 +48,7 @@ registration behavior.
 <Warning>
   The backwards-compatibility layer will be removed in a future major release.
   Plugins that still import from these surfaces will break when that happens.
-  Pi-only embedded extension factory registrations already no longer load.
+  Legacy embedded extension factory registrations already no longer load.
 </Warning>
 
 ## Why this changed
@@ -59,7 +59,7 @@ The old approach caused problems:
 - **Circular dependencies** - broad re-exports made it easy to create import cycles
 - **Unclear API surface** - no way to tell which exports were stable vs internal
 
-The modern plugin SDK fixes this: each import path (`remoteclaw/plugin-sdk/\<subpath\>`)
+The modern plugin SDK fixes this: each import path (`openclaw/plugin-sdk/\<subpath\>`)
 is a small, self-contained module with a clear purpose and documented contract.
 
 Legacy provider convenience seams for bundled channels are also gone.
@@ -81,7 +81,7 @@ Current bundled provider examples:
 
 Realtime voice, telephony, meeting, and browser Talk code is moving from
 surface-local turn bookkeeping to a shared Talk session controller exported by
-`remoteclaw/plugin-sdk/realtime-voice`. The new controller owns the common Talk
+`openclaw/plugin-sdk/realtime-voice`. The new controller owns the common Talk
 event envelope, active turn state, capture state, output-audio state, recent
 event history, and stale-turn rejection. Provider plugins should keep owning
 vendor-specific realtime sessions; surface plugins should keep owning capture,
@@ -153,7 +153,7 @@ common Gateway-managed surface for gateway-relay realtime, gateway-relay
 transcription, and managed-room native STT/TTS sessions.
 
 Legacy configs that placed realtime selectors beside `talk.provider` /
-`talk.providers` should be repaired with `remoteclaw doctor --fix`; runtime Talk
+`talk.providers` should be repaired with `openclaw doctor --fix`; runtime Talk
 does not reinterpret speech/TTS provider config as realtime provider config.
 
 The supported `talk.session.create` combinations are intentionally small:
@@ -272,20 +272,20 @@ releases.
     zero allowed ambient `loadConfig()` calls.
 
     New plugin code should also avoid importing the broad
-    `remoteclaw/plugin-sdk/config-runtime` compatibility barrel. Use the narrow
+    `openclaw/plugin-sdk/config-runtime` compatibility barrel. Use the narrow
     SDK subpath that matches the job:
 
     | Need | Import |
     | --- | --- |
-    | Config types such as `RemoteClawConfig` | `remoteclaw/plugin-sdk/config-contracts` |
+    | Config types such as `RemoteClawConfig` | `openclaw/plugin-sdk/config-contracts` |
     | Already-loaded config assertions and plugin-entry config lookup | `remoteclaw/plugin-sdk/plugin-config-runtime` |
     | Current runtime snapshot reads | `remoteclaw/plugin-sdk/runtime-config-snapshot` |
-    | Config writes | `remoteclaw/plugin-sdk/config-mutation` |
-    | Session store helpers | `remoteclaw/plugin-sdk/session-store-runtime` |
-    | Markdown table config | `remoteclaw/plugin-sdk/markdown-table-runtime` |
+    | Config writes | `openclaw/plugin-sdk/config-mutation` |
+    | Session store helpers | `openclaw/plugin-sdk/session-store-runtime` |
+    | Markdown table config | `openclaw/plugin-sdk/markdown-table-runtime` |
     | Group policy runtime helpers | `remoteclaw/plugin-sdk/runtime-group-policy` |
-    | Secret input resolution | `remoteclaw/plugin-sdk/secret-input-runtime` |
-    | Model/session overrides | `remoteclaw/plugin-sdk/model-session-runtime` |
+    | Secret input resolution | `openclaw/plugin-sdk/secret-input-runtime` |
+    | Model/session overrides | `openclaw/plugin-sdk/model-session-runtime` |
 
     Bundled plugins and their tests are scanner-guarded against the broad
     barrel so imports and mocks stay local to the behavior they need. The broad
@@ -294,17 +294,17 @@ releases.
 
   </Step>
 
-  <Step title="Migrate Pi tool-result extensions to middleware">
-    Bundled plugins must replace Pi-only
+  <Step title="Migrate embedded tool-result extensions to middleware">
+    Bundled plugins must replace embedded-runner-only
     `api.registerEmbeddedExtensionFactory(...)` tool-result handlers with
     runtime-neutral middleware.
 
     ```typescript
-    // Pi and Codex runtime dynamic tools
+    // OpenClaw and Codex runtime dynamic tools
     api.registerAgentToolResultMiddleware(async (event) => {
       return compactToolResult(event);
     }, {
-      runtimes: ["pi", "codex"],
+      runtimes: ["openclaw", "codex"],
     });
     ```
 
@@ -313,7 +313,7 @@ releases.
     ```json
     {
       "contracts": {
-        "agentToolResultMiddleware": ["pi", "codex"]
+        "agentToolResultMiddleware": ["openclaw", "codex"]
       }
     }
     ```
@@ -350,7 +350,7 @@ releases.
   </Step>
 
   <Step title="Audit Windows wrapper fallback behavior">
-    If your plugin uses `remoteclaw/plugin-sdk/windows-spawn`, unresolved Windows
+    If your plugin uses `openclaw/plugin-sdk/windows-spawn`, unresolved Windows
     `.cmd`/`.bat` wrappers now fail closed unless you explicitly pass
     `allowShellFallback: true`.
 
@@ -396,7 +396,7 @@ releases.
     } from "remoteclaw/plugin-sdk/compat";
 
     // After (modern focused imports)
-    import { createChannelReplyPipeline } from "remoteclaw/plugin-sdk/channel-reply-pipeline";
+    import { createChannelReplyPipeline } from "openclaw/plugin-sdk/channel-reply-pipeline";
     import { createPluginRuntimeStore } from "remoteclaw/plugin-sdk/runtime-store";
     import { resolveControlCommandGate } from "remoteclaw/plugin-sdk/command-auth";
     ```
@@ -406,11 +406,11 @@ releases.
 
     ```typescript
     // Before (deprecated extension-api bridge)
-    import { runEmbeddedPiAgent } from "remoteclaw/extension-api";
-    const result = await runEmbeddedPiAgent({ sessionId, prompt });
+    import { runEmbeddedAgent } from "remoteclaw/extension-api";
+    const result = await runEmbeddedAgent({ sessionId, prompt });
 
     // After (injected runtime)
-    const result = await api.runtime.agent.runEmbeddedPiAgent({ sessionId, prompt });
+    const result = await api.runtime.agent.runEmbeddedAgent({ sessionId, prompt });
     ```
 
     The same pattern applies to other legacy bridge helpers:
@@ -428,30 +428,30 @@ releases.
   </Step>
 
   <Step title="Replace broad infra-runtime imports">
-    `remoteclaw/plugin-sdk/infra-runtime` still exists for external
+    `openclaw/plugin-sdk/infra-runtime` still exists for external
     compatibility, but new code should import the focused helper surface it
     actually needs:
 
     | Need | Import |
     | --- | --- |
-    | System event queue helpers | `remoteclaw/plugin-sdk/system-event-runtime` |
-    | Heartbeat wake, event, and visibility helpers | `remoteclaw/plugin-sdk/heartbeat-runtime` |
-    | Pending delivery queue drain | `remoteclaw/plugin-sdk/delivery-queue-runtime` |
-    | Channel activity telemetry | `remoteclaw/plugin-sdk/channel-activity-runtime` |
-    | In-memory dedupe caches | `remoteclaw/plugin-sdk/dedupe-runtime` |
-    | Safe local-file/media path helpers | `remoteclaw/plugin-sdk/file-access-runtime` |
-    | Dispatcher-aware fetch | `remoteclaw/plugin-sdk/runtime-fetch` |
-    | Proxy and guarded fetch helpers | `remoteclaw/plugin-sdk/fetch-runtime` |
-    | SSRF dispatcher policy types | `remoteclaw/plugin-sdk/ssrf-dispatcher` |
-    | Approval request/resolution types | `remoteclaw/plugin-sdk/approval-runtime` |
-    | Approval reply payload and command helpers | `remoteclaw/plugin-sdk/approval-reply-runtime` |
+    | System event queue helpers | `openclaw/plugin-sdk/system-event-runtime` |
+    | Heartbeat wake, event, and visibility helpers | `openclaw/plugin-sdk/heartbeat-runtime` |
+    | Pending delivery queue drain | `openclaw/plugin-sdk/delivery-queue-runtime` |
+    | Channel activity telemetry | `openclaw/plugin-sdk/channel-activity-runtime` |
+    | In-memory dedupe caches | `openclaw/plugin-sdk/dedupe-runtime` |
+    | Safe local-file/media path helpers | `openclaw/plugin-sdk/file-access-runtime` |
+    | Dispatcher-aware fetch | `openclaw/plugin-sdk/runtime-fetch` |
+    | Proxy and guarded fetch helpers | `openclaw/plugin-sdk/fetch-runtime` |
+    | SSRF dispatcher policy types | `openclaw/plugin-sdk/ssrf-dispatcher` |
+    | Approval request/resolution types | `openclaw/plugin-sdk/approval-runtime` |
+    | Approval reply payload and command helpers | `openclaw/plugin-sdk/approval-reply-runtime` |
     | Error formatting helpers | `remoteclaw/plugin-sdk/error-runtime` |
-    | Transport readiness waits | `remoteclaw/plugin-sdk/transport-ready-runtime` |
-    | Secure token helpers | `remoteclaw/plugin-sdk/secure-random-runtime` |
-    | Bounded async task concurrency | `remoteclaw/plugin-sdk/concurrency-runtime` |
-    | Numeric coercion | `remoteclaw/plugin-sdk/number-runtime` |
-    | Process-local async lock | `remoteclaw/plugin-sdk/async-lock-runtime` |
-    | File locks | `remoteclaw/plugin-sdk/file-lock` |
+    | Transport readiness waits | `openclaw/plugin-sdk/transport-ready-runtime` |
+    | Secure token helpers | `openclaw/plugin-sdk/secure-random-runtime` |
+    | Bounded async task concurrency | `openclaw/plugin-sdk/concurrency-runtime` |
+    | Numeric coercion | `openclaw/plugin-sdk/number-runtime` |
+    | Process-local async lock | `openclaw/plugin-sdk/async-lock-runtime` |
+    | File locks | `openclaw/plugin-sdk/file-lock` |
 
     Bundled plugins are scanner-guarded against `infra-runtime`, so repo code
     cannot regress to the broad barrel.
@@ -459,7 +459,7 @@ releases.
   </Step>
 
   <Step title="Migrate channel route helpers">
-    New channel route code should use `remoteclaw/plugin-sdk/channel-route`.
+    New channel route code should use `openclaw/plugin-sdk/channel-route`.
     The older route-key and comparable-target names remain as compatibility
     aliases during the migration window, but new plugins should use the route
     names that describe the behavior directly:
@@ -520,7 +520,7 @@ releases.
   | `plugin-sdk/channel-reply-pipeline` | Reply prefix, typing, and source-delivery wiring | `createChannelReplyPipeline`, `resolveChannelSourceReplyDeliveryMode` |
   | `plugin-sdk/channel-config-helpers` | Config adapter factories and DM access helpers | `createHybridChannelConfigAdapter`, `resolveChannelDmAccess`, `resolveChannelDmAllowFrom`, `resolveChannelDmPolicy`, `normalizeChannelDmPolicy`, `normalizeLegacyDmAliases` |
   | `plugin-sdk/channel-config-schema` | Config schema builders | Shared channel config schema primitives and the generic builder only |
-  | `plugin-sdk/bundled-channel-config-schema` | Bundled config schemas | RemoteClaw-maintained bundled plugins only; new plugins must define plugin-local schemas |
+  | `plugin-sdk/bundled-channel-config-schema` | Bundled config schemas | OpenClaw-maintained bundled plugins only; new plugins must define plugin-local schemas |
   | `plugin-sdk/channel-config-schema-legacy` | Deprecated bundled config schemas | Compatibility alias only; use `plugin-sdk/bundled-channel-config-schema` for maintained bundled plugins |
   | `plugin-sdk/telegram-command-config` | Telegram command config helpers | Command-name normalization, description trimming, duplicate/conflict validation |
   | `plugin-sdk/channel-policy` | Group/DM policy resolution | `resolveChannelGroupRequireMention` |
@@ -568,6 +568,7 @@ releases.
   | `plugin-sdk/dedupe-runtime` | Dedupe helpers | In-memory dedupe caches |
   | `plugin-sdk/file-access-runtime` | File access helpers | Safe local-file/media path helpers |
   | `plugin-sdk/transport-ready-runtime` | Transport readiness helpers | `waitForTransportReady` |
+  | `plugin-sdk/exec-approvals-runtime` | Exec approval policy helpers | `loadExecApprovals`, `resolveExecApprovalsFromFile`, `ExecApprovalsFile` |
   | `plugin-sdk/collection-runtime` | Bounded cache helpers | `pruneMapToMaxSize` |
   | `plugin-sdk/diagnostic-runtime` | Diagnostic gating helpers | `isDiagnosticFlagEnabled`, `isDiagnosticsEnabled` |
   | `plugin-sdk/error-runtime` | Error formatting helpers | `formatUncaughtError`, `isApprovalNotFoundError`, error graph helpers |
@@ -680,7 +681,7 @@ the public subset.
 Reserved bundled-plugin helper seams have been retired from the public SDK
 export map except for explicitly documented compatibility facades such as the
 deprecated `plugin-sdk/discord` shim retained for the published
-`@remoteclaw/discord@2026.3.13` package. Owner-specific helpers live inside the
+`@openclaw/discord@2026.3.13` package. Owner-specific helpers live inside the
 owning plugin package; shared host behavior should move through generic SDK
 contracts such as `plugin-sdk/gateway-runtime`, `plugin-sdk/security-runtime`,
 and `plugin-sdk/plugin-config-runtime`.
@@ -730,7 +731,7 @@ canonical replacement.
   </Accordion>
 
   <Accordion title="Channel runtime shim and channel actions helpers">
-    `remoteclaw/plugin-sdk/channel-runtime` is a compatibility shim for older
+    `openclaw/plugin-sdk/channel-runtime` is a compatibility shim for older
     channel plugins. Do not import it from new code; use
     `remoteclaw/plugin-sdk/channel-runtime-context` for registering runtime
     objects.
@@ -747,7 +748,7 @@ canonical replacement.
     **Old**: `tool()` factory from `remoteclaw/plugin-sdk/provider-web-search`.
 
     **New**: implement `createTool(...)` directly on the provider plugin.
-    RemoteClaw no longer needs the SDK helper to register the tool wrapper.
+    OpenClaw no longer needs the SDK helper to register the tool wrapper.
 
   </Accordion>
 
@@ -815,7 +816,7 @@ canonical replacement.
 
     **New**: a single `resolveThinkingProfile(ctx)` that returns a
     `ProviderThinkingProfile` with the canonical `id`, optional `label`, and
-    ranked level list. RemoteClaw downgrades stale stored values by profile
+    ranked level list. OpenClaw downgrades stale stored values by profile
     rank automatically.
 
     The context includes `provider`, `modelId`, optional merged `reasoning`,
@@ -828,13 +829,12 @@ canonical replacement.
 
   </Accordion>
 
-  <Accordion title="External OAuth provider fallback → contracts.externalAuthProviders">
-    **Old**: implementing `resolveExternalOAuthProfiles(...)` without
-    declaring the provider in the plugin manifest.
+  <Accordion title="External auth providers → contracts.externalAuthProviders">
+    **Old**: implementing external auth hooks without declaring the provider
+    in the plugin manifest.
 
     **New**: declare `contracts.externalAuthProviders` in the plugin manifest
-    **and** implement `resolveExternalAuthProfiles(...)`. The old "auth
-    fallback" path emits a warning at runtime and will be removed.
+    **and** implement `resolveExternalAuthProfiles(...)`.
 
     ```json
     {
@@ -919,20 +919,20 @@ canonical replacement.
   </Accordion>
 
   <Accordion title="Embedded extension factories → agent tool-result middleware">
-    Covered in "How to migrate → Migrate Pi tool-result extensions to
-    middleware" above. Included here for completeness: the removed Pi-only
+    Covered in "How to migrate → Migrate embedded tool-result extensions to
+    middleware" above. Included here for completeness: the removed embedded-runner-only
     `api.registerEmbeddedExtensionFactory(...)` path is replaced by
     `api.registerAgentToolResultMiddleware(...)` with an explicit runtime
     list in `contracts.agentToolResultMiddleware`.
   </Accordion>
 
   <Accordion title="RemoteClawSchemaType alias → RemoteClawConfig">
-    `RemoteClawSchemaType` re-exported from `remoteclaw/plugin-sdk` is now a
+    `RemoteClawSchemaType` re-exported from `openclaw/plugin-sdk` is now a
     one-line alias for `RemoteClawConfig`. Prefer the canonical name.
 
     ```typescript
     // Before
-    import type { RemoteClawSchemaType } from "remoteclaw/plugin-sdk";
+    import type { RemoteClawSchemaType } from "openclaw/plugin-sdk";
     // After
     import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/config-schema";
     ```
@@ -963,8 +963,8 @@ before the next major release.
 Set these environment variables while you work on migrating:
 
 ```bash
-REMOTECLAW_SUPPRESS_PLUGIN_SDK_COMPAT_WARNING=1 remoteclaw gateway run
-REMOTECLAW_SUPPRESS_EXTENSION_API_WARNING=1 remoteclaw gateway run
+OPENCLAW_SUPPRESS_PLUGIN_SDK_COMPAT_WARNING=1 openclaw gateway run
+OPENCLAW_SUPPRESS_EXTENSION_API_WARNING=1 openclaw gateway run
 ```
 
 This is a temporary escape hatch, not a permanent solution.

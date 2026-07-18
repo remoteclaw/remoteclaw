@@ -29,8 +29,8 @@ const PLUGIN_DOC_ALIASES = new Map([
   ["tavily", "/tools/tavily"],
   ["tokenjuice", "/tools/tokenjuice"],
 ]);
-/** @type {ReadonlyMap<string, string>} */
-const PLUGIN_REFERENCE_EXTRA_SECTIONS = new Map();
+const MANUAL_SECTION_START = "<!-- openclaw-plugin-reference:manual-start -->";
+const MANUAL_SECTION_END = "<!-- openclaw-plugin-reference:manual-end -->";
 
 function readJson(relativePath) {
   return JSON.parse(fs.readFileSync(path.join(ROOT, relativePath), "utf8"));
@@ -162,12 +162,12 @@ function resolveDescription({ manifest, packageJson }) {
   if (channels.length > 0) {
     const channelLabel = displayList(channels);
     const channelNoun = channelLabel.toLowerCase().includes("channel") ? "" : " channel";
-    return `Adds the ${channelLabel}${channelNoun} surface for sending and receiving RemoteClaw messages.`;
+    return `Adds the ${channelLabel}${channelNoun} surface for sending and receiving OpenClaw messages.`;
   }
 
   const providers = Array.isArray(manifest.providers) ? manifest.providers : [];
   if (providers.length > 0) {
-    return `Adds ${displayList(providers)} model provider support to RemoteClaw.`;
+    return `Adds ${displayList(providers)} model provider support to OpenClaw.`;
   }
 
   const contracts = Object.keys(manifest.contracts ?? {}).toSorted((left, right) =>
@@ -198,7 +198,7 @@ function resolveDescription({ manifest, packageJson }) {
   }
 
   const packageDescription = normalizePackageDescription(packageJson.description);
-  return packageDescription ? `${packageDescription}.` : "Provides an RemoteClaw plugin.";
+  return packageDescription ? `${packageDescription}.` : "Provides an OpenClaw plugin.";
 }
 
 function pushUniqueDocLink(values, value) {
@@ -296,7 +296,7 @@ function resolveInstallRoute(packageJson, status) {
     return "source checkout only";
   }
   if (status === "core") {
-    return "included in RemoteClaw";
+    return "included in OpenClaw";
   }
   const install = packageJson.remoteclaw?.install;
   const release = packageJson.remoteclaw?.release;
@@ -377,9 +377,48 @@ function renderRelatedDocs(record) {
 ${record.docs.map((link) => `- ${docLink(link)}`).join("\n")}`;
 }
 
-function renderReferencePage(record) {
+function extractManualReferenceSections(content) {
+  const markerStart = content.indexOf(MANUAL_SECTION_START);
+  if (markerStart !== -1) {
+    const contentStart = markerStart + MANUAL_SECTION_START.length;
+    const markerEnd = content.indexOf(MANUAL_SECTION_END, contentStart);
+    if (markerEnd !== -1) {
+      return content.slice(contentStart, markerEnd).trim();
+    }
+  }
+
+  const surfaceMatch = /\n## Surface\n\n[^\n]*(?:\n|$)/u.exec(content);
+  if (!surfaceMatch?.index) {
+    return "";
+  }
+  const manualStart = surfaceMatch.index + surfaceMatch[0].length;
+  const relatedDocsStart = content.indexOf("\n## Related docs\n", manualStart);
+  const manualEnd = relatedDocsStart === -1 ? content.length : relatedDocsStart;
+  return content.slice(manualStart, manualEnd).trim();
+}
+
+function readManualReferenceSections(relativePath) {
+  const fullPath = path.join(ROOT, relativePath);
+  if (!fs.existsSync(fullPath)) {
+    return "";
+  }
+  return extractManualReferenceSections(fs.readFileSync(fullPath, "utf8"));
+}
+
+function renderManualReferenceSections(manualSections) {
+  if (!manualSections) {
+    return "";
+  }
+  return `${MANUAL_SECTION_START}
+
+${manualSections}
+
+${MANUAL_SECTION_END}`;
+}
+
+function renderReferencePage(record, manualSections = "") {
   const relatedDocs = renderRelatedDocs(record);
-  const extraSections = PLUGIN_REFERENCE_EXTRA_SECTIONS.get(record.id) ?? "";
+  const manualBlock = renderManualReferenceSections(manualSections);
   return `---
 summary: "${record.description.replaceAll('"', '\\"')}"
 read_when:
@@ -398,15 +437,15 @@ ${record.description}
 
 ## Surface
 
-${record.surface}${extraSections ? `\n\n${extraSections}` : ""}${relatedDocs ? `\n\n${relatedDocs}` : ""}
+${record.surface}${manualBlock ? `\n\n${manualBlock}` : ""}${relatedDocs ? `\n\n${relatedDocs}` : ""}
 `;
 }
 
 function renderReferenceIndex(records) {
   return `---
-summary: "Generated index of RemoteClaw plugin reference pages"
+summary: "Generated index of OpenClaw plugin reference pages"
 read_when:
-  - You need a reference page for a specific RemoteClaw plugin
+  - You need a reference page for a specific OpenClaw plugin
   - You are auditing plugin docs coverage
 title: "Plugin reference"
 ---
@@ -430,7 +469,7 @@ function collectPluginSourceEntries() {
     .readdirSync(EXTENSIONS_DIR)
     .toSorted((left, right) => left.localeCompare(right))) {
     const packagePath = path.join(EXTENSIONS_DIR, dirName, "package.json");
-    const manifestPath = path.join(EXTENSIONS_DIR, dirName, "remoteclaw.plugin.json");
+    const manifestPath = path.join(EXTENSIONS_DIR, dirName, "openclaw.plugin.json");
     if (!fs.existsSync(packagePath) || !fs.existsSync(manifestPath)) {
       continue;
     }
@@ -493,9 +532,11 @@ function collectPluginRecords() {
 function writeGeneratedDocs(records) {
   fs.mkdirSync(path.join(ROOT, REFERENCE_DIR), { recursive: true });
   for (const record of records) {
+    const relativePath = path.join(REFERENCE_DIR, `${record.id}.md`);
+    const manualSections = readManualReferenceSections(relativePath);
     fs.writeFileSync(
-      path.join(ROOT, REFERENCE_DIR, `${record.id}.md`),
-      renderReferencePage(record),
+      path.join(ROOT, relativePath),
+      renderReferencePage(record, manualSections),
       "utf8",
     );
   }
@@ -505,10 +546,10 @@ function writeGeneratedDocs(records) {
 function readGeneratedDocs(records) {
   return [
     [REFERENCE_INDEX_PATH, renderReferenceIndex(records)],
-    ...records.map((record) => [
-      path.join(REFERENCE_DIR, `${record.id}.md`),
-      renderReferencePage(record),
-    ]),
+    ...records.map((record) => {
+      const relativePath = path.join(REFERENCE_DIR, `${record.id}.md`);
+      return [relativePath, renderReferencePage(record, readManualReferenceSections(relativePath))];
+    }),
   ];
 }
 
@@ -521,7 +562,7 @@ function renderDocument() {
   };
 
   return `---
-summary: "Generated inventory of RemoteClaw plugins shipped in core, published externally, or kept source-only"
+summary: "Generated inventory of OpenClaw plugins shipped in core, published externally, or kept source-only"
 read_when:
   - You are deciding whether a plugin ships in the core npm package or installs separately
   - You are updating bundled plugin package metadata or release automation
@@ -540,8 +581,8 @@ pnpm plugins:inventory:gen
 
 ## Definitions
 
-- **Core npm package:** built into the \`remoteclaw\` npm package and available without a separate plugin install.
-- **Official external package:** RemoteClaw-maintained plugin omitted from the core npm package, kept in this official inventory, and installed on demand through ClawHub and/or npm.
+- **Core npm package:** built into the \`openclaw\` npm package and available without a separate plugin install.
+- **Official external package:** OpenClaw-maintained plugin omitted from the core npm package, kept in this official inventory, and installed on demand through ClawHub and/or npm.
 - **Source checkout only:** repo-local plugin omitted from published npm artifacts and not advertised as an installable package.
 
 Source checkouts are different from npm installs: after \`pnpm install\`, bundled
@@ -551,7 +592,7 @@ dependencies are available.
 ## Install a plugin
 
 Use the **Distribution** column to decide whether install is needed. Plugins that
-say \`included in RemoteClaw\` are already present in the core package. Official
+say \`included in OpenClaw\` are already present in the core package. Official
 external packages need one install, then a Gateway restart.
 
 For example, Discord is an official external package:

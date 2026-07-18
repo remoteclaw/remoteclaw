@@ -268,7 +268,7 @@ describe("buildInboundUserContextPrefix", () => {
       );
 
       const conversationInfo = parseConversationInfoPayload(text);
-      expect(conversationInfo["timestamp"]).toBe("Thu 2026-03-19 09:00 GMT+9");
+      expect(conversationInfo["timestamp"]).toBe("Thu 2026-03-19 09:00:00 GMT+9");
     });
   });
 

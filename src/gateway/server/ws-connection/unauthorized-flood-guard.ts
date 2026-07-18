@@ -1,3 +1,4 @@
+import { resolveIntegerOption } from "../../../shared/number-coercion.js";
 import { ErrorCodes, type ErrorShape } from "../../protocol/index.js";
 
 export type UnauthorizedFloodGuardOptions = {
@@ -22,8 +23,8 @@ export class UnauthorizedFloodGuard {
   private suppressedSinceLastLog = 0;
 
   constructor(options?: UnauthorizedFloodGuardOptions) {
-    this.closeAfter = Math.max(1, Math.floor(options?.closeAfter ?? DEFAULT_CLOSE_AFTER));
-    this.logEvery = Math.max(1, Math.floor(options?.logEvery ?? DEFAULT_LOG_EVERY));
+    this.closeAfter = resolveIntegerOption(options?.closeAfter, DEFAULT_CLOSE_AFTER, { min: 1 });
+    this.logEvery = resolveIntegerOption(options?.logEvery, DEFAULT_LOG_EVERY, { min: 1 });
   }
 
   registerUnauthorized(): UnauthorizedFloodDecision {

@@ -63,6 +63,7 @@ Example config:
 
 - Interval: `30m` (or `1h` when Anthropic OAuth/token auth is the detected auth mode, including Claude CLI reuse). Set `agents.defaults.heartbeat.every` or per-agent `agents.list[].heartbeat.every`; use `0m` to disable.
 - Prompt body (configurable via `agents.defaults.heartbeat.prompt`): `Read HEARTBEAT.md if it exists (workspace context). Follow it strictly. Do not infer or repeat old tasks from prior chats. If nothing needs attention, reply HEARTBEAT_OK.`
+- Timeout: unset heartbeat turns use `agents.defaults.timeoutSeconds` when set. Otherwise, they use the heartbeat cadence capped at 600 seconds. Set `agents.defaults.heartbeat.timeoutSeconds` or per-agent `agents.list[].heartbeat.timeoutSeconds` for longer heartbeat work.
 - The heartbeat prompt is sent **verbatim** as the user message. The system prompt includes a "Heartbeat" section only when heartbeats are enabled for the default agent, and the run is flagged internally.
 - When heartbeats are disabled with `0m`, normal runs also omit `HEARTBEAT.md` from bootstrap context so the model does not see heartbeat-only instructions.
 - Active hours (`heartbeat.activeHours`) are checked in the configured timezone. Outside the window, heartbeats are skipped until the next tick inside the window.
@@ -83,7 +84,7 @@ If you want a heartbeat to do something very specific (e.g. "check Gmail PubSub 
 
 - If nothing needs attention, reply with **`HEARTBEAT_OK`**.
 - Tool-capable heartbeat runs may instead call `heartbeat_respond` with `notify: false` for no visible update, or `notify: true` plus `notificationText` for an alert. When present, the structured tool response takes precedence over the text fallback.
-- During heartbeat runs, RemoteClaw treats `HEARTBEAT_OK` as an ack when it appears at the **start or end** of the reply. The token is stripped and the reply is dropped if the remaining content is **≤ `ackMaxChars`** (default: 300).
+- During heartbeat runs, OpenClaw treats `HEARTBEAT_OK` as an ack when it appears at the **start or end** of the reply. The token is stripped and the reply is dropped if the remaining content is **≤ `ackMaxChars`** (default: 300).
 - If `HEARTBEAT_OK` appears in the **middle** of a reply, it is not treated specially.
 - For alerts, **do not** include `HEARTBEAT_OK`; return only the alert text.
 
@@ -241,7 +242,7 @@ Use `accountId` to target a specific account on multi-account channels like Tele
   Optional session key for heartbeat runs.
 
 - `main` (default): agent main session.
-- Explicit session key (copy from `remoteclaw sessions --json` or the [sessions CLI](/cli/sessions)).
+- Explicit session key (copy from `openclaw sessions --json` or the [sessions CLI](/cli/sessions)).
 - Session key formats: see [Sessions](/concepts/session) and [Groups](/channels/groups).
 
 </ParamField>
@@ -275,6 +276,10 @@ Use `accountId` to target a specific account on multi-account channels like Tele
   When true, suppresses tool error warning payloads during heartbeat runs.
 
 </ParamField>
+<ParamField path="timeoutSeconds" type="number" default="global timeout or min(every, 600)">
+  Maximum seconds allowed for a heartbeat agent turn before it is aborted. Leave unset to use `agents.defaults.timeoutSeconds` when set, otherwise the heartbeat cadence capped at 600 seconds.
+
+</ParamField>
 <ParamField path="activeHours" type="object">
   Restricts heartbeat runs to a time window. Object with `start` (HH:MM, inclusive; use `00:00` for start-of-day), `end` (HH:MM exclusive; `24:00` allowed for end-of-day), and optional `timezone`.
 
@@ -301,8 +306,8 @@ Use `accountId` to target a specific account on multi-account channels like Tele
   </Accordion>
   <Accordion title="Visibility and skip behavior">
     - If `showOk`, `showAlerts`, and `useIndicator` are all disabled, the run is skipped up front as `reason=alerts-disabled`.
-    - If only alert delivery is disabled, RemoteClaw can still run the heartbeat, update due-task timestamps, restore the session idle timestamp, and suppress the outward alert payload.
-    - If the resolved heartbeat target supports typing, RemoteClaw shows typing while the heartbeat run is active. This uses the same target the heartbeat would send chat output to, and it is disabled by `typingMode: "never"`.
+    - If only alert delivery is disabled, OpenClaw can still run the heartbeat, update due-task timestamps, restore the session idle timestamp, and suppress the outward alert payload.
+    - If the resolved heartbeat target supports typing, OpenClaw shows typing while the heartbeat run is active. This uses the same target the heartbeat would send chat output to, and it is disabled by `typingMode: "never"`.
 
   </Accordion>
   <Accordion title="Session lifecycle and audit">
@@ -342,7 +347,7 @@ Precedence: per-account → per-channel → channel defaults → built-in defaul
 - `showAlerts`: sends the alert content when the model returns a non-OK reply.
 - `useIndicator`: emits indicator events for UI status surfaces.
 
-If **all three** are false, RemoteClaw skips the heartbeat run entirely (no model call).
+If **all three** are false, OpenClaw skips the heartbeat run entirely (no model call).
 
 ### Per-channel vs per-account examples
 
@@ -382,7 +387,7 @@ On normal runs, `HEARTBEAT.md` is only injected when heartbeat guidance is enabl
 
 On the native Codex harness, `HEARTBEAT.md` content is not injected into the turn. If the file exists and has non-whitespace content, the heartbeat collaboration-mode instructions point Codex at the file and tell it to read before proceeding.
 
-If `HEARTBEAT.md` exists but is effectively empty (only blank lines and markdown headers like `# Heading`), RemoteClaw skips the heartbeat run to save API calls. That skip is reported as `reason=empty-heartbeat-file`. If the file is missing, the heartbeat still runs and the model decides what to do.
+If `HEARTBEAT.md` exists but is effectively empty (only blank lines and markdown headers like `# Heading`), OpenClaw skips the heartbeat run to save API calls. That skip is reported as `reason=empty-heartbeat-file`. If the file is missing, the heartbeat still runs and the model decides what to do.
 
 Keep it tiny (short checklist or reminders) to avoid prompt bloat.
 
@@ -420,7 +425,7 @@ tasks:
 
 <AccordionGroup>
   <Accordion title="Behavior">
-    - RemoteClaw parses the `tasks:` block and checks each task against its own `interval`.
+    - OpenClaw parses the `tasks:` block and checks each task against its own `interval`.
     - Only **due** tasks are included in the heartbeat prompt for that tick.
     - If no tasks are due, the heartbeat is skipped entirely (`reason=no-tasks-due`) to avoid a wasted model call.
     - Non-task content in `HEARTBEAT.md` is preserved and appended as additional context after the due-task list.
@@ -452,7 +457,7 @@ Don't put secrets (API keys, phone numbers, private tokens) into `HEARTBEAT.md` 
 You can enqueue a system event and trigger an immediate heartbeat with:
 
 ```bash
-remoteclaw system event --text "Check for urgent follow-ups" --mode now
+openclaw system event --text "Check for urgent follow-ups" --mode now
 ```
 
 If multiple agents have `heartbeat` configured, a manual wake runs each of those agent heartbeats immediately.
@@ -481,7 +486,7 @@ Heartbeats run full agent turns. Shorter intervals burn more tokens. To reduce c
 
 ## Context overflow after heartbeat
 
-If a heartbeat previously left an existing session on a smaller local model, for example an Ollama model with a 32k window, and the next main-session turn reports context overflow, reset the session runtime model back to the configured primary model. RemoteClaw's reset message calls this out when the last runtime model matches configured `heartbeat.model`.
+If a heartbeat previously left an existing session on a smaller local model, for example an Ollama model with a 32k window, and the next main-session turn reports context overflow, reset the session runtime model back to the configured primary model. OpenClaw's reset message calls this out when the last runtime model matches configured `heartbeat.model`.
 
 Current heartbeats preserve the shared session's existing runtime model after the run completes. You can still use `isolatedSession: true` to run heartbeats in a fresh session, combine it with `lightContext: true` for the smallest prompt, or choose a heartbeat model with a context window large enough for the shared session.
 

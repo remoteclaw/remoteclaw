@@ -1,9 +1,9 @@
-import RemoteClawKit
 import Foundation
+import RemoteClawKit
 import Testing
 import UIKit
 import UserNotifications
-@testable import RemoteClaw
+@testable import OpenClaw
 
 private func makeAgentDeepLinkURL(
     message: String,
@@ -13,7 +13,7 @@ private func makeAgentDeepLinkURL(
     key: String? = nil) -> URL
 {
     var components = URLComponents()
-    components.scheme = "remoteclaw"
+    components.scheme = "openclaw"
     components.host = "agent"
     var queryItems: [URLQueryItem] = [URLQueryItem(name: "message", value: message)]
     if deliver {
@@ -33,6 +33,14 @@ private func makeAgentDeepLinkURL(
 }
 
 @MainActor
+private func mountScreen(_ screen: ScreenController) throws -> ScreenWebViewCoordinator {
+    let coordinator = ScreenWebViewCoordinator(controller: screen)
+    _ = coordinator.makeContainerView()
+    _ = try #require(coordinator.managedWebView)
+    return coordinator
+}
+
+@MainActor
 private final class MockWatchMessagingService: @preconcurrency WatchMessagingServicing, @unchecked Sendable {
     var currentStatus = WatchMessagingStatus(
         supported: true,
@@ -45,20 +53,81 @@ private final class MockWatchMessagingService: @preconcurrency WatchMessagingSer
         queuedForDelivery: false,
         transport: "sendMessage")
     var sendError: Error?
-    var lastSent: (id: String, params: RemoteClawWatchNotifyParams)?
+    var lastSent: (id: String, params: OpenClawWatchNotifyParams)?
+    var lastSentExecApprovalPrompt: OpenClawWatchExecApprovalPromptMessage?
+    var lastSentExecApprovalResolved: OpenClawWatchExecApprovalResolvedMessage?
+    var lastSentExecApprovalExpired: OpenClawWatchExecApprovalExpiredMessage?
+    var lastSentExecApprovalSnapshot: OpenClawWatchExecApprovalSnapshotMessage?
+    private var statusHandler: (@Sendable (WatchMessagingStatus) -> Void)?
     private var replyHandler: (@Sendable (WatchQuickReplyEvent) -> Void)?
+    private var execApprovalResolveHandler: (@Sendable (WatchExecApprovalResolveEvent) -> Void)?
+    private var execApprovalSnapshotRequestHandler: (@Sendable (WatchExecApprovalSnapshotRequestEvent) -> Void)?
 
     func status() async -> WatchMessagingStatus {
         self.currentStatus
+    }
+
+    func setStatusHandler(_ handler: (@Sendable (WatchMessagingStatus) -> Void)?) {
+        self.statusHandler = handler
     }
 
     func setReplyHandler(_ handler: (@Sendable (WatchQuickReplyEvent) -> Void)?) {
         self.replyHandler = handler
     }
 
-    func sendNotification(id: String, params: RemoteClawWatchNotifyParams) async throws -> WatchNotificationSendResult {
+    func setExecApprovalResolveHandler(_ handler: (@Sendable (WatchExecApprovalResolveEvent) -> Void)?) {
+        self.execApprovalResolveHandler = handler
+    }
+
+    func setExecApprovalSnapshotRequestHandler(
+        _ handler: (@Sendable (WatchExecApprovalSnapshotRequestEvent) -> Void)?)
+    {
+        self.execApprovalSnapshotRequestHandler = handler
+    }
+
+    func sendNotification(id: String, params: OpenClawWatchNotifyParams) async throws -> WatchNotificationSendResult {
         self.lastSent = (id: id, params: params)
-        if let sendError = self.sendError {
+        if let sendError {
+            throw sendError
+        }
+        return self.nextSendResult
+    }
+
+    func sendExecApprovalPrompt(
+        _ message: OpenClawWatchExecApprovalPromptMessage) async throws -> WatchNotificationSendResult
+    {
+        self.lastSentExecApprovalPrompt = message
+        if let sendError {
+            throw sendError
+        }
+        return self.nextSendResult
+    }
+
+    func sendExecApprovalResolved(
+        _ message: OpenClawWatchExecApprovalResolvedMessage) async throws -> WatchNotificationSendResult
+    {
+        self.lastSentExecApprovalResolved = message
+        if let sendError {
+            throw sendError
+        }
+        return self.nextSendResult
+    }
+
+    func sendExecApprovalExpired(
+        _ message: OpenClawWatchExecApprovalExpiredMessage) async throws -> WatchNotificationSendResult
+    {
+        self.lastSentExecApprovalExpired = message
+        if let sendError {
+            throw sendError
+        }
+        return self.nextSendResult
+    }
+
+    func syncExecApprovalSnapshot(
+        _ message: OpenClawWatchExecApprovalSnapshotMessage) async throws -> WatchNotificationSendResult
+    {
+        self.lastSentExecApprovalSnapshot = message
+        if let sendError {
             throw sendError
         }
         return self.nextSendResult
@@ -66,6 +135,14 @@ private final class MockWatchMessagingService: @preconcurrency WatchMessagingSer
 
     func emitReply(_ event: WatchQuickReplyEvent) {
         self.replyHandler?(event)
+    }
+
+    func emitExecApprovalResolve(_ event: WatchExecApprovalResolveEvent) {
+        self.execApprovalResolveHandler?(event)
+    }
+
+    func emitExecApprovalSnapshotRequest(_ event: WatchExecApprovalSnapshotRequestEvent) {
+        self.execApprovalSnapshotRequestHandler?(event)
     }
 }
 
@@ -102,7 +179,7 @@ private final class MockBootstrapNotificationCenter: NotificationCentering, @unc
 @Suite(.serialized) struct NodeAppModelInvokeTests {
     @Test @MainActor func decodeParamsFailsWithoutJSON() {
         #expect(throws: Error.self) {
-            _ = try NodeAppModel._test_decodeParams(RemoteClawCanvasNavigateParams.self, from: nil)
+            _ = try NodeAppModel._test_decodeParams(OpenClawCanvasNavigateParams.self, from: nil)
         }
     }
 
@@ -119,6 +196,16 @@ private final class MockBootstrapNotificationCenter: NotificationCentering, @unc
         #expect(appModel.chatSessionKey == "main")
     }
 
+    @Test @MainActor func initPreservesSavedTalkModePreference() {
+        withUserDefaults(["talk.enabled": true]) {
+            let talkMode = TalkModeManager(allowSimulatorCapture: true)
+            let appModel = NodeAppModel(talkMode: talkMode)
+
+            #expect(UserDefaults.standard.bool(forKey: "talk.enabled"))
+            #expect(appModel.talkMode.isEnabled)
+        }
+    }
+
     @Test @MainActor func chatSessionKeyUsesAgentScopedKeyForNonDefaultAgent() {
         let appModel = NodeAppModel()
         appModel.gatewayDefaultAgentId = "main"
@@ -129,8 +216,8 @@ private final class MockBootstrapNotificationCenter: NotificationCentering, @unc
 
     @Test @MainActor func execApprovalPromptPresentationTracksLatestNotificationTap() throws {
         let appModel = NodeAppModel()
-        appModel._test_presentExecApprovalPrompt(
-            try #require(
+        try appModel._test_presentExecApprovalPrompt(
+            #require(
                 NodeAppModel._test_makeExecApprovalPrompt(
                     id: "approval-1",
                     commandText: "echo first",
@@ -145,8 +232,8 @@ private final class MockBootstrapNotificationCenter: NotificationCentering, @unc
         #expect(firstPrompt.commandText == "echo first")
         #expect(firstPrompt.allowsAllowAlways == false)
 
-        appModel._test_presentExecApprovalPrompt(
-            try #require(
+        try appModel._test_presentExecApprovalPrompt(
+            #require(
                 NodeAppModel._test_makeExecApprovalPrompt(
                     id: "approval-2",
                     commandText: "echo second",
@@ -167,8 +254,8 @@ private final class MockBootstrapNotificationCenter: NotificationCentering, @unc
 
     @Test @MainActor func dismissPendingExecApprovalPromptByIdLeavesDifferentPromptVisible() throws {
         let appModel = NodeAppModel()
-        appModel._test_presentExecApprovalPrompt(
-            try #require(
+        try appModel._test_presentExecApprovalPrompt(
+            #require(
                 NodeAppModel._test_makeExecApprovalPrompt(
                     id: "approval-active",
                     commandText: "echo keep",
@@ -182,6 +269,118 @@ private final class MockBootstrapNotificationCenter: NotificationCentering, @unc
 
         let prompt = try #require(appModel._test_pendingExecApprovalPrompt())
         #expect(prompt.id == "approval-active")
+    }
+
+    @Test @MainActor func presentingExecApprovalPromptSyncsWatchPrompt() async throws {
+        let watchService = MockWatchMessagingService()
+        let appModel = NodeAppModel(watchMessagingService: watchService)
+        let prompt = try #require(
+            NodeAppModel._test_makeExecApprovalPrompt(
+                id: "approval-watch-sync",
+                commandText: "npm publish",
+                allowedDecisions: ["allow-once", "deny"],
+                host: "gateway",
+                nodeId: "node-1",
+                agentId: "main",
+                expiresAtMs: 1234))
+
+        appModel._test_presentExecApprovalPrompt(prompt)
+        await Task.yield()
+
+        let sent = try #require(watchService.lastSentExecApprovalPrompt)
+        #expect(sent.approval.id == "approval-watch-sync")
+        #expect(sent.approval.allowedDecisions == [.allowOnce, .deny])
+        #expect(sent.approval.host == "gateway")
+        #expect(sent.approval.risk == nil)
+        #expect(sent.resetResolvingState != true)
+    }
+
+    @Test @MainActor func watchExecApprovalSnapshotRequestPublishesCachedApprovalsInBackground() async throws {
+        let watchService = MockWatchMessagingService()
+        let appModel = NodeAppModel(watchMessagingService: watchService)
+        let futureExpiryMs = Int(Date().timeIntervalSince1970 * 1000) + 60000
+        try appModel._test_presentExecApprovalPrompt(
+            #require(
+                NodeAppModel._test_makeExecApprovalPrompt(
+                    id: "approval-watch-snapshot",
+                    commandText: "echo from watch",
+                    allowedDecisions: ["allow-once", "deny"],
+                    host: "gateway",
+                    nodeId: nil,
+                    agentId: nil,
+                    expiresAtMs: futureExpiryMs)))
+        await Task.yield()
+
+        appModel.setScenePhase(.background)
+        watchService.emitExecApprovalSnapshotRequest(
+            WatchExecApprovalSnapshotRequestEvent(
+                requestId: "snapshot-1",
+                sentAtMs: 111,
+                transport: "sendMessage"))
+        await Task.yield()
+
+        let snapshot = try #require(watchService.lastSentExecApprovalSnapshot)
+        #expect(snapshot.approvals.map(\.id) == ["approval-watch-snapshot"])
+    }
+
+    @Test @MainActor func watchExecApprovalSnapshotRequestSkipsForegroundRecovery() async throws {
+        let watchService = MockWatchMessagingService()
+        let appModel = NodeAppModel(watchMessagingService: watchService)
+        let futureExpiryMs = Int(Date().timeIntervalSince1970 * 1000) + 60000
+        try appModel._test_presentExecApprovalPrompt(
+            #require(
+                NodeAppModel._test_makeExecApprovalPrompt(
+                    id: "approval-watch-foreground-skip",
+                    commandText: "echo foreground",
+                    allowedDecisions: ["allow-once", "deny"],
+                    host: "gateway",
+                    nodeId: nil,
+                    agentId: nil,
+                    expiresAtMs: futureExpiryMs)))
+        await Task.yield()
+        watchService.lastSentExecApprovalSnapshot = nil
+
+        watchService.emitExecApprovalSnapshotRequest(
+            WatchExecApprovalSnapshotRequestEvent(
+                requestId: "snapshot-foreground",
+                sentAtMs: 222,
+                transport: "sendMessage"))
+        await Task.yield()
+
+        #expect(watchService.lastSentExecApprovalSnapshot == nil)
+    }
+
+    @Test @MainActor func pendingWatchRecoveryIDsAreIncludedWithoutDeliveredNotifications() async {
+        NodeAppModel._test_resetPersistedWatchExecApprovalBridgeState()
+        defer { NodeAppModel._test_resetPersistedWatchExecApprovalBridgeState() }
+
+        let appModel = NodeAppModel(notificationCenter: MockBootstrapNotificationCenter())
+        appModel._test_recordPendingWatchExecApprovalRecoveryID("approval-watch-recovery")
+
+        let ids = await appModel._test_pendingExecApprovalIDsForWatchRecovery()
+        #expect(ids == ["approval-watch-recovery"])
+    }
+
+    @Test @MainActor func presentingExecApprovalPromptClearsPendingWatchRecoveryID() throws {
+        NodeAppModel._test_resetPersistedWatchExecApprovalBridgeState()
+        defer { NodeAppModel._test_resetPersistedWatchExecApprovalBridgeState() }
+
+        let appModel = NodeAppModel(notificationCenter: MockBootstrapNotificationCenter())
+        appModel._test_recordPendingWatchExecApprovalRecoveryID("approval-watch-clear")
+        #expect(appModel._test_pendingWatchExecApprovalRecoveryIDs() == ["approval-watch-clear"])
+
+        try appModel._test_presentExecApprovalPrompt(
+            #require(
+                NodeAppModel._test_makeExecApprovalPrompt(
+                    id: "approval-watch-clear",
+                    commandText: "echo clear",
+                    allowedDecisions: ["allow-once", "deny"],
+                    host: "gateway",
+                    nodeId: nil,
+                    agentId: nil,
+                    expiresAtMs: Int(Date().timeIntervalSince1970 * 1000) + 60000)))
+
+        #expect(appModel._test_pendingWatchExecApprovalRecoveryIDs().isEmpty)
     }
 
     @Test func approvalNotificationErrorClassificationPrefersStructuredDetails() {
@@ -200,35 +399,68 @@ private final class MockBootstrapNotificationCenter: NotificationCentering, @unc
         #expect(NodeAppModel._test_isApprovalNotificationUnavailableError(unavailableError))
     }
 
+    @Test func backgroundAwareExecApprovalReconnectCoversWatchAndPushPaths() {
+        #expect(
+            NodeAppModel._test_shouldUseBackgroundAwareExecApprovalReconnect(
+                sourceReason: "watch_request",
+                isBackgrounded: true))
+        #expect(
+            NodeAppModel._test_shouldUseBackgroundAwareExecApprovalReconnect(
+                sourceReason: "push_request",
+                isBackgrounded: true))
+        #expect(
+            NodeAppModel._test_shouldUseBackgroundAwareExecApprovalReconnect(
+                sourceReason: "watch_resolve",
+                isBackgrounded: true))
+        #expect(
+            !NodeAppModel._test_shouldUseBackgroundAwareExecApprovalReconnect(
+                sourceReason: "direct",
+                isBackgrounded: true))
+        #expect(
+            !NodeAppModel._test_shouldUseBackgroundAwareExecApprovalReconnect(
+                sourceReason: "watch_request",
+                isBackgrounded: false))
+    }
+
+    @Test func watchExecApprovalHydrateFetchesOnlyMissingIDs() {
+        let idsToFetch = NodeAppModel._test_watchExecApprovalIDsNeedingFetch(
+            candidateIDs: ["cached", "pending", "cached", "other", "", "  pending  "],
+            cachedApprovalIDs: ["cached", "also-cached"])
+
+        #expect(idsToFetch == ["pending", "other"])
+    }
+
+    @Test func watchExecApprovalRetryPromptResetsResolvingStateOnlyForRetryReason() {
+        #expect(NodeAppModel._test_shouldResetWatchExecApprovalResolvingStateOnPrompt(reason: "resolve_retry"))
+        #expect(!NodeAppModel._test_shouldResetWatchExecApprovalResolvingStateOnPrompt(reason: "push_request"))
+        #expect(!NodeAppModel._test_shouldResetWatchExecApprovalResolvingStateOnPrompt(reason: "present_prompt"))
+    }
+
     @Test func operatorLoopWaitsForBootstrapHandoffBeforeUsingStoredToken() {
         #expect(
             !NodeAppModel._test_shouldStartOperatorGatewayLoop(
                 token: nil,
                 bootstrapToken: "fresh-bootstrap-token",
                 password: nil,
-                hasStoredOperatorToken: true)
-        )
+                hasStoredOperatorToken: true))
         #expect(
             !NodeAppModel._test_shouldStartOperatorGatewayLoop(
                 token: nil,
                 bootstrapToken: nil,
                 password: nil,
-                hasStoredOperatorToken: false)
-        )
+                hasStoredOperatorToken: false))
         #expect(
             NodeAppModel._test_shouldStartOperatorGatewayLoop(
                 token: nil,
                 bootstrapToken: nil,
                 password: nil,
-                hasStoredOperatorToken: true)
-        )
+                hasStoredOperatorToken: true))
         #expect(
             NodeAppModel._test_shouldStartOperatorGatewayLoop(
                 token: "shared-token",
                 bootstrapToken: "fresh-bootstrap-token",
                 password: nil,
-                hasStoredOperatorToken: false)
-        )
+                hasStoredOperatorToken: false))
     }
 
     @Test @MainActor func successfulBootstrapOnboardingRequestsNotificationAuthorization() async {
@@ -240,9 +472,9 @@ private final class MockBootstrapNotificationCenter: NotificationCentering, @unc
         #expect(center.requestAuthorizationCalls == 1)
     }
 
-    @Test func clearingBootstrapTokenStripsReconnectConfigEvenWithoutPersistence() {
-        let config = GatewayConnectConfig(
-            url: URL(string: "wss://gateway.example")!,
+    @Test func clearingBootstrapTokenStripsReconnectConfigEvenWithoutPersistence() throws {
+        let config = try GatewayConnectConfig(
+            url: #require(URL(string: "wss://gateway.example")),
             stableID: "test-gateway",
             tls: nil,
             token: nil,
@@ -254,7 +486,7 @@ private final class MockBootstrapNotificationCenter: NotificationCentering, @unc
                 caps: [],
                 commands: [],
                 permissions: [:],
-                clientId: "remoteclaw-ios",
+                clientId: "openclaw-ios",
                 clientMode: "node",
                 clientDisplayName: nil))
 
@@ -271,7 +503,7 @@ private final class MockBootstrapNotificationCenter: NotificationCentering, @unc
         let appModel = NodeAppModel()
         appModel.setScenePhase(.background)
 
-        let req = BridgeInvokeRequest(id: "bg", command: RemoteClawCanvasCommand.present.rawValue)
+        let req = BridgeInvokeRequest(id: "bg", command: OpenClawCanvasCommand.present.rawValue)
         let res = await appModel._test_handleInvoke(req)
         #expect(res.ok == false)
         #expect(res.error?.code == .backgroundUnavailable)
@@ -279,7 +511,7 @@ private final class MockBootstrapNotificationCenter: NotificationCentering, @unc
 
     @Test @MainActor func handleInvokeRejectsCameraWhenDisabled() async {
         let appModel = NodeAppModel()
-        let req = BridgeInvokeRequest(id: "cam", command: RemoteClawCameraCommand.snap.rawValue)
+        let req = BridgeInvokeRequest(id: "cam", command: OpenClawCameraCommand.snap.rawValue)
 
         let defaults = UserDefaults.standard
         let key = "camera.enabled"
@@ -301,13 +533,13 @@ private final class MockBootstrapNotificationCenter: NotificationCentering, @unc
 
     @Test @MainActor func handleInvokeRejectsInvalidScreenFormat() async {
         let appModel = NodeAppModel()
-        let params = RemoteClawScreenRecordParams(format: "gif")
+        let params = OpenClawScreenRecordParams(format: "gif")
         let data = try? JSONEncoder().encode(params)
         let json = data.flatMap { String(data: $0, encoding: .utf8) }
 
         let req = BridgeInvokeRequest(
             id: "screen",
-            command: RemoteClawScreenCommand.record.rawValue,
+            command: OpenClawScreenCommand.record.rawValue,
             paramsJSON: json)
 
         let res = await appModel._test_handleInvoke(req)
@@ -317,33 +549,41 @@ private final class MockBootstrapNotificationCenter: NotificationCentering, @unc
 
     @Test @MainActor func handleInvokeCanvasCommandsUpdateScreen() async throws {
         let appModel = NodeAppModel()
+        let coordinator = try mountScreen(appModel.screen)
+        defer { coordinator.teardown() }
+
         appModel.screen.navigate(to: "http://example.com")
 
-        let present = BridgeInvokeRequest(id: "present", command: RemoteClawCanvasCommand.present.rawValue)
+        let present = BridgeInvokeRequest(id: "present", command: OpenClawCanvasCommand.present.rawValue)
         let presentRes = await appModel._test_handleInvoke(present)
         #expect(presentRes.ok == true)
         #expect(appModel.screen.urlString.isEmpty)
 
         // Loopback URLs are rejected (they are not meaningful for a remote gateway).
-        let navigateParams = RemoteClawCanvasNavigateParams(url: "http://example.com/")
+        let navigateParams = OpenClawCanvasNavigateParams(url: "http://example.com/")
         let navData = try JSONEncoder().encode(navigateParams)
         let navJSON = String(decoding: navData, as: UTF8.self)
         let navigate = BridgeInvokeRequest(
             id: "nav",
-            command: RemoteClawCanvasCommand.navigate.rawValue,
+            command: OpenClawCanvasCommand.navigate.rawValue,
             paramsJSON: navJSON)
         let navRes = await appModel._test_handleInvoke(navigate)
         #expect(navRes.ok == true)
         #expect(appModel.screen.urlString == "http://example.com/")
 
-        let evalParams = RemoteClawCanvasEvalParams(javaScript: "1+1")
+        let evalParams = OpenClawCanvasEvalParams(javaScript: "1+1")
         let evalData = try JSONEncoder().encode(evalParams)
         let evalJSON = String(decoding: evalData, as: UTF8.self)
         let eval = BridgeInvokeRequest(
             id: "eval",
-            command: RemoteClawCanvasCommand.evalJS.rawValue,
+            command: OpenClawCanvasCommand.evalJS.rawValue,
             paramsJSON: evalJSON)
-        let evalRes = await appModel._test_handleInvoke(eval)
+        var evalRes = await appModel._test_handleInvoke(eval)
+        let deadline = ContinuousClock().now.advanced(by: .seconds(3))
+        while evalRes.ok != true, ContinuousClock().now < deadline {
+            try? await Task.sleep(nanoseconds: 100_000_000)
+            evalRes = await appModel._test_handleInvoke(eval)
+        }
         #expect(evalRes.ok == true)
         let payloadData = try #require(evalRes.payloadJSON?.data(using: .utf8))
         let payload = try JSONSerialization.jsonObject(with: payloadData) as? [String: Any]
@@ -352,16 +592,15 @@ private final class MockBootstrapNotificationCenter: NotificationCentering, @unc
 
     @Test @MainActor func pendingForegroundActionsReplayCanvasNavigate() async throws {
         let appModel = NodeAppModel()
-        let navigateParams = RemoteClawCanvasNavigateParams(url: "http://example.com/")
+        let navigateParams = OpenClawCanvasNavigateParams(url: "http://example.com/")
         let navData = try JSONEncoder().encode(navigateParams)
         let navJSON = String(decoding: navData, as: UTF8.self)
 
         await appModel._test_applyPendingForegroundNodeActions([
             (
                 id: "pending-nav-1",
-                command: RemoteClawCanvasCommand.navigate.rawValue,
-                paramsJSON: navJSON
-            ),
+                command: OpenClawCanvasCommand.navigate.rawValue,
+                paramsJSON: navJSON),
         ])
 
         #expect(appModel.screen.urlString == "http://example.com/")
@@ -370,16 +609,15 @@ private final class MockBootstrapNotificationCenter: NotificationCentering, @unc
     @Test @MainActor func pendingForegroundActionsDoNotApplyWhileBackgrounded() async throws {
         let appModel = NodeAppModel()
         appModel.setScenePhase(.background)
-        let navigateParams = RemoteClawCanvasNavigateParams(url: "http://example.com/")
+        let navigateParams = OpenClawCanvasNavigateParams(url: "http://example.com/")
         let navData = try JSONEncoder().encode(navigateParams)
         let navJSON = String(decoding: navData, as: UTF8.self)
 
         await appModel._test_applyPendingForegroundNodeActions([
             (
                 id: "pending-nav-bg",
-                command: RemoteClawCanvasCommand.navigate.rawValue,
-                paramsJSON: navJSON
-            ),
+                command: OpenClawCanvasCommand.navigate.rawValue,
+                paramsJSON: navJSON),
         ])
 
         #expect(appModel.screen.urlString.isEmpty)
@@ -388,18 +626,18 @@ private final class MockBootstrapNotificationCenter: NotificationCentering, @unc
     @Test @MainActor func handleInvokeA2UICommandsFailWhenHostMissing() async throws {
         let appModel = NodeAppModel()
 
-        let reset = BridgeInvokeRequest(id: "reset", command: RemoteClawCanvasA2UICommand.reset.rawValue)
+        let reset = BridgeInvokeRequest(id: "reset", command: OpenClawCanvasA2UICommand.reset.rawValue)
         let resetRes = await appModel._test_handleInvoke(reset)
         #expect(resetRes.ok == false)
         #expect(resetRes.error?.message.contains("A2UI_HOST_NOT_CONFIGURED") == true)
 
         let jsonl = "{\"beginRendering\":{}}"
-        let pushParams = RemoteClawCanvasA2UIPushJSONLParams(jsonl: jsonl)
+        let pushParams = OpenClawCanvasA2UIPushJSONLParams(jsonl: jsonl)
         let pushData = try JSONEncoder().encode(pushParams)
         let pushJSON = String(decoding: pushData, as: UTF8.self)
         let push = BridgeInvokeRequest(
             id: "push",
-            command: RemoteClawCanvasA2UICommand.pushJSONL.rawValue,
+            command: OpenClawCanvasA2UICommand.pushJSONL.rawValue,
             paramsJSON: pushJSON)
         let pushRes = await appModel._test_handleInvoke(push)
         #expect(pushRes.ok == false)
@@ -423,13 +661,13 @@ private final class MockBootstrapNotificationCenter: NotificationCentering, @unc
             reachable: false,
             activationState: "inactive")
         let appModel = NodeAppModel(watchMessagingService: watchService)
-        let req = BridgeInvokeRequest(id: "watch-status", command: RemoteClawWatchCommand.status.rawValue)
+        let req = BridgeInvokeRequest(id: "watch-status", command: OpenClawWatchCommand.status.rawValue)
 
         let res = await appModel._test_handleInvoke(req)
         #expect(res.ok == true)
 
         let payloadData = try #require(res.payloadJSON?.data(using: .utf8))
-        let payload = try JSONDecoder().decode(RemoteClawWatchStatusPayload.self, from: payloadData)
+        let payload = try JSONDecoder().decode(OpenClawWatchStatusPayload.self, from: payloadData)
         #expect(payload.supported == true)
         #expect(payload.reachable == false)
         #expect(payload.activationState == "inactive")
@@ -442,25 +680,25 @@ private final class MockBootstrapNotificationCenter: NotificationCentering, @unc
             queuedForDelivery: true,
             transport: "transferUserInfo")
         let appModel = NodeAppModel(watchMessagingService: watchService)
-        let params = RemoteClawWatchNotifyParams(
-            title: "RemoteClaw",
+        let params = OpenClawWatchNotifyParams(
+            title: "OpenClaw",
             body: "Meeting with Peter is at 4pm",
             priority: .timeSensitive)
         let paramsData = try JSONEncoder().encode(params)
         let paramsJSON = String(decoding: paramsData, as: UTF8.self)
         let req = BridgeInvokeRequest(
             id: "watch-notify",
-            command: RemoteClawWatchCommand.notify.rawValue,
+            command: OpenClawWatchCommand.notify.rawValue,
             paramsJSON: paramsJSON)
 
         let res = await appModel._test_handleInvoke(req)
         #expect(res.ok == true)
-        #expect(watchService.lastSent?.params.title == "RemoteClaw")
+        #expect(watchService.lastSent?.params.title == "OpenClaw")
         #expect(watchService.lastSent?.params.body == "Meeting with Peter is at 4pm")
         #expect(watchService.lastSent?.params.priority == .timeSensitive)
 
         let payloadData = try #require(res.payloadJSON?.data(using: .utf8))
-        let payload = try JSONDecoder().decode(RemoteClawWatchNotifyPayload.self, from: payloadData)
+        let payload = try JSONDecoder().decode(OpenClawWatchNotifyPayload.self, from: payloadData)
         #expect(payload.deliveredImmediately == false)
         #expect(payload.queuedForDelivery == true)
         #expect(payload.transport == "transferUserInfo")
@@ -469,12 +707,12 @@ private final class MockBootstrapNotificationCenter: NotificationCentering, @unc
     @Test @MainActor func handleInvokeWatchNotifyRejectsEmptyMessage() async throws {
         let watchService = MockWatchMessagingService()
         let appModel = NodeAppModel(watchMessagingService: watchService)
-        let params = RemoteClawWatchNotifyParams(title: "   ", body: "\n")
+        let params = OpenClawWatchNotifyParams(title: "   ", body: "\n")
         let paramsData = try JSONEncoder().encode(params)
         let paramsJSON = String(decoding: paramsData, as: UTF8.self)
         let req = BridgeInvokeRequest(
             id: "watch-notify-empty",
-            command: RemoteClawWatchCommand.notify.rawValue,
+            command: OpenClawWatchCommand.notify.rawValue,
             paramsJSON: paramsJSON)
 
         let res = await appModel._test_handleInvoke(req)
@@ -486,7 +724,7 @@ private final class MockBootstrapNotificationCenter: NotificationCentering, @unc
     @Test @MainActor func handleInvokeWatchNotifyAddsDefaultActionsForPrompt() async throws {
         let watchService = MockWatchMessagingService()
         let appModel = NodeAppModel(watchMessagingService: watchService)
-        let params = RemoteClawWatchNotifyParams(
+        let params = OpenClawWatchNotifyParams(
             title: "Task",
             body: "Action needed",
             priority: .passive,
@@ -495,7 +733,7 @@ private final class MockBootstrapNotificationCenter: NotificationCentering, @unc
         let paramsJSON = String(decoding: paramsData, as: UTF8.self)
         let req = BridgeInvokeRequest(
             id: "watch-notify-default-actions",
-            command: RemoteClawWatchCommand.notify.rawValue,
+            command: OpenClawWatchCommand.notify.rawValue,
             paramsJSON: paramsJSON)
 
         let res = await appModel._test_handleInvoke(req)
@@ -508,7 +746,7 @@ private final class MockBootstrapNotificationCenter: NotificationCentering, @unc
     @Test @MainActor func handleInvokeWatchNotifyAddsApprovalDefaults() async throws {
         let watchService = MockWatchMessagingService()
         let appModel = NodeAppModel(watchMessagingService: watchService)
-        let params = RemoteClawWatchNotifyParams(
+        let params = OpenClawWatchNotifyParams(
             title: "Approval",
             body: "Allow command?",
             promptId: "prompt-approval",
@@ -517,7 +755,7 @@ private final class MockBootstrapNotificationCenter: NotificationCentering, @unc
         let paramsJSON = String(decoding: paramsData, as: UTF8.self)
         let req = BridgeInvokeRequest(
             id: "watch-notify-approval-defaults",
-            command: RemoteClawWatchCommand.notify.rawValue,
+            command: OpenClawWatchCommand.notify.rawValue,
             paramsJSON: paramsJSON)
 
         let res = await appModel._test_handleInvoke(req)
@@ -530,22 +768,22 @@ private final class MockBootstrapNotificationCenter: NotificationCentering, @unc
     @Test @MainActor func handleInvokeWatchNotifyDerivesPriorityFromRiskAndCapsActions() async throws {
         let watchService = MockWatchMessagingService()
         let appModel = NodeAppModel(watchMessagingService: watchService)
-        let params = RemoteClawWatchNotifyParams(
+        let params = OpenClawWatchNotifyParams(
             title: "Urgent",
             body: "Check now",
             risk: .high,
             actions: [
-                RemoteClawWatchAction(id: "a1", label: "A1"),
-                RemoteClawWatchAction(id: "a2", label: "A2"),
-                RemoteClawWatchAction(id: "a3", label: "A3"),
-                RemoteClawWatchAction(id: "a4", label: "A4"),
-                RemoteClawWatchAction(id: "a5", label: "A5"),
+                OpenClawWatchAction(id: "a1", label: "A1"),
+                OpenClawWatchAction(id: "a2", label: "A2"),
+                OpenClawWatchAction(id: "a3", label: "A3"),
+                OpenClawWatchAction(id: "a4", label: "A4"),
+                OpenClawWatchAction(id: "a5", label: "A5"),
             ])
         let paramsData = try JSONEncoder().encode(params)
         let paramsJSON = String(decoding: paramsData, as: UTF8.self)
         let req = BridgeInvokeRequest(
             id: "watch-notify-derive-priority",
-            command: RemoteClawWatchCommand.notify.rawValue,
+            command: OpenClawWatchCommand.notify.rawValue,
             paramsJSON: paramsJSON)
 
         let res = await appModel._test_handleInvoke(req)
@@ -563,12 +801,12 @@ private final class MockBootstrapNotificationCenter: NotificationCentering, @unc
             code: 1,
             userInfo: [NSLocalizedDescriptionKey: "WATCH_UNAVAILABLE: no paired Apple Watch"])
         let appModel = NodeAppModel(watchMessagingService: watchService)
-        let params = RemoteClawWatchNotifyParams(title: "RemoteClaw", body: "Delivery check")
+        let params = OpenClawWatchNotifyParams(title: "OpenClaw", body: "Delivery check")
         let paramsData = try JSONEncoder().encode(params)
         let paramsJSON = String(decoding: paramsData, as: UTF8.self)
         let req = BridgeInvokeRequest(
             id: "watch-notify-fail",
-            command: RemoteClawWatchCommand.notify.rawValue,
+            command: OpenClawWatchCommand.notify.rawValue,
             paramsJSON: paramsJSON)
 
         let res = await appModel._test_handleInvoke(req)
@@ -590,20 +828,21 @@ private final class MockBootstrapNotificationCenter: NotificationCentering, @unc
                 note: nil,
                 sentAtMs: 1234,
                 transport: "transferUserInfo"))
+        await Task.yield()
         #expect(appModel._test_queuedWatchReplyCount() == 1)
     }
 
-    @Test @MainActor func handleDeepLinkSetsErrorWhenNotConnected() async {
+    @Test @MainActor func handleDeepLinkSetsErrorWhenNotConnected() async throws {
         let appModel = NodeAppModel()
-        let url = URL(string: "remoteclaw://agent?message=hello")!
+        let url = try #require(URL(string: "openclaw://agent?message=hello"))
         await appModel.handleDeepLink(url: url)
         #expect(appModel.screen.errorText?.contains("Gateway not connected") == true)
     }
 
-    @Test @MainActor func handleDeepLinkRejectsOversizedMessage() async {
+    @Test @MainActor func handleDeepLinkRejectsOversizedMessage() async throws {
         let appModel = NodeAppModel()
         let msg = String(repeating: "a", count: 20001)
-        let url = URL(string: "remoteclaw://agent?message=\(msg)")!
+        let url = try #require(URL(string: "openclaw://agent?message=\(msg)"))
         await appModel.handleDeepLink(url: url)
         #expect(appModel.screen.errorText?.contains("Deep link too large") == true)
     }

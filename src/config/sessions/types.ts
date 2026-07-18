@@ -20,6 +20,12 @@ export type SessionOrigin = {
   chatType?: SessionChatType;
   from?: string;
   to?: string;
+  /**
+   * Native (channel-side) conversation id, used as a delivery-target candidate
+   * when deciding whether two case-distinct session keys are the same room.
+   * Optional: sessions written before this field existed simply omit it.
+   */
+  nativeChannelId?: string;
   accountId?: string;
   threadId?: string | number;
 };

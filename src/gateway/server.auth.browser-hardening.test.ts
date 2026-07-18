@@ -3,7 +3,6 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, test } from "vitest";
 import { WebSocket } from "ws";
-import { ConnectErrorDetailCodes } from "../gateway/protocol/connect-error-details.js";
 import {
   loadOrCreateDeviceIdentity,
   publicKeyRawBase64UrlFromPem,
@@ -11,6 +10,7 @@ import {
 } from "../infra/device-identity.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../utils/message-channel.js";
 import { buildDeviceAuthPayload } from "./device-auth.js";
+import { ConnectErrorDetailCodes } from "./protocol/connect-error-details.js";
 import {
   connectReq,
   connectOk,
@@ -424,12 +424,7 @@ describe("gateway auth browser hardening", () => {
     });
   });
 
-  // Skipped: the fork intentionally allows a local Control-UI/webchat browser
-  // client to pair silently (shouldAllowSilentLocalPairing in
-  // server/ws-connection/message-handler.ts). Requiring explicit pairing for
-  // browser-origin clients is deferred hardening tracked in #2841; un-skip when
-  // that lands.
-  test.skip("does not silently auto-pair control-ui browser clients on loopback", async () => {
+  test("silently auto-pairs control-ui browser clients on loopback with a valid gateway token", async () => {
     const { listDevicePairing } = await import("../infra/device-pairing.js");
     testState.gatewayAuth = { mode: "token", token: "secret" };
 
@@ -452,15 +447,11 @@ describe("gateway auth browser hardening", () => {
           client: CONTROL_UI_CLIENT,
           device,
         });
-        expect(res.ok).toBe(false);
-        expect(res.error?.message ?? "").toContain("pairing required");
+        expect(res.ok).toBe(true);
 
         const pairing = await listDevicePairing();
-        const pending = pairing.pending.find((entry) => entry.deviceId === identity.deviceId);
-        if (!pending) {
-          throw new Error("expected control ui browser client to create pending pairing request");
-        }
-        expect(pending.silent).toBe(false);
+        expect(pairing.pending.some((entry) => entry.deviceId === identity.deviceId)).toBe(false);
+        expect(pairing.paired.some((entry) => entry.deviceId === identity.deviceId)).toBe(true);
       } finally {
         browserWs.close();
       }

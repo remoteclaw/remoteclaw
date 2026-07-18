@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Builds the RemoteClaw package artifact used by Docker E2E.
+// Builds the OpenClaw package artifact used by Docker E2E.
 // The script owns the build/inventory/pack sequence so local scheduler, shell
 // helpers, and GitHub Actions all prepare the exact same npm tarball.
 import { spawn } from "node:child_process";
@@ -13,6 +13,7 @@ const DEFAULT_PACKAGE_INVENTORY_TIMEOUT_MS = 5 * 60 * 1000;
 const DEFAULT_PACKAGE_PACK_TIMEOUT_MS = 5 * 60 * 1000;
 const DEFAULT_PACKAGE_TARBALL_CHECK_TIMEOUT_MS = 5 * 60 * 1000;
 const DEFAULT_TIMEOUT_KILL_AFTER_MS = 5_000;
+const DEFAULT_CAPTURED_STDOUT_MAX_BYTES = 1024 * 1024;
 const ACTIVE_CHILD_KILLERS = new Set();
 const SIGNAL_EXIT_CODES = {
   SIGHUP: 129,
@@ -91,9 +92,16 @@ function run(command, args, cwd, options = {}) {
       detached: useProcessGroup,
     });
     let timedOut = false;
+    let outputLimitExceeded = false;
     let stdout = "";
+    let stdoutBytes = 0;
     let settled = false;
     let timeout;
+    let forceKillTimeout;
+    const maxCapturedStdoutBytes = Math.max(
+      1,
+      options.maxCapturedStdoutBytes ?? DEFAULT_CAPTURED_STDOUT_MAX_BYTES,
+    );
     const finish = (error, value = "") => {
       if (settled) {
         return;
@@ -123,22 +131,37 @@ function run(command, args, cwd, options = {}) {
       }
       child.kill(signal);
     };
+    const terminateChild = () => {
+      killChild("SIGTERM");
+      forceKillTimeout = setTimeout(
+        () => killChild("SIGKILL"),
+        options.killAfterMs ?? DEFAULT_TIMEOUT_KILL_AFTER_MS,
+      );
+      forceKillTimeout.unref?.();
+    };
     ACTIVE_CHILD_KILLERS.add(killChild);
     timeout =
       options.timeoutMs === undefined
         ? undefined
         : setTimeout(() => {
             timedOut = true;
-            killChild("SIGTERM");
-            setTimeout(
-              () => killChild("SIGKILL"),
-              options.killAfterMs ?? DEFAULT_TIMEOUT_KILL_AFTER_MS,
-            ).unref?.();
+            terminateChild();
           }, options.timeoutMs);
     timeout?.unref?.();
     if (options.captureStdout) {
       child.stdout.on("data", (chunk) => {
-        stdout += String(chunk);
+        if (outputLimitExceeded) {
+          return;
+        }
+        const chunkText = String(chunk);
+        const chunkBytes = Buffer.byteLength(chunkText);
+        if (stdoutBytes + chunkBytes > maxCapturedStdoutBytes) {
+          outputLimitExceeded = true;
+          terminateChild();
+          return;
+        }
+        stdout += chunkText;
+        stdoutBytes += chunkBytes;
       });
     } else {
       child.stdout.pipe(process.stderr, { end: false });
@@ -148,6 +171,14 @@ function run(command, args, cwd, options = {}) {
     child.on("close", (status, signal) => {
       if (timedOut) {
         finish(new Error(`${command} ${args.join(" ")} timed out after ${options.timeoutMs}ms`));
+        return;
+      }
+      if (outputLimitExceeded) {
+        finish(
+          new Error(
+            `${command} ${args.join(" ")} exceeded captured stdout limit (${maxCapturedStdoutBytes} bytes)`,
+          ),
+        );
         return;
       }
       if (status === 0) {
@@ -161,7 +192,7 @@ function run(command, args, cwd, options = {}) {
 
 const PACKAGE_ARTIFACT_BUILD_STEPS = [
   {
-    label: "Building RemoteClaw package artifacts",
+    label: "Building OpenClaw package artifacts",
     command: "node",
     args: ["scripts/build-all.mjs"],
   },
@@ -174,11 +205,11 @@ export async function buildPackageArtifacts(sourceDir, options = {}) {
     await runImpl(step.command, step.args, sourceDir, {
       env: {
         ...process.env,
-        REMOTECLAW_BUILD_ALL_NO_PNPM: "1",
-        REMOTECLAW_RUN_NODE_SKIP_DTS_BUILD: "1",
+        OPENCLAW_BUILD_ALL_NO_PNPM: "1",
+        OPENCLAW_RUN_NODE_SKIP_DTS_BUILD: "1",
       },
       timeoutMs: resolveTimeoutMs(
-        "REMOTECLAW_DOCKER_PACKAGE_BUILD_TIMEOUT_MS",
+        "OPENCLAW_DOCKER_PACKAGE_BUILD_TIMEOUT_MS",
         DEFAULT_PACKAGE_BUILD_TIMEOUT_MS,
       ),
     });
@@ -191,7 +222,7 @@ async function runCapture(command, args, cwd, options = {}) {
   return await run(command, args, cwd, { ...options, captureStdout: true });
 }
 
-async function newestRemoteClawTarball(outputDir, packOutput) {
+async function newestOpenClawTarball(outputDir, packOutput) {
   let fromOutput = "";
   for (const line of packOutput.split(/\r?\n/u)) {
     const trimmed = line.trim();
@@ -209,7 +240,7 @@ async function newestRemoteClawTarball(outputDir, packOutput) {
     .toSorted()
     .at(-1);
   if (!packed) {
-    throw new Error(`missing packed RemoteClaw tarball in ${outputDir}`);
+    throw new Error(`missing packed OpenClaw tarball in ${outputDir}`);
   }
   return path.join(outputDir, packed);
 }
@@ -227,7 +258,7 @@ async function main() {
     await buildPackageArtifacts(sourceDir);
   }
 
-  console.error("==> Writing RemoteClaw package inventory");
+  console.error("==> Writing OpenClaw package inventory");
   await run(
     "node",
     [
@@ -240,25 +271,25 @@ async function main() {
     sourceDir,
     {
       timeoutMs: resolveTimeoutMs(
-        "REMOTECLAW_DOCKER_PACKAGE_INVENTORY_TIMEOUT_MS",
+        "OPENCLAW_DOCKER_PACKAGE_INVENTORY_TIMEOUT_MS",
         DEFAULT_PACKAGE_INVENTORY_TIMEOUT_MS,
       ),
     },
   );
 
-  console.error("==> Packing RemoteClaw package");
+  console.error("==> Packing OpenClaw package");
   const packOutput = await runCapture(
     "npm",
     ["pack", "--silent", "--ignore-scripts", "--pack-destination", outputDir],
     sourceDir,
     {
       timeoutMs: resolveTimeoutMs(
-        "REMOTECLAW_DOCKER_PACKAGE_PACK_TIMEOUT_MS",
+        "OPENCLAW_DOCKER_PACKAGE_PACK_TIMEOUT_MS",
         DEFAULT_PACKAGE_PACK_TIMEOUT_MS,
       ),
     },
   );
-  let tarball = await newestRemoteClawTarball(outputDir, packOutput);
+  let tarball = await newestOpenClawTarball(outputDir, packOutput);
 
   if (options.outputName) {
     const target = path.join(outputDir, options.outputName);
@@ -269,7 +300,7 @@ async function main() {
     }
   }
 
-  console.error("==> Checking RemoteClaw package tarball");
+  console.error("==> Checking OpenClaw package tarball");
   const checkStartedAt = Date.now();
   await run(
     "node",
@@ -277,13 +308,13 @@ async function main() {
     sourceDir,
     {
       timeoutMs: resolveTimeoutMs(
-        "REMOTECLAW_DOCKER_PACKAGE_TARBALL_CHECK_TIMEOUT_MS",
+        "OPENCLAW_DOCKER_PACKAGE_TARBALL_CHECK_TIMEOUT_MS",
         DEFAULT_PACKAGE_TARBALL_CHECK_TIMEOUT_MS,
       ),
     },
   );
   console.error(
-    `==> RemoteClaw package tarball check finished in ${Math.round((Date.now() - checkStartedAt) / 1000)}s`,
+    `==> OpenClaw package tarball check finished in ${Math.round((Date.now() - checkStartedAt) / 1000)}s`,
   );
 
   process.stdout.write(`${tarball}\n`);

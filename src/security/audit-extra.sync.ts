@@ -1,4 +1,4 @@
-import { isToolAllowedByPolicies } from "../agents/pi-tools.policy.js";
+import { isToolAllowedByPolicies } from "../agents/agent-tools.policy.js";
 import { isDangerousNetworkMode, normalizeNetworkMode } from "../agents/sandbox/network-mode.js";
 type SandboxMode = "off" | "non-main" | "all";
 type ResolvedSandboxForAudit = {

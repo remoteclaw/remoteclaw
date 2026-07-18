@@ -2,14 +2,17 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { createPrivateKey, createSign } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
+import { readBoundedResponseText } from "./lib/bounded-response.ts";
 import { parseStrictIntegerOption } from "./lib/dev-tooling-safety.ts";
 
-const APP_ID_ENV = "REMOTECLAW_GH_READ_APP_ID";
-const KEY_FILE_ENV = "REMOTECLAW_GH_READ_PRIVATE_KEY_FILE";
-const INSTALLATION_ID_ENV = "REMOTECLAW_GH_READ_INSTALLATION_ID";
-const PERMISSIONS_ENV = "REMOTECLAW_GH_READ_PERMISSIONS";
+const APP_ID_ENV = "OPENCLAW_GH_READ_APP_ID";
+const KEY_FILE_ENV = "OPENCLAW_GH_READ_PRIVATE_KEY_FILE";
+const INSTALLATION_ID_ENV = "OPENCLAW_GH_READ_INSTALLATION_ID";
+const PERMISSIONS_ENV = "OPENCLAW_GH_READ_PERMISSIONS";
 const API_VERSION = "2022-11-28";
 const DEFAULT_GITHUB_FETCH_TIMEOUT_MS = 30_000;
+const GITHUB_ERROR_BODY_MAX_CHARS = 4096;
+const GITHUB_JSON_BODY_MAX_BYTES = 1024 * 1024;
 const DEFAULT_READ_PERMISSION_KEYS = [
   "actions",
   "checks",
@@ -98,10 +101,10 @@ export function buildReadPermissions(
   return permissions;
 }
 
-export function resolveGitHubFetchTimeoutMs(raw = process.env.REMOTECLAW_GH_READ_FETCH_TIMEOUT_MS) {
+export function resolveGitHubFetchTimeoutMs(raw = process.env.OPENCLAW_GH_READ_FETCH_TIMEOUT_MS) {
   return parseStrictIntegerOption({
     fallback: DEFAULT_GITHUB_FETCH_TIMEOUT_MS,
-    label: "REMOTECLAW_GH_READ_FETCH_TIMEOUT_MS",
+    label: "OPENCLAW_GH_READ_FETCH_TIMEOUT_MS",
     min: 1,
     raw,
   });
@@ -190,6 +193,58 @@ async function withGitHubFetchTimeout<T>(
   }
 }
 
+export async function readBoundedGitHubErrorText(
+  response: Response,
+  maxChars = GITHUB_ERROR_BODY_MAX_CHARS,
+): Promise<string> {
+  if (!response.body) {
+    return "";
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let text = "";
+  let truncated = false;
+
+  try {
+    while (text.length <= maxChars) {
+      const { done, value } = await reader.read();
+      if (done) {
+        text += decoder.decode();
+        break;
+      }
+
+      text += decoder.decode(value, { stream: true });
+      if (text.length > maxChars) {
+        text = text.slice(0, maxChars);
+        truncated = true;
+        break;
+      }
+    }
+  } finally {
+    if (truncated) {
+      await reader.cancel().catch(() => undefined);
+    } else {
+      reader.releaseLock();
+    }
+  }
+
+  return truncated ? `${text}\n[truncated]` : text;
+}
+
+export async function readBoundedGitHubJson<T>(
+  response: Response,
+  maxBytes = GITHUB_JSON_BODY_MAX_BYTES,
+): Promise<T> {
+  const text = await readBoundedResponseText(response, "GitHub API", maxBytes, {
+    createTooLargeError: (message) =>
+      Object.assign(new Error(message), {
+        code: "ETOOBIG",
+      }),
+  });
+  return JSON.parse(text) as T;
+}
+
 export async function githubJson<T>(
   path: string,
   bearerToken: string,
@@ -219,11 +274,11 @@ export async function githubJson<T>(
       });
 
       if (!response.ok) {
-        const text = await response.text();
+        const text = await readBoundedGitHubErrorText(response);
         fail(`${init?.method ?? "GET"} ${path} failed (${response.status}): ${text}`);
       }
 
-      return (await response.json()) as T;
+      return await readBoundedGitHubJson<T>(response);
     },
   );
 }
@@ -276,7 +331,7 @@ async function createInstallationToken(
 async function main() {
   if (process.argv.length <= 2) {
     fail(
-      "usage: scripts/gh-read <gh args...>\nset REMOTECLAW_GH_READ_APP_ID and REMOTECLAW_GH_READ_PRIVATE_KEY_FILE first",
+      "usage: scripts/gh-read <gh args...>\nset OPENCLAW_GH_READ_APP_ID and OPENCLAW_GH_READ_PRIVATE_KEY_FILE first",
     );
   }
 

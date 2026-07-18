@@ -3,6 +3,7 @@ import {
   isRecord,
   normalizeOptionalString,
   normalizeStringEntries,
+  parseStrictNonNegativeInteger,
   uniqueStrings,
 } from "remoteclaw/plugin-sdk/string-coerce-runtime";
 import { resolveMSTeamsStorePath } from "./storage.js";
@@ -252,9 +253,11 @@ function pruneToLimit(polls: Record<string, MSTeamsPoll>) {
 
 export function normalizeMSTeamsPollSelections(poll: MSTeamsPoll, selections: string[]) {
   const maxSelections = Math.max(1, poll.maxSelections);
+  // `parseInt` truncates at the first non-digit, so "1x" / "0x1" would silently
+  // register as votes for option 1 / 0. Require a strict decimal instead.
   const mapped = selections
-    .map((entry) => Number.parseInt(entry, 10))
-    .filter((value) => Number.isFinite(value))
+    .map((entry) => parseStrictNonNegativeInteger(entry))
+    .filter((value): value is number => value !== undefined)
     .filter((value) => value >= 0 && value < poll.options.length)
     .map((value) => String(value));
   const limited = maxSelections > 1 ? mapped.slice(0, maxSelections) : mapped.slice(0, 1);

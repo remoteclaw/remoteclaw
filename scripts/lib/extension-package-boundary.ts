@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, posix, resolve } from "node:path";
+import { privateLocalOnlyPluginSdkEntrypoints } from "./plugin-sdk-entries.mjs";
 
 export const EXTENSION_PACKAGE_BOUNDARY_INCLUDE = ["./*.ts", "./src/**/*.ts"] as const;
 export const EXTENSION_PACKAGE_BOUNDARY_EXCLUDE = [
@@ -11,44 +12,55 @@ export const EXTENSION_PACKAGE_BOUNDARY_EXCLUDE = [
   "./src/**/*test-harness.ts",
   "./src/**/*test-support.ts",
 ] as const;
+
+const privateLocalOnlyPluginSdkPackageDtsPaths = Object.fromEntries(
+  privateLocalOnlyPluginSdkEntrypoints.map((entrypoint) => [
+    `openclaw/plugin-sdk/${entrypoint}`,
+    [`../packages/plugin-sdk/dist/src/plugin-sdk/${entrypoint}.d.ts`],
+  ]),
+) as Record<string, readonly string[]>;
+
 export const EXTENSION_PACKAGE_BOUNDARY_BASE_PATHS = {
   "remoteclaw/extension-api": ["../src/extensionAPI.ts"],
-  "remoteclaw/plugin-sdk": ["../dist/plugin-sdk/src/plugin-sdk/index.d.ts"],
-  "remoteclaw/plugin-sdk/*": ["../dist/plugin-sdk/src/plugin-sdk/*.d.ts"],
-  "remoteclaw/plugin-sdk/account-id": ["../dist/plugin-sdk/src/plugin-sdk/account-id.d.ts"],
+  "openclaw/plugin-sdk": ["../dist/plugin-sdk/index.d.ts"],
+  "openclaw/plugin-sdk/*": ["../dist/plugin-sdk/*.d.ts"],
+  ...privateLocalOnlyPluginSdkPackageDtsPaths,
+  "remoteclaw/plugin-sdk/account-id": ["../dist/plugin-sdk/account-id.d.ts"],
   "remoteclaw/plugin-sdk/channel-entry-contract": [
-    "../packages/plugin-sdk/dist/src/plugin-sdk/channel-entry-contract.d.ts",
+    "../dist/plugin-sdk/channel-entry-contract.d.ts",
   ],
   "remoteclaw/plugin-sdk/browser-maintenance": [
     "../packages/plugin-sdk/dist/extensions/browser/browser-maintenance.d.ts",
   ],
   "remoteclaw/plugin-sdk/channel-secret-basic-runtime": [
-    "../packages/plugin-sdk/dist/src/plugin-sdk/channel-secret-basic-runtime.d.ts",
+    "../dist/plugin-sdk/channel-secret-basic-runtime.d.ts",
   ],
   "remoteclaw/plugin-sdk/channel-secret-runtime": [
-    "../dist/plugin-sdk/src/plugin-sdk/channel-secret-runtime.d.ts",
+    "../dist/plugin-sdk/channel-secret-runtime.d.ts",
   ],
   "remoteclaw/plugin-sdk/channel-secret-tts-runtime": [
-    "../packages/plugin-sdk/dist/src/plugin-sdk/channel-secret-tts-runtime.d.ts",
+    "../dist/plugin-sdk/channel-secret-tts-runtime.d.ts",
   ],
-  "remoteclaw/plugin-sdk/error-runtime": ["../dist/plugin-sdk/src/plugin-sdk/error-runtime.d.ts"],
+  "remoteclaw/plugin-sdk/channel-streaming": ["../dist/plugin-sdk/channel-streaming.d.ts"],
+  "remoteclaw/plugin-sdk/error-runtime": ["../dist/plugin-sdk/error-runtime.d.ts"],
   "remoteclaw/plugin-sdk/provider-catalog-shared": [
-    "../packages/plugin-sdk/dist/src/plugin-sdk/provider-catalog-shared.d.ts",
+    "../dist/plugin-sdk/provider-catalog-shared.d.ts",
   ],
-  "remoteclaw/plugin-sdk/provider-entry": [
-    "../packages/plugin-sdk/dist/src/plugin-sdk/provider-entry.d.ts",
-  ],
-  "remoteclaw/plugin-sdk/secret-ref-runtime": [
-    "../dist/plugin-sdk/src/plugin-sdk/secret-ref-runtime.d.ts",
-  ],
-  "remoteclaw/plugin-sdk/ssrf-runtime": ["../dist/plugin-sdk/src/plugin-sdk/ssrf-runtime.d.ts"],
+  "remoteclaw/plugin-sdk/provider-entry": ["../dist/plugin-sdk/provider-entry.d.ts"],
+  "remoteclaw/plugin-sdk/secret-ref-runtime": ["../dist/plugin-sdk/secret-ref-runtime.d.ts"],
+  "remoteclaw/plugin-sdk/ssrf-runtime": ["../dist/plugin-sdk/ssrf-runtime.d.ts"],
   "@remoteclaw/qa-channel/api.js": ["../dist/plugin-sdk/extensions/qa-channel/api.d.ts"],
   "@remoteclaw/discord/api.js": ["../dist/plugin-sdk/extensions/discord/api.d.ts"],
   "@remoteclaw/slack/api.js": ["../dist/plugin-sdk/extensions/slack/api.d.ts"],
   "@remoteclaw/whatsapp/api.js": ["../dist/plugin-sdk/extensions/whatsapp/api.d.ts"],
-  "@remoteclaw/*.js": ["../packages/plugin-sdk/dist/extensions/*.d.ts", "../extensions/*"],
-  "@remoteclaw/*": ["../packages/plugin-sdk/dist/extensions/*", "../extensions/*"],
-  "@remoteclaw/plugin-sdk/*": ["../dist/plugin-sdk/src/plugin-sdk/*.d.ts"],
+  "@openclaw/*.js": ["../packages/plugin-sdk/dist/extensions/*.d.ts", "../extensions/*"],
+  "@openclaw/*": ["../packages/plugin-sdk/dist/extensions/*", "../extensions/*"],
+  "openclaw/plugin-sdk/qa-channel": ["../dist/plugin-sdk/src/plugin-sdk/qa-channel.d.ts"],
+  "remoteclaw/plugin-sdk/qa-channel-protocol": [
+    "../dist/plugin-sdk/src/plugin-sdk/qa-channel-protocol.d.ts",
+  ],
+  "openclaw/plugin-sdk/qa-runtime": ["../dist/plugin-sdk/src/plugin-sdk/qa-runtime.d.ts"],
+  "@remoteclaw/plugin-sdk/*": ["../dist/plugin-sdk/*.d.ts"],
 } as const;
 
 function prefixExtensionPackageBoundaryPaths(
@@ -76,28 +88,24 @@ export const EXTENSION_PACKAGE_BOUNDARY_XAI_PATHS = {
     "../",
   ),
   "remoteclaw/plugin-sdk/channel-entry-contract": [
-    "../../dist/plugin-sdk/src/plugin-sdk/channel-entry-contract.d.ts",
+    "../../dist/plugin-sdk/channel-entry-contract.d.ts",
   ],
   "remoteclaw/plugin-sdk/browser-maintenance": [
     "../../dist/plugin-sdk/src/plugin-sdk/browser-maintenance.d.ts",
   ],
-  "remoteclaw/plugin-sdk/cli-runtime": ["../../dist/plugin-sdk/src/plugin-sdk/cli-runtime.d.ts"],
+  "remoteclaw/plugin-sdk/cli-runtime": ["../../dist/plugin-sdk/cli-runtime.d.ts"],
   "remoteclaw/plugin-sdk/provider-catalog-shared": [
-    "../../dist/plugin-sdk/src/plugin-sdk/provider-catalog-shared.d.ts",
+    "../../dist/plugin-sdk/provider-catalog-shared.d.ts",
   ],
-  "remoteclaw/plugin-sdk/provider-env-vars": [
-    "../../dist/plugin-sdk/src/plugin-sdk/provider-env-vars.d.ts",
-  ],
-  "remoteclaw/plugin-sdk/provider-entry": [
-    "../../dist/plugin-sdk/src/plugin-sdk/provider-entry.d.ts",
-  ],
+  "remoteclaw/plugin-sdk/provider-env-vars": ["../../dist/plugin-sdk/provider-env-vars.d.ts"],
+  "remoteclaw/plugin-sdk/provider-entry": ["../../dist/plugin-sdk/provider-entry.d.ts"],
   "remoteclaw/plugin-sdk/provider-web-search-contract": [
-    "../../dist/plugin-sdk/src/plugin-sdk/provider-web-search-contract.d.ts",
+    "../../dist/plugin-sdk/provider-web-search-contract.d.ts",
   ],
   "@remoteclaw/qa-channel/api.js": ["../../dist/plugin-sdk/extensions/qa-channel/api.d.ts"],
-  "@remoteclaw/*.js": ["../../packages/plugin-sdk/dist/extensions/*.d.ts", "../*"],
-  "@remoteclaw/*": ["../*"],
-  "@remoteclaw/plugin-sdk/*": ["../../dist/plugin-sdk/src/plugin-sdk/*.d.ts"],
+  "@openclaw/*.js": ["../../packages/plugin-sdk/dist/extensions/*.d.ts", "../*"],
+  "@openclaw/*": ["../*"],
+  "@remoteclaw/plugin-sdk/*": ["../../dist/plugin-sdk/*.d.ts"],
   "@remoteclaw/anthropic-vertex/api.js": ["./.boundary-stubs/anthropic-vertex-api.d.ts"],
   "@remoteclaw/ollama/api.js": ["./.boundary-stubs/ollama-api.d.ts"],
   "@remoteclaw/ollama/runtime-api.js": ["./.boundary-stubs/ollama-runtime-api.d.ts"],

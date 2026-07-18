@@ -6,7 +6,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { listAgentEntries } from "../agents/agent-scope.js";
-import { isToolAllowedByPolicies } from "../agents/pi-tools.policy.js";
+import { isToolAllowedByPolicies } from "../agents/agent-tools.policy.js";
 import { listChannelPlugins } from "../channels/plugins/index.js";
 // Gutted in RemoteClaw fork (Middleware Boundary Principle) — remaining sandbox/skills stubs
 const SANDBOX_BROWSER_SECURITY_HASH_EPOCH = "2026-02-28-no-sandbox-env";

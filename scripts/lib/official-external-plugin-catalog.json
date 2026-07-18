@@ -2,10 +2,10 @@
   "entries": [
     {
       "name": "@remoteclaw/acpx",
-      "description": "RemoteClaw ACP runtime backend",
+      "description": "OpenClaw ACP runtime backend",
       "source": "official",
       "kind": "plugin",
-      "remoteclaw": {
+      "openclaw": {
         "plugin": {
           "id": "acpx",
           "label": "ACPX Runtime"
@@ -19,10 +19,10 @@
     },
     {
       "name": "@remoteclaw/brave-plugin",
-      "description": "RemoteClaw Brave plugin",
+      "description": "OpenClaw Brave plugin",
       "source": "official",
       "kind": "plugin",
-      "remoteclaw": {
+      "openclaw": {
         "plugin": {
           "id": "brave",
           "label": "Brave"
@@ -37,7 +37,7 @@
             "envVars": ["BRAVE_API_KEY"],
             "placeholder": "BSA...",
             "signupUrl": "https://api-dashboard.search.brave.com/app/keys",
-            "docsUrl": "https://docs.remoteclaw.org/tools/brave-search",
+            "docsUrl": "https://docs.openclaw.ai/tools/brave-search",
             "credentialPath": "plugins.entries.brave.config.webSearch.apiKey",
             "autoDetectOrder": 10
           }
@@ -51,11 +51,29 @@
       }
     },
     {
-      "name": "@remoteclaw/diagnostics-otel",
-      "description": "RemoteClaw diagnostics OpenTelemetry exporter",
+      "name": "@openclaw/copilot",
+      "description": "OpenClaw GitHub Copilot agent runtime plugin",
       "source": "official",
       "kind": "plugin",
-      "remoteclaw": {
+      "openclaw": {
+        "plugin": {
+          "id": "copilot",
+          "label": "GitHub Copilot agent runtime"
+        },
+        "install": {
+          "clawhubSpec": "clawhub:@openclaw/copilot",
+          "npmSpec": "@openclaw/copilot",
+          "defaultChoice": "npm",
+          "minHostVersion": ">=2026.5.28"
+        }
+      }
+    },
+    {
+      "name": "@remoteclaw/diagnostics-otel",
+      "description": "OpenClaw diagnostics OpenTelemetry exporter",
+      "source": "official",
+      "kind": "plugin",
+      "openclaw": {
         "plugin": {
           "id": "diagnostics-otel",
           "label": "Diagnostics OpenTelemetry"
@@ -70,10 +88,10 @@
     },
     {
       "name": "@remoteclaw/diagnostics-prometheus",
-      "description": "RemoteClaw diagnostics Prometheus exporter",
+      "description": "OpenClaw diagnostics Prometheus exporter",
       "source": "official",
       "kind": "plugin",
-      "remoteclaw": {
+      "openclaw": {
         "plugin": {
           "id": "diagnostics-prometheus",
           "label": "Diagnostics Prometheus"
@@ -88,10 +106,10 @@
     },
     {
       "name": "@remoteclaw/diffs",
-      "description": "RemoteClaw diff viewer plugin",
+      "description": "OpenClaw diff viewer plugin",
       "source": "official",
       "kind": "plugin",
-      "remoteclaw": {
+      "openclaw": {
         "plugin": {
           "id": "diffs",
           "label": "Diffs"
@@ -104,11 +122,29 @@
       }
     },
     {
-      "name": "@remoteclaw/google-meet",
-      "description": "RemoteClaw Google Meet participant plugin",
+      "name": "@openclaw/diffs-language-pack",
+      "description": "OpenClaw diffs viewer syntax highlighting language pack",
       "source": "official",
       "kind": "plugin",
-      "remoteclaw": {
+      "openclaw": {
+        "plugin": {
+          "id": "diffs-language-pack",
+          "label": "Diff Viewer Language Pack"
+        },
+        "install": {
+          "npmSpec": "@openclaw/diffs-language-pack",
+          "clawhubSpec": "clawhub:@openclaw/diffs-language-pack",
+          "defaultChoice": "npm",
+          "minHostVersion": ">=2026.5.27"
+        }
+      }
+    },
+    {
+      "name": "@remoteclaw/google-meet",
+      "description": "OpenClaw Google Meet participant plugin",
+      "source": "official",
+      "kind": "plugin",
+      "openclaw": {
         "plugin": {
           "id": "google-meet",
           "label": "Google Meet"
@@ -125,7 +161,7 @@
       "description": "Lobster workflow tool plugin (typed pipelines + resumable approvals)",
       "source": "official",
       "kind": "plugin",
-      "remoteclaw": {
+      "openclaw": {
         "plugin": {
           "id": "lobster",
           "label": "Lobster"
@@ -139,10 +175,10 @@
     },
     {
       "name": "@remoteclaw/memory-lancedb",
-      "description": "RemoteClaw LanceDB-backed long-term memory plugin with auto-recall/capture",
+      "description": "OpenClaw LanceDB-backed long-term memory plugin with auto-recall/capture",
       "source": "official",
       "kind": "plugin",
-      "remoteclaw": {
+      "openclaw": {
         "plugin": {
           "id": "memory-lancedb",
           "label": "Memory LanceDB"
@@ -156,10 +192,10 @@
     },
     {
       "name": "@remoteclaw/openshell-sandbox",
-      "description": "RemoteClaw OpenShell sandbox backend",
+      "description": "OpenClaw OpenShell sandbox backend",
       "source": "official",
       "kind": "plugin",
-      "remoteclaw": {
+      "openclaw": {
         "plugin": {
           "id": "openshell",
           "label": "OpenShell Sandbox"
@@ -172,11 +208,47 @@
       }
     },
     {
-      "name": "@remoteclaw/voice-call",
-      "description": "RemoteClaw voice-call plugin",
+      "name": "@remoteclaw/pixverse-provider",
+      "description": "OpenClaw PixVerse video generation provider plugin",
       "source": "official",
       "kind": "plugin",
-      "remoteclaw": {
+      "openclaw": {
+        "plugin": {
+          "id": "pixverse",
+          "label": "PixVerse"
+        },
+        "install": {
+          "clawhubSpec": "clawhub:@remoteclaw/pixverse-provider",
+          "npmSpec": "@remoteclaw/pixverse-provider",
+          "defaultChoice": "npm",
+          "minHostVersion": ">=2026.5.26"
+        }
+      }
+    },
+    {
+      "name": "@openclaw/tokenjuice",
+      "description": "OpenClaw tokenjuice exec output compaction plugin",
+      "source": "official",
+      "kind": "plugin",
+      "openclaw": {
+        "plugin": {
+          "id": "tokenjuice",
+          "label": "Tokenjuice"
+        },
+        "install": {
+          "clawhubSpec": "clawhub:@openclaw/tokenjuice",
+          "npmSpec": "@openclaw/tokenjuice",
+          "defaultChoice": "npm",
+          "minHostVersion": ">=2026.5.28"
+        }
+      }
+    },
+    {
+      "name": "@remoteclaw/voice-call",
+      "description": "OpenClaw voice-call plugin",
+      "source": "official",
+      "kind": "plugin",
+      "openclaw": {
         "plugin": {
           "id": "voice-call",
           "label": "Voice Call"

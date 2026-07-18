@@ -1108,6 +1108,7 @@ describe("control command parsing", () => {
     expect(hasControlCommand("/commands:")).toBe(true);
     expect(hasControlCommand("commands")).toBe(false);
     expect(hasControlCommand("/status")).toBe(true);
+    expect(hasControlCommand("/STATUS")).toBe(true);
     expect(hasControlCommand("/status:")).toBe(true);
     expect(hasControlCommand("status")).toBe(false);
     expect(hasControlCommand("usage")).toBe(false);
@@ -1119,6 +1120,7 @@ describe("control command parsing", () => {
       }
     }
     expect(hasControlCommand("/compact")).toBe(true);
+    expect(hasControlCommand("/COMPACT keep CaseSensitivePath")).toBe(true);
     expect(hasControlCommand("/compact:")).toBe(true);
     expect(hasControlCommand("compact")).toBe(false);
   });
@@ -1147,12 +1149,12 @@ describe("control command parsing", () => {
   it("ignores telegram commands addressed to other bots", () => {
     expect(
       hasControlCommand("/help@otherbot", undefined, {
-        botUsername: "remoteclaw",
+        botUsername: "openclaw",
       }),
     ).toBe(false);
     expect(
       hasControlCommand("/help@remoteclaw", undefined, {
-        botUsername: "remoteclaw",
+        botUsername: "openclaw",
       }),
     ).toBe(true);
   });

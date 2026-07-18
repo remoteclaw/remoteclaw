@@ -14,18 +14,18 @@ This page is the deep runbook. Start at [/help/troubleshooting](/help/troublesho
 Run these first, in this order:
 
 ```bash
-remoteclaw status
-remoteclaw gateway status
-remoteclaw logs --follow
-remoteclaw doctor
-remoteclaw channels status --probe
+openclaw status
+openclaw gateway status
+openclaw logs --follow
+openclaw doctor
+openclaw channels status --probe
 ```
 
 Expected healthy signals:
 
-- `remoteclaw gateway status` shows `Runtime: running`, `Connectivity probe: ok`, and a `Capability: ...` line.
-- `remoteclaw doctor` reports no blocking config/service issues.
-- `remoteclaw channels status --probe` shows live per-account transport status and, where supported, probe/audit results such as `works` or `audit ok`.
+- `openclaw gateway status` shows `Runtime: running`, `Connectivity probe: ok`, and a `Capability: ...` line.
+- `openclaw doctor` reports no blocking config/service issues.
+- `openclaw channels status --probe` shows live per-account transport status and, where supported, probe/audit results such as `works` or `audit ok`.
 
 ## After an update
 
@@ -33,82 +33,82 @@ Use this when an update finishes but the Gateway is down, channels are empty, or
 model calls start failing with 401s.
 
 ```bash
-remoteclaw status --all
-remoteclaw update status --json
-remoteclaw gateway status --deep
-remoteclaw doctor --fix
-remoteclaw gateway restart
+openclaw status --all
+openclaw update status --json
+openclaw gateway status --deep
+openclaw doctor --fix
+openclaw gateway restart
 ```
 
 Look for:
 
-- `Update restart` in `remoteclaw status` / `remoteclaw status --all`. Pending or
+- `Update restart` in `openclaw status` / `openclaw status --all`. Pending or
   failed handoffs include the next command to run.
-- `plugin load failed: dependency tree corrupted; run remoteclaw doctor --fix`
+- `plugin load failed: dependency tree corrupted; run openclaw doctor --fix`
   under Channels. That means the channel config still exists, but plugin
   registration failed before the channel could load.
-- provider 401s after re-auth. `remoteclaw doctor --fix` checks for stale
+- provider 401s after re-auth. `openclaw doctor --fix` checks for stale
   per-agent OAuth auth shadows and removes the old copies so all agents resolve
   the current shared profile.
 
 ## Split brain installs and newer config guard
 
-Use this when a gateway service unexpectedly stops after an update, or logs show that one `remoteclaw` binary is older than the version that last wrote `remoteclaw.json`.
+Use this when a gateway service unexpectedly stops after an update, or logs show that one `openclaw` binary is older than the version that last wrote `openclaw.json`.
 
-RemoteClaw stamps config writes with `meta.lastTouchedVersion`. Read-only commands can still inspect a config written by a newer RemoteClaw, but process and service mutations refuse to continue from an older binary. Blocked actions include gateway service start, stop, restart, uninstall, forced service reinstall, service-mode gateway startup, and `gateway --force` port cleanup.
+OpenClaw stamps config writes with `meta.lastTouchedVersion`. Read-only commands can still inspect a config written by a newer OpenClaw, but process and service mutations refuse to continue from an older binary. Blocked actions include gateway service start, stop, restart, uninstall, forced service reinstall, service-mode gateway startup, and `gateway --force` port cleanup.
 
 ```bash
-which remoteclaw
-remoteclaw --version
-remoteclaw gateway status --deep
-remoteclaw config get meta.lastTouchedVersion
+which openclaw
+openclaw --version
+openclaw gateway status --deep
+openclaw config get meta.lastTouchedVersion
 ```
 
 <Steps>
   <Step title="Fix PATH">
-    Fix `PATH` so `remoteclaw` resolves to the newer install, then rerun the action.
+    Fix `PATH` so `openclaw` resolves to the newer install, then rerun the action.
   </Step>
   <Step title="Reinstall the gateway service">
     Reinstall the intended gateway service from the newer install:
 
     ```bash
-    remoteclaw gateway install --force
-    remoteclaw gateway restart
+    openclaw gateway install --force
+    openclaw gateway restart
     ```
 
   </Step>
   <Step title="Remove stale wrappers">
-    Remove stale system package or old wrapper entries that still point at an old `remoteclaw` binary.
+    Remove stale system package or old wrapper entries that still point at an old `openclaw` binary.
   </Step>
 </Steps>
 
 <Warning>
-For intentional downgrade or emergency recovery only, set `REMOTECLAW_ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS=1` for the single command. Leave it unset for normal operation.
+For intentional downgrade or emergency recovery only, set `OPENCLAW_ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS=1` for the single command. Leave it unset for normal operation.
 </Warning>
 
 ## Protocol mismatch after rollback
 
-Use this when logs keep printing `protocol mismatch` after you downgrade or roll back RemoteClaw. This means an older Gateway is running, but a newer local client process is still trying to reconnect with a protocol range that the older Gateway cannot speak.
+Use this when logs keep printing `protocol mismatch` after you downgrade or roll back OpenClaw. This means an older Gateway is running, but a newer local client process is still trying to reconnect with a protocol range that the older Gateway cannot speak.
 
 ```bash
-remoteclaw --version
-which -a remoteclaw
-remoteclaw gateway status --deep
-remoteclaw doctor --deep
-remoteclaw logs --follow
+openclaw --version
+which -a openclaw
+openclaw gateway status --deep
+openclaw doctor --deep
+openclaw logs --follow
 ```
 
 Look for:
 
 - `protocol mismatch ... client=... v<version> min=<n> max=<n> expected=<n>` in Gateway logs.
-- `Established clients:` in `remoteclaw gateway status --deep` or `Gateway clients` in `remoteclaw doctor --deep`. This lists active TCP clients connected to the Gateway port, including PIDs and command lines when the OS allows it.
-- A client process whose command line points at the newer RemoteClaw install or wrapper you rolled back from.
+- `Established clients:` in `openclaw gateway status --deep` or `Gateway clients` in `openclaw doctor --deep`. This lists active TCP clients connected to the Gateway port, including PIDs and command lines when the OS allows it.
+- A client process whose command line points at the newer OpenClaw install or wrapper you rolled back from.
 
 Fix:
 
-1. Stop or restart the stale RemoteClaw client process shown by `gateway status --deep`.
-2. Restart apps or wrappers that embed RemoteClaw, such as local dashboards, editors, app-server helpers, or long-running `remoteclaw logs --follow` shells.
-3. Re-run `remoteclaw gateway status --deep` or `remoteclaw doctor --deep` and confirm the stale client PID is gone.
+1. Stop or restart the stale OpenClaw client process shown by `gateway status --deep`.
+2. Restart apps or wrappers that embed OpenClaw, such as local dashboards, editors, app-server helpers, or long-running `openclaw logs --follow` shells.
+3. Re-run `openclaw gateway status --deep` or `openclaw doctor --deep` and confirm the stale client PID is gone.
 
 Do not make an older Gateway accept a newer incompatible protocol. Protocol bumps protect the wire contract; rollback recovery is a process/version cleanup problem.
 
@@ -120,9 +120,9 @@ Use this when logs include:
 Skipping escaped skill path outside its configured root: ... reason=symlink-escape
 ```
 
-RemoteClaw treats every skill root as a containment boundary. A symlink under
+OpenClaw treats every skill root as a containment boundary. A symlink under
 `~/.agents/skills`, `<workspace>/.agents/skills`, `<workspace>/skills`, or
-`~/.remoteclaw/skills` is skipped when its real target resolves outside that root
+`~/.openclaw/skills` is skipped when its real target resolves outside that root
 unless the target is explicitly trusted.
 
 Inspect the link:
@@ -130,7 +130,7 @@ Inspect the link:
 ```bash
 ls -l ~/.agents/skills/<name>
 realpath ~/.agents/skills/<name>
-remoteclaw config get skills.load
+openclaw config get skills.load
 ```
 
 If the target is intentional, configure both the direct skill root and the
@@ -164,9 +164,9 @@ Related:
 Use this when logs/errors include: `HTTP 429: rate_limit_error: Extra usage is required for long context requests`.
 
 ```bash
-remoteclaw logs --follow
-remoteclaw models status
-remoteclaw config get agents.defaults.models
+openclaw logs --follow
+openclaw models status
+openclaw config get agents.defaults.models
 ```
 
 Look for:
@@ -201,14 +201,14 @@ Related:
 Use this when an upstream LLM provider returns a generic `403` such as
 `Your request was blocked`.
 
-Do not assume this is always an RemoteClaw configuration issue. The response can
+Do not assume this is always an OpenClaw configuration issue. The response can
 come from an upstream security layer such as a CDN, WAF, bot-management rule, or
 reverse proxy in front of an OpenAI-compatible endpoint.
 
 ```bash
-remoteclaw status
-remoteclaw gateway status
-remoteclaw logs --follow
+openclaw status
+openclaw gateway status
+openclaw logs --follow
 ```
 
 Look for:
@@ -219,7 +219,7 @@ Look for:
 - a tiny direct `curl` probe succeeding while normal SDK-shaped requests fail
 
 Fix the provider-side filtering first when the evidence points to a WAF/CDN
-block. Prefer a narrowly scoped allow or skip rule for the API path RemoteClaw
+block. Prefer a narrowly scoped allow or skip rule for the API path OpenClaw
 uses, and avoid disabling protection for the whole site.
 
 <Warning>
@@ -239,20 +239,20 @@ Use this when:
 
 - `curl ... /v1/models` works
 - tiny direct `/v1/chat/completions` calls work
-- RemoteClaw model runs fail only on normal agent turns
+- OpenClaw model runs fail only on normal agent turns
 
 ```bash
 curl http://127.0.0.1:1234/v1/models
 curl http://127.0.0.1:1234/v1/chat/completions \
   -H 'content-type: application/json' \
   -d '{"model":"<id>","messages":[{"role":"user","content":"hi"}],"stream":false}'
-remoteclaw infer model run --model <provider/model> --prompt "hi" --json
-remoteclaw logs --follow
+openclaw infer model run --model <provider/model> --prompt "hi" --json
+openclaw logs --follow
 ```
 
 Look for:
 
-- direct tiny calls succeed, but RemoteClaw runs fail only on larger prompts
+- direct tiny calls succeed, but OpenClaw runs fail only on larger prompts
 - `model_not_found` or 404 errors even though direct `/v1/chat/completions`
   works with the same bare model id
 - backend errors about `messages[].content` expecting a string
@@ -264,17 +264,17 @@ Look for:
     - `model_not_found` with a local MLX/vLLM-style server → verify `baseUrl` includes `/v1`, `api` is `"openai-completions"` for `/v1/chat/completions` backends, and `models.providers.<provider>.models[].id` is the bare provider-local id. Select it with the provider prefix once, for example `mlx/mlx-community/Qwen3-30B-A3B-6bit`; keep the catalog entry as `mlx-community/Qwen3-30B-A3B-6bit`.
     - `messages[...].content: invalid type: sequence, expected a string` → backend rejects structured Chat Completions content parts. Fix: set `models.providers.<provider>.models[].compat.requiresStringContent: true`.
     - `validation.keys` or allowed message keys like `["role","content"]` → backend rejects OpenAI-style replay metadata on Chat Completions messages. Fix: set `models.providers.<provider>.models[].compat.strictMessageKeys: true`.
-    - `incomplete turn detected ... stopReason=stop payloads=0` → the backend completed the Chat Completions request but returned no user-visible assistant text for that turn. RemoteClaw retries replay-safe empty OpenAI-compatible turns once; persistent failures usually mean the backend is emitting empty/non-text content or suppressing final-answer text.
-    - direct tiny requests succeed, but RemoteClaw agent runs fail with backend/model crashes (for example Gemma on some `inferrs` builds) → RemoteClaw transport is likely already correct; the backend is failing on the larger agent-runtime prompt shape.
+    - `incomplete turn detected ... stopReason=stop payloads=0` → the backend completed the Chat Completions request but returned no user-visible assistant text for that turn. OpenClaw retries replay-safe empty OpenAI-compatible turns once; persistent failures usually mean the backend is emitting empty/non-text content or suppressing final-answer text.
+    - direct tiny requests succeed, but OpenClaw agent runs fail with backend/model crashes (for example Gemma on some `inferrs` builds) → OpenClaw transport is likely already correct; the backend is failing on the larger agent-runtime prompt shape.
     - failures shrink after disabling tools but do not disappear → tool schemas were part of the pressure, but the remaining issue is still upstream model/server capacity or a backend bug.
 
   </Accordion>
   <Accordion title="Fix options">
     1. Set `compat.requiresStringContent: true` for string-only Chat Completions backends.
     2. Set `compat.strictMessageKeys: true` for strict Chat Completions backends that only accept `role` and `content` on each message.
-    3. Set `compat.supportsTools: false` for models/backends that cannot handle RemoteClaw's tool schema surface reliably.
+    3. Set `compat.supportsTools: false` for models/backends that cannot handle OpenClaw's tool schema surface reliably.
     4. Lower prompt pressure where possible: smaller workspace bootstrap, shorter session history, lighter local model, or a backend with stronger long-context support.
-    5. If tiny direct requests keep passing while RemoteClaw agent turns still crash inside the backend, treat it as an upstream server/model limitation and file a repro there with the accepted payload shape.
+    5. If tiny direct requests keep passing while OpenClaw agent turns still crash inside the backend, treat it as an upstream server/model limitation and file a repro there with the accepted payload shape.
   </Accordion>
 </AccordionGroup>
 
@@ -289,11 +289,11 @@ Related:
 If channels are up but nothing answers, check routing and policy before reconnecting anything.
 
 ```bash
-remoteclaw status
-remoteclaw channels status --probe
-remoteclaw pairing list --channel <channel> [--account <id>]
-remoteclaw config get channels
-remoteclaw logs --follow
+openclaw status
+openclaw channels status --probe
+openclaw pairing list --channel <channel> [--account <id>]
+openclaw config get channels
+openclaw logs --follow
 ```
 
 Look for:
@@ -319,11 +319,11 @@ Related:
 When dashboard/control UI will not connect, validate URL, auth mode, and secure context assumptions.
 
 ```bash
-remoteclaw gateway status
-remoteclaw status
-remoteclaw logs --follow
-remoteclaw doctor
-remoteclaw gateway status --json
+openclaw gateway status
+openclaw status
+openclaw logs --follow
+openclaw doctor
+openclaw gateway status --json
 ```
 
 Look for:
@@ -336,16 +336,16 @@ If a local browser cannot connect to `127.0.0.1:18789` after an update, first
 recover the local Gateway service and confirm it is serving the dashboard:
 
 ```bash
-remoteclaw gateway restart
+openclaw gateway restart
 lsof -i :18789
 curl http://127.0.0.1:18789
 ```
 
-If `curl` returns RemoteClaw HTML, the Gateway is working and the remaining issue
+If `curl` returns OpenClaw HTML, the Gateway is working and the remaining issue
 is likely browser cache, an old deep link, or stale tab state. Open
 `http://127.0.0.1:18789` directly and navigate from the dashboard. If restart
-does not leave the service running, run `remoteclaw gateway start` and recheck
-`remoteclaw gateway status`.
+does not leave the service running, run `openclaw gateway start` and recheck
+`openclaw gateway status`.
 
 <AccordionGroup>
   <Accordion title="Connect / auth signatures">
@@ -371,10 +371,11 @@ Use `error.details.code` from the failed `connect` response to pick the next act
 
 | Detail code                  | Meaning                                                                                                                                                                                      | Recommended action                                                                                                                                                                                                                                                                       |
 | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AUTH_TOKEN_MISSING`         | Client did not send a required shared token.                                                                                                                                                 | Paste/set token in the client and retry. For dashboard paths: `remoteclaw config get gateway.auth.token` then paste into Control UI settings.                                                                                                                                            |
+| `AUTH_TOKEN_MISSING`         | Client did not send a required shared token.                                                                                                                                                 | Paste/set token in the client and retry. For dashboard paths: `openclaw config get gateway.auth.token` then paste into Control UI settings.                                                                                                                                              |
 | `AUTH_TOKEN_MISMATCH`        | Shared token did not match gateway auth token.                                                                                                                                               | If `canRetryWithDeviceToken=true`, allow one trusted retry. Cached-token retries reuse stored approved scopes; explicit `deviceToken` / `scopes` callers keep requested scopes. If still failing, run the [token drift recovery checklist](/cli/devices#token-drift-recovery-checklist). |
 | `AUTH_DEVICE_TOKEN_MISMATCH` | Cached per-device token is stale or revoked.                                                                                                                                                 | Rotate/re-approve device token using [devices CLI](/cli/devices), then reconnect.                                                                                                                                                                                                        |
-| `PAIRING_REQUIRED`           | Device identity needs approval. Check `error.details.reason` for `not-paired`, `scope-upgrade`, `role-upgrade`, or `metadata-upgrade`, and use `requestId` / `remediationHint` when present. | Approve pending request: `remoteclaw devices list` then `remoteclaw devices approve <requestId>`. Scope/role upgrades use the same flow after you review the requested access.                                                                                                           |
+| `AUTH_SCOPE_MISMATCH`        | Device token is valid, but its approved role/scopes do not cover this connect request.                                                                                                       | Re-pair the device or approve the requested scope contract; do not treat this as shared-token drift.                                                                                                                                                                                     |
+| `PAIRING_REQUIRED`           | Device identity needs approval. Check `error.details.reason` for `not-paired`, `scope-upgrade`, `role-upgrade`, or `metadata-upgrade`, and use `requestId` / `remediationHint` when present. | Approve pending request: `openclaw devices list` then `openclaw devices approve <requestId>`. Scope/role upgrades use the same flow after you review the requested access.                                                                                                               |
 
 <Note>
 Direct loopback backend RPCs authenticated with the shared gateway token/password should not depend on the CLI's paired-device scope baseline. If subagents or other internal calls still fail with `scope-upgrade`, verify the caller is using `client.id: "gateway-client"` and `client.mode: "backend"` and is not forcing an explicit `deviceIdentity` or device token.
@@ -383,9 +384,9 @@ Direct loopback backend RPCs authenticated with the shared gateway token/passwor
 Device auth v2 migration check:
 
 ```bash
-remoteclaw --version
-remoteclaw doctor
-remoteclaw gateway status
+openclaw --version
+openclaw doctor
+openclaw gateway status
 ```
 
 If logs show nonce/signature errors, update the connecting client and verify it:
@@ -402,10 +403,10 @@ If logs show nonce/signature errors, update the connecting client and verify it:
   </Step>
 </Steps>
 
-If `remoteclaw devices rotate` / `revoke` / `remove` is denied unexpectedly:
+If `openclaw devices rotate` / `revoke` / `remove` is denied unexpectedly:
 
 - paired-device token sessions can manage only **their own** device unless the caller also has `operator.admin`
-- `remoteclaw devices rotate --scope ...` can only request operator scopes that the caller session already holds
+- `openclaw devices rotate --scope ...` can only request operator scopes that the caller session already holds
 
 Related:
 
@@ -420,11 +421,11 @@ Related:
 Use this when service is installed but process does not stay up.
 
 ```bash
-remoteclaw gateway status
-remoteclaw status
-remoteclaw logs --follow
-remoteclaw doctor
-remoteclaw gateway status --deep   # also scan system-level services
+openclaw gateway status
+openclaw status
+openclaw logs --follow
+openclaw doctor
+openclaw gateway status --deep   # also scan system-level services
 ```
 
 Look for:
@@ -437,12 +438,12 @@ Look for:
 
 <AccordionGroup>
   <Accordion title="Common signatures">
-    - `Gateway start blocked: set gateway.mode=local` or `existing config is missing gateway.mode` → local gateway mode is not enabled, or the config file was clobbered and lost `gateway.mode`. Fix: set `gateway.mode="local"` in your config, or re-run `remoteclaw onboard --mode local` / `remoteclaw setup` to restamp the expected local-mode config. If you are running RemoteClaw via Podman, the default config path is `~/.remoteclaw/remoteclaw.json`.
+    - `Gateway start blocked: set gateway.mode=local` or `existing config is missing gateway.mode` → local gateway mode is not enabled, or the config file was clobbered and lost `gateway.mode`. Fix: set `gateway.mode="local"` in your config, or re-run `openclaw onboard --mode local` / `openclaw setup` to restamp the expected local-mode config. If you are running OpenClaw via Podman, the default config path is `~/.remoteclaw/remoteclaw.json`.
     - `refusing to bind gateway ... without auth` → non-loopback bind without a valid gateway auth path (token/password, or trusted-proxy where configured).
     - `another gateway instance is already listening` / `EADDRINUSE` → port conflict.
     - `Other gateway-like services detected (best effort)` → stale or parallel launchd/systemd/schtasks units exist. Most setups should keep one gateway per machine; if you do need more than one, isolate ports + config/state/workspace. See [/gateway#multiple-gateways-same-host](/gateway#multiple-gateways-same-host).
-    - `System-level RemoteClaw gateway service detected` from doctor → a systemd system unit exists while the user-level service is missing. Remove or disable the duplicate before allowing doctor to install a user service, or set `REMOTECLAW_SERVICE_REPAIR_POLICY=external` if the system unit is the intended supervisor.
-    - `Gateway service port does not match current gateway config` → the installed supervisor still pins the old `--port`. Run `remoteclaw doctor --fix` or `remoteclaw gateway install --force`, then restart the gateway service.
+    - `System-level OpenClaw gateway service detected` from doctor → a systemd system unit exists while the user-level service is missing. Remove or disable the duplicate before allowing doctor to install a user service, or set `OPENCLAW_SERVICE_REPAIR_POLICY=external` if the system unit is the intended supervisor.
+    - `Gateway service port does not match current gateway config` → the installed supervisor still pins the old `--port`. Run `openclaw doctor --fix` or `openclaw gateway install --force`, then restart the gateway service.
 
   </Accordion>
 </AccordionGroup>
@@ -453,15 +454,67 @@ Related:
 - [Configuration](/gateway/configuration)
 - [Doctor](/gateway/doctor)
 
+## macOS gateway silently stops responding, then resumes when you touch the dashboard
+
+Use this when channels (Telegram, WhatsApp, etc.) on a macOS host go quiet for minutes to hours at a time, and the gateway appears to come back the moment you open the Control UI, SSH in, or otherwise interact with the host. There is usually no obvious symptom in `openclaw status` because by the time you look the gateway is alive again.
+
+```bash
+ls ~/.openclaw/logs/stability/ | tail -5
+openclaw gateway stability --bundle latest
+pmset -g log | grep -iE "sleep|wake|maintenance" | tail -50
+launchctl print gui/$UID/ai.openclaw.gateway | grep -E "state|last exit|runs"
+```
+
+Look for:
+
+- One or more `*-uncaught_exception.json` bundles in `~/.openclaw/logs/stability/` with `error.code` set to a transient network code such as `ENETDOWN`, `ENETUNREACH`, `EHOSTUNREACH`, or `ECONNREFUSED`.
+- `pmset -g log` lines like `Entering Sleep state due to 'Maintenance Sleep'` or `en0 driver is slow (msg: WillChangeState to 0)` aligned with the crash timestamps. Power Nap / Maintenance Sleep briefly puts the Wi-Fi driver into state 0; any outbound `connect()` that lands in that window can fail with `ENETDOWN` even on a host that otherwise has full network connectivity.
+- `launchctl print` output showing `state = not running` with multiple recent `runs` and an exit code, especially when the gap between crash and the next launch is on the order of an hour rather than seconds. macOS launchd applies an undocumented respawn-protection gate after a crash burst that can stop honoring `KeepAlive=true` until an external trigger such as interactive login, dashboard connection, or `launchctl kickstart` re-arms it.
+
+Common signatures:
+
+- A stability bundle whose `error.code` is `ENETDOWN` or a sibling code, with the call stack pointing into Node `net` `lookupAndConnect` / `Socket.connect`. OpenClaw `2026.5.26` and newer classify these as benign transient network errors so they no longer propagate to the top-level uncaught handler; if you are on an older release, upgrade first.
+- Long quiet periods that end the instant you connect to the Control UI or SSH into the host: the user-visible activity is what re-arms launchd's respawn gate, not anything the dashboard does to the gateway.
+- `runs` count incrementing across the day with no corresponding `received SIG*; shutting down` line in `~/Library/Logs/openclaw/gateway.log`: clean shutdowns log a signal; transient crashes do not.
+
+What to do:
+
+1. **Upgrade the gateway** if you are running a release before `2026.5.26`. After upgrading, future `ENETDOWN` errors are logged as warnings instead of terminating the process.
+2. **Reduce maintenance sleep activity** on Mac mini / desktop hosts that are meant to run as always-on servers:
+
+   ```bash
+   sudo pmset -a sleep 0 disksleep 0 standby 0 powernap 0
+   ```
+
+   This significantly reduces, but does not entirely eliminate, the underlying driver flap. The system can still perform some maintenance sleeps for TCP keepalive and mDNS upkeep regardless of these flags.
+
+3. **Add a liveness watchdog** so a future crash burst that gets parked by launchd is caught quickly:
+
+   ```bash
+   # Example launchd-aware liveness check, suitable for a 5-minute cron or LaunchAgent
+   state=$(launchctl print gui/$UID/ai.openclaw.gateway 2>/dev/null | awk -F'= ' '/state =/ {print $2; exit}')
+   if [ "$state" != "running" ]; then
+     launchctl kickstart -k gui/$UID/ai.openclaw.gateway
+   fi
+   ```
+
+   The point is to externally re-arm the respawn gate; `KeepAlive=true` alone is not sufficient on macOS after a crash burst.
+
+Related:
+
+- [macOS platform notes](/platforms/macos)
+- [Logging](/logging)
+- [Doctor](/gateway/doctor)
+
 ## Gateway exits during high memory use
 
 Use this when the Gateway disappears under load, the supervisor reports an OOM-style restart, or logs mention `critical memory pressure bundle written`.
 
 ```bash
-remoteclaw gateway status --deep
-remoteclaw logs --follow
-remoteclaw gateway stability --bundle latest
-remoteclaw gateway diagnostics export
+openclaw gateway status --deep
+openclaw logs --follow
+openclaw gateway stability --bundle latest
+openclaw gateway diagnostics export
 ```
 
 Look for:
@@ -474,8 +527,8 @@ Look for:
 
 Common signatures:
 
-- `critical memory pressure bundle written` appears shortly before restart → RemoteClaw captured a pre-OOM stability bundle. Inspect it with `remoteclaw gateway stability --bundle latest`.
-- `memory pressure: level=critical ... memoryPressureSnapshot=disabled` appears in gateway logs → RemoteClaw detected critical memory pressure, but the pre-OOM stability snapshot is off.
+- `critical memory pressure bundle written` appears shortly before restart → OpenClaw captured a pre-OOM stability bundle. Inspect it with `openclaw gateway stability --bundle latest`.
+- `memory pressure: level=critical ... memoryPressureSnapshot=disabled` appears in gateway logs → OpenClaw detected critical memory pressure, but the pre-OOM stability snapshot is off.
 - `Largest session files:` points at a very large redacted transcript path → reduce retained session history, inspect session growth, or move old transcripts out of the active store before restarting.
 - `V8 heap:` used bytes are close to the heap limit → lower prompt/session pressure, reduce concurrent work, or raise the Node heap limit only after confirming the workload is expected.
 - `Memory pressure: critical/rss_growth` → memory grew quickly inside one sampling window. Check the latest logs for a large import, runaway tool output, repeated retries, or a batch of queued agent work.
@@ -495,10 +548,10 @@ Use this when Gateway startup fails with `Invalid config` or hot reload logs say
 it skipped an invalid edit.
 
 ```bash
-remoteclaw logs --follow
-remoteclaw config file
-remoteclaw config validate
-remoteclaw doctor
+openclaw logs --follow
+openclaw config file
+openclaw config validate
+openclaw doctor
 ```
 
 Look for:
@@ -506,43 +559,43 @@ Look for:
 - `Invalid config at ...`
 - `config reload skipped (invalid config): ...`
 - `Config write rejected: ...`
-- A timestamped `remoteclaw.json.rejected.*` file beside the active config
-- A timestamped `remoteclaw.json.clobbered.*` file if `doctor --fix` repaired a broken direct edit
-- RemoteClaw keeps the latest 32 `.clobbered.*` files for each config path and rotates older ones
+- A timestamped `openclaw.json.rejected.*` file beside the active config
+- A timestamped `openclaw.json.clobbered.*` file if `doctor --fix` repaired a broken direct edit
+- OpenClaw keeps the latest 32 `.clobbered.*` files for each config path and rotates older ones
 
 <AccordionGroup>
   <Accordion title="What happened">
-    - The config did not validate during startup, hot reload, or an RemoteClaw-owned write.
-    - Gateway startup fails closed instead of rewriting `remoteclaw.json`.
+    - The config did not validate during startup, hot reload, or an OpenClaw-owned write.
+    - Gateway startup fails closed instead of rewriting `openclaw.json`.
     - Hot reload skips invalid external edits and keeps the current runtime config active.
-    - RemoteClaw-owned writes reject invalid/destructive payloads before commit and save `.rejected.*`.
-    - `remoteclaw doctor --fix` owns repair. It can remove non-JSON prefixes or restore the last-known-good copy while preserving the rejected payload as `.clobbered.*`.
-    - When many repairs happen for one config path, RemoteClaw rotates older `.clobbered.*` files so the newest repaired payload is still available.
+    - OpenClaw-owned writes reject invalid/destructive payloads before commit and save `.rejected.*`.
+    - `openclaw doctor --fix` owns repair. It can remove non-JSON prefixes or restore the last-known-good copy while preserving the rejected payload as `.clobbered.*`.
+    - When many repairs happen for one config path, OpenClaw rotates older `.clobbered.*` files so the newest repaired payload is still available.
 
   </Accordion>
   <Accordion title="Inspect and repair">
     ```bash
-    CONFIG="$(remoteclaw config file)"
+    CONFIG="$(openclaw config file)"
     ls -lt "$CONFIG".clobbered.* "$CONFIG".rejected.* 2>/dev/null | head
     diff -u "$CONFIG" "$(ls -t "$CONFIG".clobbered.* 2>/dev/null | head -n 1)"
-    remoteclaw config validate
-    remoteclaw doctor
+    openclaw config validate
+    openclaw doctor
     ```
   </Accordion>
   <Accordion title="Common signatures">
     - `.clobbered.*` exists → doctor preserved a broken external edit while repairing the active config.
-    - `.rejected.*` exists → an RemoteClaw-owned config write failed schema or clobber checks before commit.
+    - `.rejected.*` exists → an OpenClaw-owned config write failed schema or clobber checks before commit.
     - `Config write rejected:` → the write tried to drop required shape, shrink the file sharply, or persist invalid config.
     - `config reload skipped (invalid config):` → a direct edit failed validation and was ignored by the running Gateway.
     - `Invalid config at ...` → startup failed before Gateway services booted.
-    - `missing-meta-vs-last-good`, `gateway-mode-missing-vs-last-good`, or `size-drop-vs-last-good:*` → an RemoteClaw-owned write was rejected because it lost fields or size compared with the last-known-good backup.
+    - `missing-meta-vs-last-good`, `gateway-mode-missing-vs-last-good`, or `size-drop-vs-last-good:*` → an OpenClaw-owned write was rejected because it lost fields or size compared with the last-known-good backup.
     - `Config last-known-good promotion skipped` → the candidate contained redacted secret placeholders such as `***`.
 
   </Accordion>
   <Accordion title="Fix options">
-    1. Run `remoteclaw doctor --fix` to let doctor repair prefixed/clobbered config or restore last-known-good.
-    2. Copy only the intended keys from `.clobbered.*` or `.rejected.*`, then apply them with `remoteclaw config set` or `config.patch`.
-    3. Run `remoteclaw config validate` before restarting.
+    1. Run `openclaw doctor --fix` to let doctor repair prefixed/clobbered config or restore last-known-good.
+    2. Copy only the intended keys from `.clobbered.*` or `.rejected.*`, then apply them with `openclaw config set` or `config.patch`.
+    3. Run `openclaw config validate` before restarting.
     4. If you edit by hand, keep the full JSON5 config, not just the partial object you wanted to change.
   </Accordion>
 </AccordionGroup>
@@ -556,12 +609,12 @@ Related:
 
 ## Gateway probe warnings
 
-Use this when `remoteclaw gateway probe` reaches something, but still prints a warning block.
+Use this when `openclaw gateway probe` reaches something, but still prints a warning block.
 
 ```bash
-remoteclaw gateway probe
-remoteclaw gateway probe --json
-remoteclaw gateway probe --ssh user@gateway-host
+openclaw gateway probe
+openclaw gateway probe --json
+openclaw gateway probe --ssh user@gateway-host
 ```
 
 Look for:
@@ -589,11 +642,11 @@ Related:
 If channel state is connected but message flow is dead, focus on policy, permissions, and channel specific delivery rules.
 
 ```bash
-remoteclaw channels status --probe
-remoteclaw pairing list --channel <channel> [--account <id>]
-remoteclaw status --deep
-remoteclaw logs --follow
-remoteclaw config get channels
+openclaw channels status --probe
+openclaw pairing list --channel <channel> [--account <id>]
+openclaw status --deep
+openclaw logs --follow
+openclaw config get channels
 ```
 
 Look for:
@@ -620,11 +673,11 @@ Related:
 If cron or heartbeat did not run or did not deliver, verify scheduler state first, then delivery target.
 
 ```bash
-remoteclaw cron status
-remoteclaw cron list
-remoteclaw cron runs --id <jobId> --limit 20
-remoteclaw system heartbeat last
-remoteclaw logs --follow
+openclaw cron status
+openclaw cron list
+openclaw cron runs --id <jobId> --limit 20
+openclaw system heartbeat last
+openclaw logs --follow
 ```
 
 Look for:
@@ -638,7 +691,7 @@ Look for:
     - `cron: scheduler disabled; jobs will not run automatically` → cron disabled.
     - `cron: timer tick failed` → scheduler tick failed; check file/log/runtime errors.
     - `heartbeat skipped` with `reason=quiet-hours` → outside active hours window.
-    - `heartbeat skipped` with `reason=empty-heartbeat-file` → `HEARTBEAT.md` exists but only contains blank lines / markdown headers, so RemoteClaw skips the model call.
+    - `heartbeat skipped` with `reason=empty-heartbeat-file` → `HEARTBEAT.md` exists but only contains blank lines / markdown headers, so OpenClaw skips the model call.
     - `heartbeat skipped` with `reason=no-tasks-due` → `HEARTBEAT.md` contains a `tasks:` block, but none of the tasks are due on this tick.
     - `heartbeat: unknown accountId` → invalid account id for heartbeat delivery target.
     - `heartbeat skipped` with `reason=dm-blocked` → heartbeat target resolved to a DM-style destination while `agents.defaults.heartbeat.directPolicy` (or per-agent override) is set to `block`.
@@ -657,11 +710,11 @@ Related:
 If a node is paired but tools fail, isolate foreground, permission, and approval state.
 
 ```bash
-remoteclaw nodes status
-remoteclaw nodes describe --node <idOrNameOrIp>
-remoteclaw approvals get --node <idOrNameOrIp>
-remoteclaw logs --follow
-remoteclaw status
+openclaw nodes status
+openclaw nodes describe --node <idOrNameOrIp>
+openclaw approvals get --node <idOrNameOrIp>
+openclaw logs --follow
+openclaw status
 ```
 
 Look for:
@@ -688,11 +741,11 @@ Related:
 Use this when browser tool actions fail even though the gateway itself is healthy.
 
 ```bash
-remoteclaw browser status
-remoteclaw browser start --browser-profile remoteclaw
-remoteclaw browser profiles
-remoteclaw logs --follow
-remoteclaw doctor
+openclaw browser status
+openclaw browser start --browser-profile openclaw
+openclaw browser profiles
+openclaw logs --follow
+openclaw doctor
 ```
 
 Look for:
@@ -710,11 +763,11 @@ Look for:
     - `browser.executablePath not found` → configured path is invalid.
     - `browser.cdpUrl must be http(s) or ws(s)` → the configured CDP URL uses an unsupported scheme such as `file:` or `ftp:`.
     - `browser.cdpUrl has invalid port` → the configured CDP URL has a bad or out-of-range port.
-    - `Playwright is not available in this gateway build; '<feature>' is unsupported.` → the current gateway install lacks the core browser runtime dependency; reinstall or update RemoteClaw, then restart the gateway. ARIA snapshots and basic page screenshots can still work, but navigation, AI snapshots, CSS-selector element screenshots, and PDF export stay unavailable.
+    - `Playwright is not available in this gateway build; '<feature>' is unsupported.` → the current gateway install lacks the core browser runtime dependency; reinstall or update OpenClaw, then restart the gateway. ARIA snapshots and basic page screenshots can still work, but navigation, AI snapshots, CSS-selector element screenshots, and PDF export stay unavailable.
 
   </Accordion>
   <Accordion title="Chrome MCP / existing-session signatures">
-    - `Could not find DevToolsActivePort for chrome` → Chrome MCP existing-session could not attach to the selected browser data dir yet. Open the browser inspect page, enable remote debugging, keep the browser open, approve the first attach prompt, then retry. If signed-in state is not required, prefer the managed `remoteclaw` profile.
+    - `Could not find DevToolsActivePort for chrome` → Chrome MCP existing-session could not attach to the selected browser data dir yet. Open the browser inspect page, enable remote debugging, keep the browser open, approve the first attach prompt, then retry. If signed-in state is not required, prefer the managed `openclaw` profile.
     - `No Chrome tabs found for profile="user"` → the Chrome MCP attach profile has no open local Chrome tabs.
     - `Remote CDP for profile "<name>" is not reachable` → the configured remote CDP endpoint is not reachable from the gateway host.
     - `Browser attachOnly is enabled ... not reachable` or `Browser attachOnly is enabled and CDP websocket ... is not reachable` → attach-only profile has no reachable target, or the HTTP endpoint answered but the CDP WebSocket still could not be opened.
@@ -729,14 +782,14 @@ Look for:
     - `existing-session type does not support timeoutMs overrides.` → omit `timeoutMs` for `act:type` on `profile="user"` / Chrome MCP existing-session profiles, or use a managed/CDP browser profile when a custom timeout is required.
     - `existing-session evaluate does not support timeoutMs overrides.` → omit `timeoutMs` for `act:evaluate` on `profile="user"` / Chrome MCP existing-session profiles, or use a managed/CDP browser profile when a custom timeout is required.
     - `response body is not supported for existing-session profiles yet.` → `responsebody` still requires a managed browser or raw CDP profile.
-    - stale viewport / dark-mode / locale / offline overrides on attach-only or remote CDP profiles → run `remoteclaw browser stop --browser-profile <name>` to close the active control session and release Playwright/CDP emulation state without restarting the whole gateway.
+    - stale viewport / dark-mode / locale / offline overrides on attach-only or remote CDP profiles → run `openclaw browser stop --browser-profile <name>` to close the active control session and release Playwright/CDP emulation state without restarting the whole gateway.
 
   </Accordion>
 </AccordionGroup>
 
 Related:
 
-- [Browser (RemoteClaw-managed)](/tools/browser)
+- [Browser (OpenClaw-managed)](/tools/browser)
 - [Browser troubleshooting](/tools/browser-linux-troubleshooting)
 
 ## If you upgraded and something suddenly broke
@@ -746,10 +799,10 @@ Most post-upgrade breakage is config drift or stricter defaults now being enforc
 <AccordionGroup>
   <Accordion title="1. Auth and URL override behavior changed">
     ```bash
-    remoteclaw gateway status
-    remoteclaw config get gateway.mode
-    remoteclaw config get gateway.remote.url
-    remoteclaw config get gateway.auth.mode
+    openclaw gateway status
+    openclaw config get gateway.mode
+    openclaw config get gateway.remote.url
+    openclaw config get gateway.auth.mode
     ```
 
     What to check:
@@ -765,11 +818,11 @@ Most post-upgrade breakage is config drift or stricter defaults now being enforc
   </Accordion>
   <Accordion title="2. Bind and auth guardrails are stricter">
     ```bash
-    remoteclaw config get gateway.bind
-    remoteclaw config get gateway.auth.mode
-    remoteclaw config get gateway.auth.token
-    remoteclaw gateway status
-    remoteclaw logs --follow
+    openclaw config get gateway.bind
+    openclaw config get gateway.auth.mode
+    openclaw config get gateway.auth.token
+    openclaw gateway status
+    openclaw logs --follow
     ```
 
     What to check:
@@ -785,10 +838,10 @@ Most post-upgrade breakage is config drift or stricter defaults now being enforc
   </Accordion>
   <Accordion title="3. Pairing and device identity state changed">
     ```bash
-    remoteclaw devices list
-    remoteclaw pairing list --channel <channel> [--account <id>]
-    remoteclaw logs --follow
-    remoteclaw doctor
+    openclaw devices list
+    openclaw pairing list --channel <channel> [--account <id>]
+    openclaw logs --follow
+    openclaw doctor
     ```
 
     What to check:
@@ -807,8 +860,8 @@ Most post-upgrade breakage is config drift or stricter defaults now being enforc
 If the service config and runtime still disagree after checks, reinstall service metadata from the same profile/state directory:
 
 ```bash
-remoteclaw gateway install --force
-remoteclaw gateway restart
+openclaw gateway install --force
+openclaw gateway restart
 ```
 
 Related:

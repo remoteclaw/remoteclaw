@@ -1,22 +1,22 @@
 ---
-summary: "CLI reference for `remoteclaw sessions` (list stored sessions + usage)"
+summary: "CLI reference for `openclaw sessions` (list stored sessions + usage)"
 read_when:
   - You want to list stored sessions and see recent activity
 title: "Sessions"
 ---
 
-# `remoteclaw sessions`
+# `openclaw sessions`
 
 List stored conversation sessions.
 
 Session lists are not channel/provider liveness checks. They show persisted
 conversation rows from session stores. A quiet Discord, Slack, Telegram, or
 other channel can reconnect successfully without creating a new session row
-until a message is processed. Use `remoteclaw channels status --probe`,
-`remoteclaw status --deep`, or `remoteclaw health --verbose` when you need live
+until a message is processed. Use `openclaw channels status --probe`,
+`openclaw status --deep`, or `openclaw health --verbose` when you need live
 channel connectivity.
 
-`remoteclaw sessions` and Gateway `sessions.list` responses are bounded by
+`openclaw sessions` and Gateway `sessions.list` responses are bounded by
 default so large long-lived stores cannot monopolize the CLI process or Gateway
 event loop. The CLI returns the newest 100 sessions by default; pass
 `--limit <n>` for a smaller/larger window or `--limit all` when you intentionally
@@ -29,13 +29,13 @@ Control UI uses that mode by default so deleted or disk-only agent stores do
 not reappear in the Sessions view.
 
 ```bash
-remoteclaw sessions
-remoteclaw sessions --agent work
-remoteclaw sessions --all-agents
-remoteclaw sessions --active 120
-remoteclaw sessions --limit 25
-remoteclaw sessions --verbose
-remoteclaw sessions --json
+openclaw sessions
+openclaw sessions --agent work
+openclaw sessions --all-agents
+openclaw sessions --active 120
+openclaw sessions --limit 25
+openclaw sessions --verbose
+openclaw sessions --json
 ```
 
 Scope selection:
@@ -50,15 +50,15 @@ Scope selection:
 Export a trajectory bundle for a stored session:
 
 ```bash
-remoteclaw sessions export-trajectory --session-key "agent:main:telegram:direct:123" --workspace .
-remoteclaw sessions export-trajectory --session-key "agent:main:telegram:direct:123" --output bug-123 --json
+openclaw sessions export-trajectory --session-key "agent:main:telegram:direct:123" --workspace .
+openclaw sessions export-trajectory --session-key "agent:main:telegram:direct:123" --output bug-123 --json
 ```
 
 This is the command path used by the `/export-trajectory` slash command after
 the owner approves the exec request. The output directory is always resolved
-inside `.remoteclaw/trajectory-exports/` under the selected workspace.
+inside `.openclaw/trajectory-exports/` under the selected workspace.
 
-`remoteclaw sessions --all-agents` reads configured agent stores. Gateway and ACP
+`openclaw sessions --all-agents` reads configured agent stores. Gateway and ACP
 session discovery are broader: they also include disk-only stores found under
 the default `agents/` root or a templated `session.store` root. Those
 discovered stores must resolve to regular `sessions.json` files inside the
@@ -66,14 +66,14 @@ agent root; symlinks and out-of-root paths are skipped.
 
 JSON examples:
 
-`remoteclaw sessions --all-agents --json`:
+`openclaw sessions --all-agents --json`:
 
 ```json
 {
   "path": null,
   "stores": [
-    { "agentId": "main", "path": "/home/user/.remoteclaw/agents/main/sessions/sessions.json" },
-    { "agentId": "work", "path": "/home/user/.remoteclaw/agents/work/sessions/sessions.json" }
+    { "agentId": "main", "path": "/home/user/.openclaw/agents/main/sessions/sessions.json" },
+    { "agentId": "work", "path": "/home/user/.openclaw/agents/work/sessions/sessions.json" }
   ],
   "allAgents": true,
   "count": 2,
@@ -93,24 +93,24 @@ JSON examples:
 Run maintenance now (instead of waiting for the next write cycle):
 
 ```bash
-remoteclaw sessions cleanup --dry-run
-remoteclaw sessions cleanup --agent work --dry-run
-remoteclaw sessions cleanup --all-agents --dry-run
-remoteclaw sessions cleanup --enforce
-remoteclaw sessions cleanup --enforce --active-key "agent:main:telegram:direct:123"
-remoteclaw sessions cleanup --dry-run --fix-dm-scope
-remoteclaw sessions cleanup --json
+openclaw sessions cleanup --dry-run
+openclaw sessions cleanup --agent work --dry-run
+openclaw sessions cleanup --all-agents --dry-run
+openclaw sessions cleanup --enforce
+openclaw sessions cleanup --enforce --active-key "agent:main:telegram:direct:123"
+openclaw sessions cleanup --dry-run --fix-dm-scope
+openclaw sessions cleanup --json
 ```
 
-`remoteclaw sessions cleanup` uses `session.maintenance` settings from config:
+`openclaw sessions cleanup` uses `session.maintenance` settings from config:
 
-- Scope note: `remoteclaw sessions cleanup` maintains session stores, transcripts, and trajectory sidecars. It does not prune cron run logs (`cron/runs/<jobId>.jsonl`), which are managed by `cron.runLog.maxBytes` and `cron.runLog.keepLines` in [Cron configuration](/automation/cron-jobs#configuration) and explained in [Cron maintenance](/automation/cron-jobs#maintenance).
+- Scope note: `openclaw sessions cleanup` maintains session stores, transcripts, and trajectory sidecars. It does not prune cron run logs (`cron/runs/<jobId>.jsonl`), which are managed by `cron.runLog.maxBytes` and `cron.runLog.keepLines` in [Cron configuration](/automation/cron-jobs#configuration) and explained in [Cron maintenance](/automation/cron-jobs#maintenance).
 - Cleanup also prunes unreferenced primary transcripts, compaction checkpoints, and trajectory sidecars older than `session.maintenance.pruneAfter`; files still referenced by `sessions.json` are preserved.
 
 - `--dry-run`: preview how many entries would be pruned/capped without writing.
   - In text mode, dry-run prints a per-session action table (`Action`, `Key`, `Age`, `Model`, `Flags`) so you can see what would be kept vs removed.
 - `--enforce`: apply maintenance even when `session.maintenance.mode` is `warn`.
-- `--fix-missing`: remove entries whose transcript files are missing, even if they would not normally age/count out yet.
+- `--fix-missing`: remove entries whose transcript files are missing or header-only/empty, even if they would not normally age/count out yet.
 - `--fix-dm-scope`: when `session.dmScope` is `main`, retire stale peer-keyed direct-DM rows left behind by earlier `per-peer`, `per-channel-peer`, or `per-account-channel-peer` routing. Use `--dry-run` first; applying the cleanup removes those rows from `sessions.json` and preserves their transcripts as deleted archives.
 - `--active-key <key>`: protect a specific active key from disk-budget eviction. Durable external conversation pointers, such as group sessions and thread-scoped chat sessions, are also kept by age/count/disk-budget maintenance.
 - `--agent <id>`: run cleanup for one configured agent store.
@@ -122,7 +122,7 @@ When a Gateway is reachable, non-dry-run cleanup for configured agent stores is
 sent through the Gateway so it shares the same session-store writer as runtime
 traffic. Use `--store <path>` for explicit offline repair of a store file.
 
-`remoteclaw sessions cleanup --all-agents --dry-run --json`:
+`openclaw sessions cleanup --all-agents --dry-run --json`:
 
 ```json
 {
@@ -132,7 +132,7 @@ traffic. Use `--store <path>` for explicit offline repair of a store file.
   "stores": [
     {
       "agentId": "main",
-      "storePath": "/home/user/.remoteclaw/agents/main/sessions/sessions.json",
+      "storePath": "/home/user/.openclaw/agents/main/sessions/sessions.json",
       "beforeCount": 120,
       "afterCount": 80,
       "missing": 0,
@@ -142,7 +142,7 @@ traffic. Use `--store <path>` for explicit offline repair of a store file.
     },
     {
       "agentId": "work",
-      "storePath": "/home/user/.remoteclaw/agents/work/sessions/sessions.json",
+      "storePath": "/home/user/.openclaw/agents/work/sessions/sessions.json",
       "beforeCount": 18,
       "afterCount": 18,
       "missing": 0,

@@ -50,7 +50,7 @@ Agent auth inheritance is read-through. When an agent has no local profile, it
 can resolve profiles from the default/main agent store at runtime without
 copying secret material into its own `auth-profiles.json`.
 
-Explicit copy flows, such as `remoteclaw agents add`, use this portability policy:
+Explicit copy flows, such as `openclaw agents add`, use this portability policy:
 
 - `api_key` profiles are portable unless `copyToAgents: false`.
 - `token` profiles are portable unless `copyToAgents: false`.
@@ -66,12 +66,12 @@ the target agent signs in separately and creates its own local profile.
 
 `auth.profiles` entries with `mode: "aws-sdk"` are routing metadata, not stored
 credentials. They are valid when the target provider uses
-`models.providers.<id>.auth: "aws-sdk"` or the built-in Amazon Bedrock default
+`models.providers.<id>.auth: "aws-sdk"` or plugin-owned Amazon Bedrock setup
 AWS SDK route. These profile ids may appear in `auth.order` and session
 overrides even when no matching entry exists in `auth-profiles.json`.
 
 Do not write `type: "aws-sdk"` into `auth-profiles.json`. If a legacy install
-has such a marker, `remoteclaw doctor --fix` moves it to `auth.profiles` and
+has such a marker, `openclaw doctor --fix` moves it to `auth.profiles` and
 removes the marker from the credential store.
 
 ## Explicit auth order filtering
@@ -88,7 +88,7 @@ removes the marker from the credential store.
 
 - Probe targets can come from auth profiles, environment credentials, or
   `models.json`.
-- If a provider has credentials but RemoteClaw cannot resolve a probeable model
+- If a provider has credentials but OpenClaw cannot resolve a probeable model
   candidate for it, `models status --probe` reports `status: no_model` with
   `reasonCode: no_model`.
 

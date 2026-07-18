@@ -94,7 +94,7 @@ export function createWindowsExtensionShards({
 }
 
 export function resolveWindowsExtensionChunkSize(env = process.env) {
-  const rawValue = env.REMOTECLAW_OXLINT_WINDOWS_EXTENSION_CHUNK_SIZE;
+  const rawValue = env.OPENCLAW_OXLINT_WINDOWS_EXTENSION_CHUNK_SIZE;
   if (rawValue === undefined) {
     return DEFAULT_WINDOWS_EXTENSION_CHUNK_SIZE;
   }
@@ -110,7 +110,7 @@ export function shouldRunOxlintShardsSerial({
   platform = process.platform,
   hostResources,
 } = {}) {
-  const explicitMode = env.REMOTECLAW_OXLINT_SHARDS_SERIAL?.trim();
+  const explicitMode = env.OPENCLAW_OXLINT_SHARDS_SERIAL?.trim();
   if (explicitMode === "1") {
     return true;
   }
@@ -120,17 +120,20 @@ export function shouldRunOxlintShardsSerial({
   if (explicitMode === "0") {
     return false;
   }
-  const localCheckMode = env.REMOTECLAW_LOCAL_CHECK_MODE?.trim().toLowerCase();
+  const localCheckMode = env.OPENCLAW_LOCAL_CHECK_MODE?.trim().toLowerCase();
   if (localCheckMode === "full" || localCheckMode === "fast") {
     return false;
   }
   if (localCheckMode === "throttled" || localCheckMode === "low-memory") {
     return true;
   }
-  if (env.CI === "true" || env.GITHUB_ACTIONS === "true") {
-    return false;
-  }
   const resources = resolveHostResources(hostResources);
+  if (env.CI === "true" || env.GITHUB_ACTIONS === "true") {
+    return (
+      resources.totalMemoryBytes < FAST_LOCAL_CHECK_MIN_MEMORY_BYTES ||
+      resources.logicalCpuCount < FAST_LOCAL_CHECK_MIN_CPUS
+    );
+  }
   return (
     resources.totalMemoryBytes < FAST_LOCAL_CHECK_MIN_MEMORY_BYTES ||
     resources.logicalCpuCount < FAST_LOCAL_CHECK_MIN_CPUS
@@ -197,7 +200,7 @@ export async function main(extraArgs = process.argv.slice(2), runtimeEnv = proce
       env,
     });
   const releaseLock =
-    env.REMOTECLAW_OXLINT_SKIP_LOCK === "1"
+    env.OPENCLAW_OXLINT_SKIP_LOCK === "1"
       ? () => {}
       : shouldAcquireParentLock
         ? acquireLocalHeavyCheckLockSync({
@@ -328,8 +331,8 @@ async function runShard({ env, extraArgs, runner, shard }) {
     stdio: "inherit",
     env: {
       ...env,
-      REMOTECLAW_OXLINT_SKIP_LOCK: "1",
-      REMOTECLAW_OXLINT_SKIP_PREPARE: "1",
+      OPENCLAW_OXLINT_SKIP_LOCK: "1",
+      OPENCLAW_OXLINT_SKIP_PREPARE: "1",
     },
   });
 
@@ -360,7 +363,7 @@ async function runShard({ env, extraArgs, runner, shard }) {
 }
 
 export function resolveShardHeartbeatMs(env) {
-  const rawValue = env.REMOTECLAW_OXLINT_SHARD_HEARTBEAT_MS;
+  const rawValue = env.OPENCLAW_OXLINT_SHARD_HEARTBEAT_MS;
   if (rawValue === undefined) {
     return DEFAULT_SHARD_HEARTBEAT_MS;
   }

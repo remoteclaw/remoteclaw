@@ -6,14 +6,14 @@ import RemoteClawKit
 #if canImport(AppKit)
 import AppKit
 
-public typealias RemoteClawPlatformImage = NSImage
+public typealias OpenClawPlatformImage = NSImage
 #elseif canImport(UIKit)
 import UIKit
 
-public typealias RemoteClawPlatformImage = UIImage
+public typealias OpenClawPlatformImage = UIImage
 #endif
 
-public struct RemoteClawChatUsageCost: Codable, Hashable, Sendable {
+public struct OpenClawChatUsageCost: Codable, Hashable, Sendable {
     public let input: Double?
     public let output: Double?
     public let cacheRead: Double?
@@ -21,12 +21,12 @@ public struct RemoteClawChatUsageCost: Codable, Hashable, Sendable {
     public let total: Double?
 }
 
-public struct RemoteClawChatUsage: Codable, Hashable, Sendable {
+public struct OpenClawChatUsage: Codable, Hashable, Sendable {
     public let input: Int?
     public let output: Int?
     public let cacheRead: Int?
     public let cacheWrite: Int?
-    public let cost: RemoteClawChatUsageCost?
+    public let cost: OpenClawChatUsageCost?
     public let total: Int?
 
     enum CodingKeys: String, CodingKey {
@@ -45,7 +45,7 @@ public struct RemoteClawChatUsage: Codable, Hashable, Sendable {
         self.output = try container.decodeIfPresent(Int.self, forKey: .output)
         self.cacheRead = try container.decodeIfPresent(Int.self, forKey: .cacheRead)
         self.cacheWrite = try container.decodeIfPresent(Int.self, forKey: .cacheWrite)
-        self.cost = try container.decodeIfPresent(RemoteClawChatUsageCost.self, forKey: .cost)
+        self.cost = try container.decodeIfPresent(OpenClawChatUsageCost.self, forKey: .cost)
         self.total =
             try container.decodeIfPresent(Int.self, forKey: .total) ??
             container.decodeIfPresent(Int.self, forKey: .totalTokens)
@@ -62,7 +62,7 @@ public struct RemoteClawChatUsage: Codable, Hashable, Sendable {
     }
 }
 
-public struct RemoteClawChatMessageContent: Codable, Hashable, Sendable {
+public struct OpenClawChatMessageContent: Codable, Hashable, Sendable {
     public let type: String?
     public let text: String?
     public let thinking: String?
@@ -135,15 +135,16 @@ public struct RemoteClawChatMessageContent: Codable, Hashable, Sendable {
     }
 }
 
-public struct RemoteClawChatMessage: Codable, Identifiable, Sendable {
+public struct OpenClawChatMessage: Codable, Identifiable, Sendable {
     public var id: UUID = .init()
     public let role: String
-    public let content: [RemoteClawChatMessageContent]
+    public let content: [OpenClawChatMessageContent]
     public let timestamp: Double?
     public let toolCallId: String?
     public let toolName: String?
-    public let usage: RemoteClawChatUsage?
+    public let usage: OpenClawChatUsage?
     public let stopReason: String?
+    public let errorMessage: String?
 
     enum CodingKeys: String, CodingKey {
         case role
@@ -155,17 +156,19 @@ public struct RemoteClawChatMessage: Codable, Identifiable, Sendable {
         case tool_name
         case usage
         case stopReason
+        case errorMessage
     }
 
     public init(
         id: UUID = .init(),
         role: String,
-        content: [RemoteClawChatMessageContent],
+        content: [OpenClawChatMessageContent],
         timestamp: Double?,
         toolCallId: String? = nil,
         toolName: String? = nil,
-        usage: RemoteClawChatUsage? = nil,
-        stopReason: String? = nil)
+        usage: OpenClawChatUsage? = nil,
+        stopReason: String? = nil,
+        errorMessage: String? = nil)
     {
         self.id = id
         self.role = role
@@ -175,22 +178,32 @@ public struct RemoteClawChatMessage: Codable, Identifiable, Sendable {
         self.toolName = toolName
         self.usage = usage
         self.stopReason = stopReason
+        self.errorMessage = errorMessage
     }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.role = try container.decode(String.self, forKey: .role)
-        self.timestamp = try container.decodeIfPresent(Double.self, forKey: .timestamp)
-        self.toolCallId =
+        let decodedRole = try container.decode(String.self, forKey: .role)
+        let decodedTimestamp = try container.decodeIfPresent(Double.self, forKey: .timestamp)
+        let decodedToolCallId =
             try container.decodeIfPresent(String.self, forKey: .toolCallId) ??
             container.decodeIfPresent(String.self, forKey: .tool_call_id)
-        self.toolName =
+        let decodedToolName =
             try container.decodeIfPresent(String.self, forKey: .toolName) ??
             container.decodeIfPresent(String.self, forKey: .tool_name)
-        self.usage = try container.decodeIfPresent(RemoteClawChatUsage.self, forKey: .usage)
-        self.stopReason = try container.decodeIfPresent(String.self, forKey: .stopReason)
+        let decodedUsage = try container.decodeIfPresent(OpenClawChatUsage.self, forKey: .usage)
+        let decodedStopReason = try container.decodeIfPresent(String.self, forKey: .stopReason)
+        let decodedErrorMessage = try container.decodeIfPresent(String.self, forKey: .errorMessage)
 
-        if let decoded = try? container.decode([RemoteClawChatMessageContent].self, forKey: .content) {
+        self.role = decodedRole
+        self.timestamp = decodedTimestamp
+        self.toolCallId = decodedToolCallId
+        self.toolName = decodedToolName
+        self.usage = decodedUsage
+        self.stopReason = decodedStopReason
+        self.errorMessage = decodedErrorMessage
+
+        if let decoded = try? container.decode([OpenClawChatMessageContent].self, forKey: .content) {
             self.content = decoded
             return
         }
@@ -198,7 +211,7 @@ public struct RemoteClawChatMessage: Codable, Identifiable, Sendable {
         // Some session log formats store `content` as a plain string.
         if let text = try? container.decode(String.self, forKey: .content) {
             self.content = [
-                RemoteClawChatMessageContent(
+                OpenClawChatMessageContent(
                     type: "text",
                     text: text,
                     thinking: nil,
@@ -216,6 +229,41 @@ public struct RemoteClawChatMessage: Codable, Identifiable, Sendable {
         self.content = []
     }
 
+    static func displayText(
+        contentText: String,
+        role: String,
+        stopReason: String?,
+        errorMessage: String?) -> String
+    {
+        let text = contentText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let errorText = Self.errorDisplayText(
+            role: role,
+            stopReason: stopReason,
+            errorMessage: errorMessage)
+        else {
+            return text
+        }
+        if text.isEmpty || text == Self.streamErrorFallbackText {
+            return errorText
+        }
+        return text
+    }
+
+    static func errorDisplayText(role: String, stopReason: String?, errorMessage: String?) -> String? {
+        let normalizedRole = role.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let normalizedStopReason = stopReason?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard normalizedRole == "assistant",
+              normalizedStopReason == "error",
+              let text = errorMessage?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !text.isEmpty
+        else {
+            return nil
+        }
+        return text
+    }
+
+    private static let streamErrorFallbackText = "[assistant turn failed before producing content]"
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(self.role, forKey: .role)
@@ -224,56 +272,51 @@ public struct RemoteClawChatMessage: Codable, Identifiable, Sendable {
         try container.encodeIfPresent(self.toolName, forKey: .toolName)
         try container.encodeIfPresent(self.usage, forKey: .usage)
         try container.encodeIfPresent(self.stopReason, forKey: .stopReason)
+        try container.encodeIfPresent(self.errorMessage, forKey: .errorMessage)
         try container.encode(self.content, forKey: .content)
     }
 }
 
-public struct RemoteClawChatHistoryPayload: Codable, Sendable {
+public struct OpenClawChatHistoryPayload: Codable, Sendable {
     public let sessionKey: String
     public let sessionId: String?
     public let messages: [AnyCodable]?
     public let thinkingLevel: String?
-
-    public init(
-        sessionKey: String,
-        sessionId: String?,
-        messages: [AnyCodable]?,
-        thinkingLevel: String? = nil)
-    {
-        self.sessionKey = sessionKey
-        self.sessionId = sessionId
-        self.messages = messages
-        self.thinkingLevel = thinkingLevel
-    }
 }
 
-public struct RemoteClawSessionPreviewItem: Codable, Hashable, Sendable {
+public struct OpenClawSessionPreviewItem: Codable, Hashable, Sendable {
     public let role: String
     public let text: String
 }
 
-public struct RemoteClawSessionPreviewEntry: Codable, Sendable {
+public struct OpenClawSessionPreviewEntry: Codable, Sendable {
     public let key: String
     public let status: String
-    public let items: [RemoteClawSessionPreviewItem]
+    public let items: [OpenClawSessionPreviewItem]
 }
 
-public struct RemoteClawSessionsPreviewPayload: Codable, Sendable {
+public struct OpenClawSessionsPreviewPayload: Codable, Sendable {
     public let ts: Int
-    public let previews: [RemoteClawSessionPreviewEntry]
+    public let previews: [OpenClawSessionPreviewEntry]
 
-    public init(ts: Int, previews: [RemoteClawSessionPreviewEntry]) {
+    public init(ts: Int, previews: [OpenClawSessionPreviewEntry]) {
         self.ts = ts
         self.previews = previews
     }
 }
 
-public struct RemoteClawChatSendResponse: Codable, Sendable {
+public struct OpenClawChatSendResponse: Codable, Sendable {
     public let runId: String
     public let status: String
 }
 
-public struct RemoteClawChatEventPayload: Codable, Sendable {
+public struct OpenClawChatCreateSessionResponse: Codable, Sendable {
+    public let ok: Bool?
+    public let key: String
+    public let sessionId: String?
+}
+
+public struct OpenClawChatEventPayload: Codable, Sendable {
     public let runId: String?
     public let sessionKey: String?
     public let state: String?
@@ -281,7 +324,26 @@ public struct RemoteClawChatEventPayload: Codable, Sendable {
     public let errorMessage: String?
 }
 
-public struct RemoteClawAgentEventPayload: Codable, Sendable, Identifiable {
+public struct OpenClawSessionMessageEventPayload: Codable, Sendable {
+    public let sessionKey: String?
+    public let message: OpenClawChatMessage?
+    public let messageId: String?
+    public let messageSeq: Int?
+
+    public init(
+        sessionKey: String?,
+        message: OpenClawChatMessage?,
+        messageId: String?,
+        messageSeq: Int?)
+    {
+        self.sessionKey = sessionKey
+        self.message = message
+        self.messageId = messageId
+        self.messageSeq = messageSeq
+    }
+}
+
+public struct OpenClawAgentEventPayload: Codable, Sendable, Identifiable {
     public var id: String {
         "\(self.runId)-\(self.seq ?? -1)"
     }
@@ -293,7 +355,7 @@ public struct RemoteClawAgentEventPayload: Codable, Sendable, Identifiable {
     public let data: [String: AnyCodable]
 }
 
-public struct RemoteClawChatPendingToolCall: Identifiable, Hashable, Sendable {
+public struct OpenClawChatPendingToolCall: Identifiable, Hashable, Sendable {
     public var id: String {
         self.toolCallId
     }
@@ -305,18 +367,18 @@ public struct RemoteClawChatPendingToolCall: Identifiable, Hashable, Sendable {
     public let isError: Bool?
 }
 
-public struct RemoteClawGatewayHealthOK: Codable, Sendable {
+public struct OpenClawGatewayHealthOK: Codable, Sendable {
     public let ok: Bool?
 }
 
-public struct RemoteClawPendingAttachment: Identifiable {
+public struct OpenClawPendingAttachment: Identifiable {
     public let id = UUID()
     public let url: URL?
     public let data: Data
     public let fileName: String
     public let mimeType: String
     public let type: String
-    public let preview: RemoteClawPlatformImage?
+    public let preview: OpenClawPlatformImage?
 
     public init(
         url: URL?,
@@ -324,7 +386,7 @@ public struct RemoteClawPendingAttachment: Identifiable {
         fileName: String,
         mimeType: String,
         type: String = "file",
-        preview: RemoteClawPlatformImage?)
+        preview: OpenClawPlatformImage?)
     {
         self.url = url
         self.data = data
@@ -335,7 +397,7 @@ public struct RemoteClawPendingAttachment: Identifiable {
     }
 }
 
-public struct RemoteClawChatAttachmentPayload: Codable, Sendable, Hashable {
+public struct OpenClawChatAttachmentPayload: Codable, Sendable, Hashable {
     public let type: String
     public let mimeType: String
     public let fileName: String

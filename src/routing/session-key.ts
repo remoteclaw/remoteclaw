@@ -1,5 +1,9 @@
 import type { ChatType } from "../channels/chat-type.js";
-import { isCronRunSessionKey, parseAgentSessionKey } from "../sessions/session-key-utils.js";
+import {
+  isCronRunSessionKey,
+  normalizeSessionPeerId,
+  parseAgentSessionKey,
+} from "../sessions/session-key-utils.js";
 import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
 import { normalizeAccountId } from "./account-id.js";
 
@@ -229,7 +233,16 @@ export function buildAgentPeerSessionKey(params: {
     });
   }
   const channel = normalizeLowercaseStringOrEmpty(params.channel) || "unknown";
-  const peerId = normalizeLowercaseStringOrEmpty(params.peerId) || "unknown";
+  // Channel/group peer IDs are opaque for some channels (Matrix room IDs,
+  // Signal group IDs) and are CASE-SENSITIVE: lowercasing them collapses two
+  // distinct rooms onto one session key, bleeding messages across them.
+  // normalizeSessionPeerId folds case only for peers that allow it.
+  const peerId =
+    normalizeSessionPeerId({
+      channel: params.channel,
+      peerKind,
+      peerId: params.peerId,
+    }) || "unknown";
   return `agent:${normalizeAgentId(params.agentId)}:${channel}:${peerKind}:${peerId}`;
 }
 

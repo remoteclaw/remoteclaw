@@ -7,6 +7,11 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import {
+  parseNonNegativeInt,
+  parsePositiveInt,
+  parsePositiveNumber,
+} from "./lib/numeric-options.mjs";
+import {
   buildGauntletPrebuildEnv,
   collectGatewayCpuObservations,
   collectMetricObservations,
@@ -38,8 +43,8 @@ function parseArgs(argv) {
       new Date().toISOString().replace(/[:.]/g, "-"),
     ),
     pluginIds: [],
-    shardTotal: readOptionalPositiveIntEnv("REMOTECLAW_PLUGIN_GATEWAY_GAUNTLET_TOTAL") ?? 1,
-    shardIndex: readOptionalNonNegativeIntEnv("REMOTECLAW_PLUGIN_GATEWAY_GAUNTLET_INDEX") ?? 0,
+    shardTotal: readOptionalPositiveIntEnv("OPENCLAW_PLUGIN_GATEWAY_GAUNTLET_TOTAL") ?? 1,
+    shardIndex: readOptionalNonNegativeIntEnv("OPENCLAW_PLUGIN_GATEWAY_GAUNTLET_INDEX") ?? 0,
     limit: undefined,
     skipPrebuild: false,
     skipLifecycle: false,
@@ -59,9 +64,9 @@ function parseArgs(argv) {
     buildTimeoutMs: 600_000,
     qaTimeoutMs: 900_000,
     allowEmpty: false,
-    keepRunRoot: process.env.REMOTECLAW_PLUGIN_GATEWAY_GAUNTLET_KEEP_RUN_ROOT === "1",
+    keepRunRoot: process.env.OPENCLAW_PLUGIN_GATEWAY_GAUNTLET_KEEP_RUN_ROOT === "1",
   };
-  const envIds = normalizeCsv(process.env.REMOTECLAW_PLUGIN_GATEWAY_GAUNTLET_IDS);
+  const envIds = normalizeCsv(process.env.OPENCLAW_PLUGIN_GATEWAY_GAUNTLET_IDS);
   options.pluginIds.push(...envIds);
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -219,30 +224,6 @@ function readOptionalNonNegativeIntEnv(name) {
   return raw ? parseNonNegativeInt(raw, name) : undefined;
 }
 
-function parsePositiveInt(raw, label) {
-  const value = Number(raw);
-  if (!Number.isInteger(value) || value < 1) {
-    throw new Error(`${label} must be a positive integer`);
-  }
-  return value;
-}
-
-function parseNonNegativeInt(raw, label) {
-  const value = Number(raw);
-  if (!Number.isInteger(value) || value < 0) {
-    throw new Error(`${label} must be a non-negative integer`);
-  }
-  return value;
-}
-
-function parsePositiveNumber(raw, label) {
-  const value = Number(raw);
-  if (!Number.isFinite(value) || value <= 0) {
-    throw new Error(`${label} must be a positive number`);
-  }
-  return value;
-}
-
 export function createGauntletPrebuildCommand(repoRoot) {
   return {
     command: process.execPath,
@@ -297,10 +278,10 @@ function createIsolatedEnv(repoRoot, runRoot) {
     XDG_CONFIG_HOME: path.join(home, ".config"),
     XDG_CACHE_HOME: path.join(home, ".cache"),
     XDG_DATA_HOME: path.join(home, ".local", "share"),
-    REMOTECLAW_STATE_DIR: stateDir,
-    REMOTECLAW_CONFIG_PATH: path.join(stateDir, "remoteclaw.json"),
-    REMOTECLAW_LOG_DIR: path.join(runRoot, "logs"),
-    REMOTECLAW_QA_SUITE_PROGRESS: process.env.REMOTECLAW_QA_SUITE_PROGRESS ?? "1",
+    OPENCLAW_STATE_DIR: stateDir,
+    OPENCLAW_CONFIG_PATH: path.join(stateDir, "openclaw.json"),
+    OPENCLAW_LOG_DIR: path.join(runRoot, "logs"),
+    OPENCLAW_QA_SUITE_PROGRESS: process.env.OPENCLAW_QA_SUITE_PROGRESS ?? "1",
     PATH: process.env.PATH,
     PWD: repoRoot,
   };
@@ -453,13 +434,18 @@ export function runMeasuredCommandLive(params) {
     let stderr = "";
     let stdoutBytes = 0;
     let stderrBytes = 0;
+    let stdoutRelayBytes = 0;
+    let stderrRelayBytes = 0;
     let stdoutTruncated = false;
     let stderrTruncated = false;
+    let stdoutRelayTruncated = false;
+    let stderrRelayTruncated = false;
     let spawnError = null;
     let timedOut = false;
     let settled = false;
     let forceKillTimeout = null;
     const maxBufferBytes = params.maxBufferBytes ?? COMMAND_OUTPUT_MAX_BUFFER_BYTES;
+    const maxRelayBytes = params.consoleOutputMaxBytes ?? maxBufferBytes;
     const timeoutKillGraceMs = params.timeoutKillGraceMs ?? 5_000;
     const spawnOptions = mode === "none" ? (params.spawnOptions ?? {}) : {};
     const useProcessGroup =
@@ -534,13 +520,47 @@ export function runMeasuredCommandLive(params) {
         appendTruncation();
       }
     };
-    const appendOutput = (streamName, chunk) => {
-      const text = chunk.toString("utf8");
-      if (streamName === "stdout") {
-        process.stdout.write(text);
-      } else {
-        process.stderr.write(text);
+    const relayOutput = (streamName, chunk) => {
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      const currentBytes = streamName === "stdout" ? stdoutRelayBytes : stderrRelayBytes;
+      const alreadyTruncated =
+        streamName === "stdout" ? stdoutRelayTruncated : stderrRelayTruncated;
+      if (alreadyTruncated) {
+        return;
       }
+      const write =
+        streamName === "stdout"
+          ? process.stdout.write.bind(process.stdout)
+          : process.stderr.write.bind(process.stderr);
+      const markTruncated = () => {
+        write(`\n[${streamName} relay truncated after ${maxRelayBytes} bytes]\n`);
+        if (streamName === "stdout") {
+          stdoutRelayTruncated = true;
+        } else {
+          stderrRelayTruncated = true;
+        }
+      };
+      const remainingBytes = maxRelayBytes - currentBytes;
+      if (remainingBytes <= 0) {
+        markTruncated();
+        return;
+      }
+      const relayedBuffer =
+        buffer.length > remainingBytes ? buffer.subarray(0, remainingBytes) : buffer;
+      if (relayedBuffer.length > 0) {
+        write(relayedBuffer.toString("utf8"));
+      }
+      if (streamName === "stdout") {
+        stdoutRelayBytes += relayedBuffer.length;
+      } else {
+        stderrRelayBytes += relayedBuffer.length;
+      }
+      if (buffer.length > remainingBytes) {
+        markTruncated();
+      }
+    };
+    const appendOutput = (streamName, chunk) => {
+      relayOutput(streamName, chunk);
       appendCapturedOutput(streamName, chunk);
     };
     child.stdout?.on("data", (chunk) => appendOutput("stdout", chunk));

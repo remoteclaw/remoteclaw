@@ -102,7 +102,7 @@ describe("probeGateway close drain", () => {
         auth: { token: "secret" },
         timeoutMs: 1_000,
         includeDetails: false,
-        env: { ...process.env, REMOTECLAW_STATE_DIR: await createTempStateDir() },
+        env: { ...process.env, OPENCLAW_STATE_DIR: await createTempStateDir() },
       });
 
       expect(result.ok).toBe(true);

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { normalizeConfigPath, normalizeConfigPaths } from "./helpers/vitest-config-paths.js";
 import { createAgentsCoreVitestConfig } from "./vitest/vitest.agents-core.config.ts";
-import { createAgentsPiEmbeddedVitestConfig } from "./vitest/vitest.agents-pi-embedded.config.ts";
+// Gutted in RemoteClaw fork — the embedded-agent runner (upstream
+// `pi-embedded-runner`, renamed `embedded-agent-runner` in v2026.5.28) is not
+// shipped, so it has no vitest project to assert.
 import { createAgentsSupportVitestConfig } from "./vitest/vitest.agents-support.config.ts";
 import { createAgentsToolsVitestConfig } from "./vitest/vitest.agents-tools.config.ts";
 import { createAgentsVitestConfig } from "./vitest/vitest.agents.config.ts";
@@ -32,7 +34,6 @@ describe("projects vitest config", () => {
     expect(createGatewayVitestConfig().test.pool).toBe("threads");
     expect(createAgentsVitestConfig().test.pool).toBe("threads");
     expect(createAgentsCoreVitestConfig().test.pool).toBe("threads");
-    expect(createAgentsPiEmbeddedVitestConfig().test.pool).toBe("threads");
     expect(createAgentsSupportVitestConfig().test.pool).toBe("threads");
     expect(createAgentsToolsVitestConfig().test.pool).toBe("threads");
     expect(createCommandsLightVitestConfig().test.pool).toBe("threads");

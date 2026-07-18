@@ -1,7 +1,7 @@
 ---
-summary: "How RemoteClaw validates update paths, package migrations, and plugin install/update behavior"
+summary: "How OpenClaw validates update paths, package migrations, and plugin install/update behavior"
 read_when:
-  - Changing RemoteClaw update, doctor, package acceptance, or plugin install behavior
+  - Changing OpenClaw update, doctor, package acceptance, or plugin install behavior
   - Preparing or approving a release candidate
   - Debugging package update, plugin dependency cleanup, or plugin install regressions
 title: "Testing: updates and plugins"
@@ -25,14 +25,14 @@ Update and plugin tests protect these contracts:
 - A user can move from an older published package to the candidate package
   without losing config, agents, sessions, workspaces, plugin allowlists, or
   channel config.
-- `remoteclaw doctor --fix --non-interactive` owns legacy cleanup and repair
+- `openclaw doctor --fix --non-interactive` owns legacy cleanup and repair
   paths. Startup should not grow hidden compatibility migrations for stale
   plugin state.
 - Plugin installs work from local directories, git repos, npm packages, and the
   ClawHub registry path.
-- Plugin npm dependencies are installed in the managed npm root, scanned before
-  trust, and removed through npm during uninstall so hoisted dependencies do not
-  linger.
+- Plugin npm dependencies are installed in one managed npm project per plugin,
+  scanned before trust, and removed through npm during uninstall so hoisted
+  dependencies do not linger.
 - Plugin update is stable when nothing changed: install records, resolved
   source, installed dependency layout, and enabled state stay intact.
 
@@ -90,24 +90,24 @@ Important lanes:
   moving-ref updates, npm registry installs with hoisted transitive
   dependencies, npm update no-ops, malformed npm package metadata rejection,
   local ClawHub fixture installs and update no-ops, marketplace update behavior,
-  and Claude-bundle enable/inspect. Set `REMOTECLAW_PLUGINS_E2E_CLAWHUB=0` to
+  and Claude-bundle enable/inspect. Set `OPENCLAW_PLUGINS_E2E_CLAWHUB=0` to
   keep the ClawHub block hermetic/offline.
 - `test:docker:plugin-lifecycle-matrix` installs the candidate package in a bare
   container, runs an npm plugin through install, inspect, disable, enable,
   explicit upgrade, explicit downgrade, and uninstall after deleting the plugin
   code. It logs RSS and CPU metrics for each phase.
 - `test:docker:plugin-update` validates that an unchanged installed plugin does
-  not reinstall or lose install metadata during `remoteclaw plugins update`.
+  not reinstall or lose install metadata during `openclaw plugins update`.
 - `test:docker:upgrade-survivor` installs the candidate tarball over a dirty
   old-user fixture, runs package update plus non-interactive doctor, then starts
   a loopback Gateway and checks state preservation.
 - `test:docker:published-upgrade-survivor` first installs a published baseline,
-  configures it through a baked `remoteclaw config set` recipe, updates it to the
+  configures it through a baked `openclaw config set` recipe, updates it to the
   candidate tarball, runs doctor, checks legacy cleanup, starts the Gateway, and
   probes `/healthz`, `/readyz`, and RPC status.
 - `test:docker:update-restart-auth` installs the candidate package, starts a
   managed token-auth Gateway, unsets caller gateway auth env for
-  `remoteclaw update --yes --json`, and requires the candidate update command to
+  `openclaw update --yes --json`, and requires the candidate update command to
   restart the Gateway before the normal probes.
 - `test:docker:update-migration` is the cleanup-heavy published-update lane. It
   starts from a configured Discord/Telegram-style user state, runs baseline
@@ -119,19 +119,19 @@ Important lanes:
 Useful published-upgrade survivor variants:
 
 ```bash
-REMOTECLAW_UPGRADE_SURVIVOR_BASELINE_SPEC=remoteclaw@2026.4.23 \
-REMOTECLAW_UPGRADE_SURVIVOR_SCENARIO=versioned-runtime-deps \
+OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPEC=openclaw@2026.4.23 \
+OPENCLAW_UPGRADE_SURVIVOR_SCENARIO=versioned-runtime-deps \
 pnpm test:docker:published-upgrade-survivor
 
-REMOTECLAW_UPGRADE_SURVIVOR_BASELINE_SPEC=remoteclaw@latest \
-REMOTECLAW_UPGRADE_SURVIVOR_SCENARIO=bootstrap-persona \
+OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPEC=remoteclaw@latest \
+OPENCLAW_UPGRADE_SURVIVOR_SCENARIO=bootstrap-persona \
 pnpm test:docker:published-upgrade-survivor
 ```
 
 Available scenarios are `base`, `feishu-channel`, `bootstrap-persona`,
 `plugin-deps-cleanup`, `configured-plugin-installs`,
 `stale-source-plugin-shadow`, `tilde-log-path`, and `versioned-runtime-deps`. In aggregate runs,
-`REMOTECLAW_UPGRADE_SURVIVOR_SCENARIOS=reported-issues` expands to all reported
+`OPENCLAW_UPGRADE_SURVIVOR_SCENARIOS=reported-issues` expands to all reported
 issue-shaped scenarios, including the configured-plugin install migration.
 
 Full update migration is intentionally separate from Full Release CI. Use the
@@ -170,12 +170,12 @@ Candidate sources:
   in `.github/package-trusted-sources.json`. Use this for enterprise/private
   mirrors instead of weakening `source=url` with an input-level allow-private
   switch. Bearer auth, when configured by policy, uses the fixed
-  `REMOTECLAW_TRUSTED_PACKAGE_TOKEN` secret.
+  `OPENCLAW_TRUSTED_PACKAGE_TOKEN` secret.
 - `source=artifact`: reuse a tarball uploaded by another Actions run.
 
 Full Release Validation uses `source=artifact` by default, built from the
 resolved release SHA. For post-publish proof, pass
-`package_acceptance_package_spec=remoteclaw@YYYY.M.D` so the same upgrade matrix
+`package_acceptance_package_spec=openclaw@YYYY.M.D` so the same upgrade matrix
 targets the shipped npm package instead.
 
 Release checks call Package Acceptance with the package/update/restart/plugin set:
@@ -197,7 +197,7 @@ tolerance, stale plugin dependency cleanup, offline plugin coverage, plugin
 update behavior, and Telegram package QA on the same resolved artifact without
 making the default release package gate walk every published release.
 
-`last-stable-4` resolves to the four latest stable npm-published RemoteClaw
+`last-stable-4` resolves to the four latest stable npm-published OpenClaw
 releases. Release package acceptance pins `2026.4.23` as the first plugin-update
 compatibility boundary, `2026.5.2` as a plugin-architecture churn boundary, and
 `2026.4.15` as an older 2026.4.1x published-update baseline; the resolver
@@ -276,9 +276,9 @@ can fail for the right reason:
 - Registry/package source behavior: `test:docker:plugins` fixture or ClawHub
   fixture server.
 - Dependency layout or cleanup behavior: assert both runtime execution and the
-  filesystem boundary. npm dependencies may be hoisted under the managed npm
-  root, so tests should prove the root is scanned/cleaned instead of assuming a
-  package-local `node_modules` tree.
+  filesystem boundary. npm dependencies may be hoisted inside the plugin's
+  managed npm project, so tests should prove that project is scanned/cleaned
+  instead of assuming only the plugin package-local `node_modules` tree.
 
 Keep new Docker fixtures hermetic by default. Use local fixture registries and
 fake packages unless the point of the test is live registry behavior.

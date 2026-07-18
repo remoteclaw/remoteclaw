@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # Shared in-container lifecycle helpers for Docker/Bash E2E lanes.
 remoteclaw_e2e_eval_test_state_from_b64() {
-  local encoded="${1:?missing RemoteClaw test-state script}"
+  local encoded="${1:?missing OpenClaw test-state script}"
   local decoded
   if ! decoded="$(printf '%s' "$encoded" | base64 -d)"; then
-    echo "Invalid RemoteClaw test-state base64 payload" >&2
+    echo "Invalid OpenClaw test-state base64 payload" >&2
     return 1
   fi
   if [ -z "${decoded//[[:space:]]/}" ]; then
-    echo "RemoteClaw test-state base64 payload decoded to an empty script" >&2
+    echo "OpenClaw test-state base64 payload decoded to an empty script" >&2
     return 1
   fi
   eval "$decoded"
@@ -18,7 +18,7 @@ remoteclaw_e2e_resolve_entrypoint() {
   for entry in dist/index.mjs dist/index.js; do
     [ -f "$entry" ] && { printf '%s\n' "$entry"; return 0; }
   done
-  echo "RemoteClaw entrypoint not found under dist/" >&2
+  echo "OpenClaw entrypoint not found under dist/" >&2
   return 1
 }
 remoteclaw_e2e_package_root() {
@@ -35,7 +35,7 @@ remoteclaw_e2e_package_entrypoint() {
   for entry in "$root/dist/index.mjs" "$root/dist/index.js"; do
     [ -f "$entry" ] && { printf '%s\n' "$entry"; return 0; }
   done
-  echo "RemoteClaw package entrypoint not found under $root/dist/" >&2
+  echo "OpenClaw package entrypoint not found under $root/dist/" >&2
   return 1
 }
 remoteclaw_e2e_maybe_timeout() {
@@ -53,7 +53,7 @@ remoteclaw_e2e_maybe_timeout() {
   fi
   if [ -z "$timeout_bin" ]; then
     if command -v node >/dev/null 2>&1; then
-      echo "timeout command not found; using Node watchdog for RemoteClaw E2E command timeout $timeout_value" >&2
+      echo "timeout command not found; using Node watchdog for OpenClaw E2E command timeout $timeout_value" >&2
       if [[ "$1" != */* ]]; then
         local resolved_command
         resolved_command="$(command -v "$1" 2>/dev/null || true)"
@@ -91,6 +91,17 @@ const child = spawn(command, args, {
   stdio: "inherit",
 });
 let timedOut = false;
+let parentSignal = null;
+let parentSignalTimer = null;
+const signalExitCodes = new Map([
+  ["SIGHUP", 129],
+  ["SIGINT", 130],
+  ["SIGTERM", 143],
+]);
+const killGraceMs = Number.parseInt(
+  process.env.OPENCLAW_E2E_TIMEOUT_KILL_GRACE_MS || "30000",
+  10,
+);
 const killTarget = process.platform === "win32" ? child.pid : -child.pid;
 const killChild = (signal) => {
   if (!child.pid) {
@@ -106,19 +117,36 @@ const killChild = (signal) => {
 };
 const timer = setTimeout(() => {
   timedOut = true;
-  console.error(`RemoteClaw E2E command timed out after ${timeoutValue}`);
+  console.error(`OpenClaw E2E command timed out after ${timeoutValue}`);
   killChild("SIGTERM");
-  setTimeout(() => killChild("SIGKILL"), 30_000).unref();
+  setTimeout(() => killChild("SIGKILL"), killGraceMs).unref();
 }, timeoutMs);
 const forwardSignal = (signal) => {
+  if (parentSignal) {
+    killChild("SIGKILL");
+    process.exit(signalExitCodes.get(signal) ?? 1);
+  }
+  parentSignal = signal;
+  clearTimeout(timer);
   killChild(signal);
+  parentSignalTimer = setTimeout(() => {
+    killChild("SIGKILL");
+    process.exit(signalExitCodes.get(signal) ?? 1);
+  }, killGraceMs);
+  parentSignalTimer.unref();
 };
 process.once("SIGINT", forwardSignal);
 process.once("SIGTERM", forwardSignal);
 child.on("close", (code, signal) => {
   clearTimeout(timer);
+  if (parentSignalTimer) {
+    clearTimeout(parentSignalTimer);
+  }
   if (timedOut) {
     process.exit(124);
+  }
+  if (parentSignal) {
+    process.exit(signalExitCodes.get(parentSignal) ?? 1);
   }
   if (code !== null) {
     process.exit(code);
@@ -136,7 +164,7 @@ child.on("error", (error) => {
 NODE
       return
     fi
-    echo "timeout command not found and Node is unavailable; cannot bound RemoteClaw E2E command after $timeout_value" >&2
+    echo "timeout command not found and Node is unavailable; cannot bound OpenClaw E2E command after $timeout_value" >&2
     return 127
   fi
   if "$timeout_bin" --kill-after=1s 1s true >/dev/null 2>&1; then
@@ -147,10 +175,10 @@ NODE
 }
 remoteclaw_e2e_install_package() {
   local log_file="$1"
-  local label="${2:-mounted RemoteClaw package}"
+  local label="${2:-mounted OpenClaw package}"
   local prefix="${3:-}"
-  local package_tgz="${REMOTECLAW_CURRENT_PACKAGE_TGZ:?missing REMOTECLAW_CURRENT_PACKAGE_TGZ}"
-  local timeout_value="${REMOTECLAW_E2E_NPM_INSTALL_TIMEOUT:-600s}"
+  local package_tgz="${OPENCLAW_CURRENT_PACKAGE_TGZ:?missing OPENCLAW_CURRENT_PACKAGE_TGZ}"
+  local timeout_value="${OPENCLAW_E2E_NPM_INSTALL_TIMEOUT:-600s}"
   local args=(-g)
   if [ -n "$prefix" ]; then
     args+=("--prefix" "$prefix")
@@ -220,11 +248,10 @@ remoteclaw_e2e_write_state_env() {
   local target="${1:-/tmp/remoteclaw-test-state-env}"
   {
     printf 'export HOME=%q\n' "$HOME"
-    printf 'export REMOTECLAW_HOME=%q\n' "$REMOTECLAW_HOME"
-    printf 'export REMOTECLAW_STATE_DIR=%q\n' "$REMOTECLAW_STATE_DIR"
-    printf 'export REMOTECLAW_CONFIG_PATH=%q\n' "$REMOTECLAW_CONFIG_PATH"
-    printf 'export REMOTECLAW_AGENT_DIR=%q\n' "${REMOTECLAW_AGENT_DIR-}"
-    printf 'export PI_CODING_AGENT_DIR=%q\n' "${PI_CODING_AGENT_DIR-}"
+    printf 'export OPENCLAW_HOME=%q\n' "$OPENCLAW_HOME"
+    printf 'export OPENCLAW_STATE_DIR=%q\n' "$OPENCLAW_STATE_DIR"
+    printf 'export OPENCLAW_CONFIG_PATH=%q\n' "$OPENCLAW_CONFIG_PATH"
+    printf 'export OPENCLAW_AGENT_DIR=%q\n' "${OPENCLAW_AGENT_DIR-}"
   } >"$target"
 }
 remoteclaw_e2e_install_trash_shim() {
@@ -248,7 +275,7 @@ TRASH
 remoteclaw_e2e_run_script_with_pty() {
   local command="$1"
   local log_path="$2"
-  local timeout_value="${REMOTECLAW_E2E_COMMAND_TIMEOUT:-300s}"
+  local timeout_value="${OPENCLAW_E2E_COMMAND_TIMEOUT:-300s}"
   if script --version >/dev/null 2>&1; then
     remoteclaw_e2e_maybe_timeout "$timeout_value" script -q -f -c "$command" "$log_path"
   elif node -e 'import("@lydell/node-pty")' >/dev/null 2>&1; then
@@ -366,24 +393,24 @@ remoteclaw_e2e_run_logged() {
   remoteclaw_e2e_run_command "$@" >"$log_path" 2>&1 || { cat "$log_path"; exit 1; }
 }
 remoteclaw_e2e_run_command() {
-  local timeout_value="${REMOTECLAW_E2E_COMMAND_TIMEOUT:-300s}"
+  local timeout_value="${OPENCLAW_E2E_COMMAND_TIMEOUT:-300s}"
   remoteclaw_e2e_maybe_timeout "$timeout_value" "$@"
 }
 remoteclaw_e2e_enable_remoteclaw_cli_timeout() {
-  REMOTECLAW_E2E_CLI_BIN="$(type -P remoteclaw)"
-  if [ -z "$REMOTECLAW_E2E_CLI_BIN" ]; then
-    echo "RemoteClaw CLI binary not found on PATH" >&2
+  OPENCLAW_E2E_CLI_BIN="$(type -P openclaw)"
+  if [ -z "$OPENCLAW_E2E_CLI_BIN" ]; then
+    echo "OpenClaw CLI binary not found on PATH" >&2
     return 1
   fi
-  export REMOTECLAW_E2E_CLI_BIN
-  remoteclaw() {
-    remoteclaw_e2e_run_command "$REMOTECLAW_E2E_CLI_BIN" "$@"
+  export OPENCLAW_E2E_CLI_BIN
+  openclaw() {
+    remoteclaw_e2e_run_command "$OPENCLAW_E2E_CLI_BIN" "$@"
   }
 }
 remoteclaw_e2e_dump_logs() {
   local path
   for path in "$@"; do
     [ -f "$path" ] || continue
-    echo "--- $path ---"; tail -n "${REMOTECLAW_E2E_LOG_TAIL_LINES:-120}" "$path" || true
+    echo "--- $path ---"; tail -n "${OPENCLAW_E2E_LOG_TAIL_LINES:-120}" "$path" || true
   done
 }

@@ -1,20 +1,11 @@
 import fs from "node:fs";
 import { resolveStorePath } from "../config/sessions/paths.js";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
+import { parseStrictNonNegativeInteger } from "../infra/parse-finite-number.js";
 import { getSubagentDepth, parseAgentSessionKey } from "../sessions/session-key-utils.js";
 import { parseJsonWithJson5Fallback } from "../utils/parse-json-compat.js";
 import { resolveDefaultAgentId } from "./agent-scope.js";
 import { normalizeSubagentSessionKey } from "./subagent-session-key.js";
-
-/**
- * Runtime attestation (ADR 0005 H9). Declares the implementation status
- * of each runtime export in this module. See CONTRIBUTING.md § Module
- * attestations for the category definitions and the convention for
- * updating these when sync or rebrand changes the surface.
- */
-export const MODULE_ATTESTATIONS = {
-  getSubagentDepthFromSessionStore: "live",
-} as const;
 
 type SessionDepthEntry = {
   sessionId?: unknown;
@@ -27,12 +18,7 @@ function normalizeSpawnDepth(value: unknown): number | undefined {
     return Number.isInteger(value) && value >= 0 ? value : undefined;
   }
   if (typeof value === "string") {
-    const trimmed = value.trim();
-    if (!trimmed) {
-      return undefined;
-    }
-    const numeric = Number(trimmed);
-    return Number.isInteger(numeric) && numeric >= 0 ? numeric : undefined;
+    return parseStrictNonNegativeInteger(value);
   }
   return undefined;
 }
@@ -123,6 +109,10 @@ function resolveEntryForSessionKey(params: {
 
   return undefined;
 }
+
+export const MODULE_ATTESTATIONS = {
+  getSubagentDepthFromSessionStore: "live",
+} as const;
 
 export function getSubagentDepthFromSessionStore(
   sessionKey: string | undefined | null,

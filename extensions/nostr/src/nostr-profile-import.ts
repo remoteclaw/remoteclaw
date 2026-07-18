@@ -122,33 +122,31 @@ export async function importProfileFromRelays(
       for (const relay of relays) {
         relaysQueried.push(relay);
 
-        const sub = pool.subscribeMany(
-          [relay],
-          [
-            {
-              kinds: [0],
-              authors: [pubkey],
-              limit: 1,
-            },
-          ] as unknown as Parameters<typeof pool.subscribeMany>[1],
-          {
-            onevent(event) {
-              events.push({ event, relay });
-            },
-            oneose() {
-              completed++;
-              if (completed >= relays.length) {
-                resolve();
-              }
-            },
-            onclose() {
-              completed++;
-              if (completed >= relays.length) {
-                resolve();
-              }
-            },
+        // subscribeMany takes ONE filter object, not an array of them — the
+        // array form only type-checked behind an `as unknown as` cast.
+        const profileFilter = {
+          kinds: [0],
+          authors: [pubkey],
+          limit: 1,
+        } satisfies Parameters<typeof pool.subscribeMany>[1];
+
+        const sub = pool.subscribeMany([relay], profileFilter, {
+          onevent(event) {
+            events.push({ event, relay });
           },
-        );
+          oneose() {
+            completed++;
+            if (completed >= relays.length) {
+              resolve();
+            }
+          },
+          onclose() {
+            completed++;
+            if (completed >= relays.length) {
+              resolve();
+            }
+          },
+        });
 
         // Clean up subscription after timeout
         setTimeout(() => {

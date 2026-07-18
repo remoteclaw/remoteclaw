@@ -94,7 +94,7 @@ function runVitestSpec(spec) {
 }
 
 function applyDefaultParallelVitestWorkerBudget(specs, env) {
-  if (env.REMOTECLAW_VITEST_MAX_WORKERS || env.REMOTECLAW_TEST_WORKERS || isCiLikeEnv(env)) {
+  if (env.OPENCLAW_VITEST_MAX_WORKERS || env.OPENCLAW_TEST_WORKERS || isCiLikeEnv(env)) {
     return specs;
   }
   const { vitestMaxWorkers } = resolveLocalFullSuiteProfile(env);
@@ -102,7 +102,7 @@ function applyDefaultParallelVitestWorkerBudget(specs, env) {
     ...spec,
     env: {
       ...spec.env,
-      REMOTECLAW_VITEST_MAX_WORKERS: String(vitestMaxWorkers),
+      OPENCLAW_VITEST_MAX_WORKERS: String(vitestMaxWorkers),
     },
   }));
 }
@@ -258,13 +258,18 @@ async function main() {
     changedTargetArgs === null &&
     !runSpecs.some((spec) => spec.watchMode);
   const isExplicitParallelMultiConfigRun =
-    Boolean(baseEnv.REMOTECLAW_TEST_PROJECTS_PARALLEL) &&
+    Boolean(baseEnv.OPENCLAW_TEST_PROJECTS_PARALLEL) &&
     runSpecs.length > 1 &&
     !runSpecs.some((spec) => spec.watchMode);
   const isParallelShardRun =
     isFullSuiteRun || isFullExtensionsProjectRun(runSpecs) || isExplicitParallelMultiConfigRun;
   if (isParallelShardRun) {
     const concurrency = resolveParallelFullSuiteConcurrency(runSpecs.length, baseEnv);
+    if (!isCiLikeEnv(baseEnv) && runSpecs.length > 1) {
+      console.warn(
+        `[test] warning: broad local run will start ${runSpecs.length} Vitest shards; use \`pnpm test:changed\` for routine checks.`,
+      );
+    }
     if (concurrency > 1) {
       const localFullSuiteProfile = resolveLocalFullSuiteProfile(baseEnv);
       const shardTimings = readShardTimings(process.cwd(), baseEnv);
@@ -277,9 +282,9 @@ async function main() {
       );
       if (
         !isCiLikeEnv(baseEnv) &&
-        !baseEnv.REMOTECLAW_TEST_PROJECTS_PARALLEL &&
-        !baseEnv.REMOTECLAW_VITEST_MAX_WORKERS &&
-        !baseEnv.REMOTECLAW_TEST_WORKERS &&
+        !baseEnv.OPENCLAW_TEST_PROJECTS_PARALLEL &&
+        !baseEnv.OPENCLAW_VITEST_MAX_WORKERS &&
+        !baseEnv.OPENCLAW_TEST_WORKERS &&
         localFullSuiteProfile.shardParallelism === 10 &&
         localFullSuiteProfile.vitestMaxWorkers === 2
       ) {

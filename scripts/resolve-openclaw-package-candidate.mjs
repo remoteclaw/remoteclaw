@@ -19,14 +19,16 @@ const DEFAULT_OUTPUT_NAME = "remoteclaw-current.tgz";
 const PACKAGE_URL_DOWNLOAD_TIMEOUT_MS = 60_000;
 const PACKAGE_URL_MAX_BYTES = 250 * 1024 * 1024;
 const PACKAGE_URL_MAX_REDIRECTS = 5;
+const COMMAND_STDOUT_CAPTURE_MAX_CHARS = 8 * 1024 * 1024;
+const COMMAND_STDERR_CAPTURE_MAX_CHARS = 128 * 1024;
 const TRUSTED_PACKAGE_SOURCE_POLICY = ".github/package-trusted-sources.json";
-const TRUSTED_PACKAGE_SOURCE_TOKEN_ENV = "REMOTECLAW_TRUSTED_PACKAGE_TOKEN";
+const TRUSTED_PACKAGE_SOURCE_TOKEN_ENV = "OPENCLAW_TRUSTED_PACKAGE_TOKEN";
 const BLOCKED_PACKAGE_HOSTNAMES = new Set([
   "localhost",
   "localhost.localdomain",
   "metadata.google.internal",
 ]);
-export const REMOTECLAW_PACKAGE_SPEC_RE =
+export const OPENCLAW_PACKAGE_SPEC_RE =
   /^remoteclaw@(alpha|beta|latest|[0-9]{4}\.[1-9][0-9]*\.[1-9][0-9]*(-[1-9][0-9]*|-(alpha|beta)\.[1-9][0-9]*)?)$/u;
 
 function usage() {
@@ -103,16 +105,16 @@ export function parseArgs(argv) {
   return options;
 }
 
-export function validateRemoteClawPackageSpec(spec) {
-  if (!REMOTECLAW_PACKAGE_SPEC_RE.test(spec)) {
+export function validateOpenClawPackageSpec(spec) {
+  if (!OPENCLAW_PACKAGE_SPEC_RE.test(spec)) {
     throw new Error(
-      `package_spec must be remoteclaw@alpha, remoteclaw@beta, remoteclaw@latest, or an exact RemoteClaw release version; got: ${spec}`,
+      `package_spec must be remoteclaw@alpha, remoteclaw@beta, remoteclaw@latest, or an exact OpenClaw release version; got: ${spec}`,
     );
   }
 }
 
 export function resolveNpmPackageCandidatePackRunner(packageSpec, outputDir, params = {}) {
-  validateRemoteClawPackageSpec(packageSpec);
+  validateOpenClawPackageSpec(packageSpec);
   return resolveNpmRunner({
     comSpec: params.comSpec,
     env: params.env,
@@ -138,23 +140,25 @@ function run(command, args, options = {}) {
       ...spawnOptions,
     });
     let timedOut = false;
+    let killTimer;
     const timeout =
       options.timeoutMs === undefined
         ? undefined
         : setTimeout(() => {
             timedOut = true;
             child.kill("SIGTERM");
-            setTimeout(() => child.kill("SIGKILL"), 5_000).unref?.();
+            killTimer = setTimeout(() => child.kill("SIGKILL"), 5_000);
+            killTimer.unref?.();
           }, options.timeoutMs);
     timeout?.unref?.();
-    let stdout = "";
-    let stderr = "";
+    let stdout = { text: "", truncatedChars: 0 };
+    let stderr = { text: "", truncatedChars: 0 };
     if (options.capture) {
       child.stdout.on("data", (chunk) => {
-        stdout += String(chunk);
+        stdout = appendBoundedCommandOutput(stdout, chunk, COMMAND_STDOUT_CAPTURE_MAX_CHARS);
       });
       child.stderr.on("data", (chunk) => {
-        stderr += String(chunk);
+        stderr = appendBoundedCommandOutput(stderr, chunk, COMMAND_STDERR_CAPTURE_MAX_CHARS);
       });
     }
     child.on("error", reject);
@@ -162,19 +166,49 @@ function run(command, args, options = {}) {
       if (timeout) {
         clearTimeout(timeout);
       }
+      if (killTimer) {
+        clearTimeout(killTimer);
+      }
       if (timedOut) {
         reject(new Error(`${command} ${args.join(" ")} timed out after ${options.timeoutMs}ms`));
         return;
       }
       if (status === 0) {
-        resolve(stdout);
+        if (stdout.truncatedChars > 0) {
+          reject(
+            new Error(
+              `${command} ${args.join(" ")} produced more than ${COMMAND_STDOUT_CAPTURE_MAX_CHARS} captured stdout chars`,
+            ),
+          );
+          return;
+        }
+        resolve(stdout.text);
         return;
       }
-      const detail = stderr.trim() ? `\n${stderr.trim()}` : "";
+      const stderrText = formatCapturedCommandOutput(stderr).trim();
+      const detail = stderrText ? `\n${stderrText}` : "";
       reject(new Error(`${command} ${args.join(" ")} failed with ${status ?? signal}${detail}`));
     });
   });
 }
+
+function appendBoundedCommandOutput(buffer, chunk, maxChars) {
+  const nextText = buffer.text + String(chunk);
+  if (nextText.length <= maxChars) {
+    return { text: nextText, truncatedChars: buffer.truncatedChars };
+  }
+  const truncatedChars = buffer.truncatedChars + nextText.length - maxChars;
+  return { text: nextText.slice(-maxChars), truncatedChars };
+}
+
+function formatCapturedCommandOutput(buffer) {
+  if (buffer.truncatedChars === 0) {
+    return buffer.text;
+  }
+  return `[output truncated ${buffer.truncatedChars} chars; showing tail]\n${buffer.text}`;
+}
+
+export const runCommandForTest = run;
 
 async function walkFiles(dir) {
   const entries = await fs.readdir(dir, { withFileTypes: true });
@@ -320,7 +354,7 @@ async function resolveTrustedRepoRef(ref) {
   }
 
   throw new Error(
-    `package_ref ${ref} resolved to ${selectedSha}, which is not reachable from an RemoteClaw branch or release tag`,
+    `package_ref ${ref} resolved to ${selectedSha}, which is not reachable from an OpenClaw branch or release tag`,
   );
 }
 
@@ -373,7 +407,7 @@ async function moveNewestPackedTarball(outputDir, packOutput, outputName) {
       .at(-1);
   }
   if (!filename) {
-    throw new Error(`npm pack produced no RemoteClaw tarball in ${outputDir}`);
+    throw new Error(`npm pack produced no OpenClaw tarball in ${outputDir}`);
   }
   const packed = path.join(outputDir, filename);
   const target = path.join(outputDir, outputName);
@@ -1097,13 +1131,13 @@ async function resolveCandidate(options) {
 
   const artifactSha256 = typeof artifactMetadata.sha256 === "string" ? artifactMetadata.sha256 : "";
   const digest = await assertExpectedSha256(target, options.packageSha256 || artifactSha256);
-  console.error(`Checking RemoteClaw package tarball: ${target}`);
+  console.error(`Checking OpenClaw package tarball: ${target}`);
   const checkStartedAt = Date.now();
   await run("node", ["scripts/check-remoteclaw-package-tarball.mjs", target], {
     timeoutMs: 5 * 60 * 1000,
   });
   console.error(
-    `RemoteClaw package tarball check finished in ${Math.round((Date.now() - checkStartedAt) / 1000)}s`,
+    `OpenClaw package tarball check finished in ${Math.round((Date.now() - checkStartedAt) / 1000)}s`,
   );
   const pkg = await readPackageJson(target);
   if (!packageSourceSha) {
@@ -1125,10 +1159,8 @@ async function resolveCandidate(options) {
     version: pkg.version,
   };
 
-  if (pkg.name !== "remoteclaw") {
-    throw new Error(
-      `package candidate must be named "remoteclaw"; got: ${pkg.name || "<missing>"}`,
-    );
+  if (pkg.name !== "openclaw") {
+    throw new Error(`package candidate must be named "openclaw"; got: ${pkg.name || "<missing>"}`);
   }
   if (!pkg.version) {
     throw new Error("package candidate package.json has no version");

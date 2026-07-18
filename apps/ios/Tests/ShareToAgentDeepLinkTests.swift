@@ -1,5 +1,5 @@
-import RemoteClawKit
 import Foundation
+import RemoteClawKit
 import Testing
 
 @Suite struct ShareToAgentDeepLinkTests {
@@ -28,7 +28,7 @@ import Testing
         let url = ShareToAgentDeepLink.buildURL(from: payload)
         let parsed = url.flatMap { DeepLinkParser.parse($0) }
         guard case let .agent(agent)? = parsed else {
-            Issue.record("Expected remoteclaw://agent deep link")
+            Issue.record("Expected openclaw://agent deep link")
             return
         }
 
@@ -37,12 +37,14 @@ import Testing
     }
 
     @Test func buildURLReturnsNilWhenPayloadEmpty() {
+        ShareToAgentSettings.saveDefaultInstruction(nil)
         let payload = SharedContentPayload(title: nil, url: nil, text: nil)
         #expect(ShareToAgentDeepLink.buildURL(from: payload) == nil)
     }
 
     @Test func shareInstructionSettingsRoundTrip() {
         let value = "Focus on booking constraints and alternatives."
+        ShareToAgentSettings.saveDefaultInstruction(nil)
         ShareToAgentSettings.saveDefaultInstruction(value)
         defer { ShareToAgentSettings.saveDefaultInstruction(nil) }
 

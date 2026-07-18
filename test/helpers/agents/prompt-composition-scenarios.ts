@@ -7,10 +7,10 @@ import {
   buildBootstrapPromptWarning,
 } from "../../../src/agents/bootstrap-budget.js";
 import { resolveBootstrapContextForRun } from "../../../src/agents/bootstrap-files.js";
-import { buildCurrentInboundPrompt } from "../../../src/agents/pi-embedded-runner/run/runtime-context-prompt.js";
-import { buildEmbeddedSystemPrompt } from "../../../src/agents/pi-embedded-runner/system-prompt.js";
+import { buildCurrentInboundPrompt } from "../../../src/agents/embedded-agent-runner/run/runtime-context-prompt.js";
+import { buildEmbeddedSystemPrompt } from "../../../src/agents/embedded-agent-runner/system-prompt.js";
 import { buildAgentSystemPrompt } from "../../../src/agents/system-prompt.js";
-import { createStubTool } from "../../../src/agents/test-helpers/pi-tool-stubs.js";
+import { createStubTool } from "../../../src/agents/test-helpers/agent-tool-stubs.js";
 import {
   buildDirectChatContext,
   buildGroupChatContext,
@@ -197,7 +197,7 @@ function buildToolRichSystemPrompt(params: {
     "web_search",
     "x_search",
     "web_fetch",
-  ].map((name) => ({ ...createStubTool(name), description: `${name} tool` }));
+  ].map((name) => Object.assign({}, createStubTool(name), { description: `${name} tool` }));
   return buildEmbeddedSystemPrompt({
     workspaceDir: params.workspaceDir,
     reasoningTagHint: false,
@@ -497,7 +497,7 @@ async function createToolRichScenario(workspaceDir: string): Promise<PromptScena
   const skillsPrompt = [
     "<available_skills>",
     "<skill><name>checks</name><description>Run checks before landing changes.</description><location>/skills/checks/SKILL.md</location></skill>",
-    "<skill><name>release</name><description>Release RemoteClaw safely.</description><location>/skills/release/SKILL.md</location></skill>",
+    "<skill><name>release</name><description>Release OpenClaw safely.</description><location>/skills/release/SKILL.md</location></skill>",
     "</available_skills>",
   ].join("\n");
   const contextFiles = await readContextFiles(workspaceDir, ["AGENTS.md", "TOOLS.md", "SOUL.md"]);

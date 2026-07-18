@@ -3,6 +3,7 @@ import { createScopedVitestConfig } from "./vitest.scoped-config.ts";
 export function createGatewayClientVitestConfig(env?: Record<string, string | undefined>) {
   return createScopedVitestConfig(
     [
+      "packages/gateway-client/src/**/*.test.ts",
       "src/gateway/protocol/**/*.test.ts",
       "src/gateway/**/*client*.test.ts",
       "src/gateway/**/*reconnect*.test.ts",
@@ -10,7 +11,6 @@ export function createGatewayClientVitestConfig(env?: Record<string, string | un
       "src/gateway/**/*gateway-cli-backend*.test.ts",
     ],
     {
-      dir: "src/gateway",
       env,
       exclude: ["src/gateway/**/*server*.test.ts"],
       name: "gateway-client",

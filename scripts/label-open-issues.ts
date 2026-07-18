@@ -21,9 +21,10 @@ const PAGE_SIZE = 50;
 const WORK_BATCH_SIZE = 500;
 const STATE_VERSION = 1;
 const DEFAULT_OPENAI_TIMEOUT_MS = 60_000;
+const OPENAI_ERROR_BODY_MAX_CHARS = 4096;
 const STATE_FILE_NAME = "issue-labeler-state.json";
 const CONFIG_BASE_DIR = process.env.XDG_CONFIG_HOME ?? join(homedir(), ".config");
-const STATE_FILE_PATH = join(CONFIG_BASE_DIR, "remoteclaw", STATE_FILE_NAME);
+const STATE_FILE_PATH = join(CONFIG_BASE_DIR, "openclaw", STATE_FILE_NAME);
 
 const ISSUE_QUERY = `
   query($owner: String!, $name: String!, $after: String, $pageSize: Int!) {
@@ -250,10 +251,10 @@ function isMainModule() {
   return entry ? import.meta.url === pathToFileURL(entry).href : false;
 }
 
-function resolveOpenAITimeoutMs(raw = process.env.REMOTECLAW_LABEL_OPEN_ISSUES_OPENAI_TIMEOUT_MS) {
+function resolveOpenAITimeoutMs(raw = process.env.OPENCLAW_LABEL_OPEN_ISSUES_OPENAI_TIMEOUT_MS) {
   return parseStrictIntegerOption({
     fallback: DEFAULT_OPENAI_TIMEOUT_MS,
-    label: "REMOTECLAW_LABEL_OPEN_ISSUES_OPENAI_TIMEOUT_MS",
+    label: "OPENCLAW_LABEL_OPEN_ISSUES_OPENAI_TIMEOUT_MS",
     min: 1,
     raw,
   });
@@ -280,6 +281,45 @@ async function withOpenAITimeout<T>(
       clearTimeout(timeout);
     }
   }
+}
+
+async function readBoundedResponseText(
+  response: Response,
+  maxChars = OPENAI_ERROR_BODY_MAX_CHARS,
+): Promise<string> {
+  if (!response.body) {
+    return "";
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let text = "";
+  let truncated = false;
+
+  try {
+    while (text.length <= maxChars) {
+      const { done, value } = await reader.read();
+      if (done) {
+        text += decoder.decode();
+        break;
+      }
+
+      text += decoder.decode(value, { stream: true });
+      if (text.length > maxChars) {
+        text = text.slice(0, maxChars);
+        truncated = true;
+        break;
+      }
+    }
+  } finally {
+    if (truncated) {
+      await reader.cancel().catch(() => undefined);
+    } else {
+      reader.releaseLock();
+    }
+  }
+
+  return truncated ? `${text}\n[truncated]` : text;
 }
 
 function logHeader(title: string) {
@@ -666,7 +706,7 @@ async function classifyItem(
             {
               role: "system",
               content:
-                "You classify GitHub issues and pull requests for RemoteClaw. Respond with JSON only, no extra text.",
+                "You classify GitHub issues and pull requests for OpenClaw. Respond with JSON only, no extra text.",
             },
             {
               role: "user",
@@ -685,7 +725,7 @@ async function classifyItem(
       });
 
       if (!response.ok) {
-        const text = await response.text();
+        const text = await readBoundedResponseText(response);
         throw new Error(`OpenAI request failed (${response.status}): ${text}`);
       }
 
@@ -728,9 +768,7 @@ function applyLabels(
   execFileSync(
     "gh",
     [ghTarget, "edit", String(item.number), "--add-label", labelsToAdd.join(",")],
-    {
-      stdio: "inherit",
-    },
+    { stdio: "inherit" },
   );
   return true;
 }
@@ -751,7 +789,7 @@ async function main() {
   }
   const openAITimeoutMs = resolveOpenAITimeoutMs();
 
-  logHeader("RemoteClaw Issue Label Audit");
+  logHeader("OpenClaw Issue Label Audit");
   logStep(`Mode: ${dryRun ? "dry-run" : "apply labels"}`);
   logStep(`Model: ${model}`);
   logStep(`OpenAI timeout: ${openAITimeoutMs}ms`);
@@ -955,6 +993,7 @@ async function main() {
 export const testing = {
   classifyItem,
   normalizeClassification,
+  readBoundedResponseText,
   resolveOpenAITimeoutMs,
 };
 

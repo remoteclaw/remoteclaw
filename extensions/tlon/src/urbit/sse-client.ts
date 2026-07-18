@@ -32,6 +32,17 @@ function parseUrbitSsePayload(data: string): { id?: number; json?: unknown; resp
   }
 }
 
+// `parseInt` reads "12abc" as 12, so a malformed id would ack an event the
+// server never sent. Require a clean unsigned integer inside the safe range.
+function parseUrbitSseEventId(value: string): number | null {
+  const trimmed = value.trim();
+  if (!/^\d+$/.test(trimmed)) {
+    return null;
+  }
+  const parsed = Number(trimmed);
+  return Number.isSafeInteger(parsed) ? parsed : null;
+}
+
 export class UrbitSSEClient {
   url: string;
   cookie: string;
@@ -258,7 +269,7 @@ export class UrbitSSEClient {
 
     for (const line of lines) {
       if (line.startsWith("id: ")) {
-        eventId = Number.parseInt(line.slice(4), 10);
+        eventId = parseUrbitSseEventId(line.slice(4));
       }
       if (line.startsWith("data: ")) {
         data = line.slice(6);

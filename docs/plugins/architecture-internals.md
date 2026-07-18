@@ -14,7 +14,7 @@ Gateway HTTP routes, import paths, and schema tables.
 
 ## Load pipeline
 
-At startup, RemoteClaw does roughly this:
+At startup, OpenClaw does roughly this:
 
 1. discover candidate plugin roots
 2. read native or compatible bundle manifests and package metadata
@@ -42,7 +42,7 @@ as stale.
 
 ### Manifest-first behavior
 
-The manifest is the control-plane source of truth. RemoteClaw uses it to:
+The manifest is the control-plane source of truth. OpenClaw uses it to:
 
 - identify the plugin
 - discover declared channels/skills/config schema or bundle capabilities
@@ -71,7 +71,7 @@ to narrow plugin loading before broader registry materialization:
 
 Request-time runtime preloads that ask for the broad `all` scope still derive an
 explicit effective plugin id set from config, startup planning, configured
-channels, slots, and auto-enable rules. If that derived set is empty, RemoteClaw
+channels, slots, and auto-enable rules. If that derived set is empty, OpenClaw
 loads an empty runtime registry instead of widening to every discoverable
 plugin.
 
@@ -98,7 +98,7 @@ backends registered by setup-api without blocking legacy plugins.
 
 ### Plugin cache boundary
 
-RemoteClaw does not cache plugin discovery results or direct manifest registry
+OpenClaw does not cache plugin discovery results or direct manifest registry
 data behind wall-clock windows. Installs, manifest edits, and load-path changes
 must become visible on the next explicit metadata read or snapshot rebuild.
 The manifest file parser may keep a bounded file-signature cache keyed by the
@@ -225,7 +225,7 @@ Provider plugins have three layers:
   stream wrapping, thinking levels, replay policy, and usage endpoints. See
   the full list under [Hook order and usage](#hook-order-and-usage).
 
-RemoteClaw still owns the generic agent loop, failover, transcript handling, and
+OpenClaw still owns the generic agent loop, failover, transcript handling, and
 tool policy. These hooks are the extension surface for provider-specific
 behavior without needing a whole custom inference transport.
 
@@ -248,9 +248,9 @@ without loading channel runtime.
 
 ### Hook order and usage
 
-For model/provider plugins, RemoteClaw calls hooks in this rough order.
+For model/provider plugins, OpenClaw calls hooks in this rough order.
 The "When to use" column is the quick decision guide.
-Compatibility-only provider fields that RemoteClaw no longer calls, such as
+Compatibility-only provider fields that OpenClaw no longer calls, such as
 `ProviderPlugin.capabilities` and `suppressBuiltInModel`, are intentionally not
 listed here.
 
@@ -258,29 +258,28 @@ listed here.
 | --- | --------------------------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1   | `catalog`                         | Publish provider config into `models.providers` during `models.json` generation                                | Provider owns a catalog or base URL defaults                                                                                                  |
 | 2   | `applyConfigDefaults`             | Apply provider-owned global config defaults during config materialization                                      | Defaults depend on auth mode, env, or provider model-family semantics                                                                         |
-| --  | _(built-in model lookup)_         | RemoteClaw tries the normal registry/catalog path first                                                        | _(not a plugin hook)_                                                                                                                         |
+| --  | _(built-in model lookup)_         | OpenClaw tries the normal registry/catalog path first                                                          | _(not a plugin hook)_                                                                                                                         |
 | 3   | `normalizeModelId`                | Normalize legacy or preview model-id aliases before lookup                                                     | Provider owns alias cleanup before canonical model resolution                                                                                 |
 | 4   | `normalizeTransport`              | Normalize provider-family `api` / `baseUrl` before generic model assembly                                      | Provider owns transport cleanup for custom provider ids in the same transport family                                                          |
 | 5   | `normalizeConfig`                 | Normalize `models.providers.<id>` before runtime/provider resolution                                           | Provider needs config cleanup that should live with the plugin; bundled Google-family helpers also backstop supported Google config entries   |
 | 6   | `applyNativeStreamingUsageCompat` | Apply native streaming-usage compat rewrites to config providers                                               | Provider needs endpoint-driven native streaming usage metadata fixes                                                                          |
-| 7   | `resolveConfigApiKey`             | Resolve env-marker auth for config providers before runtime auth loading                                       | Provider has provider-owned env-marker API-key resolution; `amazon-bedrock` also has a built-in AWS env-marker resolver here                  |
+| 7   | `resolveConfigApiKey`             | Resolve env-marker auth for config providers before runtime auth loading                                       | Providers expose their own env-marker API-key resolution hooks                                                                                |
 | 8   | `resolveSyntheticAuth`            | Surface local/self-hosted or config-backed auth without persisting plaintext                                   | Provider can operate with a synthetic/local credential marker                                                                                 |
 | 9   | `resolveExternalAuthProfiles`     | Overlay provider-owned external auth profiles; default `persistence` is `runtime-only` for CLI/app-owned creds | Provider reuses external auth credentials without persisting copied refresh tokens; declare `contracts.externalAuthProviders` in the manifest |
 | 10  | `shouldDeferSyntheticProfileAuth` | Lower stored synthetic profile placeholders behind env/config-backed auth                                      | Provider stores synthetic placeholder profiles that should not win precedence                                                                 |
 | 11  | `resolveDynamicModel`             | Sync fallback for provider-owned model ids not in the local registry yet                                       | Provider accepts arbitrary upstream model ids                                                                                                 |
 | 12  | `prepareDynamicModel`             | Async warm-up, then `resolveDynamicModel` runs again                                                           | Provider needs network metadata before resolving unknown ids                                                                                  |
 | 13  | `normalizeResolvedModel`          | Final rewrite before the embedded runner uses the resolved model                                               | Provider needs transport rewrites but still uses a core transport                                                                             |
-| 14  | `contributeResolvedModelCompat`   | Contribute compat flags for vendor models behind another compatible transport                                  | Provider recognizes its own models on proxy transports without taking over the provider                                                       |
-| 15  | `normalizeToolSchemas`            | Normalize tool schemas before the embedded runner sees them                                                    | Provider needs transport-family schema cleanup                                                                                                |
-| 16  | `inspectToolSchemas`              | Surface provider-owned schema diagnostics after normalization                                                  | Provider wants keyword warnings without teaching core provider-specific rules                                                                 |
-| 17  | `resolveReasoningOutputMode`      | Select native vs tagged reasoning-output contract                                                              | Provider needs tagged reasoning/final output instead of native fields                                                                         |
-| 18  | `prepareExtraParams`              | Request-param normalization before generic stream option wrappers                                              | Provider needs default request params or per-provider param cleanup                                                                           |
-| 19  | `createStreamFn`                  | Fully replace the normal stream path with a custom transport                                                   | Provider needs a custom wire protocol, not just a wrapper                                                                                     |
+| 14  | `normalizeToolSchemas`            | Normalize tool schemas before the embedded runner sees them                                                    | Provider needs transport-family schema cleanup                                                                                                |
+| 15  | `inspectToolSchemas`              | Surface provider-owned schema diagnostics after normalization                                                  | Provider wants keyword warnings without teaching core provider-specific rules                                                                 |
+| 16  | `resolveReasoningOutputMode`      | Select native vs tagged reasoning-output contract                                                              | Provider needs tagged reasoning/final output instead of native fields                                                                         |
+| 17  | `prepareExtraParams`              | Request-param normalization before generic stream option wrappers                                              | Provider needs default request params or per-provider param cleanup                                                                           |
+| 18  | `createStreamFn`                  | Fully replace the normal stream path with a custom transport                                                   | Provider needs a custom wire protocol, not just a wrapper                                                                                     |
 | 20  | `wrapStreamFn`                    | Stream wrapper after generic wrappers are applied                                                              | Provider needs request headers/body/model compat wrappers without a custom transport                                                          |
 | 21  | `resolveTransportTurnState`       | Attach native per-turn transport headers or metadata                                                           | Provider wants generic transports to send provider-native turn identity                                                                       |
 | 22  | `resolveWebSocketSessionPolicy`   | Attach native WebSocket headers or session cool-down policy                                                    | Provider wants generic WS transports to tune session headers or fallback policy                                                               |
 | 23  | `formatApiKey`                    | Auth-profile formatter: stored profile becomes the runtime `apiKey` string                                     | Provider stores extra auth metadata and needs a custom runtime token shape                                                                    |
-| 24  | `refreshOAuth`                    | OAuth refresh override for custom refresh endpoints or refresh-failure policy                                  | Provider does not fit the shared `pi-ai` refreshers                                                                                           |
+| 24  | `refreshOAuth`                    | OAuth refresh override for custom refresh endpoints or refresh-failure policy                                  | Provider does not fit the shared OpenClaw refreshers                                                                                          |
 | 25  | `buildAuthDoctorHint`             | Repair hint appended when OAuth refresh fails                                                                  | Provider needs provider-owned auth repair guidance after refresh failure                                                                      |
 | 26  | `matchesContextOverflowError`     | Provider-owned context-window overflow matcher                                                                 | Provider has raw overflow errors generic heuristics would miss                                                                                |
 | 27  | `classifyFailoverReason`          | Provider-owned failover reason classification                                                                  | Provider can map raw API/transport errors to rate-limit/overload/etc                                                                          |
@@ -311,7 +310,7 @@ that compatibility cleanup.
 
 If the provider needs a fully custom wire protocol or custom request executor,
 that is a different class of extension. These hooks are for provider behavior
-that still runs on RemoteClaw's normal inference loop.
+that still runs on OpenClaw's normal inference loop.
 
 ### Provider example
 
@@ -378,7 +377,7 @@ mirroring the list.
   <Accordion title="Pass-through catalog providers">
     OpenRouter, Kilocode, Z.AI, xAI register `catalog` plus
     `resolveDynamicModel` / `prepareDynamicModel` so they can surface upstream
-    model ids ahead of RemoteClaw's static catalog.
+    model ids ahead of OpenClaw's static catalog.
   </Accordion>
   <Accordion title="OAuth and usage endpoint providers">
     GitHub Copilot, Gemini CLI, ChatGPT Codex, MiniMax, Xiaomi, z.ai pair
@@ -411,12 +410,12 @@ Plugins can access selected core helpers via `api.runtime`. For TTS:
 
 ```ts
 const clip = await api.runtime.tts.textToSpeech({
-  text: "Hello from RemoteClaw",
+  text: "Hello from OpenClaw",
   cfg: api.config,
 });
 
 const result = await api.runtime.tts.textToSpeechTelephony({
-  text: "Hello from RemoteClaw",
+  text: "Hello from OpenClaw",
   cfg: api.config,
 });
 
@@ -459,7 +458,7 @@ Notes:
 - Use speech providers for vendor-owned synthesis behavior.
 - Legacy Microsoft `edge` input is normalized to the `microsoft` provider id.
 - The preferred ownership model is company-oriented: one vendor plugin can own
-  text, speech, image, and future media providers as RemoteClaw adds those
+  text, speech, image, and future media providers as OpenClaw adds those
   capability contracts.
 
 For image/audio/video understanding, plugins register one typed
@@ -544,7 +543,7 @@ Notes:
 - `extractStructuredWithModel(...)` is the plugin-facing seam for bounded
   provider-owned image-first extraction. Include at least one image input;
   text inputs are supplemental context.
-  product plugins own their routes and schemas while RemoteClaw owns the
+  product plugins own their routes and schemas while OpenClaw owns the
   provider/runtime boundary.
 - Uses core media-understanding audio configuration (`tools.media.audio`) and provider fallback order.
 - Returns `{ text: undefined }` when no transcription output is produced (for example skipped/unsupported input).
@@ -565,7 +564,7 @@ const result = await api.runtime.subagent.run({
 Notes:
 
 - `provider` and `model` are optional per-run overrides, not persistent session changes.
-- RemoteClaw only honors those override fields for trusted callers.
+- OpenClaw only honors those override fields for trusted callers.
 - For plugin-owned fallback runs, operators must opt in with `plugins.entries.<id>.subagent.allowModelOverride: true`.
 - Use `plugins.entries.<id>.subagent.allowedModels` to restrict trusted plugins to specific canonical `provider/model` targets, or `"*"` to allow any target explicitly.
 - Untrusted plugin subagent runs still work, but override requests are rejected instead of silently falling back.
@@ -582,7 +581,7 @@ const providers = api.runtime.webSearch.listProviders({
 const result = await api.runtime.webSearch.search({
   config: api.config,
   args: {
-    query: "RemoteClaw plugin runtime helpers",
+    query: "OpenClaw plugin runtime helpers",
     count: 5,
   },
 });
@@ -653,15 +652,15 @@ Notes:
 
 ## Plugin SDK import paths
 
-Use narrow SDK subpaths instead of the monolithic `remoteclaw/plugin-sdk` root
+Use narrow SDK subpaths instead of the monolithic `openclaw/plugin-sdk` root
 barrel when authoring new plugins. Core subpaths:
 
-| Subpath                               | Purpose                                                |
-| ------------------------------------- | ------------------------------------------------------ |
-| `remoteclaw/plugin-sdk/plugin-entry`  | Plugin registration primitives                         |
-| `remoteclaw/plugin-sdk/channel-core`  | Channel entry/build helpers                            |
-| `remoteclaw/plugin-sdk/core`          | Generic shared helpers and umbrella contract           |
-| `remoteclaw/plugin-sdk/config-schema` | Root `remoteclaw.json` Zod schema (`RemoteClawSchema`) |
+| Subpath                               | Purpose                                              |
+| ------------------------------------- | ---------------------------------------------------- |
+| `openclaw/plugin-sdk/plugin-entry`    | Plugin registration primitives                       |
+| `openclaw/plugin-sdk/channel-core`    | Channel entry/build helpers                          |
+| `remoteclaw/plugin-sdk/core`          | Generic shared helpers and umbrella contract         |
+| `remoteclaw/plugin-sdk/config-schema` | Root `openclaw.json` Zod schema (`RemoteClawSchema`) |
 
 Channel plugins pick from a family of narrow seams — `channel-setup`,
 `setup-runtime`, `setup-tools`, `channel-pairing`,
@@ -679,10 +678,10 @@ Runtime and config helpers live under matching focused `*-runtime` subpaths
 instead of the broad `config-runtime` compatibility barrel.
 
 <Info>
-`remoteclaw/plugin-sdk/channel-runtime`, `remoteclaw/plugin-sdk/channel-lifecycle`,
-small channel helper facades, `remoteclaw/plugin-sdk/outbound-runtime`,
-`remoteclaw/plugin-sdk/outbound-send-deps`, `remoteclaw/plugin-sdk/config-runtime`,
-and `remoteclaw/plugin-sdk/infra-runtime` are deprecated compatibility shims for
+`openclaw/plugin-sdk/channel-runtime`, `openclaw/plugin-sdk/channel-lifecycle`,
+small channel helper facades, `openclaw/plugin-sdk/outbound-runtime`,
+`openclaw/plugin-sdk/outbound-send-deps`, `openclaw/plugin-sdk/config-runtime`,
+and `openclaw/plugin-sdk/infra-runtime` are deprecated compatibility shims for
 older plugins. New code should import narrower generic primitives instead.
 </Info>
 
@@ -693,7 +692,7 @@ Repo-internal entry points (per bundled plugin package root):
 - `runtime-api.js` — runtime-only barrel
 - `setup-entry.js` — setup plugin entry
 
-External plugins should only import `remoteclaw/plugin-sdk/*` subpaths. Never
+External plugins should only import `openclaw/plugin-sdk/*` subpaths. Never
 import another plugin package's `src/*` from core or from another plugin.
 Facade-loaded entry points prefer the active runtime config snapshot when one
 exists, then fall back to the resolved config file on disk.
@@ -752,7 +751,7 @@ Recommended split:
 
 Plugins that derive directory entries from config should keep that logic in the
 plugin and reuse the shared helpers from
-`remoteclaw/plugin-sdk/directory-runtime`.
+`openclaw/plugin-sdk/directory-runtime`.
 
 Use this when a channel needs config-backed peers/groups such as:
 
@@ -775,7 +774,7 @@ plugin implementation.
 Provider plugins can define model catalogs for inference with
 `registerProvider({ catalog: { run(...) { ... } } })`.
 
-`catalog.run(...)` returns the same shape RemoteClaw writes into
+`catalog.run(...)` returns the same shape OpenClaw writes into
 `models.providers`:
 
 - `{ provider }` for one provider entry
@@ -784,7 +783,7 @@ Provider plugins can define model catalogs for inference with
 Use `catalog` when the plugin owns provider-specific model ids, base URL
 defaults, or auth-gated model metadata.
 
-`catalog.order` controls when a plugin's catalog merges relative to RemoteClaw's
+`catalog.order` controls when a plugin's catalog merges relative to OpenClaw's
 built-in implicit providers:
 
 - `simple`: plain API-key or env-driven providers
@@ -807,7 +806,7 @@ catalog rows automatically from `defaultModel`, `models`, and `capabilities`.
 Compatibility:
 
 - `discovery` still works as a legacy alias, but emits a deprecation warning
-- if both `catalog` and `discovery` are registered, RemoteClaw uses `catalog`
+- if both `catalog` and `discovery` are registered, OpenClaw uses `catalog`
 - `augmentModelCatalog` is deprecated; bundled providers should publish
   supplemental rows through `registerModelCatalogProvider`
 
@@ -820,8 +819,8 @@ Why:
 
 - `resolveAccount(...)` is the runtime path. It is allowed to assume credentials
   are fully materialized and can fail fast when required secrets are missing.
-- Read-only command paths such as `remoteclaw status`, `remoteclaw status --all`,
-  `remoteclaw channels status`, `remoteclaw channels resolve`, and doctor/config
+- Read-only command paths such as `openclaw status`, `openclaw status --all`,
+  `openclaw channels status`, `openclaw channels resolve`, and doctor/config
   repair flows should not need to materialize runtime credentials just to
   describe configuration.
 
@@ -850,7 +849,7 @@ A plugin directory may include a `package.json` with `remoteclaw.extensions`:
 ```json
 {
   "name": "my-pack",
-  "remoteclaw": {
+  "openclaw": {
     "extensions": ["./src/safety.ts", "./src/tools.ts"],
     "setupEntry": "./src/setup-entry.ts"
   }
@@ -867,20 +866,20 @@ Security guardrail: every `remoteclaw.extensions` entry must stay inside the plu
 directory after symlink resolution. Entries that escape the package directory are
 rejected.
 
-Security note: `remoteclaw plugins install` installs plugin dependencies with a
+Security note: `openclaw plugins install` installs plugin dependencies with a
 project-local `npm install --omit=dev --ignore-scripts` (no lifecycle scripts,
 no dev dependencies at runtime), ignoring inherited global npm install settings.
 Keep plugin dependency trees "pure JS/TS" and avoid packages that require
 `postinstall` builds.
 
 Optional: `remoteclaw.setupEntry` can point at a lightweight setup-only module.
-When RemoteClaw needs setup surfaces for a disabled channel plugin, or
+When OpenClaw needs setup surfaces for a disabled channel plugin, or
 when a channel plugin is enabled but still unconfigured, it loads `setupEntry`
 instead of the full plugin entry. This keeps startup and setup lighter
 when your main plugin entry also wires tools, hooks, or other runtime-only
 code.
 
-Optional: `remoteclaw.startup.deferConfiguredChannelFullLoadUntilAfterListen`
+Optional: `openclaw.startup.deferConfiguredChannelFullLoadUntilAfterListen`
 can opt a channel plugin into the same `setupEntry` path during the gateway's
 pre-listen startup phase, even when the channel is already configured.
 
@@ -893,7 +892,7 @@ must register every channel-owned capability that startup depends on, such as:
 - any gateway methods, tools, or services that must exist during that same window
 
 If your full entry still owns any required startup capability, do not enable
-this flag. Keep the plugin on the default behavior and let RemoteClaw load the
+this flag. Keep the plugin on the default behavior and let OpenClaw load the
 full entry during startup.
 
 Bundled channels can also publish setup-only contract-surface helpers that core
@@ -925,7 +924,7 @@ Example:
 ```json
 {
   "name": "@scope/my-channel",
-  "remoteclaw": {
+  "openclaw": {
     "extensions": ["./index.ts"],
     "setupEntry": "./setup-entry.ts",
     "startup": {
@@ -937,7 +936,7 @@ Example:
 
 ### Channel catalog metadata
 
-Channel plugins can advertise setup/discovery metadata via `remoteclaw.channel` and
+Channel plugins can advertise setup/discovery metadata via `openclaw.channel` and
 install hints via `remoteclaw.install`. This keeps the core catalog data-free.
 
 Example:
@@ -945,7 +944,7 @@ Example:
 ```json
 {
   "name": "@remoteclaw/nextcloud-talk",
-  "remoteclaw": {
+  "openclaw": {
     "extensions": ["./index.ts"],
     "channel": {
       "id": "nextcloud-talk",
@@ -966,7 +965,7 @@ Example:
 }
 ```
 
-Useful `remoteclaw.channel` fields beyond the minimal example:
+Useful `openclaw.channel` fields beyond the minimal example:
 
 - `detailLabel`: secondary label for richer catalog/status surfaces
 - `docsLabel`: override link text for the docs link
@@ -981,16 +980,16 @@ Useful `remoteclaw.channel` fields beyond the minimal example:
 - `forceAccountBinding`: require explicit account binding even when only one account exists
 - `preferSessionLookupForAnnounceTarget`: prefer session lookup when resolving announce targets
 
-RemoteClaw can also merge **external channel catalogs** (for example, an MPM
+OpenClaw can also merge **external channel catalogs** (for example, an MPM
 registry export). Drop a JSON file at one of:
 
-- `~/.remoteclaw/mpm/plugins.json`
-- `~/.remoteclaw/mpm/catalog.json`
-- `~/.remoteclaw/plugins/catalog.json`
+- `~/.openclaw/mpm/plugins.json`
+- `~/.openclaw/mpm/catalog.json`
+- `~/.openclaw/plugins/catalog.json`
 
-Or point `REMOTECLAW_PLUGIN_CATALOG_PATHS` (or `REMOTECLAW_MPM_CATALOG_PATHS`) at
+Or point `OPENCLAW_PLUGIN_CATALOG_PATHS` (or `OPENCLAW_MPM_CATALOG_PATHS`) at
 one or more JSON files (comma/semicolon/`PATH`-delimited). Each file should
-contain `{ "entries": [ { "name": "@scope/pkg", "remoteclaw": { "channel": {...}, "install": {...} } } ] }`. The parser also accepts `"packages"` or `"plugins"` as legacy aliases for the `"entries"` key.
+contain `{ "entries": [ { "name": "@scope/pkg", "openclaw": { "channel": {...}, "install": {...} } } ] }`. The parser also accepts `"packages"` or `"plugins"` as legacy aliases for the `"entries"` key.
 
 Generated channel catalog entries and provider install catalog entries expose
 normalized install-source facts next to the raw `remoteclaw.install` block. The
@@ -1126,7 +1125,7 @@ Recommended sequence:
 5. add contract coverage
    Add tests so ownership and registration shape stay explicit over time.
 
-This is how RemoteClaw stays opinionated without becoming hardcoded to one
+This is how OpenClaw stays opinionated without becoming hardcoded to one
 provider's worldview. See the [Capability Cookbook](/tools/capability-cookbook)
 for a concrete file checklist and worked example.
 

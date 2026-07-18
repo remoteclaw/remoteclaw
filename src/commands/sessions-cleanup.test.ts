@@ -74,7 +74,7 @@ describe("sessionsCleanupCommand", () => {
     vi.clearAllMocks();
     mocks.loadConfig.mockReturnValue({ session: { store: "/cfg/sessions.json" } });
     mocks.resolveSessionStoreTargets.mockReturnValue([
-      { agentId: "test-agent", storePath: "/resolved/sessions.json" },
+      { agentId: "main", storePath: "/resolved/sessions.json" },
     ]);
     mocks.resolveSessionStoreTargetsOrExit.mockImplementation(
       (params: { cfg: unknown; opts: unknown; runtime: RuntimeEnv }) => {
@@ -469,8 +469,8 @@ describe("sessionsCleanupCommand", () => {
             wouldMutate: true,
           },
           beforeStore: {
-            stale: { sessionId: "stale", updatedAt: 1, model: "pi:opus" },
-            fresh: { sessionId: "fresh", updatedAt: 2, model: "pi:opus" },
+            stale: { sessionId: "stale", updatedAt: 1, model: "test:opus" },
+            fresh: { sessionId: "fresh", updatedAt: 2, model: "test:opus" },
           },
           missingKeys: new Set<string>(),
           staleKeys: new Set(["stale"]),
@@ -504,7 +504,7 @@ describe("sessionsCleanupCommand", () => {
 
   it("returns grouped JSON for --all-agents dry-runs", async () => {
     mocks.resolveSessionStoreTargets.mockReturnValue([
-      { agentId: "test-agent", storePath: "/resolved/test-agent-sessions.json" },
+      { agentId: "main", storePath: "/resolved/main-sessions.json" },
       { agentId: "work", storePath: "/resolved/work-sessions.json" },
     ]);
     mocks.enforceSessionDiskBudget.mockResolvedValue(null);

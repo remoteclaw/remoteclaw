@@ -14,6 +14,22 @@ public protocol WebSocketTasking: AnyObject {
 
 extension URLSessionWebSocketTask: WebSocketTasking {}
 
+private final class WebSocketPingContinuationGate: @unchecked Sendable {
+    private let lock = NSLock()
+    private var didResume = false
+
+    func resumeOnce(_ resume: () -> Void) {
+        self.lock.lock()
+        if self.didResume {
+            self.lock.unlock()
+            return
+        }
+        self.didResume = true
+        self.lock.unlock()
+        resume()
+    }
+}
+
 public struct WebSocketTaskBox: @unchecked Sendable {
     public let task: any WebSocketTasking
     public init(task: any WebSocketTasking) {
@@ -48,8 +64,13 @@ public struct WebSocketTaskBox: @unchecked Sendable {
 
     public func sendPing() async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            let gate = WebSocketPingContinuationGate()
             self.task.sendPing { error in
-                ThrowingContinuationSupport.resumeVoid(continuation, error: error)
+                // URLSession can race ping callbacks with cancellation; only the first
+                // pong result owns this checked continuation or Swift traps the app.
+                gate.resumeOnce {
+                    ThrowingContinuationSupport.resumeVoid(continuation, error: error)
+                }
             }
         }
     }
@@ -193,7 +214,7 @@ private enum GatewayConnectErrorCodes {
 }
 
 public actor GatewayChannelActor {
-    private let logger = Logger(subsystem: "org.remoteclaw", category: "gateway")
+    private let logger = Logger(subsystem: "ai.openclaw", category: "gateway")
     private var task: WebSocketTaskBox?
     private var pending: [String: CheckedContinuation<GatewayFrame, Error>] = [:]
     private var connected = false
@@ -214,7 +235,7 @@ public actor GatewayChannelActor {
     private let encoder = JSONEncoder()
     // Remote gateways (tailscale/wan) can take longer to deliver connect.challenge.
     // Connect now requires this nonce before we send device-auth.
-    private let connectTimeoutSeconds: Double = 12
+    private let connectTimeoutSeconds: Double = 30
     private let connectChallengeTimeoutSeconds: Double = 6.0
     // Some networks will silently drop idle TCP/TLS flows around ~30s. The gateway tick is server->client,
     // but NATs/proxies often require outbound traffic to keep the connection alive.
@@ -678,16 +699,37 @@ public actor GatewayChannelActor {
         role: String) async throws
     {
         if res.ok == false {
-            let msg = (res.error?["message"]?.value as? String) ?? "gateway connect failed"
-            let details = res.error?["details"]?.value as? [String: ProtoAnyCodable]
-            let detailCode = details?["code"]?.value as? String
-            let canRetryWithDeviceToken = details?["canRetryWithDeviceToken"]?.value as? Bool ?? false
-            let recommendedNextStep = details?["recommendedNextStep"]?.value as? String
+            let error = res.error
+            let msg = error?.message ?? "gateway connect failed"
+            let details = gatewayErrorDetails(error)
+            let detailCode = details["code"]?.value as? String
+            let canRetryWithDeviceToken = details["canRetryWithDeviceToken"]?.value as? Bool ?? false
+            let recommendedNextStep = details["recommendedNextStep"]?.value as? String
+            let requestId = details["requestId"]?.value as? String
+            let reason = details["reason"]?.value as? String
+            let owner = details["owner"]?.value as? String
+            let title = details["title"]?.value as? String
+            let userMessage = details["userMessage"]?.value as? String
+            let actionLabel = details["actionLabel"]?.value as? String
+            let actionCommand = details["actionCommand"]?.value as? String
+            let docsURLString = details["docsUrl"]?.value as? String
+            let retryableOverride = details["retryable"]?.value as? Bool
+            let pauseReconnectOverride = details["pauseReconnect"]?.value as? Bool
             throw GatewayConnectAuthError(
                 message: msg,
                 detailCodeRaw: detailCode,
                 canRetryWithDeviceToken: canRetryWithDeviceToken,
-                recommendedNextStepRaw: recommendedNextStep)
+                recommendedNextStepRaw: recommendedNextStep,
+                requestId: requestId,
+                detailsReason: reason,
+                ownerRaw: owner,
+                titleOverride: title,
+                userMessageOverride: userMessage,
+                actionLabel: actionLabel,
+                actionCommand: actionCommand,
+                docsURLString: docsURLString,
+                retryableOverride: retryableOverride,
+                pauseReconnectOverride: pauseReconnectOverride)
         }
         guard let payload = res.payload else {
             throw NSError(
@@ -948,9 +990,6 @@ public actor GatewayChannelActor {
     }
 
     private func isTrustedDeviceRetryEndpoint() -> Bool {
-        // This client currently treats loopback as the only trusted retry target.
-        // Unlike the Node gateway client, it does not yet expose a pinned TLS-fingerprint
-        // trust path for remote retry, so remote fallback remains disabled by default.
         guard let host = self.url.host?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
               !host.isEmpty
         else {
@@ -958,6 +997,11 @@ public actor GatewayChannelActor {
         }
         if host == "localhost" || host == "::1" || host == "127.0.0.1" || host.hasPrefix("127.") {
             return true
+        }
+        if self.url.scheme?.lowercased() == "wss",
+           let trust = self.session as? GatewayDeviceTokenRetryTrustProviding
+        {
+            return trust.allowsDeviceTokenRetryAuth
         }
         return false
     }

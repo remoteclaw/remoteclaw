@@ -8,27 +8,45 @@ import { pathToFileURL } from "node:url";
 
 const repoRoot = process.cwd();
 const tmpDir = process.env.TMPDIR || process.env.TEMP || process.env.TMP || os.tmpdir();
-const MAX_RSS_MARKER = "__REMOTECLAW_MAX_RSS_KB__=";
+const MAX_RSS_MARKER = "__OPENCLAW_MAX_RSS_KB__=";
 const DEFAULT_COMMAND_TIMEOUT_MS = 60_000;
 const COMMAND_TIMEOUT_MS = readPositiveIntEnv(
-  "REMOTECLAW_STARTUP_MEMORY_TIMEOUT_MS",
+  "OPENCLAW_STARTUP_MEMORY_TIMEOUT_MS",
   DEFAULT_COMMAND_TIMEOUT_MS,
 );
 let tmpHome = null;
 let rssHookPath = null;
 
-function readPositiveIntEnv(name, fallback) {
-  const value = Number(process.env[name] ?? "");
-  return Number.isInteger(value) && value > 0 ? value : fallback;
+function readPositiveIntEnv(name, fallback, env = process.env) {
+  const value = readPositiveNumberEnv(name, fallback, env);
+  return Number.isInteger(value) ? value : fallback;
+}
+
+function readPositiveNumberEnv(name, fallback, env = process.env) {
+  const raw = env[name];
+  if (raw === undefined || raw === "") {
+    return fallback;
+  }
+  const text = raw.trim();
+  if (!/^(?:\d+(?:\.\d+)?|\.\d+)$/u.test(text)) {
+    return fallback;
+  }
+  const value = Number(text);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+function readNonEmptyEnv(name) {
+  const value = process.env[name];
+  return value === undefined || value.length === 0 ? null : value;
 }
 
 function parseArgs(argv) {
   const options = {
     jsonPath:
-      process.env.REMOTECLAW_STARTUP_MEMORY_JSON_PATH ||
+      readNonEmptyEnv("OPENCLAW_STARTUP_MEMORY_JSON_PATH") ??
       path.join(repoRoot, ".artifacts", "startup-memory", "startup-memory.json"),
     summaryPath:
-      process.env.REMOTECLAW_STARTUP_MEMORY_SUMMARY_PATH ||
+      readNonEmptyEnv("OPENCLAW_STARTUP_MEMORY_SUMMARY_PATH") ??
       path.join(repoRoot, ".artifacts", "startup-memory", "summary.md"),
   };
   for (let index = 0; index < argv.length; index += 1) {
@@ -79,23 +97,25 @@ const cases = [
   {
     id: "help",
     label: "--help",
-    args: ["remoteclaw.mjs", "--help"],
-    limitMb: Number(process.env.REMOTECLAW_STARTUP_MEMORY_HELP_MB ?? DEFAULT_LIMITS_MB.help),
+    args: ["openclaw.mjs", "--help"],
+    limitMb: readPositiveNumberEnv("OPENCLAW_STARTUP_MEMORY_HELP_MB", DEFAULT_LIMITS_MB.help),
   },
   {
     id: "statusJson",
     label: "status --json",
-    args: ["remoteclaw.mjs", "status", "--json"],
-    limitMb: Number(
-      process.env.REMOTECLAW_STARTUP_MEMORY_STATUS_JSON_MB ?? DEFAULT_LIMITS_MB.statusJson,
+    args: ["openclaw.mjs", "status", "--json"],
+    limitMb: readPositiveNumberEnv(
+      "OPENCLAW_STARTUP_MEMORY_STATUS_JSON_MB",
+      DEFAULT_LIMITS_MB.statusJson,
     ),
   },
   {
     id: "gatewayStatus",
     label: "gateway status",
-    args: ["remoteclaw.mjs", "gateway", "status"],
-    limitMb: Number(
-      process.env.REMOTECLAW_STARTUP_MEMORY_GATEWAY_STATUS_MB ?? DEFAULT_LIMITS_MB.gatewayStatus,
+    args: ["openclaw.mjs", "gateway", "status"],
+    limitMb: readPositiveNumberEnv(
+      "OPENCLAW_STARTUP_MEMORY_GATEWAY_STATUS_MB",
+      DEFAULT_LIMITS_MB.gatewayStatus,
     ),
   },
 ];
@@ -111,7 +131,7 @@ function formatFixGuidance(testCase, details) {
     "2. If this is an RSS overage, compare the startup import graph against the last passing commit and look for newly eager imports, bootstrap side effects, or plugin loading on the command path.",
     "3. If this is a non-zero exit, inspect the first transitive import/config error in stderr and fix that root cause before re-checking memory.",
     "LLM prompt:",
-    `"RemoteClaw startup-memory CI failed for '${testCase.label}'. Analyze this failure, identify the first runtime/import side effect that makes startup heavier or broken, and propose the smallest safe patch. Failure output:\n${details}"`,
+    `"OpenClaw startup-memory CI failed for '${testCase.label}'. Analyze this failure, identify the first runtime/import side effect that makes startup heavier or broken, and propose the smallest safe patch. Failure output:\n${details}"`,
   ];
   return `${guidance.join("\n")}\n`;
 }
@@ -176,7 +196,7 @@ function buildBenchEnv() {
   }
   // Keep the benchmark on a single process so RSS reflects the actual command
   // path rather than the warning-suppression respawn wrapper.
-  env.REMOTECLAW_NO_RESPAWN = "1";
+  env.OPENCLAW_NO_RESPAWN = "1";
 
   return env;
 }
@@ -269,7 +289,7 @@ function writeReport(options, results) {
     results: results.map(({ failureMessage: _failureMessage, ...result }) => result),
   };
   const lines = [
-    "# RemoteClaw Startup Memory",
+    "# OpenClaw Startup Memory",
     "",
     `Generated: ${report.generatedAt}`,
     "",
@@ -341,6 +361,8 @@ function runStartupMemoryCheck(argv = process.argv.slice(2), params = {}) {
 export const testing = {
   cases,
   parseArgs,
+  readPositiveIntEnv,
+  readPositiveNumberEnv,
   resolveDefaultLimitsMb,
   runCase,
   runStartupMemoryCheck,

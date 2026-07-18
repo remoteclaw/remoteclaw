@@ -1,10 +1,10 @@
 import { spawn } from "node:child_process";
 // Live prompt probe for Anthropic setup-token and Claude CLI prompt-path debugging.
 // Usage:
-// REMOTECLAW_PROMPT_TRANSPORT=direct|gateway
-// REMOTECLAW_PROMPT_MODE=extra|override
-// REMOTECLAW_PROMPT_TEXT='...'
-// REMOTECLAW_PROMPT_CAPTURE=1
+// OPENCLAW_PROMPT_TRANSPORT=direct|gateway
+// OPENCLAW_PROMPT_MODE=extra
+// OPENCLAW_PROMPT_TEXT='...'
+// OPENCLAW_PROMPT_CAPTURE=1
 // pnpm probe:anthropic:prompt
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
@@ -26,40 +26,38 @@ import {
   redactForDevToolLog,
 } from "./lib/dev-tooling-safety.ts";
 
-const TRANSPORT =
-  process.env.REMOTECLAW_PROMPT_TRANSPORT?.trim() === "direct" ? "direct" : "gateway";
-const GATEWAY_PROMPT_MODE =
-  process.env.REMOTECLAW_PROMPT_MODE?.trim() === "override" ? "override" : "extra";
-const PROMPT_TEXT = process.env.REMOTECLAW_PROMPT_TEXT?.trim() ?? "";
-const PROMPT_LIST_JSON = process.env.REMOTECLAW_PROMPT_LIST_JSON?.trim() ?? "";
-const USER_PROMPT = process.env.REMOTECLAW_USER_PROMPT?.trim() || "is clawd here?";
+const TRANSPORT = process.env.OPENCLAW_PROMPT_TRANSPORT?.trim() === "direct" ? "direct" : "gateway";
+const GATEWAY_PROMPT_MODE = "extra";
+const PROMPT_TEXT = process.env.OPENCLAW_PROMPT_TEXT?.trim() ?? "";
+const PROMPT_LIST_JSON = process.env.OPENCLAW_PROMPT_LIST_JSON?.trim() ?? "";
+const USER_PROMPT = process.env.OPENCLAW_USER_PROMPT?.trim() || "is clawd here?";
 const ENABLE_CAPTURE = parseBooleanEnv({
   fallback: false,
-  name: "REMOTECLAW_PROMPT_CAPTURE",
-  raw: process.env.REMOTECLAW_PROMPT_CAPTURE,
+  name: "OPENCLAW_PROMPT_CAPTURE",
+  raw: process.env.OPENCLAW_PROMPT_CAPTURE,
 });
 const INCLUDE_RAW = parseBooleanEnv({
   fallback: false,
-  name: "REMOTECLAW_PROMPT_INCLUDE_RAW",
-  raw: process.env.REMOTECLAW_PROMPT_INCLUDE_RAW,
+  name: "OPENCLAW_PROMPT_INCLUDE_RAW",
+  raw: process.env.OPENCLAW_PROMPT_INCLUDE_RAW,
 });
 const CLAUDE_BIN = process.env.CLAUDE_BIN?.trim() || "claude";
-const NODE_BIN = process.env.REMOTECLAW_NODE_BIN?.trim() || process.execPath;
+const NODE_BIN = process.env.OPENCLAW_NODE_BIN?.trim() || process.execPath;
 const TIMEOUT_MS = parseStrictIntegerOption({
   fallback: 45_000,
-  label: "REMOTECLAW_PROMPT_TIMEOUT_MS",
+  label: "OPENCLAW_PROMPT_TIMEOUT_MS",
   min: 1,
-  raw: process.env.REMOTECLAW_PROMPT_TIMEOUT_MS,
+  raw: process.env.OPENCLAW_PROMPT_TIMEOUT_MS,
 });
 const GATEWAY_TIMEOUT_MS = parseStrictIntegerOption({
   fallback: 120_000,
-  label: "REMOTECLAW_PROMPT_GATEWAY_TIMEOUT_MS",
+  label: "OPENCLAW_PROMPT_GATEWAY_TIMEOUT_MS",
   min: 1,
-  raw: process.env.REMOTECLAW_PROMPT_GATEWAY_TIMEOUT_MS,
+  raw: process.env.OPENCLAW_PROMPT_GATEWAY_TIMEOUT_MS,
 });
-const SETUP_TOKEN_RAW = process.env.REMOTECLAW_LIVE_SETUP_TOKEN?.trim() ?? "";
-const SETUP_TOKEN_VALUE = process.env.REMOTECLAW_LIVE_SETUP_TOKEN_VALUE?.trim() ?? "";
-const SETUP_TOKEN_PROFILE = process.env.REMOTECLAW_LIVE_SETUP_TOKEN_PROFILE?.trim() ?? "";
+const SETUP_TOKEN_RAW = process.env.OPENCLAW_LIVE_SETUP_TOKEN?.trim() ?? "";
+const SETUP_TOKEN_VALUE = process.env.OPENCLAW_LIVE_SETUP_TOKEN_VALUE?.trim() ?? "";
+const SETUP_TOKEN_PROFILE = process.env.OPENCLAW_LIVE_SETUP_TOKEN_PROFILE?.trim() ?? "";
 const DIRECT_CLAUDE_ARGS = ["-p", "--append-system-prompt"];
 
 type CaptureSummary = {
@@ -80,7 +78,7 @@ type PromptResult = {
   prompt: string;
   ok: boolean;
   transport: "direct" | "gateway";
-  promptMode?: "extra" | "override";
+  promptMode?: "extra";
   exitCode?: number | null;
   signal?: NodeJS.Signals | null;
   status?: string;
@@ -237,7 +235,7 @@ function resolveSetupTokenSource(): TokenSource {
   const match = pickSetupTokenProfile(candidates);
   if (!match) {
     throw new Error(
-      "no Anthropics setup-token profile found; set REMOTECLAW_LIVE_SETUP_TOKEN_VALUE or REMOTECLAW_LIVE_SETUP_TOKEN_PROFILE",
+      "no Anthropics setup-token profile found; set OPENCLAW_LIVE_SETUP_TOKEN_VALUE or OPENCLAW_LIVE_SETUP_TOKEN_PROFILE",
     );
   }
   return { profileId: match.id, token: validateSetupToken(match.token) };
@@ -462,23 +460,23 @@ async function startGatewayProcess(params: {
   const logFile = await fs.open(params.logPath, "a");
   const child = spawn(
     NODE_BIN,
-    ["remoteclaw.mjs", "gateway", "--port", String(params.port), "--bind", "loopback", "--force"],
+    ["openclaw.mjs", "gateway", "--port", String(params.port), "--bind", "loopback", "--force"],
     {
       cwd: process.cwd(),
       env: {
         ...process.env,
-        REMOTECLAW_CONFIG_PATH: params.configPath,
-        REMOTECLAW_STATE_DIR: params.stateDir,
-        REMOTECLAW_AGENT_DIR: params.agentDir,
-        REMOTECLAW_GATEWAY_TOKEN: params.gatewayToken,
-        REMOTECLAW_SKIP_CHANNELS: "1",
-        REMOTECLAW_SKIP_GMAIL_WATCHER: "1",
-        REMOTECLAW_SKIP_CANVAS_HOST: "1",
-        REMOTECLAW_SKIP_BROWSER_CONTROL_SERVER: "1",
-        REMOTECLAW_DISABLE_BONJOUR: "1",
-        REMOTECLAW_SKIP_CRON: "1",
-        REMOTECLAW_TEST_MINIMAL_GATEWAY: "1",
-        REMOTECLAW_BUNDLED_PLUGINS_DIR: params.bundledPluginsDir,
+        OPENCLAW_CONFIG_PATH: params.configPath,
+        OPENCLAW_STATE_DIR: params.stateDir,
+        OPENCLAW_AGENT_DIR: params.agentDir,
+        OPENCLAW_GATEWAY_TOKEN: params.gatewayToken,
+        OPENCLAW_SKIP_CHANNELS: "1",
+        OPENCLAW_SKIP_GMAIL_WATCHER: "1",
+        OPENCLAW_SKIP_CANVAS_HOST: "1",
+        OPENCLAW_SKIP_BROWSER_CONTROL_SERVER: "1",
+        OPENCLAW_DISABLE_BONJOUR: "1",
+        OPENCLAW_SKIP_CRON: "1",
+        OPENCLAW_TEST_MINIMAL_GATEWAY: "1",
+        OPENCLAW_BUNDLED_PLUGINS_DIR: params.bundledPluginsDir,
         ANTHROPIC_API_KEY: "",
         ANTHROPIC_API_KEY_OLD: "",
       },
@@ -531,7 +529,7 @@ async function runGatewayPrompt(prompt: string): Promise<PromptResult> {
   const stateDir = path.join(tmpDir, "state");
   const agentDir = path.join(stateDir, "agents", "main", "agent");
   const bundledPluginsDir = path.join(tmpDir, "bundled-plugins-empty");
-  const configPath = path.join(tmpDir, "remoteclaw.json");
+  const configPath = path.join(tmpDir, "openclaw.json");
   const logPath = path.join(tmpDir, "gateway.log");
   const gatewayToken = `gw-${randomUUID()}`;
   const port = await getFreePort();
@@ -579,7 +577,6 @@ async function runGatewayPrompt(prompt: string): Promise<PromptResult> {
             heartbeat: {
               includeSystemPromptSection: false,
             },
-            ...(GATEWAY_PROMPT_MODE === "override" ? { systemPromptOverride: prompt } : {}),
           },
         },
       },
@@ -679,7 +676,7 @@ async function runGatewayPrompt(prompt: string): Promise<PromptResult> {
 
 async function main() {
   if (!PROMPT_TEXT && !PROMPT_LIST_JSON) {
-    throw new Error("missing REMOTECLAW_PROMPT_TEXT or REMOTECLAW_PROMPT_LIST_JSON");
+    throw new Error("missing OPENCLAW_PROMPT_TEXT or OPENCLAW_PROMPT_LIST_JSON");
   }
   const prompts = PROMPT_LIST_JSON ? (JSON.parse(PROMPT_LIST_JSON) as string[]) : [PROMPT_TEXT];
   const results: PromptResult[] = [];

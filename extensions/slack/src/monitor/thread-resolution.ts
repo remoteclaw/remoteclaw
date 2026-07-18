@@ -1,6 +1,7 @@
 import type { WebClient as SlackWebClient } from "@slack/web-api";
 import { logVerbose, shouldLogVerbose } from "../../../../src/globals.js";
 import { pruneMapToMaxSize } from "../../../../src/infra/map-size.js";
+import { parseFiniteNumber } from "../../../../src/shared/number-coercion.js";
 import type { SlackMessageEvent } from "../types.js";
 
 type ThreadTsCacheEntry = {
@@ -52,8 +53,10 @@ export function createSlackThreadTsResolver(params: {
   cacheTtlMs?: number;
   maxSize?: number;
 }) {
-  const ttlMs = Math.max(0, params.cacheTtlMs ?? DEFAULT_THREAD_TS_CACHE_TTL_MS);
-  const maxSize = Math.max(0, params.maxSize ?? DEFAULT_THREAD_TS_CACHE_MAX);
+  // `Math.max(0, NaN)` is NaN, which disables the TTL and the size cap outright;
+  // fall back to the defaults when a caller passes a non-finite value.
+  const ttlMs = Math.max(0, parseFiniteNumber(params.cacheTtlMs) ?? DEFAULT_THREAD_TS_CACHE_TTL_MS);
+  const maxSize = Math.max(0, parseFiniteNumber(params.maxSize) ?? DEFAULT_THREAD_TS_CACHE_MAX);
   const cache = new Map<string, ThreadTsCacheEntry>();
   const inflight = new Map<string, Promise<string | undefined>>();
 

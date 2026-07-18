@@ -127,15 +127,15 @@ export function shouldUseEnvHttpProxyForUrl(
  *   matches (kept in sync with that behavior)
  * - Subdomain suffix match (`openai.com` matches `api.openai.com`)
  * - Optional `:port` suffix; when present, must match target port
- * - IPv6 literals in bracketed form (`[::1]`)
- * - RemoteClaw extension: IPv4 CIDR and octet-wildcard entries
+ * - IPv6 literals in bracketed (`[::1]`) or bare (`::1`) form
+ * - OpenClaw extension: IPv4 CIDR and octet-wildcard entries
  *   (`100.64.0.0/10`, `100.64.*`) bypass the trusted env proxy mode before
  *   undici's EnvHttpProxyAgent is selected.
  *
  * Undici does not export its matcher, so this is a targeted reimplementation
  * kept in sync with the upstream file above. Paired with
  * `hasEnvHttpProxyConfigured` this gates the trusted-env-proxy auto-upgrade
- * in provider HTTP helpers; see remoteclaw#64974 review thread on NO_PROXY
+ * in provider HTTP helpers; see openclaw#64974 review thread on NO_PROXY
  * SSRF bypass.
  */
 export function matchesNoProxy(targetUrl: string, env: NodeJS.ProcessEnv = process.env): boolean {
@@ -187,10 +187,15 @@ export function matchesNoProxy(targetUrl: string, env: NodeJS.ProcessEnv = proce
       entryHost = m[1];
       entryPort = m[2];
     } else {
-      const colonIdx = entry.lastIndexOf(":");
-      if (colonIdx > 0 && /^\d+$/.test(entry.slice(colonIdx + 1))) {
-        entryHost = entry.slice(0, colonIdx);
-        entryPort = entry.slice(colonIdx + 1);
+      const firstColonIdx = entry.indexOf(":");
+      const lastColonIdx = entry.lastIndexOf(":");
+      if (
+        firstColonIdx > -1 &&
+        firstColonIdx === lastColonIdx &&
+        /^\d+$/.test(entry.slice(lastColonIdx + 1))
+      ) {
+        entryHost = entry.slice(0, lastColonIdx);
+        entryPort = entry.slice(lastColonIdx + 1);
       } else {
         entryHost = entry;
       }

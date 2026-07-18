@@ -1,14 +1,14 @@
 ---
 summary: "Place outbound and accept inbound voice calls via Twilio, Telnyx, or Plivo, with optional realtime voice and streaming transcription"
 read_when:
-  - You want to place an outbound voice call from RemoteClaw
+  - You want to place an outbound voice call from OpenClaw
   - You are configuring or developing the voice-call plugin
   - You need realtime voice or streaming transcription on telephony
 title: "Voice call plugin"
 sidebarTitle: "Voice call"
 ---
 
-Voice calls for RemoteClaw via a plugin. Supports outbound notifications,
+Voice calls for OpenClaw via a plugin. Supports outbound notifications,
 multi-turn conversations, full-duplex realtime voice, streaming
 transcription, and inbound calls with allowlist policies.
 
@@ -29,13 +29,13 @@ the Gateway, then restart the Gateway to load it.
     <Tabs>
       <Tab title="From npm">
         ```bash
-        remoteclaw plugins install @remoteclaw/voice-call
+        openclaw plugins install @remoteclaw/voice-call
         ```
       </Tab>
       <Tab title="From a local folder (dev)">
         ```bash
         PLUGIN_SRC=./path/to/local/voice-call-plugin
-        remoteclaw plugins install "$PLUGIN_SRC"
+        openclaw plugins install "$PLUGIN_SRC"
         cd "$PLUGIN_SRC" && pnpm install
         ```
       </Tab>
@@ -55,7 +55,7 @@ the Gateway, then restart the Gateway to load it.
   </Step>
   <Step title="Verify setup">
     ```bash
-    remoteclaw voicecall setup
+    openclaw voicecall setup
     ```
 
     The default output is readable in chat logs and terminals. It checks
@@ -66,15 +66,15 @@ the Gateway, then restart the Gateway to load it.
   </Step>
   <Step title="Smoke test">
     ```bash
-    remoteclaw voicecall smoke
-    remoteclaw voicecall smoke --to "+15555550123"
+    openclaw voicecall smoke
+    openclaw voicecall smoke --to "+15555550123"
     ```
 
     Both are dry runs by default. Add `--yes` to actually place a short
     outbound notify call:
 
     ```bash
-    remoteclaw voicecall smoke --to "+15555550123" --yes
+    openclaw voicecall smoke --to "+15555550123" --yes
     ```
 
   </Step>
@@ -115,7 +115,7 @@ Voice-call credentials accept SecretRefs. `plugins.entries.voice-call.config.twi
               responseSystemPrompt: "You are a concise baseball card specialist.",
               tts: {
                 providers: {
-                  openai: { voice: "alloy" },
+                  openai: { speakerVoice: "alloy" },
                 },
               },
             },
@@ -187,9 +187,9 @@ Voice-call credentials accept SecretRefs. `plugins.entries.voice-call.config.twi
   </Accordion>
   <Accordion title="Legacy config migrations">
     Older configs using `provider: "log"`, `twilio.from`, or legacy
-    `streaming.*` OpenAI keys are rewritten by `remoteclaw doctor --fix`.
+    `streaming.*` OpenAI keys are rewritten by `openclaw doctor --fix`.
     Runtime fallback still accepts the old voice-call keys for now, but
-    the rewrite path is `remoteclaw doctor --fix` and the compat shim is
+    the rewrite path is `openclaw doctor --fix` and the compat shim is
     temporary.
 
     Auto-migrated streaming keys:
@@ -228,9 +228,9 @@ Current runtime behaviour:
 - `realtime.provider` is optional. If unset, Voice Call uses the first registered realtime voice provider.
 - Bundled realtime voice providers: Google Gemini Live (`google`) and OpenAI (`openai`), registered by their provider plugins.
 - Provider-owned raw config lives under `realtime.providers.<providerId>`.
-- Voice Call exposes the shared `remoteclaw_agent_consult` realtime tool by default. The realtime model can call it when the caller asks for deeper reasoning, current information, or normal RemoteClaw tools.
-- `realtime.consultPolicy` optionally adds guidance for when the realtime model should call `remoteclaw_agent_consult`.
-- `realtime.agentContext.enabled` is default-off. When enabled, Voice Call injects a bounded agent identity, system prompt override, and selected workspace-file capsule into the realtime provider instructions at session setup.
+- Voice Call exposes the shared `openclaw_agent_consult` realtime tool by default. The realtime model can call it when the caller asks for deeper reasoning, current information, or normal OpenClaw tools.
+- `realtime.consultPolicy` optionally adds guidance for when the realtime model should call `openclaw_agent_consult`.
+- `realtime.agentContext.enabled` is default-off. When enabled, Voice Call injects a bounded agent identity and selected workspace-file capsule into the realtime provider instructions at session setup.
 - `realtime.fastContext.enabled` is default-off. When enabled, Voice Call first searches indexed memory/session context for the consult question and returns those snippets to the realtime model within `realtime.fastContext.timeoutMs` before falling back to the full consult agent only if `realtime.fastContext.fallbackToConsult` is true.
 - If `realtime.provider` points at an unregistered provider, or no realtime voice provider is registered at all, Voice Call logs a warning and skips realtime media instead of failing the whole plugin.
 - Consult session keys reuse the stored call session when available, then fall back to the configured `sessionScope` (`per-phone` by default, or `per-call` for isolated calls).
@@ -256,10 +256,10 @@ Current runtime behaviour:
 ### Agent voice context
 
 Enable `realtime.agentContext` when the voice bridge should sound like the
-configured RemoteClaw agent without paying a full agent-consult round trip on
+configured OpenClaw agent without paying a full agent-consult round trip on
 ordinary turns. The context capsule is added once when the realtime session is
 created, so it does not add per-turn latency. Calls to
-`remoteclaw_agent_consult` still run the full RemoteClaw agent and should be used
+`openclaw_agent_consult` still run the full OpenClaw agent and should be used
 for tool work, current information, memory lookups, or workspace state.
 
 ```json5
@@ -278,7 +278,6 @@ for tool work, current information, memory lookups, or workspace state.
               enabled: true,
               maxChars: 6000,
               includeIdentity: true,
-              includeSystemPrompt: true,
               includeWorkspaceFiles: true,
               files: ["SOUL.md", "IDENTITY.md", "USER.md"],
             },
@@ -313,7 +312,7 @@ for tool work, current information, memory lookups, or workspace state.
               realtime: {
                 enabled: true,
                 provider: "google",
-                instructions: "Speak briefly. Call remoteclaw_agent_consult before using deeper tools.",
+                instructions: "Speak briefly. Call openclaw_agent_consult before using deeper tools.",
                 toolPolicy: "safe-read-only",
                 consultPolicy: "substantive",
                 consultThinkingLevel: "low",
@@ -323,7 +322,7 @@ for tool work, current information, memory lookups, or workspace state.
                   google: {
                     apiKey: "${GEMINI_API_KEY}",
                     model: "gemini-2.5-flash-native-audio-preview-12-2025",
-                    voice: "Kore",
+                    speakerVoice: "Kore",
                     silenceDurationMs: 500,
                     startSensitivity: "high",
                   },
@@ -456,7 +455,7 @@ speech on calls. You can override it under the plugin config with the
     provider: "elevenlabs",
     providers: {
       elevenlabs: {
-        voiceId: "pMsXgVXv3BLzUgSXRplE",
+        speakerVoiceId: "pMsXgVXv3BLzUgSXRplE",
         modelId: "eleven_multilingual_v2",
       },
     },
@@ -471,7 +470,7 @@ the current Microsoft transport does not expose telephony PCM output.
 
 Behavior notes:
 
-- Legacy `tts.<provider>` keys inside plugin config (`openai`, `elevenlabs`, `microsoft`, `edge`) are repaired by `remoteclaw doctor --fix`; committed config should use `tts.providers.<provider>`.
+- Legacy `tts.<provider>` keys inside plugin config (`openai`, `elevenlabs`, `microsoft`, `edge`) are repaired by `openclaw doctor --fix`; committed config should use `tts.providers.<provider>`.
 - Core TTS is used when Twilio media streaming is enabled; otherwise calls fall back to provider-native voices.
 - If a Twilio media stream is already active, Voice Call does not fall back to TwiML `<Say>`. If telephony TTS is unavailable in that state, the playback request fails instead of mixing two playback paths.
 - When telephony TTS falls back to a secondary provider, Voice Call logs a warning with the provider chain (`from`, `to`, `attempts`) for debugging.
@@ -487,7 +486,7 @@ Behavior notes:
     tts: {
       provider: "openai",
       providers: {
-        openai: { voice: "alloy" },
+        openai: { speakerVoice: "alloy" },
       },
     },
   },
@@ -506,7 +505,7 @@ Behavior notes:
             providers: {
               elevenlabs: {
                 apiKey: "elevenlabs_key",
-                voiceId: "pMsXgVXv3BLzUgSXRplE",
+                speakerVoiceId: "pMsXgVXv3BLzUgSXRplE",
                 modelId: "eleven_multilingual_v2",
               },
             },
@@ -529,7 +528,7 @@ Behavior notes:
             providers: {
               openai: {
                 model: "gpt-4o-mini-tts",
-                voice: "marin",
+                speakerVoice: "marin",
               },
             },
           },
@@ -600,7 +599,7 @@ you can usually override only the provider voice:
   tts: {
     provider: "openai",
     providers: {
-      openai: { voice: "coral" },
+      openai: { speakerVoice: "coral" },
     },
   },
   numbers: {
@@ -609,7 +608,7 @@ you can usually override only the provider voice:
       responseSystemPrompt: "You are a concise baseball card specialist.",
       tts: {
         providers: {
-          openai: { voice: "alloy" },
+          openai: { speakerVoice: "alloy" },
         },
       },
     },
@@ -725,16 +724,16 @@ Example with a stable public host:
 ## CLI
 
 ```bash
-remoteclaw voicecall call --to "+15555550123" --message "Hello from RemoteClaw"
-remoteclaw voicecall start --to "+15555550123"   # alias for call
-remoteclaw voicecall continue --call-id <id> --message "Any questions?"
-remoteclaw voicecall speak --call-id <id> --message "One moment"
-remoteclaw voicecall dtmf --call-id <id> --digits "ww123456#"
-remoteclaw voicecall end --call-id <id>
-remoteclaw voicecall status --call-id <id>
-remoteclaw voicecall tail
-remoteclaw voicecall latency                      # summarize turn latency from logs
-remoteclaw voicecall expose --mode funnel
+openclaw voicecall call --to "+15555550123" --message "Hello from OpenClaw"
+openclaw voicecall start --to "+15555550123"   # alias for call
+openclaw voicecall continue --call-id <id> --message "Any questions?"
+openclaw voicecall speak --call-id <id> --message "One moment"
+openclaw voicecall dtmf --call-id <id> --digits "ww123456#"
+openclaw voicecall end --call-id <id>
+openclaw voicecall status --call-id <id>
+openclaw voicecall tail
+openclaw voicecall latency                      # summarize turn latency from logs
+openclaw voicecall expose --mode funnel
 ```
 
 When the Gateway is already running, operational `voicecall` commands delegate
@@ -784,8 +783,8 @@ digits.
 Run setup from the same environment that runs the Gateway:
 
 ```bash
-remoteclaw voicecall setup
-remoteclaw voicecall setup --json
+openclaw voicecall setup
+openclaw voicecall setup --json
 ```
 
 For `twilio`, `telnyx`, and `plivo`, `webhook-exposure` must be green. A
@@ -823,8 +822,8 @@ Use one public exposure path:
 After changing config, restart or reload the Gateway, then run:
 
 ```bash
-remoteclaw voicecall setup
-remoteclaw voicecall smoke
+openclaw voicecall setup
+openclaw voicecall smoke
 ```
 
 `voicecall smoke` is a dry run unless you pass `--yes`.
@@ -854,9 +853,9 @@ https://voice.example.com/voice/webhook
 Then inspect runtime state:
 
 ```bash
-remoteclaw voicecall status --call-id <id>
-remoteclaw voicecall tail
-remoteclaw logs --follow
+openclaw voicecall status --call-id <id>
+openclaw voicecall tail
+openclaw logs --follow
 ```
 
 Common causes:
@@ -875,7 +874,7 @@ your control.
 
 ### Signature verification fails
 
-Provider signatures are checked against the public URL RemoteClaw reconstructs
+Provider signatures are checked against the public URL OpenClaw reconstructs
 from the incoming request. If signatures fail:
 
 - Confirm the provider webhook URL exactly matches `publicUrl`, including
@@ -890,14 +889,14 @@ from the incoming request. If signatures fail:
 Google Meet uses this plugin for Twilio dial-in joins. First verify Voice Call:
 
 ```bash
-remoteclaw voicecall setup
-remoteclaw voicecall smoke --to "+15555550123"
+openclaw voicecall setup
+openclaw voicecall smoke --to "+15555550123"
 ```
 
 Then verify the Google Meet transport explicitly:
 
 ```bash
-remoteclaw googlemeet setup --transport twilio
+openclaw googlemeet setup --transport twilio
 ```
 
 If Voice Call is green but the Meet participant never joins, check the Meet
@@ -910,7 +909,7 @@ pre-connect DTMF sequence. PIN-derived sequences include the Google Meet plugin'
 because Meet dial-in prompts can arrive late. Voice Call then redirects back to
 realtime handling before the intro greeting is requested.
 
-Use `remoteclaw logs --follow` for the live phase trace. A healthy Twilio Meet
+Use `openclaw logs --follow` for the live phase trace. A healthy Twilio Meet
 join logs this order:
 
 - Google Meet delegates the Twilio join to Voice Call.
@@ -919,7 +918,7 @@ join logs this order:
 - Voice Call serves realtime TwiML for the Twilio call.
 - Google Meet requests intro speech with `voicecall.speak` after the post-DTMF delay.
 
-`remoteclaw voicecall tail` still shows persisted call records; it is useful for
+`openclaw voicecall tail` still shows persisted call records; it is useful for
 call state and transcripts, but not every webhook/realtime transition appears
 there.
 
@@ -933,7 +932,7 @@ For realtime Twilio calls, also verify:
 - A realtime provider plugin is loaded and registered.
 - `realtime.provider` is unset or names a registered provider.
 - The provider API key is available to the Gateway process.
-- `remoteclaw logs --follow` shows realtime TwiML served, the realtime bridge
+- `openclaw logs --follow` shows realtime TwiML served, the realtime bridge
   started, and the initial greeting queued.
 
 ## Related

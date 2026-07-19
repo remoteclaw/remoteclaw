@@ -67,6 +67,9 @@ export default defineConfig({
       "ui/src/ui/controllers/agents.test.ts",
       "ui/src/ui/controllers/chat.test.ts",
       "ui/src/ui/app-tool-stream.node.test.ts",
+      // Guards the Control UI service-worker build-id contract that otherwise only the
+      // publish lanes' `pnpm ui:build` exercises — see #3024.
+      "ui/src/ui/service-worker-cache.test.ts",
     ],
     setupFiles: ["test/setup.ts"],
     exclude: [

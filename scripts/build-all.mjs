@@ -91,7 +91,7 @@ export const BUILD_ALL_STEPS = [
     kind: "pnpm",
     pnpmArgs: ["ui:build"],
     // No build-all cache: ui/vite.config.ts derives the Control UI build ID
-    // from package.json, git HEAD, and OPENCLAW_CONTROL_UI_BUILD_ID env, so a
+    // from package.json, git HEAD, and REMOTECLAW_CONTROL_UI_BUILD_ID env, so a
     // file-input signature cannot exactly invalidate generated assets and a
     // warm hit could restore stale service-worker/app cache metadata.
     cache: undefined,

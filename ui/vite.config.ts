@@ -74,7 +74,7 @@ function readGitShortSha(): string | null {
 
 function resolveControlUiBuildId(): string {
   const explicit =
-    process.env.OPENCLAW_CONTROL_UI_BUILD_ID?.trim() || process.env.OPENCLAW_VERSION?.trim();
+    process.env.REMOTECLAW_CONTROL_UI_BUILD_ID?.trim() || process.env.REMOTECLAW_VERSION?.trim();
   if (explicit) {
     return normalizeBuildId(explicit);
   }
@@ -91,7 +91,9 @@ function controlUiServiceWorkerBuildIdPlugin(buildId: string): Plugin {
       const swPath = path.join(outDir, "sw.js");
       const publicSwPath = path.join(here, "public/sw.js");
       const source = fs.readFileSync(fs.existsSync(swPath) ? swPath : publicSwPath, "utf8");
-      const placeholder = '"__OPENCLAW_CONTROL_UI_BUILD_ID__"';
+      // Must stay byte-identical to the token in ui/public/sw.js — a mismatch makes the
+      // replace below a no-op and fails the build. Guarded by service-worker-cache.test.ts.
+      const placeholder = '"__REMOTECLAW_CONTROL_UI_BUILD_ID__"';
       const updated = source.replace(placeholder, JSON.stringify(buildId));
       if (updated === source) {
         throw new Error(`Control UI service worker build id placeholder missing in ${swPath}`);
@@ -103,13 +105,15 @@ function controlUiServiceWorkerBuildIdPlugin(buildId: string): Plugin {
 }
 
 export default defineConfig(() => {
-  const envBase = process.env.OPENCLAW_CONTROL_UI_BASE_PATH?.trim();
+  const envBase = process.env.REMOTECLAW_CONTROL_UI_BASE_PATH?.trim();
   const base = envBase ? normalizeBase(envBase) : "./";
   const controlUiBuildId = resolveControlUiBuildId();
   return {
     base,
     define: {
-      OPENCLAW_CONTROL_UI_BUILD_ID: JSON.stringify(controlUiBuildId),
+      // Key must match the identifier ui/src/main.ts declares and reads; otherwise vite
+      // never substitutes it and the prod bundle throws ReferenceError on that global.
+      REMOTECLAW_CONTROL_UI_BUILD_ID: JSON.stringify(controlUiBuildId),
     },
     publicDir: path.resolve(here, "public"),
     optimizeDeps: {

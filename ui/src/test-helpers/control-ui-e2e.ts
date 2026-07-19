@@ -95,7 +95,7 @@ export async function startControlUiE2eServer(): Promise<ControlUiE2eServer> {
     clearScreen: false,
     configFile: false,
     define: {
-      OPENCLAW_CONTROL_UI_BUILD_ID: JSON.stringify("e2e"),
+      REMOTECLAW_CONTROL_UI_BUILD_ID: JSON.stringify("e2e"),
     },
     logLevel: "error",
     optimizeDeps: {

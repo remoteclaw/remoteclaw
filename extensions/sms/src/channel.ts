@@ -24,6 +24,7 @@ import {
   resolveSmsAccount,
 } from "./accounts.js";
 import { SmsChannelConfigSchema } from "./config-schema.js";
+import { startSmsAccountWebhook, stopSmsAccountWebhook } from "./monitor.js";
 import {
   looksLikeSmsPhoneNumber,
   normalizeSmsAllowFrom,
@@ -245,6 +246,12 @@ export const smsPlugin: ChannelPlugin<ResolvedSmsAccount> = {
         probe,
       }),
   },
-  // No `gateway` block: PR-3 ships a send-only channel. The inbound webhook
-  // (and its gateway adapter) lands in PR-4, which is reviewed separately.
+  gateway: {
+    // Registers the PUBLIC Twilio inbound webhook on the kept
+    // `registerPluginHttpRoute` gateway path (see monitor.ts for why the route
+    // is unauthenticated at the gateway layer and what authenticates it
+    // instead). Not upstream's gutted webhook-ingress.
+    startAccount: (ctx) => startSmsAccountWebhook(ctx),
+    stopAccount: (ctx) => stopSmsAccountWebhook(ctx),
+  },
 };

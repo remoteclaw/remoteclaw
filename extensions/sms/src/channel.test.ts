@@ -30,9 +30,9 @@ describe("sms channel plugin", () => {
     expect(typeof smsPlugin.status?.probeAccount).toBe("function");
   });
 
-  it("ships send-only: no gateway block until the inbound webhook lands (PR-4)", () => {
-    expect(smsPlugin.gateway).toBeUndefined();
-    expect(smsPlugin.gatewayMethods).toBeUndefined();
+  it("wires the inbound gateway adapter (PR-4)", () => {
+    expect(typeof smsPlugin.gateway?.startAccount).toBe("function");
+    expect(typeof smsPlugin.gateway?.stopAccount).toBe("function");
     // SMS is text-only; MMS/media sending is out of scope for this channel.
     expect(smsPlugin.outbound?.sendMedia).toBeUndefined();
   });

@@ -312,15 +312,16 @@ async function requestTwilioApi(params: {
     };
   }
 
-  // The gateway egress path is SSRF-guarded and pinned to the Twilio hostname.
-  // HTTPS is enforced structurally: every Twilio URL is a hardcoded https://
-  // constant and the guard restricts egress to `allowedHostnames`, rejecting any
-  // non-http(s) protocol. (The fork's GuardedFetchOptions has no `requireHttps`.)
+  // The gateway egress path is SSRF-guarded and pinned to the Twilio hostname
+  // via `hostnameAllowlist` (egress allowlist — any hostname not on the list is
+  // rejected, and the pinned host stays subject to the private-IP rebinding
+  // re-check). HTTPS is enforced structurally: every Twilio URL is a hardcoded
+  // https:// constant. (The fork's GuardedFetchOptions has no `requireHttps`.)
   const guarded = await fetchWithSsrFGuard({
     url: params.url,
     init,
     auditContext: "sms-twilio-api",
-    policy: { allowedHostnames: [params.allowedHostname] },
+    policy: { hostnameAllowlist: [params.allowedHostname] },
     timeoutMs: params.timeoutMs ?? TWILIO_API_TIMEOUT_MS,
   });
   try {

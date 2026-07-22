@@ -534,7 +534,7 @@ describe("Twilio SMS helpers", () => {
     expect(fetchWithSsrFGuardMock).toHaveBeenCalledWith(
       expect.objectContaining({
         auditContext: "sms-twilio-api",
-        policy: { allowedHostnames: ["api.twilio.com"] },
+        policy: { hostnameAllowlist: ["api.twilio.com"] },
         timeoutMs: 30_000,
         url: "https://api.twilio.com/2010-04-01/Accounts/AC123/Messages.json",
       }),
